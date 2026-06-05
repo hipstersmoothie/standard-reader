@@ -141,3 +141,12 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+# TanStack Start / Router
+.nitro
+.tanstack
+.vinxi
+.wrangler
+__unconfig*
+src/routeTree.gen.ts
+todos.json

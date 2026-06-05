@@ -1,0 +1,43 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "extends": ["config/oxlint/rules-base.json", "config/oxlint/overrides.json"],
+  "categories": {
+    "correctness": "off"
+  },
+  "env": {
+    "builtin": true,
+    "es2026": true
+  },
+  "ignorePatterns": [
+    "**/routeTree.gen.ts",
+    "**/public/**/*.js",
+    "**/node_modules",
+    "**/.DS_Store",
+    "**/dist",
+    "**/dist-ssr",
+    "**/*.local",
+    "**/.env",
+    "**/.nitro",
+    "**/.tanstack",
+    "**/.wrangler",
+    "**/.output",
+    "**/.vinxi",
+    "**/todos.json",
+    "**/.vite",
+    "**/build/**",
+    "**/coverage/**",
+    "**/dist/**",
+    "**/vite.config.*.timestamp-*.*"
+  ],
+  "jsPlugins": [
+    "@eslint-community/eslint-plugin-eslint-comments",
+    "eslint-plugin-perfectionist"
+  ],
+  "settings": {
+    "import-x/resolver": {
+      "typescript": {
+        "alwaysTryTypes": true
+      }
+    }
+  }
+}
