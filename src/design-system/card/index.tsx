@@ -70,9 +70,9 @@ const styles = stylex.create({
       `,
     },
     alignItems: "center",
-    columnGap: 'calc(var(--card-gap) * 0.5)',
+    columnGap: "calc(var(--card-gap) * 0.5)",
     display: "grid",
-    rowGap: 'calc(var(--card-gap) * 0.5)',
+    rowGap: "calc(var(--card-gap) * 0.5)",
   },
   headerBorder: {
     borderColor: uiColor.component2,
@@ -128,7 +128,7 @@ const styles = stylex.create({
     textBoxEdge: "cap alphabetic",
     // eslint-disable-next-line @stylexjs/valid-styles
     textBoxTrim: "trim-both",
-    columnGap: 'calc(var(--card-gap) * 0.5)',
+    columnGap: "calc(var(--card-gap) * 0.5)",
     display: "flex",
     flexDirection: "column",
     fontSize: {
@@ -136,7 +136,7 @@ const styles = stylex.create({
       ":is([data-card-size='md'] *)": fontSize["base"],
       ":is([data-card-size='sm'] *)": fontSize["xs"],
     },
-    rowGap: 'calc(var(--card-gap) * 0.5)',
+    rowGap: "calc(var(--card-gap) * 0.5)",
   },
   cardFooter: {
     gap: gap["md"],

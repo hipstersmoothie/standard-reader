@@ -175,10 +175,10 @@ const styles = stylex.create({
   separator: {
     // eslint-disable-next-line @stylexjs/valid-styles
     display: "var(--separator-visibility, none)",
-    gridColumnEnd: 'separator',
-    gridColumnStart: 'separator',
-    gridRowEnd: 'separator',
-    gridRowStart: 'separator',
+    gridColumnEnd: "separator",
+    gridColumnStart: "separator",
+    gridRowEnd: "separator",
+    gridRowStart: "separator",
   },
   navigation: {
     gap: {
@@ -199,10 +199,10 @@ const styles = stylex.create({
       [containerBreakpoints.sm]: "row",
     },
     flexGrow: 1,
-    gridColumnEnd: 'navigation',
-    gridColumnStart: 'navigation',
-    gridRowEnd: 'navigation',
-    gridRowStart: 'navigation',
+    gridColumnEnd: "navigation",
+    gridColumnStart: "navigation",
+    gridRowEnd: "navigation",
+    gridRowStart: "navigation",
   },
   navigationJustifyLeft: {
     justifyContent: "flex-start",
@@ -222,10 +222,10 @@ const styles = stylex.create({
       [containerBreakpoints.sm]: "flex",
       ":is([data-always-visible])": "flex",
     },
-    gridColumnEnd: 'action',
-    gridColumnStart: 'action',
-    gridRowEnd: 'action',
-    gridRowStart: 'action',
+    gridColumnEnd: "action",
+    gridColumnStart: "action",
+    gridRowEnd: "action",
+    gridRowStart: "action",
   },
   hamburgerButton: {
     alignItems: "center",
@@ -233,10 +233,10 @@ const styles = stylex.create({
       default: "flex",
       [containerBreakpoints.sm]: "none",
     },
-    gridColumnEnd: 'hamburger',
-    gridColumnStart: 'hamburger',
-    gridRowEnd: 'hamburger',
-    gridRowStart: 'hamburger',
+    gridColumnEnd: "hamburger",
+    gridColumnStart: "hamburger",
+    gridRowEnd: "hamburger",
+    gridRowStart: "hamburger",
   },
   link: {
     "--underline-opacity": {

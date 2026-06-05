@@ -5,23 +5,13 @@ import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 
 import Footer from "../components/Footer";
 import Header from "../components/Header";
+import { HeaderLayout } from "../design-system/header-layout";
 import { ui } from "../design-system/theme/semantic-color.stylex";
 import appCss from "../styles.css?url";
 
 if (import.meta.env.DEV) {
   void import("virtual:stylex:runtime");
 }
-
-const styles = stylex.create({
-  body: {
-    display: "flex",
-    flexDirection: "column",
-    minHeight: "100vh",
-  },
-  main: {
-    flexGrow: 1,
-  },
-});
 
 export const Route = createRootRoute({
   head: () => ({
@@ -46,10 +36,19 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <head>
         <HeadContent />
       </head>
-      <body {...stylex.props(ui.bg, ui.text, styles.body)}>
-        <Header />
-        <main {...stylex.props(styles.main)}>{children}</main>
-        <Footer />
+      <body {...stylex.props(ui.bg, ui.text)}>
+        <HeaderLayout.Root>
+          <HeaderLayout.Header>
+            <Header />
+          </HeaderLayout.Header>
+
+          <HeaderLayout.Page>{children}</HeaderLayout.Page>
+
+          <HeaderLayout.Footer>
+            <Footer />
+          </HeaderLayout.Footer>
+        </HeaderLayout.Root>
+
         <TanStackDevtools
           config={{ position: "bottom-right" }}
           plugins={[

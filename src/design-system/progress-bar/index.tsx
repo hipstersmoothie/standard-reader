@@ -32,19 +32,19 @@ const styles = stylex.create({
     display: "grid",
   },
   label: {
-    gridColumnEnd: 'label',
-    gridColumnStart: 'label',
-    gridRowEnd: 'label',
-    gridRowStart: 'label',
+    gridColumnEnd: "label",
+    gridColumnStart: "label",
+    gridRowEnd: "label",
+    gridRowStart: "label",
   },
   bar: {
     borderRadius: radius.full,
     overflow: "hidden",
     backgroundColor: uiColor.component2,
-    gridColumnEnd: 'bar',
-    gridColumnStart: 'bar',
-    gridRowEnd: 'bar',
-    gridRowStart: 'bar',
+    gridColumnEnd: "bar",
+    gridColumnStart: "bar",
+    gridRowEnd: "bar",
+    gridRowStart: "bar",
     width: "100%",
 
     height: {
@@ -56,10 +56,10 @@ const styles = stylex.create({
   valueLabel: {
     color: uiColor.text1,
     fontVariantNumeric: "tabular-nums",
-    gridColumnEnd: 'value-label',
-    gridColumnStart: 'value-label',
-    gridRowEnd: 'value-label',
-    gridRowStart: 'value-label',
+    gridColumnEnd: "value-label",
+    gridColumnStart: "value-label",
+    gridRowEnd: "value-label",
+    gridRowStart: "value-label",
     justifySelf: "flex-end",
 
     fontSize: {

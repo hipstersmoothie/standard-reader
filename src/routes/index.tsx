@@ -11,13 +11,6 @@ export const Route = createFileRoute("/")({ component: Home });
 function Home() {
   return (
     <Page.Root variant="large">
-      <Page.Header>
-        <Page.Title>Home</Page.Title>
-        <Page.Description>
-          A blank TanStack Start app using the hip-ui design system.
-        </Page.Description>
-      </Page.Header>
-
       <Content>
         <Heading2>Placeholder</Heading2>
         <Body>

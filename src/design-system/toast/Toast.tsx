@@ -64,10 +64,10 @@ const styles = stylex.create({
   content: {
     gap: gap["lg"],
     display: "flex",
-    flexBasis: 'auto',
+    flexBasis: "auto",
     flexDirection: "column",
-    flexGrow: '1',
-    flexShrink: '1',
+    flexGrow: "1",
+    flexShrink: "1",
     minWidth: 0,
   },
   title: {

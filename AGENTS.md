@@ -114,11 +114,12 @@ If the MCP server isn't connected, the same docs are vendored at
 
 StyleX is compiled by `@stylexjs/unplugin/vite` (first plugin in `vite.config.ts`, mirroring
 `~/Documents/at-store`). The plugin is configured with `treeshakeCompensation`, `dev` toggled by
-`NODE_ENV`, and the `#/*` + `@/*` aliases pointing at `./src/*`. In dev, `__root.tsx` imports
-`virtual:stylex:runtime` and links `/virtual:stylex.css` (typed via `src/stylex-env.d.ts`); the
-production build emits a real CSS asset. `pnpm build`, `pnpm dev`, and `pnpm typecheck` all pass with
-the design system in use. (The StyleX-aware `@stylexjs/eslint-plugin` lint rules are still not wired
-up — see "Linting & formatting".)
+`NODE_ENV`, the `#/*` + `@/*` aliases pointing at `./src/*`, and `lightningcssOptions.targets`
+derived from `browserslist("baseline 2024")` (via `lightningcss` + `browserslist`). In dev,
+`__root.tsx` imports `virtual:stylex:runtime` and links `/virtual:stylex.css` (typed via
+`src/stylex-env.d.ts`); the production build emits a real CSS asset. The StyleX-aware lint rules are
+wired up too (see "Linting & formatting"). `pnpm lint`, `pnpm format:check`, `pnpm typecheck`,
+`pnpm build`, and `pnpm dev` all pass with the design system linted and in use.
 
 ## Scripts
 
@@ -132,6 +133,9 @@ up — see "Linting & formatting".)
 - `pnpm format` — format the repo with oxfmt (writes changes).
 - `pnpm format:check` — verify formatting without writing (CI-friendly).
 - `pnpm check` — format, then `oxlint . --fix` (one-shot local cleanup).
+- `pnpm fix-stylex-keys` — autofix StyleX `sort-keys` / `valid-shorthands` across `src` via
+  `eslint.stylex-autofix.mjs` (oxlint reports these but can't autofix them). May need to be run a
+  couple of times to converge on large objects.
 
 ## Linting & formatting (oxc + oxfmt)
 
@@ -144,22 +148,30 @@ Linting uses [oxlint](https://oxc.rs) (pinned `oxlint@1.48.0`) and formatting us
   (`routeTree.gen.ts`, `dist`, `.output`, `.tanstack`, etc.).
 - `config/oxlint/rules-base.json` — framework-agnostic base: ESLint core correctness rules,
   `eslint-comments`, `import-x`, `unicorn`, and `perfectionist/sort-imports`.
-- `config/oxlint/overrides.json` — type-aware `@typescript-eslint`, `jsx-a11y`, and React /
-  react-hooks rules for `*.ts`/`*.tsx`, a Node env override for `*.mjs`/`*.cjs`, and a general
-  `*.js`/`*.ts`/`*.tsx` block (import hygiene + `@stylistic/spaced-comment`).
+- `config/oxlint/overrides.json` — type-aware `@typescript-eslint`, `jsx-a11y`, React /
+  react-hooks, and **`@stylexjs/eslint-plugin`** rules for `*.ts`/`*.tsx`, a Node env override for
+  `*.mjs`/`*.cjs`, and a general `*.js`/`*.ts`/`*.tsx` block (import hygiene +
+  `@stylistic/spaced-comment`).
   > Adapted from at-store: at-store-specific file lists/lexicons were dropped and the
-  > import-resolution allowlist targets this repo's `#/` and `@/` aliases. The `@stylexjs/eslint-plugin`
-  > rules from at-store are **not** wired up yet even though this project uses StyleX (via the
-  > hip-ui design system) — add `@stylexjs/eslint-plugin` and port that override block if you want
-  > StyleX-aware linting.
+  > import-resolution allowlist targets this repo's `#/` and `@/` aliases.
+- **StyleX-aware linting (mirrors at-store).** The `*.ts`/`*.tsx` override adds
+  `"jsPlugins": ["@stylexjs/eslint-plugin"]` and enables `@stylexjs/valid-styles` (with
+  `propLimits` forcing `transitionDuration`/`animationDuration` to the `animationDuration.*`
+  tokens), `sort-keys`, `valid-shorthands`, `enforce-extension`, `no-unused`,
+  `no-legacy-contextual-styles`, and `no-lookahead-selectors`. Per-file override blocks switch off
+  `enforce-extension` for the `*.stylex.tsx` token files and `valid-styles` /
+  `no-legacy-contextual-styles` for the design-system components that legitimately need raw values
+  / contextual selectors (see the file list in `overrides.json`).
 - `.oxfmtrc.json` — oxfmt config: 2-space indent, 80 col, semicolons, double quotes,
   trailing commas (`all`), `lf`. Ignores generated files and lockfiles.
-- **`src/design-system/**`is excluded from both oxlint and oxfmt.** It's vendored copy-and-own
-code whose lint/format expectations are tuned to hip-ui/at-store (incl. the unconfigured StyleX
-rules), so we don't lint/format it here to avoid noise. Wire up`@stylexjs/eslint-plugin` and
-  remove the ignore if you want the design system linted in this repo.
+- **The design system is linted and formatted** (no longer excluded). `pnpm lint` runs over the
+  whole repo incl. `src/design-system/` (0 errors). Because it's copy-and-own, a few violations in
+  the pristine hip-ui copy were fixed in place (e.g. `video/index.tsx`: `transitionDuration` now
+  uses `animationDuration.default`, and `.filter()` callbacks are wrapped).
 - oxlint JS plugins in use (devDependencies): `@eslint-community/eslint-plugin-eslint-comments`,
-  `eslint-plugin-perfectionist`, `@stylistic/eslint-plugin`.
+  `eslint-plugin-perfectionist`, `@stylistic/eslint-plugin`, `@stylexjs/eslint-plugin`. The
+  StyleX key-sort autofix (`eslint.stylex-autofix.mjs`, run via `pnpm fix-stylex-keys`) also needs
+  `eslint` + `@typescript-eslint/parser`.
 - App source is clean (`pnpm lint` → 0 errors, `pnpm format:check` passes). Note the
   `unicorn/no-typeof-undefined` rule: use `globalThis.localStorage === undefined`, not
   `typeof ... === "undefined"`, and `charSet: "utf8"` (not `"utf-8"`) in route `head`.
@@ -179,7 +191,9 @@ src/
   stylex-env.d.ts     # ambient types for the StyleX virtual modules
   routeTree.gen.ts    # GENERATED at dev/build time — do not edit (gitignored)
 public/               # static assets (favicon, logos, manifest, robots.txt)
+config/oxlint/        # shared oxlint rules-base.json + overrides.json (incl. StyleX rules)
 vite.config.ts        # stylexPlugin() -> devtools() -> tanstackStart() -> viteReact()
+eslint.stylex-autofix.mjs # ESLint flat config used only for `pnpm fix-stylex-keys`
 tsconfig.json         # bundler resolution; "#/*" and "@/*" aliases -> ./src/*
 ```
 

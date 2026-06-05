@@ -2,6 +2,7 @@ import * as stylex from "@stylexjs/stylex";
 
 import { Flex } from "../design-system/flex";
 import { uiColor } from "../design-system/theme/color.stylex";
+import { containerBreakpoints } from "../design-system/theme/media-queries.stylex";
 import {
   horizontalSpace,
   verticalSpace,
@@ -13,15 +14,23 @@ const styles = stylex.create({
     borderTopColor: uiColor.border1,
     borderTopStyle: "solid",
     borderTopWidth: 1,
-    paddingLeft: horizontalSpace["4xl"],
-    paddingRight: horizontalSpace["4xl"],
   },
   inner: {
+    boxSizing: "border-box",
     marginLeft: "auto",
     marginRight: "auto",
+    maxWidth: "var(--page-content-max-width)",
     paddingBottom: verticalSpace["6xl"],
+    paddingLeft: {
+      default: horizontalSpace["3xl"],
+      [containerBreakpoints.sm]: horizontalSpace["6xl"],
+    },
+    paddingRight: {
+      default: horizontalSpace["3xl"],
+      [containerBreakpoints.sm]: horizontalSpace["6xl"],
+    },
     paddingTop: verticalSpace["6xl"],
-    width: "min(1080px, 100%)",
+    width: "100%",
   },
 });
 

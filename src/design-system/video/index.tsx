@@ -19,6 +19,7 @@ import { useEffect, useRef, useState } from "react";
 
 import type { StyleXComponentProps } from "../theme/types";
 
+import { animationDuration } from "../theme/animations.stylex";
 import { primaryColor, uiColor } from "../theme/color.stylex";
 import { radius } from "../theme/radius.stylex";
 import { ui } from "../theme/semantic-color.stylex";
@@ -115,7 +116,7 @@ const styles = stylex.create({
     position: "absolute",
     transform: `translateY(calc(-1 * ${subtitleOffset}))`,
     transitionDelay: "0.05s",
-    transitionDuration: "0.15s",
+    transitionDuration: animationDuration.default,
     transitionProperty: "transform",
     transitionTimingFunction: "linear",
     zIndex: 1,
@@ -364,8 +365,7 @@ function useVideoSubtitles({
   const defaultSubtitleTrackIndex = subtitleTracks.findIndex(
     (track) => track.default,
   );
-  const selectedSubtitleTrackIndex =
-    Math.max(defaultSubtitleTrackIndex, 0);
+  const selectedSubtitleTrackIndex = Math.max(defaultSubtitleTrackIndex, 0);
 
   useEffect(() => {
     setCaptionsEnabled(hasSubtitleTracks && defaultCaptionsEnabled);
@@ -490,8 +490,9 @@ function useVideoSubtitles({
     };
 
     const syncSubtitleState = () => {
-      const availableSubtitleTracks =
-        [...textTracks].filter(isSubtitleTrack);
+      const availableSubtitleTracks = [...textTracks].filter((textTrack) =>
+        isSubtitleTrack(textTrack),
+      );
       const selectedTrack =
         captionsEnabled &&
         selectedSubtitleTrackIndex < availableSubtitleTracks.length
@@ -510,7 +511,9 @@ function useVideoSubtitles({
     const bindCueListeners = () => {
       removeCueListeners();
 
-      for (const track of [...textTracks].filter(isSubtitleTrack)) {
+      for (const track of [...textTracks].filter((textTrack) =>
+        isSubtitleTrack(textTrack),
+      )) {
         track.addEventListener("cuechange", syncSubtitleState);
         cueListeners.set(track, syncSubtitleState);
       }

@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 
 import { Flex } from "../design-system/flex";
 import { uiColor } from "../design-system/theme/color.stylex";
+import { containerBreakpoints } from "../design-system/theme/media-queries.stylex";
 import {
   horizontalSpace,
   verticalSpace,
@@ -13,22 +14,30 @@ import ThemeToggle from "./ThemeToggle";
 
 const styles = stylex.create({
   header: {
-    backgroundColor: uiColor.bgSubtle,
+    backgroundColor: uiColor.bg,
     position: "sticky",
     zIndex: 50,
     borderBottomColor: uiColor.border1,
     borderBottomStyle: "solid",
     borderBottomWidth: 1,
-    paddingLeft: horizontalSpace["4xl"],
-    paddingRight: horizontalSpace["4xl"],
     top: 0,
   },
   nav: {
+    boxSizing: "border-box",
     marginLeft: "auto",
     marginRight: "auto",
+    maxWidth: "var(--page-content-max-width)",
     paddingBottom: verticalSpace["2xl"],
+    paddingLeft: {
+      default: horizontalSpace["3xl"],
+      [containerBreakpoints.sm]: horizontalSpace["6xl"],
+    },
+    paddingRight: {
+      default: horizontalSpace["3xl"],
+      [containerBreakpoints.sm]: horizontalSpace["6xl"],
+    },
     paddingTop: verticalSpace["2xl"],
-    width: "min(1080px, 100%)",
+    width: "100%",
   },
   brand: {
     textDecoration: "none",
