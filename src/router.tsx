@@ -13,6 +13,8 @@ export function getRouter() {
     scrollRestoration: true,
     defaultPreload: "intent",
     defaultPreloadStaleTime: 0,
+    // Keep the `:` in `did:plc:…` literal in `/p/$did/$rkey` (don't %-encode it).
+    pathParamsAllowedCharacters: [":"],
   });
 
   setupRouterSsrQueryIntegration({ router, queryClient: context.queryClient });

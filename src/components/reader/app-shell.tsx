@@ -7,6 +7,8 @@ import { feedApi } from "#/integrations/tanstack-query/api-feed.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
 import { Compass, Home, Newspaper, Plus, Search } from "lucide-react";
 
+import type { PublicationCard } from "../../integrations/tanstack-query/api-shapes";
+
 import { Avatar } from "../../design-system/avatar";
 import { Button } from "../../design-system/button";
 import { Flex } from "../../design-system/flex";
@@ -19,7 +21,7 @@ import {
   tracking,
 } from "../../design-system/theme/typography.stylex";
 import { NavbarAuth } from "../NavbarAuth";
-import { initials } from "./format";
+import { initials, publicationLinkParams } from "./format";
 
 const ButtonLink = createLink(Button);
 const DESKTOP = "@media (min-width: 60rem)";
@@ -33,7 +35,7 @@ const styles = stylex.create({
   sidebar: {
     backgroundColor: uiColor.bgSubtle,
     boxSizing: "border-box",
-    display: { [DESKTOP]: "flex", default: "none", },
+    display: { [DESKTOP]: "flex", default: "none" },
     flexDirection: "column",
     flexShrink: 0,
     position: "sticky",
@@ -53,9 +55,9 @@ const styles = stylex.create({
     textDecoration: "none",
     alignItems: "center",
     color: "inherit",
-    columnGap: '0.6rem',
+    columnGap: "0.6rem",
     display: "flex",
-    rowGap: '0.6rem',
+    rowGap: "0.6rem",
     paddingBottom: "1.1rem",
     paddingLeft: "0.5rem",
     paddingTop: "0.25rem",
@@ -84,10 +86,10 @@ const styles = stylex.create({
   },
   brandAccent: { color: primaryColor.text2 },
   nav: {
-    columnGap: '0.1rem',
+    columnGap: "0.1rem",
     display: "flex",
     flexDirection: "column",
-    rowGap: '0.1rem',
+    rowGap: "0.1rem",
   },
   navItem: {
     borderRadius: radius.sm,
@@ -98,12 +100,12 @@ const styles = stylex.create({
       ":hover": uiColor.component1,
     },
     color: uiColor.text2,
-    columnGap: '0.7rem',
+    columnGap: "0.7rem",
     display: "flex",
     fontFamily: fontFamily.sans,
     fontSize: fontSize.sm,
     fontWeight: fontWeight.medium,
-    rowGap: '0.7rem',
+    rowGap: "0.7rem",
     paddingBottom: "0.55rem",
     paddingLeft: "0.65rem",
     paddingRight: "0.65rem",
@@ -114,9 +116,11 @@ const styles = stylex.create({
     color: primaryColor.text2,
   },
   navLabel: {
- flexBasis: '0%',
- flexGrow: '1',
- flexShrink: '1', minWidth: 0 },
+    flexBasis: "0%",
+    flexGrow: "1",
+    flexShrink: "1",
+    minWidth: 0,
+  },
   count: {
     borderRadius: radius.full,
     backgroundColor: uiColor.component1,
@@ -142,10 +146,10 @@ const styles = stylex.create({
     paddingTop: "1.1rem",
   },
   followList: {
-    columnGap: '0.05rem',
+    columnGap: "0.05rem",
     display: "flex",
     flexDirection: "column",
-    rowGap: '0.05rem',
+    rowGap: "0.05rem",
   },
   followRow: {
     borderRadius: radius.sm,
@@ -156,9 +160,9 @@ const styles = stylex.create({
       ":hover": uiColor.component1,
     },
     color: "inherit",
-    columnGap: '0.6rem',
+    columnGap: "0.6rem",
     display: "flex",
-    rowGap: '0.6rem',
+    rowGap: "0.6rem",
     paddingBottom: "0.35rem",
     paddingLeft: "0.65rem",
     paddingRight: "0.65rem",
@@ -181,10 +185,10 @@ const styles = stylex.create({
     paddingRight: "0.65rem",
   },
   foot: {
-    columnGap: '0.7rem',
+    columnGap: "0.7rem",
     display: "flex",
     flexDirection: "column",
-    rowGap: '0.7rem',
+    rowGap: "0.7rem",
     marginTop: "auto",
     paddingTop: "0.9rem",
   },
@@ -203,15 +207,15 @@ const styles = stylex.create({
     minWidth: 0,
   },
   scroller: {
-    flexBasis: '0%',
-    flexGrow: '1',
-    flexShrink: '1',
+    flexBasis: "0%",
+    flexGrow: "1",
+    flexShrink: "1",
     minHeight: 0,
   },
   mobileBar: {
     alignItems: "center",
     backgroundColor: uiColor.bg,
-    display: { [DESKTOP]: "none", default: "flex", },
+    display: { [DESKTOP]: "none", default: "flex" },
     justifyContent: "space-between",
     position: "sticky",
     zIndex: 30,
@@ -226,7 +230,7 @@ const styles = stylex.create({
   },
   bottomNav: {
     backgroundColor: uiColor.bg,
-    display: { [DESKTOP]: "none", default: "flex", },
+    display: { [DESKTOP]: "none", default: "flex" },
     position: "sticky",
     zIndex: 30,
     borderTopColor: uiColor.border1,
@@ -311,6 +315,42 @@ function FollowingAvatar({
   );
 }
 
+function FollowRow({ pub }: { pub: PublicationCard }) {
+  const params = publicationLinkParams(pub.uri);
+  const avatar = (
+    <FollowingAvatar
+      name={pub.name}
+      iconUrl={pub.iconUrl ?? pub.ownerAvatarUrl}
+    />
+  );
+  const name = <span {...stylex.props(styles.followName)}>{pub.name}</span>;
+
+  if (params) {
+    return (
+      <Link
+        to="/p/$did/$rkey"
+        params={params}
+        {...stylex.props(styles.followRow)}
+      >
+        {avatar}
+        {name}
+      </Link>
+    );
+  }
+
+  return (
+    <a
+      href={pub.url}
+      target="_blank"
+      rel="noreferrer"
+      {...stylex.props(styles.followRow)}
+    >
+      {avatar}
+      {name}
+    </a>
+  );
+}
+
 function Brand() {
   return (
     <Link to="/" {...stylex.props(styles.brand)}>
@@ -353,21 +393,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               {signedIn ? "Nothing yet — go discover." : "Sign in to follow."}
             </span>
           ) : (
-            following.map((pub) => (
-              <a
-                key={pub.uri}
-                href={pub.url}
-                target="_blank"
-                rel="noreferrer"
-                {...stylex.props(styles.followRow)}
-              >
-                <FollowingAvatar
-                  name={pub.name}
-                  iconUrl={pub.iconUrl ?? pub.ownerAvatarUrl}
-                />
-                <span {...stylex.props(styles.followName)}>{pub.name}</span>
-              </a>
-            ))
+            following.map((pub) => <FollowRow key={pub.uri} pub={pub} />)
           )}
         </div>
 

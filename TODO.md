@@ -137,7 +137,11 @@ Build each on hip-ui components + StyleX tokens (no raw HTML/inline styles).
 - [ ] **Discover** — Recommended / Followed-by-people-you-follow / Trending / All (chips, sort, grid⇄list toggle).
 - [ ] **Search** — editorial field, live results split into Publications + Articles.
 - [ ] **Article** (reading view) — ~680px measure, drop-cap, pull quotes, hero, sticky bar (back/byline/follow/save/share), reading-progress bar, footer pub card + "More from {publication}".
-- [ ] **Publication profile** — banner + inline header (avatar/topic/name/desc/stats/Copy DID/Follow), recent writing, right rail (About + DID + readers-also-follow), social proof line.
+- [x] **Publication profile** — banner + inline header (avatar/topic/name/desc/stats/Copy DID/Follow),
+      recent writing, right rail (About + DID + readers-also-follow). Route `/p/$did/$rkey`
+      (`_layout.p.$did.$rkey.tsx`); sidebar Following rows + cards link here instead of the
+      external publication URL. The "followed by people you follow" social-proof line is deferred
+      until the §7 social-graph query lands.
 - [ ] **Add / Follow modal** — Browse / Paste a handle (resolve → preview → follow) / Search tabs.
 - [ ] Global follow toggle reflects everywhere instantly (optimistic).
 - [ ] Theme tokens / dark mode parity with prototype.

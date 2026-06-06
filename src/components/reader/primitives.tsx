@@ -87,7 +87,7 @@ const styles = stylex.create({
     display: "flex",
     justifyContent: "space-between",
     rowGap: "1.5rem",
-    borderBottomColor: uiColor.text2,
+    borderBottomColor: uiColor.border3,
     borderBottomStyle: "solid",
     borderBottomWidth: 2,
     marginBottom: "1.9rem",
@@ -233,10 +233,13 @@ export function Masthead({
 export function PublicationAvatar({
   pub,
   size = "md",
+  style,
 }: {
   pub: Pick<PublicationCard, "name" | "iconUrl"> &
     Partial<Pick<PublicationCard, "ownerAvatarUrl">>;
   size?: "sm" | "md" | "lg" | "xl";
+  /** Extra wrapper styles (e.g. an override size for the profile hero). */
+  style?: stylex.StyleXStyles;
 }) {
   return (
     <Avatar
@@ -244,7 +247,7 @@ export function PublicationAvatar({
       src={pub.iconUrl ?? pub.ownerAvatarUrl ?? undefined}
       fallback={initials(pub.name)}
       alt={pub.name}
-      style={styles.avatarPattern}
+      style={[styles.avatarPattern, style]}
     />
   );
 }

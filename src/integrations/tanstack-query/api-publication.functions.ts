@@ -84,33 +84,63 @@ const getPublicationProfile = createServerFn({ method: "GET" })
         const p = schema.publications;
         const st = schema.publicationStats;
         const pr = schema.profiles;
+        const sub = schema.subscriptions;
+        const doc = schema.documents;
         span.set("publicationUri", data.publicationUri);
 
-        const [headerRow, recentDocuments, alsoFollow] = await Promise.all([
-          db
-            .select({
-              ...publicationCardColumns(schema),
-              ownerHandle: pr.handle,
-              ownerDisplayName: pr.displayName,
-              ownerDescription: pr.description,
-              ownerBannerUrl: pr.bannerUrl,
-            })
-            .from(p)
-            .leftJoin(st, eq(st.publicationUri, p.uri))
-            .leftJoin(pr, eq(pr.did, p.did))
-            .where(eq(p.uri, data.publicationUri))
-            .limit(1),
-          selectArticleCards(db, schema, {
-            publicationUris: [data.publicationUri],
-            limit: data.recentLimit,
-          }),
-          readersAlsoFollow(
-            db,
-            schema,
-            data.publicationUri,
-            data.alsoFollowLimit,
-          ),
-        ]);
+        const [headerRow, recentDocuments, alsoFollow, liveCounts] =
+          await Promise.all([
+            db
+              .select({
+                ...publicationCardColumns(schema),
+                ownerHandle: pr.handle,
+                ownerDisplayName: pr.displayName,
+                ownerDescription: pr.description,
+                ownerBannerUrl: pr.bannerUrl,
+              })
+              .from(p)
+              .leftJoin(st, eq(st.publicationUri, p.uri))
+              .leftJoin(pr, eq(pr.did, p.did))
+              .where(eq(p.uri, data.publicationUri))
+              .limit(1),
+            selectArticleCards(db, schema, {
+              publicationUris: [data.publicationUri],
+              limit: data.recentLimit,
+            }),
+            readersAlsoFollow(
+              db,
+              schema,
+              data.publicationUri,
+              data.alsoFollowLimit,
+            ),
+            // Live counts: `publication_stats` lags behind the firehose, so
+            // count active subscriptions/documents directly for the header.
+            db
+              .select({
+                subscriberCount: sql<number>`count(distinct ${sub.subscriberDid}) filter (where ${sub.deleted} = false)`.mapWith(
+                  Number,
+                ),
+              })
+              .from(sub)
+              .where(eq(sub.publicationUri, data.publicationUri))
+              .then(async (subRows) => {
+                const docRows = await db
+                  .select({
+                    documentCount: sql<number>`count(*)`.mapWith(Number),
+                  })
+                  .from(doc)
+                  .where(
+                    and(
+                      eq(doc.publicationUri, data.publicationUri),
+                      eq(doc.deleted, false),
+                    ),
+                  );
+                return {
+                  subscriberCount: subRows[0]?.subscriberCount ?? 0,
+                  documentCount: docRows[0]?.documentCount ?? 0,
+                };
+              }),
+          ]);
 
         const row = headerRow[0];
         if (!row) {
@@ -128,8 +158,12 @@ const getPublicationProfile = createServerFn({ method: "GET" })
           bannerUrl: row.ownerBannerUrl,
         };
 
+        const publication = toPublicationCard(row);
+        publication.subscriberCount = liveCounts.subscriberCount;
+        publication.documentCount = liveCounts.documentCount;
+
         return {
-          publication: toPublicationCard(row),
+          publication,
           owner,
           recentDocuments,
           readersAlsoFollow: alsoFollow,

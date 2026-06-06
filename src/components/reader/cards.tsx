@@ -29,13 +29,8 @@ import {
 } from "../../design-system/theme/typography.stylex";
 import { Text } from "../../design-system/typography/text";
 import { formatDate, formatReaders } from "./format";
-import {
-  Handle,
-  MetaLine,
-  PlaceholderImg,
-  PublicationAvatar,
-  Topic,
-} from "./primitives";
+import { Handle, MetaLine, PublicationAvatar, Topic } from "./primitives";
+import { spacing } from "#/design-system/theme/spacing.stylex.tsx";
 
 const ButtonLink = createLink(Button);
 
@@ -55,16 +50,27 @@ const styles = stylex.create({
   bylineName: {
     color: uiColor.text2,
   },
+  bylineWhen: {
+    color: uiColor.text1,
+    fontFamily: fontFamily.sans,
+    fontSize: fontSize.xs,
+  },
   feature: {
     alignItems: "center",
-    columnGap: '2.25rem',
+    columnGap: "2.25rem",
     display: "grid",
-    gridTemplateColumns: { default: "1fr", "@media (min-width: 48rem)": "1.05fr 1fr" },
-    rowGap: '2.25rem',
+    gridTemplateColumns: {
+      default: "1fr",
+      "@media (min-width: 48rem)": "1.05fr 1fr",
+    },
+    rowGap: "2.25rem",
     borderBottomColor: uiColor.border1,
     borderBottomStyle: "solid",
     borderBottomWidth: 1,
     paddingBottom: "2.25rem",
+  },
+  featureTextOnly: {
+    display: "block",
   },
   featureMedia: {
     borderRadius: radius.md,
@@ -90,15 +96,21 @@ const styles = stylex.create({
   },
   row: {
     alignItems: "start",
-    columnGap: '1.5rem',
+    columnGap: "1.5rem",
     display: "grid",
-    gridTemplateColumns: { default: "1fr", "@media (min-width: 40rem)": "1fr 150px" },
-    rowGap: '1.5rem',
+    gridTemplateColumns: {
+      default: "1fr",
+      "@media (min-width: 40rem)": "1fr 150px",
+    },
+    rowGap: "1.5rem",
     borderBottomColor: uiColor.border1,
     borderBottomStyle: "solid",
     borderBottomWidth: 1,
     paddingBottom: "1.5rem",
     paddingTop: "1.5rem",
+  },
+  rowNoMedia: {
+    gridTemplateColumns: "1fr",
   },
   rowTitle: {
     color: uiColor.text2,
@@ -133,11 +145,17 @@ const styles = stylex.create({
     marginTop: "0.45rem",
     width: "7px",
   },
+  unreadDotCentered: {
+    marginTop: 0,
+  },
+  unreadDotRow: {
+    marginTop: spacing["1"],
+  },
   compactRow: {
     alignItems: "baseline",
-    columnGap: '0.85rem',
+    columnGap: "0.85rem",
     display: "flex",
-    rowGap: '0.85rem',
+    rowGap: "0.85rem",
     borderBottomColor: uiColor.border1,
     borderBottomStyle: "solid",
     borderBottomWidth: { default: 1, ":last-child": 0 },
@@ -176,11 +194,30 @@ const styles = stylex.create({
     whiteSpace: "nowrap",
   },
   grow: {
- flexBasis: '0%',
- flexGrow: '1',
- flexShrink: '1', minWidth: 0 },
+    flexBasis: "0%",
+    flexGrow: "1",
+    flexShrink: "1",
+    minWidth: 0,
+  },
+  titleRow: {
+    width: "100%",
+  },
+  titleInRow: {
+    flexBasis: "0%",
+    flexGrow: "1",
+    flexShrink: "1",
+    // eslint-disable-next-line @stylexjs/valid-styles
+    textWrap: "pretty",
+    minWidth: 0,
+  },
+  titleRowDate: {
+    flexShrink: 0,
+  },
   metaDot: {
     color: uiColor.text1,
+  },
+  unreadDotFeature: {
+    marginTop: spacing["1.5"],
   },
 });
 
@@ -190,13 +227,16 @@ export function FollowButton({
   publicationUri,
   signedIn,
   size = "sm",
+  initialFollowing = false,
 }: {
   publicationUri: string;
   signedIn: boolean;
   size?: "sm" | "md";
+  /** Seed the toggle from a known follow state (e.g. the profile header). */
+  initialFollowing?: boolean;
 }) {
   const queryClient = useQueryClient();
-  const [following, setFollowing] = useState(false);
+  const [following, setFollowing] = useState(initialFollowing);
   const followMutation = useMutation(
     readerApi.followPublicationMutationOptions(),
   );
@@ -238,9 +278,16 @@ export function FollowButton({
 
 /* ── Byline ─────────────────────────────────────────────────────────────── */
 
-function Byline({ article }: { article: ArticleCard }) {
+function Byline({
+  article,
+  includeDate = false,
+}: {
+  article: ArticleCard;
+  includeDate?: boolean;
+}) {
+  const date = formatDate(article.publishedAt);
   return (
-    <Flex align="center" gap="md" style={styles.byline}>
+    <Flex align="center" gap="md" wrap style={styles.byline}>
       <PublicationAvatar
         pub={{
           name: article.publicationName ?? "Unknown",
@@ -252,7 +299,78 @@ function Byline({ article }: { article: ArticleCard }) {
       <span {...stylex.props(styles.bylineName)}>
         {article.publicationName ?? "Unknown publication"}
       </span>
+      {includeDate && date ? (
+        <>
+          <span aria-hidden {...stylex.props(styles.metaDot)}>
+            ·
+          </span>
+          <span {...stylex.props(styles.bylineWhen)}>{date}</span>
+        </>
+      ) : null}
     </Flex>
+  );
+}
+
+function TitleRowDate({ publishedAt }: { publishedAt: string }) {
+  const date = formatDate(publishedAt);
+  if (!date) return null;
+  return (
+    <span {...stylex.props(styles.bylineWhen, styles.titleRowDate)}>
+      {date}
+    </span>
+  );
+}
+
+function ArticleTitleRow({
+  article,
+  showByline,
+  unread,
+  titleStyle,
+  unreadDotStyle,
+}: {
+  article: ArticleCard;
+  showByline: boolean;
+  unread: boolean;
+  titleStyle: stylex.StyleXStyles;
+  unreadDotStyle?: stylex.StyleXStyles;
+}) {
+  if (showByline) {
+    return (
+      <Flex gap="md" align="baseline" wrap>
+        {unread ? (
+          <span {...stylex.props(styles.unreadDot, unreadDotStyle)} />
+        ) : null}
+        <span {...stylex.props(titleStyle)}>{article.title}</span>
+      </Flex>
+    );
+  }
+
+  return (
+    <Flex gap="md" align="center" justify="between" style={styles.titleRow}>
+      <Flex gap="md" align="start" style={styles.grow}>
+        {unread ? (
+          <span
+            {...stylex.props(
+              styles.unreadDot,
+              styles.unreadDotCentered,
+              unreadDotStyle,
+            )}
+          />
+        ) : null}
+        <Text style={[titleStyle, styles.titleInRow]}>{article.title}</Text>
+      </Flex>
+      <TitleRowDate publishedAt={article.publishedAt} />
+    </Flex>
+  );
+}
+
+function ArticleMetaLine({ article }: { article: ArticleCard }) {
+  if (articleTopics(article).length === 0) return null;
+
+  return (
+    <MetaLine>
+      <TopicMeta article={article} />
+    </MetaLine>
   );
 }
 
@@ -260,9 +378,9 @@ function articleHref(article: ArticleCard): string | undefined {
   return article.canonicalUrl ?? undefined;
 }
 
-/** Cover for an article: its own cover image, else the publication banner. */
+/** Cover for an article: only its own cover image (never the Bluesky banner). */
 function coverImage(article: ArticleCard): string | null {
-  return article.coverImageUrl ?? article.publicationBannerUrl;
+  return article.coverImageUrl ?? null;
 }
 
 /** Topic labels for an article: its own tags, else the publication topic. */
@@ -273,15 +391,18 @@ function articleTopics(article: ArticleCard): Array<string> {
   return article.publicationTopic ? [article.publicationTopic] : [];
 }
 
-/** Renders `· TOPIC` chips after the date inside a {@link MetaLine}. */
+/** Renders topic chips inside a {@link MetaLine}. */
 function TopicMeta({ article }: { article: ArticleCard }) {
+  const topics = articleTopics(article);
   return (
     <>
-      {articleTopics(article).map((topic) => (
+      {topics.map((topic, index) => (
         <Fragment key={topic}>
-          <span aria-hidden {...stylex.props(styles.metaDot)}>
-            ·
-          </span>
+          {index > 0 ? (
+            <span aria-hidden {...stylex.props(styles.metaDot)}>
+              ·
+            </span>
+          ) : null}
           <Topic name={topic} />
         </Fragment>
       ))}
@@ -291,7 +412,15 @@ function TopicMeta({ article }: { article: ArticleCard }) {
 
 /* ── Feature (hero) ─────────────────────────────────────────────────────── */
 
-export function FeatureArticle({ article }: { article: ArticleCard }) {
+export function FeatureArticle({
+  article,
+  showByline = true,
+  unread = false,
+}: {
+  article: ArticleCard;
+  showByline?: boolean;
+  unread?: boolean;
+}) {
   const href = articleHref(article);
   const cover = coverImage(article);
   return (
@@ -299,32 +428,37 @@ export function FeatureArticle({ article }: { article: ArticleCard }) {
       href={href}
       target={href ? "_blank" : undefined}
       rel={href ? "noreferrer" : undefined}
-      {...stylex.props(styles.cardLink, styles.feature)}
+      {...stylex.props(
+        styles.cardLink,
+        styles.feature,
+        !cover && styles.featureTextOnly,
+      )}
     >
-      <span {...stylex.props(styles.featureMedia)}>
-        {cover ? (
+      {cover ? (
+        <span {...stylex.props(styles.featureMedia)}>
           <img
             src={cover}
             alt=""
             referrerPolicy="no-referrer"
             {...stylex.props(styles.featureMedia)}
           />
-        ) : (
-          <PlaceholderImg style={styles.featureMedia} />
-        )}
-      </span>
-      <Flex direction="column" gap="xl">
-        <Byline article={article} />
-        <span {...stylex.props(styles.featureTitle)}>{article.title}</span>
+        </span>
+      ) : null}
+      <Flex direction="column" gap="5xl">
+        {showByline ? <Byline article={article} includeDate /> : null}
+        <ArticleTitleRow
+          article={article}
+          showByline={showByline}
+          unread={unread}
+          titleStyle={styles.featureTitle}
+          unreadDotStyle={styles.unreadDotFeature}
+        />
         {article.description ? (
           <span {...stylex.props(styles.featureDek)}>
             {article.description}
           </span>
         ) : null}
-        <MetaLine>
-          <span>{formatDate(article.publishedAt)}</span>
-          <TopicMeta article={article} />
-        </MetaLine>
+        <ArticleMetaLine article={article} />
       </Flex>
     </a>
   );
@@ -335,9 +469,11 @@ export function FeatureArticle({ article }: { article: ArticleCard }) {
 export function ArticleRow({
   article,
   unread = false,
+  showByline = true,
 }: {
   article: ArticleCard;
   unread?: boolean;
+  showByline?: boolean;
 }) {
   const href = articleHref(article);
   const cover = coverImage(article);
@@ -346,29 +482,35 @@ export function ArticleRow({
       href={href}
       target={href ? "_blank" : undefined}
       rel={href ? "noreferrer" : undefined}
-      {...stylex.props(styles.cardLink, styles.row)}
+      {...stylex.props(
+        styles.cardLink,
+        styles.row,
+        !cover && styles.rowNoMedia,
+      )}
     >
-      <Flex direction="column" gap="md">
-        <Byline article={article} />
-        <Flex gap="md" align="start">
-          {unread ? <span {...stylex.props(styles.unreadDot)} /> : null}
-          <span {...stylex.props(styles.rowTitle)}>{article.title}</span>
-        </Flex>
+      <Flex direction="column" gap="2xl">
+        {showByline ? <Byline article={article} includeDate /> : null}
+        <ArticleTitleRow
+          article={article}
+          showByline={showByline}
+          unread={unread}
+          titleStyle={styles.rowTitle}
+          unreadDotStyle={styles.unreadDotRow}
+        />
         {article.description ? (
           <span {...stylex.props(styles.rowDek)}>{article.description}</span>
         ) : null}
-        <MetaLine>
-          <span>{formatDate(article.publishedAt)}</span>
-          <TopicMeta article={article} />
-        </MetaLine>
+        <ArticleMetaLine article={article} />
       </Flex>
-      <AspectRatio aspectRatio={4 / 3} rounded={false} style={styles.rowMedia}>
-        {cover ? (
+      {cover ? (
+        <AspectRatio
+          aspectRatio={4 / 3}
+          rounded={false}
+          style={styles.rowMedia}
+        >
           <AspectRatioImage src={cover} alt="" referrerPolicy="no-referrer" />
-        ) : (
-          <PlaceholderImg style={styles.mediaFill} />
-        )}
-      </AspectRatio>
+        </AspectRatio>
+      ) : null}
     </a>
   );
 }

@@ -13,7 +13,9 @@ function Search() {
         title="Search"
         dek="Publications, handles, topics, and headlines."
       />
-      <Body>Live results split into Publications and Articles land here next.</Body>
+      <Body>
+        Live results split into Publications and Articles land here next.
+      </Body>
     </ReaderContent>
   );
 }

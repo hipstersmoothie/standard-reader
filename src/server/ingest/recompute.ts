@@ -237,7 +237,10 @@ export async function backfillBlobUrls(): Promise<{
     if (!pds || !row.cid) continue;
     await db
       .update(publications)
-      .set({ iconUrl: getBlobUrl(pds, row.did, row.cid), updatedAt: new Date() })
+      .set({
+        iconUrl: getBlobUrl(pds, row.did, row.cid),
+        updatedAt: new Date(),
+      })
       .where(eq(publications.uri, row.uri));
     icons++;
   }
