@@ -59,10 +59,27 @@ work. Check items off as they land.
 
 ## 3. Auth — AT Proto / Bluesky OAuth
 
-- [ ] Implement OAuth sign-in flow (handle/PDS resolution, callback, session).
-- [ ] Persist session; expose current user **DID** to server functions + UI.
-- [ ] Sign-out + session refresh handling.
-- [ ] Guard personal views (Home/Latest unread, bookmarks) on auth state.
+Ported from `~/Documents/at-store` (`@atcute/oauth-node-client`). OAuth client +
+stores in `src/integrations/auth/`, session/user server fns in
+`src/integrations/tanstack-query/api-{auth,user}.functions.ts`, routes under
+`src/routes/api/auth/atproto/*` + `src/routes/login.tsx`, auth tables in
+`src/db/schema/auth.ts` (migration `drizzle/0002_true_vermin.sql`).
+
+- [x] Implement OAuth sign-in flow (handle/PDS resolution, callback, session).
+      Loopback (public) client locally; confidential client (`metadata.json` +
+      `jwks.json`) in prod via `ATPROTO_PRIVATE_KEY_JWK`. Saved-handles cookie
+      + signup flow included.
+- [x] Persist session; expose current user **DID** to server functions + UI.
+      Opaque HttpOnly session cookie → `session` row; DID always read from the
+      `user` row (never the client). `maybeAuthMiddleware` / `requireAuthMiddleware`
+      attach the DID + `@atcute/client` to server fns; `getSession` query feeds the UI.
+- [x] Sign-out + session refresh handling (`user.signOut` deletes the session row
+      + revokes the AT Proto session; OAuth session blobs stored in `verification`
+      and restored per request).
+- [x] Guard personal views on auth state. `unauthMiddleware` bounces signed-in
+      users from `/login`; `requireAuthMiddleware` is ready to gate personal
+      server fns/routes as Home/Latest/bookmarks land. Header shows a **Log in**
+      button that becomes the signed-in **user menu** (avatar → Copy DID / Log out).
 
 ## 4. Lexicons & writes (records = source of truth)
 

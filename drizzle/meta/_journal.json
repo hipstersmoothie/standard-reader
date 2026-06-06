@@ -15,6 +15,13 @@
       "when": 1780707153404,
       "tag": "0001_friendly_angel",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1780716050421,
+      "tag": "0002_true_vermin",
+      "breakpoints": true
     }
   ]
 }

@@ -6,7 +6,7 @@ import { Flex } from "../design-system/flex";
 import { Page } from "../design-system/page";
 import { Body, Heading2 } from "../design-system/typography";
 
-export const Route = createFileRoute("/")({ component: Home });
+export const Route = createFileRoute("/_layout/")({ component: Home });
 
 function Home() {
   return (

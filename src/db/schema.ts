@@ -11,6 +11,7 @@
  * bookkeeping. Split into modules under `./schema/` and re-exported here so the
  * Drizzle client (`./index.ts`) and `drizzle.config.ts` see every table.
  */
+export * from "./schema/auth.ts";
 export * from "./schema/profiles.ts";
 export * from "./schema/publications.ts";
 export * from "./schema/documents.ts";

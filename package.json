@@ -24,6 +24,11 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "@atcute/client": "^4.2.2",
+    "@atcute/identity-resolver": "^1.2.3",
+    "@atcute/identity-resolver-node": "^1.0.4",
+    "@atcute/lexicons": "^1.3.1",
+    "@atcute/oauth-node-client": "^1.1.1",
     "@atproto/tap": "^0.3.0",
     "@neondatabase/serverless": "^1.1.0",
     "@origin-space/image-cropper": "^0.1.9",
@@ -33,6 +38,7 @@
     "@react-types/overlays": "^3.10.0",
     "@stylexjs/stylex": "^0.18.3",
     "@tanstack/react-devtools": "latest",
+    "@tanstack/react-query": "^5.101.0",
     "@tanstack/react-router": "latest",
     "@tanstack/react-router-devtools": "latest",
     "@tanstack/react-router-ssr-query": "latest",
@@ -51,7 +57,9 @@
     "react-stately": "^3.47.0",
     "rehype-sanitize": "^6.0.0",
     "remark-gfm": "^4.0.1",
-    "web-haptics": "^0.0.6"
+    "universal-cookie": "^8.1.2",
+    "web-haptics": "^0.0.6",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@eslint-community/eslint-plugin-eslint-comments": "^4.5.0",

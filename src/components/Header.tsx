@@ -10,6 +10,7 @@ import {
 } from "../design-system/theme/semantic-spacing.stylex";
 import { fontWeight } from "../design-system/theme/typography.stylex";
 import { Text } from "../design-system/typography/text";
+import { NavbarAuth } from "./NavbarAuth";
 import ThemeToggle from "./ThemeToggle";
 
 const styles = stylex.create({
@@ -89,6 +90,7 @@ export default function Header() {
 
         <Flex align="center" gap="xl" style={styles.pushRight}>
           <ThemeToggle />
+          <NavbarAuth />
         </Flex>
       </Flex>
     </header>
