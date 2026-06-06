@@ -126,7 +126,7 @@ source of truth; Neon holds a derived view for speed and cross-network querying.
   Toggling follow is global and reflects everywhere (sidebar, cards, feed, profile) instantly; the
   write goes to the user's repo, the cache updates optimistically.
 - **Bookmarks:** an `app.standard-reader.bookmark` record per saved article (save toggle in reader).
-- **Read / unread:** an `app.standard-reader.readState` record per article; opening an article
+- **Read / unread:** an `app.standard-reader.read` record per article; opening an article
   marks it read.
 - **Routing:** URL-backed routes (TanStack Router) for every view — home / latest / discover /
   search / article / publication — with real back/forward navigation and shareable links.
@@ -149,9 +149,9 @@ source of truth; Neon holds a derived view for speed and cross-network querying.
     the AT Proto identity layer + Bluesky `app.bsky.actor.profile`.
   - Note: there's **no** "featured" flag or "topic" in the lexicons — both are app-derived
     (`topic` = a publication's most frequent document tag; Discover chips = top-N topics).
-- **App-owned lexicons** under the `app.standard-reader` namespace:
-  - `app.standard-reader.bookmark`
-  - `app.standard-reader.readState`
+- **App-owned lexicons** under the `app.standard-reader` namespace (JSON in `lexicons/`):
+  - `app.standard-reader.bookmark` — a saved article (`subject` = document at-uri).
+  - `app.standard-reader.read` — an article marked read (`subject` = document at-uri).
 
 ---
 

@@ -65,14 +65,12 @@ stores in `src/integrations/auth/`, session/user server fns in
 
 - [x] Implement OAuth sign-in flow (handle/PDS resolution, callback, session).
       Loopback (public) client locally; confidential client (`metadata.json` +
-      `jwks.json`) in prod via `ATPROTO_PRIVATE_KEY_JWK`. Saved-handles cookie
-      + signup flow included.
+      `jwks.json`) in prod via `ATPROTO_PRIVATE_KEY_JWK`. Saved-handles cookie + signup flow included.
 - [x] Persist session; expose current user **DID** to server functions + UI.
       Opaque HttpOnly session cookie → `session` row; DID always read from the
       `user` row (never the client). `maybeAuthMiddleware` / `requireAuthMiddleware`
       attach the DID + `@atcute/client` to server fns; `getSession` query feeds the UI.
-- [x] Sign-out + session refresh handling (`user.signOut` deletes the session row
-      + revokes the AT Proto session; OAuth session blobs stored in `verification`
+- [x] Sign-out + session refresh handling (`user.signOut` deletes the session row + revokes the AT Proto session; OAuth session blobs stored in `verification`
       and restored per request).
 - [x] Guard personal views on auth state. `unauthMiddleware` bounces signed-in
       users from `/login`; `requireAuthMiddleware` is ready to gate personal
@@ -81,12 +79,25 @@ stores in `src/integrations/auth/`, session/user server fns in
 
 ## 4. Lexicons & writes (records = source of truth)
 
-- [ ] Define app-owned lexicons under `app.standard-reader`:
-  - [ ] `app.standard-reader.bookmark`
-  - [ ] `app.standard-reader.read`
+- [x] Define app-owned lexicons under `app.standard-reader` (JSON in `lexicons/`):
+  - [x] `app.standard-reader.bookmark` (`subject` = document at-uri + `createdAt`)
+  - [x] `app.standard-reader.read` (`subject` = document at-uri + `createdAt`)
+  - [x] Publish tooling via `goat` (`scripts/goat-lex.mjs`): `pnpm lex:lint`,
+        `pnpm atproto:publish-lexicons`. Needs `LEXICON_PUBLISH_*` creds for the
+        `standard-reader.app` authority + `_lexicon.*` DNS (`goat lex check-dns`).
 - [x] Confirm `standard.site` subscription lexicon shape: `site.standard.graph.subscription`
-      (`publication` at-uri + optional `createdAt`); read-model ingests it. Write path TODO below.
-- [ ] Write path: create/delete records in the user's repo for follow / bookmark / read.
+      (`publication` at-uri + optional `createdAt`); read-model ingests it.
+- [x] Read-model + ingester for our own records: `bookmarks` / `reads` tables
+      (`drizzle/0003_*`), tap collection filters + consumer/handlers/deletes, and a
+      `reader` track-reason so a reader's repo is registered with tap on first write.
+- [x] Write path: create/delete records in the user's repo for follow / bookmark / read.
+      Server-side helper `src/server/atproto/repo-records.ts` (`putRecord`/`deleteRecord`
+      via `@atcute/atproto` + `@atcute/tid`, deterministic subject rkeys).
+- [x] **Reader API layer** (`src/integrations/tanstack-query/api-reader.functions.ts`,
+      mirrors `~/Documents/at-store`): `readerApi` server fns for follow / bookmark /
+      read (status reads from the cache + create/delete writes to the repo), structured
+      o11y (`src/server/observability/log.ts`), and React Query `*QueryOptions` /
+      `*MutationOptions` for the UI (pair mutations with optimistic updates).
 
 ## 5. Data layer (server functions)
 

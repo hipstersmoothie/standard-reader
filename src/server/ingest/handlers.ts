@@ -1,9 +1,11 @@
 import { and, eq, isNull, or, sql } from "drizzle-orm";
 
 import type {
+  BookmarkRecord,
   BskyProfileRecord,
   DocumentRecord,
   PublicationRecord,
+  ReadRecord,
   RecommendRecord,
   SubscriptionRecord,
   TapIdentityPayload,
@@ -11,11 +13,13 @@ import type {
 
 import { db } from "../../db/index.ts";
 import {
+  bookmarks,
   documentContributors,
   documents,
   profiles,
   publicationStats,
   publications,
+  reads,
   recommends,
   subscriptions,
 } from "../../db/schema.ts";
@@ -311,6 +315,70 @@ export async function upsertRecommend(
   }
 }
 
+export async function upsertBookmark(
+  uri: string,
+  did: string,
+  rkey: string,
+  cid: string | undefined,
+  record: BookmarkRecord,
+): Promise<void> {
+  if (typeof record.subject !== "string") {
+    return;
+  }
+  const documentDid = didFromAtUri(record.subject);
+
+  const values = {
+    uri,
+    cid: cid ?? null,
+    ownerDid: did,
+    rkey,
+    documentUri: record.subject,
+    documentDid,
+    createdAt: parseDate(record.createdAt),
+    deleted: false,
+    updatedAt: sql`now()`,
+  };
+
+  await db
+    .insert(bookmarks)
+    .values(values)
+    .onConflictDoUpdate({ target: bookmarks.uri, set: values });
+
+  await ensureTracked(did, "reader");
+}
+
+export async function upsertRead(
+  uri: string,
+  did: string,
+  rkey: string,
+  cid: string | undefined,
+  record: ReadRecord,
+): Promise<void> {
+  if (typeof record.subject !== "string") {
+    return;
+  }
+  const documentDid = didFromAtUri(record.subject);
+
+  const values = {
+    uri,
+    cid: cid ?? null,
+    ownerDid: did,
+    rkey,
+    documentUri: record.subject,
+    documentDid,
+    createdAt: parseDate(record.createdAt),
+    deleted: false,
+    updatedAt: sql`now()`,
+  };
+
+  await db
+    .insert(reads)
+    .values(values)
+    .onConflictDoUpdate({ target: reads.uri, set: values });
+
+  await ensureTracked(did, "reader");
+}
+
 export async function upsertBskyProfile(
   uri: string,
   did: string,
@@ -384,6 +452,14 @@ export async function deleteRecord(
     }
     case Collections.recommend: {
       await db.delete(recommends).where(eq(recommends.uri, uri));
+      return;
+    }
+    case Collections.bookmark: {
+      await db.delete(bookmarks).where(eq(bookmarks.uri, uri));
+      return;
+    }
+    case Collections.read: {
+      await db.delete(reads).where(eq(reads.uri, uri));
       return;
     }
     default: {

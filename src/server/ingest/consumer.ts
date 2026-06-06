@@ -1,9 +1,11 @@
 import { sql } from "drizzle-orm";
 
 import type {
+  BookmarkRecord,
   BskyProfileRecord,
   DocumentRecord,
   PublicationRecord,
+  ReadRecord,
   RecommendRecord,
   SubscriptionRecord,
   TapEvent,
@@ -16,9 +18,11 @@ import { Collections, buildAtUri } from "../atproto/uri.ts";
 import {
   applyIdentity,
   deleteRecord,
+  upsertBookmark,
   upsertBskyProfile,
   upsertDocument,
   upsertPublication,
+  upsertRead,
   upsertRecommend,
   upsertSubscription,
 } from "./handlers.ts";
@@ -78,6 +82,20 @@ async function handleRecord(payload: TapRecordPayload): Promise<void> {
         cid,
         record as unknown as RecommendRecord,
       );
+      return;
+    }
+    case Collections.bookmark: {
+      await upsertBookmark(
+        uri,
+        did,
+        rkey,
+        cid,
+        record as unknown as BookmarkRecord,
+      );
+      return;
+    }
+    case Collections.read: {
+      await upsertRead(uri, did, rkey, cid, record as unknown as ReadRecord);
       return;
     }
     case Collections.bskyProfile: {

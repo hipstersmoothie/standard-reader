@@ -22,6 +22,13 @@
       "when": 1780716050421,
       "tag": "0002_true_vermin",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1780717994571,
+      "tag": "0003_brainy_katie_power",
+      "breakpoints": true
     }
   ]
 }

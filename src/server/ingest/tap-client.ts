@@ -13,6 +13,7 @@ export type TrackReason =
   | "contributor"
   | "subscriber"
   | "recommender"
+  | "reader"
   | "manual";
 
 function basicAuthHeader(): Record<string, string> {

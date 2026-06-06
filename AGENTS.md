@@ -149,6 +149,11 @@ wired up too (see "Linting & formatting"). `pnpm lint`, `pnpm format:check`, `pn
 - `pnpm fix-stylex-keys` — autofix StyleX `sort-keys` / `valid-shorthands` across `src` via
   `eslint.stylex-autofix.mjs` (oxlint reports these but can't autofix them). May need to be run a
   couple of times to converge on large objects.
+- `pnpm db:generate` / `db:migrate` / `db:push` / `db:studio` — Drizzle Kit (schema in
+  `src/db/schema.ts`, migrations in `drizzle/`).
+- `pnpm lex:lint` / `pnpm atproto:publish-lexicons` — validate / publish the app-owned
+  `app.standard-reader.*` lexicons in `./lexicons/` via the `goat` CLI
+  (`scripts/goat-lex.mjs`; needs `LEXICON_PUBLISH_*` creds + `_lexicon.*` DNS).
 
 ## Linting & formatting (oxc + oxfmt)
 

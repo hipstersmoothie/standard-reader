@@ -1,0 +1,27 @@
+{
+  "lexicon": 1,
+  "id": "app.standard-reader.read",
+  "defs": {
+    "main": {
+      "type": "record",
+      "description": "Marks a site.standard.document as read by the reader. Presence of the record means read; deleting it marks the article unread again.",
+      "key": "any",
+      "record": {
+        "type": "object",
+        "required": ["subject", "createdAt"],
+        "properties": {
+          "subject": {
+            "type": "string",
+            "format": "at-uri",
+            "description": "AT URI of the site.standard.document record that was read."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "datetime",
+            "description": "When the reader opened / marked the article read."
+          }
+        }
+      }
+    }
+  }
+}

@@ -7,6 +7,8 @@
  * always emits DIDs). We avoid pulling in `@atproto/syntax` for these few ops.
  */
 
+import { APP_NSID, STANDARD_NSID } from "../../lib/atproto/nsids.ts";
+
 export interface ParsedAtUri {
   did: string;
   collection: string;
@@ -15,12 +17,14 @@ export interface ParsedAtUri {
 
 /** Standard.site / app collection NSIDs we care about. */
 export const Collections = {
-  publication: "site.standard.publication",
-  document: "site.standard.document",
-  subscription: "site.standard.graph.subscription",
-  recommend: "site.standard.graph.recommend",
+  publication: STANDARD_NSID.publication,
+  document: STANDARD_NSID.document,
+  subscription: STANDARD_NSID.subscription,
+  recommend: STANDARD_NSID.recommend,
   theme: "site.standard.theme.basic",
   bskyProfile: "app.bsky.actor.profile",
+  bookmark: APP_NSID.bookmark,
+  read: APP_NSID.read,
 } as const;
 
 export type KnownCollection = (typeof Collections)[keyof typeof Collections];
