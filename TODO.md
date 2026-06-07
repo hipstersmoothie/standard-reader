@@ -11,6 +11,24 @@ work. Check items off as they land.
 - [x] Set up env management (`.env` for `DATABASE_URL`, AT Proto OAuth secrets, tap config) + `.env.example`.
 - [x] Confirm Neon project + connection (`src/db/index.ts`) and Drizzle migration flow (`drizzle.config.ts`, `drizzle/`).
 - [x] Decide deployment target (Node server output) and wire CI for lint/format/typecheck/build (`.github/workflows/ci.yml`).
+- [x] **Production deploy (Railway).** Four services in the `standard-reader` project (GitHub
+      auto-deploy on push to `main`), sharing the existing Neon read-model DB:
+  - `web` — TanStack Start + Nitro (`pnpm build` → `pnpm start` = `node .output/server/index.mjs`);
+    pre-deploy `pnpm db:migrate`; healthcheck `/api/auth/atproto/metadata.json`; custom domain
+    `standard-reader.app` (OAuth `client_id`/`jwks` authority). Root `railway.json`.
+  - `tap` — `ghcr.io/.../tap` Docker image on a `/data` volume (SQLite state); signal collection
+    `site.standard.publication` + dynamic `/repos/add` graph expansion.
+  - `ingest` — standalone worker (`pnpm ingest:start` = `tsx src/server/ingest/service.ts`), binds
+    `[::]:3099`, consumes `tap.railway.internal:2480`. Config file `railway.ingest.json`.
+  - `recompute-cron` — `node scripts/recompute-cron.mjs` on `0 * * * *`, POSTs the ingest worker's
+    `/api/ingest/recompute` over private networking. Config file `railway.cron.json`.
+  - **Runbook gotcha:** Railway auto-detects only the root `railway.json`, so every non-web service
+    in this monorepo needs its **Config File Path** set explicitly (Dashboard → service → Settings →
+    Config-as-code, or `serviceInstanceUpdate{ railwayConfigFile }` via the GraphQL API) to
+    `railway.ingest.json` / `railway.cron.json`; otherwise it silently falls back to the web build.
+    Shared `INGEST_WEBHOOK_SECRET` = `TAP_ADMIN_PASSWORD`; `PUBLIC_URL=https://standard-reader.app`;
+    `ATPROTO_PRIVATE_KEY_JWK` is the ES256 private JWK. Prod DB was reset to a clean schema (drop
+    `public` + `drizzle`, then `pnpm db:migrate`) before first backfill.
 
 ## 1. Data ingestion — tap → Neon
 
