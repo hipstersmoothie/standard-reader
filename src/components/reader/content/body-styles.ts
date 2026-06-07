@@ -306,10 +306,10 @@ export const articleBodyStyles = stylex.create({
   },
   quoteShareMark: {
     borderRadius: radius.sm,
+    paddingBlock: spacing["0.5"],
     backgroundColor: primaryColor.component3,
     // eslint-disable-next-line @stylexjs/valid-styles
     boxDecorationBreak: "clone",
-    paddingBlock: spacing["0.5"],
     color: "inherit",
   },
   taskList: {

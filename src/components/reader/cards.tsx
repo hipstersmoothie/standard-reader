@@ -399,10 +399,6 @@ const styles = stylex.create({
     marginTop: spacing["2"],
   },
   pubDirRank: {
-    color: uiColor.text1,
-    flexShrink: 0,
-    fontFamily: fontFamily.mono,
-    fontSize: fontSize.sm,
     gridColumn: {
       default: 1,
       "@media (min-width: 40rem)": "auto",
@@ -411,6 +407,10 @@ const styles = stylex.create({
       default: 1,
       "@media (min-width: 40rem)": "auto",
     },
+    color: uiColor.text1,
+    flexShrink: 0,
+    fontFamily: fontFamily.mono,
+    fontSize: fontSize.sm,
     paddingTop: spacing["3"],
     width: spacing["6"],
   },
@@ -459,6 +459,14 @@ const styles = stylex.create({
     },
   },
   pubDirTop: {
+    gridColumn: {
+      default: 2,
+      "@media (min-width: 40rem)": "auto",
+    },
+    gridRow: {
+      default: 1,
+      "@media (min-width: 40rem)": "auto",
+    },
     alignItems: {
       default: "flex-start",
       "@media (min-width: 40rem)": "baseline",
@@ -470,16 +478,8 @@ const styles = stylex.create({
       "@media (min-width: 40rem)": "row",
     },
     flexWrap: "wrap",
-    gridColumn: {
-      default: 2,
-      "@media (min-width: 40rem)": "auto",
-    },
-    gridRow: {
-      default: 1,
-      "@media (min-width: 40rem)": "auto",
-    },
-    minWidth: 0,
     rowGap: spacing["1"],
+    minWidth: 0,
   },
   pubDirTopRanked: {
     gridColumn: {
@@ -494,15 +494,16 @@ const styles = stylex.create({
     fontWeight: fontWeight.semibold,
     letterSpacing: tracking.tight,
     lineHeight: lineHeight.sm,
+    overflowWrap: "anywhere",
     maxWidth: "100%",
     minWidth: 0,
-    overflowWrap: "anywhere",
   },
   pubDirDesc: {
     color: uiColor.text1,
     fontFamily: fontFamily.serif,
     fontSize: fontSize.base,
     lineHeight: lineHeight.sm,
+    overflowWrap: "anywhere",
     marginBottom: spacing["0"],
     marginTop: spacing["0"],
     maxWidth: {
@@ -510,11 +511,8 @@ const styles = stylex.create({
       "@media (min-width: 40rem)": "64ch",
     },
     minWidth: 0,
-    overflowWrap: "anywhere",
   },
   pubDirExtra: {
-    display: "flex",
-    flexDirection: "column",
     gridColumn: {
       default: "1 / -1",
       "@media (min-width: 40rem)": "auto",
@@ -523,8 +521,10 @@ const styles = stylex.create({
       default: 2,
       "@media (min-width: 40rem)": "auto",
     },
-    minWidth: 0,
+    display: "flex",
+    flexDirection: "column",
     rowGap: gap.sm,
+    minWidth: 0,
   },
   pubDirExtraRanked: {
     gridColumn: {
@@ -558,16 +558,16 @@ const styles = stylex.create({
     minWidth: 0,
   },
   modalPubName: {
+    overflow: "hidden",
     color: uiColor.text2,
     fontFamily: fontFamily.serif,
     fontSize: fontSize.base,
     fontWeight: fontWeight.semibold,
     letterSpacing: tracking.tight,
     lineHeight: lineHeight.sm,
-    minWidth: 0,
-    overflow: "hidden",
     textOverflow: "ellipsis",
     whiteSpace: "nowrap",
+    minWidth: 0,
   },
   modalPubMeta: {
     color: uiColor.text1,

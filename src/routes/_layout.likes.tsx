@@ -93,9 +93,9 @@ const styles = stylex.create({
     fontFamily: fontFamily.serif,
     fontSize: fontSize.lg,
     lineHeight: lineHeight.sm,
+    overflowWrap: "anywhere",
     maxWidth: "52ch",
     minWidth: 0,
-    overflowWrap: "anywhere",
   },
   emptyCode: {
     fontFamily: fontFamily.mono,

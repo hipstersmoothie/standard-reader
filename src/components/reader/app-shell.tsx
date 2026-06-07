@@ -6,11 +6,13 @@ import { Link } from "@tanstack/react-router";
 import { feedApi } from "#/integrations/tanstack-query/api-feed.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
 import { parseInternalRoute } from "#/lib/internal-route";
-import { Compass, Home, Newspaper, Search } from "lucide-react";
+import { Compass, Home, Newspaper, Plus, Search } from "lucide-react";
+import { useState } from "react";
 
 import type { PublicationCard } from "../../integrations/tanstack-query/api-shapes";
 
 import { Avatar } from "../../design-system/avatar";
+import { Button } from "../../design-system/button";
 import { Flex } from "../../design-system/flex";
 import { primaryColor, uiColor } from "../../design-system/theme/color.stylex";
 import { radius } from "../../design-system/theme/radius.stylex";
@@ -30,6 +32,10 @@ import {
 import { NavbarAuth } from "../NavbarAuth";
 import { AddPublicationModal } from "./add-publication-modal";
 import { initials, publicationLinkParams } from "./format";
+import {
+  SubscriptionsSheet,
+  SubscriptionsSwitcher,
+} from "./subscriptions-sheet";
 
 const DESKTOP = "@media (min-width: 60rem)";
 
@@ -216,6 +222,13 @@ const styles = stylex.create({
     paddingTop: verticalSpace.xl,
     top: 0,
   },
+  mobileBarActions: {
+    alignItems: "center",
+    columnGap: gap.lg,
+    display: "flex",
+    flexShrink: 0,
+    rowGap: gap.lg,
+  },
   bottomNav: {
     backgroundColor: uiColor.bg,
     display: { [DESKTOP]: "none", default: "flex" },
@@ -249,6 +262,24 @@ const styles = stylex.create({
     paddingTop: verticalSpace.sm,
   },
   bottomItemActive: { color: primaryColor.text2 },
+  bottomIconWrap: {
+    placeItems: "center",
+    display: "grid",
+    position: "relative",
+  },
+  unreadDot: {
+    borderRadius: radius.full,
+    backgroundColor: primaryColor.text2,
+    boxShadow: `0 0 0 2px ${uiColor.bg}`,
+    position: "absolute",
+    height: spacing["2"],
+    right: `calc(-1 * ${spacing["1"]})`,
+    top: `calc(-1 * ${spacing["0.5"]})`,
+    width: spacing["2"],
+  },
+  addTrigger: {
+    width: "100%",
+  },
 });
 
 interface NavLink {
@@ -371,6 +402,28 @@ function FollowRow({ pub }: { pub: PublicationCard }) {
   );
 }
 
+function BottomNavItem({
+  to,
+  label,
+  icon,
+  showUnreadDot,
+}: NavLink & { showUnreadDot?: boolean }) {
+  return (
+    <Link
+      to={to}
+      activeOptions={to === "/" ? { exact: true } : undefined}
+      {...stylex.props(styles.bottomItem)}
+      activeProps={stylex.props(styles.bottomItem, styles.bottomItemActive)}
+    >
+      <span {...stylex.props(styles.bottomIconWrap)}>
+        {icon}
+        {showUnreadDot ? <span {...stylex.props(styles.unreadDot)} /> : null}
+      </span>
+      <span>{label}</span>
+    </Link>
+  );
+}
+
 function Brand({ style }: { style?: stylex.StyleXStyles }) {
   return (
     <Link to="/" {...stylex.props(styles.brand, style)}>
@@ -385,6 +438,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const signedIn = Boolean(session?.user);
   const following = sidebar?.following ?? [];
   const unreadCount = sidebar?.unreadCount ?? null;
+  const hasUnread = unreadCount != null && unreadCount > 0;
+  const [subsSheetOpen, setSubsSheetOpen] = useState(false);
+  const [addModalOpen, setAddModalOpen] = useState(false);
+
+  const openAddPublication = () => {
+    setSubsSheetOpen(false);
+    setAddModalOpen(true);
+  };
 
   return (
     <div {...stylex.props(styles.shell)}>
@@ -416,14 +477,26 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
         <Flex direction="column" gap="lg" style={styles.foot}>
           <NavbarAuth variant="sidebar" menuPlacement="right bottom" />
-          <AddPublicationModal />
+          <Button
+            variant="primary"
+            style={styles.addTrigger}
+            onPress={() => setAddModalOpen(true)}
+          >
+            <Plus size={16} /> Add publication
+          </Button>
         </Flex>
       </aside>
 
       <main {...stylex.props(styles.main)}>
         <Flex align="center" justify="between" style={styles.mobileBar}>
           <Brand />
-          <NavbarAuth />
+          <div {...stylex.props(styles.mobileBarActions)}>
+            <SubscriptionsSwitcher
+              count={following.length}
+              onPress={() => setSubsSheetOpen(true)}
+            />
+            <NavbarAuth />
+          </div>
         </Flex>
 
         <div {...stylex.props(styles.scroller)} data-app-scroller>
@@ -432,22 +505,26 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
         <nav {...stylex.props(styles.bottomNav)}>
           {NAV.map((item) => (
-            <Link
+            <BottomNavItem
               key={item.to}
-              to={item.to}
-              activeOptions={item.to === "/" ? { exact: true } : undefined}
-              {...stylex.props(styles.bottomItem)}
-              activeProps={stylex.props(
-                styles.bottomItem,
-                styles.bottomItemActive,
-              )}
-            >
-              {item.icon}
-              <span>{item.label}</span>
-            </Link>
+              {...item}
+              showUnreadDot={item.to === "/latest" ? hasUnread : false}
+            />
           ))}
         </nav>
       </main>
+
+      <SubscriptionsSheet
+        isOpen={subsSheetOpen}
+        onOpenChange={setSubsSheetOpen}
+        following={following}
+        onAddPublication={openAddPublication}
+      />
+      <AddPublicationModal
+        isOpen={addModalOpen}
+        onOpenChange={setAddModalOpen}
+        showTrigger={false}
+      />
     </div>
   );
 }

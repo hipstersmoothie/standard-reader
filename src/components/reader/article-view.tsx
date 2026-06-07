@@ -174,9 +174,9 @@ const styles = stylex.create({
     overflow: "hidden",
     color: uiColor.text2,
     flexShrink: 1,
-    minWidth: 0,
     textOverflow: "ellipsis",
     whiteSpace: "nowrap",
+    minWidth: 0,
   },
   pubBylineHandle: {
     display: {

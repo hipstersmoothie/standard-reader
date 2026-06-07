@@ -107,11 +107,24 @@ const styles = stylex.create({
   },
 });
 
-export function AddPublicationModal() {
+export function AddPublicationModal({
+  isOpen: isOpenProp,
+  onOpenChange,
+  showTrigger = true,
+}: {
+  isOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  showTrigger?: boolean;
+} = {}) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [input, setInput] = useState("");
   const [debouncedQ, setDebouncedQ] = useState("");
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = isOpenProp ?? internalOpen;
+  const setOpen = (next: boolean) => {
+    if (isOpenProp === undefined) setInternalOpen(next);
+    onOpenChange?.(next);
+  };
   const { data: session } = useQuery(user.getSessionQueryOptions);
   const signedIn = Boolean(session?.user);
 
@@ -164,9 +177,13 @@ export function AddPublicationModal() {
       size="md"
       fitContent
       trigger={
-        <Button variant="primary" style={styles.trigger}>
-          <Plus size={16} /> Add publication
-        </Button>
+        showTrigger ? (
+          <Button variant="primary" style={styles.trigger}>
+            <Plus size={16} /> Add publication
+          </Button>
+        ) : (
+          <span hidden aria-hidden />
+        )
       }
     >
       <DialogHeader>

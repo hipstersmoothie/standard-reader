@@ -22,20 +22,19 @@ import {
   animations,
 } from "../theme/animations.stylex";
 import { uiColor } from "../theme/color.stylex";
+import { radius } from "../theme/radius.stylex";
 import {
   gap,
   horizontalSpace,
   size as sizeSpace,
   verticalSpace,
 } from "../theme/semantic-spacing.stylex";
+import { spacing } from "../theme/spacing.stylex";
 import { typeramp } from "../theme/typography.stylex";
 import { useDialogStyles } from "../theme/useDialogStyles";
 import { NonModalDrawer } from "./NonModalDrawer";
 
 const styles = stylex.create({
-  overlay: {
-    zIndex: 0,
-  },
   drawerWrapper: {
     position: "fixed",
     bottom: {
@@ -61,6 +60,7 @@ const styles = stylex.create({
 
     borderRadius: 0,
     translate: "unset",
+    zIndex: 1,
     borderBottomWidth: {
       default: 0,
       ":is([data-direction=top])": 1,
@@ -73,26 +73,34 @@ const styles = stylex.create({
       default: 0,
       ":is([data-direction=left])": 1,
     },
+    borderTopLeftRadius: {
+      ":is([data-direction=bottom])": radius.xl,
+    },
+    borderTopRightRadius: {
+      ":is([data-direction=bottom])": radius.xl,
+    },
     borderTopWidth: {
       default: 0,
       ":is([data-direction=bottom])": 1,
     },
     height: {
+      ":is([data-direction=bottom])": "auto",
       ":is([data-direction=right], [data-direction=left])": "100vh",
-      ":is([data-direction=top], [data-direction=bottom]):is([data-size=lg])":
-        "800px",
-      ":is([data-direction=top], [data-direction=bottom]):is([data-size=md])":
-        "600px",
-      ":is([data-direction=top], [data-direction=bottom]):is([data-size=sm])":
-        "320px",
+      ":is([data-direction=top]):is([data-size=lg])": "800px",
+      ":is([data-direction=top]):is([data-size=md])": "600px",
+      ":is([data-direction=top]):is([data-size=sm])": "320px",
     },
     maxHeight: {
+      ":is([data-direction=bottom])": "70vh",
       ":is([data-direction=right], [data-direction=left])": "100vh",
-      ":is([data-direction=top], [data-direction=bottom])": `calc(100vh - ${sizeSpace["3xl"]})`,
+      ":is([data-direction=top])": `calc(100vh - ${sizeSpace["3xl"]})`,
     },
     maxWidth: {
       ":is([data-direction=right], [data-direction=left])": `calc(100vw - ${sizeSpace["3xl"]})`,
       ":is([data-direction=top], [data-direction=bottom])": "100vw",
+    },
+    paddingBottom: {
+      ":is([data-direction=bottom])": `max(${spacing["3"]}, env(safe-area-inset-bottom))`,
     },
     width: {
       ":is([data-direction=left], [data-direction=right]):is([data-size=lg])":
@@ -125,6 +133,25 @@ const styles = stylex.create({
     paddingBottom: verticalSpace["md"],
     paddingTop: verticalSpace["md"],
   },
+  dialogBottom: {
+    overflow: "hidden",
+    display: "flex",
+    flexDirection: "column",
+    minHeight: 0,
+    paddingBottom: verticalSpace.none,
+    paddingTop: verticalSpace.none,
+  },
+  grip: {
+    borderRadius: radius.full,
+    backgroundColor: uiColor.border2,
+    flexShrink: 0,
+    height: spacing["1"],
+    marginBottom: verticalSpace.xxs,
+    marginLeft: "auto",
+    marginRight: "auto",
+    marginTop: verticalSpace.lg,
+    width: spacing["10"],
+  },
   header: {
     gap: gap["md"],
     alignItems: "center",
@@ -148,6 +175,15 @@ const styles = stylex.create({
     paddingLeft: horizontalSpace["3xl"],
     paddingRight: horizontalSpace["3xl"],
     paddingTop: { default: 0, ":first-child": verticalSpace["3xl"] },
+  },
+  bodyBottom: {
+    flexBasis: "0%",
+    flexGrow: 1,
+    flexShrink: 1,
+    minHeight: 0,
+    overflowY: "auto",
+    paddingBottom: verticalSpace.sm,
+    paddingTop: verticalSpace.lg,
   },
   footer: {
     gap: gap["md"],
@@ -209,14 +245,22 @@ export const Drawer = ({
           </AriaDialog>
         </NonModalDrawer>
       ) : (
-        <ModalOverlay isDismissable>
-          <div {...stylex.props(dialogStyles.overlay, styles.overlay)} />
+        <ModalOverlay {...stylex.props(dialogStyles.overlay)} isDismissable>
           <Modal
             data-size={size}
             data-direction={direction}
             {...stylex.props(dialogStyles.modal, styles.drawerWrapper)}
           >
-            <AriaDialog {...stylex.props(dialogStyles.dialog, styles.dialog)}>
+            <AriaDialog
+              {...stylex.props(
+                dialogStyles.dialog,
+                styles.dialog,
+                direction === "bottom" ? styles.dialogBottom : null,
+              )}
+            >
+              {direction === "bottom" ? (
+                <div {...stylex.props(styles.grip)} aria-hidden />
+              ) : null}
               {children}
             </AriaDialog>
           </Modal>
@@ -258,10 +302,23 @@ export const DrawerDescription = ({
 
 export interface DrawerBodyProps extends StyleXComponentProps<
   React.ComponentProps<"div">
-> {}
+> {
+  /** Scrollable body for bottom drawers (flex child). */
+  scroll?: boolean;
+}
 
-export const DrawerBody = ({ children, style }: DrawerBodyProps) => {
-  return <div {...stylex.props(styles.body, style)}>{children}</div>;
+export const DrawerBody = ({
+  children,
+  style,
+  scroll = false,
+}: DrawerBodyProps) => {
+  return (
+    <div
+      {...stylex.props(styles.body, scroll ? styles.bodyBottom : null, style)}
+    >
+      {children}
+    </div>
+  );
 };
 
 export interface DrawerFooterProps extends StyleXComponentProps<
