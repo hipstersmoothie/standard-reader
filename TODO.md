@@ -121,7 +121,9 @@ in structured o11y (`observe`) and reads from the Neon read-model.
       recommend count). `publicationApi.getArticle`; the GET stays side-effect-free,
       the UI marks read via `readerApi.markRead` on open.
 - [x] Search: publications + articles split over the GIN `tsvector` columns
-      (`websearch_to_tsquery` + `ts_rank`). `searchApi.search`.
+      (`websearch_to_tsquery` + `ts_rank`). Article bodies index record
+      `textContent` plus extracted content blocks into `text_content`.
+      `searchApi.search`.
 - [x] Handle resolution: AT Proto handle/domain → publication preview for the Add
       modal. `searchApi.resolvePublicationByHandle` resolves handle→DID, reads the
       read-model first, then falls back to listing the author's repo from their PDS
@@ -135,7 +137,7 @@ Build each on hip-ui components + StyleX tokens (no raw HTML/inline styles).
 - [x] **Home** — masthead (date + unread count), featured lead, latest unread rows, right rail (Trending articles + You might follow).
 - [x] **Latest** — chronological list, segmented All/Unread filter with counts.
 - [x] **Discover** — Recommended / Followed-by-people-you-follow / Trending / All (chips, sort, grid⇄list toggle).
-- [ ] **Search** — editorial field, live results split into Publications + Articles.
+- [x] **Search** — editorial field, live results split into Publications + Articles. Route `/search` with URL `?q=`; `searchApi.search` (GIN full-text); reuses `PubDirectoryRow` + `ArticleRow`.
 - [x] **Article** (reading view) — ~680px measure, drop-cap, pull quotes, hero, sticky bar (back/byline/follow/save/share), reading-progress bar, footer pub card + "More from {publication}". Route `/a/$did/$rkey` (`_layout.a.$did.$rkey.tsx`); feed/profile cards link here; `publicationApi.getArticle` returns `moreFrom` + owner handle.
 - [x] **Publication profile** — banner + inline header (avatar/topic/name/desc/stats/Copy DID/Follow),
       recent writing, right rail (About + DID + readers-also-follow). Route `/p/$did/$rkey`

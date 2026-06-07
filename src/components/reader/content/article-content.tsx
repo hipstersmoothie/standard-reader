@@ -6,7 +6,7 @@ import * as stylex from "@stylexjs/stylex";
 
 import type { ContentRendererProps } from "./types";
 
-import { parseArticleBlocks } from "../article-content";
+import { parseArticleBlocks } from "#/lib/document/blocks";
 import { articleBodyStyles } from "./body-styles";
 import { CONTENT_RENDERERS } from "./renderers";
 

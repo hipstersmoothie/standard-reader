@@ -23,10 +23,12 @@ import { dbMiddleware } from "./db-middleware";
 
 /**
  * Search (`APP_VISION.md` §5): full-text search over the read-model's GIN
- * `tsvector` columns, split into Publications and Articles. Plus handle
- * resolution for the Add/Follow modal — an AT Proto handle/domain → publication
- * preview, resolved from the read-model first and falling back to the author's
- * PDS (kicking off tap tracking) for publications we haven't indexed yet.
+ * `tsvector` columns (title, description, and body text derived from record
+ * `textContent` plus structured content blocks), split into Publications and
+ * Articles. Plus handle resolution for the Add/Follow modal — an AT Proto
+ * handle/domain → publication preview, resolved from the read-model first
+ * and falling back to the author's PDS (kicking off tap tracking) for
+ * publications we haven't indexed yet.
  */
 
 const PUBLIC_APPVIEW = "https://public.api.bsky.app";

@@ -6,7 +6,7 @@ import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { feedApi } from "#/integrations/tanstack-query/api-feed.functions";
 import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { z } from "zod";
 
 import type { ArticleCard } from "../integrations/tanstack-query/api-shapes";
@@ -80,7 +80,8 @@ const styles = stylex.create({
     lineHeight: lineHeight.sm,
     maxWidth: "52ch",
   },
-  loadMore: {
+  loadSentinel: {
+    height: 1,
     marginTop: spacing["6"],
     width: "100%",
   },
@@ -100,6 +101,8 @@ function Latest() {
   const [items, setItems] = useState<Array<ArticleCard>>([]);
   const [nextOffset, setNextOffset] = useState<number | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
+  const loadMoreSentinelRef = useRef<HTMLDivElement>(null);
+  const loadingMoreRef = useRef(false);
 
   const { data: feed } = useSuspenseQuery(
     feedApi.getLatestFeedQueryOptions({
@@ -130,8 +133,9 @@ function Latest() {
     void navigate({ search: { filter: next } });
   };
 
-  const onLoadMore = async () => {
-    if (nextOffset == null || loadingMore) return;
+  const loadMoreFeed = useCallback(async () => {
+    if (nextOffset == null || loadingMoreRef.current) return;
+    loadingMoreRef.current = true;
     setLoadingMore(true);
     try {
       const page = await feedApi.getLatestFeed({
@@ -140,9 +144,30 @@ function Latest() {
       setItems((prev) => [...prev, ...page.items]);
       setNextOffset(page.nextOffset);
     } finally {
+      loadingMoreRef.current = false;
       setLoadingMore(false);
     }
-  };
+  }, [filter, nextOffset]);
+
+  useEffect(() => {
+    if (nextOffset == null) return;
+
+    const sentinel = loadMoreSentinelRef.current;
+    if (!sentinel) return;
+
+    const root = sentinel.closest("[data-app-scroller]");
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          void loadMoreFeed();
+        }
+      },
+      { root, rootMargin: "240px", threshold: 0 },
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [loadMoreFeed, nextOffset]);
 
   const allLabel = `All (${feed.counts.all})`;
   const unreadLabel = `Unread (${feed.counts.unread})`;
@@ -216,7 +241,7 @@ function Latest() {
         <SegmentedControl
           selectedKeys={new Set([filter])}
           onSelectionChange={onFilterChange}
-          size="sm"
+          size="lg"
         >
           <SegmentedControlItem id="all">{allLabel}</SegmentedControlItem>
           <SegmentedControlItem id="unread">{unreadLabel}</SegmentedControlItem>
@@ -250,20 +275,21 @@ function Latest() {
             ))}
           </div>
 
-          {nextOffset == null ? (
+          {nextOffset != null ? (
+            <>
+              <div
+                ref={loadMoreSentinelRef}
+                aria-hidden
+                {...stylex.props(styles.loadSentinel)}
+              />
+              {loadingMore ? (
+                <p {...stylex.props(styles.endNote)}>Loading…</p>
+              ) : null}
+            </>
+          ) : (
             <p {...stylex.props(styles.endNote)}>
               You&apos;ve reached the end.
             </p>
-          ) : (
-            <Button
-              variant="secondary"
-              size="lg"
-              style={styles.loadMore}
-              onPress={onLoadMore}
-              isDisabled={loadingMore}
-            >
-              {loadingMore ? "Loading…" : "Load more"}
-            </Button>
           )}
         </>
       )}

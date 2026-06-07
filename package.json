@@ -13,6 +13,7 @@
     "test": "vitest run",
     "ingest:dev": "node --experimental-strip-types --env-file=.env src/server/ingest/service.ts",
     "backfill:blobs": "node --experimental-strip-types --env-file=.env scripts/backfill-blob-urls.ts",
+    "backfill:search-text": "pnpm exec tsx --env-file=.env scripts/backfill-search-text.ts",
     "typecheck": "tsc --noEmit",
     "lint": "pnpm exec oxlint .",
     "format": "pnpm exec oxfmt",

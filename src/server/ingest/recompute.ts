@@ -1,5 +1,7 @@
 import { and, eq, isNotNull, isNull, sql } from "drizzle-orm";
 
+import { documentSearchText } from "#/lib/document/search-text";
+
 import { db } from "../../db/index.ts";
 import { documents, publications } from "../../db/schema.ts";
 import { getBlobUrl } from "../atproto/blob.ts";
@@ -262,6 +264,38 @@ export async function backfillBlobUrls(): Promise<{
   return { icons, covers };
 }
 
+/**
+ * Fill or refresh `documents.text_content` from record text plus structured
+ * content blocks so GIN search covers full article bodies.
+ */
+export async function backfillDocumentSearchText(): Promise<number> {
+  const rows = await db
+    .select({
+      uri: documents.uri,
+      textContent: documents.textContent,
+      contentJson: documents.contentJson,
+      contentFormat: documents.contentFormat,
+    })
+    .from(documents)
+    .where(eq(documents.deleted, false));
+
+  let updated = 0;
+  for (const row of rows) {
+    const next = documentSearchText({
+      textContent: row.textContent,
+      contentJson: row.contentJson,
+      contentFormat: row.contentFormat,
+    });
+    if (next === (row.textContent ?? null)) continue;
+    await db
+      .update(documents)
+      .set({ textContent: next, updatedAt: new Date() })
+      .where(eq(documents.uri, row.uri));
+    updated++;
+  }
+  return updated;
+}
+
 /** Run the full derived-data recompute. */
 export async function recomputeDerived(): Promise<void> {
   await recomputePublicationStats();
@@ -272,5 +306,10 @@ export async function recomputeDerived(): Promise<void> {
     await backfillBlobUrls();
   } catch {
     // Leave URLs null; the next recompute retries the still-missing rows.
+  }
+  try {
+    await backfillDocumentSearchText();
+  } catch {
+    // Search text stays as-is; the next recompute retries.
   }
 }

@@ -121,6 +121,9 @@ const styles = stylex.create({
   rowNoMedia: {
     gridTemplateColumns: "1fr",
   },
+  rowFirstInSection: {
+    paddingTop: spacing["0"],
+  },
   rowTitle: {
     color: uiColor.text2,
     fontFamily: fontFamily.serif,
@@ -309,12 +312,16 @@ const styles = stylex.create({
     marginBottom: spacing["0"],
     marginTop: spacing["0"],
   },
+  pubCardFootWrap: {
+    flexShrink: 0,
+    marginTop: "auto",
+    paddingTop: spacing["4"],
+    width: "100%",
+  },
   pubCardFoot: {
     borderTopColor: uiColor.border1,
     borderTopStyle: "solid",
     borderTopWidth: 1,
-    flexShrink: 0,
-    marginTop: "auto",
     paddingTop: spacing["3"],
     width: "100%",
   },
@@ -334,6 +341,9 @@ const styles = stylex.create({
   },
   pubDirRowLast: {
     borderBottomWidth: 0,
+  },
+  pubDirRowFirstInSection: {
+    paddingTop: spacing["0"],
   },
   pubCardSkeleton: {
     pointerEvents: "none",
@@ -689,16 +699,23 @@ export function ArticleRow({
   article,
   unread = false,
   showByline = true,
+  isFirstInSection = false,
 }: {
   article: ArticleCard;
   unread?: boolean;
   showByline?: boolean;
+  /** Drop top padding when the section head already provides spacing above. */
+  isFirstInSection?: boolean;
 }) {
   const cover = coverImage(article);
   return (
     <ArticleLink
       article={article}
-      extraStyles={[styles.row, !cover && styles.rowNoMedia]}
+      extraStyles={[
+        styles.row,
+        !cover && styles.rowNoMedia,
+        isFirstInSection && styles.rowFirstInSection,
+      ]}
     >
       <Flex direction="column" gap="2xl">
         {showByline ? <Byline article={article} includeDate /> : null}
@@ -816,10 +833,17 @@ function PubReadersMeta({ pub }: { pub: PublicationCard }) {
 function PubCardFoot({ pub }: { pub: PublicationCard }) {
   if (!pub.topic && pub.subscriberCount <= 0) return null;
   return (
-    <Flex align="center" justify="between" gap="md" style={styles.pubCardFoot}>
-      <Topic name={pub.topic} />
-      <PubReadersMeta pub={pub} />
-    </Flex>
+    <div {...stylex.props(styles.pubCardFootWrap)}>
+      <Flex
+        align="center"
+        justify="between"
+        gap="md"
+        style={styles.pubCardFoot}
+      >
+        <Topic name={pub.topic} />
+        <PubReadersMeta pub={pub} />
+      </Flex>
+    </div>
   );
 }
 
@@ -894,10 +918,13 @@ export function PubDirectoryRow({
   pub,
   rank,
   isLast = false,
+  isFirstInSection = false,
 }: {
   pub: PublicationCard;
   rank?: number;
   isLast?: boolean;
+  /** Drop top padding when the section head already provides spacing above. */
+  isFirstInSection?: boolean;
 }) {
   const { data: session } = useQuery(user.getSessionQueryOptions);
   const signedIn = Boolean(session?.user);
@@ -905,7 +932,11 @@ export function PubDirectoryRow({
   return (
     <PublicationLink
       pub={pub}
-      extraStyles={[styles.pubDirRow, isLast && styles.pubDirRowLast]}
+      extraStyles={[
+        styles.pubDirRow,
+        isLast && styles.pubDirRowLast,
+        isFirstInSection && styles.pubDirRowFirstInSection,
+      ]}
     >
       {rank == null ? null : (
         <span {...stylex.props(styles.pubDirRank)}>
@@ -965,31 +996,35 @@ export function PubCardSkeleton() {
         width="100%"
         style={styles.pubCardSkeletonDesc}
       />
-      <Flex
-        align="center"
-        justify="between"
-        gap="md"
-        style={styles.pubCardFoot}
-      >
-        <Skeleton
-          variant="rectangle"
-          height={spacing["4"]}
-          width={spacing["16"]}
-        />
-        <Skeleton
-          variant="rectangle"
-          height={spacing["4"]}
-          width={spacing["14"]}
-        />
-      </Flex>
+      <div {...stylex.props(styles.pubCardFootWrap)}>
+        <Flex
+          align="center"
+          justify="between"
+          gap="md"
+          style={styles.pubCardFoot}
+        >
+          <Skeleton
+            variant="rectangle"
+            height={spacing["4"]}
+            width={spacing["16"]}
+          />
+          <Skeleton
+            variant="rectangle"
+            height={spacing["4"]}
+            width={spacing["14"]}
+          />
+        </Flex>
+      </div>
     </div>
   );
 }
 
 export function PubDirectoryRowSkeleton({
   isLast = false,
+  isFirstInSection = false,
 }: {
   isLast?: boolean;
+  isFirstInSection?: boolean;
 }) {
   return (
     <div
@@ -997,6 +1032,7 @@ export function PubDirectoryRowSkeleton({
       {...stylex.props(
         styles.pubDirRow,
         isLast && styles.pubDirRowLast,
+        isFirstInSection && styles.pubDirRowFirstInSection,
         styles.pubDirRowSkeleton,
       )}
     >

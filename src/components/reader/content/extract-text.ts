@@ -5,7 +5,7 @@ import { leafletBlocks } from "#/lib/leaflet/blocks";
 import { leafletPlaintext } from "#/lib/leaflet/plaintext";
 import { LEAFLET_CONTENT } from "#/lib/leaflet/types";
 
-import { parseArticleBlocks } from "../article-content";
+import { parseArticleBlocks } from "#/lib/document/blocks";
 
 type ArticleBodyFields = Pick<
   ArticleDetail,

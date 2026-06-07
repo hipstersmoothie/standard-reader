@@ -11,7 +11,7 @@ import type {
   TapIdentityPayload,
 } from "../atproto/types.ts";
 
-import { leafletPlaintext } from "#/lib/leaflet/plaintext";
+import { documentSearchText } from "#/lib/document/search-text";
 import { resolveLeafletContent } from "#/server/leaflet/resolve";
 
 import { db } from "../../db/index.ts";
@@ -193,10 +193,11 @@ export async function upsertDocument(
       await resolveLeafletContent(contentJson, did, ownerPds),
     );
   }
-  let textContent = cleanOptional(record.textContent);
-  if (!textContent && contentFormat === "pub.leaflet.content" && contentJson) {
-    textContent = leafletPlaintext(contentJson);
-  }
+  const textContent = documentSearchText({
+    textContent: cleanOptional(record.textContent),
+    contentJson,
+    contentFormat,
+  });
 
   const values = {
     uri,

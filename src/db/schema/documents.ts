@@ -44,7 +44,7 @@ export const documents = pgTable(
 
     /** Short excerpt / description. */
     description: text("description"),
-    /** Plaintext rendition (no markdown) — primary full-text search source. */
+    /** Plaintext for full-text search: record textContent + extracted blocks. */
     textContent: text("text_content"),
     /** Raw `content` union object as stored in the record. */
     contentJson: jsonb("content_json"),
@@ -73,7 +73,7 @@ export const documents = pgTable(
 
     deleted: boolean("deleted").notNull().default(false),
 
-    /** Generated full-text search vector over title + description + body text. */
+    /** Generated full-text search vector over title, description, and body text. */
     searchVector: tsvector("search_vector").generatedAlwaysAs(
       (): ReturnType<typeof sql> =>
         sql`setweight(to_tsvector('english', coalesce(title, '')), 'A') || setweight(to_tsvector('english', coalesce(description, '')), 'B') || setweight(to_tsvector('english', coalesce(text_content, '')), 'C')`,
