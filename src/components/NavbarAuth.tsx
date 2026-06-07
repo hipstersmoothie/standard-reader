@@ -4,7 +4,7 @@ import * as stylex from "@stylexjs/stylex";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createLink, useNavigate } from "@tanstack/react-router";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
-import { LogOut } from "lucide-react";
+import { Bookmark, LogOut } from "lucide-react";
 import { Button as AriaButton } from "react-aria-components";
 
 import { Avatar, AvatarButton } from "../design-system/avatar";
@@ -190,6 +190,15 @@ export function NavbarAuth({
           ) : undefined
         }
       >
+        <MenuItem
+          onPress={() => {
+            void navigate({ to: "/likes" });
+          }}
+          suffix={<Bookmark />}
+        >
+          Saved articles
+        </MenuItem>
+        <MenuSeparator />
         <MenuItem
           onPress={() => {
             const did = session.user.did;

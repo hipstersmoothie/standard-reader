@@ -150,8 +150,8 @@ Build each on hip-ui components + StyleX tokens (no raw HTML/inline styles).
 - [x] **Add / Follow modal** — Search field + publication rows (no tabs); uses `searchPublications` API; trending suggestions when empty.
 - [x] Global follow toggle reflects everywhere instantly (optimistic).
 - [x] Theme picker (light / dark / system) + editorial dark tokens + Shiki `standard-reader-dark`.
-- [ ] Theme tokens / dark mode parity with prototype (remaining hardcoded surfaces).
-- [ ] **Reader profile** — browse the signed-in user's likes (`site.standard.graph.recommend` records via `readerApi.getLikes`).
+- [x] Theme tokens / dark mode parity with prototype (remaining hardcoded surfaces).
+- [x] **Reader profile** — browse the signed-in user's likes (`site.standard.graph.recommend` records via `readerApi.getLikes`).
 
 ## 7. Discovery engine (network-powered)
 
@@ -161,29 +161,11 @@ Build each on hip-ui components + StyleX tokens (no raw HTML/inline styles).
 - [x] **Cold start** — popularity fallback (`trending_score` incl. likes) excluding the trending set (rails stay distinct).
 - [x] **Readers also follow** — co-subscription + co-recommend affinity on publication profiles.
 
-## 8. Routing & state
-
-- [ ] URL-backed routes for home / latest / discover / search / article / publication (TanStack Router).
-- [ ] Real back/forward + shareable/deep links.
-- [ ] Replace prototype's in-memory view stack.
-
-## 9. v1 polish & QA
-
-- [ ] Loading / empty / error states for all data-backed views.
-- [ ] Responsive checks (desktop + mobile breakpoints).
-- [ ] Accessibility pass (react-aria props, keyboard nav, focus).
-- [ ] Vitest coverage on data-layer + key components.
-- [ ] Lint/format/typecheck/build all green.
-
 ---
 
 ## Later (post-v1)
 
-- [ ] Recommendation / trending tuning and quality.
-- [ ] Higher-quality full-text search.
 - [ ] Offline / save-for-later.
-- [ ] Notifications.
-- [ ] Multi-account.
 
 ## Non-goals (for now)
 

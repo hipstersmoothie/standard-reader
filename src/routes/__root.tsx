@@ -15,6 +15,7 @@ import { useLayoutEffect } from "react";
 import {
   editorialFonts,
   editorialPrimary,
+  editorialShadow,
   editorialUi,
 } from "../components/reader/theme";
 import { ui } from "../design-system/theme/semantic-color.stylex";
@@ -126,6 +127,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
           editorialUi,
           editorialPrimary,
           editorialFonts,
+          editorialShadow,
           ui.bg,
           ui.text,
         )}

@@ -5,6 +5,7 @@ import type { LeafletFacet } from "#/lib/leaflet/types";
 import * as stylex from "@stylexjs/stylex";
 import { useQuoteHighlightTracker } from "#/components/reader/quote-highlight-context";
 
+import { themedCalloutBackground } from "../../../callout-color";
 import { articleBodyStyles } from "../../body-styles";
 import { HighlightedFacetedPlaintext } from "./faceted-text";
 
@@ -29,7 +30,9 @@ export function CalloutBlockView({
   return (
     <aside
       {...stylex.props(articleBodyStyles.callout)}
-      style={color ? { backgroundColor: color } : undefined}
+      style={
+        color ? { backgroundColor: themedCalloutBackground(color) } : undefined
+      }
     >
       <span {...stylex.props(articleBodyStyles.calloutEmoji)} aria-hidden>
         {emoji ?? DEFAULT_CALLOUT_EMOJI}

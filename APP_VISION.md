@@ -56,7 +56,8 @@ Following list (sidebar) — quick links to followed publications
 
 Detail screens
 ├── Article (reading view)
-└── Publication profile
+├── Publication profile
+└── Reader profile (saved / liked articles)
 ```
 
 ---
@@ -105,6 +106,11 @@ Sections, top to bottom:
 - Recent writing (featured lead + rows).
 - Right rail: About + DID + "Readers also follow".
 - Social proof line ("Followed by …") when applicable.
+
+### Reader profile (saved articles)
+
+- Signed-in reader's **liked articles** (`site.standard.graph.recommend`), newest first.
+- Route `/likes`; linked from the user menu. Requires auth (redirects to login).
 
 ### Add / Follow (modal)
 

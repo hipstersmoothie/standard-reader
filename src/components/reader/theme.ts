@@ -1,6 +1,7 @@
 import * as stylex from "@stylexjs/stylex";
 
 import { primaryColor, uiColor } from "../../design-system/theme/color.stylex";
+import { shadow } from "../../design-system/theme/shadow.stylex";
 import { fontFamily } from "../../design-system/theme/typography.stylex";
 
 /**
@@ -50,4 +51,11 @@ export const editorialFonts = stylex.createTheme(fontFamily, {
   sans: "'Archivo', system-ui, -apple-system, sans-serif",
   serif: "'Newsreader', Georgia, 'Times New Roman', serif",
   mono: "'Spline Sans Mono', ui-monospace, 'SFMono-Regular', monospace",
+});
+
+/** Stronger shadows on dark surfaces so popovers/cards stay legible. */
+export const editorialShadow = stylex.createTheme(shadow, {
+  sm: "light-dark(0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1), 0 1px 3px 0 rgb(0 0 0 / 0.35), 0 1px 2px -1px rgb(0 0 0 / 0.35))",
+  md: "light-dark(0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1), 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.35))",
+  lg: "light-dark(0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1), 0 10px 15px -3px rgb(0 0 0 / 0.45), 0 4px 6px -4px rgb(0 0 0 / 0.4))",
 });

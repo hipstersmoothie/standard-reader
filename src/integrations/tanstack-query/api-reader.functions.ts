@@ -15,6 +15,9 @@ import { observe } from "#/server/observability/log";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 
+import type { ArticleCard } from "./api-shapes";
+
+import { articleCardColumns, toArticleCard } from "./api-shapes";
 import { dbMiddleware } from "./db-middleware";
 
 /**
@@ -54,14 +57,13 @@ export interface ReadStatus {
   isRead: boolean;
 }
 
-export interface LikeListItem {
-  uri: string;
+/** A liked article (`site.standard.graph.recommend`) with hydrated card data. */
+export interface LikedArticleItem {
+  recommendUri: string;
+  likedAt: string | null;
   documentUri: string;
-  createdAt: string | null;
-  title: string | null;
-  canonicalUrl: string | null;
-  publicationUri: string | null;
-  coverImageUrl: string | null;
+  /** Null when the document is no longer in the read-model. */
+  article: ArticleCard | null;
 }
 
 /**
@@ -189,39 +191,64 @@ const getLikes = createServerFn({ method: "GET" })
     observe("reader.getLikes", async ({ data, context }, span) => {
       const session = await getAtprotoSessionForRequest(getRequest());
       if (!session) {
-        return [] satisfies Array<LikeListItem>;
+        return [] satisfies Array<LikedArticleItem>;
       }
       span.set("did", session.did);
       span.set("limit", data.limit);
 
       const rec = context.schema.recommends;
       const d = context.schema.documents;
+      const p = context.schema.publications;
+      const pr = context.schema.profiles;
+      const cols = articleCardColumns(context.schema);
       const rows = await context.db
         .select({
-          uri: rec.uri,
+          recommendUri: rec.uri,
+          likedAt: rec.createdAt,
           documentUri: rec.documentUri,
-          createdAt: rec.createdAt,
-          title: d.title,
-          canonicalUrl: d.canonicalUrl,
-          publicationUri: d.publicationUri,
-          coverImageUrl: d.coverImageUrl,
+          ...cols,
         })
         .from(rec)
         .leftJoin(d, eq(d.uri, rec.documentUri))
+        .leftJoin(p, eq(p.uri, d.publicationUri))
+        .leftJoin(pr, eq(pr.did, p.did))
         .where(and(eq(rec.recommenderDid, session.did), eq(rec.deleted, false)))
         .orderBy(desc(rec.createdAt))
         .limit(data.limit);
 
       span.set("count", rows.length);
       return rows.map((row) => ({
-        uri: row.uri,
+        recommendUri: row.recommendUri,
+        likedAt: row.likedAt?.toISOString() ?? null,
         documentUri: row.documentUri,
-        createdAt: row.createdAt?.toISOString() ?? null,
-        title: row.title,
-        canonicalUrl: row.canonicalUrl,
-        publicationUri: row.publicationUri,
-        coverImageUrl: row.coverImageUrl,
-      })) satisfies Array<LikeListItem>;
+        article:
+          row.uri != null &&
+          row.did != null &&
+          row.title != null &&
+          row.publishedAt != null
+            ? toArticleCard({
+                uri: row.uri,
+                did: row.did,
+                title: row.title,
+                description: row.description,
+                path: row.path,
+                canonicalUrl: row.canonicalUrl,
+                coverImageUrl: row.coverImageUrl,
+                publishedAt: row.publishedAt,
+                featured: row.featured ?? false,
+                publicationUri: row.publicationUri,
+                publicationName: row.publicationName,
+                publicationIconUrl: row.publicationIconUrl,
+                publicationOwnerAvatarUrl: row.publicationOwnerAvatarUrl,
+                publicationOwnerHandle: row.publicationOwnerHandle,
+                publicationBannerUrl: row.publicationBannerUrl,
+                publicationTopic: row.publicationTopic,
+                tags: row.tags,
+                textContent: row.textContent,
+                recommendCount: row.recommendCount,
+              })
+            : null,
+      })) satisfies Array<LikedArticleItem>;
     }),
   );
 
