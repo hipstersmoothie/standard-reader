@@ -114,7 +114,10 @@ const styles = stylex.create({
     alignItems: "stretch",
     columnGap: gap["lg"],
     display: "grid",
-    gridAutoColumns: "300px",
+    gridAutoColumns: {
+      default: "260px",
+      "@media (min-width: 40rem)": "300px",
+    },
     gridAutoFlow: "column",
     rowGap: gap["lg"],
     // eslint-disable-next-line @stylexjs/valid-styles
@@ -130,11 +133,22 @@ const styles = stylex.create({
   },
   directorySearch: {
     flexShrink: 0,
-    width: spacing["64"],
+    minWidth: 0,
+    width: {
+      default: "100%",
+      "@media (min-width: 40rem)": spacing["64"],
+    },
   },
   directoryToolbar: {
-    alignItems: "center",
+    alignItems: {
+      default: "stretch",
+      "@media (min-width: 40rem)": "center",
+    },
     display: "flex",
+    flexDirection: {
+      default: "column",
+      "@media (min-width: 40rem)": "row",
+    },
     flexWrap: "wrap",
     justifyContent: "space-between",
     rowGap: spacing["4"],
@@ -145,6 +159,16 @@ const styles = stylex.create({
     columnGap: spacing["2.5"],
     display: "flex",
     flexShrink: 0,
+    flexWrap: "wrap",
+    justifyContent: {
+      default: "space-between",
+      "@media (min-width: 40rem)": "flex-start",
+    },
+    rowGap: spacing["3"],
+    width: {
+      default: "100%",
+      "@media (min-width: 40rem)": "auto",
+    },
   },
   directoryGrid: {
     gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",

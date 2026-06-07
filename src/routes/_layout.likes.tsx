@@ -70,10 +70,16 @@ const styles = stylex.create({
     borderWidth: 1,
     boxSizing: "border-box",
     marginTop: spacing["6"],
+    maxWidth: "100%",
     paddingBottom: spacing["10"],
     paddingLeft: spacing["8"],
     paddingRight: spacing["8"],
     paddingTop: spacing["10"],
+    width: "100%",
+  },
+  emptyInner: {
+    minWidth: 0,
+    width: "100%",
   },
   emptyTitle: {
     color: uiColor.text2,
@@ -88,6 +94,13 @@ const styles = stylex.create({
     fontSize: fontSize.lg,
     lineHeight: lineHeight.sm,
     maxWidth: "52ch",
+    minWidth: 0,
+    overflowWrap: "anywhere",
+  },
+  emptyCode: {
+    fontFamily: fontFamily.mono,
+    fontSize: "0.88em",
+    overflowWrap: "anywhere",
   },
   unavailableRow: {
     borderBottomColor: uiColor.border1,
@@ -143,11 +156,19 @@ function ReaderLikes() {
 
       {likes.length === 0 ? (
         <div {...stylex.props(styles.emptyCard)}>
-          <Flex direction="column" gap="lg" align="start">
+          <Flex
+            direction="column"
+            gap="lg"
+            align="start"
+            style={styles.emptyInner}
+          >
             <span {...stylex.props(styles.emptyTitle)}>Nothing saved yet</span>
             <p {...stylex.props(styles.emptyDek)}>
               Tap the bookmark on any article to save it here. Your likes live
-              in your repo as <code>site.standard.graph.recommend</code>{" "}
+              in your repo as{" "}
+              <code {...stylex.props(styles.emptyCode)}>
+                site.standard.graph.recommend
+              </code>{" "}
               records.
             </p>
             <Link to="/">

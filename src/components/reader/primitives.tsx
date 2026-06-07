@@ -174,8 +174,39 @@ const styles = stylex.create({
     flexShrink: 0,
   },
   sectionHead: {
+    alignItems: {
+      default: "stretch",
+      "@media (min-width: 40rem)": "flex-end",
+    },
+    columnGap: gap["2xl"],
+    display: "flex",
+    flexDirection: {
+      default: "column",
+      "@media (min-width: 40rem)": "row",
+    },
+    justifyContent: "space-between",
+    rowGap: gap["2xl"],
     marginBottom: spacing["5"],
     marginTop: spacing["2"],
+  },
+  sectionHeadTitle: {
+    minWidth: 0,
+  },
+  sectionHeadAction: {
+    flexShrink: 0,
+    minWidth: 0,
+    width: {
+      default: "100%",
+      "@media (min-width: 40rem)": "auto",
+    },
+  },
+  metaGroup: {
+    alignItems: "center",
+    columnGap: gap.md,
+    display: "inline-flex",
+    flexShrink: 0,
+    rowGap: gap.md,
+    whiteSpace: "nowrap",
   },
   divider: {
     borderBottomWidth: 0,
@@ -214,8 +245,14 @@ export function Kicker({
   );
 }
 
-export function Handle({ children }: { children: React.ReactNode }) {
-  return <span {...stylex.props(styles.handle)}>{children}</span>;
+export function Handle({
+  children,
+  style,
+}: {
+  children: React.ReactNode;
+  style?: stylex.StyleXStyles;
+}) {
+  return <span {...stylex.props(styles.handle, style)}>{children}</span>;
 }
 
 export function MetaLine({ children }: { children: React.ReactNode }) {
@@ -318,14 +355,21 @@ export function SectionHead({
   icon?: React.ReactNode;
 }) {
   return (
-    <Flex align="end" justify="between" gap="2xl" style={styles.sectionHead}>
-      <Flex direction="column" gap="md">
+    <div {...stylex.props(styles.sectionHead)}>
+      <Flex direction="column" gap="md" style={styles.sectionHeadTitle}>
         {kicker != null && <Kicker icon={icon}>{kicker}</Kicker>}
         <span {...stylex.props(styles.sectionTitle)}>{title}</span>
       </Flex>
-      {action}
-    </Flex>
+      {action != null ? (
+        <div {...stylex.props(styles.sectionHeadAction)}>{action}</div>
+      ) : null}
+    </div>
   );
+}
+
+/** Keeps related meta fragments on one line (e.g. reader + post counts). */
+export function MetaGroup({ children }: { children: React.ReactNode }) {
+  return <span {...stylex.props(styles.metaGroup)}>{children}</span>;
 }
 
 export function SectionDivider() {

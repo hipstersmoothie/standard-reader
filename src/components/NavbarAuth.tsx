@@ -217,7 +217,7 @@ export function NavbarAuth({
 
   return (
     <Flex align="center" gap="sm">
-      <ButtonLink to="/login" variant="secondary" size="lg">
+      <ButtonLink to="/login" variant="secondary" size="md">
         Log in
       </ButtonLink>
     </Flex>

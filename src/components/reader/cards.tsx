@@ -24,6 +24,7 @@ import {
 } from "../../design-system/aspect-ratio";
 import { Button } from "../../design-system/button";
 import { Flex } from "../../design-system/flex";
+import { IconButton } from "../../design-system/icon-button";
 import { Skeleton } from "../../design-system/skeleton";
 import { animationDuration } from "../../design-system/theme/animations.stylex";
 import { primaryColor, uiColor } from "../../design-system/theme/color.stylex";
@@ -51,6 +52,7 @@ import {
 import {
   Handle,
   ArticleEngagement,
+  MetaGroup,
   MetaLine,
   PublicationAvatar,
   Topic,
@@ -296,7 +298,10 @@ const styles = stylex.create({
   },
   pubCardRail: {
     alignSelf: "stretch",
-    width: "300px",
+    width: {
+      default: "260px",
+      "@media (min-width: 40rem)": "300px",
+    },
   },
   pubCardHead: {
     marginBottom: spacing["3.5"],
@@ -344,15 +349,34 @@ const styles = stylex.create({
     flexShrink: 0,
   },
   pubDirRow: {
-    alignItems: "flex-start",
+    alignItems: {
+      default: "start",
+      "@media (min-width: 40rem)": "flex-start",
+    },
     columnGap: spacing["4"],
-    display: "flex",
-    rowGap: spacing["4"],
+    display: {
+      default: "grid",
+      "@media (min-width: 40rem)": "flex",
+    },
+    gridTemplateColumns: {
+      default: "auto 1fr auto",
+      "@media (min-width: 40rem)": "none",
+    },
+    rowGap: {
+      default: spacing["3"],
+      "@media (min-width: 40rem)": spacing["4"],
+    },
     borderBottomColor: uiColor.border1,
     borderBottomStyle: "solid",
     borderBottomWidth: 1,
     paddingBottom: spacing["5"],
     paddingTop: spacing["5"],
+  },
+  pubDirRowRanked: {
+    gridTemplateColumns: {
+      default: "auto auto 1fr auto",
+      "@media (min-width: 40rem)": "none",
+    },
   },
   pubDirRowLast: {
     borderBottomWidth: 0,
@@ -379,15 +403,89 @@ const styles = stylex.create({
     flexShrink: 0,
     fontFamily: fontFamily.mono,
     fontSize: fontSize.sm,
+    gridColumn: {
+      default: 1,
+      "@media (min-width: 40rem)": "auto",
+    },
+    gridRow: {
+      default: 1,
+      "@media (min-width: 40rem)": "auto",
+    },
     paddingTop: spacing["3"],
     width: spacing["6"],
   },
+  pubDirAvatar: {
+    gridColumn: {
+      default: 1,
+      "@media (min-width: 40rem)": "auto",
+    },
+    gridRow: {
+      default: 1,
+      "@media (min-width: 40rem)": "auto",
+    },
+  },
+  pubDirAvatarRanked: {
+    gridColumn: {
+      default: 2,
+      "@media (min-width: 40rem)": "auto",
+    },
+  },
+  pubDirMain: {
+    display: {
+      default: "contents",
+      "@media (min-width: 40rem)": "flex",
+    },
+    flexBasis: "0%",
+    flexDirection: "column",
+    flexGrow: 1,
+    flexShrink: 1,
+    rowGap: gap.sm,
+    minWidth: 0,
+  },
+  pubDirFollow: {
+    gridColumn: {
+      default: 3,
+      "@media (min-width: 40rem)": "auto",
+    },
+    gridRow: {
+      default: 1,
+      "@media (min-width: 40rem)": "auto",
+    },
+  },
+  pubDirFollowRanked: {
+    gridColumn: {
+      default: 4,
+      "@media (min-width: 40rem)": "auto",
+    },
+  },
   pubDirTop: {
-    alignItems: "baseline",
+    alignItems: {
+      default: "flex-start",
+      "@media (min-width: 40rem)": "baseline",
+    },
     columnGap: spacing["2.5"],
     display: "flex",
+    flexDirection: {
+      default: "column",
+      "@media (min-width: 40rem)": "row",
+    },
     flexWrap: "wrap",
-    rowGap: spacing["2"],
+    gridColumn: {
+      default: 2,
+      "@media (min-width: 40rem)": "auto",
+    },
+    gridRow: {
+      default: 1,
+      "@media (min-width: 40rem)": "auto",
+    },
+    minWidth: 0,
+    rowGap: spacing["1"],
+  },
+  pubDirTopRanked: {
+    gridColumn: {
+      default: 3,
+      "@media (min-width: 40rem)": "auto",
+    },
   },
   pubDirName: {
     color: uiColor.text2,
@@ -396,15 +494,43 @@ const styles = stylex.create({
     fontWeight: fontWeight.semibold,
     letterSpacing: tracking.tight,
     lineHeight: lineHeight.sm,
+    maxWidth: "100%",
+    minWidth: 0,
+    overflowWrap: "anywhere",
   },
   pubDirDesc: {
     color: uiColor.text1,
     fontFamily: fontFamily.serif,
     fontSize: fontSize.base,
     lineHeight: lineHeight.sm,
-    marginBottom: spacing["2"],
-    marginTop: spacing["1"],
-    maxWidth: "64ch",
+    marginBottom: spacing["0"],
+    marginTop: spacing["0"],
+    maxWidth: {
+      default: "none",
+      "@media (min-width: 40rem)": "64ch",
+    },
+    minWidth: 0,
+    overflowWrap: "anywhere",
+  },
+  pubDirExtra: {
+    display: "flex",
+    flexDirection: "column",
+    gridColumn: {
+      default: "1 / -1",
+      "@media (min-width: 40rem)": "auto",
+    },
+    gridRow: {
+      default: 2,
+      "@media (min-width: 40rem)": "auto",
+    },
+    minWidth: 0,
+    rowGap: gap.sm,
+  },
+  pubDirExtraRanked: {
+    gridColumn: {
+      default: "2 / -1",
+      "@media (min-width: 40rem)": "auto",
+    },
   },
   modalPubRow: {
     alignItems: "center",
@@ -438,12 +564,31 @@ const styles = stylex.create({
     fontWeight: fontWeight.semibold,
     letterSpacing: tracking.tight,
     lineHeight: lineHeight.sm,
+    minWidth: 0,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
   },
   modalPubMeta: {
     color: uiColor.text1,
     fontFamily: fontFamily.mono,
     fontSize: fontSize.xs,
     letterSpacing: tracking.tight,
+  },
+  followResponsiveIcon: {
+    alignItems: "center",
+    display: {
+      default: "inline-flex",
+      "@media (min-width: 40rem)": "none",
+    },
+    flexShrink: 0,
+    justifyContent: "center",
+  },
+  followResponsiveFull: {
+    display: {
+      default: "none",
+      "@media (min-width: 40rem)": "inline-flex",
+    },
   },
 });
 
@@ -481,12 +626,40 @@ export function FollowButton({
   const unfollowMutation = useMutation(
     readerApi.unfollowPublicationMutationOptions(),
   );
+  const followLabel = following ? "Following" : "Follow";
+  const mobileIconSize = 20;
+  const icon = following ? (
+    <Check size={mobileIconSize} aria-hidden />
+  ) : (
+    <Plus size={mobileIconSize} aria-hidden />
+  );
+  const desktopIconSize = size === "md" ? 18 : 15;
+  const desktopIcon = following ? (
+    <Check size={desktopIconSize} aria-hidden />
+  ) : (
+    <Plus size={desktopIconSize} aria-hidden />
+  );
 
   if (!signedIn) {
     return (
-      <ButtonLink to="/login" variant="secondary" size={size}>
-        <Plus size={15} /> Follow
-      </ButtonLink>
+      <>
+        <ButtonLink
+          to="/login"
+          variant="secondary"
+          aria-label="Follow"
+          style={styles.followResponsiveIcon}
+        >
+          <Plus size={mobileIconSize} aria-hidden />
+        </ButtonLink>
+        <ButtonLink
+          to="/login"
+          variant="secondary"
+          size={size}
+          style={styles.followResponsiveFull}
+        >
+          {desktopIcon} Follow
+        </ButtonLink>
+      </>
     );
   }
 
@@ -506,14 +679,25 @@ export function FollowButton({
   };
 
   return (
-    <Button
-      variant={following ? "secondary" : "primary"}
-      size={size}
-      onPress={onPress}
-    >
-      {following ? <Check size={15} /> : <Plus size={15} />}
-      {following ? "Following" : "Follow"}
-    </Button>
+    <>
+      <IconButton
+        variant={following ? "secondary" : "primary"}
+        label={followLabel}
+        onPress={onPress}
+        style={styles.followResponsiveIcon}
+      >
+        {icon}
+      </IconButton>
+      <Button
+        variant={following ? "secondary" : "primary"}
+        size={size}
+        onPress={onPress}
+        style={styles.followResponsiveFull}
+      >
+        {desktopIcon}
+        {followLabel}
+      </Button>
+    </>
   );
 }
 
@@ -968,6 +1152,32 @@ function PubReadersMeta({ pub }: { pub: PublicationCard }) {
   return <Handle>{formatReaders(pub.subscriberCount)} readers</Handle>;
 }
 
+function PubDirectoryStats({ pub }: { pub: PublicationCard }) {
+  const stats: Array<string> = [];
+  if (pub.subscriberCount > 0) {
+    stats.push(`${formatReaders(pub.subscriberCount)} readers`);
+  }
+  if (pub.documentCount > 0) {
+    stats.push(`${formatReaders(pub.documentCount)} posts`);
+  }
+  const statsText = stats.join(" · ");
+
+  if (!pub.topic && !statsText) {
+    return null;
+  }
+
+  return (
+    <MetaLine>
+      <Topic name={pub.topic} />
+      {statsText ? (
+        <MetaGroup>
+          <Handle>{statsText}</Handle>
+        </MetaGroup>
+      ) : null}
+    </MetaLine>
+  );
+}
+
 function PubCardFoot({ pub }: { pub: PublicationCard }) {
   if (!pub.topic && pub.subscriberCount <= 0) return null;
   return (
@@ -989,15 +1199,17 @@ function FollowSlot({
   publicationUri,
   signedIn,
   pub,
+  style,
 }: {
   publicationUri: string;
   signedIn: boolean;
   pub?: PublicationCard;
+  style?: stylex.StyleXStyles;
 }) {
   return (
     <div
       role="presentation"
-      {...stylex.props(styles.followSlot)}
+      {...stylex.props(styles.followSlot, style)}
       onClick={(event) => {
         event.preventDefault();
         event.stopPropagation();
@@ -1116,46 +1328,58 @@ export function PubDirectoryRow({
 }) {
   const { data: session } = useQuery(user.getSessionQueryOptions);
   const signedIn = Boolean(session?.user);
+  const hasRank = rank != null;
 
   return (
     <PublicationLink
       pub={pub}
       extraStyles={[
         styles.pubDirRow,
+        hasRank && styles.pubDirRowRanked,
         isLast && styles.pubDirRowLast,
         isFirstInSection && styles.pubDirRowFirstInSection,
       ]}
     >
-      {rank == null ? null : (
+      {hasRank ? (
         <span {...stylex.props(styles.pubDirRank)}>
           {String(rank).padStart(2, "0")}
         </span>
-      )}
-      <PublicationAvatar pub={pub} size="lg" />
-      <Flex direction="column" gap="sm" style={styles.grow}>
-        <div {...stylex.props(styles.pubDirTop)}>
+      ) : null}
+      <PublicationAvatar
+        pub={pub}
+        size="lg"
+        style={[styles.pubDirAvatar, hasRank && styles.pubDirAvatarRanked]}
+      />
+      <Flex direction="column" gap="sm" style={styles.pubDirMain}>
+        <div
+          {...stylex.props(styles.pubDirTop, hasRank && styles.pubDirTopRanked)}
+        >
           <span {...stylex.props(styles.pubDirName)}>{pub.name}</span>
           {pub.ownerHandle ? <Handle>@{pub.ownerHandle}</Handle> : null}
         </div>
-        {pub.description ? (
-          <p {...stylex.props(styles.pubDirDesc)}>{pub.description}</p>
+        {pub.description ||
+        pub.topic ||
+        pub.subscriberCount > 0 ||
+        pub.documentCount > 0 ? (
+          <div
+            {...stylex.props(
+              styles.pubDirExtra,
+              hasRank && styles.pubDirExtraRanked,
+            )}
+          >
+            {pub.description ? (
+              <p {...stylex.props(styles.pubDirDesc)}>{pub.description}</p>
+            ) : null}
+            <PubDirectoryStats pub={pub} />
+          </div>
         ) : null}
-        <MetaLine>
-          <Topic name={pub.topic} />
-          <PubReadersMeta pub={pub} />
-          {pub.documentCount > 0 ? (
-            <>
-              {pub.subscriberCount > 0 ? (
-                <span aria-hidden {...stylex.props(styles.metaDot)}>
-                  ·
-                </span>
-              ) : null}
-              <Handle>{formatReaders(pub.documentCount)} posts</Handle>
-            </>
-          ) : null}
-        </MetaLine>
       </Flex>
-      <FollowSlot publicationUri={pub.uri} signedIn={signedIn} pub={pub} />
+      <FollowSlot
+        publicationUri={pub.uri}
+        signedIn={signedIn}
+        pub={pub}
+        style={[styles.pubDirFollow, hasRank && styles.pubDirFollowRanked]}
+      />
     </PublicationLink>
   );
 }
@@ -1224,16 +1448,24 @@ export function PubDirectoryRowSkeleton({
         styles.pubDirRowSkeleton,
       )}
     >
-      <Skeleton variant="circle" size="lg" />
-      <Flex direction="column" gap="sm" style={styles.grow}>
-        <Skeleton variant="rectangle" height={spacing["5"]} width="42%" />
-        <Skeleton variant="rectangle" height={spacing["4"]} width="88%" />
-        <Skeleton variant="rectangle" height={spacing["3.5"]} width="34%" />
+      <Skeleton variant="circle" size="lg" style={styles.pubDirAvatar} />
+      <Flex direction="column" gap="sm" style={styles.pubDirMain}>
+        <Skeleton
+          variant="rectangle"
+          height={spacing["5"]}
+          width="42%"
+          style={styles.pubDirTop}
+        />
+        <div {...stylex.props(styles.pubDirExtra)}>
+          <Skeleton variant="rectangle" height={spacing["4"]} width="100%" />
+          <Skeleton variant="rectangle" height={spacing["3.5"]} width="34%" />
+        </div>
       </Flex>
       <Skeleton
         variant="rectangle"
         height={spacing["8"]}
         width={spacing["20"]}
+        style={styles.pubDirFollow}
       />
     </div>
   );

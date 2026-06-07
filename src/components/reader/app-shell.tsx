@@ -242,7 +242,7 @@ const styles = stylex.create({
     flexGrow: "1",
     flexShrink: "1",
     fontFamily: fontFamily.sans,
-    fontSize: "0.6rem",
+    fontSize: fontSize.xs,
     fontWeight: fontWeight.semibold,
     rowGap: gap.xs,
     paddingBottom: verticalSpace.sm,

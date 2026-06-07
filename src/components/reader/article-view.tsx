@@ -94,7 +94,10 @@ const styles = stylex.create({
     alignItems: "center",
     backdropFilter: "blur(12px)",
     backgroundColor: `color-mix(in oklch, ${uiColor.bg} 90%, transparent)`,
-    columnGap: gap.lg,
+    columnGap: {
+      default: gap.sm,
+      "@media (min-width: 40rem)": gap.lg,
+    },
     display: "flex",
     flexShrink: 0,
     justifyContent: "space-between",
@@ -139,7 +142,10 @@ const styles = stylex.create({
   },
   topActs: {
     alignItems: "center",
-    columnGap: gap.md,
+    columnGap: {
+      default: gap.xs,
+      "@media (min-width: 40rem)": gap.md,
+    },
     display: "flex",
     flexShrink: 0,
     rowGap: gap.md,
@@ -167,8 +173,17 @@ const styles = stylex.create({
   pubBylineName: {
     overflow: "hidden",
     color: uiColor.text2,
+    flexShrink: 1,
+    minWidth: 0,
     textOverflow: "ellipsis",
     whiteSpace: "nowrap",
+  },
+  pubBylineHandle: {
+    display: {
+      default: "none",
+      "@media (min-width: 40rem)": "inline",
+    },
+    flexShrink: 0,
   },
   progress: {
     backgroundColor: primaryColor.solid1,
@@ -629,7 +644,9 @@ function ArticleViewInner({
                       {pub.name}
                     </span>
                     {article.publicationOwnerHandle ? (
-                      <Handle>@{article.publicationOwnerHandle}</Handle>
+                      <Handle style={styles.pubBylineHandle}>
+                        @{article.publicationOwnerHandle}
+                      </Handle>
                     ) : null}
                   </Link>
                 ) : pub.url ? (
