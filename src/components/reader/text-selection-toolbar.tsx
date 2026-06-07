@@ -13,7 +13,7 @@ import { shadow } from "#/design-system/theme/shadow.stylex";
 import { Toolbar, ToolbarGroup } from "#/design-system/toolbar";
 import { quoteShareApi } from "#/integrations/tanstack-query/api-quote-share.functions";
 import {
-  buildBlueskyQuoteComposeUrl,
+  buildBlueskyComposeUrl,
   buildQuoteShareUrl,
   normalizeQuoteText,
 } from "#/lib/quote-share";
@@ -98,7 +98,6 @@ export function TextSelectionToolbar({
   documentUri: string;
   did: string;
   rkey: string;
-  articleTitle: string;
 }) {
   const anchorRef = useRef<HTMLDivElement>(null);
   const pinnedRef = useRef(false);
@@ -111,7 +110,6 @@ export function TextSelectionToolbar({
   const hideToolbar = useCallback(() => {
     pinnedRef.current = false;
     setToolbar(null);
-    setComposeHref(null);
   }, []);
 
   const openToolbar = useCallback((range: Range, text: string) => {
@@ -167,7 +165,8 @@ export function TextSelectionToolbar({
       .then(({ id }) => {
         if (cancelled) return;
         const shareUrl = buildQuoteShareUrl(did, rkey, id);
-        setComposeHref(buildBlueskyQuoteComposeUrl(toolbar.text, shareUrl));
+        // Prefill only the app link so Bluesky picks up our OG card; no quote in the body.
+        setComposeHref(buildBlueskyComposeUrl(shareUrl));
       })
       .catch(() => {
         if (!cancelled) setComposeHref(null);
@@ -261,7 +260,7 @@ export function TextSelectionToolbar({
           <IconButton
             variant="tertiary"
             size="lg"
-            aria-label="Share quote on Bluesky"
+            aria-label="Share on Bluesky"
             isDisabled={!composeHref}
             onPress={onSharePress}
           >

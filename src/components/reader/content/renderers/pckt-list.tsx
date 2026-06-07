@@ -7,12 +7,12 @@ import type {
 } from "#/lib/pckt/types";
 
 import * as stylex from "@stylexjs/stylex";
+import { useQuoteHighlightTracker } from "#/components/reader/quote-highlight-context";
 import { asTextBlock } from "#/lib/pckt/blocks";
 import { PCKT_BLOCK } from "#/lib/pckt/types";
 
 import { articleBodyStyles } from "../body-styles";
 import { HighlightedFacetedPlaintext } from "./shared/faceted-text";
-import { useQuoteHighlightTracker } from "#/components/reader/quote-highlight-context";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);

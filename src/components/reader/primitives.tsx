@@ -1,5 +1,5 @@
 import * as stylex from "@stylexjs/stylex";
-import { Heart } from "lucide-react";
+import { Heart, MessageCircle } from "lucide-react";
 
 import type { PublicationCard } from "../../integrations/tanstack-query/api-shapes";
 
@@ -43,12 +43,23 @@ const styles = stylex.create({
     fontFamily: fontFamily.sans,
     fontSize: fontSize.xs,
   },
+  metaDot: {
+    color: uiColor.text1,
+  },
   likeCount: {
     color: uiColor.text1,
     fontFamily: fontFamily.sans,
     fontSize: fontSize.xs,
   },
   likeCountSm: {
+    fontSize: fontSize.sm,
+  },
+  commentCount: {
+    color: uiColor.text1,
+    fontFamily: fontFamily.sans,
+    fontSize: fontSize.xs,
+  },
+  commentCountSm: {
     fontSize: fontSize.sm,
   },
   topic: {
@@ -205,7 +216,7 @@ export function MetaLine({ children }: { children: React.ReactNode }) {
   );
 }
 
-const LIKE_ICON_SIZE = { sm: 14, xs: 12 } as const;
+const ENGAGEMENT_ICON_SIZE = { sm: 14, xs: 12 } as const;
 
 /** Network like count with a heart icon; renders nothing when `count` is zero. */
 export function LikeCount({
@@ -213,7 +224,7 @@ export function LikeCount({
   size = "xs",
 }: {
   count: number;
-  size?: keyof typeof LIKE_ICON_SIZE;
+  size?: keyof typeof ENGAGEMENT_ICON_SIZE;
 }) {
   if (count <= 0) return null;
   return (
@@ -222,8 +233,60 @@ export function LikeCount({
       gap="xs"
       style={[styles.likeCount, size === "sm" && styles.likeCountSm]}
     >
-      <Heart size={LIKE_ICON_SIZE[size]} aria-hidden strokeWidth={2} />
+      <Heart size={ENGAGEMENT_ICON_SIZE[size]} aria-hidden strokeWidth={2} />
       <span>{formatReaders(count)}</span>
+    </Flex>
+  );
+}
+
+/** Bluesky discussion count; renders nothing when `count` is zero. */
+export function CommentCount({
+  count,
+  size = "xs",
+}: {
+  count: number;
+  size?: keyof typeof ENGAGEMENT_ICON_SIZE;
+}) {
+  if (count <= 0) return null;
+  return (
+    <Flex
+      align="center"
+      gap="xs"
+      style={[styles.commentCount, size === "sm" && styles.commentCountSm]}
+    >
+      <MessageCircle
+        size={ENGAGEMENT_ICON_SIZE[size]}
+        aria-hidden
+        strokeWidth={2}
+      />
+      <span>{formatReaders(count)}</span>
+    </Flex>
+  );
+}
+
+/** Likes + Bluesky comment counts for article cards and bylines. */
+export function ArticleEngagement({
+  recommendCount,
+  commentCount,
+  size = "xs",
+}: {
+  recommendCount: number;
+  commentCount: number;
+  size?: keyof typeof ENGAGEMENT_ICON_SIZE;
+}) {
+  const hasLikes = recommendCount > 0;
+  const hasComments = commentCount > 0;
+  if (!hasLikes && !hasComments) return null;
+
+  return (
+    <Flex align="center" gap="md" wrap style={styles.meta}>
+      {hasLikes ? <LikeCount count={recommendCount} size={size} /> : null}
+      {hasLikes && hasComments ? (
+        <span aria-hidden {...stylex.props(styles.metaDot)}>
+          ·
+        </span>
+      ) : null}
+      {hasComments ? <CommentCount count={commentCount} size={size} /> : null}
     </Flex>
   );
 }

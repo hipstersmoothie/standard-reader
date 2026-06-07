@@ -9,6 +9,7 @@ import { blobCid, getBlobUrl } from "#/server/atproto/blob";
 import { resolveIdentity } from "#/server/atproto/identity";
 import { ensureTracked } from "#/server/ingest/tap-client";
 import { observe } from "#/server/observability/log";
+import { attachCommentCountsToArticles } from "#/server/reader/document-comments";
 import {
   discoverEligiblePublicationWhere,
   notExcludedPublicationArticleWhere,
@@ -160,7 +161,11 @@ const searchArticles = createServerFn({ method: "GET" })
       ]);
 
       const total = countRow[0]?.count ?? 0;
-      const items = articleRows.map((row) => toArticleCard(row));
+      const items = await attachCommentCountsToArticles(
+        db,
+        schema,
+        articleRows.map((row) => toArticleCard(row)),
+      );
       span.set("total", total);
       span.set("count", items.length);
 

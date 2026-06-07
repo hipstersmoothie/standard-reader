@@ -1,7 +1,7 @@
 import type * as DbSchema from "#/db/schema";
-
 import type { SQL } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+
 import { sql } from "drizzle-orm";
 
 /**
@@ -75,6 +75,8 @@ export interface ArticleCard {
   textContent: string | null;
   /** Network likes (`site.standard.graph.recommend`). */
   recommendCount: number;
+  /** Bluesky posts linking this article (Constellation, top-level only). */
+  commentCount: number;
 }
 
 /** A profile summary (byline / publication owner). */
@@ -281,5 +283,6 @@ export function toArticleCard(row: ArticleCardRow): ArticleCard {
     tags: row.tags,
     textContent: row.textContent,
     recommendCount: row.recommendCount ?? 0,
+    commentCount: 0,
   };
 }

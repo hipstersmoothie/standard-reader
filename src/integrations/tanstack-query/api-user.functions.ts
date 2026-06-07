@@ -9,15 +9,8 @@ import {
   revokeAtprotoSession,
 } from "#/integrations/auth/atproto";
 import { AUTH_SESSION_TOKEN_COOKIE } from "#/integrations/auth/constants";
-import {
-  dbValueToThemeMode,
-  parseThemeMode,
-  THEME_COOKIE,
-  THEME_COOKIE_MAX_AGE_SECONDS,
-  THEME_MODES,
-  themeModeToDbValue,
-  type ThemeMode,
-} from "#/lib/theme";
+import { dbValueToThemeMode, parseThemeMode, THEME_COOKIE, THEME_COOKIE_MAX_AGE_SECONDS, THEME_MODES, themeModeToDbValue } from '#/lib/theme';
+import type { ThemeMode } from '#/lib/theme';
 import { fetchBlueskyPublicProfileFields } from "#/lib/bluesky-public-profile";
 import { maybeAuthMiddleware } from "#/middleware/auth";
 import { resolveIdentity } from "#/server/atproto/identity";
@@ -90,10 +83,7 @@ const getSession = createServerFn({ method: "GET" })
     }
 
     const handle =
-      profileRow?.handle ??
-      publicProfile?.handle ??
-      identity.handle ??
-      null;
+      profileRow?.handle ?? publicProfile?.handle ?? identity.handle ?? null;
 
     return {
       user: {

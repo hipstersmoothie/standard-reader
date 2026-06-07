@@ -14,10 +14,10 @@
 
 /** Blend weights for personalized publication ranking (tunable). */
 const RECOMMENDATION_BLEND = {
-  cosub: 1.0,
+  cosub: 1,
   corecommend: 1.5,
-  coReaderLike: 2.0,
-  coReaderFollow: 2.0,
+  coReaderLike: 2,
+  coReaderFollow: 2,
 } as const;
 
 import type {

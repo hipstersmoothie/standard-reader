@@ -5,10 +5,9 @@ import { useQuery } from "@tanstack/react-query";
 import { discoverApi } from "#/integrations/tanstack-query/api-discover.functions";
 import { searchApi } from "#/integrations/tanstack-query/api-search.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
-import { Search as SearchIcon, Plus } from "lucide-react";
+import { Plus, Search as SearchIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
-import { ModalPubRow, PubDirectoryRowSkeleton } from "./cards";
 import { Button } from "../../design-system/button";
 import { Dialog, DialogHeader } from "../../design-system/dialog";
 import { uiColor } from "../../design-system/theme/color.stylex";
@@ -24,6 +23,7 @@ import {
   fontWeight,
   tracking,
 } from "../../design-system/theme/typography.stylex";
+import { ModalPubRow, PubDirectoryRowSkeleton } from "./cards";
 
 const SEARCH_DEBOUNCE_MS = 300;
 const SEARCH_PAGE_SIZE = 20;

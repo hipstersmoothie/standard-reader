@@ -7,12 +7,12 @@ import type {
 } from "#/lib/leaflet/types";
 
 import * as stylex from "@stylexjs/stylex";
+import { useQuoteHighlightTracker } from "#/components/reader/quote-highlight-context";
 import { asTextBlock } from "#/lib/leaflet/blocks";
 import { LEAFLET_BLOCK } from "#/lib/leaflet/types";
 
 import { articleBodyStyles } from "../body-styles";
 import { HighlightedFacetedPlaintext } from "./shared/faceted-text";
-import { useQuoteHighlightTracker } from "#/components/reader/quote-highlight-context";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -81,7 +81,9 @@ function LeafletListItems({
         if (!text && !nested) return null;
 
         const highlightRange =
-          text != null ? (tracker?.consume(text.plaintext.length) ?? null) : null;
+          text != null
+            ? (tracker?.consume(text.plaintext.length) ?? null)
+            : null;
 
         return (
           <li key={index} {...stylex.props(articleBodyStyles.listItem)}>

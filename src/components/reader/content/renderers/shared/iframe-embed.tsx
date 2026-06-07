@@ -6,7 +6,9 @@ import { articleBodyStyles } from "../../body-styles";
 
 const DEFAULT_ASPECT_RATIO = "16 / 9";
 
-function parseDimension(value: string | number | undefined): number | undefined {
+function parseDimension(
+  value: string | number | undefined,
+): number | undefined {
   if (typeof value === "number" && value > 0) return value;
   if (typeof value === "string") {
     const parsed = Number.parseFloat(value);

@@ -11,17 +11,18 @@ import { offprintBlocks } from "#/lib/offprint/blocks";
 import { OFFPRINT_CONTENT } from "#/lib/offprint/types";
 import { pcktBlocks, pcktCodeLanguage } from "#/lib/pckt/blocks";
 import { PCKT_CONTENT } from "#/lib/pckt/types";
-import {
-  EMPTY_CODE_HIGHLIGHTS,
-  type CodeHighlightsByScheme,
-  type ThemeMode,
-} from "#/lib/theme";
+import { EMPTY_CODE_HIGHLIGHTS } from "#/lib/theme";
+import type { CodeHighlightsByScheme, ThemeMode } from "#/lib/theme";
 import { getAtprotoSessionForRequest } from "#/middleware/auth";
 import { authorPds } from "#/server/atproto/identity";
 import { resolveGreengaleContent } from "#/server/greengale/resolve";
 import { resolveLeafletContent } from "#/server/leaflet/resolve";
 import { observe } from "#/server/observability/log";
 import { resolvePcktContent } from "#/server/pckt/resolve";
+import {
+  attachCommentCountsToArticles,
+  countDocumentComments,
+} from "#/server/reader/document-comments";
 import {
   articleRecommendedPublications,
   readersAlsoFollow,
@@ -129,6 +130,8 @@ export interface ArticleDetail {
   readCount: number;
   /** Network endorsements (`site.standard.graph.recommend`). */
   recommendCount: number;
+  /** Bluesky posts linking this article (Constellation, top-level only). */
+  commentCount: number;
   /** Other recent posts from the same publication (excludes this article). */
   moreFrom: Array<ArticleCard>;
   /** Co-subscribed publications for readers of this one ("You might follow"). */
@@ -225,10 +228,16 @@ const getPublicationProfile = createServerFn({ method: "GET" })
         publication.subscriberCount = liveCounts.subscriberCount;
         publication.documentCount = liveCounts.documentCount;
 
+        const recentWithComments = await attachCommentCountsToArticles(
+          db,
+          schema,
+          recentDocuments,
+        );
+
         return {
           publication,
           owner,
-          recentDocuments,
+          recentDocuments: recentWithComments,
           readersAlsoFollow: alsoFollow,
         };
       },
@@ -386,11 +395,12 @@ const getArticle = createServerFn({ method: "GET" })
         const moreFrom = moreFromRaw
           .filter((doc) => doc.uri !== row.uri)
           .slice(0, 3);
-        const readersAlsoFollowPubs = await withLivePublicationCounts(
-          db,
-          schema,
-          recommendedRaw,
-        );
+        const [moreFromWithComments, readersAlsoFollowPubs, commentCount] =
+          await Promise.all([
+            attachCommentCountsToArticles(db, schema, moreFrom),
+            withLivePublicationCounts(db, schema, recommendedRaw),
+            countDocumentComments(db, schema, row.uri),
+          ]);
 
         const authorPdsEndpoint = await authorPds(
           row.did,
@@ -492,7 +502,8 @@ const getArticle = createServerFn({ method: "GET" })
           contributors,
           readCount: readRows[0]?.count ?? 0,
           recommendCount: recommendRows[0]?.count ?? 0,
-          moreFrom,
+          commentCount,
+          moreFrom: moreFromWithComments,
           readersAlsoFollow: readersAlsoFollowPubs,
         };
       },

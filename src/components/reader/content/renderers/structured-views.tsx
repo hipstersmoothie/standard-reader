@@ -3,13 +3,13 @@
 import type { StructuredText } from "#/lib/document/structured-content/types";
 
 import * as stylex from "@stylexjs/stylex";
-
-import { articleBodyStyles } from "../body-styles";
-import { HighlightedFacetedPlaintext } from "./shared/faceted-text";
 import {
   HighlightedPlaintext,
   useQuoteHighlightTracker,
 } from "#/components/reader/quote-highlight-context";
+
+import { articleBodyStyles } from "../body-styles";
+import { HighlightedFacetedPlaintext } from "./shared/faceted-text";
 
 export function StructuredBulletListView({
   items,
@@ -22,8 +22,7 @@ export function StructuredBulletListView({
   return (
     <ul {...stylex.props(articleBodyStyles.list)}>
       {items.map((item, index) => {
-        const highlightRange =
-          tracker?.consume(item.plaintext.length) ?? null;
+        const highlightRange = tracker?.consume(item.plaintext.length) ?? null;
         return (
           <li key={index} {...stylex.props(articleBodyStyles.listItem)}>
             <HighlightedFacetedPlaintext
@@ -51,8 +50,7 @@ export function StructuredOrderedListView({
   return (
     <ol {...stylex.props(articleBodyStyles.list)} start={start ?? 1}>
       {items.map((item, index) => {
-        const highlightRange =
-          tracker?.consume(item.plaintext.length) ?? null;
+        const highlightRange = tracker?.consume(item.plaintext.length) ?? null;
         return (
           <li key={index} {...stylex.props(articleBodyStyles.listItem)}>
             <HighlightedFacetedPlaintext

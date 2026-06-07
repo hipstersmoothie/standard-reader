@@ -31,12 +31,12 @@ import {
   tracking,
 } from "../../design-system/theme/typography.stylex";
 import { FollowButton, MiniPubRow } from "./cards";
+import { CommentsSection } from "./comments/comments-section";
 import { ArticleContent } from "./content/article-content";
 import {
   articleCardReadingText,
   articleReadingText,
 } from "./content/extract-text";
-import { QuoteShareLayer } from "./quote-share-layer";
 import {
   articlePublicationUrl,
   documentLinkParams,
@@ -49,11 +49,14 @@ import {
 import {
   Handle,
   Kicker,
-  LikeCount,
+  ArticleEngagement,
   PublicationAvatar,
   SectionHead,
   Topic,
 } from "./primitives";
+import { buildBlueskyComposeUrl } from "#/lib/quote-share";
+
+import { QuoteShareLayer } from "./quote-share-layer";
 
 const MEASURE = "80ch";
 
@@ -511,7 +514,7 @@ function ArticleViewInner({
   );
 
   const readStats = formatArticleReadStats(article.readCount);
-  const hasLikes = article.recommendCount > 0;
+  const hasEngagement = article.recommendCount > 0 || article.commentCount > 0;
 
   const { mutate: markRead } = useMutation(readerApi.markReadMutationOptions());
   const markedUriRef = useRef<string | null>(null);
@@ -568,21 +571,13 @@ function ArticleViewInner({
     };
   }, [article.uri, sharedQuote]);
 
-  const share = async () => {
-    const url = globalThis.location.href;
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: article.title, url });
-        return;
-      } catch {
-        // fall through to clipboard
-      }
-    }
-    try {
-      await navigator.clipboard.writeText(url);
-    } catch {
-      // ignore
-    }
+  const onShare = () => {
+    if (!publicationArticleUrl) return;
+    globalThis.open(
+      buildBlueskyComposeUrl(publicationArticleUrl),
+      "_blank",
+      "noopener,noreferrer",
+    );
   };
 
   return (
@@ -657,8 +652,9 @@ function ArticleViewInner({
             <IconButton
               variant="secondary"
               size="md"
-              label="Share"
-              onPress={() => void share()}
+              label="Share on Bluesky"
+              isDisabled={!publicationArticleUrl}
+              onPress={onShare}
             >
               <Share2 size={18} />
             </IconButton>
@@ -712,10 +708,14 @@ function ArticleViewInner({
                   {readingLabel ? ` · ${readingLabel}` : null}
                   {readStats ? ` · ${readStats}` : null}
                 </span>
-                {hasLikes ? (
+                {hasEngagement ? (
                   <>
                     <span aria-hidden>·</span>
-                    <LikeCount count={article.recommendCount} size="sm" />
+                    <ArticleEngagement
+                      recommendCount={article.recommendCount}
+                      commentCount={article.commentCount}
+                      size="sm"
+                    />
                   </>
                 ) : null}
               </Flex>
@@ -734,14 +734,7 @@ function ArticleViewInner({
           ) : null}
 
           {linkParams ? (
-            <QuoteShareLayer
-              article={article}
-              documentUri={article.uri}
-              did={linkParams.did}
-              rkey={linkParams.rkey}
-              articleTitle={article.title}
-              sharedQuote={sharedQuote}
-            >
+            <QuoteShareLayer article={article} sharedQuote={sharedQuote}>
               <ArticleContent
                 article={article}
                 hasHero={Boolean(article.coverImageUrl)}
@@ -792,6 +785,8 @@ function ArticleViewInner({
             </Flex>
           </div>
         ) : null}
+
+        {linkParams ? <CommentsSection documentUri={article.uri} /> : null}
 
         {article.readersAlsoFollow.length > 0 ? (
           <div {...stylex.props(styles.moreFrom)}>

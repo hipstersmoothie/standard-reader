@@ -10,37 +10,45 @@ export function plaintextLinesFromStructuredBlock(
 ): Array<string> {
   switch (block.kind) {
     case "text":
-    case "heading":
+    case "heading": {
       return textLines(block.text);
-    case "blockquote":
+    }
+    case "blockquote": {
       return block.blocks.flatMap((child) =>
         plaintextLinesFromStructuredBlock(child),
       );
-    case "callout":
+    }
+    case "callout": {
       return textLines(block.text);
+    }
     case "bulletList":
-    case "orderedList":
+    case "orderedList": {
       return block.items.flatMap((item) => textLines(item));
-    case "taskList":
+    }
+    case "taskList": {
       return block.items.flatMap((item) => textLines(item.text));
-    case "code":
+    }
+    case "code": {
       return textLines({ plaintext: block.plaintext });
+    }
     case "website": {
       const parts = [block.title?.trim(), block.description?.trim()].filter(
         Boolean,
       );
       return parts.length > 0 ? [parts.join(": ")] : [];
     }
-    case "table":
+    case "table": {
       return block.rows.map((row) =>
         row.flatMap((cell) => textLines(cell.text)).join(" | "),
       );
+    }
     case "horizontalRule":
     case "blueskyEmbed":
     case "image":
     case "iframe":
-    case "unknown":
+    case "unknown": {
       return [];
+    }
   }
 }
 

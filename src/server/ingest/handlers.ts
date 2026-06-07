@@ -1,7 +1,7 @@
 import { documentSearchText } from "#/lib/document/search-text";
-import { isExcludedPublicationUrl } from "#/lib/publication/exclusions";
 import { STANDARD_MARKDOWN_CONTENT } from "#/lib/document/structured-content/types";
 import { GREENGALE_CONTENT_REF } from "#/lib/greengale/types";
+import { isExcludedPublicationUrl } from "#/lib/publication/exclusions";
 import { resolveGreengaleContent } from "#/server/greengale/resolve";
 import { resolveLeafletContent } from "#/server/leaflet/resolve";
 import { resolvePcktContent } from "#/server/pckt/resolve";

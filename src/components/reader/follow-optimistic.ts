@@ -1,8 +1,8 @@
 import type { QueryClient } from "@tanstack/react-query";
 
-import type { PublicationCard } from "../../integrations/tanstack-query/api-shapes";
-import type { FollowStatus } from "../../integrations/tanstack-query/api-reader.functions";
 import type { SidebarData } from "../../integrations/tanstack-query/api-feed.functions";
+import type { FollowStatus } from "../../integrations/tanstack-query/api-reader.functions";
+import type { PublicationCard } from "../../integrations/tanstack-query/api-shapes";
 
 function sortFollowing(pubs: Array<PublicationCard>): Array<PublicationCard> {
   return pubs.toSorted((a, b) => a.name.localeCompare(b.name));

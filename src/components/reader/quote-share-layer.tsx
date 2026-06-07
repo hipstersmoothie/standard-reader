@@ -10,6 +10,7 @@ import {
 import { resolveQuoteHighlightRange } from "#/lib/quote-highlight-text";
 import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 
+import { documentLinkParams } from "./format";
 import { QuoteHighlightProvider } from "./quote-highlight-context";
 import { TextSelectionToolbar } from "./text-selection-toolbar";
 
@@ -22,22 +23,15 @@ function scrollToQuoteMark(root: HTMLElement): boolean {
 
 export function QuoteShareLayer({
   article,
-  documentUri,
-  did,
-  rkey,
-  articleTitle,
   sharedQuote,
   children,
 }: {
   article: ArticleDetail;
-  documentUri: string;
-  did: string;
-  rkey: string;
-  articleTitle: string;
   sharedQuote?: string | null;
   children: React.ReactNode;
 }) {
   const bodyRef = useRef<HTMLDivElement>(null);
+  const linkParams = documentLinkParams(article.uri);
   const highlightRange = useMemo(
     () =>
       sharedQuote ? resolveQuoteHighlightRange(article, sharedQuote) : null,
@@ -89,13 +83,14 @@ export function QuoteShareLayer({
     <QuoteHighlightProvider range={highlightRange}>
       <div ref={bodyRef} data-article-body="">
         {children}
-        <TextSelectionToolbar
-          rootRef={bodyRef}
-          documentUri={documentUri}
-          did={did}
-          rkey={rkey}
-          articleTitle={articleTitle}
-        />
+        {linkParams ? (
+          <TextSelectionToolbar
+            rootRef={bodyRef}
+            documentUri={article.uri}
+            did={linkParams.did}
+            rkey={linkParams.rkey}
+          />
+        ) : null}
       </div>
     </QuoteHighlightProvider>
   );

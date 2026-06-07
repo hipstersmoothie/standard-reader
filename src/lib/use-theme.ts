@@ -2,12 +2,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
 import { useCallback, useEffect, useState } from "react";
 
+import type { ResolvedThemeScheme, ThemeMode } from "./theme";
+
 import {
   DEFAULT_THEME_MODE,
   getSystemColorScheme,
   readInitialSystemColorScheme,
 } from "./theme";
-import type { ResolvedThemeScheme, ThemeMode } from "./theme";
 
 export interface ThemeContextValue {
   mode: ThemeMode;

@@ -3,12 +3,12 @@
 import type { PcktTableBlock } from "#/lib/pckt/types";
 
 import * as stylex from "@stylexjs/stylex";
+import { useQuoteHighlightTracker } from "#/components/reader/quote-highlight-context";
 import { asTextBlock } from "#/lib/pckt/blocks";
 import { PCKT_BLOCK } from "#/lib/pckt/types";
 
 import { articleBodyStyles } from "../body-styles";
 import { HighlightedFacetedPlaintext } from "./shared/faceted-text";
-import { useQuoteHighlightTracker } from "#/components/reader/quote-highlight-context";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -27,8 +27,7 @@ function TableCellContent({
       {content.map((entry, index) => {
         const text = asTextBlock(entry);
         if (!text?.plaintext.trim()) return null;
-        const highlightRange =
-          tracker?.consume(text.plaintext.length) ?? null;
+        const highlightRange = tracker?.consume(text.plaintext.length) ?? null;
         return (
           <HighlightedFacetedPlaintext
             key={index}

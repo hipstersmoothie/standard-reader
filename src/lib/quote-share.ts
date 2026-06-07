@@ -104,8 +104,20 @@ function truncateGraphemes(text: string, max: number): string {
 }
 
 /**
- * Bluesky compose intent URL with a quoted excerpt and link to the highlight.
+ * Bluesky compose intent URL pre-filled with a single link (e.g. our quote-share URL).
+ * The link card / OG preview carries the quote; the post body stays empty for commentary.
  * @see https://docs.bsky.app/docs/advanced-guides/intent-links
+ */
+export function buildBlueskyComposeUrl(linkUrl: string): string {
+  const draft = truncateGraphemes(linkUrl.trim(), BSKY_COMPOSE_MAX_GRAPHEMES);
+  const url = new URL(BSKY_COMPOSE_URL);
+  url.searchParams.set("text", draft);
+  return url.toString();
+}
+
+/**
+ * @deprecated Prefer {@link buildBlueskyComposeUrl} with an app quote-share URL only.
+ * Legacy helper that inlined the excerpt in the post body.
  */
 export function buildBlueskyQuoteComposeUrl(
   quote: string,

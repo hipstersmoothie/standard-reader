@@ -3,6 +3,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { getAtprotoSessionForRequest } from "#/middleware/auth";
 import { observe } from "#/server/observability/log";
+import { attachCommentCountsToArticles } from "#/server/reader/document-comments";
 import {
   countFollowedDocuments,
   followedPublications,
@@ -169,10 +170,20 @@ const getHomeFeed = createServerFn({ method: "GET" })
 
       span.set("rows", latestUnread.length);
       span.set("trending", trending.length);
+
+      const enriched = await attachCommentCountsToArticles(db, schema, [
+        ...(featured ? [featured] : []),
+        ...latestUnread,
+        ...trending,
+      ]);
+      const byUri = new Map(enriched.map((article) => [article.uri, article]));
+
       return {
-        featured,
-        latestUnread,
-        trending,
+        featured: featured ? (byUri.get(featured.uri) ?? featured) : null,
+        latestUnread: latestUnread.map(
+          (article) => byUri.get(article.uri) ?? article,
+        ),
+        trending: trending.map((article) => byUri.get(article.uri) ?? article),
         youMightFollow,
         personalized,
         unreadCount: counts?.unread ?? null,
@@ -212,8 +223,13 @@ const getLatestFeed = createServerFn({ method: "GET" })
       ]);
 
       span.set("count", items.length);
-      return {
+      const enrichedItems = await attachCommentCountsToArticles(
+        db,
+        schema,
         items,
+      );
+      return {
+        items: enrichedItems,
         counts,
         nextOffset:
           items.length === data.limit ? data.offset + data.limit : null,

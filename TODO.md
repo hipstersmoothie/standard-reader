@@ -141,6 +141,7 @@ Build each on hip-ui components + StyleX tokens (no raw HTML/inline styles).
 - [x] **Discover** — Recommended / Followed-by-people-you-follow / Trending / All (chips, sort, grid⇄list toggle).
 - [x] **Search** — editorial field, live results split into Publications + Articles. Route `/search` with URL `?q=`; paginated search APIs with full counts; load more (publications) + infinite scroll (articles); reuses `PubDirectoryRow` + `ArticleRow`.
 - [x] **Article** (reading view) — ~680px measure, drop-cap, pull quotes, hero, sticky bar (back/byline/follow/save/share), reading-progress bar, footer pub card + "More from {publication}". Route `/a/$did/$rkey` (`_layout.a.$did.$rkey.tsx`); feed/profile cards link here; `publicationApi.getArticle` returns `moreFrom` + owner handle. Save toggle writes `site.standard.graph.recommend`; like counts on cards + article byline.
+- [x] **Article discussion** — Bluesky comment section on documents: Constellation backlink discovery for external + app quote-share URLs, hydrated via public AppView, facet-rendered commentary, reply counts linking to bsky threads (`commentsApi.getDocumentComments`).
 - [x] **Publication profile** — banner + inline header (avatar/topic/name/desc/stats/Copy DID/Follow),
       recent writing, right rail (About + DID + readers-also-follow). Route `/p/$did/$rkey`
       (`_layout.p.$did.$rkey.tsx`); sidebar Following rows + cards link here instead of the
@@ -150,6 +151,7 @@ Build each on hip-ui components + StyleX tokens (no raw HTML/inline styles).
 - [x] Global follow toggle reflects everywhere instantly (optimistic).
 - [x] Theme picker (light / dark / system) + editorial dark tokens + Shiki `standard-reader-dark`.
 - [ ] Theme tokens / dark mode parity with prototype (remaining hardcoded surfaces).
+- [ ] **Reader profile** — browse the signed-in user's likes (`site.standard.graph.recommend` records via `readerApi.getLikes`).
 
 ## 7. Discovery engine (network-powered)
 
@@ -177,7 +179,6 @@ Build each on hip-ui components + StyleX tokens (no raw HTML/inline styles).
 
 ## Later (post-v1)
 
-- [ ] **Reader profile** — browse the signed-in user's likes (`site.standard.graph.recommend` records via `readerApi.getLikes`).
 - [ ] Recommendation / trending tuning and quality.
 - [ ] Higher-quality full-text search.
 - [ ] Offline / save-for-later.
@@ -186,4 +187,4 @@ Build each on hip-ui components + StyleX tokens (no raw HTML/inline styles).
 
 ## Non-goals (for now)
 
-- Read-first client: **no** commenting, posting, or authoring publications in-app.
+- Read-first client: **no** in-app posting or authoring publications. Discussion is read-only from Bluesky.

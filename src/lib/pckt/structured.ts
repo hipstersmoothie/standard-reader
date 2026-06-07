@@ -10,7 +10,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function mapPcktBlock(block: PcktRenderableBlock): StructuredRenderableBlock {
   switch (block.kind) {
-    case "text":
+    case "text": {
       return {
         kind: "text",
         text: {
@@ -18,7 +18,8 @@ function mapPcktBlock(block: PcktRenderableBlock): StructuredRenderableBlock {
           facets: block.block.facets,
         },
       };
-    case "heading":
+    }
+    case "heading": {
       return {
         kind: "heading",
         level: block.block.level,
@@ -27,7 +28,8 @@ function mapPcktBlock(block: PcktRenderableBlock): StructuredRenderableBlock {
           facets: block.block.facets,
         },
       };
-    case "blockquote":
+    }
+    case "blockquote": {
       return {
         kind: "blockquote",
         blocks: (block.block.content ?? []).flatMap((entry) => {
@@ -44,9 +46,11 @@ function mapPcktBlock(block: PcktRenderableBlock): StructuredRenderableBlock {
           ];
         }),
       };
-    case "horizontalRule":
+    }
+    case "horizontalRule": {
       return { kind: "horizontalRule" };
-    case "bulletList":
+    }
+    case "bulletList": {
       return {
         kind: "bulletList",
         items: (block.block.content ?? []).flatMap((child) => {
@@ -62,7 +66,8 @@ function mapPcktBlock(block: PcktRenderableBlock): StructuredRenderableBlock {
           return text?.plaintext.trim() ? [text] : [];
         }),
       };
-    case "orderedList":
+    }
+    case "orderedList": {
       return {
         kind: "orderedList",
         start: block.block.start,
@@ -79,7 +84,8 @@ function mapPcktBlock(block: PcktRenderableBlock): StructuredRenderableBlock {
           return text?.plaintext.trim() ? [text] : [];
         }),
       };
-    case "taskList":
+    }
+    case "taskList": {
       return {
         kind: "taskList",
         items: (block.block.content ?? []).flatMap((child) => {
@@ -105,12 +111,14 @@ function mapPcktBlock(block: PcktRenderableBlock): StructuredRenderableBlock {
           ];
         }),
       };
-    case "blueskyEmbed":
+    }
+    case "blueskyEmbed": {
       return {
         kind: "blueskyEmbed",
         postUri: block.block.postRef?.uri ?? "",
       };
-    case "image":
+    }
+    case "image": {
       return {
         kind: "image",
         blob: block.block.attrs?.blob,
@@ -120,20 +128,23 @@ function mapPcktBlock(block: PcktRenderableBlock): StructuredRenderableBlock {
         alt: block.block.attrs?.alt,
         aspectRatio: block.block.attrs?.aspectRatio,
       };
-    case "code":
+    }
+    case "code": {
       return {
         kind: "code",
         plaintext: block.block.plaintext,
         language:
           block.block.language ?? block.block.attrs?.language ?? undefined,
       };
-    case "iframe":
+    }
+    case "iframe": {
       return {
         kind: "iframe",
         url: block.block.url ?? "",
         height: block.block.height,
       };
-    case "website":
+    }
+    case "website": {
       return {
         kind: "website",
         src: block.block.src ?? "",
@@ -141,6 +152,7 @@ function mapPcktBlock(block: PcktRenderableBlock): StructuredRenderableBlock {
         description: block.block.description,
         previewImage: block.block.previewImage,
       };
+    }
     case "table": {
       const rows = (block.block.content ?? []).flatMap((row) => {
         if (!isRecord(row)) return [];
@@ -168,10 +180,12 @@ function mapPcktBlock(block: PcktRenderableBlock): StructuredRenderableBlock {
       });
       return { kind: "table", rows };
     }
-    case "gallery":
+    case "gallery": {
       return { kind: "unknown", blockType: "blog.pckt.block.gallery" };
-    case "unknown":
+    }
+    case "unknown": {
       return { kind: "unknown", blockType: block.blockType };
+    }
   }
 }
 

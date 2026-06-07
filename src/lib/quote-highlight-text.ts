@@ -1,19 +1,19 @@
 import type { ArticleDetail } from "#/integrations/tanstack-query/api-publication.functions";
+import type { StructuredRenderableBlock } from "#/lib/document/structured-content/types";
+import type {
+  LeafletListItem,
+  LeafletRenderableBlock,
+} from "#/lib/leaflet/types";
+import type { PcktRenderableBlock } from "#/lib/pckt/types";
 
 import { parseArticleBlocks } from "#/lib/document/blocks";
 import { markdownPlaintext } from "#/lib/document/structured-content/markdown";
-import type { StructuredRenderableBlock } from "#/lib/document/structured-content/types";
 import { STANDARD_MARKDOWN_CONTENT } from "#/lib/document/structured-content/types";
-import {
-  asTextBlock,
-  leafletBlocks,
-} from "#/lib/leaflet/blocks";
-import type { LeafletListItem, LeafletRenderableBlock } from "#/lib/leaflet/types";
+import { asTextBlock, leafletBlocks } from "#/lib/leaflet/blocks";
 import { LEAFLET_BLOCK, LEAFLET_CONTENT } from "#/lib/leaflet/types";
 import { offprintBlocks } from "#/lib/offprint/blocks";
 import { OFFPRINT_CONTENT } from "#/lib/offprint/types";
 import { pcktBlocks } from "#/lib/pckt/blocks";
-import type { PcktRenderableBlock } from "#/lib/pckt/types";
 import { PCKT_BLOCK, PCKT_CONTENT } from "#/lib/pckt/types";
 
 export interface QuoteHighlightRange {
@@ -77,7 +77,10 @@ function isLeafletListItem(value: unknown): value is LeafletListItem {
   return isRecord(value);
 }
 
-function appendLeafletListItemText(item: LeafletListItem, parts: Array<string>) {
+function appendLeafletListItemText(
+  item: LeafletListItem,
+  parts: Array<string>,
+) {
   const text = asTextBlock(item.content);
   appendText(parts, text?.plaintext);
 
@@ -112,7 +115,7 @@ function appendLeafletListItems(
     if (!isLeafletListItem(item)) continue;
     const text = asTextBlock(item.content);
     const hasNested =
-      Boolean(item.children?.length) ||
+      Boolean(item.children?.length > 0) ||
       (isRecord(item.unorderedListChildren) &&
         Array.isArray(item.unorderedListChildren.children)) ||
       (isRecord(item.orderedListChildren) &&

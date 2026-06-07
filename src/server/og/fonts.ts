@@ -12,7 +12,11 @@ interface LoadedFont {
 const require = createRequire(import.meta.url);
 
 function fontsourceFile(pkg: string, filename: string): string {
-  return join(dirname(require.resolve(`${pkg}/package.json`)), "files", filename);
+  return join(
+    dirname(require.resolve(`${pkg}/package.json`)),
+    "files",
+    filename,
+  );
 }
 
 async function loadLocalFont(

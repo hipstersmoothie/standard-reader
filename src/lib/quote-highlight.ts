@@ -1,5 +1,4 @@
 import * as stylex from "@stylexjs/stylex";
-
 import { articleBodyStyles } from "#/components/reader/content/body-styles";
 import { findQuoteTextRange } from "#/lib/quote-highlight-text";
 
@@ -122,7 +121,7 @@ function wrapRangeInMark(range: Range): HTMLElement | null {
     try {
       const contents = range.extractContents();
       if (!contents.textContent?.trim()) return null;
-      mark.appendChild(contents);
+      mark.append(contents);
       range.insertNode(mark);
       return mark;
     } catch {

@@ -139,3 +139,24 @@ export function formatDate(iso: string | null): string {
   if (Number.isNaN(t)) return "";
   return DATE_FMT.format(new Date(t));
 }
+
+const RELATIVE_FMT = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
+
+/** Compact relative label for recent timestamps (e.g. "2h ago", "3d ago"). */
+export function formatRelativeTime(iso: string | null): string {
+  if (!iso) return "";
+  const t = Date.parse(iso);
+  if (Number.isNaN(t)) return "";
+
+  const diffSec = Math.round((t - Date.now()) / 1000);
+  const abs = Math.abs(diffSec);
+
+  if (abs < 60) return RELATIVE_FMT.format(diffSec, "second");
+  const diffMin = Math.round(diffSec / 60);
+  if (Math.abs(diffMin) < 60) return RELATIVE_FMT.format(diffMin, "minute");
+  const diffHour = Math.round(diffSec / 3600);
+  if (Math.abs(diffHour) < 24) return RELATIVE_FMT.format(diffHour, "hour");
+  const diffDay = Math.round(diffSec / 86_400);
+  if (Math.abs(diffDay) < 7) return RELATIVE_FMT.format(diffDay, "day");
+  return formatDate(iso);
+}

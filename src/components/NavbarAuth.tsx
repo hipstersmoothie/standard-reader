@@ -1,11 +1,11 @@
+import type { PopoverProps } from "react-aria-components";
+
 import * as stylex from "@stylexjs/stylex";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createLink, useNavigate } from "@tanstack/react-router";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
 import { LogOut } from "lucide-react";
 import { Button as AriaButton } from "react-aria-components";
-
-import type { PopoverProps } from "react-aria-components";
 
 import { Avatar, AvatarButton } from "../design-system/avatar";
 import { Button } from "../design-system/button";

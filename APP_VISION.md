@@ -96,6 +96,7 @@ Sections, top to bottom:
 - Centered measure (~680px), drop-cap, pull quotes, hero image (if featured).
 - Sticky top bar: back, byline, follow, save (bookmark), share; reading-progress bar.
 - Footer: publication card + follow; "More from {publication}".
+- **Discussion:** Bluesky posts linking the article (external URL or app quote shares), read-only — reply counts link out to bsky threads.
 - Opening an article marks it read.
 
 ### Publication profile
@@ -224,7 +225,7 @@ hand-tuned lists:
 
 ### Non-goals (for now)
 
-- A **read-first client**: no commenting, posting, or authoring publications inside Standard Reader.
+- A **read-first client**: no in-app posting or authoring publications. Discussion is surfaced read-only from Bluesky (link shares + quote shares); threads open on bsky.
 
 ---
 

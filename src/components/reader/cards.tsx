@@ -1,11 +1,12 @@
 "use client";
 
+import type { FollowStatus } from "#/integrations/tanstack-query/api-reader.functions";
+
 import * as stylex from "@stylexjs/stylex";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, createLink } from "@tanstack/react-router";
 import { spacing } from "#/design-system/theme/spacing.stylex.tsx";
 import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
-import type { FollowStatus } from "#/integrations/tanstack-query/api-reader.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
 import { ArrowRight, Check, Plus } from "lucide-react";
 import { Fragment } from "react";
@@ -35,6 +36,11 @@ import {
 } from "../../design-system/theme/typography.stylex";
 import { Text } from "../../design-system/typography/text";
 import {
+  applyFollowOptimisticUpdate,
+  invalidateFollowQueries,
+  rollbackFollowOptimisticUpdate,
+} from "./follow-optimistic";
+import {
   documentLinkParams,
   formatDate,
   formatReaders,
@@ -42,16 +48,11 @@ import {
 } from "./format";
 import {
   Handle,
-  LikeCount,
+  ArticleEngagement,
   MetaLine,
   PublicationAvatar,
   Topic,
 } from "./primitives";
-import {
-  applyFollowOptimisticUpdate,
-  invalidateFollowQueries,
-  rollbackFollowOptimisticUpdate,
-} from "./follow-optimistic";
 
 const ButtonLink = createLink(Button);
 
@@ -616,14 +617,19 @@ function ArticleTitleRow({
 }
 
 function ArticleMetaLine({ article }: { article: ArticleCard }) {
-  const hasLikes = article.recommendCount > 0;
+  const hasEngagement = article.recommendCount > 0 || article.commentCount > 0;
   const topics = articleTopics(article);
-  if (!hasLikes && topics.length === 0) return null;
+  if (!hasEngagement && topics.length === 0) return null;
 
   return (
     <MetaLine>
-      {hasLikes ? <LikeCount count={article.recommendCount} /> : null}
-      {hasLikes && topics.length > 0 ? (
+      {hasEngagement ? (
+        <ArticleEngagement
+          recommendCount={article.recommendCount}
+          commentCount={article.commentCount}
+        />
+      ) : null}
+      {hasEngagement && topics.length > 0 ? (
         <span aria-hidden {...stylex.props(styles.metaDot)}>
           ·
         </span>
@@ -835,7 +841,7 @@ export function CompactRow({
   article: ArticleCard;
   rank: number;
 }) {
-  const hasLikes = article.recommendCount > 0;
+  const hasEngagement = article.recommendCount > 0 || article.commentCount > 0;
   return (
     <ArticleLink article={article} extraStyles={[styles.compactRow]}>
       <span {...stylex.props(styles.rank)}>
@@ -845,12 +851,15 @@ export function CompactRow({
         <span {...stylex.props(styles.compactTitle)}>{article.title}</span>
         <MetaLine>
           <span>{article.publicationName ?? "Unknown"}</span>
-          {hasLikes ? (
+          {hasEngagement ? (
             <>
               <span aria-hidden {...stylex.props(styles.metaDot)}>
                 ·
               </span>
-              <LikeCount count={article.recommendCount} />
+              <ArticleEngagement
+                recommendCount={article.recommendCount}
+                commentCount={article.commentCount}
+              />
             </>
           ) : null}
         </MetaLine>

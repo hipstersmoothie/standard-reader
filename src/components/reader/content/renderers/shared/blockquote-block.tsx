@@ -3,10 +3,10 @@
 import type { LeafletFacet } from "#/lib/leaflet/types";
 
 import * as stylex from "@stylexjs/stylex";
+import { useQuoteHighlightTracker } from "#/components/reader/quote-highlight-context";
 
 import { articleBodyStyles } from "../../body-styles";
 import { HighlightedFacetedPlaintext } from "./faceted-text";
-import { useQuoteHighlightTracker } from "#/components/reader/quote-highlight-context";
 
 export interface BlockquoteParagraph {
   plaintext: string;
@@ -25,8 +25,7 @@ export function BlockquoteBlockView({
   return (
     <blockquote {...stylex.props(articleBodyStyles.pullquote)}>
       {items.map((item, index) => {
-        const highlightRange =
-          tracker?.consume(item.plaintext.length) ?? null;
+        const highlightRange = tracker?.consume(item.plaintext.length) ?? null;
         return (
           <p key={index} {...stylex.props(articleBodyStyles.paragraph)}>
             <HighlightedFacetedPlaintext

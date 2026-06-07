@@ -3,18 +3,18 @@
 import type { ArticleDetail } from "#/integrations/tanstack-query/api-publication.functions";
 
 import * as stylex from "@stylexjs/stylex";
-import { parseArticleBlocks } from "#/lib/document/blocks";
-
-import type { ContentRendererProps } from "./types";
-
-import { articleBodyStyles } from "./body-styles";
-import { CONTENT_RENDERERS } from "./renderers";
 import {
   HighlightedPlaintext,
   intersectHighlightRange,
   renderDropCapChar,
   useQuoteHighlightTracker,
 } from "#/components/reader/quote-highlight-context";
+import { parseArticleBlocks } from "#/lib/document/blocks";
+
+import type { ContentRendererProps } from "./types";
+
+import { articleBodyStyles } from "./body-styles";
+import { CONTENT_RENDERERS } from "./renderers";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -54,8 +54,7 @@ function FallbackContent({
       )}
     >
       {blocks.map((block, index) => {
-        const highlightRange =
-          tracker?.consume(block.text.length) ?? null;
+        const highlightRange = tracker?.consume(block.text.length) ?? null;
 
         if (block.type === "pullquote") {
           return (

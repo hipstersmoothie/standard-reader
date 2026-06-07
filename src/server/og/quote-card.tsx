@@ -5,11 +5,8 @@ import { initials } from "#/components/reader/format";
 import { truncateQuoteForDisplay } from "#/lib/quote-share";
 import { loadOgFonts } from "#/server/og/fonts";
 import { loadPublicationIcon } from "#/server/og/load-image";
-import {
-  resolveQuoteOgColors,
-  type PublicationThemeInput,
-  type QuoteOgColors,
-} from "#/server/og/theme-colors";
+import { resolveQuoteOgColors } from '#/server/og/theme-colors';
+import type { PublicationThemeInput, QuoteOgColors } from '#/server/og/theme-colors';
 import satori from "satori";
 
 const OG_WIDTH = 1200;
@@ -223,10 +220,11 @@ export async function renderQuoteOgImage(
   const svg = await satori(
     quoteOgMarkup({ ...input, publicationIcon, colors }),
     {
-    width: OG_WIDTH,
-    height: OG_HEIGHT,
-    fonts: fonts as Array<Font>,
-  });
+      width: OG_WIDTH,
+      height: OG_HEIGHT,
+      fonts: fonts as Array<Font>,
+    },
+  );
 
   const resvg = new Resvg(svg, {
     fitTo: { mode: "width", value: OG_WIDTH },

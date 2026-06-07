@@ -4,6 +4,12 @@ import type { LeafletFacet } from "#/lib/leaflet/types";
 import type { QuoteHighlightRange } from "#/lib/quote-highlight-text";
 
 import * as stylex from "@stylexjs/stylex";
+import {
+  QuoteShareMark,
+  intersectHighlightRange,
+  renderDropCapChar,
+  useQuoteHighlightTracker,
+} from "#/components/reader/quote-highlight-context";
 import { segmentFacetedText, shiftFacets } from "#/lib/leaflet/facets";
 import { utf8ByteLength } from "#/lib/leaflet/utf8";
 import { Fragment } from "react";
@@ -12,12 +18,6 @@ import type { FacetFeature } from "./facets";
 
 import { articleBodyStyles } from "../../body-styles";
 import { findFacetFeature, hasFacetKind } from "./facets";
-import {
-  QuoteShareMark,
-  intersectHighlightRange,
-  renderDropCapChar,
-  useQuoteHighlightTracker,
-} from "#/components/reader/quote-highlight-context";
 
 function FacetSegment({
   text,

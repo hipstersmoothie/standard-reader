@@ -1,9 +1,9 @@
 import type { LeafletCodeBlock } from "#/lib/leaflet/types";
 import type { ResolvedThemeScheme } from "#/lib/theme";
+import type { BundledLanguage, Highlighter } from "shiki";
 
 import { codeBlockKey, normalizeLanguage } from "#/lib/code-highlight";
 import { createHighlighter } from "shiki";
-import type { BundledLanguage, Highlighter } from "shiki";
 
 import {
   codeThemeNameForScheme,

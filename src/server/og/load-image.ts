@@ -1,4 +1,4 @@
-const FETCH_TIMEOUT_MS = 5_000;
+const FETCH_TIMEOUT_MS = 5000;
 
 function toDataUrl(buffer: ArrayBuffer, contentType: string): string {
   const base64 = Buffer.from(buffer).toString("base64");

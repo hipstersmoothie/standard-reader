@@ -305,12 +305,12 @@ export const articleBodyStyles = stylex.create({
     backgroundColor: uiColor.component2,
   },
   quoteShareMark: {
-    backgroundColor: primaryColor.component3,
     borderRadius: radius.sm,
+    backgroundColor: primaryColor.component3,
     // eslint-disable-next-line @stylexjs/valid-styles
     boxDecorationBreak: "clone",
-    color: "inherit",
     paddingBlock: spacing["0.5"],
+    color: "inherit",
   },
   taskList: {
     listStyle: "none",
