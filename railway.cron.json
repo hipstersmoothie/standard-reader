@@ -1,0 +1,12 @@
+{
+  "$schema": "https://railway.com/railway.schema.json",
+  "build": {
+    "builder": "RAILPACK",
+    "buildCommand": "echo 'recompute-cron triggers the ingest worker; no build step'"
+  },
+  "deploy": {
+    "startCommand": "node scripts/recompute-cron.mjs",
+    "cronSchedule": "0 * * * *",
+    "restartPolicyType": "NEVER"
+  }
+}
