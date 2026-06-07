@@ -3,11 +3,11 @@ import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { getAtprotoSessionForRequest } from "#/middleware/auth";
 import {
-  deleteBookmarkRecord,
   deleteReadRecord,
+  deleteRecommendRecord,
   deleteSubscriptionRecord,
-  putBookmarkRecord,
   putReadRecord,
+  putRecommendRecord,
   putSubscriptionRecord,
 } from "#/server/atproto/repo-records";
 import { ensureTracked } from "#/server/ingest/tap-client";
@@ -18,10 +18,10 @@ import { z } from "zod";
 import { dbMiddleware } from "./db-middleware";
 
 /**
- * Reader API — the personal write path (follow / bookmark / read) plus the
- * status reads that back the UI toggles. Writes go to the signed-in reader's own
- * AT Proto repo (source of truth); status reads come from the Neon read-model
- * (the tap-fed cache), so the UI should treat toggles as optimistic. Mirrors the
+ * Reader API — the personal write path (follow / like / read) plus the status
+ * reads that back the UI toggles. Writes go to the signed-in reader's own AT
+ * Proto repo (source of truth); status reads come from the Neon read-model (the
+ * tap-fed cache), so the UI should treat toggles as optimistic. Mirrors the
  * `~/Documents/at-store` server-fn + query-options layout, with structured
  * observability around every call (`src/server/observability/log.ts`).
  */
@@ -38,7 +38,7 @@ const documentsInput = z.object({
   documentUris: z.array(z.string().min(1)).max(500),
 });
 
-const bookmarksInput = z.object({
+const likesInput = z.object({
   limit: z.number().int().min(1).max(100).default(50),
 });
 
@@ -46,15 +46,15 @@ export interface FollowStatus {
   isFollowing: boolean;
 }
 
-export interface BookmarkStatus {
-  isBookmarked: boolean;
+export interface RecommendStatus {
+  isRecommended: boolean;
 }
 
 export interface ReadStatus {
   isRead: boolean;
 }
 
-export interface BookmarkListItem {
+export interface LikeListItem {
   uri: string;
   documentUri: string;
   createdAt: string | null;
@@ -151,65 +151,65 @@ const unfollowPublication = createServerFn({ method: "POST" })
     }),
   );
 
-// ── Bookmark (app.standard-reader.bookmark) ─────────────────────────────────
+// ── Like (site.standard.graph.recommend) ────────────────────────────────────
 
-const getBookmarkStatus = createServerFn({ method: "GET" })
+const getRecommendStatus = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
   .inputValidator(documentInput)
   .handler(
-    observe("reader.getBookmarkStatus", async ({ data, context }, span) => {
+    observe("reader.getRecommendStatus", async ({ data, context }, span) => {
       span.set("documentUri", data.documentUri);
       const session = await getAtprotoSessionForRequest(getRequest());
       if (!session) {
-        return { isBookmarked: false } satisfies BookmarkStatus;
+        return { isRecommended: false } satisfies RecommendStatus;
       }
       span.set("did", session.did);
 
-      const b = context.schema.bookmarks;
+      const rec = context.schema.recommends;
       const [row] = await context.db
-        .select({ uri: b.uri })
-        .from(b)
+        .select({ uri: rec.uri })
+        .from(rec)
         .where(
           and(
-            eq(b.ownerDid, session.did),
-            eq(b.documentUri, data.documentUri),
-            eq(b.deleted, false),
+            eq(rec.recommenderDid, session.did),
+            eq(rec.documentUri, data.documentUri),
+            eq(rec.deleted, false),
           ),
         )
         .limit(1);
 
-      return { isBookmarked: Boolean(row) } satisfies BookmarkStatus;
+      return { isRecommended: Boolean(row) } satisfies RecommendStatus;
     }),
   );
 
-const getBookmarks = createServerFn({ method: "GET" })
+const getLikes = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
-  .inputValidator(bookmarksInput)
+  .inputValidator(likesInput)
   .handler(
-    observe("reader.getBookmarks", async ({ data, context }, span) => {
+    observe("reader.getLikes", async ({ data, context }, span) => {
       const session = await getAtprotoSessionForRequest(getRequest());
       if (!session) {
-        return [] satisfies Array<BookmarkListItem>;
+        return [] satisfies Array<LikeListItem>;
       }
       span.set("did", session.did);
       span.set("limit", data.limit);
 
-      const b = context.schema.bookmarks;
+      const rec = context.schema.recommends;
       const d = context.schema.documents;
       const rows = await context.db
         .select({
-          uri: b.uri,
-          documentUri: b.documentUri,
-          createdAt: b.createdAt,
+          uri: rec.uri,
+          documentUri: rec.documentUri,
+          createdAt: rec.createdAt,
           title: d.title,
           canonicalUrl: d.canonicalUrl,
           publicationUri: d.publicationUri,
           coverImageUrl: d.coverImageUrl,
         })
-        .from(b)
-        .leftJoin(d, eq(d.uri, b.documentUri))
-        .where(and(eq(b.ownerDid, session.did), eq(b.deleted, false)))
-        .orderBy(desc(b.createdAt))
+        .from(rec)
+        .leftJoin(d, eq(d.uri, rec.documentUri))
+        .where(and(eq(rec.recommenderDid, session.did), eq(rec.deleted, false)))
+        .orderBy(desc(rec.createdAt))
         .limit(data.limit);
 
       span.set("count", rows.length);
@@ -221,15 +221,15 @@ const getBookmarks = createServerFn({ method: "GET" })
         canonicalUrl: row.canonicalUrl,
         publicationUri: row.publicationUri,
         coverImageUrl: row.coverImageUrl,
-      })) satisfies Array<BookmarkListItem>;
+      })) satisfies Array<LikeListItem>;
     }),
   );
 
-const bookmarkDocument = createServerFn({ method: "POST" })
+const recommendDocument = createServerFn({ method: "POST" })
   .middleware([dbMiddleware])
   .inputValidator(documentInput)
   .handler(
-    observe("reader.bookmarkDocument", async ({ data }, span) => {
+    observe("reader.recommendDocument", async ({ data }, span) => {
       span.set("documentUri", data.documentUri);
       const session = await getAtprotoSessionForRequest(getRequest());
       if (!session) {
@@ -237,7 +237,7 @@ const bookmarkDocument = createServerFn({ method: "POST" })
       }
       span.set("did", session.did);
 
-      await putBookmarkRecord(
+      await putRecommendRecord(
         session.client,
         session.did,
         data.documentUri,
@@ -248,11 +248,11 @@ const bookmarkDocument = createServerFn({ method: "POST" })
     }),
   );
 
-const unbookmarkDocument = createServerFn({ method: "POST" })
+const unrecommendDocument = createServerFn({ method: "POST" })
   .middleware([dbMiddleware])
   .inputValidator(documentInput)
   .handler(
-    observe("reader.unbookmarkDocument", async ({ data }, span) => {
+    observe("reader.unrecommendDocument", async ({ data }, span) => {
       span.set("documentUri", data.documentUri);
       const session = await getAtprotoSessionForRequest(getRequest());
       if (!session) {
@@ -260,7 +260,11 @@ const unbookmarkDocument = createServerFn({ method: "POST" })
       }
       span.set("did", session.did);
 
-      await deleteBookmarkRecord(session.client, session.did, data.documentUri);
+      await deleteRecommendRecord(
+        session.client,
+        session.did,
+        data.documentUri,
+      );
       return { ok: true as const };
     }),
   );
@@ -375,10 +379,10 @@ function getFollowStatusQueryOptions(publicationUri: string) {
   });
 }
 
-function getBookmarkStatusQueryOptions(documentUri: string) {
+function getRecommendStatusQueryOptions(documentUri: string) {
   return queryOptions({
-    queryKey: ["reader", "bookmarkStatus", documentUri] as const,
-    queryFn: async () => getBookmarkStatus({ data: { documentUri } }),
+    queryKey: ["reader", "recommendStatus", documentUri] as const,
+    queryFn: async () => getRecommendStatus({ data: { documentUri } }),
   });
 }
 
@@ -389,10 +393,10 @@ function getReadStatusQueryOptions(documentUri: string) {
   });
 }
 
-function getBookmarksQueryOptions({ limit = 50 }: { limit?: number } = {}) {
+function getLikesQueryOptions({ limit = 50 }: { limit?: number } = {}) {
   return queryOptions({
-    queryKey: ["reader", "bookmarks", limit] as const,
-    queryFn: async () => getBookmarks({ data: { limit } }),
+    queryKey: ["reader", "likes", limit] as const,
+    queryFn: async () => getLikes({ data: { limit } }),
   });
 }
 
@@ -421,19 +425,19 @@ function unfollowPublicationMutationOptions() {
   });
 }
 
-function bookmarkDocumentMutationOptions() {
+function recommendDocumentMutationOptions() {
   return mutationOptions({
-    mutationKey: ["reader", "bookmarkDocument"] as const,
+    mutationKey: ["reader", "recommendDocument"] as const,
     mutationFn: async (documentUri: string) =>
-      bookmarkDocument({ data: { documentUri } }),
+      recommendDocument({ data: { documentUri } }),
   });
 }
 
-function unbookmarkDocumentMutationOptions() {
+function unrecommendDocumentMutationOptions() {
   return mutationOptions({
-    mutationKey: ["reader", "unbookmarkDocument"] as const,
+    mutationKey: ["reader", "unrecommendDocument"] as const,
     mutationFn: async (documentUri: string) =>
-      unbookmarkDocument({ data: { documentUri } }),
+      unrecommendDocument({ data: { documentUri } }),
   });
 }
 
@@ -462,15 +466,15 @@ export const readerApi = {
   followPublicationMutationOptions,
   unfollowPublication,
   unfollowPublicationMutationOptions,
-  // bookmark
-  getBookmarkStatus,
-  getBookmarkStatusQueryOptions,
-  getBookmarks,
-  getBookmarksQueryOptions,
-  bookmarkDocument,
-  bookmarkDocumentMutationOptions,
-  unbookmarkDocument,
-  unbookmarkDocumentMutationOptions,
+  // like (site.standard.graph.recommend)
+  getRecommendStatus,
+  getRecommendStatusQueryOptions,
+  getLikes,
+  getLikesQueryOptions,
+  recommendDocument,
+  recommendDocumentMutationOptions,
+  unrecommendDocument,
+  unrecommendDocumentMutationOptions,
   // read
   getReadStatus,
   getReadStatusQueryOptions,

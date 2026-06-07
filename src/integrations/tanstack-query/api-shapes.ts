@@ -1,7 +1,8 @@
 import type * as DbSchema from "#/db/schema";
-import { sql } from "drizzle-orm";
+
 import type { SQL } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import { sql } from "drizzle-orm";
 
 /**
  * Shared shapes + helpers for the read-model query layer (`APP_VISION.md` §5).
@@ -72,6 +73,8 @@ export interface ArticleCard {
   tags: Array<string> | null;
   /** Plaintext body when indexed (used for reading-time on cards). */
   textContent: string | null;
+  /** Network likes (`site.standard.graph.recommend`). */
+  recommendCount: number;
 }
 
 /** A profile summary (byline / publication owner). */
@@ -123,6 +126,7 @@ export function articleCardColumns(schema: Schema) {
   const d = schema.documents;
   const p = schema.publications;
   const pr = schema.profiles;
+  const rec = schema.recommends;
   return {
     uri: d.uri,
     did: d.did,
@@ -142,6 +146,12 @@ export function articleCardColumns(schema: Schema) {
     publicationTopic: p.topic,
     tags: d.tags,
     textContent: d.textContent,
+    recommendCount: sql<number>`coalesce((
+      select count(*)::int
+      from ${rec}
+      where ${rec.documentUri} = ${d.uri}
+        and ${rec.deleted} = false
+    ), 0)`.mapWith(Number),
   };
 }
 
@@ -247,6 +257,7 @@ type ArticleCardRow = {
   publicationTopic: string | null;
   tags: Array<string> | null;
   textContent: string | null;
+  recommendCount: number | null;
 };
 
 export function toArticleCard(row: ArticleCardRow): ArticleCard {
@@ -269,5 +280,6 @@ export function toArticleCard(row: ArticleCardRow): ArticleCard {
     publicationTopic: row.publicationTopic,
     tags: row.tags,
     textContent: row.textContent,
+    recommendCount: row.recommendCount ?? 0,
   };
 }

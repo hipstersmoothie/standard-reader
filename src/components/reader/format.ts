@@ -121,23 +121,10 @@ export function formatReaders(n: number): string {
   return String(n);
 }
 
-/** Article footer meta: reads + recommends (omits zero counts). */
-export function formatArticleReadStats(
-  readCount: number,
-  recommendCount: number,
-): string | null {
-  const parts: Array<string> = [];
-  if (readCount > 0) {
-    parts.push(
-      `${formatReaders(readCount)} ${readCount === 1 ? "read" : "reads"}`,
-    );
-  }
-  if (recommendCount > 0) {
-    parts.push(
-      `${formatReaders(recommendCount)} ${recommendCount === 1 ? "recommend" : "recommends"}`,
-    );
-  }
-  return parts.length > 0 ? parts.join(" · ") : null;
+/** Article byline meta: read count only (omits zero). Likes use `LikeCount`. */
+export function formatArticleReadStats(readCount: number): string | null {
+  if (readCount <= 0) return null;
+  return `${formatReaders(readCount)} ${readCount === 1 ? "read" : "reads"}`;
 }
 
 const DATE_FMT = new Intl.DateTimeFormat("en-US", {

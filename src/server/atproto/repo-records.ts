@@ -142,8 +142,8 @@ export async function deleteSubscriptionRecord(
   });
 }
 
-/** Write an `app.standard-reader.bookmark` for `documentUri`. */
-export async function putBookmarkRecord(
+/** Write a `site.standard.graph.recommend` (like) for `documentUri`. */
+export async function putRecommendRecord(
   client: Client,
   repo: string,
   documentUri: string,
@@ -151,24 +151,24 @@ export async function putBookmarkRecord(
 ): Promise<{ uri: string; cid: string }> {
   return repoPutRecord(client, {
     repo,
-    collection: COLLECTION.bookmark,
+    collection: COLLECTION.recommend,
     rkey: subjectRkey(documentUri),
     record: {
-      $type: COLLECTION.bookmark,
-      subject: documentUri,
+      $type: COLLECTION.recommend,
+      document: documentUri,
       createdAt,
     },
   });
 }
 
-export async function deleteBookmarkRecord(
+export async function deleteRecommendRecord(
   client: Client,
   repo: string,
   documentUri: string,
 ): Promise<void> {
   return repoDeleteRecord(client, {
     repo,
-    collection: COLLECTION.bookmark,
+    collection: COLLECTION.recommend,
     rkey: subjectRkey(documentUri),
   });
 }

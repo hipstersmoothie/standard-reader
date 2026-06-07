@@ -80,21 +80,22 @@ stores in `src/integrations/auth/`, session/user server fns in
 ## 4. Lexicons & writes (records = source of truth)
 
 - [x] Define app-owned lexicons under `app.standard-reader` (JSON in `lexicons/`):
-  - [x] `app.standard-reader.bookmark` (`subject` = document at-uri + `createdAt`)
   - [x] `app.standard-reader.read` (`subject` = document at-uri + `createdAt`)
+  - [x] ~~`app.standard-reader.bookmark`~~ — superseded by `site.standard.graph.recommend` (likes)
   - [x] Publish tooling via `goat` (`scripts/goat-lex.mjs`): `pnpm lex:lint`,
         `pnpm atproto:publish-lexicons`. Needs `LEXICON_PUBLISH_*` creds for the
         `standard-reader.app` authority + `_lexicon.*` DNS (`goat lex check-dns`).
 - [x] Confirm `standard.site` subscription lexicon shape: `site.standard.graph.subscription`
       (`publication` at-uri + optional `createdAt`); read-model ingests it.
-- [x] Read-model + ingester for our own records: `bookmarks` / `reads` tables
-      (`drizzle/0003_*`), tap collection filters + consumer/handlers/deletes, and a
-      `reader` track-reason so a reader's repo is registered with tap on first write.
-- [x] Write path: create/delete records in the user's repo for follow / bookmark / read.
-      Server-side helper `src/server/atproto/repo-records.ts` (`putRecord`/`deleteRecord`
+- [x] Read-model + ingester for our own records: `reads` table (`drizzle/0003_*`), tap
+      collection filters + consumer/handlers/deletes, and a `reader` track-reason so a
+      reader's repo is registered with tap on first write. Likes use the network
+      `site.standard.graph.recommend` collection (ingested into `recommends`).
+- [x] Write path: create/delete records in the user's repo for follow / like (recommend) /
+      read. Server-side helper `src/server/atproto/repo-records.ts` (`putRecord`/`deleteRecord`
       via `@atcute/atproto` + `@atcute/tid`, deterministic subject rkeys).
 - [x] **Reader API layer** (`src/integrations/tanstack-query/api-reader.functions.ts`,
-      mirrors `~/Documents/at-store`): `readerApi` server fns for follow / bookmark /
+      mirrors `~/Documents/at-store`): `readerApi` server fns for follow / like /
       read (status reads from the cache + create/delete writes to the repo), structured
       o11y (`src/server/observability/log.ts`), and React Query `*QueryOptions` /
       `*MutationOptions` for the UI (pair mutations with optimistic updates).
@@ -139,7 +140,7 @@ Build each on hip-ui components + StyleX tokens (no raw HTML/inline styles).
 - [x] **Latest** — chronological list, segmented All/Unread filter with counts.
 - [x] **Discover** — Recommended / Followed-by-people-you-follow / Trending / All (chips, sort, grid⇄list toggle).
 - [x] **Search** — editorial field, live results split into Publications + Articles. Route `/search` with URL `?q=`; paginated search APIs with full counts; load more (publications) + infinite scroll (articles); reuses `PubDirectoryRow` + `ArticleRow`.
-- [x] **Article** (reading view) — ~680px measure, drop-cap, pull quotes, hero, sticky bar (back/byline/follow/save/share), reading-progress bar, footer pub card + "More from {publication}". Route `/a/$did/$rkey` (`_layout.a.$did.$rkey.tsx`); feed/profile cards link here; `publicationApi.getArticle` returns `moreFrom` + owner handle.
+- [x] **Article** (reading view) — ~680px measure, drop-cap, pull quotes, hero, sticky bar (back/byline/follow/save/share), reading-progress bar, footer pub card + "More from {publication}". Route `/a/$did/$rkey` (`_layout.a.$did.$rkey.tsx`); feed/profile cards link here; `publicationApi.getArticle` returns `moreFrom` + owner handle. Save toggle writes `site.standard.graph.recommend`; like counts on cards + article byline.
 - [x] **Publication profile** — banner + inline header (avatar/topic/name/desc/stats/Copy DID/Follow),
       recent writing, right rail (About + DID + readers-also-follow). Route `/p/$did/$rkey`
       (`_layout.p.$did.$rkey.tsx`); sidebar Following rows + cards link here instead of the
@@ -175,6 +176,7 @@ Build each on hip-ui components + StyleX tokens (no raw HTML/inline styles).
 
 ## Later (post-v1)
 
+- [ ] **Reader profile** — browse the signed-in user's likes (`site.standard.graph.recommend` records via `readerApi.getLikes`).
 - [ ] Recommendation / trending tuning and quality.
 - [ ] Higher-quality full-text search.
 - [ ] Offline / save-for-later.

@@ -1,4 +1,5 @@
 import * as stylex from "@stylexjs/stylex";
+import { Heart } from "lucide-react";
 
 import type { PublicationCard } from "../../integrations/tanstack-query/api-shapes";
 
@@ -15,7 +16,7 @@ import {
   lineHeight,
   tracking,
 } from "../../design-system/theme/typography.stylex";
-import { initials } from "./format";
+import { formatReaders, initials } from "./format";
 
 /* ── styles ─────────────────────────────────────────────────────────────── */
 
@@ -41,6 +42,14 @@ const styles = stylex.create({
     color: uiColor.text1,
     fontFamily: fontFamily.sans,
     fontSize: fontSize.xs,
+  },
+  likeCount: {
+    color: uiColor.text1,
+    fontFamily: fontFamily.sans,
+    fontSize: fontSize.xs,
+  },
+  likeCountSm: {
+    fontSize: fontSize.sm,
   },
   topic: {
     color: primaryColor.text2,
@@ -192,6 +201,29 @@ export function MetaLine({ children }: { children: React.ReactNode }) {
   return (
     <Flex align="center" gap="md" wrap style={styles.meta}>
       {children}
+    </Flex>
+  );
+}
+
+const LIKE_ICON_SIZE = { sm: 14, xs: 12 } as const;
+
+/** Network like count with a heart icon; renders nothing when `count` is zero. */
+export function LikeCount({
+  count,
+  size = "xs",
+}: {
+  count: number;
+  size?: keyof typeof LIKE_ICON_SIZE;
+}) {
+  if (count <= 0) return null;
+  return (
+    <Flex
+      align="center"
+      gap="xs"
+      style={[styles.likeCount, size === "sm" && styles.likeCountSm]}
+    >
+      <Heart size={LIKE_ICON_SIZE[size]} aria-hidden strokeWidth={2} />
+      <span>{formatReaders(count)}</span>
     </Flex>
   );
 }

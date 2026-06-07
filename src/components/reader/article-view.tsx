@@ -40,6 +40,7 @@ import { QuoteShareLayer } from "./quote-share-layer";
 import {
   articlePublicationUrl,
   documentLinkParams,
+  formatArticleReadStats,
   formatDate,
   formatReadingTime,
   publicationLinkParams,
@@ -48,6 +49,7 @@ import {
 import {
   Handle,
   Kicker,
+  LikeCount,
   PublicationAvatar,
   SectionHead,
   Topic,
@@ -372,31 +374,34 @@ function ArticleFollowButtonMd({
 function BookmarkButton({
   documentUri,
   signedIn,
-  initialBookmarked = false,
+  initialRecommended = false,
 }: {
   documentUri: string;
   signedIn: boolean;
-  initialBookmarked?: boolean;
+  initialRecommended?: boolean;
 }) {
   const queryClient = useQueryClient();
-  const [bookmarked, setBookmarked] = useState(initialBookmarked);
-  const bookmarkMutation = useMutation(
-    readerApi.bookmarkDocumentMutationOptions(),
+  const [recommended, setRecommended] = useState(initialRecommended);
+  const recommendMutation = useMutation(
+    readerApi.recommendDocumentMutationOptions(),
   );
-  const unbookmarkMutation = useMutation(
-    readerApi.unbookmarkDocumentMutationOptions(),
+  const unrecommendMutation = useMutation(
+    readerApi.unrecommendDocumentMutationOptions(),
   );
 
   const onPress = () => {
     if (!signedIn) return;
-    const next = !bookmarked;
-    setBookmarked(next);
-    const mutation = next ? bookmarkMutation : unbookmarkMutation;
+    const next = !recommended;
+    setRecommended(next);
+    const mutation = next ? recommendMutation : unrecommendMutation;
     mutation.mutate(documentUri, {
-      onError: () => setBookmarked(!next),
+      onError: () => setRecommended(!next),
       onSettled: () => {
         void queryClient.invalidateQueries({
-          queryKey: ["reader", "bookmarkStatus", documentUri],
+          queryKey: ["reader", "recommendStatus", documentUri],
+        });
+        void queryClient.invalidateQueries({
+          queryKey: ["article", documentUri],
         });
       },
     });
@@ -406,12 +411,12 @@ function BookmarkButton({
     <IconButton
       variant="secondary"
       size="md"
-      label={bookmarked ? "Saved" : "Save"}
+      label={recommended ? "Saved" : "Save"}
       onPress={onPress}
       isDisabled={!signedIn}
-      style={bookmarked ? styles.bookmarkActive : undefined}
+      style={recommended ? styles.bookmarkActive : undefined}
     >
-      <Bookmark size={18} fill={bookmarked ? "currentColor" : "none"} />
+      <Bookmark size={18} fill={recommended ? "currentColor" : "none"} />
     </IconButton>
   );
 }
@@ -501,9 +506,12 @@ function ArticleViewInner({
   const { data: session } = useSuspenseQuery(user.getSessionQueryOptions);
   const signedIn = Boolean(session?.user);
 
-  const { data: bookmark } = useSuspenseQuery(
-    readerApi.getBookmarkStatusQueryOptions(article.uri),
+  const { data: recommend } = useSuspenseQuery(
+    readerApi.getRecommendStatusQueryOptions(article.uri),
   );
+
+  const readStats = formatArticleReadStats(article.readCount);
+  const hasLikes = article.recommendCount > 0;
 
   const { mutate: markRead } = useMutation(readerApi.markReadMutationOptions());
   const markedUriRef = useRef<string | null>(null);
@@ -644,7 +652,7 @@ function ArticleViewInner({
             <BookmarkButton
               documentUri={article.uri}
               signedIn={signedIn}
-              initialBookmarked={bookmark?.isBookmarked ?? false}
+              initialRecommended={recommend?.isRecommended ?? false}
             />
             <IconButton
               variant="secondary"
@@ -698,10 +706,19 @@ function ArticleViewInner({
                   primaryAuthor(article)
                 )}
               </div>
-              <div {...stylex.props(styles.bylineMeta)}>
-                {date}
-                {readingLabel ? ` · ${readingLabel}` : null}
-              </div>
+              <Flex align="center" gap="md" wrap style={styles.bylineMeta}>
+                <span>
+                  {date}
+                  {readingLabel ? ` · ${readingLabel}` : null}
+                  {readStats ? ` · ${readStats}` : null}
+                </span>
+                {hasLikes ? (
+                  <>
+                    <span aria-hidden>·</span>
+                    <LikeCount count={article.recommendCount} size="sm" />
+                  </>
+                ) : null}
+              </Flex>
             </div>
           </div>
 

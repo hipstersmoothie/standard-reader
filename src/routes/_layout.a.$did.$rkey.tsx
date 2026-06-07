@@ -68,7 +68,7 @@ export const Route = createFileRoute("/_layout/a/$did/$rkey")({
     }
     if (article) {
       await context.queryClient.ensureQueryData(
-        readerApi.getBookmarkStatusQueryOptions(uri),
+        readerApi.getRecommendStatusQueryOptions(uri),
       );
       if (article.publicationUri) {
         await context.queryClient.ensureQueryData(
@@ -94,9 +94,7 @@ export const Route = createFileRoute("/_layout/a/$did/$rkey")({
       return {
         meta: [
           {
-            title: publicationName
-              ? `${title} · ${publicationName}`
-              : title,
+            title: publicationName ? `${title} · ${publicationName}` : title,
           },
         ],
       };

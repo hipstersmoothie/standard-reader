@@ -40,7 +40,13 @@ import {
   formatReaders,
   publicationLinkParams,
 } from "./format";
-import { Handle, MetaLine, PublicationAvatar, Topic } from "./primitives";
+import {
+  Handle,
+  LikeCount,
+  MetaLine,
+  PublicationAvatar,
+  Topic,
+} from "./primitives";
 import {
   applyFollowOptimisticUpdate,
   invalidateFollowQueries,
@@ -610,10 +616,18 @@ function ArticleTitleRow({
 }
 
 function ArticleMetaLine({ article }: { article: ArticleCard }) {
-  if (articleTopics(article).length === 0) return null;
+  const hasLikes = article.recommendCount > 0;
+  const topics = articleTopics(article);
+  if (!hasLikes && topics.length === 0) return null;
 
   return (
     <MetaLine>
+      {hasLikes ? <LikeCount count={article.recommendCount} /> : null}
+      {hasLikes && topics.length > 0 ? (
+        <span aria-hidden {...stylex.props(styles.metaDot)}>
+          ·
+        </span>
+      ) : null}
       <TopicMeta article={article} />
     </MetaLine>
   );
@@ -821,6 +835,7 @@ export function CompactRow({
   article: ArticleCard;
   rank: number;
 }) {
+  const hasLikes = article.recommendCount > 0;
   return (
     <ArticleLink article={article} extraStyles={[styles.compactRow]}>
       <span {...stylex.props(styles.rank)}>
@@ -830,8 +845,13 @@ export function CompactRow({
         <span {...stylex.props(styles.compactTitle)}>{article.title}</span>
         <MetaLine>
           <span>{article.publicationName ?? "Unknown"}</span>
-          {article.publicationOwnerHandle ? (
-            <Handle>@{article.publicationOwnerHandle}</Handle>
+          {hasLikes ? (
+            <>
+              <span aria-hidden {...stylex.props(styles.metaDot)}>
+                ·
+              </span>
+              <LikeCount count={article.recommendCount} />
+            </>
           ) : null}
         </MetaLine>
       </Flex>
