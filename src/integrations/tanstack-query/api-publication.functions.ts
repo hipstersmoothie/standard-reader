@@ -19,9 +19,11 @@ import type {
   PublicationCard,
 } from "./api-shapes";
 
+import { leafletBlocks } from "#/lib/leaflet/blocks";
 import { LEAFLET_CONTENT } from "#/lib/leaflet/types";
 import { authorPds } from "#/server/atproto/identity";
 import { resolveLeafletContent } from "#/server/leaflet/resolve";
+import { highlightLeafletCodeBlocks } from "#/server/shiki/highlighter";
 
 import { publicationCardColumns, toPublicationCard } from "./api-shapes";
 import { dbMiddleware } from "./db-middleware";
@@ -78,6 +80,8 @@ export interface ArticleDetail {
   tags: Array<string> | null;
   contentJson: JsonValue;
   contentFormat: string | null;
+  /** Shiki HTML keyed by `codeBlockKey` for leaflet code blocks. */
+  codeHighlights: Record<string, string>;
   textContent: string | null;
   bskyPostUri: string | null;
   bskyPostCid: string | null;
@@ -368,6 +372,15 @@ const getArticle = createServerFn({ method: "GET" })
               )) as JsonValue)
             : (rawContentJson as JsonValue | null);
 
+        const codeHighlights =
+          row.contentFormat === LEAFLET_CONTENT && resolvedContentJson
+            ? await highlightLeafletCodeBlocks(
+                leafletBlocks(resolvedContentJson)
+                  .filter((block) => block.kind === "code")
+                  .map((block) => block.block),
+              )
+            : {};
+
         return {
           uri: row.uri,
           did: row.did,
@@ -383,6 +396,7 @@ const getArticle = createServerFn({ method: "GET" })
           tags: row.tags,
           contentJson: resolvedContentJson,
           contentFormat: row.contentFormat,
+          codeHighlights,
           textContent: row.textContent,
           bskyPostUri: row.bskyPostUri,
           bskyPostCid: row.bskyPostCid,

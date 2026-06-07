@@ -100,6 +100,20 @@ export const articleBodyStyles = stylex.create({
     paddingTop: spacing["4"],
     whiteSpace: "pre",
   },
+  /** Highlighted blocks: shell only — padding lives on the inner Shiki `<pre>`. */
+  codeBlockShell: {
+    "--code-block-padding": spacing["4"],
+    borderColor: uiColor.border1,
+    borderRadius: radius.md,
+    borderStyle: "solid",
+    borderWidth: 1,
+    fontFamily: fontFamily.mono,
+    fontSize: fontSize.sm,
+    lineHeight: 1.5,
+    marginBottom: "1.3em",
+    marginTop: spacing["0"],
+    overflowX: "auto",
+  },
   iframeFigure: {
     marginBottom: "1.3em",
     marginTop: spacing["0"],

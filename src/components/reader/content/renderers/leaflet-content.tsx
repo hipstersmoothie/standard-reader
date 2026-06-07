@@ -13,6 +13,7 @@ import { LeafletBlockView } from "./leaflet-block";
 /** Renders `pub.leaflet.content` — linear pages of typed blocks. */
 export function LeafletContentRenderer({
   blobContext,
+  codeHighlights,
   content,
   hasHero,
 }: ContentRendererProps) {
@@ -38,6 +39,7 @@ export function LeafletContentRenderer({
             key={index}
             block={block}
             blobContext={blobContext}
+            codeHighlights={codeHighlights}
             dropCap={dropCap}
           />
         );

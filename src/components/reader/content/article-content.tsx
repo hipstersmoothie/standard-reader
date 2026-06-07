@@ -102,6 +102,7 @@ export function ArticleContent({
         authorDid: article.did,
         authorPds: article.authorPds,
       },
+      codeHighlights: article.codeHighlights,
       content: article.contentJson,
       hasHero,
     };

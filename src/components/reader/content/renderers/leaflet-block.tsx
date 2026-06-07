@@ -18,10 +18,12 @@ import { LeafletUnknownBlockView } from "./leaflet-unknown";
 export function LeafletBlockView({
   block,
   blobContext,
+  codeHighlights,
   dropCap = false,
 }: {
   block: LeafletRenderableBlock;
   blobContext?: ContentBlobContext;
+  codeHighlights?: Record<string, string>;
   dropCap?: boolean;
 }) {
   switch (block.kind) {
@@ -42,7 +44,12 @@ export function LeafletBlockView({
         <LeafletImageBlockView block={block.block} blobContext={blobContext} />
       );
     case "code":
-      return <LeafletCodeBlockView block={block.block} />;
+      return (
+        <LeafletCodeBlockView
+          block={block.block}
+          codeHighlights={codeHighlights}
+        />
+      );
     case "iframe":
       return <LeafletIframeBlockView block={block.block} />;
     case "unknown":

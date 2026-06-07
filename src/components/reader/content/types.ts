@@ -11,6 +11,7 @@ export interface ContentRendererProps {
   content: JsonValue;
   hasHero: boolean;
   blobContext?: ContentBlobContext;
+  codeHighlights?: Record<string, string>;
 }
 
 export type ContentRenderer = React.ComponentType<ContentRendererProps>;
