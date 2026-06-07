@@ -43,6 +43,9 @@ export const Route = createFileRoute("/_layout/likes")({
   loader: async ({ context }) => {
     await context.queryClient.ensureQueryData(readerApi.getLikesQueryOptions());
   },
+  head: () => ({
+    meta: [{ title: "Saved articles · Standard Reader" }],
+  }),
   component: ReaderLikes,
 });
 

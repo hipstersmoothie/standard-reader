@@ -51,6 +51,13 @@ export const Route = createFileRoute("/_layout/p/$did/$rkey")({
         ),
       );
     }
+    return { publicationName: profile?.publication.name ?? null };
+  },
+  head: ({ loaderData }) => {
+    const name = loaderData?.publicationName;
+    return {
+      meta: [{ title: name ? `${name} · Standard Reader` : "Standard Reader" }],
+    };
   },
   component: PublicationProfile,
 });

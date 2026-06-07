@@ -133,6 +133,9 @@ export const Route = createFileRoute("/login")({
       ),
     };
   },
+  head: () => ({
+    meta: [{ title: "Sign in · Standard Reader" }],
+  }),
   component: AuthPage,
 });
 

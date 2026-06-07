@@ -47,6 +47,9 @@ export const Route = createFileRoute("/_layout/latest")({
       }),
     );
   },
+  head: () => ({
+    meta: [{ title: "Latest · Standard Reader" }],
+  }),
   component: Latest,
 });
 

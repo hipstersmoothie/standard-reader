@@ -4,7 +4,12 @@ import { Content } from "../design-system/content";
 import { Page } from "../design-system/page";
 import { Body } from "../design-system/typography";
 
-export const Route = createFileRoute("/_layout/about")({ component: About });
+export const Route = createFileRoute("/_layout/about")({
+  head: () => ({
+    meta: [{ title: "About · Standard Reader" }],
+  }),
+  component: About,
+});
 
 function About() {
   return (

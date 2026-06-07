@@ -99,6 +99,9 @@ export const Route = createFileRoute("/_layout/discover")({
       ),
     ]);
   },
+  head: () => ({
+    meta: [{ title: "Discover · Standard Reader" }],
+  }),
   component: Discover,
 });
 

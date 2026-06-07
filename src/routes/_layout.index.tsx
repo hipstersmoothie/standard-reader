@@ -34,6 +34,9 @@ export const Route = createFileRoute("/_layout/")({
       feedApi.getHomeFeedQueryOptions(),
     );
   },
+  head: () => ({
+    meta: [{ title: "Today · Standard Reader" }],
+  }),
   component: Home,
 });
 

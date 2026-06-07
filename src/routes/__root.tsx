@@ -90,7 +90,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
     meta: [
       { charSet: "utf8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "TanStack Start + hip-ui" },
+      { title: "Standard Reader" },
     ],
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },

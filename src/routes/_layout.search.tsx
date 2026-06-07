@@ -62,6 +62,9 @@ export const Route = createFileRoute("/_layout/search")({
       ]);
     }
   },
+  head: () => ({
+    meta: [{ title: "Search · Standard Reader" }],
+  }),
   component: Search,
 });
 
