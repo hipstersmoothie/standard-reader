@@ -71,9 +71,15 @@ const styles = stylex.create({
     marginLeft: "auto",
     marginRight: "auto",
     maxWidth: "1320px",
-    paddingBottom: "1.6rem",
-    paddingLeft: { default: "1.25rem", "@media (min-width: 40rem)": "2.5rem" },
-    paddingRight: { default: "1.25rem", "@media (min-width: 40rem)": "2.5rem" },
+    paddingBottom: spacing["6"],
+    paddingLeft: {
+      default: spacing["5"],
+      "@media (min-width: 40rem)": spacing["10"],
+    },
+    paddingRight: {
+      default: spacing["5"],
+      "@media (min-width: 40rem)": spacing["10"],
+    },
     paddingTop: spacing["6"],
     width: "100%",
   },

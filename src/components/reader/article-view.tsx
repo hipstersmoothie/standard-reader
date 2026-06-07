@@ -9,8 +9,10 @@ import {
   useSuspenseQuery,
 } from "@tanstack/react-query";
 import { Link, useRouter } from "@tanstack/react-router";
+import { AppLink } from "#/components/reader/app-link";
 import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
+import { parseInternalRoute } from "#/lib/internal-route";
 import { ArrowLeft, Bookmark, ExternalLink, Share2 } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
@@ -102,11 +104,11 @@ const styles = stylex.create({
     borderBottomWidth: 1,
     paddingBottom: spacing["3"],
     paddingLeft: {
-      default: "1.1rem",
+      default: spacing["4"],
       "@media (min-width: 40rem)": spacing["5"],
     },
     paddingRight: {
-      default: "1.1rem",
+      default: spacing["4"],
       "@media (min-width: 40rem)": spacing["5"],
     },
     paddingTop: spacing["3"],
@@ -460,6 +462,25 @@ function MoreFromRow({
 
   const href = article.canonicalUrl;
   if (!href) return null;
+  const internal = parseInternalRoute(href);
+  if (internal?.params) {
+    return (
+      <Link
+        to={internal.to}
+        params={internal.params}
+        {...stylex.props(styles.moreRow)}
+      >
+        {body}
+      </Link>
+    );
+  }
+  if (internal) {
+    return (
+      <Link to={internal.to} {...stylex.props(styles.moreRow)}>
+        {body}
+      </Link>
+    );
+  }
   return (
     <a
       href={href}
@@ -611,17 +632,18 @@ function ArticleViewInner({
                       <Handle>@{article.publicationOwnerHandle}</Handle>
                     ) : null}
                   </Link>
-                ) : (
-                  <a
-                    href={pub.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    {...stylex.props(styles.pubByline)}
-                  >
+                ) : pub.url ? (
+                  <AppLink href={pub.url} linkStyle={styles.pubByline}>
                     <span {...stylex.props(styles.pubBylineName)}>
                       {pub.name}
                     </span>
-                  </a>
+                  </AppLink>
+                ) : (
+                  <span {...stylex.props(styles.pubByline)}>
+                    <span {...stylex.props(styles.pubBylineName)}>
+                      {pub.name}
+                    </span>
+                  </span>
                 )}
               </>
             ) : null}
@@ -689,15 +711,18 @@ function ArticleViewInner({
             {pub ? <PublicationAvatar pub={pub} size="lg" /> : null}
             <div {...stylex.props(styles.bylineWho)}>
               <div {...stylex.props(styles.bylineName)}>
-                {pub?.url ? (
-                  <a
-                    href={pub.url}
-                    target="_blank"
-                    rel="noreferrer"
+                {pubParams ? (
+                  <Link
+                    to="/p/$did/$rkey"
+                    params={pubParams}
                     {...stylex.props(styles.bylineNameLink)}
                   >
                     {primaryAuthor(article)}
-                  </a>
+                  </Link>
+                ) : pub?.url ? (
+                  <AppLink href={pub.url} linkStyle={styles.bylineNameLink}>
+                    {primaryAuthor(article)}
+                  </AppLink>
                 ) : (
                   primaryAuthor(article)
                 )}

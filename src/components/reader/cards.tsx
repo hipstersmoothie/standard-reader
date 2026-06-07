@@ -5,9 +5,11 @@ import type { FollowStatus } from "#/integrations/tanstack-query/api-reader.func
 import * as stylex from "@stylexjs/stylex";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, createLink } from "@tanstack/react-router";
+import { gap } from "#/design-system/theme/semantic-spacing.stylex";
 import { spacing } from "#/design-system/theme/spacing.stylex.tsx";
 import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
+import { parseInternalRoute } from "#/lib/internal-route";
 import { ArrowRight, Check, Plus } from "lucide-react";
 import { Fragment } from "react";
 
@@ -79,17 +81,17 @@ const styles = stylex.create({
   },
   feature: {
     alignItems: "center",
-    columnGap: "2.25rem",
+    columnGap: spacing["9"],
     display: "grid",
     gridTemplateColumns: {
       default: "1fr",
       "@media (min-width: 48rem)": "1.05fr 1fr",
     },
-    rowGap: "2.25rem",
+    rowGap: spacing["9"],
     borderBottomColor: uiColor.border1,
     borderBottomStyle: "solid",
     borderBottomWidth: 1,
-    paddingBottom: "2.25rem",
+    paddingBottom: spacing["9"],
   },
   featureTextOnly: {
     display: "block",
@@ -118,18 +120,18 @@ const styles = stylex.create({
   },
   row: {
     alignItems: "start",
-    columnGap: "1.5rem",
+    columnGap: gap["5xl"],
     display: "grid",
     gridTemplateColumns: {
       default: "1fr",
       "@media (min-width: 40rem)": "1fr 150px",
     },
-    rowGap: "1.5rem",
+    rowGap: gap["5xl"],
     borderBottomColor: uiColor.border1,
     borderBottomStyle: "solid",
     borderBottomWidth: 1,
-    paddingBottom: "1.5rem",
-    paddingTop: "1.5rem",
+    paddingBottom: spacing["6"],
+    paddingTop: spacing["6"],
   },
   rowNoMedia: {
     gridTemplateColumns: "1fr",
@@ -163,25 +165,25 @@ const styles = stylex.create({
     display: "inline-block",
     flexShrink: 0,
     height: "7px",
-    marginTop: "0.45rem",
+    marginTop: spacing["2"],
     width: "7px",
   },
   unreadDotCentered: {
-    marginTop: 0,
+    marginTop: spacing["0"],
   },
   unreadDotRow: {
     marginTop: spacing["1"],
   },
   compactRow: {
     alignItems: "baseline",
-    columnGap: "0.85rem",
+    columnGap: gap["3xl"],
     display: "flex",
-    rowGap: "0.85rem",
+    rowGap: gap["3xl"],
     borderBottomColor: uiColor.border1,
     borderBottomStyle: "solid",
     borderBottomWidth: { default: 1, ":last-child": 0 },
-    paddingBottom: "0.8rem",
-    paddingTop: "0.8rem",
+    paddingBottom: spacing["3.5"],
+    paddingTop: spacing["3.5"],
   },
   rank: {
     color: uiColor.text1,
@@ -214,8 +216,8 @@ const styles = stylex.create({
     borderBottomColor: uiColor.border1,
     borderBottomStyle: "solid",
     borderBottomWidth: 1,
-    paddingBottom: "0.75rem",
-    paddingTop: "0.75rem",
+    paddingBottom: spacing["3"],
+    paddingTop: spacing["3"],
     width: "100%",
   },
   miniRowBodyLast: {
@@ -659,6 +661,21 @@ function ArticleLink({
   }
   const href = article.canonicalUrl;
   if (href) {
+    const internal = parseInternalRoute(href);
+    if (internal?.params) {
+      return (
+        <Link to={internal.to} params={internal.params} {...merged}>
+          {children}
+        </Link>
+      );
+    }
+    if (internal) {
+      return (
+        <Link to={internal.to} {...merged}>
+          {children}
+        </Link>
+      );
+    }
     return (
       <a href={href} target="_blank" rel="noreferrer" {...merged}>
         {children}
@@ -688,17 +705,41 @@ function PublicationLink({
       </Link>
     );
   }
-  return (
-    <a
-      href={pub.url}
-      target="_blank"
-      rel="noreferrer"
-      onClick={onNavigate}
-      {...merged}
-    >
-      {children}
-    </a>
-  );
+  const href = pub.url;
+  if (href) {
+    const internal = parseInternalRoute(href);
+    if (internal?.params) {
+      return (
+        <Link
+          to={internal.to}
+          params={internal.params}
+          onClick={onNavigate}
+          {...merged}
+        >
+          {children}
+        </Link>
+      );
+    }
+    if (internal) {
+      return (
+        <Link to={internal.to} onClick={onNavigate} {...merged}>
+          {children}
+        </Link>
+      );
+    }
+    return (
+      <a
+        href={href}
+        target="_blank"
+        rel="noreferrer"
+        onClick={onNavigate}
+        {...merged}
+      >
+        {children}
+      </a>
+    );
+  }
+  return <div {...stylex.props(...extraStyles)}>{children}</div>;
 }
 
 /** Cover for an article: only its own cover image (never the Bluesky banner). */

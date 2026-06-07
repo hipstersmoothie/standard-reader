@@ -3,6 +3,7 @@
 import type { Components } from "react-markdown";
 
 import * as stylex from "@stylexjs/stylex";
+import { AppLink } from "#/components/reader/app-link";
 import { spacing } from "#/design-system/theme/spacing.stylex";
 import { STANDARD_MARKDOWN_CONTENT } from "#/lib/document/structured-content/types";
 import { articleMarkdownSanitizeSchema } from "#/lib/markdown/article-sanitize-schema";
@@ -32,7 +33,7 @@ function markdownText(content: unknown): string | null {
 
 const markdownStyles = stylex.create({
   blockquote: {
-    marginBottom: "1.3em",
+    marginBottom: spacing["6"],
     marginTop: spacing["0"],
   },
 });
@@ -105,16 +106,14 @@ function useMarkdownComponents(
         }
         return <p {...stylex.props(articleBodyStyles.paragraph)}>{children}</p>;
       },
-      a: ({ href, children }) => (
-        <a
-          href={href}
-          target="_blank"
-          rel="noreferrer"
-          {...stylex.props(articleBodyStyles.facetLink)}
-        >
-          {children}
-        </a>
-      ),
+      a: ({ href, children }) =>
+        href ? (
+          <AppLink href={href} linkStyle={articleBodyStyles.facetLink}>
+            {children}
+          </AppLink>
+        ) : (
+          <>{children}</>
+        ),
       ul: ({ children }) => (
         <ul {...stylex.props(articleBodyStyles.list)}>{children}</ul>
       ),

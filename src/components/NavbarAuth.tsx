@@ -29,6 +29,7 @@ import { Handle } from "./reader/primitives";
 import { ThemeSubMenu } from "./ThemeMenu";
 
 const ButtonLink = createLink(Button);
+const MenuItemLink = createLink(MenuItem);
 
 const styles = stylex.create({
   sidebarTrigger: {
@@ -190,14 +191,9 @@ export function NavbarAuth({
           ) : undefined
         }
       >
-        <MenuItem
-          onPress={() => {
-            void navigate({ to: "/likes" });
-          }}
-          suffix={<Bookmark />}
-        >
+        <MenuItemLink to="/likes" suffix={<Bookmark />}>
           Saved articles
-        </MenuItem>
+        </MenuItemLink>
         <MenuSeparator />
         <MenuItem
           onPress={() => {

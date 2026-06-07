@@ -69,10 +69,10 @@ const styles = stylex.create({
     paddingTop: verticalSpace["xxs"],
   },
   popoverPanel: {
-    paddingBottom: 0,
-    paddingLeft: 0,
-    paddingRight: 0,
-    paddingTop: 0,
+    paddingBottom: spacing["0"],
+    paddingLeft: spacing["0"],
+    paddingRight: spacing["0"],
+    paddingTop: spacing["0"],
   },
   popoverHeader: {
     gap: gap["md"],
@@ -91,8 +91,8 @@ const styles = stylex.create({
     fontFamily: fontFamily.sans,
     fontSize: fontSize.sm,
     fontWeight: fontWeight.semibold,
-    marginBottom: 0,
-    marginTop: 0,
+    marginBottom: spacing["0"],
+    marginTop: spacing["0"],
   },
   popoverBody: {
     outline: "none",

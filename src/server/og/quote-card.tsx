@@ -2,11 +2,15 @@ import type { Font } from "satori";
 
 import { Resvg } from "@resvg/resvg-js";
 import { initials } from "#/components/reader/format";
+import { spacing } from "#/design-system/theme/spacing.stylex";
 import { truncateQuoteForDisplay } from "#/lib/quote-share";
 import { loadOgFonts } from "#/server/og/fonts";
 import { loadPublicationIcon } from "#/server/og/load-image";
-import { resolveQuoteOgColors } from '#/server/og/theme-colors';
-import type { PublicationThemeInput, QuoteOgColors } from '#/server/og/theme-colors';
+import { resolveQuoteOgColors } from "#/server/og/theme-colors";
+import type {
+  PublicationThemeInput,
+  QuoteOgColors,
+} from "#/server/og/theme-colors";
 import satori from "satori";
 
 const OG_WIDTH = 1200;
@@ -57,7 +61,7 @@ function quoteOgMarkup(input: {
         flexDirection: "column",
         fontFamily: "Newsreader",
         height: "100%",
-        padding: "56px 64px",
+        padding: `${spacing["14"]} ${spacing["16"]}`,
         width: "100%",
       }}
     >
@@ -67,8 +71,8 @@ function quoteOgMarkup(input: {
           flexDirection: "column",
           flexGrow: 1,
           justifyContent: "center",
-          paddingBottom: 30,
-          paddingTop: 30,
+          paddingBottom: spacing["7"],
+          paddingTop: spacing["7"],
         }}
       >
         <div
@@ -80,7 +84,7 @@ function quoteOgMarkup(input: {
           <div
             style={{
               display: "flex",
-              marginBottom: 18,
+              marginBottom: spacing["5"],
             }}
           >
             <QuoteGlyph accent={colors.accent} />
@@ -110,8 +114,8 @@ function quoteOgMarkup(input: {
           borderTopWidth: 1,
           display: "flex",
           flexDirection: "row",
-          gap: 18,
-          paddingTop: 26,
+          gap: spacing["5"],
+          paddingTop: spacing["6"],
         }}
       >
         {input.publicationIcon ? (
@@ -171,7 +175,7 @@ function quoteOgMarkup(input: {
                 fontSize: 19,
                 fontWeight: 400,
                 lineHeight: "22px",
-                marginTop: 2,
+                marginTop: spacing["0.5"],
               }}
             >
               @{handle}
@@ -186,7 +190,7 @@ function quoteOgMarkup(input: {
                 fontSize: 21,
                 fontWeight: 400,
                 lineHeight: "22px",
-                marginTop: 3,
+                marginTop: spacing["1"],
                 maxWidth: 620,
               }}
             >

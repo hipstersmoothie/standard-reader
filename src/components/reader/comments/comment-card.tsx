@@ -4,6 +4,7 @@ import type { DocumentComment } from "#/integrations/tanstack-query/api-comments
 import type { JsonValue } from "#/integrations/tanstack-query/api-shapes";
 
 import * as stylex from "@stylexjs/stylex";
+import { AppLink } from "#/components/reader/app-link";
 import { Avatar } from "#/design-system/avatar";
 import { Flex } from "#/design-system/flex";
 import { segmentFacetedText, shiftFacets } from "#/lib/leaflet/facets";
@@ -13,7 +14,10 @@ import { Fragment } from "react";
 
 import type { FacetFeature } from "../content/renderers/shared/facets";
 
-import { findFacetFeature, hasFacetKind } from "../content/renderers/shared/facets";
+import {
+  findFacetFeature,
+  hasFacetKind,
+} from "../content/renderers/shared/facets";
 import { formatRelativeTime, initials } from "../format";
 import { commentStyles } from "./comments-styles";
 
@@ -42,15 +46,13 @@ function CommentFacetSegment({
 
   if (link?.uri) {
     node = (
-      <a
+      <AppLink
         href={link.uri}
-        target="_blank"
-        rel="noreferrer"
-        {...stylex.props(commentStyles.facetLink)}
+        linkStyle={commentStyles.facetLink}
         onClick={(event) => event.stopPropagation()}
       >
         {text}
-      </a>
+      </AppLink>
     );
   } else if (didMention?.did) {
     node = (

@@ -22,7 +22,7 @@ export const articleBodyStyles = stylex.create({
     marginTop: spacing["0"],
   },
   paragraph: {
-    marginBottom: "1.3em",
+    marginBottom: spacing["6"],
     marginTop: spacing["0"],
   },
   /** First paragraph: contain floated drop cap so short openings clear the letter. */
@@ -49,7 +49,7 @@ export const articleBodyStyles = stylex.create({
     alignItems: "flex-start",
     backgroundColor: uiColor.component1,
     display: "flex",
-    marginBottom: "1.3em",
+    marginBottom: spacing["6"],
     marginTop: spacing["0"],
     paddingBottom: spacing["4"],
     paddingLeft: spacing["4"],
@@ -120,7 +120,7 @@ export const articleBodyStyles = stylex.create({
     fontSize: fontSize.sm,
     lineHeight: 1.5,
     whiteSpace: "pre",
-    marginBottom: "1.3em",
+    marginBottom: spacing["6"],
     marginTop: spacing["0"],
     overflowX: "auto",
     paddingBottom: spacing["4"],
@@ -138,12 +138,12 @@ export const articleBodyStyles = stylex.create({
     fontFamily: fontFamily.mono,
     fontSize: fontSize.sm,
     lineHeight: 1.5,
-    marginBottom: "1.3em",
+    marginBottom: spacing["6"],
     marginTop: spacing["0"],
     overflowX: "auto",
   },
   iframeFigure: {
-    marginBottom: "1.3em",
+    marginBottom: spacing["6"],
     marginTop: spacing["0"],
     maxWidth: "100%",
     minWidth: 0,
@@ -189,7 +189,7 @@ export const articleBodyStyles = stylex.create({
     marginTop: spacing["8"],
   },
   list: {
-    marginBottom: "1.3em",
+    marginBottom: spacing["6"],
     marginTop: spacing["0"],
     paddingLeft: spacing["6"],
   },
@@ -208,7 +208,7 @@ export const articleBodyStyles = stylex.create({
   imageFigure: {
     overflow: "hidden",
     boxSizing: "border-box",
-    marginBottom: "1.3em",
+    marginBottom: spacing["6"],
     marginLeft: spacing["0"],
     marginRight: spacing["0"],
     marginTop: spacing["0"],
@@ -223,7 +223,7 @@ export const articleBodyStyles = stylex.create({
     width: `calc(100% + 2 * ${spacing["6"]})`,
   },
   bskyPostEmbed: {
-    marginBottom: "1.3em",
+    marginBottom: spacing["6"],
     marginTop: spacing["0"],
     maxWidth: "100%",
 
@@ -236,7 +236,7 @@ export const articleBodyStyles = stylex.create({
   table: {
     borderCollapse: "collapse",
     fontSize: fontSize.sm,
-    marginBottom: "1.3em",
+    marginBottom: spacing["6"],
     marginTop: spacing["0"],
     width: "100%",
   },
@@ -263,7 +263,7 @@ export const articleBodyStyles = stylex.create({
     textDecoration: "none",
     backgroundColor: uiColor.component1,
     display: "block",
-    marginBottom: "1.3em",
+    marginBottom: spacing["6"],
     marginTop: spacing["0"],
   },
   websiteCardBody: {
@@ -314,7 +314,7 @@ export const articleBodyStyles = stylex.create({
   },
   taskList: {
     listStyle: "none",
-    marginBottom: "1.3em",
+    marginBottom: spacing["6"],
     marginTop: spacing["0"],
     paddingLeft: spacing["0"],
   },
@@ -339,7 +339,7 @@ export const articleBodyStyles = stylex.create({
     fontFamily: fontFamily.sans,
     fontSize: fontSize.sm,
     fontStyle: "italic",
-    marginBottom: "1.3em",
+    marginBottom: spacing["6"],
     marginTop: spacing["0"],
     paddingBottom: spacing["3"],
     paddingLeft: spacing["4"],
@@ -351,7 +351,7 @@ export const articleBodyStyles = stylex.create({
     gap: gap.lg,
     display: "flex",
     flexDirection: "column",
-    marginBottom: "1.3em",
+    marginBottom: spacing["6"],
     marginTop: spacing["0"],
   },
   playlistSong: {
@@ -386,7 +386,7 @@ export const articleBodyStyles = stylex.create({
     borderRadius: radius.sm,
     display: "block",
     height: "auto",
-    marginBottom: "1.3em",
+    marginBottom: spacing["6"],
     marginTop: spacing["0"],
     maxWidth: "100%",
   },

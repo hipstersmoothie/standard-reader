@@ -22,6 +22,7 @@ import { criticalColor, primaryColor, uiColor } from "./color.stylex";
 
 const styles = stylex.create({
   item: {
+    textDecoration: "none",
     display: "flex",
     userSelect: "none",
 

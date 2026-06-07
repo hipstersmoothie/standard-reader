@@ -8,6 +8,7 @@ import { Flex } from "../../design-system/flex";
 import { primaryColor, uiColor } from "../../design-system/theme/color.stylex";
 import { radius } from "../../design-system/theme/radius.stylex";
 import { ui } from "../../design-system/theme/semantic-color.stylex";
+import { gap } from "../../design-system/theme/semantic-spacing.stylex";
 import { spacing } from "../../design-system/theme/spacing.stylex";
 import {
   fontFamily,
@@ -97,23 +98,32 @@ const styles = stylex.create({
     marginLeft: "auto",
     marginRight: "auto",
     maxWidth: "1320px",
-    paddingBottom: "5rem",
-    paddingLeft: { default: "1.25rem", "@media (min-width: 40rem)": "2.5rem" },
-    paddingRight: { default: "1.25rem", "@media (min-width: 40rem)": "2.5rem" },
+    paddingBottom: spacing["20"],
+    paddingLeft: {
+      default: spacing["5"],
+      "@media (min-width: 40rem)": spacing["10"],
+    },
+    paddingRight: {
+      default: spacing["5"],
+      "@media (min-width: 40rem)": spacing["10"],
+    },
     width: "100%",
   },
   masthead: {
     alignItems: "end",
-    columnGap: "1.5rem",
+    columnGap: gap["5xl"],
     display: "flex",
     justifyContent: "space-between",
-    rowGap: "1.5rem",
+    rowGap: gap["5xl"],
     borderBottomColor: uiColor.border3,
     borderBottomStyle: "solid",
     borderBottomWidth: 2,
-    marginBottom: "1.9rem",
-    paddingBottom: "1.6rem",
-    paddingTop: { default: "1.5rem", "@media (min-width: 40rem)": "2.4rem" },
+    marginBottom: spacing["8"],
+    paddingBottom: spacing["6"],
+    paddingTop: {
+      default: spacing["6"],
+      "@media (min-width: 40rem)": spacing["10"],
+    },
   },
   mastheadTitle: {
     color: uiColor.text2,

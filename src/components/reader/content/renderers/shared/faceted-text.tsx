@@ -4,6 +4,7 @@ import type { LeafletFacet } from "#/lib/leaflet/types";
 import type { QuoteHighlightRange } from "#/lib/quote-highlight-text";
 
 import * as stylex from "@stylexjs/stylex";
+import { AppLink } from "#/components/reader/app-link";
 import {
   QuoteShareMark,
   intersectHighlightRange,
@@ -47,14 +48,9 @@ function FacetSegment({
 
   if (link?.uri) {
     node = (
-      <a
-        href={link.uri}
-        target="_blank"
-        rel="noreferrer"
-        {...stylex.props(articleBodyStyles.facetLink)}
-      >
+      <AppLink href={link.uri} linkStyle={articleBodyStyles.facetLink}>
         {text}
-      </a>
+      </AppLink>
     );
   } else if (didMention?.did) {
     node = (

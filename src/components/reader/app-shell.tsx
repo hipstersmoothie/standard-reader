@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { feedApi } from "#/integrations/tanstack-query/api-feed.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
+import { parseInternalRoute } from "#/lib/internal-route";
 import { Compass, Home, Newspaper, Search } from "lucide-react";
 
 import type { PublicationCard } from "../../integrations/tanstack-query/api-shapes";
@@ -14,9 +15,11 @@ import { Flex } from "../../design-system/flex";
 import { primaryColor, uiColor } from "../../design-system/theme/color.stylex";
 import { radius } from "../../design-system/theme/radius.stylex";
 import {
+  gap,
   horizontalSpace,
   verticalSpace,
 } from "../../design-system/theme/semantic-spacing.stylex";
+import { spacing } from "../../design-system/theme/spacing.stylex";
 import {
   fontFamily,
   fontSize,
@@ -49,10 +52,10 @@ const styles = stylex.create({
     borderRightWidth: 1,
     height: "100vh",
     overflowY: "auto",
-    paddingBottom: "1rem",
-    paddingLeft: "1.1rem",
-    paddingRight: "1.1rem",
-    paddingTop: "2.4rem",
+    paddingBottom: verticalSpace["3xl"],
+    paddingLeft: horizontalSpace["3xl"],
+    paddingRight: horizontalSpace["3xl"],
+    paddingTop: verticalSpace["8xl"],
     top: 0,
     width: "264px",
   },
@@ -74,10 +77,10 @@ const styles = stylex.create({
   },
   brandAccent: { color: primaryColor.text2 },
   nav: {
-    columnGap: "0.1rem",
+    columnGap: gap.xxs,
     display: "flex",
     flexDirection: "column",
-    rowGap: "0.1rem",
+    rowGap: gap.xxs,
   },
   navItem: {
     borderRadius: radius.sm,
@@ -88,16 +91,16 @@ const styles = stylex.create({
       ":hover": uiColor.component1,
     },
     color: uiColor.text2,
-    columnGap: "0.7rem",
+    columnGap: gap.xl,
     display: "flex",
     fontFamily: fontFamily.sans,
     fontSize: fontSize.sm,
     fontWeight: fontWeight.medium,
-    rowGap: "0.7rem",
-    paddingBottom: "0.55rem",
-    paddingLeft: "0.65rem",
-    paddingRight: "0.65rem",
-    paddingTop: "0.55rem",
+    rowGap: gap.xl,
+    paddingBottom: verticalSpace.lg,
+    paddingLeft: horizontalSpace.lg,
+    paddingRight: horizontalSpace.lg,
+    paddingTop: verticalSpace.lg,
   },
   navItemActive: {
     backgroundColor: primaryColor.component1,
@@ -115,10 +118,10 @@ const styles = stylex.create({
     color: uiColor.text1,
     fontFamily: fontFamily.mono,
     fontSize: "0.7rem",
-    paddingBottom: "0.05rem",
-    paddingLeft: "0.5rem",
-    paddingRight: "0.5rem",
-    paddingTop: "0.05rem",
+    paddingBottom: verticalSpace.none,
+    paddingLeft: horizontalSpace.md,
+    paddingRight: horizontalSpace.md,
+    paddingTop: verticalSpace.none,
   },
   sideLabel: {
     alignItems: "center",
@@ -128,16 +131,16 @@ const styles = stylex.create({
     fontWeight: fontWeight.semibold,
     letterSpacing: tracking.widest,
     textTransform: "uppercase",
-    paddingBottom: "0.5rem",
-    paddingLeft: "0.65rem",
-    paddingRight: "0.65rem",
-    paddingTop: "1.1rem",
+    paddingBottom: verticalSpace.md,
+    paddingLeft: horizontalSpace.lg,
+    paddingRight: horizontalSpace.lg,
+    paddingTop: verticalSpace["3xl"],
   },
   followList: {
-    columnGap: "0.05rem",
+    columnGap: gap.none,
     display: "flex",
     flexDirection: "column",
-    rowGap: "0.05rem",
+    rowGap: gap.none,
   },
   followRow: {
     borderRadius: radius.sm,
@@ -148,13 +151,13 @@ const styles = stylex.create({
       ":hover": uiColor.component1,
     },
     color: "inherit",
-    columnGap: "0.6rem",
+    columnGap: gap.lg,
     display: "flex",
-    rowGap: "0.6rem",
-    paddingBottom: "0.35rem",
-    paddingLeft: "0.65rem",
-    paddingRight: "0.65rem",
-    paddingTop: "0.35rem",
+    rowGap: gap.lg,
+    paddingBottom: verticalSpace.sm,
+    paddingLeft: horizontalSpace.lg,
+    paddingRight: horizontalSpace.lg,
+    paddingTop: verticalSpace.sm,
   },
   followName: {
     overflow: "hidden",
@@ -169,16 +172,16 @@ const styles = stylex.create({
     fontFamily: fontFamily.serif,
     fontSize: fontSize.sm,
     fontStyle: "italic",
-    paddingLeft: "0.65rem",
-    paddingRight: "0.65rem",
+    paddingLeft: horizontalSpace.lg,
+    paddingRight: horizontalSpace.lg,
   },
   foot: {
-    columnGap: "0.7rem",
+    columnGap: gap.xl,
     display: "flex",
     flexDirection: "column",
-    rowGap: "0.7rem",
+    rowGap: gap.xl,
     marginTop: "auto",
-    paddingTop: "0.9rem",
+    paddingTop: verticalSpace["3xl"],
   },
   main: {
     overflow: "hidden",
@@ -207,10 +210,10 @@ const styles = stylex.create({
     borderBottomColor: uiColor.border1,
     borderBottomStyle: "solid",
     borderBottomWidth: 1,
-    paddingBottom: "0.75rem",
-    paddingLeft: "1.1rem",
-    paddingRight: "1.1rem",
-    paddingTop: "0.75rem",
+    paddingBottom: verticalSpace.xl,
+    paddingLeft: horizontalSpace["3xl"],
+    paddingRight: horizontalSpace["3xl"],
+    paddingTop: verticalSpace.xl,
     top: 0,
   },
   bottomNav: {
@@ -222,8 +225,8 @@ const styles = stylex.create({
     borderTopStyle: "solid",
     borderTopWidth: 1,
     bottom: 0,
-    paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))",
-    paddingTop: "0.4rem",
+    paddingBottom: `max(${spacing["2"]}, env(safe-area-inset-bottom))`,
+    paddingTop: verticalSpace.md,
   },
   bottomItem: {
     borderWidth: 0,
@@ -231,7 +234,7 @@ const styles = stylex.create({
     alignItems: "center",
     backgroundColor: "transparent",
     color: uiColor.text1,
-    columnGap: "0.2rem",
+    columnGap: gap.xs,
     cursor: "pointer",
     display: "flex",
     flexBasis: "0%",
@@ -241,9 +244,9 @@ const styles = stylex.create({
     fontFamily: fontFamily.sans,
     fontSize: "0.6rem",
     fontWeight: fontWeight.semibold,
-    rowGap: "0.2rem",
-    paddingBottom: "0.3rem",
-    paddingTop: "0.3rem",
+    rowGap: gap.xs,
+    paddingBottom: verticalSpace.sm,
+    paddingTop: verticalSpace.sm,
   },
   bottomItemActive: { color: primaryColor.text2 },
 });
@@ -323,9 +326,41 @@ function FollowRow({ pub }: { pub: PublicationCard }) {
     );
   }
 
+  const href = pub.url;
+  if (!href) {
+    return (
+      <div {...stylex.props(styles.followRow)}>
+        {avatar}
+        {name}
+      </div>
+    );
+  }
+
+  const internal = parseInternalRoute(href);
+  if (internal?.params) {
+    return (
+      <Link
+        to={internal.to}
+        params={internal.params}
+        {...stylex.props(styles.followRow)}
+      >
+        {avatar}
+        {name}
+      </Link>
+    );
+  }
+  if (internal) {
+    return (
+      <Link to={internal.to} {...stylex.props(styles.followRow)}>
+        {avatar}
+        {name}
+      </Link>
+    );
+  }
+
   return (
     <a
-      href={pub.url}
+      href={href}
       target="_blank"
       rel="noreferrer"
       {...stylex.props(styles.followRow)}
