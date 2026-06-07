@@ -563,19 +563,8 @@ function ArticleViewInner({ article }: { article: ArticleDetail }) {
             <IconButton
               variant="secondary"
               size="md"
-              label="Back to publication"
+              label="Back"
               onPress={() => {
-                if (pubParams) {
-                  void router.navigate({
-                    to: "/p/$did/$rkey",
-                    params: pubParams,
-                  });
-                  return;
-                }
-                if (pub?.url) {
-                  globalThis.location.assign(pub.url);
-                  return;
-                }
                 router.history.back();
               }}
             >
