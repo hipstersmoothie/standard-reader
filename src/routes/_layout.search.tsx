@@ -235,9 +235,7 @@ function Search() {
   const loadingMorePubsRef = useRef(false);
   const [input, setInput] = useState(urlQ);
   const [debouncedQ, setDebouncedQ] = useState(urlQ.trim());
-  const [publications, setPublications] = useState<Array<PublicationCard>>(
-    [],
-  );
+  const [publications, setPublications] = useState<Array<PublicationCard>>([]);
   const [pubTotal, setPubTotal] = useState(0);
   const [pubNextOffset, setPubNextOffset] = useState<number | null>(null);
   const [loadingMorePubs, setLoadingMorePubs] = useState(false);
@@ -419,7 +417,7 @@ function Search() {
                       }
                     />
                   ))}
-                  {pubNextOffset != null ? (
+                  {pubNextOffset == null ? null : (
                     <div {...stylex.props(styles.loadMoreWrap)}>
                       <Button
                         variant="secondary"
@@ -432,7 +430,7 @@ function Search() {
                           : `Load more (${pubTotal - publications.length} remaining)`}
                       </Button>
                     </div>
-                  ) : null}
+                  )}
                 </section>
               ) : null}
 

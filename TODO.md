@@ -123,7 +123,8 @@ in structured o11y (`observe`) and reads from the Neon read-model.
 - [x] Search: publications + articles split over the GIN `tsvector` columns
       (`websearch_to_tsquery` + `ts_rank`). Article bodies index record
       `textContent` plus extracted content blocks into `text_content`.
-      `searchApi.search`.
+      `searchApi.searchPublications` + `searchApi.searchArticles` with totals,
+      offset pagination, load-more (publications), and infinite scroll (articles).
 - [x] Handle resolution: AT Proto handle/domain → publication preview for the Add
       modal. `searchApi.resolvePublicationByHandle` resolves handle→DID, reads the
       read-model first, then falls back to listing the author's repo from their PDS
@@ -137,15 +138,15 @@ Build each on hip-ui components + StyleX tokens (no raw HTML/inline styles).
 - [x] **Home** — masthead (date + unread count), featured lead, latest unread rows, right rail (Trending articles + You might follow).
 - [x] **Latest** — chronological list, segmented All/Unread filter with counts.
 - [x] **Discover** — Recommended / Followed-by-people-you-follow / Trending / All (chips, sort, grid⇄list toggle).
-- [x] **Search** — editorial field, live results split into Publications + Articles. Route `/search` with URL `?q=`; `searchApi.search` (GIN full-text); reuses `PubDirectoryRow` + `ArticleRow`.
+- [x] **Search** — editorial field, live results split into Publications + Articles. Route `/search` with URL `?q=`; paginated search APIs with full counts; load more (publications) + infinite scroll (articles); reuses `PubDirectoryRow` + `ArticleRow`.
 - [x] **Article** (reading view) — ~680px measure, drop-cap, pull quotes, hero, sticky bar (back/byline/follow/save/share), reading-progress bar, footer pub card + "More from {publication}". Route `/a/$did/$rkey` (`_layout.a.$did.$rkey.tsx`); feed/profile cards link here; `publicationApi.getArticle` returns `moreFrom` + owner handle.
 - [x] **Publication profile** — banner + inline header (avatar/topic/name/desc/stats/Copy DID/Follow),
       recent writing, right rail (About + DID + readers-also-follow). Route `/p/$did/$rkey`
       (`_layout.p.$did.$rkey.tsx`); sidebar Following rows + cards link here instead of the
       external publication URL. The "followed by people you follow" social-proof line is deferred
       until the §7 social-graph query lands.
-- [ ] **Add / Follow modal** — Browse / Paste a handle (resolve → preview → follow) / Search tabs.
-- [ ] Global follow toggle reflects everywhere instantly (optimistic).
+- [x] **Add / Follow modal** — Search field + publication rows (no tabs); uses `searchPublications` API; trending suggestions when empty.
+- [x] Global follow toggle reflects everywhere instantly (optimistic).
 - [x] Theme picker (light / dark / system) + editorial dark tokens + Shiki `standard-reader-dark`.
 - [ ] Theme tokens / dark mode parity with prototype (remaining hardcoded surfaces).
 

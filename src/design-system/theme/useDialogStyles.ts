@@ -65,6 +65,9 @@ const styles = stylex.create({
     flexGrow: 1,
     minHeight: 0,
   },
+  dialogFitContent: {
+    flexGrow: 0,
+  },
   size: (size: Size) => ({
     width: size === "sm" ? 400 : size === "md" ? 600 : 800,
   }),
@@ -77,5 +80,6 @@ export function useDialogStyles({ size: sizeProp }: { size?: Size }) {
     overlay: styles.overlay,
     modal: [styles.modal, ui.bg, ui.text, ui.border, styles.size(size)],
     dialog: styles.dialog,
+    dialogFitContent: styles.dialogFitContent,
   };
 }

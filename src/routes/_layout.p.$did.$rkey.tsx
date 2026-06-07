@@ -266,6 +266,7 @@ function PublicationProfile() {
               publicationUri={pub.uri}
               signedIn={signedIn}
               size="md"
+              pub={pub}
               initialFollowing={follow.isFollowing}
             />
           </div>

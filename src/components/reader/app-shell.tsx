@@ -2,15 +2,14 @@
 
 import * as stylex from "@stylexjs/stylex";
 import { useQuery } from "@tanstack/react-query";
-import { Link, createLink } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { feedApi } from "#/integrations/tanstack-query/api-feed.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
-import { Compass, Home, Newspaper, Plus, Search } from "lucide-react";
+import { Compass, Home, Newspaper, Search } from "lucide-react";
 
 import type { PublicationCard } from "../../integrations/tanstack-query/api-shapes";
 
 import { Avatar } from "../../design-system/avatar";
-import { Button } from "../../design-system/button";
 import { Flex } from "../../design-system/flex";
 import { primaryColor, uiColor } from "../../design-system/theme/color.stylex";
 import { radius } from "../../design-system/theme/radius.stylex";
@@ -21,9 +20,9 @@ import {
   tracking,
 } from "../../design-system/theme/typography.stylex";
 import { NavbarAuth } from "../NavbarAuth";
+import { AddPublicationModal } from "./add-publication-modal";
 import { initials, publicationLinkParams } from "./format";
 
-const ButtonLink = createLink(Button);
 const DESKTOP = "@media (min-width: 60rem)";
 
 const styles = stylex.create({
@@ -192,21 +191,6 @@ const styles = stylex.create({
     rowGap: "0.7rem",
     marginTop: "auto",
     paddingTop: "0.9rem",
-  },
-  addBtn: {
-    borderColor: {
-      default: uiColor.solid1,
-      ":is([data-hovered])": primaryColor.solid1,
-      ":is([data-pressed])": primaryColor.solid2,
-    },
-    backgroundColor: {
-      default: uiColor.solid1,
-      ":is([data-hovered])": primaryColor.solid1,
-      ":is([data-pressed])": primaryColor.solid2,
-    },
-    boxShadow: "none",
-    color: uiColor.textContrast,
-    width: "100%",
   },
   main: {
     overflow: "hidden",
@@ -412,9 +396,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
         <Flex direction="column" gap="lg" style={styles.foot}>
           <NavbarAuth />
-          <ButtonLink to="/discover" style={styles.addBtn}>
-            <Plus size={16} /> Add publication
-          </ButtonLink>
+          <AddPublicationModal />
         </Flex>
       </aside>
 

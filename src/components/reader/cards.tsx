@@ -5,9 +5,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, createLink } from "@tanstack/react-router";
 import { spacing } from "#/design-system/theme/spacing.stylex.tsx";
 import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
+import type { FollowStatus } from "#/integrations/tanstack-query/api-reader.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
 import { ArrowRight, Check, Plus } from "lucide-react";
-import { Fragment, useState } from "react";
+import { Fragment } from "react";
 
 import type {
   ArticleCard,
@@ -40,6 +41,11 @@ import {
   publicationLinkParams,
 } from "./format";
 import { Handle, MetaLine, PublicationAvatar, Topic } from "./primitives";
+import {
+  applyFollowOptimisticUpdate,
+  invalidateFollowQueries,
+  rollbackFollowOptimisticUpdate,
+} from "./follow-optimistic";
 
 const ButtonLink = createLink(Button);
 
@@ -391,6 +397,45 @@ const styles = stylex.create({
     marginTop: spacing["1"],
     maxWidth: "64ch",
   },
+  modalPubRow: {
+    alignItems: "center",
+    columnGap: spacing["3.5"],
+    display: "flex",
+    rowGap: spacing["3.5"],
+    borderBottomColor: uiColor.border1,
+    borderBottomStyle: "solid",
+    borderBottomWidth: 1,
+    paddingBottom: spacing["3"],
+    paddingTop: spacing["3"],
+  },
+  modalPubRowLast: {
+    borderBottomWidth: 0,
+    paddingBottom: spacing["0"],
+  },
+  modalPubRowLink: {
+    alignItems: "center",
+    columnGap: spacing["3.5"],
+    display: "flex",
+    flexBasis: "0%",
+    flexGrow: 1,
+    flexShrink: 1,
+    minWidth: 0,
+    rowGap: spacing["3.5"],
+  },
+  modalPubName: {
+    color: uiColor.text2,
+    fontFamily: fontFamily.serif,
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.semibold,
+    letterSpacing: tracking.tight,
+    lineHeight: lineHeight.sm,
+  },
+  modalPubMeta: {
+    color: uiColor.text1,
+    fontFamily: fontFamily.mono,
+    fontSize: fontSize.xs,
+    letterSpacing: tracking.tight,
+  },
 });
 
 /* ── Follow toggle ──────────────────────────────────────────────────────── */
@@ -399,16 +444,28 @@ export function FollowButton({
   publicationUri,
   signedIn,
   size = "sm",
-  initialFollowing = false,
+  pub,
+  initialFollowing,
 }: {
   publicationUri: string;
   signedIn: boolean;
   size?: "sm" | "md";
-  /** Seed the toggle from a known follow state (e.g. the profile header). */
+  /** Publication card for optimistic sidebar updates when toggling follow. */
+  pub?: PublicationCard;
+  /** @deprecated Prefer letting the button read follow status from React Query. */
   initialFollowing?: boolean;
 }) {
   const queryClient = useQueryClient();
-  const [following, setFollowing] = useState(initialFollowing);
+  const { data: followStatus } = useQuery({
+    ...readerApi.getFollowStatusQueryOptions(publicationUri),
+    enabled: signedIn,
+    ...(initialFollowing === undefined
+      ? {}
+      : {
+          initialData: { isFollowing: initialFollowing } satisfies FollowStatus,
+        }),
+  });
+  const following = followStatus?.isFollowing ?? false;
   const followMutation = useMutation(
     readerApi.followPublicationMutationOptions(),
   );
@@ -426,13 +483,16 @@ export function FollowButton({
 
   const onPress = () => {
     const next = !following;
-    setFollowing(next);
     const mutation = next ? followMutation : unfollowMutation;
+    const optimistic = applyFollowOptimisticUpdate(queryClient, {
+      publicationUri,
+      pub,
+      following: next,
+    });
     mutation.mutate(publicationUri, {
-      onError: () => setFollowing(!next),
-      onSettled: () => {
-        void queryClient.invalidateQueries({ queryKey: ["feed"] });
-      },
+      onError: () =>
+        rollbackFollowOptimisticUpdate(queryClient, publicationUri, optimistic),
+      onSettled: () => invalidateFollowQueries(queryClient),
     });
   };
 
@@ -592,22 +652,30 @@ function PublicationLink({
   pub,
   children,
   extraStyles = [],
+  onNavigate,
 }: {
   pub: PublicationCard;
   children: React.ReactNode;
   extraStyles?: Array<stylex.StyleXStyles | false | undefined>;
+  onNavigate?: () => void;
 }) {
   const params = publicationLinkParams(pub.uri);
   const merged = stylex.props(styles.cardLink, ...extraStyles);
   if (params) {
     return (
-      <Link to="/p/$did/$rkey" params={params} {...merged}>
+      <Link to="/p/$did/$rkey" params={params} onClick={onNavigate} {...merged}>
         {children}
       </Link>
     );
   }
   return (
-    <a href={pub.url} target="_blank" rel="noreferrer" {...merged}>
+    <a
+      href={pub.url}
+      target="_blank"
+      rel="noreferrer"
+      onClick={onNavigate}
+      {...merged}
+    >
       {children}
     </a>
   );
@@ -850,9 +918,11 @@ function PubCardFoot({ pub }: { pub: PublicationCard }) {
 function FollowSlot({
   publicationUri,
   signedIn,
+  pub,
 }: {
   publicationUri: string;
   signedIn: boolean;
+  pub?: PublicationCard;
 }) {
   return (
     <div
@@ -864,7 +934,11 @@ function FollowSlot({
       }}
       onKeyDown={(event) => event.stopPropagation()}
     >
-      <FollowButton publicationUri={publicationUri} signedIn={signedIn} />
+      <FollowButton
+        publicationUri={publicationUri}
+        signedIn={signedIn}
+        pub={pub}
+      />
     </div>
   );
 }
@@ -888,7 +962,7 @@ export function PubCard({
     >
       <Flex align="center" justify="between" style={styles.pubCardHead}>
         <PublicationAvatar pub={pub} size="lg" />
-        <FollowSlot publicationUri={pub.uri} signedIn={signedIn} />
+        <FollowSlot publicationUri={pub.uri} signedIn={signedIn} pub={pub} />
       </Flex>
       <span {...stylex.props(styles.pubCardName)}>{pub.name}</span>
       {pub.ownerHandle ? <Handle>@{pub.ownerHandle}</Handle> : null}
@@ -910,6 +984,50 @@ export function PubRailCard({ pub }: { pub: PublicationCard }) {
 /** @deprecated Use {@link PubCard} */
 export function PubGridCard({ pub }: { pub: PublicationCard }) {
   return <PubCard pub={pub} />;
+}
+
+/* ── Compact modal row (Add publication) ─────────────────────────────────── */
+
+export function ModalPubRow({
+  pub,
+  signedIn,
+  isLast = false,
+  onNavigate,
+}: {
+  pub: PublicationCard;
+  signedIn: boolean;
+  isLast?: boolean;
+  onNavigate?: () => void;
+}) {
+  const metaParts: Array<string> = [];
+  if (pub.ownerHandle) {
+    metaParts.push(`@${pub.ownerHandle}`);
+  }
+  if (pub.topic) {
+    metaParts.push(pub.topic);
+  }
+  const meta = metaParts.join(" · ");
+
+  return (
+    <div
+      {...stylex.props(styles.modalPubRow, isLast && styles.modalPubRowLast)}
+    >
+      <PublicationLink
+        pub={pub}
+        extraStyles={[styles.modalPubRowLink]}
+        onNavigate={onNavigate}
+      >
+        <PublicationAvatar pub={pub} size="lg" />
+        <Flex direction="column" gap="xs" style={styles.grow}>
+          <span {...stylex.props(styles.modalPubName)}>{pub.name}</span>
+          {meta ? (
+            <span {...stylex.props(styles.modalPubMeta)}>{meta}</span>
+          ) : null}
+        </Flex>
+      </PublicationLink>
+      <FollowSlot publicationUri={pub.uri} signedIn={signedIn} pub={pub} />
+    </div>
+  );
 }
 
 /* ── Publication directory row (list / trending) ────────────────────────── */
@@ -967,7 +1085,7 @@ export function PubDirectoryRow({
           ) : null}
         </MetaLine>
       </Flex>
-      <FollowSlot publicationUri={pub.uri} signedIn={signedIn} />
+      <FollowSlot publicationUri={pub.uri} signedIn={signedIn} pub={pub} />
     </PublicationLink>
   );
 }

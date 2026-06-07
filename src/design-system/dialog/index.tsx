@@ -91,6 +91,8 @@ export interface DialogProps extends DialogTriggerProps {
   trigger: React.ReactNode;
   children: React.ReactNode;
   size?: Size;
+  /** Size the dialog to its content instead of stretching within the modal. */
+  fitContent?: boolean;
 }
 
 export const Dialog = ({
@@ -100,6 +102,7 @@ export const Dialog = ({
   isOpen,
   onOpenChange,
   size,
+  fitContent = false,
 }: DialogProps) => {
   const { trigger: triggerHaptic } = useHaptics();
   const dialogStyles = useDialogStyles({ size });
@@ -119,7 +122,13 @@ export const Dialog = ({
 
       <ModalOverlay {...stylex.props(dialogStyles.overlay)} isDismissable>
         <Modal {...stylex.props(dialogStyles.modal)}>
-          <AriaDialog {...stylex.props(dialogStyles.dialog, styles.dialog)}>
+          <AriaDialog
+            {...stylex.props(
+              dialogStyles.dialog,
+              styles.dialog,
+              fitContent && dialogStyles.dialogFitContent,
+            )}
+          >
             {children}
           </AriaDialog>
         </Modal>
