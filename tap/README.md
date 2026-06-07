@@ -68,10 +68,9 @@ deliver. Our defaults (see `docker-compose.yml`):
 
 - `TAP_SIGNAL_COLLECTION=site.standard.publication` — track every repo that has
   at least one publication record (i.e. all standard.site **publishers**).
-- `TAP_COLLECTION_FILTERS=site.standard.*,app.bsky.actor.profile,app.standard-reader.{bookmark,read}`
+- `TAP_COLLECTION_FILTERS=site.standard.*,app.bsky.actor.profile,app.standard-reader.read`
   — of those repos, deliver only the standard.site collections we model, Bluesky
-  profiles, and our own app-owned reader records (bookmark / read) written back
-  by the app.
+  profiles, and our own app-owned reader records (read) written back by the app.
 
 This indexes **all publications, their documents, contributor/owner profiles,
 and any subscription/recommend records that live in publisher repos.**
@@ -81,7 +80,7 @@ referencing another repo (a document contributor, a subscription's target
 publication, a recommend's document author), it calls tap's `/repos/add` for
 that DID (requires `TAP_API_URL` set in the root env). So the index grows along
 the graph from the publication seed. The app's write path does the same for the
-signed-in reader's own repo the first time they follow / bookmark / mark-read,
+signed-in reader's own repo the first time they follow / mark-read,
 so their app-owned records flow back into the read-model.
 
 ### Capturing the full subscription/recommend graph

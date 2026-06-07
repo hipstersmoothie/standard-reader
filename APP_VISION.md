@@ -95,7 +95,7 @@ Sections, top to bottom:
 ### Article (reading view)
 
 - Centered measure (~680px), drop-cap, pull quotes, hero image (if featured).
-- Sticky top bar: back, byline, follow, save (bookmark), share; reading-progress bar.
+- Sticky top bar: back, byline, follow, like, share; reading-progress bar.
 - Footer: publication card + follow; "More from {publication}".
 - **Discussion:** Bluesky posts linking the article (external URL or app quote shares), read-only — reply counts link out to bsky threads.
 - Opening an article marks it read.
@@ -132,7 +132,8 @@ source of truth; Neon holds a derived view for speed and cross-network querying.
 - **Subscriptions (follows):** reuse `standard.site`'s `site.standard.graph.subscription` record.
   Toggling follow is global and reflects everywhere (sidebar, cards, feed, profile) instantly; the
   write goes to the user's repo, the cache updates optimistically.
-- **Bookmarks:** an `app.standard-reader.bookmark` record per saved article (save toggle in reader).
+- **Likes:** reuse `standard.site`'s `site.standard.graph.recommend` record per liked article
+  (like toggle in reader).
 - **Read / unread:** an `app.standard-reader.read` record per article; opening an article
   marks it read.
 - **Routing:** URL-backed routes (TanStack Router) for every view — home / latest / discover /
@@ -157,7 +158,6 @@ source of truth; Neon holds a derived view for speed and cross-network querying.
   - Note: there's **no** "featured" flag or "topic" in the lexicons — both are app-derived
     (`topic` = a publication's most frequent document tag; Discover chips = top-N topics).
 - **App-owned lexicons** under the `app.standard-reader` namespace (JSON in `lexicons/`):
-  - `app.standard-reader.bookmark` — a saved article (`subject` = document at-uri).
   - `app.standard-reader.read` — an article marked read (`subject` = document at-uri).
 
 ---
@@ -175,7 +175,7 @@ AT Proto network (standard.site publications, profiles, follows)
                                                       │
                                                       ▼
                                    React UI (hip-ui + StyleX)
-   user writes (follow / bookmark / readState) ──▶ user's AT Proto repo
+   user writes (follow / like / readState) ──▶ user's AT Proto repo
                                                       └─▶ cache updated optimistically
 ```
 
@@ -191,7 +191,7 @@ AT Proto network (standard.site publications, profiles, follows)
   directory, search (GIN `tsvector`), recommendations, and trending. Derived aggregates
   (`publication_stats`, `publication_cosubscriptions`) are recomputed on a schedule. It is a
   cache — never the source of truth.
-- **Writes:** user actions (follow, bookmark, read state) are written as records to the user's repo
+- **Writes:** user actions (follow, like, read state) are written as records to the user's repo
   and reflected back into the cache.
 
 ### Discovery engine (network-powered)
@@ -217,7 +217,7 @@ hand-tuned lists:
 - AT Proto / Bluesky **OAuth login**.
 - Real publications & articles served from the **Neon read-model** (tap backfill).
 - **Home, Latest, Discover, Search, Article, Publication** screens ported to TanStack Start + hip-ui.
-- **Follows, bookmarks, and read-state** written back as records (and cached).
+- **Follows, likes, and read-state** written back as records (and cached).
 - **URL-backed routing** for every view.
 - Network-powered recommendations & trending (initial heuristics, tunable).
 

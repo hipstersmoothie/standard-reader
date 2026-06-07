@@ -50,6 +50,13 @@
       "when": 1780816055576,
       "tag": "0006_naive_shotgun",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1780871506115,
+      "tag": "0007_shallow_shadow_king",
+      "breakpoints": true
     }
   ]
 }

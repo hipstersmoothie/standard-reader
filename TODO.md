@@ -96,14 +96,14 @@ stores in `src/integrations/auth/`, session/user server fns in
       and restored per request).
 - [x] Guard personal views on auth state. `unauthMiddleware` bounces signed-in
       users from `/login`; `requireAuthMiddleware` is ready to gate personal
-      server fns/routes as Home/Latest/bookmarks land. Header shows a **Log in**
+      server fns/routes as Home/Latest/likes land. Header shows a **Log in**
       button that becomes the signed-in **user menu** (avatar → Copy DID / Log out).
 
 ## 4. Lexicons & writes (records = source of truth)
 
 - [x] Define app-owned lexicons under `app.standard-reader` (JSON in `lexicons/`):
   - [x] `app.standard-reader.read` (`subject` = document at-uri + `createdAt`)
-  - [x] ~~`app.standard-reader.bookmark`~~ — superseded by `site.standard.graph.recommend` (likes)
+  - [x] Likes reuse `site.standard.graph.recommend` (no app-owned like lexicon)
   - [x] Publish tooling via `goat` (`scripts/goat-lex.mjs`): `pnpm lex:lint`,
         `pnpm atproto:publish-lexicons`. Needs `LEXICON_PUBLISH_*` creds for the
         `standard-reader.app` authority + `_lexicon.*` DNS (`goat lex check-dns`).

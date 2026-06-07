@@ -12,7 +12,6 @@
  * personal state that we write back to their repo (see `APP_VISION.md` §5).
  */
 export const APP_NSID = {
-  bookmark: "app.standard-reader.bookmark",
   read: "app.standard-reader.read",
 } as const;
 

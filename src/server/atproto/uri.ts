@@ -23,7 +23,6 @@ export const Collections = {
   recommend: STANDARD_NSID.recommend,
   theme: "site.standard.theme.basic",
   bskyProfile: "app.bsky.actor.profile",
-  bookmark: APP_NSID.bookmark,
   read: APP_NSID.read,
 } as const;
 

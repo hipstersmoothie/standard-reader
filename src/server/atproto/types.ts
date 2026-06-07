@@ -88,13 +88,6 @@ export interface RecommendRecord {
   createdAt?: string;
 }
 
-/** `app.standard-reader.bookmark` — a reader's saved article. */
-export interface BookmarkRecord {
-  $type?: string;
-  subject: string;
-  createdAt?: string;
-}
-
 /** `app.standard-reader.read` — an article the reader has read. */
 export interface ReadRecord {
   $type?: string;
