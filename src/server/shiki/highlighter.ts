@@ -1,4 +1,5 @@
 import { codeBlockKey, normalizeLanguage } from "#/lib/code-highlight";
+import type { ResolvedThemeScheme } from "#/lib/theme";
 import type { LeafletCodeBlock } from "#/lib/leaflet/types";
 import {
   createHighlighter,
@@ -6,7 +7,12 @@ import {
   type Highlighter,
 } from "shiki";
 
-const THEME = "github-light";
+import {
+  codeThemeNameForScheme,
+  editorialCodeTheme,
+  editorialCodeThemeDark,
+} from "./editorial-theme";
+
 const MAX_CACHE = 500;
 
 const STARTER_LANGS = [
@@ -32,7 +38,7 @@ const htmlCache = new Map<string, string>();
 async function getHighlighter(): Promise<Highlighter> {
   highlighterPromise ??= createHighlighter({
     langs: [...STARTER_LANGS],
-    themes: [THEME],
+    themes: [editorialCodeTheme, editorialCodeThemeDark],
   });
   return highlighterPromise;
 }
@@ -62,9 +68,11 @@ async function resolveLanguage(
 
 export async function highlightCodeBlock(
   plaintext: string,
-  language?: string,
+  language: string | undefined,
+  scheme: ResolvedThemeScheme = "light",
 ): Promise<string> {
-  const key = codeBlockKey({ language, plaintext });
+  const themeName = codeThemeNameForScheme(scheme);
+  const key = `${themeName}:${codeBlockKey({ language, plaintext })}`;
   const cached = htmlCache.get(key);
   if (cached) return cached;
 
@@ -75,7 +83,7 @@ export async function highlightCodeBlock(
   );
   const html = highlighter.codeToHtml(plaintext, {
     lang,
-    theme: THEME,
+    theme: themeName,
   });
 
   if (htmlCache.size >= MAX_CACHE) {
@@ -88,6 +96,7 @@ export async function highlightCodeBlock(
 
 export async function highlightLeafletCodeBlocks(
   blocks: Array<LeafletCodeBlock>,
+  scheme: ResolvedThemeScheme = "light",
 ): Promise<Record<string, string>> {
   const unique = new Map<string, LeafletCodeBlock>();
   for (const block of blocks) {
@@ -103,6 +112,7 @@ export async function highlightLeafletCodeBlocks(
       const html = await highlightCodeBlock(
         block.plaintext,
         block.language,
+        scheme,
       );
       return [key, html] as const;
     }),

@@ -3,13 +3,24 @@ import type { Did } from "@atcute/lexicons";
 import { isDid } from "@atcute/lexicons/syntax";
 import { queryOptions } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
-import { getRequest, setCookie } from "@tanstack/react-start/server";
+import { getCookie, getRequest, setCookie } from "@tanstack/react-start/server";
 import {
   restoreAtprotoSession,
   revokeAtprotoSession,
 } from "#/integrations/auth/atproto";
 import { AUTH_SESSION_TOKEN_COOKIE } from "#/integrations/auth/constants";
+import { maybeAuthMiddleware } from "#/middleware/auth";
+import {
+  dbValueToThemeMode,
+  parseThemeMode,
+  THEME_COOKIE,
+  THEME_COOKIE_MAX_AGE_SECONDS,
+  THEME_MODES,
+  themeModeToDbValue,
+  type ThemeMode,
+} from "#/lib/theme";
 import { eq } from "drizzle-orm";
+import { z } from "zod";
 
 import { dbMiddleware } from "./db-middleware";
 
@@ -84,6 +95,47 @@ const getSessionQueryOptions = queryOptions({
   },
 });
 
+const getThemePreference = createServerFn({ method: "GET" })
+  .middleware([dbMiddleware, maybeAuthMiddleware])
+  .handler(async ({ context }): Promise<{ mode: ThemeMode }> => {
+    const session = context?.session;
+    if (session?.user) {
+      const row = await context.db.query.user.findFirst({
+        where: eq(context.schema.user.id, session.user.id),
+        columns: { themeMode: true },
+      });
+      return { mode: dbValueToThemeMode(row?.themeMode ?? null) };
+    }
+
+    return { mode: parseThemeMode(getCookie(THEME_COOKIE)) };
+  });
+
+const getThemePreferenceQueryOptions = queryOptions({
+  queryKey: ["themePreference"] as const,
+  queryFn: () => getThemePreference(),
+  staleTime: Number.POSITIVE_INFINITY,
+});
+
+const setThemePreference = createServerFn({ method: "POST" })
+  .middleware([dbMiddleware, maybeAuthMiddleware])
+  .inputValidator(z.object({ mode: z.enum(THEME_MODES) }))
+  .handler(async ({ data, context }): Promise<{ mode: ThemeMode }> => {
+    setCookie(THEME_COOKIE, data.mode, {
+      path: "/",
+      sameSite: "lax",
+      maxAge: THEME_COOKIE_MAX_AGE_SECONDS,
+    });
+
+    if (context?.session?.user) {
+      await context.db
+        .update(context.schema.user)
+        .set({ themeMode: themeModeToDbValue(data.mode) })
+        .where(eq(context.schema.user.id, context.session.user.id));
+    }
+
+    return { mode: data.mode };
+  });
+
 const signOut = createServerFn({ method: "POST" })
   .middleware([dbMiddleware])
   .handler(async ({ context }) => {
@@ -128,5 +180,8 @@ const signOut = createServerFn({ method: "POST" })
 export const user = {
   getSession,
   getSessionQueryOptions,
+  getThemePreference,
+  getThemePreferenceQueryOptions,
+  setThemePreference,
   signOut,
 };

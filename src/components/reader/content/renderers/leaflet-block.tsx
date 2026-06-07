@@ -1,6 +1,7 @@
 "use client";
 
 import type { LeafletRenderableBlock } from "#/lib/leaflet/types";
+import type { CodeHighlightsByScheme } from "#/lib/theme";
 
 import type { ContentBlobContext } from "../types";
 
@@ -23,7 +24,7 @@ export function LeafletBlockView({
 }: {
   block: LeafletRenderableBlock;
   blobContext?: ContentBlobContext;
-  codeHighlights?: Record<string, string>;
+  codeHighlights?: CodeHighlightsByScheme;
   dropCap?: boolean;
 }) {
   switch (block.kind) {

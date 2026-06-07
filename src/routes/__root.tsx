@@ -2,6 +2,7 @@ import type { QueryClient } from "@tanstack/react-query";
 
 import * as stylex from "@stylexjs/stylex";
 import { TanStackDevtools } from "@tanstack/react-devtools";
+import { useQuery } from "@tanstack/react-query";
 import {
   HeadContent,
   Scripts,
@@ -18,6 +19,7 @@ import {
 } from "../components/reader/theme";
 import { ui } from "../design-system/theme/semantic-color.stylex";
 import { user } from "../integrations/tanstack-query/api-user.functions";
+import { DEFAULT_THEME_MODE, RESOLVED_SCHEME_SCRIPT } from "../lib/theme";
 import appCss from "../styles.css?url";
 import { saveHandle } from "../utils/saved-handles";
 
@@ -28,6 +30,15 @@ if (import.meta.env.DEV) {
 interface RouterContext {
   queryClient: QueryClient;
 }
+
+const COLOR_SCHEME_CSS = `
+html[data-theme="light"] { color-scheme: light; }
+html[data-theme="dark"] { color-scheme: dark; }
+html[data-theme="system"] { color-scheme: light; }
+@media (prefers-color-scheme: dark) {
+  html[data-theme="system"] { color-scheme: dark; }
+}
+`.trim();
 
 /**
  * The OAuth callback redirects back with `loginSuccess`, `handle`, and `avatar`
@@ -69,7 +80,10 @@ function PersistOAuthSavedHandle() {
 
 export const Route = createRootRouteWithContext<RouterContext>()({
   beforeLoad: async ({ context }) => {
-    await context.queryClient.ensureQueryData(user.getSessionQueryOptions);
+    await Promise.all([
+      context.queryClient.ensureQueryData(user.getSessionQueryOptions),
+      context.queryClient.ensureQueryData(user.getThemePreferenceQueryOptions),
+    ]);
   },
   head: () => ({
     meta: [
@@ -93,9 +107,18 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 });
 
 function RootDocument({ children }: { children: React.ReactNode }) {
+  const { data: themePreference } = useQuery({
+    ...user.getThemePreferenceQueryOptions,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+  });
+  const themeMode = themePreference?.mode ?? DEFAULT_THEME_MODE;
+
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" data-theme={themeMode} suppressHydrationWarning>
       <head>
+        <style dangerouslySetInnerHTML={{ __html: COLOR_SCHEME_CSS }} />
+        <script dangerouslySetInnerHTML={{ __html: RESOLVED_SCHEME_SCRIPT }} />
         <HeadContent />
       </head>
       <body

@@ -1,4 +1,5 @@
 import type { JsonValue } from "#/integrations/tanstack-query/api-shapes";
+import type { CodeHighlightsByScheme } from "#/lib/theme";
 
 export interface ContentBlobContext {
   /** DID of the repo that owns the document record (blob host). */
@@ -11,7 +12,7 @@ export interface ContentRendererProps {
   content: JsonValue;
   hasHero: boolean;
   blobContext?: ContentBlobContext;
-  codeHighlights?: Record<string, string>;
+  codeHighlights?: CodeHighlightsByScheme;
 }
 
 export type ContentRenderer = React.ComponentType<ContentRendererProps>;

@@ -76,7 +76,7 @@ const styles = stylex.create({
     overflow: "hidden",
   },
   stickyChrome: {
-    backgroundColor: "oklch(0.985 0.007 85 / 0.95)",
+    backgroundColor: `color-mix(in oklch, ${uiColor.bg} 95%, transparent)`,
     flexShrink: 0,
     position: "sticky",
     top: 0,
@@ -85,7 +85,7 @@ const styles = stylex.create({
   topBar: {
     alignItems: "center",
     backdropFilter: "blur(12px)",
-    backgroundColor: "oklch(0.985 0.007 85 / 0.9)",
+    backgroundColor: `color-mix(in oklch, ${uiColor.bg} 90%, transparent)`,
     columnGap: gap.lg,
     display: "flex",
     flexShrink: 0,

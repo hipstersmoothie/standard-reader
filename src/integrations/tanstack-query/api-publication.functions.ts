@@ -20,10 +20,17 @@ import type {
 } from "./api-shapes";
 
 import { leafletBlocks } from "#/lib/leaflet/blocks";
+import type { LeafletCodeBlock } from "#/lib/leaflet/types";
 import { LEAFLET_CONTENT } from "#/lib/leaflet/types";
+import {
+  EMPTY_CODE_HIGHLIGHTS,
+  type CodeHighlightsByScheme,
+  type ThemeMode,
+} from "#/lib/theme";
 import { authorPds } from "#/server/atproto/identity";
 import { resolveLeafletContent } from "#/server/leaflet/resolve";
 import { highlightLeafletCodeBlocks } from "#/server/shiki/highlighter";
+import { themeModeForRequest } from "#/server/theme-preference";
 
 import { publicationCardColumns, toPublicationCard } from "./api-shapes";
 import { dbMiddleware } from "./db-middleware";
@@ -48,6 +55,26 @@ const articleInput = z.object({
   documentUri: z.string().min(1),
   alsoFollowLimit: z.number().int().min(1).max(20).default(3),
 });
+
+async function codeHighlightsForThemeMode(
+  blocks: Array<LeafletCodeBlock>,
+  themeMode: ThemeMode,
+): Promise<CodeHighlightsByScheme> {
+  if (blocks.length === 0) return EMPTY_CODE_HIGHLIGHTS;
+
+  if (themeMode === "system") {
+    const [light, dark] = await Promise.all([
+      highlightLeafletCodeBlocks(blocks, "light"),
+      highlightLeafletCodeBlocks(blocks, "dark"),
+    ]);
+    return { light, dark };
+  }
+
+  const single = await highlightLeafletCodeBlocks(blocks, themeMode);
+  return themeMode === "dark"
+    ? { light: {}, dark: single }
+    : { light: single, dark: {} };
+}
 
 export interface PublicationProfile {
   publication: PublicationCard;
@@ -80,8 +107,8 @@ export interface ArticleDetail {
   tags: Array<string> | null;
   contentJson: JsonValue;
   contentFormat: string | null;
-  /** Shiki HTML keyed by `codeBlockKey` for leaflet code blocks. */
-  codeHighlights: Record<string, string>;
+  /** Shiki HTML keyed by `codeBlockKey`, per color scheme. */
+  codeHighlights: CodeHighlightsByScheme;
   textContent: string | null;
   bskyPostUri: string | null;
   bskyPostCid: string | null;
@@ -372,14 +399,23 @@ const getArticle = createServerFn({ method: "GET" })
               )) as JsonValue)
             : (rawContentJson as JsonValue | null);
 
-        const codeHighlights =
+        const themeMode = await themeModeForRequest(
+          db,
+          schema,
+          session?.session.user.id,
+        );
+
+        const codeBlocks =
           row.contentFormat === LEAFLET_CONTENT && resolvedContentJson
-            ? await highlightLeafletCodeBlocks(
-                leafletBlocks(resolvedContentJson)
-                  .filter((block) => block.kind === "code")
-                  .map((block) => block.block),
-              )
-            : {};
+            ? leafletBlocks(resolvedContentJson)
+                .filter((block) => block.kind === "code")
+                .map((block) => block.block)
+            : [];
+
+        const codeHighlights = await codeHighlightsForThemeMode(
+          codeBlocks,
+          themeMode,
+        );
 
         return {
           uri: row.uri,

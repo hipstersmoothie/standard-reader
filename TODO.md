@@ -144,7 +144,8 @@ Build each on hip-ui components + StyleX tokens (no raw HTML/inline styles).
       until the §7 social-graph query lands.
 - [ ] **Add / Follow modal** — Browse / Paste a handle (resolve → preview → follow) / Search tabs.
 - [ ] Global follow toggle reflects everywhere instantly (optimistic).
-- [ ] Theme tokens / dark mode parity with prototype.
+- [x] Theme picker (light / dark / system) + editorial dark tokens + Shiki `standard-reader-dark`.
+- [ ] Theme tokens / dark mode parity with prototype (remaining hardcoded surfaces).
 
 ## 7. Discovery engine (network-powered)
 

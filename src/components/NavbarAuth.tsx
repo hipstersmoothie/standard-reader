@@ -9,6 +9,7 @@ import { Button } from "../design-system/button";
 import { Flex } from "../design-system/flex";
 import { Menu, MenuItem, MenuSeparator } from "../design-system/menu";
 import { size } from "../design-system/theme/semantic-spacing.stylex";
+import { ThemeSubMenu } from "./ThemeMenu";
 
 const ButtonLink = createLink(Button);
 
@@ -60,6 +61,8 @@ export function NavbarAuth() {
         >
           Copy DID
         </MenuItem>
+        <MenuSeparator />
+        <ThemeSubMenu />
         <MenuSeparator />
         <MenuItem onPress={() => logoutMutation.mutate()} suffix={<LogOut />}>
           Log out
