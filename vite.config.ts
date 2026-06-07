@@ -10,6 +10,12 @@ import { defineConfig } from "vite";
 
 const config = defineConfig({
   resolve: { tsconfigPaths: true },
+  // `@resvg/resvg-js` is a server-only native module (ships a `.node` binary
+  // used for OG image rendering). Vite's dependency optimizer tries to parse it
+  // as JS and crashes ("stream did not contain valid UTF-8"), so keep it out of
+  // the optimizer and treat it as external for SSR.
+  optimizeDeps: { exclude: ["@resvg/resvg-js"] },
+  ssr: { external: ["@resvg/resvg-js"] },
   // StyleX emits one shared virtual stylesheet imported across the whole module
   // graph. With Vite 8 / Rolldown CSS code-splitting, that shared CSS gets
   // hoisted into a single route chunk (e.g. the article route) instead of being
