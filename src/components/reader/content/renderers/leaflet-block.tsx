@@ -3,18 +3,20 @@
 import type { LeafletRenderableBlock } from "#/lib/leaflet/types";
 import type { CodeHighlightsByScheme } from "#/lib/theme";
 
+import { leafletImageAspectRatio, leafletImageUrl } from "#/lib/leaflet/image";
+
 import type { ContentBlobContext } from "../types";
 
-import { LeafletBlockquoteBlockView } from "./leaflet-blockquote";
-import { LeafletBskyPostBlockView } from "./leaflet-bsky-post";
-import { LeafletCodeBlockView } from "./leaflet-code";
-import { LeafletHeaderBlockView } from "./leaflet-header";
-import { LeafletIframeBlockView } from "./leaflet-iframe";
-import { LeafletHorizontalRuleBlockView } from "./leaflet-horizontal-rule";
-import { LeafletImageBlockView } from "./leaflet-image";
 import { LeafletUnorderedListBlockView } from "./leaflet-list";
-import { LeafletTextBlockView } from "./leaflet-text";
-import { LeafletUnknownBlockView } from "./leaflet-unknown";
+import { BlockquoteBlockView } from "./shared/blockquote-block";
+import { BskyPostEmbedView } from "./shared/bsky-post-embed";
+import { CodeBlockView } from "./shared/code-block";
+import { TextBlockView } from "./shared/faceted-text";
+import { HeadingBlockView } from "./shared/heading-block";
+import { HorizontalRuleView } from "./shared/horizontal-rule";
+import { IframeEmbedView } from "./shared/iframe-embed";
+import { ImageFigureView } from "./shared/image-figure";
+import { UnknownBlockView } from "./shared/unknown-block";
 
 export function LeafletBlockView({
   block,
@@ -28,32 +30,80 @@ export function LeafletBlockView({
   dropCap?: boolean;
 }) {
   switch (block.kind) {
-    case "text":
-      return <LeafletTextBlockView block={block.block} dropCap={dropCap} />;
-    case "header":
-      return <LeafletHeaderBlockView block={block.block} />;
-    case "blockquote":
-      return <LeafletBlockquoteBlockView block={block.block} />;
-    case "horizontalRule":
-      return <LeafletHorizontalRuleBlockView />;
-    case "unorderedList":
-      return <LeafletUnorderedListBlockView block={block.block} />;
-    case "bskyPost":
-      return <LeafletBskyPostBlockView block={block.block} />;
-    case "image":
+    case "text": {
       return (
-        <LeafletImageBlockView block={block.block} blobContext={blobContext} />
+        <TextBlockView
+          plaintext={block.block.plaintext}
+          facets={block.block.facets}
+          dropCap={dropCap}
+        />
       );
-    case "code":
+    }
+    case "header": {
       return (
-        <LeafletCodeBlockView
-          block={block.block}
+        <HeadingBlockView
+          plaintext={block.block.plaintext}
+          level={block.block.level}
+        />
+      );
+    }
+    case "blockquote": {
+      return (
+        <BlockquoteBlockView
+          paragraphs={[
+            {
+              plaintext: block.block.plaintext,
+              facets: block.block.facets,
+            },
+          ]}
+        />
+      );
+    }
+    case "horizontalRule": {
+      return <HorizontalRuleView />;
+    }
+    case "unorderedList": {
+      return <LeafletUnorderedListBlockView block={block.block} />;
+    }
+    case "bskyPost": {
+      return <BskyPostEmbedView postUri={block.block.postRef?.uri} />;
+    }
+    case "image": {
+      if (!blobContext) return null;
+      const src = leafletImageUrl(
+        block.block,
+        blobContext.authorDid,
+        blobContext.authorPds,
+      );
+      if (!src) return null;
+      return (
+        <ImageFigureView
+          src={src}
+          alt={block.block.alt?.trim() ?? ""}
+          aspectRatio={leafletImageAspectRatio(block.block)}
+          fullBleed={block.block.fullBleed}
+        />
+      );
+    }
+    case "code": {
+      return (
+        <CodeBlockView
+          plaintext={block.block.plaintext}
+          language={block.block.language}
           codeHighlights={codeHighlights}
         />
       );
-    case "iframe":
-      return <LeafletIframeBlockView block={block.block} />;
-    case "unknown":
-      return <LeafletUnknownBlockView blockType={block.blockType} />;
+    }
+    case "iframe": {
+      return (
+        <IframeEmbedView
+          url={block.block.url ?? ""}
+          aspectRatio={block.block.aspectRatio}
+        />
+      );
+    }
+    case "unknown": {
+      return <UnknownBlockView blockType={block.blockType} />;
+    }
   }
 }

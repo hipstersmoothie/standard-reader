@@ -6,9 +6,8 @@ import {
   DEFAULT_THEME_MODE,
   getSystemColorScheme,
   readInitialSystemColorScheme,
-  type ResolvedThemeScheme,
-  type ThemeMode,
 } from "./theme";
+import type { ResolvedThemeScheme, ThemeMode } from "./theme";
 
 export interface ThemeContextValue {
   mode: ThemeMode;
@@ -40,10 +39,7 @@ export function useTheme(): ThemeContextValue {
     const listener = (event: MediaQueryListEvent) => {
       const next = event.matches ? "dark" : "light";
       setSystemScheme(next);
-      globalThis.document.documentElement.setAttribute(
-        "data-resolved-scheme",
-        next,
-      );
+      globalThis.document.documentElement.dataset.resolvedScheme = next;
     };
     media.addEventListener("change", listener);
     return () => media.removeEventListener("change", listener);
@@ -66,10 +62,7 @@ export function useTheme(): ThemeContextValue {
       if (globalThis.document !== undefined) {
         const resolved =
           next === "system" ? readInitialSystemColorScheme() : next;
-        globalThis.document.documentElement.setAttribute(
-          "data-resolved-scheme",
-          resolved,
-        );
+        globalThis.document.documentElement.dataset.resolvedScheme = resolved;
       }
       return { previous };
     },

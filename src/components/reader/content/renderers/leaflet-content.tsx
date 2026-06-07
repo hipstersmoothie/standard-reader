@@ -2,13 +2,12 @@
 
 import type { LeafletContent } from "#/lib/leaflet/types";
 
-import * as stylex from "@stylexjs/stylex";
 import { leafletBlocks } from "#/lib/leaflet/blocks";
 
 import type { ContentRendererProps } from "../types";
 
-import { articleBodyStyles } from "../body-styles";
 import { LeafletBlockView } from "./leaflet-block";
+import { ArticleBody } from "./shared/article-body";
 
 /** Renders `pub.leaflet.content` — linear pages of typed blocks. */
 export function LeafletContentRenderer({
@@ -17,20 +16,13 @@ export function LeafletContentRenderer({
   content,
   hasHero,
 }: ContentRendererProps) {
-  const leaflet = content as LeafletContent;
-  const blocks = leafletBlocks(leaflet);
-
+  const blocks = leafletBlocks(content as LeafletContent);
   if (blocks.length === 0) return null;
 
   let textSeen = false;
 
   return (
-    <div
-      {...stylex.props(
-        articleBodyStyles.body,
-        hasHero ? articleBodyStyles.bodyAfterHero : undefined,
-      )}
-    >
+    <ArticleBody hasHero={hasHero}>
       {blocks.map((block, index) => {
         const dropCap = block.kind === "text" && !textSeen;
         if (block.kind === "text") textSeen = true;
@@ -44,6 +36,6 @@ export function LeafletContentRenderer({
           />
         );
       })}
-    </div>
+    </ArticleBody>
   );
 }

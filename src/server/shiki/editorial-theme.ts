@@ -1,8 +1,8 @@
+import type { ResolvedThemeScheme } from "#/lib/theme";
 import type { ThemeRegistration } from "shiki";
+
 import rosePineDawn from "shiki/themes/rose-pine-dawn.mjs";
 import rosePineMoon from "shiki/themes/rose-pine-moon.mjs";
-
-import type { ResolvedThemeScheme } from "#/lib/theme";
 
 /**
  * Shiki themes aligned with `editorialUi` / `editorialPrimary` in

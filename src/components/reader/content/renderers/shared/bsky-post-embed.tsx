@@ -1,25 +1,22 @@
 "use client";
 
-import type { LeafletBskyPostBlock } from "#/lib/leaflet/types";
-
 import * as stylex from "@stylexjs/stylex";
-import { Post, PostSkeleton } from "bsky-react-post";
-import "bsky-react-post/theme.css";
 import { bskyPostApiUrl, parseBskyPostRef } from "#/lib/leaflet/bsky";
+import "bsky-react-post/theme.css";
 import { useTheme } from "#/lib/use-theme";
+import { Post, PostSkeleton } from "bsky-react-post";
 
-import { articleBodyStyles } from "../body-styles";
+import { articleBodyStyles } from "../../body-styles";
 
-export function LeafletBskyPostBlockView({
-  block,
+export function BskyPostEmbedView({
+  postUri,
 }: {
-  block: LeafletBskyPostBlock;
+  postUri: string | undefined;
 }) {
   const { resolvedScheme } = useTheme();
-  const uri = block.postRef?.uri;
-  if (!uri) return null;
+  if (!postUri) return null;
 
-  const ref = parseBskyPostRef(uri);
+  const ref = parseBskyPostRef(postUri);
   if (!ref) return null;
 
   return (

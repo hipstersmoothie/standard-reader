@@ -147,14 +147,6 @@ const styles = stylex.create({
     marginBottom: spacing["5"],
     marginTop: spacing["2"],
   },
-  sectionAction: {
-    color: primaryColor.text2,
-    fontFamily: fontFamily.sans,
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.semibold,
-    textDecoration: "none",
-    whiteSpace: "nowrap",
-  },
   divider: {
     borderBottomWidth: 0,
     borderLeftWidth: 0,

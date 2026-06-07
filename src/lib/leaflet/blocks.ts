@@ -170,8 +170,9 @@ export function plaintextLinesFromBlock(
     case "bskyPost":
     case "image":
     case "iframe":
-    case "unknown":
+    case "unknown": {
       return [];
+    }
   }
 }
 

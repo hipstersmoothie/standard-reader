@@ -30,18 +30,18 @@ import {
   lineHeight,
   tracking,
 } from "../../design-system/theme/typography.stylex";
+import { FollowButton, MiniPubRow } from "./cards";
 import { ArticleContent } from "./content/article-content";
 import {
   articleCardReadingText,
   articleReadingText,
 } from "./content/extract-text";
-import { FollowButton, MiniPubRow } from "./cards";
 import {
   articlePublicationUrl,
   documentLinkParams,
   formatDate,
-  publicationLinkParams,
   formatReadingTime,
+  publicationLinkParams,
   readingMinutes,
 } from "./format";
 import {
@@ -67,20 +67,20 @@ function articleScrollTargets(anchor: HTMLElement): Array<HTMLElement> {
 
 const styles = stylex.create({
   root: {
+    overflow: "hidden",
     display: "flex",
-    flexDirection: "column",
     flexBasis: "0%",
+    flexDirection: "column",
     flexGrow: 1,
     flexShrink: 1,
     minHeight: 0,
-    overflow: "hidden",
   },
   stickyChrome: {
     backgroundColor: `color-mix(in oklch, ${uiColor.bg} 95%, transparent)`,
     flexShrink: 0,
     position: "sticky",
-    top: 0,
     zIndex: 20,
+    top: 0,
   },
   topBar: {
     alignItems: "center",
@@ -115,8 +115,8 @@ const styles = stylex.create({
   progressTrack: {
     backgroundColor: uiColor.component2,
     flexShrink: 0,
-    height: spacing["1"],
     position: "relative",
+    height: spacing["1"],
     width: "100%",
   },
   topLeft: {
@@ -164,13 +164,13 @@ const styles = stylex.create({
   },
   progress: {
     backgroundColor: primaryColor.solid1,
-    height: "100%",
-    left: 0,
     position: "absolute",
-    top: 0,
     transitionDuration: animationDuration.fast,
     transitionProperty: "width",
     transitionTimingFunction: "linear",
+    height: "100%",
+    left: 0,
+    top: 0,
   },
   article: {
     boxSizing: "border-box",
@@ -236,9 +236,9 @@ const styles = stylex.create({
     paddingTop: spacing["5"],
   },
   bylineWho: {
+    gap: gap.sm,
     display: "flex",
     flexDirection: "column",
-    gap: gap.sm,
     textAlign: "left",
   },
   bylineName: {

@@ -6,7 +6,7 @@ import * as stylex from "@stylexjs/stylex";
 import { asTextBlock } from "#/lib/leaflet/blocks";
 
 import { articleBodyStyles } from "../body-styles";
-import { FacetedPlaintext } from "./leaflet-text";
+import { FacetedPlaintext } from "./shared/faceted-text";
 
 export function LeafletUnorderedListBlockView({
   block,

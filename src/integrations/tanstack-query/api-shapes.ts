@@ -1,5 +1,6 @@
 import type * as DbSchema from "#/db/schema";
-import { sql, type SQL } from "drizzle-orm";
+import { sql } from "drizzle-orm";
+import type { SQL } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 
 /**

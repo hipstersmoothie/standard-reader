@@ -1,11 +1,18 @@
 import type { ArticleDetail } from "#/integrations/tanstack-query/api-publication.functions";
 import type { ArticleCard } from "#/integrations/tanstack-query/api-shapes";
 
+import { parseArticleBlocks } from "#/lib/document/blocks";
+import { markdownPlaintext } from "#/lib/document/structured-content/markdown";
+import { STANDARD_MARKDOWN_CONTENT } from "#/lib/document/structured-content/types";
 import { leafletBlocks } from "#/lib/leaflet/blocks";
 import { leafletPlaintext } from "#/lib/leaflet/plaintext";
 import { LEAFLET_CONTENT } from "#/lib/leaflet/types";
-
-import { parseArticleBlocks } from "#/lib/document/blocks";
+import { offprintBlocks } from "#/lib/offprint/blocks";
+import { offprintPlaintext } from "#/lib/offprint/plaintext";
+import { OFFPRINT_CONTENT } from "#/lib/offprint/types";
+import { pcktBlocks } from "#/lib/pckt/blocks";
+import { pcktPlaintext } from "#/lib/pckt/plaintext";
+import { PCKT_CONTENT } from "#/lib/pckt/types";
 
 type ArticleBodyFields = Pick<
   ArticleDetail,
@@ -37,6 +44,15 @@ export function hasRenderableArticleBody(article: ArticleBodyFields): boolean {
   if (contentType === LEAFLET_CONTENT) {
     return leafletBlocks(article.contentJson).length > 0;
   }
+  if (contentType === PCKT_CONTENT) {
+    return pcktBlocks(article.contentJson).length > 0;
+  }
+  if (contentType === OFFPRINT_CONTENT) {
+    return offprintBlocks(article.contentJson).length > 0;
+  }
+  if (contentType === STANDARD_MARKDOWN_CONTENT) {
+    return Boolean(markdownPlaintext(article.contentJson));
+  }
 
   const blocks = parseArticleBlocks({
     textContent: null,
@@ -52,6 +68,15 @@ export function articleReadingText(article: ArticleDetail): string | null {
   const contentType = resolveContentType(article);
   if (contentType === LEAFLET_CONTENT) {
     return leafletPlaintext(article.contentJson);
+  }
+  if (contentType === PCKT_CONTENT) {
+    return pcktPlaintext(article.contentJson);
+  }
+  if (contentType === OFFPRINT_CONTENT) {
+    return offprintPlaintext(article.contentJson);
+  }
+  if (contentType === STANDARD_MARKDOWN_CONTENT) {
+    return markdownPlaintext(article.contentJson);
   }
 
   const blocks = parseArticleBlocks({

@@ -1,28 +1,36 @@
 "use client";
 
-import type { LeafletTextBlock } from "#/lib/leaflet/types";
+import type { LeafletFacet } from "#/lib/leaflet/types";
 
 import * as stylex from "@stylexjs/stylex";
 import { segmentFacetedText, shiftFacets } from "#/lib/leaflet/facets";
-import { LEAFLET_FACET } from "#/lib/leaflet/types";
 import { utf8ByteLength } from "#/lib/leaflet/utf8";
 import { Fragment } from "react";
 
-import { articleBodyStyles } from "../body-styles";
+import type { FacetFeature } from "./facets";
+
+import { articleBodyStyles } from "../../body-styles";
+import { findFacetFeature, hasFacetKind } from "./facets";
 
 function FacetSegment({
   text,
   features,
 }: {
   text: string;
-  features: Array<{ $type?: string; uri?: string }>;
+  features: Array<FacetFeature>;
 }) {
   if (features.length === 0) return <>{text}</>;
 
-  const isBold = features.some((f) => f.$type === LEAFLET_FACET.bold);
-  const isItalic = features.some((f) => f.$type === LEAFLET_FACET.italic);
-  const isCode = features.some((f) => f.$type === LEAFLET_FACET.code);
-  const link = features.find((f) => f.$type === LEAFLET_FACET.link && f.uri);
+  const isBold = hasFacetKind(features, "bold");
+  const isItalic = hasFacetKind(features, "italic");
+  const isCode = hasFacetKind(features, "code");
+  const isUnderline = hasFacetKind(features, "underline");
+  const isStrikethrough = hasFacetKind(features, "strikethrough");
+  const isHighlight = hasFacetKind(features, "highlight");
+  const link = findFacetFeature(features, "link");
+  const didMention =
+    findFacetFeature(features, "didMention") ??
+    findFacetFeature(features, "mention");
 
   let node: React.ReactNode = text;
 
@@ -41,6 +49,33 @@ function FacetSegment({
         {text}
       </a>
     );
+  } else if (didMention?.did) {
+    node = (
+      <a
+        href={`https://bsky.app/profile/${didMention.did}`}
+        target="_blank"
+        rel="noreferrer"
+        {...stylex.props(articleBodyStyles.facetLink)}
+      >
+        {text}
+      </a>
+    );
+  }
+
+  if (isHighlight) {
+    node = (
+      <mark {...stylex.props(articleBodyStyles.facetHighlight)}>{node}</mark>
+    );
+  }
+
+  if (isStrikethrough) {
+    node = (
+      <s {...stylex.props(articleBodyStyles.facetStrikethrough)}>{node}</s>
+    );
+  }
+
+  if (isUnderline) {
+    node = <u {...stylex.props(articleBodyStyles.facetUnderline)}>{node}</u>;
   }
 
   if (isItalic) {
@@ -61,7 +96,7 @@ export function FacetedPlaintext({
   facets,
 }: {
   plaintext: string;
-  facets: LeafletTextBlock["facets"];
+  facets?: Array<LeafletFacet> | Array<unknown>;
 }) {
   const segments = segmentFacetedText(plaintext, facets);
   return (
@@ -75,17 +110,19 @@ export function FacetedPlaintext({
   );
 }
 
-export function LeafletTextBlockView({
-  block,
+export function TextBlockView({
+  plaintext,
+  facets,
   dropCap = false,
 }: {
-  block: LeafletTextBlock;
+  plaintext: string;
+  facets?: Array<LeafletFacet> | Array<unknown>;
   dropCap?: boolean;
 }) {
-  if (!block.plaintext) return null;
+  if (!plaintext) return null;
 
   if (dropCap) {
-    const chars = [...block.plaintext];
+    const chars = [...plaintext];
     const firstChar = chars[0] ?? "";
     const rest = chars.slice(1).join("");
     const byteOffset = utf8ByteLength(firstChar);
@@ -102,7 +139,7 @@ export function LeafletTextBlockView({
         </span>
         <FacetedPlaintext
           plaintext={rest}
-          facets={shiftFacets(block.facets, byteOffset)}
+          facets={shiftFacets(facets, byteOffset)}
         />
       </p>
     );
@@ -110,7 +147,7 @@ export function LeafletTextBlockView({
 
   return (
     <p {...stylex.props(articleBodyStyles.paragraph)}>
-      <FacetedPlaintext plaintext={block.plaintext} facets={block.facets} />
+      <FacetedPlaintext plaintext={plaintext} facets={facets} />
     </p>
   );
 }

@@ -111,18 +111,18 @@ const styles = stylex.create({
   },
   railScroll: {
     alignItems: "stretch",
+    scrollSnapType: "x mandatory",
     columnGap: gap["lg"],
     display: "grid",
     gridAutoColumns: "300px",
     gridAutoFlow: "column",
+    rowGap: gap["lg"],
+    // eslint-disable-next-line @stylexjs/valid-styles
+    scrollbarWidth: "thin",
     marginTop: `calc(${spacing["3"]} * -1)`,
     overflowX: "auto",
     paddingBottom: spacing["2"],
     paddingTop: spacing["3"],
-    rowGap: gap["lg"],
-    scrollSnapType: "x mandatory",
-    // eslint-disable-next-line @stylexjs/valid-styles
-    scrollbarWidth: "thin",
   },
   socialGrid: {
     gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",

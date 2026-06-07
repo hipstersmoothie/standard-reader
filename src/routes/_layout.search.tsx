@@ -1,12 +1,14 @@
 "use client";
 
 import * as stylex from "@stylexjs/stylex";
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { searchApi } from "#/integrations/tanstack-query/api-search.functions";
 import { Search as SearchIcon, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { z } from "zod";
+
+import type { PublicationCard } from "../integrations/tanstack-query/api-shapes";
 
 import {
   ArticleRow,
@@ -18,6 +20,7 @@ import {
   ReaderContent,
   SectionHead,
 } from "../components/reader/primitives";
+import { Button } from "../design-system/button";
 import { Flex } from "../design-system/flex";
 import { IconButton } from "../design-system/icon-button";
 import { Skeleton } from "../design-system/skeleton";
@@ -31,7 +34,7 @@ import {
 } from "../design-system/theme/typography.stylex";
 
 const SEARCH_DEBOUNCE_MS = 300;
-const SEARCH_LIMIT = 20;
+const SEARCH_PAGE_SIZE = 20;
 const SKELETON_ROWS = 4;
 
 const searchSchema = z.object({
@@ -43,9 +46,20 @@ export const Route = createFileRoute("/_layout/search")({
   loaderDeps: ({ search }) => ({ q: search.q?.trim() ?? "" }),
   loader: async ({ context, deps }) => {
     if (deps.q) {
-      await context.queryClient.ensureQueryData(
-        searchApi.searchQueryOptions({ q: deps.q, limit: SEARCH_LIMIT }),
-      );
+      await Promise.all([
+        context.queryClient.ensureQueryData(
+          searchApi.searchPublicationsQueryOptions({
+            q: deps.q,
+            limit: SEARCH_PAGE_SIZE,
+          }),
+        ),
+        context.queryClient.ensureInfiniteQueryData(
+          searchApi.searchArticlesInfiniteQueryOptions({
+            q: deps.q,
+            limit: SEARCH_PAGE_SIZE,
+          }),
+        ),
+      ]);
     }
   },
   component: Search,
@@ -57,32 +71,34 @@ const styles = stylex.create({
   },
   searchField: {
     alignItems: "center",
+    columnGap: spacing["3.5"],
+    display: "flex",
+    rowGap: spacing["3.5"],
     borderBottomColor: uiColor.border3,
     borderBottomStyle: "solid",
     borderBottomWidth: 2,
-    columnGap: spacing["3.5"],
-    display: "flex",
     marginBottom: spacing["2"],
     paddingBottom: spacing["4"],
     paddingTop: spacing["4"],
-    rowGap: spacing["3.5"],
   },
   searchIcon: {
     color: uiColor.text1,
     flexShrink: 0,
   },
   searchInput: {
-    backgroundColor: "transparent",
     borderStyle: "none",
+    backgroundColor: "transparent",
     color: uiColor.text2,
-    flex: 1,
+    flexBasis: "0%",
+    flexGrow: "1",
+    flexShrink: "1",
     fontFamily: fontFamily.serif,
     fontSize: {
       default: fontSize["2xl"],
       "@media (min-width: 48rem)": fontSize["4xl"],
     },
-    minWidth: 0,
     outlineStyle: "none",
+    minWidth: 0,
     paddingBottom: spacing["0"],
     paddingLeft: spacing["0"],
     paddingRight: spacing["0"],
@@ -108,22 +124,32 @@ const styles = stylex.create({
   sectionFirst: {
     marginTop: spacing["0"],
   },
+  loadMoreWrap: {
+    display: "flex",
+    justifyContent: "center",
+    marginTop: spacing["6"],
+  },
+  loadSentinel: {
+    height: 1,
+    marginTop: spacing["6"],
+    width: "100%",
+  },
   emptyNote: {
     color: uiColor.text1,
     fontFamily: fontFamily.serif,
     fontSize: fontSize.lg,
     fontStyle: "italic",
+    textAlign: "center",
     paddingBottom: spacing["8"],
     paddingTop: spacing["8"],
-    textAlign: "center",
   },
   articleSkeleton: {
-    borderBottomColor: uiColor.border1,
-    borderBottomStyle: "solid",
-    borderBottomWidth: 1,
     columnGap: gap["2xl"],
     display: "grid",
     gridTemplateColumns: "1fr auto",
+    borderBottomColor: uiColor.border1,
+    borderBottomStyle: "solid",
+    borderBottomWidth: 1,
     paddingBottom: spacing["6"],
     paddingTop: spacing["6"],
   },
@@ -193,12 +219,28 @@ function SearchResultsSkeleton() {
   );
 }
 
+function formatMatchCount(shown: number, total: number): string {
+  if (total === 0) return "No matches";
+  if (shown < total) {
+    return `${shown} of ${total} matches`;
+  }
+  return `${total} match${total === 1 ? "" : "es"}`;
+}
+
 function Search() {
   const { q: urlQ = "" } = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
   const inputRef = useRef<HTMLInputElement>(null);
+  const loadMoreArticlesRef = useRef<HTMLDivElement>(null);
+  const loadingMorePubsRef = useRef(false);
   const [input, setInput] = useState(urlQ);
   const [debouncedQ, setDebouncedQ] = useState(urlQ.trim());
+  const [publications, setPublications] = useState<Array<PublicationCard>>(
+    [],
+  );
+  const [pubTotal, setPubTotal] = useState(0);
+  const [pubNextOffset, setPubNextOffset] = useState<number | null>(null);
+  const [loadingMorePubs, setLoadingMorePubs] = useState(false);
 
   useEffect(() => {
     setInput(urlQ);
@@ -224,23 +266,96 @@ function Search() {
     return () => globalThis.clearTimeout(timer);
   }, [input, navigate, urlQ]);
 
-  const { data, isFetching } = useQuery({
-    ...searchApi.searchQueryOptions({ q: debouncedQ, limit: SEARCH_LIMIT }),
+  const { data: pubPage, isFetching: pubsFetching } = useQuery({
+    ...searchApi.searchPublicationsQueryOptions({
+      q: debouncedQ,
+      limit: SEARCH_PAGE_SIZE,
+    }),
   });
+
+  const {
+    data: articlePages,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isFetching: articlesFetching,
+  } = useInfiniteQuery({
+    ...searchApi.searchArticlesInfiniteQueryOptions({
+      q: debouncedQ,
+      limit: SEARCH_PAGE_SIZE,
+    }),
+  });
+
+  useEffect(() => {
+    if (pubPage) {
+      setPublications(pubPage.items);
+      setPubTotal(pubPage.total);
+      setPubNextOffset(pubPage.nextOffset);
+    }
+  }, [pubPage]);
+
+  const articles = articlePages?.pages.flatMap((page) => page.items) ?? [];
+  const articleTotal = articlePages?.pages[0]?.total ?? 0;
+
+  const loadMorePublications = useCallback(async () => {
+    if (pubNextOffset == null || loadingMorePubsRef.current) return;
+    loadingMorePubsRef.current = true;
+    setLoadingMorePubs(true);
+    try {
+      const page = await searchApi.searchPublications({
+        data: {
+          q: debouncedQ,
+          limit: SEARCH_PAGE_SIZE,
+          offset: pubNextOffset,
+        },
+      });
+      setPublications((prev) => [...prev, ...page.items]);
+      setPubNextOffset(page.nextOffset);
+    } finally {
+      loadingMorePubsRef.current = false;
+      setLoadingMorePubs(false);
+    }
+  }, [debouncedQ, pubNextOffset]);
+
+  useEffect(() => {
+    if (!hasNextPage || isFetchingNextPage) return;
+
+    const sentinel = loadMoreArticlesRef.current;
+    if (!sentinel) return;
+
+    const root = sentinel.closest("[data-app-scroller]");
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          void fetchNextPage();
+        }
+      },
+      { root, rootMargin: "240px", threshold: 0 },
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage, articles.length]);
 
   const trimmedInput = input.trim();
   const hasQuery = debouncedQ.length > 0;
+  const hasResults = pubPage != null || articlePages != null;
   const isSearching =
-    hasQuery && (trimmedInput !== debouncedQ || (isFetching && !data));
-
-  const publications = data?.publications ?? [];
-  const articles = data?.articles ?? [];
+    hasQuery &&
+    (trimmedInput !== debouncedQ ||
+      ((pubsFetching || articlesFetching) && !hasResults));
 
   const hint = hasQuery
     ? isSearching
       ? "Searching…"
-      : `${publications.length} publications · ${articles.length} articles`
+      : `${pubTotal} publication${pubTotal === 1 ? "" : "s"} · ${articleTotal} article${articleTotal === 1 ? "" : "s"}`
     : 'Try "climate", "typography", or a handle like stdout.dev';
+
+  const showEmpty =
+    !isSearching &&
+    publications.length === 0 &&
+    articles.length === 0 &&
+    hasResults;
 
   return (
     <ReaderContent>
@@ -287,28 +402,45 @@ function Search() {
             <SearchResultsSkeleton />
           ) : (
             <>
-              {publications.length > 0 ? (
+              {publications.length > 0 || pubTotal > 0 ? (
                 <section {...stylex.props(styles.section, styles.sectionFirst)}>
                   <SectionHead
                     kicker="Publications"
-                    title={`${publications.length} matches`}
+                    title={formatMatchCount(publications.length, pubTotal)}
                   />
                   {publications.map((pub, index) => (
                     <PubDirectoryRow
                       key={pub.uri}
                       pub={pub}
                       isFirstInSection={index === 0}
-                      isLast={index === publications.length - 1}
+                      isLast={
+                        index === publications.length - 1 &&
+                        pubNextOffset == null
+                      }
                     />
                   ))}
+                  {pubNextOffset != null ? (
+                    <div {...stylex.props(styles.loadMoreWrap)}>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        isDisabled={loadingMorePubs}
+                        onPress={() => void loadMorePublications()}
+                      >
+                        {loadingMorePubs
+                          ? "Loading…"
+                          : `Load more (${pubTotal - publications.length} remaining)`}
+                      </Button>
+                    </div>
+                  ) : null}
                 </section>
               ) : null}
 
-              {articles.length > 0 ? (
+              {articles.length > 0 || articleTotal > 0 ? (
                 <section {...stylex.props(styles.section)}>
                   <SectionHead
                     kicker="Articles"
-                    title={`${articles.length} matches`}
+                    title={formatMatchCount(articles.length, articleTotal)}
                   />
                   {articles.map((article, index) => (
                     <ArticleRow
@@ -317,10 +449,26 @@ function Search() {
                       isFirstInSection={index === 0}
                     />
                   ))}
+                  {isFetchingNextPage
+                    ? Array.from({ length: 2 }, (_, index) => (
+                        <ArticleRowSkeleton
+                          key={`loading-${index}`}
+                          isFirstInSection={false}
+                          isLast={index === 1 && !hasNextPage}
+                        />
+                      ))
+                    : null}
+                  {hasNextPage ? (
+                    <div
+                      ref={loadMoreArticlesRef}
+                      aria-hidden
+                      {...stylex.props(styles.loadSentinel)}
+                    />
+                  ) : null}
                 </section>
               ) : null}
 
-              {publications.length === 0 && articles.length === 0 ? (
+              {showEmpty ? (
                 <p {...stylex.props(styles.emptyNote)}>
                   Nothing matches &ldquo;{debouncedQ}&rdquo; — yet. The network
                   is always growing.

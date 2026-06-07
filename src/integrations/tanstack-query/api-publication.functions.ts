@@ -1,14 +1,35 @@
+import type { LeafletCodeBlock } from "#/lib/leaflet/types";
+
 import { queryOptions } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
+import { STANDARD_MARKDOWN_CONTENT } from "#/lib/document/structured-content/types";
+import { GREENGALE_CONTENT_REF } from "#/lib/greengale/types";
+import { leafletBlocks } from "#/lib/leaflet/blocks";
+import { LEAFLET_CONTENT } from "#/lib/leaflet/types";
+import { offprintBlocks } from "#/lib/offprint/blocks";
+import { OFFPRINT_CONTENT } from "#/lib/offprint/types";
+import { pcktBlocks, pcktCodeLanguage } from "#/lib/pckt/blocks";
+import { PCKT_CONTENT } from "#/lib/pckt/types";
+import {
+  EMPTY_CODE_HIGHLIGHTS,
+  type CodeHighlightsByScheme,
+  type ThemeMode,
+} from "#/lib/theme";
 import { getAtprotoSessionForRequest } from "#/middleware/auth";
+import { authorPds } from "#/server/atproto/identity";
+import { resolveGreengaleContent } from "#/server/greengale/resolve";
+import { resolveLeafletContent } from "#/server/leaflet/resolve";
 import { observe } from "#/server/observability/log";
+import { resolvePcktContent } from "#/server/pckt/resolve";
 import {
   articleRecommendedPublications,
   readersAlsoFollow,
   selectArticleCards,
   withLivePublicationCounts,
 } from "#/server/reader/queries";
+import { highlightLeafletCodeBlocks } from "#/server/shiki/highlighter";
+import { themeModeForRequest } from "#/server/theme-preference";
 import { and, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 
@@ -18,19 +39,6 @@ import type {
   ProfileSummary,
   PublicationCard,
 } from "./api-shapes";
-
-import { leafletBlocks } from "#/lib/leaflet/blocks";
-import type { LeafletCodeBlock } from "#/lib/leaflet/types";
-import { LEAFLET_CONTENT } from "#/lib/leaflet/types";
-import {
-  EMPTY_CODE_HIGHLIGHTS,
-  type CodeHighlightsByScheme,
-  type ThemeMode,
-} from "#/lib/theme";
-import { authorPds } from "#/server/atproto/identity";
-import { resolveLeafletContent } from "#/server/leaflet/resolve";
-import { highlightLeafletCodeBlocks } from "#/server/shiki/highlighter";
-import { themeModeForRequest } from "#/server/theme-preference";
 
 import { publicationCardColumns, toPublicationCard } from "./api-shapes";
 import { dbMiddleware } from "./db-middleware";
@@ -57,7 +65,7 @@ const articleInput = z.object({
 });
 
 async function codeHighlightsForThemeMode(
-  blocks: Array<LeafletCodeBlock>,
+  blocks: Array<Pick<LeafletCodeBlock, "language" | "plaintext">>,
   themeMode: ThemeMode,
 ): Promise<CodeHighlightsByScheme> {
   if (blocks.length === 0) return EMPTY_CODE_HIGHLIGHTS;
@@ -390,14 +398,37 @@ const getArticle = createServerFn({ method: "GET" })
         );
 
         const rawContentJson = row.contentJson ?? null;
-        const resolvedContentJson =
-          row.contentFormat === LEAFLET_CONTENT && rawContentJson
-            ? ((await resolveLeafletContent(
-                rawContentJson,
-                row.did,
-                authorPdsEndpoint,
-              )) as JsonValue)
-            : (rawContentJson as JsonValue | null);
+        let resolvedContentJson = rawContentJson as JsonValue | null;
+        let resolvedContentFormat = row.contentFormat;
+        if (rawContentJson) {
+          if (row.contentFormat === LEAFLET_CONTENT) {
+            resolvedContentJson = (await resolveLeafletContent(
+              rawContentJson,
+              row.did,
+              authorPdsEndpoint,
+            )) as JsonValue;
+          } else if (row.contentFormat === PCKT_CONTENT) {
+            resolvedContentJson = (await resolvePcktContent(
+              rawContentJson,
+              row.did,
+              authorPdsEndpoint,
+            )) as JsonValue;
+          } else if (row.contentFormat === GREENGALE_CONTENT_REF) {
+            resolvedContentJson = (await resolveGreengaleContent(
+              rawContentJson,
+              row.did,
+              authorPdsEndpoint,
+            )) as JsonValue;
+            if (
+              resolvedContentJson &&
+              typeof resolvedContentJson === "object" &&
+              !Array.isArray(resolvedContentJson) &&
+              resolvedContentJson.$type === STANDARD_MARKDOWN_CONTENT
+            ) {
+              resolvedContentFormat = STANDARD_MARKDOWN_CONTENT;
+            }
+          }
+        }
 
         const themeMode = await themeModeForRequest(
           db,
@@ -405,12 +436,31 @@ const getArticle = createServerFn({ method: "GET" })
           session?.session.user.id,
         );
 
-        const codeBlocks =
+        const codeBlocks: Array<
+          Pick<LeafletCodeBlock, "language" | "plaintext">
+        > =
           row.contentFormat === LEAFLET_CONTENT && resolvedContentJson
             ? leafletBlocks(resolvedContentJson)
                 .filter((block) => block.kind === "code")
                 .map((block) => block.block)
-            : [];
+            : row.contentFormat === PCKT_CONTENT && resolvedContentJson
+              ? pcktBlocks(resolvedContentJson)
+                  .filter((block) => block.kind === "code")
+                  .map((block) => ({
+                    plaintext: block.block.plaintext,
+                    language: pcktCodeLanguage(block.block),
+                  }))
+              : row.contentFormat === OFFPRINT_CONTENT && resolvedContentJson
+                ? offprintBlocks(resolvedContentJson)
+                    .filter((block) => block.kind === "code")
+                    .map((block) => ({
+                      plaintext: block.plaintext,
+                      language: block.language,
+                    }))
+                : resolvedContentFormat === STANDARD_MARKDOWN_CONTENT &&
+                    resolvedContentJson
+                  ? []
+                  : [];
 
         const codeHighlights = await codeHighlightsForThemeMode(
           codeBlocks,
@@ -431,7 +481,7 @@ const getArticle = createServerFn({ method: "GET" })
           featured: row.featured,
           tags: row.tags,
           contentJson: resolvedContentJson,
-          contentFormat: row.contentFormat,
+          contentFormat: resolvedContentFormat,
           codeHighlights,
           textContent: row.textContent,
           bskyPostUri: row.bskyPostUri,

@@ -70,8 +70,7 @@ export const RESOLVED_SCHEME_SCRIPT = `
 
 export function readDomResolvedScheme(): ResolvedThemeScheme | null {
   if (globalThis.document === undefined) return null;
-  const value =
-    globalThis.document.documentElement.getAttribute("data-resolved-scheme");
+  const value = globalThis.document.documentElement.dataset.resolvedScheme;
   return value === "dark" || value === "light" ? value : null;
 }
 

@@ -1,6 +1,5 @@
-import { and, eq, isNotNull, isNull, sql } from "drizzle-orm";
-
 import { documentSearchText } from "#/lib/document/search-text";
+import { and, eq, isNotNull, isNull, sql } from "drizzle-orm";
 
 import { db } from "../../db/index.ts";
 import { documents, publications } from "../../db/schema.ts";

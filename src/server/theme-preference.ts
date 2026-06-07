@@ -1,8 +1,6 @@
-import { getCookie, getRequest } from "@tanstack/react-start/server";
-import { eq } from "drizzle-orm";
-
 import type { Db, Schema } from "#/integrations/tanstack-query/api-shapes";
 
+import { getCookie, getRequest } from "@tanstack/react-start/server";
 import {
   dbValueToThemeMode,
   parseThemeMode,
@@ -11,6 +9,7 @@ import {
   type ResolvedThemeScheme,
   type ThemeMode,
 } from "#/lib/theme";
+import { eq } from "drizzle-orm";
 
 export async function themeModeForRequest(
   db: Db,

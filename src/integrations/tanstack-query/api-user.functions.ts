@@ -9,7 +9,6 @@ import {
   revokeAtprotoSession,
 } from "#/integrations/auth/atproto";
 import { AUTH_SESSION_TOKEN_COOKIE } from "#/integrations/auth/constants";
-import { maybeAuthMiddleware } from "#/middleware/auth";
 import {
   dbValueToThemeMode,
   parseThemeMode,
@@ -19,6 +18,7 @@ import {
   themeModeToDbValue,
   type ThemeMode,
 } from "#/lib/theme";
+import { maybeAuthMiddleware } from "#/middleware/auth";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 

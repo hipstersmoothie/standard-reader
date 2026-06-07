@@ -1,17 +1,17 @@
 import type { PublicationRecord } from "#/server/atproto/types";
 
 import { isDid } from "@atcute/lexicons/syntax";
-import { queryOptions } from "@tanstack/react-query";
+import { infiniteQueryOptions, queryOptions } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 import { STANDARD_NSID } from "#/lib/atproto/nsids";
 import { blobCid, getBlobUrl } from "#/server/atproto/blob";
 import { resolveIdentity } from "#/server/atproto/identity";
 import { ensureTracked } from "#/server/ingest/tap-client";
 import { observe } from "#/server/observability/log";
-import { and, eq, sql } from "drizzle-orm";
+import { and, desc, eq, ilike, or, sql } from "drizzle-orm";
 import { z } from "zod";
 
-import type { ArticleCard, PublicationCard } from "./api-shapes";
+import type { ArticleCard, Db, PublicationCard, Schema } from "./api-shapes";
 
 import {
   articleCardColumns,
@@ -34,19 +34,28 @@ import { dbMiddleware } from "./db-middleware";
 const PUBLIC_APPVIEW = "https://public.api.bsky.app";
 const RESOLVE_TIMEOUT_MS = 5000;
 
-const searchInput = z.object({
+const searchPageInput = z.object({
   q: z.string().trim().min(1).max(120),
   limit: z.number().int().min(1).max(50).default(20),
+  offset: z.number().int().min(0).default(0),
 });
 
 const resolveInput = z.object({
   handle: z.string().trim().min(1).max(253),
 });
 
-export interface SearchResults {
+export interface SearchPublicationsPage {
   query: string;
-  publications: Array<PublicationCard>;
-  articles: Array<ArticleCard>;
+  items: Array<PublicationCard>;
+  total: number;
+  nextOffset: number | null;
+}
+
+export interface SearchArticlesPage {
+  query: string;
+  items: Array<ArticleCard>;
+  total: number;
+  nextOffset: number | null;
 }
 
 export interface ResolvedPublicationPreview {
@@ -57,54 +66,156 @@ export interface ResolvedPublicationPreview {
   source: "index" | "repo" | "none";
 }
 
-const search = createServerFn({ method: "GET" })
+const searchPublications = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
-  .inputValidator(searchInput)
+  .inputValidator(searchPageInput)
   .handler(
-    observe("search.query", async ({ data, context }, span) => {
+    observe("search.publications", async ({ data, context }, span) => {
       const { db, schema } = context;
-      const p = schema.publications;
-      const st = schema.publicationStats;
+      span.set("q", data.q);
+      span.set("offset", data.offset);
+
+      const page = await searchIndexedPublications(
+        db,
+        schema,
+        data.q,
+        data.limit,
+        data.offset,
+      );
+
+      let items = page.items;
+      let total = page.total;
+
+      if (data.offset === 0 && items.length === 0) {
+        const hints = publicationQueryHints(data.q);
+        if (hints.urlLike) {
+          items = await indexedPublicationsByUrl(
+            db,
+            schema,
+            hints.urlLike,
+            data.limit,
+          );
+        }
+        if (items.length === 0 && hints.handleLookup) {
+          items = await resolvePublicationCards(
+            db,
+            schema,
+            hints.handleLookup,
+          );
+        }
+        total = items.length;
+      }
+
+      span.set("total", total);
+      span.set("count", items.length);
+      const nextOffset =
+        items.length > 0 && data.offset + items.length < total
+          ? data.offset + items.length
+          : null;
+
+      return {
+        query: data.q,
+        items,
+        total,
+        nextOffset,
+      } satisfies SearchPublicationsPage;
+    }),
+  );
+
+const searchArticles = createServerFn({ method: "GET" })
+  .middleware([dbMiddleware])
+  .inputValidator(searchPageInput)
+  .handler(
+    observe("search.articles", async ({ data, context }, span) => {
+      const { db, schema } = context;
       const d = schema.documents;
+      const p = schema.publications;
       const pr = schema.profiles;
       span.set("q", data.q);
+      span.set("offset", data.offset);
 
       const tsq = sql`websearch_to_tsquery('english', ${data.q})`;
+      const articleWhere = and(
+        eq(d.deleted, false),
+        sql`${d.searchVector} @@ ${tsq}`,
+      );
 
-      const [publicationRows, articleRows] = await Promise.all([
+      const [countRow, articleRows] = await Promise.all([
         db
-          .select(publicationCardColumns(schema))
-          .from(p)
-          .leftJoin(st, eq(st.publicationUri, p.uri))
-          .leftJoin(pr, eq(pr.did, p.did))
-          .where(
-            and(
-              eq(p.deleted, false),
-              eq(p.showInDiscover, true),
-              sql`${p.searchVector} @@ ${tsq}`,
-            ),
-          )
-          .orderBy(sql`ts_rank(${p.searchVector}, ${tsq}) desc`)
-          .limit(data.limit),
+          .select({ count: sql<number>`count(*)::int` })
+          .from(d)
+          .where(articleWhere),
         db
           .select(articleCardColumns(schema))
           .from(d)
           .leftJoin(p, eq(p.uri, d.publicationUri))
           .leftJoin(pr, eq(pr.did, p.did))
-          .where(and(eq(d.deleted, false), sql`${d.searchVector} @@ ${tsq}`))
+          .where(articleWhere)
           .orderBy(sql`ts_rank(${d.searchVector}, ${tsq}) desc`)
-          .limit(data.limit),
+          .limit(data.limit)
+          .offset(data.offset),
       ]);
 
-      span.set("publications", publicationRows.length);
-      span.set("articles", articleRows.length);
+      const total = countRow[0]?.count ?? 0;
+      const items = articleRows.map((row) => toArticleCard(row));
+      span.set("total", total);
+      span.set("count", items.length);
+
+      const nextOffset =
+        items.length > 0 && data.offset + items.length < total
+          ? data.offset + items.length
+          : null;
+
       return {
         query: data.q,
-        publications: publicationRows.map((row) => toPublicationCard(row)),
-        articles: articleRows.map((row) => toArticleCard(row)),
-      } satisfies SearchResults;
+        items,
+        total,
+        nextOffset,
+      } satisfies SearchArticlesPage;
     }),
   );
+
+/** Indexed publication matches (FTS, URL, handle) with total count. */
+async function searchIndexedPublications(
+  db: Db,
+  schema: Schema,
+  q: string,
+  limit: number,
+  offset: number,
+): Promise<{ items: Array<PublicationCard>; total: number }> {
+  const p = schema.publications;
+  const st = schema.publicationStats;
+  const pr = schema.profiles;
+  const hints = publicationQueryHints(q);
+  const tsq = sql`websearch_to_tsquery('english', ${q})`;
+  const pubWhere = and(
+    eq(p.deleted, false),
+    eq(p.showInDiscover, true),
+    publicationMatchSql(p, pr, tsq, hints),
+  );
+
+  const [countRow, publicationQueryRows] = await Promise.all([
+    db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(p)
+      .leftJoin(pr, eq(pr.did, p.did))
+      .where(pubWhere),
+    db
+      .select(publicationCardColumns(schema))
+      .from(p)
+      .leftJoin(st, eq(st.publicationUri, p.uri))
+      .leftJoin(pr, eq(pr.did, p.did))
+      .where(pubWhere)
+      .orderBy(desc(publicationRankSql(p, pr, tsq, hints)))
+      .limit(limit)
+      .offset(offset),
+  ]);
+
+  return {
+    items: publicationQueryRows.map((row) => toPublicationCard(row)),
+    total: countRow[0]?.count ?? 0,
+  };
+}
 
 /** Normalize user input ("@alice.dev", "https://alice.dev/foo") to a handle. */
 function normalizeHandle(input: string): string {
@@ -112,8 +223,159 @@ function normalizeHandle(input: string): string {
   if (handle.startsWith("@")) {
     handle = handle.slice(1);
   }
+
+  const greengale = handle.match(
+    /(?:https?:\/\/)?greengale\.app\/([^/?#\s]+)/i,
+  );
+  if (greengale?.[1]) {
+    return greengale[1].toLowerCase();
+  }
+
   handle = handle.replace(/^https?:\/\//, "").replace(/\/.*$/, "");
   return handle.toLowerCase();
+}
+
+interface PublicationQueryHints {
+  likePattern: string;
+  /** Narrower URL match for platform URLs (e.g. greengale.app/melodic.stream). */
+  urlLike: string | null;
+  /** Handle or DID to resolve when the read-model has no rows yet. */
+  handleLookup: string | null;
+}
+
+function publicationQueryHints(input: string): PublicationQueryHints {
+  const trimmed = input.trim();
+  const likePattern = `%${trimmed}%`;
+
+  const greengale = trimmed.match(
+    /(?:https?:\/\/)?greengale\.app\/([^/?#\s]+)/i,
+  );
+  if (greengale?.[1]) {
+    const slug = greengale[1].toLowerCase();
+    return {
+      likePattern: `%${slug}%`,
+      urlLike: `%greengale.app/${slug}%`,
+      handleLookup: slug,
+    };
+  }
+
+  if (/^https?:\/\//i.test(trimmed)) {
+    const path = trimmed.replace(/^https?:\/\//i, "").split(/[?#]/)[0] ?? "";
+    return {
+      likePattern,
+      urlLike: path ? `%${path}%` : null,
+      handleLookup: normalizeHandle(trimmed),
+    };
+  }
+
+  return {
+    likePattern,
+    urlLike: null,
+    handleLookup: normalizeHandle(trimmed),
+  };
+}
+
+function publicationMatchSql(
+  p: Schema["publications"],
+  pr: Schema["profiles"],
+  tsq: ReturnType<typeof sql>,
+  hints: PublicationQueryHints,
+) {
+  const parts = [
+    sql`${p.searchVector} @@ ${tsq}`,
+    ilike(p.url, hints.likePattern),
+    ilike(pr.handle, hints.likePattern),
+  ];
+  if (hints.urlLike) {
+    parts.push(ilike(p.url, hints.urlLike));
+  }
+  if (parts.length === 0) return sql`false`;
+  return or(...parts) ?? sql`false`;
+}
+
+function publicationRankSql(
+  p: Schema["publications"],
+  pr: Schema["profiles"],
+  tsq: ReturnType<typeof sql>,
+  hints: PublicationQueryHints,
+) {
+  return sql`greatest(
+    case when ${p.searchVector} @@ ${tsq}
+      then ts_rank(${p.searchVector}, ${tsq})::real
+      else 0::real
+    end,
+    case when ${p.url} ilike ${hints.likePattern} then 0.2::real else 0::real end,
+    case when ${pr.handle} ilike ${hints.likePattern} then 0.15::real else 0::real end${
+      hints.urlLike
+        ? sql`, case when ${p.url} ilike ${hints.urlLike} then 0.25::real else 0::real end`
+        : sql``
+    }
+  )`;
+}
+
+/** Resolve publications from the index, or live from the author's repo. */
+async function resolvePublicationCards(
+  db: Db,
+  schema: Schema,
+  lookup: string,
+): Promise<Array<PublicationCard>> {
+  const p = schema.publications;
+  const st = schema.publicationStats;
+  const pr = schema.profiles;
+
+  const did = await resolveToDid(lookup);
+  if (!did) return [];
+
+  const indexed = await db
+    .select(publicationCardColumns(schema))
+    .from(p)
+    .leftJoin(st, eq(st.publicationUri, p.uri))
+    .leftJoin(pr, eq(pr.did, p.did))
+    .where(and(eq(p.did, did), eq(p.deleted, false)))
+    .orderBy(sql`coalesce(${st.subscriberCount}, 0) desc`)
+    .limit(20);
+
+  if (indexed.length > 0) {
+    return indexed.map((row) => toPublicationCard(row));
+  }
+
+  void ensureTracked(did, "manual").catch(() => {});
+  const identity = await resolveIdentity(did);
+  if (!identity.pds) return [];
+
+  const pubs = await listRepoPublications(identity.pds, did);
+  return pubs.map((pub) => ({
+    ...pub,
+    ownerHandle: identity.handle ?? pub.ownerHandle,
+  }));
+}
+
+/** Look up indexed publications by publication URL substring. */
+async function indexedPublicationsByUrl(
+  db: Db,
+  schema: Schema,
+  urlLike: string,
+  limit: number,
+): Promise<Array<PublicationCard>> {
+  const p = schema.publications;
+  const st = schema.publicationStats;
+  const pr = schema.profiles;
+
+  const rows = await db
+    .select(publicationCardColumns(schema))
+    .from(p)
+    .leftJoin(st, eq(st.publicationUri, p.uri))
+    .leftJoin(pr, eq(pr.did, p.did))
+    .where(
+      and(
+        eq(p.deleted, false),
+        eq(p.showInDiscover, true),
+        ilike(p.url, urlLike),
+      ),
+    )
+    .limit(limit);
+
+  return rows.map((row) => toPublicationCard(row));
 }
 
 /** Resolve a handle (or pass through a DID) to a DID, or null on failure. */
@@ -203,53 +465,61 @@ const resolvePublicationByHandle = createServerFn({ method: "GET" })
         }
         span.set("did", did);
 
-        const p = schema.publications;
-        const st = schema.publicationStats;
-        const indexed = await db
-          .select(publicationCardColumns(schema))
-          .from(p)
-          .leftJoin(st, eq(st.publicationUri, p.uri))
-          .where(and(eq(p.did, did), eq(p.deleted, false)))
-          .orderBy(sql`coalesce(${st.subscriberCount}, 0) desc`)
-          .limit(20);
-
-        if (indexed.length > 0) {
-          span.set("source", "index");
+        const publications = await resolvePublicationCards(db, schema, lookup);
+        if (publications.length > 0) {
+          const indexed = await db
+            .select({ one: sql`1` })
+            .from(schema.publications)
+            .where(
+              and(
+                eq(schema.publications.did, did),
+                eq(schema.publications.deleted, false),
+              ),
+            )
+            .limit(1);
+          const identity = await resolveIdentity(did);
+          span.set("source", indexed.length > 0 ? "index" : "repo");
           return {
             did,
-            handle,
-            publications: indexed.map((row) => toPublicationCard(row)),
-            source: "index",
+            handle: handle ?? identity.handle,
+            publications,
+            source: indexed.length > 0 ? "index" : "repo",
           };
         }
 
-        // Not in our index yet: read straight from the author's repo and ask
-        // tap to start tracking it so the read-model catches up.
-        void ensureTracked(did, "manual").catch(() => {});
-        const identity = await resolveIdentity(did);
-        const publications = identity.pds
-          ? await listRepoPublications(identity.pds, did)
-          : [];
-
-        span.set("source", publications.length > 0 ? "repo" : "none");
-        return {
-          did,
-          handle: handle ?? identity.handle,
-          publications,
-          source: publications.length > 0 ? "repo" : "none",
-        };
+        span.set("source", "none");
+        return { did, handle, publications: [], source: "none" };
       },
     ),
   );
 
-function searchQueryOptions({
+function searchPublicationsQueryOptions({
+  q = "",
+  limit = 20,
+  offset = 0,
+}: { q?: string; limit?: number; offset?: number } = {}) {
+  const trimmed = q.trim();
+  return queryOptions({
+    queryKey: ["search", "publications", trimmed, limit, offset] as const,
+    queryFn: async () =>
+      searchPublications({ data: { q: trimmed, limit, offset } }),
+    enabled: trimmed.length > 0,
+  });
+}
+
+function searchArticlesInfiniteQueryOptions({
   q = "",
   limit = 20,
 }: { q?: string; limit?: number } = {}) {
   const trimmed = q.trim();
-  return queryOptions({
-    queryKey: ["search", trimmed, limit] as const,
-    queryFn: async () => search({ data: { q: trimmed, limit } }),
+  return infiniteQueryOptions({
+    queryKey: ["search", "articles", trimmed, limit] as const,
+    queryFn: async ({ pageParam }) =>
+      searchArticles({
+        data: { q: trimmed, limit, offset: pageParam },
+      }),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) => lastPage.nextOffset ?? undefined,
     enabled: trimmed.length > 0,
   });
 }
@@ -265,8 +535,10 @@ function resolvePublicationByHandleQueryOptions(handle: string) {
 }
 
 export const searchApi = {
-  search,
-  searchQueryOptions,
+  searchPublications,
+  searchArticles,
+  searchPublicationsQueryOptions,
+  searchArticlesInfiniteQueryOptions,
   resolvePublicationByHandle,
   resolvePublicationByHandleQueryOptions,
 };

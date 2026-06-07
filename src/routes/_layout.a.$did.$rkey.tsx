@@ -1,15 +1,15 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { useLayoutEffect } from "react";
 import { publicationApi } from "#/integrations/tanstack-query/api-publication.functions";
 import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
+import { useLayoutEffect } from "react";
 
-import { hasRenderableArticleBody } from "../components/reader/content/extract-text";
 import {
   ArticleNotFound,
   ArticleView,
 } from "../components/reader/article-view";
+import { hasRenderableArticleBody } from "../components/reader/content/extract-text";
 import {
   articlePublicationUrl,
   documentUriFromParams,

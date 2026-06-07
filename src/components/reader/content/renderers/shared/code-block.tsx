@@ -1,44 +1,36 @@
 "use client";
 
-import type { LeafletCodeBlock } from "#/lib/leaflet/types";
-
 import * as stylex from "@stylexjs/stylex";
 import { useQuery } from "@tanstack/react-query";
-import { codeBlockKey } from "#/lib/code-highlight";
-import {
-  EMPTY_CODE_HIGHLIGHTS,
-  pickCodeHighlight,
-  type CodeHighlightsByScheme,
-} from "#/lib/theme";
-import { useTheme } from "#/lib/use-theme";
 import { highlightApi } from "#/integrations/tanstack-query/api-highlight.functions";
+import { codeBlockKey } from "#/lib/code-highlight";
+import { EMPTY_CODE_HIGHLIGHTS, pickCodeHighlight } from '#/lib/theme';
+import type { CodeHighlightsByScheme } from '#/lib/theme';
+import { useTheme } from "#/lib/use-theme";
 
-import { articleBodyStyles } from "../body-styles";
+import { articleBodyStyles } from "../../body-styles";
 
 function HighlightedCodeShell({ html }: { html: string }) {
   return (
     <div
       data-code-highlight=""
       {...stylex.props(articleBodyStyles.codeBlockShell)}
-      // Shiki emits trusted server-generated markup (no user HTML).
       dangerouslySetInnerHTML={{ __html: html }}
     />
   );
 }
 
-function LeafletCodeBlockLazy({
-  block,
+function CodeBlockLazy({
+  plaintext,
+  language,
   scheme,
 }: {
-  block: LeafletCodeBlock;
+  plaintext: string;
+  language: string | undefined;
   scheme: "light" | "dark";
 }) {
   const { data: html } = useQuery({
-    ...highlightApi.highlightCodeQueryOptions(
-      block.plaintext,
-      block.language,
-      scheme,
-    ),
+    ...highlightApi.highlightCodeQueryOptions(plaintext, language, scheme),
   });
 
   if (html) {
@@ -47,7 +39,7 @@ function LeafletCodeBlockLazy({
 
   return (
     <pre {...stylex.props(articleBodyStyles.codeBlock)}>
-      <code>{block.plaintext}</code>
+      <code>{plaintext}</code>
     </pre>
   );
 }
@@ -60,23 +52,24 @@ function PlainCodeBlock({ plaintext }: { plaintext: string }) {
   );
 }
 
-export function LeafletCodeBlockView({
-  block,
+export function CodeBlockView({
+  plaintext,
+  language,
   codeHighlights = EMPTY_CODE_HIGHLIGHTS,
 }: {
-  block: LeafletCodeBlock;
+  plaintext: string;
+  language?: string;
   codeHighlights?: CodeHighlightsByScheme;
 }) {
   const { mode, resolvedScheme } = useTheme();
 
-  if (!block.plaintext) return null;
+  if (!plaintext) return null;
 
-  // SSR cannot know OS preference for `system`; defer themed markup to the client.
   if (globalThis.window === undefined && mode === "system") {
-    return <PlainCodeBlock plaintext={block.plaintext} />;
+    return <PlainCodeBlock plaintext={plaintext} />;
   }
 
-  const key = codeBlockKey(block);
+  const key = codeBlockKey({ plaintext, language });
   const serverHtml = pickCodeHighlight(codeHighlights, resolvedScheme, key);
 
   if (serverHtml) {
@@ -84,8 +77,14 @@ export function LeafletCodeBlockView({
   }
 
   if (mode === "system") {
-    return <LeafletCodeBlockLazy block={block} scheme={resolvedScheme} />;
+    return (
+      <CodeBlockLazy
+        plaintext={plaintext}
+        language={language}
+        scheme={resolvedScheme}
+      />
+    );
   }
 
-  return <PlainCodeBlock plaintext={block.plaintext} />;
+  return <PlainCodeBlock plaintext={plaintext} />;
 }

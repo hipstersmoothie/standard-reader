@@ -1,11 +1,9 @@
-import { codeBlockKey, normalizeLanguage } from "#/lib/code-highlight";
-import type { ResolvedThemeScheme } from "#/lib/theme";
 import type { LeafletCodeBlock } from "#/lib/leaflet/types";
-import {
-  createHighlighter,
-  type BundledLanguage,
-  type Highlighter,
-} from "shiki";
+import type { ResolvedThemeScheme } from "#/lib/theme";
+
+import { codeBlockKey, normalizeLanguage } from "#/lib/code-highlight";
+import { createHighlighter } from "shiki";
+import type { BundledLanguage, Highlighter } from "shiki";
 
 import {
   codeThemeNameForScheme,
@@ -77,10 +75,7 @@ export async function highlightCodeBlock(
   if (cached) return cached;
 
   const highlighter = await getHighlighter();
-  const lang = await resolveLanguage(
-    highlighter,
-    normalizeLanguage(language),
-  );
+  const lang = await resolveLanguage(highlighter, normalizeLanguage(language));
   const html = highlighter.codeToHtml(plaintext, {
     lang,
     theme: themeName,

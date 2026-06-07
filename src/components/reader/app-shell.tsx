@@ -28,10 +28,10 @@ const DESKTOP = "@media (min-width: 60rem)";
 
 const styles = stylex.create({
   shell: {
+    overflow: "hidden",
     display: "flex",
     flexDirection: "row",
     height: "100vh",
-    overflow: "hidden",
   },
   sidebar: {
     backgroundColor: uiColor.bgSubtle,
@@ -209,10 +209,10 @@ const styles = stylex.create({
     width: "100%",
   },
   main: {
+    overflow: "hidden",
     display: "flex",
     flexDirection: "column",
     flexGrow: 1,
-    overflow: "hidden",
     minHeight: 0,
     minWidth: 0,
   },

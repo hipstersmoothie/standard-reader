@@ -522,6 +522,7 @@ export async function discoverDirectoryPublications(
     conds.push(
       or(
         sql`${p.searchVector} @@ ${tsq}`,
+        ilike(p.url, likePattern),
         ilike(pr.handle, likePattern),
         sql`lower(btrim(coalesce(${effectiveTopic}, ''))) like lower(${likePattern})`,
       )!,
@@ -553,6 +554,7 @@ export async function discoverDirectoryPublications(
               then ts_rank(${p.searchVector}, ${tsq})::real
               else 0::real
             end,
+            case when ${p.url} ilike ${likePattern} then 0.12::real else 0::real end,
             case when ${pr.handle} ilike ${likePattern} then 0.1::real else 0::real end,
             case when lower(btrim(coalesce(${effectiveTopic}, ''))) like lower(${likePattern}) then 0.05::real else 0::real end
           )`),

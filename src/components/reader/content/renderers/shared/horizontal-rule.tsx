@@ -2,8 +2,8 @@
 
 import * as stylex from "@stylexjs/stylex";
 
-import { articleBodyStyles } from "../body-styles";
+import { articleBodyStyles } from "../../body-styles";
 
-export function LeafletHorizontalRuleBlockView() {
+export function HorizontalRuleView() {
   return <hr {...stylex.props(articleBodyStyles.horizontalRule)} />;
 }

@@ -1,6 +1,13 @@
 import type { JsonValue } from "#/integrations/tanstack-query/api-shapes";
+
+import { markdownPlaintext } from "#/lib/document/structured-content/markdown";
+import { STANDARD_MARKDOWN_CONTENT } from "#/lib/document/structured-content/types";
 import { leafletPlaintext } from "#/lib/leaflet/plaintext";
 import { LEAFLET_CONTENT } from "#/lib/leaflet/types";
+import { offprintPlaintext } from "#/lib/offprint/plaintext";
+import { OFFPRINT_CONTENT } from "#/lib/offprint/types";
+import { pcktPlaintext } from "#/lib/pckt/plaintext";
+import { PCKT_CONTENT } from "#/lib/pckt/types";
 
 import { blocksPlaintext, parseArticleBlocks } from "./blocks";
 
@@ -45,6 +52,12 @@ export function documentSearchText({
   const format = resolveContentFormat(contentFormat, contentJson);
   if (format === LEAFLET_CONTENT) {
     appendUniquePart(parts, leafletPlaintext(contentJson));
+  } else if (format === PCKT_CONTENT) {
+    appendUniquePart(parts, pcktPlaintext(contentJson));
+  } else if (format === OFFPRINT_CONTENT) {
+    appendUniquePart(parts, offprintPlaintext(contentJson));
+  } else if (format === STANDARD_MARKDOWN_CONTENT) {
+    appendUniquePart(parts, markdownPlaintext(contentJson));
   } else {
     appendUniquePart(
       parts,

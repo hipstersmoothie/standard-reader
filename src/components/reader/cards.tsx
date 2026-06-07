@@ -252,7 +252,6 @@ const styles = stylex.create({
     marginTop: spacing["1.5"],
   },
   pubCard: {
-    backgroundColor: uiColor.bgSubtle,
     borderColor: {
       default: uiColor.border1,
       ":hover": uiColor.border2,
@@ -260,24 +259,25 @@ const styles = stylex.create({
     borderRadius: radius.md,
     borderStyle: "solid",
     borderWidth: 1,
+    backgroundColor: uiColor.bgSubtle,
+    ":hover": {
+      boxShadow: shadow.sm,
+      transform: "translateY(-2px)",
+    },
     boxSizing: "border-box",
     display: "flex",
     flexDirection: "column",
-    height: "100%",
-    paddingBottom: spacing["5"],
-    paddingLeft: spacing["5"],
-    paddingRight: spacing["5"],
-    paddingTop: spacing["5"],
     scrollSnapAlign: "start",
     transitionDuration: animationDuration.fast,
     transitionProperty: {
       default: "border-color, box-shadow, transform",
       "@media (prefers-reduced-motion: reduce)": "none",
     },
-    ":hover": {
-      boxShadow: shadow.sm,
-      transform: "translateY(-2px)",
-    },
+    height: "100%",
+    paddingBottom: spacing["5"],
+    paddingLeft: spacing["5"],
+    paddingRight: spacing["5"],
+    paddingTop: spacing["5"],
   },
   pubCardRail: {
     alignSelf: "stretch",

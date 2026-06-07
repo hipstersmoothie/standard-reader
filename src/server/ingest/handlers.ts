@@ -1,3 +1,9 @@
+import { documentSearchText } from "#/lib/document/search-text";
+import { STANDARD_MARKDOWN_CONTENT } from "#/lib/document/structured-content/types";
+import { GREENGALE_CONTENT_REF } from "#/lib/greengale/types";
+import { resolveGreengaleContent } from "#/server/greengale/resolve";
+import { resolveLeafletContent } from "#/server/leaflet/resolve";
+import { resolvePcktContent } from "#/server/pckt/resolve";
 import { and, eq, isNull, or, sql } from "drizzle-orm";
 
 import type {
@@ -10,9 +16,6 @@ import type {
   SubscriptionRecord,
   TapIdentityPayload,
 } from "../atproto/types.ts";
-
-import { documentSearchText } from "#/lib/document/search-text";
-import { resolveLeafletContent } from "#/server/leaflet/resolve";
 
 import { db } from "../../db/index.ts";
 import {
@@ -47,6 +50,10 @@ import {
   stripNullBytes,
 } from "./mappers.ts";
 import { ensureTracked } from "./tap-client.ts";
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
 
 /** Ensure a minimal profile row exists for a DID we'll show in the UI. */
 async function ensureProfileStub(
@@ -187,11 +194,27 @@ export async function upsertDocument(
   await ensureProfileStub(did, owner?.handle);
 
   let contentJson = sanitizeJson(record.content);
-  const contentFormat = cleanOptional(record.content?.$type);
+  let contentFormat = cleanOptional(record.content?.$type);
   if (contentFormat === "pub.leaflet.content" && contentJson) {
     contentJson = sanitizeJson(
       await resolveLeafletContent(contentJson, did, ownerPds),
     );
+  }
+  if (contentFormat === "blog.pckt.content" && contentJson) {
+    contentJson = sanitizeJson(
+      await resolvePcktContent(contentJson, did, ownerPds),
+    );
+  }
+  if (contentFormat === GREENGALE_CONTENT_REF && contentJson) {
+    contentJson = sanitizeJson(
+      await resolveGreengaleContent(contentJson, did, ownerPds),
+    );
+    if (
+      isRecord(contentJson) &&
+      contentJson.$type === STANDARD_MARKDOWN_CONTENT
+    ) {
+      contentFormat = STANDARD_MARKDOWN_CONTENT;
+    }
   }
   const textContent = documentSearchText({
     textContent: cleanOptional(record.textContent),
