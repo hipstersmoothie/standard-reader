@@ -1,14 +1,33 @@
 import type { BlobRef } from "./types.ts";
 
-/** Pull the CID string out of a blob ref (`ref.$link`, a bare string, or null). */
+/**
+ * Pull the CID string out of a blob ref. Handles all three shapes a `ref` can
+ * take depending on how the record was decoded:
+ * - a bare CID string,
+ * - a `{$link: cid}` object (plain dag-json),
+ * - a multiformats `CID` instance (after `@atproto/lex` `lexParse`, which is the
+ *   tap channel path) — these have no `$link`, so we stringify them.
+ */
 export function blobCid(blob: BlobRef | undefined | null): string | null {
   if (!blob || !blob.ref) {
     return null;
   }
-  if (typeof blob.ref === "string") {
-    return blob.ref;
+  const ref = blob.ref;
+  if (typeof ref === "string") {
+    return ref;
   }
-  return blob.ref.$link ?? null;
+  if (typeof ref.$link === "string") {
+    return ref.$link;
+  }
+  // CID instance: `.toString()` yields the canonical CID; guard against plain
+  // objects whose default `toString` returns "[object Object]".
+  if (typeof ref.toString === "function") {
+    const cid = ref.toString();
+    if (cid && cid !== "[object Object]") {
+      return cid;
+    }
+  }
+  return null;
 }
 
 /**

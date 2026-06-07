@@ -9,7 +9,10 @@
 /** An atproto blob reference as it appears inside a record. */
 export interface BlobRef {
   $type?: "blob";
-  ref?: { $link: string } | string;
+  // `{$link}` when decoded from plain JSON, a bare CID string in some payloads,
+  // or a multiformats `CID` instance after `@atproto/lex` `lexParse` (the tap
+  // channel path). `blobCid()` normalizes all three to a CID string.
+  ref?: { $link?: string; toString?: () => string } | string;
   mimeType?: string;
   size?: number;
 }

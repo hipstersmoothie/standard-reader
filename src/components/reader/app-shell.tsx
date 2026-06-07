@@ -44,7 +44,7 @@ const styles = stylex.create({
     overflow: "hidden",
     display: "flex",
     flexDirection: "row",
-    height: "100vh",
+    height: stylex.firstThatWorks("100dvh", "100vh"),
   },
   sidebar: {
     backgroundColor: uiColor.bgSubtle,
@@ -56,7 +56,7 @@ const styles = stylex.create({
     borderRightColor: uiColor.border1,
     borderRightStyle: "solid",
     borderRightWidth: 1,
-    height: "100vh",
+    height: stylex.firstThatWorks("100dvh", "100vh"),
     overflowY: "auto",
     paddingBottom: verticalSpace["3xl"],
     paddingLeft: horizontalSpace["3xl"],

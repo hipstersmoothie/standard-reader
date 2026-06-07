@@ -5,6 +5,7 @@ import { db } from "../../db/index.ts";
 import { documents, publications } from "../../db/schema.ts";
 import { getBlobUrl } from "../atproto/blob.ts";
 import { resolveIdentity } from "../atproto/identity.ts";
+import { reconcileDocumentDup, reconcilePublicationGroup } from "./handlers.ts";
 
 /**
  * Recompute the derived per-publication aggregates (subscriber/document/
@@ -350,8 +351,42 @@ export async function backfillDocumentSearchText(): Promise<number> {
   return updated;
 }
 
+/**
+ * Collapse duplicate publications (`did, url`) and documents (`did, cid`) to a
+ * single canonical row each. Repairs existing data and acts as a safety net for
+ * the hot-path dedup. Returns how many duplicate groups were reconciled.
+ */
+export async function dedupeRecords(): Promise<{
+  publications: number;
+  documents: number;
+}> {
+  const pubGroups = await db
+    .select({ did: publications.did, url: publications.url })
+    .from(publications)
+    .where(eq(publications.deleted, false))
+    .groupBy(publications.did, publications.url)
+    .having(sql`count(*) > 1`);
+  for (const group of pubGroups) {
+    await reconcilePublicationGroup(group.did, group.url);
+  }
+
+  const docGroups = await db
+    .select({ did: documents.did, cid: documents.cid })
+    .from(documents)
+    .where(and(eq(documents.deleted, false), isNotNull(documents.cid)))
+    .groupBy(documents.did, documents.cid)
+    .having(sql`count(*) > 1`);
+  for (const group of docGroups) {
+    await reconcileDocumentDup(group.did, group.cid);
+  }
+
+  return { documents: docGroups.length, publications: pubGroups.length };
+}
+
 /** Run the full derived-data recompute. */
 export async function recomputeDerived(): Promise<void> {
+  // Dedup first so stats/aggregates compute over canonical rows only.
+  await dedupeRecords();
   await recomputePublicationStats();
   await recomputeCosubscriptions();
   await recomputeCorecommends();

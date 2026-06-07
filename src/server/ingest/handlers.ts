@@ -5,7 +5,7 @@ import { isExcludedPublicationUrl } from "#/lib/publication/exclusions";
 import { resolveGreengaleContent } from "#/server/greengale/resolve";
 import { resolveLeafletContent } from "#/server/leaflet/resolve";
 import { resolvePcktContent } from "#/server/pckt/resolve";
-import { and, eq, isNull, or, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, or, sql } from "drizzle-orm";
 
 import type {
   BookmarkRecord,
@@ -54,6 +54,100 @@ import { ensureTracked } from "./tap-client.ts";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/**
+ * Enforce one canonical publication per `(did, url)`: the record with the
+ * greatest rkey (newest TID) survives; older same-site records are hidden
+ * (`deleted = true`) and their documents repointed to the survivor so they stay
+ * visible. Publishers sometimes re-create their publication record (new rkey,
+ * same url) and *both* records persist in the repo, so tap re-delivers both and
+ * a DB unique constraint would just wedge ingest — we keep the read-model
+ * deduped instead. Idempotent; safe to call from the hot path and the recompute
+ * sweep. (Repo deletes hard-delete publication rows, so `deleted` is free to
+ * mean "superseded duplicate" here.)
+ */
+export async function reconcilePublicationGroup(
+  did: string,
+  url: string,
+): Promise<void> {
+  const rows = await db
+    .select({ uri: publications.uri, rkey: publications.rkey })
+    .from(publications)
+    .where(and(eq(publications.did, did), eq(publications.url, url)));
+  if (rows.length <= 1) {
+    return;
+  }
+  let canonical = rows[0];
+  for (const row of rows) {
+    if (row.rkey > canonical.rkey) {
+      canonical = row;
+    }
+  }
+  const losers = rows
+    .filter((row) => row.uri !== canonical.uri)
+    .map((row) => row.uri);
+  if (losers.length === 0) {
+    return;
+  }
+  await db
+    .update(documents)
+    .set({ publicationUri: canonical.uri, updatedAt: sql`now()` })
+    .where(inArray(documents.publicationUri, losers));
+  await db
+    .update(publications)
+    .set({ deleted: true, updatedAt: sql`now()` })
+    .where(inArray(publications.uri, losers));
+  await db
+    .update(publications)
+    .set({ deleted: false })
+    .where(eq(publications.uri, canonical.uri));
+}
+
+/**
+ * Enforce one canonical document per `(did, cid)`: identical-content records
+ * (same CID, different rkey — a re-published duplicate) collapse to the newest
+ * rkey; older copies are hidden. We dedup on CID rather than path/canonical_url
+ * because distinct articles legitimately share a path (e.g. a publisher that
+ * sets every post's path to `/posts/index`), so collapsing on path would delete
+ * real content. Soft-deleting keeps the loser row, so reader activity that
+ * references it stays referentially valid (and drops out of `deleted = false`
+ * joins). Idempotent.
+ */
+export async function reconcileDocumentDup(
+  did: string,
+  cid: string | null | undefined,
+): Promise<void> {
+  if (!cid) {
+    return;
+  }
+  const rows = await db
+    .select({ uri: documents.uri, rkey: documents.rkey })
+    .from(documents)
+    .where(and(eq(documents.did, did), eq(documents.cid, cid)));
+  if (rows.length <= 1) {
+    return;
+  }
+  let canonical = rows[0];
+  for (const row of rows) {
+    if (row.rkey > canonical.rkey) {
+      canonical = row;
+    }
+  }
+  const losers = rows
+    .filter((row) => row.uri !== canonical.uri)
+    .map((row) => row.uri);
+  if (losers.length === 0) {
+    return;
+  }
+  await db
+    .update(documents)
+    .set({ deleted: true, updatedAt: sql`now()` })
+    .where(inArray(documents.uri, losers));
+  await db
+    .update(documents)
+    .set({ deleted: false })
+    .where(eq(documents.uri, canonical.uri));
 }
 
 /** Ensure a minimal profile row exists for a DID we'll show in the UI. */
@@ -139,6 +233,9 @@ export async function upsertPublication(
         ),
       ),
     );
+
+  // Collapse any older same-site publication record to this canonical one.
+  await reconcilePublicationGroup(did, values.url);
 
   await ensureTracked(did, "publication");
 }
@@ -289,6 +386,9 @@ export async function upsertDocument(
       await ensureTracked(c.did, "contributor");
     }
   }
+
+  // Collapse any identical-content duplicate of this document.
+  await reconcileDocumentDup(did, cid ?? null);
 
   await ensureTracked(did, "document");
 }
