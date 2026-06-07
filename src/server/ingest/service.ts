@@ -208,8 +208,10 @@ const server = createServer((req, res) => {
   });
 });
 
-server.listen(port(), "0.0.0.0", () => {
-  console.info(`[ingest] listening on 0.0.0.0:${port()}`);
+// Bind to `::` (all IPv6 + IPv4 via dual-stack) so the service is reachable
+// over Railway's IPv6-only private network (`*.railway.internal`).
+server.listen(port(), "::", () => {
+  console.info(`[ingest] listening on [::]:${port()}`);
 });
 
 const tapChannel = startTapChannel();

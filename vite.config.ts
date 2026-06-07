@@ -5,6 +5,7 @@ import viteReact from "@vitejs/plugin-react";
 import browserslist from "browserslist";
 import { browserslistToTargets } from "lightningcss";
 import path from "node:path";
+import { nitro } from "nitro/vite";
 import { defineConfig } from "vite";
 
 const config = defineConfig({
@@ -23,6 +24,7 @@ const config = defineConfig({
     }),
     devtools(),
     tanstackStart(),
+    nitro(),
     viteReact(),
   ],
 });

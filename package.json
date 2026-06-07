@@ -3,15 +3,20 @@
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.26.0",
+  "engines": {
+    "node": ">=22.6"
+  },
   "imports": {
     "#/*": "./src/*"
   },
   "scripts": {
     "dev": "vite dev --port 3000",
     "build": "vite build",
+    "start": "node .output/server/index.mjs",
     "preview": "vite preview",
     "test": "vitest run",
-    "ingest:dev": "node --experimental-strip-types --env-file=.env src/server/ingest/service.ts",
+    "ingest:dev": "tsx --env-file=.env src/server/ingest/service.ts",
+    "ingest:start": "tsx src/server/ingest/service.ts",
     "backfill:blobs": "node --experimental-strip-types --env-file=.env scripts/backfill-blob-urls.ts",
     "backfill:search-text": "pnpm exec tsx --env-file=.env scripts/backfill-search-text.ts",
     "scan:unsupported-blocks": "pnpm exec tsx --env-file=.env scripts/scan-unsupported-blocks.ts",
@@ -57,9 +62,12 @@
     "@tanstack/router-plugin": "^1.132.0",
     "@window-splitter/react": "^1.1.3",
     "bsky-react-post": "^0.1.7",
+    "dotenv": "^17.4.2",
+    "drizzle-kit": "^0.31.10",
     "drizzle-orm": "^0.45.2",
     "lucide-react": "^0.548.0",
     "media-chrome": "^4.19.1",
+    "nitro": "3.0.260603-beta",
     "pg": "^8.21.0",
     "react": "^19.2.0",
     "react-aria": "^3.49.0",
@@ -73,6 +81,7 @@
     "satori": "^0.26.0",
     "shiki": "^4.2.0",
     "swr": "^2.4.1",
+    "tsx": "^4.22.4",
     "universal-cookie": "^8.1.2",
     "web-haptics": "^0.0.6",
     "zod": "^4.4.3"
@@ -92,8 +101,6 @@
     "@typescript-eslint/parser": "^8.60.1",
     "@vitejs/plugin-react": "^6.0.1",
     "browserslist": "^4.28.2",
-    "dotenv": "^17.4.2",
-    "drizzle-kit": "^0.31.10",
     "eslint": "^9.39.4",
     "eslint-plugin-perfectionist": "^4.15.1",
     "hip-ui": "^0.3.0",
