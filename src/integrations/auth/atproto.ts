@@ -175,7 +175,17 @@ function getPrivateKey(): ClientAssertionPrivateJwk {
       "ATPROTO_PRIVATE_KEY_JWK environment variable is required for the confidential OAuth client.",
     );
   }
-  return JSON.parse(keyJson) as ClientAssertionPrivateJwk;
+  const jwk = JSON.parse(keyJson) as ClientAssertionPrivateJwk;
+  // A `kid` is mandatory: the signed client_assertion advertises it in its JWT
+  // header and the auth server uses it to find the matching key in our JWKS.
+  // Without one, validation fails with "no applicable key found in the JSON Web
+  // Key Set". Inject a stable fallback so a key generated without a `kid` (e.g.
+  // via `generateClientAssertionKey()` with no argument) still works — both the
+  // signer and the published JWKS read it off this same object.
+  if (!jwk.kid) {
+    jwk.kid = "standard-reader-oauth";
+  }
+  return jwk;
 }
 
 function getBaseUrl(): string {
