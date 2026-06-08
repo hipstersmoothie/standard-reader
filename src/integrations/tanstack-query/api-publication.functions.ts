@@ -1,4 +1,5 @@
 import type { LeafletCodeBlock } from "#/lib/leaflet/types";
+import type { CodeHighlightsByScheme, ThemeMode } from "#/lib/theme";
 
 import { queryOptions } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
@@ -12,7 +13,6 @@ import { OFFPRINT_CONTENT } from "#/lib/offprint/types";
 import { pcktBlocks, pcktCodeLanguage } from "#/lib/pckt/blocks";
 import { PCKT_CONTENT } from "#/lib/pckt/types";
 import { EMPTY_CODE_HIGHLIGHTS } from "#/lib/theme";
-import type { CodeHighlightsByScheme, ThemeMode } from "#/lib/theme";
 import { getAtprotoSessionForRequest } from "#/middleware/auth";
 import { authorPds } from "#/server/atproto/identity";
 import { resolveGreengaleContent } from "#/server/greengale/resolve";

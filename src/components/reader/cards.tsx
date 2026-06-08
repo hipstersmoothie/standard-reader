@@ -50,8 +50,8 @@ import {
   publicationLinkParams,
 } from "./format";
 import {
-  Handle,
   ArticleEngagement,
+  Handle,
   MetaGroup,
   MetaLine,
   PublicationAvatar,
@@ -270,10 +270,6 @@ const styles = stylex.create({
     marginTop: spacing["1.5"],
   },
   pubCard: {
-    ":hover": {
-      boxShadow: shadow.sm,
-      transform: "translateY(-2px)",
-    },
     borderColor: {
       default: uiColor.border1,
       ":hover": uiColor.border2,
@@ -282,10 +278,18 @@ const styles = stylex.create({
     borderStyle: "solid",
     borderWidth: 1,
     backgroundColor: uiColor.bgSubtle,
+    boxShadow: {
+      default: null,
+      ":hover": shadow.sm,
+    },
     boxSizing: "border-box",
     display: "flex",
     flexDirection: "column",
     scrollSnapAlign: "start",
+    transform: {
+      default: null,
+      ":hover": "translateY(-2px)",
+    },
     transitionDuration: animationDuration.fast,
     transitionProperty: {
       default: "border-color, box-shadow, transform",
@@ -401,11 +405,11 @@ const styles = stylex.create({
   },
   pubDirRank: {
     gridColumn: {
-      default: 1,
+      default: "1",
       "@media (min-width: 40rem)": "auto",
     },
     gridRow: {
-      default: 1,
+      default: "1",
       "@media (min-width: 40rem)": "auto",
     },
     color: uiColor.text1,
@@ -417,17 +421,17 @@ const styles = stylex.create({
   },
   pubDirAvatar: {
     gridColumn: {
-      default: 1,
+      default: "1",
       "@media (min-width: 40rem)": "auto",
     },
     gridRow: {
-      default: 1,
+      default: "1",
       "@media (min-width: 40rem)": "auto",
     },
   },
   pubDirAvatarRanked: {
     gridColumn: {
-      default: 2,
+      default: "2",
       "@media (min-width: 40rem)": "auto",
     },
   },
@@ -445,27 +449,27 @@ const styles = stylex.create({
   },
   pubDirFollow: {
     gridColumn: {
-      default: 3,
+      default: "3",
       "@media (min-width: 40rem)": "auto",
     },
     gridRow: {
-      default: 1,
+      default: "1",
       "@media (min-width: 40rem)": "auto",
     },
   },
   pubDirFollowRanked: {
     gridColumn: {
-      default: 4,
+      default: "4",
       "@media (min-width: 40rem)": "auto",
     },
   },
   pubDirTop: {
     gridColumn: {
-      default: 2,
+      default: "2",
       "@media (min-width: 40rem)": "auto",
     },
     gridRow: {
-      default: 1,
+      default: "1",
       "@media (min-width: 40rem)": "auto",
     },
     alignItems: {
@@ -484,7 +488,7 @@ const styles = stylex.create({
   },
   pubDirTopRanked: {
     gridColumn: {
-      default: 3,
+      default: "3",
       "@media (min-width: 40rem)": "auto",
     },
   },
@@ -519,7 +523,7 @@ const styles = stylex.create({
       "@media (min-width: 40rem)": "auto",
     },
     gridRow: {
-      default: 2,
+      default: "2",
       "@media (min-width: 40rem)": "auto",
     },
     display: "flex",

@@ -15,6 +15,7 @@ import {
   DrawerDescription,
   DrawerHeader,
 } from "../../design-system/drawer";
+import { animationDuration } from "../../design-system/theme/animations.stylex";
 import { primaryColor, uiColor } from "../../design-system/theme/color.stylex";
 import { radius } from "../../design-system/theme/radius.stylex";
 import {
@@ -30,20 +31,20 @@ import {
   tracking,
 } from "../../design-system/theme/typography.stylex";
 import { parseInternalRoute } from "../../lib/internal-route";
-import { Handle } from "./primitives";
 import { initials, publicationLinkParams } from "./format";
+import { Handle } from "./primitives";
 
 const styles = stylex.create({
   switcher: {
-    ":active": {
-      backgroundColor: uiColor.bgSubtle,
-    },
     borderColor: uiColor.border1,
     borderRadius: radius.sm,
     borderStyle: "solid",
     borderWidth: 1,
     alignItems: "center",
-    backgroundColor: uiColor.bg,
+    backgroundColor: {
+      default: uiColor.bg,
+      ":active": uiColor.bgSubtle,
+    },
     color: uiColor.text2,
     columnGap: gap.sm,
     cursor: "pointer",
@@ -52,7 +53,7 @@ const styles = stylex.create({
     fontSize: fontSize.sm,
     fontWeight: fontWeight.semibold,
     rowGap: gap.sm,
-    transitionDuration: "0.13s",
+    transitionDuration: animationDuration.default,
     transitionProperty: "background-color, border-color",
     whiteSpace: "nowrap",
     height: spacing["9"],
@@ -79,13 +80,13 @@ const styles = stylex.create({
     flexDirection: "column",
   },
   pubRow: {
-    ":active": {
-      backgroundColor: uiColor.bgSubtle,
-    },
     font: "inherit",
     borderWidth: 0,
     alignItems: "center",
-    backgroundColor: "transparent",
+    backgroundColor: {
+      default: "transparent",
+      ":active": uiColor.bgSubtle,
+    },
     color: "inherit",
     columnGap: gap.lg,
     cursor: "pointer",
@@ -122,9 +123,6 @@ const styles = stylex.create({
     flexShrink: 0,
   },
   discoverLink: {
-    ":active": {
-      opacity: 0.7,
-    },
     borderWidth: 0,
     alignItems: "center",
     backgroundColor: "transparent",
@@ -136,6 +134,10 @@ const styles = stylex.create({
     fontSize: fontSize.sm,
     fontWeight: fontWeight.semibold,
     justifyContent: "center",
+    opacity: {
+      default: 1,
+      ":active": 0.7,
+    },
     rowGap: gap.sm,
     marginTop: verticalSpace.lg,
     paddingBottom: verticalSpace.lg,

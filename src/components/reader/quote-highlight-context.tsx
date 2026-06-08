@@ -1,12 +1,12 @@
 import type { QuoteHighlightRange } from "#/lib/quote-highlight-text";
 
 import * as stylex from "@stylexjs/stylex";
-import { createContext, useContext } from "react";
 
 import { articleBodyStyles } from "./content/body-styles";
-
-const QuoteHighlightTrackerContext =
-  createContext<QuoteHighlightTracker | null>(null);
+import {
+  QuoteHighlightTracker,
+  QuoteHighlightTrackerContext,
+} from "./quote-highlight-tracker";
 
 export function QuoteShareMark({ children }: { children: React.ReactNode }) {
   return (
@@ -17,39 +17,6 @@ export function QuoteShareMark({ children }: { children: React.ReactNode }) {
       {children}
     </mark>
   );
-}
-
-export function intersectHighlightRange(
-  global: QuoteHighlightRange | null,
-  blockStart: number,
-  blockLength: number,
-): QuoteHighlightRange | null {
-  if (!global || blockLength <= 0) return null;
-
-  const blockEnd = blockStart + blockLength;
-  if (global.end <= blockStart || global.start >= blockEnd) return null;
-
-  return {
-    start: Math.max(0, global.start - blockStart),
-    end: Math.min(blockLength, global.end - blockStart),
-  };
-}
-
-/** Tracks global quote offsets block-by-block during render. */
-export class QuoteHighlightTracker {
-  private offset = 0;
-
-  constructor(private readonly global: QuoteHighlightRange | null) {}
-
-  consume(length: number): QuoteHighlightRange | null {
-    const local = intersectHighlightRange(this.global, this.offset, length);
-    this.offset += length;
-    return local;
-  }
-}
-
-export function useQuoteHighlightTracker(): QuoteHighlightTracker | null {
-  return useContext(QuoteHighlightTrackerContext);
 }
 
 export function QuoteHighlightProvider({
@@ -93,10 +60,13 @@ export function HighlightedPlaintext({
   );
 }
 
-export function renderDropCapChar(
-  char: string,
-  highlightRange: QuoteHighlightRange | null,
-): React.ReactNode {
+export function DropCapChar({
+  char,
+  highlightRange,
+}: {
+  char: string;
+  highlightRange: QuoteHighlightRange | null;
+}): React.ReactNode {
   if (!highlightRange || highlightRange.start >= highlightRange.end) {
     return char;
   }

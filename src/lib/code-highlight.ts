@@ -36,5 +36,7 @@ function hashString(value: string): string {
   for (let index = 0; index < value.length; index++) {
     hash = ((hash << 5) + hash) ^ (value.codePointAt(index) ?? 0);
   }
+  // `>>> 0` coerces the 32-bit signed hash to unsigned; Math.trunc would not.
+  // eslint-disable-next-line unicorn/prefer-math-trunc
   return (hash >>> 0).toString(36);
 }

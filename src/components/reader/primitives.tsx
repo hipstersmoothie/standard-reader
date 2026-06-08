@@ -237,9 +237,9 @@ export function Kicker({
         icon != null && styles.kickerRow,
       )}
     >
-      {icon != null ? (
+      {icon == null ? null : (
         <span {...stylex.props(styles.kickerIcon)}>{icon}</span>
-      ) : null}
+      )}
       {children}
     </span>
   );
@@ -360,9 +360,9 @@ export function SectionHead({
         {kicker != null && <Kicker icon={icon}>{kicker}</Kicker>}
         <span {...stylex.props(styles.sectionTitle)}>{title}</span>
       </Flex>
-      {action != null ? (
+      {action == null ? null : (
         <div {...stylex.props(styles.sectionHeadAction)}>{action}</div>
-      ) : null}
+      )}
     </div>
   );
 }

@@ -83,6 +83,7 @@ const styles = stylex.create({
   displayName: {
     // eslint-disable-next-line @stylexjs/valid-styles
     textBoxEdge: "cap alphabetic",
+    // eslint-disable-next-line @stylexjs/valid-styles
     textBoxTrim: "trim-both",
     overflow: "hidden",
     color: uiColor.text2,

@@ -71,14 +71,11 @@ const getTopics = createServerFn({ method: "GET" })
 const getKnownPublicationCount = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
   .handler(
-    observe(
-      "discover.getKnownPublicationCount",
-      async ({ context }, span) => {
-        const count = await countKnownPublications(context.db);
-        span.set("count", count);
-        return count;
-      },
-    ),
+    observe("discover.getKnownPublicationCount", async ({ context }, span) => {
+      const count = await countKnownPublications(context.db);
+      span.set("count", count);
+      return count;
+    }),
   );
 
 const getPublications = createServerFn({ method: "GET" })

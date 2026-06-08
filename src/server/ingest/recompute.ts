@@ -350,7 +350,7 @@ export async function backfillDocumentSearchText(): Promise<number> {
       .limit(BATCH_SIZE);
 
     if (rows.length === 0) break;
-    cursor = rows[rows.length - 1].uri;
+    cursor = rows.at(-1)?.uri ?? null;
 
     for (const row of rows) {
       const next = documentSearchText({
@@ -406,7 +406,7 @@ export async function backfillRenderableBody(): Promise<number> {
       .limit(READ_BATCH);
 
     if (rows.length === 0) break;
-    cursor = rows[rows.length - 1].uri;
+    cursor = rows.at(-1)?.uri ?? null;
 
     for (const row of rows) {
       const next = hasRenderableArticleBody({

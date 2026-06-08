@@ -46,10 +46,10 @@ const styles = stylex.create({
     paddingTop: spacing["5"],
   },
   searchField: {
-    ":focus-within": {
-      borderColor: uiColor.border3,
+    borderColor: {
+      default: uiColor.border2,
+      ":focus-within": uiColor.border3,
     },
-    borderColor: uiColor.border2,
     borderRadius: radius.md,
     borderStyle: "solid",
     borderWidth: 1,

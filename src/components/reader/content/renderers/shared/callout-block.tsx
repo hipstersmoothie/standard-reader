@@ -3,7 +3,7 @@
 import type { LeafletFacet } from "#/lib/leaflet/types";
 
 import * as stylex from "@stylexjs/stylex";
-import { useQuoteHighlightTracker } from "#/components/reader/quote-highlight-context";
+import { useQuoteHighlightTracker } from "#/components/reader/quote-highlight-tracker";
 
 import { themedCalloutBackground } from "../../../callout-color";
 import { articleBodyStyles } from "../../body-styles";
@@ -22,9 +22,9 @@ export function CalloutBlockView({
   emoji?: string;
   color?: string;
 }) {
+  const tracker = useQuoteHighlightTracker();
   if (!plaintext.trim()) return null;
 
-  const tracker = useQuoteHighlightTracker();
   const highlightRange = tracker?.consume(plaintext.length) ?? null;
 
   return (

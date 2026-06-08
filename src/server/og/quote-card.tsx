@@ -1,3 +1,7 @@
+import type {
+  PublicationThemeInput,
+  QuoteOgColors,
+} from "#/server/og/theme-colors";
 import type { Font } from "satori";
 
 import { Resvg } from "@resvg/resvg-js";
@@ -7,10 +11,6 @@ import { truncateQuoteForDisplay } from "#/lib/quote-share";
 import { loadOgFonts } from "#/server/og/fonts";
 import { loadPublicationIcon } from "#/server/og/load-image";
 import { resolveQuoteOgColors } from "#/server/og/theme-colors";
-import type {
-  PublicationThemeInput,
-  QuoteOgColors,
-} from "#/server/og/theme-colors";
 import satori from "satori";
 
 const OG_WIDTH = 1200;
@@ -24,7 +24,7 @@ function quoteFontSize(text: string): number {
   return 36;
 }
 
-function QuoteGlyph({ accent }: { accent: string }) {
+function quoteGlyph(accent: string) {
   return (
     <svg aria-hidden="true" height={74} viewBox="0 0 100 80" width={92}>
       <path
@@ -87,7 +87,7 @@ function quoteOgMarkup(input: {
               marginBottom: spacing["5"],
             }}
           >
-            <QuoteGlyph accent={colors.accent} />
+            {quoteGlyph(colors.accent)}
           </div>
           <div
             style={{

@@ -115,7 +115,7 @@ function appendLeafletListItems(
     if (!isLeafletListItem(item)) continue;
     const text = asTextBlock(item.content);
     const hasNested =
-      Boolean(item.children?.length > 0) ||
+      (item.children?.length ?? 0) > 0 ||
       (isRecord(item.unorderedListChildren) &&
         Array.isArray(item.unorderedListChildren.children)) ||
       (isRecord(item.orderedListChildren) &&

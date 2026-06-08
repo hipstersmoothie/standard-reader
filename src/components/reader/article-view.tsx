@@ -52,9 +52,9 @@ import {
   readingMinutes,
 } from "./format";
 import {
+  ArticleEngagement,
   Handle,
   Kicker,
-  ArticleEngagement,
   PublicationAvatar,
   SectionHead,
   Topic,
@@ -278,11 +278,6 @@ const styles = stylex.create({
     fontFamily: fontFamily.sans,
     fontSize: fontSize.sm,
   },
-  bylineHandle: {
-    color: uiColor.text1,
-    fontFamily: fontFamily.sans,
-    fontSize: fontSize.sm,
-  },
   hero: {
     borderRadius: radius.lg,
     overflow: "hidden",
@@ -479,9 +474,9 @@ function MoreFromRow({
       <Flex direction="column" gap="sm" style={styles.footGrow}>
         <span {...stylex.props(styles.moreTitle)}>{article.title}</span>
         <span {...stylex.props(styles.bylineMeta)}>
-          {minutes != null
-            ? `${publicationName} · ${minutes} min`
-            : publicationName}
+          {minutes == null
+            ? publicationName
+            : `${publicationName} · ${minutes} min`}
         </span>
       </Flex>
     </>

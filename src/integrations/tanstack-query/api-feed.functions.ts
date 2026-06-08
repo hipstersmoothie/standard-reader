@@ -155,7 +155,7 @@ const getHomeFeed = createServerFn({ method: "GET" })
 
       const excludeUris = new Set(
         [featured?.uri, ...latestUnread.map((row) => row.uri)].filter(
-          (uri): uri is string => Boolean(uri),
+          (uri): uri is string => uri != null,
         ),
       );
       const trending = trendingRaw

@@ -160,9 +160,7 @@ export type ProcessResult = "applied" | "dead-lettered" | "unhandled";
  * if even that write fails we report `unhandled` so the caller withholds the ack
  * and tap redelivers later (this is what prevents data loss during an outage).
  */
-export async function processTapEvent(
-  event: TapEvent,
-): Promise<ProcessResult> {
+export async function processTapEvent(event: TapEvent): Promise<ProcessResult> {
   try {
     if (event.type === "identity") {
       await applyIdentity(event.identity);

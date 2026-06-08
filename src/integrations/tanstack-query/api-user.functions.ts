@@ -1,4 +1,5 @@
 import type { Did } from "@atcute/lexicons";
+import type { ThemeMode } from "#/lib/theme";
 
 import { isDid } from "@atcute/lexicons/syntax";
 import { queryOptions } from "@tanstack/react-query";
@@ -9,9 +10,15 @@ import {
   revokeAtprotoSession,
 } from "#/integrations/auth/atproto";
 import { AUTH_SESSION_TOKEN_COOKIE } from "#/integrations/auth/constants";
-import { dbValueToThemeMode, parseThemeMode, THEME_COOKIE, THEME_COOKIE_MAX_AGE_SECONDS, THEME_MODES, themeModeToDbValue } from '#/lib/theme';
-import type { ThemeMode } from '#/lib/theme';
 import { fetchBlueskyPublicProfileFields } from "#/lib/bluesky-public-profile";
+import {
+  THEME_COOKIE,
+  THEME_COOKIE_MAX_AGE_SECONDS,
+  THEME_MODES,
+  dbValueToThemeMode,
+  parseThemeMode,
+  themeModeToDbValue,
+} from "#/lib/theme";
 import { maybeAuthMiddleware } from "#/middleware/auth";
 import { resolveIdentity } from "#/server/atproto/identity";
 import { eq } from "drizzle-orm";

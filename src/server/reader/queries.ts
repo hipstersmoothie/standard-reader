@@ -12,14 +12,6 @@
  * rails stay distinct.
  */
 
-/** Blend weights for personalized publication ranking (tunable). */
-const RECOMMENDATION_BLEND = {
-  cosub: 1,
-  corecommend: 1.5,
-  coReaderLike: 2,
-  coReaderFollow: 2,
-} as const;
-
 import type {
   ArticleCard,
   Db,
@@ -51,6 +43,14 @@ import {
   or,
   sql,
 } from "drizzle-orm";
+
+/** Blend weights for personalized publication ranking (tunable). */
+const RECOMMENDATION_BLEND = {
+  cosub: 1,
+  corecommend: 1.5,
+  coReaderLike: 2,
+  coReaderFollow: 2,
+} as const;
 
 export interface ArticleCardQuery {
   /** Restrict to documents in these publications (e.g. a reader's follows). */
@@ -99,7 +99,7 @@ export async function selectArticleCards(
   if (opts.discoverOnly) {
     conds.push(
       isNotNull(d.publicationUri),
-      discoverEligiblePublicationWhere(p)!,
+      discoverEligiblePublicationWhere(p),
     );
   }
 
@@ -249,7 +249,7 @@ export async function trendingArticles(
   const conds = [
     eq(d.deleted, false),
     isNotNull(d.publicationUri),
-    discoverEligiblePublicationWhere(p)!,
+    discoverEligiblePublicationWhere(p),
     sql`${d.publishedAt} > now() - interval '60 days'`,
   ];
   if (excludeUris.length > 0) {
@@ -449,7 +449,7 @@ export async function discoverDirectoryPublications(
 
   const effectiveTopic = publicationEffectiveTopicSql(p);
 
-  const conds = [discoverEligiblePublicationWhere(p)!];
+  const conds = [discoverEligiblePublicationWhere(p)];
   if (topic) {
     conds.push(sql`lower(btrim(${effectiveTopic})) = lower(btrim(${topic}))`);
   }
@@ -461,14 +461,13 @@ export async function discoverDirectoryPublications(
   const likePattern = trimmedQuery ? `%${trimmedQuery}%` : null;
 
   if (trimmedQuery && tsq && likePattern) {
-    conds.push(
-      or(
-        sql`${p.searchVector} @@ ${tsq}`,
-        ilike(p.url, likePattern),
-        ilike(pr.handle, likePattern),
-        sql`lower(btrim(coalesce(${effectiveTopic}, ''))) like lower(${likePattern})`,
-      )!,
+    const searchMatch = or(
+      sql`${p.searchVector} @@ ${tsq}`,
+      ilike(p.url, likePattern),
+      ilike(pr.handle, likePattern),
+      sql`lower(btrim(coalesce(${effectiveTopic}, ''))) like lower(${likePattern})`,
     );
+    if (searchMatch) conds.push(searchMatch);
   }
 
   const sortName = publicationSortNameSql(p.name, p.url);
@@ -477,11 +476,7 @@ export async function discoverDirectoryPublications(
     sort === "az"
       ? [asc(sortName), asc(p.uri)]
       : sort === "active"
-        ? [
-            sql`${st.lastDocumentAt} desc nulls last`,
-            asc(sortName),
-            asc(p.uri),
-          ]
+        ? [sql`${st.lastDocumentAt} desc nulls last`, asc(sortName), asc(p.uri)]
         : [
             sql`(coalesce(${st.subscriberCount}, 0) * 2.0 + coalesce(${st.recommendCount}, 0) * 1.0) desc`,
             asc(sortName),
@@ -516,8 +511,9 @@ export async function discoverDirectoryPublications(
       ownerHandle: pr.handle,
       topic: effectiveTopic,
       verified: p.verified,
-      subscriberCount:
-        sql<number>`coalesce(${st.subscriberCount}, 0)`.mapWith(Number),
+      subscriberCount: sql<number>`coalesce(${st.subscriberCount}, 0)`.mapWith(
+        Number,
+      ),
       documentCount: sql<number>`coalesce(${st.documentCount}, 0)`.mapWith(
         Number,
       ),
@@ -581,7 +577,7 @@ async function publicationCardsByOrderedUris(
       and(
         inArray(p.uri, uris),
         eq(p.deleted, false),
-        discoverEligiblePublicationWhere(p)!,
+        discoverEligiblePublicationWhere(p),
         hasIndexedDocuments(db, schema, p.uri),
       ),
     );
@@ -756,7 +752,7 @@ export async function popularPublications(
   const pr = schema.profiles;
 
   const conds = [
-    discoverEligiblePublicationWhere(p)!,
+    discoverEligiblePublicationWhere(p),
     hasIndexedDocuments(db, schema, p.uri),
   ];
   if (excludeUris.length > 0) {

@@ -75,6 +75,7 @@ const styles = stylex.create({
   brand: {
     // eslint-disable-next-line @stylexjs/valid-styles
     textBoxEdge: "cap alphabetic",
+    // eslint-disable-next-line @stylexjs/valid-styles
     textBoxTrim: "trim-both",
     textDecoration: "none",
     color: uiColor.text2,

@@ -271,7 +271,11 @@ function Latest() {
             ))}
           </div>
 
-          {nextOffset != null ? (
+          {nextOffset == null ? (
+            <p {...stylex.props(styles.endNote)}>
+              You&apos;ve reached the end.
+            </p>
+          ) : (
             <>
               <div
                 ref={loadMoreSentinelRef}
@@ -282,10 +286,6 @@ function Latest() {
                 <p {...stylex.props(styles.endNote)}>Loading…</p>
               ) : null}
             </>
-          ) : (
-            <p {...stylex.props(styles.endNote)}>
-              You&apos;ve reached the end.
-            </p>
           )}
         </>
       )}

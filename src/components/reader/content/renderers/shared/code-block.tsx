@@ -5,10 +5,8 @@ import type { CodeHighlightsByScheme } from "#/lib/theme";
 
 import * as stylex from "@stylexjs/stylex";
 import { useQuery } from "@tanstack/react-query";
-import {
-  HighlightedPlaintext,
-  useQuoteHighlightTracker,
-} from "#/components/reader/quote-highlight-context";
+import { HighlightedPlaintext } from "#/components/reader/quote-highlight-context";
+import { useQuoteHighlightTracker } from "#/components/reader/quote-highlight-tracker";
 import { highlightApi } from "#/integrations/tanstack-query/api-highlight.functions";
 import { codeBlockKey } from "#/lib/code-highlight";
 import { EMPTY_CODE_HIGHLIGHTS, pickCodeHighlight } from "#/lib/theme";

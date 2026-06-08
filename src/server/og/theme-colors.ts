@@ -168,7 +168,11 @@ function parseOrDefault(
   value: string | null | undefined,
   fallbackHex: string,
 ): Rgb {
-  return parseCssColor(value) ?? parseCssColor(fallbackHex)!;
+  const parsed = parseCssColor(value) ?? parseCssColor(fallbackHex);
+  if (!parsed) {
+    throw new Error(`Invalid fallback color: ${fallbackHex}`);
+  }
+  return parsed;
 }
 
 /** Build an accessible OG palette from a publication's flattened theme. */

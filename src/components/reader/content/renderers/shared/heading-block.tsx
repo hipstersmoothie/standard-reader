@@ -3,10 +3,8 @@
 import type { LeafletFacet } from "#/lib/leaflet/types";
 
 import * as stylex from "@stylexjs/stylex";
-import {
-  HighlightedPlaintext,
-  useQuoteHighlightTracker,
-} from "#/components/reader/quote-highlight-context";
+import { HighlightedPlaintext } from "#/components/reader/quote-highlight-context";
+import { useQuoteHighlightTracker } from "#/components/reader/quote-highlight-tracker";
 import { createElement } from "react";
 
 import { articleBodyStyles } from "../../body-styles";

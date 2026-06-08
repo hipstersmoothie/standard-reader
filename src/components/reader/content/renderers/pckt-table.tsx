@@ -3,7 +3,7 @@
 import type { PcktTableBlock } from "#/lib/pckt/types";
 
 import * as stylex from "@stylexjs/stylex";
-import { useQuoteHighlightTracker } from "#/components/reader/quote-highlight-context";
+import { useQuoteHighlightTracker } from "#/components/reader/quote-highlight-tracker";
 import { asTextBlock } from "#/lib/pckt/blocks";
 import { PCKT_BLOCK } from "#/lib/pckt/types";
 

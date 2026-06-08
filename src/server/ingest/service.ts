@@ -5,11 +5,10 @@ import { sql } from "drizzle-orm";
 import { createServer } from "node:http";
 
 import type { TapEvent } from "../atproto/types.ts";
+import type { ProcessResult } from "./consumer.ts";
 
 import { db } from "../../db/index.ts";
 import { ingestState } from "../../db/schema.ts";
-import type { ProcessResult } from "./consumer.ts";
-
 import { verifyIngestAuth } from "./auth.ts";
 import { ingestConfig } from "./config.ts";
 import { processTapEvent } from "./consumer.ts";
@@ -227,7 +226,7 @@ function startTapChannel(): { destroy: () => Promise<void> } {
   // hung ack just dangles harmlessly; tap tolerates the missing ack and we
   // re-upsert safely on any redelivery. The timeout here is for diagnostics
   // only — it never gates delivery.
-  const ACK_TIMEOUT_MS = 5_000;
+  const ACK_TIMEOUT_MS = 5000;
   function ackInBackground(id: number, ack: () => Promise<void>): void {
     let timer: ReturnType<typeof setTimeout> | undefined;
     const timeout = new Promise<"timeout">((resolve) => {

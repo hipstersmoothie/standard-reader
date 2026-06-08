@@ -86,7 +86,7 @@ function facetsForSlice(
 ): Array<JsonValue> | null {
   if (!facets?.length || sliceStart <= 0) return facets;
   const byteOffset = utf8ByteLength(text.slice(0, sliceStart));
-  return shiftFacets(facets, byteOffset) as Array<JsonValue>;
+  return shiftFacets(facets, byteOffset) as unknown as Array<JsonValue>;
 }
 
 function commentParagraphSlices(

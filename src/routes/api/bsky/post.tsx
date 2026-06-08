@@ -10,7 +10,16 @@ export const Route = createFileRoute("/api/bsky/post")({
         const id = url.searchParams.get("id");
         const handle = url.searchParams.get("handle");
 
-        if (!id || (!did && !handle)) {
+        if (!id) {
+          return new Response(JSON.stringify({ error: "Bad Request" }), {
+            status: 400,
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+
+        const target = handle ? { handle, id } : did ? { did, id } : null;
+
+        if (!target) {
           return new Response(JSON.stringify({ error: "Bad Request" }), {
             status: 400,
             headers: { "Content-Type": "application/json" },
@@ -18,9 +27,7 @@ export const Route = createFileRoute("/api/bsky/post")({
         }
 
         try {
-          const post = await fetchPost(
-            handle ? { handle, id } : { did: did!, id },
-          );
+          const post = await fetchPost(target);
           if (!post) {
             return new Response(JSON.stringify({ data: null }), {
               status: 404,

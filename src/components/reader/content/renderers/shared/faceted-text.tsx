@@ -6,11 +6,13 @@ import type { QuoteHighlightRange } from "#/lib/quote-highlight-text";
 import * as stylex from "@stylexjs/stylex";
 import { AppLink } from "#/components/reader/app-link";
 import {
+  DropCapChar,
   QuoteShareMark,
-  intersectHighlightRange,
-  renderDropCapChar,
-  useQuoteHighlightTracker,
 } from "#/components/reader/quote-highlight-context";
+import {
+  intersectHighlightRange,
+  useQuoteHighlightTracker,
+} from "#/components/reader/quote-highlight-tracker";
 import { segmentFacetedText, shiftFacets } from "#/lib/leaflet/facets";
 import { utf8ByteLength } from "#/lib/leaflet/utf8";
 import { Fragment } from "react";
@@ -200,7 +202,7 @@ export function TextBlockView({
         )}
       >
         <span {...stylex.props(articleBodyStyles.dropCap)} aria-hidden>
-          {renderDropCapChar(firstChar, firstCharRange)}
+          <DropCapChar char={firstChar} highlightRange={firstCharRange} />
         </span>
         <HighlightedFacetedPlaintext
           plaintext={rest}

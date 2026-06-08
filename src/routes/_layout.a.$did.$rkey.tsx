@@ -148,7 +148,7 @@ function ArticleRoute() {
     if (!article || hasRenderableArticleBody(article)) return;
     const externalUrl = articlePublicationUrl(article);
     if (externalUrl) {
-      window.location.replace(externalUrl);
+      globalThis.location.replace(externalUrl);
     }
   }, [article]);
 

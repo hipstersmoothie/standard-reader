@@ -3,7 +3,7 @@
 import type { LeafletFacet } from "#/lib/leaflet/types";
 
 import * as stylex from "@stylexjs/stylex";
-import { useQuoteHighlightTracker } from "#/components/reader/quote-highlight-context";
+import { useQuoteHighlightTracker } from "#/components/reader/quote-highlight-tracker";
 
 import { articleBodyStyles } from "../../body-styles";
 import { HighlightedFacetedPlaintext } from "./faceted-text";

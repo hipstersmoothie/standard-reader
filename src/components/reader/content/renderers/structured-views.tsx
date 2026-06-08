@@ -3,10 +3,8 @@
 import type { StructuredText } from "#/lib/document/structured-content/types";
 
 import * as stylex from "@stylexjs/stylex";
-import {
-  HighlightedPlaintext,
-  useQuoteHighlightTracker,
-} from "#/components/reader/quote-highlight-context";
+import { HighlightedPlaintext } from "#/components/reader/quote-highlight-context";
+import { useQuoteHighlightTracker } from "#/components/reader/quote-highlight-tracker";
 
 import { articleBodyStyles } from "../body-styles";
 import { HighlightedFacetedPlaintext } from "./shared/faceted-text";

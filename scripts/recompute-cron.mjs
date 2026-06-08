@@ -19,24 +19,22 @@ const secret =
   process.env.INGEST_WEBHOOK_SECRET ?? process.env.TAP_ADMIN_PASSWORD;
 
 if (!secret) {
-  console.error("[recompute-cron] INGEST_WEBHOOK_SECRET is not set");
-  process.exit(1);
+  throw new Error("[recompute-cron] INGEST_WEBHOOK_SECRET is not set");
 }
 
 const auth = `Basic ${Buffer.from(`admin:${secret}`).toString("base64")}`;
 
-try {
-  const startedAt = Date.now();
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { authorization: auth },
-  });
-  const body = await res.text();
-  console.info(
-    `[recompute-cron] POST ${url} -> ${res.status} in ${Date.now() - startedAt}ms: ${body}`,
+const startedAt = Date.now();
+const res = await fetch(url, {
+  method: "POST",
+  headers: { authorization: auth },
+});
+const body = await res.text();
+console.info(
+  `[recompute-cron] POST ${url} -> ${res.status} in ${Date.now() - startedAt}ms: ${body}`,
+);
+if (!res.ok) {
+  throw new Error(
+    `[recompute-cron] recompute request failed with status ${res.status}`,
   );
-  process.exit(res.ok ? 0 : 1);
-} catch (error) {
-  console.error("[recompute-cron] request failed", error);
-  process.exit(1);
 }

@@ -149,7 +149,8 @@ export async function authorPds(
   cachedPds?: string | null,
 ): Promise<string | null> {
   if (cachedPds) return cachedPds;
-  return (await resolveIdentity(did)).pds;
+  const identity = await resolveIdentity(did);
+  return identity.pds;
 }
 
 /** Return an already-known identity without doing network I/O. Use this in the

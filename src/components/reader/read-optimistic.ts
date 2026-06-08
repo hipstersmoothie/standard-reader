@@ -50,7 +50,11 @@ function isSidebarData(data: unknown): data is SidebarData {
  * when `wasUnread`, decrements the relevant unread counters. Returns the same
  * reference when nothing changed so React Query can skip the update.
  */
-function updateFeedCache(data: unknown, uri: string, wasUnread: boolean): unknown {
+function updateFeedCache(
+  data: unknown,
+  uri: string,
+  wasUnread: boolean,
+): unknown {
   if (isLatestFeed(data)) {
     return {
       ...data,
@@ -73,7 +77,10 @@ function updateFeedCache(data: unknown, uri: string, wasUnread: boolean): unknow
 
   if (isSidebarData(data)) {
     return wasUnread
-      ? ({ ...data, unreadCount: decrement(data.unreadCount) } satisfies SidebarData)
+      ? ({
+          ...data,
+          unreadCount: decrement(data.unreadCount),
+        } satisfies SidebarData)
       : data;
   }
 

@@ -4,11 +4,13 @@ import type { ArticleDetail } from "#/integrations/tanstack-query/api-publicatio
 
 import * as stylex from "@stylexjs/stylex";
 import {
+  DropCapChar,
   HighlightedPlaintext,
-  intersectHighlightRange,
-  renderDropCapChar,
-  useQuoteHighlightTracker,
 } from "#/components/reader/quote-highlight-context";
+import {
+  intersectHighlightRange,
+  useQuoteHighlightTracker,
+} from "#/components/reader/quote-highlight-tracker";
 import { parseArticleBlocks } from "#/lib/document/blocks";
 
 import type { ContentRendererProps } from "./types";
@@ -88,7 +90,7 @@ function FallbackContent({
               )}
             >
               <span {...stylex.props(articleBodyStyles.dropCap)} aria-hidden>
-                {renderDropCapChar(first, firstCharRange)}
+                <DropCapChar char={first} highlightRange={firstCharRange} />
               </span>
               <HighlightedPlaintext
                 plaintext={rest}

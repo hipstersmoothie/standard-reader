@@ -100,13 +100,14 @@ function mapPcktBlock(block: PcktRenderableBlock): StructuredRenderableBlock {
                 const text = asTextBlock(content);
                 return text?.plaintext.trim() ? [text] : [];
               })();
-          if (texts.length === 0) return [];
+          const [firstText] = texts;
+          if (!firstText) return [];
           return [
             {
               checked: Boolean(
                 isRecord(child.attrs) && child.attrs.checked === true,
               ),
-              text: texts[0]!,
+              text: firstText,
             },
           ];
         }),
@@ -192,5 +193,5 @@ function mapPcktBlock(block: PcktRenderableBlock): StructuredRenderableBlock {
 export function structuredBlocksFromPckt(
   blocks: Array<PcktRenderableBlock>,
 ): Array<StructuredRenderableBlock> {
-  return blocks.map(mapPcktBlock);
+  return blocks.map((block) => mapPcktBlock(block));
 }
