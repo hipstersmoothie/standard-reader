@@ -77,6 +77,11 @@ export interface ArticleCard {
   recommendCount: number;
   /** Bluesky posts linking this article (Constellation, top-level only). */
   commentCount: number;
+  /**
+   * Whether the requesting reader has marked this read. Only meaningful when the
+   * query was scoped to a reader (`readForDid`); otherwise defaults to `false`.
+   */
+  isRead: boolean;
 }
 
 /** A profile summary (byline / publication owner). */
@@ -260,6 +265,7 @@ type ArticleCardRow = {
   tags: Array<string> | null;
   textContent: string | null;
   recommendCount: number | null;
+  isRead?: boolean | null;
 };
 
 export function toArticleCard(row: ArticleCardRow): ArticleCard {
@@ -284,5 +290,6 @@ export function toArticleCard(row: ArticleCardRow): ArticleCard {
     textContent: row.textContent,
     recommendCount: row.recommendCount ?? 0,
     commentCount: 0,
+    isRead: row.isRead ?? false,
   };
 }

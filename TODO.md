@@ -141,8 +141,12 @@ in structured o11y (`observe`) and reads from the Neon read-model.
 - [x] Publication profile query (header + owner identity, recent writing,
       readers-also-follow). `publicationApi.getPublicationProfile`.
 - [x] Article query (full content + publication card + byline contributors +
-      recommend count). `publicationApi.getArticle`; the GET stays side-effect-free,
-      the UI marks read via `readerApi.markRead` on open.
+      recommend count). `publicationApi.getArticle`; the GET stays side-effect-free.
+      The UI marks read on link interaction (`ArticleLink` → `readerApi.markRead`,
+      so it works for external articles too) and again on article open as a
+      backstop; both apply an optimistic cache update (`read-optimistic.ts`).
+      Feed cards carry an inline `isRead` flag (`selectArticleCards` `readForDid`)
+      so read state renders correctly on first paint.
 - [x] Search: publications + articles split over the GIN `tsvector` columns
       (`websearch_to_tsquery` + `ts_rank`). Article bodies index record
       `textContent` plus extracted content blocks into `text_content`.

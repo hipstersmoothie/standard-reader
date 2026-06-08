@@ -11,7 +11,7 @@ import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
 import { parseInternalRoute } from "#/lib/internal-route";
 import { ArrowRight, Check, Plus } from "lucide-react";
-import { Fragment } from "react";
+import { Fragment, useCallback } from "react";
 
 import type {
   ArticleCard,
@@ -49,6 +49,7 @@ import {
   formatReaders,
   publicationLinkParams,
 } from "./format";
+import { applyMarkReadOptimisticUpdate } from "./read-optimistic";
 import {
   Handle,
   ArticleEngagement,
@@ -825,6 +826,27 @@ function ArticleMetaLine({ article }: { article: ArticleCard }) {
   );
 }
 
+/**
+ * Marks a document read the moment the reader interacts with a link to it.
+ * We can't wait for the article page to mount (the link may be external), so we
+ * fire the write on click and optimistically reflect it across the feed caches.
+ */
+function useMarkReadOnNavigate() {
+  const queryClient = useQueryClient();
+  const { data: session } = useQuery(user.getSessionQueryOptions);
+  const signedIn = Boolean(session?.user);
+  const { mutate: markRead } = useMutation(readerApi.markReadMutationOptions());
+
+  return useCallback(
+    (documentUri: string) => {
+      if (!signedIn) return;
+      applyMarkReadOptimisticUpdate(queryClient, documentUri);
+      markRead(documentUri);
+    },
+    [signedIn, queryClient, markRead],
+  );
+}
+
 function ArticleLink({
   article,
   children,
@@ -834,11 +856,13 @@ function ArticleLink({
   children: React.ReactNode;
   extraStyles?: Array<stylex.StyleXStyles | false | undefined>;
 }) {
+  const markReadOnNavigate = useMarkReadOnNavigate();
+  const onNavigate = () => markReadOnNavigate(article.uri);
   const params = documentLinkParams(article.uri);
   const merged = stylex.props(styles.cardLink, ...extraStyles);
   if (params) {
     return (
-      <Link to="/a/$did/$rkey" params={params} {...merged}>
+      <Link to="/a/$did/$rkey" params={params} onClick={onNavigate} {...merged}>
         {children}
       </Link>
     );
@@ -848,20 +872,31 @@ function ArticleLink({
     const internal = parseInternalRoute(href);
     if (internal?.params) {
       return (
-        <Link to={internal.to} params={internal.params} {...merged}>
+        <Link
+          to={internal.to}
+          params={internal.params}
+          onClick={onNavigate}
+          {...merged}
+        >
           {children}
         </Link>
       );
     }
     if (internal) {
       return (
-        <Link to={internal.to} {...merged}>
+        <Link to={internal.to} onClick={onNavigate} {...merged}>
           {children}
         </Link>
       );
     }
     return (
-      <a href={href} target="_blank" rel="noreferrer" {...merged}>
+      <a
+        href={href}
+        target="_blank"
+        rel="noreferrer"
+        onClick={onNavigate}
+        {...merged}
+      >
         {children}
       </a>
     );

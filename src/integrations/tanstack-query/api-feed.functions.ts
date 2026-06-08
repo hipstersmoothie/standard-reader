@@ -211,6 +211,7 @@ const getLatestFeed = createServerFn({ method: "GET" })
         selectArticleCards(db, schema, {
           publicationUris: followUris,
           unreadForDid: data.filter === "unread" ? did : undefined,
+          readForDid: did,
           limit: data.limit,
           offset: data.offset,
         }),

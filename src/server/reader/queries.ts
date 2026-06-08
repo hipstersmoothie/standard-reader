@@ -57,6 +57,11 @@ export interface ArticleCardQuery {
   publicationUris?: Array<string>;
   /** When set, only documents this DID has NOT marked read (unread filter). */
   unreadForDid?: string;
+  /**
+   * When set, each card carries this DID's `isRead` flag (computed inline) so
+   * the UI can render real read state on first paint without a follow-up query.
+   */
+  readForDid?: string;
   /** Only documents flagged featured (for the masthead lead). */
   featuredOnly?: boolean;
   /** Only documents that belong to a discover-eligible publication. */
@@ -98,8 +103,22 @@ export async function selectArticleCards(
     );
   }
 
+  const columns = articleCardColumns(schema);
+  const selection = opts.readForDid
+    ? {
+        ...columns,
+        isRead: sql<boolean>`exists(
+          select 1
+          from ${r}
+          where ${r.documentUri} = ${d.uri}
+            and ${r.ownerDid} = ${opts.readForDid}
+            and ${r.deleted} = false
+        )`.mapWith(Boolean),
+      }
+    : columns;
+
   let query = db
-    .select(articleCardColumns(schema))
+    .select(selection)
     .from(d)
     .leftJoin(p, eq(p.uri, d.publicationUri))
     .leftJoin(pr, eq(pr.did, p.did))

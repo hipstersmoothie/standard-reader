@@ -4,7 +4,6 @@ import * as stylex from "@stylexjs/stylex";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { feedApi } from "#/integrations/tanstack-query/api-feed.functions";
-import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { z } from "zod";
@@ -123,13 +122,7 @@ function Latest() {
   const { data: session } = useQuery(user.getSessionQueryOptions);
   const signedIn = Boolean(session?.user);
 
-  const documentUris = items.map((item) => item.uri);
-  const { data: readUris } = useQuery({
-    ...readerApi.getReadDocumentsQueryOptions(documentUris),
-    enabled: signedIn && documentUris.length > 0 && filter === "all",
-  });
-  const readSet = new Set(readUris ?? []);
-  const isUnread = (uri: string) => signedIn && !readSet.has(uri);
+  const isUnread = (article: ArticleCard) => signedIn && !article.isRead;
 
   const onFilterChange = (keys: Set<React.Key> | "all") => {
     const next = keys === "all" ? "all" : ([...keys][0] as "all" | "unread");
@@ -273,7 +266,7 @@ function Latest() {
               <ArticleRow
                 key={article.uri}
                 article={article}
-                unread={filter === "unread" || isUnread(article.uri)}
+                unread={filter === "unread" || isUnread(article)}
               />
             ))}
           </div>
