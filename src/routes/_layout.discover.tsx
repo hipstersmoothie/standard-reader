@@ -74,6 +74,9 @@ export const Route = createFileRoute("/_layout/discover")({
   loader: async ({ context, deps }) => {
     await Promise.all([
       context.queryClient.ensureQueryData(
+        discoverApi.getKnownPublicationCountQueryOptions(),
+      ),
+      context.queryClient.ensureQueryData(
         discoverApi.getTopicsQueryOptions({ limit: DISCOVER_TOPICS_LIMIT }),
       ),
       context.queryClient.ensureQueryData(
@@ -333,9 +336,8 @@ function Discover() {
 
   const topicKey = topic ?? "all";
   const topicItems = useMemo(() => sortDiscoverTopics(topics), [topics]);
-  const knownPublicationCount = useMemo(
-    () => topics.reduce((sum, chip) => sum + chip.count, 0),
-    [topics],
+  const { data: knownPublicationCount = 0 } = useSuspenseQuery(
+    discoverApi.getKnownPublicationCountQueryOptions(),
   );
 
   const isSearching =

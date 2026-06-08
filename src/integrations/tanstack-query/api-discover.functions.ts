@@ -4,6 +4,7 @@ import { getRequest } from "@tanstack/react-start/server";
 import { getAtprotoSessionForRequest } from "#/middleware/auth";
 import { observe } from "#/server/observability/log";
 import {
+  countKnownPublications,
   discoverDirectoryPublications,
   discoverPublicationTopics,
   followedByPeopleYouFollow,
@@ -65,6 +66,19 @@ const getTopics = createServerFn({ method: "GET" })
       span.set("count", rows.length);
       return rows;
     }),
+  );
+
+const getKnownPublicationCount = createServerFn({ method: "GET" })
+  .middleware([dbMiddleware])
+  .handler(
+    observe(
+      "discover.getKnownPublicationCount",
+      async ({ context }, span) => {
+        const count = await countKnownPublications(context.db);
+        span.set("count", count);
+        return count;
+      },
+    ),
   );
 
 const getPublications = createServerFn({ method: "GET" })
@@ -185,6 +199,13 @@ const getFollowedByPeopleYouFollow = createServerFn({ method: "GET" })
     ),
   );
 
+function getKnownPublicationCountQueryOptions() {
+  return queryOptions({
+    queryKey: ["discover", "known-count"] as const,
+    queryFn: async () => getKnownPublicationCount(),
+  });
+}
+
 function getTopicsQueryOptions({
   limit = DISCOVER_TOPICS_LIMIT,
 }: { limit?: number } = {}) {
@@ -244,6 +265,8 @@ function getFollowedByPeopleYouFollowQueryOptions({
 }
 
 export const discoverApi = {
+  getKnownPublicationCount,
+  getKnownPublicationCountQueryOptions,
   getTopics,
   getTopicsQueryOptions,
   getPublications,

@@ -347,6 +347,23 @@ function publicationEffectiveTopicSql(
   )`;
 }
 
+/**
+ * Total publications the network knows about: every non-deleted publication
+ * that isn't an excluded platform profile (blento.app). Deliberately ignores
+ * `show_in_discover` and topic/document gating — this is the headline "Known
+ * publications" tally, a simple count of real publications.
+ */
+export async function countKnownPublications(db: Db): Promise<number> {
+  const result = await db.execute(sql`
+    SELECT count(*)::int AS count
+    FROM publications
+    WHERE deleted = false
+      AND url NOT ILIKE ${EXCLUDED_PUBLICATION_URL_PATTERN}
+  `);
+  const row = result.rows[0] as { count?: number } | undefined;
+  return row?.count ?? 0;
+}
+
 /** Topic chips for Discover — derived live when `publications.topic` is unset. */
 export async function discoverPublicationTopics(
   db: Db,
