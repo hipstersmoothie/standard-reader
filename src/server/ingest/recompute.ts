@@ -1,6 +1,6 @@
 import { hasRenderableArticleBody } from "#/lib/document/renderable";
 import { documentSearchText } from "#/lib/document/search-text";
-import { and, asc, eq, gt, isNotNull, isNull, sql } from "drizzle-orm";
+import { and, asc, eq, gt, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 
 import { db } from "../../db/index.ts";
 import { documents, publications } from "../../db/schema.ts";
@@ -321,18 +321,71 @@ export async function backfillBlobUrls(): Promise<{
 }
 
 /**
- * Fill or refresh `documents.text_content` (searchable body) and
- * `documents.has_renderable_body` (whether the reader renders an in-app body)
- * from record text plus structured content blocks. Both are derived from the
- * same fields, so they're recomputed in a single pass. Idempotent: only rows
- * whose derived values changed are written.
+ * Fill or refresh `documents.text_content` from record text plus structured
+ * content blocks so GIN search covers full article bodies.
+ *
+ * `content_json` can be large per row, so reads are keyset-paginated by `uri`
+ * to stay under the Neon HTTP response cap (~64MB).
  */
 export async function backfillDocumentSearchText(): Promise<number> {
-  // `content_json` can be large per row; keyset-paginate by `uri` so a single
-  // fetch never blows past the Neon HTTP response cap (~64MB).
   const BATCH_SIZE = 100;
   let cursor: string | null = null;
   let updated = 0;
+
+  for (;;) {
+    const rows = await db
+      .select({
+        uri: documents.uri,
+        textContent: documents.textContent,
+        contentJson: documents.contentJson,
+        contentFormat: documents.contentFormat,
+      })
+      .from(documents)
+      .where(
+        cursor == null
+          ? eq(documents.deleted, false)
+          : and(eq(documents.deleted, false), gt(documents.uri, cursor)),
+      )
+      .orderBy(asc(documents.uri))
+      .limit(BATCH_SIZE);
+
+    if (rows.length === 0) break;
+    cursor = rows[rows.length - 1].uri;
+
+    for (const row of rows) {
+      const next = documentSearchText({
+        textContent: row.textContent,
+        contentJson: row.contentJson,
+        contentFormat: row.contentFormat,
+      });
+      if (next === (row.textContent ?? null)) continue;
+      await db
+        .update(documents)
+        .set({ textContent: next, updatedAt: new Date() })
+        .where(eq(documents.uri, row.uri));
+      updated++;
+    }
+
+    if (rows.length < BATCH_SIZE) break;
+  }
+
+  return updated;
+}
+
+/**
+ * Recompute `documents.has_renderable_body` — whether the reader can render an
+ * in-app body (structured blocks) vs. an "external" post that should link out
+ * to the publication site. Derived in JS from `content_json` (keyset-paginated
+ * reads to respect the Neon HTTP cap), then written back in batched
+ * `IN (...)`-list UPDATEs so a large corpus costs a handful of round trips
+ * instead of one per row. Idempotent.
+ */
+export async function backfillRenderableBody(): Promise<number> {
+  const READ_BATCH = 200;
+  const WRITE_CHUNK = 500;
+  let cursor: string | null = null;
+  const toTrue: Array<string> = [];
+  const toFalse: Array<string> = [];
 
   for (;;) {
     const rows = await db
@@ -350,40 +403,38 @@ export async function backfillDocumentSearchText(): Promise<number> {
           : and(eq(documents.deleted, false), gt(documents.uri, cursor)),
       )
       .orderBy(asc(documents.uri))
-      .limit(BATCH_SIZE);
+      .limit(READ_BATCH);
 
     if (rows.length === 0) break;
     cursor = rows[rows.length - 1].uri;
 
     for (const row of rows) {
-      const nextText = documentSearchText({
+      const next = hasRenderableArticleBody({
         textContent: row.textContent,
         contentJson: row.contentJson,
         contentFormat: row.contentFormat,
       });
-      const nextRenderable = hasRenderableArticleBody({
-        textContent: row.textContent,
-        contentJson: row.contentJson,
-        contentFormat: row.contentFormat,
-      });
-      const textChanged = nextText !== (row.textContent ?? null);
-      const renderableChanged = nextRenderable !== row.hasRenderableBody;
-      if (!textChanged && !renderableChanged) continue;
-      await db
-        .update(documents)
-        .set({
-          textContent: nextText,
-          hasRenderableBody: nextRenderable,
-          updatedAt: new Date(),
-        })
-        .where(eq(documents.uri, row.uri));
-      updated++;
+      if (next === row.hasRenderableBody) continue;
+      (next ? toTrue : toFalse).push(row.uri);
     }
 
-    if (rows.length < BATCH_SIZE) break;
+    if (rows.length < READ_BATCH) break;
   }
 
-  return updated;
+  for (const [value, uris] of [
+    [true, toTrue],
+    [false, toFalse],
+  ] as const) {
+    for (let i = 0; i < uris.length; i += WRITE_CHUNK) {
+      const chunk = uris.slice(i, i + WRITE_CHUNK);
+      await db
+        .update(documents)
+        .set({ hasRenderableBody: value, updatedAt: new Date() })
+        .where(inArray(documents.uri, chunk));
+    }
+  }
+
+  return toTrue.length + toFalse.length;
 }
 
 /**
@@ -436,5 +487,10 @@ export async function recomputeDerived(): Promise<void> {
     await backfillDocumentSearchText();
   } catch {
     // Search text stays as-is; the next recompute retries.
+  }
+  try {
+    await backfillRenderableBody();
+  } catch {
+    // Renderable flags stay as-is; the next recompute retries.
   }
 }

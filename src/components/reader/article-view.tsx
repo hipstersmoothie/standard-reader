@@ -487,7 +487,9 @@ function MoreFromRow({
     </>
   );
 
-  if (params) {
+  // Only route through the in-app reader when there's a body to render;
+  // "external" posts (no renderable body) link straight out in a new tab.
+  if (params && article.hasRenderableBody) {
     return (
       <Link
         to="/a/$did/$rkey"
@@ -500,7 +502,21 @@ function MoreFromRow({
   }
 
   const href = article.canonicalUrl;
-  if (!href) return null;
+  if (!href) {
+    // Non-renderable but no external URL: fall back to the in-app record page.
+    if (params) {
+      return (
+        <Link
+          to="/a/$did/$rkey"
+          params={params}
+          {...stylex.props(styles.moreRow)}
+        >
+          {body}
+        </Link>
+      );
+    }
+    return null;
+  }
   const internal = parseInternalRoute(href);
   if (internal?.params) {
     return (
