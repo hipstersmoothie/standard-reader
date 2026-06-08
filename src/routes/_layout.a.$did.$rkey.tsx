@@ -156,5 +156,11 @@ function ArticleRoute() {
     return <ArticleNotFound />;
   }
 
-  return <ArticleView article={article} sharedQuote={sharedQuote} />;
+  return (
+    <ArticleView
+      key={article.uri}
+      article={article}
+      sharedQuote={sharedQuote}
+    />
+  );
 }

@@ -510,22 +510,6 @@ function MoreFromRow({
 
 export function ArticleView({
   article,
-  sharedQuote = null,
-}: {
-  article: ArticleDetail;
-  sharedQuote?: string | null;
-}) {
-  return (
-    <ArticleViewInner
-      key={article.uri}
-      article={article}
-      sharedQuote={sharedQuote}
-    />
-  );
-}
-
-function ArticleViewInner({
-  article,
   sharedQuote,
 }: {
   article: ArticleDetail;
