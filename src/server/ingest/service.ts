@@ -177,10 +177,40 @@ function startTapChannel(): { destroy: () => Promise<void> } {
     errors: 0,
     acked: 0,
     ackTimeouts: 0,
+    inflight: 0,
     lastEventId: 0,
     lastEventAt: 0,
     startedAt: Date.now(),
   };
+
+  // Bounded concurrency: the per-event DB work is a chain of round-trips to
+  // Neon, so processing events strictly one-at-a-time leaves the connection
+  // idle waiting on latency. We let up to INGEST_CONCURRENCY events apply in
+  // parallel (each on its own pooled pg connection) and backpressure tap when
+  // the pool is full, so the read loop stays fed without unbounded buffering.
+  // Upserts are idempotent and keyed by URI, so out-of-order application across
+  // distinct records is safe; same-URI reordering is a non-issue during a
+  // create-only backfill.
+  const MAX_INFLIGHT = (() => {
+    const v = Number(process.env.INGEST_CONCURRENCY);
+    return Number.isFinite(v) && v > 0 ? Math.floor(v) : 12;
+  })();
+  const waiters: Array<() => void> = [];
+  function acquireSlot(): Promise<void> {
+    if (stats.inflight < MAX_INFLIGHT) {
+      stats.inflight += 1;
+      return Promise.resolve();
+    }
+    return new Promise<void>((resolve) => waiters.push(resolve));
+  }
+  function releaseSlot(): void {
+    const next = waiters.shift();
+    if (next) {
+      next(); // hand the slot directly to a waiter (inflight unchanged)
+    } else {
+      stats.inflight -= 1;
+    }
+  }
 
   // The tap channel awaits `onEvent` (handler + ack) sequentially inside its WS
   // read loop, so awaiting the ack there is fatal: the SDK buffers an ack when
@@ -231,43 +261,51 @@ function startTapChannel(): { destroy: () => Promise<void> } {
     ) {
       stats.lastEventId = evt.id;
       stats.lastEventAt = Date.now();
-      if (evt.type === "identity") {
+      const isIdentity = evt.type === "identity";
+      if (isIdentity) {
         stats.identity += 1;
-        console.info(`[ingest] <- identity #${evt.id} did=${String(evt.did)}`);
-        const ok = await processTapEvent(
-          fromIdentityEvent(
-            evt as unknown as Parameters<typeof fromIdentityEvent>[0],
-          ),
-        );
-        if (!ok) {
-          stats.failed += 1;
-          console.warn(`[ingest] dead-lettered identity event ${evt.id}`);
-        }
       } else {
         stats.record += 1;
-        console.info(
-          `[ingest] <- record #${evt.id} ${String(evt.action)} ${String(evt.collection)} did=${String(evt.did)}`,
-        );
-        const ok = await processTapEvent(
-          fromRecordEvent(
-            evt as unknown as Parameters<typeof fromRecordEvent>[0],
-          ),
-        );
-        if (!ok) {
-          stats.failed += 1;
-          console.warn(`[ingest] dead-lettered record event ${evt.id}`);
-        }
       }
-      ackInBackground(evt.id, opts.ack);
+
+      // Acquire a slot before returning so the SDK read loop pauses (and tap
+      // backpressures) once MAX_INFLIGHT events are in flight. The actual DB
+      // work + ack run detached so up to MAX_INFLIGHT apply concurrently.
+      await acquireSlot();
+      void (async () => {
+        try {
+          const mapped = isIdentity
+            ? fromIdentityEvent(
+                evt as unknown as Parameters<typeof fromIdentityEvent>[0],
+              )
+            : fromRecordEvent(
+                evt as unknown as Parameters<typeof fromRecordEvent>[0],
+              );
+          const ok = await processTapEvent(mapped);
+          if (!ok) {
+            stats.failed += 1;
+            console.warn(`[ingest] dead-lettered event ${evt.id}`);
+          }
+        } catch (error: unknown) {
+          stats.errors += 1;
+          console.error(`[ingest] failed to process event ${evt.id}`, error);
+        } finally {
+          // Ack after the DB work settles (idempotent re-apply on redelivery),
+          // then free the slot. The ack itself never gates the slot.
+          ackInBackground(evt.id, opts.ack);
+          releaseSlot();
+        }
+      })();
     },
   };
 
   // Heartbeat: surface cumulative counts + idle time so a stalled stream is
   // obvious in logs (vs. having to diff the DB). Logs every 10s.
   const heartbeat = setInterval(() => {
-    const idleMs = stats.lastEventAt === 0 ? -1 : Date.now() - stats.lastEventAt;
+    const idleMs =
+      stats.lastEventAt === 0 ? -1 : Date.now() - stats.lastEventAt;
     console.info(
-      `[ingest] channel heartbeat: identity=${stats.identity} record=${stats.record} acked=${stats.acked} ackTimeouts=${stats.ackTimeouts} failed=${stats.failed} errors=${stats.errors} lastEventId=${stats.lastEventId} idleMs=${idleMs}`,
+      `[ingest] channel heartbeat: identity=${stats.identity} record=${stats.record} acked=${stats.acked} ackTimeouts=${stats.ackTimeouts} failed=${stats.failed} errors=${stats.errors} inflight=${stats.inflight} lastEventId=${stats.lastEventId} idleMs=${idleMs}`,
     );
   }, 10_000);
   heartbeat.unref?.();

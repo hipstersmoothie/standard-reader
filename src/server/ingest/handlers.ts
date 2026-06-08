@@ -232,9 +232,9 @@ export async function upsertPublication(
       ),
     );
 
-  // Collapse any older same-site publication record to this canonical one.
-  await reconcilePublicationGroup(did, values.url);
-
+  // Duplicate `(did, url)` publications are collapsed by the recompute sweep
+  // (`dedupeRecords`), not on the hot path: the read-modify-write contends on
+  // shared rows under concurrent ingest and isn't time-critical.
   await ensureTracked(did, "publication");
 }
 
@@ -385,9 +385,8 @@ export async function upsertDocument(
     }
   }
 
-  // Collapse any identical-content duplicate of this document.
-  await reconcileDocumentDup(did, cid ?? null);
-
+  // Identical-content `(did, cid)` duplicates are collapsed by the recompute
+  // sweep (`dedupeRecords`), not on the hot path (see upsertPublication).
   await ensureTracked(did, "document");
 }
 
