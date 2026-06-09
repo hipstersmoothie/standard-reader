@@ -235,6 +235,18 @@ export function publicationSortNameSql(
   end`;
 }
 
+/** Sort followed publications by most recent activity, then display name. */
+export function sortFollowingPublications<
+  T extends Pick<PublicationCard, "lastDocumentAt" | "name">,
+>(pubs: Array<T>): Array<T> {
+  return pubs.toSorted((a, b) => {
+    const aTime = a.lastDocumentAt ? Date.parse(a.lastDocumentAt) : 0;
+    const bTime = b.lastDocumentAt ? Date.parse(b.lastDocumentAt) : 0;
+    if (bTime !== aTime) return bTime - aTime;
+    return a.name.localeCompare(b.name);
+  });
+}
+
 export function toPublicationCard(row: PublicationCardRow): PublicationCard {
   return {
     uri: row.uri,

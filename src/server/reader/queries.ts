@@ -193,9 +193,9 @@ export async function selectUnreadDocumentUris(
 }
 
 /**
- * The reader's followed publications as {@link PublicationCard}s, alphabetical
- * by name — backs the sidebar "Following" list. Returns `[]` for readers with
- * no follows.
+ * The reader's followed publications as {@link PublicationCard}s, ordered by
+ * most recent document activity — backs the sidebar "Following" list. Returns
+ * `[]` for readers with no follows.
  */
 export async function followedPublications(
   db: Db,
@@ -208,13 +208,18 @@ export async function followedPublications(
   const p = schema.publications;
   const st = schema.publicationStats;
   const pr = schema.profiles;
+  const sortName = publicationSortNameSql(p.name, p.url);
   const rows = await db
     .select(publicationCardColumns(schema))
     .from(p)
     .leftJoin(st, eq(st.publicationUri, p.uri))
     .leftJoin(pr, eq(pr.did, p.did))
     .where(and(inArray(p.uri, publicationUris), eq(p.deleted, false)))
-    .orderBy(p.name);
+    .orderBy(
+      sql`${st.lastDocumentAt} desc nulls last`,
+      asc(sortName),
+      asc(p.uri),
+    );
   return rows.map((row) => toPublicationCard(row));
 }
 
@@ -261,6 +266,46 @@ export async function countFollowedDocuments(
     );
 
   return { all: row?.all ?? 0, unread: row?.unread ?? 0 };
+}
+
+/** Unread document counts keyed by publication AT-URI for a reader's follows. */
+export async function countUnreadByPublication(
+  db: Db,
+  schema: Schema,
+  publicationUris: Array<string>,
+  did: string,
+): Promise<Map<string, number>> {
+  if (publicationUris.length === 0) {
+    return new Map();
+  }
+  const d = schema.documents;
+  const r = schema.reads;
+  const rows = await db
+    .select({
+      publicationUri: d.publicationUri,
+      unread: sql<number>`count(*) filter (where ${r.uri} is null)`.mapWith(
+        Number,
+      ),
+    })
+    .from(d)
+    .leftJoin(
+      r,
+      and(eq(r.documentUri, d.uri), eq(r.ownerDid, did), eq(r.deleted, false)),
+    )
+    .where(
+      and(
+        eq(d.deleted, false),
+        inArray(d.publicationUri, publicationUris),
+        isNotNull(d.publicationUri),
+      ),
+    )
+    .groupBy(d.publicationUri);
+
+  return new Map(
+    rows.flatMap((row) =>
+      row.publicationUri ? [[row.publicationUri, row.unread]] : [],
+    ),
+  );
 }
 
 // ── Discovery rails (reads over precomputed aggregates) ─────────────────────

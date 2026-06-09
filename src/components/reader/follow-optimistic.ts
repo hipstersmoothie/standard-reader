@@ -4,10 +4,7 @@ import type { SidebarData } from "../../integrations/tanstack-query/api-feed.fun
 import type { FollowStatus } from "../../integrations/tanstack-query/api-reader.functions";
 import type { PublicationCard } from "../../integrations/tanstack-query/api-shapes";
 
-function sortFollowing(pubs: Array<PublicationCard>): Array<PublicationCard> {
-  return pubs.toSorted((a, b) => a.name.localeCompare(b.name));
-}
-
+import { sortFollowingPublications } from "../../integrations/tanstack-query/api-shapes";
 export interface FollowOptimisticContext {
   prevFollow: FollowStatus | undefined;
   prevSidebar: SidebarData | undefined;
@@ -37,9 +34,9 @@ export function applyFollowOptimisticUpdate(
   if (prevSidebar) {
     const current = prevSidebar.following ?? [];
     const nextFollowing = following
-      ? sortFollowing([
+      ? sortFollowingPublications([
           ...current.filter((item) => item.uri !== publicationUri),
-          ...(pub ? [pub] : []),
+          ...(pub ? [{ ...pub, unreadCount: 0 }] : []),
         ])
       : current.filter((item) => item.uri !== publicationUri);
 

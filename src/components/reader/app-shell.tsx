@@ -16,7 +16,7 @@ import {
   useState,
 } from "react";
 
-import type { PublicationCard } from "../../integrations/tanstack-query/api-shapes";
+import type { FollowingPublication } from "../../integrations/tanstack-query/api-feed.functions";
 
 import { Avatar } from "../../design-system/avatar";
 import { Button } from "../../design-system/button";
@@ -178,10 +178,30 @@ const styles = stylex.create({
   followName: {
     overflow: "hidden",
     color: uiColor.text2,
+    flexBasis: "0%",
+    flexGrow: 1,
+    flexShrink: 1,
     fontFamily: fontFamily.serif,
     fontSize: fontSize.base,
     textOverflow: "ellipsis",
     whiteSpace: "nowrap",
+    minWidth: 0,
+  },
+  followUnread: {
+    borderRadius: radius.full,
+    backgroundColor: primaryColor.component1,
+    color: primaryColor.text2,
+    flexShrink: 0,
+    fontFamily: fontFamily.mono,
+    fontSize: "0.65rem",
+    fontWeight: fontWeight.semibold,
+    lineHeight: lineHeight.none,
+    textAlign: "center",
+    minWidth: spacing["4"],
+    paddingBottom: verticalSpace.xxs,
+    paddingLeft: horizontalSpace.sm,
+    paddingRight: horizontalSpace.sm,
+    paddingTop: verticalSpace.xxs,
   },
   emptyNote: {
     color: uiColor.text1,
@@ -414,7 +434,7 @@ function FollowingAvatar({
   );
 }
 
-function FollowRow({ pub }: { pub: PublicationCard }) {
+function FollowRow({ pub }: { pub: FollowingPublication }) {
   const params = publicationLinkParams(pub.uri);
   const avatar = (
     <FollowingAvatar
@@ -423,6 +443,22 @@ function FollowRow({ pub }: { pub: PublicationCard }) {
     />
   );
   const name = <span {...stylex.props(styles.followName)}>{pub.name}</span>;
+  const unreadBadge =
+    pub.unreadCount > 0 ? (
+      <span
+        {...stylex.props(styles.followUnread)}
+        aria-label={`${pub.unreadCount} unread`}
+      >
+        {pub.unreadCount}
+      </span>
+    ) : null;
+  const content = (
+    <>
+      {avatar}
+      {name}
+      {unreadBadge}
+    </>
+  );
 
   if (params) {
     return (
@@ -431,20 +467,14 @@ function FollowRow({ pub }: { pub: PublicationCard }) {
         params={params}
         {...stylex.props(styles.followRow)}
       >
-        {avatar}
-        {name}
+        {content}
       </Link>
     );
   }
 
   const href = pub.url;
   if (!href) {
-    return (
-      <div {...stylex.props(styles.followRow)}>
-        {avatar}
-        {name}
-      </div>
-    );
+    return <div {...stylex.props(styles.followRow)}>{content}</div>;
   }
 
   const internal = parseInternalRoute(href);
@@ -455,16 +485,14 @@ function FollowRow({ pub }: { pub: PublicationCard }) {
         params={internal.params}
         {...stylex.props(styles.followRow)}
       >
-        {avatar}
-        {name}
+        {content}
       </Link>
     );
   }
   if (internal) {
     return (
       <Link to={internal.to} {...stylex.props(styles.followRow)}>
-        {avatar}
-        {name}
+        {content}
       </Link>
     );
   }
@@ -476,8 +504,7 @@ function FollowRow({ pub }: { pub: PublicationCard }) {
       rel="noreferrer"
       {...stylex.props(styles.followRow)}
     >
-      {avatar}
-      {name}
+      {content}
     </a>
   );
 }

@@ -159,12 +159,10 @@ function Latest() {
   const { mutate: markAllRead, isPending: markingAllRead } = useMutation({
     ...readerApi.markFollowsAllUnreadReadMutationOptions(),
     onMutate: () => {
-      applyMarkReadManyOptimisticUpdate(queryClient, unreadItemUris);
+      applyMarkReadManyOptimisticUpdate(queryClient, unreadItemUris, {
+        clearAllFollowingUnread: true,
+      });
       setItems([]);
-    },
-    onSuccess: (result) => {
-      applyMarkReadManyOptimisticUpdate(queryClient, result.documentUris);
-      invalidateReadQueries(queryClient);
     },
     onError: () => {
       invalidateReadQueries(queryClient);

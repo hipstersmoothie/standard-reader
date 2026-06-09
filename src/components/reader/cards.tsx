@@ -862,9 +862,9 @@ function useMarkReadExternal() {
   const { mutate: markRead } = useMutation(readerApi.markReadMutationOptions());
 
   return useCallback(
-    (documentUri: string) => {
+    (documentUri: string, publicationUri?: string | null) => {
       if (!signedIn) return;
-      applyMarkReadOptimisticUpdate(queryClient, documentUri);
+      applyMarkReadOptimisticUpdate(queryClient, documentUri, publicationUri);
       markRead(documentUri);
     },
     [signedIn, queryClient, markRead],
@@ -914,7 +914,7 @@ function ArticleLink({
         href={href}
         target="_blank"
         rel="noreferrer"
-        onClick={() => markReadExternal(article.uri)}
+        onClick={() => markReadExternal(article.uri, article.publicationUri)}
         {...merged}
       >
         {children}

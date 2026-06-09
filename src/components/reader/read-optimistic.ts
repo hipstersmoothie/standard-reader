@@ -45,6 +45,41 @@ function isSidebarData(data: unknown): data is SidebarData {
   );
 }
 
+function findPublicationUri(
+  queryClient: QueryClient,
+  documentUri: string,
+): string | null {
+  const feedQueries = queryClient.getQueriesData({ queryKey: ["feed"] });
+  for (const [, data] of feedQueries) {
+    if (isLatestFeed(data)) {
+      const item = data.items.find((card) => card.uri === documentUri);
+      if (item?.publicationUri) return item.publicationUri;
+    }
+    if (isHomeFeed(data)) {
+      const cards = [
+        data.featured,
+        ...data.latestUnread,
+        ...data.trending,
+      ].filter((card): card is ArticleCard => card != null);
+      const item = cards.find((card) => card.uri === documentUri);
+      if (item?.publicationUri) return item.publicationUri;
+    }
+  }
+  return null;
+}
+
+function decrementFollowingUnread(
+  following: SidebarData["following"],
+  publicationUri: string | null,
+): SidebarData["following"] {
+  if (!publicationUri) return following;
+  return following.map((pub) =>
+    pub.uri === publicationUri && pub.unreadCount > 0
+      ? { ...pub, unreadCount: pub.unreadCount - 1 }
+      : pub,
+  );
+}
+
 /**
  * Flips `isRead` on any matching card inside a `["feed", …]` cache entry and,
  * when `wasUnread`, decrements the relevant unread counters. Returns the same
@@ -54,6 +89,8 @@ function updateFeedCache(
   data: unknown,
   uri: string,
   wasUnread: boolean,
+  publicationUri: string | null,
+  skipSidebar = false,
 ): unknown {
   if (isLatestFeed(data)) {
     return {
@@ -76,12 +113,12 @@ function updateFeedCache(
   }
 
   if (isSidebarData(data)) {
-    return wasUnread
-      ? ({
-          ...data,
-          unreadCount: decrement(data.unreadCount),
-        } satisfies SidebarData)
-      : data;
+    if (skipSidebar || !wasUnread) return data;
+    return {
+      ...data,
+      unreadCount: decrement(data.unreadCount),
+      following: decrementFollowingUnread(data.following, publicationUri),
+    } satisfies SidebarData;
   }
 
   return data;
@@ -117,11 +154,13 @@ function isDocumentReadInCache(
 export function applyMarkReadOptimisticUpdate(
   queryClient: QueryClient,
   documentUri: string,
+  publicationUri?: string | null,
 ): void {
   const wasUnread = !isDocumentReadInCache(queryClient, documentUri);
+  const pubUri = publicationUri ?? findPublicationUri(queryClient, documentUri);
 
   queryClient.setQueriesData({ queryKey: ["feed"] }, (data) =>
-    updateFeedCache(data, documentUri, wasUnread),
+    updateFeedCache(data, documentUri, wasUnread, pubUri),
   );
 
   queryClient.setQueriesData<Array<string>>(
@@ -135,14 +174,122 @@ export function applyMarkReadOptimisticUpdate(
   });
 }
 
+export interface MarkReadManyOptimisticOptions {
+  /** Scope sidebar unread to one publication ("mark all as read" on a profile). */
+  publicationUri?: string;
+  /** Clear every followed publication's sidebar badge (global mark-all-read). */
+  clearAllFollowingUnread?: boolean;
+}
+
 /** Batch wrapper around {@link applyMarkReadOptimisticUpdate}. */
 export function applyMarkReadManyOptimisticUpdate(
   queryClient: QueryClient,
   documentUris: Array<string>,
+  options: MarkReadManyOptimisticOptions = {},
 ): void {
+  const { publicationUri, clearAllFollowingUnread = false } = options;
+  let newlyReadCount = 0;
+
   for (const documentUri of documentUris) {
-    applyMarkReadOptimisticUpdate(queryClient, documentUri);
+    const wasUnread = !isDocumentReadInCache(queryClient, documentUri);
+    if (wasUnread) newlyReadCount++;
+
+    const pubUri =
+      publicationUri ?? findPublicationUri(queryClient, documentUri);
+
+    queryClient.setQueriesData({ queryKey: ["feed"] }, (data) =>
+      updateFeedCache(data, documentUri, wasUnread, pubUri, true),
+    );
+
+    queryClient.setQueriesData<Array<string>>(
+      { queryKey: ["reader", "readDocuments"] },
+      (data) =>
+        data && !data.includes(documentUri) ? [...data, documentUri] : data,
+    );
+
+    queryClient.setQueryData<ReadStatus>(
+      ["reader", "readStatus", documentUri],
+      {
+        isRead: true,
+      },
+    );
   }
+
+  if (
+    newlyReadCount === 0 &&
+    !clearAllFollowingUnread &&
+    publicationUri == null
+  ) {
+    return;
+  }
+
+  queryClient.setQueriesData({ queryKey: ["feed"] }, (data) => {
+    if (isSidebarData(data)) {
+      if (data.unreadCount == null) return data;
+
+      if (clearAllFollowingUnread) {
+        return {
+          ...data,
+          unreadCount: 0,
+          following: data.following.map((pub) => ({ ...pub, unreadCount: 0 })),
+        } satisfies SidebarData;
+      }
+
+      if (publicationUri) {
+        return {
+          ...data,
+          unreadCount: Math.max(0, data.unreadCount - newlyReadCount),
+          following: data.following.map((pub) =>
+            pub.uri === publicationUri
+              ? {
+                  ...pub,
+                  unreadCount: Math.max(0, pub.unreadCount - newlyReadCount),
+                }
+              : pub,
+          ),
+        } satisfies SidebarData;
+      }
+
+      if (newlyReadCount > 0) {
+        return {
+          ...data,
+          unreadCount: Math.max(0, data.unreadCount - newlyReadCount),
+        } satisfies SidebarData;
+      }
+
+      return data;
+    }
+
+    if (clearAllFollowingUnread && isLatestFeed(data)) {
+      return {
+        ...data,
+        items: data.items.map((card) =>
+          card.isRead ? card : { ...card, isRead: true },
+        ),
+        counts: { ...data.counts, unread: 0 },
+      } satisfies LatestFeed;
+    }
+
+    if (clearAllFollowingUnread && isHomeFeed(data)) {
+      return {
+        ...data,
+        featured: data.featured?.isRead
+          ? data.featured
+          : data.featured
+            ? { ...data.featured, isRead: true }
+            : data.featured,
+        latestUnread: data.latestUnread.map((card) =>
+          card.isRead ? card : { ...card, isRead: true },
+        ),
+        trending: data.trending.map((card) =>
+          card.isRead ? card : { ...card, isRead: true },
+        ),
+        unreadCount: 0,
+      } satisfies HomeFeed;
+    }
+
+    return data;
+  });
 }
 
 export function invalidateReadQueries(queryClient: QueryClient): void {

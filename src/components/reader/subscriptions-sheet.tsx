@@ -5,7 +5,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { ChevronRight, Compass, Plus } from "lucide-react";
 import { Button as AriaButton } from "react-aria-components";
 
-import type { PublicationCard } from "../../integrations/tanstack-query/api-shapes";
+import type { FollowingPublication } from "../../integrations/tanstack-query/api-feed.functions";
 
 import { Avatar } from "../../design-system/avatar";
 import { Button } from "../../design-system/button";
@@ -118,6 +118,21 @@ const styles = stylex.create({
     textOverflow: "ellipsis",
     whiteSpace: "nowrap",
   },
+  pubUnread: {
+    borderRadius: radius.full,
+    backgroundColor: primaryColor.component1,
+    color: primaryColor.text2,
+    flexShrink: 0,
+    fontFamily: fontFamily.mono,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.semibold,
+    textAlign: "center",
+    minWidth: spacing["4"],
+    paddingBottom: verticalSpace.xxs,
+    paddingLeft: horizontalSpace.sm,
+    paddingRight: horizontalSpace.sm,
+    paddingTop: verticalSpace.xxs,
+  },
   chevron: {
     color: uiColor.text1,
     flexShrink: 0,
@@ -218,7 +233,7 @@ function SheetPubRow({
   pub,
   onNavigate,
 }: {
-  pub: PublicationCard;
+  pub: FollowingPublication;
   onNavigate: () => void;
 }) {
   const navigate = useNavigate();
@@ -257,6 +272,14 @@ function SheetPubRow({
         <div {...stylex.props(styles.pubName)}>{pub.name}</div>
         {pub.ownerHandle ? <Handle>@{pub.ownerHandle}</Handle> : null}
       </div>
+      {pub.unreadCount > 0 ? (
+        <span
+          {...stylex.props(styles.pubUnread)}
+          aria-label={`${pub.unreadCount} unread`}
+        >
+          {pub.unreadCount}
+        </span>
+      ) : null}
       <ChevronRight aria-hidden size={16} {...stylex.props(styles.chevron)} />
     </AriaButton>
   );
@@ -270,7 +293,7 @@ export function SubscriptionsSheet({
 }: {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  following: Array<PublicationCard>;
+  following: Array<FollowingPublication>;
   onAddPublication: () => void;
 }) {
   const navigate = useNavigate();

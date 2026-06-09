@@ -758,9 +758,13 @@ function ArticleViewBody({
   useEffect(() => {
     if (!signedIn || markedUriRef.current === article.uri) return;
     markedUriRef.current = article.uri;
-    applyMarkReadOptimisticUpdate(queryClient, article.uri);
+    applyMarkReadOptimisticUpdate(
+      queryClient,
+      article.uri,
+      article.publicationUri,
+    );
     markRead(article.uri);
-  }, [article.uri, signedIn, markRead, queryClient]);
+  }, [article.publicationUri, article.uri, signedIn, markRead, queryClient]);
 
   useLayoutEffect(() => {
     const anchor = scrollRef.current;

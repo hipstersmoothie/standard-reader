@@ -6,6 +6,7 @@ import { observe } from "#/server/observability/log";
 import { attachCommentCountsToArticles } from "#/server/reader/document-comments";
 import {
   countFollowedDocuments,
+  countUnreadByPublication,
   followedPublications,
   popularPublications,
   recommendedPublications,
@@ -59,11 +60,13 @@ export interface LatestFeed {
   nextOffset: number | null;
 }
 
+export type FollowingPublication = PublicationCard & { unreadCount: number };
+
 export interface SidebarData {
   /** Whether the reader is signed in (drives empty-state copy + auth chrome). */
   signedIn: boolean;
-  /** Followed publications (alphabetical) for the sidebar Following list. */
-  following: Array<PublicationCard>;
+  /** Followed publications (most recent activity first) for the sidebar list. */
+  following: Array<FollowingPublication>;
   /** Unread count across follows (null when signed out / no follows). */
   unreadCount: number | null;
 }
@@ -86,16 +89,22 @@ const getSidebar = createServerFn({ method: "GET" })
 
       const followUris = await selectFollowUris(db, schema, did);
       span.set("follows", followUris.length);
-      const [following, counts] = await Promise.all([
+      const [following, counts, unreadByPublication] = await Promise.all([
         followedPublications(db, schema, followUris),
         followUris.length > 0
           ? countFollowedDocuments(db, schema, followUris, did)
           : Promise.resolve(null),
+        followUris.length > 0
+          ? countUnreadByPublication(db, schema, followUris, did)
+          : Promise.resolve(new Map<string, number>()),
       ]);
 
       return {
         signedIn: true,
-        following,
+        following: following.map((pub) => ({
+          ...pub,
+          unreadCount: unreadByPublication.get(pub.uri) ?? 0,
+        })),
         unreadCount: counts?.unread ?? null,
       } satisfies SidebarData;
     }),

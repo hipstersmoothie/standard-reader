@@ -285,11 +285,9 @@ function PublicationProfile() {
   const { mutate: markAllRead, isPending: markingAllRead } = useMutation({
     ...readerApi.markPublicationAllReadMutationOptions(),
     onMutate: () => {
-      applyMarkReadManyOptimisticUpdate(queryClient, unreadDocumentUris);
-    },
-    onSuccess: (result) => {
-      applyMarkReadManyOptimisticUpdate(queryClient, result.documentUris);
-      invalidateReadQueries(queryClient);
+      applyMarkReadManyOptimisticUpdate(queryClient, unreadDocumentUris, {
+        publicationUri: uri,
+      });
     },
     onError: () => {
       invalidateReadQueries(queryClient);
