@@ -28,6 +28,8 @@ import {
 } from "../design-system/theme/typography.stylex";
 import { feedApi } from "../integrations/tanstack-query/api-feed.functions";
 import { user } from "../integrations/tanstack-query/api-user.functions";
+import { getPublicUrlClient } from "../lib/public-url";
+import { pageSocialMeta } from "../lib/site-metadata";
 
 export const Route = createFileRoute("/_layout/")({
   loader: async ({ context }) => {
@@ -36,7 +38,7 @@ export const Route = createFileRoute("/_layout/")({
     );
   },
   head: () => ({
-    meta: [{ title: "Today · Standard Reader" }],
+    meta: pageSocialMeta("today", getPublicUrlClient()),
   }),
   component: Home,
 });

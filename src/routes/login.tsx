@@ -4,6 +4,8 @@ import * as stylex from "@stylexjs/stylex";
 import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { auth } from "#/integrations/tanstack-query/api-auth.functions";
+import { getPublicUrlClient } from "#/lib/public-url";
+import { pageSocialMeta } from "#/lib/site-metadata";
 import { unauthMiddleware } from "#/middleware/auth";
 import { getSavedHandles, saveHandle } from "#/utils/saved-handles";
 import { ChevronRight } from "lucide-react";
@@ -134,7 +136,7 @@ export const Route = createFileRoute("/login")({
     };
   },
   head: () => ({
-    meta: [{ title: "Sign in · Standard Reader" }],
+    meta: pageSocialMeta("login", getPublicUrlClient()),
   }),
   component: AuthPage,
 });

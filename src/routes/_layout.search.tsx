@@ -4,6 +4,8 @@ import * as stylex from "@stylexjs/stylex";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { searchApi } from "#/integrations/tanstack-query/api-search.functions";
+import { getPublicUrlClient } from "#/lib/public-url";
+import { pageSocialMeta } from "#/lib/site-metadata";
 import { Search as SearchIcon, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { z } from "zod";
@@ -63,7 +65,7 @@ export const Route = createFileRoute("/_layout/search")({
     }
   },
   head: () => ({
-    meta: [{ title: "Search · Standard Reader" }],
+    meta: pageSocialMeta("search", getPublicUrlClient()),
   }),
   component: Search,
 });

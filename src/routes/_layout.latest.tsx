@@ -11,6 +11,8 @@ import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { feedApi } from "#/integrations/tanstack-query/api-feed.functions";
 import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
+import { getPublicUrlClient } from "#/lib/public-url";
+import { pageSocialMeta } from "#/lib/site-metadata";
 import { useLoginSearch } from "#/utils/use-login-search";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
@@ -58,7 +60,7 @@ export const Route = createFileRoute("/_layout/latest")({
     );
   },
   head: () => ({
-    meta: [{ title: "Latest · Standard Reader" }],
+    meta: pageSocialMeta("latest", getPublicUrlClient()),
   }),
   component: Latest,
 });

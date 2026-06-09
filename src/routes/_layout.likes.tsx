@@ -5,6 +5,8 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link, createFileRoute, redirect } from "@tanstack/react-router";
 import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
+import { getPublicUrlClient } from "#/lib/public-url";
+import { pageSocialMeta } from "#/lib/site-metadata";
 import { buildAuthRedirectPath } from "#/utils/auth-redirect";
 import { Bookmark } from "lucide-react";
 
@@ -48,7 +50,7 @@ export const Route = createFileRoute("/_layout/likes")({
     await context.queryClient.ensureQueryData(readerApi.getLikesQueryOptions());
   },
   head: () => ({
-    meta: [{ title: "Saved articles · Standard Reader" }],
+    meta: pageSocialMeta("saved", getPublicUrlClient()),
   }),
   component: ReaderLikes,
 });

@@ -3,10 +3,12 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Content } from "../design-system/content";
 import { Page } from "../design-system/page";
 import { Body } from "../design-system/typography";
+import { getPublicUrlClient } from "../lib/public-url";
+import { pageSocialMeta } from "../lib/site-metadata";
 
 export const Route = createFileRoute("/_layout/about")({
   head: () => ({
-    meta: [{ title: "About · Standard Reader" }],
+    meta: pageSocialMeta("about", getPublicUrlClient()),
   }),
   component: About,
 });

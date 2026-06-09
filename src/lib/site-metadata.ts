@@ -15,6 +15,74 @@ export function siteOgImageUrl(baseUrl: string): string {
   return `${baseUrl.replace(/\/$/, "")}${SITE_OG_IMAGE_PATH}`;
 }
 
+/**
+ * Static OG card copy for the main routes, keyed by the slug used in
+ * `/api/og/page/$slug`. `title` is the card headline; `tagline` doubles as
+ * the card subtitle and the social/meta description for the page.
+ */
+export const PAGE_OG_CARDS = {
+  today: {
+    path: "/",
+    title: "Today",
+    tagline: "Fresh writing from the publications you follow, every day.",
+  },
+  discover: {
+    path: "/discover",
+    title: "Discover",
+    tagline:
+      "Browse and follow standard.site publications across the Atmosphere.",
+  },
+  latest: {
+    path: "/latest",
+    title: "Latest",
+    tagline: "The newest articles from across the network, as they publish.",
+  },
+  saved: {
+    path: "/likes",
+    title: "Saved articles",
+    tagline: "Your reading list — articles you've saved for later.",
+  },
+  search: {
+    path: "/search",
+    title: "Search",
+    tagline: "Find articles and publications across the Atmosphere.",
+  },
+  about: {
+    path: "/about",
+    title: "About",
+    tagline: "What Standard Reader is, and how it fits the Atmosphere.",
+  },
+  login: {
+    path: "/login",
+    title: "Sign in",
+    tagline: "Use your Atmosphere account to follow writers and save reads.",
+  },
+} as const;
+
+export type PageOgSlug = keyof typeof PAGE_OG_CARDS;
+
+export function isPageOgSlug(value: string): value is PageOgSlug {
+  return Object.hasOwn(PAGE_OG_CARDS, value);
+}
+
+export function pageOgImageUrl(baseUrl: string, slug: PageOgSlug): string {
+  return `${baseUrl.replace(/\/$/, "")}/api/og/page/${slug}`;
+}
+
+/** Full social meta for one of the main routes (title, OG card, URL). */
+export function pageSocialMeta(
+  slug: PageOgSlug,
+  baseUrl: string,
+): Array<HeadMetaEntry> {
+  const card = PAGE_OG_CARDS[slug];
+  return siteSocialMeta({
+    title: `${card.title} · ${SITE_NAME}`,
+    description: card.tagline,
+    url: `${baseUrl.replace(/\/$/, "")}${card.path === "/" ? "" : card.path}`,
+    ogImage: pageOgImageUrl(baseUrl, slug),
+  });
+}
+
 type HeadMetaEntry =
   | { title: string }
   | { name: string; content: string }

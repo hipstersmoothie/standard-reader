@@ -8,6 +8,8 @@ import {
   discoverApi,
 } from "#/integrations/tanstack-query/api-discover.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
+import { getPublicUrlClient } from "#/lib/public-url";
+import { pageSocialMeta } from "#/lib/site-metadata";
 import {
   Compass,
   Flame,
@@ -103,7 +105,7 @@ export const Route = createFileRoute("/_layout/discover")({
     ]);
   },
   head: () => ({
-    meta: [{ title: "Discover · Standard Reader" }],
+    meta: pageSocialMeta("discover", getPublicUrlClient()),
   }),
   component: Discover,
 });
