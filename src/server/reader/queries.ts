@@ -27,6 +27,7 @@ import {
   toPublicationCard,
 } from "#/integrations/tanstack-query/api-shapes";
 import { EXCLUDED_PUBLICATION_URL_PATTERN } from "#/lib/publication/exclusions";
+import { documentPublishedNotInFuture } from "#/server/reader/document-filters";
 import { discoverEligiblePublicationWhere } from "#/server/reader/publication-filters";
 import {
   MIN_ARTICLE_RECOMMENDERS,
@@ -78,8 +79,9 @@ export interface ArticleCardQuery {
 
 /**
  * Newest-first {@link ArticleCard}s, filtered to follows / unread / featured /
- * discover-eligible as requested. Returns `[]` when `publicationUris` is set but
- * empty (a reader with no follows), avoiding an `IN ()` that can never match.
+ * discover-eligible as requested. Excludes posts whose `publishedAt` is still in
+ * the future. Returns `[]` when `publicationUris` is set but empty (a reader with
+ * no follows), avoiding an `IN ()` that can never match.
  */
 export async function selectArticleCards(
   db: Db,
@@ -95,7 +97,7 @@ export async function selectArticleCards(
   const pr = schema.profiles;
   const r = schema.reads;
 
-  const conds = [eq(d.deleted, false)];
+  const conds = [eq(d.deleted, false), documentPublishedNotInFuture(d)];
   if (opts.publicationUris) {
     conds.push(inArray(d.publicationUri, opts.publicationUris));
   }
@@ -169,7 +171,7 @@ export async function selectUnreadDocumentUris(
   const d = schema.documents;
   const r = schema.reads;
 
-  const conds = [eq(d.deleted, false)];
+  const conds = [eq(d.deleted, false), documentPublishedNotInFuture(d)];
   if (publicationUris) {
     conds.push(inArray(d.publicationUri, publicationUris));
   }
@@ -262,7 +264,11 @@ export async function countFollowedDocuments(
       and(eq(r.documentUri, d.uri), eq(r.ownerDid, did), eq(r.deleted, false)),
     )
     .where(
-      and(eq(d.deleted, false), inArray(d.publicationUri, publicationUris)),
+      and(
+        eq(d.deleted, false),
+        documentPublishedNotInFuture(d),
+        inArray(d.publicationUri, publicationUris),
+      ),
     );
 
   return { all: row?.all ?? 0, unread: row?.unread ?? 0 };
@@ -295,6 +301,7 @@ export async function countUnreadByPublication(
     .where(
       and(
         eq(d.deleted, false),
+        documentPublishedNotInFuture(d),
         inArray(d.publicationUri, publicationUris),
         isNotNull(d.publicationUri),
       ),
@@ -331,6 +338,7 @@ export async function trendingArticles(
     eq(d.deleted, false),
     isNotNull(d.publicationUri),
     discoverEligiblePublicationWhere(p),
+    documentPublishedNotInFuture(d),
     sql`${d.publishedAt} > now() - (${TRENDING_MAX_AGE_DAYS}::text || ' days')::interval`,
     sql`${d.trendingScore} > 0`,
     sql`${d.distinctRecommenderCount} >= ${MIN_ARTICLE_RECOMMENDERS}`,

@@ -74,6 +74,9 @@ Detail screens
 ### Latest
 
 - Everything recent from followed pubs, newest first.
+- Posts with a `publishedAt` still in the future are hidden from chronological
+  feeds (Home latest rows, Latest, publication recents, trending) until that
+  time passes; direct article URLs still work.
 - Segmented filter: **All** vs **Unread** with counts.
 
 ### Discover (the directory)

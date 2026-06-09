@@ -73,9 +73,10 @@ export async function recomputePublicationStats(): Promise<void> {
     LEFT JOIN (
       SELECT publication_uri,
              count(*) AS cnt,
-             max(published_at) AS last_at,
+             max(published_at) FILTER (WHERE published_at <= now()) AS last_at,
              count(*) FILTER (
                WHERE published_at > now() - (${recentDays}::text || ' days')::interval
+                 AND published_at <= now()
              ) AS cnt7,
              count(*) FILTER (
                WHERE published_at > now() - (${totalWindow}::text || ' days')::interval
@@ -110,6 +111,7 @@ export async function recomputePublicationStats(): Promise<void> {
       WHERE deleted = false
         AND publication_uri IS NOT NULL
         AND published_at > now() - (${TRENDING_MAX_AGE_DAYS}::text || ' days')::interval
+        AND published_at <= now()
       GROUP BY publication_uri
     ) bl ON bl.publication_uri = p.uri
     WHERE p.deleted = false
@@ -203,6 +205,7 @@ export async function recomputeDocumentBacklinks(): Promise<number> {
       AND p.url NOT ILIKE ${EXCLUDED_PUBLICATION_URL_PATTERN}
       AND d.canonical_url IS NOT NULL
       AND d.published_at > now() - (${TRENDING_MAX_AGE_DAYS}::text || ' days')::interval
+      AND d.published_at <= now()
   `);
 
   const targets = rows.rows.filter(
@@ -263,6 +266,7 @@ export async function recomputeDocumentTrending(): Promise<void> {
           AND p.show_in_discover = true
           AND p.url NOT ILIKE ${EXCLUDED_PUBLICATION_URL_PATTERN}
           AND d.published_at > now() - (${maxAge}::text || ' days')::interval
+          AND d.published_at <= now()
       )
   `);
 
@@ -281,6 +285,7 @@ export async function recomputeDocumentTrending(): Promise<void> {
         AND p.show_in_discover = true
         AND p.url NOT ILIKE ${EXCLUDED_PUBLICATION_URL_PATTERN}
         AND d.published_at > now() - (${maxAge}::text || ' days')::interval
+        AND d.published_at <= now()
     ),
     rec AS (
       SELECT rc.document_uri,
