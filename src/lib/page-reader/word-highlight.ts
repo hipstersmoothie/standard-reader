@@ -82,7 +82,13 @@ function collectTextNodes(root: HTMLElement): {
 
   let current = walker.nextNode();
   while (current) {
-    if (current instanceof Text && current.textContent) {
+    if (
+      current instanceof Text &&
+      current.textContent &&
+      // Elements opted out of narration alignment (e.g. a pckt dek, which
+      // duplicates the body's opening and would steal its sentence match).
+      !current.parentElement?.closest("[data-reader-skip]")
+    ) {
       // Insert a separator (owned by no span) across block boundaries so words
       // from adjacent blocks (kicker→title, title→dek, …) don't fuse into one
       // token. Inline/floated boundaries are left glued.

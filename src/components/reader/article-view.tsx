@@ -51,7 +51,11 @@ import {
 import { ArticleBelowFold } from "./article-below-fold";
 import { FollowButton } from "./cards";
 import { ArticleContent } from "./content/article-content";
-import { articleReadingText, articleSpeechText } from "./content/extract-text";
+import {
+  articleDescriptionIsBodyExcerpt,
+  articleReadingText,
+  articleSpeechText,
+} from "./content/extract-text";
 import {
   articlePublicationUrl,
   documentLinkParams,
@@ -804,7 +808,16 @@ function ArticleViewBody({
           <h1 {...stylex.props(styles.title)}>{article.title}</h1>
 
           {article.description ? (
-            <p {...stylex.props(styles.dek)}>{article.description}</p>
+            // Pckt deks are body excerpts: keep them out of narration alignment
+            // so the first body sentence highlights in the body, not the dek.
+            <p
+              {...stylex.props(styles.dek)}
+              data-reader-skip={
+                articleDescriptionIsBodyExcerpt(article) ? true : undefined
+              }
+            >
+              {article.description}
+            </p>
           ) : null}
 
           <div {...stylex.props(styles.byline)}>

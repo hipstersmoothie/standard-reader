@@ -16,16 +16,13 @@ import { PCKT_CONTENT } from "#/lib/pckt/types";
 // lives in `#/lib/document/renderable` so it can run at ingest/backfill time.
 export { hasRenderableArticleBody } from "#/lib/document/renderable";
 
-type ArticleBodyFields = Pick<
-  ArticleDetail,
-  "textContent" | "contentJson" | "contentFormat"
->;
-
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function resolveContentType(article: ArticleBodyFields): string | null {
+function resolveContentType(
+  article: Pick<ArticleDetail, "contentFormat" | "contentJson">,
+): string | null {
   if (article.contentFormat) return article.contentFormat;
   if (
     isRecord(article.contentJson) &&
@@ -34,6 +31,17 @@ function resolveContentType(article: ArticleBodyFields): string | null {
     return article.contentJson.$type;
   }
   return null;
+}
+
+/**
+ * Whether `article.description` is just an auto-generated excerpt of the body
+ * (pckt fills it with the first N characters of the post). Such descriptions
+ * shouldn't be narrated — they duplicate the article's opening.
+ */
+export function articleDescriptionIsBodyExcerpt(
+  article: Pick<ArticleDetail, "contentFormat" | "contentJson">,
+): boolean {
+  return resolveContentType(article) === PCKT_CONTENT;
 }
 
 /** AT-URIs of Bluesky posts embedded in the article body (Leaflet only). */
@@ -93,6 +101,7 @@ export function speechAuthor(article: ArticleDetail): string | null {
 /**
  * Full narration text for the page reader: title, description, author byline,
  * then the body content (each separated so the TTS pauses between them).
+ * Auto-excerpt descriptions (pckt) are skipped — they'd read the opening twice.
  * `bskyPostText` optionally inlines narration for embedded Bluesky posts.
  */
 export function articleSpeechText(
@@ -102,7 +111,9 @@ export function articleSpeechText(
   const parts: Array<string> = [];
 
   if (article.title?.trim()) parts.push(article.title.trim());
-  if (article.description?.trim()) parts.push(article.description.trim());
+  if (!articleDescriptionIsBodyExcerpt(article) && article.description?.trim()) {
+    parts.push(article.description.trim());
+  }
 
   const author = speechAuthor(article);
   if (author) parts.push(`By ${author}.`);
