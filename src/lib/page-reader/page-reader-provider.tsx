@@ -210,9 +210,14 @@ export function PageReaderProvider({
         return;
       }
 
+      // Mark prepared as soon as synthesis starts so pause/resume doesn't
+      // treat in-flight generation as "needs re-prepare".
+      markPrepared(article, text);
       // `prepare` streams audio and starts playback from the first sentence.
       void engine.prepare(text, getVoicePromise(article)).then((ok) => {
-        if (ok) markPrepared(article, text);
+        if (!ok && preparedRef.current?.uri === article.uri) {
+          preparedRef.current = null;
+        }
       });
     },
     [getVoicePromise, markPrepared, voicePreference],
@@ -277,8 +282,8 @@ export function PageReaderProvider({
       last !== null &&
       status !== "idle" &&
       status !== "error" &&
-      (prepared === null ||
-        prepared.voicePreference !== voicePreferenceRef.current);
+      prepared !== null &&
+      prepared.voicePreference !== voicePreferenceRef.current;
 
     if (needsReprepare) {
       startPlayback(last.article, last.text);

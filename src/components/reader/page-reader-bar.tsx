@@ -1,11 +1,15 @@
 "use client";
 
+import { useExitAnimation } from "@react-aria/utils";
 import * as stylex from "@stylexjs/stylex";
 import { Link, useNavigate, useRouter } from "@tanstack/react-router";
 import { Button } from "#/design-system/button";
 import { IconButton } from "#/design-system/icon-button";
 import { Menu, MenuItem } from "#/design-system/menu";
-import { animationDuration } from "#/design-system/theme/animations.stylex";
+import {
+  animationDuration,
+  animationTimingFunction,
+} from "#/design-system/theme/animations.stylex";
 import { primaryColor, uiColor } from "#/design-system/theme/color.stylex";
 import { radius } from "#/design-system/theme/radius.stylex";
 import {
@@ -24,7 +28,7 @@ import {
 import { usePageReader } from "#/lib/page-reader/page-reader-context";
 import { articleSharePath } from "#/lib/quote-share";
 import { LocateFixed, Pause, Play, RotateCcw, SkipBack, X } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const SKIP_SECONDS = 15;
 const ARROW_SECONDS = 5;
@@ -41,9 +45,19 @@ const rise = stylex.keyframes({
   to: { opacity: 1, transform: "translateY(0)" },
 });
 
+const sink = stylex.keyframes({
+  from: { opacity: 1, transform: "translateY(0)" },
+  to: { opacity: 0, transform: "translateY(16px)" },
+});
+
 const fabIn = stylex.keyframes({
   from: { opacity: 0 },
   to: { opacity: 1 },
+});
+
+const fabOut = stylex.keyframes({
+  from: { opacity: 1 },
+  to: { opacity: 0 },
 });
 
 const styles = stylex.create({
@@ -62,19 +76,29 @@ const styles = stylex.create({
     borderStyle: "solid",
     borderWidth: 1,
     cornerShape: "squircle",
-    animationDuration: animationDuration.verySlow,
+    animationDuration: {
+      default: animationDuration.verySlow,
+      ":is([data-exiting])": animationDuration.slow,
+    },
     animationName: {
       default: rise,
+      ":is([data-exiting])": sink,
       "@media (prefers-reduced-motion: reduce)": "none",
     },
-    animationTimingFunction: "cubic-bezier(0.32, 0.72, 0, 1)",
+    animationTimingFunction: {
+      default: "cubic-bezier(0.32, 0.72, 0, 1)",
+      ":is([data-exiting])": animationTimingFunction.easeIn,
+    },
     backgroundColor: uiColor.bg,
     boxShadow:
       "0 1px 1px oklch(0.3 0.03 60 / 0.04), 0 8px 22px -10px oklch(0.3 0.04 60 / 0.22), 0 20px 48px -22px oklch(0.3 0.05 60 / 0.3)",
     boxSizing: "border-box",
     display: "flex",
     flexDirection: "column",
-    pointerEvents: "auto",
+    pointerEvents: {
+      default: "auto",
+      ":is([data-exiting])": "none",
+    },
     rowGap: gap.md,
     maxWidth: { [DESKTOP]: "min(540px, calc(100vw - 36px))", default: "480px" },
     paddingBottom: verticalSpace.lg,
@@ -148,13 +172,23 @@ const styles = stylex.create({
     borderRadius: radius.full,
   },
   followFabHost: {
-    animationDuration: animationDuration.default,
+    animationDuration: {
+      default: animationDuration.default,
+      ":is([data-exiting])": animationDuration.fast,
+    },
     animationName: {
       default: fabIn,
+      ":is([data-exiting])": fabOut,
       "@media (prefers-reduced-motion: reduce)": "none",
     },
-    animationTimingFunction: "cubic-bezier(0.32, 0.72, 0, 1)",
-    pointerEvents: "auto",
+    animationTimingFunction: {
+      default: "cubic-bezier(0.32, 0.72, 0, 1)",
+      ":is([data-exiting])": animationTimingFunction.easeIn,
+    },
+    pointerEvents: {
+      default: "auto",
+      ":is([data-exiting])": "none",
+    },
     position: "absolute",
     transform: {
       [DESKTOP]: "translateY(-50%)",
@@ -336,6 +370,12 @@ function SeekTrack({
  * the bottom navigation, on every route) and shows whenever an article is
  * loaded into the player. Tapping the title returns to the playing article.
  */
+type BarSnapshot = {
+  nowPlaying: ReturnType<typeof usePageReader>["nowPlaying"];
+  scrollLocked: boolean;
+  state: ReturnType<typeof usePageReader>["state"];
+};
+
 export function PageReaderBar() {
   const navigate = useNavigate();
   const router = useRouter();
@@ -352,9 +392,30 @@ export function PageReaderBar() {
     scrollLocked,
     lockScroll,
   } = usePageReader();
+  const cardRef = useRef<HTMLElement>(null);
+  const exiting = useExitAnimation(cardRef, active);
+  const snapshotRef = useRef<BarSnapshot | null>(null);
   // While dragging the scrubber we preview the thumb position locally and only
   // commit the seek on release.
   const [scrubValue, setScrubValue] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (active) {
+      snapshotRef.current = { nowPlaying, scrollLocked, state };
+    }
+  }, [active, nowPlaying, scrollLocked, state]);
+
+  // Hooks must run before any early return; bail out once they have.
+  if (!active && !exiting) return null;
+
+  const snapshot = snapshotRef.current;
+  const displayNowPlaying = active
+    ? nowPlaying
+    : (snapshot?.nowPlaying ?? null);
+  const displayScrollLocked = active
+    ? scrollLocked
+    : (snapshot?.scrollLocked ?? true);
+  const displayState = active ? state : (snapshot?.state ?? state);
   const {
     status,
     currentTime,
@@ -362,10 +423,7 @@ export function PageReaderBar() {
     modelProgress,
     generationProgress,
     error,
-  } = state;
-
-  // Hooks must run before any early return; bail out once they have.
-  if (!active) return null;
+  } = displayState;
 
   const isLoading = status === "loading-model" || status === "generating";
   const isError = status === "error";
@@ -386,18 +444,18 @@ export function PageReaderBar() {
 
   const previewTime = scrubValue ?? currentTime;
   const fraction = duration > 0 ? previewTime / duration : 0;
-  const rateKey = String(state.rate);
+  const rateKey = String(displayState.rate);
 
   const playingParams =
-    nowPlaying && nowPlaying.did && nowPlaying.rkey
-      ? { did: nowPlaying.did, rkey: nowPlaying.rkey }
+    displayNowPlaying && displayNowPlaying.did && displayNowPlaying.rkey
+      ? { did: displayNowPlaying.did, rkey: displayNowPlaying.rkey }
       : null;
   const playingHref = playingParams
     ? articleSharePath(playingParams.did, playingParams.rkey)
     : null;
   const onPlayingArticle =
     playingHref !== null && router.state.location.pathname === playingHref;
-  const title = nowPlaying?.title ?? "";
+  const title = displayNowPlaying?.title ?? "";
 
   const onFollowAlong = () => {
     if (playingParams && !onPlayingArticle) {
@@ -428,7 +486,12 @@ export function PageReaderBar() {
 
   return (
     <div {...stylex.props(styles.cluster)}>
-      <section {...stylex.props(styles.card)} aria-label="Read aloud">
+      <section
+        ref={cardRef}
+        data-exiting={exiting || undefined}
+        {...stylex.props(styles.card)}
+        aria-label="Read aloud"
+      >
         <div {...stylex.props(styles.row)}>
           <div {...stylex.props(styles.now)}>
             {playingParams ? (
@@ -481,10 +544,10 @@ export function PageReaderBar() {
               trigger={
                 <Button
                   variant="tertiary"
-                  aria-label={`Playback speed: ${formatRate(state.rate)}`}
+                  aria-label={`Playback speed: ${formatRate(displayState.rate)}`}
                   style={styles.speedTrigger}
                 >
-                  {formatRate(state.rate)}
+                  {formatRate(displayState.rate)}
                 </Button>
               }
             >
@@ -521,8 +584,11 @@ export function PageReaderBar() {
         />
       </section>
 
-      {!scrollLocked && transportReady ? (
-        <div {...stylex.props(styles.followFabHost)}>
+      {!displayScrollLocked && transportReady ? (
+        <div
+          data-exiting={exiting || undefined}
+          {...stylex.props(styles.followFabHost)}
+        >
           <IconButton
             variant="tertiary"
             size="lg"
