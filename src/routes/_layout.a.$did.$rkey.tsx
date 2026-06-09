@@ -8,6 +8,7 @@ import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
 import { getPublicUrlClient } from "#/lib/public-url";
 import { buildQuoteOgImageUrl, decodeQuoteParam } from "#/lib/quote-share";
+import { articleOgImageUrl, siteSocialMeta } from "#/lib/site-metadata";
 import { useOpenLinks } from "#/lib/use-open-links";
 import { useLayoutEffect } from "react";
 import { z } from "zod";
@@ -101,9 +102,26 @@ export const Route = createFileRoute("/_layout/a/$did/$rkey")({
       article?.description?.trim() ||
       (publicationName ? `${title} — ${publicationName}` : title);
 
-    if (!quote || !article || !match.search.q) {
+    if (!article) {
       return {
         meta: [{ title: pageTitle }],
+      };
+    }
+
+    if (!quote || !match.search.q) {
+      const baseUrl = getPublicUrlClient();
+      return {
+        meta: siteSocialMeta({
+          title: pageTitle,
+          description,
+          url: `${baseUrl}${match.pathname}`,
+          ogImage: articleOgImageUrl(
+            baseUrl,
+            match.params.did,
+            match.params.rkey,
+          ),
+          ogType: "article",
+        }),
       };
     }
 

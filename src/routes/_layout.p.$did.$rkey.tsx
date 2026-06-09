@@ -10,6 +10,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { publicationApi } from "#/integrations/tanstack-query/api-publication.functions";
 import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
+import { getPublicUrlClient } from "#/lib/public-url";
+import { publicationOgImageUrl, siteSocialMeta } from "#/lib/site-metadata";
 import { ExternalLink } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -72,12 +74,30 @@ export const Route = createFileRoute("/_layout/p/$did/$rkey")({
         ),
       );
     }
-    return { publicationName: profile?.publication.name ?? null };
-  },
-  head: ({ loaderData }) => {
-    const name = loaderData?.publicationName;
     return {
-      meta: [{ title: name ? `${name} · Standard Reader` : "Standard Reader" }],
+      publicationName: profile?.publication.name ?? null,
+      publicationDescription: profile?.publication.description ?? null,
+    };
+  },
+  head: ({ loaderData, match }) => {
+    const name = loaderData?.publicationName;
+    if (!name) {
+      return { meta: [{ title: "Standard Reader" }] };
+    }
+    const baseUrl = getPublicUrlClient();
+    return {
+      meta: siteSocialMeta({
+        title: `${name} · Standard Reader`,
+        description:
+          loaderData?.publicationDescription?.trim() ||
+          `Read ${name} on Standard Reader.`,
+        url: `${baseUrl}${match.pathname}`,
+        ogImage: publicationOgImageUrl(
+          baseUrl,
+          match.params.did,
+          match.params.rkey,
+        ),
+      }),
     };
   },
   component: PublicationProfile,

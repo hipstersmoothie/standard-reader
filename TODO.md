@@ -157,6 +157,17 @@ in structured o11y (`observe`) and reads from the Neon read-model.
       `textContent` plus extracted content blocks into `text_content`.
       `searchApi.searchPublications` + `searchApi.searchArticles` with totals,
       offset pagination, load-more (publications), and infinite scroll (articles).
+- [x] Fix compounded `text_content`: `documentSearchText` deduped on exact
+      equality only, and `backfillDocumentSearchText` fed the stored blob back
+      in as record text — every run appended another copy of the extracted
+      block plaintext (some rows reached ~20 copies, inflating reading times
+      and making the page reader re-narrate the article after finishing).
+      Dedupe is now approximate containment (punctuation-insensitive word
+      5-gram coverage), the backfill strips legacy compounded copies via
+      `repairCompoundedSearchText` (so re-running it is a fixed point), the
+      prod rows were repaired (~194M → ~170M chars), and narration/reading
+      time (`articleReadingText`) now prefers structured `contentJson`
+      extraction over the `textContent` search blob.
 - [x] Handle resolution: AT Proto handle/domain → publication preview for the Add
       modal. `searchApi.resolvePublicationByHandle` resolves handle→DID, reads the
       read-model first, then falls back to listing the author's repo from their PDS
@@ -192,6 +203,16 @@ Build each on hip-ui components + StyleX tokens (no raw HTML/inline styles).
       (`#/lib/open-links`, `useOpenLinks`, `OpenLinksMenuItem`).
 - [x] **Reader profile** — browse the signed-in user's likes (`site.standard.graph.recommend` records via `readerApi.getLikes`).
 - [x] **Per-page OG cards** — satori-rendered Open Graph images for the main routes (Today, Discover, Latest, Saved, Search, About, Sign in) in the site-card editorial style, served from `/api/og/page/$slug` (`src/server/og/page-card.tsx`); copy lives in `PAGE_OG_CARDS` and each route's `head` emits full social meta via `pageSocialMeta` (`src/lib/site-metadata.ts`). Article quote shares and the site-wide card already had their own OG endpoints.
+- [x] **Article + publication OG cards** — publication-themed satori cards for plain article links
+      (`/api/og/article?did&rkey`, `src/server/og/article-card.tsx`: kicker, headline, description,
+      pub icon/handle footer, date + reading time, cover image side panel when present) and for
+      publication profiles (`/api/og/publication?did&rkey`, `src/server/og/publication-card.tsx`:
+      icon, topic kicker, name, description, @handle + readers/posts footer). Both reuse the quote
+      card's theme resolution (`resolveQuoteOgColors`, WCAG-guarded). `/a/...` (non-quote) and
+      `/p/...` route `head`s now emit full social meta via `siteSocialMeta` +
+      `articleOgImageUrl`/`publicationOgImageUrl`. `loadOgImage` now routes PDS `getBlob` URLs
+      through the Bluesky CDN `@jpeg` variant and rejects formats satori can't parse (webp blobs
+      previously 500'd quote cards too).
 
 ## 7. Discovery engine (network-powered)
 

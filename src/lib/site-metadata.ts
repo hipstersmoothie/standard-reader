@@ -69,6 +69,26 @@ export function pageOgImageUrl(baseUrl: string, slug: PageOgSlug): string {
   return `${baseUrl.replace(/\/$/, "")}/api/og/page/${slug}`;
 }
 
+/** Dynamic OG card for an article (`/a/$did/$rkey`). */
+export function articleOgImageUrl(
+  baseUrl: string,
+  did: string,
+  rkey: string,
+): string {
+  const params = new URLSearchParams({ did, rkey });
+  return `${baseUrl.replace(/\/$/, "")}/api/og/article?${params.toString()}`;
+}
+
+/** Dynamic OG card for a publication profile (`/p/$did/$rkey`). */
+export function publicationOgImageUrl(
+  baseUrl: string,
+  did: string,
+  rkey: string,
+): string {
+  const params = new URLSearchParams({ did, rkey });
+  return `${baseUrl.replace(/\/$/, "")}/api/og/publication?${params.toString()}`;
+}
+
 /** Full social meta for one of the main routes (title, OG card, URL). */
 export function pageSocialMeta(
   slug: PageOgSlug,
