@@ -5,7 +5,7 @@ import { getAtprotoSessionForRequest } from "#/middleware/auth";
 import {
   deleteReadRecord,
   deleteRecommendRecord,
-  deleteSubscriptionRecord,
+  deleteSubscriptionRecords,
   putReadRecord,
   putRecommendRecord,
   putSubscriptionRecord,
@@ -145,7 +145,7 @@ const unfollowPublication = createServerFn({ method: "POST" })
   .middleware([dbMiddleware])
   .inputValidator(publicationInput)
   .handler(
-    observe("reader.unfollowPublication", async ({ data }, span) => {
+    observe("reader.unfollowPublication", async ({ data, context }, span) => {
       span.set("publicationUri", data.publicationUri);
       const session = await getAtprotoSessionForRequest(getRequest());
       if (!session) {
@@ -153,10 +153,27 @@ const unfollowPublication = createServerFn({ method: "POST" })
       }
       span.set("did", session.did);
 
-      await deleteSubscriptionRecord(
+      // Externally-created follows (e.g. Leaflet's auto self-subscribe) live at
+      // TID rkeys, not our deterministic one — collect every record the
+      // read-model knows about for this pair so they all get deleted.
+      const sub = context.schema.subscriptions;
+      const rows = await context.db
+        .select({ rkey: sub.rkey })
+        .from(sub)
+        .where(
+          and(
+            eq(sub.subscriberDid, session.did),
+            eq(sub.publicationUri, data.publicationUri),
+            eq(sub.deleted, false),
+          ),
+        );
+      span.set("records", rows.length);
+
+      await deleteSubscriptionRecords(
         session.client,
         session.did,
         data.publicationUri,
+        rows.map((row) => row.rkey),
       );
       return { ok: true as const };
     }),

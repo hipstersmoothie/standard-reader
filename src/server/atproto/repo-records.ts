@@ -130,16 +130,29 @@ export async function putSubscriptionRecord(
   });
 }
 
-export async function deleteSubscriptionRecord(
+/**
+ * Delete every subscription record for `publicationUri`. Other writers (e.g.
+ * Leaflet auto-subscribing an owner to their own publication) create records at
+ * TID rkeys rather than our deterministic `subjectRkey`, and a repo can hold
+ * several records for the same pair — so the caller passes the rkeys it knows
+ * about (from the read-model) and we delete those plus the deterministic one.
+ */
+export async function deleteSubscriptionRecords(
   client: Client,
   repo: string,
   publicationUri: string,
+  knownRkeys: Array<string> = [],
 ): Promise<void> {
-  return repoDeleteRecord(client, {
-    repo,
-    collection: COLLECTION.subscription,
-    rkey: subjectRkey(publicationUri),
-  });
+  const rkeys = new Set([subjectRkey(publicationUri), ...knownRkeys]);
+  await Promise.all(
+    [...rkeys].map((rkey) =>
+      repoDeleteRecord(client, {
+        repo,
+        collection: COLLECTION.subscription,
+        rkey,
+      }),
+    ),
+  );
 }
 
 /** Write a `site.standard.graph.recommend` (like) for `documentUri`. */
