@@ -377,7 +377,8 @@ export const articleBodyStyles = stylex.create({
     backgroundColor: uiColor.component2,
   },
   quoteShareMark: {
-    borderRadius: radius.sm,
+    borderRadius: radius.xs,
+    cornerShape: "squircle",
     paddingBlock: spacing["0.5"],
     backgroundColor: primaryColor.component3,
     // eslint-disable-next-line @stylexjs/valid-styles

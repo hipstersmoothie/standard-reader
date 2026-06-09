@@ -21,6 +21,7 @@
     "backfill:search-text": "pnpm exec tsx --env-file=.env scripts/backfill-search-text.ts",
     "backfill:renderable": "pnpm exec tsx --env-file=.env scripts/backfill-renderable-body.ts",
     "scan:unsupported-blocks": "pnpm exec tsx --env-file=.env scripts/scan-unsupported-blocks.ts",
+    "honeycomb:seed": "node --env-file=.env scripts/honeycomb-seed.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "pnpm exec oxlint .",
     "format": "pnpm exec oxfmt",

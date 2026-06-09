@@ -2,11 +2,13 @@
  * Lightweight, dependency-free observability for server functions.
  *
  * Emits one structured JSON line per event to stdout (`evt`, `ok`, `ms`, plus
- * any attributes). Structured lines are trivially ingestible by Honeycomb (and
- * any log pipeline) without pulling in an OpenTelemetry SDK. `observe()` wraps a
- * server-fn handler to time it and record success/failure; attach domain
- * attributes (did, subject, …) via the `span` it passes in.
+ * any attributes). When `HONEYCOMB_API_KEY` is set, the same events are also
+ * batched to Honeycomb (`src/server/observability/honeycomb.ts`). `observe()`
+ * wraps a server-fn handler to time it and record success/failure; attach
+ * domain attributes (did, subject, …) via the `span` it passes in.
  */
+
+import { enqueueHoneycombEvent } from "./honeycomb.ts";
 
 export type LogValue = string | number | boolean | null | undefined;
 export type LogAttrs = Record<string, LogValue>;
@@ -26,12 +28,14 @@ function clean(attrs: LogAttrs | undefined): LogAttrs {
 
 /** Emit a single structured event line. */
 export function logEvent(name: string, attrs?: LogAttrs): void {
+  const ts = new Date().toISOString();
   const line = {
-    ts: new Date().toISOString(),
+    ts,
     evt: name,
     ...clean(attrs),
   };
   console.info(JSON.stringify(line));
+  enqueueHoneycombEvent(name, attrs, ts);
 }
 
 /** A handle for attaching attributes to the in-flight observed call. */

@@ -9,6 +9,7 @@ import type { ProcessResult } from "./consumer.ts";
 
 import { db } from "../../db/index.ts";
 import { ingestState } from "../../db/schema.ts";
+import { logEvent } from "../observability/log.ts";
 import { verifyIngestAuth } from "./auth.ts";
 import { ingestConfig } from "./config.ts";
 import { processTapEvent } from "./consumer.ts";
@@ -109,9 +110,21 @@ async function handleRequest(
     if (!requireAuth(req, res)) {
       return;
     }
-    const startedAt = Date.now();
-    await recomputeDerived();
-    sendJson(res, 200, { durationMs: Date.now() - startedAt, ok: true });
+    const startedAt = performance.now();
+    try {
+      await recomputeDerived();
+      const ms = Math.round(performance.now() - startedAt);
+      logEvent("ingest.recompute", { ok: true, ms });
+      sendJson(res, 200, { durationMs: ms, ok: true });
+    } catch (error: unknown) {
+      const ms = Math.round(performance.now() - startedAt);
+      logEvent("ingest.recompute", {
+        error: error instanceof Error ? error.message : String(error),
+        ms,
+        ok: false,
+      });
+      throw error;
+    }
     return;
   }
 
@@ -289,15 +302,40 @@ function startTapChannel(): { destroy: () => Promise<void> } {
           if (result === "dead-lettered") {
             stats.failed += 1;
             console.warn(`[ingest] dead-lettered event ${evt.id}`);
+            logEvent("ingest.tapEvent", {
+              collection:
+                typeof evt.collection === "string" ? evt.collection : undefined,
+              eventId: evt.id,
+              eventType: evt.type,
+              ok: false,
+              result: "dead-lettered",
+            });
           } else if (result === "unhandled") {
             stats.errors += 1;
             console.warn(
               `[ingest] event ${evt.id} unhandled (DB down/full) — not acking, tap will redeliver`,
             );
+            logEvent("ingest.tapEvent", {
+              collection:
+                typeof evt.collection === "string" ? evt.collection : undefined,
+              eventId: evt.id,
+              eventType: evt.type,
+              ok: false,
+              result: "unhandled",
+            });
           }
         } catch (error: unknown) {
           stats.errors += 1;
           console.error(`[ingest] failed to process event ${evt.id}`, error);
+          logEvent("ingest.tapEvent", {
+            collection:
+              typeof evt.collection === "string" ? evt.collection : undefined,
+            error: error instanceof Error ? error.message : String(error),
+            eventId: evt.id,
+            eventType: evt.type,
+            ok: false,
+            result: "error",
+          });
         } finally {
           // Only ack once the event is durably handled (applied or
           // dead-lettered). Withholding the ack on "unhandled" leaves it for
@@ -319,6 +357,18 @@ function startTapChannel(): { destroy: () => Promise<void> } {
     console.info(
       `[ingest] channel heartbeat: identity=${stats.identity} record=${stats.record} acked=${stats.acked} ackTimeouts=${stats.ackTimeouts} failed=${stats.failed} errors=${stats.errors} inflight=${stats.inflight} lastEventId=${stats.lastEventId} idleMs=${idleMs}`,
     );
+    logEvent("ingest.heartbeat", {
+      ackTimeouts: stats.ackTimeouts,
+      acked: stats.acked,
+      errors: stats.errors,
+      failed: stats.failed,
+      identity: stats.identity,
+      idleMs,
+      inflight: stats.inflight,
+      lastEventId: stats.lastEventId,
+      ok: true,
+      record: stats.record,
+    });
   }, 10_000);
   heartbeat.unref?.();
 
@@ -359,6 +409,8 @@ for (const signal of ["SIGINT", "SIGTERM"] as const) {
   process.on(signal, () => {
     server.close(async () => {
       await tapChannel.destroy();
+      const { flushHoneycomb } = await import("../observability/honeycomb.ts");
+      await flushHoneycomb();
       process.exit(0);
     });
   });

@@ -1,4 +1,9 @@
-import type { PlausibleConfig } from "@plausible-analytics/tracker";
+export interface PlausibleConfig {
+  domain: string;
+  endpoint?: string;
+  captureOnLocalhost?: boolean;
+  logging?: boolean;
+}
 
 export function getPlausibleConfig(): PlausibleConfig | null {
   const domain = import.meta.env.VITE_PLAUSIBLE_DOMAIN?.trim();

@@ -1,6 +1,5 @@
 "use client";
 
-import { init } from "@plausible-analytics/tracker";
 import { useEffect } from "react";
 
 import { getPlausibleConfig } from "./config";
@@ -15,8 +14,12 @@ export function PlausibleAnalytics() {
     const config = getPlausibleConfig();
     if (!config) return;
 
-    init(config);
-    initialized = true;
+    void import("@plausible-analytics/tracker/plausible.js").then(
+      ({ init }) => {
+        init(config);
+        initialized = true;
+      },
+    );
   }, []);
 
   return null;

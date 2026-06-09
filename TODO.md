@@ -33,6 +33,10 @@ work. Check items off as they land.
     in `vite.config.ts`, and `build.cssCodeSplit` must be `false`. Otherwise Rolldown hoists the
     shared StyleX stylesheet into a single route chunk instead of linking it globally, so most
     pages render unstyled on first paint.
+- [x] **Honeycomb o11y.** Structured server events (`observe` / `logEvent`) forward to Honeycomb
+      when `HONEYCOMB_API_KEY` is set (`src/server/observability/honeycomb.ts`). Set
+      `HONEYCOMB_DATASET=standard-reader` on Railway `web` + `ingest` services; dashboards track
+      error rate, slow endpoints, and ingest health.
 
 ## 1. Data ingestion — tap → Neon
 
