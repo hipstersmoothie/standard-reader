@@ -7,10 +7,15 @@ import { leafletImageAspectRatio, leafletImageUrl } from "#/lib/leaflet/image";
 
 import type { ContentBlobContext } from "../types";
 
+import { LeafletButtonBlockView } from "./leaflet-button";
 import {
   LeafletOrderedListBlockView,
   LeafletUnorderedListBlockView,
 } from "./leaflet-list";
+import { LeafletMathBlockView } from "./leaflet-math";
+import { LeafletPollBlockView } from "./leaflet-poll";
+import { LeafletSeparatorView } from "./leaflet-separator";
+import { LeafletStandardSitePostBlockView } from "./leaflet-standard-site-post";
 import { BlockquoteBlockView } from "./shared/blockquote-block";
 import { BskyPostEmbedView } from "./shared/bsky-post-embed";
 import { CodeBlockView } from "./shared/code-block";
@@ -119,6 +124,21 @@ export function LeafletBlockView({
           description={block.block.description}
         />
       );
+    }
+    case "math": {
+      return <LeafletMathBlockView block={block.block} />;
+    }
+    case "button": {
+      return <LeafletButtonBlockView block={block.block} />;
+    }
+    case "poll": {
+      return <LeafletPollBlockView block={block.block} />;
+    }
+    case "separator": {
+      return <LeafletSeparatorView />;
+    }
+    case "standardSitePost": {
+      return <LeafletStandardSitePostBlockView block={block.block} />;
     }
     case "unknown": {
       return <UnknownBlockView blockType={block.blockType} />;

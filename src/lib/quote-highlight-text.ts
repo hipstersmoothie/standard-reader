@@ -150,7 +150,18 @@ function appendLeafletRenderedText(
       appendText(parts, block.block.description);
       return;
     }
+    case "math": {
+      appendText(parts, block.block.tex);
+      return;
+    }
+    case "button": {
+      appendText(parts, block.block.text);
+      return;
+    }
     case "horizontalRule":
+    case "separator":
+    case "poll":
+    case "standardSitePost":
     case "bskyPost":
     case "image":
     case "iframe":

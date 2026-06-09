@@ -20,11 +20,19 @@ export const LEAFLET_BLOCK = {
   code: "pub.leaflet.blocks.code",
   iframe: "pub.leaflet.blocks.iframe",
   website: "pub.leaflet.blocks.website",
+  math: "pub.leaflet.blocks.math",
+  button: "pub.leaflet.blocks.button",
+  poll: "pub.leaflet.blocks.poll",
+  page: "pub.leaflet.blocks.page",
+  separator: "pub.leaflet.blocks.separator",
+  standardSitePost: "pub.leaflet.blocks.standardSitePost",
 } as const;
 
 export const LEAFLET_PAGE = {
   linearDocument: "pub.leaflet.pages.linearDocument",
   linearDocumentBlock: "pub.leaflet.pages.linearDocument#block",
+  canvas: "pub.leaflet.pages.canvas",
+  canvasBlock: "pub.leaflet.pages.canvas#block",
 } as const;
 
 export const LEAFLET_CONTENT = "pub.leaflet.content";
@@ -97,6 +105,32 @@ export interface LeafletWebsiteBlock {
   description?: string;
 }
 
+export interface LeafletMathBlock {
+  $type?: string;
+  tex?: string;
+}
+
+export interface LeafletButtonBlock {
+  $type?: string;
+  url?: string;
+  text?: string;
+}
+
+export interface LeafletPollBlock {
+  $type?: string;
+  pollRef?: { uri?: string; cid?: string };
+}
+
+export interface LeafletPageBlockRef {
+  $type?: string;
+  id?: string;
+}
+
+export interface LeafletStandardSitePostBlock {
+  $type?: string;
+  uri?: string;
+}
+
 export interface LeafletListItem {
   $type?: string;
   content?: LeafletTextBlock | Record<string, unknown>;
@@ -128,6 +162,11 @@ export type LeafletRenderableBlock =
   | { kind: "code"; block: LeafletCodeBlock }
   | { kind: "iframe"; block: LeafletIframeBlock }
   | { kind: "website"; block: LeafletWebsiteBlock }
+  | { kind: "math"; block: LeafletMathBlock }
+  | { kind: "button"; block: LeafletButtonBlock }
+  | { kind: "poll"; block: LeafletPollBlock }
+  | { kind: "separator" }
+  | { kind: "standardSitePost"; block: LeafletStandardSitePostBlock }
   | { kind: "unknown"; blockType: string };
 
 export interface LeafletPageBlock {

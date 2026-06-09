@@ -10,15 +10,7 @@ const PCKT_SUPPORTED = new Set<string>(Object.values(PCKT_BLOCK));
 const OFFPRINT_SUPPORTED = new Set<string>(Object.values(OFFPRINT_BLOCK));
 
 /** Leaflet block types in the spec but not yet rendered in the reader. */
-export const LEAFLET_KNOWN_UNSUPPORTED = [
-  "pub.leaflet.blocks.math",
-  "pub.leaflet.blocks.button",
-  "pub.leaflet.blocks.poll",
-  "pub.leaflet.blocks.page",
-  "pub.leaflet.blocks.separator",
-  "pub.leaflet.blocks.standardSitePost",
-  "pub.leaflet.pages.canvas#block",
-] as const;
+export const LEAFLET_KNOWN_UNSUPPORTED = [] as const;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);

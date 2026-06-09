@@ -1,13 +1,17 @@
 import type {
   LeafletBlockquoteBlock,
   LeafletBskyPostBlock,
+  LeafletButtonBlock,
   LeafletCodeBlock,
   LeafletContent,
   LeafletHeaderBlock,
   LeafletIframeBlock,
   LeafletImageBlock,
+  LeafletMathBlock,
   LeafletOrderedListBlock,
+  LeafletPollBlock,
   LeafletRenderableBlock,
+  LeafletStandardSitePostBlock,
   LeafletTextBlock,
   LeafletUnorderedListBlock,
   LeafletWebsiteBlock,
@@ -21,7 +25,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function unwrapPageBlock(entry: unknown): Record<string, unknown> | null {
   if (!isRecord(entry)) return null;
-  if (entry.$type === LEAFLET_PAGE.linearDocumentBlock) {
+  if (
+    entry.$type === LEAFLET_PAGE.linearDocumentBlock ||
+    entry.$type === LEAFLET_PAGE.canvasBlock
+  ) {
     const inner = entry.block;
     return isRecord(inner) ? inner : null;
   }
@@ -128,6 +135,46 @@ function asRenderableBlock(value: unknown): LeafletRenderableBlock | null {
     };
   }
 
+  if (value.$type === LEAFLET_BLOCK.math) {
+    const tex = typeof value.tex === "string" ? value.tex : null;
+    if (!tex) return null;
+    return {
+      kind: "math",
+      block: value as unknown as LeafletMathBlock,
+    };
+  }
+
+  if (value.$type === LEAFLET_BLOCK.button) {
+    const url = typeof value.url === "string" ? value.url : null;
+    if (!url) return null;
+    return {
+      kind: "button",
+      block: value as unknown as LeafletButtonBlock,
+    };
+  }
+
+  if (value.$type === LEAFLET_BLOCK.poll) {
+    const pollUri = isRecord(value.pollRef) ? value.pollRef.uri : null;
+    if (typeof pollUri !== "string" || pollUri.length === 0) return null;
+    return {
+      kind: "poll",
+      block: value as unknown as LeafletPollBlock,
+    };
+  }
+
+  if (value.$type === LEAFLET_BLOCK.standardSitePost) {
+    const uri = typeof value.uri === "string" ? value.uri : null;
+    if (!uri) return null;
+    return {
+      kind: "standardSitePost",
+      block: value as unknown as LeafletStandardSitePostBlock,
+    };
+  }
+
+  if (value.$type === LEAFLET_BLOCK.separator) {
+    return { kind: "separator" };
+  }
+
   if (value.$type === LEAFLET_BLOCK.horizontalRule) {
     return { kind: "horizontalRule" };
   }
@@ -137,7 +184,26 @@ function asRenderableBlock(value: unknown): LeafletRenderableBlock | null {
   return { kind: "unknown", blockType };
 }
 
-function blocksFromPage(page: unknown): Array<LeafletRenderableBlock> {
+function collectReferencedPageIds(page: unknown): Array<string> {
+  if (!isRecord(page)) return [];
+  const blocks = page.blocks;
+  if (!Array.isArray(blocks)) return [];
+
+  const ids: Array<string> = [];
+  for (const entry of blocks) {
+    const inner = unwrapPageBlock(entry);
+    if (inner?.$type === LEAFLET_BLOCK.page && typeof inner.id === "string") {
+      ids.push(inner.id);
+    }
+  }
+  return ids;
+}
+
+function resolvePageBlocks(
+  page: unknown,
+  pagesById: Map<string, unknown>,
+  visiting: Set<string>,
+): Array<LeafletRenderableBlock> {
   if (!isRecord(page)) return [];
   const blocks = page.blocks;
   if (!Array.isArray(blocks)) return [];
@@ -146,10 +212,57 @@ function blocksFromPage(page: unknown): Array<LeafletRenderableBlock> {
   for (const entry of blocks) {
     const inner = unwrapPageBlock(entry);
     if (!inner) continue;
+
+    if (inner.$type === LEAFLET_BLOCK.page) {
+      const pageId = typeof inner.id === "string" ? inner.id : null;
+      if (!pageId || visiting.has(pageId)) continue;
+      const referenced = pagesById.get(pageId);
+      if (!referenced) continue;
+      visiting.add(pageId);
+      result.push(...resolvePageBlocks(referenced, pagesById, visiting));
+      visiting.delete(pageId);
+      continue;
+    }
+
     const parsed = asRenderableBlock(inner);
     if (parsed) result.push(parsed);
   }
   return result;
+}
+
+function blocksFromCanvasPage(page: unknown): Array<LeafletRenderableBlock> {
+  if (!isRecord(page)) return [];
+  const blocks = page.blocks;
+  if (!Array.isArray(blocks)) return [];
+
+  const sorted = blocks.toSorted((left, right) => {
+    const leftY = isRecord(left) && typeof left.y === "number" ? left.y : 0;
+    const rightY = isRecord(right) && typeof right.y === "number" ? right.y : 0;
+    if (leftY !== rightY) return leftY - rightY;
+    const leftX = isRecord(left) && typeof left.x === "number" ? left.x : 0;
+    const rightX = isRecord(right) && typeof right.x === "number" ? right.x : 0;
+    return leftX - rightX;
+  });
+
+  const result: Array<LeafletRenderableBlock> = [];
+  for (const entry of sorted) {
+    const inner = unwrapPageBlock(entry);
+    if (!inner) continue;
+    const parsed = asRenderableBlock(inner);
+    if (parsed) result.push(parsed);
+  }
+  return result;
+}
+
+function blocksFromPage(
+  page: unknown,
+  pagesById: Map<string, unknown>,
+): Array<LeafletRenderableBlock> {
+  if (!isRecord(page)) return [];
+  if (page.$type === LEAFLET_PAGE.canvas) {
+    return blocksFromCanvasPage(page);
+  }
+  return resolvePageBlocks(page, pagesById, new Set());
 }
 
 /** Every renderable block in document order. */
@@ -158,7 +271,27 @@ export function leafletBlocks(content: unknown): Array<LeafletRenderableBlock> {
   if (content.$type !== LEAFLET_CONTENT) return [];
   const pages = content.pages;
   if (!Array.isArray(pages)) return [];
-  return pages.flatMap((page) => blocksFromPage(page));
+
+  const pagesById = new Map<string, unknown>();
+  const referencedIds = new Set<string>();
+
+  for (const page of pages) {
+    if (!isRecord(page) || typeof page.id !== "string") continue;
+    pagesById.set(page.id, page);
+    for (const pageId of collectReferencedPageIds(page)) {
+      referencedIds.add(pageId);
+    }
+  }
+
+  const rootPages = pages.filter(
+    (page) =>
+      isRecord(page) &&
+      typeof page.id === "string" &&
+      !referencedIds.has(page.id),
+  );
+  const pagesToRender = rootPages.length > 0 ? rootPages : pages;
+
+  return pagesToRender.flatMap((page) => blocksFromPage(page, pagesById));
 }
 
 /** AT-URIs of every embedded Bluesky post block, in document order. */
@@ -219,7 +352,20 @@ export function plaintextLinesFromBlock(
       if (description) lines.push(description);
       return lines;
     }
+    case "math": {
+      const tex = block.block.tex?.trim();
+      return tex ? [tex] : [];
+    }
+    case "button": {
+      const label = block.block.text?.trim();
+      return label ? [label] : [];
+    }
+    case "standardSitePost": {
+      return [];
+    }
     case "horizontalRule":
+    case "separator":
+    case "poll":
     case "image":
     case "iframe":
     case "unknown": {
