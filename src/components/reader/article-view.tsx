@@ -558,7 +558,7 @@ function ArticleLikePrompt({
   return (
     <div {...stylex.props(styles.likePrompt)}>
       <h2 {...stylex.props(styles.likePromptTitle)}>
-        Did this piece stay with you?
+        Did this enjoy this document?
       </h2>
       <p {...stylex.props(styles.likePromptSubtext)}>
         Give it a heart — Standard Reader surfaces well-loved writing to more
