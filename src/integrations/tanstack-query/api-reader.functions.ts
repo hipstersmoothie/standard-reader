@@ -12,6 +12,10 @@ import {
 } from "#/server/atproto/repo-records";
 import { ensureTracked } from "#/server/ingest/tap-client";
 import { observe } from "#/server/observability/log";
+import {
+  selectFollowUris,
+  selectUnreadDocumentUris,
+} from "#/server/reader/queries";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 
@@ -55,6 +59,11 @@ export interface RecommendStatus {
 
 export interface ReadStatus {
   isRead: boolean;
+}
+
+export interface MarkAllReadResult {
+  markedCount: number;
+  documentUris: Array<string>;
 }
 
 /** A liked article (`site.standard.graph.recommend`) with hydrated card data. */
@@ -398,6 +407,78 @@ const markUnread = createServerFn({ method: "POST" })
     }),
   );
 
+async function markDocumentsRead(
+  session: NonNullable<Awaited<ReturnType<typeof getAtprotoSessionForRequest>>>,
+  documentUris: Array<string>,
+): Promise<MarkAllReadResult> {
+  if (documentUris.length === 0) {
+    return { markedCount: 0, documentUris: [] };
+  }
+
+  const createdAt = new Date().toISOString();
+  for (const documentUri of documentUris) {
+    await putReadRecord(session.client, session.did, documentUri, createdAt);
+  }
+  await trackReaderRepo(session.did);
+  return { markedCount: documentUris.length, documentUris };
+}
+
+const markPublicationAllRead = createServerFn({ method: "POST" })
+  .middleware([dbMiddleware])
+  .inputValidator(publicationInput)
+  .handler(
+    observe(
+      "reader.markPublicationAllRead",
+      async ({ data, context }, span) => {
+        span.set("publicationUri", data.publicationUri);
+        const session = await getAtprotoSessionForRequest(getRequest());
+        if (!session) {
+          throw new Error("Sign in to track read articles.");
+        }
+        span.set("did", session.did);
+
+        const documentUris = await selectUnreadDocumentUris(
+          context.db,
+          context.schema,
+          {
+            readerDid: session.did,
+            publicationUris: [data.publicationUri],
+          },
+        );
+        span.set("count", documentUris.length);
+        return markDocumentsRead(session, documentUris);
+      },
+    ),
+  );
+
+const markFollowsAllUnreadRead = createServerFn({ method: "POST" })
+  .middleware([dbMiddleware])
+  .handler(
+    observe("reader.markFollowsAllUnreadRead", async ({ context }, span) => {
+      const session = await getAtprotoSessionForRequest(getRequest());
+      if (!session) {
+        throw new Error("Sign in to track read articles.");
+      }
+      span.set("did", session.did);
+
+      const followUris = await selectFollowUris(
+        context.db,
+        context.schema,
+        session.did,
+      );
+      const documentUris = await selectUnreadDocumentUris(
+        context.db,
+        context.schema,
+        {
+          readerDid: session.did,
+          publicationUris: followUris,
+        },
+      );
+      span.set("count", documentUris.length);
+      return markDocumentsRead(session, documentUris);
+    }),
+  );
+
 // ── React Query options (for the UI) ────────────────────────────────────────
 
 function getFollowStatusQueryOptions(publicationUri: string) {
@@ -486,6 +567,23 @@ function markUnreadMutationOptions() {
   });
 }
 
+function markPublicationAllReadMutationOptions() {
+  return mutationOptions({
+    mutationKey: ["reader", "markPublicationAllRead"] as const,
+    mutationFn: async (publicationUri: string) =>
+      markPublicationAllRead({ data: { publicationUri } }),
+    retry: false,
+  });
+}
+
+function markFollowsAllUnreadReadMutationOptions() {
+  return mutationOptions({
+    mutationKey: ["reader", "markFollowsAllUnreadRead"] as const,
+    mutationFn: async () => markFollowsAllUnreadRead(),
+    retry: false,
+  });
+}
+
 export const readerApi = {
   // follow
   getFollowStatus,
@@ -510,6 +608,10 @@ export const readerApi = {
   getReadDocumentsQueryOptions,
   markRead,
   markReadMutationOptions,
+  markPublicationAllRead,
+  markPublicationAllReadMutationOptions,
+  markFollowsAllUnreadRead,
+  markFollowsAllUnreadReadMutationOptions,
   markUnread,
   markUnreadMutationOptions,
 };

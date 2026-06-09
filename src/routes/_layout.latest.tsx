@@ -1,17 +1,27 @@
 "use client";
 
 import * as stylex from "@stylexjs/stylex";
-import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  useSuspenseQuery,
+} from "@tanstack/react-query";
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { feedApi } from "#/integrations/tanstack-query/api-feed.functions";
+import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
 
 import type { ArticleCard } from "../integrations/tanstack-query/api-shapes";
 
 import { ArticleRow } from "../components/reader/cards";
 import { Masthead, ReaderContent } from "../components/reader/primitives";
+import {
+  applyMarkReadManyOptimisticUpdate,
+  invalidateReadQueries,
+} from "../components/reader/read-optimistic";
 import { Button } from "../design-system/button";
 import { Flex } from "../design-system/flex";
 import {
@@ -54,6 +64,18 @@ export const Route = createFileRoute("/_layout/latest")({
 
 const styles = stylex.create({
   controls: {
+    alignItems: {
+      default: "stretch",
+      "@media (min-width: 40rem)": "center",
+    },
+    columnGap: spacing["4"],
+    display: "flex",
+    flexDirection: {
+      default: "column",
+      "@media (min-width: 40rem)": "row",
+    },
+    justifyContent: "space-between",
+    rowGap: spacing["3"],
     marginBottom: spacing["6"],
   },
   emptyCard: {
@@ -100,6 +122,7 @@ const styles = stylex.create({
 function Latest() {
   const { filter } = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
+  const queryClient = useQueryClient();
   const [items, setItems] = useState<Array<ArticleCard>>([]);
   const [nextOffset, setNextOffset] = useState<number | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -123,6 +146,28 @@ function Latest() {
   const signedIn = Boolean(session?.user);
 
   const isUnread = (article: ArticleCard) => signedIn && !article.isRead;
+  const unreadItemUris = useMemo(
+    () =>
+      items
+        .filter((article) => signedIn && !article.isRead)
+        .map((article) => article.uri),
+    [items, signedIn],
+  );
+
+  const { mutate: markAllRead, isPending: markingAllRead } = useMutation({
+    ...readerApi.markFollowsAllUnreadReadMutationOptions(),
+    onMutate: () => {
+      applyMarkReadManyOptimisticUpdate(queryClient, unreadItemUris);
+      setItems([]);
+    },
+    onSuccess: (result) => {
+      applyMarkReadManyOptimisticUpdate(queryClient, result.documentUris);
+      invalidateReadQueries(queryClient);
+    },
+    onError: () => {
+      invalidateReadQueries(queryClient);
+    },
+  });
 
   const onFilterChange = (keys: Set<React.Key> | "all") => {
     const next = keys === "all" ? "all" : ([...keys][0] as "all" | "unread");
@@ -242,6 +287,16 @@ function Latest() {
           <SegmentedControlItem id="all">{allLabel}</SegmentedControlItem>
           <SegmentedControlItem id="unread">{unreadLabel}</SegmentedControlItem>
         </SegmentedControl>
+        {filter === "unread" && feed.counts.unread > 0 ? (
+          <Button
+            variant="tertiary"
+            size="sm"
+            isPending={markingAllRead}
+            onPress={() => markAllRead()}
+          >
+            Mark all as read
+          </Button>
+        ) : null}
       </div>
 
       {items.length === 0 ? (

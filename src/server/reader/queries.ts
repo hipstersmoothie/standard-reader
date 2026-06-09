@@ -145,6 +145,47 @@ export async function selectArticleCards(
   return rows.map((row) => toArticleCard(row));
 }
 
+/** Unread document AT-URIs for a reader, optionally scoped to publications. */
+export async function selectUnreadDocumentUris(
+  db: Db,
+  schema: Schema,
+  opts: {
+    readerDid: string;
+    publicationUris?: Array<string>;
+    limit?: number;
+  },
+): Promise<Array<string>> {
+  const { readerDid, publicationUris, limit = 500 } = opts;
+  if (publicationUris && publicationUris.length === 0) {
+    return [];
+  }
+
+  const d = schema.documents;
+  const r = schema.reads;
+
+  const conds = [eq(d.deleted, false)];
+  if (publicationUris) {
+    conds.push(inArray(d.publicationUri, publicationUris));
+  }
+
+  const rows = await db
+    .select({ uri: d.uri })
+    .from(d)
+    .leftJoin(
+      r,
+      and(
+        eq(r.documentUri, d.uri),
+        eq(r.ownerDid, readerDid),
+        eq(r.deleted, false),
+      ),
+    )
+    .where(and(...conds, isNull(r.uri)))
+    .orderBy(desc(d.publishedAt), desc(d.uri))
+    .limit(limit);
+
+  return rows.map((row) => row.uri);
+}
+
 /**
  * The reader's followed publications as {@link PublicationCard}s, alphabetical
  * by name — backs the sidebar "Following" list. Returns `[]` for readers with

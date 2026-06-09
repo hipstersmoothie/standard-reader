@@ -134,3 +134,19 @@ export function applyMarkReadOptimisticUpdate(
     isRead: true,
   });
 }
+
+/** Batch wrapper around {@link applyMarkReadOptimisticUpdate}. */
+export function applyMarkReadManyOptimisticUpdate(
+  queryClient: QueryClient,
+  documentUris: Array<string>,
+): void {
+  for (const documentUri of documentUris) {
+    applyMarkReadOptimisticUpdate(queryClient, documentUri);
+  }
+}
+
+export function invalidateReadQueries(queryClient: QueryClient): void {
+  void queryClient.invalidateQueries({ queryKey: ["feed"] });
+  void queryClient.invalidateQueries({ queryKey: ["reader", "readDocuments"] });
+  void queryClient.invalidateQueries({ queryKey: ["reader", "readStatus"] });
+}

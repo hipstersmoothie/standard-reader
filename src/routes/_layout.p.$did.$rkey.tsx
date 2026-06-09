@@ -1,7 +1,9 @@
 import * as stylex from "@stylexjs/stylex";
 import {
   keepPreviousData,
+  useMutation,
   useQuery,
+  useQueryClient,
   useSuspenseQuery,
 } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
@@ -29,6 +31,11 @@ import {
   ReaderContent,
   SectionHead,
 } from "../components/reader/primitives";
+import {
+  applyMarkReadManyOptimisticUpdate,
+  invalidateReadQueries,
+} from "../components/reader/read-optimistic";
+import { Button } from "../design-system/button";
 import { Flex } from "../design-system/flex";
 import { IconButton } from "../design-system/icon-button";
 import { uiColor } from "../design-system/theme/color.stylex";
@@ -220,6 +227,7 @@ function Stat({ value, label }: { value: string; label: string }) {
 function PublicationProfile() {
   const { did, rkey } = Route.useParams();
   const uri = publicationUriFromParams(did, rkey);
+  const queryClient = useQueryClient();
   const { data: profile } = useSuspenseQuery(
     publicationApi.getPublicationProfileQueryOptions(uri, {
       recentLimit: PUBLICATION_RECENT_LIMIT,
@@ -266,6 +274,27 @@ function PublicationProfile() {
   const readSet = useMemo(() => new Set(readUris ?? []), [readUris]);
   const isUnread = (documentUri: string) =>
     signedIn && !readSet.has(documentUri);
+  const unreadDocumentUris = useMemo(
+    () =>
+      documents
+        .filter((doc) => signedIn && !readSet.has(doc.uri))
+        .map((doc) => doc.uri),
+    [documents, readSet, signedIn],
+  );
+
+  const { mutate: markAllRead, isPending: markingAllRead } = useMutation({
+    ...readerApi.markPublicationAllReadMutationOptions(),
+    onMutate: () => {
+      applyMarkReadManyOptimisticUpdate(queryClient, unreadDocumentUris);
+    },
+    onSuccess: (result) => {
+      applyMarkReadManyOptimisticUpdate(queryClient, result.documentUris);
+      invalidateReadQueries(queryClient);
+    },
+    onError: () => {
+      invalidateReadQueries(queryClient);
+    },
+  });
 
   const loadMore = useCallback(async () => {
     if (nextOffset == null || loadingMoreRef.current) return;
@@ -388,7 +417,22 @@ function PublicationProfile() {
 
       <ReaderContent>
         <Flex direction="column" gap="6xl" style={styles.writing}>
-          <SectionHead kicker="Latest" title="Recent writing" />
+          <SectionHead
+            kicker="Latest"
+            title="Recent writing"
+            action={
+              signedIn && unreadDocumentUris.length > 0 ? (
+                <Button
+                  variant="tertiary"
+                  size="sm"
+                  isPending={markingAllRead}
+                  onPress={() => markAllRead(uri)}
+                >
+                  Mark all as read
+                </Button>
+              ) : undefined
+            }
+          />
           {documents.length === 0 ? (
             <div {...stylex.props(styles.emptyNote)}>
               No posts indexed from this publication yet.
