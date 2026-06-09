@@ -2,7 +2,15 @@ import type { ArticleDetail } from "#/integrations/tanstack-query/api-publicatio
 import type { ArticleCard } from "#/integrations/tanstack-query/api-shapes";
 
 import { parseArticleBlocks } from "#/lib/document/blocks";
+import {
+  LEAFLET_DOCUMENT_FORMAT,
+  altMarkdownText,
+  htmlContentPlaintext,
+  leafletDocumentContent,
+  structuredFormatBlocks,
+} from "#/lib/document/content-formats";
 import { markdownPlaintext } from "#/lib/document/structured-content/markdown";
+import { structuredPlaintextFromBlocks } from "#/lib/document/structured-content/plaintext";
 import { STANDARD_MARKDOWN_CONTENT } from "#/lib/document/structured-content/types";
 import { leafletBskyPostUris } from "#/lib/leaflet/blocks";
 import { leafletPlaintext } from "#/lib/leaflet/plaintext";
@@ -68,6 +76,12 @@ export function articleReadingText(
   if (contentType === LEAFLET_CONTENT) {
     return leafletPlaintext(article.contentJson, bskyPostText);
   }
+  if (contentType === LEAFLET_DOCUMENT_FORMAT) {
+    return leafletPlaintext(
+      leafletDocumentContent(article.contentJson),
+      bskyPostText,
+    );
+  }
   if (contentType === PCKT_CONTENT) {
     const text = pcktPlaintext(article.contentJson);
     if (text?.trim()) return text;
@@ -80,6 +94,16 @@ export function articleReadingText(
     const text = markdownPlaintext(article.contentJson);
     if (text?.trim()) return text;
   }
+
+  const structured = structuredFormatBlocks(article.contentJson, contentType);
+  if (structured) {
+    const text = structuredPlaintextFromBlocks(structured);
+    if (text?.trim()) return text;
+  }
+  const markdown = altMarkdownText(article.contentJson, contentType);
+  if (markdown?.trim()) return markdown;
+  const htmlText = htmlContentPlaintext(article.contentJson, contentType);
+  if (htmlText?.trim()) return htmlText;
 
   const blocks = parseArticleBlocks({
     textContent: null,

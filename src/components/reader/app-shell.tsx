@@ -313,8 +313,11 @@ const styles = stylex.create({
   },
   fabIndicatorGlide: {
     transitionDuration: animationDuration.verySlow,
-    transitionProperty: "transform, width",
+    transitionProperty: "transform, width, opacity",
     transitionTimingFunction: "cubic-bezier(0.32, 0.72, 0, 1)",
+  },
+  fabIndicatorHidden: {
+    opacity: 0,
   },
   bottomItem: {
     borderWidth: 0,
@@ -563,8 +566,8 @@ function BottomNav({ hasUnread }: { hasUnread: boolean }) {
   // instantly, then enabled so subsequent route changes animate the slide.
   const [glide, setGlide] = useState(false);
 
-  // Article / publication routes have no matching tab (activeIndex < 0); in
-  // that case we intentionally leave the indicator where it last settled.
+  // Article / publication routes have no matching tab (activeIndex < 0); the
+  // indicator keeps its last position but fades out (see fabIndicatorHidden).
   useLayoutEffect(() => {
     if (activeIndex === -1) return;
     const el = itemRefs.current[activeIndex];
@@ -587,6 +590,7 @@ function BottomNav({ hasUnread }: { hasUnread: boolean }) {
   const indicatorProps = stylex.props(
     styles.fabIndicator,
     glide && styles.fabIndicatorGlide,
+    activeIndex === -1 && styles.fabIndicatorHidden,
   );
 
   return (

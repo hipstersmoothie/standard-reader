@@ -1,6 +1,13 @@
 import type { JsonValue } from "#/integrations/tanstack-query/api-shapes";
 
 import { parseArticleBlocks } from "#/lib/document/blocks";
+import {
+  LEAFLET_DOCUMENT_FORMAT,
+  altMarkdownText,
+  htmlContentBody,
+  leafletDocumentContent,
+  structuredFormatBlocks,
+} from "#/lib/document/content-formats";
 import { markdownPlaintext } from "#/lib/document/structured-content/markdown";
 import { STANDARD_MARKDOWN_CONTENT } from "#/lib/document/structured-content/types";
 import { leafletBlocks } from "#/lib/leaflet/blocks";
@@ -54,6 +61,16 @@ export function hasRenderableArticleBody(article: ArticleBodyFields): boolean {
   if (contentType === STANDARD_MARKDOWN_CONTENT) {
     return Boolean(markdownPlaintext(article.contentJson));
   }
+  if (contentType === LEAFLET_DOCUMENT_FORMAT) {
+    return (
+      leafletBlocks(leafletDocumentContent(article.contentJson)).length > 0
+    );
+  }
+
+  const structured = structuredFormatBlocks(article.contentJson, contentType);
+  if (structured) return structured.length > 0;
+  if (altMarkdownText(article.contentJson, contentType)) return true;
+  if (htmlContentBody(article.contentJson, contentType)) return true;
 
   const blocks = parseArticleBlocks({
     textContent: null,

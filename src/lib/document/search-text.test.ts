@@ -1,11 +1,7 @@
+import { PCKT_BLOCK, PCKT_CONTENT } from "#/lib/pckt/types";
 import { describe, expect, it } from "vitest";
 
-import {
-  documentSearchText,
-  repairCompoundedSearchText,
-} from "./search-text";
-
-import { PCKT_BLOCK, PCKT_CONTENT } from "#/lib/pckt/types";
+import { documentSearchText, repairCompoundedSearchText } from "./search-text";
 
 const BODY = "shoulders are badly designed.\n\nmost joints favor stability.";
 
@@ -38,6 +34,17 @@ describe("documentSearchText", () => {
         contentFormat: PCKT_CONTENT,
       }),
     ).toBe(reflowed);
+  });
+
+  it("dedupes when only markdown decoration differs (bullets, headings)", () => {
+    const decorated = `# ${BODY.replaceAll("\n\n", "\n- ")}`;
+    expect(
+      documentSearchText({
+        textContent: decorated,
+        contentJson: pcktJson,
+        contentFormat: PCKT_CONTENT,
+      }),
+    ).toBe(decorated);
   });
 
   it("keeps record text that extends beyond the extracted blocks", () => {
