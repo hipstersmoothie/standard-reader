@@ -19,6 +19,7 @@ import {
   editorialUi,
 } from "../components/reader/theme";
 import { ui } from "../design-system/theme/semantic-color.stylex";
+import { PlausibleAnalytics } from "../integrations/plausible/analytics";
 import { user } from "../integrations/tanstack-query/api-user.functions";
 import { DEFAULT_THEME_MODE, RESOLVED_SCHEME_SCRIPT } from "../lib/theme";
 import appCss from "../styles.css?url";
@@ -134,6 +135,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         )}
       >
         <PersistOAuthSavedHandle />
+        <PlausibleAnalytics />
         {children}
 
         <TanStackDevtools
