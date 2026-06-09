@@ -49,8 +49,10 @@ import { dbMiddleware } from "./db-middleware";
  * The profile assembles the header (publication + owner identity + stats),
  * recent writing, and the "readers also follow" rail. The article query returns
  * full content plus its publication card, byline contributors, and recommend
- * count. Opening an article marks it read via `readerApi.markRead` from the UI —
- * this GET stays side-effect-free.
+ * count; below-the-fold rails load via `getArticleExtras` on the client.
+ * Comment count uses Constellation count endpoints (started in parallel with
+ * content resolution). Opening an article marks it read via `readerApi.markRead`
+ * from the UI — this GET stays side-effect-free.
  */
 
 const profileInput = z.object({
@@ -66,6 +68,10 @@ const documentsInput = z.object({
 });
 
 const articleInput = z.object({
+  documentUri: z.string().min(1),
+});
+
+const articleExtrasInput = z.object({
   documentUri: z.string().min(1),
   alsoFollowLimit: z.number().int().min(1).max(20).default(3),
 });
@@ -148,6 +154,12 @@ export interface ArticleDetail {
   /** Other recent posts from the same publication (excludes this article). */
   moreFrom: Array<ArticleCard>;
   /** Co-subscribed publications for readers of this one ("You might follow"). */
+  readersAlsoFollow: Array<PublicationCard>;
+}
+
+/** Below-the-fold article data — loaded client-side after the reading view paints. */
+export interface ArticleExtras {
+  moreFrom: Array<ArticleCard>;
   readersAlsoFollow: Array<PublicationCard>;
 }
 
@@ -354,6 +366,12 @@ const getArticle = createServerFn({ method: "GET" })
         }
         span.set("found", true);
 
+        const commentCountPromise = countDocumentComments(
+          db,
+          schema,
+          data.documentUri,
+        );
+
         const [authorProfile] = await db
           .select({ pds: pr.pds })
           .from(pr)
@@ -389,30 +407,6 @@ const getArticle = createServerFn({ method: "GET" })
         );
 
         const session = await getAtprotoSessionForRequest(getRequest());
-        const readerDid = session?.did;
-
-        const [moreFromRaw, recommendedRaw] = await Promise.all([
-          row.publicationUri
-            ? selectArticleCards(db, schema, {
-                publicationUris: [row.publicationUri],
-                limit: 4,
-              })
-            : Promise.resolve([]),
-          articleRecommendedPublications(db, schema, {
-            publicationUri: row.publicationUri,
-            readerDid,
-            limit: data.alsoFollowLimit,
-          }),
-        ]);
-
-        const moreFrom = moreFromRaw
-          .filter((doc) => doc.uri !== row.uri)
-          .slice(0, 3);
-        const [moreFromWithComments, commentCount] = await Promise.all([
-          attachCommentCountsToArticles(db, schema, moreFrom),
-          countDocumentComments(db, schema, row.uri),
-        ]);
-        const readersAlsoFollowPubs = recommendedRaw;
 
         const authorPdsEndpoint = await authorPds(
           row.did,
@@ -484,10 +478,10 @@ const getArticle = createServerFn({ method: "GET" })
                   ? []
                   : [];
 
-        const codeHighlights = await codeHighlightsForThemeMode(
-          codeBlocks,
-          themeMode,
-        );
+        const [codeHighlights, commentCount] = await Promise.all([
+          codeHighlightsForThemeMode(codeBlocks, themeMode),
+          commentCountPromise,
+        ]);
 
         return {
           uri: row.uri,
@@ -516,8 +510,68 @@ const getArticle = createServerFn({ method: "GET" })
           readCount: readRows[0]?.count ?? 0,
           recommendCount: recommendRows[0]?.count ?? 0,
           commentCount,
+          moreFrom: [],
+          readersAlsoFollow: [],
+        };
+      },
+    ),
+  );
+
+const getArticleExtras = createServerFn({ method: "GET" })
+  .middleware([dbMiddleware])
+  .inputValidator(articleExtrasInput)
+  .handler(
+    observe(
+      "publication.getArticleExtras",
+      async ({ data, context }, span): Promise<ArticleExtras> => {
+        const { db, schema } = context;
+        const d = schema.documents;
+        span.set("documentUri", data.documentUri);
+
+        const [row] = await db
+          .select({
+            uri: d.uri,
+            publicationUri: d.publicationUri,
+          })
+          .from(d)
+          .where(eq(d.uri, data.documentUri))
+          .limit(1);
+
+        if (!row) {
+          span.set("found", false);
+          return { moreFrom: [], readersAlsoFollow: [] };
+        }
+        span.set("found", true);
+
+        const session = await getAtprotoSessionForRequest(getRequest());
+        const readerDid = session?.did;
+
+        const [moreFromRaw, recommendedRaw] = await Promise.all([
+          row.publicationUri
+            ? selectArticleCards(db, schema, {
+                publicationUris: [row.publicationUri],
+                limit: 4,
+              })
+            : Promise.resolve([]),
+          articleRecommendedPublications(db, schema, {
+            publicationUri: row.publicationUri,
+            readerDid,
+            limit: data.alsoFollowLimit,
+          }),
+        ]);
+
+        const moreFrom = moreFromRaw
+          .filter((doc) => doc.uri !== row.uri)
+          .slice(0, 3);
+        const moreFromWithComments = await attachCommentCountsToArticles(
+          db,
+          schema,
+          moreFrom,
+        );
+
+        return {
           moreFrom: moreFromWithComments,
-          readersAlsoFollow: readersAlsoFollowPubs,
+          readersAlsoFollow: recommendedRaw,
         };
       },
     ),
@@ -563,6 +617,14 @@ function getArticleQueryOptions(documentUri: string) {
   });
 }
 
+function getArticleExtrasQueryOptions(documentUri: string) {
+  return queryOptions({
+    queryKey: ["article", "extras", documentUri] as const,
+    queryFn: async () => getArticleExtras({ data: { documentUri } }),
+    staleTime: 60_000,
+  });
+}
+
 export const publicationApi = {
   getPublicationProfile,
   getPublicationProfileQueryOptions,
@@ -570,4 +632,6 @@ export const publicationApi = {
   getPublicationDocumentsQueryOptions,
   getArticle,
   getArticleQueryOptions,
+  getArticleExtras,
+  getArticleExtrasQueryOptions,
 };

@@ -106,6 +106,68 @@ function parseBacklinksPayload(payload: unknown): ConstellationBacklinksResult {
   return { total, records, cursor: nextCursor };
 }
 
+function parseBacklinksCountPayload(payload: unknown): number {
+  if (!isRecord(payload)) return 0;
+  return typeof payload.total === "number" ? payload.total : 0;
+}
+
+function parseLegacyCountBody(body: string): number {
+  const trimmed = body.trim();
+  if (!trimmed) return 0;
+  const parsed = Number.parseInt(trimmed, 10);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+/**
+ * Total backlinks for one target + source via Constellation's count endpoint.
+ * Best-effort; returns 0 on timeout or any network/parse failure.
+ */
+async function fetchBacklinksCount({
+  target,
+  source,
+}: {
+  target: string;
+  source: string;
+}): Promise<number> {
+  if (!target.trim() || !source.trim()) return 0;
+
+  const parsed = parseSourceSpec(source);
+  if (!parsed) return 0;
+
+  try {
+    const useLegacyLinks = isHttpUrl(target);
+    const url = useLegacyLinks
+      ? new URL("/links/count", constellationBaseUrl())
+      : new URL(
+          "/xrpc/blue.microcosm.links.getBacklinksCount",
+          constellationBaseUrl(),
+        );
+
+    if (useLegacyLinks) {
+      url.searchParams.set("target", target);
+      url.searchParams.set("collection", parsed.collection);
+      url.searchParams.set("path", parsed.path);
+    } else {
+      url.searchParams.set("subject", target);
+      url.searchParams.set("source", source);
+    }
+
+    const response = await fetch(url.toString(), {
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+      headers: constellationHeaders(),
+    });
+    if (!response.ok) return 0;
+
+    if (useLegacyLinks) {
+      return parseLegacyCountBody(await response.text());
+    }
+
+    return parseBacklinksCountPayload(await response.json());
+  } catch {
+    return 0;
+  }
+}
+
 async function fetchBacklinksPage({
   target,
   source,
@@ -203,7 +265,7 @@ async function getAllBacklinksForSource(
 }
 
 /**
- * Cheap backlink total for trending — one page per source, sum `total` fields.
+ * Cheap backlink total for trending — Constellation count endpoint per source.
  * Best-effort; returns 0 on failure.
  */
 export async function getBacklinkCountForTarget(
@@ -212,14 +274,9 @@ export async function getBacklinkCountForTarget(
   if (!target.trim()) return 0;
 
   const totals = await Promise.all(
-    BSKY_POST_LINK_SOURCES.map(async (source) => {
-      const page = await fetchBacklinksPage({
-        target,
-        source,
-        limit: 1,
-      });
-      return page.total;
-    }),
+    BSKY_POST_LINK_SOURCES.map((source) =>
+      fetchBacklinksCount({ target, source }),
+    ),
   );
 
   return totals.reduce((sum, n) => sum + n, 0);

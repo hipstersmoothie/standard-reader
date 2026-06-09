@@ -16,7 +16,10 @@ import {
   normalizeQuoteText,
 } from "#/lib/quote-share";
 import { getDirectRepliesToPost, getPosts } from "#/server/atproto/bsky-posts";
-import { getPostBacklinksForTarget } from "#/server/atproto/constellation";
+import {
+  getBacklinkCountForTarget,
+  getPostBacklinksForTarget,
+} from "#/server/atproto/constellation";
 import { buildCanonicalUrl } from "#/server/ingest/mappers";
 import { listQuoteSharesForDocument } from "#/server/reader/quote-shares";
 import { eq } from "drizzle-orm";
@@ -269,17 +272,23 @@ async function discoverDocumentComments(
   return { postMeta, authorPostReplyUris, bskyPostUri };
 }
 
-async function countDocumentCommentPosts(
-  discovery: CommentDiscovery,
+async function countConstellationBacklinksForTargets(
+  targets: Array<CommentTarget>,
 ): Promise<number> {
-  if (discovery.postMeta.size === 0) return 0;
+  if (targets.length === 0) return 0;
 
-  const posts = await getPosts([...discovery.postMeta.keys()]);
-  let count = 0;
-  for (const post of posts) {
-    if (isDocumentCommentPost(post, discovery)) count += 1;
-  }
-  return count;
+  const counts = await Promise.all(
+    targets.map((target) => getBacklinkCountForTarget(target.url)),
+  );
+  return counts.reduce((sum, count) => sum + count, 0);
+}
+
+async function countAuthorPostReplies(
+  bskyPostUri: string | null,
+): Promise<number> {
+  if (!bskyPostUri?.startsWith("at://")) return 0;
+  const replies = await getDirectRepliesToPost(bskyPostUri);
+  return replies.length;
 }
 
 async function loadDocumentCommentTargets(
@@ -331,7 +340,7 @@ async function loadDocumentCommentTargets(
   };
 }
 
-/** Count top-level Bluesky posts linking this document (cached, best-effort). */
+/** Count Bluesky posts linking this document (Constellation counts + author-post replies). */
 export async function countDocumentComments(
   dbClient: typeof db,
   schemaModule: typeof schema,
@@ -356,11 +365,11 @@ export async function countDocumentComments(
       return 0;
     }
 
-    const discovery = await discoverDocumentComments(
-      context.targets,
-      context.bskyPostUri,
-    );
-    const count = await countDocumentCommentPosts(discovery);
+    const [backlinkCount, replyCount] = await Promise.all([
+      countConstellationBacklinksForTargets(context.targets),
+      countAuthorPostReplies(context.bskyPostUri),
+    ]);
+    const count = backlinkCount + replyCount;
     commentCountCache.set(documentUri, {
       count,
       expiresAt: Date.now() + COMMENT_COUNT_TTL_MS,

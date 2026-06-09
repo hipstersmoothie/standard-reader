@@ -12,7 +12,6 @@ import { Link, useRouter } from "@tanstack/react-router";
 import { AppLink } from "#/components/reader/app-link";
 import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
-import { parseInternalRoute } from "#/lib/internal-route";
 import { usePageReader } from "#/lib/page-reader/page-reader-context";
 import { buildBlueskyComposeUrl } from "#/lib/quote-share";
 import {
@@ -24,8 +23,6 @@ import {
   Share2,
 } from "lucide-react";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-
-import type { ArticleCard } from "../../integrations/tanstack-query/api-shapes";
 
 import { Avatar } from "../../design-system/avatar";
 import { Button } from "../../design-system/button";
@@ -51,14 +48,10 @@ import {
   lineHeight,
   tracking,
 } from "../../design-system/theme/typography.stylex";
-import { FollowButton, MiniPubRow } from "./cards";
-import { CommentsSection } from "./comments/comments-section";
+import { ArticleBelowFold } from "./article-below-fold";
+import { FollowButton } from "./cards";
 import { ArticleContent } from "./content/article-content";
-import {
-  articleCardReadingText,
-  articleReadingText,
-  articleSpeechText,
-} from "./content/extract-text";
+import { articleReadingText, articleSpeechText } from "./content/extract-text";
 import {
   articlePublicationUrl,
   documentLinkParams,
@@ -68,14 +61,12 @@ import {
   formatReadingTime,
   initials,
   publicationLinkParams,
-  readingMinutes,
 } from "./format";
 import {
   ArticleEngagement,
   Handle,
   Kicker,
   PublicationAvatar,
-  SectionHead,
   Topic,
 } from "./primitives";
 import { QuoteShareLayer } from "./quote-share-layer";
@@ -355,36 +346,6 @@ const styles = stylex.create({
     fontSize: fontSize.lg,
     fontWeight: fontWeight.semibold,
   },
-  moreFrom: {
-    boxSizing: "border-box",
-    marginLeft: "auto",
-    marginRight: "auto",
-    maxWidth: MEASURE,
-    paddingBottom: spacing["20"],
-    paddingLeft: spacing["6"],
-    paddingRight: spacing["6"],
-    width: "100%",
-  },
-  moreRow: {
-    textDecoration: "none",
-    alignItems: "baseline",
-    color: "inherit",
-    columnGap: gap.lg,
-    display: "flex",
-    rowGap: gap.lg,
-    borderBottomColor: uiColor.border1,
-    borderBottomStyle: "solid",
-    borderBottomWidth: 1,
-    paddingBottom: spacing["3"],
-    paddingTop: spacing["3"],
-  },
-  moreTitle: {
-    color: uiColor.text2,
-    fontFamily: fontFamily.serif,
-    fontSize: fontSize.lg,
-    fontWeight: fontWeight.medium,
-    lineHeight: lineHeight.sm,
-  },
   emptyNote: {
     color: uiColor.text1,
     fontFamily: fontFamily.serif,
@@ -586,89 +547,6 @@ function ArticleLikePrompt({
         </span>
       </Button>
     </div>
-  );
-}
-
-function MoreFromRow({
-  article,
-  publicationName,
-}: {
-  article: ArticleCard;
-  publicationName: string;
-}) {
-  const params = documentLinkParams(article.uri);
-  const minutes = readingMinutes(articleCardReadingText(article));
-  const body = (
-    <>
-      <Flex direction="column" gap="sm" style={styles.footGrow}>
-        <span {...stylex.props(styles.moreTitle)}>{article.title}</span>
-        <span {...stylex.props(styles.bylineMeta)}>
-          {minutes == null
-            ? publicationName
-            : `${publicationName} · ${minutes} min`}
-        </span>
-      </Flex>
-    </>
-  );
-
-  // Only route through the in-app reader when there's a body to render;
-  // "external" posts (no renderable body) link straight out in a new tab.
-  if (params && article.hasRenderableBody) {
-    return (
-      <Link
-        to="/a/$did/$rkey"
-        params={params}
-        {...stylex.props(styles.moreRow)}
-      >
-        {body}
-      </Link>
-    );
-  }
-
-  const href = article.canonicalUrl;
-  if (!href) {
-    // Non-renderable but no external URL: fall back to the in-app record page.
-    if (params) {
-      return (
-        <Link
-          to="/a/$did/$rkey"
-          params={params}
-          {...stylex.props(styles.moreRow)}
-        >
-          {body}
-        </Link>
-      );
-    }
-    return null;
-  }
-  const internal = parseInternalRoute(href);
-  if (internal?.params) {
-    return (
-      <Link
-        to={internal.to}
-        params={internal.params}
-        {...stylex.props(styles.moreRow)}
-      >
-        {body}
-      </Link>
-    );
-  }
-  if (internal) {
-    return (
-      <Link to={internal.to} {...stylex.props(styles.moreRow)}>
-        {body}
-      </Link>
-    );
-  }
-  return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noreferrer"
-      {...stylex.props(styles.moreRow)}
-    >
-      {body}
-    </a>
   );
 }
 
@@ -1030,44 +908,10 @@ function ArticleViewBody({
           ) : null}
         </article>
 
-        {pub && article.moreFrom.length > 0 ? (
-          <div {...stylex.props(styles.moreFrom)}>
-            <Flex direction="column">
-              <SectionHead
-                kicker={`More from ${pub.name}`}
-                title="Keep reading"
-              />
-              <div>
-                {article.moreFrom.map((doc) => (
-                  <MoreFromRow
-                    key={doc.uri}
-                    article={doc}
-                    publicationName={pub.name}
-                  />
-                ))}
-              </div>
-            </Flex>
-          </div>
-        ) : null}
-
-        {linkParams ? <CommentsSection documentUri={article.uri} /> : null}
-
-        {article.readersAlsoFollow.length > 0 ? (
-          <div {...stylex.props(styles.moreFrom)}>
-            <Flex direction="column">
-              <SectionHead kicker="Discover" title="You might follow" />
-              <div>
-                {article.readersAlsoFollow.map((suggestedPub, i, pubs) => (
-                  <MiniPubRow
-                    key={suggestedPub.uri}
-                    pub={suggestedPub}
-                    isLast={i === pubs.length - 1}
-                  />
-                ))}
-              </div>
-            </Flex>
-          </div>
-        ) : null}
+        <ArticleBelowFold
+          article={article}
+          showComments={Boolean(linkParams)}
+        />
       </div>
     </div>
   );
