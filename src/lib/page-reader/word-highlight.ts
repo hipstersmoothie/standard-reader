@@ -247,6 +247,17 @@ export function rangeForToken(map: HighlightMap, index: number): Range | null {
   return rangeFromOffsets(map.spans, token.start, token.end);
 }
 
+/** DOM range covering a sentence's whole word run, if still resolvable. */
+export function rangeForSentence(
+  map: HighlightMap,
+  run: SentenceRun,
+): Range | null {
+  const first = map.tokens[run.first];
+  const last = map.tokens[run.first + run.count - 1];
+  if (!first || !last) return null;
+  return rangeFromOffsets(map.spans, first.start, last.end);
+}
+
 let activeHighlight: HighlightLike | null = null;
 
 function highlightRegistry(): HighlightRegistryLike | undefined {

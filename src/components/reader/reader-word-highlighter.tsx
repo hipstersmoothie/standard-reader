@@ -8,10 +8,9 @@ import {
   buildHighlightMap,
   clearWordHighlight,
   matchedSentenceCount,
-  rangeForToken,
+  rangeForSentence,
   scrollWordIntoView,
   setWordHighlight,
-  tokenIndexForProgress,
 } from "#/lib/page-reader/word-highlight";
 import { useEffect, useRef } from "react";
 
@@ -29,11 +28,11 @@ const SCROLL_UNLOCK_KEYS = new Set([
 ]);
 
 /**
- * Drives karaoke-style word highlighting for the article that's currently
- * playing. It aligns the engine's narration sentences to this article's DOM and,
- * while playing, moves a CSS highlight to the active word. Auto-scroll follows
- * the active word until the user scrolls manually; they can re-lock from the
- * player bar. Renders nothing.
+ * Drives sentence highlighting for the article that's currently playing. It
+ * aligns the engine's narration sentences to this article's DOM and, while
+ * playing, moves a CSS highlight to the active sentence. Auto-scroll follows
+ * the active sentence until the user scrolls manually; they can re-lock from
+ * the player bar. Renders nothing.
  */
 export function ReaderWordHighlighter({
   rootRef,
@@ -55,7 +54,7 @@ export function ReaderWordHighlighter({
 
   const mapRef = useRef<HighlightMap | null>(null);
   const builtForRef = useRef<ReadonlyArray<string> | null>(null);
-  const lastTokenRef = useRef(-1);
+  const lastSentenceRef = useRef(-1);
   const lastBuildRef = useRef(0);
   const forceScrollRef = useRef(false);
   const prevScrollLockedRef = useRef(scrollLocked);
@@ -65,12 +64,12 @@ export function ReaderWordHighlighter({
   useEffect(() => {
     mapRef.current = null;
     builtForRef.current = null;
-    lastTokenRef.current = -1;
+    lastSentenceRef.current = -1;
     lastBuildRef.current = 0;
     forceScrollRef.current = false;
   }, [isCurrent, articleUri]);
 
-  // Re-lock from the player bar: jump to the active word on the next frame.
+  // Re-lock from the player bar: jump to the active sentence on the next frame.
   useEffect(() => {
     if (scrollLocked && !prevScrollLockedRef.current) {
       forceScrollRef.current = true;
@@ -132,13 +131,14 @@ export function ReaderWordHighlighter({
     };
   }, [isCurrent, status, scrollLocked, rootRef, unlockScroll]);
 
-  // Move the highlight to the active word each frame while playing. The map is
-  // built lazily here (once sentences + content are ready, regardless of how
-  // long the model took to load). Pausing leaves the word lit; leaving clears it.
+  // Move the highlight to the active sentence each frame while playing. The map
+  // is built lazily here (once sentences + content are ready, regardless of how
+  // long the model took to load). Pausing leaves the sentence lit; leaving
+  // clears it.
   useEffect(() => {
     if (!isCurrent) {
       clearWordHighlight();
-      lastTokenRef.current = -1;
+      lastSentenceRef.current = -1;
       return;
     }
     if (status !== "playing") return;
@@ -158,7 +158,7 @@ export function ReaderWordHighlighter({
           dirtyTimer = null;
           mapRef.current = null;
           builtForRef.current = null;
-          lastTokenRef.current = -1;
+          lastSentenceRef.current = -1;
           lastBuildRef.current = 0;
         }, 150);
       });
@@ -182,7 +182,7 @@ export function ReaderWordHighlighter({
         map = null;
         mapRef.current = null;
         builtForRef.current = null;
-        lastTokenRef.current = -1;
+        lastSentenceRef.current = -1;
         clearWordHighlight();
       }
 
@@ -204,22 +204,21 @@ export function ReaderWordHighlighter({
       const run = map.sentenceTokens[progress.index];
       if (!run) return;
 
-      const tokenIndex = tokenIndexForProgress(run, progress.fraction);
-      const tokenChanged = tokenIndex !== lastTokenRef.current;
+      const sentenceChanged = progress.index !== lastSentenceRef.current;
       const shouldFollow =
-        scrollLocked && (tokenChanged || forceScrollRef.current);
-      if (!tokenChanged && !forceScrollRef.current) return;
+        scrollLocked && (sentenceChanged || forceScrollRef.current);
+      if (!sentenceChanged && !forceScrollRef.current) return;
 
-      const range = rangeForToken(map, tokenIndex);
+      const range = rangeForSentence(map, run);
       if (!range) {
         // DOM changed under us; rebuild on a later frame.
         mapRef.current = null;
         return;
       }
-      lastTokenRef.current = tokenIndex;
+      lastSentenceRef.current = progress.index;
 
       const root = rootRef.current;
-      if (tokenChanged) setWordHighlight(range);
+      if (sentenceChanged) setWordHighlight(range);
 
       if (shouldFollow && root) {
         scrollWordIntoView(range, root);

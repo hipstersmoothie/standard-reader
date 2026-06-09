@@ -16,14 +16,16 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Page-reader "current word" highlight (CSS Custom Highlight API). Highlight
-   pseudo-elements only accept color/background-color and don't reliably resolve
-   theme-token custom properties, so this uses a literal translucent amber that
-   reads as a highlighter on both light and dark backgrounds. */
+/* Page-reader "current sentence" highlight (CSS Custom Highlight API).
+   Highlight pseudo-elements only accept color/background-color and don't
+   reliably resolve theme-token custom properties, so this uses a literal
+   translucent amber that reads as a highlighter on both light and dark
+   backgrounds. Softer than the old per-word wash since it now covers a whole
+   sentence. */
 ::highlight(reader-word) {
   background-color: var(
     --current-word-highlight-background-color,
-    oklch(0.86 0.16 92 / 0.4)
+    oklch(0.86 0.16 92 / 0.25)
   );
   color: var(--current-word-highlight-color, inherit);
 }
