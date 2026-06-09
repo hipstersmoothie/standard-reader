@@ -127,7 +127,7 @@ Sections, top to bottom:
   stays pitch-preserving (changing speed re-synthesizes from the current
   sentence).
 - Footer: publication card + follow; "More from {publication}".
-- **Discussion:** Bluesky posts linking the article (external URL or app quote shares), read-only — reply counts link out to bsky threads.
+- **Discussion:** Bluesky posts linking the article (external URL or app quote shares), plus direct replies to the author's linked announcement post (`bskyPostRef`), read-only — reply counts link out to bsky threads. The announcement post itself is not listed as a comment.
 - Opening an article marks it read.
 
 ### Publication profile

@@ -126,3 +126,48 @@ export async function getPosts(
   );
   return results.flat();
 }
+
+function parseThreadViewPost(value: unknown): BskyPostView | null {
+  if (!isRecord(value)) return null;
+  if (value.$type !== "app.bsky.feed.defs#threadViewPost") return null;
+  return parsePostView(value.post);
+}
+
+async function fetchPostThread(
+  uri: string,
+  depth: number,
+): Promise<Array<BskyPostView>> {
+  if (!uri.startsWith("at://")) return [];
+
+  try {
+    const url = new URL("/xrpc/app.bsky.feed.getPostThread", PUBLIC_APPVIEW);
+    url.searchParams.set("uri", uri);
+    url.searchParams.set("depth", String(depth));
+    url.searchParams.set("parentHeight", "0");
+
+    const response = await fetch(url.toString(), {
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+      headers: { Accept: "application/json" },
+    });
+    if (!response.ok) return [];
+
+    const payload: unknown = await response.json();
+    if (!isRecord(payload) || !isRecord(payload.thread)) return [];
+
+    const replies = payload.thread.replies;
+    if (!Array.isArray(replies)) return [];
+
+    return replies
+      .map((reply) => parseThreadViewPost(reply))
+      .filter((post): post is BskyPostView => post != null);
+  } catch {
+    return [];
+  }
+}
+
+/** Direct replies to a post (depth 1), best-effort via public AppView. */
+export async function getDirectRepliesToPost(
+  postUri: string,
+): Promise<Array<BskyPostView>> {
+  return fetchPostThread(postUri, 1);
+}

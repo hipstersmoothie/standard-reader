@@ -15,7 +15,7 @@ import {
   buildQuoteShareUrl,
   normalizeQuoteText,
 } from "#/lib/quote-share";
-import { getPosts } from "#/server/atproto/bsky-posts";
+import { getDirectRepliesToPost, getPosts } from "#/server/atproto/bsky-posts";
 import { getPostBacklinksForTarget } from "#/server/atproto/constellation";
 import { buildCanonicalUrl } from "#/server/ingest/mappers";
 import { listQuoteSharesForDocument } from "#/server/reader/quote-shares";
@@ -49,6 +49,13 @@ interface CommentTarget {
 interface PostLinkMeta {
   kind: "link" | "quote";
   quoteText: string | null;
+}
+
+interface CommentDiscovery {
+  postMeta: Map<string, PostLinkMeta>;
+  /** Direct replies to the document's author announcement post. */
+  authorPostReplyUris: Set<string>;
+  bskyPostUri: string | null;
 }
 
 function postUriFromRecord(did: string, rkey: string): string {
@@ -231,15 +238,46 @@ async function discoverCommentPostMeta(
   return postMeta;
 }
 
-async function countTopLevelPosts(
-  postMeta: Map<string, PostLinkMeta>,
-): Promise<number> {
-  if (postMeta.size === 0) return 0;
+function isDocumentCommentPost(
+  post: BskyPostView,
+  discovery: CommentDiscovery,
+): boolean {
+  if (discovery.bskyPostUri && post.uri === discovery.bskyPostUri) return false;
+  if (discovery.authorPostReplyUris.has(post.uri)) return true;
+  return !post.isReply && discovery.postMeta.has(post.uri);
+}
 
-  const posts = await getPosts([...postMeta.keys()]);
+async function discoverDocumentComments(
+  targets: Array<CommentTarget>,
+  bskyPostUri: string | null,
+): Promise<CommentDiscovery> {
+  const postMeta = await discoverCommentPostMeta(targets);
+  const authorPostReplyUris = new Set<string>();
+
+  if (bskyPostUri?.startsWith("at://")) {
+    postMeta.delete(bskyPostUri);
+
+    const replies = await getDirectRepliesToPost(bskyPostUri);
+    for (const reply of replies) {
+      authorPostReplyUris.add(reply.uri);
+      if (!postMeta.has(reply.uri)) {
+        postMeta.set(reply.uri, { kind: "link", quoteText: null });
+      }
+    }
+  }
+
+  return { postMeta, authorPostReplyUris, bskyPostUri };
+}
+
+async function countDocumentCommentPosts(
+  discovery: CommentDiscovery,
+): Promise<number> {
+  if (discovery.postMeta.size === 0) return 0;
+
+  const posts = await getPosts([...discovery.postMeta.keys()]);
   let count = 0;
   for (const post of posts) {
-    if (!post.isReply && postMeta.has(post.uri)) count += 1;
+    if (isDocumentCommentPost(post, discovery)) count += 1;
   }
   return count;
 }
@@ -251,6 +289,7 @@ async function loadDocumentCommentTargets(
 ): Promise<{
   targets: Array<CommentTarget>;
   stripUrls: Array<string>;
+  bskyPostUri: string | null;
 } | null> {
   const d = schemaModule.documents;
   const p = schemaModule.publications;
@@ -262,6 +301,7 @@ async function loadDocumentCommentTargets(
       path: d.path,
       canonicalUrl: d.canonicalUrl,
       publicationUrl: p.url,
+      bskyPostUri: d.bskyPostUri,
     })
     .from(d)
     .leftJoin(p, eq(d.publicationUri, p.uri))
@@ -284,7 +324,11 @@ async function loadDocumentCommentTargets(
     baseUrl,
   );
 
-  return { targets, stripUrls: targets.map((t) => t.url) };
+  return {
+    targets,
+    stripUrls: targets.map((t) => t.url),
+    bskyPostUri: doc.bskyPostUri,
+  };
 }
 
 /** Count top-level Bluesky posts linking this document (cached, best-effort). */
@@ -312,8 +356,11 @@ export async function countDocumentComments(
       return 0;
     }
 
-    const postMeta = await discoverCommentPostMeta(context.targets);
-    const count = await countTopLevelPosts(postMeta);
+    const discovery = await discoverDocumentComments(
+      context.targets,
+      context.bskyPostUri,
+    );
+    const count = await countDocumentCommentPosts(discovery);
     commentCountCache.set(documentUri, {
       count,
       expiresAt: Date.now() + COMMENT_COUNT_TTL_MS,
@@ -362,18 +409,18 @@ export async function fetchDocumentComments(
   );
   if (!context) return [];
 
-  const { targets, stripUrls } = context;
-  const postMeta = await discoverCommentPostMeta(targets);
+  const { targets, stripUrls, bskyPostUri } = context;
+  const discovery = await discoverDocumentComments(targets, bskyPostUri);
 
-  if (postMeta.size === 0) return [];
+  if (discovery.postMeta.size === 0) return [];
 
-  const posts = await getPosts([...postMeta.keys()]);
+  const posts = await getPosts([...discovery.postMeta.keys()]);
   const comments: Array<DocumentComment> = [];
 
   for (const post of posts) {
-    if (post.isReply) continue;
+    if (!isDocumentCommentPost(post, discovery)) continue;
 
-    const meta = postMeta.get(post.uri);
+    const meta = discovery.postMeta.get(post.uri);
     if (!meta) continue;
 
     const postUrl = bskyPostUrl(post.uri);
