@@ -219,7 +219,8 @@ Build each on hip-ui components + StyleX tokens (no raw HTML/inline styles).
       react-aria autocomplete over the remaining subscriptions). List groups render above the
       flat "All" list (desktop sidebar only).
 - [x] **Shareable list pages** — every list has a public route `/l/$did/$rkey` (hero with
-      name/description/owner handle, ranked publication rows with follow buttons, social meta).
+      name/description/owner handle, **Articles** tab with a paginated feed across member
+      publications + **Publications** tab with ranked member rows and follow buttons, social meta).
       Owners get an Edit button; other signed-in readers get **Add list / Remove list**, which
       writes/deletes an `app.standard-reader.listSave` record — saved lists then render as
       extra sidebar groups (attributed `name · @owner`, label links to the list page).

@@ -16,7 +16,11 @@ import {
   putListSaveRecord,
 } from "#/server/atproto/repo-records";
 import { observe } from "#/server/observability/log";
-import { followedPublications } from "#/server/reader/queries";
+import { attachCommentCountsToArticles } from "#/server/reader/document-comments";
+import {
+  followedPublications,
+  selectArticleCards,
+} from "#/server/reader/queries";
 import {
   fetchPublicList,
   invalidateSavedLists,
@@ -24,10 +28,14 @@ import {
   savedListsForReader,
   toSubscriptionList,
 } from "#/server/reader/saved-lists";
+import {
+  articleCardsAsAllRead,
+  resolveTrackReadingHistoryEnabled,
+} from "#/server/reader/track-reading-history";
 import { inArray } from "drizzle-orm";
 import { z } from "zod";
 
-import type { Db, PublicationCard, Schema } from "./api-shapes";
+import type { ArticleCard, Db, PublicationCard, Schema } from "./api-shapes";
 
 import { dbMiddleware } from "./db-middleware";
 
@@ -63,6 +71,11 @@ const listRefInput = z.object({
   rkey: z.string().min(1),
 });
 
+const listFeedInput = listRefInput.extend({
+  limit: z.number().int().min(1).max(50).default(20),
+  offset: z.number().int().min(0).default(0),
+});
+
 const listUriInput = z.object({
   listUri: z.string().min(1),
 });
@@ -74,6 +87,13 @@ export interface ListOwner {
   handle: string | null;
   displayName: string | null;
   avatarUrl: string | null;
+}
+
+/** Chronological articles from a list's member publications. */
+export interface ListFeed {
+  items: Array<ArticleCard>;
+  /** Offset for the next page, or null when the last page was reached. */
+  nextOffset: number | null;
 }
 
 /** Data for the public list page (`/l/$did/$rkey`). */
@@ -267,6 +287,54 @@ const getList = createServerFn({ method: "GET" })
     }),
   );
 
+const getListFeed = createServerFn({ method: "GET" })
+  .middleware([dbMiddleware])
+  .inputValidator(listFeedInput)
+  .handler(
+    observe("lists.getListFeed", async ({ data, context }, span) => {
+      span.set("listDid", data.did);
+      span.set("rkey", data.rkey);
+      span.set("offset", data.offset);
+
+      const list = await fetchPublicList(data.did, data.rkey);
+      if (!list || list.publications.length === 0) {
+        span.set("count", 0);
+        return {
+          items: [],
+          nextOffset: null,
+        } satisfies ListFeed;
+      }
+
+      const session = await getAtprotoSessionForRequest(getRequest());
+      const { db, schema } = context;
+      const trackReading =
+        session == null
+          ? false
+          : await resolveTrackReadingHistoryEnabled(db, schema);
+
+      const items = await selectArticleCards(db, schema, {
+        publicationUris: list.publications,
+        readForDid: trackReading ? session?.did : undefined,
+        limit: data.limit,
+        offset: data.offset,
+      });
+      span.set("count", items.length);
+
+      const normalized = trackReading ? items : articleCardsAsAllRead(items);
+      const enriched = await attachCommentCountsToArticles(
+        db,
+        schema,
+        normalized,
+      );
+
+      return {
+        items: enriched,
+        nextOffset:
+          items.length === data.limit ? data.offset + data.limit : null,
+      } satisfies ListFeed;
+    }),
+  );
+
 // ── Saved lists (other readers' lists added to this app) ────────────────────
 
 const getSavedLists = createServerFn({ method: "GET" })
@@ -375,6 +443,17 @@ function getListQueryOptions(did: string, rkey: string) {
   });
 }
 
+function getListFeedQueryOptions(
+  did: string,
+  rkey: string,
+  { limit = 20, offset = 0 }: { limit?: number; offset?: number } = {},
+) {
+  return queryOptions({
+    queryKey: ["list", did, rkey, "feed", limit, offset] as const,
+    queryFn: async () => getListFeed({ data: { did, rkey, limit, offset } }),
+  });
+}
+
 function putListMutationOptions() {
   return mutationOptions({
     mutationKey: ["reader", "putList"] as const,
@@ -415,6 +494,8 @@ export const listApi = {
   // public page
   getList,
   getListQueryOptions,
+  getListFeed,
+  getListFeedQueryOptions,
   // saved lists
   getSavedLists,
   getSavedListsQueryOptions,

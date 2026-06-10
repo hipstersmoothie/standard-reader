@@ -226,7 +226,9 @@ source of truth; Neon holds a derived view for speed and cross-network querying.
   Managed from the sidebar (new-list button in the Subscriptions header; per-list edit modal with
   reorder / remove / add). Every list is also a public page at `/l/$did/$rkey` — like a Bluesky
   user list, but for publications — with a **Share** menu (copy link + compose-to-Bluesky; OG card
-  on `/l/`). Other readers can **add it to their app** via an
+  on `/l/`). The page has two tabs: **Articles** (newest-first feed across all member publications,
+  paginated) and **Publications** (the ranked member directory). Other readers can **add it to their
+  app** via an
   `app.standard-reader.listSave` record (saved lists render as extra sidebar groups). **Saving a
   list acts like following its publications**: feeds, the sidebar, and unread counts operate on
   the reader's _effective_ follow set (subscriptions ∪ saved-list publications, computed in
