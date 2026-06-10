@@ -215,6 +215,10 @@ source of truth; Neon holds a derived view for speed and cross-network querying.
 - **Public by default:** reads, bookmarks, likes, follows, and lists are all public AT Proto
   records in the user's repo (like Bluesky likes or follows). `/history` and `/saved` are
   signed-in convenience views — not privacy boundaries.
+- **Track reading history (setting):** on by default; when off, the app does not write
+  `app.standard-reader.read` records, hides unread dots/counts/filters, and omits the
+  Reading history menu link. Persisted in a cookie (all readers) and on `user.track_reading_history`
+  when signed in.
 - **Publication lists (sidebar folders):** `app.standard-reader.list` records — a named, ordered,
   shareable list of publications (one level deep; a publication may live in several lists).
   Managed from the sidebar (new-list button in the Subscriptions header; per-list edit modal with

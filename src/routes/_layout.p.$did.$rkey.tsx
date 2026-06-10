@@ -12,7 +12,7 @@ import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
 import { getPublicUrlClient } from "#/lib/public-url";
 import { publicationOgImageUrl, siteSocialMeta } from "#/lib/site-metadata";
-import { ShareMenu } from "../components/reader/share-menu";
+import { useTrackReadingHistory } from "#/lib/use-track-reading-history";
 import { ExternalLink } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -39,6 +39,7 @@ import {
   applyMarkReadManyOptimisticUpdate,
   invalidateReadQueries,
 } from "../components/reader/read-optimistic";
+import { ShareMenu } from "../components/reader/share-menu";
 import { Button } from "../design-system/button";
 import { Flex } from "../design-system/flex";
 import { IconButton } from "../design-system/icon-button";
@@ -310,8 +311,9 @@ function PublicationProfile() {
     placeholderData: keepPreviousData,
   });
   const readSet = useMemo(() => new Set(readUris ?? []), [readUris]);
+  const { enabled: trackReading } = useTrackReadingHistory();
   const isUnread = (documentUri: string) =>
-    signedIn && !readSet.has(documentUri);
+    trackReading && signedIn && !readSet.has(documentUri);
   const unreadDocumentUris = useMemo(
     () =>
       documents

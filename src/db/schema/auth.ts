@@ -33,6 +33,8 @@ export const user = pgTable("user", {
   openLinksExternally: boolean("open_links_externally"),
   /** Compact `fontSize:measure:bodyFont` encoding; `null` = all defaults. */
   readingTypography: text("reading_typography"),
+  /** `false` disables read tracking and unread UI; `null` = on (default). */
+  trackReadingHistory: boolean("track_reading_history"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .defaultNow()
     .notNull(),

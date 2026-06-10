@@ -16,6 +16,10 @@ import {
   trendingPublicationUris,
 } from "#/server/reader/queries";
 import { effectiveFollowUris } from "#/server/reader/saved-lists";
+import {
+  articleCardsAsAllRead,
+  resolveTrackReadingHistoryEnabled,
+} from "#/server/reader/track-reading-history";
 import { z } from "zod";
 
 import type { ArticleCard, PublicationCard } from "./api-shapes";
@@ -102,15 +106,17 @@ const getSidebar = createServerFn({ method: "GET" })
         } satisfies SidebarData;
       }
 
+      const trackReading = await resolveTrackReadingHistoryEnabled(db, schema);
+
       // Effective follows: subscriptions plus saved-list publications.
       const followUris = await effectiveFollowUris(db, schema, did);
       span.set("follows", followUris.length);
       const [following, counts, unreadByPublication] = await Promise.all([
         followedPublications(db, schema, followUris),
-        followUris.length > 0
+        trackReading && followUris.length > 0
           ? countFollowedDocuments(db, schema, followUris, did)
           : Promise.resolve(null),
-        followUris.length > 0
+        trackReading && followUris.length > 0
           ? countUnreadByPublication(db, schema, followUris, did)
           : Promise.resolve(new Map<string, number>()),
       ]);
@@ -119,9 +125,11 @@ const getSidebar = createServerFn({ method: "GET" })
         signedIn: true,
         following: following.map((pub) => ({
           ...pub,
-          unreadCount: unreadByPublication.get(pub.uri) ?? 0,
+          unreadCount: trackReading
+            ? (unreadByPublication.get(pub.uri) ?? 0)
+            : 0,
         })),
-        unreadCount: counts?.unread ?? null,
+        unreadCount: trackReading ? (counts?.unread ?? null) : 0,
       } satisfies SidebarData;
     }),
   );
@@ -135,12 +143,19 @@ const getHomeFeed = createServerFn({ method: "GET" })
       const did = session?.did;
       const followUris = did ? await effectiveFollowUris(db, schema, did) : [];
       const personalized = followUris.length > 0;
+      const trackReading =
+        did == null
+          ? false
+          : await resolveTrackReadingHistoryEnabled(db, schema);
       span.set("did", did ?? null);
       span.set("follows", followUris.length);
       span.set("personalized", personalized);
 
       const rowQuery = personalized
-        ? { publicationUris: followUris, unreadForDid: did }
+        ? {
+            publicationUris: followUris,
+            ...(trackReading && did ? { unreadForDid: did } : {}),
+          }
         : { discoverOnly: true };
 
       const [featuredLead, rows, trendingRaw, trendingPubUris, counts] =
@@ -156,7 +171,7 @@ const getHomeFeed = createServerFn({ method: "GET" })
           }),
           trendingArticles(db, schema, HOME_RAIL_LIMIT),
           trendingPublicationUris(db, schema, HOME_RAIL_LIMIT),
-          personalized && did
+          personalized && did && trackReading
             ? countFollowedDocuments(db, schema, followUris, did)
             : Promise.resolve(null),
         ]);
@@ -174,10 +189,15 @@ const getHomeFeed = createServerFn({ method: "GET" })
               trendingPubUris,
             );
 
-      const featured = featuredLead[0] ?? rows[0] ?? null;
-      const latestUnread = rows
+      let featured: ArticleCard | null = featuredLead[0] ?? rows[0] ?? null;
+      let latestUnread = rows
         .filter((row) => row.uri !== featured?.uri)
         .slice(0, HOME_ROW_LIMIT);
+
+      if (!trackReading) {
+        featured = featured ? { ...featured, isRead: true } : null;
+        latestUnread = articleCardsAsAllRead(latestUnread);
+      }
 
       const excludeUris = new Set(
         [featured?.uri, ...latestUnread.map((row) => row.uri)].filter(
@@ -207,7 +227,7 @@ const getHomeFeed = createServerFn({ method: "GET" })
         trending: trending.map((article) => byUri.get(article.uri) ?? article),
         youMightFollow,
         personalized,
-        unreadCount: counts?.unread ?? null,
+        unreadCount: trackReading ? (counts?.unread ?? null) : 0,
       } satisfies HomeFeed;
     }),
   );
@@ -227,6 +247,10 @@ const getLatestFeed = createServerFn({ method: "GET" })
 
       const followUris = did ? await effectiveFollowUris(db, schema, did) : [];
       span.set("follows", followUris.length);
+      const trackReading =
+        did == null
+          ? false
+          : await resolveTrackReadingHistoryEnabled(db, schema);
 
       // Signed-out readers always get the network-wide list.
       const cardQuery =
@@ -234,13 +258,14 @@ const getLatestFeed = createServerFn({ method: "GET" })
           ? { discoverOnly: true }
           : {
               publicationUris: followUris,
-              unreadForDid: data.filter === "unread" ? did : undefined,
+              unreadForDid:
+                trackReading && data.filter === "unread" ? did : undefined,
             };
 
       const [items, followCounts, networkCount] = await Promise.all([
         selectArticleCards(db, schema, {
           ...cardQuery,
-          readForDid: did,
+          readForDid: trackReading ? did : undefined,
           limit: data.limit,
           offset: data.offset,
         }),
@@ -254,12 +279,12 @@ const getLatestFeed = createServerFn({ method: "GET" })
       const enrichedItems = await attachCommentCountsToArticles(
         db,
         schema,
-        items,
+        trackReading ? items : articleCardsAsAllRead(items),
       );
       return {
         items: enrichedItems,
         counts: {
-          unread: followCounts.unread,
+          unread: trackReading ? followCounts.unread : 0,
           subscriptions: followCounts.all,
           all: networkCount,
         },

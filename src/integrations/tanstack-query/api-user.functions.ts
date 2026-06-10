@@ -44,6 +44,14 @@ import {
   parseThemeMode,
   themeModeToDbValue,
 } from "#/lib/theme";
+import {
+  TRACK_READING_HISTORY_COOKIE,
+  TRACK_READING_HISTORY_COOKIE_MAX_AGE_SECONDS,
+  dbValueToTrackReadingHistory,
+  parseTrackReadingHistoryCookie,
+  trackReadingHistoryToCookieValue,
+  trackReadingHistoryToDbValue,
+} from "#/lib/track-reading-history";
 import { maybeAuthMiddleware } from "#/middleware/auth";
 import { resolveIdentity } from "#/server/atproto/identity";
 import { eq } from "drizzle-orm";
@@ -345,6 +353,59 @@ const setReadingTypographyPreference = createServerFn({ method: "POST" })
     return { preference: data.preference };
   });
 
+const getTrackReadingHistoryPreference = createServerFn({ method: "GET" })
+  .middleware([dbMiddleware, maybeAuthMiddleware])
+  .handler(async ({ context }): Promise<{ enabled: boolean }> => {
+    const session = context?.session;
+    if (session?.user) {
+      const row = await context.db.query.user.findFirst({
+        where: eq(context.schema.user.id, session.user.id),
+        columns: { trackReadingHistory: true },
+      });
+      return {
+        enabled: dbValueToTrackReadingHistory(row?.trackReadingHistory ?? null),
+      };
+    }
+
+    return {
+      enabled: parseTrackReadingHistoryCookie(
+        getCookie(TRACK_READING_HISTORY_COOKIE),
+      ),
+    };
+  });
+
+const getTrackReadingHistoryPreferenceQueryOptions = queryOptions({
+  queryKey: ["trackReadingHistoryPreference"] as const,
+  queryFn: () => getTrackReadingHistoryPreference(),
+  staleTime: Number.POSITIVE_INFINITY,
+});
+
+const setTrackReadingHistoryPreference = createServerFn({ method: "POST" })
+  .middleware([dbMiddleware, maybeAuthMiddleware])
+  .inputValidator(z.object({ enabled: z.boolean() }))
+  .handler(async ({ data, context }): Promise<{ enabled: boolean }> => {
+    setCookie(
+      TRACK_READING_HISTORY_COOKIE,
+      trackReadingHistoryToCookieValue(data.enabled),
+      {
+        path: "/",
+        sameSite: "lax",
+        maxAge: TRACK_READING_HISTORY_COOKIE_MAX_AGE_SECONDS,
+      },
+    );
+
+    if (context?.session?.user) {
+      await context.db
+        .update(context.schema.user)
+        .set({
+          trackReadingHistory: trackReadingHistoryToDbValue(data.enabled),
+        })
+        .where(eq(context.schema.user.id, context.session.user.id));
+    }
+
+    return { enabled: data.enabled };
+  });
+
 const signOut = createServerFn({ method: "POST" })
   .middleware([dbMiddleware])
   .handler(async ({ context }) => {
@@ -401,5 +462,8 @@ export const user = {
   getReadingTypographyPreference,
   getReadingTypographyPreferenceQueryOptions,
   setReadingTypographyPreference,
+  getTrackReadingHistoryPreference,
+  getTrackReadingHistoryPreferenceQueryOptions,
+  setTrackReadingHistoryPreference,
   signOut,
 };

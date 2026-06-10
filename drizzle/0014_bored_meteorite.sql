@@ -1,0 +1,1 @@
+ALTER TABLE "user" ADD COLUMN "track_reading_history" boolean;

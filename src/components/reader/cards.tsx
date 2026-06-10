@@ -11,6 +11,7 @@ import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
 import { parseInternalRoute } from "#/lib/internal-route";
 import { useOpenLinks } from "#/lib/use-open-links";
+import { useTrackReadingHistory } from "#/lib/use-track-reading-history";
 import { useLoginSearch } from "#/utils/use-login-search";
 import { ArrowRight, Bookmark, Check, Plus } from "lucide-react";
 import { Fragment, useCallback } from "react";
@@ -885,15 +886,16 @@ function useMarkReadExternal() {
   const queryClient = useQueryClient();
   const { data: session } = useQuery(user.getSessionQueryOptions);
   const signedIn = Boolean(session?.user);
+  const { enabled: trackReading } = useTrackReadingHistory();
   const { mutate: markRead } = useMutation(readerApi.markReadMutationOptions());
 
   return useCallback(
     (documentUri: string, publicationUri?: string | null) => {
-      if (!signedIn) return;
+      if (!signedIn || !trackReading) return;
       applyMarkReadOptimisticUpdate(queryClient, documentUri, publicationUri);
       markRead(documentUri);
     },
-    [signedIn, queryClient, markRead],
+    [signedIn, trackReading, queryClient, markRead],
   );
 }
 
@@ -1188,7 +1190,7 @@ export function ArticleRow({
         styles.row,
         !cover && !saveBesideMedia && styles.rowNoMedia,
         !cover && saveBesideMedia && styles.rowNoMediaSaveAside,
-        saveBesideMedia && cover && styles.rowSaveBesideMedia,
+        saveBesideMedia && cover ? styles.rowSaveBesideMedia : false,
         isFirstInSection && styles.rowFirstInSection,
       ]}
     >

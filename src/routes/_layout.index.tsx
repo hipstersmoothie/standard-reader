@@ -1,6 +1,7 @@
 import * as stylex from "@stylexjs/stylex";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
+import { useTrackReadingHistory } from "#/lib/use-track-reading-history";
 import { ArrowRight, Flame, Sparkles } from "lucide-react";
 
 import {
@@ -130,6 +131,7 @@ const WEEKDAY_FMT = new Intl.DateTimeFormat("en-US", { weekday: "long" });
 function Home() {
   const { data: feed } = useSuspenseQuery(feedApi.getHomeFeedQueryOptions());
   const { data: session } = useQuery(user.getSessionQueryOptions);
+  const { enabled: trackReading } = useTrackReadingHistory();
 
   const now = new Date();
   const weekday = WEEKDAY_FMT.format(now);
@@ -160,9 +162,13 @@ function Home() {
   }
 
   const unreadLabel =
-    feed.unreadCount == null ? "Fresh" : `${feed.unreadCount} new`;
+    !trackReading || feed.unreadCount == null
+      ? "Fresh"
+      : `${feed.unreadCount} new`;
   const dek = feed.personalized
-    ? `${feed.unreadCount ?? feed.latestUnread.length} unread across the publications you follow.`
+    ? trackReading
+      ? `${feed.unreadCount ?? feed.latestUnread.length} unread across the publications you follow.`
+      : "The latest writing from the publications you follow."
     : "The latest long-form writing from across the network.";
 
   return (
@@ -183,7 +189,7 @@ function Home() {
             kicker={
               feed.personalized ? "From your follows" : "Fresh off the network"
             }
-            title="Latest unread"
+            title={trackReading ? "Latest unread" : "Latest"}
           />
           <div>
             {feed.latestUnread.map((article) => (

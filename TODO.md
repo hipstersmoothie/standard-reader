@@ -315,6 +315,8 @@ not offline body cache). Route slug **`/saved`**.
       when landing.
 - [x] **Reading history** — `/history` queue backed by existing
       `app.standard-reader.read` / `reads` table (no new lexicon); `readerApi.getReadingHistory` + user-menu link + empty state; infinite scroll (20 per page). Update [`APP_VISION.md`](APP_VISION.md) when landing.
+- [x] **Track reading history setting** — user-menu toggle (cookie + `user.track_reading_history`);
+      when off: no `markRead` writes, zero unread counts/dots, hidden Unread tab + Reading history link.
 
 ## 11. Post-v1 — bigger bets (Tier 4)
 

@@ -4,6 +4,7 @@ import * as stylex from "@stylexjs/stylex";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createLink, useNavigate } from "@tanstack/react-router";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
+import { useTrackReadingHistory } from "#/lib/use-track-reading-history";
 import { useLoginSearch } from "#/utils/use-login-search";
 import { Bookmark, Heart, History, Info, LogOut } from "lucide-react";
 import { Button as AriaButton } from "react-aria-components";
@@ -31,6 +32,7 @@ import { Handle } from "./reader/primitives";
 import { ReaderVoiceSubMenu } from "./ReaderVoiceMenu";
 import { ReadingTypographySubMenu } from "./ReadingTypographyMenu";
 import { ThemeSubMenu } from "./ThemeMenu";
+import { TrackReadingHistoryMenuItem } from "./TrackReadingHistoryMenuItem";
 
 const ButtonLink = createLink(Button);
 const MenuItemLink = createLink(MenuItem);
@@ -154,6 +156,7 @@ export function NavbarAuth({
   menuPlacement?: PopoverProps["placement"];
 }) {
   const { data: session } = useQuery(user.getSessionQueryOptions);
+  const { enabled: trackReading } = useTrackReadingHistory();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const loginSearch = useLoginSearch();
@@ -203,9 +206,11 @@ export function NavbarAuth({
         <MenuItemLink to="/saved" suffix={<Bookmark />}>
           Saved for later
         </MenuItemLink>
-        <MenuItemLink to="/history" suffix={<History />}>
-          Reading history
-        </MenuItemLink>
+        {trackReading ? (
+          <MenuItemLink to="/history" suffix={<History />}>
+            Reading history
+          </MenuItemLink>
+        ) : null}
         <MenuItemLink to="/likes" suffix={<Heart />}>
           Liked articles
         </MenuItemLink>
@@ -228,6 +233,7 @@ export function NavbarAuth({
         <ReaderVoiceSubMenu />
         <ReadingTypographySubMenu />
         <OpenLinksMenuItem />
+        <TrackReadingHistoryMenuItem />
         <MenuSeparator />
         <MenuItem onPress={() => logoutMutation.mutate()} suffix={<LogOut />}>
           Log out

@@ -14,6 +14,7 @@ import { user } from "#/integrations/tanstack-query/api-user.functions";
 import { formatCount } from "#/lib/format-count";
 import { getPublicUrlClient } from "#/lib/public-url";
 import { pageSocialMeta } from "#/lib/site-metadata";
+import { useTrackReadingHistory } from "#/lib/use-track-reading-history";
 import { useLoginSearch } from "#/utils/use-login-search";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
@@ -149,10 +150,17 @@ function Latest() {
   }, [feed]);
 
   const { data: session } = useQuery(user.getSessionQueryOptions);
+  const { enabled: trackReading } = useTrackReadingHistory();
   const signedIn = Boolean(session?.user);
   const loginSearch = useLoginSearch();
 
-  const isUnread = (article: ArticleCard) => signedIn && !article.isRead;
+  useEffect(() => {
+    if (trackReading || filter !== "unread") return;
+    void navigate({ search: { filter: "subscriptions" } });
+  }, [filter, navigate, trackReading]);
+
+  const isUnread = (article: ArticleCard) =>
+    trackReading && signedIn && !article.isRead;
   const unreadItemUris = useMemo(
     () =>
       items
@@ -249,9 +257,11 @@ function Latest() {
             onSelectionChange={onFilterChange}
             size="lg"
           >
-            <SegmentedControlItem id="unread">
-              {unreadLabel}
-            </SegmentedControlItem>
+            {trackReading ? (
+              <SegmentedControlItem id="unread">
+                {unreadLabel}
+              </SegmentedControlItem>
+            ) : null}
             <SegmentedControlItem id="subscriptions">
               {subscriptionsLabel}
             </SegmentedControlItem>
@@ -264,7 +274,10 @@ function Latest() {
             </Link>
           </Flex>
         )}
-        {signedIn && filter === "unread" && feed.counts.unread > 0 ? (
+        {trackReading &&
+        signedIn &&
+        filter === "unread" &&
+        feed.counts.unread > 0 ? (
           <Button
             variant="tertiary"
             size="sm"

@@ -15,6 +15,7 @@ import { user } from "#/integrations/tanstack-query/api-user.functions";
 import { usePageReader } from "#/lib/page-reader/page-reader-context";
 import { buildBlueskyComposeUrl } from "#/lib/quote-share";
 import { useReadingTypography } from "#/lib/use-reading-typography";
+import { useTrackReadingHistory } from "#/lib/use-track-reading-history";
 import {
   ArrowLeft,
   Bookmark,
@@ -653,11 +654,14 @@ function ArticleViewBody({
   const hasEngagement = article.recommendCount > 0 || article.commentCount > 0;
 
   const queryClient = useQueryClient();
+  const { enabled: trackReading } = useTrackReadingHistory();
   const { mutate: markRead } = useMutation(readerApi.markReadMutationOptions());
   const markedUriRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!signedIn || markedUriRef.current === article.uri) return;
+    if (!signedIn || !trackReading || markedUriRef.current === article.uri) {
+      return;
+    }
     markedUriRef.current = article.uri;
     applyMarkReadOptimisticUpdate(
       queryClient,
@@ -665,7 +669,14 @@ function ArticleViewBody({
       article.publicationUri,
     );
     markRead(article.uri);
-  }, [article.publicationUri, article.uri, signedIn, markRead, queryClient]);
+  }, [
+    article.publicationUri,
+    article.uri,
+    signedIn,
+    trackReading,
+    markRead,
+    queryClient,
+  ]);
 
   useLayoutEffect(() => {
     const anchor = scrollRef.current;
