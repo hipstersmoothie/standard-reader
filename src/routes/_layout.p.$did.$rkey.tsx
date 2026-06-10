@@ -75,6 +75,9 @@ export const Route = createFileRoute("/_layout/p/$did/$rkey")({
       context.queryClient.ensureQueryData(
         readerApi.getFollowStatusQueryOptions(uri),
       ),
+      context.queryClient.ensureQueryData(
+        publicationApi.getPublicationEmbedMetaQueryOptions(uri),
+      ),
     ]);
     if (profile?.recentDocuments.length) {
       await context.queryClient.ensureQueryData(
@@ -273,6 +276,9 @@ function PublicationProfile() {
   const { data: follow } = useSuspenseQuery(
     readerApi.getFollowStatusQueryOptions(uri),
   );
+  const { data: embedMeta } = useSuspenseQuery(
+    publicationApi.getPublicationEmbedMetaQueryOptions(uri),
+  );
   const { data: session } = useSuspenseQuery(user.getSessionQueryOptions);
   const signedIn = Boolean(session?.user);
 
@@ -438,6 +444,7 @@ function PublicationProfile() {
             <ShareMenu
               variant="icon"
               pageUrl={`${getPublicUrlClient()}/p/${did}/${rkey}`}
+              embed={embedMeta ?? undefined}
             />
             {pub.url ? (
               <IconButton

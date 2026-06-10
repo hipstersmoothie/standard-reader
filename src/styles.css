@@ -10,6 +10,22 @@ body,
   min-height: 100%;
 }
 
+/* Subscribe embed iframes shrink-wrap the card and show the host page through. */
+html[data-embed="subscribe"] {
+  color-scheme: normal;
+}
+
+html[data-embed="subscribe"],
+html[data-embed="subscribe"] body,
+html[data-embed="subscribe"] #app,
+html[data-embed="subscribe"] #app > *,
+html[data-embed="subscribe"] main {
+  min-height: 0;
+  height: auto;
+  background: none;
+  background-color: transparent;
+}
+
 body {
   margin: 0;
   -webkit-font-smoothing: antialiased;

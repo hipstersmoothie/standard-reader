@@ -341,10 +341,10 @@ export const articleBodyStyles = stylex.create({
     flexDirection: "column",
   },
   galleryCarousel: {
+    WebkitOverflowScrolling: "touch",
     gap: gap.md,
     scrollSnapType: "x mandatory",
     display: "flex",
-    WebkitOverflowScrolling: "touch",
     overflowX: "auto",
   },
   galleryCarouselItem: {

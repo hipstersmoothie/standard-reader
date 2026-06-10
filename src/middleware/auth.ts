@@ -10,6 +10,10 @@ import { redirect } from "@tanstack/react-router";
 import { createMiddleware } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { AUTH_SESSION_TOKEN_COOKIE } from "#/integrations/auth/constants";
+import {
+  DEFAULT_AUTH_REDIRECT,
+  sanitizeAuthRedirectTarget,
+} from "#/utils/auth-redirect";
 import { eq } from "drizzle-orm";
 
 export type AtprotoSessionContext = {
@@ -100,6 +104,14 @@ export const unauthMiddleware = createMiddleware().server(async ({ next }) => {
   const context = await getSessionContext(request);
 
   if (context) {
+    const requestUrl = new URL(request.url);
+    const redirectTarget = sanitizeAuthRedirectTarget(
+      requestUrl.searchParams.get("redirect") ?? undefined,
+      request.url,
+    );
+    if (redirectTarget !== DEFAULT_AUTH_REDIRECT) {
+      throw redirect({ href: redirectTarget });
+    }
     throw redirect({ to: "/" });
   }
 

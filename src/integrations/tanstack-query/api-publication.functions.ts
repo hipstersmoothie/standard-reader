@@ -5,6 +5,7 @@ import type { MarginConnectionItem } from "#/server/reader/article-constellation
 import { queryOptions } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
+import { publicationLinkParams } from "#/components/reader/format";
 import { STANDARD_MARKDOWN_CONTENT } from "#/lib/document/structured-content/types";
 import { GREENGALE_CONTENT_REF } from "#/lib/greengale/types";
 import { leafletBlocks } from "#/lib/leaflet/blocks";
@@ -93,6 +94,10 @@ const socialProofInput = z.object({
   limit: z.number().int().min(1).max(100).default(100),
 });
 
+const embedInput = z.object({
+  publicationUri: z.string().min(1),
+});
+
 async function codeHighlightsForThemeMode(
   blocks: Array<Pick<LeafletCodeBlock, "language" | "plaintext">>,
   themeMode: ThemeMode,
@@ -124,6 +129,24 @@ export interface PublicationSocialProof {
     Pick<ProfileSummary, "did" | "handle" | "displayName" | "avatarUrl">
   >;
   total: number;
+}
+
+/** Publication header + theme for subscribe embeds and the subscribe flow. */
+export interface PublicationEmbedMeta {
+  uri: string;
+  did: string;
+  rkey: string;
+  name: string;
+  description: string | null;
+  topic: string | null;
+  iconUrl: string | null;
+  ownerAvatarUrl: string | null;
+  ownerDisplayName: string | null;
+  ownerHandle: string | null;
+  themeBackground: string | null;
+  themeForeground: string | null;
+  themeAccent: string | null;
+  themeAccentForeground: string | null;
 }
 
 /** One page of a publication's documents for the profile's infinite scroll. */
@@ -542,6 +565,64 @@ const getArticle = createServerFn({ method: "GET" })
     ),
   );
 
+const getPublicationEmbedMeta = createServerFn({ method: "GET" })
+  .middleware([dbMiddleware])
+  .inputValidator(embedInput)
+  .handler(
+    observe(
+      "publication.getEmbedMeta",
+      async ({ data, context }, span): Promise<PublicationEmbedMeta | null> => {
+        const { db, schema } = context;
+        const p = schema.publications;
+        const pr = schema.profiles;
+        span.set("publicationUri", data.publicationUri);
+
+        const link = publicationLinkParams(data.publicationUri);
+        if (!link) return null;
+
+        const [row] = await db
+          .select({
+            uri: p.uri,
+            did: p.did,
+            name: p.name,
+            description: p.description,
+            topic: p.topic,
+            iconUrl: p.iconUrl,
+            ownerAvatarUrl: pr.avatarUrl,
+            ownerDisplayName: pr.displayName,
+            ownerHandle: pr.handle,
+            themeBackground: p.themeBackground,
+            themeForeground: p.themeForeground,
+            themeAccent: p.themeAccent,
+            themeAccentForeground: p.themeAccentForeground,
+          })
+          .from(p)
+          .leftJoin(pr, eq(pr.did, p.did))
+          .where(and(eq(p.uri, data.publicationUri), eq(p.deleted, false)))
+          .limit(1);
+
+        if (!row?.name) return null;
+
+        return {
+          uri: row.uri,
+          did: row.did,
+          rkey: link.rkey,
+          name: row.name,
+          description: row.description,
+          topic: row.topic,
+          iconUrl: row.iconUrl,
+          ownerAvatarUrl: row.ownerAvatarUrl,
+          ownerDisplayName: row.ownerDisplayName,
+          ownerHandle: row.ownerHandle,
+          themeBackground: row.themeBackground,
+          themeForeground: row.themeForeground,
+          themeAccent: row.themeAccent,
+          themeAccentForeground: row.themeAccentForeground,
+        };
+      },
+    ),
+  );
+
 const getPublicationSocialProof = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
   .inputValidator(socialProofInput)
@@ -757,11 +838,21 @@ function getPublicationSocialProofQueryOptions(
   });
 }
 
+function getPublicationEmbedMetaQueryOptions(publicationUri: string) {
+  return queryOptions({
+    queryKey: ["publication", "embedMeta", publicationUri] as const,
+    queryFn: async () => getPublicationEmbedMeta({ data: { publicationUri } }),
+    staleTime: 300_000,
+  });
+}
+
 export const publicationApi = {
   getPublicationProfile,
   getPublicationProfileQueryOptions,
   getPublicationDocuments,
   getPublicationDocumentsQueryOptions,
+  getPublicationEmbedMeta,
+  getPublicationEmbedMetaQueryOptions,
   getPublicationSocialProof,
   getPublicationSocialProofQueryOptions,
   getArticle,

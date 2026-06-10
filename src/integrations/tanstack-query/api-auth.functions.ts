@@ -1,9 +1,11 @@
 import type { ActorIdentifier } from "@atcute/lexicons";
+import type { AuthScopeIntent } from "#/integrations/auth/scope";
 
 import { queryOptions } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { atprotoOAuth } from "#/integrations/auth/atproto";
+import { resolveAuthScope } from "#/integrations/auth/scope";
 import { sanitizeAuthRedirectTarget } from "#/utils/auth-redirect";
 import { getSavedHandles } from "#/utils/saved-handles";
 import { z } from "zod";
@@ -11,6 +13,7 @@ import { z } from "zod";
 const authorizeInputSchema = z.object({
   handle: z.string().min(1, "Handle is required"),
   redirect: z.string().optional(),
+  intent: z.enum(["subscribe"]).optional(),
 });
 
 const authorize = createServerFn({ method: "GET" })
@@ -23,11 +26,15 @@ const authorize = createServerFn({ method: "GET" })
       request.url,
     );
 
+    const scopeIntent: AuthScopeIntent =
+      data.intent === "subscribe" ? "subscribe" : "full";
+
     const { url } = await atprotoOAuth.authorize({
       target: {
         type: "account",
         identifier: handle,
       },
+      scope: resolveAuthScope(scopeIntent),
       state: {
         redirect: redirectTarget,
         handle,

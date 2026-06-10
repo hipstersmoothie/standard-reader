@@ -22,8 +22,8 @@ import { UserHandleAutocomplete } from "../components/user-handle-autocomplete";
 import { Avatar } from "../design-system/avatar";
 import { Button } from "../design-system/button";
 import { Flex } from "../design-system/flex";
-import { IconButton } from "../design-system/icon-button";
 import { Form } from "../design-system/form";
+import { IconButton } from "../design-system/icon-button";
 import { Separator } from "../design-system/separator";
 import { primaryColor, uiColor } from "../design-system/theme/color.stylex";
 import { breakpoints } from "../design-system/theme/media-queries.stylex";
@@ -40,6 +40,7 @@ import { Text } from "../design-system/typography/text";
 
 const searchSchema = z.object({
   redirect: z.string().optional(),
+  intent: z.enum(["subscribe"]).optional(),
   loginSuccess: z.union([z.string(), z.boolean()]).optional(),
   handle: z.string().optional(),
   avatar: z.string().optional(),
@@ -118,8 +119,8 @@ const styles = stylex.create({
     paddingBottom: verticalSpace["lg"],
   },
   backButton: {
-    left: horizontalSpace["3xl"],
     position: "absolute",
+    left: horizontalSpace["3xl"],
     top: verticalSpace["3xl"],
   },
 });
@@ -141,6 +142,9 @@ export const Route = createFileRoute("/login")({
             data: {
               handle: h.handle,
               redirect: (location.search as Record<string, string>)["redirect"],
+              intent: (location.search as Record<string, string>)["intent"] as
+                | "subscribe"
+                | undefined,
             },
           }),
         ),
@@ -156,6 +160,7 @@ export const Route = createFileRoute("/login")({
 function AuthPage() {
   const {
     redirect: redirectTo,
+    intent,
     loginSuccess,
     handle: handleParam,
     avatar: avatarParam,
@@ -181,13 +186,13 @@ function AuthPage() {
 
       void navigate({
         to: "/login",
-        search: { redirect: redirectTo },
+        search: { redirect: redirectTo, intent },
         replace: true,
       }).then(() => {
         setSavedHandles(getSavedHandles());
       });
     }
-  }, [loginSuccess, handleParam, avatarParam, navigate, redirectTo]);
+  }, [loginSuccess, handleParam, avatarParam, navigate, redirectTo, intent]);
 
   const loginMutation = useMutation({
     mutationFn: async (selectedHandle: string) => {
@@ -196,6 +201,7 @@ function AuthPage() {
         search: {
           handle: selectedHandle,
           redirect: redirectTo,
+          intent,
         },
       });
     },
@@ -250,7 +256,9 @@ function AuthPage() {
                 Standard Reader
               </Text>
               <Body variant="secondary">
-                Sign in with your Atmosphere account.
+                {intent === "subscribe"
+                  ? "Sign in with Bluesky to subscribe. We only ask permission to add this follow to your account."
+                  : "Sign in with your Atmosphere account."}
               </Body>
             </Flex>
 

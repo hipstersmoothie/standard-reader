@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Subscribe embed example</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        padding: 2rem 1.5rem 4rem;
+        background: linear-gradient(
+          160deg,
+          #f4efe6 0%,
+          #e8dfd0 45%,
+          #d9cfc0 100%
+        );
+        color: #2a241c;
+        font-family: Georgia, "Times New Roman", serif;
+        line-height: 1.5;
+      }
+
+      main {
+        max-width: 42rem;
+        margin: 0 auto;
+      }
+
+      h1 {
+        font-size: 1.75rem;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+        margin: 0 0 0.75rem;
+      }
+
+      p {
+        margin: 0 0 1rem;
+        color: #5c5348;
+        font-size: 1.05rem;
+      }
+
+      .embed-wrap {
+        margin-top: 2rem;
+        max-width: 25rem;
+      }
+
+      code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 0.9em;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Subscribe embed example</h1>
+      <p>
+        This page is plain HTML served from
+        <code>/subscribe-embed-example.html</code>. The card below is an iframe
+        from Standard Reader; height adjusts when the embed loads.
+      </p>
+
+      <div
+        style="
+          border-radius: 1.55rem;
+          corner-shape: squircle;
+          overflow: hidden;
+          max-width: 100%;
+          width: 400px;
+        "
+      >
+        <iframe
+          id="sr-subscribe-3lz3s33asuc2l"
+          src="http://localhost:3000/embed/subscribe/did:plc:s2rczyxit2v5vzedxqs326ri/3lz3s33asuc2l?layout=portrait"
+          width="400"
+          height="322"
+          style="border: 0; color-scheme: normal; display: block; width: 100%"
+          title="Subscribe to Annotated"
+          loading="lazy"
+        ></iframe>
+      </div>
+      <script>
+        window.addEventListener("message", function (e) {
+          if (
+            e.data?.type !== "standard-reader-subscribe-resize" ||
+            typeof e.data.height !== "number"
+          )
+            return;
+          var f = document.getElementById("sr-subscribe-3lz3s33asuc2l");
+          if (f && e.source === f.contentWindow) {
+            f.style.height = Math.ceil(e.data.height) + "px";
+          }
+        });
+      </script>
+    </main>
+  </body>
+</html>

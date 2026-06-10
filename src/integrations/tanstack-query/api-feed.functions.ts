@@ -1,7 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
-import { and, eq, sql } from "drizzle-orm";
 import { observe } from "#/server/observability/log";
 import { attachReaderSpanContext } from "#/server/observability/span-context.ts";
 import { attachCommentCountsToArticles } from "#/server/reader/document-comments";
@@ -22,6 +21,7 @@ import {
   articleCardsAsAllRead,
   resolveTrackReadingHistoryEnabled,
 } from "#/server/reader/track-reading-history";
+import { and, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import type { ArticleCard, PublicationCard } from "./api-shapes";

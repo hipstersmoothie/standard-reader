@@ -48,12 +48,7 @@ const authorPublicationsInput = z.object({
 
 const authorActivityInput = z.object({
   did: z.string().min(1),
-  limit: z
-    .number()
-    .int()
-    .min(1)
-    .max(30)
-    .default(AUTHOR_ACTIVITY_PAGE_SIZE),
+  limit: z.number().int().min(1).max(30).default(AUTHOR_ACTIVITY_PAGE_SIZE),
   offset: z.number().int().min(0).default(0),
 });
 
@@ -322,14 +317,7 @@ function getAuthorProfileQueryOptions(
   } = {},
 ) {
   return queryOptions({
-    queryKey: [
-      "author",
-      "profile",
-      did,
-      limit,
-      offset,
-      activityLimit,
-    ] as const,
+    queryKey: ["author", "profile", did, limit, offset, activityLimit] as const,
     queryFn: async () =>
       getAuthorProfile({ data: { did, limit, offset, activityLimit } }),
   });

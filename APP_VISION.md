@@ -150,7 +150,9 @@ Sections, top to bottom:
 ### Publication profile
 
 - Banner + **inline header** (avatar, topic, name, description, stats, Share, Follow).
-- **Share** menu: copy `/p/$did/$rkey` link + compose-to-Bluesky (OG card on `/p/`).
+- **Share** menu: copy `/p/$did/$rkey` link + compose-to-Bluesky (OG card on `/p/`) +
+  **Embed subscribe** (iframe snippet for the publication site — themed button opens
+  `/subscribe/$did/$rkey`, OAuth with subscription-only scope, auto-follow, themed success).
 - Recent writing (featured lead + rows).
 - Right rail: About + DID + "Readers also follow".
 - Social proof line ("Followed by …") when applicable.

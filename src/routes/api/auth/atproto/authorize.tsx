@@ -5,6 +5,7 @@ import { z } from "zod";
 const searchSchema = z.object({
   redirect: z.string().optional(),
   handle: z.string().optional(),
+  intent: z.enum(["subscribe"]).optional(),
 });
 
 export const Route = createFileRoute("/api/auth/atproto/authorize")({
@@ -23,6 +24,7 @@ export const Route = createFileRoute("/api/auth/atproto/authorize")({
       data: {
         handle: handleParam,
         redirect: search.redirect,
+        intent: search.intent,
       },
     });
 

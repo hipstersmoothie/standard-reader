@@ -1,5 +1,7 @@
 "use client";
 
+import type { LatestFilter } from "#/integrations/tanstack-query/api-feed.functions";
+
 import * as stylex from "@stylexjs/stylex";
 import {
   keepPreviousData,
@@ -14,7 +16,6 @@ import {
   feedApi,
   latestFeedPageSize,
 } from "#/integrations/tanstack-query/api-feed.functions";
-import type { LatestFilter } from "#/integrations/tanstack-query/api-feed.functions";
 import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
 import { formatCount } from "#/lib/format-count";

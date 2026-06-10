@@ -213,7 +213,7 @@ function parseDiscussionMarginRecord(
 
 function marginUrlsCacheKey(urls: Array<string>): string {
   return [...new Set(urls.flatMap((url) => marginLinkTargetVariants(url)))]
-    .sort()
+    .toSorted()
     .join("|");
 }
 

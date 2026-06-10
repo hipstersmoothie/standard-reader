@@ -53,12 +53,12 @@ import { Button } from "../design-system/button";
 import { Flex } from "../design-system/flex";
 import { Grid } from "../design-system/grid";
 import { SearchField } from "../design-system/search-field";
-import { Skeleton } from "../design-system/skeleton";
-import { Select, SelectItem } from "../design-system/select";
 import {
   SegmentedControl,
   SegmentedControlItem,
 } from "../design-system/segmented-control";
+import { Select, SelectItem } from "../design-system/select";
+import { Skeleton } from "../design-system/skeleton";
 import { uiColor } from "../design-system/theme/color.stylex";
 import { gap } from "../design-system/theme/semantic-spacing.stylex";
 import { spacing } from "../design-system/theme/spacing.stylex";

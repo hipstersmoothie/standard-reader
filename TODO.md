@@ -331,3 +331,6 @@ After Tier 1–3, as appetite allows:
 - [x] **Related articles** — “Related reading” rail on article footer (`relatedArticles` in
       `getArticleExtras`: tag overlap + co-read blend, excludes same publication).
 - [x] **Share publication / list** — `ShareMenu` on `/p/` and `/l/` (copy link + compose-to-bsky).
+- [x] **Subscribe embed** — `ShareMenu` embed option on `/p/`; `/embed/subscribe/$did/$rkey`
+      iframe card + `/subscribe/$did/$rkey` flow (subscription-only OAuth scope, auto-follow,
+      themed success screen).

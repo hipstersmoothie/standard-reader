@@ -5,6 +5,10 @@
  */
 import { isNotNull } from "drizzle-orm";
 
+import type { StructuredRenderableBlock } from "../src/lib/document/structured-content/types.ts";
+
+import { db } from "../src/db/index.ts";
+import { documents } from "../src/db/schema.ts";
 import {
   LEAFLET_DOCUMENT_FORMAT,
   altMarkdownText,
@@ -21,7 +25,6 @@ import {
 } from "../src/lib/document/structured-content/image.ts";
 import { markdownPlaintext } from "../src/lib/document/structured-content/markdown.ts";
 import { STANDARD_MARKDOWN_CONTENT } from "../src/lib/document/structured-content/types.ts";
-import type { StructuredRenderableBlock } from "../src/lib/document/structured-content/types.ts";
 import { leafletBlocks } from "../src/lib/leaflet/blocks.ts";
 import { leafletImageCid } from "../src/lib/leaflet/image.ts";
 import { LEAFLET_CONTENT } from "../src/lib/leaflet/types.ts";
@@ -30,8 +33,6 @@ import { OFFPRINT_CONTENT } from "../src/lib/offprint/types.ts";
 import { pcktBlocks } from "../src/lib/pckt/blocks.ts";
 import { pcktImageAlt, pcktImageHasSource } from "../src/lib/pckt/image.ts";
 import { PCKT_CONTENT } from "../src/lib/pckt/types.ts";
-import { db } from "../src/db/index.ts";
-import { documents } from "../src/db/schema.ts";
 
 const PAGE_SIZE = 100;
 

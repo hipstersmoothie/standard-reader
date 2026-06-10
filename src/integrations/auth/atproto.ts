@@ -20,7 +20,7 @@ import { db } from "#/db/index.server";
 import * as schema from "#/db/schema";
 import { eq, like } from "drizzle-orm";
 
-import { scope } from "./scope";
+import { clientMetadataScope } from "./scope";
 
 const OAUTH_STORE_PREFIX = "atproto-oauth";
 const OAUTH_STATE_TTL_MS = 15 * 60_000;
@@ -232,7 +232,7 @@ function getAtprotoOAuth(): InstanceType<typeof OAuthClient> {
       _atprotoOAuth = new OAuthClient({
         metadata: {
           redirect_uris: [redirectUri],
-          scope,
+          scope: clientMetadataScope,
         },
         stores: persistentOAuthStores,
         actorResolver: new LocalActorResolver({
@@ -255,7 +255,7 @@ function getAtprotoOAuth(): InstanceType<typeof OAuthClient> {
         metadata: {
           client_id: `${baseUrl}/api/auth/atproto/metadata.json`,
           redirect_uris: [redirectUri],
-          scope,
+          scope: clientMetadataScope,
           jwks_uri: `${baseUrl}/api/auth/atproto/jwks.json`,
         },
         keyset: [getPrivateKey()],

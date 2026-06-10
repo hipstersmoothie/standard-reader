@@ -7,7 +7,6 @@ import { discoverApi } from "#/integrations/tanstack-query/api-discover.function
 import { formatCount } from "#/lib/format-count";
 
 import { primaryColor, uiColor } from "../../design-system/theme/color.stylex";
-import { Kicker } from "./primitives";
 import {
   gap,
   horizontalSpace,
@@ -21,6 +20,7 @@ import {
   lineHeight,
   tracking,
 } from "../../design-system/theme/typography.stylex";
+import { Kicker } from "./primitives";
 
 const MOBILE = "@media (max-width: 47.5rem)";
 

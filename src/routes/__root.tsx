@@ -21,6 +21,7 @@ import {
 import { ui } from "../design-system/theme/semantic-color.stylex";
 import { PlausibleAnalytics } from "../integrations/plausible/analytics";
 import { user } from "../integrations/tanstack-query/api-user.functions";
+import { SUBSCRIBE_EMBED_TRANSPARENT_CSS } from "../lib/publication-embed";
 import { getPublicUrlClient } from "../lib/public-url";
 import { siteOgImageUrl, siteSocialMeta } from "../lib/site-metadata";
 import { DEFAULT_THEME_MODE, RESOLVED_SCHEME_SCRIPT } from "../lib/theme";
@@ -43,6 +44,24 @@ html[data-theme="system"] { color-scheme: light; }
   html[data-theme="system"] { color-scheme: dark; }
 }
 `.trim();
+
+/** Set before paint so embed iframes never flash an opaque page background. */
+const EMBED_SUBSCRIBE_PATH_SCRIPT = `
+(function () {
+  if (!location.pathname.startsWith("/embed/subscribe/")) return;
+  document.documentElement.dataset.embed = "subscribe";
+  var style = document.createElement("style");
+  style.textContent = ${JSON.stringify(SUBSCRIBE_EMBED_TRANSPARENT_CSS)};
+  document.head.appendChild(style);
+})();
+`.trim();
+
+const rootStyles = stylex.create({
+  embedShellBody: {
+    margin: 0,
+    backgroundColor: "transparent",
+  },
+});
 
 /**
  * The OAuth callback redirects back with `loginSuccess`, `handle`, and `avatar`
@@ -135,7 +154,15 @@ export const Route = createRootRouteWithContext<RouterContext>()({
   shellComponent: RootDocument,
 });
 
+function isSubscribeEmbedPath(pathname: string): boolean {
+  return pathname.startsWith("/embed/subscribe/");
+}
+
 function RootDocument({ children }: { children: React.ReactNode }) {
+  const pathname = useRouterState({
+    select: (state) => state.location.pathname,
+  });
+  const isSubscribeEmbed = isSubscribeEmbedPath(pathname);
   const { data: themePreference } = useQuery({
     ...user.getThemePreferenceQueryOptions,
     refetchOnMount: false,
@@ -144,35 +171,49 @@ function RootDocument({ children }: { children: React.ReactNode }) {
   const themeMode = themePreference?.mode ?? DEFAULT_THEME_MODE;
 
   return (
-    <html lang="en" data-theme={themeMode} suppressHydrationWarning>
+    <html
+      lang="en"
+      data-theme={themeMode}
+      data-embed={isSubscribeEmbed ? "subscribe" : undefined}
+      suppressHydrationWarning
+    >
       <head>
         <style dangerouslySetInnerHTML={{ __html: COLOR_SCHEME_CSS }} />
+        <script
+          dangerouslySetInnerHTML={{ __html: EMBED_SUBSCRIBE_PATH_SCRIPT }}
+        />
         <script dangerouslySetInnerHTML={{ __html: RESOLVED_SCHEME_SCRIPT }} />
         <HeadContent />
       </head>
       <body
         {...stylex.props(
-          editorialUi,
-          editorialPrimary,
-          editorialFonts,
-          editorialShadow,
-          ui.bg,
-          ui.text,
+          isSubscribeEmbed
+            ? rootStyles.embedShellBody
+            : [
+                editorialUi,
+                editorialPrimary,
+                editorialFonts,
+                editorialShadow,
+                ui.bg,
+                ui.text,
+              ],
         )}
       >
         <PersistOAuthSavedHandle />
         <PlausibleAnalytics />
         {children}
 
-        <TanStackDevtools
-          config={{ position: "bottom-right" }}
-          plugins={[
-            {
-              name: "Tanstack Router",
-              render: <TanStackRouterDevtoolsPanel />,
-            },
-          ]}
-        />
+        {isSubscribeEmbed ? null : (
+          <TanStackDevtools
+            config={{ position: "bottom-right" }}
+            plugins={[
+              {
+                name: "Tanstack Router",
+                render: <TanStackRouterDevtoolsPanel />,
+              },
+            ]}
+          />
+        )}
         <Scripts />
       </body>
     </html>
