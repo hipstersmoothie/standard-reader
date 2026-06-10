@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { discoverApi } from "#/integrations/tanstack-query/api-discover.functions";
 import { searchApi } from "#/integrations/tanstack-query/api-search.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
+import { isHandleLikeInput } from "#/lib/publication/handle-input";
 import { Plus, Search as SearchIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
@@ -147,13 +148,19 @@ export function AddPublicationModal({
   const hasQuery = debouncedQ.length > 0;
   const trimmedInput = input.trim();
   const isSearching = hasQuery && trimmedInput !== debouncedQ;
+  const handleLike = hasQuery && isHandleLikeInput(debouncedQ);
+
+  const { data: resolvedHandle, isFetching: resolveFetching } = useQuery({
+    ...searchApi.resolvePublicationByHandleQueryOptions(debouncedQ),
+    enabled: open && handleLike,
+  });
 
   const { data: searchPage, isFetching: searchFetching } = useQuery({
     ...searchApi.searchPublicationsQueryOptions({
       q: debouncedQ,
       limit: SEARCH_PAGE_SIZE,
     }),
-    enabled: open && hasQuery,
+    enabled: open && hasQuery && !handleLike,
   });
 
   const { data: trending, isFetching: trendingFetching } = useQuery({
@@ -163,10 +170,31 @@ export function AddPublicationModal({
     enabled: open && !hasQuery,
   });
 
-  const publications = hasQuery ? (searchPage?.items ?? []) : (trending ?? []);
+  const publications = handleLike
+    ? (resolvedHandle?.publications ?? [])
+    : hasQuery
+      ? (searchPage?.items ?? [])
+      : (trending ?? []);
   const loading =
     isSearching ||
-    (hasQuery ? searchFetching && !searchPage : trendingFetching && !trending);
+    (handleLike
+      ? resolveFetching && !resolvedHandle
+      : hasQuery
+        ? searchFetching && !searchPage
+        : trendingFetching && !trending);
+
+  const handleEmptyNote = (() => {
+    if (!handleLike || loading || publications.length > 0) {
+      return null;
+    }
+    if (!resolvedHandle?.did) {
+      return "Couldn't resolve that handle.";
+    }
+    const label = resolvedHandle.handle
+      ? `@${resolvedHandle.handle}`
+      : "this account";
+    return `No publications found for ${label}.`;
+  })();
 
   const closeModal = () => setOpen(false);
 
@@ -204,8 +232,8 @@ export function AddPublicationModal({
             spellCheck={false}
             value={input}
             onChange={(event) => setInput(event.target.value)}
-            placeholder="Search the directory by name or topic"
-            aria-label="Search publications"
+            placeholder="Search by name, topic, or paste a handle (@user.domain)"
+            aria-label="Search publications or paste a handle"
             {...stylex.props(styles.searchInput, styles.searchInputPlaceholder)}
           />
         </div>
@@ -231,6 +259,8 @@ export function AddPublicationModal({
                 onNavigate={closeModal}
               />
             ))
+          ) : handleEmptyNote ? (
+            <p {...stylex.props(styles.emptyNote)}>{handleEmptyNote}</p>
           ) : hasQuery ? (
             <p {...stylex.props(styles.emptyNote)}>
               No matches in the directory.

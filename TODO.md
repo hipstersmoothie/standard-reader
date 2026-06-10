@@ -268,10 +268,9 @@ Build each on hip-ui components + StyleX tokens (no raw HTML/inline styles).
 
 Backend/API exists; UI or copy is missing.
 
-- [ ] **Paste handle in Add publication modal** — wire `searchApi.resolvePublicationByHandle`
-      into [`add-publication-modal.tsx`](src/components/reader/add-publication-modal.tsx).
-      _Open decision:_ minimal handle detection in the search field (1.1A) vs Browse / Paste handle /
-      Search tabs (1.1B).
+- [x] **Paste handle in Add publication modal** — wired `searchApi.resolvePublicationByHandle`
+      into [`add-publication-modal.tsx`](src/components/reader/add-publication-modal.tsx) via
+      handle-like input detection in the unified search field (1.1A; no separate tabs).
 - [ ] **Publication profile — “Followed by …” social proof** — compact line under the header on
       [`_layout.p.$did.$rkey.tsx`](src/routes/_layout.p.$did.$rkey.tsx) using existing co-sub /
       co-recommend queries from [`queries.ts`](src/server/reader/queries.ts) (same signal as
@@ -327,16 +326,3 @@ After Tier 1–3, as appetite allows:
 - [ ] **Related articles** — content similarity (tags, co-read) beyond “More from {publication}”.
 - [ ] **Share publication / list** — copy link + compose-to-bsky; OG cards exist for `/p/` and `/l/`.
 
-## Non-goals (not on this roadmap)
-
-- Read-first client: **no** in-app posting or authoring publications. Discussion is read-only from Bluesky.
-- Push / Web notifications.
-- OPML import/export and RSS migration.
-- Topic following (Discover chips as subscriptions).
-- Multi-account / session switcher.
-- Search filters, ranking tuning, and in-publication search (current GIN FTS is sufficient for now).
-- Discovery recommendation / trending tuning beyond the shipped engine (tweak in prod as needed).
-- Publisher analytics dashboard.
-- Email digests.
-- Native iOS/Android apps (PWA may suffice).
-- IndexedDB / offline article bodies (separate from bookmark queue).

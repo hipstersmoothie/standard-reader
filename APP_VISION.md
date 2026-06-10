@@ -154,11 +154,14 @@ Sections, top to bottom:
 
 ### Add / Follow (modal)
 
-Three tabs:
+Single search field with two modes (detected from input):
 
-- **Browse** — popular across the network.
-- **Paste a handle** — resolve an AT Proto handle/domain (e.g. `stdout.dev`) → preview card → follow.
-- **Search** — search the directory by name/topic.
+- **Browse** — trending publications when the field is empty.
+- **Search** — full-text directory search by name or topic.
+- **Paste a handle** — when input looks like an AT Proto handle, domain, or DID
+  (e.g. `@stdout.dev`, `stdout.dev`), resolve via `resolvePublicationByHandle` →
+  preview card(s) → follow (including publications not yet in the index, fetched
+  live from the author's PDS).
 
 ---
 
