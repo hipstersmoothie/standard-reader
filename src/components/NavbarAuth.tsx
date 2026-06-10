@@ -6,7 +6,7 @@ import { createLink, useNavigate } from "@tanstack/react-router";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
 import { useTrackReadingHistory } from "#/lib/use-track-reading-history";
 import { useLoginSearch } from "#/utils/use-login-search";
-import { Bookmark, Heart, History, Info, LogOut } from "lucide-react";
+import { Heart, History, LogOut } from "lucide-react";
 import { Button as AriaButton } from "react-aria-components";
 
 import { Avatar, AvatarButton } from "../design-system/avatar";
@@ -203,9 +203,6 @@ export function NavbarAuth({
           ) : undefined
         }
       >
-        <MenuItemLink to="/saved" suffix={<Bookmark />}>
-          Saved for later
-        </MenuItemLink>
         {trackReading ? (
           <MenuItemLink to="/history" suffix={<History />}>
             Reading history
@@ -214,20 +211,6 @@ export function NavbarAuth({
         <MenuItemLink to="/likes" suffix={<Heart />}>
           Liked articles
         </MenuItemLink>
-        <MenuItemLink to="/about" suffix={<Info />}>
-          About Standard Reader
-        </MenuItemLink>
-        <MenuSeparator />
-        <MenuItem
-          onPress={() => {
-            const did = session.user.did;
-            if (did == null || did === "" || globalThis.navigator === undefined)
-              return;
-            void globalThis.navigator.clipboard?.writeText(did);
-          }}
-        >
-          Copy DID
-        </MenuItem>
         <MenuSeparator />
         <ThemeSubMenu />
         <ReaderVoiceSubMenu />

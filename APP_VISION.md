@@ -48,6 +48,7 @@ things you already subscribe to.
 Sidebar / bottom-nav
 ├── Home        — your day: featured lead + latest unread from follows + rails
 ├── Latest      — chronological list (Unread / Subscriptions / All-network tabs)
+├── Saved       — save queue (signed-in only; count badge when non-empty)
 ├── Discover    — the directory (THE differentiator)
 ├── Search      — publications, handles, topics, headlines
 └── + Add publication  (modal)
@@ -176,7 +177,7 @@ Sections, top to bottom:
 ### Reader profile (saved for later)
 
 - Signed-in reader's **save queue** (`app.standard-reader.bookmark`), newest first.
-- Route `/saved`; linked from the user menu. Requires auth (redirects to login).
+- Route `/saved`; linked from the sidebar (with saved count badge). Requires auth (redirects to login).
 
 ### Reader profile (liked articles)
 

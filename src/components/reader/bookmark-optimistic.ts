@@ -1,5 +1,6 @@
 import type { InfiniteData, QueryClient } from "@tanstack/react-query";
 
+import type { SidebarData } from "../../integrations/tanstack-query/api-feed.functions";
 import type {
   BookmarkStatus,
   ReaderListPage,
@@ -51,6 +52,23 @@ function removeFromSavedInfinite(
   };
 }
 
+function isSidebarData(data: unknown): data is SidebarData {
+  return (
+    typeof data === "object" &&
+    data !== null &&
+    "following" in data &&
+    "signedIn" in data
+  );
+}
+
+function adjustSavedCount(
+  count: number | null | undefined,
+  delta: number,
+): number | null {
+  if (count == null) return count ?? null;
+  return Math.max(0, count + delta);
+}
+
 function isBookmarkedInCache(
   queryClient: QueryClient,
   documentUri: string,
@@ -88,6 +106,17 @@ export function applyBookmarkOptimisticUpdate(
         return removeFromSavedInfinite(saved, documentUri);
       }
       return saved;
+    });
+  }
+
+  if (bookmarked !== wasBookmarked) {
+    const delta = bookmarked ? 1 : -1;
+    queryClient.setQueriesData({ queryKey: ["feed", "sidebar"] }, (data) => {
+      if (!isSidebarData(data)) return data;
+      return {
+        ...data,
+        savedCount: adjustSavedCount(data.savedCount, delta),
+      } satisfies SidebarData;
     });
   }
 

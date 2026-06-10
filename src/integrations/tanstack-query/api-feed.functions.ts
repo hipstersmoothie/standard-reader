@@ -1,6 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
+import { and, eq, sql } from "drizzle-orm";
 import { getAtprotoSessionForRequest } from "#/middleware/auth";
 import { observe } from "#/server/observability/log";
 import { attachCommentCountsToArticles } from "#/server/reader/document-comments";
@@ -88,6 +89,8 @@ export interface SidebarData {
   following: Array<FollowingPublication>;
   /** Unread count across follows (null when signed out / no follows). */
   unreadCount: number | null;
+  /** Saved-for-later count (null when signed out). */
+  savedCount: number | null;
 }
 
 const getSidebar = createServerFn({ method: "GET" })
@@ -103,6 +106,7 @@ const getSidebar = createServerFn({ method: "GET" })
           signedIn: false,
           following: [],
           unreadCount: null,
+          savedCount: null,
         } satisfies SidebarData;
       }
 
@@ -111,15 +115,21 @@ const getSidebar = createServerFn({ method: "GET" })
       // Effective follows: subscriptions plus saved-list publications.
       const followUris = await effectiveFollowUris(db, schema, did);
       span.set("follows", followUris.length);
-      const [following, counts, unreadByPublication] = await Promise.all([
-        followedPublications(db, schema, followUris),
-        trackReading && followUris.length > 0
-          ? countFollowedDocuments(db, schema, followUris, did)
-          : Promise.resolve(null),
-        trackReading && followUris.length > 0
-          ? countUnreadByPublication(db, schema, followUris, did)
-          : Promise.resolve(new Map<string, number>()),
-      ]);
+      const b = schema.bookmarks;
+      const [following, counts, unreadByPublication, savedCountRow] =
+        await Promise.all([
+          followedPublications(db, schema, followUris),
+          trackReading && followUris.length > 0
+            ? countFollowedDocuments(db, schema, followUris, did)
+            : Promise.resolve(null),
+          trackReading && followUris.length > 0
+            ? countUnreadByPublication(db, schema, followUris, did)
+            : Promise.resolve(new Map<string, number>()),
+          db
+            .select({ count: sql<number>`count(*)::int` })
+            .from(b)
+            .where(and(eq(b.ownerDid, did), eq(b.deleted, false))),
+        ]);
 
       return {
         signedIn: true,
@@ -130,6 +140,7 @@ const getSidebar = createServerFn({ method: "GET" })
             : 0,
         })),
         unreadCount: trackReading ? (counts?.unread ?? null) : 0,
+        savedCount: savedCountRow[0]?.count ?? 0,
       } satisfies SidebarData;
     }),
   );

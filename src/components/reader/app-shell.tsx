@@ -10,6 +10,7 @@ import { parseInternalRoute } from "#/lib/internal-route";
 import { PageReaderProvider } from "#/lib/page-reader/page-reader-provider";
 import {
   ArrowLeft,
+  Bookmark,
   Compass,
   FolderPlus,
   Home,
@@ -556,6 +557,20 @@ const NAV: Array<NavLink> = [
   { to: "/search", label: "Search", icon: <Search size={18} /> },
 ];
 
+const SAVED_NAV: NavLink = {
+  to: "/saved",
+  label: "Saved for later",
+  icon: <Bookmark size={18} />,
+};
+
+/** Primary nav links; inserts Saved after Latest when the reader is signed in. */
+function navWithSaved(signedIn: boolean): Array<NavLink> {
+  return NAV.flatMap((item) => {
+    if (item.to !== "/latest" || !signedIn) return [item];
+    return [item, SAVED_NAV];
+  });
+}
+
 function SidebarNavItem({
   to,
   label,
@@ -731,9 +746,9 @@ function SidebarList({
 
 const BottomNavItem = forwardRef<
   HTMLAnchorElement,
-  NavLink & { isActive: boolean; showUnreadDot?: boolean }
+  NavLink & { isActive: boolean; showBadgeDot?: boolean }
 >(function BottomNavItemRender(
-  { to, label, icon, isActive, showUnreadDot },
+  { to, label, icon, isActive, showBadgeDot },
   ref,
 ) {
   return (
@@ -745,7 +760,7 @@ const BottomNavItem = forwardRef<
     >
       <span {...stylex.props(styles.bottomIconWrap)}>
         {icon}
-        {showUnreadDot ? (
+        {showBadgeDot ? (
           <span
             {...stylex.props(
               styles.unreadDot,
@@ -771,9 +786,19 @@ function navItemActive(pathname: string, to: string): boolean {
   return pathname === to || pathname.startsWith(`${to}/`);
 }
 
-function BottomNav({ hasUnread }: { hasUnread: boolean }) {
+function BottomNav({
+  items,
+  hasUnread,
+  hasSaved,
+}: {
+  items: Array<NavLink>;
+  hasUnread: boolean;
+  hasSaved: boolean;
+}) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const activeIndex = NAV.findIndex((item) => navItemActive(pathname, item.to));
+  const activeIndex = items.findIndex((item) =>
+    navItemActive(pathname, item.to),
+  );
   const itemRefs = useRef<Array<HTMLAnchorElement | null>>([]);
   const [indicator, setIndicator] = useState<{
     left: number;
@@ -823,15 +848,22 @@ function BottomNav({ hasUnread }: { hasUnread: boolean }) {
             }}
           />
         ) : null}
-        {NAV.map((item, i) => (
+        {items.map((item, i) => (
           <BottomNavItem
             key={item.to}
             {...item}
+            label={item.to === "/saved" ? "Saved" : item.label}
             ref={(el) => {
               itemRefs.current[i] = el;
             }}
             isActive={i === activeIndex}
-            showUnreadDot={item.to === "/latest" ? hasUnread : false}
+            showBadgeDot={
+              item.to === "/latest"
+                ? hasUnread
+                : item.to === "/saved"
+                  ? hasSaved
+                  : false
+            }
           />
         ))}
       </div>
@@ -874,7 +906,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const signedIn = Boolean(session?.user);
   const following = sidebar?.following ?? [];
   const unreadCount = sidebar?.unreadCount ?? null;
+  const savedCount = sidebar?.savedCount ?? null;
   const hasUnread = unreadCount != null && unreadCount > 0;
+  const hasSaved = savedCount != null && savedCount > 0;
+  const primaryNav = navWithSaved(signedIn);
   const [subsSheetOpen, setSubsSheetOpen] = useState(false);
   const [addModalOpen, setAddModalOpen] = useState(false);
 
@@ -935,11 +970,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <aside {...stylex.props(styles.sidebar)}>
           <Brand style={styles.brandSidebar} />
           <nav {...stylex.props(styles.nav)}>
-            {NAV.map((item) => (
+            {primaryNav.map((item) => (
               <SidebarNavItem
                 key={item.to}
                 {...item}
-                count={item.to === "/latest" ? unreadCount : null}
+                count={
+                  item.to === "/latest"
+                    ? unreadCount
+                    : item.to === "/saved"
+                      ? savedCount
+                      : null
+                }
               />
             ))}
           </nav>
@@ -1028,7 +1069,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
           <div {...stylex.props(styles.dock)}>
             <PageReaderBar />
-            <BottomNav hasUnread={hasUnread} />
+            <BottomNav
+              items={primaryNav}
+              hasUnread={hasUnread}
+              hasSaved={hasSaved}
+            />
           </div>
         </main>
 
