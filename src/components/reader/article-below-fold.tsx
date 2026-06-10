@@ -64,6 +64,11 @@ const styles = stylex.create({
     color: uiColor.text2,
     fontSize: fontSize.sm,
   },
+  connectionLabel: {
+    color: uiColor.text2,
+    fontSize: fontSize.sm,
+    fontStyle: "italic",
+  },
   footGrow: {
     flexBasis: "0%",
     flexGrow: 1,
@@ -72,12 +77,45 @@ const styles = stylex.create({
   },
 });
 
+function mergeRelatedReading(
+  marginConnections: ArticleExtras["marginConnections"],
+  relatedArticles: ArticleExtras["relatedArticles"],
+): Array<{
+  article: ArticleExtras["relatedArticles"][number];
+  subtitle?: string;
+}> {
+  const seen = new Set<string>();
+  const merged: Array<{
+    article: ArticleExtras["relatedArticles"][number];
+    subtitle?: string;
+  }> = [];
+
+  for (const item of marginConnections) {
+    if (seen.has(item.article.uri)) continue;
+    seen.add(item.article.uri);
+    merged.push({
+      article: item.article,
+      subtitle: `${item.connectionLabel} on Margin`,
+    });
+  }
+
+  for (const article of relatedArticles) {
+    if (seen.has(article.uri)) continue;
+    seen.add(article.uri);
+    merged.push({ article });
+  }
+
+  return merged;
+}
+
 function MoreFromRow({
   article,
   publicationName,
+  subtitle,
 }: {
   article: ArticleExtras["moreFrom"][number];
   publicationName: string;
+  subtitle?: string;
 }) {
   const { openExternally } = useOpenLinks();
   const params = documentLinkParams(article.uri);
@@ -90,6 +128,9 @@ function MoreFromRow({
           ? publicationName
           : `${publicationName} · ${minutes} min`}
       </span>
+      {subtitle ? (
+        <span {...stylex.props(styles.connectionLabel)}>{subtitle}</span>
+      ) : null}
     </Flex>
   );
 
@@ -195,18 +236,46 @@ function MoreFromSection({
 
 function RelatedArticlesSection({
   relatedArticles,
+  marginConnections,
 }: {
   relatedArticles: ArticleExtras["relatedArticles"];
+  marginConnections: ArticleExtras["marginConnections"];
 }) {
   const { preference } = useReadingTypography();
-  if (relatedArticles.length === 0) return null;
+  const items = mergeRelatedReading(marginConnections, relatedArticles);
+  if (items.length === 0) return null;
 
   return (
     <div {...stylex.props(styles.moreFrom, articleMeasureStyle(preference))}>
       <Flex direction="column">
         <SectionHead kicker="Across the network" title="Related reading" />
         <div>
-          {relatedArticles.map((doc) => (
+          {items.map((item) => (
+            <MoreFromRow
+              key={item.article.uri}
+              article={item.article}
+              publicationName={
+                item.article.publicationName?.trim() || "Publication"
+              }
+              subtitle={item.subtitle}
+            />
+          ))}
+        </div>
+      </Flex>
+    </div>
+  );
+}
+
+function CitedInSection({ citedIn }: { citedIn: ArticleExtras["citedIn"] }) {
+  const { preference } = useReadingTypography();
+  if (citedIn.length === 0) return null;
+
+  return (
+    <div {...stylex.props(styles.moreFrom, articleMeasureStyle(preference))}>
+      <Flex direction="column">
+        <SectionHead kicker="Across the network" title="Cited in" />
+        <div>
+          {citedIn.map((doc) => (
             <MoreFromRow
               key={doc.uri}
               article={doc}
@@ -263,8 +332,13 @@ export function ArticleBelowFold({
 
       {showComments ? <CommentsSection documentUri={article.uri} /> : null}
 
+      {extras ? <CitedInSection citedIn={extras.citedIn} /> : null}
+
       {extras ? (
-        <RelatedArticlesSection relatedArticles={extras.relatedArticles} />
+        <RelatedArticlesSection
+          relatedArticles={extras.relatedArticles}
+          marginConnections={extras.marginConnections}
+        />
       ) : null}
 
       {extras ? (

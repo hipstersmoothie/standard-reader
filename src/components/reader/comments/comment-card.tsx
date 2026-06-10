@@ -177,7 +177,8 @@ export function CommentCard({ comment }: { comment: DocumentComment }) {
   const handle = comment.author.handle ? `@${comment.author.handle}` : null;
   const replyLabel =
     comment.replyCount === 1 ? "1 reply" : `${comment.replyCount} replies`;
-  const replyContext = comment.source === "margin" ? "on Margin" : "on Bluesky";
+  const replyContext =
+    comment.source === "margin" ? "on Margin" : "on Bluesky";
 
   return (
     <a

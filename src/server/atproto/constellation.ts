@@ -26,7 +26,9 @@ const MARGIN_REPLY_ROOT_PATH = ".root.uri";
 /** JSON paths in `app.bsky.feed.post` where a linked URL may appear. */
 export const BSKY_POST_LINK_PATHS = [
   ".embed.external.uri",
+  ".embed.media.external.uri",
   ".facets[].features[app.bsky.richtext.facet#link].uri",
+  ".facets[app.bsky.richtext.facet].features[app.bsky.richtext.facet#link].uri",
 ] as const;
 
 /** Bluesky post link sources as `collection:path` for the xrpc API. */
@@ -72,6 +74,51 @@ export const MARGIN_DISCUSSION_LINK_SOURCES = [
 /** Constellation source for `at.margin.reply` records pointing at a note root. */
 export const MARGIN_REPLY_LINK_SOURCE =
   `at.margin.reply:${MARGIN_REPLY_ROOT_PATH}` as const;
+
+/** Cosmik graph edges between two page URLs (Margin / Semble). */
+export const COSMIK_CONNECTION_COLLECTION = "network.cosmik.connection";
+export const COSMIK_CONNECTION_TARGET_PATH = ".target";
+export const COSMIK_CONNECTION_LINK_SOURCE =
+  `${COSMIK_CONNECTION_COLLECTION}:${COSMIK_CONNECTION_TARGET_PATH}` as const;
+
+/** In-body link citations from other standard.site / Leaflet documents. */
+export const CITATION_COLLECTIONS = [
+  "site.standard.document",
+  "pub.leaflet.document",
+] as const;
+
+export const CITATION_URL_PATHS = [
+  ".content.pages[pub.leaflet.pages.linearDocument].blocks[pub.leaflet.pages.linearDocument#block].block.facets[].features[pub.leaflet.richtext.facet#link].uri",
+  ".content.pages[pub.leaflet.pages.linearDocument].blocks[pub.leaflet.pages.linearDocument#block].block.children[pub.leaflet.blocks.unorderedList#listItem].content.facets[].features[pub.leaflet.richtext.facet#link].uri",
+  ".content.items[app.offprint.block.text].facets[].features[app.offprint.richtext.facet#link].uri",
+  ".content.items[blog.pckt.block.text].facets[].features[blog.pckt.richtext.facet#link].uri",
+  ".pages[pub.leaflet.pages.linearDocument].blocks[].block.facets[].features[pub.leaflet.richtext.facet#link].uri",
+] as const;
+
+/** Citation link sources as legacy `/links` collection + path specs. */
+export const CITATION_LINK_SOURCES = CITATION_COLLECTIONS.flatMap(
+  (collection) =>
+    CITATION_URL_PATHS.map(
+      (path) => `${collection}:${path}` as const,
+    ),
+);
+
+/** All Constellation sources Standard Reader queries for Discussion + extras. */
+export const DISCUSSION_LINK_SOURCES = [
+  ...BSKY_POST_LINK_SOURCES,
+  ...MARGIN_DISCUSSION_LINK_SOURCES,
+] as const;
+
+export interface ConstellationLinkSourceSummary {
+  collection: string;
+  path: string;
+  records: number;
+  distinctDids: number;
+}
+
+export interface ConstellationAllLinksResult {
+  sources: Array<ConstellationLinkSourceSummary>;
+}
 
 function constellationBaseUrl(): string {
   const configured = process.env.CONSTELLATION_URL?.trim();
@@ -389,4 +436,84 @@ export async function getMarginReplyCountForNote(
     target: noteUri,
     source: MARGIN_REPLY_LINK_SOURCE,
   });
+}
+
+function parseAllLinksPayload(payload: unknown): ConstellationAllLinksResult {
+  const empty: ConstellationAllLinksResult = { sources: [] };
+  if (!isRecord(payload)) return empty;
+
+  const links = payload.links;
+  if (!isRecord(links)) return empty;
+
+  const sources: Array<ConstellationLinkSourceSummary> = [];
+  for (const [collection, paths] of Object.entries(links)) {
+    if (!isRecord(paths)) continue;
+    for (const [path, stats] of Object.entries(paths)) {
+      if (!isRecord(stats)) continue;
+      const records =
+        typeof stats.records === "number" ? stats.records : 0;
+      const distinctDids =
+        typeof stats.distinct_dids === "number" ? stats.distinct_dids : 0;
+      if (records <= 0) continue;
+      sources.push({ collection, path, records, distinctDids });
+    }
+  }
+
+  sources.sort((a, b) => b.records - a.records);
+  return { sources };
+}
+
+/**
+ * All indexed link sources for one target — Constellation `/links/all`.
+ * Best-effort; returns empty on timeout or failure.
+ */
+export async function getAllLinkSourcesForTarget(
+  target: string,
+): Promise<ConstellationAllLinksResult> {
+  if (!target.trim()) return { sources: [] };
+
+  try {
+    const url = new URL("/links/all", constellationBaseUrl());
+    url.searchParams.set("target", target);
+
+    const response = await fetch(url.toString(), {
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+      headers: constellationHeaders(),
+    });
+    if (!response.ok) return { sources: [] };
+
+    return parseAllLinksPayload(await response.json());
+  } catch {
+    return { sources: [] };
+  }
+}
+
+/** Cosmik connections where `target` is the linked article URL. */
+export async function getCosmikConnectionBacklinksForTarget(
+  target: string,
+): Promise<Array<ConstellationBacklinkRecord>> {
+  const records = await getAllBacklinksForSource(
+    target,
+    COSMIK_CONNECTION_LINK_SOURCE,
+  );
+  return mergeBacklinkRecords(
+    [records],
+    new Set([COSMIK_CONNECTION_COLLECTION]),
+  );
+}
+
+/** Other documents whose body links to `target`. */
+export async function getCitationBacklinksForTarget(
+  target: string,
+): Promise<Array<ConstellationBacklinkRecord>> {
+  const results = await Promise.all(
+    CITATION_LINK_SOURCES.map((source) =>
+      getAllBacklinksForSource(target, source),
+    ),
+  );
+
+  return mergeBacklinkRecords(
+    results,
+    new Set(CITATION_COLLECTIONS),
+  );
 }

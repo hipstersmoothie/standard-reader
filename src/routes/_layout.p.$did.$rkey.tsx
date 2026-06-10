@@ -18,6 +18,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { ArticleCard } from "../integrations/tanstack-query/api-shapes";
 
+import { AddToListButton } from "../components/reader/add-to-list-modal";
 import {
   ArticleRow,
   FeatureArticle,
@@ -450,6 +451,11 @@ function PublicationProfile() {
                 <ExternalLink size={15} />
               </IconButton>
             ) : null}
+            <AddToListButton
+              publicationUri={pub.uri}
+              signedIn={signedIn}
+              size="md"
+            />
             <FollowButton
               publicationUri={pub.uri}
               signedIn={signedIn}

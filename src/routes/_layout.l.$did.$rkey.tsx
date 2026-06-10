@@ -19,7 +19,7 @@ import { user } from "#/integrations/tanstack-query/api-user.functions";
 import { getPublicUrlClient } from "#/lib/public-url";
 import { listOgImageUrl, siteSocialMeta } from "#/lib/site-metadata";
 import { useTrackReadingHistory } from "#/lib/use-track-reading-history";
-import { Pencil } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { z } from "zod";
 
@@ -27,7 +27,16 @@ import { ArticleRow, PubDirectoryRow } from "../components/reader/cards";
 import { ListEditModal } from "../components/reader/list-edit-modal";
 import { Handle, Kicker, ReaderContent } from "../components/reader/primitives";
 import { ShareMenu } from "../components/reader/share-menu";
+import {
+  AlertDialog,
+  AlertDialogActionButton,
+  AlertDialogCancelButton,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+} from "../design-system/alert-dialog";
 import { Button } from "../design-system/button";
+import { IconButton } from "../design-system/icon-button";
 import { Tab, TabList, TabPanel, Tabs } from "../design-system/tabs";
 import { uiColor } from "../design-system/theme/color.stylex";
 import { spacing } from "../design-system/theme/spacing.stylex";
@@ -396,9 +405,12 @@ function ListPage() {
   const following = sidebar?.following ?? [];
 
   const [editOpen, setEditOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
-  const invalidate = () => {
+  const invalidateListQueries = () => {
     void queryClient.invalidateQueries({ queryKey: ["list", did, rkey] });
+    void queryClient.invalidateQueries({ queryKey: ["list"] });
+    void queryClient.invalidateQueries({ queryKey: ["reader", "lists"] });
     void queryClient.invalidateQueries({
       queryKey: ["reader", "savedLists"],
     });
@@ -406,13 +418,26 @@ function ListPage() {
     // surface (sidebar, home, latest) changes too.
     void queryClient.invalidateQueries({ queryKey: ["feed"] });
   };
+
+  const leaveAfterDelete = () => {
+    void navigate({ to: "/" });
+  };
+
+  const deleteMutation = useMutation({
+    ...listApi.deleteListMutationOptions(),
+    onSuccess: () => {
+      setDeleteOpen(false);
+      leaveAfterDelete();
+    },
+    onSettled: invalidateListQueries,
+  });
   const saveMutation = useMutation({
     ...listApi.saveListMutationOptions(),
-    onSettled: invalidate,
+    onSettled: invalidateListQueries,
   });
   const unsaveMutation = useMutation({
     ...listApi.unsaveListMutationOptions(),
-    onSettled: invalidate,
+    onSettled: invalidateListQueries,
   });
   const toggling = saveMutation.isPending || unsaveMutation.isPending;
 
@@ -466,9 +491,42 @@ function ListPage() {
         <div {...stylex.props(styles.heroActs)}>
           <ShareMenu pageUrl={pageUrl} />
           {viewer.isOwner ? (
-            <Button variant="secondary" onPress={() => setEditOpen(true)}>
-              <Pencil size={14} /> Edit list
-            </Button>
+            <>
+              <Button variant="secondary" onPress={() => setEditOpen(true)}>
+                <Pencil size={14} /> Edit list
+              </Button>
+              <AlertDialog
+                isOpen={deleteOpen}
+                onOpenChange={setDeleteOpen}
+                trigger={
+                  <IconButton variant="critical-outline" label="Delete list">
+                    <Trash2 size={14} />
+                  </IconButton>
+                }
+              >
+                <AlertDialogHeader>Delete list?</AlertDialogHeader>
+                <AlertDialogDescription>
+                  “{list.name}” will be removed from your account. Anyone who
+                  saved it will no longer see it in their sidebar. This can’t be
+                  undone.
+                </AlertDialogDescription>
+                <AlertDialogFooter>
+                  <AlertDialogCancelButton
+                    isDisabled={deleteMutation.isPending}
+                  >
+                    Cancel
+                  </AlertDialogCancelButton>
+                  <AlertDialogActionButton
+                    variant="critical"
+                    closeOnPress={false}
+                    isPending={deleteMutation.isPending}
+                    onPress={() => deleteMutation.mutate(rkey)}
+                  >
+                    Delete list
+                  </AlertDialogActionButton>
+                </AlertDialogFooter>
+              </AlertDialog>
+            </>
           ) : signedIn ? (
             viewer.isSaved ? (
               <Button
@@ -530,6 +588,7 @@ function ListPage() {
           onOpenChange={setEditOpen}
           list={list}
           following={following}
+          onDeleted={leaveAfterDelete}
         />
       ) : null}
     </div>

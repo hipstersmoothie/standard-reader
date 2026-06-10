@@ -120,10 +120,12 @@ function ListEditForm({
   list,
   following,
   close,
+  onDeleted,
 }: {
   list: SubscriptionList | null;
   following: Array<FollowingPublication>;
   close: () => void;
+  onDeleted?: () => void;
 }) {
   const queryClient = useQueryClient();
   const [name, setName] = useState(list?.name ?? "");
@@ -207,7 +209,13 @@ function ListEditForm({
     if (!list || busy) {
       return;
     }
-    deleteMutation.mutate(list.rkey, { onSuccess: close, onSettled });
+    deleteMutation.mutate(list.rkey, {
+      onSuccess: () => {
+        close();
+        onDeleted?.();
+      },
+      onSettled,
+    });
   };
 
   const error = saveMutation.error ?? deleteMutation.error;
@@ -360,12 +368,15 @@ export function ListEditModal({
   onOpenChange,
   list,
   following,
+  onDeleted,
 }: {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   /** Null creates a new list. */
   list: SubscriptionList | null;
   following: Array<FollowingPublication>;
+  /** Called after a list is deleted (e.g. navigate away from its public page). */
+  onDeleted?: () => void;
 }) {
   return (
     <Dialog
@@ -385,6 +396,7 @@ export function ListEditModal({
         list={list}
         following={following}
         close={() => onOpenChange(false)}
+        onDeleted={onDeleted}
       />
     </Dialog>
   );

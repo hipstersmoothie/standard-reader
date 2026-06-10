@@ -1,5 +1,6 @@
 import type { LeafletCodeBlock } from "#/lib/leaflet/types";
 import type { CodeHighlightsByScheme, ThemeMode } from "#/lib/theme";
+import type { MarginConnectionItem } from "#/server/reader/article-constellation-extras";
 
 import { queryOptions } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
@@ -16,10 +17,15 @@ import { EMPTY_CODE_HIGHLIGHTS } from "#/lib/theme";
 import { getAtprotoSessionForRequest } from "#/middleware/auth";
 import { authorPds } from "#/server/atproto/identity";
 import { resolveGreengaleContent } from "#/server/greengale/resolve";
+import { buildCanonicalUrl } from "#/server/ingest/mappers";
 import { resolveLeafletContent } from "#/server/leaflet/resolve";
 import { observe } from "#/server/observability/log";
 import { attachReaderSpanContext } from "#/server/observability/span-context.ts";
 import { resolvePcktContent } from "#/server/pckt/resolve";
+import {
+  fetchCitedInArticles,
+  fetchMarginConnections,
+} from "#/server/reader/article-constellation-extras";
 import {
   attachCommentCountsToArticles,
   countDocumentComments,
@@ -46,6 +52,8 @@ import type {
 
 import { publicationCardColumns, toPublicationCard } from "./api-shapes";
 import { dbMiddleware } from "./db-middleware";
+
+export type { MarginConnectionItem } from "#/server/reader/article-constellation-extras";
 
 /**
  * Publication-profile and article reading queries (`APP_VISION.md` §5).
@@ -178,6 +186,10 @@ export interface ArticleExtras {
   /** Cross-publication articles by tag overlap and co-read. */
   relatedArticles: Array<ArticleCard>;
   readersAlsoFollow: Array<PublicationCard>;
+  /** Other indexed articles whose body links to this document (Constellation). */
+  citedIn: Array<ArticleCard>;
+  /** Margin/Semble graph edges pointing at this article's URL. */
+  marginConnections: Array<MarginConnectionItem>;
 }
 
 const getPublicationProfile = createServerFn({ method: "GET" })
@@ -577,25 +589,46 @@ const getArticleExtras = createServerFn({ method: "GET" })
         span.set("documentUri", data.documentUri);
         await attachReaderSpanContext(span, getRequest());
 
+        const p = schema.publications;
         const [row] = await db
           .select({
             uri: d.uri,
             publicationUri: d.publicationUri,
+            path: d.path,
+            canonicalUrl: d.canonicalUrl,
+            publicationUrl: p.url,
           })
           .from(d)
+          .leftJoin(p, eq(d.publicationUri, p.uri))
           .where(eq(d.uri, data.documentUri))
           .limit(1);
 
         if (!row) {
           span.set("found", false);
-          return { moreFrom: [], relatedArticles: [], readersAlsoFollow: [] };
+          return {
+            moreFrom: [],
+            relatedArticles: [],
+            readersAlsoFollow: [],
+            citedIn: [],
+            marginConnections: [],
+          };
         }
         span.set("found", true);
+
+        const canonicalUrl =
+          row.canonicalUrl ?? buildCanonicalUrl(row.publicationUrl, row.path);
+        const linkUrls = canonicalUrl ? [canonicalUrl] : [];
 
         const session = await getAtprotoSessionForRequest(getRequest());
         const readerDid = session?.did;
 
-        const [moreFromRaw, relatedRaw, recommendedRaw] = await Promise.all([
+        const [
+          moreFromRaw,
+          relatedRaw,
+          recommendedRaw,
+          citedInRaw,
+          marginConnectionsRaw,
+        ] = await Promise.all([
           row.publicationUri
             ? selectArticleCards(db, schema, {
                 publicationUris: [row.publicationUri],
@@ -612,20 +645,56 @@ const getArticleExtras = createServerFn({ method: "GET" })
             readerDid,
             limit: data.alsoFollowLimit,
           }),
+          linkUrls.length > 0
+            ? fetchCitedInArticles(db, schema, {
+                urls: linkUrls,
+                excludeDocumentUri: row.uri,
+                limit: 3,
+              })
+            : Promise.resolve([]),
+          linkUrls.length > 0
+            ? fetchMarginConnections(db, schema, {
+                urls: linkUrls,
+                limit: 3,
+              })
+            : Promise.resolve([]),
         ]);
 
         const moreFrom = moreFromRaw
           .filter((doc) => doc.uri !== row.uri)
           .slice(0, 3);
-        const [moreFromWithComments, relatedWithComments] = await Promise.all([
+        const marginConnectionArticles = marginConnectionsRaw.map(
+          (item) => item.article,
+        );
+        const [
+          moreFromWithComments,
+          relatedWithComments,
+          citedInWithComments,
+          marginConnectionArticlesWithComments,
+        ] = await Promise.all([
           attachCommentCountsToArticles(db, schema, moreFrom),
           attachCommentCountsToArticles(db, schema, relatedRaw),
+          attachCommentCountsToArticles(db, schema, citedInRaw),
+          attachCommentCountsToArticles(db, schema, marginConnectionArticles),
         ]);
+
+        const marginArticleByUri = new Map(
+          marginConnectionArticlesWithComments.map((article) => [
+            article.uri,
+            article,
+          ]),
+        );
+        const marginConnections = marginConnectionsRaw.map((item) => ({
+          ...item,
+          article: marginArticleByUri.get(item.article.uri) ?? item.article,
+        }));
 
         return {
           moreFrom: moreFromWithComments,
           relatedArticles: relatedWithComments,
           readersAlsoFollow: recommendedRaw,
+          citedIn: citedInWithComments,
+          marginConnections,
         };
       },
     ),

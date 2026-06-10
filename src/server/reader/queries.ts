@@ -1361,7 +1361,7 @@ const RELATED_ARTICLE_BLEND = {
 } as const;
 
 /** Fetch {@link ArticleCard}s for `uris`, preserving rank order. */
-async function articleCardsByOrderedUris(
+export async function selectArticleCardsByUris(
   db: Db,
   schema: Schema,
   uris: Array<string>,
@@ -1485,7 +1485,7 @@ export async function relatedArticles(
   }
 
   const uris = ranked.slice(0, opts.limit).map((row) => row.uri);
-  return articleCardsByOrderedUris(db, schema, uris);
+  return selectArticleCardsByUris(db, schema, uris);
 }
 
 export interface AuthorProfileStats {
