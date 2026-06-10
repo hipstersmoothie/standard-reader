@@ -126,11 +126,11 @@ const styles = stylex.create({
     width: "100%",
   },
   card: {
-    backgroundColor: "var(--sub-bg)",
     borderRadius: radius.lg,
+    cornerShape: "squircle",
+    backgroundColor: "var(--sub-bg)",
     boxSizing: "border-box",
     color: "var(--sub-fg)",
-    cornerShape: "squircle",
     display: "flex",
     paddingLeft: horizontalSpace["2xl"],
     paddingRight: horizontalSpace["2xl"],

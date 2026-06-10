@@ -99,6 +99,8 @@ export type FollowingPublication = PublicationCard & { unreadCount: number };
 export interface SidebarData {
   /** Whether the reader is signed in (drives empty-state copy + auth chrome). */
   signedIn: boolean;
+  /** Subscriptions or saved-list follows — mirrors home feed `personalized`. */
+  hasFollows: boolean;
   /** Followed publications (most recent activity first) for the sidebar list. */
   following: Array<FollowingPublication>;
   /** Unread count across follows (null when signed out / no follows). */
@@ -107,55 +109,58 @@ export interface SidebarData {
   savedCount: number | null;
 }
 
-const getSidebar = createServerFn({ method: "GET" })
-  .middleware([dbMiddleware])
-  .handler(
-    observe("feed.getSidebar", async ({ context }, span) => {
-      const { db, schema } = context;
-      const did = await attachReaderSpanContext(span, getRequest());
-      if (!did) {
-        return {
-          signedIn: false,
-          following: [],
-          unreadCount: null,
-          savedCount: null,
-        } satisfies SidebarData;
-      }
-
-      const trackReading = await resolveTrackReadingHistoryEnabled(db, schema);
-
-      // Effective follows: subscriptions plus saved-list publications.
-      const followUris = await effectiveFollowUris(db, schema, did);
-      span.set("follows", followUris.length);
-      const b = schema.bookmarks;
-      const [following, counts, unreadByPublication, savedCountRow] =
-        await Promise.all([
-          followedPublications(db, schema, followUris),
-          trackReading && followUris.length > 0
-            ? countFollowedDocuments(db, schema, followUris, did)
-            : Promise.resolve(null),
-          trackReading && followUris.length > 0
-            ? countUnreadByPublication(db, schema, followUris, did)
-            : Promise.resolve(new Map<string, number>()),
-          db
-            .select({ count: sql<number>`count(*)::int` })
-            .from(b)
-            .where(and(eq(b.ownerDid, did), eq(b.deleted, false))),
-        ]);
-
+const getSidebar = createServerFn({ method: "GET" }).handler(
+  observe("feed.getSidebar", async (_, span) => {
+    const did = await attachReaderSpanContext(span, getRequest());
+    if (!did) {
       return {
-        signedIn: true,
-        following: following.map((pub) => ({
-          ...pub,
-          unreadCount: trackReading
-            ? (unreadByPublication.get(pub.uri) ?? 0)
-            : 0,
-        })),
-        unreadCount: trackReading ? (counts?.unread ?? null) : 0,
-        savedCount: savedCountRow[0]?.count ?? 0,
+        signedIn: false,
+        hasFollows: false,
+        following: [],
+        unreadCount: null,
+        savedCount: null,
       } satisfies SidebarData;
-    }),
-  );
+    }
+
+    const [{ db }, schema] = await Promise.all([
+      import("#/db/index.server"),
+      import("#/db/schema"),
+    ]);
+
+    const trackReading = await resolveTrackReadingHistoryEnabled(db, schema);
+
+    // Effective follows: subscriptions plus saved-list publications.
+    const followUris = await effectiveFollowUris(db, schema, did);
+    const hasFollows = followUris.length > 0;
+    span.set("follows", followUris.length);
+    const b = schema.bookmarks;
+    const [following, counts, unreadByPublication, savedCountRow] =
+      await Promise.all([
+        followedPublications(db, schema, followUris),
+        trackReading && followUris.length > 0
+          ? countFollowedDocuments(db, schema, followUris, did)
+          : Promise.resolve(null),
+        trackReading && followUris.length > 0
+          ? countUnreadByPublication(db, schema, followUris, did)
+          : Promise.resolve(new Map<string, number>()),
+        db
+          .select({ count: sql<number>`count(*)::int` })
+          .from(b)
+          .where(and(eq(b.ownerDid, did), eq(b.deleted, false))),
+      ]);
+
+    return {
+      signedIn: true,
+      hasFollows,
+      following: following.map((pub) => ({
+        ...pub,
+        unreadCount: trackReading ? (unreadByPublication.get(pub.uri) ?? 0) : 0,
+      })),
+      unreadCount: trackReading ? (counts?.unread ?? null) : 0,
+      savedCount: savedCountRow[0]?.count ?? 0,
+    } satisfies SidebarData;
+  }),
+);
 
 const getHomeFeed = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])

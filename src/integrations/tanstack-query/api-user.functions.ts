@@ -68,9 +68,121 @@ function parseCookies(cookieHeader: string | null): Record<string, string> {
   return Object.fromEntries(cookiePairs) as Record<string, string>;
 }
 
-const getSession = createServerFn({ method: "GET" })
-  .middleware([dbMiddleware])
-  .handler(async ({ context }) => {
+async function loadSessionFromToken(sessionToken: string) {
+  const [{ db }, schema] = await Promise.all([
+    import("#/db/index.server"),
+    import("#/db/schema"),
+  ]);
+  const sessionRow = await db.query.session.findFirst({
+    where: eq(schema.session.token, sessionToken),
+    with: {
+      user: {
+        columns: {
+          id: true,
+          name: true,
+          email: true,
+          did: true,
+          image: true,
+          isAdmin: true,
+          createdAt: true,
+          updatedAt: true,
+          themeMode: true,
+          trackReadingHistory: true,
+        },
+      },
+    },
+  });
+
+  if (!sessionRow || sessionRow.expiresAt.getTime() <= Date.now()) {
+    return null;
+  }
+
+  const userRow = sessionRow.user;
+  if (!userRow?.did || !isDid(userRow.did)) {
+    return null;
+  }
+
+  const [atprotoSession, profileRow, publicProfile, identity] =
+    await Promise.all([
+      restoreAtprotoSession(userRow.did),
+      db.query.profiles.findFirst({
+        where: eq(schema.profiles.did, userRow.did),
+        columns: { handle: true },
+      }),
+      fetchBlueskyPublicProfileFields(userRow.did),
+      resolveIdentity(userRow.did),
+    ]);
+  if (!atprotoSession) {
+    return null;
+  }
+
+  const handle =
+    profileRow?.handle ?? publicProfile?.handle ?? identity.handle ?? null;
+
+  return {
+    user: {
+      id: userRow.id,
+      name: userRow.name,
+      email: userRow.email,
+      did: userRow.did,
+      image: userRow.image,
+      isAdmin: userRow.isAdmin,
+      createdAt: userRow.createdAt,
+      updatedAt: userRow.updatedAt,
+      handle,
+    },
+    session: {
+      id: sessionRow.id,
+      userId: userRow.id,
+      expiresAt: sessionRow.expiresAt,
+    },
+    themeMode: userRow.themeMode,
+    trackReadingHistory: userRow.trackReadingHistory,
+  };
+}
+
+/** One round trip for root shell SSR: session + theme preference. */
+const getShellBootstrap = createServerFn({ method: "GET" }).handler(async () => {
+  const request = getRequest();
+  const cookies = parseCookies(request.headers.get("cookie"));
+  const sessionToken = cookies[AUTH_SESSION_TOKEN_COOKIE];
+
+  if (!sessionToken) {
+    return {
+      session: null,
+      theme: { mode: parseThemeMode(cookies[THEME_COOKIE]) },
+      trackReading: {
+        enabled: parseTrackReadingHistoryCookie(
+          cookies[TRACK_READING_HISTORY_COOKIE],
+        ),
+      },
+    };
+  }
+
+  const loaded = await loadSessionFromToken(sessionToken);
+  if (!loaded) {
+    return {
+      session: null,
+      theme: { mode: parseThemeMode(cookies[THEME_COOKIE]) },
+      trackReading: {
+        enabled: parseTrackReadingHistoryCookie(
+          cookies[TRACK_READING_HISTORY_COOKIE],
+        ),
+      },
+    };
+  }
+
+  const { themeMode, trackReadingHistory, ...sessionPayload } = loaded;
+  return {
+    session: sessionPayload,
+    theme: { mode: dbValueToThemeMode(themeMode) },
+    trackReading: {
+      enabled: dbValueToTrackReadingHistory(trackReadingHistory),
+    },
+  };
+});
+
+const getSession = createServerFn({ method: "GET" }).handler(async () => {
     const request = getRequest();
     const cookies = parseCookies(request.headers.get("cookie"));
     const sessionToken = cookies[AUTH_SESSION_TOKEN_COOKIE];
@@ -79,62 +191,14 @@ const getSession = createServerFn({ method: "GET" })
       return null;
     }
 
-    const db = context.db;
-    const schema = context.schema;
-    const sessionRow = await db.query.session.findFirst({
-      where: eq(schema.session.token, sessionToken),
-      with: {
-        user: {
-          columns: {
-            id: true,
-            name: true,
-            email: true,
-            did: true,
-            image: true,
-            isAdmin: true,
-            createdAt: true,
-            updatedAt: true,
-          },
-        },
-      },
-    });
-
-    if (!sessionRow || sessionRow.expiresAt.getTime() <= Date.now()) {
+    const loaded = await loadSessionFromToken(sessionToken);
+    if (!loaded) {
       return null;
     }
-
-    const userRow = sessionRow.user;
-    if (!userRow?.did || !isDid(userRow.did)) {
-      return null;
-    }
-
-    const [atprotoSession, profileRow, publicProfile, identity] =
-      await Promise.all([
-        restoreAtprotoSession(userRow.did),
-        db.query.profiles.findFirst({
-          where: eq(schema.profiles.did, userRow.did),
-          columns: { handle: true },
-        }),
-        fetchBlueskyPublicProfileFields(userRow.did),
-        resolveIdentity(userRow.did),
-      ]);
-    if (!atprotoSession) {
-      return null;
-    }
-
-    const handle =
-      profileRow?.handle ?? publicProfile?.handle ?? identity.handle ?? null;
 
     return {
-      user: {
-        ...userRow,
-        handle,
-      },
-      session: {
-        id: sessionRow.id,
-        userId: userRow.id,
-        expiresAt: sessionRow.expiresAt,
-      },
+      user: loaded.user,
+      session: loaded.session,
     };
   });
 
@@ -146,12 +210,16 @@ const getSessionQueryOptions = queryOptions({
 });
 
 const getThemePreference = createServerFn({ method: "GET" })
-  .middleware([dbMiddleware, maybeAuthMiddleware])
+  .middleware([maybeAuthMiddleware])
   .handler(async ({ context }): Promise<{ mode: ThemeMode }> => {
     const session = context?.session;
     if (session?.user) {
-      const row = await context.db.query.user.findFirst({
-        where: eq(context.schema.user.id, session.user.id),
+      const [{ db }, schema] = await Promise.all([
+        import("#/db/index.server"),
+        import("#/db/schema"),
+      ]);
+      const row = await db.query.user.findFirst({
+        where: eq(schema.user.id, session.user.id),
         columns: { themeMode: true },
       });
       return { mode: dbValueToThemeMode(row?.themeMode ?? null) };
@@ -448,6 +516,7 @@ const signOut = createServerFn({ method: "POST" })
   });
 
 export const user = {
+  getShellBootstrap,
   getSession,
   getSessionQueryOptions,
   getThemePreference,

@@ -1,9 +1,13 @@
 import type {
+  StructuredGridImage,
   StructuredRenderableBlock,
   StructuredText,
 } from "#/lib/document/structured-content/types";
 
-import { normalizeImageAlt } from "#/lib/document/structured-content/image";
+import {
+  normalizeImageAlt,
+  parseStructuredGridImage,
+} from "#/lib/document/structured-content/image";
 
 import { OFFPRINT_BLOCK, OFFPRINT_CONTENT } from "./types";
 
@@ -30,6 +34,14 @@ function listItemsFromChildren(children: unknown): Array<StructuredText> {
     if (text?.plaintext.trim()) items.push(text);
   }
   return items;
+}
+
+function gridImagesFrom(value: unknown): Array<StructuredGridImage> {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((entry) => {
+    const parsed = parseStructuredGridImage(entry);
+    return parsed ? [parsed] : [];
+  });
 }
 
 function blockquoteBlocks(content: unknown): Array<StructuredRenderableBlock> {
@@ -192,6 +204,67 @@ function asRenderableBlock(value: unknown): StructuredRenderableBlock | null {
 
   if (value.$type === OFFPRINT_BLOCK.horizontalRule) {
     return { kind: "horizontalRule" };
+  }
+
+  if (value.$type === OFFPRINT_BLOCK.button) {
+    const href = typeof value.href === "string" ? value.href.trim() : "";
+    const label = typeof value.text === "string" ? value.text.trim() : "";
+    if (!href || !label) return null;
+    return {
+      kind: "button",
+      href,
+      text: label,
+      caption: typeof value.caption === "string" ? value.caption : undefined,
+      alignment:
+        typeof value.alignment === "string" ? value.alignment : undefined,
+    };
+  }
+
+  if (value.$type === OFFPRINT_BLOCK.mathBlock) {
+    const tex = typeof value.tex === "string" ? value.tex.trim() : "";
+    return tex ? { kind: "math", tex } : null;
+  }
+
+  if (value.$type === OFFPRINT_BLOCK.imageGrid) {
+    const images = gridImagesFrom(value.images);
+    if (images.length < 2) return null;
+    return {
+      kind: "imageGrid",
+      images,
+      caption: typeof value.caption === "string" ? value.caption : undefined,
+      gridRows: typeof value.gridRows === "number" ? value.gridRows : undefined,
+      aspectRatioMode:
+        typeof value.aspectRatio === "string" ? value.aspectRatio : undefined,
+    };
+  }
+
+  if (value.$type === OFFPRINT_BLOCK.imageCarousel) {
+    const images = gridImagesFrom(value.images);
+    if (images.length < 2) return null;
+    return {
+      kind: "imageCarousel",
+      images,
+      caption: typeof value.caption === "string" ? value.caption : undefined,
+    };
+  }
+
+  if (value.$type === OFFPRINT_BLOCK.imageDiff) {
+    const images = gridImagesFrom(value.images);
+    if (images.length !== 2) return null;
+    const before = images[0];
+    const after = images[1];
+    if (!before || !after) return null;
+    const labels = Array.isArray(value.labels)
+      ? ([value.labels[0], value.labels[1]] as [string?, string?])
+      : undefined;
+    return {
+      kind: "imageDiff",
+      images: [before, after],
+      caption: typeof value.caption === "string" ? value.caption : undefined,
+      labels,
+      alignment:
+        typeof value.alignment === "string" ? value.alignment : undefined,
+    };
   }
 
   const blockType =

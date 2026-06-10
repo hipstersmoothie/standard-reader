@@ -1,7 +1,7 @@
 import * as stylex from "@stylexjs/stylex";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { useTrackReadingHistory } from "#/lib/use-track-reading-history";
+import { DEFAULT_TRACK_READING_HISTORY } from "#/lib/track-reading-history";
 import { ArrowRight, Flame, Sparkles } from "lucide-react";
 
 import {
@@ -33,11 +33,6 @@ import { getPublicUrlClient } from "../lib/public-url";
 import { pageSocialMeta } from "../lib/site-metadata";
 
 export const Route = createFileRoute("/_layout/")({
-  loader: async ({ context }) => {
-    await context.queryClient.ensureQueryData(
-      feedApi.getHomeFeedQueryOptions(),
-    );
-  },
   head: () => ({
     meta: pageSocialMeta("today", getPublicUrlClient()),
   }),
@@ -128,14 +123,73 @@ const TODAY_FMT = new Intl.DateTimeFormat("en-US", {
 });
 const WEEKDAY_FMT = new Intl.DateTimeFormat("en-US", { weekday: "long" });
 
+function homeMastheadKicker(weekday: string, personalized: boolean): string {
+  return `${weekday} · ${personalized ? "Your feed" : "Across the network"}`;
+}
+
+function homeSectionKicker(personalized: boolean): string {
+  return personalized ? "From your follows" : "Fresh off the network";
+}
+
+function homeSectionTitle(trackReading: boolean): string {
+  return trackReading ? "Latest unread" : "Latest";
+}
+
+function homeFeedLabels({
+  weekday,
+  today,
+  personalized,
+  trackReading,
+  unreadCount,
+  unreadFallback = 0,
+}: {
+  weekday: string;
+  today: string;
+  personalized: boolean;
+  trackReading: boolean;
+  unreadCount: number | null | undefined;
+  unreadFallback?: number;
+}) {
+  const unreadLabel =
+    !trackReading || unreadCount == null ? "Fresh" : `${unreadCount} new`;
+  const dek = personalized
+    ? trackReading
+      ? `${unreadCount ?? unreadFallback} unread across the publications you follow.`
+      : "The latest writing from the publications you follow."
+    : "The latest long-form writing from across the network.";
+
+  return {
+    kicker: homeMastheadKicker(weekday, personalized),
+    dek,
+    metaLabel: today,
+    unreadLabel,
+    sectionKicker: homeSectionKicker(personalized),
+    sectionTitle: homeSectionTitle(trackReading),
+  };
+}
+
 function Home() {
   const { data: feed } = useSuspenseQuery(feedApi.getHomeFeedQueryOptions());
   const { data: session } = useQuery(user.getSessionQueryOptions);
-  const { enabled: trackReading } = useTrackReadingHistory();
+  const { data: trackReadingPref } = useQuery({
+    ...user.getTrackReadingHistoryPreferenceQueryOptions,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+  });
+  const signedIn = Boolean(session?.user);
+  const trackReading = signedIn
+    ? (trackReadingPref?.enabled ?? DEFAULT_TRACK_READING_HISTORY)
+    : false;
 
   const now = new Date();
-  const weekday = WEEKDAY_FMT.format(now);
-  const today = TODAY_FMT.format(now);
+  const labels = homeFeedLabels({
+    weekday: WEEKDAY_FMT.format(now),
+    today: TODAY_FMT.format(now),
+    personalized: feed.personalized,
+    trackReading,
+    unreadCount: feed.unreadCount,
+    unreadFallback: feed.latestUnread.length,
+  });
 
   if (!feed.personalized && feed.latestUnread.length === 0 && !feed.featured) {
     return (
@@ -161,24 +215,14 @@ function Home() {
     );
   }
 
-  const unreadLabel =
-    !trackReading || feed.unreadCount == null
-      ? "Fresh"
-      : `${feed.unreadCount} new`;
-  const dek = feed.personalized
-    ? trackReading
-      ? `${feed.unreadCount ?? feed.latestUnread.length} unread across the publications you follow.`
-      : "The latest writing from the publications you follow."
-    : "The latest long-form writing from across the network.";
-
   return (
     <ReaderContent>
       <Masthead
-        kicker={`${weekday} · ${feed.personalized ? "Your feed" : "Across the network"}`}
+        kicker={labels.kicker}
         title="Today"
-        dek={dek}
-        metaLabel={today}
-        metaValue={unreadLabel}
+        dek={labels.dek}
+        metaLabel={labels.metaLabel}
+        metaValue={labels.unreadLabel}
       />
 
       {feed.featured ? <FeatureArticle article={feed.featured} /> : null}
@@ -186,10 +230,8 @@ function Home() {
       <div {...stylex.props(styles.twoCol)}>
         <Flex direction="column">
           <SectionHead
-            kicker={
-              feed.personalized ? "From your follows" : "Fresh off the network"
-            }
-            title={trackReading ? "Latest unread" : "Latest"}
+            kicker={labels.sectionKicker}
+            title={labels.sectionTitle}
           />
           <div>
             {feed.latestUnread.map((article) => (

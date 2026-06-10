@@ -22,6 +22,13 @@ import { HeadingBlockView } from "./shared/heading-block";
 import { HorizontalRuleView } from "./shared/horizontal-rule";
 import { IframeEmbedView } from "./shared/iframe-embed";
 import { ImageFigureView } from "./shared/image-figure";
+import { StructuredButtonBlockView } from "./shared/structured-button";
+import {
+  StructuredImageCarouselBlockView,
+  StructuredImageDiffBlockView,
+  StructuredImageGridBlockView,
+} from "./shared/structured-image-collection";
+import { StructuredMathBlockView } from "./shared/structured-math";
 import { UnknownBlockView } from "./shared/unknown-block";
 import {
   StructuredBulletListView,
@@ -168,6 +175,37 @@ export function StructuredBlockView({
           block={{ ref: block.ref }}
           blobContext={blobContext}
         />
+      );
+    }
+    case "button": {
+      return (
+        <StructuredButtonBlockView
+          text={block.text}
+          href={block.href}
+          caption={block.caption}
+          alignment={block.alignment}
+        />
+      );
+    }
+    case "math": {
+      return <StructuredMathBlockView tex={block.tex} />;
+    }
+    case "imageGrid": {
+      return (
+        <StructuredImageGridBlockView block={block} blobContext={blobContext} />
+      );
+    }
+    case "imageCarousel": {
+      return (
+        <StructuredImageCarouselBlockView
+          block={block}
+          blobContext={blobContext}
+        />
+      );
+    }
+    case "imageDiff": {
+      return (
+        <StructuredImageDiffBlockView block={block} blobContext={blobContext} />
       );
     }
     case "unknown": {

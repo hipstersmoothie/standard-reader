@@ -4,6 +4,13 @@ export interface StructuredText {
   facets?: Array<unknown>;
 }
 
+/** Image entry used by Offprint grid, carousel, and diff blocks. */
+export interface StructuredGridImage {
+  blob?: unknown;
+  alt?: string;
+  aspectRatio?: { width?: number; height?: number };
+}
+
 export type StructuredRenderableBlock =
   | { kind: "text"; text: StructuredText }
   | { kind: "heading"; text: StructuredText; level?: number }
@@ -40,6 +47,33 @@ export type StructuredRenderableBlock =
     }
   | { kind: "table"; rows: StructuredTableRow }
   | { kind: "gallery"; ref: string }
+  | {
+      kind: "button";
+      text: string;
+      href: string;
+      caption?: string;
+      alignment?: string;
+    }
+  | { kind: "math"; tex: string }
+  | {
+      kind: "imageGrid";
+      images: Array<StructuredGridImage>;
+      caption?: string;
+      gridRows?: number;
+      aspectRatioMode?: string;
+    }
+  | {
+      kind: "imageCarousel";
+      images: Array<StructuredGridImage>;
+      caption?: string;
+    }
+  | {
+      kind: "imageDiff";
+      images: [StructuredGridImage, StructuredGridImage];
+      caption?: string;
+      labels?: [string?, string?];
+      alignment?: string;
+    }
   | { kind: "unknown"; blockType: string };
 
 export interface StructuredTableCell {

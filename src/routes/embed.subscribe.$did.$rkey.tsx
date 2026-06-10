@@ -19,9 +19,9 @@ const embedSubscribeSearchSchema = z.object({
 
 const styles = stylex.create({
   shell: {
-    display: "block",
     margin: 0,
     padding: 0,
+    display: "block",
     width: "100%",
   },
 });

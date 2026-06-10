@@ -96,9 +96,9 @@ const styles = stylex.create({
     width: "100%",
   },
   linkPreview: {
+    textDecoration: "underline",
     color: uiColor.text1,
     fontSize: fontSize.sm,
-    textDecoration: "underline",
   },
   linkPreviewPanel: {
     alignItems: "center",

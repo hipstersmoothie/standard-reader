@@ -19,11 +19,11 @@ const styles = stylex.create({
   frame: {
     borderRadius: subscribeCardLayout.borderRadius,
     cornerShape: "squircle",
+    overflow: "hidden",
     flexShrink: 0,
     marginLeft: "auto",
     marginRight: "auto",
     maxWidth: "100%",
-    overflow: "hidden",
     width: subscribeCardLayout.maxWidth,
   },
   iframe: {

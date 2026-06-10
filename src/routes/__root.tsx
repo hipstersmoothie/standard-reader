@@ -99,19 +99,19 @@ function PersistOAuthSavedHandle() {
 
 export const Route = createRootRouteWithContext<RouterContext>()({
   beforeLoad: async ({ context }) => {
-    await Promise.all([
-      context.queryClient.ensureQueryData(user.getSessionQueryOptions),
-      context.queryClient.ensureQueryData(user.getThemePreferenceQueryOptions),
-      context.queryClient.ensureQueryData(
-        user.getOpenLinksPreferenceQueryOptions,
-      ),
-      context.queryClient.ensureQueryData(
-        user.getReadingTypographyPreferenceQueryOptions,
-      ),
-      context.queryClient.ensureQueryData(
-        user.getTrackReadingHistoryPreferenceQueryOptions,
-      ),
-    ]);
+    const bootstrap = await user.getShellBootstrap();
+    context.queryClient.setQueryData(
+      user.getSessionQueryOptions.queryKey,
+      bootstrap.session,
+    );
+    context.queryClient.setQueryData(
+      user.getThemePreferenceQueryOptions.queryKey,
+      bootstrap.theme,
+    );
+    context.queryClient.setQueryData(
+      user.getTrackReadingHistoryPreferenceQueryOptions.queryKey,
+      bootstrap.trackReading,
+    );
   },
   head: () => {
     const baseUrl = getPublicUrlClient();

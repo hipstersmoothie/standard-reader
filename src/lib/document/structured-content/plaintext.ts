@@ -47,6 +47,28 @@ export function plaintextLinesFromStructuredBlock(
     case "image": {
       return narrationImageLines(block.alt);
     }
+    case "button": {
+      const lines = [block.caption?.trim(), block.text.trim()].filter(Boolean);
+      return lines.length > 0 ? [lines.join(": ")] : [];
+    }
+    case "math": {
+      return textLines({ plaintext: block.tex });
+    }
+    case "imageGrid":
+    case "imageCarousel": {
+      const altLines = block.images.flatMap((image) =>
+        narrationImageLines(image.alt),
+      );
+      const caption = block.caption?.trim();
+      return caption ? [...altLines, caption] : altLines;
+    }
+    case "imageDiff": {
+      const altLines = block.images.flatMap((image) =>
+        narrationImageLines(image.alt),
+      );
+      const caption = block.caption?.trim();
+      return caption ? [...altLines, caption] : altLines;
+    }
     case "horizontalRule":
     case "blueskyEmbed":
     case "iframe":

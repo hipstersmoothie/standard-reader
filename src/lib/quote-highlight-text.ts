@@ -336,6 +336,24 @@ function appendStructuredRenderedText(
       }
       return;
     }
+    case "button": {
+      appendText(parts, block.caption);
+      appendText(parts, block.text);
+      return;
+    }
+    case "math": {
+      appendText(parts, block.tex);
+      return;
+    }
+    case "imageGrid":
+    case "imageCarousel":
+    case "imageDiff": {
+      for (const image of block.images) {
+        appendText(parts, image.alt);
+      }
+      appendText(parts, block.caption);
+      return;
+    }
     case "horizontalRule":
     case "blueskyEmbed":
     case "image":

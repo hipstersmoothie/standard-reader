@@ -14,4 +14,9 @@ export const OFFPRINT_BLOCK = {
   blueskyPost: "app.offprint.block.blueskyPost",
   webEmbed: "app.offprint.block.webEmbed",
   webBookmark: "app.offprint.block.webBookmark",
+  button: "app.offprint.block.button",
+  imageGrid: "app.offprint.block.imageGrid",
+  imageCarousel: "app.offprint.block.imageCarousel",
+  imageDiff: "app.offprint.block.imageDiff",
+  mathBlock: "app.offprint.block.mathBlock",
 } as const;

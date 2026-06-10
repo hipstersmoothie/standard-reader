@@ -337,49 +337,50 @@ const getListFeed = createServerFn({ method: "GET" })
 
 // ── Saved lists (other readers' lists added to this app) ────────────────────
 
-const getSavedLists = createServerFn({ method: "GET" })
-  .middleware([dbMiddleware])
-  .handler(
-    observe("lists.getSavedLists", async ({ context }, span) => {
-      const session = await getAtprotoSessionForRequest(getRequest());
-      if (!session) {
-        return [] satisfies Array<SavedList>;
-      }
-      span.set("did", session.did);
+const getSavedLists = createServerFn({ method: "GET" }).handler(
+  observe("lists.getSavedLists", async (_, span) => {
+    const session = await getAtprotoSessionForRequest(getRequest());
+    if (!session) {
+      return [] satisfies Array<SavedList>;
+    }
+    span.set("did", session.did);
 
-      const lists = await savedListsForReader(session.did);
-      const { db, schema } = context;
-      const allUris = [...new Set(lists.flatMap((list) => list.publications))];
-      const [cards, owners] = await Promise.all([
-        followedPublications(db, schema, allUris),
-        lookupOwners(
-          db,
-          schema,
-          lists.map(
-            (list) => list.uri.slice("at://".length).split("/")[0] as string,
-          ),
+    const lists = await savedListsForReader(session.did);
+    const [{ db }, schema] = await Promise.all([
+      import("#/db/index.server"),
+      import("#/db/schema"),
+    ]);
+    const allUris = [...new Set(lists.flatMap((list) => list.publications))];
+    const [cards, owners] = await Promise.all([
+      followedPublications(db, schema, allUris),
+      lookupOwners(
+        db,
+        schema,
+        lists.map(
+          (list) => list.uri.slice("at://".length).split("/")[0] as string,
         ),
-      ]);
-      const cardByUri = new Map(cards.map((card) => [card.uri, card]));
+      ),
+    ]);
+    const cardByUri = new Map(cards.map((card) => [card.uri, card]));
 
-      span.set("count", lists.length);
-      return lists.map((list) => {
-        const ownerDid = list.uri.slice("at://".length).split("/")[0] as string;
-        return {
-          list,
-          owner: owners.get(ownerDid) ?? {
-            did: ownerDid,
-            handle: null,
-            displayName: null,
-            avatarUrl: null,
-          },
-          publications: list.publications
-            .map((uri) => cardByUri.get(uri))
-            .filter((card): card is PublicationCard => card != null),
-        };
-      }) satisfies Array<SavedList>;
-    }),
-  );
+    span.set("count", lists.length);
+    return lists.map((list) => {
+      const ownerDid = list.uri.slice("at://".length).split("/")[0] as string;
+      return {
+        list,
+        owner: owners.get(ownerDid) ?? {
+          did: ownerDid,
+          handle: null,
+          displayName: null,
+          avatarUrl: null,
+        },
+        publications: list.publications
+          .map((uri) => cardByUri.get(uri))
+          .filter((card): card is PublicationCard => card != null),
+      };
+    }) satisfies Array<SavedList>;
+  }),
+);
 
 const saveList = createServerFn({ method: "POST" })
   .inputValidator(listUriInput)
