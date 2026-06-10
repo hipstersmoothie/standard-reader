@@ -296,7 +296,7 @@ Backend/API exists; UI or copy is missing.
 - [x] **Content rendering gaps** — PCKT gallery renderer (`blog.pckt.block.gallery`); prod scan
       found 54 documents — implemented grid/list/carousel/masonry layouts via
       [`pckt-gallery.tsx`](src/components/reader/content/renderers/pckt-gallery.tsx).
-- [ ] **Discover — “Not following” filter** — toggle on [`_layout.discover.tsx`](src/routes/_layout.discover.tsx)
+- [x] **Discover — “Not following” filter** — toggle on [`_layout.discover.tsx`](src/routes/_layout.discover.tsx)
       All publications section to hide effective follow set ([`saved-lists.ts`](src/server/reader/saved-lists.ts)).
 
 ## 10. Post-v1 — save-for-later (Tier 3)

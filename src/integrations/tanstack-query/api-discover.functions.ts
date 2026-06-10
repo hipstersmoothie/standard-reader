@@ -167,6 +167,26 @@ const getRecommendedPublications = createServerFn({ method: "GET" })
     ),
   );
 
+const getEffectiveFollowUris = createServerFn({ method: "GET" })
+  .middleware([dbMiddleware])
+  .handler(
+    observe("discover.getEffectiveFollowUris", async ({ context }, span) => {
+      const session = await getAtprotoSessionForRequest(getRequest());
+      if (!session) {
+        span.set("count", 0);
+        return [];
+      }
+      span.set("did", session.did);
+      const uris = await effectiveFollowUris(
+        context.db,
+        context.schema,
+        session.did,
+      );
+      span.set("count", uris.length);
+      return uris;
+    }),
+  );
+
 const getFollowedByPeopleYouFollow = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
   .inputValidator(railInput)
@@ -268,6 +288,13 @@ function getFollowedByPeopleYouFollowQueryOptions({
   });
 }
 
+function getEffectiveFollowUrisQueryOptions() {
+  return queryOptions({
+    queryKey: ["discover", "effectiveFollowUris"] as const,
+    queryFn: async () => getEffectiveFollowUris(),
+  });
+}
+
 export const discoverApi = {
   getKnownPublicationCount,
   getKnownPublicationCountQueryOptions,
@@ -281,4 +308,6 @@ export const discoverApi = {
   getRecommendedPublicationsQueryOptions,
   getFollowedByPeopleYouFollow,
   getFollowedByPeopleYouFollowQueryOptions,
+  getEffectiveFollowUris,
+  getEffectiveFollowUrisQueryOptions,
 };

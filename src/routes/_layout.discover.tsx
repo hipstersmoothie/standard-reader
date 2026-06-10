@@ -162,6 +162,8 @@ const styles = stylex.create({
     justifyContent: "space-between",
     rowGap: spacing["4"],
     marginBottom: spacing["6"],
+    minWidth: 0,
+    width: "100%",
   },
   directoryToolbarControls: {
     alignItems: "center",
@@ -174,6 +176,8 @@ const styles = stylex.create({
       "@media (min-width: 40rem)": "flex-start",
     },
     rowGap: spacing["3"],
+    maxWidth: "100%",
+    minWidth: 0,
     width: {
       default: "100%",
       "@media (min-width: 40rem)": "auto",
@@ -276,6 +280,7 @@ function Discover() {
   const [searchInput, setSearchInput] = useState("");
   const [debouncedQ, setDebouncedQ] = useState("");
   const [socialProofExpanded, setSocialProofExpanded] = useState(false);
+  const [hideFollowing, setHideFollowing] = useState(false);
   const loadMoreSentinelRef = useRef<HTMLDivElement>(null);
   const loadingMoreRef = useRef(false);
 
@@ -336,6 +341,10 @@ function Discover() {
 
   const { data: session } = useQuery(user.getSessionQueryOptions);
   const signedIn = Boolean(session?.user);
+  const { data: effectiveFollowUris = [] } = useQuery({
+    ...discoverApi.getEffectiveFollowUrisQueryOptions(),
+    enabled: signedIn,
+  });
 
   const topicKey = topic ?? "all";
   const topicItems = useMemo(() => sortDiscoverTopics(topics), [topics]);
@@ -346,6 +355,18 @@ function Discover() {
   const isSearching =
     debouncedQ.length > 0 &&
     (searchInput.trim() !== debouncedQ || searchFetching);
+
+  const followUriSet = useMemo(
+    () => new Set(effectiveFollowUris),
+    [effectiveFollowUris],
+  );
+  const visibleDirectoryItems = useMemo(
+    () =>
+      hideFollowing
+        ? directoryItems.filter((pub) => !followUriSet.has(pub.uri))
+        : directoryItems,
+    [directoryItems, followUriSet, hideFollowing],
+  );
 
   const updateDirectorySearch = (
     patch: Partial<z.infer<typeof discoverSearchSchema>>,
@@ -377,6 +398,11 @@ function Discover() {
   const onViewChange = (keys: Set<React.Key> | "all") => {
     const next = keys === "all" ? "list" : ([...keys][0] as "grid" | "list");
     updateDirectorySearch({ view: next });
+  };
+
+  const onFollowFilterChange = (keys: Set<React.Key> | "all") => {
+    const id = keys === "all" ? "all" : String([...keys][0]);
+    setHideFollowing(id === "not-following");
   };
 
   const loadMoreDirectory = useCallback(async () => {
@@ -556,6 +582,21 @@ function Discover() {
           />
 
           <div {...stylex.props(styles.directoryToolbarControls)}>
+            {signedIn ? (
+              <SegmentedControl
+                selectedKeys={
+                  new Set([hideFollowing ? "not-following" : "all"])
+                }
+                onSelectionChange={onFollowFilterChange}
+                size="sm"
+              >
+                <SegmentedControlItem id="all">All</SegmentedControlItem>
+                <SegmentedControlItem id="not-following">
+                  Not following
+                </SegmentedControlItem>
+              </SegmentedControl>
+            ) : null}
+
             <SegmentedControl
               selectedKeys={new Set([sort])}
               onSelectionChange={onSortChange}
@@ -585,25 +626,27 @@ function Discover() {
 
         {isSearching ? (
           <DiscoverDirectorySkeleton view={view} />
-        ) : directoryItems.length === 0 ? (
+        ) : visibleDirectoryItems.length === 0 ? (
           <p {...stylex.props(styles.emptyRail)}>
-            {debouncedQ
-              ? "No publications match your search."
-              : "No publications match this topic yet."}
+            {hideFollowing && directoryItems.length > 0
+              ? "You're following every publication on this page — scroll for more, or turn off the filter."
+              : debouncedQ
+                ? "No publications match your search."
+                : "No publications match this topic yet."}
           </p>
         ) : view === "grid" ? (
           <Grid columnGap="lg" rowGap="lg" style={styles.directoryGrid}>
-            {directoryItems.map((pub) => (
+            {visibleDirectoryItems.map((pub) => (
               <PubCard key={pub.uri} pub={pub} />
             ))}
           </Grid>
         ) : (
           <div>
-            {directoryItems.map((pub, index) => (
+            {visibleDirectoryItems.map((pub, index) => (
               <PubDirectoryRow
                 key={pub.uri}
                 pub={pub}
-                isLast={index === directoryItems.length - 1}
+                isLast={index === visibleDirectoryItems.length - 1}
               />
             ))}
           </div>

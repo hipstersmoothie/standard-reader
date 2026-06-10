@@ -333,6 +333,10 @@ const styles = stylex.create({
     minWidth: 0,
   },
   scroller: {
+    // Reserve scrollbar width so content width stays stable when the list
+    // height changes (e.g. Discover "Not following" filter).
+    // eslint-disable-next-line @stylexjs/valid-styles
+    scrollbarGutter: "stable",
     display: "flex",
     flexBasis: "0%",
     flexDirection: "column",
