@@ -1,7 +1,8 @@
 # Standard Reader — TODO
 
-Derived from [`APP_VISION.md`](./APP_VISION.md). Organized toward the **v1 milestone**, then later
-work. Check items off as they land.
+Derived from [`APP_VISION.md`](./APP_VISION.md). Organized toward the **v1 milestone**, then post-v1
+work from [`.cursor/plans/post-v1_feature_roadmap_0dbfa3bd.plan.md`](./.cursor/plans/post-v1_feature_roadmap_0dbfa3bd.plan.md).
+Check items off as they land.
 
 ---
 
@@ -198,8 +199,8 @@ Build each on hip-ui components + StyleX tokens (no raw HTML/inline styles).
       recent writing (infinite scroll via `publicationApi.getPublicationDocuments` offset
       pagination), right rail (About + DID + readers-also-follow). Route `/p/$did/$rkey`
       (`_layout.p.$did.$rkey.tsx`); sidebar Following rows + cards link here instead of the
-      external publication URL. The "followed by people you follow" social-proof line is deferred
-      until the §7 social-graph query lands.
+      external publication URL. The "followed by people you follow" social-proof line is tracked in
+      §8 (post-v1 Tier 1).
 - [x] **Add / Follow modal** — Search field + publication rows (no tabs); uses `searchPublications` API; trending suggestions when empty.
 - [x] Global follow toggle reflects everywhere instantly (optimistic).
 - [x] Theme picker (light / dark / system) + editorial dark tokens + Shiki `standard-reader-dark`.
@@ -263,10 +264,79 @@ Build each on hip-ui components + StyleX tokens (no raw HTML/inline styles).
 
 ---
 
-## Later (post-v1)
+## 8. Post-v1 — wire up (Tier 1)
 
-- [ ] Offline / save-for-later.
+Backend/API exists; UI or copy is missing.
 
-## Non-goals (for now)
+- [ ] **Paste handle in Add publication modal** — wire `searchApi.resolvePublicationByHandle`
+      into [`add-publication-modal.tsx`](src/components/reader/add-publication-modal.tsx).
+      _Open decision:_ minimal handle detection in the search field (1.1A) vs Browse / Paste handle /
+      Search tabs (1.1B).
+- [ ] **Publication profile — “Followed by …” social proof** — compact line under the header on
+      [`_layout.p.$did.$rkey.tsx`](src/routes/_layout.p.$did.$rkey.tsx) using existing co-sub /
+      co-recommend queries from [`queries.ts`](src/server/reader/queries.ts) (same signal as
+      Discover’s “Followed by people you follow” rail). Auth-only.
+- [ ] **About page** — replace placeholder in [`_layout.about.tsx`](src/routes/_layout.about.tsx)
+      with product copy (what Standard Reader is, AT Proto ownership, link to standard.site docs,
+      privacy/data model). OG metadata already in [`site-metadata.ts`](src/lib/site-metadata.ts).
+
+## 9. Post-v1 — reader polish (Tier 2)
+
+- [ ] **Keyboard shortcuts** — [TanStack Hotkeys](https://tanstack.com/hotkeys/latest)
+      (`@tanstack/react-hotkeys`): `HotkeysProvider`, centralized `useHotkeys` in a new module,
+      `ignoreInputs`, route scopes. v1 map: `/` + optional `Mod+K` → search; `j`/`k` + `Enter` on
+      feed rows; `Shift+?` help dialog (hip-ui `Kbd` + `formatForDisplay`); `Escape` closes overlays.
+      Touch: [`app-shell.tsx`](src/components/reader/app-shell.tsx), [`cards.tsx`](src/components/reader/cards.tsx),
+      [`_layout.search.tsx`](src/routes/_layout.search.tsx).
+- [ ] **Reading typography preferences** — font size / measure (and optional sans body) on the
+      article wrapper; cookie + optional `user` column (same pattern as [`open-links.ts`](src/lib/open-links.ts));
+      menu item alongside [`OpenLinksMenuItem`](src/components/OpenLinksMenuItem.tsx).
+- [ ] **PWA install readiness** — Phase A: PNG icons (192/512), `apple-touch-icon`, expand
+      [`manifest.json`](public/manifest.json). _Open decision:_ Phase B service worker for asset
+      caching only (not offline articles).
+- [ ] **Content rendering gaps** — PCKT gallery stub (`blog.pckt.block.gallery` in
+      [`scan-unsupported-blocks.ts`](src/lib/content/scan-unsupported-blocks.ts)); run
+      `pnpm scan:unsupported-blocks` against prod to prioritize; implement renderer when justified.
+- [ ] **Discover — “Not following” filter** — toggle on [`_layout.discover.tsx`](src/routes/_layout.discover.tsx)
+      All publications section to hide effective follow set ([`saved-lists.ts`](src/server/reader/saved-lists.ts)).
+
+## 10. Post-v1 — save-for-later (Tier 3)
+
+**Decision:** `app.standard-reader.bookmark` lexicon in the reader’s repo (not likes, not app-DB-only,
+not offline body cache). _Open decision:_ route slug `/saved` vs `/bookmarks`.
+
+- [ ] **Lexicon** — [`lexicons/app/standard-reader/bookmark.json`](lexicons/app/standard-reader/bookmark.json)
+      (`subject` document at-uri + `createdAt`; deterministic rkey via `subjectRkey`). Publish via
+      `pnpm lex:lint` + `pnpm atproto:publish-lexicons`.
+- [ ] **Write path** — `COLLECTION.bookmark`, `putBookmarkRecord` / `deleteBookmarkRecord` in
+      [`repo-records.ts`](src/server/atproto/repo-records.ts); OAuth scope in
+      [`scope.ts`](src/integrations/auth/scope.ts) (re-login required); `readerApi` save/unsave/list/status
+      in [`api-reader.functions.ts`](src/integrations/tanstack-query/api-reader.functions.ts) with
+      optimistic updates.
+- [ ] **Read-model + ingest** — `bookmarks` table (mirror [`reads`](src/db/schema/personal.ts)); tap
+      collection filter + ingest handler + delete; `reader` track-reason on first write.
+- [ ] **UI** — private `/saved` queue (separate from public `/likes`); distinct save toggle on article
+      bar + feed cards; user-menu link; empty state copy. Update [`APP_VISION.md`](APP_VISION.md) §5
+      when landing.
+
+## 11. Post-v1 — bigger bets (Tier 4)
+
+After Tier 1–3, as appetite allows:
+
+- [ ] **Author view** — all publications from one DID (identity in [`profiles`](src/db/schema/publications.ts)).
+- [ ] **Related articles** — content similarity (tags, co-read) beyond “More from {publication}”.
+- [ ] **Share publication / list** — copy link + compose-to-bsky; OG cards exist for `/p/` and `/l/`.
+
+## Non-goals (not on this roadmap)
 
 - Read-first client: **no** in-app posting or authoring publications. Discussion is read-only from Bluesky.
+- Push / Web notifications.
+- OPML import/export and RSS migration.
+- Topic following (Discover chips as subscriptions).
+- Multi-account / session switcher.
+- Search filters, ranking tuning, and in-publication search (current GIN FTS is sufficient for now).
+- Discovery recommendation / trending tuning beyond the shipped engine (tweak in prod as needed).
+- Publisher analytics dashboard.
+- Email digests.
+- Native iOS/Android apps (PWA may suffice).
+- IndexedDB / offline article bodies (separate from bookmark queue).
