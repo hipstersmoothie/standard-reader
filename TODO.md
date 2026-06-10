@@ -281,9 +281,10 @@ Backend/API exists; UI or copy is missing.
 
 ## 9. Post-v1 — reader polish (Tier 2)
 
-- [ ] **Reading typography preferences** — font size / measure (and optional sans body) on the
+- [x] **Reading typography preferences** — font size / measure (and optional sans body) on the
       article wrapper; cookie + optional `user` column (same pattern as [`open-links.ts`](src/lib/open-links.ts));
-      menu item alongside [`OpenLinksMenuItem`](src/components/OpenLinksMenuItem.tsx).
+      menu item alongside [`OpenLinksMenuItem`](src/components/OpenLinksMenuItem.tsx)
+      (`ReadingTypographySubMenu`, `useReadingTypography`, `drizzle/0012_*`).
 - [x] **PWA install readiness** — Phase A: PNG icons (192/512), `apple-touch-icon`, expanded
       [`manifest.json`](public/manifest.json) + head tags in [`__root.tsx`](src/routes/__root.tsx).
       Regenerate via `pnpm icons:generate`. _Open decision:_ Phase B service worker for asset

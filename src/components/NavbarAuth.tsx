@@ -29,6 +29,7 @@ import {
 import { OpenLinksMenuItem } from "./OpenLinksMenuItem";
 import { Handle } from "./reader/primitives";
 import { ReaderVoiceSubMenu } from "./ReaderVoiceMenu";
+import { ReadingTypographySubMenu } from "./ReadingTypographyMenu";
 import { ThemeSubMenu } from "./ThemeMenu";
 
 const ButtonLink = createLink(Button);
@@ -213,6 +214,7 @@ export function NavbarAuth({
         <MenuSeparator />
         <ThemeSubMenu />
         <ReaderVoiceSubMenu />
+        <ReadingTypographySubMenu />
         <OpenLinksMenuItem />
         <MenuSeparator />
         <MenuItem onPress={() => logoutMutation.mutate()} suffix={<LogOut />}>

@@ -12,10 +12,11 @@ import {
   useQuoteHighlightTracker,
 } from "#/components/reader/quote-highlight-tracker";
 import { parseArticleBlocks } from "#/lib/document/blocks";
+import { useReadingTypography } from "#/lib/use-reading-typography";
 
 import type { ContentRendererProps } from "./types";
 
-import { articleBodyStyles } from "./body-styles";
+import { articleBodyStyles, readingBodyStyleProps } from "./body-styles";
 import { CONTENT_RENDERERS } from "./renderers";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -41,6 +42,7 @@ function FallbackContent({
   hasHero: boolean;
 }) {
   const tracker = useQuoteHighlightTracker();
+  const { preference } = useReadingTypography();
   const blocks = parseArticleBlocks({
     textContent: article.textContent,
     contentJson: article.contentJson,
@@ -49,12 +51,7 @@ function FallbackContent({
   if (blocks.length === 0) return null;
 
   return (
-    <div
-      {...stylex.props(
-        articleBodyStyles.body,
-        hasHero ? articleBodyStyles.bodyAfterHero : undefined,
-      )}
-    >
+    <div {...readingBodyStyleProps(preference, hasHero)}>
       {blocks.map((block, index) => {
         const highlightRange = tracker?.consume(block.text.length) ?? null;
 

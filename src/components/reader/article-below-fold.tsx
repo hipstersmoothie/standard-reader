@@ -20,22 +20,21 @@ import {
 } from "#/design-system/theme/typography.stylex";
 import { parseInternalRoute } from "#/lib/internal-route";
 import { useOpenLinks } from "#/lib/use-open-links";
+import { useReadingTypography } from "#/lib/use-reading-typography";
 
 import { MiniPubRow } from "./cards";
 import { CommentsSection } from "./comments/comments-section";
+import { articleMeasureStyle } from "./content/body-styles";
 import { articleCardReadingText } from "./content/extract-text";
 import { documentLinkParams, readingMinutes } from "./format";
 import { SectionHead } from "./primitives";
 import { useArticleExtras } from "./use-article-extras";
-
-const MEASURE = "80ch";
 
 const styles = stylex.create({
   moreFrom: {
     boxSizing: "border-box",
     marginLeft: "auto",
     marginRight: "auto",
-    maxWidth: MEASURE,
     paddingBottom: spacing["20"],
     paddingLeft: spacing["6"],
     paddingRight: spacing["6"],
@@ -173,10 +172,11 @@ function MoreFromSection({
   pub: PublicationCard;
   moreFrom: ArticleExtras["moreFrom"];
 }) {
+  const { preference } = useReadingTypography();
   if (moreFrom.length === 0) return null;
 
   return (
-    <div {...stylex.props(styles.moreFrom)}>
+    <div {...stylex.props(styles.moreFrom, articleMeasureStyle(preference))}>
       <Flex direction="column">
         <SectionHead kicker={`More from ${pub.name}`} title="Keep reading" />
         <div>
@@ -198,10 +198,11 @@ function ReadersAlsoFollowSection({
 }: {
   readersAlsoFollow: ArticleExtras["readersAlsoFollow"];
 }) {
+  const { preference } = useReadingTypography();
   if (readersAlsoFollow.length === 0) return null;
 
   return (
-    <div {...stylex.props(styles.moreFrom)}>
+    <div {...stylex.props(styles.moreFrom, articleMeasureStyle(preference))}>
       <Flex direction="column">
         <SectionHead kicker="Discover" title="You might follow" />
         <div>

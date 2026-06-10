@@ -28,6 +28,15 @@ import {
   readerVoicePreferenceToDbValue,
 } from "#/lib/reader-voice";
 import {
+  READING_TYPOGRAPHY_COOKIE,
+  READING_TYPOGRAPHY_COOKIE_MAX_AGE_SECONDS,
+  dbValueToReadingTypography,
+  isReadingTypographyPreference,
+  parseReadingTypographyCookie,
+  readingTypographyToCookieValue,
+  readingTypographyToDbValue,
+} from "#/lib/reading-typography";
+import {
   THEME_COOKIE,
   THEME_COOKIE_MAX_AGE_SECONDS,
   THEME_MODES,
@@ -271,6 +280,71 @@ const setOpenLinksPreference = createServerFn({ method: "POST" })
     return { openExternally: data.openExternally };
   });
 
+const readingTypographyInput = z.object({
+  preference: z.object({
+    fontSize: z.enum(["small", "default", "large"]),
+    measure: z.enum(["narrow", "default", "wide"]),
+    bodyFont: z.enum(["serif", "sans"]),
+  }),
+});
+
+const getReadingTypographyPreference = createServerFn({ method: "GET" })
+  .middleware([dbMiddleware, maybeAuthMiddleware])
+  .handler(async ({ context }) => {
+    const session = context?.session;
+    if (session?.user) {
+      const row = await context.db.query.user.findFirst({
+        where: eq(context.schema.user.id, session.user.id),
+        columns: { readingTypography: true },
+      });
+      return {
+        preference: dbValueToReadingTypography(row?.readingTypography ?? null),
+      };
+    }
+
+    return {
+      preference: parseReadingTypographyCookie(
+        getCookie(READING_TYPOGRAPHY_COOKIE),
+      ),
+    };
+  });
+
+const getReadingTypographyPreferenceQueryOptions = queryOptions({
+  queryKey: ["readingTypographyPreference"] as const,
+  queryFn: () => getReadingTypographyPreference(),
+  staleTime: Number.POSITIVE_INFINITY,
+});
+
+const setReadingTypographyPreference = createServerFn({ method: "POST" })
+  .middleware([dbMiddleware, maybeAuthMiddleware])
+  .inputValidator(readingTypographyInput)
+  .handler(async ({ data, context }) => {
+    if (!isReadingTypographyPreference(data.preference)) {
+      throw new Error("Invalid reading typography preference");
+    }
+
+    setCookie(
+      READING_TYPOGRAPHY_COOKIE,
+      readingTypographyToCookieValue(data.preference),
+      {
+        path: "/",
+        sameSite: "lax",
+        maxAge: READING_TYPOGRAPHY_COOKIE_MAX_AGE_SECONDS,
+      },
+    );
+
+    if (context?.session?.user) {
+      await context.db
+        .update(context.schema.user)
+        .set({
+          readingTypography: readingTypographyToDbValue(data.preference),
+        })
+        .where(eq(context.schema.user.id, context.session.user.id));
+    }
+
+    return { preference: data.preference };
+  });
+
 const signOut = createServerFn({ method: "POST" })
   .middleware([dbMiddleware])
   .handler(async ({ context }) => {
@@ -324,5 +398,8 @@ export const user = {
   getOpenLinksPreference,
   getOpenLinksPreferenceQueryOptions,
   setOpenLinksPreference,
+  getReadingTypographyPreference,
+  getReadingTypographyPreferenceQueryOptions,
+  setReadingTypographyPreference,
   signOut,
 };

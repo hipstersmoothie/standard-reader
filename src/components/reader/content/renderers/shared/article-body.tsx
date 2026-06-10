@@ -1,8 +1,8 @@
 "use client";
 
-import * as stylex from "@stylexjs/stylex";
+import { useReadingTypography } from "#/lib/use-reading-typography";
 
-import { articleBodyStyles } from "../../body-styles";
+import { readingBodyStyleProps } from "../../body-styles";
 
 export function ArticleBody({
   hasHero,
@@ -11,14 +11,7 @@ export function ArticleBody({
   hasHero: boolean;
   children: React.ReactNode;
 }) {
-  return (
-    <div
-      {...stylex.props(
-        articleBodyStyles.body,
-        hasHero ? articleBodyStyles.bodyAfterHero : undefined,
-      )}
-    >
-      {children}
-    </div>
-  );
+  const { preference } = useReadingTypography();
+
+  return <div {...readingBodyStyleProps(preference, hasHero)}>{children}</div>;
 }

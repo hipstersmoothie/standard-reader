@@ -14,6 +14,7 @@ import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
 import { usePageReader } from "#/lib/page-reader/page-reader-context";
 import { buildBlueskyComposeUrl } from "#/lib/quote-share";
+import { useReadingTypography } from "#/lib/use-reading-typography";
 import {
   ArrowLeft,
   Bookmark,
@@ -51,6 +52,7 @@ import {
 import { ArticleBelowFold } from "./article-below-fold";
 import { FollowButton } from "./cards";
 import { ArticleContent } from "./content/article-content";
+import { articleMeasureStyle } from "./content/body-styles";
 import {
   articleDescriptionIsBodyExcerpt,
   articleReadingText,
@@ -77,8 +79,6 @@ import { QuoteShareLayer } from "./quote-share-layer";
 import { applyMarkReadOptimisticUpdate } from "./read-optimistic";
 import { ReaderWordHighlighter } from "./reader-word-highlighter";
 import { useArticleRecommend } from "./use-article-recommend";
-
-const MEASURE = "80ch";
 
 function scrollProgress(el: HTMLElement): number {
   const max = el.scrollHeight - el.clientHeight;
@@ -230,7 +230,6 @@ const styles = stylex.create({
     boxSizing: "border-box",
     marginLeft: "auto",
     marginRight: "auto",
-    maxWidth: MEASURE,
     paddingBottom: spacing["24"],
     paddingLeft: spacing["6"],
     paddingRight: spacing["6"],
@@ -608,6 +607,7 @@ function ArticleViewBody({
 }) {
   const router = useRouter();
   const { active: readerActive } = usePageReader();
+  const { preference: readingTypography } = useReadingTypography();
   const scrollRef = useRef<HTMLDivElement>(null);
   const articleRef = useRef<HTMLElement>(null);
   const [progress, setProgress] = useState(0);
@@ -796,7 +796,13 @@ function ArticleViewBody({
         )}
       >
         <ReaderWordHighlighter rootRef={articleRef} articleUri={article.uri} />
-        <article ref={articleRef} {...stylex.props(styles.article)}>
+        <article
+          ref={articleRef}
+          {...stylex.props(
+            styles.article,
+            articleMeasureStyle(readingTypography),
+          )}
+        >
           {topic ? (
             <div {...stylex.props(styles.kicker)}>
               <Kicker>

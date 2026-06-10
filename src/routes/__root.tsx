@@ -90,6 +90,9 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       context.queryClient.ensureQueryData(
         user.getOpenLinksPreferenceQueryOptions,
       ),
+      context.queryClient.ensureQueryData(
+        user.getReadingTypographyPreferenceQueryOptions,
+      ),
     ]);
   },
   head: () => {

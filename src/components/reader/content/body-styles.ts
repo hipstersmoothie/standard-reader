@@ -1,3 +1,5 @@
+import type { ReadingTypographyPreference } from "#/lib/reading-typography";
+
 import * as stylex from "@stylexjs/stylex";
 import { primaryColor, uiColor } from "#/design-system/theme/color.stylex";
 import { radius } from "#/design-system/theme/radius.stylex";
@@ -319,8 +321,8 @@ export const articleBodyStyles = stylex.create({
     marginTop: gap.md,
   },
   galleryGrid: {
-    display: "grid",
     gap: gap.md,
+    display: "grid",
     gridTemplateColumns: {
       default: "minmax(0, 1fr)",
       "@media (min-width: 40rem)": "repeat(2, minmax(0, 1fr))",
@@ -328,14 +330,14 @@ export const articleBodyStyles = stylex.create({
   },
   galleryList: {
     display: "flex",
-    flexDirection: "column",
     gap: gap.md,
+    flexDirection: "column",
   },
   galleryCarousel: {
-    display: "flex",
     gap: gap.md,
-    overflowX: "auto",
+    display: "flex",
     scrollSnapType: "x mandatory",
+    overflowX: "auto",
     WebkitOverflowScrolling: "touch",
   },
   galleryCarouselItem: {
@@ -347,11 +349,11 @@ export const articleBodyStyles = stylex.create({
     },
   },
   galleryMasonry: {
-    columnGap: gap.md,
     columns: {
       default: 1,
       "@media (min-width: 40rem)": 2,
     },
+    columnGap: gap.md,
   },
   galleryMasonryItem: {
     breakInside: "avoid",
@@ -359,8 +361,8 @@ export const articleBodyStyles = stylex.create({
   },
   gallerySkeleton: {
     borderRadius: radius.md,
-    backgroundColor: uiColor.component1,
     aspectRatio: "16 / 9",
+    backgroundColor: uiColor.component1,
     width: "100%",
   },
   bskyPostEmbed: {
@@ -532,4 +534,49 @@ export const articleBodyStyles = stylex.create({
     marginTop: spacing["0"],
     maxWidth: "100%",
   },
+  bodyFontSizeSmall: {
+    fontSize: { default: "1rem", "@media (min-width: 40rem)": "1.0625rem" },
+  },
+  bodyFontSizeLarge: {
+    fontSize: {
+      default: "1.3125rem",
+      "@media (min-width: 40rem)": "1.375rem",
+    },
+  },
+  bodyFontSans: {
+    fontFamily: fontFamily.sans,
+  },
 });
+
+export const articleMeasureStyles = stylex.create({
+  narrow: {
+    maxWidth: "65ch",
+  },
+  default: {
+    maxWidth: "80ch",
+  },
+  wide: {
+    maxWidth: "95ch",
+  },
+});
+
+export function readingBodyStyleProps(
+  preference: ReadingTypographyPreference,
+  hasHero?: boolean,
+) {
+  return stylex.props(
+    articleBodyStyles.body,
+    hasHero ? articleBodyStyles.bodyAfterHero : undefined,
+    preference.fontSize === "small"
+      ? articleBodyStyles.bodyFontSizeSmall
+      : undefined,
+    preference.fontSize === "large"
+      ? articleBodyStyles.bodyFontSizeLarge
+      : undefined,
+    preference.bodyFont === "sans" ? articleBodyStyles.bodyFontSans : undefined,
+  );
+}
+
+export function articleMeasureStyle(preference: ReadingTypographyPreference) {
+  return articleMeasureStyles[preference.measure];
+}

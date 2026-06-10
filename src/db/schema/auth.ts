@@ -31,6 +31,8 @@ export const user = pgTable("user", {
   /** `true` opens document links on their original site; `null`/`false` uses
    * the in-app reader (default). */
   openLinksExternally: boolean("open_links_externally"),
+  /** Compact `fontSize:measure:bodyFont` encoding; `null` = all defaults. */
+  readingTypography: text("reading_typography"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .defaultNow()
     .notNull(),
