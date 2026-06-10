@@ -20,6 +20,7 @@ import type { ReaderVoice } from "./voice";
 
 import { PageReaderContext } from "./page-reader-context";
 import { PageReaderEngine } from "./page-reader-engine";
+import { useScreenWakeLock } from "./use-screen-wake-lock";
 import { articleVoice } from "./voice";
 
 const INITIAL_STATE: ReaderState = {
@@ -131,6 +132,12 @@ export function PageReaderProvider({
   const [state, setState] = useState<ReaderState>(INITIAL_STATE);
   const [nowPlaying, setNowPlaying] = useState<NowPlaying | null>(null);
   const [scrollLocked, setScrollLocked] = useState(true);
+
+  const wakeLockActive =
+    state.status === "playing" ||
+    state.status === "generating" ||
+    state.status === "loading-model";
+  useScreenWakeLock(wakeLockActive);
 
   // One engine for the session; survives route changes, torn down on unmount.
   useEffect(() => {
