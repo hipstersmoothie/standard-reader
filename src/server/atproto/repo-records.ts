@@ -231,6 +231,37 @@ export async function deleteReadRecord(
   });
 }
 
+/** Write an `app.standard-reader.bookmark` saving `documentUri` for later. */
+export async function putBookmarkRecord(
+  client: Client,
+  repo: string,
+  documentUri: string,
+  createdAt: string,
+): Promise<{ uri: string; cid: string }> {
+  return repoPutRecord(client, {
+    repo,
+    collection: COLLECTION.bookmark,
+    rkey: subjectRkey(documentUri),
+    record: {
+      $type: COLLECTION.bookmark,
+      subject: documentUri,
+      createdAt,
+    },
+  });
+}
+
+export async function deleteBookmarkRecord(
+  client: Client,
+  repo: string,
+  documentUri: string,
+): Promise<void> {
+  return repoDeleteRecord(client, {
+    repo,
+    collection: COLLECTION.bookmark,
+    rkey: subjectRkey(documentUri),
+  });
+}
+
 // ── Publication lists (app.standard-reader.list / .listSave) ────────────────
 
 /** A raw record as listed from the repo (value validated by the caller). */

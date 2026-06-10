@@ -1,0 +1,27 @@
+{
+  "lexicon": 1,
+  "id": "app.standard-reader.bookmark",
+  "defs": {
+    "main": {
+      "type": "record",
+      "description": "Marks a site.standard.document as saved for later by the reader. Presence of the record means saved; deleting it removes the article from the private save queue.",
+      "key": "any",
+      "record": {
+        "type": "object",
+        "required": ["subject", "createdAt"],
+        "properties": {
+          "subject": {
+            "type": "string",
+            "format": "at-uri",
+            "description": "AT URI of the site.standard.document record to save."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "datetime",
+            "description": "When the reader saved the article."
+          }
+        }
+      }
+    }
+  }
+}

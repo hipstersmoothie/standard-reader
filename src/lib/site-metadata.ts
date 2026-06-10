@@ -38,9 +38,14 @@ export const PAGE_OG_CARDS = {
     tagline: "The newest articles from across the network, as they publish.",
   },
   saved: {
+    path: "/saved",
+    title: "Saved for later",
+    tagline: "Your private reading queue — articles you've saved for later.",
+  },
+  likes: {
     path: "/likes",
-    title: "Saved articles",
-    tagline: "Your reading list — articles you've saved for later.",
+    title: "Liked articles",
+    tagline: "Articles you've liked across the network.",
   },
   search: {
     path: "/search",

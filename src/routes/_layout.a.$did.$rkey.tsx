@@ -78,6 +78,9 @@ export const Route = createFileRoute("/_layout/a/$did/$rkey")({
       await context.queryClient.ensureQueryData(
         readerApi.getRecommendStatusQueryOptions(uri),
       );
+      await context.queryClient.ensureQueryData(
+        readerApi.getBookmarkStatusQueryOptions(uri),
+      );
       if (article.publicationUri) {
         await context.queryClient.ensureQueryData(
           readerApi.getFollowStatusQueryOptions(article.publicationUri),

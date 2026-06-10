@@ -6,6 +6,7 @@ import { boolean, index, pgTable, text, timestamp } from "drizzle-orm/pg-core";
  * cached-here records from `APP_VISION.md` §5:
  *
  *   - `app.standard-reader.read`     — an article marked read (`reads`).
+ *   - `app.standard-reader.bookmark` — an article saved for later (`bookmarks`).
  *
  * Reads reference a `site.standard.document` by AT-URI (`subject`). Follows
  * reuse standard.site's `site.standard.graph.subscription` and live in
@@ -52,3 +53,41 @@ export const reads = pgTable(
 
 export type Read = typeof reads.$inferSelect;
 export type NewRead = typeof reads.$inferInsert;
+
+/** `app.standard-reader.bookmark` records — articles a reader saved for later. */
+export const bookmarks = pgTable(
+  "bookmarks",
+  {
+    /** AT-URI of the bookmark record. */
+    uri: text("uri").primaryKey(),
+    cid: text("cid"),
+    /** DID of the reader (the repo that holds this record). */
+    ownerDid: text("owner_did").notNull(),
+    rkey: text("rkey").notNull(),
+
+    /** AT-URI of the saved `site.standard.document` (required). */
+    documentUri: text("document_uri").notNull(),
+    /** DID extracted from `documentUri`. */
+    documentDid: text("document_did"),
+
+    /** `createdAt` from the record (when the article was saved). */
+    createdAt: timestamp("created_at", { withTimezone: true }),
+
+    deleted: boolean("deleted").notNull().default(false),
+
+    indexedAt: timestamp("indexed_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("bookmarks_owner_idx").on(table.ownerDid, table.createdAt.desc()),
+    index("bookmarks_document_idx").on(table.documentUri),
+    index("bookmarks_edge_idx").on(table.ownerDid, table.documentUri),
+  ],
+);
+
+export type Bookmark = typeof bookmarks.$inferSelect;
+export type NewBookmark = typeof bookmarks.$inferInsert;

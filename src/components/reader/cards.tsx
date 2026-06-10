@@ -12,7 +12,7 @@ import { user } from "#/integrations/tanstack-query/api-user.functions";
 import { parseInternalRoute } from "#/lib/internal-route";
 import { useOpenLinks } from "#/lib/use-open-links";
 import { useLoginSearch } from "#/utils/use-login-search";
-import { ArrowRight, Check, Plus } from "lucide-react";
+import { ArrowRight, Bookmark, Check, Plus } from "lucide-react";
 import { Fragment, useCallback } from "react";
 
 import type {
@@ -60,6 +60,7 @@ import {
   Topic,
 } from "./primitives";
 import { applyMarkReadOptimisticUpdate } from "./read-optimistic";
+import { useArticleBookmark } from "./use-article-bookmark";
 
 const ButtonLink = createLink(Button);
 
@@ -143,6 +144,14 @@ const styles = stylex.create({
   },
   rowFirstInSection: {
     paddingTop: spacing["0"],
+  },
+  rowHeader: {
+    alignItems: "center",
+    justifyContent: "space-between",
+    width: "100%",
+  },
+  saveActive: {
+    color: primaryColor.solid1,
   },
   rowTitle: {
     color: uiColor.text2,
@@ -1087,6 +1096,47 @@ export function FeatureArticle({
   );
 }
 
+/** Nested inside article cards — block parent navigation. */
+function stopSaveClick(event: React.MouseEvent) {
+  event.preventDefault();
+  event.stopPropagation();
+}
+
+export function SaveButton({
+  documentUri,
+  signedIn,
+  size = "sm",
+}: {
+  documentUri: string;
+  signedIn: boolean;
+  size?: "sm" | "md";
+}) {
+  const { bookmarked, toggle, isPending } = useArticleBookmark(
+    documentUri,
+    signedIn,
+  );
+  const iconSize = size === "md" ? 18 : 16;
+  const label = bookmarked ? "Saved for later" : "Save for later";
+
+  return (
+    <IconButton
+      variant="secondary"
+      size={size}
+      label={label}
+      isDisabled={isPending}
+      onPress={toggle}
+      onClick={stopSaveClick}
+      style={bookmarked ? styles.saveActive : undefined}
+    >
+      <Bookmark
+        size={iconSize}
+        aria-hidden
+        fill={bookmarked ? "currentColor" : "none"}
+      />
+    </IconButton>
+  );
+}
+
 /* ── Article row (list) ─────────────────────────────────────────────────── */
 
 export function ArticleRow({
@@ -1101,6 +1151,8 @@ export function ArticleRow({
   /** Drop top padding when the section head already provides spacing above. */
   isFirstInSection?: boolean;
 }) {
+  const { data: session } = useQuery(user.getSessionQueryOptions);
+  const signedIn = Boolean(session?.user);
   const cover = coverImage(article);
   return (
     <ArticleLink
@@ -1112,7 +1164,10 @@ export function ArticleRow({
       ]}
     >
       <Flex direction="column" gap="2xl">
-        {showByline ? <Byline article={article} includeDate /> : null}
+        <Flex align="center" style={styles.rowHeader}>
+          {showByline ? <Byline article={article} includeDate /> : <span />}
+          <SaveButton documentUri={article.uri} signedIn={signedIn} />
+        </Flex>
         <ArticleTitleRow
           article={article}
           showByline={showByline}

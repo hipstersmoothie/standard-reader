@@ -2,7 +2,7 @@ import { relations } from "drizzle-orm";
 
 import { documentContributors, documents } from "./documents.ts";
 import { recommends, subscriptions } from "./graph.ts";
-import { reads } from "./personal.ts";
+import { bookmarks, reads } from "./personal.ts";
 import { profiles } from "./profiles.ts";
 import { publications } from "./publications.ts";
 import { publicationCosubscriptions, publicationStats } from "./stats.ts";
@@ -40,6 +40,7 @@ export const documentsRelations = relations(documents, ({ one, many }) => ({
   contributors: many(documentContributors),
   recommends: many(recommends),
   reads: many(reads),
+  bookmarks: many(bookmarks),
 }));
 
 export const readsRelations = relations(reads, ({ one }) => ({
@@ -49,6 +50,17 @@ export const readsRelations = relations(reads, ({ one }) => ({
   }),
   owner: one(profiles, {
     fields: [reads.ownerDid],
+    references: [profiles.did],
+  }),
+}));
+
+export const bookmarksRelations = relations(bookmarks, ({ one }) => ({
+  document: one(documents, {
+    fields: [bookmarks.documentUri],
+    references: [documents.uri],
+  }),
+  owner: one(profiles, {
+    fields: [bookmarks.ownerDid],
     references: [profiles.did],
   }),
 }));

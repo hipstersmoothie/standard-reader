@@ -150,7 +150,12 @@ Sections, top to bottom:
 - Right rail: About + DID + "Readers also follow".
 - Social proof line ("Followed by …") when applicable.
 
-### Reader profile (saved articles)
+### Reader profile (saved for later)
+
+- Signed-in reader's **private save queue** (`app.standard-reader.bookmark`), newest first.
+- Route `/saved`; linked from the user menu. Requires auth (redirects to login).
+
+### Reader profile (liked articles)
 
 - Signed-in reader's **liked articles** (`site.standard.graph.recommend`), newest first.
 - Route `/likes`; linked from the user menu. Requires auth (redirects to login).
@@ -179,7 +184,9 @@ source of truth; Neon holds a derived view for speed and cross-network querying.
   Toggling follow is global and reflects everywhere (sidebar, cards, feed, profile) instantly; the
   write goes to the user's repo, the cache updates optimistically.
 - **Likes:** reuse `standard.site`'s `site.standard.graph.recommend` record per liked article
-  (like toggle in reader).
+  (heart toggle in reader).
+- **Save for later:** an `app.standard-reader.bookmark` record per saved article; a private queue
+  at `/saved`, distinct from public likes.
 - **Read / unread:** an `app.standard-reader.read` record per article; opening an article
   marks it read.
 - **Publication lists (sidebar folders):** `app.standard-reader.list` records — a named, ordered,
@@ -218,6 +225,8 @@ source of truth; Neon holds a derived view for speed and cross-network querying.
     (`topic` = a publication's most frequent document tag; Discover chips = top-N topics).
 - **App-owned lexicons** under the `app.standard-reader` namespace (JSON in `lexicons/`):
   - `app.standard-reader.read` — an article marked read (`subject` = document at-uri).
+  - `app.standard-reader.bookmark` — an article saved for later (`subject` = document at-uri +
+    `createdAt`; deterministic rkey via `subjectRkey`).
   - `app.standard-reader.list` — a publication list (`name` + optional `description` + ordered
     `publications` at-uris of `site.standard.publication` records + `createdAt`; tid rkey).
   - `app.standard-reader.listSave` — another reader's list saved into this app (`list` at-uri +
@@ -285,7 +294,7 @@ hand-tuned lists:
 - AT Proto / Bluesky **OAuth login**.
 - Real publications & articles served from the **Neon read-model** (tap backfill).
 - **Home, Latest, Discover, Search, Article, Publication** screens ported to TanStack Start + hip-ui.
-- **Follows, likes, and read-state** written back as records (and cached).
+- **Follows, likes, save-for-later, and read-state** written back as records (and cached).
 - **URL-backed routing** for every view.
 - Network-powered recommendations & trending (initial heuristics, tunable).
 
@@ -293,7 +302,7 @@ hand-tuned lists:
 
 - Recommendation / trending tuning and quality work.
 - Higher-quality full-text search.
-- Offline / save-for-later.
+- Offline / save-for-later body cache (save queue via `app.standard-reader.bookmark` is shipped).
 - Notifications.
 - Multi-account.
 

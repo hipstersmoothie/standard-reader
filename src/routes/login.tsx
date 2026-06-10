@@ -228,6 +228,13 @@ function AuthPage() {
               </Text>
             ) : null}
 
+            {error === "scope" ? (
+              <Text size="sm" variant="critical">
+                Sign in again to refresh your permissions — your session
+                doesn&apos;t include save-for-later yet.
+              </Text>
+            ) : null}
+
             {view === "saved-handles" && (
               <>
                 <Flex

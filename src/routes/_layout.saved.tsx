@@ -8,7 +8,7 @@ import { user } from "#/integrations/tanstack-query/api-user.functions";
 import { getPublicUrlClient } from "#/lib/public-url";
 import { pageSocialMeta } from "#/lib/site-metadata";
 import { buildAuthRedirectPath } from "#/utils/auth-redirect";
-import { Heart } from "lucide-react";
+import { Bookmark } from "lucide-react";
 
 import { ArticleRow } from "../components/reader/cards";
 import {
@@ -34,7 +34,7 @@ import {
   lineHeight,
 } from "../design-system/theme/typography.stylex";
 
-export const Route = createFileRoute("/_layout/likes")({
+export const Route = createFileRoute("/_layout/saved")({
   beforeLoad: async ({ context }) => {
     const session = await context.queryClient.ensureQueryData(
       user.getSessionQueryOptions,
@@ -42,17 +42,17 @@ export const Route = createFileRoute("/_layout/likes")({
     if (!session?.user) {
       throw redirect({
         to: "/login",
-        search: { redirect: buildAuthRedirectPath("/likes") },
+        search: { redirect: buildAuthRedirectPath("/saved") },
       });
     }
   },
   loader: async ({ context }) => {
-    await context.queryClient.ensureQueryData(readerApi.getLikesQueryOptions());
+    await context.queryClient.ensureQueryData(readerApi.getSavedQueryOptions());
   },
   head: () => ({
-    meta: pageSocialMeta("likes", getPublicUrlClient()),
+    meta: pageSocialMeta("saved", getPublicUrlClient()),
   }),
-  component: ReaderLikes,
+  component: ReaderSaved,
 });
 
 const styles = stylex.create({
@@ -132,9 +132,9 @@ const styles = stylex.create({
   },
 });
 
-function ReaderLikes() {
+function ReaderSaved() {
   const { data: session } = useSuspenseQuery(user.getSessionQueryOptions);
-  const { data: likes } = useSuspenseQuery(readerApi.getLikesQueryOptions());
+  const { data: saved } = useSuspenseQuery(readerApi.getSavedQueryOptions());
   const userName = session?.user.name ?? "Reader";
   const userHandle = session?.user.handle;
   const initial = userName.charAt(0).toUpperCase();
@@ -143,11 +143,11 @@ function ReaderLikes() {
     <ReaderContent>
       <Masthead
         kicker="Your profile"
-        kickerIcon={<Heart size={14} aria-hidden />}
-        title="Liked articles"
-        dek="Articles you've liked across the network."
-        metaLabel="Likes"
-        metaValue={String(likes.length)}
+        kickerIcon={<Bookmark size={14} aria-hidden />}
+        title="Saved for later"
+        dek="Your private reading queue — only you can see these."
+        metaLabel="Saved"
+        metaValue={String(saved.length)}
       />
 
       <div {...stylex.props(styles.profile)}>
@@ -163,7 +163,7 @@ function ReaderLikes() {
         </Flex>
       </div>
 
-      {likes.length === 0 ? (
+      {saved.length === 0 ? (
         <div {...stylex.props(styles.emptyCard)}>
           <Flex
             direction="column"
@@ -171,14 +171,14 @@ function ReaderLikes() {
             align="start"
             style={styles.emptyInner}
           >
-            <span {...stylex.props(styles.emptyTitle)}>No likes yet</span>
+            <span {...stylex.props(styles.emptyTitle)}>Nothing saved yet</span>
             <p {...stylex.props(styles.emptyDek)}>
-              Tap the heart on any article to like it. Your likes live in your
-              repo as{" "}
+              Tap the bookmark on any article to save it here. Your queue lives
+              in your repo as{" "}
               <code {...stylex.props(styles.emptyCode)}>
-                site.standard.graph.recommend
+                app.standard-reader.bookmark
               </code>{" "}
-              records and help surface great writing across the network.
+              records — private to you.
             </p>
             <Link to="/">
               <Button variant="secondary" size="lg">
@@ -189,12 +189,12 @@ function ReaderLikes() {
         </div>
       ) : (
         <>
-          <SectionHead kicker="Likes" title="Recently liked" />
-          {likes.map((item, index) => {
+          <SectionHead kicker="Queue" title="Recently saved" />
+          {saved.map((item, index) => {
             if (item.article) {
               return (
                 <ArticleRow
-                  key={item.recommendUri}
+                  key={item.bookmarkUri}
                   article={item.article}
                   isFirstInSection={index === 0}
                 />
@@ -204,7 +204,7 @@ function ReaderLikes() {
             const link = documentLinkParams(item.documentUri);
             return (
               <div
-                key={item.recommendUri}
+                key={item.bookmarkUri}
                 {...stylex.props(styles.unavailableRow)}
               >
                 <Flex direction="column" gap="sm">
@@ -212,8 +212,8 @@ function ReaderLikes() {
                     Article unavailable
                   </span>
                   <span {...stylex.props(styles.unavailableMeta)}>
-                    {item.likedAt
-                      ? `Saved ${formatRelativeTime(item.likedAt)}`
+                    {item.savedAt
+                      ? `Saved ${formatRelativeTime(item.savedAt)}`
                       : "Saved"}
                     {link ? (
                       <>

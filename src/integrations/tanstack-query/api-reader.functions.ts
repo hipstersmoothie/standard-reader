@@ -3,9 +3,11 @@ import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { getAtprotoSessionForRequest } from "#/middleware/auth";
 import {
+  deleteBookmarkRecord,
   deleteReadRecord,
   deleteRecommendRecord,
   deleteSubscriptionRecords,
+  putBookmarkRecord,
   putReadRecord,
   putRecommendRecord,
   putSubscriptionRecord,
@@ -23,7 +25,7 @@ import { articleCardColumns, toArticleCard } from "./api-shapes";
 import { dbMiddleware } from "./db-middleware";
 
 /**
- * Reader API — the personal write path (follow / like / read) plus the status
+ * Reader API — the personal write path (follow / like / save / read) plus the status
  * reads that back the UI toggles. Writes go to the signed-in reader's own AT
  * Proto repo (source of truth); status reads come from the Neon read-model (the
  * tap-fed cache), so the UI should treat toggles as optimistic. Mirrors the
@@ -59,6 +61,10 @@ export interface ReadStatus {
   isRead: boolean;
 }
 
+export interface BookmarkStatus {
+  isBookmarked: boolean;
+}
+
 export interface MarkAllReadResult {
   markedCount: number;
   documentUris: Array<string>;
@@ -68,6 +74,15 @@ export interface MarkAllReadResult {
 export interface LikedArticleItem {
   recommendUri: string;
   likedAt: string | null;
+  documentUri: string;
+  /** Null when the document is no longer in the read-model. */
+  article: ArticleCard | null;
+}
+
+/** A saved article (`app.standard-reader.bookmark`) with hydrated card data. */
+export interface SavedArticleItem {
+  bookmarkUri: string;
+  savedAt: string | null;
   documentUri: string;
   /** Null when the document is no longer in the read-model. */
   article: ArticleCard | null;
@@ -285,7 +300,7 @@ const recommendDocument = createServerFn({ method: "POST" })
       span.set("documentUri", data.documentUri);
       const session = await getAtprotoSessionForRequest(getRequest());
       if (!session) {
-        throw new Error("Sign in to save articles.");
+        throw new Error("Sign in to like articles.");
       }
       span.set("did", session.did);
 
@@ -308,7 +323,7 @@ const unrecommendDocument = createServerFn({ method: "POST" })
       span.set("documentUri", data.documentUri);
       const session = await getAtprotoSessionForRequest(getRequest());
       if (!session) {
-        throw new Error("Sign in to manage saved articles.");
+        throw new Error("Sign in to manage liked articles.");
       }
       span.set("did", session.did);
 
@@ -422,6 +437,146 @@ const markUnread = createServerFn({ method: "POST" })
     }),
   );
 
+// ── Save for later (app.standard-reader.bookmark) ───────────────────────────
+
+const getBookmarkStatus = createServerFn({ method: "GET" })
+  .middleware([dbMiddleware])
+  .inputValidator(documentInput)
+  .handler(
+    observe("reader.getBookmarkStatus", async ({ data, context }, span) => {
+      span.set("documentUri", data.documentUri);
+      const session = await getAtprotoSessionForRequest(getRequest());
+      if (!session) {
+        return { isBookmarked: false } satisfies BookmarkStatus;
+      }
+      span.set("did", session.did);
+
+      const b = context.schema.bookmarks;
+      const [row] = await context.db
+        .select({ uri: b.uri })
+        .from(b)
+        .where(
+          and(
+            eq(b.ownerDid, session.did),
+            eq(b.documentUri, data.documentUri),
+            eq(b.deleted, false),
+          ),
+        )
+        .limit(1);
+
+      return { isBookmarked: Boolean(row) } satisfies BookmarkStatus;
+    }),
+  );
+
+const getSaved = createServerFn({ method: "GET" })
+  .middleware([dbMiddleware])
+  .inputValidator(likesInput)
+  .handler(
+    observe("reader.getSaved", async ({ data, context }, span) => {
+      const session = await getAtprotoSessionForRequest(getRequest());
+      if (!session) {
+        return [] satisfies Array<SavedArticleItem>;
+      }
+      span.set("did", session.did);
+      span.set("limit", data.limit);
+
+      const b = context.schema.bookmarks;
+      const d = context.schema.documents;
+      const p = context.schema.publications;
+      const pr = context.schema.profiles;
+      const cols = articleCardColumns(context.schema);
+      const rows = await context.db
+        .select({
+          bookmarkUri: b.uri,
+          savedAt: b.createdAt,
+          documentUri: b.documentUri,
+          ...cols,
+        })
+        .from(b)
+        .leftJoin(d, eq(d.uri, b.documentUri))
+        .leftJoin(p, eq(p.uri, d.publicationUri))
+        .leftJoin(pr, eq(pr.did, p.did))
+        .where(and(eq(b.ownerDid, session.did), eq(b.deleted, false)))
+        .orderBy(desc(b.createdAt))
+        .limit(data.limit);
+
+      span.set("count", rows.length);
+      return rows.map((row) => ({
+        bookmarkUri: row.bookmarkUri,
+        savedAt: row.savedAt?.toISOString() ?? null,
+        documentUri: row.documentUri,
+        article:
+          row.uri != null &&
+          row.did != null &&
+          row.title != null &&
+          row.publishedAt != null
+            ? toArticleCard({
+                uri: row.uri,
+                did: row.did,
+                title: row.title,
+                description: row.description,
+                path: row.path,
+                canonicalUrl: row.canonicalUrl,
+                coverImageUrl: row.coverImageUrl,
+                publishedAt: row.publishedAt,
+                featured: row.featured ?? false,
+                publicationUri: row.publicationUri,
+                publicationName: row.publicationName,
+                publicationIconUrl: row.publicationIconUrl,
+                publicationOwnerAvatarUrl: row.publicationOwnerAvatarUrl,
+                publicationOwnerHandle: row.publicationOwnerHandle,
+                publicationBannerUrl: row.publicationBannerUrl,
+                publicationTopic: row.publicationTopic,
+                tags: row.tags,
+                textContent: row.textContent,
+                hasRenderableBody: row.hasRenderableBody,
+                recommendCount: row.recommendCount,
+              })
+            : null,
+      })) satisfies Array<SavedArticleItem>;
+    }),
+  );
+
+const bookmarkDocument = createServerFn({ method: "POST" })
+  .middleware([dbMiddleware])
+  .inputValidator(documentInput)
+  .handler(
+    observe("reader.bookmarkDocument", async ({ data }, span) => {
+      span.set("documentUri", data.documentUri);
+      const session = await getAtprotoSessionForRequest(getRequest());
+      if (!session) {
+        throw new Error("Sign in to save articles for later.");
+      }
+      span.set("did", session.did);
+
+      await putBookmarkRecord(
+        session.client,
+        session.did,
+        data.documentUri,
+        new Date().toISOString(),
+      );
+      await trackReaderRepo(session.did);
+      return { ok: true as const };
+    }),
+  );
+
+const unbookmarkDocument = createServerFn({ method: "POST" })
+  .middleware([dbMiddleware])
+  .inputValidator(documentInput)
+  .handler(
+    observe("reader.unbookmarkDocument", async ({ data }, span) => {
+      span.set("documentUri", data.documentUri);
+      const session = await getAtprotoSessionForRequest(getRequest());
+      if (!session) {
+        throw new Error("Sign in to manage saved articles.");
+      }
+      span.set("did", session.did);
+
+      await deleteBookmarkRecord(session.client, session.did, data.documentUri);
+      return { ok: true as const };
+    }),
+  );
+
 async function markDocumentsRead(
   session: NonNullable<Awaited<ReturnType<typeof getAtprotoSessionForRequest>>>,
   documentUris: Array<string>,
@@ -518,10 +673,24 @@ function getReadStatusQueryOptions(documentUri: string) {
   });
 }
 
+function getBookmarkStatusQueryOptions(documentUri: string) {
+  return queryOptions({
+    queryKey: ["reader", "bookmarkStatus", documentUri] as const,
+    queryFn: async () => getBookmarkStatus({ data: { documentUri } }),
+  });
+}
+
 function getLikesQueryOptions({ limit = 50 }: { limit?: number } = {}) {
   return queryOptions({
     queryKey: ["reader", "likes", limit] as const,
     queryFn: async () => getLikes({ data: { limit } }),
+  });
+}
+
+function getSavedQueryOptions({ limit = 50 }: { limit?: number } = {}) {
+  return queryOptions({
+    queryKey: ["reader", "saved", limit] as const,
+    queryFn: async () => getSaved({ data: { limit } }),
   });
 }
 
@@ -583,6 +752,22 @@ function markUnreadMutationOptions() {
   });
 }
 
+function bookmarkDocumentMutationOptions() {
+  return mutationOptions({
+    mutationKey: ["reader", "bookmarkDocument"] as const,
+    mutationFn: async (documentUri: string) =>
+      bookmarkDocument({ data: { documentUri } }),
+  });
+}
+
+function unbookmarkDocumentMutationOptions() {
+  return mutationOptions({
+    mutationKey: ["reader", "unbookmarkDocument"] as const,
+    mutationFn: async (documentUri: string) =>
+      unbookmarkDocument({ data: { documentUri } }),
+  });
+}
+
 function markPublicationAllReadMutationOptions() {
   return mutationOptions({
     mutationKey: ["reader", "markPublicationAllRead"] as const,
@@ -630,4 +815,13 @@ export const readerApi = {
   markFollowsAllUnreadReadMutationOptions,
   markUnread,
   markUnreadMutationOptions,
+  // save for later (app.standard-reader.bookmark)
+  getBookmarkStatus,
+  getBookmarkStatusQueryOptions,
+  getSaved,
+  getSavedQueryOptions,
+  bookmarkDocument,
+  bookmarkDocumentMutationOptions,
+  unbookmarkDocument,
+  unbookmarkDocumentMutationOptions,
 };

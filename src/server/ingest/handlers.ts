@@ -10,6 +10,7 @@ import { resolvePcktContent } from "#/server/pckt/resolve";
 import { and, eq, inArray, isNull, or, sql } from "drizzle-orm";
 
 import type {
+  BookmarkRecord,
   BskyProfileRecord,
   DocumentRecord,
   PublicationRecord,
@@ -21,6 +22,7 @@ import type {
 
 import { db } from "../../db/index.ts";
 import {
+  bookmarks,
   documentContributors,
   documents,
   profiles,
@@ -495,6 +497,38 @@ export async function upsertRead(
   await ensureTracked(did, "reader");
 }
 
+export async function upsertBookmark(
+  uri: string,
+  did: string,
+  rkey: string,
+  cid: string | undefined,
+  record: BookmarkRecord,
+): Promise<void> {
+  if (typeof record.subject !== "string") {
+    return;
+  }
+  const documentDid = didFromAtUri(record.subject);
+
+  const values = {
+    uri,
+    cid: cid ?? null,
+    ownerDid: did,
+    rkey,
+    documentUri: record.subject,
+    documentDid,
+    createdAt: parseDate(record.createdAt),
+    deleted: false,
+    updatedAt: sql`now()`,
+  };
+
+  await db
+    .insert(bookmarks)
+    .values(values)
+    .onConflictDoUpdate({ target: bookmarks.uri, set: values });
+
+  await ensureTracked(did, "reader");
+}
+
 export async function upsertBskyProfile(
   uri: string,
   did: string,
@@ -572,6 +606,10 @@ export async function deleteRecord(
     }
     case Collections.read: {
       await db.delete(reads).where(eq(reads.uri, uri));
+      return;
+    }
+    case Collections.bookmark: {
+      await db.delete(bookmarks).where(eq(bookmarks.uri, uri));
       return;
     }
     default: {

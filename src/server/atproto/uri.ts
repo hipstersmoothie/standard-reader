@@ -24,6 +24,7 @@ export const Collections = {
   theme: "site.standard.theme.basic",
   bskyProfile: "app.bsky.actor.profile",
   read: APP_NSID.read,
+  bookmark: APP_NSID.bookmark,
 } as const;
 
 export type KnownCollection = (typeof Collections)[keyof typeof Collections];

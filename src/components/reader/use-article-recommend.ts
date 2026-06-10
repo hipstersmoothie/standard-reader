@@ -8,9 +8,18 @@ import {
 import { useNavigate } from "@tanstack/react-router";
 import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
 import { useLoginSearch } from "#/utils/use-login-search";
-import { useEffect, useState } from "react";
 
-export function useArticleRecommend(documentUri: string, signedIn: boolean) {
+import {
+  applyRecommendOptimisticUpdate,
+  recommendCountFromCache,
+  rollbackRecommendOptimisticUpdate,
+} from "./recommend-optimistic";
+
+export function useArticleRecommend(
+  documentUri: string,
+  signedIn: boolean,
+  initialRecommendCount: number,
+) {
   const navigate = useNavigate();
   const loginSearch = useLoginSearch();
   const queryClient = useQueryClient();
@@ -19,17 +28,18 @@ export function useArticleRecommend(documentUri: string, signedIn: boolean) {
     readerApi.getRecommendStatusQueryOptions(documentUri),
   );
 
-  const [recommended, setRecommended] = useState(status.isRecommended);
-
-  useEffect(() => {
-    setRecommended(status.isRecommended);
-  }, [status.isRecommended]);
-
   const recommendMutation = useMutation(
     readerApi.recommendDocumentMutationOptions(),
   );
   const unrecommendMutation = useMutation(
     readerApi.unrecommendDocumentMutationOptions(),
+  );
+
+  const recommended = status.isRecommended;
+  const recommendCount = recommendCountFromCache(
+    queryClient,
+    documentUri,
+    initialRecommendCount,
   );
 
   const toggle = () => {
@@ -38,23 +48,20 @@ export function useArticleRecommend(documentUri: string, signedIn: boolean) {
       return;
     }
     const next = !recommended;
-    setRecommended(next);
+    const optimistic = applyRecommendOptimisticUpdate(
+      queryClient,
+      documentUri,
+      next,
+    );
     const mutation = next ? recommendMutation : unrecommendMutation;
     mutation.mutate(documentUri, {
-      onError: () => setRecommended(!next),
-      onSettled: () => {
-        void queryClient.invalidateQueries({
-          queryKey: ["reader", "recommendStatus", documentUri],
-        });
-        void queryClient.invalidateQueries({
-          queryKey: ["article", documentUri],
-        });
-      },
+      onError: () =>
+        rollbackRecommendOptimisticUpdate(queryClient, documentUri, optimistic),
     });
   };
 
   const isPending =
     recommendMutation.isPending || unrecommendMutation.isPending;
 
-  return { recommended, toggle, isPending };
+  return { recommended, recommendCount, toggle, isPending };
 }

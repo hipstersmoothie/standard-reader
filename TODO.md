@@ -298,19 +298,19 @@ Backend/API exists; UI or copy is missing.
 ## 10. Post-v1 — save-for-later (Tier 3)
 
 **Decision:** `app.standard-reader.bookmark` lexicon in the reader’s repo (not likes, not app-DB-only,
-not offline body cache). _Open decision:_ route slug `/saved` vs `/bookmarks`.
+not offline body cache). Route slug **`/saved`**.
 
-- [ ] **Lexicon** — [`lexicons/app/standard-reader/bookmark.json`](lexicons/app/standard-reader/bookmark.json)
+- [x] **Lexicon** — [`lexicons/app/standard-reader/bookmark.json`](lexicons/app/standard-reader/bookmark.json)
       (`subject` document at-uri + `createdAt`; deterministic rkey via `subjectRkey`). Publish via
       `pnpm lex:lint` + `pnpm atproto:publish-lexicons`.
-- [ ] **Write path** — `COLLECTION.bookmark`, `putBookmarkRecord` / `deleteBookmarkRecord` in
+- [x] **Write path** — `COLLECTION.bookmark`, `putBookmarkRecord` / `deleteBookmarkRecord` in
       [`repo-records.ts`](src/server/atproto/repo-records.ts); OAuth scope in
       [`scope.ts`](src/integrations/auth/scope.ts) (re-login required); `readerApi` save/unsave/list/status
       in [`api-reader.functions.ts`](src/integrations/tanstack-query/api-reader.functions.ts) with
       optimistic updates.
-- [ ] **Read-model + ingest** — `bookmarks` table (mirror [`reads`](src/db/schema/personal.ts)); tap
+- [x] **Read-model + ingest** — `bookmarks` table (mirror [`reads`](src/db/schema/personal.ts)); tap
       collection filter + ingest handler + delete; `reader` track-reason on first write.
-- [ ] **UI** — private `/saved` queue (separate from public `/likes`); distinct save toggle on article
+- [x] **UI** — private `/saved` queue (separate from public `/likes`); distinct save toggle on article
       bar + feed cards; user-menu link; empty state copy. Update [`APP_VISION.md`](APP_VISION.md) §5
       when landing.
 

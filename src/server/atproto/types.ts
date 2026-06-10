@@ -95,6 +95,13 @@ export interface ReadRecord {
   createdAt?: string;
 }
 
+/** `app.standard-reader.bookmark` — an article saved for later. */
+export interface BookmarkRecord {
+  $type?: string;
+  subject: string;
+  createdAt?: string;
+}
+
 /** `app.standard-reader.list` — a named, ordered, shareable publication list. */
 export interface ListRecord {
   $type?: string;

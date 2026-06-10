@@ -79,7 +79,7 @@ Without ingestion the app runs fine but the directory and feeds will be empty.
 src/
   routes/             # file-based routes: / (Today), /latest, /discover, /search,
                       #   /a/$did/$rkey (article), /p/… (publication), /l/… (list),
-                      #   /likes, /login, /about + /api/* (OAuth, OG images, ingest)
+                      #   /likes, /saved, /login, /about + /api/* (OAuth, OG images, ingest)
   components/reader/  # app shell, feeds, article view, audio player, modals
   design-system/      # hip-ui (copy-and-own) + StyleX theme tokens
   server/             # server-only code: atproto, reader queries, ingest, og, content

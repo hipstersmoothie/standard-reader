@@ -78,6 +78,7 @@ import {
 import { QuoteShareLayer } from "./quote-share-layer";
 import { applyMarkReadOptimisticUpdate } from "./read-optimistic";
 import { ReaderWordHighlighter } from "./reader-word-highlighter";
+import { useArticleBookmark } from "./use-article-bookmark";
 import { useArticleRecommend } from "./use-article-recommend";
 
 function scrollProgress(el: HTMLElement): number {
@@ -491,21 +492,24 @@ function ArticleFollowButtonMd({
 }
 
 function BookmarkButton({
-  recommended,
+  bookmarked,
   onToggle,
+  isPending = false,
 }: {
-  recommended: boolean;
+  bookmarked: boolean;
   onToggle: () => void;
+  isPending?: boolean;
 }) {
   return (
     <IconButton
       variant="secondary"
       size="md"
-      label={recommended ? "Saved" : "Save"}
+      label={bookmarked ? "Saved for later" : "Save for later"}
+      isDisabled={isPending}
       onPress={onToggle}
-      style={recommended ? styles.bookmarkActive : undefined}
+      style={bookmarked ? styles.bookmarkActive : undefined}
     >
-      <Bookmark size={18} fill={recommended ? "currentColor" : "none"} />
+      <Bookmark size={18} fill={bookmarked ? "currentColor" : "none"} />
     </IconButton>
   );
 }
@@ -625,10 +629,17 @@ function ArticleViewBody({
   const { data: session } = useSuspenseQuery(user.getSessionQueryOptions);
   const signedIn = Boolean(session?.user);
 
-  const { recommended, toggle: toggleRecommend } = useArticleRecommend(
-    article.uri,
-    signedIn,
-  );
+  const {
+    recommended,
+    recommendCount,
+    toggle: toggleRecommend,
+  } = useArticleRecommend(article.uri, signedIn, article.recommendCount);
+
+  const {
+    bookmarked,
+    toggle: toggleBookmark,
+    isPending: bookmarkPending,
+  } = useArticleBookmark(article.uri, signedIn);
 
   const readStats = formatArticleReadStats(article.readCount);
   const hasEngagement = article.recommendCount > 0 || article.commentCount > 0;
@@ -770,8 +781,9 @@ function ArticleViewBody({
               </IconButton>
             ) : null}
             <BookmarkButton
-              recommended={recommended}
-              onToggle={toggleRecommend}
+              bookmarked={bookmarked}
+              onToggle={toggleBookmark}
+              isPending={bookmarkPending}
             />
             <IconButton
               variant="secondary"
@@ -905,7 +917,7 @@ function ArticleViewBody({
           <ArticleLikePrompt
             recommended={recommended}
             onToggle={toggleRecommend}
-            recommendCount={article.recommendCount}
+            recommendCount={recommendCount}
           />
 
           {pub ? (
