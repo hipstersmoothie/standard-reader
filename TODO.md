@@ -210,9 +210,14 @@ Build each on hip-ui components + StyleX tokens (no raw HTML/inline styles).
       icon, topic kicker, name, description, @handle + readers/posts footer). Both reuse the quote
       card's theme resolution (`resolveQuoteOgColors`, WCAG-guarded). `/a/...` (non-quote) and
       `/p/...` route `head`s now emit full social meta via `siteSocialMeta` +
-      `articleOgImageUrl`/`publicationOgImageUrl`. `loadOgImage` now routes PDS `getBlob` URLs
-      through the Bluesky CDN `@jpeg` variant and rejects formats satori can't parse (webp blobs
-      previously 500'd quote cards too).
+      `articleOgImageUrl`/`publicationOgImageUrl`. `loadOgImage` fetches original blobs first
+      (png/jpeg pass through, alpha preserved) and falls back to the Bluesky CDN `@png` variant
+      for formats satori can't parse (webp blobs previously 500'd quote cards too).
+- [x] **standard.site discovery hints** — `/p/...` emits
+      `<link rel="site.standard.publication" href="at://…">` and `/a/...` emits
+      `rel="site.standard.document"` (+ the publication hint when the document belongs to one),
+      per https://standard.site/docs/verification/#discovery-hint (hints only; verification
+      stays with the publisher's `.well-known`).
 
 ## 7. Discovery engine (network-powered)
 

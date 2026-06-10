@@ -108,6 +108,15 @@ export const Route = createFileRoute("/_layout/a/$did/$rkey")({
       };
     }
 
+    // standard.site discovery hints — the AT-URIs of the records this page
+    // renders. See https://standard.site/docs/verification/#discovery-hint
+    const links = [
+      { rel: "site.standard.document", href: article.uri },
+      ...(article.publicationUri
+        ? [{ rel: "site.standard.publication", href: article.publicationUri }]
+        : []),
+    ];
+
     if (!quote || !match.search.q) {
       const baseUrl = getPublicUrlClient();
       return {
@@ -122,6 +131,7 @@ export const Route = createFileRoute("/_layout/a/$did/$rkey")({
           ),
           ogType: "article",
         }),
+        links,
       };
     }
 
@@ -151,6 +161,7 @@ export const Route = createFileRoute("/_layout/a/$did/$rkey")({
         { name: "twitter:description", content: description },
         { name: "twitter:image", content: ogImage },
       ],
+      links,
     };
   },
   component: ArticleRoute,

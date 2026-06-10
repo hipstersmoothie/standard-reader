@@ -98,6 +98,14 @@ export const Route = createFileRoute("/_layout/p/$did/$rkey")({
           match.params.rkey,
         ),
       }),
+      // standard.site discovery hint — the AT-URI of the rendered publication.
+      // See https://standard.site/docs/verification/#discovery-hint
+      links: [
+        {
+          rel: "site.standard.publication",
+          href: publicationUriFromParams(match.params.did, match.params.rkey),
+        },
+      ],
     };
   },
   component: PublicationProfile,
