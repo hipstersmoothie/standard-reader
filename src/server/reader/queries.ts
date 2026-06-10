@@ -1068,3 +1068,138 @@ export async function articleRecommendedPublications(
 
   return popularPublications(db, schema, opts.limit, exclude);
 }
+
+export interface CoReaderSocialProofReader {
+  did: string;
+  handle: string | null;
+  displayName: string | null;
+  avatarUrl: string | null;
+}
+
+export interface CoReaderSocialProof {
+  readers: Array<CoReaderSocialProofReader>;
+  total: number;
+}
+
+/**
+ * Publication-profile social proof — co-readers (readers who follow the same
+ * publications as you) who also follow or like this publication. Uses the same
+ * co-reader follow + like blend as Discover's "Followed by people you follow".
+ */
+export async function publicationFollowedByCoReaders(
+  db: Db,
+  schema: Schema,
+  readerDid: string,
+  publicationUri: string,
+  limit: number,
+  opts: PublicationRailOpts = {},
+): Promise<CoReaderSocialProof> {
+  const followUris =
+    opts.followUris ?? (await selectFollowUris(db, schema, readerDid));
+  if (followUris.length === 0) {
+    return { readers: [], total: 0 };
+  }
+
+  const sub = schema.subscriptions;
+  const pr = schema.profiles;
+  const rc = schema.recommends;
+  const doc = schema.documents;
+
+  const coReaders = db
+    .selectDistinct({ did: sub.subscriberDid })
+    .from(sub)
+    .where(
+      and(
+        inArray(sub.publicationUri, followUris),
+        ne(sub.subscriberDid, readerDid),
+        eq(sub.deleted, false),
+      ),
+    )
+    .as("co_readers");
+
+  const [followRows, likeRows] = await Promise.all([
+    db
+      .selectDistinct({
+        did: sub.subscriberDid,
+        handle: pr.handle,
+        displayName: pr.displayName,
+        avatarUrl: pr.avatarUrl,
+      })
+      .from(sub)
+      .innerJoin(coReaders, eq(coReaders.did, sub.subscriberDid))
+      .leftJoin(pr, eq(pr.did, sub.subscriberDid))
+      .where(
+        and(eq(sub.publicationUri, publicationUri), eq(sub.deleted, false)),
+      ),
+    db
+      .selectDistinct({
+        did: rc.recommenderDid,
+        handle: pr.handle,
+        displayName: pr.displayName,
+        avatarUrl: pr.avatarUrl,
+      })
+      .from(rc)
+      .innerJoin(doc, eq(doc.uri, rc.documentUri))
+      .innerJoin(coReaders, eq(coReaders.did, rc.recommenderDid))
+      .leftJoin(pr, eq(pr.did, rc.recommenderDid))
+      .where(
+        and(
+          eq(doc.publicationUri, publicationUri),
+          eq(rc.deleted, false),
+          eq(doc.deleted, false),
+        ),
+      ),
+  ]);
+
+  const ranked = new Map<
+    string,
+    CoReaderSocialProofReader & { score: number }
+  >();
+
+  for (const row of followRows) {
+    ranked.set(row.did, {
+      did: row.did,
+      handle: row.handle,
+      displayName: row.displayName,
+      avatarUrl: row.avatarUrl,
+      score: RECOMMENDATION_BLEND.coReaderFollow,
+    });
+  }
+
+  for (const row of likeRows) {
+    const existing = ranked.get(row.did);
+    if (existing) {
+      existing.score += RECOMMENDATION_BLEND.coReaderLike;
+      existing.handle ??= row.handle;
+      existing.displayName ??= row.displayName;
+      existing.avatarUrl ??= row.avatarUrl;
+    } else {
+      ranked.set(row.did, {
+        did: row.did,
+        handle: row.handle,
+        displayName: row.displayName,
+        avatarUrl: row.avatarUrl,
+        score: RECOMMENDATION_BLEND.coReaderLike,
+      });
+    }
+  }
+
+  const sorted = [...ranked.values()].toSorted((a, b) => {
+    if (b.score !== a.score) return b.score - a.score;
+    const aLabel = a.handle ?? a.displayName ?? a.did;
+    const bLabel = b.handle ?? b.displayName ?? b.did;
+    return aLabel.localeCompare(bLabel);
+  });
+
+  return {
+    readers: sorted
+      .slice(0, limit)
+      .map(({ did, handle, displayName, avatarUrl }) => ({
+        did,
+        handle,
+        displayName,
+        avatarUrl,
+      })),
+    total: sorted.length,
+  };
+}

@@ -25,9 +25,11 @@ import {
 } from "#/server/reader/document-comments";
 import {
   articleRecommendedPublications,
+  publicationFollowedByCoReaders,
   readersAlsoFollow,
   selectArticleCards,
 } from "#/server/reader/queries";
+import { effectiveFollowUris } from "#/server/reader/saved-lists";
 import { highlightLeafletCodeBlocks } from "#/server/shiki/highlighter";
 import { themeModeForRequest } from "#/server/theme-preference";
 import { and, eq, sql } from "drizzle-orm";
@@ -76,6 +78,11 @@ const articleExtrasInput = z.object({
   alsoFollowLimit: z.number().int().min(1).max(20).default(3),
 });
 
+const socialProofInput = z.object({
+  publicationUri: z.string().min(1),
+  limit: z.number().int().min(1).max(100).default(100),
+});
+
 async function codeHighlightsForThemeMode(
   blocks: Array<Pick<LeafletCodeBlock, "language" | "plaintext">>,
   themeMode: ThemeMode,
@@ -101,6 +108,13 @@ export interface PublicationProfile {
   owner: ProfileSummary;
   recentDocuments: Array<ArticleCard>;
   readersAlsoFollow: Array<PublicationCard>;
+}
+
+export interface PublicationSocialProof {
+  readers: Array<
+    Pick<ProfileSummary, "did" | "handle" | "displayName" | "avatarUrl">
+  >;
+  total: number;
 }
 
 /** One page of a publication's documents for the profile's infinite scroll. */
@@ -517,6 +531,39 @@ const getArticle = createServerFn({ method: "GET" })
     ),
   );
 
+const getPublicationSocialProof = createServerFn({ method: "GET" })
+  .middleware([dbMiddleware])
+  .inputValidator(socialProofInput)
+  .handler(
+    observe(
+      "publication.getSocialProof",
+      async ({ data, context }, span): Promise<PublicationSocialProof> => {
+        const { db, schema } = context;
+        span.set("publicationUri", data.publicationUri);
+
+        const session = await getAtprotoSessionForRequest(getRequest());
+        if (!session) {
+          span.set("count", 0);
+          return { readers: [], total: 0 };
+        }
+        span.set("did", session.did);
+
+        const proof = await publicationFollowedByCoReaders(
+          db,
+          schema,
+          session.did,
+          data.publicationUri,
+          data.limit,
+          {
+            followUris: await effectiveFollowUris(db, schema, session.did),
+          },
+        );
+        span.set("count", proof.total);
+        return proof;
+      },
+    ),
+  );
+
 const getArticleExtras = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
   .inputValidator(articleExtrasInput)
@@ -625,11 +672,25 @@ function getArticleExtrasQueryOptions(documentUri: string) {
   });
 }
 
+function getPublicationSocialProofQueryOptions(
+  publicationUri: string,
+  { limit = 100 }: { limit?: number } = {},
+) {
+  return queryOptions({
+    queryKey: ["publication", "socialProof", publicationUri, limit] as const,
+    queryFn: async () =>
+      getPublicationSocialProof({ data: { publicationUri, limit } }),
+    staleTime: 60_000,
+  });
+}
+
 export const publicationApi = {
   getPublicationProfile,
   getPublicationProfileQueryOptions,
   getPublicationDocuments,
   getPublicationDocumentsQueryOptions,
+  getPublicationSocialProof,
+  getPublicationSocialProofQueryOptions,
   getArticle,
   getArticleQueryOptions,
   getArticleExtras,

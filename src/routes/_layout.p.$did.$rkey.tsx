@@ -33,6 +33,7 @@ import {
   ReaderContent,
   SectionHead,
 } from "../components/reader/primitives";
+import { PublicationSocialProofLine } from "../components/reader/publication-social-proof";
 import {
   applyMarkReadManyOptimisticUpdate,
   invalidateReadQueries,
@@ -59,6 +60,9 @@ const PUBLICATION_PAGE_SIZE = 20;
 export const Route = createFileRoute("/_layout/p/$did/$rkey")({
   loader: async ({ context, params }) => {
     const uri = publicationUriFromParams(params.did, params.rkey);
+    void context.queryClient.ensureQueryData(
+      publicationApi.getPublicationSocialProofQueryOptions(uri),
+    );
     const profile = await context.queryClient.ensureQueryData(
       publicationApi.getPublicationProfileQueryOptions(uri, {
         recentLimit: PUBLICATION_RECENT_LIMIT,
@@ -267,6 +271,11 @@ function PublicationProfile() {
   const { data: session } = useSuspenseQuery(user.getSessionQueryOptions);
   const signedIn = Boolean(session?.user);
 
+  const { data: socialProof } = useQuery({
+    ...publicationApi.getPublicationSocialProofQueryOptions(uri),
+    enabled: signedIn,
+  });
+
   const [documents, setDocuments] = useState<Array<ArticleCard>>(
     () => profile?.recentDocuments ?? [],
   );
@@ -415,6 +424,9 @@ function PublicationProfile() {
                 label=""
               />
             </div>
+            {signedIn && socialProof && socialProof.total > 0 ? (
+              <PublicationSocialProofLine {...socialProof} />
+            ) : null}
           </div>
 
           <div {...stylex.props(styles.heroActs)}>

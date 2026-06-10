@@ -271,10 +271,10 @@ Backend/API exists; UI or copy is missing.
 - [x] **Paste handle in Add publication modal** — wired `searchApi.resolvePublicationByHandle`
       into [`add-publication-modal.tsx`](src/components/reader/add-publication-modal.tsx) via
       handle-like input detection in the unified search field (1.1A; no separate tabs).
-- [ ] **Publication profile — “Followed by …” social proof** — compact line under the header on
-      [`_layout.p.$did.$rkey.tsx`](src/routes/_layout.p.$did.$rkey.tsx) using existing co-sub /
-      co-recommend queries from [`queries.ts`](src/server/reader/queries.ts) (same signal as
-      Discover’s “Followed by people you follow” rail). Auth-only.
+- [x] **Publication profile — “Followed by …” social proof** — compact line under the header on
+      [`_layout.p.$did.$rkey.tsx`](src/routes/_layout.p.$did.$rkey.tsx) via
+      `publicationFollowedByCoReaders` + `publicationApi.getPublicationSocialProof` (co-reader
+      follow + like blend; auth-only).
 - [ ] **About page** — replace placeholder in [`_layout.about.tsx`](src/routes/_layout.about.tsx)
       with product copy (what Standard Reader is, AT Proto ownership, link to standard.site docs,
       privacy/data model). OG metadata already in [`site-metadata.ts`](src/lib/site-metadata.ts).
