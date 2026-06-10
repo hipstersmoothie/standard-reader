@@ -275,7 +275,7 @@ Backend/API exists; UI or copy is missing.
       [`_layout.p.$did.$rkey.tsx`](src/routes/_layout.p.$did.$rkey.tsx) via
       `publicationFollowedByCoReaders` + `publicationApi.getPublicationSocialProof` (co-reader
       follow + like blend; auth-only).
-- [ ] **About page** — replace placeholder in [`_layout.about.tsx`](src/routes/_layout.about.tsx)
+- [x] **About page** — replace placeholder in [`_layout.about.tsx`](src/routes/_layout.about.tsx)
       with product copy (what Standard Reader is, AT Proto ownership, link to standard.site docs,
       privacy/data model). OG metadata already in [`site-metadata.ts`](src/lib/site-metadata.ts).
 

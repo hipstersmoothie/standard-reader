@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createLink, useNavigate } from "@tanstack/react-router";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
 import { useLoginSearch } from "#/utils/use-login-search";
-import { Bookmark, Heart, History, LogOut } from "lucide-react";
+import { Bookmark, Heart, History, Info, LogOut } from "lucide-react";
 import { Button as AriaButton } from "react-aria-components";
 
 import { Avatar, AvatarButton } from "../design-system/avatar";
@@ -102,6 +102,9 @@ const styles = stylex.create({
     overflow: "hidden",
     textOverflow: "ellipsis",
     whiteSpace: "nowrap",
+  },
+  sidebarLogin: {
+    width: "100%",
   },
 });
 
@@ -206,6 +209,9 @@ export function NavbarAuth({
         <MenuItemLink to="/likes" suffix={<Heart />}>
           Liked articles
         </MenuItemLink>
+        <MenuItemLink to="/about" suffix={<Info />}>
+          About Standard Reader
+        </MenuItemLink>
         <MenuSeparator />
         <MenuItem
           onPress={() => {
@@ -227,6 +233,20 @@ export function NavbarAuth({
           Log out
         </MenuItem>
       </Menu>
+    );
+  }
+
+  if (variant === "sidebar") {
+    return (
+      <ButtonLink
+        to="/login"
+        search={loginSearch}
+        variant="secondary"
+        size="md"
+        style={styles.sidebarLogin}
+      >
+        Log in
+      </ButtonLink>
     );
   }
 

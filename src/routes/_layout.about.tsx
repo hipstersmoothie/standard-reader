@@ -1,12 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { discoverApi } from "#/integrations/tanstack-query/api-discover.functions";
+import { getPublicUrlClient } from "#/lib/public-url";
+import { pageSocialMeta } from "#/lib/site-metadata";
 
-import { Content } from "../design-system/content";
-import { Page } from "../design-system/page";
-import { Body } from "../design-system/typography";
-import { getPublicUrlClient } from "../lib/public-url";
-import { pageSocialMeta } from "../lib/site-metadata";
+import { AboutView } from "../components/reader/about-view";
 
 export const Route = createFileRoute("/_layout/about")({
+  loader: async ({ context }) => {
+    await context.queryClient.ensureQueryData(
+      discoverApi.getKnownPublicationCountQueryOptions(),
+    );
+  },
   head: () => ({
     meta: pageSocialMeta("about", getPublicUrlClient()),
   }),
@@ -14,18 +18,5 @@ export const Route = createFileRoute("/_layout/about")({
 });
 
 function About() {
-  return (
-    <Page.Root variant="small">
-      <Page.Header>
-        <Page.BackLink />
-        <Page.Title>About</Page.Title>
-      </Page.Header>
-
-      <Content>
-        <Body>
-          This is a placeholder About page built with the hip-ui design system.
-        </Body>
-      </Content>
-    </Page.Root>
-  );
+  return <AboutView />;
 }

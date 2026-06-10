@@ -2,13 +2,14 @@
 
 import * as stylex from "@stylexjs/stylex";
 import { useQuery } from "@tanstack/react-query";
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useRouter, useRouterState } from "@tanstack/react-router";
 import { feedApi } from "#/integrations/tanstack-query/api-feed.functions";
 import { listApi } from "#/integrations/tanstack-query/api-lists.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
 import { parseInternalRoute } from "#/lib/internal-route";
 import { PageReaderProvider } from "#/lib/page-reader/page-reader-provider";
 import {
+  ArrowLeft,
   Compass,
   FolderPlus,
   Home,
@@ -91,9 +92,8 @@ const styles = stylex.create({
     width: "264px",
   },
   brand: {
-    // eslint-disable-next-line @stylexjs/valid-styles
     textBoxEdge: "cap alphabetic",
-    // eslint-disable-next-line @stylexjs/valid-styles
+
     textBoxTrim: "trim-both",
     textDecoration: "none",
     color: uiColor.text2,
@@ -323,6 +323,56 @@ const styles = stylex.create({
     paddingBottom: verticalSpace["3xl"],
     paddingTop: verticalSpace["3xl"],
   },
+  sideAbout: {
+    textDecoration: "none",
+    backgroundColor: "transparent",
+    color: {
+      default: uiColor.text1,
+      ":hover": uiColor.text2,
+    },
+    fontFamily: fontFamily.sans,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+    textAlign: "center",
+    transitionDuration: animationDuration.fast,
+    transitionProperty: "color",
+    transitionTimingFunction: "ease-in-out",
+    paddingBottom: verticalSpace.xs,
+    paddingLeft: horizontalSpace.xs,
+    paddingRight: horizontalSpace.xs,
+    paddingTop: verticalSpace.xs,
+  },
+  sideAboutActive: {
+    color: primaryColor.text2,
+  },
+  mobileDetailBar: {
+    alignItems: "center",
+    backgroundColor: uiColor.bg,
+    columnGap: gap.lg,
+    display: { [DESKTOP]: "none", default: "grid" },
+    gridTemplateColumns: `${size.lg} 1fr ${size.lg}`,
+    justifyContent: "space-between",
+    position: "sticky",
+    zIndex: 30,
+    borderBottomColor: uiColor.border1,
+    borderBottomStyle: "solid",
+    borderBottomWidth: 1,
+    paddingBottom: verticalSpace.xl,
+    paddingLeft: horizontalSpace["3xl"],
+    paddingRight: horizontalSpace["3xl"],
+    paddingTop: verticalSpace.xl,
+    top: 0,
+  },
+  mobileDetailTitle: {
+    color: uiColor.text2,
+    fontFamily: fontFamily.sans,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
+    textAlign: "center",
+  },
+  mobileDetailSpacer: {
+    width: size.lg,
+  },
   main: {
     overflow: "hidden",
     display: "flex",
@@ -335,7 +385,7 @@ const styles = stylex.create({
   scroller: {
     // Reserve scrollbar width so content width stays stable when the list
     // height changes (e.g. Discover "Not following" filter).
-    // eslint-disable-next-line @stylexjs/valid-styles
+
     scrollbarGutter: "stable",
     display: "flex",
     flexBasis: "0%",
@@ -797,7 +847,28 @@ function Brand({ style }: { style?: stylex.StyleXStyles }) {
   );
 }
 
+function MobileAboutBar() {
+  const router = useRouter();
+
+  return (
+    <div {...stylex.props(styles.mobileDetailBar)}>
+      <IconButton
+        aria-label="Back"
+        size="md"
+        variant="tertiary"
+        onPress={() => router.history.back()}
+      >
+        <ArrowLeft size={18} />
+      </IconButton>
+      <span {...stylex.props(styles.mobileDetailTitle)}>About</span>
+      <span aria-hidden {...stylex.props(styles.mobileDetailSpacer)} />
+    </div>
+  );
+}
+
 export function AppShell({ children }: { children: React.ReactNode }) {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const onAbout = pathname === "/about";
   const { data: sidebar } = useQuery(feedApi.getSidebarQueryOptions());
   const { data: session } = useQuery(user.getSessionQueryOptions);
   const signedIn = Boolean(session?.user);
@@ -914,27 +985,42 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
           <Flex direction="column" gap="lg" style={styles.foot}>
             <NavbarAuth variant="sidebar" menuPlacement="right bottom" />
-            <Button
-              variant="primary"
-              style={styles.addTrigger}
-              onPress={() => setAddModalOpen(true)}
-            >
-              <Plus size={16} /> Add publication
-            </Button>
+            <Flex direction="column" gap="md">
+              <Button
+                variant="primary"
+                style={styles.addTrigger}
+                onPress={() => setAddModalOpen(true)}
+              >
+                <Plus size={16} /> Add publication
+              </Button>
+              <Link
+                to="/about"
+                {...stylex.props(
+                  styles.sideAbout,
+                  onAbout && styles.sideAboutActive,
+                )}
+              >
+                About Standard Reader
+              </Link>
+            </Flex>
           </Flex>
         </aside>
 
         <main {...stylex.props(styles.main)}>
-          <Flex align="center" justify="between" style={styles.mobileBar}>
-            <Brand />
-            <div {...stylex.props(styles.mobileBarActions)}>
-              <SubscriptionsSwitcher
-                count={following.length}
-                onPress={() => setSubsSheetOpen(true)}
-              />
-              <NavbarAuth />
-            </div>
-          </Flex>
+          {onAbout ? (
+            <MobileAboutBar />
+          ) : (
+            <Flex align="center" justify="between" style={styles.mobileBar}>
+              <Brand />
+              <div {...stylex.props(styles.mobileBarActions)}>
+                <SubscriptionsSwitcher
+                  count={following.length}
+                  onPress={() => setSubsSheetOpen(true)}
+                />
+                <NavbarAuth />
+              </div>
+            </Flex>
+          )}
 
           <div {...stylex.props(styles.scroller)} data-app-scroller>
             {children}
