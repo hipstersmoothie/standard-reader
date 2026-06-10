@@ -23,7 +23,14 @@ import {
   Sparkles,
   Users,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { z } from "zod";
 
 import type { PublicationCard } from "../integrations/tanstack-query/api-shapes";
@@ -43,8 +50,10 @@ import {
   SectionHead,
 } from "../components/reader/primitives";
 import { Button } from "../design-system/button";
+import { Flex } from "../design-system/flex";
 import { Grid } from "../design-system/grid";
 import { SearchField } from "../design-system/search-field";
+import { Skeleton } from "../design-system/skeleton";
 import { Select, SelectItem } from "../design-system/select";
 import {
   SegmentedControl,
@@ -63,7 +72,9 @@ const DIRECTORY_PAGE_SIZE = 24;
 const DIRECTORY_SEARCH_DEBOUNCE_MS = 300;
 const DIRECTORY_SKELETON_COUNT = 8;
 const DIRECTORY_LOAD_MORE_SKELETON_COUNT = 3;
+const DEFERRED_ROOT_MARGIN = "600px 0px";
 const RAIL_LIMIT = 10;
+const RAIL_SKELETON_COUNT = 4;
 const TRENDING_LIMIT_OPTIONS = [5, 10, 20, 50, 100] as const;
 const DEFAULT_TRENDING_LIMIT = 5;
 const SOCIAL_PROOF_COLLAPSED = 3;
@@ -77,41 +88,29 @@ const discoverSearchSchema = z.object({
 
 export const Route = createFileRoute("/_layout/discover")({
   validateSearch: discoverSearchSchema,
-  loaderDeps: ({ search }) => ({
-    topic: search.topic ?? null,
-    sort: search.sort,
-  }),
-  loader: async ({ context, deps }) => {
+  loader: async ({ context }) => {
+    const session = await context.queryClient.ensureQueryData(
+      user.getSessionQueryOptions,
+    );
+
     await Promise.all([
       context.queryClient.ensureQueryData(
         discoverApi.getKnownPublicationCountQueryOptions(),
-      ),
-      context.queryClient.ensureQueryData(
-        discoverApi.getTopicsQueryOptions({ limit: DISCOVER_TOPICS_LIMIT }),
       ),
       context.queryClient.ensureQueryData(
         discoverApi.getRecommendedPublicationsQueryOptions({
           limit: RAIL_LIMIT,
         }),
       ),
-      context.queryClient.ensureQueryData(
-        discoverApi.getFollowedByPeopleYouFollowQueryOptions({
-          limit: SOCIAL_PROOF_MAX,
-        }),
-      ),
-      context.queryClient.ensureQueryData(
-        discoverApi.getTrendingPublicationsQueryOptions({
-          limit: DEFAULT_TRENDING_LIMIT,
-        }),
-      ),
-      context.queryClient.ensureQueryData(
-        discoverApi.getPublicationsQueryOptions({
-          topic: deps.topic,
-          sort: deps.sort,
-          limit: DIRECTORY_PAGE_SIZE,
-          offset: 0,
-        }),
-      ),
+      ...(session?.user
+        ? [
+            context.queryClient.ensureQueryData(
+              discoverApi.getFollowedByPeopleYouFollowQueryOptions({
+                limit: SOCIAL_PROOF_MAX,
+              }),
+            ),
+          ]
+        : []),
     ]);
   },
   head: () => ({
@@ -220,6 +219,12 @@ const styles = stylex.create({
     flexShrink: 0,
     width: spacing["20"],
   },
+  toolbarSkeleton: {
+    marginBottom: spacing["6"],
+  },
+  toolbarSkeletonFilters: {
+    flexWrap: "wrap",
+  },
   kickerIcon: {
     height: spacing["3.5"],
     width: spacing["3.5"],
@@ -280,7 +285,315 @@ function DiscoverDirectorySkeleton({
   );
 }
 
-function Discover() {
+function DeferredMount({
+  children,
+  fallback,
+}: {
+  children: React.ReactNode;
+  fallback: React.ReactNode;
+}) {
+  const rootRef = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    if (mounted) return;
+
+    const node = rootRef.current;
+    if (!node) return;
+
+    const root = node.closest("[data-app-scroller]");
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setMounted(true);
+          observer.disconnect();
+        }
+      },
+      { root, rootMargin: DEFERRED_ROOT_MARGIN, threshold: 0 },
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [mounted]);
+
+  return <div ref={rootRef}>{mounted ? children : fallback}</div>;
+}
+
+function DiscoverDirectoryToolbarSkeleton() {
+  return (
+    <div
+      aria-hidden
+      {...stylex.props(styles.directoryToolbar, styles.toolbarSkeleton)}
+    >
+      <Flex gap="sm" wrap style={styles.toolbarSkeletonFilters}>
+        {Array.from({ length: 6 }, (_, index) => (
+          <Skeleton
+            key={index}
+            variant="rectangle"
+            height={spacing["8"]}
+            width={spacing["16"]}
+          />
+        ))}
+      </Flex>
+      <Flex gap="sm" wrap>
+        <Skeleton
+          variant="rectangle"
+          height={spacing["8"]}
+          width={spacing["24"]}
+        />
+        <Skeleton
+          variant="rectangle"
+          height={spacing["8"]}
+          width={spacing["28"]}
+        />
+      </Flex>
+    </div>
+  );
+}
+
+function DiscoverRecommendedSkeleton({ signedIn }: { signedIn: boolean }) {
+  return (
+    <div
+      {...stylex.props(styles.section)}
+      aria-busy="true"
+      aria-label="Loading recommendations"
+    >
+      <SectionHead
+        kicker={signedIn ? "Tuned to your follows" : "Established reads"}
+        title={signedIn ? "Recommended for you" : "Recommended"}
+        icon={
+          <SectionIcon>
+            <Sparkles size={13} />
+          </SectionIcon>
+        }
+      />
+      <div {...stylex.props(styles.railWrap)}>
+        <div {...stylex.props(styles.railScroll)}>
+          {Array.from({ length: RAIL_SKELETON_COUNT }, (_, index) => (
+            <PubCardSkeleton key={index} />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DiscoverSocialProofSkeleton() {
+  return (
+    <div
+      {...stylex.props(styles.section)}
+      aria-busy="true"
+      aria-label="Loading social proof"
+    >
+      <SectionHead
+        kicker="Social proof"
+        title="Followed by people you follow"
+        icon={
+          <SectionIcon>
+            <Users size={13} />
+          </SectionIcon>
+        }
+      />
+      <Grid columnGap="lg" rowGap="lg" style={styles.socialGrid}>
+        {Array.from({ length: SOCIAL_PROOF_COLLAPSED }, (_, index) => (
+          <PubCardSkeleton key={index} />
+        ))}
+      </Grid>
+    </div>
+  );
+}
+
+function DiscoverTrendingSkeleton() {
+  return (
+    <div
+      {...stylex.props(styles.section)}
+      aria-busy="true"
+      aria-label="Loading trending publications"
+    >
+      <SectionHead
+        kicker="Most active this week"
+        title="Trending publications"
+        icon={
+          <SectionIcon>
+            <Flame size={13} />
+          </SectionIcon>
+        }
+      />
+      {Array.from({ length: DEFAULT_TRENDING_LIMIT }, (_, index) => (
+        <PubDirectoryRowSkeleton
+          key={index}
+          isLast={index === DEFAULT_TRENDING_LIMIT - 1}
+        />
+      ))}
+    </div>
+  );
+}
+
+function DiscoverDirectorySectionSkeleton({ view }: { view: "grid" | "list" }) {
+  return (
+    <div
+      {...stylex.props(styles.section)}
+      aria-busy="true"
+      aria-label="Loading publication directory"
+    >
+      <SectionHead kicker="Browse everything" title="All publications" />
+      <DiscoverDirectoryToolbarSkeleton />
+      <DiscoverDirectorySkeleton view={view} />
+    </div>
+  );
+}
+
+function DiscoverRecommendedSection({ signedIn }: { signedIn: boolean }) {
+  const { data: recommended } = useSuspenseQuery(
+    discoverApi.getRecommendedPublicationsQueryOptions({ limit: RAIL_LIMIT }),
+  );
+
+  const recommendedKicker = signedIn
+    ? "Tuned to your follows"
+    : "Established reads";
+  const recommendedTitle = signedIn ? "Recommended for you" : "Recommended";
+
+  return (
+    <div {...stylex.props(styles.section)}>
+      <SectionHead
+        kicker={recommendedKicker}
+        title={recommendedTitle}
+        icon={
+          <SectionIcon>
+            <Sparkles size={13} />
+          </SectionIcon>
+        }
+      />
+      {recommended.length > 0 ? (
+        <HorizontalRail pubs={recommended} />
+      ) : (
+        <p {...stylex.props(styles.emptyRail)}>
+          Follow a few publications to unlock recommendations.
+        </p>
+      )}
+    </div>
+  );
+}
+
+function DiscoverSocialProofSection() {
+  const { data: followedBy } = useSuspenseQuery(
+    discoverApi.getFollowedByPeopleYouFollowQueryOptions({
+      limit: SOCIAL_PROOF_MAX,
+    }),
+  );
+  const [socialProofExpanded, setSocialProofExpanded] = useState(false);
+
+  return (
+    <div {...stylex.props(styles.section)}>
+      <SectionHead
+        kicker="Social proof"
+        title="Followed by people you follow"
+        icon={
+          <SectionIcon>
+            <Users size={13} />
+          </SectionIcon>
+        }
+        action={
+          followedBy.length > SOCIAL_PROOF_COLLAPSED ? (
+            <Button
+              variant="tertiary"
+              size="sm"
+              onPress={() => setSocialProofExpanded((open) => !open)}
+            >
+              {socialProofExpanded ? "Show less" : "Show more"}
+            </Button>
+          ) : undefined
+        }
+      />
+      {followedBy.length > 0 ? (
+        <Grid columnGap="lg" rowGap="lg" style={styles.socialGrid}>
+          {(socialProofExpanded
+            ? followedBy
+            : followedBy.slice(0, SOCIAL_PROOF_COLLAPSED)
+          ).map((pub) => (
+            <PubCard key={pub.uri} pub={pub} />
+          ))}
+        </Grid>
+      ) : (
+        <p {...stylex.props(styles.emptyRail)}>
+          Follow more publications to see what similar readers subscribe to.
+        </p>
+      )}
+    </div>
+  );
+}
+
+function DiscoverTrendingSection() {
+  const [trendingLimit, setTrendingLimit] = useState(DEFAULT_TRENDING_LIMIT);
+  const { data: trending = [], isPending } = useQuery({
+    ...discoverApi.getTrendingPublicationsQueryOptions({
+      limit: trendingLimit,
+    }),
+    placeholderData: keepPreviousData,
+  });
+
+  return (
+    <div {...stylex.props(styles.section)}>
+      <SectionHead
+        kicker="Most active this week"
+        title="Trending publications"
+        icon={
+          <SectionIcon>
+            <Flame size={13} />
+          </SectionIcon>
+        }
+        action={
+          <Select
+            aria-label="Publications shown"
+            items={TRENDING_LIMIT_OPTIONS.map((limit) => ({
+              id: limit,
+              label: String(limit),
+            }))}
+            size="sm"
+            style={styles.trendingLimitSelect}
+            value={trendingLimit}
+            variant="tertiary"
+            onChange={(key) => {
+              const next = Number(key);
+              if (
+                TRENDING_LIMIT_OPTIONS.includes(
+                  next as (typeof TRENDING_LIMIT_OPTIONS)[number],
+                )
+              ) {
+                setTrendingLimit(next);
+              }
+            }}
+          >
+            {(item) => <SelectItem id={item.id}>{item.label}</SelectItem>}
+          </Select>
+        }
+      />
+      {isPending && trending.length === 0 ? (
+        Array.from({ length: trendingLimit }, (_, index) => (
+          <PubDirectoryRowSkeleton
+            key={index}
+            isLast={index === trendingLimit - 1}
+          />
+        ))
+      ) : trending.length > 0 ? (
+        <div>
+          {trending.map((pub, index) => (
+            <PubDirectoryRow
+              key={pub.uri}
+              pub={pub}
+              rank={index + 1}
+              isLast={index === trending.length - 1}
+            />
+          ))}
+        </div>
+      ) : (
+        <p {...stylex.props(styles.emptyRail)}>No trending publications yet.</p>
+      )}
+    </div>
+  );
+}
+
+function DiscoverDirectorySection({ signedIn }: { signedIn: boolean }) {
   const { topic, sort, view } = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
   const [directoryItems, setDirectoryItems] = useState<Array<PublicationCard>>(
@@ -292,29 +605,13 @@ function Discover() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [searchInput, setSearchInput] = useState("");
   const [debouncedQ, setDebouncedQ] = useState("");
-  const [socialProofExpanded, setSocialProofExpanded] = useState(false);
   const [hideFollowing, setHideFollowing] = useState(false);
-  const [trendingLimit, setTrendingLimit] = useState(DEFAULT_TRENDING_LIMIT);
   const loadMoreSentinelRef = useRef<HTMLDivElement>(null);
   const loadingMoreRef = useRef(false);
 
   const { data: topics } = useSuspenseQuery(
     discoverApi.getTopicsQueryOptions({ limit: DISCOVER_TOPICS_LIMIT }),
   );
-  const { data: recommended } = useSuspenseQuery(
-    discoverApi.getRecommendedPublicationsQueryOptions({ limit: RAIL_LIMIT }),
-  );
-  const { data: followedBy } = useSuspenseQuery(
-    discoverApi.getFollowedByPeopleYouFollowQueryOptions({
-      limit: SOCIAL_PROOF_MAX,
-    }),
-  );
-  const { data: trending = [] } = useQuery({
-    ...discoverApi.getTrendingPublicationsQueryOptions({
-      limit: trendingLimit,
-    }),
-    placeholderData: keepPreviousData,
-  });
   const { data: directory } = useSuspenseQuery(
     discoverApi.getPublicationsQueryOptions({
       topic: topic ?? null,
@@ -332,6 +629,10 @@ function Discover() {
       q: debouncedQ || undefined,
     }),
     enabled: debouncedQ.length > 0,
+  });
+  const { data: effectiveFollowUris = [] } = useQuery({
+    ...discoverApi.getEffectiveFollowUrisQueryOptions(),
+    enabled: signedIn,
   });
 
   useEffect(() => {
@@ -356,18 +657,8 @@ function Discover() {
     setDirectoryNextOffset(directory.nextOffset);
   }, [directory, searchDirectory, debouncedQ]);
 
-  const { data: session } = useQuery(user.getSessionQueryOptions);
-  const signedIn = Boolean(session?.user);
-  const { data: effectiveFollowUris = [] } = useQuery({
-    ...discoverApi.getEffectiveFollowUrisQueryOptions(),
-    enabled: signedIn,
-  });
-
   const topicKey = topic ?? "all";
   const topicItems = useMemo(() => sortDiscoverTopics(topics), [topics]);
-  const { data: knownPublicationCount = 0 } = useSuspenseQuery(
-    discoverApi.getKnownPublicationCountQueryOptions(),
-  );
 
   const isSearching =
     debouncedQ.length > 0 &&
@@ -464,10 +755,140 @@ function Discover() {
     return () => observer.disconnect();
   }, [directoryNextOffset, loadMoreDirectory]);
 
-  const recommendedKicker = signedIn
-    ? "Tuned to your follows"
-    : "Established reads";
-  const recommendedTitle = signedIn ? "Recommended for you" : "Recommended";
+  return (
+    <div {...stylex.props(styles.section)}>
+      <SectionHead
+        kicker="Browse everything"
+        title="All publications"
+        action={
+          <SearchField
+            aria-label="Search publications"
+            placeholder="Search by name, handle, or topic…"
+            value={searchInput}
+            onChange={setSearchInput}
+            style={styles.directorySearch}
+          />
+        }
+      />
+
+      <div {...stylex.props(styles.directoryToolbar)}>
+        <DiscoverTopicFilters
+          topicKey={topicKey}
+          topicItems={topicItems}
+          onTopicChange={onTopicChange}
+        />
+
+        <div {...stylex.props(styles.directoryToolbarControls)}>
+          {signedIn ? (
+            <SegmentedControl
+              selectedKeys={new Set([hideFollowing ? "not-following" : "all"])}
+              onSelectionChange={onFollowFilterChange}
+              size="sm"
+            >
+              <SegmentedControlItem id="all">All</SegmentedControlItem>
+              <SegmentedControlItem id="not-following">
+                Not following
+              </SegmentedControlItem>
+            </SegmentedControl>
+          ) : null}
+
+          <SegmentedControl
+            selectedKeys={new Set([sort])}
+            onSelectionChange={onSortChange}
+            size="sm"
+          >
+            {SORT_OPTIONS.map((option) => (
+              <SegmentedControlItem key={option.id} id={option.id}>
+                {option.label}
+              </SegmentedControlItem>
+            ))}
+          </SegmentedControl>
+
+          <SegmentedControl
+            selectedKeys={new Set([view])}
+            onSelectionChange={onViewChange}
+            size="sm"
+          >
+            <SegmentedControlItem id="list" aria-label="List view">
+              <List size={16} />
+            </SegmentedControlItem>
+            <SegmentedControlItem id="grid" aria-label="Grid view">
+              <LayoutGrid size={16} />
+            </SegmentedControlItem>
+          </SegmentedControl>
+        </div>
+      </div>
+
+      {isSearching ? (
+        <DiscoverDirectorySkeleton view={view} />
+      ) : visibleDirectoryItems.length === 0 ? (
+        <p {...stylex.props(styles.emptyRail)}>
+          {hideFollowing && directoryItems.length > 0
+            ? "You're following every publication on this page — scroll for more, or turn off the filter."
+            : debouncedQ
+              ? "No publications match your search."
+              : "No publications match this topic yet."}
+        </p>
+      ) : view === "grid" ? (
+        <Grid columnGap="lg" rowGap="lg" style={styles.directoryGrid}>
+          {visibleDirectoryItems.map((pub) => (
+            <PubCard key={pub.uri} pub={pub} />
+          ))}
+        </Grid>
+      ) : (
+        <div>
+          {visibleDirectoryItems.map((pub, index) => (
+            <PubDirectoryRow
+              key={pub.uri}
+              pub={pub}
+              isLast={index === visibleDirectoryItems.length - 1}
+            />
+          ))}
+        </div>
+      )}
+
+      {directoryItems.length > 0 && !isSearching ? (
+        <>
+          <div
+            ref={loadMoreSentinelRef}
+            aria-hidden
+            {...stylex.props(styles.loadSentinel)}
+          />
+          {loadingMore ? (
+            <DiscoverDirectorySkeleton
+              view={view}
+              count={DIRECTORY_LOAD_MORE_SKELETON_COUNT}
+            />
+          ) : directoryNextOffset == null ? (
+            <p {...stylex.props(styles.endNote)}>
+              You&apos;ve reached the end.
+            </p>
+          ) : null}
+        </>
+      ) : null}
+    </div>
+  );
+}
+
+function DiscoverDirectoryDeferred({ signedIn }: { signedIn: boolean }) {
+  const { view } = Route.useSearch();
+  const skeleton = <DiscoverDirectorySectionSkeleton view={view} />;
+
+  return (
+    <DeferredMount fallback={skeleton}>
+      <Suspense fallback={skeleton}>
+        <DiscoverDirectorySection signedIn={signedIn} />
+      </Suspense>
+    </DeferredMount>
+  );
+}
+
+function Discover() {
+  const { data: session } = useQuery(user.getSessionQueryOptions);
+  const signedIn = Boolean(session?.user);
+  const { data: knownPublicationCount = 0 } = useSuspenseQuery(
+    discoverApi.getKnownPublicationCountQueryOptions(),
+  );
 
   return (
     <ReaderContent>
@@ -488,232 +909,23 @@ function Discover() {
         }
       />
 
-      <div {...stylex.props(styles.section)}>
-        <SectionHead
-          kicker={recommendedKicker}
-          title={recommendedTitle}
-          icon={
-            <SectionIcon>
-              <Sparkles size={13} />
-            </SectionIcon>
-          }
-        />
-        {recommended.length > 0 ? (
-          <HorizontalRail pubs={recommended} />
-        ) : (
-          <p {...stylex.props(styles.emptyRail)}>
-            Follow a few publications to unlock recommendations.
-          </p>
-        )}
-      </div>
+      <Suspense fallback={<DiscoverRecommendedSkeleton signedIn={signedIn} />}>
+        <DiscoverRecommendedSection signedIn={signedIn} />
+      </Suspense>
 
       {signedIn ? (
-        <div {...stylex.props(styles.section)}>
-          <SectionHead
-            kicker="Social proof"
-            title="Followed by people you follow"
-            icon={
-              <SectionIcon>
-                <Users size={13} />
-              </SectionIcon>
-            }
-            action={
-              followedBy.length > SOCIAL_PROOF_COLLAPSED ? (
-                <Button
-                  variant="tertiary"
-                  size="sm"
-                  onPress={() => setSocialProofExpanded((open) => !open)}
-                >
-                  {socialProofExpanded ? "Show less" : "Show more"}
-                </Button>
-              ) : undefined
-            }
-          />
-          {followedBy.length > 0 ? (
-            <Grid columnGap="lg" rowGap="lg" style={styles.socialGrid}>
-              {(socialProofExpanded
-                ? followedBy
-                : followedBy.slice(0, SOCIAL_PROOF_COLLAPSED)
-              ).map((pub) => (
-                <PubCard key={pub.uri} pub={pub} />
-              ))}
-            </Grid>
-          ) : (
-            <p {...stylex.props(styles.emptyRail)}>
-              Follow more publications to see what similar readers subscribe to.
-            </p>
-          )}
-        </div>
+        <Suspense fallback={<DiscoverSocialProofSkeleton />}>
+          <DiscoverSocialProofSection />
+        </Suspense>
       ) : null}
 
-      <div {...stylex.props(styles.section)}>
-        <SectionHead
-          kicker="Most active this week"
-          title="Trending publications"
-          icon={
-            <SectionIcon>
-              <Flame size={13} />
-            </SectionIcon>
-          }
-          action={
-            <Select
-              aria-label="Publications shown"
-              items={TRENDING_LIMIT_OPTIONS.map((limit) => ({
-                id: limit,
-                label: String(limit),
-              }))}
-              size="sm"
-              style={styles.trendingLimitSelect}
-              value={trendingLimit}
-              variant="tertiary"
-              onChange={(key) => {
-                const next = Number(key);
-                if (
-                  TRENDING_LIMIT_OPTIONS.includes(
-                    next as (typeof TRENDING_LIMIT_OPTIONS)[number],
-                  )
-                ) {
-                  setTrendingLimit(next);
-                }
-              }}
-            >
-              {(item) => <SelectItem id={item.id}>{item.label}</SelectItem>}
-            </Select>
-          }
-        />
-        {trending.length > 0 ? (
-          <div>
-            {trending.map((pub, index) => (
-              <PubDirectoryRow
-                key={pub.uri}
-                pub={pub}
-                rank={index + 1}
-                isLast={index === trending.length - 1}
-              />
-            ))}
-          </div>
-        ) : (
-          <p {...stylex.props(styles.emptyRail)}>
-            No trending publications yet.
-          </p>
-        )}
-      </div>
+      <DeferredMount fallback={<DiscoverTrendingSkeleton />}>
+        <DiscoverTrendingSection />
+      </DeferredMount>
 
       <SectionDivider />
 
-      <div {...stylex.props(styles.section)}>
-        <SectionHead
-          kicker="Browse everything"
-          title="All publications"
-          action={
-            <SearchField
-              aria-label="Search publications"
-              placeholder="Search by name, handle, or topic…"
-              value={searchInput}
-              onChange={setSearchInput}
-              style={styles.directorySearch}
-            />
-          }
-        />
-
-        <div {...stylex.props(styles.directoryToolbar)}>
-          <DiscoverTopicFilters
-            topicKey={topicKey}
-            topicItems={topicItems}
-            onTopicChange={onTopicChange}
-          />
-
-          <div {...stylex.props(styles.directoryToolbarControls)}>
-            {signedIn ? (
-              <SegmentedControl
-                selectedKeys={
-                  new Set([hideFollowing ? "not-following" : "all"])
-                }
-                onSelectionChange={onFollowFilterChange}
-                size="sm"
-              >
-                <SegmentedControlItem id="all">All</SegmentedControlItem>
-                <SegmentedControlItem id="not-following">
-                  Not following
-                </SegmentedControlItem>
-              </SegmentedControl>
-            ) : null}
-
-            <SegmentedControl
-              selectedKeys={new Set([sort])}
-              onSelectionChange={onSortChange}
-              size="sm"
-            >
-              {SORT_OPTIONS.map((option) => (
-                <SegmentedControlItem key={option.id} id={option.id}>
-                  {option.label}
-                </SegmentedControlItem>
-              ))}
-            </SegmentedControl>
-
-            <SegmentedControl
-              selectedKeys={new Set([view])}
-              onSelectionChange={onViewChange}
-              size="sm"
-            >
-              <SegmentedControlItem id="list" aria-label="List view">
-                <List size={16} />
-              </SegmentedControlItem>
-              <SegmentedControlItem id="grid" aria-label="Grid view">
-                <LayoutGrid size={16} />
-              </SegmentedControlItem>
-            </SegmentedControl>
-          </div>
-        </div>
-
-        {isSearching ? (
-          <DiscoverDirectorySkeleton view={view} />
-        ) : visibleDirectoryItems.length === 0 ? (
-          <p {...stylex.props(styles.emptyRail)}>
-            {hideFollowing && directoryItems.length > 0
-              ? "You're following every publication on this page — scroll for more, or turn off the filter."
-              : debouncedQ
-                ? "No publications match your search."
-                : "No publications match this topic yet."}
-          </p>
-        ) : view === "grid" ? (
-          <Grid columnGap="lg" rowGap="lg" style={styles.directoryGrid}>
-            {visibleDirectoryItems.map((pub) => (
-              <PubCard key={pub.uri} pub={pub} />
-            ))}
-          </Grid>
-        ) : (
-          <div>
-            {visibleDirectoryItems.map((pub, index) => (
-              <PubDirectoryRow
-                key={pub.uri}
-                pub={pub}
-                isLast={index === visibleDirectoryItems.length - 1}
-              />
-            ))}
-          </div>
-        )}
-
-        {directoryItems.length > 0 && !isSearching ? (
-          <>
-            <div
-              ref={loadMoreSentinelRef}
-              aria-hidden
-              {...stylex.props(styles.loadSentinel)}
-            />
-            {loadingMore ? (
-              <DiscoverDirectorySkeleton
-                view={view}
-                count={DIRECTORY_LOAD_MORE_SKELETON_COUNT}
-              />
-            ) : directoryNextOffset == null ? (
-              <p {...stylex.props(styles.endNote)}>
-                You&apos;ve reached the end.
-              </p>
-            ) : null}
-          </>
-        ) : null}
-      </div>
+      <DiscoverDirectoryDeferred signedIn={signedIn} />
     </ReaderContent>
   );
 }
