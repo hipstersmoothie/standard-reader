@@ -6,7 +6,7 @@ import type { ConstellationBacklinkRecord } from "#/server/atproto/constellation
 import {
   COSMIK_CONNECTION_COLLECTION,
   getCitationBacklinksForTarget,
-  getCosmikConnectionBacklinksForTarget,
+  getCosmikConnectionBacklinksForUrl,
 } from "#/server/atproto/constellation";
 import { fetchRepoRecord } from "#/server/atproto/fetch-record";
 import { resolveIdentity } from "#/server/atproto/identity";
@@ -96,7 +96,7 @@ async function discoverCosmikConnectionRecords(
   if (linkTargets.length === 0) return [];
 
   const backlinkSets = await Promise.all(
-    linkTargets.map((target) => getCosmikConnectionBacklinksForTarget(target)),
+    linkTargets.map((target) => getCosmikConnectionBacklinksForUrl(target)),
   );
   return dedupeRecords(backlinkSets);
 }
@@ -128,13 +128,19 @@ async function documentUrisByCanonicalUrls(
 }
 
 interface ParsedCosmikConnection {
-  sourceUrl: string;
+  peerUrl: string;
   connectionType: string;
   createdAt: string;
 }
 
+function urlMatchesAnyVariant(url: string, variants: Set<string>): boolean {
+  if (!url) return false;
+  return linkTargetVariants(url).some((variant) => variants.has(variant));
+}
+
 async function loadCosmikConnection(
   record: ConstellationBacklinkRecord,
+  articleUrlVariants: Set<string>,
 ): Promise<ParsedCosmikConnection | null> {
   if (record.collection !== COSMIK_CONNECTION_COLLECTION) return null;
 
@@ -145,7 +151,20 @@ async function loadCosmikConnection(
   if (!isRecord(value)) return null;
 
   const sourceUrl = typeof value.source === "string" ? value.source.trim() : "";
-  if (!sourceUrl) return null;
+  const targetUrl = typeof value.target === "string" ? value.target.trim() : "";
+  if (!sourceUrl || !targetUrl) return null;
+
+  const sourceMatches = urlMatchesAnyVariant(sourceUrl, articleUrlVariants);
+  const targetMatches = urlMatchesAnyVariant(targetUrl, articleUrlVariants);
+
+  let peerUrl: string | null = null;
+  if (targetMatches && !sourceMatches) {
+    peerUrl = sourceUrl;
+  } else if (sourceMatches && !targetMatches) {
+    peerUrl = targetUrl;
+  }
+
+  if (!peerUrl) return null;
 
   const connectionType =
     typeof value.connectionType === "string"
@@ -156,7 +175,7 @@ async function loadCosmikConnection(
       ? value.createdAt
       : new Date().toISOString();
 
-  return { sourceUrl, connectionType, createdAt };
+  return { peerUrl, connectionType, createdAt };
 }
 
 /** Articles in the read-model whose body links to this document's URL. */
@@ -207,8 +226,12 @@ export async function fetchMarginConnections(
   const records = await discoverCosmikConnectionRecords(urls);
   if (records.length === 0) return [];
 
+  const articleUrlVariants = new Set(
+    urls.flatMap((url) => linkTargetVariants(url)),
+  );
+
   const loadedConnections = await Promise.all(
-    records.map((record) => loadCosmikConnection(record)),
+    records.map((record) => loadCosmikConnection(record, articleUrlVariants)),
   );
   const parsed = loadedConnections.filter(
     (item): item is ParsedCosmikConnection => item != null,
@@ -216,17 +239,17 @@ export async function fetchMarginConnections(
 
   if (parsed.length === 0) return [];
 
-  const sourceUrls = parsed.map((item) => item.sourceUrl);
+  const peerUrls = parsed.map((item) => item.peerUrl);
   const uriByUrl = await documentUrisByCanonicalUrls(
     dbClient,
     schemaModule,
-    sourceUrls,
+    peerUrls,
   );
 
   const orderedUris = [
     ...new Set(
       parsed
-        .map((item) => uriByUrl.get(item.sourceUrl))
+        .map((item) => uriByUrl.get(item.peerUrl))
         .filter((uri): uri is string => uri != null),
     ),
   ].slice(0, limit);
@@ -245,7 +268,7 @@ export async function fetchMarginConnections(
   const items: Array<MarginConnectionItem> = [];
 
   for (const connection of parsed) {
-    const uri = uriByUrl.get(connection.sourceUrl);
+    const uri = uriByUrl.get(connection.peerUrl);
     const article = uri ? articleByUri.get(uri) : null;
     if (!article) continue;
 

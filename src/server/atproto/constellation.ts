@@ -78,8 +78,20 @@ export const MARGIN_REPLY_LINK_SOURCE =
 /** Cosmik graph edges between two page URLs (Margin / Semble). */
 export const COSMIK_CONNECTION_COLLECTION = "network.cosmik.connection";
 export const COSMIK_CONNECTION_TARGET_PATH = ".target";
-export const COSMIK_CONNECTION_LINK_SOURCE =
+export const COSMIK_CONNECTION_SOURCE_PATH = ".source";
+export const COSMIK_CONNECTION_TARGET_LINK_SOURCE =
   `${COSMIK_CONNECTION_COLLECTION}:${COSMIK_CONNECTION_TARGET_PATH}` as const;
+export const COSMIK_CONNECTION_SOURCE_LINK_SOURCE =
+  `${COSMIK_CONNECTION_COLLECTION}:${COSMIK_CONNECTION_SOURCE_PATH}` as const;
+
+/** @deprecated Use {@link COSMIK_CONNECTION_TARGET_LINK_SOURCE}. */
+export const COSMIK_CONNECTION_LINK_SOURCE =
+  COSMIK_CONNECTION_TARGET_LINK_SOURCE;
+
+export const COSMIK_CONNECTION_LINK_SOURCES = [
+  COSMIK_CONNECTION_TARGET_LINK_SOURCE,
+  COSMIK_CONNECTION_SOURCE_LINK_SOURCE,
+] as const;
 
 /** In-body link citations from other standard.site / Leaflet documents. */
 export const CITATION_COLLECTIONS = [
@@ -98,9 +110,7 @@ export const CITATION_URL_PATHS = [
 /** Citation link sources as legacy `/links` collection + path specs. */
 export const CITATION_LINK_SOURCES = CITATION_COLLECTIONS.flatMap(
   (collection) =>
-    CITATION_URL_PATHS.map(
-      (path) => `${collection}:${path}` as const,
-    ),
+    CITATION_URL_PATHS.map((path) => `${collection}:${path}` as const),
 );
 
 /** All Constellation sources Standard Reader queries for Discussion + extras. */
@@ -413,10 +423,7 @@ export async function getMarginNoteBacklinksForTarget(
     ),
   );
 
-  return mergeBacklinkRecords(
-    results,
-    new Set(MARGIN_DISCUSSION_COLLECTIONS),
-  );
+  return mergeBacklinkRecords(results, new Set(MARGIN_DISCUSSION_COLLECTIONS));
 }
 
 /** Cheap margin-note total for one URL (deduped across margin collections). */
@@ -450,8 +457,7 @@ function parseAllLinksPayload(payload: unknown): ConstellationAllLinksResult {
     if (!isRecord(paths)) continue;
     for (const [path, stats] of Object.entries(paths)) {
       if (!isRecord(stats)) continue;
-      const records =
-        typeof stats.records === "number" ? stats.records : 0;
+      const records = typeof stats.records === "number" ? stats.records : 0;
       const distinctDids =
         typeof stats.distinct_dids === "number" ? stats.distinct_dids : 0;
       if (records <= 0) continue;
@@ -494,10 +500,38 @@ export async function getCosmikConnectionBacklinksForTarget(
 ): Promise<Array<ConstellationBacklinkRecord>> {
   const records = await getAllBacklinksForSource(
     target,
-    COSMIK_CONNECTION_LINK_SOURCE,
+    COSMIK_CONNECTION_TARGET_LINK_SOURCE,
   );
   return mergeBacklinkRecords(
     [records],
+    new Set([COSMIK_CONNECTION_COLLECTION]),
+  );
+}
+
+/** Cosmik connections where `source` is the linked article URL. */
+export async function getCosmikConnectionBacklinksForSource(
+  target: string,
+): Promise<Array<ConstellationBacklinkRecord>> {
+  const records = await getAllBacklinksForSource(
+    target,
+    COSMIK_CONNECTION_SOURCE_LINK_SOURCE,
+  );
+  return mergeBacklinkRecords(
+    [records],
+    new Set([COSMIK_CONNECTION_COLLECTION]),
+  );
+}
+
+/** Cosmik connections where the article URL appears on either endpoint. */
+export async function getCosmikConnectionBacklinksForUrl(
+  url: string,
+): Promise<Array<ConstellationBacklinkRecord>> {
+  const [asTarget, asSource] = await Promise.all([
+    getCosmikConnectionBacklinksForTarget(url),
+    getCosmikConnectionBacklinksForSource(url),
+  ]);
+  return mergeBacklinkRecords(
+    [asTarget, asSource],
     new Set([COSMIK_CONNECTION_COLLECTION]),
   );
 }
@@ -512,8 +546,5 @@ export async function getCitationBacklinksForTarget(
     ),
   );
 
-  return mergeBacklinkRecords(
-    results,
-    new Set(CITATION_COLLECTIONS),
-  );
+  return mergeBacklinkRecords(results, new Set(CITATION_COLLECTIONS));
 }

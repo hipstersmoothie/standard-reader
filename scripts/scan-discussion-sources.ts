@@ -13,7 +13,7 @@ import { db } from "../src/db/index.ts";
 import { documents, publications } from "../src/db/schema.ts";
 import {
   CITATION_LINK_SOURCES,
-  COSMIK_CONNECTION_LINK_SOURCE,
+  COSMIK_CONNECTION_LINK_SOURCES,
   DISCUSSION_LINK_SOURCES,
   getAllLinkSourcesForTarget,
 } from "../src/server/atproto/constellation.ts";
@@ -26,7 +26,7 @@ const REQUEST_DELAY_MS = 120;
 const SUPPORTED_SOURCES = new Set<string>([
   ...DISCUSSION_LINK_SOURCES,
   ...CITATION_LINK_SOURCES,
-  COSMIK_CONNECTION_LINK_SOURCE,
+  ...COSMIK_CONNECTION_LINK_SOURCES,
 ]);
 
 const BOOKMARK_COLLECTION_RE =

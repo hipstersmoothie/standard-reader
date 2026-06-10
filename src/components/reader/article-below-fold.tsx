@@ -95,7 +95,7 @@ function mergeRelatedReading(
     seen.add(item.article.uri);
     merged.push({
       article: item.article,
-      subtitle: `${item.connectionLabel} on Margin`,
+      subtitle: `${item.connectionLabel} via Semble`,
     });
   }
 

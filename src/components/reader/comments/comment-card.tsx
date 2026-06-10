@@ -178,7 +178,11 @@ export function CommentCard({ comment }: { comment: DocumentComment }) {
   const replyLabel =
     comment.replyCount === 1 ? "1 reply" : `${comment.replyCount} replies`;
   const replyContext =
-    comment.source === "margin" ? "on Margin" : "on Bluesky";
+    comment.source === "margin"
+      ? "on Margin"
+      : comment.source === "semble"
+        ? "on Semble"
+        : "on Bluesky";
 
   return (
     <a

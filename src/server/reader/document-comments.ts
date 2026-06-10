@@ -36,7 +36,7 @@ export interface DocumentCommentAuthor {
 }
 
 export interface DocumentComment {
-  source: "bluesky" | "margin";
+  source: "bluesky" | "margin" | "semble";
   kind: "link" | "quote";
   postUri: string;
   postUrl: string;

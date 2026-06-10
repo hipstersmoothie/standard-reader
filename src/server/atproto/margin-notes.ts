@@ -7,6 +7,7 @@ import type {
 
 import { fetchBlueskyPublicProfileFields } from "#/lib/bluesky-public-profile";
 import { marginNoteUrl } from "#/lib/margin-note-url";
+import { semblePageUrl } from "#/lib/semble-page-url";
 import {
   COSMIK_CARD_COLLECTION,
   MARGIN_DISCUSSION_COLLECTIONS,
@@ -99,12 +100,15 @@ function dedupeMarginRecords(
 
 interface ParsedMarginNote {
   uri: string;
+  collection: string;
   authorDid: string;
   motivation: string;
   commentary: string;
   commentaryFacets: Array<JsonValue> | null;
   quote: string | null;
   createdAt: string;
+  /** Bookmarked page URL on `network.cosmik.card` records (Semble page target). */
+  pageUrl?: string;
 }
 
 function parseCosmikCardValue(
@@ -121,6 +125,14 @@ function parseCosmikCardValue(
     typeof content?.text === "string" ? content.text.trim() : "";
   if (!commentary) return null;
 
+  const pageUrl =
+    typeof value.url === "string"
+      ? value.url.trim()
+      : typeof content?.url === "string"
+        ? content.url.trim()
+        : "";
+  if (!pageUrl) return null;
+
   const createdAt =
     typeof value.createdAt === "string"
       ? value.createdAt
@@ -128,12 +140,14 @@ function parseCosmikCardValue(
 
   return {
     uri: noteUriFromRecord(record),
+    collection: record.collection,
     authorDid: record.did,
     motivation: "commenting",
     commentary,
     commentaryFacets: null,
     quote: null,
     createdAt,
+    pageUrl,
   };
 }
 
@@ -168,6 +182,7 @@ function parseMarginNoteValue(
 
   return {
     uri: noteUriFromRecord(record),
+    collection: record.collection,
     authorDid: record.did,
     motivation,
     commentary,
@@ -319,14 +334,19 @@ export async function fetchMarginNotesForUrls(
   const comments: Array<DocumentComment> = [];
 
   for (const note of parsedNotes) {
-    const postUrl = marginNoteUrl(note.uri);
+    const isCosmikCard = note.collection === COSMIK_CARD_COLLECTION;
+    const postUrl = isCosmikCard
+      ? semblePageUrl(note.pageUrl ?? "")
+      : marginNoteUrl(note.uri);
     const author = authorByDid.get(note.authorDid);
     if (!postUrl || !author) continue;
 
-    const replyCount = await getMarginReplyCountForNote(note.uri);
+    const replyCount = isCosmikCard
+      ? 0
+      : await getMarginReplyCountForNote(note.uri);
 
     comments.push({
-      source: "margin",
+      source: isCosmikCard ? "semble" : "margin",
       kind: note.quote ? "quote" : "link",
       postUri: note.uri,
       postUrl,
