@@ -21,7 +21,6 @@ import {
 import { ui } from "../design-system/theme/semantic-color.stylex";
 import { PlausibleAnalytics } from "../integrations/plausible/analytics";
 import { user } from "../integrations/tanstack-query/api-user.functions";
-import { SUBSCRIBE_EMBED_TRANSPARENT_CSS } from "../lib/publication-embed";
 import { getPublicUrlClient } from "../lib/public-url";
 import { siteOgImageUrl, siteSocialMeta } from "../lib/site-metadata";
 import { DEFAULT_THEME_MODE, RESOLVED_SCHEME_SCRIPT } from "../lib/theme";
@@ -45,21 +44,18 @@ html[data-theme="system"] { color-scheme: light; }
 }
 `.trim();
 
-/** Set before paint so embed iframes never flash an opaque page background. */
+/** Tag embed routes before paint (themed background comes from the embed route head). */
 const EMBED_SUBSCRIBE_PATH_SCRIPT = `
 (function () {
-  if (!location.pathname.startsWith("/embed/subscribe/")) return;
-  document.documentElement.dataset.embed = "subscribe";
-  var style = document.createElement("style");
-  style.textContent = ${JSON.stringify(SUBSCRIBE_EMBED_TRANSPARENT_CSS)};
-  document.head.appendChild(style);
+  if (location.pathname.startsWith("/embed/subscribe/")) {
+    document.documentElement.dataset.embed = "subscribe";
+  }
 })();
 `.trim();
 
 const rootStyles = stylex.create({
   embedShellBody: {
     margin: 0,
-    backgroundColor: "transparent",
   },
 });
 

@@ -7,8 +7,9 @@ import { SubscribeCard } from "#/components/reader/subscribe-card";
 import { SubscribeEmbedResizeReporter } from "#/components/reader/subscribe-embed-resize";
 import { publicationApi } from "#/integrations/tanstack-query/api-publication.functions";
 import { getPublicUrlClient } from "#/lib/public-url";
+import { publicationThemeColors } from "#/components/reader/subscribe-card";
 import {
-  SUBSCRIBE_EMBED_TRANSPARENT_CSS,
+  subscribeEmbedPageBackgroundCss,
   subscribePageUrl,
 } from "#/lib/publication-embed";
 
@@ -18,10 +19,9 @@ const embedSubscribeSearchSchema = z.object({
 
 const styles = stylex.create({
   shell: {
+    display: "block",
     margin: 0,
     padding: 0,
-    backgroundColor: "transparent",
-    display: "block",
     width: "100%",
   },
 });
@@ -40,13 +40,22 @@ export const Route = createFileRoute("/embed/subscribe/$did/$rkey")({
     return { meta };
   },
   head: ({ loaderData }) => {
-    const name = loaderData?.meta.name;
+    const meta = loaderData?.meta;
+    const name = meta?.name;
+    const background = meta
+      ? publicationThemeColors(meta).background
+      : "#f9f7f2";
     return {
       meta: [
         { title: name ? `Subscribe to ${name}` : "Subscribe" },
         { name: "robots", content: "noindex" },
       ],
-      styles: [{ type: "text/css", children: SUBSCRIBE_EMBED_TRANSPARENT_CSS }],
+      styles: [
+        {
+          type: "text/css",
+          children: subscribeEmbedPageBackgroundCss(background),
+        },
+      ],
     };
   },
   component: EmbedSubscribePage,
@@ -66,10 +75,16 @@ function EmbedSubscribePage() {
     rkey,
     baseUrl: getPublicUrlClient(),
   });
+  const colors = publicationThemeColors(meta);
+  const pageBackgroundCss = subscribeEmbedPageBackgroundCss(colors.background);
 
   return (
     <>
-      <main {...stylex.props(styles.shell)} data-subscribe-embed>
+      <main
+        {...stylex.props(styles.shell)}
+        data-subscribe-embed
+        style={{ backgroundColor: colors.background }}
+      >
         <SubscribeEmbedResizeReporter />
         <SubscribeCard
           meta={meta}
@@ -78,7 +93,7 @@ function EmbedSubscribePage() {
           layout={layout}
         />
       </main>
-      <style>{SUBSCRIBE_EMBED_TRANSPARENT_CSS}</style>
+      <style>{pageBackgroundCss}</style>
     </>
   );
 }

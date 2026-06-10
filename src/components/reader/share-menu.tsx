@@ -152,6 +152,10 @@ export function ShareMenu({
       ownerHandle: embed.ownerHandle,
       description: embed.description,
       layout: embedTab,
+      themeBackground: embed.themeBackground,
+      themeForeground: embed.themeForeground,
+      themeAccent: embed.themeAccent,
+      themeAccentForeground: embed.themeAccentForeground,
       baseUrl,
     });
   }, [embed, embedTab, baseUrl]);

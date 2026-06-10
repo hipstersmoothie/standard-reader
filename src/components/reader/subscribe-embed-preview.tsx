@@ -12,6 +12,7 @@ import {
 } from "#/lib/publication-embed";
 import { useEffect, useState } from "react";
 
+import { publicationThemeColors } from "./subscribe-card";
 import { subscribeCardLayout } from "./subscribe-card.stylex";
 
 const styles = stylex.create({
@@ -68,6 +69,7 @@ export function SubscribeEmbedPreview({
     baseUrl,
   });
   const [height, setHeight] = useState(() => estimateHeight(meta, layout));
+  const background = publicationThemeColors(meta).background;
 
   useEffect(() => {
     setHeight(estimateHeight(meta, layout));
@@ -98,7 +100,10 @@ export function SubscribeEmbedPreview({
   }, [iframeId]);
 
   return (
-    <div {...stylex.props(styles.frame)}>
+    <div
+      {...stylex.props(styles.frame)}
+      style={{ backgroundColor: background }}
+    >
       <iframe
         id={iframeId}
         src={src}

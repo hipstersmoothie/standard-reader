@@ -1,24 +1,34 @@
 import { subscribeCardBorderRadius } from "#/components/reader/subscribe-card.stylex";
 import { getPublicUrlClient } from "#/lib/public-url";
+import {
+  resolveQuoteOgColors,
+  type PublicationThemeInput,
+} from "#/lib/publication-theme";
 import { buildAuthRedirectPath } from "#/utils/auth-redirect";
 
 /** `postMessage` type the embed page sends so the host page can resize its iframe. */
 export const SUBSCRIBE_EMBED_RESIZE_MESSAGE =
   "standard-reader-subscribe-resize";
 
-/**
- * Forces iframe chrome transparent (beats StyleX / theme body backgrounds).
- * Injected in the embed route head script, route head, and client render — same
- * pattern as graze-social/ui feeds embed.
- */
-export const SUBSCRIBE_EMBED_TRANSPARENT_CSS = `
+/** Publication brand background — same value as the subscribe card fill. */
+export function subscribeEmbedBackgroundColor(
+  theme: PublicationThemeInput,
+): string {
+  return resolveQuoteOgColors(theme).background;
+}
+
+/** Paints the embed document with the publication brand background. */
+export function subscribeEmbedPageBackgroundCss(
+  backgroundColor: string,
+): string {
+  return `
 html, body, #app, #app > *, main {
-  background: transparent !important;
-  background-color: transparent !important;
+  background-color: ${backgroundColor} !important;
   min-height: 0 !important;
   height: auto !important;
 }
 `.trim();
+}
 
 export type SubscribeEmbedLayout = "landscape" | "portrait";
 
@@ -109,8 +119,10 @@ export function subscribeEmbedUrl({
 }
 
 /** Inline style for the squircle clip wrapper around the iframe. */
-export function subscribeEmbedFrameInlineStyle(): string {
-  return `border-radius:${subscribeCardBorderRadius};corner-shape:squircle;overflow:hidden;max-width:100%;width:400px`;
+export function subscribeEmbedFrameInlineStyle(
+  backgroundColor: string,
+): string {
+  return `border-radius:${subscribeCardBorderRadius};corner-shape:squircle;overflow:hidden;max-width:100%;width:400px;background-color:${backgroundColor}`;
 }
 
 /** Host-page script that resizes the iframe from embed `postMessage` events. */
@@ -128,6 +140,10 @@ export function buildSubscribeEmbedSnippet({
   ownerHandle = null,
   description = null,
   layout = "landscape",
+  themeBackground = null,
+  themeForeground = null,
+  themeAccent = null,
+  themeAccentForeground = null,
   baseUrl = getPublicUrlClient(),
 }: {
   did: string;
@@ -138,6 +154,10 @@ export function buildSubscribeEmbedSnippet({
   ownerHandle?: string | null;
   description?: string | null;
   layout?: SubscribeEmbedLayout;
+  themeBackground?: string | null;
+  themeForeground?: string | null;
+  themeAccent?: string | null;
+  themeAccentForeground?: string | null;
   baseUrl?: string;
 }): string {
   const src = subscribeEmbedUrl({ did, rkey, layout, baseUrl });
@@ -153,8 +173,14 @@ export function buildSubscribeEmbedSnippet({
     },
     layout,
   );
+  const background = subscribeEmbedBackgroundColor({
+    themeBackground,
+    themeForeground,
+    themeAccent,
+    themeAccentForeground,
+  });
 
-  const frameStyle = subscribeEmbedFrameInlineStyle();
+  const frameStyle = subscribeEmbedFrameInlineStyle(background);
   const iframeStyle = "border:0;color-scheme:normal;display:block;width:100%";
 
   return `<div style="${frameStyle}"><iframe id="${iframeId}" src="${src}" width="400" height="${height}" style="${iframeStyle}" title="${title}" loading="lazy"></iframe></div>

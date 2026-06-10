@@ -116,6 +116,15 @@ const styles = stylex.create({
     maxWidth: "100%",
     width: "100%",
   },
+  /** Embed: no border — iframe background already matches the card fill. */
+  cardFrameEmbed: {
+    borderRadius: radius.lg,
+    cornerShape: "squircle",
+    overflow: "hidden",
+    boxSizing: "border-box",
+    maxWidth: "100%",
+    width: "100%",
+  },
   card: {
     backgroundColor: "var(--sub-bg)",
     borderRadius: radius.lg,
@@ -435,14 +444,16 @@ function SubscribeCardShell({
   colors,
   layoutStyle,
   children,
+  embed = false,
 }: {
   colors: QuoteOgColors;
   layoutStyle: ReturnType<typeof cardLayoutStyle>;
   children: ReactNode;
+  embed?: boolean;
 }) {
   return (
     <div
-      {...stylex.props(styles.cardFrame)}
+      {...stylex.props(embed ? styles.cardFrameEmbed : styles.cardFrame)}
       style={publicationThemeVars(colors)}
     >
       <div {...stylex.props(styles.card, layoutStyle)}>{children}</div>
@@ -570,9 +581,14 @@ export function SubscribeCard({
   const portrait = layoutMode === "portrait";
 
   const layoutStyle = cardLayoutStyle(layoutMode);
+  const isEmbed = phase === "embed";
 
   const card = isSuccess ? (
-    <SubscribeCardShell colors={colors} layoutStyle={layoutStyle}>
+    <SubscribeCardShell
+      colors={colors}
+      layoutStyle={layoutStyle}
+      embed={isEmbed}
+    >
       <Flex direction="column" align="center" gap="2xl" style={styles.info}>
         <div {...stylex.props(styles.successIcon)}>
           <Check size={24} aria-hidden />
@@ -590,7 +606,11 @@ export function SubscribeCard({
       </Flex>
     </SubscribeCardShell>
   ) : (
-    <SubscribeCardShell colors={colors} layoutStyle={layoutStyle}>
+    <SubscribeCardShell
+      colors={colors}
+      layoutStyle={layoutStyle}
+      embed={isEmbed}
+    >
       <PublicationAvatar
         pub={pub}
         size="xl"

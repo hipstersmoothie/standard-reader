@@ -10,7 +10,7 @@ body,
   min-height: 100%;
 }
 
-/* Subscribe embed iframes shrink-wrap the card and show the host page through. */
+/* Subscribe embed iframes shrink-wrap the card (background matches publication theme). */
 html[data-embed="subscribe"] {
   color-scheme: normal;
 }
@@ -22,8 +22,6 @@ html[data-embed="subscribe"] #app > *,
 html[data-embed="subscribe"] main {
   min-height: 0;
   height: auto;
-  background: none;
-  background-color: transparent;
 }
 
 body {
