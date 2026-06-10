@@ -175,7 +175,7 @@ Sections, top to bottom:
 
 ### Reader profile (saved for later)
 
-- Signed-in reader's **private save queue** (`app.standard-reader.bookmark`), newest first.
+- Signed-in reader's **save queue** (`app.standard-reader.bookmark`), newest first.
 - Route `/saved`; linked from the user menu. Requires auth (redirects to login).
 
 ### Reader profile (liked articles)
@@ -208,10 +208,13 @@ source of truth; Neon holds a derived view for speed and cross-network querying.
   write goes to the user's repo, the cache updates optimistically.
 - **Likes:** reuse `standard.site`'s `site.standard.graph.recommend` record per liked article
   (heart toggle in reader).
-- **Save for later:** an `app.standard-reader.bookmark` record per saved article; a private queue
-  at `/saved`, distinct from public likes.
+- **Save for later:** an `app.standard-reader.bookmark` record per saved article; a queue at
+  `/saved`, distinct from likes.
 - **Read / unread:** an `app.standard-reader.read` record per article; opening an article
-  marks it read. Private **reading history** at `/history` lists these newest-first.
+  marks it read. **Reading history** at `/history` lists these newest-first.
+- **Public by default:** reads, bookmarks, likes, follows, and lists are all public AT Proto
+  records in the user's repo (like Bluesky likes or follows). `/history` and `/saved` are
+  signed-in convenience views — not privacy boundaries.
 - **Publication lists (sidebar folders):** `app.standard-reader.list` records — a named, ordered,
   shareable list of publications (one level deep; a publication may live in several lists).
   Managed from the sidebar (new-list button in the Subscriptions header; per-list edit modal with

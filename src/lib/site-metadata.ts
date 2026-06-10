@@ -40,7 +40,8 @@ export const PAGE_OG_CARDS = {
   saved: {
     path: "/saved",
     title: "Saved for later",
-    tagline: "Your private reading queue — articles you've saved for later.",
+    tagline:
+      "Articles you've saved for later — in your repo, synced across devices.",
   },
   likes: {
     path: "/likes",
@@ -50,7 +51,8 @@ export const PAGE_OG_CARDS = {
   history: {
     path: "/history",
     title: "Reading history",
-    tagline: "Articles you've opened — private to you, synced across devices.",
+    tagline:
+      "Articles you've opened — public records in your repo, synced across devices.",
   },
   search: {
     path: "/search",

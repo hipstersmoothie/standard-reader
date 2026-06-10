@@ -165,7 +165,7 @@ function ReaderHistory() {
         kicker="Your profile"
         kickerIcon={<History size={14} aria-hidden />}
         title="Reading history"
-        dek="Articles you've opened — private to you, synced across devices."
+        dek="Articles you've opened — public records in your repo, synced across devices."
         metaLabel="Read"
         metaValue={String(total)}
       />

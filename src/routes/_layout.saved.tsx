@@ -165,7 +165,7 @@ function ReaderSaved() {
         kicker="Your profile"
         kickerIcon={<Bookmark size={14} aria-hidden />}
         title="Saved for later"
-        dek="Your private reading queue — only you can see these."
+        dek="Articles you've saved for later — in your repo, synced across devices."
         metaLabel="Saved"
         metaValue={String(total)}
       />
@@ -198,7 +198,7 @@ function ReaderSaved() {
               <code {...stylex.props(styles.emptyCode)}>
                 app.standard-reader.bookmark
               </code>{" "}
-              records — private to you.
+              records in your repo.
             </p>
             <Link to="/">
               <Button variant="secondary" size="lg">

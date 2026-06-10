@@ -310,10 +310,10 @@ not offline body cache). Route slug **`/saved`**.
       optimistic updates.
 - [x] **Read-model + ingest** — `bookmarks` table (mirror [`reads`](src/db/schema/personal.ts)); tap
       collection filter + ingest handler + delete; `reader` track-reason on first write.
-- [x] **UI** — private `/saved` queue (separate from public `/likes`); distinct save toggle on article
+- [x] **UI** — `/saved` queue (separate from `/likes`); distinct save toggle on article
       bar + feed cards; user-menu link; empty state copy; infinite scroll (20 per page). Update [`APP_VISION.md`](APP_VISION.md) §5
       when landing.
-- [x] **Reading history** — private `/history` queue backed by existing
+- [x] **Reading history** — `/history` queue backed by existing
       `app.standard-reader.read` / `reads` table (no new lexicon); `readerApi.getReadingHistory` + user-menu link + empty state; infinite scroll (20 per page). Update [`APP_VISION.md`](APP_VISION.md) when landing.
 
 ## 11. Post-v1 — bigger bets (Tier 4)

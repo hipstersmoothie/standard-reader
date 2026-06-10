@@ -4,7 +4,7 @@
   "defs": {
     "main": {
       "type": "record",
-      "description": "Marks a site.standard.document as saved for later by the reader. Presence of the record means saved; deleting it removes the article from the private save queue.",
+      "description": "Marks a site.standard.document as saved for later by the reader. Presence of the record means saved; deleting it removes the article from the save queue.",
       "key": "any",
       "record": {
         "type": "object",
