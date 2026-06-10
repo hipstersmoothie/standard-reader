@@ -2,6 +2,7 @@ import type { StructuredRenderableBlock } from "#/lib/document/structured-conten
 import type { PcktRenderableBlock } from "#/lib/pckt/types";
 
 import { asTextBlock } from "#/lib/pckt/blocks";
+import { pcktImageAlt } from "#/lib/pckt/image";
 import { PCKT_BLOCK } from "#/lib/pckt/types";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -126,7 +127,7 @@ function mapPcktBlock(block: PcktRenderableBlock): StructuredRenderableBlock {
         externalSrc: block.block.attrs?.src?.startsWith("blob:")
           ? undefined
           : block.block.attrs?.src,
-        alt: block.block.attrs?.alt,
+        alt: pcktImageAlt(block.block) || undefined,
         aspectRatio: block.block.attrs?.aspectRatio,
       };
     }

@@ -3,6 +3,8 @@ import type {
   StructuredText,
 } from "#/lib/document/structured-content/types";
 
+import { normalizeImageAlt } from "#/lib/document/structured-content/image";
+
 import { OFFPRINT_BLOCK, OFFPRINT_CONTENT } from "./types";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -115,7 +117,10 @@ function asRenderableBlock(value: unknown): StructuredRenderableBlock | null {
     return {
       kind: "image",
       blob: value.image,
-      alt: typeof value.alt === "string" ? value.alt : undefined,
+      alt:
+        normalizeImageAlt(
+          typeof value.alt === "string" ? value.alt : undefined,
+        ) || undefined,
       aspectRatio: isRecord(value.aspectRatio)
         ? {
             width:

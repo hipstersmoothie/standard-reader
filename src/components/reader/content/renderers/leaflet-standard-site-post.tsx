@@ -10,6 +10,7 @@ import {
   documentLinkParams,
 } from "#/components/reader/format";
 import { publicationApi } from "#/integrations/tanstack-query/api-publication.functions";
+import { normalizeImageAlt } from "#/lib/document/structured-content/image";
 import { useOpenLinks } from "#/lib/use-open-links";
 
 import { articleBodyStyles } from "../body-styles";
@@ -44,7 +45,7 @@ export function LeafletStandardSitePostBlockView({
         {previewImage ? (
           <img
             src={previewImage}
-            alt=""
+            alt={normalizeImageAlt(title)}
             loading="lazy"
             referrerPolicy="no-referrer"
             {...stylex.props(articleBodyStyles.websiteCardImage)}

@@ -3,6 +3,7 @@
 import type { LeafletRenderableBlock } from "#/lib/leaflet/types";
 import type { CodeHighlightsByScheme } from "#/lib/theme";
 
+import { normalizeImageAlt } from "#/lib/document/structured-content/image";
 import { leafletImageAspectRatio, leafletImageUrl } from "#/lib/leaflet/image";
 
 import type { ContentBlobContext } from "../types";
@@ -91,7 +92,7 @@ export function LeafletBlockView({
       return (
         <ImageFigureView
           src={src}
-          alt={block.block.alt?.trim() ?? ""}
+          alt={normalizeImageAlt(block.block.alt)}
           aspectRatio={leafletImageAspectRatio(block.block)}
           fullBleed={block.block.fullBleed}
         />

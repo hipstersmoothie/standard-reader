@@ -6,6 +6,7 @@
  */
 import type { StructuredRenderableBlock, StructuredText } from "./types";
 
+import { normalizeImageAlt } from "./image";
 import { mergeTextRuns } from "./text-runs";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -117,7 +118,10 @@ function asBlock(value: unknown, ns: string): StructuredRenderableBlock | null {
     }
     case "image": {
       return {
-        alt: typeof value.alt === "string" ? value.alt : undefined,
+        alt:
+          normalizeImageAlt(
+            typeof value.alt === "string" ? value.alt : undefined,
+          ) || undefined,
         blob: value.image,
         kind: "image",
       };

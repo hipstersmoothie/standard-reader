@@ -3,6 +3,7 @@
 import type { PcktWebsiteBlock } from "#/lib/pckt/types";
 
 import * as stylex from "@stylexjs/stylex";
+import { normalizeImageAlt } from "#/lib/document/structured-content/image";
 
 import { articleBodyStyles } from "../body-styles";
 
@@ -23,7 +24,7 @@ export function PcktWebsiteBlockView({ block }: { block: PcktWebsiteBlock }) {
       {previewImage ? (
         <img
           src={previewImage}
-          alt=""
+          alt={normalizeImageAlt(title)}
           loading="lazy"
           referrerPolicy="no-referrer"
           {...stylex.props(articleBodyStyles.websiteCardImage)}

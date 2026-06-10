@@ -7,6 +7,7 @@
 import type { StructuredRenderableBlock, StructuredText } from "./types";
 
 import { utf8ByteLength } from "../../leaflet/utf8";
+import { normalizeImageAlt } from "./image";
 import { mergeTextRuns, syntheticFacet } from "./text-runs";
 
 export const BLOCKNOTE_CONTENT = "org.blocknote.document#content";
@@ -115,9 +116,14 @@ function singleBlock(
     }
     case "image": {
       const url = typeof props.url === "string" ? props.url : null;
+      const alt = normalizeImageAlt(
+        typeof props.alt === "string" ? props.alt : undefined,
+        typeof props.caption === "string" ? props.caption : undefined,
+        typeof props.name === "string" ? props.name : undefined,
+      );
       return url
         ? {
-            alt: typeof props.caption === "string" ? props.caption : undefined,
+            alt: alt || undefined,
             externalSrc: url,
             kind: "image",
           }

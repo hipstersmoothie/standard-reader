@@ -4,6 +4,7 @@ import type { StructuredRenderableBlock } from "#/lib/document/structured-conten
 import type { CodeHighlightsByScheme } from "#/lib/theme";
 
 import {
+  normalizeImageAlt,
   structuredImageAspectRatio,
   structuredImageHasSource,
   structuredImageUrl,
@@ -131,7 +132,7 @@ export function StructuredBlockView({
       return (
         <ImageFigureView
           src={src}
-          alt={block.alt ?? ""}
+          alt={normalizeImageAlt(block.alt)}
           aspectRatio={structuredImageAspectRatio(block)}
         />
       );

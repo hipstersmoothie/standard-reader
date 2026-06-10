@@ -6,6 +6,7 @@
 import type { StructuredRenderableBlock, StructuredText } from "./types";
 
 import { utf8ByteLength } from "../../leaflet/utf8";
+import { normalizeImageAlt } from "./image";
 import { mergeTextRuns, syntheticFacet } from "./text-runs";
 
 export const PROSEMIRROR_CONTENT = "com.wss.content.rich-text";
@@ -146,9 +147,13 @@ function asBlock(node: unknown): StructuredRenderableBlock | null {
     case "image": {
       const attrs = isRecord(node.attrs) ? node.attrs : {};
       const src = typeof attrs.src === "string" ? attrs.src : null;
+      const alt = normalizeImageAlt(
+        typeof attrs.alt === "string" ? attrs.alt : undefined,
+        typeof attrs.title === "string" ? attrs.title : undefined,
+      );
       return src
         ? {
-            alt: typeof attrs.alt === "string" ? attrs.alt : undefined,
+            alt: alt || undefined,
             externalSrc: src,
             kind: "image",
           }

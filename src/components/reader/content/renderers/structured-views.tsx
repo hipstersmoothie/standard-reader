@@ -5,6 +5,7 @@ import type { StructuredText } from "#/lib/document/structured-content/types";
 import * as stylex from "@stylexjs/stylex";
 import { HighlightedPlaintext } from "#/components/reader/quote-highlight-context";
 import { useQuoteHighlightTracker } from "#/components/reader/quote-highlight-tracker";
+import { normalizeImageAlt } from "#/lib/document/structured-content/image";
 
 import { articleBodyStyles } from "../body-styles";
 import { HighlightedFacetedPlaintext } from "./shared/faceted-text";
@@ -174,7 +175,7 @@ export function StructuredWebsiteView({
       {image ? (
         <img
           src={image}
-          alt=""
+          alt={normalizeImageAlt(cardTitle)}
           loading="lazy"
           referrerPolicy="no-referrer"
           {...stylex.props(articleBodyStyles.websiteCardImage)}

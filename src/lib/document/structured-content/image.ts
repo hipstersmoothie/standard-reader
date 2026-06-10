@@ -1,5 +1,16 @@
 import { blobCid, getBlobUrl } from "#/server/atproto/blob";
 
+/** First non-empty trimmed string from format-specific alt/caption/title fields. */
+export function normalizeImageAlt(
+  ...candidates: Array<string | null | undefined>
+): string {
+  for (const candidate of candidates) {
+    const trimmed = candidate?.trim();
+    if (trimmed) return trimmed;
+  }
+  return "";
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }

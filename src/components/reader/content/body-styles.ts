@@ -296,6 +296,13 @@ export const articleBodyStyles = stylex.create({
     maxWidth: "none",
     width: `calc(100% + 2 * ${spacing["6"]})`,
   },
+  imageCaption: {
+    color: uiColor.text1,
+    fontFamily: fontFamily.sans,
+    fontSize: fontSize.sm,
+    marginBottom: spacing["0"],
+    marginTop: gap.md,
+  },
   gallery: {
     marginBottom: spacing["6"],
     marginLeft: spacing["0"],

@@ -1,3 +1,4 @@
+import { normalizeImageAlt } from "#/lib/document/structured-content/image";
 import { blobCid as sharedBlobCid } from "#/server/atproto/blob";
 
 import type { PcktImageBlock } from "./types";
@@ -70,7 +71,7 @@ export function pcktImageAlign(
 }
 
 export function pcktImageAlt(block: PcktImageBlock): string {
-  return block.attrs?.alt?.trim() ?? block.attrs?.title?.trim() ?? "";
+  return normalizeImageAlt(block.attrs?.alt, block.attrs?.title);
 }
 
 /** True when attrs contain enough data to attempt rendering. */
