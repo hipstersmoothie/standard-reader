@@ -1,191 +1,100 @@
-Welcome to your new TanStack Start app!
+# Standard Reader
 
-# Getting Started
+> A warm, editorial reader for [standard.site](https://standard.site) publications on the
+> AT Protocol (the Atmosphere). Like a classic RSS reader, but built around **discovery** —
+> helping you find the publications you aren't following yet.
 
-To run this application:
+Instead of polling RSS/Atom feeds, a "publication" is a set of signed records in an
+author-controlled AT Proto repository. Any reader that understands the schema can render any
+publication, so the directory of all known publications is just a query — not a walled garden.
+Standard Reader makes that literal: a [tap](https://github.com/bluesky-social/indigo) instance
+backfills all `standard.site` data off the network into a Neon Postgres read-model, powering
+feeds, search, trending, and network-wide recommendations. Your personal state (follows, likes,
+read/unread, publication lists) is written back to **your** repo as records — owned by you,
+cached by us.
+
+For the full product vision (screens, data model, discovery engine), see
+[`APP_VISION.md`](./APP_VISION.md). The actionable roadmap lives in [`TODO.md`](./TODO.md).
+
+## Stack
+
+- **Framework:** [TanStack Start](https://tanstack.com/start) + TanStack Router
+  (file-based routing), React 19, Vite.
+- **UI:** [hip-ui](https://hip-ui.tngl.io) design system (copy-and-own, react-aria) vendored in
+  `src/design-system/`, styled with [StyleX](https://stylexjs.com) tokens — no Tailwind.
+- **Data:** Neon Postgres read-model managed with [Drizzle](https://orm.drizzle.team)
+  (`src/db/`), fed by a tap instance + ingest worker; accessed via server functions.
+- **AT Protocol:** [`@atcute/*`](https://github.com/mary-ext/atcute) clients,
+  AT Proto / Bluesky OAuth login, app-owned `app.standard-reader.*` lexicons in `lexicons/`.
+- **Tooling:** pnpm, oxlint + oxfmt, Vitest.
+
+## Getting started
+
+Requires Node ≥ 22.6 and pnpm (pinned via `package.json#packageManager`).
 
 ```bash
 pnpm install
-pnpm dev
+cp .env.example .env   # fill in values — see comments in the file
+pnpm dev               # http://localhost:3000 (hops to the next free port)
 ```
 
-# Building For Production
-
-To build this application for production:
+At minimum you need `DATABASE_URL` (a Neon Postgres connection string — a local Postgres works
+too) and `PUBLIC_URL` (keep the default `http://127.0.0.1:3000` for local loopback OAuth; no
+signing key needed in dev). Apply the schema with:
 
 ```bash
-pnpm build
+pnpm db:migrate   # or db:push for quick local iteration
 ```
 
-## Testing
+### Ingestion (populating the read-model)
 
-This project uses [Vitest](https://vitest.dev/) for testing. You can run the tests with:
+The app reads from Postgres; data gets there via a **tap** instance and a standalone ingest
+worker:
 
-```bash
-pnpm test
+1. Start tap — see [`tap/README.md`](./tap/README.md) (`docker compose up` in `tap/`, plus
+   `seed-repos.sh` or dynamic repo tracking via `TAP_API_URL`).
+2. Run the worker: `pnpm ingest:dev`. It consumes tap's acknowledged WebSocket channel, maps
+   records to rows idempotently, and expands the tracked-repo set along the graph.
+
+Without ingestion the app runs fine but the directory and feeds will be empty.
+
+## Scripts
+
+| Script | Purpose |
+| --- | --- |
+| `pnpm dev` / `build` / `start` / `preview` | Dev server / production build / serve / preview |
+| `pnpm test` | Vitest |
+| `pnpm typecheck` | `tsc --noEmit` |
+| `pnpm lint` / `format` / `format:check` | oxlint / oxfmt |
+| `pnpm check` | Format + lint `--fix` in one shot |
+| `pnpm fix-stylex-keys` | Autofix StyleX `sort-keys` / `valid-shorthands` |
+| `pnpm db:generate` / `db:migrate` / `db:push` / `db:studio` | Drizzle Kit |
+| `pnpm ingest:dev` / `ingest:start` | Standalone tap-consumer ingest worker |
+| `pnpm backfill:*` | One-off data backfills (blob URLs, search text, renderable bodies, content formats) |
+| `pnpm lex:lint` / `lex:status` / `atproto:publish-lexicons` | Validate / publish the `app.standard-reader.*` lexicons via `goat` |
+
+## Project structure
+
+```
+src/
+  routes/             # file-based routes: / (Today), /latest, /discover, /search,
+                      #   /a/$did/$rkey (article), /p/… (publication), /l/… (list),
+                      #   /likes, /login, /about + /api/* (OAuth, OG images, ingest)
+  components/reader/  # app shell, feeds, article view, audio player, modals
+  design-system/      # hip-ui (copy-and-own) + StyleX theme tokens
+  server/             # server-only code: atproto, reader queries, ingest, og, content
+  db/                 # Drizzle schema + client
+  integrations/       # TanStack Query server functions, auth
+lexicons/             # app-owned app.standard-reader.* lexicon JSON
+tap/                  # tap instance config (docker-compose) — see tap/README.md
+scripts/              # backfills, lexicon publishing, asset generation, cron
+drizzle/              # generated migrations
 ```
 
-## Styling
+## Living docs
 
-This project uses [Tailwind CSS](https://tailwindcss.com/) for styling.
-
-### Removing Tailwind CSS
-
-If you prefer not to use Tailwind CSS:
-
-1. Remove the demo pages in `src/routes/demo/`
-2. Replace the Tailwind import in `src/styles.css` with your own styles
-3. Remove `tailwindcss()` from the plugins array in `vite.config.ts`
-4. Uninstall the packages: `pnpm remove @tailwindcss/vite tailwindcss`
-
-## Routing
-
-This project uses [TanStack Router](https://tanstack.com/router) with file-based routing. Routes are managed as files in `src/routes`.
-
-### Adding A Route
-
-To add a new route to your application just add a new file in the `./src/routes` directory.
-
-TanStack will automatically generate the content of the route file for you.
-
-Now that you have two routes you can use a `Link` component to navigate between them.
-
-### Adding Links
-
-To use SPA (Single Page Application) navigation you will need to import the `Link` component from `@tanstack/react-router`.
-
-```tsx
-import { Link } from "@tanstack/react-router";
-```
-
-Then anywhere in your JSX you can use it like so:
-
-```tsx
-<Link to="/about">About</Link>
-```
-
-This will create a link that will navigate to the `/about` route.
-
-More information on the `Link` component can be found in the [Link documentation](https://tanstack.com/router/v1/docs/framework/react/api/router/linkComponent).
-
-### Using A Layout
-
-In the File Based Routing setup the layout is located in `src/routes/__root.tsx`. Anything you add to the root route will appear in all the routes. The route content will appear in the JSX where you render `{children}` in the `shellComponent`.
-
-Here is an example layout that includes a header:
-
-```tsx
-import { HeadContent, Scripts, createRootRoute } from "@tanstack/react-router";
-
-export const Route = createRootRoute({
-  head: () => ({
-    meta: [
-      { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "My App" },
-    ],
-  }),
-  shellComponent: ({ children }) => (
-    <html lang="en">
-      <head>
-        <HeadContent />
-      </head>
-      <body>
-        <header>
-          <nav>
-            <Link to="/">Home</Link>
-            <Link to="/about">About</Link>
-          </nav>
-        </header>
-        {children}
-        <Scripts />
-      </body>
-    </html>
-  ),
-});
-```
-
-More information on layouts can be found in the [Layouts documentation](https://tanstack.com/router/latest/docs/framework/react/guide/routing-concepts#layouts).
-
-## Server Functions
-
-TanStack Start provides server functions that allow you to write server-side code that seamlessly integrates with your client components.
-
-```tsx
-import { createServerFn } from "@tanstack/react-start";
-
-const getServerTime = createServerFn({
-  method: "GET",
-}).handler(async () => {
-  return new Date().toISOString();
-});
-
-// Use in a component
-function MyComponent() {
-  const [time, setTime] = useState("");
-
-  useEffect(() => {
-    getServerTime().then(setTime);
-  }, []);
-
-  return <div>Server time: {time}</div>;
-}
-```
-
-## API Routes
-
-You can create API routes by using the `server` property in your route definitions:
-
-```tsx
-import { createFileRoute } from "@tanstack/react-router";
-import { json } from "@tanstack/react-start";
-
-export const Route = createFileRoute("/api/hello")({
-  server: {
-    handlers: {
-      GET: () => json({ message: "Hello, World!" }),
-    },
-  },
-});
-```
-
-## Data Fetching
-
-There are multiple ways to fetch data in your application. You can use TanStack Query to fetch data from a server. But you can also use the `loader` functionality built into TanStack Router to load the data for a route before it's rendered.
-
-For example:
-
-```tsx
-import { createFileRoute } from "@tanstack/react-router";
-
-export const Route = createFileRoute("/people")({
-  loader: async () => {
-    const response = await fetch("https://swapi.dev/api/people");
-    return response.json();
-  },
-  component: PeopleComponent,
-});
-
-function PeopleComponent() {
-  const data = Route.useLoaderData();
-  return (
-    <ul>
-      {data.results.map((person) => (
-        <li key={person.name}>{person.name}</li>
-      ))}
-    </ul>
-  );
-}
-```
-
-Loaders simplify your data fetching logic dramatically. Check out more information in the [Loader documentation](https://tanstack.com/router/latest/docs/framework/react/guide/data-loading#loader-parameters).
-
-# Demo files
-
-Files prefixed with `demo` can be safely deleted. They are there to provide a starting point for you to play around with the features you've installed.
-
-# Learn More
-
-You can learn more about all of the offerings from TanStack in the [TanStack documentation](https://tanstack.com).
-
-For TanStack Start specific documentation, visit [TanStack Start](https://tanstack.com/start).
+- [`APP_VISION.md`](./APP_VISION.md) — product vision: concept, screens, data model,
+  architecture. Kept in sync with reality as decisions change.
+- [`TODO.md`](./TODO.md) — the roadmap derived from the vision.
+- [`AGENTS.md`](./AGENTS.md) — repo conventions for AI agents (design-system rules, lint setup,
+  gotchas).
