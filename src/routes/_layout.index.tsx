@@ -225,6 +225,15 @@ function Home() {
                   />
                 ))}
               </div>
+              <Link
+                to="/latest"
+                search={{ filter: "trending" }}
+                {...stylex.props(styles.directoryLink)}
+              >
+                <Button variant="tertiary" size="sm">
+                  See all trending <ArrowRight size={14} />
+                </Button>
+              </Link>
             </div>
           ) : null}
 

@@ -8,6 +8,7 @@ import { attachCommentCountsToArticles } from "#/server/reader/document-comments
 import {
   countFollowedDocuments,
   countNetworkDocuments,
+  countTrendingDocuments,
   countUnreadByPublication,
   followedPublications,
   popularPublications,
@@ -37,15 +38,26 @@ import { dbMiddleware } from "./db-middleware";
 
 const HOME_ROW_LIMIT = 8;
 const HOME_RAIL_LIMIT = 6;
+/** Full trending tab on Latest — home rail stays at {@link HOME_RAIL_LIMIT}. */
+export const TRENDING_PAGE_LIMIT = 100;
+const LATEST_PAGE_SIZE = 20;
 
 const latestInput = z.object({
   /**
    * - `unread` — unread documents from the reader's subscriptions
    * - `subscriptions` — all documents from the reader's subscriptions
    * - `all` — the whole network (discover-eligible publications)
+   * - `trending` — network-wide articles ranked by trending score
    */
-  filter: z.enum(["unread", "subscriptions", "all"]).default("subscriptions"),
-  limit: z.number().int().min(1).max(50).default(20),
+  filter: z
+    .enum(["unread", "subscriptions", "all", "trending"])
+    .default("subscriptions"),
+  limit: z
+    .number()
+    .int()
+    .min(1)
+    .max(TRENDING_PAGE_LIMIT)
+    .default(LATEST_PAGE_SIZE),
   offset: z.number().int().min(0).default(0),
 });
 
@@ -75,6 +87,8 @@ export interface LatestFeed {
     subscriptions: number;
     /** All discover-eligible documents across the network. */
     all: number;
+    /** Articles in the trending candidate set. */
+    trending: number;
   };
   /** Offset for the next page, or null when the last page was reached. */
   nextOffset: number | null;
@@ -257,28 +271,46 @@ const getLatestFeed = createServerFn({ method: "GET" })
           ? false
           : await resolveTrackReadingHistoryEnabled(db, schema);
 
-      // Signed-out readers always get the network-wide list.
-      const cardQuery =
-        !did || data.filter === "all"
-          ? { discoverOnly: true }
-          : {
-              publicationUris: followUris,
-              unreadForDid:
-                trackReading && data.filter === "unread" ? did : undefined,
-            };
+      const trendingLimit =
+        data.filter === "trending"
+          ? Math.min(data.limit, TRENDING_PAGE_LIMIT - data.offset)
+          : data.limit;
 
-      const [items, followCounts, networkCount] = await Promise.all([
-        selectArticleCards(db, schema, {
-          ...cardQuery,
-          readForDid: trackReading && did ? did : undefined,
-          limit: data.limit,
-          offset: data.offset,
-        }),
-        did
-          ? countFollowedDocuments(db, schema, followUris, did)
-          : Promise.resolve({ all: 0, unread: 0 }),
-        countNetworkDocuments(db, schema),
-      ]);
+      const [items, followCounts, networkCount, trendingCount] =
+        await Promise.all([
+          data.filter === "trending"
+            ? trendingLimit > 0
+              ? trendingArticles(db, schema, trendingLimit, {
+                  offset: data.offset,
+                  readForDid: trackReading && did ? did : undefined,
+                  scope: "page",
+                })
+              : Promise.resolve([])
+            : selectArticleCards(db, schema, {
+                // Signed-out readers always get the network-wide list.
+                ...(!did || data.filter === "all"
+                  ? { discoverOnly: true }
+                  : {
+                      publicationUris: followUris,
+                      unreadForDid:
+                        trackReading && data.filter === "unread"
+                          ? did
+                          : undefined,
+                    }),
+                readForDid: trackReading && did ? did : undefined,
+                limit: data.limit,
+                offset: data.offset,
+              }),
+          did
+            ? countFollowedDocuments(db, schema, followUris, did)
+            : Promise.resolve({ all: 0, unread: 0 }),
+          countNetworkDocuments(db, schema),
+          countTrendingDocuments(
+            db,
+            schema,
+            data.filter === "trending" ? "page" : "rail",
+          ),
+        ]);
 
       span.set("count", items.length);
       const enrichedItems = await attachCommentCountsToArticles(
@@ -292,9 +324,14 @@ const getLatestFeed = createServerFn({ method: "GET" })
           unread: trackReading ? followCounts.unread : 0,
           subscriptions: followCounts.all,
           all: networkCount,
+          trending: trendingCount,
         },
         nextOffset:
-          items.length === data.limit ? data.offset + data.limit : null,
+          data.filter === "trending"
+            ? null
+            : items.length === data.limit
+              ? data.offset + data.limit
+              : null,
       } satisfies LatestFeed;
     }),
   );
@@ -306,9 +343,13 @@ function getHomeFeedQueryOptions() {
   });
 }
 
+export function latestFeedPageSize(filter: LatestFilter = "subscriptions") {
+  return filter === "trending" ? TRENDING_PAGE_LIMIT : LATEST_PAGE_SIZE;
+}
+
 function getLatestFeedQueryOptions({
   filter = "subscriptions",
-  limit = 20,
+  limit = latestFeedPageSize(filter),
   offset = 0,
 }: z.input<typeof latestInput> = {}) {
   return queryOptions({

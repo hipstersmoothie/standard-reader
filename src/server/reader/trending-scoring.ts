@@ -105,5 +105,7 @@ export function applyTrendingDiversityCaps<
 
 /** Fetch pool size for diversity-capped rails. */
 export function trendingFetchPoolSize(limit: number): number {
-  return Math.max(limit * TRENDING_POOL_MULTIPLIER, limit + 24);
+  // Full-page trending needs a larger pool so per-pub caps can still fill the list.
+  const multiplier = limit > 10 ? 20 : TRENDING_POOL_MULTIPLIER;
+  return Math.max(limit * multiplier, limit + 24);
 }

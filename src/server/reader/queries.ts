@@ -405,22 +405,28 @@ export async function countUnreadByPublication(
 
 // ── Discovery rails (reads over precomputed aggregates) ─────────────────────
 
+/** `rail` = strict engagement floor + diversity; `page` = score-ranked recency window. */
+export type TrendingArticlesScope = "rail" | "page";
+
 /**
  * Discover-eligible articles ranked by precomputed `documents.trending_score`
  * (recomputed on the cron pass). Cheap read: recency gate + engagement floor +
  * diversity caps only.
  */
-export async function trendingArticles(
-  db: Db,
+export interface TrendingArticlesQuery {
+  excludeUris?: Array<string>;
+  offset?: number;
+  readForDid?: string;
+  scope?: TrendingArticlesScope;
+}
+
+function trendingArticleWhere(
   schema: Schema,
-  limit: number,
+  scope: TrendingArticlesScope,
   excludeUris: Array<string> = [],
-): Promise<Array<ArticleCard>> {
+) {
   const d = schema.documents;
   const p = schema.publications;
-  const pr = schema.profiles;
-
-  const poolSize = trendingFetchPoolSize(limit);
 
   const conds = [
     eq(d.deleted, false),
@@ -428,24 +434,102 @@ export async function trendingArticles(
     discoverEligiblePublicationWhere(p),
     documentPublishedNotInFuture(d),
     sql`${d.publishedAt} > now() - (${TRENDING_MAX_AGE_DAYS}::text || ' days')::interval`,
-    sql`${d.trendingScore} > 0`,
-    sql`${d.distinctRecommenderCount} >= ${MIN_ARTICLE_RECOMMENDERS}`,
   ];
+
+  if (scope === "rail") {
+    conds.push(
+      sql`${d.trendingScore} > 0`,
+      sql`${d.distinctRecommenderCount} >= ${MIN_ARTICLE_RECOMMENDERS}`,
+    );
+  }
+
   if (excludeUris.length > 0) {
     conds.push(notInArray(d.uri, excludeUris));
   }
 
+  return conds;
+}
+
+function trendingArticleSelection(schema: Schema, readForDid?: string) {
+  const d = schema.documents;
+  const r = schema.reads;
+  const columns = articleCardColumns(schema);
+
+  return readForDid
+    ? {
+        ...columns,
+        isRead: sql<boolean>`exists(
+          select 1
+          from ${r}
+          where ${r.documentUri} = ${d.uri}
+            and ${r.ownerDid} = ${readForDid}
+            and ${r.deleted} = false
+        )`.mapWith(Boolean),
+      }
+    : columns;
+}
+
+export async function trendingArticles(
+  db: Db,
+  schema: Schema,
+  limit: number,
+  {
+    excludeUris = [],
+    offset = 0,
+    readForDid,
+    scope = "rail",
+  }: TrendingArticlesQuery = {},
+): Promise<Array<ArticleCard>> {
+  const d = schema.documents;
+  const p = schema.publications;
+  const pr = schema.profiles;
+
+  if (scope === "page") {
+    const rows = await db
+      .select(trendingArticleSelection(schema, readForDid))
+      .from(d)
+      .innerJoin(p, eq(p.uri, d.publicationUri))
+      .leftJoin(pr, eq(pr.did, p.did))
+      .where(and(...trendingArticleWhere(schema, scope, excludeUris)))
+      .orderBy(desc(d.trendingScore), desc(d.publishedAt))
+      .limit(limit)
+      .offset(offset);
+
+    return rows.map((row) => toArticleCard(row));
+  }
+
+  const totalNeeded = offset + limit;
+  const poolSize = trendingFetchPoolSize(totalNeeded);
+
   const rows = await db
-    .select(articleCardColumns(schema))
+    .select(trendingArticleSelection(schema, readForDid))
     .from(d)
     .innerJoin(p, eq(p.uri, d.publicationUri))
     .leftJoin(pr, eq(pr.did, p.did))
-    .where(and(...conds))
+    .where(and(...trendingArticleWhere(schema, scope, excludeUris)))
     .orderBy(desc(d.trendingScore), desc(d.publishedAt))
     .limit(poolSize);
 
   const cards = rows.map((row) => toArticleCard(row));
-  return applyTrendingDiversityCaps(cards, limit);
+  const capped = applyTrendingDiversityCaps(cards, totalNeeded);
+  return capped.slice(offset, offset + limit);
+}
+
+/** Count of discover-eligible articles in the trending candidate set. */
+export async function countTrendingDocuments(
+  db: Db,
+  schema: Schema,
+  scope: TrendingArticlesScope = "rail",
+): Promise<number> {
+  const d = schema.documents;
+  const p = schema.publications;
+
+  const [row] = await db
+    .select({ count: sql<number>`count(*)`.mapWith(Number) })
+    .from(d)
+    .innerJoin(p, eq(p.uri, d.publicationUri))
+    .where(and(...trendingArticleWhere(schema, scope)));
+  return row?.count ?? 0;
 }
 
 /**
