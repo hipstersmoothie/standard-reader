@@ -39,6 +39,7 @@ export type StructuredRenderableBlock =
       previewImage?: string;
     }
   | { kind: "table"; rows: StructuredTableRow }
+  | { kind: "gallery"; ref: string }
   | { kind: "unknown"; blockType: string };
 
 export interface StructuredTableCell {

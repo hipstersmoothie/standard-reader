@@ -18,6 +18,7 @@ import {
   PcktOrderedListBlockView,
   PcktTaskListBlockView,
 } from "./pckt-list";
+import { PcktGalleryBlockView } from "./pckt-gallery";
 import { PcktTableBlockView } from "./pckt-table";
 import { PcktWebsiteBlockView } from "./pckt-website";
 import { BlockquoteBlockView } from "./shared/blockquote-block";
@@ -127,7 +128,7 @@ export function PcktBlockView({
     }
     case "gallery": {
       return (
-        <UnknownBlockView blockType="blog.pckt.block.gallery (embedded)" />
+        <PcktGalleryBlockView block={block.block} blobContext={blobContext} />
       );
     }
     case "unknown": {

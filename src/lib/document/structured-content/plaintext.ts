@@ -46,6 +46,7 @@ export function plaintextLinesFromStructuredBlock(
     case "blueskyEmbed":
     case "image":
     case "iframe":
+    case "gallery":
     case "unknown": {
       return [];
     }

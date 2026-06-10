@@ -293,9 +293,9 @@ Backend/API exists; UI or copy is missing.
 - [ ] **PWA install readiness** — Phase A: PNG icons (192/512), `apple-touch-icon`, expand
       [`manifest.json`](public/manifest.json). _Open decision:_ Phase B service worker for asset
       caching only (not offline articles).
-- [ ] **Content rendering gaps** — PCKT gallery stub (`blog.pckt.block.gallery` in
-      [`scan-unsupported-blocks.ts`](src/lib/content/scan-unsupported-blocks.ts)); run
-      `pnpm scan:unsupported-blocks` against prod to prioritize; implement renderer when justified.
+- [x] **Content rendering gaps** — PCKT gallery renderer (`blog.pckt.block.gallery`); prod scan
+      found 54 documents — implemented grid/list/carousel/masonry layouts via
+      [`pckt-gallery.tsx`](src/components/reader/content/renderers/pckt-gallery.tsx).
 - [ ] **Discover — “Not following” filter** — toggle on [`_layout.discover.tsx`](src/routes/_layout.discover.tsx)
       All publications section to hide effective follow set ([`saved-lists.ts`](src/server/reader/saved-lists.ts)).
 

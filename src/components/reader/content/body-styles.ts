@@ -294,6 +294,75 @@ export const articleBodyStyles = stylex.create({
     maxWidth: "none",
     width: `calc(100% + 2 * ${spacing["6"]})`,
   },
+  gallery: {
+    marginBottom: spacing["6"],
+    marginLeft: spacing["0"],
+    marginRight: spacing["0"],
+    marginTop: spacing["0"],
+    maxWidth: "100%",
+    minWidth: 0,
+    width: "100%",
+  },
+  galleryTitle: {
+    color: uiColor.text2,
+    fontFamily: fontFamily.serif,
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.semibold,
+    marginBottom: gap.md,
+    marginTop: spacing["0"],
+  },
+  galleryCaption: {
+    color: uiColor.text1,
+    fontFamily: fontFamily.sans,
+    fontSize: fontSize.sm,
+    marginBottom: spacing["0"],
+    marginTop: gap.md,
+  },
+  galleryGrid: {
+    display: "grid",
+    gap: gap.md,
+    gridTemplateColumns: {
+      default: "minmax(0, 1fr)",
+      "@media (min-width: 40rem)": "repeat(2, minmax(0, 1fr))",
+    },
+  },
+  galleryList: {
+    display: "flex",
+    flexDirection: "column",
+    gap: gap.md,
+  },
+  galleryCarousel: {
+    display: "flex",
+    gap: gap.md,
+    overflowX: "auto",
+    scrollSnapType: "x mandatory",
+    WebkitOverflowScrolling: "touch",
+  },
+  galleryCarouselItem: {
+    flexShrink: 0,
+    scrollSnapAlign: "start",
+    width: {
+      default: "85%",
+      "@media (min-width: 40rem)": "60%",
+    },
+  },
+  galleryMasonry: {
+    columnGap: gap.md,
+    columns: {
+      default: 1,
+      "@media (min-width: 40rem)": 2,
+    },
+  },
+  galleryMasonryItem: {
+    breakInside: "avoid",
+    marginBottom: gap.md,
+  },
+  gallerySkeleton: {
+    borderRadius: radius.md,
+    backgroundColor: uiColor.component1,
+    aspectRatio: "16 / 9",
+    width: "100%",
+  },
   bskyPostEmbed: {
     marginBottom: spacing["6"],
     marginTop: spacing["0"],

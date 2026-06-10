@@ -182,7 +182,10 @@ function mapPcktBlock(block: PcktRenderableBlock): StructuredRenderableBlock {
       return { kind: "table", rows };
     }
     case "gallery": {
-      return { kind: "unknown", blockType: "blog.pckt.block.gallery" };
+      return {
+        kind: "gallery",
+        ref: block.block.ref ?? "",
+      };
     }
     case "unknown": {
       return { kind: "unknown", blockType: block.blockType };

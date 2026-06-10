@@ -11,6 +11,7 @@ import {
 
 import type { ContentBlobContext } from "../types";
 
+import { PcktGalleryBlockView } from "./pckt-gallery";
 import { BlockquoteBlockView } from "./shared/blockquote-block";
 import { BskyPostEmbedView } from "./shared/bsky-post-embed";
 import { CalloutBlockView } from "./shared/callout-block";
@@ -158,6 +159,11 @@ export function StructuredBlockView({
           description={block.description}
           previewImage={block.previewImage}
         />
+      );
+    }
+    case "gallery": {
+      return (
+        <PcktGalleryBlockView block={{ ref: block.ref }} blobContext={blobContext} />
       );
     }
     case "unknown": {

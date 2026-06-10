@@ -282,6 +282,7 @@ function appendPcktRenderedText(
     case "blueskyEmbed":
     case "image":
     case "iframe":
+    case "gallery":
     case "unknown": {
       return;
     }
@@ -339,6 +340,7 @@ function appendStructuredRenderedText(
     case "blueskyEmbed":
     case "image":
     case "iframe":
+    case "gallery":
     case "unknown": {
       return;
     }

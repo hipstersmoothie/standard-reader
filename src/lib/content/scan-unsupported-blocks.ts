@@ -50,9 +50,6 @@ function unsupportedFromRenderable(
   if (contentFormat === PCKT_CONTENT) {
     for (const block of pcktBlocks(contentJson)) {
       if (block.kind === "unknown") unsupported.add(block.blockType);
-      if (block.kind === "gallery") {
-        unsupported.add("blog.pckt.block.gallery (render stub)");
-      }
     }
     return unsupported;
   }

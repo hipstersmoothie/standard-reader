@@ -12,17 +12,34 @@ import {
   scanUnsupportedBlocks,
 } from "../src/lib/content/scan-unsupported-blocks.ts";
 
-const rows = await db
-  .select({
-    uri: documents.uri,
-    contentFormat: documents.contentFormat,
-    contentJson: documents.contentJson,
-  })
-  .from(documents)
-  .where(isNotNull(documents.contentJson));
+const PAGE_SIZE = 75;
+
+const rows: Array<{
+  uri: string;
+  contentFormat: string | null;
+  contentJson: unknown;
+}> = [];
+
+for (let offset = 0; ; offset += PAGE_SIZE) {
+  const batch = await db
+    .select({
+      uri: documents.uri,
+      contentFormat: documents.contentFormat,
+      contentJson: documents.contentJson,
+    })
+    .from(documents)
+    .where(isNotNull(documents.contentJson))
+    .limit(PAGE_SIZE)
+    .offset(offset);
+
+  if (batch.length === 0) break;
+  rows.push(...batch);
+}
 
 const report = scanUnsupportedBlocks(rows);
 
+// eslint-disable-next-line no-console
+console.log(`Scanned ${rows.length} indexed document(s).\n`);
 // eslint-disable-next-line no-console
 console.log("Unsupported blocks in indexed documents:\n");
 if (report.byType.length === 0) {
