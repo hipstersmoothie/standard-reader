@@ -3,6 +3,7 @@
 import type { PublicationSocialProof } from "#/integrations/tanstack-query/api-publication.functions";
 
 import * as stylex from "@stylexjs/stylex";
+import { AuthorProfileLink } from "#/components/reader/author-profile-link";
 import { Fragment, useState } from "react";
 
 import { Avatar } from "../../design-system/avatar";
@@ -35,7 +36,8 @@ const styles = stylex.create({
   },
   link: {
     textDecoration: { default: "none", ":hover": "underline" },
-    color: uiColor.text2,
+    color: "inherit",
+    textDecorationColor: "currentColor",
     textUnderlineOffset: "2px",
   },
   othersButton: {
@@ -120,9 +122,6 @@ function ReaderLink({
   isLast?: boolean;
 }) {
   const label = readerDisplayName(reader);
-  const href = reader.handle
-    ? `https://bsky.app/profile/${reader.handle}`
-    : undefined;
 
   const content = (
     <>
@@ -141,23 +140,13 @@ function ReaderLink({
     </>
   );
 
-  if (!href) {
-    return (
-      <div {...stylex.props(styles.readerRow, isLast && styles.readerRowLast)}>
-        {content}
-      </div>
-    );
-  }
-
   return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noreferrer"
-      {...stylex.props(styles.readerRow, isLast && styles.readerRowLast)}
+    <AuthorProfileLink
+      authorRef={reader.did}
+      linkStyle={[styles.readerRow, isLast && styles.readerRowLast]}
     >
       {content}
-    </a>
+    </AuthorProfileLink>
   );
 }
 
@@ -185,16 +174,13 @@ export function PublicationSocialProofLine({
                 : ", "
               : null}
             {reader.handle ? (
-              <a
-                href={`https://bsky.app/profile/${reader.handle}`}
-                target="_blank"
-                rel="noreferrer"
-                {...stylex.props(styles.link)}
-              >
+              <AuthorProfileLink authorRef={reader.did} linkStyle={styles.link}>
                 @{reader.handle}
-              </a>
+              </AuthorProfileLink>
             ) : (
-              coReaderLabel(reader)
+              <AuthorProfileLink authorRef={reader.did} linkStyle={styles.link}>
+                {coReaderLabel(reader)}
+              </AuthorProfileLink>
             )}
           </Fragment>
         ))}

@@ -5,6 +5,8 @@ import type { FollowStatus } from "#/integrations/tanstack-query/api-reader.func
 import * as stylex from "@stylexjs/stylex";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, createLink } from "@tanstack/react-router";
+import { AuthorProfileLink } from "#/components/reader/author-profile-link";
+import { PublicationNameLink } from "#/components/reader/publication-name-link";
 import { gap } from "#/design-system/theme/semantic-spacing.stylex";
 import { spacing } from "#/design-system/theme/spacing.stylex.tsx";
 import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
@@ -81,6 +83,18 @@ const styles = stylex.create({
   bylineName: {
     color: uiColor.text2,
   },
+  bylineEyebrow: {
+    textDecoration: "none",
+    alignItems: "center",
+    color: "inherit",
+    columnGap: gap.md,
+    cursor: "pointer",
+    display: "inline-flex",
+    rowGap: gap.md,
+  },
+  ownerHandleLink: {
+    color: uiColor.text1,
+  },
   bylineWhen: {
     color: uiColor.text1,
     fontFamily: fontFamily.sans,
@@ -139,6 +153,48 @@ const styles = stylex.create({
     borderBottomWidth: 1,
     paddingBottom: spacing["6"],
     paddingTop: spacing["6"],
+  },
+  rowShell: {
+    borderBottomColor: uiColor.border1,
+    borderBottomStyle: "solid",
+    borderBottomWidth: 1,
+    display: "flex",
+    flexDirection: "column",
+    gap: gap["2xl"],
+    paddingBottom: spacing["6"],
+    paddingTop: spacing["6"],
+  },
+  rowShellFirstInSection: {
+    paddingTop: spacing["0"],
+  },
+  rowGrid: {
+    alignItems: "start",
+    columnGap: gap["5xl"],
+    display: "grid",
+    gridTemplateColumns: {
+      default: "1fr",
+      "@media (min-width: 40rem)": "1fr 150px",
+    },
+    rowGap: gap["5xl"],
+  },
+  featureShell: {
+    borderBottomColor: uiColor.border1,
+    borderBottomStyle: "solid",
+    borderBottomWidth: 1,
+    display: "flex",
+    flexDirection: "column",
+    gap: gap["5xl"],
+    paddingBottom: spacing["9"],
+  },
+  featureGrid: {
+    alignItems: "center",
+    columnGap: spacing["9"],
+    display: "grid",
+    gridTemplateColumns: {
+      default: "1fr",
+      "@media (min-width: 48rem)": "1.05fr 1fr",
+    },
+    rowGap: spacing["9"],
   },
   rowNoMedia: {
     gridTemplateColumns: "1fr",
@@ -752,6 +808,14 @@ export function FollowButton({
   );
 }
 
+function OwnerHandleLink({ did, handle }: { did: string; handle: string }) {
+  return (
+    <AuthorProfileLink authorRef={did} linkStyle={styles.ownerHandleLink}>
+      <Handle>@{handle}</Handle>
+    </AuthorProfileLink>
+  );
+}
+
 /* ── Byline ─────────────────────────────────────────────────────────────── */
 
 function Byline({
@@ -764,17 +828,22 @@ function Byline({
   const date = formatDate(article.publishedAt);
   return (
     <Flex align="center" gap="md" wrap style={styles.byline}>
-      <PublicationAvatar
-        pub={{
-          name: article.publicationName ?? "Unknown",
-          iconUrl: article.publicationIconUrl,
-          ownerAvatarUrl: article.publicationOwnerAvatarUrl,
-        }}
-        size="sm"
-      />
-      <span {...stylex.props(styles.bylineName)}>
-        {article.publicationName ?? "Unknown publication"}
-      </span>
+      <PublicationNameLink
+        publicationUri={article.publicationUri}
+        linkStyle={styles.bylineEyebrow}
+      >
+        <PublicationAvatar
+          pub={{
+            name: article.publicationName ?? "Unknown",
+            iconUrl: article.publicationIconUrl,
+            ownerAvatarUrl: article.publicationOwnerAvatarUrl,
+          }}
+          size="sm"
+        />
+        <span {...stylex.props(styles.bylineName)}>
+          {article.publicationName ?? "Unknown publication"}
+        </span>
+      </PublicationNameLink>
       {includeDate && date ? (
         <>
           <span aria-hidden {...stylex.props(styles.metaDot)}>
@@ -1078,11 +1147,12 @@ export function FeatureArticle({
   unread?: boolean;
 }) {
   const cover = coverImage(article);
-  return (
-    <ArticleLink
-      article={article}
-      extraStyles={[styles.feature, !cover && styles.featureTextOnly]}
-    >
+  const featureGridStyles = [
+    styles.featureGrid,
+    !cover && styles.featureTextOnly,
+  ];
+  const articleBody = (
+    <>
       {cover ? (
         <span {...stylex.props(styles.featureMedia)}>
           <img
@@ -1094,7 +1164,6 @@ export function FeatureArticle({
         </span>
       ) : null}
       <Flex direction="column" gap="5xl">
-        {showByline ? <Byline article={article} includeDate /> : null}
         <ArticleTitleRow
           article={article}
           showByline={showByline}
@@ -1110,6 +1179,26 @@ export function FeatureArticle({
         ) : null}
         <ArticleMetaLine article={article} />
       </Flex>
+    </>
+  );
+
+  if (showByline) {
+    return (
+      <div {...stylex.props(styles.featureShell)}>
+        <Byline article={article} includeDate />
+        <ArticleLink article={article} extraStyles={featureGridStyles}>
+          {articleBody}
+        </ArticleLink>
+      </div>
+    );
+  }
+
+  return (
+    <ArticleLink
+      article={article}
+      extraStyles={[styles.feature, !cover && styles.featureTextOnly]}
+    >
+      {articleBody}
     </ArticleLink>
   );
 }
@@ -1183,22 +1272,23 @@ export function ArticleRow({
     <SaveButton documentUri={article.uri} signedIn={signedIn} />
   ) : null;
 
-  return (
-    <ArticleLink
-      article={article}
-      extraStyles={[
-        styles.row,
-        !cover && !saveBesideMedia && styles.rowNoMedia,
-        !cover && saveBesideMedia && styles.rowNoMediaSaveAside,
-        saveBesideMedia && cover ? styles.rowSaveBesideMedia : false,
-        isFirstInSection && styles.rowFirstInSection,
-      ]}
-    >
+  const gridStyles = [
+    showByline ? styles.rowGrid : styles.row,
+    !cover && !saveBesideMedia ? styles.rowNoMedia : false,
+    !cover && saveBesideMedia ? styles.rowNoMediaSaveAside : false,
+    saveBesideMedia && cover ? styles.rowSaveBesideMedia : false,
+    !showByline && isFirstInSection ? styles.rowFirstInSection : false,
+  ];
+
+  const articleBody = (
+    <ArticleLink article={article} extraStyles={gridStyles}>
       <Flex direction="column" gap="2xl">
-        <Flex align="center" style={styles.rowHeader}>
-          {showByline ? <Byline article={article} includeDate /> : <span />}
-          {saveBesideMedia ? null : saveButton}
-        </Flex>
+        {!showByline ? (
+          <Flex align="center" style={styles.rowHeader}>
+            <span />
+            {saveBesideMedia ? null : saveButton}
+          </Flex>
+        ) : null}
         <ArticleTitleRow
           article={article}
           showByline={showByline}
@@ -1225,6 +1315,25 @@ export function ArticleRow({
       ) : null}
     </ArticleLink>
   );
+
+  if (showByline) {
+    return (
+      <div
+        {...stylex.props(
+          styles.rowShell,
+          isFirstInSection && styles.rowShellFirstInSection,
+        )}
+      >
+        <Flex align="center" gap="2xl" style={styles.rowHeader}>
+          <Byline article={article} includeDate />
+          {saveBesideMedia ? null : saveButton}
+        </Flex>
+        {articleBody}
+      </div>
+    );
+  }
+
+  return articleBody;
 }
 
 /* ── Compact row (trending — no image) ──────────────────────────────────── */
@@ -1245,7 +1354,9 @@ export function CompactRow({
       <Flex direction="column" gap="sm" style={styles.grow}>
         <span {...stylex.props(styles.compactTitle)}>{article.title}</span>
         <MetaLine>
-          <span>{article.publicationName ?? "Unknown"}</span>
+          <PublicationNameLink publicationUri={article.publicationUri} nested>
+            <span>{article.publicationName ?? "Unknown"}</span>
+          </PublicationNameLink>
           {hasEngagement ? (
             <>
               <span aria-hidden {...stylex.props(styles.metaDot)}>
@@ -1282,7 +1393,9 @@ export function MiniPubRow({
         <PublicationAvatar pub={pub} size="lg" />
         <Flex direction="column" gap="xs" style={styles.grow}>
           <span {...stylex.props(styles.miniName)}>{pub.name}</span>
-          {pub.ownerHandle ? <Handle>@{pub.ownerHandle}</Handle> : null}
+          {pub.ownerHandle ? (
+            <OwnerHandleLink did={pub.did} handle={pub.ownerHandle} />
+          ) : null}
           <PubMetaRow pub={pub} />
         </Flex>
         <ArrowRight
@@ -1409,7 +1522,9 @@ export function PubCard({
         <FollowSlot publicationUri={pub.uri} signedIn={signedIn} pub={pub} />
       </Flex>
       <span {...stylex.props(styles.pubCardName)}>{pub.name}</span>
-      {pub.ownerHandle ? <Handle>@{pub.ownerHandle}</Handle> : null}
+      {pub.ownerHandle ? (
+        <OwnerHandleLink did={pub.did} handle={pub.ownerHandle} />
+      ) : null}
       {pub.description ? (
         <p {...stylex.props(styles.pubCardDesc)}>{pub.description}</p>
       ) : (
@@ -1517,7 +1632,9 @@ export function PubDirectoryRow({
           {...stylex.props(styles.pubDirTop, hasRank && styles.pubDirTopRanked)}
         >
           <span {...stylex.props(styles.pubDirName)}>{pub.name}</span>
-          {pub.ownerHandle ? <Handle>@{pub.ownerHandle}</Handle> : null}
+          {pub.ownerHandle ? (
+            <OwnerHandleLink did={pub.did} handle={pub.ownerHandle} />
+          ) : null}
         </div>
         {pub.description ||
         pub.topic ||

@@ -102,6 +102,12 @@ export const articleBodyStyles = stylex.create({
     color: primaryColor.text2,
     textUnderlineOffset: "2px",
   },
+  facetMentionLink: {
+    textDecoration: { default: "none", ":hover": "underline" },
+    color: "inherit",
+    textDecorationColor: "currentColor",
+    textUnderlineOffset: "2px",
+  },
   facetCode: {
     borderRadius: radius.sm,
     backgroundColor: uiColor.component1,

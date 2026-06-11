@@ -8,6 +8,7 @@ import type { PublicationCard } from "#/integrations/tanstack-query/api-shapes";
 
 import * as stylex from "@stylexjs/stylex";
 import { Link } from "@tanstack/react-router";
+import { PublicationNameLink } from "#/components/reader/publication-name-link";
 import { Flex } from "#/design-system/flex";
 import { uiColor } from "#/design-system/theme/color.stylex";
 import { gap } from "#/design-system/theme/semantic-spacing.stylex";
@@ -111,10 +112,12 @@ function mergeRelatedReading(
 function MoreFromRow({
   article,
   publicationName,
+  publicationUri,
   subtitle,
 }: {
   article: ArticleExtras["moreFrom"][number];
   publicationName: string;
+  publicationUri?: string | null;
   subtitle?: string;
 }) {
   const { openExternally } = useOpenLinks();
@@ -124,9 +127,15 @@ function MoreFromRow({
     <Flex direction="column" gap="sm" style={styles.footGrow}>
       <span {...stylex.props(styles.moreTitle)}>{article.title}</span>
       <span {...stylex.props(styles.bylineMeta)}>
-        {minutes == null
-          ? publicationName
-          : `${publicationName} · ${minutes} min`}
+        <PublicationNameLink publicationUri={publicationUri} nested>
+          {publicationName}
+        </PublicationNameLink>
+        {minutes == null ? null : (
+          <>
+            <span aria-hidden> · </span>
+            {minutes} min
+          </>
+        )}
       </span>
       {subtitle ? (
         <span {...stylex.props(styles.connectionLabel)}>{subtitle}</span>
@@ -219,13 +228,24 @@ function MoreFromSection({
   return (
     <div {...stylex.props(styles.moreFrom, articleMeasureStyle(preference))}>
       <Flex direction="column">
-        <SectionHead kicker={`More from ${pub.name}`} title="Keep reading" />
+        <SectionHead
+          kicker={
+            <>
+              More from{" "}
+              <PublicationNameLink publicationUri={pub.uri}>
+                {pub.name}
+              </PublicationNameLink>
+            </>
+          }
+          title="Keep reading"
+        />
         <div>
           {moreFrom.map((doc) => (
             <MoreFromRow
               key={doc.uri}
               article={doc}
               publicationName={pub.name}
+              publicationUri={pub.uri}
             />
           ))}
         </div>
@@ -257,6 +277,7 @@ function RelatedArticlesSection({
               publicationName={
                 item.article.publicationName?.trim() || "Publication"
               }
+              publicationUri={item.article.publicationUri}
               subtitle={item.subtitle}
             />
           ))}
@@ -280,6 +301,7 @@ function CitedInSection({ citedIn }: { citedIn: ArticleExtras["citedIn"] }) {
               key={doc.uri}
               article={doc}
               publicationName={doc.publicationName?.trim() || "Publication"}
+              publicationUri={doc.publicationUri}
             />
           ))}
         </div>

@@ -1,4 +1,5 @@
 import { STANDARD_NSID } from "#/lib/atproto/nsids";
+import { normalizeAuthorRef } from "#/lib/author-profile";
 import { getPublicUrlClient } from "#/lib/public-url";
 
 const STATIC_ROUTES = [
@@ -24,6 +25,8 @@ export type InternalRoute =
 const ARTICLE_PATH = /^\/a\/([^/]+)\/([^/]+)\/?$/;
 const PUBLICATION_PATH = /^\/p\/([^/]+)\/([^/]+)\/?$/;
 const AUTHOR_PATH = /^\/u\/([^/]+)\/?$/;
+const BSKY_PROFILE_PATH = /^\/profile\/([^/]+)\/?$/;
+const BSKY_PROFILE_HOSTS = new Set(["bsky.app", "staging.bsky.app"]);
 
 function parseAtUri(href: string): InternalRoute | null {
   if (!href.startsWith("at://")) return null;
@@ -109,8 +112,21 @@ export function parseInternalRoute(
 
     const url = new URL(trimmed);
     const appOrigin = new URL(origin).origin;
-    if (url.origin !== appOrigin) return null;
-    return parsePathname(url.pathname);
+    if (url.origin === appOrigin) {
+      return parsePathname(url.pathname);
+    }
+
+    if (BSKY_PROFILE_HOSTS.has(url.hostname)) {
+      const match = BSKY_PROFILE_PATH.exec(url.pathname);
+      if (match?.[1]) {
+        return {
+          to: "/u/$did",
+          params: { did: normalizeAuthorRef(decodeURIComponent(match[1])) },
+        };
+      }
+    }
+
+    return null;
   } catch {
     return null;
   }

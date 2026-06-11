@@ -10,6 +10,8 @@ import {
 } from "@tanstack/react-query";
 import { Link, useRouter } from "@tanstack/react-router";
 import { AppLink } from "#/components/reader/app-link";
+import { AuthorProfileLink } from "#/components/reader/author-profile-link";
+import { PublicationNameLink } from "#/components/reader/publication-name-link";
 import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
 import { usePageReader } from "#/lib/page-reader/page-reader-context";
@@ -308,6 +310,7 @@ const styles = stylex.create({
   bylineNameLink: {
     textDecoration: { default: "none", ":hover": "underline" },
     color: "inherit",
+    textDecorationColor: "currentColor",
     textUnderlineOffset: "2px",
   },
   bylineMeta: {
@@ -945,9 +948,17 @@ function ArticleViewBody({
             <div {...stylex.props(styles.foot)}>
               <PublicationAvatar pub={pub} size="lg" />
               <Flex direction="column" gap="xs" style={styles.footGrow}>
-                <div {...stylex.props(styles.footName)}>{pub.name}</div>
-                {article.publicationOwnerHandle ? (
-                  <Handle>@{article.publicationOwnerHandle}</Handle>
+                <PublicationNameLink
+                  publicationUri={article.publicationUri}
+                  url={pub.url}
+                  linkStyle={styles.footName}
+                >
+                  {pub.name}
+                </PublicationNameLink>
+                {article.publicationOwnerHandle && bylineDid ? (
+                  <AuthorProfileLink authorRef={bylineDid}>
+                    <Handle>@{article.publicationOwnerHandle}</Handle>
+                  </AuthorProfileLink>
                 ) : null}
               </Flex>
               {article.publicationUri ? (

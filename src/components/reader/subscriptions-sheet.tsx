@@ -2,6 +2,7 @@
 
 import * as stylex from "@stylexjs/stylex";
 import { Link, useNavigate } from "@tanstack/react-router";
+import { AuthorProfileLink } from "#/components/reader/author-profile-link";
 import { ChevronRight, Compass, FolderPlus, Plus } from "lucide-react";
 import { Button as AriaButton } from "react-aria-components";
 
@@ -367,7 +368,14 @@ function SheetPubRow({
       />
       <div {...stylex.props(styles.pubInfo)}>
         <div {...stylex.props(styles.pubName)}>{pub.name}</div>
-        {pub.ownerHandle ? <Handle>@{pub.ownerHandle}</Handle> : null}
+        {pub.ownerHandle ? (
+          <AuthorProfileLink
+            authorRef={pub.did}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <Handle>@{pub.ownerHandle}</Handle>
+          </AuthorProfileLink>
+        ) : null}
       </div>
       {pub.unreadCount > 0 ? (
         <span

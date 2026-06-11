@@ -13,6 +13,7 @@ import {
   intersectHighlightRange,
   useQuoteHighlightTracker,
 } from "#/components/reader/quote-highlight-tracker";
+import { authorProfilePath } from "#/lib/author-profile";
 import { segmentFacetedText, shiftFacets } from "#/lib/leaflet/facets";
 import { utf8ByteLength } from "#/lib/leaflet/utf8";
 import { Fragment } from "react";
@@ -56,14 +57,12 @@ function FacetSegment({
     );
   } else if (didMention?.did) {
     node = (
-      <a
-        href={`https://bsky.app/profile/${didMention.did}`}
-        target="_blank"
-        rel="noreferrer"
-        {...stylex.props(articleBodyStyles.facetLink)}
+      <AppLink
+        href={authorProfilePath(didMention.did)}
+        linkStyle={articleBodyStyles.facetMentionLink}
       >
         {text}
-      </a>
+      </AppLink>
     );
   }
 

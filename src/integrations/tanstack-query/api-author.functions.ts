@@ -2,6 +2,7 @@ import { queryOptions } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 import { fetchBlueskyPublicProfileFields } from "#/lib/bluesky-public-profile";
 import { resolveIdentity } from "#/server/atproto/identity";
+import { resolveAuthorDid } from "#/server/atproto/resolve-author-ref";
 import { observe } from "#/server/observability/log";
 import {
   authorProfileStats,
@@ -154,7 +155,8 @@ const getAuthorProfile = createServerFn({ method: "GET" })
       "author.getProfile",
       async ({ data, context }, span): Promise<AuthorProfile | null> => {
         const { db, schema } = context;
-        span.set("did", data.did);
+        const did = await resolveAuthorDid(db, schema, data.did);
+        span.set("did", did);
         span.set("offset", data.offset);
 
         const [
@@ -164,19 +166,19 @@ const getAuthorProfile = createServerFn({ method: "GET" })
           subscriptionsPage,
           recommendationsPage,
         ] = await Promise.all([
-          resolveAuthorProfile(db, schema, data.did),
-          authorProfileStats(db, schema, data.did),
+          resolveAuthorProfile(db, schema, did),
+          authorProfileStats(db, schema, did),
           authorPublications(db, schema, {
-            did: data.did,
+            did,
             limit: data.limit,
             offset: data.offset,
           }),
           authorSubscriptions(db, schema, {
-            did: data.did,
+            did,
             limit: data.activityLimit,
           }),
           authorRecommendations(db, schema, {
-            did: data.did,
+            did,
             limit: data.activityLimit,
           }),
         ]);
@@ -235,10 +237,11 @@ const getAuthorPublications = createServerFn({ method: "GET" })
       "author.getPublications",
       async ({ data, context }, span): Promise<AuthorPublicationsPage> => {
         const { db, schema } = context;
-        span.set("did", data.did);
+        const did = await resolveAuthorDid(db, schema, data.did);
+        span.set("did", did);
         span.set("offset", data.offset);
 
-        const items = await authorPublications(db, schema, data);
+        const items = await authorPublications(db, schema, { ...data, did });
         span.set("count", items.length);
 
         return {
@@ -258,10 +261,11 @@ const getAuthorSubscriptions = createServerFn({ method: "GET" })
       "author.getSubscriptions",
       async ({ data, context }, span): Promise<AuthorSubscriptionsPage> => {
         const { db, schema } = context;
-        span.set("did", data.did);
+        const did = await resolveAuthorDid(db, schema, data.did);
+        span.set("did", did);
         span.set("offset", data.offset);
 
-        const page = await authorSubscriptions(db, schema, data);
+        const page = await authorSubscriptions(db, schema, { ...data, did });
         span.set("count", page.items.length);
 
         return {
@@ -285,10 +289,11 @@ const getAuthorRecommendations = createServerFn({ method: "GET" })
       "author.getRecommendations",
       async ({ data, context }, span): Promise<AuthorRecommendationsPage> => {
         const { db, schema } = context;
-        span.set("did", data.did);
+        const did = await resolveAuthorDid(db, schema, data.did);
+        span.set("did", did);
         span.set("offset", data.offset);
 
-        const page = await authorRecommendations(db, schema, data);
+        const page = await authorRecommendations(db, schema, { ...data, did });
         span.set("count", page.items.length);
 
         return {

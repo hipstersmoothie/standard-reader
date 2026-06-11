@@ -147,6 +147,7 @@ const styles = stylex.create({
   handleLink: {
     textDecoration: { default: "none", ":hover": "underline" },
     color: "inherit",
+    textDecorationColor: "currentColor",
     textUnderlineOffset: "2px",
   },
   stats: {

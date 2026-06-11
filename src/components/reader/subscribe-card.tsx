@@ -6,7 +6,9 @@ import type { QuoteOgColors } from "#/lib/publication-theme";
 import type { CSSProperties, ReactNode } from "react";
 
 import * as stylex from "@stylexjs/stylex";
-import { createLink, Link } from "@tanstack/react-router";
+import { Link, createLink } from "@tanstack/react-router";
+import { AuthorProfileLink } from "#/components/reader/author-profile-link";
+import { PublicationNameLink } from "#/components/reader/publication-name-link";
 import { Button } from "#/design-system/button";
 import { Flex } from "#/design-system/flex";
 import { ProgressCircle } from "#/design-system/progress-circle";
@@ -213,6 +215,10 @@ const styles = stylex.create({
   nameStacked: {
     fontSize: fontSize.xl,
   },
+  nameLink: {
+    color: "inherit",
+    textDecorationColor: "currentColor",
+  },
   author: {
     margin: 0,
     color: "var(--sub-muted)",
@@ -220,9 +226,17 @@ const styles = stylex.create({
     fontSize: fontSize.xs,
     lineHeight: lineHeight.sm,
   },
+  authorNameLink: {
+    textDecoration: { default: "none", ":hover": "underline" },
+    color: "inherit",
+    textDecorationColor: "currentColor",
+  },
   authorHandle: {
+    textDecoration: { default: "none", ":hover": "underline" },
+    color: "inherit",
     fontFamily: fontFamily.mono,
     letterSpacing: tracking.tight,
+    textDecorationColor: "currentColor",
   },
   dek: {
     margin: 0,
@@ -623,26 +637,42 @@ export function SubscribeCard({
         <h2
           {...stylex.props(styles.name, portrait ? styles.nameStacked : null)}
         >
-          {meta.name}
+          <PublicationNameLink
+            publicationUri={meta.uri}
+            linkStyle={styles.nameLink}
+          >
+            {meta.name}
+          </PublicationNameLink>
         </h2>
         {hasAuthor ? (
           <p {...stylex.props(styles.author)}>
             {author.displayName ? (
               <>
-                {author.displayName}
+                <AuthorProfileLink
+                  authorRef={meta.did}
+                  linkStyle={styles.authorNameLink}
+                >
+                  {author.displayName}
+                </AuthorProfileLink>
                 {author.handle ? (
                   <>
                     {" · "}
-                    <span {...stylex.props(styles.authorHandle)}>
+                    <AuthorProfileLink
+                      authorRef={meta.did}
+                      linkStyle={styles.authorHandle}
+                    >
                       @{author.handle}
-                    </span>
+                    </AuthorProfileLink>
                   </>
                 ) : null}
               </>
             ) : author.handle ? (
-              <span {...stylex.props(styles.authorHandle)}>
+              <AuthorProfileLink
+                authorRef={meta.did}
+                linkStyle={styles.authorHandle}
+              >
                 @{author.handle}
-              </span>
+              </AuthorProfileLink>
             ) : null}
           </p>
         ) : null}

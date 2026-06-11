@@ -3,6 +3,7 @@
 import * as stylex from "@stylexjs/stylex";
 import { AppLink } from "#/components/reader/app-link";
 import { primaryColor } from "#/design-system/theme/color.stylex";
+import { authorProfilePath } from "#/lib/author-profile";
 import { Fragment } from "react";
 
 /** Autolink http(s) and www. URLs in plain text (e.g. profile bios). */
@@ -32,7 +33,7 @@ function linkHref(raw: string): string {
 }
 
 function mentionHref(handle: string): string {
-  return `https://bsky.app/profile/${handle.replace(TRAILING_PUNCT_RE, "")}`;
+  return authorProfilePath(handle);
 }
 
 function findTextTokens(text: string): Array<TextToken> {
@@ -113,7 +114,13 @@ const styles = stylex.create({
   root: {
     whiteSpace: "pre-line",
   },
-  link: {
+  mentionLink: {
+    textDecoration: { default: "none", ":hover": "underline" },
+    color: "inherit",
+    textDecorationColor: "currentColor",
+    textUnderlineOffset: "2px",
+  },
+  urlLink: {
     textDecoration: { default: "underline", ":hover": "none" },
     color: primaryColor.text2,
     textUnderlineOffset: "2px",
@@ -134,7 +141,15 @@ export function LinkifiedText({
     <span {...stylex.props(styles.root, style)}>
       {segments.map((segment, index) =>
         segment.kind === "link" ? (
-          <AppLink key={index} href={segment.href} linkStyle={styles.link}>
+          <AppLink
+            key={index}
+            href={segment.href}
+            linkStyle={
+              segment.href.startsWith("/u/")
+                ? styles.mentionLink
+                : styles.urlLink
+            }
+          >
             {segment.value}
           </AppLink>
         ) : (

@@ -5,8 +5,10 @@ import type { JsonValue } from "#/integrations/tanstack-query/api-shapes";
 
 import * as stylex from "@stylexjs/stylex";
 import { AppLink } from "#/components/reader/app-link";
+import { AuthorProfileLink } from "#/components/reader/author-profile-link";
 import { Avatar } from "#/design-system/avatar";
 import { Flex } from "#/design-system/flex";
+import { authorProfilePath } from "#/lib/author-profile";
 import { segmentFacetedText, shiftFacets } from "#/lib/leaflet/facets";
 import { utf8ByteLength } from "#/lib/leaflet/utf8";
 import { MessageCircle } from "lucide-react";
@@ -56,15 +58,13 @@ function CommentFacetSegment({
     );
   } else if (didMention?.did) {
     node = (
-      <a
-        href={`https://bsky.app/profile/${didMention.did}`}
-        target="_blank"
-        rel="noreferrer"
-        {...stylex.props(commentStyles.facetLink)}
+      <AppLink
+        href={authorProfilePath(didMention.did)}
+        linkStyle={commentStyles.facetMentionLink}
         onClick={(event) => event.stopPropagation()}
       >
         {text}
-      </a>
+      </AppLink>
     );
   }
 
@@ -185,25 +185,27 @@ export function CommentCard({ comment }: { comment: DocumentComment }) {
         : "on Bluesky";
 
   return (
-    <a
-      href={comment.postUrl}
-      target="_blank"
-      rel="noreferrer"
-      {...stylex.props(commentStyles.card)}
-    >
+    <div {...stylex.props(commentStyles.card)}>
       <div {...stylex.props(commentStyles.cardHeader)}>
-        <Avatar
-          size="md"
-          src={comment.author.avatarUrl ?? undefined}
-          fallback={initials(name)}
-          alt={name}
-        />
-        <div {...stylex.props(commentStyles.authorMeta)}>
-          <span {...stylex.props(commentStyles.authorName)}>{name}</span>
-          {handle ? (
-            <span {...stylex.props(commentStyles.authorHandle)}>{handle}</span>
-          ) : null}
-        </div>
+        <AuthorProfileLink
+          authorRef={comment.author.did}
+          linkStyle={commentStyles.authorLink}
+        >
+          <Avatar
+            size="md"
+            src={comment.author.avatarUrl ?? undefined}
+            fallback={initials(name)}
+            alt={name}
+          />
+          <div {...stylex.props(commentStyles.authorMeta)}>
+            <span {...stylex.props(commentStyles.authorName)}>{name}</span>
+            {handle ? (
+              <span {...stylex.props(commentStyles.authorHandle)}>
+                {handle}
+              </span>
+            ) : null}
+          </div>
+        </AuthorProfileLink>
         <time
           dateTime={comment.indexedAt}
           {...stylex.props(commentStyles.timestamp)}
@@ -212,23 +214,30 @@ export function CommentCard({ comment }: { comment: DocumentComment }) {
         </time>
       </div>
 
-      {comment.kind === "quote" && comment.quote ? (
-        <blockquote {...stylex.props(commentStyles.blockquote)}>
-          {comment.quote}
-        </blockquote>
-      ) : null}
+      <a
+        href={comment.postUrl}
+        target="_blank"
+        rel="noreferrer"
+        {...stylex.props(commentStyles.cardBodyLink)}
+      >
+        {comment.kind === "quote" && comment.quote ? (
+          <blockquote {...stylex.props(commentStyles.blockquote)}>
+            {comment.quote}
+          </blockquote>
+        ) : null}
 
-      <CommentFacetedText
-        text={comment.commentary}
-        facets={comment.commentaryFacets}
-      />
+        <CommentFacetedText
+          text={comment.commentary}
+          facets={comment.commentaryFacets}
+        />
 
-      <Flex align="center" gap="sm" style={commentStyles.footer}>
-        <MessageCircle size={16} aria-hidden />
-        <span>
-          {replyLabel} {replyContext}
-        </span>
-      </Flex>
-    </a>
+        <Flex align="center" gap="sm" style={commentStyles.footer}>
+          <MessageCircle size={16} aria-hidden />
+          <span>
+            {replyLabel} {replyContext}
+          </span>
+        </Flex>
+      </a>
+    </div>
   );
 }
