@@ -188,7 +188,9 @@ Sections, top to bottom:
   with Bluesky public API + DID-doc fallbacks when fields are missing.
 - Header: avatar, display name, `@handle`, linkified bio (URLs + `@handles`,
   preserved newlines), aggregate stats (publications, posts, readers, following,
-  likes), Share, and "View on Bluesky" when a handle is known.
+  likes), a **Resume** chip (links to sifa.id, loaded after paint) when the author
+  has an `id.sifa.profile.self` record on their PDS, Share, and "View on Bluesky"
+  when a handle is known.
 - **All publications** directory (sorted by recent activity); infinite scroll.
 - **Subscriptions** — publications they follow (`site.standard.graph.subscription`).
 - **Liked articles** — their network likes (`site.standard.graph.recommend`).

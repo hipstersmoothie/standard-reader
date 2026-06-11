@@ -3,6 +3,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { fetchBlueskyPublicProfileFields } from "#/lib/bluesky-public-profile";
 import { resolveIdentity } from "#/server/atproto/identity";
 import { resolveAuthorDid } from "#/server/atproto/resolve-author-ref";
+import { resolveSifaProfileUrl } from "#/server/atproto/sifa-profile";
 import { observe } from "#/server/observability/log";
 import {
   authorProfileStats,
@@ -51,6 +52,11 @@ const authorActivityInput = z.object({
   did: z.string().min(1),
   limit: z.number().int().min(1).max(30).default(AUTHOR_ACTIVITY_PAGE_SIZE),
   offset: z.number().int().min(0).default(0),
+});
+
+const authorSifaInput = z.object({
+  did: z.string().min(1),
+  handle: z.string().nullable().optional(),
 });
 
 export interface AuthorProfile {
@@ -229,6 +235,24 @@ const getAuthorProfile = createServerFn({ method: "GET" })
     ),
   );
 
+const getAuthorSifaProfile = createServerFn({ method: "GET" })
+  .middleware([dbMiddleware])
+  .inputValidator(authorSifaInput)
+  .handler(
+    observe(
+      "author.getSifaProfile",
+      async ({ data, context }, span): Promise<string | null> => {
+        const { db, schema } = context;
+        const did = await resolveAuthorDid(db, schema, data.did);
+        span.set("did", did);
+
+        const url = await resolveSifaProfileUrl(did, data.handle ?? null);
+        span.set("found", url != null);
+        return url;
+      },
+    ),
+  );
+
 const getAuthorPublications = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
   .inputValidator(authorPublicationsInput)
@@ -328,6 +352,14 @@ function getAuthorProfileQueryOptions(
   });
 }
 
+function getAuthorSifaProfileQueryOptions(did: string, handle: string | null) {
+  return queryOptions({
+    queryKey: ["author", "sifa", did, handle] as const,
+    queryFn: async () => getAuthorSifaProfile({ data: { did, handle } }),
+    staleTime: 300_000,
+  });
+}
+
 function getAuthorSubscriptionsQueryOptions(
   did: string,
   {
@@ -359,6 +391,8 @@ function getAuthorRecommendationsQueryOptions(
 export const authorApi = {
   getAuthorProfile,
   getAuthorProfileQueryOptions,
+  getAuthorSifaProfile,
+  getAuthorSifaProfileQueryOptions,
   getAuthorPublications,
   getAuthorSubscriptions,
   getAuthorSubscriptionsQueryOptions,

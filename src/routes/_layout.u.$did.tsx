@@ -5,7 +5,7 @@ import type {
 import type { RefObject } from "react";
 
 import * as stylex from "@stylexjs/stylex";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { formatReaders, initials } from "#/components/reader/format";
 import {
@@ -25,6 +25,7 @@ import {
   ReaderContent,
   SectionHead,
 } from "../components/reader/primitives";
+import { SifaResumeChip } from "../components/reader/sifa-resume-chip";
 import { ShareMenu } from "../components/reader/share-menu";
 import { Avatar } from "../design-system/avatar";
 import { IconButton } from "../design-system/icon-button";
@@ -49,6 +50,14 @@ export const Route = createFileRoute("/_layout/u/$did")({
       }),
     );
     const profile = page?.profile;
+    if (page) {
+      void context.queryClient.prefetchQuery(
+        authorApi.getAuthorSifaProfileQueryOptions(
+          params.did,
+          profile?.handle ?? null,
+        ),
+      );
+    }
     const displayName =
       profile?.displayName?.trim() ||
       (profile?.handle ? `@${profile.handle}` : null);
@@ -287,6 +296,20 @@ function LoadMoreFooter({
   );
 }
 
+function AuthorSifaResumeChip({
+  did,
+  handle,
+}: {
+  did: string;
+  handle: string | null;
+}) {
+  const { data: sifaProfileUrl } = useQuery(
+    authorApi.getAuthorSifaProfileQueryOptions(did, handle),
+  );
+  if (!sifaProfileUrl) return null;
+  return <SifaResumeChip href={sifaProfileUrl} />;
+}
+
 function AuthorProfilePage() {
   const { did } = Route.useParams();
   const { data: initialPage } = useSuspenseQuery(
@@ -457,6 +480,7 @@ function AuthorProfilePage() {
                   label={stats.recommendationCount === 1 ? "like" : "likes"}
                 />
               ) : null}
+              <AuthorSifaResumeChip did={did} handle={profile.handle} />
             </div>
           </div>
 
