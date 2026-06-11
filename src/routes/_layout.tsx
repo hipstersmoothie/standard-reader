@@ -6,29 +6,20 @@ import { ReaderContent } from "../components/reader/primitives";
 import { Flex } from "../design-system/flex";
 import { Skeleton } from "../design-system/skeleton";
 import { spacing } from "../design-system/theme/spacing.stylex";
-import { feedApi } from "../integrations/tanstack-query/api-feed.functions";
-import { listApi } from "../integrations/tanstack-query/api-lists.functions";
 import { user } from "../integrations/tanstack-query/api-user.functions";
+import {
+  LAYOUT_ROUTE_STALE_TIME_MS,
+  loadShellQueries,
+} from "../integrations/tanstack-query/shell-queries";
 
 export const Route = createFileRoute("/_layout")({
+  staleTime: LAYOUT_ROUTE_STALE_TIME_MS,
   loader: async ({ context }) => {
     const session = context.queryClient.getQueryData(
       user.getSessionQueryOptions.queryKey,
     );
     const signedIn = Boolean(session?.user);
-
-    if (signedIn) {
-      await Promise.all([
-        context.queryClient.ensureQueryData(feedApi.getSidebarQueryOptions()),
-        context.queryClient.ensureQueryData(listApi.getListsQueryOptions()),
-        context.queryClient.ensureQueryData(
-          listApi.getSavedListsQueryOptions(),
-        ),
-      ]);
-      return;
-    }
-
-    void context.queryClient.prefetchQuery(feedApi.getSidebarQueryOptions());
+    await loadShellQueries(context.queryClient, signedIn);
   },
   component: LayoutRoute,
 });

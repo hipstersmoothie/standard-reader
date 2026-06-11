@@ -378,6 +378,9 @@ Standard Reader is a **port of an earlier no-build prototype** into this TanStac
 - **Styling:** StyleX (`@stylexjs/stylex`) with design-system tokens; no Tailwind.
 - **Data:** Neon Postgres + Drizzle (`src/db/`), fed by a tap instance; access via server functions.
 - **Auth:** AT Proto / Bluesky OAuth.
+- **Observability:** Server functions emit `observe()` events to Honeycomb; client route transitions
+  emit `nav.transition` via `telemetryApi.recordClientEvent`. Shell/sidebar queries use a 5-minute
+  stale window and block child navigations only on a cold cache.
 
 ### Origin prototype (being ported)
 

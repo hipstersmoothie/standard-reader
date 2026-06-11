@@ -74,24 +74,31 @@ export const Route = createFileRoute("/_layout/a/$did/$rkey")({
         throw redirect({ href: externalUrl });
       }
     }
-    if (article) {
-      await context.queryClient.ensureQueryData(
-        readerApi.getRecommendStatusQueryOptions(uri),
-      );
-      await context.queryClient.ensureQueryData(
-        readerApi.getBookmarkStatusQueryOptions(uri),
-      );
-      if (article.publicationUri) {
-        await context.queryClient.ensureQueryData(
-          readerApi.getFollowStatusQueryOptions(article.publicationUri),
-        );
-      }
-    }
-    await context.queryClient.ensureQueryData(user.getSessionQueryOptions);
+    let sharedQuote: string | null = null;
 
-    const sharedQuote = article
-      ? await resolveSharedQuote(article.uri, deps.q)
-      : null;
+    if (article) {
+      const results = await Promise.all([
+        context.queryClient.ensureQueryData(user.getSessionQueryOptions),
+        context.queryClient.ensureQueryData(
+          readerApi.getRecommendStatusQueryOptions(uri),
+        ),
+        context.queryClient.ensureQueryData(
+          readerApi.getBookmarkStatusQueryOptions(uri),
+        ),
+        article.publicationUri
+          ? context.queryClient.ensureQueryData(
+              readerApi.getFollowStatusQueryOptions(article.publicationUri),
+            )
+          : Promise.resolve(),
+        deps.q
+          ? resolveSharedQuote(article.uri, deps.q)
+          : Promise.resolve(null),
+      ]);
+      const quote = results[4];
+      sharedQuote = typeof quote === "string" ? quote : null;
+    } else {
+      await context.queryClient.ensureQueryData(user.getSessionQueryOptions);
+    }
 
     return { article, sharedQuote };
   },

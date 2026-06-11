@@ -38,6 +38,10 @@ Check items off as they land.
       when `HONEYCOMB_API_KEY` is set (`src/server/observability/honeycomb.ts`). Set
       `HONEYCOMB_DATASET=standard-reader` on Railway `web` + `ingest` services; dashboards track
       error rate, slow endpoints, and ingest health.
+- [x] **Nav perf (Honeycomb audit).** Conditional shell prefetch (`loadShellQueries` — block only
+      on cold cache), 5m `staleTime` on sidebar/lists, `_layout` route `staleTime`, combined
+      `tag.getPage` loader (one round trip), parallel article status fetches, deferred comments
+      (`useQuery` below fold), subscription skeleton in AppShell, client `nav.transition` telemetry.
 
 ## 1. Data ingestion — tap → Neon
 

@@ -3,9 +3,12 @@
 import * as stylex from "@stylexjs/stylex";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useRouter, useRouterState } from "@tanstack/react-router";
-import { feedApi } from "#/integrations/tanstack-query/api-feed.functions";
-import { listApi } from "#/integrations/tanstack-query/api-lists.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
+import {
+  listsQueryOptions,
+  savedListsQueryOptions,
+  sidebarQueryOptions,
+} from "#/integrations/tanstack-query/shell-queries";
 import { parseInternalRoute } from "#/lib/internal-route";
 import { PageReaderProvider } from "#/lib/page-reader/page-reader-provider";
 import {
@@ -38,7 +41,7 @@ import {
 } from "../../design-system/disclosure";
 import { Flex } from "../../design-system/flex";
 import { IconButton } from "../../design-system/icon-button";
-import { ToastRegion } from "../../design-system/toast";
+import { Skeleton } from "../../design-system/skeleton";
 import { animationDuration } from "../../design-system/theme/animations.stylex";
 import { primaryColor, uiColor } from "../../design-system/theme/color.stylex";
 import { radius } from "../../design-system/theme/radius.stylex";
@@ -56,6 +59,7 @@ import {
   lineHeight,
   tracking,
 } from "../../design-system/theme/typography.stylex";
+import { ToastRegion } from "../../design-system/toast";
 import { NavbarAuth } from "../NavbarAuth";
 import { SiteFooter } from "../site-footer";
 import { AddPublicationModal } from "./add-publication-modal";
@@ -311,6 +315,14 @@ const styles = stylex.create({
     fontFamily: fontFamily.serif,
     fontSize: fontSize.sm,
     fontStyle: "italic",
+    paddingLeft: horizontalSpace.lg,
+    paddingRight: horizontalSpace.lg,
+  },
+  subscriptionsLoading: {
+    gap: gap.sm,
+    display: "flex",
+    flexDirection: "column",
+    minHeight: spacing["24"],
     paddingLeft: horizontalSpace.lg,
     paddingRight: horizontalSpace.lg,
   },
@@ -878,12 +890,28 @@ function MobileStaticPageBar({ title }: { title: string }) {
   );
 }
 
+function SubscriptionsSkeleton() {
+  return (
+    <div
+      {...stylex.props(styles.subscriptionsLoading)}
+      aria-busy="true"
+      aria-label="Loading subscriptions"
+    >
+      <Skeleton variant="rectangle" height={spacing["8"]} width="88%" />
+      <Skeleton variant="rectangle" height={spacing["8"]} width="72%" />
+      <Skeleton variant="rectangle" height={spacing["8"]} width="80%" />
+    </div>
+  );
+}
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const onAbout = pathname === "/about";
   const onPrivacy = pathname === "/privacy";
   const staticPageTitle = onAbout ? "About" : onPrivacy ? "Privacy" : null;
-  const { data: sidebar } = useQuery(feedApi.getSidebarQueryOptions());
+  const { data: sidebar, isPending: sidebarPending } = useQuery(
+    sidebarQueryOptions(),
+  );
   const { data: session } = useQuery(user.getSessionQueryOptions);
   const signedIn = Boolean(session?.user);
   const following = sidebar?.following ?? [];
@@ -895,16 +923,24 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [subsSheetOpen, setSubsSheetOpen] = useState(false);
   const [addModalOpen, setAddModalOpen] = useState(false);
 
-  const { data: listsData } = useQuery({
-    ...listApi.getListsQueryOptions(),
+  const { data: listsData, isPending: listsPending } = useQuery({
+    ...listsQueryOptions(),
     enabled: signedIn,
   });
   const lists = listsData ?? [];
-  const { data: savedListsData } = useQuery({
-    ...listApi.getSavedListsQueryOptions(),
+  const { data: savedListsData, isPending: savedListsPending } = useQuery({
+    ...savedListsQueryOptions(),
     enabled: signedIn,
   });
   const savedLists = savedListsData ?? [];
+  const shellSubscriptionsLoading =
+    signedIn &&
+    (sidebarPending ||
+      listsPending ||
+      savedListsPending ||
+      sidebar === undefined ||
+      listsData === undefined ||
+      savedListsData === undefined);
   const followingByUri = new Map(following.map((pub) => [pub.uri, pub]));
   // Own + saved lists as render-ready groups (shared by sidebar and sheet).
   const listGroups: Array<SubscriptionListGroup> = [
@@ -989,7 +1025,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </div>
           </Flex>
           <div {...stylex.props(styles.followList)}>
-            {following.length === 0 && !hasListGroups ? (
+            {shellSubscriptionsLoading ? (
+              <SubscriptionsSkeleton />
+            ) : following.length === 0 && !hasListGroups ? (
               <span {...stylex.props(styles.emptyNote)}>
                 {signedIn ? "Nothing yet — go discover." : "Sign in to follow."}
               </span>

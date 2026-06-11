@@ -427,6 +427,7 @@ function getListsQueryOptions() {
   return queryOptions({
     queryKey: ["reader", "lists"] as const,
     queryFn: async () => getLists(),
+    staleTime: 5 * 60_000,
   });
 }
 
@@ -434,6 +435,7 @@ function getSavedListsQueryOptions() {
   return queryOptions({
     queryKey: ["reader", "savedLists"] as const,
     queryFn: async () => getSavedLists(),
+    staleTime: 5 * 60_000,
   });
 }
 

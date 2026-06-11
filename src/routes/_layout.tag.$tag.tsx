@@ -86,43 +86,26 @@ type TagView = TagSearch["view"];
 
 export const Route = createFileRoute("/_layout/tag/$tag")({
   validateSearch: tagSearchSchema,
+  staleTime: 60_000,
   loaderDeps: ({ search }) => ({ view: search.view, sort: search.sort }),
   loader: async ({ context, params, deps }) => {
     const tag = decodeURIComponent(params.tag);
-    const countPrefetches = [
-      context.queryClient.ensureQueryData(
-        tagApi.getArticleCountQueryOptions({ tag }),
-      ),
-      context.queryClient.ensureQueryData(
-        tagApi.getPublicationCountQueryOptions({ tag }),
-      ),
-    ];
-
-    if (deps.view === "feed") {
-      await Promise.all([
-        ...countPrefetches,
-        context.queryClient.ensureQueryData(
-          tagApi.getArticlesQueryOptions({
-            tag,
-            limit: PAGE_SIZE,
-            offset: 0,
-          }),
-        ),
-      ]);
-      return;
-    }
-
-    await Promise.all([
-      ...countPrefetches,
-      context.queryClient.ensureQueryData(
-        tagApi.getPublicationsQueryOptions({
-          tag,
-          sort: deps.sort,
-          limit: PAGE_SIZE,
-          offset: 0,
-        }),
-      ),
-    ]);
+    const page = await tagApi.getTagPage({
+      data: {
+        tag,
+        view: deps.view,
+        sort: deps.sort,
+        limit: PAGE_SIZE,
+        offset: 0,
+      },
+    });
+    tagApi.seedTagPageCaches(context.queryClient, page, {
+      tag,
+      view: deps.view,
+      sort: deps.sort,
+      limit: PAGE_SIZE,
+      offset: 0,
+    });
   },
   head: ({ params }) => {
     const tag = decodeURIComponent(params.tag);

@@ -12,6 +12,7 @@ import {
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { useLayoutEffect } from "react";
 
+import { NavTelemetry } from "../components/nav-telemetry";
 import {
   editorialFonts,
   editorialPrimary,
@@ -196,6 +197,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         )}
       >
         <PersistOAuthSavedHandle />
+        <NavTelemetry />
         <PlausibleAnalytics />
         {children}
 
