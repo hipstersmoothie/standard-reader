@@ -12,17 +12,16 @@ import {
   verticalSpace,
 } from "#/design-system/theme/semantic-spacing.stylex";
 import { shadow } from "#/design-system/theme/shadow.stylex";
+import { toasts } from "#/design-system/toast";
 import { Toolbar, ToolbarGroup } from "#/design-system/toolbar";
 import { quoteShareApi } from "#/integrations/tanstack-query/api-quote-share.functions";
 import { usePageReader } from "#/lib/page-reader/page-reader-context";
-import {
-  buildBlueskyComposeUrl,
-  buildQuoteShareUrl,
-  normalizeQuoteText,
-} from "#/lib/quote-share";
-import { Play, Quote } from "lucide-react";
+import { buildQuoteShareUrl, normalizeQuoteText } from "#/lib/quote-share";
+import { Link as LinkIcon, Play, Share2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+
+import { LinkShareMenu } from "./link-share-menu";
 
 const MIN_SELECTION_LENGTH = 3;
 const SYNC_SELECTION_DELAY_MS = 0;
@@ -37,7 +36,7 @@ const styles = stylex.create({
   },
   shell: {
     borderColor: uiColor.border2,
-    borderRadius: radius.lg,
+    borderRadius: radius.sm,
     borderStyle: "solid",
     borderWidth: 1,
     backgroundColor: uiColor.bg,
@@ -106,11 +105,13 @@ export function TextSelectionToolbar({
 }) {
   const anchorRef = useRef<HTMLDivElement>(null);
   const pinnedRef = useRef(false);
+  const isSelectingRef = useRef(false);
   const syncTimerRef = useRef<ReturnType<typeof globalThis.setTimeout> | null>(
     null,
   );
   const [toolbar, setToolbar] = useState<ToolbarState | null>(null);
-  const [composeHref, setComposeHref] = useState<string | null>(null);
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [shareMenuOpen, setShareMenuOpen] = useState(false);
   const { playFromSelection } = usePageReader();
 
   const hideToolbar = useCallback(() => {
@@ -161,7 +162,8 @@ export function TextSelectionToolbar({
 
   useEffect(() => {
     if (!toolbar) {
-      setComposeHref(null);
+      setShareUrl(null);
+      setShareMenuOpen(false);
       return;
     }
 
@@ -170,12 +172,10 @@ export function TextSelectionToolbar({
       .createQuoteShare({ data: { documentUri, quote: toolbar.text } })
       .then(({ id }) => {
         if (cancelled) return;
-        const shareUrl = buildQuoteShareUrl(did, rkey, id);
-        // Prefill only the app link so Bluesky picks up our OG card; no quote in the body.
-        setComposeHref(buildBlueskyComposeUrl(shareUrl));
+        setShareUrl(buildQuoteShareUrl(did, rkey, id));
       })
       .catch(() => {
-        if (!cancelled) setComposeHref(null);
+        if (!cancelled) setShareUrl(null);
       });
 
     return () => {
@@ -187,27 +187,40 @@ export function TextSelectionToolbar({
     const root = rootRef.current;
     if (!root) return;
 
+    const onPointerDown = (event: Event) => {
+      if (eventTargetsToolbar(event, anchorRef.current)) return;
+      isSelectingRef.current = true;
+      hideToolbar();
+    };
+
     const onPointerUp = (event: Event) => {
+      if (!isSelectingRef.current) return;
+      isSelectingRef.current = false;
       if (eventTargetsToolbar(event, anchorRef.current)) return;
       scheduleSyncToolbarToSelection();
     };
 
     const onSelectionChange = () => {
+      if (isSelectingRef.current) {
+        hideToolbar();
+        return;
+      }
       scheduleSyncToolbarToSelection();
     };
 
     const onScroll = () => {
-      const selection = globalThis.getSelection();
-      if (selection && selectionWithinRoot(selection, root)) return;
+      if (isSelectingRef.current) return;
       hideToolbar();
+      globalThis.getSelection()?.removeAllRanges();
     };
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") hideToolbar();
     };
 
-    root.addEventListener("pointerup", onPointerUp);
-    root.addEventListener("mouseup", onPointerUp);
+    root.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("pointerup", onPointerUp);
+    document.addEventListener("mouseup", onPointerUp);
     document.addEventListener("selectionchange", onSelectionChange);
     document.addEventListener("scroll", onScroll, {
       passive: true,
@@ -216,8 +229,9 @@ export function TextSelectionToolbar({
     document.addEventListener("keydown", onKeyDown);
 
     return () => {
-      root.removeEventListener("pointerup", onPointerUp);
-      root.removeEventListener("mouseup", onPointerUp);
+      root.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("pointerup", onPointerUp);
+      document.removeEventListener("mouseup", onPointerUp);
       document.removeEventListener("selectionchange", onSelectionChange);
       document.removeEventListener("scroll", onScroll, { capture: true });
       document.removeEventListener("keydown", onKeyDown);
@@ -233,6 +247,7 @@ export function TextSelectionToolbar({
 
     const onPointerDown = (event: PointerEvent) => {
       if (!pinnedRef.current) return;
+      if (shareMenuOpen) return;
       if (eventTargetsToolbar(event, anchorRef.current)) return;
       hideToolbar();
     };
@@ -241,14 +256,27 @@ export function TextSelectionToolbar({
     return () => {
       document.removeEventListener("pointerdown", onPointerDown);
     };
-  }, [hideToolbar, toolbar]);
+  }, [hideToolbar, shareMenuOpen, toolbar]);
 
-  const onSharePress = useCallback(() => {
-    if (!composeHref) return;
-    globalThis.open(composeHref, "_blank", "noopener,noreferrer");
+  const onCopyLinkPress = useCallback(() => {
+    if (!shareUrl) return;
+    void navigator.clipboard.writeText(shareUrl).then(() => {
+      toasts.add(
+        {
+          title: "Link copied",
+          variant: "success",
+        },
+        {
+          timeout: 2000,
+        },
+      );
+    });
+  }, [shareUrl]);
+
+  const dismissAfterShare = useCallback(() => {
     hideToolbar();
     globalThis.getSelection()?.removeAllRanges();
-  }, [composeHref, hideToolbar]);
+  }, [hideToolbar]);
 
   const onPlayPress = useCallback(() => {
     if (!toolbar) return;
@@ -273,7 +301,7 @@ export function TextSelectionToolbar({
           <IconButton
             variant="tertiary"
             size="lg"
-            aria-label="Read from here"
+            label="Read from here"
             onPress={onPlayPress}
           >
             <Play size={18} />
@@ -283,12 +311,28 @@ export function TextSelectionToolbar({
           <IconButton
             variant="tertiary"
             size="lg"
-            aria-label="Share on Bluesky"
-            isDisabled={!composeHref}
-            onPress={onSharePress}
+            label="Copy link"
+            isDisabled={!shareUrl}
+            onPress={onCopyLinkPress}
           >
-            <Quote size={18} />
+            <LinkIcon size={18} />
           </IconButton>
+          <LinkShareMenu
+            getLinkUrl={() => shareUrl}
+            isOpen={shareMenuOpen}
+            onOpenChange={setShareMenuOpen}
+            onShare={dismissAfterShare}
+            trigger={
+              <IconButton
+                variant="tertiary"
+                size="lg"
+                label="Share"
+                isDisabled={!shareUrl}
+              >
+                <Share2 size={18} />
+              </IconButton>
+            }
+          />
         </ToolbarGroup>
       </Toolbar>
     </div>,

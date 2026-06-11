@@ -38,6 +38,7 @@ import {
 } from "../../design-system/disclosure";
 import { Flex } from "../../design-system/flex";
 import { IconButton } from "../../design-system/icon-button";
+import { ToastRegion } from "../../design-system/toast";
 import { animationDuration } from "../../design-system/theme/animations.stylex";
 import { primaryColor, uiColor } from "../../design-system/theme/color.stylex";
 import { radius } from "../../design-system/theme/radius.stylex";
@@ -1097,6 +1098,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           list={null}
           following={following}
         />
+        <ToastRegion />
       </div>
     </PageReaderProvider>
   );

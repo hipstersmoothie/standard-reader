@@ -34,6 +34,7 @@ import {
   tracking,
 } from "#/design-system/theme/typography.stylex";
 import { SmallBody } from "#/design-system/typography";
+import { shareLinkUrl, useNativeShareAvailable } from "#/lib/native-share";
 import { getPublicUrlClient } from "#/lib/public-url";
 import {
   buildSubscribeAnchorSnippet,
@@ -126,6 +127,7 @@ export function ShareMenu({
   const [copied, setCopied] = useState<"link" | "embed" | "anchor" | null>(
     null,
   );
+  const nativeShareAvailable = useNativeShareAvailable();
 
   const baseUrl = getPublicUrlClient();
 
@@ -215,6 +217,15 @@ export function ShareMenu({
         <MenuItem onPress={onShareBluesky} suffix={<Share2 size={14} />}>
           Share on Bluesky
         </MenuItem>
+        {nativeShareAvailable ? (
+          <MenuItem
+            onPress={() => {
+              void shareLinkUrl(pageUrl);
+            }}
+          >
+            Share elsewhere
+          </MenuItem>
+        ) : null}
         {embed ? (
           <MenuItem
             onPress={() => {

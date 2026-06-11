@@ -347,8 +347,6 @@ hand-tuned lists:
 - Recommendation / trending tuning and quality work.
 - Higher-quality full-text search.
 - Offline / save-for-later body cache (save queue via `app.standard-reader.bookmark` is shipped).
-- Notifications.
-- Multi-account.
 
 ### Non-goals (for now)
 
