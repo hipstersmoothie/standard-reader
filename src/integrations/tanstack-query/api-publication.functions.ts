@@ -38,7 +38,6 @@ import {
   selectArticleCards,
   selectPublicationArticleCards,
 } from "#/server/reader/queries";
-import { resolveTrackReadingHistoryEnabled } from "#/server/reader/track-reading-history";
 import { highlightLeafletCodeBlocks } from "#/server/shiki/highlighter";
 import { themeModeForRequest } from "#/server/theme-preference";
 import { and, eq, sql } from "drizzle-orm";
@@ -222,16 +221,13 @@ const getPublicationProfile = createServerFn({ method: "GET" })
     observe(
       "publication.getProfile",
       async ({ data, context }, span): Promise<PublicationProfile | null> => {
-        const { db, schema } = context;
+        const { db, schema, trackReadingEnabled } = context;
         const p = schema.publications;
         const st = schema.publicationStats;
         const pr = schema.profiles;
         span.set("publicationUri", data.publicationUri);
         const did = await attachReaderSpanContext(span, getRequest());
-        const trackReading =
-          did == null
-            ? false
-            : await resolveTrackReadingHistoryEnabled(db, schema);
+        const trackReading = did == null ? false : trackReadingEnabled;
         const readForDid = trackReading && did ? did : undefined;
 
         const [headerRow, recentDocuments] = await Promise.all([
@@ -295,14 +291,11 @@ const getPublicationDocuments = createServerFn({ method: "GET" })
     observe(
       "publication.getDocuments",
       async ({ data, context }, span): Promise<PublicationDocumentsPage> => {
-        const { db, schema } = context;
+        const { db, schema, trackReadingEnabled } = context;
         span.set("publicationUri", data.publicationUri);
         span.set("offset", data.offset);
         const did = await attachReaderSpanContext(span, getRequest());
-        const trackReading =
-          did == null
-            ? false
-            : await resolveTrackReadingHistoryEnabled(db, schema);
+        const trackReading = did == null ? false : trackReadingEnabled;
         const readForDid = trackReading && did ? did : undefined;
 
         const documents = await selectPublicationArticleCards(db, schema, {

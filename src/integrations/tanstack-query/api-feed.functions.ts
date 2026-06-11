@@ -6,7 +6,10 @@ import {
   dbValueToHomeScope,
   parseHomeScope,
 } from "#/lib/home-scope";
-import { dbValueToTrackReadingHistory } from "#/lib/track-reading-history";
+import {
+  articleCardsAsAllRead,
+  dbValueToTrackReadingHistory,
+} from "#/lib/track-reading-history";
 import { getAtprotoSessionForRequest } from "#/middleware/auth-session.server";
 import { observe } from "#/server/observability/log";
 import type { Span } from "#/server/observability/log";
@@ -24,10 +27,6 @@ import {
 } from "#/server/reader/queries";
 import { effectiveFollowUris } from "#/server/reader/saved-lists";
 import { loadSidebarData } from "#/server/reader/shell-snapshot.server";
-import {
-  articleCardsAsAllRead,
-  resolveTrackReadingHistoryEnabled,
-} from "#/server/reader/track-reading-history";
 import { z } from "zod";
 
 import type { ArticleCard, Db, PublicationCard, Schema } from "./api-shapes";
@@ -157,27 +156,23 @@ export interface SidebarData {
   savedCount: number | null;
 }
 
-const getSidebar = createServerFn({ method: "GET" }).handler(
-  observe("feed.getSidebar", async (_, span) => {
-    const did = await attachReaderSpanContext(span, getRequest());
+const getSidebar = createServerFn({ method: "GET" })
+  .middleware([dbMiddleware])
+  .handler(
+    observe("feed.getSidebar", async ({ context }, span) => {
+      const { db, schema, trackReadingEnabled } = context;
+      const did = await attachReaderSpanContext(span, getRequest());
 
-    const [{ db }, schema] = await Promise.all([
-      import("#/db/index.server"),
-      import("#/db/schema"),
-    ]);
+      const trackReading = did ? trackReadingEnabled : false;
+      if (did) {
+        span.set("did", did);
+        const followUris = await effectiveFollowUris(db, schema, did);
+        span.set("follows", followUris.length);
+      }
 
-    const trackReading = did
-      ? await resolveTrackReadingHistoryEnabled(db, schema)
-      : false;
-    if (did) {
-      span.set("did", did);
-      const followUris = await effectiveFollowUris(db, schema, did);
-      span.set("follows", followUris.length);
-    }
-
-    return loadSidebarData(db, schema, did, trackReading);
-  }),
-);
+      return loadSidebarData(db, schema, did, trackReading);
+    }),
+  );
 
 async function resolveHomeFeedContext(
   db: Db,
@@ -185,19 +180,15 @@ async function resolveHomeFeedContext(
   did: string | null | undefined,
   scope: HomeScope,
   span: Span,
-  { trackReading: trackReadingOverride }: { trackReading?: boolean } = {},
+  {
+    trackReading: trackReadingOverride,
+    trackReadingEnabled,
+  }: { trackReading?: boolean; trackReadingEnabled?: boolean } = {},
 ) {
-  const trackReadingPromise =
-    trackReadingOverride !== undefined
-      ? Promise.resolve(trackReadingOverride)
-      : did
-        ? resolveTrackReadingHistoryEnabled(db, schema)
-        : Promise.resolve(false);
+  const trackReading =
+    trackReadingOverride ?? (did ? (trackReadingEnabled ?? false) : false);
 
-  const [followUris, trackReading] = await Promise.all([
-    did ? effectiveFollowUris(db, schema, did) : Promise.resolve([]),
-    trackReadingPromise,
-  ]);
+  const followUris = did ? await effectiveFollowUris(db, schema, did) : [];
   const hasFollows = followUris.length > 0;
   const personalized = hasFollows && scope === "follows";
   span.set("follows", followUris.length);
@@ -327,7 +318,7 @@ async function loadHomeFeedCritical(
   did: string | null | undefined,
   scope: HomeScope,
   span: Span,
-  options: { trackReading?: boolean } = {},
+  options: { trackReading?: boolean; trackReadingEnabled?: boolean } = {},
 ): Promise<HomeFeed> {
   const ctx = await resolveHomeFeedContext(
     db,
@@ -347,7 +338,7 @@ async function loadHomeFeedExtras(
   scope: HomeScope,
   excludeUris: ReadonlyArray<string>,
   span: Span,
-  options: { trackReading?: boolean } = {},
+  options: { trackReading?: boolean; trackReadingEnabled?: boolean } = {},
 ): Promise<HomeFeedExtras> {
   const ctx = await resolveHomeFeedContext(
     db,
@@ -375,7 +366,7 @@ async function loadHomePagePayload(
   did: string | null | undefined,
   scope: HomeScope,
   span: Span,
-  options: { trackReading?: boolean } = {},
+  options: { trackReading?: boolean; trackReadingEnabled?: boolean } = {},
 ): Promise<{ feed: HomeFeed; extras: HomeFeedExtras }> {
   const ctx = await resolveHomeFeedContext(
     db,
@@ -412,9 +403,11 @@ const getHomeFeed = createServerFn({ method: "GET" })
   .inputValidator(homeInput)
   .handler(
     observe("feed.getHomeFeed", async ({ data, context }, span) => {
-      const { db, schema } = context;
+      const { db, schema, trackReadingEnabled } = context;
       const did = await attachReaderSpanContext(span, getRequest());
-      return loadHomeFeedCritical(db, schema, did, data.scope, span);
+      return loadHomeFeedCritical(db, schema, did, data.scope, span, {
+        trackReadingEnabled,
+      });
     }),
   );
 
@@ -464,7 +457,7 @@ const getHomeExtras = createServerFn({ method: "GET" })
   .inputValidator(homeExtrasInput)
   .handler(
     observe("feed.getHomeExtras", async ({ data, context }, span) => {
-      const { db, schema } = context;
+      const { db, schema, trackReadingEnabled } = context;
       const did = await attachReaderSpanContext(span, getRequest());
 
       return loadHomeFeedExtras(
@@ -474,6 +467,7 @@ const getHomeExtras = createServerFn({ method: "GET" })
         data.scope,
         data.excludeUris,
         span,
+        { trackReadingEnabled },
       );
     }),
   );
@@ -484,14 +478,14 @@ async function loadLatestFeedCritical(
   did: string | null | undefined,
   data: z.infer<typeof latestInput>,
   span: Span,
+  trackReadingEnabled: boolean,
 ): Promise<LatestFeed> {
   span.set("filter", data.filter);
   span.set("offset", data.offset);
 
   const followUris = did ? await effectiveFollowUris(db, schema, did) : [];
   span.set("follows", followUris.length);
-  const trackReading =
-    did == null ? false : await resolveTrackReadingHistoryEnabled(db, schema);
+  const trackReading = did == null ? false : trackReadingEnabled;
 
   const trendingLimit =
     data.filter === "trending"
@@ -544,11 +538,11 @@ async function loadLatestFeedCounts(
   schema: Schema,
   did: string | null | undefined,
   span: Span,
+  trackReadingEnabled: boolean,
 ): Promise<LatestFeedCounts> {
   const followUris = did ? await effectiveFollowUris(db, schema, did) : [];
   span.set("follows", followUris.length);
-  const trackReading =
-    did == null ? false : await resolveTrackReadingHistoryEnabled(db, schema);
+  const trackReading = did == null ? false : trackReadingEnabled;
 
   const [followCounts, networkCount, trendingCount] = await Promise.all([
     did
@@ -571,9 +565,16 @@ const getLatestFeed = createServerFn({ method: "GET" })
   .inputValidator(latestInput)
   .handler(
     observe("feed.getLatestFeed", async ({ data, context }, span) => {
-      const { db, schema } = context;
+      const { db, schema, trackReadingEnabled } = context;
       const did = await attachReaderSpanContext(span, getRequest());
-      return loadLatestFeedCritical(db, schema, did, data, span);
+      return loadLatestFeedCritical(
+        db,
+        schema,
+        did,
+        data,
+        span,
+        trackReadingEnabled,
+      );
     }),
   );
 
@@ -582,9 +583,9 @@ const getLatestFeedCounts = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
   .handler(
     observe("feed.getLatestFeedCounts", async ({ context }, span) => {
-      const { db, schema } = context;
+      const { db, schema, trackReadingEnabled } = context;
       const did = await attachReaderSpanContext(span, getRequest());
-      return loadLatestFeedCounts(db, schema, did, span);
+      return loadLatestFeedCounts(db, schema, did, span, trackReadingEnabled);
     }),
   );
 

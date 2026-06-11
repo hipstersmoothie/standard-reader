@@ -25,7 +25,6 @@ import { ensureTracked } from "#/server/ingest/tap-client";
 import { observe } from "#/server/observability/log";
 import { selectUnreadDocumentUris } from "#/server/reader/queries";
 import { effectiveFollowUris } from "#/server/reader/saved-lists";
-import { resolveTrackReadingHistoryEnabled } from "#/server/reader/track-reading-history";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { z } from "zod";
 
@@ -471,10 +470,7 @@ const getReadStatus = createServerFn({ method: "GET" })
       }
       span.set("did", session.did);
 
-      const trackReading = await resolveTrackReadingHistoryEnabled(
-        context.db,
-        context.schema,
-      );
+      const trackReading = context.trackReadingEnabled;
       if (!trackReading) {
         return { isRead: true } satisfies ReadStatus;
       }
@@ -509,10 +505,7 @@ const getReadDocuments = createServerFn({ method: "GET" })
       span.set("did", session.did);
       span.set("requested", data.documentUris.length);
 
-      const trackReading = await resolveTrackReadingHistoryEnabled(
-        context.db,
-        context.schema,
-      );
+      const trackReading = context.trackReadingEnabled;
       if (!trackReading) {
         return data.documentUris satisfies Array<string>;
       }
@@ -546,10 +539,7 @@ const markRead = createServerFn({ method: "POST" })
       }
       span.set("did", session.did);
 
-      const trackReading = await resolveTrackReadingHistoryEnabled(
-        context.db,
-        context.schema,
-      );
+      const trackReading = context.trackReadingEnabled;
       if (!trackReading) {
         return { ok: true as const };
       }
@@ -577,10 +567,7 @@ const markUnread = createServerFn({ method: "POST" })
       }
       span.set("did", session.did);
 
-      const trackReading = await resolveTrackReadingHistoryEnabled(
-        context.db,
-        context.schema,
-      );
+      const trackReading = context.trackReadingEnabled;
       if (!trackReading) {
         return { ok: true as const };
       }
@@ -878,10 +865,7 @@ const markPublicationAllRead = createServerFn({ method: "POST" })
         }
         span.set("did", session.did);
 
-        const trackReading = await resolveTrackReadingHistoryEnabled(
-          context.db,
-          context.schema,
-        );
+        const trackReading = context.trackReadingEnabled;
         const documentUris = trackReading
           ? await selectUnreadDocumentUris(context.db, context.schema, {
               readerDid: session.did,
@@ -904,10 +888,7 @@ const markFollowsAllUnreadRead = createServerFn({ method: "POST" })
       }
       span.set("did", session.did);
 
-      const trackReading = await resolveTrackReadingHistoryEnabled(
-        context.db,
-        context.schema,
-      );
+      const trackReading = context.trackReadingEnabled;
 
       // Effective follows: subscriptions plus saved-list publications.
       const followUris = await effectiveFollowUris(

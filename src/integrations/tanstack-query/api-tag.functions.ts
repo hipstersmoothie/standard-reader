@@ -23,7 +23,6 @@ import {
   selectTagPublicationUris,
   tagDirectoryPublications,
 } from "#/server/reader/queries";
-import { resolveTrackReadingHistoryEnabled } from "#/server/reader/track-reading-history";
 import { z } from "zod";
 
 import type { ArticleCard, PublicationCard } from "./api-shapes";
@@ -98,15 +97,12 @@ const getArticles = createServerFn({ method: "GET" })
   .inputValidator(articlesPageInput)
   .handler(
     observe("tag.getArticles", async ({ data, context }, span) => {
-      const { db, schema } = context;
+      const { db, schema, trackReadingEnabled } = context;
       const did = await attachReaderSpanContext(span, getRequest());
       span.set("tag", data.tag);
       span.set("offset", data.offset);
 
-      const trackReading =
-        did == null
-          ? false
-          : await resolveTrackReadingHistoryEnabled(db, schema);
+      const trackReading = did == null ? false : trackReadingEnabled;
 
       const rows = await selectArticleCards(db, schema, {
         tag: data.tag,
@@ -185,7 +181,7 @@ const getTagPage = createServerFn({ method: "GET" })
   .inputValidator(tagPageInput)
   .handler(
     observe("tag.getPage", async ({ data, context }, span) => {
-      const { db, schema } = context;
+      const { db, schema, trackReadingEnabled } = context;
       const did = await attachReaderSpanContext(span, getRequest());
       span.set("tag", data.tag);
       span.set("view", data.view);
@@ -194,10 +190,7 @@ const getTagPage = createServerFn({ method: "GET" })
         span.set("sort", data.sort);
       }
 
-      const trackReading =
-        did == null
-          ? false
-          : await resolveTrackReadingHistoryEnabled(db, schema);
+      const trackReading = did == null ? false : trackReadingEnabled;
 
       const [articleCount, publicationCount, content] = await Promise.all([
         countTagArticles(db, schema, data.tag),

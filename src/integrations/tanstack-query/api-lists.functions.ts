@@ -30,10 +30,7 @@ import {
   loadOwnSubscriptionLists,
   loadSavedListsHydrated,
 } from "#/server/reader/shell-snapshot.server";
-import {
-  articleCardsAsAllRead,
-  resolveTrackReadingHistoryEnabled,
-} from "#/server/reader/track-reading-history";
+import { articleCardsAsAllRead } from "#/lib/track-reading-history";
 import { inArray } from "drizzle-orm";
 import { z } from "zod";
 
@@ -322,11 +319,8 @@ const getListFeed = createServerFn({ method: "GET" })
       }
 
       const session = await getAtprotoSessionForRequest(getRequest());
-      const { db, schema } = context;
-      const trackReading =
-        session == null
-          ? false
-          : await resolveTrackReadingHistoryEnabled(db, schema);
+      const { db, schema, trackReadingEnabled } = context;
+      const trackReading = session == null ? false : trackReadingEnabled;
 
       const items = await selectArticleCards(db, schema, {
         publicationUris: list.publications,

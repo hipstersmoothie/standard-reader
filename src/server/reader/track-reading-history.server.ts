@@ -1,10 +1,5 @@
-import type {
-  ArticleCard,
-  Db,
-  Schema,
-} from "#/integrations/tanstack-query/api-shapes";
-
 import { getCookie, getRequest } from "@tanstack/react-start/server";
+import type { Db, Schema } from "#/integrations/tanstack-query/api-shapes";
 import {
   TRACK_READING_HISTORY_COOKIE,
   dbValueToTrackReadingHistory,
@@ -28,10 +23,4 @@ export async function resolveTrackReadingHistoryEnabled(
   return parseTrackReadingHistoryCookie(
     getCookie(TRACK_READING_HISTORY_COOKIE),
   );
-}
-
-export function articleCardsAsAllRead(
-  items: Array<ArticleCard>,
-): Array<ArticleCard> {
-  return items.map((item) => ({ ...item, isRead: true }));
 }

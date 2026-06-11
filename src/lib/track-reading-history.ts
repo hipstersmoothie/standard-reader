@@ -34,3 +34,10 @@ export function dbValueToTrackReadingHistory(
 ): boolean {
   return value !== false;
 }
+
+/** Treat every card as read when the reader has tracking disabled. */
+export function articleCardsAsAllRead<T extends { isRead: boolean }>(
+  items: Array<T>,
+): Array<T> {
+  return items.map((item) => ({ ...item, isRead: true }));
+}
