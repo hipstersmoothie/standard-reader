@@ -238,6 +238,7 @@ function Search() {
   const inputRef = useRef<HTMLInputElement>(null);
   const loadMoreArticlesRef = useRef<HTMLDivElement>(null);
   const loadingMorePubsRef = useRef(false);
+  const committedQRef = useRef(urlQ.trim());
   const [input, setInput] = useState(urlQ);
   const [debouncedQ, setDebouncedQ] = useState(urlQ.trim());
   const [publications, setPublications] = useState<Array<PublicationCard>>([]);
@@ -246,8 +247,12 @@ function Search() {
   const [loadingMorePubs, setLoadingMorePubs] = useState(false);
 
   useEffect(() => {
+    const trimmedUrl = urlQ.trim();
+    if (trimmedUrl === committedQRef.current) return;
+
+    committedQRef.current = trimmedUrl;
     setInput(urlQ);
-    setDebouncedQ(urlQ.trim());
+    setDebouncedQ(trimmedUrl);
   }, [urlQ]);
 
   useEffect(() => {
@@ -259,6 +264,7 @@ function Search() {
       const trimmed = input.trim();
       setDebouncedQ(trimmed);
       if (trimmed !== urlQ.trim()) {
+        committedQRef.current = trimmed;
         void navigate({
           replace: true,
           resetScroll: false,
