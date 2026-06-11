@@ -299,8 +299,8 @@ Backend/API exists; UI or copy is missing.
       handle-like input detection in the unified search field (1.1A; no separate tabs).
 - [x] **Publication profile — “Followed by …” social proof** — compact line under the header on
       [`_layout.p.$did.$rkey.tsx`](src/routes/_layout.p.$did.$rkey.tsx) via
-      `publicationFollowedByCoReaders` + `publicationApi.getPublicationSocialProof` (co-reader
-      follow + like blend; auth-only).
+      `publicationFollowedByCoReaders` + `publicationApi.getPublicationSocialProof` (Bluesky
+      follows you follow who also subscribe/like; auth-only).
 - [x] **About page** — replace placeholder in [`_layout.about.tsx`](src/routes/_layout.about.tsx)
       with product copy (what Standard Reader is, AT Proto ownership, link to standard.site docs,
       privacy/data model). OG metadata already in [`site-metadata.ts`](src/lib/site-metadata.ts).

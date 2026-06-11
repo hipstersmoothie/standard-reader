@@ -177,7 +177,8 @@ Sections, top to bottom:
   `/subscribe/$did/$rkey`, OAuth with subscription-only scope, auto-follow, themed success).
 - Recent writing (featured lead + rows).
 - Right rail: About + DID + "Readers also follow".
-- Social proof line ("Followed by …") when applicable.
+- Social proof line ("Followed by …") when applicable — Bluesky accounts you
+  follow who also subscribe to or like the publication.
 - Owner `@handle` links to the **author profile** (`/u/$did`).
 
 ### Author profile

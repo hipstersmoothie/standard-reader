@@ -38,7 +38,6 @@ import {
   selectArticleCards,
   selectPublicationArticleCards,
 } from "#/server/reader/queries";
-import { effectiveFollowUris } from "#/server/reader/saved-lists";
 import { resolveTrackReadingHistoryEnabled } from "#/server/reader/track-reading-history";
 import { highlightLeafletCodeBlocks } from "#/server/shiki/highlighter";
 import { themeModeForRequest } from "#/server/theme-preference";
@@ -661,9 +660,6 @@ const getPublicationSocialProof = createServerFn({ method: "GET" })
           session.did,
           data.publicationUri,
           data.limit,
-          {
-            followUris: await effectiveFollowUris(db, schema, session.did),
-          },
         );
         span.set("count", proof.total);
         return proof;

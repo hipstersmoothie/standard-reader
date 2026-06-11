@@ -1489,9 +1489,8 @@ export interface CoReaderSocialProof {
 }
 
 /**
- * Publication-profile social proof — co-readers (readers who follow the same
- * publications as you) who also follow or like this publication. Uses the same
- * co-reader follow + like blend as Discover's "Followed by people you follow".
+ * Publication-profile social proof — Bluesky accounts you follow who also
+ * subscribe to or like this publication.
  */
 export async function publicationFollowedByCoReaders(
   db: Db,
@@ -1499,30 +1498,15 @@ export async function publicationFollowedByCoReaders(
   readerDid: string,
   publicationUri: string,
   limit: number,
-  opts: PublicationRailOpts = {},
+  _opts: PublicationRailOpts = {},
 ): Promise<CoReaderSocialProof> {
-  const followUris =
-    opts.followUris ?? (await selectFollowUris(db, schema, readerDid));
-  if (followUris.length === 0) {
-    return { readers: [], total: 0 };
-  }
+  const { filterDidsFollowedByActor } =
+    await import("#/server/atproto/bsky-relationships");
 
   const sub = schema.subscriptions;
   const pr = schema.profiles;
   const rc = schema.recommends;
   const doc = schema.documents;
-
-  const coReaders = db
-    .selectDistinct({ did: sub.subscriberDid })
-    .from(sub)
-    .where(
-      and(
-        inArray(sub.publicationUri, followUris),
-        ne(sub.subscriberDid, readerDid),
-        eq(sub.deleted, false),
-      ),
-    )
-    .as("co_readers");
 
   const [followRows, likeRows] = await Promise.all([
     db
@@ -1533,10 +1517,13 @@ export async function publicationFollowedByCoReaders(
         avatarUrl: pr.avatarUrl,
       })
       .from(sub)
-      .innerJoin(coReaders, eq(coReaders.did, sub.subscriberDid))
       .leftJoin(pr, eq(pr.did, sub.subscriberDid))
       .where(
-        and(eq(sub.publicationUri, publicationUri), eq(sub.deleted, false)),
+        and(
+          eq(sub.publicationUri, publicationUri),
+          eq(sub.deleted, false),
+          ne(sub.subscriberDid, readerDid),
+        ),
       ),
     db
       .selectDistinct({
@@ -1547,23 +1534,42 @@ export async function publicationFollowedByCoReaders(
       })
       .from(rc)
       .innerJoin(doc, eq(doc.uri, rc.documentUri))
-      .innerJoin(coReaders, eq(coReaders.did, rc.recommenderDid))
       .leftJoin(pr, eq(pr.did, rc.recommenderDid))
       .where(
         and(
           eq(doc.publicationUri, publicationUri),
           eq(rc.deleted, false),
           eq(doc.deleted, false),
+          ne(rc.recommenderDid, readerDid),
         ),
       ),
   ]);
+
+  const candidateDids = [
+    ...new Set([
+      ...followRows.map((row) => row.did),
+      ...likeRows.map((row) => row.did),
+    ]),
+  ];
+  const followedDids = await filterDidsFollowedByActor(
+    readerDid,
+    candidateDids,
+  );
+  if (followedDids.size === 0) {
+    return { readers: [], total: 0 };
+  }
+
+  const filteredFollowRows = followRows.filter((row) =>
+    followedDids.has(row.did),
+  );
+  const filteredLikeRows = likeRows.filter((row) => followedDids.has(row.did));
 
   const ranked = new Map<
     string,
     CoReaderSocialProofReader & { score: number }
   >();
 
-  for (const row of followRows) {
+  for (const row of filteredFollowRows) {
     ranked.set(row.did, {
       did: row.did,
       handle: row.handle,
@@ -1573,7 +1579,7 @@ export async function publicationFollowedByCoReaders(
     });
   }
 
-  for (const row of likeRows) {
+  for (const row of filteredLikeRows) {
     const existing = ranked.get(row.did);
     if (existing) {
       existing.score += RECOMMENDATION_BLEND.coReaderLike;
