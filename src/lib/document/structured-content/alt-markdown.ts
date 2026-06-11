@@ -17,25 +17,16 @@ const field =
     return typeof text === "string" ? text : null;
   };
 
-/** `at.markpub.markdown` nests the text under `text: { markdown }`. */
-const markpubText: MarkdownExtractor = (content) => {
-  const text = content.text;
-  if (typeof text === "string") return text;
-  if (isRecord(text) && typeof text.markdown === "string") {
-    return text.markdown;
-  }
-  return null;
-};
-
 /**
  * Known markdown-in-record formats, keyed by content `$type`. Each entry
  * extracts the raw markdown body from the format's payload shape.
+ *
+ * `at.markpub.markdown` is handled by the dedicated markpub module instead.
  */
 const ALT_MARKDOWN_EXTRACTORS: Record<string, MarkdownExtractor> = {
   "actor.rpg.news#markdown": field("value"),
   "app.blento.markdown": field("value"),
   "app.wtr.content.markdown": field("markdown"),
-  "at.markpub.markdown": markpubText,
   "at.unthread.content": field("content"),
   "com.pricelessmisc.content.markdown": field("markdown"),
   "com.scanash.content.markdown": field("markdown"),

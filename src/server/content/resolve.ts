@@ -5,13 +5,16 @@
  * - `app.greengale.document#contentRef` → referenced record (greengale/resolve)
  * - `site.standard.markdown`            → markdown blob → inline standard markdown
  * - `net.yrriban.content`               → `doc.html` blob → inline `html` field
+ * - `at.markpub.markdown`               → `text.textBlob` → inline `text.markdown`
  *
  * Resolution is best-effort: on any failure the original content is returned
  * unchanged so re-ingest/backfill can retry later.
  */
+import { MARKPUB_MARKDOWN } from "#/lib/markpub/types";
 import { STANDARD_MARKDOWN_CONTENT } from "#/lib/document/structured-content/types";
 import { GREENGALE_CONTENT_REF } from "#/lib/greengale/types";
 import { resolveGreengaleContent } from "#/server/greengale/resolve";
+import { resolveMarkpubContent } from "#/server/markpub/resolve";
 
 import type { BlobRef } from "../atproto/types.ts";
 
@@ -25,6 +28,7 @@ export const FETCHED_CONTENT_FORMATS = [
   GREENGALE_CONTENT_REF,
   STANDARD_MARKDOWN_BLOB,
   YRRIBAN_CONTENT,
+  MARKPUB_MARKDOWN,
 ];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -122,6 +126,11 @@ export async function resolveFetchedContent(
   if (contentFormat === YRRIBAN_CONTENT) {
     const resolved = await resolveYrribanContent(content, did, pds);
     return { content: resolved, contentFormat: YRRIBAN_CONTENT };
+  }
+
+  if (contentFormat === MARKPUB_MARKDOWN) {
+    const resolved = await resolveMarkpubContent(content, did, pds);
+    return { content: resolved, contentFormat: MARKPUB_MARKDOWN };
   }
 
   return unchanged;

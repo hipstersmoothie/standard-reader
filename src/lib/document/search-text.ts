@@ -10,6 +10,8 @@ import {
 import { markdownPlaintext } from "#/lib/document/structured-content/markdown";
 import { structuredPlaintextFromBlocks } from "#/lib/document/structured-content/plaintext";
 import { STANDARD_MARKDOWN_CONTENT } from "#/lib/document/structured-content/types";
+import { markpubPlaintext } from "#/lib/markpub/markdown";
+import { MARKPUB_MARKDOWN } from "#/lib/markpub/types";
 import { leafletPlaintext } from "#/lib/leaflet/plaintext";
 import { LEAFLET_CONTENT } from "#/lib/leaflet/types";
 import { offprintPlaintext } from "#/lib/offprint/plaintext";
@@ -126,6 +128,9 @@ export function documentExtractedText(
   }
   if (format === STANDARD_MARKDOWN_CONTENT) {
     return markdownPlaintext(contentJson);
+  }
+  if (format === MARKPUB_MARKDOWN) {
+    return markpubPlaintext(contentJson);
   }
   if (format === LEAFLET_DOCUMENT_FORMAT) {
     return leafletPlaintext(leafletDocumentContent(contentJson));

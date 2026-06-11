@@ -6,11 +6,14 @@ import * as stylex from "@stylexjs/stylex";
 import { AppLink } from "#/components/reader/app-link";
 import { spacing } from "#/design-system/theme/spacing.stylex";
 import { articleMarkdownSanitizeSchema } from "#/lib/markdown/article-sanitize-schema";
-import { createElement, useMemo, useRef } from "react";
+import { createElement, useMemo, useRef, type ComponentProps } from "react";
 import ReactMarkdown from "react-markdown";
+import rehypeKatex from "rehype-katex";
 import rehypeRaw from "rehype-raw";
 import rehypeSanitize from "rehype-sanitize";
 import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import "katex/dist/katex.min.css";
 
 import type { ContentRendererProps } from "../../types";
 
@@ -251,23 +254,41 @@ export function MarkdownArticle({
   text,
   hasHero,
   codeHighlights,
+  flavor = "gfm",
+  enableMath = false,
 }: {
   text: string;
   hasHero: boolean;
   codeHighlights: ContentRendererProps["codeHighlights"];
+  flavor?: "gfm" | "commonmark";
+  enableMath?: boolean;
 }) {
   const components = useMarkdownComponents(codeHighlights);
 
+  const remarkPlugins = useMemo(() => {
+    const plugins = [];
+    if (flavor === "gfm") plugins.push(remarkGfm);
+    if (enableMath) plugins.push(remarkMath);
+    return plugins;
+  }, [enableMath, flavor]);
+
   if (!text.trim()) return null;
+
+  const rehypePlugins = (
+    enableMath
+      ? [
+          rehypeRaw,
+          [rehypeSanitize, articleMarkdownSanitizeSchema],
+          rehypeKatex,
+        ]
+      : [rehypeRaw, [rehypeSanitize, articleMarkdownSanitizeSchema]]
+  ) satisfies ComponentProps<typeof ReactMarkdown>["rehypePlugins"];
 
   return (
     <ArticleBody hasHero={hasHero}>
       <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        rehypePlugins={[
-          rehypeRaw,
-          [rehypeSanitize, articleMarkdownSanitizeSchema],
-        ]}
+        remarkPlugins={remarkPlugins}
+        rehypePlugins={rehypePlugins}
         components={components}
       >
         {text}

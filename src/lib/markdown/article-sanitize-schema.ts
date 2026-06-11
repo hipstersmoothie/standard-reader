@@ -17,11 +17,30 @@ function mergeAttributes(
 
 export const articleMarkdownSanitizeSchema: SanitizeSchema = {
   ...defaultSchema,
-  tagNames: [...(defaultSchema.tagNames ?? []), "article", "iframe"],
+  tagNames: [
+    ...(defaultSchema.tagNames ?? []),
+    "article",
+    "iframe",
+    "math",
+    "semantics",
+    "mrow",
+    "mi",
+    "mo",
+    "mn",
+    "msup",
+    "msub",
+    "mfrac",
+    "mtext",
+  ],
   attributes: {
     ...defaultSchema.attributes,
     div: mergeAttributes("div", [["className", playlistClass]]),
-    span: mergeAttributes("span", [["className", playlistClass]]),
+    span: mergeAttributes("span", [
+      ["className", playlistClass],
+      ["className", /^katex/],
+      "aria-hidden",
+      "style",
+    ]),
     article: mergeAttributes("article", [["className", playlistClass]]),
     img: mergeAttributes("img", [["className", playlistClass]]),
     iframe: mergeAttributes("iframe", [

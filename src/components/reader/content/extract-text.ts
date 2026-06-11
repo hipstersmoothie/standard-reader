@@ -15,6 +15,8 @@ import {
 } from "#/lib/document/structured-content/markdown";
 import { structuredPlaintextFromBlocks } from "#/lib/document/structured-content/plaintext";
 import { STANDARD_MARKDOWN_CONTENT } from "#/lib/document/structured-content/types";
+import { markpubNarrationText } from "#/lib/markpub/markdown";
+import { MARKPUB_MARKDOWN } from "#/lib/markpub/types";
 import { leafletBskyPostUris } from "#/lib/leaflet/blocks";
 import { leafletPlaintext } from "#/lib/leaflet/plaintext";
 import { LEAFLET_CONTENT } from "#/lib/leaflet/types";
@@ -100,6 +102,10 @@ export function articleReadingText(
   }
   if (contentType === STANDARD_MARKDOWN_CONTENT) {
     const text = withMarkdownImageAlts(markdownPlaintext(article.contentJson));
+    if (text?.trim()) return text;
+  }
+  if (contentType === MARKPUB_MARKDOWN) {
+    const text = markpubNarrationText(article.contentJson);
     if (text?.trim()) return text;
   }
 

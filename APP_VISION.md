@@ -104,6 +104,13 @@ Sections, top to bottom:
 ### Article (reading view)
 
 - Centered measure (~680px), drop-cap, pull quotes, hero image (if featured).
+- **Content formats:** first-class renderers for `pub.leaflet.content`, `blog.pckt.content`,
+  `app.offprint.content`, and `site.standard.content.markdown`, plus third-party unions
+  (HTML-in-record, block-based editors, markdown-in-record). **`at.markpub.markdown`**
+  ([Markpub.at](https://markpub.at/)) is fully supported: GFM vs CommonMark flavor,
+  declared extensions (LaTeX via KaTeX, YAML front matter), ingest-time `text.textBlob`
+  resolution, and facet/lens preprocessing (`baseFormatting` headers/strong/idify,
+  `baseBlocks` front matter and horizontal rules).
 - Sticky top bar: back, byline, follow, like, share; reading-progress bar.
 - **Listen (page reader):** a top-bar "Listen" button reads the article aloud
   using on-device TTS (`kokoro-js`, lazy-loaded on first use). It narrates the

@@ -296,6 +296,10 @@ Backend/API exists; UI or copy is missing.
 - [x] **Content rendering gaps** — PCKT gallery renderer (`blog.pckt.block.gallery`); prod scan
       found 54 documents — implemented grid/list/carousel/masonry layouts via
       [`pckt-gallery.tsx`](src/components/reader/content/renderers/pckt-gallery.tsx).
+- [x] **`at.markpub.markdown`** — full [Markpub.at](https://markpub.at/) support: dedicated
+      renderer (`src/lib/markpub/*`, [`markpub-content.tsx`](src/components/reader/content/renderers/markpub-content.tsx)),
+      flavor/extensions, facet/lens preprocessing, ingest-time `text.textBlob` fetch
+      (`src/server/markpub/resolve.ts`).
 - [x] **Discover — “Not following” filter** — toggle on [`_layout.discover.tsx`](src/routes/_layout.discover.tsx)
       All publications section to hide effective follow set ([`saved-lists.ts`](src/server/reader/saved-lists.ts)).
 

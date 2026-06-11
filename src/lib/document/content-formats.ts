@@ -36,6 +36,12 @@ export {
   isAltMarkdownFormat,
 } from "./structured-content/alt-markdown";
 export {
+  markpubPlaintext,
+  prepareMarkpubMarkdown,
+} from "#/lib/markpub/markdown";
+export { isMarkpubFormat, parseMarkpubContent } from "#/lib/markpub/parse";
+export { MARKPUB_MARKDOWN } from "#/lib/markpub/types";
+export {
   HTML_CONTENT_FORMATS,
   htmlContentBody,
   htmlContentPlaintext,

@@ -32,7 +32,8 @@ function FacetSegment({
 }) {
   if (features.length === 0) return <>{text}</>;
 
-  const isBold = hasFacetKind(features, "bold");
+  const isBold =
+    hasFacetKind(features, "bold") || hasFacetKind(features, "strong");
   const isItalic = hasFacetKind(features, "italic");
   const isCode = hasFacetKind(features, "code");
   const isUnderline = hasFacetKind(features, "underline");

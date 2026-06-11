@@ -7,9 +7,9 @@ import type { ContentRendererProps } from "../types";
 import { MarkdownArticle } from "./shared/markdown-article";
 
 /**
- * Renders markdown-in-record third-party formats (wtr, markpub, unthread,
- * lichen, …) through the same sanitized markdown pipeline as
- * `site.standard.content.markdown`.
+ * Renders markdown-in-record third-party formats (wtr, unthread, lichen, …)
+ * through the same sanitized markdown pipeline as `site.standard.content.markdown`.
+ * (`at.markpub.markdown` uses the dedicated Markpub renderer instead.)
  */
 export function AltMarkdownContentRenderer({
   codeHighlights,

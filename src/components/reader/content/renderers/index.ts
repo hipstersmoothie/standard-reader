@@ -4,6 +4,7 @@ import {
   LEAFLET_DOCUMENT_FORMAT,
   STRUCTURED_BLOCK_FORMATS,
 } from "#/lib/document/content-formats";
+import { MARKPUB_MARKDOWN } from "#/lib/markpub/types";
 import { STANDARD_MARKDOWN_CONTENT } from "#/lib/document/structured-content/types";
 import { LEAFLET_CONTENT } from "#/lib/leaflet/types";
 import { OFFPRINT_CONTENT } from "#/lib/offprint/types";
@@ -16,6 +17,7 @@ import { HtmlContentRenderer } from "./html-content";
 import { LeafletContentRenderer } from "./leaflet-content";
 import { LeafletDocumentContentRenderer } from "./leaflet-document-content";
 import { MarkdownContentRenderer } from "./markdown-content";
+import { MarkpubContentRenderer } from "./markpub-content";
 import { OffprintContentRenderer } from "./offprint-content";
 import { PcktContentRenderer } from "./pckt-content";
 import { StructuredFormatContentRenderer } from "./structured-format-content";
@@ -27,6 +29,7 @@ export const CONTENT_RENDERERS: Record<string, ContentRenderer> = {
   [PCKT_CONTENT]: PcktContentRenderer,
   [OFFPRINT_CONTENT]: OffprintContentRenderer,
   [STANDARD_MARKDOWN_CONTENT]: MarkdownContentRenderer,
+  [MARKPUB_MARKDOWN]: MarkpubContentRenderer,
 };
 
 for (const format of ALT_MARKDOWN_FORMATS) {

@@ -6,6 +6,22 @@ import { articleBodyStyles } from "../../body-styles";
 
 const DEFAULT_ASPECT_RATIO = "16 / 9";
 
+/** YouTube (and some other players) reject embeds without a cross-origin Referer. */
+function iframeReferrerPolicy(url: string): React.HTMLAttributeReferrerPolicy {
+  const normalized = url.toLowerCase();
+  const needsReferrer =
+    normalized.includes("youtube.com") ||
+    normalized.includes("youtube-nocookie.com") ||
+    normalized.includes("youtu.be") ||
+    normalized.includes("player.vimeo.com") ||
+    normalized.includes("vimeo.com") ||
+    normalized.includes("fast.wistia.com") ||
+    normalized.includes("wistia.com") ||
+    normalized.includes("wistia.net");
+
+  return needsReferrer ? "strict-origin-when-cross-origin" : "no-referrer";
+}
+
 function parseDimension(
   value: string | number | undefined,
 ): number | undefined {
@@ -53,7 +69,7 @@ export function IframeEmbedView({
           src={url}
           title="Embedded content"
           loading="lazy"
-          referrerPolicy="no-referrer"
+          referrerPolicy={iframeReferrerPolicy(url)}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           allowFullScreen
           sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"
