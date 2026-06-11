@@ -12,6 +12,14 @@ import {
 import { AUTH_SESSION_TOKEN_COOKIE } from "#/integrations/auth/constants";
 import { fetchBlueskyPublicProfileFields } from "#/lib/bluesky-public-profile";
 import {
+  HOME_SCOPE_COOKIE,
+  HOME_SCOPE_COOKIE_MAX_AGE_SECONDS,
+  dbValueToHomeScope,
+  homeScopeToCookieValue,
+  homeScopeToDbValue,
+  parseHomeScope,
+} from "#/lib/home-scope";
+import {
   OPEN_LINKS_COOKIE,
   OPEN_LINKS_COOKIE_MAX_AGE_SECONDS,
   dbValueToOpenLinksExternally,
@@ -58,6 +66,8 @@ import { eq } from "drizzle-orm";
 import { z } from "zod";
 
 import { dbMiddleware } from "./db-middleware";
+
+import type { HomeScope } from "./api-feed.functions";
 
 function parseCookies(cookieHeader: string | null): Record<string, string> {
   if (!cookieHeader) return {};
@@ -142,65 +152,67 @@ async function loadSessionFromToken(sessionToken: string) {
 }
 
 /** One round trip for root shell SSR: session + theme preference. */
-const getShellBootstrap = createServerFn({ method: "GET" }).handler(async () => {
-  const request = getRequest();
-  const cookies = parseCookies(request.headers.get("cookie"));
-  const sessionToken = cookies[AUTH_SESSION_TOKEN_COOKIE];
-
-  if (!sessionToken) {
-    return {
-      session: null,
-      theme: { mode: parseThemeMode(cookies[THEME_COOKIE]) },
-      trackReading: {
-        enabled: parseTrackReadingHistoryCookie(
-          cookies[TRACK_READING_HISTORY_COOKIE],
-        ),
-      },
-    };
-  }
-
-  const loaded = await loadSessionFromToken(sessionToken);
-  if (!loaded) {
-    return {
-      session: null,
-      theme: { mode: parseThemeMode(cookies[THEME_COOKIE]) },
-      trackReading: {
-        enabled: parseTrackReadingHistoryCookie(
-          cookies[TRACK_READING_HISTORY_COOKIE],
-        ),
-      },
-    };
-  }
-
-  const { themeMode, trackReadingHistory, ...sessionPayload } = loaded;
-  return {
-    session: sessionPayload,
-    theme: { mode: dbValueToThemeMode(themeMode) },
-    trackReading: {
-      enabled: dbValueToTrackReadingHistory(trackReadingHistory),
-    },
-  };
-});
-
-const getSession = createServerFn({ method: "GET" }).handler(async () => {
+const getShellBootstrap = createServerFn({ method: "GET" }).handler(
+  async () => {
     const request = getRequest();
     const cookies = parseCookies(request.headers.get("cookie"));
     const sessionToken = cookies[AUTH_SESSION_TOKEN_COOKIE];
 
     if (!sessionToken) {
-      return null;
+      return {
+        session: null,
+        theme: { mode: parseThemeMode(cookies[THEME_COOKIE]) },
+        trackReading: {
+          enabled: parseTrackReadingHistoryCookie(
+            cookies[TRACK_READING_HISTORY_COOKIE],
+          ),
+        },
+      };
     }
 
     const loaded = await loadSessionFromToken(sessionToken);
     if (!loaded) {
-      return null;
+      return {
+        session: null,
+        theme: { mode: parseThemeMode(cookies[THEME_COOKIE]) },
+        trackReading: {
+          enabled: parseTrackReadingHistoryCookie(
+            cookies[TRACK_READING_HISTORY_COOKIE],
+          ),
+        },
+      };
     }
 
+    const { themeMode, trackReadingHistory, ...sessionPayload } = loaded;
     return {
-      user: loaded.user,
-      session: loaded.session,
+      session: sessionPayload,
+      theme: { mode: dbValueToThemeMode(themeMode) },
+      trackReading: {
+        enabled: dbValueToTrackReadingHistory(trackReadingHistory),
+      },
     };
-  });
+  },
+);
+
+const getSession = createServerFn({ method: "GET" }).handler(async () => {
+  const request = getRequest();
+  const cookies = parseCookies(request.headers.get("cookie"));
+  const sessionToken = cookies[AUTH_SESSION_TOKEN_COOKIE];
+
+  if (!sessionToken) {
+    return null;
+  }
+
+  const loaded = await loadSessionFromToken(sessionToken);
+  if (!loaded) {
+    return null;
+  }
+
+  return {
+    user: loaded.user,
+    session: loaded.session,
+  };
+});
 
 const getSessionQueryOptions = queryOptions({
   queryKey: ["session"],
@@ -474,6 +486,51 @@ const setTrackReadingHistoryPreference = createServerFn({ method: "POST" })
     return { enabled: data.enabled };
   });
 
+const homeScopeInput = z.object({
+  scope: z.enum(["follows", "network"]),
+});
+
+const getHomeScopePreference = createServerFn({ method: "GET" })
+  .middleware([dbMiddleware, maybeAuthMiddleware])
+  .handler(async ({ context }): Promise<{ scope: HomeScope }> => {
+    const session = context?.session;
+    if (session?.user) {
+      const row = await context.db.query.user.findFirst({
+        where: eq(context.schema.user.id, session.user.id),
+        columns: { homeScope: true },
+      });
+      return { scope: dbValueToHomeScope(row?.homeScope ?? null) };
+    }
+
+    return { scope: parseHomeScope(getCookie(HOME_SCOPE_COOKIE)) };
+  });
+
+const getHomeScopePreferenceQueryOptions = queryOptions({
+  queryKey: ["homeScopePreference"] as const,
+  queryFn: () => getHomeScopePreference(),
+  staleTime: Number.POSITIVE_INFINITY,
+});
+
+const setHomeScopePreference = createServerFn({ method: "POST" })
+  .middleware([dbMiddleware, maybeAuthMiddleware])
+  .inputValidator(homeScopeInput)
+  .handler(async ({ data, context }): Promise<{ scope: HomeScope }> => {
+    setCookie(HOME_SCOPE_COOKIE, homeScopeToCookieValue(data.scope), {
+      path: "/",
+      sameSite: "lax",
+      maxAge: HOME_SCOPE_COOKIE_MAX_AGE_SECONDS,
+    });
+
+    if (context?.session?.user) {
+      await context.db
+        .update(context.schema.user)
+        .set({ homeScope: homeScopeToDbValue(data.scope) })
+        .where(eq(context.schema.user.id, context.session.user.id));
+    }
+
+    return { scope: data.scope };
+  });
+
 const signOut = createServerFn({ method: "POST" })
   .middleware([dbMiddleware])
   .handler(async ({ context }) => {
@@ -534,5 +591,8 @@ export const user = {
   getTrackReadingHistoryPreference,
   getTrackReadingHistoryPreferenceQueryOptions,
   setTrackReadingHistoryPreference,
+  getHomeScopePreference,
+  getHomeScopePreferenceQueryOptions,
+  setHomeScopePreference,
   signOut,
 };

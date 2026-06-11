@@ -6,6 +6,8 @@ import { ArrowRight, Flame, Sparkles } from "lucide-react";
 import { Suspense } from "react";
 import { z } from "zod";
 
+import type { HomeScope } from "../integrations/tanstack-query/api-feed.functions";
+
 import {
   ArticleRow,
   CompactRow,
@@ -38,18 +40,24 @@ import { feedApi } from "../integrations/tanstack-query/api-feed.functions";
 import { user } from "../integrations/tanstack-query/api-user.functions";
 import { getPublicUrlClient } from "../lib/public-url";
 import { pageSocialMeta } from "../lib/site-metadata";
+import { useHomeScope } from "../lib/use-home-scope";
 
 const homeSearchSchema = z.object({
-  scope: z.enum(["follows", "network"]).default("follows"),
+  scope: z.enum(["follows", "network"]).optional(),
 });
 
 export const Route = createFileRoute("/_layout/")({
   validateSearch: homeSearchSchema,
   loaderDeps: ({ search }) => ({ scope: search.scope }),
   loader: async ({ context, deps }) => {
-    await context.queryClient.ensureQueryData(
-      feedApi.getHomeFeedQueryOptions({ scope: deps.scope }),
+    const { scope: savedScope } = await context.queryClient.ensureQueryData(
+      user.getHomeScopePreferenceQueryOptions,
     );
+    const scope = deps.scope ?? savedScope;
+    await context.queryClient.ensureQueryData(
+      feedApi.getHomeFeedQueryOptions({ scope }),
+    );
+    return { scope };
   },
   head: () => ({
     meta: pageSocialMeta("today", getPublicUrlClient()),
@@ -216,19 +224,25 @@ function HomeFeedSkeleton() {
   );
 }
 
+function useEffectiveHomeScope(): HomeScope {
+  const searchScope = Route.useSearch().scope;
+  const { scope } = Route.useLoaderData();
+  return searchScope ?? scope;
+}
+
 function Home() {
-  const { scope } = Route.useSearch();
+  const scope = useEffectiveHomeScope();
 
   return (
     <Suspense key={scope} fallback={<HomeFeedSkeleton />}>
-      <HomeFeed />
+      <HomeFeed scope={scope} />
     </Suspense>
   );
 }
 
-function HomeFeed() {
-  const { scope } = Route.useSearch();
+function HomeFeed({ scope }: { scope: HomeScope }) {
   const navigate = useNavigate({ from: Route.fullPath });
+  const { setScope } = useHomeScope();
   const { data: feed } = useSuspenseQuery(
     feedApi.getHomeFeedQueryOptions({ scope }),
   );
@@ -248,6 +262,7 @@ function HomeFeed() {
   const onScopeChange = (keys: Set<React.Key> | "all") => {
     const next = keys === "all" ? "follows" : [...keys][0];
     if (next === "follows" || next === "network") {
+      setScope(next);
       void navigate({ search: { scope: next }, resetScroll: false });
     }
   };

@@ -35,6 +35,8 @@ export const user = pgTable("user", {
   readingTypography: text("reading_typography"),
   /** `false` disables read tracking and unread UI; `null` = on (default). */
   trackReadingHistory: boolean("track_reading_history"),
+  /** `network` shows the whole-network home feed; `null` = follows (default). */
+  homeScope: text("home_scope"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .defaultNow()
     .notNull(),
