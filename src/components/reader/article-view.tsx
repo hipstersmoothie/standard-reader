@@ -15,7 +15,6 @@ import { PublicationNameLink } from "#/components/reader/publication-name-link";
 import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
 import { usePageReader } from "#/lib/page-reader/page-reader-context";
-import { buildBlueskyComposeUrl } from "#/lib/quote-share";
 import { useReadingTypography } from "#/lib/use-reading-typography";
 import { useTrackReadingHistory } from "#/lib/use-track-reading-history";
 import {
@@ -24,7 +23,6 @@ import {
   ExternalLink,
   Headphones,
   Heart,
-  Share2,
 } from "lucide-react";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
@@ -61,6 +59,7 @@ import {
   articleReadingText,
   articleSpeechText,
 } from "./content/extract-text";
+import { DocumentShareMenu } from "./document-share-menu";
 import {
   articlePublicationUrl,
   documentLinkParams,
@@ -727,15 +726,6 @@ function ArticleViewBody({
     };
   }, [article.uri, sharedQuote]);
 
-  const onShare = () => {
-    if (!publicationArticleUrl) return;
-    globalThis.open(
-      buildBlueskyComposeUrl(publicationArticleUrl),
-      "_blank",
-      "noopener,noreferrer",
-    );
-  };
-
   return (
     <div {...stylex.props(styles.root)}>
       <div {...stylex.props(styles.stickyChrome)}>
@@ -807,15 +797,7 @@ function ArticleViewBody({
               onToggle={toggleBookmark}
               isPending={bookmarkPending}
             />
-            <IconButton
-              variant="secondary"
-              size="md"
-              label="Share on Bluesky"
-              isDisabled={!publicationArticleUrl}
-              onPress={onShare}
-            >
-              <Share2 size={18} />
-            </IconButton>
+            <DocumentShareMenu recordUri={article.uri} />
           </div>
         </div>
 

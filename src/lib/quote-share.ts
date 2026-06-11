@@ -79,7 +79,22 @@ export function truncateQuoteForDisplay(text: string, max = 220): string {
 /** Bluesky post limit (Unicode grapheme clusters). */
 export const BSKY_COMPOSE_MAX_GRAPHEMES = 300;
 
-const BSKY_COMPOSE_URL = "https://bsky.app/intent/compose";
+const BSKY_COMPOSE_ORIGIN = "https://bsky.app";
+const BSKY_COMPOSE_PATH = "/intent/compose";
+const DISPERSE_SHARE_ORIGIN = "https://disperse.social";
+const DISPERSE_SHARE_PATH = "/share";
+const PDSLS_ORIGIN = "https://pdsls.dev";
+
+/** Alternate AT Protocol clients that support the same compose intent as Bluesky. */
+export const AT_PROTO_COMPOSE_CLIENTS = [
+  {
+    id: "blacksky",
+    label: "blacksky.community",
+    origin: "https://blacksky.community",
+  },
+  { id: "deer", label: "deer.social", origin: "https://deer.social" },
+  { id: "witchsky", label: "witchsky.app", origin: "https://witchsky.app" },
+] as const;
 
 function graphemeSegmenter(): Intl.Segmenter | null {
   if (globalThis.Intl?.Segmenter === undefined) return null;
@@ -104,15 +119,40 @@ function truncateGraphemes(text: string, max: number): string {
 }
 
 /**
+ * AT Protocol compose intent URL pre-filled with a single link.
+ * @see https://docs.bsky.app/docs/advanced-guides/intent-links
+ */
+export function buildAtprotoComposeUrl(
+  clientOrigin: string,
+  linkUrl: string,
+): string {
+  const draft = truncateGraphemes(linkUrl.trim(), BSKY_COMPOSE_MAX_GRAPHEMES);
+  const url = new URL(BSKY_COMPOSE_PATH, clientOrigin);
+  url.searchParams.set("text", draft);
+  return url.toString();
+}
+
+/**
  * Bluesky compose intent URL pre-filled with a single link (e.g. our quote-share URL).
  * The link card / OG preview carries the quote; the post body stays empty for commentary.
  * @see https://docs.bsky.app/docs/advanced-guides/intent-links
  */
 export function buildBlueskyComposeUrl(linkUrl: string): string {
-  const draft = truncateGraphemes(linkUrl.trim(), BSKY_COMPOSE_MAX_GRAPHEMES);
-  const url = new URL(BSKY_COMPOSE_URL);
-  url.searchParams.set("text", draft);
+  return buildAtprotoComposeUrl(BSKY_COMPOSE_ORIGIN, linkUrl);
+}
+
+/** Disperse share URL — pre-fills the link to share. */
+export function buildDisperseShareUrl(pageUrl: string): string {
+  const url = new URL(DISPERSE_SHARE_PATH, DISPERSE_SHARE_ORIGIN);
+  url.searchParams.set("url", pageUrl.trim());
   return url.toString();
+}
+
+/** PDSLS record viewer URL for an AT-URI. */
+export function buildPdslsRecordUrl(atUri: string): string {
+  const trimmed = atUri.trim();
+  const path = trimmed.startsWith("at://") ? trimmed : `at://${trimmed}`;
+  return `${PDSLS_ORIGIN}/${path}`;
 }
 
 /**
@@ -134,7 +174,7 @@ export function buildBlueskyQuoteComposeUrl(
   const text = excerpt ? `"${excerpt}"${suffix}` : shareUrl;
   const draft = truncateGraphemes(text, BSKY_COMPOSE_MAX_GRAPHEMES);
 
-  const url = new URL(BSKY_COMPOSE_URL);
+  const url = new URL(BSKY_COMPOSE_PATH, BSKY_COMPOSE_ORIGIN);
   url.searchParams.set("text", draft);
   return url.toString();
 }
