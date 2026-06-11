@@ -7,6 +7,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, createLink } from "@tanstack/react-router";
 import { AuthorProfileLink } from "#/components/reader/author-profile-link";
 import { PublicationNameLink } from "#/components/reader/publication-name-link";
+import { SearchHeadline } from "#/components/reader/search-headline";
+import { tsHeadlineHasMatch } from "#/lib/search-headline";
 import { gap } from "#/design-system/theme/semantic-spacing.stylex";
 import { spacing } from "#/design-system/theme/spacing.stylex.tsx";
 import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
@@ -873,6 +875,43 @@ function TitleRowDate({
   );
 }
 
+function ArticleTitleContent({
+  article,
+  titleStyle,
+}: {
+  article: ArticleCard;
+  titleStyle: stylex.StyleXStyles;
+}) {
+  if (article.searchTitleHtml && tsHeadlineHasMatch(article.searchTitleHtml)) {
+    return (
+      <SearchHeadline
+        html={article.searchTitleHtml}
+        style={[titleStyle, styles.titleInRow]}
+      />
+    );
+  }
+
+  return <Text style={[titleStyle, styles.titleInRow]}>{article.title}</Text>;
+}
+
+function ArticleSearchDek({
+  article,
+  style,
+}: {
+  article: ArticleCard;
+  style: stylex.StyleXStyles;
+}) {
+  if (article.searchSnippetHtml) {
+    return <SearchHeadline html={article.searchSnippetHtml} style={style} />;
+  }
+
+  if (article.description) {
+    return <span {...stylex.props(style)}>{article.description}</span>;
+  }
+
+  return null;
+}
+
 function ArticleTitleRow({
   article,
   showByline,
@@ -894,7 +933,7 @@ function ArticleTitleRow({
         {unread ? (
           <span {...stylex.props(styles.unreadDot, unreadDotStyle)} />
         ) : null}
-        <Text style={[titleStyle, styles.titleInRow]}>{article.title}</Text>
+        <ArticleTitleContent article={article} titleStyle={titleStyle} />
       </Flex>
     );
   }
@@ -916,7 +955,7 @@ function ArticleTitleRow({
             )}
           />
         ) : null}
-        <Text style={[titleStyle, styles.titleInRow]}>{article.title}</Text>
+        <ArticleTitleContent article={article} titleStyle={titleStyle} />
       </Flex>
       <TitleRowDate publishedAt={article.publishedAt} style={dateStyle} />
     </Flex>
@@ -1297,9 +1336,7 @@ export function ArticleRow({
           titleStyle={styles.rowTitle}
           unreadDotStyle={styles.unreadDotRow}
         />
-        {article.description ? (
-          <span {...stylex.props(styles.rowDek)}>{article.description}</span>
-        ) : null}
+        <ArticleSearchDek article={article} style={styles.rowDek} />
         <ArticleMetaLine article={article} />
       </Flex>
       {cover ? (
@@ -1685,12 +1722,17 @@ export function PubDirectoryRow({
         <div
           {...stylex.props(styles.pubDirTop, hasRank && styles.pubDirTopRanked)}
         >
-          <span {...stylex.props(styles.pubDirName)}>{pub.name}</span>
+          {pub.searchNameHtml && tsHeadlineHasMatch(pub.searchNameHtml) ? (
+            <SearchHeadline html={pub.searchNameHtml} style={styles.pubDirName} />
+          ) : (
+            <span {...stylex.props(styles.pubDirName)}>{pub.name}</span>
+          )}
           {pub.ownerHandle ? (
             <OwnerHandleLink did={pub.did} handle={pub.ownerHandle} />
           ) : null}
         </div>
         {pub.description ||
+        pub.searchSnippetHtml ||
         (!hideTopic && pub.topic) ||
         tagPostCount != null ||
         pub.subscriberCount > 0 ||
@@ -1701,7 +1743,12 @@ export function PubDirectoryRow({
               hasRank && styles.pubDirExtraRanked,
             )}
           >
-            {pub.description ? (
+            {pub.searchSnippetHtml ? (
+              <SearchHeadline
+                html={pub.searchSnippetHtml}
+                style={styles.pubDirDesc}
+              />
+            ) : pub.description ? (
               <p {...stylex.props(styles.pubDirDesc)}>{pub.description}</p>
             ) : null}
             <PubDirectoryStats

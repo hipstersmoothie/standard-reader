@@ -101,6 +101,8 @@ Sections, top to bottom:
 ### Search
 
 - Big editorial search field; live results split into **Publications** and **Articles**.
+- Result cards show **query-aware excerpts** (`ts_headline` snippets with highlighted
+  matches in titles and descriptions/bodies).
 
 ### Tag directory
 

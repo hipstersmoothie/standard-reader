@@ -45,6 +45,10 @@ export interface PublicationCard {
   subscriberCount: number;
   documentCount: number;
   lastDocumentAt: string | null;
+  /** `ts_headline` HTML for the name in search results. */
+  searchNameHtml?: string | null;
+  /** `ts_headline` HTML excerpt for search results. */
+  searchSnippetHtml?: string | null;
 }
 
 /** An article (document) as rendered in feed rows, rails, and search results. */
@@ -89,6 +93,10 @@ export interface ArticleCard {
    * query was scoped to a reader (`readForDid`); otherwise defaults to `false`.
    */
   isRead: boolean;
+  /** `ts_headline` HTML for the title in search results. */
+  searchTitleHtml?: string | null;
+  /** `ts_headline` HTML excerpt for search results. */
+  searchSnippetHtml?: string | null;
 }
 
 /** A profile summary (byline / publication owner). */
@@ -196,6 +204,8 @@ type PublicationCardRow = {
   subscriberCount: number | null;
   documentCount: number | null;
   lastDocumentAt: Date | string | null;
+  searchNameHtml?: string | null;
+  searchSnippetHtml?: string | null;
 };
 
 /**
@@ -262,6 +272,8 @@ export function toPublicationCard(row: PublicationCardRow): PublicationCard {
     subscriberCount: row.subscriberCount ?? 0,
     documentCount: row.documentCount ?? 0,
     lastDocumentAt: toIsoTimestamp(row.lastDocumentAt),
+    searchNameHtml: row.searchNameHtml ?? undefined,
+    searchSnippetHtml: row.searchSnippetHtml ?? undefined,
   };
 }
 
@@ -287,6 +299,8 @@ type ArticleCardRow = {
   hasRenderableBody?: boolean | null;
   recommendCount: number | null;
   isRead?: boolean | null;
+  searchTitleHtml?: string | null;
+  searchSnippetHtml?: string | null;
 };
 
 export function toArticleCard(row: ArticleCardRow): ArticleCard {
@@ -313,5 +327,7 @@ export function toArticleCard(row: ArticleCardRow): ArticleCard {
     recommendCount: row.recommendCount ?? 0,
     commentCount: 0,
     isRead: row.isRead ?? false,
+    searchTitleHtml: row.searchTitleHtml ?? undefined,
+    searchSnippetHtml: row.searchSnippetHtml ?? undefined,
   };
 }

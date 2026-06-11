@@ -16,6 +16,12 @@ import {
   discoverEligiblePublicationWhere,
   notExcludedPublicationArticleWhere,
 } from "#/server/reader/publication-filters";
+import {
+  documentSearchSnippetHeadline,
+  documentSearchTitleHeadline,
+  publicationSearchNameHeadline,
+  publicationSearchSnippetHeadline,
+} from "#/server/reader/search-headline";
 import { and, desc, eq, ilike, or, sql } from "drizzle-orm";
 import { z } from "zod";
 
@@ -154,7 +160,15 @@ const searchArticles = createServerFn({ method: "GET" })
           .leftJoin(p, eq(p.uri, d.publicationUri))
           .where(articleWhere),
         db
-          .select(articleCardColumns(schema))
+          .select({
+            ...articleCardColumns(schema),
+            searchTitleHtml: documentSearchTitleHeadline(d.title, tsq),
+            searchSnippetHtml: documentSearchSnippetHeadline(
+              d.description,
+              d.textContent,
+              tsq,
+            ),
+          })
           .from(d)
           .leftJoin(p, eq(p.uri, d.publicationUri))
           .leftJoin(pr, eq(pr.did, p.did))
@@ -212,7 +226,14 @@ async function searchIndexedPublications(
       .leftJoin(pr, eq(pr.did, p.did))
       .where(pubWhere),
     db
-      .select(publicationCardColumns(schema))
+      .select({
+        ...publicationCardColumns(schema),
+        searchNameHtml: publicationSearchNameHeadline(p.name, tsq),
+        searchSnippetHtml: publicationSearchSnippetHeadline(
+          p.description,
+          tsq,
+        ),
+      })
       .from(p)
       .leftJoin(st, eq(st.publicationUri, p.uri))
       .leftJoin(pr, eq(pr.did, p.did))
