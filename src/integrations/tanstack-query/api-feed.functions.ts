@@ -6,6 +6,7 @@ import {
   dbValueToHomeScope,
   parseHomeScope,
 } from "#/lib/home-scope";
+import { dbValueToTrackReadingHistory } from "#/lib/track-reading-history";
 import { getAtprotoSessionForRequest } from "#/middleware/auth-session.server";
 import { observe } from "#/server/observability/log";
 import type { Span } from "#/server/observability/log";
@@ -95,7 +96,10 @@ export interface HomeFeed {
   unreadCount: number | null;
 }
 
-/** Rails + unread badge — deferred after the critical home feed paints. */
+/**
+ * Trending + You-might-follow rails. Unread masthead counts come from the
+ * sidebar snapshot (`getShellBootstrap` / `getSidebar`), not this payload.
+ */
 export interface HomeFeedExtras {
   unreadCount: number | null;
   trending: Array<ArticleCard>;
@@ -105,6 +109,7 @@ export interface HomeFeedExtras {
 export interface HomePageData {
   scope: HomeScope;
   feed: HomeFeed;
+  extras: HomeFeedExtras;
 }
 
 const homePageInput = z.object({
@@ -216,16 +221,22 @@ async function resolveHomeFeedContext(
   };
 }
 
-async function loadHomeFeedCritical(
+type HomeFeedContext = Awaited<ReturnType<typeof resolveHomeFeedContext>>;
+
+function homeExcludeUris(feed: Pick<HomeFeed, "featured" | "latestUnread">) {
+  return [
+    feed.featured?.uri,
+    ...feed.latestUnread.map((article) => article.uri),
+  ].filter((uri): uri is string => uri != null);
+}
+
+async function buildHomeFeedCritical(
   db: Db,
   schema: Schema,
-  did: string | null | undefined,
-  scope: HomeScope,
+  ctx: HomeFeedContext,
   span: Span,
-  options: { trackReading?: boolean } = {},
 ): Promise<HomeFeed> {
-  const { trackReading, hasFollows, personalized, rowQuery } =
-    await resolveHomeFeedContext(db, schema, did, scope, span, options);
+  const { trackReading, hasFollows, personalized, rowQuery } = ctx;
 
   const [featuredLead, rows] = await Promise.all([
     selectArticleCards(db, schema, {
@@ -270,25 +281,21 @@ async function loadHomeFeedCritical(
   } satisfies HomeFeed;
 }
 
-async function loadHomeFeedExtras(
+async function buildHomeFeedExtras(
   db: Db,
   schema: Schema,
-  did: string | null | undefined,
-  scope: HomeScope,
+  ctx: HomeFeedContext,
   excludeUris: ReadonlyArray<string>,
   span: Span,
-  options: { trackReading?: boolean } = {},
+  trendingRawPromise: ReturnType<typeof trendingArticles>,
+  trendingPubUrisPromise: ReturnType<typeof trendingPublicationUris>,
 ): Promise<HomeFeedExtras> {
-  const { trackReading, personalized, followUris } =
-    await resolveHomeFeedContext(db, schema, did, scope, span, options);
+  const { personalized, did, followUris } = ctx;
   const exclude = new Set(excludeUris);
 
-  const [counts, trendingRaw, trendingPubUris] = await Promise.all([
-    personalized && did && trackReading
-      ? countFollowedDocuments(db, schema, followUris, did)
-      : Promise.resolve(null),
-    trendingArticles(db, schema, HOME_RAIL_LIMIT),
-    trendingPublicationUris(db, schema, HOME_RAIL_LIMIT),
+  const [trendingRaw, trendingPubUris] = await Promise.all([
+    trendingRawPromise,
+    trendingPubUrisPromise,
   ]);
 
   const trendingFiltered = trendingRaw
@@ -308,10 +315,96 @@ async function loadHomeFeedExtras(
   span.set("trending", trending.length);
 
   return {
-    unreadCount: personalized && trackReading ? (counts?.unread ?? null) : 0,
+    unreadCount: null,
     trending,
     youMightFollow: youMightFollowRaw,
   } satisfies HomeFeedExtras;
+}
+
+async function loadHomeFeedCritical(
+  db: Db,
+  schema: Schema,
+  did: string | null | undefined,
+  scope: HomeScope,
+  span: Span,
+  options: { trackReading?: boolean } = {},
+): Promise<HomeFeed> {
+  const ctx = await resolveHomeFeedContext(
+    db,
+    schema,
+    did,
+    scope,
+    span,
+    options,
+  );
+  return buildHomeFeedCritical(db, schema, ctx, span);
+}
+
+async function loadHomeFeedExtras(
+  db: Db,
+  schema: Schema,
+  did: string | null | undefined,
+  scope: HomeScope,
+  excludeUris: ReadonlyArray<string>,
+  span: Span,
+  options: { trackReading?: boolean } = {},
+): Promise<HomeFeedExtras> {
+  const ctx = await resolveHomeFeedContext(
+    db,
+    schema,
+    did,
+    scope,
+    span,
+    options,
+  );
+  return buildHomeFeedExtras(
+    db,
+    schema,
+    ctx,
+    excludeUris,
+    span,
+    trendingArticles(db, schema, HOME_RAIL_LIMIT),
+    trendingPublicationUris(db, schema, HOME_RAIL_LIMIT),
+  );
+}
+
+/** Critical feed + rails in one request; trending queries overlap article fetches. */
+async function loadHomePagePayload(
+  db: Db,
+  schema: Schema,
+  did: string | null | undefined,
+  scope: HomeScope,
+  span: Span,
+  options: { trackReading?: boolean } = {},
+): Promise<{ feed: HomeFeed; extras: HomeFeedExtras }> {
+  const ctx = await resolveHomeFeedContext(
+    db,
+    schema,
+    did,
+    scope,
+    span,
+    options,
+  );
+
+  const trendingRawPromise = trendingArticles(db, schema, HOME_RAIL_LIMIT);
+  const trendingPubUrisPromise = trendingPublicationUris(
+    db,
+    schema,
+    HOME_RAIL_LIMIT,
+  );
+
+  const feed = await buildHomeFeedCritical(db, schema, ctx, span);
+  const extras = await buildHomeFeedExtras(
+    db,
+    schema,
+    ctx,
+    homeExcludeUris(feed),
+    span,
+    trendingRawPromise,
+    trendingPubUrisPromise,
+  );
+
+  return { feed, extras };
 }
 
 const getHomeFeed = createServerFn({ method: "GET" })
@@ -346,8 +439,22 @@ const getHomePage = createServerFn({ method: "GET" })
         scope = data.scope ?? parseHomeScope(getCookie(HOME_SCOPE_COOKIE));
       }
 
-      const feed = await loadHomeFeedCritical(db, schema, did, scope, span);
-      return { scope, feed } satisfies HomePageData;
+      const trackReading =
+        authSession?.session.user != null
+          ? dbValueToTrackReadingHistory(
+              authSession.session.user.trackReadingHistory ?? null,
+            )
+          : undefined;
+
+      const { feed, extras } = await loadHomePagePayload(
+        db,
+        schema,
+        did,
+        scope,
+        span,
+        trackReading !== undefined ? { trackReading } : {},
+      );
+      return { scope, feed, extras } satisfies HomePageData;
     }),
   );
 

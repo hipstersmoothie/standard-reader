@@ -49,7 +49,7 @@ const homeSearchSchema = z.object({
 export const Route = createFileRoute("/_layout/")({
   validateSearch: homeSearchSchema,
   loaderDeps: ({ search }) => ({ scope: search.scope }),
-  loader: async ({ context, deps, preload }) => {
+  loader: async ({ context, deps }) => {
     const page = await feedApi.getHomePage({
       data: { scope: deps.scope },
     });
@@ -65,16 +65,13 @@ export const Route = createFileRoute("/_layout/")({
       page.feed.featured?.uri,
       ...page.feed.latestUnread.map((article) => article.uri),
     ].filter((uri): uri is string => uri != null);
-    const extrasOptions = feedApi.getHomeExtrasQueryOptions({
-      scope: page.scope,
-      excludeUris,
-    });
-
-    if (preload) {
-      void context.queryClient.prefetchQuery(extrasOptions);
-    } else {
-      await context.queryClient.ensureQueryData(extrasOptions);
-    }
+    context.queryClient.setQueryData(
+      feedApi.getHomeExtrasQueryOptions({
+        scope: page.scope,
+        excludeUris,
+      }).queryKey,
+      page.extras,
+    );
 
     return { scope: page.scope };
   },
@@ -282,7 +279,6 @@ function HomeTrendingRailSkeleton() {
   return (
     <div
       {...stylex.props(styles.railCard)}
-      aria-busy="true"
       aria-label="Loading trending articles"
     >
       <div {...stylex.props(styles.railHead)}>
@@ -331,7 +327,6 @@ function HomeYouMightFollowRailSkeleton() {
   return (
     <div
       {...stylex.props(styles.railCard)}
-      aria-busy="true"
       aria-label="Loading recommendations"
     >
       <div {...stylex.props(styles.railHead)}>
@@ -399,6 +394,11 @@ function HomeFeed({ scope }: { scope: HomeScope }) {
     feedApi.getHomeFeedQueryOptions({ scope }),
   );
   const { data: session } = useQuery(user.getSessionQueryOptions);
+  const { data: sidebar } = useQuery({
+    ...feedApi.getSidebarQueryOptions(),
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+  });
   const { data: trackReadingPref } = useQuery({
     ...user.getTrackReadingHistoryPreferenceQueryOptions,
     refetchOnMount: false,
@@ -433,7 +433,10 @@ function HomeFeed({ scope }: { scope: HomeScope }) {
 
   const trending = extras?.trending ?? feed.trending;
   const youMightFollow = extras?.youMightFollow ?? feed.youMightFollow;
-  const unreadCount = extras?.unreadCount ?? feed.unreadCount;
+  const unreadCount =
+    trackReading && feed.personalized
+      ? (sidebar?.unreadCount ?? extras?.unreadCount ?? feed.unreadCount)
+      : 0;
   const unreadCountPending =
     trackReading && feed.personalized && unreadCount == null;
 
