@@ -5,7 +5,7 @@ import type {
 import type { RefObject } from "react";
 
 import * as stylex from "@stylexjs/stylex";
-import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { formatReaders, initials } from "#/components/reader/format";
 import {
@@ -25,7 +25,7 @@ import {
   ReaderContent,
   SectionHead,
 } from "../components/reader/primitives";
-import { SifaResumeChip } from "../components/reader/sifa-resume-chip";
+import { AuthorSifaResumeChip } from "../components/reader/sifa-resume-chip";
 import { ShareMenu } from "../components/reader/share-menu";
 import { Avatar } from "../design-system/avatar";
 import { IconButton } from "../design-system/icon-button";
@@ -294,20 +294,6 @@ function LoadMoreFooter({
       ) : null}
     </div>
   );
-}
-
-function AuthorSifaResumeChip({
-  did,
-  handle,
-}: {
-  did: string;
-  handle: string | null;
-}) {
-  const { data: sifaProfileUrl } = useQuery(
-    authorApi.getAuthorSifaProfileQueryOptions(did, handle),
-  );
-  if (!sifaProfileUrl) return null;
-  return <SifaResumeChip href={sifaProfileUrl} />;
 }
 
 function AuthorProfilePage() {
