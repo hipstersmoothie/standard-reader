@@ -12,6 +12,10 @@ export interface QuoteOgColors {
   accent: string;
   accentForeground: string;
   line: string;
+  hoverBg: string;
+  hoverFg: string;
+  accentSubtle: string;
+  accentSubtleFg: string;
 }
 
 export interface PublicationThemeInput {
@@ -28,6 +32,10 @@ const DEFAULT: QuoteOgColors = {
   accent: "#bd5633",
   accentForeground: "#f9f7f2",
   line: "#d9d2c8",
+  hoverBg: "#f0ece7",
+  hoverFg: "#3e3934",
+  accentSubtle: "#f0e0d7",
+  accentSubtleFg: "#bd5633",
 };
 
 const BLACK: Rgb = { r: 0, g: 0, b: 0 };
@@ -150,7 +158,32 @@ function deriveMuted(foreground: Rgb, background: Rgb): Rgb {
 }
 
 function deriveLine(foreground: Rgb, background: Rgb): Rgb {
-  return mix(foreground, background, 0.22);
+  return mix(background, foreground, 0.22);
+}
+
+/** Subtle hover wash — a light/dark tint of the publication surface. */
+function deriveHoverBg(foreground: Rgb, background: Rgb): Rgb {
+  return mix(background, foreground, 0.08);
+}
+
+function deriveHoverFg(foreground: Rgb, hoverBg: Rgb): Rgb {
+  return ensureContrast(foreground, hoverBg, MIN_BODY_CONTRAST);
+}
+
+/** Tonal accent surface for active toggles (Saved, Following). */
+function deriveAccentSubtle(accent: Rgb, background: Rgb): Rgb {
+  return mix(background, accent, 0.14);
+}
+
+function deriveAccentSubtleFg(
+  accent: Rgb,
+  accentSubtle: Rgb,
+  foreground: Rgb,
+): Rgb {
+  if (contrastRatio(accent, accentSubtle) >= MIN_BODY_CONTRAST) {
+    return accent;
+  }
+  return ensureContrast(foreground, accentSubtle, MIN_BODY_CONTRAST);
 }
 
 function accentOnBackground(
@@ -194,6 +227,10 @@ export function resolveQuoteOgColors(
   );
   const muted = deriveMuted(foreground, background);
   const line = deriveLine(foreground, background);
+  const hoverBg = deriveHoverBg(foreground, background);
+  const hoverFg = deriveHoverFg(foreground, hoverBg);
+  const accentSubtle = deriveAccentSubtle(accent, background);
+  const accentSubtleFg = deriveAccentSubtleFg(accent, accentSubtle, foreground);
 
   return {
     background: rgbToHex(background),
@@ -202,5 +239,9 @@ export function resolveQuoteOgColors(
     accent: rgbToHex(accent),
     accentForeground: rgbToHex(accentForeground),
     line: rgbToHex(line),
+    hoverBg: rgbToHex(hoverBg),
+    hoverFg: rgbToHex(hoverFg),
+    accentSubtle: rgbToHex(accentSubtle),
+    accentSubtleFg: rgbToHex(accentSubtleFg),
   };
 }

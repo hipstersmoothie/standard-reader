@@ -13,7 +13,7 @@ export default [
     ],
   },
   {
-    files: ["src/**/*.{ts,tsx}"],
+    files: ["src/**/*.{ts,tsx}", "extension/src/**/*.{ts,tsx}"],
     plugins: {
       "@stylexjs": eslintPluginStylex,
     },

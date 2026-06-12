@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Standard Reader</title>
+    <script>
+      (function () {
+        function escapeHtml(value) {
+          return String(value)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/"/g, "&quot;");
+        }
+
+        function renderPrerender(state) {
+          var root = document.getElementById("root");
+          if (!root || root.getAttribute("data-sr-prerender") === "1") {
+            return;
+          }
+          root.setAttribute("data-sr-prerender", "1");
+
+          var session = state.session || {};
+          var result = state.result || { kind: "unknown" };
+          var signedIn = session.signedIn === true;
+          var body = "";
+
+          if (!signedIn) {
+            body =
+              '<section class="sr-body sr-body-center">' +
+              '<div class="sr-mark" aria-hidden="true"></div>' +
+              '<h2 class="sr-headline">Save articles as you read</h2>' +
+              '<p class="sr-muted">Sign in to save articles and follow publications.</p>' +
+              '<button type="button" class="sr-button sr-button-primary" disabled>Sign in</button>' +
+              "</section>";
+          } else if (result.kind === "article") {
+            var saveLabel = result.isBookmarked ? "Saved" : "Save";
+            var followLabel = result.isFollowing ? "Subscribed" : "Subscribe";
+            body =
+              '<section class="sr-body">' +
+              '<h2 class="sr-title">' +
+              escapeHtml(result.title || "Article") +
+              "</h2>" +
+              (result.authorName
+                ? '<p class="sr-meta">' + escapeHtml(result.authorName) + "</p>"
+                : "") +
+              '<div class="sr-actions">' +
+              '<button type="button" class="sr-button sr-button-secondary" disabled>' +
+              escapeHtml(saveLabel) +
+              "</button>" +
+              '<button type="button" class="sr-button sr-button-secondary" disabled>' +
+              escapeHtml(followLabel) +
+              "</button>" +
+              '<button type="button" class="sr-button sr-button-primary" disabled>Read</button>' +
+              "</div>" +
+              "</section>";
+          } else if (result.kind === "publication") {
+            var subscribed = result.isFollowing ? "Subscribed" : "Subscribe";
+            body =
+              '<section class="sr-body">' +
+              '<p class="sr-kicker">Publication</p>' +
+              '<h2 class="sr-title">' +
+              escapeHtml(result.name || "Publication") +
+              "</h2>" +
+              '<div class="sr-actions">' +
+              '<button type="button" class="sr-button sr-button-secondary" disabled>' +
+              escapeHtml(subscribed) +
+              "</button>" +
+              '<button type="button" class="sr-button sr-button-primary" disabled>View</button>' +
+              "</div>" +
+              "</section>";
+          } else if (result.kind === "reader-link") {
+            body =
+              '<section class="sr-body">' +
+              '<p class="sr-muted">You&apos;re already in Standard Reader.</p>' +
+              '<button type="button" class="sr-button sr-button-secondary" disabled>Open page</button>' +
+              "</section>";
+          } else {
+            var host = "";
+            try {
+              host = state.tabUrl ? new URL(state.tabUrl).hostname : "";
+            } catch (_error) {
+              host = "";
+            }
+            body =
+              '<section class="sr-body sr-body-center">' +
+              '<div class="sr-mark sr-mark-compass" aria-hidden="true"></div>' +
+              '<h2 class="sr-headline">No article detected</h2>' +
+              '<p class="sr-muted">This page doesn&apos;t look like a saved article yet.</p>' +
+              (host ? '<p class="sr-host">' + escapeHtml(host) + "</p>" : "") +
+              '<button type="button" class="sr-button sr-button-primary" disabled>Browse Discover</button>' +
+              "</section>";
+          }
+
+          root.innerHTML =
+            '<div class="sr-shell">' +
+            '<header class="sr-header">' +
+            '<div class="sr-brand">Standard Reader</div>' +
+            '<div class="sr-header-spacer"></div>' +
+            '<div class="sr-header-actions" aria-hidden="true"></div>' +
+            "</header>" +
+            '<div class="sr-separator"></div>' +
+            body +
+            (signedIn
+              ? '<div class="sr-separator"></div>' +
+                '<footer class="sr-footer">' +
+                '<span class="sr-muted">' +
+                escapeHtml(session.name || session.handle || "Signed in") +
+                "</span>" +
+                "</footer>"
+              : "") +
+            "</div>";
+        }
+
+        window.__SR_POPUP_INIT__ = new Promise(function (resolve) {
+          var api = globalThis.chrome;
+          if (!api?.tabs?.query || !api?.storage?.session?.get) {
+            resolve(null);
+            return;
+          }
+
+          api.tabs.query(
+            { active: true, currentWindow: true },
+            function (tabs) {
+              var tab = tabs[0];
+              if (!tab || tab.id == null || !tab.url) {
+                resolve(null);
+                return;
+              }
+
+              api.storage.session.get("srPopupState", function (data) {
+                var state = data.srPopupState;
+                if (
+                  state &&
+                  state.tabId === tab.id &&
+                  state.tabUrl === tab.url
+                ) {
+                  renderPrerender(state);
+                  resolve(state);
+                  return;
+                }
+                resolve(null);
+              });
+            },
+          );
+        });
+      })();
+    </script>
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        background-color: #fffcfc;
+        color: #211f1f;
+        color-scheme: light;
+        font-family: "Archivo", system-ui, sans-serif;
+        margin: 0;
+        min-height: 280px;
+        padding: 0;
+        width: 400px;
+      }
+
+      body {
+        overflow-x: hidden;
+      }
+
+      #root {
+        min-height: 280px;
+        width: 400px;
+      }
+
+      .sr-shell {
+        display: flex;
+        flex-direction: column;
+        min-height: 280px;
+        width: 400px;
+      }
+
+      .sr-header {
+        align-items: center;
+        display: flex;
+        gap: 0.5rem;
+        padding: 1rem 1.25rem;
+      }
+
+      .sr-brand {
+        font-family: "Newsreader", Georgia, serif;
+        font-size: 1.125rem;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+      }
+
+      .sr-header-spacer {
+        flex: 1;
+      }
+
+      .sr-header-actions {
+        height: 2rem;
+        width: 4.5rem;
+      }
+
+      .sr-separator {
+        background: #e8e4e4;
+        height: 1px;
+        width: 100%;
+      }
+
+      .sr-body {
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+        gap: 0.75rem;
+        padding: 1.5rem 1.25rem;
+      }
+
+      .sr-body-center {
+        align-items: center;
+        padding-bottom: 2rem;
+        padding-top: 1.5rem;
+        text-align: center;
+      }
+
+      .sr-mark {
+        background: #fff0f6;
+        border-radius: 0.75rem;
+        height: 3rem;
+        margin-bottom: 0.5rem;
+        width: 3rem;
+      }
+
+      .sr-mark-compass {
+        background: #fff0f6;
+      }
+
+      .sr-headline,
+      .sr-title {
+        font-family: "Newsreader", Georgia, serif;
+        font-size: 1.375rem;
+        font-weight: 500;
+        letter-spacing: -0.02em;
+        line-height: 1.2;
+        margin: 0;
+      }
+
+      .sr-kicker {
+        color: #c2502b;
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        margin: 0;
+        text-transform: uppercase;
+      }
+
+      .sr-meta,
+      .sr-muted {
+        color: #656161;
+        font-size: 0.875rem;
+        line-height: 1.4;
+        margin: 0;
+      }
+
+      .sr-host {
+        background: #fff0f6;
+        border-radius: 0.5rem;
+        color: #c2502b;
+        font-family: "Spline Sans Mono", ui-monospace, monospace;
+        font-size: 0.8125rem;
+        margin: 0;
+        padding: 0.5rem 0.75rem;
+      }
+
+      .sr-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-top: 0.25rem;
+      }
+
+      .sr-button {
+        border: 1px solid transparent;
+        border-radius: 999px;
+        font: inherit;
+        font-size: 0.875rem;
+        font-weight: 600;
+        line-height: 1;
+        padding: 0.625rem 1rem;
+      }
+
+      .sr-button-primary {
+        background: #c2502b;
+        color: #fff;
+      }
+
+      .sr-button-secondary {
+        background: #f4f0f0;
+        color: #211f1f;
+      }
+
+      .sr-footer {
+        padding: 0.875rem 1.25rem;
+      }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Archivo:wght@400;500;600;700&family=Spline+Sans+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="./main.tsx"></script>
+  </body>
+</html>

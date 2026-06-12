@@ -42,7 +42,10 @@
     "db:studio": "drizzle-kit studio",
     "lex:lint": "node scripts/goat-lex.mjs lex lint",
     "lex:status": "node scripts/goat-lex.mjs lex status",
-    "atproto:publish-lexicons": "node scripts/goat-lex.mjs lex publish"
+    "atproto:publish-lexicons": "node scripts/goat-lex.mjs lex publish",
+    "extension:dev": "pnpm --filter standard-reader-extension dev",
+    "extension:build": "pnpm --filter standard-reader-extension build",
+    "extension:zip": "pnpm --filter standard-reader-extension zip"
   },
   "dependencies": {
     "@atcute/atproto": "^3.1.12",

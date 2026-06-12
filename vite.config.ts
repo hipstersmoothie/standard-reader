@@ -44,6 +44,12 @@ const config = defineConfig({
     tanstackStart(),
     viteReact(),
   ],
+  server: {
+    // Bluesky OAuth requires loopback IP — use 127.0.0.1, not localhost.
+    host: "127.0.0.1",
+    port: 3000,
+    strictPort: true,
+  },
 });
 
 export default config;

@@ -11,7 +11,7 @@ export function useLoginSearch(): { redirect?: string } {
   });
   const origin =
     globalThis.window === undefined
-      ? "http://localhost"
+      ? "http://127.0.0.1:3000"
       : globalThis.location.origin;
   return loginSearchFromLocation(pathname, search, hash, origin);
 }

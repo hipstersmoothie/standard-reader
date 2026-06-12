@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <style>
+    .glyph { fill: oklch(0.575 0.155 38); }
+    @media (prefers-color-scheme: dark) {
+      .glyph { fill: oklch(0.72 0.14 42); }
+    }
+  </style>
+  <text
+    class="glyph"
+    x="50%"
+    y="50%"
+    dy="0.02em"
+    text-anchor="middle"
+    dominant-baseline="central"
+    font-family="'Newsreader', Georgia, 'Times New Roman', serif"
+    font-size="56"
+    font-weight="500"
+  >S</text>
+</svg>

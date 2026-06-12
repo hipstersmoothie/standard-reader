@@ -63,6 +63,7 @@ import { ToastRegion } from "../../design-system/toast";
 import { NavbarAuth } from "../NavbarAuth";
 import { SiteFooter } from "../site-footer";
 import { AddPublicationModal } from "./add-publication-modal";
+import { BrandWordmark } from "./brand-wordmark";
 import { initials, listLinkParams, publicationLinkParams } from "./format";
 import { ListEditModal } from "./list-edit-modal";
 import { PageReaderBar } from "./page-reader-bar";
@@ -98,23 +99,13 @@ const styles = stylex.create({
     top: 0,
     width: "264px",
   },
-  brand: {
-    textBoxEdge: "cap alphabetic",
-
-    textBoxTrim: "trim-both",
+  brandLink: {
     textDecoration: "none",
-    color: uiColor.text2,
-    fontFamily: fontFamily.serif,
-    fontSize: "1.3rem",
-    fontWeight: fontWeight.medium,
-    letterSpacing: tracking.tight,
-    lineHeight: lineHeight.none,
   },
   brandSidebar: {
     paddingBottom: verticalSpace["7xl"],
     paddingLeft: horizontalSpace.md,
   },
-  brandAccent: { color: primaryColor.text2 },
   nav: {
     columnGap: gap.xxs,
     display: "flex",
@@ -865,8 +856,8 @@ function BottomNav({
 
 function Brand({ style }: { style?: stylex.StyleXStyles }) {
   return (
-    <Link to="/" {...stylex.props(styles.brand, style)}>
-      Standard <span {...stylex.props(styles.brandAccent)}>Reader</span>
+    <Link to="/" {...stylex.props(styles.brandLink, style)}>
+      <BrandWordmark />
     </Link>
   );
 }

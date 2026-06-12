@@ -24,26 +24,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function linkTargetVariants(url: string): Array<string> {
-  const trimmed = url.trim();
-  if (!trimmed) return [];
-
-  const variants = new Set<string>([trimmed]);
-  try {
-    const parsed = new URL(trimmed);
-    if (!parsed.search && !parsed.hash) {
-      if (trimmed.endsWith("/")) {
-        variants.add(trimmed.replace(/\/+$/, "") || trimmed);
-      } else {
-        variants.add(`${trimmed}/`);
-      }
-    }
-  } catch {
-    // Keep the original target when it is not a parseable absolute URL.
-  }
-
-  return [...variants];
-}
+import { linkTargetVariants } from "#/lib/link-target-variants";
 
 function recordUri(record: ConstellationBacklinkRecord): string {
   return `at://${record.did}/${record.collection}/${record.rkey}`;

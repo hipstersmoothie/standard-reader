@@ -364,3 +364,21 @@ After Tier 1–3, as appetite allows:
 - [x] **Subscribe embed** — `ShareMenu` embed option on `/p/`; `/embed/subscribe/$did/$rkey`
       iframe card + `/subscribe/$did/$rkey` flow (subscription-only OAuth scope, auto-follow,
       themed success screen).
+
+## 12. Browser extension (WXT)
+
+Full-featured MV3 extension in [`extension/`](extension/) — popup, page overlay, context menu,
+Bluesky badges, options page. Backend routes under [`src/routes/api/extension/`](src/routes/api/extension/).
+
+- [x] **Workspace scaffold** — `pnpm-workspace.yaml`, WXT + React + StyleX + hip-ui aliases,
+      root scripts (`extension:dev`, `extension:build`, `extension:zip`), CI build step.
+- [x] **Shared link normalization** — [`src/lib/link-target-variants.ts`](src/lib/link-target-variants.ts).
+- [x] **Resolve server** — [`src/server/extension/resolve-page-url.server.ts`](src/server/extension/resolve-page-url.server.ts)
+      (SR links, `at://`, canonical URL, publication homepage).
+- [x] **API routes** — `/api/extension/{session,resolve,bookmark,follow}`.
+- [x] **Connected landing** — [`/extension/connected`](src/routes/extension.connected.tsx) after OAuth.
+- [x] **Extension client** — background message router, hip-ui popup, unified content script
+      (page overlay + Bluesky badges), context menus, toolbar badge, options page.
+- [x] **Store prep** — [`extension/store/`](extension/store/) privacy policy, listing copy, publish runbook, QA checklist in [`extension/README.md`](extension/README.md).
+- [ ] **Manual QA** — run checklist in [`extension/README.md`](extension/README.md) (dev + prod).
+- [ ] **Chrome Web Store publish** — capture screenshots per [`extension/store/README.md`](extension/store/README.md), `pnpm extension:zip`, first upload.

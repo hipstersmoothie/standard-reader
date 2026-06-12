@@ -37,6 +37,15 @@ jobs:
       - name: Build
         run: pnpm build
 
+      - name: Build extension
+        run: pnpm extension:build
+
+      - name: Typecheck extension
+        run: pnpm --filter standard-reader-extension compile
+
+      - name: Lint extension
+        run: pnpm exec oxlint extension/src src/server/extension src/routes/api/extension src/routes/extension.connected.tsx
+
       - name: Lint
         run: pnpm lint
 

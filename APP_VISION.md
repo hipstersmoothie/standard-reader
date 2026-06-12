@@ -38,7 +38,8 @@ things you already subscribe to.
 - **Audience:** readers who want a calm, text-first home for long-form writing, plus a
   way to keep discovering new voices.
 - **Platform:** responsive web — desktop (persistent left sidebar) and mobile (top bar +
-  bottom tab nav). Same codebase, same components.
+  bottom tab nav). Same codebase, same components. **Browser extension** (WXT, MV3) as a
+  capture + bridge client for save/follow while browsing.
 
 ---
 
@@ -387,6 +388,30 @@ Standard Reader is a **port of an earlier no-build prototype** into this TanStac
 - **Observability:** Server functions emit `observe()` events to Honeycomb; client route transitions
   emit `nav.transition` via `telemetryApi.recordClientEvent`. Shell/sidebar queries use a 5-minute
   stale window and block child navigations only on a cold cache.
+- **Browser extension:** pnpm workspace package [`extension/`](extension/) built with WXT + hip-ui
+  (shared `#/*` → `src/design-system/`). Auth via HttpOnly session cookie; background worker calls
+  `/api/extension/*` on the web app. Surfaces: popup, page overlay, context menu, Bluesky link
+  badges, options page, toolbar badge. See [`extension/store/README.md`](extension/store/README.md)
+  for Chrome Web Store publish notes.
+
+### Browser extension architecture
+
+```
+Web page / bsky.app                Extension (WXT MV3)
+        │                                   │
+        │  content script (overlay/badges)  │
+        │ ───────── sendMessage ──────────► │ background worker
+        │                                   │  Cookie: standard-reader-auth.session_token
+        │                                   ▼
+        │                          TanStack Start /api/extension/*
+        │                          (session, resolve, bookmark, follow)
+        ▼                                   │
+   Neon read-model ◄──── same ingest ───────┘
+```
+
+- **Resolve:** canonical URL → document/publication (`src/server/extension/resolve-page-url.server.ts`).
+- **Writes:** bookmark + follow reuse existing repo-record + ingest handlers.
+- **Login completion:** `/extension/connected` landing tab after OAuth redirect.
 
 ### Origin prototype (being ported)
 

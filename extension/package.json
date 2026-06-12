@@ -1,0 +1,35 @@
+{
+  "name": "standard-reader-extension",
+  "description": "Save articles and follow publications on the standard.site network.",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "wxt",
+    "dev:firefox": "wxt -b firefox",
+    "build": "wxt prepare && wxt build",
+    "build:firefox": "wxt prepare && wxt build -b firefox",
+    "zip": "wxt prepare && wxt zip",
+    "zip:firefox": "wxt prepare && wxt zip -b firefox",
+    "compile": "wxt prepare && tsc --noEmit"
+  },
+  "dependencies": {
+    "@stylexjs/stylex": "^0.18.3",
+    "lucide-react": "^0.548.0",
+    "react": "^19.2.0",
+    "react-aria": "^3.49.0",
+    "react-aria-components": "^1.18.0",
+    "react-dom": "^19.2.0",
+    "react-stately": "^3.47.0"
+  },
+  "devDependencies": {
+    "@stylexjs/unplugin": "^0.18.2",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@wxt-dev/module-react": "^1.1.5",
+    "browserslist": "^4.28.2",
+    "lightningcss": "^1.32.0",
+    "typescript": "^6.0.2",
+    "wxt": "^0.20.26"
+  }
+}

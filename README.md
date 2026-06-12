@@ -35,7 +35,7 @@ Requires Node ≥ 22.6 and pnpm (pinned via `package.json#packageManager`).
 ```bash
 pnpm install
 cp .env.example .env   # fill in values — see comments in the file
-pnpm dev               # http://localhost:3000 (hops to the next free port)
+pnpm dev               # http://127.0.0.1:3000
 ```
 
 At minimum you need `DATABASE_URL` (a Neon Postgres connection string — a local Postgres works

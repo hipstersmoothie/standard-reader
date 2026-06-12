@@ -8,6 +8,14 @@ export interface SavedHandle {
   lastUsed: number;
 }
 
+/** `@handle` for UI; strips a leading `@` if present. */
+export function formatDisplayHandle(
+  handle: string | null | undefined,
+): string | null {
+  const trimmed = handle?.trim().replace(/^@/, "");
+  return trimmed ? `@${trimmed}` : null;
+}
+
 /** Keep cookie under ~4KB browser limits when many avatars are CDN URLs */
 const SAVED_HANDLE_AVATAR_MAX_CHARS = 900;
 

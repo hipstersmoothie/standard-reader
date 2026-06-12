@@ -198,7 +198,7 @@ function getBaseUrl(): string {
       "PUBLIC_URL (or BETTER_AUTH_URL / ATPROTO_BASE_URL) environment variable is required",
     );
   }
-  return url.replace(/\/$/, "");
+  return url.replace("localhost", "127.0.0.1").replace(/\/$/, "");
 }
 
 function isPublicClient(): boolean {
