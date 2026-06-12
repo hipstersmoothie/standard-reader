@@ -235,15 +235,13 @@ async function main() {
         a.format.localeCompare(b.format),
     );
 
-  const totals = rows.reduce(
-    (acc, row) => ({
-      documents: acc.documents + row.documents,
-      documentsWithImages: acc.documentsWithImages + row.documentsWithImages,
-      images: acc.images + row.images,
-      imagesWithAlt: acc.imagesWithAlt + row.imagesWithAlt,
-    }),
-    emptyStats(),
-  );
+  const totals = emptyStats();
+  for (const row of rows) {
+    totals.documents += row.documents;
+    totals.documentsWithImages += row.documentsWithImages;
+    totals.images += row.images;
+    totals.imagesWithAlt += row.imagesWithAlt;
+  }
 
   // eslint-disable-next-line no-console
   console.log("Image alt-text coverage by content format\n");

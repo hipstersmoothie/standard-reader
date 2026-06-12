@@ -9,17 +9,16 @@ import type {
   PublicationCard,
   Schema,
 } from "#/integrations/tanstack-query/api-shapes";
+import type { SubscriptionList } from "#/server/reader/saved-lists";
 
 import { APP_NSID } from "#/lib/atproto/nsids";
 import { resolveIdentity } from "#/server/atproto/identity";
 import { listCollectionRecords } from "#/server/atproto/repo-records";
-import type { SubscriptionList } from "#/server/reader/saved-lists";
 import {
   countFollowedDocuments,
   countUnreadByPublication,
   followedPublications,
 } from "#/server/reader/queries";
-
 import {
   effectiveFollowUris,
   savedListsForReader,

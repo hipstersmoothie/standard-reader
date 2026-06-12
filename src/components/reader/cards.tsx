@@ -79,15 +79,15 @@ const styles = stylex.create({
   },
   cardShell: {
     textDecoration: "none",
-    position: "relative",
     color: "inherit",
     cursor: "pointer",
     display: "block",
+    position: "relative",
   },
   cardOverlay: {
     inset: 0,
-    position: "absolute",
     borderRadius: "inherit",
+    position: "absolute",
     zIndex: 0,
   },
   cardInertRoot: {
@@ -180,12 +180,12 @@ const styles = stylex.create({
     paddingTop: spacing["6"],
   },
   rowShell: {
+    gap: gap["2xl"],
+    display: "flex",
+    flexDirection: "column",
     borderBottomColor: uiColor.border1,
     borderBottomStyle: "solid",
-    display: "flex",
     borderBottomWidth: 1,
-    gap: gap["2xl"],
-    flexDirection: "column",
     paddingBottom: spacing["6"],
     paddingTop: spacing["6"],
   },
@@ -203,12 +203,12 @@ const styles = stylex.create({
     rowGap: gap["5xl"],
   },
   featureShell: {
+    gap: gap["5xl"],
+    display: "flex",
+    flexDirection: "column",
     borderBottomColor: uiColor.border1,
     borderBottomStyle: "solid",
-    display: "flex",
     borderBottomWidth: 1,
-    gap: gap["5xl"],
-    flexDirection: "column",
     paddingBottom: spacing["9"],
   },
   featureGrid: {
@@ -1242,7 +1242,7 @@ export function FeatureArticle({
   const cover = coverImage(article);
   const featureGridStyles: Array<stylex.StyleXStyles | false | undefined> = [
     styles.featureGrid,
-    !cover ? styles.featureTextOnly : false,
+    cover ? false : styles.featureTextOnly,
   ];
   const articleBody = (
     <>
@@ -1289,7 +1289,7 @@ export function FeatureArticle({
   return (
     <ArticleLink
       article={article}
-      extraStyles={[styles.feature, !cover ? styles.featureTextOnly : false]}
+      extraStyles={[styles.feature, cover ? false : styles.featureTextOnly]}
     >
       {articleBody}
     </ArticleLink>
@@ -1376,12 +1376,12 @@ export function ArticleRow({
   const articleBody = (
     <ArticleLink article={article} extraStyles={gridStyles}>
       <Flex direction="column" gap="2xl">
-        {!showByline ? (
+        {showByline ? null : (
           <Flex align="center" style={styles.rowHeader}>
             <span />
             {saveBesideMedia ? null : saveButton}
           </Flex>
-        ) : null}
+        )}
         <ArticleTitleRow
           article={article}
           showByline={showByline}
@@ -1583,7 +1583,7 @@ function PubCardFoot({
 }) {
   const showTopic = !hideTopic && Boolean(pub.topic);
   const taggedMeta =
-    tagPostCount != null ? formatTaggedPostCount(tagPostCount) : null;
+    tagPostCount == null ? null : formatTaggedPostCount(tagPostCount);
   if (!showTopic && !taggedMeta && pub.subscriberCount <= 0) {
     return null;
   }

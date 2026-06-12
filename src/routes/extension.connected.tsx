@@ -12,11 +12,11 @@ import { requestExtensionCloseLoginTab } from "#/lib/extension-connected";
 
 const styles = stylex.create({
   page: {
+    padding: verticalSpace.xl,
     alignItems: "center",
     boxSizing: "border-box",
     justifyContent: "center",
     minHeight: "100vh",
-    padding: verticalSpace.xl,
   },
   card: {
     alignItems: "center",

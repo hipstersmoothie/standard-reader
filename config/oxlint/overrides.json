@@ -244,6 +244,12 @@
       }
     },
     {
+      "files": ["**/wxt.config.ts"],
+      "rules": {
+        "eslint-plugin-unicorn(no-process-exit)": "off"
+      }
+    },
+    {
       "files": ["**/*.mjs", "**/*.cjs"],
       "env": { "node": true }
     },

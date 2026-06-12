@@ -1,9 +1,7 @@
+import type { ReadingTypographyPreference } from "#/lib/reading-typography";
 import type { CSSProperties } from "react";
 
-import type { ReadingTypographyPreference } from "#/lib/reading-typography";
-
 import * as stylex from "@stylexjs/stylex";
-import { readingCustomFontFamily } from "#/lib/reading-typography";
 import { primaryColor, uiColor } from "#/design-system/theme/color.stylex";
 import { radius } from "#/design-system/theme/radius.stylex";
 import { gap, size } from "#/design-system/theme/semantic-spacing.stylex";
@@ -13,6 +11,7 @@ import {
   fontSize,
   fontWeight,
 } from "#/design-system/theme/typography.stylex";
+import { readingCustomFontFamily } from "#/lib/reading-typography";
 
 export const articleBodyStyles = stylex.create({
   body: {

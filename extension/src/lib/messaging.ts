@@ -1,9 +1,9 @@
+import type { PopupStateResponse } from "./popup-state";
 import type {
   ExtensionResolveResult,
   ExtensionSessionResponse,
   ExtensionSettings,
 } from "./types";
-import type { PopupStateResponse } from "./popup-state";
 
 export type PendingAction =
   | { kind: "bookmark"; documentUri: string; save: boolean }
@@ -19,7 +19,12 @@ export type BgRequest =
   | { type: "resolveBatch"; urls: Array<string> }
   | { type: "resolveActiveTab" }
   | { type: "getPopupState"; refresh?: boolean }
-  | { type: "bookmark"; documentUri: string; save: boolean }
+  | {
+      type: "bookmark";
+      documentUri: string;
+      save: boolean;
+      resolveUrl?: string;
+    }
   | { type: "follow"; publicationUri: string; follow: boolean }
   | { type: "getSession" }
   | { type: "openLogin" }
@@ -56,13 +61,13 @@ type BgResponseData<T extends BgRequest["type"]> = T extends "getSettings"
             : T extends "getPopupState"
               ? PopupStateResponse
               : T extends
-                  | "bookmark"
-                  | "follow"
-                  | "openLogin"
-                  | "loginComplete"
-                  | "openReader"
-              ? { ok: boolean }
-              : never;
+                    | "bookmark"
+                    | "follow"
+                    | "openLogin"
+                    | "loginComplete"
+                    | "openReader"
+                ? { ok: boolean }
+                : never;
 
 export function sendMessage<T extends BgRequest>(
   request: T,

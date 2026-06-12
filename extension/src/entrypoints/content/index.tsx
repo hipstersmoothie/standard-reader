@@ -1,11 +1,9 @@
 import type { Root } from "react-dom/client";
 import type { ContentScriptContext } from "wxt/utils/content-script-context";
 
+import { readDiscoveryHintsFromDocument } from "#/lib/discovery-hints";
 import { createRoot } from "react-dom/client";
 
-import { readDiscoveryHintsFromDocument } from "#/lib/discovery-hints";
-
-import { BskyLinkBadge } from "../../components/BskyLinkBadge";
 import { PageChip } from "../../components/PageChip";
 import { sendMessage } from "../../lib/messaging";
 import "../../load-stylex-styles";
@@ -20,33 +18,14 @@ function dismissOrigin(origin: string): void {
   dismissedOrigins.add(origin);
 }
 
-const SR_HOSTS = new Set([
-  "standard-reader.app",
-  "staging.standard-reader.app",
-]);
-const BSKY_HOSTS = new Set(["bsky.app", "staging.bsky.app"]);
 const EXCLUDED_HOSTS = new Set([
   "standard-reader.app",
+  "staging.standard-reader.app",
+  "bsky.app",
+  "staging.bsky.app",
   "localhost",
   "127.0.0.1",
 ]);
-
-function collectBskyLinks(): Array<HTMLAnchorElement> {
-  const anchors = [
-    ...document.querySelectorAll("a[href]"),
-  ] as Array<HTMLAnchorElement>;
-  return anchors.filter((anchor) => {
-    const href = anchor.href;
-    if (!href) return false;
-    if (href.startsWith("at://")) return true;
-    try {
-      const url = new URL(href);
-      return SR_HOSTS.has(url.hostname) && url.pathname.startsWith("/a/");
-    } catch {
-      return false;
-    }
-  });
-}
 
 function installSpaNavigationListener(callback: () => void): () => void {
   const notify = () => {
@@ -189,102 +168,14 @@ async function initPageOverlay(ctx: ContentScriptContext): Promise<void> {
   });
 }
 
-async function initBskyBadges(ctx: ContentScriptContext): Promise<void> {
-  const settings = await sendMessage({ type: "getSettings" });
-  if (!settings.bskyBadgesEnabled) return;
-
-  const mounted = new Map<
-    HTMLAnchorElement,
-    Awaited<ReturnType<typeof createShadowRootUi>>
-  >();
-
-  const scan = async () => {
-    for (const [link, ui] of mounted) {
-      if (!document.contains(link)) {
-        ui.remove();
-        mounted.delete(link);
-        delete link.dataset.srBadgeMounted;
-      }
-    }
-
-    const links = collectBskyLinks();
-    const hrefs = [...new Set(links.map((link) => link.href))];
-    if (hrefs.length === 0) return;
-
-    const results = await sendMessage({
-      type: "resolveBatch",
-      urls: hrefs,
-    });
-
-    for (const link of links) {
-      const result = results[link.href];
-      if (!result || result.kind !== "article") {
-        if (link.dataset.srBadgeMounted === "true") {
-          const existing = mounted.get(link);
-          existing?.remove();
-          mounted.delete(link);
-          delete link.dataset.srBadgeMounted;
-        }
-        continue;
-      }
-      if (link.dataset.srBadgeMounted === "true") {
-        continue;
-      }
-
-      link.dataset.srBadgeMounted = "true";
-      const ui = await createShadowRootUi(ctx, {
-        name: "standard-reader-bsky-badge",
-        position: "inline",
-        anchor: link,
-        append: "after",
-        onMount(container) {
-          const root = createRoot(container);
-          root.render(
-            <BskyLinkBadge
-              result={result}
-              onUpdate={() => {
-                void scan();
-              }}
-            />,
-          );
-          return root;
-        },
-        onRemove(root) {
-          root?.unmount();
-        },
-      });
-      await ui.mount();
-      mounted.set(link, ui);
-    }
-  };
-
-  void scan();
-
-  const observer = new MutationObserver(() => {
-    void scan();
-  });
-  observer.observe(document.body, { subtree: true, childList: true });
-
-  browser.storage.onChanged.addListener((changes, area) => {
-    if (area === "sync" && changes.bskyBadgesEnabled) {
-      if (changes.bskyBadgesEnabled.newValue === false) {
-        for (const ui of mounted.values()) {
-          ui.remove();
-        }
-        mounted.clear();
-      } else {
-        void scan();
-      }
-    }
-  });
-}
-
 const standardReaderContentScript = defineContentScript({
   matches: ["<all_urls>"],
   cssInjectionMode: "ui",
   excludeMatches: [
     "*://standard-reader.app/*",
     "*://*.standard-reader.app/*",
+    "*://bsky.app/*",
+    "*://staging.bsky.app/*",
     "*://localhost/*",
     "*://127.0.0.1/*",
   ],
@@ -294,14 +185,10 @@ const standardReaderContentScript = defineContentScript({
         sendResponse(readDiscoveryHintsFromDocument(document));
         return true;
       }
-      return undefined;
+      return;
     });
 
     const host = globalThis.location.hostname;
-    if (BSKY_HOSTS.has(host)) {
-      await initBskyBadges(ctx);
-      return;
-    }
     if (EXCLUDED_HOSTS.has(host)) {
       return;
     }

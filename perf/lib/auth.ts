@@ -2,10 +2,10 @@ import type { BrowserContext } from "@playwright/test";
 
 import { readPerfAuthState } from "./bootstrap-session.ts";
 import {
+  SESSION_COOKIE_NAME,
   hasPerfAppPasswordCredentials,
   perfBaseUrl,
   perfSessionToken,
-  SESSION_COOKIE_NAME,
 } from "./config.ts";
 
 export function hasPerfSignedInCredentials(): boolean {

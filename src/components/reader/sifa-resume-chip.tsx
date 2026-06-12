@@ -1,14 +1,12 @@
 import * as stylex from "@stylexjs/stylex";
 import { useQuery } from "@tanstack/react-query";
-
-import { authorApi } from "#/integrations/tanstack-query/api-author.functions";
-
 import { Badge } from "#/design-system/badge";
+import { authorApi } from "#/integrations/tanstack-query/api-author.functions";
 
 const styles = stylex.create({
   link: {
-    color: "inherit",
     textDecoration: "none",
+    color: "inherit",
   },
   placeholder: {
     flexShrink: 0,
@@ -34,12 +32,7 @@ export function SifaResumeChip({ href }: { href: string }) {
 /** Invisible badge matching {@link SifaResumeChip} dimensions — reserves space while loading. */
 function SifaResumeChipPlaceholder() {
   return (
-    <Badge
-      size="sm"
-      variant="default"
-      aria-hidden
-      style={styles.placeholder}
-    >
+    <Badge size="sm" variant="default" aria-hidden style={styles.placeholder}>
       Resume
     </Badge>
   );

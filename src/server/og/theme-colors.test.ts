@@ -79,15 +79,16 @@ describe("resolveQuoteOgColors", () => {
   });
 });
 
+function linearizeChannel(channel: number): number {
+  const value = channel / 255;
+  return value <= 0.039_28 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+}
+
 function relativeLuminance(color: { r: number; g: number; b: number }): number {
-  const linearize = (channel: number) => {
-    const value = channel / 255;
-    return value <= 0.039_28 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
-  };
   return (
-    0.2126 * linearize(color.r) +
-    0.7152 * linearize(color.g) +
-    0.0722 * linearize(color.b)
+    0.2126 * linearizeChannel(color.r) +
+    0.7152 * linearizeChannel(color.g) +
+    0.0722 * linearizeChannel(color.b)
   );
 }
 

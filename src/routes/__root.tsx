@@ -229,7 +229,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       >
         <PersistOAuthSavedHandle />
         <NavTelemetry />
-        {!isEmbedPath(pathname) ? <PlausibleAnalytics /> : null}
+        {isEmbedPath(pathname) ? null : <PlausibleAnalytics />}
         {children}
 
         <TanStackDevtools

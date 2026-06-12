@@ -78,8 +78,16 @@ export function PublicationNameLink({
           tabIndex={0}
           onClick={(event) => {
             stopBubble(event);
-            if (event.defaultPrevented || event.button !== 0) return;
-            goToPublication();
+            if (
+              !event.defaultPrevented &&
+              event.button === 0 &&
+              !event.metaKey &&
+              !event.ctrlKey &&
+              !event.shiftKey &&
+              !event.altKey
+            ) {
+              goToPublication();
+            }
           }}
           onKeyDown={(event) => {
             if (event.key === "Enter" || event.key === " ") {

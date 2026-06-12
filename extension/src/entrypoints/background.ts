@@ -1,4 +1,5 @@
 import type { BgRequest, BgResponse } from "../lib/messaging";
+import type { PopupStateResponse } from "../lib/popup-state";
 import type {
   ExtensionResolveResult,
   ExtensionSessionResponse,
@@ -12,13 +13,6 @@ import {
 } from "../lib/auth";
 import { getEffectiveApiOrigin, loadSettings } from "../lib/config";
 import {
-  clearResolveCache,
-  getCachedResolve,
-  invalidateResolveCache,
-  resolveBatchWithCache,
-  resolveWithCache,
-} from "../lib/resolve-cache";
-import {
   getSessionCached,
   getTabSnapshot,
   invalidateSessionCache,
@@ -27,7 +21,13 @@ import {
   rememberTabSnapshot,
   seedSessionCache,
 } from "../lib/popup-state";
-import type { PopupStateResponse } from "../lib/popup-state";
+import {
+  clearResolveCache,
+  getCachedResolve,
+  invalidateResolveCache,
+  resolveBatchWithCache,
+  resolveWithCache,
+} from "../lib/resolve-cache";
 
 const MENU_SAVE = "sr-save";
 const MENU_OPEN = "sr-open";
@@ -45,13 +45,14 @@ async function closeLoginTab(): Promise<void> {
     return;
   }
 
-  const origin = (await getEffectiveApiOrigin()).replace(/\/$/, "");
+  const apiOrigin = await getEffectiveApiOrigin();
+  const origin = apiOrigin.replace(/\/$/, "");
   const tabs = await browser.tabs.query({
     url: [`${origin}/extension/connected`, `${origin}/extension/connected/*`],
   });
   for (const tab of tabs) {
     if (tab.id != null) {
-      await browser.tabs.remove(tab.id).catch(() => undefined);
+      await browser.tabs.remove(tab.id).catch(() => {});
     }
   }
 }
@@ -65,7 +66,8 @@ async function getActiveTab(): Promise<Browser.tabs.Tab | undefined> {
 }
 
 async function getActiveTabUrl(): Promise<string | null> {
-  return (await getActiveTab())?.url ?? null;
+  const tab = await getActiveTab();
+  return tab?.url ?? null;
 }
 
 async function getTabDiscoveryHints(tabId: number): Promise<{
@@ -261,6 +263,7 @@ async function handleBookmark(
   save: boolean,
   signedIn: boolean,
   tabUrl?: string | null,
+  resolveUrl?: string | null,
 ): Promise<void> {
   if (!signedIn) {
     if (save) {
@@ -276,6 +279,7 @@ async function handleBookmark(
   try {
     await fetchBookmark(documentUri, save);
     if (tabUrl) await invalidateResolveCache(tabUrl);
+    if (resolveUrl) await invalidateResolveCache(resolveUrl);
     await refreshActiveTabSnapshot(tabUrl ?? undefined);
   } catch (error) {
     if (error instanceof Error && error.message === "unauthorized" && save) {
@@ -379,6 +383,7 @@ async function handleMessage(request: BgRequest): Promise<BgResponse> {
           request.save,
           session.signedIn,
           tabUrl,
+          request.resolveUrl,
         );
         return { ok: true, data: { ok: true } };
       }

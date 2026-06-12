@@ -413,12 +413,12 @@ export function Masthead({
             metaAccessory != null && styles.mastheadMetaWithAccessory,
           ]}
         >
-          {metaLabel != null ? (
+          {metaLabel == null ? null : (
             <span {...stylex.props(styles.metaDate)}>{metaLabel}</span>
-          ) : null}
-          {metaValue != null ? (
+          )}
+          {metaValue == null ? null : (
             <span {...stylex.props(styles.metaBig)}>{metaValue}</span>
-          ) : null}
+          )}
         </Flex>
       ) : null}
     </div>

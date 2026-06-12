@@ -1,33 +1,32 @@
 import * as stylex from "@stylexjs/stylex";
 import { Button } from "#/design-system/button";
 import { Flex } from "#/design-system/flex";
-import { primary, ui } from "#/design-system/theme/semantic-color.stylex";
+import { primaryColor } from "#/design-system/theme/color.stylex";
+import { radius } from "#/design-system/theme/radius.stylex";
+import { primary } from "#/design-system/theme/semantic-color.stylex";
 import {
   horizontalSpace,
   size,
   verticalSpace,
 } from "#/design-system/theme/semantic-spacing.stylex";
-import { radius } from "#/design-system/theme/radius.stylex";
 import { fontFamily } from "#/design-system/theme/typography.stylex";
-import { Heading2 } from "#/design-system/typography";
-import { Body, SmallBody } from "#/design-system/typography";
+import { Body, Heading2, SmallBody } from "#/design-system/typography";
 import { Compass } from "lucide-react";
-import { primaryColor } from "#/design-system/theme/color.stylex";
 
 const styles = stylex.create({
   content: {
-    alignItems: "center",
-    paddingBlockStart: verticalSpace["5xl"],
-    paddingBlockEnd: verticalSpace["6xl"],
     paddingInline: horizontalSpace.md,
+    alignItems: "center",
+    paddingBlockEnd: verticalSpace["6xl"],
+    paddingBlockStart: verticalSpace["5xl"],
     textAlign: "center",
   },
   iconTile: {
-    alignItems: "center",
     borderRadius: radius.lg,
+    alignItems: "center",
     display: "flex",
-    height: size["7xl"],
     justifyContent: "center",
+    height: size["7xl"],
     width: size["7xl"],
   },
   headline: {
@@ -35,18 +34,18 @@ const styles = stylex.create({
     textAlign: "center",
   },
   description: {
-    maxWidth: "17.5rem",
     textAlign: "center",
+    maxWidth: "17.5rem",
   },
   host: {
-    fontFamily: fontFamily.mono,
-    textAlign: "center",
-    backgroundColor: primaryColor.component1,
-    color: primaryColor.text1,
-    paddingInline: horizontalSpace.lg,
-    paddingBlock: verticalSpace.md,
     borderRadius: radius.md,
     cornerShape: "squircle",
+    paddingBlock: verticalSpace.md,
+    paddingInline: horizontalSpace.lg,
+    backgroundColor: primaryColor.component1,
+    color: primaryColor.text1,
+    fontFamily: fontFamily.mono,
+    textAlign: "center",
   },
   discoverButton: {
     width: "100%",

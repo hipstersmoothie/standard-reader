@@ -19,7 +19,7 @@ import {
 import { effectiveFollowUris } from "#/server/reader/saved-lists";
 import { z } from "zod";
 
-import type { PublicationCard, Db, Schema } from "./api-shapes";
+import type { Db, PublicationCard, Schema } from "./api-shapes";
 
 import { dbMiddleware } from "./db-middleware";
 

@@ -6,8 +6,8 @@ import {
   useSuspenseQuery,
 } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { publicationApi } from "#/integrations/tanstack-query/api-publication.functions";
 import { authorApi } from "#/integrations/tanstack-query/api-author.functions";
+import { publicationApi } from "#/integrations/tanstack-query/api-publication.functions";
 import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
 import { getPublicUrlClient } from "#/lib/public-url";
@@ -44,13 +44,13 @@ import {
   Topic,
 } from "../components/reader/primitives";
 import { PublicationSocialProofLine } from "../components/reader/publication-social-proof";
-import { AuthorSifaResumeChip } from "../components/reader/sifa-resume-chip";
 import {
   applyMarkReadManyOptimisticUpdate,
   invalidateReadQueries,
   isArticleUnreadForReader,
 } from "../components/reader/read-optimistic";
 import { ShareMenu } from "../components/reader/share-menu";
+import { AuthorSifaResumeChip } from "../components/reader/sifa-resume-chip";
 import { Button } from "../design-system/button";
 import { Flex } from "../design-system/flex";
 import { IconButton } from "../design-system/icon-button";

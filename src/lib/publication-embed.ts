@@ -1,7 +1,8 @@
-import { subscribeCardBorderRadius } from "#/components/reader/subscribe-card.stylex";
+import type { PublicationThemeInput } from "#/lib/publication-theme";
+
+import { subscribeCardBorderRadius } from "#/components/reader/subscribe-card.constants";
 import { getPublicUrlClient } from "#/lib/public-url";
-import { resolveQuoteOgColors } from '#/lib/publication-theme';
-import type { PublicationThemeInput } from '#/lib/publication-theme';
+import { resolveQuoteOgColors } from "#/lib/publication-theme";
 import { buildAuthRedirectPath } from "#/utils/auth-redirect";
 
 /** `postMessage` type the embed page sends so the host page can resize its iframe. */

@@ -1,5 +1,6 @@
 import type { db } from "#/db/index.server";
 import type * as schema from "#/db/schema";
+import type { DiscoveryHints } from "#/lib/discovery-hints";
 import type { AtprotoSessionContext } from "#/middleware/auth-session.server";
 import type { ExtensionResolveResult } from "#/server/extension/types";
 
@@ -12,16 +13,14 @@ import { STANDARD_NSID } from "#/lib/atproto/nsids";
 import {
   mergeDiscoveryHints,
   parseDiscoveryHintsFromHtml,
-  type DiscoveryHints,
 } from "#/lib/discovery-hints";
 import { parseInternalRoute } from "#/lib/internal-route";
 import { linkTargetVariants } from "#/lib/link-target-variants";
 import { getPublicUrl } from "#/lib/public-url";
+import { countDocumentComments } from "#/server/reader/document-comments";
 import { and, eq, inArray, sql } from "drizzle-orm";
 
-import { countDocumentComments } from "#/server/reader/document-comments";
-
-const PAGE_FETCH_TIMEOUT_MS = 8_000;
+const PAGE_FETCH_TIMEOUT_MS = 8000;
 const PAGE_FETCH_MAX_BYTES = 200_000;
 
 function parseAtUriCollection(
@@ -495,7 +494,8 @@ async function fetchDiscoveryHintsFromPageUrl(
       return { documentUri: null, publicationUri: null };
     }
 
-    const html = (await response.text()).slice(0, PAGE_FETCH_MAX_BYTES);
+    const body = await response.text();
+    const html = body.slice(0, PAGE_FETCH_MAX_BYTES);
     return parseDiscoveryHintsFromHtml(html);
   } catch {
     return { documentUri: null, publicationUri: null };

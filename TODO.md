@@ -381,4 +381,4 @@ Bluesky badges, options page. Backend routes under [`src/routes/api/extension/`]
       (page overlay + Bluesky badges), context menus, toolbar badge, options page.
 - [x] **Store prep** — [`extension/store/`](extension/store/) privacy policy, listing copy, publish runbook, QA checklist in [`extension/README.md`](extension/README.md).
 - [ ] **Manual QA** — run checklist in [`extension/README.md`](extension/README.md) (dev + prod).
-- [ ] **Chrome Web Store publish** — capture screenshots per [`extension/store/README.md`](extension/store/README.md), `pnpm extension:zip`, first upload.
+- [ ] **Chrome Web Store publish** — follow [`extension/store/DEPLOY.md`](extension/store/DEPLOY.md) (prod API, privacy URL, QA, screenshots, upload).

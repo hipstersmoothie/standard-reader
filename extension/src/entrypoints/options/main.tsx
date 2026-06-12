@@ -1,7 +1,8 @@
+import * as stylex from "@stylexjs/stylex";
 import { Button } from "#/design-system/button";
 import { Checkbox } from "#/design-system/checkbox";
 import { Flex } from "#/design-system/flex";
-import { TextField } from "#/design-system/text-field";
+import { spacing } from "#/design-system/theme/spacing.stylex";
 import { Heading4 } from "#/design-system/typography";
 import { Text } from "#/design-system/typography/text";
 import { StrictMode, useEffect, useState } from "react";
@@ -10,15 +11,18 @@ import { createRoot } from "react-dom/client";
 import type { ExtensionSettings } from "../../lib/types";
 
 import { ExtensionTheme } from "../../components/ExtensionTheme";
-import {
-  DEFAULT_API_ORIGIN,
-  DEFAULT_SETTINGS,
-} from "../../lib/config";
+import { DEFAULT_SETTINGS } from "../../lib/config";
 import { sendMessage } from "../../lib/messaging";
 
 if (!import.meta.env.DEV) {
   void import("../../load-stylex-styles");
 }
+
+const styles = stylex.create({
+  container: {
+    padding: spacing["6"],
+  },
+});
 
 export function OptionsApp() {
   const [settings, setSettings] = useState<ExtensionSettings>({
@@ -45,42 +49,32 @@ export function OptionsApp() {
 
   return (
     <ExtensionTheme variant="options">
-      <Heading4>Standard Reader extension</Heading4>
-      <Flex direction="column" gap="md">
-        <Checkbox
-          isSelected={settings.overlayEnabled}
-          onChange={(value) => {
-            setSettings((current) => ({
-              ...current,
-              overlayEnabled: value,
-            }));
-          }}
-        >
-          Show page overlay on publication sites
-        </Checkbox>
-        <Checkbox
-          isSelected={settings.bskyBadgesEnabled}
-          onChange={(value) => {
-            setSettings((current) => ({
-              ...current,
-              bskyBadgesEnabled: value,
-            }));
-          }}
-        >
-          Show save badges on Bluesky links
-        </Checkbox>
-        <TextField
-          label="API origin"
-          description={`Leave blank for default (${DEFAULT_API_ORIGIN}). Bluesky OAuth requires 127.0.0.1 — not localhost.`}
-          placeholder={DEFAULT_API_ORIGIN}
-          value={settings.apiOrigin ?? ""}
-          onChange={(value) => {
-            setSettings((current) => ({
-              ...current,
-              apiOrigin: value || undefined,
-            }));
-          }}
-        />
+      <Flex direction="column" gap="5xl" style={styles.container}>
+        <Heading4>Standard Reader extension</Heading4>
+        <Flex direction="column" gap="2xl">
+          <Checkbox
+            isSelected={settings.overlayEnabled}
+            onChange={(value) => {
+              setSettings((current) => ({
+                ...current,
+                overlayEnabled: value,
+              }));
+            }}
+          >
+            Show page overlay on publication sites
+          </Checkbox>
+          <Checkbox
+            isSelected={settings.bskyBadgesEnabled}
+            onChange={(value) => {
+              setSettings((current) => ({
+                ...current,
+                bskyBadgesEnabled: value,
+              }));
+            }}
+          >
+            Show save button on Bluesky article embeds
+          </Checkbox>
+        </Flex>
         <Button variant="primary" onPress={() => void save()}>
           Save settings
         </Button>

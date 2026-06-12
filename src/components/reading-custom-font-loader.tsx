@@ -7,7 +7,7 @@ import {
 import { useLayoutEffect } from "react";
 
 function linkIdForFamily(family: string, variant: "full" | "preview"): string {
-  const slug = family.trim().toLowerCase().replace(/\s+/g, "-");
+  const slug = family.trim().toLowerCase().replaceAll(/\s+/g, "-");
   return variant === "preview"
     ? `google-font-preview-${slug}`
     : `google-font-${slug}`;
@@ -25,7 +25,7 @@ export function ReadingCustomFontLoader({
     if (!normalized) return;
 
     const id = linkIdForFamily(normalized, variant);
-    const existing = document.getElementById(id);
+    const existing = document.querySelector(`#${id}`);
     if (existing instanceof HTMLLinkElement) {
       return;
     }

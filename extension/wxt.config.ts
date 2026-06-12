@@ -48,12 +48,14 @@ export default defineConfig({
       }
       if (isOneShotBuild) {
         // @stylexjs/unplugin leaves async handles open after one-shot builds.
+        // oxlint-disable-next-line eslint-plugin-unicorn(no-process-exit) -- force exit after WXT build
         setTimeout(() => process.exit(0), 500);
       }
     },
     "prepare:types": () => {
       if (isWxtPrepare) {
         // prepare:types runs just before type files are written; allow that to finish.
+        // oxlint-disable-next-line eslint-plugin-unicorn(no-process-exit) -- force exit after WXT prepare
         setTimeout(() => process.exit(0), 1500);
       }
     },

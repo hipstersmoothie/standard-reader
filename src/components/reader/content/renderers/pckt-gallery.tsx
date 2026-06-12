@@ -28,7 +28,6 @@ function galleryLayoutStyle(layout: string | undefined) {
     case "list": {
       return articleBodyStyles.galleryList;
     }
-    case "grid":
     default: {
       return articleBodyStyles.galleryGrid;
     }

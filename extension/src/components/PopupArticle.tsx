@@ -1,13 +1,13 @@
 import * as stylex from "@stylexjs/stylex";
+import { initials } from "#/components/reader/format";
+import { ArticleEngagement } from "#/components/reader/primitives";
 import { Avatar } from "#/design-system/avatar";
 import { Button } from "#/design-system/button";
 import { Flex } from "#/design-system/flex";
 import { Separator } from "#/design-system/separator";
 import { uiColor } from "#/design-system/theme/color.stylex";
 import {
-  gap as gapToken,
   horizontalSpace,
-  size,
   verticalSpace,
 } from "#/design-system/theme/semantic-spacing.stylex";
 import {
@@ -17,19 +17,16 @@ import {
   lineHeight,
   tracking,
 } from "#/design-system/theme/typography.stylex";
-import { SmallBody } from "#/design-system/typography";
-import { formatDate, initials } from "#/components/reader/format";
-import { ArticleEngagement } from "#/components/reader/primitives";
+import { Text } from "#/design-system/typography/text";
 import { ArrowRight, Bookmark, UserPlus } from "lucide-react";
 
 import type { ExtensionResolveArticle } from "../lib/types";
-import { Text } from "#/design-system/typography/text";
 
 const styles = stylex.create({
   content: {
-    boxSizing: "border-box",
     paddingBlock: verticalSpace["5xl"],
     paddingInline: horizontalSpace["4xl"],
+    boxSizing: "border-box",
     width: "100%",
   },
   title: {
@@ -39,47 +36,9 @@ const styles = stylex.create({
     fontWeight: fontWeight.medium,
     letterSpacing: tracking.tight,
     lineHeight: lineHeight.sm,
+    textWrap: "pretty",
     marginBottom: verticalSpace.none,
     marginTop: verticalSpace.none,
-    textWrap: "pretty",
-  },
-  authorRow: {
-    alignItems: "center",
-    columnGap: gapToken.lg,
-    display: "flex",
-    flexDirection: "row",
-    marginBottom: verticalSpace.lg,
-  },
-  authorAvatar: {
-    flexShrink: 0,
-    height: "2rem",
-    width: "2rem",
-  },
-  authorText: {
-    display: "flex",
-    flexDirection: "column",
-    gap: gapToken.xxs,
-    minWidth: 0,
-  },
-  authorName: {
-    display: "block",
-    fontFamily: fontFamily.serif,
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.semibold,
-    lineHeight: lineHeight.sm,
-  },
-  authorHandle: {
-    color: uiColor.text2,
-    display: "block",
-    fontFamily: fontFamily.mono,
-    fontSize: fontSize.xs,
-    lineHeight: lineHeight.sm,
-  },
-  meta: {
-    color: uiColor.text1,
-    fontFamily: fontFamily.mono,
-    fontSize: fontSize.sm,
-    marginBottom: verticalSpace["3xl"],
   },
   metaDot: {
     color: uiColor.text1,
@@ -88,7 +47,9 @@ const styles = stylex.create({
     width: "100%",
   },
   actionButton: {
-    flex: 1,
+    flexBasis: "0%",
+    flexGrow: "1",
+    flexShrink: "1",
     minWidth: 0,
   },
   pubRow: {
@@ -99,21 +60,19 @@ const styles = stylex.create({
     paddingTop: verticalSpace["2xl"],
   },
   pubIdentity: {
-    flex: 1,
+    flexBasis: "0%",
+    flexGrow: "1",
+    flexShrink: "1",
     minWidth: 0,
   },
   pubName: {
+    overflow: "hidden",
     fontFamily: fontFamily.serif,
     fontSize: fontSize.base,
     fontWeight: fontWeight.semibold,
     lineHeight: lineHeight.sm,
     textOverflow: "ellipsis",
-    overflow: "hidden",
     whiteSpace: "nowrap",
-  },
-  pubMeta: {
-    fontFamily: fontFamily.mono,
-    fontSize: fontSize.sm,
   },
 });
 
@@ -121,16 +80,16 @@ function PublicationMark({
   name,
   iconUrl,
   ownerAvatarUrl,
-  size,
+  avatarSize,
 }: {
   name: string;
   iconUrl: string | null;
   ownerAvatarUrl: string | null;
-  size: "sm" | "md" | "lg";
+  avatarSize: "sm" | "md" | "lg";
 }) {
   return (
     <Avatar
-      size={size}
+      size={avatarSize}
       src={iconUrl ?? ownerAvatarUrl ?? undefined}
       fallback={initials(name)}
       alt={name}
@@ -139,8 +98,10 @@ function PublicationMark({
 }
 
 function formatSubscriberCount(count: number | null): string | null {
-  if (count == null || count <= 0) return null;
-  return `${count.toLocaleString("en-US")} followers`;
+  if (count != null && count > 0) {
+    return `${count.toLocaleString("en-US")} followers`;
+  }
+  return null;
 }
 
 type PopupArticleProps = {
@@ -159,14 +120,9 @@ export function PopupArticle({
   onOpenReader,
 }: PopupArticleProps) {
   const pubName = result.publicationName ?? "Publication";
-  const authorName = result.authorName;
   const authorHandle = result.authorHandle;
-  const showAuthor = Boolean(
-    authorName || authorHandle || result.authorAvatarUrl,
-  );
   const readingLabel =
-    result.readingMinutes != null ? `${result.readingMinutes} min read` : null;
-  const dateLabel = formatDate(result.publishedAt);
+    result.readingMinutes == null ? null : `${result.readingMinutes} min read`;
   const followerLabel = formatSubscriberCount(
     result.publicationSubscriberCount,
   );
@@ -250,7 +206,7 @@ export function PopupArticle({
               name={pubName}
               iconUrl={result.publicationIconUrl}
               ownerAvatarUrl={result.publicationOwnerAvatarUrl}
-              size="lg"
+              avatarSize="lg"
             />
             <Flex direction="column" gap="sm" style={styles.pubIdentity}>
               <span {...stylex.props(styles.pubName)}>{pubName}</span>

@@ -25,8 +25,8 @@ import {
   ReaderContent,
   SectionHead,
 } from "../components/reader/primitives";
-import { AuthorSifaResumeChip } from "../components/reader/sifa-resume-chip";
 import { ShareMenu } from "../components/reader/share-menu";
+import { AuthorSifaResumeChip } from "../components/reader/sifa-resume-chip";
 import { Avatar } from "../design-system/avatar";
 import { IconButton } from "../design-system/icon-button";
 import { uiColor } from "../design-system/theme/color.stylex";

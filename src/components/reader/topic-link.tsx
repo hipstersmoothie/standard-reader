@@ -73,9 +73,10 @@ export function Topic({ name, linkable = true, nested = false }: TopicProps) {
         role="link"
         tabIndex={0}
         onClick={(event) => {
-          if (event.button !== 0) return;
-          stopNestedNavigation(event);
-          goToTag();
+          if (event.button === 0) {
+            stopNestedNavigation(event);
+            goToTag();
+          }
         }}
         onKeyDown={(event) => {
           if (event.key === "Enter" || event.key === " ") {

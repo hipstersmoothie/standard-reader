@@ -15,27 +15,30 @@ import type { ExtensionSessionResponse } from "../lib/types";
 
 const styles = stylex.create({
   bar: {
-    backgroundColor: uiColor.bg,
-    boxSizing: "border-box",
     paddingBlock: verticalSpace["2xl"],
     paddingInline: horizontalSpace["4xl"],
+    backgroundColor: uiColor.bg,
+    boxSizing: "border-box",
     width: "100%",
   },
   identity: {
-    flex: 1,
+    flexBasis: "0%",
+    flexGrow: "1",
+    flexShrink: "1",
     minWidth: 0,
   },
   handle: {
+    overflow: "hidden",
     fontFamily: fontFamily.mono,
     fontSize: fontSize.xs,
-    minWidth: 0,
-    overflow: "hidden",
     textOverflow: "ellipsis",
     whiteSpace: "nowrap",
-    textBoxTrim: "none",
+    minWidth: 0,
   },
   handleRow: {
-    flex: 1,
+    flexBasis: "0%",
+    flexGrow: "1",
+    flexShrink: "1",
     minWidth: 0,
   },
 });

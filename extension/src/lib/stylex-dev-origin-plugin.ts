@@ -1,7 +1,7 @@
+import type { Plugin, ResolvedConfig } from "vite";
+
 import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-
-import type { Plugin, ResolvedConfig } from "vite";
 
 const HTML_ENTRYPOINTS = ["popup.html", "options.html"] as const;
 const DEV_CSS_PATH = "/virtual:stylex.css";
@@ -105,7 +105,7 @@ export async function ensureStylexDevAssets(
     HTML_ENTRYPOINTS.map(async (filename) => {
       const filePath = join(outDir, filename);
       try {
-        let html = await readFile(filePath, "utf-8");
+        let html = await readFile(filePath, "utf8");
         const resolvedOrigin = inferDevOriginFromHtml(html, origin);
         html = rewriteStylexDevUrls(html, resolvedOrigin);
 
@@ -116,7 +116,7 @@ export async function ensureStylexDevAssets(
           );
         }
 
-        await writeFile(filePath, html, "utf-8");
+        await writeFile(filePath, html, "utf8");
       } catch {
         // Entrypoint may not exist for every build target.
       }

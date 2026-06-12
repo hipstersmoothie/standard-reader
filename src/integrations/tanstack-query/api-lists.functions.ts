@@ -4,6 +4,7 @@ import { mutationOptions, queryOptions } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { APP_NSID } from "#/lib/atproto/nsids";
+import { articleCardsAsAllRead } from "#/lib/track-reading-history";
 import { getAtprotoSessionForRequest } from "#/middleware/auth-session.server";
 import { resolveIdentity } from "#/server/atproto/identity";
 import {
@@ -30,7 +31,6 @@ import {
   loadOwnSubscriptionLists,
   loadSavedListsHydrated,
 } from "#/server/reader/shell-snapshot.server";
-import { articleCardsAsAllRead } from "#/lib/track-reading-history";
 import { inArray } from "drizzle-orm";
 import { z } from "zod";
 

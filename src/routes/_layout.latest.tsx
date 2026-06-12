@@ -239,7 +239,7 @@ function LatestTabLabel({
   name,
   count,
   pending,
-  formatCountValue = (value) => String(value),
+  formatCountValue = String,
 }: {
   name: string;
   count: number;

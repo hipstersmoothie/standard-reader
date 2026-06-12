@@ -84,9 +84,7 @@ export function parseDiscoveryHintsFromHtml(html: string): DiscoveryHints {
 }
 
 /** Read discovery hints from a live document (extension content scripts). */
-export function readDiscoveryHintsFromDocument(
-  doc: Document,
-): DiscoveryHints {
+export function readDiscoveryHintsFromDocument(doc: Document): DiscoveryHints {
   const hints: DiscoveryHints = { ...EMPTY_HINTS };
 
   for (const link of doc.querySelectorAll("link[rel][href]")) {

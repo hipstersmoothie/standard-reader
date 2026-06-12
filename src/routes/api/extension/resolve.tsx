@@ -3,7 +3,10 @@ import {
   badRequestResponse,
   getExtensionSession,
 } from "#/server/extension/auth.server";
-import { resolvePageUrl, resolvePageUrls } from "#/server/extension/resolve-page-url.server";
+import {
+  resolvePageUrl,
+  resolvePageUrls,
+} from "#/server/extension/resolve-page-url.server";
 
 export const Route = createFileRoute("/api/extension/resolve")({
   server: {

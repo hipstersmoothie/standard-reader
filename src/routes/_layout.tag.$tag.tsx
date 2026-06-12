@@ -16,8 +16,8 @@ import {
   useSuspenseQuery,
 } from "@tanstack/react-query";
 import {
-  createFileRoute,
   Link,
+  createFileRoute,
   useNavigate,
   useRouterState,
 } from "@tanstack/react-router";
@@ -1043,11 +1043,11 @@ function TagPage() {
           </div>
         </div>
 
-        {!isFeed ? (
+        {isFeed ? null : (
           <div {...stylex.props(styles.heroActs)}>
             <TagFollowAllButton tag={tag} publicationCount={publicationCount} />
           </div>
-        ) : null}
+        )}
       </div>
 
       <Tabs
@@ -1070,9 +1070,9 @@ function TagPage() {
             {isFeed ? <TagArticlesPanel tag={tag} /> : null}
           </TabPanel>
           <TabPanel id="publications" style={styles.tabPanel}>
-            {!isFeed ? (
+            {isFeed ? null : (
               <TagPublicationsPanel tag={tag} sort={sort} layout={layout} />
-            ) : null}
+            )}
           </TabPanel>
         </ReaderContent>
       </Tabs>

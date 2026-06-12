@@ -1,24 +1,16 @@
 import { IconButton } from "#/design-system/icon-button";
 import { Moon, Sun } from "lucide-react";
-import { useEffect, useState } from "react";
 
-import {
-  getExtensionThemeMode,
-  setExtensionThemeMode,
-  type ExtensionThemeMode,
-} from "../lib/extension-theme";
+import type { ExtensionThemeMode } from "../lib/extension-theme";
+
+import { useExtensionTheme } from "../lib/extension-theme-context";
 
 export function ExtensionThemeToggle() {
-  const [mode, setMode] = useState<ExtensionThemeMode>("light");
-
-  useEffect(() => {
-    setMode(getExtensionThemeMode());
-  }, []);
+  const { mode, setMode } = useExtensionTheme();
 
   const toggleMode = () => {
     const next: ExtensionThemeMode = mode === "light" ? "dark" : "light";
     setMode(next);
-    setExtensionThemeMode(next);
   };
 
   return (

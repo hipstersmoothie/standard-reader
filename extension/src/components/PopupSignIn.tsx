@@ -1,52 +1,47 @@
 import * as stylex from "@stylexjs/stylex";
 import { Button } from "#/design-system/button";
 import { Flex } from "#/design-system/flex";
+import { radius } from "#/design-system/theme/radius.stylex";
 import { primary } from "#/design-system/theme/semantic-color.stylex";
 import {
   horizontalSpace,
   size,
   verticalSpace,
 } from "#/design-system/theme/semantic-spacing.stylex";
-import { radius } from "#/design-system/theme/radius.stylex";
 import { fontFamily } from "#/design-system/theme/typography.stylex";
-import { Heading2 } from "#/design-system/typography";
-import { Body, SmallBody } from "#/design-system/typography";
+import { Body, Heading2 } from "#/design-system/typography";
 import { Bookmark } from "lucide-react";
 
 import type { ExtensionResolveResult } from "../lib/types";
 
 const styles = stylex.create({
   content: {
-    alignItems: "center",
-    paddingBlockStart: verticalSpace["4xl"],
-    paddingBlockEnd: verticalSpace["6xl"],
     paddingInline: horizontalSpace.md,
+    alignItems: "center",
+    paddingBlockEnd: verticalSpace["6xl"],
+    paddingBlockStart: verticalSpace["4xl"],
     textAlign: "center",
   },
   mark: {
-    alignItems: "center",
     borderRadius: radius.lg,
     cornerShape: "squircle",
+    alignItems: "center",
     display: "flex",
-    height: size["7xl"],
     justifyContent: "center",
+    height: size["7xl"],
     width: size["7xl"],
   },
   headline: {
     fontFamily: fontFamily.serif,
-    maxWidth: "22rem",
     textAlign: "center",
+    maxWidth: "22rem",
   },
   description: {
-    maxWidth: "17.5rem",
     textAlign: "center",
+    maxWidth: "17.5rem",
   },
   signInButton: {
     width: "100%",
-  },
-  sessionHint: {
-    fontFamily: fontFamily.mono,
-    textAlign: "center",
   },
 });
 

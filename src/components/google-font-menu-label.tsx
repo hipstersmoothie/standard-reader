@@ -5,8 +5,8 @@ import type { CSSProperties } from "react";
 import * as stylex from "@stylexjs/stylex";
 import { googleFontFamilyStyle } from "#/lib/google-fonts";
 
-import { ReadingCustomFontLoader } from "./reading-custom-font-loader";
 import { fontSize } from "../design-system/theme/typography.stylex";
+import { ReadingCustomFontLoader } from "./reading-custom-font-loader";
 
 const styles = stylex.create({
   label: {

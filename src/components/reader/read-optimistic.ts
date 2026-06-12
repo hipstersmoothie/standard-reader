@@ -6,11 +6,11 @@ import type {
   LatestFeedCounts,
   SidebarData,
 } from "../../integrations/tanstack-query/api-feed.functions";
-import type { ReadStatus } from "../../integrations/tanstack-query/api-reader.functions";
 import type {
   PublicationDocumentsPage,
   PublicationProfile,
 } from "../../integrations/tanstack-query/api-publication.functions";
+import type { ReadStatus } from "../../integrations/tanstack-query/api-reader.functions";
 import type { ArticleCard } from "../../integrations/tanstack-query/api-shapes";
 
 function decrement(count: number | null | undefined): number | null {

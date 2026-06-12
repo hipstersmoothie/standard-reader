@@ -1,7 +1,7 @@
 import type { PopupStateResponse, StoredPopupState } from "./popup-state";
 
-import { readStoredPopupState } from "./popup-state";
 import { sendMessage } from "./messaging";
+import { readStoredPopupState } from "./popup-state";
 
 declare global {
   interface Window {
@@ -19,7 +19,8 @@ function fromStored(state: StoredPopupState): PopupStateResponse {
 }
 
 export async function loadInitialPopupState(): Promise<PopupStateResponse> {
-  const preloaded = await (window.__SR_POPUP_INIT__ ?? Promise.resolve(null));
+  const preloaded = await (globalThis.window?.__SR_POPUP_INIT__ ??
+    Promise.resolve(null));
   if (preloaded) {
     return fromStored(preloaded);
   }

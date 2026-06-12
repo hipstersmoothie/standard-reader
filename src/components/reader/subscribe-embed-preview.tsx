@@ -12,7 +12,7 @@ import {
 } from "#/lib/publication-embed";
 import { useEffect, useState } from "react";
 
-import { publicationThemeColors } from "./subscribe-card";
+import { publicationThemeColors } from "./subscribe-card-theme";
 import { subscribeCardLayout } from "./subscribe-card.stylex";
 
 const styles = stylex.create({
@@ -29,7 +29,6 @@ const styles = stylex.create({
   iframe: {
     borderStyle: "none",
     borderWidth: 0,
-    colorScheme: "normal",
     display: "block",
     width: "100%",
   },

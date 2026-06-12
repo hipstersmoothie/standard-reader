@@ -34,7 +34,7 @@ function scaleBudget(ms: number): number {
   return Math.round(ms * perfBudgetMultiplier());
 }
 
-function target(
+function perfTarget(
   partial: Omit<PerfTarget, "timeoutMs"> & { timeoutMs?: number },
 ): PerfTarget {
   return {
@@ -127,7 +127,7 @@ function sharedTargets(auth: PerfAuthMode): Array<PerfTarget> {
   const signedIn = auth === "signed-in";
 
   return sharedRouteDefs().map((route) =>
-    target({
+    perfTarget({
       id: signedIn ? `${route.id}.signed-in` : route.id,
       name: signedIn ? `${route.name} (signed in)` : route.name,
       path: route.path,
@@ -141,21 +141,21 @@ function sharedTargets(auth: PerfAuthMode): Array<PerfTarget> {
 /** Signed-in-only routes (no guest counterpart). */
 function signedInOnlyTargets(): Array<PerfTarget> {
   return [
-    target({
+    perfTarget({
       id: "saved",
       name: "Saved for later",
       path: "/saved",
       auth: "signed-in",
       budgetMs: 5000,
     }),
-    target({
+    perfTarget({
       id: "history",
       name: "Reading history",
       path: "/history",
       auth: "signed-in",
       budgetMs: 5000,
     }),
-    target({
+    perfTarget({
       id: "likes",
       name: "Likes",
       path: "/likes",

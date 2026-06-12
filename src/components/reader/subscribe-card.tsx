@@ -3,7 +3,7 @@
 import type { PublicationEmbedMeta } from "#/integrations/tanstack-query/api-publication.functions";
 import type { SubscribeEmbedLayout } from "#/lib/publication-embed";
 import type { QuoteOgColors } from "#/lib/publication-theme";
-import type { CSSProperties, ReactNode } from "react";
+import type { ReactNode } from "react";
 
 import * as stylex from "@stylexjs/stylex";
 import { Link, createLink } from "@tanstack/react-router";
@@ -27,10 +27,13 @@ import {
   lineHeight,
   tracking,
 } from "#/design-system/theme/typography.stylex";
-import { resolveQuoteOgColors } from "#/lib/publication-theme";
 import { Check, Plus } from "lucide-react";
 
 import { PublicationAvatar } from "./primitives";
+import {
+  publicationThemeColors,
+  publicationThemeVars,
+} from "./subscribe-card-theme";
 import { subscribeCardLayout } from "./subscribe-card.stylex";
 
 const ButtonLink = createLink(Button);
@@ -61,29 +64,6 @@ function resolveSubscribeCardLayout(
     return "landscape";
   }
   return "responsive";
-}
-
-export function publicationThemeColors(
-  meta: PublicationEmbedMeta,
-): QuoteOgColors {
-  return resolveQuoteOgColors({
-    themeBackground: meta.themeBackground,
-    themeForeground: meta.themeForeground,
-    themeAccent: meta.themeAccent,
-    themeAccentForeground: meta.themeAccentForeground,
-  });
-}
-
-/** Theme tokens for subscribe card CSS variables. */
-export function publicationThemeVars(colors: QuoteOgColors): CSSProperties {
-  return {
-    "--sub-bg": colors.background,
-    "--sub-fg": colors.foreground,
-    "--sub-muted": colors.muted,
-    "--sub-accent": colors.accent,
-    "--sub-accent-fg": colors.accentForeground,
-    "--sub-line": colors.line,
-  } as CSSProperties;
 }
 
 const styles = stylex.create({

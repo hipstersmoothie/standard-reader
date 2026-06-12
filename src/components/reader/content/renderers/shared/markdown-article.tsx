@@ -1,5 +1,6 @@
 "use client";
 
+import type { ComponentProps } from "react";
 import type { Components } from "react-markdown";
 
 import * as stylex from "@stylexjs/stylex";
@@ -8,7 +9,6 @@ import { spacing } from "#/design-system/theme/spacing.stylex";
 import { articleMarkdownSanitizeSchema } from "#/lib/markdown/article-sanitize-schema";
 import { useReadingTypography } from "#/lib/use-reading-typography";
 import { createElement, useMemo, useRef } from "react";
-import type { ComponentProps } from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeKatex from "rehype-katex";
 import rehypeRaw from "rehype-raw";

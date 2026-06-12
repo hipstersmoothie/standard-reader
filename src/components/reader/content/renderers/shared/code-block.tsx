@@ -21,7 +21,7 @@ import { articleBodyStyles } from "../../body-styles";
  * node, trip the word-highlighter's MutationObserver, and make sentence
  * highlights flash inside code blocks.
  */
-const HighlightedCodeShell = memo(function HighlightedCodeShell({
+const HighlightedCodeShell = memo(function HighlightedCodeShellView({
   html,
 }: {
   html: string;

@@ -3,6 +3,7 @@ import type * as schema from "#/db/schema";
 import type { ArticleCard } from "#/integrations/tanstack-query/api-shapes";
 import type { ConstellationBacklinkRecord } from "#/server/atproto/constellation";
 
+import { linkTargetVariants } from "#/lib/link-target-variants";
 import {
   COSMIK_CONNECTION_COLLECTION,
   getCitationBacklinksForTarget,
@@ -23,8 +24,6 @@ export interface MarginConnectionItem {
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
-
-import { linkTargetVariants } from "#/lib/link-target-variants";
 
 function recordUri(record: ConstellationBacklinkRecord): string {
   return `at://${record.did}/${record.collection}/${record.rkey}`;

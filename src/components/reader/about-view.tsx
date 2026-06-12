@@ -72,9 +72,6 @@ const styles = stylex.create({
     marginBottom: verticalSpace["4xl"],
   },
   title: {
-    textBoxEdge: "cap alphabetic",
-
-    textBoxTrim: "trim-both",
     color: uiColor.text2,
     fontFamily: fontFamily.serif,
     fontSize: {

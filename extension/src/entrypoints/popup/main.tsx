@@ -13,24 +13,20 @@ if (!import.meta.env.DEV) {
   void import("../../load-stylex-styles");
 }
 
-async function bootstrap(): Promise<void> {
-  let initialState: PopupStateResponse | null = null;
-  let initialError: string | null = null;
+let initialState: PopupStateResponse | null = null;
+let initialError: string | null = null;
 
-  try {
-    initialState = await initialStatePromise;
-  } catch (error) {
-    initialError = error instanceof Error ? error.message : "Failed to load";
-  }
-
-  const root = document.querySelector("#root");
-  if (root) {
-    createRoot(root).render(
-      <StrictMode>
-        <PopupShell initialState={initialState} initialError={initialError} />
-      </StrictMode>,
-    );
-  }
+try {
+  initialState = await initialStatePromise;
+} catch (error) {
+  initialError = error instanceof Error ? error.message : "Failed to load";
 }
 
-void bootstrap();
+const root = document.querySelector("#root");
+if (root) {
+  createRoot(root).render(
+    <StrictMode>
+      <PopupShell initialState={initialState} initialError={initialError} />
+    </StrictMode>,
+  );
+}

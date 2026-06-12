@@ -1,3 +1,5 @@
+import type { Span } from "#/server/observability/log";
+
 import { queryOptions } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 import { getCookie, getRequest } from "@tanstack/react-start/server";
@@ -12,7 +14,6 @@ import {
 } from "#/lib/track-reading-history";
 import { getAtprotoSessionForRequest } from "#/middleware/auth-session.server";
 import { observe } from "#/server/observability/log";
-import type { Span } from "#/server/observability/log";
 import { attachReaderSpanContext } from "#/server/observability/span-context.ts";
 import { attachCommentCountsToArticles } from "#/server/reader/document-comments";
 import {
@@ -433,11 +434,11 @@ const getHomePage = createServerFn({ method: "GET" })
       }
 
       const trackReading =
-        authSession?.session.user != null
-          ? dbValueToTrackReadingHistory(
+        authSession?.session.user == null
+          ? undefined
+          : dbValueToTrackReadingHistory(
               authSession.session.user.trackReadingHistory ?? null,
-            )
-          : undefined;
+            );
 
       const { feed, extras } = await loadHomePagePayload(
         db,
@@ -445,7 +446,7 @@ const getHomePage = createServerFn({ method: "GET" })
         did,
         scope,
         span,
-        trackReading !== undefined ? { trackReading } : {},
+        trackReading === undefined ? {} : { trackReading },
       );
       return { scope, feed, extras } satisfies HomePageData;
     }),

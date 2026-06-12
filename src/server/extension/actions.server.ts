@@ -10,10 +10,7 @@ import {
   subjectRkey,
 } from "#/server/atproto/repo-records";
 import { Collections, buildAtUri } from "#/server/atproto/uri";
-import {
-  deleteRecord,
-  upsertSubscription,
-} from "#/server/ingest/handlers";
+import { deleteRecord, upsertSubscription } from "#/server/ingest/handlers";
 import { ensureTracked } from "#/server/ingest/tap-client";
 import { and, eq } from "drizzle-orm";
 

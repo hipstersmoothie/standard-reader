@@ -1,4 +1,5 @@
 import * as stylex from "@stylexjs/stylex";
+import { BrandWordmark } from "#/components/reader/brand-wordmark";
 import { Button } from "#/design-system/button";
 import { Flex } from "#/design-system/flex";
 import { IconButton } from "#/design-system/icon-button";
@@ -8,23 +9,19 @@ import {
   verticalSpace,
 } from "#/design-system/theme/semantic-spacing.stylex";
 import { Text } from "#/design-system/typography/text";
-import { BrandWordmark } from "#/components/reader/brand-wordmark";
 import { Settings, X } from "lucide-react";
 import { useState } from "react";
 
-import type {
-  ExtensionResolveResult,
-  ExtensionSessionResponse,
-} from "../lib/types";
-
 import type { PopupStateResponse } from "../lib/popup-state";
+import type { ExtensionResolveResult } from "../lib/types";
+
 import { sendMessage } from "../lib/messaging";
 import { ExtensionTheme } from "./ExtensionTheme";
 import { ExtensionThemeToggle } from "./ExtensionThemeToggle";
-import { PopupSignIn } from "./PopupSignIn";
 import { PopupArticle } from "./PopupArticle";
 import { PopupPublication } from "./PopupPublication";
 import { PopupSignedInFooter } from "./PopupSignedInFooter";
+import { PopupSignIn } from "./PopupSignIn";
 import { PopupUnknown } from "./PopupUnknown";
 
 const styles = stylex.create({
@@ -37,27 +34,29 @@ const styles = stylex.create({
     width: "100%",
   },
   headerToolbar: {
-    boxSizing: "border-box",
     paddingBlock: verticalSpace["2xl"],
     paddingInline: horizontalSpace["4xl"],
+    boxSizing: "border-box",
     width: "100%",
   },
   brandButton: {
+    padding: horizontalSpace.none,
+    borderStyle: "none",
     alignItems: "center",
     backgroundColor: "transparent",
-    borderStyle: "none",
     cursor: "pointer",
     display: "inline-flex",
-    padding: horizontalSpace.none,
     paddingLeft: horizontalSpace.xs,
   },
   headerSpacer: {
-    flex: 1,
+    flexBasis: "0%",
+    flexGrow: "1",
+    flexShrink: "1",
     minWidth: 0,
   },
   inset: {
-    boxSizing: "border-box",
     paddingInline: horizontalSpace.md,
+    boxSizing: "border-box",
   },
   footerBlock: {
     boxSizing: "border-box",
@@ -69,6 +68,10 @@ function openOptions(): void {
   void browser.runtime.openOptionsPage();
 }
 
+function closePopup(): void {
+  globalThis.close();
+}
+
 type PopupShellProps = {
   initialState: PopupStateResponse | null;
   initialError?: string | null;
@@ -78,12 +81,8 @@ export function PopupShell({
   initialState,
   initialError = null,
 }: PopupShellProps) {
-  const [session, setSession] = useState<ExtensionSessionResponse | null>(
-    initialState?.session ?? null,
-  );
-  const [tabUrl, setTabUrl] = useState<string | null>(
-    initialState?.tabUrl ?? null,
-  );
+  const session = initialState?.session ?? null;
+  const tabUrl = initialState?.tabUrl ?? null;
   const [result, setResult] = useState<ExtensionResolveResult | null>(
     initialState?.result ?? null,
   );
@@ -169,10 +168,6 @@ export function PopupShell({
     void sendMessage({ type: "openReader", url: "/saved" });
   };
 
-  const closePopup = () => {
-    window.close();
-  };
-
   const showBody = initialState != null && !loadError;
   const signedOut = showBody && !session?.signedIn;
   const signedIn = showBody && session?.signedIn;
@@ -196,7 +191,7 @@ export function PopupShell({
             </button>
             <div {...stylex.props(styles.headerSpacer)} />
             <Flex direction="row" gap="sm" align="center">
-              {!session?.signedIn ? <ExtensionThemeToggle /> : null}
+              {session?.signedIn ? null : <ExtensionThemeToggle />}
               <IconButton
                 aria-label="Extension settings"
                 variant="tertiary"

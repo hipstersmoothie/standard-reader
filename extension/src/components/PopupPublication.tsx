@@ -1,13 +1,12 @@
 import * as stylex from "@stylexjs/stylex";
+import { initials } from "#/components/reader/format";
 import { Avatar } from "#/design-system/avatar";
 import { Button } from "#/design-system/button";
 import { Flex } from "#/design-system/flex";
-import { initials } from "#/components/reader/format";
 import { uiColor } from "#/design-system/theme/color.stylex";
 import {
   gap as gapToken,
   horizontalSpace,
-  size,
   verticalSpace,
 } from "#/design-system/theme/semantic-spacing.stylex";
 import {
@@ -23,9 +22,9 @@ import type { ExtensionResolvePublication } from "../lib/types";
 
 const styles = stylex.create({
   content: {
-    boxSizing: "border-box",
     paddingBlock: verticalSpace["5xl"],
     paddingInline: horizontalSpace["4xl"],
+    boxSizing: "border-box",
     width: "100%",
   },
   identityRow: {
@@ -33,11 +32,6 @@ const styles = stylex.create({
     columnGap: gapToken.lg,
     display: "flex",
     flexDirection: "row",
-  },
-  avatar: {
-    flexShrink: 0,
-    height: size["4xl"],
-    width: size["4xl"],
   },
   identityText: {
     display: "flex",
@@ -52,9 +46,9 @@ const styles = stylex.create({
     fontWeight: fontWeight.semibold,
     letterSpacing: tracking.tight,
     lineHeight: lineHeight.sm,
+    textWrap: "pretty",
     marginBottom: verticalSpace.none,
     marginTop: verticalSpace.none,
-    textWrap: "pretty",
   },
   handle: {
     color: uiColor.text1,
@@ -68,9 +62,9 @@ const styles = stylex.create({
     fontFamily: fontFamily.serif,
     fontSize: fontSize.base,
     lineHeight: lineHeight.sm,
+    textWrap: "pretty",
     marginBottom: verticalSpace.none,
     marginTop: verticalSpace.none,
-    textWrap: "pretty",
   },
   followers: {
     color: uiColor.text1,

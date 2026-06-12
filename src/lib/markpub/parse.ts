@@ -1,7 +1,8 @@
 import type { LeafletFacet } from "#/lib/leaflet/types";
 
-import { MARKPUB_MARKDOWN, MARKPUB_TEXT } from './types';
-import type { MarkpubDocument, MarkpubFlavor, MarkpubLens } from './types';
+import type { MarkpubDocument, MarkpubFlavor, MarkpubLens } from "./types";
+
+import { MARKPUB_MARKDOWN, MARKPUB_TEXT } from "./types";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
