@@ -38,7 +38,7 @@ Standard Reader is the browser companion for [standard.site](https://standard.si
 
 - API calls run only in the extension background worker
 - Content scripts never access your session cookie directly
-- See [privacy-policy.md](./privacy-policy.md) for details
+- See [standard-reader.app/privacy/extension](https://standard-reader.app/privacy/extension) for details
 
 ## Permissions justification
 
@@ -52,8 +52,8 @@ Paste these into the Chrome Web Store dashboard (see [`DEPLOY.md`](./DEPLOY.md) 
 
 ## Privacy
 
-Policy text: [`privacy-policy.md`](./privacy-policy.md). Host at a public URL on
-`standard-reader.app` before first submit (see [`DEPLOY.md`](./DEPLOY.md)).
+Policy text: [`privacy-policy.md`](./privacy-policy.md). Live at
+**https://standard-reader.app/privacy/extension** (see [`DEPLOY.md`](./DEPLOY.md)).
 
 ## Release (quick reference)
 

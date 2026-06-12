@@ -379,6 +379,7 @@ Bluesky badges, options page. Backend routes under [`src/routes/api/extension/`]
 - [x] **Connected landing** — [`/extension/connected`](src/routes/extension.connected.tsx) after OAuth.
 - [x] **Extension client** — background message router, hip-ui popup, unified content script
       (page overlay + Bluesky badges), context menus, toolbar badge, options page.
-- [x] **Store prep** — [`extension/store/`](extension/store/) privacy policy, listing copy, publish runbook, QA checklist in [`extension/README.md`](extension/README.md).
+- [x] **Extension privacy URL** — [`/privacy/extension`](src/routes/_layout.privacy.extension.tsx) with
+      [`ExtensionPrivacyView`](src/components/reader/extension-privacy-view.tsx); cross-linked from site privacy policy.
 - [ ] **Manual QA** — run checklist in [`extension/README.md`](extension/README.md) (dev + prod).
 - [ ] **Chrome Web Store publish** — follow [`extension/store/DEPLOY.md`](extension/store/DEPLOY.md) (prod API, privacy URL, QA, screenshots, upload).

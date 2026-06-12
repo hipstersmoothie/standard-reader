@@ -70,6 +70,12 @@ export const PAGE_OG_CARDS = {
     tagline:
       "What Standard Reader collects, where your data lives, and your choices.",
   },
+  privacyExtension: {
+    path: "/privacy/extension",
+    title: "Extension privacy",
+    tagline:
+      "What the Standard Reader browser extension accesses and how it uses your data.",
+  },
   settings: {
     path: "/settings",
     title: "Settings",

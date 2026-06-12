@@ -898,15 +898,18 @@ function SubscriptionsSkeleton() {
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const onAbout = pathname === "/about";
-  const onPrivacy = pathname === "/privacy";
+  const onPrivacyExtension = pathname === "/privacy/extension";
+  const onPrivacy = pathname === "/privacy" || onPrivacyExtension;
   const onSettings = pathname === "/settings";
   const staticPageTitle = onAbout
     ? "About"
-    : onPrivacy
-      ? "Privacy"
-      : onSettings
-        ? "Settings"
-        : null;
+    : onPrivacyExtension
+      ? "Extension privacy"
+      : onPrivacy
+        ? "Privacy"
+        : onSettings
+          ? "Settings"
+          : null;
   const { data: sidebar, isPending: sidebarPending } = useQuery(
     sidebarQueryOptions(),
   );

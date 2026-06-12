@@ -56,18 +56,12 @@ before uploading to the store.
 
 ### 3. Public privacy policy URL
 
-Chrome requires a **privacy policy URL** on the store listing. The extension
-policy text is in [`privacy-policy.md`](./privacy-policy.md).
+Chrome requires a **privacy policy URL** on the store listing.
 
-**Before first submit:** publish that content at a stable URL on the main site,
-for example:
+**URL:** `https://standard-reader.app/privacy/extension`
 
-```text
-https://standard-reader.app/privacy/extension
-```
-
-Use the same URL in the developer dashboard and in listing copy if you link
-“Privacy” from the description.
+Source: [`src/components/reader/extension-privacy-view.tsx`](../../src/components/reader/extension-privacy-view.tsx).
+Store copy summary: [`privacy-policy.md`](./privacy-policy.md).
 
 ### 4. Repo access
 
