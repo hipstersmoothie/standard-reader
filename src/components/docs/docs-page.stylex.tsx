@@ -60,17 +60,21 @@ export const docsStyles = stylex.create({
     borderBottomStyle: "solid",
     borderBottomWidth: spacing["px"],
     paddingBottom: spacing["4"],
-    paddingLeft: spacing["10"],
-    paddingRight: spacing["10"],
+    paddingLeft: spacing["4"],
+    paddingRight: spacing["6"],
     paddingTop: spacing["4"],
     top: 0,
   },
   topbarLeft: {
     gap: spacing["4"],
-    alignItems: "baseline",
+    alignItems: "center",
     display: "flex",
   },
   brandLink: {
+    // eslint-disable-next-line @stylexjs/valid-styles
+    textBoxEdge: "cap alphabetic",
+    // eslint-disable-next-line @stylexjs/valid-styles
+    textBoxTrim: "trim-both",
     textDecoration: "none",
     color: uiColor.text2,
     fontFamily: fontFamily.serif,
@@ -80,10 +84,18 @@ export const docsStyles = stylex.create({
     whiteSpace: "nowrap",
   },
   brandEm: {
+    // eslint-disable-next-line @stylexjs/valid-styles
+    textBoxEdge: "cap alphabetic",
+    // eslint-disable-next-line @stylexjs/valid-styles
+    textBoxTrim: "trim-both",
     color: primaryColor.text2,
     fontStyle: "italic",
   },
   topbarTag: {
+    // eslint-disable-next-line @stylexjs/valid-styles
+    textBoxEdge: "cap alphabetic",
+    // eslint-disable-next-line @stylexjs/valid-styles
+    textBoxTrim: "trim-both",
     color: uiColor.text1,
     fontFamily: fontFamily.sans,
     fontSize: fontSize.xs,
@@ -93,7 +105,9 @@ export const docsStyles = stylex.create({
     borderLeftColor: uiColor.border1,
     borderLeftStyle: "solid",
     borderLeftWidth: spacing["px"],
+    paddingBottom: spacing["2"],
     paddingLeft: spacing["4"],
+    paddingTop: spacing["2"],
   },
   topbarNav: {
     gap: spacing["1"],
