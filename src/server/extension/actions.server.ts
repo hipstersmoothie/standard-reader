@@ -4,8 +4,10 @@ import type { AtprotoSessionContext } from "#/middleware/auth-session.server";
 
 import {
   deleteBookmarkRecord,
+  deleteRecommendRecord,
   deleteSubscriptionRecords,
   putBookmarkRecord,
+  putRecommendRecord,
   putSubscriptionRecord,
   subjectRkey,
 } from "#/server/atproto/repo-records";
@@ -20,6 +22,24 @@ async function trackReaderRepo(did: string): Promise<void> {
   } catch (error) {
     console.warn("[extension] failed to track reader repo", did, error);
   }
+}
+
+export async function extensionRecommendDocument(
+  session: AtprotoSessionContext,
+  documentUri: string,
+  recommend: boolean,
+): Promise<void> {
+  if (recommend) {
+    await putRecommendRecord(
+      session.client,
+      session.did,
+      documentUri,
+      new Date().toISOString(),
+    );
+    await trackReaderRepo(session.did);
+    return;
+  }
+  await deleteRecommendRecord(session.client, session.did, documentUri);
 }
 
 export async function extensionBookmarkDocument(

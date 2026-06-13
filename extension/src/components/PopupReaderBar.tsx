@@ -19,7 +19,6 @@ import {
   tracking,
 } from "#/design-system/theme/typography.stylex";
 import { Headphones, Pause, Play, RotateCcw, SkipBack, X } from "lucide-react";
-import { useEffect, useState } from "react";
 
 import type {
   ReaderSnapshot,
@@ -27,7 +26,6 @@ import type {
 } from "../lib/reader-messaging";
 
 import { sendMessage } from "../lib/messaging";
-import { isReaderStateBroadcast } from "../lib/reader-messaging";
 
 const SKIP_SECONDS = 15;
 const SPEED_OPTIONS = [0.75, 1, 1.25, 1.5, 1.75, 2];
@@ -139,43 +137,6 @@ const styles = stylex.create({
   },
 });
 
-/**
- * Popup state for the offscreen read-aloud session. Pulls the current snapshot
- * on mount (playback may already be running from a previous popup) and follows
- * the offscreen document's state broadcasts from then on.
- */
-function useReaderSnapshot() {
-  // null = unknown (assume supported until the background says otherwise, so
-  // the Listen button doesn't flash in and out on open).
-  const [supported, setSupported] = useState<boolean | null>(null);
-  const [snapshot, setSnapshot] = useState<ReaderSnapshot | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    void sendMessage({ type: "readerGetState" })
-      .then((result) => {
-        if (cancelled) return;
-        setSupported(result.supported);
-        setSnapshot(result.snapshot);
-      })
-      .catch(() => {
-        if (!cancelled) setSupported(false);
-      });
-
-    const onMessage = (message: unknown) => {
-      if (isReaderStateBroadcast(message)) setSnapshot(message.snapshot);
-    };
-    browser.runtime.onMessage.addListener(onMessage);
-    return () => {
-      cancelled = true;
-      browser.runtime.onMessage.removeListener(onMessage);
-    };
-  }, []);
-
-  return { supported, snapshot, setSnapshot };
-}
-
 export type PopupReaderArticle = {
   documentUri: string;
   title: string;
@@ -184,41 +145,28 @@ export type PopupReaderArticle = {
 type PopupReaderBarProps = {
   /** Current tab article, when the popup resolved to one. */
   article?: PopupReaderArticle | null;
+  snapshot: ReaderSnapshot | null;
+  setSnapshot: (snapshot: ReaderSnapshot | null) => void;
+  onPlay: (target: PopupReaderArticle) => Promise<void>;
+  starting?: boolean;
+  playError?: string | null;
 };
 
 /**
- * Pinned read-aloud controls for the popup footer. Shows transport whenever a
- * session is active (so controls stay put as you browse other popup states
- * while audio keeps playing). Offers Listen only when the active tab is an
- * indexed article.
+ * Pinned read-aloud controls for the popup footer. Renders only while a session
+ * is active (loading, playing, paused, or error) so transport stays put as you
+ * browse other popup states while audio keeps playing.
  */
-export function PopupReaderBar({ article = null }: PopupReaderBarProps) {
-  const { supported, snapshot, setSnapshot } = useReaderSnapshot();
-  const [starting, setStarting] = useState(false);
-  const [playError, setPlayError] = useState<string | null>(null);
-
-  if (supported === false) return null;
-
+export function PopupReaderBar({
+  article = null,
+  snapshot,
+  setSnapshot,
+  onPlay,
+  starting = false,
+  playError = null,
+}: PopupReaderBarProps) {
   const state = snapshot?.state ?? null;
-  const active = state !== null && state.status !== "idle";
-
-  const play = async (target: PopupReaderArticle) => {
-    setPlayError(null);
-    setStarting(true);
-    try {
-      await sendMessage({
-        type: "readerPlay",
-        documentUri: target.documentUri,
-        title: target.title,
-      });
-    } catch (error) {
-      setPlayError(
-        error instanceof Error ? error.message : "Couldn’t start reading.",
-      );
-    } finally {
-      setStarting(false);
-    }
-  };
+  if (state === null || state.status === "idle") return null;
 
   const command = (transportCommand: ReaderTransportCommand) => {
     void sendMessage({
@@ -233,30 +181,6 @@ export function PopupReaderBar({ article = null }: PopupReaderBarProps) {
     setSnapshot(null);
     command({ type: "stop" });
   };
-
-  if (!active || state === null) {
-    if (!article) return null;
-
-    return (
-      <div {...stylex.props(styles.frame)}>
-        <div {...stylex.props(styles.content)}>
-          <Button
-            variant="secondary"
-            size="lg"
-            onPress={() => void play(article)}
-            isPending={starting}
-            style={styles.listenButton}
-          >
-            <Headphones size={16} />
-            Listen to article
-          </Button>
-          {playError ? (
-            <span {...stylex.props(styles.errorText)}>{playError}</span>
-          ) : null}
-        </div>
-      </div>
-    );
-  }
 
   const {
     status,
@@ -395,7 +319,7 @@ export function PopupReaderBar({ article = null }: PopupReaderBarProps) {
           <Button
             variant="secondary"
             size="lg"
-            onPress={() => void play(article)}
+            onPress={() => void onPlay(article)}
             isPending={starting}
             style={styles.listenButton}
           >

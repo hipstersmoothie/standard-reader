@@ -12,7 +12,8 @@ import type {
 
 export type PendingAction =
   | { kind: "bookmark"; documentUri: string; save: boolean }
-  | { kind: "follow"; publicationUri: string; follow: boolean };
+  | { kind: "follow"; publicationUri: string; follow: boolean }
+  | { kind: "recommend"; documentUri: string; recommend: boolean };
 
 export type BgRequest =
   | {
@@ -29,6 +30,13 @@ export type BgRequest =
       documentUri: string;
       save: boolean;
       resolveUrl?: string;
+    }
+  | {
+      type: "recommend";
+      documentUri: string;
+      recommend: boolean;
+      resolveUrl?: string;
+      recommendCount?: number;
     }
   | { type: "follow"; publicationUri: string; follow: boolean }
   | { type: "getSession" }
@@ -77,6 +85,7 @@ type BgResponseData<T extends BgRequest["type"]> = T extends "getSettings"
                   ? ReaderSentencesResult
                   : T extends
                         | "bookmark"
+                        | "recommend"
                         | "follow"
                         | "openLogin"
                         | "loginComplete"

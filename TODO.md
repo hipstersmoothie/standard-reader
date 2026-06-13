@@ -375,7 +375,7 @@ Bluesky badges, options page. Backend routes under [`src/routes/api/extension/`]
 - [x] **Shared link normalization** — [`src/lib/link-target-variants.ts`](src/lib/link-target-variants.ts).
 - [x] **Resolve server** — [`src/server/extension/resolve-page-url.server.ts`](src/server/extension/resolve-page-url.server.ts)
       (SR links, `at://`, canonical URL, publication homepage).
-- [x] **API routes** — `/api/extension/{session,resolve,bookmark,follow}`.
+- [x] **API routes** — `/api/extension/{session,resolve,bookmark,follow,recommend}`.
 - [x] **Connected landing** — [`/extension/connected`](src/routes/extension.connected.tsx) after OAuth.
 - [x] **Extension client** — background message router, hip-ui popup, unified content script
       (page overlay + Bluesky badges), context menus, toolbar badge, options page.

@@ -64,10 +64,12 @@ async function loadArticleStatus(
   isBookmarked?: boolean;
   isRead?: boolean;
   isFollowing?: boolean;
+  isRecommended?: boolean;
 }> {
   if (!session) return {};
 
-  const [bookmarkRow, readRow, followRow] = await Promise.all([
+  const rec = schemaModule.recommends;
+  const [bookmarkRow, readRow, followRow, recommendRow] = await Promise.all([
     dbClient
       .select({ uri: schemaModule.bookmarks.uri })
       .from(schemaModule.bookmarks)
@@ -103,12 +105,24 @@ async function loadArticleStatus(
           )
           .limit(1)
       : Promise.resolve([]),
+    dbClient
+      .select({ uri: rec.uri })
+      .from(rec)
+      .where(
+        and(
+          eq(rec.recommenderDid, session.did),
+          eq(rec.documentUri, documentUri),
+          eq(rec.deleted, false),
+        ),
+      )
+      .limit(1),
   ]);
 
   return {
     isBookmarked: Boolean(bookmarkRow[0]),
     isRead: Boolean(readRow[0]),
     isFollowing: publicationUri ? Boolean(followRow[0]) : undefined,
+    isRecommended: Boolean(recommendRow[0]),
   };
 }
 
@@ -119,6 +133,7 @@ type ArticleResolveRow = {
   publicationUri: string | null;
   publishedAt: Date | null;
   textContent: string | null;
+  hasRenderableBody: boolean;
   pubName: string | null;
   pubIconUrl: string | null;
   pubOwnerAvatarUrl: string | null;
@@ -203,6 +218,7 @@ function articleResolveColumns(schemaModule: typeof schema) {
     publicationUri: d.publicationUri,
     publishedAt: d.publishedAt,
     textContent: d.textContent,
+    hasRenderableBody: d.hasRenderableBody,
     pubName: p.name,
     pubIconUrl: p.iconUrl,
     pubOwnerAvatarUrl: pr.avatarUrl,
@@ -276,6 +292,7 @@ async function buildArticleResult(
     authorAvatarUrl: author.authorAvatarUrl,
     readerUrl: buildArticleReaderUrl(row.uri),
     canonicalUrl: row.canonicalUrl,
+    hasRenderableBody: row.hasRenderableBody,
     themeBackground: row.themeBackground,
     themeForeground: row.themeForeground,
     themeAccent: row.themeAccent,

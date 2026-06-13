@@ -137,3 +137,25 @@ export async function fetchFollow(
     throw new Error("Subscribe failed");
   }
 }
+
+export async function fetchRecommend(
+  documentUri: string,
+  recommend: boolean,
+): Promise<void> {
+  const response = recommend
+    ? await apiFetch("/api/extension/recommend", {
+        method: "POST",
+        body: JSON.stringify({ documentUri }),
+      })
+    : await apiFetch(
+        `/api/extension/recommend?documentUri=${encodeURIComponent(documentUri)}`,
+        { method: "DELETE" },
+      );
+
+  if (response.status === 401) {
+    throw new Error("unauthorized");
+  }
+  if (!response.ok) {
+    throw new Error("Like failed");
+  }
+}

@@ -143,16 +143,15 @@ export function PopupPublication({
             <Check size={16} aria-hidden />
           </IconButton>
         ) : (
-          <Button
-            variant="primary"
+          <IconButton
+            variant="secondary"
             size="lg"
+            label="Subscribe"
             onPress={onFollow}
             isDisabled={followBusy}
-            style={styles.actionButton}
           >
-            <UserPlus size={16} />
-            Subscribe
-          </Button>
+            <UserPlus size={18} strokeWidth={2} aria-hidden />
+          </IconButton>
         )}
         <Button
           variant="secondary"
@@ -160,8 +159,8 @@ export function PopupPublication({
           onPress={onOpenReader}
           style={styles.actionButton}
         >
+          Open in Standard Reader
           <ArrowRight size={16} />
-          Open in Reader
         </Button>
       </Flex>
     </Flex>

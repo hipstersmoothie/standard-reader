@@ -25,9 +25,11 @@ export type ExtensionResolveArticle = {
   authorAvatarUrl: string | null;
   readerUrl: string;
   canonicalUrl: string | null;
+  hasRenderableBody: boolean;
   isBookmarked?: boolean;
   isRead?: boolean;
   isFollowing?: boolean;
+  isRecommended?: boolean;
   recommendCount: number;
   commentCount: number;
 } & ExtensionPublicationTheme;

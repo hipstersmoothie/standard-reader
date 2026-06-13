@@ -4,6 +4,7 @@ import {
   animationDuration,
   animationTimingFunction,
 } from "#/design-system/theme/animations.stylex";
+import { criticalColor } from "#/design-system/theme/color.stylex";
 import { radius } from "#/design-system/theme/radius.stylex";
 import {
   gap as gapToken,
@@ -20,7 +21,7 @@ import {
   tracking,
 } from "#/design-system/theme/typography.stylex";
 import { formatDisplayHandle } from "#/utils/saved-handles";
-import { ArrowRight, Bookmark, Check, Plus, X } from "lucide-react";
+import { ArrowRight, Bookmark, Check, Heart, Plus, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { ExtensionResolveResult } from "../lib/types";
@@ -231,17 +232,19 @@ const styles = stylex.create({
     transitionTimingFunction: animationTimingFunction.easeOut,
     whiteSpace: "nowrap",
   },
-  actionSave: {
-    backgroundColor: "var(--chip-accent)",
-    color: "var(--chip-accent-fg)",
-    opacity: {
-      default: null,
-      ":hover": 0.9,
+  actionSubscribed: {
+    backgroundColor: {
+      default: "transparent",
+      ":hover": "var(--chip-hover-bg)",
+    },
+    color: {
+      default: "var(--chip-fg)",
+      ":hover": "var(--chip-hover-fg)",
     },
   },
-  actionSaveActive: {
-    backgroundColor: "var(--chip-accent-subtle)",
-    color: "var(--chip-accent-subtle-fg)",
+  actionLikeActive: {
+    backgroundColor: criticalColor.bgSubtle,
+    color: criticalColor.solid1,
     opacity: {
       default: null,
       ":hover": 0.9,
@@ -249,9 +252,9 @@ const styles = stylex.create({
   },
   actionIconOnly: {
     justifyContent: "center",
+    paddingInline: spacing["2"],
     minHeight: size["3xl"],
     minWidth: size["3xl"],
-    paddingInline: spacing["2"],
   },
   actionOpen: {
     backgroundColor: {
@@ -261,6 +264,14 @@ const styles = stylex.create({
     color: {
       default: "var(--chip-muted)",
       ":hover": "var(--chip-hover-fg)",
+    },
+  },
+  actionOpenPrimary: {
+    backgroundColor: "var(--chip-accent)",
+    color: "var(--chip-accent-fg)",
+    opacity: {
+      default: null,
+      ":hover": 0.9,
     },
   },
   dismiss: {
@@ -385,27 +396,22 @@ export function PageChip({
     : (formatDisplayHandle(result.handle) ?? "");
 
   const saved = isArticle ? result.isBookmarked : result.isFollowing;
-  const subscribedIconOnly = !isArticle && saved;
+  const liked = isArticle ? result.isRecommended : false;
 
-  const saveActionContent = isArticle ? (
-    saved ? (
-      <>
-        <Bookmark size={12} fill="currentColor" />
-        Saved
-      </>
-    ) : (
-      <>
-        <Bookmark size={12} />
-        Save
-      </>
-    )
+  const saveAriaLabel = isArticle
+    ? saved
+      ? "Saved for later"
+      : "Save for later"
+    : saved
+      ? "Subscribed"
+      : "Subscribe";
+
+  const saveIcon = isArticle ? (
+    <Bookmark size={12} fill={saved ? "currentColor" : "none"} aria-hidden />
   ) : saved ? (
     <Check size={12} strokeWidth={2.4} aria-hidden />
   ) : (
-    <>
-      <Plus size={12} strokeWidth={2.4} />
-      Subscribe
-    </>
+    <Plus size={12} strokeWidth={2.4} aria-hidden />
   );
 
   const toggleSave = async () => {
@@ -431,6 +437,36 @@ export function PageChip({
           follow: nextFollowing,
         });
       }
+      onRefresh();
+    } catch {
+      setResult(previous);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const toggleLike = async () => {
+    if (result.kind !== "article") return;
+
+    const previous = result;
+    const nextRecommended = !result.isRecommended;
+    const nextCount = Math.max(
+      0,
+      result.recommendCount + (nextRecommended ? 1 : -1),
+    );
+    setResult({
+      ...result,
+      isRecommended: nextRecommended,
+      recommendCount: nextCount,
+    });
+    setBusy(true);
+    try {
+      await sendMessage({
+        type: "recommend",
+        documentUri: result.documentUri,
+        recommend: nextRecommended,
+        recommendCount: nextCount,
+      });
       onRefresh();
     } catch {
       setResult(previous);
@@ -519,24 +555,46 @@ export function PageChip({
             )}
           >
             <div {...stylex.props(styles.text)}>{chipText}</div>
+            {isArticle ? (
+              <button
+                type="button"
+                {...stylex.props(
+                  styles.action,
+                  styles.actionIconOnly,
+                  liked ? styles.actionLikeActive : styles.actionOpen,
+                )}
+                aria-label={liked ? "Liked" : "Like article"}
+                disabled={busy}
+                onClick={() => {
+                  void toggleLike();
+                }}
+              >
+                <Heart
+                  size={12}
+                  strokeWidth={2.4}
+                  fill={liked ? "currentColor" : "none"}
+                  aria-hidden
+                />
+              </button>
+            ) : null}
             <button
               type="button"
               {...stylex.props(
                 styles.action,
-                saved ? styles.actionSaveActive : styles.actionSave,
-                subscribedIconOnly && styles.actionIconOnly,
+                styles.actionIconOnly,
+                saved ? styles.actionSubscribed : styles.actionOpen,
               )}
-              aria-label={subscribedIconOnly ? "Subscribed" : undefined}
+              aria-label={saveAriaLabel}
               disabled={busy}
               onClick={() => {
                 void toggleSave();
               }}
             >
-              {saveActionContent}
+              {saveIcon}
             </button>
             <button
               type="button"
-              {...stylex.props(styles.action, styles.actionOpen)}
+              {...stylex.props(styles.action, styles.actionOpenPrimary)}
               disabled={busy}
               onClick={() => {
                 void openReader();
@@ -566,20 +624,38 @@ export function PageChip({
           <div {...stylex.props(styles.mark)}>S</div>
           <div {...stylex.props(styles.body, styles.bodyExpanded)}>
             <div {...stylex.props(styles.text)}>{chipText}</div>
+            {isArticle ? (
+              <button
+                type="button"
+                {...stylex.props(
+                  styles.action,
+                  styles.actionIconOnly,
+                  liked ? styles.actionLikeActive : styles.actionOpen,
+                )}
+                aria-label={liked ? "Liked" : "Like article"}
+              >
+                <Heart
+                  size={12}
+                  strokeWidth={2.4}
+                  fill={liked ? "currentColor" : "none"}
+                  aria-hidden
+                />
+              </button>
+            ) : null}
             <button
               type="button"
               {...stylex.props(
                 styles.action,
-                saved ? styles.actionSaveActive : styles.actionSave,
-                subscribedIconOnly && styles.actionIconOnly,
+                styles.actionIconOnly,
+                saved ? styles.actionSubscribed : styles.actionOpen,
               )}
-              aria-label={subscribedIconOnly ? "Subscribed" : undefined}
+              aria-label={saveAriaLabel}
             >
-              {saveActionContent}
+              {saveIcon}
             </button>
             <button
               type="button"
-              {...stylex.props(styles.action, styles.actionOpen)}
+              {...stylex.props(styles.action, styles.actionOpenPrimary)}
             >
               Open
               <ArrowRight size={11} strokeWidth={2.2} />

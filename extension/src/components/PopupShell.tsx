@@ -14,8 +14,10 @@ import { useState } from "react";
 
 import type { PopupStateResponse } from "../lib/popup-state";
 import type { ExtensionResolveResult } from "../lib/types";
+import type { PopupReaderArticle } from "./PopupReaderBar";
 
 import { sendMessage } from "../lib/messaging";
+import { useReaderSnapshot } from "../lib/use-reader-snapshot";
 import { ExtensionTheme } from "./ExtensionTheme";
 import { PopupArticle } from "./PopupArticle";
 import { PopupPublication } from "./PopupPublication";
@@ -96,8 +98,13 @@ export function PopupShell({
     initialState?.result ?? null,
   );
   const [saveBusy, setSaveBusy] = useState(false);
+  const [likeBusy, setLikeBusy] = useState(false);
   const [followBusy, setFollowBusy] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(initialError);
+  const [listenStarting, setListenStarting] = useState(false);
+  const [listenError, setListenError] = useState<string | null>(null);
+  const { supported: readerSupported, snapshot, setSnapshot } =
+    useReaderSnapshot();
 
   const signIn = async () => {
     await sendMessage({ type: "openLogin" });
@@ -119,6 +126,34 @@ export function PopupShell({
       setLoadError(error instanceof Error ? error.message : "Save failed");
     } finally {
       setSaveBusy(false);
+    }
+  };
+
+  const toggleRecommend = async () => {
+    if (result?.kind !== "article") return;
+    const nextRecommended = !result.isRecommended;
+    const nextCount = Math.max(
+      0,
+      result.recommendCount + (nextRecommended ? 1 : -1),
+    );
+    const previous = result;
+    setResult({
+      ...result,
+      isRecommended: nextRecommended,
+      recommendCount: nextCount,
+    });
+    setLikeBusy(true);
+    try {
+      await sendMessage({
+        type: "recommend",
+        documentUri: result.documentUri,
+        recommend: nextRecommended,
+      });
+    } catch (error) {
+      setResult(previous);
+      setLoadError(error instanceof Error ? error.message : "Like failed");
+    } finally {
+      setLikeBusy(false);
     }
   };
 
@@ -178,6 +213,24 @@ export function PopupShell({
     void sendMessage({ type: "openReader", url: "/saved" });
   };
 
+  const playArticle = async (target: PopupReaderArticle) => {
+    setListenError(null);
+    setListenStarting(true);
+    try {
+      await sendMessage({
+        type: "readerPlay",
+        documentUri: target.documentUri,
+        title: target.title,
+      });
+    } catch (error) {
+      setListenError(
+        error instanceof Error ? error.message : "Couldn’t start reading.",
+      );
+    } finally {
+      setListenStarting(false);
+    }
+  };
+
   const showBody = initialState != null && !loadError;
   const signedOut = showBody && !session?.signedIn;
   const signedIn = showBody && session?.signedIn;
@@ -185,6 +238,17 @@ export function PopupShell({
     result?.kind === "article"
       ? { documentUri: result.documentUri, title: result.title }
       : null;
+  const readerState = snapshot?.state ?? null;
+  const readerActive =
+    readerState !== null && readerState.status !== "idle";
+  const playingThisArticle =
+    readerArticle != null &&
+    readerActive &&
+    snapshot?.nowPlaying?.documentUri === readerArticle.documentUri;
+  const showListenInArticle =
+    readerSupported !== false &&
+    readerArticle != null &&
+    !playingThisArticle;
 
   return (
     <ExtensionTheme variant="popup">
@@ -240,10 +304,18 @@ export function PopupShell({
             <PopupArticle
               result={result}
               saveBusy={saveBusy}
+              likeBusy={likeBusy}
               followBusy={followBusy}
               onSave={toggleBookmark}
+              onLike={toggleRecommend}
               onFollow={toggleFollow}
               onOpenReader={openReader}
+              showListen={showListenInArticle}
+              listenStarting={listenStarting}
+              listenError={listenError}
+              onListen={() => {
+                if (readerArticle) void playArticle(readerArticle);
+              }}
             />
           ) : null}
 
@@ -279,8 +351,15 @@ export function PopupShell({
           ) : null}
         </Flex>
 
-        {signedIn && session ? (
-          <PopupReaderBar article={readerArticle} />
+        {signedIn && session && readerActive ? (
+          <PopupReaderBar
+            article={readerArticle}
+            snapshot={snapshot}
+            setSnapshot={setSnapshot}
+            onPlay={playArticle}
+            starting={listenStarting}
+            playError={listenError}
+          />
         ) : null}
 
         {signedIn && session ? (

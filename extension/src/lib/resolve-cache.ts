@@ -136,3 +136,24 @@ export async function patchResolveCacheBookmark(
   };
   await writeCache(cache);
 }
+
+export async function patchResolveCacheRecommend(
+  url: string,
+  isRecommended: boolean,
+  recommendCount: number,
+): Promise<void> {
+  const cache = await readCache();
+  const entry = cache[url];
+  if (!entry || entry.expiresAt <= Date.now()) return;
+  if (entry.result.kind !== "article") return;
+
+  cache[url] = {
+    ...entry,
+    result: {
+      ...entry.result,
+      isRecommended,
+      recommendCount,
+    },
+  };
+  await writeCache(cache);
+}

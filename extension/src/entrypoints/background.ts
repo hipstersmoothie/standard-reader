@@ -14,6 +14,7 @@ import {
   fetchBookmark,
   fetchFollow,
   fetchNarration,
+  fetchRecommend,
   fetchSession,
 } from "../lib/api";
 import { isActionIconPlaying, setActionIconPlaying } from "../lib/action-icon";
@@ -43,6 +44,7 @@ import {
   getCachedResolve,
   invalidateResolveCache,
   patchResolveCacheBookmark,
+  patchResolveCacheRecommend,
   resolveBatchWithCache,
   resolveWithCache,
 } from "../lib/resolve-cache";
@@ -478,6 +480,49 @@ async function handleBookmark(
   }
 }
 
+async function handleRecommend(
+  documentUri: string,
+  recommend: boolean,
+  signedIn: boolean,
+  tabUrl?: string | null,
+  resolveUrl?: string | null,
+  recommendCount?: number,
+): Promise<void> {
+  if (!signedIn) {
+    if (recommend) {
+      await promptLoginForPending({
+        kind: "recommend",
+        documentUri,
+        recommend: true,
+      });
+    }
+    return;
+  }
+
+  try {
+    await fetchRecommend(documentUri, recommend);
+    if (resolveUrl && recommendCount != null) {
+      await patchResolveCacheRecommend(resolveUrl, recommend, recommendCount);
+    }
+    if (tabUrl) await invalidateResolveCache(tabUrl);
+    await refreshActiveTabSnapshot(tabUrl ?? undefined);
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message === "unauthorized" &&
+      recommend
+    ) {
+      await promptLoginForPending({
+        kind: "recommend",
+        documentUri,
+        recommend: true,
+      });
+      return;
+    }
+    throw error;
+  }
+}
+
 async function handleFollow(
   publicationUri: string,
   follow: boolean,
@@ -520,6 +565,8 @@ async function processPendingActions(): Promise<void> {
 
   if (pending.kind === "bookmark") {
     await fetchBookmark(pending.documentUri, pending.save);
+  } else if (pending.kind === "recommend") {
+    await fetchRecommend(pending.documentUri, pending.recommend);
   } else {
     await fetchFollow(pending.publicationUri, pending.follow);
   }
@@ -568,6 +615,19 @@ async function handleMessage(request: BgRequest): Promise<BgResponse> {
           session.signedIn,
           tabUrl,
           request.resolveUrl,
+        );
+        return { ok: true, data: { ok: true } };
+      }
+      case "recommend": {
+        const session = await fetchSession();
+        const tabUrl = await getActiveTabUrl();
+        await handleRecommend(
+          request.documentUri,
+          request.recommend,
+          session.signedIn,
+          tabUrl,
+          request.resolveUrl,
+          request.recommendCount,
         );
         return { ok: true, data: { ok: true } };
       }
