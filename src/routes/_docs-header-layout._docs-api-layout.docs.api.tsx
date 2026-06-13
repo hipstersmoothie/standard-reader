@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { getApiDocsPageData } from "#/integrations/tanstack-query/api-docs.functions";
 import { getPublicUrlClient } from "#/lib/public-url";
 import { pageSocialMeta } from "#/lib/site-metadata";
-import { loadApiDocsPageData } from "#/server/api-docs/fixtures.server";
 
 import { ApiDocsPage } from "../components/docs/api-docs-page";
 
@@ -11,6 +11,6 @@ export const Route = createFileRoute(
   head: () => ({
     meta: pageSocialMeta("docsApi", getPublicUrlClient()),
   }),
-  loader: async () => loadApiDocsPageData(),
+  loader: async () => getApiDocsPageData(),
   component: ApiDocsPage,
 });
