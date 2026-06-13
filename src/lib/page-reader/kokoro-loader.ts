@@ -43,6 +43,8 @@ export function loadKokoro(
       },
     });
   })().catch((error: unknown) => {
+    // Surface the cause (the engine reduces this to a generic message).
+    console.error("[page-reader] kokoro load failed", error);
     // Allow a later retry if loading failed (network, unsupported device, ...).
     ttsPromise = null;
     throw error;

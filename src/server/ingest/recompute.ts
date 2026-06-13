@@ -21,6 +21,7 @@ import { documents, publications } from "../../db/schema.ts";
 import { getBlobUrl } from "../atproto/blob.ts";
 import { getBacklinkCountForTarget } from "../atproto/constellation.ts";
 import { resolveIdentity } from "../atproto/identity.ts";
+import { replayDeadLetters } from "./consumer.ts";
 import { reconcileDocumentDup, reconcilePublicationGroup } from "./handlers.ts";
 
 /**
@@ -745,11 +746,15 @@ export async function dedupeRecords(): Promise<{
   publications: number;
   documents: number;
 }> {
+  // Group on the trailing-slash-normalized url: re-created publication records
+  // arrive as slash variants of the same site (`https://x.com/` vs
+  // `https://x.com`) and must collapse into one group.
+  const normalizedUrl = sql<string>`rtrim(${publications.url}, '/')`;
   const pubGroups = await db
-    .select({ did: publications.did, url: publications.url })
+    .select({ did: publications.did, url: normalizedUrl })
     .from(publications)
     .where(eq(publications.deleted, false))
-    .groupBy(publications.did, publications.url)
+    .groupBy(publications.did, normalizedUrl)
     .having(sql`count(*) > 1`);
   for (const group of pubGroups) {
     await reconcilePublicationGroup(group.did, group.url);
@@ -770,6 +775,13 @@ export async function dedupeRecords(): Promise<{
 
 /** Run the full derived-data recompute (trending + discovery graphs). */
 export async function recomputeDerived(): Promise<void> {
+  // Replay events dropped by transient DB failures so the sweep computes over
+  // complete data; failures stay dead-lettered and retry next sweep.
+  try {
+    await replayDeadLetters();
+  } catch {
+    // Replay is best-effort; the rows persist and the next sweep retries.
+  }
   // Dedup first so stats/aggregates compute over canonical rows only.
   await dedupeRecords();
   try {

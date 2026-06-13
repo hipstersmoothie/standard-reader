@@ -90,15 +90,15 @@ evaluated at runtime.
 When the dashboard asks what data you collect, align with
 [`privacy-policy.md`](./privacy-policy.md):
 
-| Data | Collected? | Notes |
-| ---- | ---------- | ----- |
-| **Website content / URLs** | Yes | Page and link URLs sent to `/api/extension/*` for index matching only |
-| **Authentication info** | Yes | Session cookie on standard-reader.app (existing web login) |
-| **User activity** | Yes | Save/follow actions you explicitly trigger (written to your AT Protocol repo) |
-| **Personally identifiable information** | Via account | Same account as the web app when signed in |
-| **Health / financial / personal communications** | No | |
-| **Location** | No | |
-| **Web history browsing** | No | URLs are processed for matching on demand; we do not build a browsing history log in the extension |
+| Data                                             | Collected?  | Notes                                                                                              |
+| ------------------------------------------------ | ----------- | -------------------------------------------------------------------------------------------------- |
+| **Website content / URLs**                       | Yes         | Page and link URLs sent to `/api/extension/*` for index matching only                              |
+| **Authentication info**                          | Yes         | Session cookie on standard-reader.app (existing web login)                                         |
+| **User activity**                                | Yes         | Save/follow actions you explicitly trigger (written to your AT Protocol repo)                      |
+| **Personally identifiable information**          | Via account | Same account as the web app when signed in                                                         |
+| **Health / financial / personal communications** | No          |                                                                                                    |
+| **Location**                                     | No          |                                                                                                    |
+| **Web history browsing**                         | No          | URLs are processed for matching on demand; we do not build a browsing history log in the extension |
 
 **Purpose:** App functionality (save, follow, open reader).
 
@@ -110,10 +110,10 @@ When the dashboard asks what data you collect, align with
 
 ## Store listing assets (reminder)
 
-| Asset | File / spec |
-| ----- | ----------- |
-| Icon 128×128 | `extension/public/icons/icon-128.png` |
-| Screenshots | 1280×800 or 640×400 — see [`README.md`](./README.md) |
-| Privacy policy URL | https://standard-reader.app/privacy/extension |
+| Asset              | File / spec                                          |
+| ------------------ | ---------------------------------------------------- |
+| Icon 128×128       | `extension/public/icons/icon-128.png`                |
+| Screenshots        | 1280×800 or 640×400 — see [`README.md`](./README.md) |
+| Privacy policy URL | https://standard-reader.app/privacy/extension        |
 
 Regenerate icons: `node scripts/generate-social-icon.mjs`

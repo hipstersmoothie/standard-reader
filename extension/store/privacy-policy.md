@@ -12,11 +12,11 @@ The Standard Reader browser extension helps you save articles and follow publica
 
 ## What the extension accesses
 
-| Data | Purpose |
-| ---- | ------- |
-| **Page URLs** | Match pages against the Standard Reader index to offer save/follow/open actions (`/api/extension/*`). Page content is not uploaded. |
-| **Session cookie** | Authenticate API requests using your existing Standard Reader sign-in (HttpOnly cookie on standard-reader.app). Content scripts do not read this cookie. |
-| **Extension settings** | Stored locally in `chrome.storage.sync` (overlay toggle, Bluesky embed save button). |
+| Data                   | Purpose                                                                                                                                                  |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Page URLs**          | Match pages against the Standard Reader index to offer save/follow/open actions (`/api/extension/*`). Page content is not uploaded.                      |
+| **Session cookie**     | Authenticate API requests using your existing Standard Reader sign-in (HttpOnly cookie on standard-reader.app). Content scripts do not read this cookie. |
+| **Extension settings** | Stored locally in `chrome.storage.sync` (overlay toggle, Bluesky embed save button).                                                                     |
 
 ## What the extension does not do
 

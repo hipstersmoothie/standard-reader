@@ -1,8 +1,17 @@
-import type { ArticleDetail } from "#/integrations/tanstack-query/api-publication.functions";
-
 import type { ReaderVoice } from "./voice-catalog";
 
 export type { ReaderVoice } from "./voice-catalog";
+
+/**
+ * The slice of `ArticleDetail` that voice detection needs. Structural so
+ * non-app callers (the browser extension's offscreen reader) can use this
+ * module without pulling the server function types into their graph.
+ */
+type VoiceArticle = {
+  contributors: Array<{ displayName: string | null; handle: string | null }>;
+  publicationOwnerDisplayName: string | null;
+  publicationOwnerHandle: string | null;
+};
 
 /** Highest-grade American English picks used when auto-detecting gender. */
 const FEMALE_VOICE: ReaderVoice = "af_heart";
@@ -52,7 +61,7 @@ function loadClassifier(): Promise<ZeroShotClassifier> {
 }
 
 /** The author name to classify: display name, else a handle's local part. */
-function authorName(article: ArticleDetail): string | null {
+function authorName(article: VoiceArticle): string | null {
   const lead = article.contributors[0];
 
   const displayName = lead?.displayName ?? article.publicationOwnerDisplayName;
@@ -91,6 +100,6 @@ export async function nameVoice(name: string | null): Promise<ReaderVoice> {
 }
 
 /** Choose the narration voice for an article from its lead author. */
-export function articleVoice(article: ArticleDetail): Promise<ReaderVoice> {
+export function articleVoice(article: VoiceArticle): Promise<ReaderVoice> {
   return nameVoice(authorName(article));
 }

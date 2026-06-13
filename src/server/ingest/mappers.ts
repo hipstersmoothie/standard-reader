@@ -70,6 +70,17 @@ export function flattenTheme(theme: BasicTheme | undefined): FlatTheme {
 }
 
 /**
+ * Normalize a publication URL for storage and `(did, url)` grouping: strip NUL
+ * bytes, trim whitespace, and drop trailing slashes so `https://x.com` and
+ * `https://x.com/` collapse to one publication. Publishers re-create their
+ * publication record with slash variants of the same url, which would
+ * otherwise defeat the dedupe sweep and split documents across pages.
+ */
+export function normalizePublicationUrl(url: string): string {
+  return stripNullBytes(url).trim().replace(/\/+$/, "");
+}
+
+/**
  * Build a canonical document URL from a publication/site base URL and the
  * document `path`. Returns null when there's no base to anchor on.
  */

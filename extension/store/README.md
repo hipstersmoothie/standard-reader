@@ -63,9 +63,9 @@ Policy text: [`privacy-policy.md`](./privacy-policy.md). Live at
 
 ## Store assets
 
-| Asset | Path |
-| ----- | ---- |
-| Icon 128×128 | `extension/public/icons/icon-128.png` |
+| Asset              | Path                                         |
+| ------------------ | -------------------------------------------- |
+| Icon 128×128       | `extension/public/icons/icon-128.png`        |
 | Icons 16 / 32 / 48 | `extension/public/icons/icon-{16,32,48}.png` |
 
 Regenerate all sizes from the Newsreader glyph:

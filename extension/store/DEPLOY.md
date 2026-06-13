@@ -41,15 +41,15 @@ upload, submit.
 
 The extension talks to the main app over HTTPS. Before any store build:
 
-| Requirement | Verify |
-| ----------- | ------ |
-| App deployed at `https://standard-reader.app` | Open in browser |
-| `/api/extension/session` | Signed-in session returns `{ authenticated: true }` |
-| `/api/extension/resolve` | Known article URL resolves |
-| `/api/extension/bookmark` | Save works when authenticated |
-| `/api/extension/follow` | Follow works when authenticated |
-| `/extension/connected` | OAuth redirect closes login tab |
-| OAuth `client_id` / redirect URIs | Login from extension popup completes |
+| Requirement                                   | Verify                                              |
+| --------------------------------------------- | --------------------------------------------------- |
+| App deployed at `https://standard-reader.app` | Open in browser                                     |
+| `/api/extension/session`                      | Signed-in session returns `{ authenticated: true }` |
+| `/api/extension/resolve`                      | Known article URL resolves                          |
+| `/api/extension/bookmark`                     | Save works when authenticated                       |
+| `/api/extension/follow`                       | Follow works when authenticated                     |
+| `/extension/connected`                        | OAuth redirect closes login tab                     |
+| OAuth `client_id` / redirect URIs             | Login from extension popup completes                |
 
 Quick smoke test with an **unpacked prod build** (see [Pre-flight QA](#pre-flight-qa))
 before uploading to the store.
@@ -142,18 +142,18 @@ Load the **production** build unpacked:
 3. Run the checklist below against **production** (`standard-reader.app`), not
    localhost.
 
-| # | Case | Steps | Expected |
-| - | ---- | ----- | -------- |
-| 1 | Popup — article | Indexed article URL → extension icon | Title, Save, Follow, Open |
-| 2 | Sign-in flow | Sign out → popup on article → Save | Login tab → auto-close → save completes |
-| 3 | Overlay | Publication article (not SR app) | Bottom-right chip; dismiss until refresh |
-| 4 | Overlay off | Options → disable overlay → revisit | No chip |
-| 5 | SR app excluded | `standard-reader.app` article | No overlay |
-| 6 | Context menu | Right-click indexed article link → Save | Bookmark (or login → retry) |
-| 7 | Toolbar badge | Tabs: indexed article ↔ other site | Dot on indexed tabs only |
-| 8 | Bluesky embed | bsky.app post with standard.site embed | Save in embed footer |
-| 9 | Bluesky off | Options → disable embed save | Buttons removed |
-| 10 | Options persist | Toggle settings → restart browser | Settings kept (`storage.sync`) |
+| #   | Case            | Steps                                   | Expected                                 |
+| --- | --------------- | --------------------------------------- | ---------------------------------------- |
+| 1   | Popup — article | Indexed article URL → extension icon    | Title, Save, Follow, Open                |
+| 2   | Sign-in flow    | Sign out → popup on article → Save      | Login tab → auto-close → save completes  |
+| 3   | Overlay         | Publication article (not SR app)        | Bottom-right chip; dismiss until refresh |
+| 4   | Overlay off     | Options → disable overlay → revisit     | No chip                                  |
+| 5   | SR app excluded | `standard-reader.app` article           | No overlay                               |
+| 6   | Context menu    | Right-click indexed article link → Save | Bookmark (or login → retry)              |
+| 7   | Toolbar badge   | Tabs: indexed article ↔ other site      | Dot on indexed tabs only                 |
+| 8   | Bluesky embed   | bsky.app post with standard.site embed  | Save in embed footer                     |
+| 9   | Bluesky off     | Options → disable embed save            | Buttons removed                          |
+| 10  | Options persist | Toggle settings → restart browser       | Settings kept (`storage.sync`)           |
 
 Capture failures before upload — reviewers exercise the same flows.
 
@@ -164,12 +164,12 @@ Capture failures before upload — reviewers exercise the same flows.
 Chrome needs **at least one** screenshot; plan for **four** (1280×800 or
 640×400). Capture from a clean profile with the **prod** unpacked build.
 
-| # | Scene | How to capture |
-| - | ----- | -------------- |
-| 1 | Popup on indexed article | Article tab, signed in, extension popup open |
-| 2 | Page overlay | Publication site article, chip visible bottom-right |
-| 3 | Bluesky embed | bsky.app post with standard.site embed, Save visible |
-| 4 | Options | Extension options page, both toggles visible |
+| #   | Scene                    | How to capture                                       |
+| --- | ------------------------ | ---------------------------------------------------- |
+| 1   | Popup on indexed article | Article tab, signed in, extension popup open         |
+| 2   | Page overlay             | Publication site article, chip visible bottom-right  |
+| 3   | Bluesky embed            | bsky.app post with standard.site embed, Save visible |
+| 4   | Options                  | Extension options page, both toggles visible         |
 
 Tips:
 
@@ -190,17 +190,16 @@ Icons are already in the manifest (`icons/icon-{16,32,48,128}.png`).
 2. Upload `extension/.output/*-chrome.zip`.
 3. Fill **Store listing** from [`README.md`](./README.md):
 
-   | Field | Source |
-   | ----- | ------ |
-   | Name | Standard Reader |
-   | Summary | Save articles and follow publications… |
-   | Description | Full description section |
-   | Category | News & Weather or Productivity |
-   | Language | English |
+   | Field       | Source                                 |
+   | ----------- | -------------------------------------- |
+   | Name        | Standard Reader                        |
+   | Summary     | Save articles and follow publications… |
+   | Description | Full description section               |
+   | Category    | News & Weather or Productivity         |
+   | Language    | English                                |
 
 4. Upload screenshots and icon assets.
 5. **Privacy**:
-
    - Privacy policy URL → hosted extension policy URL
    - Data use: page URLs sent to your server for index matching; session
      cookie on `standard-reader.app` for auth; settings in `chrome.storage.sync`
@@ -215,7 +214,6 @@ Icons are already in the manifest (`icons/icon-{16,32,48,128}.png`).
    [`README.md`](./README.md).
 
 8. **Distribution**:
-
    - Visibility: Public (or Unlisted for a soft launch)
    - Regions: as needed
    - Mature content: No (unless that changes)
@@ -228,13 +226,13 @@ Icons are already in the manifest (`icons/icon-{16,32,48,128}.png`).
 
 Expect **1–3 business days**; broad permissions can take longer.
 
-| Permission | Why reviewers care | Our justification (short) |
-| ---------- | ------------------ | ------------------------- |
-| `<all_urls>` | Runs on every site | Match page URLs to indexed articles; overlay + context menu on publication sites only |
-| `cookies` | Cross-site identity | Read HttpOnly session on `standard-reader.app` only — same login as web app |
-| `tabs` / `activeTab` | Tab access | Resolve active tab URL; open articles in Standard Reader |
-| `contextMenus` | Right-click hooks | Save / Open on links and pages |
-| `storage` | Local data | User toggles (overlay, Bluesky embed) |
+| Permission           | Why reviewers care  | Our justification (short)                                                             |
+| -------------------- | ------------------- | ------------------------------------------------------------------------------------- |
+| `<all_urls>`         | Runs on every site  | Match page URLs to indexed articles; overlay + context menu on publication sites only |
+| `cookies`            | Cross-site identity | Read HttpOnly session on `standard-reader.app` only — same login as web app           |
+| `tabs` / `activeTab` | Tab access          | Resolve active tab URL; open articles in Standard Reader                              |
+| `contextMenus`       | Right-click hooks   | Save / Open on links and pages                                                        |
+| `storage`            | Local data          | User toggles (overlay, Bluesky embed)                                                 |
 
 If Google asks for a **video**, record ~30s: visit publication article → overlay
 → save → popup on article → Bluesky embed save.
@@ -264,12 +262,12 @@ Existing users get updates via Chrome’s extension update channel after approva
 
 ## Rollback and incidents
 
-| Situation | Action |
-| --------- | ------ |
+| Situation      | Action                                                                                               |
+| -------------- | ---------------------------------------------------------------------------------------------------- |
 | Bad build live | Upload previous zip with a **new higher** version, or disable new installs in dashboard while fixing |
-| API outage | Extension degrades (resolve/save fail); fix server first — no store resubmit needed |
-| Auth broken | Check OAuth redirects and cookie domain on `standard-reader.app` |
-| Review stuck | Dashboard → item → check **Status** and registered developer email |
+| API outage     | Extension degrades (resolve/save fail); fix server first — no store resubmit needed                  |
+| Auth broken    | Check OAuth redirects and cookie domain on `standard-reader.app`                                     |
+| Review stuck   | Dashboard → item → check **Status** and registered developer email                                   |
 
 Keep the last known-good `*-chrome.zip` artifact (tagged release or CI artifact)
 for quick rollback uploads.

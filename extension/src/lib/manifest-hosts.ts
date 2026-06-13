@@ -13,7 +13,7 @@ export const DEV_HOST_PERMISSIONS = [
   "https://staging.bsky.app/*",
 ] as const;
 
-export function hostPermissions(includeDev: boolean): string[] {
+export function hostPermissions(includeDev: boolean): Array<string> {
   return includeDev
     ? [...PRODUCTION_HOST_PERMISSIONS, ...DEV_HOST_PERMISSIONS]
     : [...PRODUCTION_HOST_PERMISSIONS];
@@ -25,11 +25,11 @@ const BSKY_HOSTS = ["bsky.app"] as const;
 const DEV_BSKY_HOSTS = ["staging.bsky.app"] as const;
 const DEV_LOOPBACK_HOSTS = ["localhost", "127.0.0.1"] as const;
 
-export function appHosts(includeDev: boolean): readonly string[] {
+export function appHosts(includeDev: boolean): ReadonlyArray<string> {
   return includeDev ? [...APP_HOSTS, ...DEV_APP_HOSTS] : APP_HOSTS;
 }
 
-export function bskyHosts(includeDev: boolean): readonly string[] {
+export function bskyHosts(includeDev: boolean): ReadonlyArray<string> {
   return includeDev ? [...BSKY_HOSTS, ...DEV_BSKY_HOSTS] : BSKY_HOSTS;
 }
 
@@ -41,7 +41,7 @@ export function overlayExcludedHosts(includeDev: boolean): Set<string> {
   ]);
 }
 
-export function pageOverlayExcludeMatches(includeDev: boolean): string[] {
+export function pageOverlayExcludeMatches(includeDev: boolean): Array<string> {
   const excludes = [
     "*://standard-reader.app/*",
     "*://*.standard-reader.app/*",
@@ -58,7 +58,7 @@ export function pageOverlayExcludeMatches(includeDev: boolean): string[] {
   return excludes;
 }
 
-export function authCallbackMatches(includeDev: boolean): string[] {
+export function authCallbackMatches(includeDev: boolean): Array<string> {
   const matches = ["https://standard-reader.app/extension/connected*"];
   if (includeDev) {
     matches.push(
@@ -69,7 +69,7 @@ export function authCallbackMatches(includeDev: boolean): string[] {
   return matches;
 }
 
-export function bskyEmbedMatches(includeDev: boolean): string[] {
+export function bskyEmbedMatches(includeDev: boolean): Array<string> {
   return includeDev
     ? ["https://bsky.app/*", "https://staging.bsky.app/*"]
     : ["https://bsky.app/*"];

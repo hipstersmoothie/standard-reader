@@ -26,6 +26,7 @@
     "backfill:search-text": "pnpm exec tsx --env-file=.env scripts/backfill-search-text.ts",
     "backfill:renderable": "pnpm exec tsx --env-file=.env scripts/backfill-renderable-body.ts",
     "backfill:content-formats": "pnpm exec tsx --env-file=.env scripts/backfill-content-formats.ts",
+    "backfill:repo-documents": "pnpm exec tsx --env-file=.env scripts/backfill-repo-documents.ts",
     "scan:unsupported-blocks": "pnpm exec tsx --env-file=.env scripts/scan-unsupported-blocks.ts",
     "scan:discussion-sources": "pnpm exec tsx --env-file=.env scripts/scan-discussion-sources.ts",
     "icons:generate": "node scripts/generate-social-icon.mjs",

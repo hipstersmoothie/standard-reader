@@ -57,9 +57,10 @@ interface HighlightRegistryLike {
  * Nearest ancestor that introduces a layout boundary for a text node — i.e. the
  * closest non-inline, non-floated block. Floated elements (e.g. drop caps) and
  * inline elements (links, emphasis) are skipped so they stay glued to their
- * surrounding text rather than forming a word boundary.
+ * surrounding text rather than forming a word boundary. Exported so the
+ * extension's page-text extraction groups blocks the same way alignment does.
  */
-function blockAncestor(node: Node): Element | null {
+export function blockAncestor(node: Node): Element | null {
   let el = node.parentElement;
   while (el) {
     const style = globalThis.getComputedStyle(el);
@@ -317,7 +318,11 @@ function findScrollContainer(start: HTMLElement): HTMLElement {
     }
     node = node.parentElement;
   }
-  return start;
+  // No scrollable ancestor — the page scrolls at the document level (e.g. a
+  // publication's own site under the extension's read-along). The root itself
+  // isn't scrollable, so fall back to the document scroller.
+  const scrolling = start.ownerDocument.scrollingElement;
+  return scrolling instanceof HTMLElement ? scrolling : start;
 }
 
 /** Keep the active word within a comfortable band of its scroll container. */
@@ -326,7 +331,12 @@ export function scrollWordIntoView(range: Range, root: HTMLElement): void {
   const word = range.getBoundingClientRect();
   if (word.width === 0 && word.height === 0) return;
 
-  const view = scroller.getBoundingClientRect();
+  // For the document scroller the bounding rect spans the whole page; the
+  // visible band is the viewport instead.
+  const isDocScroller = scroller === root.ownerDocument.scrollingElement;
+  const view = isDocScroller
+    ? { top: 0, height: globalThis.innerHeight }
+    : scroller.getBoundingClientRect();
   const topBand = view.top + view.height * 0.2;
   const bottomBand = view.top + view.height * 0.75;
   if (word.top >= topBand && word.bottom <= bottomBand) return;

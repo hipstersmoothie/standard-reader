@@ -5,11 +5,11 @@ import { readDiscoveryHintsFromDocument } from "#/lib/discovery-hints";
 import { createRoot } from "react-dom/client";
 
 import { PageChip } from "../../components/PageChip";
-import { sendMessage } from "../../lib/messaging";
 import {
   overlayExcludedHosts,
   pageOverlayExcludeMatches,
 } from "../../lib/manifest-hosts";
+import { sendMessage } from "../../lib/messaging";
 import "../../load-stylex-styles";
 
 const dismissedOrigins = new Set<string>();

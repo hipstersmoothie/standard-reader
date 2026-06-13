@@ -5,8 +5,8 @@ import { Link } from "@tanstack/react-router";
 import { getPublicUrlClient } from "#/lib/public-url";
 import { SITE_NAME } from "#/lib/site-metadata";
 
+import { legalPageStyles as styles } from "./legal-page-styles";
 import { Kicker } from "./primitives";
-import { legalPageStyles as styles } from "./legal-page.stylex";
 
 export function PrivacyView() {
   const siteUrl = getPublicUrlClient();

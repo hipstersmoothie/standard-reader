@@ -1,4 +1,4 @@
-import { sql } from "drizzle-orm";
+import { asc, eq, lt, sql } from "drizzle-orm";
 
 import type {
   BookmarkRecord,
@@ -192,6 +192,56 @@ export async function processTapEvent(event: TapEvent): Promise<ProcessResult> {
       return "unhandled";
     }
   }
+}
+
+const DEAD_LETTER_MAX_RETRIES = 5;
+const DEAD_LETTER_REPLAY_BATCH = 200;
+
+/**
+ * Re-apply dead-lettered events. Rows land in `ingest_dead_letter` when the
+ * original apply failed (almost always a transient DB error), and without a
+ * replay they are silently missing from the read model forever — tap acked the
+ * event, so it never redelivers. Successful replays delete the row; failures
+ * bump `retries` until {@link DEAD_LETTER_MAX_RETRIES}, after which the row is
+ * left for manual inspection. Runs from the hourly recompute sweep.
+ */
+export async function replayDeadLetters(): Promise<{
+  replayed: number;
+  failed: number;
+}> {
+  const rows = await db
+    .select()
+    .from(ingestDeadLetter)
+    .where(lt(ingestDeadLetter.retries, DEAD_LETTER_MAX_RETRIES))
+    .orderBy(asc(ingestDeadLetter.id))
+    .limit(DEAD_LETTER_REPLAY_BATCH);
+
+  let replayed = 0;
+  let failed = 0;
+  for (const row of rows) {
+    try {
+      const event = row.payload as unknown as TapEvent | null;
+      if (event?.type === "identity") {
+        await applyIdentity(event.identity);
+      } else if (event?.type === "record") {
+        await handleRecord(event.record);
+      } else {
+        throw new Error("unrecognized dead-letter payload");
+      }
+      await db.delete(ingestDeadLetter).where(eq(ingestDeadLetter.id, row.id));
+      replayed += 1;
+    } catch (error: unknown) {
+      failed += 1;
+      await db
+        .update(ingestDeadLetter)
+        .set({
+          retries: row.retries + 1,
+          error: error instanceof Error ? error.message : String(error),
+        })
+        .where(eq(ingestDeadLetter.id, row.id));
+    }
+  }
+  return { failed, replayed };
 }
 
 /** Process a batch (tap may deliver one event per webhook call, but the WS/SDK

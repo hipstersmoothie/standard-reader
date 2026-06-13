@@ -70,6 +70,7 @@ export function Topic({ name, linkable = true, nested = false }: TopicProps) {
   if (nested) {
     return (
       <span
+        // oxlint-disable-next-line jsx_a11y/prefer-tag-over-role -- nested inside parent card link
         role="link"
         tabIndex={0}
         onClick={(event) => {

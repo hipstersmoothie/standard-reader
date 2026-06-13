@@ -41,6 +41,7 @@ import {
 } from "../atproto/identity.ts";
 import {
   Collections,
+  buildAtUri,
   didFromAtUri,
   isAtUri,
   parseAtUri,
@@ -49,6 +50,7 @@ import {
   buildCanonicalUrl,
   cleanOptional,
   flattenTheme,
+  normalizePublicationUrl,
   parseDate,
   sanitizeJson,
   stripNullBytes,
@@ -58,11 +60,14 @@ import { ensureTracked } from "./tap-client.ts";
 /**
  * Enforce one canonical publication per `(did, url)`: the record with the
  * greatest rkey (newest TID) survives; older same-site records are hidden
- * (`deleted = true`) and their documents repointed to the survivor so they stay
- * visible. Publishers sometimes re-create their publication record (new rkey,
- * same url) and *both* records persist in the repo, so tap re-delivers both and
- * a DB unique constraint would just wedge ingest — we keep the read-model
- * deduped instead. Idempotent; safe to call from the hot path and the recompute
+ * (`deleted = true`) and their documents and subscriptions repointed to the
+ * survivor so they stay visible. Publishers sometimes re-create their
+ * publication record (new rkey, same url) and *both* records persist in the
+ * repo, so tap re-delivers both and a DB unique constraint would just wedge
+ * ingest — we keep the read-model deduped instead. URL matching is
+ * trailing-slash-insensitive: re-created records show up as `https://x.com/`
+ * vs `https://x.com`, and exact matching left both live with documents split
+ * between them. Idempotent; safe to call from the hot path and the recompute
  * sweep. (Repo deletes hard-delete publication rows, so `deleted` is free to
  * mean "superseded duplicate" here.)
  */
@@ -70,10 +75,16 @@ export async function reconcilePublicationGroup(
   did: string,
   url: string,
 ): Promise<void> {
+  const normalizedUrl = normalizePublicationUrl(url);
   const rows = await db
     .select({ uri: publications.uri, rkey: publications.rkey })
     .from(publications)
-    .where(and(eq(publications.did, did), eq(publications.url, url)));
+    .where(
+      and(
+        eq(publications.did, did),
+        sql`rtrim(${publications.url}, '/') = ${normalizedUrl}`,
+      ),
+    );
   if (rows.length <= 1) {
     return;
   }
@@ -93,6 +104,10 @@ export async function reconcilePublicationGroup(
     .update(documents)
     .set({ publicationUri: canonical.uri, updatedAt: sql`now()` })
     .where(inArray(documents.publicationUri, losers));
+  await db
+    .update(subscriptions)
+    .set({ publicationUri: canonical.uri, updatedAt: sql`now()` })
+    .where(inArray(subscriptions.publicationUri, losers));
   await db
     .update(publications)
     .set({ deleted: true, updatedAt: sql`now()` })
@@ -172,6 +187,8 @@ export async function upsertPublication(
     return;
   }
 
+  const url = normalizePublicationUrl(record.url);
+
   const owner = getCachedIdentity(did);
   const ownerPds = await authorPds(did, owner?.pds ?? null);
   const iconCid = blobCid(record.icon);
@@ -187,7 +204,7 @@ export async function upsertPublication(
     did,
     rkey,
     name: stripNullBytes(record.name),
-    url: stripNullBytes(record.url),
+    url,
     description: cleanOptional(record.description),
     iconCid,
     iconMime: record.icon?.mimeType ?? null,
@@ -196,7 +213,7 @@ export async function upsertPublication(
     themeJson: sanitizeJson(record.basicTheme),
     showInDiscover:
       (record.preferences?.showInDiscover ?? true) &&
-      !isExcludedPublicationUrl(record.url),
+      !isExcludedPublicationUrl(url),
     deleted: false,
     updatedAt: sql`now()`,
   };
@@ -214,12 +231,11 @@ export async function upsertPublication(
 
   // Reconcile documents that referenced this publication (by at-uri or base
   // URL) before it was indexed: attach them and backfill their canonical URL.
-  const trimmedUrl = record.url.replace(/\/+$/, "");
   await db
     .update(documents)
     .set({
       publicationUri: uri,
-      canonicalUrl: sql`${trimmedUrl} || case when ${documents.path} is null then '' when left(${documents.path}, 1) = '/' then ${documents.path} else '/' || ${documents.path} end`,
+      canonicalUrl: sql`${url} || case when ${documents.path} is null then '' when left(${documents.path}, 1) = '/' then ${documents.path} else '/' || ${documents.path} end`,
       updatedAt: sql`now()`,
     })
     .where(
@@ -228,7 +244,8 @@ export async function upsertPublication(
         or(
           eq(documents.siteUri, uri),
           eq(documents.siteUri, record.url),
-          eq(documents.siteUri, trimmedUrl),
+          eq(documents.siteUri, url),
+          eq(documents.siteUri, `${url}/`),
         ),
       ),
     );
@@ -270,7 +287,9 @@ export async function upsertDocument(
     const found = await db
       .select({ uri: publications.uri, url: publications.url })
       .from(publications)
-      .where(eq(publications.url, site))
+      .where(
+        sql`rtrim(${publications.url}, '/') = ${normalizePublicationUrl(site)}`,
+      )
       .limit(1);
     if (found[0]) {
       publicationUri = found[0].uri;
@@ -396,6 +415,23 @@ export async function upsertDocument(
   await ensureTracked(did, "document");
 }
 
+const LEAFLET_PUBLICATION_NSID = "pub.leaflet.publication";
+
+/**
+ * Map a `pub.leaflet.publication` reference to its `site.standard.publication`
+ * twin. Leaflet's standard.site migration dual-writes both records under the
+ * same rkey, but older subscription records still point at the leaflet URI,
+ * which matches no documents in our read model (documents only ever carry
+ * site.standard publication URIs).
+ */
+function normalizePublicationRef(ref: string): string {
+  const parsed = parseAtUri(ref);
+  if (parsed?.collection === LEAFLET_PUBLICATION_NSID) {
+    return buildAtUri(parsed.did, Collections.publication, parsed.rkey);
+  }
+  return ref;
+}
+
 export async function upsertSubscription(
   uri: string,
   did: string,
@@ -406,14 +442,15 @@ export async function upsertSubscription(
   if (typeof record.publication !== "string") {
     return;
   }
-  const publicationDid = didFromAtUri(record.publication);
+  const publicationUri = normalizePublicationRef(record.publication);
+  const publicationDid = didFromAtUri(publicationUri);
 
   const values = {
     uri,
     cid: cid ?? null,
     subscriberDid: did,
     rkey,
-    publicationUri: record.publication,
+    publicationUri,
     publicationDid,
     createdAt: parseDate(record.createdAt),
     deleted: false,

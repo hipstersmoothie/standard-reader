@@ -62,8 +62,25 @@ export function articleDescriptionIsBodyExcerpt(
   return resolveContentType(article) === PCKT_CONTENT;
 }
 
+/**
+ * The structural subset of `ArticleDetail` that narration extraction needs —
+ * lets server callers (e.g. the extension narration endpoint) pass a lean
+ * document row instead of building a full detail payload.
+ */
+export type SpeechArticle = Pick<
+  ArticleDetail,
+  "title" | "description" | "contentFormat" | "contentJson" | "textContent"
+> & {
+  contributors: Array<{ displayName: string | null; handle: string | null }>;
+  publicationOwnerDisplayName: string | null;
+  publicationOwnerHandle: string | null;
+  publication: { name: string } | null;
+};
+
 /** AT-URIs of Bluesky posts embedded in the article body (Leaflet only). */
-export function articleBskyPostUris(article: ArticleDetail): Array<string> {
+export function articleBskyPostUris(
+  article: Pick<ArticleDetail, "contentFormat" | "contentJson">,
+): Array<string> {
   if (resolveContentType(article) !== LEAFLET_CONTENT) return [];
   return leafletBskyPostUris(article.contentJson);
 }
@@ -79,7 +96,10 @@ export function articleBskyPostUris(article: ArticleDetail): Array<string> {
  * when there's no structured content to extract from.
  */
 export function articleReadingText(
-  article: ArticleDetail,
+  article: Pick<
+    ArticleDetail,
+    "contentFormat" | "contentJson" | "textContent" | "description"
+  >,
   bskyPostText?: Map<string, string>,
 ): string | null {
   const contentType = resolveContentType(article);
@@ -134,7 +154,15 @@ export function articleReadingText(
 }
 
 /** Author name for narration (lead contributor, else publication owner). */
-export function speechAuthor(article: ArticleDetail): string | null {
+export function speechAuthor(
+  article: Pick<
+    SpeechArticle,
+    | "contributors"
+    | "publicationOwnerDisplayName"
+    | "publicationOwnerHandle"
+    | "publication"
+  >,
+): string | null {
   const lead = article.contributors[0];
   if (lead?.displayName) return lead.displayName;
   if (article.publicationOwnerDisplayName) {
@@ -152,7 +180,7 @@ export function speechAuthor(article: ArticleDetail): string | null {
  * `bskyPostText` optionally inlines narration for embedded Bluesky posts.
  */
 export function articleSpeechText(
-  article: ArticleDetail,
+  article: SpeechArticle,
   bskyPostText?: Map<string, string>,
 ): string | null {
   const parts: Array<string> = [];

@@ -78,7 +78,7 @@ Load unpacked from `extension/.output/chrome-mv3/` after `pnpm extension:build`.
 | SR app excluded         | Visit `standard-reader.app` article                    | No overlay                                          |
 | Context menu            | Right-click link to indexed article → Save             | Bookmark created (or login → retry)                 |
 | Toolbar badge           | Switch tabs between article and other sites            | Dot on indexed tabs only                            |
-| Bluesky embed save      | Post with a standard.site article embed on bsky.app     | Native Save button in embed footer                  |
+| Bluesky embed save      | Post with a standard.site article embed on bsky.app    | Native Save button in embed footer                  |
 | Bluesky embed off       | Disable in options                                     | Buttons removed                                     |
 | Options sync            | Toggle settings → restart browser                      | Settings persist (`storage.sync`)                   |
 | Dev API                 | API origin blank or `http://127.0.0.1:3000` in options | Extension hits local app                            |

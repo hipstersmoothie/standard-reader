@@ -4,12 +4,12 @@ import { browserslistToTargets } from "lightningcss";
 import path from "node:path";
 import { defineConfig } from "wxt";
 
+import { hostPermissions } from "./src/lib/manifest-hosts.ts";
 import {
   ensureStylexDevAssets,
   stylexCssOnlyDevFixPlugin,
   stylexDevServerOriginPlugins,
 } from "./src/lib/stylex-dev-origin-plugin.ts";
-import { hostPermissions } from "./src/lib/manifest-hosts.ts";
 
 const repoRoot = path.resolve(import.meta.dirname, "..");
 const wxtCommand =

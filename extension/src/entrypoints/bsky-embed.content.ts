@@ -1,5 +1,5 @@
-import { bskyEmbedMatches } from "../lib/manifest-hosts";
 import { initBskyEmbedBookmarks } from "../lib/bsky-embed-bookmark";
+import { bskyEmbedMatches } from "../lib/manifest-hosts";
 
 export default defineContentScript({
   matches: bskyEmbedMatches(import.meta.env.DEV),

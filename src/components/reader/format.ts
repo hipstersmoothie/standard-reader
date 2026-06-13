@@ -190,3 +190,12 @@ export function formatRelativeTime(iso: string | null): string {
   if (Math.abs(diffDay) < 7) return RELATIVE_FMT.format(diffDay, "day");
   return formatDate(iso);
 }
+
+/** `m:ss` clock time for the page-reader transport. */
+export function formatTime(seconds: number): string {
+  if (!Number.isFinite(seconds) || seconds < 0) return "0:00";
+  const total = Math.floor(seconds);
+  const minutes = Math.floor(total / 60);
+  const secs = total % 60;
+  return `${minutes}:${secs.toString().padStart(2, "0")}`;
+}
