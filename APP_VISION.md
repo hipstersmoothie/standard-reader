@@ -312,7 +312,7 @@ serves **`app.standard-reader.*` query and procedure lexicons** at `/xrpc/...` o
   AppView indexes them for fast queries but does not own personal state.
 - **Service discovery:** `did:web:standard-reader.app` with `#standard_reader_appview` → `/xrpc`;
   `/.well-known/oauth-protected-resource` for OAuth clients.
-- **Developer docs:** live examples at [`/docs/api`](/docs/api).
+- **Developer docs:** live API examples at [`/docs/api`](/docs/api); published lexicon schemas at [`/docs/lexicons`](/docs/lexicons).
 
 Implementation: shared handler layer in `src/server/xrpc/handlers/`; TanStack server functions
 and extension HTTP routes call the same underlying logic. `/xrpc` uses AT Proto auth only — no
@@ -406,7 +406,7 @@ Standard Reader is a **port of an earlier no-build prototype** into this TanStac
 - **Design system:** hip-ui (copy-and-own, react-aria) in `src/design-system/`.
 - **Styling:** StyleX (`@stylexjs/stylex`) with design-system tokens; no Tailwind.
 - **Data:** Neon Postgres + Drizzle (`src/db/`), fed by a tap instance; access via server functions
-  and the public AppView XRPC surface at `/xrpc/app.standard-reader.*` (see [`/docs/api`](/docs/api)).
+  and the public AppView XRPC surface at `/xrpc/app.standard-reader.*` (see [`/docs/api`](/docs/api) and [`/docs/lexicons`](/docs/lexicons)).
 - **Auth:** AT Proto / Bluesky OAuth.
 - **Observability:** Server functions emit `observe()` events to Honeycomb; client route transitions
   emit `nav.transition` via `telemetryApi.recordClientEvent`. Shell/sidebar queries use a 5-minute

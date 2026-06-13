@@ -11,9 +11,7 @@
           "type": "ref"
         }
       },
-      "required": [
-        "did"
-      ],
+      "required": ["did"],
       "type": "object"
     },
     "blockedPost": {
@@ -31,11 +29,7 @@
           "type": "string"
         }
       },
-      "required": [
-        "uri",
-        "blocked",
-        "author"
-      ],
+      "required": ["uri", "blocked", "author"],
       "type": "object"
     },
     "clickthroughAuthor": {
@@ -74,10 +68,7 @@
           "type": "ref"
         },
         "reason": {
-          "refs": [
-            "#reasonRepost",
-            "#reasonPin"
-          ],
+          "refs": ["#reasonRepost", "#reasonPin"],
           "type": "union"
         },
         "reply": {
@@ -90,9 +81,7 @@
           "type": "string"
         }
       },
-      "required": [
-        "post"
-      ],
+      "required": ["post"],
       "type": "object"
     },
     "generatorView": {
@@ -162,14 +151,7 @@
           "type": "ref"
         }
       },
-      "required": [
-        "uri",
-        "cid",
-        "did",
-        "creator",
-        "displayName",
-        "indexedAt"
-      ],
+      "required": ["uri", "cid", "did", "creator", "displayName", "indexedAt"],
       "type": "object"
     },
     "generatorViewerState": {
@@ -252,10 +234,7 @@
           "type": "string"
         }
       },
-      "required": [
-        "uri",
-        "notFound"
-      ],
+      "required": ["uri", "notFound"],
       "type": "object"
     },
     "postView": {
@@ -324,13 +303,7 @@
           "type": "ref"
         }
       },
-      "required": [
-        "uri",
-        "cid",
-        "author",
-        "record",
-        "indexedAt"
-      ],
+      "required": ["uri", "cid", "author", "record", "indexedAt"],
       "type": "object"
     },
     "reasonPin": {
@@ -356,10 +329,7 @@
           "type": "string"
         }
       },
-      "required": [
-        "by",
-        "indexedAt"
-      ],
+      "required": ["by", "indexedAt"],
       "type": "object"
     },
     "replyRef": {
@@ -370,26 +340,15 @@
           "type": "ref"
         },
         "parent": {
-          "refs": [
-            "#postView",
-            "#notFoundPost",
-            "#blockedPost"
-          ],
+          "refs": ["#postView", "#notFoundPost", "#blockedPost"],
           "type": "union"
         },
         "root": {
-          "refs": [
-            "#postView",
-            "#notFoundPost",
-            "#blockedPost"
-          ],
+          "refs": ["#postView", "#notFoundPost", "#blockedPost"],
           "type": "union"
         }
       },
-      "required": [
-        "root",
-        "parent"
-      ],
+      "required": ["root", "parent"],
       "type": "object"
     },
     "requestLess": {
@@ -412,16 +371,11 @@
           "type": "string"
         },
         "reason": {
-          "refs": [
-            "#skeletonReasonRepost",
-            "#skeletonReasonPin"
-          ],
+          "refs": ["#skeletonReasonRepost", "#skeletonReasonPin"],
           "type": "union"
         }
       },
-      "required": [
-        "post"
-      ],
+      "required": ["post"],
       "type": "object"
     },
     "skeletonReasonPin": {
@@ -435,9 +389,7 @@
           "type": "string"
         }
       },
-      "required": [
-        "repost"
-      ],
+      "required": ["repost"],
       "type": "object"
     },
     "threadContext": {
@@ -453,11 +405,7 @@
     "threadViewPost": {
       "properties": {
         "parent": {
-          "refs": [
-            "#threadViewPost",
-            "#notFoundPost",
-            "#blockedPost"
-          ],
+          "refs": ["#threadViewPost", "#notFoundPost", "#blockedPost"],
           "type": "union"
         },
         "post": {
@@ -466,11 +414,7 @@
         },
         "replies": {
           "items": {
-            "refs": [
-              "#threadViewPost",
-              "#notFoundPost",
-              "#blockedPost"
-            ],
+            "refs": ["#threadViewPost", "#notFoundPost", "#blockedPost"],
             "type": "union"
           },
           "type": "array"
@@ -480,9 +424,7 @@
           "type": "ref"
         }
       },
-      "required": [
-        "post"
-      ],
+      "required": ["post"],
       "type": "object"
     },
     "threadgateView": {

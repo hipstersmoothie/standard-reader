@@ -218,10 +218,7 @@ export async function prioritizeApiDocsFixtureTag(
 
   const existing = options.find((option) => option.id === normalized);
   if (existing) {
-    return [
-      existing,
-      ...options.filter((option) => option.id !== normalized),
-    ];
+    return [existing, ...options.filter((option) => option.id !== normalized)];
   }
 
   const count = await discoverTagArticleCount(normalized);

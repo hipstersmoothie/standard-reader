@@ -12,10 +12,7 @@
           "type": "integer"
         }
       },
-      "required": [
-        "width",
-        "height"
-      ],
+      "required": ["width", "height"],
       "type": "object"
     }
   },

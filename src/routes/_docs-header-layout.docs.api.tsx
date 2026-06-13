@@ -5,9 +5,7 @@ import { pageSocialMeta } from "#/lib/site-metadata";
 
 import { ApiDocsPage } from "../components/docs/api-docs-page";
 
-export const Route = createFileRoute(
-  "/_docs-header-layout/_docs-api-layout/docs/api",
-)({
+export const Route = createFileRoute("/_docs-header-layout/docs/api")({
   head: () => ({
     meta: pageSocialMeta("docsApi", getPublicUrlClient()),
   }),

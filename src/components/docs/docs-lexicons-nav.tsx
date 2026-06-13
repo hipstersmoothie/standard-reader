@@ -1,22 +1,28 @@
 "use client";
 
+import type { LexiconDocsEntry } from "#/lib/lexicon-docs/types";
+
 import * as stylex from "@stylexjs/stylex";
-import { API_DOCS_CATALOG, API_DOCS_SECTIONS } from "#/lib/api-docs/catalog";
 import {
-  API_DOCS_INTRO_IDS,
-  apiDocsEndpointId,
-  apiDocsNsidLeaf,
-  apiDocsSectionEndpointCount,
-} from "#/lib/api-docs/navigation";
+  LEXICON_DOCS_INTRO_IDS,
+  lexiconDocsEntryId,
+  lexiconDocsNsidLeaf,
+  lexiconDocsSectionCount,
+} from "#/lib/lexicon-docs/navigation";
+import { LEXICON_DOCS_SECTIONS } from "#/lib/lexicon-docs/types";
 
 import { docsStyles } from "./docs-page.stylex";
 import { useDocsScrollSpyActive } from "./docs-scroll-spy-context";
 
-export function DocsApiNav() {
+export function DocsLexiconsNav({
+  entries,
+}: {
+  entries: Array<LexiconDocsEntry>;
+}) {
   const active = useDocsScrollSpyActive();
 
   return (
-    <nav {...stylex.props(docsStyles.refNav)} aria-label="API reference">
+    <nav {...stylex.props(docsStyles.refNav)} aria-label="Lexicon reference">
       <div {...stylex.props(docsStyles.refNavGroup)}>
         <div {...stylex.props(docsStyles.refNavHeadingRow)}>
           <span {...stylex.props(docsStyles.refNavHeading)}>
@@ -24,41 +30,35 @@ export function DocsApiNav() {
           </span>
         </div>
         <a
-          href={`#${API_DOCS_INTRO_IDS.overview}`}
+          href={`#${LEXICON_DOCS_INTRO_IDS.overview}`}
           {...stylex.props(
             docsStyles.refNavLink,
-            active === API_DOCS_INTRO_IDS.overview &&
+            active === LEXICON_DOCS_INTRO_IDS.overview &&
               docsStyles.refNavLinkActive,
           )}
         >
           Overview
         </a>
         <a
-          href={`#${API_DOCS_INTRO_IDS.discovery}`}
+          href={`#${LEXICON_DOCS_INTRO_IDS.namespace}`}
           {...stylex.props(
             docsStyles.refNavLink,
-            active === API_DOCS_INTRO_IDS.discovery &&
+            active === LEXICON_DOCS_INTRO_IDS.namespace &&
               docsStyles.refNavLinkActive,
           )}
         >
-          Service discovery
-        </a>
-        <a
-          href={`#${API_DOCS_INTRO_IDS.auth}`}
-          {...stylex.props(
-            docsStyles.refNavLink,
-            active === API_DOCS_INTRO_IDS.auth && docsStyles.refNavLinkActive,
-          )}
-        >
-          Authentication
+          Namespace
         </a>
       </div>
 
-      {API_DOCS_SECTIONS.map((section) => {
-        const entries = API_DOCS_CATALOG.filter(
+      {LEXICON_DOCS_SECTIONS.map((section) => {
+        const sectionEntries = entries.filter(
           (entry) => entry.section === section,
         );
-        const count = apiDocsSectionEndpointCount(section);
+        if (sectionEntries.length === 0) {
+          return null;
+        }
+        const count = lexiconDocsSectionCount(section, entries);
         return (
           <div key={section} {...stylex.props(docsStyles.refNavGroup)}>
             <div {...stylex.props(docsStyles.refNavHeadingRow)}>
@@ -67,11 +67,11 @@ export function DocsApiNav() {
                 {count}
               </span>
             </div>
-            {entries.map((entry) => {
-              const id = apiDocsEndpointId(entry.nsid);
+            {sectionEntries.map((entry) => {
+              const id = lexiconDocsEntryId(entry.id);
               return (
                 <a
-                  key={entry.nsid}
+                  key={entry.id}
                   href={`#${id}`}
                   {...stylex.props(
                     docsStyles.refNavLink,
@@ -79,7 +79,7 @@ export function DocsApiNav() {
                     active === id && docsStyles.refNavLinkActive,
                   )}
                 >
-                  {apiDocsNsidLeaf(entry.nsid)}
+                  {lexiconDocsNsidLeaf(entry.id)}
                 </a>
               );
             })}

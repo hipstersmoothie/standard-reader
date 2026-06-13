@@ -12,8 +12,7 @@ export type ApiDocsFixtures = {
 
 export function getDefaultApiDocsFixtures(): ApiDocsFixtures {
   return {
-    publicationUri:
-      "at://did:plc:example/site.standard.publication/abc",
+    publicationUri: "at://did:plc:example/site.standard.publication/abc",
     documentUri: "at://did:plc:example/site.standard.document/xyz",
     handle: "standard.site",
     tag: "reader",

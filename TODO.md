@@ -402,6 +402,7 @@ cookies on `/xrpc`. Live developer docs at [`/docs/api`](/docs/api).
 - [x] **Tier 2 feeds** — latest/trending/tag/author/list/document-context with cursor pagination.
 - [x] **Tier 3–4** — personalized reads + write procedures with scope enforcement.
 - [x] **API docs page** — `/docs/api` catalog, in-process live examples, footer link.
+- [x] **Lexicon docs page** — `/docs/lexicons` reference for all `app.standard-reader.*` schemas.
 - [x] **XRPC test suite** — unit tests for registry, params, dispatch, and handlers
       (`src/server/xrpc/*.test.ts`); optional DB integration via
       `XRPC_INTEGRATION_TEST=1 pnpm test`.

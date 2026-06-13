@@ -552,6 +552,32 @@ export const docsStyles = stylex.create({
     backgroundColor: primaryColor.bgSubtle,
     color: primaryColor.text2,
   },
+  lexiconBadgeRecord: {
+    backgroundColor: "light-dark(oklch(0.94 0.03 145), oklch(0.28 0.04 145))",
+    color: "light-dark(oklch(0.48 0.10 145), oklch(0.78 0.08 145))",
+  },
+  lexiconBadgeDefs: {
+    backgroundColor: "light-dark(oklch(0.94 0.02 70), oklch(0.28 0.03 70))",
+    color: "light-dark(oklch(0.50 0.08 70), oklch(0.78 0.06 70))",
+  },
+  lexiconFieldsLabel: {
+    color: uiColor.text1,
+    fontFamily: fontFamily.sans,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.bold,
+    letterSpacing: "0.06em",
+    textTransform: "uppercase",
+    marginBottom: verticalSpace.none,
+    marginTop: spacing["5"],
+  },
+  lexiconFieldDesc: {
+    color: uiColor.text1,
+    display: "block",
+    fontFamily: fontFamily.serif,
+    fontSize: fontSize.sm,
+    lineHeight: lineHeight.sm,
+    marginTop: spacing["1"],
+  },
   authBadge: {
     gap: spacing["1.5"],
     alignItems: "center",

@@ -6,7 +6,9 @@ const results = await runApiDocsExamples();
 const failed = results.filter((r) => r.status < 200 || r.status >= 300);
 const ok = results.filter((r) => r.status >= 200 && r.status < 300);
 
-console.log(`OK: ${ok.length}  FAILED: ${failed.length}  TOTAL: ${results.length}`);
+console.log(
+  `OK: ${ok.length}  FAILED: ${failed.length}  TOTAL: ${results.length}`,
+);
 if (fixtures.listUri.includes("did:plc:example")) {
   console.log(
     "Skipped list examples (no API_DOCS_FIXTURE_LIST_URI / discoverable list on PDS).",

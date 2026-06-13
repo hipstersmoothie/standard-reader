@@ -70,6 +70,12 @@ export const PAGE_OG_CARDS = {
     tagline:
       "AppView XRPC queries and procedures for the Standard Reader read-model.",
   },
+  docsLexicons: {
+    path: "/docs/lexicons",
+    title: "Lexicons",
+    tagline:
+      "Published app.standard-reader.* record schemas for reader repo state.",
+  },
   privacy: {
     path: "/privacy",
     title: "Privacy",
