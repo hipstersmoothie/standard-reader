@@ -2,14 +2,14 @@
   "name": "standard-reader-extension",
   "description": "Save articles and follow publications on the standard.site network.",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "scripts": {
     "dev": "wxt",
     "dev:firefox": "wxt -b firefox",
     "build": "wxt prepare && wxt build",
     "build:firefox": "wxt prepare && wxt build -b firefox",
-    "zip": "wxt prepare && wxt zip",
+    "zip": "wxt prepare && VITE_API_ORIGIN=https://standard-reader.app wxt build && node scripts/zip-chrome.mjs",
     "zip:firefox": "wxt prepare && wxt zip -b firefox",
     "compile": "wxt prepare && tsc --noEmit"
   },

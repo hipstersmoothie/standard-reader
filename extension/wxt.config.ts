@@ -67,7 +67,7 @@ export default defineConfig({
       if (wxt.config.command === "serve" && wxt.server?.origin) {
         await ensureStylexDevAssets(wxt.config.outDir, wxt.server.origin);
       }
-      if (isOneShotBuild) {
+      if (wxtCommand === "build") {
         // @stylexjs/unplugin leaves async handles open after one-shot builds.
         // oxlint-disable-next-line eslint-plugin-unicorn(no-process-exit) -- force exit after WXT build
         setTimeout(() => process.exit(0), 500);

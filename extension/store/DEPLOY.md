@@ -109,8 +109,11 @@ VITE_API_ORIGIN=https://standard-reader.app pnpm extension:zip
 From repo root:
 
 ```bash
-pnpm extension:zip
+VITE_API_ORIGIN=https://standard-reader.app pnpm extension:zip
 ```
+
+(`extension:zip` runs `wxt build` then `scripts/zip-chrome.mjs` — avoids a hang from
+`wxt zip` when StyleX leaves async handles open after the build.)
 
 Output:
 
@@ -154,6 +157,9 @@ Load the **production** build unpacked:
 | 8   | Bluesky embed   | bsky.app post with standard.site embed  | Save in embed footer                     |
 | 9   | Bluesky off     | Options → disable embed save            | Buttons removed                          |
 | 10  | Options persist | Toggle settings → restart browser       | Settings kept (`storage.sync`)           |
+| 11  | Read aloud      | Popup on indexed article → Listen       | Playback starts; popup can close         |
+| 12  | Playing icon    | While read-aloud active                 | Toolbar play icon; no red badge dot      |
+| 13  | Read-along      | Publication page for playing article    | Current sentence highlighted on page     |
 
 Capture failures before upload — reviewers exercise the same flows.
 

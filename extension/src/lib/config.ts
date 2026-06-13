@@ -7,10 +7,19 @@ export const DEFAULT_SETTINGS = {
   bskyBadgesEnabled: true,
 } as const;
 
-/** Default until `/api/extension/*` ships on production. Override via `extension/.env`. */
+/** Loopback default for local dev (`pnpm extension:dev`). */
 export const DEFAULT_API_ORIGIN = "http://127.0.0.1:3000";
 
 export const PRODUCTION_API_ORIGIN = "https://standard-reader.app";
+
+function isLoopbackOrigin(origin: string): boolean {
+  try {
+    const host = new URL(origin.replace(/\/$/, "") || origin).hostname;
+    return host === "localhost" || host === "127.0.0.1";
+  } catch {
+    return false;
+  }
+}
 
 /** Bluesky OAuth requires loopback IP — normalize legacy localhost origins. */
 export function normalizeDevApiOrigin(origin: string): string {
@@ -28,6 +37,8 @@ export function normalizeDevApiOrigin(origin: string): string {
 export function getApiOrigin(): string {
   const configured = import.meta.env.VITE_API_ORIGIN?.replace(/\/$/, "");
   if (configured) return normalizeDevApiOrigin(configured);
+  // Store / production builds must never ship with a loopback default.
+  if (import.meta.env.PROD) return PRODUCTION_API_ORIGIN;
   return DEFAULT_API_ORIGIN;
 }
 
@@ -57,8 +68,13 @@ export async function loadSettings(): Promise<ExtensionSettings> {
 
 export async function getEffectiveApiOrigin(): Promise<string> {
   const settings = await loadSettings();
-  const configured = settings.apiOrigin?.replace(/\/$/, "") ?? getApiOrigin();
-  return normalizeDevApiOrigin(configured);
+  const stored = settings.apiOrigin?.replace(/\/$/, "");
+  const baked = getApiOrigin();
+  // Ignore stale loopback origins left in sync storage from local dev.
+  if (stored && !(import.meta.env.PROD && isLoopbackOrigin(stored))) {
+    return normalizeDevApiOrigin(stored);
+  }
+  return normalizeDevApiOrigin(baked);
 }
 
 export const LOGIN_PATH = "/login?redirect=/extension/connected";

@@ -13,7 +13,7 @@
 
 ### Short description (132 chars max)
 
-Save articles, follow publications, and open the reader from any tab — with overlay chips on publication sites.
+Save articles, follow publications, and listen to articles from any tab — with overlay chips on publication sites.
 
 ### Full description
 
@@ -24,7 +24,13 @@ Standard Reader is the browser companion for [standard.site](https://standard.si
 - Popup shows the current page when it matches an indexed article or publication
 - Floating overlay chip on publication websites (Save / Open)
 - Right-click context menu: Save to Standard Reader / Open in Standard Reader
-- Toolbar badge when the active tab is a known article or publication
+- Toolbar badge when the active tab is a known article or publication (hidden while read-aloud is playing)
+
+**Read aloud**
+
+- Listen to indexed articles from the popup with on-device text-to-speech
+- Playback continues after the popup closes; the toolbar icon switches to a play indicator
+- Optional read-along highlighting on the article’s publication page
 
 **Bluesky**
 

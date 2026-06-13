@@ -17,9 +17,10 @@ Account setup (not paste fields — do these in the dashboard):
 
 Standard Reader is a browser companion for the Standard Reader web app
 (standard-reader.app) and the standard.site reading network. Its sole purpose
-is to help signed-in users save articles, follow publications, and open the
-reader from pages they visit — including a popup, page overlay, context menu,
-and Bluesky embed save buttons on supported sites.
+is to help signed-in users save articles, follow publications, open the
+reader from pages they visit, and listen to articles with on-device text-to-speech
+— including a popup, page overlay, context menu, and Bluesky embed save buttons
+on supported sites.
 
 ---
 
@@ -61,6 +62,13 @@ User preferences (page overlay on/off, Bluesky embed save button on/off) are
 stored locally in chrome.storage.sync so settings persist across browser
 sessions. No account credentials are stored in extension storage.
 
+### offscreen
+
+Read-aloud uses a Chromium offscreen document so audio keeps playing after the
+popup closes. Speech is synthesized on your device from article text (fetched
+from our index or, when needed, extracted locally from the open page). Audio
+does not pass through our servers.
+
 ### Host permission use
 
 **standard-reader.app** — Extension API calls (resolve, save, follow, session)
@@ -71,10 +79,12 @@ Bluesky web app when that feature is enabled in options.
 
 **&lt;all_urls&gt;** — Content scripts run on pages you visit to (1) show an
 optional save/open overlay on publication websites, (2) read page URLs and
-lightweight discovery hints for index matching, and (3) support context-menu
-actions on links. Only URLs and hints are sent to our server; page text is not
-uploaded. The overlay is disabled on standard-reader.app itself and can be
-turned off in extension options.
+lightweight discovery hints for index matching, (3) optionally extract article
+text on-device for read-aloud when the index has no full body, and (4) support
+context-menu actions on links. URLs and hints are sent to our server for
+matching; live page text used for read-aloud stays on your device. The overlay
+is disabled on standard-reader.app itself and can be turned off in extension
+options.
 
 ### Remote code use
 

@@ -22,7 +22,7 @@ export function ExtensionPrivacyView() {
           <Kicker>Legal</Kicker>
         </div>
         <h1 {...stylex.props(styles.title)}>Browser extension privacy</h1>
-        <p {...stylex.props(styles.updated)}>Last updated June 11, 2026</p>
+        <p {...stylex.props(styles.updated)}>Last updated June 13, 2026</p>
       </header>
 
       <div {...stylex.props(styles.body)}>
@@ -66,6 +66,14 @@ export function ExtensionPrivacyView() {
             (or the equivalent in other browsers) and are not sent to our
             servers except as part of normal extension operation on your device.
           </li>
+          <li {...stylex.props(styles.listItem)}>
+            <strong>Read aloud.</strong> When you choose Listen, the extension
+            may fetch indexed article text from{" "}
+            <code>/api/extension/narration</code> (same content as the in-app
+            reader) or read the open page locally when the index has no full
+            body. Speech is synthesized on your device; audio is not streamed
+            from our servers.
+          </li>
         </ul>
 
         <h2 {...stylex.props(styles.sectionHeading)}>
@@ -80,8 +88,9 @@ export function ExtensionPrivacyView() {
             We do not sell or share extension data with third parties.
           </li>
           <li {...stylex.props(styles.listItem)}>
-            We do not scrape or upload the text of pages you visit — only URLs
-            needed for index matching and the actions you choose.
+            We do not scrape or upload arbitrary page text — only URLs needed
+            for index matching, indexed article text you request for read-aloud,
+            or on-device extraction from the page you are listening to.
           </li>
         </ul>
 
