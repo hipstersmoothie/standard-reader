@@ -17,7 +17,14 @@ export function DocsTopbar() {
         <Link to="/" {...stylex.props(docsStyles.brandLink)}>
           Standard <span {...stylex.props(docsStyles.brandEm)}>Reader</span>
         </Link>
-        <span {...stylex.props(docsStyles.topbarTag)}>Developer docs</span>
+        <span {...stylex.props(docsStyles.topbarTag, docsStyles.topbarTagFull)}>
+          Developer docs
+        </span>
+        <span
+          {...stylex.props(docsStyles.topbarTag, docsStyles.topbarTagShort)}
+        >
+          Docs
+        </span>
       </div>
       <nav {...stylex.props(docsStyles.topbarNav)} aria-label="Developer docs">
         {NAV_ITEMS.map((item) => (

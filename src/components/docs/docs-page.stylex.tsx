@@ -36,7 +36,7 @@ const REF_BREAK = "@media (max-width: 1280px)";
 const NAV_HIDE = "@media (max-width: 960px)";
 const DOCS_NAV_WIDTH = "264px";
 const DOCS_INTRO_MAX = "56rem";
-const DOCS_TOPBAR_HEIGHT = spacing["14"];
+const DOCS_TOPBAR_HEIGHT = spacing["16"];
 
 export const docsStyles = stylex.create({
   page: {
@@ -52,6 +52,7 @@ export const docsStyles = stylex.create({
     backdropFilter: "blur(10px)",
     backgroundColor:
       "light-dark(oklch(0.985 0.007 85 / 0.9), oklch(0.16 0.012 60 / 0.9))",
+    boxSizing: "border-box",
     display: "flex",
     justifyContent: "space-between",
     position: "sticky",
@@ -59,9 +60,13 @@ export const docsStyles = stylex.create({
     borderBottomColor: uiColor.border1,
     borderBottomStyle: "solid",
     borderBottomWidth: spacing["px"],
+    height: DOCS_TOPBAR_HEIGHT,
     paddingBottom: spacing["4"],
     paddingLeft: spacing["4"],
-    paddingRight: spacing["6"],
+    paddingRight: {
+      [NAV_HIDE]: spacing["4"],
+      default: spacing["6"],
+    },
     paddingTop: spacing["4"],
     top: 0,
   },
@@ -102,12 +107,25 @@ export const docsStyles = stylex.create({
     fontWeight: fontWeight.bold,
     letterSpacing: "0.16em",
     textTransform: "uppercase",
+    whiteSpace: "nowrap",
     borderLeftColor: uiColor.border1,
     borderLeftStyle: "solid",
     borderLeftWidth: spacing["px"],
     paddingBottom: spacing["2"],
     paddingLeft: spacing["4"],
     paddingTop: spacing["2"],
+  },
+  topbarTagFull: {
+    display: {
+      [NAV_HIDE]: "none",
+      default: "inline",
+    },
+  },
+  topbarTagShort: {
+    display: {
+      [NAV_HIDE]: "inline",
+      default: "none",
+    },
   },
   topbarNav: {
     gap: spacing["1"],
@@ -443,10 +461,12 @@ export const docsStyles = stylex.create({
     borderStyle: "solid",
     borderWidth: spacing["px"],
     backgroundColor: uiColor.bgSubtle,
+    // eslint-disable-next-line @stylexjs/valid-styles
+    boxDecorationBreak: "clone",
     color: uiColor.text2,
     fontFamily: fontFamily.mono,
     fontSize: "0.86em",
-    whiteSpace: "nowrap",
+    overflowWrap: "anywhere",
     paddingBottom: spacing["px"],
     paddingLeft: spacing["1.5"],
     paddingRight: spacing["1.5"],
