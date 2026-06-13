@@ -213,6 +213,7 @@ function ReaderSaved() {
           <ReaderQueueRows
             items={queueRows}
             saveButtonPlacement="besideMedia"
+            assumeBookmarked
           />
           {isFetchingNextPage ? (
             <p {...stylex.props(styles.loadingNote)}>Loading…</p>

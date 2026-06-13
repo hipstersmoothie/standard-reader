@@ -178,6 +178,16 @@ export function articleCardColumns(schema: Schema) {
   };
 }
 
+/**
+ * Lighter {@link ArticleCard} projection for personal queue pages (saved,
+ * likes, history). Omits `textContent` — list rows never render bodies, and
+ * full essays bloat the query + SSR dehydration.
+ */
+export function articleQueueCardColumns(schema: Schema) {
+  const { textContent: _textContent, ...columns } = articleCardColumns(schema);
+  return columns;
+}
+
 // ── Row → DTO mappers ───────────────────────────────────────────────────────
 
 /** Drizzle timestamps are `Date`; raw SQL / aggregates may return strings. */
@@ -295,7 +305,7 @@ type ArticleCardRow = {
   publicationBannerUrl: string | null;
   publicationTopic: string | null;
   tags: Array<string> | null;
-  textContent: string | null;
+  textContent?: string | null;
   hasRenderableBody?: boolean | null;
   recommendCount: number | null;
   isRead?: boolean | null;
@@ -322,7 +332,7 @@ export function toArticleCard(row: ArticleCardRow): ArticleCard {
     publicationBannerUrl: row.publicationBannerUrl,
     publicationTopic: row.publicationTopic,
     tags: row.tags,
-    textContent: row.textContent,
+    textContent: row.textContent ?? null,
     hasRenderableBody: row.hasRenderableBody ?? true,
     recommendCount: row.recommendCount ?? 0,
     commentCount: 0,

@@ -31,7 +31,7 @@ import { z } from "zod";
 
 import type { ArticleCard } from "./api-shapes";
 
-import { articleCardColumns, toArticleCard } from "./api-shapes";
+import { articleQueueCardColumns, toArticleCard } from "./api-shapes";
 import { dbMiddleware } from "./db-middleware";
 
 /**
@@ -88,7 +88,7 @@ type JoinedArticleRow = {
   publicationBannerUrl: string | null;
   publicationTopic: string | null;
   tags: Array<string> | null;
-  textContent: string | null;
+  textContent?: string | null;
   hasRenderableBody: boolean | null;
   recommendCount: number | null;
 };
@@ -124,7 +124,7 @@ function hydrateArticleFromRow(
     publicationBannerUrl: row.publicationBannerUrl,
     publicationTopic: row.publicationTopic,
     tags: row.tags,
-    textContent: row.textContent,
+    textContent: row.textContent ?? null,
     hasRenderableBody: row.hasRenderableBody,
     recommendCount: row.recommendCount,
     ...extra,
@@ -370,7 +370,7 @@ const getLikes = createServerFn({ method: "GET" })
       const d = context.schema.documents;
       const p = context.schema.publications;
       const pr = context.schema.profiles;
-      const cols = articleCardColumns(context.schema);
+      const cols = articleQueueCardColumns(context.schema);
       const where = and(
         eq(rec.recommenderDid, session.did),
         eq(rec.deleted, false),
@@ -595,7 +595,7 @@ const getReadingHistory = createServerFn({ method: "GET" })
       const d = context.schema.documents;
       const p = context.schema.publications;
       const pr = context.schema.profiles;
-      const cols = articleCardColumns(context.schema);
+      const cols = articleQueueCardColumns(context.schema);
       const where = and(eq(r.ownerDid, session.did), eq(r.deleted, false));
 
       const [countRow, rows] = await Promise.all([
@@ -683,7 +683,7 @@ const getSaved = createServerFn({ method: "GET" })
       const d = context.schema.documents;
       const p = context.schema.publications;
       const pr = context.schema.profiles;
-      const cols = articleCardColumns(context.schema);
+      const cols = articleQueueCardColumns(context.schema);
       const where = and(eq(b.ownerDid, session.did), eq(b.deleted, false));
 
       const [countRow, rows] = await Promise.all([

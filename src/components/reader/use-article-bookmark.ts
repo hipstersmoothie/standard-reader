@@ -12,14 +12,20 @@ import {
   rollbackBookmarkOptimisticUpdate,
 } from "./bookmark-optimistic";
 
-export function useArticleBookmark(documentUri: string, signedIn: boolean) {
+export function useArticleBookmark(
+  documentUri: string,
+  signedIn: boolean,
+  opts?: { assumeBookmarked?: boolean },
+) {
   const navigate = useNavigate();
   const loginSearch = useLoginSearch();
   const queryClient = useQueryClient();
+  const assumeBookmarked = opts?.assumeBookmarked;
 
-  const { data: status } = useQuery(
-    readerApi.getBookmarkStatusQueryOptions(documentUri),
-  );
+  const { data: status } = useQuery({
+    ...readerApi.getBookmarkStatusQueryOptions(documentUri),
+    enabled: signedIn && assumeBookmarked === undefined,
+  });
 
   const bookmarkMutation = useMutation(
     readerApi.bookmarkDocumentMutationOptions(),
@@ -28,7 +34,7 @@ export function useArticleBookmark(documentUri: string, signedIn: boolean) {
     readerApi.unbookmarkDocumentMutationOptions(),
   );
 
-  const bookmarked = status?.isBookmarked ?? false;
+  const bookmarked = assumeBookmarked ?? status?.isBookmarked ?? false;
 
   const toggle = () => {
     if (!signedIn) {

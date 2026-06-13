@@ -52,10 +52,13 @@ export function ReaderQueueRows({
   items,
   showSaveButton = true,
   saveButtonPlacement = "header",
+  assumeBookmarked,
 }: {
   items: Array<ReaderQueueRowItem>;
   showSaveButton?: boolean;
   saveButtonPlacement?: "header" | "besideMedia";
+  /** Skip per-row bookmark status fetches when rendering the save queue. */
+  assumeBookmarked?: boolean;
 }) {
   return items.map((item, index) => {
     if (item.article) {
@@ -66,6 +69,7 @@ export function ReaderQueueRows({
           isFirstInSection={index === 0}
           showSaveButton={showSaveButton}
           saveButtonPlacement={saveButtonPlacement}
+          assumeBookmarked={assumeBookmarked}
         />
       );
     }

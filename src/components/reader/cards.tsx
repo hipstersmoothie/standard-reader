@@ -1306,14 +1306,18 @@ export function SaveButton({
   documentUri,
   signedIn,
   size = "sm",
+  assumeBookmarked,
 }: {
   documentUri: string;
   signedIn: boolean;
   size?: "sm" | "md";
+  /** Skip per-row status fetch when the parent already knows bookmark state. */
+  assumeBookmarked?: boolean;
 }) {
   const { bookmarked, toggle, isPending } = useArticleBookmark(
     documentUri,
     signedIn,
+    assumeBookmarked !== undefined ? { assumeBookmarked } : undefined,
   );
   const iconSize = size === "md" ? 18 : 16;
   const label = bookmarked ? "Saved for later" : "Save for later";
@@ -1346,6 +1350,7 @@ export function ArticleRow({
   showSaveButton = true,
   saveButtonPlacement = "header",
   isFirstInSection = false,
+  assumeBookmarked,
 }: {
   article: ArticleCard;
   unread?: boolean;
@@ -1355,6 +1360,8 @@ export function ArticleRow({
   saveButtonPlacement?: "header" | "besideMedia";
   /** Drop top padding when the section head already provides spacing above. */
   isFirstInSection?: boolean;
+  /** Skip per-row bookmark status fetches when the list is already the save queue. */
+  assumeBookmarked?: boolean;
 }) {
   const { data: session } = useQuery(user.getSessionQueryOptions);
   const signedIn = Boolean(session?.user);
@@ -1362,7 +1369,11 @@ export function ArticleRow({
   const saveBesideMedia =
     showSaveButton && saveButtonPlacement === "besideMedia";
   const saveButton = showSaveButton ? (
-    <SaveButton documentUri={article.uri} signedIn={signedIn} />
+    <SaveButton
+      documentUri={article.uri}
+      signedIn={signedIn}
+      assumeBookmarked={assumeBookmarked}
+    />
   ) : null;
 
   const gridStyles: Array<stylex.StyleXStyles | false | undefined> = [

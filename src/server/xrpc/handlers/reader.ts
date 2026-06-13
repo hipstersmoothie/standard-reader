@@ -1,7 +1,7 @@
 import type { ArticleCard } from "#/integrations/tanstack-query/api-shapes";
 
 import {
-  articleCardColumns,
+  articleQueueCardColumns,
   toArticleCard,
 } from "#/integrations/tanstack-query/api-shapes";
 import {
@@ -246,7 +246,7 @@ async function loadReaderDocumentQueue(
     return { cursor: null, items: [] };
   }
 
-  const cols = articleCardColumns(ctx.schema);
+  const cols = articleQueueCardColumns(ctx.schema);
   const d = ctx.schema.documents;
   const p = ctx.schema.publications;
   const pr = ctx.schema.profiles;
