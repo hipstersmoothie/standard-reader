@@ -1,0 +1,47 @@
+{
+  "lexicon": 1,
+  "id": "app.standard-reader.getList",
+  "defs": {
+    "main": {
+      "type": "query",
+      "description": "Public metadata and member publications for an app.standard-reader.list AT-URI.",
+      "parameters": {
+        "type": "params",
+        "properties": {
+          "list": {
+            "type": "string",
+            "format": "at-uri"
+          }
+        },
+        "required": ["list"]
+      },
+      "output": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["name", "publications"],
+          "properties": {
+            "uri": {
+              "type": "string",
+              "format": "at-uri"
+            },
+            "name": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string",
+              "nullable": true
+            },
+            "publications": {
+              "type": "array",
+              "items": {
+                "type": "ref",
+                "ref": "app.standard-reader.defs#publicationView"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

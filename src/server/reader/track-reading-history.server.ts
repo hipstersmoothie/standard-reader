@@ -13,7 +13,14 @@ export async function resolveTrackReadingHistoryEnabled(
   _db: Db,
   _schema: Schema,
 ): Promise<boolean> {
-  const request = getRequest();
+  let request: Request;
+  try {
+    request = getRequest();
+  } catch {
+    // Scripts and in-process callers outside TanStack Start request scope.
+    return false;
+  }
+
   const session = await getAtprotoSessionForRequest(request);
   if (session?.session.user.id) {
     return dbValueToTrackReadingHistory(

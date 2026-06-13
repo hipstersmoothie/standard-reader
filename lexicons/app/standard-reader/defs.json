@@ -1,0 +1,258 @@
+{
+  "lexicon": 1,
+  "id": "app.standard-reader.defs",
+  "defs": {
+    "publicationView": {
+      "type": "object",
+      "description": "A publication as shown in directory cards and profile headers.",
+      "required": [
+        "uri",
+        "did",
+        "name",
+        "url",
+        "subscriberCount",
+        "documentCount"
+      ],
+      "properties": {
+        "uri": { "type": "string", "format": "at-uri" },
+        "did": { "type": "string", "format": "did" },
+        "name": { "type": "string" },
+        "url": { "type": "string", "format": "uri" },
+        "description": { "type": "string", "nullable": true },
+        "iconUrl": { "type": "string", "format": "uri", "nullable": true },
+        "ownerAvatarUrl": {
+          "type": "string",
+          "format": "uri",
+          "nullable": true
+        },
+        "ownerHandle": { "type": "string", "nullable": true },
+        "topic": { "type": "string", "nullable": true },
+        "verified": { "type": "boolean" },
+        "subscriberCount": { "type": "integer" },
+        "documentCount": { "type": "integer" },
+        "lastDocumentAt": {
+          "type": "string",
+          "format": "datetime",
+          "nullable": true
+        },
+        "searchNameHtml": { "type": "string", "nullable": true },
+        "searchSnippetHtml": { "type": "string", "nullable": true }
+      }
+    },
+    "documentView": {
+      "type": "object",
+      "description": "An article as shown in feed rows and search results (metadata only).",
+      "required": [
+        "uri",
+        "did",
+        "title",
+        "publishedAt",
+        "recommendCount",
+        "commentCount",
+        "hasRenderableBody",
+        "isRead"
+      ],
+      "properties": {
+        "uri": { "type": "string", "format": "at-uri" },
+        "did": { "type": "string", "format": "did" },
+        "title": { "type": "string" },
+        "description": { "type": "string", "nullable": true },
+        "path": { "type": "string", "nullable": true },
+        "canonicalUrl": { "type": "string", "format": "uri", "nullable": true },
+        "coverImageUrl": {
+          "type": "string",
+          "format": "uri",
+          "nullable": true
+        },
+        "publishedAt": { "type": "string", "format": "datetime" },
+        "featured": { "type": "boolean" },
+        "publicationUri": {
+          "type": "string",
+          "format": "at-uri",
+          "nullable": true
+        },
+        "publicationName": { "type": "string", "nullable": true },
+        "publicationIconUrl": {
+          "type": "string",
+          "format": "uri",
+          "nullable": true
+        },
+        "publicationOwnerAvatarUrl": {
+          "type": "string",
+          "format": "uri",
+          "nullable": true
+        },
+        "publicationOwnerHandle": { "type": "string", "nullable": true },
+        "publicationBannerUrl": {
+          "type": "string",
+          "format": "uri",
+          "nullable": true
+        },
+        "publicationTopic": { "type": "string", "nullable": true },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "nullable": true
+        },
+        "recommendCount": { "type": "integer" },
+        "commentCount": { "type": "integer" },
+        "hasRenderableBody": { "type": "boolean" },
+        "isRead": { "type": "boolean" },
+        "searchTitleHtml": { "type": "string", "nullable": true },
+        "searchSnippetHtml": { "type": "string", "nullable": true }
+      }
+    },
+    "profileView": {
+      "type": "object",
+      "required": ["did"],
+      "properties": {
+        "did": { "type": "string", "format": "did" },
+        "handle": { "type": "string", "nullable": true },
+        "displayName": { "type": "string", "nullable": true },
+        "description": { "type": "string", "nullable": true },
+        "avatarUrl": { "type": "string", "format": "uri", "nullable": true },
+        "bannerUrl": { "type": "string", "format": "uri", "nullable": true }
+      }
+    },
+    "cursorPagePublications": {
+      "type": "object",
+      "required": ["items"],
+      "properties": {
+        "cursor": { "type": "string", "nullable": true },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "ref",
+            "ref": "app.standard-reader.defs#publicationView"
+          }
+        }
+      }
+    },
+    "cursorPageDocuments": {
+      "type": "object",
+      "required": ["items"],
+      "properties": {
+        "cursor": { "type": "string", "nullable": true },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "ref",
+            "ref": "app.standard-reader.defs#documentView"
+          }
+        }
+      }
+    },
+    "resolveViewArticle": {
+      "type": "object",
+      "required": [
+        "$type",
+        "kind",
+        "documentUri",
+        "title",
+        "readerUrl",
+        "recommendCount",
+        "commentCount"
+      ],
+      "properties": {
+        "$type": {
+          "type": "string",
+          "const": "app.standard-reader.defs#resolveViewArticle"
+        },
+        "kind": { "type": "string", "const": "article" },
+        "documentUri": { "type": "string", "format": "at-uri" },
+        "title": { "type": "string" },
+        "publicationUri": {
+          "type": "string",
+          "format": "at-uri",
+          "nullable": true
+        },
+        "publicationName": { "type": "string", "nullable": true },
+        "publicationHandle": { "type": "string", "nullable": true },
+        "publicationIconUrl": {
+          "type": "string",
+          "format": "uri",
+          "nullable": true
+        },
+        "publicationOwnerAvatarUrl": {
+          "type": "string",
+          "format": "uri",
+          "nullable": true
+        },
+        "publicationSubscriberCount": { "type": "integer", "nullable": true },
+        "publicationReaderUrl": {
+          "type": "string",
+          "format": "uri",
+          "nullable": true
+        },
+        "publishedAt": {
+          "type": "string",
+          "format": "datetime",
+          "nullable": true
+        },
+        "readingMinutes": { "type": "integer", "nullable": true },
+        "authorName": { "type": "string", "nullable": true },
+        "authorHandle": { "type": "string", "nullable": true },
+        "authorAvatarUrl": {
+          "type": "string",
+          "format": "uri",
+          "nullable": true
+        },
+        "readerUrl": { "type": "string", "format": "uri" },
+        "canonicalUrl": { "type": "string", "format": "uri", "nullable": true },
+        "isBookmarked": { "type": "boolean" },
+        "isRead": { "type": "boolean" },
+        "isFollowing": { "type": "boolean" },
+        "recommendCount": { "type": "integer" },
+        "commentCount": { "type": "integer" }
+      }
+    },
+    "resolveViewPublication": {
+      "type": "object",
+      "required": ["$type", "kind", "publicationUri", "name", "readerUrl"],
+      "properties": {
+        "$type": {
+          "type": "string",
+          "const": "app.standard-reader.defs#resolveViewPublication"
+        },
+        "kind": { "type": "string", "const": "publication" },
+        "publicationUri": { "type": "string", "format": "at-uri" },
+        "name": { "type": "string" },
+        "description": { "type": "string", "nullable": true },
+        "handle": { "type": "string", "nullable": true },
+        "iconUrl": { "type": "string", "format": "uri", "nullable": true },
+        "ownerAvatarUrl": {
+          "type": "string",
+          "format": "uri",
+          "nullable": true
+        },
+        "subscriberCount": { "type": "integer", "nullable": true },
+        "readerUrl": { "type": "string", "format": "uri" },
+        "siteUrl": { "type": "string", "format": "uri", "nullable": true },
+        "isFollowing": { "type": "boolean" }
+      }
+    },
+    "resolveViewReaderLink": {
+      "type": "object",
+      "required": ["$type", "kind", "readerUrl"],
+      "properties": {
+        "$type": {
+          "type": "string",
+          "const": "app.standard-reader.defs#resolveViewReaderLink"
+        },
+        "kind": { "type": "string", "const": "reader-link" },
+        "readerUrl": { "type": "string" }
+      }
+    },
+    "resolveViewUnknown": {
+      "type": "object",
+      "required": ["$type", "kind"],
+      "properties": {
+        "$type": {
+          "type": "string",
+          "const": "app.standard-reader.defs#resolveViewUnknown"
+        },
+        "kind": { "type": "string", "const": "unknown" }
+      }
+    }
+  }
+}

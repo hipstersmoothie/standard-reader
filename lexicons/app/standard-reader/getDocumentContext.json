@@ -1,0 +1,49 @@
+{
+  "lexicon": 1,
+  "id": "app.standard-reader.getDocumentContext",
+  "defs": {
+    "main": {
+      "type": "query",
+      "description": "Deferred reading-view context: related articles, recents, social proof, citations.",
+      "parameters": {
+        "type": "params",
+        "properties": {
+          "document": {
+            "type": "string",
+            "format": "at-uri"
+          }
+        },
+        "required": ["document"]
+      },
+      "output": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "moreFrom": {
+              "type": "array",
+              "items": {
+                "type": "ref",
+                "ref": "app.standard-reader.defs#documentView"
+              }
+            },
+            "related": {
+              "type": "array",
+              "items": {
+                "type": "ref",
+                "ref": "app.standard-reader.defs#documentView"
+              }
+            },
+            "readersAlsoFollow": {
+              "type": "array",
+              "items": {
+                "type": "ref",
+                "ref": "app.standard-reader.defs#publicationView"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

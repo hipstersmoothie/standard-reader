@@ -383,3 +383,27 @@ Bluesky badges, options page. Backend routes under [`src/routes/api/extension/`]
       [`ExtensionPrivacyView`](src/components/reader/extension-privacy-view.tsx); cross-linked from site privacy policy.
 - [ ] **Manual QA** — run checklist in [`extension/README.md`](extension/README.md) (dev + prod).
 - [ ] **Chrome Web Store publish** — follow [`extension/store/DEPLOY.md`](extension/store/DEPLOY.md) (prod API, privacy URL, QA, screenshots, upload).
+
+## 13. AppView XRPC (public API)
+
+Shipped catalog of `app.standard-reader.*` query/procedure lexicons on `/xrpc`, backed by the
+Neon read-model. Auth follows AT Proto standard (DPoP + `getSession`, PDS proxy JWT) — no session
+cookies on `/xrpc`. Live developer docs at [`/docs/api`](/docs/api).
+
+- [x] **Lexicon defs + query/procedure schemas** — `lexicons/app/standard-reader/` (46 files);
+      `pnpm lex:lint` passes (warnings only on unlimited-string).
+- [x] **XRPC router** — `/xrpc/$` catch-all, handler registry, AT Proto error responses, CORS.
+- [x] **Standard AT Proto auth** — `src/server/xrpc/auth.ts` (service JWT + access token getSession).
+- [x] **Shared handlers** — `src/server/xrpc/handlers/`; publication header + mark-read extracted
+      to `src/server/reader/publication-header.ts` and `mark-documents-read.ts`.
+- [x] **Service DID** — `/.well-known/did.json` with `#standard_reader_appview`; OAuth protected
+      resource metadata.
+- [x] **Tier 1 queries** — resolve, search, publication/document/directory views.
+- [x] **Tier 2 feeds** — latest/trending/tag/author/list/document-context with cursor pagination.
+- [x] **Tier 3–4** — personalized reads + write procedures with scope enforcement.
+- [x] **API docs page** — `/docs/api` catalog, in-process live examples, footer link.
+- [x] **XRPC test suite** — unit tests for registry, params, dispatch, and handlers
+      (`src/server/xrpc/*.test.ts`); optional DB integration via
+      `XRPC_INTEGRATION_TEST=1 pnpm test`.
+- [ ] **Publish lexicons to network** — `pnpm atproto:publish-lexicons` when `_lexicon.*` DNS ready.
+- [ ] **Production smoke test** — curl Tier 1 endpoints on `standard-reader.app` after deploy.

@@ -1,0 +1,43 @@
+{
+  "lexicon": 1,
+  "id": "app.standard-reader.getPublications",
+  "defs": {
+    "main": {
+      "type": "query",
+      "description": "Browse the publication directory with topic filter, sort, and cursor pagination.",
+      "parameters": {
+        "type": "params",
+        "properties": {
+          "topic": {
+            "type": "string"
+          },
+          "sort": {
+            "type": "string",
+            "knownValues": ["readers", "active", "az"],
+            "default": "readers"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 60,
+            "default": 24
+          },
+          "cursor": {
+            "type": "string"
+          },
+          "q": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "output": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "ref",
+          "ref": "app.standard-reader.defs#cursorPagePublications"
+        }
+      }
+    }
+  }
+}

@@ -32,6 +32,7 @@ import {
   attachCommentCountsToArticles,
   countDocumentComments,
 } from "#/server/reader/document-comments";
+import { selectPublicationHeader } from "#/server/reader/publication-header";
 import {
   articleRecommendedPublications,
   publicationFollowedByCoReaders,
@@ -51,7 +52,7 @@ import type {
   PublicationCard,
 } from "./api-shapes";
 
-import { publicationCardColumns, toPublicationCard } from "./api-shapes";
+import { toPublicationCard } from "./api-shapes";
 import { dbMiddleware } from "./db-middleware";
 
 export type { MarginConnectionItem } from "#/server/reader/article-constellation-extras";
@@ -223,44 +224,6 @@ export interface ArticleExtras {
   citedIn: Array<ArticleCard>;
   /** Margin/Semble graph edges pointing at this article's URL. */
   marginConnections: Array<MarginConnectionItem>;
-}
-
-async function selectPublicationHeader(
-  db: Parameters<typeof selectPublicationArticleCards>[0],
-  schema: Parameters<typeof selectPublicationArticleCards>[1],
-  publicationUri: string,
-): Promise<PublicationHeader | null> {
-  const p = schema.publications;
-  const st = schema.publicationStats;
-  const pr = schema.profiles;
-
-  const [row] = await db
-    .select({
-      ...publicationCardColumns(schema),
-      ownerHandle: pr.handle,
-      ownerDisplayName: pr.displayName,
-      ownerDescription: pr.description,
-      ownerBannerUrl: pr.bannerUrl,
-    })
-    .from(p)
-    .leftJoin(st, eq(st.publicationUri, p.uri))
-    .leftJoin(pr, eq(pr.did, p.did))
-    .where(eq(p.uri, publicationUri))
-    .limit(1);
-
-  if (!row) return null;
-
-  return {
-    publication: toPublicationCard(row),
-    owner: {
-      did: row.did,
-      handle: row.ownerHandle,
-      displayName: row.ownerDisplayName,
-      description: row.ownerDescription,
-      avatarUrl: row.ownerAvatarUrl,
-      bannerUrl: row.ownerBannerUrl,
-    },
-  };
 }
 
 const getPublicationHeader = createServerFn({ method: "GET" })

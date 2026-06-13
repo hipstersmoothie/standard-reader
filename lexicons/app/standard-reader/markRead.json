@@ -1,0 +1,31 @@
+{
+  "lexicon": 1,
+  "id": "app.standard-reader.markRead",
+  "defs": {
+    "main": {
+      "type": "procedure",
+      "description": "Mark an article as read.",
+      "input": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["document"],
+          "properties": {
+            "document": {
+              "type": "string",
+              "format": "at-uri",
+              "description": "Document AT-URI"
+            }
+          }
+        }
+      },
+      "output": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "properties": {}
+        }
+      }
+    }
+  }
+}

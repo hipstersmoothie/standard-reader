@@ -1,0 +1,36 @@
+{
+  "lexicon": 1,
+  "id": "app.standard-reader.getFollowStatus",
+  "defs": {
+    "main": {
+      "type": "query",
+      "description": "Whether the subject reader subscribes to a publication.",
+      "parameters": {
+        "type": "params",
+        "properties": {
+          "did": {
+            "type": "string",
+            "format": "did"
+          },
+          "publication": {
+            "type": "string",
+            "format": "at-uri"
+          }
+        },
+        "required": ["publication"]
+      },
+      "output": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["active"],
+          "properties": {
+            "active": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    }
+  }
+}

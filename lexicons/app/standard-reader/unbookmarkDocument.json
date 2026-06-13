@@ -1,0 +1,31 @@
+{
+  "lexicon": 1,
+  "id": "app.standard-reader.unbookmarkDocument",
+  "defs": {
+    "main": {
+      "type": "procedure",
+      "description": "Remove an article from the save queue.",
+      "input": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["document"],
+          "properties": {
+            "document": {
+              "type": "string",
+              "format": "at-uri",
+              "description": "Document AT-URI"
+            }
+          }
+        }
+      },
+      "output": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "properties": {}
+        }
+      }
+    }
+  }
+}

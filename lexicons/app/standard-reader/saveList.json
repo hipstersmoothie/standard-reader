@@ -1,0 +1,31 @@
+{
+  "lexicon": 1,
+  "id": "app.standard-reader.saveList",
+  "defs": {
+    "main": {
+      "type": "procedure",
+      "description": "Add another reader publication list to this app.",
+      "input": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["list"],
+          "properties": {
+            "list": {
+              "type": "string",
+              "format": "at-uri",
+              "description": "List AT-URI"
+            }
+          }
+        }
+      },
+      "output": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "properties": {}
+        }
+      }
+    }
+  }
+}

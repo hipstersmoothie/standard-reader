@@ -1,0 +1,43 @@
+{
+  "lexicon": 1,
+  "id": "app.standard-reader.resolveUrl",
+  "defs": {
+    "main": {
+      "type": "query",
+      "description": "Match a web page URL to an indexed standard.site article or publication.",
+      "parameters": {
+        "type": "params",
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "urls": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uri"
+            }
+          },
+          "did": {
+            "type": "string",
+            "format": "did"
+          }
+        },
+        "required": []
+      },
+      "output": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "union",
+          "refs": [
+            "app.standard-reader.defs#resolveViewArticle",
+            "app.standard-reader.defs#resolveViewPublication",
+            "app.standard-reader.defs#resolveViewReaderLink",
+            "app.standard-reader.defs#resolveViewUnknown"
+          ]
+        }
+      }
+    }
+  }
+}

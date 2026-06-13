@@ -73,6 +73,16 @@ export function SiteLegalLinks({ style }: { style?: stylex.StyleXStyles }) {
       >
         Privacy
       </Link>
+      <span {...stylex.props(styles.separator)} aria-hidden>
+        ·
+      </span>
+      <Link
+        to="/docs/api"
+        {...stylex.props(styles.link)}
+        activeProps={stylex.props(styles.link, styles.linkActive)}
+      >
+        API
+      </Link>
     </nav>
   );
 }

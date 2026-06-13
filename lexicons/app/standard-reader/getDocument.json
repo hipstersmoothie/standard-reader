@@ -1,0 +1,27 @@
+{
+  "lexicon": 1,
+  "id": "app.standard-reader.getDocument",
+  "defs": {
+    "main": {
+      "type": "query",
+      "description": "Fetch a single article card metadata and aggregate stats (no full body).",
+      "parameters": {
+        "type": "params",
+        "properties": {
+          "document": {
+            "type": "string",
+            "format": "at-uri"
+          }
+        },
+        "required": ["document"]
+      },
+      "output": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "ref",
+          "ref": "app.standard-reader.defs#documentView"
+        }
+      }
+    }
+  }
+}

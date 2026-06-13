@@ -1,0 +1,53 @@
+{
+  "lexicon": 1,
+  "id": "app.standard-reader.getAuthor",
+  "defs": {
+    "main": {
+      "type": "query",
+      "description": "Author profile for a DID with aggregate stats.",
+      "parameters": {
+        "type": "params",
+        "properties": {
+          "did": {
+            "type": "string",
+            "format": "did"
+          }
+        },
+        "required": ["did"]
+      },
+      "output": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["profile", "stats"],
+          "properties": {
+            "profile": {
+              "type": "ref",
+              "ref": "app.standard-reader.defs#profileView"
+            },
+            "stats": {
+              "type": "object",
+              "properties": {
+                "publicationCount": {
+                  "type": "integer"
+                },
+                "documentCount": {
+                  "type": "integer"
+                },
+                "subscriberCount": {
+                  "type": "integer"
+                },
+                "followingCount": {
+                  "type": "integer"
+                },
+                "likeCount": {
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

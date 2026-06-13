@@ -64,6 +64,12 @@ export const PAGE_OG_CARDS = {
     title: "About",
     tagline: "What Standard Reader is, and how it fits the Atmosphere.",
   },
+  docsApi: {
+    path: "/docs/api",
+    title: "API",
+    tagline:
+      "AppView XRPC queries and procedures for the Standard Reader read-model.",
+  },
   privacy: {
     path: "/privacy",
     title: "Privacy",

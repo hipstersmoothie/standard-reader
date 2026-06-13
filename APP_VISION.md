@@ -296,6 +296,28 @@ source of truth; Neon holds a derived view for speed and cross-network querying.
   - `app.standard-reader.listSave` — another reader's list saved into this app (`list` at-uri +
     `createdAt`; deterministic rkey so save/unsave/status address one record).
 
+### AppView XRPC (public API)
+
+Third-party AT clients can query the indexed read-model without running tap. Standard Reader
+serves **`app.standard-reader.*` query and procedure lexicons** at `/xrpc/...` on
+`standard-reader.app`:
+
+- **Public queries (Tier 1–2):** directory, search, feeds, URL resolution — no auth.
+- **Personalized reads (Tier 3):** home feed, recommendations, reader-state queues — standard
+  AT Proto auth (DPoP + `getSession`, or PDS proxy JWT); Tier 3b accepts optional `did` for
+  public reader-state lookups.
+- **Write procedures (Tier 4):** follow, like, read, bookmark, list CRUD — auth required; writes
+  go to the user's PDS via `com.atproto.repo.*` (same path as the web app).
+- **Repo records** (`read`, `bookmark`, `list`, `listSave`) remain in each reader's PDS; the
+  AppView indexes them for fast queries but does not own personal state.
+- **Service discovery:** `did:web:standard-reader.app` with `#standard_reader_appview` → `/xrpc`;
+  `/.well-known/oauth-protected-resource` for OAuth clients.
+- **Developer docs:** live examples at [`/docs/api`](/docs/api).
+
+Implementation: shared handler layer in `src/server/xrpc/handlers/`; TanStack server functions
+and extension HTTP routes call the same underlying logic. `/xrpc` uses AT Proto auth only — no
+HttpOnly session cookies.
+
 ---
 
 ## 6. Data & backend architecture
@@ -383,7 +405,8 @@ Standard Reader is a **port of an earlier no-build prototype** into this TanStac
 - **Framework:** TanStack Start + TanStack Router (file-based routing), React 19, Vite.
 - **Design system:** hip-ui (copy-and-own, react-aria) in `src/design-system/`.
 - **Styling:** StyleX (`@stylexjs/stylex`) with design-system tokens; no Tailwind.
-- **Data:** Neon Postgres + Drizzle (`src/db/`), fed by a tap instance; access via server functions.
+- **Data:** Neon Postgres + Drizzle (`src/db/`), fed by a tap instance; access via server functions
+  and the public AppView XRPC surface at `/xrpc/app.standard-reader.*` (see [`/docs/api`](/docs/api)).
 - **Auth:** AT Proto / Bluesky OAuth.
 - **Observability:** Server functions emit `observe()` events to Honeycomb; client route transitions
   emit `nav.transition` via `telemetryApi.recordClientEvent`. Shell/sidebar queries use a 5-minute

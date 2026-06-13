@@ -1,0 +1,62 @@
+{
+  "lexicon": 1,
+  "id": "app.standard-reader.getTagFeed",
+  "defs": {
+    "main": {
+      "type": "query",
+      "description": "Articles or publications carrying a given tag.",
+      "parameters": {
+        "type": "params",
+        "properties": {
+          "tag": {
+            "type": "string"
+          },
+          "view": {
+            "type": "string",
+            "knownValues": ["articles", "publications"],
+            "default": "articles"
+          },
+          "sort": {
+            "type": "string"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50,
+            "default": 20
+          },
+          "cursor": {
+            "type": "string"
+          }
+        },
+        "required": ["tag"]
+      },
+      "output": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["view", "items"],
+          "properties": {
+            "view": {
+              "type": "string"
+            },
+            "cursor": {
+              "type": "string",
+              "nullable": true
+            },
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "union",
+                "refs": [
+                  "app.standard-reader.defs#publicationView",
+                  "app.standard-reader.defs#documentView"
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

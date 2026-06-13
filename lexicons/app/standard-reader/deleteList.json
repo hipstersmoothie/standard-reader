@@ -1,0 +1,29 @@
+{
+  "lexicon": 1,
+  "id": "app.standard-reader.deleteList",
+  "defs": {
+    "main": {
+      "type": "procedure",
+      "description": "Delete a publication list.",
+      "input": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["rkey"],
+          "properties": {
+            "rkey": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "output": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "properties": {}
+        }
+      }
+    }
+  }
+}

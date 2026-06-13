@@ -23,6 +23,7 @@ import { Collections, buildAtUri } from "#/server/atproto/uri";
 import { deleteRecord, upsertSubscription } from "#/server/ingest/handlers";
 import { ensureTracked } from "#/server/ingest/tap-client";
 import { observe } from "#/server/observability/log";
+import { markDocumentsRead } from "#/server/reader/mark-documents-read";
 import { selectUnreadDocumentUris } from "#/server/reader/queries";
 import { effectiveFollowUris } from "#/server/reader/saved-lists";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
@@ -834,23 +835,6 @@ const deleteAllBookmarks = createServerFn({ method: "POST" })
     }),
   );
 
-async function markDocumentsRead(
-  session: NonNullable<Awaited<ReturnType<typeof getAtprotoSessionForRequest>>>,
-  documentUris: Array<string>,
-  trackReading: boolean,
-): Promise<MarkAllReadResult> {
-  if (documentUris.length === 0 || !trackReading) {
-    return { markedCount: 0, documentUris: [] };
-  }
-
-  const createdAt = new Date().toISOString();
-  for (const documentUri of documentUris) {
-    await putReadRecord(session.client, session.did, documentUri, createdAt);
-  }
-  await trackReaderRepo(session.did);
-  return { markedCount: documentUris.length, documentUris };
-}
-
 const markPublicationAllRead = createServerFn({ method: "POST" })
   .middleware([dbMiddleware])
   .inputValidator(publicationInput)
@@ -873,7 +857,12 @@ const markPublicationAllRead = createServerFn({ method: "POST" })
             })
           : [];
         span.set("count", documentUris.length);
-        return markDocumentsRead(session, documentUris, trackReading);
+        return markDocumentsRead({
+          client: session.client,
+          did: session.did,
+          documentUris,
+          trackReading,
+        });
       },
     ),
   );
@@ -903,7 +892,12 @@ const markFollowsAllUnreadRead = createServerFn({ method: "POST" })
           })
         : [];
       span.set("count", documentUris.length);
-      return markDocumentsRead(session, documentUris, trackReading);
+      return markDocumentsRead({
+        client: session.client,
+        did: session.did,
+        documentUris,
+        trackReading,
+      });
     }),
   );
 

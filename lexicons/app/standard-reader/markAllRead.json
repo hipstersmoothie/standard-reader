@@ -1,0 +1,36 @@
+{
+  "lexicon": 1,
+  "id": "app.standard-reader.markAllRead",
+  "defs": {
+    "main": {
+      "type": "procedure",
+      "description": "Mark all unread articles in effective follow set as read.",
+      "input": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      "output": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["markedCount", "documentUris"],
+          "properties": {
+            "markedCount": {
+              "type": "integer"
+            },
+            "documentUris": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "at-uri"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

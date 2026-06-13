@@ -244,6 +244,13 @@
       }
     },
     {
+      "files": ["src/components/docs/docs-page.stylex.tsx"],
+      "rules": {
+        "@stylexjs/enforce-extension": "off",
+        "@stylexjs/valid-styles": "off"
+      }
+    },
+    {
       "files": ["**/wxt.config.ts"],
       "rules": {
         "eslint-plugin-unicorn(no-process-exit)": "off"

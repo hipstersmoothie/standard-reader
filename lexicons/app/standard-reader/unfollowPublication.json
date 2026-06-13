@@ -1,0 +1,31 @@
+{
+  "lexicon": 1,
+  "id": "app.standard-reader.unfollowPublication",
+  "defs": {
+    "main": {
+      "type": "procedure",
+      "description": "Remove a publication subscription.",
+      "input": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["publication"],
+          "properties": {
+            "publication": {
+              "type": "string",
+              "format": "at-uri",
+              "description": "Publication AT-URI"
+            }
+          }
+        }
+      },
+      "output": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "properties": {}
+        }
+      }
+    }
+  }
+}

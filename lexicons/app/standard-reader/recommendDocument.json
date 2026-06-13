@@ -1,0 +1,31 @@
+{
+  "lexicon": 1,
+  "id": "app.standard-reader.recommendDocument",
+  "defs": {
+    "main": {
+      "type": "procedure",
+      "description": "Like an article on the network.",
+      "input": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["document"],
+          "properties": {
+            "document": {
+              "type": "string",
+              "format": "at-uri",
+              "description": "Document AT-URI"
+            }
+          }
+        }
+      },
+      "output": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "properties": {}
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "lexicon": 1,
+  "id": "app.standard-reader.getAuthorPublications",
+  "defs": {
+    "main": {
+      "type": "query",
+      "description": "Publications owned by a DID with cursor pagination.",
+      "parameters": {
+        "type": "params",
+        "properties": {
+          "did": {
+            "type": "string",
+            "format": "did"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50,
+            "default": 20
+          },
+          "cursor": {
+            "type": "string"
+          }
+        },
+        "required": ["did"]
+      },
+      "output": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "ref",
+          "ref": "app.standard-reader.defs#cursorPagePublications"
+        }
+      }
+    }
+  }
+}

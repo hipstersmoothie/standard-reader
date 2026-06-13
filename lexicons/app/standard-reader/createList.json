@@ -1,0 +1,48 @@
+{
+  "lexicon": 1,
+  "id": "app.standard-reader.createList",
+  "defs": {
+    "main": {
+      "type": "procedure",
+      "description": "Create a new publication list.",
+      "input": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["name", "publications"],
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "publications": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "at-uri"
+              }
+            }
+          }
+        }
+      },
+      "output": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["rkey", "uri"],
+          "properties": {
+            "rkey": {
+              "type": "string"
+            },
+            "uri": {
+              "type": "string",
+              "format": "at-uri"
+            }
+          }
+        }
+      }
+    }
+  }
+}

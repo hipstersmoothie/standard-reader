@@ -1,0 +1,38 @@
+{
+  "lexicon": 1,
+  "id": "app.standard-reader.getTrendingPublications",
+  "defs": {
+    "main": {
+      "type": "query",
+      "description": "Ranked list of trending discover-eligible publications.",
+      "parameters": {
+        "type": "params",
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 12
+          }
+        },
+        "required": []
+      },
+      "output": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["items"],
+          "properties": {
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "ref",
+                "ref": "app.standard-reader.defs#publicationView"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

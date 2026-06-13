@@ -1,0 +1,43 @@
+{
+  "lexicon": 1,
+  "id": "app.standard-reader.markPublicationAllRead",
+  "defs": {
+    "main": {
+      "type": "procedure",
+      "description": "Mark all unread articles from one publication as read.",
+      "input": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["publication"],
+          "properties": {
+            "publication": {
+              "type": "string",
+              "format": "at-uri",
+              "description": "Publication AT-URI"
+            }
+          }
+        }
+      },
+      "output": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["markedCount", "documentUris"],
+          "properties": {
+            "markedCount": {
+              "type": "integer"
+            },
+            "documentUris": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "at-uri"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

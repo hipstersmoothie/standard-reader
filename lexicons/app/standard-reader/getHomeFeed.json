@@ -1,0 +1,43 @@
+{
+  "lexicon": 1,
+  "id": "app.standard-reader.getHomeFeed",
+  "defs": {
+    "main": {
+      "type": "query",
+      "description": "Signed-in home page critical path: featured lead and latest rows.",
+      "parameters": {
+        "type": "params",
+        "properties": {
+          "scope": {
+            "type": "string",
+            "knownValues": ["subscriptions", "all"],
+            "default": "subscriptions"
+          }
+        },
+        "required": []
+      },
+      "output": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "featured": {
+              "type": "ref",
+              "ref": "app.standard-reader.defs#documentView"
+            },
+            "latest": {
+              "type": "array",
+              "items": {
+                "type": "ref",
+                "ref": "app.standard-reader.defs#documentView"
+              }
+            },
+            "scope": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  }
+}

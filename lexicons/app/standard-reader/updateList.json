@@ -1,0 +1,42 @@
+{
+  "lexicon": 1,
+  "id": "app.standard-reader.updateList",
+  "defs": {
+    "main": {
+      "type": "procedure",
+      "description": "Replace an existing publication list.",
+      "input": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["rkey", "name", "publications"],
+          "properties": {
+            "rkey": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "publications": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "at-uri"
+              }
+            }
+          }
+        }
+      },
+      "output": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "properties": {}
+        }
+      }
+    }
+  }
+}

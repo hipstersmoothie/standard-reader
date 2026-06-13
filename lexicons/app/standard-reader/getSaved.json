@@ -1,0 +1,34 @@
+{
+  "lexicon": 1,
+  "id": "app.standard-reader.getSaved",
+  "defs": {
+    "main": {
+      "type": "query",
+      "description": "Subject reader save queue with hydrated document rows.",
+      "parameters": {
+        "type": "params",
+        "properties": {
+          "did": {
+            "type": "string",
+            "format": "did"
+          },
+          "limit": {
+            "type": "integer",
+            "default": 20
+          },
+          "cursor": {
+            "type": "string"
+          }
+        },
+        "required": []
+      },
+      "output": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "ref",
+          "ref": "app.standard-reader.defs#cursorPageDocuments"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "lexicon": 1,
+  "id": "app.standard-reader.getRecommendedPublications",
+  "defs": {
+    "main": {
+      "type": "query",
+      "description": "Personalized publication recommendations for the authenticated user.",
+      "parameters": {
+        "type": "params",
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 12
+          }
+        },
+        "required": []
+      },
+      "output": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["items"],
+          "properties": {
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "ref",
+                "ref": "app.standard-reader.defs#publicationView"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
