@@ -4,19 +4,21 @@ import { Button } from "#/design-system/button";
 import { Flex } from "#/design-system/flex";
 import { IconButton } from "#/design-system/icon-button";
 import { Separator } from "#/design-system/separator";
+import { uiColor } from "#/design-system/theme/color.stylex";
 import {
   horizontalSpace,
   verticalSpace,
 } from "#/design-system/theme/semantic-spacing.stylex";
 import { Text } from "#/design-system/typography/text";
 import { Settings, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import type { PopupStateResponse } from "../lib/popup-state";
 import type { ExtensionResolveResult } from "../lib/types";
 import type { PopupReaderArticle } from "./PopupReaderBar";
 
 import { sendMessage } from "../lib/messaging";
+import { setPopupDimensions } from "../lib/popup-dimensions";
 import { useReaderSnapshot } from "../lib/use-reader-snapshot";
 import { ExtensionTheme } from "./ExtensionTheme";
 import { PopupArticle } from "./PopupArticle";
@@ -32,6 +34,11 @@ const styles = stylex.create({
     minHeight: "100%",
     width: "100%",
   },
+  shellDiscussion: {
+    overflow: "hidden",
+    height: "100%",
+    minHeight: 0,
+  },
   main: {
     boxSizing: "border-box",
     flexBasis: "0%",
@@ -39,6 +46,13 @@ const styles = stylex.create({
     flexShrink: "1",
     minHeight: 0,
     width: "100%",
+  },
+  mainDiscussion: {
+    overflow: "hidden",
+  },
+  chromeSticky: {
+    backgroundColor: uiColor.bg,
+    flexShrink: 0,
   },
   headerBlock: {
     boxSizing: "border-box",
@@ -68,6 +82,9 @@ const styles = stylex.create({
   inset: {
     paddingInline: horizontalSpace.md,
     boxSizing: "border-box",
+  },
+  readerBarSticky: {
+    flexShrink: 0,
   },
   footerBlock: {
     boxSizing: "border-box",
@@ -103,8 +120,23 @@ export function PopupShell({
   const [loadError, setLoadError] = useState<string | null>(initialError);
   const [listenStarting, setListenStarting] = useState(false);
   const [listenError, setListenError] = useState<string | null>(null);
-  const { supported: readerSupported, snapshot, setSnapshot } =
-    useReaderSnapshot();
+  const [discussionOpen, setDiscussionOpen] = useState(false);
+  const {
+    supported: readerSupported,
+    snapshot,
+    setSnapshot,
+  } = useReaderSnapshot();
+
+  const articleDocumentUri =
+    result?.kind === "article" ? result.documentUri : null;
+
+  useEffect(() => {
+    setDiscussionOpen(false);
+  }, [articleDocumentUri]);
+
+  useEffect(() => {
+    setPopupDimensions(discussionOpen ? "discussion" : "default");
+  }, [discussionOpen]);
 
   const signIn = async () => {
     await sendMessage({ type: "openLogin" });
@@ -197,6 +229,10 @@ export function PopupShell({
     }
   };
 
+  const openReaderUrl = async (url: string) => {
+    await sendMessage({ type: "openReader", url });
+  };
+
   const openOptionsPage = () => {
     openOptions();
   };
@@ -239,21 +275,24 @@ export function PopupShell({
       ? { documentUri: result.documentUri, title: result.title }
       : null;
   const readerState = snapshot?.state ?? null;
-  const readerActive =
-    readerState !== null && readerState.status !== "idle";
+  const readerActive = readerState !== null && readerState.status !== "idle";
   const playingThisArticle =
     readerArticle != null &&
     readerActive &&
     snapshot?.nowPlaying?.documentUri === readerArticle.documentUri;
   const showListenInArticle =
-    readerSupported !== false &&
-    readerArticle != null &&
-    !playingThisArticle;
+    readerSupported !== false && readerArticle != null && !playingThisArticle;
 
   return (
-    <ExtensionTheme variant="popup">
-      <Flex direction="column" style={styles.shell}>
-        <Flex direction="column" style={styles.headerBlock}>
+    <ExtensionTheme variant="popup" discussionOpen={discussionOpen}>
+      <Flex
+        direction="column"
+        style={[styles.shell, discussionOpen && styles.shellDiscussion]}
+      >
+        <Flex
+          direction="column"
+          style={[styles.headerBlock, discussionOpen && styles.chromeSticky]}
+        >
           <Flex
             direction="row"
             gap="sm"
@@ -297,7 +336,10 @@ export function PopupShell({
           </Text>
         ) : null}
 
-        <Flex direction="column" style={styles.main}>
+        <Flex
+          direction="column"
+          style={[styles.main, discussionOpen && styles.mainDiscussion]}
+        >
           {signedOut ? <PopupSignIn result={result} onSignIn={signIn} /> : null}
 
           {signedIn && result?.kind === "article" ? (
@@ -310,9 +352,12 @@ export function PopupShell({
               onLike={toggleRecommend}
               onFollow={toggleFollow}
               onOpenReader={openReader}
+              onOpenReaderUrl={openReaderUrl}
               showListen={showListenInArticle}
               listenStarting={listenStarting}
               listenError={listenError}
+              discussionOpen={discussionOpen}
+              onDiscussionOpenChange={setDiscussionOpen}
               onListen={() => {
                 if (readerArticle) void playArticle(readerArticle);
               }}
@@ -352,18 +397,23 @@ export function PopupShell({
         </Flex>
 
         {signedIn && session && readerActive ? (
-          <PopupReaderBar
-            article={readerArticle}
-            snapshot={snapshot}
-            setSnapshot={setSnapshot}
-            onPlay={playArticle}
-            starting={listenStarting}
-            playError={listenError}
-          />
+          <div {...stylex.props(discussionOpen && styles.readerBarSticky)}>
+            <PopupReaderBar
+              article={readerArticle}
+              snapshot={snapshot}
+              setSnapshot={setSnapshot}
+              onPlay={playArticle}
+              starting={listenStarting}
+              playError={listenError}
+            />
+          </div>
         ) : null}
 
         {signedIn && session ? (
-          <Flex direction="column" style={styles.footerBlock}>
+          <Flex
+            direction="column"
+            style={[styles.footerBlock, discussionOpen && styles.chromeSticky]}
+          >
             <Separator />
             <PopupSignedInFooter session={session} onViewSaved={openSaved} />
           </Flex>

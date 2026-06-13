@@ -68,3 +68,37 @@ export type ExtensionSessionResponse = {
   image: string | null;
   did: string | null;
 };
+
+export type ExtensionDiscussionComment = {
+  source: "bluesky" | "margin" | "semble";
+  kind: "link" | "quote";
+  postUri: string;
+  postUrl: string;
+  author: {
+    did: string;
+    handle: string | null;
+    displayName: string | null;
+    avatarUrl: string | null;
+  };
+  commentary: string;
+  quote: string | null;
+  replyCount: number;
+  indexedAt: string;
+};
+
+export type ExtensionDiscussionArticle = {
+  uri: string;
+  title: string;
+  publicationName: string | null;
+  publicationUri: string | null;
+  readerUrl: string;
+  commentCount: number;
+  subtitle?: string;
+};
+
+export type ExtensionDiscussionResponse = {
+  keepReading: Array<ExtensionDiscussionArticle>;
+  discussions: Array<ExtensionDiscussionComment>;
+  relatedReading: Array<ExtensionDiscussionArticle>;
+  citedIn: Array<ExtensionDiscussionArticle>;
+};

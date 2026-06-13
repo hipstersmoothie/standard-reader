@@ -15,7 +15,11 @@ import {
   buildQuoteShareUrl,
   normalizeQuoteText,
 } from "#/lib/quote-share";
-import { getDirectRepliesToPost, getPosts } from "#/server/atproto/bsky-posts";
+import {
+  getDirectRepliesToPost,
+  getPosts,
+  inferAuthorAnnouncementPostUri,
+} from "#/server/atproto/bsky-posts";
 import {
   getBacklinkCountForTarget,
   getPostBacklinksForTarget,
@@ -217,6 +221,15 @@ interface CommentCountCacheEntry {
 const commentCountCache = new Map<string, CommentCountCacheEntry>();
 const commentCountRevalidationInflight = new Set<string>();
 
+interface InferredBskyPostCacheEntry {
+  uri: string | null;
+  updatedAt: number;
+}
+
+const inferredBskyPostCache = new Map<string, InferredBskyPostCacheEntry>();
+const inferredBskyPostInflight = new Map<string, Promise<string | null>>();
+const INFERRED_BSKY_POST_CACHE_TTL_MS = 60 * 60 * 1000;
+
 function peekCommentCount(documentUri: string): number {
   return commentCountCache.get(documentUri)?.count ?? 0;
 }
@@ -357,6 +370,42 @@ async function countAuthorPostReplies(
   return replies.length;
 }
 
+async function resolveBskyPostUri(
+  documentUri: string,
+  storedBskyPostUri: string | null,
+  did: string,
+  publishedAt: Date,
+  linkTargets: Array<string>,
+): Promise<string | null> {
+  if (storedBskyPostUri?.startsWith("at://")) return storedBskyPostUri;
+
+  const cached = inferredBskyPostCache.get(documentUri);
+  if (
+    cached &&
+    Date.now() - cached.updatedAt < INFERRED_BSKY_POST_CACHE_TTL_MS
+  ) {
+    return cached.uri;
+  }
+
+  const inflight = inferredBskyPostInflight.get(documentUri);
+  if (inflight) return inflight;
+
+  const promise = inferAuthorAnnouncementPostUri(did, publishedAt, linkTargets)
+    .then((uri) => {
+      inferredBskyPostCache.set(documentUri, {
+        uri,
+        updatedAt: Date.now(),
+      });
+      return uri;
+    })
+    .finally(() => {
+      inferredBskyPostInflight.delete(documentUri);
+    });
+
+  inferredBskyPostInflight.set(documentUri, promise);
+  return promise;
+}
+
 async function loadDocumentCommentTargets(
   dbClient: typeof db,
   schemaModule: typeof schema,
@@ -377,6 +426,7 @@ async function loadDocumentCommentTargets(
       canonicalUrl: d.canonicalUrl,
       publicationUrl: p.url,
       bskyPostUri: d.bskyPostUri,
+      publishedAt: d.publishedAt,
     })
     .from(d)
     .leftJoin(p, eq(d.publicationUri, p.uri))
@@ -399,10 +449,19 @@ async function loadDocumentCommentTargets(
     baseUrl,
   );
 
+  const linkTargets = targets.map((target) => target.url);
+  const bskyPostUri = await resolveBskyPostUri(
+    documentUri,
+    doc.bskyPostUri,
+    doc.did,
+    doc.publishedAt,
+    linkTargets,
+  );
+
   return {
     targets,
-    stripUrls: targets.map((t) => t.url),
-    bskyPostUri: doc.bskyPostUri,
+    stripUrls: linkTargets,
+    bskyPostUri,
   };
 }
 

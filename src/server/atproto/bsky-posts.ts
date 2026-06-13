@@ -171,3 +171,197 @@ export async function getDirectRepliesToPost(
 ): Promise<Array<BskyPostView>> {
   return fetchPostThread(postUri, 1);
 }
+
+const AUTHOR_FEED_PAGE_SIZE = 100;
+const AUTHOR_FEED_MAX_PAGES = 40;
+const ANNOUNCEMENT_WINDOW_BEFORE_MS = 14 * 24 * 60 * 60 * 1000;
+const ANNOUNCEMENT_WINDOW_AFTER_MS = 7 * 24 * 60 * 60 * 1000;
+const MIN_INFERRED_ANNOUNCEMENT_REPLIES = 5;
+
+function normalizeLinkTarget(url: string): string {
+  try {
+    const parsed = new URL(url.trim());
+    parsed.hash = "";
+    parsed.search = "";
+    let path = parsed.pathname;
+    if (path.length > 1 && path.endsWith("/")) {
+      path = path.slice(0, -1);
+    }
+    parsed.pathname = path;
+    return parsed.toString();
+  } catch {
+    return url.trim();
+  }
+}
+
+function postRecordLinksTarget(
+  record: Record<string, unknown>,
+  targetUrls: ReadonlySet<string>,
+): boolean {
+  const normalizedTargets = new Set(
+    [...targetUrls].map((url) => normalizeLinkTarget(url)),
+  );
+
+  const facets = record.facets;
+  if (Array.isArray(facets)) {
+    for (const facet of facets) {
+      if (!isRecord(facet)) continue;
+      const features = facet.features;
+      if (!Array.isArray(features)) continue;
+      for (const feature of features) {
+        if (!isRecord(feature)) continue;
+        const uri = feature.uri;
+        if (
+          typeof uri === "string" &&
+          normalizedTargets.has(normalizeLinkTarget(uri))
+        ) {
+          return true;
+        }
+      }
+    }
+  }
+
+  const embed = record.embed;
+  if (isRecord(embed)) {
+    const external = embed.external;
+    if (isRecord(external)) {
+      const uri = external.uri;
+      if (
+        typeof uri === "string" &&
+        normalizedTargets.has(normalizeLinkTarget(uri))
+      ) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+interface AuthorFeedPostCandidate {
+  uri: string;
+  replyCount: number;
+  linksTarget: boolean;
+  createdAt: number;
+}
+
+interface AuthorFeedPageResult {
+  posts: Array<AuthorFeedPostCandidate>;
+  cursor?: string;
+}
+
+async function fetchAuthorFeedPage(
+  did: string,
+  linkTargets: ReadonlySet<string>,
+  cursor: string | undefined,
+): Promise<AuthorFeedPageResult> {
+  try {
+    const url = new URL("/xrpc/app.bsky.feed.getAuthorFeed", PUBLIC_APPVIEW);
+    url.searchParams.set("actor", did);
+    url.searchParams.set("limit", String(AUTHOR_FEED_PAGE_SIZE));
+    url.searchParams.set("filter", "posts_no_replies");
+    if (cursor) {
+      url.searchParams.set("cursor", cursor);
+    }
+
+    const response = await fetch(url.toString(), {
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+      headers: { Accept: "application/json" },
+    });
+    if (!response.ok) return { posts: [] };
+
+    const payload: unknown = await response.json();
+    if (!isRecord(payload) || !Array.isArray(payload.feed)) {
+      return { posts: [] };
+    }
+
+    const posts: Array<AuthorFeedPostCandidate> = [];
+    for (const item of payload.feed) {
+      if (!isRecord(item) || !isRecord(item.post)) continue;
+      const postView = parsePostView(item.post);
+      if (!postView || postView.author.did !== did || postView.isReply)
+        continue;
+
+      const record = isRecord(item.post.record) ? item.post.record : null;
+      const createdAtRaw =
+        typeof record?.createdAt === "string" ? record.createdAt : "";
+      const createdAt = Date.parse(createdAtRaw);
+      if (!Number.isFinite(createdAt)) continue;
+
+      posts.push({
+        uri: postView.uri,
+        replyCount: postView.replyCount,
+        linksTarget: record
+          ? postRecordLinksTarget(record, linkTargets)
+          : false,
+        createdAt,
+      });
+    }
+
+    const nextCursor =
+      typeof payload.cursor === "string" ? payload.cursor : undefined;
+    return { posts, cursor: nextCursor };
+  } catch {
+    return { posts: [] };
+  }
+}
+
+/**
+ * When a document has no `bskyPostRef`, infer the author's announcement post
+ * by scanning their top-level feed around `publishedAt`. Prefer posts that link
+ * the article URL; otherwise pick the highest-reply post in the window.
+ */
+export async function inferAuthorAnnouncementPostUri(
+  did: string,
+  publishedAt: Date,
+  linkTargets: Array<string>,
+): Promise<string | null> {
+  if (!did.startsWith("did:") || linkTargets.length === 0) return null;
+
+  const normalizedTargets = new Set(linkTargets.filter(Boolean));
+  if (normalizedTargets.size === 0) return null;
+
+  const windowStart = publishedAt.getTime() - ANNOUNCEMENT_WINDOW_BEFORE_MS;
+  const windowEnd = publishedAt.getTime() + ANNOUNCEMENT_WINDOW_AFTER_MS;
+
+  let urlLinkedBest: AuthorFeedPostCandidate | null = null;
+  let replyBest: AuthorFeedPostCandidate | null = null;
+  let cursor: string | undefined;
+  let reachedWindowStart = false;
+
+  for (
+    let page = 0;
+    page < AUTHOR_FEED_MAX_PAGES && !reachedWindowStart;
+    page++
+  ) {
+    const feedPage = await fetchAuthorFeedPage(did, normalizedTargets, cursor);
+    if (feedPage.posts.length === 0) break;
+
+    for (const candidate of feedPage.posts) {
+      if (candidate.createdAt < windowStart) {
+        reachedWindowStart = true;
+        continue;
+      }
+      if (candidate.createdAt > windowEnd) continue;
+
+      if (
+        candidate.linksTarget &&
+        (!urlLinkedBest || candidate.replyCount > urlLinkedBest.replyCount)
+      ) {
+        urlLinkedBest = candidate;
+      }
+
+      if (
+        candidate.replyCount >= MIN_INFERRED_ANNOUNCEMENT_REPLIES &&
+        (!replyBest || candidate.replyCount > replyBest.replyCount)
+      ) {
+        replyBest = candidate;
+      }
+    }
+
+    cursor = feedPage.cursor;
+    if (!cursor) break;
+  }
+
+  return urlLinkedBest?.uri ?? replyBest?.uri ?? null;
+}

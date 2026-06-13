@@ -29,7 +29,12 @@ const styles = stylex.create({
     backgroundColor: uiColor.bg,
     color: uiColor.text2,
     minHeight: "280px",
-    width: "400px",
+    width: "100%",
+  },
+  popupRootDiscussion: {
+    height: "100%",
+    minHeight: "520px",
+    overflow: "hidden",
   },
   pageRoot: {
     backgroundColor: uiColor.bg,
@@ -46,11 +51,13 @@ const styles = stylex.create({
 type ExtensionThemeProps = {
   children: ReactNode;
   variant?: "popup" | "page" | "options";
+  discussionOpen?: boolean;
 };
 
 export function ExtensionTheme({
   children,
   variant = "popup",
+  discussionOpen = false,
 }: ExtensionThemeProps) {
   const [mode, setModeState] = useState<ExtensionThemeMode>(() =>
     variant === "page" ? "light" : getExtensionThemeMode(),
@@ -79,6 +86,7 @@ export function ExtensionTheme({
           editorialShadow,
           styles.root,
           variant === "popup" && styles.popupRoot,
+          variant === "popup" && discussionOpen && styles.popupRootDiscussion,
           variant === "page" && styles.pageRoot,
           variant === "options" && styles.optionsRoot,
         )}

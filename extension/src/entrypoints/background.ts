@@ -10,14 +10,15 @@ import type {
   ExtensionSessionResponse,
 } from "../lib/types";
 
+import { isActionIconPlaying, setActionIconPlaying } from "../lib/action-icon";
 import {
   fetchBookmark,
+  fetchDiscussion,
   fetchFollow,
   fetchNarration,
   fetchRecommend,
   fetchSession,
 } from "../lib/api";
-import { isActionIconPlaying, setActionIconPlaying } from "../lib/action-icon";
 import {
   consumePendingAction,
   openLoginTab,
@@ -641,6 +642,10 @@ async function handleMessage(request: BgRequest): Promise<BgResponse> {
           tabUrl,
         );
         return { ok: true, data: { ok: true } };
+      }
+      case "getDiscussion": {
+        const data = await fetchDiscussion(request.documentUri);
+        return { ok: true, data };
       }
       case "openLogin": {
         loginTabId = await openLoginTab();

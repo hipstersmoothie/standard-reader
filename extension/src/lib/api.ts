@@ -1,4 +1,5 @@
 import type {
+  ExtensionDiscussionResponse,
   ExtensionNarrationResponse,
   ExtensionResolveResult,
   ExtensionSessionResponse,
@@ -157,5 +158,48 @@ export async function fetchRecommend(
   }
   if (!response.ok) {
     throw new Error("Like failed");
+  }
+}
+
+function normalizeDiscussionResponse(
+  body: unknown,
+): ExtensionDiscussionResponse {
+  const raw = body as Partial<
+    ExtensionDiscussionResponse & {
+      comments?: ExtensionDiscussionResponse["discussions"];
+      related?: ExtensionDiscussionResponse["relatedReading"];
+      mentions?: ExtensionDiscussionResponse["citedIn"];
+    }
+  >;
+
+  return {
+    keepReading: raw.keepReading ?? [],
+    discussions: raw.discussions ?? raw.comments ?? [],
+    relatedReading: raw.relatedReading ?? raw.related ?? [],
+    citedIn: raw.citedIn ?? raw.mentions ?? [],
+  };
+}
+
+export async function fetchDiscussion(
+  documentUri: string,
+): Promise<ExtensionDiscussionResponse> {
+  const origin = await getEffectiveApiOrigin();
+  const response = await apiFetch(
+    `/api/extension/discussion?documentUri=${encodeURIComponent(documentUri)}`,
+  );
+
+  if (!response.ok) {
+    if (response.status === 404) {
+      throw new Error(
+        `Discussion isn’t available on ${origin} yet. Use a local dev server or deploy the latest app.`,
+      );
+    }
+    throw new Error("Couldn’t load discussion.");
+  }
+
+  try {
+    return normalizeDiscussionResponse(await response.json());
+  } catch {
+    throw new Error("Couldn’t load discussion.");
   }
 }

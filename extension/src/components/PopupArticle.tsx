@@ -30,11 +30,14 @@ import {
   Check,
   Headphones,
   Heart,
+  MessageCircle,
   UserPlus,
   Users,
 } from "lucide-react";
 
 import type { ExtensionResolveArticle } from "../lib/types";
+
+import { PopupArticleDiscussion } from "./PopupArticleDiscussion";
 
 const READER_UNAVAILABLE_TOOLTIP =
   "This article doesn't have the structured content needed to render in Standard Reader.";
@@ -145,10 +148,13 @@ type PopupArticleProps = {
   onLike: () => void;
   onFollow: () => void;
   onOpenReader: () => void;
+  onOpenReaderUrl?: (url: string) => void;
   showListen?: boolean;
   listenStarting?: boolean;
   listenError?: string | null;
   onListen?: () => void;
+  discussionOpen?: boolean;
+  onDiscussionOpenChange?: (open: boolean) => void;
 };
 
 export function PopupArticle({
@@ -160,10 +166,13 @@ export function PopupArticle({
   onLike,
   onFollow,
   onOpenReader,
+  onOpenReaderUrl,
   showListen = false,
   listenStarting = false,
   listenError = null,
   onListen,
+  discussionOpen = false,
+  onDiscussionOpenChange,
 }: PopupArticleProps) {
   const pubName = result.publicationName ?? "Publication";
   const authorHandle = result.authorHandle;
@@ -187,6 +196,24 @@ export function PopupArticle({
       <ArrowRight size={16} />
     </Button>
   );
+
+  const openLinkedReader = (url: string) => {
+    if (onOpenReaderUrl) {
+      onOpenReaderUrl(url);
+      return;
+    }
+    onOpenReader();
+  };
+
+  if (discussionOpen) {
+    return (
+      <PopupArticleDiscussion
+        documentUri={result.documentUri}
+        onClose={() => onDiscussionOpenChange?.(false)}
+        onOpenReader={openLinkedReader}
+      />
+    );
+  }
 
   return (
     <Flex direction="column" style={styles.content}>
@@ -253,6 +280,14 @@ export function PopupArticle({
               size={18}
               fill={result.isBookmarked ? "currentColor" : "none"}
             />
+          </IconButton>
+          <IconButton
+            variant="secondary"
+            size="lg"
+            label="Discussion"
+            onPress={() => onDiscussionOpenChange?.(true)}
+          >
+            <MessageCircle size={18} />
           </IconButton>
           {canOpenInReader ? (
             viewInReaderButton
