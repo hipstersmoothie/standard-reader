@@ -8,6 +8,7 @@
 
 import type { ReaderVoice } from "#/lib/page-reader/voice-catalog";
 
+import { nameVoice } from "#/lib/page-reader/voice";
 import {
   AMERICAN_ENGLISH_VOICE_IDS,
   readerVoiceLabel,
@@ -63,4 +64,13 @@ export function readerVoicePreferenceLabel(
   preference: ReaderVoicePreference,
 ): string {
   return preference === "auto" ? "Auto" : readerVoiceLabel(preference);
+}
+
+/** Resolve a stored preference to a Kokoro voice (auto runs name detection). */
+export function resolveReaderVoicePreference(
+  author: string | null,
+  preference: ReaderVoicePreference,
+): ReaderVoice | Promise<ReaderVoice> {
+  if (preference !== "auto") return preference;
+  return nameVoice(author);
 }

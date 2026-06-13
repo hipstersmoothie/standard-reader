@@ -11,13 +11,13 @@ import { appHosts, bskyHosts } from "./manifest-hosts";
 import { sendMessage } from "./messaging";
 
 const BUTTON_ATTR = "data-sr-bsky-bookmark";
+const ICON_ATTR = "data-sr-bsky-bookmark-icon";
+const SPINNER_ATTR = "data-sr-bsky-bookmark-spinner";
 const EMBED_ATTR = "data-sr-bsky-embed";
 const ARTICLE_HREF_ATTR = "data-sr-bsky-article-href";
 const TITLE_ROW_ATTR = "data-sr-bsky-embed-row";
 const SPACER_ATTR = "data-sr-bsky-bookmark-spacer";
 const STYLE_ID = "sr-bsky-bookmark-styles";
-
-const positionSyncByButton = new WeakMap<HTMLButtonElement, () => void>();
 
 const SR_HOSTS = new Set(appHosts(import.meta.env.DEV));
 const BSKY_HOSTS = new Set(bskyHosts(import.meta.env.DEV));
@@ -30,6 +30,12 @@ const FOOTER_CTA =
   /^(Subscribe(?: on .+)?|Subscribe to .+|View publication|View .+)$/i;
 
 const BOOKMARK_PATH = "m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z";
+
+let embedScanGeneration = 0;
+
+function bumpEmbedScanGeneration(): void {
+  embedScanGeneration += 1;
+}
 
 type EmbedCandidate = {
   root: HTMLElement;
@@ -45,6 +51,7 @@ function ensureBookmarkStyles(): void {
   style.textContent = `
     [${BUTTON_ATTR}] {
       position: absolute;
+      inset: 0;
       z-index: 11;
       pointer-events: auto;
       flex-shrink: 0;
@@ -56,6 +63,8 @@ function ensureBookmarkStyles(): void {
       padding: 0;
       border: none;
       border-radius: 9999px;
+      background-color: var(--sr-bookmark-accent);
+      color: var(--sr-bookmark-accent-fg);
       cursor: pointer;
       transition: opacity 150ms ease;
     }
@@ -63,18 +72,28 @@ function ensureBookmarkStyles(): void {
       opacity: 0.9;
     }
     [${BUTTON_ATTR}]:disabled {
-      opacity: 0.6;
       cursor: wait;
+    }
+    [${BUTTON_ATTR}]:disabled:not([aria-busy="true"]) {
+      opacity: 0.6;
     }
     [${BUTTON_ATTR}] svg {
       width: 14px;
       height: 14px;
     }
-    [${BUTTON_ATTR}][aria-pressed="true"] svg path {
+    [${BUTTON_ATTR}] [${SPINNER_ATTR}] {
+      animation: sr-bsky-bookmark-spin 0.75s linear infinite;
+    }
+    @keyframes sr-bsky-bookmark-spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+    [${BUTTON_ATTR}][aria-pressed="true"] [${ICON_ATTR}] path {
       fill: currentColor;
       stroke: none;
     }
-    [${BUTTON_ATTR}][aria-pressed="false"] svg path {
+    [${BUTTON_ATTR}][aria-pressed="false"] [${ICON_ATTR}] path {
       fill: none;
       stroke: currentColor;
     }
@@ -90,6 +109,7 @@ function ensureBookmarkStyles(): void {
       min-width: 0;
     }
     [${SPACER_ATTR}] {
+      position: relative;
       flex-shrink: 0;
       width: 28px;
       height: 28px;
@@ -266,96 +286,16 @@ function findTextBlockContainer(titleEl: HTMLElement): HTMLElement | null {
   return titleEl.parentElement;
 }
 
-function findArticleOverlay(
-  root: HTMLElement,
-  articleHref: string,
-): HTMLAnchorElement | null {
-  for (const anchor of root.querySelectorAll("a[href]")) {
-    if (!(anchor instanceof HTMLAnchorElement)) continue;
-    if (anchor.href !== articleHref) continue;
-    if (getComputedStyle(anchor).position === "absolute") return anchor;
-  }
-  return null;
-}
-
-function findPositionedContainer(from: HTMLElement): HTMLElement {
-  let el: HTMLElement | null = from;
-  while (el) {
-    if (getComputedStyle(el).position !== "static") return el;
-    el = el.parentElement;
-  }
-  return from;
-}
-
-function positionBookmarkButton(
+function ensureButtonInSpacer(
   button: HTMLButtonElement,
-  anchorEl: HTMLElement,
-  container: HTMLElement,
+  spacer: HTMLElement,
 ): void {
-  const containerRect = container.getBoundingClientRect();
-  const anchorRect = anchorEl.getBoundingClientRect();
-  button.style.top = `${anchorRect.top - containerRect.top + container.scrollTop}px`;
-  button.style.left = `${anchorRect.left - containerRect.left + container.scrollLeft}px`;
-}
-
-function setupBookmarkPositionSync(
-  button: HTMLButtonElement,
-  anchorEl: HTMLElement,
-  container: HTMLElement,
-): () => void {
-  const sync = () => {
-    positionBookmarkButton(button, anchorEl, container);
-  };
-
-  sync();
-  const observer = new ResizeObserver(sync);
-  observer.observe(anchorEl);
-  observer.observe(container);
-  globalThis.addEventListener("scroll", sync, { capture: true, passive: true });
-
-  return () => {
-    observer.disconnect();
-    globalThis.removeEventListener("scroll", sync, { capture: true });
-  };
-}
-
-function stopLinkNavigation(event: Event): void {
-  event.preventDefault();
-  event.stopPropagation();
-  event.stopImmediatePropagation();
-}
-
-function attachBookmarkActivationHandlers(
-  button: HTMLButtonElement,
-  onActivate: () => void,
-): void {
-  for (const type of ["pointerdown", "mousedown", "touchstart"] as const) {
-    button.addEventListener(type, stopLinkNavigation, { capture: true });
+  if (button.parentElement !== spacer) {
+    spacer.append(button);
   }
-
-  button.addEventListener(
-    "click",
-    (event) => {
-      stopLinkNavigation(event);
-      onActivate();
-    },
-    { capture: true },
-  );
-
-  button.addEventListener(
-    "keydown",
-    (event) => {
-      if (event.key !== "Enter" && event.key !== " ") return;
-      stopLinkNavigation(event);
-      onActivate();
-    },
-    { capture: true },
-  );
 }
 
 function mountBesideTextBlock(
-  root: HTMLElement,
-  articleLink: HTMLAnchorElement,
   titleEl: HTMLElement,
   button: HTMLButtonElement,
 ): void {
@@ -390,19 +330,42 @@ function mountBesideTextBlock(
     row.append(spacer);
   }
 
-  const overlay = findArticleOverlay(root, articleLink.href);
-  const container = findPositionedContainer(overlay ?? row);
+  ensureButtonInSpacer(button, spacer);
+}
 
-  if (overlay?.parentElement) {
-    overlay.after(button);
-  } else if (!row.contains(button)) {
-    row.append(button);
+function stopLinkNavigation(event: Event): void {
+  event.preventDefault();
+  event.stopPropagation();
+  event.stopImmediatePropagation();
+}
+
+function attachBookmarkActivationHandlers(
+  button: HTMLButtonElement,
+  onActivate: (target: HTMLButtonElement) => void,
+): void {
+  for (const type of ["pointerdown", "mousedown", "touchstart"] as const) {
+    button.addEventListener(type, stopLinkNavigation, { capture: true });
   }
 
-  positionSyncByButton.get(button)?.();
-  positionSyncByButton.set(
-    button,
-    setupBookmarkPositionSync(button, spacer, container),
+  button.addEventListener(
+    "click",
+    (event) => {
+      stopLinkNavigation(event);
+      if (event.currentTarget instanceof HTMLButtonElement) {
+        onActivate(event.currentTarget);
+      }
+    },
+    { capture: true },
+  );
+
+  button.addEventListener(
+    "keydown",
+    (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      stopLinkNavigation(event);
+      onActivate(button);
+    },
+    { capture: true },
   );
 }
 
@@ -444,58 +407,90 @@ function collectStandardSiteDocumentEmbeds(): Array<EmbedCandidate> {
 function applyBookmarkTheme(
   button: HTMLButtonElement,
   theme: ExtensionPublicationTheme,
-  saved: boolean,
 ): void {
   const colors = resolveQuoteOgColors(theme);
 
-  if (saved) {
-    button.style.backgroundColor = colors.accentSubtle;
-    button.style.color = colors.accentSubtleFg;
-  } else {
-    button.style.backgroundColor = colors.accent;
-    button.style.color = colors.accentForeground;
-  }
+  button.style.setProperty("--sr-bookmark-accent", colors.accent);
+  button.style.setProperty("--sr-bookmark-accent-fg", colors.accentForeground);
 }
 
-function setBookmarkIcon(button: HTMLButtonElement, saved: boolean): void {
-  button.replaceChildren();
+function ensureBookmarkIcon(button: HTMLButtonElement): void {
+  button.querySelector(`[${SPINNER_ATTR}]`)?.remove();
+
+  if (button.querySelector(`[${ICON_ATTR}]`)) return;
 
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute(ICON_ATTR, "true");
   svg.setAttribute("viewBox", "0 0 24 24");
   svg.setAttribute("aria-hidden", "true");
 
   const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
   path.setAttribute("d", BOOKMARK_PATH);
-  if (saved) {
-    path.setAttribute("fill", "currentColor");
-    path.removeAttribute("stroke");
-    path.removeAttribute("stroke-width");
-    path.removeAttribute("stroke-linecap");
-    path.removeAttribute("stroke-linejoin");
-  } else {
-    path.setAttribute("fill", "none");
-    path.setAttribute("stroke", "currentColor");
-    path.setAttribute("stroke-width", "2");
-    path.setAttribute("stroke-linecap", "round");
-    path.setAttribute("stroke-linejoin", "round");
-  }
+  path.setAttribute("stroke-width", "2");
+  path.setAttribute("stroke-linecap", "round");
+  path.setAttribute("stroke-linejoin", "round");
   svg.append(path);
   button.append(svg);
+}
+
+function ensureBookmarkSpinner(button: HTMLButtonElement): void {
+  button.querySelector(`[${ICON_ATTR}]`)?.remove();
+
+  if (button.querySelector(`[${SPINNER_ATTR}]`)) return;
+
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute(SPINNER_ATTR, "true");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("aria-hidden", "true");
+
+  const circle = document.createElementNS(
+    "http://www.w3.org/2000/svg",
+    "circle",
+  );
+  circle.setAttribute("cx", "12");
+  circle.setAttribute("cy", "12");
+  circle.setAttribute("r", "9");
+  circle.setAttribute("fill", "none");
+  circle.setAttribute("stroke", "currentColor");
+  circle.setAttribute("stroke-width", "2");
+  circle.setAttribute("stroke-dasharray", "28 56");
+  circle.setAttribute("stroke-linecap", "round");
+  svg.append(circle);
+  button.append(svg);
+}
+
+function readBookmarkSavedState(
+  button: HTMLButtonElement,
+  article: ExtensionResolveArticle,
+): boolean {
+  if (button.hasAttribute("aria-pressed")) {
+    return button.getAttribute("aria-pressed") === "true";
+  }
+  return Boolean(article.isBookmarked);
 }
 
 function updateBookmarkButton(
   button: HTMLButtonElement,
   article: ExtensionResolveArticle,
   saved: boolean,
+  busy = false,
 ): void {
-  applyBookmarkTheme(button, article, saved);
-  setBookmarkIcon(button, saved);
-  button.setAttribute(
-    "aria-label",
-    saved ? "Saved to Standard Reader" : "Save to Standard Reader",
-  );
-  button.setAttribute("aria-pressed", saved ? "true" : "false");
-  button.title = saved ? "Saved" : "Save";
+  applyBookmarkTheme(button, article);
+
+  const label = saved ? "Saved to Standard Reader" : "Save to Standard Reader";
+  const pressed = saved ? "true" : "false";
+  const busyAttr = busy ? "true" : "false";
+
+  button.setAttribute("aria-label", label);
+  button.setAttribute("aria-pressed", pressed);
+  button.setAttribute("aria-busy", busyAttr);
+  button.title = label;
+
+  if (busy) {
+    ensureBookmarkSpinner(button);
+  } else {
+    ensureBookmarkIcon(button);
+  }
 }
 
 function mountBookmarkButton(
@@ -519,16 +514,25 @@ function mountBookmarkButton(
     button.type = "button";
     button.setAttribute(BUTTON_ATTR, "true");
 
-    attachBookmarkActivationHandlers(button, () => {
-      void toggleBookmark(button, root, article);
+    attachBookmarkActivationHandlers(button, (target) => {
+      void toggleBookmark(target, root, article);
     });
-
-    mountBesideTextBlock(root, articleLink, titleEl, button);
   }
+
+  mountBesideTextBlock(titleEl, button);
 
   root.setAttribute(EMBED_ATTR, article.documentUri);
   root.setAttribute(ARTICLE_HREF_ATTR, articleLink.href);
-  updateBookmarkButton(button, article, Boolean(article.isBookmarked));
+
+  if (button.disabled || button.getAttribute("aria-busy") === "true") {
+    return button;
+  }
+
+  updateBookmarkButton(
+    button,
+    article,
+    readBookmarkSavedState(button, article),
+  );
   return button;
 }
 
@@ -540,12 +544,15 @@ async function toggleBookmark(
   const documentUri = root.getAttribute(EMBED_ATTR);
   if (!documentUri) return;
 
+  bumpEmbedScanGeneration();
+
   const saved = button.getAttribute("aria-pressed") === "true";
   const nextSaved = !saved;
 
   button.disabled = true;
-  updateBookmarkButton(button, article, nextSaved);
+  updateBookmarkButton(button, article, nextSaved, true);
 
+  let resolvedSaved = saved;
   try {
     await sendMessage({
       type: "bookmark",
@@ -553,20 +560,17 @@ async function toggleBookmark(
       save: nextSaved,
       resolveUrl: root.getAttribute(ARTICLE_HREF_ATTR) ?? undefined,
     });
+    resolvedSaved = nextSaved;
   } catch {
-    updateBookmarkButton(button, article, saved);
+    resolvedSaved = saved;
   } finally {
     button.disabled = false;
+    updateBookmarkButton(button, article, resolvedSaved, false);
   }
 }
 
 function removeBookmarkButton(root: HTMLElement): void {
-  const button = root.querySelector(`[${BUTTON_ATTR}]`);
-  if (button instanceof HTMLButtonElement) {
-    positionSyncByButton.get(button)?.();
-    positionSyncByButton.delete(button);
-  }
-  button?.remove();
+  root.querySelector(`[${BUTTON_ATTR}]`)?.remove();
 
   for (const spacer of root.querySelectorAll(`[${SPACER_ATTR}]`)) {
     spacer.remove();
@@ -593,15 +597,60 @@ function debounce(fn: () => void, delayMs: number): () => void {
   };
 }
 
+function embedHrefSignature(embeds: Array<EmbedCandidate>): string {
+  return embeds
+    .map((embed) => embed.articleHref)
+    .sort()
+    .join("|");
+}
+
+function isManagedMutationNode(node: Node): boolean {
+  if (!(node instanceof Element)) {
+    return node.nodeType === Node.TEXT_NODE;
+  }
+
+  return (
+    node.matches(`[${BUTTON_ATTR}], [${SPACER_ATTR}], [${TITLE_ROW_ATTR}]`) ||
+    node.closest(`[${BUTTON_ATTR}], [${SPACER_ATTR}], [${TITLE_ROW_ATTR}]`) !=
+      null
+  );
+}
+
+function shouldScheduleScan(mutations: Array<MutationRecord>): boolean {
+  for (const mutation of mutations) {
+    if (mutation.type !== "childList") continue;
+
+    const added = [...mutation.addedNodes].filter(
+      (node) => !isManagedMutationNode(node),
+    );
+    const removed = [...mutation.removedNodes].filter(
+      (node) => !isManagedMutationNode(node),
+    );
+
+    if (added.length > 0 || removed.length > 0) return true;
+  }
+
+  return false;
+}
+
 export async function initBskyEmbedBookmarks(): Promise<void> {
   const settings = await sendMessage({ type: "getSettings" });
   if (!settings.bskyBadgesEnabled) return;
 
   ensureBookmarkStyles();
 
+  let lastMountedSignature = "";
+
   const scan = async () => {
+    const generation = embedScanGeneration;
     const embeds = collectStandardSiteDocumentEmbeds();
     if (embeds.length === 0) return;
+
+    const signature = embedHrefSignature(embeds);
+    const allMounted = embeds.every((embed) =>
+      Boolean(embed.root.querySelector(`[${BUTTON_ATTR}]`)),
+    );
+    if (signature === lastMountedSignature && allMounted) return;
 
     const hrefs = [...new Set(embeds.map((embed) => embed.articleHref))];
     let results: Record<string, ExtensionResolveResult>;
@@ -613,6 +662,8 @@ export async function initBskyEmbedBookmarks(): Promise<void> {
     } catch {
       return;
     }
+
+    if (generation !== embedScanGeneration) return;
 
     const mountedRoots = new Set<HTMLElement>();
 
@@ -631,6 +682,8 @@ export async function initBskyEmbedBookmarks(): Promise<void> {
       if (!(root instanceof HTMLElement)) continue;
       if (!mountedRoots.has(root)) removeBookmarkButton(root);
     }
+
+    lastMountedSignature = signature;
   };
 
   const scheduleScan = debounce(() => {
@@ -639,7 +692,9 @@ export async function initBskyEmbedBookmarks(): Promise<void> {
 
   void scan();
 
-  const observer = new MutationObserver(scheduleScan);
+  const observer = new MutationObserver((mutations) => {
+    if (shouldScheduleScan(mutations)) scheduleScan();
+  });
   observer.observe(document.body, { subtree: true, childList: true });
 
   browser.storage.onChanged.addListener((changes, area) => {

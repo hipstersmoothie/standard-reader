@@ -117,3 +117,22 @@ export async function invalidateResolveCache(url: string): Promise<void> {
   void _removed;
   await writeCache(rest);
 }
+
+export async function patchResolveCacheBookmark(
+  url: string,
+  isBookmarked: boolean,
+): Promise<void> {
+  const cache = await readCache();
+  const entry = cache[url];
+  if (!entry || entry.expiresAt <= Date.now()) return;
+  if (entry.result.kind !== "article") return;
+
+  cache[url] = {
+    ...entry,
+    result: {
+      ...entry.result,
+      isBookmarked,
+    },
+  };
+  await writeCache(cache);
+}

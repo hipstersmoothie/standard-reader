@@ -1,6 +1,12 @@
+import type { ReaderVoicePreference } from "#/lib/reader-voice";
+
 import { env } from "@huggingface/transformers";
 import { PageReaderEngine } from "#/lib/page-reader/page-reader-engine";
-import { nameVoice } from "#/lib/page-reader/voice";
+import {
+  DEFAULT_READER_VOICE_PREFERENCE,
+  parseReaderVoicePreference,
+  resolveReaderVoicePreference,
+} from "#/lib/reader-voice";
 
 import type {
   OffscreenReaderMessage,
@@ -26,12 +32,14 @@ if (ortWasm) ortWasm.wasmPaths = new URL("/ort/", location.href).href;
 
 const engine = new PageReaderEngine();
 
+let voicePreference: ReaderVoicePreference = DEFAULT_READER_VOICE_PREFERENCE;
 let nowPlaying: ReaderNowPlaying | null = null;
 let lastPlayback: {
   documentUri: string;
   title: string;
   author: string | null;
   text: string;
+  voicePreference: ReaderVoicePreference;
 } | null = null;
 
 function snapshot(): ReaderSnapshot {
@@ -55,12 +63,27 @@ function startPlayback(message: {
   title: string;
   author: string | null;
   text: string;
+  voicePreference: ReaderVoicePreference;
 }): void {
   nowPlaying = { documentUri: message.documentUri, title: message.title };
   lastPlayback = message;
+  voicePreference = message.voicePreference;
   // Same flow as the app: voice detection runs concurrently with the model
   // load inside `prepare`, and playback starts on the first synthesized chunk.
-  void engine.prepare(message.text, nameVoice(message.author));
+  void engine.prepare(
+    message.text,
+    resolveReaderVoicePreference(message.author, voicePreference),
+  );
+}
+
+function reprepareIfLoaded(): void {
+  if (!lastPlayback) return;
+  const { status } = engine.getState();
+  if (status === "idle" || status === "error") return;
+  void engine.prepare(
+    lastPlayback.text,
+    resolveReaderVoicePreference(lastPlayback.author, voicePreference),
+  );
 }
 
 /**
@@ -139,3 +162,11 @@ browser.runtime.onMessage.addListener((message: unknown) => {
 });
 
 startKeepalive();
+
+browser.storage.onChanged.addListener((changes, area) => {
+  if (area !== "sync" || !changes.readerVoice) return;
+  const next = parseReaderVoicePreference(changes.readerVoice.newValue);
+  if (next === voicePreference) return;
+  voicePreference = next;
+  reprepareIfLoaded();
+});

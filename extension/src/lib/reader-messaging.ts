@@ -1,4 +1,5 @@
 import type { ReaderState } from "#/lib/page-reader/page-reader-engine";
+import type { ReaderVoicePreference } from "#/lib/reader-voice";
 
 /** Marker for messages addressed to the offscreen reader document. */
 export const READER_TARGET = "sr-reader";
@@ -30,6 +31,7 @@ export type ReaderMessageBody =
       /** Narration author; drives the auto voice pick (same as the app). */
       author: string | null;
       text: string;
+      voicePreference: ReaderVoicePreference;
     }
   | { type: "getState" }
   | { type: "getSentences" };

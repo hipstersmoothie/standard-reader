@@ -1,3 +1,5 @@
+import { parseReaderVoicePreference } from "#/lib/reader-voice";
+
 import type { ExtensionSettings } from "./types";
 
 export const AUTH_SESSION_COOKIE = "standard-reader-auth.session_token";
@@ -5,7 +7,11 @@ export const AUTH_SESSION_COOKIE = "standard-reader-auth.session_token";
 export const DEFAULT_SETTINGS = {
   overlayEnabled: true,
   bskyBadgesEnabled: true,
-} as const;
+  readerVoice: "auto",
+} as const satisfies Pick<
+  ExtensionSettings,
+  "overlayEnabled" | "bskyBadgesEnabled" | "readerVoice"
+>;
 
 /** Loopback default for local dev (`pnpm extension:dev`). */
 export const DEFAULT_API_ORIGIN = "http://127.0.0.1:3000";
@@ -50,6 +56,7 @@ export async function loadSettings(): Promise<ExtensionSettings> {
   const stored = await browser.storage.sync.get([
     "overlayEnabled",
     "bskyBadgesEnabled",
+    "readerVoice",
     "apiOrigin",
   ]);
   return {
@@ -61,6 +68,7 @@ export async function loadSettings(): Promise<ExtensionSettings> {
       stored.bskyBadgesEnabled,
       DEFAULT_SETTINGS.bskyBadgesEnabled,
     ),
+    readerVoice: parseReaderVoicePreference(stored.readerVoice),
     apiOrigin:
       typeof stored.apiOrigin === "string" ? stored.apiOrigin : undefined,
   };

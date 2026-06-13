@@ -135,7 +135,7 @@ export function PopupArticle({
 
   return (
     <Flex direction="column" style={styles.content}>
-      <Flex direction="column" gap="4xl" align="center">
+      <Flex direction="column" gap="4xl" align="stretch">
         <Flex direction="column" gap="xxs">
           <h2 {...stylex.props(styles.title)}>{result.title}</h2>
 

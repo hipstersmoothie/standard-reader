@@ -42,6 +42,7 @@ import {
   clearResolveCache,
   getCachedResolve,
   invalidateResolveCache,
+  patchResolveCacheBookmark,
   resolveBatchWithCache,
   resolveWithCache,
 } from "../lib/resolve-cache";
@@ -461,8 +462,8 @@ async function handleBookmark(
 
   try {
     await fetchBookmark(documentUri, save);
+    if (resolveUrl) await patchResolveCacheBookmark(resolveUrl, save);
     if (tabUrl) await invalidateResolveCache(tabUrl);
-    if (resolveUrl) await invalidateResolveCache(resolveUrl);
     await refreshActiveTabSnapshot(tabUrl ?? undefined);
   } catch (error) {
     if (error instanceof Error && error.message === "unauthorized" && save) {
@@ -602,9 +603,10 @@ async function handleMessage(request: BgRequest): Promise<BgResponse> {
       }
       case "readerPlay": {
         await ensureOffscreenDocument();
-        const narration = await fetchNarration(request.documentUri).catch(
-          () => null,
-        );
+        const [settings, narration] = await Promise.all([
+          loadSettings(),
+          fetchNarration(request.documentUri).catch(() => null),
+        ]);
 
         // When the index has no full body (or no narration at all), read the
         // live page instead — whichever source has more text wins. Page text
@@ -629,6 +631,7 @@ async function handleMessage(request: BgRequest): Promise<BgResponse> {
           title: narration?.title ?? request.title,
           author: narration?.author ?? null,
           text,
+          voicePreference: settings.readerVoice,
         });
         return { ok: true, data: { ok: true } };
       }

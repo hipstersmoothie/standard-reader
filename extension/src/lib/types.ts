@@ -1,3 +1,5 @@
+import type { ReaderVoicePreference } from "#/lib/reader-voice";
+
 export type ExtensionPublicationTheme = {
   themeBackground: string | null;
   themeForeground: string | null;
@@ -84,5 +86,6 @@ export type ExtensionSessionResponse = {
 export type ExtensionSettings = {
   overlayEnabled: boolean;
   bskyBadgesEnabled: boolean;
+  readerVoice: ReaderVoicePreference;
   apiOrigin?: string;
 };
