@@ -334,10 +334,9 @@ const styles = stylex.create({
     backgroundColor: uiColor.bg,
     columnGap: gap.lg,
     display: { [DESKTOP]: "none", default: "grid" },
+    flexShrink: 0,
     gridTemplateColumns: `${size.lg} 1fr ${size.lg}`,
     justifyContent: "space-between",
-    position: "sticky",
-    zIndex: 30,
     borderBottomColor: uiColor.border1,
     borderBottomStyle: "solid",
     borderBottomWidth: 1,
@@ -345,7 +344,6 @@ const styles = stylex.create({
     paddingLeft: horizontalSpace["3xl"],
     paddingRight: horizontalSpace["3xl"],
     paddingTop: verticalSpace.xl,
-    top: 0,
   },
   mobileDetailTitle: {
     color: uiColor.text2,
@@ -377,15 +375,16 @@ const styles = stylex.create({
     flexGrow: "1",
     flexShrink: "1",
     minHeight: 0,
+    minWidth: 0,
+    overflowX: "clip",
     overflowY: "auto",
   },
   mobileBar: {
     alignItems: "center",
     backgroundColor: uiColor.bg,
     display: { [DESKTOP]: "none", default: "flex" },
+    flexShrink: 0,
     justifyContent: "space-between",
-    position: "sticky",
-    zIndex: 30,
     borderBottomColor: uiColor.border1,
     borderBottomStyle: "solid",
     borderBottomWidth: 1,
@@ -393,7 +392,6 @@ const styles = stylex.create({
     paddingLeft: horizontalSpace["3xl"],
     paddingRight: horizontalSpace["3xl"],
     paddingTop: verticalSpace.xl,
-    top: 0,
   },
   mobileBarActions: {
     alignItems: "center",
@@ -1058,22 +1056,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </aside>
 
         <main {...stylex.props(styles.main)}>
-          {staticPageTitle ? (
-            <MobileStaticPageBar title={staticPageTitle} />
-          ) : (
-            <Flex align="center" justify="between" style={styles.mobileBar}>
-              <Brand />
-              <div {...stylex.props(styles.mobileBarActions)}>
-                <SubscriptionsSwitcher
-                  count={following.length}
-                  onPress={() => setSubsSheetOpen(true)}
-                />
-                <NavbarAuth />
-              </div>
-            </Flex>
-          )}
-
           <div {...stylex.props(styles.scroller)} data-app-scroller>
+            {staticPageTitle ? (
+              <MobileStaticPageBar title={staticPageTitle} />
+            ) : (
+              <Flex align="center" justify="between" style={styles.mobileBar}>
+                <Brand />
+                <div {...stylex.props(styles.mobileBarActions)}>
+                  <SubscriptionsSwitcher
+                    count={following.length}
+                    onPress={() => setSubsSheetOpen(true)}
+                  />
+                  <NavbarAuth />
+                </div>
+              </Flex>
+            )}
+
             {children}
             <SiteFooter />
           </div>

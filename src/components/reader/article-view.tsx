@@ -83,33 +83,57 @@ import { ReaderWordHighlighter } from "./reader-word-highlighter";
 import { useArticleBookmark } from "./use-article-bookmark";
 import { useArticleRecommend } from "./use-article-recommend";
 
-function scrollProgress(el: HTMLElement): number {
-  const max = el.scrollHeight - el.clientHeight;
-  return max > 0 ? Math.min(1, el.scrollTop / max) : 0;
+/** Reading progress for article content within the app-shell scroller. */
+function articleReadingProgress(
+  scroller: HTMLElement,
+  content: HTMLElement,
+): number {
+  const viewport = scroller.clientHeight;
+  const contentTop =
+    content.getBoundingClientRect().top -
+    scroller.getBoundingClientRect().top +
+    scroller.scrollTop;
+  const contentBottom = contentTop + content.offsetHeight;
+  const startScroll = contentTop;
+  const endScroll = Math.max(contentBottom - viewport, startScroll);
+  const range = endScroll - startScroll;
+  if (range <= 0) {
+    return scroller.scrollTop >= startScroll ? 1 : 0;
+  }
+  return Math.min(1, Math.max(0, (scroller.scrollTop - startScroll) / range));
 }
 
-/** Prefer the article body scroller; fall back to the app-shell scroller. */
-function articleScrollTargets(anchor: HTMLElement): Array<HTMLElement> {
+/** App-shell scroller that carries article pages (and the site footer). */
+function articleScrollContainer(anchor: HTMLElement): HTMLElement | null {
   const outer = anchor.closest("[data-app-scroller]");
-  return outer instanceof HTMLElement ? [anchor, outer] : [anchor];
+  return outer instanceof HTMLElement ? outer : null;
 }
 
 const styles = stylex.create({
   root: {
-    overflow: "hidden",
-    display: "flex",
-    flexBasis: "0%",
-    flexDirection: "column",
-    flexGrow: 1,
-    flexShrink: 1,
-    minHeight: 0,
-
     "--current-word-highlight-background-color": primaryColor.solid1,
     "--current-word-highlight-color": primaryColor.textContrast,
+    boxSizing: "border-box",
+    maxWidth: "100%",
+    minWidth: 0,
+    overflowX: "clip",
+    // The floating bottom-nav pill overlays the app scroller on mobile, so
+    // reserve room for trailing content; the nav is hidden at desktop widths.
+    paddingBottom: {
+      default: `calc(env(safe-area-inset-bottom, 0px) + ${spacing["28"]})`,
+      "@media (min-width: 60rem)": 0,
+    },
+  },
+  // The floating page-reader bar overlays the scroller on every width while a
+  // document is playing, so reserve extra room for trailing content.
+  rootReader: {
+    paddingBottom: {
+      default: `calc(env(safe-area-inset-bottom, 0px) + ${spacing["40"]})`,
+      "@media (min-width: 60rem)": spacing["28"],
+    },
   },
   stickyChrome: {
     backgroundColor: `color-mix(in oklch, ${uiColor.bg} 95%, transparent)`,
-    flexShrink: 0,
     position: "sticky",
     zIndex: 20,
     top: 0,
@@ -139,30 +163,6 @@ const styles = stylex.create({
       "@media (min-width: 40rem)": spacing["5"],
     },
     paddingTop: spacing["3"],
-  },
-  scrollBody: {
-    flexBasis: "0%",
-    flexGrow: 1,
-    flexShrink: 1,
-    minHeight: 0,
-    overflowY: "auto",
-    // The app shell's floating bottom-nav pill overlays this (own) scroller on
-    // mobile, so reserve room (plus the safe-area inset) for trailing content;
-    // the nav is hidden at desktop widths, so drop it there.
-    paddingBottom: {
-      default: `calc(env(safe-area-inset-bottom, 0px) + ${spacing["28"]})`,
-      "@media (min-width: 60rem)": 0,
-    },
-  },
-  // The floating page-reader bar overlays this scroller on every width while a
-  // document is playing, so reserve extra room for trailing content (footer /
-  // "more from"). On desktop the bottom-nav padding above is 0, so this is what
-  // clears the bar.
-  scrollBodyReader: {
-    paddingBottom: {
-      default: `calc(env(safe-area-inset-bottom, 0px) + ${spacing["40"]})`,
-      "@media (min-width: 60rem)": spacing["28"],
-    },
   },
   progressTrack: {
     backgroundColor: uiColor.component2,
@@ -233,6 +233,8 @@ const styles = stylex.create({
     boxSizing: "border-box",
     marginLeft: "auto",
     marginRight: "auto",
+    maxWidth: "100%",
+    minWidth: 0,
     paddingBottom: spacing["24"],
     paddingLeft: spacing["6"],
     paddingRight: spacing["6"],
@@ -277,10 +279,14 @@ const styles = stylex.create({
   },
   byline: {
     alignItems: "center",
+    boxSizing: "border-box",
     columnGap: gap.lg,
     display: "flex",
     justifyContent: "center",
+    maxWidth: "100%",
+    minWidth: 0,
     rowGap: gap.lg,
+    width: "100%",
     borderBottomColor: uiColor.border1,
     borderBottomStyle: "solid",
     borderBottomWidth: 1,
@@ -294,7 +300,11 @@ const styles = stylex.create({
   bylineWho: {
     gap: gap.sm,
     display: "flex",
+    flexBasis: "0%",
     flexDirection: "column",
+    flexGrow: 1,
+    flexShrink: 1,
+    minWidth: 0,
     textAlign: "left",
   },
   bylineName: {
@@ -302,15 +312,25 @@ const styles = stylex.create({
     alignItems: "center",
     color: uiColor.text2,
     display: "flex",
+    flexWrap: "wrap",
     fontFamily: fontFamily.serif,
     fontSize: fontSize.base,
     fontWeight: fontWeight.semibold,
+    maxWidth: "100%",
+    minWidth: 0,
   },
   bylineNameLink: {
     textDecoration: { default: "none", ":hover": "underline" },
     color: "inherit",
+    minWidth: 0,
     textDecorationColor: "currentColor",
     textUnderlineOffset: "2px",
+  },
+  bylineHandleLink: {
+    overflow: "hidden",
+    maxWidth: "100%",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
   },
   bylineMeta: {
     color: uiColor.text1,
@@ -603,7 +623,7 @@ function ArticleViewBody({
   const router = useRouter();
   const { active: readerActive } = usePageReader();
   const { preference: readingTypography } = useReadingTypography();
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
   const articleRef = useRef<HTMLElement>(null);
   const [progress, setProgress] = useState(0);
   const pub = article.publication;
@@ -662,53 +682,37 @@ function ArticleViewBody({
   ]);
 
   useLayoutEffect(() => {
-    const anchor = scrollRef.current;
-
+    const anchor = rootRef.current;
     if (!anchor) return;
 
-    const targets = articleScrollTargets(anchor);
+    const scroller = articleScrollContainer(anchor);
+    if (!scroller) return;
 
-    const sync = (source?: HTMLElement) => {
-      if (source) {
-        setProgress(scrollProgress(source));
-        return;
-      }
-      const active =
-        targets.find((el) => el.scrollTop > 0) ??
-        targets.find((el) => el.scrollHeight > el.clientHeight) ??
-        anchor;
-      setProgress(scrollProgress(active));
+    const sync = () => {
+      setProgress(articleReadingProgress(scroller, anchor));
     };
 
-    for (const el of targets) {
-      if (!sharedQuote?.trim()) {
-        el.scrollTop = 0;
-      }
+    if (!sharedQuote?.trim()) {
+      scroller.scrollTop = 0;
     }
     sync();
 
-    const onScroll = (event: Event) => {
-      if (event.currentTarget instanceof HTMLElement) {
-        sync(event.currentTarget);
-      }
-    };
-
-    for (const el of targets) {
-      el.addEventListener("scroll", onScroll, { passive: true });
-    }
+    scroller.addEventListener("scroll", sync, { passive: true });
     const resizeObserver = new ResizeObserver(() => sync());
     resizeObserver.observe(anchor);
+    resizeObserver.observe(scroller);
 
     return () => {
-      for (const el of targets) {
-        el.removeEventListener("scroll", onScroll);
-      }
+      scroller.removeEventListener("scroll", sync);
       resizeObserver.disconnect();
     };
   }, [article.uri, sharedQuote]);
 
   return (
-    <div {...stylex.props(styles.root)}>
+    <div
+      ref={rootRef}
+      {...stylex.props(styles.root, readerActive && styles.rootReader)}
+    >
       <div {...stylex.props(styles.stickyChrome)}>
         <div {...stylex.props(styles.topBar)}>
           <div {...stylex.props(styles.topLeft)}>
@@ -785,160 +789,152 @@ function ArticleViewBody({
         <ReaderProgress progress={progress} />
       </div>
 
-      <div
-        ref={scrollRef}
+      <ReaderWordHighlighter rootRef={articleRef} articleUri={article.uri} />
+      <article
+        ref={articleRef}
         {...stylex.props(
-          styles.scrollBody,
-          readerActive && styles.scrollBodyReader,
+          styles.article,
+          articleMeasureStyle(readingTypography),
         )}
       >
-        <ReaderWordHighlighter rootRef={articleRef} articleUri={article.uri} />
-        <article
-          ref={articleRef}
-          {...stylex.props(
-            styles.article,
-            articleMeasureStyle(readingTypography),
-          )}
-        >
-          {topic ? (
-            <div {...stylex.props(styles.kicker)}>
-              <Kicker>
-                <Topic name={topic} />
-              </Kicker>
-            </div>
-          ) : null}
-
-          <h1 {...stylex.props(styles.title)}>{article.title}</h1>
-
-          {article.description ? (
-            // Pckt deks are body excerpts: keep them out of narration alignment
-            // so the first body sentence highlights in the body, not the dek.
-            <p
-              {...stylex.props(styles.dek)}
-              data-reader-skip={
-                articleDescriptionIsBodyExcerpt(article) ? true : undefined
-              }
-            >
-              {article.description}
-            </p>
-          ) : null}
-
-          <div {...stylex.props(styles.byline)}>
-            <Avatar
-              size="lg"
-              src={authorAvatarUrl(article) ?? undefined}
-              fallback={initials(authorName)}
-              alt={authorName}
-            />
-            <div {...stylex.props(styles.bylineWho)}>
-              <div {...stylex.props(styles.bylineName)}>
-                {bylineDid ? (
-                  <Link
-                    to="/u/$did"
-                    params={{ did: bylineDid }}
-                    {...stylex.props(styles.bylineNameLink)}
-                  >
-                    {authorName}
-                  </Link>
-                ) : (
-                  authorName
-                )}
-
-                {showHandle && bylineDid ? (
-                  <Link
-                    to="/u/$did"
-                    params={{ did: bylineDid }}
-                    {...stylex.props(styles.bylineNameLink)}
-                  >
-                    <Handle>@{handle}</Handle>
-                  </Link>
-                ) : showHandle ? (
-                  <Handle>@{handle}</Handle>
-                ) : null}
-              </div>
-              <Flex align="center" gap="md" wrap style={styles.bylineMeta}>
-                <span>
-                  {date}
-                  {readingLabel ? ` · ${readingLabel}` : null}
-                  {readStats ? ` · ${readStats}` : null}
-                </span>
-                {hasEngagement ? (
-                  <>
-                    <span aria-hidden>·</span>
-                    <ArticleEngagement
-                      recommendCount={article.recommendCount}
-                      commentCount={article.commentCount}
-                      size="sm"
-                    />
-                  </>
-                ) : null}
-              </Flex>
-            </div>
+        {topic ? (
+          <div {...stylex.props(styles.kicker)}>
+            <Kicker>
+              <Topic name={topic} />
+            </Kicker>
           </div>
+        ) : null}
 
-          {article.coverImageUrl ? (
-            <div {...stylex.props(styles.hero)}>
-              <img
-                src={article.coverImageUrl}
-                alt=""
-                referrerPolicy="no-referrer"
-                {...stylex.props(styles.heroImg)}
-              />
+        <h1 {...stylex.props(styles.title)}>{article.title}</h1>
+
+        {article.description ? (
+          // Pckt deks are body excerpts: keep them out of narration alignment
+          // so the first body sentence highlights in the body, not the dek.
+          <p
+            {...stylex.props(styles.dek)}
+            data-reader-skip={
+              articleDescriptionIsBodyExcerpt(article) ? true : undefined
+            }
+          >
+            {article.description}
+          </p>
+        ) : null}
+
+        <div {...stylex.props(styles.byline)}>
+          <Avatar
+            size="lg"
+            src={authorAvatarUrl(article) ?? undefined}
+            fallback={initials(authorName)}
+            alt={authorName}
+          />
+          <div {...stylex.props(styles.bylineWho)}>
+            <div {...stylex.props(styles.bylineName)}>
+              {bylineDid ? (
+                <Link
+                  to="/u/$did"
+                  params={{ did: bylineDid }}
+                  {...stylex.props(styles.bylineNameLink)}
+                >
+                  {authorName}
+                </Link>
+              ) : (
+                authorName
+              )}
+
+              {showHandle && bylineDid ? (
+                <Link
+                  to="/u/$did"
+                  params={{ did: bylineDid }}
+                  {...stylex.props(
+                    styles.bylineNameLink,
+                    styles.bylineHandleLink,
+                  )}
+                >
+                  <Handle>@{handle}</Handle>
+                </Link>
+              ) : showHandle ? (
+                <Handle>@{handle}</Handle>
+              ) : null}
             </div>
-          ) : null}
+            <Flex align="center" gap="md" wrap style={styles.bylineMeta}>
+              <span>
+                {date}
+                {readingLabel ? ` · ${readingLabel}` : null}
+                {readStats ? ` · ${readStats}` : null}
+              </span>
+              {hasEngagement ? (
+                <>
+                  <span aria-hidden>·</span>
+                  <ArticleEngagement
+                    recommendCount={article.recommendCount}
+                    commentCount={article.commentCount}
+                    size="sm"
+                  />
+                </>
+              ) : null}
+            </Flex>
+          </div>
+        </div>
 
-          {linkParams ? (
-            <QuoteShareLayer article={article} sharedQuote={sharedQuote}>
-              <ArticleContent
-                article={article}
-                hasHero={Boolean(article.coverImageUrl)}
-              />
-            </QuoteShareLayer>
-          ) : (
+        {article.coverImageUrl ? (
+          <div {...stylex.props(styles.hero)}>
+            <img
+              src={article.coverImageUrl}
+              alt=""
+              referrerPolicy="no-referrer"
+              {...stylex.props(styles.heroImg)}
+            />
+          </div>
+        ) : null}
+
+        {linkParams ? (
+          <QuoteShareLayer article={article} sharedQuote={sharedQuote}>
             <ArticleContent
               article={article}
               hasHero={Boolean(article.coverImageUrl)}
             />
-          )}
-
-          <ArticleLikePrompt
-            recommended={recommended}
-            onToggle={toggleRecommend}
-            recommendCount={recommendCount}
+          </QuoteShareLayer>
+        ) : (
+          <ArticleContent
+            article={article}
+            hasHero={Boolean(article.coverImageUrl)}
           />
+        )}
 
-          {pub ? (
-            <div {...stylex.props(styles.foot)}>
-              <PublicationAvatar pub={pub} size="lg" />
-              <Flex direction="column" gap="xs" style={styles.footGrow}>
-                <PublicationNameLink
-                  publicationUri={article.publicationUri}
-                  url={pub.url}
-                  linkStyle={styles.footName}
-                >
-                  {pub.name}
-                </PublicationNameLink>
-                {article.publicationOwnerHandle && bylineDid ? (
-                  <AuthorProfileLink authorRef={bylineDid}>
-                    <Handle>@{article.publicationOwnerHandle}</Handle>
-                  </AuthorProfileLink>
-                ) : null}
-              </Flex>
-              {article.publicationUri ? (
-                <FollowButton
-                  publicationUri={article.publicationUri}
-                  signedIn={signedIn}
-                />
-              ) : null}
-            </div>
-          ) : null}
-        </article>
-
-        <ArticleBelowFold
-          article={article}
-          showComments={Boolean(linkParams)}
+        <ArticleLikePrompt
+          recommended={recommended}
+          onToggle={toggleRecommend}
+          recommendCount={recommendCount}
         />
-      </div>
+
+        {pub ? (
+          <div {...stylex.props(styles.foot)}>
+            <PublicationAvatar pub={pub} size="lg" />
+            <Flex direction="column" gap="xs" style={styles.footGrow}>
+              <PublicationNameLink
+                publicationUri={article.publicationUri}
+                url={pub.url}
+                linkStyle={styles.footName}
+              >
+                {pub.name}
+              </PublicationNameLink>
+              {article.publicationOwnerHandle && bylineDid ? (
+                <AuthorProfileLink authorRef={bylineDid}>
+                  <Handle>@{article.publicationOwnerHandle}</Handle>
+                </AuthorProfileLink>
+              ) : null}
+            </Flex>
+            {article.publicationUri ? (
+              <FollowButton
+                publicationUri={article.publicationUri}
+                signedIn={signedIn}
+              />
+            ) : null}
+          </div>
+        ) : null}
+      </article>
+
+      <ArticleBelowFold article={article} showComments={Boolean(linkParams)} />
     </div>
   );
 }
