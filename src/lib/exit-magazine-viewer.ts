@@ -7,7 +7,12 @@ type HistoryStack = Pick<RouterHistory, "back" | "go"> & {
   entries?: Array<{ pathname?: string }>;
 };
 
-/** Leave the magazine viewer, skipping the reader page when magazine-first is on. */
+export type MagazineExitTarget =
+  | { to: "/a/$did/$rkey"; params: { did: string; rkey: string } }
+  | { to: "/p/$did/$rkey"; params: { did: string; rkey: string } }
+  | { to: "/l/$did/$rkey"; params: { did: string; rkey: string } };
+
+/** Leave the magazine viewer with context-aware navigation. */
 export function exitMagazineViewer({
   history,
   canGoBack,
@@ -15,7 +20,8 @@ export function exitMagazineViewer({
   mode,
   did,
   rkey,
-  onFallback,
+  publicationParams,
+  onNavigate,
 }: {
   history: HistoryStack;
   canGoBack: boolean;
@@ -23,20 +29,37 @@ export function exitMagazineViewer({
   mode: "collection" | "list";
   did: string;
   rkey: string;
-  onFallback: () => void;
+  publicationParams: { did: string; rkey: string } | null;
+  onNavigate: (target: MagazineExitTarget) => void;
 }): void {
-  if (!canGoBack) {
-    onFallback();
+  if (mode === "collection") {
+    if (!canGoBack) {
+      if (publicationParams) {
+        onNavigate({ to: "/p/$did/$rkey", params: publicationParams });
+      } else {
+        onNavigate({ to: "/a/$did/$rkey", params: { did, rkey } });
+      }
+      return;
+    }
+
+    if (openInMagazine) {
+      const prev = history.entries?.[(history.index ?? 0) - 1];
+      if (prev?.pathname === collectionReaderPath(did, rkey)) {
+        history.go(-2);
+        return;
+      }
+      history.back();
+      return;
+    }
+
+    onNavigate({ to: "/a/$did/$rkey", params: { did, rkey } });
     return;
   }
 
-  if (openInMagazine && mode === "collection") {
-    const prev = history.entries?.[(history.index ?? 0) - 1];
-    if (prev?.pathname === collectionReaderPath(did, rkey)) {
-      history.go(-2);
-      return;
-    }
+  if (canGoBack) {
+    history.back();
+    return;
   }
 
-  history.back();
+  onNavigate({ to: "/l/$did/$rkey", params: { did, rkey } });
 }

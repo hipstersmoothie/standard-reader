@@ -27,6 +27,7 @@ import { prefetchCollectionMagazineArticles } from "../magazine/load-magazine-da
 
 const articleSearchSchema = z.object({
   q: z.string().optional(),
+  view: z.literal("reader").optional(),
 });
 
 async function resolveSharedQuote(
@@ -54,7 +55,7 @@ async function resolveSharedQuote(
 
 export const Route = createFileRoute("/_layout/a/$did/$rkey")({
   validateSearch: articleSearchSchema,
-  loaderDeps: ({ search }) => ({ q: search.q }),
+  loaderDeps: ({ search }) => ({ q: search.q, view: search.view }),
   loader: async ({ context, params, deps }) => {
     const uri = documentUriFromParams(params.did, params.rkey);
     const { queryClient } = context;
@@ -82,7 +83,8 @@ export const Route = createFileRoute("/_layout/a/$did/$rkey")({
       article?.collection &&
       openInMagazinePref.openInMagazine &&
       !openLinks.openExternally &&
-      !deps.q
+      !deps.q &&
+      deps.view !== "reader"
     ) {
       throw redirect({
         to: "/magazine/$did/$rkey",

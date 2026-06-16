@@ -2,7 +2,10 @@ import type { QueryClient } from "@tanstack/react-query";
 import type { ArticleDetail } from "#/integrations/tanstack-query/api-publication.functions";
 import type { CollectionEditorial } from "#/lib/collections/manifest";
 
-import { documentUriFromParams } from "#/components/reader/format";
+import {
+  documentUriFromParams,
+  publicationLinkParams,
+} from "#/components/reader/format";
 import { listApi } from "#/integrations/tanstack-query/api-lists.functions";
 import { publicationApi } from "#/integrations/tanstack-query/api-publication.functions";
 
@@ -20,6 +23,7 @@ export type MagazineLoaderData =
       mode: "collection";
       name: string;
       publicationName: string | null;
+      publicationParams: { did: string; rkey: string } | null;
       ownerHandle: string | null;
       editorial: CollectionEditorial | null;
       coverImageUrl: string | null;
@@ -83,6 +87,9 @@ export async function loadMagazineData(
       name:
         collectionDoc.title || collectionDoc.publication?.name || "Collection",
       publicationName: collectionDoc.publication?.name ?? null,
+      publicationParams: collectionDoc.publicationUri
+        ? publicationLinkParams(collectionDoc.publicationUri)
+        : null,
       ownerHandle: collectionDoc.publicationOwnerHandle,
       editorial: manifest.editorial ?? null,
       coverImageUrl: collectionDoc.coverImageUrl,

@@ -5,10 +5,11 @@ import {
   useRouter,
 } from "@tanstack/react-router";
 import { exitMagazineViewer } from "#/lib/exit-magazine-viewer";
+import { collectionReaderViewSearch } from "#/lib/open-collections-in-magazine";
 import { getPublicUrlClient } from "#/lib/public-url";
 import { siteSocialMeta } from "#/lib/site-metadata";
 import { useOpenCollectionsInMagazine } from "#/lib/use-open-collections-in-magazine";
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { z } from "zod";
 
 import { composeCollectionIssue, composeIssue } from "../magazine/compose";
@@ -62,14 +63,7 @@ function MagazineRoute() {
   const router = useRouter();
   const navigate = useNavigate();
   const canGoBack = useCanGoBack();
-  const { openInMagazine, rememberOpenInMagazine } =
-    useOpenCollectionsInMagazine();
-
-  useEffect(() => {
-    if (data.mode === "collection") {
-      rememberOpenInMagazine();
-    }
-  }, [data.mode, rememberOpenInMagazine]);
+  const { openInMagazine } = useOpenCollectionsInMagazine();
 
   const issue = useMemo(() => {
     if (data.mode === "collection") {
@@ -88,7 +82,11 @@ function MagazineRoute() {
 
   const openReader = () => {
     if (data.mode === "collection") {
-      void navigate({ to: "/a/$did/$rkey", params: { did, rkey } });
+      void navigate({
+        to: "/a/$did/$rkey",
+        params: { did, rkey },
+        search: collectionReaderViewSearch,
+      });
     } else {
       void navigate({ to: "/l/$did/$rkey", params: { did, rkey } });
     }
@@ -102,7 +100,11 @@ function MagazineRoute() {
       mode: data.mode,
       did,
       rkey,
-      onFallback: openReader,
+      publicationParams:
+        data.mode === "collection" ? data.publicationParams : null,
+      onNavigate: (target) => {
+        void navigate(target);
+      },
     });
   };
 
