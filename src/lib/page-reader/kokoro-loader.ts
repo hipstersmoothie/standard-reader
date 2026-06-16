@@ -1,5 +1,7 @@
 import type { KokoroTTS } from "kokoro-js";
 
+import "./readable-stream-polyfill";
+
 const MODEL_ID = "onnx-community/Kokoro-82M-v1.0-ONNX";
 
 /** Subset of the transformers progress payload we care about for the UI. */
