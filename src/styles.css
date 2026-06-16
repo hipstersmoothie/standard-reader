@@ -30,6 +30,27 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* App shell scroll lives in [data-app-scroller]; lock the document so home-screen
+   (standalone) launches don't rubber-band the whole page. */
+html:has([data-app-shell]) {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+html:has([data-app-shell]) body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+@media (display-mode: standalone) {
+  html:has([data-app-shell]) body {
+    position: fixed;
+    width: 100%;
+  }
+}
+
 /* Page-reader "current sentence" highlight (CSS Custom Highlight API).
    Highlight pseudo-elements only accept color/background-color and don't
    reliably resolve theme-token custom properties, so this uses a literal

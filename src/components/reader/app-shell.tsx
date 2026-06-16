@@ -93,6 +93,7 @@ const styles = stylex.create({
     borderRightWidth: 1,
     height: stylex.firstThatWorks("100dvh", "100vh"),
     overflowY: "auto",
+    overscrollBehavior: "contain",
     paddingLeft: horizontalSpace["3xl"],
     paddingRight: horizontalSpace["3xl"],
     paddingTop: verticalSpace["8xl"],
@@ -343,7 +344,7 @@ const styles = stylex.create({
     paddingBottom: verticalSpace.xl,
     paddingLeft: horizontalSpace["3xl"],
     paddingRight: horizontalSpace["3xl"],
-    paddingTop: verticalSpace.xl,
+    paddingTop: `calc(env(safe-area-inset-top, 0px) + ${verticalSpace.xl})`,
   },
   mobileDetailTitle: {
     color: uiColor.text2,
@@ -378,6 +379,7 @@ const styles = stylex.create({
     minWidth: 0,
     overflowX: "clip",
     overflowY: "auto",
+    overscrollBehavior: "none",
   },
   mobileBar: {
     alignItems: "center",
@@ -391,7 +393,7 @@ const styles = stylex.create({
     paddingBottom: verticalSpace.xl,
     paddingLeft: horizontalSpace["3xl"],
     paddingRight: horizontalSpace["3xl"],
-    paddingTop: verticalSpace.xl,
+    paddingTop: `calc(env(safe-area-inset-top, 0px) + ${verticalSpace.xl})`,
   },
   mobileBarActions: {
     alignItems: "center",
@@ -983,7 +985,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <PageReaderProvider>
-      <div {...stylex.props(styles.shell)}>
+      <div {...stylex.props(styles.shell)} data-app-shell>
         <aside {...stylex.props(styles.sidebar)}>
           <Brand style={styles.brandSidebar} />
           <nav {...stylex.props(styles.nav)}>
