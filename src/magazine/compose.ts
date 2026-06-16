@@ -86,6 +86,7 @@ export function composeIssue(
  */
 export function composeCollectionIssue(input: {
   name: string;
+  publicationName: string | null;
   ownerHandle: string | null;
   editorial: CollectionEditorial | null;
   coverImageUrl: string | null;
@@ -97,6 +98,7 @@ export function composeCollectionIssue(input: {
     no: "No. 1",
     sub: "app.standard-reader.collection",
     ownerHandle: input.ownerHandle,
+    publicationName: input.publicationName,
     editorial: input.editorial,
     coverImageUrl: input.coverImageUrl,
     theme: input.theme,

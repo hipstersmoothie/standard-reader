@@ -26,6 +26,8 @@ import { observe } from "#/server/observability/log";
 import { selectArticleCardsByUris } from "#/server/reader/queries";
 import { z } from "zod";
 
+import type { ArticleCard } from "./api-shapes";
+
 import { dbMiddleware } from "./db-middleware";
 
 /**
@@ -85,6 +87,8 @@ export interface CollectionCard {
   uri: string;
   did: string;
   rkey: string;
+  /** The publication this collection is published under (its `site` ref). */
+  publicationUri: string | null;
   title: string;
   itemCount: number;
   hasEditorial: boolean;
@@ -95,11 +99,23 @@ export interface CollectionEditItem {
   document: string;
   title: string;
   note: string | null;
+  /** Full card for a recognizable row; `null` if the document isn't indexed. */
+  card: ArticleCard | null;
+}
+
+export interface CollectionsPublicationSummary {
+  uri: string;
+  rkey: string;
+  name: string;
+  description: string | null;
+  theme: CollectionsTheme;
 }
 
 export interface CollectionForEdit {
   rkey: string;
   title: string;
+  /** The publication this collection is published under (its `site` ref). */
+  publicationUri: string | null;
   editorial: { title: string | null; body: string | null } | null;
   items: Array<CollectionEditItem>;
   /** Existing cover blob ref (to preserve on save) + a resolved preview URL. */
@@ -127,7 +143,7 @@ const putCollectionInput = z.object({
       body: z.string().trim().max(8000).optional(),
     })
     .optional(),
-  items: z.array(collectionItemInput).min(1).max(16),
+  items: z.array(collectionItemInput).min(1).max(42),
   /** A blob ref from `uploadCollectionCover` (or the existing one, to preserve it). */
   coverImage: z.record(z.string(), z.unknown()).nullish(),
   publishedAt: z.string().datetime().optional(),
@@ -212,6 +228,40 @@ async function findCollectionsPublication(
   );
 }
 
+function publicationFromRecord(
+  uri: string,
+  rkey: string,
+  value: Record<string, unknown>,
+): CollectionsPublicationSummary {
+  return {
+    uri,
+    rkey,
+    name: typeof value.name === "string" ? value.name : "Series",
+    description:
+      typeof value.description === "string" ? value.description : null,
+    theme: themeFromRecord(value),
+  };
+}
+
+/** Find a reader-collections publication by rkey. */
+async function findCollectionsPublicationByRkey(
+  client: Parameters<typeof listCollectionRecords>[0],
+  did: string,
+  rkey: string,
+) {
+  const records = await listCollectionRecords(
+    client,
+    did,
+    STANDARD_NSID.publication,
+  );
+  return records.find(
+    (r) =>
+      r.rkey === rkey &&
+      isRecord(r.value) &&
+      r.value.readerCollections === true,
+  );
+}
+
 const getCollectionsPublication = createServerFn({ method: "GET" }).handler(
   observe("collections.getPublication", async (_, span) => {
     const session = await getAtprotoSessionForRequest(getRequest());
@@ -224,7 +274,7 @@ const getCollectionsPublication = createServerFn({ method: "GET" }).handler(
     return {
       uri: found.uri,
       rkey: found.rkey,
-      name: typeof value.name === "string" ? value.name : "Collections",
+      name: typeof value.name === "string" ? value.name : "Series",
       description:
         typeof value.description === "string" ? value.description : null,
       theme: themeFromRecord(value),
@@ -265,6 +315,68 @@ const ensureCollectionsPublication = createServerFn({ method: "POST" })
     }),
   );
 
+/** Every publication the reader can publish a collection under. */
+const listCollectionsPublications = createServerFn({ method: "GET" }).handler(
+  observe("collections.listPublications", async (_, span) => {
+    const session = await getAtprotoSessionForRequest(getRequest());
+    if (!session) return [] satisfies Array<CollectionsPublicationSummary>;
+    span.set("did", session.did);
+
+    const records = await listCollectionRecords(
+      session.client,
+      session.did,
+      STANDARD_NSID.publication,
+    );
+    const publications = records
+      .filter(
+        (r): r is typeof r & { value: Record<string, unknown> } =>
+          isRecord(r.value) && r.value.readerCollections === true,
+      )
+      .map((r) => publicationFromRecord(r.uri, r.rkey, r.value));
+    span.set("count", publications.length);
+    return publications satisfies Array<CollectionsPublicationSummary>;
+  }),
+);
+
+/** Create a new, separate publication to publish collections under. */
+const createCollectionsPublication = createServerFn({ method: "POST" })
+  .inputValidator(ensurePublicationInput)
+  .handler(
+    observe("collections.createPublication", async ({ data }, span) => {
+      const session = await getAtprotoSessionForRequest(getRequest());
+      if (!session) throw new Error("Sign in to create collections.");
+      span.set("did", session.did);
+
+      const rkey = newCollectionRkey();
+      const { uri } = await putPublicationRecord(
+        session.client,
+        session.did,
+        rkey,
+        {
+          name: data.name,
+          url: getPublicUrl(),
+          description: data.description || undefined,
+          readerCollections: true,
+        },
+      );
+      await ensureTracked(session.did, "reader");
+      return {
+        uri,
+        rkey,
+        name: data.name,
+        description: data.description ?? null,
+        theme: {
+          background: null,
+          foreground: null,
+          accent: null,
+          accentForeground: null,
+          fontTitle: null,
+          fontBody: null,
+        },
+      } satisfies CollectionsPublicationSummary;
+    }),
+  );
+
 const getMyCollections = createServerFn({ method: "GET" }).handler(
   observe("collections.getMine", async (_, span) => {
     const session = await getAtprotoSessionForRequest(getRequest());
@@ -285,6 +397,8 @@ const getMyCollections = createServerFn({ method: "GET" }).handler(
         uri: record.uri,
         did: session.did,
         rkey: record.rkey,
+        publicationUri:
+          typeof record.value.site === "string" ? record.value.site : null,
         title:
           typeof record.value.title === "string"
             ? record.value.title
@@ -363,7 +477,7 @@ const getCollectionForEdit = createServerFn({ method: "GET" })
         schema,
         manifest.items.map((item) => item.document),
       );
-      const titleByUri = new Map(cards.map((card) => [card.uri, card.title]));
+      const cardByUri = new Map(cards.map((card) => [card.uri, card]));
 
       const coverImage = isRecord(value.coverImage)
         ? asJsonObject(value.coverImage)
@@ -371,17 +485,22 @@ const getCollectionForEdit = createServerFn({ method: "GET" })
       return {
         rkey: data.rkey,
         title: typeof value.title === "string" ? value.title : "",
+        publicationUri: typeof value.site === "string" ? value.site : null,
         editorial: manifest.editorial
           ? {
               title: manifest.editorial.title ?? null,
               body: manifest.editorial.body ?? null,
             }
           : null,
-        items: manifest.items.map((item) => ({
-          document: item.document,
-          title: titleByUri.get(item.document) ?? item.document,
-          note: item.note ?? null,
-        })),
+        items: manifest.items.map((item) => {
+          const card = cardByUri.get(item.document) ?? null;
+          return {
+            document: item.document,
+            title: card?.title ?? item.document,
+            note: item.note ?? null,
+            card,
+          };
+        }),
         coverImage,
         coverImageUrl: await resolveCoverUrl(session.did, coverImage),
       } satisfies CollectionForEdit;
@@ -468,6 +587,7 @@ const hexColor = z
   .optional();
 
 const putThemeInput = z.object({
+  publicationRkey: z.string().min(1),
   colors: z.object({
     background: hexColor,
     foreground: hexColor,
@@ -488,16 +608,17 @@ const putCollectionsTheme = createServerFn({ method: "POST" })
       if (!session) throw new Error("Sign in to theme collections.");
       span.set("did", session.did);
 
-      const existing = await findCollectionsPublication(
+      const existing = await findCollectionsPublicationByRkey(
         session.client,
         session.did,
+        data.publicationRkey,
       );
       if (!existing || !isRecord(existing.value)) {
-        throw new Error("Create a collection before theming.");
+        throw new Error("Publication not found.");
       }
       const value = existing.value;
       await putPublicationRecord(session.client, session.did, existing.rkey, {
-        name: typeof value.name === "string" ? value.name : "Collections",
+        name: typeof value.name === "string" ? value.name : "Series",
         url: typeof value.url === "string" ? value.url : getPublicUrl(),
         description:
           typeof value.description === "string" ? value.description : undefined,
@@ -516,6 +637,22 @@ function getCollectionsPublicationQueryOptions() {
     queryKey: ["reader", "collectionsPublication"] as const,
     queryFn: async () => getCollectionsPublication(),
     staleTime: 5 * 60_000,
+  });
+}
+
+function listCollectionsPublicationsQueryOptions() {
+  return queryOptions({
+    queryKey: ["reader", "collectionsPublications"] as const,
+    queryFn: async () => listCollectionsPublications(),
+    staleTime: 5 * 60_000,
+  });
+}
+
+function createCollectionsPublicationMutationOptions() {
+  return mutationOptions({
+    mutationKey: ["reader", "createCollectionsPublication"] as const,
+    mutationFn: async (input: z.input<typeof ensurePublicationInput>) =>
+      createCollectionsPublication({ data: input }),
   });
 }
 
@@ -575,6 +712,8 @@ function putCollectionsThemeMutationOptions() {
 
 export const collectionsApi = {
   getCollectionsPublication,
+  listCollectionsPublications,
+  createCollectionsPublication,
   getMyCollections,
   getCollectionForEdit,
   ensureCollectionsPublication,
@@ -583,6 +722,8 @@ export const collectionsApi = {
   putCollectionsTheme,
   uploadCollectionCover,
   getCollectionsPublicationQueryOptions,
+  listCollectionsPublicationsQueryOptions,
+  createCollectionsPublicationMutationOptions,
   getMyCollectionsQueryOptions,
   getCollectionForEditQueryOptions,
   ensureCollectionsPublicationMutationOptions,

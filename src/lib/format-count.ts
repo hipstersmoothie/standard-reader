@@ -8,3 +8,11 @@ const countFormatter = new Intl.NumberFormat("en-US", {
 export function formatCount(count: number): string {
   return countFormatter.format(count).replace("K", "k");
 }
+
+/**
+ * Sidebar unread badge — full count through 999, compact k from 1,000+.
+ */
+export function formatSidebarUnreadCount(count: number): string {
+  if (count < 1000) return String(count);
+  return formatCount(count);
+}

@@ -46,27 +46,25 @@ const searchSchema = z.object({
 export const Route = createFileRoute("/_layout/search")({
   validateSearch: searchSchema,
   loaderDeps: ({ search }) => ({ q: search.q?.trim() ?? "" }),
-  loader: async ({ context, deps }) => {
-    if (deps.q) {
-      await Promise.all([
-        context.queryClient.ensureQueryData(
-          searchApi.searchPublicationsQueryOptions({
-            q: deps.q,
-            limit: SEARCH_PAGE_SIZE,
-          }),
-        ),
-        context.queryClient.ensureInfiniteQueryData(
-          searchApi.searchArticlesInfiniteQueryOptions({
-            q: deps.q,
-            limit: SEARCH_PAGE_SIZE,
-          }),
-        ),
-      ]);
-    }
+  loader: ({ context, deps }) => {
+    if (!deps.q) return;
+
+    const publicationsOptions = searchApi.searchPublicationsQueryOptions({
+      q: deps.q,
+      limit: SEARCH_PAGE_SIZE,
+    });
+    const articlesOptions = searchApi.searchArticlesInfiniteQueryOptions({
+      q: deps.q,
+      limit: SEARCH_PAGE_SIZE,
+    });
+
+    void context.queryClient.prefetchQuery(publicationsOptions);
+    void context.queryClient.prefetchInfiniteQuery(articlesOptions);
   },
   head: () => ({
     meta: pageSocialMeta("search", getPublicUrlClient()),
   }),
+  pendingComponent: SearchPending,
   component: Search,
 });
 
@@ -197,30 +195,135 @@ function ArticleRowSkeleton({
   );
 }
 
-function SearchResultsSkeleton() {
+function SectionTitleSkeleton() {
+  return <Skeleton variant="rectangle" height={spacing["8"]} width="36%" />;
+}
+
+function PublicationResultsSkeleton({
+  isFirstSection = true,
+}: {
+  isFirstSection?: boolean;
+}) {
   return (
-    <>
-      <div {...stylex.props(styles.section, styles.sectionFirst)}>
-        <SectionHead kicker="Publications" title="Searching…" />
-        {Array.from({ length: SKELETON_ROWS }, (_, index) => (
-          <PubDirectoryRowSkeleton
-            key={index}
-            isFirstInSection={index === 0}
-            isLast={index === SKELETON_ROWS - 1}
-          />
-        ))}
+    <div
+      aria-busy="true"
+      aria-label="Loading publication matches"
+      {...stylex.props(styles.section, isFirstSection && styles.sectionFirst)}
+    >
+      <SectionHead kicker="Publications" title={<SectionTitleSkeleton />} />
+      {Array.from({ length: SKELETON_ROWS }, (_, index) => (
+        <PubDirectoryRowSkeleton
+          key={index}
+          isFirstInSection={index === 0}
+          isLast={index === SKELETON_ROWS - 1}
+        />
+      ))}
+    </div>
+  );
+}
+
+function ArticleResultsSkeleton({
+  isFirstSection = false,
+}: {
+  isFirstSection?: boolean;
+}) {
+  return (
+    <div
+      aria-busy="true"
+      aria-label="Loading article matches"
+      {...stylex.props(styles.section, isFirstSection && styles.sectionFirst)}
+    >
+      <SectionHead kicker="Articles" title={<SectionTitleSkeleton />} />
+      {Array.from({ length: SKELETON_ROWS }, (_, index) => (
+        <ArticleRowSkeleton
+          key={index}
+          isFirstInSection={index === 0}
+          isLast={index === SKELETON_ROWS - 1}
+        />
+      ))}
+    </div>
+  );
+}
+
+function SearchChrome({
+  input,
+  hint,
+  inputRef,
+  onInputChange,
+  onClear,
+  readOnly = false,
+}: {
+  input: string;
+  hint: string;
+  inputRef?: React.RefObject<HTMLInputElement | null>;
+  onInputChange?: (value: string) => void;
+  onClear?: () => void;
+  readOnly?: boolean;
+}) {
+  return (
+    <div {...stylex.props(styles.header)}>
+      <Kicker>Search the network</Kicker>
+      <div {...stylex.props(styles.searchField)}>
+        <SearchIcon
+          aria-hidden
+          size={28}
+          {...stylex.props(styles.searchIcon)}
+        />
+        <input
+          ref={inputRef}
+          type="text"
+          enterKeyHint="search"
+          autoComplete="off"
+          spellCheck={false}
+          value={input}
+          readOnly={readOnly}
+          onChange={
+            readOnly || !onInputChange
+              ? undefined
+              : (event) => onInputChange(event.target.value)
+          }
+          placeholder="Publications, handles, topics, headlines…"
+          aria-label="Search publications and articles"
+          {...stylex.props(styles.searchInput, styles.searchInputPlaceholder)}
+        />
+        {input && onClear ? (
+          <IconButton
+            label="Clear search"
+            size="sm"
+            variant="secondary"
+            onPress={onClear}
+          >
+            <X size={18} />
+          </IconButton>
+        ) : null}
       </div>
-      <div {...stylex.props(styles.section)}>
-        <SectionHead kicker="Articles" title="Searching…" />
-        {Array.from({ length: SKELETON_ROWS }, (_, index) => (
-          <ArticleRowSkeleton
-            key={index}
-            isFirstInSection={index === 0}
-            isLast={index === SKELETON_ROWS - 1}
-          />
-        ))}
-      </div>
-    </>
+      <p {...stylex.props(styles.hint)}>{hint}</p>
+    </div>
+  );
+}
+
+function SearchPending() {
+  const { q: urlQ = "" } = Route.useSearch();
+  const trimmedQ = urlQ.trim();
+
+  return (
+    <ReaderContent>
+      <SearchChrome
+        input={urlQ}
+        hint={
+          trimmedQ
+            ? "Searching…"
+            : 'Try "climate", "typography", or a handle like stdout.dev'
+        }
+        readOnly
+      />
+      {trimmedQ ? (
+        <div {...stylex.props(styles.results)}>
+          <PublicationResultsSkeleton />
+          <ArticleResultsSkeleton />
+        </div>
+      ) : null}
+    </ReaderContent>
   );
 }
 
@@ -296,12 +399,18 @@ function Search() {
   });
 
   useEffect(() => {
-    if (pubPage) {
+    setPublications([]);
+    setPubTotal(0);
+    setPubNextOffset(null);
+  }, [debouncedQ]);
+
+  useEffect(() => {
+    if (pubPage?.query === debouncedQ) {
       setPublications(pubPage.items);
       setPubTotal(pubPage.total);
       setPubNextOffset(pubPage.nextOffset);
     }
-  }, [pubPage]);
+  }, [debouncedQ, pubPage]);
 
   const articles = articlePages?.pages.flatMap((page) => page.items) ?? [];
   const articleTotal = articlePages?.pages[0]?.total ?? 0;
@@ -348,143 +457,135 @@ function Search() {
 
   const trimmedInput = input.trim();
   const hasQuery = debouncedQ.length > 0;
-  const hasResults = pubPage != null || articlePages != null;
-  const isSearching =
-    hasQuery &&
-    (trimmedInput !== debouncedQ ||
-      ((pubsFetching || articlesFetching) && !hasResults));
+  const inputPending = trimmedInput !== debouncedQ;
+  const pubsReady = pubPage?.query === debouncedQ;
+  const articlesReady = articlePages?.pages[0]?.query === debouncedQ;
+  const pubsPending = hasQuery && !pubsReady && (inputPending || pubsFetching);
+  const articlesPending =
+    hasQuery && !articlesReady && (inputPending || articlesFetching);
+  const resultsReady = hasQuery && pubsReady && articlesReady;
 
   const hint = hasQuery
-    ? isSearching
+    ? pubsPending || articlesPending
       ? "Searching…"
       : `${pubTotal} publication${pubTotal === 1 ? "" : "s"} · ${articleTotal} article${articleTotal === 1 ? "" : "s"}`
     : 'Try "climate", "typography", or a handle like stdout.dev';
 
   const showEmpty =
-    !isSearching &&
-    publications.length === 0 &&
-    articles.length === 0 &&
-    hasResults;
+    resultsReady && publications.length === 0 && articles.length === 0;
+  const showPublicationSection =
+    pubsPending || publications.length > 0 || pubTotal > 0;
+  const showArticleSection =
+    articlesPending || articles.length > 0 || articleTotal > 0;
+  const publicationSectionFirst = showPublicationSection;
+  const articleSectionFirst = !showPublicationSection && showArticleSection;
 
   return (
     <ReaderContent>
-      <div {...stylex.props(styles.header)}>
-        <Kicker>Search the network</Kicker>
-        <div {...stylex.props(styles.searchField)}>
-          <SearchIcon
-            aria-hidden
-            size={28}
-            {...stylex.props(styles.searchIcon)}
-          />
-          <input
-            ref={inputRef}
-            type="text"
-            enterKeyHint="search"
-            autoComplete="off"
-            spellCheck={false}
-            value={input}
-            onChange={(event) => setInput(event.target.value)}
-            placeholder="Publications, handles, topics, headlines…"
-            aria-label="Search publications and articles"
-            {...stylex.props(styles.searchInput, styles.searchInputPlaceholder)}
-          />
-          {input ? (
-            <IconButton
-              label="Clear search"
-              size="sm"
-              variant="secondary"
-              onPress={() => {
-                setInput("");
-                inputRef.current?.focus();
-              }}
-            >
-              <X size={18} />
-            </IconButton>
-          ) : null}
-        </div>
-        <p {...stylex.props(styles.hint)}>{hint}</p>
-      </div>
+      <SearchChrome
+        input={input}
+        hint={hint}
+        inputRef={inputRef}
+        onInputChange={setInput}
+        onClear={() => {
+          setInput("");
+          inputRef.current?.focus();
+        }}
+      />
 
       {hasQuery ? (
         <div {...stylex.props(styles.results)}>
-          {isSearching ? (
-            <SearchResultsSkeleton />
-          ) : (
-            <>
-              {publications.length > 0 || pubTotal > 0 ? (
-                <section {...stylex.props(styles.section, styles.sectionFirst)}>
-                  <SectionHead
-                    kicker="Publications"
-                    title={formatMatchCount(publications.length, pubTotal)}
+          {showPublicationSection ? (
+            pubsPending ? (
+              <PublicationResultsSkeleton
+                isFirstSection={publicationSectionFirst}
+              />
+            ) : (
+              <section
+                {...stylex.props(
+                  styles.section,
+                  publicationSectionFirst && styles.sectionFirst,
+                )}
+              >
+                <SectionHead
+                  kicker="Publications"
+                  title={formatMatchCount(publications.length, pubTotal)}
+                />
+                {publications.map((pub, index) => (
+                  <PubDirectoryRow
+                    key={pub.uri}
+                    pub={pub}
+                    isFirstInSection={index === 0}
+                    isLast={
+                      index === publications.length - 1 && pubNextOffset == null
+                    }
                   />
-                  {publications.map((pub, index) => (
-                    <PubDirectoryRow
-                      key={pub.uri}
-                      pub={pub}
-                      isFirstInSection={index === 0}
-                      isLast={
-                        index === publications.length - 1 &&
-                        pubNextOffset == null
-                      }
-                    />
-                  ))}
-                  {pubNextOffset == null ? null : (
-                    <div {...stylex.props(styles.loadMoreWrap)}>
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        isDisabled={loadingMorePubs}
-                        onPress={() => void loadMorePublications()}
-                      >
-                        {loadingMorePubs
-                          ? "Loading…"
-                          : `Load more (${pubTotal - publications.length} remaining)`}
-                      </Button>
-                    </div>
-                  )}
-                </section>
-              ) : null}
+                ))}
+                {pubNextOffset == null ? null : (
+                  <div {...stylex.props(styles.loadMoreWrap)}>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      isDisabled={loadingMorePubs}
+                      onPress={() => void loadMorePublications()}
+                    >
+                      {loadingMorePubs
+                        ? "Loading…"
+                        : `Load more (${pubTotal - publications.length} remaining)`}
+                    </Button>
+                  </div>
+                )}
+              </section>
+            )
+          ) : null}
 
-              {articles.length > 0 || articleTotal > 0 ? (
-                <section {...stylex.props(styles.section)}>
-                  <SectionHead
-                    kicker="Articles"
-                    title={formatMatchCount(articles.length, articleTotal)}
+          {showArticleSection ? (
+            articlesPending ? (
+              <ArticleResultsSkeleton isFirstSection={articleSectionFirst} />
+            ) : (
+              <section
+                {...stylex.props(
+                  styles.section,
+                  articleSectionFirst && styles.sectionFirst,
+                )}
+              >
+                <SectionHead
+                  kicker="Articles"
+                  title={formatMatchCount(articles.length, articleTotal)}
+                />
+                {articles.map((article, index) => (
+                  <ArticleRow
+                    key={article.uri}
+                    article={article}
+                    isFirstInSection={index === 0}
                   />
-                  {articles.map((article, index) => (
-                    <ArticleRow
-                      key={article.uri}
-                      article={article}
-                      isFirstInSection={index === 0}
-                    />
-                  ))}
-                  {isFetchingNextPage
-                    ? Array.from({ length: 2 }, (_, index) => (
-                        <ArticleRowSkeleton
-                          key={`loading-${index}`}
-                          isFirstInSection={false}
-                          isLast={index === 1 && !hasNextPage}
-                        />
-                      ))
-                    : null}
-                  {hasNextPage ? (
-                    <div
-                      ref={loadMoreArticlesRef}
-                      aria-hidden
-                      {...stylex.props(styles.loadSentinel)}
-                    />
-                  ) : null}
-                </section>
-              ) : null}
+                ))}
+                {isFetchingNextPage
+                  ? Array.from({ length: 2 }, (_, index) => (
+                      <ArticleRowSkeleton
+                        key={`loading-${index}`}
+                        isFirstInSection={false}
+                        isLast={index === 1 && !hasNextPage}
+                      />
+                    ))
+                  : null}
+                {hasNextPage ? (
+                  <div
+                    ref={loadMoreArticlesRef}
+                    aria-hidden
+                    {...stylex.props(styles.loadSentinel)}
+                  />
+                ) : null}
+              </section>
+            )
+          ) : null}
 
-              {showEmpty ? (
-                <p {...stylex.props(styles.emptyNote)}>
-                  Nothing matches &ldquo;{debouncedQ}&rdquo; — yet. The network
-                  is always growing.
-                </p>
-              ) : null}
-            </>
-          )}
+          {showEmpty ? (
+            <p {...stylex.props(styles.emptyNote)}>
+              Nothing matches &ldquo;{debouncedQ}&rdquo; — yet. The network is
+              always growing.
+            </p>
+          ) : null}
         </div>
       ) : null}
     </ReaderContent>

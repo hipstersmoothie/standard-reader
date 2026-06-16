@@ -2,9 +2,11 @@
 
 import * as stylex from "@stylexjs/stylex";
 import { bskyPostApiUrl, parseBskyPostRef } from "#/lib/leaflet/bsky";
+import { MagazineColorContext } from "#/magazine/context";
 import "bsky-react-post/theme.css";
 import { useTheme } from "#/lib/use-theme";
 import { Post, PostSkeleton } from "bsky-react-post";
+import { use } from "react";
 
 import { articleBodyStyles } from "../../body-styles";
 
@@ -13,7 +15,13 @@ export function BskyPostEmbedView({
 }: {
   postUri: string | undefined;
 }) {
+  const magazine = use(MagazineColorContext);
   const { resolvedScheme } = useTheme();
+  const colorScheme = magazine
+    ? magazine.dark
+      ? "dark"
+      : "light"
+    : resolvedScheme;
   if (!postUri) return null;
 
   const ref = parseBskyPostRef(postUri);
@@ -22,7 +30,8 @@ export function BskyPostEmbedView({
   return (
     <div
       {...stylex.props(articleBodyStyles.bskyPostEmbed)}
-      data-theme={resolvedScheme}
+      data-bsky-post-embed
+      data-theme={colorScheme}
     >
       <Post
         did={ref.did}

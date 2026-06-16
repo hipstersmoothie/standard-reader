@@ -3,6 +3,7 @@
 import * as stylex from "@stylexjs/stylex";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { AuthorProfileLink } from "#/components/reader/author-profile-link";
+import { formatSidebarUnreadCount } from "#/lib/format-count";
 import { ChevronRight, Compass, FolderPlus, Plus } from "lucide-react";
 import { Button as AriaButton } from "react-aria-components";
 
@@ -382,7 +383,7 @@ function SheetPubRow({
           {...stylex.props(styles.pubUnread)}
           aria-label={`${pub.unreadCount} unread`}
         >
-          {pub.unreadCount}
+          {formatSidebarUnreadCount(pub.unreadCount)}
         </span>
       ) : null}
       <ChevronRight aria-hidden size={16} {...stylex.props(styles.chevron)} />
@@ -417,7 +418,9 @@ function SheetListGroup({
           <span {...stylex.props(styles.groupName)}>{group.name}</span>
         )}
         <div {...stylex.props(styles.groupActions)}>
-          {unreadTotal > 0 ? <span>{unreadTotal}</span> : null}
+          {unreadTotal > 0 ? (
+            <span>{formatSidebarUnreadCount(unreadTotal)}</span>
+          ) : null}
           <DisclosureTitle
             style={styles.groupToggle}
             aria-label={`Toggle list ${group.name}`}

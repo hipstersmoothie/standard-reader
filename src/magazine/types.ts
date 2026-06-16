@@ -32,7 +32,9 @@ export interface MagIssue {
   sub: string;
   ownerHandle: string | null;
   features: Array<MagFeature>;
-  /** Collection-only: optional editorial intro spread (title and/or body). */
+  /** Collection-only: the owning publication's name, shown above the title. */
+  publicationName?: string | null;
+  /** Collection-only: optional editorial intro spread (markdown body). */
   editorial?: CollectionEditorial | null;
   /** Collection-only: the issue cover image. */
   coverImageUrl?: string | null;

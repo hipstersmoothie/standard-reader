@@ -6,7 +6,7 @@ import type {
 } from "react-aria-components";
 
 import * as stylex from "@stylexjs/stylex";
-import { use, useLayoutEffect, useRef } from "react";
+import { use, useCallback, useLayoutEffect, useRef } from "react";
 import {
   TextArea as AriaTextArea,
   TextField as AriaTextField,
@@ -32,6 +32,8 @@ import { useInputStyles } from "../theme/useInputStyles";
 const styles = stylex.create({
   wrapper: {
     height: "auto",
+  },
+  wrapperMinHeight: {
     minHeight: {
       ":is([data-size=lg])": sizeSpace["4xl"],
       ":is([data-size=md])": sizeSpace["3xl"],
@@ -86,6 +88,8 @@ export interface TextAreaProps
   autosize?: boolean;
   variant?: InputVariant;
   validationState?: InputValidationState;
+  /** Extra style merged onto the inner textarea (e.g. to flush its padding). */
+  inputStyle?: stylex.StyleXStyles;
 }
 
 export function TextArea({
@@ -93,6 +97,7 @@ export function TextArea({
   description,
   errorMessage,
   style,
+  inputStyle,
   size: sizeProp,
   prefix,
   suffix,
@@ -114,25 +119,20 @@ export function TextArea({
     validationState,
   });
 
+  // Grow to fit content; scrollHeight (padding + line box) is the only height.
+  const adjustHeight = useCallback(() => {
+    const textarea = textAreaRef.current;
+    if (!textarea || !autosize) return;
+    textarea.style.height = "auto";
+    textarea.style.height = `${textarea.scrollHeight}px`;
+  }, [autosize]);
+
   useLayoutEffect(() => {
     const textarea = textAreaRef.current;
     if (!textarea || !autosize) return;
 
-    const adjustHeight = () => {
-      // Reset height to auto to get accurate scrollHeight
-      textarea.style.height = "auto";
-      // Set height to scrollHeight, which will respect minHeight from styles
-      const newHeight = textarea.scrollHeight;
-      textarea.style.height = `${String(newHeight)}px`;
-    };
-
-    // Adjust height immediately
     adjustHeight();
-
-    // Listen for input events to adjust height dynamically
     textarea.addEventListener("input", adjustHeight);
-
-    // Also adjust on resize in case container size changes
     const resizeObserver = new ResizeObserver(adjustHeight);
     resizeObserver.observe(textarea);
 
@@ -140,21 +140,12 @@ export function TextArea({
       textarea.removeEventListener("input", adjustHeight);
       resizeObserver.disconnect();
     };
-  }, [autosize, props.value, props.defaultValue]);
+  }, [autosize, adjustHeight, props.value, props.defaultValue]);
 
-  // Handle onChange to trigger resize when value changes programmatically
+  // Handle onChange to trigger resize when value changes programmatically.
   const handleChange = (value: string) => {
     props.onChange?.(value);
-    // Trigger resize after value update
-    if (autosize && textAreaRef.current) {
-      requestAnimationFrame(() => {
-        const textarea = textAreaRef.current;
-        if (textarea) {
-          textarea.style.height = "auto";
-          textarea.style.height = `${String(textarea.scrollHeight)}px`;
-        }
-      });
-    }
+    if (autosize) requestAnimationFrame(adjustHeight);
   };
 
   return (
@@ -172,7 +163,11 @@ export function TextArea({
       */}
         {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
         <div
-          {...stylex.props(inputStyles.wrapper, styles.wrapper)}
+          {...stylex.props(
+            inputStyles.wrapper,
+            styles.wrapper,
+            !autosize && styles.wrapperMinHeight,
+          )}
           onClick={() => textAreaRef.current?.focus()}
           data-size={size}
         >
@@ -186,6 +181,7 @@ export function TextArea({
               styles.textarea,
               isResizable && !autosize && styles.resizable,
               autosize && styles.autosize,
+              inputStyle,
             )}
             ref={textAreaRef}
             placeholder={placeholder}

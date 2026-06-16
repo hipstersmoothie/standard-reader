@@ -5,24 +5,29 @@ import type { MagFeature, MagIssue, MagMeta } from "./types";
 
 import { MagMarkdown } from "./MagMarkdown";
 
-/** Collection editorial intro — a full spread after the cover. */
+/**
+ * Collection editorial intro — a full spread after the cover, rendered only when
+ * there's editorial body copy. Leads with the publication name + the collection
+ * title (there's no separate editorial title), then the editorial markdown.
+ */
 export function EditorialFlow({ issue }: { issue: MagIssue }) {
-  const { editorial } = issue;
-  if (!editorial?.title && !editorial?.body) return null;
+  const body = issue.editorial?.body;
+  if (!body) return null;
+  // A flowing block (like a feature body) — NOT a fixed `.flow-col` — so long
+  // editorial copy fragments across pages instead of overflowing one column.
+  // (It must not carry `.feature-body`: the measure pass indexes those by
+  // feature, which the editorial isn't.)
   return (
-    <section className="flow-col editorial">
-      <div className="kick">
-        <span>{issue.name}</span>
-        <span className="sep" />
-        <span>Editorial</span>
-      </div>
-      {editorial.title ? (
-        <h1 className="headline lg editorial-title">{editorial.title}</h1>
-      ) : null}
-      {editorial.body ? (
-        <MagMarkdown className="editorial-body">{editorial.body}</MagMarkdown>
-      ) : null}
-    </section>
+    <div className="editorial-spread">
+      <header className="opener">
+        {issue.publicationName ? (
+          <div className="editorial-pub">{issue.publicationName}</div>
+        ) : null}
+        <h1 className="headline lg editorial-title">{issue.name}</h1>
+        <hr className="opener-rule" />
+      </header>
+      <MagMarkdown className="editorial-body">{body}</MagMarkdown>
+    </div>
   );
 }
 
@@ -63,7 +68,12 @@ export function CoverFlow({
         ) : (
           <div aria-hidden />
         )}
-        <h1 className="cover-masthead">{issue.name}</h1>
+        <div className="cover-title-block">
+          {issue.publicationName ? (
+            <div className="cover-pub">{issue.publicationName}</div>
+          ) : null}
+          <h1 className="cover-masthead">{issue.name}</h1>
+        </div>
         <div className="cover-sub">
           {issue.sub}
           {issue.ownerHandle ? ` · @${issue.ownerHandle}` : ""}

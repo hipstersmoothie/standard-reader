@@ -5,6 +5,8 @@ import { infiniteQueryOptions, queryOptions } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { STANDARD_NSID } from "#/lib/atproto/nsids";
+import { parseInternalRoute } from "#/lib/internal-route";
+import { getPublicUrl } from "#/lib/public-url";
 import { withoutExcludedPublications } from "#/lib/publication/exclusions";
 import { blobCid, getBlobUrl } from "#/server/atproto/blob";
 import { resolveIdentity } from "#/server/atproto/identity";
@@ -49,7 +51,7 @@ const PUBLIC_APPVIEW = "https://public.api.bsky.app";
 const RESOLVE_TIMEOUT_MS = 5000;
 
 const searchPageInput = z.object({
-  q: z.string().trim().min(1).max(120),
+  q: z.string().trim().min(1).max(512),
   limit: z.number().int().min(1).max(50).default(20),
   offset: z.number().int().min(0).default(0),
 });
@@ -147,9 +149,11 @@ const searchArticles = createServerFn({ method: "GET" })
       await attachReaderSpanContext(span, getRequest());
 
       const tsq = sql`websearch_to_tsquery('english', ${data.q})`;
+      const hints = documentQueryHints(data.q);
+      const matchClause = documentMatchSql(d, pr, tsq, hints);
       const articleWhere = and(
         eq(d.deleted, false),
-        sql`${d.searchVector} @@ ${tsq}`,
+        matchClause,
         notExcludedPublicationArticleWhere(p),
       );
 
@@ -158,6 +162,7 @@ const searchArticles = createServerFn({ method: "GET" })
           .select({ count: sql<number>`count(*)::int` })
           .from(d)
           .leftJoin(p, eq(p.uri, d.publicationUri))
+          .leftJoin(pr, eq(pr.did, p.did))
           .where(articleWhere),
         db
           .select({
@@ -173,7 +178,10 @@ const searchArticles = createServerFn({ method: "GET" })
           .leftJoin(p, eq(p.uri, d.publicationUri))
           .leftJoin(pr, eq(pr.did, p.did))
           .where(articleWhere)
-          .orderBy(sql`ts_rank(${d.searchVector}, ${tsq}) desc`)
+          .orderBy(
+            sql`ts_rank(${d.searchVector}, ${tsq}) desc`,
+            desc(d.publishedAt),
+          )
           .limit(data.limit)
           .offset(data.offset),
       ]);
@@ -302,6 +310,98 @@ function publicationQueryHints(input: string): PublicationQueryHints {
     urlLike: null,
     handleLookup: normalizeHandle(trimmed),
   };
+}
+
+interface DocumentQueryHints {
+  /** Exact document at-URI to match (an at:// URI or a Standard Reader URL). */
+  uri: string | null;
+  /** Canonical-URL substring match for a general (external) article URL. */
+  canonicalLike: string | null;
+  /** Author/publication-owner handle to also match (e.g. `alice.bsky.social`). */
+  authorHandle: string | null;
+  /** Author DID to match the document author directly. */
+  authorDid: string | null;
+}
+
+const EMPTY_DOCUMENT_HINTS: DocumentQueryHints = {
+  uri: null,
+  canonicalLike: null,
+  authorHandle: null,
+  authorDid: null,
+};
+
+/** A bare handle/domain like `alice.bsky.social` (no scheme, no spaces). */
+const BARE_HANDLE = /^[a-z0-9-]+(?:\.[a-z0-9-]+)+$/i;
+
+/**
+ * Detect when an article query is a reference rather than free text. An
+ * `at://…/site.standard.document/…` URI or a Standard Reader `/a/$did/$rkey`
+ * URL resolves to an exact document at-URI; a profile URL, `@handle`, bare
+ * handle, or DID resolves to an author match (additive — still runs FTS); any
+ * other `http(s)` URL falls back to a canonical-URL substring match. Plain
+ * text returns no hints (FTS only).
+ */
+function documentQueryHints(input: string): DocumentQueryHints {
+  const trimmed = input.trim();
+
+  if (isDid(trimmed)) {
+    return { ...EMPTY_DOCUMENT_HINTS, authorDid: trimmed };
+  }
+
+  const route = parseInternalRoute(trimmed, getPublicUrl());
+  if (route?.to === "/a/$did/$rkey") {
+    return {
+      ...EMPTY_DOCUMENT_HINTS,
+      uri: `at://${route.params.did}/${STANDARD_NSID.document}/${route.params.rkey}`,
+    };
+  }
+  if (route?.to === "/u/$did") {
+    const ref = route.params.did;
+    return isDid(ref)
+      ? { ...EMPTY_DOCUMENT_HINTS, authorDid: ref }
+      : { ...EMPTY_DOCUMENT_HINTS, authorHandle: ref.toLowerCase() };
+  }
+
+  if (trimmed.startsWith("@") || BARE_HANDLE.test(trimmed)) {
+    return { ...EMPTY_DOCUMENT_HINTS, authorHandle: normalizeHandle(trimmed) };
+  }
+
+  if (/^https?:\/\//i.test(trimmed)) {
+    // Match on host + path so http/https and tracking params don't break it,
+    // mirroring the publication URL hints above.
+    const path = trimmed.replace(/^https?:\/\//i, "").split(/[?#]/)[0] ?? "";
+    return {
+      ...EMPTY_DOCUMENT_HINTS,
+      canonicalLike: path ? `%${path}%` : null,
+    };
+  }
+
+  return EMPTY_DOCUMENT_HINTS;
+}
+
+/**
+ * Build the article match clause from {@link documentQueryHints}: an exact
+ * record/URL reference matches alone, otherwise the FTS vector is OR-ed with
+ * any author handle/DID match so "alice.bsky.social" surfaces her articles
+ * alongside ordinary title/body hits.
+ */
+function documentMatchSql(
+  d: Schema["documents"],
+  pr: Schema["profiles"],
+  tsq: ReturnType<typeof sql>,
+  hints: DocumentQueryHints,
+) {
+  if (hints.uri) return eq(d.uri, hints.uri);
+  if (hints.canonicalLike) return ilike(d.canonicalUrl, hints.canonicalLike);
+
+  const parts = [sql`${d.searchVector} @@ ${tsq}`];
+  if (hints.authorHandle) {
+    parts.push(ilike(pr.handle, `%${hints.authorHandle}%`));
+  }
+  if (hints.authorDid) {
+    parts.push(eq(d.did, hints.authorDid));
+  }
+  return or(...parts) ?? sql`false`;
 }
 
 function publicationMatchSql(

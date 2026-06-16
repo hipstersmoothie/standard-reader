@@ -53,6 +53,7 @@ export const Route = createFileRoute("/magazine/$did/$rkey")({
       return {
         mode: "collection" as const,
         name: collectionDoc.title || collectionDoc.publication?.name || "Collection",
+        publicationName: collectionDoc.publication?.name ?? null,
         ownerHandle: collectionDoc.publicationOwnerHandle,
         editorial: manifest.editorial ?? null,
         coverImageUrl: collectionDoc.coverImageUrl,
@@ -120,6 +121,7 @@ function MagazineRoute() {
     if (data.mode === "collection") {
       return composeCollectionIssue({
         name: data.name,
+        publicationName: data.publicationName,
         ownerHandle: data.ownerHandle,
         editorial: data.editorial,
         coverImageUrl: data.coverImageUrl,

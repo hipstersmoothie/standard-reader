@@ -9,6 +9,7 @@ import {
   savedListsQueryOptions,
   sidebarQueryOptions,
 } from "#/integrations/tanstack-query/shell-queries";
+import { formatSidebarUnreadCount } from "#/lib/format-count";
 import { parseInternalRoute } from "#/lib/internal-route";
 import { PageReaderProvider } from "#/lib/page-reader/page-reader-provider";
 import {
@@ -567,7 +568,8 @@ function SidebarNavItem({
   label,
   icon,
   count,
-}: NavLink & { count?: number | null }) {
+  compactCount = false,
+}: NavLink & { count?: number | null; compactCount?: boolean }) {
   return (
     <Link
       to={to}
@@ -578,7 +580,9 @@ function SidebarNavItem({
       {icon}
       <span {...stylex.props(styles.navLabel)}>{label}</span>
       {count != null && count > 0 ? (
-        <span {...stylex.props(styles.count)}>{count}</span>
+        <span {...stylex.props(styles.count)}>
+          {compactCount ? formatSidebarUnreadCount(count) : count}
+        </span>
       ) : null}
     </Link>
   );
@@ -616,7 +620,7 @@ function FollowRow({ pub }: { pub: FollowingPublication }) {
         {...stylex.props(styles.followUnread)}
         aria-label={`${pub.unreadCount} unread`}
       >
-        {pub.unreadCount}
+        {formatSidebarUnreadCount(pub.unreadCount)}
       </span>
     ) : null;
   const content = (
@@ -711,7 +715,9 @@ function SidebarList({
           <span {...stylex.props(styles.listName)}>{name}</span>
         )}
         <div {...stylex.props(styles.sideLabelActions)}>
-          {unreadTotal > 0 ? <span>{unreadTotal}</span> : null}
+          {unreadTotal > 0 ? (
+            <span>{formatSidebarUnreadCount(unreadTotal)}</span>
+          ) : null}
           <DisclosureTitle
             style={styles.listToggle}
             chevronStyle={styles.headerIcon}
@@ -1008,6 +1014,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                       ? savedCount
                       : null
                 }
+                compactCount={item.to === "/latest"}
               />
             ))}
           </nav>

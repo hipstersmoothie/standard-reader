@@ -1,8 +1,14 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  buildMagazinePalette,
+  magazinePaletteCss,
+  themePrefersDark,
+} from "#/lib/collections/radix-theme";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { MagIssue } from "./types";
 
 import { CoverFlow, EditorialFlow, EndCardFlow, FeatureFlow } from "./flow";
+import { MagazineColorContext } from "./context";
 import { googleFontsHref, magazineThemeStyle } from "./theme-vars";
 
 const clamp = (v: number, lo: number, hi: number) =>
@@ -32,28 +38,73 @@ function sameImageUrl(a: string, b: string): boolean {
 
 const Icon = {
   prev: (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M15 18l-6-6 6-6" />
     </svg>
   ),
   next: (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M9 18l6-6-6-6" />
     </svg>
   ),
   close: (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M18 6L6 18M6 6l12 12" />
     </svg>
   ),
   sun: (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <circle cx="12" cy="12" r="4" />
       <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
     </svg>
   ),
   moon: (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />
     </svg>
   ),
@@ -96,6 +147,17 @@ interface Measure {
   featureCols: Array<number>;
 }
 
+/** Matches `.mag .click-zone { width: 14vw }` in magazine.css */
+const CLICK_ZONE_VW = 0.14;
+/** Ignore synthetic mouse events fired after touch (edge tap, swipe). */
+const POST_TOUCH_MOUSE_MS = 500;
+
+function isEdgeTap(clientX: number) {
+  const width = window.visualViewport?.width ?? window.innerWidth;
+  const edge = width * CLICK_ZONE_VW;
+  return clientX <= edge || clientX >= width - edge;
+}
+
 export function Magazine({
   issue,
   onExit,
@@ -104,6 +166,10 @@ export function Magazine({
   onExit: () => void;
 }) {
   const storageKey = `mag-slide:${issue.name}`;
+  const themePalette = useMemo(
+    () => buildMagazinePalette(issue.theme),
+    [issue.theme],
+  );
 
   const [mounted, setMounted] = useState(false);
   const [geom, setGeom] = useState<Geom>(() => readGeom());
@@ -138,7 +204,11 @@ export function Magazine({
     setMounted(true);
     setGeom(readGeom());
     setShowHint(!localStorage.getItem("mag-seen"));
-    setDark(localStorage.getItem("mag-dark") === "1");
+    // Default to the theme's own mode until the reader explicitly toggles.
+    const storedDark = localStorage.getItem("mag-dark");
+    setDark(
+      storedDark === null ? themePrefersDark(issue.theme) : storedDark === "1",
+    );
     const t = setTimeout(() => setAnimate(true), 80);
     return () => {
       html.style.overflow = prevHtml;
@@ -232,6 +302,8 @@ export function Magazine({
   }, [geom, issue]);
 
   // Re-measure after fonts + late images settle, and whenever geometry changes.
+  const themeFontTitle = issue.theme?.fontTitle;
+  const themeFontBody = issue.theme?.fontBody;
   useEffect(() => {
     setMeasure(null);
     let raf = 0;
@@ -244,6 +316,20 @@ export function Magazine({
     } else {
       schedule();
     }
+    // Custom Google fonts load lazily after their <link> is added, so
+    // `fonts.ready` can resolve before they arrive and pagination ends up
+    // measured with the fallback font. Explicitly load each theme font at the
+    // weights the magazine uses and re-measure once the real metrics are in.
+    const families = [themeFontTitle, themeFontBody].filter((f): f is string =>
+      Boolean(f),
+    );
+    if (typeof document !== "undefined" && document.fonts && families.length) {
+      void Promise.all(
+        families.map((family) =>
+          document.fonts.load(`1em "${family}"`).catch(() => []),
+        ),
+      ).then(runMeasure);
+    }
     for (const delay of [200, 600, 1500, 3000]) {
       passes.push(setTimeout(runMeasure, delay));
     }
@@ -253,7 +339,7 @@ export function Magazine({
       for (const p of passes) clearTimeout(p);
       window.removeEventListener("load", runMeasure);
     };
-  }, [runMeasure]);
+  }, [runMeasure, themeFontTitle, themeFontBody]);
 
   // A promoted cover changes the flow structure → re-measure once it lands.
   useEffect(() => {
@@ -319,22 +405,31 @@ export function Magazine({
     });
   }, []);
 
-  // Auto-hiding HUD — only on pointer or Tab, never on keyboard page turns.
+  // Auto-hiding HUD — pointer/tap or Tab, never on keyboard or swipe page turns.
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const suppressWakeUntil = useRef(0);
+  const lastTouchEnd = useRef(0);
+  const suppressWake = useCallback((ms = POST_TOUCH_MOUSE_MS) => {
+    suppressWakeUntil.current = Date.now() + ms;
+  }, []);
   const wake = useCallback(() => {
+    if (Date.now() < suppressWakeUntil.current) return;
     setChrome(true);
     if (hideTimer.current) clearTimeout(hideTimer.current);
     hideTimer.current = setTimeout(() => setChrome(false), 2800);
   }, []);
 
   useEffect(() => {
-    const onMove = () => wake();
-    const onTouch = () => wake();
+    const onMove = (e: MouseEvent) => {
+      const now = Date.now();
+      if (now - lastTouchEnd.current < POST_TOUCH_MOUSE_MS) return;
+      if (now < suppressWakeUntil.current) return;
+      if (isEdgeTap(e.clientX)) return;
+      wake();
+    };
     window.addEventListener("mousemove", onMove);
-    window.addEventListener("touchstart", onTouch, { passive: true });
     return () => {
       window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("touchstart", onTouch);
       if (hideTimer.current) clearTimeout(hideTimer.current);
     };
   }, [wake]);
@@ -419,170 +514,226 @@ export function Magazine({
   };
 
   const fontsHref = googleFontsHref(issue.theme);
+  const paletteCss = themePalette ? magazinePaletteCss(themePalette) : null;
 
   return (
-    <div
-      className={`mag ${dark ? "is-dark" : ""} ${issue.theme ? "is-themed" : ""}`}
-      style={magazineThemeStyle(issue.theme)}
-      onTouchStart={(e) => {
-        touchX.current = e.touches[0].clientX;
-      }}
-      onTouchEnd={(e) => {
-        if (touchX.current == null) return;
-        const dx = e.changedTouches[0].clientX - touchX.current;
-        if (Math.abs(dx) > 44) go(dx < 0 ? 1 : -1);
-        touchX.current = null;
-      }}
-    >
-      {fontsHref ? <link rel="stylesheet" href={fontsHref} /> : null}
-      <div className="progress" style={{ width: `${progress}%` }} />
-
-      <div className="mag-stage" style={stageStyle}>
-        {geom.spread && measure ? (
-          <div
-            className={`creases ${animate ? "animate" : ""}`}
-            aria-hidden
-            style={{
-              left: 0,
-              top: 0,
-              bottom: 0,
-              width: measure.columns * geom.pageW,
-              backgroundSize: `${2 * geom.pageW}px 100%`,
-              transform: `translateX(${-activeSlide * geom.perView * geom.pageW}px)`,
-            }}
-          />
-        ) : null}
-        <div
-          className={`mag-flow ${animate ? "animate" : ""} ${
-            geom.spread ? "spread" : "single"
-          }`}
-          ref={flowRef}
-          style={flowStyle}
-        >
-          {mounted ? (
-            <>
-              <CoverFlow issue={issue} onJump={jumpToFeature} />
-              <EditorialFlow issue={issue} />
-              {issue.features.map((feature, i) => (
-                <FeatureFlow
-                  key={feature.meta.id}
-                  feature={feature}
-                  coverImageUrl={effectiveCover(i)}
-                  ref={(el) => {
-                    featureRefs.current[i] = el;
-                  }}
-                />
-              ))}
-              <EndCardFlow issue={issue} />
-            </>
-          ) : null}
-        </div>
-      </div>
-
-      {measure === null ? (
-        <div className="building">
-          <div>
-            <div className="spin" />
-            Setting the issue…
-          </div>
-        </div>
-      ) : null}
-
-      {/* folios */}
-      {leftFolio ? (
-        <div className="folio left">
-          <span className="num">{String(leftFolio.num).padStart(2, "0")}</span>
-          <span className="tick" />
-          <span>{leftFolio.label}</span>
-        </div>
-      ) : null}
-      {rightFolio ? (
-        <div className="folio right">
-          <span>{rightFolio.label}</span>
-          <span className="tick" />
-          <span className="num">{String(rightFolio.num).padStart(2, "0")}</span>
-        </div>
-      ) : null}
-
-      <button className="click-zone prev" onClick={() => go(-1)} disabled={activeSlide <= 0} aria-label="Previous page" tabIndex={-1} />
-      <button className="click-zone next" onClick={() => go(1)} disabled={activeSlide >= maxSlide} aria-label="Next page" tabIndex={-1} />
-
-      <button className={`toc-btn ${chromeOn ? "show" : ""}`} onClick={() => setToc(true)}>
-        <span className="mk">S</span>
-        Contents
-      </button>
-
-      <button
-        className={`theme-btn ${chromeOn ? "show" : ""}`}
-        onClick={toggleDark}
-        aria-label={dark ? "Switch to light paper" : "Switch to dark paper"}
+    <MagazineColorContext value={{ dark }}>
+      <div
+        className={`mag ${dark ? "is-dark" : ""} ${issue.theme ? "is-themed" : ""}`}
+        style={magazineThemeStyle(issue.theme)}
+        onTouchStart={(e) => {
+          touchX.current = e.touches[0].clientX;
+        }}
+        onTouchEnd={(e) => {
+          lastTouchEnd.current = Date.now();
+          if (touchX.current == null) return;
+          const startX = touchX.current;
+          const dx = e.changedTouches[0].clientX - startX;
+          touchX.current = null;
+          if (Math.abs(dx) > 44) {
+            suppressWake();
+            go(dx < 0 ? 1 : -1);
+            return;
+          }
+          if (isEdgeTap(startX)) {
+            suppressWake();
+            return;
+          }
+          wake();
+        }}
       >
-        {dark ? Icon.sun : Icon.moon}
-      </button>
+        {fontsHref ? <link rel="stylesheet" href={fontsHref} /> : null}
+        {paletteCss ? (
+          // eslint-disable-next-line react/no-danger
+          <style dangerouslySetInnerHTML={{ __html: paletteCss }} />
+        ) : null}
+        <div className="progress" style={{ width: `${progress}%` }} />
 
-      <button className={`exit-btn ${chromeOn ? "show" : ""}`} onClick={onExit} aria-label="Close magazine">
-        {Icon.close}
-      </button>
-
-      {showHint ? (
-        <div className="hint">
-          <span>
-            <kbd>←</kbd> <kbd>→</kbd>
-          </span>
-          <span>turn the page</span>
-        </div>
-      ) : null}
-
-      <div className={`dock ${chromeOn ? "show" : ""}`}>
-        <button onClick={() => go(-1)} disabled={activeSlide <= 0} aria-label="Previous">
-          {Icon.prev}
-        </button>
-        <div className="pos">
-          <span className="ttl">{currentTitle}</span>
-          <span>
-            {activeSlide + 1} / {slideCount}
-          </span>
-        </div>
-        <button onClick={() => go(1)} disabled={activeSlide >= maxSlide} aria-label="Next">
-          {Icon.next}
-        </button>
-      </div>
-
-      <div className={`toc-scrim ${toc ? "open" : ""}`} onClick={() => setToc(false)} />
-      <nav className={`toc ${toc ? "open" : ""}`}>
-        <div className="toc-head">
-          <div className="iss">
-            {issue.name} &nbsp;·&nbsp; {issue.no}
+        <div className="mag-stage" style={stageStyle}>
+          {geom.spread && measure && measure.columns >= 2 ? (
+            <div
+              className={`creases ${animate ? "animate" : ""}`}
+              aria-hidden
+              style={{
+                left: 0,
+                top: 0,
+                bottom: 0,
+                // Only span full two-page spreads, so a trailing lone page (odd
+                // column count) doesn't get a crease through its blank facing page.
+                width: Math.floor(measure.columns / 2) * 2 * geom.pageW,
+                backgroundSize: `${2 * geom.pageW}px 100%`,
+                transform: `translateX(${-activeSlide * geom.perView * geom.pageW}px)`,
+              }}
+            />
+          ) : null}
+          <div
+            className={`mag-flow ${animate ? "animate" : ""} ${
+              geom.spread ? "spread" : "single"
+            }`}
+            ref={flowRef}
+            style={flowStyle}
+          >
+            {mounted ? (
+              <>
+                <CoverFlow issue={issue} onJump={jumpToFeature} />
+                <EditorialFlow issue={issue} />
+                {issue.features.map((feature, i) => (
+                  <FeatureFlow
+                    key={feature.meta.id}
+                    feature={feature}
+                    coverImageUrl={effectiveCover(i)}
+                    ref={(el) => {
+                      featureRefs.current[i] = el;
+                    }}
+                  />
+                ))}
+                <EndCardFlow issue={issue} />
+              </>
+            ) : null}
           </div>
-          <h2>Contents</h2>
-          <div className="sub">
-            {issue.sub} &nbsp;·&nbsp; {issue.features.length} features
-          </div>
         </div>
-        <div className="toc-list">
-          {issue.features.map((feature, i) => {
-            const col = measure?.featureCols[i] ?? 0;
-            const num = Math.max(1, col - firstFeatureCol + 1);
-            const active = featureForColumn(leftCol) === i;
-            return (
-              <button
-                key={feature.meta.id}
-                className={`toc-row ${active ? "on" : ""}`}
-                onClick={() => jumpToColumn(col)}
-              >
-                <span className="pg-n">{String(num).padStart(2, "0")}</span>
-                <span className="ti">
-                  <span className="k">
-                    {feature.meta.pubName} · {feature.meta.topic}
+
+        {measure === null ? (
+          <div className="building">
+            <div>
+              <div className="spin" />
+              Setting the issue…
+            </div>
+          </div>
+        ) : null}
+
+        {/* folios */}
+        {leftFolio ? (
+          <div className="folio left">
+            <span className="num">
+              {String(leftFolio.num).padStart(2, "0")}
+            </span>
+            <span className="tick" />
+            <span>{leftFolio.label}</span>
+          </div>
+        ) : null}
+        {rightFolio ? (
+          <div className="folio right">
+            <span>{rightFolio.label}</span>
+            <span className="tick" />
+            <span className="num">
+              {String(rightFolio.num).padStart(2, "0")}
+            </span>
+          </div>
+        ) : null}
+
+        <button
+          className="click-zone prev"
+          onPointerDown={() => suppressWake()}
+          onClick={() => go(-1)}
+          disabled={activeSlide <= 0}
+          aria-label="Previous page"
+          tabIndex={-1}
+        />
+        <button
+          className="click-zone next"
+          onPointerDown={() => suppressWake()}
+          onClick={() => go(1)}
+          disabled={activeSlide >= maxSlide}
+          aria-label="Next page"
+          tabIndex={-1}
+        />
+
+        <button
+          className={`toc-btn ${chromeOn ? "show" : ""}`}
+          onClick={() => setToc(true)}
+        >
+          <span className="mk">S</span>
+          Contents
+        </button>
+
+        <button
+          className={`theme-btn ${chromeOn ? "show" : ""}`}
+          onClick={toggleDark}
+          aria-label={dark ? "Switch to light paper" : "Switch to dark paper"}
+        >
+          {dark ? Icon.sun : Icon.moon}
+        </button>
+
+        <button
+          className={`exit-btn ${chromeOn ? "show" : ""}`}
+          onClick={onExit}
+          aria-label="Close magazine"
+        >
+          {Icon.close}
+        </button>
+
+        {showHint ? (
+          <div className="hint">
+            <span>
+              <kbd>←</kbd> <kbd>→</kbd>
+            </span>
+            <span>turn the page</span>
+          </div>
+        ) : null}
+
+        <div className={`dock ${chromeOn ? "show" : ""}`}>
+          <button
+            onClick={() => go(-1)}
+            disabled={activeSlide <= 0}
+            aria-label="Previous"
+          >
+            {Icon.prev}
+          </button>
+          <div className="pos">
+            <span className="ttl">{currentTitle}</span>
+            <span>
+              {activeSlide + 1} / {slideCount}
+            </span>
+          </div>
+          <button
+            onClick={() => go(1)}
+            disabled={activeSlide >= maxSlide}
+            aria-label="Next"
+          >
+            {Icon.next}
+          </button>
+        </div>
+
+        <div
+          className={`toc-scrim ${toc ? "open" : ""}`}
+          onClick={() => setToc(false)}
+        />
+        <nav className={`toc ${toc ? "open" : ""}`}>
+          <div className="toc-head">
+            <div className="iss">
+              {issue.name} &nbsp;·&nbsp; {issue.no}
+            </div>
+            <h2>Contents</h2>
+            <div className="sub">
+              {issue.sub} &nbsp;·&nbsp; {issue.features.length} features
+            </div>
+          </div>
+          <div className="toc-list">
+            {issue.features.map((feature, i) => {
+              const col = measure?.featureCols[i] ?? 0;
+              const num = Math.max(1, col - firstFeatureCol + 1);
+              const active = featureForColumn(leftCol) === i;
+              return (
+                <button
+                  key={feature.meta.id}
+                  className={`toc-row ${active ? "on" : ""}`}
+                  onClick={() => jumpToColumn(col)}
+                >
+                  <span className="pg-n">{String(num).padStart(2, "0")}</span>
+                  <span className="ti">
+                    <span className="k">
+                      {feature.meta.pubName} · {feature.meta.topic}
+                    </span>
+                    <span className="t">{feature.meta.title}</span>
                   </span>
-                  <span className="t">{feature.meta.title}</span>
-                </span>
-                <span className="mins">{feature.meta.minutes}m</span>
-              </button>
-            );
-          })}
-        </div>
-      </nav>
-    </div>
+                  <span className="mins">{feature.meta.minutes}m</span>
+                </button>
+              );
+            })}
+          </div>
+        </nav>
+      </div>
+    </MagazineColorContext>
   );
 }

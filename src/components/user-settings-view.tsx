@@ -518,6 +518,7 @@ export function UserSettingsView() {
             description="The voice used when you listen to an article with read aloud."
           >
             <Select
+              size="lg"
               aria-label="Reader voice"
               selectedKey={voice}
               style={styles.voiceSelect}

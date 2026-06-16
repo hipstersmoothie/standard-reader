@@ -176,20 +176,18 @@ export function DefaultColorEditor({
       {...props}
       style={[styles.defaultPicker, style]}
     >
-      {colorSpace === "hsb" ? (
-        <ColorArea
-          colorSpace={colorSpace}
-          xChannel="saturation"
-          yChannel="brightness"
-        />
-      ) : colorSpace === "hsl" ? (
+      {colorSpace === "hsl" ? (
         <ColorArea
           colorSpace={colorSpace}
           xChannel="hue"
           yChannel="saturation"
         />
       ) : (
-        <ColorArea colorSpace={colorSpace} xChannel="red" yChannel="green" />
+        <ColorArea
+          colorSpace="hsb"
+          xChannel="saturation"
+          yChannel="brightness"
+        />
       )}
 
       <Separator style={styles.separator} />
@@ -258,6 +256,7 @@ export function DefaultColorEditor({
             </>
           ) : (
             <>
+              <ColorSlider label="Hue" channel="hue" colorSpace="hsb" />
               <ColorSlider label="Red" channel="red" colorSpace={colorSpace} />
               <ColorSlider
                 label="Green"

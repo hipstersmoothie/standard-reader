@@ -44,6 +44,12 @@ function relativeLuminance({ r, g, b }: Rgb): number {
   );
 }
 
+/** Whether a hex color reads as "light" (used to route a theme bg to light/dark mode). */
+export function isLightColor(hex: string): boolean {
+  const rgb = hexToRgb(hex);
+  return rgb ? relativeLuminance(rgb) > 0.45 : true;
+}
+
 /** WCAG contrast ratio (1–21) between two hex colors; 0 if either is invalid. */
 export function contrastRatio(hexA: string, hexB: string): number {
   const a = hexToRgb(hexA);
