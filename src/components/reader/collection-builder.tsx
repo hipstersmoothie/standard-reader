@@ -64,6 +64,7 @@ import { MarkdownField } from "./markdown-field";
 import { Kicker, SectionHead } from "./primitives";
 
 const COLLECTIONS_QUERY_KEY = ["reader", "collections"] as const;
+const COLLECTION_EDIT_QUERY_KEY = ["reader", "collectionEdit"] as const;
 const MAX_ITEMS = 42;
 
 /** Centered, max-width inner container shared by the header and each band. */
@@ -724,8 +725,14 @@ export function CollectionBuilder({
       },
       {
         onSuccess: onSaved,
-        onSettled: () =>
-          queryClient.invalidateQueries({ queryKey: COLLECTIONS_QUERY_KEY }),
+        onSettled: () => {
+          void queryClient.invalidateQueries({ queryKey: COLLECTIONS_QUERY_KEY });
+          // The editor query now has a non-zero staleTime, so re-entering the
+          // builder after a save must drop the cached snapshot for this rkey.
+          void queryClient.invalidateQueries({
+            queryKey: COLLECTION_EDIT_QUERY_KEY,
+          });
+        },
       },
     );
   };

@@ -140,7 +140,9 @@ function sharedTargets(auth: PerfAuthMode): Array<PerfTarget> {
 
 /** Signed-in-only routes (no guest counterpart). */
 function signedInOnlyTargets(): Array<PerfTarget> {
-  return [
+  const fixtures = loadPerfFixtures();
+
+  const targets = [
     perfTarget({
       id: "saved",
       name: "Saved for later",
@@ -162,7 +164,29 @@ function signedInOnlyTargets(): Array<PerfTarget> {
       auth: "signed-in",
       budgetMs: 5000,
     }),
+    perfTarget({
+      id: "collections",
+      name: "Collections",
+      path: "/collections",
+      auth: "signed-in",
+      budgetMs: 5000,
+    }),
   ];
+
+  if (fixtures.collectionEditPath) {
+    targets.push(
+      perfTarget({
+        id: "collections.edit",
+        name: "Collection editor",
+        path: fixtures.collectionEditPath,
+        auth: "signed-in",
+        budgetMs: 5000,
+        required: false,
+      }),
+    );
+  }
+
+  return targets;
 }
 
 /** Guest-visible routes — always run in CI. */

@@ -560,6 +560,7 @@ const getCollectionForEdit = createServerFn({ method: "GET" })
         db,
         schema,
         manifest.items.map((item) => item.document),
+        { lite: true },
       );
       const cardByUri = new Map(cards.map((card) => [card.uri, card]));
 
@@ -606,6 +607,7 @@ const putCollection = createServerFn({ method: "POST" })
         db,
         schema,
         data.items.map((item) => item.document),
+        { lite: true },
       );
       const cardByUri = new Map(cards.map((card) => [card.uri, card]));
 
@@ -779,6 +781,7 @@ function getMyCollectionsQueryOptions() {
   return queryOptions({
     queryKey: ["reader", "collections"] as const,
     queryFn: async () => getMyCollections(),
+    staleTime: 5 * 60_000,
   });
 }
 
@@ -786,7 +789,7 @@ function getCollectionForEditQueryOptions(rkey: string) {
   return queryOptions({
     queryKey: ["reader", "collectionEdit", rkey] as const,
     queryFn: async () => getCollectionForEdit({ data: { rkey } }),
-    staleTime: 0,
+    staleTime: 5 * 60_000,
   });
 }
 

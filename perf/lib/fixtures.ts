@@ -4,6 +4,7 @@ import { parseAtUri } from "../../src/server/atproto/uri.ts";
 export interface PerfFixtures {
   articlePath: string | null;
   publicationPath: string | null;
+  collectionEditPath: string | null;
   tag: string;
   searchQuery: string;
 }
@@ -43,9 +44,17 @@ export function loadPerfFixtures(): PerfFixtures {
       ? `/a/${encodeURIComponent(process.env.PERF_TEST_ARTICLE_DID)}/${encodeURIComponent(process.env.PERF_TEST_ARTICLE_RKEY)}`
       : null);
 
+  const collectionRkey = process.env.PERF_TEST_COLLECTION_RKEY?.trim();
+  const collectionEditPath =
+    envPath("PERF_TEST_COLLECTION_EDIT_PATH") ??
+    (collectionRkey
+      ? `/collections/edit/${encodeURIComponent(collectionRkey)}`
+      : null);
+
   return {
     articlePath: resolvedArticle,
     publicationPath,
+    collectionEditPath,
     tag: process.env.PERF_TEST_TAG?.trim() || "observability",
     searchQuery: process.env.PERF_TEST_SEARCH_QUERY?.trim() || "reader",
   };

@@ -7,7 +7,6 @@ import { createServerFn } from "@tanstack/react-start";
 import { getCookie, getRequest, setCookie } from "@tanstack/react-start/server";
 import { revokeAtprotoSession } from "#/integrations/auth/atproto";
 import { AUTH_SESSION_TOKEN_COOKIE } from "#/integrations/auth/constants";
-import { fetchBlueskyPublicProfileFields } from "#/lib/bluesky-public-profile";
 import {
   HOME_SCOPE_COOKIE,
   HOME_SCOPE_COOKIE_MAX_AGE_SECONDS,
@@ -122,21 +121,23 @@ async function loadSessionFromToken(sessionToken: string) {
 
   const { restoreAuthenticatedClient } =
     await import("#/integrations/auth/restore-client.server");
-  const [client, profileRow, publicProfile, identity] = await Promise.all([
+  const [client, profileRow, identity] = await Promise.all([
     restoreAuthenticatedClient(userRow.did),
     db.query.profiles.findFirst({
       where: eq(schema.profiles.did, userRow.did),
       columns: { handle: true },
     }),
-    fetchBlueskyPublicProfileFields(userRow.did),
     resolveIdentity(userRow.did),
   ]);
   if (!client) {
     return null;
   }
 
-  const handle =
-    profileRow?.handle ?? publicProfile?.handle ?? identity.handle ?? null;
+  // Handle comes from our indexed profile, falling back to the (cached) PLC
+  // identity. The Bluesky AppView profile call that used to seed this was
+  // redundant here — its display name/avatar are only needed at login — and an
+  // uncached round-trip to public.api.bsky.app on every session restore.
+  const handle = profileRow?.handle ?? identity.handle ?? null;
 
   return {
     user: {

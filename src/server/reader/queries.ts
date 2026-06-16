@@ -22,6 +22,7 @@ import type { SQL } from "drizzle-orm";
 
 import {
   articleCardColumns,
+  articleQueueCardColumns,
   documentIsCollectionColumn,
   publicationCardColumns,
   publicationSortNameSql,
@@ -1632,6 +1633,13 @@ export async function selectArticleCardsByUris(
   db: Db,
   schema: Schema,
   uris: Array<string>,
+  /**
+   * When `lite`, omit the document body (`textContent`) from the projection.
+   * Callers that only need card metadata (collection editor + newsletter
+   * compose) avoid pulling full essay bodies into the payload + SSR dehydration.
+   * Reading-time labels go blank for these rows, which those surfaces don't show.
+   */
+  opts?: { lite?: boolean },
 ): Promise<Array<ArticleCard>> {
   if (uris.length === 0) {
     return [];
@@ -1641,7 +1649,9 @@ export async function selectArticleCardsByUris(
   const p = schema.publications;
   const pr = schema.profiles;
   const rows = await db
-    .select(articleCardColumns(schema))
+    .select(
+      opts?.lite ? articleQueueCardColumns(schema) : articleCardColumns(schema),
+    )
     .from(d)
     .leftJoin(p, eq(p.uri, d.publicationUri))
     .leftJoin(pr, eq(pr.did, p.did))
