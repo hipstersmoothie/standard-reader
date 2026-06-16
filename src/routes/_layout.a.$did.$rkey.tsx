@@ -17,6 +17,7 @@ import {
   ArticleNotFound,
   ArticleView,
 } from "../components/reader/article-view";
+import { ArticleViewSkeleton } from "../components/reader/article-view-skeleton";
 import { hasRenderableArticleBody } from "../components/reader/content/extract-text";
 import {
   articlePublicationUrl,
@@ -163,6 +164,7 @@ export const Route = createFileRoute("/_layout/a/$did/$rkey")({
       links,
     };
   },
+  pendingComponent: ArticleViewSkeleton,
   component: ArticleRoute,
 });
 

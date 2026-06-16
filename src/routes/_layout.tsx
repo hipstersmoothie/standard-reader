@@ -1,7 +1,12 @@
-import { Outlet, createFileRoute } from "@tanstack/react-router";
+import {
+  Outlet,
+  createFileRoute,
+  useRouterState,
+} from "@tanstack/react-router";
 import { Suspense } from "react";
 
 import { AppShell } from "../components/reader/app-shell";
+import { ArticleViewSkeleton } from "../components/reader/article-view-skeleton";
 import { ReaderContent } from "../components/reader/primitives";
 import { Flex } from "../design-system/flex";
 import { Skeleton } from "../design-system/skeleton";
@@ -24,7 +29,19 @@ export const Route = createFileRoute("/_layout")({
   component: LayoutRoute,
 });
 
+function isArticlePath(pathname: string): boolean {
+  return /^\/a\/[^/]+\/[^/]+\/?$/.test(pathname);
+}
+
 function RouteContentFallback() {
+  const pathname = useRouterState({
+    select: (state) => state.location.pathname,
+  });
+
+  if (isArticlePath(pathname)) {
+    return <ArticleViewSkeleton />;
+  }
+
   return (
     <ReaderContent>
       <div aria-busy="true" aria-label="Loading page">
