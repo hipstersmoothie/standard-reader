@@ -3,6 +3,7 @@ import type { CollectionEditorial } from "#/lib/collections/manifest";
 import type { CollectionTheme } from "#/lib/collections/theme";
 
 import { parseArticleBlocks } from "#/lib/document/blocks";
+import { resolveArticleHeroImage } from "#/lib/document/lead-image";
 
 import type { MagIssue, MagMeta } from "./types";
 
@@ -49,6 +50,7 @@ function bylineAuthor(article: ArticleDetail): string {
 }
 
 export function articleMeta(article: ArticleDetail): MagMeta {
+  const hero = resolveArticleHeroImage(article);
   return {
     id: article.uri,
     did: article.did,
@@ -61,7 +63,8 @@ export function articleMeta(article: ArticleDetail): MagMeta {
     minutes: readingMinutes(article),
     pubName: article.publication?.name ?? "Standard Reader",
     topic: article.publication?.topic ?? article.tags?.[0] ?? "Feature",
-    coverImageUrl: article.coverImageUrl,
+    coverImageUrl: hero?.url ?? null,
+    leadImageFromFirstBlock: hero?.fromFirstBlock ?? false,
   };
 }
 

@@ -19,6 +19,7 @@ import {
 import type { StyleXComponentProps } from "../theme/types";
 
 import { IconButton } from "../icon-button";
+import { ProgressCircle } from "../progress-circle";
 import {
   animationDuration,
   animationTimingFunction,
@@ -28,6 +29,7 @@ import { ui } from "../theme/semantic-color.stylex";
 import {
   gap,
   horizontalSpace,
+  size,
   verticalSpace,
 } from "../theme/semantic-spacing.stylex";
 
@@ -35,6 +37,56 @@ const SLIDE_DURATION_MS = 250;
 
 function prefersReducedMotion() {
   return globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+}
+
+function LightboxImage({
+  src,
+  alt,
+  presentation = false,
+}: {
+  src: string;
+  alt: string;
+  presentation?: boolean;
+}) {
+  const [loaded, setLoaded] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
+
+  useEffect(() => {
+    setLoaded(false);
+  }, [src]);
+
+  useLayoutEffect(() => {
+    const img = imgRef.current;
+    if (img?.complete && img.naturalWidth > 0) {
+      setLoaded(true);
+    }
+  }, [src]);
+
+  return (
+    <div
+      {...stylex.props(styles.imageFrame, !loaded && styles.imageFrameLoading)}
+    >
+      {!loaded ? (
+        <div {...stylex.props(styles.loadingOverlay)}>
+          <ProgressCircle
+            isIndeterminate
+            size="lg"
+            aria-label="Loading image"
+          />
+        </div>
+      ) : null}
+      {/* eslint-disable-next-line jsx-a11y/alt-text -- alt passed via prop; empty when presentation */}
+      <img
+        ref={imgRef}
+        src={src}
+        alt={presentation ? "" : alt}
+        role={presentation ? "presentation" : undefined}
+        onLoad={() => setLoaded(true)}
+        onError={() => setLoaded(true)}
+        {...stylex.props(styles.image, !loaded && styles.imageHidden)}
+      />
+    </div>
+  );
 }
 
 const styles = stylex.create({
@@ -103,6 +155,27 @@ const styles = stylex.create({
     maxHeight: "90vh",
     maxWidth: "100%",
     width: "auto",
+  },
+  imageHidden: {
+    opacity: 0,
+  },
+  imageFrame: {
+    alignItems: "center",
+    display: "flex",
+    justifyContent: "center",
+    position: "relative",
+  },
+  imageFrameLoading: {
+    minHeight: "40vh",
+    minWidth: size["4xl"],
+  },
+  loadingOverlay: {
+    alignItems: "center",
+    display: "flex",
+    inset: 0,
+    justifyContent: "center",
+    position: "absolute",
+    zIndex: 1,
   },
   imageLayer: {
     inset: 0,
@@ -361,10 +434,9 @@ export function Lightbox({
                   }
                 >
                   {previousIndex === null ? (
-                    <img
+                    <LightboxImage
                       src={currentImage}
                       alt={`${alt} ${String(currentIndex + 1)}`}
-                      {...stylex.props(styles.image)}
                     />
                   ) : (
                     <>
@@ -375,11 +447,10 @@ export function Lightbox({
                           styles.imageLayerOutgoing,
                         )}
                       >
-                        <img
+                        <LightboxImage
                           src={images[previousIndex]}
                           alt=""
-                          role="presentation"
-                          {...stylex.props(styles.image)}
+                          presentation
                         />
                       </div>
                       <div
@@ -389,10 +460,9 @@ export function Lightbox({
                           styles.imageLayerIncoming,
                         )}
                       >
-                        <img
+                        <LightboxImage
                           src={currentImage}
                           alt={`${alt} ${String(currentIndex + 1)}`}
-                          {...stylex.props(styles.image)}
                         />
                       </div>
                     </>
@@ -423,11 +493,7 @@ export function Lightbox({
                     : undefined
                 }
               >
-                <img
-                  src={currentImage}
-                  alt={alt}
-                  {...stylex.props(styles.image)}
-                />
+                <LightboxImage src={currentImage} alt={alt} />
               </div>
             )}
           </AriaDialog>

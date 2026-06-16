@@ -154,7 +154,11 @@ export const FeatureFlow = forwardRef<
             </MagMarkdown>
           </aside>
         ) : null}
-        <ArticleContent article={detail} hasHero />
+        <ArticleContent
+          article={detail}
+          hasHero
+          skipFirstBlock={meta.leadImageFromFirstBlock}
+        />
       </div>
     </>
   );

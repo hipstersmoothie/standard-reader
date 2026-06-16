@@ -1,8 +1,10 @@
 "use client";
 
 import * as stylex from "@stylexjs/stylex";
+import { use } from "react";
 import { AspectRatio, AspectRatioImage } from "#/design-system/aspect-ratio";
 import { normalizeImageAlt } from "#/lib/document/structured-content/image";
+import { MagazineColorContext } from "#/magazine/context";
 
 import { articleBodyStyles } from "../../body-styles";
 
@@ -17,22 +19,33 @@ export function ImageFigureView({
   aspectRatio?: number;
   fullBleed?: boolean;
 }) {
+  const magazine = use(MagazineColorContext);
   const altText = normalizeImageAlt(alt);
 
   return (
     <figure
       {...stylex.props(
         articleBodyStyles.imageFigure,
-        fullBleed ? articleBodyStyles.imageFullBleed : undefined,
+        fullBleed && !magazine ? articleBodyStyles.imageFullBleed : undefined,
       )}
     >
-      <AspectRatio aspectRatio={aspectRatio} rounded={!fullBleed}>
-        <AspectRatioImage
+      {magazine ? (
+        <img
           alt={altText}
+          data-mag-block-photo=""
+          loading="lazy"
           referrerPolicy="no-referrer"
           src={src}
         />
-      </AspectRatio>
+      ) : (
+        <AspectRatio aspectRatio={aspectRatio} rounded={!fullBleed}>
+          <AspectRatioImage
+            alt={altText}
+            referrerPolicy="no-referrer"
+            src={src}
+          />
+        </AspectRatio>
+      )}
       {altText ? (
         <figcaption
           aria-hidden="true"

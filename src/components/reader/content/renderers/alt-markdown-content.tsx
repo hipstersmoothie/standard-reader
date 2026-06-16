@@ -15,6 +15,7 @@ export function AltMarkdownContentRenderer({
   codeHighlights,
   content,
   hasHero,
+  skipFirstBlock,
 }: ContentRendererProps) {
   const text = altMarkdownText(content);
   if (!text) return null;
@@ -23,6 +24,7 @@ export function AltMarkdownContentRenderer({
     <MarkdownArticle
       text={text}
       hasHero={hasHero}
+      skipFirstBlock={skipFirstBlock}
       codeHighlights={codeHighlights}
     />
   );

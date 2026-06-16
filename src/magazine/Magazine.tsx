@@ -3,6 +3,7 @@ import {
   magazinePaletteCss,
   themePrefersDark,
 } from "#/lib/collections/radix-theme";
+import { Lightbox } from "#/design-system/lightbox";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { MagIssue } from "./types";
@@ -10,31 +11,10 @@ import type { MagIssue } from "./types";
 import { MagazineColorContext } from "./context";
 import { CoverFlow, EditorialFlow, EndCardFlow, FeatureFlow } from "./flow";
 import { googleFontsHref, magazineThemeStyle } from "./theme-vars";
+import { useMagazineImageLightbox } from "./use-magazine-image-lightbox";
 
 const clamp = (v: number, lo: number, hi: number) =>
   Math.max(lo, Math.min(hi, v));
-
-/** Normalize to origin+path so CDN/query variants of one image compare equal. */
-function normalizeImageUrl(url: string): string {
-  try {
-    const u = new URL(url, globalThis.location.href);
-    return `${u.origin}${u.pathname}`;
-  } catch {
-    return url;
-  }
-}
-
-/** Whether two image URLs point at the same asset (same path or blob CID). */
-function sameImageUrl(a: string, b: string): boolean {
-  if (!a || !b) return false;
-  if (a === b) return true;
-  const na = normalizeImageUrl(a);
-  const nb = normalizeImageUrl(b);
-  if (na === nb) return true;
-  const sa = na.split("/").pop() ?? "";
-  const sb = nb.split("/").pop() ?? "";
-  return sa.length > 8 && sa === sb;
-}
 
 const Icon = {
   prev: (
@@ -147,16 +127,14 @@ interface Measure {
   featureCols: Array<number>;
 }
 
-/** Matches `.mag .click-zone { width: 14vw }` in magazine.css */
-const CLICK_ZONE_VW = 0.14;
+/** Matches `.mag .click-zone { width: var(--mag-click-zone-w) }` from stage margins. */
+function isEdgeTap(clientX: number, edgeWidth: number) {
+  const width = globalThis.visualViewport?.width ?? globalThis.innerWidth;
+  return clientX <= edgeWidth || clientX >= width - edgeWidth;
+}
+
 /** Ignore synthetic mouse events fired after touch (edge tap, swipe). */
 const POST_TOUCH_MOUSE_MS = 500;
-
-function isEdgeTap(clientX: number) {
-  const width = globalThis.visualViewport?.width ?? globalThis.innerWidth;
-  const edge = width * CLICK_ZONE_VW;
-  return clientX <= edge || clientX >= width - edge;
-}
 
 export function Magazine({
   issue,
@@ -186,14 +164,7 @@ export function Magazine({
   const flowRef = useRef<HTMLDivElement | null>(null);
   const featureRefs = useRef<Array<HTMLElement | null>>([]);
   const restoredRef = useRef(false);
-
-  // Covers promoted from a leading body image (index → resolved url, or null
-  // once inspected and ruled out). `coversRef` is the live copy used during a
-  // measure pass; `covers` mirrors it into render state.
-  const coversRef = useRef<Record<number, string | null>>({});
-  const [covers, setCovers] = useState<Record<number, string | null>>({});
-  const effectiveCover = (i: number): string | null =>
-    issue.features[i]?.meta.coverImageUrl ?? covers[i] ?? null;
+  const photoLightbox = useMagazineImageLightbox(flowRef);
 
   // Own the viewport while mounted.
   useEffect(() => {
@@ -243,43 +214,6 @@ export function Magazine({
     const flow = flowRef.current;
     if (!flow) return;
 
-    const bodies = flow.querySelectorAll<HTMLElement>(".feature-body");
-    let coversChanged = false;
-    for (let i = 0; i < issue.features.length; i++) {
-      const feature = issue.features[i];
-      const body = bodies[i];
-      if (!body) continue;
-
-      // Promote a leading body image to the cover when there's no explicit one.
-      let cover = feature.meta.coverImageUrl ?? coversRef.current[i] ?? null;
-      if (!feature.meta.coverImageUrl && coversRef.current[i] === undefined) {
-        const wrapper = body.children[1]; // [0] is the opener header
-        const firstBlock = wrapper?.firstElementChild as HTMLElement | null;
-        const img = firstBlock?.querySelector<HTMLImageElement>("img") ?? null;
-        const isImageBlock =
-          !!img &&
-          !!firstBlock &&
-          firstBlock.tagName !== "P" &&
-          firstBlock.getBoundingClientRect().height > 120;
-        const promoted = isImageBlock ? img.currentSrc || img.src : null;
-        coversRef.current[i] = promoted;
-        cover = promoted;
-        coversChanged = true;
-      }
-
-      // If the cover image is also the first body image, hide the in-body copy
-      // so the photo appears once — as the cover opener.
-      if (cover && body.dataset.dedup !== "done") {
-        const img = body.querySelector<HTMLImageElement>("img");
-        const src = img ? img.currentSrc || img.src : "";
-        if (img && src && sameImageUrl(src, cover)) {
-          (img.closest("figure") ?? img).style.display = "none";
-          body.dataset.dedup = "done";
-        }
-      }
-    }
-    if (coversChanged) setCovers({ ...coversRef.current });
-
     const pitch = geom.colW + geom.gap;
     if (pitch <= 0) return;
     const columns = Math.max(
@@ -302,7 +236,7 @@ export function Magazine({
         ? prev
         : { columns, slideCount, featureCols },
     );
-  }, [geom, issue]);
+  }, [geom, issue.features.length]);
 
   // Re-measure after fonts + late images settle, and whenever geometry changes.
   const themeFontTitle = issue.theme?.fontTitle;
@@ -347,11 +281,6 @@ export function Magazine({
       globalThis.removeEventListener("load", runMeasure);
     };
   }, [runMeasure, themeFontTitle, themeFontBody]);
-
-  // A promoted cover changes the flow structure → re-measure once it lands.
-  useEffect(() => {
-    runMeasure();
-  }, [covers, runMeasure]);
 
   const slideCount = measure?.slideCount ?? 1;
   const maxSlide = Math.max(0, slideCount - 1);
@@ -431,7 +360,7 @@ export function Magazine({
       const now = Date.now();
       if (now - lastTouchEnd.current < POST_TOUCH_MOUSE_MS) return;
       if (now < suppressWakeUntil.current) return;
-      if (isEdgeTap(e.clientX)) return;
+      if (isEdgeTap(e.clientX, geom.hMargin)) return;
       wake();
     };
     globalThis.addEventListener("mousemove", onMove);
@@ -439,11 +368,12 @@ export function Magazine({
       globalThis.removeEventListener("mousemove", onMove);
       if (hideTimer.current) clearTimeout(hideTimer.current);
     };
-  }, [wake]);
+  }, [wake, geom.hMargin]);
 
   // Keyboard navigation.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (photoLightbox.isOpen) return;
       if (e.key === "Tab") {
         wake();
         return;
@@ -467,7 +397,7 @@ export function Magazine({
     };
     globalThis.addEventListener("keydown", onKey);
     return () => globalThis.removeEventListener("keydown", onKey);
-  }, [go, maxSlide, toc, onExit, wake]);
+  }, [go, maxSlide, onExit, photoLightbox.isOpen, toc, wake]);
 
   // Swipe.
   const touchX = useRef<number | null>(null);
@@ -528,12 +458,16 @@ export function Magazine({
     <MagazineColorContext value={{ dark }}>
       <div
         className={`mag ${dark ? "is-dark" : ""} ${issue.theme ? "is-themed" : ""}`}
-        style={magazineThemeStyle(issue.theme)}
+        style={{
+          ...magazineThemeStyle(issue.theme),
+          "--mag-click-zone-w": `${geom.hMargin}px`,
+        }}
         onTouchStart={(e) => {
           touchX.current = e.touches[0].clientX;
         }}
         onTouchEnd={(e) => {
           lastTouchEnd.current = Date.now();
+          if (photoLightbox.isOpen) return;
           if (touchX.current == null) return;
           const startX = touchX.current;
           const dx = e.changedTouches[0].clientX - startX;
@@ -543,7 +477,7 @@ export function Magazine({
             go(dx < 0 ? 1 : -1);
             return;
           }
-          if (isEdgeTap(startX)) {
+          if (isEdgeTap(startX, geom.hMargin)) {
             suppressWake();
             return;
           }
@@ -589,7 +523,7 @@ export function Magazine({
                   <FeatureFlow
                     key={feature.meta.id}
                     feature={feature}
-                    coverImageUrl={effectiveCover(i)}
+                    coverImageUrl={feature.meta.coverImageUrl}
                     ref={(el) => {
                       featureRefs.current[i] = el;
                     }}
@@ -638,7 +572,7 @@ export function Magazine({
           className="click-zone prev"
           onPointerDown={() => suppressWake()}
           onClick={() => go(-1)}
-          disabled={activeSlide <= 0}
+          disabled={activeSlide <= 0 || photoLightbox.isOpen}
           aria-label="Previous page"
           tabIndex={-1}
         />
@@ -646,7 +580,7 @@ export function Magazine({
           className="click-zone next"
           onPointerDown={() => suppressWake()}
           onClick={() => go(1)}
-          disabled={activeSlide >= maxSlide}
+          disabled={activeSlide >= maxSlide || photoLightbox.isOpen}
           aria-label="Next page"
           tabIndex={-1}
         />
@@ -695,7 +629,7 @@ export function Magazine({
         <div className={`dock ${chromeOn ? "show" : ""}`}>
           <button
             onClick={() => go(-1)}
-            disabled={activeSlide <= 0}
+            disabled={activeSlide <= 0 || photoLightbox.isOpen}
             aria-label="Previous"
           >
             {Icon.prev}
@@ -708,7 +642,7 @@ export function Magazine({
           </div>
           <button
             onClick={() => go(1)}
-            disabled={activeSlide >= maxSlide}
+            disabled={activeSlide >= maxSlide || photoLightbox.isOpen}
             aria-label="Next"
           >
             {Icon.next}
@@ -756,6 +690,14 @@ export function Magazine({
           </div>
         </nav>
       </div>
+      <Lightbox
+        isOpen={photoLightbox.isOpen}
+        onOpenChange={photoLightbox.setIsOpen}
+        images={photoLightbox.images}
+        initialIndex={photoLightbox.initialIndex}
+        alt="Image"
+        style={{ zIndex: 1100 }}
+      />
     </MagazineColorContext>
   );
 }

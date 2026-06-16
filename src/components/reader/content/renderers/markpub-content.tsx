@@ -11,6 +11,7 @@ export function MarkpubContentRenderer({
   codeHighlights,
   content,
   hasHero,
+  skipFirstBlock,
 }: ContentRendererProps) {
   const prepared = prepareMarkpubMarkdown(content);
   if (!prepared) return null;
@@ -19,6 +20,7 @@ export function MarkpubContentRenderer({
     <MarkdownArticle
       text={prepared.body}
       hasHero={hasHero}
+      skipFirstBlock={skipFirstBlock}
       codeHighlights={codeHighlights}
       flavor={prepared.flavor}
       enableMath={prepared.enableMath}

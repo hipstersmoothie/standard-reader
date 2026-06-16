@@ -6,6 +6,7 @@ import type { Components } from "react-markdown";
 import * as stylex from "@stylexjs/stylex";
 import { AppLink } from "#/components/reader/app-link";
 import { spacing } from "#/design-system/theme/spacing.stylex";
+import { stripLeadingMarkupImage } from "#/lib/document/lead-image";
 import { articleMarkdownSanitizeSchema } from "#/lib/markdown/article-sanitize-schema";
 import { useReadingTypography } from "#/lib/use-reading-typography";
 import { createElement, useMemo, useRef } from "react";
@@ -256,12 +257,14 @@ function useMarkdownComponents(
 export function MarkdownArticle({
   text,
   hasHero,
+  skipFirstBlock,
   codeHighlights,
   flavor = "gfm",
   enableMath = false,
 }: {
   text: string;
   hasHero: boolean;
+  skipFirstBlock?: boolean;
   codeHighlights: ContentRendererProps["codeHighlights"];
   flavor?: "gfm" | "commonmark";
   enableMath?: boolean;
@@ -275,7 +278,8 @@ export function MarkdownArticle({
     return plugins;
   }, [enableMath, flavor]);
 
-  if (!text.trim()) return null;
+  const body = skipFirstBlock ? stripLeadingMarkupImage(text) : text;
+  if (!body.trim()) return null;
 
   const rehypePlugins = (
     enableMath
@@ -294,7 +298,7 @@ export function MarkdownArticle({
         rehypePlugins={rehypePlugins}
         components={components}
       >
-        {text}
+        {body}
       </ReactMarkdown>
     </ArticleBody>
   );

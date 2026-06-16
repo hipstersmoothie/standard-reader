@@ -17,6 +17,7 @@ export function StructuredFormatContentRenderer({
   codeHighlights,
   content,
   hasHero,
+  skipFirstBlock,
 }: ContentRendererProps) {
   const blocks = structuredFormatBlocks(content) ?? [];
   if (blocks.length === 0) return null;
@@ -26,6 +27,9 @@ export function StructuredFormatContentRenderer({
   return (
     <ArticleBody hasHero={hasHero}>
       {blocks.map((block, index) => {
+        if (skipFirstBlock && index === 0 && block.kind === "image") {
+          return null;
+        }
         const dropCap = block.kind === "text" && !textSeen;
         if (block.kind === "text" && block.text.plaintext.trim()) {
           textSeen = true;

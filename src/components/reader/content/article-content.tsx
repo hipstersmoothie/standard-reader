@@ -12,6 +12,7 @@ import {
   useQuoteHighlightTracker,
 } from "#/components/reader/quote-highlight-tracker";
 import { parseArticleBlocks } from "#/lib/document/blocks";
+import { resolveArticleHeroImage } from "#/lib/document/lead-image";
 import { useReadingTypography } from "#/lib/use-reading-typography";
 
 import type { ContentRendererProps } from "./types";
@@ -116,11 +117,16 @@ function FallbackContent({
 
 export function ArticleContent({
   article,
-  hasHero,
+  hasHero: hasHeroProp,
+  skipFirstBlock: skipFirstBlockProp,
 }: {
   article: ArticleDetail;
-  hasHero: boolean;
+  hasHero?: boolean;
+  skipFirstBlock?: boolean;
 }) {
+  const hero = resolveArticleHeroImage(article);
+  const hasHero = hasHeroProp ?? Boolean(hero);
+  const skipFirstBlock = skipFirstBlockProp ?? hero?.fromFirstBlock ?? false;
   const contentType = resolveContentType(article);
   const Renderer = contentType ? CONTENT_RENDERERS[contentType] : undefined;
 
@@ -133,6 +139,7 @@ export function ArticleContent({
       codeHighlights: article.codeHighlights,
       content: article.contentJson,
       hasHero,
+      skipFirstBlock,
     };
     return <Renderer {...props} />;
   }

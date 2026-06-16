@@ -11,6 +11,8 @@ export interface ContentBlobContext {
 export interface ContentRendererProps {
   content: JsonValue;
   hasHero: boolean;
+  /** When true, omit the first image block (or leading markdown/HTML image). */
+  skipFirstBlock?: boolean;
   blobContext?: ContentBlobContext;
   codeHighlights?: CodeHighlightsByScheme;
 }

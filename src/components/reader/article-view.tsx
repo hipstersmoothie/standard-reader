@@ -14,6 +14,7 @@ import { AuthorProfileLink } from "#/components/reader/author-profile-link";
 import { PublicationNameLink } from "#/components/reader/publication-name-link";
 import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
+import { resolveArticleHeroImage } from "#/lib/document/lead-image";
 import { usePageReader } from "#/lib/page-reader/page-reader-context";
 import { useOpenCollectionsInMagazine } from "#/lib/use-open-collections-in-magazine";
 import { useReadingTypography } from "#/lib/use-reading-typography";
@@ -348,8 +349,7 @@ const styles = stylex.create({
     borderRadius: radius.lg,
     overflow: "hidden",
     aspectRatio: "16 / 9",
-    marginBottom: spacing["10"],
-    marginTop: spacing["10"],
+    marginBottom: spacing["8"],
   },
   heroImg: {
     display: "block",
@@ -689,6 +689,7 @@ function ArticleViewBody({
 
   const readStats = formatArticleReadStats(article.readCount);
   const hasEngagement = article.recommendCount > 0 || article.commentCount > 0;
+  const hero = useMemo(() => resolveArticleHeroImage(article), [article]);
 
   const queryClient = useQueryClient();
   const { enabled: trackReading } = useTrackReadingHistory();
@@ -893,6 +894,17 @@ function ArticleViewBody({
           </div>
         ) : null}
 
+        {hero ? (
+          <div {...stylex.props(styles.hero)}>
+            <img
+              src={hero.url}
+              alt=""
+              referrerPolicy="no-referrer"
+              {...stylex.props(styles.heroImg)}
+            />
+          </div>
+        ) : null}
+
         <h1 {...stylex.props(styles.title)}>{article.title}</h1>
 
         {article.description && !articleDescriptionIsBodyExcerpt(article) ? (
@@ -955,29 +967,12 @@ function ArticleViewBody({
           </div>
         </div>
 
-        {article.coverImageUrl ? (
-          <div {...stylex.props(styles.hero)}>
-            <img
-              src={article.coverImageUrl}
-              alt=""
-              referrerPolicy="no-referrer"
-              {...stylex.props(styles.heroImg)}
-            />
-          </div>
-        ) : null}
-
         {linkParams ? (
           <QuoteShareLayer article={article} sharedQuote={sharedQuote}>
-            <ArticleContent
-              article={article}
-              hasHero={Boolean(article.coverImageUrl)}
-            />
+            <ArticleContent article={article} />
           </QuoteShareLayer>
         ) : (
-          <ArticleContent
-            article={article}
-            hasHero={Boolean(article.coverImageUrl)}
-          />
+          <ArticleContent article={article} />
         )}
 
         <ArticleLikePrompt

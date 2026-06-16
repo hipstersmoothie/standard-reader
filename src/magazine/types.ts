@@ -16,6 +16,8 @@ export interface MagMeta {
   pubName: string;
   topic: string;
   coverImageUrl: string | null;
+  /** True when `coverImageUrl` was promoted from the article's first image block. */
+  leadImageFromFirstBlock?: boolean;
 }
 
 /** A composed feature: opener metadata + the full article record to render. */

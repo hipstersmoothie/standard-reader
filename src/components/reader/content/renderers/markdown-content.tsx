@@ -22,6 +22,7 @@ export function MarkdownContentRenderer({
   codeHighlights,
   content,
   hasHero,
+  skipFirstBlock,
 }: ContentRendererProps) {
   const text = markdownText(content);
   if (!text?.trim()) return null;
@@ -30,6 +31,7 @@ export function MarkdownContentRenderer({
     <MarkdownArticle
       text={text}
       hasHero={hasHero}
+      skipFirstBlock={skipFirstBlock}
       codeHighlights={codeHighlights}
     />
   );

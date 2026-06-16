@@ -15,6 +15,7 @@ export function PcktContentRenderer({
   codeHighlights,
   content,
   hasHero,
+  skipFirstBlock,
 }: ContentRendererProps) {
   const blocks = pcktBlocks(content as PcktContent);
   if (blocks.length === 0) return null;
@@ -24,6 +25,9 @@ export function PcktContentRenderer({
   return (
     <ArticleBody hasHero={hasHero}>
       {blocks.map((block, index) => {
+        if (skipFirstBlock && index === 0 && block.kind === "image") {
+          return null;
+        }
         const dropCap = block.kind === "text" && !textSeen;
         if (block.kind === "text" && block.block.plaintext.trim()) {
           textSeen = true;

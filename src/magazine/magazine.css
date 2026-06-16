@@ -27,6 +27,10 @@
 
   --display-weight: 500;
   --display-tracking: -0.015em;
+  --mag-click-zone-z: 1030;
+  --bsky-embed-media-max: min(28vh, 220px);
+  --bsky-embed-media-gap: 4px;
+  --mag-block-photo-max: 40vh;
 }
 
 /* ---------- dark paper ---------- */
@@ -55,7 +59,7 @@
 .mag {
   position: fixed;
   inset: 0;
-  z-index: 1000;
+  z-index: 100;
   /* The magazine is always printed on light paper. Pin the scheme so the
      app's `light-dark()` theme tokens resolve to their light values even when
      the reader's app theme is dark (otherwise body text is light-on-light). */
@@ -150,8 +154,104 @@
 .mag .feature-body ol {
   break-inside: avoid;
 }
-.mag .feature-body img {
-  max-height: 78vh;
+
+/* In-body block photos — intrinsic width (up to column), max 40vh, centered,
+   object-fit contain. Bluesky embed media is capped separately below. */
+.mag .feature-body figure:has([data-mag-block-photo="true"]),
+.mag .editorial-body figure:has([data-mag-block-photo="true"]),
+.mag .feature-note-body figure:has([data-mag-block-photo="true"]) {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  margin: 0 auto 0.85em;
+  max-width: 100%;
+  width: fit-content;
+}
+.mag .feature-body [data-mag-block-photo="true"],
+.mag .editorial-body [data-mag-block-photo="true"],
+.mag .feature-note-body [data-mag-block-photo="true"] {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  max-height: var(--mag-block-photo-max);
+  height: auto;
+  margin: 0 auto 0.85em;
+  cursor: zoom-in;
+  object-fit: contain;
+  object-position: center;
+}
+.mag
+  .feature-body
+  figure:has([data-mag-block-photo="true"])
+  [data-mag-block-photo="true"],
+.mag
+  .editorial-body
+  figure:has([data-mag-block-photo="true"])
+  [data-mag-block-photo="true"],
+.mag
+  .feature-note-body
+  figure:has([data-mag-block-photo="true"])
+  [data-mag-block-photo="true"] {
+  margin: 0;
+}
+.mag .feature-body figure:has([data-mag-block-photo="true"]) figcaption,
+.mag .editorial-body figure:has([data-mag-block-photo="true"]) figcaption,
+.mag .feature-note-body figure:has([data-mag-block-photo="true"]) figcaption {
+  text-align: center;
+  width: 100%;
+}
+.mag .feature-body [data-mag-block-photo="true"]:focus-visible,
+.mag .editorial-body [data-mag-block-photo="true"]:focus-visible,
+.mag .feature-note-body [data-mag-block-photo="true"]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Multi-image block rows — start-aligned, scroll horizontally in the column. */
+.mag .feature-body figure:has(> div > :nth-child(2)),
+.mag .editorial-body figure:has(> div > :nth-child(2)),
+.mag .feature-note-body figure:has(> div > :nth-child(2)) {
+  align-items: flex-start;
+  margin: 0 0 0.85em;
+  width: 100%;
+}
+.mag .feature-body figure:has(> div > :nth-child(2)) > div,
+.mag .editorial-body figure:has(> div > :nth-child(2)) > div,
+.mag .feature-note-body figure:has(> div > :nth-child(2)) > div {
+  -webkit-overflow-scrolling: touch;
+  align-items: flex-start;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: var(--bsky-embed-media-gap);
+  justify-content: flex-start;
+  max-width: 100%;
+  overflow-x: auto;
+  width: 100%;
+}
+.mag .feature-body figure:has(> div > :nth-child(2)) > div > *,
+.mag .editorial-body figure:has(> div > :nth-child(2)) > div > *,
+.mag .feature-note-body figure:has(> div > :nth-child(2)) > div > *,
+.mag .feature-body figure:has(> div > :nth-child(2)) figure,
+.mag .editorial-body figure:has(> div > :nth-child(2)) figure,
+.mag .feature-note-body figure:has(> div > :nth-child(2)) figure {
+  flex: 0 0 auto;
+  margin: 0;
+  width: auto;
+}
+.mag
+  .feature-body
+  figure:has(> div > :nth-child(2))
+  [data-mag-block-photo="true"],
+.mag
+  .editorial-body
+  figure:has(> div > :nth-child(2))
+  [data-mag-block-photo="true"],
+.mag
+  .feature-note-body
+  figure:has(> div > :nth-child(2))
+  [data-mag-block-photo="true"] {
+  margin: 0;
 }
 .mag .feature-body :is(h1, h2, h3) {
   break-after: avoid;
@@ -242,6 +342,152 @@
 }
 .mag .feature-body [data-bsky-post-embed] [class*="replies"]:hover {
   color: var(--post-color-blue-primary-hover);
+}
+
+/* Bluesky embed — compact card; cap media height; Lightbox on click. */
+.mag .feature-body [data-bsky-post-embed][data-magazine-bsky] {
+  break-inside: avoid;
+  max-width: 100%;
+  min-width: 0;
+}
+.mag
+  .feature-body
+  [data-bsky-post-embed][data-magazine-bsky]
+  .bsky-react-post-theme {
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+.mag
+  .feature-body
+  [data-bsky-post-embed][data-magazine-bsky]
+  [class*="avatar__"] {
+  width: 2rem;
+  height: 2rem;
+  min-width: 2rem;
+  min-height: 2rem;
+  margin: 0;
+  border-radius: 9999px;
+  corner-shape: round;
+}
+.mag
+  .feature-body
+  [data-bsky-post-embed][data-magazine-bsky]
+  [class*="recordMedia"] {
+  align-items: flex-start;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  min-width: 0;
+  overflow: visible;
+}
+.mag
+  .feature-body
+  [data-bsky-post-embed][data-magazine-bsky]
+  [class*="record"] {
+  min-width: 0;
+}
+.mag
+  .feature-body
+  [data-bsky-post-embed][data-magazine-bsky]
+  [class*="singleImage"],
+.mag
+  .feature-body
+  [data-bsky-post-embed][data-magazine-bsky]
+  img[data-mag-photo="true"]:not(
+    [class*="doubleImagesImg"],
+    [class*="threeImagesLargeImg"],
+    [class*="threeImagesRemainingImages"],
+    [class*="fourImagesImg"]
+  ) {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  max-height: var(--bsky-embed-media-max);
+  height: auto;
+  margin: 0;
+  object-fit: contain;
+  object-position: left center;
+  cursor: zoom-in;
+}
+.mag
+  .feature-body
+  [data-bsky-post-embed][data-magazine-bsky]
+  [class*="imagesContainer"],
+.mag
+  .feature-body
+  [data-bsky-post-embed][data-magazine-bsky]
+  [class*="fourImagesContainer"] {
+  align-items: flex-start;
+  aspect-ratio: auto;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: var(--bsky-embed-media-gap);
+  height: auto;
+  justify-content: flex-start;
+  max-height: none;
+  max-width: 100%;
+  min-width: 0;
+  -webkit-overflow-scrolling: touch;
+  overflow-x: auto;
+  width: 100%;
+}
+.mag
+  .feature-body
+  [data-bsky-post-embed][data-magazine-bsky]
+  [class*="threeImagesRemainingImagesContainer"] {
+  display: contents;
+}
+.mag
+  .feature-body
+  [data-bsky-post-embed][data-magazine-bsky]
+  [class*="fourImagesImg"],
+.mag
+  .feature-body
+  [data-bsky-post-embed][data-magazine-bsky]
+  [class*="doubleImagesImg"],
+.mag
+  .feature-body
+  [data-bsky-post-embed][data-magazine-bsky]
+  [class*="threeImagesLargeImg"],
+.mag
+  .feature-body
+  [data-bsky-post-embed][data-magazine-bsky]
+  [class*="threeImagesRemainingImages"] {
+  aspect-ratio: auto;
+  cursor: zoom-in;
+  flex: 0 0 auto;
+  height: auto;
+  margin: 0;
+  max-height: var(--bsky-embed-media-max);
+  max-width: none;
+  object-fit: contain;
+  object-position: left center;
+  width: auto;
+}
+.mag
+  .feature-body
+  [data-bsky-post-embed][data-magazine-bsky]
+  [class*="externalThumbnail"],
+.mag
+  .feature-body
+  [data-bsky-post-embed][data-magazine-bsky]
+  [class*="videoEmbedThumbnail"],
+.mag
+  .feature-body
+  [data-bsky-post-embed][data-magazine-bsky]
+  [class*="genericImage"] {
+  max-height: calc(var(--bsky-embed-media-max) * 0.72);
+  aspect-ratio: 16 / 9;
+  width: 100%;
+  object-fit: cover;
+}
+.mag
+  .feature-body
+  [data-bsky-post-embed][data-magazine-bsky]
+  img[data-mag-photo="true"]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 /* Highlighted text: the UA yellow default is illegible against dark paper, so
    reuse the accent pairing (defined for both light and dark) like ::selection. */
@@ -555,8 +801,8 @@
   position: fixed;
   top: 0;
   bottom: 0;
-  width: 14vw;
-  z-index: 1030;
+  width: var(--mag-click-zone-w, 14vw);
+  z-index: var(--mag-click-zone-z);
   cursor: pointer;
   background: none;
   border: none;

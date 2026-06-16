@@ -19,6 +19,7 @@ export function HtmlContentRenderer({
   codeHighlights,
   content,
   hasHero,
+  skipFirstBlock,
 }: ContentRendererProps) {
   const html = htmlContentBody(content);
   if (!html) return null;
@@ -27,6 +28,7 @@ export function HtmlContentRenderer({
     <MarkdownArticle
       text={html}
       hasHero={hasHero}
+      skipFirstBlock={skipFirstBlock}
       codeHighlights={codeHighlights}
     />
   );

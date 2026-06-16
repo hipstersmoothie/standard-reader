@@ -31,6 +31,7 @@ export function BskyPostEmbedView({
     <div
       {...stylex.props(articleBodyStyles.bskyPostEmbed)}
       data-bsky-post-embed
+      data-magazine-bsky={magazine ? "" : undefined}
       data-theme={colorScheme}
     >
       <Post

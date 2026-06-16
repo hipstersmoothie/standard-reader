@@ -15,6 +15,7 @@ export function LeafletContentRenderer({
   codeHighlights,
   content,
   hasHero,
+  skipFirstBlock,
 }: ContentRendererProps) {
   const blocks = leafletBlocks(content as LeafletContent);
   if (blocks.length === 0) return null;
@@ -24,6 +25,9 @@ export function LeafletContentRenderer({
   return (
     <ArticleBody hasHero={hasHero}>
       {blocks.map((block, index) => {
+        if (skipFirstBlock && index === 0 && block.kind === "image") {
+          return null;
+        }
         const dropCap = block.kind === "text" && !textSeen;
         if (block.kind === "text") textSeen = true;
         return (
