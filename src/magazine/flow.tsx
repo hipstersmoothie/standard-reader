@@ -9,6 +9,7 @@ import { MagHoverButton } from "./mag-hover-button";
 import { MagMarkdown } from "./MagMarkdown";
 import { MagazineEndLike } from "./magazine-end-like";
 import { MagazineEndSubscribe } from "./magazine-end-subscribe";
+import { MagazineFeatureEnd } from "./magazine-feature-end";
 
 /**
  * Collection editorial intro — a full spread after the cover, rendered only when
@@ -173,6 +174,7 @@ export const FeatureFlow = forwardRef<
           hasHero
           skipFirstBlock={meta.leadImageFromFirstBlock}
         />
+        <MagazineFeatureEnd detail={detail} />
       </div>
     </>
   );
