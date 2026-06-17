@@ -34,13 +34,6 @@ export function magazineDocumentChromeCss(
   return `html,body{background-color:${bg}!important;overflow:hidden}`;
 }
 
-function isMagazineDocumentChromeStyle(text: string): boolean {
-  return (
-    text.includes("html,body{background-color:") &&
-    text.includes("overflow:hidden")
-  );
-}
-
 /** Route head: paint html/body before React mounts the magazine shell. */
 export function magazineRouteBackdropStyle(
   theme: CollectionTheme | null | undefined,
@@ -73,14 +66,8 @@ function installMagazineDocumentChrome(
     document.head.appendChild(style);
   }
   style.textContent = magazineDocumentChromeCss(theme, dark);
-
-  for (const el of document.head.querySelectorAll("style")) {
-    if (el.id === MAGAZINE_DOCUMENT_CHROME_STYLE_ID) continue;
-    const text = el.textContent ?? "";
-    if (isMagazineDocumentChromeStyle(text)) {
-      el.remove();
-    }
-  }
+  // Leave route-head <style> tags to HeadContent — removing duplicates here
+  // races TanStack Router on navigation and throws removeChild errors.
 
   document.documentElement.style.overflow = "hidden";
   document.body.style.overflow = "hidden";
@@ -92,12 +79,6 @@ function clearMagazineDocumentChrome(
   if (globalThis.document === undefined) return;
 
   document.getElementById(MAGAZINE_DOCUMENT_CHROME_STYLE_ID)?.remove();
-  for (const el of document.head.querySelectorAll("style")) {
-    const text = el.textContent ?? "";
-    if (isMagazineDocumentChromeStyle(text)) {
-      el.remove();
-    }
-  }
 
   const html = document.documentElement;
   const body = document.body;
