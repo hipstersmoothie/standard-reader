@@ -72,6 +72,14 @@ const styles = stylex.create({
   },
 });
 
+/** Keep pointer/drag events inside the field when nested in a draggable row. */
+function isolateFromParentDrag(event: React.SyntheticEvent) {
+  event.stopPropagation();
+  if (event.type === "dragstart") {
+    event.preventDefault();
+  }
+}
+
 export interface TextAreaProps
   extends
     StyleXComponentProps<Omit<TextFieldProps, "children">>,
@@ -169,6 +177,9 @@ export function TextArea({
             !autosize && styles.wrapperMinHeight,
           )}
           onClick={() => textAreaRef.current?.focus()}
+          onPointerDown={isolateFromParentDrag}
+          onMouseDown={isolateFromParentDrag}
+          onDragStart={isolateFromParentDrag}
           data-size={size}
         >
           {prefix != null && (
@@ -186,6 +197,11 @@ export function TextArea({
             ref={textAreaRef}
             placeholder={placeholder}
             rows={autosize ? 1 : rows}
+            // Cancel native drag on the draggable GridList row when selecting text.
+            draggable
+            onPointerDown={isolateFromParentDrag}
+            onMouseDown={isolateFromParentDrag}
+            onDragStart={isolateFromParentDrag}
           />
           {suffix != null && (
             <div {...stylex.props(inputStyles.addon)}>{suffix}</div>

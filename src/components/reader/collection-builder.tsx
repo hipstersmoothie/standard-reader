@@ -399,6 +399,14 @@ function moveItem(
   return next;
 }
 
+/** Keep note-field interactions from starting a GridList row drag. */
+function isolateNoteFieldFromRowDrag(event: React.SyntheticEvent) {
+  event.stopPropagation();
+  if (event.type === "dragstart") {
+    event.preventDefault();
+  }
+}
+
 /** Reorder builder items per a react-aria drop event. */
 function reorderBuilderItems(
   items: Array<BuilderItem>,
@@ -951,6 +959,10 @@ export function CollectionBuilder({
                 aria-label="Articles in collection"
                 selectionMode="none"
                 layout="stack"
+                // Notes are text fields inside each row — typeahead and arrow
+                // navigation must not steal keys meant for the textarea.
+                disallowTypeAhead
+                keyboardNavigationBehavior="tab"
                 dragAndDropHooks={dragAndDropHooks}
                 {...stylex.props(styles.gridList)}
               >
@@ -1027,7 +1039,13 @@ export function CollectionBuilder({
                               {item.title}
                             </span>
                           )}
-                          <div {...stylex.props(styles.noteFooter)}>
+                          <div
+                            role="group"
+                            {...stylex.props(styles.noteFooter)}
+                            onPointerDown={isolateNoteFieldFromRowDrag}
+                            onMouseDown={isolateNoteFieldFromRowDrag}
+                            onDragStart={isolateNoteFieldFromRowDrag}
+                          >
                             <MarkdownField
                               label="Editor’s note"
                               value={item.note}
