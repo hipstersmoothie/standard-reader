@@ -1,7 +1,12 @@
 import { mutationOptions, queryOptions } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
+import type { Client } from "@atcute/client";
 import { APP_NSID, STANDARD_NSID } from "#/lib/atproto/nsids";
+import {
+  collectionDocumentUri,
+  collectionsPublicationUri,
+} from "#/lib/atproto/collection-uris";
 import { hexToRgb, rgbToHex } from "#/lib/collections/color";
 import { composeCollectionNewsletterContent } from "#/lib/collections/compose-newsletter";
 import {
@@ -13,24 +18,13 @@ import { getAtprotoSessionForRequest } from "#/middleware/auth-session.server";
 import { blobCid, getBlobUrl } from "#/server/atproto/blob";
 import { resolveIdentity } from "#/server/atproto/identity";
 import {
-  collectionDocumentUri,
-  collectionsPublicationUri,
-  deleteCollectionRecord,
-  deleteDocumentRecord,
   getCollectionRecord,
   getDocumentRecord,
   getPublicationThemeRecord,
-  listCollectionRecords,
-  newCollectionRkey,
-  putCollectionRecord,
-  putCollectionsPublicationRecord,
-  putDocumentRecord,
-  putPublicationRecord,
-  putPublicationThemeRecord,
-  uploadBlob,
-} from "#/server/atproto/repo-records";
+} from "#/server/atproto/repo-get-records";
 import { ensureTracked } from "#/server/ingest/tap-client";
 import { observe } from "#/server/observability/log";
+import { parseAtUri } from "#/server/atproto/uri";
 import { selectArticleCardsByUris } from "#/server/reader/queries";
 import { inArray } from "drizzle-orm";
 import { z } from "zod";
@@ -38,6 +32,13 @@ import { z } from "zod";
 import type { ArticleCard } from "./api-shapes";
 
 import { dbMiddleware } from "./db-middleware";
+
+/** Server-only repo writers — dynamic import keeps `node:crypto` out of the client bundle. */
+async function repoRecords() {
+  return import("#/server/atproto/repo-records");
+}
+
+type RepoClient = Client;
 
 /**
  * Collections — curated, magazine-rendered editions. A collection is a
@@ -224,8 +225,6 @@ function buildBasicThemeColors(
   return Object.keys(theme).length > 0 ? theme : undefined;
 }
 
-type RepoClient = Parameters<typeof listCollectionRecords>[0];
-
 /** Whether a publication record is marked as a collections series (legacy). */
 function isLegacyCollectionsPublication(
   value: Record<string, unknown>,
@@ -234,16 +233,113 @@ function isLegacyCollectionsPublication(
 }
 
 /** Resolve collections-series publications from sidecar + legacy markers. */
+async function publicationUrisReferencedByCollections(
+  client: RepoClient,
+  did: string,
+): Promise<Set<string>> {
+  const { listCollectionRecords } = await repoRecords();
+  const [documents, collectionSidecars] = await Promise.all([
+    listCollectionRecords(client, did, STANDARD_NSID.document),
+    listCollectionRecords(client, did, APP_NSID.collection),
+  ]);
+  const sidecarByRkey = new Map(
+    collectionSidecars.map((sidecar) => [sidecar.rkey, sidecar.value]),
+  );
+  const uris = new Set<string>();
+  for (const document of documents) {
+    if (!isRecord(document.value)) continue;
+    const manifest = collectionManifestFromSources({
+      sidecar: sidecarByRkey.get(document.rkey),
+      legacyDocument: document.value,
+    });
+    if (!manifest) continue;
+    const site = document.value.site;
+    if (typeof site === "string" && site.startsWith("at://")) {
+      uris.add(site);
+    }
+  }
+  return uris;
+}
+
+function publicationRkeyFromOwnerUri(
+  publicationUri: string,
+  ownerDid: string,
+): string | null {
+  const parsed = parseAtUri(publicationUri);
+  if (!parsed) return null;
+  if (parsed.did !== ownerDid) return null;
+  if (parsed.collection !== STANDARD_NSID.publication) return null;
+  return parsed.rkey;
+}
+
+/** Ensure the collections-series marker exists for one publication URI. */
+async function ensureCollectionsPublicationSidecarForUri(
+  client: RepoClient,
+  did: string,
+  publicationUri: string,
+): Promise<void> {
+  const rkey = publicationRkeyFromOwnerUri(publicationUri, did);
+  if (!rkey) return;
+
+  const { listCollectionRecords, putCollectionsPublicationRecord } =
+    await repoRecords();
+  const sidecars = await listCollectionRecords(
+    client,
+    did,
+    APP_NSID.collectionsPublication,
+  );
+  if (sidecars.some((sidecar) => sidecar.rkey === rkey)) return;
+
+  await putCollectionsPublicationRecord(
+    client,
+    did,
+    rkey,
+    publicationUri,
+    new Date().toISOString(),
+  );
+}
+
+/**
+ * Backfill missing `app.standard-reader.collectionsPublication` sidecars for
+ * every publication referenced by collection documents in this repo.
+ */
+async function repairMissingCollectionsPublicationSidecars(
+  client: RepoClient,
+  did: string,
+): Promise<void> {
+  const { listCollectionRecords, putCollectionsPublicationRecord } =
+    await repoRecords();
+  const [referencedUris, sidecars] = await Promise.all([
+    publicationUrisReferencedByCollections(client, did),
+    listCollectionRecords(client, did, APP_NSID.collectionsPublication),
+  ]);
+  const sidecarRkeys = new Set(sidecars.map((sidecar) => sidecar.rkey));
+  const now = new Date().toISOString();
+  await Promise.all(
+    [...referencedUris].flatMap((uri) => {
+      const rkey = publicationRkeyFromOwnerUri(uri, did);
+      if (!rkey || sidecarRkeys.has(rkey)) return [];
+      return [putCollectionsPublicationRecord(client, did, rkey, uri, now)];
+    }),
+  );
+}
+
 async function listCollectionsPublicationRecords(
   client: RepoClient,
   did: string,
+  options?: { repairSidecars?: boolean },
 ) {
-  const [sidecars, publications] = await Promise.all([
+  const { listCollectionRecords } = await repoRecords();
+  const [sidecars, publications, referencedUris] = await Promise.all([
     listCollectionRecords(client, did, APP_NSID.collectionsPublication),
     listCollectionRecords(client, did, STANDARD_NSID.publication),
+    publicationUrisReferencedByCollections(client, did),
   ]);
   const publicationByRkey = new Map(
     publications.map((record) => [record.rkey, record]),
+  );
+  const publicationByUri = new Map(
+    publications.map((record) => [record.uri, record]),
   );
   const marked = new Map<string, (typeof publications)[number]>();
 
@@ -264,12 +360,27 @@ async function listCollectionsPublicationRecords(
     }
   }
 
-  return [...marked.values()];
+  for (const uri of referencedUris) {
+    const publication = publicationByUri.get(uri);
+    if (publication && isRecord(publication.value)) {
+      marked.set(publication.rkey, publication);
+    }
+  }
+
+  const records = [...marked.values()];
+  if (options?.repairSidecars) {
+    await repairMissingCollectionsPublicationSidecars(client, did);
+  }
+  return records;
 }
 
 /** Find the user's first collections publication (legacy: first marked pub). */
-async function findCollectionsPublication(client: RepoClient, did: string) {
-  const records = await listCollectionsPublicationRecords(client, did);
+async function findCollectionsPublication(
+  client: RepoClient,
+  did: string,
+  options?: { repairSidecars?: boolean },
+) {
+  const records = await listCollectionsPublicationRecords(client, did, options);
   return records[0];
 }
 
@@ -280,7 +391,24 @@ async function findCollectionsPublicationByRkey(
   rkey: string,
 ) {
   const records = await listCollectionsPublicationRecords(client, did);
-  return records.find((record) => record.rkey === rkey);
+  const found = records.find((record) => record.rkey === rkey);
+  if (found) return found;
+
+  // Recover when a re-save stripped the legacy marker before the sidecar existed.
+  const { listCollectionRecords } = await repoRecords();
+  const publications = await listCollectionRecords(
+    client,
+    did,
+    STANDARD_NSID.publication,
+  );
+  const publication = publications.find((record) => record.rkey === rkey);
+  if (!publication || !isRecord(publication.value)) return undefined;
+
+  const referencedUris = await publicationUrisReferencedByCollections(
+    client,
+    did,
+  );
+  return referencedUris.has(publication.uri) ? publication : undefined;
 }
 
 async function themeFromPublicationRecord(
@@ -387,7 +515,13 @@ const getCollectionsPublication = createServerFn({ method: "GET" }).handler(
     if (!session) return null;
     span.set("did", session.did);
 
-    const found = await findCollectionsPublication(session.client, session.did);
+    const found = await findCollectionsPublication(
+      session.client,
+      session.did,
+      {
+        repairSidecars: true,
+      },
+    );
     if (!found || !isRecord(found.value)) return null;
     const value = found.value;
     return {
@@ -423,6 +557,11 @@ const ensureCollectionsPublication = createServerFn({ method: "POST" })
         return { uri: existing.uri, rkey: existing.rkey, created: false };
       }
 
+      const {
+        newCollectionRkey,
+        putPublicationRecord,
+        putCollectionsPublicationRecord,
+      } = await repoRecords();
       const rkey = newCollectionRkey();
       const now = new Date().toISOString();
       const { uri } = await putPublicationRecord(
@@ -459,6 +598,7 @@ const listCollectionsPublications = createServerFn({ method: "GET" })
       const records = await listCollectionsPublicationRecords(
         session.client,
         session.did,
+        { repairSidecars: true },
       );
       const publications = await Promise.all(
         records
@@ -510,6 +650,11 @@ const createCollectionsPublication = createServerFn({ method: "POST" })
       if (!session) throw new Error("Sign in to create collections.");
       span.set("did", session.did);
 
+      const {
+        newCollectionRkey,
+        putPublicationRecord,
+        putCollectionsPublicationRecord,
+      } = await repoRecords();
       const rkey = newCollectionRkey();
       const icon = data.icon ? asJsonObject(data.icon) : undefined;
       const now = new Date().toISOString();
@@ -558,6 +703,12 @@ const getMyCollections = createServerFn({ method: "GET" }).handler(
     if (!session) return [] satisfies Array<CollectionCard>;
     span.set("did", session.did);
 
+    await repairMissingCollectionsPublicationSidecars(
+      session.client,
+      session.did,
+    );
+
+    const { listCollectionRecords } = await repoRecords();
     const [records, sidecars] = await Promise.all([
       listCollectionRecords(
         session.client,
@@ -629,6 +780,7 @@ const uploadCollectionCover = createServerFn({ method: "POST" })
       if (bytes.byteLength === 0 || bytes.byteLength > MAX_COVER_BYTES) {
         throw new Error("Cover image must be under 4 MB.");
       }
+      const { uploadBlob } = await repoRecords();
       const blob = await uploadBlob(session.client, bytes, data.mimeType);
       const url = await resolveBlobUrl(session.did, blob);
       return { blob: asJsonObject(blob), url };
@@ -647,6 +799,7 @@ const uploadPublicationIcon = createServerFn({ method: "POST" })
       if (bytes.byteLength === 0 || bytes.byteLength > MAX_COVER_BYTES) {
         throw new Error("Icon must be under 4 MB.");
       }
+      const { uploadBlob } = await repoRecords();
       const blob = await uploadBlob(session.client, bytes, data.mimeType);
       const url = await resolveBlobUrl(session.did, blob);
       return { blob: asJsonObject(blob), url };
@@ -754,6 +907,8 @@ const putCollection = createServerFn({ method: "POST" })
       const colophon =
         data.colophon && data.colophon.body ? data.colophon : undefined;
 
+      const { newCollectionRkey, putCollectionRecord, putDocumentRecord } =
+        await repoRecords();
       const rkey = data.rkey ?? newCollectionRkey();
       span.set("rkey", rkey);
       const now = new Date().toISOString();
@@ -781,6 +936,11 @@ const putCollection = createServerFn({ method: "POST" })
         createdAt: data.publishedAt ?? now,
         updatedAt: data.rkey ? now : undefined,
       });
+      await ensureCollectionsPublicationSidecarForUri(
+        session.client,
+        session.did,
+        data.publicationUri,
+      );
       await ensureTracked(session.did, "reader");
       return { ok: true as const, rkey };
     }),
@@ -795,6 +955,8 @@ const deleteCollection = createServerFn({ method: "POST" })
       span.set("did", session.did);
       span.set("rkey", data.rkey);
 
+      const { deleteCollectionRecord, deleteDocumentRecord } =
+        await repoRecords();
       await deleteDocumentRecord(session.client, session.did, data.rkey);
       await deleteCollectionRecord(session.client, session.did, data.rkey);
       return { ok: true as const };
@@ -843,10 +1005,22 @@ const putCollectionsTheme = createServerFn({ method: "POST" })
         session.did,
         existing.rkey,
       );
+      const {
+        putCollectionsPublicationRecord,
+        putPublicationRecord,
+        putPublicationThemeRecord,
+      } = await repoRecords();
       await putPublicationRecord(session.client, session.did, existing.rkey, {
         ...base,
         basicTheme: buildBasicThemeColors(data.colors),
       });
+      await putCollectionsPublicationRecord(
+        session.client,
+        session.did,
+        existing.rkey,
+        existing.uri,
+        now,
+      );
       await putPublicationThemeRecord(
         session.client,
         session.did,
@@ -890,6 +1064,8 @@ const putCollectionsPublication = createServerFn({ method: "POST" })
           : data.icon
             ? asJsonObject(data.icon)
             : base.icon;
+      const { putCollectionsPublicationRecord, putPublicationRecord } =
+        await repoRecords();
       await putPublicationRecord(session.client, session.did, existing.rkey, {
         name: data.name,
         url: base.url,
@@ -897,6 +1073,13 @@ const putCollectionsPublication = createServerFn({ method: "POST" })
         ...(icon ? { icon } : {}),
         ...(base.basicTheme ? { basicTheme: base.basicTheme } : {}),
       });
+      await putCollectionsPublicationRecord(
+        session.client,
+        session.did,
+        existing.rkey,
+        existing.uri,
+        new Date().toISOString(),
+      );
       await ensureTracked(session.did, "reader");
       const iconUrl = icon ? await resolveBlobUrl(session.did, icon) : null;
       return {

@@ -12,8 +12,14 @@ import { now as tidNow } from "@atcute/tid";
 import type { CollectionManifest } from "#/lib/collections/manifest";
 
 import { COLLECTION } from "#/lib/atproto/nsids";
+import {
+  collectionDocumentUri,
+  collectionsPublicationUri,
+} from "#/lib/atproto/collection-uris.ts";
 import { createHash } from "node:crypto";
 import { buildAtUri } from "./uri.ts";
+
+export { collectionDocumentUri, collectionsPublicationUri };
 
 /**
  * Server-only helpers for writing the reader's personal state back to their own
@@ -513,22 +519,6 @@ export async function deletePublicationThemeRecord(
   });
 }
 
-/** Read one `app.standard-reader.publicationTheme` record's value. */
-export async function getPublicationThemeRecord(
-  client: Client,
-  repo: string,
-  publicationRkey: string,
-): Promise<unknown | null> {
-  const res = await client.get("com.atproto.repo.getRecord", {
-    params: lexGetRecordParams({
-      repo,
-      collection: COLLECTION.publicationTheme,
-      rkey: publicationRkey,
-    }),
-  });
-  return res.ok ? (res.data?.value ?? null) : null;
-}
-
 /**
  * Create or replace a collection document shell as `site.standard.document`:
  * portable `content` (markpub newsletter). The curated manifest lives in
@@ -621,50 +611,11 @@ export async function deleteDocumentRecord(
   });
 }
 
-/** Read one `site.standard.document` record's value straight from the repo. */
-export async function getDocumentRecord(
-  client: Client,
-  repo: string,
-  rkey: string,
-): Promise<unknown | null> {
-  const res = await client.get("com.atproto.repo.getRecord", {
-    params: lexGetRecordParams({
-      repo,
-      collection: COLLECTION.document,
-      rkey,
-    }),
-  });
-  return res.ok ? (res.data?.value ?? null) : null;
-}
-
-/** Read one `app.standard-reader.collection` sidecar's value from the repo. */
-export async function getCollectionRecord(
-  client: Client,
-  repo: string,
-  rkey: string,
-): Promise<unknown | null> {
-  const res = await client.get("com.atproto.repo.getRecord", {
-    params: lexGetRecordParams({
-      repo,
-      collection: COLLECTION.collection,
-      rkey,
-    }),
-  });
-  return res.ok ? (res.data?.value ?? null) : null;
-}
-
-/** Build the AT URI for a collection document in `repo`. */
-export function collectionDocumentUri(repo: string, rkey: string): string {
-  return buildAtUri(repo, COLLECTION.document, rkey);
-}
-
-/** Build the AT URI for a collections publication in `repo`. */
-export function collectionsPublicationUri(
-  repo: string,
-  publicationRkey: string,
-): string {
-  return buildAtUri(repo, COLLECTION.publication, publicationRkey);
-}
+export {
+  getCollectionRecord,
+  getDocumentRecord,
+  getPublicationThemeRecord,
+} from "./repo-get-records.ts";
 
 /** Whether the reader has saved `listUri` (an `app.standard-reader.listSave`). */
 export async function hasListSaveRecord(

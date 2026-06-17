@@ -4,7 +4,7 @@ import { collectionManifestFromSources } from "#/lib/collections/manifest";
 import {
   getCollectionRecord,
   getDocumentRecord,
-} from "#/server/atproto/repo-records";
+} from "#/server/atproto/repo-get-records";
 
 type RepoClient = Parameters<typeof getDocumentRecord>[0];
 
