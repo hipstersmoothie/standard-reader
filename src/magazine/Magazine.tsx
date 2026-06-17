@@ -15,12 +15,18 @@ import type { MagIssue } from "./types";
 import { MagazineColorContext } from "./context";
 import { readMagazineDark } from "./dark-mode";
 import { CoverFlow, EditorialFlow, EndCardFlow, FeatureFlow } from "./flow";
-import { applyForcedColumnBreaks } from "./feature-layout";
 import { MagHoverButton } from "./mag-hover-button";
 import type { Geom } from "./magazine-geom";
 import { geomEqual, readGeom } from "./magazine-geom";
+import { readFlowMeasure } from "./magazine-measure";
 import { MagazineShell } from "./magazine-shell";
+import {
+  isResizeChromeActive,
+  MAG_RESIZE_END,
+  MAG_RESIZE_START,
+} from "./resize-chrome";
 import { useMagazineImageLightbox } from "./use-magazine-image-lightbox";
+import { useMagazineResize } from "./use-magazine-resize";
 
 const clamp = (v: number, lo: number, hi: number) =>
   Math.max(lo, Math.min(hi, v));
@@ -158,6 +164,7 @@ export function Magazine({
   const [activeSlide, setActiveSlide] = useState(0);
   const [fullBleedCol, setFullBleedCol] = useState<number | null>(null);
   const [animate, setAnimate] = useState(false);
+  const [resizeChromeActive, setResizeChromeActive] = useState(false);
   const [chrome, setChrome] = useState(false);
   const [toc, setToc] = useState(false);
   const [showHint, setShowHint] = useState(false);
@@ -169,6 +176,7 @@ export function Magazine({
 
   const flowRef = useRef<HTMLDivElement | null>(null);
   const stageRef = useRef<HTMLDivElement | null>(null);
+  const chromeRef = useRef<HTMLDivElement | null>(null);
   const featureRefs = useRef<Array<HTMLElement | null>>([]);
   const endRef = useRef<HTMLElement | null>(null);
   const restoredRef = useRef(false);
@@ -276,96 +284,44 @@ export function Magazine({
     };
   }, [embedded, issue.theme, onDarkChange]);
 
-  // Page geometry follows the painted stage box (ResizeObserver), not viewport
-  // units — iOS Safari can report innerHeight/dvh larger than the visible area.
-  // flushSync keeps spread mode in sync with the stage during resize drags.
-  useLayoutEffect(() => {
-    const stage = stageRef.current;
-    if (!stage || globalThis.ResizeObserver === undefined) return;
-
-    const syncGeom = () => {
-      const w = stage.clientWidth;
-      const h = stage.clientHeight;
-      if (w <= 0 || h <= 0) return;
-      flushSync(() => {
-        setGeom((prev) => {
-          const next = readGeom(w, h, prev.spread);
-          return geomEqual(prev, next) ? prev : next;
-        });
-      });
-    };
-
-    syncGeom();
-    const observer = new ResizeObserver(syncGeom);
-    observer.observe(stage);
-    return () => observer.disconnect();
-  }, [mounted]);
+  const slideCount = measure?.slideCount ?? 1;
+  const maxSlide = Math.max(0, slideCount - 1);
 
   // Measure the fragmented flow → column + slide counts and feature anchors.
-  const runMeasure = useCallback(() => {
+  const measureNow = useCallback(() => {
     const flow = flowRef.current;
-    if (!flow) return;
+    if (!flow) return null;
+    return readFlowMeasure({
+      flow,
+      geom,
+      featureEls: featureRefs.current,
+      endEl: endRef.current,
+      requireEnd: mounted,
+    });
+  }, [geom, mounted]);
 
-    applyForcedColumnBreaks(flow);
-
-    const pitch = geom.colW + geom.gap;
-    if (pitch <= 0) return;
-    const flowLeft = flow.getBoundingClientRect().left;
-    const columnAt = (el: HTMLElement | null) => {
-      if (!el) return null;
-      const x = el.getBoundingClientRect().left - flowLeft;
-      return Math.max(0, Math.round(x / pitch));
-    };
-    const columnSpanEnd = (el: HTMLElement | null) => {
-      if (!el) return null;
-      const x = el.getBoundingClientRect().right - flowLeft;
-      return Math.max(0, Math.ceil(x / pitch) - 1);
-    };
-    // scrollWidth is the source of truth for total flowed columns. clientWidth /
-    // ResizeObserver stay fixed while columns accrue, so callers must re-run this
-    // when async content (images, fonts, end-spread widgets) settles.
-    let columns = Math.max(
-      1,
-      Math.ceil((flow.scrollWidth + geom.gap - 1) / pitch),
-    );
-    const endEl = endRef.current;
-    const endStartCol = columnAt(endEl);
-    const endSpanCol = columnSpanEnd(endEl);
-    if (mounted && !endEl) return;
-
-    const endAnchorCol =
-      endStartCol != null
-        ? Math.max(endStartCol, endSpanCol ?? endStartCol)
-        : null;
-    if (endAnchorCol != null) {
-      // Spread: end column + facing page. Single: end column only (perView = 1).
-      columns = Math.max(columns, endAnchorCol + geom.perView);
-    }
-    let slideCount = Math.max(1, Math.ceil(columns / geom.perView));
-    if (endStartCol != null) {
-      slideCount = Math.max(
-        slideCount,
-        Math.floor(endStartCol / geom.perView) + 1,
+  const commitMeasure = useCallback(
+    (snapshot: NonNullable<ReturnType<typeof measureNow>>) => {
+      setMeasure((prev) =>
+        prev &&
+        prev.columns === snapshot.columns &&
+        prev.slideCount === snapshot.slideCount &&
+        prev.featureCols.length === snapshot.featureCols.length &&
+        prev.featureCols.every((c, i) => c === snapshot.featureCols[i])
+          ? prev
+          : snapshot,
       );
-    }
-    lastScrollWidthRef.current = flow.scrollWidth;
-    const featureCols = featureRefs.current.map((el) => columnAt(el) ?? 0);
-    setMeasure((prev) =>
-      prev &&
-      prev.columns === columns &&
-      prev.slideCount === slideCount &&
-      prev.featureCols.length === featureCols.length &&
-      prev.featureCols.every((c, i) => c === featureCols[i])
-        ? prev
-        : { columns, slideCount, featureCols },
-    );
-  }, [
-    geom,
-    issue.documentUri,
-    issue.features.length,
-    issue.subscribe?.uri,
-    mounted,
-  ]);
+    },
+    [],
+  );
+
+  const runMeasure = useCallback(() => {
+    if (isResizeChromeActive()) return;
+    const snapshot = measureNow();
+    if (!snapshot) return;
+    lastScrollWidthRef.current = flowRef.current?.scrollWidth ?? 0;
+    commitMeasure(snapshot);
+  }, [commitMeasure, measureNow]);
 
   const scheduleMeasure = useCallback(() => {
     cancelAnimationFrame(measureRafRef.current);
@@ -475,8 +431,77 @@ export function Magazine({
     };
   }, [mounted, scheduleMeasure, issue.documentUri, issue.subscribe?.uri]);
 
-  const slideCount = measure?.slideCount ?? 1;
-  const maxSlide = Math.max(0, slideCount - 1);
+  const suppressPageTurn = useCallback(() => setAnimate(false), []);
+  const resumePageTurn = useCallback(() => setAnimate(true), []);
+
+  useLayoutEffect(() => {
+    const root = chromeRef.current;
+    if (!root) return;
+    const onStart = () => {
+      setAnimate(false);
+      setResizeChromeActive(true);
+    };
+    const onEnd = () => setResizeChromeActive(false);
+    root.addEventListener(MAG_RESIZE_START, onStart);
+    root.addEventListener(MAG_RESIZE_END, onEnd);
+    return () => {
+      root.removeEventListener(MAG_RESIZE_START, onStart);
+      root.removeEventListener(MAG_RESIZE_END, onEnd);
+    };
+  }, [mounted, measure]);
+
+  const { layoutLocked, frozenTransformPx, onStageSizeChange, scheduleSettle } =
+    useMagazineResize({
+      enabled: mounted && measure !== null,
+      resetKey: issue.name,
+      chromeRootRef: chromeRef,
+      geom,
+      activeSlide,
+      measure,
+      setActiveSlide,
+      measureNow,
+      commitMeasure,
+      suppressPageTurn,
+      resumePageTurn,
+    });
+
+  const resizing = layoutLocked || resizeChromeActive || isResizeChromeActive();
+
+  // Page geometry follows the painted stage box (ResizeObserver), not viewport
+  // units — iOS Safari can report innerHeight/dvh larger than the visible area.
+  useLayoutEffect(() => {
+    const stage = stageRef.current;
+    if (!stage || globalThis.ResizeObserver === undefined) return;
+
+    const lastSizeRef = { w: 0, h: 0 };
+
+    const syncGeom = () => {
+      const w = stage.clientWidth;
+      const h = stage.clientHeight;
+      if (w <= 0 || h <= 0) return;
+
+      const sizeChanged =
+        lastSizeRef.w > 0 &&
+        (Math.abs(lastSizeRef.w - w) >= 1 || Math.abs(lastSizeRef.h - h) >= 1);
+      lastSizeRef.w = w;
+      lastSizeRef.h = h;
+
+      let settling = false;
+      flushSync(() => {
+        if (sizeChanged) settling = onStageSizeChange();
+        setGeom((prev) => {
+          const next = readGeom(w, h, prev.spread);
+          return geomEqual(prev, next) ? prev : next;
+        });
+      });
+      if (settling) scheduleSettle();
+    };
+
+    syncGeom();
+    const observer = new ResizeObserver(syncGeom);
+    observer.observe(stage);
+    return () => observer.disconnect();
+  }, [mounted, onStageSizeChange, scheduleSettle]);
 
   // Restore the saved slide once measured.
   useEffect(() => {
@@ -488,8 +513,9 @@ export function Magazine({
   }, [measure, storageKey]);
 
   useEffect(() => {
+    if (resizing) return;
     setActiveSlide((s) => clamp(s, 0, maxSlide));
-  }, [maxSlide]);
+  }, [resizing, maxSlide]);
 
   useEffect(() => {
     if (measure) localStorage.setItem(storageKey, String(activeSlide));
@@ -660,11 +686,15 @@ export function Magazine({
     "--mag-h-margin": `${geom.hMargin}px`,
     "--mag-v-margin": `${geom.vMargin}px`,
   } as React.CSSProperties;
+  const flowTranslatePx =
+    resizing && frozenTransformPx !== null
+      ? frozenTransformPx
+      : -activeSlide * geom.perView * geom.pageW;
   const flowStyle: React.CSSProperties = {
     columnWidth: `${geom.colW}px`,
     columnGap: `${geom.gap}px`,
     height: geom.pageH - 2 * geom.vMargin,
-    transform: `translateX(${-activeSlide * geom.perView * geom.pageW}px)`,
+    transform: `translateX(${flowTranslatePx}px)`,
   };
 
   const showBuilding = measure === null || !mounted;
@@ -709,7 +739,7 @@ export function Magazine({
   };
 
   const viewer = (
-    <>
+    <div ref={chromeRef} className="mag-chrome">
       <div className="progress" style={{ width: `${progress}%` }} />
 
       <div
@@ -722,7 +752,7 @@ export function Magazine({
       >
         {geom.spread && measure && measure.columns >= 2 ? (
           <div
-            className={`creases ${animate ? "animate" : ""}`}
+            className={`creases ${animate && !resizing ? "animate" : ""}`}
             aria-hidden
             style={{
               left: 0,
@@ -732,12 +762,12 @@ export function Magazine({
               // column count) doesn't get a crease through its blank facing page.
               width: Math.floor(measure.columns / 2) * 2 * geom.pageW,
               backgroundSize: `${2 * geom.pageW}px 100%`,
-              transform: `translateX(${-activeSlide * geom.perView * geom.pageW}px)`,
+              transform: `translateX(${flowTranslatePx}px)`,
             }}
           />
         ) : null}
         <div
-          className={`mag-flow ${animate ? "animate" : ""} ${
+          className={`mag-flow ${animate && !resizing ? "animate" : ""} ${
             geom.spread ? "spread" : "single"
           }`}
           ref={flowRef}
@@ -917,7 +947,12 @@ export function Magazine({
           })}
         </div>
       </nav>
-    </>
+
+      <div
+        className={`resize-overlay ${resizing ? "show" : ""}`}
+        aria-hidden={!resizing}
+      />
+    </div>
   );
 
   return (

@@ -90,6 +90,11 @@
   color: var(--accent-ink);
 }
 
+.mag-chrome {
+  position: absolute;
+  inset: 0;
+}
+
 /* ============================================================
    Stage + flow (the paged multi-column reader)
    ============================================================ */
@@ -1238,6 +1243,37 @@
   z-index: 1060;
   background: var(--accent);
   transition: width 0.46s cubic-bezier(0.7, 0, 0.2, 1);
+}
+
+/* Paper overlay while the stage reflows during window resize. */
+.mag .resize-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1088;
+  pointer-events: none;
+  opacity: 0;
+  background:
+    radial-gradient(
+      120% 90% at 50% 0%,
+      color-mix(in oklab, var(--accent-soft) 55%, transparent),
+      transparent 62%
+    ),
+    var(--paper);
+}
+.mag .resize-overlay.show,
+.mag-chrome.mag-resizing .resize-overlay {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Imperative chrome — instant cover + frozen slide before React commits. */
+.mag-chrome.mag-resizing .mag-flow,
+.mag-chrome.mag-resizing .creases {
+  transition: none !important;
+  transform: var(--mag-frozen-transform) !important;
+}
+.mag-chrome.mag-resizing .progress {
+  transition: none;
 }
 
 .mag .exit-btn,
