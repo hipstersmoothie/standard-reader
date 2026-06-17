@@ -17,20 +17,14 @@ import {
   redirect,
   useNavigate,
 } from "@tanstack/react-router";
+import { IconButtonLink } from "#/components/router-links";
 import { collectionsApi } from "#/integrations/tanstack-query/api-collections.functions";
+import { publicationApi } from "#/integrations/tanstack-query/api-publication.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
 import { getPublicUrlClient } from "#/lib/public-url";
 import { siteSocialMeta } from "#/lib/site-metadata";
 import { buildAuthRedirectPath } from "#/utils/auth-redirect";
-import {
-  BookOpen,
-  Eye,
-  Layers,
-  Palette,
-  Pencil,
-  Plus,
-  Trash2,
-} from "lucide-react";
+import { Eye, Layers, Palette, Pencil, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import {
@@ -38,7 +32,11 @@ import {
   CollectionPublicationEditor,
 } from "../components/reader/collection-publication-editor";
 import { CollectionThemeEditor } from "../components/reader/collection-theme-editor";
-import { formatMonthYear, formatReaders } from "../components/reader/format";
+import {
+  documentUriFromParams,
+  formatMonthYear,
+  formatReaders,
+} from "../components/reader/format";
 import {
   Kicker,
   Masthead,
@@ -78,14 +76,20 @@ export const Route = createFileRoute("/_layout/collections/")({
     }
   },
   loader: async ({ context }) => {
-    await Promise.all([
-      context.queryClient.ensureQueryData(
-        collectionsApi.getMyCollectionsQueryOptions(),
-      ),
-      context.queryClient.ensureQueryData(
-        collectionsApi.listCollectionsPublicationsQueryOptions(),
-      ),
-    ]);
+    const { queryClient } = context;
+    const collections = await queryClient.ensureQueryData(
+      collectionsApi.getMyCollectionsQueryOptions(),
+    );
+    await queryClient.ensureQueryData(
+      collectionsApi.listCollectionsPublicationsQueryOptions(),
+    );
+    for (const card of collections) {
+      void queryClient.prefetchQuery(
+        publicationApi.getArticleQueryOptions(
+          documentUriFromParams(card.did, card.rkey),
+        ),
+      );
+    }
   },
   head: () => ({
     meta: siteSocialMeta({
@@ -510,19 +514,17 @@ function IssueRow({
         </div>
       </div>
       <div {...stylex.props(styles.issueActs)}>
-        <Link
-          to="/magazine/$did/$rkey"
+        <IconButtonLink
+          to="/collection/$did/$rkey"
           params={{ did: issue.did, rkey: issue.rkey }}
+          preload="intent"
+          preloadIntentProximity={100}
+          variant="secondary"
+          size="md"
+          label="View collection"
         >
-          <IconButton variant="secondary" size="md" label="Launch magazine">
-            <BookOpen size={16} />
-          </IconButton>
-        </Link>
-        <Link to="/a/$did/$rkey" params={{ did: issue.did, rkey: issue.rkey }}>
-          <IconButton variant="secondary" size="md" label="View collection">
-            <Eye size={16} />
-          </IconButton>
-        </Link>
+          <Eye size={16} />
+        </IconButtonLink>
         <ShareMenu
           pageUrl={`${baseUrl}/a/${issue.did}/${issue.rkey}`}
           variant="icon"

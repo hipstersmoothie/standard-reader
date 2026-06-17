@@ -2,7 +2,8 @@ import type { PopoverProps } from "react-aria-components";
 
 import * as stylex from "@stylexjs/stylex";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createLink, useNavigate } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
+import { ButtonLink, MenuItemLink } from "#/components/router-links";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
 import { useTrackReadingHistory } from "#/lib/use-track-reading-history";
 import { useLoginSearch } from "#/utils/use-login-search";
@@ -10,7 +11,6 @@ import { Heart, History, LogOut, Settings } from "lucide-react";
 import { Button as AriaButton } from "react-aria-components";
 
 import { Avatar, AvatarButton } from "../design-system/avatar";
-import { Button } from "../design-system/button";
 import { Flex } from "../design-system/flex";
 import { Menu, MenuItem, MenuSeparator } from "../design-system/menu";
 import { animationDuration } from "../design-system/theme/animations.stylex";
@@ -28,9 +28,6 @@ import {
   lineHeight,
 } from "../design-system/theme/typography.stylex";
 import { Handle } from "./reader/primitives";
-
-const ButtonLink = createLink(Button);
-const MenuItemLink = createLink(MenuItem);
 
 const styles = stylex.create({
   sidebarTrigger: {

@@ -52,7 +52,7 @@ describe("exitMagazineViewer", () => {
         entries: [
           { pathname: "/discover" },
           { pathname: `/a/${doc.did}/${doc.rkey}` },
-          { pathname: `/magazine/${doc.did}/${doc.rkey}` },
+          { pathname: `/collection/${doc.did}/${doc.rkey}` },
         ],
       },
       canGoBack: true,

@@ -431,7 +431,7 @@ function ListPage() {
     .slice(0, MAGAZINE_LIMIT);
   const openMagazine = () => {
     void navigate({
-      to: "/magazine/$did/$rkey",
+      to: "/collection/$did/$rkey",
       params: { did, rkey },
       search: { ids: encodeIssueIds(magazineArticles) },
     });

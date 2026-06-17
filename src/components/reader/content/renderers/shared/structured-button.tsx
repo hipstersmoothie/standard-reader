@@ -1,7 +1,7 @@
 "use client";
 
 import * as stylex from "@stylexjs/stylex";
-import { Link } from "@tanstack/react-router";
+import { ButtonLink } from "#/components/router-links";
 import { Button } from "#/design-system/button";
 import { parseInternalRoute } from "#/lib/internal-route";
 
@@ -40,13 +40,13 @@ export function StructuredButtonBlockView({
   const alignmentStyle = blockAlignmentStyle(alignment);
 
   const button = internal?.params ? (
-    <Link to={internal.to} params={internal.params}>
-      <Button variant="secondary">{label}</Button>
-    </Link>
+    <ButtonLink to={internal.to} params={internal.params} variant="secondary">
+      {label}
+    </ButtonLink>
   ) : internal ? (
-    <Link to={internal.to}>
-      <Button variant="secondary">{label}</Button>
-    </Link>
+    <ButtonLink to={internal.to} variant="secondary">
+      {label}
+    </ButtonLink>
   ) : (
     <a href={url} target="_blank" rel="noreferrer">
       <Button variant="secondary">{label}</Button>

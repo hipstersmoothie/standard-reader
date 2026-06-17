@@ -8,7 +8,7 @@ import {
   useQueryClient,
   useSuspenseQuery,
 } from "@tanstack/react-query";
-import { createLink } from "@tanstack/react-router";
+import { ButtonLink } from "#/components/router-links";
 import { listApi } from "#/integrations/tanstack-query/api-lists.functions";
 import { useLoginSearch } from "#/utils/use-login-search";
 import { Check, ListPlus } from "lucide-react";
@@ -37,8 +37,6 @@ import {
 
 const LISTS_QUERY_KEY = ["reader", "lists"] as const;
 const LIST_PAGES_QUERY_KEY = ["list"] as const;
-
-const ButtonLink = createLink(Button);
 
 const styles = stylex.create({
   headerTitle: {

@@ -1,6 +1,7 @@
 import * as stylex from "@stylexjs/stylex";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
-import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { ButtonLink } from "#/components/router-links";
 import { DEFAULT_TRACK_READING_HISTORY } from "#/lib/track-reading-history";
 import { ArrowRight, Flame, Sparkles } from "lucide-react";
 import { Suspense, useMemo } from "react";
@@ -19,7 +20,6 @@ import {
   ReaderContent,
   SectionHead,
 } from "../components/reader/primitives";
-import { Button } from "../design-system/button";
 import { Flex } from "../design-system/flex";
 import {
   SegmentedControl,
@@ -473,9 +473,7 @@ function HomeFeed({ scope }: { scope: HomeScope }) {
             few worth your mornings.
           </span>
           <Flex>
-            <Link to="/discover">
-              <Button>Explore the directory</Button>
-            </Link>
+            <ButtonLink to="/discover">Explore the directory</ButtonLink>
           </Flex>
         </Flex>
       </ReaderContent>
@@ -543,11 +541,14 @@ function HomeFeed({ scope }: { scope: HomeScope }) {
             ))}
           </div>
           {session?.user ? (
-            <Link to="/latest" {...stylex.props(styles.viewAll)}>
-              <Button variant="secondary" size="lg" style={styles.viewAll}>
-                View all latest <ArrowRight size={15} />
-              </Button>
-            </Link>
+            <ButtonLink
+              to="/latest"
+              variant="secondary"
+              size="lg"
+              style={styles.viewAll}
+            >
+              View all latest <ArrowRight size={15} />
+            </ButtonLink>
           ) : null}
         </Flex>
 
@@ -569,15 +570,15 @@ function HomeFeed({ scope }: { scope: HomeScope }) {
                   />
                 ))}
               </div>
-              <Link
+              <ButtonLink
                 to="/latest"
                 search={{ filter: "trending" }}
-                {...stylex.props(styles.directoryLink)}
+                variant="tertiary"
+                size="sm"
+                style={styles.directoryLink}
               >
-                <Button variant="tertiary" size="sm">
-                  See all trending <ArrowRight size={14} />
-                </Button>
-              </Link>
+                See all trending <ArrowRight size={14} />
+              </ButtonLink>
             </div>
           ) : null}
 
@@ -598,11 +599,14 @@ function HomeFeed({ scope }: { scope: HomeScope }) {
                   />
                 ))}
               </div>
-              <Link to="/discover" {...stylex.props(styles.directoryLink)}>
-                <Button variant="tertiary" size="sm">
-                  Open the directory <ArrowRight size={14} />
-                </Button>
-              </Link>
+              <ButtonLink
+                to="/discover"
+                variant="tertiary"
+                size="sm"
+                style={styles.directoryLink}
+              >
+                Open the directory <ArrowRight size={14} />
+              </ButtonLink>
             </div>
           ) : null}
         </Flex>

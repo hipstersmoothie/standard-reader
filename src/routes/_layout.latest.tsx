@@ -7,7 +7,8 @@ import {
   useQueryClient,
   useSuspenseQuery,
 } from "@tanstack/react-query";
-import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { ButtonLink } from "#/components/router-links";
 import {
   TRENDING_PAGE_LIMIT,
   feedApi,
@@ -377,9 +378,7 @@ function LatestFeedPanel({
               here.
             </span>
             <Flex>
-              <Link to="/discover">
-                <Button>Explore the directory</Button>
-              </Link>
+              <ButtonLink to="/discover">Explore the directory</ButtonLink>
             </Flex>
           </Flex>
         ) : (
@@ -616,9 +615,9 @@ function Latest() {
           </SegmentedControl>
         ) : (
           <Flex>
-            <Link to="/login" search={loginSearch}>
-              <Button variant="secondary">Log in to follow publications</Button>
-            </Link>
+            <ButtonLink to="/login" search={loginSearch} variant="secondary">
+              Log in to follow publications
+            </ButtonLink>
           </Flex>
         )}
         {trackReading &&

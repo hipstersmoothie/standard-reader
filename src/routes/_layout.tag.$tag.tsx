@@ -16,7 +16,6 @@ import {
   useSuspenseQuery,
 } from "@tanstack/react-query";
 import {
-  Link,
   createFileRoute,
   useNavigate,
   useRouterState,
@@ -39,6 +38,7 @@ import {
   ReaderContent,
   SectionHead,
 } from "#/components/reader/primitives";
+import { ButtonLink } from "#/components/router-links";
 import {
   AlertDialog,
   AlertDialogActionButton,
@@ -866,11 +866,9 @@ function TagFollowAllButton({
 
   if (!signedIn) {
     return (
-      <Link to="/login" search={loginSearch}>
-        <Button variant="primary" size="md">
-          <Plus size={15} aria-hidden /> Follow all
-        </Button>
-      </Link>
+      <ButtonLink to="/login" search={loginSearch} variant="primary" size="md">
+        <Plus size={15} aria-hidden /> Follow all
+      </ButtonLink>
     );
   }
 

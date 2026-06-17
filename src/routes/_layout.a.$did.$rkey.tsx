@@ -70,25 +70,29 @@ export const Route = createFileRoute("/_layout/a/$did/$rkey")({
       readerApi.getBookmarkStatusQueryOptions(uri),
     );
 
-    const [article, openLinks, openInMagazinePref] = await Promise.all([
+    const [article, openLinks] = await Promise.all([
       queryClient.ensureQueryData(publicationApi.getArticleQueryOptions(uri)),
       queryClient.ensureQueryData(user.getOpenLinksPreferenceQueryOptions),
-      queryClient.ensureQueryData(
-        user.getOpenCollectionsInMagazinePreferenceQueryOptions,
-      ),
     ]);
     if (
       article?.collection &&
-      openInMagazinePref.openInMagazine &&
       !openLinks.openExternally &&
       !deps.q &&
       deps.view !== "reader"
     ) {
-      prefetchCollectionMagazineArticles(queryClient, article.collection.items);
-      throw redirect({
-        to: "/magazine/$did/$rkey",
-        params: { did: params.did, rkey: params.rkey },
-      });
+      const openInMagazinePref = await queryClient.ensureQueryData(
+        user.getOpenCollectionsInMagazinePreferenceQueryOptions,
+      );
+      if (openInMagazinePref.openInMagazine) {
+        prefetchCollectionMagazineArticles(
+          queryClient,
+          article.collection.items,
+        );
+        throw redirect({
+          to: "/collection/$did/$rkey",
+          params: { did: params.did, rkey: params.rkey },
+        });
+      }
     }
 
     const sharedQuote = deps.q ? await resolveSharedQuote(uri, deps.q) : null;

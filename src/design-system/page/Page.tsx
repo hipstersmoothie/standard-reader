@@ -5,14 +5,14 @@ import type { ComponentProps, ReactNode } from "react";
 
 import * as stylex from "@stylexjs/stylex";
 import type { LinkProps } from "@tanstack/react-router";
-import { createLink } from "@tanstack/react-router";
+import { IconButtonLink } from "#/components/router-links";
 import { ArrowLeft } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import type { StyleXComponentProps } from "../theme/types";
 
 import { Flex } from "../flex";
-import { IconButton } from "../icon-button";
+import type { IconButton } from "../icon-button";
 import { primaryColor, uiColor } from "../theme/color.stylex";
 import {
   breakpoints,
@@ -29,8 +29,6 @@ import { shadow } from "../theme/shadow.stylex";
 import { fontFamily } from "../theme/typography.stylex";
 import { Text } from "../typography/text";
 import { PageContext, usePageContext } from "./context";
-
-const IconButtonLink = createLink(IconButton);
 
 const smallRootStyles = stylex.create({
   root: {

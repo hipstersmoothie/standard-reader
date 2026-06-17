@@ -5,7 +5,8 @@ import {
   useSuspenseInfiniteQuery,
   useSuspenseQuery,
 } from "@tanstack/react-query";
-import { Link, createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
+import { ButtonLink } from "#/components/router-links";
 import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
 import { getPublicUrlClient } from "#/lib/public-url";
@@ -23,7 +24,6 @@ import {
 import { ReaderQueueRows } from "../components/reader/reader-queue-rows";
 import { useInfiniteScrollSentinel } from "../components/reader/use-infinite-scroll-sentinel";
 import { Avatar } from "../design-system/avatar";
-import { Button } from "../design-system/button";
 import { Flex } from "../design-system/flex";
 import { uiColor } from "../design-system/theme/color.stylex";
 import { radius } from "../design-system/theme/radius.stylex";
@@ -200,11 +200,9 @@ function ReaderSaved() {
               </code>{" "}
               records in your repo.
             </p>
-            <Link to="/">
-              <Button variant="secondary" size="lg">
-                Browse your feed
-              </Button>
-            </Link>
+            <ButtonLink to="/" variant="secondary" size="lg">
+              Browse your feed
+            </ButtonLink>
           </Flex>
         </div>
       ) : (

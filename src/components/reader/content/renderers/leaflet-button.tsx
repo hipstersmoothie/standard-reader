@@ -3,7 +3,7 @@
 import type { LeafletButtonBlock } from "#/lib/leaflet/types";
 
 import * as stylex from "@stylexjs/stylex";
-import { Link } from "@tanstack/react-router";
+import { ButtonLink } from "#/components/router-links";
 import { Button } from "#/design-system/button";
 import { parseInternalRoute } from "#/lib/internal-route";
 
@@ -23,9 +23,13 @@ export function LeafletButtonBlockView({
   if (internal?.params) {
     return (
       <div {...stylex.props(articleBodyStyles.buttonRow)}>
-        <Link to={internal.to} params={internal.params}>
-          <Button variant="secondary">{label}</Button>
-        </Link>
+        <ButtonLink
+          to={internal.to}
+          params={internal.params}
+          variant="secondary"
+        >
+          {label}
+        </ButtonLink>
       </div>
     );
   }
@@ -33,9 +37,9 @@ export function LeafletButtonBlockView({
   if (internal) {
     return (
       <div {...stylex.props(articleBodyStyles.buttonRow)}>
-        <Link to={internal.to}>
-          <Button variant="secondary">{label}</Button>
-        </Link>
+        <ButtonLink to={internal.to} variant="secondary">
+          {label}
+        </ButtonLink>
       </div>
     );
   }

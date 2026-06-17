@@ -6,9 +6,10 @@ import type { QuoteOgColors } from "#/lib/publication-theme";
 import type { ReactNode } from "react";
 
 import * as stylex from "@stylexjs/stylex";
-import { Link, createLink } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { AuthorProfileLink } from "#/components/reader/author-profile-link";
 import { PublicationNameLink } from "#/components/reader/publication-name-link";
+import { ButtonLink } from "#/components/router-links";
 import { Button } from "#/design-system/button";
 import { Flex } from "#/design-system/flex";
 import { ProgressCircle } from "#/design-system/progress-circle";
@@ -35,8 +36,6 @@ import {
   publicationThemeVars,
 } from "./subscribe-card-theme";
 import { subscribeCardLayout } from "./subscribe-card.stylex";
-
-const ButtonLink = createLink(Button);
 
 /** Wide containers use the horizontal embed layout (iframe-style). */
 const LANDSCAPE = "@container subscribe-card (min-width: 18rem)";

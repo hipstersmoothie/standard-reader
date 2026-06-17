@@ -65,6 +65,75 @@ export type MagazineShellData = {
   theme: ArticleDetail["collectionTheme"];
 };
 
+export type MagazineCollectionBootstrap = {
+  name: string;
+  publicationName: string | null;
+  publicationParams: { did: string; rkey: string } | null;
+  ownerHandle: string | null;
+  editorial: CollectionEditorial | null;
+  coverImageUrl: string | null;
+  theme: ArticleDetail["collectionTheme"];
+};
+
+export function shellFromArticle(
+  article: ArticleDetail | null | undefined,
+): MagazineShellData {
+  return {
+    isCollection: Boolean(article?.collection),
+    theme: article?.collectionTheme ?? null,
+  };
+}
+
+export function bootstrapFromCollectionDoc(
+  article: ArticleDetail,
+): MagazineCollectionBootstrap | null {
+  if (!article.collection) return null;
+  return {
+    name: article.title || article.publication?.name || "Collection",
+    publicationName: article.publication?.name ?? null,
+    publicationParams: article.publicationUri
+      ? publicationLinkParams(article.publicationUri)
+      : null,
+    ownerHandle: article.publicationOwnerHandle,
+    editorial: article.collection.editorial ?? null,
+    coverImageUrl: article.coverImageUrl,
+    theme: article.collectionTheme,
+  };
+}
+
+export async function loadMagazineCollectionFeatures(
+  queryClient: QueryClient,
+  params: { did: string; rkey: string },
+): Promise<Array<{ detail: ArticleDetail; note: string | null }>> {
+  const collectionDoc = await fetchArticleDetail(
+    queryClient,
+    documentUriFromParams(params.did, params.rkey),
+  );
+  if (!collectionDoc?.collection) return [];
+
+  const items = collectionDoc.collection.items.slice(0, MAX_MAGAZINE_FEATURES);
+  const itemDetails = await Promise.all(
+    items.map((item) => fetchArticleDetail(queryClient, item.document)),
+  );
+  return items
+    .map((item, i) => ({ detail: itemDetails[i], note: item.note ?? null }))
+    .filter(
+      (f): f is { detail: ArticleDetail; note: string | null } =>
+        f.detail != null,
+    );
+}
+
+export function getMagazineCollectionFeaturesQueryOptions(params: {
+  did: string;
+  rkey: string;
+}) {
+  return queryOptions({
+    queryKey: ["magazine", "features", params.did, params.rkey] as const,
+    queryFn: () => loadMagazineCollectionFeatures(getQueryClient(), params),
+    staleTime: 60_000,
+  });
+}
+
 export async function loadMagazineShell(
   queryClient: QueryClient,
   params: { did: string; rkey: string },
@@ -114,17 +183,7 @@ export async function loadMagazineData(
     documentUriFromParams(did, rkey),
   );
   if (collectionDoc?.collection) {
-    const manifest = collectionDoc.collection;
-    const items = manifest.items.slice(0, MAX_MAGAZINE_FEATURES);
-    const itemDetails = await Promise.all(
-      items.map((item) => fetchArticleDetail(queryClient, item.document)),
-    );
-    const features = items
-      .map((item, i) => ({ detail: itemDetails[i], note: item.note ?? null }))
-      .filter(
-        (f): f is { detail: ArticleDetail; note: string | null } =>
-          f.detail != null,
-      );
+    const features = await loadMagazineCollectionFeatures(queryClient, params);
     return {
       mode: "collection",
       name:
@@ -134,7 +193,7 @@ export async function loadMagazineData(
         ? publicationLinkParams(collectionDoc.publicationUri)
         : null,
       ownerHandle: collectionDoc.publicationOwnerHandle,
-      editorial: manifest.editorial ?? null,
+      editorial: collectionDoc.collection.editorial ?? null,
       coverImageUrl: collectionDoc.coverImageUrl,
       theme: collectionDoc.collectionTheme,
       features,

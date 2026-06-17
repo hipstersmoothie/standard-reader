@@ -4,10 +4,11 @@ import type { FollowStatus } from "#/integrations/tanstack-query/api-reader.func
 
 import * as stylex from "@stylexjs/stylex";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, createLink } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { AuthorProfileLink } from "#/components/reader/author-profile-link";
 import { PublicationNameLink } from "#/components/reader/publication-name-link";
 import { SearchHeadline } from "#/components/reader/search-headline";
+import { ButtonLink } from "#/components/router-links";
 import { gap } from "#/design-system/theme/semantic-spacing.stylex";
 import { spacing } from "#/design-system/theme/spacing.stylex.tsx";
 import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
@@ -68,8 +69,6 @@ import {
 } from "./primitives";
 import { applyMarkReadOptimisticUpdate } from "./read-optimistic";
 import { useArticleBookmark } from "./use-article-bookmark";
-
-const ButtonLink = createLink(Button);
 
 const styles = stylex.create({
   cardLink: {
@@ -1100,7 +1099,7 @@ function ArticleLink({
     const collectionMagazine = article.isCollection && openInMagazine;
     return (
       <Link
-        to={collectionMagazine ? "/magazine/$did/$rkey" : "/a/$did/$rkey"}
+        to={collectionMagazine ? "/collection/$did/$rkey" : "/a/$did/$rkey"}
         params={params}
         {...merged}
       >

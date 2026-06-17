@@ -723,7 +723,7 @@ function ArticleViewBody({
 
     const preloadMagazine = () => {
       void router.preloadRoute({
-        to: "/magazine/$did/$rkey",
+        to: "/collection/$did/$rkey",
         params: linkParams,
       });
     };
@@ -825,7 +825,7 @@ function ArticleViewBody({
                 onPress={() => {
                   rememberOpenInMagazine();
                   void router.navigate({
-                    to: "/magazine/$did/$rkey",
+                    to: "/collection/$did/$rkey",
                     params: linkParams,
                     replace: true,
                   });
