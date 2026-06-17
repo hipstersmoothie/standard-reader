@@ -33,8 +33,7 @@
   ],
   "jsPlugins": [
     "@eslint-community/eslint-plugin-eslint-comments",
-    "eslint-plugin-perfectionist",
-    "oxc-plugin-react-compiler/eslint"
+    "eslint-plugin-perfectionist"
   ],
   "settings": {
     "import-x/resolver": {

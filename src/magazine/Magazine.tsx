@@ -511,9 +511,9 @@ export function Magazine({
     if (restoredRef.current || !measure) return;
     restoredRef.current = true;
     const saved = Number.parseInt(localStorage.getItem(storageKey) ?? "", 10);
-    if (Number.isFinite(saved)) setActiveSlide(clamp(saved, 0, maxSlide));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [measure]);
+    const slideMax = Math.max(0, measure.slideCount - 1);
+    if (Number.isFinite(saved)) setActiveSlide(clamp(saved, 0, slideMax));
+  }, [measure, storageKey]);
 
   useEffect(() => {
     setActiveSlide((s) => clamp(s, 0, maxSlide));

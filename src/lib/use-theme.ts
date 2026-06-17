@@ -6,7 +6,6 @@ import type { ResolvedThemeScheme, ThemeMode } from "./theme";
 
 import {
   DEFAULT_THEME_MODE,
-  readInitialSystemColorScheme,
   resolveSchemeForMode,
   resolvedSchemeServerSnapshot,
   subscribeToResolvedScheme,
@@ -49,11 +48,6 @@ export function useTheme(): ThemeContextValue {
       queryClient.setQueryData(user.getThemePreferenceQueryOptions.queryKey, {
         mode: next,
       });
-      if (globalThis.document !== undefined) {
-        const resolved =
-          next === "system" ? readInitialSystemColorScheme() : next;
-        globalThis.document.documentElement.dataset.resolvedScheme = resolved;
-      }
       return { previous };
     },
     onError: (_error, _next, ctx) => {

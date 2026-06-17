@@ -157,23 +157,6 @@
         "react-hooks/rules-of-hooks": "error",
         "react-hooks/exhaustive-deps": "error",
 
-        "oxc-react-compiler/static-components": "error",
-        "oxc-react-compiler/use-memo": "error",
-        "oxc-react-compiler/component-hook-factories": "error",
-        "oxc-react-compiler/preserve-manual-memoization": "error",
-        "oxc-react-compiler/incompatible-library": "warn",
-        "oxc-react-compiler/immutability": "error",
-        "oxc-react-compiler/globals": "error",
-        "oxc-react-compiler/refs": "error",
-        "oxc-react-compiler/set-state-in-effect": "error",
-        "oxc-react-compiler/error-boundaries": "error",
-        "oxc-react-compiler/purity": "error",
-        "oxc-react-compiler/set-state-in-render": "error",
-        "oxc-react-compiler/unsupported-syntax": "warn",
-        "oxc-react-compiler/config": "error",
-        "oxc-react-compiler/gating": "error",
-        "oxc-react-compiler/no-unused-directives": "error",
-
         "@stylexjs/valid-styles": [
           "error",
           {

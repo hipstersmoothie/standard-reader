@@ -1,7 +1,7 @@
 import tsParser from "@typescript-eslint/parser";
-import reactCompiler from "oxc-plugin-react-compiler/eslint";
+import reactCompiler from "eslint-plugin-react-compiler";
 
-/** Rust React Compiler lint (run via `pnpm lint:react-compiler`). */
+/** React Compiler lint (run via `pnpm lint:react-compiler`). */
 export default [
   {
     ignores: [
