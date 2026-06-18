@@ -75,6 +75,11 @@ Check items off as they land.
       `tracked_repos.added_to_tap_at` is null, ingest reconcile loop + PDS backfill for reader
       repos with zero mirrored subs (`/api/ingest/reconcile-tracked`). Set `TAP_API_URL` on **both**
       Railway `web` and `ingest` services (`http://tap.railway.internal:2480`).
+- [x] **Publisher-repo delete reconcile.** Tap delete events are applied on the hot path, but missed
+      deletes (dead-letter cap, stream gaps, out-of-order backfill) are repaired by comparing each
+      publisher repo to its PDS: `reconcileRepoFromPds` prunes stale rows in batched deletes.
+      Runs on a 5-minute ingest timer (5 repos/tick), each hourly recompute sweep (50 repos), and
+      manually via `pnpm backfill:repo-documents` / `POST /api/ingest/reconcile-repo`.
 
 ## 2. Read-model schema (Drizzle)
 

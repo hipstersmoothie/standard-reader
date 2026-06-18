@@ -107,6 +107,10 @@ whole graph, pick one:
   the handler completes successfully. Failures are written to
   `ingest_dead_letter` and swallowed so one bad event never wedges tap's
   per-repo ordering.
+- Deletes that never land (dead-letter retry cap, stream gaps) are repaired by
+  periodic PDS reconcile in the ingest worker (`repo-sync.ts`): list live
+  `site.standard.*` records from the author's PDS and prune stale read-model
+  rows in batched deletes.
 - tap owns the firehose cursor + per-repo backfill state (in its own
   SQLite/Postgres store). The app's `ingest_state` table is a high-water mark
   for observability only.

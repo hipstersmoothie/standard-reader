@@ -16,6 +16,11 @@ import { processTapEvent } from "./consumer.ts";
 import { backfillSubscriptionsFromRepo } from "./handlers.ts";
 import { recomputeDerived } from "./recompute.ts";
 import {
+  reconcilePublisherReposBatch,
+  reconcileRepoFromPds,
+  startPublisherRepoReconcile,
+} from "./repo-sync.ts";
+import {
   reconcilePendingTrackedRepos,
   startPendingTrackedReconcile,
 } from "./tap-client.ts";
@@ -213,6 +218,74 @@ async function handleRequest(
     } catch (error: unknown) {
       const ms = Math.round(performance.now() - startedAt);
       logEvent("ingest.reconcileTracked", {
+        error: error instanceof Error ? error.message : String(error),
+        ms,
+        ok: false,
+      });
+      throw error;
+    }
+    return;
+  }
+
+  if (url.pathname === "/api/ingest/reconcile-repos" && req.method === "POST") {
+    if (!requireAuth(req, res)) {
+      return;
+    }
+    const startedAt = performance.now();
+    try {
+      const result = await reconcilePublisherReposBatch();
+      const ms = Math.round(performance.now() - startedAt);
+      logEvent("ingest.reconcileRepos", {
+        attempted: result.attempted,
+        ms,
+        ok: true,
+        prunedDocuments: result.prunedDocuments,
+        prunedPublications: result.prunedPublications,
+      });
+      sendJson(res, 200, { durationMs: ms, ok: true, ...result });
+    } catch (error: unknown) {
+      const ms = Math.round(performance.now() - startedAt);
+      logEvent("ingest.reconcileRepos", {
+        error: error instanceof Error ? error.message : String(error),
+        ms,
+        ok: false,
+      });
+      throw error;
+    }
+    return;
+  }
+
+  if (url.pathname === "/api/ingest/reconcile-repo" && req.method === "POST") {
+    if (!requireAuth(req, res)) {
+      return;
+    }
+    const chunks: Array<Buffer> = [];
+    for await (const chunk of req) {
+      chunks.push(typeof chunk === "string" ? Buffer.from(chunk) : chunk);
+    }
+    const body = JSON.parse(Buffer.concat(chunks).toString("utf8") || "{}") as {
+      did?: string;
+    };
+    if (!body.did?.startsWith("did:")) {
+      sendJson(res, 400, { error: "did required" });
+      return;
+    }
+    const startedAt = performance.now();
+    try {
+      const result = await reconcileRepoFromPds(body.did, { upsert: true });
+      const ms = Math.round(performance.now() - startedAt);
+      logEvent("ingest.reconcileRepo", {
+        ms,
+        ok: true,
+        prunedDocuments: result.prunedDocuments,
+        prunedPublications: result.prunedPublications,
+        did: body.did,
+      });
+      sendJson(res, 200, { durationMs: ms, ok: true, ...result });
+    } catch (error: unknown) {
+      const ms = Math.round(performance.now() - startedAt);
+      logEvent("ingest.reconcileRepo", {
+        did: body.did,
         error: error instanceof Error ? error.message : String(error),
         ms,
         ok: false,
@@ -501,11 +574,13 @@ const tapChannel = startTapChannel();
 const pendingTrackedReconcile = startPendingTrackedReconcile(
   reconcileTrackedWithBackfill,
 );
+const publisherRepoReconcile = startPublisherRepoReconcile();
 
 for (const signal of ["SIGINT", "SIGTERM"] as const) {
   process.on(signal, () => {
     server.close(async () => {
       pendingTrackedReconcile.stop();
+      publisherRepoReconcile.stop();
       await tapChannel.destroy();
       const { flushHoneycomb } = await import("../observability/honeycomb.ts");
       await flushHoneycomb();

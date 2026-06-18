@@ -17,6 +17,7 @@ import type {
 import { db } from "../../db/index.ts";
 import { ingestDeadLetter, ingestState } from "../../db/schema.ts";
 import { Collections, buildAtUri } from "../atproto/uri.ts";
+import { logEvent } from "../observability/log.ts";
 import {
   applyIdentity,
   deleteRecord,
@@ -39,6 +40,13 @@ async function handleRecord(payload: TapRecordPayload): Promise<void> {
 
   if (action === "delete") {
     await deleteRecord(uri, collection);
+    logEvent("ingest.tapDelete", {
+      collection,
+      did,
+      ok: true,
+      rkey,
+      uri,
+    });
     return;
   }
 

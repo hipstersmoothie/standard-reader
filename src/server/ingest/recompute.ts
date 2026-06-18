@@ -23,6 +23,7 @@ import { getBacklinkCountForTarget } from "../atproto/constellation.ts";
 import { resolveIdentity } from "../atproto/identity.ts";
 import { replayDeadLetters } from "./consumer.ts";
 import { reconcileDocumentDup, reconcilePublicationGroup } from "./handlers.ts";
+import { reconcilePublisherReposBatch } from "./repo-sync.ts";
 
 /**
  * Recompute the derived per-publication aggregates (subscriber/document/
@@ -781,6 +782,13 @@ export async function recomputeDerived(): Promise<void> {
     await replayDeadLetters();
   } catch {
     // Replay is best-effort; the rows persist and the next sweep retries.
+  }
+  // PDS is the source of truth for deletes tap missed (dead-letter cap, stream
+  // gaps, out-of-order backfill). Round-robin a batch each sweep.
+  try {
+    await reconcilePublisherReposBatch();
+  } catch {
+    // Best-effort; the background timer retries between sweeps.
   }
   // Dedup first so stats/aggregates compute over canonical rows only.
   await dedupeRecords();
