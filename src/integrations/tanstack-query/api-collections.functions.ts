@@ -3,10 +3,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import type { Client } from "@atcute/client";
 import { APP_NSID, STANDARD_NSID } from "#/lib/atproto/nsids";
-import {
-  collectionDocumentUri,
-  collectionsPublicationUri,
-} from "#/lib/atproto/collection-uris";
+import { collectionsPublicationUri } from "#/lib/atproto/collection-uris";
 import { hexToRgb, rgbToHex } from "#/lib/collections/color";
 import { composeCollectionNewsletterContent } from "#/lib/collections/compose-newsletter";
 import {
@@ -907,7 +904,7 @@ const putCollection = createServerFn({ method: "POST" })
       const colophon =
         data.colophon && data.colophon.body ? data.colophon : undefined;
 
-      const { newCollectionRkey, putCollectionRecord, putDocumentRecord } =
+      const { newCollectionRkey, putCollectionDocumentPair } =
         await repoRecords();
       const rkey = data.rkey ?? newCollectionRkey();
       span.set("rkey", rkey);
@@ -920,21 +917,22 @@ const putCollection = createServerFn({ method: "POST" })
           ...(item.note ? { note: item.note } : {}),
         })),
       };
-      const documentUri = collectionDocumentUri(session.did, rkey);
-      await putDocumentRecord(session.client, session.did, rkey, {
-        site: data.publicationUri,
-        title: data.title,
-        description: editorial?.body?.slice(0, 280) || undefined,
-        coverImage: data.coverImage ?? undefined,
-        content,
-        publishedAt: data.publishedAt ?? now,
-        updatedAt: data.rkey ? now : undefined,
-      });
-      await putCollectionRecord(session.client, session.did, rkey, {
-        documentUri,
-        manifest,
-        createdAt: data.publishedAt ?? now,
-        updatedAt: data.rkey ? now : undefined,
+      await putCollectionDocumentPair(session.client, session.did, rkey, {
+        isUpdate: Boolean(data.rkey),
+        doc: {
+          site: data.publicationUri,
+          title: data.title,
+          description: editorial?.body?.slice(0, 280) || undefined,
+          coverImage: data.coverImage ?? undefined,
+          content,
+          publishedAt: data.publishedAt ?? now,
+          updatedAt: data.rkey ? now : undefined,
+        },
+        collection: {
+          manifest,
+          createdAt: data.publishedAt ?? now,
+          updatedAt: data.rkey ? now : undefined,
+        },
       });
       await ensureCollectionsPublicationSidecarForUri(
         session.client,
@@ -955,10 +953,12 @@ const deleteCollection = createServerFn({ method: "POST" })
       span.set("did", session.did);
       span.set("rkey", data.rkey);
 
-      const { deleteCollectionRecord, deleteDocumentRecord } =
-        await repoRecords();
-      await deleteDocumentRecord(session.client, session.did, data.rkey);
-      await deleteCollectionRecord(session.client, session.did, data.rkey);
+      const { deleteCollectionDocumentPair } = await repoRecords();
+      await deleteCollectionDocumentPair(
+        session.client,
+        session.did,
+        data.rkey,
+      );
       return { ok: true as const };
     }),
   );

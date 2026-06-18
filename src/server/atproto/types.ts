@@ -75,6 +75,8 @@ export interface DocumentRecord {
   updatedAt?: string;
   bskyPostRef?: StrongRef;
   contributors?: Array<DocumentContributorRecord>;
+  /** Open union of related resources (see `app.standard-reader.collection#documentLink`). */
+  links?: Array<{ $type?: string; uri?: string } & Record<string, unknown>>;
   /** Legacy Standard Reader extension (pre-sidecar). Prefer
    * `app.standard-reader.collection` at the same rkey. */
   readerCollection?: unknown;

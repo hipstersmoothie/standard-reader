@@ -298,6 +298,9 @@ source of truth; Neon holds a derived view for speed and cross-network querying.
   - `app.standard-reader.collection` — curated magazine manifest for a
     `site.standard.document` (same rkey sidecar: editorial, colophon, ordered items).
     Editorial body, colophon, and per-item notes are stored as `at.markpub.markdown`.
+    The document's `links` array includes an inverse
+    `app.standard-reader.collection#documentLink` entry; both records are written
+    atomically via `com.atproto.repo.applyWrites` so the URIs are known before publish.
   - `app.standard-reader.collectionsPublication` — marks a
     `site.standard.publication` as a collections series (same rkey sidecar).
   - `app.standard-reader.publicationTheme` — Google Font names for a collections

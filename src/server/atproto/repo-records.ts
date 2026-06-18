@@ -13,14 +13,19 @@ import type { CollectionManifest } from "#/lib/collections/manifest";
 
 import { COLLECTION } from "#/lib/atproto/nsids";
 import {
+  collectionDocumentLink,
   collectionDocumentUri,
+  collectionSidecarUri,
   collectionsPublicationUri,
 } from "#/lib/atproto/collection-uris.ts";
 import { serializeCollectionManifestForRepo } from "#/lib/markpub/collection-fields.ts";
 import { createHash } from "node:crypto";
-import { buildAtUri } from "./uri.ts";
 
-export { collectionDocumentUri, collectionsPublicationUri };
+export {
+  collectionDocumentUri,
+  collectionSidecarUri,
+  collectionsPublicationUri,
+};
 
 /**
  * Server-only helpers for writing the reader's personal state back to their own
@@ -120,6 +125,63 @@ async function repoDeleteRecord(
       input: lexDeleteRecordInput(input),
     }),
   );
+}
+
+type ApplyWriteOp =
+  | {
+      $type: "com.atproto.repo.applyWrites#create";
+      collection: string;
+      rkey: string;
+      value: Record<string, unknown>;
+    }
+  | {
+      $type: "com.atproto.repo.applyWrites#update";
+      collection: string;
+      rkey: string;
+      value: Record<string, unknown>;
+    }
+  | {
+      $type: "com.atproto.repo.applyWrites#delete";
+      collection: string;
+      rkey: string;
+    };
+
+interface ApplyWriteResult {
+  uri: string;
+  cid: string;
+}
+
+/** Atomically apply one or more repo writes (create / update / delete). */
+async function repoApplyWrites(
+  client: Client,
+  input: { repo: string; writes: Array<ApplyWriteOp> },
+): Promise<Array<ApplyWriteResult | null>> {
+  const res = await ok(
+    client.post("com.atproto.repo.applyWrites", {
+      input: {
+        repo: input.repo,
+        writes: input.writes,
+        validate: true,
+      } as never,
+    }),
+  );
+
+  const results: Array<ApplyWriteResult | null> = [];
+  for (const row of res.results ?? []) {
+    if (
+      typeof row === "object" &&
+      row !== null &&
+      "uri" in row &&
+      "cid" in row &&
+      typeof row.uri === "string" &&
+      typeof row.cid === "string"
+    ) {
+      results.push({ uri: row.uri, cid: row.cid });
+      continue;
+    }
+    results.push(null);
+  }
+  return results;
 }
 
 /** Whether a record exists at `(collection, rkey)` in the repo. */
@@ -537,6 +599,7 @@ export async function putDocumentRecord(
     coverImage?: Record<string, unknown>;
     publishedAt: string;
     updatedAt?: string;
+    links?: Array<Record<string, unknown>>;
   },
 ): Promise<{ uri: string; cid: string }> {
   return repoPutRecord(client, {
@@ -552,6 +615,7 @@ export async function putDocumentRecord(
       ...(doc.description ? { description: doc.description } : {}),
       content: doc.content,
       ...(doc.coverImage ? { coverImage: doc.coverImage } : {}),
+      ...(doc.links && doc.links.length > 0 ? { links: doc.links } : {}),
     },
   });
 }
@@ -583,6 +647,132 @@ export async function putCollectionRecord(
       createdAt: collection.createdAt,
       ...(collection.updatedAt ? { updatedAt: collection.updatedAt } : {}),
     },
+  });
+}
+
+function buildCollectionDocumentRecord(
+  doc: {
+    site: string;
+    title: string;
+    content: Record<string, unknown>;
+    description?: string;
+    coverImage?: Record<string, unknown>;
+    publishedAt: string;
+    updatedAt?: string;
+  },
+  sidecarUri: string,
+): Record<string, unknown> {
+  return {
+    $type: COLLECTION.document,
+    site: doc.site,
+    title: doc.title,
+    publishedAt: doc.publishedAt,
+    ...(doc.updatedAt ? { updatedAt: doc.updatedAt } : {}),
+    ...(doc.description ? { description: doc.description } : {}),
+    content: doc.content,
+    ...(doc.coverImage ? { coverImage: doc.coverImage } : {}),
+    links: [collectionDocumentLink(sidecarUri)],
+  };
+}
+
+function buildCollectionSidecarRecord(collection: {
+  documentUri: string;
+  manifest: CollectionManifest;
+  createdAt: string;
+  updatedAt?: string;
+}): Record<string, unknown> {
+  const { manifest } = collection;
+  const serialized = serializeCollectionManifestForRepo(manifest);
+  return {
+    $type: COLLECTION.collection,
+    document: collection.documentUri,
+    ...(serialized.editorial ? { editorial: serialized.editorial } : {}),
+    ...(serialized.colophon ? { colophon: serialized.colophon } : {}),
+    items: serialized.items,
+    createdAt: collection.createdAt,
+    ...(collection.updatedAt ? { updatedAt: collection.updatedAt } : {}),
+  };
+}
+
+/**
+ * Create or replace a collection document + sidecar pair atomically. The client
+ * mints one TID rkey up front so the document can link back to the sidecar URI
+ * before either record exists; both land in one `applyWrites` batch.
+ */
+export async function putCollectionDocumentPair(
+  client: Client,
+  repo: string,
+  rkey: string,
+  input: {
+    isUpdate: boolean;
+    doc: {
+      site: string;
+      title: string;
+      content: Record<string, unknown>;
+      description?: string;
+      coverImage?: Record<string, unknown>;
+      publishedAt: string;
+      updatedAt?: string;
+    };
+    collection: {
+      manifest: CollectionManifest;
+      createdAt: string;
+      updatedAt?: string;
+    };
+  },
+): Promise<{ documentUri: string; sidecarUri: string }> {
+  const documentUri = collectionDocumentUri(repo, rkey);
+  const sidecarUri = collectionSidecarUri(repo, rkey);
+  const writeType = input.isUpdate
+    ? ("com.atproto.repo.applyWrites#update" as const)
+    : ("com.atproto.repo.applyWrites#create" as const);
+
+  await repoApplyWrites(client, {
+    repo,
+    writes: [
+      {
+        $type: writeType,
+        collection: COLLECTION.document,
+        rkey,
+        value: buildCollectionDocumentRecord(input.doc, sidecarUri),
+      },
+      {
+        $type: writeType,
+        collection: COLLECTION.collection,
+        rkey,
+        value: buildCollectionSidecarRecord({
+          documentUri,
+          manifest: input.collection.manifest,
+          createdAt: input.collection.createdAt,
+          updatedAt: input.collection.updatedAt,
+        }),
+      },
+    ],
+  });
+
+  return { documentUri, sidecarUri };
+}
+
+/** Delete a collection document + sidecar pair atomically. */
+export async function deleteCollectionDocumentPair(
+  client: Client,
+  repo: string,
+  rkey: string,
+): Promise<void> {
+  await repoApplyWrites(client, {
+    repo,
+    writes: [
+      {
+        $type: "com.atproto.repo.applyWrites#delete",
+        collection: COLLECTION.document,
+        rkey,
+      },
+      {
+        $type: "com.atproto.repo.applyWrites#delete",
+        collection: COLLECTION.collection,
+        rkey,
+      },
+    ],
   });
 }
 

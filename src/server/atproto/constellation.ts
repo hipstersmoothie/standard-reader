@@ -99,6 +99,12 @@ export const CITATION_COLLECTIONS = [
   "pub.leaflet.document",
 ] as const;
 
+/** JSON paths on `site.standard.document#links` back to collection sidecars. */
+export const COLLECTION_DOCUMENT_LINK_PATHS = [
+  ".links[app.standard-reader.collection#documentLink].uri",
+  ".links[app.standard-reader.collection].uri",
+] as const;
+
 export const CITATION_URL_PATHS = [
   ".content.pages[pub.leaflet.pages.linearDocument].blocks[pub.leaflet.pages.linearDocument#block].block.facets[].features[pub.leaflet.richtext.facet#link].uri",
   ".content.pages[pub.leaflet.pages.linearDocument].blocks[pub.leaflet.pages.linearDocument#block].block.children[pub.leaflet.blocks.unorderedList#listItem].content.facets[].features[pub.leaflet.richtext.facet#link].uri",
@@ -112,6 +118,12 @@ export const CITATION_LINK_SOURCES = CITATION_COLLECTIONS.flatMap(
   (collection) =>
     CITATION_URL_PATHS.map((path) => `${collection}:${path}` as const),
 );
+
+/** Document → collection sidecar inverse link sources. */
+export const COLLECTION_DOCUMENT_LINK_SOURCES =
+  COLLECTION_DOCUMENT_LINK_PATHS.map(
+    (path) => `site.standard.document:${path}` as const,
+  );
 
 /** All Constellation sources Standard Reader queries for Discussion + extras. */
 export const DISCUSSION_LINK_SOURCES = [
