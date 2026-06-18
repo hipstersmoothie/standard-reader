@@ -161,7 +161,10 @@ async function repoApplyWrites(
       input: {
         repo: input.repo,
         writes: input.writes,
-        validate: true,
+        // Omit `validate` for optimistic validation (same default as putRecord):
+        // validate known lexicons, fail-open for third-party NSIDs the PDS has
+        // not loaded (e.g. site.standard.*). Explicit validate:true rejects
+        // those writes even when the schemas are published on the network.
       } as never,
     }),
   );
@@ -726,29 +729,45 @@ export async function putCollectionDocumentPair(
   const writeType = input.isUpdate
     ? ("com.atproto.repo.applyWrites#update" as const)
     : ("com.atproto.repo.applyWrites#create" as const);
-
-  await repoApplyWrites(client, {
-    repo,
-    writes: [
-      {
-        $type: writeType,
-        collection: COLLECTION.document,
-        rkey,
-        value: buildCollectionDocumentRecord(input.doc, sidecarUri),
-      },
-      {
-        $type: writeType,
-        collection: COLLECTION.collection,
-        rkey,
-        value: buildCollectionSidecarRecord({
-          documentUri,
-          manifest: input.collection.manifest,
-          createdAt: input.collection.createdAt,
-          updatedAt: input.collection.updatedAt,
-        }),
-      },
-    ],
+  const documentRecord = buildCollectionDocumentRecord(input.doc, sidecarUri);
+  const sidecarRecord = buildCollectionSidecarRecord({
+    documentUri,
+    manifest: input.collection.manifest,
+    createdAt: input.collection.createdAt,
+    updatedAt: input.collection.updatedAt,
   });
+
+  try {
+    await repoApplyWrites(client, {
+      repo,
+      writes: [
+        {
+          $type: writeType,
+          collection: COLLECTION.document,
+          rkey,
+          value: documentRecord,
+        },
+        {
+          $type: writeType,
+          collection: COLLECTION.collection,
+          rkey,
+          value: sidecarRecord,
+        },
+      ],
+    });
+  } catch {
+    // Best-effort fallback when applyWrites is unavailable or rejects the batch.
+    await putDocumentRecord(client, repo, rkey, {
+      ...input.doc,
+      links: [collectionDocumentLink(sidecarUri)],
+    });
+    await putCollectionRecord(client, repo, rkey, {
+      documentUri,
+      manifest: input.collection.manifest,
+      createdAt: input.collection.createdAt,
+      updatedAt: input.collection.updatedAt,
+    });
+  }
 
   return { documentUri, sidecarUri };
 }
@@ -759,21 +778,26 @@ export async function deleteCollectionDocumentPair(
   repo: string,
   rkey: string,
 ): Promise<void> {
-  await repoApplyWrites(client, {
-    repo,
-    writes: [
-      {
-        $type: "com.atproto.repo.applyWrites#delete",
-        collection: COLLECTION.document,
-        rkey,
-      },
-      {
-        $type: "com.atproto.repo.applyWrites#delete",
-        collection: COLLECTION.collection,
-        rkey,
-      },
-    ],
-  });
+  try {
+    await repoApplyWrites(client, {
+      repo,
+      writes: [
+        {
+          $type: "com.atproto.repo.applyWrites#delete",
+          collection: COLLECTION.document,
+          rkey,
+        },
+        {
+          $type: "com.atproto.repo.applyWrites#delete",
+          collection: COLLECTION.collection,
+          rkey,
+        },
+      ],
+    });
+  } catch {
+    await deleteDocumentRecord(client, repo, rkey);
+    await deleteCollectionRecord(client, repo, rkey);
+  }
 }
 
 export async function deleteCollectionRecord(
