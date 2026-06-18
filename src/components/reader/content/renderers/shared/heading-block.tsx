@@ -14,10 +14,12 @@ export function HeadingBlockView({
   plaintext,
   level = 2,
   facets,
+  embedded = false,
 }: {
   plaintext: string;
   level?: number;
   facets?: Array<LeafletFacet> | Array<unknown>;
+  embedded?: boolean;
 }) {
   const tracker = useQuoteHighlightTracker();
   const highlightRange = tracker?.consume(plaintext.length) ?? null;
@@ -29,7 +31,12 @@ export function HeadingBlockView({
 
   return createElement(
     `h${clamped}`,
-    { ...stylex.props(style) },
+    {
+      ...stylex.props(
+        style,
+        embedded && articleBodyStyles.pageEmbedBlockSpacing,
+      ),
+    },
     facets?.length ? (
       <HighlightedFacetedPlaintext
         plaintext={plaintext}

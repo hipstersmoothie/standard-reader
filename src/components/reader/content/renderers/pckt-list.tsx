@@ -43,6 +43,10 @@ function ListItemContent({
           );
         }
 
+        if (entry.$type === PCKT_BLOCK.hardBreak) {
+          return <br key={index} />;
+        }
+
         if (isRecord(entry) && typeof entry.$type === "string") {
           return <PcktInlineBlock key={index} value={entry} />;
         }

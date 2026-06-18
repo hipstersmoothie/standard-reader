@@ -2,7 +2,11 @@ import type { ReadingTypographyPreference } from "#/lib/reading-typography";
 import type { CSSProperties } from "react";
 
 import * as stylex from "@stylexjs/stylex";
-import { primaryColor, uiColor } from "#/design-system/theme/color.stylex";
+import {
+  primaryColor,
+  uiColor,
+  warningColor,
+} from "#/design-system/theme/color.stylex";
 import { radius } from "#/design-system/theme/radius.stylex";
 import { gap, size } from "#/design-system/theme/semantic-spacing.stylex";
 import { spacing } from "#/design-system/theme/spacing.stylex";
@@ -514,10 +518,54 @@ export const articleBodyStyles = stylex.create({
     marginTop: spacing["0"],
   },
   websiteCardBody: {
+    alignItems: "center",
+    display: "flex",
+    gap: gap.md,
+    paddingBottom: spacing["4"],
+    paddingLeft: spacing["4"],
+    paddingRight: spacing["6"],
+    paddingTop: spacing["4"],
+  },
+  websiteCardText: {
+    flex: 1,
+    minWidth: 0,
+  },
+  websiteCardExternalIcon: {
+    color: uiColor.text1,
+    display: "flex",
+    flexShrink: 0,
+    height: size.sm,
+    width: size.sm,
+  },
+  pageEmbedDisclosure: {
+    borderColor: uiColor.border1,
+    borderRadius: radius.md,
+    borderStyle: "solid",
+    borderWidth: 1,
+    backgroundColor: uiColor.component1,
+    marginBottom: spacing["6"],
+    marginTop: spacing["0"],
+  },
+  pageEmbedPanelContent: {
+    color: uiColor.text2,
+    display: "flex",
+    flexDirection: "column",
+    fontFamily: fontFamily.serif,
+    fontSize: { default: "1.1875rem", "@media (min-width: 40rem)": "1.25rem" },
+    gap: gap.sm,
+    lineHeight: 1.68,
     paddingBottom: spacing["4"],
     paddingLeft: spacing["4"],
     paddingRight: spacing["4"],
-    paddingTop: spacing["4"],
+    paddingTop: gap.sm,
+  },
+  pageEmbedBlockSpacing: {
+    marginBottom: spacing["0"],
+    marginTop: spacing["0"],
+  },
+  pageEmbedBlockInner: {
+    marginBottom: spacing["0"],
+    marginTop: spacing["0"],
   },
   websiteCardTitle: {
     color: uiColor.text2,
@@ -549,7 +597,12 @@ export const articleBodyStyles = stylex.create({
     textDecoration: "line-through",
   },
   facetHighlight: {
-    backgroundColor: uiColor.component2,
+    backgroundColor: warningColor.component2,
+    borderRadius: radius.xs,
+    color: warningColor.text2,
+    // eslint-disable-next-line @stylexjs/valid-styles
+    boxDecorationBreak: "clone",
+    paddingBlock: spacing["0.5"],
   },
   quoteShareMark: {
     borderRadius: radius.xs,

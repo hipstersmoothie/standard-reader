@@ -6,6 +6,7 @@ import * as stylex from "@stylexjs/stylex";
 import { normalizeImageAlt } from "#/lib/document/structured-content/image";
 
 import { articleBodyStyles } from "../body-styles";
+import { WebsiteCardBody } from "./structured-views";
 
 export function PcktWebsiteBlockView({ block }: { block: PcktWebsiteBlock }) {
   if (!block.src) return null;
@@ -30,16 +31,7 @@ export function PcktWebsiteBlockView({ block }: { block: PcktWebsiteBlock }) {
           {...stylex.props(articleBodyStyles.websiteCardImage)}
         />
       ) : null}
-      <div {...stylex.props(articleBodyStyles.websiteCardBody)}>
-        {title ? (
-          <p {...stylex.props(articleBodyStyles.websiteCardTitle)}>{title}</p>
-        ) : null}
-        {description ? (
-          <p {...stylex.props(articleBodyStyles.websiteCardDescription)}>
-            {description}
-          </p>
-        ) : null}
-      </div>
+      <WebsiteCardBody title={title} description={description} />
     </a>
   );
 }

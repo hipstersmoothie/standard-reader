@@ -14,7 +14,7 @@ import { normalizeImageAlt } from "#/lib/document/structured-content/image";
 import { useOpenLinks } from "#/lib/use-open-links";
 
 import { articleBodyStyles } from "../body-styles";
-import { StructuredWebsiteView } from "./structured-views";
+import { StructuredWebsiteView, WebsiteCardBody } from "./structured-views";
 
 export function LeafletStandardSitePostBlockView({
   block,
@@ -51,14 +51,11 @@ export function LeafletStandardSitePostBlockView({
             {...stylex.props(articleBodyStyles.websiteCardImage)}
           />
         ) : null}
-        <div {...stylex.props(articleBodyStyles.websiteCardBody)}>
-          <p {...stylex.props(articleBodyStyles.websiteCardTitle)}>{title}</p>
-          {description ? (
-            <p {...stylex.props(articleBodyStyles.websiteCardDescription)}>
-              {description}
-            </p>
-          ) : null}
-        </div>
+        <WebsiteCardBody
+          title={title}
+          description={description}
+          showExternalIcon={Boolean(externalUrl)}
+        />
       </>
     );
     // "Open on original site" preference: skip the in-app reader.

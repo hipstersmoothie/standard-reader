@@ -15,19 +15,32 @@ export interface BlockquoteParagraph {
 
 export function BlockquoteBlockView({
   paragraphs,
+  embedded = false,
 }: {
   paragraphs: Array<BlockquoteParagraph>;
+  embedded?: boolean;
 }) {
   const tracker = useQuoteHighlightTracker();
   const items = paragraphs.filter((item) => item.plaintext.trim());
   if (items.length === 0) return null;
 
   return (
-    <blockquote {...stylex.props(articleBodyStyles.pullquote)}>
+    <blockquote
+      {...stylex.props(
+        articleBodyStyles.pullquote,
+        embedded && articleBodyStyles.pageEmbedBlockSpacing,
+      )}
+    >
       {items.map((item, index) => {
         const highlightRange = tracker?.consume(item.plaintext.length) ?? null;
         return (
-          <p key={index} {...stylex.props(articleBodyStyles.paragraph)}>
+          <p
+            key={index}
+            {...stylex.props(
+              articleBodyStyles.paragraph,
+              embedded && articleBodyStyles.pageEmbedBlockInner,
+            )}
+          >
             <HighlightedFacetedPlaintext
               plaintext={item.plaintext}
               facets={item.facets}

@@ -173,16 +173,22 @@ export function TextBlockView({
   plaintext,
   facets,
   dropCap = false,
+  embedded = false,
 }: {
   plaintext: string;
   facets?: Array<LeafletFacet> | Array<unknown>;
   dropCap?: boolean;
+  embedded?: boolean;
 }) {
   const tracker = useQuoteHighlightTracker();
   const { preference } = useReadingTypography();
   const highlightRange = tracker?.consume(plaintext.length) ?? null;
 
   if (!plaintext) return null;
+
+  const paragraphStyle = embedded
+    ? articleBodyStyles.pageEmbedBlockSpacing
+    : articleBodyStyles.paragraph;
 
   if (dropCap) {
     const chars = [...plaintext];
@@ -197,12 +203,7 @@ export function TextBlockView({
     );
 
     return (
-      <p
-        {...stylex.props(
-          articleBodyStyles.paragraph,
-          articleBodyStyles.dropCapParagraph,
-        )}
-      >
+      <p {...stylex.props(paragraphStyle, articleBodyStyles.dropCapParagraph)}>
         <span {...readingDropCapStyleProps(preference)} aria-hidden>
           <DropCapChar char={firstChar} highlightRange={firstCharRange} />
         </span>
@@ -216,7 +217,7 @@ export function TextBlockView({
   }
 
   return (
-    <p {...stylex.props(articleBodyStyles.paragraph)}>
+    <p {...stylex.props(paragraphStyle)}>
       <HighlightedFacetedPlaintext
         plaintext={plaintext}
         facets={facets}

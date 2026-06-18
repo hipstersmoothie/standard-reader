@@ -31,6 +31,7 @@ export const PCKT_BLOCK = {
   tableHeader: "blog.pckt.block.tableHeader",
   tableCell: "blog.pckt.block.tableCell",
   website: "blog.pckt.block.website",
+  hardBreak: "blog.pckt.block.hardBreak",
 } as const;
 
 export const PCKT_CONTENT = "blog.pckt.content";
@@ -56,6 +57,7 @@ export interface PcktTextBlock {
   $type?: string;
   plaintext: string;
   facets?: Array<PcktFacet>;
+  content?: Array<Record<string, unknown>>;
 }
 
 export interface PcktHeadingBlock {
@@ -63,6 +65,7 @@ export interface PcktHeadingBlock {
   level?: number;
   plaintext: string;
   facets?: Array<PcktFacet>;
+  content?: Array<Record<string, unknown>>;
 }
 
 export interface PcktImageAttrs {
@@ -90,6 +93,7 @@ export interface PcktIframeBlock {
   $type?: string;
   url?: string;
   height?: number;
+  attrs?: { url?: string; height?: number };
 }
 
 export interface PcktBlueskyEmbedBlock {

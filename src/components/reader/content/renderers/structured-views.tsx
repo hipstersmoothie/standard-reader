@@ -1,14 +1,61 @@
 "use client";
 
 import type { StructuredText } from "#/lib/document/structured-content/types";
+import type { QuoteHighlightRange } from "#/lib/quote-highlight-text";
 
 import * as stylex from "@stylexjs/stylex";
+import { ExternalLink } from "lucide-react";
 import { HighlightedPlaintext } from "#/components/reader/quote-highlight-context";
 import { useQuoteHighlightTracker } from "#/components/reader/quote-highlight-tracker";
 import { normalizeImageAlt } from "#/lib/document/structured-content/image";
 
 import { articleBodyStyles } from "../body-styles";
 import { HighlightedFacetedPlaintext } from "./shared/faceted-text";
+
+export function WebsiteCardBody({
+  title,
+  description,
+  titleRange,
+  descriptionRange,
+  showExternalIcon = true,
+}: {
+  title?: string;
+  description?: string;
+  titleRange?: QuoteHighlightRange | null | undefined;
+  descriptionRange?: QuoteHighlightRange | null | undefined;
+  showExternalIcon?: boolean;
+}) {
+  const cardTitle = title?.trim();
+  const cardDescription = description?.trim();
+
+  return (
+    <div {...stylex.props(articleBodyStyles.websiteCardBody)}>
+      <div {...stylex.props(articleBodyStyles.websiteCardText)}>
+        {cardTitle ? (
+          <p {...stylex.props(articleBodyStyles.websiteCardTitle)}>
+            <HighlightedPlaintext
+              plaintext={cardTitle}
+              highlightRange={titleRange}
+            />
+          </p>
+        ) : null}
+        {cardDescription ? (
+          <p {...stylex.props(articleBodyStyles.websiteCardDescription)}>
+            <HighlightedPlaintext
+              plaintext={cardDescription}
+              highlightRange={descriptionRange}
+            />
+          </p>
+        ) : null}
+      </div>
+      {showExternalIcon ? (
+        <span {...stylex.props(articleBodyStyles.websiteCardExternalIcon)}>
+          <ExternalLink aria-hidden size={16} />
+        </span>
+      ) : null}
+    </div>
+  );
+}
 
 export function StructuredBulletListView({
   items,
@@ -181,24 +228,12 @@ export function StructuredWebsiteView({
           {...stylex.props(articleBodyStyles.websiteCardImage)}
         />
       ) : null}
-      <div {...stylex.props(articleBodyStyles.websiteCardBody)}>
-        {cardTitle ? (
-          <p {...stylex.props(articleBodyStyles.websiteCardTitle)}>
-            <HighlightedPlaintext
-              plaintext={cardTitle}
-              highlightRange={titleRange}
-            />
-          </p>
-        ) : null}
-        {cardDescription ? (
-          <p {...stylex.props(articleBodyStyles.websiteCardDescription)}>
-            <HighlightedPlaintext
-              plaintext={cardDescription}
-              highlightRange={descriptionRange}
-            />
-          </p>
-        ) : null}
-      </div>
+      <WebsiteCardBody
+        title={cardTitle}
+        description={cardDescription}
+        titleRange={titleRange}
+        descriptionRange={descriptionRange}
+      />
     </a>
   );
 }

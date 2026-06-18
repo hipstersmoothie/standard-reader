@@ -3,11 +3,18 @@
 import type { LeafletRenderableBlock } from "#/lib/leaflet/types";
 import type { CodeHighlightsByScheme } from "#/lib/theme";
 
+import {
+  Disclosure,
+  DisclosurePanel,
+  DisclosureTitle,
+} from "#/design-system/disclosure";
 import { normalizeImageAlt } from "#/lib/document/structured-content/image";
+import { leafletPageEmbedLabel, leafletWebsiteSrc } from "#/lib/leaflet/blocks";
 import { leafletImageAspectRatio, leafletImageUrl } from "#/lib/leaflet/image";
 
 import type { ContentBlobContext } from "../types";
 
+import { articleBodyStyles } from "../body-styles";
 import { LeafletButtonBlockView } from "./leaflet-button";
 import {
   LeafletOrderedListBlockView,
@@ -33,11 +40,13 @@ export function LeafletBlockView({
   blobContext,
   codeHighlights,
   dropCap = false,
+  embedded = false,
 }: {
   block: LeafletRenderableBlock;
   blobContext?: ContentBlobContext;
   codeHighlights?: CodeHighlightsByScheme;
   dropCap?: boolean;
+  embedded?: boolean;
 }) {
   switch (block.kind) {
     case "text": {
@@ -46,6 +55,7 @@ export function LeafletBlockView({
           plaintext={block.block.plaintext}
           facets={block.block.facets}
           dropCap={dropCap}
+          embedded={embedded}
         />
       );
     }
@@ -54,6 +64,7 @@ export function LeafletBlockView({
         <HeadingBlockView
           plaintext={block.block.plaintext}
           level={block.block.level}
+          embedded={embedded}
         />
       );
     }
@@ -66,17 +77,25 @@ export function LeafletBlockView({
               facets: block.block.facets,
             },
           ]}
+          embedded={embedded}
         />
       );
     }
     case "horizontalRule": {
-      return <HorizontalRuleView />;
+      return <HorizontalRuleView embedded={embedded} />;
     }
     case "unorderedList": {
-      return <LeafletUnorderedListBlockView block={block.block} />;
+      return (
+        <LeafletUnorderedListBlockView
+          block={block.block}
+          embedded={embedded}
+        />
+      );
     }
     case "orderedList": {
-      return <LeafletOrderedListBlockView block={block.block} />;
+      return (
+        <LeafletOrderedListBlockView block={block.block} embedded={embedded} />
+      );
     }
     case "bskyPost": {
       return <BskyPostEmbedView postUri={block.block.postRef?.uri} />;
@@ -116,11 +135,11 @@ export function LeafletBlockView({
       );
     }
     case "website": {
-      const url = block.block.url?.trim();
-      if (!url) return null;
+      const src = leafletWebsiteSrc(block.block);
+      if (!src) return null;
       return (
         <StructuredWebsiteView
-          src={url}
+          src={src}
           title={block.block.title}
           description={block.block.description}
         />
@@ -141,8 +160,65 @@ export function LeafletBlockView({
     case "standardSitePost": {
       return <LeafletStandardSitePostBlockView block={block.block} />;
     }
+    case "pageEmbed": {
+      return (
+        <LeafletPageEmbedView
+          blocks={block.blocks}
+          blobContext={blobContext}
+          codeHighlights={codeHighlights}
+        />
+      );
+    }
     case "unknown": {
       return <UnknownBlockView blockType={block.blockType} />;
     }
   }
+}
+
+function LeafletPageEmbedView({
+  blocks,
+  blobContext,
+  codeHighlights,
+}: {
+  blocks: Array<LeafletRenderableBlock>;
+  blobContext?: ContentBlobContext;
+  codeHighlights?: CodeHighlightsByScheme;
+}) {
+  if (blocks.length === 0) return null;
+
+  const title = leafletPageEmbedLabel(blocks);
+  let skippedTitleHeader = false;
+  const bodyBlocks = blocks.filter((block) => {
+    if (
+      title &&
+      !skippedTitleHeader &&
+      block.kind === "header" &&
+      block.block.plaintext.trim() === title
+    ) {
+      skippedTitleHeader = true;
+      return false;
+    }
+    return true;
+  });
+
+  const label = title ?? "Linked page";
+
+  return (
+    <Disclosure size="sm" style={articleBodyStyles.pageEmbedDisclosure}>
+      <DisclosureTitle aria-label={`Toggle ${label}`}>{label}</DisclosureTitle>
+      {bodyBlocks.length > 0 ? (
+        <DisclosurePanel contentStyle={articleBodyStyles.pageEmbedPanelContent}>
+          {bodyBlocks.map((block, index) => (
+            <LeafletBlockView
+              key={index}
+              block={block}
+              blobContext={blobContext}
+              codeHighlights={codeHighlights}
+              embedded
+            />
+          ))}
+        </DisclosurePanel>
+      ) : null}
+    </Disclosure>
+  );
 }

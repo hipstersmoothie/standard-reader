@@ -1,4 +1,5 @@
 import { narrationImageLines } from "#/lib/document/structured-content/image";
+import { utf8ByteLength } from "#/lib/leaflet/utf8";
 import { pcktImageAlt } from "#/lib/pckt/image";
 
 import type {
@@ -6,6 +7,7 @@ import type {
   PcktBlueskyEmbedBlock,
   PcktCodeBlock,
   PcktContent,
+  PcktFacet,
   PcktGalleryBlock,
   PcktHeadingBlock,
   PcktIframeBlock,
@@ -24,18 +26,102 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+function shiftFacets(
+  facets: Array<PcktFacet> | undefined,
+  byteOffset: number,
+): Array<PcktFacet> | undefined {
+  if (!facets?.length || byteOffset === 0) return facets;
+  return facets.map((facet) => ({
+    ...facet,
+    index: {
+      byteStart: facet.index.byteStart + byteOffset,
+      byteEnd: facet.index.byteEnd + byteOffset,
+    },
+  }));
+}
+
+/** Flatten ProseMirror-style inline `content` (text + hardBreak) into plaintext. */
+function flattenPcktInlineContent(
+  entries: Array<unknown>,
+): Pick<PcktTextBlock, "plaintext" | "facets"> {
+  const parts: Array<string> = [];
+  const facets: Array<PcktFacet> = [];
+  let byteOffset = 0;
+
+  for (const entry of entries) {
+    if (!isRecord(entry)) continue;
+
+    if (entry.$type === PCKT_BLOCK.hardBreak) {
+      parts.push("\n");
+      byteOffset += 1;
+      continue;
+    }
+
+    if (entry.$type !== PCKT_BLOCK.text) continue;
+
+    let segmentPlaintext = "";
+    let segmentFacets: Array<PcktFacet> | undefined;
+
+    if (typeof entry.plaintext === "string") {
+      segmentPlaintext = entry.plaintext;
+      segmentFacets = entry.facets as Array<PcktFacet> | undefined;
+    } else if (Array.isArray(entry.content)) {
+      const nested = flattenPcktInlineContent(entry.content);
+      segmentPlaintext = nested.plaintext;
+      segmentFacets = nested.facets;
+    }
+
+    if (segmentFacets?.length) {
+      facets.push(...(shiftFacets(segmentFacets, byteOffset) ?? []));
+    }
+    parts.push(segmentPlaintext);
+    byteOffset += utf8ByteLength(segmentPlaintext);
+  }
+
+  return {
+    plaintext: parts.join(""),
+    facets: facets.length > 0 ? facets : undefined,
+  };
+}
+
+function normalizeTextFields(
+  value: Record<string, unknown>,
+): Pick<PcktTextBlock, "plaintext" | "facets"> {
+  if (typeof value.plaintext === "string") {
+    return {
+      plaintext: value.plaintext,
+      facets: value.facets as Array<PcktFacet> | undefined,
+    };
+  }
+
+  const content = value.content;
+  if (Array.isArray(content)) {
+    return flattenPcktInlineContent(content);
+  }
+
+  return { plaintext: "" };
+}
+
 export function asTextBlock(value: unknown): PcktTextBlock | null {
   if (!isRecord(value)) return null;
   if (value.$type !== PCKT_BLOCK.text) return null;
-  if (typeof value.plaintext !== "string") return null;
-  return value as unknown as PcktTextBlock;
+  const { plaintext, facets } = normalizeTextFields(value);
+  return {
+    ...(value as unknown as PcktTextBlock),
+    plaintext,
+    facets: facets ?? (value.facets as Array<PcktFacet> | undefined),
+  };
 }
 
 function asHeadingBlock(value: unknown): PcktHeadingBlock | null {
   if (!isRecord(value)) return null;
   if (value.$type !== PCKT_BLOCK.heading) return null;
-  if (typeof value.plaintext !== "string") return null;
-  return value as unknown as PcktHeadingBlock;
+  const { plaintext, facets } = normalizeTextFields(value);
+  return {
+    ...(value as unknown as PcktHeadingBlock),
+    plaintext,
+    facets: facets ?? (value.facets as Array<PcktFacet> | undefined),
+  };
 }
 
 function asBlockquoteBlock(value: unknown): PcktBlockquoteBlock | null {
@@ -68,8 +154,25 @@ function asCodeBlock(value: unknown): PcktCodeBlock | null {
 function asIframeBlock(value: unknown): PcktIframeBlock | null {
   if (!isRecord(value)) return null;
   if (value.$type !== PCKT_BLOCK.iframe) return null;
-  if (typeof value.url !== "string") return null;
-  return value as unknown as PcktIframeBlock;
+  const attrs = isRecord(value.attrs) ? value.attrs : null;
+  const url =
+    typeof value.url === "string"
+      ? value.url
+      : typeof attrs?.url === "string"
+        ? attrs.url
+        : null;
+  if (!url) return null;
+  const height =
+    typeof value.height === "number"
+      ? value.height
+      : typeof attrs?.height === "number"
+        ? attrs.height
+        : undefined;
+  return {
+    ...(value as unknown as PcktIframeBlock),
+    url,
+    height,
+  };
 }
 
 function asRenderableBlock(value: unknown): PcktRenderableBlock | null {

@@ -24,9 +24,14 @@ function listItemText(item: LeafletListItem) {
   return text;
 }
 
-function nestedList(item: LeafletListItem) {
+function nestedList(item: LeafletListItem, embedded = false) {
   if (item.children?.length) {
-    return <LeafletOrderedListBlockView block={{ children: item.children }} />;
+    return (
+      <LeafletOrderedListBlockView
+        block={{ children: item.children }}
+        embedded={embedded}
+      />
+    );
   }
 
   const unordered = item.unorderedListChildren;
@@ -39,6 +44,7 @@ function nestedList(item: LeafletListItem) {
     return (
       <LeafletUnorderedListBlockView
         block={unordered as LeafletUnorderedListBlock}
+        embedded={embedded}
       />
     );
   }
@@ -51,7 +57,10 @@ function nestedList(item: LeafletListItem) {
     ordered.children.length > 0
   ) {
     return (
-      <LeafletOrderedListBlockView block={ordered as LeafletOrderedListBlock} />
+      <LeafletOrderedListBlockView
+        block={ordered as LeafletOrderedListBlock}
+        embedded={embedded}
+      />
     );
   }
 
@@ -62,22 +71,27 @@ function LeafletListItems({
   items,
   ordered,
   startIndex,
+  embedded = false,
 }: {
   items: Array<LeafletListItem>;
   ordered: boolean;
   startIndex?: number;
+  embedded?: boolean;
 }) {
   const tracker = useQuoteHighlightTracker();
   const ListTag = ordered ? "ol" : "ul";
 
   return (
     <ListTag
-      {...stylex.props(articleBodyStyles.list)}
+      {...stylex.props(
+        articleBodyStyles.list,
+        embedded && articleBodyStyles.pageEmbedBlockSpacing,
+      )}
       {...(ordered ? { start: startIndex ?? 1 } : {})}
     >
       {items.map((item, index) => {
         const text = listItemText(item);
-        const nested = nestedList(item);
+        const nested = nestedList(item, embedded);
         if (!text && !nested) return null;
 
         const highlightRange =
@@ -104,8 +118,10 @@ function LeafletListItems({
 
 export function LeafletUnorderedListBlockView({
   block,
+  embedded = false,
 }: {
   block: LeafletUnorderedListBlock;
+  embedded?: boolean;
 }) {
   const children = block.children ?? [];
   const items = children.filter(
@@ -113,13 +129,15 @@ export function LeafletUnorderedListBlockView({
   );
   if (items.length === 0) return null;
 
-  return <LeafletListItems items={items} ordered={false} />;
+  return <LeafletListItems embedded={embedded} items={items} ordered={false} />;
 }
 
 export function LeafletOrderedListBlockView({
   block,
+  embedded = false,
 }: {
   block: LeafletOrderedListBlock;
+  embedded?: boolean;
 }) {
   const children = block.children ?? [];
   const items = children.filter(
@@ -128,6 +146,11 @@ export function LeafletOrderedListBlockView({
   if (items.length === 0) return null;
 
   return (
-    <LeafletListItems items={items} ordered startIndex={block.startIndex} />
+    <LeafletListItems
+      embedded={embedded}
+      items={items}
+      ordered
+      startIndex={block.startIndex}
+    />
   );
 }

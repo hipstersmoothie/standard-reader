@@ -100,9 +100,13 @@ export interface LeafletIframeBlock {
 
 export interface LeafletWebsiteBlock {
   $type?: string;
+  /** Current lexicon field. */
+  src?: string;
+  /** Legacy field used by older published content. */
   url?: string;
   title?: string;
   description?: string;
+  previewImage?: string;
 }
 
 export interface LeafletMathBlock {
@@ -167,6 +171,12 @@ export type LeafletRenderableBlock =
   | { kind: "poll"; block: LeafletPollBlock }
   | { kind: "separator" }
   | { kind: "standardSitePost"; block: LeafletStandardSitePostBlock }
+  | {
+      kind: "pageEmbed";
+      pageId: string;
+      pageType?: string;
+      blocks: Array<LeafletRenderableBlock>;
+    }
   | { kind: "unknown"; blockType: string };
 
 export interface LeafletPageBlock {

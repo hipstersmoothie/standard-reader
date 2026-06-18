@@ -19,6 +19,7 @@ export const articleMarkdownSanitizeSchema: SanitizeSchema = {
   ...defaultSchema,
   tagNames: [
     ...(defaultSchema.tagNames ?? []),
+    "mark",
     "article",
     "iframe",
     "math",

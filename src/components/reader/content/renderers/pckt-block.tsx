@@ -113,12 +113,8 @@ export function PcktBlockView({
       );
     }
     case "iframe": {
-      return (
-        <IframeEmbedView
-          url={block.block.url ?? ""}
-          height={block.block.height}
-        />
-      );
+      const url = block.block.url ?? block.block.attrs?.url ?? "";
+      return <IframeEmbedView url={url} height={block.block.height} />;
     }
     case "table": {
       return <PcktTableBlockView block={block.block} />;

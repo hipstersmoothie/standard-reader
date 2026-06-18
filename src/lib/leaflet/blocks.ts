@@ -90,6 +90,28 @@ function asIframeBlock(value: unknown): LeafletIframeBlock | null {
   return value as unknown as LeafletIframeBlock;
 }
 
+function asWebsiteBlock(value: unknown): LeafletWebsiteBlock | null {
+  if (!isRecord(value)) return null;
+  if (value.$type !== LEAFLET_BLOCK.website) return null;
+  const src =
+    typeof value.src === "string"
+      ? value.src
+      : typeof value.url === "string"
+        ? value.url
+        : null;
+  if (!src) return null;
+  return {
+    ...(value as unknown as LeafletWebsiteBlock),
+    src,
+    url: src,
+  };
+}
+
+/** Bookmark URL for a leaflet website block (`src` in current lexicon). */
+export function leafletWebsiteSrc(block: LeafletWebsiteBlock): string {
+  return (block.src ?? block.url ?? "").trim();
+}
+
 function asRenderableBlock(value: unknown): LeafletRenderableBlock | null {
   if (!isRecord(value)) return null;
 
@@ -128,13 +150,9 @@ function asRenderableBlock(value: unknown): LeafletRenderableBlock | null {
   const iframe = asIframeBlock(value);
   if (iframe) return { kind: "iframe", block: iframe };
 
-  if (value.$type === LEAFLET_BLOCK.website) {
-    const url = typeof value.url === "string" ? value.url : null;
-    if (!url) return null;
-    return {
-      kind: "website",
-      block: value as unknown as LeafletWebsiteBlock,
-    };
+  const website = asWebsiteBlock(value);
+  if (website) {
+    return { kind: "website", block: website };
   }
 
   if (value.$type === LEAFLET_BLOCK.math) {
@@ -201,6 +219,43 @@ function collectReferencedPageIds(page: unknown): Array<string> {
   return ids;
 }
 
+function blocksForReferencedPage(
+  referenced: Record<string, unknown>,
+  pagesById: Map<string, unknown>,
+  visiting: Set<string>,
+): Array<LeafletRenderableBlock> {
+  if (referenced.$type === LEAFLET_PAGE.canvas) {
+    return blocksFromCanvasPage(referenced, pagesById, visiting);
+  }
+  return resolvePageBlocks(referenced, pagesById, visiting);
+}
+
+function appendReferencedPageBlocks(
+  pageId: string,
+  pagesById: Map<string, unknown>,
+  visiting: Set<string>,
+  result: Array<LeafletRenderableBlock>,
+): void {
+  if (visiting.has(pageId)) return;
+  const referenced = pagesById.get(pageId);
+  if (!isRecord(referenced)) return;
+
+  visiting.add(pageId);
+  try {
+    const blocks = blocksForReferencedPage(referenced, pagesById, visiting);
+    if (blocks.length === 0) return;
+    result.push({
+      kind: "pageEmbed",
+      pageId,
+      pageType:
+        typeof referenced.$type === "string" ? referenced.$type : undefined,
+      blocks,
+    });
+  } finally {
+    visiting.delete(pageId);
+  }
+}
+
 function resolvePageBlocks(
   page: unknown,
   pagesById: Map<string, unknown>,
@@ -217,12 +272,8 @@ function resolvePageBlocks(
 
     if (inner.$type === LEAFLET_BLOCK.page) {
       const pageId = typeof inner.id === "string" ? inner.id : null;
-      if (!pageId || visiting.has(pageId)) continue;
-      const referenced = pagesById.get(pageId);
-      if (!referenced) continue;
-      visiting.add(pageId);
-      result.push(...resolvePageBlocks(referenced, pagesById, visiting));
-      visiting.delete(pageId);
+      if (pageId)
+        appendReferencedPageBlocks(pageId, pagesById, visiting, result);
       continue;
     }
 
@@ -232,7 +283,11 @@ function resolvePageBlocks(
   return result;
 }
 
-function blocksFromCanvasPage(page: unknown): Array<LeafletRenderableBlock> {
+function blocksFromCanvasPage(
+  page: unknown,
+  pagesById: Map<string, unknown>,
+  visiting: Set<string> = new Set(),
+): Array<LeafletRenderableBlock> {
   if (!isRecord(page)) return [];
   const blocks = page.blocks;
   if (!Array.isArray(blocks)) return [];
@@ -250,6 +305,14 @@ function blocksFromCanvasPage(page: unknown): Array<LeafletRenderableBlock> {
   for (const entry of sorted) {
     const inner = unwrapPageBlock(entry);
     if (!inner) continue;
+
+    if (inner.$type === LEAFLET_BLOCK.page) {
+      const pageId = typeof inner.id === "string" ? inner.id : null;
+      if (pageId)
+        appendReferencedPageBlocks(pageId, pagesById, visiting, result);
+      continue;
+    }
+
     const parsed = asRenderableBlock(inner);
     if (parsed) result.push(parsed);
   }
@@ -262,7 +325,7 @@ function blocksFromPage(
 ): Array<LeafletRenderableBlock> {
   if (!isRecord(page)) return [];
   if (page.$type === LEAFLET_PAGE.canvas) {
-    return blocksFromCanvasPage(page);
+    return blocksFromCanvasPage(page, pagesById, new Set());
   }
   return resolvePageBlocks(page, pagesById, new Set());
 }
@@ -303,6 +366,19 @@ export function leafletBskyPostUris(content: unknown): Array<string> {
       block.kind === "bskyPost" ? block.block.postRef?.uri : undefined,
     )
     .filter((uri): uri is string => typeof uri === "string" && uri.length > 0);
+}
+
+/** First header plaintext inside a page embed, for chrome labels. */
+export function leafletPageEmbedLabel(
+  blocks: Array<LeafletRenderableBlock>,
+): string | null {
+  for (const block of blocks) {
+    if (block.kind === "header") {
+      const text = block.block.plaintext.trim();
+      if (text) return text;
+    }
+  }
+  return null;
 }
 
 /**
@@ -364,6 +440,11 @@ export function plaintextLinesFromBlock(
     }
     case "standardSitePost": {
       return [];
+    }
+    case "pageEmbed": {
+      return block.blocks.flatMap((nested) =>
+        plaintextLinesFromBlock(nested, bskyPostText),
+      );
     }
     case "image": {
       return narrationImageLines(block.block.alt);

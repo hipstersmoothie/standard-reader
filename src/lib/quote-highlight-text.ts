@@ -158,6 +158,12 @@ function appendLeafletRenderedText(
       appendText(parts, block.block.text);
       return;
     }
+    case "pageEmbed": {
+      for (const nested of block.blocks) {
+        appendLeafletRenderedText(nested, parts);
+      }
+      return;
+    }
     case "horizontalRule":
     case "separator":
     case "poll":
