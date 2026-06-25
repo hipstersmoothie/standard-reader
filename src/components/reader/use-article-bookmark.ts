@@ -3,8 +3,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
-import { APP_NSID } from "#/lib/atproto/nsids";
-import { isAtprotoScopeMissingError } from "#/lib/atproto/scope-error";
 import { useLoginSearch } from "#/utils/use-login-search";
 
 import {
@@ -49,14 +47,10 @@ export function useArticleBookmark(
     );
     const mutation = next ? bookmarkMutation : unbookmarkMutation;
     mutation.mutate(documentUri, {
-      onError: (error) => {
+      onError: () => {
         rollbackBookmarkOptimisticUpdate(queryClient, documentUri, optimistic);
-        if (isAtprotoScopeMissingError(error, APP_NSID.bookmark)) {
-          void navigate({
-            to: "/login",
-            search: { ...loginSearch, error: "scope" },
-          });
-        }
+        // Missing-scope errors are handled globally (a reconnect toast) by the
+        // mutation cache in query-client.ts.
       },
     });
   };
