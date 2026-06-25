@@ -5,6 +5,7 @@ import type {
   BskyProfileRecord,
   CollectionSidecarRecord,
   DocumentRecord,
+  LabelerServiceRecord,
   LabelerSubscriptionRecord,
   PublicationRecord,
   PublicationThemeRecord,
@@ -26,6 +27,7 @@ import {
   upsertBskyProfile,
   upsertCollectionSidecar,
   upsertDocument,
+  upsertLabelerService,
   upsertLabelerSubscription,
   upsertPublication,
   upsertPublicationTheme,
@@ -105,6 +107,16 @@ async function handleRecord(payload: TapRecordPayload): Promise<void> {
         rkey,
         cid,
         record as unknown as LabelerSubscriptionRecord,
+      );
+      return;
+    }
+    case Collections.labelerService: {
+      await upsertLabelerService(
+        uri,
+        did,
+        rkey,
+        cid,
+        record as unknown as LabelerServiceRecord,
       );
       return;
     }

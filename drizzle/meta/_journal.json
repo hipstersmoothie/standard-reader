@@ -134,6 +134,13 @@
       "when": 1782368986968,
       "tag": "0018_milky_shocker",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1782398509797,
+      "tag": "0019_petite_natasha_romanoff",
+      "breakpoints": true
     }
   ]
 }

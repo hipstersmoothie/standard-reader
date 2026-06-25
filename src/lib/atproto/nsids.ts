@@ -20,6 +20,7 @@ export const APP_NSID = {
   collectionsPublication: "app.standard-reader.collectionsPublication",
   publicationTheme: "app.standard-reader.publicationTheme",
   labelerSubscription: "app.standard-reader.labelerSubscription",
+  labelerService: "app.standard-reader.labeler.service",
 } as const;
 
 /**

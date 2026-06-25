@@ -12,7 +12,6 @@
  * shape of a labeler stays legible.
  */
 
-import { readFileSync } from "node:fs";
 import { createServer } from "node:http";
 import type { IncomingMessage, ServerResponse } from "node:http";
 
@@ -24,17 +23,7 @@ import type { WebSocket } from "ws";
 import { config } from "./config.ts";
 import { labelsAfter, latestSeq, queryLabels } from "./db.ts";
 import type { LabelerDb, StoredLabel } from "./db.ts";
-import { labelerServiceView } from "./descriptor.ts";
 import { keypairMultikey } from "./sign.ts";
-
-/** Avatar served at /avatar.svg and advertised in the labeler descriptor. */
-const AVATAR_SVG = ((): string | null => {
-  try {
-    return readFileSync(new URL("../avatar.svg", import.meta.url), "utf8");
-  } catch {
-    return null;
-  }
-})();
 
 function sendJson(res: ServerResponse, status: number, body: unknown): void {
   const json = JSON.stringify(body);
@@ -171,25 +160,8 @@ export function startServer(db: LabelerDb, keypair: Secp256k1Keypair): void {
           sendJson(res, 200, didDocument(multikey));
           return;
         }
-        case "/avatar.svg": {
-          if (!AVATAR_SVG) {
-            xrpcError(res, 404, "NotFound", "No avatar");
-            return;
-          }
-          res.writeHead(200, {
-            "Content-Type": "image/svg+xml",
-            "Cache-Control": "public, max-age=3600",
-            "Access-Control-Allow-Origin": "*",
-          });
-          res.end(AVATAR_SVG);
-          return;
-        }
         case "/xrpc/com.atproto.label.queryLabels": {
           handleQueryLabels(db, url, res);
-          return;
-        }
-        case "/xrpc/app.standard-reader.labeler.getServices": {
-          sendJson(res, 200, { views: [labelerServiceView()] });
           return;
         }
         default: {

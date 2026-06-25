@@ -14,6 +14,63 @@ export interface LabelPref {
   visibility: LabelVisibility;
 }
 
+/** A label-value definition as carried on a labeler.service record's policies. */
+export interface LabelValueDefinition {
+  identifier?: string;
+  severity?: string;
+  blurs?: string;
+  defaultSetting?: string;
+  adultOnly?: boolean;
+  locales?: Array<{ lang?: string; name?: string; description?: string }>;
+}
+
+/**
+ * `app.standard-reader.labeler.service` records — the registration of a labeler,
+ * indexed off the network (the owner DID is the labeler's author). Drives the
+ * Labelers directory and where to reach each labeler's label server.
+ */
+export const labelerServices = pgTable(
+  "labeler_services",
+  {
+    /** AT-URI of the labeler.service record. */
+    uri: text("uri").primaryKey(),
+    cid: text("cid"),
+    /** DID that owns the record (the labeler's author). */
+    ownerDid: text("owner_did").notNull(),
+    rkey: text("rkey").notNull(),
+
+    /** DID of the labeler itself (`src` on its labels). */
+    labelerDid: text("labeler_did").notNull(),
+    /** Origin serving queryLabels / subscribeLabels. */
+    serviceEndpoint: text("service_endpoint").notNull(),
+
+    displayName: text("display_name"),
+    description: text("description"),
+    /** Resolved avatar blob URL (owner PDS getBlob), if any. */
+    avatarUrl: text("avatar_url"),
+    /** `policies.labelValueDefinitions` from the record. */
+    labelValueDefinitions: jsonb("label_value_definitions").$type<
+      Array<LabelValueDefinition>
+    >(),
+
+    createdAt: timestamp("created_at", { withTimezone: true }),
+    deleted: boolean("deleted").notNull().default(false),
+    indexedAt: timestamp("indexed_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    // Look up a labeler's registration by its DID (subscriptions reference the DID).
+    index("labeler_services_labeler_idx").on(table.labelerDid),
+  ],
+);
+
+export type LabelerService = typeof labelerServices.$inferSelect;
+export type NewLabelerService = typeof labelerServices.$inferInsert;
+
 /**
  * `app.standard-reader.labelerSubscription` records — which labeler services a
  * reader has subscribed to (like Bluesky's subscribed moderation services).

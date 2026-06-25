@@ -4,19 +4,40 @@
   "defs": {
     "main": {
       "type": "record",
-      "description": "A declaration of the existence of a Standard Reader labeler service. Mirrors app.bsky.labeler.service, but app-owned so the reader can host its own labelers. Note that did:web labelers (with no repo) instead expose this via app.standard-reader.labeler.getServices.",
-      "key": "literal:self",
+      "description": "Registers a Standard Reader labeler. This record is the single source of truth for a labeler: its identity, where to reach its label server, how it presents, and its label-value definitions. Indexed off the network like any other record (the owner of the record is the labeler's author); the label server itself only answers com.atproto.label.queryLabels / subscribeLabels.",
+      "key": "tid",
       "record": {
         "type": "object",
-        "required": ["policies", "createdAt"],
+        "required": ["did", "serviceEndpoint", "createdAt"],
         "properties": {
+          "did": {
+            "type": "string",
+            "format": "did",
+            "description": "DID of the labeler — the `src` on its labels (and whose key signs them)."
+          },
+          "serviceEndpoint": {
+            "type": "string",
+            "format": "uri",
+            "description": "Origin serving this labeler's com.atproto.label.queryLabels / subscribeLabels."
+          },
+          "displayName": {
+            "type": "string",
+            "maxGraphemes": 64,
+            "maxLength": 640
+          },
+          "description": {
+            "type": "string",
+            "maxGraphemes": 300,
+            "maxLength": 3000
+          },
+          "avatar": {
+            "type": "blob",
+            "accept": ["image/png", "image/jpeg", "image/svg+xml"],
+            "maxSize": 1000000
+          },
           "policies": {
             "type": "ref",
             "ref": "app.standard-reader.labeler.defs#labelerPolicies"
-          },
-          "labels": {
-            "type": "union",
-            "refs": ["com.atproto.label.defs#selfLabels"]
           },
           "createdAt": { "type": "string", "format": "datetime" }
         }

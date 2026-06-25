@@ -20,7 +20,6 @@ import {
   subscribedLabelerDids,
 } from "#/server/labeler/labels.server";
 import {
-  knownLabelerDids,
   resolveActorDid,
   resolveLabelerView,
 } from "#/server/labeler/resolve.server";
@@ -144,16 +143,27 @@ const getKnownLabelers = createServerFn({ method: "GET" })
       const countByDid = new Map(
         countRows.map((row) => [row.labelerDid, row.subscriberCount]),
       );
-      // The known directory plus anything the reader already subscribed to.
-      const dids = [...new Set([...knownLabelerDids(), ...subscribed])];
-      const views = await Promise.all(dids.map((d) => resolveLabelerView(d)));
-      span.set("count", dids.length);
-      return dids
+
+      // The registered labelers (records indexed off the network).
+      const svc = context.schema.labelerServices;
+      const rows = await context.db
+        .select()
+        .from(svc)
+        .where(eq(svc.deleted, false));
+      span.set("count", rows.length);
+
+      return rows
         .map(
-          (did, i): LabelerListItem => ({
-            ...(views[i] ?? { did }),
-            subscribed: subSet.has(did),
-            subscriberCount: countByDid.get(did) ?? 0,
+          (row): LabelerListItem => ({
+            did: row.labelerDid,
+            displayName: row.displayName ?? undefined,
+            description: row.description ?? undefined,
+            avatar: row.avatarUrl ?? undefined,
+            labelValueDefinitions:
+              (row.labelValueDefinitions as Array<LabelValueDef> | null) ??
+              undefined,
+            subscribed: subSet.has(row.labelerDid),
+            subscriberCount: countByDid.get(row.labelerDid) ?? 0,
           }),
         )
         .toSorted(

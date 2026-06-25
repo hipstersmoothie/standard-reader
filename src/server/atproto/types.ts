@@ -157,6 +157,21 @@ export interface LabelPrefRecord {
   visibility: "ignore" | "warn" | "hide";
 }
 
+/** `app.standard-reader.labeler.service` — registers a labeler (owner = author). */
+export interface LabelerServiceRecord {
+  $type?: string;
+  did: string;
+  serviceEndpoint: string;
+  displayName?: string;
+  description?: string;
+  avatar?: BlobRef;
+  policies?: {
+    labelValues?: Array<string>;
+    labelValueDefinitions?: Array<Record<string, unknown>>;
+  };
+  createdAt?: string;
+}
+
 /** `app.standard-reader.labelerSubscription` — a labeler the reader subscribes to. */
 export interface LabelerSubscriptionRecord {
   $type?: string;

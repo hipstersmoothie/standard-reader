@@ -40,6 +40,7 @@
         },
         "visibility": {
           "type": "string",
+          "maxLength": 16,
           "knownValues": ["ignore", "warn", "hide"],
           "description": "ignore = show normally; warn = content warning / blur; hide = filter out."
         }

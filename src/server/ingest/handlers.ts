@@ -18,6 +18,7 @@ import type {
   BskyProfileRecord,
   CollectionSidecarRecord,
   DocumentRecord,
+  LabelerServiceRecord,
   LabelerSubscriptionRecord,
   PublicationRecord,
   PublicationThemeRecord,
@@ -32,6 +33,7 @@ import {
   bookmarks,
   documentContributors,
   documents,
+  labelerServices,
   labelerSubscriptions,
   profiles,
   publicationStats,
@@ -538,6 +540,60 @@ export async function upsertLabelerSubscription(
   await ensureTracked(did, "reader");
 }
 
+/**
+ * `app.standard-reader.labeler.service` — a labeler registered by its owner
+ * (the record author). Drives the Labelers directory + where to query labels.
+ * The avatar blob lives in the owner's repo, so resolve it via the owner's PDS.
+ */
+export async function upsertLabelerService(
+  uri: string,
+  did: string,
+  rkey: string,
+  cid: string | undefined,
+  record: LabelerServiceRecord,
+): Promise<void> {
+  if (
+    typeof record.did !== "string" ||
+    typeof record.serviceEndpoint !== "string"
+  ) {
+    return;
+  }
+
+  const owner = getCachedIdentity(did);
+  const ownerPds = await authorPds(did, owner?.pds ?? null);
+  const avatarBlobCid = blobCid(record.avatar);
+  const avatarUrl =
+    avatarBlobCid && ownerPds ? getBlobUrl(ownerPds, did, avatarBlobCid) : null;
+  const labelValueDefinitions = Array.isArray(
+    record.policies?.labelValueDefinitions,
+  )
+    ? record.policies.labelValueDefinitions
+    : null;
+
+  const values = {
+    uri,
+    cid: cid ?? null,
+    ownerDid: did,
+    rkey,
+    labelerDid: record.did,
+    serviceEndpoint: record.serviceEndpoint,
+    displayName: cleanOptional(record.displayName),
+    description: cleanOptional(record.description),
+    avatarUrl,
+    labelValueDefinitions,
+    createdAt: parseDate(record.createdAt),
+    deleted: false,
+    updatedAt: sql`now()`,
+  };
+
+  await db
+    .insert(labelerServices)
+    .values(values)
+    .onConflictDoUpdate({ target: labelerServices.uri, set: values });
+
+  await ensureTracked(did, "manual");
+}
+
 export async function upsertRecommend(
   uri: string,
   did: string,
@@ -780,6 +836,10 @@ export async function deleteRecord(
       await db
         .delete(labelerSubscriptions)
         .where(eq(labelerSubscriptions.uri, uri));
+      return;
+    }
+    case Collections.labelerService: {
+      await db.delete(labelerServices).where(eq(labelerServices.uri, uri));
       return;
     }
     case Collections.read: {
