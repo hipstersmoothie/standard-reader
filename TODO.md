@@ -423,3 +423,28 @@ cookies on `/xrpc`. Live developer docs at [`/docs/api`](/docs/api).
       `XRPC_INTEGRATION_TEST=1 pnpm test`.
 - [ ] **Publish lexicons to network** — `pnpm atproto:publish-lexicons` when `_lexicon.*` DNS ready.
 - [ ] **Production smoke test** — curl Tier 1 endpoints on `standard-reader.app` after deploy.
+
+## 14. Labelers (moderation)
+
+Standard AT Proto labels: subscribe to labelers, see/blur/hide their labels while reading.
+
+- [x] **Lexicons** — vendored `com.atproto.label.{defs,queryLabels,subscribeLabels}`; app-owned
+      `app.standard-reader.labeler.{service,defs,getServices}`, `labelerSubscription`,
+      `getLabelers`, `getLabeler`, `getLabels`.
+- [x] **Subscriptions** — `app.standard-reader.labelerSubscription` repo record (deterministic
+      rkey, per-label visibility prefs), read-model mirror (`labeler_subscriptions`), tap filter,
+      subscribe/unsubscribe procedures.
+- [x] **Discovery** — resolve a labeler by DID/handle (DID doc → `#atproto_labeler` →
+      descriptor); nothing hardcoded.
+- [x] **Settings → Labelers** — `/settings/labelers` (add by handle/DID, list subscriptions) +
+      `/settings/labelers/$did` (info, subscribe, per-label hide/blur toggles, labeled documents).
+- [x] **Reader display** — badge + content warning on labeled documents per the reader's prefs.
+- [x] **claudeslop** — standalone reference labeler (`services/claudeslop/`): Jetstream → heuristic
+      AI-writing detector → signed labels (SQLite) → `queryLabels` + `subscribeLabels`.
+- [ ] **Feed-level hiding** — filter `hide`-labeled documents out of feeds (currently surfaced
+      only on the article page).
+- [ ] **Signature verification** — verify label `sig` against the labeler's `#atproto_label` key
+      when displaying (claudeslop signs; the app trusts the TLS endpoint for now).
+- [ ] **subscribeLabels ingestion** — consume the labeler firehose into the read-model instead of
+      live `queryLabels` per page, for lower latency.
+- [ ] **Deploy claudeslop** — Railway service + persistent SQLite volume; publish its did:web.

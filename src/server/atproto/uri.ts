@@ -28,6 +28,7 @@ export const Collections = {
   collection: APP_NSID.collection,
   collectionsPublication: APP_NSID.collectionsPublication,
   publicationTheme: APP_NSID.publicationTheme,
+  labelerSubscription: APP_NSID.labelerSubscription,
 } as const;
 
 export type KnownCollection = (typeof Collections)[keyof typeof Collections];

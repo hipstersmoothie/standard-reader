@@ -151,6 +151,20 @@ export interface BookmarkRecord {
   createdAt?: string;
 }
 
+/** A single per-label visibility override on a labeler subscription. */
+export interface LabelPrefRecord {
+  val: string;
+  visibility: "ignore" | "warn" | "hide";
+}
+
+/** `app.standard-reader.labelerSubscription` — a labeler the reader subscribes to. */
+export interface LabelerSubscriptionRecord {
+  $type?: string;
+  labeler: string;
+  labels?: Array<LabelPrefRecord>;
+  createdAt?: string;
+}
+
 /** `app.standard-reader.list` — a named, ordered, shareable publication list. */
 export interface ListRecord {
   $type?: string;

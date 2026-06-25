@@ -1,0 +1,37 @@
+{
+  "lexicon": 1,
+  "id": "app.standard-reader.labeler.defs",
+  "defs": {
+    "labelerPolicies": {
+      "type": "object",
+      "required": ["labelValues"],
+      "properties": {
+        "labelValues": {
+          "type": "array",
+          "items": { "type": "ref", "ref": "com.atproto.label.defs#labelValue" },
+          "description": "The label values which this labeler publishes. May include global or custom (labeler-defined) values."
+        },
+        "labelValueDefinitions": {
+          "type": "array",
+          "items": {
+            "type": "ref",
+            "ref": "com.atproto.label.defs#labelValueDefinition"
+          },
+          "description": "Label values created by this labeler and scoped exclusively to it. Each value provides its own meaning and behaviors."
+        }
+      }
+    },
+    "labelerView": {
+      "type": "object",
+      "required": ["did"],
+      "properties": {
+        "did": { "type": "string", "format": "did" },
+        "displayName": { "type": "string", "maxGraphemes": 64, "maxLength": 640 },
+        "description": { "type": "string", "maxGraphemes": 300, "maxLength": 3000 },
+        "avatar": { "type": "string", "format": "uri" },
+        "policies": { "type": "ref", "ref": "#labelerPolicies" },
+        "indexedAt": { "type": "string", "format": "datetime" }
+      }
+    }
+  }
+}

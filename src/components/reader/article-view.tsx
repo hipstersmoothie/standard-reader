@@ -11,6 +11,7 @@ import {
 import { Link, useRouter } from "@tanstack/react-router";
 import { AppLink } from "#/components/reader/app-link";
 import { AuthorProfileLink } from "#/components/reader/author-profile-link";
+import { DocumentLabelNotice } from "#/components/reader/document-label-notice";
 import { PublicationNameLink } from "#/components/reader/publication-name-link";
 import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
@@ -903,6 +904,8 @@ function ArticleViewBody({
           articleMeasureStyle(readingTypography),
         )}
       >
+        <DocumentLabelNotice uri={article.uri} />
+
         {showMagazineIntro ? (
           <div {...stylex.props(styles.magazineIntro)}>
             <Alert

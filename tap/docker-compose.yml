@@ -32,7 +32,7 @@ services:
       TAP_SIGNAL_COLLECTION: "${TAP_SIGNAL_COLLECTION:-site.standard.publication}"
       # Of those repos, only deliver the collections we model + bsky profiles +
       # our own app-owned reader records (read) written back by the app.
-      TAP_COLLECTION_FILTERS: "${TAP_COLLECTION_FILTERS:-site.standard.publication,site.standard.document,site.standard.graph.subscription,site.standard.graph.recommend,app.bsky.actor.profile,app.standard-reader.read,app.standard-reader.bookmark,app.standard-reader.collection,app.standard-reader.collectionsPublication,app.standard-reader.publicationTheme}"
+      TAP_COLLECTION_FILTERS: "${TAP_COLLECTION_FILTERS:-site.standard.publication,site.standard.document,site.standard.graph.subscription,site.standard.graph.recommend,app.bsky.actor.profile,app.standard-reader.read,app.standard-reader.bookmark,app.standard-reader.collection,app.standard-reader.collectionsPublication,app.standard-reader.publicationTheme,app.standard-reader.labelerSubscription}"
 
       # Basic-auth credential for tap's admin API + WebSocket channel (user is
       # always `admin`). The ingest worker uses the same value to connect.

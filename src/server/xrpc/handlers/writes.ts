@@ -1,6 +1,7 @@
 import { APP_NSID } from "#/lib/atproto/nsids";
 import {
   deleteBookmarkRecord,
+  deleteLabelerSubscriptionRecord,
   deleteListRecord,
   deleteListSaveRecord,
   deleteReadRecord,
@@ -8,6 +9,7 @@ import {
   deleteSubscriptionRecords,
   newListRkey,
   putBookmarkRecord,
+  putLabelerSubscriptionRecord,
   putListRecord,
   putListSaveRecord,
   putRecommendRecord,
@@ -15,7 +17,11 @@ import {
   subjectRkey,
 } from "#/server/atproto/repo-records";
 import { Collections, buildAtUri } from "#/server/atproto/uri";
-import { deleteRecord, upsertSubscription } from "#/server/ingest/handlers";
+import {
+  deleteRecord,
+  upsertLabelerSubscription,
+  upsertSubscription,
+} from "#/server/ingest/handlers";
 import { markDocumentsRead } from "#/server/reader/mark-documents-read";
 import { selectUnreadDocumentUris } from "#/server/reader/queries";
 import {
@@ -50,6 +56,39 @@ export async function handleFollowPublication(ctx: XrpcRequestContext) {
     publication: publicationUri,
     createdAt,
   });
+  return {};
+}
+
+export async function handleSubscribeLabeler(ctx: XrpcRequestContext) {
+  const auth = requireAuthClient(ctx);
+  requireScopes(auth, [XRPC_WRITE_SCOPES.labelerSubscription]);
+  const labelerDid = requireBodyField(ctx.body, "labeler");
+  const createdAt = new Date().toISOString();
+  const { uri, cid } = await putLabelerSubscriptionRecord(
+    auth.client,
+    auth.did,
+    labelerDid,
+    createdAt,
+  );
+  await upsertLabelerSubscription(
+    uri,
+    auth.did,
+    subjectRkey(labelerDid),
+    cid,
+    { labeler: labelerDid, createdAt },
+  );
+  return {};
+}
+
+export async function handleUnsubscribeLabeler(ctx: XrpcRequestContext) {
+  const auth = requireAuthClient(ctx);
+  requireScopes(auth, [XRPC_WRITE_SCOPES.labelerSubscription]);
+  const labelerDid = requireBodyField(ctx.body, "labeler");
+  await deleteLabelerSubscriptionRecord(auth.client, auth.did, labelerDid);
+  await deleteRecord(
+    buildAtUri(auth.did, Collections.labelerSubscription, subjectRkey(labelerDid)),
+    Collections.labelerSubscription,
+  );
   return {};
 }
 

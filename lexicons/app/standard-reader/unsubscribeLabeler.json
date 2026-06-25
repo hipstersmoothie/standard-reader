@@ -1,0 +1,31 @@
+{
+  "lexicon": 1,
+  "id": "app.standard-reader.unsubscribeLabeler",
+  "defs": {
+    "main": {
+      "type": "procedure",
+      "description": "Unsubscribe the calling reader from a labeler service (deletes the app.standard-reader.labelerSubscription record).",
+      "input": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["labeler"],
+          "properties": {
+            "labeler": {
+              "type": "string",
+              "format": "did",
+              "description": "DID of the labeler to unsubscribe from."
+            }
+          }
+        }
+      },
+      "output": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "properties": {}
+        }
+      }
+    }
+  }
+}

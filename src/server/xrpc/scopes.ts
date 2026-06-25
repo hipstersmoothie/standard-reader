@@ -21,4 +21,7 @@ export const XRPC_WRITE_SCOPES = {
   listSave: atprotoScope.repo({
     collection: [APP_NSID.listSave],
   }),
+  labelerSubscription: atprotoScope.repo({
+    collection: [APP_NSID.labelerSubscription],
+  }),
 } as const;

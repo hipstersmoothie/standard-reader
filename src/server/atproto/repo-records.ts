@@ -244,6 +244,40 @@ export async function deleteSubscriptionRecords(
   );
 }
 
+/** Write an `app.standard-reader.labelerSubscription` for `labelerDid`. */
+export async function putLabelerSubscriptionRecord(
+  client: Client,
+  repo: string,
+  labelerDid: string,
+  createdAt: string,
+  labels?: Array<{ val: string; visibility: "ignore" | "warn" | "hide" }>,
+): Promise<{ uri: string; cid: string }> {
+  return repoPutRecord(client, {
+    repo,
+    collection: COLLECTION.labelerSubscription,
+    rkey: subjectRkey(labelerDid),
+    record: {
+      $type: COLLECTION.labelerSubscription,
+      labeler: labelerDid,
+      ...(labels && labels.length > 0 ? { labels } : {}),
+      createdAt,
+    },
+  });
+}
+
+/** Delete the `app.standard-reader.labelerSubscription` for `labelerDid`. */
+export async function deleteLabelerSubscriptionRecord(
+  client: Client,
+  repo: string,
+  labelerDid: string,
+): Promise<void> {
+  await repoDeleteRecord(client, {
+    repo,
+    collection: COLLECTION.labelerSubscription,
+    rkey: subjectRkey(labelerDid),
+  });
+}
+
 /** Write a `site.standard.graph.recommend` (like) for `documentUri`. */
 export async function putRecommendRecord(
   client: Client,

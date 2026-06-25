@@ -18,6 +18,7 @@ import type {
   BskyProfileRecord,
   CollectionSidecarRecord,
   DocumentRecord,
+  LabelerSubscriptionRecord,
   PublicationRecord,
   PublicationThemeRecord,
   ReadRecord,
@@ -31,6 +32,7 @@ import {
   bookmarks,
   documentContributors,
   documents,
+  labelerSubscriptions,
   profiles,
   publicationStats,
   publications,
@@ -494,6 +496,48 @@ export async function upsertSubscription(
   }
 }
 
+export async function upsertLabelerSubscription(
+  uri: string,
+  did: string,
+  rkey: string,
+  cid: string | undefined,
+  record: LabelerSubscriptionRecord,
+): Promise<void> {
+  if (typeof record.labeler !== "string") {
+    return;
+  }
+  const prefs = Array.isArray(record.labels)
+    ? record.labels.filter(
+        (p): p is { val: string; visibility: "ignore" | "warn" | "hide" } =>
+          typeof p?.val === "string" &&
+          (p.visibility === "ignore" ||
+            p.visibility === "warn" ||
+            p.visibility === "hide"),
+      )
+    : null;
+
+  const values = {
+    uri,
+    cid: cid ?? null,
+    subscriberDid: did,
+    rkey,
+    labelerDid: record.labeler,
+    prefs,
+    createdAt: parseDate(record.createdAt),
+    deleted: false,
+    updatedAt: sql`now()`,
+  };
+
+  await db
+    .insert(labelerSubscriptions)
+    .values(values)
+    .onConflictDoUpdate({ target: labelerSubscriptions.uri, set: values });
+
+  // The labeler itself is an external (often did:web) service we don't track via
+  // tap; only keep the subscribing reader's repo tracked.
+  await ensureTracked(did, "reader");
+}
+
 export async function upsertRecommend(
   uri: string,
   did: string,
@@ -730,6 +774,12 @@ export async function deleteRecord(
     }
     case Collections.recommend: {
       await db.delete(recommends).where(eq(recommends.uri, uri));
+      return;
+    }
+    case Collections.labelerSubscription: {
+      await db
+        .delete(labelerSubscriptions)
+        .where(eq(labelerSubscriptions.uri, uri));
       return;
     }
     case Collections.read: {

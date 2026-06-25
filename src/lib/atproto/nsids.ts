@@ -19,6 +19,7 @@ export const APP_NSID = {
   collection: "app.standard-reader.collection",
   collectionsPublication: "app.standard-reader.collectionsPublication",
   publicationTheme: "app.standard-reader.publicationTheme",
+  labelerSubscription: "app.standard-reader.labelerSubscription",
 } as const;
 
 /**

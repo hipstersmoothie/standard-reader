@@ -916,6 +916,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const onAbout = pathname === "/about";
   const onPrivacyExtension = pathname === "/privacy/extension";
   const onPrivacy = pathname === "/privacy" || onPrivacyExtension;
+  const onLabelers = pathname === "/settings/labelers";
   const onSettings = pathname === "/settings";
   const staticPageTitle = onAbout
     ? "About"
@@ -923,9 +924,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       ? "Extension privacy"
       : onPrivacy
         ? "Privacy"
-        : onSettings
-          ? "Settings"
-          : null;
+        : onLabelers
+          ? "Labelers"
+          : onSettings
+            ? "Settings"
+            : null;
   const { data: sidebar, isPending: sidebarPending } = useQuery(
     sidebarQueryOptions(),
   );

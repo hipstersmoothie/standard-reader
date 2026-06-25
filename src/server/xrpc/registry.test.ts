@@ -5,12 +5,23 @@ import { describe, expect, it } from "vitest";
 
 import { XRPC_REGISTRY, parseXrpcNsid } from "./registry";
 
-/** Repo record + shared def lexicons — not served as AppView XRPC methods. */
+/**
+ * Lexicons not served as AppView XRPC methods: repo records, shared defs, and
+ * the labeler-service endpoints (served by labeler services like claudeslop, not
+ * the AppView — see `services/claudeslop/`).
+ */
 const NON_XRPC_LEXICON_STEMS = new Set([
   "bookmark",
+  "collection",
+  "collectionsPublication",
   "defs",
+  "labeler.defs",
+  "labeler.getServices",
+  "labeler.service",
+  "labelerSubscription",
   "list",
   "listSave",
+  "publicationTheme",
   "read",
 ]);
 

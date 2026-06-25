@@ -1,0 +1,31 @@
+{
+  "lexicon": 1,
+  "id": "app.standard-reader.subscribeLabeler",
+  "defs": {
+    "main": {
+      "type": "procedure",
+      "description": "Subscribe the calling reader to a labeler service (writes an app.standard-reader.labelerSubscription record to their repo).",
+      "input": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["labeler"],
+          "properties": {
+            "labeler": {
+              "type": "string",
+              "format": "did",
+              "description": "DID of the labeler to subscribe to."
+            }
+          }
+        }
+      },
+      "output": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "properties": {}
+        }
+      }
+    }
+  }
+}

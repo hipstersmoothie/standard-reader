@@ -1,0 +1,26 @@
+{
+  "lexicon": 1,
+  "id": "app.standard-reader.labeler.getServices",
+  "defs": {
+    "main": {
+      "type": "query",
+      "description": "Get the labeler service descriptor(s) hosted at this endpoint, including their label-value definitions. A did:web labeler with no repo serves its app.standard-reader.labeler.service declaration here.",
+      "output": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["views"],
+          "properties": {
+            "views": {
+              "type": "array",
+              "items": {
+                "type": "ref",
+                "ref": "app.standard-reader.labeler.defs#labelerView"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -328,6 +328,24 @@ Implementation: shared handler layer in `src/server/xrpc/handlers/`; TanStack se
 and extension HTTP routes call the same underlying logic. `/xrpc` uses AT Proto auth only — no
 HttpOnly session cookies.
 
+### Labels & moderation (labelers)
+
+Standard Reader speaks the standard AT Proto label protocol, so readers can subscribe to
+**labelers** (moderation services) exactly as they would in Bluesky:
+
+- **A labeler is just a DID.** We discover it the standard way — resolve the DID document, find
+  its `#atproto_labeler` service, and read its descriptor + label-value definitions. Nothing is
+  hardcoded; the first-party `claudeslop` labeler (below) is discovered like any third party.
+- **Subscriptions are repo records** (`app.standard-reader.labelerSubscription`, deterministic
+  rkey per labeler) in the reader's own PDS — owned by them, mirrored into the read-model. Each
+  record also carries per-label visibility prefs (`ignore` / `warn`=blur / `hide`).
+- **Reading labels** uses `com.atproto.label.queryLabels` against each subscribed labeler; the
+  reader sees a badge + content warning on labeled documents per their prefs. Settings →
+  Labelers manages subscriptions and per-label toggles, and lists a labeler's labeled documents.
+- **claudeslop** is our example labeler: a standalone service (`services/claudeslop/`) that
+  consumes Jetstream, scores documents for AI-written prose, signs labels, and serves
+  `queryLabels` + `subscribeLabels` — a minimal reference implementation of the labeler API.
+
 ---
 
 ## 6. Data & backend architecture

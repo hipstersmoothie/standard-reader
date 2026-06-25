@@ -1,0 +1,26 @@
+{
+  "lexicon": 1,
+  "id": "app.standard-reader.labeler.service",
+  "defs": {
+    "main": {
+      "type": "record",
+      "description": "A declaration of the existence of a Standard Reader labeler service. Mirrors app.bsky.labeler.service, but app-owned so the reader can host its own labelers. Note that did:web labelers (with no repo) instead expose this via app.standard-reader.labeler.getServices.",
+      "key": "literal:self",
+      "record": {
+        "type": "object",
+        "required": ["policies", "createdAt"],
+        "properties": {
+          "policies": {
+            "type": "ref",
+            "ref": "app.standard-reader.labeler.defs#labelerPolicies"
+          },
+          "labels": {
+            "type": "union",
+            "refs": ["com.atproto.label.defs#selfLabels"]
+          },
+          "createdAt": { "type": "string", "format": "datetime" }
+        }
+      }
+    }
+  }
+}

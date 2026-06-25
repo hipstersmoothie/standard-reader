@@ -120,6 +120,20 @@
       "when": 1781579094419,
       "tag": "0016_fuzzy_ricochet",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1782367959273,
+      "tag": "0017_labeler_subscriptions",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1782368986968,
+      "tag": "0018_milky_shocker",
+      "breakpoints": true
     }
   ]
 }

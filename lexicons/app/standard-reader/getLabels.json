@@ -1,0 +1,35 @@
+{
+  "lexicon": 1,
+  "id": "app.standard-reader.getLabels",
+  "defs": {
+    "main": {
+      "type": "query",
+      "description": "Fetch labels for a set of subject AT-URIs from the calling reader's subscribed labelers. Returns nothing for labelers the reader is not subscribed to.",
+      "parameters": {
+        "type": "params",
+        "required": ["uris"],
+        "properties": {
+          "uris": {
+            "type": "array",
+            "items": { "type": "string", "format": "at-uri" },
+            "description": "Subject AT-URIs to fetch labels for.",
+            "maxLength": 100
+          }
+        }
+      },
+      "output": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["labels"],
+          "properties": {
+            "labels": {
+              "type": "array",
+              "items": { "type": "ref", "ref": "com.atproto.label.defs#label" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

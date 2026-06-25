@@ -1,0 +1,35 @@
+{
+  "lexicon": 1,
+  "id": "app.standard-reader.getLabeler",
+  "defs": {
+    "main": {
+      "type": "query",
+      "description": "Resolve a single labeler by DID or handle (for previewing before subscribing), with the calling reader's subscription state. Discovered the standard way via the DID document's #atproto_labeler service.",
+      "parameters": {
+        "type": "params",
+        "required": ["actor"],
+        "properties": {
+          "actor": {
+            "type": "string",
+            "format": "at-identifier",
+            "description": "DID or handle of the labeler to resolve."
+          }
+        }
+      },
+      "output": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["subscribed"],
+          "properties": {
+            "labeler": {
+              "type": "ref",
+              "ref": "app.standard-reader.labeler.defs#labelerView"
+            },
+            "subscribed": { "type": "boolean" }
+          }
+        }
+      }
+    }
+  }
+}

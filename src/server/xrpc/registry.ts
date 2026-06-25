@@ -2,6 +2,7 @@ import type { XrpcRegistryEntry } from "./types";
 
 import * as catalog from "./handlers/catalog";
 import * as feeds from "./handlers/feeds";
+import * as labels from "./handlers/labels";
 import * as reader from "./handlers/reader";
 import * as writes from "./handlers/writes";
 import { XRPC_WRITE_SCOPES } from "./scopes";
@@ -59,6 +60,20 @@ export const XRPC_REGISTRY = new Map<string, XrpcRegistryEntry>([
       auth: "none",
       handler: catalog.handleGetDocumentContext,
     },
+  ],
+
+  // Labelers — discovery + per-subject labels from subscribed labelers
+  [
+    "app.standard-reader.getLabelers",
+    { method: "query", auth: "optional-did", handler: labels.handleGetLabelers },
+  ],
+  [
+    "app.standard-reader.getLabeler",
+    { method: "query", auth: "optional-did", handler: labels.handleGetLabeler },
+  ],
+  [
+    "app.standard-reader.getLabels",
+    { method: "query", auth: "optional-did", handler: labels.handleGetLabels },
   ],
 
   // Feeds & lists — directory rails, tags, publication lists
@@ -184,6 +199,24 @@ export const XRPC_REGISTRY = new Map<string, XrpcRegistryEntry>([
       auth: "required",
       scopes: [XRPC_WRITE_SCOPES.subscription],
       handler: writes.handleUnfollowPublication,
+    },
+  ],
+  [
+    "app.standard-reader.subscribeLabeler",
+    {
+      method: "procedure",
+      auth: "required",
+      scopes: [XRPC_WRITE_SCOPES.labelerSubscription],
+      handler: writes.handleSubscribeLabeler,
+    },
+  ],
+  [
+    "app.standard-reader.unsubscribeLabeler",
+    {
+      method: "procedure",
+      auth: "required",
+      scopes: [XRPC_WRITE_SCOPES.labelerSubscription],
+      handler: writes.handleUnsubscribeLabeler,
     },
   ],
   [

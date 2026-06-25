@@ -26,6 +26,7 @@ export const scope = [
       "app.standard-reader.collection",
       "app.standard-reader.collectionsPublication",
       "app.standard-reader.publicationTheme",
+      "app.standard-reader.labelerSubscription",
     ],
   }),
 ];
