@@ -102,6 +102,19 @@ export interface ArticleCard {
   searchTitleHtml?: string | null;
   /** `ts_headline` HTML excerpt for search results. */
   searchSnippetHtml?: string | null;
+  /**
+   * Labels on this document from the reader's subscribed labelers, with the
+   * reader's per-label visibility. Attached server-side (see
+   * `attachSubscribedLabels`) so rows render badges without a client round-trip.
+   */
+  labels?: Array<ArticleCardLabel>;
+}
+
+/** A label from a subscribed labeler, as carried on an {@link ArticleCard}. */
+export interface ArticleCardLabel {
+  src: string;
+  val: string;
+  visibility: "ignore" | "warn" | "hide";
 }
 
 /** A profile summary (byline / publication owner). */

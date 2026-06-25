@@ -14,6 +14,7 @@ import {
 } from "#/lib/track-reading-history";
 import { getAtprotoSessionForRequest } from "#/middleware/auth-session.server";
 import {
+  attachSubscribedLabels,
   filterHiddenDocuments,
   hiddenDocumentUris,
 } from "#/server/labeler/labels.server";
@@ -268,10 +269,16 @@ async function buildHomeFeedCritical(
 
   span.set("rows", latestUnread.length);
 
-  const enriched = await attachCommentCountsToArticles(db, schema, [
+  const withCounts = await attachCommentCountsToArticles(db, schema, [
     ...(featured ? [featured] : []),
     ...latestUnread,
   ]);
+  const enriched = await attachSubscribedLabels(
+    db,
+    schema,
+    ctx.did,
+    withCounts,
+  );
   const byUri = new Map(enriched.map((article) => [article.uri, article]));
 
   return {
@@ -545,9 +552,15 @@ async function loadLatestFeedCritical(
     schema,
     trackReading ? visibleItems : articleCardsAsAllRead(visibleItems),
   );
+  const labeledItems = await attachSubscribedLabels(
+    db,
+    schema,
+    did,
+    enrichedItems,
+  );
 
   return {
-    items: enrichedItems,
+    items: labeledItems,
     counts: null,
     nextOffset:
       data.filter === "trending"

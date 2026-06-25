@@ -170,9 +170,9 @@ const styles = stylex.create({
     minWidth: size["4xl"],
   },
   loadingOverlay: {
+    inset: 0,
     alignItems: "center",
     display: "flex",
-    inset: 0,
     justifyContent: "center",
     position: "absolute",
     zIndex: 1,

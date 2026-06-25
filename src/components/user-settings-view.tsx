@@ -30,7 +30,7 @@ import { useReaderVoice } from "#/lib/use-reader-voice";
 import { useReadingTypography } from "#/lib/use-reading-typography";
 import { useTheme } from "#/lib/use-theme";
 import { useTrackReadingHistory } from "#/lib/use-track-reading-history";
-import { Monitor, Moon, Sparkles, Sun } from "lucide-react";
+import { ChevronRight, Monitor, Moon, Sparkles, Sun } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
@@ -41,6 +41,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
 } from "../design-system/alert-dialog";
+import { Avatar } from "../design-system/avatar";
 import { Button } from "../design-system/button";
 import { Flex } from "../design-system/flex";
 import {
@@ -51,6 +52,7 @@ import { Select, SelectItem } from "../design-system/select";
 import { Separator } from "../design-system/separator";
 import { Switch } from "../design-system/switch";
 import { primaryColor, uiColor } from "../design-system/theme/color.stylex";
+import { radius } from "../design-system/theme/radius.stylex";
 import {
   gap,
   horizontalSpace,
@@ -145,14 +147,43 @@ const styles = stylex.create({
       default: "auto",
     },
   },
+  labelerList: {
+    gap: gap.xs,
+    paddingBlock: verticalSpace.md,
+    display: "flex",
+    flexDirection: "column",
+    paddingLeft: horizontalSpace.lg,
+    paddingRight: horizontalSpace.lg,
+  },
   labelerLink: {
+    borderRadius: radius.md,
     paddingBlock: verticalSpace.sm,
-    textDecoration: { default: "none", ":hover": "underline" },
+    textDecoration: "none",
+    alignItems: "center",
+    backgroundColor: { default: "transparent", ":hover": uiColor.component2 },
     color: uiColor.text2,
-    display: "block",
+    columnGap: gap.md,
+    display: "flex",
     fontSize: fontSize.sm,
-    paddingLeft: horizontalSpace["3xl"],
-    paddingRight: horizontalSpace["3xl"],
+    fontWeight: fontWeight.medium,
+    justifyContent: "space-between",
+    paddingLeft: horizontalSpace.md,
+    paddingRight: horizontalSpace.md,
+  },
+  labelerMain: {
+    alignItems: "center",
+    columnGap: gap.md,
+    display: "flex",
+    minWidth: 0,
+  },
+  labelerName: {
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  },
+  labelerChevron: {
+    color: uiColor.text1,
+    flexShrink: 0,
   },
   labelerEmpty: {
     marginBlock: verticalSpace.none,
@@ -598,16 +629,38 @@ export function UserSettingsView() {
           {(labelers.data?.length ?? 0) === 0 ? (
             <p {...stylex.props(styles.labelerEmpty)}>No labelers subscribed</p>
           ) : (
-            labelers.data?.map((card) => (
-              <Link
-                key={card.did}
-                to="/labelers/$did"
-                params={{ did: card.did }}
-                {...stylex.props(styles.labelerLink)}
-              >
-                {card.displayName ?? card.did}
-              </Link>
-            ))
+            <div {...stylex.props(styles.labelerList)}>
+              {labelers.data?.map((card) => {
+                const name = card.displayName ?? card.did;
+                const fallback = name
+                  .replace(/^did:\w+:/, "")
+                  .slice(0, 2)
+                  .toUpperCase();
+                return (
+                  <Link
+                    key={card.did}
+                    to="/labelers/$did"
+                    params={{ did: card.did }}
+                    {...stylex.props(styles.labelerLink)}
+                  >
+                    <span {...stylex.props(styles.labelerMain)}>
+                      <Avatar
+                        size="sm"
+                        src={card.avatar}
+                        fallback={fallback}
+                        alt={name}
+                      />
+                      <span {...stylex.props(styles.labelerName)}>{name}</span>
+                    </span>
+                    <ChevronRight
+                      size={16}
+                      aria-hidden
+                      {...stylex.props(styles.labelerChevron)}
+                    />
+                  </Link>
+                );
+              })}
+            </div>
           )}
         </div>
       </section>

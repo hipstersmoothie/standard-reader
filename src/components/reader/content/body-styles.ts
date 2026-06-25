@@ -518,16 +518,18 @@ export const articleBodyStyles = stylex.create({
     marginTop: spacing["0"],
   },
   websiteCardBody: {
+    gap: gap.md,
     alignItems: "center",
     display: "flex",
-    gap: gap.md,
     paddingBottom: spacing["4"],
     paddingLeft: spacing["4"],
     paddingRight: spacing["6"],
     paddingTop: spacing["4"],
   },
   websiteCardText: {
-    flex: 1,
+    flexBasis: '0%',
+    flexGrow: '1',
+    flexShrink: '1',
     minWidth: 0,
   },
   websiteCardExternalIcon: {
@@ -547,12 +549,12 @@ export const articleBodyStyles = stylex.create({
     marginTop: spacing["0"],
   },
   pageEmbedPanelContent: {
+    gap: gap.sm,
     color: uiColor.text2,
     display: "flex",
     flexDirection: "column",
     fontFamily: fontFamily.serif,
     fontSize: { default: "1.1875rem", "@media (min-width: 40rem)": "1.25rem" },
-    gap: gap.sm,
     lineHeight: 1.68,
     paddingBottom: spacing["4"],
     paddingLeft: spacing["4"],
@@ -597,12 +599,12 @@ export const articleBodyStyles = stylex.create({
     textDecoration: "line-through",
   },
   facetHighlight: {
-    backgroundColor: warningColor.component2,
     borderRadius: radius.xs,
-    color: warningColor.text2,
+    paddingBlock: spacing["0.5"],
+    backgroundColor: warningColor.component2,
     // eslint-disable-next-line @stylexjs/valid-styles
     boxDecorationBreak: "clone",
-    paddingBlock: spacing["0.5"],
+    color: warningColor.text2,
   },
   quoteShareMark: {
     borderRadius: radius.xs,

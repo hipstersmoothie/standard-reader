@@ -1022,16 +1022,29 @@ function ArticleMetaLine({
 }) {
   const hasEngagement = article.recommendCount > 0 || article.commentCount > 0;
   const topics = metaLabels == null ? articleTopics(article) : [];
+  // Labels from the reader's subscribed labelers (attached server-side), shown
+  // alongside the article's tags. Skipped when `metaLabels` overrides the line.
+  const cardLabelVals =
+    metaLabels == null
+      ? [
+          ...new Set(
+            (article.labels ?? [])
+              .filter((l) => l.visibility !== "ignore")
+              .map((l) => l.val),
+          ),
+        ]
+      : [];
   const showCollection = article.isCollection;
   const hasTopics = topics.length > 0;
-  const hasLabelVals = metaLabels != null && metaLabels.length > 0;
-  if (!showCollection && !hasEngagement && !hasTopics && !hasLabelVals)
-    return null;
+  const hasCardLabels = cardLabelVals.length > 0;
+  const hasMetaLabels = metaLabels != null && metaLabels.length > 0;
+  const hasTrailing = hasTopics || hasCardLabels || hasMetaLabels;
+  if (!showCollection && !hasEngagement && !hasTrailing) return null;
 
   return (
     <MetaLine>
       {showCollection ? <CollectionMagazineMeta /> : null}
-      {showCollection && (hasEngagement || hasTopics || hasLabelVals) ? (
+      {showCollection && (hasEngagement || hasTrailing) ? (
         <span aria-hidden {...stylex.props(styles.metaDot)}>
           ·
         </span>
@@ -1042,12 +1055,18 @@ function ArticleMetaLine({
           commentCount={article.commentCount}
         />
       ) : null}
-      {hasEngagement && (hasTopics || hasLabelVals) ? (
+      {hasEngagement && hasTrailing ? (
         <span aria-hidden {...stylex.props(styles.metaDot)}>
           ·
         </span>
       ) : null}
-      {hasLabelVals ? (
+      {hasCardLabels ? <LabelValsMeta labels={cardLabelVals} /> : null}
+      {hasCardLabels && (hasTopics || hasMetaLabels) ? (
+        <span aria-hidden {...stylex.props(styles.metaDot)}>
+          ·
+        </span>
+      ) : null}
+      {hasMetaLabels ? (
         <LabelValsMeta labels={metaLabels} />
       ) : (
         <TopicMeta article={article} />

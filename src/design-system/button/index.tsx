@@ -34,8 +34,8 @@ const styles = stylex.create({
     position: "absolute",
   },
   link: {
-    cursor: "pointer",
     textDecoration: "none",
+    cursor: "pointer",
   },
 });
 

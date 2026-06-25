@@ -9,6 +9,7 @@ import type { ProcessResult } from "./consumer.ts";
 
 import { db } from "../../db/index.ts";
 import { ingestState, subscriptions, trackedRepos } from "../../db/schema.ts";
+import { startLabelSync } from "../labeler/sync.server.ts";
 import { logEvent } from "../observability/log.ts";
 import { verifyIngestAuth } from "./auth.ts";
 import { ingestConfig } from "./config.ts";
@@ -582,12 +583,14 @@ const pendingTrackedReconcile = startPendingTrackedReconcile(
   reconcileTrackedWithBackfill,
 );
 const publisherRepoReconcile = startPublisherRepoReconcile();
+const labelSync = startLabelSync();
 
 for (const signal of ["SIGINT", "SIGTERM"] as const) {
   process.on(signal, () => {
     server.close(async () => {
       pendingTrackedReconcile.stop();
       publisherRepoReconcile.stop();
+      labelSync.stop();
       await tapChannel.destroy();
       await labelerTapChannel?.destroy();
       const { flushHoneycomb } = await import("../observability/honeycomb.ts");

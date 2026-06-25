@@ -11,6 +11,7 @@ import {
 } from "#/server/atproto/repo-records";
 import { upsertSubscription } from "#/server/ingest/handlers";
 import { ensureTracked } from "#/server/ingest/tap-client";
+import { attachSubscribedLabels } from "#/server/labeler/labels.server";
 import { observe } from "#/server/observability/log";
 import { attachReaderSpanContext } from "#/server/observability/span-context.ts";
 import { attachCommentCountsToArticles } from "#/server/reader/document-comments";
@@ -112,7 +113,8 @@ const getArticles = createServerFn({ method: "GET" })
         readForDid: trackReading && did ? did : undefined,
       });
 
-      const items = await attachCommentCountsToArticles(db, schema, rows);
+      const withCounts = await attachCommentCountsToArticles(db, schema, rows);
+      const items = await attachSubscribedLabels(db, schema, did, withCounts);
       span.set("count", items.length);
 
       return {

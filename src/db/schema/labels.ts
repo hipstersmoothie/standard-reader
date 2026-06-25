@@ -3,6 +3,7 @@ import {
   index,
   jsonb,
   pgTable,
+  primaryKey,
   text,
   timestamp,
 } from "drizzle-orm/pg-core";
@@ -117,3 +118,37 @@ export const labelerSubscriptions = pgTable(
 
 export type LabelerSubscription = typeof labelerSubscriptions.$inferSelect;
 export type NewLabelerSubscription = typeof labelerSubscriptions.$inferInsert;
+
+/**
+ * Labels mirrored from labeler services into the read-model. A periodic sync is
+ * the *only* time we contact a labeler; request paths (feeds, tag, article,
+ * labeler detail) read labels from here via SQL, so they never make per-request
+ * label calls. One row per active `(src, uri, val)` — negations are applied at
+ * sync time by removing the row rather than storing it.
+ */
+export const documentLabels = pgTable(
+  "document_labels",
+  {
+    /** Labeler DID that emitted the label (the label's `src`). */
+    src: text("src").notNull(),
+    /** Subject document AT-URI. */
+    uri: text("uri").notNull(),
+    /** Label value (e.g. "ai-writing", "bot"). */
+    val: text("val").notNull(),
+    /** Label creation time reported by the labeler (`cts`). */
+    cts: timestamp("cts", { withTimezone: true }),
+    /** When this row was last refreshed by a sync. */
+    syncedAt: timestamp("synced_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.src, table.uri, table.val] }),
+    // Resolve labels for a set of document URIs (feed/tag/article attach).
+    index("document_labels_uri_idx").on(table.uri),
+    // Replace-by-labeler during sync + labeler-detail document listing.
+    index("document_labels_src_idx").on(table.src),
+  ],
+);
+
+export type DocumentLabelRow = typeof documentLabels.$inferSelect;

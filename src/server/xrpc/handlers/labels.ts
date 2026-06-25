@@ -1,4 +1,4 @@
-import { fetchSubscribedLabels } from "#/server/labeler/labels.server";
+import { labelsForUris } from "#/server/labeler/labels.server";
 import {
   resolveActorDid,
   resolveLabelerView,
@@ -69,6 +69,6 @@ export async function handleGetLabels(ctx: XrpcRequestContext) {
   const uris = new URL(ctx.request.url).searchParams
     .getAll("uris")
     .slice(0, 100);
-  const labels = await fetchSubscribedLabels(ctx.db, ctx.schema, did, uris);
+  const labels = await labelsForUris(ctx.db, ctx.schema, did, uris);
   return { labels };
 }

@@ -5,14 +5,15 @@ import type { ArticleDetail } from "#/integrations/tanstack-query/api-publicatio
 import * as stylex from "@stylexjs/stylex";
 import {
   useMutation,
+  useQuery,
   useQueryClient,
   useSuspenseQuery,
 } from "@tanstack/react-query";
 import { Link, useRouter } from "@tanstack/react-router";
 import { AppLink } from "#/components/reader/app-link";
 import { AuthorProfileLink } from "#/components/reader/author-profile-link";
-import { DocumentLabelNotice } from "#/components/reader/document-label-notice";
 import { PublicationNameLink } from "#/components/reader/publication-name-link";
+import { labelerApi } from "#/integrations/tanstack-query/api-labelers.functions";
 import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
 import { resolveArticleHeroImage } from "#/lib/document/lead-image";
@@ -33,6 +34,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import { Alert } from "../../design-system/alert";
 import { Avatar } from "../../design-system/avatar";
+import { Badge } from "../../design-system/badge";
 import { Button } from "../../design-system/button";
 import { Flex } from "../../design-system/flex";
 import { IconButton } from "../../design-system/icon-button";
@@ -249,8 +251,18 @@ const styles = stylex.create({
     width: "100%",
   },
   kicker: {
+    gap: gap.sm,
+    alignItems: "center",
+    display: "flex",
+    flexDirection: "column",
     textAlign: "center",
     marginBottom: spacing["5"],
+  },
+  labelBadges: {
+    gap: gap.sm,
+    display: "flex",
+    flexWrap: "wrap",
+    justifyContent: "center",
   },
   title: {
     color: uiColor.text2,
@@ -693,6 +705,16 @@ function ArticleViewBody({
   const bylineDid = authorDid(article);
   const showHandle = handle != null && authorName !== `@${handle}`;
   const topic = articleTopic(article);
+  const { data: labelData } = useQuery(
+    labelerApi.getDocumentLabelsQueryOptions(article.uri),
+  );
+  const labelVals = [
+    ...new Set(
+      (labelData?.labels ?? [])
+        .filter((l) => l.visibility !== "ignore")
+        .map((l) => l.val),
+    ),
+  ];
   const readingLabel = formatReadingTime(articleReadingText(article));
   const date = formatDate(article.publishedAt);
   const publicationArticleUrl = articlePublicationUrl(article);
@@ -904,8 +926,6 @@ function ArticleViewBody({
           articleMeasureStyle(readingTypography),
         )}
       >
-        <DocumentLabelNotice uri={article.uri} />
-
         {showMagazineIntro ? (
           <div {...stylex.props(styles.magazineIntro)}>
             <Alert
@@ -922,11 +942,22 @@ function ArticleViewBody({
           </div>
         ) : null}
 
-        {topic ? (
+        {topic || labelVals.length > 0 ? (
           <div {...stylex.props(styles.kicker)}>
-            <Kicker>
-              <Topic name={topic} />
-            </Kicker>
+            {labelVals.length > 0 ? (
+              <div {...stylex.props(styles.labelBadges)}>
+                {labelVals.map((val) => (
+                  <Badge key={val} variant="warning">
+                    {val}
+                  </Badge>
+                ))}
+              </div>
+            ) : null}
+            {topic ? (
+              <Kicker>
+                <Topic name={topic} />
+              </Kicker>
+            ) : null}
           </div>
         ) : null}
 

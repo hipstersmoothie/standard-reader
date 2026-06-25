@@ -15,8 +15,7 @@ import {
   upsertLabelerSubscription,
 } from "#/server/ingest/handlers";
 import {
-  fetchAllLabelsFromLabeler,
-  fetchSubscribedLabels,
+  labelsForDocument,
   subscribedLabelerDids,
 } from "#/server/labeler/labels.server";
 import {
@@ -253,18 +252,22 @@ const getLabeledDocuments = createServerFn({ method: "GET" })
   .handler(
     observe("labelers.getLabeledDocuments", async ({ data, context }, span) => {
       span.set("labeler", data.labeler);
-      const labels = await fetchAllLabelsFromLabeler(data.labeler);
+      const dl = context.schema.documentLabels;
+      const rows = await context.db
+        .select({ uri: dl.uri, val: dl.val, cts: dl.cts })
+        .from(dl)
+        .where(eq(dl.src, data.labeler));
       const labelsByUri: Record<string, Array<string>> = {};
       const uriLatest = new Map<string, string>();
 
-      for (const label of labels) {
-        if (!label.uri.includes("/site.standard.document/")) continue;
-        const vals = labelsByUri[label.uri] ?? [];
-        if (!vals.includes(label.val)) vals.push(label.val);
-        labelsByUri[label.uri] = vals;
-        const cts = label.cts ?? "";
-        if ((uriLatest.get(label.uri) ?? "") < cts)
-          uriLatest.set(label.uri, cts);
+      for (const row of rows) {
+        if (!row.uri.includes("/site.standard.document/")) continue;
+        const vals = labelsByUri[row.uri] ?? [];
+        if (!vals.includes(row.val)) vals.push(row.val);
+        labelsByUri[row.uri] = vals;
+        const cts = row.cts ? row.cts.toISOString() : "";
+        if ((uriLatest.get(row.uri) ?? "") < cts)
+          uriLatest.set(row.uri, cts);
       }
 
       const uris = Object.keys(labelsByUri)
@@ -298,34 +301,13 @@ const getDocumentLabels = createServerFn({ method: "GET" })
       if (!session) return { labels: [] satisfies Array<DocumentLabel> };
       span.set("uri", data.uri);
 
-      const labels = await fetchSubscribedLabels(
+      // Read from the read-model (synced from labelers); no labeler call here.
+      const out: Array<DocumentLabel> = await labelsForDocument(
         context.db,
         context.schema,
         session.did,
-        [data.uri],
+        data.uri,
       );
-      if (labels.length === 0)
-        return { labels: [] satisfies Array<DocumentLabel> };
-
-      // Resolve each label's visibility from the caller's saved prefs (default
-      // `warn` when they haven't chosen one).
-      const ls = context.schema.labelerSubscriptions;
-      const rows = await context.db
-        .select({ labelerDid: ls.labelerDid, prefs: ls.prefs })
-        .from(ls)
-        .where(and(eq(ls.subscriberDid, session.did), eq(ls.deleted, false)));
-      const prefMap = new Map<string, LabelVisibility>();
-      for (const row of rows) {
-        for (const p of (row.prefs as Array<LabelPref> | null) ?? []) {
-          prefMap.set(`${row.labelerDid} ${p.val}`, p.visibility);
-        }
-      }
-
-      const out: Array<DocumentLabel> = labels.map((l) => ({
-        src: l.src,
-        val: l.val,
-        visibility: prefMap.get(`${l.src} ${l.val}`) ?? "warn",
-      }));
       span.set("count", out.length);
       return { labels: out };
     }),

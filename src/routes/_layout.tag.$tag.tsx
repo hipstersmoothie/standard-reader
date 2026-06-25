@@ -71,8 +71,8 @@ import { user } from "#/integrations/tanstack-query/api-user.functions";
 import { formatCount } from "#/lib/format-count";
 import { getPublicUrlClient } from "#/lib/public-url";
 import { SITE_NAME, siteSocialMeta } from "#/lib/site-metadata";
-import { useTrackReadingHistory } from "#/lib/use-track-reading-history";
 import { useDelayedLoading } from "#/lib/use-delayed-loading";
+import { useTrackReadingHistory } from "#/lib/use-track-reading-history";
 import { useLoginSearch } from "#/utils/use-login-search";
 import { Check, LayoutGrid, List, Plus, Tag } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -460,6 +460,7 @@ function TagArticlesPanel({ tag }: { tag: string }) {
     () => [...(feed?.items ?? []), ...loadedMore],
     [feed?.items, loadedMore],
   );
+
   const nextOffset =
     loadedMore.length > 0 ? loadedMoreNextOffset : (feed?.nextOffset ?? null);
 
