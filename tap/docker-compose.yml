@@ -45,5 +45,28 @@ services:
       # Lets TAP_WEBHOOK_URL reach the host on Linux as well as macOS/Windows.
       - "host.docker.internal:host-gateway"
 
+  # Second signal instance: tracks every repo that publishes an
+  # `app.standard-reader.labeler.service` record, so registering a labeler is all
+  # an operator does. The ingest worker consumes this channel too (TAP_LABELER_API_URL).
+  tap-labeler:
+    image: ghcr.io/bluesky-social/indigo/tap:latest
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:2481:2481"
+    environment:
+      TAP_DATABASE_URL: "sqlite:///data/tap-labeler.db"
+      TAP_BIND: ":2481"
+      TAP_RELAY_URL: "${TAP_RELAY_URL:-https://relay1.us-east.bsky.network}"
+      TAP_PLC_URL: "${TAP_PLC_URL:-https://plc.directory}"
+      TAP_SIGNAL_COLLECTION: "app.standard-reader.labeler.service"
+      TAP_COLLECTION_FILTERS: "app.standard-reader.labeler.service"
+      TAP_ADMIN_PASSWORD: "${TAP_ADMIN_PASSWORD:?set TAP_ADMIN_PASSWORD in .env}"
+      TAP_LOG_LEVEL: "${TAP_LOG_LEVEL:-info}"
+    volumes:
+      - tap-labeler-data:/data
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
 volumes:
   tap-data:
+  tap-labeler-data:

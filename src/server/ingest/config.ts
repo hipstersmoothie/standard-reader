@@ -21,6 +21,15 @@ export const ingestConfig = {
     return process.env.TAP_API_URL ?? null;
   },
 
+  /**
+   * Optional second tap instance signaled on `app.standard-reader.labeler.service`
+   * (`TAP_LABELER_API_URL`) so repos that register a labeler get tracked and
+   * their records indexed. Shares `TAP_ADMIN_PASSWORD`.
+   */
+  get tapLabelerApiUrl(): string | null {
+    return process.env.TAP_LABELER_API_URL ?? null;
+  },
+
   /** Basic-auth admin password for tap (`TAP_ADMIN_PASSWORD`), if configured. */
   get tapAdminPassword(): string | null {
     return process.env.TAP_ADMIN_PASSWORD ?? null;

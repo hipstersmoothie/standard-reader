@@ -6,18 +6,17 @@ import type {
 } from "@atcute/atproto";
 import type { Client } from "@atcute/client";
 import type { InferInput } from "@atcute/lexicons/validations";
+import type { CollectionManifest } from "#/lib/collections/manifest";
 
 import { ok } from "@atcute/client";
 import { now as tidNow } from "@atcute/tid";
-import type { CollectionManifest } from "#/lib/collections/manifest";
-
-import { COLLECTION } from "#/lib/atproto/nsids";
 import {
   collectionDocumentLink,
   collectionDocumentUri,
   collectionSidecarUri,
   collectionsPublicationUri,
 } from "#/lib/atproto/collection-uris.ts";
+import { COLLECTION } from "#/lib/atproto/nsids";
 import { serializeCollectionManifestForRepo } from "#/lib/markpub/collection-fields.ts";
 import { createHash } from "node:crypto";
 

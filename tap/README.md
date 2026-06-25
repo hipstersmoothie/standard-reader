@@ -96,6 +96,13 @@ whole graph, pick one:
   `TAP_SIGNAL_COLLECTION=site.standard.graph.subscription` (and the same
   filters/webhook) to also seed from subscriber repos.
 
+**Labeler discovery** uses exactly this pattern: `docker-compose.yml` runs a
+second tap (`tap-labeler`, port 2481) signaled on
+`app.standard-reader.labeler.service`, so any repo that registers a labeler is
+tracked and its record indexed. The ingest worker consumes it via
+`TAP_LABELER_API_URL`. In production, run it as a second tap service alongside
+the primary.
+
 > ⚠️ Bandwidth note: tap consumes the **entire** firehose and filters locally,
 > so egress/ingress is non-trivial. Budget accordingly (or use a lighter
 > Jetstream-based consumer if you don't need backfill/verification).

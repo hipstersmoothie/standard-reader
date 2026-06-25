@@ -344,8 +344,7 @@ function fromIdentityEvent(evt: {
   };
 }
 
-function startTapChannel(): { destroy: () => Promise<void> } {
-  const tapUrl = ingestConfig.tapApiUrl ?? "http://127.0.0.1:2480";
+function startTapChannel(tapUrl: string): { destroy: () => Promise<void> } {
   const tap = new Tap(tapUrl, {
     adminPassword: ingestConfig.tapAdminPassword ?? undefined,
   });
@@ -570,7 +569,15 @@ server.listen(port(), "::", () => {
   console.info(`[ingest] listening on [::]:${port()}`);
 });
 
-const tapChannel = startTapChannel();
+// Primary signal (publishers) + an optional second tap instance signaled on
+// `app.standard-reader.labeler.service`, so any repo that registers a labeler is
+// tracked and its record indexed — no manual repo tracking needed.
+const tapChannel = startTapChannel(
+  ingestConfig.tapApiUrl ?? "http://127.0.0.1:2480",
+);
+const labelerTapChannel = ingestConfig.tapLabelerApiUrl
+  ? startTapChannel(ingestConfig.tapLabelerApiUrl)
+  : null;
 const pendingTrackedReconcile = startPendingTrackedReconcile(
   reconcileTrackedWithBackfill,
 );
@@ -582,6 +589,7 @@ for (const signal of ["SIGINT", "SIGTERM"] as const) {
       pendingTrackedReconcile.stop();
       publisherRepoReconcile.stop();
       await tapChannel.destroy();
+      await labelerTapChannel?.destroy();
       const { flushHoneycomb } = await import("../observability/honeycomb.ts");
       await flushHoneycomb();
       process.exit(0);

@@ -50,7 +50,8 @@
     "extension:build": "pnpm --filter standard-reader-extension build",
     "extension:zip": "pnpm --filter standard-reader-extension zip",
     "extension:build:firefox": "pnpm --filter standard-reader-extension build:firefox",
-    "extension:zip:firefox": "pnpm --filter standard-reader-extension zip:firefox"
+    "extension:zip:firefox": "pnpm --filter standard-reader-extension zip:firefox",
+    "register-labelers": "pnpm exec tsx --env-file=.env scripts/register-labelers.ts"
   },
   "dependencies": {
     "@atcute/atproto": "^3.1.12",
