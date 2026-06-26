@@ -5,14 +5,12 @@ import {
 } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
-import { APP_NSID } from "#/lib/atproto/nsids";
 import { getAtprotoSessionForRequest } from "#/middleware/auth-session.server";
 import {
   deleteBookmarkRecord,
   deleteReadRecord,
   deleteRecommendRecord,
   deleteSubscriptionRecords,
-  listCollectionRecords,
   putBookmarkRecord,
   putReadRecord,
   putRecommendRecord,
@@ -775,17 +773,15 @@ const deleteAllReadHistory = createServerFn({ method: "POST" })
       }
       span.set("did", session.did);
 
-      const records = await listCollectionRecords(
-        session.client,
-        session.did,
-        APP_NSID.read,
-      );
+      // Read rkeys from the DB mirror (no PDS I/O for the read).
+      const readRows = await context.db
+        .select({ rkey: context.schema.reads.rkey, subject: context.schema.reads.documentUri })
+        .from(context.schema.reads)
+        .where(eq(context.schema.reads.ownerDid, session.did));
+
       await Promise.all(
-        records.map(async (record) => {
-          const value = record.value as { subject?: string };
-          if (typeof value.subject === "string") {
-            await deleteReadRecord(session.client, session.did, value.subject);
-          }
+        readRows.map(async (row) => {
+          await deleteReadRecord(session.client, session.did, row.subject);
         }),
       );
 
@@ -794,8 +790,8 @@ const deleteAllReadHistory = createServerFn({ method: "POST" })
         .where(eq(context.schema.reads.ownerDid, session.did));
 
       await trackReaderRepo(session.did);
-      span.set("deleted", records.length);
-      return { ok: true as const, deleted: records.length };
+      span.set("deleted", readRows.length);
+      return { ok: true as const, deleted: readRows.length };
     }),
   );
 
@@ -809,21 +805,19 @@ const deleteAllBookmarks = createServerFn({ method: "POST" })
       }
       span.set("did", session.did);
 
-      const records = await listCollectionRecords(
-        session.client,
-        session.did,
-        APP_NSID.bookmark,
-      );
+      // Read rkeys from the DB mirror (no PDS I/O for the read).
+      const bookmarkRows = await context.db
+        .select({ rkey: context.schema.bookmarks.rkey, subject: context.schema.bookmarks.documentUri })
+        .from(context.schema.bookmarks)
+        .where(eq(context.schema.bookmarks.ownerDid, session.did));
+
       await Promise.all(
-        records.map(async (record) => {
-          const value = record.value as { subject?: string };
-          if (typeof value.subject === "string") {
-            await deleteBookmarkRecord(
-              session.client,
-              session.did,
-              value.subject,
-            );
-          }
+        bookmarkRows.map(async (row) => {
+          await deleteBookmarkRecord(
+            session.client,
+            session.did,
+            row.subject,
+          );
         }),
       );
 
@@ -832,8 +826,8 @@ const deleteAllBookmarks = createServerFn({ method: "POST" })
         .where(eq(context.schema.bookmarks.ownerDid, session.did));
 
       await trackReaderRepo(session.did);
-      span.set("deleted", records.length);
-      return { ok: true as const, deleted: records.length };
+      span.set("deleted", bookmarkRows.length);
+      return { ok: true as const, deleted: bookmarkRows.length };
     }),
   );
 

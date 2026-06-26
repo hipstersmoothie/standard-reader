@@ -104,6 +104,75 @@ export async function fetchPublicList(
   }
 }
 
+/**
+ * Read one `app.standard-reader.list` from the DB mirror. Falls back to a PDS
+ * `getRecord` when the row isn't present yet (first view of a list owned by a
+ * repo we haven't backfilled), then backfills for next time.
+ */
+export async function readList(
+  did: string,
+  rkey: string,
+): Promise<SubscriptionList | null> {
+  const { db } = await import("#/db/index.server");
+  const { lists } = await import("#/db/schema");
+  const { eq: eqList } = await import("drizzle-orm");
+  const uri = listUriFromParams(did, rkey);
+
+  const [row] = await db
+    .select()
+    .from(lists)
+    .where(eqList(lists.uri, uri))
+    .limit(1);
+
+  if (row && !row.deleted) {
+    return {
+      uri: row.uri,
+      rkey: row.rkey,
+      name: row.name,
+      description: row.description,
+      publications: (row.publications as Array<string>) ?? [],
+      createdAt: row.createdAt ? row.createdAt.toISOString() : null,
+    };
+  }
+
+  // Not in the DB — fetch from PDS and backfill.
+  const fetched = await fetchPublicList(did, rkey);
+  if (!fetched) return null;
+
+  // Backfill the owner's lists (catches both this list and any siblings).
+  const { backfillListsFromRepo } = await import("#/server/ingest/handlers");
+  void backfillListsFromRepo(did);
+
+  return fetched;
+}
+
+/**
+ * Whether `saverDid` has a `listSave` record for `listUri`, read from the DB
+ * mirror. No PDS I/O.
+ */
+export async function hasSavedListDb(
+  saverDid: string,
+  listUri: string,
+): Promise<boolean> {
+  const { db } = await import("#/db/index.server");
+  const { listSaves } = await import("#/db/schema");
+  const { and: andSave, eq: eqSave } = await import("drizzle-orm");
+
+  const [row] = await db
+    .select({ uri: listSaves.uri })
+    .from(listSaves)
+    .where(
+      andSave(
+        eqSave(listSaves.saverDid, saverDid),
+        eqSave(listSaves.listUri, listUri),
+        eqSave(listSaves.deleted, false),
+      ),
+    )
+    .limit(1);
+
+  return row != null;
+}
+
 interface CacheEntry {
   lists: Array<SubscriptionList>;
   expires: number;

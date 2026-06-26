@@ -3,15 +3,12 @@ import type { SubscriptionList } from "#/server/reader/saved-lists";
 import { mutationOptions, queryOptions } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
-import { APP_NSID } from "#/lib/atproto/nsids";
 import { articleCardsAsAllRead } from "#/lib/track-reading-history";
 import { getAtprotoSessionForRequest } from "#/middleware/auth-session.server";
 import { resolveIdentity } from "#/server/atproto/identity";
 import {
   deleteListRecord,
   deleteListSaveRecord,
-  hasListSaveRecord,
-  listCollectionRecords,
   newListRkey,
   putListRecord,
   putListSaveRecord,
@@ -23,9 +20,10 @@ import {
   selectArticleCards,
 } from "#/server/reader/queries";
 import {
-  fetchPublicList,
+  hasSavedListDb,
   invalidateSavedLists,
   listUriFromParams,
+  readList,
 } from "#/server/reader/saved-lists";
 import {
   loadOwnSubscriptionLists,
@@ -45,9 +43,9 @@ import { dbMiddleware } from "./db-middleware";
  * other readers can add it to their app via an `app.standard-reader.listSave`
  * record (deterministic rkey, so save/unsave/status address one record).
  *
- * Lists are NOT mirrored into the Neon read-model: reads go straight to the
- * owning repo's PDS (strongly consistent — an edit shows up on the next
- * fetch), and only the member publications are hydrated from Neon. Saved
+ * Lists are mirrored into the Neon read-model (`lists` + `list_saves` tables)
+ * by the tap ingester, so reads go to the DB (no PDS I/O on the hot path). A
+ * backfill from the PDS runs on first access when no rows exist yet. Saved
  * lists also act as virtual subscriptions (see `#/server/reader/saved-lists`).
  */
 
@@ -228,19 +226,24 @@ const deleteAllLists = createServerFn({ method: "POST" }).handler(
     }
     span.set("did", session.did);
 
-    const records = await listCollectionRecords(
-      session.client,
-      session.did,
-      APP_NSID.list,
-    );
+    // Read list rkeys from the DB mirror (no PDS I/O for the read).
+    const { db } = await import("#/db/index.server");
+    const { lists } = await import("#/db/schema");
+    const { eq: eqList } = await import("drizzle-orm");
+
+    const rows = await db
+      .select({ rkey: lists.rkey })
+      .from(lists)
+      .where(eqList(lists.ownerDid, session.did));
+
     await Promise.all(
-      records.map((record) =>
-        deleteListRecord(session.client, session.did, record.rkey),
+      rows.map((row) =>
+        deleteListRecord(session.client, session.did, row.rkey),
       ),
     );
     invalidateSavedLists(session.did);
-    span.set("deleted", records.length);
-    return { ok: true as const, deleted: records.length };
+    span.set("deleted", rows.length);
+    return { ok: true as const, deleted: rows.length };
   }),
 );
 
@@ -258,11 +261,9 @@ const getList = createServerFn({ method: "GET" })
       const session = await getAtprotoSessionForRequest(getRequest());
       const isOwner = session?.did === data.did;
       const [list, isSaved] = await Promise.all([
-        fetchPublicList(data.did, data.rkey),
+        readList(data.did, data.rkey),
         session && !isOwner
-          ? hasListSaveRecord(session.client, session.did, listUri).catch(
-              () => false,
-            )
+          ? hasSavedListDb(session.did, listUri)
           : Promise.resolve(false),
       ]);
       if (!list) {
@@ -309,7 +310,7 @@ const getListFeed = createServerFn({ method: "GET" })
       span.set("rkey", data.rkey);
       span.set("offset", data.offset);
 
-      const list = await fetchPublicList(data.did, data.rkey);
+      const list = await readList(data.did, data.rkey);
       if (!list || list.publications.length === 0) {
         span.set("count", 0);
         return {
