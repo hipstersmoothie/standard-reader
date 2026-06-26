@@ -834,13 +834,23 @@ const getMyCollections = createServerFn({ method: "GET" }).handler(
     span.set("did", session.did);
 
     // Read from the DB mirror (documents table already has collectionJson
-    // synced by the tap ingester). No PDS I/O on the read path.
+    // synced by the tap ingester). No PDS I/O on the read path. Project only
+    // the columns used so we don't materialize/transmit the large jsonb/text
+    // columns (contentJson, textContent), the tsvector, or the trending/backlink
+    // counters that this card list never reads.
     const { db } = await import("#/db/index.server");
     const { documents } = await import("#/db/schema");
     const { and: andDocs, eq: eqDocs, isNotNull } = await import("drizzle-orm");
 
     const rows = await db
-      .select()
+      .select({
+        uri: documents.uri,
+        rkey: documents.rkey,
+        publicationUri: documents.publicationUri,
+        title: documents.title,
+        collectionJson: documents.collectionJson,
+        updatedAt: documents.updatedAt,
+      })
       .from(documents)
       .where(
         andDocs(

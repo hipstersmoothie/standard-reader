@@ -39,12 +39,33 @@ function readSessionTokenCookie(
   return undefined;
 }
 
+/**
+ * Short-lived cache of resolved sessions keyed by session token. The React
+ * `cache()` below only dedupes when `request === getRequest()`, but server-fn
+ * RPC calls during SSR each get a different request object — so without this,
+ * every server fn re-queries the DB for the session row + user row. A 30s TTL
+ * is safe: the session row has its own expiry, and a logout creates a new token.
+ */
+const SESSION_CACHE_TTL_MS = 30_000;
+
+interface SessionCacheEntry {
+  result: AtprotoSessionContext | undefined;
+  expiresAt: number;
+}
+
+const sessionTokenCache = new Map<string, SessionCacheEntry>();
+
 async function resolveAtprotoSession(
   request: Request,
 ): Promise<AtprotoSessionContext | undefined> {
   const sessionToken = readSessionTokenCookie(request.headers.get("cookie"));
   if (!sessionToken) {
     return;
+  }
+
+  const cached = sessionTokenCache.get(sessionToken);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.result;
   }
 
   const [{ db }, schema] = await Promise.all([
@@ -74,7 +95,14 @@ async function resolveAtprotoSession(
     return;
   }
 
-  return { did, atprotoSession: client, client, session: { user: userRow } };
+  const result = { did, atprotoSession: client, client, session: { user: userRow } };
+  // Cache the resolved session by token so sibling server fns in the same
+  // page load reuse it instead of each re-querying the DB for the session row.
+  sessionTokenCache.set(sessionToken, {
+    result,
+    expiresAt: Date.now() + SESSION_CACHE_TTL_MS,
+  });
+  return result;
 }
 
 /** Per-request dedupe when handlers share the active TanStack Start request. */

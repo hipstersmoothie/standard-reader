@@ -77,19 +77,29 @@ export const Route = createFileRoute("/_layout/collections/")({
   },
   loader: async ({ context }) => {
     const { queryClient } = context;
-    const collections = await queryClient.ensureQueryData(
-      collectionsApi.getMyCollectionsQueryOptions(),
-    );
-    await queryClient.ensureQueryData(
-      collectionsApi.listCollectionsPublicationsQueryOptions(),
-    );
-    for (const card of collections) {
-      void queryClient.prefetchQuery(
-        publicationApi.getArticleQueryOptions(
-          documentUriFromParams(card.did, card.rkey),
+    // The collections list and the publications list are independent — run
+    // their server-fn round trips in parallel instead of sequentially so the
+    // redundant session resolutions overlap.
+    const [collections] = await Promise.all([
+      queryClient.ensureQueryData(
+        collectionsApi.getMyCollectionsQueryOptions(),
+      ),
+      queryClient.ensureQueryData(
+        collectionsApi.listCollectionsPublicationsQueryOptions(),
+      ),
+    ]);
+    // Kick off article-card prefetches in parallel (warms the cache for
+    // potential navigation) but don't block the loader on them — the page
+    // only suspends on collections + publications, not articles.
+    void Promise.all(
+      collections.map((card) =>
+        queryClient.prefetchQuery(
+          publicationApi.getArticleQueryOptions(
+            documentUriFromParams(card.did, card.rkey),
+          ),
         ),
-      );
-    }
+      ),
+    );
   },
   head: () => ({
     meta: siteSocialMeta({
