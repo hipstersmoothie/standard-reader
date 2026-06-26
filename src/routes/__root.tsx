@@ -126,6 +126,22 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       user.getHomeScopePreferenceQueryOptions.queryKey,
       bootstrap.homeScope,
     );
+    context.queryClient.setQueryData(
+      user.getReaderVoicePreferenceQueryOptions.queryKey,
+      bootstrap.readerVoice,
+    );
+    context.queryClient.setQueryData(
+      user.getOpenLinksPreferenceQueryOptions.queryKey,
+      bootstrap.openLinks,
+    );
+    context.queryClient.setQueryData(
+      user.getOpenCollectionsInMagazinePreferenceQueryOptions.queryKey,
+      bootstrap.openCollectionsInMagazine,
+    );
+    context.queryClient.setQueryData(
+      user.getReadingTypographyPreferenceQueryOptions.queryKey,
+      bootstrap.readingTypography,
+    );
     if (bootstrap.shell) {
       context.queryClient.setQueryData(
         sidebarQueryOptions().queryKey,

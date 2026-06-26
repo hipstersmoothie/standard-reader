@@ -105,6 +105,10 @@ async function loadSessionFromToken(sessionToken: string) {
           themeMode: true,
           trackReadingHistory: true,
           homeScope: true,
+          readerVoice: true,
+          openLinksExternally: true,
+          openCollectionsInMagazine: true,
+          readingTypography: true,
         },
       },
     },
@@ -159,6 +163,10 @@ async function loadSessionFromToken(sessionToken: string) {
     themeMode: userRow.themeMode,
     trackReadingHistory: userRow.trackReadingHistory,
     homeScope: userRow.homeScope,
+    readerVoice: userRow.readerVoice,
+    openLinksExternally: userRow.openLinksExternally,
+    openCollectionsInMagazine: userRow.openCollectionsInMagazine,
+    readingTypography: userRow.readingTypography,
     client,
   };
 }
@@ -181,6 +189,22 @@ const getShellBootstrap = createServerFn({ method: "GET" }).handler(
       homeScope: {
         scope: parseHomeScope(cookies[HOME_SCOPE_COOKIE]),
       },
+      readerVoice: {
+        preference: parseReaderVoicePreference(cookies[READER_VOICE_COOKIE]),
+      },
+      openLinks: {
+        openExternally: parseOpenLinksExternally(cookies[OPEN_LINKS_COOKIE]),
+      },
+      openCollectionsInMagazine: {
+        openInMagazine: parseOpenCollectionsInMagazineCookie(
+          cookies[OPEN_COLLECTIONS_IN_MAGAZINE_COOKIE],
+        ),
+      },
+      readingTypography: {
+        preference: parseReadingTypographyCookie(
+          cookies[READING_TYPOGRAPHY_COOKIE],
+        ),
+      },
       shell: null,
     };
 
@@ -197,6 +221,10 @@ const getShellBootstrap = createServerFn({ method: "GET" }).handler(
       themeMode,
       trackReadingHistory,
       homeScope,
+      readerVoice,
+      openLinksExternally,
+      openCollectionsInMagazine,
+      readingTypography,
       client,
       user,
       session: sessionRow,
@@ -218,6 +246,20 @@ const getShellBootstrap = createServerFn({ method: "GET" }).handler(
       theme: { mode: dbValueToThemeMode(themeMode) },
       trackReading: { enabled: trackReading },
       homeScope: { scope: dbValueToHomeScope(homeScope) },
+      readerVoice: {
+        preference: dbValueToReaderVoicePreference(readerVoice),
+      },
+      openLinks: {
+        openExternally: dbValueToOpenLinksExternally(openLinksExternally),
+      },
+      openCollectionsInMagazine: {
+        openInMagazine: dbValueToOpenCollectionsInMagazine(
+          openCollectionsInMagazine,
+        ),
+      },
+      readingTypography: {
+        preference: dbValueToReadingTypography(readingTypography),
+      },
       shell,
     };
   },
