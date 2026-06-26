@@ -141,6 +141,47 @@ derived from `browserslist("baseline 2024")` (via `lightningcss` + `browserslist
 wired up too (see "Linting & formatting"). `pnpm lint`, `pnpm format:check`, `pnpm typecheck`,
 `pnpm build`, and `pnpm dev` all pass with the design system linted and in use.
 
+## AT Protocol data model — never hit the PDS for reads
+
+All AT Protocol record collections we care about are **mirrored into the Neon
+read-model** (Postgres tables in `src/db/schema/`) by the tap ingester
+(`src/server/ingest/`). The canonical records always live in each author's / reader's
+repo on their PDS, but the DB mirror is the read path. **Never hit the PDS for a
+read when data exists in the DB.**
+
+### How it works
+
+- **Tap ingester** (`src/server/ingest/consumer.ts` → `handlers.ts`): every
+  `create`/`update`/`delete` event from the firehose upserts or deletes a DB row.
+  Each collection has an `upsertX` handler and a `deleteRecord` case.
+- **DB tables**: `publications`, `documents`, `subscriptions`, `recommends`,
+  `reads`, `bookmarks`, `lists`, `list_saves`, `labeler_subscriptions`,
+  `labeler_services`, `profiles`, etc. (see `src/db/schema.ts` for the full list).
+- **Backfill** (`backfillXFromRepo` in `handlers.ts`): when no DB rows exist for a
+  reader yet (first visit, pre-sync gap), the read path fetches from the PDS once,
+  upserts into the DB, and then serves from the DB on subsequent reads.
+- **Writes** (`putRecord` / `deleteRecord` / `applyWrites` in
+  `src/server/atproto/repo-records.ts`): these **always** hit the PDS — the repo is
+  the source of truth. After a successful write, the tap event mirrors the change
+  into the DB. The DB row is never the write target.
+
+### Rules
+
+1. **Read from the DB, not the PDS.** If a collection has a DB table, read it from
+   the DB. Do not use `listCollectionRecords` or `client.get("com.atproto.repo.*")`
+   for reads when a DB table exists.
+2. **Falling back to the PDS is OK** when no DB rows exist yet (first access for a
+   repo). Always upsert what you fetch so the next read hits the DB. Use the
+   `backfillXFromRepo` pattern.
+3. **`fetchPublicList` / `listCollectionRecords` / `getRecord`** are only
+   appropriate for: (a) backfill/fallback when the DB is empty, (b) collections
+   that are genuinely not mirrored (none should exist — if you find one, add a
+   table + ingest handler instead), or (c) the public list page OG image route
+   where no auth/DB context exists.
+4. **Delete operations read from the DB, then delete on the PDS.** The read step
+   (enumerating what to delete) uses the DB; the actual `deleteRecord` call goes
+   to the PDS. The DB row is cleaned up by the tap delete handler afterward.
+
 ## Scripts
 
 - `pnpm install` — install dependencies.
