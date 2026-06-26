@@ -17,6 +17,7 @@ export * from "./schema/publications.ts";
 export * from "./schema/documents.ts";
 export * from "./schema/graph.ts";
 export * from "./schema/personal.ts";
+export * from "./schema/lists.ts";
 export * from "./schema/stats.ts";
 export * from "./schema/ingest.ts";
 export * from "./schema/labels.ts";

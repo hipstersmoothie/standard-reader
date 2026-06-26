@@ -262,10 +262,9 @@ source of truth; Neon holds a derived view for speed and cross-network querying.
   list acts like following its publications**: feeds, the sidebar, and unread counts operate on
   the reader's _effective_ follow set (subscriptions ∪ saved-list publications, computed in
   `src/server/reader/saved-lists.ts` with a short-TTL per-reader cache) — no individual
-  `site.standard.graph.subscription` records are written. Lists are
-  **not** mirrored into Neon: reads go straight to the owning repo's PDS (strongly consistent;
-  public pages use unauthenticated `getRecord`), and only the member publications are hydrated
-  from the read-model.
+  `site.standard.graph.subscription` records are written. Both `list` and `listSave` records are
+  **mirrored into Neon** (`lists` + `list_saves` tables) by the tap ingester so the shell snapshot
+  never blocks on PDS I/O. A backfill from the PDS runs on first access when no rows exist yet.
 - **Routing:** URL-backed routes (TanStack Router) for every view — home / latest / discover /
   search / article / publication — with real back/forward navigation and shareable links.
   _(The original prototype used an in-memory view stack; the port moves to real URLs.)_

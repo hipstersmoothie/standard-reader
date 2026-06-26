@@ -148,6 +148,13 @@
       "when": 1782408866575,
       "tag": "0020_eager_warpath",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1782449967687,
+      "tag": "0021_mean_living_lightning",
+      "breakpoints": true
     }
   ]
 }

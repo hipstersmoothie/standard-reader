@@ -398,9 +398,8 @@ const LIST_RECORDS_PAGE = 100;
 
 /**
  * Enumerate every record in one of the reader's own collections. Lists and
- * list-saves aren't mirrored into the Neon read-model (they're app-personal
- * state with no cross-network query), so the user's own repo is read directly
- * — which also means an edit is visible on the next read, no ingest lag.
+ * list-saves are mirrored into the Neon read-model by the tap ingester, so
+ * this is only used for backfill or collections not yet synced.
  */
 export async function listCollectionRecords(
   client: Client,

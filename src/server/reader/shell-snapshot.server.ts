@@ -11,9 +11,7 @@ import type {
 } from "#/integrations/tanstack-query/api-shapes";
 import type { SubscriptionList } from "#/server/reader/saved-lists";
 
-import { APP_NSID } from "#/lib/atproto/nsids";
 import { resolveIdentity } from "#/server/atproto/identity";
-import { listCollectionRecords } from "#/server/atproto/repo-records";
 import {
   countFollowedDocuments,
   countUnreadByPublication,
@@ -22,7 +20,6 @@ import {
 import {
   effectiveFollowUris,
   savedListsForReader,
-  toSubscriptionList,
 } from "#/server/reader/saved-lists";
 import { and, eq, inArray, sql } from "drizzle-orm";
 
@@ -81,14 +78,54 @@ export async function loadSidebarData(
 
 /** Own publication lists from the reader's repo (sidebar folders). */
 export async function loadOwnSubscriptionLists(
-  client: Client,
+  _client: Client,
   did: string,
 ): Promise<Array<SubscriptionList>> {
-  const records = await listCollectionRecords(client, did, APP_NSID.list);
-  return records
-    .map((record) => toSubscriptionList(record.uri, record.rkey, record.value))
-    .filter((list): list is SubscriptionList => list !== null)
-    .toSorted((a, b) => a.rkey.localeCompare(b.rkey));
+  // Read from the DB mirror (synced by the tap ingester). Falls back to a PDS
+  // fetch + backfill when no rows exist yet (first visit or pre-sync gap).
+  const { db } = await import("#/db/index.server");
+  const { lists } = await import("#/db/schema");
+  const { eq: eqList } = await import("drizzle-orm");
+
+  const rows = await db
+    .select()
+    .from(lists)
+    .where(and(eqList(lists.ownerDid, did), eqList(lists.deleted, false)))
+    .orderBy(lists.rkey);
+
+  if (rows.length > 0) {
+    return rows.map(
+      (row): SubscriptionList => ({
+        uri: row.uri,
+        rkey: row.rkey,
+        name: row.name,
+        description: row.description,
+        publications: (row.publications as Array<string>) ?? [],
+        createdAt: row.createdAt ? row.createdAt.toISOString() : null,
+      }),
+    );
+  }
+
+  // No rows yet — backfill from the PDS and retry the DB read.
+  const { backfillListsFromRepo } = await import("#/server/ingest/handlers");
+  await backfillListsFromRepo(did);
+
+  const refreshed = await db
+    .select()
+    .from(lists)
+    .where(and(eqList(lists.ownerDid, did), eqList(lists.deleted, false)))
+    .orderBy(lists.rkey);
+
+  return refreshed.map(
+    (row): SubscriptionList => ({
+      uri: row.uri,
+      rkey: row.rkey,
+      name: row.name,
+      description: row.description,
+      publications: (row.publications as Array<string>) ?? [],
+      createdAt: row.createdAt ? row.createdAt.toISOString() : null,
+    }),
+  );
 }
 
 async function lookupOwners(

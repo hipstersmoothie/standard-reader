@@ -7,12 +7,10 @@
  * set used by the sidebar, feeds, and unread counts, without writing
  * individual `site.standard.graph.subscription` records.
  *
- * Lists are NOT mirrored into the Neon read-model: both the reader's
- * `listSave` records and the referenced list records are public, so they're
- * fetched straight from the owning PDSes (strongly consistent). Because the
- * effective follow set is consulted on hot feed paths, the per-reader
- * resolution is cached in-memory for a short TTL and explicitly invalidated
- * when the reader saves/unsaves a list.
+ * Both `list` and `listSave` records are mirrored into the Neon read-model by
+ * the tap ingester (`lists` + `list_saves` tables). The per-reader resolution
+ * is cached in-memory for a short TTL and explicitly invalidated when the
+ * reader saves/unsaves a list.
  */
 
 import type { Db, Schema } from "#/integrations/tanstack-query/api-shapes";
@@ -23,7 +21,6 @@ import { selectFollowUris } from "#/server/reader/queries";
 import { cache as reactCache } from "react";
 
 const RECORD_FETCH_TIMEOUT_MS = 8000;
-const LIST_RECORDS_PAGE = 100;
 /** How long a reader's resolved saved lists are reused across feed queries. */
 const SAVED_LISTS_TTL_MS = 60_000;
 
@@ -107,49 +104,6 @@ export async function fetchPublicList(
   }
 }
 
-/** List uris referenced by the reader's `listSave` records (public read). */
-async function listSavedListUris(did: string): Promise<Array<string>> {
-  const identity = await resolveIdentity(did);
-  if (!identity.pds) {
-    return [];
-  }
-  const uris = new Set<string>();
-  let cursor: string | undefined;
-  try {
-    do {
-      const url = new URL("/xrpc/com.atproto.repo.listRecords", identity.pds);
-      url.searchParams.set("repo", did);
-      url.searchParams.set("collection", APP_NSID.listSave);
-      url.searchParams.set("limit", String(LIST_RECORDS_PAGE));
-      if (cursor) {
-        url.searchParams.set("cursor", cursor);
-      }
-      const res = await fetch(url, {
-        signal: AbortSignal.timeout(RECORD_FETCH_TIMEOUT_MS),
-      });
-      if (!res.ok) {
-        break;
-      }
-      const body = (await res.json()) as {
-        cursor?: string;
-        records?: Array<{ value?: { list?: unknown } }>;
-      };
-      for (const record of body.records ?? []) {
-        if (typeof record.value?.list === "string") {
-          uris.add(record.value.list);
-        }
-      }
-      cursor =
-        (body.records?.length ?? 0) === LIST_RECORDS_PAGE
-          ? body.cursor
-          : undefined;
-    } while (cursor);
-  } catch {
-    // Treat an unreachable PDS as "no saved lists" rather than failing feeds.
-  }
-  return [...uris];
-}
-
 interface CacheEntry {
   lists: Array<SubscriptionList>;
   expires: number;
@@ -160,7 +114,8 @@ const inflight = new Map<string, Promise<Array<SubscriptionList>>>();
 
 /**
  * The reader's saved lists (excluding saves that point at their own lists),
- * resolved from the PDSes and cached for {@link SAVED_LISTS_TTL_MS}.
+ * resolved from the DB mirror and cached for {@link SAVED_LISTS_TTL_MS}.
+ * Falls back to a PDS fetch + backfill when no list_saves rows exist yet.
  */
 export async function savedListsForReader(
   did: string,
@@ -174,20 +129,95 @@ export async function savedListsForReader(
     return pending;
   }
   const promise = (async () => {
-    const savedUris = await listSavedListUris(did);
+    const { db } = await import("#/db/index.server");
+    const { listSaves, lists } = await import("#/db/schema");
+    const { and, eq, inArray } = await import("drizzle-orm");
+
+    const saveRows = await db
+      .select({ listUri: listSaves.listUri })
+      .from(listSaves)
+      .where(and(eq(listSaves.saverDid, did), eq(listSaves.deleted, false)));
+
+    // No rows yet — backfill from the PDS and retry.
+    if (saveRows.length === 0) {
+      const { backfillListsFromRepo } = await import(
+        "#/server/ingest/handlers"
+      );
+      await backfillListsFromRepo(did);
+    }
+
+    const refetched = await db
+      .select({ listUri: listSaves.listUri })
+      .from(listSaves)
+      .where(and(eq(listSaves.saverDid, did), eq(listSaves.deleted, false)));
+
+    const savedUris = refetched.map((row) => row.listUri);
     const refs = savedUris
       .map((uri) => listRefFromUri(uri))
       .filter((ref): ref is { did: string; rkey: string } => ref !== null)
       // A save of your own list would just duplicate the sidebar group.
       .filter((ref) => ref.did !== did);
-    const fetched = await Promise.all(
-      refs.map((ref) => fetchPublicList(ref.did, ref.rkey)),
+
+    if (refs.length === 0) {
+      cache.set(did, { lists: [], expires: Date.now() + SAVED_LISTS_TTL_MS });
+      return [];
+    }
+
+    // Batch-fetch all referenced lists from the DB mirror.
+    const listUris = refs.map((ref) => listUriFromParams(ref.did, ref.rkey));
+    const listRows = await db
+      .select()
+      .from(lists)
+      .where(
+        and(inArray(lists.uri, listUris), eq(lists.deleted, false)),
+      );
+
+    const listByUri = new Map(listRows.map((row) => [row.uri, row]));
+
+    // Any list not yet in the DB (owned by a different repo we haven't
+    // backfilled) falls back to a single PDS fetch.
+    const missing = refs.filter(
+      (ref) => !listByUri.has(listUriFromParams(ref.did, ref.rkey)),
     );
-    const lists = fetched.filter(
-      (list): list is SubscriptionList => list !== null,
-    );
-    cache.set(did, { lists, expires: Date.now() + SAVED_LISTS_TTL_MS });
-    return lists;
+    if (missing.length > 0) {
+      const fetched = await Promise.all(
+        missing.map((ref) => fetchPublicList(ref.did, ref.rkey)),
+      );
+      for (const list of fetched) {
+        if (list) {
+          listByUri.set(list.uri, {
+            uri: list.uri,
+            name: list.name,
+            description: list.description,
+            publications: list.publications,
+            rkey: list.rkey,
+            ownerDid: list.uri.slice("at://".length).split("/")[0] as string,
+            cid: null,
+            createdAt: list.createdAt ? new Date(list.createdAt) : null,
+            deleted: false,
+            indexedAt: new Date(),
+            updatedAt: new Date(),
+          });
+        }
+      }
+    }
+
+    const result = refs
+      .map((ref) => listByUri.get(listUriFromParams(ref.did, ref.rkey)))
+      .filter((row): row is NonNullable<typeof row> => row != null)
+      .map(
+        (row): SubscriptionList => ({
+          uri: row.uri,
+          rkey: row.rkey,
+          name: row.name,
+          description: row.description,
+          publications: (row.publications as Array<string>) ?? [],
+          createdAt: row.createdAt ? row.createdAt.toISOString() : null,
+        }),
+      );
+
+    cache.set(did, { lists: result, expires: Date.now() + SAVED_LISTS_TTL_MS });
+    return result;
   })();
   inflight.set(did, promise);
   try {

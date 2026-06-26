@@ -20,6 +20,8 @@ import type {
   DocumentRecord,
   LabelerServiceRecord,
   LabelerSubscriptionRecord,
+  ListRecord,
+  ListSaveRecord,
   PublicationRecord,
   PublicationThemeRecord,
   ReadRecord,
@@ -35,6 +37,8 @@ import {
   documents,
   labelerServices,
   labelerSubscriptions,
+  listSaves,
+  lists,
   profiles,
   publicationStats,
   publications,
@@ -693,6 +697,85 @@ export async function upsertBookmark(
   await ensureTracked(did, "reader");
 }
 
+/**
+ * `app.standard-reader.list` — a named, ordered, shareable publication list.
+ * The `publications` array holds ordered at-uris of `site.standard.publication`
+ * records. Mirrored into `lists` so the shell snapshot reads from the DB
+ * instead of hitting the PDS.
+ */
+export async function upsertList(
+  uri: string,
+  did: string,
+  rkey: string,
+  cid: string | undefined,
+  record: ListRecord,
+): Promise<void> {
+  if (typeof record.name !== "string") {
+    return;
+  }
+  const publicationUris = Array.isArray(record.publications)
+    ? record.publications.filter(
+        (item): item is string => typeof item === "string",
+      )
+    : [];
+
+  const values = {
+    uri,
+    cid: cid ?? null,
+    ownerDid: did,
+    rkey,
+    name: record.name,
+    description: typeof record.description === "string" ? record.description : null,
+    publications: publicationUris,
+    createdAt: parseDate(record.createdAt),
+    deleted: false,
+    updatedAt: sql`now()`,
+  };
+
+  await db
+    .insert(lists)
+    .values(values)
+    .onConflictDoUpdate({ target: lists.uri, set: values });
+
+  await ensureTracked(did, "reader");
+}
+
+/**
+ * `app.standard-reader.listSave` — a reader has saved another reader's list.
+ * Mirrored into `list_saves` so saved-list resolution never hits the PDS.
+ */
+export async function upsertListSave(
+  uri: string,
+  did: string,
+  rkey: string,
+  cid: string | undefined,
+  record: ListSaveRecord,
+): Promise<void> {
+  if (typeof record.list !== "string") {
+    return;
+  }
+  const listOwnerDid = didFromAtUri(record.list);
+
+  const values = {
+    uri,
+    cid: cid ?? null,
+    saverDid: did,
+    rkey,
+    listUri: record.list,
+    listOwnerDid,
+    createdAt: parseDate(record.createdAt),
+    deleted: false,
+    updatedAt: sql`now()`,
+  };
+
+  await db
+    .insert(listSaves)
+    .values(values)
+    .onConflictDoUpdate({ target: listSaves.uri, set: values });
+
+  await ensureTracked(did, "reader");
+}
+
 export async function upsertBskyProfile(
   uri: string,
   did: string,
@@ -886,6 +969,14 @@ export async function deleteRecord(
         .where(eq(publications.uri, row.uri));
       return;
     }
+    case Collections.list: {
+      await db.delete(lists).where(eq(lists.uri, uri));
+      return;
+    }
+    case Collections.listSave: {
+      await db.delete(listSaves).where(eq(listSaves.uri, uri));
+      return;
+    }
     default: {
       // Unknown / profile deletes: nothing to remove from the read-model.
       return;
@@ -963,4 +1054,81 @@ export async function backfillSubscriptionsFromRepo(
   }
 
   return count;
+}
+
+/**
+ * Backfill a reader's `app.standard-reader.list` and `app.standard-reader.listSave`
+ * records from their PDS into the read-model. Called when the shell snapshot
+ * finds no rows for a reader (first visit, or a gap from before the sync was
+ * wired up).
+ */
+export async function backfillListsFromRepo(
+  did: string,
+): Promise<{ lists: number; listSaves: number }> {
+  const identity = await resolveIdentity(did);
+  if (!identity.pds) {
+    return { lists: 0, listSaves: 0 };
+  }
+
+  async function backfillCollection<T>(
+    collection: string,
+    upsert: (
+      uri: string,
+      did: string,
+      rkey: string,
+      cid: string | undefined,
+      record: T,
+    ) => Promise<void>,
+  ): Promise<number> {
+    const pds = identity.pds;
+    if (!pds) return 0;
+    let count = 0;
+    let cursor: string | undefined;
+    try {
+      do {
+        const url = new URL("/xrpc/com.atproto.repo.listRecords", pds);
+        url.searchParams.set("repo", did);
+        url.searchParams.set("collection", collection);
+        url.searchParams.set("limit", String(SUBSCRIPTION_LIST_PAGE));
+        if (cursor) {
+          url.searchParams.set("cursor", cursor);
+        }
+
+        const res = await fetch(url, {
+          signal: AbortSignal.timeout(SUBSCRIPTION_FETCH_TIMEOUT_MS),
+        });
+        if (!res.ok) break;
+
+        const body = (await res.json()) as {
+          cursor?: string;
+          records?: Array<{ cid?: string; uri: string; value?: T }>;
+        };
+
+        for (const record of body.records ?? []) {
+          const rkey = record.uri.slice(record.uri.lastIndexOf("/") + 1);
+          if (!record.value) continue;
+          await upsert(record.uri, did, rkey, record.cid, record.value);
+          count += 1;
+        }
+
+        cursor =
+          (body.records?.length ?? 0) === SUBSCRIPTION_LIST_PAGE
+            ? body.cursor
+            : undefined;
+      } while (cursor);
+    } catch (error: unknown) {
+      console.warn(
+        `[ingest] ${collection} backfill failed for ${did}`,
+        error,
+      );
+    }
+    return count;
+  }
+
+  const [listCount, listSaveCount] = await Promise.all([
+    backfillCollection<ListRecord>(Collections.list, upsertList),
+    backfillCollection<ListSaveRecord>(Collections.listSave, upsertListSave),
+  ]);
+
+  return { lists: listCount, listSaves: listSaveCount };
 }

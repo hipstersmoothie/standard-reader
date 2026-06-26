@@ -7,6 +7,8 @@ import type {
   DocumentRecord,
   LabelerServiceRecord,
   LabelerSubscriptionRecord,
+  ListRecord,
+  ListSaveRecord,
   PublicationRecord,
   PublicationThemeRecord,
   ReadRecord,
@@ -29,6 +31,8 @@ import {
   upsertDocument,
   upsertLabelerService,
   upsertLabelerSubscription,
+  upsertList,
+  upsertListSave,
   upsertPublication,
   upsertPublicationTheme,
   upsertRead,
@@ -156,6 +160,26 @@ async function handleRecord(payload: TapRecordPayload): Promise<void> {
         did,
         cid,
         record as unknown as BskyProfileRecord,
+      );
+      return;
+    }
+    case Collections.list: {
+      await upsertList(
+        uri,
+        did,
+        rkey,
+        cid,
+        record as unknown as ListRecord,
+      );
+      return;
+    }
+    case Collections.listSave: {
+      await upsertListSave(
+        uri,
+        did,
+        rkey,
+        cid,
+        record as unknown as ListSaveRecord,
       );
       return;
     }
