@@ -153,6 +153,16 @@ Check items off as they land.
       (avatar/handle fall back to the author when there's no publication). Author profile `/u/$did`
       gains a "Documents" section listing the author's loose docs; `authorProfileStats.documentCount`
       adds the loose-doc total.
+      **Verified in production (2026-06-27):** `tap-docs` is online (`:2482`,
+      `TAP_SIGNAL_COLLECTION=site.standard.document`, volume `tap-docs-volume` at `/data`,
+      actively backfilling repos). The ingest worker has `TAP_DOCS_API_URL` set but is still on
+      `main` (no `docsTapChannel` wiring), so only the primary + labeler channels are connected —
+      the docs channel will come online once `feat/loose-docs-tap-signal` is merged + redeployed.
+      DB check: 795 loose docs already present (authored by 229 DIDs, 28 of which have no
+      publication — those arrived via the primary tap, which includes `site.standard.document` in
+      its collection filter, for authors who previously had a publication). The read-model +
+      byline changes are required to surface them: on `main`, the Latest All feed filters
+      `publication_uri IS NOT NULL`, so loose docs are invisible there until the branch lands.
 - [x] Keep the read-model in sync (tap firehose + backfill; consumer expands tracking along the
       graph via tap `/repos/add` when it sees contributor/subscription/recommend references).
 - [x] Operational basics: cursor persistence (tap-owned) + `ingest_state` high-water mark;
