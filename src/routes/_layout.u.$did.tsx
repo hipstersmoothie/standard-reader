@@ -448,6 +448,7 @@ function AuthorProfileContent({
   const { profile, stats } = initialPage;
   const name = authorDisplayName(profile);
   const pageUrl = `${getPublicUrlClient()}/u/${did}`;
+  const showPublications = stats.publicationCount > 0;
   const showDocuments = documents.length > 0;
   const showSubscriptions = stats.subscriptionCount > 0;
   const showRecommendations = stats.recommendationCount > 0;
@@ -528,21 +529,17 @@ function AuthorProfileContent({
       </div>
 
       <ReaderContent>
-        <div
-          {...stylex.props(
-            styles.section,
-            !showDocuments &&
-              !showSubscriptions &&
-              !showRecommendations &&
-              styles.sectionLast,
-          )}
-        >
-          <SectionHead kicker="Publications" title="All publications" />
-          {publications.length === 0 ? (
-            <div {...stylex.props(styles.emptyNote)}>
-              No publications indexed from this author yet.
-            </div>
-          ) : (
+        {showPublications ? (
+          <div
+            {...stylex.props(
+              styles.section,
+              !showDocuments &&
+                !showSubscriptions &&
+                !showRecommendations &&
+                styles.sectionLast,
+            )}
+          >
+            <SectionHead kicker="Publications" title="All publications" />
             <div>
               {publications.map((pub, index) => (
                 <PubDirectoryRow
@@ -561,8 +558,8 @@ function AuthorProfileContent({
                 sentinelRef={publicationsScroll.sentinelRef}
               />
             </div>
-          )}
-        </div>
+          </div>
+        ) : null}
 
         {showDocuments ? (
           <div
