@@ -102,11 +102,7 @@ export function LeafletBlockView({
     }
     case "image": {
       if (!blobContext) return null;
-      const src = leafletImageUrl(
-        block.block,
-        blobContext.authorDid,
-        blobContext.authorPds,
-      );
+      const src = leafletImageUrl(block.block, blobContext.authorDid);
       if (!src) return null;
       return (
         <ImageFigureView

@@ -6,7 +6,7 @@ import {
   stripLeadingMarkupImage,
 } from "./lead-image";
 
-const author = { did: "did:plc:author", authorPds: "https://pds.example" };
+const author = { did: "did:plc:author" };
 
 describe("leadingMarkupImageUrl", () => {
   it("reads a leading markdown image", () => {

@@ -89,11 +89,7 @@ export function PcktBlockView({
     }
     case "image": {
       if (!pcktImageHasSource(block.block) || !blobContext) return null;
-      const src = pcktImageUrl(
-        block.block,
-        blobContext.authorDid,
-        blobContext.authorPds,
-      );
+      const src = pcktImageUrl(block.block, blobContext.authorDid);
       if (!src) return null;
       return (
         <ImageFigureView

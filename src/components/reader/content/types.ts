@@ -4,8 +4,6 @@ import type { CodeHighlightsByScheme } from "#/lib/theme";
 export interface ContentBlobContext {
   /** DID of the repo that owns the document record (blob host). */
   authorDid: string;
-  /** Resolved PDS endpoint for `com.atproto.sync.getBlob` URLs. */
-  authorPds: string | null;
 }
 
 export interface ContentRendererProps {

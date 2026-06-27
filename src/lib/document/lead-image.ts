@@ -71,13 +71,10 @@ export function stripLeadingMarkupImage(text: string): string {
 }
 
 function firstBlockImageUrl(
-  article: Pick<
-    ArticleDetail,
-    "contentFormat" | "contentJson" | "did" | "authorPds"
-  >,
+  article: Pick<ArticleDetail, "contentFormat" | "contentJson" | "did">,
 ): string | null {
   const contentType = resolveContentType(article);
-  const { contentJson, did, authorPds } = article;
+  const { contentJson, did } = article;
   if (!contentType || !contentJson) return null;
 
   if (
@@ -90,7 +87,7 @@ function firstBlockImageUrl(
         : contentJson;
     const first = leafletBlocks(content)[0];
     if (first?.kind === "image") {
-      return leafletImageUrl(first.block, did, authorPds);
+      return leafletImageUrl(first.block, did);
     }
     return null;
   }
@@ -98,7 +95,7 @@ function firstBlockImageUrl(
   if (contentType === PCKT_CONTENT) {
     const first = pcktBlocks(contentJson)[0];
     if (first?.kind === "image" && pcktImageHasSource(first.block)) {
-      return pcktImageUrl(first.block, did, authorPds);
+      return pcktImageUrl(first.block, did);
     }
     return null;
   }
@@ -106,7 +103,7 @@ function firstBlockImageUrl(
   if (contentType === OFFPRINT_CONTENT) {
     const first = offprintBlocks(contentJson)[0];
     if (first?.kind === "image" && structuredImageHasSource(first)) {
-      return structuredImageUrl(first, did, authorPds);
+      return structuredImageUrl(first, did);
     }
     return null;
   }
@@ -115,7 +112,7 @@ function firstBlockImageUrl(
   if (structured?.[0]?.kind === "image") {
     const first = structured[0];
     if (structuredImageHasSource(first)) {
-      return structuredImageUrl(first, did, authorPds);
+      return structuredImageUrl(first, did);
     }
   }
 
@@ -136,7 +133,7 @@ function firstBlockImageUrl(
 export function resolveArticleHeroImage(
   article: Pick<
     ArticleDetail,
-    "coverImageUrl" | "contentFormat" | "contentJson" | "did" | "authorPds"
+    "coverImageUrl" | "contentFormat" | "contentJson" | "did"
   >,
 ): ArticleHeroImage | null {
   const fromFirstBlock = firstBlockImageUrl(article);

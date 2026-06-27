@@ -130,11 +130,7 @@ export function StructuredBlockView({
     }
     case "image": {
       if (!structuredImageHasSource(block) || !blobContext) return null;
-      const src = structuredImageUrl(
-        block,
-        blobContext.authorDid,
-        blobContext.authorPds,
-      );
+      const src = structuredImageUrl(block, blobContext.authorDid);
       if (!src) return null;
       return (
         <ImageFigureView

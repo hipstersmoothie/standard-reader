@@ -26,13 +26,9 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 /** Build a Bluesky CDN image URL for an offprint/structured blob ref. */
-export function blobImageUrl(
-  blob: unknown,
-  did: string,
-  pds: string | null | undefined,
-): string | null {
+export function blobImageUrl(blob: unknown, did: string): string | null {
   const cid = blobCid(blob as Parameters<typeof blobCid>[0]);
-  if (!cid || !pds) return null;
+  if (!cid) return null;
   return cdnImageUrl(did, cid, "png");
 }
 
@@ -42,12 +38,11 @@ export function structuredImageUrl(
     externalSrc?: string;
   },
   did: string,
-  pds: string | null | undefined,
 ): string | null {
   if (block.externalSrc && /^https?:\/\//i.test(block.externalSrc)) {
     return block.externalSrc;
   }
-  return blobImageUrl(block.blob, did, pds);
+  return blobImageUrl(block.blob, did);
 }
 
 export function structuredImageAspectRatio(block: {

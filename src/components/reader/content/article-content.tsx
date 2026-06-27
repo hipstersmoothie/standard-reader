@@ -138,7 +138,6 @@ export function ArticleContent({
     const props: ContentRendererProps = {
       blobContext: {
         authorDid: article.did,
-        authorPds: article.authorPds,
       },
       codeHighlights: article.codeHighlights,
       content: article.contentJson,

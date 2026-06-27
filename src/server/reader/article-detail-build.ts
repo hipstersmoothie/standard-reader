@@ -26,7 +26,6 @@ import { PCKT_CONTENT } from "#/lib/pckt/types";
 import { getPublicUrl } from "#/lib/public-url";
 import { EMPTY_CODE_HIGHLIGHTS } from "#/lib/theme";
 import { cdnImageUrl } from "#/server/atproto/blob";
-import { resolveAndPersistContent } from "#/server/content/resolve-and-persist";
 import { countDocumentComments } from "#/server/reader/document-comments";
 import { selectArticleCardsByUris } from "#/server/reader/queries";
 import { highlightLeafletCodeBlocks } from "#/server/shiki/highlighter";
@@ -162,7 +161,6 @@ export async function buildArticleDetail(
   schema: Schema,
   row: ArticleDetailSourceRow,
   contributors: Array<ArticleContributor>,
-  authorPdsEndpoint: string | null,
   themeMode: ThemeMode,
   options: BuildArticleDetailOptions = {},
 ): Promise<ArticleDetail> {
@@ -170,19 +168,8 @@ export async function buildArticleDetail(
   const collection = parseCollectionManifest(row.collectionJson);
 
   const rawContentJson = row.contentJson ?? null;
-  const resolved =
-    rawContentJson == null
-      ? { contentJson: null, contentFormat: row.contentFormat }
-      : await resolveAndPersistContent(
-          db,
-          row.uri,
-          row.did,
-          rawContentJson,
-          row.contentFormat,
-          authorPdsEndpoint,
-        );
-  let resolvedContentJson = resolved.contentJson;
-  const resolvedContentFormat = resolved.contentFormat;
+  let resolvedContentJson = rawContentJson as JsonValue | null;
+  const resolvedContentFormat = row.contentFormat;
 
   if (
     collection &&
@@ -220,7 +207,6 @@ export async function buildArticleDetail(
   return {
     uri: row.uri,
     did: row.did,
-    authorPds: authorPdsEndpoint,
     title: row.title,
     description: row.description,
     path: row.path,

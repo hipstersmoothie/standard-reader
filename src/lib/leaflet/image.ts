@@ -8,14 +8,13 @@ export function leafletImageCid(image: unknown): string | null {
 }
 
 /** Build a Bluesky CDN image URL for a leaflet `image` blob. Returns null when
- *  the blob ref or PDS is missing. PNG is used to preserve alpha. */
+ *  the blob ref is missing. PNG is used to preserve alpha. */
 export function leafletImageUrl(
   block: LeafletImageBlock,
   did: string,
-  pds: string | null | undefined,
 ): string | null {
   const cid = leafletImageCid(block.image);
-  if (!cid || !pds) return null;
+  if (!cid) return null;
   return cdnImageUrl(did, cid, "png");
 }
 

@@ -14,7 +14,6 @@ import {
   getAtprotoSessionForRequest,
   getReaderContextForRequest,
 } from "#/middleware/auth-session.server";
-import { authorPds } from "#/server/atproto/identity";
 import { parseAtUri } from "#/server/atproto/uri";
 import {
   buildArticleDetail,
@@ -66,7 +65,6 @@ type BundleSqlRow = {
   pub_subscriber_count: number | null;
   pub_document_count: number | null;
   pub_last_document_at: Date | string | null;
-  author_pds: string | null;
   contrib_did: string | null;
   contrib_role: string | null;
   contrib_display_name: string | null;
@@ -257,7 +255,6 @@ async function fetchCollectionMagazineRows(
       st.subscriber_count AS pub_subscriber_count,
       st.document_count AS pub_document_count,
       st.last_document_at AS pub_last_document_at,
-      pr_author.pds AS author_pds,
       dc.did AS contrib_did,
       dc.role AS contrib_role,
       dc.display_name AS contrib_display_name,
@@ -269,7 +266,6 @@ async function fetchCollectionMagazineRows(
     LEFT JOIN publications p ON p.uri = d.publication_uri
     LEFT JOIN publication_stats st ON st.publication_uri = p.uri
     LEFT JOIN profiles pr_pub ON pr_pub.did = p.did
-    LEFT JOIN profiles pr_author ON pr_author.did = d.did
     LEFT JOIN document_contributors dc ON dc.document_uri = d.uri
     LEFT JOIN profiles pr_contrib ON pr_contrib.did = dc.did
     WHERE b.kind = 'collection'
@@ -285,7 +281,6 @@ type GroupedBundleDoc = {
   featureNote: string | null;
   featureOrd: number;
   row: ArticleDetailSourceRow;
-  authorPdsFromProfile: string | null;
   contributors: Array<LocalContributor>;
 };
 
@@ -300,7 +295,6 @@ function groupBundleRows(rows: Array<BundleSqlRow>): Array<GroupedBundleDoc> {
         featureNote: sqlRow.kind === "feature" ? sqlRow.feature_note : null,
         featureOrd: sqlRow.feature_ord,
         row: mapSqlRowToSource(sqlRow),
-        authorPdsFromProfile: sqlRow.author_pds,
         contributors: [],
       };
       byUri.set(sqlRow.uri, grouped);
@@ -313,25 +307,6 @@ function groupBundleRows(rows: Array<BundleSqlRow>): Array<GroupedBundleDoc> {
   }
 
   return [...byUri.values()].toSorted((a, b) => a.featureOrd - b.featureOrd);
-}
-
-async function resolveAuthorPdsEndpoints(
-  docs: Array<GroupedBundleDoc>,
-): Promise<Map<string, string | null>> {
-  const byDid = new Map<string, string | null>();
-  for (const doc of docs) {
-    if (!byDid.has(doc.row.did)) {
-      byDid.set(doc.row.did, doc.authorPdsFromProfile);
-    }
-  }
-
-  await Promise.all(
-    [...byDid.entries()].map(async ([did, pds]) => {
-      byDid.set(did, await authorPds(did, pds));
-    }),
-  );
-
-  return byDid;
 }
 
 export async function loadCollectionMagazine(
@@ -383,7 +358,6 @@ export async function loadCollectionMagazine(
     schema,
     reader?.userId,
   );
-  const authorPdsByDid = await resolveAuthorPdsEndpoints(grouped);
 
   const builtByUri = new Map<
     string,
@@ -396,7 +370,6 @@ export async function loadCollectionMagazine(
         schema,
         doc.row,
         doc.contributors,
-        authorPdsByDid.get(doc.row.did) ?? null,
         themeMode,
         {
           skipSocialCounts: true,

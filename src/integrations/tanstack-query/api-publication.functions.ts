@@ -17,8 +17,7 @@ import {
   getReaderDidForRequest,
 } from "#/middleware/auth-session.server";
 import { cdnImageUrl } from "#/server/atproto/blob";
-import { authorPds } from "#/server/atproto/identity";
-import { didFromAtUri, parseAtUri } from "#/server/atproto/uri";
+import { parseAtUri } from "#/server/atproto/uri";
 import { buildCanonicalUrl } from "#/server/ingest/mappers";
 import { observe } from "#/server/observability/log";
 import { attachReaderSpanContext } from "#/server/observability/span-context.ts";
@@ -152,8 +151,6 @@ export interface ArticleContributor {
 export interface ArticleDetail {
   uri: string;
   did: string;
-  /** PDS for the authoring repo — resolves in-body leaflet image blobs. */
-  authorPds: string | null;
   title: string;
   description: string | null;
   path: string | null;
@@ -322,107 +319,90 @@ const getArticle = createServerFn({ method: "GET" })
         span.set("documentUri", data.documentUri);
         await attachReaderSpanContext(span, getRequest());
 
-        // The URI authority is the author's repo DID, so the profile lookup
-        // can join the first batch instead of waiting on the document row.
-        const authorDid = didFromAtUri(data.documentUri);
-
-        const [
-          docRows,
-          contributorRows,
-          recommendRows,
-          readRows,
-          authorProfileRows,
-          reader,
-        ] = await Promise.all([
-          db
-            .select({
-              uri: d.uri,
-              did: d.did,
-              title: d.title,
-              description: d.description,
-              path: d.path,
-              canonicalUrl: d.canonicalUrl,
-              coverImageCid: d.coverImageCid,
-              publishedAt: d.publishedAt,
-              recordUpdatedAt: d.recordUpdatedAt,
-              featured: d.featured,
-              tags: d.tags,
-              contentJson: d.contentJson,
-              contentFormat: d.contentFormat,
-              collectionJson: d.collectionJson,
-              textContent: d.textContent,
-              bskyPostUri: d.bskyPostUri,
-              bskyPostCid: d.bskyPostCid,
-              publicationUri: d.publicationUri,
-              pubUri: p.uri,
-              pubDid: p.did,
-              pubName: p.name,
-              pubUrl: p.url,
-              pubDescription: p.description,
-              pubIconCid: p.iconCid,
-              pubThemeBackground: p.themeBackground,
-              pubThemeForeground: p.themeForeground,
-              pubThemeAccent: p.themeAccent,
-              pubThemeAccentForeground: p.themeAccentForeground,
-              pubThemeJson: p.themeJson,
-              pubOwnerAvatarUrl: pr.avatarUrl,
-              pubOwnerHandle: pr.handle,
-              pubOwnerDisplayName: pr.displayName,
-              pubTopic: p.topic,
-              pubVerified: p.verified,
-              pubSubscriberCount: st.subscriberCount,
-              pubDocumentCount: st.documentCount,
-              pubLastDocumentAt: st.lastDocumentAt,
-            })
-            .from(d)
-            .leftJoin(p, eq(p.uri, d.publicationUri))
-            .leftJoin(st, eq(st.publicationUri, p.uri))
-            .leftJoin(pr, eq(pr.did, p.did))
-            .where(eq(d.uri, data.documentUri))
-            .limit(1),
-          db
-            .select({
-              did: dc.did,
-              role: dc.role,
-              displayName: dc.displayName,
-              profileDisplayName: pr.displayName,
-              handle: pr.handle,
-              avatarUrl: pr.avatarUrl,
-            })
-            .from(dc)
-            .leftJoin(pr, eq(pr.did, dc.did))
-            .where(eq(dc.documentUri, data.documentUri)),
-          db
-            .select({ count: sql<number>`count(*)`.mapWith(Number) })
-            .from(rec)
-            .where(
-              and(
-                eq(rec.documentUri, data.documentUri),
-                eq(rec.deleted, false),
+        const [docRows, contributorRows, recommendRows, readRows, reader] =
+          await Promise.all([
+            db
+              .select({
+                uri: d.uri,
+                did: d.did,
+                title: d.title,
+                description: d.description,
+                path: d.path,
+                canonicalUrl: d.canonicalUrl,
+                coverImageCid: d.coverImageCid,
+                publishedAt: d.publishedAt,
+                recordUpdatedAt: d.recordUpdatedAt,
+                featured: d.featured,
+                tags: d.tags,
+                contentJson: d.contentJson,
+                contentFormat: d.contentFormat,
+                collectionJson: d.collectionJson,
+                textContent: d.textContent,
+                bskyPostUri: d.bskyPostUri,
+                bskyPostCid: d.bskyPostCid,
+                publicationUri: d.publicationUri,
+                pubUri: p.uri,
+                pubDid: p.did,
+                pubName: p.name,
+                pubUrl: p.url,
+                pubDescription: p.description,
+                pubIconCid: p.iconCid,
+                pubThemeBackground: p.themeBackground,
+                pubThemeForeground: p.themeForeground,
+                pubThemeAccent: p.themeAccent,
+                pubThemeAccentForeground: p.themeAccentForeground,
+                pubThemeJson: p.themeJson,
+                pubOwnerAvatarUrl: pr.avatarUrl,
+                pubOwnerHandle: pr.handle,
+                pubOwnerDisplayName: pr.displayName,
+                pubTopic: p.topic,
+                pubVerified: p.verified,
+                pubSubscriberCount: st.subscriberCount,
+                pubDocumentCount: st.documentCount,
+                pubLastDocumentAt: st.lastDocumentAt,
+              })
+              .from(d)
+              .leftJoin(p, eq(p.uri, d.publicationUri))
+              .leftJoin(st, eq(st.publicationUri, p.uri))
+              .leftJoin(pr, eq(pr.did, p.did))
+              .where(eq(d.uri, data.documentUri))
+              .limit(1),
+            db
+              .select({
+                did: dc.did,
+                role: dc.role,
+                displayName: dc.displayName,
+                profileDisplayName: pr.displayName,
+                handle: pr.handle,
+                avatarUrl: pr.avatarUrl,
+              })
+              .from(dc)
+              .leftJoin(pr, eq(pr.did, dc.did))
+              .where(eq(dc.documentUri, data.documentUri)),
+            db
+              .select({ count: sql<number>`count(*)`.mapWith(Number) })
+              .from(rec)
+              .where(
+                and(
+                  eq(rec.documentUri, data.documentUri),
+                  eq(rec.deleted, false),
+                ),
               ),
-            ),
-          db
-            .select({ count: sql<number>`count(*)`.mapWith(Number) })
-            .from(reads)
-            .where(
-              and(
-                eq(reads.documentUri, data.documentUri),
-                eq(reads.deleted, false),
+            db
+              .select({ count: sql<number>`count(*)`.mapWith(Number) })
+              .from(reads)
+              .where(
+                and(
+                  eq(reads.documentUri, data.documentUri),
+                  eq(reads.deleted, false),
+                ),
               ),
-            ),
-          authorDid
-            ? db
-                .select({ pds: pr.pds })
-                .from(pr)
-                .where(eq(pr.did, authorDid))
-                .limit(1)
-            : Promise.resolve([]),
-          // DB-only reader context (DID + user id) — avoids the PDS
-          // `manager.resume()` network round trip on every article view.
-          // The full PDS client is restored below only in the rare case
-          // where the signed-in reader owns this collection document.
-          getReaderContextForRequest(getRequest()),
-        ]);
+            // DB-only reader context (DID + user id) — avoids the PDS
+            // `manager.resume()` network round trip on every article view.
+            // The full PDS client is restored below only in the rare case
+            // where the signed-in reader owns this collection document.
+            getReaderContextForRequest(getRequest()),
+          ]);
 
         const row = docRows[0];
         if (!row) {
@@ -454,7 +434,6 @@ const getArticle = createServerFn({ method: "GET" })
           }
         }
 
-        const authorProfile = authorProfileRows[0];
         const contributors: Array<ArticleContributor> = contributorRows.map(
           (c) => ({
             did: c.did,
@@ -465,17 +444,13 @@ const getArticle = createServerFn({ method: "GET" })
           }),
         );
 
-        const [authorPdsEndpoint, themeMode] = await Promise.all([
-          authorPds(row.did, authorProfile?.pds ?? null),
-          themeModeForRequest(db, schema, reader?.userId),
-        ]);
+        const themeMode = await themeModeForRequest(db, schema, reader?.userId);
 
         return buildArticleDetail(
           db,
           schema,
           sourceRow,
           contributors,
-          authorPdsEndpoint,
           themeMode,
           {
             readCount: readRows[0]?.count ?? 0,

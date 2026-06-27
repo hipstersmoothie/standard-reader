@@ -64,7 +64,6 @@ export function PcktGalleryBlockView({
 
   const gallery = resolved?.record;
   const galleryDid = resolved?.did;
-  const galleryPds = resolved?.pds;
 
   const title = gallery?.title?.trim();
   const caption = gallery?.caption?.trim();
@@ -95,7 +94,6 @@ export function PcktGalleryBlockView({
             const src = pcktImageUrl(
               imageBlock,
               galleryDid ?? blobContext?.authorDid ?? "",
-              galleryPds ?? blobContext?.authorPds,
             );
             if (!src) return null;
             return (

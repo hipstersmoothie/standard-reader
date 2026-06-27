@@ -62,11 +62,7 @@ function StructuredGridImageView({
   blobContext: ContentBlobContext;
   aspectRatio: number;
 }) {
-  const src = structuredImageUrl(
-    image,
-    blobContext.authorDid,
-    blobContext.authorPds,
-  );
+  const src = structuredImageUrl(image, blobContext.authorDid);
   if (!src) return null;
 
   return (
@@ -158,16 +154,8 @@ export function StructuredImageDiffBlockView({
   if (!blobContext) return null;
 
   const [beforeImage, afterImage] = block.images;
-  const beforeSrc = structuredImageUrl(
-    beforeImage,
-    blobContext.authorDid,
-    blobContext.authorPds,
-  );
-  const afterSrc = structuredImageUrl(
-    afterImage,
-    blobContext.authorDid,
-    blobContext.authorPds,
-  );
+  const beforeSrc = structuredImageUrl(beforeImage, blobContext.authorDid);
+  const afterSrc = structuredImageUrl(afterImage, blobContext.authorDid);
   if (!beforeSrc || !afterSrc) return null;
 
   const aspectRatio = Math.max(
