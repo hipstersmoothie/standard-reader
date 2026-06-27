@@ -11,7 +11,7 @@ import { composeCollectionNewsletterContent } from "#/lib/collections/compose-ne
 import { collectionManifestFromSources } from "#/lib/collections/manifest";
 import { getPublicUrl } from "#/lib/public-url";
 import { getAtprotoSessionForRequest } from "#/middleware/auth-session.server";
-import { blobCid, getBlobUrl } from "#/server/atproto/blob";
+import { blobCid, cdnImageUrl } from "#/server/atproto/blob";
 import { resolveIdentity } from "#/server/atproto/identity";
 import {
   getCollectionRecord,
@@ -894,7 +894,10 @@ const getMyCollections = createServerFn({ method: "GET" }).handler(
   }),
 );
 
-/** Resolve a record blob ref to a getBlob URL on the owner's PDS. */
+/** Resolve a record blob ref to a Bluesky CDN image URL (rewritten from the
+ *  raw PDS getBlob URL so the browser gets a cacheable, inline-disposition
+ *  image). Returns null when the blob ref is missing or the PDS can't be
+ *  resolved. */
 async function resolveBlobUrl(
   did: string,
   blob: unknown,
@@ -902,7 +905,7 @@ async function resolveBlobUrl(
   const cid = blobCid(blob as Parameters<typeof blobCid>[0]);
   if (!cid) return null;
   const identity = await resolveIdentity(did).catch(() => null);
-  return identity?.pds ? getBlobUrl(identity.pds, did, cid) : null;
+  return identity?.pds ? cdnImageUrl(did, cid, "png") : null;
 }
 
 const uploadCollectionCover = createServerFn({ method: "POST" })

@@ -1,5 +1,5 @@
 import { normalizeImageAlt } from "#/lib/document/structured-content/image";
-import { blobCid as sharedBlobCid } from "#/server/atproto/blob";
+import { cdnImageUrl, blobCid as sharedBlobCid } from "#/server/atproto/blob";
 
 import type { PcktImageBlock } from "./types";
 
@@ -17,14 +17,8 @@ function cidFromSrc(src: string): string | null {
   return null;
 }
 
-function getBlobUrl(pds: string, did: string, cid: string): string {
-  const base = pds.replace(/\/+$/, "");
-  return `${base}/xrpc/com.atproto.sync.getBlob?did=${encodeURIComponent(
-    did,
-  )}&cid=${encodeURIComponent(cid)}`;
-}
-
-/** Build a blob URL or return an external `https:` src. */
+/** Build a Bluesky CDN image URL for a pckt image blob, or return an external
+ *  `https:` src unchanged. Returns null when no source can be resolved. */
 export function pcktImageUrl(
   block: PcktImageBlock,
   did: string,
@@ -41,7 +35,7 @@ export function pcktImageUrl(
   const cid =
     blobCid(attrs.blob) ?? (typeof src === "string" ? cidFromSrc(src) : null);
   if (!cid || !pds) return null;
-  return getBlobUrl(pds, did, cid);
+  return cdnImageUrl(did, cid, "png");
 }
 
 /** Width ÷ height for layout; falls back to 16∶9 when missing or invalid. */

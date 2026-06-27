@@ -12,6 +12,7 @@ import { publicationLinkParams } from "#/components/reader/format";
 import { parseCollectionManifest } from "#/lib/collections/manifest";
 import { collectionManifestForOwner } from "#/lib/collections/resolve-manifest";
 import { getAtprotoSessionForRequest } from "#/middleware/auth-session.server";
+import { pdsBlobUrlToCdn } from "#/server/atproto/blob";
 import { authorPds } from "#/server/atproto/identity";
 import { didFromAtUri, parseAtUri } from "#/server/atproto/uri";
 import { buildCanonicalUrl } from "#/server/ingest/mappers";
@@ -542,7 +543,7 @@ const getPublicationEmbedMeta = createServerFn({ method: "GET" })
           name: row.name,
           description: row.description,
           topic: row.topic,
-          iconUrl: row.iconUrl,
+          iconUrl: pdsBlobUrlToCdn(row.iconUrl, "png"),
           ownerAvatarUrl: row.ownerAvatarUrl,
           ownerDisplayName: row.ownerDisplayName,
           ownerHandle: row.ownerHandle,

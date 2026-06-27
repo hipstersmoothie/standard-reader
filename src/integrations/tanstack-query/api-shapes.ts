@@ -2,6 +2,7 @@ import type * as DbSchema from "#/db/schema";
 import type { SQL } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 
+import { pdsBlobUrlToCdn } from "#/server/atproto/blob";
 import { sql } from "drizzle-orm";
 
 /**
@@ -304,7 +305,8 @@ export function toPublicationCard(row: PublicationCardRow): PublicationCard {
     name: publicationDisplayName(row.name, row.url),
     url: row.url,
     description: row.description,
-    iconUrl: row.iconUrl,
+    // Icons may carry alpha (square logos on themed backgrounds); keep PNG.
+    iconUrl: pdsBlobUrlToCdn(row.iconUrl, "png"),
     ownerAvatarUrl: row.ownerAvatarUrl,
     ownerHandle: row.ownerHandle,
     topic: row.topic,
@@ -352,12 +354,12 @@ export function toArticleCard(row: ArticleCardRow): ArticleCard {
     description: row.description,
     path: row.path,
     canonicalUrl: row.canonicalUrl,
-    coverImageUrl: row.coverImageUrl,
+    coverImageUrl: pdsBlobUrlToCdn(row.coverImageUrl, "jpeg"),
     publishedAt: row.publishedAt.toISOString(),
     featured: row.featured,
     publicationUri: row.publicationUri,
     publicationName: row.publicationName,
-    publicationIconUrl: row.publicationIconUrl,
+    publicationIconUrl: pdsBlobUrlToCdn(row.publicationIconUrl, "png"),
     publicationOwnerAvatarUrl: row.publicationOwnerAvatarUrl,
     publicationOwnerHandle: row.publicationOwnerHandle,
     publicationBannerUrl: row.publicationBannerUrl,

@@ -25,6 +25,7 @@ import { pcktBlocks, pcktCodeLanguage } from "#/lib/pckt/blocks";
 import { PCKT_CONTENT } from "#/lib/pckt/types";
 import { getPublicUrl } from "#/lib/public-url";
 import { EMPTY_CODE_HIGHLIGHTS } from "#/lib/theme";
+import { pdsBlobUrlToCdn } from "#/server/atproto/blob";
 import { resolveAndPersistContent } from "#/server/content/resolve-and-persist";
 import { countDocumentComments } from "#/server/reader/document-comments";
 import { selectArticleCardsByUris } from "#/server/reader/queries";
@@ -224,7 +225,7 @@ export async function buildArticleDetail(
     description: row.description,
     path: row.path,
     canonicalUrl: row.canonicalUrl,
-    coverImageUrl: row.coverImageUrl,
+    coverImageUrl: pdsBlobUrlToCdn(row.coverImageUrl, "jpeg"),
     publishedAt: row.publishedAt.toISOString(),
     updatedAt: row.recordUpdatedAt?.toISOString() ?? null,
     featured: row.featured,

@@ -8,7 +8,7 @@ import { STANDARD_NSID } from "#/lib/atproto/nsids";
 import { parseInternalRoute } from "#/lib/internal-route";
 import { getPublicUrl } from "#/lib/public-url";
 import { withoutExcludedPublications } from "#/lib/publication/exclusions";
-import { blobCid, getBlobUrl } from "#/server/atproto/blob";
+import { blobCid, cdnImageUrl } from "#/server/atproto/blob";
 import { resolveIdentity } from "#/server/atproto/identity";
 import { ensureTracked } from "#/server/ingest/tap-client";
 import { observe } from "#/server/observability/log";
@@ -557,7 +557,7 @@ async function listRepoPublications(
         name: record.name ?? "Untitled publication",
         url: record.url ?? "",
         description: record.description ?? null,
-        iconUrl: cid ? getBlobUrl(pds, did, cid) : null,
+        iconUrl: cid ? cdnImageUrl(did, cid, "png") : null,
         ownerAvatarUrl: null,
         ownerHandle: null,
         topic: null,

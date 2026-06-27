@@ -1,4 +1,4 @@
-import { blobCid, getBlobUrl } from "#/server/atproto/blob";
+import { blobCid, cdnImageUrl } from "#/server/atproto/blob";
 
 import type { StructuredGridImage } from "./types";
 
@@ -25,7 +25,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-/** Build a blob URL for leaflet/offprint-style image blob fields. */
+/** Build a Bluesky CDN image URL for an offprint/structured blob ref. */
 export function blobImageUrl(
   blob: unknown,
   did: string,
@@ -33,7 +33,7 @@ export function blobImageUrl(
 ): string | null {
   const cid = blobCid(blob as Parameters<typeof blobCid>[0]);
   if (!cid || !pds) return null;
-  return getBlobUrl(pds, did, cid);
+  return cdnImageUrl(did, cid, "png");
 }
 
 export function structuredImageUrl(

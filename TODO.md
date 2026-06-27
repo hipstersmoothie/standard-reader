@@ -71,6 +71,23 @@ Check items off as they land.
       subsequent reads stay on the DB (per the "never hit the PDS for a read when
       data exists in the DB" rule). `buildArticleDetail` and `resolveNarration` both
       route through it.
+- [x] **Browser image URLs → Bluesky CDN.** Publication icons and document cover
+      images were stored in the DB as raw `com.atproto.sync.getBlob` URLs on the
+      author's PDS, so every `<img>` load hit the PDS directly — exposing the PDS
+      hostname, defeating CDN caching (PDS serves `Cache-Control: private` +
+      `Content-Disposition: attachment`), and routing through a non-CDN-optimized
+      server. The Bluesky CDN (`cdn.bsky.app`) serves *any* PDS blob by (did, cid),
+      not just Bluesky app blobs — confirmed it serves standard.site icons/covers
+      with `Cache-Control: public, max-age=604800` + inline disposition, and can
+      transcode format. Added `pdsBlobUrlToCdn` / `cdnImageUrl`
+      (`src/server/atproto/blob.ts`) and route all browser-facing image URLs
+      through it at serve time: card mappers (`toPublicationCard` /
+      `toArticleCard`), `buildArticleDetail`, `getPublicationEmbedMeta`, PDS
+      fallbacks in search/collections, and in-content image builders
+      (`leafletImageUrl` / `pcktImageUrl` / `structuredImageUrl` / `blobImageUrl`).
+      Icons use `@png` (alpha-preserving); covers use `@jpeg`. The DB still stores
+      raw getBlob URLs (canonical reference); the rewrite happens at the read
+      boundary so backfill/identity resolution is unaffected.
 
 ## 1. Data ingestion — tap → Neon
 
