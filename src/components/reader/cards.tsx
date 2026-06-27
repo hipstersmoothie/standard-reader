@@ -874,6 +874,7 @@ function Byline({
       <PublicationNameLink
         publicationUri={article.publicationUri}
         linkStyle={styles.bylineEyebrow}
+        nested
       >
         <PublicationAvatar
           pub={{
