@@ -1,7 +1,6 @@
 import type { QueryClient } from "@tanstack/react-query";
 
 import * as stylex from "@stylexjs/stylex";
-import { TanStackDevtools } from "@tanstack/react-devtools";
 import { useQuery } from "@tanstack/react-query";
 import {
   HeadContent,
@@ -9,7 +8,6 @@ import {
   createRootRouteWithContext,
   useRouterState,
 } from "@tanstack/react-router";
-import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { useLayoutEffect } from "react";
 
 import { NavTelemetry } from "../components/nav-telemetry";
@@ -251,15 +249,6 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         {isEmbedPath(pathname) ? null : <PlausibleAnalytics />}
         {children}
 
-        <TanStackDevtools
-          config={{ position: "bottom-right" }}
-          plugins={[
-            {
-              name: "Tanstack Router",
-              render: <TanStackRouterDevtoolsPanel />,
-            },
-          ]}
-        />
         <Scripts />
       </body>
     </html>
