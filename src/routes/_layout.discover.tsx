@@ -355,18 +355,6 @@ function DeferredMount({
   return <div ref={rootRef}>{mounted ? children : fallback}</div>;
 }
 
-function DiscoverRailSkeleton({ count }: { count: number }) {
-  return (
-    <div {...stylex.props(styles.railWrap)} aria-hidden>
-      <div {...stylex.props(styles.railScroll)}>
-        {Array.from({ length: count }, (_, index) => (
-          <PubCardSkeleton key={index} />
-        ))}
-      </div>
-    </div>
-  );
-}
-
 function DiscoverDirectoryToolbarSkeleton() {
   return (
     <div
@@ -424,6 +412,8 @@ function DiscoverRecommendedSection({
     : "Established reads";
   const recommendedTitle = signedIn ? "Recommended for you" : "Recommended";
 
+  if (recommended === undefined) return null;
+
   return (
     <div {...stylex.props(styles.section)}>
       <SectionHead
@@ -435,9 +425,7 @@ function DiscoverRecommendedSection({
           </SectionIcon>
         }
       />
-      {recommended === undefined ? (
-        <DiscoverRailSkeleton count={RAIL_LIMIT} />
-      ) : recommended.length > 0 ? (
+      {recommended.length > 0 ? (
         <HorizontalRail pubs={recommended} />
       ) : (
         <p {...stylex.props(styles.emptyRail)}>
@@ -455,6 +443,8 @@ function DiscoverSocialProofSection({
 }) {
   const [socialProofExpanded, setSocialProofExpanded] = useState(false);
 
+  if (followedBy === undefined) return null;
+
   return (
     <div {...stylex.props(styles.section)}>
       <SectionHead
@@ -466,7 +456,7 @@ function DiscoverSocialProofSection({
           </SectionIcon>
         }
         action={
-          followedBy && followedBy.length > SOCIAL_PROOF_COLLAPSED ? (
+          followedBy.length > SOCIAL_PROOF_COLLAPSED ? (
             <Button
               variant="tertiary"
               size="sm"
@@ -477,13 +467,7 @@ function DiscoverSocialProofSection({
           ) : undefined
         }
       />
-      {followedBy === undefined ? (
-        <Grid columnGap="lg" rowGap="lg" style={styles.socialGrid}>
-          {Array.from({ length: SOCIAL_PROOF_COLLAPSED }, (_, index) => (
-            <PubCardSkeleton key={index} />
-          ))}
-        </Grid>
-      ) : followedBy.length > 0 ? (
+      {followedBy.length > 0 ? (
         <Grid columnGap="lg" rowGap="lg" style={styles.socialGrid}>
           {(socialProofExpanded
             ? followedBy
