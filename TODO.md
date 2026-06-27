@@ -45,6 +45,17 @@ Check items off as they land.
       the auth session row (no extra `user.findFirst`). Combined `tag.getPage` loader, parallel
       article status fetches, deferred comments, subscription skeleton in AppShell, client
       `nav.transition` telemetry.
+- [x] **`/saved` perf: PLC lookups + preload stale time.** Honeycomb MCP revealed
+      `getShellBootstrap` at 4.3s P99 (vs `reader.getSaved` at 363ms P99). Root cause:
+      `lookupOwners` in `loadSavedListsHydrated` called `resolveIdentity(did)` (network
+      fetch to `plc.directory`, 8s timeout) for every saved-list owner missing a handle
+      in the `profiles` table — sequential PLC lookups blocking the critical path. Fix:
+      made `lookupOwners` DB-only (tap ingester syncs handles from the firehose; owners
+      missing from the DB get null handles, which the UI already handles gracefully).
+      Also set `defaultPreloadStaleTime: 30_000` in the router so hover→click preloaded
+      data stays fresh instead of refetching (was `0`). Wrapped `getShellBootstrap` in
+      `observe()` for ongoing Honeycomb visibility. Result: cold `/saved` 5.2s→3.6s,
+      cold `/likes` 3.7s, cold `/history` 1.3s; warm loads ~0.8s across all routes.
 - [x] **Load perf regression suite.** Playwright budgets for guest + signed-in views
       (`pnpm perf:test`, `perf/load-regression.spec.ts`); JSON report in `perf/results/latest.json`;
       fixture discovery via `pnpm perf:discover-fixtures`; signed-in auth via

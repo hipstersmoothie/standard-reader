@@ -11,7 +11,6 @@ import type {
 } from "#/integrations/tanstack-query/api-shapes";
 import type { SubscriptionList } from "#/server/reader/saved-lists";
 
-import { resolveIdentity } from "#/server/atproto/identity";
 import {
   countFollowedDocuments,
   countUnreadByPublication,
@@ -151,19 +150,6 @@ async function lookupOwners(
   for (const row of rows) {
     owners.set(row.did, row);
   }
-  await Promise.all(
-    unique
-      .filter((did) => !owners.get(did)?.handle)
-      .map(async (did) => {
-        const identity = await resolveIdentity(did);
-        owners.set(did, {
-          did,
-          handle: identity.handle,
-          displayName: owners.get(did)?.displayName ?? null,
-          avatarUrl: owners.get(did)?.avatarUrl ?? null,
-        });
-      }),
-  );
   return owners;
 }
 

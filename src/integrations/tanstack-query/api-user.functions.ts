@@ -67,6 +67,7 @@ import {
 } from "#/lib/track-reading-history";
 import { maybeAuthMiddleware } from "#/middleware/auth";
 import { resolveIdentity } from "#/server/atproto/identity";
+import { observe } from "#/server/observability/log";
 import { loadShellSnapshot } from "#/server/reader/shell-snapshot.server";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
@@ -173,7 +174,7 @@ async function loadSessionFromToken(sessionToken: string) {
 
 /** One round trip for root shell SSR: session, prefs, and signed-in shell data. */
 const getShellBootstrap = createServerFn({ method: "GET" }).handler(
-  async () => {
+  observe("user.getShellBootstrap", async (_args, span) => {
     const request = getRequest();
     const cookies = parseCookies(request.headers.get("cookie"));
     const sessionToken = cookies[AUTH_SESSION_TOKEN_COOKIE];
@@ -209,6 +210,7 @@ const getShellBootstrap = createServerFn({ method: "GET" }).handler(
     };
 
     if (!sessionToken) {
+      span.set("result", "guest");
       return guestBootstrap;
     }
 
@@ -245,14 +247,17 @@ const getShellBootstrap = createServerFn({ method: "GET" }).handler(
     });
 
     if (!sessionRow || sessionRow.expiresAt.getTime() <= Date.now()) {
+      span.set("result", "guest");
       return guestBootstrap;
     }
 
     const userRow = sessionRow.user;
     if (!userRow?.did || !isDid(userRow.did)) {
+      span.set("result", "guest");
       return guestBootstrap;
     }
 
+    span.set("did", userRow.did);
     const trackReading = dbValueToTrackReadingHistory(
       userRow.trackReadingHistory,
     );
@@ -275,6 +280,7 @@ const getShellBootstrap = createServerFn({ method: "GET" }).handler(
     ]);
 
     const handle = profileRow?.handle ?? null;
+    span.set("result", "signedIn");
 
     return {
       session: {
@@ -316,7 +322,7 @@ const getShellBootstrap = createServerFn({ method: "GET" }).handler(
       },
       shell,
     };
-  },
+  }),
 );
 
 const getSession = createServerFn({ method: "GET" }).handler(async () => {
