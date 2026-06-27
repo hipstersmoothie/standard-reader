@@ -9,8 +9,10 @@ import { isHandleLikeInput } from "#/lib/publication/handle-input";
 import { Plus, Search as SearchIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
+import { Avatar } from "../../design-system/avatar";
 import { Button } from "../../design-system/button";
 import { Dialog, DialogHeader } from "../../design-system/dialog";
+import { Flex } from "../../design-system/flex";
 import { uiColor } from "../../design-system/theme/color.stylex";
 import { radius } from "../../design-system/theme/radius.stylex";
 import {
@@ -22,9 +24,11 @@ import {
   fontFamily,
   fontSize,
   fontWeight,
+  lineHeight,
   tracking,
 } from "../../design-system/theme/typography.stylex";
 import { ModalPubRow, PubDirectoryRowSkeleton } from "./cards";
+import { initials } from "./format";
 
 const SEARCH_DEBOUNCE_MS = 300;
 const SEARCH_PAGE_SIZE = 20;
@@ -102,6 +106,32 @@ const styles = stylex.create({
   },
   skeletonWrap: {
     marginTop: gap["md"],
+  },
+  disabledRow: {
+    alignItems: "center",
+    columnGap: spacing["3.5"],
+    display: "flex",
+    opacity: 0.6,
+    rowGap: spacing["3.5"],
+    borderBottomColor: uiColor.border1,
+    borderBottomStyle: "solid",
+    borderBottomWidth: 0,
+    paddingBottom: spacing["3"],
+    paddingTop: spacing["3"],
+  },
+  disabledName: {
+    color: uiColor.text2,
+    fontFamily: fontFamily.serif,
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.semibold,
+    letterSpacing: tracking.tight,
+    lineHeight: lineHeight.sm,
+  },
+  disabledNote: {
+    color: uiColor.text1,
+    fontFamily: fontFamily.mono,
+    fontSize: fontSize.xs,
+    letterSpacing: tracking.tight,
   },
   trigger: {
     width: "100%",
@@ -184,8 +214,19 @@ export function AddPublicationModal({
         ? searchFetching && !searchPage
         : trendingFetching && !trending);
 
+  const showDisabledAccount =
+    handleLike &&
+    !loading &&
+    publications.length === 0 &&
+    Boolean(resolvedHandle?.did && resolvedHandle.hasDocuments);
+
   const handleEmptyNote = (() => {
-    if (!handleLike || loading || publications.length > 0) {
+    if (
+      !handleLike ||
+      loading ||
+      publications.length > 0 ||
+      showDisabledAccount
+    ) {
       return null;
     }
     if (!resolvedHandle?.did) {
@@ -260,6 +301,28 @@ export function AddPublicationModal({
                 onNavigate={closeModal}
               />
             ))
+          ) : showDisabledAccount && resolvedHandle?.did ? (
+            <div
+              {...stylex.props(styles.disabledRow)}
+              aria-disabled="true"
+              title="This account has documents but no publications to follow"
+            >
+              <Avatar
+                size="lg"
+                fallback={initials(resolvedHandle.handle ?? resolvedHandle.did)}
+                alt={resolvedHandle.handle ?? resolvedHandle.did}
+              />
+              <Flex direction="column" gap="xs">
+                <span {...stylex.props(styles.disabledName)}>
+                  {resolvedHandle.handle
+                    ? `@${resolvedHandle.handle}`
+                    : resolvedHandle.did}
+                </span>
+                <span {...stylex.props(styles.disabledNote)}>
+                  Has documents but no publications
+                </span>
+              </Flex>
+            </div>
           ) : handleEmptyNote ? (
             <p {...stylex.props(styles.emptyNote)}>{handleEmptyNote}</p>
           ) : hasQuery ? (

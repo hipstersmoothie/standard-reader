@@ -25,7 +25,7 @@ import {
   publicationSearchNameHeadline,
   publicationSearchSnippetHeadline,
 } from "#/server/reader/search-headline";
-import { and, desc, eq, ilike, or, sql } from "drizzle-orm";
+import { and, desc, eq, ilike, isNull, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { z } from "zod";
 
@@ -82,6 +82,12 @@ export interface ResolvedPublicationPreview {
   publications: Array<PublicationCard>;
   /** Where the previews came from: the read-model, the author's repo, or none. */
   source: "index" | "repo" | "none";
+  /**
+   * Whether the resolved account has loose documents (no publication). Used by
+   * the add-publication modal to show the account as a disabled row with a note
+   * instead of a bare "no publications" empty state.
+   */
+  hasDocuments: boolean;
 }
 
 const searchPublications = createServerFn({ method: "GET" })
@@ -153,7 +159,7 @@ const searchArticles = createServerFn({ method: "GET" })
 
       const tsq = sql`websearch_to_tsquery('english', ${data.q})`;
       const hints = documentQueryHints(data.q);
-      const matchClause = documentMatchSql(d, pr, pa, tsq, hints);
+      const matchClause = documentMatchSql(d, pr, pa, tsq, hints, data.q);
       const articleWhere = and(
         eq(d.deleted, false),
         matchClause,
@@ -399,6 +405,7 @@ function documentMatchSql(
   pa: ProfileAlias,
   tsq: ReturnType<typeof sql>,
   hints: DocumentQueryHints,
+  q: string,
 ) {
   if (hints.uri) return eq(d.uri, hints.uri);
   if (hints.canonicalLike) return ilike(d.canonicalUrl, hints.canonicalLike);
@@ -414,6 +421,15 @@ function documentMatchSql(
   if (hints.authorDid) {
     parts.push(eq(d.did, hints.authorDid));
   }
+  // For plain-text queries, also match the author's display name so searching
+  // by a person's name surfaces their documents (incl. loose docs whose author
+  // has no publication). `searchVector` only covers title/description/body.
+  const trimmed = q.trim();
+  if (trimmed.length > 0 && !hints.authorHandle && !hints.authorDid) {
+    const like = `%${trimmed}%`;
+    parts.push(ilike(pr.displayName, like));
+    parts.push(ilike(pa.displayName, like));
+  }
   return or(...parts) ?? sql`false`;
 }
 
@@ -427,6 +443,7 @@ function publicationMatchSql(
     sql`${p.searchVector} @@ ${tsq}`,
     ilike(p.url, hints.likePattern),
     ilike(pr.handle, hints.likePattern),
+    ilike(pr.displayName, hints.likePattern),
   ];
   if (hints.urlLike) {
     parts.push(ilike(p.url, hints.urlLike));
@@ -447,7 +464,8 @@ function publicationRankSql(
       else 0::real
     end,
     case when ${p.url} ilike ${hints.likePattern} then 0.2::real else 0::real end,
-    case when ${pr.handle} ilike ${hints.likePattern} then 0.15::real else 0::real end${
+    case when ${pr.handle} ilike ${hints.likePattern} then 0.15::real else 0::real end,
+    case when ${pr.displayName} ilike ${hints.likePattern} then 0.15::real else 0::real end${
       hints.urlLike
         ? sql`, case when ${p.url} ilike ${hints.urlLike} then 0.25::real else 0::real end`
         : sql``
@@ -601,7 +619,13 @@ const resolvePublicationByHandle = createServerFn({ method: "GET" })
         const did = await resolveToDid(lookup);
         if (!did) {
           span.set("resolved", false);
-          return { did: null, handle, publications: [], source: "none" };
+          return {
+            did: null,
+            handle,
+            publications: [],
+            source: "none",
+            hasDocuments: false,
+          };
         }
         span.set("did", did);
 
@@ -624,11 +648,28 @@ const resolvePublicationByHandle = createServerFn({ method: "GET" })
             handle: handle ?? identity.handle,
             publications,
             source: indexed.length > 0 ? "index" : "repo",
+            hasDocuments: false,
           };
         }
 
+        // No publications — check whether the account has loose documents so
+        // the modal can show a disabled row instead of a bare empty note.
+        const [docRow] = await db
+          .select({ one: sql`1` })
+          .from(schema.documents)
+          .where(
+            and(
+              eq(schema.documents.did, did),
+              eq(schema.documents.deleted, false),
+              isNull(schema.documents.publicationUri),
+            ),
+          )
+          .limit(1);
+        const hasDocuments = docRow != null;
+        span.set("hasDocuments", hasDocuments);
+
         span.set("source", "none");
-        return { did, handle, publications: [], source: "none" };
+        return { did, handle, publications: [], source: "none", hasDocuments };
       },
     ),
   );
