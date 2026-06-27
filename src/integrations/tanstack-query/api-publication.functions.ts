@@ -14,6 +14,7 @@ import { collectionManifestForOwner } from "#/lib/collections/resolve-manifest";
 import {
   getAtprotoSessionForRequest,
   getReaderContextForRequest,
+  getReaderDidForRequest,
 } from "#/middleware/auth-session.server";
 import { cdnImageUrl } from "#/server/atproto/blob";
 import { authorPds } from "#/server/atproto/identity";
@@ -581,19 +582,19 @@ const getPublicationSocialProof = createServerFn({ method: "GET" })
         const { db, schema } = context;
         span.set("publicationUri", data.publicationUri);
 
-        const session = await getAtprotoSessionForRequest(getRequest());
-        if (!session) {
+        const did = await getReaderDidForRequest(getRequest());
+        if (!did) {
           span.set("signedIn", false);
           span.set("count", 0);
           return { readers: [], total: 0 };
         }
         span.set("signedIn", true);
-        span.set("did", session.did);
+        span.set("did", did);
 
         const proof = await publicationFollowedByCoReaders(
           db,
           schema,
-          session.did,
+          did,
           data.publicationUri,
           data.limit,
         );
@@ -645,8 +646,7 @@ const getArticleExtras = createServerFn({ method: "GET" })
           row.canonicalUrl ?? buildCanonicalUrl(row.publicationUrl, row.path);
         const linkUrls = canonicalUrl ? [canonicalUrl] : [];
 
-        const session = await getAtprotoSessionForRequest(getRequest());
-        const readerDid = session?.did;
+        const readerDid = await getReaderDidForRequest(getRequest());
 
         const [
           moreFromRaw,

@@ -10,7 +10,10 @@ import type { ArticleDetailSourceRow } from "#/server/reader/article-detail-buil
 import { publicationLinkParams } from "#/components/reader/format";
 import { collectionManifestForOwner } from "#/lib/collections/resolve-manifest";
 import { MAX_MAGAZINE_FEATURES } from "#/magazine/constants";
-import { getAtprotoSessionForRequest } from "#/middleware/auth-session.server";
+import {
+  getAtprotoSessionForRequest,
+  getReaderContextForRequest,
+} from "#/middleware/auth-session.server";
 import { authorPds } from "#/server/atproto/identity";
 import { parseAtUri } from "#/server/atproto/uri";
 import {
@@ -347,25 +350,30 @@ export async function loadCollectionMagazine(
   const collectionEntry = grouped.find((doc) => doc.kind === "collection");
   if (!collectionEntry) return null;
 
-  const session = await getAtprotoSessionForRequest(request);
+  const reader = await getReaderContextForRequest(request);
   let manifest = manifestFromCollectionRow(collectionEntry.row);
   if (!manifest) return null;
 
-  if (session?.did === collectionEntry.row.did) {
+  if (reader && reader.did === collectionEntry.row.did) {
     const parsed = parseAtUri(collectionEntry.row.uri);
     if (parsed) {
-      const freshManifest = await collectionManifestForOwner(
-        session.client,
-        collectionEntry.row.did,
-        parsed.rkey,
-        manifest,
-      );
-      if (freshManifest) {
-        manifest = freshManifest;
-        collectionEntry.row = {
-          ...collectionEntry.row,
-          collectionJson: freshManifest,
-        };
+      // Only now — when the reader owns this collection — do we pay for
+      // the PDS client restore to read the manifest from their repo.
+      const session = await getAtprotoSessionForRequest(request);
+      if (session?.client) {
+        const freshManifest = await collectionManifestForOwner(
+          session.client,
+          collectionEntry.row.did,
+          parsed.rkey,
+          manifest,
+        );
+        if (freshManifest) {
+          manifest = freshManifest;
+          collectionEntry.row = {
+            ...collectionEntry.row,
+            collectionJson: freshManifest,
+          };
+        }
       }
     }
   }
@@ -373,7 +381,7 @@ export async function loadCollectionMagazine(
   const themeMode: ThemeMode = await themeModeForRequest(
     db,
     schema,
-    session?.session.user.id,
+    reader?.userId,
   );
   const authorPdsByDid = await resolveAuthorPdsEndpoints(grouped);
 
