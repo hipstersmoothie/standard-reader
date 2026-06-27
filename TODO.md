@@ -143,6 +143,16 @@ Check items off as they land.
       (`tap/` — docker-compose for `bluesky-social/indigo` cmd/tap, signal collection
       `site.standard.publication`, filters `site.standard.*` + `app.bsky.actor.profile`, webhook
       delivery to `/api/ingest/tap`; `tap/README.md` runbook + `tap/seed-repos.sh`).
+- [x] **Loose documents** — `site.standard.document` records whose `site` is an `https://` URL
+      (no publication record, e.g. Leaflet-hosted). A third `tap-docs` instance signals on
+      `site.standard.document` so author repos with no publication still get tracked + backfilled
+      (`tap/docker-compose.yml`, `TAP_DOCS_API_URL` on the ingest worker). The read model relaxes
+      `publication_uri IS NOT NULL` to "loose doc OR discover-eligible publication"
+      (`discoverEligibleArticleWhere`), so loose docs surface in Latest All, Trending, tags, and
+      search. `articleCardColumns` joins the author profile on `documents.did` so bylines resolve
+      (avatar/handle fall back to the author when there's no publication). Author profile `/u/$did`
+      gains a "Documents" section listing the author's loose docs; `authorProfileStats.documentCount`
+      adds the loose-doc total.
 - [x] Keep the read-model in sync (tap firehose + backfill; consumer expands tracking along the
       graph via tap `/repos/add` when it sees contributor/subscription/recommend references).
 - [x] Operational basics: cursor persistence (tap-owned) + `ingest_state` high-water mark;

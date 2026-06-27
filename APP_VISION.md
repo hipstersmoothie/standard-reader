@@ -274,8 +274,12 @@ source of truth; Neon holds a derived view for speed and cross-network querying.
 - **From `standard.site` lexicons** (reuse everything we can):
   - `site.standard.publication` — a publication (`url`, `name`, `description`, `icon` blob,
     `basicTheme`, `preferences.showInDiscover`). _In the UI we call these "publications"._
-  - `site.standard.document` — an **article** (`site` → publication, `title`, `path`,
-    `content`/`textContent`, `coverImage` blob = hero, `tags`, `contributors`, `publishedAt`).
+  - `site.standard.document` — an **article** (`site` → publication at-uri **or** an `https://`
+    URL for a "loose document" with no publication record, `title`, `path`, `content`/`textContent`,
+    `coverImage` blob = hero, `tags`, `contributors`, `publishedAt`). When `site` is an `https://`
+    URL the document is "loose" — `publication_uri` is null and the author is the repo DID (e.g.
+    Leaflet-hosted posts). Loose documents surface everywhere publication-bound documents do
+    (feeds, Trending, tags, search, author profiles) and byline the author via `/u/$did`.
     _"Article" is the product/UI term; the record is a "document"._
   - `site.standard.graph.subscription` — a **subscription** (`publication` at-uri). These are
     standard.site subscriptions, **not** Bluesky follows. _UI term: "follow"._
@@ -368,12 +372,16 @@ AT Proto network (standard.site publications, profiles, follows)
                                                       └─▶ cache updated optimistically
 ```
 
-- **Ingestion:** a **tap instance** (`bluesky-social/indigo` cmd/tap; see `tap/`) backfills all
-  `standard.site` data from the network and keeps it current. A separate ingest worker
-  (`pnpm ingest:dev`) connects to tap's acknowledged WebSocket channel, maps records to rows
-  idempotently, and expands tap's tracked-repo set along the graph via `/repos/add`. tap + the
-  worker are the single ingestion path for both backfill and live sync (locally and in prod); the
-  product app server does not process the firehose.
+- **Ingestion:** **tap instances** (`bluesky-social/indigo` cmd/tap; see `tap/`) backfill all
+  `standard.site` data from the network and keep it current. The primary tap signals on
+  `site.standard.publication` to discover publishers; a second `tap-labeler` instance signals on
+  `app.standard-reader.labeler.service`; and a third `tap-docs` instance signals on
+  `site.standard.document` so repos that publish "loose documents" (no publication record — e.g.
+  Leaflet-hosted) get tracked + backfilled. A separate ingest worker (`pnpm ingest:dev`) connects
+  to each tap's acknowledged WebSocket channel, maps records to rows idempotently, and expands
+  tap's tracked-repo set along the graph via `/repos/add`. tap + the worker are the single
+  ingestion path for both backfill and live sync (locally and in prod); the product app server
+  does not process the firehose.
 - **Read-model:** **Neon Postgres** in dev/prod (a local Postgres for testing — the DB client in
   `src/db/index.ts` picks the driver from the connection string), managed with **Drizzle**
   (`src/db/schema/`), powers feeds, the
