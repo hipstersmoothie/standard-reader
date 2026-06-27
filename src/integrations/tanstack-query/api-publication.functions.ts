@@ -353,9 +353,15 @@ const getArticle = createServerFn({ method: "GET" })
                 pubThemeAccent: p.themeAccent,
                 pubThemeAccentForeground: p.themeAccentForeground,
                 pubThemeJson: p.themeJson,
-                pubOwnerAvatarUrl: sql<string | null>`coalesce(${pr.avatarUrl}, ${pa.avatarUrl})`,
-                pubOwnerHandle: sql<string | null>`coalesce(${pr.handle}, ${pa.handle})`,
-                pubOwnerDisplayName: sql<string | null>`coalesce(${pr.displayName}, ${pa.displayName})`,
+                pubOwnerAvatarUrl: sql<
+                  string | null
+                >`coalesce(${pr.avatarUrl}, ${pa.avatarUrl})`,
+                pubOwnerHandle: sql<
+                  string | null
+                >`coalesce(${pr.handle}, ${pa.handle})`,
+                pubOwnerDisplayName: sql<
+                  string | null
+                >`coalesce(${pr.displayName}, ${pa.displayName})`,
                 pubTopic: p.topic,
                 pubVerified: p.verified,
                 pubSubscriberCount: st.subscriberCount,

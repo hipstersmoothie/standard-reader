@@ -344,9 +344,9 @@ function AuthorProfileContent({
   const [documents, setDocuments] = useState<Array<ArticleCard>>(
     () => initialPage?.documents ?? [],
   );
-  const [documentsNextOffset, setDocumentsNextOffset] = useState<
-    number | null
-  >(() => initialPage?.documentsNextOffset ?? null);
+  const [documentsNextOffset, setDocumentsNextOffset] = useState<number | null>(
+    () => initialPage?.documentsNextOffset ?? null,
+  );
 
   const loadMorePublications = useCallback(async () => {
     if (publicationsNextOffset == null) return;

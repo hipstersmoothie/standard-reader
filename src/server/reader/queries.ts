@@ -2078,7 +2078,10 @@ export async function authorLooseDocuments(
   );
 
   const [countRow, rows] = await Promise.all([
-    db.select({ count: sql<number>`count(*)::int`.mapWith(Number) }).from(d).where(where),
+    db
+      .select({ count: sql<number>`count(*)::int`.mapWith(Number) })
+      .from(d)
+      .where(where),
     db
       .select({
         ...articleCardColumns(schema),
