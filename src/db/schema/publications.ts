@@ -38,10 +38,10 @@ export const publications = pgTable(
     /** Brief description / tagline. */
     description: text("description"),
 
-    /** `icon` blob (square avatar). We keep the raw ref + a resolved getBlob URL. */
+    /** `icon` blob (square avatar). We keep the raw ref (CID); the browser URL
+     *  is derived at read time via `cdnImageUrl(did, cid)` — see api-shapes.ts. */
     iconCid: text("icon_cid"),
     iconMime: text("icon_mime"),
-    iconUrl: text("icon_url"),
 
     /** Flattened `basicTheme` (site.standard.theme.basic) as CSS color strings,
      * plus the raw object for anything we don't flatten. */

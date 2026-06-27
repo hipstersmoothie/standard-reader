@@ -17,6 +17,7 @@ import {
 import { parseInternalRoute } from "#/lib/internal-route";
 import { linkTargetVariants } from "#/lib/link-target-variants";
 import { getPublicUrl } from "#/lib/public-url";
+import { cdnImageUrl } from "#/server/atproto/blob";
 import { countDocumentComments } from "#/server/reader/document-comments";
 import { and, eq, inArray, sql } from "drizzle-orm";
 
@@ -135,7 +136,8 @@ type ArticleResolveRow = {
   textContent: string | null;
   hasRenderableBody: boolean;
   pubName: string | null;
-  pubIconUrl: string | null;
+  pubDid: string | null;
+  pubIconCid: string | null;
   pubOwnerAvatarUrl: string | null;
   pubOwnerHandle: string | null;
   pubOwnerDisplayName: string | null;
@@ -220,7 +222,8 @@ function articleResolveColumns(schemaModule: typeof schema) {
     textContent: d.textContent,
     hasRenderableBody: d.hasRenderableBody,
     pubName: p.name,
-    pubIconUrl: p.iconUrl,
+    pubDid: p.did,
+    pubIconCid: p.iconCid,
     pubOwnerAvatarUrl: pr.avatarUrl,
     pubOwnerHandle: pr.handle,
     pubOwnerDisplayName: pr.displayName,
@@ -279,7 +282,10 @@ async function buildArticleResult(
     publicationUri: row.publicationUri,
     publicationName: row.pubName,
     publicationHandle: row.pubOwnerHandle,
-    publicationIconUrl: row.pubIconUrl,
+    publicationIconUrl:
+      row.pubIconCid && row.pubDid
+        ? cdnImageUrl(row.pubDid, row.pubIconCid, "png")
+        : null,
     publicationOwnerAvatarUrl: row.pubOwnerAvatarUrl,
     publicationSubscriberCount: row.pubSubscriberCount,
     publicationReaderUrl: row.publicationUri
@@ -309,10 +315,11 @@ function publicationResolveColumns(schemaModule: typeof schema) {
   const pr = schemaModule.profiles;
   return {
     uri: p.uri,
+    did: p.did,
     name: p.name,
     url: p.url,
     description: p.description,
-    iconUrl: p.iconUrl,
+    iconCid: p.iconCid,
     ownerAvatarUrl: pr.avatarUrl,
     ownerHandle: pr.handle,
     subscriberCount: st.subscriberCount,
@@ -325,10 +332,11 @@ function publicationResolveColumns(schemaModule: typeof schema) {
 
 type PublicationResolveRow = {
   uri: string;
+  did: string;
   name: string;
   url: string;
   description: string | null;
-  iconUrl: string | null;
+  iconCid: string | null;
   ownerAvatarUrl: string | null;
   ownerHandle: string | null;
   subscriberCount: number | null;
@@ -348,7 +356,7 @@ function buildPublicationResult(
     name: row.name,
     description: row.description,
     handle: row.ownerHandle,
-    iconUrl: row.iconUrl,
+    iconUrl: row.iconCid ? cdnImageUrl(row.did, row.iconCid, "png") : null,
     ownerAvatarUrl: row.ownerAvatarUrl,
     subscriberCount: row.subscriberCount,
     readerUrl: buildPublicationReaderUrl(row.uri),

@@ -3,6 +3,7 @@ import type { ListOgMember } from "#/server/og/list-card";
 import { createFileRoute } from "@tanstack/react-router";
 import { db } from "#/db/index.server";
 import * as schema from "#/db/schema";
+import { cdnImageUrl } from "#/server/atproto/blob";
 import { resolveIdentity } from "#/server/atproto/identity";
 import { renderListOgImage } from "#/server/og/list-card";
 import { fetchPublicList } from "#/server/reader/saved-lists";
@@ -24,8 +25,9 @@ async function loadMembers(uris: Array<string>): Promise<Array<ListOgMember>> {
   const rows = await db
     .select({
       uri: pub.uri,
+      did: pub.did,
       name: pub.name,
-      iconUrl: pub.iconUrl,
+      iconCid: pub.iconCid,
       ownerAvatarUrl: pr.avatarUrl,
     })
     .from(pub)
@@ -38,7 +40,10 @@ async function loadMembers(uris: Array<string>): Promise<Array<ListOgMember>> {
     .filter((row) => row != null)
     .map((row) => ({
       name: row.name ?? "",
-      iconUrl: row.iconUrl,
+      iconUrl:
+        row.iconCid && row.did
+          ? cdnImageUrl(row.did, row.iconCid, "png")
+          : null,
       ownerAvatarUrl: row.ownerAvatarUrl,
     }));
 }

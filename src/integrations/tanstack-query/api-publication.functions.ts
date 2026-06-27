@@ -12,7 +12,7 @@ import { publicationLinkParams } from "#/components/reader/format";
 import { parseCollectionManifest } from "#/lib/collections/manifest";
 import { collectionManifestForOwner } from "#/lib/collections/resolve-manifest";
 import { getAtprotoSessionForRequest } from "#/middleware/auth-session.server";
-import { pdsBlobUrlToCdn } from "#/server/atproto/blob";
+import { cdnImageUrl } from "#/server/atproto/blob";
 import { authorPds } from "#/server/atproto/identity";
 import { didFromAtUri, parseAtUri } from "#/server/atproto/uri";
 import { buildCanonicalUrl } from "#/server/ingest/mappers";
@@ -338,7 +338,7 @@ const getArticle = createServerFn({ method: "GET" })
               description: d.description,
               path: d.path,
               canonicalUrl: d.canonicalUrl,
-              coverImageUrl: d.coverImageUrl,
+              coverImageCid: d.coverImageCid,
               publishedAt: d.publishedAt,
               recordUpdatedAt: d.recordUpdatedAt,
               featured: d.featured,
@@ -355,7 +355,7 @@ const getArticle = createServerFn({ method: "GET" })
               pubName: p.name,
               pubUrl: p.url,
               pubDescription: p.description,
-              pubIconUrl: p.iconUrl,
+              pubIconCid: p.iconCid,
               pubThemeBackground: p.themeBackground,
               pubThemeForeground: p.themeForeground,
               pubThemeAccent: p.themeAccent,
@@ -520,7 +520,7 @@ const getPublicationEmbedMeta = createServerFn({ method: "GET" })
             name: p.name,
             description: p.description,
             topic: p.topic,
-            iconUrl: p.iconUrl,
+            iconCid: p.iconCid,
             ownerAvatarUrl: pr.avatarUrl,
             ownerDisplayName: pr.displayName,
             ownerHandle: pr.handle,
@@ -543,7 +543,9 @@ const getPublicationEmbedMeta = createServerFn({ method: "GET" })
           name: row.name,
           description: row.description,
           topic: row.topic,
-          iconUrl: pdsBlobUrlToCdn(row.iconUrl, "png"),
+          iconUrl: row.iconCid
+            ? cdnImageUrl(row.did, row.iconCid, "png")
+            : null,
           ownerAvatarUrl: row.ownerAvatarUrl,
           ownerDisplayName: row.ownerDisplayName,
           ownerHandle: row.ownerHandle,

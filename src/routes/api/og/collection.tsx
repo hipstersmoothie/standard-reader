@@ -4,6 +4,7 @@ import * as schema from "#/db/schema";
 import { STANDARD_NSID } from "#/lib/atproto/nsids";
 import { parseCollectionManifest } from "#/lib/collections/manifest";
 import { themeFontsFromJson } from "#/lib/collections/theme";
+import { cdnImageUrl } from "#/server/atproto/blob";
 import {
   collectionOgCardDescription,
   renderCollectionOgImage,
@@ -20,14 +21,16 @@ async function loadCollectionOgMeta(did: string, rkey: string) {
 
   const rows = await db
     .select({
+      did: doc.did,
       name: doc.title,
       description: doc.description,
-      coverImageUrl: doc.coverImageUrl,
+      coverImageCid: doc.coverImageCid,
       collectionJson: doc.collectionJson,
       publicationName: pub.name,
+      publicationDid: pub.did,
       publicationOwnerHandle: pr.handle,
       publicationOwnerDisplayName: pr.displayName,
-      publicationIconUrl: pub.iconUrl,
+      publicationIconCid: pub.iconCid,
       publicationOwnerAvatarUrl: pr.avatarUrl,
       themeBackground: pub.themeBackground,
       themeForeground: pub.themeForeground,
@@ -56,10 +59,15 @@ async function loadCollectionOgMeta(did: string, rkey: string) {
       editorialBody: manifest.editorial?.body ?? null,
       documentDescription: row.description,
     }),
-    coverImageUrl: row.coverImageUrl,
+    coverImageUrl: row.coverImageCid
+      ? cdnImageUrl(row.did, row.coverImageCid, "jpeg")
+      : null,
     ownerHandle: row.publicationOwnerHandle,
     ownerDisplayName: row.publicationOwnerDisplayName,
-    publicationIconUrl: row.publicationIconUrl,
+    publicationIconUrl:
+      row.publicationIconCid && row.publicationDid
+        ? cdnImageUrl(row.publicationDid, row.publicationIconCid, "png")
+        : null,
     publicationOwnerAvatarUrl: row.publicationOwnerAvatarUrl,
     fontTitle: themeFonts.title,
     fontBody: themeFonts.body,

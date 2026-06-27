@@ -25,7 +25,7 @@ import { pcktBlocks, pcktCodeLanguage } from "#/lib/pckt/blocks";
 import { PCKT_CONTENT } from "#/lib/pckt/types";
 import { getPublicUrl } from "#/lib/public-url";
 import { EMPTY_CODE_HIGHLIGHTS } from "#/lib/theme";
-import { pdsBlobUrlToCdn } from "#/server/atproto/blob";
+import { cdnImageUrl } from "#/server/atproto/blob";
 import { resolveAndPersistContent } from "#/server/content/resolve-and-persist";
 import { countDocumentComments } from "#/server/reader/document-comments";
 import { selectArticleCardsByUris } from "#/server/reader/queries";
@@ -39,7 +39,7 @@ export interface ArticleDetailSourceRow {
   description: string | null;
   path: string | null;
   canonicalUrl: string | null;
-  coverImageUrl: string | null;
+  coverImageCid: string | null;
   publishedAt: Date;
   recordUpdatedAt: Date | null;
   featured: boolean;
@@ -56,7 +56,7 @@ export interface ArticleDetailSourceRow {
   pubName: string | null;
   pubUrl: string | null;
   pubDescription: string | null;
-  pubIconUrl: string | null;
+  pubIconCid: string | null;
   pubThemeBackground: string | null;
   pubThemeForeground: string | null;
   pubThemeAccent: string | null;
@@ -111,7 +111,7 @@ function publicationFromRow(
     name: row.pubName ?? "",
     url: row.pubUrl ?? "",
     description: row.pubDescription,
-    iconUrl: row.pubIconUrl,
+    iconCid: row.pubIconCid,
     ownerAvatarUrl: row.pubOwnerAvatarUrl,
     ownerHandle: row.pubOwnerHandle,
     topic: row.pubTopic,
@@ -225,7 +225,9 @@ export async function buildArticleDetail(
     description: row.description,
     path: row.path,
     canonicalUrl: row.canonicalUrl,
-    coverImageUrl: pdsBlobUrlToCdn(row.coverImageUrl, "jpeg"),
+    coverImageUrl: row.coverImageCid
+      ? cdnImageUrl(row.did, row.coverImageCid, "jpeg")
+      : null,
     publishedAt: row.publishedAt.toISOString(),
     updatedAt: row.recordUpdatedAt?.toISOString() ?? null,
     featured: row.featured,

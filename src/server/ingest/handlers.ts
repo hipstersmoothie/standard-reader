@@ -205,10 +205,7 @@ export async function upsertPublication(
   const url = normalizePublicationUrl(record.url);
 
   const owner = getCachedIdentity(did);
-  const ownerPds = await authorPds(did, owner?.pds ?? null);
   const iconCid = blobCid(record.icon);
-  const iconUrl =
-    iconCid && ownerPds ? getBlobUrl(ownerPds, did, iconCid) : null;
   const theme = flattenTheme(record.basicTheme);
 
   await ensureProfileStub(did, owner?.handle);
@@ -223,7 +220,6 @@ export async function upsertPublication(
     description: cleanOptional(record.description),
     iconCid,
     iconMime: record.icon?.mimeType ?? null,
-    iconUrl,
     ...theme,
     themeJson: sanitizeJson(record.basicTheme),
     showInDiscover:
@@ -316,10 +312,8 @@ export async function upsertDocument(
   const canonicalUrl = buildCanonicalUrl(base, cleanOptional(record.path));
 
   const owner = getCachedIdentity(did);
-  const ownerPds = await authorPds(did, owner?.pds ?? null);
   const coverCid = blobCid(record.coverImage);
-  const coverImageUrl =
-    coverCid && ownerPds ? getBlobUrl(ownerPds, did, coverCid) : null;
+  const ownerPds = await authorPds(did, owner?.pds ?? null);
 
   const publishedAt =
     parseDate(record.publishedAt) ?? parseDate(record.updatedAt) ?? new Date();
@@ -396,7 +390,6 @@ export async function upsertDocument(
     hasRenderableBody: renderableBody,
     coverImageCid: coverCid,
     coverImageMime: record.coverImage?.mimeType ?? null,
-    coverImageUrl,
     tags: Array.isArray(record.tags)
       ? record.tags
           .filter((t) => typeof t === "string")

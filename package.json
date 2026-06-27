@@ -23,7 +23,6 @@
     "perf:view": "node scripts/perf-view.mjs",
     "ingest:dev": "tsx --env-file=.env src/server/ingest/service.ts",
     "ingest:start": "tsx src/server/ingest/service.ts",
-    "backfill:blobs": "pnpm exec tsx --env-file=.env scripts/backfill-blob-urls.ts",
     "backfill:search-text": "pnpm exec tsx --env-file=.env scripts/backfill-search-text.ts",
     "backfill:renderable": "pnpm exec tsx --env-file=.env scripts/backfill-renderable-body.ts",
     "backfill:content-formats": "pnpm exec tsx --env-file=.env scripts/backfill-content-formats.ts",

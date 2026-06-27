@@ -71,23 +71,32 @@ Check items off as they land.
       subsequent reads stay on the DB (per the "never hit the PDS for a read when
       data exists in the DB" rule). `buildArticleDetail` and `resolveNarration` both
       route through it.
-- [x] **Browser image URLs → Bluesky CDN.** Publication icons and document cover
-      images were stored in the DB as raw `com.atproto.sync.getBlob` URLs on the
-      author's PDS, so every `<img>` load hit the PDS directly — exposing the PDS
-      hostname, defeating CDN caching (PDS serves `Cache-Control: private` +
-      `Content-Disposition: attachment`), and routing through a non-CDN-optimized
-      server. The Bluesky CDN (`cdn.bsky.app`) serves *any* PDS blob by (did, cid),
-      not just Bluesky app blobs — confirmed it serves standard.site icons/covers
-      with `Cache-Control: public, max-age=604800` + inline disposition, and can
-      transcode format. Added `pdsBlobUrlToCdn` / `cdnImageUrl`
-      (`src/server/atproto/blob.ts`) and route all browser-facing image URLs
-      through it at serve time: card mappers (`toPublicationCard` /
-      `toArticleCard`), `buildArticleDetail`, `getPublicationEmbedMeta`, PDS
-      fallbacks in search/collections, and in-content image builders
+- [x] **Browser image URLs → Bluesky CDN (derived from CID, not stored).**
+      Publication icons and document cover images were stored in the DB as raw
+      `com.atproto.sync.getBlob` URLs on the author's PDS, so every `<img>` load
+      hit the PDS directly — exposing the PDS hostname, defeating CDN caching
+      (PDS serves `Cache-Control: private` + `Content-Disposition: attachment`),
+      and routing through a non-CDN-optimized server. The Bluesky CDN
+      (`cdn.bsky.app`) serves _any_ PDS blob by (did, cid), not just Bluesky app
+      blobs — confirmed it serves standard.site icons/covers with
+      `Cache-Control: public, max-age=604800` + inline disposition, and can
+      transcode format.
+      **The DB no longer stores the URL at all** — `publications.icon_url` and
+      `documents.cover_image_url` are dropped (migration `0023_woozy_jane_foster`).
+      The ingester writes only the CID (`icon_cid` / `cover_image_cid`); every
+      read path selects `(did, cid)` and derives the CDN URL at serve time via
+      `cdnImageUrl(did, cid, format)` (`src/server/atproto/blob.ts`). This is
+      strictly better: the column can't go stale when an author migrates PDS, the
+      row is smaller, and the backfill script (`backfill:blobs` /
+      `backfillBlobUrls`) is deleted entirely. The `pdsBlobUrlToCdn` URL-rewriter
+      helper is also gone — with no stored getBlob URLs to rewrite, callers use
+      `cdnImageUrl` directly. Icons use `@png` (alpha-preserving); covers use
+      `@jpeg`. Affected read paths: card mappers (`toPublicationCard` /
+      `toArticleCard`), `buildArticleDetail`, `getPublicationEmbedMeta`,
+      collection summaries, OG image routes (article/collection/publication/list/
+      quote), extension page resolver, raw SQL in `queries.ts` /
+      `collection-magazine.ts`, and in-content image builders
       (`leafletImageUrl` / `pcktImageUrl` / `structuredImageUrl` / `blobImageUrl`).
-      Icons use `@png` (alpha-preserving); covers use `@jpeg`. The DB still stores
-      raw getBlob URLs (canonical reference); the rewrite happens at the read
-      boundary so backfill/identity resolution is unaffected.
 
 ## 1. Data ingestion — tap → Neon
 

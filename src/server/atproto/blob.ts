@@ -38,14 +38,15 @@ export function blobCid(blob: BlobRef | undefined | null): string | null {
 
 /**
  * Build a `com.atproto.sync.getBlob` URL for a blob stored on an author's PDS.
- * Used for standard.site blobs (publication `icon`, document `coverImage`).
- * Requires the owning repo's PDS endpoint (resolved via the identity layer).
+ * Used for server-side blob fetches (e.g. resolving fetch-backed content, or
+ * the profile avatar path during ingest). Requires the owning repo's PDS
+ * endpoint (resolved via the identity layer).
  *
  * Note: this URL is **not** ideal for browser `<img src>`. PDS servers serve
  * blobs with `Cache-Control: private` and `Content-Disposition: attachment`,
  * which prevents both CDN caching and inline image display. For any URL that
- * will be handed to the browser, pass it through {@link pdsBlobUrlToCdn} first
- * (or call {@link cdnImageUrl} directly when you already have the did + cid).
+ * will be handed to the browser, call {@link cdnImageUrl} directly with the
+ * owning repo's DID + the blob CID.
  */
 export function getBlobUrl(pds: string, did: string, cid: string): string {
   const base = pds.replace(/\/+$/, "");
@@ -63,8 +64,7 @@ const BSKY_CDN_BASE = "https://cdn.bsky.app/img";
  * requested format (`@jpeg` for photos, `@png` when alpha must be preserved)
  * and serves with `Cache-Control: public, max-age=604800` + inline
  * disposition — far better for browser `<img src>` than the raw PDS getBlob
- * URL (which is private/attachment). Falls back to the original URL when it
- * isn't a recognizable getBlob URL.
+ * URL (which is private/attachment).
  */
 export function cdnImageUrl(
   did: string,
@@ -74,34 +74,6 @@ export function cdnImageUrl(
   return `${BSKY_CDN_BASE}/feed_fullsize/plain/${encodeURIComponent(
     did,
   )}/${encodeURIComponent(cid)}@${format}`;
-}
-
-/**
- * Rewrite a raw PDS `com.atproto.sync.getBlob` URL to the Bluesky CDN. Use
- * this when you have a stored getBlob URL (e.g. from `publications.icon_url`)
- * and need to hand it to the browser. Non-getBlob URLs are returned unchanged
- * (they're already CDN/external URLs, or not images).
- *
- * `format` defaults to `jpeg`; pass `png` for icons/thumbnails that may have
- * meaningful alpha channels.
- */
-export function pdsBlobUrlToCdn(
-  url: string | null | undefined,
-  format: "jpeg" | "png" = "jpeg",
-): string | null {
-  if (!url) return null;
-  try {
-    const parsed = new URL(url);
-    if (!parsed.pathname.endsWith("/xrpc/com.atproto.sync.getBlob")) {
-      return url;
-    }
-    const did = parsed.searchParams.get("did");
-    const cid = parsed.searchParams.get("cid");
-    if (!did || !cid) return url;
-    return cdnImageUrl(did, cid, format);
-  } catch {
-    return url;
-  }
 }
 
 export type BskyImageKind = "avatar" | "banner";

@@ -32,7 +32,7 @@ type BundleSqlRow = {
   description: string | null;
   path: string | null;
   canonical_url: string | null;
-  cover_image_url: string | null;
+  cover_image_cid: string | null;
   published_at: Date | string;
   record_updated_at: Date | string | null;
   featured: boolean;
@@ -49,7 +49,7 @@ type BundleSqlRow = {
   pub_name: string | null;
   pub_url: string | null;
   pub_description: string | null;
-  pub_icon_url: string | null;
+  pub_icon_cid: string | null;
   pub_theme_background: string | null;
   pub_theme_foreground: string | null;
   pub_theme_accent: string | null;
@@ -120,7 +120,7 @@ function mapSqlRowToSource(row: BundleSqlRow): ArticleDetailSourceRow {
     description: row.description,
     path: row.path,
     canonicalUrl: row.canonical_url,
-    coverImageUrl: row.cover_image_url,
+    coverImageCid: row.cover_image_cid,
     publishedAt,
     recordUpdatedAt: toDate(row.record_updated_at),
     featured: row.featured,
@@ -137,7 +137,7 @@ function mapSqlRowToSource(row: BundleSqlRow): ArticleDetailSourceRow {
     pubName: row.pub_name,
     pubUrl: row.pub_url,
     pubDescription: row.pub_description,
-    pubIconUrl: row.pub_icon_url,
+    pubIconCid: row.pub_icon_cid,
     pubThemeBackground: row.pub_theme_background,
     pubThemeForeground: row.pub_theme_foreground,
     pubThemeAccent: row.pub_theme_accent,
@@ -223,7 +223,7 @@ async function fetchCollectionMagazineRows(
       d.description,
       d.path,
       d.canonical_url,
-      d.cover_image_url,
+      d.cover_image_cid,
       d.published_at,
       d.record_updated_at,
       d.featured,
@@ -240,7 +240,7 @@ async function fetchCollectionMagazineRows(
       p.name AS pub_name,
       p.url AS pub_url,
       p.description AS pub_description,
-      p.icon_url AS pub_icon_url,
+      p.icon_cid AS pub_icon_cid,
       p.theme_background AS pub_theme_background,
       p.theme_foreground AS pub_theme_foreground,
       p.theme_accent AS pub_theme_accent,

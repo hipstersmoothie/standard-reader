@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { db } from "#/db/index.server";
 import * as schema from "#/db/schema";
 import { STANDARD_NSID } from "#/lib/atproto/nsids";
+import { cdnImageUrl } from "#/server/atproto/blob";
 import { renderPublicationOgImage } from "#/server/og/publication-card";
 import { and, eq } from "drizzle-orm";
 
@@ -15,10 +16,11 @@ async function loadPublicationOgMeta(did: string, rkey: string) {
 
   const rows = await db
     .select({
+      did: pub.did,
       name: pub.name,
       description: pub.description,
       topic: pub.topic,
-      iconUrl: pub.iconUrl,
+      iconCid: pub.iconCid,
       ownerHandle: pr.handle,
       ownerAvatarUrl: pr.avatarUrl,
       subscriberCount: st.subscriberCount,
@@ -60,7 +62,9 @@ export const Route = createFileRoute("/api/og/publication")({
             description: meta.description,
             topic: meta.topic,
             ownerHandle: meta.ownerHandle,
-            iconUrl: meta.iconUrl,
+            iconUrl: meta.iconCid
+              ? cdnImageUrl(meta.did, meta.iconCid, "png")
+              : null,
             ownerAvatarUrl: meta.ownerAvatarUrl,
             subscriberCount: meta.subscriberCount ?? 0,
             documentCount: meta.documentCount ?? 0,

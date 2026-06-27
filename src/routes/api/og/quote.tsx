@@ -3,6 +3,7 @@ import { db } from "#/db/index.server";
 import * as schema from "#/db/schema";
 import { STANDARD_NSID } from "#/lib/atproto/nsids";
 import { decodeQuoteParam } from "#/lib/quote-share";
+import { cdnImageUrl } from "#/server/atproto/blob";
 import { renderQuoteOgImage } from "#/server/og/quote-card";
 import { getQuoteShareForDocument } from "#/server/reader/quote-shares";
 import { and, eq } from "drizzle-orm";
@@ -19,8 +20,9 @@ async function loadQuoteOgMeta(did: string, rkey: string) {
     .select({
       publicationName: pub.name,
       publicationDescription: pub.description,
+      publicationDid: pub.did,
       publicationOwnerHandle: pr.handle,
-      publicationIconUrl: pub.iconUrl,
+      publicationIconCid: pub.iconCid,
       publicationOwnerAvatarUrl: pr.avatarUrl,
       themeBackground: pub.themeBackground,
       themeForeground: pub.themeForeground,
@@ -69,7 +71,14 @@ export const Route = createFileRoute("/api/og/quote")({
             publicationName: meta.publicationName,
             publicationDescription: meta.publicationDescription,
             publicationOwnerHandle: meta.publicationOwnerHandle,
-            publicationIconUrl: meta.publicationIconUrl,
+            publicationIconUrl:
+              meta.publicationIconCid && meta.publicationDid
+                ? cdnImageUrl(
+                    meta.publicationDid,
+                    meta.publicationIconCid,
+                    "png",
+                  )
+                : null,
             publicationOwnerAvatarUrl: meta.publicationOwnerAvatarUrl,
             themeBackground: meta.themeBackground,
             themeForeground: meta.themeForeground,

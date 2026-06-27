@@ -603,10 +603,11 @@ const getCollectionsPublication = createServerFn({ method: "GET" })
       const [row] = await db
         .select({
           uri: schema.publications.uri,
+          did: schema.publications.did,
           rkey: schema.publications.rkey,
           name: schema.publications.name,
           description: schema.publications.description,
-          iconUrl: schema.publications.iconUrl,
+          iconCid: schema.publications.iconCid,
           themeJson: schema.publications.themeJson,
         })
         .from(schema.publications)
@@ -625,7 +626,10 @@ const getCollectionsPublication = createServerFn({ method: "GET" })
           rkey: row.rkey,
           name: row.name,
           description: row.description ?? null,
-          iconUrl: row.iconUrl ?? null,
+          iconUrl:
+            row.iconCid && row.did
+              ? cdnImageUrl(row.did, row.iconCid, "png")
+              : null,
           theme: themeFromPublicationRow(row.themeJson),
         } satisfies CollectionsPublication;
       }
@@ -718,10 +722,11 @@ const listCollectionsPublications = createServerFn({ method: "GET" })
       const rows = await db
         .select({
           uri: schema.publications.uri,
+          did: schema.publications.did,
           rkey: schema.publications.rkey,
           name: schema.publications.name,
           description: schema.publications.description,
-          iconUrl: schema.publications.iconUrl,
+          iconCid: schema.publications.iconCid,
           themeJson: schema.publications.themeJson,
           subscriberCount: schema.publicationStats.subscriberCount,
         })
@@ -757,7 +762,10 @@ const listCollectionsPublications = createServerFn({ method: "GET" })
         rkey: row.rkey,
         name: row.name,
         description: row.description ?? null,
-        iconUrl: row.iconUrl ?? null,
+        iconUrl:
+          row.iconCid && row.did
+            ? cdnImageUrl(row.did, row.iconCid, "png")
+            : null,
         theme: themeFromPublicationRow(row.themeJson),
         subscriberCount: row.subscriberCount ?? 0,
       })) satisfies Array<CollectionsPublicationSummary>;

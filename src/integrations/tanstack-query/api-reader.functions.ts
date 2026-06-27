@@ -75,12 +75,13 @@ type JoinedArticleRow = {
   description: string | null;
   path: string | null;
   canonicalUrl: string | null;
-  coverImageUrl: string | null;
+  coverImageCid: string | null;
   publishedAt: Date | null;
   featured: boolean | null;
   publicationUri: string | null;
   publicationName: string | null;
-  publicationIconUrl: string | null;
+  publicationDid: string | null;
+  publicationIconCid: string | null;
   publicationOwnerAvatarUrl: string | null;
   publicationOwnerHandle: string | null;
   publicationBannerUrl: string | null;
@@ -112,12 +113,13 @@ function hydrateArticleFromRow(
     description: row.description,
     path: row.path,
     canonicalUrl: row.canonicalUrl,
-    coverImageUrl: row.coverImageUrl,
+    coverImageCid: row.coverImageCid,
     publishedAt: row.publishedAt,
     featured: row.featured ?? false,
     publicationUri: row.publicationUri,
     publicationName: row.publicationName,
-    publicationIconUrl: row.publicationIconUrl,
+    publicationDid: row.publicationDid,
+    publicationIconCid: row.publicationIconCid,
     publicationOwnerAvatarUrl: row.publicationOwnerAvatarUrl,
     publicationOwnerHandle: row.publicationOwnerHandle,
     publicationBannerUrl: row.publicationBannerUrl,

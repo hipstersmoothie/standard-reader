@@ -63,10 +63,10 @@ export const documents = pgTable(
      * so un-backfilled rows keep the prior in-app routing until recomputed. */
     hasRenderableBody: boolean("has_renderable_body").notNull().default(true),
 
-    /** `coverImage` blob (the hero/thumbnail). Raw ref + resolved getBlob URL. */
+    /** `coverImage` blob (the hero/thumbnail). Raw ref (CID); the browser URL
+     *  is derived at read time via `cdnImageUrl(did, cid)` — see api-shapes.ts. */
     coverImageCid: text("cover_image_cid"),
     coverImageMime: text("cover_image_mime"),
-    coverImageUrl: text("cover_image_url"),
 
     /** Free-form tags from the record. */
     tags: text("tags").array(),

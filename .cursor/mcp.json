@@ -3,6 +3,13 @@
       "hip-ui": {
         "command": "npx",
         "args": ["hip-ui", "mcp"]
+      },
+      "search_atproto_docs": {
+        "command": "npx",
+        "args": [
+          "mcp-remote",
+          "https://mcp-atproto-docs.immber.workers.dev/sse"
+        ]
       }
     }
 }

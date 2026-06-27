@@ -2,7 +2,7 @@ import type * as DbSchema from "#/db/schema";
 import type { SQL } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 
-import { pdsBlobUrlToCdn } from "#/server/atproto/blob";
+import { cdnImageUrl } from "#/server/atproto/blob";
 import { sql } from "drizzle-orm";
 
 /**
@@ -146,7 +146,7 @@ export function publicationCardColumns(schema: Schema) {
     name: p.name,
     url: p.url,
     description: p.description,
-    iconUrl: p.iconUrl,
+    iconCid: p.iconCid,
     ownerAvatarUrl: pr.avatarUrl,
     ownerHandle: pr.handle,
     topic: p.topic,
@@ -175,12 +175,13 @@ export function articleCardColumns(schema: Schema) {
     description: d.description,
     path: d.path,
     canonicalUrl: d.canonicalUrl,
-    coverImageUrl: d.coverImageUrl,
+    coverImageCid: d.coverImageCid,
     publishedAt: d.publishedAt,
     featured: d.featured,
     publicationUri: d.publicationUri,
     publicationName: p.name,
-    publicationIconUrl: p.iconUrl,
+    publicationDid: p.did,
+    publicationIconCid: p.iconCid,
     publicationOwnerAvatarUrl: pr.avatarUrl,
     publicationOwnerHandle: pr.handle,
     publicationBannerUrl: pr.bannerUrl,
@@ -237,7 +238,7 @@ type PublicationCardRow = {
   name: string;
   url: string;
   description: string | null;
-  iconUrl: string | null;
+  iconCid: string | null;
   ownerAvatarUrl: string | null;
   ownerHandle: string | null;
   topic: string | null;
@@ -306,7 +307,7 @@ export function toPublicationCard(row: PublicationCardRow): PublicationCard {
     url: row.url,
     description: row.description,
     // Icons may carry alpha (square logos on themed backgrounds); keep PNG.
-    iconUrl: pdsBlobUrlToCdn(row.iconUrl, "png"),
+    iconUrl: row.iconCid ? cdnImageUrl(row.did, row.iconCid, "png") : null,
     ownerAvatarUrl: row.ownerAvatarUrl,
     ownerHandle: row.ownerHandle,
     topic: row.topic,
@@ -326,12 +327,13 @@ type ArticleCardRow = {
   description: string | null;
   path: string | null;
   canonicalUrl: string | null;
-  coverImageUrl: string | null;
+  coverImageCid: string | null;
   publishedAt: Date;
   featured: boolean;
   publicationUri: string | null;
   publicationName: string | null;
-  publicationIconUrl: string | null;
+  publicationIconCid: string | null;
+  publicationDid: string | null;
   publicationOwnerAvatarUrl: string | null;
   publicationOwnerHandle: string | null;
   publicationBannerUrl: string | null;
@@ -354,12 +356,17 @@ export function toArticleCard(row: ArticleCardRow): ArticleCard {
     description: row.description,
     path: row.path,
     canonicalUrl: row.canonicalUrl,
-    coverImageUrl: pdsBlobUrlToCdn(row.coverImageUrl, "jpeg"),
+    coverImageUrl: row.coverImageCid
+      ? cdnImageUrl(row.did, row.coverImageCid, "jpeg")
+      : null,
     publishedAt: row.publishedAt.toISOString(),
     featured: row.featured,
     publicationUri: row.publicationUri,
     publicationName: row.publicationName,
-    publicationIconUrl: pdsBlobUrlToCdn(row.publicationIconUrl, "png"),
+    publicationIconUrl:
+      row.publicationIconCid && row.publicationDid
+        ? cdnImageUrl(row.publicationDid, row.publicationIconCid, "png")
+        : null,
     publicationOwnerAvatarUrl: row.publicationOwnerAvatarUrl,
     publicationOwnerHandle: row.publicationOwnerHandle,
     publicationBannerUrl: row.publicationBannerUrl,

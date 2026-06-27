@@ -3,6 +3,7 @@ import { readingMinutes } from "#/components/reader/format";
 import { db } from "#/db/index.server";
 import * as schema from "#/db/schema";
 import { STANDARD_NSID } from "#/lib/atproto/nsids";
+import { cdnImageUrl } from "#/server/atproto/blob";
 import { renderArticleOgImage } from "#/server/og/article-card";
 import { and, eq } from "drizzle-orm";
 
@@ -16,14 +17,16 @@ async function loadArticleOgMeta(did: string, rkey: string) {
 
   const rows = await db
     .select({
+      did: doc.did,
       title: doc.title,
       description: doc.description,
-      coverImageUrl: doc.coverImageUrl,
+      coverImageCid: doc.coverImageCid,
       publishedAt: doc.publishedAt,
       textContent: doc.textContent,
       publicationName: pub.name,
+      publicationDid: pub.did,
       publicationOwnerHandle: pr.handle,
-      publicationIconUrl: pub.iconUrl,
+      publicationIconCid: pub.iconCid,
       publicationOwnerAvatarUrl: pr.avatarUrl,
       themeBackground: pub.themeBackground,
       themeForeground: pub.themeForeground,
@@ -60,12 +63,21 @@ export const Route = createFileRoute("/api/og/article")({
           const png = await renderArticleOgImage({
             title: meta.title,
             description: meta.description,
-            coverImageUrl: meta.coverImageUrl,
+            coverImageUrl: meta.coverImageCid
+              ? cdnImageUrl(meta.did, meta.coverImageCid, "jpeg")
+              : null,
             publishedAt: meta.publishedAt?.toISOString() ?? null,
             readingMinutes: readingMinutes(meta.textContent),
             publicationName: meta.publicationName,
             publicationOwnerHandle: meta.publicationOwnerHandle,
-            publicationIconUrl: meta.publicationIconUrl,
+            publicationIconUrl:
+              meta.publicationIconCid && meta.publicationDid
+                ? cdnImageUrl(
+                    meta.publicationDid,
+                    meta.publicationIconCid,
+                    "png",
+                  )
+                : null,
             publicationOwnerAvatarUrl: meta.publicationOwnerAvatarUrl,
             themeBackground: meta.themeBackground,
             themeForeground: meta.themeForeground,
