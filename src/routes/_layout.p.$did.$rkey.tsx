@@ -12,17 +12,9 @@ import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
 import { getPublicUrlClient } from "#/lib/public-url";
 import { publicationOgImageUrl, siteSocialMeta } from "#/lib/site-metadata";
-import { useDelayedLoading } from "#/lib/use-delayed-loading";
 import { useTrackReadingHistory } from "#/lib/use-track-reading-history";
 import { ExternalLink } from "lucide-react";
-import {
-  Suspense,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { ArticleCard } from "../integrations/tanstack-query/api-shapes";
 
@@ -76,8 +68,6 @@ const PUBLICATION_RECENT_LIMIT = 12;
 /** Page size for each subsequent infinite-scroll fetch. */
 const PUBLICATION_PAGE_SIZE = 20;
 const PUBLICATION_SKELETON_ROWS = 5;
-/** Grace period before post skeletons appear (avoids flash on fast loads). */
-const POSTS_SKELETON_DELAY_MS = 150;
 
 export const Route = createFileRoute("/_layout/p/$did/$rkey")({
   loader: async ({ context, params, preload }) => {
@@ -86,6 +76,7 @@ export const Route = createFileRoute("/_layout/p/$did/$rkey")({
       user.getSessionQueryOptions,
     );
     const readerScope = user.readerQueryScope(session);
+    const signedIn = Boolean(session?.user);
     const headerOptions = publicationApi.getPublicationHeaderQueryOptions(uri);
     const recentDocumentsOptions =
       publicationApi.getPublicationDocumentsQueryOptions(uri, {
@@ -93,31 +84,45 @@ export const Route = createFileRoute("/_layout/p/$did/$rkey")({
         offset: 0,
         readerScope,
       });
-    // Warm below-the-fold/secondary data without gating navigation on it:
-    // FollowButton and ShareMenu read these from React Query themselves.
-    if (session?.user) {
-      void context.queryClient.prefetchQuery(
-        publicationApi.getPublicationSocialProofQueryOptions(uri),
-      );
+    const socialProofOptions =
+      publicationApi.getPublicationSocialProofQueryOptions(uri);
+
+    // Non-blocking: ShareMenu and FollowButton read these from React Query.
+    void context.queryClient.prefetchQuery(
+      publicationApi.getPublicationEmbedMetaQueryOptions(uri),
+    );
+    if (signedIn) {
       void context.queryClient.prefetchQuery(
         readerApi.getFollowStatusQueryOptions(uri),
       );
     }
-    void context.queryClient.prefetchQuery(
-      publicationApi.getPublicationEmbedMetaQueryOptions(uri),
-    );
 
     if (preload) {
       void context.queryClient.prefetchQuery(headerOptions);
       void context.queryClient.prefetchQuery(recentDocumentsOptions);
+      if (signedIn) void context.queryClient.prefetchQuery(socialProofOptions);
       return {
         publicationName: null,
         publicationDescription: null,
       };
     }
 
-    const header = await context.queryClient.ensureQueryData(headerOptions);
-    void context.queryClient.prefetchQuery(recentDocumentsOptions);
+    // Await header + documents (+ social proof for signed-in readers) in
+    // parallel so the page paints in one shot instead of stacking loading
+    // states. All three are fast DB queries (P50 63-148ms on prod).
+    const awaitables: Array<Promise<unknown>> = [
+      context.queryClient.ensureQueryData(headerOptions),
+      context.queryClient.ensureQueryData(recentDocumentsOptions),
+    ];
+    if (signedIn) {
+      awaitables.push(context.queryClient.ensureQueryData(socialProofOptions));
+    }
+    const results = await Promise.all(awaitables);
+    const header = results[0] as {
+      publication: { name: string; description: string };
+      owner: { did: string; handle: string };
+    } | null;
+
     if (header) {
       void context.queryClient.prefetchQuery(
         authorApi.getAuthorSifaProfileQueryOptions(
@@ -161,6 +166,7 @@ export const Route = createFileRoute("/_layout/p/$did/$rkey")({
     };
   },
   component: PublicationProfilePage,
+  pendingComponent: PublicationPending,
 });
 
 const styles = stylex.create({
@@ -259,6 +265,26 @@ const styles = stylex.create({
   },
   writing: {
     marginTop: spacing["8"],
+  },
+  heroSkeletonName: {
+    height: spacing["10"],
+    marginTop: spacing["2"],
+    width: "42%",
+  },
+  heroSkeletonDesc: {
+    height: spacing["5"],
+    marginTop: spacing["2"],
+    width: "68%",
+  },
+  heroSkeletonStats: {
+    height: spacing["3.5"],
+    marginTop: spacing["4"],
+    width: "32%",
+  },
+  heroSkeletonActs: {
+    height: spacing["8"],
+    paddingTop: spacing["1"],
+    width: spacing["32"],
   },
   emptyNote: {
     color: uiColor.text1,
@@ -411,18 +437,33 @@ function PublicationPostsSkeleton() {
   );
 }
 
-function PublicationPostsFallback() {
-  const showSkeleton = useDelayedLoading(true, POSTS_SKELETON_DELAY_MS);
-
-  if (showSkeleton) {
-    return <PublicationPostsSkeleton />;
-  }
-
+/**
+ * Route pending state — paints the hero skeleton + recent writing skeleton
+ * together so the page has one unified loading state instead of two. Fires
+ * while the route loader awaits header + documents + social proof.
+ */
+function PublicationPending() {
   return (
-    <Flex direction="column" gap="6xl" style={styles.writing}>
-      <SectionHead kicker="Latest" title="Recent writing" />
-      <div aria-busy="true" aria-label="Loading recent writing" />
-    </Flex>
+    <div aria-busy="true" aria-label="Loading publication">
+      <div {...stylex.props(styles.hero)}>
+        <div {...stylex.props(styles.heroInner)}>
+          <div {...stylex.props(styles.avRing)}>
+            <Skeleton variant="circle" size="lg" />
+          </div>
+          <div {...stylex.props(styles.heroInfo)}>
+            <Skeleton variant="rectangle" style={styles.heroSkeletonName} />
+            <Skeleton variant="rectangle" style={styles.heroSkeletonDesc} />
+            <Skeleton variant="rectangle" style={styles.heroSkeletonStats} />
+          </div>
+          <div {...stylex.props(styles.heroActs)}>
+            <Skeleton variant="rectangle" style={styles.heroSkeletonActs} />
+          </div>
+        </div>
+      </div>
+      <ReaderContent>
+        <PublicationPostsSkeleton />
+      </ReaderContent>
+    </div>
   );
 }
 
@@ -535,9 +576,7 @@ function PublicationProfile() {
       </div>
 
       <ReaderContent>
-        <Suspense fallback={<PublicationPostsFallback />}>
-          <PublicationRecentWriting uri={uri} signedIn={signedIn} />
-        </Suspense>
+        <PublicationRecentWriting uri={uri} signedIn={signedIn} />
       </ReaderContent>
     </div>
   );
