@@ -235,3 +235,21 @@ export function subscribeLoginUrl({
   });
   return `${origin}/login?${params}`;
 }
+
+/**
+ * Themed subscribe-login page (`/subscribe-login/$did/$rkey`). Renders the
+ * publication-branded login card — no Standard Reader chrome, no saved handles,
+ * just the publication theme + "Subscribe to NAME".
+ */
+export function subscribeLoginPageUrl({
+  did,
+  rkey,
+  baseUrl = getPublicUrlClient(),
+}: {
+  did: string;
+  rkey: string;
+  baseUrl?: string;
+}): string {
+  const origin = baseUrl.replace(/\/$/, "");
+  return `${origin}/subscribe-login/${did}/${rkey}`;
+}

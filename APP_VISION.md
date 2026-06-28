@@ -176,6 +176,9 @@ Sections, top to bottom:
 - **Share** menu: copy `/p/$did/$rkey` link + compose-to-Bluesky (OG card on `/p/`) +
   **Embed subscribe** (iframe snippet for the publication site — themed button opens
   `/subscribe/$did/$rkey`, OAuth with subscription-only scope, auto-follow, themed success).
+  Unsigned-out readers hit `/login/subscribe/$did/$rkey` — a publication-themed
+  login page (no Standard Reader chrome, no saved handles) that drives the
+  subscription-only OAuth scope and returns to the auto-follow success screen.
 - Recent writing (featured lead + rows).
 - Right rail: About + DID + "Readers also follow".
 - Social proof line ("Followed by …") when applicable — Bluesky accounts you

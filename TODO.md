@@ -486,6 +486,10 @@ After Tier 1–3, as appetite allows:
 - [x] **Subscribe embed** — `ShareMenu` embed option on `/p/`; `/embed/subscribe/$did/$rkey`
       iframe card + `/subscribe/$did/$rkey` flow (subscription-only OAuth scope, auto-follow,
       themed success screen).
+- [x] **Themed subscribe login** — `/login/subscribe/$did/$rkey` renders a publication-branded
+      login card (publication theme colors + avatar + "Subscribe to NAME", no Standard Reader
+      chrome, no saved handles). `subscribe.$did.$rkey` `beforeLoad` redirects signed-out
+      readers here; `subscribeLoginPageUrl` in `publication-embed.ts` builds the URL.
 
 ## 12. Browser extension (WXT)
 

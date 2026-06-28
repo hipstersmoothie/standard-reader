@@ -7,7 +7,6 @@ import { SubscribeCard } from "#/components/reader/subscribe-card";
 import { publicationApi } from "#/integrations/tanstack-query/api-publication.functions";
 import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
-import { buildAuthRedirectPath } from "#/utils/auth-redirect";
 import { useEffect, useRef, useState } from "react";
 
 export const Route = createFileRoute("/subscribe/$did/$rkey")({
@@ -17,13 +16,8 @@ export const Route = createFileRoute("/subscribe/$did/$rkey")({
     );
     if (!session?.user) {
       throw redirect({
-        to: "/login",
-        search: {
-          redirect: buildAuthRedirectPath(
-            `/subscribe/${params.did}/${params.rkey}`,
-          ),
-          intent: "subscribe",
-        },
+        to: "/subscribe-login/$did/$rkey",
+        params: { did: params.did, rkey: params.rkey },
       });
     }
   },
