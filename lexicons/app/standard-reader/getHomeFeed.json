@@ -11,7 +11,8 @@
           "scope": {
             "type": "string",
             "knownValues": ["subscriptions", "all"],
-            "default": "subscriptions"
+            "default": "subscriptions",
+            "maxLength": 32
           }
         },
         "required": []
@@ -33,7 +34,8 @@
               }
             },
             "scope": {
-              "type": "string"
+              "type": "string",
+              "maxLength": 32
             }
           }
         }

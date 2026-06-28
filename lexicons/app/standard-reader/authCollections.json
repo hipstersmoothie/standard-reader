@@ -1,0 +1,22 @@
+{
+  "lexicon": 1,
+  "id": "app.standard-reader.authCollections",
+  "defs": {
+    "main": {
+      "type": "permission-set",
+      "title": "Standard Reader Collection Publication Permissions",
+      "detail": "Permissions to create and manage Collections within the app. A Collection is a meta publication that composes other documents along with your personal narrative.",
+      "permissions": [
+        {
+          "type": "permission",
+          "resource": "repo",
+          "collection": [
+            "app.standard-reader.collection",
+            "app.standard-reader.collectionsPublication",
+            "app.standard-reader.publicationTheme"
+          ]
+        }
+      ]
+    }
+  }
+}

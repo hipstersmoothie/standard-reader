@@ -73,12 +73,16 @@ export type LabelerService = typeof labelerServices.$inferSelect;
 export type NewLabelerService = typeof labelerServices.$inferInsert;
 
 /**
+ * `app.standard-reader.labeler.subscription` (V2) and legacy
  * `app.standard-reader.labelerSubscription` records — which labeler services a
  * reader has subscribed to (like Bluesky's subscribed moderation services).
  *
- * Keyed by the record AT-URI. Required lexicon field: `labeler` (a DID). This is
- * a read-model mirror of records the reader writes to their own repo; it lets
- * the app filter labels to a reader's subscribed labelers without a repo read.
+ * V2 is the nested-NSID successor; new writes target V2, reads accept both
+ * until per-reader migration completes (the lazy migration on the labeler
+ * write path rewrites old records). Keyed by the record AT-URI. Required
+ * lexicon field: `labeler` (a DID). This is a read-model mirror of records the
+ * reader writes to their own repo; it lets the app filter labels to a reader's
+ * subscribed labelers without a repo read.
  */
 export const labelerSubscriptions = pgTable(
   "labeler_subscriptions",

@@ -1,0 +1,50 @@
+{
+  "lexicon": 1,
+  "id": "app.standard-reader.labeler.subscription",
+  "defs": {
+    "main": {
+      "type": "record",
+      "description": "Subscribes the reader to a labeler service (like adding a Bluesky moderation service). Presence of the record means subscribed; deleting it unsubscribes. The rkey is derived from the labeler DID so each labeler maps to a single record. Successor to app.standard-reader.labelerSubscription, nested under the labeler NSID group.",
+      "key": "any",
+      "record": {
+        "type": "object",
+        "required": ["labeler", "createdAt"],
+        "properties": {
+          "labeler": {
+            "type": "string",
+            "format": "did",
+            "description": "DID of the labeler service being subscribed to."
+          },
+          "labels": {
+            "type": "array",
+            "description": "Per-label visibility overrides for this labeler's label values.",
+            "items": { "type": "ref", "ref": "#labelPref" }
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "datetime",
+            "description": "When the reader subscribed to the labeler."
+          }
+        }
+      }
+    },
+    "labelPref": {
+      "type": "object",
+      "description": "How the reader wants a single label value from this labeler treated.",
+      "required": ["val", "visibility"],
+      "properties": {
+        "val": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "The label value this preference applies to."
+        },
+        "visibility": {
+          "type": "string",
+          "maxLength": 16,
+          "knownValues": ["ignore", "warn", "hide"],
+          "description": "ignore = show normally; warn = content warning / blur; hide = filter out."
+        }
+      }
+    }
+  }
+}

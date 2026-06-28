@@ -50,6 +50,19 @@ export const Route = createFileRoute("/api/auth/atproto/callback")({
               }),
             ]);
 
+          // Snapshot the granted scopes so the UI can detect missing-scope
+          // errors (e.g. a collections write attempted without the upgrade).
+          // `scope` is only available via `getTokenInfo()` (it's not a sync
+          // property on OAuthSession). May differ from what we requested if the
+          // user partial-consented.
+          let grantedScope: string | null = null;
+          try {
+            const tokenInfo = await oauthSession.getTokenInfo();
+            grantedScope = tokenInfo.scope;
+          } catch (error) {
+            console.warn("Failed to read OAuth token info on callback:", error);
+          }
+
           const handle = stateData?.handle || publicProfile?.handle || "";
           const displayName = publicProfile?.displayName || handle || did;
           const blueskyAvatarUrl = publicProfile?.avatarUrl ?? null;
@@ -93,12 +106,20 @@ export const Route = createFileRoute("/api/auth/atproto/callback")({
               .where(eq(schema.user.id, userId));
           }
 
-          if (!existingAccount) {
+          if (existingAccount) {
+            // Refresh the granted-scope snapshot on every callback (covers
+            // re-logins where the user upgraded or downgraded their consent).
+            await db
+              .update(schema.account)
+              .set({ scope: grantedScope })
+              .where(eq(schema.account.id, existingAccount.id));
+          } else {
             await db.insert(schema.account).values({
               id: crypto.randomUUID(),
               accountId: did,
               providerId: "atproto",
               userId,
+              scope: grantedScope,
             });
           }
 

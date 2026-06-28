@@ -12,13 +12,16 @@
           "required": ["rkey", "name", "publications"],
           "properties": {
             "rkey": {
-              "type": "string"
+              "type": "string",
+              "maxLength": 128
             },
             "name": {
-              "type": "string"
+              "type": "string",
+              "maxLength": 128
             },
             "description": {
-              "type": "string"
+              "type": "string",
+              "maxLength": 4096
             },
             "publications": {
               "type": "array",

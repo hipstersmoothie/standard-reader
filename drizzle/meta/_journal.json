@@ -169,6 +169,13 @@
       "when": 1782529335565,
       "tag": "0023_woozy_jane_foster",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1782666387691,
+      "tag": "0024_sturdy_living_lightning",
+      "breakpoints": true
     }
   ]
 }

@@ -1,0 +1,25 @@
+{
+  "lexicon": 1,
+  "id": "app.standard-reader.authBasicFeatures",
+  "defs": {
+    "main": {
+      "type": "permission-set",
+      "title": "Standard Reader",
+      "detail": "Bookmark articles, mark them read, and create and save publication lists.",
+      "permissions": [
+        {
+          "type": "permission",
+          "resource": "repo",
+          "collection": [
+            "app.standard-reader.bookmark",
+            "app.standard-reader.labelerSubscription",
+            "app.standard-reader.labeler.subscription",
+            "app.standard-reader.list",
+            "app.standard-reader.listSave",
+            "app.standard-reader.read"
+          ]
+        }
+      ]
+    }
+  }
+}

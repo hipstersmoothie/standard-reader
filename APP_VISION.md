@@ -272,6 +272,38 @@ source of truth; Neon holds a derived view for speed and cross-network querying.
   search / article / publication — with real back/forward navigation and shareable links.
   _(The original prototype used an in-memory view stack; the port moves to real URLs.)_
 
+### OAuth scopes
+
+Sign-in requests granular AT Proto OAuth permission scopes as `include:` references to
+**permission-set lexicons** (per [atproto.com/guides/permission-sets](https://atproto.com/guides/permission-sets)).
+A permission set can only reference resources under its own NSID namespace, so the design
+splits each capability tier across a set we publish (`app.standard-reader.auth*`) and the
+upstream `site.standard.auth*` sets (published by standard.site — see
+[standard.site/docs/permissions](https://standard.site/docs/permissions/)):
+
+| Tier                                | App-owned set (we publish)                      | site.standard set (we reference)         | Covers                                                                               |
+| ----------------------------------- | ----------------------------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------ |
+| **Basic** (default sign-in)         | `include:app.standard-reader.authBasicFeatures` | `include:site.standard.authSocial`       | bookmark, read, list, listSave, labelerSubscription + follows + likes                |
+| **Collections authoring** (upgrade) | `+ include:app.standard-reader.authCollections` | swap to `include:site.standard.authFull` | collection, collectionsPublication, publicationTheme + publication + document writes |
+| **Subscribe embed**                 | —                                               | `include:site.standard.authSocial`       | subscription write (also covers recommend)                                           |
+
+`blob:*/*` (image upload) is requested as a granular scope alongside the basic tier — it
+cannot live inside a permission set. The OAuth client metadata `scope` field declares the
+union of all three tiers so any may be requested at authorize time.
+
+**Progressive scope upgrade:** the collections tier is opt-in. When a reader first opens
+`/collections/new` without the collections scope, an `AlertDialog` prompts them to upgrade.
+`auth.upgradeToCollections` sets `user.collectionsAuthoringEnabled = true`, revokes the
+current OAuth session, and re-authorizes fresh with the collections tier; the callback
+returns to the collections editor. The flag persists the upgrade so **subsequent logins
+silently request the collections tier automatically** (the authorize flow reads the flag by
+DID — threaded from the handle autocomplete result — before building the scope string). Per
+[OAuth Patterns](https://atproto.com/guides/oauth-patterns): BFF scope upgrades revoke +
+re-auth because `prompt: consent` re-consent isn't reliable across PDS providers. The
+granted scope is snapshotted to `account.scope` on every callback so the UI can detect
+missing-scope errors. See `src/integrations/auth/scope.ts` and
+`src/integrations/tanstack-query/api-auth.functions.ts`.
+
 ### Data shapes (source of truth)
 
 - **From `standard.site` lexicons** (reuse everything we can):
@@ -346,8 +378,12 @@ Standard Reader speaks the standard AT Proto label protocol, so readers can subs
 - **A labeler is just a DID.** We discover it the standard way — resolve the DID document, find
   its `#atproto_labeler` service, and read its descriptor + label-value definitions. Nothing is
   hardcoded; the first-party `claudeslop` labeler (below) is discovered like any third party.
-- **Subscriptions are repo records** (`app.standard-reader.labelerSubscription`, deterministic
-  rkey per labeler) in the reader's own PDS — owned by them, mirrored into the read-model. Each
+- **Subscriptions are repo records** (`app.standard-reader.labeler.subscription`, V2; legacy
+  `app.standard-reader.labelerSubscription` — nested under the `labeler` NSID group so a single
+  `_lexicon.labeler.standard-reader.app` DNS record covers `labeler.defs`, `labeler.service`, and
+  `labeler.subscription`). Deterministic rkey per labeler; lives in the reader's own PDS — owned by
+  them, mirrored into the read-model. New writes target V2; reads accept both until per-reader
+  migration completes (the lazy migration on the labeler write path rewrites old records). Each
   record also carries per-label visibility prefs (`ignore` / `warn`=blur / `hide`).
 - **Reading labels** uses `com.atproto.label.queryLabels` against each subscribed labeler; the
   reader sees a badge + content warning on labeled documents per their prefs. Settings →

@@ -172,7 +172,11 @@ export interface LabelerServiceRecord {
   createdAt?: string;
 }
 
-/** `app.standard-reader.labelerSubscription` — a labeler the reader subscribes to. */
+/**
+ * `app.standard-reader.labeler.subscription` (V2) / legacy
+ * `app.standard-reader.labelerSubscription` — a labeler the reader subscribes
+ * to. Same record shape across both NSIDs; new writes target V2.
+ */
 export interface LabelerSubscriptionRecord {
   $type?: string;
   labeler: string;

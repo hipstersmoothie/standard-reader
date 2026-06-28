@@ -934,7 +934,8 @@ export async function deleteRecord(
       await db.delete(recommends).where(eq(recommends.uri, uri));
       return;
     }
-    case Collections.labelerSubscription: {
+    case Collections.labelerSubscription:
+    case Collections.labelerSubscriptionV2: {
       await db
         .delete(labelerSubscriptions)
         .where(eq(labelerSubscriptions.uri, uri));

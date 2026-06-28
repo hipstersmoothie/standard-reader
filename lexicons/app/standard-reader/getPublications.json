@@ -9,12 +9,14 @@
         "type": "params",
         "properties": {
           "topic": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 128
           },
           "sort": {
             "type": "string",
             "knownValues": ["readers", "active", "az"],
-            "default": "readers"
+            "default": "readers",
+            "maxLength": 32
           },
           "limit": {
             "type": "integer",
@@ -23,10 +25,12 @@
             "default": 24
           },
           "cursor": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 8192
           },
           "q": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 256
           }
         },
         "required": []

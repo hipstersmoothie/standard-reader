@@ -20,8 +20,8 @@ import { z } from "zod";
 
 import { SiteLegalLinks } from "../components/site-legal-links";
 import { UserHandleAutocomplete } from "../components/user-handle-autocomplete";
-import { AlertDialog } from "../design-system/alert-dialog";
 import {
+  AlertDialog,
   AlertDialogActionButton,
   AlertDialogCancelButton,
   AlertDialogDescription,
@@ -33,6 +33,7 @@ import { Button } from "../design-system/button";
 import { Flex } from "../design-system/flex";
 import { Form } from "../design-system/form";
 import { IconButton } from "../design-system/icon-button";
+import { Link } from "../design-system/link";
 import { Separator } from "../design-system/separator";
 import { primaryColor, uiColor } from "../design-system/theme/color.stylex";
 import { breakpoints } from "../design-system/theme/media-queries.stylex";
@@ -46,7 +47,6 @@ import {
 } from "../design-system/theme/semantic-spacing.stylex";
 import { Body } from "../design-system/typography";
 import { Text } from "../design-system/typography/text";
-import { Link } from "../design-system/link";
 
 const searchSchema = z.object({
   redirect: z.string().optional(),

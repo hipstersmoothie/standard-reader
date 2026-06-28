@@ -243,7 +243,9 @@ export async function deleteSubscriptionRecords(
   );
 }
 
-/** Write an `app.standard-reader.labelerSubscription` for `labelerDid`. */
+/** Write an `app.standard-reader.labeler.subscription` (V2) for `labelerDid`.
+ *  V2 is the nested-NSID successor to the flat `labelerSubscription`; new writes
+ *  go here. Reads accept both until per-reader migration completes. */
 export async function putLabelerSubscriptionRecord(
   client: Client,
   repo: string,
@@ -253,10 +255,10 @@ export async function putLabelerSubscriptionRecord(
 ): Promise<{ uri: string; cid: string }> {
   return repoPutRecord(client, {
     repo,
-    collection: COLLECTION.labelerSubscription,
+    collection: COLLECTION.labelerSubscriptionV2,
     rkey: subjectRkey(labelerDid),
     record: {
-      $type: COLLECTION.labelerSubscription,
+      $type: COLLECTION.labelerSubscriptionV2,
       labeler: labelerDid,
       ...(labels && labels.length > 0 ? { labels } : {}),
       createdAt,
@@ -264,8 +266,25 @@ export async function putLabelerSubscriptionRecord(
   });
 }
 
-/** Delete the `app.standard-reader.labelerSubscription` for `labelerDid`. */
+/** Delete the `app.standard-reader.labeler.subscription` (V2) for `labelerDid`. */
 export async function deleteLabelerSubscriptionRecord(
+  client: Client,
+  repo: string,
+  labelerDid: string,
+): Promise<void> {
+  await repoDeleteRecord(client, {
+    repo,
+    collection: COLLECTION.labelerSubscriptionV2,
+    rkey: subjectRkey(labelerDid),
+  });
+}
+
+/**
+ * Delete a legacy `app.standard-reader.labelerSubscription` (flat NSID) record
+ * for `labelerDid`. Used by the per-reader migration to clean up old records
+ * after they've been rewritten to V2.
+ */
+export async function deleteLegacyLabelerSubscriptionRecord(
   client: Client,
   repo: string,
   labelerDid: string,

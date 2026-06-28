@@ -20,6 +20,7 @@ export type AtprotoSessionContext = {
       isAdmin: boolean;
       homeScope: string | null;
       trackReadingHistory: boolean | null;
+      collectionsAuthoringEnabled: boolean | null;
     };
   };
 };
@@ -79,6 +80,9 @@ export interface ReaderContext {
   homeScope: string | null;
   /** Reader's reading-history tracking preference (DB column). */
   trackReadingHistory: boolean | null;
+  /** Reader's collections-authoring upgrade flag (DB column). `true` means
+   * subsequent authorize flows request the collections OAuth scope tier. */
+  collectionsAuthoringEnabled: boolean | null;
 }
 
 /**
@@ -113,6 +117,8 @@ export async function getReaderContextForRequest(
         userId: result.session.user.id,
         homeScope: result.session.user.homeScope,
         trackReadingHistory: result.session.user.trackReadingHistory,
+        collectionsAuthoringEnabled:
+          result.session.user.collectionsAuthoringEnabled,
       };
     }
   }
@@ -131,6 +137,7 @@ export async function getReaderContextForRequest(
           did: true,
           homeScope: true,
           trackReadingHistory: true,
+          collectionsAuthoringEnabled: true,
         },
       },
     },
@@ -151,6 +158,7 @@ export async function getReaderContextForRequest(
     userId,
     homeScope: sessionRow.user.homeScope,
     trackReadingHistory: sessionRow.user.trackReadingHistory,
+    collectionsAuthoringEnabled: sessionRow.user.collectionsAuthoringEnabled,
   };
   readerContextCache.set(sessionToken, {
     ctx,

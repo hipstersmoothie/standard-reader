@@ -9,7 +9,8 @@
         "type": "params",
         "properties": {
           "handle": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 128
           }
         },
         "required": ["handle"]
@@ -27,7 +28,8 @@
             },
             "handle": {
               "type": "string",
-              "nullable": true
+              "nullable": true,
+              "maxLength": 128
             },
             "publications": {
               "type": "array",
@@ -38,7 +40,8 @@
             },
             "source": {
               "type": "string",
-              "knownValues": ["index", "repo", "none"]
+              "knownValues": ["index", "repo", "none"],
+              "maxLength": 32
             }
           }
         }

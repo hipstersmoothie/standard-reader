@@ -40,6 +40,11 @@ export const user = pgTable("user", {
   trackReadingHistory: boolean("track_reading_history"),
   /** `network` shows the whole-network home feed; `null` = follows (default). */
   homeScope: text("home_scope"),
+  /** `true` enables collections authoring (requests the collections OAuth scope
+   * tier on the next sign-in). Set when the user opts into the collections
+   * upgrade flow; persists across logins so subsequent authorize requests
+   * silently include the expanded scopes. */
+  collectionsAuthoringEnabled: boolean("collections_authoring_enabled"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .defaultNow()
     .notNull(),

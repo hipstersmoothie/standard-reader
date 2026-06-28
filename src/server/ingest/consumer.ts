@@ -106,7 +106,8 @@ async function handleRecord(payload: TapRecordPayload): Promise<void> {
       );
       return;
     }
-    case Collections.labelerSubscription: {
+    case Collections.labelerSubscription:
+    case Collections.labelerSubscriptionV2: {
       await upsertLabelerSubscription(
         uri,
         did,

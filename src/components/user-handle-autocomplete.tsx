@@ -8,6 +8,7 @@ import { ListBoxItem } from "#/design-system/listbox";
 
 type HandleActor = {
   id: string;
+  did: string;
   handle: string;
   avatar: string | null;
 };
@@ -15,7 +16,10 @@ type HandleActor = {
 export interface UserHandleAutocompleteProps {
   value: string;
   onValueChange: (value: string) => void;
-  onSelect?: (handle: string) => void;
+  /** Called with the selected handle and, when available, the actor's DID.
+   * The DID lets callers (e.g. the authorize flow) look up the user's
+   * collections-authoring flag without an extra handle→DID resolution. */
+  onSelect?: (handle: string, did?: string) => void;
   label?: React.ReactNode;
   "aria-label"?: string;
   placeholder?: string;
@@ -42,11 +46,14 @@ export function UserHandleAutocomplete({
   const isSearching = query.length >= 2;
 
   const { data: actorsData } = useQuery<{
-    actors: Array<{ handle: string; avatar: string | null }>;
+    actors: Array<{ did: string; handle: string; avatar: string | null }>;
   }>({
     queryKey: ["bsky-handle-typeahead", query],
     queryFn: async () => {
-      const host = "https://public.api.bsky.app";
+      // Community-hosted actor typeahead (drop-in compatible with the bsky
+      // XRPC — same response shape, includes `did` so callers can avoid a
+      // separate handle→DID resolution).
+      const host = "https://typeahead.waow.tech";
       const url = new URL("xrpc/app.bsky.actor.searchActorsTypeahead", host);
       url.searchParams.set("q", query);
       url.searchParams.set("limit", "5");
@@ -56,7 +63,7 @@ export function UserHandleAutocomplete({
         throw new Error("Failed to fetch actors");
       }
       return res.json() as Promise<{
-        actors: Array<{ handle: string; avatar: string | null }>;
+        actors: Array<{ did: string; handle: string; avatar: string | null }>;
       }>;
     },
     enabled: isSearching,
@@ -71,6 +78,10 @@ export function UserHandleAutocomplete({
     }),
   );
 
+  // Map handle → did so onAction (which only gives us the ListBoxItem id,
+  // i.e. the handle) can resolve the DID without re-scanning the actors array.
+  const didByHandle = new Map(actors.map((a) => [a.handle, a.did]));
+
   return (
     <AutocompleteInput
       size={size}
@@ -82,7 +93,7 @@ export function UserHandleAutocomplete({
       items={actors}
       onAction={(selectedHandle) => {
         onValueChange(selectedHandle);
-        onSelect?.(selectedHandle);
+        onSelect?.(selectedHandle, didByHandle.get(selectedHandle));
       }}
     >
       {(actor) => (

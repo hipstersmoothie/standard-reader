@@ -1,7 +1,10 @@
+import type { Client } from "@atcute/client";
+
 import { APP_NSID } from "#/lib/atproto/nsids";
 import {
   deleteBookmarkRecord,
   deleteLabelerSubscriptionRecord,
+  deleteLegacyLabelerSubscriptionRecord,
   deleteListRecord,
   deleteListSaveRecord,
   deleteReadRecord,
@@ -74,6 +77,11 @@ export async function handleSubscribeLabeler(ctx: XrpcRequestContext) {
     labeler: labelerDid,
     createdAt,
   });
+  // Lazy per-reader migration: if the reader has a legacy
+  // `app.standard-reader.labelerSubscription` (flat NSID) record for this
+  // labeler, delete it from their repo and the DB now that the V2 record
+  // exists. Best-effort — a failure here doesn't break the subscribe.
+  await migrateLegacyLabelerSubscription(auth.client, auth.did, labelerDid);
   return {};
 }
 
@@ -81,16 +89,56 @@ export async function handleUnsubscribeLabeler(ctx: XrpcRequestContext) {
   const auth = requireAuthClient(ctx);
   requireScopes(auth, [XRPC_WRITE_SCOPES.labelerSubscription]);
   const labelerDid = requireBodyField(ctx.body, "labeler");
+  // Delete the V2 record first (new writes target V2), then any legacy V1
+  // record for the same labeler. Both use the same deterministic rkey.
   await deleteLabelerSubscriptionRecord(auth.client, auth.did, labelerDid);
+  await deleteLegacyLabelerSubscriptionRecord(
+    auth.client,
+    auth.did,
+    labelerDid,
+  );
+  const rkey = subjectRkey(labelerDid);
   await deleteRecord(
-    buildAtUri(
-      auth.did,
-      Collections.labelerSubscription,
-      subjectRkey(labelerDid),
-    ),
+    buildAtUri(auth.did, Collections.labelerSubscriptionV2, rkey),
+    Collections.labelerSubscriptionV2,
+  );
+  await deleteRecord(
+    buildAtUri(auth.did, Collections.labelerSubscription, rkey),
     Collections.labelerSubscription,
   );
   return {};
+}
+
+/**
+ * Lazy per-reader migration from the flat `app.standard-reader.labelerSubscription`
+ * NSID to the nested V2 `app.standard-reader.labeler.subscription`. Called on
+ * subscribe: after the V2 record is written, delete any legacy V1 record for the
+ * same labeler from the reader's repo and the DB. Best-effort — failures are
+ * swallowed so they never block a subscribe; a leftover V1 row is harmless (the
+ * read path accepts both) and will be cleaned up on the next unsubscribe.
+ *
+ * `com.atproto.repo.deleteRecord` is idempotent (succeeds when the record is
+ * already gone), so calling this for readers who never had a V1 record is a
+ * no-op round trip, not an error.
+ */
+async function migrateLegacyLabelerSubscription(
+  client: Client,
+  repo: string,
+  labelerDid: string,
+): Promise<void> {
+  try {
+    await deleteLegacyLabelerSubscriptionRecord(client, repo, labelerDid);
+    await deleteRecord(
+      buildAtUri(
+        repo,
+        Collections.labelerSubscription,
+        subjectRkey(labelerDid),
+      ),
+      Collections.labelerSubscription,
+    );
+  } catch {
+    // Swallow — see JSDoc above.
+  }
 }
 
 export async function handleUnfollowPublication(ctx: XrpcRequestContext) {

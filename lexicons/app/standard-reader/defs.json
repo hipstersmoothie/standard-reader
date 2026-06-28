@@ -16,17 +16,25 @@
       "properties": {
         "uri": { "type": "string", "format": "at-uri" },
         "did": { "type": "string", "format": "did" },
-        "name": { "type": "string" },
+        "name": { "type": "string", "maxLength": 128 },
         "url": { "type": "string", "format": "uri" },
-        "description": { "type": "string", "nullable": true },
+        "description": {
+          "type": "string",
+          "nullable": true,
+          "maxLength": 4096
+        },
         "iconUrl": { "type": "string", "format": "uri", "nullable": true },
         "ownerAvatarUrl": {
           "type": "string",
           "format": "uri",
           "nullable": true
         },
-        "ownerHandle": { "type": "string", "nullable": true },
-        "topic": { "type": "string", "nullable": true },
+        "ownerHandle": {
+          "type": "string",
+          "nullable": true,
+          "maxLength": 128
+        },
+        "topic": { "type": "string", "nullable": true, "maxLength": 128 },
         "verified": { "type": "boolean" },
         "subscriberCount": { "type": "integer" },
         "documentCount": { "type": "integer" },
@@ -35,8 +43,16 @@
           "format": "datetime",
           "nullable": true
         },
-        "searchNameHtml": { "type": "string", "nullable": true },
-        "searchSnippetHtml": { "type": "string", "nullable": true }
+        "searchNameHtml": {
+          "type": "string",
+          "nullable": true,
+          "maxLength": 512
+        },
+        "searchSnippetHtml": {
+          "type": "string",
+          "nullable": true,
+          "maxLength": 8192
+        }
       }
     },
     "documentView": {
@@ -55,9 +71,13 @@
       "properties": {
         "uri": { "type": "string", "format": "at-uri" },
         "did": { "type": "string", "format": "did" },
-        "title": { "type": "string" },
-        "description": { "type": "string", "nullable": true },
-        "path": { "type": "string", "nullable": true },
+        "title": { "type": "string", "maxLength": 512 },
+        "description": {
+          "type": "string",
+          "nullable": true,
+          "maxLength": 4096
+        },
+        "path": { "type": "string", "nullable": true, "maxLength": 2048 },
         "canonicalUrl": { "type": "string", "format": "uri", "nullable": true },
         "coverImageUrl": {
           "type": "string",
@@ -71,7 +91,11 @@
           "format": "at-uri",
           "nullable": true
         },
-        "publicationName": { "type": "string", "nullable": true },
+        "publicationName": {
+          "type": "string",
+          "nullable": true,
+          "maxLength": 128
+        },
         "publicationIconUrl": {
           "type": "string",
           "format": "uri",
@@ -82,24 +106,40 @@
           "format": "uri",
           "nullable": true
         },
-        "publicationOwnerHandle": { "type": "string", "nullable": true },
+        "publicationOwnerHandle": {
+          "type": "string",
+          "nullable": true,
+          "maxLength": 128
+        },
         "publicationBannerUrl": {
           "type": "string",
           "format": "uri",
           "nullable": true
         },
-        "publicationTopic": { "type": "string", "nullable": true },
+        "publicationTopic": {
+          "type": "string",
+          "nullable": true,
+          "maxLength": 128
+        },
         "tags": {
           "type": "array",
-          "items": { "type": "string" },
+          "items": { "type": "string", "maxLength": 128 },
           "nullable": true
         },
         "recommendCount": { "type": "integer" },
         "commentCount": { "type": "integer" },
         "hasRenderableBody": { "type": "boolean" },
         "isRead": { "type": "boolean" },
-        "searchTitleHtml": { "type": "string", "nullable": true },
-        "searchSnippetHtml": { "type": "string", "nullable": true }
+        "searchTitleHtml": {
+          "type": "string",
+          "nullable": true,
+          "maxLength": 1024
+        },
+        "searchSnippetHtml": {
+          "type": "string",
+          "nullable": true,
+          "maxLength": 8192
+        }
       }
     },
     "profileView": {
@@ -107,9 +147,17 @@
       "required": ["did"],
       "properties": {
         "did": { "type": "string", "format": "did" },
-        "handle": { "type": "string", "nullable": true },
-        "displayName": { "type": "string", "nullable": true },
-        "description": { "type": "string", "nullable": true },
+        "handle": { "type": "string", "nullable": true, "maxLength": 128 },
+        "displayName": {
+          "type": "string",
+          "nullable": true,
+          "maxLength": 128
+        },
+        "description": {
+          "type": "string",
+          "nullable": true,
+          "maxLength": 4096
+        },
         "avatarUrl": { "type": "string", "format": "uri", "nullable": true },
         "bannerUrl": { "type": "string", "format": "uri", "nullable": true }
       }
@@ -118,7 +166,7 @@
       "type": "object",
       "required": ["items"],
       "properties": {
-        "cursor": { "type": "string", "nullable": true },
+        "cursor": { "type": "string", "nullable": true, "maxLength": 8192 },
         "items": {
           "type": "array",
           "items": {
@@ -132,7 +180,7 @@
       "type": "object",
       "required": ["items"],
       "properties": {
-        "cursor": { "type": "string", "nullable": true },
+        "cursor": { "type": "string", "nullable": true, "maxLength": 8192 },
         "items": {
           "type": "array",
           "items": {
@@ -153,16 +201,24 @@
         "commentCount"
       ],
       "properties": {
-        "kind": { "type": "string", "const": "article" },
+        "kind": { "type": "string", "const": "article", "maxLength": 64 },
         "documentUri": { "type": "string", "format": "at-uri" },
-        "title": { "type": "string" },
+        "title": { "type": "string", "maxLength": 512 },
         "publicationUri": {
           "type": "string",
           "format": "at-uri",
           "nullable": true
         },
-        "publicationName": { "type": "string", "nullable": true },
-        "publicationHandle": { "type": "string", "nullable": true },
+        "publicationName": {
+          "type": "string",
+          "nullable": true,
+          "maxLength": 128
+        },
+        "publicationHandle": {
+          "type": "string",
+          "nullable": true,
+          "maxLength": 128
+        },
         "publicationIconUrl": {
           "type": "string",
           "format": "uri",
@@ -185,8 +241,12 @@
           "nullable": true
         },
         "readingMinutes": { "type": "integer", "nullable": true },
-        "authorName": { "type": "string", "nullable": true },
-        "authorHandle": { "type": "string", "nullable": true },
+        "authorName": { "type": "string", "nullable": true, "maxLength": 128 },
+        "authorHandle": {
+          "type": "string",
+          "nullable": true,
+          "maxLength": 128
+        },
         "authorAvatarUrl": {
           "type": "string",
           "format": "uri",
@@ -205,11 +265,15 @@
       "type": "object",
       "required": ["kind", "publicationUri", "name", "readerUrl"],
       "properties": {
-        "kind": { "type": "string", "const": "publication" },
+        "kind": { "type": "string", "const": "publication", "maxLength": 64 },
         "publicationUri": { "type": "string", "format": "at-uri" },
-        "name": { "type": "string" },
-        "description": { "type": "string", "nullable": true },
-        "handle": { "type": "string", "nullable": true },
+        "name": { "type": "string", "maxLength": 128 },
+        "description": {
+          "type": "string",
+          "nullable": true,
+          "maxLength": 4096
+        },
+        "handle": { "type": "string", "nullable": true, "maxLength": 128 },
         "iconUrl": { "type": "string", "format": "uri", "nullable": true },
         "ownerAvatarUrl": {
           "type": "string",
@@ -226,15 +290,23 @@
       "type": "object",
       "required": ["kind", "readerUrl"],
       "properties": {
-        "kind": { "type": "string", "const": "reader-link" },
-        "readerUrl": { "type": "string" }
+        "kind": {
+          "type": "string",
+          "const": "reader-link",
+          "maxLength": 64
+        },
+        "readerUrl": {
+          "type": "string",
+          "format": "uri",
+          "maxLength": 2048
+        }
       }
     },
     "resolveViewUnknown": {
       "type": "object",
       "required": ["kind"],
       "properties": {
-        "kind": { "type": "string", "const": "unknown" }
+        "kind": { "type": "string", "const": "unknown", "maxLength": 64 }
       }
     }
   }

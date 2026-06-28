@@ -12,7 +12,8 @@
           "required": ["rkey"],
           "properties": {
             "rkey": {
-              "type": "string"
+              "type": "string",
+              "maxLength": 128
             }
           }
         }

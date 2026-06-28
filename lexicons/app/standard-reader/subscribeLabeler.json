@@ -4,7 +4,7 @@
   "defs": {
     "main": {
       "type": "procedure",
-      "description": "Subscribe the calling reader to a labeler service (writes an app.standard-reader.labelerSubscription record to their repo).",
+      "description": "Subscribe the calling reader to a labeler service (writes an app.standard-reader.labeler.subscription record to their repo; legacy readers may still have an app.standard-reader.labelerSubscription record, which is migrated on next subscribe).",
       "input": {
         "encoding": "application/json",
         "schema": {

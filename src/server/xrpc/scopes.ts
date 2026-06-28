@@ -22,6 +22,9 @@ export const XRPC_WRITE_SCOPES = {
     collection: [APP_NSID.listSave],
   }),
   labelerSubscription: atprotoScope.repo({
-    collection: [APP_NSID.labelerSubscription],
+    // Both the legacy flat NSID and the nested V2 NSID. New writes target V2;
+    // the legacy NSID stays so already-authorized sessions keep working and so
+    // the lazy per-reader migration (which deletes legacy records) is allowed.
+    collection: [APP_NSID.labelerSubscription, APP_NSID.labelerSubscriptionV2],
   }),
 } as const;

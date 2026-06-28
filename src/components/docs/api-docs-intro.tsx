@@ -164,10 +164,10 @@ export function ApiDocsIntro() {
           <strong>4. Let readers subscribe.</strong> When a reader subscribes we
           write an{" "}
           <a
-            href="/docs/lexicons#lex-labelerSubscription"
+            href="/docs/lexicons#lex-labeler.subscription"
             {...stylex.props(docsStyles.proseLink)}
           >
-            app.standard-reader.labelerSubscription
+            app.standard-reader.labeler.subscription
           </a>{" "}
           record to their repo, carrying their per-label warn/hide preferences.
         </p>

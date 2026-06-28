@@ -9,15 +9,18 @@
         "type": "params",
         "properties": {
           "tag": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 128
           },
           "view": {
             "type": "string",
             "knownValues": ["articles", "publications"],
-            "default": "articles"
+            "default": "articles",
+            "maxLength": 32
           },
           "sort": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 32
           },
           "limit": {
             "type": "integer",
@@ -26,7 +29,8 @@
             "default": 20
           },
           "cursor": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 8192
           }
         },
         "required": ["tag"]
@@ -38,11 +42,13 @@
           "required": ["view", "items"],
           "properties": {
             "view": {
-              "type": "string"
+              "type": "string",
+              "maxLength": 32
             },
             "cursor": {
               "type": "string",
-              "nullable": true
+              "nullable": true,
+              "maxLength": 8192
             },
             "items": {
               "type": "array",

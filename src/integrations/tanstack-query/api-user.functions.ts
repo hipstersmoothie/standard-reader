@@ -110,6 +110,7 @@ async function loadSessionFromToken(sessionToken: string) {
           openLinksExternally: true,
           openCollectionsInMagazine: true,
           readingTypography: true,
+          collectionsAuthoringEnabled: true,
         },
       },
     },
@@ -168,6 +169,7 @@ async function loadSessionFromToken(sessionToken: string) {
     openLinksExternally: userRow.openLinksExternally,
     openCollectionsInMagazine: userRow.openCollectionsInMagazine,
     readingTypography: userRow.readingTypography,
+    collectionsAuthoringEnabled: userRow.collectionsAuthoringEnabled,
     client,
   };
 }
@@ -206,6 +208,7 @@ const getShellBootstrap = createServerFn({ method: "GET" }).handler(
           cookies[READING_TYPOGRAPHY_COOKIE],
         ),
       },
+      collectionsAuthoring: { enabled: false },
       shell: null,
     };
 
@@ -241,6 +244,7 @@ const getShellBootstrap = createServerFn({ method: "GET" }).handler(
             openLinksExternally: true,
             openCollectionsInMagazine: true,
             readingTypography: true,
+            collectionsAuthoringEnabled: true,
           },
         },
       },
@@ -300,6 +304,7 @@ const getShellBootstrap = createServerFn({ method: "GET" }).handler(
           userId: userRow.id,
           expiresAt: sessionRow.expiresAt,
         },
+        collectionsAuthoringEnabled: userRow.collectionsAuthoringEnabled,
       },
       theme: { mode: dbValueToThemeMode(userRow.themeMode) },
       trackReading: { enabled: trackReading },
@@ -319,6 +324,9 @@ const getShellBootstrap = createServerFn({ method: "GET" }).handler(
       },
       readingTypography: {
         preference: dbValueToReadingTypography(userRow.readingTypography),
+      },
+      collectionsAuthoring: {
+        enabled: userRow.collectionsAuthoringEnabled === true,
       },
       shell,
     };
@@ -342,6 +350,7 @@ const getSession = createServerFn({ method: "GET" }).handler(async () => {
   return {
     user: loaded.user,
     session: loaded.session,
+    collectionsAuthoringEnabled: loaded.collectionsAuthoringEnabled,
   };
 });
 

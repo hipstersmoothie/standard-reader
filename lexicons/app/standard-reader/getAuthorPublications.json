@@ -19,7 +19,8 @@
             "default": 20
           },
           "cursor": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 8192
           }
         },
         "required": ["did"]

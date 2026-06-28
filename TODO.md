@@ -232,6 +232,27 @@ stores in `src/integrations/auth/`, session/user server fns in
       users from `/login`; `requireAuthMiddleware` is ready to gate personal
       server fns/routes as Home/Latest/likes land. Header shows a **Log in**
       button that becomes the signed-in **user menu** (avatar → Copy DID / Log out).
+- [x] **Permission-set OAuth scopes.** Granular `repo:` scopes replaced with
+      `include:` references to permission-set lexicons (per
+      [atproto.com/guides/permission-sets](https://atproto.com/guides/permission-sets)).
+      Three tiers in [`src/integrations/auth/scope.ts`](src/integrations/auth/scope.ts):
+      **basic** (default sign-in: `app.standard-reader.authBasicFeatures` +
+      `site.standard.authSocial`), **collections** (upgrade: adds
+      `app.standard-reader.authCollections` + swaps to `site.standard.authFull`),
+      and **subscribe** (embed-only: `site.standard.authSocial`). The
+      `user.collections_authoring_enabled` flag
+      ([`drizzle/0024_sturdy_living_lightning.sql`](drizzle/0024_sturdy_living_lightning.sql))
+      persists the collections upgrade so subsequent logins silently request the
+      collections tier; `auth.upgradeToCollections` revokes + re-authorizes on
+      first opt-in (per [OAuth Patterns](https://atproto.com/guides/oauth-patterns)).
+      Granted scope snapshotted to `account.scope` on every callback. Handle
+      autocomplete switched to [`typeahead.waow.tech`](https://typeahead.waow.tech)
+      so the selected actor's `did` threads through to the authorize flow.
+      See APP_VISION.md §5 "OAuth scopes".
+- [ ] **Publish permission-set lexicons** — `pnpm atproto:publish-lexicons`
+      for `app.standard-reader.authBasicFeatures` +
+      `app.standard-reader.authCollections` when `_lexicon.*` DNS ready (manual,
+      requires `LEXICON_PUBLISH_*` creds).
 
 ## 4. Lexicons & writes (records = source of truth)
 
@@ -545,6 +566,12 @@ Standard AT Proto labels: subscribe to labelers, see/blur/hide their labels whil
 - [x] **Subscriptions** — `app.standard-reader.labelerSubscription` repo record (deterministic
       rkey, per-label visibility prefs), read-model mirror (`labeler_subscriptions`), tap filter,
       subscribe/unsubscribe procedures.
+- [ ] **V2 NSID rollout** — `app.standard-reader.labeler.subscription` (nested under the `labeler`
+      NSID group) is the successor to the flat `labelerSubscription`. New writes target V2; reads
+      accept both; lazy per-reader migration on subscribe/unsubscribe rewrites old records. Phase 1
+      (publish V2 alongside legacy, dual-read, lazy migration) is landed; Phase 2 (deprecate legacy
+      NSID + scope once no reader has old records) is pending. Requires the
+      `_lexicon.labeler.standard-reader.app` DNS TXT record to publish the `labeler.*` group.
 - [x] **Discovery** — resolve a labeler by DID/handle (DID doc → `#atproto_labeler` →
       descriptor); nothing hardcoded.
 - [x] **Settings → Labelers** — `/settings/labelers` (add by handle/DID, list subscriptions) +

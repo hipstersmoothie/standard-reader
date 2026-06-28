@@ -26,11 +26,13 @@
               "format": "at-uri"
             },
             "name": {
-              "type": "string"
+              "type": "string",
+              "maxLength": 128
             },
             "description": {
               "type": "string",
-              "nullable": true
+              "nullable": true,
+              "maxLength": 4096
             },
             "publications": {
               "type": "array",

@@ -17,7 +17,8 @@
           "scope": {
             "type": "string",
             "knownValues": ["rail", "page"],
-            "default": "rail"
+            "default": "rail",
+            "maxLength": 32
           }
         },
         "required": []

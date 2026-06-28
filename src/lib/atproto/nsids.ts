@@ -10,6 +10,16 @@
 /**
  * App-owned lexicons under the `app.standard-reader` namespace — the reader's
  * personal state that we write back to their repo (see `APP_VISION.md` §5).
+ *
+ * `labelerSubscription` (the flat NSID) is the original published collection;
+ * `labelerSubscriptionV2` (`app.standard-reader.labeler.subscription`) is the
+ * successor, nested under the `labeler` NSID group so a single
+ * `_lexicon.labeler.standard-reader.app` DNS record covers the whole family
+ * (`labeler.defs`, `labeler.service`, `labeler.subscription`). New writes go
+ * to V2; reads accept both until per-reader migration completes (see the lazy
+ * migration on the labeler write path). The flat NSID stays published for
+ * backwards compatibility with already-authorized sessions and existing repo
+ * records until Phase 2 deprecation.
  */
 export const APP_NSID = {
   read: "app.standard-reader.read",
@@ -20,6 +30,7 @@ export const APP_NSID = {
   collectionsPublication: "app.standard-reader.collectionsPublication",
   publicationTheme: "app.standard-reader.publicationTheme",
   labelerSubscription: "app.standard-reader.labelerSubscription",
+  labelerSubscriptionV2: "app.standard-reader.labeler.subscription",
   labelerService: "app.standard-reader.labeler.service",
 } as const;
 

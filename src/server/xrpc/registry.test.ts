@@ -11,6 +11,8 @@ import { XRPC_REGISTRY, parseXrpcNsid } from "./registry";
  * the AppView — see `services/claudeslop/`).
  */
 const NON_XRPC_LEXICON_STEMS = new Set([
+  "authBasicFeatures",
+  "authCollections",
   "bookmark",
   "collection",
   "collectionsPublication",
@@ -18,6 +20,7 @@ const NON_XRPC_LEXICON_STEMS = new Set([
   "labeler.defs",
   "labeler.getServices",
   "labeler.service",
+  "labeler.subscription",
   "labelerSubscription",
   "list",
   "listSave",

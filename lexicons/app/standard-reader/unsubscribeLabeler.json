@@ -4,7 +4,7 @@
   "defs": {
     "main": {
       "type": "procedure",
-      "description": "Unsubscribe the calling reader from a labeler service (deletes the app.standard-reader.labelerSubscription record).",
+      "description": "Unsubscribe the calling reader from a labeler service (deletes the app.standard-reader.labeler.subscription record, and any legacy app.standard-reader.labelerSubscription record for the same labeler).",
       "input": {
         "encoding": "application/json",
         "schema": {

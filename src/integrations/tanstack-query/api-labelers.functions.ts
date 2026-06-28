@@ -32,10 +32,12 @@ import type { ArticleCard, Db, Schema } from "./api-shapes";
 import { dbMiddleware } from "./db-middleware";
 
 /**
- * Labeler subscriptions (`app.standard-reader.labelerSubscription`). A labeler is
- * just a DID; we discover it the standard way (DID document → `#atproto_labeler`
- * service → descriptor). Subscriptions are records in the reader's own repo,
- * mirrored into the read-model so label lookups don't need a repo read.
+ * Labeler subscriptions (`app.standard-reader.labeler.subscription`, V2; legacy
+ * `app.standard-reader.labelerSubscription`). A labeler is just a DID; we
+ * discover it the standard way (DID document → `#atproto_labeler` service →
+ * descriptor). Subscriptions are records in the reader's own repo, mirrored
+ * into the read-model so label lookups don't need a repo read. New writes target
+ * V2; reads accept both NSIDs until per-reader migration completes.
  */
 
 export type { LabelValueDef };

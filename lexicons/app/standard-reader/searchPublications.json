@@ -9,7 +9,8 @@
         "type": "params",
         "properties": {
           "q": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 256
           },
           "limit": {
             "type": "integer",
@@ -18,7 +19,8 @@
             "default": 20
           },
           "cursor": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 8192
           }
         },
         "required": ["q"]
@@ -30,11 +32,13 @@
           "required": ["query", "items"],
           "properties": {
             "query": {
-              "type": "string"
+              "type": "string",
+              "maxLength": 256
             },
             "cursor": {
               "type": "string",
-              "nullable": true
+              "nullable": true,
+              "maxLength": 8192
             },
             "items": {
               "type": "array",
