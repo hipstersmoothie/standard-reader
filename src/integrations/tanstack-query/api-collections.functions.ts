@@ -729,7 +729,7 @@ const getCollectionsPublication = createServerFn({ method: "GET" })
   );
 
 const ensureCollectionsPublication = createServerFn({ method: "POST" })
-  .inputValidator(ensurePublicationInput)
+  .validator(ensurePublicationInput)
   .handler(
     observe("collections.ensurePublication", async ({ data }, span) => {
       const session = await getAtprotoSessionForRequest(getRequest());
@@ -844,7 +844,7 @@ const listCollectionsPublications = createServerFn({ method: "GET" })
 
 /** Create a new, separate publication to publish collections under. */
 const createCollectionsPublication = createServerFn({ method: "POST" })
-  .inputValidator(ensurePublicationInput)
+  .validator(ensurePublicationInput)
   .handler(
     observe("collections.createPublication", async ({ data }, span) => {
       const session = await getAtprotoSessionForRequest(getRequest());
@@ -984,7 +984,7 @@ async function resolveBlobUrl(
 }
 
 const uploadCollectionCover = createServerFn({ method: "POST" })
-  .inputValidator(uploadCoverInput)
+  .validator(uploadCoverInput)
   .handler(
     observe("collections.uploadCover", async ({ data }, span) => {
       const session = await getAtprotoSessionForRequest(getRequest());
@@ -1003,7 +1003,7 @@ const uploadCollectionCover = createServerFn({ method: "POST" })
   );
 
 const uploadPublicationIcon = createServerFn({ method: "POST" })
-  .inputValidator(uploadCoverInput)
+  .validator(uploadCoverInput)
   .handler(
     observe("collections.uploadPublicationIcon", async ({ data }, span) => {
       const session = await getAtprotoSessionForRequest(getRequest());
@@ -1023,7 +1023,7 @@ const uploadPublicationIcon = createServerFn({ method: "POST" })
 
 const getCollectionForEdit = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
-  .inputValidator(rkeyInput)
+  .validator(rkeyInput)
   .handler(
     observe("collections.getForEdit", async ({ data, context }, span) => {
       const session = await getAtprotoSessionForRequest(getRequest());
@@ -1130,7 +1130,7 @@ const getCollectionForEdit = createServerFn({ method: "GET" })
 
 const putCollection = createServerFn({ method: "POST" })
   .middleware([dbMiddleware])
-  .inputValidator(putCollectionInput)
+  .validator(putCollectionInput)
   .handler(
     observe("collections.putCollection", async ({ data, context }, span) => {
       const session = await getAtprotoSessionForRequest(getRequest());
@@ -1216,7 +1216,7 @@ const putCollection = createServerFn({ method: "POST" })
 
 const deleteCollection = createServerFn({ method: "POST" })
   .middleware([dbMiddleware])
-  .inputValidator(rkeyInput)
+  .validator(rkeyInput)
   .handler(
     observe("collections.deleteCollection", async ({ data, context }, span) => {
       const session = await getAtprotoSessionForRequest(getRequest());
@@ -1262,7 +1262,7 @@ const putThemeInput = z.object({
 });
 
 const putCollectionsTheme = createServerFn({ method: "POST" })
-  .inputValidator(putThemeInput)
+  .validator(putThemeInput)
   .handler(
     observe("collections.putTheme", async ({ data }, span) => {
       const session = await getAtprotoSessionForRequest(getRequest());
@@ -1322,7 +1322,7 @@ const putCollectionsTheme = createServerFn({ method: "POST" })
   );
 
 const putCollectionsPublication = createServerFn({ method: "POST" })
-  .inputValidator(putPublicationInput)
+  .validator(putPublicationInput)
   .handler(
     observe("collections.putPublication", async ({ data }, span) => {
       const session = await getAtprotoSessionForRequest(getRequest());

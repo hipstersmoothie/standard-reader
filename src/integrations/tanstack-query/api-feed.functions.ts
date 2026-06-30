@@ -429,7 +429,7 @@ async function loadHomePagePayload(
 
 const getHomeFeed = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
-  .inputValidator(homeInput)
+  .validator(homeInput)
   .handler(
     observe("feed.getHomeFeed", async ({ data, context }, span) => {
       const { db, schema, trackReadingEnabled } = context;
@@ -443,7 +443,7 @@ const getHomeFeed = createServerFn({ method: "GET" })
 /** Scope preference + home feed in one round trip for the route loader. */
 const getHomePage = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
-  .inputValidator(homePageInput)
+  .validator(homePageInput)
   .handler(
     observe("feed.getHomePage", async ({ data, context }, span) => {
       const { db, schema } = context;
@@ -479,7 +479,7 @@ const getHomePage = createServerFn({ method: "GET" })
 /** Rails + unread badge — loaded after the critical feed paints. */
 const getHomeExtras = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
-  .inputValidator(homeExtrasInput)
+  .validator(homeExtrasInput)
   .handler(
     observe("feed.getHomeExtras", async ({ data, context }, span) => {
       const { db, schema, trackReadingEnabled } = context;
@@ -596,7 +596,7 @@ async function loadLatestFeedCounts(
 
 const getLatestFeed = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
-  .inputValidator(latestInput)
+  .validator(latestInput)
   .handler(
     observe("feed.getLatestFeed", async ({ data, context }, span) => {
       const { db, schema, trackReadingEnabled } = context;

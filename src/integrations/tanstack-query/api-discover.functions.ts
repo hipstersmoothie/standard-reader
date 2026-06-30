@@ -141,7 +141,7 @@ async function loadDiscoverExtras(
 
 const getTopics = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
-  .inputValidator(topicsInput)
+  .validator(topicsInput)
   .handler(
     observe("discover.getTopics", async ({ data, context }, span) => {
       const { db } = context;
@@ -166,7 +166,7 @@ const getKnownPublicationCount = createServerFn({ method: "GET" })
 /** Masthead count + rails — loaded after the discover shell paints. */
 const getDiscoverExtras = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
-  .inputValidator(discoverExtrasInput)
+  .validator(discoverExtrasInput)
   .handler(
     observe("discover.getDiscoverExtras", async ({ data, context }, span) => {
       const { db, schema } = context;
@@ -177,7 +177,7 @@ const getDiscoverExtras = createServerFn({ method: "GET" })
 
 const getPublications = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
-  .inputValidator(directoryInput)
+  .validator(directoryInput)
   .handler(
     observe("discover.getPublications", async ({ data, context }, span) => {
       const { db, schema } = context;
@@ -206,7 +206,7 @@ const getPublications = createServerFn({ method: "GET" })
 
 const getTrendingPublications = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
-  .inputValidator(railInput)
+  .validator(railInput)
   .handler(
     observe(
       "discover.getTrendingPublications",
@@ -221,7 +221,7 @@ const getTrendingPublications = createServerFn({ method: "GET" })
 
 const getRecommendedPublications = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
-  .inputValidator(railInput)
+  .validator(railInput)
   .handler(
     observe(
       "discover.getRecommendedPublications",
@@ -286,7 +286,7 @@ const getEffectiveFollowUris = createServerFn({ method: "GET" })
 
 const getFollowedByPeopleYouFollow = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
-  .inputValidator(railInput)
+  .validator(railInput)
   .handler(
     observe(
       "discover.getFollowedByPeopleYouFollow",

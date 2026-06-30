@@ -17,7 +17,7 @@ const runExampleInput = z.object({
 });
 
 export const runApiDocsExample = createServerFn({ method: "POST" })
-  .inputValidator(runExampleInput)
+  .validator(runExampleInput)
   .handler(async ({ data }) =>
     runXrpcExample(data.nsid, {
       params: data.params,

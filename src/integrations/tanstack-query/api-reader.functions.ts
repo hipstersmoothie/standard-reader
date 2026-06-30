@@ -222,7 +222,7 @@ async function trackReaderRepo(did: string): Promise<void> {
 
 const getFollowStatus = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
-  .inputValidator(publicationInput)
+  .validator(publicationInput)
   .handler(
     observe("reader.getFollowStatus", async ({ data, context }, span) => {
       span.set("publicationUri", data.publicationUri);
@@ -251,7 +251,7 @@ const getFollowStatus = createServerFn({ method: "GET" })
 
 const followPublication = createServerFn({ method: "POST" })
   .middleware([dbMiddleware])
-  .inputValidator(publicationInput)
+  .validator(publicationInput)
   .handler(
     observe("reader.followPublication", async ({ data }, span) => {
       span.set("publicationUri", data.publicationUri);
@@ -285,7 +285,7 @@ const followPublication = createServerFn({ method: "POST" })
 
 const unfollowPublication = createServerFn({ method: "POST" })
   .middleware([dbMiddleware])
-  .inputValidator(publicationInput)
+  .validator(publicationInput)
   .handler(
     observe("reader.unfollowPublication", async ({ data, context }, span) => {
       span.set("publicationUri", data.publicationUri);
@@ -338,7 +338,7 @@ const unfollowPublication = createServerFn({ method: "POST" })
 
 const getRecommendStatus = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
-  .inputValidator(documentInput)
+  .validator(documentInput)
   .handler(
     observe("reader.getRecommendStatus", async ({ data, context }, span) => {
       span.set("documentUri", data.documentUri);
@@ -367,7 +367,7 @@ const getRecommendStatus = createServerFn({ method: "GET" })
 
 const getLikes = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
-  .inputValidator(readerListInput)
+  .validator(readerListInput)
   .handler(
     observe("reader.getLikes", async ({ data, context }, span) => {
       const did = await getReaderDidForRequest(getRequest());
@@ -426,7 +426,7 @@ const getLikes = createServerFn({ method: "GET" })
 
 const recommendDocument = createServerFn({ method: "POST" })
   .middleware([dbMiddleware])
-  .inputValidator(documentInput)
+  .validator(documentInput)
   .handler(
     observe("reader.recommendDocument", async ({ data }, span) => {
       span.set("documentUri", data.documentUri);
@@ -449,7 +449,7 @@ const recommendDocument = createServerFn({ method: "POST" })
 
 const unrecommendDocument = createServerFn({ method: "POST" })
   .middleware([dbMiddleware])
-  .inputValidator(documentInput)
+  .validator(documentInput)
   .handler(
     observe("reader.unrecommendDocument", async ({ data }, span) => {
       span.set("documentUri", data.documentUri);
@@ -472,7 +472,7 @@ const unrecommendDocument = createServerFn({ method: "POST" })
 
 const getReadStatus = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
-  .inputValidator(documentInput)
+  .validator(documentInput)
   .handler(
     observe("reader.getReadStatus", async ({ data, context }, span) => {
       span.set("documentUri", data.documentUri);
@@ -507,7 +507,7 @@ const getReadStatus = createServerFn({ method: "GET" })
 /** Batch read-status lookup for a feed page — returns the read document URIs. */
 const getReadDocuments = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
-  .inputValidator(documentsInput)
+  .validator(documentsInput)
   .handler(
     observe("reader.getReadDocuments", async ({ data, context }, span) => {
       const did = await getReaderDidForRequest(getRequest());
@@ -541,7 +541,7 @@ const getReadDocuments = createServerFn({ method: "GET" })
 
 const markRead = createServerFn({ method: "POST" })
   .middleware([dbMiddleware])
-  .inputValidator(documentInput)
+  .validator(documentInput)
   .handler(
     observe("reader.markRead", async ({ data, context }, span) => {
       span.set("documentUri", data.documentUri);
@@ -569,7 +569,7 @@ const markRead = createServerFn({ method: "POST" })
 
 const markUnread = createServerFn({ method: "POST" })
   .middleware([dbMiddleware])
-  .inputValidator(documentInput)
+  .validator(documentInput)
   .handler(
     observe("reader.markUnread", async ({ data, context }, span) => {
       span.set("documentUri", data.documentUri);
@@ -591,7 +591,7 @@ const markUnread = createServerFn({ method: "POST" })
 
 const getReadingHistory = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
-  .inputValidator(readerListInput)
+  .validator(readerListInput)
   .handler(
     observe("reader.getReadingHistory", async ({ data, context }, span) => {
       const did = await getReaderDidForRequest(getRequest());
@@ -652,7 +652,7 @@ const getReadingHistory = createServerFn({ method: "GET" })
 
 const getBookmarkStatus = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
-  .inputValidator(documentInput)
+  .validator(documentInput)
   .handler(
     observe("reader.getBookmarkStatus", async ({ data, context }, span) => {
       span.set("documentUri", data.documentUri);
@@ -681,7 +681,7 @@ const getBookmarkStatus = createServerFn({ method: "GET" })
 
 const getSaved = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
-  .inputValidator(readerListInput)
+  .validator(readerListInput)
   .handler(
     observe("reader.getSaved", async ({ data, context }, span) => {
       const did = await getReaderDidForRequest(getRequest());
@@ -740,7 +740,7 @@ const getSaved = createServerFn({ method: "GET" })
 
 const bookmarkDocument = createServerFn({ method: "POST" })
   .middleware([dbMiddleware])
-  .inputValidator(documentInput)
+  .validator(documentInput)
   .handler(
     observe("reader.bookmarkDocument", async ({ data }, span) => {
       span.set("documentUri", data.documentUri);
@@ -763,7 +763,7 @@ const bookmarkDocument = createServerFn({ method: "POST" })
 
 const unbookmarkDocument = createServerFn({ method: "POST" })
   .middleware([dbMiddleware])
-  .inputValidator(documentInput)
+  .validator(documentInput)
   .handler(
     observe("reader.unbookmarkDocument", async ({ data }, span) => {
       span.set("documentUri", data.documentUri);
@@ -850,7 +850,7 @@ const deleteAllBookmarks = createServerFn({ method: "POST" })
 
 const markPublicationAllRead = createServerFn({ method: "POST" })
   .middleware([dbMiddleware])
-  .inputValidator(publicationInput)
+  .validator(publicationInput)
   .handler(
     observe(
       "reader.markPublicationAllRead",

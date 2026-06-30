@@ -14,7 +14,7 @@ export interface BskyEmbedPost {
 }
 
 const getEmbedPosts = createServerFn({ method: "GET" })
-  .inputValidator(getEmbedPostsInput)
+  .validator(getEmbedPostsInput)
   .handler(async ({ data }): Promise<Array<BskyEmbedPost>> => {
     const posts = await getPosts(data.uris);
     return posts.map((post) => ({

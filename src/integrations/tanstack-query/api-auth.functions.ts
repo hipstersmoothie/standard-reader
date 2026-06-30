@@ -85,7 +85,7 @@ async function shouldRequestCollectionsScope(args: {
 }
 
 const authorize = createServerFn({ method: "GET" })
-  .inputValidator(authorizeInputSchema)
+  .validator(authorizeInputSchema)
   .handler(async ({ data }) => {
     const request = getRequest();
     const handle = data.handle.replace(/^@/, "").trim() as ActorIdentifier;
@@ -142,7 +142,7 @@ const signupInputSchema = z.object({
 });
 
 const signup = createServerFn({ method: "GET" })
-  .inputValidator(signupInputSchema)
+  .validator(signupInputSchema)
   .handler(async ({ data }) => {
     const request = getRequest();
     const redirectTarget = sanitizeAuthRedirectTarget(
@@ -194,7 +194,7 @@ const upgradeToCollectionsInputSchema = z.object({
  * request the collections tier.
  */
 const upgradeToCollections = createServerFn({ method: "POST" })
-  .inputValidator(upgradeToCollectionsInputSchema)
+  .validator(upgradeToCollectionsInputSchema)
   .handler(async ({ data }) => {
     const request = getRequest();
     const [{ db }, schema, { getReaderContextForRequest }] = await Promise.all([

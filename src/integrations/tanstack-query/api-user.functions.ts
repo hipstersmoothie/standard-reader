@@ -429,7 +429,7 @@ const getThemePreferenceQueryOptions = queryOptions({
 
 const setThemePreference = createServerFn({ method: "POST" })
   .middleware([dbMiddleware, maybeAuthMiddleware])
-  .inputValidator(z.object({ mode: z.enum(THEME_MODES) }))
+  .validator(z.object({ mode: z.enum(THEME_MODES) }))
   .handler(async ({ data, context }): Promise<{ mode: ThemeMode }> => {
     setCookie(THEME_COOKIE, data.mode, {
       path: "/",
@@ -474,7 +474,7 @@ const getReaderVoicePreferenceQueryOptions = queryOptions({
 
 const setReaderVoicePreference = createServerFn({ method: "POST" })
   .middleware([dbMiddleware, maybeAuthMiddleware])
-  .inputValidator(z.object({ preference: z.enum(READER_VOICE_PREFERENCES) }))
+  .validator(z.object({ preference: z.enum(READER_VOICE_PREFERENCES) }))
   .handler(async ({ data, context }) => {
     setCookie(READER_VOICE_COOKIE, data.preference, {
       path: "/",
@@ -523,7 +523,7 @@ const getOpenLinksPreferenceQueryOptions = queryOptions({
 
 const setOpenLinksPreference = createServerFn({ method: "POST" })
   .middleware([dbMiddleware, maybeAuthMiddleware])
-  .inputValidator(z.object({ openExternally: z.boolean() }))
+  .validator(z.object({ openExternally: z.boolean() }))
   .handler(async ({ data, context }): Promise<{ openExternally: boolean }> => {
     setCookie(
       OPEN_LINKS_COOKIE,
@@ -582,7 +582,7 @@ const setOpenCollectionsInMagazinePreference = createServerFn({
   method: "POST",
 })
   .middleware([dbMiddleware, maybeAuthMiddleware])
-  .inputValidator(z.object({ openInMagazine: z.boolean() }))
+  .validator(z.object({ openInMagazine: z.boolean() }))
   .handler(async ({ data, context }): Promise<{ openInMagazine: boolean }> => {
     setCookie(
       OPEN_COLLECTIONS_IN_MAGAZINE_COOKIE,
@@ -646,7 +646,7 @@ const getReadingTypographyPreferenceQueryOptions = queryOptions({
 
 const setReadingTypographyPreference = createServerFn({ method: "POST" })
   .middleware([dbMiddleware, maybeAuthMiddleware])
-  .inputValidator(readingTypographyInput)
+  .validator(readingTypographyInput)
   .handler(async ({ data, context }) => {
     if (!isReadingTypographyPreference(data.preference)) {
       throw new Error("Invalid reading typography preference");
@@ -703,7 +703,7 @@ const getTrackReadingHistoryPreferenceQueryOptions = queryOptions({
 
 const setTrackReadingHistoryPreference = createServerFn({ method: "POST" })
   .middleware([dbMiddleware, maybeAuthMiddleware])
-  .inputValidator(z.object({ enabled: z.boolean() }))
+  .validator(z.object({ enabled: z.boolean() }))
   .handler(async ({ data, context }): Promise<{ enabled: boolean }> => {
     setCookie(
       TRACK_READING_HISTORY_COOKIE,
@@ -750,7 +750,7 @@ const getHomeScopePreferenceQueryOptions = queryOptions({
 
 const setHomeScopePreference = createServerFn({ method: "POST" })
   .middleware([dbMiddleware, maybeAuthMiddleware])
-  .inputValidator(homeScopeInput)
+  .validator(homeScopeInput)
   .handler(async ({ data, context }): Promise<{ scope: HomeScope }> => {
     setCookie(HOME_SCOPE_COOKIE, homeScopeToCookieValue(data.scope), {
       path: "/",

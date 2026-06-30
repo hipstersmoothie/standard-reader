@@ -163,7 +163,7 @@ function nextOffsetForPage(
 
 const getAuthorProfile = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
-  .inputValidator(authorInput)
+  .validator(authorInput)
   .handler(
     observe(
       "author.getProfile",
@@ -259,7 +259,7 @@ const getAuthorProfile = createServerFn({ method: "GET" })
 
 const getAuthorSifaProfile = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
-  .inputValidator(authorSifaInput)
+  .validator(authorSifaInput)
   .handler(
     observe(
       "author.getSifaProfile",
@@ -277,7 +277,7 @@ const getAuthorSifaProfile = createServerFn({ method: "GET" })
 
 const getAuthorPublications = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
-  .inputValidator(authorPublicationsInput)
+  .validator(authorPublicationsInput)
   .handler(
     observe(
       "author.getPublications",
@@ -301,7 +301,7 @@ const getAuthorPublications = createServerFn({ method: "GET" })
 
 const getAuthorSubscriptions = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
-  .inputValidator(authorActivityInput)
+  .validator(authorActivityInput)
   .handler(
     observe(
       "author.getSubscriptions",
@@ -329,7 +329,7 @@ const getAuthorSubscriptions = createServerFn({ method: "GET" })
 
 const getAuthorRecommendations = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
-  .inputValidator(authorActivityInput)
+  .validator(authorActivityInput)
   .handler(
     observe(
       "author.getRecommendations",
@@ -357,7 +357,7 @@ const getAuthorRecommendations = createServerFn({ method: "GET" })
 
 const getAuthorDocuments = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
-  .inputValidator(authorActivityInput)
+  .validator(authorActivityInput)
   .handler(
     observe(
       "author.getDocuments",

@@ -11,7 +11,7 @@ const createQuoteShareInput = z.object({
 });
 
 const createQuoteShare = createServerFn({ method: "POST" })
-  .inputValidator(createQuoteShareInput)
+  .validator(createQuoteShareInput)
   .handler(async ({ data }) => upsertQuoteShare(data.documentUri, data.quote));
 
 const resolveQuoteShareInput = z.object({
@@ -20,7 +20,7 @@ const resolveQuoteShareInput = z.object({
 });
 
 const resolveQuoteShare = createServerFn({ method: "GET" })
-  .inputValidator(resolveQuoteShareInput)
+  .validator(resolveQuoteShareInput)
   .handler(async ({ data }) => {
     const quote = await getQuoteShareForDocument(data.id, data.documentUri);
     return quote ? { quote } : null;

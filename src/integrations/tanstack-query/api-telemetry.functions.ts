@@ -15,7 +15,7 @@ const clientEventInput = z.object({
 });
 
 const recordClientEvent = createServerFn({ method: "POST" })
-  .inputValidator(clientEventInput)
+  .validator(clientEventInput)
   .handler(async ({ data }) => {
     logEvent(data.name, data.attrs as LogAttrs | undefined);
     return { ok: true as const };

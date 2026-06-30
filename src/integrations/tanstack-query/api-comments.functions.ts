@@ -19,7 +19,7 @@ const documentCommentsInput = z.object({
 
 const getDocumentComments = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
-  .inputValidator(documentCommentsInput)
+  .validator(documentCommentsInput)
   .handler(
     observe("comments.getDocumentComments", async ({ data, context }, span) => {
       span.set("documentUri", data.documentUri);

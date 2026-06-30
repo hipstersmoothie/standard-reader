@@ -202,7 +202,7 @@ export interface ArticleExtras {
 
 const getPublicationHeader = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
-  .inputValidator(headerInput)
+  .validator(headerInput)
   .handler(
     observe(
       "publication.getHeader",
@@ -222,7 +222,7 @@ const getPublicationHeader = createServerFn({ method: "GET" })
 
 const getPublicationProfile = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
-  .inputValidator(profileInput)
+  .validator(profileInput)
   .handler(
     observe(
       "publication.getProfile",
@@ -264,7 +264,7 @@ const getPublicationProfile = createServerFn({ method: "GET" })
 
 const getPublicationDocuments = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
-  .inputValidator(documentsInput)
+  .validator(documentsInput)
   .handler(
     observe(
       "publication.getDocuments",
@@ -300,7 +300,7 @@ const getPublicationDocuments = createServerFn({ method: "GET" })
 
 const getArticle = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
-  .inputValidator(articleInput)
+  .validator(articleInput)
   .handler(
     observe(
       "publication.getArticle",
@@ -446,7 +446,7 @@ const getArticle = createServerFn({ method: "GET" })
 
 const getCollection = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
-  .inputValidator(articleInput)
+  .validator(articleInput)
   .handler(
     observe(
       "publication.getCollection",
@@ -472,7 +472,7 @@ const getCollection = createServerFn({ method: "GET" })
 
 const getPublicationEmbedMeta = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
-  .inputValidator(embedInput)
+  .validator(embedInput)
   .handler(
     observe(
       "publication.getEmbedMeta",
@@ -532,7 +532,7 @@ const getPublicationEmbedMeta = createServerFn({ method: "GET" })
 
 const getPublicationSocialProof = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
-  .inputValidator(socialProofInput)
+  .validator(socialProofInput)
   .handler(
     observe(
       "publication.getSocialProof",
@@ -564,7 +564,7 @@ const getPublicationSocialProof = createServerFn({ method: "GET" })
 
 const getArticleExtras = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
-  .inputValidator(articleExtrasInput)
+  .validator(articleExtrasInput)
   .handler(
     observe(
       "publication.getArticleExtras",

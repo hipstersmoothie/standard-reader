@@ -180,7 +180,7 @@ const getLists = createServerFn({ method: "GET" }).handler(
 );
 
 const putList = createServerFn({ method: "POST" })
-  .inputValidator(putListInput)
+  .validator(putListInput)
   .handler(
     observe("lists.putList", async ({ data }, span) => {
       const session = await getAtprotoSessionForRequest(getRequest());
@@ -203,7 +203,7 @@ const putList = createServerFn({ method: "POST" })
   );
 
 const deleteList = createServerFn({ method: "POST" })
-  .inputValidator(rkeyInput)
+  .validator(rkeyInput)
   .handler(
     observe("lists.deleteList", async ({ data }, span) => {
       const session = await getAtprotoSessionForRequest(getRequest());
@@ -251,7 +251,7 @@ const deleteAllLists = createServerFn({ method: "POST" }).handler(
 
 const getList = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
-  .inputValidator(listRefInput)
+  .validator(listRefInput)
   .handler(
     observe("lists.getList", async ({ data, context }, span) => {
       span.set("listDid", data.did);
@@ -302,7 +302,7 @@ const getList = createServerFn({ method: "GET" })
 
 const getListFeed = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
-  .inputValidator(listFeedInput)
+  .validator(listFeedInput)
   .handler(
     observe("lists.getListFeed", async ({ data, context }, span) => {
       span.set("listDid", data.did);
@@ -366,7 +366,7 @@ const getSavedLists = createServerFn({ method: "GET" }).handler(
 );
 
 const saveList = createServerFn({ method: "POST" })
-  .inputValidator(listUriInput)
+  .validator(listUriInput)
   .handler(
     observe("lists.saveList", async ({ data }, span) => {
       span.set("listUri", data.listUri);
@@ -388,7 +388,7 @@ const saveList = createServerFn({ method: "POST" })
   );
 
 const unsaveList = createServerFn({ method: "POST" })
-  .inputValidator(listUriInput)
+  .validator(listUriInput)
   .handler(
     observe("lists.unsaveList", async ({ data }, span) => {
       span.set("listUri", data.listUri);

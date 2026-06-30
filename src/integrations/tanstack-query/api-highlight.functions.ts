@@ -14,7 +14,7 @@ const highlightInput = z.object({
 });
 
 const highlightCode = createServerFn({ method: "POST" })
-  .inputValidator(highlightInput)
+  .validator(highlightInput)
   .handler(
     observe("highlight.codeBlock", async ({ data }, span): Promise<string> => {
       span.set("language", data.language ?? "text");

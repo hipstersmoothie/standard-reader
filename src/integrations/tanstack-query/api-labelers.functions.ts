@@ -175,7 +175,7 @@ const getKnownLabelers = createServerFn({ method: "GET" })
 
 const getLabeler = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
-  .inputValidator(actorInput)
+  .validator(actorInput)
   .handler(
     observe("labelers.getLabeler", async ({ data, context }, span) => {
       span.set("actor", data.actor);
@@ -209,7 +209,7 @@ const getLabeler = createServerFn({ method: "GET" })
 
 const setLabelerPref = createServerFn({ method: "POST" })
   .middleware([dbMiddleware])
-  .inputValidator(setPrefInput)
+  .validator(setPrefInput)
   .handler(
     observe("labelers.setPref", async ({ data, context }, span) => {
       const session = await getAtprotoSessionForRequest(getRequest());
@@ -250,7 +250,7 @@ const setLabelerPref = createServerFn({ method: "POST" })
 
 const getLabeledDocuments = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
-  .inputValidator(labelerInput)
+  .validator(labelerInput)
   .handler(
     observe("labelers.getLabeledDocuments", async ({ data, context }, span) => {
       span.set("labeler", data.labeler);
@@ -295,7 +295,7 @@ const getLabeledDocuments = createServerFn({ method: "GET" })
 
 const getDocumentLabels = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
-  .inputValidator(uriInput)
+  .validator(uriInput)
   .handler(
     observe("labelers.getDocumentLabels", async ({ data, context }, span) => {
       const session = await getAtprotoSessionForRequest(getRequest());
@@ -315,7 +315,7 @@ const getDocumentLabels = createServerFn({ method: "GET" })
   );
 
 const subscribeLabeler = createServerFn({ method: "POST" })
-  .inputValidator(labelerInput)
+  .validator(labelerInput)
   .handler(
     observe("labelers.subscribe", async ({ data }, span) => {
       const session = await getAtprotoSessionForRequest(getRequest());
@@ -342,7 +342,7 @@ const subscribeLabeler = createServerFn({ method: "POST" })
   );
 
 const unsubscribeLabeler = createServerFn({ method: "POST" })
-  .inputValidator(labelerInput)
+  .validator(labelerInput)
   .handler(
     observe("labelers.unsubscribe", async ({ data }, span) => {
       const session = await getAtprotoSessionForRequest(getRequest());

@@ -93,7 +93,7 @@ export interface ResolvedPublicationPreview {
 
 const searchPublications = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
-  .inputValidator(searchPageInput)
+  .validator(searchPageInput)
   .handler(
     observe("search.publications", async ({ data, context }, span) => {
       const { db, schema } = context;
@@ -146,7 +146,7 @@ const searchPublications = createServerFn({ method: "GET" })
 
 const searchArticles = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
-  .inputValidator(searchPageInput)
+  .validator(searchPageInput)
   .handler(
     observe("search.articles", async ({ data, context }, span) => {
       const { db, schema } = context;
@@ -622,7 +622,7 @@ async function listRepoPublications(
 
 const resolvePublicationByHandle = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
-  .inputValidator(resolveInput)
+  .validator(resolveInput)
   .handler(
     observe(
       "search.resolveHandle",
@@ -712,7 +712,7 @@ const looseDocAccountsInput = z.object({
 /** Profiles with loose documents whose handle/display name partially match `q`. */
 const searchLooseDocAccounts = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
-  .inputValidator(looseDocAccountsInput)
+  .validator(looseDocAccountsInput)
   .handler(
     observe("search.looseDocAccounts", async ({ data, context }, span) => {
       const { db, schema } = context;

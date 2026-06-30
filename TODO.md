@@ -229,8 +229,8 @@ Check items off as they land.
       the status code, so transient failures (502, fetch failed, timeout) are self-diagnosing in
       Honeycomb and stay on the retry path. It also tries Slingshot (a caching proxy aggregating
       records across PDSes) before hitting the author's PDS directly.
-- [x] **PDS migration retry.** A "repo gone" response can mean the repo was *deleted* or that it
-      *migrated* to a new PDS (PLC directory updated, our cached identity still points at the old
+- [x] **PDS migration retry.** A "repo gone" response can mean the repo was _deleted_ or that it
+      _migrated_ to a new PDS (PLC directory updated, our cached identity still points at the old
       one). `listRepoRecords` handles this: on `RepoGoneError` from the PDS, it calls
       `refreshIdentity(did)` to force a fresh DID-doc fetch (bypassing the identity cache) and
       retries once against the new PDS before re-throwing. A repo is only marked `gone` when the

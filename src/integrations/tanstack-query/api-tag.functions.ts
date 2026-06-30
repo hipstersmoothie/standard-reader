@@ -61,7 +61,7 @@ const articlesPageInput = tagInput.extend({
 
 const getPublicationCount = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
-  .inputValidator(tagInput)
+  .validator(tagInput)
   .handler(
     observe("tag.getPublicationCount", async ({ data, context }, span) => {
       await attachReaderSpanContext(span, getRequest());
@@ -78,7 +78,7 @@ const getPublicationCount = createServerFn({ method: "GET" })
 
 const getArticleCount = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
-  .inputValidator(tagInput)
+  .validator(tagInput)
   .handler(
     observe("tag.getArticleCount", async ({ data, context }, span) => {
       await attachReaderSpanContext(span, getRequest());
@@ -95,7 +95,7 @@ const getArticleCount = createServerFn({ method: "GET" })
 
 const getArticles = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
-  .inputValidator(articlesPageInput)
+  .validator(articlesPageInput)
   .handler(
     observe("tag.getArticles", async ({ data, context }, span) => {
       const { db, schema, trackReadingEnabled } = context;
@@ -127,7 +127,7 @@ const getArticles = createServerFn({ method: "GET" })
 
 const getPublications = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
-  .inputValidator(directoryInput)
+  .validator(directoryInput)
   .handler(
     observe("tag.getPublications", async ({ data, context }, span) => {
       const { db, schema } = context;
@@ -180,7 +180,7 @@ export interface TagFollowAllResult {
 /** One round trip for tag directory counts + the active tab's first page. */
 const getTagPage = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
-  .inputValidator(tagPageInput)
+  .validator(tagPageInput)
   .handler(
     observe("tag.getPage", async ({ data, context }, span) => {
       const { db, schema, trackReadingEnabled } = context;
@@ -246,7 +246,7 @@ const getTagPage = createServerFn({ method: "GET" })
 
 const getTagFollowSummary = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
-  .inputValidator(tagInput)
+  .validator(tagInput)
   .handler(
     observe("tag.getFollowSummary", async ({ data, context }, span) => {
       const { db, schema } = context;
@@ -283,7 +283,7 @@ const getTagFollowSummary = createServerFn({ method: "GET" })
 
 const followTagPublications = createServerFn({ method: "POST" })
   .middleware([dbMiddleware])
-  .inputValidator(tagInput)
+  .validator(tagInput)
   .handler(
     observe("tag.followPublications", async ({ data, context }, span) => {
       const { db, schema } = context;
