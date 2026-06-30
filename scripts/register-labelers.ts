@@ -13,7 +13,8 @@
  * re-running updates the existing record for each labeler (matched by `did`).
  */
 
-import { Client, CredentialManager } from "@atcute/client";
+import { Client } from "@atcute/client";
+import { PasswordSession } from "@atcute/password-session";
 import { APP_NSID } from "#/lib/atproto/nsids";
 import {
   listCollectionRecords,
@@ -101,10 +102,9 @@ async function main(): Promise<void> {
     );
   }
 
-  const manager = new CredentialManager({ service });
-  await manager.login({ identifier, password });
-  const client = new Client({ handler: manager });
-  const repo = manager.session?.did;
+  const session = await PasswordSession.login({ service, identifier, password });
+  const client = new Client({ handler: session });
+  const repo = session.did;
   if (!repo) throw new Error("Login did not establish a session DID.");
   console.log(`[register] signed in as ${repo} (${service})`);
 

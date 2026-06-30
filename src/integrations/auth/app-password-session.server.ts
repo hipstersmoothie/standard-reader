@@ -1,12 +1,12 @@
 /**
- * Dev/perf-only AT Proto sessions via Bluesky app password (`CredentialManager`).
+ * Dev/perf-only AT Proto sessions via Bluesky app password (`PasswordSession`).
  * Gated by `PERF_TEST_APP_PASSWORD` on the server — never set in production.
  */
-import type { AtpSessionData } from "@atcute/client";
 import type { Did } from "@atcute/lexicons";
+import type { PasswordSessionData } from "@atcute/password-session";
 
-import { CredentialManager } from "@atcute/client";
 import { isDid } from "@atcute/lexicons/syntax";
+import { PasswordSession } from "@atcute/password-session";
 import { db } from "#/db/index.server";
 import * as schema from "#/db/schema";
 import { fetchBlueskyPublicProfileFields } from "#/lib/bluesky-public-profile";
@@ -29,9 +29,9 @@ function perfPdsService(): string {
   return process.env.PERF_TEST_PDS_URL?.trim() || DEFAULT_PDS;
 }
 
-function parseStoredSession(value: string): AtpSessionData | undefined {
+function parseStoredSession(value: string): PasswordSessionData | undefined {
   try {
-    const parsed = JSON.parse(value) as AtpSessionData;
+    const parsed = JSON.parse(value) as PasswordSessionData;
     if (!parsed?.did || !isDid(parsed.did)) return undefined;
     if (!parsed.accessJwt || !parsed.refreshJwt) return undefined;
     return parsed;
@@ -41,7 +41,7 @@ function parseStoredSession(value: string): AtpSessionData | undefined {
 }
 
 export async function storeAppPasswordSession(
-  session: AtpSessionData,
+  session: PasswordSessionData,
 ): Promise<void> {
   const identifier = storeIdentifier(session.did);
   const expiresAt = new Date(Date.now() + ATP_SESSION_TTL_MS);
@@ -59,7 +59,7 @@ export async function storeAppPasswordSession(
 
 export async function restoreAppPasswordClient(
   did: Did,
-): Promise<CredentialManager | null> {
+): Promise<PasswordSession | null> {
   if (!isAppPasswordAuthEnabled()) {
     return null;
   }
@@ -86,10 +86,9 @@ export async function restoreAppPasswordClient(
     return null;
   }
 
-  const manager = new CredentialManager({ service: perfPdsService() });
   try {
-    await manager.resume(stored);
-    return manager;
+    const session = await PasswordSession.resume(stored);
+    return session;
   } catch {
     await db
       .delete(schema.verification)
@@ -165,12 +164,15 @@ export async function bootstrapAppPasswordSession(
   identifier: string,
   password: string,
 ): Promise<{ sessionToken: string; did: Did }> {
-  const manager = new CredentialManager({ service: perfPdsService() });
-  const atpSession = await manager.login({ identifier, password });
-  await storeAppPasswordSession(atpSession);
+  const session = await PasswordSession.login({
+    service: perfPdsService(),
+    identifier,
+    password,
+  });
+  await storeAppPasswordSession(session.session);
 
-  const userId = await ensureUserForDid(atpSession.did, atpSession.handle);
+  const userId = await ensureUserForDid(session.did, session.session.handle);
   const sessionToken = await createAppSessionToken(userId);
 
-  return { sessionToken, did: atpSession.did };
+  return { sessionToken, did: session.did };
 }
