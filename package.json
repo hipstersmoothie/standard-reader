@@ -155,7 +155,8 @@
     "overrides": {
       "@huggingface/transformers": "^4.2.0",
       "react": "19.3.0-canary-ad78e251-20260616",
-      "react-dom": "19.3.0-canary-ad78e251-20260616"
+      "react-dom": "19.3.0-canary-ad78e251-20260616",
+      "unplugin": "^3.0.0"
     }
   }
 }

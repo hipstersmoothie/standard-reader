@@ -58,7 +58,10 @@ export const Route = createFileRoute("/_layout/")({
       { scope: page.scope },
     );
     context.queryClient.setQueryData(
-      feedApi.getHomeFeedQueryOptions({ scope: page.scope }).queryKey,
+      feedApi.getHomeFeedQueryOptions({
+        scope: page.scope,
+        readerScope: page.readerScope,
+      }).queryKey,
       page.feed,
     );
     const excludeUris = [
@@ -69,11 +72,12 @@ export const Route = createFileRoute("/_layout/")({
       feedApi.getHomeExtrasQueryOptions({
         scope: page.scope,
         excludeUris,
+        readerScope: page.readerScope,
       }).queryKey,
       page.extras,
     );
 
-    return { scope: page.scope };
+    return { scope: page.scope, readerScope: page.readerScope };
   },
   head: () => ({
     meta: pageSocialMeta("today", getPublicUrlClient()),
@@ -377,22 +381,36 @@ function useEffectiveHomeScope(): HomeScope {
   return searchScope ?? scope;
 }
 
+function useHomeReaderScope(): string {
+  const { readerScope: loaderScope } = Route.useLoaderData();
+  const { data: session } = useQuery(user.getSessionQueryOptions);
+  return session === undefined ? loaderScope : user.readerQueryScope(session);
+}
+
 function Home() {
   const scope = useEffectiveHomeScope();
+  const readerScope = useHomeReaderScope();
 
   return (
-    <Suspense key={scope} fallback={<HomeFeedSkeleton />}>
-      <HomeFeed scope={scope} />
+    <Suspense key={`${scope}:${readerScope}`} fallback={<HomeFeedSkeleton />}>
+      <HomeFeed scope={scope} readerScope={readerScope} />
     </Suspense>
   );
 }
 
-function HomeFeed({ scope }: { scope: HomeScope }) {
+function HomeFeed({
+  scope,
+  readerScope,
+}: {
+  scope: HomeScope;
+  readerScope: string;
+}) {
   const navigate = useNavigate({ from: Route.fullPath });
   const { setScope } = useHomeScope();
-  const { data: feed } = useSuspenseQuery(
-    feedApi.getHomeFeedQueryOptions({ scope }),
-  );
+  const { data: feed } = useSuspenseQuery({
+    ...feedApi.getHomeFeedQueryOptions({ scope, readerScope }),
+    refetchOnMount: false,
+  });
   const { data: session } = useQuery(user.getSessionQueryOptions);
   const { data: sidebar } = useQuery({
     ...feedApi.getSidebarQueryOptions(),
@@ -425,7 +443,7 @@ function HomeFeed({ scope }: { scope: HomeScope }) {
   );
 
   const { data: extras, isPending: extrasPending } = useQuery({
-    ...feedApi.getHomeExtrasQueryOptions({ scope, excludeUris }),
+    ...feedApi.getHomeExtrasQueryOptions({ scope, excludeUris, readerScope }),
     enabled: hasMainContent,
     refetchOnMount: false,
     refetchOnWindowFocus: false,
@@ -480,6 +498,8 @@ function HomeFeed({ scope }: { scope: HomeScope }) {
     );
   }
 
+  const showScopeToggle = signedIn && (sidebar?.hasFollows ?? feed.hasFollows);
+
   return (
     <ReaderContent>
       <Masthead
@@ -505,7 +525,7 @@ function HomeFeed({ scope }: { scope: HomeScope }) {
           )
         }
         metaAccessory={
-          signedIn && feed.hasFollows ? (
+          showScopeToggle ? (
             <SegmentedControl
               selectedKeys={new Set([scope])}
               onSelectionChange={onScopeChange}

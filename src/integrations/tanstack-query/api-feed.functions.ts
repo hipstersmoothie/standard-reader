@@ -113,6 +113,8 @@ export interface HomeFeedExtras {
 
 export interface HomePageData {
   scope: HomeScope;
+  /** Cache scope for personalized feed queries (`did` or `"guest"`). */
+  readerScope: string;
   feed: HomeFeed;
   extras: HomeFeedExtras;
 }
@@ -472,7 +474,12 @@ const getHomePage = createServerFn({ method: "GET" })
         span,
         trackReading === undefined ? {} : { trackReading },
       );
-      return { scope, feed, extras } satisfies HomePageData;
+      return {
+        scope,
+        readerScope: did ?? "guest",
+        feed,
+        extras,
+      } satisfies HomePageData;
     }),
   );
 
@@ -583,7 +590,7 @@ async function loadLatestFeedCounts(
       ? countFollowedDocuments(db, schema, followUris, did)
       : Promise.resolve({ all: 0, unread: 0 }),
     countNetworkDocuments(db, schema),
-    did ? countTrendingDocuments(db, schema, "rail") : Promise.resolve(0),
+    did ? countTrendingDocuments(db, schema, "page") : Promise.resolve(0),
   ]);
 
   return {
@@ -623,9 +630,9 @@ const getLatestFeedCounts = createServerFn({ method: "GET" })
     }),
   );
 
-function getLatestFeedCountsQueryOptions() {
+function getLatestFeedCountsQueryOptions(readerScope = "guest") {
   return queryOptions({
-    queryKey: ["feed", "latest", "counts"] as const,
+    queryKey: ["feed", "latest", "counts", readerScope] as const,
     queryFn: async () => getLatestFeedCounts(),
     staleTime: 60_000,
   });
@@ -633,19 +640,29 @@ function getLatestFeedCountsQueryOptions() {
 
 function getHomeFeedQueryOptions({
   scope = "follows",
-}: z.input<typeof homeInput> = {}) {
+  readerScope = "guest",
+}: z.input<typeof homeInput> & { readerScope?: string } = {}) {
   return queryOptions({
-    queryKey: ["feed", "home", scope] as const,
+    queryKey: ["feed", "home", scope, readerScope] as const,
     queryFn: async () => getHomeFeed({ data: { scope } }),
+    staleTime: 60_000,
   });
 }
 
 function getHomeExtrasQueryOptions({
   scope = "follows",
   excludeUris = [],
-}: z.input<typeof homeExtrasInput> = {}) {
+  readerScope = "guest",
+}: z.input<typeof homeExtrasInput> & { readerScope?: string } = {}) {
   return queryOptions({
-    queryKey: ["feed", "home", "extras", scope, excludeUris] as const,
+    queryKey: [
+      "feed",
+      "home",
+      "extras",
+      scope,
+      readerScope,
+      excludeUris,
+    ] as const,
     queryFn: async () => getHomeExtras({ data: { scope, excludeUris } }),
     staleTime: 60_000,
   });
@@ -659,10 +676,12 @@ function getLatestFeedQueryOptions({
   filter = "subscriptions",
   limit = latestFeedPageSize(filter),
   offset = 0,
-}: z.input<typeof latestInput> = {}) {
+  readerScope = "guest",
+}: z.input<typeof latestInput> & { readerScope?: string } = {}) {
   return queryOptions({
-    queryKey: ["feed", "latest", filter, limit, offset] as const,
+    queryKey: ["feed", "latest", filter, limit, offset, readerScope] as const,
     queryFn: async () => getLatestFeed({ data: { filter, limit, offset } }),
+    staleTime: 60_000,
   });
 }
 

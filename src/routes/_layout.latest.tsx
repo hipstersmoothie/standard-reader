@@ -80,12 +80,17 @@ export const Route = createFileRoute("/_layout/latest")({
   validateSearch: latestSearchSchema,
   loaderDeps: ({ search }) => ({ filter: search.filter }),
   loader: async ({ context, deps, preload }) => {
+    const session = context.queryClient.getQueryData(
+      user.getSessionQueryOptions.queryKey,
+    );
+    const readerScope = user.readerQueryScope(session);
     const feedOptions = feedApi.getLatestFeedQueryOptions({
       filter: deps.filter,
       limit: latestFeedPageSize(deps.filter),
       offset: 0,
+      readerScope,
     });
-    const countsOptions = feedApi.getLatestFeedCountsQueryOptions();
+    const countsOptions = feedApi.getLatestFeedCountsQueryOptions(readerScope);
 
     if (preload) {
       void context.queryClient.prefetchQuery(countsOptions);
@@ -268,21 +273,25 @@ function LatestFeedPanel({
   filter,
   counts,
   countsPending,
+  readerScope,
 }: {
   filter: LatestFilter;
   counts: LatestFeedCounts;
   countsPending: boolean;
+  readerScope: string;
 }) {
   const navigate = useNavigate({ from: Route.fullPath });
   const pageSize = latestFeedPageSize(filter);
 
-  const { data: feed } = useSuspenseQuery(
-    feedApi.getLatestFeedQueryOptions({
+  const { data: feed } = useSuspenseQuery({
+    ...feedApi.getLatestFeedQueryOptions({
       filter,
       limit: pageSize,
       offset: 0,
+      readerScope,
     }),
-  );
+    refetchOnMount: false,
+  });
 
   const [extraItems, setExtraItems] = useState<Array<ArticleCard>>([]);
   const [nextOffset, setNextOffset] = useState<number | null>(feed.nextOffset);
@@ -439,12 +448,15 @@ function Latest() {
   const queryClient = useQueryClient();
   const pageSize = latestFeedPageSize(filter);
 
+  const { data: session } = useQuery(user.getSessionQueryOptions);
+  const readerScope = user.readerQueryScope(session);
+
   const {
     data: tabCounts,
     isPending: countsQueryPending,
     isFetching: countsFetching,
   } = useQuery({
-    ...feedApi.getLatestFeedCountsQueryOptions(),
+    ...feedApi.getLatestFeedCountsQueryOptions(readerScope),
     refetchOnMount: false,
     refetchOnWindowFocus: false,
   });
@@ -458,7 +470,6 @@ function Latest() {
   const countsPending =
     tabCounts == null && (countsQueryPending || countsFetching);
 
-  const { data: session } = useQuery(user.getSessionQueryOptions);
   const { enabled: trackReading } = useTrackReadingHistory();
   const signedIn = Boolean(session?.user);
   const loginSearch = useLoginSearch();
@@ -474,7 +485,9 @@ function Latest() {
     if (!signedIn) return;
 
     const prefetchTabs = () => {
-      void queryClient.prefetchQuery(feedApi.getLatestFeedCountsQueryOptions());
+      void queryClient.prefetchQuery(
+        feedApi.getLatestFeedCountsQueryOptions(readerScope),
+      );
       for (const tabFilter of LATEST_FILTERS) {
         if (tabFilter === filter) continue;
         if (tabFilter === "unread" && !trackReading) continue;
@@ -483,6 +496,7 @@ function Latest() {
             filter: tabFilter,
             limit: latestFeedPageSize(tabFilter),
             offset: 0,
+            readerScope,
           }),
         );
       }
@@ -502,7 +516,7 @@ function Latest() {
 
     const idleId = scheduleIdle(prefetchTabs);
     return () => cancelIdle(idleId);
-  }, [filter, queryClient, signedIn, trackReading]);
+  }, [filter, queryClient, readerScope, signedIn, trackReading]);
 
   const onFilterChange = (keys: Set<React.Key> | "all") => {
     const next = keys === "all" ? "all" : ([...keys][0] as LatestFilter);
@@ -644,6 +658,7 @@ function Latest() {
           filter={filter}
           counts={counts}
           countsPending={countsPending}
+          readerScope={readerScope}
         />
       </Suspense>
     </ReaderContent>

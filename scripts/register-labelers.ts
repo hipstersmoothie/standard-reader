@@ -102,7 +102,11 @@ async function main(): Promise<void> {
     );
   }
 
-  const session = await PasswordSession.login({ service, identifier, password });
+  const session = await PasswordSession.login({
+    service,
+    identifier,
+    password,
+  });
   const client = new Client({ handler: session });
   const repo = session.did;
   if (!repo) throw new Error("Login did not establish a session DID.");

@@ -553,11 +553,16 @@ export class PageReaderEngine {
       }
       if (runId !== this.runId) return;
 
-      const buffer = ctx.createBuffer(1, raw.audio.length, raw.sampling_rate);
-      buffer.getChannelData(0).set(raw.audio);
-
-      this.producedChars += this.charLen[index] ?? 0;
-      this.appendChunk(buffer);
+      // kokoro-js returns a single Float32Array; v4 types it as
+      // `Float32Array | Float32Array[]`. Flatten to a single array so the
+      // AudioBuffer's `set()` (which needs `ArrayLike<number>`) is happy.
+      const audio = Array.isArray(raw.audio) ? raw.audio[0] : raw.audio;
+      if (audio) {
+        const buffer = ctx.createBuffer(1, audio.length, raw.sampling_rate);
+        buffer.getChannelData(0).set(audio);
+        this.producedChars += this.charLen[index] ?? 0;
+        this.appendChunk(buffer);
+      }
       this.setState({
         generationProgress: Math.min(
           this.producedChars / this.totalChars,

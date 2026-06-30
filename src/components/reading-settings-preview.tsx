@@ -209,12 +209,11 @@ export function ReadingSettingsPreview({
       if (runId !== runIdRef.current) return;
 
       const context = new AudioContext();
-      const buffer = context.createBuffer(
-        1,
-        raw.audio.length,
-        raw.sampling_rate,
-      );
-      buffer.getChannelData(0).set(raw.audio);
+      // kokoro-js v4 types `raw.audio` as `Float32Array | Float32Array[]`.
+      const audio = Array.isArray(raw.audio) ? raw.audio[0] : raw.audio;
+      if (!audio) return;
+      const buffer = context.createBuffer(1, audio.length, raw.sampling_rate);
+      buffer.getChannelData(0).set(audio);
 
       const source = context.createBufferSource();
       source.buffer = buffer;

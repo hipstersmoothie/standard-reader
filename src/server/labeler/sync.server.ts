@@ -9,7 +9,7 @@
 
 import type { Db, Schema } from "#/integrations/tanstack-query/api-shapes";
 
-import { db as database } from "#/db/index";
+import { db as database } from "#/db/index.server";
 import * as dbSchema from "#/db/schema";
 import { eq } from "drizzle-orm";
 

@@ -8,6 +8,7 @@ overrides:
   '@huggingface/transformers': ^4.2.0
   react: 19.3.0-canary-ad78e251-20260616
   react-dom: 19.3.0-canary-ad78e251-20260616
+  unplugin: ^3.0.0
 
 importers:
 
@@ -2573,12 +2574,12 @@ packages:
   '@stylexjs/unplugin@0.18.3':
     resolution: {integrity: sha512-qLdYhFB2hmvOSSlz9CSU+jRcDu5W0LBM36EuGvGIBVEputbhIR62G660d2Mw1G6tCw3qe75UDSxlPul2qS6HPQ==}
     peerDependencies:
-      unplugin: ^2.3.11
+      unplugin: ^3.0.0
 
   '@stylexjs/unplugin@0.19.0':
     resolution: {integrity: sha512-2QwNYovSwarC/M8DLD78857F6MEi4eQ3UYzgdmyg/K7562M/rV1KWptiATxcKgujlUT6ToNy778SOXf4bGK+Bw==}
     peerDependencies:
-      unplugin: ^2.3.11
+      unplugin: ^3.0.0
 
   '@stylistic/eslint-plugin@5.10.0':
     resolution: {integrity: sha512-nPK52ZHvot8Ju/0A4ucSX1dcPV2/1clx0kLcH5wDmrE4naKso7TUC/voUyU1O9OTKTrR6MYip6LP0ogEMQ9jPQ==}

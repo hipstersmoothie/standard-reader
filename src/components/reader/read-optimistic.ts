@@ -247,8 +247,8 @@ export function applyMarkReadOptimisticUpdate(
   );
 
   if (wasUnread) {
-    queryClient.setQueryData<LatestFeedCounts>(
-      ["feed", "latest", "counts"],
+    queryClient.setQueriesData<LatestFeedCounts>(
+      { queryKey: ["feed", "latest", "counts"] },
       (data) =>
         data ? { ...data, unread: Math.max(0, data.unread - 1) } : data,
     );
