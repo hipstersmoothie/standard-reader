@@ -19,6 +19,7 @@ import { linkTargetVariants } from "#/lib/link-target-variants";
 import { getPublicUrl } from "#/lib/public-url";
 import { cdnImageUrl } from "#/server/atproto/blob";
 import { countDocumentComments } from "#/server/reader/document-comments";
+import { assertSafeFetchUrl } from "#/server/security/ssrf-guard";
 import { and, eq, inArray, sql } from "drizzle-orm";
 
 const PAGE_FETCH_TIMEOUT_MS = 8000;
@@ -499,6 +500,16 @@ async function fetchDiscoveryHintsFromPageUrl(
   try {
     const parsed = new URL(url);
     if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      return { documentUri: null, publicationUri: null };
+    }
+
+    // The URL is user-controlled (extension resolve endpoint) — reject private /
+    // loopback / link-local IPs and internal hostnames before fetching to
+    // prevent SSRF (security audit H3). HTTP is allowed here since many real
+    // publications are served over HTTP; the guard blocks dangerous hosts.
+    try {
+      assertSafeFetchUrl(url, { requireHttps: false });
+    } catch {
       return { documentUri: null, publicationUri: null };
     }
 

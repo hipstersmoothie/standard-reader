@@ -11,6 +11,7 @@ import {
 } from "#/server/content/resolve";
 import { resolveLeafletContent } from "#/server/leaflet/resolve";
 import { resolvePcktContent } from "#/server/pckt/resolve";
+import { assertSafeFetchUrl } from "#/server/security/ssrf-guard";
 import { and, eq, inArray, isNull, or, sql } from "drizzle-orm";
 
 import type {
@@ -555,6 +556,15 @@ export async function upsertLabelerService(
     typeof record.did !== "string" ||
     typeof record.serviceEndpoint !== "string"
   ) {
+    return;
+  }
+
+  // `serviceEndpoint` is attacker-controlled (from the firehose record) and is
+  // fetched automatically by the label sync worker. Reject unsafe URLs before
+  // storing to prevent SSRF (security audit C3).
+  try {
+    assertSafeFetchUrl(record.serviceEndpoint);
+  } catch {
     return;
   }
 

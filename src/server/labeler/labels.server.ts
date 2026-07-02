@@ -15,6 +15,7 @@ import type {
   Schema,
 } from "#/integrations/tanstack-query/api-shapes";
 
+import { assertSafeFetchUrl } from "#/server/security/ssrf-guard";
 import { and, eq, inArray } from "drizzle-orm";
 
 import { resolveLabelerEndpoint } from "./resolve.server.ts";
@@ -232,6 +233,14 @@ async function queryLabeler(
 ): Promise<Array<DisplayLabel>> {
   const base = await resolveLabelerEndpoint(did);
   if (!base) return [];
+  // Defense-in-depth: re-validate the stored endpoint before fetching, in
+  // case a malicious URL was stored before the ingest-time guard was added
+  // (security audit C3).
+  try {
+    assertSafeFetchUrl(base);
+  } catch {
+    return [];
+  }
   const url = new URL(`${base}/xrpc/com.atproto.label.queryLabels`);
   for (const u of uris) url.searchParams.append("uriPatterns", u);
   url.searchParams.append("sources", did);

@@ -1,3 +1,5 @@
+import { assertSafeFetchUrl } from "#/server/security/ssrf-guard";
+
 /**
  * DID → identity resolution (PDS endpoint + handle), used to build blob URLs
  * for standard.site assets and to enrich profiles. Resolution is cached in a
@@ -81,6 +83,13 @@ async function fetchDidDoc(did: string): Promise<DidDocument | null> {
     } else if (did.startsWith("did:web:")) {
       const host = did.slice("did:web:".length).replaceAll(":", "/");
       url = `https://${host}/.well-known/did.json`;
+      // did:web host is attacker-controlled — validate before fetching to
+      // prevent SSRF (security audit C1/C2).
+      try {
+        assertSafeFetchUrl(url);
+      } catch {
+        return null;
+      }
     }
     if (!url) {
       return null;

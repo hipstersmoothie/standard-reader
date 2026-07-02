@@ -160,11 +160,6 @@ At the end of the review, suggest next steps that the user can take:
 
 If the user chooses to discuss, use the AskUserQuestion tool to systematically talk through each of the issues identified in your review. Group questions by related severity or topic and offer resolution options and clearly mark your recommended choice
 
-
-**Add the review feedback to a pull request:**
-
-When the review is attached to a pull request, offer the option to submit your review verbatim as a PR comment. Include attribution at the top: "Review feedback assisted by the [critical-code-reviewer skill](https://github.com/posit-dev/skills/blob/main/posit-dev/critical-code-reviewer/SKILL.md)."
-
 **Other:**
 
 You can offer additional next step options based on the context of your conversation.

@@ -4,6 +4,7 @@ import type { Did } from "@atcute/lexicons";
 import { Client as AtpClient } from "@atcute/client";
 import { verifyJwt } from "@atproto/xrpc-server";
 import { resolveIdentity } from "#/server/atproto/identity";
+import { assertSafeFetchUrl } from "#/server/security/ssrf-guard";
 
 import { appviewAudience } from "./config";
 import { AuthRequiredError, ForbiddenError } from "./errors";
@@ -45,6 +46,13 @@ async function getSigningKey(
   } else if (did.startsWith("did:web:")) {
     const host = did.slice("did:web:".length).replaceAll(":", ".");
     docUrl = `https://${host}/.well-known/did.json`;
+    // did:web host is attacker-controlled (from the unverified JWT iss) —
+    // validate before fetching to prevent SSRF (security audit C1).
+    try {
+      assertSafeFetchUrl(docUrl);
+    } catch {
+      throw new AuthRequiredError("Unable to resolve signing key for issuer");
+    }
   }
   if (!docUrl) {
     throw new AuthRequiredError("Unable to resolve signing key for issuer");
@@ -89,10 +97,9 @@ async function verifyServiceJwt(
 async function resolvePdsFromAccessToken(token: string): Promise<string> {
   const { decodeJwt } = await import("jose");
   const payload = decodeJwt(token);
-  const iss = payload.iss;
-  if (typeof iss === "string" && iss.startsWith("http")) {
-    return iss.replace(/\/+$/, "");
-  }
+  // Never trust the unverified `iss` claim as a URL — it is attacker-controlled
+  // and would allow SSRF (see security audit C2). Resolve the PDS exclusively
+  // from `sub` (a DID) via proper identity resolution.
   const sub = payload.sub;
   if (typeof sub === "string" && sub.startsWith("did:")) {
     const identity = await resolveIdentity(sub as Did);
