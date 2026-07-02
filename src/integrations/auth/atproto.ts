@@ -61,6 +61,23 @@ async function getStoreValue<T>(
   consume: boolean,
 ): Promise<T | undefined> {
   const identifier = getStoreIdentifier(kind, key);
+
+  if (consume) {
+    // Atomic delete-and-return to prevent TOCTOU: a concurrent request with
+    // the same key can't also read the entry before the delete commits.
+    const [deleted] = await db
+      .delete(schema.verification)
+      .where(eq(schema.verification.identifier, identifier))
+      .returning({
+        value: schema.verification.value,
+        expiresAt: schema.verification.expiresAt,
+      });
+    if (!deleted) return undefined;
+    if (deleted.expiresAt.getTime() <= Date.now()) return undefined;
+    return parseStoreJson<T>(deleted.value);
+  }
+
+  // Non-consuming read — no TOCTOU concern (no delete follows).
   const entry = await db.query.verification.findFirst({
     where: eq(schema.verification.identifier, identifier),
   });
@@ -82,12 +99,6 @@ async function getStoreValue<T>(
       .delete(schema.verification)
       .where(eq(schema.verification.identifier, identifier));
     return undefined;
-  }
-
-  if (consume) {
-    await db
-      .delete(schema.verification)
-      .where(eq(schema.verification.identifier, identifier));
   }
 
   return parsed;

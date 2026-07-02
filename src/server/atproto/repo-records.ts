@@ -126,7 +126,7 @@ async function repoDeleteRecord(
   );
 }
 
-type ApplyWriteOp =
+export type ApplyWriteOp =
   | {
       $type: "com.atproto.repo.applyWrites#create";
       collection: string;
@@ -151,7 +151,7 @@ interface ApplyWriteResult {
 }
 
 /** Atomically apply one or more repo writes (create / update / delete). */
-async function repoApplyWrites(
+export async function repoApplyWrites(
   client: Client,
   input: { repo: string; writes: Array<ApplyWriteOp> },
 ): Promise<Array<ApplyWriteResult | null>> {

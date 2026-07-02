@@ -62,21 +62,17 @@
   - **Files:** Missing from `__root.tsx`, `vite.config.ts`, all middleware.
   - **Fix:** Add restrictive CSP via TanStack Start middleware. Start with `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://*.bsky.network https://plc.directory; frame-ancestors 'none'`.
 
-- [ ] [M7 — XRPC error responses leak internal messages](./security-audit.md#m7-xrpc-error-responses-leak-internal-error-messages)
+- [x] [M7 — XRPC error responses leak internal messages](./security-audit.md#m7-xrpc-error-responses-leak-internal-error-messages)
   - **File:** `src/server/xrpc/errors.ts:38-45`
   - **Fix:** Return generic `"Internal error"` for non-`XRPCError` exceptions. Log full error server-side with `console.error`.
 
-- [ ] [M9 — OAuth state store TOCTOU (non-atomic read-then-delete)](./security-audit.md#m9-oauth-state-store-toctou--non-atomic-read-then-delete-allows-state-replay)
+- [x] [M9 — OAuth state store TOCTOU (non-atomic read-then-delete)](./security-audit.md#m9-oauth-state-store-toctou--non-atomic-read-then-delete-allows-state-replay)
   - **File:** `src/integrations/auth/atproto.ts:58-94` (`getStoreValue` with `consume: true`)
   - **Fix:** Use atomic delete-and-return: `db.delete(...).where(...).returning({ value, expiresAt })`.
 
-- [ ] [M10 — `markDocumentsRead` sequential PDS round-trip amplification](./security-audit.md#m10-markdocumentsread-loops-sequentially-with-no-cap--pds-round-trip-amplification)
+- [x] [M10 — `markDocumentsRead` sequential PDS round-trip amplification](./security-audit.md#m10-markdocumentsread-loops-sequentially-with-no-cap--pds-round-trip-amplification)
   - **Files:** `src/server/reader/mark-documents-read.ts:32-34`, `src/server/reader/queries.ts:270`
   - **Fix:** Use `repoApplyWrites` (batch write, exists at `repo-records.ts:154-187`). Reduce default limit from 500 to 100. Reduce `documentsInput` cap from 500 to 100.
-
-- [ ] [M11 — No rate limits on OG image generation, search, shiki](./security-audit.md#m11-no-rate-limits-on-og-image-generation-search-or-shiki-highlighting)
-  - **Files:** `src/routes/api/og/article.tsx:45-102`, `src/integrations/tanstack-query/api-search.functions.ts:94-104`
-  - **Fix:** Add in-memory token-bucket rate limiter per IP for OG image and search. Consider pre-generating OG images at ingest time.
 
 ---
 

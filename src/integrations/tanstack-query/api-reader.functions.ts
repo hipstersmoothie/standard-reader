@@ -54,7 +54,7 @@ const documentInput = z.object({
 });
 
 const documentsInput = z.object({
-  documentUris: z.array(z.string().min(1)).max(500),
+  documentUris: z.array(z.string().min(1)).max(100),
 });
 
 /** Default page size for likes / saved / history infinite scroll. */

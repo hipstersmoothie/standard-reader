@@ -276,7 +276,7 @@ export async function selectUnreadDocumentUris(
     limit?: number;
   },
 ): Promise<Array<string>> {
-  const { readerDid, publicationUris, limit = 500 } = opts;
+  const { readerDid, publicationUris, limit = 100 } = opts;
   if (publicationUris && publicationUris.length === 0) {
     return [];
   }

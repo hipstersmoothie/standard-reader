@@ -39,8 +39,8 @@ export function handleXrpcError(cause: unknown): Response {
   if (cause instanceof XRPCError) {
     return xrpcErrorResponse(cause);
   }
-  if (cause instanceof Error) {
-    return xrpcErrorResponse(new InvalidRequestError(cause.message));
-  }
-  return xrpcErrorResponse(new InvalidRequestError("Invalid request"));
+  // Non-XRPCError exceptions (DB errors, library internals, etc.) must not
+  // leak their raw messages to callers. Log server-side, return generic.
+  console.error("[xrpc] unhandled error", cause);
+  return xrpcErrorResponse(new InvalidRequestError("Internal error"));
 }
