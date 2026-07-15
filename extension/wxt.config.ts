@@ -16,8 +16,17 @@ import {
 const repoRoot = path.resolve(import.meta.dirname, "..");
 
 const require = createRequire(import.meta.url);
-/** onnxruntime-web runtime files shipped inside @huggingface/transformers. */
-const ortDistDir = path.dirname(require.resolve("@huggingface/transformers"));
+/**
+ * onnxruntime-web runtime files. Newer @huggingface/transformers no longer
+ * ships the `.wasm` binaries in its own dist (only the `.mjs` loader), so
+ * resolve them from the onnxruntime-web package it depends on — that dir holds
+ * both the loader and the version-matched wasm.
+ */
+const ortDistDir = path.dirname(
+  createRequire(require.resolve("@huggingface/transformers")).resolve(
+    "onnxruntime-web",
+  ),
+);
 const ORT_RUNTIME_FILES = [
   "ort-wasm-simd-threaded.jsep.mjs",
   "ort-wasm-simd-threaded.jsep.wasm",
