@@ -326,6 +326,11 @@ function FacetSegment({
 
   let node: React.ReactNode = text;
 
+  // A rendered link already carries its own underline (`facetLink`). Track that
+  // so a co-located `underline` facet doesn't wrap it in a second `<u>` — two
+  // underline decorations at different offsets render as a double underline.
+  let nodeIsUnderlinedLink = false;
+
   if (isCode) {
     node = <code {...stylex.props(articleBodyStyles.facetCode)}>{text}</code>;
   }
@@ -356,6 +361,7 @@ function FacetSegment({
         {text}
       </SmartArticleLink>
     );
+    nodeIsUnderlinedLink = true;
   } else if (didMention?.did) {
     node = (
       <ActorMentionChip
@@ -378,7 +384,7 @@ function FacetSegment({
     );
   }
 
-  if (isUnderline) {
+  if (isUnderline && !nodeIsUnderlinedLink) {
     node = <u {...stylex.props(articleBodyStyles.facetUnderline)}>{node}</u>;
   }
 
