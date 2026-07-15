@@ -616,7 +616,9 @@ function Latest() {
     <ReaderContent>
       <Masthead
         kicker={
-          isTrending || isNetwork ? "Across the network" : "From your subscriptions"
+          isTrending || isNetwork
+            ? "Across the network"
+            : "From your subscriptions"
         }
         title={isTrending ? "Trending" : "Latest"}
         dek={

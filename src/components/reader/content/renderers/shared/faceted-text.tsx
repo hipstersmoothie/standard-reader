@@ -14,8 +14,6 @@ import {
   UserHoverCardBody,
 } from "#/components/reader/mention-hover-card";
 import { PublicationAvatar } from "#/components/reader/primitives";
-import { authorApi } from "#/integrations/tanstack-query/api-author.functions";
-import { publicationApi } from "#/integrations/tanstack-query/api-publication.functions";
 import {
   DropCapChar,
   QuoteShareMark,
@@ -25,6 +23,8 @@ import {
   useQuoteHighlightTracker,
 } from "#/components/reader/quote-highlight-tracker";
 import { Avatar } from "#/design-system/avatar";
+import { authorApi } from "#/integrations/tanstack-query/api-author.functions";
+import { publicationApi } from "#/integrations/tanstack-query/api-publication.functions";
 import { segmentFacetedText, shiftFacets } from "#/lib/leaflet/facets";
 import type {
   ResolvedActorMention,
@@ -257,15 +257,15 @@ function LinkedActorChip({
   return (
     <EntityHoverCard
       onIntent={() =>
-        queryClient.prefetchQuery(
-          authorApi.getAuthorSummaryQueryOptions(ident),
-        )
+        queryClient.prefetchQuery(authorApi.getAuthorSummaryQueryOptions(ident))
       }
       card={
         <UserHoverCardBody
           did={ident}
           fallbackLabel={label}
-          fallbackHandle={actor?.handle ?? (ident.startsWith("did:") ? null : ident)}
+          fallbackHandle={
+            actor?.handle ?? (ident.startsWith("did:") ? null : ident)
+          }
           fallbackAvatarUrl={actor?.avatarUrl ?? null}
         />
       }

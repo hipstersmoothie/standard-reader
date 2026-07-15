@@ -226,7 +226,8 @@ export function UserHoverCardBody({
 
   const handle = profile?.handle ?? fallbackHandle ?? null;
   const displayName = profile?.displayName ?? null;
-  const name = displayName ?? (handle ? `@${handle}` : (fallbackLabel ?? "Reader"));
+  const name =
+    displayName ?? (handle ? `@${handle}` : (fallbackLabel ?? "Reader"));
   const avatarUrl = profile?.avatarUrl ?? fallbackAvatarUrl ?? undefined;
   const showHandle = displayName != null && handle != null;
 
@@ -336,10 +337,7 @@ export function PublicationHoverCardBody({
       }
     >
       <div {...stylex.props(styles.head)}>
-        <PublicationAvatar
-          pub={{ name, iconUrl }}
-          size="lg"
-        />
+        <PublicationAvatar pub={{ name, iconUrl }} size="lg" />
         <div {...stylex.props(styles.headMeta)}>
           {pub?.topic ? (
             <span {...stylex.props(styles.kicker)}>{pub.topic}</span>

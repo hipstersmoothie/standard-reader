@@ -103,7 +103,8 @@ export const PAGE_OG_CARDS = {
   login: {
     path: "/login",
     title: "Sign in",
-    tagline: "Use your Atmosphere account to subscribe to writers and save reads.",
+    tagline:
+      "Use your Atmosphere account to subscribe to writers and save reads.",
   },
   feedback: {
     path: "/feedback",

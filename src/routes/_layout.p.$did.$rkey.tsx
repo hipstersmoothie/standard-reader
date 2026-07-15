@@ -11,6 +11,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { authorApi } from "#/integrations/tanstack-query/api-author.functions";
 import { publicationApi } from "#/integrations/tanstack-query/api-publication.functions";
+import type {
+  PublicationEmbedMeta,
+  PublicationHeader,
+  PublicationSocialProof,
+} from "#/integrations/tanstack-query/api-publication.functions";
 import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
 import { getPublicUrlClient } from "#/lib/public-url";
@@ -72,11 +77,6 @@ import {
   tracking,
 } from "../design-system/theme/typography.stylex";
 import type { ArticleCard } from "../integrations/tanstack-query/api-shapes";
-import type {
-  PublicationEmbedMeta,
-  PublicationHeader,
-  PublicationSocialProof,
-} from "#/integrations/tanstack-query/api-publication.functions";
 
 /** Documents loaded with the profile (page 0) before infinite scroll kicks in. */
 const PUBLICATION_RECENT_LIMIT = 12;

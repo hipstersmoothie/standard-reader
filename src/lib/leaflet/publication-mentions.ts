@@ -108,9 +108,9 @@ const BSKY_PROFILE_HOSTS = new Set(["bsky.app", "staging.bsky.app"]);
  * If a `#link` facet's target is a *user profile*, return the user's ident
  * (handle or DID) so the segment can render as an actor mention (avatar chip +
  * hovercard, linking in-app to `/u/$did`) instead of a bare off-site link.
- * Recognizes an in-app author path (`/u/<handle-or-did>`, relative) and a
- * Bluesky profile or post link (`bsky.app/profile/<handle-or-did>[/post/…]`).
- * Returns null for any other link.
+ * Recognizes an in-app author path (`/u/<handle-or-did>`, relative) and a bare
+ * Bluesky profile link (`bsky.app/profile/<handle-or-did>`). Returns null for
+ * any other link.
  */
 export function actorLinkIdent(uri: string): string | null {
   const trimmed = uri.trim();
@@ -132,10 +132,10 @@ export function actorLinkIdent(uri: string): string | null {
   }
 
   if (host && BSKY_PROFILE_HOSTS.has(host)) {
-    // ONLY a bare profile or a post counts as a person reference. A list
-    // (`/profile/<ident>/lists/…`), a feed (`/profile/<ident>/feed/…`), or any
-    // other sub-resource is about that object, not a mention of its owner.
-    const match = /^\/profile\/([^/]+)(?:\/post\/[^/]+)?\/?$/.exec(pathname);
+    // ONLY a bare profile counts as a person reference. A post
+    // (`/profile/<ident>/post/…`), list, or feed is about that object, not a
+    // mention of its owner — keep it a plain link to the original.
+    const match = /^\/profile\/([^/]+)\/?$/.exec(pathname);
     if (match?.[1]) {
       const ident = normalizeAuthorRef(decodeURIComponent(match[1]));
       // A handle needs a dot; a DID is taken verbatim. Guards against
@@ -149,7 +149,8 @@ export function actorLinkIdent(uri: string): string | null {
   // URL that happens to carry a `/u/` segment is not our profile route.
   if (host === null) {
     const match = /^\/u\/([^/]+)\/?$/.exec(pathname);
-    if (match?.[1]) return normalizeAuthorRef(decodeURIComponent(match[1])) || null;
+    if (match?.[1])
+      return normalizeAuthorRef(decodeURIComponent(match[1])) || null;
   }
   return null;
 }

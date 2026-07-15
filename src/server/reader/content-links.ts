@@ -7,8 +7,8 @@ import {
 import type { Db, Schema } from "#/integrations/tanstack-query/api-shapes";
 import { publicationDisplayName } from "#/integrations/tanstack-query/api-shapes";
 import { isAppOriginHref } from "#/lib/app-origin";
-import { actorLinkIdent } from "#/lib/leaflet/publication-mentions";
 import { parseInternalRoute } from "#/lib/internal-route";
+import { actorLinkIdent } from "#/lib/leaflet/publication-mentions";
 import { linkTargetVariants } from "#/lib/link-target-variants";
 import { getPublicUrl } from "#/lib/public-url";
 import { cdnImageUrl } from "#/server/atproto/blob";

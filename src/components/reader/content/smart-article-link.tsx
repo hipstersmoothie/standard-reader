@@ -119,7 +119,9 @@ export function SmartArticleLink({
     return <ArticleLinkChip target={target}>{children}</ArticleLinkChip>;
   }
   if (target?.kind === "publication") {
-    return <PublicationLinkChip target={target}>{children}</PublicationLinkChip>;
+    return (
+      <PublicationLinkChip target={target}>{children}</PublicationLinkChip>
+    );
   }
   return (
     <AppLink href={href} linkStyle={linkStyle}>
@@ -241,7 +243,9 @@ function PublicationLinkChip({
     <EntityHoverCard
       onIntent={() =>
         queryClient.prefetchQuery(
-          publicationApi.getPublicationHeaderQueryOptions(target.publicationUri),
+          publicationApi.getPublicationHeaderQueryOptions(
+            target.publicationUri,
+          ),
         )
       }
       card={

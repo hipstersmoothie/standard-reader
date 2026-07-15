@@ -861,10 +861,14 @@ export async function upsertSidebarPref(
   record: SidebarPrefRecord,
 ): Promise<void> {
   const listOrder = Array.isArray(record.listOrder)
-    ? record.listOrder.filter((item): item is string => typeof item === "string")
+    ? record.listOrder.filter(
+        (item): item is string => typeof item === "string",
+      )
     : [];
   const collapsed = Array.isArray(record.collapsed)
-    ? record.collapsed.filter((item): item is string => typeof item === "string")
+    ? record.collapsed.filter(
+        (item): item is string => typeof item === "string",
+      )
     : [];
 
   const values = {

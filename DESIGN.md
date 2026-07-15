@@ -139,6 +139,7 @@ trendy AI-startup landing aesthetic (no gradient text, no glassmorphism, no trac
 is a reading room, not a control panel.
 
 **Key Characteristics:**
+
 - Warm paper + warm ink neutrals (the Almanac palette), theme-aware light/dark via `light-dark()`.
 - Disciplined warmth: whisper-chroma OKLCH off-white, never pushed to loud cream/sand.
 - One earthen camel accent (`#ad7f58`), used on ≤10% of any screen: actions, selection, state.
@@ -153,14 +154,16 @@ semantic set for state. The neutrals and the accent are theme-aware through CSS 
 values below are light mode with the dark equivalent noted.
 
 ### Primary
+
 - **Camel** (`#ad7f58` solid; link/accent text `#815e46` light / `#dbb594` dark): The single
   accent — a muted, earthen tan-brown. (The source `editorialPrimary` theme labels it "terracotta,"
   but the value reads as a soft camel/tan, not orange-red clay.) Used for primary action buttons, the
   current navigation selection, focus and active states, unread markers, and links. Never decoration.
-  Its rarity is the entire point. On the warm paper, accent *text* uses the deeper brown (`#815e46`)
+  Its rarity is the entire point. On the warm paper, accent _text_ uses the deeper brown (`#815e46`)
   so links stay legible; the brighter `#ad7f58` is for solid fills and markers.
 
 ### Neutral (the Almanac paper + ink)
+
 - **Ink** (`oklch(0.245 0.012 60)` light / `oklch(0.92 0.01 85)` dark): Primary text — headings,
   body, high-emphasis labels. A warm near-black, never pure `#000`.
 - **Ink Muted** (`oklch(0.56 0.012 65)` light / `oklch(0.62 0.012 70)` dark): Secondary text —
@@ -173,11 +176,13 @@ values below are light mode with the dark equivalent noted.
   off-white in light, a warm dark reading surface in dark — both first-class.
 
 ### Semantic (Radix Red / Green / Yellow — unchanged by the editorial theme)
+
 - **Critical** (`#e5484d`, text `#ce2c31`): Errors, destructive actions, failed states.
 - **Success** (`#30a46c`, text `#218358`): Confirmation, completed, healthy.
 - **Warning** (`#ffe629`, text `#9e6c00`): Caution. The yellow solid takes **black** text, not white.
 
 ### Named Rules
+
 **The One Lamp Rule.** The camel accent appears on ≤10% of any given screen. If two things on a
 screen are both camel, one of them is wrong. Emphasis beyond that is carried by weight, size,
 and whitespace — not more color.
@@ -200,6 +205,7 @@ running interface quiet, accessible, and out of the way. Metric-adjusted Capsize
 (generated into `src/styles.css`) hold the layout so text doesn't shift as the web fonts load.
 
 ### Hierarchy
+
 - **Display** (Newsreader, 400, `clamp(2.25rem, 5vw, 3rem)`, line-height 1.25, tracking -0.025em):
   Article titles and editorial headlines — the content voice at its largest.
 - **Heading** (Newsreader, 500–600, 1.25rem → 3rem responsive by level, tracking -0.025em):
@@ -214,6 +220,7 @@ running interface quiet, accessible, and out of the way. Metric-adjusted Capsize
   never body copy.
 
 ### Named Rules
+
 **The Serif-Sans Split Rule.** Newsreader carries display, headings, and reading content (titles,
 prose, publication names). Atkinson carries running UI text, labels, buttons, counts, and metadata.
 If a heading renders in the sans, or a button renders in the serif, the split has been broken.
@@ -232,6 +239,7 @@ dark mode the shadow tokens are deliberately strengthened (via `editorialShadow`
 surfaces stay legible against the dark reading ground.
 
 ### Shadow Vocabulary
+
 - **Rest** (`box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05)` — `xs`): The most a resting surface earns —
   buttons, occasionally a raised card. Barely there.
 - **Floating** (`shadow.lg`, stronger on dark): Popovers, menus, autocomplete panels — things
@@ -240,6 +248,7 @@ surfaces stay legible against the dark reading ground.
   (`overlayBackdrop` is a warm-tinted translucent, not neutral black).
 
 ### Named Rules
+
 **The Float-To-Earn Rule.** A surface gets a shadow only when it literally floats above another
 layer. If it lives in the page flow, it is flat and bordered. A resting card with a soft 16px+ drop
 shadow is prohibited — that is the 2014-app tell.
@@ -253,6 +262,7 @@ error — because they are wired through react-aria. The overall feel is **refin
 quiet and low-contrast at rest, precise on interaction, receding so the reading leads.
 
 ### Buttons
+
 - **Shape:** Squircle corners at 8px (`rounded.md`, `corner-shape: squircle`), 1px border.
 - **Primary:** Camel solid fill (`#ad7f58`) with contrast text; the one high-emphasis action
   per view. Small size is 1.75rem tall with `0.75rem` horizontal padding.
@@ -262,25 +272,29 @@ quiet and low-contrast at rest, precise on interaction, receding so the reading 
   no transform, no bounce. Focus-visible shows a camel ring. Disabled drops to 50% opacity.
 
 ### Inputs / Fields
+
 - **Style:** Page-background fill, 1px tonal border, 8px squircle corners, Atkinson body text.
 - **Focus:** Border shifts to camel with a matching focus ring; no glow, no scale.
 - **Error:** Border and helper text shift to Critical red (`#e5484d` / `#ce2c31`).
 - **Placeholder:** Uses Ink Muted, never a lighter gray — placeholders must stay legible.
 
 ### Chips / Tags
+
 - **Style:** Full-pill (`rounded.full`), Surface fill, Ink Muted label; topic and filter tags.
 - **State:** Selected filters take the camel accent (text or subtle camel background);
   unselected stay neutral. Reserve the pill radius for tags and toggles, not cards.
 
 ### Cards / Containers
+
 - **Corner Style:** 12px (`rounded.lg`), squircle where supported.
 - **Background:** Page or Surface Subtle; **Border:** hairline warm tonal border.
 - **Shadow Strategy:** Flat at rest (see Elevation). No resting drop shadow.
 - **Internal Padding:** 1rem baseline (`lg`), scaling up for featured/lead cards.
 - Cards are used only where they are the right affordance (a discrete publication or article
-  object). Article and feed *rows* are the default list unit — not a wall of identical cards.
+  object). Article and feed _rows_ are the default list unit — not a wall of identical cards.
 
 ### Navigation
+
 - **Desktop:** Persistent left sidebar — Home, Latest, Saved, Discover, Search, plus the followed-
   publications list. Atkinson labels; current item marked with the camel accent.
 - **Mobile:** Top bar + bottom tab nav. Same items, same components, restructured — responsive
@@ -288,6 +302,7 @@ quiet and low-contrast at rest, precise on interaction, receding so the reading 
 - **States:** Default (Ink Muted), hover (Ink + Surface), active/current (camel).
 
 ### Signature: The Discover Directory & Editorial Rows
+
 The differentiator surface. A browsable directory of every known publication with recommendations,
 trending, and topic browsing — presented with real editorial care (Newsreader publication names,
 lead/featured treatments, "You might follow" rails), never as a flat utilitarian list. Article and
@@ -297,11 +312,12 @@ restrained camel affordance for save/follow — the recurring atom of the readin
 ## 6. Do's and Don'ts
 
 ### Do:
+
 - **Do** carry warmth through Newsreader, reading rhythm, generous margins, and the earthen accent —
   the background stays a whisper-chroma warm off-white.
 - **Do** keep the paper at Almanac chroma (`C ≈ 0.007–0.014`, hue ~60–85); warm, never loud.
 - **Do** reserve camel (`#ad7f58`) for primary actions, current selection, and state — ≤10% of
-  any screen (The One Lamp Rule). Use the deeper brown (`#815e46`) for accent *text* on light.
+  any screen (The One Lamp Rule). Use the deeper brown (`#815e46`) for accent _text_ on light.
 - **Do** use Newsreader for headings and reading content, and Atkinson Hyperlegible Next for running
   UI text, labels, and controls — never cross them (The Serif-Sans Split Rule).
 - **Do** keep surfaces flat and bordered at rest; add shadow only to things that float.
@@ -310,6 +326,7 @@ restrained camel affordance for save/follow — the recurring atom of the readin
 - **Do** honor `prefers-reduced-motion` with a crossfade or instant alternative for every transition.
 
 ### Don't:
+
 - **Don't** widen the warm paper into a loud cream, sand, parchment, or beige, or push its chroma
   past the Almanac whisper. This is warm off-white, not a coffee-stain aesthetic.
 - **Don't** design an algorithmic social feed: no engagement-bait, infinite-scroll dopamine

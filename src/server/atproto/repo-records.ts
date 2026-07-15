@@ -272,9 +272,7 @@ export async function putUserFollowRecord(
     record: {
       $type: COLLECTION.graphFollow,
       subject: subjectDid,
-      ...(excludedPublications.length > 0
-        ? { excludedPublications }
-        : {}),
+      ...(excludedPublications.length > 0 ? { excludedPublications } : {}),
       createdAt,
     },
   });

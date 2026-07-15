@@ -3,7 +3,14 @@
 import * as stylex from "@stylexjs/stylex";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { ArrowRight, BookOpen, Bookmark, Check, Heart, Plus } from "lucide-react";
+import {
+  ArrowRight,
+  BookOpen,
+  Bookmark,
+  Check,
+  Heart,
+  Plus,
+} from "lucide-react";
 import { Fragment, useCallback } from "react";
 
 import { AuthorProfileLink } from "#/components/reader/author-profile-link";

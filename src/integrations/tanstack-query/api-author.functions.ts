@@ -18,10 +18,7 @@ import {
   authorRecommendations,
   authorSubscriptions,
 } from "#/server/reader/queries";
-import type {
-  AuthorProfileStats,
-  AuthorReader,
-} from "#/server/reader/queries";
+import type { AuthorProfileStats, AuthorReader } from "#/server/reader/queries";
 
 import type {
   ArticleCard,

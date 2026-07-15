@@ -468,12 +468,14 @@ function ListPeoplePanel({
   return (
     <div>
       {users.map((member, index) => {
-        const name =
-          member.displayName?.trim() || member.handle || member.did;
+        const name = member.displayName?.trim() || member.handle || member.did;
         return (
           <div
             key={member.did}
-            {...stylex.props(styles.userRow, index === 0 && styles.userRowFirst)}
+            {...stylex.props(
+              styles.userRow,
+              index === 0 && styles.userRowFirst,
+            )}
           >
             <AuthorProfileLink
               authorRef={member.did}

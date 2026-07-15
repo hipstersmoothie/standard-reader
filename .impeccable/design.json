@@ -8,59 +8,149 @@
         "role": "primary",
         "displayName": "Camel",
         "canonical": "#ad7f58",
-        "tonalRamp": ["#3e332e", "#815e46", "#a07553", "#ad7f58", "#cea37e", "#dcbc9f", "#e4cdb7", "#f6eee7"]
+        "tonalRamp": [
+          "#3e332e",
+          "#815e46",
+          "#a07553",
+          "#ad7f58",
+          "#cea37e",
+          "#dcbc9f",
+          "#e4cdb7",
+          "#f6eee7"
+        ]
       },
       "ink": {
         "role": "neutral",
         "displayName": "Warm Ink",
         "canonical": "oklch(0.245 0.012 60)",
-        "tonalRamp": ["oklch(0.245 0.012 60)", "oklch(0.40 0.012 60)", "oklch(0.56 0.012 65)", "oklch(0.72 0.016 68)", "oklch(0.80 0.014 70)", "oklch(0.88 0.012 75)", "oklch(0.945 0.012 83)", "oklch(0.985 0.007 85)"]
+        "tonalRamp": [
+          "oklch(0.245 0.012 60)",
+          "oklch(0.40 0.012 60)",
+          "oklch(0.56 0.012 65)",
+          "oklch(0.72 0.016 68)",
+          "oklch(0.80 0.014 70)",
+          "oklch(0.88 0.012 75)",
+          "oklch(0.945 0.012 83)",
+          "oklch(0.985 0.007 85)"
+        ]
       },
       "page-bg": {
         "role": "neutral",
         "displayName": "Almanac Paper",
         "canonical": "oklch(0.985 0.007 85)",
-        "tonalRamp": ["oklch(0.16 0.012 60)", "oklch(0.19 0.012 58)", "oklch(0.22 0.014 56)", "oklch(0.72 0.016 68)", "oklch(0.88 0.012 75)", "oklch(0.945 0.012 83)", "oklch(0.965 0.01 84)", "oklch(0.985 0.007 85)"]
+        "tonalRamp": [
+          "oklch(0.16 0.012 60)",
+          "oklch(0.19 0.012 58)",
+          "oklch(0.22 0.014 56)",
+          "oklch(0.72 0.016 68)",
+          "oklch(0.88 0.012 75)",
+          "oklch(0.945 0.012 83)",
+          "oklch(0.965 0.01 84)",
+          "oklch(0.985 0.007 85)"
+        ]
       },
       "critical-solid": {
         "role": "critical",
         "displayName": "Critical Red",
         "canonical": "#e5484d",
-        "tonalRamp": ["#641723", "#822025", "#aa2429", "#ce2c31", "#e5484d", "#eb8e90", "#f4a9aa", "#ffdbdc"]
+        "tonalRamp": [
+          "#641723",
+          "#822025",
+          "#aa2429",
+          "#ce2c31",
+          "#e5484d",
+          "#eb8e90",
+          "#f4a9aa",
+          "#ffdbdc"
+        ]
       },
       "success-solid": {
         "role": "success",
         "displayName": "Success Green",
         "canonical": "#30a46c",
-        "tonalRamp": ["#193b2d", "#1b543a", "#20573e", "#218358", "#30a46c", "#5bb98b", "#8eceaa", "#c4e8d1"]
+        "tonalRamp": [
+          "#193b2d",
+          "#1b543a",
+          "#20573e",
+          "#218358",
+          "#30a46c",
+          "#5bb98b",
+          "#8eceaa",
+          "#c4e8d1"
+        ]
       },
       "warning-solid": {
         "role": "warning",
         "displayName": "Warning Yellow",
         "canonical": "#ffe629",
-        "tonalRamp": ["#473b1f", "#5c4d0f", "#8f7d0e", "#9e6c00", "#ffe629", "#f5e147", "#f9e68c", "#fdf8ba"]
+        "tonalRamp": [
+          "#473b1f",
+          "#5c4d0f",
+          "#8f7d0e",
+          "#9e6c00",
+          "#ffe629",
+          "#f5e147",
+          "#f9e68c",
+          "#fdf8ba"
+        ]
       }
     },
     "typographyMeta": {
-      "display": { "displayName": "Display", "purpose": "Article titles and editorial headlines (Newsreader serif)." },
-      "heading": { "displayName": "Heading", "purpose": "All screen/section headings h1–h5 (Newsreader serif)." },
-      "reading": { "displayName": "Reading", "purpose": "Long-form article prose (Newsreader), capped 65–75ch." },
-      "body": { "displayName": "Body", "purpose": "Running interface text (Atkinson Hyperlegible Next)." },
-      "label": { "displayName": "Label", "purpose": "Buttons, form labels, nav, chips (Atkinson, semibold)." },
-      "mono": { "displayName": "Mono", "purpose": "Counts, dates, handles/DIDs, code only (Spline Sans Mono)." }
+      "display": {
+        "displayName": "Display",
+        "purpose": "Article titles and editorial headlines (Newsreader serif)."
+      },
+      "heading": {
+        "displayName": "Heading",
+        "purpose": "All screen/section headings h1–h5 (Newsreader serif)."
+      },
+      "reading": {
+        "displayName": "Reading",
+        "purpose": "Long-form article prose (Newsreader), capped 65–75ch."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Running interface text (Atkinson Hyperlegible Next)."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Buttons, form labels, nav, chips (Atkinson, semibold)."
+      },
+      "mono": {
+        "displayName": "Mono",
+        "purpose": "Counts, dates, handles/DIDs, code only (Spline Sans Mono)."
+      }
     },
     "shadows": [
-      { "name": "xs-rest", "value": "0 1px 2px 0 rgb(0 0 0 / 0.05)", "purpose": "The most a resting surface earns — buttons, occasional raised card." },
-      { "name": "lg-floating", "value": "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)", "purpose": "Popovers, menus, autocomplete — detached from flow. Stronger on dark." },
-      { "name": "xl-modal", "value": "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)", "purpose": "Dialogs and sheets over a warm dimmed backdrop." }
+      {
+        "name": "xs-rest",
+        "value": "0 1px 2px 0 rgb(0 0 0 / 0.05)",
+        "purpose": "The most a resting surface earns — buttons, occasional raised card."
+      },
+      {
+        "name": "lg-floating",
+        "value": "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)",
+        "purpose": "Popovers, menus, autocomplete — detached from flow. Stronger on dark."
+      },
+      {
+        "name": "xl-modal",
+        "value": "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)",
+        "purpose": "Dialogs and sheets over a warm dimmed backdrop."
+      }
     ],
     "motion": [
-      { "name": "duration-fast", "value": "120ms", "purpose": "Default state transitions (button/input hover, focus)." },
-      { "name": "ease-standard", "value": "ease-in-out", "purpose": "Easing for color/state transitions — no bounce, no elastic." }
+      {
+        "name": "duration-fast",
+        "value": "120ms",
+        "purpose": "Default state transitions (button/input hover, focus)."
+      },
+      {
+        "name": "ease-standard",
+        "value": "ease-in-out",
+        "purpose": "Easing for color/state transitions — no bounce, no elastic."
+      }
     ],
-    "breakpoints": [
-      { "name": "md", "value": "768px" }
-    ]
+    "breakpoints": [{ "name": "md", "value": "768px" }]
   },
   "components": [
     {
@@ -124,11 +214,31 @@
       "Squircle corners on interactive surfaces; radii stay modest (8–12px), never over-rounded."
     ],
     "rules": [
-      { "name": "The One Lamp Rule", "body": "The camel accent appears on ≤10% of any given screen. If two things on a screen are both camel, one of them is wrong. Emphasis beyond that is carried by weight, size, and whitespace — not more color.", "section": "colors" },
-      { "name": "The Disciplined Warmth Rule", "body": "The paper is warm on purpose, but at a whisper of chroma (C ≈ 0.007–0.014). The warmth is carried by the serif, the reading rhythm, and the earthen accent — never by widening the background into a loud cream, sand, or parchment. Warm off-white, not coffee stain.", "section": "colors" },
-      { "name": "The Serif-Sans Split Rule", "body": "Newsreader carries display, headings, and reading content (titles, prose, publication names). Atkinson carries running UI text, labels, buttons, counts, and metadata. If a heading renders in the sans, or a button renders in the serif, the split has been broken.", "section": "typography" },
-      { "name": "The Legible-Floor Rule", "body": "Body and reading text never drop below their tokened size for density's sake, and muted text never goes lighter than Ink Muted (oklch(0.56 0.012 65)). Reading comfort is the product.", "section": "typography" },
-      { "name": "The Float-To-Earn Rule", "body": "A surface gets a shadow only when it literally floats above another layer. If it lives in the page flow, it is flat and bordered. A resting card with a soft 16px+ drop shadow is prohibited — that is the 2014-app tell.", "section": "elevation" }
+      {
+        "name": "The One Lamp Rule",
+        "body": "The camel accent appears on ≤10% of any given screen. If two things on a screen are both camel, one of them is wrong. Emphasis beyond that is carried by weight, size, and whitespace — not more color.",
+        "section": "colors"
+      },
+      {
+        "name": "The Disciplined Warmth Rule",
+        "body": "The paper is warm on purpose, but at a whisper of chroma (C ≈ 0.007–0.014). The warmth is carried by the serif, the reading rhythm, and the earthen accent — never by widening the background into a loud cream, sand, or parchment. Warm off-white, not coffee stain.",
+        "section": "colors"
+      },
+      {
+        "name": "The Serif-Sans Split Rule",
+        "body": "Newsreader carries display, headings, and reading content (titles, prose, publication names). Atkinson carries running UI text, labels, buttons, counts, and metadata. If a heading renders in the sans, or a button renders in the serif, the split has been broken.",
+        "section": "typography"
+      },
+      {
+        "name": "The Legible-Floor Rule",
+        "body": "Body and reading text never drop below their tokened size for density's sake, and muted text never goes lighter than Ink Muted (oklch(0.56 0.012 65)). Reading comfort is the product.",
+        "section": "typography"
+      },
+      {
+        "name": "The Float-To-Earn Rule",
+        "body": "A surface gets a shadow only when it literally floats above another layer. If it lives in the page flow, it is flat and bordered. A resting card with a soft 16px+ drop shadow is prohibited — that is the 2014-app tell.",
+        "section": "elevation"
+      }
     ],
     "dos": [
       "Do carry warmth through Newsreader, reading rhythm, generous margins, and the earthen accent — the background stays a whisper-chroma warm off-white.",

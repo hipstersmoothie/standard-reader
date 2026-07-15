@@ -25,7 +25,9 @@ import { deleteRecord, upsertSubscription } from "#/server/ingest/handlers";
  */
 
 /** The subject's live publication URIs (the owner-authored publications). */
-async function subjectPublicationUris(subjectDid: string): Promise<Array<string>> {
+async function subjectPublicationUris(
+  subjectDid: string,
+): Promise<Array<string>> {
   const p = schema.publications;
   const rows = await db
     .select({ uri: p.uri })
@@ -104,10 +106,16 @@ export async function syncFollowedPublications(
         publicationUri,
         createdAt,
       );
-      await upsertSubscription(uri, followerDid, subjectRkey(publicationUri), cid, {
-        publication: publicationUri,
-        createdAt,
-      });
+      await upsertSubscription(
+        uri,
+        followerDid,
+        subjectRkey(publicationUri),
+        cid,
+        {
+          publication: publicationUri,
+          createdAt,
+        },
+      );
       created += 1;
     } catch (error) {
       console.warn(
@@ -156,7 +164,12 @@ export async function unsubscribeFollowedPublications(
   let removed = 0;
   for (const [publicationUri, rkeys] of byPub) {
     try {
-      await deleteSubscriptionRecords(client, followerDid, publicationUri, rkeys);
+      await deleteSubscriptionRecords(
+        client,
+        followerDid,
+        publicationUri,
+        rkeys,
+      );
       const allRkeys = new Set([subjectRkey(publicationUri), ...rkeys]);
       await Promise.all(
         [...allRkeys].map((rkey) =>
@@ -196,9 +209,8 @@ export function scheduleFollowedPublicationReconcile(readerDid: string): void {
   reconciled.add(readerDid);
   void (async () => {
     try {
-      const { restoreAuthenticatedClient } = await import(
-        "#/integrations/auth/restore-client.server"
-      );
+      const { restoreAuthenticatedClient } =
+        await import("#/integrations/auth/restore-client.server");
       const client = await restoreAuthenticatedClient(readerDid as Did);
       if (!client) {
         reconciled.delete(readerDid); // no session now — retry on a later load

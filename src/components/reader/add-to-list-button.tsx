@@ -21,7 +21,9 @@ export function AddToListButton({
   const queryClient = useQueryClient();
   const { data: lists } = useQuery(listApi.getListsQueryOptions());
   const addMutation = useMutation(listApi.addUserToListMutationOptions());
-  const removeMutation = useMutation(listApi.removeUserFromListMutationOptions());
+  const removeMutation = useMutation(
+    listApi.removeUserFromListMutationOptions(),
+  );
 
   const iconSize = size === "md" ? 15 : 14;
 

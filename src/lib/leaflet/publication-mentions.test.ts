@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { PublicationMentionMap } from "./publication-mentions";
 import {
+  actorLinkIdent,
   collectInlineMentionRefs,
   documentMentionKey,
   lookupActorMention,
@@ -301,5 +302,39 @@ describe("lookupPublicationMention", () => {
       mentions,
     );
     expect(hit).toBeNull();
+  });
+});
+
+describe("actorLinkIdent", () => {
+  it("resolves a bare Bluesky profile link to the actor ident", () => {
+    expect(actorLinkIdent("https://bsky.app/profile/alice.bsky.social")).toBe(
+      "alice.bsky.social",
+    );
+    expect(actorLinkIdent("https://bsky.app/profile/did:plc:abc123")).toBe(
+      "did:plc:abc123",
+    );
+  });
+
+  it("keeps a Bluesky post link as-is (not a mention of its author)", () => {
+    expect(
+      actorLinkIdent("https://bsky.app/profile/alice.bsky.social/post/3abc123"),
+    ).toBeNull();
+    expect(
+      actorLinkIdent("https://bsky.app/profile/did:plc:abc123/post/3abc123"),
+    ).toBeNull();
+  });
+
+  it("ignores other profile sub-resources (lists, feeds)", () => {
+    expect(
+      actorLinkIdent("https://bsky.app/profile/alice.bsky.social/lists/xyz"),
+    ).toBeNull();
+    expect(
+      actorLinkIdent("https://bsky.app/profile/alice.bsky.social/feed/xyz"),
+    ).toBeNull();
+  });
+
+  it("resolves a relative in-app author path", () => {
+    expect(actorLinkIdent("/u/did:plc:abc123")).toBe("did:plc:abc123");
+    expect(actorLinkIdent("/u/alice.bsky.social")).toBe("alice.bsky.social");
   });
 });

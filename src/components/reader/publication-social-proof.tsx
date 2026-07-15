@@ -206,7 +206,8 @@ export function PublicationSocialProofLine({
           trigger={<span hidden aria-hidden />}
         >
           <DialogHeader>
-            Subscribed by {total} {total === 1 ? "reader" : "readers"} you follow
+            Subscribed by {total} {total === 1 ? "reader" : "readers"} you
+            follow
           </DialogHeader>
           <DialogBody style={styles.modalBody}>
             {modalReaders.map((reader, index) => (

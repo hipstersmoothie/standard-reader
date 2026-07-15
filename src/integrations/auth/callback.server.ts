@@ -178,9 +178,8 @@ export async function handleAtprotoOAuthCallback(args: {
       !priorUser.weeklyDigestWelcomeSentAt
     ) {
       try {
-        const { sendDigestWelcomeEmail } = await import(
-          "#/server/digest/welcome.server"
-        );
+        const { sendDigestWelcomeEmail } =
+          await import("#/server/digest/welcome.server");
         const sent = await sendDigestWelcomeEmail({
           userId,
           email: accountEmail,

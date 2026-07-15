@@ -22,9 +22,9 @@ import {
   Users,
 } from "lucide-react";
 
-import { CHROME_STORE_URL, FIREFOX_STORE_URL } from "#/lib/extension-links";
 import { discoverApi } from "#/integrations/tanstack-query/api-discover.functions";
 import type { PublicationCard } from "#/integrations/tanstack-query/api-shapes";
+import { CHROME_STORE_URL, FIREFOX_STORE_URL } from "#/lib/extension-links";
 import { usePageReader } from "#/lib/page-reader/page-reader-context";
 
 import { animationDuration } from "../../design-system/theme/animations.stylex";
@@ -1286,7 +1286,10 @@ export function AboutView() {
             </div>
           </div>
 
-          <IntegrationCard icon={Heart} title="Save, like, subscribe — everywhere">
+          <IntegrationCard
+            icon={Heart}
+            title="Save, like, subscribe — everywhere"
+          >
             One tap from the reading view, on any device, instantly in sync.
             Your library is always where you left it.
           </IntegrationCard>
@@ -1386,9 +1389,9 @@ export function AboutView() {
               </h2>
               <p {...stylex.props(styles.panelPara, styles.panelParaSpaced)}>
                 Don’t want another app to check? Opt into a weekly email with
-                the best of the publications you subscribe to, plus a couple worth
-                discovering. One email, one click to leave — and you can preview
-                exactly what it looks like before you ever turn it on.
+                the best of the publications you subscribe to, plus a couple
+                worth discovering. One email, one click to leave — and you can
+                preview exactly what it looks like before you ever turn it on.
               </p>
               <CtaButton to="/settings" variant="ghost" icon={Mail}>
                 Turn on in Settings
