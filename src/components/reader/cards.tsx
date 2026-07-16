@@ -1240,6 +1240,13 @@ function ArticleMetaLine({
  * navigations mark read once the article page mounts (i.e. after we navigate);
  * external links have no such page, so this is their only trigger. The write is
  * fire-and-forget with an optimistic cache update so the feed reflects it.
+ *
+ * The optimistic flip only sets `isRead` on cards already in cache — it can't
+ * remove the document from a server-derived list (e.g. the "unread" filter on
+ * `/latest`, where the read article would otherwise linger, still flagged
+ * unread). So we invalidate the read queries once the write settles, letting the
+ * filtered feeds refetch and drop it (and reconciling the optimistic update on
+ * error).
  */
 function useMarkReadExternal() {
   const queryClient = useQueryClient();
@@ -1252,7 +1259,9 @@ function useMarkReadExternal() {
     (documentUri: string, publicationUri?: string | null) => {
       if (!signedIn || !trackReading) return;
       applyMarkReadOptimisticUpdate(queryClient, documentUri, publicationUri);
-      markRead(documentUri);
+      markRead(documentUri, {
+        onSettled: () => invalidateReadQueries(queryClient),
+      });
     },
     [signedIn, trackReading, queryClient, markRead],
   );
