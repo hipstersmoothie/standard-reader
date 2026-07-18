@@ -75,6 +75,10 @@ import {
 const AUTHOR_PAGE_SIZE = 24;
 
 const authorSearchSchema = z.object({
+  // `.default` only fills in a *missing* `tab`; an invalid value (a stale or
+  // renamed tab from an old shared link, a typo, an empty `?tab=`) would throw
+  // a ZodError and surface as a 500 "error loading this link". `.catch` makes
+  // any unparseable value fall back to the default tab instead of erroring.
   tab: z
     .enum([
       "posts",
@@ -84,7 +88,8 @@ const authorSearchSchema = z.object({
       "lists",
       "likes",
     ])
-    .default("posts"),
+    .default("posts")
+    .catch("posts"),
 });
 
 type AuthorSearch = z.infer<typeof authorSearchSchema>;
