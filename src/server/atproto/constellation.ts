@@ -120,6 +120,7 @@ export const CITATION_URL_PATHS = [
   ".content.pages[pub.leaflet.pages.linearDocument].blocks[pub.leaflet.pages.linearDocument#block].block.facets[].features[pub.leaflet.richtext.facet#link].uri",
   ".content.pages[pub.leaflet.pages.linearDocument].blocks[pub.leaflet.pages.linearDocument#block].block.children[pub.leaflet.blocks.unorderedList#listItem].content.facets[].features[pub.leaflet.richtext.facet#link].uri",
   ".content.items[app.offprint.block.text].facets[].features[app.offprint.richtext.facet#link].uri",
+  ".content.items[app.offprint.block.text].facets[].features[app.offprint.richtext.facet#webMention].uri",
   ".content.items[blog.pckt.block.text].facets[].features[blog.pckt.richtext.facet#link].uri",
   ".pages[pub.leaflet.pages.linearDocument].blocks[].block.facets[].features[pub.leaflet.richtext.facet#link].uri",
 ] as const;
