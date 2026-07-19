@@ -625,6 +625,14 @@ export async function selectPublicationArticleCards(
   );
 }
 
+/**
+ * How many unread URIs a single "mark all as read" pass will claim when the
+ * caller doesn't specify. Callers that write these to the PDS batch them, so
+ * this is a throughput/latency choice rather than a protocol limit — a reader
+ * with a backlog deeper than this still needs more than one pass.
+ */
+const DEFAULT_UNREAD_URI_LIMIT = 200;
+
 /** Unread document AT-URIs for a reader, optionally scoped to publications
  * and/or followed users (union — matches the follow feed). */
 export async function selectUnreadDocumentUris(
@@ -643,7 +651,7 @@ export async function selectUnreadDocumentUris(
     publicationUris,
     followedUserDids,
     countOldPostsAsUnread,
-    limit = 100,
+    limit = DEFAULT_UNREAD_URI_LIMIT,
   } = opts;
   const hasFollowedUsers = (followedUserDids?.length ?? 0) > 0;
   if (publicationUris && publicationUris.length === 0 && !hasFollowedUsers) {

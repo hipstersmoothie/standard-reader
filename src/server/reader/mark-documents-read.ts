@@ -1,7 +1,11 @@
 import type { Client } from "@atcute/client";
 
 import { COLLECTION } from "#/lib/atproto/nsids";
-import { repoApplyWrites, subjectRkey } from "#/server/atproto/repo-records";
+import {
+  APPLY_WRITES_MAX_BATCH,
+  repoApplyWrites,
+  subjectRkey,
+} from "#/server/atproto/repo-records";
 import { ensureTracked } from "#/server/ingest/tap-client";
 
 export interface MarkDocumentsReadResult {
@@ -30,19 +34,34 @@ export async function markDocumentsRead(options: {
   }
 
   const createdAt = new Date().toISOString();
-  await repoApplyWrites(client, {
-    repo: did,
-    writes: documentUris.map((documentUri) => ({
-      $type: "com.atproto.repo.applyWrites#create",
-      collection: COLLECTION.read,
-      rkey: subjectRkey(documentUri),
-      value: {
-        $type: COLLECTION.read,
-        subject: documentUri,
-        createdAt,
-      },
-    })),
-  });
+
+  // `applyWrites` is atomic per request and capped server-side, so a large
+  // backlog has to go out as several sequential batches. Sequential (not
+  // parallel) keeps us inside the PDS rate limit — the client retries 429s with
+  // the server's own `Retry-After`, and firing N batches at once would just
+  // burn those retries against a window we've already exhausted.
+  const marked: Array<string> = [];
+  for (let i = 0; i < documentUris.length; i += APPLY_WRITES_MAX_BATCH) {
+    const batch = documentUris.slice(i, i + APPLY_WRITES_MAX_BATCH);
+    // A failure here propagates, but earlier batches are already durable on the
+    // PDS — read records are additive and keyed by subject, so a retry re-marks
+    // only what's still unread rather than duplicating work.
+    await repoApplyWrites(client, {
+      repo: did,
+      writes: batch.map((documentUri) => ({
+        $type: "com.atproto.repo.applyWrites#create",
+        collection: COLLECTION.read,
+        rkey: subjectRkey(documentUri),
+        value: {
+          $type: COLLECTION.read,
+          subject: documentUri,
+          createdAt,
+        },
+      })),
+    });
+    marked.push(...batch);
+  }
+
   await trackReaderRepo(did);
-  return { markedCount: documentUris.length, documentUris };
+  return { markedCount: marked.length, documentUris: marked };
 }

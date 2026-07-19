@@ -162,6 +162,13 @@ interface ApplyWriteResult {
   cid: string;
 }
 
+/**
+ * Per-request write cap for `com.atproto.repo.applyWrites`. The reference PDS
+ * rejects anything larger with `InvalidRequest`, so batches must be chunked
+ * below this regardless of how many records a caller wants to write.
+ */
+export const APPLY_WRITES_MAX_BATCH = 200;
+
 /** Atomically apply one or more repo writes (create / update / delete). */
 export async function repoApplyWrites(
   client: Client,
