@@ -87,6 +87,10 @@ export function UserHandleAutocomplete({
     <AutocompleteInput
       size={size}
       placeholder={placeholder}
+      // This is a handle field with its own in-app suggestion list, never a
+      // password/username login field — stop the browser from popping its
+      // saved-password autofill over our dropdown.
+      autoComplete="off"
       label={label}
       aria-label={ariaLabel}
       inputValue={value}

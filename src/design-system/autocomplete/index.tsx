@@ -74,6 +74,11 @@ export interface AutocompleteInputProps<T extends object>
   validationState?: InputValidationState;
   /** Placeholder text when input is empty. */
   placeholder?: string;
+  /**
+   * Native input autocomplete hint. Pass "off" to stop the browser from
+   * offering saved-password/username autofill over an in-app suggestion field.
+   */
+  autoComplete?: string;
   /** Content to render before the input. */
   prefix?: React.ReactNode;
   /** Content to render after the input. */
@@ -93,6 +98,7 @@ export function AutocompleteInput<T extends object>({
   variant,
   validationState,
   placeholder,
+  autoComplete,
   prefix,
   suffix,
   onAction,
@@ -179,6 +185,7 @@ export function AutocompleteInput<T extends object>({
             variant={variant}
             validationState={validationState}
             placeholder={placeholder}
+            autoComplete={autoComplete}
             prefix={prefix}
             suffix={suffix}
           />
