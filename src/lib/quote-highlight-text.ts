@@ -364,6 +364,7 @@ function appendStructuredRenderedText(
     case "image":
     case "iframe":
     case "gallery":
+    case "offprintComponent":
     case "unknown": {
       return;
     }

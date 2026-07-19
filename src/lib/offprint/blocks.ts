@@ -266,6 +266,12 @@ function asRenderableBlock(value: unknown): StructuredRenderableBlock | null {
     };
   }
 
+  if (value.$type === OFFPRINT_BLOCK.component) {
+    const componentUri =
+      typeof value.component === "string" ? value.component.trim() : "";
+    return componentUri ? { kind: "offprintComponent", componentUri } : null;
+  }
+
   const blockType =
     typeof value.$type === "string" ? value.$type : "unknown block";
   return { kind: "unknown", blockType };
