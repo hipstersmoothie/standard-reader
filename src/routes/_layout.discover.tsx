@@ -30,6 +30,7 @@ import { user } from "#/integrations/tanstack-query/api-user.functions";
 import { getPublicUrlClient } from "#/lib/public-url";
 import { pageSocialMeta } from "#/lib/site-metadata";
 import { useFormatters } from "#/lib/use-formatters";
+import { useHasMounted } from "#/lib/use-has-mounted";
 
 import {
   PubCardSkeleton,
@@ -451,6 +452,10 @@ const FRIENDS_PROMPT_PAGE = 4;
  */
 function DiscoverFriendsPrompt() {
   const { t } = useLingui();
+  // The friends lookup is prefetched without blocking the loader, so SSR can
+  // finish it mid-render while the client hydrates without it. Rendering
+  // nothing until mount keeps both sides in agreement.
+  const mounted = useHasMounted();
   const { data } = useQuery(
     discoverApi.getFriendPublishersQueryOptions({
       limit: FRIENDS_PROMPT_PAGE,
@@ -458,7 +463,7 @@ function DiscoverFriendsPrompt() {
   );
   const totalPeople = data?.totalPeople ?? 0;
 
-  if (totalPeople === 0) return null;
+  if (!mounted || totalPeople === 0) return null;
 
   const shown = data?.previewAuthors.slice(0, FRIENDS_PROMPT_AVATARS) ?? [];
 

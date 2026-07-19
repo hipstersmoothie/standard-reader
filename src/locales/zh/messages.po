@@ -261,6 +261,10 @@ msgstr "此刊物尚无已索引的文章。"
 msgid "Subscribing…"
 msgstr "正在订阅…"
 
+#: src/routes/_layout.friends.tsx
+msgid "Publications written by the people you follow on Bluesky, minus the ones you already subscribe to."
+msgstr ""
+
 #: src/components/reader/reorder-lists-modal.tsx
 msgid "List"
 msgstr "列表"
@@ -946,6 +950,7 @@ msgstr "我们不在扩展内运行独立的分析管道。"
 msgid "Remove list"
 msgstr "移除列表"
 
+#: src/routes/_layout.friends.tsx
 #: src/routes/_layout.latest.tsx
 #: src/routes/_layout.tag.$tag.tsx
 msgid "Loading articles"
@@ -1780,6 +1785,10 @@ msgstr "暂停"
 msgid "Back"
 msgstr "返回"
 
+#: src/routes/_layout.friends.tsx
+msgid "None of these publications have posted anything yet. Subscribe from the Publications tab and their writing will land on your Home feed."
+msgstr ""
+
 #: src/components/reader/link-share-menu.tsx
 #: src/components/reader/share-menu.tsx
 #: src/routes/_layout.l.$did.$rkey.tsx
@@ -1886,8 +1895,8 @@ msgid "Finish"
 msgstr "完成"
 
 #: src/routes/_layout.friends.tsx
-msgid "We checked the people you follow on Bluesky against every publication on the network and didn't find a match. As more of them start publishing, they'll show up here."
-msgstr ""
+#~ msgid "We checked the people you follow on Bluesky against every publication on the network and didn't find a match. As more of them start publishing, they'll show up here."
+#~ msgstr ""
 
 #: src/routes/_layout.index.tsx
 msgid "The latest long-form writing from across the network."
@@ -2297,8 +2306,8 @@ msgid "All"
 msgstr "全部"
 
 #: src/routes/_layout.friends.tsx
-msgid "Publications written by the people you follow on Bluesky."
-msgstr ""
+#~ msgid "Publications written by the people you follow on Bluesky."
+#~ msgstr ""
 
 #: src/components/reader/article-view.tsx
 #: src/components/reader/cards.tsx
@@ -2678,6 +2687,10 @@ msgstr "{name} 还没有在这里阅读或发布过内容。你可以在 Bluesky
 msgid "Accent on background"
 msgstr "背景上的强调色"
 
+#: src/routes/_layout.friends.tsx
+msgid "Either no one you follow on Bluesky publishes here yet, or you're already subscribed to everyone who does. As more of them start publishing, they'll show up here."
+msgstr ""
+
 #: src/components/reader/save-to-collection-dialog.tsx
 msgid "Collection"
 msgstr "合集"
@@ -2829,8 +2842,8 @@ msgid "Preview"
 msgstr "预览"
 
 #: src/routes/_layout.friends.tsx
-msgid "No one you follow publishes here yet"
-msgstr ""
+#~ msgid "No one you follow publishes here yet"
+#~ msgstr ""
 
 #: src/routes/_layout.index.tsx
 msgid "Standard Reader knows about every publication on the network. Find a few worth your mornings."
@@ -2996,6 +3009,10 @@ msgstr "标题字体"
 msgid "You may be asked to grant permission the first time."
 msgstr "首次使用时可能需要你授权。"
 
+#: src/routes/_layout.friends.tsx
+msgid "Friends views"
+msgstr ""
+
 #: src/components/NavbarAuth.tsx
 #: src/routes/login.tsx
 msgid "Log in"
@@ -3111,6 +3128,10 @@ msgstr "your.handle.com"
 msgid "Open collections in magazine"
 msgstr "在杂志中打开合集"
 
+#: src/routes/_layout.friends.tsx
+msgid "Nothing new from the people you follow"
+msgstr ""
+
 #: src/components/reader/reader-queue-rows.tsx
 msgid "Article unavailable"
 msgstr "文章不可用"
@@ -3160,6 +3181,7 @@ msgid "Your Home feed is empty for now — head to Discover whenever you're read
 msgstr "你的首页信息流暂时是空的——随时可以去「发现」看看，你订阅的一切都会在这里汇集起来。"
 
 #: src/components/reader/collection-builder.tsx
+#: src/routes/_layout.friends.tsx
 #: src/routes/_layout.l.$did.$rkey.tsx
 #: src/routes/_layout.search.tsx
 #: src/routes/_layout.tag.$tag.tsx

@@ -8,8 +8,11 @@ import type { Span } from "#/server/observability/log";
 import { observe } from "#/server/observability/log";
 import { attachReaderSpanContext } from "#/server/observability/span-context.ts";
 import {
+  EMPTY_FRIEND_ARTICLES,
   EMPTY_FRIEND_PUBLISHERS,
+  FRIEND_ARTICLE_PAGE_SIZE,
   FRIEND_PAGE_SIZE,
+  friendArticles,
   friendPublishers,
 } from "#/server/reader/bsky-friends";
 import {
@@ -29,6 +32,7 @@ import type { Db, PublicationCard, Schema } from "./api-shapes";
 import { dbMiddleware } from "./db-middleware";
 
 export type {
+  FriendArticles,
   FriendAuthor,
   FriendPublishers,
 } from "#/server/reader/bsky-friends";
@@ -191,6 +195,11 @@ const friendPublishersInput = z.object({
   offset: z.number().int().min(0).default(0),
 });
 
+const friendArticlesInput = z.object({
+  limit: z.number().int().min(1).max(50).default(FRIEND_ARTICLE_PAGE_SIZE),
+  offset: z.number().int().min(0).default(0),
+});
+
 const getFriendPublishers = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
   .validator(friendPublishersInput)
@@ -213,6 +222,31 @@ const getFriendPublishers = createServerFn({ method: "GET" })
       span.set("publications", result.publicationCount);
       span.set("degraded", result.degraded);
       span.set("truncated", result.truncated);
+      return result;
+    }),
+  );
+
+/** The Articles tab of `/friends`: recent writing from those publications. */
+const getFriendArticles = createServerFn({ method: "GET" })
+  .middleware([dbMiddleware])
+  .validator(friendArticlesInput)
+  .handler(
+    observe("discover.getFriendArticles", async ({ data, context }, span) => {
+      const { db, schema } = context;
+      const did = await attachReaderSpanContext(span, getRequest());
+      if (!did) {
+        span.set("signedIn", false);
+        return EMPTY_FRIEND_ARTICLES;
+      }
+      span.set("signedIn", true);
+      span.set("offset", data.offset);
+
+      const result = await friendArticles(db, schema, did, {
+        limit: data.limit,
+        offset: data.offset,
+      });
+      span.set("count", result.items.length);
+      span.set("degraded", result.degraded);
       return result;
     }),
   );
@@ -658,6 +692,23 @@ function getFriendPublishersInfiniteQueryOptions({
   });
 }
 
+function getFriendArticlesInfiniteQueryOptions({
+  limit = FRIEND_ARTICLE_PAGE_SIZE,
+}: { limit?: number } = {}) {
+  return infiniteQueryOptions({
+    // Same `friends` namespace as the Publications tab, and for the same
+    // reason: subscribing must not invalidate the list out from under the
+    // reader mid-visit.
+    queryKey: ["friends", "articles", "infinite", limit] as const,
+    queryFn: async ({ pageParam }) =>
+      getFriendArticles({ data: { limit, offset: pageParam } }),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) => lastPage.nextOffset ?? undefined,
+    staleTime: 5 * 60_000,
+    refetchOnWindowFocus: false,
+  });
+}
+
 function getEffectiveFollowUrisQueryOptions() {
   return queryOptions({
     queryKey: ["discover", "effectiveFollowUris"] as const,
@@ -680,6 +731,8 @@ export const discoverApi = {
   getRecommendedPublicationsQueryOptions,
   getFollowedByPeopleYouFollow,
   getFollowedByPeopleYouFollowQueryOptions,
+  getFriendArticles,
+  getFriendArticlesInfiniteQueryOptions,
   getFriendPublishers,
   getFriendPublishersQueryOptions,
   getFriendPublishersInfiniteQueryOptions,

@@ -261,6 +261,10 @@ msgstr "No posts indexed from this publication yet."
 msgid "Subscribing…"
 msgstr "Subscribing…"
 
+#: src/routes/_layout.friends.tsx
+msgid "Publications written by the people you follow on Bluesky, minus the ones you already subscribe to."
+msgstr "Publications written by the people you follow on Bluesky, minus the ones you already subscribe to."
+
 #: src/components/reader/reorder-lists-modal.tsx
 msgid "List"
 msgstr "List"
@@ -946,6 +950,7 @@ msgstr "We do not run a separate analytics pipeline inside the extension."
 msgid "Remove list"
 msgstr "Remove list"
 
+#: src/routes/_layout.friends.tsx
 #: src/routes/_layout.latest.tsx
 #: src/routes/_layout.tag.$tag.tsx
 msgid "Loading articles"
@@ -1780,6 +1785,10 @@ msgstr "Pause"
 msgid "Back"
 msgstr "Back"
 
+#: src/routes/_layout.friends.tsx
+msgid "None of these publications have posted anything yet. Subscribe from the Publications tab and their writing will land on your Home feed."
+msgstr "None of these publications have posted anything yet. Subscribe from the Publications tab and their writing will land on your Home feed."
+
 #: src/components/reader/link-share-menu.tsx
 #: src/components/reader/share-menu.tsx
 #: src/routes/_layout.l.$did.$rkey.tsx
@@ -1886,8 +1895,8 @@ msgid "Finish"
 msgstr "Finish"
 
 #: src/routes/_layout.friends.tsx
-msgid "We checked the people you follow on Bluesky against every publication on the network and didn't find a match. As more of them start publishing, they'll show up here."
-msgstr "We checked the people you follow on Bluesky against every publication on the network and didn't find a match. As more of them start publishing, they'll show up here."
+#~ msgid "We checked the people you follow on Bluesky against every publication on the network and didn't find a match. As more of them start publishing, they'll show up here."
+#~ msgstr "We checked the people you follow on Bluesky against every publication on the network and didn't find a match. As more of them start publishing, they'll show up here."
 
 #: src/routes/_layout.index.tsx
 msgid "The latest long-form writing from across the network."
@@ -2297,8 +2306,8 @@ msgid "All"
 msgstr "All"
 
 #: src/routes/_layout.friends.tsx
-msgid "Publications written by the people you follow on Bluesky."
-msgstr "Publications written by the people you follow on Bluesky."
+#~ msgid "Publications written by the people you follow on Bluesky."
+#~ msgstr "Publications written by the people you follow on Bluesky."
 
 #: src/components/reader/article-view.tsx
 #: src/components/reader/cards.tsx
@@ -2678,6 +2687,10 @@ msgstr "{name} hasn't started reading or publishing here. You can find them on B
 msgid "Accent on background"
 msgstr "Accent on background"
 
+#: src/routes/_layout.friends.tsx
+msgid "Either no one you follow on Bluesky publishes here yet, or you're already subscribed to everyone who does. As more of them start publishing, they'll show up here."
+msgstr "Either no one you follow on Bluesky publishes here yet, or you're already subscribed to everyone who does. As more of them start publishing, they'll show up here."
+
 #: src/components/reader/save-to-collection-dialog.tsx
 msgid "Collection"
 msgstr "Collection"
@@ -2829,8 +2842,8 @@ msgid "Preview"
 msgstr "Preview"
 
 #: src/routes/_layout.friends.tsx
-msgid "No one you follow publishes here yet"
-msgstr "No one you follow publishes here yet"
+#~ msgid "No one you follow publishes here yet"
+#~ msgstr "No one you follow publishes here yet"
 
 #: src/routes/_layout.index.tsx
 msgid "Standard Reader knows about every publication on the network. Find a few worth your mornings."
@@ -2996,6 +3009,10 @@ msgstr "Title font"
 msgid "You may be asked to grant permission the first time."
 msgstr "You may be asked to grant permission the first time."
 
+#: src/routes/_layout.friends.tsx
+msgid "Friends views"
+msgstr "Friends views"
+
 #: src/components/NavbarAuth.tsx
 #: src/routes/login.tsx
 msgid "Log in"
@@ -3111,6 +3128,10 @@ msgstr "your.handle.com"
 msgid "Open collections in magazine"
 msgstr "Open collections in magazine"
 
+#: src/routes/_layout.friends.tsx
+msgid "Nothing new from the people you follow"
+msgstr "Nothing new from the people you follow"
+
 #: src/components/reader/reader-queue-rows.tsx
 msgid "Article unavailable"
 msgstr "Article unavailable"
@@ -3160,6 +3181,7 @@ msgid "Your Home feed is empty for now — head to Discover whenever you're read
 msgstr "Your Home feed is empty for now — head to Discover whenever you're ready, and everything you subscribe to will start collecting here."
 
 #: src/components/reader/collection-builder.tsx
+#: src/routes/_layout.friends.tsx
 #: src/routes/_layout.l.$did.$rkey.tsx
 #: src/routes/_layout.search.tsx
 #: src/routes/_layout.tag.$tag.tsx

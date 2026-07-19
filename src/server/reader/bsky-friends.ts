@@ -16,17 +16,22 @@
  */
 
 import { and, asc, desc, eq, exists, inArray, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 
 import type {
+  ArticleCard,
   Db,
   PublicationCard,
   Schema,
 } from "#/integrations/tanstack-query/api-shapes";
 import {
+  articleCardColumns,
   publicationCardColumns,
+  toArticleCard,
   toPublicationCard,
 } from "#/integrations/tanstack-query/api-shapes";
 import { followedDidsForActor } from "#/server/atproto/bsky-relationships";
+import { documentPublishedNotInFuture } from "#/server/reader/document-filters";
 import { discoverEligiblePublicationWhere } from "#/server/reader/publication-filters";
 
 /**
@@ -89,6 +94,23 @@ export const FRIEND_PREVIEW_AUTHORS = 4;
 
 /** Default page size for `/friends`. Matches the Discover directory. */
 export const FRIEND_PAGE_SIZE = 24;
+
+/** Page size for the Articles tab. Matches the other chronological feeds. */
+export const FRIEND_ARTICLE_PAGE_SIZE = 20;
+
+export interface FriendArticles {
+  items: Array<ArticleCard>;
+  /** Offset for the next page, or `null` at the end. */
+  nextOffset: number | null;
+  /** See {@link FriendPublishers.degraded}. */
+  degraded: boolean;
+}
+
+export const EMPTY_FRIEND_ARTICLES: FriendArticles = {
+  items: [],
+  nextOffset: null,
+  degraded: false,
+};
 
 interface CachedGraph {
   followedDids: Array<string>;
@@ -286,19 +308,21 @@ export function friendAuthors(
 }
 
 /**
- * Publications authored by the Bluesky accounts `readerDid` follows, ranked by
- * readership and paged. Every card carries its owner's handle and avatar, so
- * the author stays visible without grouping the list by person.
+ * The publications behind both tabs of `/friends`: written by someone the
+ * reader follows on Bluesky, not already subscribed to, ranked by readership.
+ * Shared so the Articles tab describes exactly the same set as the
+ * Publications tab rather than a subtly different one.
  */
-export async function friendPublishers(
+async function resolveFriendPublications(
   db: Db,
   schema: Schema,
   readerDid: string,
-  opts: { candidateLimit?: number; limit?: number; offset?: number } = {},
-): Promise<FriendPublishers> {
-  const limit = opts.limit ?? FRIEND_PAGE_SIZE;
-  const offset = opts.offset ?? 0;
-
+  opts: { candidateLimit?: number } = {},
+): Promise<{
+  publications: Array<PublicationCard>;
+  degraded: boolean;
+  truncated: boolean;
+}> {
   const graph =
     readGraphCache(readerDid) ??
     (await (async (): Promise<CachedGraph> => {
@@ -331,7 +355,7 @@ export async function friendPublishers(
 
   const { followedDids, degraded, truncated } = graph;
   if (followedDids.length === 0) {
-    return { ...EMPTY_FRIEND_PUBLISHERS, degraded, truncated };
+    return { publications: [], degraded, truncated };
   }
 
   const sub = schema.subscriptions;
@@ -344,7 +368,36 @@ export async function friendPublishers(
       .where(and(eq(sub.subscriberDid, readerDid), eq(sub.deleted, false))),
   ]);
   const subscribed = new Set(subscribedRows.map((row) => row.uri));
-  const ranked = rankFriendPublications(followedDids, byAuthor, subscribed);
+
+  return {
+    publications: rankFriendPublications(followedDids, byAuthor, subscribed),
+    degraded,
+    truncated,
+  };
+}
+
+/**
+ * Publications authored by the Bluesky accounts `readerDid` follows, ranked by
+ * readership and paged. Every card carries its owner's handle and avatar, so
+ * the author stays visible without grouping the list by person.
+ */
+export async function friendPublishers(
+  db: Db,
+  schema: Schema,
+  readerDid: string,
+  opts: { candidateLimit?: number; limit?: number; offset?: number } = {},
+): Promise<FriendPublishers> {
+  const limit = opts.limit ?? FRIEND_PAGE_SIZE;
+  const offset = opts.offset ?? 0;
+
+  const {
+    publications: ranked,
+    degraded,
+    truncated,
+  } = await resolveFriendPublications(db, schema, readerDid, opts);
+  if (ranked.length === 0) {
+    return { ...EMPTY_FRIEND_PUBLISHERS, degraded, truncated };
+  }
 
   // Headline counts describe the whole match; only a page is serialized —
   // 362 publication cards at once is half a megabyte of JSON otherwise.
@@ -364,5 +417,79 @@ export async function friendPublishers(
     subscribedUris: [],
     degraded,
     truncated,
+  };
+}
+
+/**
+ * Recent articles from the same publications the Publications tab lists:
+ * written by people the reader follows on Bluesky, minus anything already
+ * subscribed to (those already arrive on Home). Chronological, newest first.
+ */
+export async function friendArticles(
+  db: Db,
+  schema: Schema,
+  readerDid: string,
+  opts: { candidateLimit?: number; limit?: number; offset?: number } = {},
+): Promise<FriendArticles> {
+  const limit = opts.limit ?? FRIEND_ARTICLE_PAGE_SIZE;
+  const offset = opts.offset ?? 0;
+
+  const { publications, degraded } = await resolveFriendPublications(
+    db,
+    schema,
+    readerDid,
+    opts,
+  );
+  if (publications.length === 0) {
+    return { ...EMPTY_FRIEND_ARTICLES, degraded };
+  }
+
+  const publicationUris = publications.map((pub) => pub.uri);
+  const d = schema.documents;
+  const p = schema.publications;
+  const pr = schema.profiles;
+  const pa = alias(schema.profiles, "pa");
+
+  const rows = await db
+    .select(articleCardColumns(schema))
+    .from(d)
+    .leftJoin(p, eq(p.uri, d.publicationUri))
+    .leftJoin(pr, eq(pr.did, p.did))
+    .leftJoin(pa, eq(pa.did, d.did))
+    .where(
+      and(
+        inArray(d.publicationUri, publicationUris),
+        eq(d.deleted, false),
+        documentPublishedNotInFuture(d),
+      ),
+    )
+    .orderBy(desc(d.publishedAt), desc(d.uri))
+    // One past the page so `nextOffset` never promises an empty page.
+    .limit(limit + 1)
+    .offset(offset);
+
+  const hasMore = rows.length > limit;
+  const items = rows
+    .slice(0, limit)
+    .filter(
+      (
+        row,
+      ): row is typeof row & {
+        uri: string;
+        did: string;
+        title: string;
+        publishedAt: Date;
+      } =>
+        row.uri != null &&
+        row.did != null &&
+        row.title != null &&
+        row.publishedAt != null,
+    )
+    .map((row) => toArticleCard({ ...row, featured: row.featured ?? false }));
+
+  return {
+    items,
+    nextOffset: hasMore ? offset + limit : null,
+    degraded,
   };
 }
