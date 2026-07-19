@@ -18,6 +18,7 @@ import {
 import { Fragment, useCallback } from "react";
 
 import { AuthorProfileLink } from "#/components/reader/author-profile-link";
+import { FollowUserButton } from "#/components/reader/follow-user-button";
 import { PublicationNameLink } from "#/components/reader/publication-name-link";
 import { SearchHeadline } from "#/components/reader/search-headline";
 import { ButtonLink } from "#/components/router-links";
@@ -55,6 +56,7 @@ import {
   tracking,
 } from "../../design-system/theme/typography.stylex";
 import { Text } from "../../design-system/typography/text";
+import type { FriendPerson } from "../../integrations/tanstack-query/api-discover.functions";
 import type {
   ArticleCard,
   PublicationCard,
@@ -2375,6 +2377,138 @@ export function PubDirectoryRow({
         style={[styles.pubDirFollow, hasRank && styles.pubDirFollowRanked]}
       />
     </PublicationLink>
+  );
+}
+
+/** Readership + publication tally for a {@link FriendPersonRow}. */
+function FriendPersonStats({ person }: { person: FriendPerson }) {
+  const { i18n } = useLingui();
+  const stats: Array<string> = [];
+  if (person.subscriberCount > 0) {
+    stats.push(
+      i18n._(
+        msg`${plural(person.subscriberCount, { one: "# reader", other: `${formatReaders(person.subscriberCount)} readers` })}`,
+      ),
+    );
+  }
+  stats.push(
+    i18n._(
+      msg`${plural(person.publicationCount, { one: "# publication", other: `${formatReaders(person.publicationCount)} publications` })}`,
+    ),
+  );
+
+  return (
+    <MetaLine>
+      <MetaGroup>
+        <Handle>
+          {stats.map((part, index) => (
+            <span key={part}>
+              {index > 0 ? <span aria-hidden> · </span> : null}
+              {/* Each stat is its own bidi run (digits + a localized word);
+                  isolate so an RTL UI can't interleave them. */}
+              <span {...stylex.props(styles.bidiIsolate)}>{part}</span>
+            </span>
+          ))}
+        </Handle>
+      </MetaGroup>
+    </MetaLine>
+  );
+}
+
+/** Stretched overlay link to a writer's profile — mirrors {@link PublicationStretchedLink}. */
+function PersonStretchedLink({ did, name }: { did: string; name: string }) {
+  return (
+    <Link
+      to="/u/$did"
+      params={{ did }}
+      aria-label={`Open ${name}`}
+      {...stylex.props(styles.cardOverlay)}
+    />
+  );
+}
+
+/**
+ * A single writer on the People tab of `/friends`: someone the reader follows
+ * on Bluesky who publishes here. The row links to the writer's profile; the CTA
+ * follows the *person* (`app.standard-reader.graph.follow`), not one of their
+ * publications, so it reuses {@link FollowUserButton} rather than the
+ * publication {@link FollowButton}.
+ */
+export function FriendPersonRow({
+  person,
+  isLast = false,
+  isFirstInSection = false,
+}: {
+  person: FriendPerson;
+  isLast?: boolean;
+  /** Drop top padding when the section head already provides spacing above. */
+  isFirstInSection?: boolean;
+}) {
+  const { data: session } = useQuery(user.getSessionQueryOptions);
+  const signedIn = Boolean(session?.user);
+  const name =
+    person.displayName?.trim() ||
+    (person.handle ? `@${person.handle}` : "Unknown");
+  const publications = person.publicationNames.slice(0, 3).join(", ");
+
+  return (
+    <div
+      {...stylex.props(
+        styles.cardShell,
+        styles.pubDirRow,
+        isLast && styles.pubDirRowLast,
+        isFirstInSection && styles.pubDirRowFirstInSection,
+      )}
+    >
+      <PersonStretchedLink did={person.did} name={name} />
+      <div {...stylex.props(styles.cardInertRoot)}>
+        <PublicationAvatar
+          pub={{ name, iconUrl: null, ownerAvatarUrl: person.avatarUrl }}
+          size="lg"
+          style={styles.pubDirAvatar}
+        />
+        <Flex direction="column" gap="sm" style={styles.pubDirMain}>
+          <div {...stylex.props(styles.pubDirTop)}>
+            <span {...stylex.props(styles.pubDirName)}>{name}</span>
+            {person.handle ? (
+              <OwnerHandleLink
+                did={person.did}
+                handle={person.handle}
+                style={styles.pubDirHandle}
+              />
+            ) : null}
+          </div>
+          <div {...stylex.props(styles.pubDirExtra)}>
+            {publications ? (
+              <p dir="auto" {...stylex.props(styles.pubDirDesc)}>
+                {publications}
+              </p>
+            ) : null}
+            <FriendPersonStats person={person} />
+          </div>
+        </Flex>
+      </div>
+      <div
+        role="presentation"
+        {...stylex.props(
+          styles.followSlot,
+          styles.cardInteractive,
+          styles.pubDirFollow,
+        )}
+      >
+        <FollowUserButton
+          did={person.did}
+          signedIn={signedIn}
+          size="sm"
+          user={{
+            did: person.did,
+            handle: person.handle,
+            displayName: person.displayName,
+            avatarUrl: person.avatarUrl,
+          }}
+        />
+      </div>
+    </div>
   );
 }
 

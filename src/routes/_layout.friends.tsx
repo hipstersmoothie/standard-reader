@@ -25,6 +25,7 @@ import { buildAuthRedirectPath } from "#/utils/auth-redirect";
 
 import {
   ArticleRow,
+  FriendPersonRow,
   PubDirectoryRow,
   PubDirectoryRowSkeleton,
 } from "../components/reader/cards";
@@ -44,14 +45,16 @@ import {
   fontWeight,
   lineHeight,
 } from "../design-system/theme/typography.stylex";
+import type { FriendPerson } from "../integrations/tanstack-query/api-discover.functions";
 import type { PublicationCard } from "../integrations/tanstack-query/api-shapes";
 
 const SKELETON_ROWS = 6;
 
 const friendsSearchSchema = z.object({
   // Publications lead: the page exists to get the reader subscribed, and the
-  // articles are what those publications happen to have published lately.
-  view: z.enum(["publications", "articles"]).default("publications"),
+  // articles are what those publications happen to have published lately. The
+  // People tab lists the writers themselves, with a follow-the-person CTA.
+  view: z.enum(["publications", "people", "articles"]).default("publications"),
 });
 
 type FriendsView = z.infer<typeof friendsSearchSchema>["view"];
@@ -172,6 +175,25 @@ function useSeededFollowStatus(publications: Array<PublicationCard>) {
   }, [publications, queryClient]);
 }
 
+/**
+ * Seed the per-writer user-follow cache from the payload we already have, so a
+ * page of writers doesn't fire a status request per row. Unlike publications
+ * (all unsubscribed by construction), a writer may already be followed, so we
+ * seed each row's real state; `prev ?? next` still lets an optimistic Follow
+ * press win.
+ */
+function useSeededUserFollowStatus(people: Array<FriendPerson>) {
+  const queryClient = useQueryClient();
+  useEffect(() => {
+    for (const person of people) {
+      queryClient.setQueryData(
+        readerApi.getUserFollowStatusQueryOptions(person.did).queryKey,
+        (prev) => prev ?? { isFollowing: person.isFollowing },
+      );
+    }
+  }, [people, queryClient]);
+}
+
 function FriendsPage() {
   const { t } = useLingui();
   const { view } = Route.useSearch();
@@ -289,6 +311,9 @@ function FriendsPage() {
               <Tab id="publications">
                 <Trans>Publications</Trans>
               </Tab>
+              <Tab id="people">
+                <Trans>People</Trans>
+              </Tab>
               <Tab id="articles">
                 <Trans>Articles</Trans>
               </Tab>
@@ -319,6 +344,10 @@ function FriendsPage() {
               ) : null}
             </TabPanel>
 
+            <TabPanel id="people" style={styles.tabPanel}>
+              {view === "people" ? <FriendPeoplePanel /> : null}
+            </TabPanel>
+
             <TabPanel id="articles" style={styles.tabPanel}>
               {view === "articles" ? <FriendArticlesPanel /> : null}
             </TabPanel>
@@ -326,6 +355,95 @@ function FriendsPage() {
         </>
       )}
     </ReaderContent>
+  );
+}
+
+/**
+ * The distinct writers behind the Publications tab — the people you follow on
+ * Bluesky who publish here. The CTA follows the writer on standard.reader (a
+ * `graph.follow`), not one of their publications. Mounted only while its tab is
+ * selected, so an unvisited tab costs no request.
+ */
+function FriendPeoplePanel() {
+  const { t } = useLingui();
+  const mounted = useHasMounted();
+
+  const { data, isPending, fetchNextPage, hasNextPage, isFetchingNextPage } =
+    useInfiniteQuery(discoverApi.getFriendPeopleInfiniteQueryOptions());
+
+  const people = useMemo(
+    () => (mounted ? (data?.pages.flatMap((page) => page.people) ?? []) : []),
+    [data, mounted],
+  );
+
+  useSeededUserFollowStatus(people);
+
+  const loadMore = useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) {
+      void fetchNextPage();
+    }
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
+
+  const loadMoreRef = useInfiniteScrollSentinel(
+    loadMore,
+    hasNextPage,
+    people.length,
+  );
+
+  if (!mounted || isPending) {
+    return (
+      <div
+        {...stylex.props(styles.list)}
+        aria-busy="true"
+        aria-label={t`Loading people`}
+      >
+        {Array.from({ length: SKELETON_ROWS }, (_, index) => (
+          <PubDirectoryRowSkeleton
+            key={index}
+            isFirstInSection={index === 0}
+            isLast={index === SKELETON_ROWS - 1}
+          />
+        ))}
+      </div>
+    );
+  }
+
+  if (people.length === 0) {
+    return (
+      <p {...stylex.props(styles.emptyNote)}>
+        <Trans>
+          No one you follow on Bluesky publishes here yet. As more of them start
+          writing, they'll show up here to follow.
+        </Trans>
+      </p>
+    );
+  }
+
+  return (
+    <>
+      <div {...stylex.props(styles.list)}>
+        {people.map((person, index) => (
+          <FriendPersonRow
+            key={person.did}
+            person={person}
+            isFirstInSection={index === 0}
+            isLast={index === people.length - 1}
+          />
+        ))}
+      </div>
+      {isFetchingNextPage ? (
+        <p {...stylex.props(styles.loadingNote)}>
+          <Trans>Loading…</Trans>
+        </p>
+      ) : null}
+      {hasNextPage ? (
+        <div
+          ref={loadMoreRef}
+          aria-hidden
+          {...stylex.props(styles.loadSentinel)}
+        />
+      ) : null}
+    </>
   );
 }
 

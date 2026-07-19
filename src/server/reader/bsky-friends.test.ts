@@ -2,7 +2,11 @@ import { describe, expect, it } from "vitest";
 
 import type { PublicationCard } from "#/integrations/tanstack-query/api-shapes";
 
-import { friendAuthors, rankFriendPublications } from "./bsky-friends";
+import {
+  friendAuthors,
+  groupFriendPeople,
+  rankFriendPublications,
+} from "./bsky-friends";
 
 function pub(
   did: string,
@@ -112,5 +116,39 @@ describe("friendAuthors", () => {
       "did:a",
       "did:b",
     ]);
+  });
+});
+
+describe("groupFriendPeople", () => {
+  it("collapses to one row per writer, summing readers and listing pubs", () => {
+    const ranked = rankFriendPublications(
+      ["did:a", "did:b"],
+      new Map([
+        [
+          "did:a",
+          [
+            pub("did:a", "a1", 90, {
+              name: "Big Weekly",
+              ownerHandle: "ana.example",
+            }),
+            pub("did:a", "a2", 5, {
+              name: "Side Notes",
+              ownerHandle: "ana.example",
+            }),
+          ],
+        ],
+        ["did:b", [pub("did:b", "b1", 40, { name: "Bo Blog" })]],
+      ]),
+    );
+
+    const people = groupFriendPeople(ranked);
+    // Ranked by best-read publication: did:a (90) before did:b (40).
+    expect(people.map((p) => p.did)).toEqual(["did:a", "did:b"]);
+    expect(people[0]).toMatchObject({
+      handle: "ana.example",
+      subscriberCount: 95,
+      publicationNames: ["Big Weekly", "Side Notes"],
+    });
+    expect(people[1].publicationNames).toEqual(["Bo Blog"]);
   });
 });

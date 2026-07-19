@@ -112,6 +112,48 @@ export const EMPTY_FRIEND_ARTICLES: FriendArticles = {
   degraded: false,
 };
 
+/** A writer you follow on Bluesky, for the People tab of `/friends`. */
+export interface FriendPerson {
+  did: string;
+  handle: string | null;
+  displayName: string | null;
+  avatarUrl: string | null;
+  /** Names of this writer's discover-eligible publications you don't follow. */
+  publicationNames: Array<string>;
+  publicationCount: number;
+  /** Combined readership across those publications, for a subline. */
+  subscriberCount: number;
+  /** Whether the reader already follows this writer on standard.reader. */
+  isFollowing: boolean;
+}
+
+export interface FriendPeople {
+  /** This page of writers, ranked by their best-read publication. */
+  people: Array<FriendPerson>;
+  /** Every distinct writer, not just this page — the headline count. */
+  personCount: number;
+  /** Total publications behind those writers. */
+  publicationCount: number;
+  /** Offset for the next page, or `null` at the end. */
+  nextOffset: number | null;
+  /** See {@link FriendPublishers.degraded}. */
+  degraded: boolean;
+  /** See {@link FriendPublishers.truncated}. */
+  truncated: boolean;
+}
+
+export const EMPTY_FRIEND_PEOPLE: FriendPeople = {
+  people: [],
+  personCount: 0,
+  publicationCount: 0,
+  nextOffset: null,
+  degraded: false,
+  truncated: false,
+};
+
+/** Default page size for the People tab. Matches the Publications tab. */
+export const FRIEND_PEOPLE_PAGE_SIZE = 24;
+
 interface CachedGraph {
   followedDids: Array<string>;
   degraded: boolean;
@@ -307,6 +349,43 @@ export function friendAuthors(
   return authors;
 }
 
+/** Per-writer aggregate over a ranked publication list (no DB-derived fields). */
+export interface FriendPersonAggregate {
+  did: string;
+  handle: string | null;
+  avatarUrl: string | null;
+  publicationNames: Array<string>;
+  subscriberCount: number;
+}
+
+/**
+ * Collapse a ranked list of friend publications into one entry per writer, in
+ * first-appearance order. Since the input is ordered by readership, a writer
+ * ranks by their best-read publication. Pure so it can be unit-tested without a
+ * DB; {@link friendPeople} layers on the profile name and follow state.
+ */
+export function groupFriendPeople(
+  publications: ReadonlyArray<PublicationCard>,
+): Array<FriendPersonAggregate> {
+  const byDid = new Map<string, FriendPersonAggregate>();
+  for (const pub of publications) {
+    let entry = byDid.get(pub.did);
+    if (!entry) {
+      entry = {
+        did: pub.did,
+        handle: pub.ownerHandle,
+        avatarUrl: pub.ownerAvatarUrl,
+        publicationNames: [],
+        subscriberCount: 0,
+      };
+      byDid.set(pub.did, entry);
+    }
+    entry.publicationNames.push(pub.name);
+    entry.subscriberCount += pub.subscriberCount;
+  }
+  return [...byDid.values()];
+}
+
 /**
  * The publications behind both tabs of `/friends`: written by someone the
  * reader follows on Bluesky, not already subscribed to, ranked by readership.
@@ -491,5 +570,105 @@ export async function friendArticles(
     items,
     nextOffset: hasMore ? offset + limit : null,
     degraded,
+  };
+}
+
+/** Display names for the page's writers, keyed by DID (null when unset). */
+async function displayNamesForDids(
+  db: Db,
+  schema: Schema,
+  dids: Array<string>,
+): Promise<Map<string, string | null>> {
+  const out = new Map<string, string | null>();
+  if (dids.length === 0) return out;
+  const pr = schema.profiles;
+  const rows = await db
+    .select({ did: pr.did, displayName: pr.displayName })
+    .from(pr)
+    .where(inArray(pr.did, dids));
+  for (const row of rows) out.set(row.did, row.displayName);
+  return out;
+}
+
+/** Which of `dids` the reader already follows on standard.reader. */
+async function userFollowedDids(
+  db: Db,
+  schema: Schema,
+  readerDid: string,
+  dids: Array<string>,
+): Promise<Set<string>> {
+  if (dids.length === 0) return new Set();
+  const uf = schema.userFollows;
+  const rows = await db
+    .select({ subjectDid: uf.subjectDid })
+    .from(uf)
+    .where(
+      and(
+        eq(uf.followerDid, readerDid),
+        inArray(uf.subjectDid, dids),
+        eq(uf.deleted, false),
+      ),
+    );
+  return new Set(rows.map((row) => row.subjectDid));
+}
+
+/**
+ * The distinct writers behind {@link friendPublishers}: people the reader
+ * follows on Bluesky who publish here, one row each, ranked by their best-read
+ * publication. The follow CTA on this tab follows the *person*
+ * (`app.standard-reader.graph.follow`), not a single publication, so each row
+ * carries the reader's current follow state to seed the button without a
+ * per-row request.
+ */
+export async function friendPeople(
+  db: Db,
+  schema: Schema,
+  readerDid: string,
+  opts: { candidateLimit?: number; limit?: number; offset?: number } = {},
+): Promise<FriendPeople> {
+  const limit = opts.limit ?? FRIEND_PEOPLE_PAGE_SIZE;
+  const offset = opts.offset ?? 0;
+
+  const {
+    publications: ranked,
+    degraded,
+    truncated,
+  } = await resolveFriendPublications(db, schema, readerDid, opts);
+  if (ranked.length === 0) {
+    return { ...EMPTY_FRIEND_PEOPLE, degraded, truncated };
+  }
+
+  const aggregates = groupFriendPeople(ranked);
+  const personCount = aggregates.length;
+  const page = aggregates.slice(offset, offset + limit);
+  const nextOffset = offset + limit < personCount ? offset + limit : null;
+  const pageDids = page.map((entry) => entry.did);
+
+  const [displayNames, followedDids] = await Promise.all([
+    displayNamesForDids(db, schema, pageDids),
+    userFollowedDids(db, schema, readerDid, pageDids),
+  ]);
+
+  const people = page.map(
+    (entry) =>
+      ({
+        did: entry.did,
+        handle: entry.handle,
+        displayName: displayNames.get(entry.did) ?? null,
+        avatarUrl: entry.avatarUrl,
+        publicationNames: entry.publicationNames,
+        publicationCount: entry.publicationNames.length,
+        subscriberCount: entry.subscriberCount,
+        isFollowing: followedDids.has(entry.did),
+      }) satisfies FriendPerson,
+  );
+
+  return {
+    people,
+    personCount,
+    publicationCount: ranked.length,
+    nextOffset,
+    degraded,
+    truncated,
   };
 }

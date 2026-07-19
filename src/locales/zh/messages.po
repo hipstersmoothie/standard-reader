@@ -262,6 +262,10 @@ msgid "Subscribing…"
 msgstr "正在订阅…"
 
 #: src/routes/_layout.friends.tsx
+msgid "People"
+msgstr ""
+
+#: src/routes/_layout.friends.tsx
 msgid "Publications written by the people you follow on Bluesky, minus the ones you already subscribe to."
 msgstr ""
 
@@ -378,6 +382,10 @@ msgstr "读者状态接口还接受可选的 <0>did</0> 查询参数，无需鉴
 #: src/components/user-settings-view.tsx
 msgid "Permanently remove data stored in your account. These actions delete records from your account and cannot be undone."
 msgstr "永久删除存储在你账户中的数据。这些操作会从你的账户中删除记录，且无法撤销。"
+
+#: src/routes/_layout.friends.tsx
+msgid "Loading people"
+msgstr ""
 
 #: src/components/reader/collection-theme-editor.tsx
 msgid "Read the piece →"
@@ -605,6 +613,10 @@ msgstr ""
 #: src/components/feedback/feedback-dialog.tsx
 msgid "Optional: add context, steps to reproduce, or what you'd like to see"
 msgstr "可选：补充背景、复现步骤，或你希望看到的效果"
+
+#: src/routes/_layout.friends.tsx
+msgid "No one you follow on Bluesky publishes here yet. As more of them start writing, they'll show up here to follow."
+msgstr ""
 
 #: src/routes/_layout.l.$did.$rkey.tsx
 msgid "Show read articles"
@@ -2330,7 +2342,9 @@ msgstr "之后"
 msgid "Integrations"
 msgstr "集成"
 
+#. placeholder {0}: person.subscriberCount
 #. placeholder {0}: pub.subscriberCount
+#. placeholder {1}: formatReaders(person.subscriberCount)
 #. placeholder {1}: formatReaders(pub.subscriberCount)
 #: src/components/reader/cards.tsx
 msgid "{0, plural, one {# reader} other {{1} readers}}"
@@ -2544,6 +2558,12 @@ msgstr "我们不会抓取或上传任意页面文本——只会发送用于索
 #: src/components/reading-settings-preview.tsx
 msgid "Couldn’t play the voice sample."
 msgstr "无法播放语音示例。"
+
+#. placeholder {0}: person.publicationCount
+#. placeholder {1}: formatReaders(person.publicationCount)
+#: src/components/reader/cards.tsx
+msgid "{0, plural, one {# publication} other {{1} publications}}"
+msgstr ""
 
 #: src/components/docs/docs-topbar.tsx
 msgid "API"
