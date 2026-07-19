@@ -26,7 +26,11 @@ import {
   trendingPublications,
 } from "#/server/reader/queries";
 import { rotationSeed } from "#/server/reader/rail-rotation";
-import { effectiveFollowUris } from "#/server/reader/saved-lists";
+import { attachRecommendedByToArticles } from "#/server/reader/recommended-by";
+import {
+  effectiveFollowSets,
+  effectiveFollowUris,
+} from "#/server/reader/saved-lists";
 
 import type { Db, PublicationCard, Schema } from "./api-shapes";
 import { dbMiddleware } from "./db-middleware";
@@ -241,13 +245,26 @@ const getFriendArticles = createServerFn({ method: "GET" })
       span.set("signedIn", true);
       span.set("offset", data.offset);
 
-      const result = await friendArticles(db, schema, did, {
-        limit: data.limit,
-        offset: data.offset,
-      });
-      span.set("count", result.items.length);
+      // Fetch the friends' articles and the reader's follow set concurrently —
+      // the follow set only needs `did`, not the article rows.
+      const [result, followSets] = await Promise.all([
+        friendArticles(db, schema, did, {
+          limit: data.limit,
+          offset: data.offset,
+        }),
+        effectiveFollowSets(db, schema, did),
+      ]);
+      // "Recommended by @follow" attribution — the same follows signal as the
+      // feeds; a no-op (no query) when the reader follows no one.
+      const items = await attachRecommendedByToArticles(
+        db,
+        schema,
+        followSets.userDids,
+        result.items,
+      );
+      span.set("count", items.length);
       span.set("degraded", result.degraded);
-      return result;
+      return { ...result, items };
     }),
   );
 

@@ -21,11 +21,15 @@ import {
   authorSubscriptions,
 } from "#/server/reader/queries";
 import type { AuthorProfileStats, AuthorReader } from "#/server/reader/queries";
+import { attachRecommendedByToArticles } from "#/server/reader/recommended-by";
+import { effectiveFollowSets } from "#/server/reader/saved-lists";
 
 import type {
   ArticleCard,
+  Db,
   ProfileSummary,
   PublicationCard,
+  Schema,
 } from "./api-shapes";
 import { dbMiddleware } from "./db-middleware";
 
@@ -194,6 +198,30 @@ function nextOffsetForPage(
   return next < total && fetched === limit ? next : null;
 }
 
+/**
+ * "Recommended by @follow" attribution for the *viewing* reader — the same
+ * signal shown on the feeds. Resolves the viewer's effective follow set and
+ * attaches it to the cards; a no-op (no query) when signed out or following no
+ * one. `excludeDid` drops one recommender: on a profile's Likes tab the cards
+ * are already framed as that profile's recommendations, so surfacing
+ * "Recommended by <that profile>" would be redundant — pass the profile owner
+ * to keep only *other* follows.
+ */
+async function attachViewerRecommendedBy(
+  db: Db,
+  schema: Schema,
+  viewerDid: string | null | undefined,
+  articles: Array<ArticleCard>,
+  excludeDid?: string | null,
+): Promise<Array<ArticleCard>> {
+  if (!viewerDid || articles.length === 0) return articles;
+  const { userDids } = await effectiveFollowSets(db, schema, viewerDid);
+  const followedUserDids = excludeDid
+    ? userDids.filter((recommender) => recommender !== excludeDid)
+    : userDids;
+  return attachRecommendedByToArticles(db, schema, followedUserDids, articles);
+}
+
 const getAuthorProfile = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
   .validator(authorInput)
@@ -278,6 +306,21 @@ const getAuthorProfile = createServerFn({ method: "GET" })
         span.set("recommendationCount", recommendationsPage.items.length);
         span.set("documentCount", documentsPage.items.length);
 
+        // "Recommended by @follow" for the viewer. Writing = this author's own
+        // posts (self-recommends are already excluded by the helper); Likes =
+        // posts this author recommended, so drop the author from the attribution
+        // to avoid the redundant "Recommended by <this profile>".
+        const [documentsWithRecs, recommendationsWithRecs] = await Promise.all([
+          attachViewerRecommendedBy(db, schema, viewerDid, documentsPage.items),
+          attachViewerRecommendedBy(
+            db,
+            schema,
+            viewerDid,
+            recommendationsPage.items,
+            did,
+          ),
+        ]);
+
         return {
           profile,
           stats,
@@ -300,14 +343,14 @@ const getAuthorProfile = createServerFn({ method: "GET" })
             readersPage.items.length,
             readersPage.total,
           ),
-          recommendations: recommendationsPage.items,
+          recommendations: recommendationsWithRecs,
           recommendationsNextOffset: nextOffsetForPage(
             0,
             data.activityLimit,
             recommendationsPage.items.length,
             recommendationsPage.total,
           ),
-          documents: documentsPage.items,
+          documents: documentsWithRecs,
           documentsNextOffset: nextOffsetForPage(
             0,
             data.activityLimit,
@@ -484,11 +527,26 @@ const getAuthorRecommendations = createServerFn({ method: "GET" })
         span.set("did", did);
         span.set("offset", data.offset);
 
-        const page = await authorRecommendations(db, schema, { ...data, did });
+        // Resolve the page and the viewer identity together — the follow-set
+        // lookup only needs the viewer's DID, not the page rows.
+        const [page, viewerDid] = await Promise.all([
+          authorRecommendations(db, schema, { ...data, did }),
+          getReaderDidForRequest(getRequest()),
+        ]);
         span.set("count", page.items.length);
 
+        // Likes tab: exclude the profile owner from the attribution (see
+        // {@link attachViewerRecommendedBy}).
+        const items = await attachViewerRecommendedBy(
+          db,
+          schema,
+          viewerDid,
+          page.items,
+          did,
+        );
+
         return {
-          items: page.items,
+          items,
           nextOffset: nextOffsetForPage(
             data.offset,
             data.limit,
@@ -512,11 +570,25 @@ const getAuthorDocuments = createServerFn({ method: "GET" })
         span.set("did", did);
         span.set("offset", data.offset);
 
-        const page = await authorDocuments(db, schema, { ...data, did });
+        // Resolve the page and the viewer identity together — the follow-set
+        // lookup only needs the viewer's DID, not the page rows.
+        const [page, viewerDid] = await Promise.all([
+          authorDocuments(db, schema, { ...data, did }),
+          getReaderDidForRequest(getRequest()),
+        ]);
         span.set("count", page.items.length);
 
+        // Writing tab: this author's own posts — the helper already drops
+        // self-recommends, so no owner exclusion needed here.
+        const items = await attachViewerRecommendedBy(
+          db,
+          schema,
+          viewerDid,
+          page.items,
+        );
+
         return {
-          items: page.items,
+          items,
           nextOffset: nextOffsetForPage(
             data.offset,
             data.limit,
