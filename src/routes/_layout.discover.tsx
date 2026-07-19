@@ -30,7 +30,6 @@ import { user } from "#/integrations/tanstack-query/api-user.functions";
 import { getPublicUrlClient } from "#/lib/public-url";
 import { pageSocialMeta } from "#/lib/site-metadata";
 import { useFormatters } from "#/lib/use-formatters";
-import { useHasMounted } from "#/lib/use-has-mounted";
 
 import {
   PubCardSkeleton,
@@ -75,6 +74,17 @@ const RAIL_LIMIT = 10;
 const TRENDING_LIMIT_OPTIONS = [5, 10, 20, 50, 100] as const;
 const DEFAULT_TRENDING_LIMIT = 5;
 const SOCIAL_PROOF_MAX = 60;
+/**
+ * How long the loader will wait for the "people you follow" lookup before
+ * giving up and letting it stream in.
+ *
+ * The wait doubles as the warmth test: the reader's Bluesky graph is cached
+ * server-side for ten minutes, and a warm lookup comes back in ~400ms while a
+ * cold sweep of the whole author set can't. So a warm hit lands inside the
+ * budget and the prompt is in the first paint; a cold one loses the race and
+ * costs the page nothing.
+ */
+const FRIENDS_PROMPT_BUDGET_MS = 700;
 
 const discoverSearchSchema = z.object({
   topic: z.string().optional(),
@@ -131,7 +141,15 @@ export const Route = createFileRoute("/_layout/discover")({
     void context.queryClient.prefetchQuery(extrasOptions);
     void context.queryClient.prefetchQuery(topicsOptions);
     void context.queryClient.prefetchQuery(directoryOptions);
-    void context.queryClient.prefetchQuery(friendsOptions);
+
+    // Block on the friends lookup only if it can be answered from the warm
+    // server-side cache. `prefetchQuery` never rejects, so the race is safe;
+    // whichever side wins, the query is in flight and the prompt renders as
+    // soon as it resolves.
+    await Promise.race([
+      context.queryClient.prefetchQuery(friendsOptions),
+      new Promise((resolve) => setTimeout(resolve, FRIENDS_PROMPT_BUDGET_MS)),
+    ]);
   },
   head: () => ({
     meta: pageSocialMeta("discover", getPublicUrlClient()),
@@ -452,10 +470,6 @@ const FRIENDS_PROMPT_PAGE = 4;
  */
 function DiscoverFriendsPrompt() {
   const { t } = useLingui();
-  // The friends lookup is prefetched without blocking the loader, so SSR can
-  // finish it mid-render while the client hydrates without it. Rendering
-  // nothing until mount keeps both sides in agreement.
-  const mounted = useHasMounted();
   const { data } = useQuery(
     discoverApi.getFriendPublishersQueryOptions({
       limit: FRIENDS_PROMPT_PAGE,
@@ -463,7 +477,7 @@ function DiscoverFriendsPrompt() {
   );
   const totalPeople = data?.totalPeople ?? 0;
 
-  if (!mounted || totalPeople === 0) return null;
+  if (totalPeople === 0) return null;
 
   const shown = data?.previewAuthors.slice(0, FRIENDS_PROMPT_AVATARS) ?? [];
 
@@ -580,6 +594,10 @@ function DiscoverTrendingSection() {
     <div {...stylex.props(styles.section)}>
       <SectionHead
         title={trendingTitle}
+        // The limit chooser is a compact control, not a full-width mobile
+        // action — stacking it under the heading wasted a row and read as a
+        // second, unrelated element. Keep it on the heading line at every width.
+        stackOnMobile={false}
         action={
           <Select
             aria-label={t`Publications shown`}

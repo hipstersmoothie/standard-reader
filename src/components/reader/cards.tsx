@@ -149,6 +149,10 @@ const styles = stylex.create({
   ownerHandleLink: {
     color: uiColor.text1,
   },
+  pubDirHandle: {
+    minWidth: 0,
+    overflowWrap: "anywhere",
+  },
   bylineWhen: {
     color: uiColor.text1,
     fontFamily: fontFamily.sans,
@@ -682,18 +686,19 @@ const styles = stylex.create({
       default: "1",
       "@media (min-width: 40rem)": "auto",
     },
-    alignItems: {
-      default: "flex-start",
-      "@media (min-width: 40rem)": "baseline",
-    },
-    columnGap: spacing["2.5"],
+    // Name and `@handle` sit on one line at every width. They used to stack
+    // below 40rem, which cost a whole row per result and read as two separate
+    // facts rather than one byline. `wrap` still lets the handle drop to its
+    // own line when a long name genuinely leaves it no room.
+    alignItems: "baseline",
+    columnGap: spacing["2"],
     display: "flex",
-    flexDirection: {
-      default: "column",
-      "@media (min-width: 40rem)": "row",
-    },
+    flexDirection: "row",
+    // Wrap rather than truncate: the handle drops to its own line only when a
+    // long name genuinely leaves no room. Truncating either one costs the
+    // reader real information on a directory of unfamiliar publications.
     flexWrap: "wrap",
-    rowGap: spacing["1"],
+    rowGap: spacing["0.5"],
     minWidth: 0,
   },
   pubDirTopRanked: {
@@ -708,7 +713,12 @@ const styles = stylex.create({
     unicodeBidi: "isolate",
     color: uiColor.text2,
     fontFamily: fontFamily.serif,
-    fontSize: fontSize.xl,
+    // A step down on phones: at `xl` the name alone eats the row, pushing the
+    // handle onto a second line for all but the shortest names.
+    fontSize: {
+      default: fontSize.lg,
+      "@media (min-width: 40rem)": fontSize.xl,
+    },
     fontWeight: fontWeight.semibold,
     letterSpacing: tracking.tight,
     lineHeight: lineHeight.sm,
@@ -980,11 +990,20 @@ export function FollowButton({
   );
 }
 
-function OwnerHandleLink({ did, handle }: { did: string; handle: string }) {
+function OwnerHandleLink({
+  did,
+  handle,
+  style,
+}: {
+  did: string;
+  handle: string;
+  /** Extra styles for the link box (e.g. the directory row's shrink rules). */
+  style?: stylex.StyleXStyles;
+}) {
   return (
     <AuthorProfileLink
       authorRef={did}
-      linkStyle={[styles.ownerHandleLink, styles.cardInteractive]}
+      linkStyle={[styles.ownerHandleLink, styles.cardInteractive, style]}
     >
       <Handle>@{handle}</Handle>
     </AuthorProfileLink>
@@ -2302,7 +2321,11 @@ export function PubDirectoryRow({
             </span>
           )}
           {pub.ownerHandle ? (
-            <OwnerHandleLink did={pub.did} handle={pub.ownerHandle} />
+            <OwnerHandleLink
+              did={pub.did}
+              handle={pub.ownerHandle}
+              style={styles.pubDirHandle}
+            />
           ) : null}
           {isHidden ? (
             <span
