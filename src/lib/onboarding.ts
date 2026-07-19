@@ -27,3 +27,9 @@ export function dbValueToOnboardingCompleted(
 ): boolean {
   return value === true;
 }
+
+/**
+ * How many of the people you follow the onboarding step shows. A first-run step
+ * is a decision, not a directory — the rest are one tap away on `/friends`.
+ */
+export const ONBOARDING_FRIENDS_LIMIT = 6;

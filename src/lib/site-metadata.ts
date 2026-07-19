@@ -43,6 +43,12 @@ export const PAGE_OG_CARDS = {
     tagline:
       "Articles you've saved for later — in your repo, synced across devices.",
   },
+  friends: {
+    path: "/friends",
+    title: "People you follow",
+    tagline:
+      "Publications written by the people you follow on Bluesky, all in one place.",
+  },
   recommended: {
     path: "/recommended",
     title: "Recommended articles",

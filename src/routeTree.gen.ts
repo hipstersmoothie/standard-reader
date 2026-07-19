@@ -17,6 +17,7 @@ import { Route as LayoutIndexRouteImport } from './routes/_layout.index'
 import { Route as LayoutAboutRouteImport } from './routes/_layout.about'
 import { Route as LayoutCollectionsRouteImport } from './routes/_layout.collections'
 import { Route as LayoutDiscoverRouteImport } from './routes/_layout.discover'
+import { Route as LayoutFriendsRouteImport } from './routes/_layout.friends'
 import { Route as LayoutHistoryRouteImport } from './routes/_layout.history'
 import { Route as LayoutLatestRouteImport } from './routes/_layout.latest'
 import { Route as LayoutLikesRouteImport } from './routes/_layout.likes'
@@ -121,6 +122,11 @@ const LayoutCollectionsRoute = LayoutCollectionsRouteImport.update({
 const LayoutDiscoverRoute = LayoutDiscoverRouteImport.update({
   id: '/discover',
   path: '/discover',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutFriendsRoute = LayoutFriendsRouteImport.update({
+  id: '/friends',
+  path: '/friends',
   getParentRoute: () => LayoutRoute,
 } as any)
 const LayoutHistoryRoute = LayoutHistoryRouteImport.update({
@@ -473,6 +479,7 @@ export interface FileRoutesByFullPath {
   '/about': typeof LayoutAboutRoute
   '/collections': typeof LayoutCollectionsRouteWithChildren
   '/discover': typeof LayoutDiscoverRoute
+  '/friends': typeof LayoutFriendsRoute
   '/history': typeof LayoutHistoryRoute
   '/latest': typeof LayoutLatestRoute
   '/likes': typeof LayoutLikesRoute
@@ -547,6 +554,7 @@ export interface FileRoutesByTo {
   '/welcome': typeof WelcomeRoute
   '/about': typeof LayoutAboutRoute
   '/discover': typeof LayoutDiscoverRoute
+  '/friends': typeof LayoutFriendsRoute
   '/history': typeof LayoutHistoryRoute
   '/latest': typeof LayoutLatestRoute
   '/likes': typeof LayoutLikesRoute
@@ -624,6 +632,7 @@ export interface FileRoutesById {
   '/_layout/about': typeof LayoutAboutRoute
   '/_layout/collections': typeof LayoutCollectionsRouteWithChildren
   '/_layout/discover': typeof LayoutDiscoverRoute
+  '/_layout/friends': typeof LayoutFriendsRoute
   '/_layout/history': typeof LayoutHistoryRoute
   '/_layout/latest': typeof LayoutLatestRoute
   '/_layout/likes': typeof LayoutLikesRoute
@@ -702,6 +711,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/collections'
     | '/discover'
+    | '/friends'
     | '/history'
     | '/latest'
     | '/likes'
@@ -776,6 +786,7 @@ export interface FileRouteTypes {
     | '/welcome'
     | '/about'
     | '/discover'
+    | '/friends'
     | '/history'
     | '/latest'
     | '/likes'
@@ -852,6 +863,7 @@ export interface FileRouteTypes {
     | '/_layout/about'
     | '/_layout/collections'
     | '/_layout/discover'
+    | '/_layout/friends'
     | '/_layout/history'
     | '/_layout/latest'
     | '/_layout/likes'
@@ -1028,6 +1040,13 @@ declare module '@tanstack/react-router' {
       path: '/discover'
       fullPath: '/discover'
       preLoaderRoute: typeof LayoutDiscoverRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/friends': {
+      id: '/_layout/friends'
+      path: '/friends'
+      fullPath: '/friends'
+      preLoaderRoute: typeof LayoutFriendsRouteImport
       parentRoute: typeof LayoutRoute
     }
     '/_layout/history': {
@@ -1548,6 +1567,7 @@ interface LayoutRouteChildren {
   LayoutAboutRoute: typeof LayoutAboutRoute
   LayoutCollectionsRoute: typeof LayoutCollectionsRouteWithChildren
   LayoutDiscoverRoute: typeof LayoutDiscoverRoute
+  LayoutFriendsRoute: typeof LayoutFriendsRoute
   LayoutHistoryRoute: typeof LayoutHistoryRoute
   LayoutLatestRoute: typeof LayoutLatestRoute
   LayoutLikesRoute: typeof LayoutLikesRoute
@@ -1572,6 +1592,7 @@ const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutAboutRoute: LayoutAboutRoute,
   LayoutCollectionsRoute: LayoutCollectionsRouteWithChildren,
   LayoutDiscoverRoute: LayoutDiscoverRoute,
+  LayoutFriendsRoute: LayoutFriendsRoute,
   LayoutHistoryRoute: LayoutHistoryRoute,
   LayoutLatestRoute: LayoutLatestRoute,
   LayoutLikesRoute: LayoutLikesRoute,

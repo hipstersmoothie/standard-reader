@@ -5,6 +5,8 @@
 const PUBLIC_APPVIEW = "https://public.api.bsky.app";
 const FETCH_TIMEOUT_MS = 8000;
 const RELATIONSHIPS_BATCH = 30;
+/** In-flight `getRelationships` requests. Bounded to stay a polite client. */
+const RELATIONSHIPS_CONCURRENCY = 8;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -32,6 +34,15 @@ function parseRelationshipDid(value: unknown): {
   };
 }
 
+export interface FollowedDidsResult {
+  /** The subset of the candidates that the actor follows. */
+  followed: Set<string>;
+  /** Batches the AppView never answered (timeout, network, non-2xx). */
+  failedBatches: number;
+  /** Batches attempted. `failedBatches === batches` means we learned nothing. */
+  batches: number;
+}
+
 /**
  * Return the subset of `candidateDids` that `actorDid` follows on Bluesky.
  * Uses `app.bsky.graph.getRelationships` (30 DIDs per request).
@@ -40,15 +51,47 @@ export async function filterDidsFollowedByActor(
   actorDid: string,
   candidateDids: ReadonlyArray<string>,
 ): Promise<Set<string>> {
+  const { followed } = await followedDidsForActor(actorDid, candidateDids);
+  return followed;
+}
+
+/**
+ * {@link filterDidsFollowedByActor} with batch-failure counts retained.
+ *
+ * Callers that render "we found nobody" need to tell a genuine empty result
+ * apart from an unreachable AppView — an empty `followed` with
+ * `failedBatches > 0` is "couldn't check", not "no results".
+ */
+export async function followedDidsForActor(
+  actorDid: string,
+  candidateDids: ReadonlyArray<string>,
+): Promise<FollowedDidsResult> {
   const unique = [
     ...new Set(
       candidateDids.filter((did) => did.startsWith("did:") && did !== actorDid),
     ),
   ];
-  if (unique.length === 0) return new Set();
+  if (unique.length === 0) {
+    return { followed: new Set(), failedBatches: 0, batches: 0 };
+  }
 
   const followed = new Set<string>();
-  for (const batch of chunk(unique, RELATIONSHIPS_BATCH)) {
+  const allBatches = chunk(unique, RELATIONSHIPS_BATCH);
+  let failedBatches = 0;
+
+  // Batches run concurrently: a full candidate sweep is dozens of requests, and
+  // serially they add up to tens of seconds. The cap keeps us a polite client.
+  const queue = [...allBatches];
+  const workers = Array.from(
+    { length: Math.min(RELATIONSHIPS_CONCURRENCY, queue.length) },
+    async () => {
+      for (let batch = queue.shift(); batch; batch = queue.shift()) {
+        await runBatch(batch);
+      }
+    },
+  );
+
+  async function runBatch(batch: Array<string>): Promise<void> {
     try {
       const url = new URL(
         "/xrpc/app.bsky.graph.getRelationships",
@@ -63,11 +106,15 @@ export async function filterDidsFollowedByActor(
         signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
         headers: { Accept: "application/json" },
       });
-      if (!response.ok) continue;
+      if (!response.ok) {
+        failedBatches += 1;
+        return;
+      }
 
       const payload: unknown = await response.json();
       if (!isRecord(payload) || !Array.isArray(payload.relationships)) {
-        continue;
+        failedBatches += 1;
+        return;
       }
 
       for (const relationship of payload.relationships) {
@@ -78,8 +125,11 @@ export async function filterDidsFollowedByActor(
       }
     } catch {
       // Best-effort — omit this batch on timeout/network failure.
+      failedBatches += 1;
     }
   }
 
-  return followed;
+  await Promise.all(workers);
+
+  return { followed, failedBatches, batches: allBatches.length };
 }

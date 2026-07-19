@@ -90,6 +90,7 @@ msgstr "Add an article"
 #: src/components/reader/app-shell.tsx
 #: src/components/reader/article-below-fold.tsx
 #: src/routes/_layout.discover.tsx
+#: src/routes/_layout.friends.tsx
 msgid "Discover"
 msgstr "Discover"
 
@@ -593,6 +594,10 @@ msgstr "Reorder lists"
 msgid "Publication lists"
 msgstr "Publication lists"
 
+#: src/components/onboarding/welcome-wizard.tsx
+msgid "These accounts you follow on Bluesky publish on standard.site. Subscribing puts their writing on your Home feed."
+msgstr "These accounts you follow on Bluesky publish on standard.site. Subscribing puts their writing on your Home feed."
+
 #: src/components/feedback/feedback-dialog.tsx
 msgid "Optional: add context, steps to reproduce, or what you'd like to see"
 msgstr "Optional: add context, steps to reproduce, or what you'd like to see"
@@ -662,6 +667,10 @@ msgstr "{userCount, plural, one {user} other {users}}"
 #: src/components/reader/privacy-view.tsx
 msgid "<0>Reading activity.</0> When reading history is enabled, articles you open are recorded as public AT Protocol records in <1>your</1> repository — not as private app-only data. You can turn this off in Settings; existing records remain in your repo until you delete them from the Personal data section."
 msgstr "<0>Reading activity.</0> When reading history is enabled, articles you open are recorded as public AT Protocol records in <1>your</1> repository — not as private app-only data. You can turn this off in Settings; existing records remain in your repo until you delete them from the Personal data section."
+
+#: src/routes/_layout.friends.tsx
+msgid "Browse the directory"
+msgstr "Browse the directory"
 
 #: src/components/reader/article-view.tsx
 msgid "Did you enjoy this article?"
@@ -1300,6 +1309,10 @@ msgstr "View on PDSLS"
 msgid "Subscribe to a few publications to unlock recommendations."
 msgstr "Subscribe to a few publications to unlock recommendations."
 
+#: src/routes/_layout.discover.tsx
+msgid "See publications from the people you follow"
+msgstr "See publications from the people you follow"
+
 #: src/routes/_layout.search.tsx
 msgid "{shown}+ matches"
 msgstr "{shown}+ matches"
@@ -1353,6 +1366,11 @@ msgstr "Log out"
 msgid "The top articles from publications you subscribe to."
 msgstr "The top articles from publications you subscribe to."
 
+#. placeholder {0}: data?.publicationCount ?? 0
+#: src/routes/_layout.discover.tsx
+msgid "{0, plural, one {# publication from your Bluesky follows} other {# publications from your Bluesky follows}}"
+msgstr "{0, plural, one {# publication from your Bluesky follows} other {# publications from your Bluesky follows}}"
+
 #: src/routes/review.thanks.tsx
 msgid "Return to the app"
 msgstr "Return to the app"
@@ -1400,6 +1418,10 @@ msgstr "We couldn't find that author."
 #: src/components/onboarding/welcome-wizard.tsx
 msgid "A few preferences"
 msgstr "A few preferences"
+
+#: src/routes/_layout.friends.tsx
+msgid "We couldn't reach Bluesky to look up who you follow. Reload in a moment, or browse the directory in the meantime."
+msgstr "We couldn't reach Bluesky to look up who you follow. Reload in a moment, or browse the directory in the meantime."
 
 #: src/components/user-settings-view.tsx
 msgid "All articles you have marked as read."
@@ -1453,6 +1475,10 @@ msgstr "Open the directory"
 #: src/routes/_layout.feedback.index.tsx
 msgid "Answered"
 msgstr "Answered"
+
+#: src/routes/_layout.friends.tsx
+msgid "Couldn't check right now"
+msgstr "Couldn't check right now"
 
 #: src/components/reader/collection-builder.tsx
 msgid "Reorder {itemTitle}"
@@ -1638,6 +1664,10 @@ msgstr "Last updated June 13, 2026"
 msgid "{shown, plural, one {# match} other {# matches}}"
 msgstr "{shown, plural, one {# match} other {# matches}}"
 
+#: src/components/onboarding/welcome-wizard.tsx
+msgid "People you follow write here"
+msgstr "People you follow write here"
+
 #: src/magazine/flow.tsx
 msgid "Original"
 msgstr "Original"
@@ -1658,6 +1688,10 @@ msgstr "Create"
 #: src/routes/_layout.index.tsx
 msgid "See all trending"
 msgstr "See all trending"
+
+#: src/components/onboarding/step-friends.tsx
+msgid "All selected"
+msgstr "All selected"
 
 #: src/components/reader/collection-theme-editor.tsx
 msgid "Fonts"
@@ -1761,6 +1795,10 @@ msgstr "Worth subscribing to"
 msgid "Subscription list actions"
 msgstr "Subscription list actions"
 
+#: src/components/reader/friend-publishers.tsx
+msgid "{people, plural, one {# person you follow} other {# people you follow}}"
+msgstr "{people, plural, one {# person you follow} other {# people you follow}}"
+
 #: src/components/reader/reorder-lists-modal.tsx
 msgid "You don't have any lists to reorder yet."
 msgstr "You don't have any lists to reorder yet."
@@ -1788,6 +1826,10 @@ msgstr "On the network"
 #: src/components/reader/collection-builder.tsx
 msgid "Matching articles"
 msgstr "Matching articles"
+
+#: src/routes/_layout.friends.tsx
+msgid "Writers"
+msgstr "Writers"
 
 #: src/components/reader/about-view.tsx
 msgid "A quiet place to read"
@@ -1838,6 +1880,10 @@ msgstr "Choose light, dark, or match your system setting."
 #: src/components/onboarding/welcome-wizard.tsx
 msgid "Finish"
 msgstr "Finish"
+
+#: src/routes/_layout.friends.tsx
+msgid "We checked the people you follow on Bluesky against every publication on the network and didn't find a match. As more of them start publishing, they'll show up here."
+msgstr "We checked the people you follow on Bluesky against every publication on the network and didn't find a match. As more of them start publishing, they'll show up here."
 
 #: src/routes/_layout.index.tsx
 msgid "The latest long-form writing from across the network."
@@ -2342,6 +2388,10 @@ msgstr "No people in this list — add some from the edit dialog."
 msgid "Description"
 msgstr "Description"
 
+#: src/routes/_layout.discover.tsx
+msgid "{totalPeople, plural, one {# person you follow writes here} other {# people you follow write here}}"
+msgstr "{totalPeople, plural, one {# person you follow writes here} other {# people you follow write here}}"
+
 #: src/components/reader/page-reader-bar.tsx
 msgid "Something went wrong"
 msgstr "Something went wrong"
@@ -2377,6 +2427,10 @@ msgstr "Close magazine"
 #: src/components/reader/collection-builder.tsx
 msgid "Introduce the collection… (markdown supported)"
 msgstr "Introduce the collection… (markdown supported)"
+
+#: src/components/reader/friend-publishers.tsx
+msgid "Bluesky didn't answer in time, so this list may be incomplete. Reload to try again."
+msgstr "Bluesky didn't answer in time, so this list may be incomplete. Reload to try again."
 
 #: src/components/reader/article-below-fold.tsx
 msgid "Cited in"
@@ -2595,6 +2649,7 @@ msgstr "Sign in with Bluesky to subscribe. We only ask permission to add this fo
 
 #: src/components/labeler-detail-view.tsx
 #: src/components/reader/about-view.tsx
+#: src/routes/_layout.friends.tsx
 #: src/routes/_layout.history.tsx
 #: src/routes/_layout.l.$did.$rkey.tsx
 #: src/routes/_layout.recommended.tsx
@@ -2765,6 +2820,10 @@ msgstr "Standard Reader meets you where you read"
 msgid "Preview"
 msgstr "Preview"
 
+#: src/routes/_layout.friends.tsx
+msgid "No one you follow publishes here yet"
+msgstr "No one you follow publishes here yet"
+
 #: src/routes/_layout.index.tsx
 msgid "Standard Reader knows about every publication on the network. Find a few worth your mornings."
 msgstr "Standard Reader knows about every publication on the network. Find a few worth your mornings."
@@ -2781,6 +2840,10 @@ msgstr "Privacy"
 #: src/components/reader/privacy-view.tsx
 msgid "Last updated June 11, 2026"
 msgstr "Last updated June 11, 2026"
+
+#: src/routes/_layout.friends.tsx
+msgid "People you follow"
+msgstr "People you follow"
 
 #: src/components/reader/collections-upgrade-gate.tsx
 msgid "Standard Reader needs write access to your site.standard publications and documents, plus your collection records, to author Collections. You'll be asked to approve this on your PDS login."
@@ -2897,6 +2960,10 @@ msgstr "Whether tapping an article opens it inline in Standard Reader, or takes 
 msgid "Example record"
 msgstr "Example record"
 
+#: src/components/onboarding/step-friends.tsx
+msgid "{remaining, plural, one {# more person you follow writes here — find them under Discover once you're set up.} other {# more people you follow write here — find them under Discover once you're set up.}}"
+msgstr "{remaining, plural, one {# more person you follow writes here — find them under Discover once you're set up.} other {# more people you follow write here — find them under Discover once you're set up.}}"
+
 #: src/components/reader/collection-builder.tsx
 msgid "No articles yet — use “Add an article” to get started."
 msgstr "No articles yet — use “Add an article” to get started."
@@ -2933,6 +3000,10 @@ msgstr "Keep reading history"
 #: src/components/docs/publishing-docs-page.tsx
 msgid "<0>Other markdown shapes (avoid).</0> <1>site.standard.content.markdown</1> and a scattering of third-party <2>#markdown</2> shapes — e.g. <3>site.standard.document#markdown</3> — carry a raw markdown string under a format-specific key. Don't add another one — publish Markpub instead."
 msgstr "<0>Other markdown shapes (avoid).</0> <1>site.standard.content.markdown</1> and a scattering of third-party <2>#markdown</2> shapes — e.g. <3>site.standard.document#markdown</3> — carry a raw markdown string under a format-specific key. Don't add another one — publish Markpub instead."
+
+#: src/routes/_layout.discover.tsx
+msgid "Find your friends"
+msgstr "Find your friends"
 
 #: src/components/reader/list-edit-modal.tsx
 msgid "Save list"
@@ -3202,6 +3273,10 @@ msgstr "Listen aloud voice"
 msgid "Tag"
 msgstr "Tag"
 
+#: src/routes/_layout.friends.tsx
+msgid "Publications written by the people you follow on Bluesky. Follow someone here and every publication they write lands on your Home feed."
+msgstr "Publications written by the people you follow on Bluesky. Follow someone here and every publication they write lands on your Home feed."
+
 #: src/routes/_layout.index.tsx
 msgid "Wander the directory"
 msgstr "Wander the directory"
@@ -3308,6 +3383,10 @@ msgstr "Editorial"
 #: src/components/docs/api-docs-request-panel.tsx
 msgid "Click Run example to fetch a live response with your session."
 msgstr "Click Run example to fetch a live response with your session."
+
+#: src/components/reader/friend-publishers.tsx
+msgid "{publicationCount, plural, one {# publication} other {# publications}}"
+msgstr "{publicationCount, plural, one {# publication} other {# publications}}"
 
 #. placeholder {0}: selected.size
 #: src/components/onboarding/welcome-wizard.tsx
@@ -3469,6 +3548,10 @@ msgstr "This publication opted out of discovery, so it's hidden everywhere excep
 #: src/routes/_layout.feedback.index.tsx
 msgid "{count, plural, one {# upvote} other {# upvotes}} — sign in to upvote"
 msgstr "{count, plural, one {# upvote} other {# upvotes}} — sign in to upvote"
+
+#: src/components/onboarding/step-friends.tsx
+msgid "Select all"
+msgstr "Select all"
 
 #: src/components/reader/extension-privacy-view.tsx
 msgid "For how {SITE_NAME} works overall, see <0>About</0>. For site-wide privacy, see the <1>site privacy policy</1>. For questions about this deployment, contact the operator of {siteHost}."
@@ -3778,6 +3861,10 @@ msgstr "Powered by <0>Standard Reader</0>"
 #: src/components/reader/about-view.tsx
 msgid "Save from anywhere you browse"
 msgstr "Save from anywhere you browse"
+
+#: src/components/reader/friend-publishers.tsx
+msgid "Loading"
+msgstr "Loading"
 
 #: src/routes/_layout.u.$did.tsx
 msgid "Not on Standard Reader yet"

@@ -2,7 +2,7 @@
 
 import type { MessageDescriptor } from "@lingui/core";
 import { msg } from "@lingui/core/macro";
-import { Trans, useLingui } from "@lingui/react/macro";
+import { Plural, Trans, useLingui } from "@lingui/react/macro";
 import * as stylex from "@stylexjs/stylex";
 import {
   keepPreviousData,
@@ -10,7 +10,7 @@ import {
   useSuspenseQuery,
 } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { LayoutGrid, List } from "lucide-react";
+import { LayoutGrid, List, Users } from "lucide-react";
 import {
   Suspense,
   useCallback,
@@ -21,6 +21,7 @@ import {
 } from "react";
 import { z } from "zod";
 
+import { ButtonLink } from "#/components/router-links";
 import {
   DISCOVER_TOPICS_LIMIT,
   discoverApi,
@@ -36,6 +37,7 @@ import {
 } from "../components/reader/cards";
 import { DiscoverTopicFilters } from "../components/reader/discover-topic-filters";
 import { sortDiscoverTopics } from "../components/reader/discover-topics";
+import { friendDisplayName, initials } from "../components/reader/format";
 import {
   Masthead,
   ReaderContent,
@@ -43,6 +45,7 @@ import {
   SectionHead,
 } from "../components/reader/primitives";
 import { PubGridList } from "../components/reader/pub-grid-list";
+import { Avatar } from "../design-system/avatar";
 import { Flex } from "../design-system/flex";
 import { Grid } from "../design-system/grid";
 import { SearchField } from "../design-system/search-field";
@@ -53,6 +56,7 @@ import {
 import { Select, SelectItem } from "../design-system/select";
 import { Skeleton } from "../design-system/skeleton";
 import { uiColor } from "../design-system/theme/color.stylex";
+import { radius } from "../design-system/theme/radius.stylex";
 import { spacing } from "../design-system/theme/spacing.stylex";
 import {
   fontFamily,
@@ -99,6 +103,10 @@ export const Route = createFileRoute("/_layout/discover")({
       limit: DIRECTORY_PAGE_SIZE,
       offset: 0,
     });
+    // Shared with /friends, so following the prompt is a cache hit.
+    const friendsOptions = discoverApi.getFriendPublishersQueryOptions({
+      limit: FRIENDS_PROMPT_PAGE,
+    });
 
     if (preload) {
       void context.queryClient.prefetchQuery(knownCountOptions);
@@ -106,6 +114,7 @@ export const Route = createFileRoute("/_layout/discover")({
       void context.queryClient.prefetchQuery(trendingOptions);
       void context.queryClient.prefetchQuery(topicsOptions);
       void context.queryClient.prefetchQuery(directoryOptions);
+      void context.queryClient.prefetchQuery(friendsOptions);
       return;
     }
 
@@ -121,6 +130,7 @@ export const Route = createFileRoute("/_layout/discover")({
     void context.queryClient.prefetchQuery(extrasOptions);
     void context.queryClient.prefetchQuery(topicsOptions);
     void context.queryClient.prefetchQuery(directoryOptions);
+    void context.queryClient.prefetchQuery(friendsOptions);
   },
   head: () => ({
     meta: pageSocialMeta("discover", getPublicUrlClient()),
@@ -131,6 +141,65 @@ export const Route = createFileRoute("/_layout/discover")({
 const styles = stylex.create({
   section: {
     marginBottom: spacing["12"],
+  },
+  friendsPrompt: {
+    alignItems: {
+      default: "stretch",
+      "@media (min-width: 40rem)": "center",
+    },
+    borderColor: uiColor.border1,
+    borderRadius: radius.md,
+    borderStyle: "solid",
+    borderWidth: 1,
+    columnGap: spacing["5"],
+    display: "flex",
+    flexDirection: {
+      default: "column",
+      "@media (min-width: 40rem)": "row",
+    },
+    justifyContent: "space-between",
+    marginBottom: spacing["12"],
+    paddingBottom: spacing["4"],
+    paddingInlineEnd: spacing["5"],
+    paddingInlineStart: spacing["5"],
+    paddingTop: spacing["4"],
+    rowGap: spacing["4"],
+  },
+  friendsPromptMain: {
+    alignItems: "center",
+    columnGap: spacing["4"],
+    display: "flex",
+    minWidth: 0,
+  },
+  friendsAvatars: {
+    display: "flex",
+    flexShrink: 0,
+    // Overlap the stack, first avatar on top, so it reads as a group of people
+    // rather than a row of unrelated icons.
+    paddingInlineStart: spacing["2"],
+  },
+  friendsAvatar: {
+    borderColor: uiColor.bg,
+    borderStyle: "solid",
+    borderWidth: 2,
+    marginInlineStart: `calc(-1 * ${spacing["2"]})`,
+  },
+  friendsPromptText: {
+    color: uiColor.text2,
+    fontFamily: fontFamily.sans,
+    fontSize: fontSize.base,
+    lineHeight: lineHeight.sm,
+    marginBottom: spacing["0"],
+    marginTop: spacing["0"],
+    minWidth: 0,
+  },
+  friendsPromptDek: {
+    color: uiColor.text1,
+    display: "block",
+    fontSize: fontSize.sm,
+  },
+  friendsPromptAction: {
+    flexShrink: 0,
   },
   railWrap: {
     marginTop: spacing["5"],
@@ -366,6 +435,76 @@ function DiscoverDirectorySectionSkeleton({ view }: { view: "grid" | "list" }) {
       />
       <DiscoverDirectoryToolbarSkeleton />
       <DiscoverDirectorySkeleton view={view} />
+    </div>
+  );
+}
+
+const FRIENDS_PROMPT_AVATARS = 4;
+/** The prompt only needs the headline counts and a few faces. */
+const FRIENDS_PROMPT_PAGE = 4;
+
+/**
+ * Entry point to `/friends` — publications written by the people the reader
+ * follows on Bluesky. Renders only once we know there's someone to show, so it
+ * never occupies the top of Discover with an empty promise (the surrounding
+ * rails behave the same way).
+ */
+function DiscoverFriendsPrompt() {
+  const { t } = useLingui();
+  const { data } = useQuery(
+    discoverApi.getFriendPublishersQueryOptions({
+      limit: FRIENDS_PROMPT_PAGE,
+    }),
+  );
+  const totalPeople = data?.totalPeople ?? 0;
+
+  if (totalPeople === 0) return null;
+
+  const shown = data?.people.slice(0, FRIENDS_PROMPT_AVATARS) ?? [];
+
+  return (
+    <div {...stylex.props(styles.friendsPrompt)}>
+      <div {...stylex.props(styles.friendsPromptMain)}>
+        <div {...stylex.props(styles.friendsAvatars)} aria-hidden>
+          {shown.map((person) => {
+            const name = friendDisplayName(person);
+            return (
+              <Avatar
+                key={person.did}
+                src={person.avatarUrl ?? undefined}
+                alt=""
+                size="md"
+                fallback={initials(name)}
+                style={styles.friendsAvatar}
+              />
+            );
+          })}
+        </div>
+        <p {...stylex.props(styles.friendsPromptText)}>
+          <Plural
+            value={totalPeople}
+            one="# person you follow writes here"
+            other="# people you follow write here"
+          />
+          <span {...stylex.props(styles.friendsPromptDek)}>
+            <Plural
+              value={data?.publicationCount ?? 0}
+              one="# publication from your Bluesky follows"
+              other="# publications from your Bluesky follows"
+            />
+          </span>
+        </p>
+      </div>
+      <ButtonLink
+        to="/friends"
+        variant="secondary"
+        size="md"
+        style={styles.friendsPromptAction}
+        aria-label={t`See publications from the people you follow`}
+      >
+        <Users size={16} aria-hidden />
+        <Trans>Find your friends</Trans>
+      </ButtonLink>
     </div>
   );
 }
@@ -840,6 +979,8 @@ function Discover() {
             : undefined
         }
       />
+
+      {signedIn ? <DiscoverFriendsPrompt /> : null}
 
       <DiscoverTrendingSection />
 
