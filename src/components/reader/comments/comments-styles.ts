@@ -34,6 +34,7 @@ export const commentStyles = stylex.create({
     marginTop: verticalSpace.lg,
   },
   card: {
+    position: "relative",
     borderColor: uiColor.border1,
     borderRadius: radius.sm,
     borderStyle: "solid",
@@ -47,39 +48,32 @@ export const commentStyles = stylex.create({
     paddingInlineEnd: horizontalSpace.lg,
     paddingTop: verticalSpace.lg,
   },
-  // A plain container (not a link) with a stretched overlay link below. The
-  // "open post" affordance must not wrap the in-body facet links — a nested
-  // <a> is invalid HTML and breaks hydration.
-  cardBody: {
-    position: "relative",
-    borderRadius: radius.sm,
+  // Only comments that link out to the original post get the hover affordance
+  // — the stretched overlay link covers the whole card, so the highlight
+  // should too, not just the text below the byline.
+  cardLinked: {
     backgroundColor: {
-      default: "transparent",
+      default: uiColor.component1,
       ":hover": uiColor.component2,
     },
-    color: "inherit",
-    display: "block",
     transitionDuration: animationDuration.fast,
     transitionProperty: "background-color",
-    marginInlineStart: `calc(-1 * ${horizontalSpace.lg})`,
-    marginInlineEnd: `calc(-1 * ${horizontalSpace.lg})`,
-    paddingBottom: verticalSpace.lg,
-    paddingInlineStart: horizontalSpace.lg,
-    paddingInlineEnd: horizontalSpace.lg,
-    paddingTop: verticalSpace.md,
   },
-  // Full-card "open the post" link. Sits above the body text (a click anywhere
-  // opens the post) but below the facet links, which lift themselves above it.
+  cardBody: {
+    color: "inherit",
+    display: "block",
+  },
+  // Full-card "open the post" link. Sits above the card background but below
+  // the header and facet links, which lift themselves above it.
   cardBodyOverlay: {
     position: "absolute",
-    top: 0,
-    insetInlineEnd: 0,
-    bottom: 0,
-    insetInlineStart: 0,
-    borderRadius: radius.sm,
+    inset: 0,
+    borderRadius: "inherit",
     zIndex: 0,
   },
   cardHeader: {
+    position: "relative",
+    zIndex: 1,
     alignItems: "center",
     columnGap: gap.md,
     display: "flex",
