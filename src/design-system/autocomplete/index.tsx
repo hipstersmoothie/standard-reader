@@ -79,6 +79,11 @@ export interface AutocompleteInputProps<T extends object>
    * offering saved-password/username autofill over an in-app suggestion field.
    */
   autoComplete?: string;
+  /**
+   * Opt the input out of browser/extension credential autofill (1Password,
+   * LastPass, etc.) so it doesn't pop over the in-app suggestion list.
+   */
+  disablePasswordManagers?: boolean;
   /** Content to render before the input. */
   prefix?: React.ReactNode;
   /** Content to render after the input. */
@@ -99,6 +104,7 @@ export function AutocompleteInput<T extends object>({
   validationState,
   placeholder,
   autoComplete,
+  disablePasswordManagers,
   prefix,
   suffix,
   onAction,
@@ -186,6 +192,7 @@ export function AutocompleteInput<T extends object>({
             validationState={validationState}
             placeholder={placeholder}
             autoComplete={autoComplete}
+            disablePasswordManagers={disablePasswordManagers}
             prefix={prefix}
             suffix={suffix}
           />
