@@ -1225,22 +1225,30 @@ const getWeeklyDigestSections = createServerFn({ method: "GET" })
     const reader = await getReaderContextForRequest(getRequest());
     if (!reader) return { ...DEFAULT_DIGEST_SECTIONS };
 
-    const row = await context.db.query.user.findFirst({
-      where: eq(context.schema.user.id, reader.userId),
-      columns: {
-        weeklyDigestSectionSubscriptions: true,
-        weeklyDigestSectionNetwork: true,
-        weeklyDigestSectionSaved: true,
-        weeklyDigestSectionRecommendations: true,
-      },
-    });
+    // Degrade to the all-on default rather than throwing if the read fails
+    // (e.g. the `weekly_digest_section_*` columns aren't migrated yet), so the
+    // settings page never errors on this lookup.
+    try {
+      const row = await context.db.query.user.findFirst({
+        where: eq(context.schema.user.id, reader.userId),
+        columns: {
+          weeklyDigestSectionSubscriptions: true,
+          weeklyDigestSectionNetwork: true,
+          weeklyDigestSectionSaved: true,
+          weeklyDigestSectionRecommendations: true,
+        },
+      });
 
-    return {
-      subscriptions: row?.weeklyDigestSectionSubscriptions !== false,
-      network: row?.weeklyDigestSectionNetwork !== false,
-      saved: row?.weeklyDigestSectionSaved !== false,
-      recommendations: row?.weeklyDigestSectionRecommendations !== false,
-    };
+      return {
+        subscriptions: row?.weeklyDigestSectionSubscriptions !== false,
+        network: row?.weeklyDigestSectionNetwork !== false,
+        saved: row?.weeklyDigestSectionSaved !== false,
+        recommendations: row?.weeklyDigestSectionRecommendations !== false,
+      };
+    } catch (error) {
+      console.warn("[digest] section prefs read failed:", error);
+      return { ...DEFAULT_DIGEST_SECTIONS };
+    }
   });
 
 const getWeeklyDigestSectionsQueryOptions = queryOptions({

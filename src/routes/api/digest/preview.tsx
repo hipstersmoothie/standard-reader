@@ -35,16 +35,32 @@ export const Route = createFileRoute("/api/digest/preview")({
         }
 
         // Preview what the reader would actually receive — honour their
-        // per-section opt-outs.
-        const prefsRow = await db.query.user.findFirst({
-          where: eq(schema.user.id, reader.userId),
-          columns: {
-            weeklyDigestSectionSubscriptions: true,
-            weeklyDigestSectionNetwork: true,
-            weeklyDigestSectionSaved: true,
-            weeklyDigestSectionRecommendations: true,
-          },
-        });
+        // per-section opt-outs. A preview must never hard-fail on a preferences
+        // lookup, so if the read errors (e.g. the `weekly_digest_section_*`
+        // columns haven't been migrated onto this DB yet) fall back to the
+        // all-sections-on default rather than 500ing.
+        let prefsRow:
+          | {
+              weeklyDigestSectionSubscriptions: boolean | null;
+              weeklyDigestSectionNetwork: boolean | null;
+              weeklyDigestSectionSaved: boolean | null;
+              weeklyDigestSectionRecommendations: boolean | null;
+            }
+          | undefined;
+        try {
+          prefsRow = await db.query.user.findFirst({
+            where: eq(schema.user.id, reader.userId),
+            columns: {
+              weeklyDigestSectionSubscriptions: true,
+              weeklyDigestSectionNetwork: true,
+              weeklyDigestSectionSaved: true,
+              weeklyDigestSectionRecommendations: true,
+            },
+          });
+        } catch (error) {
+          console.warn("[digest] preview prefs read failed:", error);
+          prefsRow = undefined;
+        }
 
         const digest = await buildDigestForUser(db, schema, {
           did: reader.did,
