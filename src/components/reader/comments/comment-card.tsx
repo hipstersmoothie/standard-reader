@@ -225,10 +225,7 @@ export function CommentCard({ comment }: { comment: DocumentComment }) {
 
   return (
     <div
-      {...stylex.props(
-        commentStyles.card,
-        hasLink && commentStyles.cardLinked,
-      )}
+      {...stylex.props(commentStyles.card, hasLink && commentStyles.cardLinked)}
     >
       {hasLink ? (
         // Stretched overlay link — a sibling of the header and facet links,
