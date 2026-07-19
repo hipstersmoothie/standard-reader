@@ -1258,59 +1258,6 @@ export async function topNetworkArticles(
 }
 
 /**
- * The reader's most recently saved-for-later articles (`app.standard-reader.bookmark`
- * records), newest first, for the weekly digest's "Saved for later" section.
- *
- * Unlike {@link bestOfFollows} / {@link topNetworkArticles} there's no time
- * window, trending rank, or diversity cap — it's a straight recency read of the
- * reader's own bookmarks, mirroring the in-app "Saved for later" queue. Deleted
- * bookmarks and deleted documents are excluded; pass `excludeUris` (the picks
- * already shown in earlier sections) so a saved article isn't repeated.
- */
-export async function savedForLater(
-  db: Db,
-  schema: Schema,
-  {
-    did,
-    limit,
-    excludeUris = [],
-  }: {
-    did: string;
-    limit: number;
-    excludeUris?: Array<string>;
-  },
-): Promise<Array<ArticleCard>> {
-  const b = schema.bookmarks;
-  const d = schema.documents;
-  const p = schema.publications;
-  const pr = schema.profiles;
-  const pa = alias(schema.profiles, "pa");
-
-  const conds = [
-    eq(b.ownerDid, did),
-    eq(b.deleted, false),
-    eq(d.deleted, false),
-  ];
-  if (excludeUris.length > 0) {
-    conds.push(notInArray(d.uri, excludeUris));
-  }
-
-  const rows = await db
-    .select(articleCardColumns(schema))
-    .from(b)
-    .innerJoin(d, eq(d.uri, b.documentUri))
-    .leftJoin(p, eq(p.uri, d.publicationUri))
-    .leftJoin(pr, eq(pr.did, p.did))
-    .leftJoin(pa, eq(pa.did, d.did))
-    .where(and(...conds))
-    // NULLS LAST matches `bookmarks_owner_idx` (see the getSaved handler).
-    .orderBy(sql`${b.createdAt} desc nulls last`)
-    .limit(limit);
-
-  return rows.map((row) => toArticleCard(row));
-}
-
-/**
  * "Week in review" ranking for the weekly Bluesky thread: the biggest discover-
  * eligible articles across the whole network over the last `sinceDays`, ranked by
  * engagement ACCUMULATED across the window rather than by `trending_score`.

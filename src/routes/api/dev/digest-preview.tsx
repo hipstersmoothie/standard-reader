@@ -69,7 +69,6 @@ export const Route = createFileRoute("/api/dev/digest-preview")({
             "content-type": "text/html; charset=utf-8",
             "cache-control": "no-store",
             "x-digest-article-count": String(digest.articles.length),
-            "x-digest-saved-count": String(digest.saved.length),
             "x-digest-recommendation-count": String(
               digest.recommendations.length,
             ),

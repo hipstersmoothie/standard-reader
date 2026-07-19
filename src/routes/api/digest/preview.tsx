@@ -15,10 +15,9 @@ export const Route = createFileRoute("/api/digest/preview")({
           { getReaderContextForRequest },
           { db },
           schema,
-          { buildDigestForUser, digestSectionsFromUser },
+          { buildDigestForUser },
           { renderDigestEmail },
           { getPublicUrl },
-          { eq },
         ] = await Promise.all([
           import("#/middleware/auth-session.server"),
           import("#/db/index.server"),
@@ -26,7 +25,6 @@ export const Route = createFileRoute("/api/digest/preview")({
           import("#/server/digest/builder"),
           import("#/server/digest/render"),
           import("#/lib/public-url"),
-          import("drizzle-orm"),
         ]);
 
         const reader = await getReaderContextForRequest(request);
@@ -34,21 +32,8 @@ export const Route = createFileRoute("/api/digest/preview")({
           return new Response("Unauthorized", { status: 401 });
         }
 
-        // Preview what the reader would actually receive — honour their
-        // per-section opt-outs.
-        const prefsRow = await db.query.user.findFirst({
-          where: eq(schema.user.id, reader.userId),
-          columns: {
-            weeklyDigestSectionSubscriptions: true,
-            weeklyDigestSectionNetwork: true,
-            weeklyDigestSectionSaved: true,
-            weeklyDigestSectionRecommendations: true,
-          },
-        });
-
         const digest = await buildDigestForUser(db, schema, {
           did: reader.did,
-          sections: digestSectionsFromUser(prefsRow ?? {}),
         });
         const rendered = await renderDigestEmail(digest, {
           baseUrl: getPublicUrl(),

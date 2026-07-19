@@ -157,10 +157,6 @@ msgstr "This list is empty — add publications or people to it."
 msgid "A labeler is any DID that publishes AT Proto labels. Readers add one by DID on the <0>Labelers</0> page, and Standard Reader then shows that labeler's labels — and can warn on or hide labeled posts — as they read. Labelers are discovered the standard way; nothing about them is specific to us. To run your own:"
 msgstr "A labeler is any DID that publishes AT Proto labels. Readers add one by DID on the <0>Labelers</0> page, and Standard Reader then shows that labeler's labels — and can warn on or hide labeled posts — as they read. Labelers are discovered the standard way; nothing about them is specific to us. To run your own:"
 
-#: src/components/user-settings-view.tsx
-msgid "The most-read articles across Standard this week."
-msgstr "The most-read articles across Standard this week."
-
 #: src/components/reader/article-view.tsx
 msgid "Article header image"
 msgstr "Article header image"
@@ -242,10 +238,6 @@ msgstr "Light"
 #: src/components/docs/api-docs-intro.tsx
 msgid "For a complete, minimal reference implementation (Jetstream → detect → sign → SQLite → serve), see the <0>claudeslop</0> labeler in <1>services/claudeslop</1>."
 msgstr "For a complete, minimal reference implementation (Jetstream → detect → sign → SQLite → serve), see the <0>claudeslop</0> labeler in <1>services/claudeslop</1>."
-
-#: src/components/reader/text-selection-toolbar.tsx
-msgid "Dismiss"
-msgstr "Dismiss"
 
 #: src/routes/_layout.feedback.index.tsx
 msgid "Open"
@@ -1349,10 +1341,6 @@ msgstr "The latest writing from the publications you subscribe to."
 msgid "Log out"
 msgstr "Log out"
 
-#: src/components/user-settings-view.tsx
-msgid "The top articles from publications you subscribe to."
-msgstr "The top articles from publications you subscribe to."
-
 #: src/routes/review.thanks.tsx
 msgid "Return to the app"
 msgstr "Return to the app"
@@ -1438,7 +1426,7 @@ msgstr "Couldn't subscribe"
 msgid "On keeping a commonplace book"
 msgstr "On keeping a commonplace book"
 
-#: src/routes/_layout.u.$did.tsx
+#: src/components/reader/cards.tsx
 msgid "Featured in"
 msgstr "Featured in"
 
@@ -1610,10 +1598,6 @@ msgstr "Skip for now"
 #: src/components/reader/about-view.tsx
 msgid "The latest across everyone you subscribe to"
 msgstr "The latest across everyone you subscribe to"
-
-#: src/components/user-settings-view.tsx
-msgid "Publications to explore"
-msgstr "Publications to explore"
 
 #: src/routes/_layout.history.tsx
 #: src/routes/_layout.latest.tsx
@@ -1984,10 +1968,6 @@ msgstr "View record"
 msgid "Optional: add a note about why you're saving this"
 msgstr "Optional: add a note about why you're saving this"
 
-#: src/components/user-settings-view.tsx
-msgid "Best of your subscriptions"
-msgstr "Best of your subscriptions"
-
 #: src/routes/_layout.p.$did.$rkey.tsx
 msgid "We couldn’t find that publication."
 msgstr "We couldn’t find that publication."
@@ -2131,10 +2111,6 @@ msgstr "Sun · 8:00 AM"
 #: src/components/reader/language-hint-prompt.tsx
 msgid "We picked this language from your browser. You can switch it anytime."
 msgstr "We picked this language from your browser. You can switch it anytime."
-
-#: src/components/reader/text-selection-toolbar.tsx
-msgid "Dismiss selection"
-msgstr "Dismiss selection"
 
 #: src/routes/_layout.latest.tsx
 msgid "Follow a few publications and their latest writing will show up here."
@@ -2282,10 +2258,6 @@ msgstr "Service discovery"
 msgid "The voice used when you listen to an article with read aloud."
 msgstr "The voice used when you listen to an article with read aloud."
 
-#: src/components/user-settings-view.tsx
-msgid "Your five most recently saved-for-later articles."
-msgstr "Your five most recently saved-for-later articles."
-
 #: src/magazine/magazine-end-subscribe.tsx
 #: src/routes/_layout.l.$did.$rkey.tsx
 msgid "Subscribe to list"
@@ -2381,10 +2353,6 @@ msgstr "Introduce the collection… (markdown supported)"
 #: src/components/reader/article-below-fold.tsx
 msgid "Cited in"
 msgstr "Cited in"
-
-#: src/components/user-settings-view.tsx
-msgid "A couple of publications worth discovering."
-msgstr "A couple of publications worth discovering."
 
 #: src/components/reader/share-menu.tsx
 #: src/routes/_layout.l.$did.$rkey.tsx
@@ -2974,10 +2942,6 @@ msgstr "Related reading"
 #: src/components/docs/api-docs-intro.tsx
 msgid "operational"
 msgstr "operational"
-
-#: src/components/user-settings-view.tsx
-msgid "Top on the network"
-msgstr "Top on the network"
 
 #: src/components/reader/collection-builder.tsx
 msgid "Remove"
@@ -3786,7 +3750,6 @@ msgstr "Not on Standard Reader yet"
 #: src/components/reader/app-shell.tsx
 #: src/components/reader/article-view.tsx
 #: src/components/reader/cards.tsx
-#: src/components/user-settings-view.tsx
 #: src/routes/_layout.saved.tsx
 msgid "Saved for later"
 msgstr "Saved for later"

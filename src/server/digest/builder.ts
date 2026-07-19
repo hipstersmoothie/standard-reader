@@ -6,8 +6,7 @@
  * "Best of your follows" reuses {@link bestOfFollows} (trending-ranked, diversity
  * capped) and the unfollowed recommendations reuse {@link recommendedPublications}
  * (co-subscription / co-recommend blend, already excludes follows, cold-starts
- * to popular). "Saved for later" reuses {@link savedForLater} (the reader's most
- * recent bookmarks). Mirrors how `src/server/feeds/build.ts` composes cards.
+ * to popular). Mirrors how `src/server/feeds/build.ts` composes cards.
  */
 
 import type {
@@ -19,7 +18,6 @@ import type {
 import {
   bestOfFollows,
   recommendedPublications,
-  savedForLater,
   selectFollowUris,
   topNetworkArticles,
 } from "#/server/reader/queries";
@@ -29,7 +27,6 @@ import {
   DIGEST_ARTICLE_LIMIT,
   DIGEST_NETWORK_ARTICLE_LIMIT,
   DIGEST_RECOMMENDATION_LIMIT,
-  DIGEST_SAVED_LIMIT,
   DIGEST_WINDOW_DAYS,
 } from "./config";
 
@@ -38,110 +35,43 @@ export interface DigestData {
   articles: Array<ArticleCard>;
   /** Top articles across the whole network this week (excludes `articles`). */
   networkArticles: Array<ArticleCard>;
-  /** The reader's most recently saved-for-later articles (bookmarks). */
-  saved: Array<ArticleCard>;
   /** Trending, not-yet-followed publications to recommend. */
   recommendations: Array<PublicationCard>;
 }
 
 /**
- * Which sections to include in a reader's digest. Each maps to a `null`-able
- * `weeklyDigestSection*` opt-out column on `user` (`null`/`true` = included).
- */
-export interface DigestSections {
-  subscriptions: boolean;
-  network: boolean;
-  saved: boolean;
-  recommendations: boolean;
-}
-
-/** Every section on — the default when a reader has expressed no preference. */
-export const ALL_DIGEST_SECTIONS: DigestSections = {
-  subscriptions: true,
-  network: true,
-  saved: true,
-  recommendations: true,
-};
-
-/** A `null`-able opt-out column resolves to on unless it's explicitly `false`. */
-function sectionEnabled(value: boolean | null | undefined): boolean {
-  return value !== false;
-}
-
-/**
- * Resolve the four `weeklyDigestSection*` opt-out columns into a
- * {@link DigestSections} (each defaults to on).
- */
-export function digestSectionsFromUser(row: {
-  weeklyDigestSectionSubscriptions?: boolean | null;
-  weeklyDigestSectionNetwork?: boolean | null;
-  weeklyDigestSectionSaved?: boolean | null;
-  weeklyDigestSectionRecommendations?: boolean | null;
-}): DigestSections {
-  return {
-    subscriptions: sectionEnabled(row.weeklyDigestSectionSubscriptions),
-    network: sectionEnabled(row.weeklyDigestSectionNetwork),
-    saved: sectionEnabled(row.weeklyDigestSectionSaved),
-    recommendations: sectionEnabled(row.weeklyDigestSectionRecommendations),
-  };
-}
-
-/**
- * Assemble the digest for one reader. Builds every enabled section; disabled
- * sections come back empty. The "skip if there's nothing worth sending"
- * decision lives in the send runner, so the preview path can render a complete
- * digest even for readers whose follows were quiet this week.
+ * Assemble the digest for one reader. Builds all three sections; the "skip if
+ * there's nothing worth sending" decision (empty `articles`) lives in the send
+ * runner, so the preview path can render a complete digest even for readers
+ * whose follows were quiet this week.
  */
 export async function buildDigestForUser(
   db: Db,
   schema: Schema,
-  {
-    did,
-    sections = ALL_DIGEST_SECTIONS,
-  }: { did: string; sections?: DigestSections },
+  { did }: { did: string },
 ): Promise<DigestData> {
-  // Needed by the subscriptions section directly, and by the recommendations
-  // section to exclude publications the reader already follows.
-  const followUris =
-    sections.subscriptions || sections.recommendations
-      ? await selectFollowUris(db, schema, did)
-      : [];
+  const followUris = await selectFollowUris(db, schema, did);
 
-  const articles = sections.subscriptions
-    ? await bestOfFollows(db, schema, {
-        publicationUris: followUris,
-        sinceDays: DIGEST_WINDOW_DAYS,
-        limit: DIGEST_ARTICLE_LIMIT,
-        // Don't re-surface articles the reader already opened this week.
-        excludeReadForDid: did,
-      })
-    : [];
+  const articles = await bestOfFollows(db, schema, {
+    publicationUris: followUris,
+    sinceDays: DIGEST_WINDOW_DAYS,
+    limit: DIGEST_ARTICLE_LIMIT,
+    // Don't re-surface articles the reader already opened this week.
+    excludeReadForDid: did,
+  });
 
-  const articleUris = articles.map((a) => a.uri);
-
-  const [networkArticles, saved, recommendations] = await Promise.all([
-    sections.network
-      ? topNetworkArticles(db, schema, {
-          sinceDays: DIGEST_WINDOW_DAYS,
-          limit: DIGEST_NETWORK_ARTICLE_LIMIT,
-          excludeUris: articleUris,
-          excludeReadForDid: did,
-        })
-      : Promise.resolve([]),
-    sections.saved
-      ? savedForLater(db, schema, {
-          did,
-          limit: DIGEST_SAVED_LIMIT,
-          excludeUris: articleUris,
-        })
-      : Promise.resolve([]),
-    sections.recommendations
-      ? recommendedPublications(db, schema, did, DIGEST_RECOMMENDATION_LIMIT, {
-          followUris,
-          seed: rotationSeed("digest", did),
-        })
-      : Promise.resolve([]),
+  const [networkArticles, recommendations] = await Promise.all([
+    topNetworkArticles(db, schema, {
+      sinceDays: DIGEST_WINDOW_DAYS,
+      limit: DIGEST_NETWORK_ARTICLE_LIMIT,
+      excludeUris: articles.map((a) => a.uri),
+      excludeReadForDid: did,
+    }),
+    recommendedPublications(db, schema, did, DIGEST_RECOMMENDATION_LIMIT, {
+      followUris,
+      seed: rotationSeed("digest", did),
+    }),
   ]);
 
-  return { articles, networkArticles, saved, recommendations };
+  return { articles, networkArticles, recommendations };
 }

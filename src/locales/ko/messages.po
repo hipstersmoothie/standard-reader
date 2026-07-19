@@ -157,10 +157,6 @@ msgstr "이 목록은 비어 있습니다 — 발행물이나 사람을 추가�
 msgid "A labeler is any DID that publishes AT Proto labels. Readers add one by DID on the <0>Labelers</0> page, and Standard Reader then shows that labeler's labels — and can warn on or hide labeled posts — as they read. Labelers are discovered the standard way; nothing about them is specific to us. To run your own:"
 msgstr "레이블러는 AT Proto 레이블을 게시하는 모든 DID를 말합니다. 독자는 <0>레이블러</0> 페이지에서 DID로 추가하며, 그러면 Standard Reader가 읽는 동안 해당 레이블러의 레이블을 표시하고 레이블이 붙은 글을 경고하거나 숨길 수 있습니다. 레이블러는 표준 방식으로 검색되며, 저희만의 특별한 요소는 없습니다. 직접 운영하려면:"
 
-#: src/components/user-settings-view.tsx
-msgid "The most-read articles across Standard this week."
-msgstr ""
-
 #: src/components/reader/article-view.tsx
 msgid "Article header image"
 msgstr "글 헤더 이미지"
@@ -242,10 +238,6 @@ msgstr "라이트"
 #: src/components/docs/api-docs-intro.tsx
 msgid "For a complete, minimal reference implementation (Jetstream → detect → sign → SQLite → serve), see the <0>claudeslop</0> labeler in <1>services/claudeslop</1>."
 msgstr "완전하고 최소한의 참조 구현(Jetstream → 감지 → 서명 → SQLite → 제공)은 <1>services/claudeslop</1>의 <0>claudeslop</0> 레이블러를 참고하세요."
-
-#: src/components/reader/text-selection-toolbar.tsx
-msgid "Dismiss"
-msgstr ""
 
 #: src/routes/_layout.feedback.index.tsx
 msgid "Open"
@@ -1349,10 +1341,6 @@ msgstr "구독 중인 발행물의 최신 글입니다."
 msgid "Log out"
 msgstr "로그아웃"
 
-#: src/components/user-settings-view.tsx
-msgid "The top articles from publications you subscribe to."
-msgstr ""
-
 #: src/routes/review.thanks.tsx
 msgid "Return to the app"
 msgstr "앱으로 돌아가기"
@@ -1438,7 +1426,7 @@ msgstr "구독하지 못했습니다"
 msgid "On keeping a commonplace book"
 msgstr "비망록을 쓴다는 것"
 
-#: src/routes/_layout.u.$did.tsx
+#: src/components/reader/cards.tsx
 msgid "Featured in"
 msgstr "게재 매체"
 
@@ -1610,10 +1598,6 @@ msgstr "나중에 하기"
 #: src/components/reader/about-view.tsx
 msgid "The latest across everyone you subscribe to"
 msgstr "구독 중인 모든 곳의 최신 글"
-
-#: src/components/user-settings-view.tsx
-msgid "Publications to explore"
-msgstr ""
 
 #: src/routes/_layout.history.tsx
 #: src/routes/_layout.latest.tsx
@@ -1984,10 +1968,6 @@ msgstr "레코드 보기"
 msgid "Optional: add a note about why you're saving this"
 msgstr "선택 사항: 저장하는 이유를 메모로 남겨보세요"
 
-#: src/components/user-settings-view.tsx
-msgid "Best of your subscriptions"
-msgstr ""
-
 #: src/routes/_layout.p.$did.$rkey.tsx
 msgid "We couldn’t find that publication."
 msgstr "해당 발행물을 찾을 수 없습니다."
@@ -2131,10 +2111,6 @@ msgstr "일 · 오전 8:00"
 #: src/components/reader/language-hint-prompt.tsx
 msgid "We picked this language from your browser. You can switch it anytime."
 msgstr "브라우저 설정에 따라 이 언어를 선택했습니다. 언제든지 변경할 수 있습니다."
-
-#: src/components/reader/text-selection-toolbar.tsx
-msgid "Dismiss selection"
-msgstr ""
 
 #: src/routes/_layout.latest.tsx
 msgid "Follow a few publications and their latest writing will show up here."
@@ -2282,10 +2258,6 @@ msgstr "서비스 검색"
 msgid "The voice used when you listen to an article with read aloud."
 msgstr "읽어주기로 아티클을 들을 때 사용하는 음성입니다."
 
-#: src/components/user-settings-view.tsx
-msgid "Your five most recently saved-for-later articles."
-msgstr ""
-
 #: src/magazine/magazine-end-subscribe.tsx
 #: src/routes/_layout.l.$did.$rkey.tsx
 msgid "Subscribe to list"
@@ -2381,10 +2353,6 @@ msgstr "컬렉션을 소개해 주세요… (마크다운 지원)"
 #: src/components/reader/article-below-fold.tsx
 msgid "Cited in"
 msgstr "인용된 곳"
-
-#: src/components/user-settings-view.tsx
-msgid "A couple of publications worth discovering."
-msgstr ""
 
 #: src/components/reader/share-menu.tsx
 #: src/routes/_layout.l.$did.$rkey.tsx
@@ -2974,10 +2942,6 @@ msgstr "함께 읽기"
 #: src/components/docs/api-docs-intro.tsx
 msgid "operational"
 msgstr "정상"
-
-#: src/components/user-settings-view.tsx
-msgid "Top on the network"
-msgstr ""
 
 #: src/components/reader/collection-builder.tsx
 msgid "Remove"
@@ -3786,7 +3750,6 @@ msgstr "아직 Standard Reader에 없음"
 #: src/components/reader/app-shell.tsx
 #: src/components/reader/article-view.tsx
 #: src/components/reader/cards.tsx
-#: src/components/user-settings-view.tsx
 #: src/routes/_layout.saved.tsx
 msgid "Saved for later"
 msgstr "나중에 볼 항목"

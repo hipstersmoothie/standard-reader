@@ -157,10 +157,6 @@ msgstr ""
 msgid "A labeler is any DID that publishes AT Proto labels. Readers add one by DID on the <0>Labelers</0> page, and Standard Reader then shows that labeler's labels — and can warn on or hide labeled posts — as they read. Labelers are discovered the standard way; nothing about them is specific to us. To run your own:"
 msgstr ""
 
-#: src/components/user-settings-view.tsx
-msgid "The most-read articles across Standard this week."
-msgstr ""
-
 #: src/components/reader/article-view.tsx
 msgid "Article header image"
 msgstr ""
@@ -241,10 +237,6 @@ msgstr ""
 
 #: src/components/docs/api-docs-intro.tsx
 msgid "For a complete, minimal reference implementation (Jetstream → detect → sign → SQLite → serve), see the <0>claudeslop</0> labeler in <1>services/claudeslop</1>."
-msgstr ""
-
-#: src/components/reader/text-selection-toolbar.tsx
-msgid "Dismiss"
 msgstr ""
 
 #: src/routes/_layout.feedback.index.tsx
@@ -1349,10 +1341,6 @@ msgstr ""
 msgid "Log out"
 msgstr ""
 
-#: src/components/user-settings-view.tsx
-msgid "The top articles from publications you subscribe to."
-msgstr ""
-
 #: src/routes/review.thanks.tsx
 msgid "Return to the app"
 msgstr ""
@@ -1438,7 +1426,7 @@ msgstr ""
 msgid "On keeping a commonplace book"
 msgstr ""
 
-#: src/routes/_layout.u.$did.tsx
+#: src/components/reader/cards.tsx
 msgid "Featured in"
 msgstr "[Ϝḗḗααṭŭŭřḗḗḓ īīƞ]"
 
@@ -1609,10 +1597,6 @@ msgstr ""
 
 #: src/components/reader/about-view.tsx
 msgid "The latest across everyone you subscribe to"
-msgstr ""
-
-#: src/components/user-settings-view.tsx
-msgid "Publications to explore"
 msgstr ""
 
 #: src/routes/_layout.history.tsx
@@ -1984,10 +1968,6 @@ msgstr ""
 msgid "Optional: add a note about why you're saving this"
 msgstr ""
 
-#: src/components/user-settings-view.tsx
-msgid "Best of your subscriptions"
-msgstr ""
-
 #: src/routes/_layout.p.$did.$rkey.tsx
 msgid "We couldn’t find that publication."
 msgstr ""
@@ -2130,10 +2110,6 @@ msgstr ""
 
 #: src/components/reader/language-hint-prompt.tsx
 msgid "We picked this language from your browser. You can switch it anytime."
-msgstr ""
-
-#: src/components/reader/text-selection-toolbar.tsx
-msgid "Dismiss selection"
 msgstr ""
 
 #: src/routes/_layout.latest.tsx
@@ -2282,10 +2258,6 @@ msgstr ""
 msgid "The voice used when you listen to an article with read aloud."
 msgstr ""
 
-#: src/components/user-settings-view.tsx
-msgid "Your five most recently saved-for-later articles."
-msgstr ""
-
 #: src/magazine/magazine-end-subscribe.tsx
 #: src/routes/_layout.l.$did.$rkey.tsx
 msgid "Subscribe to list"
@@ -2380,10 +2352,6 @@ msgstr ""
 
 #: src/components/reader/article-below-fold.tsx
 msgid "Cited in"
-msgstr ""
-
-#: src/components/user-settings-view.tsx
-msgid "A couple of publications worth discovering."
 msgstr ""
 
 #: src/components/reader/share-menu.tsx
@@ -2973,10 +2941,6 @@ msgstr ""
 
 #: src/components/docs/api-docs-intro.tsx
 msgid "operational"
-msgstr ""
-
-#: src/components/user-settings-view.tsx
-msgid "Top on the network"
 msgstr ""
 
 #: src/components/reader/collection-builder.tsx
@@ -3786,7 +3750,6 @@ msgstr ""
 #: src/components/reader/app-shell.tsx
 #: src/components/reader/article-view.tsx
 #: src/components/reader/cards.tsx
-#: src/components/user-settings-view.tsx
 #: src/routes/_layout.saved.tsx
 msgid "Saved for later"
 msgstr ""

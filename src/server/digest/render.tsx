@@ -123,7 +123,6 @@ export async function renderDigestEmail(
   const networkArticles = digest.networkArticles.map((card) =>
     toDigestArticle(card, base),
   );
-  const saved = digest.saved.map((card) => toDigestArticle(card, base));
   const recommendations = digest.recommendations.map((pub) =>
     toDigestPublication(pub, base),
   );
@@ -133,7 +132,6 @@ export async function renderDigestEmail(
     weekLabel: weekLabel(now),
     articles,
     networkArticles,
-    saved,
     recommendations,
     unsubscribeUrl: `${base}/api/digest/unsubscribe?token=${encodeURIComponent(token)}`,
     logoUrl: `${base}/icon-192.png`,

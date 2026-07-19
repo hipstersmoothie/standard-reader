@@ -69,8 +69,6 @@ export const DIGEST_ARTICLE_LIMIT = 5;
 export const DIGEST_NETWORK_ARTICLE_LIMIT = 5;
 /** Number of unfollowed publication recommendations to include. */
 export const DIGEST_RECOMMENDATION_LIMIT = 2;
-/** Number of most-recently saved-for-later articles (bookmarks) to include. */
-export const DIGEST_SAVED_LIMIT = 5;
 /** Only articles published within this many days are eligible for the digest. */
 export const DIGEST_WINDOW_DAYS = 7;
 /** Skip a reader who already received a digest within this many days (idempotency). */
