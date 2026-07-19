@@ -44,7 +44,11 @@ import { Flex } from "../../design-system/flex";
 import { IconButton } from "../../design-system/icon-button";
 import { Skeleton } from "../../design-system/skeleton";
 import { animationDuration } from "../../design-system/theme/animations.stylex";
-import { primaryColor, uiColor } from "../../design-system/theme/color.stylex";
+import {
+  criticalColor,
+  primaryColor,
+  uiColor,
+} from "../../design-system/theme/color.stylex";
 import { radius } from "../../design-system/theme/radius.stylex";
 import { shadow } from "../../design-system/theme/shadow.stylex";
 import {
@@ -163,6 +167,15 @@ const styles = stylex.create({
     fontFamily: fontFamily.sans,
     fontSize: fontSize.xs,
     fontWeight: fontWeight.medium,
+  },
+  // A quiet tint on the heart so the "Recommended by" eyebrow reads as a
+  // recommendation at a glance — noticeable, but the text stays muted so it
+  // never competes with the title.
+  recommendedByHeart: {
+    alignItems: "center",
+    color: criticalColor.solid1,
+    display: "inline-flex",
+    flexShrink: 0,
   },
   recommendedByName: {
     color: uiColor.text2,
@@ -1029,7 +1042,9 @@ function RecommendedByLine({ article }: { article: ArticleCard }) {
 
   return (
     <Flex align="center" gap="sm" style={styles.recommendedByLine}>
-      <Heart size={13} aria-hidden fill="currentColor" />
+      <span {...stylex.props(styles.recommendedByHeart)}>
+        <Heart size={13} aria-hidden fill="currentColor" />
+      </span>
       <span>
         Recommended by{" "}
         <AuthorProfileLink
@@ -1629,6 +1644,20 @@ export function FeatureArticle({
     );
   }
 
+  // Byline-less (publication page): the "Recommended by @follow" line still
+  // applies. Lift it out of the card link — it holds its own profile links —
+  // and let the shell own the row's border so the grid inside stays border-free.
+  if (article.recommendedBy && article.recommendedBy.length > 0) {
+    return (
+      <div {...stylex.props(styles.featureShell)}>
+        <RecommendedByLine article={article} />
+        <ArticleLink article={article} extraStyles={featureGridStyles}>
+          {articleBody}
+        </ArticleLink>
+      </div>
+    );
+  }
+
   return (
     <ArticleLink
       article={article}
@@ -1803,7 +1832,9 @@ export function ArticleRow({
           <Byline article={article} includeDate />
         </Flex>
       ) : (
-        <span />
+        // Byline-less (publication page): keep the "Recommended by @follow"
+        // attribution — the same follows signal shown on the home/latest feeds.
+        <RecommendedByLine article={article} />
       )}
       {headerSaveButton}
     </Flex>
