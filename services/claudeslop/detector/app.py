@@ -16,6 +16,7 @@ from __future__ import annotations
 import os
 from contextlib import asynccontextmanager
 
+import anyio.to_thread
 import py3langid as langid
 from fastapi import FastAPI
 from pydantic import BaseModel
@@ -31,6 +32,12 @@ _detector: Detector | None = None
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     global _detector
+    # `score` is a sync handler, so Starlette runs it on anyio's threadpool —
+    # 40 workers by default. Each concurrent forward pass spins up its own
+    # OpenMP thread team on top of that, which exhausts the container's thread
+    # budget and segfaults torch. One model, one CPU-bound pass at a time: cap
+    # the pool so requests queue instead of piling up.
+    anyio.to_thread.current_default_thread_limiter().total_tokens = 1
     # Load the model at startup so the first request isn't slow.
     _detector = Detector()
     yield

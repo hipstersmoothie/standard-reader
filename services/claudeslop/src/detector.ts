@@ -71,6 +71,22 @@ export async function preload(timeoutMs = 180_000): Promise<void> {
   }
 }
 
+/**
+ * The ingest loop dispatches events fire-and-forget, so a firehose backlog can
+ * put hundreds of scores in flight at once. The detector is a single CPU-bound
+ * model that scores one request at a time regardless, so the only thing that
+ * concurrency buys us is a pile of open sockets and torch fighting itself for
+ * threads. Serialize the calls here and let the rest wait their turn.
+ */
+let pending: Promise<unknown> = Promise.resolve();
+
+function enqueue<T>(task: () => Promise<T>): Promise<T> {
+  const result = pending.then(task, task);
+  // Keep the chain alive when a task rejects; callers still see the rejection.
+  pending = result.catch(() => {});
+  return result;
+}
+
 /** Score a chunk of prose. Higher = more likely AI-generated. */
 export async function score(input: string): Promise<DetectorResult> {
   const text = (input ?? "").trim();
@@ -84,11 +100,14 @@ export async function score(input: string): Promise<DetectorResult> {
     };
   }
 
-  const res = await fetch(`${config.detectorUrl}/score`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ text }),
-  });
+  const res = await enqueue(() =>
+    fetch(`${config.detectorUrl}/score`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ text }),
+      signal: AbortSignal.timeout(60_000),
+    }),
+  );
   if (!res.ok) {
     throw new Error(`detector /score failed: ${res.status}`);
   }

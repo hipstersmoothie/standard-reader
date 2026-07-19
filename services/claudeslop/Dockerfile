@@ -13,6 +13,15 @@ RUN corepack enable
 
 WORKDIR /app
 
+# Cap the native thread pools. Without this, OpenMP/MKL size themselves from
+# the host's core count rather than the container's share and blow through the
+# thread limit — see the matching note in detector/model.py. Set here so it
+# also applies to the model-baking step below.
+ENV OMP_NUM_THREADS=2 \
+    MKL_NUM_THREADS=2 \
+    OPENBLAS_NUM_THREADS=2 \
+    TOKENIZERS_PARALLELISM=false
+
 # --- Python detector: deps + baked model (cached unless these change) ---
 COPY services/claudeslop/detector/requirements.txt services/claudeslop/detector/requirements.txt
 RUN python3 -m venv /opt/pyenv \
