@@ -1,34 +1,33 @@
-import { Plural, Trans } from "@lingui/react/macro";
+import { Plural } from "@lingui/react/macro";
 import * as stylex from "@stylexjs/stylex";
 import { useQuery } from "@tanstack/react-query";
-import { Check, Plus } from "lucide-react";
 
 import { discoverApi } from "#/integrations/tanstack-query/api-discover.functions";
-import type { FriendPublisher } from "#/integrations/tanstack-query/api-discover.functions";
 import { ONBOARDING_FRIENDS_LIMIT } from "#/lib/onboarding";
 
-import { Button } from "../../design-system/button";
 import { Flex } from "../../design-system/flex";
 import { uiColor } from "../../design-system/theme/color.stylex";
-import { verticalSpace } from "../../design-system/theme/semantic-spacing.stylex";
 import { spacing } from "../../design-system/theme/spacing.stylex";
 import {
   fontFamily,
   fontSize,
   lineHeight,
 } from "../../design-system/theme/typography.stylex";
-import {
-  FriendPublisherGroup,
-  FriendPublishersDegradedNote,
-  FriendPublishersSkeleton,
-} from "../reader/friend-publishers";
+import { PubCardSkeleton } from "../reader/cards";
+import { FriendPublishersDegradedNote } from "../reader/friend-publishers";
 import { OnboardingPubRow } from "./onboarding-pub-row";
 
 const styles = stylex.create({
-  groups: {
+  // The same bordered row stack the trending / topic sections use, so every
+  // step of the wizard reads as one list rather than three treatments.
+  rows: {
+    borderColor: uiColor.border1,
+    borderRadius: 12,
+    borderStyle: "solid",
+    borderWidth: 1,
     display: "flex",
     flexDirection: "column",
-    rowGap: verticalSpace["10xl"],
+    overflow: "hidden",
   },
   more: {
     color: uiColor.text1,
@@ -47,7 +46,8 @@ const styles = stylex.create({
  *
  * Selection is in-memory (committed with the rest of the wizard's picks at the
  * end), which is why this uses {@link OnboardingPubRow} rather than the live
- * subscribe buttons on `/friends`.
+ * subscribe buttons on `/friends`. Each row names its author, so the list needs
+ * no per-person grouping.
  */
 export function StepFriends({
   selected,
@@ -63,14 +63,24 @@ export function StepFriends({
   );
 
   if (isPending) {
-    return <FriendPublishersSkeleton groups={2} />;
+    return (
+      <Flex direction="column" gap="lg">
+        {Array.from({ length: 4 }, (_, index) => (
+          <PubCardSkeleton key={index} />
+        ))}
+      </Flex>
+    );
   }
 
-  const people = data?.people ?? [];
-  const remaining = Math.max(0, (data?.totalPeople ?? 0) - people.length);
-  // The wizard skips this step when there's nobody, so an empty render here
-  // only happens if the graph changed under us mid-flow.
-  if (people.length === 0) {
+  const publications = data?.publications ?? [];
+  const remaining = Math.max(
+    0,
+    (data?.publicationCount ?? 0) - publications.length,
+  );
+
+  // The wizard skips this step when there's nothing to show, so an empty render
+  // here only happens if the graph changed under us mid-flow.
+  if (publications.length === 0) {
     return (
       <Flex direction="column" gap="lg">
         {data?.degraded ? <FriendPublishersDegradedNote /> : null}
@@ -81,71 +91,25 @@ export function StepFriends({
   return (
     <Flex direction="column" gap="lg">
       {data?.degraded ? <FriendPublishersDegradedNote /> : null}
-      <div {...stylex.props(styles.groups)}>
-        {people.map((person) => (
-          <FriendPublisherGroup
-            key={person.did}
-            person={person}
-            action={
-              <SelectAllButton
-                person={person}
-                selected={selected}
-                onToggle={onToggle}
-              />
-            }
-          >
-            {person.publications.map((pub) => (
-              <OnboardingPubRow
-                key={pub.uri}
-                pub={pub}
-                selected={selected.has(pub.uri)}
-                onToggle={(next) => onToggle(pub.uri, next)}
-              />
-            ))}
-          </FriendPublisherGroup>
+      <div {...stylex.props(styles.rows)}>
+        {publications.map((pub) => (
+          <OnboardingPubRow
+            key={pub.uri}
+            pub={pub}
+            selected={selected.has(pub.uri)}
+            onToggle={(next) => onToggle(pub.uri, next)}
+          />
         ))}
       </div>
       {remaining > 0 ? (
         <p {...stylex.props(styles.more)}>
           <Plural
             value={remaining}
-            one="# more person you follow writes here — find them under Discover once you're set up."
-            other="# more people you follow write here — find them under Discover once you're set up."
+            one="# more publication from people you follow — find it under Discover once you're set up."
+            other="# more publications from people you follow — find them under Discover once you're set up."
           />
         </p>
       ) : null}
     </Flex>
-  );
-}
-
-/**
- * Person-level shortcut. People who run several publications are common enough
- * that "subscribe to all of Anna's writing" deserves one press; for a single
- * publication the row below already says everything, so the button is omitted.
- */
-function SelectAllButton({
-  person,
-  selected,
-  onToggle,
-}: {
-  person: FriendPublisher;
-  selected: Set<string>;
-  onToggle: (uri: string, next: boolean) => void;
-}) {
-  if (person.publications.length < 2) return null;
-
-  const all = person.publications.every((pub) => selected.has(pub.uri));
-
-  return (
-    <Button
-      variant={all ? "secondary" : "outline"}
-      size="sm"
-      onPress={() => {
-        for (const pub of person.publications) onToggle(pub.uri, !all);
-      }}
-    >
-      {all ? <Check size={15} aria-hidden /> : <Plus size={15} aria-hidden />}
-      {all ? <Trans>All selected</Trans> : <Trans>Select all</Trans>}
-    </Button>
   );
 }

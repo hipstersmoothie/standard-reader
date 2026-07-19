@@ -37,7 +37,7 @@ import {
 } from "../components/reader/cards";
 import { DiscoverTopicFilters } from "../components/reader/discover-topic-filters";
 import { sortDiscoverTopics } from "../components/reader/discover-topics";
-import { friendDisplayName, initials } from "../components/reader/format";
+import { initials } from "../components/reader/format";
 import {
   Masthead,
   ReaderContent,
@@ -460,25 +460,22 @@ function DiscoverFriendsPrompt() {
 
   if (totalPeople === 0) return null;
 
-  const shown = data?.people.slice(0, FRIENDS_PROMPT_AVATARS) ?? [];
+  const shown = data?.previewAuthors.slice(0, FRIENDS_PROMPT_AVATARS) ?? [];
 
   return (
     <div {...stylex.props(styles.friendsPrompt)}>
       <div {...stylex.props(styles.friendsPromptMain)}>
         <div {...stylex.props(styles.friendsAvatars)} aria-hidden>
-          {shown.map((person) => {
-            const name = friendDisplayName(person);
-            return (
-              <Avatar
-                key={person.did}
-                src={person.avatarUrl ?? undefined}
-                alt=""
-                size="md"
-                fallback={initials(name)}
-                style={styles.friendsAvatar}
-              />
-            );
-          })}
+          {shown.map((author) => (
+            <Avatar
+              key={author.did}
+              src={author.avatarUrl ?? undefined}
+              alt=""
+              size="md"
+              fallback={initials(author.handle ?? author.did)}
+              style={styles.friendsAvatar}
+            />
+          ))}
         </div>
         <p {...stylex.props(styles.friendsPromptText)}>
           <Plural

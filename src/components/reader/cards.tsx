@@ -2226,7 +2226,6 @@ export function PubDirectoryRow({
   isLast = false,
   isFirstInSection = false,
   hideTopic = false,
-  hideOwner = false,
   tagPostCount,
   noLink = false,
   markHidden = false,
@@ -2238,8 +2237,6 @@ export function PubDirectoryRow({
   isFirstInSection?: boolean;
   /** Omit topic chips when the surrounding page already names the tag. */
   hideTopic?: boolean;
-  /** Omit the owner handle when rows are already grouped under that person. */
-  hideOwner?: boolean;
   /** Tagged-post tally for tag directory rows. */
   tagPostCount?: number;
   /** Render body only (no stretched link) — for use inside a GridListItem. */
@@ -2304,7 +2301,7 @@ export function PubDirectoryRow({
               {pub.name}
             </span>
           )}
-          {pub.ownerHandle && !hideOwner ? (
+          {pub.ownerHandle ? (
             <OwnerHandleLink did={pub.did} handle={pub.ownerHandle} />
           ) : null}
           {isHidden ? (

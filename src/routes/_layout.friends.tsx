@@ -8,19 +8,18 @@ import { useCallback, useEffect, useMemo } from "react";
 
 import { ButtonLink } from "#/components/router-links";
 import { discoverApi } from "#/integrations/tanstack-query/api-discover.functions";
-import type { FriendPublisher } from "#/integrations/tanstack-query/api-discover.functions";
 import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
 import { getPublicUrlClient } from "#/lib/public-url";
 import { pageSocialMeta } from "#/lib/site-metadata";
 import { buildAuthRedirectPath } from "#/utils/auth-redirect";
 
-import { PubDirectoryRow } from "../components/reader/cards";
-import { FollowUserButton } from "../components/reader/follow-user-button";
 import {
-  FriendPublisherGroup,
+  PubDirectoryRow,
+  PubDirectoryRowSkeleton,
+} from "../components/reader/cards";
+import {
   FriendPublishersDegradedNote,
-  FriendPublishersSkeleton,
   FriendPublishersSummary,
 } from "../components/reader/friend-publishers";
 import { Masthead, ReaderContent } from "../components/reader/primitives";
@@ -35,6 +34,9 @@ import {
   fontWeight,
   lineHeight,
 } from "../design-system/theme/typography.stylex";
+import type { PublicationCard } from "../integrations/tanstack-query/api-shapes";
+
+const SKELETON_ROWS = 6;
 
 export const Route = createFileRoute("/_layout/friends")({
   beforeLoad: async ({ context }) => {
@@ -62,13 +64,10 @@ export const Route = createFileRoute("/_layout/friends")({
 });
 
 const styles = stylex.create({
-  groups: {
-    display: "flex",
-    flexDirection: "column",
-    marginTop: spacing["8"],
-    rowGap: spacing["12"],
-  },
   summary: {
+    marginTop: spacing["6"],
+  },
+  list: {
     marginTop: spacing["6"],
   },
   emptyCard: {
@@ -105,9 +104,6 @@ const styles = stylex.create({
     minWidth: 0,
     overflowWrap: "anywhere",
   },
-  loading: {
-    marginTop: spacing["8"],
-  },
   loadSentinel: {
     height: 1,
     marginTop: spacing["6"],
@@ -123,32 +119,25 @@ const styles = stylex.create({
 });
 
 /**
- * Seed the per-publication and per-person follow-status caches from the payload
- * we already have, so a page of ten people doesn't fire twenty status requests.
- * Only fills gaps (`prev ?? next`) — an optimistic update from a button press
- * must always win over this snapshot.
+ * Seed the per-publication follow-status cache from the payload we already
+ * have, so a page of two dozen rows doesn't fire two dozen status requests.
+ * Only fills gaps (`prev ?? next`) — an optimistic update from a Subscribe
+ * press must always win over this snapshot.
  */
 function useSeededFollowStatus(
-  people: Array<FriendPublisher> | undefined,
-  subscribedUris: Array<string> | undefined,
+  publications: Array<PublicationCard>,
+  subscribedUris: Array<string>,
 ) {
   const queryClient = useQueryClient();
   useEffect(() => {
-    if (!people) return;
-    const subscribed = new Set(subscribedUris ?? []);
-    for (const person of people) {
+    const subscribed = new Set(subscribedUris);
+    for (const pub of publications) {
       queryClient.setQueryData(
-        readerApi.getUserFollowStatusQueryOptions(person.did).queryKey,
-        (prev) => prev ?? { isFollowing: person.followedInApp },
+        readerApi.getFollowStatusQueryOptions(pub.uri).queryKey,
+        (prev) => prev ?? { isFollowing: subscribed.has(pub.uri) },
       );
-      for (const pub of person.publications) {
-        queryClient.setQueryData(
-          readerApi.getFollowStatusQueryOptions(pub.uri).queryKey,
-          (prev) => prev ?? { isFollowing: subscribed.has(pub.uri) },
-        );
-      }
     }
-  }, [people, subscribedUris, queryClient]);
+  }, [publications, subscribedUris, queryClient]);
 }
 
 function FriendsPage() {
@@ -166,8 +155,8 @@ function FriendsPage() {
   // A failed request and a partial Bluesky sweep get the same treatment: say we
   // couldn't check, never "nobody you follow publishes here".
   const couldNotCheck = isError || (first?.degraded ?? false);
-  const people = useMemo(
-    () => data?.pages.flatMap((page) => page.people) ?? [],
+  const publications = useMemo(
+    () => data?.pages.flatMap((page) => page.publications) ?? [],
     [data],
   );
   const subscribedUris = useMemo(
@@ -175,7 +164,7 @@ function FriendsPage() {
     [data],
   );
 
-  useSeededFollowStatus(people, subscribedUris);
+  useSeededFollowStatus(publications, subscribedUris);
 
   const loadMore = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) {
@@ -186,7 +175,7 @@ function FriendsPage() {
   const loadMoreRef = useInfiniteScrollSentinel(
     loadMore,
     hasNextPage,
-    people.length,
+    publications.length,
   );
 
   return (
@@ -194,16 +183,22 @@ function FriendsPage() {
       <Masthead
         kicker={t`Discover`}
         title={t`People you follow`}
-        dek={t`Publications written by the people you follow on Bluesky. Follow someone here and every publication they write lands on your Home feed.`}
-        metaLabel={t`Writers`}
-        metaValue={first ? String(first.totalPeople) : undefined}
+        dek={t`Publications written by the people you follow on Bluesky.`}
+        metaLabel={t`Publications`}
+        metaValue={first ? String(first.publicationCount) : undefined}
       />
 
       {isPending ? (
-        <div {...stylex.props(styles.loading)}>
-          <FriendPublishersSkeleton />
+        <div {...stylex.props(styles.list)}>
+          {Array.from({ length: SKELETON_ROWS }, (_, index) => (
+            <PubDirectoryRowSkeleton
+              key={index}
+              isFirstInSection={index === 0}
+              isLast={index === SKELETON_ROWS - 1}
+            />
+          ))}
         </div>
-      ) : people.length === 0 ? (
+      ) : publications.length === 0 ? (
         <div {...stylex.props(styles.emptyCard)}>
           <Flex
             direction="column"
@@ -241,40 +236,19 @@ function FriendsPage() {
         <>
           <div {...stylex.props(styles.summary)}>
             <FriendPublishersSummary
-              people={first?.totalPeople ?? people.length}
+              people={first?.totalPeople ?? 0}
               publicationCount={first?.publicationCount ?? 0}
             />
             {couldNotCheck ? <FriendPublishersDegradedNote /> : null}
           </div>
-          <div {...stylex.props(styles.groups)}>
-            {people.map((person) => (
-              <FriendPublisherGroup
-                key={person.did}
-                person={person}
-                action={
-                  <FollowUserButton
-                    did={person.did}
-                    signedIn
-                    size="sm"
-                    user={{
-                      did: person.did,
-                      handle: person.handle,
-                      displayName: person.displayName,
-                      avatarUrl: person.avatarUrl,
-                    }}
-                  />
-                }
-              >
-                {person.publications.map((pub, index) => (
-                  <PubDirectoryRow
-                    key={pub.uri}
-                    pub={pub}
-                    hideOwner
-                    isFirstInSection={index === 0}
-                    isLast={index === person.publications.length - 1}
-                  />
-                ))}
-              </FriendPublisherGroup>
+          <div {...stylex.props(styles.list)}>
+            {publications.map((pub, index) => (
+              <PubDirectoryRow
+                key={pub.uri}
+                pub={pub}
+                isFirstInSection={index === 0}
+                isLast={index === publications.length - 1}
+              />
             ))}
           </div>
           {isFetchingNextPage ? (

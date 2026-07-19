@@ -220,17 +220,3 @@ export function formatTime(seconds: number): string {
   const secs = total % 60;
   return `${minutes}:${secs.toString().padStart(2, "0")}`;
 }
-
-/**
- * Display label for a person in the "people you follow" surfaces: their profile
- * name when they have one, else the handle, else the bare DID.
- */
-export function friendDisplayName(person: {
-  did: string;
-  handle: string | null;
-  displayName: string | null;
-}): string {
-  return (
-    person.displayName ?? (person.handle ? `@${person.handle}` : person.did)
-  );
-}

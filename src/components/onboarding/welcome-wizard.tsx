@@ -287,7 +287,7 @@ export function WelcomeWizard({
       limit: ONBOARDING_FRIENDS_LIMIT,
     }),
   );
-  const hasFriends = (friends?.totalPeople ?? 0) > 0;
+  const hasFriends = (friends?.publicationCount ?? 0) > 0;
   // A dedicated step that renders nobody is a dead screen, so it only exists
   // when it has content. While the lookup is still in flight we keep the step
   // in the flow rather than dropping a dot mid-wizard.

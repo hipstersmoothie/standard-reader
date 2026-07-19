@@ -40,26 +40,29 @@ import { discoverEligiblePublicationWhere } from "#/server/reader/publication-fi
  */
 export const FRIEND_CANDIDATE_LIMIT = 5000;
 
-export interface FriendPublisher {
+/** A writer you follow, for the Discover prompt's avatar stack. */
+export interface FriendAuthor {
   did: string;
   handle: string | null;
-  displayName: string | null;
   avatarUrl: string | null;
-  /** True when the reader already follows this person *in Standard Reader*. */
-  followedInApp: boolean;
-  publications: Array<PublicationCard>;
 }
 
 export interface FriendPublishers {
-  /** This page of people. */
-  people: Array<FriendPublisher>;
-  /** Every matching person, not just this page — the headline count. */
-  totalPeople: number;
-  /** Total publications across every match — the headline count. */
+  /** This page of publications, ranked by readership. */
+  publications: Array<PublicationCard>;
+  /** Every matching publication, not just this page — the headline count. */
   publicationCount: number;
+  /** Distinct writers behind those publications — the headline count. */
+  totalPeople: number;
+  /** A few writers for the Discover prompt's avatar stack. */
+  previewAuthors: Array<FriendAuthor>;
   /** Offset for the next page, or `null` at the end. */
   nextOffset: number | null;
-  /** Publication URIs on this page the reader already subscribes to. */
+  /**
+   * Publications on this page the reader already subscribes to. Normally empty
+   * — subscriptions are filtered out server-side — but a row subscribed to
+   * during this visit stays put, so the client seeds its state from here.
+   */
   subscribedUris: Array<string>;
   /**
    * The Bluesky AppView didn't answer for at least one batch, so the result is
@@ -71,17 +74,21 @@ export interface FriendPublishers {
 }
 
 export const EMPTY_FRIEND_PUBLISHERS: FriendPublishers = {
-  people: [],
-  totalPeople: 0,
+  publications: [],
   publicationCount: 0,
+  totalPeople: 0,
+  previewAuthors: [],
   nextOffset: null,
   subscribedUris: [],
   degraded: false,
   truncated: false,
 };
 
-/** Default page size for `/friends`. */
-export const FRIEND_PAGE_SIZE = 12;
+/** Writers shown in the Discover prompt's avatar stack. */
+export const FRIEND_PREVIEW_AUTHORS = 4;
+
+/** Default page size for `/friends`. Matches the Discover directory. */
+export const FRIEND_PAGE_SIZE = 24;
 
 interface CachedGraph {
   followedDids: Array<string>;
@@ -221,66 +228,67 @@ async function publicationsByAuthors(
   return grouped;
 }
 
-/** Combined readership across everything a person publishes. */
-function totalReaders(person: FriendPublisher): number {
-  return person.publications.reduce((n, pub) => n + pub.subscriberCount, 0);
-}
-
-export interface FriendProfileRow {
-  did: string;
-  handle: string | null;
-  displayName: string | null;
-  avatarUrl: string | null;
-}
-
 /**
- * Assemble the person-grouped result from the pieces the DB returned: drop
- * followed DIDs that publish nothing, prefer the profile row for identity and
- * fall back to whatever the publication carries, and rank by combined
- * readership (handle breaks ties, so the order is stable between requests).
- * Pure so it can be unit-tested without a DB.
+ * Rank the publications written by people you follow. Ordered by readership so
+ * the best-known writing leads, with name and URI breaking ties so the order is
+ * stable between requests (and therefore between pages).
+ *
+ * Publications the reader already subscribes to are dropped: this is a page of
+ * things to discover, and a list of rows already marked "Subscribed" is just
+ * noise between the reader and what's new to them.
+ *
+ * A flat list, not a per-person grouping: the reader is picking publications to
+ * subscribe to, and every row already names its author. Pure so it can be
+ * unit-tested without a DB.
  */
-export function buildFriendPublishers({
-  followedDids,
-  publicationsByDid,
-  profiles,
-  appFollowedDids,
-}: {
-  followedDids: ReadonlyArray<string>;
-  publicationsByDid: ReadonlyMap<string, Array<PublicationCard>>;
-  profiles: ReadonlyMap<string, FriendProfileRow>;
-  appFollowedDids: ReadonlySet<string>;
-}): Array<FriendPublisher> {
-  const people: Array<FriendPublisher> = [];
+export function rankFriendPublications(
+  followedDids: ReadonlyArray<string>,
+  publicationsByDid: ReadonlyMap<string, Array<PublicationCard>>,
+  subscribedUris: ReadonlySet<string> = new Set(),
+): Array<PublicationCard> {
+  const publications: Array<PublicationCard> = [];
   for (const did of followedDids) {
-    const publications = publicationsByDid.get(did);
-    if (!publications || publications.length === 0) continue;
-    const profile = profiles.get(did);
-    people.push({
-      did,
-      handle: profile?.handle ?? publications[0]?.ownerHandle ?? null,
-      displayName: profile?.displayName ?? null,
-      avatarUrl: profile?.avatarUrl ?? publications[0]?.ownerAvatarUrl ?? null,
-      followedInApp: appFollowedDids.has(did),
-      publications,
-    });
+    const owned = publicationsByDid.get(did);
+    if (!owned) continue;
+    for (const pub of owned) {
+      if (subscribedUris.has(pub.uri)) continue;
+      publications.push(pub);
+    }
   }
 
-  people.sort((a, b) => {
-    const diff = totalReaders(b) - totalReaders(a);
-    if (diff !== 0) return diff;
-    return (a.handle ?? a.did).localeCompare(b.handle ?? b.did);
+  return publications.toSorted((a, b) => {
+    const readers = b.subscriberCount - a.subscriberCount;
+    if (readers !== 0) return readers;
+    const name = a.name.localeCompare(b.name);
+    if (name !== 0) return name;
+    return a.uri.localeCompare(b.uri);
   });
+}
 
-  return people;
+/** Distinct writers behind a ranked list, in the order they first appear. */
+export function friendAuthors(
+  publications: ReadonlyArray<PublicationCard>,
+  limit?: number,
+): Array<FriendAuthor> {
+  const seen = new Set<string>();
+  const authors: Array<FriendAuthor> = [];
+  for (const pub of publications) {
+    if (seen.has(pub.did)) continue;
+    seen.add(pub.did);
+    authors.push({
+      did: pub.did,
+      handle: pub.ownerHandle,
+      avatarUrl: pub.ownerAvatarUrl,
+    });
+    if (limit != null && authors.length >= limit) break;
+  }
+  return authors;
 }
 
 /**
- * Publications authored by the Bluesky accounts `readerDid` follows.
- *
- * Grouped by person, because that's the unit the reader thinks in: "Anna
- * writes here" rather than "here is a publication that happens to be Anna's".
- * People are ordered by total readership across their publications.
+ * Publications authored by the Bluesky accounts `readerDid` follows, ranked by
+ * readership and paged. Every card carries its owner's handle and avatar, so
+ * the author stays visible without grouping the list by person.
  */
 export async function friendPublishers(
   db: Db,
@@ -326,73 +334,34 @@ export async function friendPublishers(
     return { ...EMPTY_FRIEND_PUBLISHERS, degraded, truncated };
   }
 
-  const uf = schema.userFollows;
   const sub = schema.subscriptions;
-  const pr = schema.profiles;
 
-  const [byAuthor, appFollowRows, profileRows] = await Promise.all([
+  const [byAuthor, subscribedRows] = await Promise.all([
     publicationsByAuthors(db, schema, followedDids),
     db
-      .select({ did: uf.subjectDid })
-      .from(uf)
-      .where(
-        and(
-          eq(uf.followerDid, readerDid),
-          eq(uf.deleted, false),
-          inArray(uf.subjectDid, followedDids),
-        ),
-      ),
-    db
-      .select({
-        did: pr.did,
-        handle: pr.handle,
-        displayName: pr.displayName,
-        avatarUrl: pr.avatarUrl,
-      })
-      .from(pr)
-      .where(inArray(pr.did, followedDids)),
+      .select({ uri: sub.publicationUri })
+      .from(sub)
+      .where(and(eq(sub.subscriberDid, readerDid), eq(sub.deleted, false))),
   ]);
+  const subscribed = new Set(subscribedRows.map((row) => row.uri));
+  const ranked = rankFriendPublications(followedDids, byAuthor, subscribed);
 
-  const people = buildFriendPublishers({
-    followedDids,
-    publicationsByDid: byAuthor,
-    profiles: new Map(profileRows.map((row) => [row.did, row])),
-    appFollowedDids: new Set(appFollowRows.map((row) => row.did)),
-  });
-
-  // Headline counts describe the whole match; only a page is serialized. 240
-  // people with their publication cards is half a megabyte of JSON otherwise.
-  const totalPeople = people.length;
-  const publicationCount = people.reduce(
-    (n, person) => n + person.publications.length,
-    0,
-  );
-  const page = people.slice(offset, offset + limit);
-  const nextOffset = offset + limit < totalPeople ? offset + limit : null;
-
-  const publicationUris = page.flatMap((person) =>
-    person.publications.map((pub) => pub.uri),
-  );
-  const subscribedRows =
-    publicationUris.length > 0
-      ? await db
-          .select({ uri: sub.publicationUri })
-          .from(sub)
-          .where(
-            and(
-              eq(sub.subscriberDid, readerDid),
-              eq(sub.deleted, false),
-              inArray(sub.publicationUri, publicationUris),
-            ),
-          )
-      : [];
+  // Headline counts describe the whole match; only a page is serialized —
+  // 362 publication cards at once is half a megabyte of JSON otherwise.
+  const publicationCount = ranked.length;
+  const page = ranked.slice(offset, offset + limit);
+  const nextOffset = offset + limit < publicationCount ? offset + limit : null;
 
   return {
-    people: page,
-    totalPeople,
+    publications: page,
     publicationCount,
+    totalPeople: friendAuthors(ranked).length,
+    previewAuthors: friendAuthors(ranked, FRIEND_PREVIEW_AUTHORS),
     nextOffset,
-    subscribedUris: [...new Set(subscribedRows.map((row) => row.uri))],
+    // Every row on the page is unsubscribed by construction; the client seeds
+    // its follow-status cache from this so a page of rows costs no extra
+    // requests, and its own optimistic updates still win.
+    subscribedUris: [],
     degraded,
     truncated,
   };

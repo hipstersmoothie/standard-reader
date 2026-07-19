@@ -29,7 +29,7 @@ import type { Db, PublicationCard, Schema } from "./api-shapes";
 import { dbMiddleware } from "./db-middleware";
 
 export type {
-  FriendPublisher,
+  FriendAuthor,
   FriendPublishers,
 } from "#/server/reader/bsky-friends";
 
@@ -620,19 +620,27 @@ function getOnboardingSuggestionsQueryOptions({
 }
 
 /**
- * A single page of friends. The Discover prompt and the onboarding step take a
- * small page (they only need counts and the first few faces); `/friends` pages
- * through with {@link getFriendPublishersInfiniteQueryOptions}. The expensive
- * Bluesky sweep is cached server-side per reader, so later pages are DB-only.
+ * A single page of friends' publications. The Discover prompt and the
+ * onboarding step take a small page (they only need the counts and the first
+ * few faces); `/friends` pages through with
+ * {@link getFriendPublishersInfiniteQueryOptions}. The expensive Bluesky sweep
+ * is cached server-side per reader, so later pages are DB-only.
+ *
+ * Keyed under `friends`, deliberately *not* `discover`: subscribing invalidates
+ * the whole `["discover"]` prefix, and since the server drops publications the
+ * reader already subscribes to, that would make a row vanish the moment it was
+ * subscribed to. Rows should settle into "Subscribed" and stay put until the
+ * next visit.
  */
 function getFriendPublishersQueryOptions({
   limit = FRIEND_PAGE_SIZE,
   offset = 0,
 }: z.input<typeof friendPublishersInput> = {}) {
   return queryOptions({
-    queryKey: ["discover", "friend-publishers", limit, offset] as const,
+    queryKey: ["friends", "publications", limit, offset] as const,
     queryFn: async () => getFriendPublishers({ data: { limit, offset } }),
     staleTime: 5 * 60_000,
+    refetchOnWindowFocus: false,
   });
 }
 
@@ -640,12 +648,13 @@ function getFriendPublishersInfiniteQueryOptions({
   limit = FRIEND_PAGE_SIZE,
 }: { limit?: number } = {}) {
   return infiniteQueryOptions({
-    queryKey: ["discover", "friend-publishers", "infinite", limit] as const,
+    queryKey: ["friends", "publications", "infinite", limit] as const,
     queryFn: async ({ pageParam }) =>
       getFriendPublishers({ data: { limit, offset: pageParam } }),
     initialPageParam: 0,
     getNextPageParam: (lastPage) => lastPage.nextOffset ?? undefined,
     staleTime: 5 * 60_000,
+    refetchOnWindowFocus: false,
   });
 }
 

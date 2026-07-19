@@ -2,8 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { PublicationCard } from "#/integrations/tanstack-query/api-shapes";
 
-import type { FriendProfileRow } from "./bsky-friends";
-import { buildFriendPublishers } from "./bsky-friends";
+import { friendAuthors, rankFriendPublications } from "./bsky-friends";
 
 function pub(
   did: string,
@@ -30,130 +29,88 @@ function pub(
   };
 }
 
-function profile(did: string, over: Partial<FriendProfileRow> = {}) {
-  return {
-    did,
-    handle: `${did}.example`,
-    displayName: null,
-    avatarUrl: null,
-    ...over,
-  } satisfies FriendProfileRow;
-}
-
-describe("buildFriendPublishers", () => {
-  it("drops followed accounts that publish nothing", () => {
-    const people = buildFriendPublishers({
-      followedDids: ["did:a", "did:silent"],
-      publicationsByDid: new Map([["did:a", [pub("did:a", "a1", 5)]]]),
-      profiles: new Map([
-        ["did:a", profile("did:a")],
-        ["did:silent", profile("did:silent")],
+describe("rankFriendPublications", () => {
+  it("ranks by readership across every writer", () => {
+    const ranked = rankFriendPublications(
+      ["did:a", "did:b"],
+      new Map([
+        ["did:a", [pub("did:a", "a-small", 5), pub("did:a", "a-big", 90)]],
+        ["did:b", [pub("did:b", "b-mid", 40)]],
       ]),
-      appFollowedDids: new Set(),
-    });
+    );
 
-    expect(people.map((p) => p.did)).toEqual(["did:a"]);
+    expect(ranked.map((p) => p.uri)).toEqual(["a-big", "b-mid", "a-small"]);
   });
 
-  it("ranks people by combined readership across their publications", () => {
-    const people = buildFriendPublishers({
-      followedDids: ["did:small", "did:split", "did:big"],
-      publicationsByDid: new Map([
-        ["did:small", [pub("did:small", "s1", 40)]],
-        // Two modest publications outrank one mid-sized one.
-        ["did:split", [pub("did:split", "p1", 30), pub("did:split", "p2", 30)]],
-        ["did:big", [pub("did:big", "b1", 100)]],
+  it("breaks ties on name then URI so paging stays stable", () => {
+    const ranked = rankFriendPublications(
+      ["did:a", "did:b"],
+      new Map([
+        ["did:a", [pub("did:a", "z-uri", 10, { name: "Same" })]],
+        ["did:b", [pub("did:b", "a-uri", 10, { name: "Same" })]],
       ]),
-      profiles: new Map(),
-      appFollowedDids: new Set(),
-    });
+    );
 
-    expect(people.map((p) => p.did)).toEqual([
-      "did:big",
-      "did:split",
-      "did:small",
+    expect(ranked.map((p) => p.uri)).toEqual(["a-uri", "z-uri"]);
+  });
+
+  it("drops publications the reader already subscribes to", () => {
+    const ranked = rankFriendPublications(
+      ["did:a"],
+      new Map([
+        ["did:a", [pub("did:a", "known", 90), pub("did:a", "new", 10)]],
+      ]),
+      new Set(["known"]),
+    );
+
+    expect(ranked.map((p) => p.uri)).toEqual(["new"]);
+  });
+
+  it("ignores followed accounts that publish nothing", () => {
+    const ranked = rankFriendPublications(
+      ["did:silent", "did:a"],
+      new Map([["did:a", [pub("did:a", "a1", 1)]]]),
+    );
+
+    expect(ranked.map((p) => p.uri)).toEqual(["a1"]);
+  });
+});
+
+describe("friendAuthors", () => {
+  it("dedupes writers, keeping rank order", () => {
+    const ranked = rankFriendPublications(
+      ["did:a", "did:b"],
+      new Map([
+        [
+          "did:a",
+          [
+            pub("did:a", "a1", 90, { ownerHandle: "ana.example" }),
+            pub("did:a", "a2", 5, { ownerHandle: "ana.example" }),
+          ],
+        ],
+        ["did:b", [pub("did:b", "b1", 40, { ownerHandle: "bo.example" })]],
+      ]),
+    );
+
+    expect(friendAuthors(ranked).map((a) => a.handle)).toEqual([
+      "ana.example",
+      "bo.example",
     ]);
   });
 
-  it("breaks readership ties on handle so ordering is stable", () => {
-    const people = buildFriendPublishers({
-      followedDids: ["did:z", "did:a"],
-      publicationsByDid: new Map([
-        ["did:z", [pub("did:z", "z1", 10)]],
-        ["did:a", [pub("did:a", "a1", 10)]],
+  it("honours the preview limit", () => {
+    const ranked = rankFriendPublications(
+      ["did:a", "did:b", "did:c"],
+      new Map([
+        ["did:a", [pub("did:a", "a1", 30)]],
+        ["did:b", [pub("did:b", "b1", 20)]],
+        ["did:c", [pub("did:c", "c1", 10)]],
       ]),
-      profiles: new Map([
-        ["did:z", profile("did:z", { handle: "zoe.example" })],
-        ["did:a", profile("did:a", { handle: "ana.example" })],
-      ]),
-      appFollowedDids: new Set(),
-    });
+    );
 
-    expect(people.map((p) => p.handle)).toEqual(["ana.example", "zoe.example"]);
-  });
-
-  it("prefers the profile row for identity and falls back to the publication", () => {
-    const people = buildFriendPublishers({
-      followedDids: ["did:withprofile", "did:noprofile"],
-      publicationsByDid: new Map([
-        [
-          "did:withprofile",
-          [
-            pub("did:withprofile", "w1", 2, {
-              ownerHandle: "stale.example",
-              ownerAvatarUrl: "https://cdn.example/stale.jpg",
-            }),
-          ],
-        ],
-        [
-          "did:noprofile",
-          [
-            pub("did:noprofile", "n1", 1, {
-              ownerHandle: "fallback.example",
-              ownerAvatarUrl: "https://cdn.example/fallback.jpg",
-            }),
-          ],
-        ],
-      ]),
-      profiles: new Map([
-        [
-          "did:withprofile",
-          profile("did:withprofile", {
-            handle: "current.example",
-            displayName: "Current Name",
-            avatarUrl: "https://cdn.example/current.jpg",
-          }),
-        ],
-      ]),
-      appFollowedDids: new Set(),
-    });
-
-    const [withProfile, noProfile] = people;
-    expect(withProfile).toMatchObject({
-      handle: "current.example",
-      displayName: "Current Name",
-      avatarUrl: "https://cdn.example/current.jpg",
-    });
-    expect(noProfile).toMatchObject({
-      handle: "fallback.example",
-      displayName: null,
-      avatarUrl: "https://cdn.example/fallback.jpg",
-    });
-  });
-
-  it("marks people the reader already follows in-app", () => {
-    const people = buildFriendPublishers({
-      followedDids: ["did:a", "did:b"],
-      publicationsByDid: new Map([
-        ["did:a", [pub("did:a", "a1", 5)]],
-        ["did:b", [pub("did:b", "b1", 4)]],
-      ]),
-      profiles: new Map(),
-      appFollowedDids: new Set(["did:b"]),
-    });
-
-    expect(
-      Object.fromEntries(people.map((p) => [p.did, p.followedInApp])),
-    ).toEqual({ "did:a": false, "did:b": true });
+    expect(friendAuthors(ranked, 2).map((a) => a.did)).toEqual([
+      "did:a",
+      "did:b",
+    ]);
   });
 });
