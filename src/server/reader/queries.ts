@@ -1311,8 +1311,9 @@ export async function savedForLater(
 }
 
 /**
- * "Week in review" ranking for the weekly Bluesky thread: the biggest discover-
- * eligible articles across the whole network over the last `sinceDays`, ranked by
+ * "Week in review" ranking, shared by the weekly Bluesky thread and the weekly
+ * digest's "Top on the network this week" section: the biggest discover-eligible
+ * articles across the whole network over the last `sinceDays`, ranked by
  * engagement ACCUMULATED across the window rather than by `trending_score`.
  *
  * Unlike {@link topNetworkArticles} (which orders by the precomputed
@@ -1334,7 +1335,19 @@ export async function savedForLater(
 export async function weekInReviewArticles(
   db: Db,
   schema: Schema,
-  { sinceDays, limit }: { sinceDays: number; limit: number },
+  {
+    sinceDays,
+    limit,
+    excludeUris = [],
+    excludeReadForDid,
+  }: {
+    sinceDays: number;
+    limit: number;
+    /** Articles already shown elsewhere (the digest's best-of picks). */
+    excludeUris?: Array<string>;
+    /** Omit documents this reader has already read (weekly digest). */
+    excludeReadForDid?: string;
+  },
 ): Promise<Array<ArticleCard>> {
   const d = schema.documents;
   const p = schema.publications;
@@ -1371,6 +1384,12 @@ export async function weekInReviewArticles(
     sql`${d.publishedAt} > now() - (${sinceDays}::text || ' days')::interval`,
     sql`${distinctLikers} >= ${MIN_ARTICLE_RECOMMENDERS}`,
   ];
+  if (excludeUris.length > 0) {
+    conds.push(notInArray(d.uri, excludeUris));
+  }
+  if (excludeReadForDid) {
+    conds.push(documentUnreadWhere(schema, excludeReadForDid));
+  }
 
   const rows = await db
     .select({

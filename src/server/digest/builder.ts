@@ -8,6 +8,12 @@
  * (co-subscription / co-recommend blend, already excludes follows, cold-starts
  * to popular). "Saved for later" reuses {@link savedForLater} (the reader's most
  * recent bookmarks). Mirrors how `src/server/feeds/build.ts` composes cards.
+ *
+ * "Top on the network" reuses {@link weekInReviewArticles} — the same ranking the
+ * weekly Bluesky thread posts, so both weekly surfaces agree on what the week's
+ * biggest articles were. It scores engagement live rather than reading
+ * `trending_score`, which is only recomputed for the 4-day discover slice and so
+ * goes stale across days 5–7 of this section's 7-day window.
  */
 
 import type {
@@ -21,7 +27,7 @@ import {
   recommendedPublications,
   savedForLater,
   selectFollowUris,
-  topNetworkArticles,
+  weekInReviewArticles,
 } from "#/server/reader/queries";
 import { rotationSeed } from "#/server/reader/rail-rotation";
 
@@ -121,7 +127,7 @@ export async function buildDigestForUser(
 
   const [networkArticles, saved, recommendations] = await Promise.all([
     sections.network
-      ? topNetworkArticles(db, schema, {
+      ? weekInReviewArticles(db, schema, {
           sinceDays: DIGEST_WINDOW_DAYS,
           limit: DIGEST_NETWORK_ARTICLE_LIMIT,
           excludeUris: articleUris,
