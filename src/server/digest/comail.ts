@@ -26,6 +26,19 @@ export interface SendEmailResult {
 }
 
 /**
+ * `Standard Reader <digest@standard-reader.app>` so inboxes show a name rather
+ * than a bare address. Passes `COMAIL_FROM` through untouched when it already
+ * carries its own display name, and quotes the name so a comma or period in it
+ * can't split the address per RFC 5322.
+ */
+function fromHeader(): string {
+  const address = digestConfig.comailFrom;
+  if (address.includes("<")) return address;
+  const name = digestConfig.comailFromName.replaceAll('"', String.raw`\"`);
+  return `"${name}" <${address}>`;
+}
+
+/**
  * Send one email through comail. Never throws on an HTTP error — returns a
  * structured result so the runner can distinguish a rate-limit stop (429) from
  * a per-recipient failure and keep going.
@@ -40,7 +53,7 @@ export async function sendEmail(
   };
 
   const body: Record<string, unknown> = {
-    from: digestConfig.comailFrom,
+    from: fromHeader(),
     to: input.to,
     subject: input.subject,
     text: input.text,

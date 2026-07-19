@@ -32,7 +32,6 @@ import {
 import {
   EmailFooter,
   EmailHead,
-  EmailHeader,
   EmailShell,
   PubIcon,
   SectionLabel,
@@ -64,7 +63,6 @@ interface DigestPublication {
 }
 
 interface DigestEmailProps {
-  weekLabel: string; // e.g. "Week of Jul 4, 2026"
   articles: Array<DigestArticle>;
   networkArticles: Array<DigestArticle>;
   saved: Array<DigestArticle>;
@@ -405,7 +403,6 @@ function RecommendationCard({ pub }: { pub: DigestPublication }) {
 /* ------------------------------------------------------------------ */
 
 export default function WeeklyDigestEmail({
-  weekLabel,
   articles,
   networkArticles,
   saved,
@@ -413,7 +410,7 @@ export default function WeeklyDigestEmail({
   unsubscribeUrl,
   logoUrl,
 }: DigestEmailProps) {
-  const px = { paddingLeft: "34px", paddingRight: "34px" };
+  const px = { paddingLeft: "24px", paddingRight: "24px" };
 
   return (
     <Html lang="en">
@@ -428,8 +425,6 @@ export default function WeeklyDigestEmail({
         style={{ margin: 0, padding: 0, background: c.page }}
       >
         <EmailShell>
-          <EmailHeader logoUrl={logoUrl} rightLabel={weekLabel} />
-
           {/* ---- Best of your follows ---- */}
           <Section style={{ ...px, paddingTop: "22px" }}>
             <SectionLabel>Best of your subscriptions</SectionLabel>
