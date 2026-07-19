@@ -1379,13 +1379,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
             <Flex direction="column" gap="lg" style={styles.foot}>
               <NavbarAuth variant="sidebar" menuPlacement="right bottom" />
-              <Button
-                variant="primary"
-                style={styles.addTrigger}
-                onPress={() => setAddModalOpen(true)}
-              >
-                <Plus size={16} /> <Trans>Add publication</Trans>
-              </Button>
+              {/* Guests can't add publications, so the button is signed-in only.
+                They switch language via the globe next to "Log in" (NavbarAuth). */}
+              {signedIn ? (
+                <Button
+                  variant="primary"
+                  style={styles.addTrigger}
+                  onPress={() => setAddModalOpen(true)}
+                >
+                  <Plus size={16} /> <Trans>Add publication</Trans>
+                </Button>
+              ) : null}
             </Flex>
           </aside>
 
