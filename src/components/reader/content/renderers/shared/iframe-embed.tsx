@@ -4,35 +4,9 @@ import { useLingui } from "@lingui/react/macro";
 import * as stylex from "@stylexjs/stylex";
 
 import { articleBodyStyles } from "../../body-styles";
+import { iframeReferrerPolicy, parseDimension } from "./iframe-embed.utils";
 
 const DEFAULT_ASPECT_RATIO = "16 / 9";
-
-/** YouTube (and some other players) reject embeds without a cross-origin Referer. */
-function iframeReferrerPolicy(url: string): React.HTMLAttributeReferrerPolicy {
-  const normalized = url.toLowerCase();
-  const needsReferrer =
-    normalized.includes("youtube.com") ||
-    normalized.includes("youtube-nocookie.com") ||
-    normalized.includes("youtu.be") ||
-    normalized.includes("player.vimeo.com") ||
-    normalized.includes("vimeo.com") ||
-    normalized.includes("fast.wistia.com") ||
-    normalized.includes("wistia.com") ||
-    normalized.includes("wistia.net");
-
-  return needsReferrer ? "strict-origin-when-cross-origin" : "no-referrer";
-}
-
-function parseDimension(
-  value: string | number | undefined,
-): number | undefined {
-  if (typeof value === "number" && value > 0) return value;
-  if (typeof value === "string") {
-    const parsed = Number.parseFloat(value);
-    if (Number.isFinite(parsed) && parsed > 0) return parsed;
-  }
-  return undefined;
-}
 
 export function IframeEmbedView({
   url,
