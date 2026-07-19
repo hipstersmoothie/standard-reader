@@ -723,8 +723,19 @@ export const articleBodyStyles = stylex.create({
     marginTop: spacing["0"],
   },
   taskCheckbox: {
+    // The article body sets `line-height: 1.68` (see `body` above), so each
+    // task row's first line box is 1.68em tall while a native checkbox is only
+    // a fraction of that. Top-aligning it (the row is `align-items: flex-start`)
+    // left the indicator floating above the text's optical center. Give the
+    // checkbox a deterministic 0.9em box and center it within that first line —
+    // `marginTop = (lineBox - checkbox) / 2` — so multi-line items still line up
+    // with their first line. Everything is expressed in `em`, so it tracks the
+    // body font size across the breakpoint and reading-size preferences.
     flexShrink: 0,
-    marginTop: spacing["1"],
+    fontSize: "inherit",
+    width: "0.9em",
+    height: "0.9em",
+    marginTop: "calc((1.68em - 0.9em) / 2)",
   },
   unknownBlock: {
     borderColor: uiColor.border1,
