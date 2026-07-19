@@ -22,6 +22,7 @@ import type { CollectionManifest } from "#/lib/collections/manifest";
 import { serializeCollectionManifestForRepo } from "#/lib/markpub/collection-fields.ts";
 import { listRepoRecords } from "#/server/atproto/fetch-record";
 import { buildAtUri } from "#/server/atproto/uri";
+import { logEvent } from "#/server/observability/log";
 
 export {
   collectionDocumentUri,
@@ -169,7 +170,30 @@ interface ApplyWriteResult {
  */
 export const APPLY_WRITES_MAX_BATCH = 200;
 
-/** Atomically apply one or more repo writes (create / update / delete). */
+/** Raised when a PDS returns success but acknowledges fewer writes than we sent. */
+export class ApplyWritesUnacknowledgedError extends Error {
+  readonly requested: number;
+  readonly acknowledged: number;
+
+  constructor(repo: string, requested: number, acknowledged: number) {
+    super(
+      `applyWrites acknowledged ${acknowledged} of ${requested} writes for ${repo}`,
+    );
+    this.name = "ApplyWritesUnacknowledgedError";
+    this.requested = requested;
+    this.acknowledged = acknowledged;
+  }
+}
+
+/**
+ * Atomically apply one or more repo writes (create / update / delete).
+ *
+ * A 2xx here is not by itself proof the writes committed: we have seen a PDS
+ * return success for a 100-record batch and commit nothing, with no error and
+ * no firehose event, which is indistinguishable from success to every caller
+ * downstream. So the response is checked against what we sent rather than
+ * assumed — see {@link ApplyWritesUnacknowledgedError}.
+ */
 export async function repoApplyWrites(
   client: Client,
   input: { repo: string; writes: Array<ApplyWriteOp> },
@@ -187,8 +211,32 @@ export async function repoApplyWrites(
     }),
   );
 
+  const rows = res.results;
+  if (rows == null) {
+    // `results` is optional in the lexicon and some PDS implementations omit it,
+    // so absence is not evidence of failure — but it does mean the write is
+    // unconfirmed. Record it so a PDS that silently drops writes is visible in
+    // telemetry instead of passing as success.
+    logEvent("atproto.applyWritesUnconfirmed", {
+      repo: input.repo,
+      requested: input.writes.length,
+    });
+    return [];
+  }
+
+  // A short `results` is the PDS telling us it did less than we asked. Fail
+  // loudly: the caller's retry is safe (writes are keyed by deterministic rkey)
+  // and a wrong "success" is worse than a visible error.
+  if (rows.length < input.writes.length) {
+    throw new ApplyWritesUnacknowledgedError(
+      input.repo,
+      input.writes.length,
+      rows.length,
+    );
+  }
+
   const results: Array<ApplyWriteResult | null> = [];
-  for (const row of res.results ?? []) {
+  for (const row of rows) {
     if (
       typeof row === "object" &&
       row !== null &&
