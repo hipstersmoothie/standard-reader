@@ -123,22 +123,34 @@ export interface UnreadCutoffOpts {
 
 /**
  * Scalar subquery: the earliest moment a source the reader follows began
- * surfacing a document — `min(coalesce(created_at, indexed_at))` across the
- * reader's active subscription to `pubUriExpr` and active user-follow of
- * `authorDidExpr`. `NULL` when the reader follows no source that surfaces the
- * document (e.g. a discover card), so callers treat `NULL` as "no cutoff" and
- * leave the document's unread state unchanged. `pubUriExpr` / `authorDidExpr`
- * are the outer publication-uri / author-did column expressions to correlate on
- * (e.g. `"documents"."publication_uri"`, or a CTE's `cand.publication_uri`).
+ * surfacing a document — `min(coalesce(created_at, indexed_at))` across *every*
+ * followed source that can surface it: an active subscription to `pubUriExpr`,
+ * and an active user-follow of the document's author (`authorDidExpr`), of a
+ * credited contributor, or of a recommender.
+ *
+ * All four branches matter: a document reaches the follow feed through any of
+ * them (see {@link followFeedUnionSql}), so omitting one leaves a document whose
+ * *only* followed source is a recommend/contributor credit with a `NULL` cutoff.
+ * `NULL` means "no followed source" (e.g. a discover card) and callers leave
+ * unread state alone — so a missing branch silently exempts those documents from
+ * the cutoff and counts a followed user's back catalogue of recommends as
+ * unread.
+ *
+ * `pubUriExpr` / `authorDidExpr` / `docUriExpr` are the outer publication-uri /
+ * author-did / document-uri column expressions to correlate on (e.g.
+ * `"documents"."publication_uri"`, or a CTE's `cand.publication_uri`).
  */
 function readerSourceCutoffSql(
   schema: Schema,
   readerDid: string,
   pubUriExpr: SQL,
   authorDidExpr: SQL,
+  docUriExpr: SQL,
 ): SQL {
   const sub = schema.subscriptions;
   const uf = schema.userFollows;
+  const rec = schema.recommends;
+  const dc = schema.documentContributors;
   return sql`(
     select min(cutoff) from (
       select min(coalesce(${sub.createdAt}, ${sub.indexedAt})) as cutoff
@@ -152,6 +164,21 @@ function readerSourceCutoffSql(
       where ${uf.followerDid} = ${readerDid}
         and ${uf.subjectDid} = ${authorDidExpr}
         and ${uf.deleted} = false
+      union all
+      select min(coalesce(${uf.createdAt}, ${uf.indexedAt})) as cutoff
+      from ${uf}
+      join ${dc} on ${dc.did} = ${uf.subjectDid}
+      where ${uf.followerDid} = ${readerDid}
+        and ${uf.deleted} = false
+        and ${dc.documentUri} = ${docUriExpr}
+      union all
+      select min(coalesce(${uf.createdAt}, ${uf.indexedAt})) as cutoff
+      from ${uf}
+      join ${rec} on ${rec.recommenderDid} = ${uf.subjectDid}
+        and ${rec.deleted} = false
+      where ${uf.followerDid} = ${readerDid}
+        and ${uf.deleted} = false
+        and ${rec.documentUri} = ${docUriExpr}
     ) c
   )`;
 }
@@ -181,6 +208,7 @@ function documentReadExistsColumn(
       readForDid,
       sql`"documents"."publication_uri"`,
       sql`"documents"."did"`,
+      sql`"documents"."uri"`,
     );
     return sql<boolean>`(${readExists} or (
       ${cutoff} is not null and "documents"."published_at" < ${cutoff}
@@ -216,6 +244,7 @@ function documentUnreadWhere(
       readForDid,
       sql`"documents"."publication_uri"`,
       sql`"documents"."did"`,
+      sql`"documents"."uri"`,
     );
     return sql`(${notRead} and (
       ${cutoff} is null or "documents"."published_at" >= ${cutoff}
@@ -520,6 +549,7 @@ export async function selectArticleCards(
         opts.unreadForDid,
         sql`${d.publicationUri}`,
         sql`${d.did}`,
+        sql`${d.uri}`,
       );
       conds.push(sql`(${cutoff} is null or ${d.publishedAt} >= ${cutoff})`);
     }
@@ -666,8 +696,8 @@ export async function selectUnreadDocumentUris(
   if (hasFollowedUsers) {
     const cutoffFilter =
       countOldPostsAsUnread === false
-        ? sql`and (${readerSourceCutoffSql(schema, readerDid, sql`cand.publication_uri`, sql`cand.did`)} is null
-            or cand.published_at >= ${readerSourceCutoffSql(schema, readerDid, sql`cand.publication_uri`, sql`cand.did`)})`
+        ? sql`and (${readerSourceCutoffSql(schema, readerDid, sql`cand.publication_uri`, sql`cand.did`, sql`cand.uri`)} is null
+            or cand.published_at >= ${readerSourceCutoffSql(schema, readerDid, sql`cand.publication_uri`, sql`cand.did`, sql`cand.uri`)})`
         : sql``;
     const rows = await db.execute(sql`
       with cand as ${followFeedUnionSql(schema, publicationUris ?? [], followedUserDids ?? [])}
@@ -692,6 +722,7 @@ export async function selectUnreadDocumentUris(
       readerDid,
       sql`${d.publicationUri}`,
       sql`${d.did}`,
+      sql`${d.uri}`,
     );
     conds.push(sql`(${cutoff} is null or ${d.publishedAt} >= ${cutoff})`);
   }
@@ -816,6 +847,8 @@ export async function countFollowedDocuments(
   const suppressOld = opts?.countOldPostsAsUnread === false;
   const sub = schema.subscriptions;
   const uf = schema.userFollows;
+  const rec = schema.recommends;
+  const dc = schema.documentContributors;
 
   // No followed users → the fast publication-only path (indexed `IN`). When
   // suppressing old posts, left-join the per-publication subscription cutoff so
@@ -852,8 +885,12 @@ export async function countFollowedDocuments(
 
   // Union mode: count distinct documents from the index-friendly source union,
   // joining reads for the unread tally (avoids the correlated OR ... EXISTS scan).
-  // When suppressing old posts, take the earliest of the publication-subscription
-  // and author-follow cutoffs (`least` ignores nulls) as the document's cutoff.
+  // When suppressing old posts, take the earliest cutoff across every followed
+  // source that can surface the document (`least` ignores nulls): the
+  // publication subscription, the author follow, and — because a document can
+  // reach the feed through them alone — a followed contributor or recommender.
+  // The contributor/recommend aggregates are bounded by the reader's follows, so
+  // they stay small. Mirrors {@link readerSourceCutoffSql}.
   const cutoffJoins = suppressOld
     ? sql`left join (
         select ${sub.publicationUri} as publication_uri,
@@ -868,11 +905,28 @@ export async function countFollowedDocuments(
         from ${uf}
         where ${uf.followerDid} = ${did} and ${uf.deleted} = false
         group by ${uf.subjectDid}
-      ) uc on uc.subject_did = cand.did`
+      ) uc on uc.subject_did = cand.did
+      left join (
+        select ${dc.documentUri} as document_uri,
+               min(coalesce(${uf.createdAt}, ${uf.indexedAt})) as cutoff
+        from ${dc}
+        join ${uf} on ${uf.subjectDid} = ${dc.did}
+          and ${uf.followerDid} = ${did} and ${uf.deleted} = false
+        group by ${dc.documentUri}
+      ) cc on cc.document_uri = cand.uri
+      left join (
+        select ${rec.documentUri} as document_uri,
+               min(coalesce(${uf.createdAt}, ${uf.indexedAt})) as cutoff
+        from ${rec}
+        join ${uf} on ${uf.subjectDid} = ${rec.recommenderDid}
+          and ${uf.followerDid} = ${did} and ${uf.deleted} = false
+        where ${rec.deleted} = false
+        group by ${rec.documentUri}
+      ) rc on rc.document_uri = cand.uri`
     : sql``;
   const cutoffPred = suppressOld
-    ? sql`and (least(sc.cutoff, uc.cutoff) is null
-        or cand.published_at >= least(sc.cutoff, uc.cutoff))`
+    ? sql`and (least(sc.cutoff, uc.cutoff, cc.cutoff, rc.cutoff) is null
+        or cand.published_at >= least(sc.cutoff, uc.cutoff, cc.cutoff, rc.cutoff))`
     : sql``;
   const result = await db.execute(sql`
     with cand as ${followFeedUnionSql(schema, publicationUris, followedUserDids)}
