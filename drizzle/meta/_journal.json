@@ -120,6 +120,13 @@
       "when": 1784403276074,
       "tag": "0016_fresh_kulan_gath",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1784430903472,
+      "tag": "0017_digest_section_prefs",
+      "breakpoints": true
     }
   ]
 }

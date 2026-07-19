@@ -101,6 +101,19 @@ export const user = pgTable("user", {
    * re-request it and keep `email` fresh), and opts the reader into the weekly
    * send. Cleared when the reader unsubscribes or turns the digest off. */
   weeklyDigestEnabled: boolean("weekly_digest_enabled"),
+  /** Per-section digest opt-outs. `null` = included (default); `false` hides the
+   * section from this reader's digest. Readers can toggle each independently in
+   * settings — the "Best of your subscriptions" section still drives the
+   * "nothing worth sending" skip, but a reader can suppress any of the others. */
+  weeklyDigestSectionSubscriptions: boolean(
+    "weekly_digest_section_subscriptions",
+  ),
+  weeklyDigestSectionNetwork: boolean("weekly_digest_section_network"),
+  /** Include the reader's most recently saved-for-later articles (bookmarks). */
+  weeklyDigestSectionSaved: boolean("weekly_digest_section_saved"),
+  weeklyDigestSectionRecommendations: boolean(
+    "weekly_digest_section_recommendations",
+  ),
   /** When the last weekly digest was sent to this reader; drives the send
    * runner's idempotency guard (skip if sent within the last ~6 days). */
   weeklyDigestLastSentAt: timestamp("weekly_digest_last_sent_at", {

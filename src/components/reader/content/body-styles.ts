@@ -17,6 +17,15 @@ import {
 import type { ReadingTypographyPreference } from "#/lib/reading-typography";
 import { readingCustomFontFamily } from "#/lib/reading-typography";
 
+/**
+ * Border width of `iframeFrame`. Exported so callers that set an explicit
+ * pixel height on the frame can add it back: the frame is `border-box`, so a
+ * bare `height: 352px` leaves the iframe only 350px of content box, and some
+ * embeds (Spotify switches to its compact player below 352px) change layout
+ * over a couple of pixels.
+ */
+export const IFRAME_FRAME_BORDER_WIDTH = 1;
+
 export const articleBodyStyles = stylex.create({
   body: {
     color: uiColor.text2,
@@ -246,6 +255,8 @@ export const articleBodyStyles = stylex.create({
     borderColor: uiColor.border1,
     borderRadius: radius.md,
     borderStyle: "solid",
+    // Keep in sync with `IFRAME_FRAME_BORDER_WIDTH`; the stylex lint rule
+    // can't resolve an identifier here.
     borderWidth: 1,
     overflow: "hidden",
     backgroundColor: uiColor.component1,
@@ -485,6 +496,7 @@ export const articleBodyStyles = stylex.create({
     lineHeight: 1.2,
     marginBottom: spacing["0"],
     marginTop: gap.md,
+    textAlign: "center",
   },
   gallery: {
     marginBottom: spacing["6"],

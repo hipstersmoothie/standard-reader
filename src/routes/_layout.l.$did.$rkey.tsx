@@ -94,13 +94,22 @@ type ListView = z.infer<typeof listSearchSchema>["view"];
 export const Route = createFileRoute("/_layout/l/$did/$rkey")({
   validateSearch: listSearchSchema,
   loader: async ({ context, params }) => {
+    const session = context.queryClient.getQueryData(
+      user.getSessionQueryOptions.queryKey,
+    );
+    const readerScope = user.readerQueryScope(session);
     const page = await context.queryClient.ensureQueryData(
       listApi.getListQueryOptions(params.did, params.rkey),
     );
+    // The first paint always shows read + unread (hideRead is a client-only
+    // localStorage toggle, reconciled after mount), so prefetch the unfiltered
+    // page scoped to the reader — it backs both the feed panel and the magazine
+    // snapshot below without a refetch on hydrate.
     await context.queryClient.ensureQueryData(
       listApi.getListFeedQueryOptions(params.did, params.rkey, {
         limit: PAGE_SIZE,
         offset: 0,
+        readerScope,
       }),
     );
     return {
@@ -328,22 +337,32 @@ function ListFeedPanel({
   hasMembers,
   isOwner,
   hideRead,
+  readerScope,
 }: {
   did: string;
   rkey: string;
   hasMembers: boolean;
   isOwner: boolean;
   hideRead: boolean;
+  readerScope: string;
 }) {
   const queryClient = useQueryClient();
   const { data: session } = useQuery(user.getSessionQueryOptions);
   const signedIn = Boolean(session?.user);
   const { enabled: trackReading } = useTrackReadingHistory();
 
+  // The unread filter runs server-side so each page returns a full run of unread
+  // articles (no sparse client-filtered slices, no repeated silent fetches). It
+  // only applies to a signed-in reader who tracks reading history — otherwise
+  // there's no read state to filter on and the server ignores it.
+  const serverHideRead = hideRead && trackReading && signedIn;
+
   const { data: feed } = useSuspenseQuery(
     listApi.getListFeedQueryOptions(did, rkey, {
       limit: PAGE_SIZE,
       offset: 0,
+      hideRead: serverHideRead,
+      readerScope,
     }),
   );
 
@@ -365,7 +384,13 @@ function ListFeedPanel({
     setLoadingMore(true);
     try {
       const page = await listApi.getListFeed({
-        data: { did, rkey, limit: PAGE_SIZE, offset: nextOffset },
+        data: {
+          did,
+          rkey,
+          limit: PAGE_SIZE,
+          offset: nextOffset,
+          hideRead: serverHideRead,
+        },
       });
       setItems((prev) => {
         const seen = new Set(prev.map((article) => article.uri));
@@ -379,7 +404,7 @@ function ListFeedPanel({
       loadingMoreRef.current = false;
       setLoadingMore(false);
     }
-  }, [did, nextOffset, rkey]);
+  }, [did, nextOffset, rkey, serverHideRead]);
 
   const loadMoreSentinelRef = useInfiniteScrollSentinel(
     loadMore,
@@ -399,32 +424,25 @@ function ListFeedPanel({
     );
   }
 
-  // Cache-aware so a just-read article's dot clears (and it hides under "hide
-  // read") the moment it's optimistically marked read, before the list refetches.
+  // Cache-aware so a just-read article's dot clears the moment it's optimistically
+  // marked read, before the list refetches. The row itself stays until the next
+  // fetch (like the Latest unread feed) so it doesn't vanish out from under a tap.
   const isUnread = (article: ArticleCard) =>
     isArticleUnreadForReader(queryClient, article, { trackReading, signedIn });
-  const canFilterRead = hideRead && trackReading && signedIn;
-  const visibleItems = canFilterRead
-    ? items.filter((article) => isUnread(article))
-    : items;
 
   if (items.length === 0) {
     return (
       <div {...stylex.props(styles.emptyNote)}>
-        <Trans>
-          No articles from this list&apos;s publications or people yet.
-        </Trans>
-      </div>
-    );
-  }
-
-  if (visibleItems.length === 0) {
-    return (
-      <div {...stylex.props(styles.emptyNote)}>
-        <Trans>
-          You&apos;ve read every article here. Show read articles to see them
-          again.
-        </Trans>
+        {serverHideRead ? (
+          <Trans>
+            You&apos;ve read every article here. Show read articles to see them
+            again.
+          </Trans>
+        ) : (
+          <Trans>
+            No articles from this list&apos;s publications or people yet.
+          </Trans>
+        )}
       </div>
     );
   }
@@ -432,7 +450,7 @@ function ListFeedPanel({
   return (
     <>
       <div>
-        {visibleItems.map((article, index) => (
+        {items.map((article, index) => (
           <ArticleRow
             key={article.uri}
             article={article}
@@ -574,6 +592,7 @@ function ListPage() {
   );
   const { data: session } = useQuery(user.getSessionQueryOptions);
   const signedIn = Boolean(session?.user);
+  const readerScope = user.readerQueryScope(session);
   const { enabled: trackReading } = useTrackReadingHistory();
   const nativeShareAvailable = useNativeShareAvailable();
   const { data: sidebar } = useQuery(feedApi.getSidebarQueryOptions());
@@ -591,6 +610,7 @@ function ListPage() {
     listApi.getListFeedQueryOptions(did, rkey, {
       limit: PAGE_SIZE,
       offset: 0,
+      readerScope,
     }),
   );
   const magazineArticles = (feedForMagazine?.items ?? [])
@@ -922,6 +942,7 @@ function ListPage() {
               hasMembers={hasPublications || hasUsers}
               isOwner={viewer.isOwner}
               hideRead={hideRead}
+              readerScope={readerScope}
             />
           </TabPanel>
           {hasPublications ? (

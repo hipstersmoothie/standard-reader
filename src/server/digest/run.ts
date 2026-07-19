@@ -17,7 +17,7 @@ import { getPublicUrl } from "#/lib/public-url";
 
 import { db } from "../../db/index.ts";
 import * as schema from "../../db/schema.ts";
-import { buildDigestForUser } from "./builder.ts";
+import { buildDigestForUser, digestSectionsFromUser } from "./builder.ts";
 import { sendEmail } from "./comail.ts";
 import { DIGEST_MIN_INTERVAL_DAYS, digestConfig } from "./config.ts";
 import { renderDigestEmail } from "./render.tsx";
@@ -56,7 +56,15 @@ export async function runWeeklyDigest(): Promise<DigestRunSummary> {
         ),
       ),
     ),
-    columns: { id: true, did: true, email: true },
+    columns: {
+      id: true,
+      did: true,
+      email: true,
+      weeklyDigestSectionSubscriptions: true,
+      weeklyDigestSectionNetwork: true,
+      weeklyDigestSectionSaved: true,
+      weeklyDigestSectionRecommendations: true,
+    },
     limit: maxPerRun,
   });
 
@@ -72,8 +80,19 @@ export async function runWeeklyDigest(): Promise<DigestRunSummary> {
     const reader = candidates[i];
     if (!reader.did || !reader.email) continue;
 
-    const digest = await buildDigestForUser(db, schema, { did: reader.did });
-    if (digest.articles.length === 0) {
+    const sections = digestSectionsFromUser(reader);
+    const digest = await buildDigestForUser(db, schema, {
+      did: reader.did,
+      sections,
+    });
+    // Skip when there's no real reading content to send. Recommendations alone
+    // (which cold-start to popular publications) aren't enough to justify a
+    // send, so the guard looks only at the article-bearing sections.
+    if (
+      digest.articles.length === 0 &&
+      digest.networkArticles.length === 0 &&
+      digest.saved.length === 0
+    ) {
       summary.skippedEmpty++;
       continue;
     }

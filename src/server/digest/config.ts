@@ -33,6 +33,15 @@ export const digestConfig = {
     return required("COMAIL_FROM");
   },
 
+  /**
+   * Display name shown as the sender in the recipient's inbox. Wrapped around
+   * `comailFrom` as `Standard Reader <digest@standard-reader.app>` unless
+   * `COMAIL_FROM` already carries its own display name.
+   */
+  get comailFromName(): string {
+    return process.env.COMAIL_FROM_NAME ?? "Standard Reader";
+  },
+
   /** HMAC key for one-click unsubscribe tokens. Required in production; in dev
    * it falls back to a static placeholder so the digest preview tool works
    * without extra setup (preview tokens are never acted on). */
@@ -69,6 +78,8 @@ export const DIGEST_ARTICLE_LIMIT = 5;
 export const DIGEST_NETWORK_ARTICLE_LIMIT = 5;
 /** Number of unfollowed publication recommendations to include. */
 export const DIGEST_RECOMMENDATION_LIMIT = 2;
+/** Number of most-recently saved-for-later articles (bookmarks) to include. */
+export const DIGEST_SAVED_LIMIT = 5;
 /** Only articles published within this many days are eligible for the digest. */
 export const DIGEST_WINDOW_DAYS = 7;
 /** Skip a reader who already received a digest within this many days (idempotency). */

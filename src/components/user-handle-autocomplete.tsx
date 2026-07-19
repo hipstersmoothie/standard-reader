@@ -87,6 +87,13 @@ export function UserHandleAutocomplete({
     <AutocompleteInput
       size={size}
       placeholder={placeholder}
+      // This is a handle field with its own in-app suggestion list, never a
+      // password/username login field. `autoComplete="off"` handles the native
+      // browser, and `disablePasswordManagers` adds the vendor ignore
+      // attributes (1Password, etc.) that extensions honor instead — so neither
+      // pops autofill over our dropdown.
+      autoComplete="off"
+      disablePasswordManagers
       label={label}
       aria-label={ariaLabel}
       inputValue={value}

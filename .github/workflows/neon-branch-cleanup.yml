@@ -1,0 +1,22 @@
+name: Neon branch cleanup
+
+# Deletes the per-PR Neon branch once the PR is merged or closed. Railway tears
+# down its own PR environment automatically; this reclaims the database side.
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  delete-branch:
+    name: Delete Neon branch
+    runs-on: ubuntu-latest
+    # Fork PRs never had a branch created (no access to secrets), so there is
+    # nothing to clean up.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - name: Delete Neon branch
+        uses: neondatabase/delete-branch-action@v3
+        with:
+          project_id: ${{ vars.NEON_PROJECT_ID }}
+          branch: pr-${{ github.event.number }}
+          api_key: ${{ secrets.NEON_API_KEY }}

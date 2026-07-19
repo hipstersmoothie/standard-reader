@@ -48,10 +48,10 @@ const WEEK_LABEL_FMT = new Intl.DateTimeFormat("en-US", {
   year: "numeric",
 });
 
-/** "Week of Jul 4, 2026" for the header label (start of the covered week). */
-function weekLabel(now: Date): string {
+/** "Digest for week of Jul 4, 2026" — subject line; dates the covered week. */
+function subjectFor(now: Date): string {
   const start = new Date(now.getTime() - WEEK_MS);
-  return `Week of ${WEEK_LABEL_FMT.format(start)}`;
+  return `Digest for week of ${WEEK_LABEL_FMT.format(start)}`;
 }
 
 function trimBase(baseUrl: string): string {
@@ -105,13 +105,6 @@ function toDigestPublication(
   };
 }
 
-/** Subject line — lead article title drives opens; degrades for 1 / 0 articles. */
-function subjectFor(articles: Array<DigestArticle>): string {
-  if (articles.length === 0) return "Your weekly Standard digest";
-  if (articles.length === 1) return articles[0].title;
-  return `${articles[0].title} + ${articles.length - 1} more`;
-}
-
 export async function renderDigestEmail(
   digest: DigestData,
   options: RenderDigestOptions,
@@ -123,15 +116,16 @@ export async function renderDigestEmail(
   const networkArticles = digest.networkArticles.map((card) =>
     toDigestArticle(card, base),
   );
+  const saved = digest.saved.map((card) => toDigestArticle(card, base));
   const recommendations = digest.recommendations.map((pub) =>
     toDigestPublication(pub, base),
   );
 
   const token = makeUnsubscribeToken(options.userId);
   const props = {
-    weekLabel: weekLabel(now),
     articles,
     networkArticles,
+    saved,
     recommendations,
     unsubscribeUrl: `${base}/api/digest/unsubscribe?token=${encodeURIComponent(token)}`,
     logoUrl: `${base}/icon-192.png`,
@@ -143,5 +137,5 @@ export async function renderDigestEmail(
     render(element, { plainText: true }),
   ]);
 
-  return { subject: subjectFor(articles), html, text };
+  return { subject: subjectFor(now), html, text };
 }

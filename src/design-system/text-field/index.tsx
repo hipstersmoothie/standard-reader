@@ -70,7 +70,20 @@ interface TextFieldContentProps {
   type: TextFieldProps["type"];
   setType: (type: TextFieldProps["type"]) => void;
   isRequired: boolean;
+  disablePasswordManagers?: boolean;
 }
+
+/**
+ * Opt a field out of browser/extension credential autofill. Password managers
+ * ignore `autocomplete="off"`, so they each expose their own ignore attribute.
+ * Use for in-app fields (e.g. a handle search) that are never login inputs.
+ */
+const passwordManagerIgnoreProps = {
+  "data-1p-ignore": true,
+  "data-lpignore": "true",
+  "data-bwignore": true,
+  "data-form-type": "other",
+} as const;
 
 function TextFieldContent({
   label,
@@ -87,6 +100,7 @@ function TextFieldContent({
   type,
   setType,
   isRequired,
+  disablePasswordManagers,
 }: TextFieldContentProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const isPasswordInput = type === "password";
@@ -116,6 +130,7 @@ function TextFieldContent({
           ref={inputRef}
           placeholder={placeholder}
           data-focus-always-visible
+          {...(disablePasswordManagers ? passwordManagerIgnoreProps : {})}
         />
         {isPasswordInput && (
           <PasswordToggle
@@ -175,6 +190,11 @@ export interface TextFieldProps
   validationState?: InputValidationState;
   prefix?: React.ReactNode;
   suffix?: React.ReactNode;
+  /**
+   * Opt the input out of browser/extension credential autofill (1Password,
+   * LastPass, etc.). Use for in-app fields that are never login inputs.
+   */
+  disablePasswordManagers?: boolean;
 }
 
 export function TextField({
@@ -189,6 +209,7 @@ export function TextField({
   suffix,
   placeholder,
   labelVariant,
+  disablePasswordManagers,
   ...props
 }: TextFieldProps) {
   const size = sizeProp || use(SizeContext);
@@ -226,6 +247,7 @@ export function TextField({
             placeholder={placeholder}
             type={type}
             setType={setType}
+            disablePasswordManagers={disablePasswordManagers}
           />
         )}
       </AriaTextField>

@@ -92,6 +92,14 @@ const authorListsInput = z.object({
 const listFeedInput = listRefInput.extend({
   limit: z.number().int().min(1).max(50).default(20),
   offset: z.number().int().min(0).default(0),
+  /**
+   * When true, filter the page down to documents the reader hasn't read
+   * server-side (the "hide read" toggle). Only takes effect for a signed-in
+   * reader who tracks reading history; ignored otherwise. Filtering in the query
+   * means each page returns a full run of unread articles instead of a sparse
+   * client-filtered slice, so pagination and empty states behave predictably.
+   */
+  hideRead: z.boolean().default(false),
 });
 
 const listUriInput = z.object({
@@ -470,11 +478,17 @@ const getListFeed = createServerFn({ method: "GET" })
       const trackReading = session == null ? false : trackReadingEnabled;
       const countOldPostsAsUnread =
         session == null ? true : countOldPostsAsUnreadEnabled;
+      // Only the "hide read" toggle asks for unread-only, and only a reader who
+      // tracks reading history has read state to filter on.
+      const unreadForDid =
+        data.hideRead && trackReading ? session?.did : undefined;
+      span.set("hideRead", Boolean(unreadForDid));
 
       const items = await selectArticleCards(db, schema, {
         publicationUris: list.publications,
         followedUserDids: list.users,
         readForDid: trackReading ? session?.did : undefined,
+        unreadForDid,
         countOldPostsAsUnread,
         limit: data.limit,
         offset: data.offset,
@@ -632,11 +646,32 @@ function getListQueryOptions(did: string, rkey: string) {
 function getListFeedQueryOptions(
   did: string,
   rkey: string,
-  { limit = 20, offset = 0 }: { limit?: number; offset?: number } = {},
+  {
+    limit = 20,
+    offset = 0,
+    hideRead = false,
+    readerScope = "guest",
+  }: {
+    limit?: number;
+    offset?: number;
+    hideRead?: boolean;
+    /** Scopes the cache to the signed-in reader (unread state is per-reader). */
+    readerScope?: string;
+  } = {},
 ) {
   return queryOptions({
-    queryKey: ["list", did, rkey, "feed", limit, offset] as const,
-    queryFn: async () => getListFeed({ data: { did, rkey, limit, offset } }),
+    queryKey: [
+      "list",
+      did,
+      rkey,
+      "feed",
+      limit,
+      offset,
+      hideRead,
+      readerScope,
+    ] as const,
+    queryFn: async () =>
+      getListFeed({ data: { did, rkey, limit, offset, hideRead } }),
   });
 }
 

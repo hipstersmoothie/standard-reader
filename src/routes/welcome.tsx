@@ -5,10 +5,13 @@ import type { OnboardingStep } from "#/components/onboarding/welcome-wizard";
 import { WelcomeWizard } from "#/components/onboarding/welcome-wizard";
 import { discoverApi } from "#/integrations/tanstack-query/api-discover.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
+import { ONBOARDING_FRIENDS_LIMIT } from "#/lib/onboarding";
 import { siteSocialMeta } from "#/lib/site-metadata";
 
 const searchSchema = z.object({
-  step: z.enum(["intro", "topics", "follow", "settings", "done"]).optional(),
+  step: z
+    .enum(["intro", "topics", "friends", "follow", "settings", "done"])
+    .optional(),
   topics: z.array(z.string().min(1).max(60)).max(5).optional(),
 });
 
@@ -39,6 +42,13 @@ export const Route = createFileRoute("/welcome")({
     );
     void context.queryClient.prefetchQuery(
       discoverApi.getTrendingPublicationsQueryOptions({ limit: 6 }),
+    );
+    // Kicked off at the intro step: the Bluesky lookup decides whether the
+    // "people you follow" step exists at all, so it needs a head start.
+    void context.queryClient.prefetchQuery(
+      discoverApi.getFriendPublishersQueryOptions({
+        limit: ONBOARDING_FRIENDS_LIMIT,
+      }),
     );
     await Promise.all([
       context.queryClient.ensureQueryData(user.getThemePreferenceQueryOptions),

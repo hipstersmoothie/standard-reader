@@ -25,6 +25,8 @@ import {
   selectTagPublicationUris,
   tagDirectoryPublications,
 } from "#/server/reader/queries";
+import { attachRecommendedByToArticles } from "#/server/reader/recommended-by";
+import { effectiveFollowSets } from "#/server/reader/saved-lists";
 
 import type { ArticleCard, PublicationCard } from "./api-shapes";
 import { dbMiddleware } from "./db-middleware";
@@ -107,16 +109,33 @@ const getArticles = createServerFn({ method: "GET" })
       const countOldPostsAsUnread =
         did == null ? true : countOldPostsAsUnreadEnabled;
 
-      const rows = await selectArticleCards(db, schema, {
-        tag: data.tag,
-        discoverOnly: true,
-        limit: data.limit,
-        offset: data.offset,
-        readForDid: trackReading && did ? did : undefined,
-        countOldPostsAsUnread,
-      });
+      // The tag rows and the reader's follow set are independent reads (the
+      // follow set only needs `did`), so resolve them in one wave.
+      const [rows, followSets] = await Promise.all([
+        selectArticleCards(db, schema, {
+          tag: data.tag,
+          discoverOnly: true,
+          limit: data.limit,
+          offset: data.offset,
+          readForDid: trackReading && did ? did : undefined,
+          countOldPostsAsUnread,
+        }),
+        did ? effectiveFollowSets(db, schema, did) : Promise.resolve(null),
+      ]);
 
-      const withCounts = await attachCommentCountsToArticles(db, schema, rows);
+      // "Recommended by @follow" attribution — no-op (no query) for signed-out
+      // readers and readers who follow no one.
+      const withRecs = await attachRecommendedByToArticles(
+        db,
+        schema,
+        followSets?.userDids ?? [],
+        rows,
+      );
+      const withCounts = await attachCommentCountsToArticles(
+        db,
+        schema,
+        withRecs,
+      );
       const items = await attachSubscribedLabels(db, schema, did, withCounts);
       span.set("count", items.length);
 
@@ -200,31 +219,42 @@ const getTagPage = createServerFn({ method: "GET" })
       const countOldPostsAsUnread =
         did == null ? true : countOldPostsAsUnreadEnabled;
 
-      const [articleCount, publicationCount, content] = await Promise.all([
-        countTagArticles(db, schema, data.tag),
-        countTagPublications(db, schema, data.tag),
-        data.view === "feed"
-          ? selectArticleCards(db, schema, {
-              tag: data.tag,
-              discoverOnly: true,
-              limit: data.limit,
-              offset: data.offset,
-              readForDid: trackReading && did ? did : undefined,
-              countOldPostsAsUnread,
-            }).then((rows) => attachCommentCountsToArticles(db, schema, rows))
-          : tagDirectoryPublications(db, schema, {
-              tag: data.tag,
-              sort: data.sort,
-              limit: data.limit,
-              offset: data.offset,
-            }),
-      ]);
+      const [articleCount, publicationCount, content, followSets] =
+        await Promise.all([
+          countTagArticles(db, schema, data.tag),
+          countTagPublications(db, schema, data.tag),
+          data.view === "feed"
+            ? selectArticleCards(db, schema, {
+                tag: data.tag,
+                discoverOnly: true,
+                limit: data.limit,
+                offset: data.offset,
+                readForDid: trackReading && did ? did : undefined,
+                countOldPostsAsUnread,
+              }).then((rows) => attachCommentCountsToArticles(db, schema, rows))
+            : tagDirectoryPublications(db, schema, {
+                tag: data.tag,
+                sort: data.sort,
+                limit: data.limit,
+                offset: data.offset,
+              }),
+          data.view === "feed" && did
+            ? effectiveFollowSets(db, schema, did)
+            : Promise.resolve(null),
+        ]);
 
       span.set("articleCount", articleCount);
       span.set("publicationCount", publicationCount);
 
       if (data.view === "feed") {
-        const items = content as Array<ArticleCard>;
+        // "Recommended by @follow" attribution — no-op (no query) for signed-out
+        // readers and readers who follow no one.
+        const items = await attachRecommendedByToArticles(
+          db,
+          schema,
+          followSets?.userDids ?? [],
+          content as Array<ArticleCard>,
+        );
         span.set("count", items.length);
         return {
           articleCount,

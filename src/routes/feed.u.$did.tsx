@@ -7,7 +7,7 @@ import { renderRssFeed } from "#/lib/feeds/rss";
 import { getPublicUrl } from "#/lib/public-url";
 import { authorFeedUrl, SITE_NAME } from "#/lib/site-metadata";
 import { feedItemsFromCards, loadFeedItemBodies } from "#/server/feeds/build";
-import { selectArticleCards } from "#/server/reader/queries";
+import { authorDocuments } from "#/server/reader/queries";
 
 const CACHE_CONTROL = "public, max-age=900, stale-while-revalidate=3600";
 const FEED_LIMIT = 50;
@@ -32,7 +32,10 @@ export const Route = createFileRoute("/feed/u/$did")({
           .limit(1);
 
         const baseUrl = getPublicUrl();
-        const cards = await selectArticleCards(db, schema, {
+        // Same source as the profile's Posts tab — their own repo plus posts
+        // crediting them as a contributor — so subscribing to the feed and
+        // reading the profile agree.
+        const { items: cards } = await authorDocuments(db, schema, {
           did,
           limit: FEED_LIMIT,
         });

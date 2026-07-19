@@ -40,6 +40,8 @@ import {
   selectArticleCardsByUris,
   selectPublicationArticleCards,
 } from "#/server/reader/queries";
+import { attachRecommendedByToArticles } from "#/server/reader/recommended-by";
+import { effectiveFollowSets } from "#/server/reader/saved-lists";
 import { themeModeForRequest } from "#/server/theme-preference";
 
 import type {
@@ -311,17 +313,41 @@ const getPublicationDocuments = createServerFn({ method: "GET" })
         const countOldPostsAsUnread =
           did == null ? true : countOldPostsAsUnreadEnabled;
 
-        const documents = await selectPublicationArticleCards(db, schema, {
-          publicationUri: data.publicationUri,
-          limit: data.limit,
-          offset: data.offset,
-          readForDid,
-          countOldPostsAsUnread,
-        });
+        // The page rows and the reader's follow set are independent reads — the
+        // follow set only needs `did` — so resolve them in one wave instead of
+        // chaining. (`effectiveFollowSets` is request-memoized.)
+        const [documents, followSets] = await Promise.all([
+          selectPublicationArticleCards(db, schema, {
+            publicationUri: data.publicationUri,
+            limit: data.limit,
+            offset: data.offset,
+            readForDid,
+            countOldPostsAsUnread,
+          }),
+          did ? effectiveFollowSets(db, schema, did) : Promise.resolve(null),
+        ]);
+
+        // "Recommended by @follow" attribution — same signal, same batched query
+        // (one round trip over the page's rows, served by the partial
+        // `recommends (document_uri, recommender_did, created_at)` index) as the
+        // home/latest feeds. Skipped for signed-out readers and readers who
+        // follow no one, so it never runs when it can't produce a result.
+        const followedUserDids = followSets?.userDids ?? [];
+        span.set("followedUsers", followedUserDids.length);
+        const withRecommendedBy =
+          followedUserDids.length > 0
+            ? await attachRecommendedByToArticles(
+                db,
+                schema,
+                followedUserDids,
+                documents,
+              )
+            : documents;
+        // No DB round trip: reads cached counts + schedules background refresh.
         const items = await attachCommentCountsToArticles(
           db,
           schema,
-          documents,
+          withRecommendedBy,
         );
 
         span.set("count", items.length);

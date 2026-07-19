@@ -1188,6 +1188,94 @@ const getWeeklyDigestStatusQueryOptions = queryOptions({
   staleTime: Number.POSITIVE_INFINITY,
 });
 
+/** The toggleable digest sections. Keep in sync with `DigestSections` in
+ * `src/server/digest/builder.ts` and the `weeklyDigestSection*` user columns. */
+const DIGEST_SECTION_KEYS = [
+  "subscriptions",
+  "network",
+  "saved",
+  "recommendations",
+] as const;
+
+type DigestSectionKey = (typeof DIGEST_SECTION_KEYS)[number];
+
+type WeeklyDigestSections = Record<DigestSectionKey, boolean>;
+
+/** Section key → the `null`-able opt-out column that backs it. */
+const DIGEST_SECTION_COLUMN = {
+  subscriptions: "weeklyDigestSectionSubscriptions",
+  network: "weeklyDigestSectionNetwork",
+  saved: "weeklyDigestSectionSaved",
+  recommendations: "weeklyDigestSectionRecommendations",
+} as const satisfies Record<DigestSectionKey, string>;
+
+const DEFAULT_DIGEST_SECTIONS: WeeklyDigestSections = {
+  subscriptions: true,
+  network: true,
+  saved: true,
+  recommendations: true,
+};
+
+/** Per-section digest opt-outs for the signed-in reader (`null`/`true` = on). */
+const getWeeklyDigestSections = createServerFn({ method: "GET" })
+  .middleware([dbMiddleware])
+  .handler(async ({ context }): Promise<WeeklyDigestSections> => {
+    const { getReaderContextForRequest } =
+      await import("#/middleware/auth-session.server");
+    const reader = await getReaderContextForRequest(getRequest());
+    if (!reader) return { ...DEFAULT_DIGEST_SECTIONS };
+
+    const row = await context.db.query.user.findFirst({
+      where: eq(context.schema.user.id, reader.userId),
+      columns: {
+        weeklyDigestSectionSubscriptions: true,
+        weeklyDigestSectionNetwork: true,
+        weeklyDigestSectionSaved: true,
+        weeklyDigestSectionRecommendations: true,
+      },
+    });
+
+    return {
+      subscriptions: row?.weeklyDigestSectionSubscriptions !== false,
+      network: row?.weeklyDigestSectionNetwork !== false,
+      saved: row?.weeklyDigestSectionSaved !== false,
+      recommendations: row?.weeklyDigestSectionRecommendations !== false,
+    };
+  });
+
+const getWeeklyDigestSectionsQueryOptions = queryOptions({
+  queryKey: ["weeklyDigestSections"] as const,
+  queryFn: () => getWeeklyDigestSections(),
+  staleTime: Number.POSITIVE_INFINITY,
+});
+
+/** Toggle one digest section on/off for the signed-in reader. */
+const setWeeklyDigestSection = createServerFn({ method: "POST" })
+  .middleware([dbMiddleware])
+  .validator(
+    z.object({
+      section: z.enum(DIGEST_SECTION_KEYS),
+      enabled: z.boolean(),
+    }),
+  )
+  .handler(
+    async ({
+      data,
+      context,
+    }): Promise<{ section: DigestSectionKey; enabled: boolean }> => {
+      const { getReaderContextForRequest } =
+        await import("#/middleware/auth-session.server");
+      const reader = await getReaderContextForRequest(getRequest());
+      if (reader) {
+        await context.db
+          .update(context.schema.user)
+          .set({ [DIGEST_SECTION_COLUMN[data.section]]: data.enabled })
+          .where(eq(context.schema.user.id, reader.userId));
+      }
+      return { section: data.section, enabled: data.enabled };
+    },
+  );
+
 const signOut = createServerFn({ method: "POST" })
   .middleware([dbMiddleware])
   .handler(async ({ context }) => {
@@ -1269,5 +1357,10 @@ export const user = {
   setOnboardingCompleted,
   getWeeklyDigestStatus,
   getWeeklyDigestStatusQueryOptions,
+  getWeeklyDigestSections,
+  getWeeklyDigestSectionsQueryOptions,
+  setWeeklyDigestSection,
   signOut,
 };
+
+export type { DigestSectionKey, WeeklyDigestSections };

@@ -10,9 +10,45 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Per-PR database. Branches off the production project's primary branch so
+  # migrations and the Railway preview run against real prod schema + data
+  # without touching prod itself. Skipped on pushes to main and on fork PRs
+  # (forks get no secrets), in which case the jobs below fall back to the
+  # offline placeholder URL.
+  #
+  # This job only *ensures the branch exists*. It deliberately exposes no
+  # outputs: the action masks the branch password, and GitHub strips masked
+  # values out of job outputs, so a `db_url` job output always arrives empty
+  # downstream. Each consuming job re-runs the action instead — it is
+  # idempotent and returns the existing branch — and reads it as a step output,
+  # which is not stripped. Creating it here first keeps those two jobs from
+  # racing to create the same branch name.
+  neon-branch:
+    name: Create Neon branch
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - name: Create Neon branch
+        uses: neondatabase/create-branch-action@v6
+        with:
+          project_id: ${{ vars.NEON_PROJECT_ID }}
+          # Stable name so re-runs and later pushes reuse the same branch
+          # rather than piling up one per commit.
+          branch_name: pr-${{ github.event.number }}
+          api_key: ${{ secrets.NEON_API_KEY }}
+
   verify:
     name: Lint, format, typecheck, build
     runs-on: ubuntu-latest
+    needs: [neon-branch]
+    # `needs` would otherwise skip this job whenever neon-branch is skipped
+    # (main pushes, fork PRs). Run unless the branch job actually failed.
+    if: >-
+      !cancelled() &&
+      (needs.neon-branch.result == 'success' ||
+       needs.neon-branch.result == 'skipped')
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -29,6 +65,17 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # Resolves to the branch neon-branch already created. Skipped on main
+      # pushes and fork PRs; the steps below then fall back to a placeholder.
+      - name: Resolve Neon branch
+        id: neon
+        if: needs.neon-branch.result == 'success'
+        uses: neondatabase/create-branch-action@v6
+        with:
+          project_id: ${{ vars.NEON_PROJECT_ID }}
+          branch_name: pr-${{ github.event.number }}
+          api_key: ${{ secrets.NEON_API_KEY }}
+
       # Validate the drizzle migration journal/snapshots are consistent before
       # the deploy's pre-deploy `pnpm db:migrate` tries to apply them. Offline
       # check (no DB connection); the URL only satisfies drizzle.config.ts.
@@ -36,6 +83,16 @@ jobs:
         run: pnpm exec drizzle-kit check
         env:
           DATABASE_URL: postgres://drizzle:drizzle@localhost:5432/drizzle
+
+      # Apply the migrations to the PR's Neon branch. This is the check the
+      # offline `drizzle-kit check` above can't do: proving the migrations
+      # actually apply to production's current schema and data before the
+      # deploy's pre-deploy `pnpm db:migrate` tries the same thing for real.
+      - name: Apply migrations to Neon branch
+        if: needs.neon-branch.result == 'success'
+        run: pnpm db:migrate
+        env:
+          DATABASE_URL: ${{ steps.neon.outputs.db_url }}
 
       - name: Format check
         run: pnpm format:check
@@ -62,3 +119,46 @@ jobs:
 
       - name: Test
         run: pnpm test
+        env:
+          # Inert today — the suite mocks the DB layer and never connects, and
+          # vitest.setup.ts supplies its own placeholder when this is unset.
+          DATABASE_URL: ${{ steps.neon.outputs.db_url }}
+
+  # Repoint the Railway PR environment at the Neon branch. Railway clones
+  # variables from production when it creates a preview, so without this the
+  # preview boots against the production DATABASE_URL.
+  railway-preview-db:
+    name: Point Railway preview at Neon branch
+    runs-on: ubuntu-latest
+    needs: [neon-branch]
+    if: needs.neon-branch.result == 'success'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Resolve Neon branch
+        id: neon
+        uses: neondatabase/create-branch-action@v6
+        with:
+          project_id: ${{ vars.NEON_PROJECT_ID }}
+          branch_name: pr-${{ github.event.number }}
+          api_key: ${{ secrets.NEON_API_KEY }}
+
+      - name: Set preview DATABASE_URL
+        run: node scripts/railway-set-preview-db.mjs
+        env:
+          RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
+          RAILWAY_PROJECT_ID: fbde7ed0-9be3-4364-8892-c4aa80b2f79e
+          DATABASE_URL: ${{ steps.neon.outputs.db_url }}
+          PR_BRANCH: ${{ github.event.pull_request.head.ref }}
+          PR_NUMBER: ${{ github.event.number }}
+          # Every service in the PR environment that reads DATABASE_URL. The
+          # ingest worker *writes* to the read-model, so leaving it on the
+          # cloned production URL would have previews writing to prod. `tap`
+          # uses its own TAP_DATABASE_URL and is not in scope here.
+          SERVICES: web,ingest

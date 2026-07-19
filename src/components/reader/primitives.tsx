@@ -77,6 +77,11 @@ const styles = stylex.create({
     letterSpacing: tracking.tight,
     lineHeight: lineHeight.sm,
   },
+  // Compact step for heads nested under a page that already has its own title
+  // (e.g. a group inside a profile tab), where the full size would rival it.
+  sectionTitleCompact: {
+    fontSize: fontSize["2xl"],
+  },
   placeholder: {
     borderColor: uiColor.border1,
     borderRadius: radius.sm,
@@ -371,6 +376,7 @@ export function SectionHead({
   action,
   icon,
   stackOnMobile = true,
+  size = "lg",
 }: {
   kicker?: React.ReactNode;
   title: React.ReactNode;
@@ -378,6 +384,12 @@ export function SectionHead({
   icon?: React.ReactNode;
   /** Set false to keep the action inline with the title even on narrow screens (e.g. a compact icon button). */
   stackOnMobile?: boolean;
+  /**
+   * `"lg"` is the page-level head used on Discover and Search. Use `"md"` for a
+   * group nested under a surface that already has its own title, so the head
+   * ranks below that title instead of tying with it.
+   */
+  size?: "lg" | "md";
 }) {
   return (
     <div
@@ -388,7 +400,14 @@ export function SectionHead({
     >
       <Flex direction="column" gap="md" style={styles.sectionHeadTitle}>
         {kicker != null && <Kicker icon={icon}>{kicker}</Kicker>}
-        <span {...stylex.props(styles.sectionTitle)}>{title}</span>
+        <span
+          {...stylex.props(
+            styles.sectionTitle,
+            size === "md" && styles.sectionTitleCompact,
+          )}
+        >
+          {title}
+        </span>
       </Flex>
       {action == null ? null : (
         <div

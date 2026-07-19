@@ -157,7 +157,10 @@ test-results/
 .vinxi
 .wrangler
 __unconfig*
-src/routeTree.gen.ts
+# src/routeTree.gen.ts is committed (not ignored): the TanStack Router Vite
+# plugin only generates it during a build, so without it in the repo a fresh
+# clone can't lint or typecheck (both fail to resolve ./routeTree.gen) until
+# someone runs a full build. Committing it keeps the tree buildable on clone.
 todos.json
 
 # Lingui compiled catalogs (generated from .po by `pnpm i18n:compile`;

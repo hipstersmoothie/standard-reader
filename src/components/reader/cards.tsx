@@ -18,6 +18,7 @@ import {
 import { Fragment, useCallback } from "react";
 
 import { AuthorProfileLink } from "#/components/reader/author-profile-link";
+import { FollowUserButton } from "#/components/reader/follow-user-button";
 import { PublicationNameLink } from "#/components/reader/publication-name-link";
 import { SearchHeadline } from "#/components/reader/search-headline";
 import { ButtonLink } from "#/components/router-links";
@@ -44,7 +45,11 @@ import { Flex } from "../../design-system/flex";
 import { IconButton } from "../../design-system/icon-button";
 import { Skeleton } from "../../design-system/skeleton";
 import { animationDuration } from "../../design-system/theme/animations.stylex";
-import { primaryColor, uiColor } from "../../design-system/theme/color.stylex";
+import {
+  criticalColor,
+  primaryColor,
+  uiColor,
+} from "../../design-system/theme/color.stylex";
 import { radius } from "../../design-system/theme/radius.stylex";
 import { shadow } from "../../design-system/theme/shadow.stylex";
 import {
@@ -55,6 +60,7 @@ import {
   tracking,
 } from "../../design-system/theme/typography.stylex";
 import { Text } from "../../design-system/typography/text";
+import type { FriendPerson } from "../../integrations/tanstack-query/api-discover.functions";
 import type {
   ArticleCard,
   PublicationCard,
@@ -93,6 +99,13 @@ const styles = stylex.create({
     color: "inherit",
     cursor: "pointer",
     display: "block",
+    // Card text is user-generated — publication names, `@handle`s and titles can
+    // all be long unbreakable tokens (`@a-very-long-handle.bsky.social`). Those
+    // offer no break opportunity, so they overflow the card and push the whole
+    // page sideways. `anywhere` (not `break-word`) also shrinks the intrinsic
+    // min-content width, which is what keeps the surrounding grid track from
+    // being forced wider. Inherited, so it covers every text node in the card.
+    overflowWrap: "anywhere",
   },
   cardShell: {
     textDecoration: "none",
@@ -100,6 +113,8 @@ const styles = stylex.create({
     cursor: "pointer",
     display: "block",
     position: "relative",
+    // See `cardLink` — long unbreakable names/handles must wrap, not overflow.
+    overflowWrap: "anywhere",
   },
   cardOverlay: {
     inset: 0,
@@ -140,6 +155,10 @@ const styles = stylex.create({
   ownerHandleLink: {
     color: uiColor.text1,
   },
+  pubDirHandle: {
+    minWidth: 0,
+    overflowWrap: "anywhere",
+  },
   bylineWhen: {
     color: uiColor.text1,
     fontFamily: fontFamily.sans,
@@ -150,6 +169,15 @@ const styles = stylex.create({
     fontFamily: fontFamily.sans,
     fontSize: fontSize.xs,
     fontWeight: fontWeight.medium,
+  },
+  // A quiet tint on the heart so the "Recommended by" eyebrow reads as a
+  // recommendation at a glance — noticeable, but the text stays muted so it
+  // never competes with the title.
+  recommendedByHeart: {
+    alignItems: "center",
+    color: criticalColor.solid1,
+    display: "inline-flex",
+    flexShrink: 0,
   },
   recommendedByName: {
     color: uiColor.text2,
@@ -216,6 +244,8 @@ const styles = stylex.create({
     borderBottomColor: uiColor.border1,
     borderBottomStyle: "solid",
     borderBottomWidth: 1,
+    // See `cardLink` — long unbreakable names/handles must wrap, not overflow.
+    overflowWrap: "anywhere",
     paddingBottom: spacing["6"],
     paddingTop: spacing["6"],
   },
@@ -671,18 +701,19 @@ const styles = stylex.create({
       default: "1",
       "@media (min-width: 40rem)": "auto",
     },
-    alignItems: {
-      default: "flex-start",
-      "@media (min-width: 40rem)": "baseline",
-    },
-    columnGap: spacing["2.5"],
+    // Name and `@handle` sit on one line at every width. They used to stack
+    // below 40rem, which cost a whole row per result and read as two separate
+    // facts rather than one byline. `wrap` still lets the handle drop to its
+    // own line when a long name genuinely leaves it no room.
+    alignItems: "baseline",
+    columnGap: spacing["2"],
     display: "flex",
-    flexDirection: {
-      default: "column",
-      "@media (min-width: 40rem)": "row",
-    },
+    flexDirection: "row",
+    // Wrap rather than truncate: the handle drops to its own line only when a
+    // long name genuinely leaves no room. Truncating either one costs the
+    // reader real information on a directory of unfamiliar publications.
     flexWrap: "wrap",
-    rowGap: spacing["1"],
+    rowGap: spacing["0.5"],
     minWidth: 0,
   },
   pubDirTopRanked: {
@@ -697,7 +728,12 @@ const styles = stylex.create({
     unicodeBidi: "isolate",
     color: uiColor.text2,
     fontFamily: fontFamily.serif,
-    fontSize: fontSize.xl,
+    // A step down on phones: at `xl` the name alone eats the row, pushing the
+    // handle onto a second line for all but the shortest names.
+    fontSize: {
+      default: fontSize.lg,
+      "@media (min-width: 40rem)": fontSize.xl,
+    },
     fontWeight: fontWeight.semibold,
     letterSpacing: tracking.tight,
     lineHeight: lineHeight.sm,
@@ -969,11 +1005,20 @@ export function FollowButton({
   );
 }
 
-function OwnerHandleLink({ did, handle }: { did: string; handle: string }) {
+function OwnerHandleLink({
+  did,
+  handle,
+  style,
+}: {
+  did: string;
+  handle: string;
+  /** Extra styles for the link box (e.g. the directory row's shrink rules). */
+  style?: stylex.StyleXStyles;
+}) {
   return (
     <AuthorProfileLink
       authorRef={did}
-      linkStyle={[styles.ownerHandleLink, styles.cardInteractive]}
+      linkStyle={[styles.ownerHandleLink, styles.cardInteractive, style]}
     >
       <Handle>@{handle}</Handle>
     </AuthorProfileLink>
@@ -999,7 +1044,9 @@ function RecommendedByLine({ article }: { article: ArticleCard }) {
 
   return (
     <Flex align="center" gap="sm" style={styles.recommendedByLine}>
-      <Heart size={13} aria-hidden fill="currentColor" />
+      <span {...stylex.props(styles.recommendedByHeart)}>
+        <Heart size={13} aria-hidden fill="currentColor" />
+      </span>
       <span>
         Recommended by{" "}
         <AuthorProfileLink
@@ -1599,6 +1646,20 @@ export function FeatureArticle({
     );
   }
 
+  // Byline-less (publication page): the "Recommended by @follow" line still
+  // applies. Lift it out of the card link — it holds its own profile links —
+  // and let the shell own the row's border so the grid inside stays border-free.
+  if (article.recommendedBy && article.recommendedBy.length > 0) {
+    return (
+      <div {...stylex.props(styles.featureShell)}>
+        <RecommendedByLine article={article} />
+        <ArticleLink article={article} extraStyles={featureGridStyles}>
+          {articleBody}
+        </ArticleLink>
+      </div>
+    );
+  }
+
   return (
     <ArticleLink
       article={article}
@@ -1773,7 +1834,9 @@ export function ArticleRow({
           <Byline article={article} includeDate />
         </Flex>
       ) : (
-        <span />
+        // Byline-less (publication page): keep the "Recommended by @follow"
+        // attribution — the same follows signal shown on the home/latest feeds.
+        <RecommendedByLine article={article} />
       )}
       {headerSaveButton}
     </Flex>
@@ -2291,7 +2354,11 @@ export function PubDirectoryRow({
             </span>
           )}
           {pub.ownerHandle ? (
-            <OwnerHandleLink did={pub.did} handle={pub.ownerHandle} />
+            <OwnerHandleLink
+              did={pub.did}
+              handle={pub.ownerHandle}
+              style={styles.pubDirHandle}
+            />
           ) : null}
           {isHidden ? (
             <span
@@ -2341,6 +2408,138 @@ export function PubDirectoryRow({
         style={[styles.pubDirFollow, hasRank && styles.pubDirFollowRanked]}
       />
     </PublicationLink>
+  );
+}
+
+/** Readership + publication tally for a {@link FriendPersonRow}. */
+function FriendPersonStats({ person }: { person: FriendPerson }) {
+  const { i18n } = useLingui();
+  const stats: Array<string> = [];
+  if (person.subscriberCount > 0) {
+    stats.push(
+      i18n._(
+        msg`${plural(person.subscriberCount, { one: "# reader", other: `${formatReaders(person.subscriberCount)} readers` })}`,
+      ),
+    );
+  }
+  stats.push(
+    i18n._(
+      msg`${plural(person.publicationCount, { one: "# publication", other: `${formatReaders(person.publicationCount)} publications` })}`,
+    ),
+  );
+
+  return (
+    <MetaLine>
+      <MetaGroup>
+        <Handle>
+          {stats.map((part, index) => (
+            <span key={part}>
+              {index > 0 ? <span aria-hidden> · </span> : null}
+              {/* Each stat is its own bidi run (digits + a localized word);
+                  isolate so an RTL UI can't interleave them. */}
+              <span {...stylex.props(styles.bidiIsolate)}>{part}</span>
+            </span>
+          ))}
+        </Handle>
+      </MetaGroup>
+    </MetaLine>
+  );
+}
+
+/** Stretched overlay link to a writer's profile — mirrors {@link PublicationStretchedLink}. */
+function PersonStretchedLink({ did, name }: { did: string; name: string }) {
+  return (
+    <Link
+      to="/u/$did"
+      params={{ did }}
+      aria-label={`Open ${name}`}
+      {...stylex.props(styles.cardOverlay)}
+    />
+  );
+}
+
+/**
+ * A single writer on the People tab of `/friends`: someone the reader follows
+ * on Bluesky who publishes here. The row links to the writer's profile; the CTA
+ * follows the *person* (`app.standard-reader.graph.follow`), not one of their
+ * publications, so it reuses {@link FollowUserButton} rather than the
+ * publication {@link FollowButton}.
+ */
+export function FriendPersonRow({
+  person,
+  isLast = false,
+  isFirstInSection = false,
+}: {
+  person: FriendPerson;
+  isLast?: boolean;
+  /** Drop top padding when the section head already provides spacing above. */
+  isFirstInSection?: boolean;
+}) {
+  const { data: session } = useQuery(user.getSessionQueryOptions);
+  const signedIn = Boolean(session?.user);
+  const name =
+    person.displayName?.trim() ||
+    (person.handle ? `@${person.handle}` : "Unknown");
+  const publications = person.publicationNames.slice(0, 3).join(", ");
+
+  return (
+    <div
+      {...stylex.props(
+        styles.cardShell,
+        styles.pubDirRow,
+        isLast && styles.pubDirRowLast,
+        isFirstInSection && styles.pubDirRowFirstInSection,
+      )}
+    >
+      <PersonStretchedLink did={person.did} name={name} />
+      <div {...stylex.props(styles.cardInertRoot)}>
+        <PublicationAvatar
+          pub={{ name, iconUrl: null, ownerAvatarUrl: person.avatarUrl }}
+          size="lg"
+          style={styles.pubDirAvatar}
+        />
+        <Flex direction="column" gap="sm" style={styles.pubDirMain}>
+          <div {...stylex.props(styles.pubDirTop)}>
+            <span {...stylex.props(styles.pubDirName)}>{name}</span>
+            {person.handle ? (
+              <OwnerHandleLink
+                did={person.did}
+                handle={person.handle}
+                style={styles.pubDirHandle}
+              />
+            ) : null}
+          </div>
+          <div {...stylex.props(styles.pubDirExtra)}>
+            {publications ? (
+              <p dir="auto" {...stylex.props(styles.pubDirDesc)}>
+                {publications}
+              </p>
+            ) : null}
+            <FriendPersonStats person={person} />
+          </div>
+        </Flex>
+      </div>
+      <div
+        role="presentation"
+        {...stylex.props(
+          styles.followSlot,
+          styles.cardInteractive,
+          styles.pubDirFollow,
+        )}
+      >
+        <FollowUserButton
+          did={person.did}
+          signedIn={signedIn}
+          size="sm"
+          user={{
+            did: person.did,
+            handle: person.handle,
+            displayName: person.displayName,
+            avatarUrl: person.avatarUrl,
+          }}
+        />
+      </div>
+    </div>
   );
 }
 

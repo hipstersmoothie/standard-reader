@@ -17,6 +17,7 @@ import { feedApi } from "#/integrations/tanstack-query/api-feed.functions";
 import { labelerApi } from "#/integrations/tanstack-query/api-labelers.functions";
 import { listApi } from "#/integrations/tanstack-query/api-lists.functions";
 import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
+import type { DigestSectionKey } from "#/integrations/tanstack-query/api-user.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
 import { DEFAULT_CUSTOM_GOOGLE_FONT } from "#/lib/google-fonts";
 import type { Locale } from "#/lib/locale";
@@ -99,6 +100,34 @@ const THEME_OPTIONS: Array<{
 const LOCALE_OPTIONS: ReadonlyArray<Locale> = LOCALES.filter(
   (locale) => locale !== PSEUDO_LOCALE || import.meta.env.DEV,
 );
+
+/** The toggleable digest sections, in the order they appear in the email. */
+const DIGEST_SECTIONS: ReadonlyArray<{
+  key: DigestSectionKey;
+  label: MessageDescriptor;
+  description: MessageDescriptor;
+}> = [
+  {
+    key: "subscriptions",
+    label: msg`Best of your subscriptions`,
+    description: msg`The top articles from publications you subscribe to.`,
+  },
+  {
+    key: "network",
+    label: msg`Top on the network`,
+    description: msg`The most-read articles across Standard this week.`,
+  },
+  {
+    key: "saved",
+    label: msg`Saved for later`,
+    description: msg`Your five most recently saved-for-later articles.`,
+  },
+  {
+    key: "recommendations",
+    label: msg`Publications to explore`,
+    description: msg`A couple of publications worth discovering.`,
+  },
+];
 
 const styles = stylex.create({
   section: {
@@ -447,6 +476,56 @@ export function UserSettingsView() {
   });
   const digestPending =
     enableDigestMutation.isPending || disableDigestMutation.isPending;
+
+  const digestSectionsQuery = useQuery(
+    user.getWeeklyDigestSectionsQueryOptions,
+  );
+  const setDigestSectionMutation = useMutation({
+    mutationFn: (vars: { section: DigestSectionKey; enabled: boolean }) =>
+      user.setWeeklyDigestSection({ data: vars }),
+    onMutate: async (vars) => {
+      await queryClient.cancelQueries({
+        queryKey: user.getWeeklyDigestSectionsQueryOptions.queryKey,
+      });
+      const previous = queryClient.getQueryData(
+        user.getWeeklyDigestSectionsQueryOptions.queryKey,
+      );
+      queryClient.setQueryData(
+        user.getWeeklyDigestSectionsQueryOptions.queryKey,
+        (old) => ({
+          subscriptions: true,
+          network: true,
+          saved: true,
+          recommendations: true,
+          ...old,
+          [vars.section]: vars.enabled,
+        }),
+      );
+      return { previous };
+    },
+    onError: (_error, _vars, ctx) => {
+      if (ctx?.previous) {
+        queryClient.setQueryData(
+          user.getWeeklyDigestSectionsQueryOptions.queryKey,
+          ctx.previous,
+        );
+      }
+    },
+    onSuccess: (result) => {
+      queryClient.setQueryData(
+        user.getWeeklyDigestSectionsQueryOptions.queryKey,
+        (old) => ({
+          subscriptions: true,
+          network: true,
+          saved: true,
+          recommendations: true,
+          ...old,
+          [result.section]: result.enabled,
+        }),
+      );
+    },
+  });
+
   const [digestDialogOpen, setDigestDialogOpen] = useState(false);
   const [digestPreviewOpen, setDigestPreviewOpen] = useState(false);
   const [digestPreviewLoading, setDigestPreviewLoading] = useState(true);
@@ -680,6 +759,33 @@ export function UserSettingsView() {
               />
             </Flex>
           </SettingRow>
+          {digestEnabled
+            ? DIGEST_SECTIONS.map((section) => {
+                const enabled = digestSectionsQuery.data?.[section.key] ?? true;
+                return (
+                  <div key={section.key}>
+                    <Separator />
+                    <SettingRow
+                      label={i18n._(section.label)}
+                      description={i18n._(section.description)}
+                    >
+                      <Switch
+                        isSelected={enabled}
+                        onChange={(next) => {
+                          if (next === enabled) return;
+                          setDigestSectionMutation.mutate({
+                            section: section.key,
+                            enabled: next,
+                          });
+                        }}
+                        isDisabled={digestSectionsQuery.isLoading}
+                        aria-label={i18n._(section.label)}
+                      />
+                    </SettingRow>
+                  </div>
+                );
+              })
+            : null}
           <AlertDialog
             isOpen={digestDialogOpen}
             onOpenChange={setDigestDialogOpen}

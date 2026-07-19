@@ -9,3 +9,5 @@ py3langid>=0.3.0
 fastapi>=0.115
 uvicorn[standard]>=0.32
 pydantic>=2.9
+# Transitive via starlette, but we import it directly to cap the threadpool.
+anyio>=4.0

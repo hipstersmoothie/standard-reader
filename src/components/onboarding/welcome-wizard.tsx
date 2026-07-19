@@ -2,12 +2,14 @@ import type { MessageDescriptor } from "@lingui/core";
 import { msg, plural } from "@lingui/core/macro";
 import { Plural, Trans, useLingui } from "@lingui/react/macro";
 import * as stylex from "@stylexjs/stylex";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { discoverApi } from "#/integrations/tanstack-query/api-discover.functions";
 import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
+import { ONBOARDING_FRIENDS_LIMIT } from "#/lib/onboarding";
 
 import { Button } from "../../design-system/button";
 import { Flex } from "../../design-system/flex";
@@ -33,6 +35,7 @@ import { Body } from "../../design-system/typography";
 import { Text } from "../../design-system/typography/text";
 import { BrandWordmark } from "../reader/brand-wordmark";
 import { StepFollow } from "./step-follow";
+import { StepFriends } from "./step-friends";
 import { StepIntro } from "./step-intro";
 import { StepSettings } from "./step-settings";
 import { StepTopics } from "./step-topics";
@@ -40,6 +43,7 @@ import { StepTopics } from "./step-topics";
 export type OnboardingStep =
   | "intro"
   | "topics"
+  | "friends"
   | "follow"
   | "settings"
   | "done";
@@ -47,6 +51,7 @@ export type OnboardingStep =
 /** Ordered steps that count toward the progress dots (intro excluded). */
 const PROGRESS_STEPS: Array<OnboardingStep> = [
   "topics",
+  "friends",
   "follow",
   "settings",
   "done",
@@ -178,6 +183,10 @@ const STEP_COPY: Record<
     title: msg`What do you like to read?`,
     dek: msg`Pick a few topics — we'll suggest publications to match. Optional.`,
   },
+  friends: {
+    title: msg`People you follow write here`,
+    dek: msg`These accounts you follow on Bluesky publish on standard.site. Subscribing puts their writing on your Home feed.`,
+  },
   follow: {
     title: msg`Subscribe to a few publications`,
     dek: msg`Your Home feed is built from subscriptions. Three is a good start.`,
@@ -271,7 +280,31 @@ export function WelcomeWizard({
     await navigate({ to: "/" });
   }, [selected, followMutation, finishMutation, navigate, t]);
 
-  const progressIndex = PROGRESS_STEPS.indexOf(step);
+  // Whether the reader follows anyone on Bluesky who publishes here. Prefetched
+  // by the /welcome loader, so this has usually resolved by the intro step.
+  const { data: friends, isPending: friendsPending } = useQuery(
+    discoverApi.getFriendPublishersQueryOptions({
+      limit: ONBOARDING_FRIENDS_LIMIT,
+    }),
+  );
+  const hasFriends = (friends?.publicationCount ?? 0) > 0;
+  // A dedicated step that renders nobody is a dead screen, so it only exists
+  // when it has content. While the lookup is still in flight we keep the step
+  // in the flow rather than dropping a dot mid-wizard.
+  const includeFriends = hasFriends || friendsPending;
+  const progressSteps = includeFriends
+    ? PROGRESS_STEPS
+    : PROGRESS_STEPS.filter((s) => s !== "friends");
+
+  // Landing on ?step=friends with nothing to show (deep link, or the lookup
+  // resolved empty while the reader was on it) moves on instead of stranding.
+  useEffect(() => {
+    if (step === "friends" && !friendsPending && !hasFriends) {
+      onStepChange("follow");
+    }
+  }, [step, friendsPending, hasFriends, onStepChange]);
+
+  const progressIndex = progressSteps.indexOf(step);
 
   // Reset the scroll position whenever the step changes so each step starts at
   // the top rather than inheriting the previous step's scroll offset.
@@ -283,7 +316,8 @@ export function WelcomeWizard({
   const backTarget: Record<OnboardingStep, OnboardingStep | null> = {
     intro: null,
     topics: "intro",
-    follow: "topics",
+    friends: "topics",
+    follow: includeFriends ? "friends" : "topics",
     settings: "follow",
     done: "settings",
   };
@@ -295,6 +329,10 @@ export function WelcomeWizard({
         break;
       }
       case "topics": {
+        onStepChange(includeFriends ? "friends" : "follow");
+        break;
+      }
+      case "friends": {
         onStepChange("follow");
         break;
       }
@@ -318,7 +356,7 @@ export function WelcomeWizard({
       ? t`Get started`
       : step === "topics"
         ? t`Continue`
-        : step === "follow"
+        : step === "friends" || step === "follow"
           ? selected.size === 0
             ? t`Skip for now`
             : t`Continue`
@@ -360,6 +398,13 @@ export function WelcomeWizard({
             <>
               <StepHeadingBlock stepKey="topics" />
               <StepTopics selected={topics} onChange={onTopicsChange} />
+            </>
+          ) : null}
+
+          {step === "friends" ? (
+            <>
+              <StepHeadingBlock stepKey="friends" />
+              <StepFriends selected={selected} onToggle={toggleFollow} />
             </>
           ) : null}
 
@@ -407,7 +452,7 @@ export function WelcomeWizard({
       </div>
 
       <div {...stylex.props(styles.footer)}>
-        {step === "follow" ? (
+        {step === "friends" || step === "follow" ? (
           <span
             {...stylex.props(
               styles.counter,
@@ -436,7 +481,9 @@ export function WelcomeWizard({
           </Button>
           <Button
             variant={
-              step === "follow" && selected.size === 0 ? "outline" : "primary"
+              (step === "friends" || step === "follow") && selected.size === 0
+                ? "outline"
+                : "primary"
             }
             isPending={forwardPending}
             onPress={forward}
@@ -447,7 +494,7 @@ export function WelcomeWizard({
       </div>
 
       <div {...stylex.props(styles.dotsBar)} aria-hidden>
-        {PROGRESS_STEPS.map((s, i) => (
+        {progressSteps.map((s, i) => (
           <span
             key={s}
             {...stylex.props(

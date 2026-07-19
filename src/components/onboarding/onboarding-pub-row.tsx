@@ -72,17 +72,19 @@ const styles = stylex.create({
   },
   description: {
     color: uiColor.text1,
-    display: "-webkit-box",
     fontFamily: fontFamily.sans,
     fontSize: fontSize.sm,
     lineHeight: lineHeight.sm,
     marginBottom: 0,
     marginTop: 0,
+    // The row is a <button>, which sets `white-space: nowrap` — inherited, that
+    // pinned descriptions to one unwrappable line that got clipped mid-word.
+    // Restore normal wrapping, then cap the block at two lines.
+    maxHeight: `calc(2 * ${lineHeight.sm} * ${fontSize.sm})`,
+    minWidth: 0,
     overflow: "hidden",
-    // eslint-disable-next-line @stylexjs/valid-styles
-    WebkitBoxOrient: "vertical",
-    // eslint-disable-next-line @stylexjs/valid-styles
-    WebkitLineClamp: 2,
+    overflowWrap: "anywhere",
+    whiteSpace: "normal",
   },
   metaLine: {
     alignItems: "center",

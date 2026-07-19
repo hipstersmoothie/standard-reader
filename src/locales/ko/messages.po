@@ -90,6 +90,7 @@ msgstr "글 추가"
 #: src/components/reader/app-shell.tsx
 #: src/components/reader/article-below-fold.tsx
 #: src/routes/_layout.discover.tsx
+#: src/routes/_layout.friends.tsx
 msgid "Discover"
 msgstr "둘러보기"
 
@@ -156,6 +157,10 @@ msgstr "이 목록은 비어 있습니다 — 발행물이나 사람을 추가�
 #: src/components/docs/api-docs-intro.tsx
 msgid "A labeler is any DID that publishes AT Proto labels. Readers add one by DID on the <0>Labelers</0> page, and Standard Reader then shows that labeler's labels — and can warn on or hide labeled posts — as they read. Labelers are discovered the standard way; nothing about them is specific to us. To run your own:"
 msgstr "레이블러는 AT Proto 레이블을 게시하는 모든 DID를 말합니다. 독자는 <0>레이블러</0> 페이지에서 DID로 추가하며, 그러면 Standard Reader가 읽는 동안 해당 레이블러의 레이블을 표시하고 레이블이 붙은 글을 경고하거나 숨길 수 있습니다. 레이블러는 표준 방식으로 검색되며, 저희만의 특별한 요소는 없습니다. 직접 운영하려면:"
+
+#: src/components/user-settings-view.tsx
+msgid "The most-read articles across Standard this week."
+msgstr ""
 
 #: src/components/reader/article-view.tsx
 msgid "Article header image"
@@ -239,6 +244,10 @@ msgstr "라이트"
 msgid "For a complete, minimal reference implementation (Jetstream → detect → sign → SQLite → serve), see the <0>claudeslop</0> labeler in <1>services/claudeslop</1>."
 msgstr "완전하고 최소한의 참조 구현(Jetstream → 감지 → 서명 → SQLite → 제공)은 <1>services/claudeslop</1>의 <0>claudeslop</0> 레이블러를 참고하세요."
 
+#: src/components/reader/text-selection-toolbar.tsx
+msgid "Dismiss"
+msgstr ""
+
 #: src/routes/_layout.feedback.index.tsx
 msgid "Open"
 msgstr "열기"
@@ -251,6 +260,14 @@ msgstr "이 발행물에서 색인된 글이 아직 없습니다."
 #: src/magazine/magazine-end-subscribe.tsx
 msgid "Subscribing…"
 msgstr "구독하는 중…"
+
+#: src/routes/_layout.friends.tsx
+msgid "People"
+msgstr ""
+
+#: src/routes/_layout.friends.tsx
+msgid "Publications written by the people you follow on Bluesky, minus the ones you already subscribe to."
+msgstr ""
 
 #: src/components/reader/reorder-lists-modal.tsx
 msgid "List"
@@ -365,6 +382,10 @@ msgstr "리더 상태 엔드포인트는 인증 없이 독자의 공개 색인 �
 #: src/components/user-settings-view.tsx
 msgid "Permanently remove data stored in your account. These actions delete records from your account and cannot be undone."
 msgstr "계정에 저장된 데이터를 영구적으로 삭제합니다. 이 작업은 계정에서 레코드를 삭제하며 되돌릴 수 없습니다."
+
+#: src/routes/_layout.friends.tsx
+msgid "Loading people"
+msgstr ""
 
 #: src/components/reader/collection-theme-editor.tsx
 msgid "Read the piece →"
@@ -585,9 +606,17 @@ msgstr "목록 순서 변경"
 msgid "Publication lists"
 msgstr "발행물 목록"
 
+#: src/components/onboarding/welcome-wizard.tsx
+msgid "These accounts you follow on Bluesky publish on standard.site. Subscribing puts their writing on your Home feed."
+msgstr ""
+
 #: src/components/feedback/feedback-dialog.tsx
 msgid "Optional: add context, steps to reproduce, or what you'd like to see"
 msgstr "선택 사항: 배경 설명, 재현 단계, 원하는 개선점을 적어 주세요"
+
+#: src/routes/_layout.friends.tsx
+msgid "No one you follow on Bluesky publishes here yet. As more of them start writing, they'll show up here to follow."
+msgstr ""
 
 #: src/routes/_layout.l.$did.$rkey.tsx
 msgid "Show read articles"
@@ -654,6 +683,10 @@ msgstr "{userCount, plural, one {사용자} other {사용자}}"
 #: src/components/reader/privacy-view.tsx
 msgid "<0>Reading activity.</0> When reading history is enabled, articles you open are recorded as public AT Protocol records in <1>your</1> repository — not as private app-only data. You can turn this off in Settings; existing records remain in your repo until you delete them from the Personal data section."
 msgstr "<0>읽기 활동.</0> 읽기 기록을 켜면 열어 본 글이 앱 전용 비공개 데이터가 아니라 <1>내</1> 저장소의 공개 AT Protocol 레코드로 기록됩니다. 설정에서 끌 수 있으며, 기존 레코드는 개인 데이터 섹션에서 삭제하기 전까지 저장소에 남아 있습니다."
+
+#: src/routes/_layout.friends.tsx
+msgid "Browse the directory"
+msgstr ""
 
 #: src/components/reader/article-view.tsx
 msgid "Did you enjoy this article?"
@@ -929,6 +962,7 @@ msgstr "확장 프로그램 내부에서 별도의 분석 파이프라인을 운
 msgid "Remove list"
 msgstr "목록 제거"
 
+#: src/routes/_layout.friends.tsx
 #: src/routes/_layout.latest.tsx
 #: src/routes/_layout.tag.$tag.tsx
 msgid "Loading articles"
@@ -949,6 +983,10 @@ msgstr "확장 프로그램 옵션 페이지에서 페이지 오버레이와 Blu
 #: src/components/reader/list-edit-modal.tsx
 msgid "List members"
 msgstr "목록 멤버"
+
+#: src/components/onboarding/step-friends.tsx
+msgid "{remaining, plural, one {# more publication from people you follow — find it under Discover once you're set up.} other {# more publications from people you follow — find them under Discover once you're set up.}}"
+msgstr ""
 
 #. placeholder {0}: pub.name
 #: src/components/reader/article-below-fold.tsx
@@ -1292,6 +1330,10 @@ msgstr "PDSLS에서 보기"
 msgid "Subscribe to a few publications to unlock recommendations."
 msgstr "추천을 받으려면 발행물을 몇 개 구독하세요."
 
+#: src/routes/_layout.discover.tsx
+msgid "See publications from the people you follow"
+msgstr ""
+
 #: src/routes/_layout.search.tsx
 msgid "{shown}+ matches"
 msgstr "{shown}개 이상 일치"
@@ -1341,6 +1383,15 @@ msgstr "구독 중인 발행물의 최신 글입니다."
 msgid "Log out"
 msgstr "로그아웃"
 
+#: src/components/user-settings-view.tsx
+msgid "The top articles from publications you subscribe to."
+msgstr ""
+
+#. placeholder {0}: data?.publicationCount ?? 0
+#: src/routes/_layout.discover.tsx
+msgid "{0, plural, one {# publication from your Bluesky follows} other {# publications from your Bluesky follows}}"
+msgstr ""
+
 #: src/routes/review.thanks.tsx
 msgid "Return to the app"
 msgstr "앱으로 돌아가기"
@@ -1389,6 +1440,10 @@ msgstr "해당 작가를 찾을 수 없습니다."
 msgid "A few preferences"
 msgstr "몇 가지 설정"
 
+#: src/routes/_layout.friends.tsx
+msgid "We couldn't reach Bluesky to look up who you follow. Reload in a moment, or browse the directory in the meantime."
+msgstr ""
+
 #: src/components/user-settings-view.tsx
 msgid "All articles you have marked as read."
 msgstr "읽음으로 표시한 모든 아티클입니다."
@@ -1426,6 +1481,10 @@ msgstr "구독하지 못했습니다"
 msgid "On keeping a commonplace book"
 msgstr "비망록을 쓴다는 것"
 
+#: src/routes/_layout.u.$did.tsx
+msgid "Featured in"
+msgstr "게재 매체"
+
 #: src/components/reader/collection-theme-editor.tsx
 msgid "A sentence of body copy, set in your chosen fonts and colors, so you can see how it all reads together before you save."
 msgstr "선택한 서체와 색으로 표시된 본문 예시 문장입니다. 저장하기 전에 전체적인 느낌을 확인해 보세요."
@@ -1437,6 +1496,10 @@ msgstr "디렉터리 열기"
 #: src/routes/_layout.feedback.index.tsx
 msgid "Answered"
 msgstr "답변 완료"
+
+#: src/routes/_layout.friends.tsx
+msgid "Couldn't check right now"
+msgstr ""
 
 #: src/components/reader/collection-builder.tsx
 msgid "Reorder {itemTitle}"
@@ -1595,6 +1658,10 @@ msgstr "나중에 하기"
 msgid "The latest across everyone you subscribe to"
 msgstr "구독 중인 모든 곳의 최신 글"
 
+#: src/components/user-settings-view.tsx
+msgid "Publications to explore"
+msgstr ""
+
 #: src/routes/_layout.history.tsx
 #: src/routes/_layout.latest.tsx
 #: src/routes/_layout.u.$did.tsx
@@ -1618,6 +1685,10 @@ msgstr "2026년 6월 13일 최종 업데이트"
 msgid "{shown, plural, one {# match} other {# matches}}"
 msgstr "{shown, plural, one {#개 일치} other {#개 일치}}"
 
+#: src/components/onboarding/welcome-wizard.tsx
+msgid "People you follow write here"
+msgstr ""
+
 #: src/magazine/flow.tsx
 msgid "Original"
 msgstr "원본"
@@ -1638,6 +1709,10 @@ msgstr "만들기"
 #: src/routes/_layout.index.tsx
 msgid "See all trending"
 msgstr "인기 글 전체 보기"
+
+#: src/components/onboarding/step-friends.tsx
+#~ msgid "All selected"
+#~ msgstr ""
 
 #: src/components/reader/collection-theme-editor.tsx
 msgid "Fonts"
@@ -1722,6 +1797,10 @@ msgstr "일시정지"
 msgid "Back"
 msgstr "뒤로"
 
+#: src/routes/_layout.friends.tsx
+msgid "None of these publications have posted anything yet. Subscribe from the Publications tab and their writing will land on your Home feed."
+msgstr ""
+
 #: src/components/reader/link-share-menu.tsx
 #: src/components/reader/share-menu.tsx
 #: src/routes/_layout.l.$did.$rkey.tsx
@@ -1740,6 +1819,10 @@ msgstr "구독할 만한 곳"
 #: src/components/reader/subscriptions-sheet.tsx
 msgid "Subscription list actions"
 msgstr "구독 리스트 작업"
+
+#: src/components/reader/friend-publishers.tsx
+msgid "{people, plural, one {# person you follow} other {# people you follow}}"
+msgstr ""
 
 #: src/components/reader/reorder-lists-modal.tsx
 msgid "You don't have any lists to reorder yet."
@@ -1768,6 +1851,10 @@ msgstr "네트워크에서"
 #: src/components/reader/collection-builder.tsx
 msgid "Matching articles"
 msgstr "일치하는 글"
+
+#: src/routes/_layout.friends.tsx
+#~ msgid "Writers"
+#~ msgstr ""
 
 #: src/components/reader/about-view.tsx
 msgid "A quiet place to read"
@@ -1818,6 +1905,10 @@ msgstr "라이트, 다크 또는 시스템 설정 따르기 중에서 선택하�
 #: src/components/onboarding/welcome-wizard.tsx
 msgid "Finish"
 msgstr "완료"
+
+#: src/routes/_layout.friends.tsx
+#~ msgid "We checked the people you follow on Bluesky against every publication on the network and didn't find a match. As more of them start publishing, they'll show up here."
+#~ msgstr ""
 
 #: src/routes/_layout.index.tsx
 msgid "The latest long-form writing from across the network."
@@ -1964,6 +2055,10 @@ msgstr "레코드 보기"
 msgid "Optional: add a note about why you're saving this"
 msgstr "선택 사항: 저장하는 이유를 메모로 남겨보세요"
 
+#: src/components/user-settings-view.tsx
+msgid "Best of your subscriptions"
+msgstr ""
+
 #: src/routes/_layout.p.$did.$rkey.tsx
 msgid "We couldn’t find that publication."
 msgstr "해당 발행물을 찾을 수 없습니다."
@@ -2108,6 +2203,10 @@ msgstr "일 · 오전 8:00"
 msgid "We picked this language from your browser. You can switch it anytime."
 msgstr "브라우저 설정에 따라 이 언어를 선택했습니다. 언제든지 변경할 수 있습니다."
 
+#: src/components/reader/text-selection-toolbar.tsx
+msgid "Dismiss selection"
+msgstr ""
+
 #: src/routes/_layout.latest.tsx
 msgid "Follow a few publications and their latest writing will show up here."
 msgstr "발행물을 몇 개 팔로우하면 최신 글이 여기에 표시됩니다."
@@ -2218,6 +2317,10 @@ msgstr "계속 읽기"
 msgid "All"
 msgstr "전체"
 
+#: src/routes/_layout.friends.tsx
+#~ msgid "Publications written by the people you follow on Bluesky."
+#~ msgstr ""
+
 #: src/components/reader/article-view.tsx
 #: src/components/reader/cards.tsx
 msgid "Save for later"
@@ -2239,7 +2342,9 @@ msgstr "이후"
 msgid "Integrations"
 msgstr "연동"
 
+#. placeholder {0}: person.subscriberCount
 #. placeholder {0}: pub.subscriberCount
+#. placeholder {1}: formatReaders(person.subscriberCount)
 #. placeholder {1}: formatReaders(pub.subscriberCount)
 #: src/components/reader/cards.tsx
 msgid "{0, plural, one {# reader} other {{1} readers}}"
@@ -2253,6 +2358,10 @@ msgstr "서비스 검색"
 #: src/components/user-settings-view.tsx
 msgid "The voice used when you listen to an article with read aloud."
 msgstr "읽어주기로 아티클을 들을 때 사용하는 음성입니다."
+
+#: src/components/user-settings-view.tsx
+msgid "Your five most recently saved-for-later articles."
+msgstr ""
 
 #: src/magazine/magazine-end-subscribe.tsx
 #: src/routes/_layout.l.$did.$rkey.tsx
@@ -2310,6 +2419,10 @@ msgstr "이 목록에 사람이 없습니다 — 편집 대화상자에서 추�
 msgid "Description"
 msgstr "설명"
 
+#: src/routes/_layout.discover.tsx
+msgid "{totalPeople, plural, one {# person you follow writes here} other {# people you follow write here}}"
+msgstr ""
+
 #: src/components/reader/page-reader-bar.tsx
 msgid "Something went wrong"
 msgstr "문제가 발생했습니다"
@@ -2346,9 +2459,17 @@ msgstr "매거진 닫기"
 msgid "Introduce the collection… (markdown supported)"
 msgstr "컬렉션을 소개해 주세요… (마크다운 지원)"
 
+#: src/components/reader/friend-publishers.tsx
+msgid "Bluesky didn't answer in time, so this list may be incomplete. Reload to try again."
+msgstr ""
+
 #: src/components/reader/article-below-fold.tsx
 msgid "Cited in"
 msgstr "인용된 곳"
+
+#: src/components/user-settings-view.tsx
+msgid "A couple of publications worth discovering."
+msgstr ""
 
 #: src/components/reader/share-menu.tsx
 #: src/routes/_layout.l.$did.$rkey.tsx
@@ -2437,6 +2558,12 @@ msgstr "임의의 페이지 텍스트를 수집하거나 업로드하지 않습�
 #: src/components/reading-settings-preview.tsx
 msgid "Couldn’t play the voice sample."
 msgstr "음성 샘플을 재생하지 못했습니다."
+
+#. placeholder {0}: person.publicationCount
+#. placeholder {1}: formatReaders(person.publicationCount)
+#: src/components/reader/cards.tsx
+msgid "{0, plural, one {# publication} other {{1} publications}}"
+msgstr ""
 
 #: src/components/docs/docs-topbar.tsx
 msgid "API"
@@ -2559,6 +2686,7 @@ msgstr "구독하려면 Bluesky로 로그인하세요. 계정에 이 팔로우�
 
 #: src/components/labeler-detail-view.tsx
 #: src/components/reader/about-view.tsx
+#: src/routes/_layout.friends.tsx
 #: src/routes/_layout.history.tsx
 #: src/routes/_layout.l.$did.$rkey.tsx
 #: src/routes/_layout.recommended.tsx
@@ -2578,6 +2706,10 @@ msgstr "{name}님은 아직 여기서 읽거나 발행하지 않았습니다. Bl
 #: src/components/reader/collection-theme-editor.tsx
 msgid "Accent on background"
 msgstr "배경 위 강조색"
+
+#: src/routes/_layout.friends.tsx
+msgid "Either no one you follow on Bluesky publishes here yet, or you're already subscribed to everyone who does. As more of them start publishing, they'll show up here."
+msgstr ""
 
 #: src/components/reader/save-to-collection-dialog.tsx
 msgid "Collection"
@@ -2729,6 +2861,10 @@ msgstr "Standard Reader는 당신이 읽는 곳으로 찾아갑니다"
 msgid "Preview"
 msgstr "미리보기"
 
+#: src/routes/_layout.friends.tsx
+#~ msgid "No one you follow publishes here yet"
+#~ msgstr ""
+
 #: src/routes/_layout.index.tsx
 msgid "Standard Reader knows about every publication on the network. Find a few worth your mornings."
 msgstr "Standard Reader는 네트워크의 모든 발행물을 알고 있습니다. 당신의 아침을 채울 만한 몇 곳을 찾아보세요."
@@ -2745,6 +2881,10 @@ msgstr "개인정보"
 #: src/components/reader/privacy-view.tsx
 msgid "Last updated June 11, 2026"
 msgstr "2026년 6월 11일 최종 수정"
+
+#: src/routes/_layout.friends.tsx
+msgid "People you follow"
+msgstr ""
 
 #: src/components/reader/collections-upgrade-gate.tsx
 msgid "Standard Reader needs write access to your site.standard publications and documents, plus your collection records, to author Collections. You'll be asked to approve this on your PDS login."
@@ -2861,6 +3001,10 @@ msgstr "글을 탭했을 때 Standard Reader 안에서 바로 열릴지, 아니�
 msgid "Example record"
 msgstr "예시 레코드"
 
+#: src/components/onboarding/step-friends.tsx
+#~ msgid "{remaining, plural, one {# more person you follow writes here — find them under Discover once you're set up.} other {# more people you follow write here — find them under Discover once you're set up.}}"
+#~ msgstr ""
+
 #: src/components/reader/collection-builder.tsx
 msgid "No articles yet — use “Add an article” to get started."
 msgstr "아직 글이 없습니다 — “글 추가”로 시작해 보세요."
@@ -2885,6 +3029,10 @@ msgstr "제목 글꼴"
 msgid "You may be asked to grant permission the first time."
 msgstr "처음에는 권한 부여를 요청받을 수 있습니다."
 
+#: src/routes/_layout.friends.tsx
+msgid "Friends views"
+msgstr ""
+
 #: src/components/NavbarAuth.tsx
 #: src/routes/login.tsx
 msgid "Log in"
@@ -2897,6 +3045,10 @@ msgstr "읽기 기록 유지"
 #: src/components/docs/publishing-docs-page.tsx
 msgid "<0>Other markdown shapes (avoid).</0> <1>site.standard.content.markdown</1> and a scattering of third-party <2>#markdown</2> shapes — e.g. <3>site.standard.document#markdown</3> — carry a raw markdown string under a format-specific key. Don't add another one — publish Markpub instead."
 msgstr "<0>다른 마크다운 형태(권장하지 않음).</0> <1>site.standard.content.markdown</1>과 여기저기 흩어진 서드파티 <2>#markdown</2> 형태들 — 예: <3>site.standard.document#markdown</3> — 은 형식별 키 아래에 원시 마크다운 문자열을 담습니다. 새로 하나 더 만들지 말고 Markpub으로 발행하세요."
+
+#: src/routes/_layout.discover.tsx
+msgid "Find your friends"
+msgstr ""
 
 #: src/components/reader/list-edit-modal.tsx
 msgid "Save list"
@@ -2938,6 +3090,10 @@ msgstr "함께 읽기"
 #: src/components/docs/api-docs-intro.tsx
 msgid "operational"
 msgstr "정상"
+
+#: src/components/user-settings-view.tsx
+msgid "Top on the network"
+msgstr ""
 
 #: src/components/reader/collection-builder.tsx
 msgid "Remove"
@@ -2992,6 +3148,10 @@ msgstr "your.handle.com"
 msgid "Open collections in magazine"
 msgstr "매거진에서 컬렉션 열기"
 
+#: src/routes/_layout.friends.tsx
+msgid "Nothing new from the people you follow"
+msgstr ""
+
 #: src/components/reader/reader-queue-rows.tsx
 msgid "Article unavailable"
 msgstr "글을 볼 수 없음"
@@ -3041,6 +3201,7 @@ msgid "Your Home feed is empty for now — head to Discover whenever you're read
 msgstr "홈 피드가 아직 비어 있습니다. 준비되면 언제든 탐색으로 가 보세요. 구독한 글이 모두 여기에 모입니다."
 
 #: src/components/reader/collection-builder.tsx
+#: src/routes/_layout.friends.tsx
 #: src/routes/_layout.l.$did.$rkey.tsx
 #: src/routes/_layout.search.tsx
 #: src/routes/_layout.tag.$tag.tsx
@@ -3162,6 +3323,10 @@ msgstr "소리내어 읽기 음성"
 msgid "Tag"
 msgstr "태그"
 
+#: src/routes/_layout.friends.tsx
+#~ msgid "Publications written by the people you follow on Bluesky. Follow someone here and every publication they write lands on your Home feed."
+#~ msgstr ""
+
 #: src/routes/_layout.index.tsx
 msgid "Wander the directory"
 msgstr "디렉터리 거닐기"
@@ -3268,6 +3433,10 @@ msgstr "에디토리얼"
 #: src/components/docs/api-docs-request-panel.tsx
 msgid "Click Run example to fetch a live response with your session."
 msgstr "예제 실행을 누르면 내 세션으로 실시간 응답을 가져옵니다."
+
+#: src/components/reader/friend-publishers.tsx
+msgid "{publicationCount, plural, one {# publication} other {# publications}}"
+msgstr ""
 
 #. placeholder {0}: selected.size
 #: src/components/onboarding/welcome-wizard.tsx
@@ -3430,6 +3599,10 @@ msgstr "이 발행물은 둘러보기 노출을 해제했기 때문에 내 프�
 msgid "{count, plural, one {# upvote} other {# upvotes}} — sign in to upvote"
 msgstr "{count, plural, one {추천 #개} other {추천 #개}} — 추천하려면 로그인하세요"
 
+#: src/components/onboarding/step-friends.tsx
+#~ msgid "Select all"
+#~ msgstr ""
+
 #: src/components/reader/extension-privacy-view.tsx
 msgid "For how {SITE_NAME} works overall, see <0>About</0>. For site-wide privacy, see the <1>site privacy policy</1>. For questions about this deployment, contact the operator of {siteHost}."
 msgstr "{SITE_NAME}의 전반적인 작동 방식은 <0>소개</0>를 참고하세요. 사이트 전체 개인정보 처리방침은 <1>사이트 개인정보 처리방침</1>을 확인하세요. 이 배포에 대한 문의는 {siteHost} 운영자에게 연락하세요."
@@ -3585,6 +3758,7 @@ msgid "We do not post to your account except when you take an explicit action th
 msgstr "발행물 팔로우, 글 좋아요나 저장, 전용 구독 흐름을 통한 구독처럼 이용자가 직접 수행한 동작에 필요한 경우를 제외하고는 계정에 게시하지 않습니다. 개인정보를 판매하지 않습니다."
 
 #: src/routes/_layout.discover.tsx
+#: src/routes/_layout.friends.tsx
 #: src/routes/_layout.l.$did.$rkey.tsx
 #: src/routes/_layout.search.tsx
 #: src/routes/_layout.tag.$tag.tsx
@@ -3739,6 +3913,10 @@ msgstr "<0>Standard Reader</0> 제공"
 msgid "Save from anywhere you browse"
 msgstr "어디서 둘러보든 저장하기"
 
+#: src/components/reader/friend-publishers.tsx
+#~ msgid "Loading"
+#~ msgstr ""
+
 #: src/routes/_layout.u.$did.tsx
 msgid "Not on Standard Reader yet"
 msgstr "아직 Standard Reader에 없음"
@@ -3746,6 +3924,7 @@ msgstr "아직 Standard Reader에 없음"
 #: src/components/reader/app-shell.tsx
 #: src/components/reader/article-view.tsx
 #: src/components/reader/cards.tsx
+#: src/components/user-settings-view.tsx
 #: src/routes/_layout.saved.tsx
 msgid "Saved for later"
 msgstr "나중에 볼 항목"

@@ -3,7 +3,10 @@
 import { useLingui } from "@lingui/react/macro";
 import * as stylex from "@stylexjs/stylex";
 
-import { articleBodyStyles } from "../../body-styles";
+import {
+  articleBodyStyles,
+  IFRAME_FRAME_BORDER_WIDTH,
+} from "../../body-styles";
 
 const DEFAULT_ASPECT_RATIO = "16 / 9";
 
@@ -69,9 +72,11 @@ export function IframeEmbedView({
         {...stylex.props(articleBodyStyles.iframeFrame)}
         style={{
           aspectRatio: aspectRatioCss,
+          // The frame is `border-box`, so grow it by the border so the iframe
+          // itself gets exactly the height the embed asked for.
           height:
             aspectRatioCss == null && fixedHeight != null
-              ? `${fixedHeight}px`
+              ? `${fixedHeight + IFRAME_FRAME_BORDER_WIDTH * 2}px`
               : undefined,
         }}
       >

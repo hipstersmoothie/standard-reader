@@ -32,7 +32,6 @@ import {
 import {
   EmailFooter,
   EmailHead,
-  EmailHeader,
   EmailShell,
   PubIcon,
   SectionLabel,
@@ -64,9 +63,9 @@ interface DigestPublication {
 }
 
 interface DigestEmailProps {
-  weekLabel: string; // e.g. "Week of Jul 4, 2026"
   articles: Array<DigestArticle>;
   networkArticles: Array<DigestArticle>;
+  saved: Array<DigestArticle>;
   recommendations: Array<DigestPublication>;
   unsubscribeUrl: string;
   logoUrl: string;
@@ -404,14 +403,14 @@ function RecommendationCard({ pub }: { pub: DigestPublication }) {
 /* ------------------------------------------------------------------ */
 
 export default function WeeklyDigestEmail({
-  weekLabel,
   articles,
   networkArticles,
+  saved,
   recommendations,
   unsubscribeUrl,
   logoUrl,
 }: DigestEmailProps) {
-  const px = { paddingLeft: "34px", paddingRight: "34px" };
+  const px = { paddingLeft: "24px", paddingRight: "24px" };
 
   return (
     <Html lang="en">
@@ -426,8 +425,6 @@ export default function WeeklyDigestEmail({
         style={{ margin: 0, padding: 0, background: c.page }}
       >
         <EmailShell>
-          <EmailHeader logoUrl={logoUrl} rightLabel={weekLabel} />
-
           {/* ---- Best of your follows ---- */}
           <Section style={{ ...px, paddingTop: "22px" }}>
             <SectionLabel>Best of your subscriptions</SectionLabel>
@@ -455,6 +452,29 @@ export default function WeeklyDigestEmail({
               </Section>
               <Section style={px}>
                 {networkArticles.map((a, i) => (
+                  <ArticleCard key={a.url + i} article={a} />
+                ))}
+              </Section>
+            </>
+          )}
+
+          {/* ---- Saved for later ---- */}
+          {saved.length > 0 && (
+            <>
+              <Section style={{ ...px, paddingTop: "30px" }}>
+                <Hr
+                  className="d-divider"
+                  style={{
+                    borderColor: c.line,
+                    borderWidth: "1px 0 0",
+                    margin: "0 0 20px",
+                    height: 0,
+                  }}
+                />
+                <SectionLabel>Saved for later</SectionLabel>
+              </Section>
+              <Section style={px}>
+                {saved.map((a, i) => (
                   <ArticleCard key={a.url + i} article={a} />
                 ))}
               </Section>

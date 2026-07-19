@@ -128,7 +128,14 @@ const styles = stylex.create({
     boxSizing: "border-box",
     maxWidth: "100%",
     minWidth: 0,
-    overflowX: "clip",
+    // Deliberately no `overflow-x: clip` here, and the app shell drops its own
+    // clip for this view (see `scroller` in app-shell). A horizontal clip
+    // anywhere above the sticky article header makes WebKit re-snap the clip
+    // rect to whole device pixels every frame while the page scrolls at
+    // fractional offsets, so the header visibly jitters ~1px and leaks a sliver
+    // of content along its top edge. Wide body content (code blocks, tables,
+    // math, carousels) already scrolls inside its own `overflow-x: auto` box,
+    // so nothing here needs an outer clip.
     // The floating bottom-nav pill overlays the app scroller on mobile, so
     // reserve room for trailing content; the nav is hidden at desktop widths.
     paddingBottom: {
@@ -1009,7 +1016,10 @@ function ArticleViewBody({
   }, [article.uri, sharedQuote]);
 
   return (
-    <div {...stylex.props(styles.root, readerActive && styles.rootReader)}>
+    <div
+      data-unclipped-sticky
+      {...stylex.props(styles.root, readerActive && styles.rootReader)}
+    >
       <div {...stylex.props(styles.stickyChrome)}>
         <div {...stylex.props(styles.topBar)}>
           <div {...stylex.props(styles.topLeft)}>

@@ -15,6 +15,8 @@ reconstruct the architecture here rather than relying on an Auto* class.
 
 from __future__ import annotations
 
+import os
+
 import torch
 import torch.nn as nn
 from huggingface_hub import hf_hub_download
@@ -23,6 +25,15 @@ from transformers import AutoConfig, AutoModel, AutoTokenizer
 
 MODEL_ID = "desklib/ai-text-detector-v1.01"
 MAX_TOKENS = 768
+
+# torch sizes its thread pools from the *host's* core count, which on a shared
+# platform is far larger than the cores the container can actually use. The
+# oversized OpenMP teams exhaust the container's thread limit ("libgomp: Thread
+# creation failed") and take the process down with them. Scoring is already
+# serialized by the caller, so a small fixed pool is all we want.
+_THREADS = int(os.environ.get("TORCH_NUM_THREADS", "2"))
+torch.set_num_threads(_THREADS)
+torch.set_num_interop_threads(1)
 
 
 class DesklibDetector(nn.Module):

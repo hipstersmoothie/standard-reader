@@ -18,7 +18,9 @@ const styles = stylex.create({
     boxSizing: "border-box",
     maxWidth: "100%",
     minWidth: 0,
-    overflowX: "clip",
+    // No horizontal clip — must match the loaded `ArticleView` root so the
+    // sticky header doesn't gain a clipping ancestor on hydration. See the
+    // comment on `styles.root` in article-view.tsx.
     paddingBottom: {
       default: `calc(env(safe-area-inset-bottom, 0px) + ${spacing["28"]})`,
       "@media (min-width: 60rem)": 0,
@@ -122,6 +124,7 @@ export function ArticleViewSkeleton() {
     <div
       aria-busy="true"
       aria-label={t`Loading article`}
+      data-unclipped-sticky
       {...stylex.props(styles.root)}
     >
       <article {...stylex.props(styles.article, articleMeasureStyles.default)}>

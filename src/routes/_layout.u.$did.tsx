@@ -48,7 +48,12 @@ import { AuthorProfileLink } from "../components/reader/author-profile-link";
 import { ArticleRow, PubDirectoryRow } from "../components/reader/cards";
 import { FollowUserButton } from "../components/reader/follow-user-button";
 import { LinkifiedText } from "../components/reader/linkified-text";
-import { Handle, Kicker, ReaderContent } from "../components/reader/primitives";
+import {
+  Handle,
+  Kicker,
+  ReaderContent,
+  SectionHead,
+} from "../components/reader/primitives";
 import { ProfileTabsSettingsModal } from "../components/reader/profile-tabs-settings-modal";
 import { RssFeedButton } from "../components/reader/rss-feed-button";
 import { ShareMenu } from "../components/reader/share-menu";
@@ -356,6 +361,12 @@ const styles = stylex.create({
   },
   readerHandle: {
     marginTop: spacing["0.5"],
+  },
+  // Generous separation between the author's own publications and the ones
+  // they're only featured in; `SectionHead` supplies the tighter space below
+  // its title, so the rhythm reads as one break, not two.
+  featuredSection: {
+    marginTop: spacing["10"],
   },
   emptyNote: {
     color: uiColor.text1,
@@ -1041,6 +1052,7 @@ function AuthorPublicationsPanel({
   initialItems: Array<PublicationCard>;
   initialNextOffset: number | null;
 }) {
+  const { t } = useLingui();
   const [items, setItems] = useState(initialItems);
   const [nextOffset, setNextOffset] = useState(initialNextOffset);
 
@@ -1065,17 +1077,44 @@ function AuthorPublicationsPanel({
     );
   }
 
+  // The query returns owned publications first, then ones the author is only
+  // featured in, so a partition keeps both groups intact as pages accumulate.
+  const owned = items.filter((pub) => pub.did === did);
+  const featured = items.filter((pub) => pub.did !== did);
+  // Only the trailing group closes its bottom rule; a mid-list rule would
+  // collide with the "Featured in" head that follows it.
+  const ownedIsLastGroup = featured.length === 0;
+
   return (
     <div>
-      {items.map((pub, index) => (
+      {owned.map((pub, index) => (
         <PubDirectoryRow
           key={pub.uri}
           pub={pub}
           isFirstInSection={index === 0}
-          isLast={index === items.length - 1 && nextOffset == null}
+          isLast={
+            ownedIsLastGroup && index === owned.length - 1 && nextOffset == null
+          }
           markHidden
         />
       ))}
+      {featured.length > 0 ? (
+        <section
+          aria-label={t`Featured in`}
+          {...stylex.props(owned.length > 0 && styles.featuredSection)}
+        >
+          <SectionHead size="md" title={<Trans>Featured in</Trans>} />
+          {featured.map((pub, index) => (
+            <PubDirectoryRow
+              key={pub.uri}
+              pub={pub}
+              isFirstInSection={index === 0}
+              isLast={index === featured.length - 1 && nextOffset == null}
+              markHidden
+            />
+          ))}
+        </section>
+      ) : null}
       <LoadMoreFooter
         nextOffset={nextOffset}
         loadingMore={scroll.loadingMore}
