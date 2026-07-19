@@ -496,6 +496,7 @@ export const articleBodyStyles = stylex.create({
     lineHeight: 1.2,
     marginBottom: spacing["0"],
     marginTop: gap.md,
+    textAlign: "center",
   },
   gallery: {
     marginBottom: spacing["6"],
