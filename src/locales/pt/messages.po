@@ -1247,7 +1247,7 @@ msgstr "O seu voto foi registado em userinput.app. Obrigado por ajudar a destaca
 
 #: src/routes/_layout.index.tsx
 msgid "You might follow"
-msgstr "Pode seguir"
+msgstr "Você pode gostar"
 
 #: src/components/reader/labeler-pill.tsx
 msgid "View labeler"
@@ -1444,7 +1444,7 @@ msgstr "Voltar ao aplicativo"
 
 #: src/magazine/Magazine.tsx
 msgid "Switch to reader view"
-msgstr "Mudar para a vista de leitura"
+msgstr "Mudar para modo leitor"
 
 #: src/components/docs/api-docs-intro.tsx
 msgid "<0>3. Declare your label values.</0> Describe each value (severity, default warn/hide, blur behavior) in an <1>app.standard-reader.labeler.service</1> descriptor, served from <2>app.standard-reader.labeler.getServices</2> (a <3>did:web</3> labeler has no repo to hold the record)."
@@ -1521,7 +1521,7 @@ msgstr "Todos os artigos não lidos desta publicação serão marcados como lido
 
 #: src/magazine/Magazine.tsx
 msgid "Setting the issue…"
-msgstr "A definir a edição…"
+msgstr "Preparando a edição…"
 
 #: src/components/reader/subscribe-card.tsx
 msgid "Couldn't subscribe"
@@ -1533,7 +1533,7 @@ msgstr "Sobre manter um caderno de apontamentos"
 
 #: src/routes/_layout.u.$did.tsx
 msgid "Featured in"
-msgstr "Publicado em"
+msgstr "Aparece em"
 
 #: src/components/reader/collection-theme-editor.tsx
 msgid "A sentence of body copy, set in your chosen fonts and colors, so you can see how it all reads together before you save."
@@ -1651,11 +1651,11 @@ msgstr "Ainda não há recomendações"
 #: src/routes/_layout.tag.$tag.tsx
 #: src/routes/_layout.u.$did.tsx
 msgid "You've reached the end."
-msgstr "Chegou ao fim."
+msgstr "Você chegou ao fim."
 
 #: src/components/reader/subscriptions-sheet.tsx
 msgid "Toggle list {listName}"
-msgstr "Alternar lista {listName}"
+msgstr "Alternar exibição da lista {listName}"
 
 #: src/components/reader/privacy-view.tsx
 msgid "OAuth tokens so we can read and write records in your repository on your behalf (for example follows, likes, saves, and publication lists)."
@@ -3056,7 +3056,7 @@ msgstr "Pesquisando…"
 
 #: src/components/reader/app-shell.tsx
 msgid "Toggle list {name}"
-msgstr "Alternar lista {name}"
+msgstr "Alternar exibição da lista {name}"
 
 #: src/components/reader/privacy-view.tsx
 msgid "Privacy policy"
@@ -3515,7 +3515,7 @@ msgstr "{weekday} · Em toda a rede"
 
 #: src/routes/_layout.collections.index.tsx
 msgid "Publish & share the run"
-msgstr "Publicar e compartilhar a execução"
+msgstr "Publicar e compartilhar a edição"
 
 #: src/components/reader/collection-builder.tsx
 msgid "Editorial"
@@ -3600,12 +3600,12 @@ msgstr "Outras coleções"
 
 #: src/components/reader/about-view.tsx
 msgid "One tasteful email a week"
-msgstr "Um email cuidado por semana"
+msgstr "Um e-mail bem selecionado por semana"
 
 #: src/components/reader/app-shell.tsx
 #: src/components/reader/subscriptions-sheet.tsx
 msgid "{unreadCount} unread"
-msgstr "{unreadCount} por ler"
+msgstr "{unreadCount} não lido"
 
 #: src/components/reader/add-publication-modal.tsx
 #: src/components/reader/app-shell.tsx
@@ -3864,7 +3864,7 @@ msgstr "Nesta página"
 
 #: src/components/reader/share-menu.tsx
 msgid "Embed code"
-msgstr "Código de incorporação"
+msgstr "Código de embed"
 
 #: src/components/reader/mention-hover-card.tsx
 msgid "{n, plural, one {# subscriber} other {{value} subscribers}}"
