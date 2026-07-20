@@ -363,7 +363,7 @@ msgstr "Ainda não há artigos das publicações ou pessoas desta lista."
 
 #: src/components/reader/share-menu.tsx
 msgid "Landscape fits a compact row. Height adjusts automatically once the embed loads. Change the iframe width as needed."
-msgstr "O formato horizontal cabe numa linha compacta. A altura ajusta-se automaticamente assim que o embed carrega. Altere a largura do iframe conforme necessário."
+msgstr "O formato horizontal cabe numa linha compacta. A altura ajusta-se automaticamente assim que o elemento carrega. Altere a largura do iframe conforme necessário."
 
 #: src/routes/_layout.u.$did.tsx
 msgid "Follow the publications you love and build reading lists worth sharing — they'll gather here for others to discover. Everything you do lives in your own repo, owned by you."
@@ -759,7 +759,7 @@ msgstr "Para saber mais sobre como o {SITE_NAME} funciona, consulte a página <0
 
 #: src/components/reader/share-menu.tsx
 msgid "Portrait stacks the card vertically. Height adjusts automatically once the embed loads. Change the iframe width as needed."
-msgstr "O formato vertical empilha o cartão. A altura ajusta-se automaticamente assim que o embed carrega. Altere a largura do iframe conforme necessário."
+msgstr "O formato vertical empilha o cartão. A altura ajusta-se automaticamente assim que o elemento carrega. Altere a largura do iframe conforme necessário."
 
 #: src/components/reader/add-to-list-modal.tsx
 msgid "Your lists"
@@ -965,7 +965,7 @@ msgstr "As publicações e os artigos pertencem aos seus autores. A leitura ou a
 
 #: src/components/reader/share-menu.tsx
 msgid "Embed subscribe"
-msgstr "Embed de inscrição"
+msgstr "Incorporar inscrição"
 
 #: src/components/reader/list-edit-modal.tsx
 msgid "What this list is about (shown on its public page)"
@@ -1011,7 +1011,7 @@ msgstr "Carregando página"
 
 #: src/components/reader/extension-privacy-view.tsx
 msgid "You can disable the page overlay and Bluesky embed save button in the extension options page. You can sign out from the web app to invalidate the session cookie the extension uses. Uninstalling the extension removes locally stored settings from your browser profile."
-msgstr "Pode desativar a sobreposição na página e o botão de salvar nos embeds do Bluesky na página de opções da extensão. Pode terminar sessão na aplicação web para invalidar o cookie de sessão que a extensão utiliza. Desinstalar a extensão remove as configurações guardadas localmente no perfil do seu navegador."
+msgstr "Você pode desativar a sobreposição na página e o botão de salvar nos links incorporados do Bluesky na página de opções da extensão. Pode terminar sessão na aplicação web para invalidar o cookie de sessão que a extensão utiliza. Desinstalar a extensão remove as configurações guardadas localmente no perfil do seu navegador."
 
 #: src/components/reader/list-edit-modal.tsx
 msgid "List members"
@@ -1884,7 +1884,7 @@ msgstr "{weekday} · Em alta"
 
 #: src/components/reader/extension-privacy-view.tsx
 msgid "Network calls to {siteHost} run in the extension background worker, not in page scripts injected into sites you visit. That keeps your session handling in one place and limits what runs on third-party pages to URL matching, UI (overlay chip, Bluesky embed save button), and messaging with the background worker."
-msgstr "As chamadas de rede para {siteHost} são executadas no processo em segundo plano da extensão, e não em scripts injetados nos sites que visita. Isso mantém a gestão da sessão num só lugar e limita o que corre em páginas de terceiros à correspondência de URL, à interface (chip de sobreposição, botão de salvar em embeds do Bluesky) e à comunicação com o processo em segundo plano."
+msgstr "As chamadas de rede para {siteHost} são executadas no processo em segundo plano da extensão, e não em scripts injetados nos sites que visita. Isso mantém a gestão da sessão num só lugar e limita o que corre em páginas de terceiros à correspondência de URL, à interface (chip de sobreposição, botão de salvar em links incorporados do Bluesky) e à comunicação com o processo em segundo plano."
 
 #: src/routes/login.tsx
 msgid "Switch account"
@@ -3143,7 +3143,7 @@ msgstr "Índice"
 
 #: src/components/reader/share-menu.tsx
 msgid "Copy embed code"
-msgstr "Copiar código de embed"
+msgstr "Copiar código de incorporação"
 
 #: src/components/user-settings-view.tsx
 msgid "Delete all lists?"
@@ -3400,7 +3400,7 @@ msgstr "Apagar todo o histórico de leitura?"
 #: src/components/docs/docs-publishing-nav.tsx
 #: src/components/docs/publishing-docs-page.tsx
 msgid "Subscribe embed"
-msgstr "Embed de inscrição"
+msgstr "Incorporar inscrição"
 
 #: src/components/user-settings-view.tsx
 msgid "Weekly digest preview"
@@ -3454,7 +3454,7 @@ msgstr "Sobre"
 
 #: src/components/reader/privacy-view.tsx
 msgid "Sign-in and record access go through your Personal Data Server and the wider AT Protocol network. Infrastructure providers (such as our database host) process data on our behalf under their own terms. Embedded media, fonts, or links on article pages may load resources from other sites when you open them."
-msgstr "O início de sessão e o acesso aos registos passam pelo seu Personal Data Server e pela restante rede AT Protocol. Os fornecedores de infraestrutura (como o hospedagem da nossa base de dados) processam dados em nosso nome sob seus próprios termos. Mídia embedada, fontes ou links nas páginas dos artigos podem carregar recursos de outros sites quando os abre."
+msgstr "O início de sessão e o acesso aos registos passam pelo seu Personal Data Server e pela restante rede AT Protocol. Os fornecedores de infraestrutura (como o hospedagem da nossa base de dados) processam dados em nosso nome sob seus próprios termos. Mídia incorporada, fontes ou links nas páginas dos artigos podem carregar recursos de outros sites quando os abre."
 
 #: src/components/reader/collection-theme-editor.tsx
 msgid "An included article"
@@ -3646,7 +3646,7 @@ msgstr "Usar o link original"
 
 #: src/components/docs/publishing-docs-page.tsx
 msgid "Every publication page also serves a themed, embeddable subscribe widget — an iframe you can drop on your own site so visitors can subscribe without leaving your page. The easiest way to get it: open your publication's page on Standard Reader, use <0>Share → Embed subscribe</0>, pick landscape or portrait, and copy the snippet — no account or ownership check required to generate it."
-msgstr "Todas as páginas de publicação fornecem também um embed de inscrição — um iframe que pode colocar no seu site para que os visitantes se inscrevam sem sair da sua página. A forma mais fácil de obtê-lo: abra a página da sua publicação no Standard Reader, use <0>Compartilhar → Embed de inscrição</0>, escolha horizontal ou vertical e copie o código — não é preciso conta nem verificação de propriedade para gerar."
+msgstr "Todas as páginas de publicação fornecem também um elemento incorporável de inscrição — um iframe que pode colocar no seu site para que os visitantes se inscrevam sem sair da sua página. A forma mais fácil de obtê-lo: abra a página da sua publicação no Standard Reader, use <0>Compartilhar → Incorporar inscrição</0>, escolha horizontal ou vertical e copie o código — não é preciso conta nem verificação de propriedade para gerar."
 
 #: src/routes/_layout.tag.$tag.tsx
 msgid "{articleCount, plural, one {article} other {articles}}"
@@ -3864,7 +3864,7 @@ msgstr "Nesta página"
 
 #: src/components/reader/share-menu.tsx
 msgid "Embed code"
-msgstr "Código de embed"
+msgstr "Código incorporável"
 
 #: src/components/reader/mention-hover-card.tsx
 msgid "{n, plural, one {# subscriber} other {{value} subscribers}}"
@@ -4023,7 +4023,7 @@ msgstr "Salvo para mais tarde"
 
 #: src/components/reader/share-menu.tsx
 msgid "Add this anchor anywhere on your site and style it however you like. It opens the subscribe flow when clicked."
-msgstr "Adicione este embed em qualquer parte do seu site e estilize da forma que quiser. Abre o fluxo de inscrição quando é clicado."
+msgstr "Adicione este código em qualquer parte do seu site e estilize da forma que quiser. Abre o fluxo de inscrição quando é clicado."
 
 #: src/components/onboarding/step-settings.tsx
 msgid "When on, a publication's whole back catalogue counts as unread when you subscribe. Turn off to only see posts published after you subscribe as new."
