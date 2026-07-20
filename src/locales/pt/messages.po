@@ -1192,11 +1192,11 @@ msgstr "Discussão"
 
 #: src/routes/_layout.discover.tsx
 msgid "Recommended for you"
-msgstr "Recomendado para si"
+msgstr "Recomendado para você"
 
 #: src/components/feedback/feedback-dialog.tsx
 msgid "Something went wrong while submitting your feedback."
-msgstr "Algo correu mal ao enviar o seu comentário."
+msgstr "Algo deu errado ao enviar o seu feedback."
 
 #: src/components/reader/about-view.tsx
 msgid "Don’t want another app to check? Opt into a weekly email with the best of the publications you subscribe to, plus a couple worth discovering. One email, one click to leave — and you can preview exactly what it looks like before you ever turn it on."
@@ -1467,7 +1467,7 @@ msgstr "Avisar"
 #: src/components/feedback/feedback-dialog.tsx
 #: src/components/reader/save-to-collection-dialog.tsx
 msgid "Something went wrong. Please try again."
-msgstr "Algo correu mal. Tente novamente."
+msgstr "Algo deu errado. Por favor tente novamente."
 
 #: src/routes/_layout.recommended.tsx
 #: src/routes/_layout.u.$did.tsx
