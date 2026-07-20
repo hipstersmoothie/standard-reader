@@ -72,9 +72,9 @@ export function TermsView() {
             Atmosphere account (for example via Bluesky OAuth). You are
             responsible for the security of your account and for the activity
             that happens through it. When you take an action that writes to your
-            AT Protocol repository, those records live in{" "}
-            <em>your</em> repository and are subject to the rules of the network
-            and your account provider.
+            AT Protocol repository, those records live in <em>your</em>{" "}
+            repository and are subject to the rules of the network and your
+            account provider.
           </Trans>
         </p>
 
@@ -114,8 +114,8 @@ export function TermsView() {
         <p {...stylex.props(styles.paragraph)}>
           <Trans>
             Publications and articles belong to their authors. Reading or
-            indexing them through {SITE_NAME} does not transfer any rights to
-            us or to you. Respect the copyright and licensing choices of the
+            indexing them through {SITE_NAME} does not transfer any rights to us
+            or to you. Respect the copyright and licensing choices of the
             writers whose work you read. The {SITE_NAME} software itself is open
             source and available under the license in its{" "}
             <a
