@@ -130,7 +130,7 @@ msgstr "Abrir artigos externamente"
 
 #: src/components/reader/terms-view.tsx
 msgid "Content and intellectual property"
-msgstr ""
+msgstr "Conteúdo e propriedade intelectual"
 
 #: src/components/docs/docs-topbar.tsx
 #: src/components/docs/lexicon-docs-intro.tsx
@@ -172,7 +172,7 @@ msgstr "Imagem de cabeçalho do artigo"
 
 #: src/components/reader/terms-view.tsx
 msgid "Last updated July 20, 2026"
-msgstr ""
+msgstr "Última atualização em 20 de julho de 2026"
 
 #: src/components/reader/about-view.tsx
 msgid "Recommendations from real reading patterns"
@@ -250,7 +250,7 @@ msgstr "Claro"
 
 #: src/components/reader/terms-view.tsx
 msgid "Your use of {SITE_NAME} is also governed by our <0>privacy policy</0>, which describes what we collect, where your data lives, and the choices you have."
-msgstr ""
+msgstr "O seu uso do {SITE_NAME} também é regido pela nossa <0>política de privacidade</0>, que descreve o que coletamos, onde seus dados ficam armazenados e as opções que você possui."
 
 #: src/components/docs/api-docs-intro.tsx
 msgid "For a complete, minimal reference implementation (Jetstream → detect → sign → SQLite → serve), see the <0>claudeslop</0> labeler in <1>services/claudeslop</1>."
@@ -275,11 +275,11 @@ msgstr "Se inscrevendo…"
 
 #: src/routes/_layout.friends.tsx
 msgid "People"
-msgstr ""
+msgstr "Pessoas"
 
 #: src/routes/_layout.friends.tsx
 msgid "Publications written by the people you follow on Bluesky, minus the ones you already subscribe to."
-msgstr ""
+msgstr "Publicações escritas pelas pessoas que você segue no Bluesky, exceto as que você já está inscrito."
 
 #: src/components/reader/reorder-lists-modal.tsx
 msgid "List"
@@ -355,7 +355,7 @@ msgstr "Mover para baixo"
 
 #: src/components/reader/terms-view.tsx
 msgid "Disclaimer and limitation of liability"
-msgstr ""
+msgstr "Isenção e limitação de responsabilidade"
 
 #: src/routes/_layout.l.$did.$rkey.tsx
 msgid "No articles from this list's publications or people yet."
@@ -443,7 +443,7 @@ msgstr "Sem resultados"
 #: src/components/reader/app-shell.tsx
 #: src/components/site-legal-links.tsx
 msgid "Terms"
-msgstr ""
+msgstr "Termos"
 
 #: src/components/reader/format-i18n.ts
 msgid "{count, plural, one {# tagged post} other {{value} tagged posts}}"
@@ -476,7 +476,7 @@ msgstr "Falha ao iniciar sessão. Tente novamente."
 #: src/routes/_layout.discover.tsx
 #: src/routes/_layout.tag.$tag.tsx
 msgid "Loading publications"
-msgstr "A carregar publicações"
+msgstr "Carregando publicações"
 
 #. placeholder {0}: meta.minutes
 #: src/magazine/flow.tsx
@@ -540,7 +540,7 @@ msgstr "Privacidade da extensão"
 
 #: src/components/reading-settings-preview.tsx
 msgid "Loading voice sample"
-msgstr "A carregar amostra de voz"
+msgstr "Carregando amostra de voz"
 
 #: src/components/docs/api-docs-intro.tsx
 #: src/components/docs/docs-api-nav.tsx
@@ -645,7 +645,7 @@ msgstr "Mostrar artigos lidos"
 
 #: src/routes/_layout.p.$did.$rkey.tsx
 msgid "Loading recent writing"
-msgstr "A carregar textos recentes"
+msgstr "Carregando textos recentes"
 
 #: src/components/user-settings-view.tsx
 msgid "Bookmarks"
@@ -666,7 +666,7 @@ msgstr "Abrir publicações no site original"
 
 #: src/components/reader/terms-view.tsx
 msgid "{SITE_NAME} is a web reader for standard.site publications on the AT Protocol. These terms govern your use of this site. By accessing or using the Standard Reader deployment at <0>{siteHost}</0>, you agree to these terms. If you do not agree, please do not use the site."
-msgstr ""
+msgstr "O {SITE_NAME} é um leitor web para publicações do standard.site no AT Protocol. Estes termos regem o seu uso deste site. Ao acessar ou utilizar a instância do Standard Reader em <0>{siteHost}</0>, você concorda com estes termos. Se você não concordar, por favor, não utilize o site."
 
 #: src/components/reader/comments/comments-section.tsx
 msgid "Discussions"
@@ -695,7 +695,7 @@ msgstr "Nova série"
 #: src/magazine/magazine-end-subscribe.tsx
 #: src/routes/_layout.tag.$tag.tsx
 msgid "Subscribed"
-msgstr "Subscrito"
+msgstr "Inscrito"
 
 #: src/components/reader/collection-builder.tsx
 msgid "Search by title or author handle, or paste a Standard Reader URL, article URL, or at:// URI."
@@ -711,7 +711,7 @@ msgstr "<0>Atividade de leitura.</0> Quando o histórico de leitura está ativo,
 
 #: src/routes/_layout.friends.tsx
 msgid "Browse the directory"
-msgstr ""
+msgstr "Navegue pelo diretório"
 
 #: src/components/reader/article-view.tsx
 msgid "Did you enjoy this article?"
@@ -755,7 +755,7 @@ msgstr "Tipo de membro a adicionar"
 
 #: src/components/reader/terms-view.tsx
 msgid "For more about how {SITE_NAME} works, see the <0>About</0> page. For questions about these terms for this deployment, contact the operator of the site at the URL above."
-msgstr ""
+msgstr "Para saber mais sobre como o {SITE_NAME} funciona, consulte a página <0>Sobre</0>. Para dúvidas sobre estes termos referentes a esta implementação, entre em contato com o operador do site na URL acima."
 
 #: src/components/reader/share-menu.tsx
 msgid "Portrait stacks the card vertically. Height adjusts automatically once the embed loads. Change the iframe width as needed."
@@ -785,7 +785,7 @@ msgstr "Nada em alta ainda"
 
 #: src/components/docs/publishing-docs-page.tsx
 msgid "It reads the publication's <0>basicTheme</0> colors automatically, so the card matches your brand with no extra params — fonts aren't picked up though; the card always uses Standard Reader's own type. Here's a live one:"
-msgstr "Lê automaticamente as cores <0>basicTheme</0> da publicação, pelo que o cartão condiz com a sua marca sem parâmetros adicionais — os tipos de letra, no entanto, não são aproveitados; o cartão usa sempre a tipografia do próprio Standard Reader. Eis um exemplo em direto:"
+msgstr "Lê automaticamente as cores <0>basicTheme</0> da publicação, pelo que o cartão condiz com a sua marca sem parâmetros adicionais — as fontes, no entanto, não são alteradas; o cartão usa sempre a tipografia do próprio Standard Reader. Eis um exemplo em direto:"
 
 #: src/components/reader/extension-privacy-view.tsx
 #: src/components/reader/privacy-view.tsx
@@ -894,7 +894,7 @@ msgstr "Referência da API"
 #: src/components/ReadingTypographyMenu.tsx
 #: src/components/user-settings-view.tsx
 msgid "Body font"
-msgstr "Tipo de letra do corpo"
+msgstr "Fonte do texto"
 
 #: src/components/reader/about-view.tsx
 msgid "Fast full-text search"
@@ -961,7 +961,7 @@ msgstr "{0, plural, one {# artigo} other {{documentLabel} artigos}}"
 
 #: src/components/reader/terms-view.tsx
 msgid "Publications and articles belong to their authors. Reading or indexing them through {SITE_NAME} does not transfer any rights to us or to you. Respect the copyright and licensing choices of the writers whose work you read. The {SITE_NAME} software itself is open source and available under the license in its <0>source repository</0>."
-msgstr ""
+msgstr "As publicações e os artigos pertencem aos seus autores. A leitura ou a indexação deles por meio do {SITE_NAME} não transfere quaisquer direitos para nós nem para você. Respeite os direitos autorais e as escolhas de licenciamento dos autores cujos trabalhos você lê. O software do {SITE_NAME} em si é de código aberto e está disponível sob a licença indicada em seu <0>repositório</0>."
 
 #: src/components/reader/share-menu.tsx
 msgid "Embed subscribe"
@@ -981,7 +981,7 @@ msgstr "Nenhuma publicação nesta lista."
 
 #: src/components/reader/save-to-collection-dialog.tsx
 msgid "Loading collections…"
-msgstr "A carregar coleções…"
+msgstr "Carregando coleções…"
 
 #: src/components/user-settings-view.tsx
 msgid "Browse labelers"
@@ -999,7 +999,7 @@ msgstr "Remover lista"
 #: src/routes/_layout.latest.tsx
 #: src/routes/_layout.tag.$tag.tsx
 msgid "Loading articles"
-msgstr "A carregar artigos"
+msgstr "Carregando artigos"
 
 #: src/components/reader/about-view.tsx
 msgid "The reading experience"
@@ -1007,7 +1007,7 @@ msgstr "A experiência de leitura"
 
 #: src/routes/_layout.tsx
 msgid "Loading page"
-msgstr "A carregar página"
+msgstr "Carregando página"
 
 #: src/components/reader/extension-privacy-view.tsx
 msgid "You can disable the page overlay and Bluesky embed save button in the extension options page. You can sign out from the web app to invalidate the session cookie the extension uses. Uninstalling the extension removes locally stored settings from your browser profile."
@@ -1130,7 +1130,7 @@ msgstr "Capa da coleção"
 
 #: src/components/reader/terms-view.tsx
 msgid "Attempt to disrupt, overload, or gain unauthorized access to the service, its infrastructure, or other users' accounts."
-msgstr ""
+msgstr "Tentar interromper, sobrecarregar ou obter acesso não autorizado ao serviço, à sua infraestrutura ou às contas de outros usuários."
 
 #: src/routes/_layout.feedback.index.tsx
 msgid "Anonymous"
@@ -1231,7 +1231,7 @@ msgstr "Salvar no Semble…"
 
 #: src/components/reader/terms-view.tsx
 msgid "{SITE_NAME} is an open-source reader and index for publications on the AT Protocol network. We do not host publication content — articles and publications remain in their authors' repositories, and our database is a derived index for fast browsing and search. The service is provided as a convenience for reading and discovering writing across the network."
-msgstr ""
+msgstr "O {SITE_NAME} é um leitor e índice de código aberto para publicações na rede AT Protocol. Não hospedamos o conteúdo das publicações — artigos e publicações permanecem nos repositórios de seus autores, e nosso banco de dados é um índice derivado para navegação e busca rápidas. O serviço é oferecido como uma facilidade para ler e descobrir textos em toda a rede."
 
 #: src/components/reader/comments/comment-card.tsx
 msgid "on pckt"
@@ -1276,7 +1276,7 @@ msgstr "{durationMs}ms · obtido {fetchedAt}"
 
 #: src/routes/_layout.feedback.index.tsx
 msgid "Loading feedback"
-msgstr "A carregar comentários"
+msgstr "Carregando feedback"
 
 #: src/components/reader/collection-theme-editor.tsx
 msgid "Accent"
@@ -1423,7 +1423,7 @@ msgstr "Os textos mais recentes das suas inscrições."
 
 #: src/components/reader/terms-view.tsx
 msgid "Break the law, infringe others' rights, or violate the terms of the AT Protocol network or your account provider."
-msgstr ""
+msgstr "Violar a lei, infringir os direitos de terceiros ou descumprir os termos da rede AT Protocol ou do provedor da sua conta."
 
 #: src/components/NavbarAuth.tsx
 msgid "Log out"
@@ -1497,7 +1497,7 @@ msgstr "Todos os artigos que marcou como lidos."
 #: src/components/reader/collection-builder.tsx
 #: src/components/reader/collection-publication-editor.tsx
 msgid "Uploading…"
-msgstr "A carregar…"
+msgstr "Enviando…"
 
 #: src/routes/_layout.latest.tsx
 msgid "No articles are trending across the network right now. Check back soon."
@@ -1513,7 +1513,7 @@ msgstr "Inscrevendo-se"
 
 #: src/components/reader/terms-view.tsx
 msgid "Your account"
-msgstr ""
+msgstr "Sua conta"
 
 #: src/routes/_layout.p.$did.$rkey.tsx
 msgid "Every unread article from this publication will be marked read. This can’t be undone."
@@ -1537,7 +1537,7 @@ msgstr "Publicado em"
 
 #: src/components/reader/collection-theme-editor.tsx
 msgid "A sentence of body copy, set in your chosen fonts and colors, so you can see how it all reads together before you save."
-msgstr "Uma frase de texto corrido, composta com os tipos de letra e as cores que escolheu, para ver como tudo se lê em conjunto antes de salvar."
+msgstr "Uma frase de texto corrido, composta com as fontes e as cores que escolheu, para ver como tudo se lê em conjunto antes de salvar."
 
 #: src/routes/_layout.index.tsx
 msgid "Open the directory"
@@ -1737,7 +1737,7 @@ msgstr "{shown, plural, one {# correspondência} other {# correspondências}}"
 
 #: src/components/onboarding/welcome-wizard.tsx
 msgid "People you follow write here"
-msgstr ""
+msgstr "Pessoas que você segue escrevem aqui"
 
 #: src/magazine/flow.tsx
 msgid "Original"
@@ -1766,7 +1766,7 @@ msgstr "Ver tudo em alta"
 
 #: src/components/reader/collection-theme-editor.tsx
 msgid "Fonts"
-msgstr "Tipos de letra"
+msgstr "Fontes"
 
 #: src/components/Header.tsx
 #: src/components/reader/app-shell.tsx
@@ -1904,7 +1904,7 @@ msgstr "Artigos correspondentes"
 
 #: src/routes/_layout.friends.tsx
 #~ msgid "Writers"
-#~ msgstr ""
+#~ msgstr "Escritores"
 
 #: src/components/reader/about-view.tsx
 msgid "A quiet place to read"
@@ -1912,7 +1912,7 @@ msgstr "Um lugar tranquilo para ler"
 
 #: src/components/reader/terms-view.tsx
 msgid "You agree not to use {SITE_NAME} to:"
-msgstr ""
+msgstr "Você concorda em não usar o {SITE_NAME} para:"
 
 #: src/components/reader/collection-publication-editor.tsx
 #: src/routes/_layout.collections.new.tsx
@@ -1929,7 +1929,7 @@ msgstr "{formattedMetaCount} não lidos"
 
 #: src/routes/_layout.index.tsx
 msgid "Loading today"
-msgstr "A carregar hoje"
+msgstr "Carregando hoje"
 
 #: src/components/reader/reorder-lists-modal.tsx
 msgid "Save order"
@@ -2135,7 +2135,7 @@ msgstr "Inicie sessão para se inscrever."
 
 #: src/components/reader/terms-view.tsx
 msgid "What Standard Reader is"
-msgstr ""
+msgstr "O que Standard Reader é"
 
 #: src/components/reader/about-view.tsx
 msgid "Prefer the original?"
@@ -2184,7 +2184,7 @@ msgstr "<0>HTML no registo.</0> Formatos cujo conteúdo é <1>{HTML_PAYLOAD_EXAM
 
 #: src/routes/_layout.search.tsx
 msgid "Loading publication matches"
-msgstr "A carregar publicações correspondentes"
+msgstr "Carregando publicações correspondentes"
 
 #: src/routes/_layout.feedback.index.tsx
 msgid "Feature requests"
@@ -2234,7 +2234,7 @@ msgstr "Apagar lista"
 
 #: src/components/reader/about-view.tsx
 msgid "So we built the reader we wanted: a column you can size, a font you can choose, and a margin wide enough to think in."
-msgstr "Por isso criámos o leitor que queríamos: uma coluna que pode dimensionar, um tipo de letra que pode escolher e uma margem larga o suficiente para pensar."
+msgstr "Por isso criámos o leitor que queríamos: uma coluna que você pode dimensionar, uma fonte que você pode escolher e uma margem larga o suficiente para pensar."
 
 #: src/components/NavbarAuth.tsx
 #: src/routes/_layout.recommended.tsx
@@ -2377,7 +2377,7 @@ msgstr "Tudo"
 
 #: src/routes/_layout.friends.tsx
 #~ msgid "Publications written by the people you follow on Bluesky."
-#~ msgstr ""
+#~ msgstr "Publicações escritas pelas pessoas que você segue no Bluesky."
 
 #: src/components/reader/article-view.tsx
 #: src/components/reader/cards.tsx
@@ -2519,7 +2519,7 @@ msgstr "Apresente a coleção… (com suporte para markdown)"
 
 #: src/components/reader/friend-publishers.tsx
 msgid "Bluesky didn't answer in time, so this list may be incomplete. Reload to try again."
-msgstr ""
+msgstr "Bluesky não respondeu a tempo, então esta lista pode estar incompleta. Recarregue para tentar novamente."
 
 #: src/components/reader/article-below-fold.tsx
 msgid "Cited in"
@@ -2595,7 +2595,7 @@ msgstr "O seu nome de apresentação, identificador, URL do avatar e DID, tal co
 
 #: src/components/reader/terms-view.tsx
 msgid "We may update these terms as the product changes. The “Last updated” date at the top will change when we do. Continued use of the site after an update means you accept the revised terms."
-msgstr ""
+msgstr "Podemos atualizar estes termos à medida que o produto sofrer alterações. A data de “Última atualização”, localizada no topo, será alterada quando isso ocorrer. O uso contínuo do site após uma atualização significa que você aceita os termos revisados."
 
 #: src/components/reader/about-view.tsx
 msgid "Save, like, subscribe — everywhere"
@@ -2661,7 +2661,7 @@ msgstr "Autenticação"
 
 #: src/components/reader/terms-view.tsx
 msgid "Changes to these terms"
-msgstr ""
+msgstr "Alterações a estes termos"
 
 #: src/components/reader/about-view.tsx
 msgid "Worth discovering"
@@ -2670,7 +2670,7 @@ msgstr "Vale a pena descobrir"
 #: src/components/reader/collection-theme-editor.tsx
 #: src/routes/_layout.collections.index.tsx
 msgid "Theme & fonts"
-msgstr "Tema e tipos de letra"
+msgstr "Tema e fontes"
 
 #: src/components/user-settings-view.tsx
 msgid "Personal data"
@@ -2743,7 +2743,7 @@ msgstr "Este rotulador ainda não rotulou documentos no modelo de leitura."
 
 #: src/components/reader/terms-view.tsx
 msgid "Scrape, harvest, or misuse the read-model index or API in ways that harm the service or the people whose writing it indexes."
-msgstr ""
+msgstr "Coletar, extrair ou utilizar indevidamente o modelo de leitura indexador ou a API de maneiras que prejudiquem o serviço ou as pessoas cujos textos são indexados por ele."
 
 #: src/components/reader/collection-theme-editor.tsx
 #: src/components/user-settings-view.tsx
@@ -2763,11 +2763,11 @@ msgstr "Inicie sessão com o Bluesky para se inscrever. Apenas pedimos permissã
 #: src/routes/_layout.saved.tsx
 #: src/routes/_layout.search.tsx
 msgid "Loading…"
-msgstr "A carregar…"
+msgstr "Carregando…"
 
 #: src/components/reader/about-view.tsx
 msgid "Choose body text size, column width, and font — serif, sans, or any Google Font. Read the way that’s easy on your eyes."
-msgstr "Escolha o tamanho do texto, a largura da coluna e o tipo de letra — serifado, sem serifa ou qualquer Google Font. Leia da forma que for mais confortável para os seus olhos."
+msgstr "Escolha o tamanho do texto, a largura da coluna e o tipo de letra — serifado, sem serifa ou qualquer Fonte do Google. Leia da forma que for mais confortável para os seus olhos."
 
 #: src/routes/_layout.u.$did.tsx
 msgid "{name} hasn't started reading or publishing here. You can find them on Bluesky."
@@ -2779,7 +2779,7 @@ msgstr "Destaque sobre o fundo"
 
 #: src/routes/_layout.friends.tsx
 msgid "Either no one you follow on Bluesky publishes here yet, or you're already subscribed to everyone who does. As more of them start publishing, they'll show up here."
-msgstr ""
+msgstr "Ou ninguém que você segue no Bluesky publica aqui ainda, ou você já é inscrito de todos que publicam. Assim que mais começarem a publicar, eles aparecerão aqui."
 
 #: src/components/reader/save-to-collection-dialog.tsx
 msgid "Collection"
@@ -2860,7 +2860,7 @@ msgstr "Ainda não há listas — mude para Nova lista para criar uma."
 
 #: src/components/reader/terms-view.tsx
 msgid "{SITE_NAME} is provided “as is” and “as available,” without warranties of any kind, whether express or implied. We do not guarantee that the service will be uninterrupted, error-free, or that the index will always be complete or current. To the fullest extent permitted by law, the operator of this deployment is not liable for any indirect, incidental, or consequential damages arising from your use of the site."
-msgstr ""
+msgstr "O {SITE_NAME} é disponibilizado "no “estado em que se encontra” e “conforme a disponibilidade”, sem garantias de qualquer tipo, sejam elas expressas ou implícitas. Não garantimos que o serviço será ininterrupto ou livre de erros, nem que o índice estará sempre completo ou atualizado. Na máxima extensão permitida por lei, o operador desta implementação não se responsabiliza por quaisquer danos indiretos, incidentais ou consequenciais decorrentes do seu uso do site."
 
 #: src/routes/_layout.feedback.index.tsx
 msgid "Show implemented"
@@ -2888,7 +2888,7 @@ msgstr "Ativo — enviado para {digestEmail}. O melhor das publicações em que 
 
 #: src/components/reader/about-view.tsx
 msgid "“The page gets quiet, and the sentence gets loud.”"
-msgstr "“A página fica silenciosa e a frase fica alta.”"
+msgstr "“A página fica silenciosa e a frase fica mais alta.”"
 
 #: src/components/feedback/feedback-dialog.tsx
 #: src/routes/_layout.feedback.index.tsx
@@ -2897,11 +2897,11 @@ msgstr "Sugestão de funcionalidade"
 
 #: src/components/reader/about-view.tsx
 msgid "There is a particular pleasure in reading something that was made to be read, and not to be measured. It asks nothing of you but your attention. The page gets quiet, and the sentence gets loud. So we built the reader we wanted: a column you can size, a font you can choose, and a margin wide enough to think in."
-msgstr "Há um prazer particular em ler algo que foi feito para ser lido, e não para ser medido. Nada lhe pede além da sua atenção. A página fica silenciosa e a frase fica alta. Por isso construímos o leitor que queríamos: uma coluna que pode dimensionar, um tipo de letra que pode escolher e uma margem suficientemente larga para pensar."
+msgstr "Há um prazer particular em ler algo que foi feito para ser lido, e não para ser medido. Nada lhe pede além da sua atenção. A página fica silenciosa e a frase fica mais alta. Por isso construímos o leitor que queríamos: uma coluna que você pode redimensionar, uma fonte que você pode escolher e uma margem suficientemente larga para pensar."
 
 #: src/components/reader/terms-view.tsx
 msgid "Availability and changes to the service"
-msgstr ""
+msgstr "Disponibilidade e alterações no serviço"
 
 #: src/routes/extension.connected.tsx
 msgid "Close tab"
@@ -2941,11 +2941,11 @@ msgstr "Pré-visualizar"
 
 #: src/routes/_layout.friends.tsx
 #~ msgid "No one you follow publishes here yet"
-#~ msgstr ""
+#~ msgstr "Ninguém que você segue publica aqui ainda"
 
 #: src/components/reader/terms-view.tsx
 msgid "You may read without an account. To follow publications, save articles, and take other social actions, you sign in with your Atmosphere account (for example via Bluesky OAuth). You are responsible for the security of your account and for the activity that happens through it. When you take an action that writes to your AT Protocol repository, those records live in <0>your</0> repository and are subject to the rules of the network and your account provider."
-msgstr ""
+msgstr "Você pode ler sem uma conta. Para seguir  publicações, salvar artigos e realizar outras ações sociais, você deve fazer login com sua conta da Atmosfera (por exemplo via Bluesky OAuth). Você é responsável pela segurança da sua conta e pelas atividades realizadas por meio dela. Ao realizar uma ação que grava dados em seu repositório do AT Protocol, esses registros ficam armazenados no <0>seu</0> repositório e estão sujeitos às regras da rede e do provedor da sua conta."
 
 #: src/routes/_layout.index.tsx
 msgid "Standard Reader knows about every publication on the network. Find a few worth your mornings."
@@ -2967,7 +2967,7 @@ msgstr "Última atualização a 11 de junho de 2026"
 
 #: src/routes/_layout.friends.tsx
 msgid "People you follow"
-msgstr ""
+msgstr "Pessoas que você segue"
 
 #: src/components/reader/collections-upgrade-gate.tsx
 msgid "Standard Reader needs write access to your site.standard publications and documents, plus your collection records, to author Collections. You'll be asked to approve this on your PDS login."
@@ -3012,7 +3012,7 @@ msgstr "A Slow Web, Revisitada"
 #: src/components/reading-custom-font-picker.tsx
 #: src/components/user-settings-view.tsx
 msgid "Google Font"
-msgstr "Google Font"
+msgstr "Fonte do Google"
 
 #: src/components/reader/collection-builder.tsx
 msgid "Create collection"
@@ -3106,7 +3106,7 @@ msgstr "Carregar mais ({remainingPublications} restantes)"
 
 #: src/components/reader/collection-theme-editor.tsx
 msgid "Title font"
-msgstr "Tipo de letra dos títulos"
+msgstr "Fonte dos títulos"
 
 #: src/components/reader/save-to-collection-dialog.tsx
 msgid "You may be asked to grant permission the first time."
@@ -3114,7 +3114,7 @@ msgstr "Poderá ser-lhe pedida permissão da primeira vez."
 
 #: src/routes/_layout.friends.tsx
 msgid "Friends views"
-msgstr ""
+msgstr "Amigos veem"
 
 #: src/components/NavbarAuth.tsx
 #: src/routes/login.tsx
@@ -3164,7 +3164,7 @@ msgstr "Pesquisar na rede"
 
 #: src/components/reading-custom-font-picker.tsx
 msgid "Search Google Fonts"
-msgstr "Pesquisar Google Fonts"
+msgstr "Pesquisar Fontes do Google"
 
 #: src/components/reader/article-below-fold.tsx
 msgid "Related reading"
@@ -3197,7 +3197,7 @@ msgstr "{0, plural, one {# leitor} other {{subscriberLabel} leitores}}"
 
 #: src/components/reader/terms-view.tsx
 msgid "We may change, suspend, or discontinue any part of the service at any time. Because {SITE_NAME} indexes a decentralized network, the availability of specific publications is outside our control."
-msgstr ""
+msgstr "Podemos alterar, suspender ou descontinuar qualquer parte do serviço a qualquer momento. Como o {SITE_NAME} indexa uma rede descentralizada, a disponibilidade de publicações específicas está fora de nosso controle."
 
 #: src/components/reader/page-reader-bar.tsx
 msgid "Play"
@@ -3205,7 +3205,7 @@ msgstr "Reproduzir"
 
 #: src/routes/_layout.search.tsx
 msgid "Loading article matches"
-msgstr "A carregar artigos correspondentes"
+msgstr "Carregando artigos correspondentes"
 
 #: src/components/reader/content/renderers/leaflet-standard-site-publication.tsx
 msgid "Publication not found."
@@ -3213,7 +3213,7 @@ msgstr "Publicação não encontrada."
 
 #: src/components/reader/page-reader-bar.tsx
 msgid "Loading voice… {percent}%"
-msgstr "A carregar voz… {percent}%"
+msgstr "Carregando voz… {percent}%"
 
 #: src/components/docs/docs-topbar.tsx
 msgid "Docs"
@@ -3391,7 +3391,7 @@ msgstr "Ler artigo"
 
 #: src/components/reader/terms-view.tsx
 msgid "Terms of service"
-msgstr ""
+msgstr "Termos de serviço"
 
 #: src/components/user-settings-view.tsx
 msgid "Delete all reading history?"
@@ -3416,7 +3416,7 @@ msgstr "Tag"
 
 #: src/routes/_layout.friends.tsx
 #~ msgid "Publications written by the people you follow on Bluesky. Follow someone here and every publication they write lands on your Home feed."
-#~ msgstr ""
+#~ msgstr "Publicações escritas pelas pessoas que você segue no Bluesky. Siga alguém aqui e toda publicação que escreverem aparecerá no seu feed Início."
 
 #: src/routes/_layout.index.tsx
 msgid "Wander the directory"
@@ -3454,7 +3454,7 @@ msgstr "Sobre"
 
 #: src/components/reader/privacy-view.tsx
 msgid "Sign-in and record access go through your Personal Data Server and the wider AT Protocol network. Infrastructure providers (such as our database host) process data on our behalf under their own terms. Embedded media, fonts, or links on article pages may load resources from other sites when you open them."
-msgstr "O início de sessão e o acesso aos registos passam pelo seu Personal Data Server e pela restante rede AT Protocol. Os fornecedores de infraestrutura (como o alojamento da nossa base de dados) processam dados em nosso nome ao abrigo dos seus próprios termos. Media incorporado, tipos de letra ou ligações nas páginas dos artigos podem carregar recursos de outros sites quando os abre."
+msgstr "O início de sessão e o acesso aos registos passam pelo seu Personal Data Server e pela restante rede AT Protocol. Os fornecedores de infraestrutura (como o hospedagem da nossa base de dados) processam dados em nosso nome sob seus próprios termos. Mídia embedada, fontes ou links nas páginas dos artigos podem carregar recursos de outros sites quando os abre."
 
 #: src/components/reader/collection-theme-editor.tsx
 msgid "An included article"
@@ -3584,7 +3584,7 @@ msgstr "Não foram encontradas publicações para {handleLabel}."
 
 #: src/components/reader/subscribe-card.tsx
 msgid "Already subscribed"
-msgstr "Já subscrito"
+msgstr "Já é inscrito"
 
 #: src/components/docs/publishing-docs-page.tsx
 msgid "How to wire a personal site's own <0>site.standard.*</0> records so Standard Reader can find it and read articles inline, without going through Leaflet, Pckt, Offprint, or another publishing tool."
@@ -3880,7 +3880,7 @@ msgstr "De momento não há artigos por ler das publicações que segue."
 
 #: src/components/user-settings-view.tsx
 msgid "Search and pick any family from the Google Fonts catalog."
-msgstr "Pesquise e escolha qualquer família do catálogo Google Fonts."
+msgstr "Pesquise e escolha qualquer família do catálogo das Fontes do Google."
 
 #: src/components/reader/add-to-list-modal.tsx
 #: src/components/reader/list-edit-modal.tsx
@@ -4086,7 +4086,7 @@ msgstr "O seu resumo semanal"
 #: src/components/reader/about-view.tsx
 #: src/routes/_layout.discover.tsx
 msgid "Subscribed to by people you follow"
-msgstr "Subscrito por pessoas que segue"
+msgstr "Assinado por pessoas que segue"
 
 #: src/routes/_layout.collections.index.tsx
 msgid "Add collections as issues"
@@ -4111,7 +4111,7 @@ msgstr "Artigos e publicações com a tag {displayTag} em toda a Atmosfera."
 
 #: src/components/user-settings-view.tsx
 msgid "Loading digest preview"
-msgstr "A carregar a pré-visualização do resumo"
+msgstr "Carregando a pré-visualização do resumo"
 
 #: src/components/docs/lexicon-docs-intro.tsx
 msgid "Published AT Proto record schemas for reader state in each user's PDS."
@@ -4119,7 +4119,7 @@ msgstr "Esquemas de registo AT Proto publicados para o estado do leitor no PDS d
 
 #: src/routes/_layout.discover.tsx
 msgid "Loading publication directory"
-msgstr "A carregar o diretório de publicações"
+msgstr "Carregando o diretório de publicações"
 
 #: src/components/reader/extension-privacy-view.tsx
 msgid "Browser extension privacy"
@@ -4167,4 +4167,4 @@ msgstr "Nesta edição"
 
 #: src/components/reader/terms-view.tsx
 msgid "Acceptable use"
-msgstr ""
+msgstr "Uso aceitável"
