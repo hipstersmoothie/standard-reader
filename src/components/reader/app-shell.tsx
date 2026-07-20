@@ -1124,6 +1124,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const onAbout = pathname === "/about";
   const onPrivacyExtension = pathname === "/privacy/extension";
   const onPrivacy = pathname === "/privacy" || onPrivacyExtension;
+  const onTerms = pathname === "/terms";
   const onLabelers = pathname === "/labelers";
   const onSettings = pathname === "/settings";
   const staticPageTitle = onAbout
@@ -1132,11 +1133,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       ? t`Extension privacy`
       : onPrivacy
         ? t`Privacy`
-        : onLabelers
-          ? t`Labelers`
-          : onSettings
-            ? t`Settings`
-            : null;
+        : onTerms
+          ? t`Terms`
+          : onLabelers
+            ? t`Labelers`
+            : onSettings
+              ? t`Settings`
+              : null;
   const { data: sidebar, isPending: sidebarPending } = useQuery(
     sidebarQueryOptions(),
   );

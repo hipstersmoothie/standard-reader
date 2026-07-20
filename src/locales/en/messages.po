@@ -128,6 +128,10 @@ msgstr "Change language"
 msgid "Open posts externally"
 msgstr "Open posts externally"
 
+#: src/components/reader/terms-view.tsx
+msgid "Content and intellectual property"
+msgstr "Content and intellectual property"
+
 #: src/components/docs/docs-topbar.tsx
 #: src/components/docs/lexicon-docs-intro.tsx
 msgid "Lexicons"
@@ -165,6 +169,10 @@ msgstr "The most-read articles across Standard this week."
 #: src/components/reader/article-view.tsx
 msgid "Article header image"
 msgstr "Article header image"
+
+#: src/components/reader/terms-view.tsx
+msgid "Last updated July 20, 2026"
+msgstr "Last updated July 20, 2026"
 
 #: src/components/reader/about-view.tsx
 msgid "Recommendations from real reading patterns"
@@ -239,6 +247,10 @@ msgstr "<0>Session cookie.</0> After you sign in through the web app, the extens
 #: src/components/user-settings-view.tsx
 msgid "Light"
 msgstr "Light"
+
+#: src/components/reader/terms-view.tsx
+msgid "Your use of {SITE_NAME} is also governed by our <0>privacy policy</0>, which describes what we collect, where your data lives, and the choices you have."
+msgstr "Your use of {SITE_NAME} is also governed by our <0>privacy policy</0>, which describes what we collect, where your data lives, and the choices you have."
 
 #: src/components/docs/api-docs-intro.tsx
 msgid "For a complete, minimal reference implementation (Jetstream → detect → sign → SQLite → serve), see the <0>claudeslop</0> labeler in <1>services/claudeslop</1>."
@@ -341,6 +353,10 @@ msgstr "New collection"
 msgid "Move down"
 msgstr "Move down"
 
+#: src/components/reader/terms-view.tsx
+msgid "Disclaimer and limitation of liability"
+msgstr "Disclaimer and limitation of liability"
+
 #: src/routes/_layout.l.$did.$rkey.tsx
 msgid "No articles from this list's publications or people yet."
 msgstr "No articles from this list's publications or people yet."
@@ -423,6 +439,11 @@ msgstr "Publications, handles, #tags, headlines…"
 #: src/routes/_layout.search.tsx
 msgid "No matches"
 msgstr "No matches"
+
+#: src/components/reader/app-shell.tsx
+#: src/components/site-legal-links.tsx
+msgid "Terms"
+msgstr "Terms"
 
 #: src/components/reader/format-i18n.ts
 msgid "{count, plural, one {# tagged post} other {{value} tagged posts}}"
@@ -643,6 +664,10 @@ msgstr "Getting started"
 msgid "Open posts on their original site"
 msgstr "Open posts on their original site"
 
+#: src/components/reader/terms-view.tsx
+msgid "{SITE_NAME} is a web reader for standard.site publications on the AT Protocol. These terms govern your use of this site. By accessing or using the Standard Reader deployment at <0>{siteHost}</0>, you agree to these terms. If you do not agree, please do not use the site."
+msgstr "{SITE_NAME} is a web reader for standard.site publications on the AT Protocol. These terms govern your use of this site. By accessing or using the Standard Reader deployment at <0>{siteHost}</0>, you agree to these terms. If you do not agree, please do not use the site."
+
 #: src/components/reader/comments/comments-section.tsx
 msgid "Discussions"
 msgstr "Discussions"
@@ -727,6 +752,10 @@ msgstr "Close table of contents"
 #: src/components/reader/list-edit-modal.tsx
 msgid "Member type to add"
 msgstr "Member type to add"
+
+#: src/components/reader/terms-view.tsx
+msgid "For more about how {SITE_NAME} works, see the <0>About</0> page. For questions about these terms for this deployment, contact the operator of the site at the URL above."
+msgstr "For more about how {SITE_NAME} works, see the <0>About</0> page. For questions about these terms for this deployment, contact the operator of the site at the URL above."
 
 #: src/components/reader/share-menu.tsx
 msgid "Portrait stacks the card vertically. Height adjusts automatically once the embed loads. Change the iframe width as needed."
@@ -930,6 +959,10 @@ msgstr "Nothing to preview yet."
 msgid "{0, plural, one {# article} other {{documentLabel} articles}}"
 msgstr "{0, plural, one {# article} other {{documentLabel} articles}}"
 
+#: src/components/reader/terms-view.tsx
+msgid "Publications and articles belong to their authors. Reading or indexing them through {SITE_NAME} does not transfer any rights to us or to you. Respect the copyright and licensing choices of the writers whose work you read. The {SITE_NAME} software itself is open source and available under the license in its <0>source repository</0>."
+msgstr "Publications and articles belong to their authors. Reading or indexing them through {SITE_NAME} does not transfer any rights to us or to you. Respect the copyright and licensing choices of the writers whose work you read. The {SITE_NAME} software itself is open source and available under the license in its <0>source repository</0>."
+
 #: src/components/reader/share-menu.tsx
 msgid "Embed subscribe"
 msgstr "Embed subscribe"
@@ -1095,6 +1128,10 @@ msgstr "Hide read articles"
 msgid "Collection cover"
 msgstr "Collection cover"
 
+#: src/components/reader/terms-view.tsx
+msgid "Attempt to disrupt, overload, or gain unauthorized access to the service, its infrastructure, or other users' accounts."
+msgstr "Attempt to disrupt, overload, or gain unauthorized access to the service, its infrastructure, or other users' accounts."
+
 #: src/routes/_layout.feedback.index.tsx
 msgid "Anonymous"
 msgstr "Anonymous"
@@ -1191,6 +1228,10 @@ msgstr "Drop an image here, or choose a file"
 #: src/components/reader/text-selection-toolbar.tsx
 msgid "Save to Semble…"
 msgstr "Save to Semble…"
+
+#: src/components/reader/terms-view.tsx
+msgid "{SITE_NAME} is an open-source reader and index for publications on the AT Protocol network. We do not host publication content — articles and publications remain in their authors' repositories, and our database is a derived index for fast browsing and search. The service is provided as a convenience for reading and discovering writing across the network."
+msgstr "{SITE_NAME} is an open-source reader and index for publications on the AT Protocol network. We do not host publication content — articles and publications remain in their authors' repositories, and our database is a derived index for fast browsing and search. The service is provided as a convenience for reading and discovering writing across the network."
 
 #: src/components/reader/comments/comment-card.tsx
 msgid "on pckt"
@@ -1291,6 +1332,7 @@ msgstr "Before"
 
 #: src/components/reader/extension-privacy-view.tsx
 #: src/components/reader/privacy-view.tsx
+#: src/components/reader/terms-view.tsx
 #: src/routes/_layout.feedback.index.tsx
 msgid "Questions"
 msgstr "Questions"
@@ -1379,6 +1421,10 @@ msgstr "Theme"
 msgid "The latest writing from the publications you subscribe to."
 msgstr "The latest writing from the publications you subscribe to."
 
+#: src/components/reader/terms-view.tsx
+msgid "Break the law, infringe others' rights, or violate the terms of the AT Protocol network or your account provider."
+msgstr "Break the law, infringe others' rights, or violate the terms of the AT Protocol network or your account provider."
+
 #: src/components/NavbarAuth.tsx
 msgid "Log out"
 msgstr "Log out"
@@ -1464,6 +1510,10 @@ msgstr "Everything below is compatibility support for formats already out there 
 #: src/components/reader/subscribe-card.tsx
 msgid "Subscribing"
 msgstr "Subscribing"
+
+#: src/components/reader/terms-view.tsx
+msgid "Your account"
+msgstr "Your account"
 
 #: src/routes/_layout.p.$did.$rkey.tsx
 msgid "Every unread article from this publication will be marked read. This can’t be undone."
@@ -1860,6 +1910,10 @@ msgstr "Matching articles"
 msgid "A quiet place to read"
 msgstr "A quiet place to read"
 
+#: src/components/reader/terms-view.tsx
+msgid "You agree not to use {SITE_NAME} to:"
+msgstr "You agree not to use {SITE_NAME} to:"
+
 #: src/components/reader/collection-publication-editor.tsx
 #: src/routes/_layout.collections.new.tsx
 msgid "e.g. Dispatches from the Atmosphere"
@@ -2078,6 +2132,10 @@ msgstr "{label} mode"
 #: src/components/reader/app-shell.tsx
 msgid "Sign in to subscribe."
 msgstr "Sign in to subscribe."
+
+#: src/components/reader/terms-view.tsx
+msgid "What Standard Reader is"
+msgstr "What Standard Reader is"
 
 #: src/components/reader/about-view.tsx
 msgid "Prefer the original?"
@@ -2535,6 +2593,10 @@ msgstr "Mark all as read"
 msgid "Your display name, handle, avatar URL, and DID as returned by your account provider."
 msgstr "Your display name, handle, avatar URL, and DID as returned by your account provider."
 
+#: src/components/reader/terms-view.tsx
+msgid "We may update these terms as the product changes. The “Last updated” date at the top will change when we do. Continued use of the site after an update means you accept the revised terms."
+msgstr "We may update these terms as the product changes. The “Last updated” date at the top will change when we do. Continued use of the site after an update means you accept the revised terms."
+
 #: src/components/reader/about-view.tsx
 msgid "Save, like, subscribe — everywhere"
 msgstr "Save, like, subscribe — everywhere"
@@ -2596,6 +2658,10 @@ msgstr "{0, plural, one {# post} other {{1} posts}}"
 #: src/components/docs/docs-api-nav.tsx
 msgid "Authentication"
 msgstr "Authentication"
+
+#: src/components/reader/terms-view.tsx
+msgid "Changes to these terms"
+msgstr "Changes to these terms"
 
 #: src/components/reader/about-view.tsx
 msgid "Worth discovering"
@@ -2674,6 +2740,10 @@ msgstr "Bug reports, feature requests, and questions for Standard Reader. Feedba
 #: src/components/labeler-detail-view.tsx
 msgid "This labeler hasn’t labeled any documents in the read-model yet."
 msgstr "This labeler hasn’t labeled any documents in the read-model yet."
+
+#: src/components/reader/terms-view.tsx
+msgid "Scrape, harvest, or misuse the read-model index or API in ways that harm the service or the people whose writing it indexes."
+msgstr "Scrape, harvest, or misuse the read-model index or API in ways that harm the service or the people whose writing it indexes."
 
 #: src/components/reader/collection-theme-editor.tsx
 #: src/components/user-settings-view.tsx
@@ -2788,6 +2858,10 @@ msgstr "Weekly digest email"
 msgid "No lists yet — switch to New list to create one."
 msgstr "No lists yet — switch to New list to create one."
 
+#: src/components/reader/terms-view.tsx
+msgid "{SITE_NAME} is provided “as is” and “as available,” without warranties of any kind, whether express or implied. We do not guarantee that the service will be uninterrupted, error-free, or that the index will always be complete or current. To the fullest extent permitted by law, the operator of this deployment is not liable for any indirect, incidental, or consequential damages arising from your use of the site."
+msgstr "{SITE_NAME} is provided “as is” and “as available,” without warranties of any kind, whether express or implied. We do not guarantee that the service will be uninterrupted, error-free, or that the index will always be complete or current. To the fullest extent permitted by law, the operator of this deployment is not liable for any indirect, incidental, or consequential damages arising from your use of the site."
+
 #: src/routes/_layout.feedback.index.tsx
 msgid "Show implemented"
 msgstr "Show implemented"
@@ -2824,6 +2898,10 @@ msgstr "Feature request"
 #: src/components/reader/about-view.tsx
 msgid "There is a particular pleasure in reading something that was made to be read, and not to be measured. It asks nothing of you but your attention. The page gets quiet, and the sentence gets loud. So we built the reader we wanted: a column you can size, a font you can choose, and a margin wide enough to think in."
 msgstr "There is a particular pleasure in reading something that was made to be read, and not to be measured. It asks nothing of you but your attention. The page gets quiet, and the sentence gets loud. So we built the reader we wanted: a column you can size, a font you can choose, and a margin wide enough to think in."
+
+#: src/components/reader/terms-view.tsx
+msgid "Availability and changes to the service"
+msgstr "Availability and changes to the service"
 
 #: src/routes/extension.connected.tsx
 msgid "Close tab"
@@ -2865,6 +2943,10 @@ msgstr "Preview"
 #~ msgid "No one you follow publishes here yet"
 #~ msgstr "No one you follow publishes here yet"
 
+#: src/components/reader/terms-view.tsx
+msgid "You may read without an account. To follow publications, save articles, and take other social actions, you sign in with your Atmosphere account (for example via Bluesky OAuth). You are responsible for the security of your account and for the activity that happens through it. When you take an action that writes to your AT Protocol repository, those records live in <0>your</0> repository and are subject to the rules of the network and your account provider."
+msgstr "You may read without an account. To follow publications, save articles, and take other social actions, you sign in with your Atmosphere account (for example via Bluesky OAuth). You are responsible for the security of your account and for the activity that happens through it. When you take an action that writes to your AT Protocol repository, those records live in <0>your</0> repository and are subject to the rules of the network and your account provider."
+
 #: src/routes/_layout.index.tsx
 msgid "Standard Reader knows about every publication on the network. Find a few worth your mornings."
 msgstr "Standard Reader knows about every publication on the network. Find a few worth your mornings."
@@ -2874,6 +2956,7 @@ msgid "Running"
 msgstr "Running"
 
 #: src/components/reader/app-shell.tsx
+#: src/components/reader/terms-view.tsx
 #: src/components/site-legal-links.tsx
 msgid "Privacy"
 msgstr "Privacy"
@@ -3112,6 +3195,10 @@ msgstr "Return to article and follow along"
 msgid "{0, plural, one {# reader} other {{subscriberLabel} readers}}"
 msgstr "{0, plural, one {# reader} other {{subscriberLabel} readers}}"
 
+#: src/components/reader/terms-view.tsx
+msgid "We may change, suspend, or discontinue any part of the service at any time. Because {SITE_NAME} indexes a decentralized network, the availability of specific publications is outside our control."
+msgstr "We may change, suspend, or discontinue any part of the service at any time. Because {SITE_NAME} indexes a decentralized network, the availability of specific publications is outside our control."
+
 #: src/components/reader/page-reader-bar.tsx
 msgid "Play"
 msgstr "Play"
@@ -3302,6 +3389,10 @@ msgstr "Account actions"
 msgid "Read article"
 msgstr "Read article"
 
+#: src/components/reader/terms-view.tsx
+msgid "Terms of service"
+msgstr "Terms of service"
+
 #: src/components/user-settings-view.tsx
 msgid "Delete all reading history?"
 msgstr "Delete all reading history?"
@@ -3449,6 +3540,7 @@ msgstr "Click Run example to fetch a live response."
 
 #: src/components/reader/extension-privacy-view.tsx
 #: src/components/reader/privacy-view.tsx
+#: src/components/reader/terms-view.tsx
 msgid "Legal"
 msgstr "Legal"
 
@@ -4072,3 +4164,7 @@ msgstr "{connectionLabel} via Semble"
 #: src/magazine/flow.tsx
 msgid "In this issue"
 msgstr "In this issue"
+
+#: src/components/reader/terms-view.tsx
+msgid "Acceptable use"
+msgstr "Acceptable use"
