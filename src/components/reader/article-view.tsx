@@ -33,6 +33,7 @@ import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
 import { resolveArticleHeroImage } from "#/lib/document/lead-image";
 import { usePageReader } from "#/lib/page-reader/page-reader-context";
+import { publishingPlatform } from "#/lib/publishing-platform";
 import { useFormatters } from "#/lib/use-formatters";
 import { useOpenCollectionsInMagazine } from "#/lib/use-open-collections-in-magazine";
 import { useReadingTypography } from "#/lib/use-reading-typography";
@@ -100,6 +101,7 @@ import {
   Topic,
 } from "./primitives";
 import { QuoteShareLayer } from "./quote-share-layer";
+import { ReadOnPlatformButton } from "./read-on-platform";
 import { applyMarkReadOptimisticUpdate } from "./read-optimistic";
 import { ReaderWordHighlighter } from "./reader-word-highlighter";
 import { SaveDraftConsumer } from "./save-draft-consumer";
@@ -886,6 +888,9 @@ function ArticleViewBody({
   const date = fmt.date(article.publishedAt);
   const publicationArticleUrl = articlePublicationUrl(article);
   const linkParams = documentLinkParams(article.uri);
+  // Leaflet / pckt / Offprint get their own mark in place of the generic
+  // external-link glyph, so the destination is legible before the click.
+  const platform = publishingPlatform(article);
 
   const handleOpenMagazine =
     article.collection && linkParams
@@ -1081,7 +1086,10 @@ function ArticleViewBody({
                   <BookOpen size={18} />
                 </IconButton>
               ) : null}
-              {handleOpenPublication ? (
+              {/* A recognized platform gets its branded mark pulled out to the
+                  end of the row instead (see below) — it reads as the
+                  destination, not as one more grey utility glyph. */}
+              {handleOpenPublication && !platform ? (
                 <IconButton
                   variant="secondary"
                   size="md"
@@ -1111,7 +1119,9 @@ function ArticleViewBody({
             <div {...stylex.props(styles.topActsOverflow)}>
               <ReaderSecondaryActionsMenu
                 onOpenMagazine={handleOpenMagazine}
-                onOpenPublication={handleOpenPublication}
+                // A recognized platform keeps its own branded button visible on
+                // mobile (below), so it must not also appear in here.
+                onOpenPublication={platform ? null : handleOpenPublication}
                 publicationName={publicationName}
                 showReadToggle={signedIn && trackReading}
                 isRead={isRead}
@@ -1130,6 +1140,29 @@ function ArticleViewBody({
               siteName={pub?.name}
               imageUrl={article.coverImageUrl}
             />
+
+            {/* Last in the row: the one action that leaves the app, and the
+                only colored thing in the header. It stays visible at every
+                width — the full lockup on desktop, the mark alone on mobile —
+                rather than collapsing into the overflow menu. */}
+            {platform && publicationArticleUrl ? (
+              <>
+                <div {...stylex.props(styles.topActsInline)}>
+                  <ReadOnPlatformButton
+                    platform={platform}
+                    href={publicationArticleUrl}
+                    size="sm"
+                  />
+                </div>
+                <div {...stylex.props(styles.topActsOverflow)}>
+                  <ReadOnPlatformButton
+                    platform={platform}
+                    href={publicationArticleUrl}
+                    size="icon"
+                  />
+                </div>
+              </>
+            ) : null}
           </div>
         </div>
 
