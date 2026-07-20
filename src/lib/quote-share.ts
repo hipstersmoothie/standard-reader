@@ -40,8 +40,13 @@ export function decodeQuoteParam(encoded: string | undefined): string | null {
   return normalized || null;
 }
 
+/**
+ * Article path exactly as the router emits it — `:` in the DID stays literal.
+ * Percent-encoding it yields a URL that never appears in the wild, so
+ * Constellation backlink lookups (Discussion) miss every real share.
+ */
 export function articleSharePath(did: string, rkey: string): string {
-  return `/a/${encodeURIComponent(did)}/${encodeURIComponent(rkey)}`;
+  return `/a/${did}/${rkey}`;
 }
 
 /** Share URL for a highlighted quote on an article. */
