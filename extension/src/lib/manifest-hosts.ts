@@ -2,6 +2,7 @@
 export const PRODUCTION_HOST_PERMISSIONS = [
   "https://standard-reader.app/*",
   "https://bsky.app/*",
+  "https://witchsky.app/*",
   "<all_urls>",
 ] as const;
 
@@ -21,7 +22,9 @@ export function hostPermissions(includeDev: boolean): Array<string> {
 
 const APP_HOSTS = ["standard-reader.app"] as const;
 const DEV_APP_HOSTS = ["staging.standard-reader.app"] as const;
-const BSKY_HOSTS = ["bsky.app"] as const;
+// bsky.app and Bluesky-fork clients that share its post/embed DOM shape
+// (e.g. Witchsky) get the same in-embed "Save to Standard Reader" button.
+const BSKY_HOSTS = ["bsky.app", "witchsky.app"] as const;
 const DEV_BSKY_HOSTS = ["staging.bsky.app"] as const;
 const DEV_LOOPBACK_HOSTS = ["localhost", "127.0.0.1"] as const;
 
@@ -46,6 +49,7 @@ export function pageOverlayExcludeMatches(includeDev: boolean): Array<string> {
     "*://standard-reader.app/*",
     "*://*.standard-reader.app/*",
     "*://bsky.app/*",
+    "*://witchsky.app/*",
   ];
   if (includeDev) {
     excludes.push(
@@ -70,7 +74,7 @@ export function authCallbackMatches(includeDev: boolean): Array<string> {
 }
 
 export function bskyEmbedMatches(includeDev: boolean): Array<string> {
-  return includeDev
-    ? ["https://bsky.app/*", "https://staging.bsky.app/*"]
-    : ["https://bsky.app/*"];
+  const matches = ["https://bsky.app/*", "https://witchsky.app/*"];
+  if (includeDev) matches.push("https://staging.bsky.app/*");
+  return matches;
 }
