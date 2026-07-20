@@ -1118,7 +1118,7 @@ msgstr "Não foi possível salvar em {appLabel}"
 
 #: src/components/docs/publishing-docs-page.tsx
 msgid "<0><1>Markpub</1> (recommended).</0> <2>at.markpub.markdown</2> — markdown with facets for rich text. It's not part of the site.standard spec either — no markdown format is — but it's the only one that's actually spec'd in a meaningful, reusable way, rather than one app's own ad hoc shape. Use this for a hand-rolled integration unless you already produce one of the platform formats below."
-msgstr "<0><1>Markpub</1> (recomendado).</0> <2>at.markpub.markdown</2> — markdown com facetas para texto formatado. Também não faz parte da especificação site.standard — nenhum formato markdown faz — mas é o único que está realmente especificado de forma significativa e reutilizável, em vez de ser o formato ad hoc de uma única aplicação. Utilize-o numa integração feita à mão, a menos que já produza um dos formatos de plataforma abaixo."
+msgstr "<0><1>Markpub</1> (recomendado).</0> <2>at.markpub.markdown</2> — markdown com facets para formatação de texto. Também não faz parte da especificação site.standard — nenhum formato markdown faz — mas é o único que está realmente especificado de forma significativa e reutilizável, em vez de ser o formato ad hoc de uma única aplicação. Utilize-o numa integração feita à mão, a menos que já produza um dos formatos de plataforma abaixo."
 
 #: src/routes/_layout.l.$did.$rkey.tsx
 msgid "Hide read articles"
@@ -1134,7 +1134,7 @@ msgstr "Tentar interromper, sobrecarregar ou obter acesso não autorizado ao ser
 
 #: src/routes/_layout.feedback.index.tsx
 msgid "Anonymous"
-msgstr "Anónimo"
+msgstr "Anônimo"
 
 #: src/components/reader/language-dialog.tsx
 #: src/components/user-settings-view.tsx
