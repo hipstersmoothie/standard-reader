@@ -9,7 +9,7 @@ import type {
 import { bskyPostUrl } from "#/lib/leaflet/bsky";
 import { shiftFacets } from "#/lib/leaflet/facets";
 import { utf8ByteLength } from "#/lib/leaflet/utf8";
-import { getPublicUrl } from "#/lib/public-url";
+import { getCanonicalPublicUrl } from "#/lib/public-url";
 import {
   articleSharePath,
   buildQuoteShareUrl,
@@ -454,7 +454,10 @@ async function loadDocumentCommentTargets(
   const canonicalUrl =
     doc.canonicalUrl ?? buildCanonicalUrl(doc.publicationUrl, doc.path);
 
-  const baseUrl = getPublicUrl();
+  // Canonical (not per-deployment) origin: posts in the wild embed the prod
+  // `standard-reader.app/a/...` URL, so a preview must look that up, not its
+  // own railway.app subdomain.
+  const baseUrl = getCanonicalPublicUrl();
   const quoteShares = await listQuoteSharesForDocument(documentUri);
   const targets = buildCommentTargets(
     doc.did,

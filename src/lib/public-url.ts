@@ -24,6 +24,22 @@ export function getPublicUrl(): string {
     return `https://${railwayDomain}`;
   }
 
+  return getCanonicalPublicUrl();
+}
+
+/**
+ * Canonical public base URL — the production custom domain, ignoring the
+ * per-deployment `RAILWAY_PUBLIC_DOMAIN` override that {@link getPublicUrl}
+ * applies for OAuth. Previews inherit prod's `PUBLIC_URL` from shared
+ * variables, so this resolves to `standard-reader.app` on prod AND previews.
+ *
+ * Use this for anything that must match strings that exist in the wild — most
+ * importantly the `/a/<did>/<rkey>` app-article URLs that Bluesky posts embed,
+ * which the Discussion backlink lookup resolves against Constellation by exact
+ * string match. Building those targets from the preview domain would match no
+ * real post.
+ */
+export function getCanonicalPublicUrl(): string {
   const url =
     process.env.PUBLIC_URL ||
     process.env.BETTER_AUTH_URL ||
