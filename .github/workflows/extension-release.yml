@@ -1,0 +1,177 @@
+# Build and publish the browser extension to the Chrome Web Store and Firefox
+# AMO in one manual step: dispatch this workflow.
+#
+# It bumps extension/package.json, commits + tags the release, builds the
+# production Chrome and Firefox zips (plus a Firefox source archive for AMO),
+# uploads them to both stores via `wxt submit`, and cuts a GitHub Release with
+# the artifacts attached.
+#
+# Required repository secrets (Settings → Secrets and variables → Actions):
+#
+#   Chrome Web Store  (https://wxt.dev/guide/essentials/publishing.html#chrome-web-store)
+#     CHROME_EXTENSION_ID    Item ID from the developer dashboard URL
+#     CHROME_CLIENT_ID       Google Cloud OAuth client id
+#     CHROME_CLIENT_SECRET   Google Cloud OAuth client secret
+#     CHROME_REFRESH_TOKEN   OAuth refresh token for that client
+#
+#   Firefox AMO  (https://wxt.dev/guide/essentials/publishing.html#firefox-addon-store)
+#     FIREFOX_EXTENSION_ID   Add-on id, e.g. standard-reader@standard-reader.app
+#     FIREFOX_JWT_ISSUER     AMO API key (issuer)
+#     FIREFOX_JWT_SECRET     AMO API secret
+#
+# VITE_API_ORIGIN is already baked into the `extension:zip*` scripts
+# (https://standard-reader.app), so no build-time env is needed here.
+
+name: Release extension
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: "Semver bump applied to extension/package.json"
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+        default: patch
+      version:
+        description: "Explicit version (e.g. 0.4.0). Overrides the bump when set."
+        type: string
+        required: false
+      dry_run:
+        description: "Build and validate only — no commit, tag, publish, or release"
+        type: boolean
+        default: false
+
+# Never let two releases run at once; don't cancel one in flight.
+concurrency:
+  group: extension-release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and publish extension
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Full history so `gh release --generate-notes` has prior tags to diff.
+          fetch-depth: 0
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      # Bump extension/package.json only (WXT embeds this in the packaged
+      # manifest; the stores use it to detect updates). --no-git-tag-version
+      # edits the file without committing or tagging — we do that ourselves.
+      - name: Bump version
+        id: bump
+        working-directory: extension
+        run: |
+          if [ -n "${{ inputs.version }}" ]; then
+            npm version "${{ inputs.version }}" --no-git-tag-version --allow-same-version
+          else
+            npm version "${{ inputs.bump }}" --no-git-tag-version
+          fi
+          NEW_VERSION=$(node -p "require('./package.json').version")
+          echo "version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
+          echo "Extension version is now $NEW_VERSION"
+
+      # Commit + tag before building so the Firefox source archive (git archive
+      # HEAD) captures the exact bumped tree AMO will rebuild from.
+      - name: Commit and tag release
+        if: ${{ !inputs.dry_run }}
+        env:
+          VERSION: ${{ steps.bump.outputs.version }}
+        run: |
+          git add extension/package.json
+          git commit -m "Release extension v$VERSION"
+          git tag "extension-v$VERSION"
+          git push origin "HEAD:${{ github.ref_name }}"
+          git push origin "extension-v$VERSION"
+
+      # `extension:zip` = wxt prepare && (VITE_API_ORIGIN=prod) wxt build &&
+      # scripts/zip-chrome.mjs. Zips into extension/.output/*-chrome.zip.
+      - name: Build Chrome zip
+        run: pnpm extension:zip
+
+      - name: Build Firefox zip
+        run: pnpm extension:zip:firefox
+
+      # AMO requires a matching source archive for bundler builds. A zip of the
+      # tracked monorepo tree at HEAD is exactly what store/FIREFOX-SOURCE.md
+      # tells reviewers to rebuild from; .output/ and node_modules/ are
+      # gitignored so they're excluded automatically.
+      - name: Build Firefox source archive
+        env:
+          VERSION: ${{ steps.bump.outputs.version }}
+        run: |
+          mkdir -p extension/.output
+          git archive --format=zip \
+            --output="extension/.output/standard-reader-extension-$VERSION-sources.zip" \
+            HEAD
+
+      # Sanity-check the packaged version matches the bump before uploading.
+      - name: Verify packaged manifest version
+        env:
+          VERSION: ${{ steps.bump.outputs.version }}
+        run: |
+          for target in chrome firefox; do
+            manifest_version=$(unzip -p \
+              "extension/.output/standard-reader-extension-$VERSION-$target.zip" \
+              manifest.json | node -p "JSON.parse(require('fs').readFileSync(0)).version")
+            if [ "$manifest_version" != "$VERSION" ]; then
+              echo "::error::$target manifest version $manifest_version != $VERSION"
+              exit 1
+            fi
+            echo "$target manifest version OK: $manifest_version"
+          done
+
+      - name: Publish to Chrome Web Store and Firefox AMO
+        working-directory: extension
+        env:
+          VERSION: ${{ steps.bump.outputs.version }}
+          CHROME_EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
+          CHROME_CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
+          CHROME_CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
+          CHROME_REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
+          FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }}
+          FIREFOX_JWT_ISSUER: ${{ secrets.FIREFOX_JWT_ISSUER }}
+          FIREFOX_JWT_SECRET: ${{ secrets.FIREFOX_JWT_SECRET }}
+        run: |
+          pnpm exec wxt submit ${{ inputs.dry_run && '--dry-run' || '' }} \
+            --chrome-zip ".output/standard-reader-extension-$VERSION-chrome.zip" \
+            --firefox-zip ".output/standard-reader-extension-$VERSION-firefox.zip" \
+            --firefox-sources-zip ".output/standard-reader-extension-$VERSION-sources.zip"
+
+      - name: Create GitHub release
+        if: ${{ !inputs.dry_run }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.bump.outputs.version }}
+        run: |
+          gh release create "extension-v$VERSION" \
+            --title "Extension v$VERSION" \
+            --generate-notes \
+            "extension/.output/standard-reader-extension-$VERSION-chrome.zip" \
+            "extension/.output/standard-reader-extension-$VERSION-firefox.zip" \
+            "extension/.output/standard-reader-extension-$VERSION-sources.zip"
