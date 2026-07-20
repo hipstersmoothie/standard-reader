@@ -72,6 +72,7 @@ export function plaintextLinesFromStructuredBlock(
     case "blueskyEmbed":
     case "iframe":
     case "gallery":
+    case "offprintComponent":
     case "unknown": {
       return [];
     }

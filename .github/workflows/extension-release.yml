@@ -1,0 +1,315 @@
+# Build and publish the browser extension to the Chrome Web Store and Firefox
+# AMO with a manual kick-off and a bump-in-PR flow (no direct pushes to a
+# protected main):
+#
+#   1. Dispatch this workflow (Actions -> Release extension -> Run workflow).
+#      The `prepare` job bumps extension/package.json on a `release/extension-v*`
+#      branch and opens a PR. Nothing is published yet.
+#   2. Review and merge that PR. Merging fires the `publish` job, which builds
+#      the production Chrome + Firefox packages (plus a Firefox source archive
+#      for AMO), uploads them to both stores via `wxt submit`, tags the release,
+#      and cuts a GitHub Release with the artifacts attached.
+#
+#   Set `dry_run: true` on dispatch to build and validate end-to-end
+#   (`wxt submit --dry-run`) without opening a PR or publishing — handy for a
+#   first run to confirm the build and store secrets are wired up.
+#
+# Because the `publish` job is triggered by `pull_request`, this workflow file
+# must live on the default branch for merges to fire it.
+#
+# Required repository secrets (Settings -> Secrets and variables -> Actions):
+#
+#   GitHub
+#     GH_TOKEN               PAT used by the `prepare` job to push the release
+#                            branch and open the PR. The built-in GITHUB_TOKEN
+#                            cannot open PRs unless "Allow GitHub Actions to
+#                            create and approve pull requests" is enabled under
+#                            Settings -> Actions -> General. Needs `repo` scope
+#                            (classic) or Contents + Pull requests read/write
+#                            (fine-grained). The release PR only touches
+#                            extension/package.json, so no `workflow` scope is
+#                            required. Falls back to GITHUB_TOKEN when unset.
+#
+#   Chrome Web Store  (https://wxt.dev/guide/essentials/publishing.html#chrome-web-store)
+#     CHROME_EXTENSION_ID    Item ID from the developer dashboard URL
+#     CHROME_CLIENT_ID       Google Cloud OAuth client id
+#     CHROME_CLIENT_SECRET   Google Cloud OAuth client secret
+#     CHROME_REFRESH_TOKEN   OAuth refresh token for that client
+#
+#   Firefox AMO  (https://wxt.dev/guide/essentials/publishing.html#firefox-addon-store)
+#     FIREFOX_EXTENSION_ID   Add-on id, e.g. standard-reader@standard-reader.app
+#     FIREFOX_JWT_ISSUER     AMO API key (issuer)
+#     FIREFOX_JWT_SECRET     AMO API secret
+#
+# VITE_API_ORIGIN is already baked into the `extension:zip*` scripts
+# (https://standard-reader.app), so no build-time env is needed here.
+
+name: Release extension
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: "Semver bump applied to extension/package.json"
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+        default: patch
+      version:
+        description: "Explicit version (e.g. 0.4.0). Overrides the bump when set."
+        type: string
+        required: false
+      dry_run:
+        description: "Build and validate only — no PR, no publish"
+        type: boolean
+        default: false
+  pull_request:
+    types: [closed]
+
+# Serialize releases so two runs never upload to the stores at once.
+concurrency:
+  group: extension-release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Dispatch, real release: bump the version on a branch and open a PR. Merging
+  # that PR is what triggers `publish`.
+  # ---------------------------------------------------------------------------
+  prepare:
+    name: Open release PR
+    if: github.event_name == 'workflow_dispatch' && !inputs.dry_run
+    runs-on: ubuntu-latest
+    steps:
+      # Check out with the PAT so the release-branch push and `gh pr create`
+      # below both authenticate as a user rather than as GITHUB_TOKEN.
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_TOKEN || github.token }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      # Bump extension/package.json only (WXT embeds this in the packaged
+      # manifest; the stores use it to detect updates). --no-git-tag-version
+      # edits the file without committing — we commit it onto the release branch.
+      - name: Bump version
+        id: bump
+        working-directory: extension
+        run: |
+          if [ -n "${{ inputs.version }}" ]; then
+            npm version "${{ inputs.version }}" --no-git-tag-version --allow-same-version
+          else
+            npm version "${{ inputs.bump }}" --no-git-tag-version
+          fi
+          NEW_VERSION=$(node -p "require('./package.json').version")
+          echo "version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
+          echo "Extension version is now $NEW_VERSION"
+
+      - name: Create release branch and open PR
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN || github.token }}
+          VERSION: ${{ steps.bump.outputs.version }}
+          BASE: ${{ github.ref_name }}
+        run: |
+          BRANCH="release/extension-v$VERSION"
+          git checkout -b "$BRANCH"
+          git add extension/package.json
+          git commit -m "Release extension v$VERSION"
+          git push --force-with-lease origin "$BRANCH"
+
+          if gh pr view "$BRANCH" --json state >/dev/null 2>&1; then
+            echo "PR already open for $BRANCH; branch updated."
+          else
+            gh pr create \
+              --base "$BASE" \
+              --head "$BRANCH" \
+              --title "Release extension v$VERSION" \
+              --body "$(cat <<EOF
+          Automated release PR — bumps \`extension/package.json\` to **v$VERSION**.
+
+          Merging this PR builds the production Chrome and Firefox packages,
+          uploads them to the Chrome Web Store and Firefox AMO, tags
+          \`extension-v$VERSION\`, and cuts a GitHub Release.
+
+          Do not merge until you're ready to ship a store release.
+          EOF
+          )"
+          fi
+
+  # ---------------------------------------------------------------------------
+  # Dispatch, dry run: build both targets and validate the upload without
+  # opening a PR or publishing. Uses the version currently in package.json.
+  # ---------------------------------------------------------------------------
+  dry-run:
+    name: Dry-run build and validate
+    if: github.event_name == 'workflow_dispatch' && inputs.dry_run
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Read extension version
+        id: version
+        run: echo "version=$(node -p "require('./extension/package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Build Chrome zip
+        run: pnpm extension:zip
+
+      - name: Build Firefox zip
+        run: pnpm extension:zip:firefox
+
+      - name: Build Firefox source archive
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          mkdir -p extension/.output
+          git archive --format=zip \
+            --output="extension/.output/standard-reader-extension-$VERSION-sources.zip" \
+            HEAD
+
+      - name: Validate upload (dry run)
+        working-directory: extension
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          CHROME_EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
+          CHROME_CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
+          CHROME_CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
+          CHROME_REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
+          FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }}
+          FIREFOX_JWT_ISSUER: ${{ secrets.FIREFOX_JWT_ISSUER }}
+          FIREFOX_JWT_SECRET: ${{ secrets.FIREFOX_JWT_SECRET }}
+        run: |
+          pnpm exec wxt submit --dry-run \
+            --chrome-zip ".output/standard-reader-extension-$VERSION-chrome.zip" \
+            --firefox-zip ".output/standard-reader-extension-$VERSION-firefox.zip" \
+            --firefox-sources-zip ".output/standard-reader-extension-$VERSION-sources.zip"
+
+  # ---------------------------------------------------------------------------
+  # Merge of a release PR: build from the now-updated base branch and publish.
+  # ---------------------------------------------------------------------------
+  publish:
+    name: Build and publish extension
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.merged == true &&
+      startsWith(github.event.pull_request.head.ref, 'release/extension-v')
+    runs-on: ubuntu-latest
+    steps:
+      # Check out the base branch (post-merge, so it carries the version bump).
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.ref }}
+          fetch-depth: 0
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Read extension version
+        id: version
+        run: echo "version=$(node -p "require('./extension/package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Build Chrome zip
+        run: pnpm extension:zip
+
+      - name: Build Firefox zip
+        run: pnpm extension:zip:firefox
+
+      # AMO requires a matching source archive for bundler builds. A zip of the
+      # tracked monorepo tree at HEAD is exactly what store/FIREFOX-SOURCE.md
+      # tells reviewers to rebuild from; .output/ and node_modules/ are
+      # gitignored so they're excluded automatically.
+      - name: Build Firefox source archive
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          mkdir -p extension/.output
+          git archive --format=zip \
+            --output="extension/.output/standard-reader-extension-$VERSION-sources.zip" \
+            HEAD
+
+      # Sanity-check the packaged version matches package.json before uploading.
+      - name: Verify packaged manifest version
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          for target in chrome firefox; do
+            manifest_version=$(unzip -p \
+              "extension/.output/standard-reader-extension-$VERSION-$target.zip" \
+              manifest.json | node -p "JSON.parse(require('fs').readFileSync(0)).version")
+            if [ "$manifest_version" != "$VERSION" ]; then
+              echo "::error::$target manifest version $manifest_version != $VERSION"
+              exit 1
+            fi
+            echo "$target manifest version OK: $manifest_version"
+          done
+
+      - name: Publish to Chrome Web Store and Firefox AMO
+        working-directory: extension
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          CHROME_EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
+          CHROME_CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
+          CHROME_CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
+          CHROME_REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
+          FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }}
+          FIREFOX_JWT_ISSUER: ${{ secrets.FIREFOX_JWT_ISSUER }}
+          FIREFOX_JWT_SECRET: ${{ secrets.FIREFOX_JWT_SECRET }}
+        run: |
+          pnpm exec wxt submit \
+            --chrome-zip ".output/standard-reader-extension-$VERSION-chrome.zip" \
+            --firefox-zip ".output/standard-reader-extension-$VERSION-firefox.zip" \
+            --firefox-sources-zip ".output/standard-reader-extension-$VERSION-sources.zip"
+
+      # Tag + release only after a successful publish so nothing dangles on failure.
+      - name: Tag and create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag "extension-v$VERSION"
+          git push origin "extension-v$VERSION"
+          gh release create "extension-v$VERSION" \
+            --title "Extension v$VERSION" \
+            --generate-notes \
+            "extension/.output/standard-reader-extension-$VERSION-chrome.zip" \
+            "extension/.output/standard-reader-extension-$VERSION-firefox.zip" \
+            "extension/.output/standard-reader-extension-$VERSION-sources.zip"

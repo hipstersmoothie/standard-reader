@@ -1,7 +1,14 @@
+// bsky.app and web clients forked from its `social-app` codebase share the
+// same post/embed DOM shape, so they all get the in-embed "Save to Standard
+// Reader" button. Add a fork's host here and every permission / content
+// script match / exclusion list below picks it up.
+const BSKY_HOSTS = ["bsky.app", "witchsky.app", "mu.social"] as const;
+const DEV_BSKY_HOSTS = ["staging.bsky.app"] as const;
+
 /** Production host permissions for store builds (build / zip). */
 export const PRODUCTION_HOST_PERMISSIONS = [
   "https://standard-reader.app/*",
-  "https://bsky.app/*",
+  ...BSKY_HOSTS.map((host) => `https://${host}/*`),
   "<all_urls>",
 ] as const;
 
@@ -21,8 +28,6 @@ export function hostPermissions(includeDev: boolean): Array<string> {
 
 const APP_HOSTS = ["standard-reader.app"] as const;
 const DEV_APP_HOSTS = ["staging.standard-reader.app"] as const;
-const BSKY_HOSTS = ["bsky.app"] as const;
-const DEV_BSKY_HOSTS = ["staging.bsky.app"] as const;
 const DEV_LOOPBACK_HOSTS = ["localhost", "127.0.0.1"] as const;
 
 export function appHosts(includeDev: boolean): ReadonlyArray<string> {
@@ -45,7 +50,7 @@ export function pageOverlayExcludeMatches(includeDev: boolean): Array<string> {
   const excludes = [
     "*://standard-reader.app/*",
     "*://*.standard-reader.app/*",
-    "*://bsky.app/*",
+    ...BSKY_HOSTS.map((host) => `*://${host}/*`),
   ];
   if (includeDev) {
     excludes.push(
@@ -70,7 +75,7 @@ export function authCallbackMatches(includeDev: boolean): Array<string> {
 }
 
 export function bskyEmbedMatches(includeDev: boolean): Array<string> {
-  return includeDev
-    ? ["https://bsky.app/*", "https://staging.bsky.app/*"]
-    : ["https://bsky.app/*"];
+  const matches = BSKY_HOSTS.map((host) => `https://${host}/*`);
+  if (includeDev) matches.push("https://staging.bsky.app/*");
+  return matches;
 }

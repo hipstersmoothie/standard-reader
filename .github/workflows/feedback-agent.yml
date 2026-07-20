@@ -1,0 +1,58 @@
+name: Feedback agent
+
+# Polls the userinput.app feedback board and fires a Claude Code Routine for
+# every discussion newly marked `planned`. The agent itself runs as a cloud
+# session on Anthropic infrastructure — this workflow only hosts the ~5s poller,
+# so there is no ANTHROPIC_API_KEY here and no agent code on the runner.
+#
+# See scripts/feedback-agent-poll.ts and .github/feedback-agent-routine.md.
+
+on:
+  schedule:
+    # GitHub's cron is best-effort and frequently runs late; "every 15 minutes"
+    # means "within the hour" in practice, which is fine for this.
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+    inputs:
+      discussion_uri:
+        description: "Only dispatch this at:// discussion URI (must be marked `planned`)"
+        required: false
+        type: string
+      dry_run:
+        description: "Log decisions without creating branches or firing"
+        required: false
+        default: false
+        type: boolean
+
+concurrency:
+  # Never let two polls race for the same dispatch lock.
+  group: feedback-agent
+  cancel-in-progress: false
+
+jobs:
+  poll:
+    name: Poll board and dispatch
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # create the claude/feedback-* lock branches
+      pull-requests: read # dedupe against existing PRs
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Poll feedback board
+        run: pnpm feedback:poll
+        env:
+          CLAUDE_ROUTINE_ID: ${{ secrets.CLAUDE_ROUTINE_ID }}
+          CLAUDE_ROUTINE_TOKEN: ${{ secrets.CLAUDE_ROUTINE_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
+          DISCUSSION_URI: ${{ inputs.discussion_uri }}
+          DRY_RUN: ${{ inputs.dry_run && '1' || '' }}

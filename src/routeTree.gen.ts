@@ -25,6 +25,7 @@ import { Route as LayoutPrivacyRouteImport } from './routes/_layout.privacy'
 import { Route as LayoutRecommendedRouteImport } from './routes/_layout.recommended'
 import { Route as LayoutSavedRouteImport } from './routes/_layout.saved'
 import { Route as LayoutSearchRouteImport } from './routes/_layout.search'
+import { Route as LayoutTermsRouteImport } from './routes/_layout.terms'
 import { Route as DevDigestRouteImport } from './routes/dev.digest'
 import { Route as DevRtlRouteImport } from './routes/dev.rtl'
 import { Route as DevWelcomeEmailRouteImport } from './routes/dev.welcome-email'
@@ -162,6 +163,11 @@ const LayoutSavedRoute = LayoutSavedRouteImport.update({
 const LayoutSearchRoute = LayoutSearchRouteImport.update({
   id: '/search',
   path: '/search',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutTermsRoute = LayoutTermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
   getParentRoute: () => LayoutRoute,
 } as any)
 const DevDigestRoute = DevDigestRouteImport.update({
@@ -487,6 +493,7 @@ export interface FileRoutesByFullPath {
   '/recommended': typeof LayoutRecommendedRoute
   '/saved': typeof LayoutSavedRoute
   '/search': typeof LayoutSearchRoute
+  '/terms': typeof LayoutTermsRoute
   '/dev/digest': typeof DevDigestRoute
   '/dev/rtl': typeof DevRtlRoute
   '/dev/welcome-email': typeof DevWelcomeEmailRoute
@@ -562,6 +569,7 @@ export interface FileRoutesByTo {
   '/recommended': typeof LayoutRecommendedRoute
   '/saved': typeof LayoutSavedRoute
   '/search': typeof LayoutSearchRoute
+  '/terms': typeof LayoutTermsRoute
   '/dev/digest': typeof DevDigestRoute
   '/dev/rtl': typeof DevRtlRoute
   '/dev/welcome-email': typeof DevWelcomeEmailRoute
@@ -640,6 +648,7 @@ export interface FileRoutesById {
   '/_layout/recommended': typeof LayoutRecommendedRoute
   '/_layout/saved': typeof LayoutSavedRoute
   '/_layout/search': typeof LayoutSearchRoute
+  '/_layout/terms': typeof LayoutTermsRoute
   '/dev/digest': typeof DevDigestRoute
   '/dev/rtl': typeof DevRtlRoute
   '/dev/welcome-email': typeof DevWelcomeEmailRoute
@@ -719,6 +728,7 @@ export interface FileRouteTypes {
     | '/recommended'
     | '/saved'
     | '/search'
+    | '/terms'
     | '/dev/digest'
     | '/dev/rtl'
     | '/dev/welcome-email'
@@ -794,6 +804,7 @@ export interface FileRouteTypes {
     | '/recommended'
     | '/saved'
     | '/search'
+    | '/terms'
     | '/dev/digest'
     | '/dev/rtl'
     | '/dev/welcome-email'
@@ -871,6 +882,7 @@ export interface FileRouteTypes {
     | '/_layout/recommended'
     | '/_layout/saved'
     | '/_layout/search'
+    | '/_layout/terms'
     | '/dev/digest'
     | '/dev/rtl'
     | '/dev/welcome-email'
@@ -1096,6 +1108,13 @@ declare module '@tanstack/react-router' {
       path: '/search'
       fullPath: '/search'
       preLoaderRoute: typeof LayoutSearchRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/terms': {
+      id: '/_layout/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof LayoutTermsRouteImport
       parentRoute: typeof LayoutRoute
     }
     '/dev/digest': {
@@ -1575,6 +1594,7 @@ interface LayoutRouteChildren {
   LayoutRecommendedRoute: typeof LayoutRecommendedRoute
   LayoutSavedRoute: typeof LayoutSavedRoute
   LayoutSearchRoute: typeof LayoutSearchRoute
+  LayoutTermsRoute: typeof LayoutTermsRoute
   LayoutIndexRoute: typeof LayoutIndexRoute
   LayoutFeedbackReturnRoute: typeof LayoutFeedbackReturnRoute
   LayoutLabelersDidRoute: typeof LayoutLabelersDidRoute
@@ -1600,6 +1620,7 @@ const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutRecommendedRoute: LayoutRecommendedRoute,
   LayoutSavedRoute: LayoutSavedRoute,
   LayoutSearchRoute: LayoutSearchRoute,
+  LayoutTermsRoute: LayoutTermsRoute,
   LayoutIndexRoute: LayoutIndexRoute,
   LayoutFeedbackReturnRoute: LayoutFeedbackReturnRoute,
   LayoutLabelersDidRoute: LayoutLabelersDidRoute,

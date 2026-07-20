@@ -207,6 +207,10 @@ export const Route = createRootRouteWithContext<RouterContext>()({
           url: baseUrl,
           ogImage: siteOgImageUrl(baseUrl),
         }),
+        {
+          name: "google-site-verification",
+          content: "p35WlJ32yt-tsksqm9KFeTHKgWNN99eeCXsVhcMb7-8",
+        },
       ],
       links: [
         { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },

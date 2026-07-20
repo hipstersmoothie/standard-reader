@@ -525,7 +525,9 @@ const getAuthorLists = createServerFn({ method: "GET" })
   .validator(authorListsInput)
   .handler(
     observe("lists.getAuthorLists", async ({ data }, span) => {
-      span.set("did", data.did);
+      // The author whose lists these are, not the viewer — see
+      // `author.getProfile` for why this is not `did`.
+      span.set("subject.did", data.did);
       // Lists are public repo records — no ownership/auth check needed to
       // view another author's lists, same as their publications or posts.
       const lists = await loadOwnSubscriptionLists(null, data.did);

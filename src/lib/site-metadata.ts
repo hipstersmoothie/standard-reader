@@ -94,6 +94,12 @@ export const PAGE_OG_CARDS = {
     tagline:
       "What Standard Reader collects, where your data lives, and your choices.",
   },
+  terms: {
+    path: "/terms",
+    title: "Terms of service",
+    tagline:
+      "The terms for using Standard Reader — what you can expect and what we ask of you.",
+  },
   privacyExtension: {
     path: "/privacy/extension",
     title: "Extension privacy",

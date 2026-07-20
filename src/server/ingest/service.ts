@@ -629,8 +629,8 @@ for (const signal of ["SIGINT", "SIGTERM"] as const) {
       await tapChannel.destroy();
       await labelerTapChannel?.destroy();
       await docsTapChannel?.destroy();
-      const { flushHoneycomb } = await import("../observability/honeycomb.ts");
-      await flushHoneycomb();
+      const { flushTelemetry } = await import("../observability/log.ts");
+      await flushTelemetry();
       process.exit(0);
     });
   });

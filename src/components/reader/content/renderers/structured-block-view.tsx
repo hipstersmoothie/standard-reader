@@ -10,6 +10,7 @@ import type { StructuredRenderableBlock } from "#/lib/document/structured-conten
 import type { CodeHighlightsByScheme } from "#/lib/theme";
 
 import type { ContentBlobContext } from "../types";
+import { OffprintComponentBlockView } from "./offprint-component";
 import { PcktGalleryBlockView } from "./pckt-gallery";
 import { BlockquoteBlockView } from "./shared/blockquote-block";
 import { BskyPostEmbedView } from "./shared/bsky-post-embed";
@@ -172,6 +173,9 @@ export function StructuredBlockView({
           blobContext={blobContext}
         />
       );
+    }
+    case "offprintComponent": {
+      return <OffprintComponentBlockView componentUri={block.componentUri} />;
     }
     case "button": {
       return (

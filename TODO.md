@@ -610,7 +610,8 @@ After Tier 1–3, as appetite allows:
 ## 12. Browser extension (WXT)
 
 Full-featured MV3 extension in [`extension/`](extension/) — popup, page overlay, context menu,
-Bluesky badges, options page. Backend routes under [`src/routes/api/extension/`](src/routes/api/extension/).
+Bluesky badges (bsky.app + `social-app` forks Witchsky, Mu), options page. Backend routes under
+[`src/routes/api/extension/`](src/routes/api/extension/).
 
 - [x] **Workspace scaffold** — `pnpm-workspace.yaml`, WXT + React + StyleX + hip-ui aliases,
       root scripts (`extension:dev`, `extension:build`, `extension:zip`), CI build step.
@@ -620,7 +621,8 @@ Bluesky badges, options page. Backend routes under [`src/routes/api/extension/`]
 - [x] **API routes** — `/api/extension/{session,resolve,bookmark,follow,recommend}`.
 - [x] **Connected landing** — [`/extension/connected`](src/routes/extension.connected.tsx) after OAuth.
 - [x] **Extension client** — background message router, hip-ui popup, unified content script
-      (page overlay + Bluesky badges), context menus, toolbar badge, options page.
+      (page overlay + Bluesky badges on bsky.app and its forks Witchsky, Mu), context menus,
+      toolbar badge, options page.
 - [x] **Extension privacy URL** — [`/privacy/extension`](src/routes/_layout.privacy.extension.tsx) with
       [`ExtensionPrivacyView`](src/components/reader/extension-privacy-view.tsx); cross-linked from site privacy policy.
 - [ ] **Manual QA** — run checklist in [`extension/README.md`](extension/README.md) (dev + prod).

@@ -84,16 +84,16 @@ local API (`pnpm dev` + `pnpm extension:dev`).
 
 Load unpacked from `extension/.output/chrome-mv3/` after `pnpm extension:build`.
 
-| Case                    | Steps                                                  | Expected                                            |
-| ----------------------- | ------------------------------------------------------ | --------------------------------------------------- |
-| Popup — article         | Open indexed article URL → click extension icon        | Title, Save, Follow, Open                           |
-| Popup — signed out save | Sign out → open popup on article → Save                | Login tab opens; save completes after sign-in       |
-| Overlay                 | Visit publication article URL (not SR app)             | Bottom-right chip; dismiss hides until page refresh |
-| Overlay off             | Disable in options → revisit site                      | No chip                                             |
-| SR app excluded         | Visit `standard-reader.app` article                    | No overlay                                          |
-| Context menu            | Right-click link to indexed article → Save             | Bookmark created (or login → retry)                 |
-| Toolbar badge           | Switch tabs between article and other sites            | Dot on indexed tabs only                            |
-| Bluesky embed save      | Post with a standard.site article embed on bsky.app    | Native Save button in embed footer                  |
-| Bluesky embed off       | Disable in options                                     | Buttons removed                                     |
-| Options sync            | Toggle settings → restart browser                      | Settings persist (`storage.sync`)                   |
-| Dev API                 | API origin blank or `http://127.0.0.1:3000` in options | Extension hits local app                            |
+| Case                    | Steps                                                                           | Expected                                            |
+| ----------------------- | ------------------------------------------------------------------------------- | --------------------------------------------------- |
+| Popup — article         | Open indexed article URL → click extension icon                                 | Title, Save, Follow, Open                           |
+| Popup — signed out save | Sign out → open popup on article → Save                                         | Login tab opens; save completes after sign-in       |
+| Overlay                 | Visit publication article URL (not SR app)                                      | Bottom-right chip; dismiss hides until page refresh |
+| Overlay off             | Disable in options → revisit site                                               | No chip                                             |
+| SR app excluded         | Visit `standard-reader.app` article                                             | No overlay                                          |
+| Context menu            | Right-click link to indexed article → Save                                      | Bookmark created (or login → retry)                 |
+| Toolbar badge           | Switch tabs between article and other sites                                     | Dot on indexed tabs only                            |
+| Bluesky embed save      | Post with a standard.site article embed on bsky.app, witchsky.app, or mu.social | Native Save button in embed footer                  |
+| Bluesky embed off       | Disable in options                                                              | Buttons removed                                     |
+| Options sync            | Toggle settings → restart browser                                               | Settings persist (`storage.sync`)                   |
+| Dev API                 | API origin blank or `http://127.0.0.1:3000` in options                          | Extension hits local app                            |

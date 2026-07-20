@@ -176,7 +176,6 @@ const AUTHOR_FEED_PAGE_SIZE = 100;
 const AUTHOR_FEED_MAX_PAGES = 40;
 const ANNOUNCEMENT_WINDOW_BEFORE_MS = 14 * 24 * 60 * 60 * 1000;
 const ANNOUNCEMENT_WINDOW_AFTER_MS = 7 * 24 * 60 * 60 * 1000;
-const MIN_INFERRED_ANNOUNCEMENT_REPLIES = 5;
 
 function normalizeLinkTarget(url: string): string {
   try {
@@ -308,8 +307,12 @@ async function fetchAuthorFeedPage(
 
 /**
  * When a document has no `bskyPostRef`, infer the author's announcement post
- * by scanning their top-level feed around `publishedAt`. Prefer posts that link
- * the article URL; otherwise pick the highest-reply post in the window.
+ * by scanning their top-level feed around `publishedAt` for a post that
+ * actually links the article URL (via facet or embed). We deliberately do
+ * *not* fall back to "most-replied post in the window" when no post links
+ * the URL — that heuristic surfaces a prolific author's unrelated popular
+ * post (and its replies) as the document's Discussion, which is worse than
+ * showing no inferred announcement at all.
  */
 export async function inferAuthorAnnouncementPostUri(
   did: string,
@@ -325,7 +328,6 @@ export async function inferAuthorAnnouncementPostUri(
   const windowEnd = publishedAt.getTime() + ANNOUNCEMENT_WINDOW_AFTER_MS;
 
   let urlLinkedBest: AuthorFeedPostCandidate | null = null;
-  let replyBest: AuthorFeedPostCandidate | null = null;
   let cursor: string | undefined;
   let reachedWindowStart = false;
 
@@ -350,18 +352,11 @@ export async function inferAuthorAnnouncementPostUri(
       ) {
         urlLinkedBest = candidate;
       }
-
-      if (
-        candidate.replyCount >= MIN_INFERRED_ANNOUNCEMENT_REPLIES &&
-        (!replyBest || candidate.replyCount > replyBest.replyCount)
-      ) {
-        replyBest = candidate;
-      }
     }
 
     cursor = feedPage.cursor;
     if (!cursor) break;
   }
 
-  return urlLinkedBest?.uri ?? replyBest?.uri ?? null;
+  return urlLinkedBest?.uri ?? null;
 }

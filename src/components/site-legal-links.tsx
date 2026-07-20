@@ -79,6 +79,16 @@ export function SiteLegalLinks({ style }: { style?: stylex.StyleXStyles }) {
         ·
       </span>
       <Link
+        to="/terms"
+        {...stylex.props(styles.link)}
+        activeProps={stylex.props(styles.link, styles.linkActive)}
+      >
+        <Trans>Terms</Trans>
+      </Link>
+      <span {...stylex.props(styles.separator)} aria-hidden>
+        ·
+      </span>
+      <Link
         to="/docs/api"
         {...stylex.props(styles.link)}
         activeProps={stylex.props(styles.link, styles.linkActive)}

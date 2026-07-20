@@ -348,7 +348,12 @@ function FacetSegment({
   const isUnderline = hasFacetKind(features, "underline");
   const isStrikethrough = hasFacetKind(features, "strikethrough");
   const isHighlight = hasFacetKind(features, "highlight");
-  const link = findFacetFeature(features, "link");
+  // Offprint's `#webMention` is a `#link` enriched with page metadata (`title`,
+  // `siteName`). Authors use it both inline and as a whole-paragraph label, and
+  // the plaintext already carries that metadata, so render it as a plain link.
+  const link =
+    findFacetFeature(features, "link") ??
+    findFacetFeature(features, "webMention");
   const didMention =
     findFacetFeature(features, "didMention") ??
     findFacetFeature(features, "mention");

@@ -44,6 +44,9 @@ export const maybeAuthMiddleware = createMiddleware({
   const { getAtprotoSessionForRequest } =
     await import("#/middleware/auth-session.server");
   const context = await getAtprotoSessionForRequest(getRequest());
+  const { labelRequestSpanIdentity } =
+    await import("#/server/observability/span-context");
+  labelRequestSpanIdentity(context?.did ?? null);
   return await next({ context });
 });
 
@@ -57,5 +60,8 @@ export const requireAuthMiddleware = createMiddleware({
   if (!ctx) {
     throw new Error("Unauthorized");
   }
+  const { labelRequestSpanIdentity } =
+    await import("#/server/observability/span-context");
+  labelRequestSpanIdentity(ctx.did);
   return await next({ context: { authSession: ctx } });
 });

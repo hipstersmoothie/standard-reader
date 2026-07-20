@@ -224,7 +224,21 @@ export function CommentCard({ comment }: { comment: DocumentComment }) {
   );
 
   return (
-    <div {...stylex.props(commentStyles.card)}>
+    <div
+      {...stylex.props(commentStyles.card, hasLink && commentStyles.cardLinked)}
+    >
+      {hasLink ? (
+        // Stretched overlay link — a sibling of the header and facet links,
+        // not their ancestor, so no nested <a>. Covers the whole card so the
+        // hover highlight (`cardLinked`, above) matches the click target.
+        <a
+          href={comment.postUrl}
+          target="_blank"
+          rel="noreferrer"
+          aria-label={t`Open this reply on Bluesky`}
+          {...stylex.props(commentStyles.cardBodyOverlay)}
+        />
+      ) : null}
       <div {...stylex.props(commentStyles.cardHeader)}>
         <AuthorProfileLink
           authorRef={comment.author.did}
@@ -253,22 +267,7 @@ export function CommentCard({ comment }: { comment: DocumentComment }) {
         </time>
       </div>
 
-      {hasLink ? (
-        <div {...stylex.props(commentStyles.cardBody)}>
-          {/* Stretched overlay link — a sibling of the facet links, not their
-              ancestor, so no nested <a>. */}
-          <a
-            href={comment.postUrl}
-            target="_blank"
-            rel="noreferrer"
-            aria-label={t`Open this reply on Bluesky`}
-            {...stylex.props(commentStyles.cardBodyOverlay)}
-          />
-          {body}
-        </div>
-      ) : (
-        <div {...stylex.props(commentStyles.cardBody)}>{body}</div>
-      )}
+      <div {...stylex.props(commentStyles.cardBody)}>{body}</div>
     </div>
   );
 }

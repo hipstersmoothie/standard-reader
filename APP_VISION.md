@@ -608,8 +608,9 @@ Standard Reader is a **port of an earlier no-build prototype** into this TanStac
 - **Browser extension:** pnpm workspace package [`extension/`](extension/) built with WXT + hip-ui
   (shared `#/*` → `src/design-system/`). Auth via HttpOnly session cookie; background worker calls
   `/api/extension/*` on the web app. Surfaces: popup, page overlay, context menu, Bluesky link
-  badges, options page, toolbar badge. See [`extension/store/README.md`](extension/store/README.md)
-  for Chrome Web Store publish notes.
+  badges (bsky.app and its `social-app` forks — currently also Witchsky and Mu), options page,
+  toolbar badge. See [`extension/store/README.md`](extension/store/README.md) for Chrome Web Store
+  publish notes.
 
 ### Browser extension architecture
 

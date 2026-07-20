@@ -19,4 +19,8 @@ export const OFFPRINT_BLOCK = {
   imageCarousel: "app.offprint.block.imageCarousel",
   imageDiff: "app.offprint.block.imageDiff",
   mathBlock: "app.offprint.block.mathBlock",
+  component: "app.offprint.block.component",
 } as const;
+
+/** Reusable snippet record inlined by `app.offprint.block.component`. */
+export const OFFPRINT_COMPONENT_COLLECTION = "app.offprint.component";

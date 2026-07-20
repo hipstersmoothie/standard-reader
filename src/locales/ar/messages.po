@@ -128,6 +128,10 @@ msgstr "تغيير اللغة"
 msgid "Open posts externally"
 msgstr "فتح المنشورات خارجيًا"
 
+#: src/components/reader/terms-view.tsx
+msgid "Content and intellectual property"
+msgstr ""
+
 #: src/components/docs/docs-topbar.tsx
 #: src/components/docs/lexicon-docs-intro.tsx
 msgid "Lexicons"
@@ -165,6 +169,10 @@ msgstr ""
 #: src/components/reader/article-view.tsx
 msgid "Article header image"
 msgstr "صورة رأس المقال"
+
+#: src/components/reader/terms-view.tsx
+msgid "Last updated July 20, 2026"
+msgstr ""
 
 #: src/components/reader/about-view.tsx
 msgid "Recommendations from real reading patterns"
@@ -239,6 +247,10 @@ msgstr "<0>ملف تعريف ارتباط الجلسة.</0> بعد تسجيل د
 #: src/components/user-settings-view.tsx
 msgid "Light"
 msgstr "فاتح"
+
+#: src/components/reader/terms-view.tsx
+msgid "Your use of {SITE_NAME} is also governed by our <0>privacy policy</0>, which describes what we collect, where your data lives, and the choices you have."
+msgstr ""
 
 #: src/components/docs/api-docs-intro.tsx
 msgid "For a complete, minimal reference implementation (Jetstream → detect → sign → SQLite → serve), see the <0>claudeslop</0> labeler in <1>services/claudeslop</1>."
@@ -341,6 +353,10 @@ msgstr "مجموعة جديدة"
 msgid "Move down"
 msgstr "تحريك لأسفل"
 
+#: src/components/reader/terms-view.tsx
+msgid "Disclaimer and limitation of liability"
+msgstr ""
+
 #: src/routes/_layout.l.$did.$rkey.tsx
 msgid "No articles from this list's publications or people yet."
 msgstr "لا توجد مقالات بعد من منشورات هذه القائمة أو أشخاصها."
@@ -423,6 +439,11 @@ msgstr "منشورات، معرّفات، وسوم، عناوين…"
 #: src/routes/_layout.search.tsx
 msgid "No matches"
 msgstr "لا توجد نتائج"
+
+#: src/components/reader/app-shell.tsx
+#: src/components/site-legal-links.tsx
+msgid "Terms"
+msgstr ""
 
 #: src/components/reader/format-i18n.ts
 msgid "{count, plural, one {# tagged post} other {{value} tagged posts}}"
@@ -643,6 +664,10 @@ msgstr "البداية"
 msgid "Open posts on their original site"
 msgstr "فتح المنشورات في موقعها الأصلي"
 
+#: src/components/reader/terms-view.tsx
+msgid "{SITE_NAME} is a web reader for standard.site publications on the AT Protocol. These terms govern your use of this site. By accessing or using the Standard Reader deployment at <0>{siteHost}</0>, you agree to these terms. If you do not agree, please do not use the site."
+msgstr ""
+
 #: src/components/reader/comments/comments-section.tsx
 msgid "Discussions"
 msgstr "النقاشات"
@@ -727,6 +752,10 @@ msgstr "إغلاق جدول المحتويات"
 #: src/components/reader/list-edit-modal.tsx
 msgid "Member type to add"
 msgstr "نوع العضو المراد إضافته"
+
+#: src/components/reader/terms-view.tsx
+msgid "For more about how {SITE_NAME} works, see the <0>About</0> page. For questions about these terms for this deployment, contact the operator of the site at the URL above."
+msgstr ""
 
 #: src/components/reader/share-menu.tsx
 msgid "Portrait stacks the card vertically. Height adjusts automatically once the embed loads. Change the iframe width as needed."
@@ -930,6 +959,10 @@ msgstr "لا شيء لمعاينته بعد."
 msgid "{0, plural, one {# article} other {{documentLabel} articles}}"
 msgstr "{0, plural, zero {لا مقالات} one {مقال واحد} two {مقالان} few {# مقالات} many {{documentLabel} مقالًا} other {{documentLabel} مقال}}"
 
+#: src/components/reader/terms-view.tsx
+msgid "Publications and articles belong to their authors. Reading or indexing them through {SITE_NAME} does not transfer any rights to us or to you. Respect the copyright and licensing choices of the writers whose work you read. The {SITE_NAME} software itself is open source and available under the license in its <0>source repository</0>."
+msgstr ""
+
 #: src/components/reader/share-menu.tsx
 msgid "Embed subscribe"
 msgstr "تضمين زر الاشتراك"
@@ -1095,6 +1128,10 @@ msgstr "إخفاء المقالات المقروءة"
 msgid "Collection cover"
 msgstr "غلاف المجموعة"
 
+#: src/components/reader/terms-view.tsx
+msgid "Attempt to disrupt, overload, or gain unauthorized access to the service, its infrastructure, or other users' accounts."
+msgstr ""
+
 #: src/routes/_layout.feedback.index.tsx
 msgid "Anonymous"
 msgstr "مجهول"
@@ -1191,6 +1228,10 @@ msgstr "أفلِت صورة هنا، أو اختر ملفًا"
 #: src/components/reader/text-selection-toolbar.tsx
 msgid "Save to Semble…"
 msgstr "الحفظ في Semble…"
+
+#: src/components/reader/terms-view.tsx
+msgid "{SITE_NAME} is an open-source reader and index for publications on the AT Protocol network. We do not host publication content — articles and publications remain in their authors' repositories, and our database is a derived index for fast browsing and search. The service is provided as a convenience for reading and discovering writing across the network."
+msgstr ""
 
 #: src/components/reader/comments/comment-card.tsx
 msgid "on pckt"
@@ -1291,6 +1332,7 @@ msgstr "قبل"
 
 #: src/components/reader/extension-privacy-view.tsx
 #: src/components/reader/privacy-view.tsx
+#: src/components/reader/terms-view.tsx
 #: src/routes/_layout.feedback.index.tsx
 msgid "Questions"
 msgstr "الأسئلة"
@@ -1379,6 +1421,10 @@ msgstr "السمة"
 msgid "The latest writing from the publications you subscribe to."
 msgstr "أحدث الكتابات من المنشورات التي تشترك فيها."
 
+#: src/components/reader/terms-view.tsx
+msgid "Break the law, infringe others' rights, or violate the terms of the AT Protocol network or your account provider."
+msgstr ""
+
 #: src/components/NavbarAuth.tsx
 msgid "Log out"
 msgstr "تسجيل الخروج"
@@ -1464,6 +1510,10 @@ msgstr "كل ما يلي هو دعم توافقية لصيغ موجودة أصل
 #: src/components/reader/subscribe-card.tsx
 msgid "Subscribing"
 msgstr "جارٍ الاشتراك"
+
+#: src/components/reader/terms-view.tsx
+msgid "Your account"
+msgstr ""
 
 #: src/routes/_layout.p.$did.$rkey.tsx
 msgid "Every unread article from this publication will be marked read. This can’t be undone."
@@ -1860,6 +1910,10 @@ msgstr "المقالات المطابقة"
 msgid "A quiet place to read"
 msgstr "مكان هادئ للقراءة"
 
+#: src/components/reader/terms-view.tsx
+msgid "You agree not to use {SITE_NAME} to:"
+msgstr ""
+
 #: src/components/reader/collection-publication-editor.tsx
 #: src/routes/_layout.collections.new.tsx
 msgid "e.g. Dispatches from the Atmosphere"
@@ -2078,6 +2132,10 @@ msgstr "وضع {label}"
 #: src/components/reader/app-shell.tsx
 msgid "Sign in to subscribe."
 msgstr "سجّل الدخول للاشتراك."
+
+#: src/components/reader/terms-view.tsx
+msgid "What Standard Reader is"
+msgstr ""
 
 #: src/components/reader/about-view.tsx
 msgid "Prefer the original?"
@@ -2535,6 +2593,10 @@ msgstr "تحديد الكل كمقروء"
 msgid "Your display name, handle, avatar URL, and DID as returned by your account provider."
 msgstr "اسمك المعروض ومعرّفك وعنوان صورتك الرمزية وDID كما يعيدها مزوّد حسابك."
 
+#: src/components/reader/terms-view.tsx
+msgid "We may update these terms as the product changes. The “Last updated” date at the top will change when we do. Continued use of the site after an update means you accept the revised terms."
+msgstr ""
+
 #: src/components/reader/about-view.tsx
 msgid "Save, like, subscribe — everywhere"
 msgstr "احفظ وأعجب واشترك — في كل مكان"
@@ -2596,6 +2658,10 @@ msgstr "{0, plural, zero {لا منشورات} one {منشور واحد} two {م
 #: src/components/docs/docs-api-nav.tsx
 msgid "Authentication"
 msgstr "المصادقة"
+
+#: src/components/reader/terms-view.tsx
+msgid "Changes to these terms"
+msgstr ""
 
 #: src/components/reader/about-view.tsx
 msgid "Worth discovering"
@@ -2674,6 +2740,10 @@ msgstr "تقارير الأخطاء وطلبات الميزات والأسئلة
 #: src/components/labeler-detail-view.tsx
 msgid "This labeler hasn’t labeled any documents in the read-model yet."
 msgstr "لم تُصنّف جهة التصنيف هذه أي مستندات في نموذج القراءة بعد."
+
+#: src/components/reader/terms-view.tsx
+msgid "Scrape, harvest, or misuse the read-model index or API in ways that harm the service or the people whose writing it indexes."
+msgstr ""
 
 #: src/components/reader/collection-theme-editor.tsx
 #: src/components/user-settings-view.tsx
@@ -2788,6 +2858,10 @@ msgstr "بريد الملخص الأسبوعي"
 msgid "No lists yet — switch to New list to create one."
 msgstr "لا توجد قوائم بعد — بدّل إلى «قائمة جديدة» لإنشاء واحدة."
 
+#: src/components/reader/terms-view.tsx
+msgid "{SITE_NAME} is provided “as is” and “as available,” without warranties of any kind, whether express or implied. We do not guarantee that the service will be uninterrupted, error-free, or that the index will always be complete or current. To the fullest extent permitted by law, the operator of this deployment is not liable for any indirect, incidental, or consequential damages arising from your use of the site."
+msgstr ""
+
 #: src/routes/_layout.feedback.index.tsx
 msgid "Show implemented"
 msgstr "إظهار المنفَّذ"
@@ -2824,6 +2898,10 @@ msgstr "طلب ميزة"
 #: src/components/reader/about-view.tsx
 msgid "There is a particular pleasure in reading something that was made to be read, and not to be measured. It asks nothing of you but your attention. The page gets quiet, and the sentence gets loud. So we built the reader we wanted: a column you can size, a font you can choose, and a margin wide enough to think in."
 msgstr "ثمة متعة خاصة في قراءة شيء صُنع ليُقرأ، لا ليُقاس. لا يطلب منك سوى انتباهك. تهدأ الصفحة، وتعلو الجملة. لذلك بنينا القارئ الذي أردناه: عمود تتحكم في عرضه، وخط تختاره، وهامش واسع بما يكفي للتفكير فيه."
+
+#: src/components/reader/terms-view.tsx
+msgid "Availability and changes to the service"
+msgstr ""
 
 #: src/routes/extension.connected.tsx
 msgid "Close tab"
@@ -2865,6 +2943,10 @@ msgstr "معاينة"
 #~ msgid "No one you follow publishes here yet"
 #~ msgstr ""
 
+#: src/components/reader/terms-view.tsx
+msgid "You may read without an account. To follow publications, save articles, and take other social actions, you sign in with your Atmosphere account (for example via Bluesky OAuth). You are responsible for the security of your account and for the activity that happens through it. When you take an action that writes to your AT Protocol repository, those records live in <0>your</0> repository and are subject to the rules of the network and your account provider."
+msgstr ""
+
 #: src/routes/_layout.index.tsx
 msgid "Standard Reader knows about every publication on the network. Find a few worth your mornings."
 msgstr "يعرف Standard Reader كل منشورة على الشبكة. اعثر على ما يستحق صباحاتك."
@@ -2874,6 +2956,7 @@ msgid "Running"
 msgstr "قيد التنفيذ"
 
 #: src/components/reader/app-shell.tsx
+#: src/components/reader/terms-view.tsx
 #: src/components/site-legal-links.tsx
 msgid "Privacy"
 msgstr "الخصوصية"
@@ -3112,6 +3195,10 @@ msgstr "العودة إلى المقالة والمتابعة"
 msgid "{0, plural, one {# reader} other {{subscriberLabel} readers}}"
 msgstr "{0, plural, zero {لا قرّاء} one {قارئ واحد} two {قارئان} few {# قرّاء} many {{subscriberLabel} قارئًا} other {{subscriberLabel} قارئ}}"
 
+#: src/components/reader/terms-view.tsx
+msgid "We may change, suspend, or discontinue any part of the service at any time. Because {SITE_NAME} indexes a decentralized network, the availability of specific publications is outside our control."
+msgstr ""
+
 #: src/components/reader/page-reader-bar.tsx
 msgid "Play"
 msgstr "تشغيل"
@@ -3302,6 +3389,10 @@ msgstr "إجراءات الحساب"
 msgid "Read article"
 msgstr "قراءة المقالة"
 
+#: src/components/reader/terms-view.tsx
+msgid "Terms of service"
+msgstr ""
+
 #: src/components/user-settings-view.tsx
 msgid "Delete all reading history?"
 msgstr "حذف كل سجل القراءة؟"
@@ -3449,6 +3540,7 @@ msgstr "انقر على «تشغيل المثال» لجلب استجابة حي
 
 #: src/components/reader/extension-privacy-view.tsx
 #: src/components/reader/privacy-view.tsx
+#: src/components/reader/terms-view.tsx
 msgid "Legal"
 msgstr "قانوني"
 
@@ -4072,3 +4164,7 @@ msgstr "{connectionLabel} عبر Semble"
 #: src/magazine/flow.tsx
 msgid "In this issue"
 msgstr "في هذا العدد"
+
+#: src/components/reader/terms-view.tsx
+msgid "Acceptable use"
+msgstr ""

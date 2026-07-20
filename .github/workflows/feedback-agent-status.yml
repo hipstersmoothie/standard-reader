@@ -1,0 +1,52 @@
+name: Feedback agent status
+
+# Keeps the userinput.app board in sync with the agent's PRs:
+#   PR opened from claude/feedback-<rkey>  → discussion goes `in-progress`
+#   that PR merged                         → discussion goes `implemented`
+#
+# A PR closed without merging is deliberately left alone — the discussion stays
+# `in-progress` so it's visible that something was attempted and abandoned,
+# rather than silently reverting to `planned` and getting re-dispatched.
+#
+# See scripts/feedback-agent-status.ts.
+
+on:
+  pull_request:
+    types: [opened, reopened, closed]
+
+concurrency:
+  # Status records are append-only and last-write-wins, so ordering matters.
+  group: feedback-status-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: Sync discussion status
+    # Only our agent's branches, and never from forks (no secrets there).
+    if: >-
+      startsWith(github.event.pull_request.head.ref, 'claude/feedback-') &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      (github.event.action != 'closed' || github.event.pull_request.merged)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Set discussion status
+        run: >-
+          pnpm feedback:status
+          --branch "${{ github.event.pull_request.head.ref }}"
+          --state "${{ github.event.pull_request.merged && 'implemented' || 'in-progress' }}"
+        env:
+          USERINPUT_OWNER_IDENTIFIER: ${{ secrets.USERINPUT_OWNER_IDENTIFIER }}
+          USERINPUT_OWNER_APP_PASSWORD: ${{ secrets.USERINPUT_OWNER_APP_PASSWORD }}

@@ -26,12 +26,23 @@ import { readingCustomFontFamily } from "#/lib/reading-typography";
  */
 export const IFRAME_FRAME_BORDER_WIDTH = 1;
 
+/**
+ * Line height of the article reading column. Shared so that anything which
+ * has to align to a line of body copy — task-list checkboxes, hanging
+ * markers — can do the arithmetic against the same number instead of
+ * hard-coding a second copy that silently drifts.
+ */
+const READING_LINE_HEIGHT = 1.68;
+
+/** Edge length of a task-list checkbox, relative to the reading font size. */
+const TASK_CHECKBOX_SIZE = "0.75em";
+
 export const articleBodyStyles = stylex.create({
   body: {
     color: uiColor.text2,
     fontFamily: fontFamily.serif,
     fontSize: { default: "1.1875rem", "@media (min-width: 40rem)": "1.25rem" },
-    lineHeight: 1.68,
+    lineHeight: READING_LINE_HEIGHT,
     marginTop: spacing["9"],
     minWidth: 0,
   },
@@ -649,7 +660,7 @@ export const articleBodyStyles = stylex.create({
     flexDirection: "column",
     fontFamily: fontFamily.serif,
     fontSize: { default: "1.1875rem", "@media (min-width: 40rem)": "1.25rem" },
-    lineHeight: 1.68,
+    lineHeight: READING_LINE_HEIGHT,
     paddingBottom: spacing["4"],
     paddingInlineStart: spacing["4"],
     paddingInlineEnd: spacing["4"],
@@ -716,15 +727,39 @@ export const articleBodyStyles = stylex.create({
     paddingInlineStart: spacing["0"],
   },
   taskItem: {
-    gap: gap.sm,
+    gap: gap.md,
     alignItems: "flex-start",
     display: "flex",
     marginBottom: gap.sm,
     marginTop: spacing["0"],
   },
+  /**
+   * Sized and centred against the reading type rather than the browser
+   * default. A bare checkbox is ~13px at whatever font-size the UA gives an
+   * `input`, so at the article's reading rhythm the old fixed `margin-top`
+   * left it floating near the top of the line box, well above the letterforms
+   * it labels. `font-size: inherit` makes `em` and `lh` resolve against the
+   * reading size, so the box scales with the reader's type preference and
+   * centres on its item's first line at any size. `lh` is the accurate unit
+   * but is unsupported in older Safari, hence the `em` fallback computed from
+   * the same line height the body uses.
+   *
+   * `line-height: inherit` is load-bearing, not tidiness: the UA sets
+   * `line-height: normal` on `input`, so without it `1lh` resolves against the
+   * control's own ~1.2 normal rather than the reading column's, and the box
+   * lands 7px high — the original bug.
+   */
   taskCheckbox: {
+    accentColor: primaryColor.solid1,
     flexShrink: 0,
-    marginTop: spacing["1"],
+    fontSize: "inherit",
+    lineHeight: "inherit",
+    blockSize: TASK_CHECKBOX_SIZE,
+    inlineSize: TASK_CHECKBOX_SIZE,
+    marginTop: stylex.firstThatWorks(
+      `calc((1lh - ${TASK_CHECKBOX_SIZE}) / 2)`,
+      `calc((${READING_LINE_HEIGHT}em - ${TASK_CHECKBOX_SIZE}) / 2)`,
+    ),
   },
   unknownBlock: {
     borderColor: uiColor.border1,

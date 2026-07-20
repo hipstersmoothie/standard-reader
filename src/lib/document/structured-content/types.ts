@@ -74,6 +74,13 @@ export type StructuredRenderableBlock =
       labels?: [string?, string?];
       alignment?: string;
     }
+  /**
+   * An `app.offprint.component` record inlined by AT-URI. Offprint references
+   * it by URI rather than strongRef so publication-wide edits (a newsletter
+   * footer, a content warning) cascade to every document embedding it — so it
+   * is resolved when read, not pinned at ingest.
+   */
+  | { kind: "offprintComponent"; componentUri: string }
   | { kind: "unknown"; blockType: string };
 
 export interface StructuredTableCell {

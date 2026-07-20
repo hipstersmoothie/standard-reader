@@ -231,12 +231,18 @@ const getAuthorProfile = createServerFn({ method: "GET" })
       async ({ data, context }, span): Promise<AuthorProfile | null> => {
         const { db, schema } = context;
         const did = await resolveAuthorDid(db, schema, data.did);
-        span.set("did", did);
+        // `subject.did` is the profile being viewed; `did` is reserved for the
+        // viewer, so that counting distinct `did` counts people, not profiles.
+        span.set("subject.did", did);
         span.set("offset", data.offset);
 
         // Only the owner viewing their own profile sees pubs that opted out of
         // discovery — dimmed + labeled. Everyone else gets them filtered out.
         const viewerDid = await getReaderDidForRequest(getRequest());
+        span.set("signedIn", viewerDid != null);
+        if (viewerDid) {
+          span.set("did", viewerDid);
+        }
         const includeHidden = viewerDid != null && viewerDid === did;
         span.set("ownProfile", includeHidden);
 
@@ -416,7 +422,8 @@ const getAuthorSifaProfile = createServerFn({ method: "GET" })
       async ({ data, context }, span): Promise<string | null> => {
         const { db, schema } = context;
         const did = await resolveAuthorDid(db, schema, data.did);
-        span.set("did", did);
+        // The profile being looked up, not the viewer — see `author.getProfile`.
+        span.set("subject.did", did);
 
         const url = await resolveSifaProfileUrl(did, data.handle ?? null);
         span.set("found", url != null);
