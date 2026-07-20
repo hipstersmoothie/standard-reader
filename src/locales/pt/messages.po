@@ -64,7 +64,7 @@ msgstr "Ouvir"
 
 #: src/routes/_layout.search.tsx
 msgid "Try \"climate\", a #tag like #essay, or a handle like stdout.dev"
-msgstr "Experimente \"clima\", uma #etiqueta como #ensaio ou um handle como stdout.dev"
+msgstr "Experimente \"clima\", uma #etiqueta como #ensaio ou um nome de usuário como stdout.dev"
 
 #: src/components/feedback/feedback-dialog.tsx
 msgid "Thanks for taking the time to help us improve Standard Reader."
@@ -116,7 +116,7 @@ msgstr "Remover ícone"
 
 #: src/components/reader/extension-privacy-view.tsx
 msgid "The {SITE_NAME} browser extension helps you save articles and follow publications on the standard.site network from any tab. It connects to the same account as the web app at <0>{siteHost}</0>. This policy covers the extension only; the <1>site privacy policy</1> describes data handling on the website itself."
-msgstr "A extensão de navegador do {SITE_NAME} ajuda-o a guardar artigos e a seguir publicações na rede standard.site a partir de qualquer aba. Se conecta à mesma conta que a aplicação web em <0>{siteHost}</0>. Esta política abrange apenas a extensão; a <1>política de privacidade do site</1> descreve o tratamento de dados no próprio site."
+msgstr "A extensão de navegador do {SITE_NAME} ajuda-o a salvar artigos e a seguir publicações na rede standard.site a partir de qualquer aba. Se conecta à mesma conta que a aplicação web em <0>{siteHost}</0>. Esta política abrange apenas a extensão; a <1>política de privacidade do site</1> descreve o tratamento de dados no próprio site."
 
 #: src/components/NavbarAuth.tsx
 #: src/components/reader/language-hint-prompt.tsx
@@ -160,7 +160,7 @@ msgstr "Um rotulador é qualquer DID que publique rótulos no AT Proto. Os leito
 
 #: src/components/user-settings-view.tsx
 msgid "The most-read articles across Standard this week."
-msgstr ""
+msgstr "Os artigos mais lidos através do Standard esta semana."
 
 #: src/components/reader/article-view.tsx
 msgid "Article header image"
@@ -246,7 +246,7 @@ msgstr "Para uma implementação de referência completa e minimalista (Jetstrea
 
 #: src/components/reader/text-selection-toolbar.tsx
 msgid "Dismiss"
-msgstr ""
+msgstr "Dispensar"
 
 #: src/routes/_layout.feedback.index.tsx
 msgid "Open"
@@ -299,7 +299,7 @@ msgstr "Dê um nome a sua série e escolha um tema"
 
 #: src/routes/_layout.feedback.index.tsx
 msgid "Bugs"
-msgstr "Bugs"
+msgstr "Erros"
 
 #: src/components/reader/atstore-review-prompt.tsx
 msgid "Optional: tell people what you like about Standard Reader"
@@ -315,7 +315,7 @@ msgstr "Podemos atualizar esta política à medida que o produto evolui. A data 
 
 #: src/components/onboarding/welcome-wizard.tsx
 msgid "Pick a few topics — we'll suggest publications to match. Optional."
-msgstr "Escolha alguns temas — sugerimos publicações relacionadas. Opcional."
+msgstr "Escolha alguns temas — sugeriremos publicações relacionadas. Opcional."
 
 #: src/components/reader/page-reader-bar.tsx
 msgid "Reading aloud"
@@ -327,7 +327,7 @@ msgstr "Texto em destaque"
 
 #: src/components/reader/atstore-review-prompt.tsx
 msgid "Please choose a rating."
-msgstr "Escolha uma classificação."
+msgstr "Escolha uma nota."
 
 #: src/components/reader/share-menu.tsx
 msgid "Portrait"
@@ -351,7 +351,7 @@ msgstr "O formato horizontal cabe numa linha compacta. A altura ajusta-se automa
 
 #: src/routes/_layout.u.$did.tsx
 msgid "Follow the publications you love and build reading lists worth sharing — they'll gather here for others to discover. Everything you do lives in your own repo, owned by you."
-msgstr "Siga as publicações que adora e crie listas de leitura que valha a pena partilhar — ficarão reunidas aqui para outros descobrirem. Tudo o que faz reside no seu próprio repositório, que lhe pertence."
+msgstr "Siga as publicações que adora e crie listas de leitura que valha a pena compartilhar — ficarão reunidas aqui para outros descobrirem. Tudo o que fizer reside no seu próprio repositório, que lhe pertence."
 
 #: src/routes/_layout.recommended.tsx
 msgid "Tap the heart on any article to recommend it. Your recommendations live in your repo as <0>site.standard.graph.recommend</0> records and help surface great writing across the network."
@@ -360,7 +360,7 @@ msgstr "Toque no coração de qualquer artigo para o recomendar. As suas recomen
 #: src/routes/_layout.index.tsx
 #: src/routes/_layout.latest.tsx
 msgid "Trending"
-msgstr "Em destaque"
+msgstr "Em alta"
 
 #: src/routes/_layout.feedback.index.tsx
 msgid "Implemented"
@@ -381,11 +381,11 @@ msgstr "Os endpoints de estado do leitor também aceitam um parâmetro de consul
 
 #: src/components/user-settings-view.tsx
 msgid "Permanently remove data stored in your account. These actions delete records from your account and cannot be undone."
-msgstr "Remova definitivamente dados guardados na sua conta. Estas ações eliminam registos da sua conta e não podem ser anuladas."
+msgstr "Remova permanentemente dados salvos na sua conta. Estas ações apagam registos da sua conta e não podem ser desfeitas."
 
 #: src/routes/_layout.friends.tsx
 msgid "Loading people"
-msgstr ""
+msgstr "Carregando pessoas"
 
 #: src/components/reader/collection-theme-editor.tsx
 msgid "Read the piece →"
@@ -398,15 +398,15 @@ msgstr "Velocidade de reprodução: {0}"
 
 #: src/routes/_layout.l.$did.$rkey.tsx
 msgid "“{listName}” will be removed from your account. Anyone who saved it will no longer see it in their sidebar. This can’t be undone."
-msgstr "“{listName}” será removida da sua conta. Quem a tiver guardado deixará de a ver na barra lateral. Isto não pode ser anulado."
+msgstr "“{listName}” será removida da sua conta. Quem a tiver salvo deixará de vê-la na barra lateral. Esta ação não pode ser desfeita."
 
 #: src/routes/_layout.l.$did.$rkey.tsx
 msgid "Delete list?"
-msgstr "Eliminar lista?"
+msgstr "Apagar lista?"
 
 #: src/routes/_layout.latest.tsx
 msgid "Everything published recently across the publications you subscribe to."
-msgstr "Tudo o que foi publicado recentemente nas publicações que subscreve."
+msgstr "Tudo o que foi publicado recentemente nas suas inscrições."
 
 #: src/routes/_layout.latest.tsx
 msgid "Log in to follow publications"
@@ -438,15 +438,15 @@ msgstr "Reproduzir amostra de voz"
 
 #: src/components/reader/subscribe-card.tsx
 msgid "You're subscribed"
-msgstr "Subscrição ativa"
+msgstr "Você está inscrito"
 
 #: src/components/reader/about-view.tsx
 msgid "One of your saved lists"
-msgstr "Uma das suas listas guardadas"
+msgstr "Uma das suas listas salvas"
 
 #: src/components/user-settings-view.tsx
 msgid "When on, articles you open are recorded as public read records in your account."
-msgstr "Quando ativo, os artigos que abrir são registados como registos de leitura públicos na sua conta."
+msgstr "Quando ativo, os artigos que abrir são registados publicamente como lidos na sua conta."
 
 #: src/routes/login.tsx
 msgid "Sign-in failed. Try again."
@@ -474,7 +474,7 @@ msgstr "Vista de grelha"
 
 #: src/magazine/flow.tsx
 msgid "Subscribe to get new writing in your feed."
-msgstr "Subscreva para receber novos textos no seu feed."
+msgstr "Inscreva-se para receber novos textos no seu feed."
 
 #: src/components/docs/publishing-docs-page.tsx
 msgid "A minimal loose document — no publication, Markpub markdown body:"
@@ -482,19 +482,19 @@ msgstr "Um documento avulso minimalista — sem publicação, com corpo em markd
 
 #: src/components/docs/api-docs-intro.tsx
 msgid "<0>4. Let readers subscribe.</0> When a reader subscribes we write an <1>app.standard-reader.labeler.subscription</1> record to their repo, carrying their per-label warn/hide preferences."
-msgstr "<0>4. Deixe os leitores subscrever.</0> Quando um leitor subscreve, escrevemos um registo <1>app.standard-reader.labeler.subscription</1> no repositório dele, com as suas preferências de aviso/ocultação por etiqueta."
+msgstr "<0>4. Deixe os leitores se inscrever.</0> Quando um leitor se inscreve, escrevemos um registo <1>app.standard-reader.labeler.subscription</1> no repositório dele, com as suas preferências de aviso/ocultação por rótulo."
 
 #: src/components/reader/add-publication-modal.tsx
 msgid "Search by name, topic, or paste a handle (@user.domain)"
-msgstr "Pesquise por nome, tema, ou cole um handle (@utilizador.dominio)"
+msgstr "Pesquise por nome, tema, ou cole um handle (@nome.de.usuario)"
 
 #: src/components/user-settings-view.tsx
 msgid "Every list you own will be removed from your account. Anyone who saved your lists will no longer see them in their sidebar. This cannot be undone."
-msgstr "Todas as listas que possui serão removidas da sua conta. Quem tiver guardado as suas listas deixará de as ver na barra lateral. Isto não pode ser anulado."
+msgstr "Todas as listas que possui serão removidas da sua conta. Quem tiver salvo as suas listas deixará de vê-las na barra lateral. Esta ação não pode ser desfeita."
 
 #: src/components/reader/atstore-review-prompt.tsx
 msgid "Review"
-msgstr "Crítica"
+msgstr "Avaliação"
 
 #: src/components/reader/about-view.tsx
 msgid "Sign in"
@@ -502,7 +502,7 @@ msgstr "Iniciar sessão"
 
 #: src/components/reader/link-share-menu.tsx
 msgid "Share to Bluesky"
-msgstr "Partilhar no Bluesky"
+msgstr "Compartilhar no Bluesky"
 
 #: src/routes/_layout.discover.tsx
 #: src/routes/_layout.tag.$tag.tsx
@@ -511,7 +511,7 @@ msgstr "Vista de lista"
 
 #: src/components/reader/atstore-review-prompt.tsx
 msgid "Clicking Create will first request permissions to create a review."
-msgstr "Ao clicar em Criar, serão primeiro pedidas permissões para criar uma crítica."
+msgstr "Ao clicar em Criar, primeiro serão pedidas permissões para criar uma avaliação."
 
 #: src/components/reader/app-shell.tsx
 msgid "Extension privacy"
@@ -532,11 +532,11 @@ msgstr "Resumo"
 
 #: src/routes/_layout.saved.tsx
 msgid "Nothing saved yet"
-msgstr "Ainda não há nada guardado"
+msgstr "Ainda não há nada salvo"
 
 #: src/routes/_layout.tag.$tag.tsx
 msgid "{unfollowedCount, plural, one {Subscribe to {formattedUnfollowedCount} publication?} other {Subscribe to {formattedUnfollowedCount} publications?}}"
-msgstr "{unfollowedCount, plural, one {Subscrever {formattedUnfollowedCount} publicação?} other {Subscrever {formattedUnfollowedCount} publicações?}}"
+msgstr "{unfollowedCount, plural, one {Se inscrever em {formattedUnfollowedCount} publicação?} other {Se inscrever em {formattedUnfollowedCount} publicações?}}"
 
 #: src/routes/_layout.tag.$tag.tsx
 msgid "No articles match this tag yet."
@@ -552,11 +552,11 @@ msgstr "Tentar novamente"
 
 #: src/components/user-settings-view.tsx
 msgid "Delete history"
-msgstr "Eliminar histórico"
+msgstr "Apagar histórico"
 
 #: src/routes/login.tsx
 msgid "You can use any Atmosphere account, including accounts from Bluesky, Tangled, Semble, and all the <0>other apps.</0>"
-msgstr "Pode usar qualquer conta da Atmosphere, incluindo contas do Bluesky, Tangled, Semble e de todas as <0>outras aplicações.</0>"
+msgstr "Pode usar qualquer conta da Atmosfera, incluindo contas do Bluesky, Tangled, Semble e de todas as <0>outras aplicações.</0>"
 
 #: src/components/reader/collection-theme-editor.tsx
 msgid "Text on background"
@@ -608,7 +608,7 @@ msgstr "Listas de publicações"
 
 #: src/components/onboarding/welcome-wizard.tsx
 msgid "These accounts you follow on Bluesky publish on standard.site. Subscribing puts their writing on your Home feed."
-msgstr ""
+msgstr "Essas contas que você segue no Bluesky publicam no standard.site. Inscrever-se coloca seus artigos no seu feed Início."
 
 #: src/components/feedback/feedback-dialog.tsx
 msgid "Optional: add context, steps to reproduce, or what you'd like to see"
@@ -616,7 +616,7 @@ msgstr "Opcional: acrescente contexto, passos para reproduzir ou o que gostaria 
 
 #: src/routes/_layout.friends.tsx
 msgid "No one you follow on Bluesky publishes here yet. As more of them start writing, they'll show up here to follow."
-msgstr ""
+msgstr "Ninguém que você segue no Bluesky publica aqui ainda. Assim que eles começarem a publicar, irão aparecer aqui para seguir."
 
 #: src/routes/_layout.l.$did.$rkey.tsx
 msgid "Show read articles"
@@ -628,11 +628,11 @@ msgstr "A carregar textos recentes"
 
 #: src/components/user-settings-view.tsx
 msgid "Bookmarks"
-msgstr "Marcadores"
+msgstr "Salvos"
 
 #: src/components/reader/save-to-collection-dialog.tsx
 msgid "Saved to {savedName} on {appLabel}."
-msgstr "Guardado em {savedName} no {appLabel}."
+msgstr "Salvo em {savedName} no {appLabel}."
 
 #: src/components/docs/docs-api-nav.tsx
 #: src/components/docs/docs-lexicons-nav.tsx
@@ -678,11 +678,11 @@ msgstr "Pesquise por título ou handle do autor, ou cole um URL do Standard Read
 
 #: src/routes/_layout.l.$did.$rkey.tsx
 msgid "{userCount, plural, one {user} other {users}}"
-msgstr "{userCount, plural, one {utilizador} other {utilizadores}}"
+msgstr "{userCount, plural, one {usuário} other {usuários}}"
 
 #: src/components/reader/privacy-view.tsx
 msgid "<0>Reading activity.</0> When reading history is enabled, articles you open are recorded as public AT Protocol records in <1>your</1> repository — not as private app-only data. You can turn this off in Settings; existing records remain in your repo until you delete them from the Personal data section."
-msgstr "<0>Atividade de leitura.</0> Quando o histórico de leitura está ativo, os artigos que abrir são registados como registos públicos AT Protocol no <1>seu</1> repositório — e não como dados privados só da aplicação. Pode desativar isto nas Definições; os registos existentes permanecem no seu repositório até que os elimine na secção Dados pessoais."
+msgstr "<0>Atividade de leitura.</0> Quando o histórico de leitura está ativo, os artigos que abrir são registados como registos públicos AT Protocol no <1>seu</1> repositório — e não como dados privados só da aplicação. Pode desativar isto nas Configurações; os registos existentes permanecem no seu repositório até que os elimine na secção Dados pessoais."
 
 #: src/routes/_layout.friends.tsx
 msgid "Browse the directory"
@@ -739,7 +739,7 @@ msgstr "As suas listas"
 #: src/routes/_layout.discover.tsx
 #: src/routes/_layout.index.tsx
 msgid "Trending publications"
-msgstr "Publicações em destaque"
+msgstr "Publicações em alta"
 
 #: src/components/reader/collection-builder.tsx
 msgid "Replace cover image"
@@ -752,7 +752,7 @@ msgstr "Pesquisar"
 
 #: src/routes/_layout.latest.tsx
 msgid "Nothing trending yet"
-msgstr "Ainda nada em destaque"
+msgstr "Nada em alta ainda"
 
 #: src/components/docs/publishing-docs-page.tsx
 msgid "It reads the publication's <0>basicTheme</0> colors automatically, so the card matches your brand with no extra params — fonts aren't picked up though; the card always uses Standard Reader's own type. Here's a live one:"
@@ -765,11 +765,11 @@ msgstr "Alterações"
 
 #: src/components/reader/about-view.tsx
 msgid "<0/> Unsubscribe in one click, any time"
-msgstr "<0/> Cancele a subscrição num clique, quando quiser"
+msgstr "<0/> Cancele a inscrição num clique, quando quiser"
 
 #: src/components/user-settings-view.tsx
 msgid "Appearance"
-msgstr "Aspeto"
+msgstr "Aparência"
 
 #: src/components/reader/list-edit-modal.tsx
 msgid "Follows"
@@ -886,15 +886,15 @@ msgstr "Escolha um item para adicionar à lista"
 
 #: src/magazine/magazine-end-subscribe.tsx
 msgid "Subscribed to list"
-msgstr "Subscreveu a lista"
+msgstr "Inscrito na lista"
 
 #: src/components/docs/lexicon-docs-intro.tsx
 msgid "Standard Reader owns the <0>app.standard-reader.*</0> namespace. These lexicons describe repo records — bookmarks, read state, lists, and related shared definitions. AppView XRPC queries and procedures are documented on <1>/docs/api</1>."
-msgstr "O Standard Reader detém o espaço de nomes <0>app.standard-reader.*</0>. Estes lexicons descrevem registos do repositório — marcadores, estado de leitura, listas e definições partilhadas relacionadas. As consultas e procedimentos XRPC do AppView estão documentados em <1>/docs/api</1>."
+msgstr "O Standard Reader detém o espaço de nomes <0>app.standard-reader.*</0>. Estes lexicons descrevem registos do repositório — salvos, estado de leitura, listas e configurações compartilhadas. As consultas e procedimentos XRPC do AppView estão documentados em <1>/docs/api</1>."
 
 #: src/routes/_layout.latest.tsx
 msgid "Every unread article in your subscriptions will be marked read. This can’t be undone."
-msgstr "Todos os artigos não lidos nas suas subscrições serão marcados como lidos. Não é possível anular."
+msgstr "Todos os artigos não lidos nas suas inscrições serão marcados como lidos. Esta ação não pode ser desfeita."
 
 #: src/components/reader/about-view.tsx
 msgid "Start with a single publication"
@@ -932,7 +932,7 @@ msgstr "{0, plural, one {# artigo} other {{documentLabel} artigos}}"
 
 #: src/components/reader/share-menu.tsx
 msgid "Embed subscribe"
-msgstr "Incorporar subscrição"
+msgstr "Embed de inscrição"
 
 #: src/components/reader/list-edit-modal.tsx
 msgid "What this list is about (shown on its public page)"
@@ -940,7 +940,7 @@ msgstr "Sobre o que é esta lista (mostrado na sua página pública)"
 
 #: src/routes/_layout.collections.index.tsx
 msgid "Delete collection"
-msgstr "Eliminar coleção"
+msgstr "Apagar coleção"
 
 #: src/routes/_layout.l.$did.$rkey.tsx
 msgid "No publications in this list."
@@ -952,7 +952,7 @@ msgstr "A carregar coleções…"
 
 #: src/components/user-settings-view.tsx
 msgid "Browse labelers"
-msgstr "Explorar serviços de etiquetagem"
+msgstr "Explorar rotuladores"
 
 #: src/components/reader/extension-privacy-view.tsx
 msgid "We do not run a separate analytics pipeline inside the extension."
@@ -978,7 +978,7 @@ msgstr "A carregar página"
 
 #: src/components/reader/extension-privacy-view.tsx
 msgid "You can disable the page overlay and Bluesky embed save button in the extension options page. You can sign out from the web app to invalidate the session cookie the extension uses. Uninstalling the extension removes locally stored settings from your browser profile."
-msgstr "Pode desativar a sobreposição na página e o botão de guardar nas incorporações do Bluesky na página de opções da extensão. Pode terminar sessão na aplicação web para invalidar o cookie de sessão que a extensão utiliza. Desinstalar a extensão remove as definições guardadas localmente no perfil do seu navegador."
+msgstr "Pode desativar a sobreposição na página e o botão de salvar nos embeds do Bluesky na página de opções da extensão. Pode terminar sessão na aplicação web para invalidar o cookie de sessão que a extensão utiliza. Desinstalar a extensão remove as configurações guardadas localmente no perfil do seu navegador."
 
 #: src/components/reader/list-edit-modal.tsx
 msgid "List members"
@@ -986,7 +986,7 @@ msgstr "Membros da lista"
 
 #: src/components/onboarding/step-friends.tsx
 msgid "{remaining, plural, one {# more publication from people you follow — find it under Discover once you're set up.} other {# more publications from people you follow — find them under Discover once you're set up.}}"
-msgstr ""
+msgstr "{remaining, plural, one {# outra publicação de pessoas que você segue — encontre-a em Descobrir após finalizar.} other {# outras publicações de pessoas que você segue — encontre-as em Descobrir após finalizar.}}"
 
 #. placeholder {0}: pub.name
 #: src/components/reader/article-below-fold.tsx
@@ -1008,7 +1008,7 @@ msgstr "Publicações conhecidas"
 
 #: src/components/docs/publishing-docs-page.tsx
 msgid "Clicking Subscribe opens Standard Reader itself, not your page — subscribing writes a <0>site.standard.graph.subscription</0> record to the reader's own PDS via their own OAuth session, so it has to happen on our domain. If you'd rather skip the iframe, link straight to <1>/subscribe/{did}/{rkey}</1> and style your own button."
-msgstr "Clicar em Subscrever abre o próprio Standard Reader, não a sua página — subscrever escreve um registo <0>site.standard.graph.subscription</0> no PDS do próprio leitor através da sessão OAuth dele, por isso tem de acontecer no nosso domínio. Se preferir evitar o iframe, ligue diretamente a <1>/subscribe/{did}/{rkey}</1> e crie o seu próprio botão."
+msgstr "Clicar em Inscreva-se abre o próprio Standard Reader, não a sua página — se inscrever escreve um registo <0>site.standard.graph.subscription</0> no PDS do próprio leitor através da sessão OAuth dele, por isso tem de acontecer no nosso domínio. Se preferir evitar o iframe, conecte diretamente a <1>/subscribe/{did}/{rkey}</1> e crie o seu próprio botão."
 
 #: src/routes/collection.$did.$rkey.tsx
 msgid "Go back"
@@ -1016,15 +1016,15 @@ msgstr "Voltar"
 
 #: src/routes/_layout.discover.tsx
 msgid "You're subscribed to every publication on this page — scroll for more, or turn off the filter."
-msgstr "Subscreveu todas as publicações desta página — continue a percorrer, ou desligue o filtro."
+msgstr "Você se inscreveu em todas as publicações desta página — continue a rolar para mais, ou desligue o filtro."
 
 #: src/components/reader/about-view.tsx
 msgid "Under each article you see the discussion from across the open network — Bluesky posts and replies, margin notes, links from other pieces that cite it, and related reading. All read-only, all linking back to the source."
-msgstr "Por baixo de cada artigo vê a discussão de toda a rede aberta — publicações e respostas no Bluesky, notas de margem, ligações de outros textos que o citam e leituras relacionadas. Tudo só de leitura, tudo com ligação à origem."
+msgstr "Abaixo de cada artigo veja a discussão através da rede aberta — publicações e respostas no Bluesky, anotações no Margin, outros textos que o citam e leituras relacionadas. Tudo em modo apenas de leitura, tudo com conexão direto à origem."
 
 #: src/routes/_layout.latest.tsx
 msgid "Show all subscriptions"
-msgstr "Mostrar todas as subscrições"
+msgstr "Mostrar todas as inscrições"
 
 #: src/components/reader/collection-publication-editor.tsx
 #: src/routes/_layout.collections.new.tsx
@@ -1033,11 +1033,11 @@ msgstr "Nome da série"
 
 #: src/components/user-settings-view.tsx
 msgid "Delete"
-msgstr "Eliminar"
+msgstr "Apagar"
 
 #: src/components/reader/collection-builder.tsx
 msgid "Why is this piece here? (markdown supported)"
-msgstr "Porque está este texto aqui? (suporta markdown)"
+msgstr "Porque esta peça está aqui? (suporta markdown)"
 
 #: src/routes/_layout.feedback.index.tsx
 msgid "{count, plural, one {# upvote} other {# upvotes}} — click to upvote"
@@ -1057,7 +1057,7 @@ msgstr "{total, plural, one {# resultado} other {# resultados}}"
 
 #: src/components/reader/about-view.tsx
 msgid "Publications, lists, and collections each get a clean link with a rich preview card — plus a subscribe button a publication can drop on its own site."
-msgstr "Publicações, listas e coleções têm cada uma uma ligação limpa com um cartão de pré-visualização rico — mais um botão de subscrição que uma publicação pode colocar no seu próprio site."
+msgstr "Publicações, listas e coleções, cada uma têm um link com um cartão de pré-visualização — mais um botão de inscrição que uma publicação pode colocar no seu próprio site."
 
 #: src/routes/_layout.collections.index.tsx
 msgid "No collections in this series yet."
@@ -1081,7 +1081,7 @@ msgstr "Sistema"
 
 #: src/components/reader/save-to-collection-dialog.tsx
 msgid "Could not save to {appLabel}"
-msgstr "Não foi possível guardar em {appLabel}"
+msgstr "Não foi possível salvar em {appLabel}"
 
 #: src/components/docs/publishing-docs-page.tsx
 msgid "<0><1>Markpub</1> (recommended).</0> <2>at.markpub.markdown</2> — markdown with facets for rich text. It's not part of the site.standard spec either — no markdown format is — but it's the only one that's actually spec'd in a meaningful, reusable way, rather than one app's own ad hoc shape. Use this for a hand-rolled integration unless you already produce one of the platform formats below."
@@ -1106,7 +1106,7 @@ msgstr "O idioma utilizado na interface do leitor. Os artigos são apresentados 
 
 #: src/components/labeler-detail-view.tsx
 msgid "Labeler"
-msgstr "Serviço de etiquetagem"
+msgstr "Rotulador"
 
 #: src/routes/_layout.history.tsx
 msgid "Articles you've opened — public records in your repo, synced across devices."
@@ -1126,7 +1126,7 @@ msgstr "Cancelar"
 
 #: src/components/user-settings-view.tsx
 msgid "Every saved article will be removed from your repository. Your Saved for later list will be empty. This cannot be undone."
-msgstr "Todos os artigos guardados serão removidos do seu repositório. A sua lista Guardados para mais tarde ficará vazia. Não é possível anular."
+msgstr "Todos os artigos salvos serão removidos do seu repositório. A sua lista Salvo para mais tarde ficará vazia. Esta ação não pode ser desfeita."
 
 #: src/routes/_layout.feedback.return.tsx
 #: src/routes/review.thanks.tsx
@@ -1163,7 +1163,7 @@ msgstr "Algo correu mal ao enviar o seu comentário."
 
 #: src/components/reader/about-view.tsx
 msgid "Don’t want another app to check? Opt into a weekly email with the best of the publications you subscribe to, plus a couple worth discovering. One email, one click to leave — and you can preview exactly what it looks like before you ever turn it on."
-msgstr "Não quer mais uma aplicação para consultar? Opte por um email semanal com o melhor das publicações que subscreve, mais algumas que vale a pena descobrir. Um email, um clique para sair — e pode pré-visualizar exatamente como é antes sequer de o ativar."
+msgstr "Não quer mais um aplicativo para conferir? Opte por um e-mail semanal com o melhor das publicações em que está inscrito, e mais algumas que vale a pena descobrir. Um e-mail, um clique para sair — e pode pré-visualizar exatamente como é antes de sequer ativá-lo."
 
 #: src/components/reader/app-shell.tsx
 #: src/components/reader/collection-builder.tsx
@@ -1185,12 +1185,12 @@ msgstr "Todas as publicações"
 
 #: src/components/reader/collection-builder.tsx
 msgid "Drop an image here, or choose a file"
-msgstr "Largue uma imagem aqui, ou escolha um ficheiro"
+msgstr "Arraste uma imagem aqui, ou escolha um arquivo"
 
 #: src/components/reader/document-share-menu.tsx
 #: src/components/reader/text-selection-toolbar.tsx
 msgid "Save to Semble…"
-msgstr "Guardar no Semble…"
+msgstr "Salvar no Semble…"
 
 #: src/components/reader/comments/comment-card.tsx
 msgid "on pckt"
@@ -1198,7 +1198,7 @@ msgstr "no pckt"
 
 #: src/components/onboarding/step-settings.tsx
 msgid "Marks what you've read for unread counts. Stored publicly on your account — turn off to read privately."
-msgstr "Marca o que já leu para as contagens de não lidos. Guardado publicamente na sua conta — desligue para ler em privado."
+msgstr "Marca o que já leu para as contagens de não lidos. É salvo publicamente na sua conta — desligue para ler em privado."
 
 #: src/routes/_layout.feedback.return.tsx
 msgid "Your upvote has been recorded on userinput.app. Thanks for helping surface what matters."
@@ -1210,7 +1210,7 @@ msgstr "Pode seguir"
 
 #: src/components/reader/labeler-pill.tsx
 msgid "View labeler"
-msgstr "Ver serviço de etiquetagem"
+msgstr "Ver rotulador"
 
 #: src/magazine/magazine-feature-end.tsx
 msgid "Read more from the author"
@@ -1255,11 +1255,11 @@ msgstr "Hoje"
 #: src/magazine/magazine-end-subscribe.tsx
 #: src/routes/subscribe-login.$did.$rkey.tsx
 msgid "Subscribe"
-msgstr "Subscrever"
+msgstr "Inscreva-se"
 
 #: src/components/reader/text-selection-toolbar.tsx
 msgid "Link copied"
-msgstr "Ligação copiada"
+msgstr "Link copiado"
 
 #: src/components/reader/privacy-view.tsx
 msgid "Browser extension"
@@ -1267,7 +1267,7 @@ msgstr "Extensão do navegador"
 
 #: src/magazine/Magazine.tsx
 msgid "Setting the issue"
-msgstr "A definir a edição"
+msgstr "Configurando a edição"
 
 #: src/components/docs/api-docs-request-panel.tsx
 msgid "Set API_DOCS_FIXTURE_LIST_URI to run this example."
@@ -1297,7 +1297,7 @@ msgstr "Perguntas"
 
 #: src/components/reader/collection-builder.tsx
 msgid "Where this collection is published — followers of the series receive it."
-msgstr "Onde esta coleção é publicada — quem segue a série recebe-a."
+msgstr "Onde esta coleção é publicada — seguidores da série receberão."
 
 #: src/components/reader/markdown-field.tsx
 msgid "Edit"
@@ -1313,7 +1313,7 @@ msgstr "Consultas e procedimentos XRPC públicos para o modelo de leitura indexa
 
 #: src/components/reader/collection-theme-editor.tsx
 msgid "Save theme"
-msgstr "Guardar tema"
+msgstr "Salvar tema"
 
 #: src/routes/_layout.discover.tsx
 #: src/routes/_layout.p.$did.$rkey.tsx
@@ -1328,11 +1328,11 @@ msgstr "Ver no PDSLS"
 
 #: src/routes/_layout.discover.tsx
 msgid "Subscribe to a few publications to unlock recommendations."
-msgstr "Subscreva algumas publicações para desbloquear recomendações."
+msgstr Inscreva-se em algumas publicações para desbloquear recomendações."
 
 #: src/routes/_layout.discover.tsx
 msgid "See publications from the people you follow"
-msgstr ""
+msgstr "Ver publicações das pessoas que você segue"
 
 #: src/routes/_layout.search.tsx
 msgid "{shown}+ matches"
@@ -1340,7 +1340,7 @@ msgstr "{shown}+ resultados"
 
 #: src/routes/_layout.u.$did.tsx
 msgid "No liked articles yet."
-msgstr "Ainda não há artigos com gosto."
+msgstr "Ainda não há artigos recomendados."
 
 #: src/components/reader/article-below-fold.tsx
 #: src/routes/_layout.index.tsx
@@ -1350,7 +1350,7 @@ msgstr "Em toda a rede"
 
 #: src/components/reader/add-publication-modal.tsx
 msgid "This account has documents but no publications to subscribe to"
-msgstr "Esta conta tem documentos mas não tem publicações para subscrever"
+msgstr "Esta conta tem documentos mas não tem publicações para se inscrever"
 
 #: src/routes/_layout.discover.tsx
 #: src/routes/_layout.tag.$tag.tsx
@@ -1369,7 +1369,7 @@ msgstr "Feed RSS"
 #: src/components/docs/api-docs-intro.tsx
 #: src/components/docs/docs-api-nav.tsx
 msgid "Run a labeler"
-msgstr "Executar um serviço de etiquetagem"
+msgstr "Executar um rotulador"
 
 #: src/components/user-settings-view.tsx
 msgid "Theme"
@@ -1377,7 +1377,7 @@ msgstr "Tema"
 
 #: src/routes/_layout.index.tsx
 msgid "The latest writing from the publications you subscribe to."
-msgstr "Os textos mais recentes das publicações que subscreve."
+msgstr "Os textos mais recentes das suas inscrições."
 
 #: src/components/NavbarAuth.tsx
 msgid "Log out"
@@ -1385,16 +1385,16 @@ msgstr "Terminar sessão"
 
 #: src/components/user-settings-view.tsx
 msgid "The top articles from publications you subscribe to."
-msgstr ""
+msgstr "Os artigos mais populares das suas inscrições."
 
 #. placeholder {0}: data?.publicationCount ?? 0
 #: src/routes/_layout.discover.tsx
 msgid "{0, plural, one {# publication from your Bluesky follows} other {# publications from your Bluesky follows}}"
-msgstr ""
+msgstr "{0, plural, one {# publicação de quem você segue no Bluesky} other {# publicações de quem você segue no Bluesky}}"
 
 #: src/routes/review.thanks.tsx
 msgid "Return to the app"
-msgstr "Voltar à aplicação"
+msgstr "Voltar ao aplicativo"
 
 #: src/magazine/Magazine.tsx
 msgid "Switch to reader view"
@@ -1402,11 +1402,11 @@ msgstr "Mudar para a vista de leitura"
 
 #: src/components/docs/api-docs-intro.tsx
 msgid "<0>3. Declare your label values.</0> Describe each value (severity, default warn/hide, blur behavior) in an <1>app.standard-reader.labeler.service</1> descriptor, served from <2>app.standard-reader.labeler.getServices</2> (a <3>did:web</3> labeler has no repo to hold the record)."
-msgstr "<0>3. Declare os valores das suas etiquetas.</0> Descreva cada valor (gravidade, avisar/ocultar por omissão, comportamento de desfoque) num descritor <1>app.standard-reader.labeler.service</1>, servido a partir de <2>app.standard-reader.labeler.getServices</2> (um serviço de etiquetagem <3>did:web</3> não tem repositório para guardar o registo)."
+msgstr "<0>3. Declare os valores dos seus rótulos.</0> Descreva cada valor (gravidade, avisar/ocultar por padrão, desfocar) num descritor <1>app.standard-reader.labeler.service</1>, servido a partir de <2>app.standard-reader.labeler.getServices</2> (um rotulador <3>did:web</3> não tem repositório para salvar o registo)."
 
 #: src/components/user-settings-view.tsx
 msgid "To email your digest, Standard Reader needs your account email address. We'll ask your PDS to share it — you'll be sent to your login to approve the request, then brought right back here. Your email is used only to send the weekly digest, and you can turn it off any time."
-msgstr "Para lhe enviar o resumo por email, o Standard Reader precisa do endereço de email da sua conta. Vamos pedir ao seu PDS que o partilhe — será encaminhado para a sua página de início de sessão para aprovar o pedido e trazido de volta para aqui. O seu email é utilizado apenas para enviar o resumo semanal e pode desativá-lo quando quiser."
+msgstr "Para lhe enviar o resumo por e-mail, o Standard Reader precisa do endereço de e-mail da sua conta. Vamos pedir ao seu PDS que o compartilhe — será encaminhado para a sua página de início de sessão para aprovar o pedido e voltará para aqui. O seu e-mail é utilizado apenas para enviar o resumo semanal e pode desativá-lo quando quiser."
 
 #: src/components/docs/docs-publishing-nav.tsx
 #: src/components/docs/publishing-docs-page.tsx
@@ -1442,7 +1442,7 @@ msgstr "Algumas preferências"
 
 #: src/routes/_layout.friends.tsx
 msgid "We couldn't reach Bluesky to look up who you follow. Reload in a moment, or browse the directory in the meantime."
-msgstr ""
+msgstr "Não conseguimos conectar com Bluesky para ver quem você segue. Recarregue em um momento, ou navegue pelo diretório enquanto isso."
 
 #: src/components/user-settings-view.tsx
 msgid "All articles you have marked as read."
@@ -1455,7 +1455,7 @@ msgstr "A carregar…"
 
 #: src/routes/_layout.latest.tsx
 msgid "No articles are trending across the network right now. Check back soon."
-msgstr "Não há artigos em destaque na rede neste momento. Volte em breve."
+msgstr "Não há artigos em alta na rede neste momento. Volte em breve."
 
 #: src/components/docs/publishing-docs-page.tsx
 msgid "Everything below is compatibility support for formats already out there in other apps' own repos — none of it is part of the site.standard spec, and none of it is something to model a new integration on."
@@ -1463,11 +1463,11 @@ msgstr "Tudo o que se segue é suporte de compatibilidade para formatos que já 
 
 #: src/components/reader/subscribe-card.tsx
 msgid "Subscribing"
-msgstr "A subscrever"
+msgstr "Inscrevendo-se"
 
 #: src/routes/_layout.p.$did.$rkey.tsx
 msgid "Every unread article from this publication will be marked read. This can’t be undone."
-msgstr "Todos os artigos não lidos desta publicação serão marcados como lidos. Não é possível anular."
+msgstr "Todos os artigos não lidos desta publicação serão marcados como lidos. Esta ação não pode ser desfeita."
 
 #: src/magazine/Magazine.tsx
 msgid "Setting the issue…"
@@ -1475,7 +1475,7 @@ msgstr "A definir a edição…"
 
 #: src/components/reader/subscribe-card.tsx
 msgid "Couldn't subscribe"
-msgstr "Não foi possível subscrever"
+msgstr "Não foi possível se inscrever"
 
 #: src/components/reader/about-view.tsx
 msgid "On keeping a commonplace book"
@@ -1487,7 +1487,7 @@ msgstr "Publicado em"
 
 #: src/components/reader/collection-theme-editor.tsx
 msgid "A sentence of body copy, set in your chosen fonts and colors, so you can see how it all reads together before you save."
-msgstr "Uma frase de texto corrido, composta com os tipos de letra e as cores que escolheu, para ver como tudo se lê em conjunto antes de guardar."
+msgstr "Uma frase de texto corrido, composta com os tipos de letra e as cores que escolheu, para ver como tudo se lê em conjunto antes de salvar."
 
 #: src/routes/_layout.index.tsx
 msgid "Open the directory"
@@ -1499,7 +1499,7 @@ msgstr "Respondido"
 
 #: src/routes/_layout.friends.tsx
 msgid "Couldn't check right now"
-msgstr ""
+msgstr "Não foi possível verificar agora"
 
 #: src/components/reader/collection-builder.tsx
 msgid "Reorder {itemTitle}"
@@ -1507,7 +1507,7 @@ msgstr "Reordenar {itemTitle}"
 
 #: src/routes/_layout.feedback.return.tsx
 msgid "Back to feedback"
-msgstr "Voltar aos comentários"
+msgstr "Voltar a feedback"
 
 #: src/routes/_layout.search.tsx
 msgid "{pubTotal, plural, one {# publication} other {# publications}}"
@@ -1523,7 +1523,7 @@ msgstr "Nove textos, dispostos em páginas duplas — feitos para serem lidos de
 
 #: src/routes/_layout.latest.tsx
 msgid "From your subscriptions"
-msgstr "Das suas subscrições"
+msgstr "Das suas inscrições"
 
 #: src/components/reader/privacy-view.tsx
 msgid "<0>When you browse without signing in,</0> we serve public writing from our read-model index. We may store a theme preference cookie and, if you have signed in before on this device, a short list of recently used account handles (and optional avatar URLs) to speed up sign-in. We do not require an account to read."
@@ -1535,11 +1535,11 @@ msgstr "Mude uma definição e as ligações dos artigos passam a abrir no site 
 
 #: src/components/reader/privacy-view.tsx
 msgid "<0>Analytics.</0> When configured, we use <1>Plausible Analytics</1>, a privacy-oriented analytics service that does not use cookies for tracking and does not build individual user profiles. Page views are aggregated; no analytics run when the service is not configured for this deployment."
-msgstr "<0>Análise de dados.</0> Quando configurado, utilizamos o <1>Plausible Analytics</1>, um serviço de análise orientado para a privacidade que não usa cookies para rastreio nem constrói perfis individuais de utilizadores. As visualizações de página são agregadas; não é executada qualquer análise quando o serviço não está configurado para esta instalação."
+msgstr "<0>Análise de dados.</0> Quando configurado, utilizamos o <1>Plausible Analytics</1>, um serviço de análise orientado para a privacidade que não usa cookies para rastreio nem constrói perfis individuais de usuários. As visualizações de página são agregadas; não é executada qualquer análise quando o serviço não está configurado para esta instalação."
 
 #: src/components/reader/list-edit-modal.tsx
 msgid "No matching subscriptions."
-msgstr "Nenhuma subscrição corresponde."
+msgstr "Nenhuma inscrição corresponde."
 
 #: src/components/docs/publishing-docs-page.tsx
 msgid "Discovery hints are part of the site.standard spec itself, and our browser extension uses it too! When you land on a URL it hasn't indexed yet, it looks in that page's <0>head</0> for a <1>link</1> tag whose <2>rel</2> matches the record's collection and whose <3>href</3> is the record's <4>at://</4> URI."
@@ -1555,11 +1555,11 @@ msgstr "Uma série é uma coleção de coleções — como uma revista e as suas
 
 #: src/routes/_layout.index.tsx
 msgid "Subscribe to a few publications or follow some people, and their latest writing and recommendations will collect here."
-msgstr "Subscreva algumas publicações ou siga algumas pessoas, e os seus textos e recomendações mais recentes juntam-se aqui."
+msgstr "Inscreva-se em algumas publicações ou siga algumas pessoas, e seus textos e recomendações mais recentes aparecerão aqui."
 
 #: src/components/reader/about-view.tsx
 msgid "Read without an account. Sign in with Bluesky when you want to subscribe, like, and save — and take all of it with you, wherever you choose to read next."
-msgstr "Leia sem conta. Inicie sessão com o Bluesky quando quiser subscrever, gostar e guardar — e leve tudo consigo, onde quer que escolha ler a seguir."
+msgstr "Leia sem uma conta. Inicie sessão com o Bluesky quando quiser se inscrever, recomendar e salvar — e leve tudo consigo, onde quer que escolha ler a seguir."
 
 #: src/components/reader/collection-builder.tsx
 msgid "Remove {itemTitle}"
@@ -1576,7 +1576,7 @@ msgstr "{0, plural, one {seguidor} other {seguidores}}"
 
 #: src/components/reader/about-view.tsx
 msgid "Most readers stop at what you already subscribe to. Standard Reader treats finding your next favourite as part of the job. Browse all {countLabel} publications on the network — not just the handful you've heard of."
-msgstr "A maioria dos leitores fica pelo que já subscreve. O Standard Reader trata a descoberta do seu próximo favorito como parte do trabalho. Explore todas as {countLabel} publicações da rede — não apenas as poucas de que já ouviu falar."
+msgstr "A maioria dos leitores ficam apenas nas suas inscrições. O Standard Reader trata a descoberta do seu próximo favorito como parte do trabalho. Explore todas as {countLabel} publicações da rede — não apenas as poucas de que já ouviu falar."
 
 #: src/components/labeler-detail-view.tsx
 msgid "Labels"
@@ -1609,7 +1609,7 @@ msgstr "Alternar lista {listName}"
 
 #: src/components/reader/privacy-view.tsx
 msgid "OAuth tokens so we can read and write records in your repository on your behalf (for example follows, likes, saves, and publication lists)."
-msgstr "Tokens OAuth para podermos ler e escrever registos no seu repositório em seu nome (por exemplo seguidores, gostos, guardados e listas de publicações)."
+msgstr "Tokens OAuth para podermos ler e escrever registos no seu repositório em seu nome (por exemplo quem você segue, recomenda, salva e listas de publicações)."
 
 #: src/components/docs/api-docs-request-panel.tsx
 msgid "Copy"
@@ -1627,11 +1627,11 @@ msgstr "Fazer upgrade para criar Coleções"
 
 #: src/components/reader/privacy-view.tsx
 msgid "Your social actions (follows, likes, saves, lists) are written to your AT Protocol repository and are visible according to the network's rules and your account settings. Our Postgres database holds a network read-model, app session state, and cached public metadata — not the canonical copies of publications."
-msgstr "As suas ações sociais (seguidores, gostos, guardados, listas) são escritas no seu repositório AT Protocol e ficam visíveis de acordo com as regras da rede e as definições da sua conta. A nossa base de dados Postgres guarda um modelo de leitura da rede, o estado da sessão da aplicação e metadados públicos em cache — não as cópias canónicas das publicações."
+msgstr "As suas ações sociais (quem segue, recomendados, salvos, listas) são escritas no seu repositório AT Protocol e ficam visíveis de acordo com as regras da rede e as configurações da sua conta. A nossa base de dados Postgres guarda um modelo de leitura da rede, o estado da sessão da aplicação e metadados públicos em cache — não as cópias canônicas das publicações."
 
 #: src/components/reader/share-menu.tsx
 msgid "Subscribe link code"
-msgstr "Código da ligação de subscrição"
+msgstr "Código do link de inscrição"
 
 #: src/components/reader/add-to-list-button.tsx
 #: src/components/reader/add-to-list-modal.tsx
@@ -1644,11 +1644,11 @@ msgstr "Um tema ou etiqueta"
 
 #: src/components/onboarding/welcome-wizard.tsx
 msgid "Couldn't save your follows"
-msgstr "Não foi possível guardar quem segue"
+msgstr "Não foi possível salvar quem você segue"
 
 #: src/components/user-settings-view.tsx
 msgid "When on, everything a publication has ever posted counts as unread the moment you subscribe. Turn off to only mark posts published after you subscribe as new — older posts stay unread but lose their dot."
-msgstr "Quando ativo, tudo o que uma publicação alguma vez publicou conta como não lido assim que subscrever. Desative para marcar como novos apenas os artigos publicados depois de subscrever — os mais antigos continuam não lidos, mas perdem o ponto."
+msgstr "Quando ativo, tudo o que uma publicação já publicou conta como não lido no momento em que se inscrever. Desative para marcar como não lido apenas os artigos publicados depois de se inscrever — os mais antigos continuam não lidos, mas perdem o ponto."
 
 #: src/components/onboarding/welcome-wizard.tsx
 msgid "Skip for now"
@@ -1656,11 +1656,11 @@ msgstr "Ignorar por agora"
 
 #: src/components/reader/about-view.tsx
 msgid "The latest across everyone you subscribe to"
-msgstr "As novidades de tudo o que subscreve"
+msgstr "As novidades das suas inscrições"
 
 #: src/components/user-settings-view.tsx
 msgid "Publications to explore"
-msgstr ""
+msgstr "Publicações para explorar"
 
 #: src/routes/_layout.history.tsx
 #: src/routes/_layout.latest.tsx
@@ -1671,7 +1671,7 @@ msgstr "Ainda não há nada aqui"
 #: src/routes/_layout.p.$did.$rkey.tsx
 #: src/routes/_layout.u.$did.tsx
 msgid "Loading more…"
-msgstr "A carregar mais…"
+msgstr "Carregando mais…"
 
 #: src/components/reader/add-publication-modal.tsx
 msgid "No matches in the directory."
@@ -1679,7 +1679,7 @@ msgstr "Sem correspondências no diretório."
 
 #: src/components/reader/extension-privacy-view.tsx
 msgid "Last updated June 13, 2026"
-msgstr "Última atualização a 13 de junho de 2026"
+msgstr "Última atualização em 13 de junho de 2026"
 
 #: src/routes/_layout.search.tsx
 msgid "{shown, plural, one {# match} other {# matches}}"
@@ -1708,11 +1708,11 @@ msgstr "Criar"
 
 #: src/routes/_layout.index.tsx
 msgid "See all trending"
-msgstr "Ver tudo em tendência"
+msgstr "Ver tudo em alta"
 
 #: src/components/onboarding/step-friends.tsx
 #~ msgid "All selected"
-#~ msgstr ""
+#~ msgstr "Todos selecionados"
 
 #: src/components/reader/collection-theme-editor.tsx
 msgid "Fonts"
@@ -1725,7 +1725,7 @@ msgstr "Início"
 
 #: src/magazine/flow.tsx
 msgid "Subscribe to this list to read new articles from its publications."
-msgstr "Subscreva esta lista para ler os novos artigos das suas publicações."
+msgstr "Inscreva-se nesta lista para ler os novos artigos das suas publicações."
 
 #: src/components/reader/collection-builder.tsx
 msgid "{itemCount} of {MAX_ITEMS}"
@@ -1737,7 +1737,7 @@ msgstr "{metaCount, plural, one {{formattedMetaCount} artigo} other {{formattedM
 
 #: src/components/reader/profile-tabs-settings-modal.tsx
 msgid "Show {label} tab"
-msgstr "Mostrar separador {label}"
+msgstr "Mostrar aba {label}"
 
 #: src/routes/_layout.feedback.index.tsx
 msgid "Hide implemented"
@@ -1745,7 +1745,7 @@ msgstr "Ocultar implementados"
 
 #: src/routes/_layout.p.$did.$rkey.tsx
 msgid "Loading publication"
-msgstr "A carregar publicação"
+msgstr "Carregando publicação"
 
 #: src/components/reader/mention-hover-card.tsx
 msgid "{n, plural, one {# publication} other {{value} publications}}"
@@ -1761,22 +1761,22 @@ msgstr "Ver todas as novidades"
 
 #: src/components/reader/extension-privacy-view.tsx
 msgid "<0>Extension settings.</0> Your overlay and Bluesky embed preferences are stored locally in <1>chrome.storage.sync</1> (or the equivalent in other browsers) and are not sent to our servers except as part of normal extension operation on your device."
-msgstr "<0>Definições da extensão.</0> As suas preferências de sobreposição e de incorporação do Bluesky são guardadas localmente em <1>chrome.storage.sync</1> (ou no equivalente noutros navegadores) e não são enviadas para os nossos servidores, exceto no âmbito do funcionamento normal da extensão no seu dispositivo."
+msgstr "<0>Configurações da extensão.</0> As suas preferências de sobreposição e de incorporação do Bluesky são guardadas localmente em <1>chrome.storage.sync</1> (ou no equivalente noutros navegadores) e não são enviadas para os nossos servidores, exceto no âmbito do funcionamento normal da extensão no seu dispositivo."
 
 #: src/components/reader/app-shell.tsx
 #: src/components/reader/save-to-collection-dialog.tsx
 #: src/routes/_layout.saved.tsx
 msgid "Saved"
-msgstr "Guardado"
+msgstr "Salvo"
 
 #: src/components/onboarding/step-intro.tsx
 msgid "{count, plural, one {{formattedCount} publication across the Atmosphere} other {{formattedCount} publications across the Atmosphere}}"
-msgstr "{count, plural, one {{formattedCount} publicação na Atmosphere} other {{formattedCount} publicações na Atmosphere}}"
+msgstr "{count, plural, one {{formattedCount} publicação na Atmosfera} other {{formattedCount} publicações na Atmosfera}}"
 
 #: src/routes/login.tsx
 #: src/routes/subscribe-login.$did.$rkey.tsx
 msgid "Atmosphere account"
-msgstr "Conta Atmosphere"
+msgstr "Conta da Atmosfera"
 
 #: src/components/reader/about-view.tsx
 msgid "Open {pubName}"
@@ -1799,13 +1799,13 @@ msgstr "Voltar"
 
 #: src/routes/_layout.friends.tsx
 msgid "None of these publications have posted anything yet. Subscribe from the Publications tab and their writing will land on your Home feed."
-msgstr ""
+msgstr "Nenhuma destas publicações publicou algo. Inscreva-se através da aba Publicações e seus textos irão aparecer no seu feed Início"
 
 #: src/components/reader/link-share-menu.tsx
 #: src/components/reader/share-menu.tsx
 #: src/routes/_layout.l.$did.$rkey.tsx
 msgid "Share elsewhere"
-msgstr "Partilhar noutro sítio"
+msgstr "Compartilhar em outro lugar"
 
 #: src/components/docs/docs-publishing-nav.tsx
 msgid "Publishing guide"
@@ -1813,16 +1813,16 @@ msgstr "Guia de publicação"
 
 #: src/components/reader/article-below-fold.tsx
 msgid "Worth subscribing to"
-msgstr "Vale a pena subscrever"
+msgstr "Vale a pena se inscrever"
 
 #: src/components/reader/app-shell.tsx
 #: src/components/reader/subscriptions-sheet.tsx
 msgid "Subscription list actions"
-msgstr "Ações da lista de subscrições"
+msgstr "Ações da lista de inscrições"
 
 #: src/components/reader/friend-publishers.tsx
 msgid "{people, plural, one {# person you follow} other {# people you follow}}"
-msgstr ""
+msgstr "{people, plural, one {# pessoa que você segue} other {# pessoas que você segue}}"
 
 #: src/components/reader/reorder-lists-modal.tsx
 msgid "You don't have any lists to reorder yet."
@@ -1830,11 +1830,11 @@ msgstr "Ainda não tem listas para reordenar."
 
 #: src/routes/_layout.index.tsx
 msgid "{weekday} · Trending"
-msgstr "{weekday} · Em tendência"
+msgstr "{weekday} · Em alta"
 
 #: src/components/reader/extension-privacy-view.tsx
 msgid "Network calls to {siteHost} run in the extension background worker, not in page scripts injected into sites you visit. That keeps your session handling in one place and limits what runs on third-party pages to URL matching, UI (overlay chip, Bluesky embed save button), and messaging with the background worker."
-msgstr "As chamadas de rede para {siteHost} são executadas no processo em segundo plano da extensão, e não em scripts injetados nos sites que visita. Isso mantém a gestão da sessão num só lugar e limita o que corre em páginas de terceiros à correspondência de URL, à interface (chip de sobreposição, botão de guardar em incorporações do Bluesky) e à comunicação com o processo em segundo plano."
+msgstr "As chamadas de rede para {siteHost} são executadas no processo em segundo plano da extensão, e não em scripts injetados nos sites que visita. Isso mantém a gestão da sessão num só lugar e limita o que corre em páginas de terceiros à correspondência de URL, à interface (chip de sobreposição, botão de salvar em embeds do Bluesky) e à comunicação com o processo em segundo plano."
 
 #: src/routes/login.tsx
 msgid "Switch account"
@@ -1863,7 +1863,7 @@ msgstr "Um lugar tranquilo para ler"
 #: src/components/reader/collection-publication-editor.tsx
 #: src/routes/_layout.collections.new.tsx
 msgid "e.g. Dispatches from the Atmosphere"
-msgstr "por ex. Dispatches from the Atmosphere"
+msgstr "por ex. Relatos da Atmosfera"
 
 #: src/components/onboarding/welcome-wizard.tsx
 msgid "{selectedCount} selected — {remainingFollows} more to fill your feed"
@@ -1879,7 +1879,7 @@ msgstr "A carregar hoje"
 
 #: src/components/reader/reorder-lists-modal.tsx
 msgid "Save order"
-msgstr "Guardar ordem"
+msgstr "Salvar ordem"
 
 #: src/routes/_layout.discover.tsx
 msgid "No publications match this topic yet."
@@ -1887,7 +1887,7 @@ msgstr "Ainda não há publicações que correspondam a este tema."
 
 #: src/routes/_layout.u.$did.tsx
 msgid "Author sections"
-msgstr "Secções do autor"
+msgstr "Seções do autor"
 
 #: src/components/reader/article-view.tsx
 #: src/routes/_layout.l.$did.$rkey.tsx
@@ -1908,7 +1908,7 @@ msgstr "Concluir"
 
 #: src/routes/_layout.friends.tsx
 #~ msgid "We checked the people you follow on Bluesky against every publication on the network and didn't find a match. As more of them start publishing, they'll show up here."
-#~ msgstr ""
+#~ msgstr "Verificamos as pessoas que você segue no Bluesky buscando por publicações na rede e não encontramos nenhuma correspondância. Assim que eles começarem a publicar, irão aparecer aqui."
 
 #: src/routes/_layout.index.tsx
 msgid "The latest long-form writing from across the network."
@@ -1916,7 +1916,7 @@ msgstr "Os textos de formato longo mais recentes de toda a rede."
 
 #: src/routes/_layout.index.tsx
 msgid "{subscribedCount} unread across the publications you subscribe to."
-msgstr "{subscribedCount} não lidos nas publicações que subscreve."
+msgstr "{subscribedCount} não lidos das suas inscrições."
 
 #: src/components/reader/list-edit-modal.tsx
 msgid "Everyone you follow is in this list."
@@ -1924,7 +1924,7 @@ msgstr "Todas as pessoas que segue estão nesta lista."
 
 #: src/components/user-settings-view.tsx
 msgid "Delete bookmarks"
-msgstr "Eliminar marcadores"
+msgstr "Apagar salvos"
 
 #: src/components/reader/article-view.tsx
 msgid "Recommend it — Standard Reader surfaces well-loved writing to more readers across the network."
@@ -1936,11 +1936,11 @@ msgstr "Bem-vindo a"
 
 #: src/components/reader/privacy-view.tsx
 msgid "In-app preferences you set (theme, reading typography, whether to track reading history, and similar settings)."
-msgstr "As preferências que define na aplicação (tema, tipografia de leitura, se pretende registar o histórico de leitura e definições semelhantes)."
+msgstr "As preferências que define na aplicação (tema, tipografia de leitura, se pretende registar o histórico de leitura e configurações semelhantes)."
 
 #: src/components/reader/subscribe-card.tsx
 msgid "You're already subscribed to {publicationName}. New posts will show up in your feed."
-msgstr "Já subscreveu {publicationName}. Os novos artigos aparecerão no seu feed."
+msgstr "Já está inscrito em {publicationName}. Novos artigos aparecerão no seu feed."
 
 #: src/routes/_layout.discover.tsx
 msgid "The directory"
@@ -1948,15 +1948,15 @@ msgstr "O diretório"
 
 #: src/components/reader/about-view.tsx
 msgid "Trending this week"
-msgstr "Em tendência esta semana"
+msgstr "Em alta esta semana"
 
 #: src/routes/_layout.u.$did.tsx
 msgid "Subscriptions aren't indexed yet."
-msgstr "As subscrições ainda não estão indexadas."
+msgstr "As inscrições ainda não foram indexadas."
 
 #: src/components/reader/collection-publication-editor.tsx
 msgid "Drop or choose a new image"
-msgstr "Largue ou escolha uma nova imagem"
+msgstr "Arraste ou escolha uma nova imagem"
 
 #: src/routes/_layout.search.tsx
 msgid "Search publications and articles"
@@ -1980,7 +1980,7 @@ msgstr "Um botão Ouvir lê qualquer artigo em voz alta, no seu próprio disposi
 
 #: src/components/reader/atstore-review-prompt.tsx
 msgid "Something went wrong while preparing your review."
-msgstr "Algo correu mal ao preparar a sua análise."
+msgstr "Algo deu errado ao preparar a sua avaliação."
 
 #: src/components/reader/add-publication-modal.tsx
 msgid "No publications found for this account."
@@ -1999,11 +1999,11 @@ msgstr "{0, plural, one {# publicação} other {# publicações}}"
 #: src/components/reader/save-to-collection-dialog.tsx
 #: src/routes/_layout.feedback.return.tsx
 msgid "Something went wrong."
-msgstr "Algo correu mal."
+msgstr "Algo deu errado."
 
 #: src/components/reader/about-view.tsx
 msgid "The best of what you subscribe to"
-msgstr "O melhor do que subscreve"
+msgstr "O melhor das suas inscrições"
 
 #: src/components/reader/save-to-collection-dialog.tsx
 msgid "Note"
@@ -2032,7 +2032,7 @@ msgstr "Modo de pré-visualização"
 
 #: src/routes/_layout.collections.new.tsx
 msgid "On your first collection we create one series to hold them — a special collection you can subscribe to, rename, and theme later."
-msgstr "Na sua primeira coleção criamos uma série para as guardar — uma coleção especial que pode subscrever, renomear e personalizar mais tarde."
+msgstr "Na sua primeira coleção criamos uma série para as agrupar — uma coleção especial em que pode se inscrever, renomear e personalizar mais tarde."
 
 #: src/components/reader/collection-builder.tsx
 #: src/components/reader/collection-theme-editor.tsx
@@ -2053,11 +2053,11 @@ msgstr "Ver registo"
 
 #: src/components/reader/save-to-collection-dialog.tsx
 msgid "Optional: add a note about why you're saving this"
-msgstr "Opcional: acrescente uma nota sobre o motivo por que está a guardar isto"
+msgstr "Opcional: acrescente uma nota sobre o porquê está salvando isto"
 
 #: src/components/user-settings-view.tsx
 msgid "Best of your subscriptions"
-msgstr ""
+msgstr "O melhor das suas inscrições"
 
 #: src/routes/_layout.p.$did.$rkey.tsx
 msgid "We couldn’t find that publication."
@@ -2077,7 +2077,7 @@ msgstr "Modo {label}"
 
 #: src/components/reader/app-shell.tsx
 msgid "Sign in to subscribe."
-msgstr "Inicie sessão para subscrever."
+msgstr "Inicie sessão para se inscrever."
 
 #: src/components/reader/about-view.tsx
 msgid "Prefer the original?"
@@ -2094,7 +2094,7 @@ msgstr "Leitura"
 
 #: src/routes/_layout.feedback.index.tsx
 msgid "Be the first to share a bug, idea, or question."
-msgstr "Seja o primeiro a partilhar um erro, uma ideia ou uma questão."
+msgstr "Seja o primeiro a compartilhar um erro, uma ideia ou uma pergunta."
 
 #: src/routes/_layout.index.tsx
 msgid "The most-read writing across the network right now."
@@ -2106,11 +2106,11 @@ msgstr "Recomendar esta edição"
 
 #: src/components/reader/subscriptions-sheet.tsx
 msgid "You aren't following anything yet."
-msgstr "Ainda não segue ninguém."
+msgstr "Você ainda não segue ninguém."
 
 #: src/routes/_layout.feedback.index.tsx
 msgid "{count, plural, one {# upvote} other {# upvotes}} — click to undo"
-msgstr "{count, plural, one {# voto positivo} other {# votos positivos}} — clique para anular"
+msgstr "{count, plural, one {# voto positivo} other {# votos positivos}} — clique para desfazer"
 
 #: src/routes/_layout.search.tsx
 msgid "{shown} of {total} matches"
@@ -2138,11 +2138,11 @@ msgstr "Ver coleção"
 
 #: src/components/reader/about-view.tsx
 msgid "Turn on in Settings"
-msgstr "Ativar nas Definições"
+msgstr "Ativar nas Configurações"
 
 #: src/components/labeler-detail-view.tsx
 msgid "This labeler didn’t publish any label definitions."
-msgstr "Este serviço de etiquetagem não publicou nenhuma definição de etiquetas."
+msgstr "Este rotulador não publicou nenhuma definição de rótulos."
 
 #: src/components/user-settings-view.tsx
 msgid "Continue to approve"
@@ -2159,7 +2159,7 @@ msgstr "Marcar tudo como lido?"
 
 #: src/components/feedback/feedback-dialog.tsx
 msgid "Summarize your feedback"
-msgstr "Resuma o seu comentário"
+msgstr "Resuma o seu feedback"
 
 #: src/components/reader/reorder-lists-modal.tsx
 msgid "Sidebar lists"
@@ -2167,12 +2167,12 @@ msgstr "Listas da barra lateral"
 
 #: src/components/labeler-detail-view.tsx
 msgid "Subscribe to choose how these labels are applied while you read."
-msgstr "Subscreva para escolher como estas etiquetas são aplicadas enquanto lê."
+msgstr "Inscreva-se para escolher como estes rótulos são aplicados enquanto lê."
 
 #: src/components/reader/list-edit-modal.tsx
 #: src/routes/_layout.l.$did.$rkey.tsx
 msgid "Delete list"
-msgstr "Eliminar lista"
+msgstr "Apagar lista"
 
 #: src/components/reader/about-view.tsx
 msgid "So we built the reader we wanted: a column you can size, a font you can choose, and a margin wide enough to think in."
@@ -2185,7 +2185,7 @@ msgstr "Artigos recomendados"
 
 #: src/components/labeler-detail-view.tsx
 msgid "Labeler views"
-msgstr "Vistas do serviço de etiquetagem"
+msgstr "Visualizações do rotulador"
 
 #: src/routes/_layout.u.$did.tsx
 msgid "Discover publications"
@@ -2205,15 +2205,15 @@ msgstr "Escolhemos este idioma com base no seu navegador. Pode alterá-lo quando
 
 #: src/components/reader/text-selection-toolbar.tsx
 msgid "Dismiss selection"
-msgstr ""
+msgstr "Desfazer seleção"
 
 #: src/routes/_layout.latest.tsx
 msgid "Follow a few publications and their latest writing will show up here."
-msgstr "Siga algumas publicações e os seus textos mais recentes aparecerão aqui."
+msgstr "Inscreva-se em publicações e os seus textos mais recentes aparecerão aqui."
 
 #: src/routes/_layout.discover.tsx
 msgid "Subscribe to more publications to see what similar readers enjoy."
-msgstr "Subscreva mais publicações para ver o que leitores semelhantes apreciam."
+msgstr "Inscreva-se em mais publicações para ver o que leitores semelhantes gostam."
 
 #: src/components/feedback/feedback-dialog.tsx
 #: src/components/reader/collection-builder.tsx
@@ -2240,7 +2240,7 @@ msgstr "Notas de rodapé"
 
 #: src/routes/_layout.discover.tsx
 msgid "Every publication the network knows about — {publicationCount} and counting. Subscribe to the ones worth your mornings."
-msgstr "Todas as publicações que a rede conhece — {publicationCount} e a contar. Subscreva as que merecem as suas manhãs."
+msgstr "Todas as publicações que a rede conhece — {publicationCount} e contando. Inscreva-se nas que merecem as suas manhãs."
 
 #: src/components/reader/cards.tsx
 #: src/components/reader/follow-user-button.tsx
@@ -2300,11 +2300,11 @@ msgstr "{0}+ artigos"
 
 #: src/routes/_layout.feedback.return.tsx
 msgid "That link expired."
-msgstr "Essa ligação expirou."
+msgstr "Esse link expirou."
 
 #: src/components/reader/privacy-view.tsx
 msgid "You can sign out at any time, which clears your app session cookie. You can clear site cookies in your browser to remove theme and saved-handle preferences. You can change reading-history tracking and delete personal data from Settings. To remove other AT Protocol records you created through the app, use a compatible client or your repository tools."
-msgstr "Pode terminar sessão a qualquer momento, o que limpa o cookie de sessão da aplicação. Pode limpar os cookies do site no seu navegador para remover as preferências de tema e de handle guardado. Pode alterar o registo do histórico de leitura e eliminar dados pessoais nas Definições. Para remover outros registos AT Protocol que criou através da aplicação, use um cliente compatível ou as ferramentas do seu repositório."
+msgstr "Pode terminar sessão a qualquer momento, o que limpa o cookie de sessão da aplicação. Pode limpar os cookies do site no seu navegador para remover as preferências de tema e de handle guardados. Pode alterar o registo do histórico de leitura e apagar dados pessoais nas Configurações. Para remover outros registos AT Protocol que criou através da aplicação, use um cliente compatível ou as ferramentas do seu repositório."
 
 #: src/components/reader/article-below-fold.tsx
 msgid "Keep reading"
@@ -2324,7 +2324,7 @@ msgstr "Tudo"
 #: src/components/reader/article-view.tsx
 #: src/components/reader/cards.tsx
 msgid "Save for later"
-msgstr "Guardar para mais tarde"
+msgstr "Salvar para mais tarde"
 
 #: src/components/reader/collection-theme-editor.tsx
 msgid "Accent text"
@@ -2361,12 +2361,12 @@ msgstr "A voz usada quando ouve um artigo com a leitura em voz alta."
 
 #: src/components/user-settings-view.tsx
 msgid "Your five most recently saved-for-later articles."
-msgstr ""
+msgstr "Seus últimos cinco artigos salvos para mais tarde"
 
 #: src/magazine/magazine-end-subscribe.tsx
 #: src/routes/_layout.l.$did.$rkey.tsx
 msgid "Subscribe to list"
-msgstr "Subscrever lista"
+msgstr "Inscreva-se na lista"
 
 #: src/routes/_layout.tag.$tag.tsx
 msgid "Most posts"
@@ -2400,15 +2400,15 @@ msgstr "A que acede a extensão"
 
 #: src/components/user-settings-view.tsx
 msgid "Delete lists"
-msgstr "Eliminar listas"
+msgstr "Apagar listas"
 
 #: src/components/onboarding/step-settings.tsx
 msgid "A weekly email with the best of what you subscribe to, plus a couple of publications worth discovering."
-msgstr "Um email semanal com o melhor do que subscreve, mais algumas publicações que vale a pena descobrir."
+msgstr "Um e-mail semanal com o melhor das suas inscrições, mais algumas publicações que vale a pena descobrir."
 
 #: src/components/reader/comments/comments-section.tsx
 msgid "Across the Atmosphere"
-msgstr "Por toda a Atmosphere"
+msgstr "Por toda a Atmosfera"
 
 #: src/routes/_layout.l.$did.$rkey.tsx
 msgid "No people in this list — add some from the edit dialog."
@@ -2421,11 +2421,11 @@ msgstr "Descrição"
 
 #: src/routes/_layout.discover.tsx
 msgid "{totalPeople, plural, one {# person you follow writes here} other {# people you follow write here}}"
-msgstr ""
+msgstr "{totalPeople, plural, one {# pessoa que você segue escreve aqui} other {# pessoas que você segue escrevem aqui}}"
 
 #: src/components/reader/page-reader-bar.tsx
 msgid "Something went wrong"
-msgstr "Algo correu mal"
+msgstr "Algo deu errado"
 
 #: src/components/reader/about-view.tsx
 msgid "Browse publications"
@@ -2445,11 +2445,11 @@ msgstr "Base"
 
 #: src/components/reader/extension-privacy-view.tsx
 msgid "<0>Page URLs.</0> When you open the popup, use the page overlay, or choose a context-menu action, the extension sends the relevant URL to {SITE_NAME}'s <1>/api/extension/*</1> endpoints so we can match it against our index and offer save, follow, or open actions. Page content is not uploaded."
-msgstr "<0>URLs de páginas.</0> Quando abre a janela, usa a sobreposição de página ou escolhe uma ação do menu de contexto, a extensão envia o URL relevante para os endpoints <1>/api/extension/*</1> do {SITE_NAME} para o compararmos com o nosso índice e oferecermos ações de guardar, seguir ou abrir. O conteúdo da página não é enviado."
+msgstr "<0>URLs de páginas.</0> Quando abre a janela, usa a sobreposição de página ou escolhe uma ação do menu de contexto, a extensão envia o URL relevante para os endpoints <1>/api/extension/*</1> do {SITE_NAME} para o compararmos com o nosso índice e oferecermos ações de salvar, seguir ou abrir. O conteúdo da página não é enviado."
 
 #: src/routes/_layout.collections.index.tsx
 msgid "Curated, magazine-rendered editions grouped into series you can subscribe to — your special collections on the network."
-msgstr "Edições selecionadas, apresentadas em formato de revista e agrupadas em séries que pode subscrever — as suas coleções especiais na rede."
+msgstr "Edições selecionadas, apresentadas em formato de revista e agrupadas em séries em que pode se inscrever — as suas coleções especiais na rede."
 
 #: src/magazine/Magazine.tsx
 msgid "Close magazine"
@@ -2469,12 +2469,12 @@ msgstr "Citado em"
 
 #: src/components/user-settings-view.tsx
 msgid "A couple of publications worth discovering."
-msgstr ""
+msgstr "Algumas publicações que vale descobrir"
 
 #: src/components/reader/share-menu.tsx
 #: src/routes/_layout.l.$did.$rkey.tsx
 msgid "Share on Bluesky"
-msgstr "Partilhar no Bluesky"
+msgstr "Compartilhar no Bluesky"
 
 #: src/components/docs/docs-lexicons-nav.tsx
 msgid "Lexicon reference"
@@ -2483,7 +2483,7 @@ msgstr "Referência do lexicon"
 #: src/components/reader/profile-tabs-settings-modal.tsx
 #: src/routes/_layout.u.$did.tsx
 msgid "Profile settings"
-msgstr "Definições do perfil"
+msgstr "Configurações do perfil"
 
 #: src/components/reader/content/renderers/leaflet-image-gallery.tsx
 msgid "Image gallery"
@@ -2537,11 +2537,11 @@ msgstr "O seu nome de apresentação, identificador, URL do avatar e DID, tal co
 
 #: src/components/reader/about-view.tsx
 msgid "Save, like, subscribe — everywhere"
-msgstr "Guardar, gostar, subscrever — em todo o lado"
+msgstr "Salvar, recomendar, se inscrever — em todo lugar"
 
 #: src/components/reader/link-share-menu.tsx
 msgid "Share to Alternate Client"
-msgstr "Partilhar noutro cliente"
+msgstr "Compartilhar em outro cliente"
 
 #: src/components/reader/extension-privacy-view.tsx
 msgid "What the extension does not do"
@@ -2549,7 +2549,7 @@ msgstr "O que a extensão não faz"
 
 #: src/routes/_layout.index.tsx
 msgid "Loading recommendations"
-msgstr "A carregar recomendações"
+msgstr "Carregando recomendações"
 
 #: src/components/reader/extension-privacy-view.tsx
 msgid "We do not scrape or upload arbitrary page text — only URLs needed for index matching, indexed article text you request for read-aloud, or on-device extraction from the page you are listening to."
@@ -2563,7 +2563,7 @@ msgstr "Não foi possível reproduzir a amostra de voz."
 #. placeholder {1}: formatReaders(person.publicationCount)
 #: src/components/reader/cards.tsx
 msgid "{0, plural, one {# publication} other {{1} publications}}"
-msgstr ""
+msgstr "{0, plural, one {# publicação} other {{1} publicações}}"
 
 #: src/components/docs/docs-topbar.tsx
 msgid "API"
@@ -2575,7 +2575,7 @@ msgstr "Substituir ícone"
 
 #: src/components/onboarding/welcome-wizard.tsx
 msgid "You can subscribe to publications from Discover."
-msgstr "Pode subscrever publicações a partir de Descobrir."
+msgstr "Você pode se inscrever em publicações a partir de Descobrir."
 
 #: src/components/reader/app-shell.tsx
 #: src/components/reader/list-edit-modal.tsx
@@ -2584,7 +2584,7 @@ msgstr "Pode subscrever publicações a partir de Descobrir."
 #: src/routes/_layout.latest.tsx
 #: src/routes/_layout.u.$did.tsx
 msgid "Subscriptions"
-msgstr "Subscrições"
+msgstr "Inscrições"
 
 #. placeholder {0}: pub.documentCount
 #. placeholder {1}: formatReaders(pub.documentCount)
@@ -2629,7 +2629,7 @@ msgstr "＋ Nova série…"
 
 #: src/components/reader/list-edit-modal.tsx
 msgid "All subscriptions are in this list."
-msgstr "Todas as subscrições estão nesta lista."
+msgstr "Todas as inscrições estão nesta lista."
 
 #: src/routes/_layout.collections.index.tsx
 msgid "Start your first series"
@@ -2641,11 +2641,11 @@ msgstr "(requer {min}:1)"
 
 #: src/components/user-settings-view.tsx
 msgid "Every read record in your repository will be removed. Articles will appear unread again across the app. This cannot be undone."
-msgstr "Todos os registos de leitura no seu repositório serão removidos. Os artigos voltarão a aparecer como não lidos em toda a aplicação. Esta ação não pode ser anulada."
+msgstr "Todos os registos de leitura no seu repositório serão removidos. Os artigos voltarão a aparecer como não lidos em toda a aplicação. Esta ação não pode ser desfeita."
 
 #: src/components/reader/privacy-view.tsx
 msgid "If you install the {SITE_NAME} browser extension, it uses the same account and session cookie as this site. The extension sends page URLs to our <0>/api/extension/*</0> endpoints for index matching and keeps overlay settings in your browser's extension storage. See the <1>extension privacy policy</1> for details that apply only to the extension."
-msgstr "Se instalar a extensão de navegador do {SITE_NAME}, esta usa a mesma conta e o mesmo cookie de sessão que este site. A extensão envia URLs de páginas para os nossos endpoints <0>/api/extension/*</0> para correspondência com o índice e guarda as definições da sobreposição no armazenamento de extensões do seu navegador. Consulte a <1>política de privacidade da extensão</1> para detalhes que se aplicam apenas à extensão."
+msgstr "Se instalar a extensão de navegador do {SITE_NAME}, esta usa a mesma conta e o mesmo cookie de sessão que este site. A extensão envia URLs de páginas para os nossos endpoints <0>/api/extension/*</0> para correspondência com o índice e guarda as configurações da sobreposição no armazenamento de extensões do seu navegador. Consulte a <1>política de privacidade da extensão</1> para detalhes que se aplicam apenas à extensão."
 
 #: src/components/reader/list-edit-modal.tsx
 msgid "Remove {memberName} from list"
@@ -2661,7 +2661,7 @@ msgstr "Publicado no nosso <0>quadro de feedback</0> em userinput.app. Poderá s
 
 #: src/components/labelers-settings-view.tsx
 msgid "No known labelers yet."
-msgstr "Ainda não há serviços de etiquetagem conhecidos."
+msgstr "Ainda não há rotuladores conhecidos."
 
 #: src/components/user-settings-view.tsx
 msgid "All publication lists you created in this app."
@@ -2669,11 +2669,11 @@ msgstr "Todas as listas de publicações que criou nesta aplicação."
 
 #: src/routes/_layout.feedback.index.tsx
 msgid "Bug reports, feature requests, and questions for Standard Reader. Feedback lives on <0>userinput.app</0>."
-msgstr "Relatos de erros, sugestões de funcionalidades e perguntas sobre o Standard Reader. O feedback vive em <0>userinput.app</0>."
+msgstr "Relatos de erros, sugestões de funcionalidades e perguntas sobre o Standard Reader. O feedback utiliza o <0>userinput.app</0>."
 
 #: src/components/labeler-detail-view.tsx
 msgid "This labeler hasn’t labeled any documents in the read-model yet."
-msgstr "Este serviço de etiquetagem ainda não etiquetou documentos no modelo de leitura."
+msgstr "Este rotulador ainda não rotulou documentos no modelo de leitura."
 
 #: src/components/reader/collection-theme-editor.tsx
 #: src/components/user-settings-view.tsx
@@ -2682,7 +2682,7 @@ msgstr "Escuro"
 
 #: src/routes/login.tsx
 msgid "Sign in with Bluesky to subscribe. We only ask permission to add this follow to your account."
-msgstr "Inicie sessão com o Bluesky para subscrever. Apenas pedimos permissão para adicionar este seguimento à sua conta."
+msgstr "Inicie sessão com o Bluesky para se inscrever. Apenas pedimos permissão para adicionar esta ação à sua conta."
 
 #: src/components/labeler-detail-view.tsx
 #: src/components/reader/about-view.tsx
@@ -2737,7 +2737,7 @@ msgstr "Abrir edição em revista"
 
 #: src/components/reader/save-to-collection-dialog.tsx
 msgid "Saves a link to your <0>{appLabel}</0> collection."
-msgstr "Guarda uma ligação na sua coleção <0>{appLabel}</0>."
+msgstr "Salva um link na sua coleção <0>{appLabel}</0>."
 
 #: src/components/reader/about-view.tsx
 msgid "In your inbox"
@@ -2761,7 +2761,7 @@ msgstr "Tudo de um só autor"
 
 #: src/components/reader/text-selection-toolbar.tsx
 msgid "Couldn't create share link"
-msgstr "Não foi possível criar a ligação de partilha"
+msgstr "Não foi possível criar link de compartilharmento"
 
 #: src/routes/_layout.feedback.index.tsx
 msgid "Search feedback..."
@@ -2777,12 +2777,12 @@ msgstr "Não foi possível resolver esse identificador."
 
 #: src/components/reader/atstore-review-prompt.tsx
 msgid "Sharing a review on the <0>ATStore</0> will help both us and other users see what you think about Standard Reader."
-msgstr "Partilhar uma crítica na <0>ATStore</0> ajuda-nos a nós e aos outros utilizadores a saber o que pensa do Standard Reader."
+msgstr "Compartilhar uma avalição na <0>ATStore</0> ajuda-nos a nós e aos outros usuários a saber o que pensa do Standard Reader."
 
 #: src/components/onboarding/step-settings.tsx
 #: src/components/user-settings-view.tsx
 msgid "Weekly digest email"
-msgstr "E-mail do resumo semanal"
+msgstr "E-mail de resumo semanal"
 
 #: src/components/reader/add-to-list-modal.tsx
 msgid "No lists yet — switch to New list to create one."
@@ -2794,7 +2794,7 @@ msgstr "Mostrar implementados"
 
 #: src/components/reader/collection-publication-editor.tsx
 msgid "Drop a square image, or choose a file"
-msgstr "Largue aqui uma imagem quadrada ou escolha um ficheiro"
+msgstr "Arraste aqui uma imagem quadrada, ou escolha um arquivo"
 
 #: src/components/feedback/feedback-dialog.tsx
 msgid "Feedback submitted"
@@ -2810,7 +2810,7 @@ msgstr "no Semble"
 
 #: src/components/user-settings-view.tsx
 msgid "On — delivered to {digestEmail}. The best of the publications you subscribe to, plus a couple worth discovering."
-msgstr "Ativo — enviado para {digestEmail}. O melhor das publicações que subscreve, e mais algumas que vale a pena descobrir."
+msgstr "Ativo — enviado para {digestEmail}. O melhor das publicações em que está inscrito, e mais algumas que vale a pena descobrir."
 
 #: src/components/reader/about-view.tsx
 msgid "“The page gets quiet, and the sentence gets loud.”"
@@ -2827,7 +2827,7 @@ msgstr "Há um prazer particular em ler algo que foi feito para ser lido, e não
 
 #: src/routes/extension.connected.tsx
 msgid "Close tab"
-msgstr "Fechar separador"
+msgstr "Fechar aba"
 
 #: src/components/ReaderVoiceMenu.tsx
 #: src/components/user-settings-view.tsx
@@ -2840,7 +2840,7 @@ msgstr "Coleção não encontrada"
 
 #: src/components/user-settings-view.tsx
 msgid "No labelers subscribed"
-msgstr "Sem serviços de etiquetagem subscritos"
+msgstr "Inscrito em nenhum rotulador"
 
 #: src/routes/collection.$did.$rkey.tsx
 msgid "Nothing to read here yet."
@@ -2848,7 +2848,7 @@ msgstr "Ainda não há nada para ler aqui."
 
 #: src/components/labelers-settings-view.tsx
 msgid "Labelers are moderation services you subscribe to by DID. Subscribe to see their labels — and blur or hide labeled posts — while you read."
-msgstr "Os serviços de etiquetagem são serviços de moderação que subscreve por DID. Subscreva para ver as suas etiquetas — e desfocar ou ocultar publicações etiquetadas — enquanto lê."
+msgstr "Os rotuladores são serviços de moderação em que se inscreve por DID. Inscreva-se para ver seus rótulos — e desfocar ou ocultar publicações rotuladas — enquanto lê."
 
 #: src/components/reader/about-view.tsx
 msgid "Standard Reader meets you where you read"
@@ -2892,7 +2892,7 @@ msgstr "O Standard Reader precisa de acesso de escrita às suas publicações e 
 
 #: src/components/user-settings-view.tsx
 msgid "All articles you have saved for later."
-msgstr "Todos os artigos que guardou para mais tarde."
+msgstr "Todos os artigos que salvou para mais tarde."
 
 #: src/components/reader/about-view.tsx
 msgid "Listen to anything"
@@ -2908,7 +2908,7 @@ msgstr "{n, plural, one {# artigo} other {{value} artigos}}"
 
 #: src/components/labelers-settings-view.tsx
 msgid "Search labelers"
-msgstr "Pesquisar serviços de etiquetagem"
+msgstr "Pesquisar rotuladores"
 
 #: src/routes/_layout.index.tsx
 msgid "{weekday} · Your feed"
@@ -2960,16 +2960,16 @@ msgstr "Nova lista"
 
 #: src/components/onboarding/welcome-wizard.tsx
 msgid "Subscribe to a few publications"
-msgstr "Subscreva algumas publicações"
+msgstr "Inscreva-se em algumas publicações"
 
 #: src/components/reader/app-shell.tsx
 msgid "Nothing yet — go discover."
-msgstr "Ainda nada — vá descobrir."
+msgstr "Nada ainda — vá descobrir."
 
 #: src/components/reader/collection-builder.tsx
 #: src/routes/_layout.search.tsx
 msgid "Searching…"
-msgstr "A pesquisar…"
+msgstr "Pesquisando…"
 
 #: src/components/reader/app-shell.tsx
 msgid "Toggle list {name}"
@@ -2981,12 +2981,12 @@ msgstr "Política de privacidade"
 
 #: src/components/reader/share-menu.tsx
 msgid "Copy link code"
-msgstr "Copiar código da ligação"
+msgstr "Copiar código do link"
 
 #. placeholder {0}: defs.length
 #: src/components/labeler-detail-view.tsx
 msgid "{0, plural, one {label} other {labels}}"
-msgstr "{0, plural, one {etiqueta} other {etiquetas}}"
+msgstr "{0, plural, one {rótulo} other {rótulos}}"
 
 #: src/routes/_layout.feedback.return.tsx
 msgid "Your feedback has been posted to <0>userinput.app</0>. Thanks for helping us improve Standard Reader."
@@ -3003,7 +3003,7 @@ msgstr "Registo de exemplo"
 
 #: src/components/onboarding/step-friends.tsx
 #~ msgid "{remaining, plural, one {# more person you follow writes here — find them under Discover once you're set up.} other {# more people you follow write here — find them under Discover once you're set up.}}"
-#~ msgstr ""
+#~ msgstr "{remaining, plural, one {# pessoa que você segue escreve aqui — encontre ele em Descobrir após finalizar.} other {# pessoas que você segue escrevem aqui — encontre eles em Descobrir após finalizar.}}"
 
 #: src/components/reader/collection-builder.tsx
 msgid "No articles yet — use “Add an article” to get started."
@@ -3011,7 +3011,7 @@ msgstr "Ainda não há artigos — use “Adicionar um artigo” para começar."
 
 #: src/components/reader/atstore-review-prompt.tsx
 msgid "Leave us a review on ATStore."
-msgstr "Deixe-nos uma crítica na ATStore."
+msgstr "Deixe-nos uma avaliação na ATStore."
 
 #: src/routes/_layout.feedback.index.tsx
 msgid "Search feedback"
@@ -3048,11 +3048,11 @@ msgstr "<0>Outros formatos de markdown (a evitar).</0> <1>site.standard.content.
 
 #: src/routes/_layout.discover.tsx
 msgid "Find your friends"
-msgstr ""
+msgstr "Encontre seus amigos"
 
 #: src/components/reader/list-edit-modal.tsx
 msgid "Save list"
-msgstr "Guardar lista"
+msgstr "Salvar lista"
 
 #: src/magazine/Magazine.tsx
 msgid "Contents"
@@ -3060,11 +3060,11 @@ msgstr "Índice"
 
 #: src/components/reader/share-menu.tsx
 msgid "Copy embed code"
-msgstr "Copiar código de incorporação"
+msgstr "Copiar código de embed"
 
 #: src/components/user-settings-view.tsx
 msgid "Delete all lists?"
-msgstr "Eliminar todas as listas?"
+msgstr "Apagar todas as listas?"
 
 #: src/components/onboarding/step-settings.tsx
 #: src/components/user-settings-view.tsx
@@ -3073,7 +3073,7 @@ msgstr "Resumo semanal"
 
 #: src/routes/_layout.l.$did.$rkey.tsx
 msgid "Users"
-msgstr "Utilizadores"
+msgstr "Usuários"
 
 #: src/routes/_layout.search.tsx
 msgid "Search the network"
@@ -3093,7 +3093,7 @@ msgstr "operacional"
 
 #: src/components/user-settings-view.tsx
 msgid "Top on the network"
-msgstr ""
+msgstr "Os mais populares da rede"
 
 #: src/components/reader/collection-builder.tsx
 msgid "Remove"
@@ -3134,15 +3134,15 @@ msgstr "Documentação"
 
 #: src/components/reader/about-view.tsx
 msgid "Subscribe to the publications on <0>standard.site</0> you care about. New writing simply arrives, in the order it was written — no feed to fight, nothing shouting for your attention. Just good long-form, and a genuinely nice way to keep finding more of it."
-msgstr "Subscreva as publicações em <0>standard.site</0> que lhe interessam. Os novos textos chegam simplesmente, pela ordem em que foram escritos — sem feed contra o qual lutar, sem nada a gritar pela sua atenção. Apenas bom texto longo, e uma forma genuinamente agradável de continuar a encontrar mais."
+msgstr "Inscreva-se nas publicações em <0>standard.site</0> que lhe interessam. Os novos textos simplesmente chegam, pela ordem em que foram escritos — nada de brigar contra o feed, nada gritando pela sua atenção. Apenas bons textos longos, e uma forma genuinamente agradável de continuar a encontrar mais."
 
 #: src/components/reader/save-to-collection-dialog.tsx
 msgid "Save"
-msgstr "Guardar"
+msgstr "Salvar"
 
 #: src/routes/login.tsx
 msgid "your.handle.com"
-msgstr "o.seu.identificador.com"
+msgstr "seu.nome.de.usuario.com"
 
 #: src/components/user-settings-view.tsx
 msgid "Open collections in magazine"
@@ -3150,7 +3150,7 @@ msgstr "Abrir coleções em revista"
 
 #: src/routes/_layout.friends.tsx
 msgid "Nothing new from the people you follow"
-msgstr ""
+msgstr "Nada novo das pessoas que você segue"
 
 #: src/components/reader/reader-queue-rows.tsx
 msgid "Article unavailable"
@@ -3158,7 +3158,7 @@ msgstr "Artigo indisponível"
 
 #: src/components/reader/atstore-review-prompt.tsx
 msgid "Create will publish your review to ATStore."
-msgstr "Criar irá publicar a sua crítica na ATStore."
+msgstr "Criar irá publicar a sua avaliação na ATStore."
 
 #. placeholder {0}: issues.length
 #. placeholder {0}: orphans.length
@@ -3172,7 +3172,7 @@ msgstr "Ainda nada corresponde a “{debouncedQ}”. A rede está sempre a cresc
 
 #: src/components/reader/about-view.tsx
 msgid "A home for the writing you love"
-msgstr "Uma casa para os textos que adora"
+msgstr "Uma casa para os textos que você ama"
 
 #: src/components/user-settings-view.tsx
 msgid "Behavior"
@@ -3186,19 +3186,19 @@ msgstr "Histórico de leitura"
 
 #: src/components/docs/api-docs-intro.tsx
 msgid "<0>2. Serve labels.</0> Sign and emit <1>com.atproto.label.defs#label</1> objects, and expose the standard <2>com.atproto.label.queryLabels</2> (HTTP) and <3>com.atproto.label.subscribeLabels</3> (WebSocket) endpoints."
-msgstr "<0>2. Servir etiquetas.</0> Assine e emita objetos <1>com.atproto.label.defs#label</1> e exponha os endpoints padrão <2>com.atproto.label.queryLabels</2> (HTTP) e <3>com.atproto.label.subscribeLabels</3> (WebSocket)."
+msgstr "<0>2. Servir rótulos.</0> Assine e emita objetos <1>com.atproto.label.defs#label</1> e exponha os endpoints padrão <2>com.atproto.label.queryLabels</2> (HTTP) e <3>com.atproto.label.subscribeLabels</3> (WebSocket)."
 
 #: src/routes/_layout.search.tsx
 msgid "Try \"climate\", \"typography\", or a handle like stdout.dev"
-msgstr "Experimente \"clima\", \"tipografia\" ou um identificador como stdout.dev"
+msgstr "Experimente \"clima\", \"tipografia\" ou nome de usuário como stdout.dev"
 
 #: src/components/reader/privacy-view.tsx
 msgid "We do not host publication content. Articles and publications remain in their authors' repositories; our database is a derived index for fast browsing and search."
-msgstr "Não alojamos conteúdo das publicações. Os artigos e as publicações permanecem nos repositórios dos seus autores; a nossa base de dados é um índice derivado para navegação e pesquisa rápidas."
+msgstr "Não hospedamos o conteúdo das publicações. Os artigos e as publicações permanecem nos repositórios dos seus autores; a nossa base de dados é um índice derivado para navegação e pesquisa rápidas."
 
 #: src/components/onboarding/welcome-wizard.tsx
 msgid "Your Home feed is empty for now — head to Discover whenever you're ready, and everything you subscribe to will start collecting here."
-msgstr "O seu feed Início está vazio por agora — passe por Descobrir quando quiser, e tudo o que subscrever começará a juntar-se aqui."
+msgstr "O seu feed Início está vazio por agora — passe pelo Descobrir quando quiser, e tudo no que se inscrever começará a aparecer aqui."
 
 #: src/components/reader/collection-builder.tsx
 #: src/routes/_layout.friends.tsx
@@ -3210,12 +3210,12 @@ msgstr "Artigos"
 
 #: src/components/reader/atstore-review-prompt.tsx
 msgid "Leave a review"
-msgstr "Deixar uma crítica"
+msgstr "Deixar uma avaliação"
 
 #: src/routes/login.tsx
 #: src/routes/subscribe-login.$did.$rkey.tsx
 msgid "Sign in with your Atmosphere account."
-msgstr "Inicie sessão com a sua conta Atmosphere."
+msgstr "Inicie sessão com a sua conta da Atmosfera."
 
 #: src/components/onboarding/welcome-wizard.tsx
 msgid "Start reading"
@@ -3236,17 +3236,17 @@ msgstr "Nenhuma publicação nesta lista — adicione algumas na janela de ediç
 
 #: src/components/reader/subscribe-card.tsx
 msgid "Adding {publicationName} to your feed."
-msgstr "A adicionar {publicationName} ao seu feed."
+msgstr "Adicionando {publicationName} ao seu feed."
 
 #: src/components/NavbarAuth.tsx
 #: src/components/reader/app-shell.tsx
 #: src/components/user-settings-view.tsx
 msgid "Settings"
-msgstr "Definições"
+msgstr "Configurações"
 
 #: src/components/reader/about-view.tsx
 msgid "A lightweight browser extension lets you save and subscribe to publications while you’re out on the web — with subtle badges on bsky.app and a one-click overlay on any page you land on. Your reading list fills itself."
-msgstr "Uma extensão de navegador leve permite-lhe guardar e subscrever publicações enquanto navega pela web — com discretos distintivos no bsky.app e uma sobreposição de um clique em qualquer página onde chegue. A sua lista de leitura enche-se sozinha."
+msgstr "Uma extensão de navegador leve que lhe permite salvar e se inscrever em publicações enquanto navega pela web — com discretos botões no bsky.app e uma sobreposição de um clique em qualquer página onde estiver. A sua lista de leitura enche-se sozinha."
 
 #: src/routes/_layout.discover.tsx
 #: src/routes/_layout.tag.$tag.tsx
@@ -3255,7 +3255,7 @@ msgstr "A–Z"
 
 #: src/components/reader/extension-privacy-view.tsx
 msgid "We do not sell or share extension data with third parties."
-msgstr "Não vendemos nem partilhamos os dados da extensão com terceiros."
+msgstr "Não vendemos nem compartilhamos os dados da extensão com terceiros."
 
 #: src/routes/_layout.index.tsx
 #: src/routes/_layout.latest.tsx
@@ -3279,7 +3279,7 @@ msgstr "Ainda não há leitores indexados."
 
 #: src/components/reader/collection-builder.tsx
 msgid "Save collection"
-msgstr "Guardar coleção"
+msgstr "Salvar coleção"
 
 #. placeholder {0}: failed.length
 #: src/components/onboarding/welcome-wizard.tsx
@@ -3288,11 +3288,11 @@ msgstr "{0, plural, one {Não foi possível seguir # publicação} other {Não f
 
 #: src/routes/_layout.discover.tsx
 msgid "No trending publications yet."
-msgstr "Ainda não há publicações em destaque."
+msgstr "Nenhuma publicação em alta ainda."
 
 #: src/routes/login.tsx
 msgid "Sign in again to refresh your permissions — your session doesn't include save-for-later yet."
-msgstr "Inicie sessão novamente para atualizar as suas permissões — a sua sessão ainda não inclui guardar para mais tarde."
+msgstr "Inicie sessão novamente para atualizar as suas permissões — a sua sessão ainda não inclui salvar para mais tarde."
 
 #: src/components/reader/extension-privacy-view.tsx
 msgid "Account actions"
@@ -3304,12 +3304,12 @@ msgstr "Ler artigo"
 
 #: src/components/user-settings-view.tsx
 msgid "Delete all reading history?"
-msgstr "Eliminar todo o histórico de leitura?"
+msgstr "Apagar todo o histórico de leitura?"
 
 #: src/components/docs/docs-publishing-nav.tsx
 #: src/components/docs/publishing-docs-page.tsx
 msgid "Subscribe embed"
-msgstr "Widget de subscrição"
+msgstr "Embed de inscrição"
 
 #: src/components/user-settings-view.tsx
 msgid "Weekly digest preview"
@@ -3345,7 +3345,7 @@ msgstr "Detalhes"
 
 #: src/components/reader/extension-privacy-view.tsx
 msgid "When you save or follow from the extension, {SITE_NAME} writes AT Protocol records to <0>your</0> repository through the same server paths as the web app. Those records follow the network's visibility rules and your account settings."
-msgstr "Quando guarda ou segue a partir da extensão, o {SITE_NAME} escreve registos do AT Protocol no <0>seu</0> repositório através dos mesmos caminhos de servidor que a aplicação web. Esses registos seguem as regras de visibilidade da rede e as definições da sua conta."
+msgstr "Quando você salva ou segue a partir da extensão, o {SITE_NAME} escreve registos do AT Protocol no <0>seu</0> repositório através dos mesmos caminhos de servidor que a aplicação web. Esses registos seguem as regras de visibilidade da rede e as configurações da sua conta."
 
 #: src/components/reader/collection-publication-editor.tsx
 msgid "Create series"
@@ -3371,11 +3371,11 @@ msgstr "Um artigo incluído"
 
 #: src/components/user-settings-view.tsx
 msgid "Subscribe to labelers to flag, blur, or hide content as you read."
-msgstr "Subscreva serviços de etiquetagem para assinalar, desfocar ou ocultar conteúdo enquanto lê."
+msgstr "Inscreva-se em rotuladores para rotular, desfocar ou ocultar conteúdo enquanto lê."
 
 #: src/routes/_layout.saved.tsx
 msgid "Tap the bookmark on any article to save it here. Your queue lives in your repo as <0>app.standard-reader.bookmark</0> records in your repo."
-msgstr "Toque no marcador de qualquer artigo para o guardar aqui. A sua fila vive no seu repositório como registos <0>app.standard-reader.bookmark</0>."
+msgstr "Toque no ícone de marca páginas de qualquer artigo para salvá-lo aqui. A sua fila vive no seu repositório como registos <0>app.standard-reader.bookmark</0>."
 
 #: src/components/reader/sifa-resume-chip.tsx
 msgid "Resume"
@@ -3387,11 +3387,11 @@ msgstr "Ainda não há publicações indexadas."
 
 #: src/routes/_layout.tag.$tag.tsx
 msgid "You're about to subscribe to {formattedUnfollowedCount} publications tagged {displayTag}. That's a lot to add to your feed — only continue if you really want them all."
-msgstr "Está prestes a subscrever {formattedUnfollowedCount} publicações com a tag {displayTag}. É muita coisa para adicionar ao seu feed — só continue se as quiser mesmo todas."
+msgstr "Está prestes a se inscrever em {formattedUnfollowedCount} publicações com a tag {displayTag}. É muita coisa para adicionar ao seu feed — só continue se as quiser mesmo todas."
 
 #: src/components/reader/collection-builder.tsx
 msgid "Drop or choose a new image to replace"
-msgstr "Largue ou escolha uma nova imagem para substituir"
+msgstr "Arraste ou escolha uma nova imagem para substituir"
 
 #: src/routes/_layout.search.tsx
 msgid "Clear search"
@@ -3424,7 +3424,7 @@ msgstr "{weekday} · Em toda a rede"
 
 #: src/routes/_layout.collections.index.tsx
 msgid "Publish & share the run"
-msgstr "Publicar e partilhar a execução"
+msgstr "Publicar e compartilhar a execução"
 
 #: src/components/reader/collection-builder.tsx
 msgid "Editorial"
@@ -3432,20 +3432,20 @@ msgstr "Editorial"
 
 #: src/components/docs/api-docs-request-panel.tsx
 msgid "Click Run example to fetch a live response with your session."
-msgstr "Clique em Executar exemplo para obter uma resposta em direto com a sua sessão."
+msgstr "Clique em Executar exemplo para obter uma resposta ao vivo com a sua sessão."
 
 #: src/components/reader/friend-publishers.tsx
 msgid "{publicationCount, plural, one {# publication} other {# publications}}"
-msgstr ""
+msgstr "{publicationCount, plural, one {# publicação} other {# publicações}}"
 
 #. placeholder {0}: selected.size
 #: src/components/onboarding/welcome-wizard.tsx
 msgid "{0, plural, one {You're following # publication. Their latest writing will collect on Home.} other {You're following # publications. Their latest writing will collect on Home.}}"
-msgstr "{0, plural, one {Está a seguir # publicação. Os textos mais recentes vão juntar-se no Início.} other {Está a seguir # publicações. Os textos mais recentes vão juntar-se no Início.}}"
+msgstr "{0, plural, one {Está seguindo # publicação. Os artigos mais recentes vão aparecer no Início.} other {Está seguindo # publicações. Os artigos mais recentes vão aparecer no Início.}}"
 
 #: src/components/docs/api-docs-request-panel.tsx
 msgid "Click Run example to fetch a live response."
-msgstr "Clique em Executar exemplo para obter uma resposta em direto."
+msgstr "Clique em Executar exemplo para obter uma resposta ao vivo."
 
 #: src/components/reader/extension-privacy-view.tsx
 #: src/components/reader/privacy-view.tsx
@@ -3458,13 +3458,13 @@ msgstr "{unread} por ler"
 
 #: src/components/user-settings-view.tsx
 msgid "Delete all bookmarks?"
-msgstr "Eliminar todos os marcadores?"
+msgstr "Apagar todos os salvos?"
 
 #: src/components/labelers-settings-view.tsx
 #: src/components/reader/app-shell.tsx
 #: src/components/user-settings-view.tsx
 msgid "Labelers"
-msgstr "Serviços de etiquetagem"
+msgstr "Rotuladores"
 
 #: src/components/reader/language-dialog.tsx
 msgid "Choose your language"
@@ -3500,7 +3500,7 @@ msgstr "Como configurar os registos <0>site.standard.*</0> do seu próprio site 
 
 #: src/components/reader/save-to-collection-dialog.tsx
 msgid "Save to {appLabel}"
-msgstr "Guardar em {appLabel}"
+msgstr "Salvar em {appLabel}"
 
 #: src/routes/_layout.collections.index.tsx
 msgid "Other collections"
@@ -3550,11 +3550,11 @@ msgstr "Gosta do Standard Reader?"
 
 #: src/components/reader/save-to-collection-dialog.tsx
 msgid "Use original link"
-msgstr "Usar ligação original"
+msgstr "Usar o link original"
 
 #: src/components/docs/publishing-docs-page.tsx
 msgid "Every publication page also serves a themed, embeddable subscribe widget — an iframe you can drop on your own site so visitors can subscribe without leaving your page. The easiest way to get it: open your publication's page on Standard Reader, use <0>Share → Embed subscribe</0>, pick landscape or portrait, and copy the snippet — no account or ownership check required to generate it."
-msgstr "Todas as páginas de publicação servem também um widget de subscrição incorporável e com tema — um iframe que pode colocar no seu site para que os visitantes subscrevam sem sair da sua página. A forma mais fácil de o obter: abra a página da sua publicação no Standard Reader, use <0>Partilhar → Incorporar subscrição</0>, escolha horizontal ou vertical e copie o excerto — não é preciso conta nem verificação de propriedade para o gerar."
+msgstr "Todas as páginas de publicação fornecem também um embed de inscrição — um iframe que pode colocar no seu site para que os visitantes se inscrevam sem sair da sua página. A forma mais fácil de obtê-lo: abra a página da sua publicação no Standard Reader, use <0>Compartilhar → Embed de inscrição</0>, escolha horizontal ou vertical e copie o código — não é preciso conta nem verificação de propriedade para gerar."
 
 #: src/routes/_layout.tag.$tag.tsx
 msgid "{articleCount, plural, one {article} other {articles}}"
@@ -3601,7 +3601,7 @@ msgstr "{count, plural, one {# voto positivo} other {# votos positivos}} — ini
 
 #: src/components/onboarding/step-friends.tsx
 #~ msgid "Select all"
-#~ msgstr ""
+#~ msgstr "Selecionar tudo"
 
 #: src/components/reader/extension-privacy-view.tsx
 msgid "For how {SITE_NAME} works overall, see <0>About</0>. For site-wide privacy, see the <1>site privacy policy</1>. For questions about this deployment, contact the operator of {siteHost}."
@@ -3632,7 +3632,7 @@ msgstr "Namespace"
 
 #: src/components/onboarding/welcome-wizard.tsx
 msgid "What do you like to read?"
-msgstr "O que gosta de ler?"
+msgstr "O que você gosta de ler?"
 
 #: src/components/reader/comments/comments-section.tsx
 msgid "No discussion yet."
@@ -3661,7 +3661,7 @@ msgstr "A pesquisar"
 
 #: src/components/reader/article-view-skeleton.tsx
 msgid "Loading article"
-msgstr "A carregar o artigo"
+msgstr "Carregando artigo"
 
 #: src/routes/_layout.feedback.return.tsx
 msgid "Upvoted."
@@ -3669,7 +3669,7 @@ msgstr "Votado."
 
 #: src/components/reader/list-edit-modal.tsx
 msgid "Search your subscriptions"
-msgstr "Pesquisar nas suas subscrições"
+msgstr "Pesquisar nas suas inscrições"
 
 #: src/components/reader/collection-publication-editor.tsx
 msgid "Icon"
@@ -3685,7 +3685,7 @@ msgstr "Ler em voz alta"
 
 #: src/routes/_layout.saved.tsx
 msgid "Articles you've saved for later — in your repo, synced across devices."
-msgstr "Artigos que guardou para mais tarde — no seu repositório, sincronizados entre dispositivos."
+msgstr "Artigos que salvou para mais tarde — no seu repositório, sincronizados entre dispositivos."
 
 #: src/components/reader/article-view.tsx
 #: src/components/reader/content/renderers/shared/image-figure.tsx
@@ -3703,7 +3703,7 @@ msgstr "Nota mais recente"
 
 #: src/routes/_layout.tag.$tag.tsx
 msgid "Subscribe all"
-msgstr "Subscrever tudo"
+msgstr "Inscrever se em tudo"
 
 #: src/components/reader/privacy-view.tsx
 msgid "{SITE_NAME} is a web reader for standard.site publications on the AT Protocol. This policy describes what we collect when you use this site, how we use it, and the choices you have. It applies to the Standard Reader deployment you are using at <0>{siteHost}</0>."
@@ -3717,11 +3717,11 @@ msgstr "Já leu todos os artigos aqui. Mostre os artigos lidos para os ver novam
 #: src/components/reader/share-menu.tsx
 #: src/routes/subscribe-login.$did.$rkey.tsx
 msgid "Subscribe to {publicationName}"
-msgstr "Subscrever {publicationName}"
+msgstr "Inscreva-se em {publicationName}"
 
 #: src/components/docs/publishing-docs-page.tsx
 msgid "<0>Structured blocks.</0> Rich block-editor documents, each in that editor's own schema — e.g. <1>org.blocknote.document#content</1> (BlockNote) or <2>pub.oxa.document.document</2> (Oxa). Only useful if you're already producing one of these; not worth adopting from scratch."
-msgstr "<0>Blocos estruturados.</0> Documentos ricos de editores de blocos, cada um no esquema do próprio editor — por exemplo <1>org.blocknote.document#content</1> (BlockNote) ou <2>pub.oxa.document.document</2> (Oxa). Só é útil se já estiver a produzir um destes; não vale a pena adotar de raiz."
+msgstr "<0>Blocos estruturados.</0> Documentos de editores de blocos, cada um no esquema do próprio editor — por exemplo <1>org.blocknote.document#content</1> (BlockNote) ou <2>pub.oxa.document.document</2> (Oxa). Só é útil se já estiver a produzir um destes; não vale a pena adotar de raiz."
 
 #: src/components/reader/collection-theme-editor.tsx
 msgid "Text"
@@ -3755,7 +3755,7 @@ msgstr "Metadados da sessão, como o endereço IP e a cadeia user-agent do naveg
 
 #: src/components/reader/privacy-view.tsx
 msgid "We do not post to your account except when you take an explicit action that requires it (for example following a publication, liking or saving an article, or subscribing with the dedicated subscribe flow). We do not sell your personal information."
-msgstr "Não publicamos na sua conta exceto quando realiza uma ação explícita que o exija (por exemplo seguir uma publicação, gostar ou guardar um artigo, ou subscrever através do fluxo de subscrição dedicado). Não vendemos as suas informações pessoais."
+msgstr "Não publicamos na sua conta exceto quando realiza uma ação explícita que o exija (por exemplo seguir uma publicação, curtir ou salvar um artigo, ou se inscrever através do fluxo de inscrição dedicado). Não vendemos as suas informações pessoais."
 
 #: src/routes/_layout.discover.tsx
 #: src/routes/_layout.friends.tsx
@@ -3776,7 +3776,7 @@ msgstr "Código de incorporação"
 
 #: src/components/reader/mention-hover-card.tsx
 msgid "{n, plural, one {# subscriber} other {{value} subscribers}}"
-msgstr "{n, plural, one {# subscritor} other {{value} subscritores}}"
+msgstr "{n, plural, one {# inscrito} other {{value} inscritos}}"
 
 #: src/components/reader/discover-topic-filters.tsx
 msgid "Filter by topic"
@@ -3803,7 +3803,7 @@ msgstr "Expandir todas as listas"
 #: src/components/reader/document-share-menu.tsx
 #: src/components/reader/text-selection-toolbar.tsx
 msgid "Save to Margin…"
-msgstr "Guardar no Margin…"
+msgstr "Salvar no Margin…"
 
 #: src/components/reader/article-below-fold.tsx
 msgid "{minutes} min"
@@ -3819,7 +3819,7 @@ msgstr "Editar coleção"
 
 #: src/components/reader/rss-feed-button.tsx
 msgid "Subscribe to {name} in any RSS reader — new articles show up there as soon as they publish."
-msgstr "Subscreva {name} em qualquer leitor de RSS — os novos artigos aparecem lá assim que forem publicados."
+msgstr "Inscreva-se em {name} com qualquer leitor de RSS — os novos artigos aparecem lá assim que forem publicados."
 
 #: src/components/reader/privacy-view.tsx
 msgid "For more about how {SITE_NAME} works, see the <0>About</0> page. For privacy questions about this deployment, contact the operator of the site at the URL above."
@@ -3829,11 +3829,11 @@ msgstr "Para saber mais sobre como o {SITE_NAME} funciona, consulte a página <0
 #: src/components/reader/text-selection-toolbar.tsx
 #: src/routes/_layout.l.$did.$rkey.tsx
 msgid "Copy link"
-msgstr "Copiar ligação"
+msgstr "Copiar link"
 
 #: src/components/user-settings-view.tsx
 msgid "A weekly email with the best of what you subscribe to, plus a couple of publications worth discovering. Turning this on asks your PDS to share your email address."
-msgstr "Um email semanal com o melhor do que subscreve, mais algumas publicações que vale a pena descobrir. Ativar isto pede ao seu PDS para partilhar o seu endereço de email."
+msgstr "Um e-mail semanal com o melhor das suas inscrições, mais algumas publicações que vale a pena descobrir. Ativar isto pede ao seu PDS para compartilhar o seu endereço de e-mail."
 
 #: src/routes/_layout.l.$did.$rkey.tsx
 msgid "Read as magazine"
@@ -3903,7 +3903,7 @@ msgstr "Nenhum feedback corresponde aos seus filtros."
 
 #: src/components/reader/privacy-view.tsx
 msgid "<0>When you sign in</0> with your Atmosphere account (for example via Bluesky OAuth), we create an app session tied to your AT Protocol DID. We store:"
-msgstr "<0>Quando inicia sessão</0> com a sua conta Atmosphere (por exemplo via OAuth do Bluesky), criamos uma sessão da aplicação associada ao seu DID do AT Protocol. Guardamos:"
+msgstr "<0>Quando inicia sessão</0> com a sua conta da Atmosfera (por exemplo via OAuth do Bluesky), criamos uma sessão da aplicação associada ao seu DID do AT Protocol. Guardamos:"
 
 #: src/routes/subscribe-login.$did.$rkey.tsx
 msgid "Powered by <0>Standard Reader</0>"
@@ -3911,11 +3911,11 @@ msgstr "Com tecnologia <0>Standard Reader</0>"
 
 #: src/components/reader/about-view.tsx
 msgid "Save from anywhere you browse"
-msgstr "Guarde a partir de onde quer que navegue"
+msgstr "Salve a partir de qualquer lugar que navegue"
 
 #: src/components/reader/friend-publishers.tsx
 #~ msgid "Loading"
-#~ msgstr ""
+#~ msgstr "Carregando"
 
 #: src/routes/_layout.u.$did.tsx
 msgid "Not on Standard Reader yet"
@@ -3927,15 +3927,15 @@ msgstr "Ainda não está no Standard Reader"
 #: src/components/user-settings-view.tsx
 #: src/routes/_layout.saved.tsx
 msgid "Saved for later"
-msgstr "Guardado para mais tarde"
+msgstr "Salvo para mais tarde"
 
 #: src/components/reader/share-menu.tsx
 msgid "Add this anchor anywhere on your site and style it however you like. It opens the subscribe flow when clicked."
-msgstr "Adicione esta âncora em qualquer parte do seu site e dê-lhe o estilo que quiser. Abre o fluxo de subscrição quando é clicada."
+msgstr "Adicione este embed em qualquer parte do seu site e estilize da forma que quiser. Abre o fluxo de inscrição quando é clicado."
 
 #: src/components/onboarding/step-settings.tsx
 msgid "When on, a publication's whole back catalogue counts as unread when you subscribe. Turn off to only see posts published after you subscribe as new."
-msgstr "Quando ativo, todo o catálogo anterior de uma publicação conta como não lido quando a subscreve. Desative para ver como novos apenas os textos publicados depois de subscrever."
+msgstr "Quando ativo, todos os artigos anteriores de uma publicação contam como não lido quando se inscrever. Desative para ver como não lido apenas os textos publicados depois de se inscrever."
 
 #: src/components/reader/comments/comment-card.tsx
 msgid "Open this reply on Bluesky"
@@ -3949,19 +3949,19 @@ msgstr "Fechar"
 
 #: src/components/reader/share-menu.tsx
 msgid "Link"
-msgstr "Ligação"
+msgstr "Link"
 
 #: src/components/reader/collection-publication-editor.tsx
 msgid "Save series"
-msgstr "Guardar série"
+msgstr "Salvar série"
 
 #: src/components/labelers-settings-view.tsx
 msgid "No labelers match “{searchTrim}”."
-msgstr "Nenhum serviço de etiquetagem corresponde a “{searchTrim}”."
+msgstr "Nenhum rotulador corresponde a “{searchTrim}”."
 
 #: src/components/reader/atstore-review-prompt.tsx
 msgid "Rating"
-msgstr "Classificação"
+msgstr "Nota"
 
 #: src/components/reader/collection-theme-editor.tsx
 msgid "The Issue Title"
@@ -3969,7 +3969,7 @@ msgstr "O título da edição"
 
 #: src/components/reader/app-shell.tsx
 msgid "Loading subscriptions"
-msgstr "A carregar subscrições"
+msgstr Carregando inscrições"
 
 #: src/components/OpenLinksMenuItem.tsx
 #: src/components/TrackReadingHistoryMenuItem.tsx
@@ -3985,7 +3985,7 @@ msgstr "Parar de ler"
 #: src/components/reader/text-selection-toolbar.tsx
 #: src/magazine/magazine-feature-end.tsx
 msgid "Share"
-msgstr "Partilhar"
+msgstr "Compartilhar"
 
 #: src/components/user-settings-view.tsx
 msgid "Your weekly digest"
@@ -4015,7 +4015,7 @@ msgstr "OK"
 
 #: src/routes/_layout.tag.$tag.tsx
 msgid "Articles and publications tagged {displayTag} across the Atmosphere."
-msgstr "Artigos e publicações com a tag {displayTag} em toda a Atmosphere."
+msgstr "Artigos e publicações com a tag {displayTag} em toda a Atmosfera."
 
 #: src/components/user-settings-view.tsx
 msgid "Loading digest preview"
@@ -4023,7 +4023,7 @@ msgstr "A carregar a pré-visualização do resumo"
 
 #: src/components/docs/lexicon-docs-intro.tsx
 msgid "Published AT Proto record schemas for reader state in each user's PDS."
-msgstr "Esquemas de registo AT Proto publicados para o estado do leitor no PDS de cada utilizador."
+msgstr "Esquemas de registo AT Proto publicados para o estado do leitor no PDS de cada usuário."
 
 #: src/routes/_layout.discover.tsx
 msgid "Loading publication directory"
