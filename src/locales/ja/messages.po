@@ -4105,8 +4105,8 @@ msgstr "発行物"
 
 #: src/components/docs/docs-introduction-nav.tsx
 #: src/components/docs/docs-publishing-nav.tsx
-#: src/components/docs/docs-ref-shell.tsx
 #: src/components/docs/docs-renderers-nav.tsx
+#: src/components/docs/docs-toc.tsx
 msgid "On this page"
 msgstr "このページの内容"
 

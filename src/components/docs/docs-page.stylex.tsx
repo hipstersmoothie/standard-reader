@@ -252,15 +252,21 @@ export const docsStyles = stylex.create({
       [NAV_HIDE]: "none",
       default: "block",
     },
+    // Pinned to the viewport with its own scroll area, so it stays put while
+    // the main column scrolls independently.
+    position: "sticky",
     borderInlineEndColor: uiColor.border1,
     borderInlineEndStyle: "solid",
     borderInlineEndWidth: spacing["px"],
+    height: "100vh",
     minWidth: 0,
     overflowX: "hidden",
+    overflowY: "auto",
     paddingBottom: spacing["10"],
     paddingInlineStart: horizontalSpace["3xl"],
     paddingInlineEnd: horizontalSpace["3xl"],
     paddingTop: spacing["9"],
+    top: 0,
     width: DOCS_NAV_WIDTH,
   },
   refToc: {
