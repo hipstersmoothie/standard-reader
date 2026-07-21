@@ -1,0 +1,51 @@
+{
+  "name": "@standard-reader/renderer-solid",
+  "version": "0.1.0",
+  "description": "Headless, unstyled SolidJS renderer for Standard Site documents.",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "prepare": "tsc -p tsconfig.build.json",
+    "clean": "rm -rf dist",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepublishOnly": "pnpm run clean && pnpm run build"
+  },
+  "keywords": [
+    "standard-reader",
+    "atproto",
+    "leaflet",
+    "renderer",
+    "headless",
+    "solid",
+    "solidjs"
+  ],
+  "dependencies": {
+    "@standard-reader/renderer-core": "workspace:*"
+  },
+  "peerDependencies": {
+    "solid-js": "^1.8.0"
+  },
+  "devDependencies": {
+    "jsdom": "^28.1.0",
+    "solid-js": "^1.9.3",
+    "typescript": "^6.0.2",
+    "vitest": "^4.1.5"
+  }
+}
