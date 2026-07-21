@@ -49,6 +49,7 @@ msgstr "{name} hat hier noch nicht angefangen zu lesen oder zu veröffentlichen.
 #: src/components/docs/docs-api-mobile-jump-nav.tsx
 #: src/components/docs/docs-lexicons-mobile-jump-nav.tsx
 #: src/components/docs/docs-publishing-mobile-jump-nav.tsx
+#: src/components/docs/docs-renderers-mobile-jump-nav.tsx
 msgid "Jump to section"
 msgstr "Zum Abschnitt springen"
 
@@ -105,6 +106,10 @@ msgstr "Ein Tippen aus der Leseansicht, auf jedem Gerät, sofort synchron. Ihre 
 #: src/components/reader/about-view.tsx
 msgid "Curated lists & collections"
 msgstr "Kuratierte Listen & Sammlungen"
+
+#: src/components/docs/renderers-docs-page.tsx
+msgid "Vue 3."
+msgstr ""
 
 #: src/routes/_layout.l.$did.$rkey.tsx
 msgid "Publication list"
@@ -546,8 +551,10 @@ msgstr "Stimmprobe wird geladen"
 #: src/components/docs/docs-api-nav.tsx
 #: src/components/docs/docs-lexicons-nav.tsx
 #: src/components/docs/docs-publishing-nav.tsx
+#: src/components/docs/docs-renderers-nav.tsx
 #: src/components/docs/lexicon-docs-intro.tsx
 #: src/components/docs/publishing-docs-page.tsx
+#: src/components/docs/renderers-docs-page.tsx
 msgid "Overview"
 msgstr "Überblick"
 
@@ -753,6 +760,10 @@ msgstr "Inhaltsverzeichnis schließen"
 msgid "Member type to add"
 msgstr "Art des Mitglieds"
 
+#: src/components/docs/renderers-docs-page.tsx
+msgid "Rendering Standard Site documents"
+msgstr ""
+
 #: src/components/reader/terms-view.tsx
 msgid "For more about how {SITE_NAME} works, see the <0>About</0> page. For questions about these terms for this deployment, contact the operator of the site at the URL above."
 msgstr ""
@@ -868,6 +879,10 @@ msgstr "RSS-Feed-URL"
 msgid "Coming soon"
 msgstr "Demnächst"
 
+#: src/components/docs/renderers-docs-page.tsx
+msgid "The same renderer that powers Standard Reader, published as headless, unstyled packages. Give one a <0>site.standard.document</0> and your own components, and drop richly-formatted cross-platform posts into your own app — in React, Vue, Solid, Svelte, web components, or Angular."
+msgstr ""
+
 #: src/components/reader/save-to-collection-dialog.tsx
 msgid "e.g. To Read"
 msgstr "z. B. Zu lesen"
@@ -895,6 +910,10 @@ msgstr "API-Referenz"
 #: src/components/user-settings-view.tsx
 msgid "Body font"
 msgstr "Fließtextschrift"
+
+#: src/components/docs/renderers-docs-page.tsx
+msgid "Svelte 5."
+msgstr ""
 
 #: src/components/reader/about-view.tsx
 msgid "Fast full-text search"
@@ -983,6 +1002,11 @@ msgstr "Keine Publikationen in dieser Liste."
 msgid "Loading collections…"
 msgstr "Sammlungen werden geladen…"
 
+#: src/components/docs/docs-renderers-nav.tsx
+#: src/components/docs/renderers-docs-page.tsx
+msgid "The document input"
+msgstr ""
+
 #: src/components/user-settings-view.tsx
 msgid "Browse labelers"
 msgstr "Labeler durchstöbern"
@@ -1009,6 +1033,10 @@ msgstr "Das Leseerlebnis"
 msgid "Loading page"
 msgstr "Seite wird geladen"
 
+#: src/components/docs/renderers-docs-page.tsx
+msgid "The core, and new frameworks"
+msgstr ""
+
 #: src/components/reader/extension-privacy-view.tsx
 msgid "You can disable the page overlay and Bluesky embed save button in the extension options page. You can sign out from the web app to invalidate the session cookie the extension uses. Uninstalling the extension removes locally stored settings from your browser profile."
 msgstr "Sie können das Seiten-Overlay und den Speichern-Button in Bluesky-Embeds in den Optionen der Erweiterung deaktivieren. In der Web-App können Sie sich abmelden, um das von der Erweiterung genutzte Session-Cookie ungültig zu machen. Beim Deinstallieren der Erweiterung werden lokal gespeicherte Einstellungen aus Ihrem Browserprofil entfernt."
@@ -1034,6 +1062,10 @@ msgstr "Wir können diese Richtlinie ändern, wenn sich die Erweiterung ändert.
 #: src/components/reader/privacy-view.tsx
 msgid "Your choices"
 msgstr "Ihre Wahl"
+
+#: src/components/docs/renderers-docs-page.tsx
+msgid "Pick the package for your framework; all sit on the same core."
+msgstr ""
 
 #: src/routes/_layout.discover.tsx
 msgid "Known publications"
@@ -1314,6 +1346,10 @@ msgstr "Ausgabe wird gesetzt"
 msgid "Set API_DOCS_FIXTURE_LIST_URI to run this example."
 msgstr "Setzen Sie API_DOCS_FIXTURE_LIST_URI, um dieses Beispiel auszuführen."
 
+#: src/components/docs/renderers-docs-page.tsx
+msgid "React (this is what Standard Reader itself uses)."
+msgstr ""
+
 #: src/components/reader/about-view.tsx
 msgid "Add to Chrome"
 msgstr "Zu Chrome hinzufügen"
@@ -1364,6 +1400,10 @@ msgstr "Theme speichern"
 msgid "Readers"
 msgstr "Leser"
 
+#: src/components/docs/renderers-docs-page.tsx
+msgid "Walk the blocks, map each block type to your framework's primitive, and run text through <0>segmentInline</0> to render marks, links, mentions and footnote references. The existing renderers are the reference implementations."
+msgstr ""
+
 #: src/components/reader/document-share-menu.tsx
 msgid "View on PDSLS"
 msgstr "Auf PDSLS ansehen"
@@ -1403,6 +1443,10 @@ msgstr "Aktiv"
 msgid "Powered by Standard Reader"
 msgstr "Bereitgestellt von Standard Reader"
 
+#: src/components/docs/renderers-docs-page.tsx
+msgid "You usually depend on a framework renderer, not the core directly. But <0>@standard-reader/renderer-core</0> is public: reach for it to inspect or transform a document without rendering it, or to build a renderer for a framework not listed above. A renderer is just a walk over its normalized tree."
+msgstr ""
+
 #: src/components/reader/rss-feed-button.tsx
 #: src/routes/_layout.l.$did.$rkey.tsx
 msgid "RSS feed"
@@ -1412,6 +1456,10 @@ msgstr "RSS-Feed"
 #: src/components/docs/docs-api-nav.tsx
 msgid "Run a labeler"
 msgstr "Labeler betreiben"
+
+#: src/components/reader/read-on-platform.tsx
+msgid "Read on"
+msgstr ""
 
 #: src/components/user-settings-view.tsx
 msgid "Theme"
@@ -1523,6 +1571,10 @@ msgstr "Jeder ungelesene Artikel dieser Publikation wird als gelesen markiert. D
 msgid "Setting the issue…"
 msgstr "Ausgabe wird gesetzt…"
 
+#: src/components/docs/docs-renderers-nav.tsx
+msgid "Renderers guide"
+msgstr ""
+
 #: src/components/reader/subscribe-card.tsx
 msgid "Couldn't subscribe"
 msgstr "Abonnieren fehlgeschlagen"
@@ -1570,6 +1622,10 @@ msgstr "Hintergrund"
 #: src/components/reader/article-view.tsx
 msgid "Nine pieces, laid out as spreads — made to be read slowly. Click the book icon in the header."
 msgstr "Neun Texte, als Doppelseiten gesetzt – zum langsamen Lesen gemacht. Klicken Sie auf das Buchsymbol in der Kopfzeile."
+
+#: src/components/docs/renderers-docs-page.tsx
+msgid "Lit / web components."
+msgstr ""
 
 #: src/routes/_layout.latest.tsx
 msgid "From your subscriptions"
@@ -1635,6 +1691,10 @@ msgstr "Labels"
 #: src/routes/_layout.feedback.index.tsx
 msgid "Filter by tag"
 msgstr "Nach Tag filtern"
+
+#: src/components/docs/renderers-docs-page.tsx
+msgid "The <0>components</0> map is a partial override — anything you omit uses the unstyled default. It comes in two categories:"
+msgstr ""
 
 #: src/components/docs/publishing-docs-page.tsx
 msgid "Publishing without a platform"
@@ -1707,6 +1767,10 @@ msgstr "Vorerst überspringen"
 #: src/components/reader/about-view.tsx
 msgid "The latest across everyone you subscribe to"
 msgstr "Das Neueste von allen, die Sie abonniert haben"
+
+#: src/components/docs/renderers-docs-page.tsx
+msgid "SolidJS."
+msgstr ""
 
 #: src/components/user-settings-view.tsx
 msgid "Publications to explore"
@@ -1865,6 +1929,10 @@ msgstr "Leitfaden zum Veröffentlichen"
 msgid "Worth subscribing to"
 msgstr "Einen Blick wert"
 
+#: src/components/docs/renderers-docs-page.tsx
+msgid "Angular."
+msgstr ""
+
 #: src/components/reader/app-shell.tsx
 #: src/components/reader/subscriptions-sheet.tsx
 msgid "Subscription list actions"
@@ -1893,6 +1961,10 @@ msgstr "Konto wechseln"
 #: src/routes/_layout.feedback.index.tsx
 msgid "New"
 msgstr "Neu"
+
+#: src/components/docs/renderers-docs-page.tsx
+msgid "All the format-specific work happens once, in a framework-agnostic core that normalizes every format into one block vocabulary. Each framework renderer is a thin walk over that shared tree, so the same mental model — one document input, one components map — transfers between frameworks."
+msgstr ""
 
 #: src/routes/_layout.latest.tsx
 msgid "On the network"
@@ -1926,6 +1998,11 @@ msgstr "{selectedCount} ausgewählt — noch {remainingFollows} für einen volle
 #: src/routes/_layout.latest.tsx
 msgid "{formattedMetaCount} unread"
 msgstr "{formattedMetaCount} ungelesen"
+
+#: src/components/docs/docs-renderers-nav.tsx
+#: src/components/docs/renderers-docs-page.tsx
+msgid "Packages"
+msgstr ""
 
 #: src/routes/_layout.index.tsx
 msgid "Loading today"
@@ -2098,6 +2175,7 @@ msgstr "Reihen"
 #: src/components/docs/docs-topbar.tsx
 #: src/components/docs/lexicon-docs-intro.tsx
 #: src/components/docs/publishing-docs-page.tsx
+#: src/components/docs/renderers-docs-page.tsx
 msgid "Developer docs"
 msgstr "Entwicklerdokumentation"
 
@@ -2120,6 +2198,10 @@ msgstr "Diese Publikation konnten wir nicht finden."
 #: src/components/reader/page-reader-bar.tsx
 msgid "Generating audio… {percent}%"
 msgstr "Audio wird erzeugt… {percent} %"
+
+#: src/components/docs/docs-topbar.tsx
+msgid "Renderers"
+msgstr ""
 
 #: src/routes/_layout.latest.tsx
 msgid "Unread"
@@ -2437,6 +2519,7 @@ msgstr "<0>1. Identität & Signaturschlüssel.</0> Geben Sie ihm eine DID (am ei
 #: src/components/docs/docs-api-mobile-jump-nav.tsx
 #: src/components/docs/docs-lexicons-mobile-jump-nav.tsx
 #: src/components/docs/docs-publishing-mobile-jump-nav.tsx
+#: src/components/docs/docs-renderers-mobile-jump-nav.tsx
 msgid "Jump to"
 msgstr "Springe zu"
 
@@ -2597,6 +2680,10 @@ msgstr "Ihr Anzeigename, Handle, Avatar-URL und DID, wie von Ihrem Konto-Anbiete
 msgid "We may update these terms as the product changes. The “Last updated” date at the top will change when we do. Continued use of the site after an update means you accept the revised terms."
 msgstr ""
 
+#: src/components/docs/renderers-docs-page.tsx
+msgid "The exact override mechanism is idiomatic per framework — a components object of functions in React, Vue and Solid, <0>lit-html</0> templates in Lit, snippets in Svelte, or <1><ng-template></1> refs in Angular — but the split and the vocabulary are the same everywhere. See each package's README for the framework-specific shape."
+msgstr ""
+
 #: src/components/reader/about-view.tsx
 msgid "Save, like, subscribe — everywhere"
 msgstr "Speichern, liken, abonnieren – überall"
@@ -2627,6 +2714,10 @@ msgstr "Die Stimmprobe konnte nicht abgespielt werden."
 msgid "{0, plural, one {# publication} other {{1} publications}}"
 msgstr ""
 
+#: src/components/docs/renderers-docs-page.tsx
+msgid "<0>Shared</0> components render the block and inline vocabulary that every format has in common — paragraphs, headings, images, code, lists, tables, and the inline marks (bold, links, mentions, footnotes). Override one and it applies across every format."
+msgstr ""
+
 #: src/components/docs/docs-topbar.tsx
 msgid "API"
 msgstr "API"
@@ -2638,6 +2729,11 @@ msgstr "Symbol ersetzen"
 #: src/components/onboarding/welcome-wizard.tsx
 msgid "You can subscribe to publications from Discover."
 msgstr "Publikationen können Sie unter „Entdecken“ abonnieren."
+
+#: src/components/docs/docs-renderers-nav.tsx
+#: src/components/docs/renderers-docs-page.tsx
+msgid "Customizing components"
+msgstr ""
 
 #: src/components/reader/app-shell.tsx
 #: src/components/reader/list-edit-modal.tsx
@@ -2737,6 +2833,11 @@ msgstr "Alle Publikationslisten, die Sie in dieser App erstellt haben."
 msgid "Bug reports, feature requests, and questions for Standard Reader. Feedback lives on <0>userinput.app</0>."
 msgstr "Fehlerberichte, Feature-Wünsche und Fragen zu Standard Reader. Das Feedback liegt auf <0>userinput.app</0>."
 
+#: src/components/docs/docs-renderers-nav.tsx
+#: src/components/docs/renderers-docs-page.tsx
+msgid "Resolving platform data"
+msgstr ""
+
 #: src/components/labeler-detail-view.tsx
 msgid "This labeler hasn’t labeled any documents in the read-model yet."
 msgstr "Dieser Labeler hat im Read-Model noch keine Dokumente gelabelt."
@@ -2776,6 +2877,10 @@ msgstr "{name} hat hier noch nicht gelesen oder veröffentlicht. Sie finden das 
 #: src/components/reader/collection-theme-editor.tsx
 msgid "Accent on background"
 msgstr "Akzent auf Hintergrund"
+
+#: src/components/docs/renderers-docs-page.tsx
+msgid "A publication body can arrive in many formats — Leaflet, Pckt, Offprint, and a long tail of third-party block and markdown formats. These packages parse all of them and render each block with <0>your</0> components. They ship no styles and no design system: the defaults are the barest semantic HTML, and every component is overridable."
+msgstr ""
 
 #: src/routes/_layout.friends.tsx
 msgid "Either no one you follow on Bluesky publishes here yet, or you're already subscribed to everyone who does. As more of them start publishing, they'll show up here."
@@ -2906,6 +3011,11 @@ msgstr ""
 #: src/routes/extension.connected.tsx
 msgid "Close tab"
 msgstr "Tab schließen"
+
+#: src/components/docs/docs-renderers-nav.tsx
+#: src/components/docs/renderers-docs-page.tsx
+msgid "Quick start"
+msgstr ""
 
 #: src/components/ReaderVoiceMenu.tsx
 #: src/components/user-settings-view.tsx
@@ -3182,6 +3292,10 @@ msgstr ""
 msgid "Remove"
 msgstr "Entfernen"
 
+#: src/components/docs/renderers-docs-page.tsx
+msgid "<0>Platform</0> components render the blocks unique to one publishing platform — a Leaflet poll or signup, a Pckt gallery or note embed, an Offprint component. These are the interactive, often data-backed embeds; the headless defaults render nothing, so you supply your own to make them live."
+msgstr ""
+
 #: src/components/reader/discover-topic-filters.tsx
 msgid "Filter by topic: {triggerLabel}"
 msgstr "Nach Thema filtern: {triggerLabel}"
@@ -3218,6 +3332,10 @@ msgstr "Stimme wird geladen … {percent} %"
 #: src/components/docs/docs-topbar.tsx
 msgid "Docs"
 msgstr "Doku"
+
+#: src/components/docs/docs-renderers-nav.tsx
+msgid "The core / new frameworks"
+msgstr ""
 
 #: src/components/reader/about-view.tsx
 msgid "Subscribe to the publications on <0>standard.site</0> you care about. New writing simply arrives, in the order it was written — no feed to fight, nothing shouting for your attention. Just good long-form, and a genuinely nice way to keep finding more of it."
@@ -3278,6 +3396,10 @@ msgstr "<0>2. Label ausliefern.</0> Signieren und senden Sie <1>com.atproto.labe
 #: src/routes/_layout.search.tsx
 msgid "Try \"climate\", \"typography\", or a handle like stdout.dev"
 msgstr "Versuchen Sie \"Klima\", \"Typografie\" oder ein Handle wie stdout.dev"
+
+#: src/components/docs/renderers-docs-page.tsx
+msgid "The platform components — and the inline mention and link components — hand you AT-URIs and DIDs to resolve to records and identities yourself. A hosted AT Protocol data service like <0>microcosm</0> works great for many of them: <1>Slingshot</1> for record and identity resolution, and <2>Constellation</2> for network-wide backlinks and interaction counts (poll tallies, reply counts, who-embedded-this)."
+msgstr ""
 
 #: src/components/reader/privacy-view.tsx
 msgid "We do not host publication content. Articles and publications remain in their authors' repositories; our database is a derived index for fast browsing and search."
@@ -3410,9 +3532,17 @@ msgstr "Vorschau des Wochenrückblicks"
 msgid "Listen aloud voice"
 msgstr "Stimme zum Vorlesen"
 
+#: src/components/docs/renderers-docs-page.tsx
+msgid "Every renderer takes one input for the document — the content payload of a <0>site.standard.document</0>. The format is detected from the payload's <1>$type</1>."
+msgstr ""
+
 #: src/routes/_layout.tag.$tag.tsx
 msgid "Tag"
 msgstr "Tag"
+
+#: src/components/docs/renderers-docs-page.tsx
+msgid "The React package, for example. With no <0>components</0> prop, a document renders as unstyled semantic HTML."
+msgstr ""
 
 #: src/routes/_layout.friends.tsx
 #~ msgid "Publications written by the people you follow on Bluesky. Follow someone here and every publication they write lands on your Home feed."
@@ -3859,6 +3989,7 @@ msgid "Publications"
 msgstr "Publikationen"
 
 #: src/components/docs/docs-publishing-nav.tsx
+#: src/components/docs/docs-renderers-nav.tsx
 msgid "On this page"
 msgstr "Auf dieser Seite"
 
@@ -4164,6 +4295,10 @@ msgstr "{connectionLabel} über Semble"
 #: src/magazine/flow.tsx
 msgid "In this issue"
 msgstr "In dieser Ausgabe"
+
+#: src/components/reader/read-on-platform.tsx
+msgid "Read this on {name}"
+msgstr ""
 
 #: src/components/reader/terms-view.tsx
 msgid "Acceptable use"
