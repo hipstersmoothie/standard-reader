@@ -54,7 +54,7 @@
     "db:studio": "drizzle-kit studio",
     "lex:lint": "node scripts/goat-lex.mjs lex lint lexicons/app/standard-reader",
     "lex:status": "node scripts/goat-lex.mjs lex status",
-    "atproto:publish-lexicons": "node scripts/goat-lex.mjs lex publish",
+    "atproto:publish-lexicons": "node scripts/goat-lex.mjs lex publish --update",
     "lexicons:generate": "pnpm --filter @standard-reader/lexicons generate",
     "lexicons:build": "pnpm --filter @standard-reader/lexicons build",
     "extension:dev": "pnpm --filter standard-reader-extension dev",
