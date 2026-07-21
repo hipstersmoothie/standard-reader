@@ -24,7 +24,7 @@
   },
   "scripts": {
     "lex:install": "ts-lex install --lexicons ../../lexicons --ci",
-    "lex:build": "ts-lex build --lexicons ../../lexicons --out src/lexicons --lib @atproto/lex-schema --exclude app.bsky.feed.defs app.bsky.embed.defs --index-file --clear",
+    "lex:build": "ts-lex build --lexicons ../../lexicons --out src/lexicons --lib @atproto/lex-schema --exclude app.bsky.feed.defs app.bsky.embed.defs com.atproto.label.queryLabels com.atproto.label.subscribeLabels --index-file --clear",
     "generate": "pnpm run lex:build",
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",

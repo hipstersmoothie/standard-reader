@@ -5,8 +5,9 @@ The **Standard Reader** XRPC API as typed AT Protocol lexicon schemas.
 This package is generated directly from Standard Reader's lexicons
 (`lexicons/app/standard-reader/*.json`) using
 [`@atproto/lex`](https://www.npmjs.com/package/@atproto/lex) — the official
-atproto Lexicon codegen. It exports the generated schema objects (grouped by
-NSID authority: `app`, `at`, `com`) and nothing else.
+atproto Lexicon codegen. Its primary export, `standardReader`, holds a generated
+schema object for every `app.standard-reader.*` method and record (e.g.
+`standardReader.getDocument`).
 
 > There is no OpenAPI step: XRPC is RPC-over-HTTP, not REST, so the schemas are
 > generated straight from the lexicons, preserving atproto-native semantics
@@ -30,16 +31,16 @@ pnpm add @standard-reader/api-client @atproto/lex-client
 
 ```ts
 import { Client } from "@atproto/lex-client";
-import { app, STANDARD_READER_SERVICE } from "@standard-reader/api-client";
+import { standardReader, STANDARD_READER_SERVICE } from "@standard-reader/api-client";
 
 const client = new Client(STANDARD_READER_SERVICE); // https://standard-reader.app
 
 const { publications } = await client.call(
-  app["standard-reader"].getTrendingPublications,
+  standardReader.getTrendingPublications,
   { limit: 12 },
 );
 
-const doc = await client.call(app["standard-reader"].getDocument, {
+const doc = await client.call(standardReader.getDocument, {
   document: "at://did:plc:…/app.standard-reader.document/…",
 });
 ```
@@ -66,7 +67,7 @@ const client = new Client({
     }),
 });
 
-await client.call(app["standard-reader"].markRead, { document: "at://…" });
+await client.call(standardReader.markRead, { document: "at://…" });
 ```
 
 See [`@atproto/lex-client`](https://www.npmjs.com/package/@atproto/lex-client)
@@ -77,12 +78,15 @@ for the full agent/auth API.
 `src/lexicons/` is generated and committed (do not edit by hand). It covers:
 
 - `app["standard-reader"].*` — every Standard Reader query, procedure, and
-  record.
-- `com.atproto.label.*` and `at.markpub.*` — the external definitions the
-  Standard Reader lexicons reference.
+  record (exposed as the `standardReader` shorthand).
+- `com.atproto.label.defs` and `at.markpub.*` — the external definitions the
+  Standard Reader lexicons actually reference (labels returned by `getLabels`;
+  the markdown body of the `collection` record). Reach them via the full
+  `lexicons` export, e.g. `lexicons.com.atproto.label.defs`.
 
-Unrelated `app.bsky.*` reference lexicons vendored in the repo are excluded from
-generation.
+Reference lexicons vendored in the repo but not referenced by our API
+(`app.bsky.*`, the `com.atproto.label` query/subscription methods) are excluded
+from generation.
 
 ## Regenerating
 
