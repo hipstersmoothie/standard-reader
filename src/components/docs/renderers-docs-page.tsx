@@ -139,8 +139,8 @@ export function RenderersDocsPage() {
               site.standard.document
             </code>{" "}
             — and an optional{" "}
-            <code {...stylex.props(docsStyles.codeInline)}>components</code> map.
-            The format is detected from the payload&apos;s{" "}
+            <code {...stylex.props(docsStyles.codeInline)}>components</code>{" "}
+            map. The format is detected from the payload&apos;s{" "}
             <code {...stylex.props(docsStyles.codeInline)}>$type</code>. With no{" "}
             <code {...stylex.props(docsStyles.codeInline)}>components</code>{" "}
             prop, a document renders as unstyled semantic HTML.
@@ -234,15 +234,14 @@ export function RenderersDocsPage() {
         <p {...stylex.props(docsStyles.prose)}>
           <Trans>
             You usually depend on a framework renderer, not the core directly.
-            But{" "}
-            <PackageLink name="@standard-reader/renderer-core" /> is public:
-            reach for it to inspect or transform a document without rendering it,
-            or to build a renderer for a framework not listed above. A renderer
-            is just a walk over its normalized tree — map each block type to your
-            framework&apos;s primitive, and run text through the core&apos;s
-            inline segmenter to render marks, links, mentions and footnote
-            references. The existing renderers are the reference implementations;
-            the API is documented in the{" "}
+            But <PackageLink name="@standard-reader/renderer-core" /> is public:
+            reach for it to inspect or transform a document without rendering
+            it, or to build a renderer for a framework not listed above. A
+            renderer is just a walk over its normalized tree — map each block
+            type to your framework&apos;s primitive, and run text through the
+            core&apos;s inline segmenter to render marks, links, mentions and
+            footnote references. The existing renderers are the reference
+            implementations; the API is documented in the{" "}
             <PackageLink name="@standard-reader/renderer-core" /> README on npm.
           </Trans>
         </p>
