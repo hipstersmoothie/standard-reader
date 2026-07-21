@@ -354,6 +354,10 @@ msgstr "竖版"
 msgid "New collection"
 msgstr "新建合集"
 
+#: src/routes/_layout.index.tsx
+msgid "Caught up"
+msgstr ""
+
 #: src/components/reader/collection-builder.tsx
 msgid "Move down"
 msgstr "下移"
@@ -581,6 +585,10 @@ msgstr "重试"
 #: src/components/user-settings-view.tsx
 msgid "Delete history"
 msgstr "删除历史记录"
+
+#: src/routes/_layout.index.tsx
+msgid "Your subscriptions have been quiet. The directory knows about every publication on the network — there's more to find."
+msgstr ""
 
 #: src/routes/login.tsx
 msgid "You can use any Atmosphere account, including accounts from Bluesky, Tangled, Semble, and all the <0>other apps.</0>"
@@ -875,6 +883,10 @@ msgstr "浏览你的信息流"
 msgid "RSS feed URL"
 msgstr "RSS 源地址"
 
+#: src/components/reader/discover-topic-filters.tsx
+msgid "No topics match “{debouncedQuery}”."
+msgstr ""
+
 #: src/components/onboarding/step-settings.tsx
 msgid "Coming soon"
 msgstr "敬请期待"
@@ -1123,6 +1135,10 @@ msgstr "{total, plural, one {# 条匹配} other {# 条匹配}}"
 #: src/components/reader/about-view.tsx
 msgid "Publications, lists, and collections each get a clean link with a rich preview card — plus a subscribe button a publication can drop on its own site."
 msgstr "刊物、列表和合集都有简洁的链接与丰富的预览卡片——刊物还能把订阅按钮放到自己的网站上。"
+
+#: src/components/reader/discover-topic-filters.tsx
+msgid "Search topics"
+msgstr ""
 
 #: src/routes/_layout.collections.index.tsx
 msgid "No collections in this series yet."
@@ -1614,6 +1630,10 @@ msgstr "返回反馈"
 #: src/routes/_layout.search.tsx
 msgid "{pubTotal, plural, one {# publication} other {# publications}}"
 msgstr "{pubTotal, plural, one {# 个刊物} other {# 个刊物}}"
+
+#: src/routes/_layout.index.tsx
+msgid "Nothing new today"
+msgstr ""
 
 #: src/components/reader/collection-theme-editor.tsx
 msgid "Background"
@@ -2825,6 +2845,10 @@ msgstr "已发布到我们在 userinput.app 上的<0>反馈板</0>。首次使�
 msgid "No known labelers yet."
 msgstr "暂无已知的标注服务。"
 
+#: src/routes/_layout.index.tsx
+msgid "You're all caught up"
+msgstr ""
+
 #: src/components/user-settings-view.tsx
 msgid "All publication lists you created in this app."
 msgstr "你在本应用中创建的所有刊物列表。"
@@ -2854,6 +2878,10 @@ msgstr "深色"
 #: src/routes/login.tsx
 msgid "Sign in with Bluesky to subscribe. We only ask permission to add this follow to your account."
 msgstr "使用 Bluesky 登录以订阅。我们仅请求向你的账号添加此关注的权限。"
+
+#: src/routes/_layout.index.tsx
+msgid "The publications you follow haven't published anything recently."
+msgstr ""
 
 #: src/components/labeler-detail-view.tsx
 #: src/components/reader/about-view.tsx
@@ -3531,6 +3559,10 @@ msgstr "每周摘要预览"
 #: src/components/user-settings-view.tsx
 msgid "Listen aloud voice"
 msgstr "朗读语音"
+
+#: src/routes/_layout.index.tsx
+msgid "Nothing left unread from the publications you follow. There's more on the network than you're following yet."
+msgstr ""
 
 #: src/components/docs/renderers-docs-page.tsx
 msgid "Every renderer takes one input for the document — the content payload of a <0>site.standard.document</0>. The format is detected from the payload's <1>$type</1>."
@@ -4214,6 +4246,10 @@ msgstr "分享"
 msgid "Your weekly digest"
 msgstr "你的每周摘要"
 
+#: src/components/reader/discover-topic-filters.tsx
+msgid "Search all topics…"
+msgstr ""
+
 #: src/components/reader/about-view.tsx
 #: src/routes/_layout.discover.tsx
 msgid "Subscribed to by people you follow"
@@ -4222,6 +4258,10 @@ msgstr "你关注的人订阅了"
 #: src/routes/_layout.collections.index.tsx
 msgid "Add collections as issues"
 msgstr "把合集添加为期"
+
+#: src/routes/_layout.index.tsx
+msgid "You've read everything from the publications you follow."
+msgstr ""
 
 #: src/components/onboarding/welcome-wizard.tsx
 #: src/components/reader/about-view.tsx

@@ -354,6 +354,10 @@ msgstr "Portrait"
 msgid "New collection"
 msgstr "Nouvelle collection"
 
+#: src/routes/_layout.index.tsx
+msgid "Caught up"
+msgstr ""
+
 #: src/components/reader/collection-builder.tsx
 msgid "Move down"
 msgstr "Descendre"
@@ -581,6 +585,10 @@ msgstr "Réessayer"
 #: src/components/user-settings-view.tsx
 msgid "Delete history"
 msgstr "Supprimer l’historique"
+
+#: src/routes/_layout.index.tsx
+msgid "Your subscriptions have been quiet. The directory knows about every publication on the network — there's more to find."
+msgstr ""
 
 #: src/routes/login.tsx
 msgid "You can use any Atmosphere account, including accounts from Bluesky, Tangled, Semble, and all the <0>other apps.</0>"
@@ -875,6 +883,10 @@ msgstr "Parcourir votre flux"
 msgid "RSS feed URL"
 msgstr "URL du flux RSS"
 
+#: src/components/reader/discover-topic-filters.tsx
+msgid "No topics match “{debouncedQuery}”."
+msgstr ""
+
 #: src/components/onboarding/step-settings.tsx
 msgid "Coming soon"
 msgstr "Bientôt disponible"
@@ -1123,6 +1135,10 @@ msgstr "{total, plural, one {# résultat} other {# résultats}}"
 #: src/components/reader/about-view.tsx
 msgid "Publications, lists, and collections each get a clean link with a rich preview card — plus a subscribe button a publication can drop on its own site."
 msgstr "Publications, listes et collections disposent chacune d'un lien épuré avec un aperçu enrichi — ainsi que d'un bouton d'abonnement qu'une publication peut installer sur son propre site."
+
+#: src/components/reader/discover-topic-filters.tsx
+msgid "Search topics"
+msgstr ""
 
 #: src/routes/_layout.collections.index.tsx
 msgid "No collections in this series yet."
@@ -1614,6 +1630,10 @@ msgstr "Retour aux retours"
 #: src/routes/_layout.search.tsx
 msgid "{pubTotal, plural, one {# publication} other {# publications}}"
 msgstr "{pubTotal, plural, one {# publication} other {# publications}}"
+
+#: src/routes/_layout.index.tsx
+msgid "Nothing new today"
+msgstr ""
 
 #: src/components/reader/collection-theme-editor.tsx
 msgid "Background"
@@ -2825,6 +2845,10 @@ msgstr "Publié sur notre <0>tableau de retours</0> sur userinput.app. Une autor
 msgid "No known labelers yet."
 msgstr "Aucun service d'étiquetage connu pour l'instant."
 
+#: src/routes/_layout.index.tsx
+msgid "You're all caught up"
+msgstr ""
+
 #: src/components/user-settings-view.tsx
 msgid "All publication lists you created in this app."
 msgstr "Toutes les listes de publications que vous avez créées dans cette application."
@@ -2854,6 +2878,10 @@ msgstr "Sombre"
 #: src/routes/login.tsx
 msgid "Sign in with Bluesky to subscribe. We only ask permission to add this follow to your account."
 msgstr "Connectez-vous avec Bluesky pour vous abonner. Nous demandons uniquement l'autorisation d'ajouter cet abonnement à votre compte."
+
+#: src/routes/_layout.index.tsx
+msgid "The publications you follow haven't published anything recently."
+msgstr ""
 
 #: src/components/labeler-detail-view.tsx
 #: src/components/reader/about-view.tsx
@@ -3531,6 +3559,10 @@ msgstr "Aperçu du résumé hebdomadaire"
 #: src/components/user-settings-view.tsx
 msgid "Listen aloud voice"
 msgstr "Voix de la lecture à voix haute"
+
+#: src/routes/_layout.index.tsx
+msgid "Nothing left unread from the publications you follow. There's more on the network than you're following yet."
+msgstr ""
 
 #: src/components/docs/renderers-docs-page.tsx
 msgid "Every renderer takes one input for the document — the content payload of a <0>site.standard.document</0>. The format is detected from the payload's <1>$type</1>."
@@ -4214,6 +4246,10 @@ msgstr "Partager"
 msgid "Your weekly digest"
 msgstr "Votre résumé hebdomadaire"
 
+#: src/components/reader/discover-topic-filters.tsx
+msgid "Search all topics…"
+msgstr ""
+
 #: src/components/reader/about-view.tsx
 #: src/routes/_layout.discover.tsx
 msgid "Subscribed to by people you follow"
@@ -4222,6 +4258,10 @@ msgstr "Suivi par des personnes que vous suivez"
 #: src/routes/_layout.collections.index.tsx
 msgid "Add collections as issues"
 msgstr "Ajouter des collections comme numéros"
+
+#: src/routes/_layout.index.tsx
+msgid "You've read everything from the publications you follow."
+msgstr ""
 
 #: src/components/onboarding/welcome-wizard.tsx
 #: src/components/reader/about-view.tsx

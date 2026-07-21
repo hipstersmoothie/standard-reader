@@ -354,6 +354,10 @@ msgstr "Vertical"
 msgid "New collection"
 msgstr "Nova coleção"
 
+#: src/routes/_layout.index.tsx
+msgid "Caught up"
+msgstr ""
+
 #: src/components/reader/collection-builder.tsx
 msgid "Move down"
 msgstr "Mover para baixo"
@@ -581,6 +585,10 @@ msgstr "Tentar novamente"
 #: src/components/user-settings-view.tsx
 msgid "Delete history"
 msgstr "Apagar histórico"
+
+#: src/routes/_layout.index.tsx
+msgid "Your subscriptions have been quiet. The directory knows about every publication on the network — there's more to find."
+msgstr ""
 
 #: src/routes/login.tsx
 msgid "You can use any Atmosphere account, including accounts from Bluesky, Tangled, Semble, and all the <0>other apps.</0>"
@@ -875,6 +883,10 @@ msgstr "Explorar o seu feed"
 msgid "RSS feed URL"
 msgstr "URL do feed RSS"
 
+#: src/components/reader/discover-topic-filters.tsx
+msgid "No topics match “{debouncedQuery}”."
+msgstr ""
+
 #: src/components/onboarding/step-settings.tsx
 msgid "Coming soon"
 msgstr "Em breve"
@@ -1123,6 +1135,10 @@ msgstr "{total, plural, one {# resultado} other {# resultados}}"
 #: src/components/reader/about-view.tsx
 msgid "Publications, lists, and collections each get a clean link with a rich preview card — plus a subscribe button a publication can drop on its own site."
 msgstr "Publicações, listas e coleções, cada uma têm um link com um cartão de pré-visualização — mais um botão de inscrição que uma publicação pode colocar no seu próprio site."
+
+#: src/components/reader/discover-topic-filters.tsx
+msgid "Search topics"
+msgstr ""
 
 #: src/routes/_layout.collections.index.tsx
 msgid "No collections in this series yet."
@@ -1410,7 +1426,7 @@ msgstr "Ver no PDSLS"
 
 #: src/routes/_layout.discover.tsx
 msgid "Subscribe to a few publications to unlock recommendations."
-msgstr Inscreva-se em algumas publicações para desbloquear recomendações."
+msgstr ""
 
 #: src/routes/_layout.discover.tsx
 msgid "See publications from the people you follow"
@@ -1614,6 +1630,10 @@ msgstr "Voltar a feedback"
 #: src/routes/_layout.search.tsx
 msgid "{pubTotal, plural, one {# publication} other {# publications}}"
 msgstr "{pubTotal, plural, one {# publicação} other {# publicações}}"
+
+#: src/routes/_layout.index.tsx
+msgid "Nothing new today"
+msgstr ""
 
 #: src/components/reader/collection-theme-editor.tsx
 msgid "Background"
@@ -2825,6 +2845,10 @@ msgstr "Publicado no nosso <0>quadro de feedback</0> em userinput.app. Poderá s
 msgid "No known labelers yet."
 msgstr "Ainda não há rotuladores conhecidos."
 
+#: src/routes/_layout.index.tsx
+msgid "You're all caught up"
+msgstr ""
+
 #: src/components/user-settings-view.tsx
 msgid "All publication lists you created in this app."
 msgstr "Todas as listas de publicações que criou nesta aplicação."
@@ -2854,6 +2878,10 @@ msgstr "Escuro"
 #: src/routes/login.tsx
 msgid "Sign in with Bluesky to subscribe. We only ask permission to add this follow to your account."
 msgstr "Inicie sessão com o Bluesky para se inscrever. Apenas pedimos permissão para adicionar esta ação à sua conta."
+
+#: src/routes/_layout.index.tsx
+msgid "The publications you follow haven't published anything recently."
+msgstr ""
 
 #: src/components/labeler-detail-view.tsx
 #: src/components/reader/about-view.tsx
@@ -2965,7 +2993,7 @@ msgstr "Ainda não há listas — mude para Nova lista para criar uma."
 
 #: src/components/reader/terms-view.tsx
 msgid "{SITE_NAME} is provided “as is” and “as available,” without warranties of any kind, whether express or implied. We do not guarantee that the service will be uninterrupted, error-free, or that the index will always be complete or current. To the fullest extent permitted by law, the operator of this deployment is not liable for any indirect, incidental, or consequential damages arising from your use of the site."
-msgstr "O {SITE_NAME} é disponibilizado "no “estado em que se encontra” e “conforme a disponibilidade”, sem garantias de qualquer tipo, sejam elas expressas ou implícitas. Não garantimos que o serviço será ininterrupto ou livre de erros, nem que o índice estará sempre completo ou atualizado. Na máxima extensão permitida por lei, o operador desta implementação não se responsabiliza por quaisquer danos indiretos, incidentais ou consequenciais decorrentes do seu uso do site."
+msgstr "O {SITE_NAME} é disponibilizado \"no “estado em que se encontra” e “conforme a disponibilidade”, sem garantias de qualquer tipo, sejam elas expressas ou implícitas. Não garantimos que o serviço será ininterrupto ou livre de erros, nem que o índice estará sempre completo ou atualizado. Na máxima extensão permitida por lei, o operador desta implementação não se responsabiliza por quaisquer danos indiretos, incidentais ou consequenciais decorrentes do seu uso do site."
 
 #: src/routes/_layout.feedback.index.tsx
 msgid "Show implemented"
@@ -3531,6 +3559,10 @@ msgstr "Pré-visualização do resumo semanal"
 #: src/components/user-settings-view.tsx
 msgid "Listen aloud voice"
 msgstr "Voz da leitura em voz alta"
+
+#: src/routes/_layout.index.tsx
+msgid "Nothing left unread from the publications you follow. There's more on the network than you're following yet."
+msgstr ""
 
 #: src/components/docs/renderers-docs-page.tsx
 msgid "Every renderer takes one input for the document — the content payload of a <0>site.standard.document</0>. The format is detected from the payload's <1>$type</1>."
@@ -4192,7 +4224,7 @@ msgstr "O título da edição"
 
 #: src/components/reader/app-shell.tsx
 msgid "Loading subscriptions"
-msgstr Carregando inscrições"
+msgstr ""
 
 #: src/components/OpenLinksMenuItem.tsx
 #: src/components/TrackReadingHistoryMenuItem.tsx
@@ -4214,6 +4246,10 @@ msgstr "Compartilhar"
 msgid "Your weekly digest"
 msgstr "O seu resumo semanal"
 
+#: src/components/reader/discover-topic-filters.tsx
+msgid "Search all topics…"
+msgstr ""
+
 #: src/components/reader/about-view.tsx
 #: src/routes/_layout.discover.tsx
 msgid "Subscribed to by people you follow"
@@ -4222,6 +4258,10 @@ msgstr "Assinado por pessoas que segue"
 #: src/routes/_layout.collections.index.tsx
 msgid "Add collections as issues"
 msgstr "Adicionar coleções como edições"
+
+#: src/routes/_layout.index.tsx
+msgid "You've read everything from the publications you follow."
+msgstr ""
 
 #: src/components/onboarding/welcome-wizard.tsx
 #: src/components/reader/about-view.tsx

@@ -97,6 +97,23 @@ jobs:
       - name: Format check
         run: pnpm format:check
 
+      # Fail if any `<Trans>`/`t` string in the source hasn't been extracted
+      # into the `.po` catalogs. A missing entry renders the message's raw
+      # generated ID in the UI (e.g. the "Today" empty state showing "PK3-Q2"
+      # instead of "Nothing new today") — the symptom of adding a string but
+      # forgetting `pnpm i18n:extract`. This is a *freshness* check on the
+      # message set only: `git diff` catches new/removed msgids. It does not
+      # gate on untranslated `msgstr`s, since a translation backlog for the
+      # non-source locales is filled separately and is expected.
+      - name: Check i18n catalogs are up to date
+        run: |
+          pnpm i18n:extract
+          if ! git diff --quiet -- src/locales; then
+            echo "::error::Translation catalogs are stale. Run 'pnpm i18n:extract' and commit src/locales."
+            git --no-pager diff --stat -- src/locales
+            exit 1
+          fi
+
       # Build first: the TanStack Router Vite plugin generates the gitignored
       # src/routeTree.gen.ts, which lint and typecheck both need to resolve.
       - name: Build
