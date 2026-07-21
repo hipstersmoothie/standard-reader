@@ -31,11 +31,19 @@
     "prepack": "pnpm run build"
   },
   "dependencies": {
-    "@atproto/lex-client": "0.3.0",
     "@atproto/lex-schema": "0.2.2"
+  },
+  "peerDependencies": {
+    "@atproto/lex-client": "^0.3.0"
+  },
+  "peerDependenciesMeta": {
+    "@atproto/lex-client": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@atproto/lex": "0.3.0",
+    "@atproto/lex-client": "0.3.0",
     "typescript": "^6.0.2"
   }
 }
