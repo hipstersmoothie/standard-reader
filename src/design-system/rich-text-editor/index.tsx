@@ -28,6 +28,7 @@ import { focusColor, uiColor } from "../theme/color.stylex";
 import { radius } from "../theme/radius.stylex";
 import {
   horizontalSpace,
+  size,
   verticalSpace,
 } from "../theme/semantic-spacing.stylex";
 import type { StyleXComponentProps } from "../theme/types";
@@ -36,6 +37,7 @@ import { editorTheme } from "./editor-theme";
 import { markdownFromMarkpub, toMarkpubRecord } from "./markpub";
 import type { MarkpubRecord, MarkpubTextValue } from "./markpub";
 import { EDITOR_NODES } from "./nodes";
+import { BlockMenuPlugin } from "./plugins/block-menu";
 import { ToolbarPlugin } from "./plugins/toolbar";
 import { MARKPUB_TRANSFORMERS } from "./transformers";
 
@@ -66,13 +68,15 @@ const styles = stylex.create({
   },
   editorShell: {
     position: "relative",
+    maxHeight: 640,
+    overflowY: "auto",
   },
   contentEditable: {
     minHeight: verticalSpace["12xl"],
-    maxHeight: 640,
-    overflowY: "auto",
     paddingBlock: verticalSpace.xl,
-    paddingInline: horizontalSpace["3xl"],
+    // Extra inline-start room opens the gutter the "+" affordance lives in.
+    paddingInlineStart: size["4xl"],
+    paddingInlineEnd: horizontalSpace["3xl"],
     fontFamily: fontFamily.serif,
     fontSize: fontSize.base,
     lineHeight: lineHeight.xl,
@@ -196,6 +200,7 @@ export function RichTextEditor({
             }
             ErrorBoundary={LexicalErrorBoundary}
           />
+          {isReadOnly ? null : <BlockMenuPlugin />}
           <HistoryPlugin />
           <ListPlugin />
           <CheckListPlugin />
