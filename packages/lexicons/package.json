@@ -16,10 +16,6 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
-    },
-    "./lexicons": {
-      "types": "./dist/lexicons/index.d.ts",
-      "default": "./dist/lexicons/index.js"
     }
   },
   "scripts": {

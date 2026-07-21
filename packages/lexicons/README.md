@@ -78,11 +78,12 @@ for the full agent/auth API.
 `src/lexicons/` is generated and committed (do not edit by hand). It covers:
 
 - `app["standard-reader"].*` — every Standard Reader query, procedure, and
-  record (exposed as the `standardReader` shorthand).
+  record, exported as `standardReader`.
 - `com.atproto.label.defs` and `at.markpub.*` — the external definitions the
-  Standard Reader lexicons actually reference (labels returned by `getLabels`;
-  the markdown body of the `collection` record). Reach them via the full
-  `lexicons` export, e.g. `lexicons.com.atproto.label.defs`.
+  Standard Reader lexicons reference (labels returned by `getLabels`; the
+  markdown body of the `collection` record). These are generated internally so
+  method inputs/outputs are fully typed, but they are **not exported** — their
+  types flow through the `standardReader` method signatures.
 
 Reference lexicons vendored in the repo but not referenced by our API
 (`app.bsky.*`, the `com.atproto.label` query/subscription methods) are excluded
