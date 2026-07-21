@@ -93,6 +93,16 @@ export function IntroductionDocsPage() {
             </Trans>
           </li>
           <li>
+            <Link to="/docs/labelers" {...stylex.props(docsStyles.proseLink)}>
+              <Trans>Labelers</Trans>
+            </Link>{" "}
+            —{" "}
+            <Trans>
+              publish AT Protocol labels Standard Reader shows — and can warn on
+              or hide by — as readers read.
+            </Trans>
+          </li>
+          <li>
             <Link to="/docs/renderers" {...stylex.props(docsStyles.proseLink)}>
               <Trans>Renderers</Trans>
             </Link>{" "}

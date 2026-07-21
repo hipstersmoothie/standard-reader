@@ -83,6 +83,12 @@ export const PAGE_OG_CARDS = {
     tagline:
       "AppView XRPC queries and procedures for the Standard Reader read-model.",
   },
+  docsLabelers: {
+    path: "/docs/labelers",
+    title: "Labelers",
+    tagline:
+      "Publish AT Protocol labels Standard Reader shows — and can warn or hide by — as readers read.",
+  },
   docsLexicons: {
     path: "/docs/lexicons",
     title: "Lexicons",

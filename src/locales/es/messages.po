@@ -174,8 +174,8 @@ msgid "This list is empty — add publications or people to it."
 msgstr "Esta lista está vacía: añádale publicaciones o personas."
 
 #: src/components/docs/api-docs-intro.tsx
-msgid "A labeler is any DID that publishes AT Proto labels. Readers add one by DID on the <0>Labelers</0> page, and Standard Reader then shows that labeler's labels — and can warn on or hide labeled posts — as they read. Labelers are discovered the standard way; nothing about them is specific to us. To run your own:"
-msgstr "Un etiquetador es cualquier DID que publica etiquetas de AT Proto. Los lectores añaden uno por DID en la página <0>Etiquetadores</0> y, a partir de ahí, Standard Reader muestra las etiquetas de ese etiquetador (y puede advertir sobre los posts etiquetados u ocultarlos) mientras leen. Los etiquetadores se descubren de la forma estándar; nada en ellos es específico de nosotros. Para ejecutar el suyo:"
+#~ msgid "A labeler is any DID that publishes AT Proto labels. Readers add one by DID on the <0>Labelers</0> page, and Standard Reader then shows that labeler's labels — and can warn on or hide labeled posts — as they read. Labelers are discovered the standard way; nothing about them is specific to us. To run your own:"
+#~ msgstr "Un etiquetador es cualquier DID que publica etiquetas de AT Proto. Los lectores añaden uno por DID en la página <0>Etiquetadores</0> y, a partir de ahí, Standard Reader muestra las etiquetas de ese etiquetador (y puede advertir sobre los posts etiquetados u ocultarlos) mientras leen. Los etiquetadores se descubren de la forma estándar; nada en ellos es específico de nosotros. Para ejecutar el suyo:"
 
 #: src/components/user-settings-view.tsx
 msgid "The most-read articles across Standard this week."
@@ -271,7 +271,7 @@ msgstr "Claro"
 msgid "Your use of {SITE_NAME} is also governed by our <0>privacy policy</0>, which describes what we collect, where your data lives, and the choices you have."
 msgstr ""
 
-#: src/components/docs/api-docs-intro.tsx
+#: src/components/docs/labelers-docs-page.tsx
 msgid "For a complete, minimal reference implementation (Jetstream → detect → sign → SQLite → serve), see the <0>claudeslop</0> labeler in <1>services/claudeslop</1>."
 msgstr "Para una implementación de referencia completa y mínima (Jetstream → detectar → firmar → SQLite → servir), vea el etiquetador <0>claudeslop</0> en <1>services/claudeslop</1>."
 
@@ -327,6 +327,11 @@ msgstr "La mayoría de los lectores se quedan en lo que ya siguen. Standard Read
 #: src/routes/_layout.collections.index.tsx
 msgid "Name your series & pick a theme"
 msgstr "Ponga nombre a su serie y elija un tema"
+
+#: src/components/docs/docs-labelers-nav.tsx
+#: src/components/docs/labelers-docs-page.tsx
+msgid "Reference implementation"
+msgstr ""
 
 #: src/routes/_layout.feedback.index.tsx
 msgid "Bugs"
@@ -451,6 +456,10 @@ msgstr "¿Eliminar la lista?"
 msgid "Everything published recently across the publications you subscribe to."
 msgstr "Todo lo publicado recientemente en las publicaciones a las que está suscrito."
 
+#: src/components/docs/introduction-docs-page.tsx
+msgid "publish AT Protocol labels Standard Reader shows — and can warn on or hide by — as readers read."
+msgstr ""
+
 #: src/routes/_layout.latest.tsx
 msgid "Log in to follow publications"
 msgstr "Inicie sesión para seguir publicaciones"
@@ -528,7 +537,7 @@ msgstr "Suscríbase para recibir nuevos textos en su feed."
 msgid "A minimal loose document — no publication, Markpub markdown body:"
 msgstr "Un documento suelto mínimo, sin publicación y con cuerpo en markdown de Markpub:"
 
-#: src/components/docs/api-docs-intro.tsx
+#: src/components/docs/labelers-docs-page.tsx
 msgid "<0>4. Let readers subscribe.</0> When a reader subscribes we write an <1>app.standard-reader.labeler.subscription</1> record to their repo, carrying their per-label warn/hide preferences."
 msgstr "<0>4. Permita que los lectores se suscriban.</0> Cuando un lector se suscribe, escribimos un registro <1>app.standard-reader.labeler.subscription</1> en su repo con sus preferencias de advertir/ocultar por etiqueta."
 
@@ -572,10 +581,12 @@ msgstr "Cargando muestra de voz"
 #: src/components/docs/api-docs-intro.tsx
 #: src/components/docs/docs-api-nav.tsx
 #: src/components/docs/docs-introduction-nav.tsx
+#: src/components/docs/docs-labelers-nav.tsx
 #: src/components/docs/docs-lexicons-nav.tsx
 #: src/components/docs/docs-publishing-nav.tsx
 #: src/components/docs/docs-renderers-nav.tsx
 #: src/components/docs/introduction-docs-page.tsx
+#: src/components/docs/labelers-docs-page.tsx
 #: src/components/docs/lexicon-docs-intro.tsx
 #: src/components/docs/publishing-docs-page.tsx
 #: src/components/docs/renderers-docs-page.tsx
@@ -792,6 +803,10 @@ msgstr ""
 #: src/components/reader/list-edit-modal.tsx
 msgid "Member type to add"
 msgstr "Tipo de miembro para añadir"
+
+#: src/components/docs/labelers-docs-page.tsx
+msgid "A labeler is any DID that publishes AT Proto labels. Readers add one by DID on the <0>Labelers</0> page, and Standard Reader then shows that labeler's labels — and can warn on or hide labeled posts — as they read. Labelers are discovered the standard way; nothing about them is specific to us."
+msgstr ""
 
 #: src/components/docs/renderers-docs-page.tsx
 msgid "Rendering Standard Site documents"
@@ -1504,8 +1519,8 @@ msgstr "Feed RSS"
 
 #: src/components/docs/api-docs-intro.tsx
 #: src/components/docs/docs-api-nav.tsx
-msgid "Run a labeler"
-msgstr "Ejecutar un etiquetador"
+#~ msgid "Run a labeler"
+#~ msgstr "Ejecutar un etiquetador"
 
 #: src/components/reader/read-on-platform.tsx
 msgid "Read on"
@@ -1544,7 +1559,7 @@ msgstr "Volver a la aplicación"
 msgid "Switch to reader view"
 msgstr "Cambiar a la vista de lectura"
 
-#: src/components/docs/api-docs-intro.tsx
+#: src/components/docs/labelers-docs-page.tsx
 msgid "<0>3. Declare your label values.</0> Describe each value (severity, default warn/hide, blur behavior) in an <1>app.standard-reader.labeler.service</1> descriptor, served from <2>app.standard-reader.labeler.getServices</2> (a <3>did:web</3> labeler has no repo to hold the record)."
 msgstr "<0>3. Declare los valores de sus etiquetas.</0> Describa cada valor (gravedad, advertir/ocultar por defecto, comportamiento de desenfoque) en un descriptor <1>app.standard-reader.labeler.service</1>, servido desde <2>app.standard-reader.labeler.getServices</2> (un etiquetador <3>did:web</3> no tiene repositorio donde guardar el registro)."
 
@@ -1807,8 +1822,8 @@ msgid "A topic or tag"
 msgstr "Un tema o etiqueta"
 
 #: src/components/docs/api-docs-intro.tsx
-msgid "Prefer a typed client? The whole API ships as codegen'd AT Protocol lexicon schemas in <0>@standard-reader/lexicons</0>. Pair it with <1>@atproto/lex-client</1> for fully-typed <2>client.call()</2> queries and procedures. Its <3>getDocument</3> also returns a document's renderable body, ready to hand to the <4>renderers</4>."
-msgstr ""
+#~ msgid "Prefer a typed client? The whole API ships as codegen'd AT Protocol lexicon schemas in <0>@standard-reader/lexicons</0>. Pair it with <1>@atproto/lex-client</1> for fully-typed <2>client.call()</2> queries and procedures. Its <3>getDocument</3> also returns a document's renderable body, ready to hand to the <4>renderers</4>."
+#~ msgstr ""
 
 #: src/components/onboarding/welcome-wizard.tsx
 msgid "Couldn't save your follows"
@@ -1839,6 +1854,10 @@ msgstr ""
 #: src/routes/_layout.u.$did.tsx
 msgid "Nothing here yet"
 msgstr "Aquí todavía no hay nada"
+
+#: src/components/docs/api-docs-intro.tsx
+msgid "Prefer a typed client? The whole API ships as codegen'd AT Protocol lexicon schemas in <0>@standard-reader/lexicons</0>. Pair it with <1>@atproto/lex-client</1> for fully-typed <2>client.call()</2> queries and procedures."
+msgstr ""
 
 #: src/routes/_layout.p.$did.$rkey.tsx
 #: src/routes/_layout.u.$did.tsx
@@ -2248,6 +2267,7 @@ msgstr "Serie"
 #: src/components/docs/api-docs-intro.tsx
 #: src/components/docs/docs-topbar.tsx
 #: src/components/docs/introduction-docs-page.tsx
+#: src/components/docs/labelers-docs-page.tsx
 #: src/components/docs/lexicon-docs-intro.tsx
 #: src/components/docs/publishing-docs-page.tsx
 #: src/components/docs/renderers-docs-page.tsx
@@ -2601,7 +2621,7 @@ msgstr "Suscribirse a la lista"
 msgid "Most posts"
 msgstr "Más entradas"
 
-#: src/components/docs/api-docs-intro.tsx
+#: src/components/docs/labelers-docs-page.tsx
 msgid "<0>1. Identity & signing key.</0> Give it a DID (a <1>did:web</1> is simplest) whose DID document advertises an <2>#atproto_labeler</2> service endpoint and an <3>#atproto_label</3> public signing key."
 msgstr "<0>1. Identidad y clave de firma.</0> Asígnele un DID (un <1>did:web</1> es lo más sencillo) cuyo documento DID anuncie un punto de conexión de servicio <2>#atproto_labeler</2> y una clave pública de firma <3>#atproto_label</3>."
 
@@ -2766,6 +2786,10 @@ msgstr "Su nombre visible, handle, URL del avatar y DID, tal como los devuelve s
 msgid "We may update these terms as the product changes. The “Last updated” date at the top will change when we do. Continued use of the site after an update means you accept the revised terms."
 msgstr ""
 
+#: src/components/docs/labelers-docs-page.tsx
+msgid "Publish AT Protocol labels that Standard Reader shows — and can warn on or hide by — as readers read."
+msgstr ""
+
 #: src/components/docs/renderers-docs-page.tsx
 #~ msgid "The exact override mechanism is idiomatic per framework — a components object of functions in React, Vue and Solid, <0>lit-html</0> templates in Lit, snippets in Svelte, or <1><ng-template></1> refs in Angular — but the split and the vocabulary are the same everywhere. See each package's README for the framework-specific shape."
 #~ msgstr ""
@@ -2883,6 +2907,11 @@ msgstr "Todas las suscripciones están en esta lista."
 #: src/routes/_layout.collections.index.tsx
 msgid "Start your first series"
 msgstr "Comience su primera serie"
+
+#: src/components/docs/docs-labelers-nav.tsx
+#: src/components/docs/labelers-docs-page.tsx
+msgid "Running a labeler"
+msgstr ""
 
 #: src/components/reader/collection-theme-editor.tsx
 msgid "(needs {min}:1)"
@@ -3492,7 +3521,7 @@ msgstr "Comportamiento"
 msgid "Reading history"
 msgstr "Historial de lectura"
 
-#: src/components/docs/api-docs-intro.tsx
+#: src/components/docs/labelers-docs-page.tsx
 msgid "<0>2. Serve labels.</0> Sign and emit <1>com.atproto.label.defs#label</1> objects, and expose the standard <2>com.atproto.label.queryLabels</2> (HTTP) and <3>com.atproto.label.subscribeLabels</3> (WebSocket) endpoints."
 msgstr "<0>2. Servir etiquetas.</0> Firme y emita objetos <1>com.atproto.label.defs#label</1>, y exponga los endpoints estándar <2>com.atproto.label.queryLabels</2> (HTTP) y <3>com.atproto.label.subscribeLabels</3> (WebSocket)."
 
@@ -3797,6 +3826,9 @@ msgstr "{unread} sin leer"
 msgid "Delete all bookmarks?"
 msgstr "¿Eliminar todos los marcadores?"
 
+#: src/components/docs/docs-nav-areas.ts
+#: src/components/docs/introduction-docs-page.tsx
+#: src/components/docs/labelers-docs-page.tsx
 #: src/components/labelers-settings-view.tsx
 #: src/components/reader/app-shell.tsx
 #: src/components/user-settings-view.tsx
@@ -4112,6 +4144,7 @@ msgid "Publications"
 msgstr "Publicaciones"
 
 #: src/components/docs/docs-introduction-nav.tsx
+#: src/components/docs/docs-labelers-nav.tsx
 #: src/components/docs/docs-publishing-nav.tsx
 #: src/components/docs/docs-renderers-nav.tsx
 #: src/components/docs/docs-toc.tsx

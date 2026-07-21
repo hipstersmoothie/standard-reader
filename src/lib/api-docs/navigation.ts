@@ -4,7 +4,6 @@ export const API_DOCS_INTRO_IDS = {
   overview: "overview",
   discovery: "discovery",
   auth: "auth",
-  labelers: "labelers",
 } as const;
 
 export function apiDocsEndpointId(nsid: string): string {
@@ -46,7 +45,6 @@ function buildScrollSpyIds(): Array<string> {
     API_DOCS_INTRO_IDS.overview,
     API_DOCS_INTRO_IDS.discovery,
     API_DOCS_INTRO_IDS.auth,
-    API_DOCS_INTRO_IDS.labelers,
     ...API_DOCS_SECTIONS.flatMap((section) => [
       apiDocsSectionId(section),
       ...API_DOCS_CATALOG.filter((entry) => entry.section === section).map(
@@ -76,7 +74,6 @@ export function apiDocsJumpNavGroups(): Array<ApiDocsJumpNavGroup> {
         { id: API_DOCS_INTRO_IDS.overview, label: "Overview" },
         { id: API_DOCS_INTRO_IDS.discovery, label: "Service discovery" },
         { id: API_DOCS_INTRO_IDS.auth, label: "Authentication" },
-        { id: API_DOCS_INTRO_IDS.labelers, label: "Run a labeler" },
       ],
     },
     ...API_DOCS_SECTIONS.map((section) => ({

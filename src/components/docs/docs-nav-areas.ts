@@ -4,6 +4,7 @@ import { msg } from "@lingui/core/macro";
 export type DocsArea =
   | "introduction"
   | "api"
+  | "labelers"
   | "renderers"
   | "lexicons"
   | "publishing";
@@ -17,6 +18,7 @@ export const DOCS_AREAS: ReadonlyArray<{
   to:
     | "/docs/introduction"
     | "/docs/api"
+    | "/docs/labelers"
     | "/docs/renderers"
     | "/docs/lexicons"
     | "/docs/publishing";
@@ -24,6 +26,7 @@ export const DOCS_AREAS: ReadonlyArray<{
 }> = [
   { area: "introduction", to: "/docs/introduction", label: msg`Introduction` },
   { area: "api", to: "/docs/api", label: msg`API` },
+  { area: "labelers", to: "/docs/labelers", label: msg`Labelers` },
   { area: "renderers", to: "/docs/renderers", label: msg`Renderers` },
   { area: "lexicons", to: "/docs/lexicons", label: msg`Lexicons` },
   { area: "publishing", to: "/docs/publishing", label: msg`Publishing` },
