@@ -35,6 +35,7 @@ export const docsCodeColors = stylex.defineConsts({
 const REF_BREAK = "@media (max-width: 1280px)";
 const NAV_HIDE = "@media (max-width: 960px)";
 const DOCS_NAV_WIDTH = "264px";
+const DOCS_TOC_WIDTH = "248px";
 const DOCS_INTRO_MAX = "56rem";
 const DOCS_TOPBAR_HEIGHT = spacing["16"];
 
@@ -230,7 +231,8 @@ export const docsStyles = stylex.create({
     display: "grid",
     gridTemplateColumns: {
       [NAV_HIDE]: "minmax(0, 1fr)",
-      default: `${DOCS_NAV_WIDTH} minmax(0, 1fr)`,
+      [REF_BREAK]: `${DOCS_NAV_WIDTH} minmax(0, 1fr)`,
+      default: `${DOCS_NAV_WIDTH} minmax(0, 1fr) ${DOCS_TOC_WIDTH}`,
     },
   },
   refNav: {
@@ -254,6 +256,27 @@ export const docsStyles = stylex.create({
     paddingTop: spacing["9"],
     top: 0,
     width: DOCS_NAV_WIDTH,
+  },
+  refToc: {
+    boxSizing: "border-box",
+    display: {
+      [REF_BREAK]: "none",
+      default: "block",
+    },
+    position: "sticky",
+    borderInlineStartColor: uiColor.border1,
+    borderInlineStartStyle: "solid",
+    borderInlineStartWidth: spacing["px"],
+    height: "100vh",
+    minWidth: 0,
+    overflowX: "hidden",
+    overflowY: "auto",
+    paddingBottom: spacing["10"],
+    paddingInlineStart: spacing["8"],
+    paddingInlineEnd: horizontalSpace["2xl"],
+    paddingTop: spacing["9"],
+    top: 0,
+    width: DOCS_TOC_WIDTH,
   },
   refNavGroup: {
     marginBottom: spacing["6"],

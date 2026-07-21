@@ -43,11 +43,8 @@ export function RenderersDocsPage() {
   return (
     <DocsRefShell
       scrollSpyIds={RENDERERS_DOCS_SCROLL_SPY_IDS}
-      nav={
-        <DocsSideNav area="renderers">
-          <DocsRenderersNav />
-        </DocsSideNav>
-      }
+      nav={<DocsSideNav area="renderers" />}
+      toc={<DocsRenderersNav />}
       mobileJumpNav={
         <DocsMobileNav
           area="renderers"

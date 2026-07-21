@@ -30,11 +30,8 @@ export function ApiDocsPage() {
     <ApiDocsPageProvider fixtures={fixtures} tagOptions={tagOptions}>
       <DocsRefShell
         scrollSpyIds={API_DOCS_SCROLL_SPY_IDS}
-        nav={
-          <DocsSideNav area="api">
-            <DocsApiNav />
-          </DocsSideNav>
-        }
+        nav={<DocsSideNav area="api" />}
+        toc={<DocsApiNav />}
         mobileJumpNav={
           <DocsMobileNav
             area="api"

@@ -135,11 +135,8 @@ export function PublishingDocsPage() {
   return (
     <DocsRefShell
       scrollSpyIds={[...PUBLISHING_DOCS_SCROLL_SPY_IDS]}
-      nav={
-        <DocsSideNav area="publishing">
-          <DocsPublishingNav />
-        </DocsSideNav>
-      }
+      nav={<DocsSideNav area="publishing" />}
+      toc={<DocsPublishingNav />}
       mobileJumpNav={
         <DocsMobileNav
           area="publishing"

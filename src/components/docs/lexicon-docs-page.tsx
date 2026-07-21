@@ -36,11 +36,8 @@ export function LexiconDocsPage() {
   return (
     <DocsRefShell
       scrollSpyIds={scrollSpyIds}
-      nav={
-        <DocsSideNav area="lexicons">
-          <DocsLexiconsNav entries={entries} />
-        </DocsSideNav>
-      }
+      nav={<DocsSideNav area="lexicons" />}
+      toc={<DocsLexiconsNav entries={entries} />}
       mobileJumpNav={
         <DocsMobileNav
           area="lexicons"

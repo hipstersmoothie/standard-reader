@@ -3,28 +3,21 @@
 import { Trans, useLingui } from "@lingui/react/macro";
 import * as stylex from "@stylexjs/stylex";
 import { Link } from "@tanstack/react-router";
-import type { ReactNode } from "react";
 
 import type { DocsArea } from "./docs-nav-areas";
 import { DOCS_AREAS } from "./docs-nav-areas";
 import { docsStyles } from "./docs-page.stylex";
 
 /**
- * The shared docs sidebar. Lists every docs area (API, Renderers, Lexicons,
- * Publishing) and highlights the current one; the active page passes its own
- * scroll-spy anchor groups as `children`, which render beneath the switcher.
+ * The left docs sidebar: navigation between docs areas (API, Renderers,
+ * Lexicons, Publishing). The current page's table of contents lives in the
+ * right rail (see {@link DocsRefShell}), not here.
  */
-export function DocsSideNav({
-  area,
-  children,
-}: {
-  area: DocsArea;
-  children: ReactNode;
-}) {
+export function DocsSideNav({ area }: { area: DocsArea }) {
   const { t, i18n } = useLingui();
 
   return (
-    <nav {...stylex.props(docsStyles.refNav)} aria-label={t`Developer docs`}>
+    <nav {...stylex.props(docsStyles.refNav)} aria-label={t`Documentation`}>
       <div {...stylex.props(docsStyles.refNavGroup)}>
         <div {...stylex.props(docsStyles.refNavHeadingRow)}>
           <span {...stylex.props(docsStyles.refNavHeading)}>
@@ -44,7 +37,6 @@ export function DocsSideNav({
           </Link>
         ))}
       </div>
-      {children}
     </nav>
   );
 }
