@@ -20,6 +20,11 @@ export const $output = /*#__PURE__*/ l.jsonPayload({
     (() => StandardReaderDefs.profileView) as any,
   ),
   stats: /*#__PURE__*/ l.ref<Stats>((() => stats) as any),
+  publications: /*#__PURE__*/ l.array(
+    /*#__PURE__*/ l.ref<StandardReaderDefs.PublicationView>(
+      (() => StandardReaderDefs.publicationView) as any,
+    ),
+  ),
 })
 
 export type $Output<B = l.BinaryData> = l.InferPayload<typeof $output, B>
@@ -28,7 +33,7 @@ export type $OutputBody<B = l.BinaryData> = l.InferPayloadBody<
   B
 >
 
-/** Author profile for a DID with aggregate stats. */
+/** Author profile for a DID with aggregate stats and a first page of their publications. */
 const main = /*#__PURE__*/ l.query($nsid, $params, $output)
 
 export { main }

@@ -4,7 +4,7 @@
   "defs": {
     "main": {
       "type": "query",
-      "description": "Author profile for a DID with aggregate stats.",
+      "description": "Author profile for a DID with aggregate stats and a first page of their publications.",
       "parameters": {
         "type": "params",
         "properties": {
@@ -19,7 +19,7 @@
         "encoding": "application/json",
         "schema": {
           "type": "object",
-          "required": ["profile", "stats"],
+          "required": ["profile", "stats", "publications"],
           "properties": {
             "profile": {
               "type": "ref",
@@ -28,6 +28,14 @@
             "stats": {
               "type": "ref",
               "ref": "app.standard-reader.getAuthor#stats"
+            },
+            "publications": {
+              "type": "array",
+              "description": "The author's publications, owned first then featured, newest activity first. A convenience first page; use getAuthorPublications to page through the full set.",
+              "items": {
+                "type": "ref",
+                "ref": "app.standard-reader.defs#publicationView"
+              }
             }
           }
         }

@@ -37,6 +37,14 @@ export const XRPC_REGISTRY = new Map<string, XrpcRegistryEntry>([
     { method: "query", auth: "none", handler: catalog.handleGetDocument },
   ],
   [
+    "app.standard-reader.getPublicationDocuments",
+    {
+      method: "query",
+      auth: "none",
+      handler: catalog.handleGetPublicationDocuments,
+    },
+  ],
+  [
     "app.standard-reader.getPublications",
     { method: "query", auth: "none", handler: catalog.handleGetPublications },
   ],

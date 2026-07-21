@@ -146,6 +146,21 @@ export const API_DOCS_CATALOG: Array<ApiDocsCatalogEntry> = [
     },
   ),
   q(
+    "app.standard-reader.getPublicationDocuments",
+    "Public queries",
+    "Page through a single publication's articles, newest first, with cursor pagination.",
+    "none",
+    [
+      { name: "publication", type: "at-uri", required: true },
+      { name: "limit", type: "integer" },
+      { name: "cursor", type: "string" },
+    ],
+    {
+      autoRun: true,
+      params: (f) => ({ publication: f.publicationUri, limit: "5" }),
+    },
+  ),
+  q(
     "app.standard-reader.getPublications",
     "Public queries",
     "Browse the publication directory with topic filter, sort, and cursor pagination.",
@@ -213,7 +228,7 @@ export const API_DOCS_CATALOG: Array<ApiDocsCatalogEntry> = [
   q(
     "app.standard-reader.getAuthor",
     "Directory & feeds",
-    "Author profile for a DID with aggregate stats.",
+    "Author profile for a DID with aggregate stats and a first page of their publications.",
     "none",
     [{ name: "did", type: "did", required: true }],
     {

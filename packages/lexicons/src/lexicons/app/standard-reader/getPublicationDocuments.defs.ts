@@ -5,20 +5,27 @@
 import { l } from '@atproto/lex-schema'
 import * as StandardReaderDefs from './defs.defs.js'
 
-const $nsid = 'app.standard-reader.getDocument'
+const $nsid = 'app.standard-reader.getPublicationDocuments'
 
 export { $nsid }
 
 export const $params = /*#__PURE__*/ l.params({
-  document: /*#__PURE__*/ l.string({ format: 'at-uri' }),
+  publication: /*#__PURE__*/ l.string({ format: 'at-uri' }),
+  limit: /*#__PURE__*/ l.optional(
+    /*#__PURE__*/ l.withDefault(
+      /*#__PURE__*/ l.integer({ minimum: 1, maximum: 50 }),
+      20,
+    ),
+  ),
+  cursor: /*#__PURE__*/ l.optional(/*#__PURE__*/ l.string({ maxLength: 8192 })),
 })
 
 export type $Params = l.InferOutput<typeof $params>
 
 export const $output = /*#__PURE__*/ l.payload(
   'application/json',
-  /*#__PURE__*/ l.ref<StandardReaderDefs.DocumentView>(
-    (() => StandardReaderDefs.documentView) as any,
+  /*#__PURE__*/ l.ref<StandardReaderDefs.CursorPageDocuments>(
+    (() => StandardReaderDefs.cursorPageDocuments) as any,
   ),
 )
 
@@ -28,7 +35,7 @@ export type $OutputBody<B = l.BinaryData> = l.InferPayloadBody<
   B
 >
 
-/** Fetch a single article: card metadata, aggregate stats, and the renderable body (content) ready for the renderers. */
+/** Chronological article feed for a single publication with cursor pagination. */
 const main = /*#__PURE__*/ l.query($nsid, $params, $output)
 
 export { main }

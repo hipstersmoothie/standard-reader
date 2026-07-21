@@ -12,9 +12,10 @@ import { selectPublicationHeader } from "#/server/reader/publication-header";
 import {
   discoverDirectoryPublications,
   selectArticleCardsByUris,
+  selectPublicationArticleCards,
 } from "#/server/reader/queries";
 
-import { encodeCursor } from "../db";
+import { encodeCursor, nextCursor } from "../db";
 import { InvalidRequestError } from "../errors";
 import { optionalParam, requireParam } from "../params";
 import type { XrpcRequestContext } from "../types";
@@ -269,14 +270,23 @@ async function resolveAuthorProfileSummary(
   };
 }
 
+// A convenience first page of the author's publications, embedded in the
+// profile response so a single call renders the author header. Clients that
+// need to page past this use `getAuthorPublications`.
+const AUTHOR_PROFILE_PUBLICATION_LIMIT = 25;
+
 export async function handleGetAuthor(ctx: XrpcRequestContext) {
   const did = requireParam(ctx.params, "did");
   const resolvedDid = await resolveAuthorDid(ctx.db, ctx.schema, did);
-  const [profile, stats] = await Promise.all([
+  const { authorProfileStats, authorPublications } =
+    await import("#/server/reader/queries");
+  const [profile, stats, publications] = await Promise.all([
     resolveAuthorProfileSummary(ctx, resolvedDid),
-    import("#/server/reader/queries").then(({ authorProfileStats }) =>
-      authorProfileStats(ctx.db, ctx.schema, resolvedDid),
-    ),
+    authorProfileStats(ctx.db, ctx.schema, resolvedDid),
+    authorPublications(ctx.db, ctx.schema, {
+      did: resolvedDid,
+      limit: AUTHOR_PROFILE_PUBLICATION_LIMIT,
+    }),
   ]);
 
   return {
@@ -288,6 +298,30 @@ export async function handleGetAuthor(ctx: XrpcRequestContext) {
       followingCount: stats.subscriptionCount,
       likeCount: stats.recommendationCount,
     },
+    publications: publications.map((item) => toPublicationView(item)),
+  };
+}
+
+export async function handleGetPublicationDocuments(ctx: XrpcRequestContext) {
+  const publicationUri = requireParam(ctx.params, "publication");
+  const { offset, limit } = paginationFromCursor(ctx.params, 20, 50);
+
+  const readForDid =
+    ctx.auth && ctx.trackReadingEnabled ? ctx.auth.did : undefined;
+  const rows = await selectPublicationArticleCards(ctx.db, ctx.schema, {
+    publicationUri,
+    limit,
+    offset,
+    readForDid,
+    countOldPostsAsUnread: ctx.auth ? ctx.countOldPostsAsUnreadEnabled : true,
+  });
+  const items = await enrichDocuments(ctx, rows, readForDid);
+  return {
+    cursor:
+      rows.length === limit
+        ? nextCursor(offset, limit, offset + limit + 1)
+        : null,
+    items: items.map((item) => toDocumentView(item)),
   };
 }
 
