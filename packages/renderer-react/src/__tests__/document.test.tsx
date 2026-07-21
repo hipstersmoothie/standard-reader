@@ -1,11 +1,9 @@
 import { render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import {
-  hasFacetKind,
-  segmentFacetedText,
-  StandardDocumentRenderer,
-} from "../index";
+import { hasFacetKind, segmentFacetedText } from "@standard-reader/renderer-core";
+
+import { StandardDocumentRenderer } from "../index";
 import { facet, LEAFLET_FACETS, leaflet } from "./fixtures";
 
 describe("document-level behavior", () => {

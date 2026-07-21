@@ -1,5 +1,6 @@
 "use client";
 
+import type { StandardSiteDocument } from "@standard-reader/renderer-core";
 import type {
   BlockquoteProps,
   BlueskyEmbedProps,
@@ -28,7 +29,6 @@ import type {
   PcktNoteEmbedProps,
   RendererComponentsInput,
   RootProps,
-  StandardSiteDocument,
   TableProps,
   TaskListItemProps,
   UnknownBlockProps,

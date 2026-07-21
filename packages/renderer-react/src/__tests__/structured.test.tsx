@@ -1,7 +1,10 @@
 import { render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import { offprintBlocks, structuredFormatBlocks } from "../index";
+import {
+  offprintBlocks,
+  structuredFormatBlocks,
+} from "@standard-reader/renderer-core";
 import { StandardDocumentRenderer } from "../render/document";
 import type { StandardSiteDocument } from "../types";
 import { offprint, offprintDoc } from "./fixtures";
