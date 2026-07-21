@@ -138,11 +138,16 @@ msgstr "切换语言"
 msgid "Open posts externally"
 msgstr "在外部打开文章"
 
+#: src/components/docs/introduction-docs-page.tsx
+msgid "That means you can build in whichever direction you need — read the indexed network through the API, render documents inside your own app, model your own records against the lexicons, or make your existing site discoverable and readable on Standard."
+msgstr ""
+
 #: src/components/reader/terms-view.tsx
 msgid "Content and intellectual property"
 msgstr ""
 
 #: src/components/docs/docs-nav-areas.ts
+#: src/components/docs/introduction-docs-page.tsx
 #: src/components/docs/lexicon-docs-intro.tsx
 msgid "Lexicons"
 msgstr "Lexicon"
@@ -566,9 +571,11 @@ msgstr "正在加载语音样本"
 
 #: src/components/docs/api-docs-intro.tsx
 #: src/components/docs/docs-api-nav.tsx
+#: src/components/docs/docs-introduction-nav.tsx
 #: src/components/docs/docs-lexicons-nav.tsx
 #: src/components/docs/docs-publishing-nav.tsx
 #: src/components/docs/docs-renderers-nav.tsx
+#: src/components/docs/introduction-docs-page.tsx
 #: src/components/docs/lexicon-docs-intro.tsx
 #: src/components/docs/publishing-docs-page.tsx
 #: src/components/docs/renderers-docs-page.tsx
@@ -777,12 +784,21 @@ msgstr "随处可分享"
 msgid "Close table of contents"
 msgstr "关闭目录"
 
+#: src/components/docs/docs-introduction-nav.tsx
+#: src/components/docs/introduction-docs-page.tsx
+msgid "Conventions"
+msgstr ""
+
 #: src/components/reader/list-edit-modal.tsx
 msgid "Member type to add"
 msgstr "要添加的成员类型"
 
 #: src/components/docs/renderers-docs-page.tsx
 msgid "Rendering Standard Site documents"
+msgstr ""
+
+#: src/components/docs/introduction-docs-page.tsx
+msgid "how to make a site discoverable on Standard and have its content read inline, without adopting a platform."
 msgstr ""
 
 #: src/components/reader/terms-view.tsx
@@ -845,8 +861,13 @@ msgid "{documentCount, plural, one {document} other {documents}}"
 msgstr "{documentCount, plural, one {文档} other {文档}}"
 
 #: src/components/docs/docs-nav-areas.ts
+#: src/components/docs/introduction-docs-page.tsx
 msgid "Publishing"
 msgstr "发布"
+
+#: src/components/docs/introduction-docs-page.tsx
+msgid "public XRPC queries and procedures for the Standard Reader read-model, with live examples."
+msgstr ""
 
 #: src/components/reader/content/renderers/shared/iframe-embed.tsx
 msgid "Embedded content"
@@ -1999,6 +2020,10 @@ msgstr "新增"
 msgid "All the format-specific work happens once, in a framework-agnostic core that normalizes every format into one block vocabulary. Each framework renderer is a thin walk over that shared tree, so the same mental model — one document input, one components map — transfers between frameworks."
 msgstr ""
 
+#: src/components/docs/introduction-docs-page.tsx
+msgid "A publication on Standard is a <0>site.standard.document</0> record in the author's AT Protocol repository — not a row in a database we own. Standard Reader indexes those records into a public read-model and renders them, but nothing about the format is proprietary: the schemas are open, the content is portable across publishing platforms, and the same renderer we ship is available to you."
+msgstr ""
+
 #: src/routes/_layout.latest.tsx
 msgid "On the network"
 msgstr "网络上"
@@ -2024,6 +2049,10 @@ msgstr ""
 msgid "e.g. Dispatches from the Atmosphere"
 msgstr "例如：来自 Atmosphere 的快讯"
 
+#: src/components/docs/introduction-docs-page.tsx
+msgid "the AT Protocol schemas that define Standard records and the shared definitions they build on."
+msgstr ""
+
 #: src/components/docs/renderers-docs-page.tsx
 msgid "You usually depend on a framework renderer, not the core directly. But <0/> is public: reach for it to inspect or transform a document without rendering it, or to build a renderer for a framework not listed above. A renderer is just a walk over its normalized tree — map each block type to your framework's primitive, and run text through the core's inline segmenter to render marks, links, mentions and footnote references. The existing renderers are the reference implementations; the API is documented in the <1/> README on npm."
 msgstr ""
@@ -2044,6 +2073,10 @@ msgstr ""
 #: src/routes/_layout.index.tsx
 msgid "Loading today"
 msgstr "正在加载今日内容"
+
+#: src/components/docs/introduction-docs-page.tsx
+msgid "headless, unstyled packages that turn a document into your own components, in React, Vue, Solid, Svelte, Lit, or Angular."
+msgstr ""
 
 #: src/components/reader/reorder-lists-modal.tsx
 msgid "Save order"
@@ -2210,6 +2243,7 @@ msgstr "系列"
 
 #: src/components/docs/api-docs-intro.tsx
 #: src/components/docs/docs-topbar.tsx
+#: src/components/docs/introduction-docs-page.tsx
 #: src/components/docs/lexicon-docs-intro.tsx
 #: src/components/docs/publishing-docs-page.tsx
 #: src/components/docs/renderers-docs-page.tsx
@@ -2237,6 +2271,7 @@ msgid "Generating audio… {percent}%"
 msgstr "正在生成音频… {percent}%"
 
 #: src/components/docs/docs-nav-areas.ts
+#: src/components/docs/introduction-docs-page.tsx
 msgid "Renderers"
 msgstr ""
 
@@ -2372,6 +2407,11 @@ msgstr "发现刊物"
 msgid "turn the page"
 msgstr "翻页"
 
+#: src/components/docs/docs-introduction-nav.tsx
+#: src/components/docs/introduction-docs-page.tsx
+msgid "What's in these docs"
+msgstr ""
+
 #: src/components/reader/about-view.tsx
 msgid "Sun · 8:00 AM"
 msgstr "周日 · 上午 8:00"
@@ -2410,6 +2450,10 @@ msgstr "{0, plural, one {# 项功能} other {# 项功能}}"
 #: src/routes/_layout.p.$did.$rkey.tsx
 msgid "Last active"
 msgstr "最后活跃"
+
+#: src/components/docs/introduction-docs-page.tsx
+msgid "These docs assume working familiarity with the AT Protocol — repositories, records, DIDs, NSIDs, and XRPC. Identifiers are written as their fully-qualified NSID (for example <0>site.standard.document</0>), and record references use <1>at://</1> URIs. Anything the network hosts — records, blobs, identities — is addressed the same way whether you reach it through the API, a renderer, or your own service."
+msgstr ""
 
 #: src/components/reader/content/renderers/shared/footnotes-section.tsx
 msgid "Footnotes"
@@ -2753,6 +2797,7 @@ msgid "<0>Shared</0> components render the block and inline vocabulary that ever
 msgstr ""
 
 #: src/components/docs/docs-nav-areas.ts
+#: src/components/docs/introduction-docs-page.tsx
 msgid "API"
 msgstr "API"
 
@@ -3272,6 +3317,10 @@ msgstr "首次使用时可能需要你授权。"
 msgid "Friends views"
 msgstr ""
 
+#: src/components/docs/introduction-docs-page.tsx
+msgid "Build on Standard"
+msgstr ""
+
 #: src/components/NavbarAuth.tsx
 #: src/routes/login.tsx
 msgid "Log in"
@@ -3506,6 +3555,10 @@ msgstr "设置"
 #: src/components/reader/about-view.tsx
 msgid "A lightweight browser extension lets you save and subscribe to publications while you’re out on the web — with subtle badges on bsky.app and a one-click overlay on any page you land on. Your reading list fills itself."
 msgstr "轻量的浏览器扩展让你在网上浏览时随手保存和订阅刊物——在 bsky.app 上显示低调的徽标，在你访问的任何页面上提供一键浮层。你的阅读清单会自己充实起来。"
+
+#: src/components/docs/docs-nav-areas.ts
+msgid "Introduction"
+msgstr ""
 
 #: src/routes/_layout.discover.tsx
 #: src/routes/_layout.tag.$tag.tsx
@@ -3892,6 +3945,10 @@ msgstr "你的评价已发布到 <0>ATStore</0>。感谢你帮助更多读者发
 msgid "When on, links open on the original website instead of the in-app reader."
 msgstr "开启后，链接将在原网站打开，而不是应用内阅读器。"
 
+#: src/components/docs/introduction-docs-page.tsx
+msgid "Standard is an open reading network built on the AT Protocol. Publications live as records in their author's repository, and anyone can read, index, or render them. These docs cover the surfaces you build against."
+msgstr ""
+
 #: src/routes/_layout.index.tsx
 msgid "A quiet place to begin"
 msgstr "一个安静的起点"
@@ -4046,6 +4103,7 @@ msgstr "除非你主动执行需要写入的操作（例如关注刊物、点赞
 msgid "Publications"
 msgstr "刊物"
 
+#: src/components/docs/docs-introduction-nav.tsx
 #: src/components/docs/docs-publishing-nav.tsx
 #: src/components/docs/docs-ref-shell.tsx
 #: src/components/docs/docs-renderers-nav.tsx

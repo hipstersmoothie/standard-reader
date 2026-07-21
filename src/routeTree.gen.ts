@@ -33,6 +33,7 @@ import { Route as ExtensionConnectedRouteImport } from './routes/extension.conne
 import { Route as ReviewThanksRouteImport } from './routes/review.thanks'
 import { Route as XrpcSplatRouteImport } from './routes/xrpc/$'
 import { Route as DocsHeaderLayoutDocsApiRouteImport } from './routes/_docs-header-layout.docs.api'
+import { Route as DocsHeaderLayoutDocsIntroductionRouteImport } from './routes/_docs-header-layout.docs.introduction'
 import { Route as DocsHeaderLayoutDocsLexiconsRouteImport } from './routes/_docs-header-layout.docs.lexicons'
 import { Route as DocsHeaderLayoutDocsPublishingRouteImport } from './routes/_docs-header-layout.docs.publishing'
 import { Route as DocsHeaderLayoutDocsRenderersRouteImport } from './routes/_docs-header-layout.docs.renderers'
@@ -206,6 +207,12 @@ const DocsHeaderLayoutDocsApiRoute = DocsHeaderLayoutDocsApiRouteImport.update({
   path: '/docs/api',
   getParentRoute: () => DocsHeaderLayoutRoute,
 } as any)
+const DocsHeaderLayoutDocsIntroductionRoute =
+  DocsHeaderLayoutDocsIntroductionRouteImport.update({
+    id: '/docs/introduction',
+    path: '/docs/introduction',
+    getParentRoute: () => DocsHeaderLayoutRoute,
+  } as any)
 const DocsHeaderLayoutDocsLexiconsRoute =
   DocsHeaderLayoutDocsLexiconsRouteImport.update({
     id: '/docs/lexicons',
@@ -508,6 +515,7 @@ export interface FileRoutesByFullPath {
   '/review/thanks': typeof ReviewThanksRoute
   '/xrpc/$': typeof XrpcSplatRoute
   '/docs/api': typeof DocsHeaderLayoutDocsApiRoute
+  '/docs/introduction': typeof DocsHeaderLayoutDocsIntroductionRoute
   '/docs/lexicons': typeof DocsHeaderLayoutDocsLexiconsRoute
   '/docs/publishing': typeof DocsHeaderLayoutDocsPublishingRoute
   '/docs/renderers': typeof DocsHeaderLayoutDocsRenderersRoute
@@ -585,6 +593,7 @@ export interface FileRoutesByTo {
   '/review/thanks': typeof ReviewThanksRoute
   '/xrpc/$': typeof XrpcSplatRoute
   '/docs/api': typeof DocsHeaderLayoutDocsApiRoute
+  '/docs/introduction': typeof DocsHeaderLayoutDocsIntroductionRoute
   '/docs/lexicons': typeof DocsHeaderLayoutDocsLexiconsRoute
   '/docs/publishing': typeof DocsHeaderLayoutDocsPublishingRoute
   '/docs/renderers': typeof DocsHeaderLayoutDocsRenderersRoute
@@ -666,6 +675,7 @@ export interface FileRoutesById {
   '/xrpc/$': typeof XrpcSplatRoute
   '/_layout/': typeof LayoutIndexRoute
   '/_docs-header-layout/docs/api': typeof DocsHeaderLayoutDocsApiRoute
+  '/_docs-header-layout/docs/introduction': typeof DocsHeaderLayoutDocsIntroductionRoute
   '/_docs-header-layout/docs/lexicons': typeof DocsHeaderLayoutDocsLexiconsRoute
   '/_docs-header-layout/docs/publishing': typeof DocsHeaderLayoutDocsPublishingRoute
   '/_docs-header-layout/docs/renderers': typeof DocsHeaderLayoutDocsRenderersRoute
@@ -746,6 +756,7 @@ export interface FileRouteTypes {
     | '/review/thanks'
     | '/xrpc/$'
     | '/docs/api'
+    | '/docs/introduction'
     | '/docs/lexicons'
     | '/docs/publishing'
     | '/docs/renderers'
@@ -823,6 +834,7 @@ export interface FileRouteTypes {
     | '/review/thanks'
     | '/xrpc/$'
     | '/docs/api'
+    | '/docs/introduction'
     | '/docs/lexicons'
     | '/docs/publishing'
     | '/docs/renderers'
@@ -903,6 +915,7 @@ export interface FileRouteTypes {
     | '/xrpc/$'
     | '/_layout/'
     | '/_docs-header-layout/docs/api'
+    | '/_docs-header-layout/docs/introduction'
     | '/_docs-header-layout/docs/lexicons'
     | '/_docs-header-layout/docs/publishing'
     | '/_docs-header-layout/docs/renderers'
@@ -1177,6 +1190,13 @@ declare module '@tanstack/react-router' {
       path: '/docs/api'
       fullPath: '/docs/api'
       preLoaderRoute: typeof DocsHeaderLayoutDocsApiRouteImport
+      parentRoute: typeof DocsHeaderLayoutRoute
+    }
+    '/_docs-header-layout/docs/introduction': {
+      id: '/_docs-header-layout/docs/introduction'
+      path: '/docs/introduction'
+      fullPath: '/docs/introduction'
+      preLoaderRoute: typeof DocsHeaderLayoutDocsIntroductionRouteImport
       parentRoute: typeof DocsHeaderLayoutRoute
     }
     '/_docs-header-layout/docs/lexicons': {
@@ -1562,6 +1582,7 @@ declare module '@tanstack/react-router' {
 
 interface DocsHeaderLayoutRouteChildren {
   DocsHeaderLayoutDocsApiRoute: typeof DocsHeaderLayoutDocsApiRoute
+  DocsHeaderLayoutDocsIntroductionRoute: typeof DocsHeaderLayoutDocsIntroductionRoute
   DocsHeaderLayoutDocsLexiconsRoute: typeof DocsHeaderLayoutDocsLexiconsRoute
   DocsHeaderLayoutDocsPublishingRoute: typeof DocsHeaderLayoutDocsPublishingRoute
   DocsHeaderLayoutDocsRenderersRoute: typeof DocsHeaderLayoutDocsRenderersRoute
@@ -1569,6 +1590,7 @@ interface DocsHeaderLayoutRouteChildren {
 
 const DocsHeaderLayoutRouteChildren: DocsHeaderLayoutRouteChildren = {
   DocsHeaderLayoutDocsApiRoute: DocsHeaderLayoutDocsApiRoute,
+  DocsHeaderLayoutDocsIntroductionRoute: DocsHeaderLayoutDocsIntroductionRoute,
   DocsHeaderLayoutDocsLexiconsRoute: DocsHeaderLayoutDocsLexiconsRoute,
   DocsHeaderLayoutDocsPublishingRoute: DocsHeaderLayoutDocsPublishingRoute,
   DocsHeaderLayoutDocsRenderersRoute: DocsHeaderLayoutDocsRenderersRoute,

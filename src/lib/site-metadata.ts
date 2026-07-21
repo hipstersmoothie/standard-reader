@@ -71,6 +71,12 @@ export const PAGE_OG_CARDS = {
     tagline:
       "New writing from the standard.site publications you subscribe to — calm, chronological, and yours to take anywhere.",
   },
+  docsIntroduction: {
+    path: "/docs/introduction",
+    title: "Introduction",
+    tagline:
+      "Build on Standard — an open reading network on the AT Protocol. What the developer docs cover.",
+  },
   docsApi: {
     path: "/docs/api",
     title: "API",

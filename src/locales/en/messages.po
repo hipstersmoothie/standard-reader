@@ -138,11 +138,16 @@ msgstr "Change language"
 msgid "Open posts externally"
 msgstr "Open posts externally"
 
+#: src/components/docs/introduction-docs-page.tsx
+msgid "That means you can build in whichever direction you need — read the indexed network through the API, render documents inside your own app, model your own records against the lexicons, or make your existing site discoverable and readable on Standard."
+msgstr "That means you can build in whichever direction you need — read the indexed network through the API, render documents inside your own app, model your own records against the lexicons, or make your existing site discoverable and readable on Standard."
+
 #: src/components/reader/terms-view.tsx
 msgid "Content and intellectual property"
 msgstr "Content and intellectual property"
 
 #: src/components/docs/docs-nav-areas.ts
+#: src/components/docs/introduction-docs-page.tsx
 #: src/components/docs/lexicon-docs-intro.tsx
 msgid "Lexicons"
 msgstr "Lexicons"
@@ -566,9 +571,11 @@ msgstr "Loading voice sample"
 
 #: src/components/docs/api-docs-intro.tsx
 #: src/components/docs/docs-api-nav.tsx
+#: src/components/docs/docs-introduction-nav.tsx
 #: src/components/docs/docs-lexicons-nav.tsx
 #: src/components/docs/docs-publishing-nav.tsx
 #: src/components/docs/docs-renderers-nav.tsx
+#: src/components/docs/introduction-docs-page.tsx
 #: src/components/docs/lexicon-docs-intro.tsx
 #: src/components/docs/publishing-docs-page.tsx
 #: src/components/docs/renderers-docs-page.tsx
@@ -777,6 +784,11 @@ msgstr "Shareable everywhere"
 msgid "Close table of contents"
 msgstr "Close table of contents"
 
+#: src/components/docs/docs-introduction-nav.tsx
+#: src/components/docs/introduction-docs-page.tsx
+msgid "Conventions"
+msgstr "Conventions"
+
 #: src/components/reader/list-edit-modal.tsx
 msgid "Member type to add"
 msgstr "Member type to add"
@@ -784,6 +796,10 @@ msgstr "Member type to add"
 #: src/components/docs/renderers-docs-page.tsx
 msgid "Rendering Standard Site documents"
 msgstr "Rendering Standard Site documents"
+
+#: src/components/docs/introduction-docs-page.tsx
+msgid "how to make a site discoverable on Standard and have its content read inline, without adopting a platform."
+msgstr "how to make a site discoverable on Standard and have its content read inline, without adopting a platform."
 
 #: src/components/reader/terms-view.tsx
 msgid "For more about how {SITE_NAME} works, see the <0>About</0> page. For questions about these terms for this deployment, contact the operator of the site at the URL above."
@@ -845,8 +861,13 @@ msgid "{documentCount, plural, one {document} other {documents}}"
 msgstr "{documentCount, plural, one {document} other {documents}}"
 
 #: src/components/docs/docs-nav-areas.ts
+#: src/components/docs/introduction-docs-page.tsx
 msgid "Publishing"
 msgstr "Publishing"
+
+#: src/components/docs/introduction-docs-page.tsx
+msgid "public XRPC queries and procedures for the Standard Reader read-model, with live examples."
+msgstr "public XRPC queries and procedures for the Standard Reader read-model, with live examples."
 
 #: src/components/reader/content/renderers/shared/iframe-embed.tsx
 msgid "Embedded content"
@@ -1999,6 +2020,10 @@ msgstr "New"
 msgid "All the format-specific work happens once, in a framework-agnostic core that normalizes every format into one block vocabulary. Each framework renderer is a thin walk over that shared tree, so the same mental model — one document input, one components map — transfers between frameworks."
 msgstr "All the format-specific work happens once, in a framework-agnostic core that normalizes every format into one block vocabulary. Each framework renderer is a thin walk over that shared tree, so the same mental model — one document input, one components map — transfers between frameworks."
 
+#: src/components/docs/introduction-docs-page.tsx
+msgid "A publication on Standard is a <0>site.standard.document</0> record in the author's AT Protocol repository — not a row in a database we own. Standard Reader indexes those records into a public read-model and renders them, but nothing about the format is proprietary: the schemas are open, the content is portable across publishing platforms, and the same renderer we ship is available to you."
+msgstr "A publication on Standard is a <0>site.standard.document</0> record in the author's AT Protocol repository — not a row in a database we own. Standard Reader indexes those records into a public read-model and renders them, but nothing about the format is proprietary: the schemas are open, the content is portable across publishing platforms, and the same renderer we ship is available to you."
+
 #: src/routes/_layout.latest.tsx
 msgid "On the network"
 msgstr "On the network"
@@ -2024,6 +2049,10 @@ msgstr "You agree not to use {SITE_NAME} to:"
 msgid "e.g. Dispatches from the Atmosphere"
 msgstr "e.g. Dispatches from the Atmosphere"
 
+#: src/components/docs/introduction-docs-page.tsx
+msgid "the AT Protocol schemas that define Standard records and the shared definitions they build on."
+msgstr "the AT Protocol schemas that define Standard records and the shared definitions they build on."
+
 #: src/components/docs/renderers-docs-page.tsx
 msgid "You usually depend on a framework renderer, not the core directly. But <0/> is public: reach for it to inspect or transform a document without rendering it, or to build a renderer for a framework not listed above. A renderer is just a walk over its normalized tree — map each block type to your framework's primitive, and run text through the core's inline segmenter to render marks, links, mentions and footnote references. The existing renderers are the reference implementations; the API is documented in the <1/> README on npm."
 msgstr "You usually depend on a framework renderer, not the core directly. But <0/> is public: reach for it to inspect or transform a document without rendering it, or to build a renderer for a framework not listed above. A renderer is just a walk over its normalized tree — map each block type to your framework's primitive, and run text through the core's inline segmenter to render marks, links, mentions and footnote references. The existing renderers are the reference implementations; the API is documented in the <1/> README on npm."
@@ -2044,6 +2073,10 @@ msgstr "Packages"
 #: src/routes/_layout.index.tsx
 msgid "Loading today"
 msgstr "Loading today"
+
+#: src/components/docs/introduction-docs-page.tsx
+msgid "headless, unstyled packages that turn a document into your own components, in React, Vue, Solid, Svelte, Lit, or Angular."
+msgstr "headless, unstyled packages that turn a document into your own components, in React, Vue, Solid, Svelte, Lit, or Angular."
 
 #: src/components/reader/reorder-lists-modal.tsx
 msgid "Save order"
@@ -2210,6 +2243,7 @@ msgstr "Series"
 
 #: src/components/docs/api-docs-intro.tsx
 #: src/components/docs/docs-topbar.tsx
+#: src/components/docs/introduction-docs-page.tsx
 #: src/components/docs/lexicon-docs-intro.tsx
 #: src/components/docs/publishing-docs-page.tsx
 #: src/components/docs/renderers-docs-page.tsx
@@ -2237,6 +2271,7 @@ msgid "Generating audio… {percent}%"
 msgstr "Generating audio… {percent}%"
 
 #: src/components/docs/docs-nav-areas.ts
+#: src/components/docs/introduction-docs-page.tsx
 msgid "Renderers"
 msgstr "Renderers"
 
@@ -2372,6 +2407,11 @@ msgstr "Discover publications"
 msgid "turn the page"
 msgstr "turn the page"
 
+#: src/components/docs/docs-introduction-nav.tsx
+#: src/components/docs/introduction-docs-page.tsx
+msgid "What's in these docs"
+msgstr "What's in these docs"
+
 #: src/components/reader/about-view.tsx
 msgid "Sun · 8:00 AM"
 msgstr "Sun · 8:00 AM"
@@ -2410,6 +2450,10 @@ msgstr "{0, plural, one {# feature} other {# features}}"
 #: src/routes/_layout.p.$did.$rkey.tsx
 msgid "Last active"
 msgstr "Last active"
+
+#: src/components/docs/introduction-docs-page.tsx
+msgid "These docs assume working familiarity with the AT Protocol — repositories, records, DIDs, NSIDs, and XRPC. Identifiers are written as their fully-qualified NSID (for example <0>site.standard.document</0>), and record references use <1>at://</1> URIs. Anything the network hosts — records, blobs, identities — is addressed the same way whether you reach it through the API, a renderer, or your own service."
+msgstr "These docs assume working familiarity with the AT Protocol — repositories, records, DIDs, NSIDs, and XRPC. Identifiers are written as their fully-qualified NSID (for example <0>site.standard.document</0>), and record references use <1>at://</1> URIs. Anything the network hosts — records, blobs, identities — is addressed the same way whether you reach it through the API, a renderer, or your own service."
 
 #: src/components/reader/content/renderers/shared/footnotes-section.tsx
 msgid "Footnotes"
@@ -2753,6 +2797,7 @@ msgid "<0>Shared</0> components render the block and inline vocabulary that ever
 msgstr "<0>Shared</0> components render the block and inline vocabulary that every format has in common — paragraphs, headings, images, code, lists, tables, and the inline marks (bold, links, mentions, footnotes). Override one and it applies across every format."
 
 #: src/components/docs/docs-nav-areas.ts
+#: src/components/docs/introduction-docs-page.tsx
 msgid "API"
 msgstr "API"
 
@@ -3272,6 +3317,10 @@ msgstr "You may be asked to grant permission the first time."
 msgid "Friends views"
 msgstr "Friends views"
 
+#: src/components/docs/introduction-docs-page.tsx
+msgid "Build on Standard"
+msgstr "Build on Standard"
+
 #: src/components/NavbarAuth.tsx
 #: src/routes/login.tsx
 msgid "Log in"
@@ -3506,6 +3555,10 @@ msgstr "Settings"
 #: src/components/reader/about-view.tsx
 msgid "A lightweight browser extension lets you save and subscribe to publications while you’re out on the web — with subtle badges on bsky.app and a one-click overlay on any page you land on. Your reading list fills itself."
 msgstr "A lightweight browser extension lets you save and subscribe to publications while you’re out on the web — with subtle badges on bsky.app and a one-click overlay on any page you land on. Your reading list fills itself."
+
+#: src/components/docs/docs-nav-areas.ts
+msgid "Introduction"
+msgstr "Introduction"
 
 #: src/routes/_layout.discover.tsx
 #: src/routes/_layout.tag.$tag.tsx
@@ -3892,6 +3945,10 @@ msgstr "Your review has been posted to <0>ATStore</0>. Thanks for helping more r
 msgid "When on, links open on the original website instead of the in-app reader."
 msgstr "When on, links open on the original website instead of the in-app reader."
 
+#: src/components/docs/introduction-docs-page.tsx
+msgid "Standard is an open reading network built on the AT Protocol. Publications live as records in their author's repository, and anyone can read, index, or render them. These docs cover the surfaces you build against."
+msgstr "Standard is an open reading network built on the AT Protocol. Publications live as records in their author's repository, and anyone can read, index, or render them. These docs cover the surfaces you build against."
+
 #: src/routes/_layout.index.tsx
 msgid "A quiet place to begin"
 msgstr "A quiet place to begin"
@@ -4046,6 +4103,7 @@ msgstr "We do not post to your account except when you take an explicit action t
 msgid "Publications"
 msgstr "Publications"
 
+#: src/components/docs/docs-introduction-nav.tsx
 #: src/components/docs/docs-publishing-nav.tsx
 #: src/components/docs/docs-ref-shell.tsx
 #: src/components/docs/docs-renderers-nav.tsx
