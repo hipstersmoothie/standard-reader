@@ -6,6 +6,7 @@ import { useLoaderData } from "@tanstack/react-router";
 import { API_DOCS_CATALOG, API_DOCS_SECTIONS } from "#/lib/api-docs/catalog";
 import {
   API_DOCS_SCROLL_SPY_IDS,
+  apiDocsJumpNavGroups,
   apiDocsSectionEndpointCount,
   apiDocsSectionId,
   apiDocsSectionSubtitle,
@@ -14,10 +15,11 @@ import {
 import { ApiDocsEndpoint } from "./api-docs-endpoint";
 import { ApiDocsPageProvider } from "./api-docs-fixtures-context";
 import { ApiDocsIntro } from "./api-docs-intro";
-import { DocsApiMobileJumpNav } from "./docs-api-mobile-jump-nav";
 import { DocsApiNav } from "./docs-api-nav";
+import { DocsMobileNav } from "./docs-mobile-nav";
 import { docsStyles } from "./docs-page.stylex";
 import { DocsRefShell } from "./docs-ref-shell";
+import { DocsSideNav } from "./docs-side-nav";
 
 export function ApiDocsPage() {
   const { fixtures, tagOptions } = useLoaderData({
@@ -28,8 +30,19 @@ export function ApiDocsPage() {
     <ApiDocsPageProvider fixtures={fixtures} tagOptions={tagOptions}>
       <DocsRefShell
         scrollSpyIds={API_DOCS_SCROLL_SPY_IDS}
-        nav={<DocsApiNav />}
-        mobileJumpNav={<DocsApiMobileJumpNav />}
+        nav={
+          <DocsSideNav area="api">
+            <DocsApiNav />
+          </DocsSideNav>
+        }
+        mobileJumpNav={
+          <DocsMobileNav
+            area="api"
+            groups={apiDocsJumpNavGroups()}
+            selectId="docs-api-jump-nav"
+            fallbackId={API_DOCS_SCROLL_SPY_IDS[0] ?? ""}
+          />
+        }
       >
         <ApiDocsIntro />
         {API_DOCS_SECTIONS.map((section) => {

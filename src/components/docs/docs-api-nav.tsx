@@ -1,6 +1,6 @@
 "use client";
 
-import { Trans, useLingui } from "@lingui/react/macro";
+import { Trans } from "@lingui/react/macro";
 import * as stylex from "@stylexjs/stylex";
 
 import { API_DOCS_CATALOG, API_DOCS_SECTIONS } from "#/lib/api-docs/catalog";
@@ -16,10 +16,9 @@ import { useDocsScrollSpyActive } from "./docs-scroll-spy-context";
 
 export function DocsApiNav() {
   const active = useDocsScrollSpyActive();
-  const { t } = useLingui();
 
   return (
-    <nav {...stylex.props(docsStyles.refNav)} aria-label={t`API reference`}>
+    <>
       <div {...stylex.props(docsStyles.refNavGroup)}>
         <div {...stylex.props(docsStyles.refNavHeadingRow)}>
           <span {...stylex.props(docsStyles.refNavHeading)}>
@@ -99,6 +98,6 @@ export function DocsApiNav() {
           </div>
         );
       })}
-    </nav>
+    </>
   );
 }

@@ -26,11 +26,11 @@ const LINKS = [
 ] as const;
 
 export function DocsPublishingNav() {
-  const { t, i18n } = useLingui();
+  const { i18n } = useLingui();
   const active = useDocsScrollSpyActive();
 
   return (
-    <nav {...stylex.props(docsStyles.refNav)} aria-label={t`Publishing guide`}>
+    <>
       <div {...stylex.props(docsStyles.refNavGroup)}>
         <div {...stylex.props(docsStyles.refNavHeadingRow)}>
           <span {...stylex.props(docsStyles.refNavHeading)}>
@@ -51,6 +51,6 @@ export function DocsPublishingNav() {
           </a>
         ))}
       </div>
-    </nav>
+    </>
   );
 }

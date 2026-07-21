@@ -3,88 +3,59 @@
 import { Trans } from "@lingui/react/macro";
 import * as stylex from "@stylexjs/stylex";
 
-import { RENDERERS_DOCS_IDS } from "#/lib/renderers-docs/navigation";
+import {
+  RENDERERS_DOCS_IDS,
+  RENDERERS_DOCS_SCROLL_SPY_IDS,
+  renderersDocsJumpNavGroups,
+} from "#/lib/renderers-docs/navigation";
 
+import { DocsMobileNav } from "./docs-mobile-nav";
 import { docsStyles } from "./docs-page.stylex";
 import { DocsRefShell } from "./docs-ref-shell";
-import { DocsRenderersMobileJumpNav } from "./docs-renderers-mobile-jump-nav";
 import { DocsRenderersNav } from "./docs-renderers-nav";
+import { DocsSideNav } from "./docs-side-nav";
 
-const INSTALL = `npm install @standard-reader/renderer-react react react-dom`;
+const NPM_BASE = "https://www.npmjs.com/package";
 
-const QUICKSTART = `import { StandardDocumentRenderer } from "@standard-reader/renderer-react";
+const PACKAGES = [
+  { name: "@standard-reader/renderer-react", framework: "React" },
+  { name: "@standard-reader/renderer-vue", framework: "Vue 3" },
+  { name: "@standard-reader/renderer-solid", framework: "SolidJS" },
+  { name: "@standard-reader/renderer-svelte", framework: "Svelte 5" },
+  { name: "@standard-reader/renderer-lit", framework: "Lit / web components" },
+  { name: "@standard-reader/renderer-angular", framework: "Angular" },
+] as const;
 
-function Article({ record }) {
+function PackageLink({ name }: { name: string }) {
   return (
-    <StandardDocumentRenderer
-      document={{
-        content: record.content, // the content-union payload (has a $type)
-        authorDid: record.did,    // repo that hosts image blobs
-        description: record.description,
-      }}
-    />
-  );
-}`;
-
-const DOCUMENT_TYPE = `interface StandardSiteDocument {
-  // The content-union payload — the "content" of a site.standard.document.
-  content: unknown;
-  // Explicit format $type, used only when content.$type is absent.
-  contentFormat?: string | null;
-  // DID of the repo hosting image blobs (required for blob-backed images).
-  authorDid?: string;
-  // Header description; a leading heading matching it is dropped as a dupe.
-  description?: string | null;
-}`;
-
-const COMPONENTS_EXAMPLE = `<StandardDocumentRenderer
-  document={doc}
-  components={{
-    shared: {
-      // one Root/Paragraph/Heading/Image/Code/Link/Mention/... for every format
-      Root: ({ children }) => <div className="prose">{children}</div>,
-      Link: ({ href, children }) => <SmartLink href={href}>{children}</SmartLink>,
-    },
-    leaflet: { Poll: ({ pollUri }) => <LivePoll uri={pollUri} /> },
-    pckt: { Gallery: ({ ref }) => <PcktGallery recordUri={ref} /> },
-    offprint: { Component: ({ componentUri }) => <Snippet uri={componentUri} /> },
-  }}
-/>`;
-
-const CORE_EXAMPLE = `import { buildRenderTree, segmentInline } from "@standard-reader/renderer-core";
-
-const tree = buildRenderTree(document, options);
-if (!tree) return null; // unsupported format or empty body
-
-// tree.children  — BlockNode[]  (paragraph, heading, image, code, leaflet.poll, …)
-// tree.footnotes — the endnotes
-// segmentInline(text, tree.footnoteNumbers) — an InlineNode[] of marks/links/…`;
-
-function CodeBlock({ tag, code }: { tag: string; code: string }) {
-  return (
-    <div {...stylex.props(docsStyles.reqPanel)}>
-      <div {...stylex.props(docsStyles.reqBar)}>
-        <span {...stylex.props(docsStyles.reqTag)}>{tag}</span>
-      </div>
-      <pre {...stylex.props(docsStyles.reqCode)}>{code}</pre>
-    </div>
+    <a
+      href={`${NPM_BASE}/${name}`}
+      target="_blank"
+      rel="noreferrer"
+      {...stylex.props(docsStyles.proseLink)}
+    >
+      <code {...stylex.props(docsStyles.codeInline)}>{name}</code>
+    </a>
   );
 }
 
 export function RenderersDocsPage() {
   return (
     <DocsRefShell
-      scrollSpyIds={[
-        RENDERERS_DOCS_IDS.overview,
-        RENDERERS_DOCS_IDS.packages,
-        RENDERERS_DOCS_IDS.quickstart,
-        RENDERERS_DOCS_IDS.document,
-        RENDERERS_DOCS_IDS.components,
-        RENDERERS_DOCS_IDS.platformData,
-        RENDERERS_DOCS_IDS.core,
-      ]}
-      nav={<DocsRenderersNav />}
-      mobileJumpNav={<DocsRenderersMobileJumpNav />}
+      scrollSpyIds={RENDERERS_DOCS_SCROLL_SPY_IDS}
+      nav={
+        <DocsSideNav area="renderers">
+          <DocsRenderersNav />
+        </DocsSideNav>
+      }
+      mobileJumpNav={
+        <DocsMobileNav
+          area="renderers"
+          groups={renderersDocsJumpNavGroups()}
+          selectId="docs-renderers-jump-nav"
+          fallbackId={RENDERERS_DOCS_SCROLL_SPY_IDS[0] ?? ""}
+        />
+      }
     >
       <div {...stylex.props(docsStyles.masthead)}>
         <div {...stylex.props(docsStyles.kicker)}>
@@ -140,62 +111,28 @@ export function RenderersDocsPage() {
         <p {...stylex.props(docsStyles.prose)}>
           <Trans>
             Pick the package for your framework; all sit on the same core.
+            Install instructions, the full props reference, and
+            framework-specific usage examples live in each package&apos;s README
+            on npm.
           </Trans>
         </p>
         <ul {...stylex.props(docsStyles.prose)}>
-          <li>
-            <code {...stylex.props(docsStyles.codeInline)}>
-              @standard-reader/renderer-react
-            </code>{" "}
-            — <Trans>React (this is what Standard Reader itself uses).</Trans>
-          </li>
-          <li>
-            <code {...stylex.props(docsStyles.codeInline)}>
-              @standard-reader/renderer-vue
-            </code>{" "}
-            — <Trans>Vue 3.</Trans>
-          </li>
-          <li>
-            <code {...stylex.props(docsStyles.codeInline)}>
-              @standard-reader/renderer-solid
-            </code>{" "}
-            — <Trans>SolidJS.</Trans>
-          </li>
-          <li>
-            <code {...stylex.props(docsStyles.codeInline)}>
-              @standard-reader/renderer-svelte
-            </code>{" "}
-            — <Trans>Svelte 5.</Trans>
-          </li>
-          <li>
-            <code {...stylex.props(docsStyles.codeInline)}>
-              @standard-reader/renderer-lit
-            </code>{" "}
-            — <Trans>Lit / web components.</Trans>
-          </li>
-          <li>
-            <code {...stylex.props(docsStyles.codeInline)}>
-              @standard-reader/renderer-angular
-            </code>{" "}
-            — <Trans>Angular.</Trans>
-          </li>
+          {PACKAGES.map((pkg) => (
+            <li key={pkg.name}>
+              <PackageLink name={pkg.name} /> — {pkg.framework}
+              {pkg.name === "@standard-reader/renderer-react" ? (
+                <>
+                  {" "}
+                  <Trans>(this is what Standard Reader itself uses)</Trans>
+                </>
+              ) : null}
+              .
+            </li>
+          ))}
         </ul>
 
-        <h2 {...stylex.props(docsStyles.h2)} id={RENDERERS_DOCS_IDS.quickstart}>
-          <Trans>Quick start</Trans>
-        </h2>
-        <p {...stylex.props(docsStyles.prose)}>
-          <Trans>
-            The React package, for example. With no{" "}
-            <code {...stylex.props(docsStyles.codeInline)}>components</code>{" "}
-            prop, a document renders as unstyled semantic HTML.
-          </Trans>
-        </p>
-        <CodeBlock tag="sh" code={INSTALL} />
-        <CodeBlock tag="tsx" code={QUICKSTART} />
-
-        <h2 {...stylex.props(docsStyles.h2)} id={RENDERERS_DOCS_IDS.document}>
-          <Trans>The document input</Trans>
+        <h2 {...stylex.props(docsStyles.h2)} id={RENDERERS_DOCS_IDS.components}>
+          <Trans>Customizing components</Trans>
         </h2>
         <p {...stylex.props(docsStyles.prose)}>
           <Trans>
@@ -203,16 +140,15 @@ export function RenderersDocsPage() {
             payload of a{" "}
             <code {...stylex.props(docsStyles.codeInline)}>
               site.standard.document
-            </code>
-            . The format is detected from the payload&apos;s{" "}
-            <code {...stylex.props(docsStyles.codeInline)}>$type</code>.
+            </code>{" "}
+            — and an optional{" "}
+            <code {...stylex.props(docsStyles.codeInline)}>components</code> map.
+            The format is detected from the payload&apos;s{" "}
+            <code {...stylex.props(docsStyles.codeInline)}>$type</code>. With no{" "}
+            <code {...stylex.props(docsStyles.codeInline)}>components</code>{" "}
+            prop, a document renders as unstyled semantic HTML.
           </Trans>
         </p>
-        <CodeBlock tag="ts" code={DOCUMENT_TYPE} />
-
-        <h2 {...stylex.props(docsStyles.h2)} id={RENDERERS_DOCS_IDS.components}>
-          <Trans>Customizing components</Trans>
-        </h2>
         <p {...stylex.props(docsStyles.prose)}>
           <Trans>
             The <code {...stylex.props(docsStyles.codeInline)}>components</code>{" "}
@@ -238,7 +174,6 @@ export function RenderersDocsPage() {
             supply your own to make them live.
           </Trans>
         </p>
-        <CodeBlock tag="tsx" code={COMPONENTS_EXAMPLE} />
         <p {...stylex.props(docsStyles.prose)}>
           <Trans>
             The exact override mechanism is idiomatic per framework — a
@@ -249,8 +184,8 @@ export function RenderersDocsPage() {
               &lt;ng-template&gt;
             </code>{" "}
             refs in Angular — but the split and the vocabulary are the same
-            everywhere. See each package&apos;s README for the
-            framework-specific shape.
+            everywhere. See each package&apos;s README on npm for the
+            framework-specific shape and worked examples.
           </Trans>
         </p>
 
@@ -303,22 +238,15 @@ export function RenderersDocsPage() {
           <Trans>
             You usually depend on a framework renderer, not the core directly.
             But{" "}
-            <code {...stylex.props(docsStyles.codeInline)}>
-              @standard-reader/renderer-core
-            </code>{" "}
-            is public: reach for it to inspect or transform a document without
-            rendering it, or to build a renderer for a framework not listed
-            above. A renderer is just a walk over its normalized tree.
-          </Trans>
-        </p>
-        <CodeBlock tag="ts" code={CORE_EXAMPLE} />
-        <p {...stylex.props(docsStyles.prose)}>
-          <Trans>
-            Walk the blocks, map each block type to your framework&apos;s
-            primitive, and run text through{" "}
-            <code {...stylex.props(docsStyles.codeInline)}>segmentInline</code>{" "}
-            to render marks, links, mentions and footnote references. The
-            existing renderers are the reference implementations.
+            <PackageLink name="@standard-reader/renderer-core" /> is public:
+            reach for it to inspect or transform a document without rendering it,
+            or to build a renderer for a framework not listed above. A renderer
+            is just a walk over its normalized tree — map each block type to your
+            framework&apos;s primitive, and run text through the core&apos;s
+            inline segmenter to render marks, links, mentions and footnote
+            references. The existing renderers are the reference implementations;
+            the API is documented in the{" "}
+            <PackageLink name="@standard-reader/renderer-core" /> README on npm.
           </Trans>
         </p>
       </div>

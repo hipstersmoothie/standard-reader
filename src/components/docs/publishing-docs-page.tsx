@@ -8,13 +8,15 @@ import { getPublicUrlClient } from "#/lib/public-url";
 import {
   PUBLISHING_DOCS_IDS,
   PUBLISHING_DOCS_SCROLL_SPY_IDS,
+  publishingDocsJumpNavGroups,
 } from "#/lib/publishing-docs/navigation";
 
 import { HighlightedHtml, HighlightedJson } from "./docs-highlighted-code";
+import { DocsMobileNav } from "./docs-mobile-nav";
 import { docsStyles } from "./docs-page.stylex";
-import { DocsPublishingMobileJumpNav } from "./docs-publishing-mobile-jump-nav";
 import { DocsPublishingNav } from "./docs-publishing-nav";
 import { DocsRefShell } from "./docs-ref-shell";
+import { DocsSideNav } from "./docs-side-nav";
 
 const DISCOVERY_SNIPPET = `<link
   rel="site.standard.document"
@@ -133,8 +135,19 @@ export function PublishingDocsPage() {
   return (
     <DocsRefShell
       scrollSpyIds={[...PUBLISHING_DOCS_SCROLL_SPY_IDS]}
-      nav={<DocsPublishingNav />}
-      mobileJumpNav={<DocsPublishingMobileJumpNav />}
+      nav={
+        <DocsSideNav area="publishing">
+          <DocsPublishingNav />
+        </DocsSideNav>
+      }
+      mobileJumpNav={
+        <DocsMobileNav
+          area="publishing"
+          groups={publishingDocsJumpNavGroups()}
+          selectId="docs-publishing-jump-nav"
+          fallbackId={PUBLISHING_DOCS_SCROLL_SPY_IDS[0] ?? ""}
+        />
+      }
     >
       <div {...stylex.props(docsStyles.masthead)}>
         <div {...stylex.props(docsStyles.kicker)}>

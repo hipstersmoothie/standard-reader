@@ -5,16 +5,18 @@ import { useLoaderData } from "@tanstack/react-router";
 import { useMemo } from "react";
 
 import {
+  lexiconDocsJumpNavGroups,
   lexiconDocsScrollSpyIds,
   lexiconDocsSectionCount,
   lexiconDocsSectionId,
 } from "#/lib/lexicon-docs/navigation";
 import { LEXICON_DOCS_SECTIONS } from "#/lib/lexicon-docs/types";
 
-import { DocsLexiconsMobileJumpNav } from "./docs-lexicons-mobile-jump-nav";
 import { DocsLexiconsNav } from "./docs-lexicons-nav";
+import { DocsMobileNav } from "./docs-mobile-nav";
 import { docsStyles } from "./docs-page.stylex";
 import { DocsRefShell } from "./docs-ref-shell";
+import { DocsSideNav } from "./docs-side-nav";
 import { LexiconDocsEntrySection } from "./lexicon-docs-entry";
 import { LexiconDocsIntro } from "./lexicon-docs-intro";
 
@@ -26,12 +28,27 @@ export function LexiconDocsPage() {
     () => lexiconDocsScrollSpyIds(entries),
     [entries],
   );
+  const jumpGroups = useMemo(
+    () => lexiconDocsJumpNavGroups(entries),
+    [entries],
+  );
 
   return (
     <DocsRefShell
       scrollSpyIds={scrollSpyIds}
-      nav={<DocsLexiconsNav entries={entries} />}
-      mobileJumpNav={<DocsLexiconsMobileJumpNav entries={entries} />}
+      nav={
+        <DocsSideNav area="lexicons">
+          <DocsLexiconsNav entries={entries} />
+        </DocsSideNav>
+      }
+      mobileJumpNav={
+        <DocsMobileNav
+          area="lexicons"
+          groups={jumpGroups}
+          selectId="docs-lexicons-jump-nav"
+          fallbackId={scrollSpyIds[0] ?? ""}
+        />
+      }
     >
       <LexiconDocsIntro />
       {LEXICON_DOCS_SECTIONS.map((section) => {

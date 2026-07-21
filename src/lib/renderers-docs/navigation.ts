@@ -1,8 +1,6 @@
 export const RENDERERS_DOCS_IDS = {
   overview: "overview",
   packages: "packages",
-  quickstart: "quickstart",
-  document: "document",
   components: "components",
   platformData: "platform-data",
   core: "core",
@@ -22,8 +20,6 @@ export function renderersDocsJumpNavGroups(): Array<RenderersDocsJumpNavGroup> {
       options: [
         { id: RENDERERS_DOCS_IDS.overview, label: "Overview" },
         { id: RENDERERS_DOCS_IDS.packages, label: "Packages" },
-        { id: RENDERERS_DOCS_IDS.quickstart, label: "Quick start" },
-        { id: RENDERERS_DOCS_IDS.document, label: "The document input" },
         { id: RENDERERS_DOCS_IDS.components, label: "Customizing components" },
         {
           id: RENDERERS_DOCS_IDS.platformData,
