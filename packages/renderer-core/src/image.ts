@@ -1,6 +1,6 @@
-import { blobCid, cdnImageUrl } from "./atproto/blob";
 import { structuredImageAspectRatio } from "./document/structured-content/image";
 import type { StructuredGridImage } from "./document/structured-content/types";
+import { blobImageUrl, externalHttpUrl } from "./internal";
 import type { CollectionImage } from "./nodes";
 import type { ImageUrlResolver } from "./types";
 
@@ -15,11 +15,10 @@ export const defaultImageUrlResolver: ImageUrlResolver = ({
   externalSrc,
   authorDid,
 }) => {
-  if (externalSrc && /^https?:\/\//i.test(externalSrc)) return externalSrc;
+  const external = externalHttpUrl(externalSrc);
+  if (external) return external;
   if (!authorDid) return null;
-  const cid = blobCid(blob as Parameters<typeof blobCid>[0]);
-  if (!cid) return null;
-  return cdnImageUrl(authorDid, cid, "png");
+  return blobImageUrl(blob, authorDid);
 };
 
 /** Resolve a list of structured grid images to renderable collection images. */

@@ -1,13 +1,10 @@
+import { isRecord } from "../internal";
 import type { LeafletFacet, LeafletFacetFeature } from "./types";
 import { sliceUtf8, utf8ByteLength } from "./utf8";
 
 export interface FacetSegment {
   text: string;
   features: Array<LeafletFacetFeature>;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function parseFacet(value: unknown): LeafletFacet | null {

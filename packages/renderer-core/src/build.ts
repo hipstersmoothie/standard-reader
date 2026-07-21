@@ -9,6 +9,7 @@ import {
 } from "./document/structured-content/image";
 import type { StructuredRenderableBlock } from "./document/structured-content/types";
 import { defaultImageUrlResolver, resolveGridImages } from "./image";
+import { externalHttpUrl, isRecord } from "./internal";
 import {
   asTextBlock as leafletAsTextBlock,
   leafletBlocks,
@@ -55,10 +56,6 @@ import type {
 interface BuildContext {
   authorDid: string | undefined;
   resolveImageUrl: ImageUrlResolver;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function resolveFormat(doc: StandardSiteDocument): string | null {
@@ -413,7 +410,7 @@ function pcktImageSrc(block: PcktImageBlock, ctx: BuildContext): string | null {
   const attrs = block.attrs;
   if (!attrs) return null;
   const src = attrs.src;
-  if (typeof src === "string" && /^https?:\/\//i.test(src)) {
+  if (externalHttpUrl(src)) {
     return ctx.resolveImageUrl({ externalSrc: src, authorDid: ctx.authorDid });
   }
   let blob = attrs.blob;

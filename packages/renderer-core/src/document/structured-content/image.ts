@@ -1,4 +1,10 @@
-import { blobCid, cdnImageUrl } from "../../atproto/blob";
+import { blobCid } from "../../atproto/blob";
+import {
+  aspectRatioFromDimensions,
+  blobImageUrl,
+  externalHttpUrl,
+  isRecord,
+} from "../../internal";
 import type { StructuredGridImage } from "./types";
 
 /** First non-empty trimmed string from format-specific alt/caption/title fields. */
@@ -20,17 +26,6 @@ export function narrationImageLines(
   return alt ? [alt] : [];
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-/** Build a Bluesky CDN image URL for an offprint/structured blob ref. */
-export function blobImageUrl(blob: unknown, did: string): string | null {
-  const cid = blobCid(blob as Parameters<typeof blobCid>[0]);
-  if (!cid) return null;
-  return cdnImageUrl(did, cid, "png");
-}
-
 export function structuredImageUrl(
   block: {
     blob?: unknown;
@@ -38,26 +33,18 @@ export function structuredImageUrl(
   },
   did: string,
 ): string | null {
-  if (block.externalSrc && /^https?:\/\//i.test(block.externalSrc)) {
-    return block.externalSrc;
-  }
+  const external = externalHttpUrl(block.externalSrc);
+  if (external) return external;
   return blobImageUrl(block.blob, did);
 }
 
 export function structuredImageAspectRatio(block: {
   aspectRatio?: { width?: number; height?: number };
 }): number {
-  const width = block.aspectRatio?.width;
-  const height = block.aspectRatio?.height;
-  if (
-    typeof width === "number" &&
-    typeof height === "number" &&
-    width > 0 &&
-    height > 0
-  ) {
-    return width / height;
-  }
-  return 16 / 9;
+  return aspectRatioFromDimensions(
+    block.aspectRatio?.width,
+    block.aspectRatio?.height,
+  );
 }
 
 export function structuredImageHasSource(block: {

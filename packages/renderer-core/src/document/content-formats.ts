@@ -1,3 +1,4 @@
+import { isRecord } from "../internal";
 import { LEAFLET_CONTENT } from "../leaflet/types";
 import {
   BLOCKNOTE_CONTENT,
@@ -14,10 +15,6 @@ import {
   prosemirrorBlocks,
 } from "./structured-content/prosemirror";
 import type { StructuredRenderableBlock } from "./structured-content/types";
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
 
 /** `pub.leaflet.document` — a full Leaflet document whose `pages` match the
  *  `pub.leaflet.content` shape. */

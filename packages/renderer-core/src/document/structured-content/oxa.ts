@@ -3,13 +3,10 @@
  * array of `pub.oxa.blocks.defs#*` entries. Facets are already emitted in the
  * leaflet/AT Proto byte-facet shape, so they pass straight through.
  */
+import { isRecord } from "../../internal";
 import type { StructuredRenderableBlock, StructuredText } from "./types";
 
 export const OXA_CONTENT = "pub.oxa.document.document";
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
 
 function structuredText(value: Record<string, unknown>): StructuredText | null {
   if (typeof value.text !== "string" || !value.text.trim()) return null;

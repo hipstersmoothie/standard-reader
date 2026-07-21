@@ -1,4 +1,5 @@
 import { narrationImageLines } from "../document/structured-content/image";
+import { isRecord } from "../internal";
 import type {
   LeafletBlockquoteBlock,
   LeafletBskyPostBlock,
@@ -20,10 +21,6 @@ import type {
   LeafletWebsiteBlock,
 } from "./types";
 import { LEAFLET_BLOCK, LEAFLET_CONTENT, LEAFLET_PAGE } from "./types";
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
 
 function unwrapPageBlock(entry: unknown): Record<string, unknown> | null {
   if (!isRecord(entry)) return null;

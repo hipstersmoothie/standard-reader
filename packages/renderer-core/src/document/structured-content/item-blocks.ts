@@ -1,3 +1,4 @@
+import { isRecord } from "../../internal";
 import { normalizeImageAlt } from "./image";
 import { mergeTextRuns } from "./text-runs";
 /**
@@ -7,10 +8,6 @@ import { mergeTextRuns } from "./text-runs";
  * shared faceted-text renderer already understands.
  */
 import type { StructuredRenderableBlock, StructuredText } from "./types";
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
 
 /** Known namespaced item formats: content `$type` → block `$type` prefix. */
 const ITEM_BLOCK_NAMESPACES: Record<string, string> = {

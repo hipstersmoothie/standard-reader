@@ -4,13 +4,10 @@
  * Per-block visual styling (`style`) is intentionally dropped; the reader
  * applies its own typography.
  */
+import { isRecord } from "../../internal";
 import type { StructuredRenderableBlock } from "./types";
 
 export const FABLES_CONTENT = "ca.justexe.fables.blocks";
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
 
 function asBlock(value: unknown): StructuredRenderableBlock | null {
   if (!isRecord(value) || typeof value.type !== "string") return null;

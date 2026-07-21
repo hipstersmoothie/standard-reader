@@ -1,4 +1,5 @@
 import { narrationImageLines } from "../document/structured-content/image";
+import { isRecord } from "../internal";
 import { utf8ByteLength } from "../leaflet/utf8";
 import { pcktImageAlt } from "./image";
 import type {
@@ -20,10 +21,6 @@ import type {
   PcktWebsiteBlock,
 } from "./types";
 import { PCKT_BLOCK, PCKT_CONTENT } from "./types";
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
 
 function shiftFacets(
   facets: Array<PcktFacet> | undefined,

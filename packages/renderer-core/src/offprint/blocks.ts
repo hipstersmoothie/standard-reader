@@ -7,11 +7,8 @@ import type {
   StructuredRenderableBlock,
   StructuredText,
 } from "../document/structured-content/types";
+import { isRecord } from "../internal";
 import { OFFPRINT_BLOCK, OFFPRINT_CONTENT } from "./types";
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
 
 function asText(value: unknown): StructuredText | null {
   if (!isRecord(value)) return null;

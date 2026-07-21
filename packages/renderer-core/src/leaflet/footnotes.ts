@@ -1,3 +1,4 @@
+import { isRecord } from "../internal";
 import { asTextBlock } from "./blocks";
 import type {
   LeafletFacet,
@@ -26,10 +27,6 @@ export interface LeafletFootnoteIndex {
   footnotes: Array<LeafletFootnote>;
   /** `footnoteId` → display number, for the inline reference renderer. */
   numberById: Map<string, number>;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 interface RawFootnote {

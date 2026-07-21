@@ -1,3 +1,4 @@
+import { isRecord } from "../../internal";
 import { utf8ByteLength } from "../../leaflet/utf8";
 import { normalizeImageAlt } from "./image";
 import { mergeTextRuns, syntheticFacet } from "./text-runs";
@@ -10,10 +11,6 @@ import { mergeTextRuns, syntheticFacet } from "./text-runs";
 import type { StructuredRenderableBlock, StructuredText } from "./types";
 
 export const BLOCKNOTE_CONTENT = "org.blocknote.document#content";
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
 
 const STYLE_KINDS: Record<string, string> = {
   bold: "bold",

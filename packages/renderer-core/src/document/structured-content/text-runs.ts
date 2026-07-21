@@ -1,9 +1,6 @@
+import { isRecord } from "../../internal";
 import { utf8ByteLength } from "../../leaflet/utf8";
 import type { StructuredText } from "./types";
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
 
 /** Shift facet byte ranges forward by `byteOffset` (run concatenation). */
 function offsetFacets(

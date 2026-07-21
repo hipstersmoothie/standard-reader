@@ -1,14 +1,11 @@
-import { cdnImageUrl, blobCid as sharedBlobCid } from "../atproto/blob";
+import { blobCid, cdnImageUrl } from "../atproto/blob";
 import { normalizeImageAlt } from "../document/structured-content/image";
+import {
+  aspectRatioFromDimensions,
+  externalHttpUrl,
+  isRecord,
+} from "../internal";
 import type { PcktImageBlock } from "./types";
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function blobCid(blob: unknown): string | null {
-  return sharedBlobCid(blob as Parameters<typeof sharedBlobCid>[0]);
-}
 
 /** Pull a CID from `blob:CID` src strings or blob refs. */
 function cidFromSrc(src: string): string | null {
@@ -26,12 +23,12 @@ export function pcktImageUrl(
   if (!attrs) return null;
 
   const src = attrs.src;
-  if (typeof src === "string" && /^https?:\/\//i.test(src)) {
-    return src;
-  }
+  const external = externalHttpUrl(src);
+  if (external) return external;
 
   const cid =
-    blobCid(attrs.blob) ?? (typeof src === "string" ? cidFromSrc(src) : null);
+    blobCid(attrs.blob as Parameters<typeof blobCid>[0]) ??
+    (typeof src === "string" ? cidFromSrc(src) : null);
   if (!cid) return null;
   return cdnImageUrl(did, cid, "png");
 }
@@ -39,17 +36,10 @@ export function pcktImageUrl(
 /** Width ÷ height for layout; falls back to 16∶9 when missing or invalid. */
 export function pcktImageAspectRatio(block: PcktImageBlock): number {
   const ratio = block.attrs?.aspectRatio;
-  const width = ratio?.width ?? block.attrs?.naturalWidth;
-  const height = ratio?.height ?? block.attrs?.naturalHeight;
-  if (
-    typeof width === "number" &&
-    typeof height === "number" &&
-    width > 0 &&
-    height > 0
-  ) {
-    return width / height;
-  }
-  return 16 / 9;
+  return aspectRatioFromDimensions(
+    ratio?.width ?? block.attrs?.naturalWidth,
+    ratio?.height ?? block.attrs?.naturalHeight,
+  );
 }
 
 export function pcktImageAlign(
