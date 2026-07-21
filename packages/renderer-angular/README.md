@@ -1,8 +1,8 @@
 # @standard-reader/renderer-angular
 
 A **headless, unstyled Angular renderer** for [Standard Site](https://standard.site)
-documents. Same idea as the React/Vue/Solid/Svelte/Lit renderers, built on the
-shared [`@standard-reader/renderer-core`](../renderer-core).
+documents, built on the framework-agnostic
+[`@standard-reader/renderer-core`](../renderer-core).
 
 - A standalone `<sr-standard-document>` component — bind the `document` input.
 - Renders unstyled semantic HTML you style with your own CSS.

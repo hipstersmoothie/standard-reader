@@ -1,10 +1,8 @@
 # @standard-reader/renderer-lit
 
 A **headless, unstyled web-components renderer** for [Standard Site](https://standard.site)
-documents, built on [Lit](https://lit.dev). Same idea as
-[`@standard-reader/renderer-react`](../renderer-react), rendered with `lit-html`
-instead of React — both sit on the shared
-[`@standard-reader/renderer-core`](../renderer-core).
+documents, built on [Lit](https://lit.dev). It renders `lit-html` templates on
+top of the framework-agnostic [`@standard-reader/renderer-core`](../renderer-core).
 
 - A `<standard-document>` custom element — set its `document` property.
 - Or a `renderDocument()` function returning a `lit-html` template you can drop

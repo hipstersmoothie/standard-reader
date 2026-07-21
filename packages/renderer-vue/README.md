@@ -1,9 +1,8 @@
 # @standard-reader/renderer-vue
 
 A **headless, unstyled Vue 3 renderer** for [Standard Site](https://standard.site)
-documents. Same idea as the React and Lit renderers, rendered with Vue's `h()`
-render functions — all sit on the shared
-[`@standard-reader/renderer-core`](../renderer-core).
+documents. It renders with Vue's `h()` render functions on top of the
+framework-agnostic [`@standard-reader/renderer-core`](../renderer-core).
 
 - A `<StandardDocument>` component — pass the `document` prop.
 - Or a `renderDocument()` function returning a vnode for your own render fns.

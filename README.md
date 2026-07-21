@@ -89,6 +89,8 @@ lexicons/             # app-owned app.standard-reader.* lexicon JSON
 tap/                  # tap instance config (docker-compose) — see tap/README.md
 scripts/              # backfills, lexicon publishing, asset generation, cron
 drizzle/              # generated migrations
+packages/             # publishable document renderers (@standard-reader/renderer-*)
+                      #   — see packages/README.md
 ```
 
 ## Living docs
@@ -98,3 +100,5 @@ drizzle/              # generated migrations
 - [`TODO.md`](./TODO.md) — the roadmap derived from the vision.
 - [`AGENTS.md`](./AGENTS.md) — repo conventions for AI agents (design-system rules, lint setup,
   gotchas).
+- [`packages/README.md`](./packages/README.md) — the document renderer family: the
+  framework-agnostic core and the per-framework renderers built on it.

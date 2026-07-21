@@ -1,7 +1,7 @@
 # @standard-reader/renderer-solid
 
 A **headless, unstyled SolidJS renderer** for [Standard Site](https://standard.site)
-documents. Same idea as the React/Vue/Lit renderers, built on the shared
+documents, built on the framework-agnostic
 [`@standard-reader/renderer-core`](../renderer-core).
 
 - A `<StandardDocument>` component — pass the `document` prop.

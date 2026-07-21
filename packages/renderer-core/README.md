@@ -6,10 +6,9 @@ format Standard Reader understands — and normalizes it into a single render tr
 that any UI framework can walk.
 
 You usually don't depend on this directly: pick a framework renderer instead
-([`@standard-reader/renderer-react`](../renderer-react),
-[`@standard-reader/renderer-lit`](../renderer-lit)). Reach for the core when you
-want to build a renderer for another framework, or to inspect/transform a
-document without rendering it.
+(see the [renderers overview](../README.md)). Reach for the core when you want to
+build a renderer for another framework, or to inspect/transform a document
+without rendering it.
 
 ## The render tree
 
@@ -83,9 +82,9 @@ function renderInline(text) {
 }
 ```
 
-The React, Vue, Solid, Svelte, Lit and Angular renderers are each exactly this
-walk with a per-framework component/template registry layered on top — a good
-reference when adding another framework.
+Every framework renderer is exactly this walk with a per-framework
+component/template registry layered on top; the [renderers
+overview](../README.md) links the reference implementations.
 
 ## Also exported
 
