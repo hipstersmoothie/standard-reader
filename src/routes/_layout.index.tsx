@@ -246,6 +246,14 @@ const styles = stylex.create({
     lineHeight: lineHeight.sm,
     maxWidth: "52ch",
   },
+  // The same empty card, but sitting at the top of the two-column grid's main
+  // track — so it must start flush with the rail cards beside it, not `6` down.
+  caughtUpCard: {
+    marginTop: spacing["0"],
+  },
+  caughtUpActions: {
+    flexWrap: "wrap",
+  },
   homeSkeleton: {
     marginTop: spacing["9"],
   },
@@ -288,6 +296,7 @@ function homeFeedLabels({
   unreadCount,
   unreadCountPending = false,
   isTrending = false,
+  caughtUp = false,
 }: {
   i18n: I18n;
   fmt: Formatters;
@@ -298,6 +307,7 @@ function homeFeedLabels({
   unreadCount: number | null | undefined;
   unreadCountPending?: boolean;
   isTrending?: boolean;
+  caughtUp?: boolean;
 }) {
   if (isTrending) {
     return {
@@ -307,6 +317,22 @@ function homeFeedLabels({
       unreadLabel: undefined,
       sectionKicker: i18n._(msg`Across the network`),
       sectionTitle: i18n._(msg`Trending`),
+    };
+  }
+
+  // Caught up: the masthead shouldn't announce "0 new" like it's a shortfall,
+  // and the dek can't say "0 unread across the publications you subscribe to"
+  // when there is simply nothing left to read. Both swap to the caught-up voice.
+  if (caughtUp) {
+    return {
+      kicker: homeMastheadKicker(i18n, weekday, personalized),
+      dek: trackReading
+        ? i18n._(msg`You've read everything from the publications you follow.`)
+        : i18n._(
+            msg`The publications you follow haven't published anything recently.`,
+          ),
+      metaLabel: today,
+      unreadLabel: trackReading ? i18n._(msg`Caught up`) : undefined,
     };
   }
 
@@ -521,6 +547,17 @@ function HomeFeed({
     }
   };
 
+  // A reader with follows who has read everything: `selectArticleCards` runs
+  // unread-only when tracking is on, so the feed comes back with no lead and no
+  // rows while `personalized` stays true. The guest/no-follows empty branch below
+  // requires `!personalized`, so without this the main column renders as a bare
+  // "View all latest" button under an empty list.
+  const isCaughtUp =
+    !isTrending &&
+    feed.personalized &&
+    !feed.featured &&
+    mainArticles.length === 0;
+
   const nowIso = new Date().toISOString();
   const labels = homeFeedLabels({
     i18n,
@@ -532,6 +569,7 @@ function HomeFeed({
     unreadCount,
     unreadCountPending,
     isTrending,
+    caughtUp: isCaughtUp,
   });
 
   if (
@@ -622,17 +660,55 @@ function HomeFeed({
 
       <div {...stylex.props(styles.twoCol)}>
         <Flex direction="column">
-          <div>
-            {mainArticles.map((article, index) => (
-              <ArticleRow
-                key={article.uri}
-                article={article}
-                showSaveButton={false}
-                isFirstInSection={index === 0}
-              />
-            ))}
-          </div>
-          {isTrending ? (
+          {isCaughtUp ? (
+            <Flex
+              direction="column"
+              gap="2xl"
+              style={[styles.emptyCard, styles.caughtUpCard]}
+            >
+              <span {...stylex.props(styles.emptyTitle)}>
+                {trackReading ? (
+                  <Trans>You're all caught up</Trans>
+                ) : (
+                  <Trans>Nothing new today</Trans>
+                )}
+              </span>
+              <span {...stylex.props(styles.emptyDek)}>
+                {trackReading ? (
+                  <Trans>
+                    Nothing left unread from the publications you follow.
+                    There's more on the network than you're following yet.
+                  </Trans>
+                ) : (
+                  <Trans>
+                    Your subscriptions have been quiet. The directory knows
+                    about every publication on the network — there's more to
+                    find.
+                  </Trans>
+                )}
+              </span>
+              <Flex gap="md" style={styles.caughtUpActions}>
+                <ButtonLink to="/discover">
+                  <Trans>Explore the directory</Trans>
+                </ButtonLink>
+                <ButtonLink to="/latest" variant="secondary">
+                  <Trans>View all latest</Trans>
+                </ButtonLink>
+              </Flex>
+            </Flex>
+          ) : (
+            <div>
+              {mainArticles.map((article, index) => (
+                <ArticleRow
+                  key={article.uri}
+                  article={article}
+                  showSaveButton={false}
+                  isFirstInSection={index === 0}
+                />
+              ))}
+            </div>
+          )}
+          {isCaughtUp ? null : isTrending ? (
             <ButtonLink
               to="/latest"
               search={{ filter: "trending" }}
