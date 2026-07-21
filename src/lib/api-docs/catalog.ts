@@ -161,6 +161,21 @@ export const API_DOCS_CATALOG: Array<ApiDocsCatalogEntry> = [
     },
   ),
   q(
+    "app.standard-reader.getPublicationSubscribers",
+    "Public queries",
+    "Readers subscribed to a publication, most recently subscribed first, with cursor pagination.",
+    "none",
+    [
+      { name: "publication", type: "at-uri", required: true },
+      { name: "limit", type: "integer" },
+      { name: "cursor", type: "string" },
+    ],
+    {
+      autoRun: true,
+      params: (f) => ({ publication: f.publicationUri, limit: "10" }),
+    },
+  ),
+  q(
     "app.standard-reader.getPublications",
     "Public queries",
     "Browse the publication directory with topic filter, sort, and cursor pagination.",
@@ -252,6 +267,36 @@ export const API_DOCS_CATALOG: Array<ApiDocsCatalogEntry> = [
     },
   ),
   q(
+    "app.standard-reader.getAuthorPosts",
+    "Directory & feeds",
+    "Every article a DID has a byline on — their own posts plus documents they are credited on elsewhere (featured in) — newest first, with cursor pagination.",
+    "none",
+    [
+      { name: "did", type: "did", required: true },
+      { name: "limit", type: "integer" },
+      { name: "cursor", type: "string" },
+    ],
+    {
+      autoRun: true,
+      params: (f) => ({ did: f.readerDid, limit: "5" }),
+    },
+  ),
+  q(
+    "app.standard-reader.getUserSubscriptions",
+    "Directory & feeds",
+    "Publications a DID subscribes to, most recently subscribed first, with cursor pagination.",
+    "none",
+    [
+      { name: "did", type: "did", required: true },
+      { name: "limit", type: "integer" },
+      { name: "cursor", type: "string" },
+    ],
+    {
+      autoRun: true,
+      params: (f) => ({ did: f.readerDid, limit: "5" }),
+    },
+  ),
+  q(
     "app.standard-reader.getList",
     "Directory & feeds",
     "Public metadata and member publications for an app.standard-reader.list AT-URI.",
@@ -275,6 +320,17 @@ export const API_DOCS_CATALOG: Array<ApiDocsCatalogEntry> = [
     {
       autoRun: true,
       params: (f) => ({ list: f.listUri, limit: "5" }),
+    },
+  ),
+  q(
+    "app.standard-reader.getUserLists",
+    "Directory & feeds",
+    "Every publication list authored by a DID, each with its member publications resolved.",
+    "none",
+    [{ name: "did", type: "did", required: true }],
+    {
+      autoRun: true,
+      params: (f) => ({ did: f.readerDid }),
     },
   ),
   q(

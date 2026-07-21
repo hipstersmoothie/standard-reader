@@ -1,0 +1,37 @@
+{
+  "lexicon": 1,
+  "id": "app.standard-reader.getPublicationSubscribers",
+  "defs": {
+    "main": {
+      "type": "query",
+      "description": "Readers subscribed to a publication, most recently subscribed first, with cursor pagination.",
+      "parameters": {
+        "type": "params",
+        "properties": {
+          "publication": {
+            "type": "string",
+            "format": "at-uri"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 30
+          },
+          "cursor": {
+            "type": "string",
+            "maxLength": 8192
+          }
+        },
+        "required": ["publication"]
+      },
+      "output": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "ref",
+          "ref": "app.standard-reader.defs#cursorPageProfiles"
+        }
+      }
+    }
+  }
+}

@@ -33,6 +33,7 @@ import { alias } from "drizzle-orm/pg-core";
 import type {
   ArticleCard,
   Db,
+  ProfileSummary,
   PublicationCard,
   Schema,
 } from "#/integrations/tanstack-query/api-shapes";
@@ -3102,6 +3103,79 @@ export async function authorReaders(
         handle: null,
         displayName: null,
         avatarUrl: null,
+      },
+  );
+
+  return { items, total: countRow[0]?.count ?? 0 };
+}
+
+/**
+ * Distinct readers subscribed to a single publication
+ * (`site.standard.graph.subscription`), most recently subscribed first. The
+ * publication-scoped counterpart of {@link authorReaders}; rides
+ * `subscriptions_publication_idx`.
+ */
+export async function publicationSubscribers(
+  db: Db,
+  schema: Schema,
+  opts: { publicationUri: string; limit: number; offset?: number },
+): Promise<AuthorActivityPage<ProfileSummary>> {
+  const sub = schema.subscriptions;
+  const pr = schema.profiles;
+
+  const where = and(
+    eq(sub.publicationUri, opts.publicationUri),
+    eq(sub.deleted, false),
+  );
+
+  const [countRow, didRows] = await Promise.all([
+    db
+      .select({
+        count: sql<number>`count(distinct ${sub.subscriberDid})::int`.mapWith(
+          Number,
+        ),
+      })
+      .from(sub)
+      .where(where),
+    db
+      .select({ subscriberDid: sub.subscriberDid })
+      .from(sub)
+      .where(where)
+      .groupBy(sub.subscriberDid)
+      .orderBy(desc(sql`max(${sub.createdAt})`), asc(sub.subscriberDid))
+      .limit(opts.limit)
+      .offset(opts.offset ?? 0),
+  ]);
+
+  const dids = didRows.map((row) => row.subscriberDid);
+  if (dids.length === 0) {
+    return { items: [], total: countRow[0]?.count ?? 0 };
+  }
+
+  const profileRows = await db
+    .select({
+      did: pr.did,
+      handle: pr.handle,
+      displayName: pr.displayName,
+      description: pr.description,
+      avatarUrl: pr.avatarUrl,
+      bannerUrl: pr.bannerUrl,
+    })
+    .from(pr)
+    .where(inArray(pr.did, dids));
+  const byDid = new Map(profileRows.map((row) => [row.did, row]));
+
+  // Preserve the recency order from the subscription query; fill unindexed
+  // subscribers (no profile row yet) with a DID-only summary.
+  const items = dids.map(
+    (did): ProfileSummary =>
+      byDid.get(did) ?? {
+        did,
+        handle: null,
+        displayName: null,
+        description: null,
+        avatarUrl: null,
+        bannerUrl: null,
       },
   );
 

@@ -256,6 +256,62 @@ const cursorPageDocuments = /*#__PURE__*/ l.typedObject<CursorPageDocuments>(
 
 export { cursorPageDocuments }
 
+type CursorPageProfiles = {
+  $type?: 'app.standard-reader.defs#cursorPageProfiles'
+  cursor?: string
+  items: ProfileView[]
+}
+
+export type { CursorPageProfiles }
+
+const cursorPageProfiles = /*#__PURE__*/ l.typedObject<CursorPageProfiles>(
+  $nsid,
+  'cursorPageProfiles',
+  /*#__PURE__*/ l.object({
+    cursor: /*#__PURE__*/ l.optional(
+      /*#__PURE__*/ l.string({ maxLength: 8192 }),
+    ),
+    items: /*#__PURE__*/ l.array(
+      /*#__PURE__*/ l.ref<ProfileView>((() => profileView) as any),
+    ),
+  }),
+)
+
+export { cursorPageProfiles }
+
+/** A reader-authored publication list (app.standard-reader.list) with its member publications resolved. */
+type ListView = {
+  $type?: 'app.standard-reader.defs#listView'
+  uri: l.AtUriString
+  name: string
+  description?: string
+  createdAt?: l.DatetimeString
+  publications: PublicationView[]
+}
+
+export type { ListView }
+
+/** A reader-authored publication list (app.standard-reader.list) with its member publications resolved. */
+const listView = /*#__PURE__*/ l.typedObject<ListView>(
+  $nsid,
+  'listView',
+  /*#__PURE__*/ l.object({
+    uri: /*#__PURE__*/ l.string({ format: 'at-uri' }),
+    name: /*#__PURE__*/ l.string({ maxLength: 128 }),
+    description: /*#__PURE__*/ l.optional(
+      /*#__PURE__*/ l.string({ maxLength: 4096 }),
+    ),
+    createdAt: /*#__PURE__*/ l.optional(
+      /*#__PURE__*/ l.string({ format: 'datetime' }),
+    ),
+    publications: /*#__PURE__*/ l.array(
+      /*#__PURE__*/ l.ref<PublicationView>((() => publicationView) as any),
+    ),
+  }),
+)
+
+export { listView }
+
 type ResolveViewArticle = {
   $type?: 'app.standard-reader.defs#resolveViewArticle'
   kind: 'article'

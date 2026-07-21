@@ -1,5 +1,6 @@
 import { TRENDING_PAGE_LIMIT } from "#/integrations/tanstack-query/api-feed.functions";
 import { articleCardsAsAllRead } from "#/lib/track-reading-history";
+import { resolveAuthorDid } from "#/server/atproto/resolve-author-ref";
 import { parseAtUri } from "#/server/atproto/uri";
 import {
   followedPublications,
@@ -9,6 +10,7 @@ import {
   trendingPublications,
 } from "#/server/reader/queries";
 import { effectiveFollowUris, readList } from "#/server/reader/saved-lists";
+import { loadOwnSubscriptionLists } from "#/server/reader/shell-snapshot.server";
 
 import { nextCursor } from "../db";
 import { InvalidRequestError } from "../errors";
@@ -171,6 +173,36 @@ export async function handleGetList(ctx: XrpcRequestContext) {
     name: list.name,
     description: list.description ?? null,
     publications: ordered.map((item) => toPublicationView(item)),
+  };
+}
+
+export async function handleGetUserLists(ctx: XrpcRequestContext) {
+  const did = requireParam(ctx.params, "did");
+  const resolvedDid = await resolveAuthorDid(ctx.db, ctx.schema, did);
+
+  const lists = await loadOwnSubscriptionLists(null, resolvedDid);
+  if (lists.length === 0) {
+    return { lists: [] };
+  }
+
+  // Resolve every member publication across all lists in one batched query,
+  // then rebuild each list preserving its curated order.
+  const allUris = [...new Set(lists.flatMap((list) => list.publications))];
+  const cards = await followedPublications(ctx.db, ctx.schema, allUris);
+  const viewByUri = new Map(
+    cards.map((card) => [card.uri, toPublicationView(card)]),
+  );
+
+  return {
+    lists: lists.map((list) => ({
+      uri: list.uri,
+      name: list.name,
+      description: list.description ?? null,
+      createdAt: list.createdAt ?? null,
+      publications: list.publications
+        .map((uri) => viewByUri.get(uri))
+        .filter((view): view is NonNullable<typeof view> => view != null),
+    })),
   };
 }
 

@@ -24,6 +24,7 @@ import {
   authSessionFromContext,
   directorySortFromParam,
   enrichDocuments,
+  mapDocumentPage,
   mapPublicationPage,
   paginationFromCursor,
 } from "./_helpers";
@@ -338,6 +339,53 @@ export async function handleGetAuthorPublications(ctx: XrpcRequestContext) {
   const total =
     items.length < limit ? offset + items.length : offset + limit + 1;
   return mapPublicationPage(items, offset, limit, total);
+}
+
+export async function handleGetAuthorPosts(ctx: XrpcRequestContext) {
+  const did = requireParam(ctx.params, "did");
+  const resolvedDid = await resolveAuthorDid(ctx.db, ctx.schema, did);
+  const { offset, limit } = paginationFromCursor(ctx.params, 20, 50);
+
+  const readForDid =
+    ctx.auth && ctx.trackReadingEnabled ? ctx.auth.did : undefined;
+  const { authorDocuments } = await import("#/server/reader/queries");
+  // Full byline feed: own posts plus contributor credits in other publications,
+  // merged newest-first with an exact total (see `authorDocuments`).
+  const page = await authorDocuments(ctx.db, ctx.schema, {
+    did: resolvedDid,
+    limit,
+    offset,
+  });
+  const items = await enrichDocuments(ctx, page.items, readForDid);
+  return mapDocumentPage(items, offset, limit, page.total);
+}
+
+export async function handleGetUserSubscriptions(ctx: XrpcRequestContext) {
+  const did = requireParam(ctx.params, "did");
+  const resolvedDid = await resolveAuthorDid(ctx.db, ctx.schema, did);
+  const { offset, limit } = paginationFromCursor(ctx.params, 20, 50);
+  const { authorSubscriptions } = await import("#/server/reader/queries");
+  const page = await authorSubscriptions(ctx.db, ctx.schema, {
+    did: resolvedDid,
+    limit,
+    offset,
+  });
+  return mapPublicationPage(page.items, offset, limit, page.total);
+}
+
+export async function handleGetPublicationSubscribers(ctx: XrpcRequestContext) {
+  const publicationUri = requireParam(ctx.params, "publication");
+  const { offset, limit } = paginationFromCursor(ctx.params, 30, 100);
+  const { publicationSubscribers } = await import("#/server/reader/queries");
+  const page = await publicationSubscribers(ctx.db, ctx.schema, {
+    publicationUri,
+    limit,
+    offset,
+  });
+  return {
+    cursor: nextCursor(offset, limit, page.total),
+    items: page.items.map((item) => toProfileView(item)),
+  };
 }
 
 export async function handleGetDocumentContext(ctx: XrpcRequestContext) {

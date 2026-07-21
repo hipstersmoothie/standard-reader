@@ -1,0 +1,36 @@
+{
+  "lexicon": 1,
+  "id": "app.standard-reader.getUserLists",
+  "defs": {
+    "main": {
+      "type": "query",
+      "description": "Every publication list authored by a DID, each with its member publications resolved.",
+      "parameters": {
+        "type": "params",
+        "properties": {
+          "did": {
+            "type": "string",
+            "format": "did"
+          }
+        },
+        "required": ["did"]
+      },
+      "output": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["lists"],
+          "properties": {
+            "lists": {
+              "type": "array",
+              "items": {
+                "type": "ref",
+                "ref": "app.standard-reader.defs#listView"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

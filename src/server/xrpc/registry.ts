@@ -45,6 +45,14 @@ export const XRPC_REGISTRY = new Map<string, XrpcRegistryEntry>([
     },
   ],
   [
+    "app.standard-reader.getPublicationSubscribers",
+    {
+      method: "query",
+      auth: "none",
+      handler: catalog.handleGetPublicationSubscribers,
+    },
+  ],
+  [
     "app.standard-reader.getPublications",
     { method: "query", auth: "none", handler: catalog.handleGetPublications },
   ],
@@ -58,6 +66,22 @@ export const XRPC_REGISTRY = new Map<string, XrpcRegistryEntry>([
       method: "query",
       auth: "none",
       handler: catalog.handleGetAuthorPublications,
+    },
+  ],
+  [
+    "app.standard-reader.getAuthorPosts",
+    {
+      method: "query",
+      auth: "none",
+      handler: catalog.handleGetAuthorPosts,
+    },
+  ],
+  [
+    "app.standard-reader.getUserSubscriptions",
+    {
+      method: "query",
+      auth: "none",
+      handler: catalog.handleGetUserSubscriptions,
     },
   ],
   [
@@ -119,6 +143,10 @@ export const XRPC_REGISTRY = new Map<string, XrpcRegistryEntry>([
   [
     "app.standard-reader.getListFeed",
     { method: "query", auth: "none", handler: feeds.handleGetListFeed },
+  ],
+  [
+    "app.standard-reader.getUserLists",
+    { method: "query", auth: "none", handler: feeds.handleGetUserLists },
   ],
 
   // Signed-in home & discovery rails

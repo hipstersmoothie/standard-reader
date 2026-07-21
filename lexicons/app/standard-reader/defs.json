@@ -199,6 +199,46 @@
         }
       }
     },
+    "cursorPageProfiles": {
+      "type": "object",
+      "required": ["items"],
+      "properties": {
+        "cursor": { "type": "string", "nullable": true, "maxLength": 8192 },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "ref",
+            "ref": "app.standard-reader.defs#profileView"
+          }
+        }
+      }
+    },
+    "listView": {
+      "type": "object",
+      "description": "A reader-authored publication list (app.standard-reader.list) with its member publications resolved.",
+      "required": ["uri", "name", "publications"],
+      "properties": {
+        "uri": { "type": "string", "format": "at-uri" },
+        "name": { "type": "string", "maxLength": 128 },
+        "description": {
+          "type": "string",
+          "nullable": true,
+          "maxLength": 4096
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "datetime",
+          "nullable": true
+        },
+        "publications": {
+          "type": "array",
+          "items": {
+            "type": "ref",
+            "ref": "app.standard-reader.defs#publicationView"
+          }
+        }
+      }
+    },
     "resolveViewArticle": {
       "type": "object",
       "required": [
