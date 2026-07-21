@@ -2,12 +2,14 @@
 
 import { Trans, useLingui } from "@lingui/react/macro";
 import * as stylex from "@stylexjs/stylex";
+import { useQuery } from "@tanstack/react-query";
 import { X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button as AriaButton, Heading } from "react-aria-components";
 
 import { IconButton } from "#/design-system/icon-button";
 import { Popover } from "#/design-system/popover";
+import { SearchField } from "#/design-system/search-field";
 import { Tag, TagGroup } from "#/design-system/tag-group";
 import { animationDuration } from "#/design-system/theme/animations.stylex";
 import { primaryColor, uiColor } from "#/design-system/theme/color.stylex";
@@ -26,7 +28,15 @@ import {
   typeramp,
 } from "#/design-system/theme/typography.stylex";
 
+import { discoverApi } from "#/integrations/tanstack-query/api-discover.functions";
+
+import { searchResultTopics } from "./discover-topics";
 import type { TopicChipItem } from "./discover-topics";
+
+/** How long the topic search waits after a keystroke before querying. */
+const TOPIC_SEARCH_DEBOUNCE_MS = 250;
+/** Max tags a single search request returns (the query fn caps at 100). */
+const TOPIC_SEARCH_LIMIT = 100;
 
 const styles = stylex.create({
   filterTrigger: {
@@ -96,6 +106,15 @@ const styles = stylex.create({
     marginBottom: spacing["0"],
     marginTop: spacing["0"],
   },
+  searchRow: {
+    borderBottomColor: uiColor.border1,
+    borderBottomStyle: "solid",
+    borderBottomWidth: 1,
+    paddingBottom: verticalSpace["md"],
+    paddingInlineStart: horizontalSpace["lg"],
+    paddingInlineEnd: horizontalSpace["lg"],
+    paddingTop: verticalSpace["md"],
+  },
   popoverBody: {
     outline: "none",
     maxHeight: spacing["64"],
@@ -106,6 +125,13 @@ const styles = stylex.create({
     paddingInlineStart: horizontalSpace["lg"],
     paddingInlineEnd: horizontalSpace["lg"],
     paddingTop: verticalSpace["lg"],
+  },
+  emptyState: {
+    color: uiColor.text1,
+    fontFamily: fontFamily.sans,
+    fontSize: fontSize.sm,
+    marginBottom: spacing["0"],
+    marginTop: spacing["0"],
   },
 });
 
@@ -128,6 +154,53 @@ export function DiscoverTopicFilters({
 }: DiscoverTopicFiltersProps) {
   const { t } = useLingui();
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [searchInput, setSearchInput] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+
+  useEffect(() => {
+    const trimmed = searchInput.trim();
+    const timer = globalThis.setTimeout(() => {
+      setDebouncedQuery(trimmed);
+    }, TOPIC_SEARCH_DEBOUNCE_MS);
+    return () => globalThis.clearTimeout(timer);
+  }, [searchInput]);
+
+  // Reset the search each time the popover closes, so it reopens on the
+  // default top-50 list rather than stale results.
+  useEffect(() => {
+    if (!pickerOpen) {
+      setSearchInput("");
+      setDebouncedQuery("");
+    }
+  }, [pickerOpen]);
+
+  const isSearching = debouncedQuery.length > 0;
+
+  // Searches span the *whole* tag vocabulary, so tags past the default top-50
+  // list are reachable. `keepPreviousData` avoids a flash of empty while the
+  // next keystroke's results load.
+  const { data: searchRows, isFetching: searchFetching } = useQuery({
+    ...discoverApi.getTopicsQueryOptions({
+      limit: TOPIC_SEARCH_LIMIT,
+      q: debouncedQuery,
+    }),
+    enabled: isSearching,
+    placeholderData: (previous) => previous,
+  });
+
+  const searchItems = useMemo(
+    () => (searchRows ? searchResultTopics(searchRows) : []),
+    [searchRows],
+  );
+
+  const visibleItems = isSearching ? searchItems : topicItems;
+  // Show the "no matches" copy only once results for the current query have
+  // actually arrived — not during the in-flight gap after a keystroke.
+  const showEmpty =
+    isSearching &&
+    visibleItems.length === 0 &&
+    !searchFetching &&
+    searchInput.trim() === debouncedQuery;
 
   const triggerLabel = useMemo(() => {
     if (topicKey === "all") return t`All`;
@@ -183,22 +256,44 @@ export function DiscoverTopicFilters({
         </IconButton>
       </div>
 
+      <div {...stylex.props(styles.searchRow)}>
+        <SearchField
+          aria-label={t`Search topics`}
+          placeholder={t`Search all topics…`}
+          value={searchInput}
+          onChange={setSearchInput}
+          // Focus lands on search when the picker opens: the popover is a
+          // deliberate search surface, and without this focus would otherwise
+          // start on the Close button ahead of it in DOM order.
+          // eslint-disable-next-line jsx-a11y/no-autofocus
+          autoFocus
+        />
+      </div>
+
       <div {...stylex.props(styles.popoverBody)}>
-        <TagGroup
-          aria-label={t`Filter by topic`}
-          selectionMode="single"
-          selectedKeys={new Set([topicKey])}
-          onSelectionChange={onPickerTopicChange}
-          items={topicItems}
-        >
-          {(item) => (
-            // Topic values come from the network (author-supplied), so let the
-            // browser resolve their direction rather than inheriting the UI's.
-            <Tag id={item.id}>
-              <span dir="auto">{item.name}</span>
-            </Tag>
-          )}
-        </TagGroup>
+        {showEmpty ? (
+          <p {...stylex.props(styles.emptyState)}>
+            <Trans>No topics match “{debouncedQuery}”.</Trans>
+          </p>
+        ) : (
+          <TagGroup
+            aria-label={t`Filter by topic`}
+            selectionMode="single"
+            selectedKeys={new Set([topicKey])}
+            onSelectionChange={onPickerTopicChange}
+            items={visibleItems}
+            renderEmptyState={() => null}
+          >
+            {(item) => (
+              // Topic values come from the network (author-supplied), so let
+              // the browser resolve their direction rather than inheriting the
+              // UI's.
+              <Tag id={item.id}>
+                <span dir="auto">{item.name}</span>
+              </Tag>
+            )}
+          </TagGroup>
+        )}
       </div>
     </Popover>
   );

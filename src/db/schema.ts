@@ -19,6 +19,7 @@ export * from "./schema/graph.ts";
 export * from "./schema/personal.ts";
 export * from "./schema/lists.ts";
 export * from "./schema/stats.ts";
+export * from "./schema/discover-topics.ts";
 export * from "./schema/ingest.ts";
 export * from "./schema/labels.ts";
 export * from "./schema/quote-shares.ts";

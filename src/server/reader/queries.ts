@@ -1616,37 +1616,36 @@ export async function countKnownPublications(db: Db): Promise<number> {
   return row?.count ?? 0;
 }
 
-/** Topic chips for Discover — derived live when `publications.topic` is unset. */
+/**
+ * Topic chips for Discover — the full tag vocabulary of the network, not just
+ * each publication's single dominant tag. A chip is any distinct document tag
+ * (plus any explicit `publications.topic`) across discover-eligible
+ * publications, counted by how many publications a reader would reach by
+ * selecting it. That count mirrors the chip click path, which filters with
+ * `topicMatch: "document"` — matching a publication's effective topic OR any of
+ * its document tags — so every chip is guaranteed to return results.
+ *
+ * Reads the precomputed `discover_topic_counts` table (rebuilt each sweep by
+ * `recomputeTopics()`); aggregating the vocabulary live is a ~2s network-wide
+ * `unnest(tags)` scan, far too slow for this request-path, Suspense-gated
+ * query. `query`, when set, filters the vocabulary by a case-insensitive
+ * substring (trigram-indexed) so the popover search can reach tags past the
+ * default `limit`.
+ */
 export async function discoverPublicationTopics(
   db: Db,
-  limit: number,
+  { limit, query = null }: { limit: number; query?: string | null },
 ): Promise<Array<DiscoverTopicChip>> {
+  const trimmedQuery = query?.trim() ?? "";
+  const queryCond = trimmedQuery
+    ? sql`topic ILIKE ${`%${trimmedQuery}%`}`
+    : sql`true`;
+
   const result = await db.execute(sql`
-    WITH pub_effective AS (
-      SELECT p.uri,
-             coalesce(
-               p.topic,
-               (
-                 SELECT lower(btrim(tag))
-                 FROM documents d, unnest(d.tags) AS tag
-                 WHERE d.publication_uri = p.uri
-                   AND d.deleted = false
-                   AND btrim(tag) <> ''
-                 GROUP BY lower(btrim(tag))
-                 ORDER BY count(*) DESC, lower(btrim(tag)) ASC
-                 LIMIT 1
-               )
-             ) AS topic
-      FROM publications p
-      WHERE p.show_in_discover = true
-        AND p.deleted = false
-        AND p.url NOT ILIKE ${EXCLUDED_PUBLICATION_URL_PATTERN}
-    )
-    SELECT topic, count(*)::int AS count
-    FROM pub_effective
-    WHERE topic IS NOT NULL
-    GROUP BY topic
-    ORDER BY count(*) DESC, topic ASC
+    SELECT topic, publication_count AS count
+    FROM discover_topic_counts
+    WHERE ${queryCond}
+    ORDER BY publication_count DESC, topic ASC
     LIMIT ${limit}
   `);
 

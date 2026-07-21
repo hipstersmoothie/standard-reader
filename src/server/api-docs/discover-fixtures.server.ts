@@ -181,7 +181,7 @@ export async function discoverApiDocsTagOptions(
 ): Promise<Array<ApiDocsTagOption>> {
   const [documentTags, publicationTopics] = await Promise.all([
     discoverDocumentTagCounts(limit),
-    discoverPublicationTopics(db, 32),
+    discoverPublicationTopics(db, { limit: 32 }),
   ]);
 
   const byId = new Map<string, ApiDocsTagOption>();

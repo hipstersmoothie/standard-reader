@@ -519,6 +519,42 @@ export async function recomputeTopics(): Promise<void> {
     FROM ranked r
     WHERE r.uri = p.uri AND r.rk = 1
   `);
+
+  // Rebuild the network-wide topic counts that power the Discover topic filter.
+  // The chip list and its search read this table instead of running a ~2s
+  // `unnest(tags)` aggregation on the request path. A transaction keeps
+  // concurrent readers on the prior snapshot until commit, so the chips never
+  // briefly empty mid-sweep. `publication_count` is a distinct-publication count
+  // per tag (the UNION dedupes each publication's repeated tags), matching the
+  // chip click path (`topicMatch: "document"`).
+  await db.transaction(async (tx) => {
+    await tx.execute(sql`DELETE FROM discover_topic_counts`);
+    await tx.execute(sql`
+      INSERT INTO discover_topic_counts (topic, publication_count)
+      WITH eligible AS (
+        SELECT p.uri, p.topic
+        FROM publications p
+        WHERE p.show_in_discover = true
+          AND p.deleted = false
+          AND p.url NOT ILIKE ${EXCLUDED_PUBLICATION_URL_PATTERN}
+      ),
+      pub_topic AS (
+        SELECT uri, lower(btrim(topic)) AS topic
+        FROM eligible
+        WHERE topic IS NOT NULL AND btrim(topic) <> ''
+        UNION
+        SELECT e.uri, lower(btrim(tag)) AS topic
+        FROM eligible e
+        JOIN documents d ON d.publication_uri = e.uri AND d.deleted = false
+        CROSS JOIN unnest(d.tags) AS tag
+        WHERE btrim(tag) <> ''
+      )
+      SELECT topic, count(*)::int AS publication_count
+      FROM pub_topic
+      WHERE char_length(topic) BETWEEN 1 AND 128
+      GROUP BY topic
+    `);
+  });
 }
 
 /**

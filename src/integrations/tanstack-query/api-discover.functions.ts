@@ -59,6 +59,9 @@ export const DISCOVER_TOPICS_LIMIT = 50;
 
 const topicsInput = z.object({
   limit: z.number().int().min(1).max(100).default(DISCOVER_TOPICS_LIMIT),
+  // Case-insensitive substring search over the full tag vocabulary, so the
+  // popover can reach tags past the default top-`limit` list.
+  q: z.string().trim().min(1).max(120).optional(),
 });
 
 const directoryInput = z.object({
@@ -177,7 +180,11 @@ const getTopics = createServerFn({ method: "GET" })
     observe("discover.getTopics", async ({ data, context }, span) => {
       const { db } = context;
       await attachReaderSpanContext(span, getRequest());
-      const rows = await discoverPublicationTopics(db, data.limit);
+      span.set("q", data.q ?? null);
+      const rows = await discoverPublicationTopics(db, {
+        limit: data.limit,
+        query: data.q ?? null,
+      });
       span.set("count", rows.length);
       return rows;
     }),
@@ -331,6 +338,10 @@ const getPublications = createServerFn({ method: "GET" })
 
       const items = await discoverDirectoryPublications(db, schema, {
         topic: data.topic ?? null,
+        // The topic chips now surface the full document-tag vocabulary, so a
+        // selected chip must match any document tag — not only a publication's
+        // single effective topic — or tags past the dominant one return empty.
+        topicMatch: "document",
         sort: data.sort,
         limit: data.limit,
         offset: data.offset,
@@ -640,10 +651,11 @@ function getKnownPublicationCountQueryOptions() {
 
 function getTopicsQueryOptions({
   limit = DISCOVER_TOPICS_LIMIT,
-}: { limit?: number } = {}) {
+  q,
+}: { limit?: number; q?: string } = {}) {
   return queryOptions({
-    queryKey: ["discover", "topics", limit] as const,
-    queryFn: async () => getTopics({ data: { limit } }),
+    queryKey: ["discover", "topics", limit, q ?? ""] as const,
+    queryFn: async () => getTopics({ data: { limit, q } }),
   });
 }
 

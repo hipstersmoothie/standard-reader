@@ -39,3 +39,15 @@ export function sortDiscoverTopics(
 
   return ordered;
 }
+
+/**
+ * Map raw topic search results to chip items, preserving the server's
+ * count-desc (most-used first) ordering. Unlike {@link sortDiscoverTopics},
+ * this injects no "All" entry and applies no canonical reordering — a search is
+ * a flat relevance list over the whole vocabulary, not the curated chip row.
+ */
+export function searchResultTopics(
+  topics: Array<{ topic: string; count: number }>,
+): Array<TopicChipItem> {
+  return topics.map((row) => ({ id: row.topic, name: row.topic }));
+}

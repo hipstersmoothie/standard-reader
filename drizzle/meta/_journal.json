@@ -127,6 +127,13 @@
       "when": 1784430903472,
       "tag": "0017_digest_section_prefs",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1784603390663,
+      "tag": "0018_discover_topic_counts",
+      "breakpoints": true
     }
   ]
 }
