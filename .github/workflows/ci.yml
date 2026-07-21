@@ -141,6 +141,58 @@ jobs:
           # vitest.setup.ts supplies its own placeholder when this is unset.
           DATABASE_URL: ${{ steps.neon.outputs.db_url }}
 
+  # Lexicon schemas (`app.standard-reader.*` in ./lexicons/) are linted on every
+  # run and published to the network on merge to main, both via the `goat` CLI.
+  # goat is a Go binary; `pnpm lex:lint` / `pnpm atproto:publish-lexicons` wrap
+  # it (see scripts/goat-lex.mjs). This job is independent of the app build:
+  # lint gives fast feedback on schema edits, and `goat lex publish` is
+  # idempotent (unchanged schemas are a no-op).
+  lexicons:
+    name: Lint & publish lexicons
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      # goat-lex.mjs imports `dotenv/config`, so it needs node_modules present.
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: stable
+
+      - name: Install goat
+        run: |
+          go install github.com/bluesky-social/goat@latest
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      # Validate the schemas. Runs on every push and PR. `goat lex lint`
+      # defaults to ./lexicons/.
+      - name: Lint lexicons
+        run: pnpm lex:lint
+
+      # Publish only when landing on main. `goat lex publish` writes new/updated
+      # `com.atproto.lexicon.schema` records to the account that controls the
+      # `standard-reader.app` NSID authority; unchanged schemas are skipped. A
+      # lint failure above stops this step from running.
+      - name: Publish lexicons
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: pnpm atproto:publish-lexicons
+        env:
+          LEXICON_PUBLISH_IDENTIFIER: ${{ secrets.LEXICON_PUBLISH_IDENTIFIER }}
+          LEXICON_PUBLISH_APP_PASSWORD: ${{ secrets.LEXICON_PUBLISH_APP_PASSWORD }}
+
   # Repoint the Railway PR environment at the Neon branch. Railway clones
   # variables from production when it creates a preview, so without this the
   # preview boots against the production DATABASE_URL.
