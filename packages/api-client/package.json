@@ -1,0 +1,41 @@
+{
+  "name": "@standard-reader/api-client",
+  "version": "0.1.0",
+  "description": "Typed TypeScript client for the Standard Reader XRPC API, generated from its AT Protocol lexicons with @atproto/lex.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=22.6"
+  },
+  "files": [
+    "dist",
+    "src",
+    "!src/**/*.map"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./lexicons": {
+      "types": "./dist/lexicons/index.d.ts",
+      "default": "./dist/lexicons/index.js"
+    }
+  },
+  "scripts": {
+    "lex:install": "ts-lex install --lexicons ../../lexicons --ci",
+    "lex:build": "ts-lex build --lexicons ../../lexicons --out src/lexicons --lib @atproto/lex-schema --exclude app.bsky.feed.defs app.bsky.embed.defs --index-file --clear",
+    "generate": "pnpm run lex:build",
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "prepack": "pnpm run build"
+  },
+  "dependencies": {
+    "@atproto/lex-client": "0.3.0",
+    "@atproto/lex-schema": "0.2.2"
+  },
+  "devDependencies": {
+    "@atproto/lex": "0.3.0",
+    "typescript": "^6.0.2"
+  }
+}

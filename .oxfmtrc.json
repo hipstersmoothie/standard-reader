@@ -12,6 +12,7 @@
   "sortImports": true,
   "ignorePatterns": [
     "**/routeTree.gen.ts",
+    "**/api-client/src/lexicons/**",
     "**/.output/**",
     "**/.vscode/**",
     "**/.cursor/**",

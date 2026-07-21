@@ -26,26 +26,31 @@
               "ref": "app.standard-reader.defs#profileView"
             },
             "stats": {
-              "type": "object",
-              "properties": {
-                "publicationCount": {
-                  "type": "integer"
-                },
-                "documentCount": {
-                  "type": "integer"
-                },
-                "subscriberCount": {
-                  "type": "integer"
-                },
-                "followingCount": {
-                  "type": "integer"
-                },
-                "likeCount": {
-                  "type": "integer"
-                }
-              }
+              "type": "ref",
+              "ref": "app.standard-reader.getAuthor#stats"
             }
           }
+        }
+      }
+    },
+    "stats": {
+      "type": "object",
+      "description": "Aggregate author counts shown on the profile header.",
+      "properties": {
+        "publicationCount": {
+          "type": "integer"
+        },
+        "documentCount": {
+          "type": "integer"
+        },
+        "subscriberCount": {
+          "type": "integer"
+        },
+        "followingCount": {
+          "type": "integer"
+        },
+        "likeCount": {
+          "type": "integer"
         }
       }
     }

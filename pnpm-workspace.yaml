@@ -1,4 +1,4 @@
 packages:
   - extension
-  - services/*
   - packages/*
+  - services/*

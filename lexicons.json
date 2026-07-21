@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "lexicons": [
+    "at.markpub.markdown"
+  ],
+  "resolutions": {
+    "at.markpub.markdown": {
+      "uri": "at://did:plc:kfxbexqtvw76572grhv2f3on/com.atproto.lexicon.schema/at.markpub.markdown",
+      "cid": "bafyreie54ai2jwjnmuv524xwifld3glpqtutxz7ufnw2abu3pbct35dr7a"
+    },
+    "at.markpub.text": {
+      "uri": "at://did:plc:kfxbexqtvw76572grhv2f3on/com.atproto.lexicon.schema/at.markpub.text",
+      "cid": "bafyreicq255g6olx2e3hbkzstyplckjjg7adkfkxcgjzxp6t3t6wlsalwa"
+    }
+  }
+}

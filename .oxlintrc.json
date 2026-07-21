@@ -15,6 +15,7 @@
     ".cursor/**",
     ".polytoken/**",
     "**/routeTree.gen.ts",
+    "**/api-client/src/lexicons/**",
     "**/src/locales/**/messages.ts",
     "eslint.stylex-autofix.mjs",
     "eslint.react-compiler.mjs",

@@ -1,0 +1,48 @@
+{
+  "id": "at.markpub.markdown",
+  "defs": {
+    "main": {
+      "type": "object",
+      "required": [
+        "text"
+      ],
+      "properties": {
+        "text": {
+          "ref": "at.markpub.text",
+          "type": "ref",
+          "description": "An object that includes the text in markdown. May include anything that is valid markdown syntax for your flavor. Make sure it is properly escaped if necessary."
+        },
+        "flavor": {
+          "type": "string",
+          "description": "Markdown may be rendered in many flavors. The most common are CommonMark and Github Flavored Markdown (GFM). Generally your markdown is one of those two and if you don't know then it is likely CommonMark. At this time the lexicon only recognizes these two flavors. Submit a PR if you think one should be added.",
+          "knownValues": [
+            "gfm",
+            "commonmark"
+          ]
+        },
+        "extensions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "The Markdown community expects certain extensions to mainline Markdown flavors. This setting allows you to note to a renderer what extensions might be expected. The most common is LaTeX. Rendering systems may choose to render these extensions in a variety of ways or present them raw. It is not required that you include YAML in the markdown text itself, if you choose to include a YAML metadata block, note it in this field."
+        },
+        "frontMatter": {
+          "type": "array",
+          "items": {
+            "refs": [],
+            "type": "union",
+            "closed": false
+          },
+          "description": "If your markdown includes a front matter block, you can include it here as a set of objects describing the data. This is optional but may be more convenient for some systems to have it separate. It is expected that if you include this field that the front matter block is not included in the raw markdown text field. It would likely be parsed out of a YAML block and transformed into this array of objects or an array holding a single object."
+        },
+        "renderingRules": {
+          "type": "string",
+          "description": "Using this field is highly suggested. Different rendering systems for Markdown may introduce slight or significant changes to the resulting HTML. This setting allows you to specify your renderer so systems can understand the rules you expect. Keep in mind that no consuming entity is obligated to honor this preference. While rendering views may infer rules established by different Markdown renderers with this field, they can and should use the rendering system of their choice. Do **not** use rendering systems you don't know. Some examples might be `marked`, `pandoc`, `markdown-it` `mdxt`, etc. Generally, this lexicon assumes that you are pulling the Markdown from an existing site that includes an existing rendering process. The processor used for that process to build your site's pages is the one you should include here. If you don't know then just leave this field out."
+        }
+      }
+    }
+  },
+  "$type": "com.atproto.lexicon.schema",
+  "lexicon": 1
+}
