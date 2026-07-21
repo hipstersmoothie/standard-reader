@@ -35,6 +35,7 @@ import { Route as XrpcSplatRouteImport } from './routes/xrpc/$'
 import { Route as DocsHeaderLayoutDocsApiRouteImport } from './routes/_docs-header-layout.docs.api'
 import { Route as DocsHeaderLayoutDocsLexiconsRouteImport } from './routes/_docs-header-layout.docs.lexicons'
 import { Route as DocsHeaderLayoutDocsPublishingRouteImport } from './routes/_docs-header-layout.docs.publishing'
+import { Route as DocsHeaderLayoutDocsRenderersRouteImport } from './routes/_docs-header-layout.docs.renderers'
 import { Route as LayoutCollectionsIndexRouteImport } from './routes/_layout.collections.index'
 import { Route as LayoutCollectionsNewRouteImport } from './routes/_layout.collections.new'
 import { Route as LayoutFeedbackIndexRouteImport } from './routes/_layout.feedback.index'
@@ -215,6 +216,12 @@ const DocsHeaderLayoutDocsPublishingRoute =
   DocsHeaderLayoutDocsPublishingRouteImport.update({
     id: '/docs/publishing',
     path: '/docs/publishing',
+    getParentRoute: () => DocsHeaderLayoutRoute,
+  } as any)
+const DocsHeaderLayoutDocsRenderersRoute =
+  DocsHeaderLayoutDocsRenderersRouteImport.update({
+    id: '/docs/renderers',
+    path: '/docs/renderers',
     getParentRoute: () => DocsHeaderLayoutRoute,
   } as any)
 const LayoutCollectionsIndexRoute = LayoutCollectionsIndexRouteImport.update({
@@ -503,6 +510,7 @@ export interface FileRoutesByFullPath {
   '/docs/api': typeof DocsHeaderLayoutDocsApiRoute
   '/docs/lexicons': typeof DocsHeaderLayoutDocsLexiconsRoute
   '/docs/publishing': typeof DocsHeaderLayoutDocsPublishingRoute
+  '/docs/renderers': typeof DocsHeaderLayoutDocsRenderersRoute
   '/collections/new': typeof LayoutCollectionsNewRoute
   '/feedback/return': typeof LayoutFeedbackReturnRoute
   '/labelers/$did': typeof LayoutLabelersDidRoute
@@ -579,6 +587,7 @@ export interface FileRoutesByTo {
   '/docs/api': typeof DocsHeaderLayoutDocsApiRoute
   '/docs/lexicons': typeof DocsHeaderLayoutDocsLexiconsRoute
   '/docs/publishing': typeof DocsHeaderLayoutDocsPublishingRoute
+  '/docs/renderers': typeof DocsHeaderLayoutDocsRenderersRoute
   '/collections/new': typeof LayoutCollectionsNewRoute
   '/feedback/return': typeof LayoutFeedbackReturnRoute
   '/labelers/$did': typeof LayoutLabelersDidRoute
@@ -659,6 +668,7 @@ export interface FileRoutesById {
   '/_docs-header-layout/docs/api': typeof DocsHeaderLayoutDocsApiRoute
   '/_docs-header-layout/docs/lexicons': typeof DocsHeaderLayoutDocsLexiconsRoute
   '/_docs-header-layout/docs/publishing': typeof DocsHeaderLayoutDocsPublishingRoute
+  '/_docs-header-layout/docs/renderers': typeof DocsHeaderLayoutDocsRenderersRoute
   '/_layout/collections/new': typeof LayoutCollectionsNewRoute
   '/_layout/feedback/return': typeof LayoutFeedbackReturnRoute
   '/_layout/labelers/$did': typeof LayoutLabelersDidRoute
@@ -738,6 +748,7 @@ export interface FileRouteTypes {
     | '/docs/api'
     | '/docs/lexicons'
     | '/docs/publishing'
+    | '/docs/renderers'
     | '/collections/new'
     | '/feedback/return'
     | '/labelers/$did'
@@ -814,6 +825,7 @@ export interface FileRouteTypes {
     | '/docs/api'
     | '/docs/lexicons'
     | '/docs/publishing'
+    | '/docs/renderers'
     | '/collections/new'
     | '/feedback/return'
     | '/labelers/$did'
@@ -893,6 +905,7 @@ export interface FileRouteTypes {
     | '/_docs-header-layout/docs/api'
     | '/_docs-header-layout/docs/lexicons'
     | '/_docs-header-layout/docs/publishing'
+    | '/_docs-header-layout/docs/renderers'
     | '/_layout/collections/new'
     | '/_layout/feedback/return'
     | '/_layout/labelers/$did'
@@ -1178,6 +1191,13 @@ declare module '@tanstack/react-router' {
       path: '/docs/publishing'
       fullPath: '/docs/publishing'
       preLoaderRoute: typeof DocsHeaderLayoutDocsPublishingRouteImport
+      parentRoute: typeof DocsHeaderLayoutRoute
+    }
+    '/_docs-header-layout/docs/renderers': {
+      id: '/_docs-header-layout/docs/renderers'
+      path: '/docs/renderers'
+      fullPath: '/docs/renderers'
+      preLoaderRoute: typeof DocsHeaderLayoutDocsRenderersRouteImport
       parentRoute: typeof DocsHeaderLayoutRoute
     }
     '/_layout/collections/': {
@@ -1544,12 +1564,14 @@ interface DocsHeaderLayoutRouteChildren {
   DocsHeaderLayoutDocsApiRoute: typeof DocsHeaderLayoutDocsApiRoute
   DocsHeaderLayoutDocsLexiconsRoute: typeof DocsHeaderLayoutDocsLexiconsRoute
   DocsHeaderLayoutDocsPublishingRoute: typeof DocsHeaderLayoutDocsPublishingRoute
+  DocsHeaderLayoutDocsRenderersRoute: typeof DocsHeaderLayoutDocsRenderersRoute
 }
 
 const DocsHeaderLayoutRouteChildren: DocsHeaderLayoutRouteChildren = {
   DocsHeaderLayoutDocsApiRoute: DocsHeaderLayoutDocsApiRoute,
   DocsHeaderLayoutDocsLexiconsRoute: DocsHeaderLayoutDocsLexiconsRoute,
   DocsHeaderLayoutDocsPublishingRoute: DocsHeaderLayoutDocsPublishingRoute,
+  DocsHeaderLayoutDocsRenderersRoute: DocsHeaderLayoutDocsRenderersRoute,
 }
 
 const DocsHeaderLayoutRouteWithChildren =

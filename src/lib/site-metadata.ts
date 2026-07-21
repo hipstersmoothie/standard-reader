@@ -88,6 +88,12 @@ export const PAGE_OG_CARDS = {
     title: "Publishing",
     tagline: "Wire a personal site's own site.standard.* records by hand.",
   },
+  docsRenderers: {
+    path: "/docs/renderers",
+    title: "Renderers",
+    tagline:
+      "Headless, unstyled renderers for Standard Site documents — React, Vue, Solid, Svelte, Lit, and Angular.",
+  },
   privacy: {
     path: "/privacy",
     title: "Privacy",

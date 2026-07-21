@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { label: msg`API`, to: "/docs/api" as const },
   { label: msg`Lexicons`, to: "/docs/lexicons" as const },
   { label: msg`Publishing`, to: "/docs/publishing" as const },
+  { label: msg`Renderers`, to: "/docs/renderers" as const },
 ] as const;
 
 export function DocsTopbar() {
