@@ -64,7 +64,7 @@ const config = defineConfig({
     },
   },
   oxc: {
-    exclude: ["packages/design-system/**"],
+    exclude: ["**/packages/design-system/**"],
   },
   plugins: [
     stylexPlugin({
@@ -77,7 +77,7 @@ const config = defineConfig({
         "@/*": [path.join(__dirname, "./src/*")],
         "#/*": [path.join(__dirname, "./src/*")],
         "@standard-reader/design-system/*": [
-          path.join(__dirname, "./packages/design-system/src/*"),
+          path.join(__dirname, "../../packages/design-system/src/*"),
         ],
       },
       lightningcssOptions: {

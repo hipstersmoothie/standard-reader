@@ -8,7 +8,7 @@ import "./styles.css";
 
 import { App } from "./App";
 
-const container = document.getElementById("app");
+const container = document.querySelector("#app");
 if (!container) throw new Error("Missing #app root element");
 
 createRoot(container).render(

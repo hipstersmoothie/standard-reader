@@ -11,8 +11,8 @@
     "allowImportingTsExtensions": true,
     "isolatedModules": true,
     "paths": {
-      "#/*": ["../src/*"],
-      "@/*": ["../src/*"],
+      "#/*": ["../apps/standard-reader/src/*"],
+      "@/*": ["../apps/standard-reader/src/*"],
       "@standard-reader/design-system/*": ["../packages/design-system/src/*"]
     }
   },
@@ -20,7 +20,10 @@
     "src/**/*",
     ".wxt/wxt.d.ts",
     "../packages/design-system/src/**/*",
-    "../src/components/reader/theme.ts"
+    "../apps/standard-reader/src/components/reader/theme.ts"
   ],
-  "exclude": ["../src/routes/**", "../src/server/**"]
+  "exclude": [
+    "../apps/standard-reader/src/routes/**",
+    "../apps/standard-reader/src/server/**"
+  ]
 }

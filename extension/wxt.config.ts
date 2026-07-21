@@ -46,8 +46,8 @@ const stylexPlugins = [
     dev: isWxtDev,
     devMode: "css-only",
     aliases: {
-      "@/*": [path.join(repoRoot, "src/*")],
-      "#/*": [path.join(repoRoot, "src/*")],
+      "@/*": [path.join(repoRoot, "apps/standard-reader/src/*")],
+      "#/*": [path.join(repoRoot, "apps/standard-reader/src/*")],
       "@standard-reader/design-system/*": [
         path.join(repoRoot, "packages/design-system/src/*"),
       ],
@@ -113,8 +113,8 @@ export default defineConfig({
           repoRoot,
           "packages/design-system/src",
         ),
-        "#": path.join(repoRoot, "src"),
-        "@": path.join(repoRoot, "src"),
+        "#": path.join(repoRoot, "apps/standard-reader/src"),
+        "@": path.join(repoRoot, "apps/standard-reader/src"),
       },
     },
     plugins: stylexPlugins,

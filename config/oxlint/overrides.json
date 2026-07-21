@@ -244,7 +244,7 @@
       }
     },
     {
-      "files": ["src/components/docs/docs-page.stylex.tsx"],
+      "files": ["apps/standard-reader/src/components/docs/docs-page.stylex.tsx"],
       "rules": {
         "@stylexjs/enforce-extension": "off",
         "@stylexjs/valid-styles": "off"
@@ -308,7 +308,7 @@
       "plugins": ["typescript"]
     },
     {
-      "files": ["src/lib/collections/generate-radix-colors.ts"],
+      "files": ["apps/standard-reader/src/lib/collections/generate-radix-colors.ts"],
       "rules": {
         "@typescript-eslint/ban-ts-comment": "off",
         "typescript-eslint(ban-ts-comment)": "off",
