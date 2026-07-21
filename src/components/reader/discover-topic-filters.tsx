@@ -27,7 +27,6 @@ import {
   fontWeight,
   typeramp,
 } from "#/design-system/theme/typography.stylex";
-
 import { discoverApi } from "#/integrations/tanstack-query/api-discover.functions";
 
 import { searchResultTopics } from "./discover-topics";
