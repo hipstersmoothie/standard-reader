@@ -1,13 +1,14 @@
-import type { ImageCollectionImage } from "../components/types";
-import { blobCid, cdnImageUrl } from "../core/atproto/blob";
-import { structuredImageAspectRatio } from "../core/document/structured-content/image";
-import type { StructuredGridImage } from "../core/document/structured-content/types";
-import type { ImageUrlResolver } from "../types";
+import { blobCid, cdnImageUrl } from "./atproto/blob";
+import { structuredImageAspectRatio } from "./document/structured-content/image";
+import type { StructuredGridImage } from "./document/structured-content/types";
+import type { CollectionImage } from "./nodes";
+import type { ImageUrlResolver } from "./types";
 
 /**
  * The default image URL resolver: pass through absolute `https` sources, and
  * build a Bluesky CDN URL from a blob CID + the document's author DID. PNG is
- * requested to preserve alpha, matching the app.
+ * requested to preserve alpha, matching the app. The CDN serves any PDS blob by
+ * `(did, cid)`.
  */
 export const defaultImageUrlResolver: ImageUrlResolver = ({
   blob,
@@ -26,7 +27,7 @@ export function resolveGridImages(
   images: Array<StructuredGridImage>,
   resolve: ImageUrlResolver,
   authorDid: string | undefined,
-): Array<ImageCollectionImage> {
+): Array<CollectionImage> {
   return images.flatMap((image) => {
     const src = resolve({ blob: image.blob, authorDid });
     if (!src) return [];

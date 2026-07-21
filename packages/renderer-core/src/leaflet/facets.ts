@@ -52,7 +52,7 @@ export function shiftFacets(
 /** Split plaintext into styled segments using Leaflet/AT Proto UTF-8 byte facets. */
 export function segmentFacetedText(
   plaintext: string,
-  facets: Array<unknown> | Array<LeafletFacet> | undefined,
+  facets?: Array<unknown> | Array<LeafletFacet>,
 ): Array<FacetSegment> {
   const parsed =
     Array.isArray(facets) &&

@@ -116,7 +116,7 @@ export const defaultComponents: RendererComponents = {
     Math: ({ tex }) => <code data-tex="">{tex}</code>,
     Button: ({ text, href, caption }) => (
       <span>
-        <a href={href} role="button" rel="noopener noreferrer nofollow">
+        <a href={href} rel="noopener noreferrer nofollow">
           {text}
         </a>
         {caption ? <small>{caption}</small> : null}

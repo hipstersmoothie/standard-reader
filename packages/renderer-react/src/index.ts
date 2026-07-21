@@ -7,17 +7,16 @@ export {
 
 export { defaultComponents } from "./components/defaults";
 export { mergeComponents } from "./components/merge";
-export { defaultImageUrlResolver } from "./render/image";
 
 // Public prop / option types
+export type { TableCell, TableRow } from "./types";
 export type {
   StandardSiteDocument,
   RendererOptions,
   ImageUrlResolver,
   AspectRatio,
-  TableCell,
-  TableRow,
-} from "./types";
+} from "@standard-reader/renderer-core";
+export { defaultImageUrlResolver } from "@standard-reader/renderer-core";
 
 // Component contracts (for typing custom components)
 export type {
@@ -69,44 +68,43 @@ export type {
   OffprintComponentProps,
 } from "./components/types";
 
-// Block-vocabulary types + pure parsers, for consumers that want to
-// pre-process or inspect documents outside the renderer.
+// Re-export the framework-agnostic core (parsing, render tree, facet helpers)
+// so consumers can pre-process documents without a second dependency.
 export {
+  buildRenderTree,
+  segmentInline,
   leafletBlocks,
   leafletBskyPostUris,
   asLeafletContent,
-} from "./core/leaflet/blocks";
-export type {
-  LeafletRenderableBlock,
-  LeafletContent,
-} from "./core/leaflet/types";
-export { LEAFLET_CONTENT } from "./core/leaflet/types";
-
-export { pcktBlocks, asPcktContent } from "./core/pckt/blocks";
-export type { PcktRenderableBlock, PcktContent } from "./core/pckt/types";
-export { PCKT_CONTENT } from "./core/pckt/types";
-
-export { offprintBlocks } from "./core/offprint/blocks";
-export { OFFPRINT_CONTENT } from "./core/offprint/types";
-
-export {
+  LEAFLET_CONTENT,
+  pcktBlocks,
+  asPcktContent,
+  PCKT_CONTENT,
+  offprintBlocks,
+  OFFPRINT_CONTENT,
   structuredFormatBlocks,
   STRUCTURED_BLOCK_FORMATS,
   isStructuredBlockFormat,
   leafletDocumentContent,
   LEAFLET_DOCUMENT_FORMAT,
-} from "./core/document/content-formats";
-export type {
-  StructuredRenderableBlock,
-  StructuredText,
-} from "./core/document/structured-content/types";
-
-export { collectLeafletFootnotes } from "./core/leaflet/footnotes";
-export type { LeafletFootnote } from "./core/leaflet/footnotes";
-
-export { segmentFacetedText } from "./core/leaflet/facets";
-export {
+  collectLeafletFootnotes,
+  segmentFacetedText,
   facetFeatureKind,
   hasFacetKind,
   findFacetFeature,
-} from "./core/facets";
+} from "@standard-reader/renderer-core";
+export type {
+  DocumentTree,
+  BlockNode,
+  InlineNode,
+  MarkKind,
+  RichText,
+  FootnoteEntry,
+  LeafletRenderableBlock,
+  LeafletContent,
+  PcktRenderableBlock,
+  PcktContent,
+  StructuredRenderableBlock,
+  StructuredText,
+  LeafletFootnote,
+} from "@standard-reader/renderer-core";

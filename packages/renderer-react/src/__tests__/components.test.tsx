@@ -5,9 +5,10 @@ import { defaultComponents, mergeComponents } from "../index";
 import { StandardDocumentRenderer } from "../render/document";
 import { leaflet, leafletDoc } from "./fixtures";
 
+const CustomParagraph = () => <p>custom</p>;
+
 describe("component customization", () => {
   it("merges partial overrides over defaults, leaving the rest intact", () => {
-    const CustomParagraph = () => <p>custom</p>;
     const merged = mergeComponents({ shared: { Paragraph: CustomParagraph } });
     expect(merged.shared.Paragraph).toBe(CustomParagraph);
     // Untouched components stay the defaults.
@@ -16,7 +17,7 @@ describe("component customization", () => {
   });
 
   it("returns the defaults unchanged when no overrides are given", () => {
-    expect(mergeComponents(undefined)).toBe(defaultComponents);
+    expect(mergeComponents()).toBe(defaultComponents);
   });
 
   it("uses an overridden shared Root to wrap the body", () => {
@@ -43,16 +44,16 @@ describe("component customization", () => {
         components={{
           shared: {
             Heading: ({ level, children }) => (
-              <div role="heading" aria-level={level} data-heading="">
+              <p data-heading="" data-level={level}>
                 {children}
-              </div>
+              </p>
             ),
           },
         }}
       />,
     );
-    const heading = container.querySelector("[data-heading]");
-    expect(heading?.getAttribute("aria-level")).toBe("3");
+    const heading = container.querySelector<HTMLElement>("[data-heading]");
+    expect(heading?.dataset.level).toBe("3");
     expect(heading?.textContent).toBe("Styled");
   });
 

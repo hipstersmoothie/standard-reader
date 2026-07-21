@@ -165,7 +165,7 @@ describe("leaflet rendering", () => {
       },
     );
     expect(
-      container.querySelector("[data-poll]")?.getAttribute("data-poll"),
+      container.querySelector<HTMLElement>("[data-poll]")?.dataset.poll,
     ).toBe("at://did:plc:x/app.poll/1");
   });
 

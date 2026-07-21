@@ -76,7 +76,7 @@ export const leaflet = {
   }),
   orderedList: (items: Array<string>, startIndex?: number) => ({
     $type: "pub.leaflet.blocks.orderedList",
-    ...(startIndex != null ? { startIndex } : {}),
+    ...(startIndex === undefined ? {} : { startIndex }),
     children: items.map((plaintext) => ({
       $type: "pub.leaflet.blocks.orderedList#listItem",
       content: { $type: "pub.leaflet.blocks.text", plaintext },

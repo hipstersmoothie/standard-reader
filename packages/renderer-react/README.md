@@ -11,6 +11,11 @@ semantic HTML, and every one of them is overridable.
 This is the same renderer that powers the Standard Reader app, factored out so
 you can drop richly-formatted cross-platform posts into your own UI.
 
+> Built on [`@standard-reader/renderer-core`](../renderer-core), the
+> framework-agnostic parser + render tree. Not using React? See
+> [`@standard-reader/renderer-lit`](../renderer-lit) (web components), with Vue,
+> Svelte, Solid and Angular renderers to follow — all sharing the same core.
+
 - **One prop for the document.** Pass the content payload; the format is detected
   from its `$type`.
 - **One prop for the components.** Override any block or inline mark. Components
@@ -37,7 +42,7 @@ function Article({ record }) {
     <StandardDocumentRenderer
       document={{
         content: record.content, // the content-union payload (has a `$type`)
-        authorDid: record.did,    // repo that hosts image blobs
+        authorDid: record.did, // repo that hosts image blobs
         description: record.description,
       }}
     />
@@ -67,16 +72,16 @@ interface StandardSiteDocument {
 
 Supported content formats:
 
-| Family | `$type` | Vocabulary |
-| --- | --- | --- |
-| Leaflet | `pub.leaflet.content`, `pub.leaflet.document` | Leaflet blocks |
-| pckt | `blog.pckt.content` | pckt blocks |
-| Offprint | `app.offprint.content` | shared structured |
-| BlockNote | `org.blocknote.document#content` | shared structured |
-| Fables | `ca.justexe.fables.blocks` | shared structured |
-| OXA | `pub.oxa.document.document` | shared structured |
-| WSS rich-text | `com.wss.content.rich-text` | shared structured |
-| item-block formats | (several) | shared structured |
+| Family             | `$type`                                       | Vocabulary        |
+| ------------------ | --------------------------------------------- | ----------------- |
+| Leaflet            | `pub.leaflet.content`, `pub.leaflet.document` | Leaflet blocks    |
+| pckt               | `blog.pckt.content`                           | pckt blocks       |
+| Offprint           | `app.offprint.content`                        | shared structured |
+| BlockNote          | `org.blocknote.document#content`              | shared structured |
+| Fables             | `ca.justexe.fables.blocks`                    | shared structured |
+| OXA                | `pub.oxa.document.document`                   | shared structured |
+| WSS rich-text      | `com.wss.content.rich-text`                   | shared structured |
+| item-block formats | (several)                                     | shared structured |
 
 ## The `components` prop
 
@@ -87,19 +92,13 @@ default. It has four groups:
 <StandardDocumentRenderer
   document={doc}
   components={{
-    shared: {
-      /* block + inline components shared across every format */
-    },
+    shared: {/* block + inline components shared across every format */},
     leaflet: {
       /* Leaflet-only blocks: Poll, Signup, Separator, StandardSitePost,
          StandardSitePublication, PageEmbed */
     },
-    pckt: {
-      /* pckt-only blocks: Gallery, NoteEmbed */
-    },
-    offprint: {
-      /* Offprint-only blocks: Component */
-    },
+    pckt: {/* pckt-only blocks: Gallery, NoteEmbed */},
+    offprint: {/* Offprint-only blocks: Component */},
   }}
 />
 ```

@@ -49,7 +49,7 @@ describe("pckt rendering", () => {
       />,
     );
     expect(
-      container.querySelector("[data-gallery]")?.getAttribute("data-gallery"),
+      container.querySelector<HTMLElement>("[data-gallery]")?.dataset.gallery,
     ).toBe("at://did:plc:x/gallery/1");
   });
 

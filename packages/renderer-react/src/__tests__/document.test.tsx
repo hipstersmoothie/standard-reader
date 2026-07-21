@@ -55,12 +55,12 @@ describe("facet helpers", () => {
       facet(6, 10, LEAFLET_FACETS.bold),
     ]);
     expect(segments.map((s) => s.text)).toEqual(["Hello ", "bold", " world"]);
-    expect(hasFacetKind(segments[1]!.features, "bold")).toBe(true);
-    expect(hasFacetKind(segments[0]!.features, "bold")).toBe(false);
+    expect(hasFacetKind(segments[1]?.features ?? [], "bold")).toBe(true);
+    expect(hasFacetKind(segments[0]?.features ?? [], "bold")).toBe(false);
   });
 
   it("returns a single plain segment when there are no facets", () => {
-    const segments = segmentFacetedText("plain text", undefined);
+    const segments = segmentFacetedText("plain text");
     expect(segments).toHaveLength(1);
     expect(segments[0]?.features).toHaveLength(0);
   });

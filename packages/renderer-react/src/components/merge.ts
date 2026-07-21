@@ -8,7 +8,7 @@ import type { RendererComponents, RendererComponentsInput } from "./types";
  * only the image renderer and leaves the rest as defaults.
  */
 export function mergeComponents(
-  input: RendererComponentsInput | undefined,
+  input?: RendererComponentsInput,
 ): RendererComponents {
   if (!input) return defaultComponents;
   return {

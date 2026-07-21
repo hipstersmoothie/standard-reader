@@ -1,7 +1,7 @@
 {
-  "name": "@standard-reader/renderer-react",
+  "name": "@standard-reader/renderer-core",
   "version": "0.1.0",
-  "description": "Headless, unstyled React renderer for Standard Site documents. Bring your own components.",
+  "description": "Framework-agnostic core for rendering Standard Site documents: parsing + a normalized render tree.",
   "license": "MIT",
   "type": "module",
   "sideEffects": false,
@@ -32,24 +32,9 @@
     "atproto",
     "leaflet",
     "renderer",
-    "headless",
-    "react"
+    "headless"
   ],
-  "peerDependencies": {
-    "react": ">=18",
-    "react-dom": ">=18"
-  },
-  "dependencies": {
-    "@standard-reader/renderer-core": "workspace:*"
-  },
   "devDependencies": {
-    "@testing-library/jest-dom": "^6.6.3",
-    "@testing-library/react": "^16.3.0",
-    "@types/react": "^19.2.0",
-    "@types/react-dom": "^19.2.0",
-    "jsdom": "^28.1.0",
-    "react": "19.3.0-canary-ad78e251-20260616",
-    "react-dom": "19.3.0-canary-ad78e251-20260616",
     "typescript": "^6.0.2",
     "vitest": "^4.1.5"
   }

@@ -38,7 +38,7 @@ describe("offprint rendering (shared structured vocabulary)", () => {
       />,
     );
     expect(
-      container.querySelector("[data-cmp]")?.getAttribute("data-cmp"),
+      container.querySelector<HTMLElement>("[data-cmp]")?.dataset.cmp,
     ).toBe("at://did:plc:x/app.offprint.component/1");
   });
 });
