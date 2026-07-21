@@ -149,7 +149,9 @@ const documentView = /*#__PURE__*/ l.typedObject<DocumentView>(
     commentCount: /*#__PURE__*/ l.integer(),
     hasRenderableBody: /*#__PURE__*/ l.boolean(),
     content: /*#__PURE__*/ l.optional(/*#__PURE__*/ l.lexMap()),
-    contentFormat: /*#__PURE__*/ l.optional(/*#__PURE__*/ l.string()),
+    contentFormat: /*#__PURE__*/ l.optional(
+      /*#__PURE__*/ l.string({ maxLength: 256 }),
+    ),
     isRead: /*#__PURE__*/ l.boolean(),
     searchTitleHtml: /*#__PURE__*/ l.optional(
       /*#__PURE__*/ l.string({ maxLength: 1024 }),

@@ -135,6 +135,7 @@
         },
         "contentFormat": {
           "type": "string",
+          "maxLength": 256,
           "description": "Explicit content-union $type, used when the body payload lacks one. Only populated by getDocument."
         },
         "isRead": { "type": "boolean" },
