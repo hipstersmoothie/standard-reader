@@ -34,6 +34,10 @@ export const docsCodeColors = stylex.defineConsts({
 
 const REF_BREAK = "@media (max-width: 1280px)";
 const NAV_HIDE = "@media (max-width: 960px)";
+// The 2-column band (left nav + content, no TOC rail): wider than the mobile
+// breakpoint but narrower than where the TOC rail fits. Kept non-overlapping
+// with NAV_HIDE so the mobile grid is unambiguously single-column.
+const REF_MID = "@media (min-width: 961px) and (max-width: 1280px)";
 const DOCS_NAV_WIDTH = "264px";
 const DOCS_TOC_WIDTH = "248px";
 const DOCS_INTRO_MAX = "56rem";
@@ -56,7 +60,12 @@ export const docsStyles = stylex.create({
     boxSizing: "border-box",
     display: "flex",
     justifyContent: "space-between",
-    position: "sticky",
+    // Non-sticky on mobile: only the jump-nav bar below should pin. On wider
+    // screens the topbar stays pinned as the persistent header.
+    position: {
+      [NAV_HIDE]: "static",
+      default: "sticky",
+    },
     zIndex: 20,
     borderBottomColor: uiColor.border1,
     borderBottomStyle: "solid",
@@ -186,7 +195,8 @@ export const docsStyles = stylex.create({
     paddingInlineStart: horizontalSpace["3xl"],
     paddingInlineEnd: horizontalSpace["3xl"],
     paddingTop: spacing["2"],
-    top: DOCS_TOPBAR_HEIGHT,
+    // The topbar is not sticky on mobile, so this bar pins to the viewport top.
+    top: 0,
   },
   mobileJumpLabel: {
     color: uiColor.text1,
@@ -231,7 +241,7 @@ export const docsStyles = stylex.create({
     display: "grid",
     gridTemplateColumns: {
       [NAV_HIDE]: "minmax(0, 1fr)",
-      [REF_BREAK]: `${DOCS_NAV_WIDTH} minmax(0, 1fr)`,
+      [REF_MID]: `${DOCS_NAV_WIDTH} minmax(0, 1fr)`,
       default: `${DOCS_NAV_WIDTH} minmax(0, 1fr) ${DOCS_TOC_WIDTH}`,
     },
   },
