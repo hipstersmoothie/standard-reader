@@ -30,7 +30,10 @@ npm install @standard-reader/lexicons @atproto/lex-client
 
 ```ts
 import { Client } from "@atproto/lex-client";
-import { standardReader, STANDARD_READER_SERVICE } from "@standard-reader/lexicons";
+import {
+  standardReader,
+  STANDARD_READER_SERVICE,
+} from "@standard-reader/lexicons";
 
 const client = new Client(STANDARD_READER_SERVICE); // https://standard-reader.app
 

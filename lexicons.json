@@ -1,8 +1,6 @@
 {
   "version": 1,
-  "lexicons": [
-    "at.markpub.markdown"
-  ],
+  "lexicons": ["at.markpub.markdown"],
   "resolutions": {
     "at.markpub.markdown": {
       "uri": "at://did:plc:kfxbexqtvw76572grhv2f3on/com.atproto.lexicon.schema/at.markpub.markdown",

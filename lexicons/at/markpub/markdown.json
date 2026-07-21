@@ -3,9 +3,7 @@
   "defs": {
     "main": {
       "type": "object",
-      "required": [
-        "text"
-      ],
+      "required": ["text"],
       "properties": {
         "text": {
           "ref": "at.markpub.text",
@@ -15,10 +13,7 @@
         "flavor": {
           "type": "string",
           "description": "Markdown may be rendered in many flavors. The most common are CommonMark and Github Flavored Markdown (GFM). Generally your markdown is one of those two and if you don't know then it is likely CommonMark. At this time the lexicon only recognizes these two flavors. Submit a PR if you think one should be added.",
-          "knownValues": [
-            "gfm",
-            "commonmark"
-          ]
+          "knownValues": ["gfm", "commonmark"]
         },
         "extensions": {
           "type": "array",

@@ -3,9 +3,7 @@
   "defs": {
     "main": {
       "type": "object",
-      "required": [
-        "markdown"
-      ],
+      "required": ["markdown"],
       "properties": {
         "facets": {
           "type": "array",
@@ -31,9 +29,7 @@
         },
         "textBlob": {
           "type": "blob",
-          "accept": [
-            "text/*"
-          ],
+          "accept": ["text/*"],
           "maxSize": 1000000,
           "description": "Text may be blob-ified as raw Markdown and stored on a PDS, pass it here by reference. If you use this property it is assumed that it overrides the \"rawMarkdown\" property. It is a PDS address for a markdown text file. You still must provide some value, even if it is a preview for \"rawMarkdown\" in this field."
         }
