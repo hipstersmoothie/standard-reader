@@ -186,12 +186,17 @@ jobs:
       # `com.atproto.lexicon.schema` records to the account that controls the
       # `standard-reader.app` NSID authority; unchanged schemas are skipped. A
       # lint failure above stops this step from running.
+      #
+      # Reuses the existing feedback-agent secrets: USERINPUT_OWNER_* is the
+      # `standard-reader.app` owner account, which is the same account that owns
+      # the lexicon NSID authority. goat-lex.mjs maps LEXICON_PUBLISH_* onto the
+      # GOAT_USERNAME/GOAT_PASSWORD vars goat reads.
       - name: Publish lexicons
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: pnpm atproto:publish-lexicons
         env:
-          LEXICON_PUBLISH_IDENTIFIER: ${{ secrets.LEXICON_PUBLISH_IDENTIFIER }}
-          LEXICON_PUBLISH_APP_PASSWORD: ${{ secrets.LEXICON_PUBLISH_APP_PASSWORD }}
+          LEXICON_PUBLISH_IDENTIFIER: ${{ secrets.USERINPUT_OWNER_IDENTIFIER }}
+          LEXICON_PUBLISH_APP_PASSWORD: ${{ secrets.USERINPUT_OWNER_APP_PASSWORD }}
 
   # Repoint the Railway PR environment at the Neon branch. Railway clones
   # variables from production when it creates a preview, so without this the
