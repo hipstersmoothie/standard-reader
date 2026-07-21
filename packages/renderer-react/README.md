@@ -12,9 +12,10 @@ This is the same renderer that powers the Standard Reader app, factored out so
 you can drop richly-formatted cross-platform posts into your own UI.
 
 > Built on [`@standard-reader/renderer-core`](../renderer-core), the
-> framework-agnostic parser + render tree. Not using React? See
-> [`@standard-reader/renderer-lit`](../renderer-lit) (web components), with Vue,
-> Svelte, Solid and Angular renderers to follow — all sharing the same core.
+> framework-agnostic parser + render tree. Not using React? There are sibling
+> renderers on the same core:
+> [Vue](../renderer-vue), [Solid](../renderer-solid), [Svelte](../renderer-svelte),
+> [Lit / web components](../renderer-lit), and [Angular](../renderer-angular).
 
 - **One prop for the document.** Pass the content payload; the format is detected
   from its `$type`.

@@ -83,8 +83,9 @@ function renderInline(text) {
 }
 ```
 
-The React and Lit renderers are exactly this walk with a components registry
-layered on top — a good reference when adding Vue, Svelte, Solid or Angular.
+The React, Vue, Solid, Svelte, Lit and Angular renderers are each exactly this
+walk with a per-framework component/template registry layered on top — a good
+reference when adding another framework.
 
 ## Also exported
 
