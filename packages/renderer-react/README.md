@@ -183,7 +183,8 @@ embeds the headless defaults can't fetch. Supply your own to make them live:
 >   tallies, who-embedded-this, reply counts).
 >
 > Both are free and hosted, and pair naturally with a data-fetching layer
-> (TanStack Query, SWR, …) inside your platform components.
+> (TanStack Query, SWR, or your framework's own data layer) inside your platform
+> components.
 
 ### Customizing inline formatting
 
@@ -241,20 +242,22 @@ The resolved URL is passed to your `shared.Image` component as `src`.
 
 ## Parsing without rendering
 
-The pure parsers and block-vocabulary types are exported too, for
-pre-processing, search indexing, or custom renderers:
+The pure parsers, the render tree, and the block-vocabulary types are not in
+this package — they live in the framework-agnostic core. Install
+[`@standard-reader/renderer-core`](../renderer-core) directly when you want to
+pre-process a document, index it, or build your own renderer:
 
 ```ts
 import {
+  buildRenderTree,
+  segmentInline,
   leafletBlocks,
   pcktBlocks,
   offprintBlocks,
   structuredFormatBlocks,
-  segmentFacetedText,
-  collectLeafletFootnotes,
   type LeafletRenderableBlock,
   type StructuredRenderableBlock,
-} from "@standard-reader/renderer-react";
+} from "@standard-reader/renderer-core";
 
 const blocks = leafletBlocks(content); // Array<LeafletRenderableBlock>
 ```
