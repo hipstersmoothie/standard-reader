@@ -1,7 +1,7 @@
 {
-  "name": "@standard-reader/api-client",
+  "name": "@standard-reader/lexicons",
   "version": "0.1.0",
-  "description": "Typed TypeScript client for the Standard Reader XRPC API, generated from its AT Protocol lexicons with @atproto/lex.",
+  "description": "Typed AT Protocol lexicon schemas for the Standard Reader XRPC API, generated with @atproto/lex.",
   "license": "MIT",
   "type": "module",
   "engines": {

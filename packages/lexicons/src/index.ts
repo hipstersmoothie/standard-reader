@@ -1,5 +1,5 @@
 /**
- * `@standard-reader/api-client` — the Standard Reader XRPC API as typed AT
+ * `@standard-reader/lexicons` — the Standard Reader XRPC API as typed AT
  * Protocol lexicon schemas.
  *
  * The primary export, {@link standardReader}, holds the generated schema
@@ -15,7 +15,7 @@
  * @example
  * ```ts
  * import { Client } from "@atproto/lex-client";
- * import { standardReader, STANDARD_READER_SERVICE } from "@standard-reader/api-client";
+ * import { standardReader, STANDARD_READER_SERVICE } from "@standard-reader/lexicons";
  *
  * const client = new Client(STANDARD_READER_SERVICE);
  * const { publications } = await client.call(

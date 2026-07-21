@@ -1,4 +1,4 @@
-# @standard-reader/api-client
+# @standard-reader/lexicons
 
 The **Standard Reader** XRPC API as typed AT Protocol lexicon schemas.
 
@@ -22,7 +22,7 @@ maintained upstream client rather than a bespoke wrapper.
 ## Install
 
 ```sh
-pnpm add @standard-reader/api-client @atproto/lex-client
+pnpm add @standard-reader/lexicons @atproto/lex-client
 ```
 
 ## Usage
@@ -31,7 +31,7 @@ pnpm add @standard-reader/api-client @atproto/lex-client
 
 ```ts
 import { Client } from "@atproto/lex-client";
-import { standardReader, STANDARD_READER_SERVICE } from "@standard-reader/api-client";
+import { standardReader, STANDARD_READER_SERVICE } from "@standard-reader/lexicons";
 
 const client = new Client(STANDARD_READER_SERVICE); // https://standard-reader.app
 
@@ -93,19 +93,19 @@ from generation.
 Run from the repo root after changing any lexicon:
 
 ```sh
-pnpm --filter @standard-reader/api-client generate
+pnpm --filter @standard-reader/lexicons generate
 ```
 
 This runs `ts-lex build` over `../../lexicons`. To refresh the vendored external
 lexicons (markpub/etc.) and verify their pinned CIDs:
 
 ```sh
-pnpm --filter @standard-reader/api-client lex:install
+pnpm --filter @standard-reader/lexicons lex:install
 ```
 
 ## Build
 
 ```sh
-pnpm --filter @standard-reader/api-client build      # tsc -> dist/
-pnpm --filter @standard-reader/api-client typecheck
+pnpm --filter @standard-reader/lexicons build      # tsc -> dist/
+pnpm --filter @standard-reader/lexicons typecheck
 ```
