@@ -25,6 +25,9 @@ const styles = stylex.create({
     maxWidth: 820,
   },
   header: {
+    display: "flex",
+    flexDirection: "column",
+    gap: verticalSpace.md,
     marginBottom: verticalSpace["5xl"],
   },
   output: {

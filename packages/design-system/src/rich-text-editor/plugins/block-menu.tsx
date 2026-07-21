@@ -20,6 +20,7 @@ import {
   $getRoot,
   $getSelection,
   $isElementNode,
+  $isParagraphNode,
   $isRangeSelection,
 } from "lexical";
 import {
@@ -44,34 +45,6 @@ import { Menu, MenuItem } from "../../menu";
 
 const ICON_SIZE = 16;
 
-interface BlockOption {
-  key: string;
-  label: string;
-  icon: ComponentType<{ size?: number }>;
-  apply: (editor: LexicalEditor, blockKey: string) => void;
-}
-
-/** Move the selection into `blockKey`, then run `fn` in the same update. */
-function turnInto(
-  editor: LexicalEditor,
-  blockKey: string,
-  fn: () => void,
-): void {
-  editor.update(() => {
-    const node = $getNodeByKey(blockKey);
-    if ($isElementNode(node)) node.selectEnd();
-    fn();
-  });
-}
-
-/** Place the caret at the end of `blockKey` so the next command targets it. */
-function focusBlock(editor: LexicalEditor, blockKey: string): void {
-  editor.update(() => {
-    const node = $getNodeByKey(blockKey);
-    if ($isElementNode(node)) node.selectEnd();
-  });
-}
-
 function dispatchVoid(
   editor: LexicalEditor,
   command: LexicalCommand<void>,
@@ -81,9 +54,34 @@ function dispatchVoid(
   editor.dispatchCommand(command, undefined);
 }
 
-function setBlocks(factory: () => ElementNode): void {
-  const selection = $getSelection();
-  if ($isRangeSelection(selection)) $setBlocksType(selection, factory);
+/**
+ * Put the caret on the block the menu will act on, Medium/Notion style: if the
+ * anchored block is an empty paragraph, target it in place (convert it);
+ * otherwise append a fresh empty paragraph after it (add a new block below) and
+ * target that. Every option then applies to wherever the caret lands.
+ */
+function selectTarget(editor: LexicalEditor, blockKey: string): void {
+  editor.update(() => {
+    const anchor = $getNodeByKey(blockKey);
+    if (!$isElementNode(anchor)) return;
+    if ($isParagraphNode(anchor) && anchor.getTextContentSize() === 0) {
+      anchor.selectEnd();
+      return;
+    }
+    const paragraph = $createParagraphNode();
+    anchor.insertAfter(paragraph);
+    paragraph.selectEnd();
+  });
+}
+
+interface BlockOption {
+  key: string;
+  label: string;
+  icon: ComponentType<{ size?: number }>;
+  /** Turn the target block into this element. */
+  factory?: () => ElementNode;
+  /** Or dispatch a Lexical command against the target block. */
+  command?: LexicalCommand<void>;
 }
 
 // Input-free block types. Image and math live in the toolbar because they need
@@ -93,94 +91,82 @@ const BLOCK_OPTIONS: Array<BlockOption> = [
     key: "paragraph",
     label: "Text",
     icon: Type,
-    apply: (editor, key) =>
-      turnInto(editor, key, () => setBlocks(() => $createParagraphNode())),
+    factory: $createParagraphNode,
   },
   {
     key: "h1",
     label: "Heading 1",
     icon: Heading1,
-    apply: (editor, key) =>
-      turnInto(editor, key, () => setBlocks(() => $createHeadingNode("h1"))),
+    factory: () => $createHeadingNode("h1"),
   },
   {
     key: "h2",
     label: "Heading 2",
     icon: Heading2,
-    apply: (editor, key) =>
-      turnInto(editor, key, () => setBlocks(() => $createHeadingNode("h2"))),
+    factory: () => $createHeadingNode("h2"),
   },
   {
     key: "h3",
     label: "Heading 3",
     icon: Heading3,
-    apply: (editor, key) =>
-      turnInto(editor, key, () => setBlocks(() => $createHeadingNode("h3"))),
+    factory: () => $createHeadingNode("h3"),
   },
   {
     key: "bulleted",
     label: "Bulleted list",
     icon: List,
-    apply: (editor, key) => {
-      focusBlock(editor, key);
-      dispatchVoid(editor, INSERT_UNORDERED_LIST_COMMAND);
-    },
+    command: INSERT_UNORDERED_LIST_COMMAND,
   },
   {
     key: "numbered",
     label: "Numbered list",
     icon: ListOrdered,
-    apply: (editor, key) => {
-      focusBlock(editor, key);
-      dispatchVoid(editor, INSERT_ORDERED_LIST_COMMAND);
-    },
+    command: INSERT_ORDERED_LIST_COMMAND,
   },
   {
     key: "todo",
     label: "To-do list",
     icon: ListChecks,
-    apply: (editor, key) => {
-      focusBlock(editor, key);
-      dispatchVoid(editor, INSERT_CHECK_LIST_COMMAND);
-    },
+    command: INSERT_CHECK_LIST_COMMAND,
   },
-  {
-    key: "quote",
-    label: "Quote",
-    icon: Quote,
-    apply: (editor, key) =>
-      turnInto(editor, key, () => setBlocks(() => $createQuoteNode())),
-  },
-  {
-    key: "code",
-    label: "Code block",
-    icon: Code2,
-    apply: (editor, key) =>
-      turnInto(editor, key, () => setBlocks(() => $createCodeNode())),
-  },
+  { key: "quote", label: "Quote", icon: Quote, factory: $createQuoteNode },
+  { key: "code", label: "Code block", icon: Code2, factory: $createCodeNode },
   {
     key: "divider",
     label: "Divider",
     icon: Minus,
-    apply: (editor, key) => {
-      focusBlock(editor, key);
-      dispatchVoid(editor, INSERT_HORIZONTAL_RULE_COMMAND);
-    },
+    command: INSERT_HORIZONTAL_RULE_COMMAND,
   },
-  {
-    key: "table",
-    label: "Table",
-    icon: TableIcon,
-    apply: (editor, key) => {
-      focusBlock(editor, key);
-      editor.dispatchCommand(INSERT_TABLE_COMMAND, {
-        columns: "3",
-        rows: "3",
-        includeHeaders: true,
-      });
-    },
-  },
+  { key: "table", label: "Table", icon: TableIcon },
 ];
+
+/** Apply a menu option to the block the "+" is anchored to. */
+function applyOption(
+  editor: LexicalEditor,
+  blockKey: string,
+  option: BlockOption,
+): void {
+  selectTarget(editor, blockKey);
+  if (option.command) {
+    dispatchVoid(editor, option.command);
+    return;
+  }
+  if (option.key === "table") {
+    editor.dispatchCommand(INSERT_TABLE_COMMAND, {
+      columns: "3",
+      rows: "3",
+      includeHeaders: true,
+    });
+    return;
+  }
+  if (option.factory) {
+    const { factory } = option;
+    editor.update(() => {
+      const selection = $getSelection();
+      if ($isRangeSelection(selection)) $setBlocksType(selection, factory);
+    });
+  }
+}
 
 const styles = stylex.create({
   gutter: (top: number) => ({
@@ -272,7 +258,7 @@ export function BlockMenuPlugin() {
               id={option.key}
               textValue={option.label}
               prefix={<Icon size={ICON_SIZE} />}
-              onAction={() => option.apply(editor, anchor.key)}
+              onAction={() => applyOption(editor, anchor.key, option)}
             >
               {option.label}
             </MenuItem>
