@@ -63,6 +63,38 @@ export function ApiDocsIntro() {
             repo records.
           </Trans>
         </p>
+        <p {...stylex.props(docsStyles.prose)}>
+          <Trans>
+            Prefer a typed client? The whole API ships as codegen&apos;d AT
+            Protocol lexicon schemas in{" "}
+            <a
+              href="https://www.npmjs.com/package/@standard-reader/lexicons"
+              target="_blank"
+              rel="noreferrer"
+              {...stylex.props(docsStyles.proseLink)}
+            >
+              @standard-reader/lexicons
+            </a>
+            . Pair it with{" "}
+            <a
+              href="https://www.npmjs.com/package/@atproto/lex-client"
+              target="_blank"
+              rel="noreferrer"
+              {...stylex.props(docsStyles.proseLink)}
+            >
+              @atproto/lex-client
+            </a>{" "}
+            for fully-typed{" "}
+            <code {...stylex.props(docsStyles.codeInline)}>client.call()</code>{" "}
+            queries and procedures. Its{" "}
+            <code {...stylex.props(docsStyles.codeInline)}>getDocument</code>{" "}
+            also returns a document&apos;s renderable body, ready to hand to the{" "}
+            <a href="/docs/renderers" {...stylex.props(docsStyles.proseLink)}>
+              renderers
+            </a>
+            .
+          </Trans>
+        </p>
 
         <h2 id={API_DOCS_INTRO_IDS.discovery} {...stylex.props(docsStyles.h2)}>
           <Trans>Service discovery</Trans>

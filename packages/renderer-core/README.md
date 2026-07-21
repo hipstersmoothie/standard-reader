@@ -12,11 +12,31 @@ without rendering it.
 
 ## The render tree
 
+Fetch a document with the typed Standard Reader API client
+([`@standard-reader/lexicons`](https://www.npmjs.com/package/@standard-reader/lexicons) and [`@atproto/lex-client`](https://www.npmjs.com/package/@atproto/lex-client)) — a
+single `getDocument` call returns the card metadata **and** the renderable body,
+whose fields map straight onto a `StandardSiteDocument`:
+
 ```ts
+import { Client } from "@atproto/lex-client";
+import {
+  standardReader,
+  STANDARD_READER_SERVICE,
+} from "@standard-reader/lexicons";
 import { buildRenderTree, segmentInline } from "@standard-reader/renderer-core";
 
+const client = new Client(STANDARD_READER_SERVICE);
+const doc = await client.call(standardReader.getDocument, {
+  document: "at://did:plc:…/site.standard.document/…",
+});
+
 const tree = buildRenderTree(
-  { content, authorDid, description }, // a StandardSiteDocument
+  {
+    content: doc.content,
+    contentFormat: doc.contentFormat,
+    authorDid: doc.did,
+    description: doc.description,
+  }, // a StandardSiteDocument
   { dropCap: true, skipLeadingImage: false },
 );
 // tree: { format, children: BlockNode[], footnotes, footnoteNumbers } | null

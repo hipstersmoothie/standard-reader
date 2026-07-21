@@ -129,6 +129,14 @@
         "recommendCount": { "type": "integer" },
         "commentCount": { "type": "integer" },
         "hasRenderableBody": { "type": "boolean" },
+        "content": {
+          "type": "unknown",
+          "description": "Renderable body payload (the content-union of the site.standard.document record). Only populated by getDocument; omitted from feed and search views."
+        },
+        "contentFormat": {
+          "type": "string",
+          "description": "Explicit content-union $type, used when the body payload lacks one. Only populated by getDocument."
+        },
         "isRead": { "type": "boolean" },
         "searchTitleHtml": {
           "type": "string",

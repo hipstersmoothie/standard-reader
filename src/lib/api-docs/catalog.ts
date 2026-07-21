@@ -137,7 +137,7 @@ export const API_DOCS_CATALOG: Array<ApiDocsCatalogEntry> = [
   q(
     "app.standard-reader.getDocument",
     "Public queries",
-    "Fetch a single article card metadata and aggregate stats (no full body).",
+    "Fetch a single article: card metadata, aggregate stats, and the renderable body (content) ready for the renderers.",
     "none",
     [{ name: "document", type: "at-uri", required: true }],
     {

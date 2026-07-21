@@ -16,9 +16,31 @@ top of the framework-agnostic [`@standard-reader/renderer-core`](../renderer-cor
 
 ```sh
 npm install @standard-reader/renderer-lit lit
+# to fetch documents to render (optional):
+npm install @standard-reader/lexicons @atproto/lex-client
 ```
 
 ## Quick start
+
+Fetch a document with the typed Standard Reader API client
+([`@standard-reader/lexicons`](https://www.npmjs.com/package/@standard-reader/lexicons) and [`@atproto/lex-client`](https://www.npmjs.com/package/@atproto/lex-client)) — a
+single `getDocument` call returns the card metadata **and** the renderable body:
+
+```ts
+import { Client } from "@atproto/lex-client";
+import {
+  standardReader,
+  STANDARD_READER_SERVICE,
+} from "@standard-reader/lexicons";
+
+const client = new Client(STANDARD_READER_SERVICE);
+
+const doc = await client.call(standardReader.getDocument, {
+  document: "at://did:plc:…/site.standard.document/…",
+});
+```
+
+`doc` lines up field-for-field with the renderer's `document` input.
 
 ### As a custom element
 
@@ -26,7 +48,12 @@ npm install @standard-reader/renderer-lit lit
 import "@standard-reader/renderer-lit"; // registers <standard-document>
 
 const el = document.createElement("standard-document");
-el.document = { content: record.content, authorDid: record.did };
+el.document = {
+  content: doc.content,
+  contentFormat: doc.contentFormat,
+  authorDid: doc.did,
+  description: doc.description,
+};
 el.options = { dropCap: true };
 document.body.append(el);
 ```

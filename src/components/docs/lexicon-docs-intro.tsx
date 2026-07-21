@@ -48,6 +48,33 @@ export function LexiconDocsIntro() {
             .
           </Trans>
         </p>
+        <p {...stylex.props(docsStyles.prose)}>
+          <Trans>
+            These schemas are published, codegen&apos;d from the lexicons, as{" "}
+            <a
+              href="https://www.npmjs.com/package/@standard-reader/lexicons"
+              target="_blank"
+              rel="noreferrer"
+              {...stylex.props(docsStyles.proseLink)}
+            >
+              @standard-reader/lexicons
+            </a>{" "}
+            — a typed schema object for every{" "}
+            <code {...stylex.props(docsStyles.codeInline)}>
+              app.standard-reader.*
+            </code>{" "}
+            query, procedure, and record, validated at runtime when paired with{" "}
+            <a
+              href="https://www.npmjs.com/package/@atproto/lex-client"
+              target="_blank"
+              rel="noreferrer"
+              {...stylex.props(docsStyles.proseLink)}
+            >
+              @atproto/lex-client
+            </a>
+            .
+          </Trans>
+        </p>
 
         <h2
           id={LEXICON_DOCS_INTRO_IDS.namespace}

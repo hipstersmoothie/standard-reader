@@ -17,9 +17,31 @@ you can drop richly-formatted cross-platform posts into your own UI.
 
 ```sh
 npm install @standard-reader/renderer-angular @angular/core @angular/common
+# to fetch documents to render (optional):
+npm install @standard-reader/lexicons @atproto/lex-client
 ```
 
 ## Quick start
+
+Fetch a document with the typed Standard Reader API client
+([`@standard-reader/lexicons`](https://www.npmjs.com/package/@standard-reader/lexicons) and [`@atproto/lex-client`](https://www.npmjs.com/package/@atproto/lex-client)) — a
+single `getDocument` call returns the card metadata **and** the renderable body:
+
+```ts
+import { Client } from "@atproto/lex-client";
+import {
+  standardReader,
+  STANDARD_READER_SERVICE,
+} from "@standard-reader/lexicons";
+
+const client = new Client(STANDARD_READER_SERVICE);
+
+const doc = await client.call(standardReader.getDocument, {
+  document: "at://did:plc:…/site.standard.document/…",
+});
+```
+
+`doc` lines up field-for-field with the renderer's `document` input:
 
 ```ts
 import { Component } from "@angular/core";
@@ -30,12 +52,17 @@ import { StandardDocumentComponent } from "@standard-reader/renderer-angular";
   standalone: true,
   imports: [StandardDocumentComponent],
   template: `<sr-standard-document
-    [document]="doc"
+    [document]="document"
     [options]="{ dropCap: true }"
   />`,
 })
 export class ArticleComponent {
-  doc = { content: this.record.content, authorDid: this.record.did };
+  document = {
+    content: doc.content,
+    contentFormat: doc.contentFormat,
+    authorDid: doc.did,
+    description: doc.description,
+  };
 }
 ```
 

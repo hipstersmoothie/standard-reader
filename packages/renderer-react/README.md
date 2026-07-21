@@ -28,24 +28,43 @@ you can drop richly-formatted cross-platform posts into your own UI.
 npm install @standard-reader/renderer-react
 # peers:
 npm install react react-dom
+# to fetch documents to render (optional):
+npm install @standard-reader/lexicons @atproto/lex-client
 ```
 
 ## Quick start
 
+Fetch a document with the typed Standard Reader API client
+([`@standard-reader/lexicons`](https://www.npmjs.com/package/@standard-reader/lexicons) and [`@atproto/lex-client`](https://www.npmjs.com/package/@atproto/lex-client)) — a
+single `getDocument` call returns the card metadata **and** the renderable body:
+
+```ts
+import { Client } from "@atproto/lex-client";
+import {
+  standardReader,
+  STANDARD_READER_SERVICE,
+} from "@standard-reader/lexicons";
+
+const client = new Client(STANDARD_READER_SERVICE);
+
+const doc = await client.call(standardReader.getDocument, {
+  document: "at://did:plc:…/site.standard.document/…",
+});
+```
+
+`doc` lines up field-for-field with the renderer's `document` prop:
+
 ```tsx
 import { StandardDocumentRenderer } from "@standard-reader/renderer-react";
 
-function Article({ record }) {
-  return (
-    <StandardDocumentRenderer
-      document={{
-        content: record.content, // the content-union payload (has a `$type`)
-        authorDid: record.did, // repo that hosts image blobs
-        description: record.description,
-      }}
-    />
-  );
-}
+<StandardDocumentRenderer
+  document={{
+    content: doc.content, // the content-union payload (has a `$type`)
+    contentFormat: doc.contentFormat,
+    authorDid: doc.did, // repo that hosts image blobs
+    description: doc.description,
+  }}
+/>;
 ```
 
 With no `components` prop, the document renders as unstyled semantic HTML

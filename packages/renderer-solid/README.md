@@ -18,21 +18,44 @@ plain JS with no JSX build step of its own — it drops into any Solid app.
 
 ```sh
 npm install @standard-reader/renderer-solid solid-js
+# to fetch documents to render (optional):
+npm install @standard-reader/lexicons @atproto/lex-client
 ```
 
 ## Quick start
 
+Fetch a document with the typed Standard Reader API client
+([`@standard-reader/lexicons`](https://www.npmjs.com/package/@standard-reader/lexicons) and [`@atproto/lex-client`](https://www.npmjs.com/package/@atproto/lex-client)) — a
+single `getDocument` call returns the card metadata **and** the renderable body:
+
+```ts
+import { Client } from "@atproto/lex-client";
+import {
+  standardReader,
+  STANDARD_READER_SERVICE,
+} from "@standard-reader/lexicons";
+
+const client = new Client(STANDARD_READER_SERVICE);
+
+const doc = await client.call(standardReader.getDocument, {
+  document: "at://did:plc:…/site.standard.document/…",
+});
+```
+
+`doc` lines up field-for-field with the renderer's `document` prop:
+
 ```tsx
 import { StandardDocument } from "@standard-reader/renderer-solid";
 
-function Article(props: { record: any }) {
-  return (
-    <StandardDocument
-      document={{ content: props.record.content, authorDid: props.record.did }}
-      options={{ dropCap: true }}
-    />
-  );
-}
+<StandardDocument
+  document={{
+    content: doc.content,
+    contentFormat: doc.contentFormat,
+    authorDid: doc.did,
+    description: doc.description,
+  }}
+  options={{ dropCap: true }}
+/>;
 ```
 
 With no `components`, the document renders as unstyled semantic HTML (`<p>`,

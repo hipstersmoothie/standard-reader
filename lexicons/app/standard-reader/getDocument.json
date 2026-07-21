@@ -4,7 +4,7 @@
   "defs": {
     "main": {
       "type": "query",
-      "description": "Fetch a single article card metadata and aggregate stats (no full body).",
+      "description": "Fetch a single article: card metadata, aggregate stats, and the renderable body (content) ready for the renderers.",
       "parameters": {
         "type": "params",
         "properties": {

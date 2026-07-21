@@ -179,7 +179,22 @@ export async function handleGetDocument(ctx: XrpcRequestContext) {
   }
 
   const [enriched] = await enrichDocuments(ctx, [card], readForDid);
-  return toDocumentView(enriched ?? card);
+  const view = toDocumentView(enriched ?? card);
+
+  // Unlike the feed and search views, getDocument returns the renderable body
+  // so a single call gives clients everything needed to render the document.
+  const d = ctx.schema.documents;
+  const [body] = await ctx.db
+    .select({ contentJson: d.contentJson, contentFormat: d.contentFormat })
+    .from(d)
+    .where(eq(d.uri, documentUri))
+    .limit(1);
+
+  return {
+    ...view,
+    content: body?.contentJson ?? undefined,
+    contentFormat: body?.contentFormat ?? undefined,
+  };
 }
 
 export async function handleGetPublications(ctx: XrpcRequestContext) {

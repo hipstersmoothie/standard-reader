@@ -25,18 +25,45 @@ semantic HTML, rendered into light DOM, and every one of them is overridable.
 
 ```sh
 npm install @standard-reader/renderer-svelte svelte
+# to fetch documents to render (optional):
+npm install @standard-reader/lexicons @atproto/lex-client
 ```
 
 ## Quick start
 
+Fetch a document with the typed Standard Reader API client
+([`@standard-reader/lexicons`](https://www.npmjs.com/package/@standard-reader/lexicons) and [`@atproto/lex-client`](https://www.npmjs.com/package/@atproto/lex-client)) — a
+single `getDocument` call returns the card metadata **and** the renderable body:
+
+```ts
+import { Client } from "@atproto/lex-client";
+import {
+  standardReader,
+  STANDARD_READER_SERVICE,
+} from "@standard-reader/lexicons";
+
+const client = new Client(STANDARD_READER_SERVICE);
+
+const doc = await client.call(standardReader.getDocument, {
+  document: "at://did:plc:…/site.standard.document/…",
+});
+```
+
+`doc` lines up field-for-field with the renderer's `document` prop:
+
 ```svelte
 <script>
   import { StandardDocument } from "@standard-reader/renderer-svelte";
-  let { record } = $props();
+  let { doc } = $props();
 </script>
 
 <StandardDocument
-  document={{ content: record.content, authorDid: record.did }}
+  document={{
+    content: doc.content,
+    contentFormat: doc.contentFormat,
+    authorDid: doc.did,
+    description: doc.description,
+  }}
   options={{ dropCap: true }}
 />
 ```

@@ -1806,6 +1806,10 @@ msgstr "리스트에 추가"
 msgid "A topic or tag"
 msgstr "주제 또는 태그"
 
+#: src/components/docs/api-docs-intro.tsx
+msgid "Prefer a typed client? The whole API ships as codegen'd AT Protocol lexicon schemas in <0>@standard-reader/lexicons</0>. Pair it with <1>@atproto/lex-client</1> for fully-typed <2>client.call()</2> queries and procedures. Its <3>getDocument</3> also returns a document's renderable body, ready to hand to the <4>renderers</4>."
+msgstr ""
+
 #: src/components/onboarding/welcome-wizard.tsx
 msgid "Couldn't save your follows"
 msgstr "팔로우를 저장하지 못했습니다"
@@ -2575,6 +2579,10 @@ msgstr "{0, plural, one {독자 #명} other {독자 {1}명}}"
 #: src/components/docs/docs-api-nav.tsx
 msgid "Service discovery"
 msgstr "서비스 검색"
+
+#: src/components/docs/lexicon-docs-intro.tsx
+msgid "These schemas are published, codegen'd from the lexicons, as <0>@standard-reader/lexicons</0> — a typed schema object for every <1>app.standard-reader.*</1> query, procedure, and record, validated at runtime when paired with <2>@atproto/lex-client</2>."
+msgstr ""
 
 #: src/components/user-settings-view.tsx
 msgid "The voice used when you listen to an article with read aloud."

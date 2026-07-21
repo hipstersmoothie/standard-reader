@@ -25,18 +25,46 @@ semantic HTML, and every one of them is overridable.
 
 ```sh
 npm install @standard-reader/renderer-vue vue
+# to fetch documents to render (optional):
+npm install @standard-reader/lexicons @atproto/lex-client
 ```
 
 ## Quick start
 
+Fetch a document with the typed Standard Reader API client
+([`@standard-reader/lexicons`](https://www.npmjs.com/package/@standard-reader/lexicons) and [`@atproto/lex-client`](https://www.npmjs.com/package/@atproto/lex-client)) — a
+single `getDocument` call returns the card metadata **and** the renderable body:
+
+```ts
+import { Client } from "@atproto/lex-client";
+import {
+  standardReader,
+  STANDARD_READER_SERVICE,
+} from "@standard-reader/lexicons";
+
+const client = new Client(STANDARD_READER_SERVICE);
+
+const doc = await client.call(standardReader.getDocument, {
+  document: "at://did:plc:…/site.standard.document/…",
+});
+```
+
+`doc` lines up field-for-field with the renderer's `document` prop:
+
 ```vue
 <script setup lang="ts">
 import { StandardDocument } from "@standard-reader/renderer-vue";
-const doc = { content: record.content, authorDid: record.did };
+
+const document = {
+  content: doc.content,
+  contentFormat: doc.contentFormat,
+  authorDid: doc.did,
+  description: doc.description,
+};
 </script>
 
 <template>
-  <StandardDocument :document="doc" :options="{ dropCap: true }" />
+  <StandardDocument :document="document" :options="{ dropCap: true }" />
 </template>
 ```
 
