@@ -98,6 +98,7 @@
     "@react-stately/utils": "^3.12.1",
     "@react-types/overlays": "^3.10.0",
     "@resvg/resvg-js": "^2.6.2",
+    "@standard-reader/renderer-react": "workspace:*",
     "@stylexjs/stylex": "^0.19.0",
     "@tanstack/react-query": "^5.101.0",
     "@tanstack/react-router": "latest",

@@ -1,6 +1,12 @@
 {
   "include": ["**/*.ts", "**/*.tsx"],
-  "exclude": ["extension/**", "dist/**", ".output/**", "node_modules/**"],
+  "exclude": [
+    "extension/**",
+    "packages/**",
+    "dist/**",
+    ".output/**",
+    "node_modules/**"
+  ],
   "compilerOptions": {
     "target": "ES2023",
     "jsx": "react-jsx",
