@@ -166,7 +166,9 @@ through your client-side router:
 const components = {
   shared: {
     mention: ({ did, atUri }, children) => (
-      <MentionChip did={did} atUri={atUri}>{children}</MentionChip>
+      <MentionChip did={did} atUri={atUri}>
+        {children}
+      </MentionChip>
     ),
     link: ({ href }, children) => <SmartLink href={href}>{children}</SmartLink>,
   },

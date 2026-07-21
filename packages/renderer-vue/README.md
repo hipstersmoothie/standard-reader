@@ -160,7 +160,8 @@ const components = {
     noteEmbed: ({ uri }) => h(NoteCard, { uri }),
   },
   offprint: {
-    component: ({ componentUri }) => h(OffprintComponent, { uri: componentUri }),
+    component: ({ componentUri }) =>
+      h(OffprintComponent, { uri: componentUri }),
   },
 };
 ```

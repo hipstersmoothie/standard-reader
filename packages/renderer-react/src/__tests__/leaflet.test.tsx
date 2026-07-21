@@ -1,7 +1,6 @@
+import type { RendererOptions } from "@standard-reader/renderer-core";
 import { render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-
-import type { RendererOptions } from "@standard-reader/renderer-core";
 
 import type { RendererComponentsInput } from "../index";
 import { StandardDocumentRenderer } from "../render/document";

@@ -201,7 +201,9 @@ renderDocument(doc, {
   components: {
     shared: {
       mention: ({ did, atUri }, children) =>
-        html`<mention-chip did=${did ?? ""} at-uri=${atUri ?? ""}>${children}</mention-chip>`,
+        html`<mention-chip did=${did ?? ""} at-uri=${atUri ?? ""}
+          >${children}</mention-chip
+        >`,
       link: ({ href }, children) =>
         html`<smart-link href=${href}>${children}</smart-link>`,
     },
