@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { Button } from "../design-system/button";
+import { Button } from "@standard-reader/design-system/button";
 
 type ThemeMode = "light" | "dark" | "auto";
 

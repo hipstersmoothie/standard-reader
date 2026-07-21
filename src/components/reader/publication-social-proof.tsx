@@ -6,21 +6,21 @@ import { Fragment, useState } from "react";
 import { AuthorProfileLink } from "#/components/reader/author-profile-link";
 import type { PublicationSocialProof } from "#/integrations/tanstack-query/api-publication.functions";
 
-import { Avatar } from "../../design-system/avatar";
-import { Dialog, DialogBody, DialogHeader } from "../../design-system/dialog";
-import { Flex } from "../../design-system/flex";
-import { uiColor } from "../../design-system/theme/color.stylex";
+import { Avatar } from "@standard-reader/design-system/avatar";
+import { Dialog, DialogBody, DialogHeader } from "@standard-reader/design-system/dialog";
+import { Flex } from "@standard-reader/design-system/flex";
+import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
 import {
   gap,
   horizontalSpace,
-} from "../../design-system/theme/semantic-spacing.stylex";
-import { spacing } from "../../design-system/theme/spacing.stylex";
+} from "@standard-reader/design-system/theme/semantic-spacing.stylex";
+import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
 import {
   fontFamily,
   fontSize,
   fontWeight,
   lineHeight,
-} from "../../design-system/theme/typography.stylex";
+} from "@standard-reader/design-system/theme/typography.stylex";
 import { initials } from "./format";
 
 const SOCIAL_PROOF_NAMES = 2;

@@ -48,6 +48,9 @@ const stylexPlugins = [
     aliases: {
       "@/*": [path.join(repoRoot, "src/*")],
       "#/*": [path.join(repoRoot, "src/*")],
+      "@standard-reader/design-system/*": [
+        path.join(repoRoot, "packages/design-system/src/*"),
+      ],
     },
     lightningcssOptions: {
       targets: browserslistToTargets(browserslist("baseline 2024")),
@@ -106,6 +109,10 @@ export default defineConfig({
     },
     resolve: {
       alias: {
+        "@standard-reader/design-system": path.join(
+          repoRoot,
+          "packages/design-system/src",
+        ),
         "#": path.join(repoRoot, "src"),
         "@": path.join(repoRoot, "src"),
       },

@@ -1,4 +1,4 @@
-import { toasts } from "#/design-system/toast";
+import { toasts } from "@standard-reader/design-system/toast";
 import { auth } from "#/integrations/tanstack-query/api-auth.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
 import { getQueryClient } from "#/integrations/tanstack-query/query-client";

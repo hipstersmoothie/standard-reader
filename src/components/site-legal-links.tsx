@@ -4,18 +4,18 @@ import { Trans, useLingui } from "@lingui/react/macro";
 import * as stylex from "@stylexjs/stylex";
 import { Link } from "@tanstack/react-router";
 
-import { animationDuration } from "../design-system/theme/animations.stylex";
-import { primaryColor, uiColor } from "../design-system/theme/color.stylex";
+import { animationDuration } from "@standard-reader/design-system/theme/animations.stylex";
+import { primaryColor, uiColor } from "@standard-reader/design-system/theme/color.stylex";
 import {
   gap,
   horizontalSpace,
   verticalSpace,
-} from "../design-system/theme/semantic-spacing.stylex";
+} from "@standard-reader/design-system/theme/semantic-spacing.stylex";
 import {
   fontFamily,
   fontSize,
   fontWeight,
-} from "../design-system/theme/typography.stylex";
+} from "@standard-reader/design-system/theme/typography.stylex";
 
 const styles = stylex.create({
   nav: {

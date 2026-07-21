@@ -13,7 +13,7 @@ import { z } from "zod";
 
 import { isArticleUnreadForReader } from "#/components/reader/read-optimistic";
 import { ButtonLink } from "#/components/router-links";
-import { Tab, TabList, TabPanel, Tabs } from "#/design-system/tabs";
+import { Tab, TabList, TabPanel, Tabs } from "@standard-reader/design-system/tabs";
 import { discoverApi } from "#/integrations/tanstack-query/api-discover.functions";
 import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
@@ -35,16 +35,16 @@ import {
 } from "../components/reader/friend-publishers";
 import { Masthead, ReaderContent } from "../components/reader/primitives";
 import { useInfiniteScrollSentinel } from "../components/reader/use-infinite-scroll-sentinel";
-import { Flex } from "../design-system/flex";
-import { uiColor } from "../design-system/theme/color.stylex";
-import { radius } from "../design-system/theme/radius.stylex";
-import { spacing } from "../design-system/theme/spacing.stylex";
+import { Flex } from "@standard-reader/design-system/flex";
+import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
+import { radius } from "@standard-reader/design-system/theme/radius.stylex";
+import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
 import {
   fontFamily,
   fontSize,
   fontWeight,
   lineHeight,
-} from "../design-system/theme/typography.stylex";
+} from "@standard-reader/design-system/theme/typography.stylex";
 import type { FriendPerson } from "../integrations/tanstack-query/api-discover.functions";
 import type { PublicationCard } from "../integrations/tanstack-query/api-shapes";
 

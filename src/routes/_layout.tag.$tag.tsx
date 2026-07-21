@@ -47,26 +47,26 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
-} from "#/design-system/alert-dialog";
-import { Button } from "#/design-system/button";
-import { Flex } from "#/design-system/flex";
-import { Grid } from "#/design-system/grid";
+} from "@standard-reader/design-system/alert-dialog";
+import { Button } from "@standard-reader/design-system/button";
+import { Flex } from "@standard-reader/design-system/flex";
+import { Grid } from "@standard-reader/design-system/grid";
 import {
   SegmentedControl,
   SegmentedControlItem,
-} from "#/design-system/segmented-control";
-import { Skeleton } from "#/design-system/skeleton";
-import { Tab, TabList, TabPanel, Tabs } from "#/design-system/tabs";
-import { uiColor } from "#/design-system/theme/color.stylex";
-import { gap } from "#/design-system/theme/semantic-spacing.stylex";
-import { spacing } from "#/design-system/theme/spacing.stylex";
+} from "@standard-reader/design-system/segmented-control";
+import { Skeleton } from "@standard-reader/design-system/skeleton";
+import { Tab, TabList, TabPanel, Tabs } from "@standard-reader/design-system/tabs";
+import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
+import { gap } from "@standard-reader/design-system/theme/semantic-spacing.stylex";
+import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
 import {
   fontFamily,
   fontSize,
   fontWeight,
   lineHeight,
   tracking,
-} from "#/design-system/theme/typography.stylex";
+} from "@standard-reader/design-system/theme/typography.stylex";
 import type { ArticleCard } from "#/integrations/tanstack-query/api-shapes";
 import type {
   TagFollowSummary,

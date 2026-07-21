@@ -4,11 +4,11 @@ import { useLingui } from "@lingui/react/macro";
 import * as stylex from "@stylexjs/stylex";
 import { useRef } from "react";
 
-import { animationDuration } from "#/design-system/theme/animations.stylex";
-import { primaryColor, uiColor } from "#/design-system/theme/color.stylex";
-import { radius } from "#/design-system/theme/radius.stylex";
-import { verticalSpace } from "#/design-system/theme/semantic-spacing.stylex";
-import { spacing } from "#/design-system/theme/spacing.stylex";
+import { animationDuration } from "@standard-reader/design-system/theme/animations.stylex";
+import { primaryColor, uiColor } from "@standard-reader/design-system/theme/color.stylex";
+import { radius } from "@standard-reader/design-system/theme/radius.stylex";
+import { verticalSpace } from "@standard-reader/design-system/theme/semantic-spacing.stylex";
+import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
 
 import { formatTime } from "./format";
 

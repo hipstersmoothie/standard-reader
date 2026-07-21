@@ -15,41 +15,41 @@ import {
 import { Button as AriaButton } from "react-aria-components";
 
 import { AuthorProfileLink } from "#/components/reader/author-profile-link";
-import { DirectionalIcon } from "#/design-system/directional-icon";
+import { DirectionalIcon } from "@standard-reader/design-system/directional-icon";
 import { formatSidebarUnreadCount } from "#/lib/format-count";
 import { useFormatters } from "#/lib/use-formatters";
 
-import { Avatar } from "../../design-system/avatar";
-import { Button } from "../../design-system/button";
-import { ButtonGroup } from "../../design-system/button-group";
+import { Avatar } from "@standard-reader/design-system/avatar";
+import { Button } from "@standard-reader/design-system/button";
+import { ButtonGroup } from "@standard-reader/design-system/button-group";
 import {
   Disclosure,
   DisclosurePanel,
   DisclosureTitle,
-} from "../../design-system/disclosure";
+} from "@standard-reader/design-system/disclosure";
 import {
   Drawer,
   DrawerBody,
   DrawerDescription,
   DrawerHeader,
-} from "../../design-system/drawer";
-import { IconButton } from "../../design-system/icon-button";
-import { animationDuration } from "../../design-system/theme/animations.stylex";
-import { primaryColor, uiColor } from "../../design-system/theme/color.stylex";
-import { radius } from "../../design-system/theme/radius.stylex";
+} from "@standard-reader/design-system/drawer";
+import { IconButton } from "@standard-reader/design-system/icon-button";
+import { animationDuration } from "@standard-reader/design-system/theme/animations.stylex";
+import { primaryColor, uiColor } from "@standard-reader/design-system/theme/color.stylex";
+import { radius } from "@standard-reader/design-system/theme/radius.stylex";
 import {
   gap,
   horizontalSpace,
   size,
   verticalSpace,
-} from "../../design-system/theme/semantic-spacing.stylex";
-import { spacing } from "../../design-system/theme/spacing.stylex";
+} from "@standard-reader/design-system/theme/semantic-spacing.stylex";
+import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
 import {
   fontFamily,
   fontSize,
   fontWeight,
   tracking,
-} from "../../design-system/theme/typography.stylex";
+} from "@standard-reader/design-system/theme/typography.stylex";
 import type {
   FollowingPublication,
   FollowingUser,

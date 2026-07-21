@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   SegmentedControl,
   SegmentedControlItem,
-} from "../design-system/segmented-control";
+} from "@standard-reader/design-system/segmented-control";
 
 /**
  * A single-select segmented control for a reading-typography option (text size,

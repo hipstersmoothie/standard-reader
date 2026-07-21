@@ -2,9 +2,9 @@
 
 import { createLink } from "@tanstack/react-router";
 
-import { Button } from "#/design-system/button";
-import { IconButton } from "#/design-system/icon-button";
-import { MenuItem } from "#/design-system/menu";
+import { Button } from "@standard-reader/design-system/button";
+import { IconButton } from "@standard-reader/design-system/icon-button";
+import { MenuItem } from "@standard-reader/design-system/menu";
 
 export const ButtonLink = createLink(Button);
 export const IconButtonLink = createLink(IconButton);

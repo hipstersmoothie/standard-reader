@@ -1,22 +1,22 @@
 import * as stylex from "@stylexjs/stylex";
 
-import { animationDuration } from "../../design-system/theme/animations.stylex";
-import { primaryColor, uiColor } from "../../design-system/theme/color.stylex";
-import { radius } from "../../design-system/theme/radius.stylex";
+import { animationDuration } from "@standard-reader/design-system/theme/animations.stylex";
+import { primaryColor, uiColor } from "@standard-reader/design-system/theme/color.stylex";
+import { radius } from "@standard-reader/design-system/theme/radius.stylex";
 import {
   gap,
   horizontalSpace,
   verticalSpace,
-} from "../../design-system/theme/semantic-spacing.stylex";
-import { shadow } from "../../design-system/theme/shadow.stylex";
-import { spacing } from "../../design-system/theme/spacing.stylex";
+} from "@standard-reader/design-system/theme/semantic-spacing.stylex";
+import { shadow } from "@standard-reader/design-system/theme/shadow.stylex";
+import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
 import {
   fontFamily,
   fontSize,
   fontWeight,
   lineHeight,
   tracking,
-} from "../../design-system/theme/typography.stylex";
+} from "@standard-reader/design-system/theme/typography.stylex";
 
 export const docsCodeColors = stylex.defineConsts({
   bg: "oklch(0.255 0.016 58)",

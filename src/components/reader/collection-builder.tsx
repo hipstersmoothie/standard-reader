@@ -29,36 +29,36 @@ import { collectionsApi } from "#/integrations/tanstack-query/api-collections.fu
 import { searchApi } from "#/integrations/tanstack-query/api-search.functions";
 import type { ArticleCard } from "#/integrations/tanstack-query/api-shapes";
 
-import { Button } from "../../design-system/button";
-import { Dialog, DialogBody, DialogHeader } from "../../design-system/dialog";
+import { Button } from "@standard-reader/design-system/button";
+import { Dialog, DialogBody, DialogHeader } from "@standard-reader/design-system/dialog";
 import {
   FileDropDefaultTrigger,
   FileDropZone,
-} from "../../design-system/file-drop-zone";
-import { Flex } from "../../design-system/flex";
-import { IconButton } from "../../design-system/icon-button";
-import { Label } from "../../design-system/label";
-import { ListBox, ListBoxItem } from "../../design-system/listbox";
-import { ProgressCircle } from "../../design-system/progress-circle";
-import { SearchField } from "../../design-system/search-field";
-import { Select, SelectItem } from "../../design-system/select";
-import { TextField } from "../../design-system/text-field";
-import { primaryColor, uiColor } from "../../design-system/theme/color.stylex";
-import { radius } from "../../design-system/theme/radius.stylex";
+} from "@standard-reader/design-system/file-drop-zone";
+import { Flex } from "@standard-reader/design-system/flex";
+import { IconButton } from "@standard-reader/design-system/icon-button";
+import { Label } from "@standard-reader/design-system/label";
+import { ListBox, ListBoxItem } from "@standard-reader/design-system/listbox";
+import { ProgressCircle } from "@standard-reader/design-system/progress-circle";
+import { SearchField } from "@standard-reader/design-system/search-field";
+import { Select, SelectItem } from "@standard-reader/design-system/select";
+import { TextField } from "@standard-reader/design-system/text-field";
+import { primaryColor, uiColor } from "@standard-reader/design-system/theme/color.stylex";
+import { radius } from "@standard-reader/design-system/theme/radius.stylex";
 import {
   horizontalSpace,
   size,
   verticalSpace,
-} from "../../design-system/theme/semantic-spacing.stylex";
-import { shadow } from "../../design-system/theme/shadow.stylex";
-import { spacing } from "../../design-system/theme/spacing.stylex";
+} from "@standard-reader/design-system/theme/semantic-spacing.stylex";
+import { shadow } from "@standard-reader/design-system/theme/shadow.stylex";
+import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
 import {
   fontFamily,
   fontSize,
   fontWeight,
   lineHeight,
   tracking,
-} from "../../design-system/theme/typography.stylex";
+} from "@standard-reader/design-system/theme/typography.stylex";
 import { ArticleResultRow } from "./article-result-row";
 import { CollectionPublicationCreateDialog } from "./collection-publication-editor";
 import { MarkdownField } from "./markdown-field";

@@ -8,26 +8,26 @@ import type { QueryClient } from "@tanstack/react-query";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 
-import { Button } from "#/design-system/button";
+import { Button } from "@standard-reader/design-system/button";
 import {
   Dialog,
   DialogBody,
   DialogDescription,
   DialogFooter,
   DialogHeader,
-} from "#/design-system/dialog";
-import { Flex } from "#/design-system/flex";
-import { Link } from "#/design-system/link";
+} from "@standard-reader/design-system/dialog";
+import { Flex } from "@standard-reader/design-system/flex";
+import { Link } from "@standard-reader/design-system/link";
 import {
   SegmentedControl,
   SegmentedControlItem,
-} from "#/design-system/segmented-control";
-import { Separator } from "#/design-system/separator";
-import { TextArea } from "#/design-system/text-area";
-import { TextField } from "#/design-system/text-field";
-import { criticalColor } from "#/design-system/theme/color.stylex";
-import { fontFamily, fontSize } from "#/design-system/theme/typography.stylex";
-import { toasts } from "#/design-system/toast";
+} from "@standard-reader/design-system/segmented-control";
+import { Separator } from "@standard-reader/design-system/separator";
+import { TextArea } from "@standard-reader/design-system/text-area";
+import { TextField } from "@standard-reader/design-system/text-field";
+import { criticalColor } from "@standard-reader/design-system/theme/color.stylex";
+import { fontFamily, fontSize } from "@standard-reader/design-system/theme/typography.stylex";
+import { toasts } from "@standard-reader/design-system/toast";
 import { auth } from "#/integrations/tanstack-query/api-auth.functions";
 import { userinputApi } from "#/integrations/tanstack-query/api-userinput.functions";
 import { isAtprotoScopeMissingError } from "#/lib/atproto/scope-error";

@@ -2,12 +2,12 @@
 
 import * as stylex from "@stylexjs/stylex";
 
-import { uiColor } from "../design-system/theme/color.stylex";
-import { containerBreakpoints } from "../design-system/theme/media-queries.stylex";
+import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
+import { containerBreakpoints } from "@standard-reader/design-system/theme/media-queries.stylex";
 import {
   horizontalSpace,
   verticalSpace,
-} from "../design-system/theme/semantic-spacing.stylex";
+} from "@standard-reader/design-system/theme/semantic-spacing.stylex";
 import { SiteLegalLinks } from "./site-legal-links";
 
 const styles = stylex.create({

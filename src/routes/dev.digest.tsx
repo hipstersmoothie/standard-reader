@@ -5,14 +5,14 @@ import { createFileRoute, notFound } from "@tanstack/react-router";
 import { useState } from "react";
 
 import { UserHandleAutocomplete } from "#/components/user-handle-autocomplete";
-import { criticalColor, uiColor } from "#/design-system/theme/color.stylex";
-import { radius } from "#/design-system/theme/radius.stylex";
+import { criticalColor, uiColor } from "@standard-reader/design-system/theme/color.stylex";
+import { radius } from "@standard-reader/design-system/theme/radius.stylex";
 import {
   gap,
   horizontalSpace,
   verticalSpace,
-} from "#/design-system/theme/semantic-spacing.stylex";
-import { fontSize, fontWeight } from "#/design-system/theme/typography.stylex";
+} from "@standard-reader/design-system/theme/semantic-spacing.stylex";
+import { fontSize, fontWeight } from "@standard-reader/design-system/theme/typography.stylex";
 
 /** Dev-only tool to preview a reader's weekly digest. 404s in production. */
 export const Route = createFileRoute("/dev/digest")({

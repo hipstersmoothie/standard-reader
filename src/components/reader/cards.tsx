@@ -22,9 +22,9 @@ import { FollowUserButton } from "#/components/reader/follow-user-button";
 import { PublicationNameLink } from "#/components/reader/publication-name-link";
 import { SearchHeadline } from "#/components/reader/search-headline";
 import { ButtonLink } from "#/components/router-links";
-import { DirectionalIcon } from "#/design-system/directional-icon";
-import { gap } from "#/design-system/theme/semantic-spacing.stylex";
-import { spacing } from "#/design-system/theme/spacing.stylex.tsx";
+import { DirectionalIcon } from "@standard-reader/design-system/directional-icon";
+import { gap } from "@standard-reader/design-system/theme/semantic-spacing.stylex";
+import { spacing } from "@standard-reader/design-system/theme/spacing.stylex.tsx";
 import type { FollowStatus } from "#/integrations/tanstack-query/api-reader.functions";
 import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
@@ -39,27 +39,27 @@ import { useLoginSearch } from "#/utils/use-login-search";
 import {
   AspectRatio,
   AspectRatioImage,
-} from "../../design-system/aspect-ratio";
-import { Button } from "../../design-system/button";
-import { Flex } from "../../design-system/flex";
-import { IconButton } from "../../design-system/icon-button";
-import { Skeleton } from "../../design-system/skeleton";
-import { animationDuration } from "../../design-system/theme/animations.stylex";
+} from "@standard-reader/design-system/aspect-ratio";
+import { Button } from "@standard-reader/design-system/button";
+import { Flex } from "@standard-reader/design-system/flex";
+import { IconButton } from "@standard-reader/design-system/icon-button";
+import { Skeleton } from "@standard-reader/design-system/skeleton";
+import { animationDuration } from "@standard-reader/design-system/theme/animations.stylex";
 import {
   criticalColor,
   primaryColor,
   uiColor,
-} from "../../design-system/theme/color.stylex";
-import { radius } from "../../design-system/theme/radius.stylex";
-import { shadow } from "../../design-system/theme/shadow.stylex";
+} from "@standard-reader/design-system/theme/color.stylex";
+import { radius } from "@standard-reader/design-system/theme/radius.stylex";
+import { shadow } from "@standard-reader/design-system/theme/shadow.stylex";
 import {
   fontFamily,
   fontSize,
   fontWeight,
   lineHeight,
   tracking,
-} from "../../design-system/theme/typography.stylex";
-import { Text } from "../../design-system/typography/text";
+} from "@standard-reader/design-system/theme/typography.stylex";
+import { Text } from "@standard-reader/design-system/typography/text";
 import type { FriendPerson } from "../../integrations/tanstack-query/api-discover.functions";
 import type {
   ArticleCard,

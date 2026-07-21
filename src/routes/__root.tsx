@@ -21,8 +21,8 @@ import {
   editorialShadow,
   editorialUi,
 } from "../components/reader/theme";
-import { uiColor } from "../design-system/theme/color.stylex";
-import { ui } from "../design-system/theme/semantic-color.stylex";
+import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
+import { ui } from "@standard-reader/design-system/theme/semantic-color.stylex";
 import { PlausibleAnalytics } from "../integrations/plausible/analytics";
 import { user } from "../integrations/tanstack-query/api-user.functions";
 import {

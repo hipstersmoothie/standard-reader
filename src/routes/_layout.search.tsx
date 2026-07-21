@@ -25,18 +25,18 @@ import {
   SectionHead,
 } from "../components/reader/primitives";
 import { useInfiniteScrollSentinel } from "../components/reader/use-infinite-scroll-sentinel";
-import { Button } from "../design-system/button";
-import { Flex } from "../design-system/flex";
-import { IconButton } from "../design-system/icon-button";
-import { Skeleton } from "../design-system/skeleton";
-import { uiColor } from "../design-system/theme/color.stylex";
-import { gap } from "../design-system/theme/semantic-spacing.stylex";
-import { spacing } from "../design-system/theme/spacing.stylex";
+import { Button } from "@standard-reader/design-system/button";
+import { Flex } from "@standard-reader/design-system/flex";
+import { IconButton } from "@standard-reader/design-system/icon-button";
+import { Skeleton } from "@standard-reader/design-system/skeleton";
+import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
+import { gap } from "@standard-reader/design-system/theme/semantic-spacing.stylex";
+import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
 import {
   fontFamily,
   fontSize,
   tracking,
-} from "../design-system/theme/typography.stylex";
+} from "@standard-reader/design-system/theme/typography.stylex";
 import type { PublicationCard } from "../integrations/tanstack-query/api-shapes";
 
 const SEARCH_DEBOUNCE_MS = 300;

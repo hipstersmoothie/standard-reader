@@ -4,9 +4,9 @@ import { useQuery } from "@tanstack/react-query";
 import { FileText } from "lucide-react";
 import { useEffect, useState } from "react";
 
-import { Badge } from "#/design-system/badge";
-import { IconButton } from "#/design-system/icon-button";
-import { tracking } from "#/design-system/theme/typography.stylex";
+import { Badge } from "@standard-reader/design-system/badge";
+import { IconButton } from "@standard-reader/design-system/icon-button";
+import { tracking } from "@standard-reader/design-system/theme/typography.stylex";
 import { authorApi } from "#/integrations/tanstack-query/api-author.functions";
 
 const styles = stylex.create({

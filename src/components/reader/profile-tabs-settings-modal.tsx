@@ -9,14 +9,14 @@ import {
   DialogBody,
   DialogDescription,
   DialogHeader,
-} from "../../design-system/dialog";
-import { Switch } from "../../design-system/switch";
-import { uiColor } from "../../design-system/theme/color.stylex";
-import { spacing } from "../../design-system/theme/spacing.stylex";
+} from "@standard-reader/design-system/dialog";
+import { Switch } from "@standard-reader/design-system/switch";
+import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
+import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
 import {
   fontSize,
   fontWeight,
-} from "../../design-system/theme/typography.stylex";
+} from "@standard-reader/design-system/theme/typography.stylex";
 
 const styles = stylex.create({
   row: {

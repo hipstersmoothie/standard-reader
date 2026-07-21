@@ -3,7 +3,7 @@
 import { useLingui } from "@lingui/react/macro";
 import { useEffect, useState } from "react";
 
-import { toasts } from "#/design-system/toast";
+import { toasts } from "@standard-reader/design-system/toast";
 import { DEFAULT_LOCALE, LOCALE_LABELS } from "#/lib/locale";
 import { useLocale } from "#/lib/use-locale";
 import { useLocaleHint } from "#/lib/use-locale-hint";

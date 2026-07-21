@@ -1,13 +1,13 @@
 import * as stylex from "@stylexjs/stylex";
 
-import { Flex } from "../design-system/flex";
-import { uiColor } from "../design-system/theme/color.stylex";
-import { containerBreakpoints } from "../design-system/theme/media-queries.stylex";
+import { Flex } from "@standard-reader/design-system/flex";
+import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
+import { containerBreakpoints } from "@standard-reader/design-system/theme/media-queries.stylex";
 import {
   horizontalSpace,
   verticalSpace,
-} from "../design-system/theme/semantic-spacing.stylex";
-import { Text } from "../design-system/typography/text";
+} from "@standard-reader/design-system/theme/semantic-spacing.stylex";
+import { Text } from "@standard-reader/design-system/typography/text";
 
 const styles = stylex.create({
   footer: {

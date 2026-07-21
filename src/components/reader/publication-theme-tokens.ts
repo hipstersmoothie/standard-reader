@@ -1,6 +1,6 @@
 import * as stylex from "@stylexjs/stylex";
 
-import { primaryColor, uiColor } from "../../design-system/theme/color.stylex";
+import { primaryColor, uiColor } from "@standard-reader/design-system/theme/color.stylex";
 
 /**
  * Publication-themed overrides for the design-system color tokens.

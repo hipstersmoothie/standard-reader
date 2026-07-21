@@ -3,21 +3,21 @@ import { Check, Plus } from "lucide-react";
 
 import type { PublicationCard } from "#/integrations/tanstack-query/api-shapes";
 
-import { Badge } from "../../design-system/badge";
-import { uiColor } from "../../design-system/theme/color.stylex";
-import { radius } from "../../design-system/theme/radius.stylex";
+import { Badge } from "@standard-reader/design-system/badge";
+import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
+import { radius } from "@standard-reader/design-system/theme/radius.stylex";
 import {
   gap,
   horizontalSpace,
   verticalSpace,
-} from "../../design-system/theme/semantic-spacing.stylex";
+} from "@standard-reader/design-system/theme/semantic-spacing.stylex";
 import {
   fontFamily,
   fontSize,
   fontWeight,
   lineHeight,
-} from "../../design-system/theme/typography.stylex";
-import { ToggleButton } from "../../design-system/toggle-button";
+} from "@standard-reader/design-system/theme/typography.stylex";
+import { ToggleButton } from "@standard-reader/design-system/toggle-button";
 import { PublicationAvatar } from "../reader/primitives";
 
 const styles = stylex.create({

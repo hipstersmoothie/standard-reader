@@ -21,22 +21,22 @@ import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { useId, useState } from "react";
 
-import { DirectionalIcon } from "#/design-system/directional-icon";
-import { animationDuration } from "#/design-system/theme/animations.stylex";
+import { DirectionalIcon } from "@standard-reader/design-system/directional-icon";
+import { animationDuration } from "@standard-reader/design-system/theme/animations.stylex";
 import {
   criticalColor,
   primaryColor,
   successColor,
   uiColor,
   warningColor,
-} from "#/design-system/theme/color.stylex";
-import { radius } from "#/design-system/theme/radius.stylex";
-import { spacing } from "#/design-system/theme/spacing.stylex";
+} from "@standard-reader/design-system/theme/color.stylex";
+import { radius } from "@standard-reader/design-system/theme/radius.stylex";
+import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
 import {
   fontFamily,
   fontSize,
   fontWeight,
-} from "#/design-system/theme/typography.stylex";
+} from "@standard-reader/design-system/theme/typography.stylex";
 import type { CalloutKind } from "#/lib/markdown/callouts";
 
 const KIND_ICON: Record<CalloutKind, LucideIcon> = {

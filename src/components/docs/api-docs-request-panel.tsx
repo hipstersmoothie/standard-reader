@@ -6,8 +6,8 @@ import { useMutation } from "@tanstack/react-query";
 import { Play } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 
-import { Select, SelectItem } from "#/design-system/select";
-import { TextField } from "#/design-system/text-field";
+import { Select, SelectItem } from "@standard-reader/design-system/select";
+import { TextField } from "@standard-reader/design-system/text-field";
 import { runApiDocsExample } from "#/integrations/tanstack-query/api-docs.functions";
 import {
   buildApiDocsCurl,

@@ -4,17 +4,17 @@ import { useQuery } from "@tanstack/react-query";
 
 import { discoverApi } from "#/integrations/tanstack-query/api-discover.functions";
 
-import { primaryColor, uiColor } from "../../design-system/theme/color.stylex";
-import { verticalSpace } from "../../design-system/theme/semantic-spacing.stylex";
+import { primaryColor, uiColor } from "@standard-reader/design-system/theme/color.stylex";
+import { verticalSpace } from "@standard-reader/design-system/theme/semantic-spacing.stylex";
 import {
   fontFamily,
   fontSize,
   fontWeight,
   lineHeight,
   tracking,
-} from "../../design-system/theme/typography.stylex";
-import { Body } from "../../design-system/typography";
-import { Text } from "../../design-system/typography/text";
+} from "@standard-reader/design-system/theme/typography.stylex";
+import { Body } from "@standard-reader/design-system/typography";
+import { Text } from "@standard-reader/design-system/typography/text";
 import { PublicationAvatar } from "../reader/primitives";
 
 const styles = stylex.create({

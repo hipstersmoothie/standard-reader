@@ -7,26 +7,26 @@ import { useRef, useState } from "react";
 import type { Key } from "react-aria-components";
 import { DropIndicator, useDragAndDrop } from "react-aria-components";
 
-import { Button } from "../../design-system/button";
+import { Button } from "@standard-reader/design-system/button";
 import {
   Dialog,
   DialogFooter,
   DialogHeader,
   DialogDescription,
-} from "../../design-system/dialog";
-import { ListBox, ListBoxItem } from "../../design-system/listbox";
-import { primaryColor, uiColor } from "../../design-system/theme/color.stylex";
-import { radius } from "../../design-system/theme/radius.stylex";
+} from "@standard-reader/design-system/dialog";
+import { ListBox, ListBoxItem } from "@standard-reader/design-system/listbox";
+import { primaryColor, uiColor } from "@standard-reader/design-system/theme/color.stylex";
+import { radius } from "@standard-reader/design-system/theme/radius.stylex";
 import {
   horizontalSpace,
   verticalSpace,
-} from "../../design-system/theme/semantic-spacing.stylex";
+} from "@standard-reader/design-system/theme/semantic-spacing.stylex";
 import {
   fontFamily,
   fontSize,
   fontWeight,
   tracking,
-} from "../../design-system/theme/typography.stylex";
+} from "@standard-reader/design-system/theme/typography.stylex";
 
 /** A sidebar list group as shown in the reorder dialog. */
 export interface ReorderableGroup {

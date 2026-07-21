@@ -14,14 +14,14 @@ import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 
 import { SmartArticleLink } from "#/components/reader/content/smart-article-link";
-import { Lightbox } from "#/design-system/lightbox";
+import { Lightbox } from "@standard-reader/design-system/lightbox";
 import {
   LIGHTBOX_IMAGE_TRANSITION_NAME,
   startLightboxViewTransition,
-} from "#/design-system/lightbox/transition";
-import { radius } from "#/design-system/theme/radius.stylex";
-import { gap } from "#/design-system/theme/semantic-spacing.stylex";
-import { spacing } from "#/design-system/theme/spacing.stylex";
+} from "@standard-reader/design-system/lightbox/transition";
+import { radius } from "@standard-reader/design-system/theme/radius.stylex";
+import { gap } from "@standard-reader/design-system/theme/semantic-spacing.stylex";
+import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
 import { stripLeadingMarkupImage } from "#/lib/document/lead-image";
 import { normalizeImageAlt } from "#/lib/document/structured-content/image";
 import { articleMarkdownSanitizeSchema } from "#/lib/markdown/article-sanitize-schema";

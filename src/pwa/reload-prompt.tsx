@@ -3,11 +3,11 @@
 import * as stylex from "@stylexjs/stylex";
 import { useEffect, useRef, useState } from "react";
 
-import { Button } from "../design-system/button";
-import { radius } from "../design-system/theme/radius.stylex";
-import { ui } from "../design-system/theme/semantic-color.stylex";
-import { shadow } from "../design-system/theme/shadow.stylex";
-import { spacing } from "../design-system/theme/spacing.stylex";
+import { Button } from "@standard-reader/design-system/button";
+import { radius } from "@standard-reader/design-system/theme/radius.stylex";
+import { ui } from "@standard-reader/design-system/theme/semantic-color.stylex";
+import { shadow } from "@standard-reader/design-system/theme/shadow.stylex";
+import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
 import type { UpdateServiceWorker } from "./register";
 import { registerServiceWorker } from "./register";
 

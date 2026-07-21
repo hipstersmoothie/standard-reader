@@ -4,15 +4,15 @@ import { Trans } from "@lingui/react/macro";
 import * as stylex from "@stylexjs/stylex";
 import { useQuery } from "@tanstack/react-query";
 
-import { uiColor } from "#/design-system/theme/color.stylex";
-import { gap } from "#/design-system/theme/semantic-spacing.stylex";
-import { spacing } from "#/design-system/theme/spacing.stylex";
+import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
+import { gap } from "@standard-reader/design-system/theme/semantic-spacing.stylex";
+import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
 import {
   fontFamily,
   fontSize,
   fontWeight,
   lineHeight,
-} from "#/design-system/theme/typography.stylex";
+} from "@standard-reader/design-system/theme/typography.stylex";
 import { notesApi } from "#/integrations/tanstack-query/api-notes.functions";
 import { useFormatters } from "#/lib/use-formatters";
 

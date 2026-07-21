@@ -15,11 +15,17 @@ export default defineConfig({
       aliases: {
         "@/*": [path.join(__dirname, "./src/*")],
         "#/*": [path.join(__dirname, "./src/*")],
+        "@standard-reader/design-system/*": [
+          path.join(__dirname, "./packages/design-system/src/*"),
+        ],
       },
     }),
   ],
   test: {
-    include: ["src/**/*.test.ts"],
+    include: [
+      "src/**/*.test.ts",
+      "packages/design-system/**/*.test.ts",
+    ],
     exclude: ["perf/**", "extension/**", "node_modules/**"],
     setupFiles: ["./vitest.setup.ts"],
   },

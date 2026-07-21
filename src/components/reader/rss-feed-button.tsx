@@ -5,30 +5,30 @@ import * as stylex from "@stylexjs/stylex";
 import { Rss } from "lucide-react";
 import { useState } from "react";
 
-import { Button } from "#/design-system/button";
-import { CopyToClipboardButton } from "#/design-system/copy-to-clipboard-button";
+import { Button } from "@standard-reader/design-system/button";
+import { CopyToClipboardButton } from "@standard-reader/design-system/copy-to-clipboard-button";
 import {
   Dialog,
   DialogBody,
   DialogFooter,
   DialogHeader,
-} from "#/design-system/dialog";
-import { Flex } from "#/design-system/flex";
-import { IconButton } from "#/design-system/icon-button";
-import { uiColor } from "#/design-system/theme/color.stylex";
-import { radius } from "#/design-system/theme/radius.stylex";
+} from "@standard-reader/design-system/dialog";
+import { Flex } from "@standard-reader/design-system/flex";
+import { IconButton } from "@standard-reader/design-system/icon-button";
+import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
+import { radius } from "@standard-reader/design-system/theme/radius.stylex";
 import {
   gap,
   verticalSpace,
-} from "#/design-system/theme/semantic-spacing.stylex";
-import type { Size } from "#/design-system/theme/types";
+} from "@standard-reader/design-system/theme/semantic-spacing.stylex";
+import type { Size } from "@standard-reader/design-system/theme/types";
 import {
   fontFamily,
   fontSize,
   fontWeight,
   tracking,
-} from "#/design-system/theme/typography.stylex";
-import { SmallBody } from "#/design-system/typography";
+} from "@standard-reader/design-system/theme/typography.stylex";
+import { SmallBody } from "@standard-reader/design-system/typography";
 
 const styles = stylex.create({
   dialogTitle: {

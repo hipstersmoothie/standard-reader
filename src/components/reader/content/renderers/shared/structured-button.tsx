@@ -3,7 +3,7 @@
 import * as stylex from "@stylexjs/stylex";
 
 import { ButtonLink } from "#/components/router-links";
-import { Button } from "#/design-system/button";
+import { Button } from "@standard-reader/design-system/button";
 import { parseInternalRoute } from "#/lib/internal-route";
 
 import { articleBodyStyles } from "../../body-styles";

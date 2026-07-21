@@ -1,6 +1,5 @@
 import {
   PageActions,
-  PageBackLink,
   PageDescription,
   PageHeader,
   PageIcon,
@@ -13,7 +12,6 @@ import {
 export const Page = {
   Root: PageRoot,
   Header: PageHeader,
-  BackLink: PageBackLink,
   Title: PageTitle,
   Description: PageDescription,
   Actions: PageActions,

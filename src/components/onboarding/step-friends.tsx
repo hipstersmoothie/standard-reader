@@ -5,14 +5,14 @@ import { useQuery } from "@tanstack/react-query";
 import { discoverApi } from "#/integrations/tanstack-query/api-discover.functions";
 import { ONBOARDING_FRIENDS_LIMIT } from "#/lib/onboarding";
 
-import { Flex } from "../../design-system/flex";
-import { uiColor } from "../../design-system/theme/color.stylex";
-import { spacing } from "../../design-system/theme/spacing.stylex";
+import { Flex } from "@standard-reader/design-system/flex";
+import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
+import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
 import {
   fontFamily,
   fontSize,
   lineHeight,
-} from "../../design-system/theme/typography.stylex";
+} from "@standard-reader/design-system/theme/typography.stylex";
 import { PubCardSkeleton } from "../reader/cards";
 import { FriendPublishersDegradedNote } from "../reader/friend-publishers";
 import { OnboardingPubRow } from "./onboarding-pub-row";

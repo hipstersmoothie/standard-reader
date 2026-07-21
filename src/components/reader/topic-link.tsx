@@ -4,13 +4,13 @@ import * as stylex from "@stylexjs/stylex";
 import { useNavigate } from "@tanstack/react-router";
 
 import { tagPagePath } from "#/components/reader/format";
-import { primaryColor } from "#/design-system/theme/color.stylex";
+import { primaryColor } from "@standard-reader/design-system/theme/color.stylex";
 import {
   fontFamily,
   fontSize,
   fontWeight,
   tracking,
-} from "#/design-system/theme/typography.stylex";
+} from "@standard-reader/design-system/theme/typography.stylex";
 
 /** Block parent card links from also navigating (see `stopSaveClick` in cards). */
 function stopNestedNavigation(event: React.SyntheticEvent<HTMLElement>) {

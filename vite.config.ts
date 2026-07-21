@@ -64,15 +64,21 @@ const config = defineConfig({
     },
   },
   oxc: {
-    exclude: ["src/design-system/**"],
+    exclude: ["packages/design-system/**"],
   },
   plugins: [
     stylexPlugin({
       treeshakeCompensation: true,
       dev: process.env.NODE_ENV !== "production",
+      // The design system now lives in a workspace package that ships source;
+      // StyleX must resolve its theme vars to the same canonical files whether
+      // referenced from the app or from within the package.
       aliases: {
         "@/*": [path.join(__dirname, "./src/*")],
         "#/*": [path.join(__dirname, "./src/*")],
+        "@standard-reader/design-system/*": [
+          path.join(__dirname, "./packages/design-system/src/*"),
+        ],
       },
       lightningcssOptions: {
         targets: browserslistToTargets(browserslist("baseline 2024")),
@@ -243,7 +249,7 @@ const config = defineConfig({
           target: "19",
         }),
       ],
-      exclude: [/[/\\]node_modules[/\\]/, /\/src\/design-system\//],
+      exclude: [/[/\\]node_modules[/\\]/, /[/\\]packages[/\\]design-system[/\\]/],
     }),
   ],
   server: {

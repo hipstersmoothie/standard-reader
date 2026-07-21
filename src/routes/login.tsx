@@ -12,7 +12,7 @@ import { useEffect, useState } from "react";
 import { Link as AriaLink } from "react-aria-components";
 import { z } from "zod";
 
-import { DirectionalIcon } from "#/design-system/directional-icon";
+import { DirectionalIcon } from "@standard-reader/design-system/directional-icon";
 import { auth } from "#/integrations/tanstack-query/api-auth.functions";
 import { getPublicUrlClient } from "#/lib/public-url";
 import { pageSocialMeta } from "#/lib/site-metadata";
@@ -29,26 +29,26 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
-} from "../design-system/alert-dialog";
-import { Avatar } from "../design-system/avatar";
-import { Button } from "../design-system/button";
-import { Flex } from "../design-system/flex";
-import { Form } from "../design-system/form";
-import { IconButton } from "../design-system/icon-button";
-import { Link } from "../design-system/link";
-import { Separator } from "../design-system/separator";
-import { primaryColor, uiColor } from "../design-system/theme/color.stylex";
-import { breakpoints } from "../design-system/theme/media-queries.stylex";
-import { radius } from "../design-system/theme/radius.stylex";
-import { primary } from "../design-system/theme/semantic-color.stylex";
+} from "@standard-reader/design-system/alert-dialog";
+import { Avatar } from "@standard-reader/design-system/avatar";
+import { Button } from "@standard-reader/design-system/button";
+import { Flex } from "@standard-reader/design-system/flex";
+import { Form } from "@standard-reader/design-system/form";
+import { IconButton } from "@standard-reader/design-system/icon-button";
+import { Link } from "@standard-reader/design-system/link";
+import { Separator } from "@standard-reader/design-system/separator";
+import { primaryColor, uiColor } from "@standard-reader/design-system/theme/color.stylex";
+import { breakpoints } from "@standard-reader/design-system/theme/media-queries.stylex";
+import { radius } from "@standard-reader/design-system/theme/radius.stylex";
+import { primary } from "@standard-reader/design-system/theme/semantic-color.stylex";
 import {
   gap as gapSpace,
   horizontalSpace,
   size as sizeSpace,
   verticalSpace,
-} from "../design-system/theme/semantic-spacing.stylex";
-import { Body } from "../design-system/typography";
-import { Text } from "../design-system/typography/text";
+} from "@standard-reader/design-system/theme/semantic-spacing.stylex";
+import { Body } from "@standard-reader/design-system/typography";
+import { Text } from "@standard-reader/design-system/typography/text";
 
 const searchSchema = z.object({
   redirect: z.string().optional(),

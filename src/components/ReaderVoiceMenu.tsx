@@ -2,8 +2,8 @@ import { Trans, useLingui } from "@lingui/react/macro";
 import * as stylex from "@stylexjs/stylex";
 import { Sparkles } from "lucide-react";
 
-import { MenuItem, SubMenu } from "#/design-system/menu";
-import { uiColor } from "#/design-system/theme/color.stylex";
+import { MenuItem, SubMenu } from "@standard-reader/design-system/menu";
+import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
 import { AMERICAN_ENGLISH_VOICES } from "#/lib/page-reader/voice-catalog";
 import type { ReaderVoicePreference } from "#/lib/reader-voice";
 import {

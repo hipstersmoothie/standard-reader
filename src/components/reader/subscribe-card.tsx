@@ -9,24 +9,24 @@ import type { ReactNode } from "react";
 import { AuthorProfileLink } from "#/components/reader/author-profile-link";
 import { PublicationNameLink } from "#/components/reader/publication-name-link";
 import { ButtonLink } from "#/components/router-links";
-import { Button } from "#/design-system/button";
-import { Flex } from "#/design-system/flex";
-import { ProgressCircle } from "#/design-system/progress-circle";
-import { uiColor } from "#/design-system/theme/color.stylex";
-import { radius } from "#/design-system/theme/radius.stylex";
+import { Button } from "@standard-reader/design-system/button";
+import { Flex } from "@standard-reader/design-system/flex";
+import { ProgressCircle } from "@standard-reader/design-system/progress-circle";
+import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
+import { radius } from "@standard-reader/design-system/theme/radius.stylex";
 import {
   size as boxSize,
   gap,
   horizontalSpace,
   verticalSpace,
-} from "#/design-system/theme/semantic-spacing.stylex";
+} from "@standard-reader/design-system/theme/semantic-spacing.stylex";
 import {
   fontFamily,
   fontSize,
   fontWeight,
   lineHeight,
   tracking,
-} from "#/design-system/theme/typography.stylex";
+} from "@standard-reader/design-system/theme/typography.stylex";
 import type { PublicationEmbedMeta } from "#/integrations/tanstack-query/api-publication.functions";
 import type { SubscribeEmbedLayout } from "#/lib/publication-embed";
 import type { QuoteOgColors } from "#/lib/publication-theme";

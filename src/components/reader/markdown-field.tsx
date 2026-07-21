@@ -8,27 +8,27 @@ import ReactMarkdown from "react-markdown";
 import rehypeSanitize from "rehype-sanitize";
 import remarkGfm from "remark-gfm";
 
-import { Flex } from "../../design-system/flex";
-import { Label } from "../../design-system/label";
+import { Flex } from "@standard-reader/design-system/flex";
+import { Label } from "@standard-reader/design-system/label";
 import {
   SegmentedControl,
   SegmentedControlItem,
-} from "../../design-system/segmented-control";
-import { TextArea } from "../../design-system/text-area";
-import { uiColor } from "../../design-system/theme/color.stylex";
-import { radius } from "../../design-system/theme/radius.stylex";
+} from "@standard-reader/design-system/segmented-control";
+import { TextArea } from "@standard-reader/design-system/text-area";
+import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
+import { radius } from "@standard-reader/design-system/theme/radius.stylex";
 import {
   horizontalSpace,
   verticalSpace,
-} from "../../design-system/theme/semantic-spacing.stylex";
-import type { InputVariant, Size } from "../../design-system/theme/types";
+} from "@standard-reader/design-system/theme/semantic-spacing.stylex";
+import type { InputVariant, Size } from "@standard-reader/design-system/theme/types";
 import {
   fontFamily,
   fontSize,
   fontWeight,
   lineHeight,
-} from "../../design-system/theme/typography.stylex";
-import { useInputStyles } from "../../design-system/theme/useInputStyles";
+} from "@standard-reader/design-system/theme/typography.stylex";
+import { useInputStyles } from "@standard-reader/design-system/theme/useInputStyles";
 
 const styles = stylex.create({
   // The preview mirrors the textarea so toggling Edit/Preview doesn't shift:

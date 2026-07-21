@@ -12,17 +12,17 @@ import type {
 } from "#/integrations/tanstack-query/api-labelers.functions";
 import { labelerApi } from "#/integrations/tanstack-query/api-labelers.functions";
 
-import { Avatar } from "../design-system/avatar";
-import { Badge } from "../design-system/badge";
-import { TextField } from "../design-system/text-field";
-import { animationDuration } from "../design-system/theme/animations.stylex";
-import { uiColor } from "../design-system/theme/color.stylex";
+import { Avatar } from "@standard-reader/design-system/avatar";
+import { Badge } from "@standard-reader/design-system/badge";
+import { TextField } from "@standard-reader/design-system/text-field";
+import { animationDuration } from "@standard-reader/design-system/theme/animations.stylex";
+import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
 import {
   gap,
   verticalSpace,
-} from "../design-system/theme/semantic-spacing.stylex";
-import { spacing } from "../design-system/theme/spacing.stylex";
-import { fontSize, fontWeight } from "../design-system/theme/typography.stylex";
+} from "@standard-reader/design-system/theme/semantic-spacing.stylex";
+import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
+import { fontSize, fontWeight } from "@standard-reader/design-system/theme/typography.stylex";
 import { Masthead, ReaderContent } from "./reader/primitives";
 
 const MOBILE = "@media (max-width: 47.5rem)";

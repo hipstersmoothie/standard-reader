@@ -1,8 +1,8 @@
 import { Trans, useLingui } from "@lingui/react/macro";
 import * as stylex from "@stylexjs/stylex";
 
-import { MenuItem } from "#/design-system/menu";
-import { uiColor } from "#/design-system/theme/color.stylex";
+import { MenuItem } from "@standard-reader/design-system/menu";
+import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
 import { useTrackReadingHistory } from "#/lib/use-track-reading-history";
 
 const styles = stylex.create({

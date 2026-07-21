@@ -1,0 +1,21 @@
+{
+  "name": "@standard-reader/design-system",
+  "version": "0.1.0",
+  "description": "hip-ui design system (StyleX + react-aria) shared across Standard apps. Ships source; the consuming app compiles StyleX.",
+  "private": true,
+  "type": "module",
+  "sideEffects": true,
+  "exports": {
+    "./theme": "./src/theme/index.ts",
+    "./theme/*": "./src/theme/*",
+    "./context": "./src/context.ts",
+    "./*": "./src/*/index.tsx"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "peerDependencies": {
+    "react": ">=19",
+    "react-dom": ">=19"
+  }
+}

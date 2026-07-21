@@ -4,17 +4,17 @@ import * as stylex from "@stylexjs/stylex";
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { useState } from "react";
 
-import { Skeleton } from "#/design-system/skeleton";
-import { StarRatingInput } from "#/design-system/star-rating";
-import { Switch } from "#/design-system/switch";
-import { uiColor } from "#/design-system/theme/color.stylex";
-import { radius } from "#/design-system/theme/radius.stylex";
+import { Skeleton } from "@standard-reader/design-system/skeleton";
+import { StarRatingInput } from "@standard-reader/design-system/star-rating";
+import { Switch } from "@standard-reader/design-system/switch";
+import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
+import { radius } from "@standard-reader/design-system/theme/radius.stylex";
 import {
   gap,
   horizontalSpace,
   verticalSpace,
-} from "#/design-system/theme/semantic-spacing.stylex";
-import { fontSize, fontWeight } from "#/design-system/theme/typography.stylex";
+} from "@standard-reader/design-system/theme/semantic-spacing.stylex";
+import { fontSize, fontWeight } from "@standard-reader/design-system/theme/typography.stylex";
 
 /**
  * Dev-only RTL harness. 404s in production.

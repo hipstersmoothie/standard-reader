@@ -25,22 +25,22 @@ import type { ReaderVoicePreference } from "#/lib/reader-voice";
 import { readingCustomFontFamily } from "#/lib/reading-typography";
 import { useReadingTypography } from "#/lib/use-reading-typography";
 
-import { Button } from "../design-system/button";
-import { Flex } from "../design-system/flex";
-import { ProgressCircle } from "../design-system/progress-circle";
-import { criticalColor, uiColor } from "../design-system/theme/color.stylex";
+import { Button } from "@standard-reader/design-system/button";
+import { Flex } from "@standard-reader/design-system/flex";
+import { ProgressCircle } from "@standard-reader/design-system/progress-circle";
+import { criticalColor, uiColor } from "@standard-reader/design-system/theme/color.stylex";
 import {
   gap,
   horizontalSpace,
   verticalSpace,
-} from "../design-system/theme/semantic-spacing.stylex";
-import { spacing } from "../design-system/theme/spacing.stylex";
+} from "@standard-reader/design-system/theme/semantic-spacing.stylex";
+import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
 import {
   fontFamily,
   fontSize,
   fontWeight,
   lineHeight,
-} from "../design-system/theme/typography.stylex";
+} from "@standard-reader/design-system/theme/typography.stylex";
 
 const PREVIEW_DROP_CAP = "L";
 const PREVIEW_PARAGRAPH_1 =

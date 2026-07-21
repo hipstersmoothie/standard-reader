@@ -8,24 +8,24 @@ import { useCountOldPostsAsUnread } from "#/lib/use-count-old-posts-as-unread";
 import { useOpenLinks } from "#/lib/use-open-links";
 import { useTrackReadingHistory } from "#/lib/use-track-reading-history";
 
-import { Flex } from "../../design-system/flex";
-import { Separator } from "../../design-system/separator";
-import { Switch } from "../../design-system/switch";
-import { primaryColor, uiColor } from "../../design-system/theme/color.stylex";
+import { Flex } from "@standard-reader/design-system/flex";
+import { Separator } from "@standard-reader/design-system/separator";
+import { Switch } from "@standard-reader/design-system/switch";
+import { primaryColor, uiColor } from "@standard-reader/design-system/theme/color.stylex";
 import {
   gap,
   horizontalSpace,
   verticalSpace,
-} from "../../design-system/theme/semantic-spacing.stylex";
-import { spacing } from "../../design-system/theme/spacing.stylex";
+} from "@standard-reader/design-system/theme/semantic-spacing.stylex";
+import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
 import {
   fontFamily,
   fontSize,
   fontWeight,
   lineHeight,
   tracking,
-} from "../../design-system/theme/typography.stylex";
-import { Tooltip } from "../../design-system/tooltip";
+} from "@standard-reader/design-system/theme/typography.stylex";
+import { Tooltip } from "@standard-reader/design-system/tooltip";
 
 const MOBILE = "@media (max-width: 47.5rem)";
 

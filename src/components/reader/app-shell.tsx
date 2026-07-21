@@ -29,7 +29,7 @@ import {
 } from "react";
 import { useFocusRing } from "react-aria";
 
-import { DirectionalIcon } from "#/design-system/directional-icon";
+import { DirectionalIcon } from "@standard-reader/design-system/directional-icon";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
 import {
   listsQueryOptions,
@@ -41,40 +41,40 @@ import { parseInternalRoute } from "#/lib/internal-route";
 import { PageReaderProvider } from "#/lib/page-reader/page-reader-provider";
 import { useFormatters } from "#/lib/use-formatters";
 
-import { Avatar } from "../../design-system/avatar";
-import { Button } from "../../design-system/button";
-import { ButtonGroup } from "../../design-system/button-group";
+import { Avatar } from "@standard-reader/design-system/avatar";
+import { Button } from "@standard-reader/design-system/button";
+import { ButtonGroup } from "@standard-reader/design-system/button-group";
 import {
   Disclosure,
   DisclosurePanel,
   DisclosureTitle,
-} from "../../design-system/disclosure";
-import { Flex } from "../../design-system/flex";
-import { IconButton } from "../../design-system/icon-button";
-import { Skeleton } from "../../design-system/skeleton";
-import { SkipLink } from "../../design-system/skip-link";
-import { animationDuration } from "../../design-system/theme/animations.stylex";
+} from "@standard-reader/design-system/disclosure";
+import { Flex } from "@standard-reader/design-system/flex";
+import { IconButton } from "@standard-reader/design-system/icon-button";
+import { Skeleton } from "@standard-reader/design-system/skeleton";
+import { SkipLink } from "@standard-reader/design-system/skip-link";
+import { animationDuration } from "@standard-reader/design-system/theme/animations.stylex";
 import {
   focusColor,
   primaryColor,
   uiColor,
-} from "../../design-system/theme/color.stylex";
-import { radius } from "../../design-system/theme/radius.stylex";
+} from "@standard-reader/design-system/theme/color.stylex";
+import { radius } from "@standard-reader/design-system/theme/radius.stylex";
 import {
   gap,
   horizontalSpace,
   size,
   verticalSpace,
-} from "../../design-system/theme/semantic-spacing.stylex";
-import { spacing } from "../../design-system/theme/spacing.stylex";
+} from "@standard-reader/design-system/theme/semantic-spacing.stylex";
+import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
 import {
   fontFamily,
   fontSize,
   fontWeight,
   lineHeight,
   tracking,
-} from "../../design-system/theme/typography.stylex";
-import { ToastRegion } from "../../design-system/toast";
+} from "@standard-reader/design-system/theme/typography.stylex";
+import { ToastRegion } from "@standard-reader/design-system/toast";
 import type {
   FollowingPublication,
   FollowingUser,

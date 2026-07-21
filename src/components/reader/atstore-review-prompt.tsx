@@ -5,28 +5,28 @@ import * as stylex from "@stylexjs/stylex";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 
-import { Link } from "#/design-system/link";
-import { Separator } from "#/design-system/separator";
-import { toasts } from "#/design-system/toast";
-import { Text } from "#/design-system/typography/text";
+import { Link } from "@standard-reader/design-system/link";
+import { Separator } from "@standard-reader/design-system/separator";
+import { toasts } from "@standard-reader/design-system/toast";
+import { Text } from "@standard-reader/design-system/typography/text";
 
-import { Button } from "../../design-system/button";
+import { Button } from "@standard-reader/design-system/button";
 import {
   Dialog,
   DialogBody,
   DialogDescription,
   DialogFooter,
   DialogHeader,
-} from "../../design-system/dialog";
-import { Flex } from "../../design-system/flex";
-import { StarRatingInput } from "../../design-system/star-rating";
-import { TextArea } from "../../design-system/text-area";
-import { criticalColor, uiColor } from "../../design-system/theme/color.stylex";
-import { horizontalSpace } from "../../design-system/theme/semantic-spacing.stylex";
+} from "@standard-reader/design-system/dialog";
+import { Flex } from "@standard-reader/design-system/flex";
+import { StarRatingInput } from "@standard-reader/design-system/star-rating";
+import { TextArea } from "@standard-reader/design-system/text-area";
+import { criticalColor, uiColor } from "@standard-reader/design-system/theme/color.stylex";
+import { horizontalSpace } from "@standard-reader/design-system/theme/semantic-spacing.stylex";
 import {
   fontFamily,
   fontSize,
-} from "../../design-system/theme/typography.stylex";
+} from "@standard-reader/design-system/theme/typography.stylex";
 import { hasAtstoreReviewScope } from "../../integrations/auth/scope";
 import { atstoreReviewApi } from "../../integrations/tanstack-query/api-atstore-review.functions";
 import { user } from "../../integrations/tanstack-query/api-user.functions";

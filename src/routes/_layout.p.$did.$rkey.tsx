@@ -60,24 +60,24 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
-} from "../design-system/alert-dialog";
-import { Flex } from "../design-system/flex";
-import { IconButton } from "../design-system/icon-button";
-import { Skeleton } from "../design-system/skeleton";
-import { uiColor } from "../design-system/theme/color.stylex";
-import { radius } from "../design-system/theme/radius.stylex";
+} from "@standard-reader/design-system/alert-dialog";
+import { Flex } from "@standard-reader/design-system/flex";
+import { IconButton } from "@standard-reader/design-system/icon-button";
+import { Skeleton } from "@standard-reader/design-system/skeleton";
+import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
+import { radius } from "@standard-reader/design-system/theme/radius.stylex";
 import {
   size as boxSize,
   gap,
-} from "../design-system/theme/semantic-spacing.stylex";
-import { spacing } from "../design-system/theme/spacing.stylex";
+} from "@standard-reader/design-system/theme/semantic-spacing.stylex";
+import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
 import {
   fontFamily,
   fontSize,
   fontWeight,
   lineHeight,
   tracking,
-} from "../design-system/theme/typography.stylex";
+} from "@standard-reader/design-system/theme/typography.stylex";
 import type { ArticleCard } from "../integrations/tanstack-query/api-shapes";
 
 /** Documents loaded with the profile (page 0) before infinite scroll kicks in. */

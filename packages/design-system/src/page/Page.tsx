@@ -1,17 +1,9 @@
 "use client";
 
 import * as stylex from "@stylexjs/stylex";
-import type { LinkProps } from "@tanstack/react-router";
-import { ArrowLeft } from "lucide-react";
-/* oxlint-disable perfectionist/sort-imports -- @stylexjs vs @tanstack ordering conflicts */
-import type { ComponentProps, ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
 
-import { IconButtonLink } from "#/components/router-links";
-
-import { DirectionalIcon } from "../directional-icon";
 import { Flex } from "../flex";
-import type { IconButton } from "../icon-button";
 import { primaryColor, uiColor } from "../theme/color.stylex";
 import {
   breakpoints,
@@ -627,30 +619,3 @@ export const PageStickyFooter = ({ children }: PageStickyFooterProps) => {
   );
 };
 
-export type PageBackLinkProps = LinkProps & {
-  "aria-label"?: string;
-  style?: ComponentProps<typeof IconButton>["style"];
-  children?: ReactNode;
-};
-
-/**
- * Back link component for navigating to the previous page.
- */
-export const PageBackLink = ({
-  style,
-  children,
-  "aria-label": ariaLabel = "Back",
-  ...linkProps
-}: PageBackLinkProps) => {
-  return (
-    <IconButtonLink
-      {...(linkProps as ComponentProps<typeof IconButtonLink>)}
-      aria-label={ariaLabel}
-      style={style}
-      variant="tertiary"
-      size="lg"
-    >
-      {children ?? <DirectionalIcon as={ArrowLeft} size={20} />}
-    </IconButtonLink>
-  );
-};

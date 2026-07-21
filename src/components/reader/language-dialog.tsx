@@ -2,15 +2,15 @@
 
 import { Trans, useLingui } from "@lingui/react/macro";
 
-import { Button } from "#/design-system/button";
+import { Button } from "@standard-reader/design-system/button";
 import {
   Dialog,
   DialogBody,
   DialogDescription,
   DialogFooter,
   DialogHeader,
-} from "#/design-system/dialog";
-import { Select, SelectItem } from "#/design-system/select";
+} from "@standard-reader/design-system/dialog";
+import { Select, SelectItem } from "@standard-reader/design-system/select";
 import type { Locale } from "#/lib/locale";
 import { LOCALE_LABELS, LOCALES, PSEUDO_LOCALE, isLocale } from "#/lib/locale";
 import { useLocale } from "#/lib/use-locale";

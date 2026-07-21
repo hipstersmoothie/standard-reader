@@ -3,9 +3,9 @@
 import * as stylex from "@stylexjs/stylex";
 import { useQuery } from "@tanstack/react-query";
 
-import { AutocompleteInput } from "#/design-system/autocomplete";
-import { Avatar } from "#/design-system/avatar";
-import { ListBoxItem } from "#/design-system/listbox";
+import { AutocompleteInput } from "@standard-reader/design-system/autocomplete";
+import { Avatar } from "@standard-reader/design-system/avatar";
+import { ListBoxItem } from "@standard-reader/design-system/listbox";
 
 type HandleActor = {
   id: string;

@@ -10,10 +10,10 @@ import { Suspense } from "react";
 import { AppShell } from "../components/reader/app-shell";
 import { ArticleViewSkeleton } from "../components/reader/article-view-skeleton";
 import { ReaderContent } from "../components/reader/primitives";
-import { Flex } from "../design-system/flex";
-import { Skeleton } from "../design-system/skeleton";
-import { uiColor } from "../design-system/theme/color.stylex";
-import { spacing } from "../design-system/theme/spacing.stylex";
+import { Flex } from "@standard-reader/design-system/flex";
+import { Skeleton } from "@standard-reader/design-system/skeleton";
+import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
+import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
 import { user } from "../integrations/tanstack-query/api-user.functions";
 import {
   LAYOUT_ROUTE_STALE_TIME_MS,

@@ -45,24 +45,24 @@ import {
   SectionHead,
 } from "../components/reader/primitives";
 import { PubGridList } from "../components/reader/pub-grid-list";
-import { Avatar } from "../design-system/avatar";
-import { Flex } from "../design-system/flex";
-import { Grid } from "../design-system/grid";
-import { SearchField } from "../design-system/search-field";
+import { Avatar } from "@standard-reader/design-system/avatar";
+import { Flex } from "@standard-reader/design-system/flex";
+import { Grid } from "@standard-reader/design-system/grid";
+import { SearchField } from "@standard-reader/design-system/search-field";
 import {
   SegmentedControl,
   SegmentedControlItem,
-} from "../design-system/segmented-control";
-import { Select, SelectItem } from "../design-system/select";
-import { Skeleton } from "../design-system/skeleton";
-import { uiColor } from "../design-system/theme/color.stylex";
-import { radius } from "../design-system/theme/radius.stylex";
-import { spacing } from "../design-system/theme/spacing.stylex";
+} from "@standard-reader/design-system/segmented-control";
+import { Select, SelectItem } from "@standard-reader/design-system/select";
+import { Skeleton } from "@standard-reader/design-system/skeleton";
+import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
+import { radius } from "@standard-reader/design-system/theme/radius.stylex";
+import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
 import {
   fontFamily,
   fontSize,
   lineHeight,
-} from "../design-system/theme/typography.stylex";
+} from "@standard-reader/design-system/theme/typography.stylex";
 import type { PublicationCard } from "../integrations/tanstack-query/api-shapes";
 
 const DIRECTORY_PAGE_SIZE = 24;

@@ -10,7 +10,7 @@ import {
 } from "react";
 import { flushSync } from "react-dom";
 
-import { Lightbox } from "#/design-system/lightbox";
+import { Lightbox } from "@standard-reader/design-system/lightbox";
 
 import { MagazineColorContext } from "./context";
 import { readMagazineDark } from "./dark-mode";

@@ -2,23 +2,23 @@ import * as stylex from "@stylexjs/stylex";
 import { ArrowRight, Check, UserPlus } from "lucide-react";
 
 import { initials } from "#/components/reader/format";
-import { Avatar } from "#/design-system/avatar";
-import { Button } from "#/design-system/button";
-import { Flex } from "#/design-system/flex";
-import { IconButton } from "#/design-system/icon-button";
-import { uiColor } from "#/design-system/theme/color.stylex";
+import { Avatar } from "@standard-reader/design-system/avatar";
+import { Button } from "@standard-reader/design-system/button";
+import { Flex } from "@standard-reader/design-system/flex";
+import { IconButton } from "@standard-reader/design-system/icon-button";
+import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
 import {
   gap as gapToken,
   horizontalSpace,
   verticalSpace,
-} from "#/design-system/theme/semantic-spacing.stylex";
+} from "@standard-reader/design-system/theme/semantic-spacing.stylex";
 import {
   fontFamily,
   fontSize,
   fontWeight,
   lineHeight,
   tracking,
-} from "#/design-system/theme/typography.stylex";
+} from "@standard-reader/design-system/theme/typography.stylex";
 
 import type { ExtensionResolvePublication } from "../lib/types";
 

@@ -9,18 +9,18 @@ import { useHover } from "react-aria";
 
 import { publicationLinkParams } from "#/components/reader/format";
 import { PublicationAvatar } from "#/components/reader/primitives";
-import { Skeleton } from "#/design-system/skeleton";
-import { animationDuration } from "#/design-system/theme/animations.stylex";
-import { primaryColor, uiColor } from "#/design-system/theme/color.stylex";
-import { radius } from "#/design-system/theme/radius.stylex";
-import { gap } from "#/design-system/theme/semantic-spacing.stylex";
-import { spacing } from "#/design-system/theme/spacing.stylex";
+import { Skeleton } from "@standard-reader/design-system/skeleton";
+import { animationDuration } from "@standard-reader/design-system/theme/animations.stylex";
+import { primaryColor, uiColor } from "@standard-reader/design-system/theme/color.stylex";
+import { radius } from "@standard-reader/design-system/theme/radius.stylex";
+import { gap } from "@standard-reader/design-system/theme/semantic-spacing.stylex";
+import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
 import {
   fontFamily,
   fontSize,
   fontWeight,
   lineHeight,
-} from "#/design-system/theme/typography.stylex";
+} from "@standard-reader/design-system/theme/typography.stylex";
 import type { PublicationEmbedMeta } from "#/integrations/tanstack-query/api-publication.functions";
 import { publicationApi } from "#/integrations/tanstack-query/api-publication.functions";
 import { buildMagazinePalette } from "#/lib/collections/radix-theme";

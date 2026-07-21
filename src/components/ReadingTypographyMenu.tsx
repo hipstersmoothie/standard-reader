@@ -1,8 +1,8 @@
 import { Trans, useLingui } from "@lingui/react/macro";
 import * as stylex from "@stylexjs/stylex";
 
-import { MenuItem, MenuSeparator, SubMenu } from "#/design-system/menu";
-import { uiColor } from "#/design-system/theme/color.stylex";
+import { MenuItem, MenuSeparator, SubMenu } from "@standard-reader/design-system/menu";
+import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
 import { DEFAULT_CUSTOM_GOOGLE_FONT } from "#/lib/google-fonts";
 import type {
   ReadingBodyFont,

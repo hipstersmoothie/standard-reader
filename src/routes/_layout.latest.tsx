@@ -50,25 +50,25 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
-} from "../design-system/alert-dialog";
-import { Button } from "../design-system/button";
-import { Flex } from "../design-system/flex";
-import { IconButton } from "../design-system/icon-button";
+} from "@standard-reader/design-system/alert-dialog";
+import { Button } from "@standard-reader/design-system/button";
+import { Flex } from "@standard-reader/design-system/flex";
+import { IconButton } from "@standard-reader/design-system/icon-button";
 import {
   SegmentedControl,
   SegmentedControlItem,
-} from "../design-system/segmented-control";
-import { Skeleton } from "../design-system/skeleton";
-import { uiColor } from "../design-system/theme/color.stylex";
-import { radius } from "../design-system/theme/radius.stylex";
-import { gap } from "../design-system/theme/semantic-spacing.stylex";
-import { spacing } from "../design-system/theme/spacing.stylex";
+} from "@standard-reader/design-system/segmented-control";
+import { Skeleton } from "@standard-reader/design-system/skeleton";
+import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
+import { radius } from "@standard-reader/design-system/theme/radius.stylex";
+import { gap } from "@standard-reader/design-system/theme/semantic-spacing.stylex";
+import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
 import {
   fontFamily,
   fontSize,
   fontWeight,
   lineHeight,
-} from "../design-system/theme/typography.stylex";
+} from "@standard-reader/design-system/theme/typography.stylex";
 import type {
   LatestFeedCounts,
   LatestFilter,

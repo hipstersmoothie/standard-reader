@@ -5,7 +5,7 @@ import type { CSSProperties } from "react";
 
 import { googleFontFamilyStyle } from "#/lib/google-fonts";
 
-import { fontSize } from "../design-system/theme/typography.stylex";
+import { fontSize } from "@standard-reader/design-system/theme/typography.stylex";
 import { ReadingCustomFontLoader } from "./reading-custom-font-loader";
 
 const styles = stylex.create({

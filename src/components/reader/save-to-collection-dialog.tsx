@@ -5,24 +5,24 @@ import * as stylex from "@stylexjs/stylex";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 
-import { Button } from "#/design-system/button";
-import { Checkbox } from "#/design-system/checkbox";
+import { Button } from "@standard-reader/design-system/button";
+import { Checkbox } from "@standard-reader/design-system/checkbox";
 import {
   Dialog,
   DialogBody,
   DialogDescription,
   DialogFooter,
   DialogHeader,
-} from "#/design-system/dialog";
-import { Flex } from "#/design-system/flex";
-import { Link } from "#/design-system/link";
-import { Radio, RadioGroup } from "#/design-system/radio";
-import { Separator } from "#/design-system/separator";
-import { TextArea } from "#/design-system/text-area";
-import { TextField } from "#/design-system/text-field";
-import { criticalColor, uiColor } from "#/design-system/theme/color.stylex";
-import { fontFamily, fontSize } from "#/design-system/theme/typography.stylex";
-import { toasts } from "#/design-system/toast";
+} from "@standard-reader/design-system/dialog";
+import { Flex } from "@standard-reader/design-system/flex";
+import { Link } from "@standard-reader/design-system/link";
+import { Radio, RadioGroup } from "@standard-reader/design-system/radio";
+import { Separator } from "@standard-reader/design-system/separator";
+import { TextArea } from "@standard-reader/design-system/text-area";
+import { TextField } from "@standard-reader/design-system/text-field";
+import { criticalColor, uiColor } from "@standard-reader/design-system/theme/color.stylex";
+import { fontFamily, fontSize } from "@standard-reader/design-system/theme/typography.stylex";
+import { toasts } from "@standard-reader/design-system/toast";
 import { hasMarginScope, hasSembleScope } from "#/integrations/auth/scope";
 import { auth } from "#/integrations/tanstack-query/api-auth.functions";
 import { marginApi } from "#/integrations/tanstack-query/api-margin.functions";

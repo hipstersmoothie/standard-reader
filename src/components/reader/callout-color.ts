@@ -1,4 +1,4 @@
-import { uiColor } from "#/design-system/theme/color.stylex";
+import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
 
 /**
  * Blend a publication-defined callout tint with the editorial surface token so

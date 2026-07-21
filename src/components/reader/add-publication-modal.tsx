@@ -11,24 +11,24 @@ import { searchApi } from "#/integrations/tanstack-query/api-search.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
 import { isHandleLikeInput } from "#/lib/publication/handle-input";
 
-import { Avatar } from "../../design-system/avatar";
-import { Button } from "../../design-system/button";
-import { Dialog, DialogHeader } from "../../design-system/dialog";
-import { Flex } from "../../design-system/flex";
-import { uiColor } from "../../design-system/theme/color.stylex";
-import { radius } from "../../design-system/theme/radius.stylex";
+import { Avatar } from "@standard-reader/design-system/avatar";
+import { Button } from "@standard-reader/design-system/button";
+import { Dialog, DialogHeader } from "@standard-reader/design-system/dialog";
+import { Flex } from "@standard-reader/design-system/flex";
+import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
+import { radius } from "@standard-reader/design-system/theme/radius.stylex";
 import {
   gap,
   horizontalSpace,
-} from "../../design-system/theme/semantic-spacing.stylex";
-import { spacing } from "../../design-system/theme/spacing.stylex";
+} from "@standard-reader/design-system/theme/semantic-spacing.stylex";
+import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
 import {
   fontFamily,
   fontSize,
   fontWeight,
   lineHeight,
   tracking,
-} from "../../design-system/theme/typography.stylex";
+} from "@standard-reader/design-system/theme/typography.stylex";
 import { ModalPubRow, PubDirectoryRowSkeleton } from "./cards";
 import { initials } from "./format";
 

@@ -6,14 +6,14 @@ import type { CSSProperties } from "react";
 import { useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 
-import { AspectRatio, AspectRatioImage } from "#/design-system/aspect-ratio";
-import { Lightbox } from "#/design-system/lightbox";
+import { AspectRatio, AspectRatioImage } from "@standard-reader/design-system/aspect-ratio";
+import { Lightbox } from "@standard-reader/design-system/lightbox";
 import {
   LIGHTBOX_IMAGE_TRANSITION_NAME,
   startLightboxViewTransition,
-} from "#/design-system/lightbox/transition";
-import { gap } from "#/design-system/theme/semantic-spacing.stylex";
-import { spacing } from "#/design-system/theme/spacing.stylex";
+} from "@standard-reader/design-system/lightbox/transition";
+import { gap } from "@standard-reader/design-system/theme/semantic-spacing.stylex";
+import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
 import { normalizeImageAlt } from "#/lib/document/structured-content/image";
 import { leafletImageAspectRatio, leafletImageUrl } from "#/lib/leaflet/image";
 import type { LeafletImageGalleryBlock } from "#/lib/leaflet/types";

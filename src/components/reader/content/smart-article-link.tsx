@@ -22,7 +22,7 @@ import {
   UserHoverCardBody,
 } from "#/components/reader/mention-hover-card";
 import { PublicationAvatar } from "#/components/reader/primitives";
-import { Avatar } from "#/design-system/avatar";
+import { Avatar } from "@standard-reader/design-system/avatar";
 import { authorApi } from "#/integrations/tanstack-query/api-author.functions";
 import { publicationApi } from "#/integrations/tanstack-query/api-publication.functions";
 import { actorLinkIdent } from "#/lib/leaflet/publication-mentions";

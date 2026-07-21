@@ -11,24 +11,24 @@ import {
   labelValueDisplayName,
 } from "#/lib/label-value";
 
-import { Avatar } from "../../design-system/avatar";
-import { Badge } from "../../design-system/badge";
-import { HoverCard } from "../../design-system/hover-card";
-import { animationDuration } from "../../design-system/theme/animations.stylex";
-import { uiColor } from "../../design-system/theme/color.stylex";
-import { radius } from "../../design-system/theme/radius.stylex";
+import { Avatar } from "@standard-reader/design-system/avatar";
+import { Badge } from "@standard-reader/design-system/badge";
+import { HoverCard } from "@standard-reader/design-system/hover-card";
+import { animationDuration } from "@standard-reader/design-system/theme/animations.stylex";
+import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
+import { radius } from "@standard-reader/design-system/theme/radius.stylex";
 import {
   gap,
   horizontalSpace,
   verticalSpace,
-} from "../../design-system/theme/semantic-spacing.stylex";
+} from "@standard-reader/design-system/theme/semantic-spacing.stylex";
 import {
   fontFamily,
   fontSize,
   fontWeight,
   lineHeight,
   tracking,
-} from "../../design-system/theme/typography.stylex";
+} from "@standard-reader/design-system/theme/typography.stylex";
 import { Kicker } from "./primitives";
 
 /**

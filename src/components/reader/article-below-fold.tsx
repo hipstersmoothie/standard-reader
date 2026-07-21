@@ -7,16 +7,16 @@ import * as stylex from "@stylexjs/stylex";
 import { Link } from "@tanstack/react-router";
 
 import { PublicationNameLink } from "#/components/reader/publication-name-link";
-import { Flex } from "#/design-system/flex";
-import { uiColor } from "#/design-system/theme/color.stylex";
-import { gap } from "#/design-system/theme/semantic-spacing.stylex";
-import { spacing } from "#/design-system/theme/spacing.stylex";
+import { Flex } from "@standard-reader/design-system/flex";
+import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
+import { gap } from "@standard-reader/design-system/theme/semantic-spacing.stylex";
+import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
 import {
   fontFamily,
   fontSize,
   fontWeight,
   lineHeight,
-} from "#/design-system/theme/typography.stylex";
+} from "@standard-reader/design-system/theme/typography.stylex";
 import type {
   ArticleDetail,
   ArticleExtras,

@@ -3,7 +3,7 @@
 import type { RefObject } from "react";
 import { useCallback, useEffect, useState } from "react";
 
-import type { LightboxImage } from "#/design-system/lightbox";
+import type { LightboxImage } from "@standard-reader/design-system/lightbox";
 
 const PHOTO_SCOPE =
   ".feature-body, .editorial-body, .feature-note-body, .editorial-spread";

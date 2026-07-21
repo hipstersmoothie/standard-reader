@@ -20,24 +20,24 @@ import { user } from "#/integrations/tanstack-query/api-user.functions";
 import { useTrackReadingHistory } from "#/lib/use-track-reading-history";
 import { useLoginSearch } from "#/utils/use-login-search";
 
-import { Avatar, AvatarButton } from "../design-system/avatar";
-import { Flex } from "../design-system/flex";
-import { IconButton } from "../design-system/icon-button";
-import { Menu, MenuItem, MenuSeparator } from "../design-system/menu";
-import { animationDuration } from "../design-system/theme/animations.stylex";
-import { uiColor } from "../design-system/theme/color.stylex";
-import { radius } from "../design-system/theme/radius.stylex";
+import { Avatar, AvatarButton } from "@standard-reader/design-system/avatar";
+import { Flex } from "@standard-reader/design-system/flex";
+import { IconButton } from "@standard-reader/design-system/icon-button";
+import { Menu, MenuItem, MenuSeparator } from "@standard-reader/design-system/menu";
+import { animationDuration } from "@standard-reader/design-system/theme/animations.stylex";
+import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
+import { radius } from "@standard-reader/design-system/theme/radius.stylex";
 import {
   gap as gapSpace,
   horizontalSpace,
   verticalSpace,
-} from "../design-system/theme/semantic-spacing.stylex";
+} from "@standard-reader/design-system/theme/semantic-spacing.stylex";
 import {
   fontFamily,
   fontSize,
   fontWeight,
   lineHeight,
-} from "../design-system/theme/typography.stylex";
+} from "@standard-reader/design-system/theme/typography.stylex";
 import { LanguageDialog } from "./reader/language-dialog";
 import { Handle } from "./reader/primitives";
 

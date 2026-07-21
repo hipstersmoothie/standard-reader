@@ -205,9 +205,9 @@
     },
     {
       "files": [
-        "src/design-system/theme/semantic-color.stylex.tsx",
-        "src/design-system/theme/typography.stylex.tsx",
-        "src/design-system/theme/spacing.stylex.tsx"
+        "packages/design-system/src/theme/semantic-color.stylex.tsx",
+        "packages/design-system/src/theme/typography.stylex.tsx",
+        "packages/design-system/src/theme/spacing.stylex.tsx"
       ],
       "rules": {
         "@stylexjs/enforce-extension": "off"
@@ -215,28 +215,28 @@
     },
     {
       "files": [
-        "src/design-system/alert/index.tsx",
-        "src/design-system/badge/index.tsx",
-        "src/design-system/button/index.tsx",
-        "src/design-system/card/index.tsx",
-        "src/design-system/content/index.tsx",
-        "src/design-system/empty-state/index.tsx",
-        "src/design-system/footer/index.tsx",
-        "src/design-system/link/index.tsx",
-        "src/design-system/menubar/index.tsx",
-        "src/design-system/navbar/Navbar.tsx",
-        "src/design-system/navbar/NavbarMenu.tsx",
-        "src/design-system/number-field/index.tsx",
-        "src/design-system/page/Page.tsx",
-        "src/design-system/segmented-control/index.tsx",
-        "src/design-system/tag-group/index.tsx",
-        "src/design-system/theme/useButtonStyles.ts",
-        "src/design-system/theme/useInputStyles.ts",
-        "src/design-system/theme/useListBoxItemStyles.ts",
-        "src/design-system/toast/Toast.tsx",
-        "src/design-system/toggle-button-group/index.tsx",
-        "src/design-system/tree/index.tsx",
-        "src/design-system/typography/text.tsx"
+        "packages/design-system/src/alert/index.tsx",
+        "packages/design-system/src/badge/index.tsx",
+        "packages/design-system/src/button/index.tsx",
+        "packages/design-system/src/card/index.tsx",
+        "packages/design-system/src/content/index.tsx",
+        "packages/design-system/src/empty-state/index.tsx",
+        "packages/design-system/src/footer/index.tsx",
+        "packages/design-system/src/link/index.tsx",
+        "packages/design-system/src/menubar/index.tsx",
+        "packages/design-system/src/navbar/Navbar.tsx",
+        "packages/design-system/src/navbar/NavbarMenu.tsx",
+        "packages/design-system/src/number-field/index.tsx",
+        "packages/design-system/src/page/Page.tsx",
+        "packages/design-system/src/segmented-control/index.tsx",
+        "packages/design-system/src/tag-group/index.tsx",
+        "packages/design-system/src/theme/useButtonStyles.ts",
+        "packages/design-system/src/theme/useInputStyles.ts",
+        "packages/design-system/src/theme/useListBoxItemStyles.ts",
+        "packages/design-system/src/toast/Toast.tsx",
+        "packages/design-system/src/toggle-button-group/index.tsx",
+        "packages/design-system/src/tree/index.tsx",
+        "packages/design-system/src/typography/text.tsx"
       ],
       "rules": {
         "@stylexjs/no-legacy-contextual-styles": "off",

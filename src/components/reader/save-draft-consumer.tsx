@@ -3,7 +3,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
 
-import { toasts } from "#/design-system/toast";
+import { toasts } from "@standard-reader/design-system/toast";
 import { marginApi } from "#/integrations/tanstack-query/api-margin.functions";
 import { saveDraftApi } from "#/integrations/tanstack-query/api-save-draft.functions";
 import { sembleApi } from "#/integrations/tanstack-query/api-semble.functions";

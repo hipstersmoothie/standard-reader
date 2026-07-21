@@ -6,20 +6,20 @@ import { Link as LinkIcon, Play, Share2, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
-import { IconButton } from "#/design-system/icon-button";
-import { MenuItem, MenuSeparator } from "#/design-system/menu";
-import { animationDuration } from "#/design-system/theme/animations.stylex";
-import { uiColor } from "#/design-system/theme/color.stylex";
-import { radius } from "#/design-system/theme/radius.stylex";
+import { IconButton } from "@standard-reader/design-system/icon-button";
+import { MenuItem, MenuSeparator } from "@standard-reader/design-system/menu";
+import { animationDuration } from "@standard-reader/design-system/theme/animations.stylex";
+import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
+import { radius } from "@standard-reader/design-system/theme/radius.stylex";
 import {
   gap,
   horizontalSpace,
   verticalSpace,
-} from "#/design-system/theme/semantic-spacing.stylex";
-import { shadow } from "#/design-system/theme/shadow.stylex";
-import { spacing } from "#/design-system/theme/spacing.stylex";
-import { toasts } from "#/design-system/toast";
-import { Toolbar, ToolbarGroup } from "#/design-system/toolbar";
+} from "@standard-reader/design-system/theme/semantic-spacing.stylex";
+import { shadow } from "@standard-reader/design-system/theme/shadow.stylex";
+import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
+import { toasts } from "@standard-reader/design-system/toast";
+import { Toolbar, ToolbarGroup } from "@standard-reader/design-system/toolbar";
 import type { ArticleDetail } from "#/integrations/tanstack-query/api-publication.functions";
 import { quoteShareApi } from "#/integrations/tanstack-query/api-quote-share.functions";
 import { usePageReader } from "#/lib/page-reader/page-reader-context";

@@ -6,11 +6,11 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 
 import { GoogleFontMenuLabel } from "#/components/google-font-menu-label";
-import { SizeContext } from "#/design-system/context";
+import { SizeContext } from "@standard-reader/design-system/context";
 import { googleFontsApi } from "#/integrations/tanstack-query/api-google-fonts.functions";
 
-import { ComboBox, ComboBoxItem } from "../design-system/combobox";
-import { spacing } from "../design-system/theme/spacing.stylex";
+import { ComboBox, ComboBoxItem } from "@standard-reader/design-system/combobox";
+import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
 
 const styles = stylex.create({
   picker: {

@@ -24,28 +24,28 @@ import {
   Users,
 } from "lucide-react";
 
-import { DirectionalIcon } from "#/design-system/directional-icon";
+import { DirectionalIcon } from "@standard-reader/design-system/directional-icon";
 import { discoverApi } from "#/integrations/tanstack-query/api-discover.functions";
 import type { PublicationCard } from "#/integrations/tanstack-query/api-shapes";
 import { CHROME_STORE_URL, FIREFOX_STORE_URL } from "#/lib/extension-links";
 import { usePageReader } from "#/lib/page-reader/page-reader-context";
 
-import { animationDuration } from "../../design-system/theme/animations.stylex";
-import { primaryColor, uiColor } from "../../design-system/theme/color.stylex";
-import { radius } from "../../design-system/theme/radius.stylex";
+import { animationDuration } from "@standard-reader/design-system/theme/animations.stylex";
+import { primaryColor, uiColor } from "@standard-reader/design-system/theme/color.stylex";
+import { radius } from "@standard-reader/design-system/theme/radius.stylex";
 import {
   gap,
   verticalSpace,
-} from "../../design-system/theme/semantic-spacing.stylex";
-import { shadow } from "../../design-system/theme/shadow.stylex";
-import { spacing } from "../../design-system/theme/spacing.stylex";
+} from "@standard-reader/design-system/theme/semantic-spacing.stylex";
+import { shadow } from "@standard-reader/design-system/theme/shadow.stylex";
+import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
 import {
   fontFamily,
   fontSize,
   fontWeight,
   lineHeight,
   tracking,
-} from "../../design-system/theme/typography.stylex";
+} from "@standard-reader/design-system/theme/typography.stylex";
 import { PubCard } from "./cards";
 import { publicationLinkParams } from "./format";
 import { Kicker, PublicationAvatar } from "./primitives";

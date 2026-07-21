@@ -14,7 +14,7 @@ import { Suspense, useEffect } from "react";
 import { z } from "zod";
 
 import { ButtonLink } from "#/components/router-links";
-import { DirectionalIcon } from "#/design-system/directional-icon";
+import { DirectionalIcon } from "@standard-reader/design-system/directional-icon";
 import type { Formatters } from "#/lib/formatters";
 import { DEFAULT_TRACK_READING_HISTORY } from "#/lib/track-reading-history";
 import { useFormatters } from "#/lib/use-formatters";
@@ -25,22 +25,22 @@ import {
   MiniPubRow,
 } from "../components/reader/cards";
 import { Masthead, ReaderContent } from "../components/reader/primitives";
-import { Flex } from "../design-system/flex";
+import { Flex } from "@standard-reader/design-system/flex";
 import {
   SegmentedControl,
   SegmentedControlItem,
-} from "../design-system/segmented-control";
-import { Skeleton } from "../design-system/skeleton";
-import { primaryColor, uiColor } from "../design-system/theme/color.stylex";
-import { radius } from "../design-system/theme/radius.stylex";
-import { spacing } from "../design-system/theme/spacing.stylex";
+} from "@standard-reader/design-system/segmented-control";
+import { Skeleton } from "@standard-reader/design-system/skeleton";
+import { primaryColor, uiColor } from "@standard-reader/design-system/theme/color.stylex";
+import { radius } from "@standard-reader/design-system/theme/radius.stylex";
+import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
 import {
   fontFamily,
   fontSize,
   fontWeight,
   lineHeight,
   tracking,
-} from "../design-system/theme/typography.stylex";
+} from "@standard-reader/design-system/theme/typography.stylex";
 import type { HomeScope } from "../integrations/tanstack-query/api-feed.functions";
 import { feedApi } from "../integrations/tanstack-query/api-feed.functions";
 import { user } from "../integrations/tanstack-query/api-user.functions";

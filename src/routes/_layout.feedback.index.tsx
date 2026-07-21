@@ -28,39 +28,39 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import { FeedbackDialog } from "#/components/feedback/feedback-dialog";
 import { initials } from "#/components/reader/format";
 import { ReaderContent } from "#/components/reader/primitives";
-import { Avatar } from "#/design-system/avatar";
-import { Button } from "#/design-system/button";
-import { Flex } from "#/design-system/flex";
-import { IconButton } from "#/design-system/icon-button";
-import { Link } from "#/design-system/link";
-import { SearchField } from "#/design-system/search-field";
+import { Avatar } from "@standard-reader/design-system/avatar";
+import { Button } from "@standard-reader/design-system/button";
+import { Flex } from "@standard-reader/design-system/flex";
+import { IconButton } from "@standard-reader/design-system/icon-button";
+import { Link } from "@standard-reader/design-system/link";
+import { SearchField } from "@standard-reader/design-system/search-field";
 import {
   SegmentedControl,
   SegmentedControlItem,
-} from "#/design-system/segmented-control";
-import { Select, SelectItem } from "#/design-system/select";
-import { Skeleton } from "#/design-system/skeleton";
-import { animationDuration } from "#/design-system/theme/animations.stylex";
-import { primaryColor, uiColor } from "#/design-system/theme/color.stylex";
-import { amber } from "#/design-system/theme/colors/amber.stylex";
-import { blue } from "#/design-system/theme/colors/blue.stylex";
-import { green } from "#/design-system/theme/colors/green.stylex";
-import { red } from "#/design-system/theme/colors/red.stylex";
-import { radius } from "#/design-system/theme/radius.stylex";
+} from "@standard-reader/design-system/segmented-control";
+import { Select, SelectItem } from "@standard-reader/design-system/select";
+import { Skeleton } from "@standard-reader/design-system/skeleton";
+import { animationDuration } from "@standard-reader/design-system/theme/animations.stylex";
+import { primaryColor, uiColor } from "@standard-reader/design-system/theme/color.stylex";
+import { amber } from "@standard-reader/design-system/theme/colors/amber.stylex";
+import { blue } from "@standard-reader/design-system/theme/colors/blue.stylex";
+import { green } from "@standard-reader/design-system/theme/colors/green.stylex";
+import { red } from "@standard-reader/design-system/theme/colors/red.stylex";
+import { radius } from "@standard-reader/design-system/theme/radius.stylex";
 import {
   gap,
   horizontalSpace,
   verticalSpace,
-} from "#/design-system/theme/semantic-spacing.stylex";
-import { shadow } from "#/design-system/theme/shadow.stylex";
-import { spacing } from "#/design-system/theme/spacing.stylex";
+} from "@standard-reader/design-system/theme/semantic-spacing.stylex";
+import { shadow } from "@standard-reader/design-system/theme/shadow.stylex";
+import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
 import {
   fontFamily,
   fontSize,
   fontWeight,
   lineHeight,
   tracking,
-} from "#/design-system/theme/typography.stylex";
+} from "@standard-reader/design-system/theme/typography.stylex";
 import { auth } from "#/integrations/tanstack-query/api-auth.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
 import type { UserinputDiscussion } from "#/integrations/tanstack-query/api-userinput.functions";

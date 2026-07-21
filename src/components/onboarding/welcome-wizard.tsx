@@ -11,28 +11,28 @@ import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
 import { ONBOARDING_FRIENDS_LIMIT } from "#/lib/onboarding";
 
-import { Button } from "../../design-system/button";
-import { Flex } from "../../design-system/flex";
+import { Button } from "@standard-reader/design-system/button";
+import { Flex } from "@standard-reader/design-system/flex";
 import {
   primaryColor,
   successColor,
   uiColor,
-} from "../../design-system/theme/color.stylex";
-import { breakpoints } from "../../design-system/theme/media-queries.stylex";
-import { radius } from "../../design-system/theme/radius.stylex";
+} from "@standard-reader/design-system/theme/color.stylex";
+import { breakpoints } from "@standard-reader/design-system/theme/media-queries.stylex";
+import { radius } from "@standard-reader/design-system/theme/radius.stylex";
 import {
   gap,
   horizontalSpace,
   verticalSpace,
-} from "../../design-system/theme/semantic-spacing.stylex";
+} from "@standard-reader/design-system/theme/semantic-spacing.stylex";
 import {
   fontFamily,
   fontSize,
   fontWeight,
-} from "../../design-system/theme/typography.stylex";
-import { toasts } from "../../design-system/toast";
-import { Body } from "../../design-system/typography";
-import { Text } from "../../design-system/typography/text";
+} from "@standard-reader/design-system/theme/typography.stylex";
+import { toasts } from "@standard-reader/design-system/toast";
+import { Body } from "@standard-reader/design-system/typography";
+import { Text } from "@standard-reader/design-system/typography/text";
 import { BrandWordmark } from "../reader/brand-wordmark";
 import { StepFollow } from "./step-follow";
 import { StepFriends } from "./step-friends";

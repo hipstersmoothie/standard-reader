@@ -59,23 +59,23 @@ import { RssFeedButton } from "../components/reader/rss-feed-button";
 import { ShareMenu } from "../components/reader/share-menu";
 import { AuthorSifaResumeChip } from "../components/reader/sifa-resume-chip";
 import { useInfiniteScrollSentinel } from "../components/reader/use-infinite-scroll-sentinel";
-import { Avatar } from "../design-system/avatar";
-import { Badge } from "../design-system/badge";
-import { Button } from "../design-system/button";
-import { IconButton } from "../design-system/icon-button";
-import { Tab, TabList, TabPanel, Tabs } from "../design-system/tabs";
-import { uiColor } from "../design-system/theme/color.stylex";
-import { radius } from "../design-system/theme/radius.stylex";
-import { ui } from "../design-system/theme/semantic-color.stylex";
-import { size as boxSize } from "../design-system/theme/semantic-spacing.stylex";
-import { spacing } from "../design-system/theme/spacing.stylex";
+import { Avatar } from "@standard-reader/design-system/avatar";
+import { Badge } from "@standard-reader/design-system/badge";
+import { Button } from "@standard-reader/design-system/button";
+import { IconButton } from "@standard-reader/design-system/icon-button";
+import { Tab, TabList, TabPanel, Tabs } from "@standard-reader/design-system/tabs";
+import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
+import { radius } from "@standard-reader/design-system/theme/radius.stylex";
+import { ui } from "@standard-reader/design-system/theme/semantic-color.stylex";
+import { size as boxSize } from "@standard-reader/design-system/theme/semantic-spacing.stylex";
+import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
 import {
   fontFamily,
   fontSize,
   fontWeight,
   lineHeight,
   tracking,
-} from "../design-system/theme/typography.stylex";
+} from "@standard-reader/design-system/theme/typography.stylex";
 
 const AUTHOR_PAGE_SIZE = 24;
 

@@ -1,8 +1,8 @@
 import * as stylex from "@stylexjs/stylex";
 
-import { primaryColor, uiColor } from "../../design-system/theme/color.stylex";
-import { shadow } from "../../design-system/theme/shadow.stylex";
-import { fontFamily } from "../../design-system/theme/typography.stylex";
+import { primaryColor, uiColor } from "@standard-reader/design-system/theme/color.stylex";
+import { shadow } from "@standard-reader/design-system/theme/shadow.stylex";
+import { fontFamily } from "@standard-reader/design-system/theme/typography.stylex";
 
 /**
  * Editorial theme for Standard Reader — warm paper (light) and warm ink (dark),

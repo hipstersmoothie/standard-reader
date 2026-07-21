@@ -61,20 +61,20 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
-} from "../design-system/alert-dialog";
-import { Avatar } from "../design-system/avatar";
-import { IconButton } from "../design-system/icon-button";
-import { Menu, MenuItem } from "../design-system/menu";
-import { Tab, TabList, TabPanel, Tabs } from "../design-system/tabs";
-import { uiColor } from "../design-system/theme/color.stylex";
-import { spacing } from "../design-system/theme/spacing.stylex";
+} from "@standard-reader/design-system/alert-dialog";
+import { Avatar } from "@standard-reader/design-system/avatar";
+import { IconButton } from "@standard-reader/design-system/icon-button";
+import { Menu, MenuItem } from "@standard-reader/design-system/menu";
+import { Tab, TabList, TabPanel, Tabs } from "@standard-reader/design-system/tabs";
+import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
+import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
 import {
   fontFamily,
   fontSize,
   fontWeight,
   lineHeight,
   tracking,
-} from "../design-system/theme/typography.stylex";
+} from "@standard-reader/design-system/theme/typography.stylex";
 import { encodeIssueIds } from "../magazine/issue-link";
 
 const PAGE_SIZE = 20;

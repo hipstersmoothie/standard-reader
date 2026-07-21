@@ -7,17 +7,17 @@ import { ArrowUpRight } from "lucide-react";
 import {
   animationDuration,
   animationTimingFunction,
-} from "#/design-system/theme/animations.stylex";
-import { focusColor, uiColor } from "#/design-system/theme/color.stylex";
-import { radius } from "#/design-system/theme/radius.stylex";
-import { gap } from "#/design-system/theme/semantic-spacing.stylex";
-import { spacing } from "#/design-system/theme/spacing.stylex";
+} from "@standard-reader/design-system/theme/animations.stylex";
+import { focusColor, uiColor } from "@standard-reader/design-system/theme/color.stylex";
+import { radius } from "@standard-reader/design-system/theme/radius.stylex";
+import { gap } from "@standard-reader/design-system/theme/semantic-spacing.stylex";
+import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
 import {
   fontFamily,
   fontSize,
   fontWeight,
   lineHeight,
-} from "#/design-system/theme/typography.stylex";
+} from "@standard-reader/design-system/theme/typography.stylex";
 import type { PublishingPlatform } from "#/lib/publishing-platform";
 import { PLATFORM_NAME } from "#/lib/publishing-platform";
 

@@ -2,7 +2,7 @@
 
 import { Trans, useLingui } from "@lingui/react/macro";
 
-import { Menu, MenuItem, MenuSeparator, SubMenu } from "#/design-system/menu";
+import { Menu, MenuItem, MenuSeparator, SubMenu } from "@standard-reader/design-system/menu";
 import { shareLinkUrl, useNativeShareAvailable } from "#/lib/native-share";
 import {
   AT_PROTO_COMPOSE_CLIENTS,

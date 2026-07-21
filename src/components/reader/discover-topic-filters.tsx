@@ -7,26 +7,26 @@ import { X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Button as AriaButton, Heading } from "react-aria-components";
 
-import { IconButton } from "#/design-system/icon-button";
-import { Popover } from "#/design-system/popover";
-import { SearchField } from "#/design-system/search-field";
-import { Tag, TagGroup } from "#/design-system/tag-group";
-import { animationDuration } from "#/design-system/theme/animations.stylex";
-import { primaryColor, uiColor } from "#/design-system/theme/color.stylex";
-import { mediaQueries } from "#/design-system/theme/media-queries.stylex";
-import { radius } from "#/design-system/theme/radius.stylex";
+import { IconButton } from "@standard-reader/design-system/icon-button";
+import { Popover } from "@standard-reader/design-system/popover";
+import { SearchField } from "@standard-reader/design-system/search-field";
+import { Tag, TagGroup } from "@standard-reader/design-system/tag-group";
+import { animationDuration } from "@standard-reader/design-system/theme/animations.stylex";
+import { primaryColor, uiColor } from "@standard-reader/design-system/theme/color.stylex";
+import { mediaQueries } from "@standard-reader/design-system/theme/media-queries.stylex";
+import { radius } from "@standard-reader/design-system/theme/radius.stylex";
 import {
   gap,
   horizontalSpace,
   verticalSpace,
-} from "#/design-system/theme/semantic-spacing.stylex";
-import { spacing } from "#/design-system/theme/spacing.stylex";
+} from "@standard-reader/design-system/theme/semantic-spacing.stylex";
+import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
 import {
   fontFamily,
   fontSize,
   fontWeight,
   typeramp,
-} from "#/design-system/theme/typography.stylex";
+} from "@standard-reader/design-system/theme/typography.stylex";
 import { discoverApi } from "#/integrations/tanstack-query/api-discover.functions";
 
 import { searchResultTopics } from "./discover-topics";

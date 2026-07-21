@@ -2,14 +2,14 @@ import { Trans } from "@lingui/react/macro";
 import * as stylex from "@stylexjs/stylex";
 import { createFileRoute } from "@tanstack/react-router";
 
-import { Button } from "#/design-system/button";
-import { Flex } from "#/design-system/flex";
+import { Button } from "@standard-reader/design-system/button";
+import { Flex } from "@standard-reader/design-system/flex";
 import {
   gap as gapSpace,
   verticalSpace,
-} from "#/design-system/theme/semantic-spacing.stylex";
-import { Heading4 } from "#/design-system/typography";
-import { Text } from "#/design-system/typography/text";
+} from "@standard-reader/design-system/theme/semantic-spacing.stylex";
+import { Heading4 } from "@standard-reader/design-system/typography";
+import { Text } from "@standard-reader/design-system/typography/text";
 import { requestExtensionCloseLoginTab } from "#/lib/extension-connected";
 
 const styles = stylex.create({

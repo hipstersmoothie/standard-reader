@@ -15,24 +15,24 @@ import { ButtonLink } from "#/components/router-links";
 import { listApi } from "#/integrations/tanstack-query/api-lists.functions";
 import { useLoginSearch } from "#/utils/use-login-search";
 
-import { Button } from "../../design-system/button";
-import { Dialog, DialogFooter, DialogHeader } from "../../design-system/dialog";
-import { Flex } from "../../design-system/flex";
-import { ListBox, ListBoxItem } from "../../design-system/listbox";
-import { Tab, TabList, TabPanel, Tabs } from "../../design-system/tabs";
-import { TextField } from "../../design-system/text-field";
-import { uiColor } from "../../design-system/theme/color.stylex";
-import { radius } from "../../design-system/theme/radius.stylex";
+import { Button } from "@standard-reader/design-system/button";
+import { Dialog, DialogFooter, DialogHeader } from "@standard-reader/design-system/dialog";
+import { Flex } from "@standard-reader/design-system/flex";
+import { ListBox, ListBoxItem } from "@standard-reader/design-system/listbox";
+import { Tab, TabList, TabPanel, Tabs } from "@standard-reader/design-system/tabs";
+import { TextField } from "@standard-reader/design-system/text-field";
+import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
+import { radius } from "@standard-reader/design-system/theme/radius.stylex";
 import {
   horizontalSpace,
   verticalSpace,
-} from "../../design-system/theme/semantic-spacing.stylex";
+} from "@standard-reader/design-system/theme/semantic-spacing.stylex";
 import {
   fontFamily,
   fontSize,
   fontWeight,
   tracking,
-} from "../../design-system/theme/typography.stylex";
+} from "@standard-reader/design-system/theme/typography.stylex";
 import type { SubscriptionList } from "../../integrations/tanstack-query/api-lists.functions";
 
 const LISTS_QUERY_KEY = ["reader", "lists"] as const;

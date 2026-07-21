@@ -6,34 +6,34 @@ import { Code, Link as LinkIcon, Share2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { Key } from "react-aria-components";
 
-import { Button } from "#/design-system/button";
+import { Button } from "@standard-reader/design-system/button";
 import {
   Dialog,
   DialogBody,
   DialogFooter,
   DialogHeader,
-} from "#/design-system/dialog";
-import { Flex } from "#/design-system/flex";
-import { IconButton } from "#/design-system/icon-button";
-import { Menu, MenuItem } from "#/design-system/menu";
+} from "@standard-reader/design-system/dialog";
+import { Flex } from "@standard-reader/design-system/flex";
+import { IconButton } from "@standard-reader/design-system/icon-button";
+import { Menu, MenuItem } from "@standard-reader/design-system/menu";
 import {
   SegmentedControl,
   SegmentedControlItem,
-} from "#/design-system/segmented-control";
-import { uiColor } from "#/design-system/theme/color.stylex";
-import { radius } from "#/design-system/theme/radius.stylex";
+} from "@standard-reader/design-system/segmented-control";
+import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
+import { radius } from "@standard-reader/design-system/theme/radius.stylex";
 import {
   gap,
   verticalSpace,
-} from "#/design-system/theme/semantic-spacing.stylex";
-import type { Size } from "#/design-system/theme/types";
+} from "@standard-reader/design-system/theme/semantic-spacing.stylex";
+import type { Size } from "@standard-reader/design-system/theme/types";
 import {
   fontFamily,
   fontSize,
   fontWeight,
   tracking,
-} from "#/design-system/theme/typography.stylex";
-import { SmallBody } from "#/design-system/typography";
+} from "@standard-reader/design-system/theme/typography.stylex";
+import { SmallBody } from "@standard-reader/design-system/typography";
 import type { PublicationEmbedMeta } from "#/integrations/tanstack-query/api-publication.functions";
 import { shareLinkUrl, useNativeShareAvailable } from "#/lib/native-share";
 import { getPublicUrlClient } from "#/lib/public-url";

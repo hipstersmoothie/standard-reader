@@ -1,8 +1,8 @@
 import * as stylex from "@stylexjs/stylex";
 import { Monitor, Moon, Sun } from "lucide-react";
 
-import { MenuItem, SubMenu } from "#/design-system/menu";
-import { uiColor } from "#/design-system/theme/color.stylex";
+import { MenuItem, SubMenu } from "@standard-reader/design-system/menu";
+import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
 import type { ThemeMode } from "#/lib/theme";
 import { isThemeMode } from "#/lib/theme";
 import { useTheme } from "#/lib/use-theme";

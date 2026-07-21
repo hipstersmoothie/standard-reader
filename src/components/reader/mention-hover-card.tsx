@@ -12,25 +12,25 @@ import { mergeProps, useFocus, useFocusVisible, useHover } from "react-aria";
 import type { PopoverProps as AriaPopoverProps } from "react-aria-components";
 import { Popover as AriaPopover } from "react-aria-components";
 
-import { Avatar } from "#/design-system/avatar";
-import { animationDuration } from "#/design-system/theme/animations.stylex";
-import { primaryColor, uiColor } from "#/design-system/theme/color.stylex";
-import { mediaQueries } from "#/design-system/theme/media-queries.stylex";
-import { radius } from "#/design-system/theme/radius.stylex";
+import { Avatar } from "@standard-reader/design-system/avatar";
+import { animationDuration } from "@standard-reader/design-system/theme/animations.stylex";
+import { primaryColor, uiColor } from "@standard-reader/design-system/theme/color.stylex";
+import { mediaQueries } from "@standard-reader/design-system/theme/media-queries.stylex";
+import { radius } from "@standard-reader/design-system/theme/radius.stylex";
 import {
   gap,
   horizontalSpace,
   verticalSpace,
-} from "#/design-system/theme/semantic-spacing.stylex";
-import { spacing } from "#/design-system/theme/spacing.stylex";
+} from "@standard-reader/design-system/theme/semantic-spacing.stylex";
+import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
 import {
   fontFamily,
   fontSize,
   fontWeight,
   lineHeight,
   tracking,
-} from "#/design-system/theme/typography.stylex";
-import { usePopoverStyles } from "#/design-system/theme/usePopoverStyles";
+} from "@standard-reader/design-system/theme/typography.stylex";
+import { usePopoverStyles } from "@standard-reader/design-system/theme/usePopoverStyles";
 import { authorApi } from "#/integrations/tanstack-query/api-author.functions";
 import { publicationApi } from "#/integrations/tanstack-query/api-publication.functions";
 import { useFormatters } from "#/lib/use-formatters";

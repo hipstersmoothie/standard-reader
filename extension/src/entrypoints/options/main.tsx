@@ -3,13 +3,13 @@ import { Sparkles } from "lucide-react";
 import { StrictMode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 
-import { Button } from "#/design-system/button";
-import { Checkbox } from "#/design-system/checkbox";
-import { Flex } from "#/design-system/flex";
-import { Select, SelectItem } from "#/design-system/select";
-import { spacing } from "#/design-system/theme/spacing.stylex";
-import { Heading4 } from "#/design-system/typography";
-import { Text } from "#/design-system/typography/text";
+import { Button } from "@standard-reader/design-system/button";
+import { Checkbox } from "@standard-reader/design-system/checkbox";
+import { Flex } from "@standard-reader/design-system/flex";
+import { Select, SelectItem } from "@standard-reader/design-system/select";
+import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
+import { Heading4 } from "@standard-reader/design-system/typography";
+import { Text } from "@standard-reader/design-system/typography/text";
 import { AMERICAN_ENGLISH_VOICES } from "#/lib/page-reader/voice-catalog";
 import {
   DEFAULT_READER_VOICE_PREFERENCE,

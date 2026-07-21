@@ -5,22 +5,22 @@ import * as stylex from "@stylexjs/stylex";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { z } from "zod";
 
-import { Link } from "#/design-system/link";
+import { Link } from "@standard-reader/design-system/link";
 
-import { Button } from "../design-system/button";
-import { Flex } from "../design-system/flex";
-import { uiColor } from "../design-system/theme/color.stylex";
-import { breakpoints } from "../design-system/theme/media-queries.stylex";
+import { Button } from "@standard-reader/design-system/button";
+import { Flex } from "@standard-reader/design-system/flex";
+import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
+import { breakpoints } from "@standard-reader/design-system/theme/media-queries.stylex";
 import {
   horizontalSpace,
   verticalSpace,
-} from "../design-system/theme/semantic-spacing.stylex";
+} from "@standard-reader/design-system/theme/semantic-spacing.stylex";
 import {
   fontFamily,
   fontSize,
   fontWeight,
   tracking,
-} from "../design-system/theme/typography.stylex";
+} from "@standard-reader/design-system/theme/typography.stylex";
 import { atstoreReviewApi } from "../integrations/tanstack-query/api-atstore-review.functions";
 import { sanitizeAuthRedirectTarget } from "../utils/auth-redirect";
 

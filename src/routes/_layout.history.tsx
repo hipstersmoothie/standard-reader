@@ -16,16 +16,16 @@ import { buildAuthRedirectPath } from "#/utils/auth-redirect";
 import { Masthead, ReaderContent } from "../components/reader/primitives";
 import { ReaderQueueRows } from "../components/reader/reader-queue-rows";
 import { useInfiniteScrollSentinel } from "../components/reader/use-infinite-scroll-sentinel";
-import { Flex } from "../design-system/flex";
-import { uiColor } from "../design-system/theme/color.stylex";
-import { radius } from "../design-system/theme/radius.stylex";
-import { spacing } from "../design-system/theme/spacing.stylex";
+import { Flex } from "@standard-reader/design-system/flex";
+import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
+import { radius } from "@standard-reader/design-system/theme/radius.stylex";
+import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
 import {
   fontFamily,
   fontSize,
   fontWeight,
   lineHeight,
-} from "../design-system/theme/typography.stylex";
+} from "@standard-reader/design-system/theme/typography.stylex";
 
 export const Route = createFileRoute("/_layout/history")({
   beforeLoad: async ({ context }) => {

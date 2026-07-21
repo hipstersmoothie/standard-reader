@@ -4,9 +4,9 @@ import { Trans, useLingui } from "@lingui/react/macro";
 import { Share2 } from "lucide-react";
 import { useState } from "react";
 
-import { IconButton } from "#/design-system/icon-button";
-import { MenuItem, MenuSeparator } from "#/design-system/menu";
-import type { Size } from "#/design-system/theme/types";
+import { IconButton } from "@standard-reader/design-system/icon-button";
+import { MenuItem, MenuSeparator } from "@standard-reader/design-system/menu";
+import type { Size } from "@standard-reader/design-system/theme/types";
 import { buildPdslsRecordUrl } from "#/lib/quote-share";
 
 import { LinkShareMenu } from "./link-share-menu";

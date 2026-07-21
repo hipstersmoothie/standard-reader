@@ -5,10 +5,10 @@ import { GridList, GridListItem, RouterProvider } from "react-aria-components";
 
 import { parseInternalRoute } from "#/lib/internal-route";
 
-import { focusColor } from "../../design-system/theme/color.stylex";
-import { radius } from "../../design-system/theme/radius.stylex";
-import { gap } from "../../design-system/theme/semantic-spacing.stylex";
-import { spacing } from "../../design-system/theme/spacing.stylex";
+import { focusColor } from "@standard-reader/design-system/theme/color.stylex";
+import { radius } from "@standard-reader/design-system/theme/radius.stylex";
+import { gap } from "@standard-reader/design-system/theme/semantic-spacing.stylex";
+import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
 import type { PublicationCard } from "../../integrations/tanstack-query/api-shapes";
 import { PubCard, PubDirectoryRow } from "./cards";
 import { publicationLinkParams } from "./format";

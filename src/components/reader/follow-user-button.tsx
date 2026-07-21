@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, Plus } from "lucide-react";
 
 import { ButtonLink } from "#/components/router-links";
-import { Button } from "#/design-system/button";
+import { Button } from "@standard-reader/design-system/button";
 import type { FollowingUser } from "#/integrations/tanstack-query/api-feed.functions";
 import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
 import { useLoginSearch } from "#/utils/use-login-search";

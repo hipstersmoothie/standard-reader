@@ -4,7 +4,7 @@ import {
   Disclosure,
   DisclosurePanel,
   DisclosureTitle,
-} from "#/design-system/disclosure";
+} from "@standard-reader/design-system/disclosure";
 import { normalizeImageAlt } from "#/lib/document/structured-content/image";
 import { leafletPageEmbedLabel, leafletWebsiteSrc } from "#/lib/leaflet/blocks";
 import { leafletImageAspectRatio, leafletImageUrl } from "#/lib/leaflet/image";

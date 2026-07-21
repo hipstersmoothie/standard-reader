@@ -1,4 +1,4 @@
 {
-  "componentDir": "src/design-system",
+  "componentDir": "packages/design-system/src",
   "packageManager": "pnpm"
 }

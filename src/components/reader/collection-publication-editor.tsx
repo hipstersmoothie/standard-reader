@@ -9,28 +9,28 @@ import { useState } from "react";
 import type { CollectionsPublicationSummary } from "#/integrations/tanstack-query/api-collections.functions";
 import { collectionsApi } from "#/integrations/tanstack-query/api-collections.functions";
 
-import { Button } from "../../design-system/button";
+import { Button } from "@standard-reader/design-system/button";
 import {
   Dialog,
   DialogBody,
   DialogFooter,
   DialogHeader,
-} from "../../design-system/dialog";
+} from "@standard-reader/design-system/dialog";
 import {
   FileDropDefaultTrigger,
   FileDropZone,
-} from "../../design-system/file-drop-zone";
-import { Flex } from "../../design-system/flex";
-import { Label } from "../../design-system/label";
-import { TextArea } from "../../design-system/text-area";
-import { TextField } from "../../design-system/text-field";
-import { uiColor } from "../../design-system/theme/color.stylex";
-import { radius } from "../../design-system/theme/radius.stylex";
-import { size } from "../../design-system/theme/semantic-spacing.stylex";
+} from "@standard-reader/design-system/file-drop-zone";
+import { Flex } from "@standard-reader/design-system/flex";
+import { Label } from "@standard-reader/design-system/label";
+import { TextArea } from "@standard-reader/design-system/text-area";
+import { TextField } from "@standard-reader/design-system/text-field";
+import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
+import { radius } from "@standard-reader/design-system/theme/radius.stylex";
+import { size } from "@standard-reader/design-system/theme/semantic-spacing.stylex";
 import {
   fontFamily,
   fontSize,
-} from "../../design-system/theme/typography.stylex";
+} from "@standard-reader/design-system/theme/typography.stylex";
 import { PublicationAvatar } from "./primitives";
 
 type JsonObject = { [key: string]: unknown };

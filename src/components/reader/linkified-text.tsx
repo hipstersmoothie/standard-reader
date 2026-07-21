@@ -4,7 +4,7 @@ import * as stylex from "@stylexjs/stylex";
 import { Fragment } from "react";
 
 import { AppLink } from "#/components/reader/app-link";
-import { primaryColor } from "#/design-system/theme/color.stylex";
+import { primaryColor } from "@standard-reader/design-system/theme/color.stylex";
 import { authorProfilePath } from "#/lib/author-profile";
 
 /** Autolink http(s) and www. URLs in plain text (e.g. profile bios). */

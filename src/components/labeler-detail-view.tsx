@@ -21,31 +21,31 @@ import type { LabelValueDef } from "#/integrations/tanstack-query/api-labelers.f
 import { labelerApi } from "#/integrations/tanstack-query/api-labelers.functions";
 import { useTrackReadingHistory } from "#/lib/use-track-reading-history";
 
-import { Avatar } from "../design-system/avatar";
-import { Button } from "../design-system/button";
+import { Avatar } from "@standard-reader/design-system/avatar";
+import { Button } from "@standard-reader/design-system/button";
 import {
   EmptyState,
   EmptyStateDescription,
   EmptyStateTitle,
-} from "../design-system/empty-state";
+} from "@standard-reader/design-system/empty-state";
 import {
   SegmentedControl,
   SegmentedControlItem,
-} from "../design-system/segmented-control";
-import { Tab, TabList, TabPanel, Tabs } from "../design-system/tabs";
-import { uiColor } from "../design-system/theme/color.stylex";
+} from "@standard-reader/design-system/segmented-control";
+import { Tab, TabList, TabPanel, Tabs } from "@standard-reader/design-system/tabs";
+import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
 import {
   size as boxSize,
   gap,
-} from "../design-system/theme/semantic-spacing.stylex";
-import { spacing } from "../design-system/theme/spacing.stylex";
+} from "@standard-reader/design-system/theme/semantic-spacing.stylex";
+import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
 import {
   fontFamily,
   fontSize,
   fontWeight,
   lineHeight,
   tracking,
-} from "../design-system/theme/typography.stylex";
+} from "@standard-reader/design-system/theme/typography.stylex";
 import { Kicker, ReaderContent } from "./reader/primitives";
 
 type Visibility = "ignore" | "warn" | "hide";

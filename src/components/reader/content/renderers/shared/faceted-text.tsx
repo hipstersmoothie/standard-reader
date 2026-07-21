@@ -22,7 +22,7 @@ import {
   intersectHighlightRange,
   useQuoteHighlightTracker,
 } from "#/components/reader/quote-highlight-tracker";
-import { Avatar } from "#/design-system/avatar";
+import { Avatar } from "@standard-reader/design-system/avatar";
 import { authorApi } from "#/integrations/tanstack-query/api-author.functions";
 import { publicationApi } from "#/integrations/tanstack-query/api-publication.functions";
 import { segmentFacetedText, shiftFacets } from "#/lib/leaflet/facets";

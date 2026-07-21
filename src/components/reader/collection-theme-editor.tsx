@@ -16,29 +16,29 @@ import {
 import type { CollectionTheme } from "#/lib/collections/theme";
 import { googleFontsHref } from "#/magazine/theme-vars";
 
-import { Button } from "../../design-system/button";
+import { Button } from "@standard-reader/design-system/button";
 import {
   ColorPicker,
   DefaultColorEditor,
-} from "../../design-system/color-picker";
+} from "@standard-reader/design-system/color-picker";
 import {
   Dialog,
   DialogBody,
   DialogFooter,
   DialogHeader,
-} from "../../design-system/dialog";
-import { Flex } from "../../design-system/flex";
+} from "@standard-reader/design-system/dialog";
+import { Flex } from "@standard-reader/design-system/flex";
 import {
   SegmentedControl,
   SegmentedControlItem,
-} from "../../design-system/segmented-control";
-import { uiColor } from "../../design-system/theme/color.stylex";
-import { radius } from "../../design-system/theme/radius.stylex";
+} from "@standard-reader/design-system/segmented-control";
+import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
+import { radius } from "@standard-reader/design-system/theme/radius.stylex";
 import {
   fontFamily,
   fontSize,
-} from "../../design-system/theme/typography.stylex";
-import { SmallBody } from "../../design-system/typography";
+} from "@standard-reader/design-system/theme/typography.stylex";
+import { SmallBody } from "@standard-reader/design-system/typography";
 import { ReadingCustomFontPicker } from "../reading-custom-font-picker";
 
 const DEFAULTS = {

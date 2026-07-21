@@ -26,7 +26,7 @@ import { flushSync } from "react-dom";
 import { AppLink } from "#/components/reader/app-link";
 import { AuthorProfileLink } from "#/components/reader/author-profile-link";
 import { PublicationNameLink } from "#/components/reader/publication-name-link";
-import { DirectionalIcon } from "#/design-system/directional-icon";
+import { DirectionalIcon } from "@standard-reader/design-system/directional-icon";
 import { labelerApi } from "#/integrations/tanstack-query/api-labelers.functions";
 import type { ArticleDetail } from "#/integrations/tanstack-query/api-publication.functions";
 import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
@@ -40,37 +40,37 @@ import { useReadingTypography } from "#/lib/use-reading-typography";
 import { useTrackReadingHistory } from "#/lib/use-track-reading-history";
 import { prefetchCollectionMagazine } from "#/magazine/load-magazine-data";
 
-import { Alert } from "../../design-system/alert";
-import { Avatar } from "../../design-system/avatar";
-import { Button } from "../../design-system/button";
-import { Flex } from "../../design-system/flex";
-import { IconButton } from "../../design-system/icon-button";
-import { Lightbox } from "../../design-system/lightbox";
+import { Alert } from "@standard-reader/design-system/alert";
+import { Avatar } from "@standard-reader/design-system/avatar";
+import { Button } from "@standard-reader/design-system/button";
+import { Flex } from "@standard-reader/design-system/flex";
+import { IconButton } from "@standard-reader/design-system/icon-button";
+import { Lightbox } from "@standard-reader/design-system/lightbox";
 import {
   LIGHTBOX_IMAGE_TRANSITION_NAME,
   startLightboxViewTransition,
-} from "../../design-system/lightbox/transition";
-import { Menu, MenuItem } from "../../design-system/menu";
-import { animationDuration } from "../../design-system/theme/animations.stylex";
+} from "@standard-reader/design-system/lightbox/transition";
+import { Menu, MenuItem } from "@standard-reader/design-system/menu";
+import { animationDuration } from "@standard-reader/design-system/theme/animations.stylex";
 import {
   criticalColor,
   primaryColor,
   uiColor,
-} from "../../design-system/theme/color.stylex";
-import { radius } from "../../design-system/theme/radius.stylex";
+} from "@standard-reader/design-system/theme/color.stylex";
+import { radius } from "@standard-reader/design-system/theme/radius.stylex";
 import {
   gap,
   horizontalSpace,
   verticalSpace,
-} from "../../design-system/theme/semantic-spacing.stylex";
-import { spacing } from "../../design-system/theme/spacing.stylex";
+} from "@standard-reader/design-system/theme/semantic-spacing.stylex";
+import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
 import {
   fontFamily,
   fontSize,
   fontWeight,
   lineHeight,
   tracking,
-} from "../../design-system/theme/typography.stylex";
+} from "@standard-reader/design-system/theme/typography.stylex";
 import { ArticleBelowFold } from "./article-below-fold";
 import { FollowButton } from "./cards";
 import { ArticleContent } from "./content/article-content";

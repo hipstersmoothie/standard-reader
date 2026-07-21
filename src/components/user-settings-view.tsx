@@ -11,7 +11,7 @@ import { useCallback, useState } from "react";
 
 import { invalidateReadQueries } from "#/components/reader/read-optimistic";
 import { ButtonLink } from "#/components/router-links";
-import { DirectionalIcon } from "#/design-system/directional-icon";
+import { DirectionalIcon } from "@standard-reader/design-system/directional-icon";
 import { auth } from "#/integrations/tanstack-query/api-auth.functions";
 import { feedApi } from "#/integrations/tanstack-query/api-feed.functions";
 import { labelerApi } from "#/integrations/tanstack-query/api-labelers.functions";
@@ -51,34 +51,34 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
-} from "../design-system/alert-dialog";
-import { Avatar } from "../design-system/avatar";
-import { Button } from "../design-system/button";
-import { Dialog, DialogBody, DialogHeader } from "../design-system/dialog";
-import { Flex } from "../design-system/flex";
-import { ProgressCircle } from "../design-system/progress-circle";
+} from "@standard-reader/design-system/alert-dialog";
+import { Avatar } from "@standard-reader/design-system/avatar";
+import { Button } from "@standard-reader/design-system/button";
+import { Dialog, DialogBody, DialogHeader } from "@standard-reader/design-system/dialog";
+import { Flex } from "@standard-reader/design-system/flex";
+import { ProgressCircle } from "@standard-reader/design-system/progress-circle";
 import {
   SegmentedControl,
   SegmentedControlItem,
-} from "../design-system/segmented-control";
-import { Select, SelectItem } from "../design-system/select";
-import { Separator } from "../design-system/separator";
-import { Switch } from "../design-system/switch";
-import { primaryColor, uiColor } from "../design-system/theme/color.stylex";
-import { radius } from "../design-system/theme/radius.stylex";
+} from "@standard-reader/design-system/segmented-control";
+import { Select, SelectItem } from "@standard-reader/design-system/select";
+import { Separator } from "@standard-reader/design-system/separator";
+import { Switch } from "@standard-reader/design-system/switch";
+import { primaryColor, uiColor } from "@standard-reader/design-system/theme/color.stylex";
+import { radius } from "@standard-reader/design-system/theme/radius.stylex";
 import {
   gap,
   horizontalSpace,
   verticalSpace,
-} from "../design-system/theme/semantic-spacing.stylex";
-import { spacing } from "../design-system/theme/spacing.stylex";
+} from "@standard-reader/design-system/theme/semantic-spacing.stylex";
+import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
 import {
   fontFamily,
   fontSize,
   fontWeight,
   lineHeight,
   tracking,
-} from "../design-system/theme/typography.stylex";
+} from "@standard-reader/design-system/theme/typography.stylex";
 import { Masthead, ReaderContent } from "./reader/primitives";
 import { ReadingCustomFontPicker } from "./reading-custom-font-picker";
 import { ReadingSettingsPreview } from "./reading-settings-preview";

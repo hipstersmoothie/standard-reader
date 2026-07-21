@@ -6,18 +6,18 @@ import { Link } from "@tanstack/react-router";
 
 import { initials } from "#/components/reader/format";
 import { PublicationAvatar } from "#/components/reader/primitives";
-import { Avatar } from "#/design-system/avatar";
-import { animationDuration } from "#/design-system/theme/animations.stylex";
-import { uiColor } from "#/design-system/theme/color.stylex";
-import { radius } from "#/design-system/theme/radius.stylex";
-import { gap } from "#/design-system/theme/semantic-spacing.stylex";
-import { spacing } from "#/design-system/theme/spacing.stylex";
+import { Avatar } from "@standard-reader/design-system/avatar";
+import { animationDuration } from "@standard-reader/design-system/theme/animations.stylex";
+import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
+import { radius } from "@standard-reader/design-system/theme/radius.stylex";
+import { gap } from "@standard-reader/design-system/theme/semantic-spacing.stylex";
+import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
 import {
   fontFamily,
   fontSize,
   fontWeight,
   lineHeight,
-} from "#/design-system/theme/typography.stylex";
+} from "@standard-reader/design-system/theme/typography.stylex";
 import { authorApi } from "#/integrations/tanstack-query/api-author.functions";
 import { publicationApi } from "#/integrations/tanstack-query/api-publication.functions";
 import { fetchMiniPost, pcktNoteUrl } from "#/lib/pckt/mini";

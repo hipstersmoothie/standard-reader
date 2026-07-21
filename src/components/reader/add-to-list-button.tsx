@@ -2,8 +2,8 @@ import { Trans, useLingui } from "@lingui/react/macro";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, ListPlus } from "lucide-react";
 
-import { IconButton } from "#/design-system/icon-button";
-import { Menu, MenuItem } from "#/design-system/menu";
+import { IconButton } from "@standard-reader/design-system/icon-button";
+import { Menu, MenuItem } from "@standard-reader/design-system/menu";
 import { listApi } from "#/integrations/tanstack-query/api-lists.functions";
 
 /**

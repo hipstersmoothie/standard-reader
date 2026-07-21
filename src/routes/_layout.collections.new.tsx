@@ -21,9 +21,9 @@ import { buildAuthRedirectPath } from "#/utils/auth-redirect";
 import { CollectionBuilder } from "../components/reader/collection-builder";
 import { CollectionsUpgradeGate } from "../components/reader/collections-upgrade-gate";
 import { Masthead, ReaderContent } from "../components/reader/primitives";
-import { Button } from "../design-system/button";
-import { Flex } from "../design-system/flex";
-import { TextField } from "../design-system/text-field";
+import { Button } from "@standard-reader/design-system/button";
+import { Flex } from "@standard-reader/design-system/flex";
+import { TextField } from "@standard-reader/design-system/text-field";
 
 const newCollectionSearchSchema = z.object({
   publication: z.string().optional(),

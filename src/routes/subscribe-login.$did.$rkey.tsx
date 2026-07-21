@@ -11,28 +11,28 @@ import {
   publicationUi,
 } from "#/components/reader/publication-theme-tokens";
 import { UserHandleAutocomplete } from "#/components/user-handle-autocomplete";
-import { Avatar } from "#/design-system/avatar";
-import { Button } from "#/design-system/button";
-import { Flex } from "#/design-system/flex";
-import { Form } from "#/design-system/form";
-import { primaryColor, uiColor } from "#/design-system/theme/color.stylex";
-import { breakpoints } from "#/design-system/theme/media-queries.stylex";
-import { radius } from "#/design-system/theme/radius.stylex";
+import { Avatar } from "@standard-reader/design-system/avatar";
+import { Button } from "@standard-reader/design-system/button";
+import { Flex } from "@standard-reader/design-system/flex";
+import { Form } from "@standard-reader/design-system/form";
+import { primaryColor, uiColor } from "@standard-reader/design-system/theme/color.stylex";
+import { breakpoints } from "@standard-reader/design-system/theme/media-queries.stylex";
+import { radius } from "@standard-reader/design-system/theme/radius.stylex";
 import {
   gap as gapSpace,
   horizontalSpace,
   size as sizeSpace,
   verticalSpace,
-} from "#/design-system/theme/semantic-spacing.stylex";
+} from "@standard-reader/design-system/theme/semantic-spacing.stylex";
 import {
   fontFamily,
   fontSize,
   fontWeight,
   lineHeight,
   tracking,
-} from "#/design-system/theme/typography.stylex";
-import { Body } from "#/design-system/typography";
-import { Text } from "#/design-system/typography/text";
+} from "@standard-reader/design-system/theme/typography.stylex";
+import { Body } from "@standard-reader/design-system/typography";
+import { Text } from "@standard-reader/design-system/typography/text";
 import { publicationApi } from "#/integrations/tanstack-query/api-publication.functions";
 import { getPublicUrlClient } from "#/lib/public-url";
 import { unauthMiddleware } from "#/middleware/auth";

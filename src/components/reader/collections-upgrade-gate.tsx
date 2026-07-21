@@ -13,7 +13,7 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
-} from "../../design-system/alert-dialog";
+} from "@standard-reader/design-system/alert-dialog";
 import { Masthead, ReaderContent } from "./primitives";
 
 /**
