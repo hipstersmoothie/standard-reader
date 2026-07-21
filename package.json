@@ -52,7 +52,7 @@
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "lex:lint": "node scripts/goat-lex.mjs lex lint",
+    "lex:lint": "node scripts/goat-lex.mjs lex lint lexicons/app/standard-reader",
     "lex:status": "node scripts/goat-lex.mjs lex status",
     "atproto:publish-lexicons": "node scripts/goat-lex.mjs lex publish",
     "lexicons:generate": "pnpm --filter @standard-reader/lexicons generate",

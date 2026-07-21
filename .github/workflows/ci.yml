@@ -177,8 +177,10 @@ jobs:
           go install github.com/bluesky-social/goat@latest
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
 
-      # Validate the schemas. Runs on every push and PR. `goat lex lint`
-      # defaults to ./lexicons/.
+      # Validate our own schemas. Runs on every push and PR. `lex:lint` scopes
+      # `goat lex lint` to lexicons/app/standard-reader (our NSID authority);
+      # the vendored upstream copies under lexicons/{app/bsky,at,com} inherently
+      # trip lint warnings we can't fix, and publishing only touches ours.
       - name: Lint lexicons
         run: pnpm lex:lint
 
