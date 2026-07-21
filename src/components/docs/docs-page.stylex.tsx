@@ -42,6 +42,9 @@ const DOCS_NAV_WIDTH = "264px";
 const DOCS_TOC_WIDTH = "248px";
 const DOCS_INTRO_MAX = "56rem";
 const DOCS_TOPBAR_HEIGHT = spacing["16"];
+// Rails pin below the sticky header and fill the rest of the viewport, so each
+// is its own scroll area that starts flush under the topbar.
+const DOCS_RAIL_HEIGHT = `calc(100vh - ${DOCS_TOPBAR_HEIGHT})`;
 
 export const docsStyles = stylex.create({
   page: {
@@ -258,15 +261,15 @@ export const docsStyles = stylex.create({
     borderInlineEndColor: uiColor.border1,
     borderInlineEndStyle: "solid",
     borderInlineEndWidth: spacing["px"],
-    height: "100vh",
+    height: DOCS_RAIL_HEIGHT,
     minWidth: 0,
     overflowX: "hidden",
     overflowY: "auto",
     paddingBottom: spacing["10"],
     paddingInlineStart: horizontalSpace["3xl"],
     paddingInlineEnd: horizontalSpace["3xl"],
-    paddingTop: spacing["9"],
-    top: 0,
+    paddingTop: spacing["8"],
+    top: DOCS_TOPBAR_HEIGHT,
     width: DOCS_NAV_WIDTH,
   },
   refToc: {
@@ -279,15 +282,15 @@ export const docsStyles = stylex.create({
     borderInlineStartColor: uiColor.border1,
     borderInlineStartStyle: "solid",
     borderInlineStartWidth: spacing["px"],
-    height: "100vh",
+    height: DOCS_RAIL_HEIGHT,
     minWidth: 0,
     overflowX: "hidden",
     overflowY: "auto",
     paddingBottom: spacing["10"],
     paddingInlineStart: spacing["8"],
     paddingInlineEnd: horizontalSpace["2xl"],
-    paddingTop: spacing["9"],
-    top: 0,
+    paddingTop: spacing["8"],
+    top: DOCS_TOPBAR_HEIGHT,
     width: DOCS_TOC_WIDTH,
   },
   refNavGroup: {
@@ -382,14 +385,16 @@ export const docsStyles = stylex.create({
     },
     paddingTop: {
       [NAV_HIDE]: spacing["6"],
-      default: spacing["10"],
+      default: spacing["8"],
     },
     width: "100%",
   },
   masthead: {
     maxWidth: DOCS_INTRO_MAX,
     paddingBottom: spacing["9"],
-    paddingTop: spacing["12"],
+    // No top padding: the column's paddingTop sets the top offset so the
+    // masthead's first line aligns with the left nav and TOC headings.
+    paddingTop: verticalSpace.none,
   },
   introProse: {
     maxWidth: DOCS_INTRO_MAX,
