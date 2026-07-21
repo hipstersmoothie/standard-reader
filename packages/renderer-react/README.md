@@ -169,6 +169,25 @@ embeds the headless defaults can't fetch. Supply your own to make them live:
 />
 ```
 
+> **Resolving the data these components need.** The platform components — and
+> the inline `Mention` / `Link` components — hand you AT-URIs and DIDs
+> (`pollUri`, `ref`, `componentUri`, `uri`, `did`, …) that you resolve to
+> records and identities yourself. A hosted AT Protocol data service like
+> [**microcosm**](https://www.microcosm.blue/) works great for many of them, so
+> you don't have to stand up your own AppView:
+>
+> - [**Slingshot**](https://slingshot.microcosm.blue/) — an edge record +
+>   identity cache. Resolve a record by AT-URI (the poll, gallery blob, note
+>   post, Offprint component, embedded publication/document) or resolve a
+>   handle/DID (`identity.resolveMiniDoc`) to build `Mention` chips and smart
+>   `Link`s.
+> - [**Constellation**](https://constellation.microcosm.blue/) — a network-wide
+>   backlink index, handy for the interaction data these embeds show (poll
+>   tallies, who-embedded-this, reply counts).
+>
+> Both are free and hosted, and pair naturally with a data-fetching layer
+> (TanStack Query, SWR, …) inside your platform components.
+
 ### Customizing inline formatting
 
 Inline marks are shared components too. Override a single mark to restyle it, or
