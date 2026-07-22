@@ -4,23 +4,50 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite dev --port 3001",
     "build": "vite build",
+    "start": "node .output/server/index.mjs",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "@atcute/client": "^5.1.1",
+    "@atcute/identity-resolver": "^2.0.1",
+    "@atcute/identity-resolver-node": "^2.0.1",
+    "@atcute/lexicons": "^2.0.2",
+    "@atcute/oauth-node-client": "^2.0.1",
+    "@neondatabase/serverless": "^1.1.0",
     "@standard-reader/design-system": "workspace:*",
+    "@tanstack/react-query": "^5.101.0",
+    "@tanstack/react-router": "latest",
+    "@tanstack/react-router-ssr-query": "latest",
+    "@tanstack/react-start": "latest",
+    "@tanstack/router-plugin": "^1.132.0",
+    "dotenv": "^17.4.2",
+    "drizzle-kit": "^0.31.10",
+    "drizzle-orm": "^0.45.2",
+    "jose": "^6.2.3",
+    "nitro": "3.0.260603-beta",
+    "pg": "^8.21.0",
     "react": "19.3.0-canary-ad78e251-20260616",
-    "react-dom": "19.3.0-canary-ad78e251-20260616"
+    "react-dom": "19.3.0-canary-ad78e251-20260616",
+    "tsx": "^4.22.4",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@stylexjs/stylex": "^0.19.0",
     "@stylexjs/unplugin": "^0.19.0",
     "@types/node": "^22.19.20",
+    "@types/pg": "^8.20.0",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^6.0.1",
+    "browserslist": "^4.28.2",
+    "lightningcss": "^1.32.0",
     "typescript": "^6.0.2",
     "vite": "8.1.0"
   }

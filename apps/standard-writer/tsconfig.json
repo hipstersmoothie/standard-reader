@@ -20,6 +20,8 @@
     "noUncheckedSideEffectImports": true,
 
     "paths": {
+      "#/*": ["./src/*"],
+      "@/*": ["./src/*"],
       "@standard-reader/design-system/*": ["../../packages/design-system/src/*"]
     }
   }

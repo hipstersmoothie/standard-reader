@@ -10,8 +10,13 @@ import {
   SidebarItem,
 } from "@standard-reader/design-system/sidebar";
 import * as stylex from "@stylexjs/stylex";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 
+import {
+  auth,
+  sessionQueryOptions,
+} from "../integrations/tanstack-query/api-auth.functions";
 import { PUBS } from "./data";
 import { I, Ico } from "./icons";
 import { NameAvatar } from "./name-avatar";
@@ -103,6 +108,102 @@ function profileMenuItem(label: string, icon: string): ReactNode {
   return <MenuItem suffix={<Ico d={icon} s={17} />}>{label}</MenuItem>;
 }
 
+/** Session-aware footer: the signed-in author + logout, or a sign-in prompt. */
+function ProfileFooter() {
+  const { data: session, isPending } = useQuery(sessionQueryOptions);
+  const queryClient = useQueryClient();
+  const logout = useMutation({
+    mutationFn: () => auth.logout(),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries();
+      globalThis.location.href = "/login";
+    },
+  });
+
+  return (
+    <div style={{ padding: "8px 12px 12px", borderTop: `1px solid ${C.b6}` }}>
+      {session ? (
+        <Menu
+          size="lg"
+          placement="top start"
+          trigger={
+            <Button variant="tertiary" style={dsStyles.profileButton}>
+              <NameAvatar name={session.name} size="md" />
+              <span
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 2,
+                  minWidth: 0,
+                  flex: 1,
+                  textAlign: "left",
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: 13.5,
+                    fontWeight: 600,
+                    color: C.t12,
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
+                  {session.name}
+                </span>
+                <span
+                  style={{
+                    fontSize: 12,
+                    color: C.mut,
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
+                  {session.did ?? "Signed in"}
+                </span>
+              </span>
+              <Ico d={I.chevD} s={16} style={{ flex: "none", color: C.mut }} />
+            </Button>
+          }
+        >
+          {profileMenuItem("View profile", I.user)}
+          {profileMenuItem("Settings", I.settings)}
+          <MenuSeparator />
+          <MenuItem
+            variant="destructive"
+            suffix={<Ico d={I.logout} s={17} />}
+            onAction={() => logout.mutate()}
+          >
+            Log out
+          </MenuItem>
+        </Menu>
+      ) : (
+        <Button
+          variant="secondary"
+          style={dsStyles.profileButton}
+          isDisabled={isPending}
+          onPress={() => {
+            globalThis.location.href = "/login";
+          }}
+        >
+          <Ico d={I.user} s={17} />
+          <span
+            style={{
+              flex: 1,
+              textAlign: "left",
+              fontSize: 13.5,
+              fontWeight: 600,
+            }}
+          >
+            Sign in
+          </span>
+        </Button>
+      )}
+    </div>
+  );
+}
+
 export function AppSidebar({ screen, pubId, go, openPub }: AppSidebarProps) {
   return (
     <div
@@ -182,60 +283,7 @@ export function AppSidebar({ screen, pubId, go, openPub }: AppSidebarProps) {
         </Sidebar>
       </div>
 
-      <div style={{ padding: "8px 12px 12px", borderTop: `1px solid ${C.b6}` }}>
-        <Menu
-          size="lg"
-          placement="top start"
-          trigger={
-            <Button variant="tertiary" style={dsStyles.profileButton}>
-              <NameAvatar name="Mara Delgado" size="md" />
-              <span
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 2,
-                  minWidth: 0,
-                  flex: 1,
-                  textAlign: "left",
-                }}
-              >
-                <span
-                  style={{
-                    fontSize: 13.5,
-                    fontWeight: 600,
-                    color: C.t12,
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                  }}
-                >
-                  Mara Delgado
-                </span>
-                <span
-                  style={{
-                    fontSize: 12,
-                    color: C.mut,
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                  }}
-                >
-                  @mara.dispatch.site
-                </span>
-              </span>
-              <Ico d={I.chevD} s={16} style={{ flex: "none", color: C.mut }} />
-            </Button>
-          }
-        >
-          {profileMenuItem("View profile", I.user)}
-          {profileMenuItem("My publications", I.book)}
-          {profileMenuItem("Settings", I.settings)}
-          <MenuSeparator />
-          <MenuItem variant="destructive" suffix={<Ico d={I.logout} s={17} />}>
-            Log out
-          </MenuItem>
-        </Menu>
-      </div>
+      <ProfileFooter />
     </div>
   );
 }

@@ -5,8 +5,14 @@ import { RichTextEditor } from "@standard-reader/design-system/rich-text-editor"
 import { Separator } from "@standard-reader/design-system/separator";
 import { Tag, TagGroup } from "@standard-reader/design-system/tag-group";
 import { TextField } from "@standard-reader/design-system/text-field";
-import { useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
 
+import { sessionQueryOptions } from "../integrations/tanstack-query/api-auth.functions";
+import {
+  draftsApi,
+  draftsQueryOptions,
+} from "../integrations/tanstack-query/api-drafts.functions";
 import { STARTER_DOC } from "./data";
 import { I, Ico } from "./icons";
 import { NameAvatar } from "./name-avatar";
@@ -14,31 +20,27 @@ import { C, sectLabel } from "./tokens";
 import type { Layout, Screen } from "./types";
 
 function countWords(markdown: string): number {
-  const words = markdown
+  return markdown
     .replaceAll(/[#>*`_-]/g, " ")
     .split(/\s+/)
-    .filter(Boolean);
-  return words.length;
+    .filter(Boolean).length;
 }
 
 interface EditorCanvasProps {
-  onWordCount: (count: number) => void;
+  title: string;
+  onTitleChange: (title: string) => void;
+  onBodyChange: (markdown: string) => void;
 }
 
-function EditorCanvas({ onWordCount }: EditorCanvasProps) {
-  const handleChange = (next: MarkpubRecord) => {
-    onWordCount(countWords(next.text.markdown));
-  };
-
+function EditorCanvas({
+  title,
+  onTitleChange,
+  onBodyChange,
+}: EditorCanvasProps) {
   return (
     <div
       className="sw-scroll"
-      style={{
-        flex: 1,
-        minWidth: 0,
-        overflow: "auto",
-        background: C.pageBg,
-      }}
+      style={{ flex: 1, minWidth: 0, overflow: "auto", background: C.pageBg }}
     >
       <div
         style={{
@@ -68,7 +70,9 @@ function EditorCanvas({ onWordCount }: EditorCanvasProps) {
 
         <input
           aria-label="Document title"
-          defaultValue="You Own the Press"
+          value={title}
+          onChange={(event) => onTitleChange(event.target.value)}
+          placeholder="Untitled"
           spellCheck={false}
           style={{
             display: "block",
@@ -108,7 +112,9 @@ function EditorCanvas({ onWordCount }: EditorCanvasProps) {
         <RichTextEditor
           chrome="bare"
           defaultValue={STARTER_DOC}
-          onChange={handleChange}
+          onChange={(record: MarkpubRecord) =>
+            onBodyChange(record.text.markdown)
+          }
           aria-label="Document body"
         />
       </div>
@@ -116,7 +122,7 @@ function EditorCanvas({ onWordCount }: EditorCanvasProps) {
   );
 }
 
-function WorkbenchRail() {
+function WorkbenchRail({ title }: { title: string }) {
   return (
     <div
       className="sw-scroll"
@@ -155,7 +161,7 @@ function WorkbenchRail() {
           <span style={{ fontSize: 12.5 }}>Drop cover, or click to upload</span>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          <TextField label="Title" defaultValue="You Own the Press" size="sm" />
+          <TextField label="Title" value={title} isReadOnly size="sm" />
           <TextField
             label="Path"
             prefix="/"
@@ -218,8 +224,45 @@ interface WriteScreenProps {
 }
 
 export function WriteScreen({ layout, setLayout, go }: WriteScreenProps) {
-  const [words, setWords] = useState(1240);
-  const wordLabel = useMemo(() => words.toLocaleString(), [words]);
+  const { data: session } = useQuery(sessionQueryOptions);
+  const queryClient = useQueryClient();
+
+  const [title, setTitle] = useState("You Own the Press");
+  const [markdown, setMarkdown] = useState(STARTER_DOC);
+  const [touched, setTouched] = useState(false);
+  const [draftId, setDraftId] = useState<string | undefined>();
+
+  const words = useMemo(() => countWords(markdown), [markdown]);
+
+  const save = useMutation({
+    mutationFn: (vars: { title: string; bodyMarkdown: string }) =>
+      draftsApi.upsertDraft({ data: { id: draftId, ...vars } }),
+    onSuccess: (res) => {
+      setDraftId(res.id);
+      void queryClient.invalidateQueries({
+        queryKey: draftsQueryOptions.queryKey,
+      });
+    },
+  });
+
+  // Autosave: debounce edits and persist to the writer's drafts table when
+  // signed in. Guests compose freely; nothing is written until they sign in.
+  const saveMutate = save.mutate;
+  useEffect(() => {
+    if (!session || !touched) return;
+    const timer = setTimeout(() => {
+      saveMutate({ title, bodyMarkdown: markdown });
+    }, 1200);
+    return () => clearTimeout(timer);
+  }, [title, markdown, touched, session, saveMutate]);
+
+  const status: string = session
+    ? save.isPending
+      ? "Saving…"
+      : save.isSuccess
+        ? "Saved to draft · just now"
+        : "Draft"
+    : "Sign in to save · draft is local";
 
   return (
     <div
@@ -255,9 +298,12 @@ export function WriteScreen({ layout, setLayout, go }: WriteScreenProps) {
               fontWeight: 600,
               color: C.t12,
               whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              maxWidth: 360,
             }}
           >
-            You Own the Press
+            {title || "Untitled"}
           </div>
           <div
             style={{
@@ -273,11 +319,11 @@ export function WriteScreen({ layout, setLayout, go }: WriteScreenProps) {
                 width: 6,
                 height: 6,
                 borderRadius: "50%",
-                background: "#4a9d6b",
+                background: session ? "#4a9d6b" : "#c99f6a",
                 flex: "none",
               }}
             />
-            Saved to draft · just now · {wordLabel} words
+            {status} · {words.toLocaleString()} words
           </div>
         </div>
         <div
@@ -308,8 +354,18 @@ export function WriteScreen({ layout, setLayout, go }: WriteScreenProps) {
         </div>
       </div>
       <div style={{ flex: 1, minHeight: 0, display: "flex" }}>
-        <EditorCanvas onWordCount={setWords} />
-        {layout === "workbench" && <WorkbenchRail />}
+        <EditorCanvas
+          title={title}
+          onTitleChange={(next) => {
+            setTouched(true);
+            setTitle(next);
+          }}
+          onBodyChange={(next) => {
+            setTouched(true);
+            setMarkdown(next);
+          }}
+        />
+        {layout === "workbench" && <WorkbenchRail title={title} />}
       </div>
     </div>
   );
