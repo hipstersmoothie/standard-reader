@@ -2,7 +2,7 @@
   "name": "standard-reader-extension",
   "description": "Save articles and follow publications on the standard.site network.",
   "private": true,
-  "version": "0.4.0",
+  "version": "0.4.1",
   "type": "module",
   "scripts": {
     "dev": "wxt",
