@@ -38,6 +38,7 @@ import { markdownFromMarkpub, toMarkpubRecord } from "./markpub";
 import type { MarkpubRecord, MarkpubTextValue } from "./markpub";
 import { EDITOR_NODES } from "./nodes";
 import { BlockMenuPlugin } from "./plugins/block-menu";
+import { FloatingToolbarPlugin } from "./plugins/floating-toolbar";
 import { ToolbarPlugin } from "./plugins/toolbar";
 import { MARKPUB_TRANSFORMERS } from "./transformers";
 
@@ -58,6 +59,11 @@ const styles = stylex.create({
     backgroundColor: uiColor.bg,
     overflow: "hidden",
   },
+  // Editorial "bare" chrome: no card, no fixed toolbar — the surface sits
+  // directly on the page and formatting appears in a floating selection pill.
+  rootBare: {
+    backgroundColor: "transparent",
+  },
   toolbarWrap: {
     borderBottomWidth: 1,
     borderBottomStyle: "solid",
@@ -70,6 +76,13 @@ const styles = stylex.create({
     position: "relative",
     maxHeight: 640,
     overflowY: "auto",
+  },
+  editorShellBare: {
+    position: "relative",
+  },
+  contentEditableBare: {
+    paddingBlock: 0,
+    paddingInlineEnd: 0,
   },
   contentEditable: {
     minHeight: verticalSpace["12xl"],
@@ -122,6 +135,13 @@ export interface RichTextEditorProps extends Omit<
   /** Namespace passed to Lexical; useful when multiple editors share a page. */
   namespace?: string;
   isReadOnly?: boolean;
+  /**
+   * Chrome style. `"boxed"` (default) frames the editor in a bordered card with
+   * a fixed formatting toolbar. `"bare"` drops the frame for an editorial,
+   * page-level writing surface whose formatting lives in a floating selection
+   * toolbar — the Standard Writer composing experience.
+   */
+  chrome?: "boxed" | "bare";
   "aria-label"?: string;
 }
 
@@ -138,10 +158,12 @@ export function RichTextEditor({
   placeholder = "Write something…",
   namespace = "markpub-editor",
   isReadOnly = false,
+  chrome = "boxed",
   style,
   "aria-label": ariaLabel = "Rich text editor",
   ...props
 }: RichTextEditorProps) {
+  const bare = chrome === "bare";
   const initialMarkdown = markdownFromMarkpub(defaultValue);
   // Serializing on the trailing edge keeps large documents responsive while
   // typing; the record is rebuilt from the settled editor state.
@@ -162,7 +184,10 @@ export function RichTextEditor({
   );
 
   return (
-    <div {...stylex.props(styles.root, style)} {...props}>
+    <div
+      {...stylex.props(bare ? styles.rootBare : styles.root, style)}
+      {...props}
+    >
       <LexicalComposer
         initialConfig={{
           namespace,
@@ -181,12 +206,18 @@ export function RichTextEditor({
           },
         }}
       >
-        {isReadOnly ? null : (
+        {isReadOnly || bare ? null : (
           <div {...stylex.props(styles.toolbarWrap)}>
             <ToolbarPlugin />
           </div>
         )}
-        <div {...stylex.props(styles.editorShell, styles.focused)}>
+        <div
+          {...stylex.props(
+            bare
+              ? styles.editorShellBare
+              : [styles.editorShell, styles.focused],
+          )}
+        >
           <RichTextPlugin
             contentEditable={
               <ContentEditable
@@ -195,12 +226,16 @@ export function RichTextEditor({
                 placeholder={
                   <div {...stylex.props(styles.placeholder)}>{placeholder}</div>
                 }
-                {...stylex.props(styles.contentEditable)}
+                {...stylex.props(
+                  styles.contentEditable,
+                  bare && styles.contentEditableBare,
+                )}
               />
             }
             ErrorBoundary={LexicalErrorBoundary}
           />
           {isReadOnly ? null : <BlockMenuPlugin />}
+          {isReadOnly || !bare ? null : <FloatingToolbarPlugin />}
           <HistoryPlugin />
           <ListPlugin />
           <CheckListPlugin />

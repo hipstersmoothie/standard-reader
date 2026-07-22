@@ -18,3 +18,28 @@ body,
 body {
   margin: 0;
 }
+
+/* Blinking caret used by static editorial previews. */
+@keyframes sw-blink {
+  0%,
+  45% {
+    opacity: 1;
+  }
+  55%,
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Thin, warm scrollbars on the app's scroll regions. */
+.sw-scroll::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.sw-scroll::-webkit-scrollbar-thumb {
+  background: color-mix(in oklab, currentColor 22%, transparent);
+  border-radius: 8px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}

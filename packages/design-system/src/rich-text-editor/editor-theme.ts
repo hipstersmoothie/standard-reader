@@ -24,9 +24,9 @@ import {
  */
 const styles = stylex.create({
   paragraph: {
-    marginBlock: verticalSpace["3xl"],
-    fontSize: fontSize.base,
-    lineHeight: lineHeight.xl,
+    marginBlock: verticalSpace["2xl"],
+    fontSize: fontSize.xl,
+    lineHeight: lineHeight.base,
   },
   h1: {
     marginTop: verticalSpace["7xl"],
@@ -78,11 +78,14 @@ const styles = stylex.create({
     marginBlock: verticalSpace["3xl"],
     marginInline: 0,
     paddingInlineStart: horizontalSpace["3xl"],
-    borderInlineStartWidth: horizontalSpace.md,
+    borderInlineStartWidth: horizontalSpace.sm,
     borderInlineStartStyle: "solid",
-    borderInlineStartColor: uiColor.border2,
-    color: uiColor.text1,
+    // Editorial accent rail: the warm bronze accent, not a neutral border.
+    borderInlineStartColor: primaryColor.solid1,
+    color: primaryColor.text1,
+    fontSize: fontSize["2xl"],
     fontStyle: "italic",
+    lineHeight: lineHeight.sm,
   },
   list: {
     marginBlock: verticalSpace["3xl"],
@@ -122,11 +125,14 @@ const styles = stylex.create({
   underlineStrikethrough: { textDecorationLine: "underline line-through" },
   code: {
     backgroundColor: uiColor.component1,
+    borderWidth: 1,
+    borderStyle: "solid",
+    borderColor: uiColor.border1,
     borderRadius: radius.xs,
     paddingBlock: verticalSpace.xxs,
     paddingInline: horizontalSpace.xs,
     fontFamily: fontFamily.mono,
-    fontSize: "0.9em",
+    fontSize: "0.85em",
   },
   highlight: {
     backgroundColor: primaryColor.bgSubtle,
