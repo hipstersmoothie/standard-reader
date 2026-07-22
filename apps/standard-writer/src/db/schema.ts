@@ -18,3 +18,8 @@ export {
   userRelations,
   verification,
 } from "../../../standard-reader/src/db/schema/auth.ts";
+// Read-model tables the reader owns; the writer reads its author's own
+// publications + documents from them (never migrates them).
+export { publications } from "../../../standard-reader/src/db/schema/publications.ts";
+export { documents } from "../../../standard-reader/src/db/schema/documents.ts";
+export { profiles } from "../../../standard-reader/src/db/schema/profiles.ts";

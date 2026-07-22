@@ -1,14 +1,27 @@
 import { Button } from "@standard-reader/design-system/button";
+import { IconButton } from "@standard-reader/design-system/icon-button";
 import {
   Menu,
   MenuItem,
   MenuSeparator,
 } from "@standard-reader/design-system/menu";
 import {
-  Sidebar,
-  SidebarSection,
-  SidebarItem,
-} from "@standard-reader/design-system/sidebar";
+  focusColor,
+  primaryColor,
+  uiColor,
+} from "@standard-reader/design-system/theme/color.stylex";
+import { radius } from "@standard-reader/design-system/theme/radius.stylex";
+import {
+  gap,
+  horizontalSpace,
+  verticalSpace,
+} from "@standard-reader/design-system/theme/semantic-spacing.stylex";
+import {
+  fontFamily,
+  fontSize,
+  fontWeight,
+  tracking,
+} from "@standard-reader/design-system/theme/typography.stylex";
 import * as stylex from "@stylexjs/stylex";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ReactNode } from "react";
@@ -17,22 +30,119 @@ import {
   auth,
   sessionQueryOptions,
 } from "../integrations/tanstack-query/api-auth.functions";
-import { PUBS } from "./data";
+import { draftsQueryOptions } from "../integrations/tanstack-query/api-drafts.functions";
+import { myPublicationsQueryOptions } from "../integrations/tanstack-query/api-publications.functions";
 import { I, Ico } from "./icons";
 import { NameAvatar } from "./name-avatar";
 import { C } from "./tokens";
 import type { Screen } from "./types";
 
-// DS components accept StyleX styles (not raw objects) for `style`.
-const dsStyles = stylex.create({
+// Sidebar chrome mirrors Standard Reader's app-shell: a brand wordmark, a flat
+// primary nav, an uppercase section label with inline actions, then the list.
+const styles = stylex.create({
+  aside: {
+    width: 264,
+    flex: "none",
+    height: "100%",
+    borderInlineEndWidth: 1,
+    borderInlineEndStyle: "solid",
+    borderInlineEndColor: uiColor.border1,
+    backgroundColor: uiColor.bgSubtle,
+    display: "flex",
+    flexDirection: "column",
+  },
+  scroll: {
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: "0%",
+    minHeight: 0,
+    overflowY: "auto",
+    overflowX: "hidden",
+    paddingInline: horizontalSpace.lg,
+    paddingTop: verticalSpace["3xl"],
+  },
+  brand: {
+    fontFamily: fontFamily.serif,
+    fontSize: "1.3rem",
+    fontWeight: fontWeight.medium,
+    letterSpacing: tracking.tight,
+    lineHeight: 1,
+    color: uiColor.text2,
+    paddingInline: horizontalSpace.lg,
+    marginBottom: verticalSpace["6xl"],
+    display: "block",
+  },
   nav: {
     display: "flex",
     flexDirection: "column",
-    gap: 20,
-    paddingTop: "4px",
-    paddingRight: "12px",
-    paddingBottom: "24px",
-    paddingLeft: "12px",
+    rowGap: gap.xxs,
+  },
+  navItem: {
+    borderStyle: "none",
+    borderRadius: radius.sm,
+    textAlign: "start",
+    width: "100%",
+    cursor: "pointer",
+    alignItems: "center",
+    backgroundColor: {
+      default: "transparent",
+      ":hover": uiColor.component2,
+    },
+    outline: {
+      default: "none",
+      ":is([data-focus-visible])": `2px solid ${focusColor.ring}`,
+    },
+    outlineOffset: "-2px",
+    color: uiColor.text2,
+    columnGap: gap.xl,
+    display: "flex",
+    fontFamily: fontFamily.sans,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+    paddingBlock: verticalSpace.lg,
+    paddingInline: horizontalSpace.lg,
+  },
+  navItemActive: {
+    backgroundColor: primaryColor.component3,
+    color: primaryColor.text2,
+  },
+  navLabel: {
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: "0%",
+    minWidth: 0,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  },
+  count: {
+    borderRadius: radius.full,
+    backgroundColor: primaryColor.component3,
+    color: primaryColor.text2,
+    fontFamily: fontFamily.mono,
+    fontSize: "0.7rem",
+    paddingInline: horizontalSpace.md,
+  },
+  sideLabel: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    color: uiColor.text1,
+    fontFamily: fontFamily.sans,
+    fontSize: "0.65rem",
+    fontWeight: fontWeight.semibold,
+    letterSpacing: tracking.widest,
+    textTransform: "uppercase",
+    paddingInline: horizontalSpace.lg,
+    paddingTop: verticalSpace["3xl"],
+    paddingBottom: verticalSpace.md,
+  },
+  footer: {
+    paddingInline: horizontalSpace.md,
+    paddingBlock: horizontalSpace.md,
+    borderBlockStartWidth: 1,
+    borderBlockStartStyle: "solid",
+    borderBlockStartColor: uiColor.border1,
   },
   profileButton: {
     display: "flex",
@@ -55,51 +165,24 @@ interface NavItemProps {
 
 function NavItem({ active, icon, label, badge, onClick }: NavItemProps) {
   return (
-    <SidebarItem isActive={active} onClick={onClick}>
-      <span
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 10,
-          width: "100%",
-          minWidth: 0,
-        }}
-      >
-        <Ico d={icon} />
-        <span
-          style={{
-            flex: 1,
-            minWidth: 0,
-            textAlign: "left",
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-          }}
-        >
-          {label}
-        </span>
-        {badge != null && (
-          <span
-            style={{
-              flex: "none",
-              fontSize: 11,
-              color: C.mut,
-              background: C.ui3,
-              borderRadius: 20,
-              padding: "1px 8px",
-            }}
-          >
-            {badge}
-          </span>
-        )}
-      </span>
-    </SidebarItem>
+    <button
+      type="button"
+      onClick={onClick}
+      data-active={active || undefined}
+      {...stylex.props(styles.navItem, active && styles.navItemActive)}
+    >
+      <Ico d={icon} s={18} />
+      <span {...stylex.props(styles.navLabel)}>{label}</span>
+      {badge != null && badge > 0 ? (
+        <span {...stylex.props(styles.count)}>{badge}</span>
+      ) : null}
+    </button>
   );
 }
 
 interface AppSidebarProps {
   screen: Screen;
-  pubId: string;
+  pubId: string | undefined;
   go: (screen: Screen) => void;
   openPub: (id: string) => void;
 }
@@ -121,14 +204,14 @@ function ProfileFooter() {
   });
 
   return (
-    <div style={{ padding: "8px 12px 12px", borderTop: `1px solid ${C.b6}` }}>
+    <div {...stylex.props(styles.footer)}>
       {session ? (
         <Menu
           size="lg"
           placement="top start"
           trigger={
-            <Button variant="tertiary" style={dsStyles.profileButton}>
-              <NameAvatar name={session.name} size="md" />
+            <Button variant="tertiary" style={styles.profileButton}>
+              <NameAvatar name={session.name} src={session.image} size="md" />
               <span
                 style={{
                   display: "flex",
@@ -160,7 +243,9 @@ function ProfileFooter() {
                     textOverflow: "ellipsis",
                   }}
                 >
-                  {session.did ?? "Signed in"}
+                  {session.handle
+                    ? `@${session.handle}`
+                    : (session.did ?? "Signed in")}
                 </span>
               </span>
               <Ico d={I.chevD} s={16} style={{ flex: "none", color: C.mut }} />
@@ -181,7 +266,7 @@ function ProfileFooter() {
       ) : (
         <Button
           variant="secondary"
-          style={dsStyles.profileButton}
+          style={styles.profileButton}
           isDisabled={isPending}
           onPress={() => {
             globalThis.location.href = "/login";
@@ -205,82 +290,55 @@ function ProfileFooter() {
 }
 
 export function AppSidebar({ screen, pubId, go, openPub }: AppSidebarProps) {
+  const { data: publications = [] } = useQuery(myPublicationsQueryOptions);
+  const { data: drafts = [] } = useQuery(draftsQueryOptions);
+
   return (
-    <div
-      style={{
-        width: 266,
-        flex: "none",
-        height: "100%",
-        borderRight: `1px solid ${C.b6}`,
-        background: C.warm,
-        display: "flex",
-        flexDirection: "column",
-      }}
-    >
-      <div
-        style={{
-          padding: "22px 20px 14px 24px",
-          display: "flex",
-          alignItems: "center",
-        }}
-      >
-        <div
-          style={{
-            fontFamily: C.serif,
-            fontSize: "1.3rem",
-            fontWeight: 500,
-            letterSpacing: "-0.02em",
-            lineHeight: 1,
-            color: C.t12,
-          }}
-        >
+    <div {...stylex.props(styles.aside)}>
+      <div className="sw-scroll" {...stylex.props(styles.scroll)}>
+        <div {...stylex.props(styles.brand)}>
           Standard <span style={{ color: C.a9 }}>Writer</span>
         </div>
-      </div>
 
-      <div
-        className="sw-scroll"
-        style={{
-          flex: 1,
-          minHeight: 0,
-          overflowY: "auto",
-          overflowX: "hidden",
-        }}
-      >
-        <Sidebar style={dsStyles.nav}>
-          <SidebarSection title="Compose">
+        <nav {...stylex.props(styles.nav)}>
+          <NavItem
+            active={screen === "write"}
+            icon={I.pen}
+            label="Write"
+            onClick={() => go("write")}
+          />
+          <NavItem
+            active={screen === "drafts"}
+            icon={I.file}
+            label="Drafts"
+            badge={drafts.length}
+            onClick={() => go("drafts")}
+          />
+        </nav>
+
+        <div {...stylex.props(styles.sideLabel)}>
+          <span>Publications</span>
+          <IconButton
+            aria-label="New publication"
+            size="sm"
+            variant="tertiary"
+            onPress={() => go("newpub")}
+          >
+            <Ico d={I.plus} s={15} />
+          </IconButton>
+        </div>
+
+        <nav {...stylex.props(styles.nav)}>
+          {publications.map((p) => (
             <NavItem
-              active={screen === "write"}
-              icon={I.pen}
-              label="Write"
-              onClick={() => go("write")}
+              key={p.uri}
+              active={screen === "pub" && pubId === p.uri}
+              icon={I.book}
+              label={p.name}
+              onClick={() => openPub(p.uri)}
             />
-            <NavItem
-              active={screen === "drafts"}
-              icon={I.file}
-              label="Drafts"
-              badge={4}
-              onClick={() => go("drafts")}
-            />
-          </SidebarSection>
-          <SidebarSection title="Publications">
-            {PUBS.map((p) => (
-              <NavItem
-                key={p.id}
-                active={screen === "pub" && pubId === p.id}
-                icon={I.book}
-                label={p.name}
-                onClick={() => openPub(p.id)}
-              />
-            ))}
-            <NavItem
-              active={screen === "newpub"}
-              icon={I.plus}
-              label="New publication"
-              onClick={() => go("newpub")}
-            />
-          </SidebarSection>
-        </Sidebar>
+          ))}
+        </nav>
       </div>
 
       <ProfileFooter />

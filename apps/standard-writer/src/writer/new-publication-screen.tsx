@@ -8,6 +8,7 @@ import { TextArea } from "@standard-reader/design-system/text-area";
 import { TextField } from "@standard-reader/design-system/text-field";
 import { useState } from "react";
 
+import type { WriterPublication } from "../integrations/tanstack-query/api-publications.functions";
 import type { PubTheme, ThemePreset } from "./data";
 import { PALETTE, THEME_PRESETS, THEME_ROLES } from "./data";
 import { I, Ico } from "./icons";
@@ -30,12 +31,19 @@ const colHex = (c: ColorValue): string =>
 
 interface NewPubScreenProps {
   onClose: () => void;
+  /** When present, the screen edits this publication instead of creating one. */
+  publication?: WriterPublication;
 }
 
-export function NewPubScreen({ onClose }: NewPubScreenProps) {
-  const [theme, setTheme] = useState<ThemePreset>(THEME_PRESETS[0]);
-  const [discover, setDiscover] = useState(true);
-  const [name, setName] = useState("The Marginalia Dispatch");
+export function NewPubScreen({ onClose, publication }: NewPubScreenProps) {
+  const isEditing = publication != null;
+  const [theme, setTheme] = useState<ThemePreset>(
+    publication
+      ? { id: "custom", name: "Custom", ...publication.theme }
+      : THEME_PRESETS[0],
+  );
+  const [discover, setDiscover] = useState(publication?.discoverable ?? true);
+  const [name, setName] = useState(publication?.name ?? "");
   // Bumped when a preset is picked so the (uncontrolled) color pickers remount
   // and re-sync to the preset's values without disrupting manual edits.
   const [presetGen, setPresetGen] = useState(0);
@@ -99,7 +107,7 @@ export function NewPubScreen({ onClose }: NewPubScreenProps) {
             color: C.t12,
           }}
         >
-          New publication
+          {isEditing ? "Edit publication" : "New publication"}
         </h1>
         <p
           style={{
@@ -187,7 +195,8 @@ export function NewPubScreen({ onClose }: NewPubScreenProps) {
                   <TextField
                     label="Base URL"
                     prefix="https://"
-                    defaultValue="marginaliadispatch.com"
+                    defaultValue={publication?.url ?? ""}
+                    placeholder="yourpublication.com"
                     size="md"
                     isRequired
                     description="Document URLs combine this with each document’s path."
@@ -200,7 +209,8 @@ export function NewPubScreen({ onClose }: NewPubScreenProps) {
                 </div>
                 <TextArea
                   aria-label="Description"
-                  defaultValue="Loose essays on reading, writing, and owning what you publish."
+                  defaultValue={publication?.description ?? ""}
+                  placeholder="What is this publication about?"
                   rows={3}
                 />
               </div>
@@ -368,7 +378,7 @@ export function NewPubScreen({ onClose }: NewPubScreenProps) {
                   }}
                 >
                   <Ico d={I.up} s={17} w={2} />
-                  Create publication
+                  {isEditing ? "Save changes" : "Create publication"}
                 </span>
               </Button>
               <Button variant="tertiary" size="lg" onPress={onClose}>

@@ -2,9 +2,11 @@ import { Avatar } from "@standard-reader/design-system/avatar";
 
 /** First letters of the first two name parts, e.g. "Mara Delgado" → "MD". */
 function initials(name: string): string {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
+  const parts = name
+    .replace(/^@/, "")
+    .split(/[\s.]+/)
+    .filter(Boolean);
+  return parts
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase() ?? "")
     .join("");
@@ -12,10 +14,19 @@ function initials(name: string): string {
 
 interface NameAvatarProps {
   name: string;
+  /** Optional avatar image URL; falls back to initials when absent/broken. */
+  src?: string | null;
   size?: "sm" | "md" | "lg" | "xl";
 }
 
-/** Design-system Avatar seeded from a display name (initials fallback). */
-export function NameAvatar({ name, size }: NameAvatarProps) {
-  return <Avatar fallback={initials(name)} alt={name} size={size} />;
+/** Design-system Avatar seeded from a display name, with an optional image. */
+export function NameAvatar({ name, src, size }: NameAvatarProps) {
+  return (
+    <Avatar
+      src={src ?? undefined}
+      fallback={initials(name)}
+      alt={name}
+      size={size}
+    />
+  );
 }

@@ -1,40 +1,51 @@
 import { Button } from "@standard-reader/design-system/button";
 import { RichTextEditor } from "@standard-reader/design-system/rich-text-editor";
+import { useQuery } from "@tanstack/react-query";
 
-import type { Article } from "./data";
+import { sessionQueryOptions } from "../integrations/tanstack-query/api-auth.functions";
+import type { WriterDocument } from "../integrations/tanstack-query/api-publications.functions";
 import { I, Ico } from "./icons";
 import { clickable } from "./interaction";
 import { NameAvatar } from "./name-avatar";
 import { C } from "./tokens";
 
-const EDIT_DOC = [
-  "A publication on standard.site is a set of signed records in a repository you control. This document lives in your repo, addressed by its path and signed by your DID — not held on a platform that could revoke it.",
-  "",
-  "Because the article is the record, revising it is simply writing the record again — no support ticket, no waiting on an editor's queue. Every reader that speaks the schema sees the update the next time it ingests.",
-  "",
-  "> The repo record stays the source of truth. The app is a client that helps you produce it — it is not the home of your work.",
-  "",
-  "You own the press.",
-].join("\n");
+function formatDate(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
 
 interface EditScreenProps {
-  doc: Article | null;
+  doc: WriterDocument | null;
   back: () => void;
 }
 
 export function EditScreen({ doc, back }: EditScreenProps) {
-  const d: Article = doc ?? {
-    title: "Untitled",
-    pubName: "",
-    path: "",
-    published: "",
-    words: "",
-    readTime: "",
-    rev: 1,
-    status: "published",
-    excerpt: "",
-  };
-  const scheduled = d.status === "scheduled";
+  const { data: session } = useQuery(sessionQueryOptions);
+
+  if (!doc) {
+    return (
+      <div
+        style={{
+          height: "100%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: C.pageBg,
+          color: C.mut,
+        }}
+      >
+        No document selected.
+      </div>
+    );
+  }
+
+  const authorName = session?.name ?? "You";
+  const published = formatDate(doc.publishedAt);
 
   return (
     <div
@@ -58,17 +69,8 @@ export function EditScreen({ doc, back }: EditScreenProps) {
       >
         <Ico d={I.clock} s={16} w={1.9} style={{ color: C.a11 }} />
         <div style={{ fontSize: 13, color: C.a11 }}>
-          {scheduled ? (
-            <span>
-              Scheduled — publishes {d.published}. Editing updates the pending
-              record in your repo.
-            </span>
-          ) : (
-            <span>
-              Editing a <strong>published</strong> document — republishing
-              rewrites the record in your repo. Reader re-ingests the update.
-            </span>
-          )}
+          Editing a <strong>published</strong> document — republishing rewrites
+          the record in your repo. Reader re-ingests the update.
         </div>
         <span
           style={{
@@ -79,7 +81,7 @@ export function EditScreen({ doc, back }: EditScreenProps) {
             flex: "none",
           }}
         >
-          rev {d.rev} · {d.published}
+          {published}
         </span>
       </div>
       <div
@@ -106,7 +108,7 @@ export function EditScreen({ doc, back }: EditScreenProps) {
           }}
         >
           <Ico d={I.chevL} s={15} w={1.9} />
-          {d.pubName}
+          Back
         </span>
         <div style={{ width: 1, height: 22, background: C.b6, flex: "none" }} />
         <div
@@ -127,11 +129,13 @@ export function EditScreen({ doc, back }: EditScreenProps) {
               textOverflow: "ellipsis",
             }}
           >
-            {d.title}
+            {doc.title || "Untitled"}
           </div>
-          <div style={{ fontSize: 11.5, color: C.mut, fontFamily: C.mono }}>
-            /{d.path}
-          </div>
+          {doc.path && (
+            <div style={{ fontSize: 11.5, color: C.mut, fontFamily: C.mono }}>
+              /{doc.path}
+            </div>
+          )}
         </div>
         <div
           style={{
@@ -141,14 +145,11 @@ export function EditScreen({ doc, back }: EditScreenProps) {
             gap: 10,
           }}
         >
-          <Button variant="tertiary" size="sm">
-            View in Reader
-          </Button>
           <Button variant="secondary" size="sm">
             Revert
           </Button>
           <Button variant="primary" size="sm">
-            {scheduled ? "Update" : "Republish"}
+            Republish
           </Button>
         </div>
       </div>
@@ -180,7 +181,7 @@ export function EditScreen({ doc, back }: EditScreenProps) {
               textWrap: "balance",
             }}
           >
-            {d.title}
+            {doc.title || "Untitled"}
           </h1>
           <div
             style={{
@@ -192,19 +193,21 @@ export function EditScreen({ doc, back }: EditScreenProps) {
               fontSize: 14,
             }}
           >
-            <NameAvatar name="Mara Delgado" size="sm" />
-            <span>Mara Delgado</span>
+            <NameAvatar name={authorName} size="sm" />
+            <span>{authorName}</span>
             <span style={{ opacity: 0.5 }}>·</span>
-            <span style={{ color: scheduled ? "#8a6d3b" : "#4a9d6b" }}>
-              {scheduled ? "Scheduled" : "Published"}
-            </span>
-            <span style={{ opacity: 0.5 }}>·</span>
-            <span>{d.readTime} read</span>
+            <span style={{ color: "#4a9d6b" }}>Published</span>
+            {published && (
+              <>
+                <span style={{ opacity: 0.5 }}>·</span>
+                <span>{published}</span>
+              </>
+            )}
           </div>
           <RichTextEditor
-            key={d.path}
+            key={doc.uri}
             chrome="bare"
-            defaultValue={EDIT_DOC}
+            defaultValue={doc.textContent ?? ""}
             aria-label="Document body"
           />
         </div>

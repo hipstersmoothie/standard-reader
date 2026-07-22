@@ -171,7 +171,9 @@ function applyOption(
 const styles = stylex.create({
   gutter: (top: number) => ({
     position: "absolute",
-    insetInlineStart: 0,
+    // Bare/editorial chrome sets `--rte-plus-inset` to pull the "+" into the
+    // left margin so body text aligns with the title; boxed chrome leaves it 0.
+    insetInlineStart: "var(--rte-plus-inset, 0px)",
     top,
     transform: "translateY(-2px)",
     zIndex: 1,

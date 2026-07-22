@@ -63,6 +63,9 @@ const styles = stylex.create({
   // directly on the page and formatting appears in a floating selection pill.
   rootBare: {
     backgroundColor: "transparent",
+    // Pull the gutter "+" into the left margin so editorial body text lines up
+    // flush with the document title (see BlockMenuPlugin).
+    "--rte-plus-inset": "-32px",
   },
   toolbarWrap: {
     borderBottomWidth: 1,
@@ -82,6 +85,7 @@ const styles = stylex.create({
   },
   contentEditableBare: {
     paddingBlock: 0,
+    paddingInlineStart: 0,
     paddingInlineEnd: 0,
   },
   contentEditable: {

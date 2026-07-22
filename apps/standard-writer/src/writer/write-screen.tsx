@@ -3,7 +3,6 @@ import { IconButton } from "@standard-reader/design-system/icon-button";
 import type { MarkpubRecord } from "@standard-reader/design-system/rich-text-editor";
 import { RichTextEditor } from "@standard-reader/design-system/rich-text-editor";
 import { Separator } from "@standard-reader/design-system/separator";
-import { Tag, TagGroup } from "@standard-reader/design-system/tag-group";
 import { TextField } from "@standard-reader/design-system/text-field";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -13,7 +12,6 @@ import {
   draftsApi,
   draftsQueryOptions,
 } from "../integrations/tanstack-query/api-drafts.functions";
-import { STARTER_DOC } from "./data";
 import { I, Ico } from "./icons";
 import { NameAvatar } from "./name-avatar";
 import { C, sectLabel } from "./tokens";
@@ -29,6 +27,7 @@ function countWords(markdown: string): number {
 interface EditorCanvasProps {
   title: string;
   defaultMarkdown: string;
+  authorName: string;
   onTitleChange: (title: string) => void;
   onBodyChange: (markdown: string) => void;
 }
@@ -36,6 +35,7 @@ interface EditorCanvasProps {
 function EditorCanvas({
   title,
   defaultMarkdown,
+  authorName,
   onTitleChange,
   onBodyChange,
 }: EditorCanvasProps) {
@@ -103,12 +103,10 @@ function EditorCanvas({
             fontSize: 14,
           }}
         >
-          <NameAvatar name="Mara Delgado" size="sm" />
-          <span>Mara Delgado</span>
+          <NameAvatar name={authorName} size="sm" />
+          <span>{authorName}</span>
           <span style={{ opacity: 0.5 }}>·</span>
           <span>Draft</span>
-          <span style={{ opacity: 0.5 }}>·</span>
-          <span>~5 min read</span>
         </div>
 
         <RichTextEditor
@@ -117,6 +115,7 @@ function EditorCanvas({
           onChange={(record: MarkpubRecord) =>
             onBodyChange(record.text.markdown)
           }
+          placeholder="Write your document…"
           aria-label="Document body"
         />
       </div>
@@ -124,7 +123,19 @@ function EditorCanvas({
   );
 }
 
-function WorkbenchRail({ title }: { title: string }) {
+interface WorkbenchRailProps {
+  title: string;
+  path: string;
+  onPathChange: (path: string) => void;
+  authorName: string;
+}
+
+function WorkbenchRail({
+  title,
+  path,
+  onPathChange,
+  authorName,
+}: WorkbenchRailProps) {
   return (
     <div
       className="sw-scroll"
@@ -163,12 +174,14 @@ function WorkbenchRail({ title }: { title: string }) {
           <span style={{ fontSize: 12.5 }}>Drop cover, or click to upload</span>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          <TextField label="Title" value={title} isReadOnly size="sm" />
+          <TextField label="Title" value={title} isReadOnly size="md" />
           <TextField
             label="Path"
             prefix="/"
-            defaultValue="you-own-the-press"
-            size="sm"
+            value={path}
+            onChange={onPathChange}
+            placeholder="my-document"
+            size="md"
           />
         </div>
       </div>
@@ -177,18 +190,7 @@ function WorkbenchRail({ title }: { title: string }) {
 
       <div>
         <div style={sectLabel}>Tags</div>
-        <TagGroup aria-label="Tags">
-          <Tag id="essays">essays</Tag>
-          <Tag id="atproto">atproto</Tag>
-          <Tag id="ownership">ownership</Tag>
-        </TagGroup>
-        <div style={{ marginTop: 10 }}>
-          <TextField
-            aria-label="Add a tag"
-            placeholder="Add a tag…"
-            size="sm"
-          />
-        </div>
+        <TextField aria-label="Add a tag" placeholder="Add a tag…" size="md" />
       </div>
 
       <Separator />
@@ -196,8 +198,7 @@ function WorkbenchRail({ title }: { title: string }) {
       <div>
         <div style={sectLabel}>Contributors</div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <NameAvatar name="Mara Delgado" size="sm" />
-          <NameAvatar name="Jonah Reyes" size="sm" />
+          <NameAvatar name={authorName} size="sm" />
           <div
             style={{
               width: 30,
@@ -236,6 +237,7 @@ export function WriteScreen({
 }: WriteScreenProps) {
   const { data: session } = useQuery(sessionQueryOptions);
   const queryClient = useQueryClient();
+  const authorName = session?.name ?? "You";
 
   const draftQuery = useQuery({
     queryKey: ["draft", draftId],
@@ -244,8 +246,9 @@ export function WriteScreen({
   });
   const loaded = draftId === undefined ? null : (draftQuery.data ?? null);
 
-  const [title, setTitle] = useState("You Own the Press");
-  const [markdown, setMarkdown] = useState(STARTER_DOC);
+  const [title, setTitle] = useState("");
+  const [markdown, setMarkdown] = useState("");
+  const [path, setPath] = useState("");
   const [touched, setTouched] = useState(false);
   const [seedKey, setSeedKey] = useState("new");
   // Which identity the editor is currently seeded with, so a self-created draft
@@ -254,11 +257,12 @@ export function WriteScreen({
   const seededRef = useRef("new");
 
   useEffect(() => {
-    if (draftId == null) {
+    if (draftId === undefined) {
       if (seededRef.current === "new") return;
       seededRef.current = "new";
-      setTitle("You Own the Press");
-      setMarkdown(STARTER_DOC);
+      setTitle("");
+      setMarkdown("");
+      setPath("");
       setTouched(false);
       setSeedKey(`new:${Date.now()}`);
       return;
@@ -267,6 +271,7 @@ export function WriteScreen({
       seededRef.current = `loaded:${loaded.id}`;
       setTitle(loaded.title);
       setMarkdown(loaded.bodyMarkdown);
+      setPath(loaded.path ?? "");
       setTouched(false);
       setSeedKey(`loaded:${loaded.id}`);
     }
@@ -275,12 +280,13 @@ export function WriteScreen({
   const words = useMemo(() => countWords(markdown), [markdown]);
 
   const save = useMutation({
-    mutationFn: (vars: { title: string; bodyMarkdown: string }) =>
-      draftsApi.upsertDraft({ data: { id: draftId, ...vars } }),
+    mutationFn: (vars: {
+      title: string;
+      bodyMarkdown: string;
+      path?: string;
+    }) => draftsApi.upsertDraft({ data: { id: draftId, ...vars } }),
     onSuccess: (res) => {
       if (res.id !== draftId) {
-        // A freshly-created draft: adopt its id and mark it already-seeded so
-        // the incoming getDraft doesn't reset the editor mid-compose.
         seededRef.current = `loaded:${res.id}`;
         onDraftIdChange(res.id);
       }
@@ -294,10 +300,10 @@ export function WriteScreen({
   useEffect(() => {
     if (!session || !touched) return;
     const timer = setTimeout(() => {
-      saveMutate({ title, bodyMarkdown: markdown });
+      saveMutate({ title, bodyMarkdown: markdown, path: path || undefined });
     }, 1200);
     return () => clearTimeout(timer);
-  }, [title, markdown, touched, session, saveMutate]);
+  }, [title, markdown, path, touched, session, saveMutate]);
 
   const status: string = session
     ? save.isPending
@@ -348,7 +354,7 @@ export function WriteScreen({
               maxWidth: 360,
             }}
           >
-            {title || "Untitled"}
+            {title || "Untitled document"}
           </div>
           <div
             style={{
@@ -417,6 +423,7 @@ export function WriteScreen({
             key={seedKey}
             title={title}
             defaultMarkdown={markdown}
+            authorName={authorName}
             onTitleChange={(next) => {
               setTouched(true);
               setTitle(next);
@@ -427,7 +434,17 @@ export function WriteScreen({
             }}
           />
         )}
-        {layout === "workbench" && <WorkbenchRail title={title} />}
+        {layout === "workbench" && (
+          <WorkbenchRail
+            title={title}
+            path={path}
+            onPathChange={(next) => {
+              setTouched(true);
+              setPath(next);
+            }}
+            authorName={authorName}
+          />
+        )}
       </div>
     </div>
   );

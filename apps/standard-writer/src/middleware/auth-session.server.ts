@@ -7,7 +7,11 @@ import { AUTH_SESSION_TOKEN_COOKIE } from "#/integrations/auth/constants";
 export interface WriterSession {
   userId: string;
   did: string | null;
+  /** Display name (from the profile read-model, falling back to the DID). */
   name: string;
+  /** Current handle (e.g. `alice.bsky.social`), resolved from the profile. */
+  handle: string | null;
+  /** Avatar URL, from the profile read-model. */
   image: string | null;
 }
 
@@ -44,10 +48,20 @@ export async function getWriterSession(
   if (!row || row.expiresAt.getTime() <= Date.now()) return null;
 
   const { user } = row;
+
+  // Identity (handle / display name / avatar) lives in the reader's profile
+  // read-model, keyed by DID — not on the auth `user` row.
+  const profile = user.did
+    ? await db.query.profiles.findFirst({
+        where: eq(schema.profiles.did, user.did),
+      })
+    : null;
+
   return {
     userId: user.id,
     did: user.did,
-    name: user.name,
-    image: user.image,
+    name: profile?.displayName || user.name,
+    handle: profile?.handle ?? null,
+    image: profile?.avatarUrl ?? user.image,
   };
 }

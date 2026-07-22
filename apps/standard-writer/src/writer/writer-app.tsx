@@ -1,8 +1,10 @@
 import { useState } from "react";
 
+import type {
+  WriterDocument,
+  WriterPublication,
+} from "../integrations/tanstack-query/api-publications.functions";
 import { AppSidebar } from "./app-sidebar";
-import type { Article } from "./data";
-import { PUBS } from "./data";
 import { DraftsScreen } from "./drafts-screen";
 import { EditScreen } from "./edit-screen";
 import { NewPubScreen } from "./new-publication-screen";
@@ -15,17 +17,29 @@ import { WriteScreen } from "./write-screen";
 export function WriterApp() {
   const [screen, setScreen] = useState<Screen>("write");
   const [layout, setLayout] = useState<Layout>("focus");
-  const [pubId, setPubId] = useState(PUBS[0].id);
-  const [doc, setDoc] = useState<Article | null>(null);
+  // The selected publication's at:// uri, and the document open in the editor.
+  const [pubId, setPubId] = useState<string | undefined>();
+  const [doc, setDoc] = useState<WriterDocument | null>(null);
+  // The publication being edited on the New/Edit publication screen.
+  const [editingPub, setEditingPub] = useState<WriterPublication | undefined>();
   // The draft currently open in the editor (undefined = a fresh document).
   const [draftId, setDraftId] = useState<string | undefined>();
 
-  const go = (s: Screen) => setScreen(s);
+  const go = (s: Screen) => {
+    // Reaching the publication screen from anywhere but the edit action means a
+    // fresh, blank "New publication".
+    if (s === "newpub") setEditingPub(undefined);
+    setScreen(s);
+  };
+  const editPub = (p: WriterPublication) => {
+    setEditingPub(p);
+    setScreen("newpub");
+  };
   const openPub = (id: string) => {
     setPubId(id);
     setScreen("pub");
   };
-  const openDoc = (d: Article) => {
+  const openDoc = (d: WriterDocument) => {
     setDoc(d);
     setScreen("edit");
   };
@@ -37,8 +51,7 @@ export function WriterApp() {
     setDraftId(undefined);
     setScreen("write");
   };
-
-  const pub = PUBS.find((p) => p.id === pubId) ?? PUBS[0];
+  const backToPub = () => (pubId ? openPub(pubId) : go("write"));
 
   return (
     <div
@@ -73,21 +86,21 @@ export function WriterApp() {
         {screen === "drafts" && (
           <DraftsScreen openDraft={openDraft} newDoc={newDoc} />
         )}
-        {screen === "pub" && (
+        {screen === "pub" && pubId && (
           <PubDetailScreen
-            pub={pub}
-            go={go}
+            pubId={pubId}
+            onEdit={editPub}
             openDoc={openDoc}
             newDoc={newDoc}
           />
         )}
-        {screen === "newpub" && <NewPubScreen onClose={() => openPub(pubId)} />}
+        {screen === "newpub" && (
+          <NewPubScreen onClose={backToPub} publication={editingPub} />
+        )}
         {screen === "publish" && (
           <PublishScreen go={go} draftId={draftId} onPublished={newDoc} />
         )}
-        {screen === "edit" && (
-          <EditScreen doc={doc} back={() => openPub(pubId)} />
-        )}
+        {screen === "edit" && <EditScreen doc={doc} back={backToPub} />}
       </div>
     </div>
   );

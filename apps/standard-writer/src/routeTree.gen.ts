@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ApiAuthAtprotoAuthorizeRouteImport } from './routes/api/auth/atproto/authorize'
 import { Route as ApiAuthAtprotoCallbackRouteImport } from './routes/api/auth/atproto/callback'
@@ -19,6 +20,11 @@ import { Route as ApiAuthAtprotoMetadataDotjsonRouteImport } from './routes/api/
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -51,6 +57,7 @@ const ApiAuthAtprotoMetadataDotjsonRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/api/auth/atproto/authorize': typeof ApiAuthAtprotoAuthorizeRoute
   '/api/auth/atproto/callback': typeof ApiAuthAtprotoCallbackRoute
@@ -59,6 +66,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/api/auth/atproto/authorize': typeof ApiAuthAtprotoAuthorizeRoute
   '/api/auth/atproto/callback': typeof ApiAuthAtprotoCallbackRoute
@@ -68,6 +76,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/api/auth/atproto/authorize': typeof ApiAuthAtprotoAuthorizeRoute
   '/api/auth/atproto/callback': typeof ApiAuthAtprotoCallbackRoute
@@ -78,6 +87,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/dashboard'
     | '/login'
     | '/api/auth/atproto/authorize'
     | '/api/auth/atproto/callback'
@@ -86,6 +96,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/dashboard'
     | '/login'
     | '/api/auth/atproto/authorize'
     | '/api/auth/atproto/callback'
@@ -94,6 +105,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/dashboard'
     | '/login'
     | '/api/auth/atproto/authorize'
     | '/api/auth/atproto/callback'
@@ -103,6 +115,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DashboardRoute: typeof DashboardRoute
   LoginRoute: typeof LoginRoute
   ApiAuthAtprotoAuthorizeRoute: typeof ApiAuthAtprotoAuthorizeRoute
   ApiAuthAtprotoCallbackRoute: typeof ApiAuthAtprotoCallbackRoute
@@ -117,6 +130,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -159,6 +179,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DashboardRoute: DashboardRoute,
   LoginRoute: LoginRoute,
   ApiAuthAtprotoAuthorizeRoute: ApiAuthAtprotoAuthorizeRoute,
   ApiAuthAtprotoCallbackRoute: ApiAuthAtprotoCallbackRoute,

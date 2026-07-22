@@ -1,28 +1,56 @@
 import { Button } from "@standard-reader/design-system/button";
 import { IconButton } from "@standard-reader/design-system/icon-button";
 import { Tooltip } from "@standard-reader/design-system/tooltip";
+import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 
-import type { Article, Publication } from "./data";
-import { STATUS } from "./data";
+import {
+  myPublicationsQueryOptions,
+  publicationDocumentsQueryOptions,
+} from "../integrations/tanstack-query/api-publications.functions";
+import type {
+  WriterDocument,
+  WriterPublication,
+} from "../integrations/tanstack-query/api-publications.functions";
 import { I, Ico } from "./icons";
-import { clickable } from "./interaction";
 import { C } from "./tokens";
-import type { Screen } from "./types";
+
+function formatDate(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function excerptOf(doc: WriterDocument): string {
+  const source = doc.description ?? doc.textContent ?? "";
+  const text = source.replaceAll(/\s+/g, " ").trim();
+  return text.length > 200 ? `${text.slice(0, 200)}…` : text;
+}
 
 interface ArticleRowProps {
-  a: Article;
+  doc: WriterDocument;
   onOpen: () => void;
   last: boolean;
 }
 
-function ArticleRow({ a, onOpen, last }: ArticleRowProps) {
+function ArticleRow({ doc, onOpen, last }: ArticleRowProps) {
   const [hover, setHover] = useState(false);
-  const st = STATUS[a.status];
 
   return (
     <div
-      {...clickable(onOpen)}
+      role="button"
+      tabIndex={0}
+      onClick={onOpen}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onOpen();
+        }
+      }}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       style={{
@@ -55,23 +83,25 @@ function ArticleRow({ a, onOpen, last }: ArticleRowProps) {
               lineHeight: 1.2,
             }}
           >
-            {a.title}
+            {doc.title || "Untitled"}
           </span>
           <span style={{ flex: "none", fontSize: 12.5, color: C.mut }}>
-            {a.published}
+            {formatDate(doc.publishedAt)}
           </span>
         </div>
-        <div
-          style={{
-            fontSize: 14.5,
-            color: C.a11,
-            lineHeight: 1.55,
-            marginBottom: 12,
-            maxWidth: 620,
-          }}
-        >
-          {a.excerpt}
-        </div>
+        {excerptOf(doc) && (
+          <div
+            style={{
+              fontSize: 14.5,
+              color: C.a11,
+              lineHeight: 1.55,
+              marginBottom: 12,
+              maxWidth: 620,
+            }}
+          >
+            {excerptOf(doc)}
+          </div>
+        )}
         <div
           style={{
             display: "flex",
@@ -86,7 +116,7 @@ function ArticleRow({ a, onOpen, last }: ArticleRowProps) {
               display: "inline-flex",
               alignItems: "center",
               gap: 6,
-              color: st.color,
+              color: "#3f7d4e",
             }}
           >
             <span
@@ -94,17 +124,23 @@ function ArticleRow({ a, onOpen, last }: ArticleRowProps) {
                 width: 7,
                 height: 7,
                 borderRadius: "50%",
-                background: st.dot,
+                background: "#4a9d6b",
               }}
             />
-            {st.label}
+            Published
           </span>
-          <span style={{ opacity: 0.4 }}>·</span>
-          <span style={{ fontFamily: C.mono }}>/{a.path}</span>
-          <span style={{ opacity: 0.4 }}>·</span>
-          <span>{a.words} words</span>
-          <span style={{ opacity: 0.4 }}>·</span>
-          <span style={{ fontFamily: C.mono }}>rev {a.rev}</span>
+          {doc.path && (
+            <>
+              <span style={{ opacity: 0.4 }}>·</span>
+              <span style={{ fontFamily: C.mono }}>/{doc.path}</span>
+            </>
+          )}
+          {doc.tags && doc.tags.length > 0 && (
+            <>
+              <span style={{ opacity: 0.4 }}>·</span>
+              <span style={{ fontFamily: C.mono }}>{doc.tags.join(" · ")}</span>
+            </>
+          )}
         </div>
       </div>
     </div>
@@ -112,18 +148,43 @@ function ArticleRow({ a, onOpen, last }: ArticleRowProps) {
 }
 
 interface PubDetailScreenProps {
-  pub: Publication;
-  go: (screen: Screen) => void;
-  openDoc: (doc: Article) => void;
+  pubId: string;
+  onEdit: (pub: WriterPublication) => void;
+  openDoc: (doc: WriterDocument) => void;
   newDoc: () => void;
 }
 
 export function PubDetailScreen({
-  pub,
-  go,
+  pubId,
+  onEdit,
   openDoc,
   newDoc,
 }: PubDetailScreenProps) {
+  const { data: publications = [] } = useQuery(myPublicationsQueryOptions);
+  const { data: documents = [], isPending } = useQuery(
+    publicationDocumentsQueryOptions(pubId),
+  );
+  const pub = publications.find((p) => p.uri === pubId);
+
+  if (!pub) {
+    return (
+      <div
+        className="sw-scroll"
+        style={{
+          height: "100%",
+          overflow: "auto",
+          background: C.pageBg,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: C.mut,
+        }}
+      >
+        Publication not found.
+      </div>
+    );
+  }
+
   const t = pub.theme;
 
   return (
@@ -177,17 +238,19 @@ export function PubDetailScreen({
             >
               {pub.name}
             </div>
-            <div
-              style={{
-                fontSize: 14.5,
-                lineHeight: 1.55,
-                opacity: 0.82,
-                marginTop: 8,
-                maxWidth: 560,
-              }}
-            >
-              {pub.desc}
-            </div>
+            {pub.description && (
+              <div
+                style={{
+                  fontSize: 14.5,
+                  lineHeight: 1.55,
+                  opacity: 0.82,
+                  marginTop: 8,
+                  maxWidth: 560,
+                }}
+              >
+                {pub.description}
+              </div>
+            )}
             <div
               style={{
                 display: "flex",
@@ -208,7 +271,7 @@ export function PubDetailScreen({
                 }}
               >
                 <Ico d={I.link} s={14} />
-                https://{pub.url}
+                {pub.url}
               </span>
               <span style={{ opacity: 0.4 }}>·</span>
               <span
@@ -232,7 +295,10 @@ export function PubDetailScreen({
                 {pub.discoverable ? "Discoverable" : "Unlisted"}
               </span>
               <span style={{ opacity: 0.4 }}>·</span>
-              <span>{pub.articles.length} documents</span>
+              <span>
+                {documents.length}{" "}
+                {documents.length === 1 ? "document" : "documents"}
+              </span>
             </div>
           </div>
           <div
@@ -245,21 +311,12 @@ export function PubDetailScreen({
             }}
           >
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <Tooltip text="View in Reader">
-                <IconButton
-                  variant="tertiary"
-                  size="sm"
-                  aria-label="View in Reader"
-                >
-                  <Ico d={I.external} s={17} />
-                </IconButton>
-              </Tooltip>
               <Tooltip text="Edit identity & theme">
                 <IconButton
                   variant="secondary"
                   size="sm"
                   aria-label="Edit identity & theme"
-                  onPress={() => go("newpub")}
+                  onPress={() => onEdit(pub)}
                 >
                   <Ico d={I.settings} s={17} />
                 </IconButton>
@@ -268,28 +325,6 @@ export function PubDetailScreen({
                 New document
               </Button>
             </div>
-            <div style={{ display: "flex", gap: 5 }}>
-              {(
-                [
-                  "background",
-                  "foreground",
-                  "accent",
-                  "accentForeground",
-                ] as const
-              ).map((k) => (
-                <span
-                  key={k}
-                  title={k}
-                  style={{
-                    width: 15,
-                    height: 15,
-                    borderRadius: 5,
-                    background: t[k],
-                    border: "1px solid rgba(0,0,0,0.14)",
-                  }}
-                />
-              ))}
-            </div>
           </div>
         </div>
       </div>
@@ -297,16 +332,39 @@ export function PubDetailScreen({
       <div
         style={{ maxWidth: 940, margin: "0 auto", padding: "18px 40px 80px" }}
       >
-        <div>
-          {pub.articles.map((a, i) => (
-            <ArticleRow
-              key={a.path}
-              a={a}
-              last={i === pub.articles.length - 1}
-              onOpen={() => openDoc({ ...a, pubName: pub.name })}
-            />
-          ))}
-        </div>
+        {isPending ? (
+          <div
+            style={{ padding: "48px 16px", textAlign: "center", color: C.mut }}
+          >
+            Loading documents…
+          </div>
+        ) : documents.length === 0 ? (
+          <div
+            style={{
+              padding: "48px 16px",
+              textAlign: "center",
+              color: C.mut,
+            }}
+          >
+            <div style={{ fontFamily: C.serif, fontSize: 20, color: C.t12 }}>
+              No documents yet
+            </div>
+            <div style={{ fontSize: 14, marginTop: 6 }}>
+              Publish a document to this publication and it will appear here.
+            </div>
+          </div>
+        ) : (
+          <div>
+            {documents.map((d, i) => (
+              <ArticleRow
+                key={d.uri}
+                doc={d}
+                last={i === documents.length - 1}
+                onOpen={() => openDoc(d)}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
