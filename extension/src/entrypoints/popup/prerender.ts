@@ -17,19 +17,22 @@ import type { StoredPopupState } from "../../lib/popup-state";
 
 function escapeHtml(value: unknown): string {
   return String(value)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/"/g, "&quot;");
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll('"', "&quot;");
 }
 
 type PrerenderState = StoredPopupState;
 
 function renderPrerender(state: PrerenderState): void {
-  const root = document.getElementById("root");
-  if (!root || root.getAttribute("data-sr-prerender") === "1") {
+  // `querySelector("#root")` returns `Element`; cast to `HTMLElement` to access
+  // `dataset`. Matches the extension's `querySelector("#root")` convention
+  // (options/main.tsx, popup-dimensions.ts).
+  const root = document.querySelector("#root") as HTMLElement | null;
+  if (!root || root.dataset.srPrerender === "1") {
     return;
   }
-  root.setAttribute("data-sr-prerender", "1");
+  root.dataset.srPrerender = "1";
 
   const session = state.session ?? {};
   const result = state.result ?? { kind: "unknown" };
@@ -124,10 +127,12 @@ function renderPrerender(state: PrerenderState): void {
 }
 
 // Uses the typed `browser` global (WXT's promise-based wrapper) rather than the
-// callback-style `chrome` global. async/await keeps the logic flat and type-safe;
-// the module still runs before React because it has no heavy imports and `main.tsx`
-// awaits `window.__SR_POPUP_INIT__` via `loadInitialPopupState`.
-window.__SR_POPUP_INIT__ = (async (): Promise<PrerenderState | null> => {
+// callback-style `chrome` global. Top-level await keeps the logic flat and
+// type-safe; the module still runs before React because it has no heavy imports
+// and `main.tsx` awaits `globalThis.__SR_POPUP_INIT__` via `loadInitialPopupState`.
+// The consumer awaits this value, so wrapping the resolved result in
+// `Promise.resolve` preserves the `Promise<…>` contract without an async IIFE.
+async function loadPrerenderState(): Promise<PrerenderState | null> {
   if (!browser?.tabs?.query || !browser?.storage?.session?.get) {
     return null;
   }
@@ -146,4 +151,7 @@ window.__SR_POPUP_INIT__ = (async (): Promise<PrerenderState | null> => {
 
   renderPrerender(state);
   return state;
-})();
+}
+
+// oxlint-disable-next-line eslint-plugin-unicorn(prefer-global-this) -- the global type is declared on the `Window` interface (popup-load-state.ts), which `globalThis` doesn't see.
+window.__SR_POPUP_INIT__ = Promise.resolve(await loadPrerenderState());

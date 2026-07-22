@@ -1,8 +1,8 @@
 import { createRequire } from "node:module";
 import path from "node:path";
 
-import stylexPlugin from "@stylexjs/unplugin/vite";
 import babel from "@rolldown/plugin-babel";
+import stylexPlugin from "@stylexjs/unplugin/vite";
 import browserslist from "browserslist";
 import { browserslistToTargets } from "lightningcss";
 import { defineConfig } from "wxt";

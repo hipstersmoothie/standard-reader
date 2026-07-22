@@ -1,8 +1,7 @@
-import { StrictMode } from "react";
-import { createRoot } from "react-dom/client";
-
 import { setupI18n } from "@lingui/core";
 import { I18nProvider } from "@lingui/react";
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
 
 import { PopupShell } from "../../components/PopupShell";
 import { loadInitialPopupState } from "../../lib/popup-load-state";
