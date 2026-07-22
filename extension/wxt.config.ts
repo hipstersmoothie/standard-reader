@@ -2,6 +2,7 @@ import { createRequire } from "node:module";
 import path from "node:path";
 
 import stylexPlugin from "@stylexjs/unplugin/vite";
+import babel from "@rolldown/plugin-babel";
 import browserslist from "browserslist";
 import { browserslistToTargets } from "lightningcss";
 import { defineConfig } from "wxt";
@@ -110,7 +111,20 @@ export default defineConfig({
         "@": path.join(repoRoot, "src"),
       },
     },
-    plugins: stylexPlugins,
+    plugins: [
+      // Compile Lingui macros (`Trans`, `t`, `Plural`, …) imported via the `#`/`@`
+      // aliases into shared app source (e.g. seek-track.tsx → useLingui). Without
+      // this pass the macros ship untransformed and throw "executed outside the
+      // context of compilation" at runtime. Mirrors vite.config.ts in the app, which
+      // uses the same plugin + excludes. `src/design-system` is intentionally
+      // excluded — `lingui.config.ts` documents that macros don't work there and its
+      // strings are passed in by callers instead.
+      babel({
+        plugins: ["@lingui/babel-plugin-lingui-macro"],
+        exclude: [/[/\\]node_modules[/\\]/, /\/src\/design-system\//],
+      }),
+      ...stylexPlugins,
+    ],
   }),
   manifest: ({ browser }) => ({
     name: "Standard Reader",

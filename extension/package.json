@@ -15,6 +15,8 @@
   },
   "dependencies": {
     "@huggingface/transformers": "^3.8.1",
+    "@lingui/core": "^6.5.0",
+    "@lingui/react": "^6.5.0",
     "@stylexjs/stylex": "^0.19.0",
     "kokoro-js": "^1.2.1",
     "lucide-react": "^0.548.0",
@@ -25,6 +27,8 @@
     "react-stately": "^3.47.0"
   },
   "devDependencies": {
+    "@lingui/babel-plugin-lingui-macro": "^6.5.0",
+    "@rolldown/plugin-babel": "0.2.3",
     "@stylexjs/unplugin": "^0.19.0",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
