@@ -109,31 +109,39 @@ function collectRuns(
 ): void {
   for (const node of nodes) {
     switch (node.type) {
-      case "text":
+      case "text": {
         out.push({ text: node.value, kinds, link });
         break;
-      case "strong":
+      }
+      case "strong": {
         collectRuns(node.children, [...kinds, "bold"], link, out);
         break;
-      case "emphasis":
+      }
+      case "emphasis": {
         collectRuns(node.children, [...kinds, "italic"], link, out);
         break;
-      case "delete":
+      }
+      case "delete": {
         collectRuns(node.children, [...kinds, "strikethrough"], link, out);
         break;
-      case "inlineCode":
+      }
+      case "inlineCode": {
         out.push({ text: node.value, kinds: [...kinds, "code"], link });
         break;
-      case "link":
+      }
+      case "link": {
         collectRuns(node.children, kinds, node.url || link, out);
         break;
-      case "break":
+      }
+      case "break": {
         out.push({ text: "\n", kinds, link });
         break;
-      default:
+      }
+      default: {
         // image (inline), html, footnoteReference, etc. carry no plain body
         // we can faithfully inline — skip rather than emit noise.
         break;
+      }
     }
   }
 }
@@ -250,12 +258,18 @@ function mapBlock(node: RootContent): Array<StructuredRenderableBlock> {
       const blocks = node.children.flatMap(mapBlock);
       return blocks.length > 0 ? [{ blocks, kind: "blockquote" }] : [];
     }
-    case "thematicBreak":
+    case "thematicBreak": {
       return [{ kind: "horizontalRule" }];
-    case "code":
+    }
+    case "code": {
       return [
-        { kind: "code", language: node.lang ?? undefined, plaintext: node.value },
+        {
+          kind: "code",
+          language: node.lang ?? undefined,
+          plaintext: node.value,
+        },
       ];
+    }
     case "list": {
       const list = mapList(node);
       return list ? [list] : [];
@@ -264,11 +278,15 @@ function mapBlock(node: RootContent): Array<StructuredRenderableBlock> {
       const table = mapTable(node.children);
       return table ? [table] : [];
     }
-    case "image":
-      return [{ alt: node.alt ?? undefined, externalSrc: node.url, kind: "image" }];
-    default:
+    case "image": {
+      return [
+        { alt: node.alt ?? undefined, externalSrc: node.url, kind: "image" },
+      ];
+    }
+    default: {
       // html, definition, footnoteDefinition, yaml, etc. — nothing to render.
       return [];
+    }
   }
 }
 

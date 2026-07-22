@@ -251,9 +251,9 @@
       }
     },
     {
-      "files": ["**/wxt.config.ts"],
+      "files": ["**/wxt.config.ts", "scripts/publish-packages.mjs"],
       "rules": {
-        "eslint-plugin-unicorn(no-process-exit)": "off"
+        "unicorn/no-process-exit": "off"
       }
     },
     {

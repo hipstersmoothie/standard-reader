@@ -5,9 +5,9 @@ loads from [jsDelivr](https://www.jsdelivr.com/)'s ESM CDN via an import map.
 
 - **`index.html`** — the blog index. Uses the typed lexicon client
   ([`@standard-reader/lexicons`](https://www.npmjs.com/package/@standard-reader/lexicons)
-  + [`@atproto/lex-client`](https://www.npmjs.com/package/@atproto/lex-client)) to
-  call `getAuthor` and `getPublicationDocuments`, and renders the author header +
-  each publication's posts as a Lit element.
+  - [`@atproto/lex-client`](https://www.npmjs.com/package/@atproto/lex-client)) to
+    call `getAuthor` and `getPublicationDocuments`, and renders the author header +
+    each publication's posts as a Lit element.
 - **`post.html`** — the post viewer. Calls `getDocument` (one call returns
   metadata **and** the renderable body) and renders it with the
   [`@standard-reader/renderer-lit`](https://www.npmjs.com/package/@standard-reader/renderer-lit)

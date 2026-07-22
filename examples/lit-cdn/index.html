@@ -43,54 +43,176 @@
           --bg: #101216;
         }
       }
-      * { box-sizing: border-box; }
+      * {
+        box-sizing: border-box;
+      }
       body {
         margin: 0;
         background: var(--bg);
         color: var(--fg);
-        font: 16px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif;
+        font:
+          16px/1.6 system-ui,
+          -apple-system,
+          "Segoe UI",
+          sans-serif;
       }
-      main { max-width: 720px; margin: 0 auto; padding: 40px 20px 80px; }
+      main {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 40px 20px 80px;
+      }
 
-      .profile { display: flex; gap: 18px; align-items: center; margin-bottom: 8px; }
-      .profile img { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; background: var(--line); }
-      .profile h1 { margin: 0; font-size: 26px; }
-      .profile .handle { color: var(--muted); }
-      .bio { color: var(--muted); margin: 4px 0 20px; }
+      .profile {
+        display: flex;
+        gap: 18px;
+        align-items: center;
+        margin-bottom: 8px;
+      }
+      .profile img {
+        width: 72px;
+        height: 72px;
+        border-radius: 50%;
+        object-fit: cover;
+        background: var(--line);
+      }
+      .profile h1 {
+        margin: 0;
+        font-size: 26px;
+      }
+      .profile .handle {
+        color: var(--muted);
+      }
+      .bio {
+        color: var(--muted);
+        margin: 4px 0 20px;
+      }
 
-      .stats { display: flex; gap: 22px; padding: 14px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); margin-bottom: 32px; }
-      .stats b { font-size: 18px; display: block; }
-      .stats span { color: var(--muted); font-size: 13px; }
+      .stats {
+        display: flex;
+        gap: 22px;
+        padding: 14px 0;
+        border-top: 1px solid var(--line);
+        border-bottom: 1px solid var(--line);
+        margin-bottom: 32px;
+      }
+      .stats b {
+        font-size: 18px;
+        display: block;
+      }
+      .stats span {
+        color: var(--muted);
+        font-size: 13px;
+      }
 
-      .pub { margin-bottom: 40px; }
-      .pub-head { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
-      .pub-head img { width: 34px; height: 34px; border-radius: 8px; object-fit: cover; background: var(--line); }
-      .pub-head h2 { margin: 0; font-size: 19px; }
-      .pub-desc { color: var(--muted); font-size: 14px; margin: 0 0 14px; }
+      .pub {
+        margin-bottom: 40px;
+      }
+      .pub-head {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 4px;
+      }
+      .pub-head img {
+        width: 34px;
+        height: 34px;
+        border-radius: 8px;
+        object-fit: cover;
+        background: var(--line);
+      }
+      .pub-head h2 {
+        margin: 0;
+        font-size: 19px;
+      }
+      .pub-desc {
+        color: var(--muted);
+        font-size: 14px;
+        margin: 0 0 14px;
+      }
 
-      ul { list-style: none; margin: 0; padding: 0; }
+      ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+      }
       li a {
-        display: flex; justify-content: space-between; gap: 16px; align-items: baseline;
-        padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; margin-bottom: 8px;
-        background: var(--card); color: inherit; text-decoration: none; transition: border-color .15s;
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        align-items: baseline;
+        padding: 12px 14px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        margin-bottom: 8px;
+        background: var(--card);
+        color: inherit;
+        text-decoration: none;
+        transition: border-color 0.15s;
       }
-      li a:hover { border-color: var(--accent); }
-      li a .t { font-weight: 550; }
-      li a time { color: var(--muted); font-size: 13px; white-space: nowrap; }
+      li a:hover {
+        border-color: var(--accent);
+      }
+      li a .t {
+        font-weight: 550;
+      }
+      li a time {
+        color: var(--muted);
+        font-size: 13px;
+        white-space: nowrap;
+      }
 
-      .switch { display: flex; gap: 8px; margin-bottom: 28px; font: 14px/1.6 system-ui, sans-serif; }
-      .switch input { flex: 1; min-width: 0; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: inherit; }
-      .switch input:focus { outline: none; border-color: var(--accent); }
-      .switch button { padding: 8px 16px; border: 1px solid var(--accent); border-radius: 8px; background: var(--accent); color: #fff; cursor: pointer; white-space: nowrap; }
+      .switch {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 28px;
+        font:
+          14px/1.6 system-ui,
+          sans-serif;
+      }
+      .switch input {
+        flex: 1;
+        min-width: 0;
+        padding: 8px 12px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--card);
+        color: inherit;
+      }
+      .switch input:focus {
+        outline: none;
+        border-color: var(--accent);
+      }
+      .switch button {
+        padding: 8px 16px;
+        border: 1px solid var(--accent);
+        border-radius: 8px;
+        background: var(--accent);
+        color: #fff;
+        cursor: pointer;
+        white-space: nowrap;
+      }
 
       .subscribe {
-        margin-left: auto; padding: 8px 16px; border-radius: 999px;
-        background: var(--accent); color: #fff; text-decoration: none; white-space: nowrap;
-        font: 600 13px/1 system-ui, sans-serif;
+        margin-left: auto;
+        padding: 8px 16px;
+        border-radius: 999px;
+        background: var(--accent);
+        color: #fff;
+        text-decoration: none;
+        white-space: nowrap;
+        font:
+          600 13px/1 system-ui,
+          sans-serif;
       }
-      .subscribe:hover { filter: brightness(1.08); }
+      .subscribe:hover {
+        filter: brightness(1.08);
+      }
 
-      .status { color: var(--muted); padding: 40px 0; text-align: center; }
+      .status {
+        color: var(--muted);
+        padding: 40px 0;
+        text-align: center;
+      }
     </style>
   </head>
 
@@ -100,13 +222,18 @@
     <script type="module">
       import { LitElement, html, nothing } from "lit";
       import { Client } from "@atproto/lex-client";
-      import { standardReader, STANDARD_READER_SERVICE } from "@standard-reader/lexicons";
+      import {
+        standardReader,
+        STANDARD_READER_SERVICE,
+      } from "@standard-reader/lexicons";
 
       // Which profile to show — pass ?handle=<handle-or-did> in the URL, e.g.
       //   index.html?handle=cameron.stream
       //   index.html?handle=did:plc:gfrmhdmjvxn2sjedzboeudef
       // Defaults to a sample so the demo works with no query string.
-      const ACTOR = new URLSearchParams(location.search).get("handle")?.trim() || "cameron.stream";
+      const ACTOR =
+        new URLSearchParams(location.search).get("handle")?.trim() ||
+        "cameron.stream";
 
       const client = new Client(STANDARD_READER_SERVICE);
 
@@ -115,7 +242,9 @@
       // at-uri: at://<did>/site.standard.publication/<rkey>.
       function subscribeUrl(pubUri) {
         const m = /^at:\/\/([^/]+)\/[^/]+\/([^/]+)/.exec(pubUri || "");
-        return m ? `${STANDARD_READER_SERVICE}/subscribe/${m[1]}/${m[2]}` : null;
+        return m
+          ? `${STANDARD_READER_SERVICE}/subscribe/${m[1]}/${m[2]}`
+          : null;
       }
 
       // getAuthor takes a DID, so resolve a handle first. DIDs pass through.
@@ -132,11 +261,17 @@
       }
 
       const fmtDate = (iso) =>
-        new Date(iso).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+        new Date(iso).toLocaleDateString(undefined, {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        });
 
       class BlogIndex extends LitElement {
         // Render into light DOM so the page's CSS above applies.
-        createRenderRoot() { return this; }
+        createRenderRoot() {
+          return this;
+        }
 
         static properties = { author: { state: true }, error: { state: true } };
 
@@ -154,10 +289,13 @@
             // 2. A page of posts for each publication.
             const withPosts = await Promise.all(
               author.publications.map(async (pub) => {
-                const { items } = await client.call(standardReader.getPublicationDocuments, {
-                  publication: pub.uri,
-                  limit: 20,
-                });
+                const { items } = await client.call(
+                  standardReader.getPublicationDocuments,
+                  {
+                    publication: pub.uri,
+                    limit: 20,
+                  },
+                );
                 return { pub, posts: items };
               }),
             );
@@ -177,13 +315,27 @@
         render() {
           const switcher = html`
             <form class="switch" @submit=${this._switch}>
-              <input name="handle" .value=${ACTOR} placeholder="handle or did"
-                spellcheck="false" autocapitalize="off" autocorrect="off" />
+              <input
+                name="handle"
+                .value=${ACTOR}
+                placeholder="handle or did"
+                spellcheck="false"
+                autocapitalize="off"
+                autocorrect="off"
+              />
               <button type="submit">View blog</button>
             </form>
           `;
-          if (this.error) return html`<main>${switcher}<p class="status">⚠ ${this.error}</p></main>`;
-          if (!this.author) return html`<main>${switcher}<p class="status">Loading…</p></main>`;
+          if (this.error)
+            return html`<main>
+              ${switcher}
+              <p class="status">⚠ ${this.error}</p>
+            </main>`;
+          if (!this.author)
+            return html`<main>
+              ${switcher}
+              <p class="status">Loading…</p>
+            </main>`;
 
           const { profile, stats, withPosts } = this.author;
           return html`
@@ -193,15 +345,24 @@
                 <div class="profile">
                   ${profile.avatarUrl ? html`<img src=${profile.avatarUrl} alt="" />` : nothing}
                   <div>
-                    <h1>${profile.displayName ?? profile.handle ?? "Author"}</h1>
+                    <h1>
+                      ${profile.displayName ?? profile.handle ?? "Author"}
+                    </h1>
                     ${profile.handle ? html`<div class="handle">@${profile.handle}</div>` : nothing}
                   </div>
                 </div>
                 ${profile.description ? html`<p class="bio">${profile.description}</p>` : nothing}
                 <div class="stats">
-                  <div><b>${stats.publicationCount ?? 0}</b><span>Publications</span></div>
-                  <div><b>${stats.documentCount ?? 0}</b><span>Posts</span></div>
-                  <div><b>${stats.subscriberCount ?? 0}</b><span>Subscribers</span></div>
+                  <div>
+                    <b>${stats.publicationCount ?? 0}</b
+                    ><span>Publications</span>
+                  </div>
+                  <div>
+                    <b>${stats.documentCount ?? 0}</b><span>Posts</span>
+                  </div>
+                  <div>
+                    <b>${stats.subscriberCount ?? 0}</b><span>Subscribers</span>
+                  </div>
                 </div>
               </header>
 
@@ -211,18 +372,30 @@
                     <div class="pub-head">
                       ${pub.iconUrl ? html`<img src=${pub.iconUrl} alt="" />` : nothing}
                       <h2>${pub.name}</h2>
-                      ${subscribeUrl(pub.uri)
-                        ? html`<a class="subscribe" href=${subscribeUrl(pub.uri)} target="_blank" rel="noopener">Subscribe</a>`
-                        : nothing}
+                      ${
+                        subscribeUrl(pub.uri)
+                          ? html`<a
+                              class="subscribe"
+                              href=${subscribeUrl(pub.uri)}
+                              target="_blank"
+                              rel="noopener"
+                              >Subscribe</a
+                            >`
+                          : nothing
+                      }
                     </div>
                     ${pub.description ? html`<p class="pub-desc">${pub.description}</p>` : nothing}
                     <ul>
                       ${posts.map(
                         (post) => html`
                           <li>
-                            <a href=${`post.html?uri=${encodeURIComponent(post.uri)}&handle=${encodeURIComponent(ACTOR)}`}>
+                            <a
+                              href=${`post.html?uri=${encodeURIComponent(post.uri)}&handle=${encodeURIComponent(ACTOR)}`}
+                            >
                               <span class="t">${post.title}</span>
-                              <time datetime=${post.publishedAt}>${fmtDate(post.publishedAt)}</time>
+                              <time datetime=${post.publishedAt}
+                                >${fmtDate(post.publishedAt)}</time
+                              >
                             </a>
                           </li>
                         `,

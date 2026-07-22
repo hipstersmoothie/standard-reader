@@ -200,7 +200,7 @@ export async function handleGetDocument(ctx: XrpcRequestContext) {
     // `{$bytes}`) that atproto XRPC clients expect — otherwise a strict lex
     // parser rejects the blob refs with "Invalid blob object".
     content:
-      body?.contentJson != null ? ipldToLexJson(body.contentJson) : undefined,
+      body?.contentJson == null ? undefined : ipldToLexJson(body.contentJson),
     contentFormat: body?.contentFormat ?? undefined,
   };
 }

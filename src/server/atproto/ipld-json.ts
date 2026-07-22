@@ -18,7 +18,7 @@
  */
 export function ipldToLexJson(value: unknown): unknown {
   if (Array.isArray(value)) {
-    return value.map(ipldToLexJson);
+    return value.map((item) => ipldToLexJson(item));
   }
 
   if (value && typeof value === "object") {

@@ -25,6 +25,7 @@
 import { readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+
 import ts from "typescript";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -51,14 +52,16 @@ const lexicons = new Map();
 function propsOf(schema) {
   if (!schema || typeof schema !== "object") return null;
   if (schema.type === "object" && schema.properties) return schema.properties;
-  if (schema.type === "record" && schema.record?.properties) return schema.record.properties;
+  if (schema.type === "record" && schema.record?.properties)
+    return schema.record.properties;
   return null;
 }
 
 /** Nested object properties reachable through a property schema (object, or array-of-object). */
 function nestedProps(propSchema) {
   if (!propSchema || typeof propSchema !== "object") return null;
-  if (propSchema.type === "object" && propSchema.properties) return propSchema.properties;
+  if (propSchema.type === "object" && propSchema.properties)
+    return propSchema.properties;
   if (propSchema.type === "array") return propsOf(propSchema.items);
   return null;
 }
@@ -85,14 +88,16 @@ function isLCall(node, names) {
 }
 
 function memberName(name) {
-  if (name && (ts.isIdentifier(name) || ts.isStringLiteral(name))) return name.text;
+  if (name && (ts.isIdentifier(name) || ts.isStringLiteral(name)))
+    return name.text;
   return null;
 }
 
 /** Unwrap l.optional/l.nullable/l.array to the inner `l.object({...})` object literal, if any. */
 function innerObjectLiteral(node) {
   let cur = node;
-  while (isLCall(cur, ["optional", "nullable", "array"])) cur = cur.arguments[0];
+  while (isLCall(cur, ["optional", "nullable", "array"]))
+    cur = cur.arguments[0];
   if (isLCall(cur, ["object"])) {
     const arg = cur.arguments[0];
     if (arg && ts.isObjectLiteralExpression(arg)) return arg;
@@ -121,7 +126,13 @@ let typeEdits = 0;
 
 for (const file of eachTs(GEN_DIR)) {
   const text = readFileSync(file, "utf8");
-  const sf = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+  const sf = ts.createSourceFile(
+    file,
+    text,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  );
   const inserts = []; // { pos, text }
 
   const wrapValue = (valNode) => {
@@ -154,12 +165,16 @@ for (const file of eachTs(GEN_DIR)) {
       const name = memberName(member.name);
       const srcProp = name ? srcProps[name] : null;
       if (!srcProp) continue;
-      if (srcProp.nullable === true && !/\bnull\b/.test(member.type.getText(sf))) {
+      if (
+        srcProp.nullable === true &&
+        !/\bnull\b/.test(member.type.getText(sf))
+      ) {
         inserts.push({ pos: member.type.getEnd(), text: " | null" });
         typeEdits++;
       }
       const childProps = nestedProps(srcProp);
-      if (childProps && ts.isTypeLiteralNode(member.type)) walkType(member.type, childProps);
+      if (childProps && ts.isTypeLiteralNode(member.type))
+        walkType(member.type, childProps);
     }
   };
 
@@ -175,8 +190,15 @@ for (const file of eachTs(GEN_DIR)) {
       const nsidArg = node.arguments[0];
       const defArg = node.arguments[1];
       // arg[0] is the `$nsid` identifier; resolve it from this file's const below.
-      if (defArg && ts.isStringLiteral(defArg) && nsidArg && ts.isIdentifier(nsidArg)) {
-        typeToProps.set(node.typeArguments[0].typeName.text, { defName: defArg.text });
+      if (
+        defArg &&
+        ts.isStringLiteral(defArg) &&
+        nsidArg &&
+        ts.isIdentifier(nsidArg)
+      ) {
+        typeToProps.set(node.typeArguments[0].typeName.text, {
+          defName: defArg.text,
+        });
       }
     }
     ts.forEachChild(node, collectTypeMap);
@@ -244,10 +266,11 @@ for (const file of eachTs(GEN_DIR)) {
   };
   visit(sf);
 
-  if (!inserts.length) continue;
+  if (inserts.length === 0) continue;
   inserts.sort((a, b) => b.pos - a.pos); // apply right-to-left; pure inserts compose
   let next = text;
-  for (const e of inserts) next = next.slice(0, e.pos) + e.text + next.slice(e.pos);
+  for (const e of inserts)
+    next = next.slice(0, e.pos) + e.text + next.slice(e.pos);
   writeFileSync(file, next);
   filesChanged++;
 }

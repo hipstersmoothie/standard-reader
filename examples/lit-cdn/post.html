@@ -27,9 +27,20 @@
     </script>
 
     <!-- Styles for the <bluesky-post> embed (base + auto light/dark theme). -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bluesky-post-embed@1/dist/core.css" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bluesky-post-embed@1/themes/light.css" media="(prefers-color-scheme: light)" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bluesky-post-embed@1/themes/dark.css" media="(prefers-color-scheme: dark)" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bluesky-post-embed@1/dist/core.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bluesky-post-embed@1/themes/light.css"
+      media="(prefers-color-scheme: light)"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bluesky-post-embed@1/themes/dark.css"
+      media="(prefers-color-scheme: dark)"
+    />
 
     <style>
       :root {
@@ -49,42 +60,130 @@
           --bg: #101216;
         }
       }
-      * { box-sizing: border-box; }
+      * {
+        box-sizing: border-box;
+      }
       body {
         margin: 0;
         background: var(--bg);
         color: var(--fg);
-        font: 18px/1.7 Georgia, "Iowan Old Style", serif;
+        font:
+          18px/1.7 Georgia,
+          "Iowan Old Style",
+          serif;
       }
-      main { max-width: 680px; margin: 0 auto; padding: 32px 20px 96px; }
+      main {
+        max-width: 680px;
+        margin: 0 auto;
+        padding: 32px 20px 96px;
+      }
 
-      .back { font: 14px/1.6 system-ui, sans-serif; color: var(--accent); text-decoration: none; }
-      .back:hover { text-decoration: underline; }
-      header { margin: 20px 0 32px; padding-bottom: 20px; border-bottom: 1px solid var(--line); }
-      header h1 { margin: 0 0 8px; font-size: 32px; line-height: 1.2; }
-      header .meta { font: 14px/1.6 system-ui, sans-serif; color: var(--muted); }
+      .back {
+        font:
+          14px/1.6 system-ui,
+          sans-serif;
+        color: var(--accent);
+        text-decoration: none;
+      }
+      .back:hover {
+        text-decoration: underline;
+      }
+      header {
+        margin: 20px 0 32px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid var(--line);
+      }
+      header h1 {
+        margin: 0 0 8px;
+        font-size: 32px;
+        line-height: 1.2;
+      }
+      header .meta {
+        font:
+          14px/1.6 system-ui,
+          sans-serif;
+        color: var(--muted);
+      }
 
       /* Prose styling for the headless renderer's semantic HTML output. */
-      standard-document { display: block; }
-      standard-document :is(h1, h2, h3) { line-height: 1.25; margin: 1.6em 0 .5em; }
-      standard-document p { margin: 0 0 1.1em; }
-      standard-document a { color: var(--accent); }
-      standard-document img { max-width: 100%; height: auto; border-radius: 8px; }
-      standard-document figure { margin: 1.5em 0; }
-      standard-document figcaption { font: 14px/1.5 system-ui, sans-serif; color: var(--muted); text-align: center; margin-top: .5em; }
-      standard-document blockquote { margin: 1.5em 0; padding-left: 18px; border-left: 3px solid var(--line); color: var(--muted); }
-      standard-document pre { background: rgba(127,127,127,.12); padding: 14px; border-radius: 8px; overflow-x: auto; font-size: .85em; }
-      standard-document :not(pre) > code { background: rgba(127,127,127,.15); padding: .1em .35em; border-radius: 4px; font-size: .9em; }
-
-      .status { color: var(--muted); padding: 60px 0; text-align: center; font: 15px/1.6 system-ui, sans-serif; }
-
-      .subscribe-foot { margin-top: 48px; padding-top: 28px; border-top: 1px solid var(--line); text-align: center; }
-      .subscribe {
-        display: inline-block; padding: 11px 22px; border-radius: 999px;
-        background: var(--accent); color: #fff; text-decoration: none;
-        font: 600 15px/1 system-ui, sans-serif;
+      standard-document {
+        display: block;
       }
-      .subscribe:hover { filter: brightness(1.08); }
+      standard-document :is(h1, h2, h3) {
+        line-height: 1.25;
+        margin: 1.6em 0 0.5em;
+      }
+      standard-document p {
+        margin: 0 0 1.1em;
+      }
+      standard-document a {
+        color: var(--accent);
+      }
+      standard-document img {
+        max-width: 100%;
+        height: auto;
+        border-radius: 8px;
+      }
+      standard-document figure {
+        margin: 1.5em 0;
+      }
+      standard-document figcaption {
+        font:
+          14px/1.5 system-ui,
+          sans-serif;
+        color: var(--muted);
+        text-align: center;
+        margin-top: 0.5em;
+      }
+      standard-document blockquote {
+        margin: 1.5em 0;
+        padding-left: 18px;
+        border-left: 3px solid var(--line);
+        color: var(--muted);
+      }
+      standard-document pre {
+        background: rgba(127, 127, 127, 0.12);
+        padding: 14px;
+        border-radius: 8px;
+        overflow-x: auto;
+        font-size: 0.85em;
+      }
+      standard-document :not(pre) > code {
+        background: rgba(127, 127, 127, 0.15);
+        padding: 0.1em 0.35em;
+        border-radius: 4px;
+        font-size: 0.9em;
+      }
+
+      .status {
+        color: var(--muted);
+        padding: 60px 0;
+        text-align: center;
+        font:
+          15px/1.6 system-ui,
+          sans-serif;
+      }
+
+      .subscribe-foot {
+        margin-top: 48px;
+        padding-top: 28px;
+        border-top: 1px solid var(--line);
+        text-align: center;
+      }
+      .subscribe {
+        display: inline-block;
+        padding: 11px 22px;
+        border-radius: 999px;
+        background: var(--accent);
+        color: #fff;
+        text-decoration: none;
+        font:
+          600 15px/1 system-ui,
+          sans-serif;
+      }
+      .subscribe:hover {
+        filter: brightness(1.08);
+      }
     </style>
   </head>
 
@@ -94,7 +193,10 @@
     <script type="module">
       import { LitElement, html, nothing } from "lit";
       import { Client } from "@atproto/lex-client";
-      import { standardReader, STANDARD_READER_SERVICE } from "@standard-reader/lexicons";
+      import {
+        standardReader,
+        STANDARD_READER_SERVICE,
+      } from "@standard-reader/lexicons";
       import "@standard-reader/renderer-lit"; // registers <standard-document>
       import "bluesky-post-embed"; // registers <bluesky-post>
 
@@ -105,7 +207,9 @@
       // at-uri: at://<did>/site.standard.publication/<rkey>.
       function subscribeUrl(pubUri) {
         const m = /^at:\/\/([^/]+)\/[^/]+\/([^/]+)/.exec(pubUri || "");
-        return m ? `${STANDARD_READER_SERVICE}/subscribe/${m[1]}/${m[2]}` : null;
+        return m
+          ? `${STANDARD_READER_SERVICE}/subscribe/${m[1]}/${m[2]}`
+          : null;
       }
 
       // Plug the Bluesky embed web component into the renderer. `blueskyEmbed`
@@ -118,10 +222,18 @@
       };
 
       const fmtDate = (iso) =>
-        iso ? new Date(iso).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" }) : "";
+        iso
+          ? new Date(iso).toLocaleDateString(undefined, {
+              year: "numeric",
+              month: "short",
+              day: "numeric",
+            })
+          : "";
 
       class BlogPost extends LitElement {
-        createRenderRoot() { return this; } // light DOM, so page CSS applies
+        createRenderRoot() {
+          return this;
+        } // light DOM, so page CSS applies
 
         static properties = { doc: { state: true }, error: { state: true } };
 
@@ -130,7 +242,9 @@
           const params = new URLSearchParams(location.search);
           // Preserve the profile so "All posts" returns to the right index.
           const handle = params.get("handle");
-          this.backHref = handle ? `index.html?handle=${encodeURIComponent(handle)}` : "index.html";
+          this.backHref = handle
+            ? `index.html?handle=${encodeURIComponent(handle)}`
+            : "index.html";
           const uri = params.get("uri");
           if (!uri) this.error = "Missing ?uri= parameter.";
           else this.load(uri);
@@ -139,15 +253,19 @@
         async load(uri) {
           try {
             // One call returns card metadata AND the renderable body (`content`).
-            this.doc = await client.call(standardReader.getDocument, { document: uri });
+            this.doc = await client.call(standardReader.getDocument, {
+              document: uri,
+            });
           } catch (err) {
             this.error = String(err?.message ?? err);
           }
         }
 
         render() {
-          if (this.error) return html`<main><p class="status">⚠ ${this.error}</p></main>`;
-          if (!this.doc) return html`<main><p class="status">Loading…</p></main>`;
+          if (this.error)
+            return html`<main><p class="status">⚠ ${this.error}</p></main>`;
+          if (!this.doc)
+            return html`<main><p class="status">Loading…</p></main>`;
 
           const d = this.doc;
           return html`
@@ -176,17 +294,19 @@
                 .options=${{ dropCap: true }}
               ></standard-document>
 
-              ${d.publicationUri && subscribeUrl(d.publicationUri)
-                ? html`<div class="subscribe-foot">
-                    <a
-                      class="subscribe"
-                      href=${subscribeUrl(d.publicationUri)}
-                      target="_blank"
-                      rel="noopener"
-                      >Subscribe${d.publicationName ? ` to ${d.publicationName}` : nothing}</a
-                    >
-                  </div>`
-                : nothing}
+              ${
+                d.publicationUri && subscribeUrl(d.publicationUri)
+                  ? html`<div class="subscribe-foot">
+                      <a
+                        class="subscribe"
+                        href=${subscribeUrl(d.publicationUri)}
+                        target="_blank"
+                        rel="noopener"
+                        >Subscribe${d.publicationName ? ` to ${d.publicationName}` : nothing}</a
+                      >
+                    </div>`
+                  : nothing
+              }
             </main>
           `;
         }

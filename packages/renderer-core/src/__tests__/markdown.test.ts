@@ -42,15 +42,17 @@ describe("markdown — format registry", () => {
       markdownText({ $type: "site.standard.content.markdown", text: "hi" }),
     ).toBe("hi");
     // Lemma keeps its body under `content`.
-    expect(
-      markdownText({ $type: "pub.lemma.blog.entry", content: "yo" }),
-    ).toBe("yo");
+    expect(markdownText({ $type: "pub.lemma.blog.entry", content: "yo" })).toBe(
+      "yo",
+    );
     // Format can come from contentFormat when the record omits $type.
     expect(markdownText({ markdown: "wtr" }, "app.wtr.content.markdown")).toBe(
       "wtr",
     );
     expect(markdownText({ text: "   " })).toBeNull();
-    expect(markdownText({ $type: "not.a.markdown.format", text: "x" })).toBeNull();
+    expect(
+      markdownText({ $type: "not.a.markdown.format", text: "x" }),
+    ).toBeNull();
   });
 });
 
@@ -94,7 +96,9 @@ describe("buildRenderTree — markdown", () => {
   });
 
   it("converts inline emphasis and links into segmentable facets", () => {
-    const tree = build(markdownDoc("See **bold** and [a link](https://x.test)."));
+    const tree = build(
+      markdownDoc("See **bold** and [a link](https://x.test)."),
+    );
     const para = tree.children[0] as Extract<BlockNode, { type: "paragraph" }>;
     expect(para.text.plaintext).toBe("See bold and a link.");
 
