@@ -202,17 +202,25 @@ const styles = stylex.create({
     whiteSpace: "pre",
     tabSize: 2,
   },
+  // Mirror the design-system `Table`: a rounded, single-outline frame with
+  // header-tinted top row and light row separators — not a heavy full grid.
   table: {
     marginBlock: verticalSpace["3xl"],
-    borderCollapse: "collapse",
+    borderCollapse: "separate",
+    borderSpacing: 0,
     width: "100%",
-    overflowY: "scroll",
+    borderWidth: 1,
+    borderStyle: "solid",
+    borderColor: uiColor.border1,
+    borderRadius: radius.md,
+    overflow: "hidden",
+    fontSize: fontSize.base,
   },
   tableCell: {
     minWidth: horizontalSpace["11xl"],
-    borderWidth: "1px",
-    borderStyle: "solid",
-    borderColor: uiColor.border2,
+    borderBottomWidth: 1,
+    borderBottomStyle: "solid",
+    borderBottomColor: uiColor.border1,
     paddingBlock: verticalSpace.sm,
     paddingInline: horizontalSpace.lg,
     verticalAlign: "top",
@@ -221,6 +229,7 @@ const styles = stylex.create({
   tableCellHeader: {
     backgroundColor: uiColor.component1,
     fontWeight: fontWeight.semibold,
+    color: uiColor.text2,
   },
 });
 

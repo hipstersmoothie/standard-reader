@@ -1,3 +1,11 @@
+import {
+  AlertDialog,
+  AlertDialogActionButton,
+  AlertDialogCancelButton,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+} from "@standard-reader/design-system/alert-dialog";
 import { Button } from "@standard-reader/design-system/button";
 import {
   ColorPicker,
@@ -6,8 +14,10 @@ import {
 import { Switch } from "@standard-reader/design-system/switch";
 import { TextArea } from "@standard-reader/design-system/text-area";
 import { TextField } from "@standard-reader/design-system/text-field";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
+import { publicationsApi } from "../integrations/tanstack-query/api-publications.functions";
 import type { WriterPublication } from "../integrations/tanstack-query/api-publications.functions";
 import type { PubTheme, ThemePreset } from "./data";
 import { PALETTE, THEME_PRESETS, THEME_ROLES } from "./data";
@@ -37,6 +47,17 @@ interface NewPubScreenProps {
 
 export function NewPubScreen({ onClose, publication }: NewPubScreenProps) {
   const isEditing = publication != null;
+  const queryClient = useQueryClient();
+  const remove = useMutation({
+    mutationFn: () =>
+      publicationsApi.deletePublication({
+        data: { publicationUri: publication?.uri as string },
+      }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["my-publications"] });
+      onClose();
+    },
+  });
   const [theme, setTheme] = useState<ThemePreset>(
     publication
       ? { id: "custom", name: "Custom", ...publication.theme }
@@ -360,6 +381,61 @@ export function NewPubScreen({ onClose, publication }: NewPubScreenProps) {
                 aria-label="Show in Discover"
               />
             </div>
+
+            {isEditing && (
+              <div
+                style={{
+                  ...cardBox,
+                  padding: 22,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 14,
+                  borderColor: "#e0b4a4",
+                }}
+              >
+                <div style={{ flex: 1 }}>
+                  <div
+                    style={{ fontFamily: C.serif, fontSize: 18, color: C.t12 }}
+                  >
+                    Delete publication
+                  </div>
+                  <div style={{ fontSize: 12.5, color: C.mut, marginTop: 2 }}>
+                    Removes the{" "}
+                    <span style={{ fontFamily: C.mono }}>
+                      site.standard.publication
+                    </span>{" "}
+                    record from your repo. Documents already published keep
+                    their own records.
+                  </div>
+                </div>
+                <AlertDialog
+                  trigger={
+                    <Button variant="critical" size="md">
+                      Delete
+                    </Button>
+                  }
+                >
+                  <AlertDialogHeader>
+                    Delete this publication?
+                  </AlertDialogHeader>
+                  <AlertDialogDescription>
+                    “{publication.name}” will be permanently removed from your
+                    repo. This can’t be undone.
+                  </AlertDialogDescription>
+                  <AlertDialogFooter>
+                    <AlertDialogCancelButton />
+                    <AlertDialogActionButton
+                      variant="critical"
+                      closeOnPress={false}
+                      isPending={remove.isPending}
+                      onPress={() => remove.mutate()}
+                    >
+                      Delete publication
+                    </AlertDialogActionButton>
+                  </AlertDialogFooter>
+                </AlertDialog>
+              </div>
+            )}
 
             <div
               style={{

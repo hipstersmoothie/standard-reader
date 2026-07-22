@@ -1,3 +1,7 @@
+// Registers the com.atproto.* lexicons so `com.atproto.repo.deleteRecord` is
+// known to the atcute client type + runtime registry.
+import "@atcute/atproto";
+import type { ActorIdentifier } from "@atcute/lexicons";
 import { queryOptions } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
@@ -110,9 +114,80 @@ const listPublicationDocuments = createServerFn({ method: "GET" })
     }));
   });
 
+const deleteInput = z.object({ publicationUri: z.string().min(1) });
+
+/**
+ * Parse an `at://did/collection/rkey` uri into its record coordinates. Returns
+ * `null` for anything that isn't a well-formed AT-URI with all three parts.
+ */
+function parseAtUri(
+  uri: string,
+): { repo: string; collection: string; rkey: string } | null {
+  const m = /^at:\/\/([^/]+)\/([^/]+)\/([^/]+)$/.exec(uri);
+  if (!m) return null;
+  return { repo: m[1], collection: m[2], rkey: m[3] };
+}
+
+/**
+ * Delete one of the author's publications: remove the
+ * `site.standard.publication` record from their repo (via
+ * `com.atproto.repo.deleteRecord` on the restored OAuth session) and drop the
+ * matching read-model row so the sidebar updates immediately. Ownership is
+ * enforced by matching the record's repo DID against the session DID.
+ */
+const deletePublication = createServerFn({ method: "POST" })
+  .validator(deleteInput)
+  .handler(async ({ data }): Promise<{ ok: boolean }> => {
+    const session = await getWriterSession(getRequest());
+    if (!session?.did) throw new Error("Unauthorized");
+
+    const coords = parseAtUri(data.publicationUri);
+    if (!coords) throw new Error("Invalid publication uri");
+    if (coords.repo !== session.did) {
+      throw new Error("You can only delete your own publications.");
+    }
+
+    const { atprotoOAuth } = await import("#/integrations/auth/atproto");
+    const { Client } = await import("@atcute/client");
+
+    const oauthSession = await atprotoOAuth.restore(session.did as never);
+    if (!oauthSession) {
+      throw new Error("Your session expired — sign in again to continue.");
+    }
+    const client = new Client({ handler: oauthSession });
+
+    const res = await client.post("com.atproto.repo.deleteRecord", {
+      input: {
+        repo: session.did as ActorIdentifier,
+        collection: coords.collection as `${string}.${string}.${string}`,
+        rkey: coords.rkey,
+      },
+    });
+    if (!res.ok) {
+      throw new Error("Delete failed — the PDS rejected the write.");
+    }
+
+    // Drop the read-model row so the UI reflects the deletion right away; the
+    // ingester would otherwise reconcile it on the next sync.
+    const { db } = await import("#/db/index.server");
+    const schema = await import("#/db/schema");
+    const { and, eq } = await import("drizzle-orm");
+    await db
+      .delete(schema.publications)
+      .where(
+        and(
+          eq(schema.publications.uri, data.publicationUri),
+          eq(schema.publications.did, session.did),
+        ),
+      );
+
+    return { ok: true };
+  });
+
 export const publicationsApi = {
   listMyPublications,
   listPublicationDocuments,
+  deletePublication,
 };
 
 export const myPublicationsQueryOptions = queryOptions({

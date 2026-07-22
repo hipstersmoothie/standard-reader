@@ -1,6 +1,7 @@
 import { Button } from "@standard-reader/design-system/button";
 import { IconButton } from "@standard-reader/design-system/icon-button";
 import { Tooltip } from "@standard-reader/design-system/tooltip";
+import * as stylex from "@stylexjs/stylex";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 
@@ -13,6 +14,8 @@ import type {
   WriterPublication,
 } from "../integrations/tanstack-query/api-publications.functions";
 import { I, Ico } from "./icons";
+import { publicationThemeScaleVars } from "./publication-theme-scale";
+import { publicationPrimary, publicationUi } from "./publication-theme-tokens";
 import { C } from "./tokens";
 
 function formatDate(iso: string): string {
@@ -186,6 +189,10 @@ export function PubDetailScreen({
   }
 
   const t = pub.theme;
+  // Derive a Radix-style palette from the publication's theme and apply the
+  // `publicationUi` / `publicationPrimary` StyleX themes so the header's
+  // buttons pick up the publication's accent instead of the editorial bronze.
+  const themeProps = stylex.props(publicationUi, publicationPrimary);
 
   return (
     <div
@@ -193,7 +200,10 @@ export function PubDetailScreen({
       style={{ height: "100%", overflow: "auto", background: C.pageBg }}
     >
       <div
+        className={themeProps.className}
         style={{
+          ...themeProps.style,
+          ...publicationThemeScaleVars(t),
           background: t.background,
           color: t.foreground,
           borderBottom: `1px solid ${C.b6}`,
