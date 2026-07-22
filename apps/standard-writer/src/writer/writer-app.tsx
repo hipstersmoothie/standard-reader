@@ -17,6 +17,8 @@ export function WriterApp() {
   const [layout, setLayout] = useState<Layout>("focus");
   const [pubId, setPubId] = useState(PUBS[0].id);
   const [doc, setDoc] = useState<Article | null>(null);
+  // The draft currently open in the editor (undefined = a fresh document).
+  const [draftId, setDraftId] = useState<string | undefined>();
 
   const go = (s: Screen) => setScreen(s);
   const openPub = (id: string) => {
@@ -26,6 +28,14 @@ export function WriterApp() {
   const openDoc = (d: Article) => {
     setDoc(d);
     setScreen("edit");
+  };
+  const openDraft = (id: string) => {
+    setDraftId(id);
+    setScreen("write");
+  };
+  const newDoc = () => {
+    setDraftId(undefined);
+    setScreen("write");
   };
 
   const pub = PUBS.find((p) => p.id === pubId) ?? PUBS[0];
@@ -52,14 +62,29 @@ export function WriterApp() {
         }}
       >
         {screen === "write" && (
-          <WriteScreen layout={layout} setLayout={setLayout} go={go} />
+          <WriteScreen
+            layout={layout}
+            setLayout={setLayout}
+            go={go}
+            draftId={draftId}
+            onDraftIdChange={setDraftId}
+          />
         )}
-        {screen === "drafts" && <DraftsScreen go={go} />}
+        {screen === "drafts" && (
+          <DraftsScreen openDraft={openDraft} newDoc={newDoc} />
+        )}
         {screen === "pub" && (
-          <PubDetailScreen pub={pub} go={go} openDoc={openDoc} />
+          <PubDetailScreen
+            pub={pub}
+            go={go}
+            openDoc={openDoc}
+            newDoc={newDoc}
+          />
         )}
         {screen === "newpub" && <NewPubScreen onClose={() => openPub(pubId)} />}
-        {screen === "publish" && <PublishScreen go={go} />}
+        {screen === "publish" && (
+          <PublishScreen go={go} draftId={draftId} onPublished={newDoc} />
+        )}
         {screen === "edit" && (
           <EditScreen doc={doc} back={() => openPub(pubId)} />
         )}

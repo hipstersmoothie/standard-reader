@@ -8,7 +8,6 @@ import type { DraftRow } from "#/db/schema/drafts";
 import { sessionQueryOptions } from "../integrations/tanstack-query/api-auth.functions";
 import { draftsQueryOptions } from "../integrations/tanstack-query/api-drafts.functions";
 import { C } from "./tokens";
-import type { Screen } from "./types";
 
 function excerptOf(markdown: string): string {
   const text = markdown
@@ -35,10 +34,11 @@ function relativeTime(date: Date): string {
 }
 
 interface DraftsScreenProps {
-  go: (screen: Screen) => void;
+  openDraft: (id: string) => void;
+  newDoc: () => void;
 }
 
-export function DraftsScreen({ go }: DraftsScreenProps) {
+export function DraftsScreen({ openDraft, newDoc }: DraftsScreenProps) {
   const { data: session } = useQuery(sessionQueryOptions);
   const { data: drafts = [], isPending } = useQuery(draftsQueryOptions);
   const [hover, setHover] = useState(-1);
@@ -72,7 +72,7 @@ export function DraftsScreen({ go }: DraftsScreenProps) {
             Drafts
           </h1>
           <span style={{ marginLeft: "auto" }}>
-            <Button variant="primary" size="sm" onPress={() => go("write")}>
+            <Button variant="primary" size="sm" onPress={newDoc}>
               New document
             </Button>
           </span>
@@ -104,11 +104,11 @@ export function DraftsScreen({ go }: DraftsScreenProps) {
                   key={d.id}
                   role="button"
                   tabIndex={0}
-                  onClick={() => go("write")}
+                  onClick={() => openDraft(d.id)}
                   onKeyDown={(event) => {
                     if (event.key === "Enter" || event.key === " ") {
                       event.preventDefault();
-                      go("write");
+                      openDraft(d.id);
                     }
                   }}
                   onMouseEnter={() => setHover(i)}

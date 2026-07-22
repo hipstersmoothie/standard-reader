@@ -6,7 +6,7 @@ import { Separator } from "@standard-reader/design-system/separator";
 import { Tag, TagGroup } from "@standard-reader/design-system/tag-group";
 import { TextField } from "@standard-reader/design-system/text-field";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { sessionQueryOptions } from "../integrations/tanstack-query/api-auth.functions";
 import {
@@ -28,12 +28,14 @@ function countWords(markdown: string): number {
 
 interface EditorCanvasProps {
   title: string;
+  defaultMarkdown: string;
   onTitleChange: (title: string) => void;
   onBodyChange: (markdown: string) => void;
 }
 
 function EditorCanvas({
   title,
+  defaultMarkdown,
   onTitleChange,
   onBodyChange,
 }: EditorCanvasProps) {
@@ -111,7 +113,7 @@ function EditorCanvas({
 
         <RichTextEditor
           chrome="bare"
-          defaultValue={STARTER_DOC}
+          defaultValue={defaultMarkdown}
           onChange={(record: MarkpubRecord) =>
             onBodyChange(record.text.markdown)
           }
@@ -221,16 +223,54 @@ interface WriteScreenProps {
   layout: Layout;
   setLayout: (layout: Layout) => void;
   go: (screen: Screen) => void;
+  draftId: string | undefined;
+  onDraftIdChange: (id: string) => void;
 }
 
-export function WriteScreen({ layout, setLayout, go }: WriteScreenProps) {
+export function WriteScreen({
+  layout,
+  setLayout,
+  go,
+  draftId,
+  onDraftIdChange,
+}: WriteScreenProps) {
   const { data: session } = useQuery(sessionQueryOptions);
   const queryClient = useQueryClient();
+
+  const draftQuery = useQuery({
+    queryKey: ["draft", draftId],
+    queryFn: () => draftsApi.getDraft({ data: { id: draftId as string } }),
+    enabled: draftId != null,
+  });
+  const loaded = draftId === undefined ? null : (draftQuery.data ?? null);
 
   const [title, setTitle] = useState("You Own the Press");
   const [markdown, setMarkdown] = useState(STARTER_DOC);
   const [touched, setTouched] = useState(false);
-  const [draftId, setDraftId] = useState<string | undefined>();
+  const [seedKey, setSeedKey] = useState("new");
+  // Which identity the editor is currently seeded with, so a self-created draft
+  // (lifted after the first autosave) doesn't get re-seeded and clobbered when
+  // its `getDraft` query later resolves.
+  const seededRef = useRef("new");
+
+  useEffect(() => {
+    if (draftId == null) {
+      if (seededRef.current === "new") return;
+      seededRef.current = "new";
+      setTitle("You Own the Press");
+      setMarkdown(STARTER_DOC);
+      setTouched(false);
+      setSeedKey(`new:${Date.now()}`);
+      return;
+    }
+    if (loaded && seededRef.current !== `loaded:${loaded.id}`) {
+      seededRef.current = `loaded:${loaded.id}`;
+      setTitle(loaded.title);
+      setMarkdown(loaded.bodyMarkdown);
+      setTouched(false);
+      setSeedKey(`loaded:${loaded.id}`);
+    }
+  }, [draftId, loaded]);
 
   const words = useMemo(() => countWords(markdown), [markdown]);
 
@@ -238,15 +278,18 @@ export function WriteScreen({ layout, setLayout, go }: WriteScreenProps) {
     mutationFn: (vars: { title: string; bodyMarkdown: string }) =>
       draftsApi.upsertDraft({ data: { id: draftId, ...vars } }),
     onSuccess: (res) => {
-      setDraftId(res.id);
+      if (res.id !== draftId) {
+        // A freshly-created draft: adopt its id and mark it already-seeded so
+        // the incoming getDraft doesn't reset the editor mid-compose.
+        seededRef.current = `loaded:${res.id}`;
+        onDraftIdChange(res.id);
+      }
       void queryClient.invalidateQueries({
         queryKey: draftsQueryOptions.queryKey,
       });
     },
   });
 
-  // Autosave: debounce edits and persist to the writer's drafts table when
-  // signed in. Guests compose freely; nothing is written until they sign in.
   const saveMutate = save.mutate;
   useEffect(() => {
     if (!session || !touched) return;
@@ -263,6 +306,8 @@ export function WriteScreen({ layout, setLayout, go }: WriteScreenProps) {
         ? "Saved to draft · just now"
         : "Draft"
     : "Sign in to save · draft is local";
+
+  const isLoadingDraft = draftId != null && !loaded;
 
   return (
     <div
@@ -354,17 +399,34 @@ export function WriteScreen({ layout, setLayout, go }: WriteScreenProps) {
         </div>
       </div>
       <div style={{ flex: 1, minHeight: 0, display: "flex" }}>
-        <EditorCanvas
-          title={title}
-          onTitleChange={(next) => {
-            setTouched(true);
-            setTitle(next);
-          }}
-          onBodyChange={(next) => {
-            setTouched(true);
-            setMarkdown(next);
-          }}
-        />
+        {isLoadingDraft ? (
+          <div
+            style={{
+              flex: 1,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: C.mut,
+              background: C.pageBg,
+            }}
+          >
+            Loading draft…
+          </div>
+        ) : (
+          <EditorCanvas
+            key={seedKey}
+            title={title}
+            defaultMarkdown={markdown}
+            onTitleChange={(next) => {
+              setTouched(true);
+              setTitle(next);
+            }}
+            onBodyChange={(next) => {
+              setTouched(true);
+              setMarkdown(next);
+            }}
+          />
+        )}
         {layout === "workbench" && <WorkbenchRail title={title} />}
       </div>
     </div>

@@ -115,9 +115,15 @@ interface PubDetailScreenProps {
   pub: Publication;
   go: (screen: Screen) => void;
   openDoc: (doc: Article) => void;
+  newDoc: () => void;
 }
 
-export function PubDetailScreen({ pub, go, openDoc }: PubDetailScreenProps) {
+export function PubDetailScreen({
+  pub,
+  go,
+  openDoc,
+  newDoc,
+}: PubDetailScreenProps) {
   const t = pub.theme;
 
   return (
@@ -258,7 +264,7 @@ export function PubDetailScreen({ pub, go, openDoc }: PubDetailScreenProps) {
                   <Ico d={I.settings} s={17} />
                 </IconButton>
               </Tooltip>
-              <Button variant="primary" size="sm" onPress={() => go("write")}>
+              <Button variant="primary" size="sm" onPress={newDoc}>
                 New document
               </Button>
             </div>

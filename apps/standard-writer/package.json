@@ -15,6 +15,7 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "@atcute/atproto": "^4.0.3",
     "@atcute/client": "^5.1.1",
     "@atcute/identity-resolver": "^2.0.1",
     "@atcute/identity-resolver-node": "^2.0.1",

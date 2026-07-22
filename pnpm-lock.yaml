@@ -397,6 +397,9 @@ importers:
 
   apps/standard-writer:
     dependencies:
+      '@atcute/atproto':
+        specifier: ^4.0.3
+        version: 4.0.3(@atcute/lexicons@2.0.2)
       '@atcute/client':
         specifier: ^5.1.1
         version: 5.1.1(@atcute/lexicons@2.0.2)(typescript@6.0.3)

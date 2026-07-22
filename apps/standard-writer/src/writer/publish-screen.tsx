@@ -1,8 +1,12 @@
 import { Button } from "@standard-reader/design-system/button";
 import { Select, SelectItem } from "@standard-reader/design-system/select";
 import { Switch } from "@standard-reader/design-system/switch";
+import { TextField } from "@standard-reader/design-system/text-field";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 
+import { sessionQueryOptions } from "../integrations/tanstack-query/api-auth.functions";
+import { publishApi } from "../integrations/tanstack-query/api-publish.functions";
 import { I, Ico } from "./icons";
 import { clickable } from "./interaction";
 import { C, cardBox } from "./tokens";
@@ -10,10 +14,30 @@ import type { Screen } from "./types";
 
 interface PublishScreenProps {
   go: (screen: Screen) => void;
+  draftId: string | undefined;
+  onPublished: () => void;
 }
 
-export function PublishScreen({ go }: PublishScreenProps) {
-  const [publishing, setPublishing] = useState(false);
+export function PublishScreen({
+  go,
+  draftId,
+  onPublished,
+}: PublishScreenProps) {
+  const { data: session } = useQuery(sessionQueryOptions);
+  const [site, setSite] = useState("marginaliadispatch.com/you-own-the-press");
+
+  const publish = useMutation({
+    mutationFn: () =>
+      publishApi.publishDraft({
+        data: { draftId: draftId as string, site: `https://${site.trim()}` },
+      }),
+    onSuccess: () => {
+      // The repo record is now the source of truth; the draft was cleared.
+      setTimeout(onPublished, 1400);
+    },
+  });
+
+  const canPublish = Boolean(session && draftId && site.trim());
 
   return (
     <div
@@ -97,19 +121,15 @@ export function PublishScreen({ go }: PublishScreenProps) {
                   Loose document (no publication)
                 </SelectItem>
               </Select>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  marginTop: 12,
-                  fontSize: 12.5,
-                  color: C.mut,
-                  fontFamily: C.mono,
-                }}
-              >
-                <Ico d={I.link} s={14} />
-                marginaliadispatch.com/you-own-the-press
+              <div style={{ marginTop: 12 }}>
+                <TextField
+                  aria-label="Document URL"
+                  prefix="https://"
+                  value={site}
+                  onChange={setSite}
+                  size="sm"
+                  description="Where this document lives. Standard Reader renders it as a loose document, bylined by your DID."
+                />
               </div>
             </div>
 
@@ -197,22 +217,37 @@ export function PublishScreen({ go }: PublishScreenProps) {
             <Button
               variant="primary"
               size="lg"
-              isPending={publishing}
-              onPress={() => {
-                setPublishing(true);
-                setTimeout(() => setPublishing(false), 1600);
-              }}
+              isPending={publish.isPending}
+              isDisabled={!canPublish}
+              onPress={() => publish.mutate()}
             >
               <span
                 style={{ display: "inline-flex", alignItems: "center", gap: 8 }}
               >
                 <Ico d={I.up} s={17} w={2} />
-                Publish to my repo
+                {publish.isSuccess ? "Published" : "Publish to my repo"}
               </span>
             </Button>
             <div style={{ fontSize: 12.5, color: C.mut, lineHeight: 1.5 }}>
-              You can re-edit and re-publish anytime — the repo record stays the
-              source of truth.
+              {publish.isError ? (
+                <span style={{ color: "#a33a2a" }}>
+                  {publish.error instanceof Error
+                    ? publish.error.message
+                    : "Publish failed."}
+                </span>
+              ) : publish.isSuccess ? (
+                <span style={{ color: "#3f7d4e" }}>
+                  Published — the record is in your repo. Reader will ingest it.
+                </span>
+              ) : session ? (
+                draftId ? (
+                  "You can re-edit and re-publish anytime — the repo record stays the source of truth."
+                ) : (
+                  "Start writing on the Write screen — a draft autosaves, then you can publish it."
+                )
+              ) : (
+                "Sign in to publish to your repo."
+              )}
             </div>
           </div>
         </div>
