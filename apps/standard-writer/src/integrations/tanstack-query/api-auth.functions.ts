@@ -6,6 +6,8 @@ import { z } from "zod";
 
 import type { WriterSession } from "#/middleware/auth-session.server";
 import { sanitizeAuthRedirectTarget } from "#/utils/auth-redirect";
+import { getSavedHandles } from "#/utils/saved-handles";
+import type { SavedHandle } from "#/utils/saved-handles";
 
 /** Start the OAuth flow for a handle; returns the PDS authorization URL. */
 const authorize = createServerFn({ method: "GET" })
@@ -74,13 +76,24 @@ const logout = createServerFn({ method: "POST" }).handler(
   },
 );
 
+/** Handles the browser has signed in with before (from a client cookie). */
+const getSavedHandlesServer = createServerFn({ method: "GET" }).handler(
+  (): Array<SavedHandle> => getSavedHandles(getRequest().headers.get("cookie")),
+);
+
 export const auth = {
   authorize,
   getSession,
   logout,
+  getSavedHandles: getSavedHandlesServer,
 };
 
 export const sessionQueryOptions = queryOptions({
   queryKey: ["writer-session"],
   queryFn: () => getSession(),
+});
+
+export const savedHandlesQueryOptions = queryOptions({
+  queryKey: ["saved-handles"],
+  queryFn: () => getSavedHandlesServer(),
 });

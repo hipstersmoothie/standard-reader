@@ -37,6 +37,7 @@
     "react": "19.3.0-canary-ad78e251-20260616",
     "react-dom": "19.3.0-canary-ad78e251-20260616",
     "tsx": "^4.22.4",
+    "universal-cookie": "^8.1.2",
     "zod": "^4.4.3"
   },
   "devDependencies": {

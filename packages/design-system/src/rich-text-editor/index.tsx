@@ -118,6 +118,12 @@ const styles = stylex.create({
     pointerEvents: "none",
     userSelect: "none",
   },
+  // Bare chrome zeroes the editable padding, so the placeholder must originate
+  // flush with the content (and the title above it), not at the boxed insets.
+  placeholderBare: {
+    top: 0,
+    insetInlineStart: 0,
+  },
 });
 
 export interface RichTextEditorProps extends Omit<
@@ -228,7 +234,14 @@ export function RichTextEditor({
                 aria-label={ariaLabel}
                 aria-placeholder={placeholder}
                 placeholder={
-                  <div {...stylex.props(styles.placeholder)}>{placeholder}</div>
+                  <div
+                    {...stylex.props(
+                      styles.placeholder,
+                      bare && styles.placeholderBare,
+                    )}
+                  >
+                    {placeholder}
+                  </div>
                 }
                 {...stylex.props(
                   styles.contentEditable,

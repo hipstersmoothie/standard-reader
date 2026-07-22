@@ -463,6 +463,9 @@ importers:
       tsx:
         specifier: ^4.22.4
         version: 4.22.4
+      universal-cookie:
+        specifier: ^8.1.2
+        version: 8.1.2
       zod:
         specifier: ^4.4.3
         version: 4.4.3

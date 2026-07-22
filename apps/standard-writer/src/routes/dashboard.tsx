@@ -1,9 +1,17 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
+import { auth } from "../integrations/tanstack-query/api-auth.functions";
 import { WriterApp } from "../writer/writer-app";
 
 export const Route = createFileRoute("/dashboard")({
+  // The app is auth-only: guests are sent to sign in and returned here after.
+  beforeLoad: async () => {
+    const session = await auth.getSession();
+    if (!session) {
+      throw redirect({ to: "/login", search: { redirect: "/dashboard" } });
+    }
+  },
   component: Dashboard,
 });
 
