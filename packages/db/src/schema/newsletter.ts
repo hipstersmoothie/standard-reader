@@ -95,6 +95,11 @@ export const NEWSLETTER_SUBSCRIBER_STATUSES = [
 export type NewsletterSubscriberStatus =
   (typeof NEWSLETTER_SUBSCRIBER_STATUSES)[number];
 
+export const NEWSLETTER_SUBSCRIBER_SOURCES = ["email", "space"] as const;
+
+export type NewsletterSubscriberSource =
+  (typeof NEWSLETTER_SUBSCRIBER_SOURCES)[number];
+
 /**
  * A publication's email list — the recipients Standard Newsletter mails. A
  * subscriber double-opts-in (`pending` → confirmation email → `confirmed`) and
@@ -113,6 +118,16 @@ export const newsletterSubscribers = pgTable(
     subscriberDid: text("subscriber_did"),
     /** One of NEWSLETTER_SUBSCRIBER_STATUSES. */
     status: text("status").notNull().default("pending"),
+    /**
+     * How the subscriber joined: `email` (plain email signup / author import,
+     * stored in the author's subscriberList space record) or `space` (signed in
+     * with Bluesky; owns an app.standard-newsletter.subscription record in their
+     * own permissioned-space repo). Mirrored rows carry the source so the send
+     * and unsubscribe paths know which side of the space to reconcile against.
+     */
+    source: text("source").notNull().default("email"),
+    /** AT-URI of the backing permissioned-space record, when `source=space`. */
+    spaceRecordUri: text("space_record_uri"),
     token: text("token").notNull().unique(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
