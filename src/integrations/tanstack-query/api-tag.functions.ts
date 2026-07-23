@@ -25,7 +25,10 @@ import {
   selectTagPublicationUris,
   tagDirectoryPublications,
 } from "#/server/reader/queries";
-import { attachRecommendedByToArticles } from "#/server/reader/recommended-by";
+import {
+  attachRecommendedByToArticles,
+  attachViewerRecommendedToArticles,
+} from "#/server/reader/recommended-by";
 import { effectiveFollowSets } from "#/server/reader/saved-lists";
 
 import type { ArticleCard, PublicationCard } from "./api-shapes";
@@ -131,10 +134,16 @@ const getArticles = createServerFn({ method: "GET" })
         followSets?.userDids ?? [],
         rows,
       );
+      const withViewerRecs = await attachViewerRecommendedToArticles(
+        db,
+        schema,
+        did,
+        withRecs,
+      );
       const withCounts = await attachCommentCountsToArticles(
         db,
         schema,
-        withRecs,
+        withViewerRecs,
       );
       const items = await attachSubscribedLabels(db, schema, did, withCounts);
       span.set("count", items.length);
@@ -249,11 +258,17 @@ const getTagPage = createServerFn({ method: "GET" })
       if (data.view === "feed") {
         // "Recommended by @follow" attribution — no-op (no query) for signed-out
         // readers and readers who follow no one.
-        const items = await attachRecommendedByToArticles(
+        const withRecs = await attachRecommendedByToArticles(
           db,
           schema,
           followSets?.userDids ?? [],
           content as Array<ArticleCard>,
+        );
+        const items = await attachViewerRecommendedToArticles(
+          db,
+          schema,
+          did,
+          withRecs,
         );
         span.set("count", items.length);
         return {

@@ -34,6 +34,7 @@ import { observe } from "#/server/observability/log";
 import { syncFollowedPublications } from "#/server/reader/followed-publications-sync.server";
 import { markDocumentsRead } from "#/server/reader/mark-documents-read";
 import { selectUnreadDocumentUris } from "#/server/reader/queries";
+import { attachViewerRecommendedToArticles } from "#/server/reader/recommended-by";
 import { effectiveFollowSets } from "#/server/reader/saved-lists";
 import {
   unfollowPublicationForSession,
@@ -168,6 +169,41 @@ function buildReaderListPage<T>(
         ? offset + items.length
         : null,
   };
+}
+
+/**
+ * Flag the queue items (saved / history) whose article the viewer recommended,
+ * so the rows show the "Recommended by you" indicator. One batched query over
+ * the page's cards; a no-op when nothing on the page is recommended.
+ */
+async function flagViewerRecommendedItems<
+  T extends { article: ArticleCard | null },
+>(
+  db: Parameters<typeof attachViewerRecommendedToArticles>[0],
+  schema: Parameters<typeof attachViewerRecommendedToArticles>[1],
+  viewerDid: string | null | undefined,
+  items: Array<T>,
+): Promise<Array<T>> {
+  const articles = items
+    .map((item) => item.article)
+    .filter((article): article is ArticleCard => article != null);
+  const flagged = await attachViewerRecommendedToArticles(
+    db,
+    schema,
+    viewerDid,
+    articles,
+  );
+  const recommendedUris = new Set(
+    flagged
+      .filter((article) => article.viewerHasRecommended)
+      .map((article) => article.uri),
+  );
+  if (recommendedUris.size === 0) return items;
+  return items.map((item) =>
+    item.article && recommendedUris.has(item.article.uri)
+      ? { ...item, article: { ...item.article, viewerHasRecommended: true } }
+      : item,
+  );
 }
 
 export interface FollowStatus {
@@ -889,7 +925,14 @@ const getReadingHistory = createServerFn({ method: "GET" })
         article: hydrateArticleFromRow(row, { isRead: true }),
       })) satisfies Array<ReadHistoryItem>;
 
-      return buildReaderListPage(items, data.offset, total);
+      const withViewerRecs = await flagViewerRecommendedItems(
+        context.db,
+        context.schema,
+        did,
+        items,
+      );
+
+      return buildReaderListPage(withViewerRecs, data.offset, total);
     }),
   );
 
@@ -981,7 +1024,14 @@ const getSaved = createServerFn({ method: "GET" })
         article: hydrateArticleFromRow(row),
       })) satisfies Array<SavedArticleItem>;
 
-      return buildReaderListPage(items, data.offset, total);
+      const withViewerRecs = await flagViewerRecommendedItems(
+        context.db,
+        context.schema,
+        did,
+        items,
+      );
+
+      return buildReaderListPage(withViewerRecs, data.offset, total);
     }),
   );
 

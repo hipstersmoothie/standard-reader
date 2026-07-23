@@ -38,7 +38,10 @@ import {
   trendingPublications,
 } from "#/server/reader/queries";
 import { rotationSeed } from "#/server/reader/rail-rotation";
-import { attachRecommendedByToArticles } from "#/server/reader/recommended-by";
+import {
+  attachRecommendedByToArticles,
+  attachViewerRecommendedToArticles,
+} from "#/server/reader/recommended-by";
 import {
   effectiveFollowSets,
   effectiveFollowUris,
@@ -332,7 +335,7 @@ async function buildHomeFeedCritical(
       0,
       HOME_TRENDING_ROW_LIMIT + 1,
     );
-    const trendingCards = await attachSubscribedLabels(
+    const trendingLabeled = await attachSubscribedLabels(
       db,
       schema,
       ctx.did,
@@ -341,6 +344,12 @@ async function buildHomeFeedCritical(
         schema,
         trackReading ? trendingVisible : articleCardsAsAllRead(trendingVisible),
       ),
+    );
+    const trendingCards = await attachViewerRecommendedToArticles(
+      db,
+      schema,
+      ctx.did,
+      trendingLabeled,
     );
     span.set("trending", trendingCards.length);
 
@@ -399,6 +408,13 @@ async function buildHomeFeedCritical(
       ? attachRecommendedByToArticles(db, schema, ctx.followedUserDids, cards)
       : Promise.resolve(cards),
   ]);
+  // Flag the viewer's own recommends so cards show "Recommended by you".
+  const withViewerRecs = await attachViewerRecommendedToArticles(
+    db,
+    schema,
+    ctx.did,
+    withRecs,
+  );
 
   // Drop anything the reader hid via a subscribed labeler's label.
   const hidden = hiddenUrisFromLabels(labelsByUri);
@@ -413,7 +429,7 @@ async function buildHomeFeedCritical(
   const withCounts = await attachCommentCountsToArticles(
     db,
     schema,
-    withRecs.filter((article) => !hidden.has(article.uri)),
+    withViewerRecs.filter((article) => !hidden.has(article.uri)),
   );
   const enrichedWithRecs = attachLabelsFromMap(withCounts, labelsByUri);
   const byUri = new Map(
@@ -689,7 +705,13 @@ async function loadLatestFeedCritical(
     schema,
     trackReading ? visibleItems : articleCardsAsAllRead(visibleItems),
   );
-  const attributedItems = attachLabelsFromMap(enrichedItems, labelsByUri);
+  const withViewerRecs = await attachViewerRecommendedToArticles(
+    db,
+    schema,
+    did,
+    enrichedItems,
+  );
+  const attributedItems = attachLabelsFromMap(withViewerRecs, labelsByUri);
 
   return {
     items: attributedItems,

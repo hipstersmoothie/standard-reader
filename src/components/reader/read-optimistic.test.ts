@@ -53,6 +53,7 @@ function makeCard(uri: string, isRead: boolean): ArticleCard {
     hasRenderableBody: true,
     isRead,
     isCollection: false,
+    viewerHasRecommended: false,
   };
 }
 

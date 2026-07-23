@@ -40,32 +40,44 @@ function bumpCard(
   card: ArticleCard,
   documentUri: string,
   delta: number,
+  recommended: boolean,
 ): ArticleCard {
-  if (card.uri !== documentUri || delta === 0) return card;
-  return { ...card, recommendCount: bumpCount(card.recommendCount, delta) };
+  if (card.uri !== documentUri) return card;
+  // Also flip the viewer's own recommend flag so the "Recommended by you"
+  // indicator toggles instantly, even when the count is unchanged (delta 0).
+  return {
+    ...card,
+    recommendCount: bumpCount(card.recommendCount, delta),
+    viewerHasRecommended: recommended,
+  };
 }
 
 function updateFeedCache(
   data: unknown,
   documentUri: string,
   delta: number,
+  recommended: boolean,
 ): unknown {
   if (isLatestFeed(data)) {
     return {
       ...data,
-      items: data.items.map((item) => bumpCard(item, documentUri, delta)),
+      items: data.items.map((item) =>
+        bumpCard(item, documentUri, delta, recommended),
+      ),
     };
   }
   if (isHomeFeed(data)) {
     return {
       ...data,
       featured: data.featured
-        ? bumpCard(data.featured, documentUri, delta)
+        ? bumpCard(data.featured, documentUri, delta, recommended)
         : data.featured,
       latestUnread: data.latestUnread.map((item) =>
-        bumpCard(item, documentUri, delta),
+        bumpCard(item, documentUri, delta, recommended),
       ),
-      trending: data.trending.map((item) => bumpCard(item, documentUri, delta)),
+      trending: data.trending.map((item) =>
+        bumpCard(item, documentUri, delta, recommended),
+      ),
     };
   }
   return data;
@@ -120,7 +132,7 @@ export function applyRecommendOptimisticUpdate(
   });
 
   queryClient.setQueriesData({ queryKey: ["feed"] }, (data) =>
-    updateFeedCache(data, documentUri, delta),
+    updateFeedCache(data, documentUri, delta, recommended),
   );
 
   return { prevStatus, prevArticle, prevFeedEntries };

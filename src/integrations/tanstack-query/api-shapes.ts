@@ -145,6 +145,14 @@ export interface ArticleCard {
    * reached the feed as an author's own post or a subscribed publication's.
    */
   recommendedBy?: Array<ArticleCardRecommender>;
+  /**
+   * Whether the requesting reader has recommended this article themselves.
+   * Drives the "Recommended by you" indicator (red heart) shown on document
+   * items across the app. Attached server-side (see
+   * `attachViewerRecommendedToArticles`); only meaningful when the query ran for
+   * a signed-in reader, otherwise defaults to `false`.
+   */
+  viewerHasRecommended: boolean;
 }
 
 /** A followed user who recommended an article (for feed attribution). */
@@ -458,6 +466,9 @@ export function toArticleCard(row: ArticleCardRow): ArticleCard {
     recommendCount: row.recommendCount ?? 0,
     commentCount: 0,
     isRead: row.isRead ?? false,
+    // Defaults to false; `attachViewerRecommendedToArticles` flips it to true
+    // for the signed-in reader's own recommends after the card is built.
+    viewerHasRecommended: false,
     searchTitleHtml: row.searchTitleHtml ?? undefined,
     searchSnippetHtml: row.searchSnippetHtml ?? undefined,
   };
