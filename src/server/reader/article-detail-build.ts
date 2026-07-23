@@ -17,6 +17,7 @@ import { STANDARD_MARKDOWN_CONTENT } from "#/lib/document/structured-content/typ
 import { leafletBlocks } from "#/lib/leaflet/blocks";
 import type { LeafletCodeBlock } from "#/lib/leaflet/types";
 import { LEAFLET_CONTENT } from "#/lib/leaflet/types";
+import { extractMarkdownCodeBlocks } from "#/lib/markdown/extract-code-blocks";
 import { offprintBlocks } from "#/lib/offprint/blocks";
 import { OFFPRINT_CONTENT } from "#/lib/offprint/types";
 import { pcktBlocks, pcktCodeLanguage } from "#/lib/pckt/blocks";
@@ -148,9 +149,12 @@ function codeBlocksFromContent(
   }
   if (
     resolvedContentFormat === STANDARD_MARKDOWN_CONTENT &&
-    resolvedContentJson
+    resolvedContentJson &&
+    typeof resolvedContentJson === "object" &&
+    !Array.isArray(resolvedContentJson) &&
+    typeof resolvedContentJson.text === "string"
   ) {
-    return [];
+    return extractMarkdownCodeBlocks(resolvedContentJson.text);
   }
   return [];
 }

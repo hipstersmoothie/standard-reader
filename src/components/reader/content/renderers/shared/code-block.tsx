@@ -99,7 +99,7 @@ export function CodeBlockView({
   language?: string;
   codeHighlights?: CodeHighlightsByScheme;
 }) {
-  const { mode, resolvedScheme } = useTheme();
+  const { resolvedScheme } = useTheme();
   const tracker = useQuoteHighlightTracker();
   const highlightRange = tracker?.consume(plaintext.length) ?? null;
 
@@ -120,15 +120,15 @@ export function CodeBlockView({
     return <HighlightedCodeShell html={serverHtml} />;
   }
 
-  if (mode === "system") {
-    return (
-      <CodeBlockLazy
-        plaintext={plaintext}
-        language={language}
-        scheme={resolvedScheme}
-      />
-    );
-  }
-
-  return <PlainCodeBlock plaintext={plaintext} highlightRange={null} />;
+  // No precomputed highlight for this block (formats whose code blocks aren't
+  // extracted server-side, or a cache miss). Fetch it for the active scheme in
+  // every theme mode — not just `system` — so code is highlighted regardless of
+  // the reader's theme. Renders plain text until the highlight resolves.
+  return (
+    <CodeBlockLazy
+      plaintext={plaintext}
+      language={language}
+      scheme={resolvedScheme}
+    />
+  );
 }
