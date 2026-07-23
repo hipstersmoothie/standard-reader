@@ -19,6 +19,7 @@ const NS = {
   createRecord: "com.atproto.space.createRecord",
   putRecord: "com.atproto.space.putRecord",
   deleteRecord: "com.atproto.space.deleteRecord",
+  getRecord: "com.atproto.space.getRecord",
   listRepoOps: "com.atproto.space.listRepoOps",
   listRepos: "com.atproto.space.listRepos",
   getDelegationToken: "com.atproto.space.getDelegationToken",
@@ -148,6 +149,25 @@ export function listRepoOps(
     buildHappyViewRequest({
       config,
       nsid: NS.listRepoOps,
+      method: "GET",
+      params,
+      auth,
+    }),
+  );
+}
+
+/** Read a single record (read member DPoP session or Bearer credential). */
+export function getRecord(
+  transport: SpaceTransport,
+  config: HappyViewConfig,
+  auth: SpaceAuthMode,
+  params: { space: string; collection: string; rkey: string },
+): Promise<{ uri: string; cid: string; value: unknown }> {
+  return callHappyView(
+    transport,
+    buildHappyViewRequest({
+      config,
+      nsid: NS.getRecord,
       method: "GET",
       params,
       auth,

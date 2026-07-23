@@ -34,6 +34,8 @@ export interface Send {
 
 export interface Publication {
   id: string;
+  /** Publication AT-URI. Present for DB-backed publications; absent for sample data. */
+  uri?: string;
   name: string;
   icon: string;
   url: string;

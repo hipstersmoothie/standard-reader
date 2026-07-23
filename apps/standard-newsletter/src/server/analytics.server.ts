@@ -259,6 +259,7 @@ export async function loadPublicationsFromDb(
     const cadences = ["Weekly", "Biweekly", "Monthly"];
     return {
       id: p.rkey,
+      uri: p.uri,
       name: p.name,
       icon: (p.name.trim()[0] ?? "•").toUpperCase(),
       url: displayUrl(p.url),
