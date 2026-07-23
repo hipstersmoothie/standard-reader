@@ -12,29 +12,29 @@ import {
 
 import { formatReaders, initials } from "#/components/reader/format";
 import { ArticleEngagement } from "#/components/reader/primitives";
-import { Avatar } from "#/design-system/avatar";
-import { Button } from "#/design-system/button";
-import { Flex } from "#/design-system/flex";
-import { IconButton } from "#/design-system/icon-button";
-import { Separator } from "#/design-system/separator";
+import { Avatar } from "@standard-reader/design-system/avatar";
+import { Button } from "@standard-reader/design-system/button";
+import { Flex } from "@standard-reader/design-system/flex";
+import { IconButton } from "@standard-reader/design-system/icon-button";
+import { Separator } from "@standard-reader/design-system/separator";
 import {
   criticalColor,
   primaryColor,
   uiColor,
-} from "#/design-system/theme/color.stylex";
+} from "@standard-reader/design-system/theme/color.stylex";
 import {
   horizontalSpace,
   verticalSpace,
-} from "#/design-system/theme/semantic-spacing.stylex";
+} from "@standard-reader/design-system/theme/semantic-spacing.stylex";
 import {
   fontFamily,
   fontSize,
   fontWeight,
   lineHeight,
   tracking,
-} from "#/design-system/theme/typography.stylex";
-import { Tooltip } from "#/design-system/tooltip";
-import { Text } from "#/design-system/typography/text";
+} from "@standard-reader/design-system/theme/typography.stylex";
+import { Tooltip } from "@standard-reader/design-system/tooltip";
+import { Text } from "@standard-reader/design-system/typography/text";
 
 import type { ExtensionResolveArticle } from "../lib/types";
 import { PopupArticleDiscussion } from "./PopupArticleDiscussion";

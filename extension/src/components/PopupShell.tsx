@@ -3,16 +3,16 @@ import { Settings, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { BrandWordmark } from "#/components/reader/brand-wordmark";
-import { Button } from "#/design-system/button";
-import { Flex } from "#/design-system/flex";
-import { IconButton } from "#/design-system/icon-button";
-import { Separator } from "#/design-system/separator";
-import { uiColor } from "#/design-system/theme/color.stylex";
+import { Button } from "@standard-reader/design-system/button";
+import { Flex } from "@standard-reader/design-system/flex";
+import { IconButton } from "@standard-reader/design-system/icon-button";
+import { Separator } from "@standard-reader/design-system/separator";
+import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
 import {
   horizontalSpace,
   verticalSpace,
-} from "#/design-system/theme/semantic-spacing.stylex";
-import { Text } from "#/design-system/typography/text";
+} from "@standard-reader/design-system/theme/semantic-spacing.stylex";
+import { Text } from "@standard-reader/design-system/typography/text";
 
 import { sendMessage } from "../lib/messaging";
 import { setPopupDimensions } from "../lib/popup-dimensions";

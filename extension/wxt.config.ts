@@ -47,8 +47,11 @@ const stylexPlugins = [
     dev: isWxtDev,
     devMode: "css-only",
     aliases: {
-      "@/*": [path.join(repoRoot, "src/*")],
-      "#/*": [path.join(repoRoot, "src/*")],
+      "@/*": [path.join(repoRoot, "apps/standard-reader/src/*")],
+      "#/*": [path.join(repoRoot, "apps/standard-reader/src/*")],
+      "@standard-reader/design-system/*": [
+        path.join(repoRoot, "packages/design-system/src/*"),
+      ],
     },
     lightningcssOptions: {
       targets: browserslistToTargets(browserslist("baseline 2024")),
@@ -107,8 +110,12 @@ export default defineConfig({
     },
     resolve: {
       alias: {
-        "#": path.join(repoRoot, "src"),
-        "@": path.join(repoRoot, "src"),
+        "@standard-reader/design-system": path.join(
+          repoRoot,
+          "packages/design-system/src",
+        ),
+        "#": path.join(repoRoot, "apps/standard-reader/src"),
+        "@": path.join(repoRoot, "apps/standard-reader/src"),
       },
     },
     plugins: [

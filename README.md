@@ -14,7 +14,7 @@ read/unread, publication lists) is written back to **your** repo as records — 
 cached by us.
 
 For the full product vision (screens, data model, discovery engine), see
-[`APP_VISION.md`](./APP_VISION.md). The actionable roadmap lives in [`TODO.md`](./TODO.md).
+[`apps/standard-reader/APP_VISION.md`](./apps/standard-reader/APP_VISION.md).
 
 ## Stack
 
@@ -95,9 +95,8 @@ packages/             # publishable document renderers (@standard-reader/rendere
 
 ## Living docs
 
-- [`APP_VISION.md`](./APP_VISION.md) — product vision: concept, screens, data model,
-  architecture. Kept in sync with reality as decisions change.
-- [`TODO.md`](./TODO.md) — the roadmap derived from the vision.
+- [`apps/standard-reader/APP_VISION.md`](./apps/standard-reader/APP_VISION.md) — product vision:
+  concept, screens, data model, architecture. Kept in sync with reality as decisions change.
 - [`AGENTS.md`](./AGENTS.md) — repo conventions for AI agents (design-system rules, lint setup,
   gotchas).
 - [`packages/README.md`](./packages/README.md) — the document renderer family: the

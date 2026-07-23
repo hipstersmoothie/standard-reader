@@ -25,12 +25,10 @@ was scaffolded with npm and later switched to pnpm: `package-lock.json` was remo
 
 This repo has two source-of-truth planning docs that **must be kept up to date as work happens**:
 
-- [`APP_VISION.md`](./APP_VISION.md) — the product vision (concept, architecture, scope). When a
-  decision changes the product direction, data model, lexicons, or architecture, **update
-  `APP_VISION.md` in the same change** so it never drifts from reality.
-- [`TODO.md`](./TODO.md) — the actionable roadmap derived from the vision. As you complete work,
-  **check off the relevant items**; when scope changes or new work is discovered, **add/adjust
-  items**. Keep `TODO.md` in sync with `APP_VISION.md`.
+- [`apps/standard-reader/APP_VISION.md`](./apps/standard-reader/APP_VISION.md) — the product
+  vision (concept, architecture, scope). When a decision changes the product direction, data
+  model, lexicons, or architecture, **update `apps/standard-reader/APP_VISION.md` in the same
+  change** so it never drifts from reality.
 
 Treat updating these docs as part of "done" for any meaningful change, not an afterthought.
 

@@ -1,0 +1,305 @@
+import * as stylex from "@stylexjs/stylex";
+import type { EditorThemeClasses } from "lexical";
+
+import { primaryColor, uiColor } from "../theme/color.stylex";
+import { radius } from "../theme/radius.stylex";
+import {
+  horizontalSpace,
+  verticalSpace,
+} from "../theme/semantic-spacing.stylex";
+import {
+  fontFamily,
+  fontSize,
+  fontWeight,
+  lineHeight,
+} from "../theme/typography.stylex";
+
+/**
+ * StyleX rules for the editable surface. These map 1:1 to Lexical's
+ * `EditorThemeClasses`: Lexical stamps the generated class name onto the DOM
+ * node it renders for each node type, so styling the editor means styling
+ * these keys rather than the design-system React components (Lexical owns the
+ * DOM). Tokens are pulled from the design system so the editor matches prose
+ * rendered elsewhere.
+ */
+const styles = stylex.create({
+  paragraph: {
+    // Editorial prose spacing, but collapsed to a dense line inside table cells.
+    marginBlock: {
+      default: verticalSpace["2xl"],
+      ":is(td *)": 0,
+      ":is(th *)": 0,
+    },
+    fontSize: {
+      default: fontSize.xl,
+      ":is(td *)": "inherit",
+      ":is(th *)": "inherit",
+    },
+    lineHeight: {
+      default: lineHeight.base,
+      ":is(td *)": "inherit",
+      ":is(th *)": "inherit",
+    },
+  },
+  h1: {
+    marginTop: verticalSpace["7xl"],
+    marginBottom: verticalSpace["3xl"],
+    fontFamily: fontFamily.title,
+    fontSize: fontSize["4xl"],
+    fontWeight: fontWeight.bold,
+    lineHeight: lineHeight.xs,
+  },
+  h2: {
+    marginTop: verticalSpace["7xl"],
+    marginBottom: verticalSpace["3xl"],
+    fontFamily: fontFamily.title,
+    fontSize: fontSize["3xl"],
+    fontWeight: fontWeight.bold,
+    lineHeight: lineHeight.xs,
+  },
+  h3: {
+    marginTop: verticalSpace["4xl"],
+    marginBottom: verticalSpace["md"],
+    fontFamily: fontFamily.title,
+    fontSize: fontSize["2xl"],
+    fontWeight: fontWeight.semibold,
+    lineHeight: lineHeight.sm,
+  },
+  h4: {
+    marginTop: verticalSpace["4xl"],
+    marginBottom: verticalSpace["md"],
+    fontSize: fontSize.xl,
+    fontWeight: fontWeight.semibold,
+    lineHeight: lineHeight.sm,
+  },
+  h5: {
+    marginTop: verticalSpace["3xl"],
+    marginBottom: verticalSpace["xs"],
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.semibold,
+    lineHeight: lineHeight.base,
+  },
+  h6: {
+    marginTop: verticalSpace["3xl"],
+    marginBottom: verticalSpace["xs"],
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.semibold,
+    color: uiColor.text1,
+    lineHeight: lineHeight.base,
+  },
+  quote: {
+    marginBlock: verticalSpace["3xl"],
+    marginInline: 0,
+    paddingInlineStart: horizontalSpace["3xl"],
+    borderInlineStartWidth: horizontalSpace.sm,
+    borderInlineStartStyle: "solid",
+    // Editorial accent rail: the warm bronze accent, not a neutral border.
+    borderInlineStartColor: primaryColor.solid1,
+    color: primaryColor.text1,
+    fontSize: fontSize["2xl"],
+    fontStyle: "italic",
+    lineHeight: lineHeight.sm,
+  },
+  list: {
+    marginBlock: verticalSpace["3xl"],
+    paddingInlineStart: horizontalSpace["7xl"],
+  },
+  listItem: {
+    marginBlock: verticalSpace.xxs,
+    lineHeight: lineHeight.base,
+  },
+  nestedListItem: {
+    listStyleType: "none",
+  },
+  // Checklist items align the box and text with em units so the indicator and
+  // the (large, serif) body text stay lined up at any font size. Padding leaves
+  // room for the 1.15em box plus a gap; the box is vertically centered on the
+  // first line via `top`.
+  listItemChecked: {
+    position: "relative",
+    listStyleType: "none",
+    marginInlineStart: 0,
+    paddingInlineStart: "1.9em",
+    marginBlock: verticalSpace.xxs,
+    lineHeight: lineHeight.base,
+    textDecorationLine: "line-through",
+    color: uiColor.text1,
+    outline: "none",
+    cursor: "pointer",
+    // Filled checkbox.
+    "::before": {
+      content: '""',
+      position: "absolute",
+      insetInlineStart: 0,
+      top: "0.2em",
+      width: "1.15em",
+      height: "1.15em",
+      borderRadius: radius.xs,
+      borderWidth: 1,
+      borderStyle: "solid",
+      borderColor: primaryColor.solid1,
+      backgroundColor: primaryColor.solid1,
+    },
+    // Checkmark.
+    "::after": {
+      content: '""',
+      position: "absolute",
+      insetInlineStart: "0.44em",
+      top: "0.34em",
+      width: "0.28em",
+      height: "0.56em",
+      borderInlineEndWidth: 2,
+      borderBlockEndWidth: 2,
+      borderInlineEndStyle: "solid",
+      borderBlockEndStyle: "solid",
+      borderInlineEndColor: primaryColor.textContrast,
+      borderBlockEndColor: primaryColor.textContrast,
+      transform: "rotate(45deg)",
+    },
+  },
+  listItemUnchecked: {
+    position: "relative",
+    listStyleType: "none",
+    marginInlineStart: 0,
+    paddingInlineStart: "1.9em",
+    marginBlock: verticalSpace.xxs,
+    lineHeight: lineHeight.base,
+    outline: "none",
+    cursor: "pointer",
+    // Empty checkbox.
+    "::before": {
+      content: '""',
+      position: "absolute",
+      insetInlineStart: 0,
+      top: "0.2em",
+      width: "1.15em",
+      height: "1.15em",
+      borderRadius: radius.xs,
+      borderWidth: 1,
+      borderStyle: "solid",
+      borderColor: uiColor.border3,
+      backgroundColor: uiColor.bg,
+    },
+  },
+  link: {
+    color: primaryColor.text1,
+    textDecorationLine: "underline",
+    cursor: "pointer",
+  },
+  bold: { fontWeight: fontWeight.bold },
+  italic: { fontStyle: "italic" },
+  underline: { textDecorationLine: "underline" },
+  strikethrough: { textDecorationLine: "line-through" },
+  underlineStrikethrough: { textDecorationLine: "underline line-through" },
+  code: {
+    backgroundColor: uiColor.component1,
+    borderWidth: 1,
+    borderStyle: "solid",
+    borderColor: uiColor.border1,
+    borderRadius: radius.xs,
+    paddingBlock: verticalSpace.xxs,
+    paddingInline: horizontalSpace.xs,
+    fontFamily: fontFamily.mono,
+    fontSize: "0.85em",
+  },
+  highlight: {
+    backgroundColor: primaryColor.bgSubtle,
+    borderRadius: radius.xs,
+  },
+  codeBlock: {
+    position: "relative",
+    display: "block",
+    marginBlock: verticalSpace["3xl"],
+    // Extra top inset leaves room for the static header bar (filename +
+    // language) that CodeBlockHeaderPlugin pins to the top of the block.
+    paddingTop: verticalSpace["8xl"],
+    paddingBottom: verticalSpace.xl,
+    paddingInline: verticalSpace.xl,
+    backgroundColor: uiColor.component1,
+    borderRadius: radius.md,
+    fontFamily: fontFamily.mono,
+    fontSize: fontSize.sm,
+    lineHeight: lineHeight.lg,
+    overflowX: "auto",
+    whiteSpace: "pre",
+    tabSize: 2,
+  },
+  // Mirror the design-system `Table`: a rounded, single-outline frame with
+  // header-tinted top row and light row separators — not a heavy full grid.
+  table: {
+    marginBlock: verticalSpace["3xl"],
+    borderCollapse: "separate",
+    borderSpacing: 0,
+    width: "100%",
+    borderWidth: 1,
+    borderStyle: "solid",
+    borderColor: uiColor.border1,
+    borderRadius: radius.md,
+    overflow: "hidden",
+    fontSize: fontSize.sm,
+  },
+  tableCell: {
+    minWidth: horizontalSpace["10xl"],
+    // Row separators only; the last row leans on the table's own frame so there
+    // is no doubled line at the rounded bottom edge.
+    borderBottomWidth: {
+      default: 1,
+      ":is(tr:last-child > *)": 0,
+    },
+    borderBottomStyle: "solid",
+    borderBottomColor: uiColor.border1,
+    paddingBlock: verticalSpace.xs,
+    paddingInline: horizontalSpace.md,
+    lineHeight: lineHeight.sm,
+    verticalAlign: "top",
+    textAlign: "start",
+  },
+  tableCellHeader: {
+    backgroundColor: uiColor.component1,
+    fontWeight: fontWeight.semibold,
+    color: uiColor.text2,
+  },
+});
+
+/** Extract the StyleX-generated class name for one rule. */
+const cls = (...rules: Array<stylex.StyleXStyles>): string =>
+  stylex.props(...rules).className ?? "";
+
+/**
+ * Build the Lexical theme. Returns generated class names keyed by node type so
+ * Lexical can attach design-system styling to the DOM it renders.
+ */
+export const editorTheme: EditorThemeClasses = {
+  paragraph: cls(styles.paragraph),
+  heading: {
+    h1: cls(styles.h1),
+    h2: cls(styles.h2),
+    h3: cls(styles.h3),
+    h4: cls(styles.h4),
+    h5: cls(styles.h5),
+    h6: cls(styles.h6),
+  },
+  quote: cls(styles.quote),
+  list: {
+    ul: cls(styles.list),
+    ol: cls(styles.list),
+    listitem: cls(styles.listItem),
+    nested: { listitem: cls(styles.nestedListItem) },
+    listitemChecked: cls(styles.listItemChecked),
+    listitemUnchecked: cls(styles.listItemUnchecked),
+  },
+  link: cls(styles.link),
+  text: {
+    bold: cls(styles.bold),
+    italic: cls(styles.italic),
+    underline: cls(styles.underline),
+    strikethrough: cls(styles.strikethrough),
+    underlineStrikethrough: cls(styles.underlineStrikethrough),
+    code: cls(styles.code),
+    highlight: cls(styles.highlight),
+  },
+  code: cls(styles.codeBlock),
+  table: cls(styles.table),
+  tableCell: cls(styles.tableCell),
+  tableCellHeader: cls(styles.tableCellHeader),
+};

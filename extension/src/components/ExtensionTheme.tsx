@@ -8,7 +8,7 @@ import {
   editorialShadow,
   editorialUi,
 } from "#/components/reader/theme";
-import { uiColor } from "#/design-system/theme/color.stylex";
+import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
 
 import type { ExtensionThemeMode } from "../lib/extension-theme";
 import {

@@ -6,23 +6,23 @@ import { ArticleEngagement } from "#/components/reader/primitives";
 import {
   animationDuration,
   animationTimingFunction,
-} from "#/design-system/theme/animations.stylex";
-import { criticalColor } from "#/design-system/theme/color.stylex";
-import { radius } from "#/design-system/theme/radius.stylex";
+} from "@standard-reader/design-system/theme/animations.stylex";
+import { criticalColor } from "@standard-reader/design-system/theme/color.stylex";
+import { radius } from "@standard-reader/design-system/theme/radius.stylex";
 import {
   gap as gapToken,
   horizontalSpace,
   size,
-} from "#/design-system/theme/semantic-spacing.stylex";
-import { shadow } from "#/design-system/theme/shadow.stylex";
-import { spacing } from "#/design-system/theme/spacing.stylex";
+} from "@standard-reader/design-system/theme/semantic-spacing.stylex";
+import { shadow } from "@standard-reader/design-system/theme/shadow.stylex";
+import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
 import {
   fontFamily,
   fontSize,
   fontWeight,
   lineHeight,
   tracking,
-} from "#/design-system/theme/typography.stylex";
+} from "@standard-reader/design-system/theme/typography.stylex";
 import { formatDisplayHandle } from "#/utils/saved-handles";
 
 import { sendMessage } from "../lib/messaging";
