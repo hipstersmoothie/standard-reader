@@ -27,7 +27,7 @@ msgstr "Nenhuma pessoa nesta lista."
 
 #: src/components/docs/renderers-docs-page.tsx
 msgid "The exact override mechanism is idiomatic per framework — a components object of functions in React, Vue and Solid, <0>lit-html</0> templates in Lit, snippets in Svelte, or <1><ng-template></1> refs in Angular — but the split and the vocabulary are the same everywhere. See each package's README on npm for the framework-specific shape and worked examples."
-msgstr ""
+msgstr "O mecanismo exato de substituição é idiomático para cada framework — um objeto de funções de componentes no React, Vue e Solid; templates <0>lit-html</0> no Lit; snippets no Svelte; ou refs <1><ng-template></1> no Angular — mas a divisão e a terminologia são as mesmas em todos eles. Consulte o arquivo README de cada pacote no npm para ver a estrutura específica do framework e exemplos práticos."
 
 #: src/routes/_layout.latest.tsx
 msgid "Your Latest"
@@ -104,7 +104,7 @@ msgstr "O rascunho do feedback não foi encontrado — pode ter expirado (os ras
 
 #: src/components/docs/renderers-docs-page.tsx
 msgid "Every renderer takes one input for the document — the content payload of a <0>site.standard.document</0> — and an optional <1>components</1> map. The format is detected from the payload's <2>$type</2>. With no <3>components</3> prop, a document renders as unstyled semantic HTML."
-msgstr ""
+msgstr "Cada renderizador recebe uma entrada para o documento — o conteúdo de um <0>site.standard.document</0> — e um mapa opcional de <1>components</1>. O formato é detectado a partir do campo <2>$type</2> do conteúdo. Sem a propriedade <3>components</3>, o documento é renderizado como HTML semântico sem estilos."
 
 #: src/components/reader/about-view.tsx
 msgid "One tap from the reading view, on any device, instantly in sync. Your library is always where you left it."
@@ -116,7 +116,7 @@ msgstr "Listas e coleções curadas"
 
 #: src/components/docs/renderers-docs-page.tsx
 #~ msgid "Vue 3."
-#~ msgstr ""
+#~ msgstr "Vue 3."
 
 #: src/routes/_layout.l.$did.$rkey.tsx
 msgid "Publication list"
@@ -142,7 +142,7 @@ msgstr "Abrir artigos externamente"
 
 #: src/components/docs/introduction-docs-page.tsx
 msgid "That means you can build in whichever direction you need — read the indexed network through the API, render documents inside your own app, model your own records against the lexicons, or make your existing site discoverable and readable on Standard."
-msgstr ""
+msgstr "Isso significa que você pode desenvolver na direção que precisar: ler a rede indexada via API, renderizar documentos dentro do seu próprio aplicativo, modelar seus registros com base nos léxicos ou tornar seu site existente detectável e legível no Standard."
 
 #: src/components/reader/terms-view.tsx
 msgid "Content and intellectual property"
@@ -152,7 +152,7 @@ msgstr "Conteúdo e propriedade intelectual"
 #: src/components/docs/introduction-docs-page.tsx
 #: src/components/docs/lexicon-docs-intro.tsx
 msgid "Lexicons"
-msgstr "Lexicons"
+msgstr "Léxicos"
 
 #: src/routes/_layout.p.$did.$rkey.tsx
 #: src/routes/_layout.u.$did.tsx
@@ -165,7 +165,7 @@ msgstr "Sessão iniciada"
 
 #: src/routes/_layout.subscriptions.tsx
 msgid "Subscribe to a publication or follow a writer and they'll show up here, with their unread count and latest post. Each subscription is an <0>app.standard-reader.subscription</0> record in your repo — yours to take anywhere."
-msgstr ""
+msgstr "Inscreva-se a uma publicação ou siga um autor e eles aparecerão aqui, com a contagem de itens não lidos e o artigo mais recente. Cada inscrição é um registro <0>app.standard-reader.subscription</0> no seu repositório — para você levar aonde quiser."
 
 #: src/components/reader/collection-theme-editor.tsx
 msgid "Your series"
@@ -198,7 +198,7 @@ msgstr "Última atualização em 20 de julho de 2026"
 #: src/components/reader/subscriptions-table.tsx
 #: src/routes/_layout.feedback.index.tsx
 msgid "Type"
-msgstr ""
+msgstr "Tipo"
 
 #: src/components/reader/about-view.tsx
 msgid "Recommendations from real reading patterns"
@@ -218,7 +218,7 @@ msgstr "Adicione um título."
 
 #: src/components/reader/subscriptions-table.tsx
 msgid "Filter by name, handle, or topic"
-msgstr ""
+msgstr "Filtrar por nome, nome de usuário, ou tema"
 
 #: src/routes/_layout.discover.tsx
 msgid "Not subscribed"
@@ -250,7 +250,7 @@ msgstr "Abrir na publicação"
 
 #: src/components/docs/renderers-docs-page.tsx
 msgid "(this is what Standard Reader itself uses)"
-msgstr ""
+msgstr "(é o que o próprio Standard Reader utiliza)"
 
 #: src/components/reader/about-view.tsx
 msgid "And it never feels sealed off. We connect each article to the conversation happening across the Atmosphere — the open network beyond this app — gathering the Bluesky posts and replies about a piece, the notes left in its margins, and the other writing that cites it, quietly beneath what you’re reading."
@@ -363,7 +363,7 @@ msgstr "Dê um nome a sua série e escolha um tema"
 #: src/components/docs/docs-labelers-nav.tsx
 #: src/components/docs/labelers-docs-page.tsx
 msgid "Reference implementation"
-msgstr ""
+msgstr "Implementação de referência"
 
 #: src/components/appearance-settings.tsx
 msgid "Extra large"
@@ -403,7 +403,7 @@ msgstr "Escolha uma nota."
 
 #: src/components/docs/docs-mobile-nav.tsx
 msgid "(current)"
-msgstr ""
+msgstr "(atual)"
 
 #: src/routes/_layout.feedback.index.tsx
 msgid "Attachments on “{title}”"
@@ -419,7 +419,7 @@ msgstr "Nova coleção"
 
 #: src/routes/_layout.index.tsx
 msgid "Caught up"
-msgstr ""
+msgstr "Em dia"
 
 #: src/components/reader/collection-builder.tsx
 msgid "Move down"
@@ -495,7 +495,7 @@ msgstr "Velocidade de reprodução: {0}"
 
 #: src/components/reader/subscriptions-table.tsx
 msgid "No posts yet"
-msgstr ""
+msgstr "Nenhum artigo ainda"
 
 #: src/routes/_layout.l.$did.$rkey.tsx
 msgid "“{listName}” will be removed from your account. Anyone who saved it will no longer see it in their sidebar. This can’t be undone."
@@ -511,11 +511,11 @@ msgstr "Tudo o que foi publicado recentemente nas suas inscrições."
 
 #: src/components/reader/subscriptions-table.tsx
 msgid "Last post"
-msgstr ""
+msgstr "Último artigo"
 
 #: src/components/docs/introduction-docs-page.tsx
 msgid "publish AT Protocol labels Standard Reader shows — and can warn on or hide by — as readers read."
-msgstr ""
+msgstr "publicar rótulos do AT Protocol que o Standard Reader exibe — e com base nos quais pode emitir avisos ou ocultar conteúdo — à medida que os leitores leem."
 
 #: src/routes/_layout.latest.tsx
 msgid "Log in to follow publications"
@@ -634,7 +634,7 @@ msgstr "Vista de lista"
 #. placeholder {0}: result.failed.length
 #: src/components/reader/subscriptions-table.tsx
 msgid "{removed} removed, {0} could not be. Try the rest again."
-msgstr ""
+msgstr "{removed} removido, {0} não foi possível. Tente novamente o restante."
 
 #: src/components/reader/atstore-review-prompt.tsx
 msgid "Clicking Create will first request permissions to create a review."
@@ -693,11 +693,11 @@ msgstr "Apagar histórico"
 
 #: src/routes/_layout.index.tsx
 msgid "Your subscriptions have been quiet. The directory knows about every publication on the network — there's more to find."
-msgstr ""
+msgstr "Suas inscrições estão silenciosas. O diretório conhece todas as publicações da rede — há mais para descobrir."
 
 #: src/components/reader/subscriptions-table.tsx
 msgid "Selection actions"
-msgstr ""
+msgstr "Ações da seleção"
 
 #: src/routes/login.tsx
 msgid "You can use any Atmosphere account, including accounts from Bluesky, Tangled, Semble, and all the <0>other apps.</0>"
@@ -759,7 +759,7 @@ msgstr "Essas contas que você segue no Bluesky publicam no standard.site. Inscr
 #. placeholder {0}: row.unreadCount
 #: src/components/reader/subscriptions-table.tsx
 msgid "{0} unread"
-msgstr ""
+msgstr "{0} não lido"
 
 #: src/components/feedback/feedback-dialog.tsx
 msgid "Optional: add context, steps to reproduce, or what you'd like to see"
@@ -804,7 +804,7 @@ msgstr "Discussões"
 
 #: src/components/reader/labeler-pill.tsx
 msgid "Content label"
-msgstr "Etiqueta de conteúdo"
+msgstr "Rótulo de conteúdo"
 
 #: src/components/appearance-settings.tsx
 #: src/components/ReadingTypographyMenu.tsx
@@ -871,7 +871,7 @@ msgstr "Ainda não há publicações indexadas."
 #. placeholder {0}: result.added
 #: src/components/reader/subscriptions-table.tsx
 msgid "{0} added to {listName}."
-msgstr ""
+msgstr "{0, plural, one {# adicionado para } other {# adicionados para }} {listName}"
 
 #: src/components/appearance-settings.tsx
 #: src/components/user-settings-view.tsx
@@ -893,7 +893,7 @@ msgstr "Fechar índice"
 #: src/components/docs/docs-introduction-nav.tsx
 #: src/components/docs/introduction-docs-page.tsx
 msgid "Conventions"
-msgstr ""
+msgstr "Convenções"
 
 #: src/components/reader/list-edit-modal.tsx
 msgid "Member type to add"
@@ -901,15 +901,15 @@ msgstr "Tipo de membro a adicionar"
 
 #: src/components/docs/labelers-docs-page.tsx
 msgid "A labeler is any DID that publishes AT Proto labels. Readers add one by DID on the <0>Labelers</0> page, and Standard Reader then shows that labeler's labels — and can warn on or hide labeled posts — as they read. Labelers are discovered the standard way; nothing about them is specific to us."
-msgstr ""
+msgstr "Um rotulador é qualquer DID que publique rótulos do AT Proto. Os usuários os adicionam pelo DID na página <0>Rotuladores</0>; o cliente então exibe os rótulos desse rotulador — podendo emitir avisos ou ocultar publicações marcadas — durante a leitura. Os rotuladores são descobertos da maneira padrão; não há nada neles que seja específico da plataforma."
 
 #: src/components/docs/renderers-docs-page.tsx
 msgid "Rendering Standard Site documents"
-msgstr ""
+msgstr "Renderização de documentos Standard Site"
 
 #: src/components/docs/introduction-docs-page.tsx
 msgid "how to make a site discoverable on Standard and have its content read inline, without adopting a platform."
-msgstr ""
+msgstr "como tornar um site detectável no Standard e permitir que seu conteúdo seja lido diretamente na plataforma, sem precisar adotar a plataforma em si."
 
 #: src/components/reader/terms-view.tsx
 msgid "For more about how {SITE_NAME} works, see the <0>About</0> page. For questions about these terms for this deployment, contact the operator of the site at the URL above."
@@ -986,7 +986,7 @@ msgstr ""
 
 #: src/components/docs/introduction-docs-page.tsx
 msgid "public XRPC queries and procedures for the Standard Reader read-model, with live examples."
-msgstr ""
+msgstr "consultas e procedimentos XRPC públicos para o modelo de leitura Standard Reader, com exemplos em tempo real."
 
 #: src/components/reader/content/renderers/shared/iframe-embed.tsx
 msgid "Embedded content"
@@ -1050,7 +1050,7 @@ msgstr ""
 
 #: src/components/reader/discover-topic-filters.tsx
 msgid "No topics match “{debouncedQuery}”."
-msgstr ""
+msgstr "Nenhum tema corresponde a “{debouncedQuery}”"
 
 #: src/components/onboarding/step-settings.tsx
 msgid "Coming soon"
@@ -1058,7 +1058,7 @@ msgstr "Em breve"
 
 #: src/components/docs/renderers-docs-page.tsx
 msgid "The same renderer that powers Standard Reader, published as headless, unstyled packages. Give one a <0>site.standard.document</0> and your own components, and drop richly-formatted cross-platform posts into your own app — in React, Vue, Solid, Svelte, web components, or Angular."
-msgstr ""
+msgstr "O mesmo motor de renderização que alimenta o Standard Reader, disponibilizado como pacotes headless (sem interface pré-definida) e sem estilos. Basta fornecer um <0>site.standard.document</0> e seus próprios componentes para integrar publicações multiplataforma com formatação rica ao seu aplicativo — seja em React, Vue, Solid, Svelte, componentes web ou Angular."
 
 #: src/components/reader/save-to-collection-dialog.tsx
 msgid "e.g. To Read"
@@ -1094,7 +1094,7 @@ msgstr "Fonte do texto"
 
 #: src/components/docs/renderers-docs-page.tsx
 #~ msgid "Svelte 5."
-#~ msgstr ""
+#~ msgstr "Svelte 5."
 
 #: src/components/reader/about-view.tsx
 msgid "Fast full-text search"
@@ -1207,7 +1207,7 @@ msgstr "Carregando coleções…"
 #: src/components/docs/docs-renderers-nav.tsx
 #: src/components/docs/renderers-docs-page.tsx
 #~ msgid "The document input"
-#~ msgstr ""
+#~ msgstr "A entrada do documento"
 
 #: src/components/user-settings-view.tsx
 msgid "Browse labelers"
@@ -1241,7 +1241,7 @@ msgstr "Carregando página"
 
 #: src/components/docs/renderers-docs-page.tsx
 msgid "The core, and new frameworks"
-msgstr ""
+msgstr "O núcleo e novos frameworks"
 
 #: src/components/reader/extension-privacy-view.tsx
 msgid "You can disable the page overlay and Bluesky embed save button in the extension options page. You can sign out from the web app to invalidate the session cookie the extension uses. Uninstalling the extension removes locally stored settings from your browser profile."
@@ -1271,7 +1271,7 @@ msgstr "As suas opções"
 
 #: src/components/docs/renderers-docs-page.tsx
 #~ msgid "Pick the package for your framework; all sit on the same core."
-#~ msgstr ""
+#~ msgstr "Escolha o pacote para o seu framework; todos se baseiam no mesmo núcleo."
 
 #: src/routes/_layout.discover.tsx
 msgid "Known publications"
@@ -1332,7 +1332,7 @@ msgstr "Publicações, listas e coleções, cada uma têm um link com um cartão
 
 #: src/components/reader/discover-topic-filters.tsx
 msgid "Search topics"
-msgstr ""
+msgstr "Pesquisar temas"
 
 #: src/routes/_layout.collections.index.tsx
 msgid "No collections in this series yet."
@@ -1376,7 +1376,7 @@ msgstr "Tentar interromper, sobrecarregar ou obter acesso não autorizado ao ser
 
 #: src/components/reader/subscriptions-table.tsx
 msgid "Sort descending"
-msgstr ""
+msgstr "Ordem descendente"
 
 #: src/routes/_layout.feedback.index.tsx
 msgid "Anonymous"
@@ -1512,7 +1512,7 @@ msgstr "Moderação"
 
 #: src/components/labeler-detail-view.tsx
 msgid "Nothing labeled yet"
-msgstr "Ainda nada etiquetado"
+msgstr "Nada rotulado ainda"
 
 #: src/components/labeler-detail-view.tsx
 msgid "Documents"
@@ -1569,7 +1569,7 @@ msgstr "Defina API_DOCS_FIXTURE_LIST_URI para executar este exemplo."
 
 #: src/components/docs/renderers-docs-page.tsx
 #~ msgid "React (this is what Standard Reader itself uses)."
-#~ msgstr ""
+#~ msgstr "React (é o que o próprio Standard Reader utiliza)."
 
 #: src/components/reader/about-view.tsx
 msgid "Add to Chrome"
@@ -1608,7 +1608,7 @@ msgstr "Editar"
 
 #: src/components/reader/subscriptions-table.tsx
 msgid "Removed"
-msgstr ""
+msgstr "Removido"
 
 #: src/components/reading-settings-preview.tsx
 msgid "Stop sample"
@@ -1631,15 +1631,15 @@ msgstr "Leitores"
 
 #: src/components/docs/renderers-docs-page.tsx
 #~ msgid "Walk the blocks, map each block type to your framework's primitive, and run text through <0>segmentInline</0> to render marks, links, mentions and footnote references. The existing renderers are the reference implementations."
-#~ msgstr ""
+#~ msgstr "Percorra os blocos, mapeie cada tipo de bloco para o elemento primitivo do seu framework e processe o texto usando <0>segmentInline</0> para renderizar marcações, links, menções e referências de notas de rodapé. Os renderizadores existentes servem como implementações de referência."
 
 #: src/components/reader/document-share-menu.tsx
 msgid "View on PDSLS"
-msgstr "Ver no PDSLS"
+msgstr "Ver no PDSls"
 
 #: src/routes/_layout.discover.tsx
 msgid "Subscribe to a few publications to unlock recommendations."
-msgstr ""
+msgstr "Inscreva-se em algumas publicações para receber recomendações"
 
 #: src/routes/_layout.discover.tsx
 msgid "See publications from the people you follow"
@@ -1678,11 +1678,11 @@ msgstr "Com tecnologia Standard Reader"
 
 #: src/components/docs/renderers-docs-page.tsx
 #~ msgid "You usually depend on a framework renderer, not the core directly. But <0>@standard-reader/renderer-core</0> is public: reach for it to inspect or transform a document without rendering it, or to build a renderer for a framework not listed above. A renderer is just a walk over its normalized tree."
-#~ msgstr ""
+#~ msgstr "Normalmente, você depende de um renderizador de framework, e não diretamente do núcleo. No entanto, o <0>@standard-reader/renderer-core</0> é público: utilize-o para inspecionar ou transformar um documento sem renderizá-lo, ou para criar um renderizador para um framework não listado acima. Um renderizador consiste simplesmente em percorrer a árvore normalizada do documento."
 
 #: src/components/reader/subscriptions-table.tsx
 msgid "Clear selection"
-msgstr ""
+msgstr "Limpar a seleção"
 
 #: src/components/reader/rss-feed-button.tsx
 #: src/routes/_layout.l.$did.$rkey.tsx
@@ -1696,7 +1696,7 @@ msgstr "Feed RSS"
 
 #: src/components/reader/read-on-platform.tsx
 msgid "Read on"
-msgstr ""
+msgstr "Leia em"
 
 #: src/components/user-settings-view.tsx
 msgid "Theme"
@@ -1718,7 +1718,7 @@ msgstr "Terminar sessão"
 #. placeholder {1}: rows.length
 #: src/components/reader/subscriptions-table.tsx
 msgid "{0} of {1}"
-msgstr ""
+msgstr "{0} de {1}"
 
 #: src/components/user-settings-view.tsx
 msgid "The top articles from publications you subscribe to."
@@ -1727,7 +1727,7 @@ msgstr "Os artigos mais populares das suas inscrições."
 #. placeholder {0}: data?.publicationCount ?? 0
 #: src/routes/_layout.discover.tsx
 msgid "{0, plural, one {# publication from your Bluesky follows} other {# publications from your Bluesky follows}}"
-msgstr "{0, plural, one {# publicação de quem você segue no Bluesky} other {# publicações de quem você segue no Bluesky}}"
+msgstr "{0, plural, one {# publicação} other {# publicações}} de quem você segue no Bluesky"
 
 #: src/routes/review.thanks.tsx
 msgid "Return to the app"
@@ -1758,7 +1758,7 @@ msgstr "Descoberta"
 #. placeholder {0}: selected.count
 #: src/components/reader/subscriptions-table.tsx
 msgid "{0} selected"
-msgstr ""
+msgstr "{0, plural, one {# selecionado} other {# selecionados}}"
 
 #: src/components/labeler-detail-view.tsx
 msgid "Warn"
@@ -1830,7 +1830,7 @@ msgstr "Preparando a edição…"
 
 #: src/components/docs/docs-renderers-nav.tsx
 #~ msgid "Renderers guide"
-#~ msgstr ""
+#~ msgstr "Guia de renderizadores"
 
 #: src/components/reader/subscribe-card.tsx
 msgid "Couldn't subscribe"
@@ -1874,7 +1874,7 @@ msgstr "{pubTotal, plural, one {# publicação} other {# publicações}}"
 
 #: src/routes/_layout.index.tsx
 msgid "Nothing new today"
-msgstr ""
+msgstr "Nada novo hoje"
 
 #. placeholder {0}: palette.name
 #: src/components/appearance-settings.tsx
@@ -1895,7 +1895,7 @@ msgstr "Nove textos, dispostos em páginas duplas — feitos para serem lidos de
 
 #: src/components/docs/renderers-docs-page.tsx
 #~ msgid "Lit / web components."
-#~ msgstr ""
+#~ msgstr "Componentes Lit / web."
 
 #: src/routes/_layout.latest.tsx
 msgid "From your subscriptions"
@@ -1931,7 +1931,7 @@ msgstr "Executar de novo"
 
 #: src/components/reader/subscriptions-table.tsx
 msgid "Everything selected was already in that list."
-msgstr ""
+msgstr "Toda a seleção já estava naquela lista."
 
 #: src/routes/_layout.collections.index.tsx
 msgid "A series is a collection of collections — like a magazine and its issues. Group related editions under one masthead, give it a theme, and let readers follow the whole run."
@@ -1965,7 +1965,7 @@ msgstr "A maioria dos leitores ficam apenas nas suas inscrições. O Standard Re
 
 #: src/components/labeler-detail-view.tsx
 msgid "Labels"
-msgstr "Etiquetas"
+msgstr "Rótulos"
 
 #: src/routes/_layout.feedback.index.tsx
 msgid "Filter by tag"
@@ -1973,7 +1973,7 @@ msgstr "Filtrar por etiqueta"
 
 #: src/components/docs/renderers-docs-page.tsx
 msgid "The <0>components</0> map is a partial override — anything you omit uses the unstyled default. It comes in two categories:"
-msgstr ""
+msgstr "O mapa de <0>componentes</0> é uma substituição parcial — tudo o que você omitir utiliza o padrão sem estilos. Ele se divide em duas categorias:"
 
 #: src/components/docs/publishing-docs-page.tsx
 msgid "Publishing without a platform"
@@ -2034,7 +2034,7 @@ msgstr "Um tema ou etiqueta"
 
 #: src/components/docs/api-docs-intro.tsx
 #~ msgid "Prefer a typed client? The whole API ships as codegen'd AT Protocol lexicon schemas in <0>@standard-reader/lexicons</0>. Pair it with <1>@atproto/lex-client</1> for fully-typed <2>client.call()</2> queries and procedures. Its <3>getDocument</3> also returns a document's renderable body, ready to hand to the <4>renderers</4>."
-#~ msgstr ""
+#~ msgstr "Prefere um cliente tipificado? Toda a API é fornecida na forma de esquemas de léxico do AT Protocol gerados automaticamente no pacote <0>@standard-reader/lexicons</0>. Combine-o com <1>@atproto/lex-client</1> para realizar consultas e procedimentos via <2>client.call()</2> tipificado. O método <3>getDocument</3> também retorna o corpo renderizável do documento, pronto para ser passado aos <4>renderizadores</4>."
 
 #: src/components/onboarding/welcome-wizard.tsx
 msgid "Couldn't save your follows"
@@ -2054,11 +2054,11 @@ msgstr "As novidades das suas inscrições"
 
 #: src/components/docs/renderers-docs-page.tsx
 #~ msgid "SolidJS."
-#~ msgstr ""
+#~ msgstr "SolidJS"
 
 #: src/components/reader/subscriptions-table.tsx
 msgid "Added"
-msgstr ""
+msgstr "Adicionado"
 
 #: src/components/feedback/feedback-image-picker.tsx
 msgid "Description for image {position}"
@@ -2076,7 +2076,7 @@ msgstr "Ainda não há nada aqui"
 
 #: src/components/docs/api-docs-intro.tsx
 msgid "Prefer a typed client? The whole API ships as codegen'd AT Protocol lexicon schemas in <0>@standard-reader/lexicons</0>. Pair it with <1>@atproto/lex-client</1> for fully-typed <2>client.call()</2> queries and procedures."
-msgstr ""
+msgstr "Prefere um cliente tipificado? Toda a API é fornecida na forma de esquemas de léxico do AT Protocol gerados automaticamente no pacote <0>@standard-reader/lexicons</0>. Combine-o com <1>@atproto/lex-client</1> para realizar consultas e procedimentos via <2>client.call()</2> tipificado."
 
 #: src/routes/_layout.p.$did.$rkey.tsx
 #: src/routes/_layout.u.$did.tsx
@@ -2093,7 +2093,7 @@ msgstr "Última atualização em 13 de junho de 2026"
 
 #: src/routes/_layout.search.tsx
 msgid "{shown, plural, one {# match} other {# matches}}"
-msgstr "{shown, plural, one {# correspondência} other {# correspondências}}"
+msgstr "{shown, plural, one {# resultado} other {# resultados}}"
 
 #: src/components/onboarding/welcome-wizard.tsx
 msgid "People you follow write here"
@@ -2168,7 +2168,7 @@ msgstr "Carregando publicação"
 
 #: src/components/reader/subscriptions-table.tsx
 msgid "Filter subscriptions"
-msgstr ""
+msgstr "Filtrar inscrições"
 
 #: src/components/reader/mention-hover-card.tsx
 msgid "{n, plural, one {# publication} other {{value} publications}}"
@@ -2240,7 +2240,7 @@ msgstr "Vale a pena se inscrever"
 
 #: src/components/docs/renderers-docs-page.tsx
 #~ msgid "Angular."
-#~ msgstr ""
+#~ msgstr "Angular."
 
 #: src/components/reader/app-shell.tsx
 #: src/components/reader/subscriptions-sheet.tsx
@@ -2253,11 +2253,11 @@ msgstr "{people, plural, one {# pessoa que você segue} other {# pessoas que voc
 
 #: src/routes/_layout.subscriptions.tsx
 msgid "Nothing to manage yet"
-msgstr ""
+msgstr "Nada a gerenciar ainda"
 
 #: src/routes/_layout.subscriptions.tsx
 msgid "Your library"
-msgstr ""
+msgstr "Sua biblioteca"
 
 #: src/components/reader/reorder-lists-modal.tsx
 msgid "You don't have any lists to reorder yet."
@@ -2281,11 +2281,11 @@ msgstr "Novo"
 
 #: src/components/docs/renderers-docs-page.tsx
 msgid "All the format-specific work happens once, in a framework-agnostic core that normalizes every format into one block vocabulary. Each framework renderer is a thin walk over that shared tree, so the same mental model — one document input, one components map — transfers between frameworks."
-msgstr ""
+msgstr "Todo o trabalho específico de formato é realizado uma única vez, em um núcleo agnóstico a frameworks que normaliza cada formato em um vocabulário de blocos unificado. Cada mecanismo de renderização é uma pequena extensão dessa árvore compartilhada, portanto o mesmo modelo mental — uma entrada de documento, um mapa de componentes — é transferido entre os diferentes mecanismos."
 
 #: src/components/docs/introduction-docs-page.tsx
 msgid "A publication on Standard is a <0>site.standard.document</0> record in the author's AT Protocol repository — not a row in a database we own. Standard Reader indexes those records into a public read-model and renders them, but nothing about the format is proprietary: the schemas are open, the content is portable across publishing platforms, and the same renderer we ship is available to you."
-msgstr ""
+msgstr "Uma publicação no Standard é um registro do tipo <0>site.standard.document</0> no repositório AT Protocol do autor — e não uma linha em um banco de dados de nossa propriedade. O Standard Reader indexa esses registros em um modelo de leitura público e os renderiza, mas nada no formato é proprietário: os esquemas são abertos, o conteúdo é portátil entre plataformas de publicação e o mesmo renderizador que disponibilizamos também está ao seu alcance."
 
 #: src/routes/_layout.latest.tsx
 msgid "On the network"
@@ -2314,11 +2314,11 @@ msgstr "por ex. Relatos da Atmosfera"
 
 #: src/components/docs/introduction-docs-page.tsx
 msgid "the AT Protocol schemas that define Standard records and the shared definitions they build on."
-msgstr ""
+msgstr "os esquemas do Protocolo AT que definem registros Standard e as definições compartilhadas nas quais eles se baseiam."
 
 #: src/components/docs/renderers-docs-page.tsx
 msgid "You usually depend on a framework renderer, not the core directly. But <0/> is public: reach for it to inspect or transform a document without rendering it, or to build a renderer for a framework not listed above. A renderer is just a walk over its normalized tree — map each block type to your framework's primitive, and run text through the core's inline segmenter to render marks, links, mentions and footnote references. The existing renderers are the reference implementations; the API is documented in the <1/> README on npm."
-msgstr ""
+msgstr "Normalmente, você depende de um renderizador de framework, e não diretamente do núcleo. No entanto, <0/> é público: utilize-o para inspecionar ou transformar um documento sem renderizá-lo, ou para criar um renderizador para um framework não listado acima. Um renderizador consiste apenas em percorrer a árvore normalizada — mapeie cada tipo de bloco para o elemento primitivo do seu framework e processe o texto por meio do segmentador de elementos inline do núcleo para renderizar marcações, links, menções e referências de notas de rodapé. Os renderizadores existentes servem como implementações de referência; a API está documentada no <1/> README no npm."
 
 #: src/components/onboarding/welcome-wizard.tsx
 msgid "{selectedCount} selected — {remainingFollows} more to fill your feed"
@@ -2331,7 +2331,7 @@ msgstr "{formattedMetaCount} não lidos"
 #: src/components/docs/docs-renderers-nav.tsx
 #: src/components/docs/renderers-docs-page.tsx
 msgid "Packages"
-msgstr ""
+msgstr "Pacotes"
 
 #: src/routes/_layout.index.tsx
 msgid "Loading today"
@@ -2339,11 +2339,11 @@ msgstr "Carregando hoje"
 
 #: src/components/reader/subscriptions-table.tsx
 msgid "Already in {listName}"
-msgstr ""
+msgstr "Já adicionado à {listName}"
 
 #: src/components/docs/introduction-docs-page.tsx
 msgid "headless, unstyled packages that turn a document into your own components, in React, Vue, Solid, Svelte, Lit, or Angular."
-msgstr ""
+msgstr "pacotes headless e sem estilos que transformam um documento em seus próprios componentes, em React, Vue, Solid, Svelte, Lit ou Angular."
 
 #: src/components/reader/reorder-lists-modal.tsx
 msgid "Save order"
@@ -2373,7 +2373,7 @@ msgstr "por @{ownerHandle}"
 #. placeholder {0}: rows.length
 #: src/components/reader/subscriptions-table.tsx
 msgid "{0} total"
-msgstr ""
+msgstr "{0} total"
 
 #: src/components/onboarding/welcome-wizard.tsx
 msgid "Finish"
@@ -2397,7 +2397,7 @@ msgstr "{subscribedCount} não lidos das suas inscrições."
 
 #: src/components/reader/subscriptions-table.tsx
 msgid "Could not unsubscribe"
-msgstr ""
+msgstr "Não foi possível cancelar inscrição"
 
 #: src/components/reader/list-edit-modal.tsx
 msgid "Everyone you follow is in this list."
@@ -2571,7 +2571,7 @@ msgstr "A gerar áudio… {percent}%"
 #: src/components/docs/docs-nav-areas.ts
 #: src/components/docs/introduction-docs-page.tsx
 msgid "Renderers"
-msgstr ""
+msgstr "Renderizadores"
 
 #: src/components/reader/subscriptions-table.tsx
 #: src/routes/_layout.latest.tsx
@@ -2581,7 +2581,7 @@ msgstr "Não lido"
 #. placeholder {0}: filter.trim()
 #: src/components/reader/subscriptions-table.tsx
 msgid "Nothing matches “{0}”."
-msgstr ""
+msgstr "Nada corresponde “{0}”."
 
 #: src/components/reader/markdown-field.tsx
 msgid "{label} mode"
@@ -2601,7 +2601,7 @@ msgstr "Prefere o original?"
 
 #: src/components/reader/subscriptions-table.tsx
 msgid "Could not add to list"
-msgstr ""
+msgstr "Não foi possível adicionar para a lista"
 
 #: src/components/reader/page-reader-bar.tsx
 msgid "Back {SKIP_SECONDS} seconds"
@@ -2642,7 +2642,7 @@ msgstr "{count, plural, one {# voto positivo} other {# votos positivos}} — cli
 
 #: src/routes/_layout.search.tsx
 msgid "{shown} of {total} matches"
-msgstr "{shown} de {total} correspondências"
+msgstr "{shown} de {total} resultados"
 
 #: src/components/appearance-settings.tsx
 msgid "How rounded buttons, cards and inputs are."
@@ -2707,7 +2707,7 @@ msgstr "Resuma o seu feedback"
 
 #: src/components/reader/subscriptions-unsubscribe-dialog.tsx
 msgid "Remove these?"
-msgstr ""
+msgstr "Remover estes?"
 
 #: src/components/reader/reorder-lists-modal.tsx
 msgid "Sidebar lists"
@@ -2719,7 +2719,7 @@ msgstr "Inscreva-se para escolher como estes rótulos são aplicados enquanto l�
 
 #: src/components/reader/subscriptions-table.tsx
 msgid "Partly removed"
-msgstr ""
+msgstr "Removido parcialmente"
 
 #: src/components/reader/list-edit-modal.tsx
 #: src/routes/_layout.l.$did.$rkey.tsx
@@ -2759,7 +2759,7 @@ msgstr "virar a página"
 #: src/components/docs/docs-introduction-nav.tsx
 #: src/components/docs/introduction-docs-page.tsx
 msgid "What's in these docs"
-msgstr ""
+msgstr "O que essa documentação contém"
 
 #: src/components/reader/about-view.tsx
 msgid "Sun · 8:00 AM"
@@ -2806,7 +2806,7 @@ msgstr "Última atividade"
 
 #: src/components/docs/introduction-docs-page.tsx
 msgid "These docs assume working familiarity with the AT Protocol — repositories, records, DIDs, NSIDs, and XRPC. Identifiers are written as their fully-qualified NSID (for example <0>site.standard.document</0>), and record references use <1>at://</1> URIs. Anything the network hosts — records, blobs, identities — is addressed the same way whether you reach it through the API, a renderer, or your own service."
-msgstr ""
+msgstr "Esta documentação pressupõe familiaridade prática com o AT Protocol — repositórios, registros, DIDs, NSIDs e XRPC. Os identificadores são escritos como seus NSIDs qualificados (por exemplo, <0>site.standard.document</0>), e as referências a registros utilizam URIs <1>at://</1>. Qualquer elemento hospedado pela rede — registros, blobs ou identidades — é endereçado da mesma maneira, independentemente de você acessá-lo via API, renderizador ou seu próprio serviço."
 
 #: src/components/reader/content/renderers/shared/footnotes-section.tsx
 msgid "Footnotes"
@@ -2934,7 +2934,7 @@ msgstr "{0, plural, one {# leitor} other {{1} leitores}}"
 
 #: src/components/reader/subscriptions-table.tsx
 msgid "Sort ascending"
-msgstr ""
+msgstr "Ordem ascendente"
 
 #: src/components/docs/api-docs-intro.tsx
 #: src/components/docs/docs-api-nav.tsx
@@ -2943,7 +2943,7 @@ msgstr "Descoberta de serviços"
 
 #: src/components/docs/lexicon-docs-intro.tsx
 msgid "These schemas are published, codegen'd from the lexicons, as <0>@standard-reader/lexicons</0> — a typed schema object for every <1>app.standard-reader.*</1> query, procedure, and record, validated at runtime when paired with <2>@atproto/lex-client</2>."
-msgstr ""
+msgstr "Esses esquemas são publicados — gerados a partir dos léxicos — como <0>@standard-reader/lexicons</0>: um objeto de esquema tipificado para cada consulta, procedimento e registro <1>app.standard-reader.*</1>, validado em tempo de execução quando utilizado em conjunto com <2>@atproto/lex-client</2>."
 
 #: src/components/user-settings-view.tsx
 msgid "The voice used when you listen to an article with read aloud."
@@ -3157,11 +3157,11 @@ msgstr "Podemos atualizar estes termos à medida que o produto sofrer alteraçõ
 
 #: src/components/docs/labelers-docs-page.tsx
 msgid "Publish AT Protocol labels that Standard Reader shows — and can warn on or hide by — as readers read."
-msgstr ""
+msgstr "publicar rótulos do AT Protocol que o Standard Reader exibe — e com base nos quais pode emitir avisos ou ocultar conteúdo — à medida que os leitores leem."
 
 #: src/components/docs/renderers-docs-page.tsx
 #~ msgid "The exact override mechanism is idiomatic per framework — a components object of functions in React, Vue and Solid, <0>lit-html</0> templates in Lit, snippets in Svelte, or <1><ng-template></1> refs in Angular — but the split and the vocabulary are the same everywhere. See each package's README for the framework-specific shape."
-#~ msgstr ""
+#~ msgstr "O mecanismo exato de substituição é idiomático para cada framework — um objeto de funções de componentes no React, Vue e Solid; templates <0>lit-html</0> no Lit; snippets no Svelte; ou refs <1><ng-template></1> no Angular —, mas a divisão e a terminologia são as mesmas em todos eles. Consulte o arquivo README de cada pacote para verificar a estrutura específica do framework."
 
 #: src/components/reader/about-view.tsx
 msgid "Save, like, subscribe — everywhere"
@@ -3169,7 +3169,7 @@ msgstr "Salvar, recomendar, se inscrever — em todo lugar"
 
 #: src/components/reader/subscriptions-unsubscribe-dialog.tsx
 msgid "Unsubscribe?"
-msgstr ""
+msgstr "Cancelar inscrição?"
 
 #: src/components/reader/link-share-menu.tsx
 msgid "Share to Alternate Client"
@@ -3203,11 +3203,11 @@ msgstr "{0, plural, one {# publicação} other {{1} publicações}}"
 
 #: src/components/reader/subscriptions-table.tsx
 msgid "Person"
-msgstr ""
+msgstr "Pessoa"
 
 #: src/components/docs/renderers-docs-page.tsx
 msgid "<0>Shared</0> components render the block and inline vocabulary that every format has in common — paragraphs, headings, images, code, lists, tables, and the inline marks (bold, links, mentions, footnotes). Override one and it applies across every format."
-msgstr ""
+msgstr "Componentes <0>compartilhados</0> renderizam o vocabulário de blocos e elementos embutidos comum a todos os formatos — parágrafos, títulos, imagens, código, listas, tabelas e as marcações embutidas (negrito, links, menções, notas de rodapé). Ao substituir um deles, a alteração é aplicada a todos os formatos."
 
 #: src/components/docs/docs-nav-areas.ts
 #: src/components/docs/introduction-docs-page.tsx
@@ -3220,7 +3220,7 @@ msgstr "Substituir ícone"
 
 #: src/components/reader/subscriptions-unsubscribe-dialog.tsx
 msgid "Unfollow"
-msgstr ""
+msgstr "Deixar de seguir"
 
 #: src/components/onboarding/welcome-wizard.tsx
 msgid "You can subscribe to publications from Discover."
@@ -3229,7 +3229,7 @@ msgstr "Você pode se inscrever em publicações a partir de Descobrir."
 #: src/components/docs/docs-renderers-nav.tsx
 #: src/components/docs/renderers-docs-page.tsx
 msgid "Customizing components"
-msgstr ""
+msgstr "Customizando componentes"
 
 #: src/components/reader/app-shell.tsx
 #: src/components/reader/list-edit-modal.tsx
@@ -3302,7 +3302,7 @@ msgstr "Comece a sua primeira série"
 #: src/components/docs/docs-labelers-nav.tsx
 #: src/components/docs/labelers-docs-page.tsx
 msgid "Running a labeler"
-msgstr ""
+msgstr "Executando um rotulador"
 
 #: src/components/reader/collection-theme-editor.tsx
 msgid "(needs {min}:1)"
@@ -3330,7 +3330,7 @@ msgstr "Copiado!"
 
 #: src/components/feedback/feedback-dialog.tsx
 msgid "Posted to our <0>feedback board</0> on userinput.app. You may be asked to grant permission the first time."
-msgstr "Publicado no nosso <0>quadro de feedback</0> em userinput.app. Poderá ser-lhe pedida permissão da primeira vez."
+msgstr "Publicado no nosso <0>quadro de feedback</0> em userinput.app. Permissões extras podem ser solicitadas na primeira vez."
 
 #: src/components/labelers-settings-view.tsx
 msgid "No known labelers yet."
@@ -3338,7 +3338,7 @@ msgstr "Ainda não há rotuladores conhecidos."
 
 #: src/routes/_layout.index.tsx
 msgid "You're all caught up"
-msgstr ""
+msgstr "Você está em dia"
 
 #: src/components/user-settings-view.tsx
 msgid "All publication lists you created in this app."
@@ -3351,7 +3351,7 @@ msgstr "Relatos de erros, sugestões de funcionalidades e perguntas sobre o Stan
 #: src/components/docs/docs-renderers-nav.tsx
 #: src/components/docs/renderers-docs-page.tsx
 msgid "Resolving platform data"
-msgstr ""
+msgstr "Resolvendo dados da plataforma"
 
 #: src/components/labeler-detail-view.tsx
 msgid "This labeler hasn’t labeled any documents in the read-model yet."
@@ -3363,7 +3363,7 @@ msgstr "Coletar, extrair ou utilizar indevidamente o modelo de leitura indexador
 
 #: src/components/reader/subscriptions-unsubscribe-dialog.tsx
 msgid "Unfollowing {peopleCount, plural, one {this person} other {these # people}} also drops the subscriptions that follow created, so their publications leave your feed. Nothing you have saved, read, or recommended is affected."
-msgstr ""
+msgstr "Ao deixar de seguir {peopleCount, plural, one {esta pessoa} other {estas # pessoas}}, você também cancela as inscrições associadas; assim, as publicações deixam de aparecer no seu feed. Nada do que você salvou, leu ou recomendou é afetado."
 
 #: src/components/appearance-settings.tsx
 #: src/components/reader/collection-theme-editor.tsx
@@ -3377,7 +3377,7 @@ msgstr "Inicie sessão com o Bluesky para se inscrever. Apenas pedimos permissã
 
 #: src/routes/_layout.index.tsx
 msgid "The publications you follow haven't published anything recently."
-msgstr ""
+msgstr "As publicações em que vocês está inscrito publicaram nada recentemente."
 
 #: src/components/labeler-detail-view.tsx
 #: src/components/reader/about-view.tsx
@@ -3404,7 +3404,7 @@ msgstr "Destaque sobre o fundo"
 
 #: src/components/docs/renderers-docs-page.tsx
 msgid "A publication body can arrive in many formats — Leaflet, Pckt, Offprint, and a long tail of third-party block and markdown formats. These packages parse all of them and render each block with <0>your</0> components. They ship no styles and no design system: the defaults are the barest semantic HTML, and every component is overridable."
-msgstr ""
+msgstr "Um conteúdo de uma publicação pode chegar em diversos formatos — Leaflet, Pckt, Offprint e uma ampla variedade de formatos de bloco e Markdown de terceiros. Esses pacotes processam todos eles e renderizam cada bloco utilizando os <0>seus</0> componentes. Eles não incluem estilos nem sistema de design: os padrões são o HTML semântico básico, e todos os componentes podem ser substituídos."
 
 #: src/routes/_layout.friends.tsx
 msgid "Either no one you follow on Bluesky publishes here yet, or you're already subscribed to everyone who does. As more of them start publishing, they'll show up here."
@@ -3416,7 +3416,7 @@ msgstr "Coleção"
 
 #: src/components/reader/subscriptions-table.tsx
 msgid "Clear filter"
-msgstr ""
+msgstr "Limpar filtro"
 
 #: src/components/reader/about-view.tsx
 msgid "Listen to this example read aloud"
@@ -3468,7 +3468,7 @@ msgstr "Tudo de um só autor"
 
 #: src/components/reader/subscriptions-table.tsx
 msgid "Topic"
-msgstr ""
+msgstr "Tema"
 
 #: src/components/reader/text-selection-toolbar.tsx
 msgid "Couldn't create share link"
@@ -3496,7 +3496,7 @@ msgstr "Compartilhar uma avalição na <0>ATStore</0> ajuda-nos a nós e aos out
 
 #: src/components/reader/text-selection-toolbar.tsx
 msgid "Listen from here"
-msgstr ""
+msgstr "Ouça a partir daqui"
 
 #: src/components/onboarding/step-settings.tsx
 #: src/components/user-settings-view.tsx
@@ -3564,7 +3564,7 @@ msgstr "Fechar aba"
 #: src/components/docs/docs-renderers-nav.tsx
 #: src/components/docs/renderers-docs-page.tsx
 #~ msgid "Quick start"
-#~ msgstr ""
+#~ msgstr "Início rápido"
 
 #: src/components/ReaderVoiceMenu.tsx
 #: src/components/user-settings-view.tsx
@@ -3620,7 +3620,7 @@ msgstr "O Standard Reader conhece todas as publicações da rede. Encontre algum
 
 #: src/components/docs/renderers-docs-page.tsx
 msgid "Pick the package for your framework; all sit on the same core. Install instructions, the full props reference, and framework-specific usage examples live in each package's README on npm."
-msgstr ""
+msgstr "Escolha o pacote para o seu framework; todos compartilham o mesmo núcleo. As instruções de instalação, a referência completa das propriedades e os exemplos de uso específicos para cada framework estão disponíveis no arquivo README de cada pacote no npm."
 
 #: src/components/docs/api-docs-request-panel.tsx
 msgid "Running"
@@ -3650,7 +3650,7 @@ msgstr "Todos os artigos que salvou para mais tarde."
 
 #: src/components/reader/subscriptions-unsubscribe-dialog.tsx
 msgid "Unfollow?"
-msgstr ""
+msgstr "Deixar de seguir?"
 
 #: src/components/reader/about-view.tsx
 msgid "Listen to anything"
@@ -3762,7 +3762,7 @@ msgstr "O seu feedback foi publicado em <0>userinput.app</0>. Obrigado por nos a
 
 #: src/components/docs/publishing-docs-page.tsx
 msgid "Whether tapping an article opens it inline in Standard Reader, or takes the reader straight to your site, depends on one thing: does the record's <0>content</0> field hold a body in a format Standard Reader knows how to render? If <1>content</1> is missing, or set to a format we don't recognize, the article is treated as an external post and always opens on your site — even if <2>textContent</2> carries a plain-text excerpt. To get inline reading, publish the article body in <3>content</3> using one of the recognized formats below."
-msgstr "Se tocar num artigo o abre dentro do Standard Reader, ou leva o leitor diretamente para o seu site, depende de uma coisa: o campo <0>content</0> do registo contém um corpo num formato que o Standard Reader saiba apresentar? Se <1>content</1> estiver em falta, ou definido com um formato que não reconhecemos, o artigo é tratado como uma publicação externa e abre sempre no seu site — mesmo que <2>textContent</2> inclua um excerto em texto simples. Para obter leitura integrada, publique o corpo do artigo em <3>content</3> usando um dos formatos reconhecidos abaixo."
+msgstr "Se tocar num artigo o abre dentro do Standard Reader, ou leva o leitor diretamente para o seu site, depende de uma coisa: o campo <0>content</0> do registo contém um corpo num formato que o Standard Reader saiba apresentar? Se <1>content</1> estiver em falta, ou definido com um formato que não reconhecemos, o artigo é tratado como uma publicação externa e abre sempre no seu site — mesmo que <2>textContent</2> inclua um excerto em texto simples. Para obter leitura embutida, publique o corpo do artigo em <3>content</3> usando um dos formatos reconhecidos abaixo."
 
 #: src/components/docs/docs-publishing-nav.tsx
 #: src/components/docs/publishing-docs-page.tsx
@@ -3787,7 +3787,7 @@ msgstr "Pesquisar feedback"
 
 #: src/components/reader/subscriptions-unsubscribe-dialog.tsx
 msgid "Unsubscribe"
-msgstr ""
+msgstr "Cancelar inscrição"
 
 #: src/components/feedback/feedback-image-picker.tsx
 msgid "Could not read that file."
@@ -3807,7 +3807,7 @@ msgstr "Fonte dos títulos"
 
 #: src/components/reader/save-to-collection-dialog.tsx
 msgid "You may be asked to grant permission the first time."
-msgstr "Poderá ser-lhe pedida permissão da primeira vez."
+msgstr "Permissões extras podem ser solicitadas na primeira vez."
 
 #: src/routes/_layout.friends.tsx
 msgid "Friends views"
@@ -3815,7 +3815,7 @@ msgstr "Amigos veem"
 
 #: src/components/docs/introduction-docs-page.tsx
 msgid "Build on Standard"
-msgstr ""
+msgstr "Desenvolva no Standard"
 
 #: src/components/NavbarAuth.tsx
 #: src/routes/login.tsx
@@ -3890,7 +3890,7 @@ msgstr "Remover"
 
 #: src/components/docs/renderers-docs-page.tsx
 msgid "<0>Platform</0> components render the blocks unique to one publishing platform — a Leaflet poll or signup, a Pckt gallery or note embed, an Offprint component. These are the interactive, often data-backed embeds; the headless defaults render nothing, so you supply your own to make them live."
-msgstr ""
+msgstr "Os componentes de <0>platforma</0> renderizam blocos exclusivos de uma plataforma de publicação — uma enquete ou formulário de inscrição do Leaflet, uma galeria ou nota incorporada do Pckt, um componente do Offprint. Trata-se de elementos incorporados interativos, frequentemente baseados em dados; as versões padrão headless não renderizam nada, portanto, você deve fornecer sua própria implementação para torná-los funcionais."
 
 #: src/components/reader/discover-topic-filters.tsx
 msgid "Filter by topic: {triggerLabel}"
@@ -3935,7 +3935,7 @@ msgstr "Documentação"
 
 #: src/components/docs/docs-renderers-nav.tsx
 msgid "The core / new frameworks"
-msgstr ""
+msgstr "O núcleo / novos frameworks"
 
 #: src/components/reader/about-view.tsx
 msgid "Subscribe to the publications on <0>standard.site</0> you care about. New writing simply arrives, in the order it was written — no feed to fight, nothing shouting for your attention. Just good long-form, and a genuinely nice way to keep finding more of it."
@@ -3973,7 +3973,7 @@ msgstr "{0, plural, one {edição} other {edições}}"
 
 #: src/routes/_layout.search.tsx
 msgid "Nothing matches “{debouncedQ}” — yet. The network is always growing."
-msgstr "Ainda nada corresponde a “{debouncedQ}”. A rede está sempre a crescer."
+msgstr "Nenhum resultado para “{debouncedQ}” — ainda. A rede está sempre crescendo."
 
 #: src/components/reader/about-view.tsx
 msgid "A home for the writing you love"
@@ -4003,7 +4003,7 @@ msgstr "Experimente \"clima\", \"tipografia\" ou nome de usuário como stdout.de
 
 #: src/components/docs/renderers-docs-page.tsx
 msgid "The platform components — and the inline mention and link components — hand you AT-URIs and DIDs to resolve to records and identities yourself. A hosted AT Protocol data service like <0>microcosm</0> works great for many of them: <1>Slingshot</1> for record and identity resolution, and <2>Constellation</2> for network-wide backlinks and interaction counts (poll tallies, reply counts, who-embedded-this)."
-msgstr ""
+msgstr "Os componentes da plataforma — bem como os componentes de menções e links embutidos — fornecem AT-URIs e DIDs para que você mesmo realize a resolução de registros e identidades. Um serviço de dados do AT Protocol hospedado, como o <0>microcosm</0>, funciona muito bem para muitos desses casos: o <1>Slingshot</1> para resolução de registros e identidades, e a <2>Constellation</2> para backlinks em toda a rede e contagens de interações (resultados de enquetes, contagem de respostas, quem incorporou o conteúdo)."
 
 #: src/components/reader/privacy-view.tsx
 msgid "We do not host publication content. Articles and publications remain in their authors' repositories; our database is a derived index for fast browsing and search."
@@ -4046,7 +4046,7 @@ msgstr "O que não fazemos"
 
 #: src/components/docs/docs-side-nav.tsx
 msgid "Documentation"
-msgstr ""
+msgstr "Documentação"
 
 #: src/routes/_layout.l.$did.$rkey.tsx
 msgid "No publications in this list — add some from the edit dialog."
@@ -4072,7 +4072,7 @@ msgstr "Uma extensão de navegador leve que lhe permite salvar e se inscrever em
 
 #: src/components/docs/docs-nav-areas.ts
 msgid "Introduction"
-msgstr ""
+msgstr "Introdução"
 
 #: src/routes/_layout.discover.tsx
 #: src/routes/_layout.tag.$tag.tsx
@@ -4151,7 +4151,7 @@ msgstr "Voz da leitura em voz alta"
 
 #: src/routes/_layout.index.tsx
 msgid "Nothing left unread from the publications you follow. There's more on the network than you're following yet."
-msgstr ""
+msgstr "Não há nada não lido das publicações que você é inscrito. Existe mais conteúdo na rede além das suas inscrições atuais."
 
 #: src/routes/_layout.feedback.index.tsx
 msgid "Filter and sort — {activeFilters, plural, one {# filter active} other {# filters active}}"
@@ -4159,15 +4159,15 @@ msgstr ""
 
 #: src/components/docs/renderers-docs-page.tsx
 #~ msgid "Every renderer takes one input for the document — the content payload of a <0>site.standard.document</0>. The format is detected from the payload's <1>$type</1>."
-#~ msgstr ""
+#~ msgstr "Cada renderizador recebe uma entrada para o documento — o conteúdo de um <0>site.standard.document</0>. O formato é detectado a partir do <1>$type</1> do conteúdo."
 
 #: src/routes/_layout.tag.$tag.tsx
 msgid "Tag"
-msgstr "Tag"
+msgstr "Etiqueta"
 
 #: src/components/docs/renderers-docs-page.tsx
 #~ msgid "The React package, for example. With no <0>components</0> prop, a document renders as unstyled semantic HTML."
-#~ msgstr ""
+#~ msgstr "O pacote React, por exemplo. Sem a propriedade de <0>components</0>, um documento é renderizado como HTML semântico sem estilos."
 
 #: src/routes/_layout.friends.tsx
 #~ msgid "Publications written by the people you follow on Bluesky. Follow someone here and every publication they write lands on your Home feed."
@@ -4241,7 +4241,7 @@ msgstr "Ainda não há publicações indexadas."
 
 #: src/routes/_layout.tag.$tag.tsx
 msgid "You're about to subscribe to {formattedUnfollowedCount} publications tagged {displayTag}. That's a lot to add to your feed — only continue if you really want them all."
-msgstr "Está prestes a se inscrever em {formattedUnfollowedCount} publicações com a tag {displayTag}. É muita coisa para adicionar ao seu feed — só continue se as quiser mesmo todas."
+msgstr "Está prestes a se inscrever em {formattedUnfollowedCount} publicações com a etiqueta {displayTag}. É muita coisa para adicionar ao seu feed — só continue se as quiser mesmo todas."
 
 #: src/components/reader/collection-builder.tsx
 msgid "Drop or choose a new image to replace"
@@ -4445,7 +4445,7 @@ msgstr "Atualizar permissões"
 
 #: src/routes/_layout.subscriptions.tsx
 msgid "Every publication and person you follow. Easily manage them all."
-msgstr ""
+msgstr "Todas as publicações e pessoas que você segue. Gerencie facilmente tudo."
 
 #: src/components/reader/article-view.tsx
 msgid "Open on {publicationName}"
@@ -4461,7 +4461,7 @@ msgstr "Pesquise publicações ou cole um identificador"
 
 #: src/components/site-legal-links.tsx
 msgid "Source"
-msgstr "Fonte"
+msgstr "Código"
 
 #: src/components/feedback/feedback-image-picker.tsx
 msgid "That file isn't an image we can read."
@@ -4505,7 +4505,7 @@ msgstr "Quando ativo, as ligações abrem no site original em vez do leitor da a
 
 #: src/components/docs/introduction-docs-page.tsx
 msgid "Standard is an open reading network built on the AT Protocol. Publications live as records in their author's repository, and anyone can read, index, or render them. These docs cover the surfaces you build against."
-msgstr ""
+msgstr "O Standard é uma rede de leitura aberta construída sobre o AT Protocol. As publicações existem como registros no repositório de seus autores, e qualquer pessoa pode lê-las, indexá-las ou renderizá-las. Esta documentação aborda as interfaces com as quais você trabalha ao desenvolver."
 
 #: src/routes/_layout.index.tsx
 msgid "A quiet place to begin"
@@ -4553,7 +4553,7 @@ msgstr "A pesquisar"
 
 #: src/components/docs/docs-mobile-nav.tsx
 msgid "Pages"
-msgstr ""
+msgstr "Páginas"
 
 #: src/components/reader/article-view-skeleton.tsx
 msgid "Loading article"
@@ -4595,7 +4595,7 @@ msgstr "Abrir imagem"
 
 #: src/components/reader/subscriptions-table.tsx
 msgid "Followers"
-msgstr ""
+msgstr "Seguidores"
 
 #: src/components/reader/mention-hover-card.tsx
 msgid "View publication"
@@ -4855,7 +4855,7 @@ msgstr "Salvo para mais tarde"
 
 #: src/components/reader/subscriptions-unsubscribe-dialog.tsx
 msgid "Unsubscribing from {publicationCount, plural, one {this publication} other {these # publications}} stops their articles appearing in your feed. Nothing you have saved, read, or recommended is affected, and you can subscribe again at any time."
-msgstr ""
+msgstr "Ao cancelar a inscrição {publicationCount, plural, one {desta publicação} other {destas # publicações}}, seus artigos deixam de aparecer no seu feed. Nada do que você salvou, leu ou recomendou é afetado, e você pode se inscrever novamente a qualquer momento."
 
 #: src/components/reader/share-menu.tsx
 msgid "Add this anchor anywhere on your site and style it however you like. It opens the subscribe flow when clicked."
@@ -4863,7 +4863,7 @@ msgstr "Adicione este código em qualquer parte do seu site e estilize da forma 
 
 #: src/components/reader/subscriptions-unsubscribe-dialog.tsx
 msgid "This unsubscribes from {publicationCount, plural, one {# publication} other {# publications}} and unfollows {peopleCount, plural, one {# person} other {# people}}. Their articles leave your feed, and unfollowing someone also drops the subscriptions that follow created. You can subscribe again at any time."
-msgstr ""
+msgstr "Isso cancela a inscrição de {publicationCount, plural, one {# publicação} other {# publicações}} e deixa de seguir {peopleCount, plural, one {# pessoa} other {# pessoas}}. Os artigos delas saem do seu feed, e deixar de seguir alguém também cancela as inscrições que seguir a pessoa havia criado. Você pode se inscrever novamente a qualquer momento."
 
 #: src/components/onboarding/step-settings.tsx
 msgid "When on, a publication's whole back catalogue counts as unread when you subscribe. Turn off to only see posts published after you subscribe as new."
@@ -4901,7 +4901,7 @@ msgstr "O título da edição"
 
 #: src/components/reader/app-shell.tsx
 msgid "Loading subscriptions"
-msgstr ""
+msgstr "Carregando inscrições"
 
 #: src/components/OpenLinksMenuItem.tsx
 #: src/components/TrackReadingHistoryMenuItem.tsx
@@ -4925,7 +4925,7 @@ msgstr "O seu resumo semanal"
 
 #: src/components/reader/discover-topic-filters.tsx
 msgid "Search all topics…"
-msgstr ""
+msgstr "Pesquisar todos os temas…"
 
 #: src/components/reader/about-view.tsx
 #: src/routes/_layout.discover.tsx
@@ -4938,7 +4938,7 @@ msgstr "Adicionar coleções como edições"
 
 #: src/routes/_layout.index.tsx
 msgid "You've read everything from the publications you follow."
-msgstr ""
+msgstr "Você leu tudo das publicações em que está inscrito."
 
 #: src/components/onboarding/welcome-wizard.tsx
 #: src/components/reader/about-view.tsx
@@ -4959,7 +4959,7 @@ msgstr "OK"
 
 #: src/routes/_layout.tag.$tag.tsx
 msgid "Articles and publications tagged {displayTag} across the Atmosphere."
-msgstr "Artigos e publicações com a tag {displayTag} em toda a Atmosfera."
+msgstr "Artigos e publicações com a etiqueta {displayTag} em toda a Atmosfera."
 
 #: src/components/user-settings-view.tsx
 msgid "Loading digest preview"
@@ -4984,7 +4984,7 @@ msgstr "Largura da coluna"
 
 #: src/components/reader/subscriptions-table.tsx
 msgid "{removed} no longer in your subscriptions."
-msgstr ""
+msgstr "{removed} não está mais nas suas inscrições."
 
 #: src/components/onboarding/welcome-wizard.tsx
 msgid "You can add them later from Discover."
@@ -5002,7 +5002,7 @@ msgstr ""
 
 #: src/routes/_layout.tag.$tag.tsx
 msgid "Tag views"
-msgstr "Vistas de tags"
+msgstr "Visualizações da etiqueta"
 
 #: src/components/reader/collection-builder.tsx
 msgid "Closing credits on the end spread… (markdown supported)"
@@ -5035,7 +5035,7 @@ msgstr "Nesta edição"
 
 #: src/components/reader/read-on-platform.tsx
 msgid "Read this on {name}"
-msgstr ""
+msgstr "Leia isto em {name}"
 
 #: src/components/reader/terms-view.tsx
 msgid "Acceptable use"
