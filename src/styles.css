@@ -151,6 +151,15 @@ html[data-resolved-scheme="dark"] .bsky-react-post-theme {
   line-height: inherit;
   margin: 0;
   padding: var(--code-block-padding);
+  /*
+   * The shell (`.codeBlockShell`) is the horizontal scroll container but has no
+   * background — the theme background lives on this <pre>. As a block it is only
+   * as wide as the visible container, so on overflow-scroll its background would
+   * scroll away and expose the bare shell. `min-width: max-content` grows the
+   * <pre> to the full content width so the background spans the entire scroll
+   * region (and still fills the container when the code is short).
+   */
+  min-width: max-content;
 }
 
 html[data-lightbox-view-transition]::view-transition-old(root),
