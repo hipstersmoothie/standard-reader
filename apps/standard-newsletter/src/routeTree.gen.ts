@@ -10,33 +10,73 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppRouteImport } from './routes/_app'
+import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
+import { Route as AppPPubIdRouteImport } from './routes/_app.p.$pubId'
+import { Route as AppPPubIdSendPathRouteImport } from './routes/_app.p.$pubId_.$sendPath'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppRoute = AppRouteImport.update({
+  id: '/_app',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppDashboardRoute = AppDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPPubIdRoute = AppPPubIdRouteImport.update({
+  id: '/p/$pubId',
+  path: '/p/$pubId',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPPubIdSendPathRoute = AppPPubIdSendPathRouteImport.update({
+  id: '/p/$pubId_/$sendPath',
+  path: '/p/$pubId/$sendPath',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/dashboard': typeof AppDashboardRoute
+  '/p/$pubId': typeof AppPPubIdRoute
+  '/p/$pubId/$sendPath': typeof AppPPubIdSendPathRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/dashboard': typeof AppDashboardRoute
+  '/p/$pubId': typeof AppPPubIdRoute
+  '/p/$pubId/$sendPath': typeof AppPPubIdSendPathRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_app': typeof AppRouteWithChildren
+  '/_app/dashboard': typeof AppDashboardRoute
+  '/_app/p/$pubId': typeof AppPPubIdRoute
+  '/_app/p/$pubId_/$sendPath': typeof AppPPubIdSendPathRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/dashboard' | '/p/$pubId' | '/p/$pubId/$sendPath'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/dashboard' | '/p/$pubId' | '/p/$pubId/$sendPath'
+  id:
+    | '__root__'
+    | '/'
+    | '/_app'
+    | '/_app/dashboard'
+    | '/_app/p/$pubId'
+    | '/_app/p/$pubId_/$sendPath'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AppRoute: typeof AppRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +88,54 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_app': {
+      id: '/_app'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_app/dashboard': {
+      id: '/_app/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AppDashboardRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/p/$pubId': {
+      id: '/_app/p/$pubId'
+      path: '/p/$pubId'
+      fullPath: '/p/$pubId'
+      preLoaderRoute: typeof AppPPubIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/p/$pubId_/$sendPath': {
+      id: '/_app/p/$pubId_/$sendPath'
+      path: '/p/$pubId/$sendPath'
+      fullPath: '/p/$pubId/$sendPath'
+      preLoaderRoute: typeof AppPPubIdSendPathRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
+interface AppRouteChildren {
+  AppDashboardRoute: typeof AppDashboardRoute
+  AppPPubIdRoute: typeof AppPPubIdRoute
+  AppPPubIdSendPathRoute: typeof AppPPubIdSendPathRoute
+}
+
+const AppRouteChildren: AppRouteChildren = {
+  AppDashboardRoute: AppDashboardRoute,
+  AppPPubIdRoute: AppPPubIdRoute,
+  AppPPubIdSendPathRoute: AppPPubIdSendPathRoute,
+}
+
+const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AppRoute: AppRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

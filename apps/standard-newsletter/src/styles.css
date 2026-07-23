@@ -22,3 +22,40 @@ body {
 a {
   color: inherit;
 }
+
+/* Marketing hero: publications rise in, the envelope gently floats. */
+@keyframes sn-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes sn-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+.sn-rise {
+  animation: sn-rise 0.6s both ease-out;
+}
+
+.sn-float {
+  animation: sn-float 4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sn-rise,
+  .sn-float {
+    animation: none;
+  }
+}
