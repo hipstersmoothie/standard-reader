@@ -193,7 +193,7 @@ export function EditScreen({ doc, back }: EditScreenProps) {
               fontSize: 14,
             }}
           >
-            <NameAvatar name={authorName} size="sm" />
+            <NameAvatar name={authorName} src={session?.image} size="sm" />
             <span>{authorName}</span>
             <span style={{ opacity: 0.5 }}>·</span>
             <span style={{ color: "#4a9d6b" }}>Published</span>

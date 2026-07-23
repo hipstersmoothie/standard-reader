@@ -38,7 +38,7 @@ import { markdownFromMarkpub, toMarkpubRecord } from "./markpub";
 import type { MarkpubRecord, MarkpubTextValue } from "./markpub";
 import { EDITOR_NODES } from "./nodes";
 import { BlockMenuPlugin } from "./plugins/block-menu";
-import { CodeLanguagePlugin } from "./plugins/code-language";
+import { CodeBlockHeaderPlugin } from "./plugins/code-language";
 import { FloatingToolbarPlugin } from "./plugins/floating-toolbar";
 import { ToolbarPlugin } from "./plugins/toolbar";
 import { MARKPUB_TRANSFORMERS } from "./transformers";
@@ -254,7 +254,7 @@ export function RichTextEditor({
           />
           {isReadOnly ? null : <BlockMenuPlugin />}
           {isReadOnly || !bare ? null : <FloatingToolbarPlugin />}
-          {isReadOnly ? null : <CodeLanguagePlugin />}
+          {isReadOnly ? null : <CodeBlockHeaderPlugin />}
           <HistoryPlugin />
           <ListPlugin />
           <CheckListPlugin />

@@ -28,6 +28,7 @@ interface EditorCanvasProps {
   title: string;
   defaultMarkdown: string;
   authorName: string;
+  authorImage?: string | null;
   onTitleChange: (title: string) => void;
   onBodyChange: (markdown: string) => void;
 }
@@ -36,6 +37,7 @@ function EditorCanvas({
   title,
   defaultMarkdown,
   authorName,
+  authorImage,
   onTitleChange,
   onBodyChange,
 }: EditorCanvasProps) {
@@ -103,7 +105,7 @@ function EditorCanvas({
             fontSize: 14,
           }}
         >
-          <NameAvatar name={authorName} size="sm" />
+          <NameAvatar name={authorName} src={authorImage} size="sm" />
           <span>{authorName}</span>
           <span style={{ opacity: 0.5 }}>·</span>
           <span>Draft</span>
@@ -128,6 +130,7 @@ interface WorkbenchRailProps {
   path: string;
   onPathChange: (path: string) => void;
   authorName: string;
+  authorImage?: string | null;
 }
 
 function WorkbenchRail({
@@ -135,6 +138,7 @@ function WorkbenchRail({
   path,
   onPathChange,
   authorName,
+  authorImage,
 }: WorkbenchRailProps) {
   return (
     <div
@@ -198,7 +202,7 @@ function WorkbenchRail({
       <div>
         <div style={sectLabel}>Contributors</div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <NameAvatar name={authorName} size="sm" />
+          <NameAvatar name={authorName} src={authorImage} size="sm" />
           <div
             style={{
               width: 30,
@@ -226,6 +230,10 @@ interface WriteScreenProps {
   go: (screen: Screen) => void;
   draftId: string | undefined;
   onDraftIdChange: (id: string) => void;
+  /** Report whether the editor holds unsaved, typed content. */
+  onDirtyChange?: (dirty: boolean) => void;
+  /** Register a "persist current content as a draft" action for the nav guard. */
+  registerSaveDraft?: (save: (() => Promise<unknown>) | null) => void;
 }
 
 export function WriteScreen({
@@ -234,6 +242,8 @@ export function WriteScreen({
   go,
   draftId,
   onDraftIdChange,
+  onDirtyChange,
+  registerSaveDraft,
 }: WriteScreenProps) {
   const { data: session } = useQuery(sessionQueryOptions);
   const queryClient = useQueryClient();
@@ -290,11 +300,43 @@ export function WriteScreen({
         seededRef.current = `loaded:${res.id}`;
         onDraftIdChange(res.id);
       }
+      // Content is safely persisted — no longer dirty until the next edit.
+      setTouched(false);
       void queryClient.invalidateQueries({
         queryKey: draftsQueryOptions.queryKey,
       });
     },
   });
+
+  // Dirty = the writer typed something that isn't yet persisted as a draft.
+  const dirty = touched && (title.trim() !== "" || markdown.trim() !== "");
+  useEffect(() => {
+    onDirtyChange?.(dirty);
+  }, [dirty, onDirtyChange]);
+
+  // Expose a save action so the app-level nav guard can offer "Save as draft".
+  const saveMutateAsync = save.mutateAsync;
+  useEffect(() => {
+    registerSaveDraft?.(() =>
+      saveMutateAsync({
+        title,
+        bodyMarkdown: markdown,
+        path: path || undefined,
+      }),
+    );
+    return () => registerSaveDraft?.(null);
+  }, [registerSaveDraft, saveMutateAsync, title, markdown, path]);
+
+  // Warn on real browser navigation (refresh/close) while content is unsaved.
+  useEffect(() => {
+    if (!dirty) return;
+    const handler = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    globalThis.addEventListener("beforeunload", handler);
+    return () => globalThis.removeEventListener("beforeunload", handler);
+  }, [dirty]);
 
   const saveMutate = save.mutate;
   useEffect(() => {
@@ -424,6 +466,7 @@ export function WriteScreen({
             title={title}
             defaultMarkdown={markdown}
             authorName={authorName}
+            authorImage={session?.image}
             onTitleChange={(next) => {
               setTouched(true);
               setTitle(next);
@@ -443,6 +486,7 @@ export function WriteScreen({
               setPath(next);
             }}
             authorName={authorName}
+            authorImage={session?.image}
           />
         )}
       </div>

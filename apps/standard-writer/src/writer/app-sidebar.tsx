@@ -140,9 +140,6 @@ const styles = stylex.create({
   footer: {
     paddingInline: horizontalSpace.md,
     paddingBlock: horizontalSpace.md,
-    borderBlockStartWidth: 1,
-    borderBlockStartStyle: "solid",
-    borderBlockStartColor: uiColor.border1,
   },
   profileButton: {
     display: "flex",

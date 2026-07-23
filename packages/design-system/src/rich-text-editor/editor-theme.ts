@@ -24,9 +24,22 @@ import {
  */
 const styles = stylex.create({
   paragraph: {
-    marginBlock: verticalSpace["2xl"],
-    fontSize: fontSize.xl,
-    lineHeight: lineHeight.base,
+    // Editorial prose spacing, but collapsed to a dense line inside table cells.
+    marginBlock: {
+      default: verticalSpace["2xl"],
+      ":is(td *)": 0,
+      ":is(th *)": 0,
+    },
+    fontSize: {
+      default: fontSize.xl,
+      ":is(td *)": "inherit",
+      ":is(th *)": "inherit",
+    },
+    lineHeight: {
+      default: lineHeight.base,
+      ":is(td *)": "inherit",
+      ":is(th *)": "inherit",
+    },
   },
   h1: {
     marginTop: verticalSpace["7xl"],
@@ -98,11 +111,15 @@ const styles = stylex.create({
   nestedListItem: {
     listStyleType: "none",
   },
+  // Checklist items align the box and text with em units so the indicator and
+  // the (large, serif) body text stay lined up at any font size. Padding leaves
+  // room for the 1.15em box plus a gap; the box is vertically centered on the
+  // first line via `top`.
   listItemChecked: {
     position: "relative",
     listStyleType: "none",
-    marginInlineStart: horizontalSpace.md,
-    paddingInlineStart: horizontalSpace["3xl"],
+    marginInlineStart: 0,
+    paddingInlineStart: "1.9em",
     marginBlock: verticalSpace.xxs,
     lineHeight: lineHeight.base,
     textDecorationLine: "line-through",
@@ -114,9 +131,9 @@ const styles = stylex.create({
       content: '""',
       position: "absolute",
       insetInlineStart: 0,
-      top: "0.3em",
-      width: "1.05em",
-      height: "1.05em",
+      top: "0.2em",
+      width: "1.15em",
+      height: "1.15em",
       borderRadius: radius.xs,
       borderWidth: 1,
       borderStyle: "solid",
@@ -127,10 +144,10 @@ const styles = stylex.create({
     "::after": {
       content: '""',
       position: "absolute",
-      insetInlineStart: "0.4em",
-      top: "0.42em",
+      insetInlineStart: "0.44em",
+      top: "0.34em",
       width: "0.28em",
-      height: "0.55em",
+      height: "0.56em",
       borderInlineEndWidth: 2,
       borderBlockEndWidth: 2,
       borderInlineEndStyle: "solid",
@@ -143,8 +160,8 @@ const styles = stylex.create({
   listItemUnchecked: {
     position: "relative",
     listStyleType: "none",
-    marginInlineStart: horizontalSpace.md,
-    paddingInlineStart: horizontalSpace["3xl"],
+    marginInlineStart: 0,
+    paddingInlineStart: "1.9em",
     marginBlock: verticalSpace.xxs,
     lineHeight: lineHeight.base,
     outline: "none",
@@ -154,9 +171,9 @@ const styles = stylex.create({
       content: '""',
       position: "absolute",
       insetInlineStart: 0,
-      top: "0.3em",
-      width: "1.05em",
-      height: "1.05em",
+      top: "0.2em",
+      width: "1.15em",
+      height: "1.15em",
       borderRadius: radius.xs,
       borderWidth: 1,
       borderStyle: "solid",
@@ -190,9 +207,14 @@ const styles = stylex.create({
     borderRadius: radius.xs,
   },
   codeBlock: {
+    position: "relative",
     display: "block",
     marginBlock: verticalSpace["3xl"],
-    padding: verticalSpace.xl,
+    // Extra top inset leaves room for the static header bar (filename +
+    // language) that CodeBlockHeaderPlugin pins to the top of the block.
+    paddingTop: verticalSpace["8xl"],
+    paddingBottom: verticalSpace.xl,
+    paddingInline: verticalSpace.xl,
     backgroundColor: uiColor.component1,
     borderRadius: radius.md,
     fontFamily: fontFamily.mono,
@@ -214,15 +236,21 @@ const styles = stylex.create({
     borderColor: uiColor.border1,
     borderRadius: radius.md,
     overflow: "hidden",
-    fontSize: fontSize.base,
+    fontSize: fontSize.sm,
   },
   tableCell: {
-    minWidth: horizontalSpace["11xl"],
-    borderBottomWidth: 1,
+    minWidth: horizontalSpace["10xl"],
+    // Row separators only; the last row leans on the table's own frame so there
+    // is no doubled line at the rounded bottom edge.
+    borderBottomWidth: {
+      default: 1,
+      ":is(tr:last-child > *)": 0,
+    },
     borderBottomStyle: "solid",
     borderBottomColor: uiColor.border1,
-    paddingBlock: verticalSpace.sm,
-    paddingInline: horizontalSpace.lg,
+    paddingBlock: verticalSpace.xs,
+    paddingInline: horizontalSpace.md,
+    lineHeight: lineHeight.sm,
     verticalAlign: "top",
     textAlign: "start",
   },

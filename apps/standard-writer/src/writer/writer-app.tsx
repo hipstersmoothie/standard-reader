@@ -1,4 +1,11 @@
-import { useState } from "react";
+import {
+  AlertDialog,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+} from "@standard-reader/design-system/alert-dialog";
+import { Button } from "@standard-reader/design-system/button";
+import { useRef, useState } from "react";
 
 import type {
   WriterDocument,
@@ -25,33 +32,84 @@ export function WriterApp() {
   // The draft currently open in the editor (undefined = a fresh document).
   const [draftId, setDraftId] = useState<string | undefined>();
 
+  // Nav guard: block leaving the editor with unsaved content (except to Publish,
+  // which persists on its own). WriteScreen reports dirtiness and registers a
+  // "save as draft" action; a pending navigation waits on the confirm dialog.
+  const [editorDirty, setEditorDirty] = useState(false);
+  const [pendingNav, setPendingNav] = useState<(() => void) | null>(null);
+  const [savingDraft, setSavingDraft] = useState(false);
+  const saveDraftRef = useRef<(() => Promise<unknown>) | null>(null);
+
+  // Run `proceed`, unless we're leaving a dirty editor — then defer it behind
+  // the confirm dialog. `skip` covers same-screen and Publish transitions.
+  const guarded = (proceed: () => void, skip = false) => {
+    if (screen === "write" && editorDirty && !skip) {
+      setPendingNav(() => proceed);
+    } else {
+      proceed();
+    }
+  };
+
   const go = (s: Screen) => {
-    // Reaching the publication screen from anywhere but the edit action means a
-    // fresh, blank "New publication".
-    if (s === "newpub") setEditingPub(undefined);
-    setScreen(s);
+    guarded(
+      () => {
+        // Reaching the publication screen from anywhere but the edit action means
+        // a fresh, blank "New publication".
+        if (s === "newpub") setEditingPub(undefined);
+        setScreen(s);
+      },
+      s === "publish" || s === screen,
+    );
   };
   const editPub = (p: WriterPublication) => {
-    setEditingPub(p);
-    setScreen("newpub");
+    guarded(() => {
+      setEditingPub(p);
+      setScreen("newpub");
+    });
   };
   const openPub = (id: string) => {
-    setPubId(id);
-    setScreen("pub");
+    guarded(() => {
+      setPubId(id);
+      setScreen("pub");
+    });
   };
   const openDoc = (d: WriterDocument) => {
-    setDoc(d);
-    setScreen("edit");
+    guarded(() => {
+      setDoc(d);
+      setScreen("edit");
+    });
   };
   const openDraft = (id: string) => {
-    setDraftId(id);
-    setScreen("write");
+    guarded(() => {
+      setDraftId(id);
+      setScreen("write");
+    });
   };
   const newDoc = () => {
-    setDraftId(undefined);
-    setScreen("write");
+    guarded(() => {
+      setDraftId(undefined);
+      setScreen("write");
+    });
   };
   const backToPub = () => (pubId ? openPub(pubId) : go("write"));
+
+  // Resolve the deferred navigation and clear the guard state.
+  const proceedPending = () => {
+    const proceed = pendingNav;
+    setPendingNav(null);
+    setEditorDirty(false);
+    proceed?.();
+  };
+  const discardAndLeave = () => proceedPending();
+  const saveAndLeave = async () => {
+    setSavingDraft(true);
+    try {
+      await saveDraftRef.current?.();
+    } finally {
+      setSavingDraft(false);
+    }
+    proceedPending();
+  };
 
   return (
     <div
@@ -81,6 +139,10 @@ export function WriterApp() {
             go={go}
             draftId={draftId}
             onDraftIdChange={setDraftId}
+            onDirtyChange={setEditorDirty}
+            registerSaveDraft={(save) => {
+              saveDraftRef.current = save;
+            }}
           />
         )}
         {screen === "drafts" && (
@@ -102,6 +164,39 @@ export function WriterApp() {
         )}
         {screen === "edit" && <EditScreen doc={doc} back={backToPub} />}
       </div>
+
+      <AlertDialog
+        isOpen={pendingNav != null}
+        onOpenChange={(open) => {
+          if (!open) setPendingNav(null);
+        }}
+        trigger={<span aria-hidden style={{ display: "none" }} />}
+      >
+        <AlertDialogHeader>Save this draft?</AlertDialogHeader>
+        <AlertDialogDescription>
+          You have unsaved changes in the editor. Save them as a draft before
+          leaving?
+        </AlertDialogDescription>
+        <AlertDialogFooter>
+          <Button variant="tertiary" onPress={() => setPendingNav(null)}>
+            Cancel
+          </Button>
+          <Button
+            variant="secondary"
+            isDisabled={savingDraft}
+            onPress={discardAndLeave}
+          >
+            Discard
+          </Button>
+          <Button
+            variant="primary"
+            isPending={savingDraft}
+            onPress={() => void saveAndLeave()}
+          >
+            Save as draft
+          </Button>
+        </AlertDialogFooter>
+      </AlertDialog>
     </div>
   );
 }
