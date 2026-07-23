@@ -1,0 +1,41 @@
+{
+  "lexicon": 1,
+  "id": "app.standard-newsletter.subscriberList",
+  "defs": {
+    "main": {
+      "type": "record",
+      "description": "A publication's email subscriber list, owned by the author and stored in the author's own repo inside the publication's permissioned space (AT Protocol Proposal 0016). The author holds this data in an atproto-native way and can choose which apps may read it. One record per publication (rkey `self`); large lists may be chunked across multiple records keyed by index.",
+      "key": "literal:self",
+      "record": {
+        "type": "object",
+        "required": ["publicationUri", "entries", "updatedAt"],
+        "properties": {
+          "publicationUri": {
+            "type": "string",
+            "format": "at-uri",
+            "description": "AT-URI of the publication this list belongs to."
+          },
+          "entries": {
+            "type": "array",
+            "description": "The email subscribers on this list.",
+            "items": { "type": "ref", "ref": "#entry" }
+          },
+          "updatedAt": { "type": "string", "format": "datetime" }
+        }
+      }
+    },
+    "entry": {
+      "type": "object",
+      "required": ["email", "addedAt"],
+      "properties": {
+        "email": { "type": "string", "maxLength": 320 },
+        "addedAt": { "type": "string", "format": "datetime" },
+        "unsubscribedAt": {
+          "type": "string",
+          "format": "datetime",
+          "description": "Set when the subscriber unsubscribed; the entry is kept so re-imports don't re-add them."
+        }
+      }
+    }
+  }
+}

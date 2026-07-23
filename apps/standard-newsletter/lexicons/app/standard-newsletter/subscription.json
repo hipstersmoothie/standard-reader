@@ -1,0 +1,28 @@
+{
+  "lexicon": 1,
+  "id": "app.standard-newsletter.subscription",
+  "defs": {
+    "main": {
+      "type": "record",
+      "description": "A subscriber's private subscription to a publication's newsletter. Written into the subscriber's own per-user repo inside the publication's permissioned space (AT Protocol Proposal 0016), so the subscriber holds and controls it: deleting this record unsubscribes them. The email is shared with the author only through the permissioned space.",
+      "key": "tid",
+      "record": {
+        "type": "object",
+        "required": ["publicationUri", "email", "createdAt"],
+        "properties": {
+          "publicationUri": {
+            "type": "string",
+            "format": "at-uri",
+            "description": "AT-URI of the publication being subscribed to."
+          },
+          "email": {
+            "type": "string",
+            "maxLength": 320,
+            "description": "Delivery address for this subscription."
+          },
+          "createdAt": { "type": "string", "format": "datetime" }
+        }
+      }
+    }
+  }
+}
