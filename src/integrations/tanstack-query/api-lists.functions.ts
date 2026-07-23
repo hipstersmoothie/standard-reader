@@ -30,7 +30,10 @@ import {
   followedPublications,
   selectArticleCards,
 } from "#/server/reader/queries";
-import { attachRecommendedByToArticles } from "#/server/reader/recommended-by";
+import {
+  attachRecommendedByToArticles,
+  attachViewerRecommendedToArticles,
+} from "#/server/reader/recommended-by";
 import type { SubscriptionList } from "#/server/reader/saved-lists";
 import {
   hasSavedListDb,
@@ -564,9 +567,15 @@ const getListFeed = createServerFn({ method: "GET" })
               enriched,
             )
           : enriched;
+      const withViewerRecs = await attachViewerRecommendedToArticles(
+        db,
+        schema,
+        session?.did,
+        attributed,
+      );
 
       return {
-        items: attributed,
+        items: withViewerRecs,
         nextOffset:
           items.length === data.limit ? data.offset + data.limit : null,
       } satisfies ListFeed;

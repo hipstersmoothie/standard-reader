@@ -21,7 +21,10 @@ import {
   authorSubscriptions,
 } from "#/server/reader/queries";
 import type { AuthorProfileStats, AuthorReader } from "#/server/reader/queries";
-import { attachRecommendedByToArticles } from "#/server/reader/recommended-by";
+import {
+  attachRecommendedByToArticles,
+  attachViewerRecommendedToArticles,
+} from "#/server/reader/recommended-by";
 import { effectiveFollowSets } from "#/server/reader/saved-lists";
 
 import type {
@@ -316,14 +319,35 @@ const getAuthorProfile = createServerFn({ method: "GET" })
         // posts (self-recommends are already excluded by the helper); Likes =
         // posts this author recommended, so drop the author from the attribution
         // to avoid the redundant "Recommended by <this profile>".
+        const [documentsAttributed, recommendationsAttributed] =
+          await Promise.all([
+            attachViewerRecommendedBy(
+              db,
+              schema,
+              viewerDid,
+              documentsPage.items,
+            ),
+            attachViewerRecommendedBy(
+              db,
+              schema,
+              viewerDid,
+              recommendationsPage.items,
+              did,
+            ),
+          ]);
+        // Flag the viewer's own recommends so cards show "Recommended by you".
         const [documentsWithRecs, recommendationsWithRecs] = await Promise.all([
-          attachViewerRecommendedBy(db, schema, viewerDid, documentsPage.items),
-          attachViewerRecommendedBy(
+          attachViewerRecommendedToArticles(
             db,
             schema,
             viewerDid,
-            recommendationsPage.items,
-            did,
+            documentsAttributed,
+          ),
+          attachViewerRecommendedToArticles(
+            db,
+            schema,
+            viewerDid,
+            recommendationsAttributed,
           ),
         ]);
 
@@ -544,12 +568,18 @@ const getAuthorRecommendations = createServerFn({ method: "GET" })
 
         // Likes tab: exclude the profile owner from the attribution (see
         // {@link attachViewerRecommendedBy}).
-        const items = await attachViewerRecommendedBy(
+        const attributed = await attachViewerRecommendedBy(
           db,
           schema,
           viewerDid,
           page.items,
           did,
+        );
+        const items = await attachViewerRecommendedToArticles(
+          db,
+          schema,
+          viewerDid,
+          attributed,
         );
 
         return {
@@ -587,11 +617,17 @@ const getAuthorDocuments = createServerFn({ method: "GET" })
 
         // Writing tab: this author's own posts — the helper already drops
         // self-recommends, so no owner exclusion needed here.
-        const items = await attachViewerRecommendedBy(
+        const attributed = await attachViewerRecommendedBy(
           db,
           schema,
           viewerDid,
           page.items,
+        );
+        const items = await attachViewerRecommendedToArticles(
+          db,
+          schema,
+          viewerDid,
+          attributed,
         );
 
         return {

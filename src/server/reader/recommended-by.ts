@@ -76,3 +76,53 @@ export async function attachRecommendedByToArticles<
       : article;
   });
 }
+
+/**
+ * Flag the cards the requesting reader has recommended themselves, so document
+ * items across the app can show the "Recommended by you" indicator. One batched,
+ * index-served query (rides the `(recommender_did, document_uri)` composite
+ * index) sets `viewerHasRecommended: true` on matching cards; the rest keep the
+ * `false` default from {@link toArticleCard}.
+ *
+ * A no-op (no query) for signed-out readers (`viewerDid` null/empty) and empty
+ * card lists — those keep `viewerHasRecommended: false`. Unlike
+ * {@link attachRecommendedByToArticles}, this is the viewer's *own* recommend
+ * state, so it is independent of who they follow and never excludes self.
+ */
+export async function attachViewerRecommendedToArticles<
+  T extends Pick<ArticleCard, "uri" | "viewerHasRecommended">,
+>(
+  dbClient: typeof db,
+  schemaModule: typeof schema,
+  viewerDid: string | null | undefined,
+  articles: Array<T>,
+): Promise<Array<T>> {
+  if (!viewerDid || articles.length === 0) {
+    return articles;
+  }
+
+  const uris = [...new Set(articles.map((article) => article.uri))];
+  const rec = schemaModule.recommends;
+
+  const rows = await dbClient
+    .select({ documentUri: rec.documentUri })
+    .from(rec)
+    .where(
+      and(
+        inArray(rec.documentUri, uris),
+        eq(rec.recommenderDid, viewerDid),
+        eq(rec.deleted, false),
+      ),
+    );
+
+  if (rows.length === 0) {
+    return articles;
+  }
+
+  const recommended = new Set(rows.map((row) => row.documentUri));
+  return articles.map((article) =>
+    recommended.has(article.uri)
+      ? { ...article, viewerHasRecommended: true }
+      : article,
+  );
+}

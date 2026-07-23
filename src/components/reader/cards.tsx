@@ -1027,12 +1027,31 @@ function OwnerHandleLink({
 
 /* ── Recommended-by attribution ─────────────────────────────────────────── */
 
+/** Whether {@link RecommendedByLine} would render anything for this card. */
+function hasRecommendedByLine(article: ArticleCard): boolean {
+  return (
+    article.viewerHasRecommended || (article.recommendedBy?.length ?? 0) > 0
+  );
+}
+
 /**
- * "Recommended by @handle" line shown above the byline in the home/latest feed
- * when an article surfaced because followed users recommended it. A single line
- * covers all recommenders ("+N others") — the article is one collapsed card.
+ * Recommend attribution shown above the byline on document items. When the
+ * viewer recommended the article themselves it reads "Recommended by you" (the
+ * personal signal takes precedence); otherwise it collapses the followed users
+ * who recommended it into one line ("@handle and N others"). Either way a red
+ * heart marks it as a recommendation at a glance.
  */
 function RecommendedByLine({ article }: { article: ArticleCard }) {
+  if (article.viewerHasRecommended) {
+    return (
+      <Flex align="center" gap="sm" style={styles.recommendedByLine}>
+        <span {...stylex.props(styles.recommendedByHeart)}>
+          <Heart size={13} aria-hidden fill="currentColor" />
+        </span>
+        <span>Recommended by you</span>
+      </Flex>
+    );
+  }
   const recommenders = article.recommendedBy;
   if (!recommenders || recommenders.length === 0) {
     return null;
@@ -1646,10 +1665,11 @@ export function FeatureArticle({
     );
   }
 
-  // Byline-less (publication page): the "Recommended by @follow" line still
-  // applies. Lift it out of the card link — it holds its own profile links —
-  // and let the shell own the row's border so the grid inside stays border-free.
-  if (article.recommendedBy && article.recommendedBy.length > 0) {
+  // Byline-less (publication page): the recommend attribution still applies —
+  // "Recommended by you" or the followed-user line. Lift it out of the card link
+  // (it holds its own profile links) and let the shell own the row's border so
+  // the grid inside stays border-free.
+  if (hasRecommendedByLine(article)) {
     return (
       <div {...stylex.props(styles.featureShell)}>
         <RecommendedByLine article={article} />
@@ -1909,6 +1929,7 @@ export function CompactRow({
         {String(rank).padStart(2, "0")}
       </span>
       <Flex direction="column" gap="sm" style={styles.grow}>
+        <RecommendedByLine article={article} />
         <span {...stylex.props(styles.compactTitle)}>{article.title}</span>
         <MetaLine>
           {showCollection ? <CollectionMagazineMeta /> : null}

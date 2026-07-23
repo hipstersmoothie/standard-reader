@@ -22,6 +22,7 @@ import {
   discoverEligiblePublicationWhere,
   notExcludedPublicationArticleWhere,
 } from "#/server/reader/publication-filters";
+import { attachViewerRecommendedToArticles } from "#/server/reader/recommended-by";
 import {
   documentSearchSnippetHeadline,
   documentSearchTitleHeadline,
@@ -153,7 +154,7 @@ const searchArticles = createServerFn({ method: "GET" })
       const pa = alias(schema.profiles, "pa");
       span.set("q", data.q);
       span.set("offset", data.offset);
-      await attachReaderSpanContext(span, getRequest());
+      const did = await attachReaderSpanContext(span, getRequest());
 
       const tsq = sql`websearch_to_tsquery('english', ${data.q})`;
       const hints = documentQueryHints(data.q);
@@ -220,10 +221,16 @@ const searchArticles = createServerFn({ method: "GET" })
       const hasMore = pageRows.length > data.limit;
       const articleRows = hasMore ? pageRows.slice(0, data.limit) : pageRows;
 
+      const withViewerRecs = await attachViewerRecommendedToArticles(
+        db,
+        schema,
+        did,
+        articleRows.map((row) => toArticleCard(row)),
+      );
       const items = await attachCommentCountsToArticles(
         db,
         schema,
-        articleRows.map((row) => toArticleCard(row)),
+        withViewerRecs,
       );
       span.set("count", items.length);
 

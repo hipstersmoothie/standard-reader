@@ -40,7 +40,10 @@ import {
   selectArticleCardsByUris,
   selectPublicationArticleCards,
 } from "#/server/reader/queries";
-import { attachRecommendedByToArticles } from "#/server/reader/recommended-by";
+import {
+  attachRecommendedByToArticles,
+  attachViewerRecommendedToArticles,
+} from "#/server/reader/recommended-by";
 import { effectiveFollowSets } from "#/server/reader/saved-lists";
 import { themeModeForRequest } from "#/server/theme-preference";
 
@@ -343,11 +346,17 @@ const getPublicationDocuments = createServerFn({ method: "GET" })
                 documents,
               )
             : documents;
+        const withViewerRecs = await attachViewerRecommendedToArticles(
+          db,
+          schema,
+          did,
+          withRecommendedBy,
+        );
         // No DB round trip: reads cached counts + schedules background refresh.
         const items = await attachCommentCountsToArticles(
           db,
           schema,
-          withRecommendedBy,
+          withViewerRecs,
         );
 
         span.set("count", items.length);

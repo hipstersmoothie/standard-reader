@@ -29,7 +29,10 @@ import {
   trendingPublications,
 } from "#/server/reader/queries";
 import { rotationSeed } from "#/server/reader/rail-rotation";
-import { attachRecommendedByToArticles } from "#/server/reader/recommended-by";
+import {
+  attachRecommendedByToArticles,
+  attachViewerRecommendedToArticles,
+} from "#/server/reader/recommended-by";
 import {
   effectiveFollowSets,
   effectiveFollowUris,
@@ -273,11 +276,17 @@ const getFriendArticles = createServerFn({ method: "GET" })
       ]);
       // "Recommended by @follow" attribution — the same follows signal as the
       // feeds; a no-op (no query) when the reader follows no one.
-      const items = await attachRecommendedByToArticles(
+      const withRecs = await attachRecommendedByToArticles(
         db,
         schema,
         followSets.userDids,
         result.items,
+      );
+      const items = await attachViewerRecommendedToArticles(
+        db,
+        schema,
+        did,
+        withRecs,
       );
       span.set("count", items.length);
       span.set("degraded", result.degraded);
