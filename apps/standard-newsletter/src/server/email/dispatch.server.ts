@@ -15,9 +15,11 @@ import {
 } from "@standard-reader/db/schema";
 
 import { getDb } from "../../db/index.server";
+import { toStandardSiteDocument } from "@standard-reader/renderer-email";
+
 import { reserveSend } from "../send-events.server";
 import { loadConfirmedSubscribers } from "../subscribers.server";
-import { extractMarkdown, previewText } from "./document-content";
+import { previewText } from "./document-content";
 import { sendNewsletter } from "./send-newsletter";
 
 export interface DispatchResult {
@@ -50,6 +52,9 @@ export async function dispatchPendingSends(
       title: documents.title,
       textContent: documents.textContent,
       contentJson: documents.contentJson,
+      contentFormat: documents.contentFormat,
+      did: documents.did,
+      description: documents.description,
       canonicalUrl: documents.canonicalUrl,
       path: documents.path,
       publicationUri: documents.publicationUri,
@@ -110,7 +115,12 @@ export async function dispatchPendingSends(
         title: doc.title,
         preview: previewText(doc.textContent),
         canonicalUrl: canonicalUrlFor(doc.canonicalUrl, doc.pubUrl, doc.path),
-        markdown: extractMarkdown(doc.contentJson),
+        document: toStandardSiteDocument({
+          contentJson: doc.contentJson,
+          contentFormat: doc.contentFormat,
+          authorDid: doc.did,
+          description: doc.description,
+        }),
         textContent: doc.textContent,
       },
       subscribers,

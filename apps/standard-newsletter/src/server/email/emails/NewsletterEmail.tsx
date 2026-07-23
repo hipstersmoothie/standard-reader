@@ -1,13 +1,13 @@
 /**
  * NewsletterEmail — one published document from a standard.site publication,
  * mailed to its subscribers. Standard Newsletter authors nothing; the body comes
- * from the publication's post. Rendered entirely with React Email components
- * (react.email): the body is the post's markdown via <Markdown>, or plaintext
- * paragraphs via <Text> when no markdown is available.
+ * from the publication's post, rendered with React Email via
+ * @standard-reader/renderer-email (full block fidelity — headings, images,
+ * lists, code, tables, embeds). Falls back to plaintext paragraphs when the post
+ * has no structured content.
  *
  * Render:  import { render } from "@react-email/render";
  *          const html = await render(<NewsletterEmail {...props} />);
- *          const text = await render(<NewsletterEmail {...props} />, { plainText: true });
  */
 
 import {
@@ -18,20 +18,23 @@ import {
   Hr,
   Html,
   Link,
-  Markdown,
   Preview,
   Section,
   Text,
 } from "@react-email/components";
+import {
+  DocumentEmailBody,
+  type StandardSiteDocument,
+} from "@standard-reader/renderer-email";
 
 export interface NewsletterEmailProps {
   publicationName: string;
   title: string;
   preview: string;
   canonicalUrl: string;
-  /** Post body as markdown; when present it's rendered richly. */
-  markdown: string | null;
-  /** Plaintext fallback body (rendered as paragraphs) when there's no markdown. */
+  /** The post content, rendered with the email renderer when present. */
+  document: StandardSiteDocument | null;
+  /** Plaintext fallback body when the post has no structured content. */
   textContent: string | null;
   unsubscribeUrl: string;
 }
@@ -55,38 +58,7 @@ const paragraph = {
 const footer = { fontSize: "13px", color: "#8a817c", lineHeight: "1.6" };
 const link = { color: "#8a817c", textDecoration: "underline" };
 
-const markdownStyles = {
-  p: paragraph,
-  h1: { fontSize: "24px", lineHeight: "1.25", margin: "28px 0 12px" },
-  h2: { fontSize: "20px", lineHeight: "1.3", margin: "24px 0 10px" },
-  h3: { fontSize: "18px", lineHeight: "1.35", margin: "20px 0 8px" },
-  link: { color: "#ad7f58", textDecoration: "underline" },
-  li: { ...paragraph, margin: "0 0 8px" },
-  blockQuote: {
-    borderLeft: "3px solid #e7e2dd",
-    paddingLeft: "16px",
-    color: "#6f5636",
-    fontStyle: "italic",
-  },
-  codeInline: {
-    fontFamily: "Menlo, monospace",
-    fontSize: "14px",
-    background: "#f1ece5",
-    padding: "1px 4px",
-    borderRadius: "4px",
-  },
-};
-
-function DocumentBody({
-  markdown,
-  textContent,
-}: {
-  markdown: string | null;
-  textContent: string | null;
-}) {
-  if (markdown) {
-    return <Markdown markdownCustomStyles={markdownStyles}>{markdown}</Markdown>;
-  }
+function FallbackBody({ textContent }: { textContent: string | null }) {
   const paras = (textContent ?? "")
     .trim()
     .split(/\n{2,}/)
@@ -111,10 +83,13 @@ export function NewsletterEmail({
   title,
   preview,
   canonicalUrl,
-  markdown,
+  document,
   textContent,
   unsubscribeUrl,
 }: NewsletterEmailProps) {
+  const hasContent = Boolean(
+    document && document.content != null && document.content !== "",
+  );
   return (
     <Html>
       <Head />
@@ -128,7 +103,11 @@ export function NewsletterEmail({
             </Link>
           </Heading>
           <Section>
-            <DocumentBody markdown={markdown} textContent={textContent} />
+            {hasContent && document ? (
+              <DocumentEmailBody document={document} />
+            ) : (
+              <FallbackBody textContent={textContent} />
+            )}
           </Section>
           <Hr style={{ borderColor: "#e7e2dd", margin: "32px 0 16px" }} />
           <Text style={footer}>

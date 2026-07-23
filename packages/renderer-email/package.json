@@ -1,0 +1,52 @@
+{
+  "name": "@standard-reader/renderer-email",
+  "version": "0.1.0",
+  "description": "React Email renderer for Standard Site documents — the renderer-react component set mapped to email-safe React Email primitives.",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "files": ["dist", "README.md"],
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "prepare": "tsc -p tsconfig.build.json",
+    "clean": "rm -rf dist",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "prepublishOnly": "pnpm run clean && pnpm run build"
+  },
+  "keywords": [
+    "standard-reader",
+    "atproto",
+    "renderer",
+    "email",
+    "react-email"
+  ],
+  "peerDependencies": {
+    "@react-email/components": ">=0.0.30",
+    "react": ">=18",
+    "react-dom": ">=18"
+  },
+  "dependencies": {
+    "@standard-reader/renderer-core": "workspace:*",
+    "@standard-reader/renderer-react": "workspace:*"
+  },
+  "devDependencies": {
+    "@react-email/components": "^1.0.12",
+    "@react-email/render": "^2.1.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "react": "19.3.0-canary-ad78e251-20260616",
+    "react-dom": "19.3.0-canary-ad78e251-20260616",
+    "typescript": "^6.0.2",
+    "vitest": "^4.1.5"
+  }
+}

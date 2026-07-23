@@ -21,9 +21,11 @@ const send: NewsletterSend = {
   title: "This week on The Dispatch",
   preview: "A short note about what shipped this week.",
   canonicalUrl: "https://dispatch.standard.site/this-week",
-  markdown:
-    "## Hello\n\nThis is a sample post rendered with **react.email**. It supports _emphasis_, [links](https://standard.site), and lists:\n\n- one\n- two\n- three",
-  textContent: null,
+  // Demo uses the plaintext fallback; real dispatches pass a StandardSiteDocument
+  // built from the post, rendered via @standard-reader/renderer-email.
+  document: null,
+  textContent:
+    "This is a sample post from the manual send CLI.\n\nReal sends render the publication's post with the email renderer.",
 };
 
 const subscribers: Subscriber[] = [

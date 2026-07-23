@@ -12,6 +12,7 @@
 import { render } from "@react-email/render";
 
 import type { NewNewsletterSendEvent } from "@standard-reader/db/schema";
+import type { StandardSiteDocument } from "@standard-reader/renderer-email";
 
 import { recordEvents, recordSend } from "../send-events.server";
 import { emailConfig } from "./config";
@@ -35,9 +36,9 @@ export interface NewsletterSend {
   title: string;
   preview: string;
   canonicalUrl: string;
-  /** Post body as markdown (rendered via React Email's <Markdown>). */
-  markdown: string | null;
-  /** Plaintext fallback body when there's no markdown. */
+  /** The post content, rendered with @standard-reader/renderer-email. */
+  document: StandardSiteDocument | null;
+  /** Plaintext fallback body when the post has no structured content. */
   textContent: string | null;
 }
 
@@ -75,7 +76,7 @@ export async function sendNewsletter(
       title: send.title,
       preview: send.preview,
       canonicalUrl: send.canonicalUrl,
-      markdown: send.markdown,
+      document: send.document,
       textContent: send.textContent,
       unsubscribeUrl: unsubscribeUrl(subscriber.unsubscribeToken),
     };

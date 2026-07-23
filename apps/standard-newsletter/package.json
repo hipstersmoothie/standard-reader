@@ -23,6 +23,7 @@
     "@react-email/render": "^2.1.0",
     "@standard-reader/db": "workspace:*",
     "@standard-reader/design-system": "workspace:*",
+    "@standard-reader/renderer-email": "workspace:*",
     "@stylexjs/stylex": "^0.19.0",
     "@tanstack/react-query": "^5.101.0",
     "@tanstack/react-router": "latest",
