@@ -14,6 +14,9 @@ import { Route as AppRouteImport } from './routes/_app'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 import { Route as ApiResendWebhookRouteImport } from './routes/api.resend-webhook'
+import { Route as ApiSubscribeRouteImport } from './routes/api/subscribe'
+import { Route as SubscribeConfirmRouteImport } from './routes/subscribe.confirm'
+import { Route as UnsubscribeTokenRouteImport } from './routes/unsubscribe.$token'
 import { Route as AppPPubIdRouteImport } from './routes/_app.p.$pubId'
 import { Route as ApiAuthLogoutRouteImport } from './routes/api/auth/logout'
 import { Route as AppPPubIdSendPathRouteImport } from './routes/_app.p.$pubId_.$sendPath'
@@ -44,6 +47,21 @@ const AppDashboardRoute = AppDashboardRouteImport.update({
 const ApiResendWebhookRoute = ApiResendWebhookRouteImport.update({
   id: '/api/resend-webhook',
   path: '/api/resend-webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSubscribeRoute = ApiSubscribeRouteImport.update({
+  id: '/api/subscribe',
+  path: '/api/subscribe',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SubscribeConfirmRoute = SubscribeConfirmRouteImport.update({
+  id: '/subscribe/confirm',
+  path: '/subscribe/confirm',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UnsubscribeTokenRoute = UnsubscribeTokenRouteImport.update({
+  id: '/unsubscribe/$token',
+  path: '/unsubscribe/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppPPubIdRoute = AppPPubIdRouteImport.update({
@@ -89,6 +107,9 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/dashboard': typeof AppDashboardRoute
   '/api/resend-webhook': typeof ApiResendWebhookRoute
+  '/api/subscribe': typeof ApiSubscribeRoute
+  '/subscribe/confirm': typeof SubscribeConfirmRoute
+  '/unsubscribe/$token': typeof UnsubscribeTokenRoute
   '/p/$pubId': typeof AppPPubIdRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/p/$pubId/$sendPath': typeof AppPPubIdSendPathRoute
@@ -102,6 +123,9 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/dashboard': typeof AppDashboardRoute
   '/api/resend-webhook': typeof ApiResendWebhookRoute
+  '/api/subscribe': typeof ApiSubscribeRoute
+  '/subscribe/confirm': typeof SubscribeConfirmRoute
+  '/unsubscribe/$token': typeof UnsubscribeTokenRoute
   '/p/$pubId': typeof AppPPubIdRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/p/$pubId/$sendPath': typeof AppPPubIdSendPathRoute
@@ -117,6 +141,9 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_app/dashboard': typeof AppDashboardRoute
   '/api/resend-webhook': typeof ApiResendWebhookRoute
+  '/api/subscribe': typeof ApiSubscribeRoute
+  '/subscribe/confirm': typeof SubscribeConfirmRoute
+  '/unsubscribe/$token': typeof UnsubscribeTokenRoute
   '/_app/p/$pubId': typeof AppPPubIdRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/_app/p/$pubId_/$sendPath': typeof AppPPubIdSendPathRoute
@@ -132,6 +159,9 @@ export interface FileRouteTypes {
     | '/login'
     | '/dashboard'
     | '/api/resend-webhook'
+    | '/api/subscribe'
+    | '/subscribe/confirm'
+    | '/unsubscribe/$token'
     | '/p/$pubId'
     | '/api/auth/logout'
     | '/p/$pubId/$sendPath'
@@ -145,6 +175,9 @@ export interface FileRouteTypes {
     | '/login'
     | '/dashboard'
     | '/api/resend-webhook'
+    | '/api/subscribe'
+    | '/subscribe/confirm'
+    | '/unsubscribe/$token'
     | '/p/$pubId'
     | '/api/auth/logout'
     | '/p/$pubId/$sendPath'
@@ -159,6 +192,9 @@ export interface FileRouteTypes {
     | '/login'
     | '/_app/dashboard'
     | '/api/resend-webhook'
+    | '/api/subscribe'
+    | '/subscribe/confirm'
+    | '/unsubscribe/$token'
     | '/_app/p/$pubId'
     | '/api/auth/logout'
     | '/_app/p/$pubId_/$sendPath'
@@ -173,6 +209,9 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   LoginRoute: typeof LoginRoute
   ApiResendWebhookRoute: typeof ApiResendWebhookRoute
+  ApiSubscribeRoute: typeof ApiSubscribeRoute
+  SubscribeConfirmRoute: typeof SubscribeConfirmRoute
+  UnsubscribeTokenRoute: typeof UnsubscribeTokenRoute
   ApiAuthLogoutRoute: typeof ApiAuthLogoutRoute
   ApiAuthAtprotoAuthorizeRoute: typeof ApiAuthAtprotoAuthorizeRoute
   ApiAuthAtprotoCallbackRoute: typeof ApiAuthAtprotoCallbackRoute
@@ -215,6 +254,27 @@ declare module '@tanstack/react-router' {
       path: '/api/resend-webhook'
       fullPath: '/api/resend-webhook'
       preLoaderRoute: typeof ApiResendWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/subscribe': {
+      id: '/api/subscribe'
+      path: '/api/subscribe'
+      fullPath: '/api/subscribe'
+      preLoaderRoute: typeof ApiSubscribeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/subscribe/confirm': {
+      id: '/subscribe/confirm'
+      path: '/subscribe/confirm'
+      fullPath: '/subscribe/confirm'
+      preLoaderRoute: typeof SubscribeConfirmRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/unsubscribe/$token': {
+      id: '/unsubscribe/$token'
+      path: '/unsubscribe/$token'
+      fullPath: '/unsubscribe/$token'
+      preLoaderRoute: typeof UnsubscribeTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app/p/$pubId': {
@@ -288,6 +348,9 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   LoginRoute: LoginRoute,
   ApiResendWebhookRoute: ApiResendWebhookRoute,
+  ApiSubscribeRoute: ApiSubscribeRoute,
+  SubscribeConfirmRoute: SubscribeConfirmRoute,
+  UnsubscribeTokenRoute: UnsubscribeTokenRoute,
   ApiAuthLogoutRoute: ApiAuthLogoutRoute,
   ApiAuthAtprotoAuthorizeRoute: ApiAuthAtprotoAuthorizeRoute,
   ApiAuthAtprotoCallbackRoute: ApiAuthAtprotoCallbackRoute,

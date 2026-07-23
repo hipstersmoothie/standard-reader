@@ -51,6 +51,23 @@ export async function recordSend(send: NewNewsletterSend): Promise<boolean> {
   return true;
 }
 
+/**
+ * Reserve a send before mailing — insert the send row, skipping if one already
+ * exists. Returns true only if THIS caller created it, so a concurrent
+ * dispatcher can't double-send the same document (at-most-once). A send that
+ * fails after reserving won't auto-retry; re-trigger it manually.
+ */
+export async function reserveSend(send: NewNewsletterSend): Promise<boolean> {
+  const db = getDb();
+  if (!db) return false;
+  const [row] = await db
+    .insert(newsletterSends)
+    .values(send)
+    .onConflictDoNothing({ target: newsletterSends.id })
+    .returning({ id: newsletterSends.id });
+  return Boolean(row);
+}
+
 export async function recordEvents(
   events: NewNewsletterSendEvent[],
 ): Promise<boolean> {

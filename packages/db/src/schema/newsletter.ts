@@ -10,7 +10,14 @@
  * `pnpm --filter standard-reader db:generate` to emit the migration.
  */
 
-import { index, integer, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import {
+  index,
+  integer,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+} from "drizzle-orm/pg-core";
 
 export const newsletterSends = pgTable(
   "newsletter_sends",
@@ -78,3 +85,52 @@ export const newsletterSendEvents = pgTable(
 
 export type NewsletterSendEvent = typeof newsletterSendEvents.$inferSelect;
 export type NewNewsletterSendEvent = typeof newsletterSendEvents.$inferInsert;
+
+export const NEWSLETTER_SUBSCRIBER_STATUSES = [
+  "pending",
+  "confirmed",
+  "unsubscribed",
+] as const;
+
+export type NewsletterSubscriberStatus =
+  (typeof NEWSLETTER_SUBSCRIBER_STATUSES)[number];
+
+/**
+ * A publication's email list — the recipients Standard Newsletter mails. A
+ * subscriber double-opts-in (`pending` → confirmation email → `confirmed`) and
+ * can one-click `unsubscribe`. `token` is an unguessable per-row capability used
+ * to confirm and to unsubscribe without being logged in. Distinct from the
+ * reader's standard.site `subscriptions` (which are follows, and only expose an
+ * email for reader-signed-in users).
+ */
+export const newsletterSubscribers = pgTable(
+  "newsletter_subscribers",
+  {
+    id: text("id").primaryKey(),
+    publicationUri: text("publication_uri").notNull(),
+    email: text("email").notNull(),
+    /** DID when the subscriber is a known AT Proto identity; else null. */
+    subscriberDid: text("subscriber_did"),
+    /** One of NEWSLETTER_SUBSCRIBER_STATUSES. */
+    status: text("status").notNull().default("pending"),
+    token: text("token").notNull().unique(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    confirmedAt: timestamp("confirmed_at", { withTimezone: true }),
+    unsubscribedAt: timestamp("unsubscribed_at", { withTimezone: true }),
+  },
+  (t) => [
+    uniqueIndex("newsletter_subscribers_pub_email_idx").on(
+      t.publicationUri,
+      t.email,
+    ),
+    index("newsletter_subscribers_pub_status_idx").on(
+      t.publicationUri,
+      t.status,
+    ),
+  ],
+);
+
+export type NewsletterSubscriber = typeof newsletterSubscribers.$inferSelect;
+export type NewNewsletterSubscriber = typeof newsletterSubscribers.$inferInsert;

@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "lint": "pnpm exec oxlint .",
-    "newsletter:send": "pnpm exec tsx --env-file=.env scripts/send-newsletter.ts"
+    "newsletter:send": "pnpm exec tsx --env-file=.env scripts/send-newsletter.ts",
+    "newsletter:dispatch": "pnpm exec tsx --env-file=.env scripts/dispatch-sends.ts"
   },
   "dependencies": {
     "@atcute/client": "^5.1.1",

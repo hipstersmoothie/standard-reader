@@ -141,6 +141,13 @@
       "when": 1784832221754,
       "tag": "0019_newsletter_sends",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1784835289858,
+      "tag": "0020_newsletter_subscribers",
+      "breakpoints": true
     }
   ]
 }
