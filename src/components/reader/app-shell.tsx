@@ -1148,7 +1148,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const following = sidebar?.following ?? [];
   const followingUsers = sidebar?.followingUsers ?? [];
   const unreadCount = sidebar?.unreadCount ?? null;
-  const savedCount = sidebar?.savedCount ?? null;
   const hasUnread = unreadCount != null && unreadCount > 0;
   const primaryNav = navWithSaved(signedIn);
   const [subsSheetOpen, setSubsSheetOpen] = useState(false);
@@ -1268,13 +1267,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   <SidebarNavItem
                     key={item.to}
                     {...item}
-                    count={
-                      item.to === "/latest"
-                        ? unreadCount
-                        : item.to === "/saved"
-                          ? savedCount
-                          : null
-                    }
+                    count={item.to === "/latest" ? unreadCount : null}
                     compactCount={item.to === "/latest"}
                   />
                 ))}
