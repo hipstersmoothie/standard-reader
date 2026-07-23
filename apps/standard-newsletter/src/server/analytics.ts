@@ -73,6 +73,86 @@ export function viewerQueryOptions() {
   });
 }
 
+export interface SettingsData {
+  viewer: ViewerData | null;
+  sending: {
+    fromName: string;
+    fromAddress: string;
+    publicUrl: string;
+    resendConfigured: boolean;
+  };
+}
+
+export const getSettings = createServerFn({ method: "GET" }).handler(
+  async (): Promise<SettingsData> => {
+    const [{ getCurrentViewer }, { emailConfig }] = await Promise.all([
+      import("../integrations/auth/session.server"),
+      import("./email/config"),
+    ]);
+    let viewer: ViewerData | null = null;
+    try {
+      viewer = await getCurrentViewer(getRequest());
+    } catch {
+      viewer = null;
+    }
+    return {
+      viewer,
+      sending: {
+        fromName: emailConfig.defaultFromName,
+        fromAddress: emailConfig.defaultFrom,
+        publicUrl: emailConfig.publicUrl,
+        resendConfigured: Boolean(process.env.RESEND_API_KEY),
+      },
+    };
+  },
+);
+
+export function settingsQueryOptions() {
+  return queryOptions({
+    queryKey: ["settings"],
+    queryFn: () => getSettings(),
+    staleTime: 60_000,
+  });
+}
+
+export interface PublicationSummaryData {
+  uri: string;
+  id: string;
+  name: string;
+  description: string;
+  theme: {
+    background: string;
+    foreground: string;
+    accent: string;
+    accentForeground: string;
+  };
+}
+
+export const getPublicationSummary = createServerFn({ method: "GET" })
+  .validator((data: { pubId: string }) => data)
+  .handler(
+    async ({ data }): Promise<PublicationSummaryData | null> => {
+      try {
+        const { loadPublicationSummary } = await import("./analytics.server");
+        const row = await loadPublicationSummary(data.pubId);
+        if (row) return row;
+        if (process.env.DATABASE_URL) return null;
+      } catch (error) {
+        console.error("[standard-newsletter] publication summary failed:", error);
+      }
+      const p = PUBS.find((x) => x.id === data.pubId);
+      return p
+        ? {
+            uri: `sample:${p.id}`,
+            id: p.id,
+            name: p.name,
+            description: p.desc,
+            theme: p.theme,
+          }
+        : null;
+    },
+  );
+
 /**
  * App access mode for the authenticated shell:
  * - `demo`  — no DATABASE_URL, run on sample data without auth.

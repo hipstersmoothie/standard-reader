@@ -196,6 +196,23 @@ function PubAnalytics() {
               <span>{pub.sends.length} sends</span>
             </div>
           </div>
+          <a
+            href={`https://${pub.url}`}
+            target="_blank"
+            rel="noreferrer"
+            style={{
+              flex: "none",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              fontSize: 13,
+              color: t.foreground,
+              opacity: 0.75,
+              textDecoration: "none",
+            }}
+          >
+            <Ico d={I.external} s={15} /> Visit site
+          </a>
         </div>
       </div>
 
@@ -268,19 +285,46 @@ function PubAnalytics() {
           </span>
         </div>
         <div style={{ ...cardBox, overflow: "hidden" }}>
-          {pub.sends.map((s, i) => (
-            <SendRow
-              key={s.path}
-              s={s}
-              last={i === pub.sends.length - 1}
-              onOpen={() =>
-                navigate({
-                  to: "/p/$pubId/$sendPath",
-                  params: { pubId: pub.id, sendPath: s.path },
-                })
-              }
-            />
-          ))}
+          {pub.sends.length === 0 ? (
+            <div style={{ padding: "40px 24px", textAlign: "center" }}>
+              <div
+                style={{
+                  fontFamily: C.serif,
+                  fontSize: 18,
+                  color: C.t12,
+                  marginBottom: 6,
+                }}
+              >
+                No newsletters sent yet
+              </div>
+              <p
+                style={{
+                  fontSize: 13.5,
+                  lineHeight: 1.6,
+                  color: C.mut,
+                  maxWidth: 380,
+                  margin: "0 auto",
+                }}
+              >
+                New posts published to this publication are mailed to its
+                subscribers and their delivery reports appear here.
+              </p>
+            </div>
+          ) : (
+            pub.sends.map((s, i) => (
+              <SendRow
+                key={s.path}
+                s={s}
+                last={i === pub.sends.length - 1}
+                onOpen={() =>
+                  navigate({
+                    to: "/p/$pubId/$sendPath",
+                    params: { pubId: pub.id, sendPath: s.path },
+                  })
+                }
+              />
+            ))
+          )}
         </div>
       </div>
     </div>

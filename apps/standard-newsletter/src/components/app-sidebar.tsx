@@ -174,6 +174,16 @@ const styles = stylex.create({
     flexDirection: "column",
     rowGap: gap.none,
   },
+  emptyNote: {
+    color: uiColor.text1,
+    fontFamily: fontFamily.serif,
+    fontSize: fontSize.sm,
+    fontStyle: "italic",
+    paddingInlineStart: horizontalSpace.lg,
+    paddingInlineEnd: horizontalSpace.lg,
+    paddingTop: verticalSpace.xs,
+    paddingBottom: verticalSpace.xs,
+  },
   followRow: {
     borderRadius: radius.sm,
     textDecoration: "none",
@@ -306,19 +316,26 @@ export function AppSidebar({
 
         <div {...stylex.props(styles.sideLabel)}>Publications</div>
         <div {...stylex.props(styles.followList)}>
-          {publications.map((p) => (
-            <Link
-              key={p.id}
-              to="/p/$pubId"
-              params={{ pubId: p.id }}
-              {...stylex.props(styles.followRow)}
-              activeProps={stylex.props(styles.followRow, styles.followRowActive)}
-            >
-              <PubGlyph pub={p} size={24} r={7} fs={12} />
-              <span {...stylex.props(styles.followName)}>{p.name}</span>
-              <span {...stylex.props(styles.count)}>{kfmt(p.subs)}</span>
-            </Link>
-          ))}
+          {publications.length === 0 ? (
+            <div {...stylex.props(styles.emptyNote)}>No publications yet</div>
+          ) : (
+            publications.map((p) => (
+              <Link
+                key={p.id}
+                to="/p/$pubId"
+                params={{ pubId: p.id }}
+                {...stylex.props(styles.followRow)}
+                activeProps={stylex.props(
+                  styles.followRow,
+                  styles.followRowActive,
+                )}
+              >
+                <PubGlyph pub={p} size={24} r={7} fs={12} />
+                <span {...stylex.props(styles.followName)}>{p.name}</span>
+                <span {...stylex.props(styles.count)}>{kfmt(p.subs)}</span>
+              </Link>
+            ))
+          )}
         </div>
       </div>
 
@@ -341,9 +358,23 @@ export function AppSidebar({
             </AriaButton>
           }
         >
-          <MenuItem suffix={<User size={17} />}>View profile</MenuItem>
-          <MenuItem suffix={<Mail size={17} />}>Sender settings</MenuItem>
-          <MenuItem suffix={<Settings size={17} />}>Settings</MenuItem>
+          <MenuItem
+            href={
+              viewer?.handle
+                ? `https://bsky.app/profile/${viewer.handle}`
+                : undefined
+            }
+            target="_blank"
+            suffix={<User size={17} />}
+          >
+            View profile
+          </MenuItem>
+          <MenuItem href="/settings" suffix={<Mail size={17} />}>
+            Sender settings
+          </MenuItem>
+          <MenuItem href="/settings" suffix={<Settings size={17} />}>
+            Settings
+          </MenuItem>
           <MenuSeparator />
           <MenuItem
             href="/api/auth/logout"

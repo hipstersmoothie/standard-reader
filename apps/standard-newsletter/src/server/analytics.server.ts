@@ -18,9 +18,56 @@ import { and, desc, eq, inArray } from "drizzle-orm";
 
 import { documents, publicationStats, publications } from "@standard-reader/db/schema";
 
-import type { Publication, Send } from "../data/publications";
+import type {
+  Publication,
+  PublicationTheme,
+  Send,
+} from "../data/publications";
 import { getDb } from "../db/index.server";
 import { type DocSendMetrics, loadSendMetrics } from "./send-events.server";
+
+export interface PublicationSummary {
+  uri: string;
+  id: string;
+  name: string;
+  description: string;
+  theme: PublicationTheme;
+}
+
+/** Public, unscoped lookup of one publication by rkey (for the subscribe page). */
+export async function loadPublicationSummary(
+  rkey: string,
+): Promise<PublicationSummary | null> {
+  const db = getDb();
+  if (!db) return null;
+  const [row] = await db
+    .select({
+      uri: publications.uri,
+      rkey: publications.rkey,
+      name: publications.name,
+      description: publications.description,
+      themeAccent: publications.themeAccent,
+      themeBackground: publications.themeBackground,
+      themeForeground: publications.themeForeground,
+      themeAccentForeground: publications.themeAccentForeground,
+    })
+    .from(publications)
+    .where(and(eq(publications.rkey, rkey), eq(publications.deleted, false)))
+    .limit(1);
+  if (!row) return null;
+  return {
+    uri: row.uri,
+    id: row.rkey,
+    name: row.name,
+    description: row.description ?? "",
+    theme: {
+      background: row.themeBackground ?? DEFAULT_THEME.background,
+      foreground: row.themeForeground ?? DEFAULT_THEME.foreground,
+      accent: row.themeAccent ?? DEFAULT_THEME.accent,
+      accentForeground: row.themeAccentForeground ?? DEFAULT_THEME.accentForeground,
+    },
+  };
+}
 
 const DEFAULT_THEME = {
   background: "#fcf9f5",

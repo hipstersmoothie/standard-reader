@@ -1,8 +1,6 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link, createFileRoute, redirect } from "@tanstack/react-router";
 
-import { Button } from "@standard-reader/design-system/button";
-
 import { AreaChart } from "../components/charts";
 import { I, Ico } from "../components/icons";
 import { BigStat, StatBar } from "../components/ui";
@@ -126,14 +124,27 @@ function SendDetail() {
             </div>
           </div>
           <div style={{ flex: "none", display: "flex", gap: 10 }}>
-            <Button variant="tertiary" size="sm">
-              <span
-                style={{ display: "inline-flex", alignItems: "center", gap: 7 }}
-              >
-                <Ico d={I.external} s={16} />
-                View post
-              </span>
-            </Button>
+            <a
+              href={`https://${pub.url}/${send.path}`}
+              target="_blank"
+              rel="noreferrer"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 7,
+                fontSize: 13.5,
+                fontWeight: 500,
+                color: C.t12,
+                background: C.warm,
+                border: `1px solid ${C.b7}`,
+                borderRadius: 8,
+                padding: "7px 13px",
+                textDecoration: "none",
+              }}
+            >
+              <Ico d={I.external} s={16} />
+              View post
+            </a>
           </div>
         </div>
 

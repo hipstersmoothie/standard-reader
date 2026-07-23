@@ -21,6 +21,78 @@ function Dashboard() {
   const openPub = (id: string) =>
     navigate({ to: "/p/$pubId", params: { pubId: id } });
 
+  if (pubs.length === 0) {
+    return (
+      <div style={{ height: "100%", overflow: "auto", background: C.pageBg }}>
+        <div
+          style={{ maxWidth: 1000, margin: "0 auto", padding: "44px 40px 90px" }}
+        >
+          <h1
+            style={{
+              fontFamily: C.serif,
+              fontWeight: 500,
+              fontSize: 34,
+              letterSpacing: "-0.02em",
+              margin: "0 0 30px",
+              color: C.t12,
+            }}
+          >
+            Dashboard
+          </h1>
+          <div
+            style={{
+              border: `1px solid ${C.b6}`,
+              borderRadius: 16,
+              background: C.warm,
+              padding: "56px 40px",
+              textAlign: "center",
+            }}
+          >
+            <div
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: 12,
+                background: C.sel5,
+                color: C.a11,
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                marginBottom: 18,
+              }}
+            >
+              <Ico d={I.mail} s={24} />
+            </div>
+            <div
+              style={{
+                fontFamily: C.serif,
+                fontSize: 22,
+                fontWeight: 500,
+                color: C.t12,
+                marginBottom: 8,
+              }}
+            >
+              No publications yet
+            </div>
+            <p
+              style={{
+                fontSize: 14.5,
+                lineHeight: 1.6,
+                color: C.mut,
+                maxWidth: 420,
+                margin: "0 auto",
+              }}
+            >
+              When you own a standard.site publication, it shows up here with its
+              subscriber growth and per-send delivery analytics. Publish a post
+              and connect your publication to get started.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const totalSubs = pubs.reduce((s, p) => s + p.subs, 0);
   const totalDelta = pubs.reduce((s, p) => s + p.delta, 0);
   const sends30 = pubs.reduce(
