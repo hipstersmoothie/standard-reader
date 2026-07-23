@@ -79,6 +79,29 @@ webhook at `POST /api/resend-webhook`. Configure the endpoint in the Resend
 dashboard and set `RESEND_WEBHOOK_SECRET` to its `whsec_…` signing secret —
 webhooks whose Svix signature doesn't verify are rejected.
 
+## Subscribers & permissioned spaces
+
+Subscribers can be stored as **AT Protocol permissioned data** (Proposal 0016) —
+data the author owns and shares with the app — via
+[HappyView](https://happyview.dev), an experimental 0016 AppView. It's optional:
+with `HAPPYVIEW_*` unset the app runs email-only on the database.
+
+- **Email (default):** the address goes to the author's own `subscriberList`
+  space record; authors bulk-import from **Settings → Import email subscribers**.
+- **Bluesky:** the subscriber signs in and writes their own
+  `app.standard-newsletter.subscription` record into their space repo — they
+  unsubscribe with the email link **or** by deleting the record (from
+  `/subscribe/manage`).
+
+Records are reconciled into the `newsletter_subscribers` mirror (the send read
+model), so the send path is unchanged. **Note:** HappyView hosts space data in
+its own DB, not the user's PDS — it isn't network-recoverable, so back up the
+instance. Full setup and caveats: [`docs/happyview-runbook.md`](../../docs/happyview-runbook.md).
+
+The record schemas live in [`lexicons/app/standard-newsletter/`](./lexicons/app/standard-newsletter)
+(a new `app.standard-newsletter.*` authority; network publishing is deferred
+until its `_lexicon` DNS is set up — HappyView doesn't require it).
+
 ## Environment variables
 
 See [`.env.example`](./.env.example). Summary:
@@ -93,6 +116,9 @@ See [`.env.example`](./.env.example). Summary:
 | `RESEND_WEBHOOK_SECRET`  | delivery webhooks | `whsec_…` from the Resend dashboard; unsigned ⇒ rejected.   |
 | `NEWSLETTER_FROM`        | sending           | From address on a **verified** Resend domain.               |
 | `NEWSLETTER_FROM_NAME`   | sending           | Display name shown in the inbox.                            |
+| `HAPPYVIEW_URL`          | permissioned lists| HappyView instance origin. Unset ⇒ email-only on the DB.    |
+| `HAPPYVIEW_CLIENT_KEY`   | permissioned lists| `hvc_…` API client key (sent as `X-Client-Key`).            |
+| `HAPPYVIEW_CLIENT_SECRET`| permissioned lists| `hvs_…` API client secret (server-to-server).              |
 
 ## Scripts
 
