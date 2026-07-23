@@ -251,7 +251,7 @@
       }
     },
     {
-      "files": ["**/wxt.config.ts", "scripts/publish-packages.mjs"],
+      "files": ["**/wxt.config.ts", "**/scripts/publish-packages.mjs"],
       "rules": {
         "unicorn/no-process-exit": "off"
       }

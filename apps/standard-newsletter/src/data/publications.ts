@@ -28,8 +28,8 @@ export interface Send {
    * curve/links in that case.
    */
   delivered?: number;
-  opensByHour?: number[];
-  topLinks?: { url: string; count: number }[];
+  opensByHour?: Array<number>;
+  topLinks?: Array<{ url: string; count: number }>;
 }
 
 export interface Publication {
@@ -44,8 +44,8 @@ export interface Publication {
   openRate: number;
   clickRate: number;
   cadence: string;
-  growth: number[];
-  sends: Send[];
+  growth: Array<number>;
+  sends: Array<Send>;
 }
 
 export const MONTHS = [
@@ -63,7 +63,7 @@ export const MONTHS = [
   "Jul",
 ];
 
-export const PUBS: Publication[] = [
+export const PUBS: Array<Publication> = [
   {
     id: "marginalia",
     name: "The Marginalia Dispatch",
@@ -81,7 +81,9 @@ export const PUBS: Publication[] = [
     openRate: 58.2,
     clickRate: 9.4,
     cadence: "Weekly",
-    growth: [6100, 6280, 6510, 6720, 6980, 7210, 7420, 7690, 7880, 8010, 8180, 8420],
+    growth: [
+      6100, 6280, 6510, 6720, 6980, 7210, 7420, 7690, 7880, 8010, 8180, 8420,
+    ],
     sends: [
       {
         title: "You Own the Press",
@@ -146,7 +148,9 @@ export const PUBS: Publication[] = [
     openRate: 47.5,
     clickRate: 6.1,
     cadence: "Biweekly",
-    growth: [1180, 1240, 1320, 1410, 1490, 1580, 1690, 1780, 1870, 1980, 2054, 2140],
+    growth: [
+      1180, 1240, 1320, 1410, 1490, 1580, 1690, 1780, 1870, 1980, 2054, 2140,
+    ],
     sends: [
       {
         title: "The Repo as Canon",
@@ -200,7 +204,9 @@ export const PUBS: Publication[] = [
     openRate: 62.1,
     clickRate: 12.3,
     cadence: "Weekly",
-    growth: [2210, 2380, 2560, 2740, 2910, 3080, 3220, 3360, 3480, 3590, 3690, 3760],
+    growth: [
+      2210, 2380, 2560, 2740, 2910, 3080, 3220, 3360, 3480, 3590, 3690, 3760,
+    ],
     sends: [
       {
         title: "A Field Guide to Slow Mornings",

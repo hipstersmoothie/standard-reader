@@ -1,8 +1,3 @@
-import * as stylex from "@stylexjs/stylex";
-import { Link } from "@tanstack/react-router";
-import { LayoutGrid, LogOut, Mail, Settings, User } from "lucide-react";
-import { Button as AriaButton } from "react-aria-components";
-
 import { Avatar } from "@standard-reader/design-system/avatar";
 import {
   Menu,
@@ -27,6 +22,10 @@ import {
   lineHeight,
   tracking,
 } from "@standard-reader/design-system/theme/typography.stylex";
+import * as stylex from "@stylexjs/stylex";
+import { Link } from "@tanstack/react-router";
+import { LayoutGrid, LogOut, Mail, Settings, User } from "lucide-react";
+import { Button as AriaButton } from "react-aria-components";
 
 import type { Publication } from "../data/publications";
 import type { ViewerData } from "../server/analytics";
@@ -288,7 +287,7 @@ export function AppSidebar({
   publications,
   viewer,
 }: {
-  publications: Publication[];
+  publications: Array<Publication>;
   viewer: ViewerData | null;
 }) {
   const displayName = viewer?.displayName ?? "Demo account";

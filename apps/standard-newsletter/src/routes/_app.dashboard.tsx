@@ -25,7 +25,11 @@ function Dashboard() {
     return (
       <div style={{ height: "100%", overflow: "auto", background: C.pageBg }}>
         <div
-          style={{ maxWidth: 1000, margin: "0 auto", padding: "44px 40px 90px" }}
+          style={{
+            maxWidth: 1000,
+            margin: "0 auto",
+            padding: "44px 40px 90px",
+          }}
         >
           <h1
             style={{
@@ -83,9 +87,9 @@ function Dashboard() {
                 margin: "0 auto",
               }}
             >
-              When you own a standard.site publication, it shows up here with its
-              subscriber growth and per-send delivery analytics. Publish a post
-              and connect your publication to get started.
+              When you own a standard.site publication, it shows up here with
+              its subscriber growth and per-send delivery analytics. Publish a
+              post and connect your publication to get started.
             </p>
           </div>
         </div>
@@ -104,56 +108,63 @@ function Dashboard() {
   const avgClick =
     pubs.reduce((s, p) => s + p.clickRate * p.subs, 0) / totalSubs;
   const agg = MONTHS.map((_, i) => pubs.reduce((s, p) => s + p.growth[i], 0));
-  const allSends = pubs.flatMap((p) => p.sends.map((s) => ({ ...s, pub: p })))
-    .sort((a, b) => Date.parse(b.when) - Date.parse(a.when))
+  const allSends = pubs
+    .flatMap((p) => p.sends.map((s) => ({ ...s, pub: p })))
+    .toSorted((a, b) => Date.parse(b.when) - Date.parse(a.when))
     .slice(0, 5);
 
-  const kpis: { icon: string; label: string; value: string; foot: ReactNode }[] =
-    [
-      {
-        icon: I.users,
-        label: "Subscribers",
-        value: fmt(totalSubs),
-        foot: (
-          <>
-            <Delta value={totalDelta} />
-            <span>new in 30d</span>
-          </>
-        ),
-      },
-      {
-        icon: I.send,
-        label: "Emails sent",
-        value: fmt(emailsSent),
-        foot: <span>{sends30} campaigns · 30d</span>,
-      },
-      {
-        icon: I.eye,
-        label: "Avg open rate",
-        value: `${avgOpen.toFixed(1)}%`,
-        foot: (
-          <>
-            <Delta value={1.4} suffix="pt" />
-            <span>vs. prior</span>
-          </>
-        ),
-      },
-      {
-        icon: I.cursor,
-        label: "Avg click rate",
-        value: `${avgClick.toFixed(1)}%`,
-        foot: (
-          <>
-            <Delta value={0.6} suffix="pt" />
-            <span>vs. prior</span>
-          </>
-        ),
-      },
-    ];
+  const kpis: Array<{
+    icon: string;
+    label: string;
+    value: string;
+    foot: ReactNode;
+  }> = [
+    {
+      icon: I.users,
+      label: "Subscribers",
+      value: fmt(totalSubs),
+      foot: (
+        <>
+          <Delta value={totalDelta} />
+          <span>new in 30d</span>
+        </>
+      ),
+    },
+    {
+      icon: I.send,
+      label: "Emails sent",
+      value: fmt(emailsSent),
+      foot: <span>{sends30} campaigns · 30d</span>,
+    },
+    {
+      icon: I.eye,
+      label: "Avg open rate",
+      value: `${avgOpen.toFixed(1)}%`,
+      foot: (
+        <>
+          <Delta value={1.4} suffix="pt" />
+          <span>vs. prior</span>
+        </>
+      ),
+    },
+    {
+      icon: I.cursor,
+      label: "Avg click rate",
+      value: `${avgClick.toFixed(1)}%`,
+      foot: (
+        <>
+          <Delta value={0.6} suffix="pt" />
+          <span>vs. prior</span>
+        </>
+      ),
+    },
+  ];
 
   return (
     <div style={{ height: "100%", overflow: "auto", background: C.pageBg }}>
-      <div style={{ maxWidth: 1000, margin: "0 auto", padding: "44px 40px 90px" }}>
+      <div
+        style={{ maxWidth: 1000, margin: "0 auto", padding: "44px 40px 90px" }}
+      >
         <h1
           style={{
             fontFamily: C.serif,
@@ -272,7 +283,12 @@ function Dashboard() {
               {pubs.map((p, i) => (
                 <div
                   key={p.id}
+                  role="button"
+                  tabIndex={0}
                   onClick={() => openPub(p.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") openPub(p.id);
+                  }}
                   onMouseEnter={() => setHover(i)}
                   onMouseLeave={() => setHover(-1)}
                   style={{
@@ -323,7 +339,9 @@ function Dashboard() {
                     >
                       {p.openRate}%
                     </div>
-                    <div style={{ fontSize: 11.5, color: C.mut }}>open rate</div>
+                    <div style={{ fontSize: 11.5, color: C.mut }}>
+                      open rate
+                    </div>
                   </div>
                   <Ico
                     d={I.chevR}
@@ -341,7 +359,12 @@ function Dashboard() {
               {allSends.map((s) => (
                 <div
                   key={`${s.pub.id}-${s.path}`}
+                  role="button"
+                  tabIndex={0}
                   onClick={() => openPub(s.pub.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") openPub(s.pub.id);
+                  }}
                   style={{
                     display: "flex",
                     alignItems: "center",

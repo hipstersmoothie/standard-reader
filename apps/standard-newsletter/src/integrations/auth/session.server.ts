@@ -5,9 +5,12 @@
  * `getCurrentViewer` for display.
  */
 
+import {
+  profiles,
+  session as sessionTable,
+  user,
+} from "@standard-reader/db/schema";
 import { eq } from "drizzle-orm";
-
-import { profiles, session as sessionTable, user } from "@standard-reader/db/schema";
 
 import { getDb } from "../../db/index.server";
 import { AUTH_SESSION_TOKEN_COOKIE } from "./constants";

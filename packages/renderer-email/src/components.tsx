@@ -1,3 +1,4 @@
+/* eslint-disable react/only-export-components -- this module intentionally co-locates the email component map with its block/inline renderers; it is a build-time email package, not a fast-refresh boundary */
 import {
   Button,
   Heading,
@@ -7,9 +8,8 @@ import {
   Section,
   Text,
 } from "@react-email/components";
-import type { CSSProperties, ReactNode } from "react";
-
 import type { RendererComponentsInput } from "@standard-reader/renderer-react";
+import type { CSSProperties, ReactNode } from "react";
 
 /**
  * Email-safe styling for the rendered document body. React Email primitives +
@@ -139,13 +139,7 @@ export const emailComponents: RendererComponentsInput = {
         {children}
       </Section>
     ),
-    Callout: ({
-      emoji,
-      children,
-    }: {
-      emoji?: string;
-      children: ReactNode;
-    }) => (
+    Callout: ({ emoji, children }: { emoji?: string; children: ReactNode }) => (
       <Section
         style={{
           background: CODE_BG,
@@ -154,7 +148,9 @@ export const emailComponents: RendererComponentsInput = {
           margin: "0 0 16px",
         }}
       >
-        {emoji ? <Text style={{ ...paragraph, margin: 0 }}>{emoji}</Text> : null}
+        {emoji ? (
+          <Text style={{ ...paragraph, margin: 0 }}>{emoji}</Text>
+        ) : null}
         {children}
       </Section>
     ),
@@ -248,11 +244,15 @@ export const emailComponents: RendererComponentsInput = {
               style={{ width: "100%", height: "auto" }}
             />
           ) : null}
-          <Text style={{ ...paragraph, fontWeight: 600, margin: "12px 16px 4px" }}>
+          <Text
+            style={{ ...paragraph, fontWeight: 600, margin: "12px 16px 4px" }}
+          >
             {title ?? src}
           </Text>
           {description ? (
-            <Text style={{ ...caption, textAlign: "left", margin: "0 16px 12px" }}>
+            <Text
+              style={{ ...caption, textAlign: "left", margin: "0 16px 12px" }}
+            >
               {description}
             </Text>
           ) : null}
@@ -303,7 +303,9 @@ export const emailComponents: RendererComponentsInput = {
     ),
 
     Math: ({ tex }: { tex: string }) => (
-      <Text style={{ ...paragraph, ...codeInline, display: "block" }}>{tex}</Text>
+      <Text style={{ ...paragraph, ...codeInline, display: "block" }}>
+        {tex}
+      </Text>
     ),
     Button: ({ text, href }: { text: string; href: string }) => (
       <Button
@@ -402,13 +404,7 @@ export const emailComponents: RendererComponentsInput = {
         </ol>
       </Section>
     ),
-    FootnoteItem: ({
-      id,
-      children,
-    }: {
-      id: string;
-      children: ReactNode;
-    }) => (
+    FootnoteItem: ({ id, children }: { id: string; children: ReactNode }) => (
       <li id={`fn-${id}`} style={listItem}>
         {children}
       </li>
@@ -431,3 +427,4 @@ export const emailComponents: RendererComponentsInput = {
     ),
   },
 };
+/* eslint-enable react/only-export-components */

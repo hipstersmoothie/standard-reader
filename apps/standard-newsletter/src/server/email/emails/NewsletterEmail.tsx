@@ -22,10 +22,8 @@ import {
   Section,
   Text,
 } from "@react-email/components";
-import {
-  DocumentEmailBody,
-  type StandardSiteDocument,
-} from "@standard-reader/renderer-email";
+import { DocumentEmailBody } from "@standard-reader/renderer-email";
+import type { StandardSiteDocument } from "@standard-reader/renderer-email";
 
 export interface NewsletterEmailProps {
   publicationName: string;

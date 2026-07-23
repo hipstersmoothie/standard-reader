@@ -17,7 +17,7 @@ import type { Publication } from "../data/publications";
 import { PUBS } from "../data/publications";
 
 export const getPublications = createServerFn({ method: "GET" }).handler(
-  async (): Promise<Publication[]> => {
+  async (): Promise<Array<Publication>> => {
     try {
       const [{ loadPublicationsFromDb }, { getCurrentUserDid }] =
         await Promise.all([
@@ -55,9 +55,8 @@ export interface ViewerData {
 export const getViewer = createServerFn({ method: "GET" }).handler(
   async (): Promise<ViewerData | null> => {
     try {
-      const { getCurrentViewer } = await import(
-        "../integrations/auth/session.server"
-      );
+      const { getCurrentViewer } =
+        await import("../integrations/auth/session.server");
       return await getCurrentViewer(getRequest());
     } catch {
       return null;
@@ -130,28 +129,26 @@ export interface PublicationSummaryData {
 
 export const getPublicationSummary = createServerFn({ method: "GET" })
   .validator((data: { pubId: string }) => data)
-  .handler(
-    async ({ data }): Promise<PublicationSummaryData | null> => {
-      try {
-        const { loadPublicationSummary } = await import("./analytics.server");
-        const row = await loadPublicationSummary(data.pubId);
-        if (row) return row;
-        if (process.env.DATABASE_URL) return null;
-      } catch (error) {
-        console.error("[standard-newsletter] publication summary failed:", error);
-      }
-      const p = PUBS.find((x) => x.id === data.pubId);
-      return p
-        ? {
-            uri: `sample:${p.id}`,
-            id: p.id,
-            name: p.name,
-            description: p.desc,
-            theme: p.theme,
-          }
-        : null;
-    },
-  );
+  .handler(async ({ data }): Promise<PublicationSummaryData | null> => {
+    try {
+      const { loadPublicationSummary } = await import("./analytics.server");
+      const row = await loadPublicationSummary(data.pubId);
+      if (row) return row;
+      if (process.env.DATABASE_URL) return null;
+    } catch (error) {
+      console.error("[standard-newsletter] publication summary failed:", error);
+    }
+    const p = PUBS.find((x) => x.id === data.pubId);
+    return p
+      ? {
+          uri: `sample:${p.id}`,
+          id: p.id,
+          name: p.name,
+          description: p.desc,
+          theme: p.theme,
+        }
+      : null;
+  });
 
 /**
  * App access mode for the authenticated shell:
@@ -160,12 +157,14 @@ export const getPublicationSummary = createServerFn({ method: "GET" })
  * - `login` — DB configured but not signed in; redirect to /login.
  */
 export const getAppAccess = createServerFn({ method: "GET" }).handler(
-  async (): Promise<{ mode: "demo" | "authed" | "login"; viewer: ViewerData | null }> => {
+  async (): Promise<{
+    mode: "demo" | "authed" | "login";
+    viewer: ViewerData | null;
+  }> => {
     if (!process.env.DATABASE_URL) return { mode: "demo", viewer: null };
     try {
-      const { getCurrentViewer } = await import(
-        "../integrations/auth/session.server"
-      );
+      const { getCurrentViewer } =
+        await import("../integrations/auth/session.server");
       const viewer = await getCurrentViewer(getRequest());
       return viewer
         ? { mode: "authed", viewer }

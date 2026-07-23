@@ -13,17 +13,23 @@ export const Route = createFileRoute("/api/subscribe")({
         try {
           body = (await request.json()) as typeof body;
         } catch {
-          return Response.json({ ok: false, error: "invalid-json" }, {
-            status: 400,
-          });
+          return Response.json(
+            { ok: false, error: "invalid-json" },
+            {
+              status: 400,
+            },
+          );
         }
         const publicationUri =
           typeof body.publicationUri === "string" ? body.publicationUri : "";
         const email = typeof body.email === "string" ? body.email : "";
         if (!publicationUri || !email) {
-          return Response.json({ ok: false, error: "missing-fields" }, {
-            status: 400,
-          });
+          return Response.json(
+            { ok: false, error: "missing-fields" },
+            {
+              status: 400,
+            },
+          );
         }
 
         const { subscribe } = await import("#/server/subscribers.server");
@@ -46,9 +52,8 @@ export const Route = createFileRoute("/api/subscribe")({
                 where: eq(publications.uri, publicationUri),
               })
             : null;
-          const { sendConfirmationEmail } = await import(
-            "#/server/email/send-confirmation"
-          );
+          const { sendConfirmationEmail } =
+            await import("#/server/email/send-confirmation");
           await sendConfirmationEmail({
             email,
             token: result.token,

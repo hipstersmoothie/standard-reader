@@ -26,7 +26,10 @@ const button = {
   display: "inline-block",
 };
 
-export function ConfirmEmail({ publicationName, confirmUrl }: ConfirmEmailProps) {
+export function ConfirmEmail({
+  publicationName,
+  confirmUrl,
+}: ConfirmEmailProps) {
   return (
     <Html>
       <Head />
@@ -36,14 +39,18 @@ export function ConfirmEmail({ publicationName, confirmUrl }: ConfirmEmailProps)
           <Heading style={{ fontSize: "22px", margin: "0 0 12px" }}>
             Confirm your subscription
           </Heading>
-          <Text style={{ fontSize: "15px", lineHeight: "1.6", color: "#3e332e" }}>
-            Tap below to start receiving {publicationName} by email. If you didn’t
-            request this, you can ignore this message.
+          <Text
+            style={{ fontSize: "15px", lineHeight: "1.6", color: "#3e332e" }}
+          >
+            Tap below to start receiving {publicationName} by email. If you
+            didn’t request this, you can ignore this message.
           </Text>
           <Button href={confirmUrl} style={button}>
             Confirm subscription
           </Button>
-          <Text style={{ fontSize: "12px", color: "#8a817c", marginTop: "24px" }}>
+          <Text
+            style={{ fontSize: "12px", color: "#8a817c", marginTop: "24px" }}
+          >
             Or paste this link into your browser: {confirmUrl}
           </Text>
         </Container>

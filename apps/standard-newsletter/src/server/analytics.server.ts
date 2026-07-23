@@ -14,17 +14,17 @@
  * its titles/dates) comes straight from the DB.
  */
 
+import {
+  documents,
+  publicationStats,
+  publications,
+} from "@standard-reader/db/schema";
 import { and, desc, eq, inArray } from "drizzle-orm";
 
-import { documents, publicationStats, publications } from "@standard-reader/db/schema";
-
-import type {
-  Publication,
-  PublicationTheme,
-  Send,
-} from "../data/publications";
+import type { Publication, PublicationTheme, Send } from "../data/publications";
 import { getDb } from "../db/index.server";
-import { type DocSendMetrics, loadSendMetrics } from "./send-events.server";
+import { loadSendMetrics } from "./send-events.server";
+import type { DocSendMetrics } from "./send-events.server";
 
 export interface PublicationSummary {
   uri: string;
@@ -64,7 +64,8 @@ export async function loadPublicationSummary(
       background: row.themeBackground ?? DEFAULT_THEME.background,
       foreground: row.themeForeground ?? DEFAULT_THEME.foreground,
       accent: row.themeAccent ?? DEFAULT_THEME.accent,
-      accentForeground: row.themeAccentForeground ?? DEFAULT_THEME.accentForeground,
+      accentForeground:
+        row.themeAccentForeground ?? DEFAULT_THEME.accentForeground,
     },
   };
 }
@@ -78,11 +79,12 @@ const DEFAULT_THEME = {
 
 /** Stable 32-bit hash for deterministic synthetic metrics. */
 function hash(s: string): number {
-  let h = 2166136261;
+  let h = 2_166_136_261;
   for (let i = 0; i < s.length; i++) {
-    h ^= s.charCodeAt(i);
-    h = Math.imul(h, 16777619);
+    h ^= s.codePointAt(i) ?? 0;
+    h = Math.imul(h, 16_777_619);
   }
+  // eslint-disable-next-line unicorn/prefer-math-trunc -- >>> 0 is an unsigned 32-bit cast, not truncation
   return h >>> 0;
 }
 
@@ -92,6 +94,11 @@ function synth(seed: string, lo: number, hi: number, decimals = 0): number {
   const v = lo + t * (hi - lo);
   const f = 10 ** decimals;
   return Math.round(v * f) / f;
+}
+
+/** Rate as a percentage rounded to one decimal (0.1234 → 12.3). */
+function round1(n: number): number {
+  return Math.round(n * 1000) / 10;
 }
 
 function displayUrl(url: string): string {
@@ -112,11 +119,11 @@ function formatWhen(d: Date): string {
 }
 
 /** 12-point subscriber-growth series ramping up to the current count. */
-function synthGrowth(id: string, subs: number): number[] {
+function synthGrowth(id: string, subs: number): Array<number> {
   return Array.from({ length: 12 }, (_, i) => {
     if (i === 11) return subs;
     const base = 0.72 + 0.28 * (i / 11);
-    const jitter = 1 + (synth(`${id}-g${i}`, -20, 20) / 1000);
+    const jitter = 1 + synth(`${id}-g${i}`, -20, 20) / 1000;
     return Math.round(subs * base * jitter);
   });
 }
@@ -137,7 +144,6 @@ function toSend(
   // Real delivery metrics when this post has actually been sent.
   if (metrics) {
     const denom = metrics.delivered || metrics.recipients || 1;
-    const round1 = (n: number) => Math.round(n * 1000) / 10;
     return {
       ...base,
       recipients: metrics.recipients || subs,
@@ -225,11 +231,14 @@ export async function loadPublicationsFromDb(
     })
     .from(documents)
     .where(
-      and(eq(documents.deleted, false), inArray(documents.publicationUri, uris)),
+      and(
+        eq(documents.deleted, false),
+        inArray(documents.publicationUri, uris),
+      ),
     )
     .orderBy(desc(documents.publishedAt));
 
-  const docsByPub = new Map<string, DocRow[]>();
+  const docsByPub = new Map<string, Array<DocRow>>();
   for (const d of docRows) {
     if (!d.publicationUri) continue;
     const list = docsByPub.get(d.publicationUri) ?? [];
@@ -244,7 +253,9 @@ export async function loadPublicationsFromDb(
   return pubRows.map((p) => {
     const subs = p.subscriberCount ?? 0;
     const docs = docsByPub.get(p.uri) ?? [];
-    const sends = docs.map((d) => toSend(p.rkey, subs, d, metricsByDoc.get(d.uri)));
+    const sends = docs.map((d) =>
+      toSend(p.rkey, subs, d, metricsByDoc.get(d.uri)),
+    );
     const cadences = ["Weekly", "Biweekly", "Monthly"];
     return {
       id: p.rkey,
@@ -261,16 +272,18 @@ export async function loadPublicationsFromDb(
       },
       subs,
       delta: p.subscribers7d ?? 0,
-      openRate: sends.length
-        ? Math.round(
-            (sends.reduce((s, x) => s + x.openRate, 0) / sends.length) * 10,
-          ) / 10
-        : synth(`${p.rkey}-o`, 45, 66, 1),
-      clickRate: sends.length
-        ? Math.round(
-            (sends.reduce((s, x) => s + x.clickRate, 0) / sends.length) * 10,
-          ) / 10
-        : synth(`${p.rkey}-c`, 5, 14, 1),
+      openRate:
+        sends.length > 0
+          ? Math.round(
+              (sends.reduce((s, x) => s + x.openRate, 0) / sends.length) * 10,
+            ) / 10
+          : synth(`${p.rkey}-o`, 45, 66, 1),
+      clickRate:
+        sends.length > 0
+          ? Math.round(
+              (sends.reduce((s, x) => s + x.clickRate, 0) / sends.length) * 10,
+            ) / 10
+          : synth(`${p.rkey}-c`, 5, 14, 1),
       cadence: cadences[hash(p.rkey) % cadences.length],
       growth: synthGrowth(p.rkey, subs),
       sends,

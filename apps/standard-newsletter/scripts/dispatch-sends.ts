@@ -11,12 +11,14 @@ import { dispatchPendingSends } from "../src/server/email/dispatch.server";
 
 if (!process.env.DATABASE_URL) {
   console.log("DATABASE_URL not set — nothing to dispatch.");
+  // eslint-disable-next-line unicorn/no-process-exit
   process.exit(0);
 }
 
 const results = await dispatchPendingSends({ limit: 20 });
 if (results.length === 0) {
   console.log("No pending sends.");
+  // eslint-disable-next-line unicorn/no-process-exit
   process.exit(0);
 }
 

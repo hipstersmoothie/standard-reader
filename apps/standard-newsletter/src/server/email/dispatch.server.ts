@@ -6,17 +6,15 @@
  * or repeated runs. Drive it from a cron (the CLI at scripts/dispatch-sends.ts).
  */
 
-import { and, eq, isNull } from "drizzle-orm";
-
 import {
   documents,
   newsletterSends,
   publications,
 } from "@standard-reader/db/schema";
+import { toStandardSiteDocument } from "@standard-reader/renderer-email";
+import { and, eq, isNull } from "drizzle-orm";
 
 import { getDb } from "../../db/index.server";
-import { toStandardSiteDocument } from "@standard-reader/renderer-email";
-
 import { reserveSend } from "../send-events.server";
 import { loadConfirmedSubscribers } from "../subscribers.server";
 import { previewText } from "./document-content";
@@ -42,7 +40,7 @@ function canonicalUrlFor(
 
 export async function dispatchPendingSends(
   opts: { publicationUri?: string; limit?: number } = {},
-): Promise<DispatchResult[]> {
+): Promise<Array<DispatchResult>> {
   const db = getDb();
   if (!db) return [];
 
@@ -76,7 +74,7 @@ export async function dispatchPendingSends(
     .orderBy(documents.publishedAt)
     .limit(opts.limit ?? 20);
 
-  const results: DispatchResult[] = [];
+  const results: Array<DispatchResult> = [];
   for (const doc of rows) {
     if (!doc.publicationUri) continue;
 

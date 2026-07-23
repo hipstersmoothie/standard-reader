@@ -18,7 +18,10 @@ export interface DocumentEmailBodyProps {
  * inside a React Email template (Container/Section) and render with
  * @react-email/render.
  */
-export function DocumentEmailBody({ document, options }: DocumentEmailBodyProps) {
+export function DocumentEmailBody({
+  document,
+  options,
+}: DocumentEmailBodyProps) {
   return (
     <StandardDocumentRenderer
       document={document}
@@ -29,6 +32,7 @@ export function DocumentEmailBody({ document, options }: DocumentEmailBodyProps)
 }
 
 /** Build a StandardSiteDocument from a stored `documents` row's fields. */
+// eslint-disable-next-line react/only-export-components -- server helper co-located with the email body it feeds
 export function toStandardSiteDocument(input: {
   contentJson: unknown;
   contentFormat?: string | null;

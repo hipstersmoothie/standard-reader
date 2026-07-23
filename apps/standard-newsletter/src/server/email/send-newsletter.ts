@@ -10,7 +10,6 @@
  */
 
 import { render } from "@react-email/render";
-
 import type { NewNewsletterSendEvent } from "@standard-reader/db/schema";
 import type { StandardSiteDocument } from "@standard-reader/renderer-email";
 
@@ -59,7 +58,7 @@ function unsubscribeUrl(token: string): string {
  */
 export async function sendNewsletter(
   send: NewsletterSend,
-  subscribers: Subscriber[],
+  subscribers: Array<Subscriber>,
 ): Promise<SendReport> {
   const report: SendReport = {
     total: subscribers.length,
@@ -68,7 +67,7 @@ export async function sendNewsletter(
     rateLimited: false,
   };
 
-  const deliveredEvents: NewNewsletterSendEvent[] = [];
+  const deliveredEvents: Array<NewNewsletterSendEvent> = [];
 
   for (const subscriber of subscribers) {
     const props = {

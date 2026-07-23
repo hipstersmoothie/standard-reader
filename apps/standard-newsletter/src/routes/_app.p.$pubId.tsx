@@ -4,8 +4,7 @@ import { useState } from "react";
 
 import { AreaChart } from "../components/charts";
 import { I, Ico } from "../components/icons";
-import { PubGlyph, StatBar, StatCard } from "../components/ui";
-import { Delta } from "../components/ui";
+import { Delta, PubGlyph, StatBar, StatCard } from "../components/ui";
 import type { Send } from "../data/publications";
 import { MONTHS } from "../data/publications";
 import { publicationsQueryOptions } from "../server/analytics";
@@ -35,7 +34,12 @@ function SendRow({
   const [hover, setHover] = useState(false);
   return (
     <div
+      role="button"
+      tabIndex={0}
       onClick={onOpen}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") onOpen();
+      }}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       style={{
@@ -276,11 +280,11 @@ function PubAnalytics() {
           <AreaChart data={pub.growth} h={160} labels={MONTHS} />
         </div>
 
-        <div style={{ display: "flex", alignItems: "flex-end", marginBottom: 12 }}>
+        <div
+          style={{ display: "flex", alignItems: "flex-end", marginBottom: 12 }}
+        >
           <div style={sectLabel}>Newsletters sent</div>
-          <span
-            style={{ marginLeft: "auto", fontSize: 12.5, color: C.mut }}
-          >
+          <span style={{ marginLeft: "auto", fontSize: 12.5, color: C.mut }}>
             Each row is a published post mailed to subscribers
           </span>
         </div>

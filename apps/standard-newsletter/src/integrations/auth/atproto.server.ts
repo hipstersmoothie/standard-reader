@@ -24,9 +24,8 @@ import type {
   StoredState,
 } from "@atcute/oauth-node-client";
 import { OAuthClient } from "@atcute/oauth-node-client";
-import { eq, like } from "drizzle-orm";
-
 import { verification } from "@standard-reader/db/schema";
+import { eq, like } from "drizzle-orm";
 
 import { getDb } from "../../db/index.server";
 import { getPublicUrl } from "../../lib/public-url";
@@ -79,7 +78,10 @@ async function getValue<T>(
     const [deleted] = await db
       .delete(verification)
       .where(eq(verification.identifier, identifier))
-      .returning({ value: verification.value, expiresAt: verification.expiresAt });
+      .returning({
+        value: verification.value,
+        expiresAt: verification.expiresAt,
+      });
     if (!deleted || deleted.expiresAt.getTime() <= Date.now()) return undefined;
     return parse<T>(deleted.value);
   }
@@ -88,7 +90,9 @@ async function getValue<T>(
   });
   if (!entry) return undefined;
   if (entry.expiresAt.getTime() <= Date.now()) {
-    await db.delete(verification).where(eq(verification.identifier, identifier));
+    await db
+      .delete(verification)
+      .where(eq(verification.identifier, identifier));
     return undefined;
   }
   return parse<T>(entry.value);
@@ -152,7 +156,12 @@ const stores: OAuthClientStores = {
       return await getValue<StoredState>("state", stateId, consume);
     },
     async set(stateId, state) {
-      await setValue("state", stateId, state, new Date(Date.now() + STATE_TTL_MS));
+      await setValue(
+        "state",
+        stateId,
+        state,
+        new Date(Date.now() + STATE_TTL_MS),
+      );
     },
     async delete(stateId) {
       await deleteValue("state", stateId);
@@ -231,12 +240,9 @@ function createClient(): InstanceType<typeof OAuthClient> {
   });
 }
 
-export const atprotoOAuth = new Proxy(
-  {} as InstanceType<typeof OAuthClient>,
-  {
-    get(_t, prop) {
-      _client ??= createClient();
-      return _client[prop as keyof InstanceType<typeof OAuthClient>];
-    },
+export const atprotoOAuth = new Proxy({} as InstanceType<typeof OAuthClient>, {
+  get(_t, prop) {
+    _client ??= createClient();
+    return _client[prop as keyof InstanceType<typeof OAuthClient>];
   },
-);
+});

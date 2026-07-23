@@ -57,7 +57,10 @@ const config = defineConfig({
           target: "19",
         }),
       ],
-      exclude: [/[/\\]node_modules[/\\]/, /[/\\]packages[/\\]design-system[/\\]/],
+      exclude: [
+        /[/\\]node_modules[/\\]/,
+        /[/\\]packages[/\\]design-system[/\\]/,
+      ],
     }),
   ],
   server: {

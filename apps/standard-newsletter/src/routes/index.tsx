@@ -1,9 +1,8 @@
+import { Button } from "@standard-reader/design-system/button";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import type { ReactNode } from "react";
-
-import { Button } from "@standard-reader/design-system/button";
 
 import { I, Ico } from "../components/icons";
 import { PubGlyph } from "../components/ui";
@@ -66,18 +65,20 @@ function Step({
   );
 }
 
-function Home() {
-  const navigate = useNavigate();
-  const { data: pubs } = useSuspenseQuery(publicationsQueryOptions());
-  const goDashboard = () => navigate({ to: "/dashboard" });
-  const [calcEmails, setCalcEmails] = useState(50000);
-  const price = Math.max(0, Math.ceil((calcEmails - 1000) / 1000));
-
-  const wrap = (children: ReactNode) => (
+function wrap(children: ReactNode) {
+  return (
     <div style={{ maxWidth: 1040, margin: "0 auto", padding: "0 40px" }}>
       {children}
     </div>
   );
+}
+
+function Home() {
+  const navigate = useNavigate();
+  const { data: pubs } = useSuspenseQuery(publicationsQueryOptions());
+  const goDashboard = () => navigate({ to: "/dashboard" });
+  const [calcEmails, setCalcEmails] = useState(50_000);
+  const price = Math.max(0, Math.ceil((calcEmails - 1000) / 1000));
 
   return (
     <div
@@ -222,9 +223,7 @@ function Home() {
               gap: 4,
             }}
           >
-            <div
-              style={{ display: "flex", flexDirection: "column", gap: 12 }}
-            >
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               {pubs.slice(0, 3).map((p, i) => (
                 <div
                   key={p.id}
@@ -292,7 +291,9 @@ function Home() {
           }}
         >
           <div>
-            <div style={sectLabel}>Works with any standard.site publication</div>
+            <div style={sectLabel}>
+              Works with any standard.site publication
+            </div>
             <div
               style={{
                 fontFamily: C.serif,
@@ -433,9 +434,7 @@ function Home() {
             }}
           >
             <div style={sectLabel}>Pricing</div>
-            <span
-              style={{ marginLeft: "auto", fontSize: 13, color: C.mut }}
-            >
+            <span style={{ marginLeft: "auto", fontSize: 13, color: C.mut }}>
               Pay for what you send · every publication included
             </span>
           </div>
@@ -533,16 +532,14 @@ function Home() {
                 >
                   Estimate your bill
                 </span>
-                <span
-                  style={{ fontSize: 14, color: C.t12, fontWeight: 600 }}
-                >
+                <span style={{ fontSize: 14, color: C.t12, fontWeight: 600 }}>
                   {fmt(calcEmails)} emails / mo
                 </span>
               </div>
               <input
                 type="range"
                 min={0}
-                max={500000}
+                max={500_000}
                 step={1000}
                 value={calcEmails}
                 onChange={(e) => setCalcEmails(+e.target.value)}

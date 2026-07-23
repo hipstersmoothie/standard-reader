@@ -11,15 +11,16 @@
  * working on sample data.
  */
 
-import { and, eq, inArray, sql } from "drizzle-orm";
-
 import {
-  type NewNewsletterSend,
-  type NewNewsletterSendEvent,
-  type NewsletterEventType,
   newsletterSendEvents,
   newsletterSends,
 } from "@standard-reader/db/schema";
+import type {
+  NewNewsletterSend,
+  NewNewsletterSendEvent,
+  NewsletterEventType,
+} from "@standard-reader/db/schema";
+import { and, eq, inArray, sql } from "drizzle-orm";
 
 import { getDb } from "../db/index.server";
 
@@ -34,8 +35,8 @@ export interface DocSendMetrics {
   unsubs: number;
   bounces: number;
   /** Cumulative unique opens at 0,4,…,48h (13 points). */
-  opensByHour: number[];
-  topLinks: { url: string; count: number }[];
+  opensByHour: Array<number>;
+  topLinks: Array<{ url: string; count: number }>;
 }
 
 export async function recordSend(send: NewNewsletterSend): Promise<boolean> {
@@ -69,7 +70,7 @@ export async function reserveSend(send: NewNewsletterSend): Promise<boolean> {
 }
 
 export async function recordEvents(
-  events: NewNewsletterSendEvent[],
+  events: Array<NewNewsletterSendEvent>,
 ): Promise<boolean> {
   const db = getDb();
   if (!db || events.length === 0) return false;
@@ -115,8 +116,8 @@ export async function recordWebhookEvent(evt: {
 function cumulativeCurve(
   buckets: Map<number, number>,
   totalOpens: number,
-): number[] {
-  const curve: number[] = [];
+): Array<number> {
+  const curve: Array<number> = [];
   let running = 0;
   for (let i = 0; i < 13; i++) {
     running += buckets.get(i) ?? 0;
@@ -126,7 +127,7 @@ function cumulativeCurve(
 }
 
 export async function loadSendMetrics(
-  documentUris: string[],
+  documentUris: Array<string>,
 ): Promise<Map<string, DocSendMetrics>> {
   const out = new Map<string, DocSendMetrics>();
   const db = getDb();
@@ -179,7 +180,10 @@ export async function loadSendMetrics(
       uniq: sql<number>`count(distinct ${newsletterSendEvents.recipient})::int`,
     })
     .from(newsletterSendEvents)
-    .innerJoin(newsletterSends, eq(newsletterSendEvents.sendId, newsletterSends.id))
+    .innerJoin(
+      newsletterSends,
+      eq(newsletterSendEvents.sendId, newsletterSends.id),
+    )
     .where(
       and(
         inArray(newsletterSendEvents.sendId, sendIds),
@@ -203,7 +207,7 @@ export async function loadSendMetrics(
     const topLinks = linkRows
       .filter((l) => l.sendId === send.id && l.url)
       .map((l) => ({ url: l.url as string, count: l.total }))
-      .sort((a, b) => b.count - a.count)
+      .toSorted((a, b) => b.count - a.count)
       .slice(0, 6);
 
     out.set(send.documentUri, {

@@ -10,10 +10,10 @@ export function AreaChart({
   stroke = C.a9,
   labels,
 }: {
-  data: number[];
+  data: Array<number>;
   h?: number;
   stroke?: string;
-  labels?: string[];
+  labels?: Array<string>;
 }) {
   const W = 720;
   const pad = { t: 12, r: 6, b: labels ? 22 : 8, l: 6 };
@@ -31,8 +31,10 @@ export function AreaChart({
   const line = pts
     .map((p, i) => `${i ? "L" : "M"}${p[0].toFixed(1)} ${p[1].toFixed(1)}`)
     .join(" ");
-  const last = pts[pts.length - 1];
-  const area = `${line} L${last[0].toFixed(1)} ${pad.t + ih} L${pts[0][0].toFixed(1)} ${pad.t + ih} Z`;
+  const last = pts.at(-1);
+  const first = pts.at(0);
+  if (!last || !first) return null;
+  const area = `${line} L${last[0].toFixed(1)} ${pad.t + ih} L${first[0].toFixed(1)} ${pad.t + ih} Z`;
   const gid = `ac${Math.round(min + max + data.length)}`;
 
   return (

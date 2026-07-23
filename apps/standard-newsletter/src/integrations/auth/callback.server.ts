@@ -7,15 +7,14 @@
  */
 
 import type { OAuthClient } from "@atcute/oauth-node-client";
-import { redirect } from "@tanstack/react-router";
-import { and, eq } from "drizzle-orm";
-
 import {
   account,
   profiles,
   session as sessionTable,
   user,
 } from "@standard-reader/db/schema";
+import { redirect } from "@tanstack/react-router";
+import { and, eq } from "drizzle-orm";
 
 import { getDb } from "../../db/index.server";
 import { AUTH_SESSION_TOKEN_COOKIE, SESSION_TTL_MS } from "./constants";

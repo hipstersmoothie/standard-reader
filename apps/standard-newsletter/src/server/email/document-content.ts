@@ -2,6 +2,6 @@
  * by @standard-reader/renderer-email (see NewsletterEmail / dispatch). */
 
 export function previewText(textContent: string | null, max = 140): string {
-  const text = (textContent ?? "").replace(/\s+/g, " ").trim();
+  const text = (textContent ?? "").replaceAll(/\s+/g, " ").trim();
   return text.length > max ? `${text.slice(0, max - 1)}…` : text;
 }

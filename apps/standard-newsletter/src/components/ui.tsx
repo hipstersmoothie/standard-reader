@@ -37,7 +37,12 @@ export function Delta({
 export function StatBar({ pct, color }: { pct: number; color: string }) {
   return (
     <div
-      style={{ height: 6, borderRadius: 6, background: C.ui3, overflow: "hidden" }}
+      style={{
+        height: 6,
+        borderRadius: 6,
+        background: C.ui3,
+        overflow: "hidden",
+      }}
     >
       <div
         style={{

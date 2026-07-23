@@ -14,12 +14,14 @@ export const Route = createFileRoute("/api/auth/atproto/authorize")({
         const handle = url.searchParams.get("handle")?.trim();
         const redirectParam = url.searchParams.get("redirect") ?? "/dashboard";
         if (!handle) {
-          return Response.redirect(new URL("/login", url.origin).toString(), 302);
+          return Response.redirect(
+            new URL("/login", url.origin).toString(),
+            302,
+          );
         }
 
-        const { atprotoOAuth } = await import(
-          "#/integrations/auth/atproto.server"
-        );
+        const { atprotoOAuth } =
+          await import("#/integrations/auth/atproto.server");
         const { url: authUrl } = await atprotoOAuth.authorize({
           target: { type: "account", identifier: handle as ActorIdentifier },
           scope: "atproto",

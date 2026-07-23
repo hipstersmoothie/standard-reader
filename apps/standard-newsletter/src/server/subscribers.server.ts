@@ -6,9 +6,8 @@
  * source. No-ops / empties when no DB is configured.
  */
 
-import { and, eq } from "drizzle-orm";
-
 import { newsletterSubscribers } from "@standard-reader/db/schema";
+import { and, eq } from "drizzle-orm";
 
 import { getDb } from "../db/index.server";
 
@@ -99,7 +98,7 @@ export interface LoadedSubscriber {
 
 export async function loadConfirmedSubscribers(
   publicationUri: string,
-): Promise<LoadedSubscriber[]> {
+): Promise<Array<LoadedSubscriber>> {
   const db = getDb();
   if (!db) return [];
   const rows = await db

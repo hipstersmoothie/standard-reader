@@ -6,7 +6,9 @@ import { createFileRoute } from "@tanstack/react-router";
  * subscriber to `unsubscribed` by its capability token.
  */
 function tokenFromUrl(request: Request): string {
-  const last = new URL(request.url).pathname.split("/").filter(Boolean).pop();
+  const last = new URL(request.url).pathname
+    .split("/")
+    .findLast((s) => s.length > 0);
   return last ? decodeURIComponent(last) : "";
 }
 

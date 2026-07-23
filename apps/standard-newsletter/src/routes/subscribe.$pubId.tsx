@@ -1,5 +1,6 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { type FormEvent, useState } from "react";
+import { useState } from "react";
+import type { FormEvent } from "react";
 
 import { getPublicationSummary } from "../server/analytics";
 import { C } from "../theme";
@@ -118,8 +119,8 @@ function Subscribe() {
             }}
           >
             <strong>Almost there.</strong> We sent a confirmation link to{" "}
-            <span style={{ fontFamily: C.mono }}>{email}</span>. Click it to start
-            receiving {summary.name} by email.
+            <span style={{ fontFamily: C.mono }}>{email}</span>. Click it to
+            start receiving {summary.name} by email.
           </div>
         ) : (
           <form onSubmit={onSubmit}>
@@ -168,7 +169,8 @@ function Subscribe() {
               </p>
             ) : null}
             <p style={{ fontSize: 12, color: C.mut, marginTop: 16 }}>
-              Double opt-in — you’ll confirm from your inbox. Unsubscribe anytime.
+              Double opt-in — you’ll confirm from your inbox. Unsubscribe
+              anytime.
             </p>
           </form>
         )}

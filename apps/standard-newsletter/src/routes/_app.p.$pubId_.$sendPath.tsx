@@ -36,7 +36,21 @@ function SendDetail() {
       const x = i / 12;
       return Math.round(opens * (1 - Math.exp(-3.2 * x)));
     });
-  const hourLabels = ["0h", "", "4h", "", "8h", "", "12h", "", "", "", "", "", "48h"];
+  const hourLabels = [
+    "0h",
+    "",
+    "4h",
+    "",
+    "8h",
+    "",
+    "12h",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "48h",
+  ];
   const links =
     send.topLinks && send.topLinks.length > 0
       ? send.topLinks.map((l) => ({ label: l.url, count: l.count }))
@@ -50,7 +64,9 @@ function SendDetail() {
 
   return (
     <div style={{ height: "100%", overflow: "auto", background: C.pageBg }}>
-      <div style={{ maxWidth: 940, margin: "0 auto", padding: "30px 40px 90px" }}>
+      <div
+        style={{ maxWidth: 940, margin: "0 auto", padding: "30px 40px 90px" }}
+      >
         <Link
           to="/p/$pubId"
           params={{ pubId: pub.id }}
@@ -208,9 +224,7 @@ function SendDetail() {
               <div style={{ fontFamily: C.serif, fontSize: 18, color: C.t12 }}>
                 Opens over time
               </div>
-              <div
-                style={{ fontSize: 12.5, color: C.mut, marginLeft: "auto" }}
-              >
+              <div style={{ fontSize: 12.5, color: C.mut, marginLeft: "auto" }}>
                 First 48 hours
               </div>
             </div>
@@ -228,9 +242,7 @@ function SendDetail() {
             >
               Top links clicked
             </div>
-            <div
-              style={{ display: "flex", flexDirection: "column", gap: 15 }}
-            >
+            <div style={{ display: "flex", flexDirection: "column", gap: 15 }}>
               {links.map((l) => (
                 <div key={l.label}>
                   <div

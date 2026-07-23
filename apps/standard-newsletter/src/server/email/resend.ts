@@ -77,8 +77,8 @@ export async function sendEmail(
     }
 
     return { ok: true, id: data?.id, rateLimited: false };
-  } catch (cause) {
-    const message = cause instanceof Error ? cause.message : String(cause);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
     return { ok: false, rateLimited: false, error: message };
   }
 }

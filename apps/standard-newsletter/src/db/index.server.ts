@@ -10,11 +10,11 @@
  */
 
 import { neon } from "@neondatabase/serverless";
-import { drizzle as drizzleHttp } from "drizzle-orm/neon-http";
-import { type NodePgDatabase, drizzle as drizzlePg } from "drizzle-orm/node-postgres";
-import { Pool } from "pg";
-
 import * as schema from "@standard-reader/db/schema";
+import { drizzle as drizzleHttp } from "drizzle-orm/neon-http";
+import { drizzle as drizzlePg } from "drizzle-orm/node-postgres";
+import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import { Pool } from "pg";
 
 export type NewsletterDb = NodePgDatabase<typeof schema>;
 

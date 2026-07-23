@@ -14,9 +14,8 @@ export const Route = createFileRoute("/subscribe/confirm")({
             400,
           );
         }
-        const { confirmSubscription } = await import(
-          "#/server/subscribers.server"
-        );
+        const { confirmSubscription } =
+          await import("#/server/subscribers.server");
         const ok = await confirmSubscription(token);
         return ok
           ? htmlPage(

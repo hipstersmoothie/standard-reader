@@ -1,6 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
-
 import type { NewsletterEventType } from "@standard-reader/db/schema";
+import { createFileRoute } from "@tanstack/react-router";
 
 /**
  * Resend webhook receiver. Resend POSTs delivery events
@@ -50,9 +49,8 @@ export const Route = createFileRoute("/api/resend-webhook")({
           return new Response("ignored", { status: 202 });
         }
 
-        const { recordWebhookEvent } = await import(
-          "../server/send-events.server"
-        );
+        const { recordWebhookEvent } =
+          await import("../server/send-events.server");
         const recorded = await recordWebhookEvent({
           messageId,
           recipient: to,

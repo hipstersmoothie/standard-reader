@@ -8,10 +8,10 @@
  * layer. Runs as a dry stub unless RESEND_API_KEY is set.
  */
 
-import {
-  type NewsletterSend,
-  type Subscriber,
-  sendNewsletter,
+import { sendNewsletter } from "../src/server/email/send-newsletter";
+import type {
+  NewsletterSend,
+  Subscriber,
 } from "../src/server/email/send-newsletter";
 
 const send: NewsletterSend = {
@@ -28,7 +28,7 @@ const send: NewsletterSend = {
     "This is a sample post from the manual send CLI.\n\nReal sends render the publication's post with the email renderer.",
 };
 
-const subscribers: Subscriber[] = [
+const subscribers: Array<Subscriber> = [
   { email: "reader@example.com", unsubscribeToken: "demo-token" },
 ];
 
@@ -36,7 +36,10 @@ if (!process.env.RESEND_API_KEY) {
   console.log(
     "RESEND_API_KEY not set — skipping real send. Configure .env to send for real.",
   );
-  console.log(`Would send "${send.title}" to ${subscribers.length} subscriber(s).`);
+  console.log(
+    `Would send "${send.title}" to ${subscribers.length} subscriber(s).`,
+  );
+  // eslint-disable-next-line unicorn/no-process-exit
   process.exit(0);
 }
 
