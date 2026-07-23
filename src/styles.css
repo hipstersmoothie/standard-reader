@@ -125,10 +125,31 @@ html:has([data-app-shell]) body {
   color: var(--current-word-highlight-color, inherit);
 }
 
-/* Bluesky post embeds in dark mode. The head script sets
-   html[data-resolved-scheme] before paint; the embed wrapper's data-theme can
-   lag SSR/hydration and leave a white card with light inherited text. */
-html[data-resolved-scheme="dark"] .bsky-react-post-theme {
+/* Bluesky post embeds (vendored `bsky-react-post`).
+ *
+ * 1. Avatars: the package's <img>s carry no size of their own — it was written
+ *    against a global `img { max-width: 100%; height: auto }` reset (Tailwind
+ *    preflight) that this app dropped along with Tailwind. bsky serves avatars
+ *    at 1000px, so without the reset they overflow the 40px avatar circle and
+ *    render as a zoomed-in top-left crop (the "broken profile pics"). Restore
+ *    that reset, scoped to the embed.
+ *
+ * 2. Theme: the package colors text through CSS custom properties but never
+ *    binds `color` to its own container, and its dark palette reuses the light
+ *    secondary (rgb(66 87 108), ~2:1 on the dark card). The correction below
+ *    keys off html[data-resolved-scheme] — set by a separate pre-paint script —
+ *    so a race, JS-off, or an app/embed theme mismatch can leave a dark card
+ *    with dark, unreadable body + secondary text. Also key off the embed
+ *    wrapper's own resolved data-theme, which the component sets together with
+ *    the content (never "system", can't race the script), so the embed carries
+ *    a readable, self-contained palette regardless of the html attribute. */
+[data-bsky-post-embed] img {
+  max-width: 100%;
+  height: auto;
+}
+
+html[data-resolved-scheme="dark"] .bsky-react-post-theme,
+[data-bsky-post-embed][data-theme="dark"] .bsky-react-post-theme {
   --post-skeleton-bg: rgb(63 63 70);
   --post-border: 1px solid rgb(46 64 82);
   --post-error-border: 1px solid rgb(252 165 165);
