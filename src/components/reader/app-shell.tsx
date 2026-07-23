@@ -241,6 +241,22 @@ const styles = stylex.create({
     alignItems: "center",
     display: "flex",
   },
+  /** Inherits the label's type; only the hover/current affordance is its own. */
+  sideLabelLink: {
+    borderRadius: radius.sm,
+    color: {
+      default: "inherit",
+      ":hover": uiColor.text2,
+    },
+    textDecorationLine: {
+      default: "none",
+      ":hover": "underline",
+    },
+    textUnderlineOffset: "0.3em",
+  },
+  sideLabelLinkActive: {
+    color: primaryColor.text2,
+  },
   listLabel: {
     alignItems: "center",
     color: uiColor.text1,
@@ -720,6 +736,28 @@ function SidebarNavItem({
           {compactCount ? formatSidebarUnreadCount(fmt, count) : count}
         </span>
       ) : null}
+    </Link>
+  );
+}
+
+/**
+ * The "Subscriptions" section heading, which doubles as the entry point to the
+ * `/subscriptions` directory. Signed-in only — a guest has nothing to manage,
+ * and the route bounces them to login.
+ */
+function SubscriptionsHeading() {
+  const focusRingProps = useFocusRingProps();
+  return (
+    <Link
+      to="/subscriptions"
+      {...focusRingProps}
+      {...stylex.props(styles.sideLabelLink)}
+      activeProps={stylex.props(
+        styles.sideLabelLink,
+        styles.sideLabelLinkActive,
+      )}
+    >
+      <Trans>Subscriptions</Trans>
     </Link>
   );
 }
@@ -1286,9 +1324,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 data-sidebar-label="true"
                 style={styles.sideLabel}
               >
-                <span>
-                  <Trans>Subscriptions</Trans>
-                </span>
+                {signedIn ? (
+                  <SubscriptionsHeading />
+                ) : (
+                  <span>
+                    <Trans>Subscriptions</Trans>
+                  </span>
+                )}
                 {signedIn ? (
                   <ButtonGroup
                     aria-label={t`Subscription list actions`}

@@ -55,12 +55,14 @@ Sidebar / bottom-nav
 └── + Add publication  (modal)
 
 Following list (sidebar) — quick links to followed publications
+    └── "Subscriptions" heading links to /subscriptions (the manage view)
 
 Detail screens
 ├── Article (reading view)
 ├── Publication profile
 ├── Author profile (`/u/$did` — all publications from one DID)
 ├── Tag directory (`/tag/$tag` — articles and publications for that tag)
+├── Subscriptions (`/subscriptions` — manage everything you follow)
 └── Reader profile (saved / liked articles)
 ```
 
@@ -203,6 +205,38 @@ Sections, top to bottom:
 - **Subscriptions** — publications they follow (`site.standard.graph.subscription`).
 - **Liked articles** — their network likes (`site.standard.graph.recommend`).
 - Linked from publication profiles, list pages, and article bylines.
+
+### Subscriptions (manage view)
+
+- Route `/subscriptions`, reached from the sidebar's "Subscriptions" heading. Requires auth
+  (redirects to login).
+- One **sortable, multi-selectable table** of everything the reader follows — publications
+  (`site.standard.graph.subscription`) _and_ people (`app.standard-reader.graph.follow`) in a
+  single list, matching how the sidebar groups them. A sortable `Type` column is how you group
+  the table by kind.
+- Columns: Name (avatar + handle), Type, Unread, Last post, Articles, Followers, Topic, and the
+  reader's own Lists the subject belongs to. Every column sorts; rows missing a value for the
+  sorted column always sink to the bottom rather than reading as "smallest". Client-side filter
+  by name / handle / topic.
+- **Bulk actions on a selection**: add to one of the reader's lists, or unsubscribe/unfollow
+  (confirmation names both counts, since unfollowing a person also tears down the subscriptions
+  that follow created). The selection controls take the result count's place in the filter row
+  rather than adding a bar, so selecting never shifts the table under the cursor. Deliberately
+  **no bulk mark-as-read** — one selection could mean thousands of `read` records written to the
+  reader's repo; `/latest` owns marking things read.
+- **Data**: rows come free from the shell's `["feed", "sidebar"]` cache plus `["reader",
+"lists"]`. The page's only added query is per-person publishing stats
+  (`subscriptions.getPeopleStats` — grouped aggregates over `documents` and `user_follows`),
+  kept out of `loadSidebarData` so the cost lands on the page that needs it.
+- **Virtualized** (react-aria `Virtualizer` + `TableLayout`) against the _page_ scroll, not an
+  inner scrollport — the reader keeps one scrollbar, and a 200-subscription library renders ~25
+  rows. Row heights are **fixed**, not measured: rows are uniform (both text lines are
+  single-line-with-ellipsis, so height comes from tokened line-heights), and skipping
+  react-aria's per-row `ResizeObserver` roughly halves the main-thread cost of a fast scroll.
+- **Responsive**: four column tiers sized to what the content column actually gets (the desktop
+  sidebar takes 264px of it). The narrowest tier keeps one column: name and handle lead, the
+  last-post date and unread count move to the row's trailing edge, and the columns it drops
+  stay sortable through a sort control in the toolbar.
 
 ### Reader profile (reading history)
 

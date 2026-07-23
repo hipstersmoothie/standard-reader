@@ -456,6 +456,43 @@ Build each on hip-ui components + StyleX tokens (no raw HTML/inline styles).
       when signed in (`drizzle/0011_*`); articles without a canonical URL fall back to the reader
       (`#/lib/open-links`, `useOpenLinks`, `OpenLinksMenuItem`).
 - [x] **Reader profile** — browse the signed-in user's likes (`site.standard.graph.recommend` records via `readerApi.getLikes`); `/likes` infinite scroll (20 per page, IntersectionObserver sentinel).
+- [x] **Subscriptions manage page** — the sidebar's "Subscriptions" heading links to
+      `/subscriptions` (`_layout.subscriptions.tsx` + `subscriptions-table.tsx`): one sortable,
+      multi-selectable table of every followed publication _and_ person, with Name / Type /
+      Unread / Last post / Articles / Followers / Topic / Lists columns, a client-side
+      name-handle-topic filter, and bulk **add to list** / **unsubscribe** (confirmation names
+      publication and people counts separately). No bulk mark-as-read: one selection could mean
+      thousands of `read` records written to the reader's repo. Selection controls replace the
+      result count in the filter row, so selecting never shifts the table. Rows are free from the
+      shell's `["feed","sidebar"]` + `["reader","lists"]` caches; the one added query is
+      `subscriptions.getPeopleStats` (grouped `documents` + `user_follows` aggregates, so people
+      rows get real Articles / Last post / Followers). Bulk writes go through
+      `readerApi.unfollowSubscriptions` and `listApi.addToList`; the per-subject unfollow bodies
+      live in `server/reader/unfollow-subject.server.ts` (a `.server` module — module-scope
+      helpers in a `*.functions.ts` file are not stripped from the client bundle). Virtualized
+      via react-aria's `Virtualizer` + `TableLayout` against the **page** scroll
+      (`allowsWindowScrolling`, no inner scrollport), with fixed (not measured) row heights —
+      skipping the per-row `ResizeObserver` roughly halves the main-thread cost of a fast fling. Four responsive
+      column tiers sized to the real content width (the desktop sidebar takes 264px); the
+      narrowest keeps one column with the date + unread moved to the row's trailing edge, and a
+      toolbar sort control covering the dropped columns.
+- [x] **Design-system table fixes** (`src/design-system/table/`, surfaced by the subscriptions
+      page): cell content is now a flex box that fills the cell, so a one-line value sits level
+      with a two-line name in **both** layout modes (`vertical-align` means nothing to a
+      virtualized row's positioned divs); header cells fill the header row, so the sorted column
+      — taller because it carries the arrow — no longer drops its label below the others; the
+      sort arrow is boxed so it stops inflating that cell; the leading (checkbox) cell's inset
+      scales with table size instead of staying 16px at every size; virtualized `rowheader`
+      cells fill the row like `gridcell`s already did; a row can mark itself `data-last-row` to
+      drop its bottom border, which `:last-child` cannot detect once rows are windowed; the
+      virtualized row fills its layout wrapper so its hover/selection background has a box to
+      paint in (absolutely-positioned cells left the row itself zero-height, so the wash simply
+      vanished); and a synthetic scroll after mount re-syncs the virtualizer's viewport offset,
+      which react-aria only ever learns from a scroll _event_ — scroll restoration lands in a
+      layout effect, before that listener exists, so reopening a page mid-scroll rendered the
+      top window and showed nothing until the reader scrolled. New props:
+      `TableHeader variant="filled" | "plain"`, and `rowHeight` / `estimatedRowHeight` /
+      `headingHeight` on `Table`.
 - [x] **Publication lists (sidebar folders)** — named, ordered lists of publications
       (one level deep, a publication can be in several lists): folder-plus button in the
       Subscriptions header creates one, each list header has an edit (pencil) button opening

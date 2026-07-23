@@ -43,6 +43,12 @@ export const PAGE_OG_CARDS = {
     tagline:
       "Articles you've saved for later — in your repo, synced across devices.",
   },
+  subscriptions: {
+    path: "/subscriptions",
+    title: "Subscriptions",
+    tagline:
+      "Every publication and person you follow, in one sortable directory you control.",
+  },
   friends: {
     path: "/friends",
     title: "People you follow",

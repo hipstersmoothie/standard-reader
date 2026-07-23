@@ -17,8 +17,6 @@ import {
   deleteBookmarkRecord,
   deleteReadRecord,
   deleteRecommendRecord,
-  deleteSubscriptionRecords,
-  deleteUserFollowRecords,
   putBookmarkRecord,
   putReadRecord,
   putRecommendRecord,
@@ -26,22 +24,21 @@ import {
   putUserFollowRecord,
   subjectRkey,
 } from "#/server/atproto/repo-records";
-import { Collections, buildAtUri, didFromAtUri } from "#/server/atproto/uri";
 import {
   backfillFollowedUserContent,
-  deleteRecord,
   upsertSubscription,
   upsertUserFollow,
 } from "#/server/ingest/handlers";
 import { ensureTracked } from "#/server/ingest/tap-client";
 import { observe } from "#/server/observability/log";
-import {
-  syncFollowedPublications,
-  unsubscribeFollowedPublications,
-} from "#/server/reader/followed-publications-sync.server";
+import { syncFollowedPublications } from "#/server/reader/followed-publications-sync.server";
 import { markDocumentsRead } from "#/server/reader/mark-documents-read";
 import { selectUnreadDocumentUris } from "#/server/reader/queries";
 import { effectiveFollowSets } from "#/server/reader/saved-lists";
+import {
+  unfollowPublicationForSession,
+  unfollowUserForSession,
+} from "#/server/reader/unfollow-subject.server";
 
 import type { ArticleCard } from "./api-shapes";
 import { articleQueueCardColumns, toArticleCard } from "./api-shapes";
@@ -351,59 +348,6 @@ const followPublications = createServerFn({ method: "POST" })
     }),
   );
 
-/**
- * When a reader unsubscribes from a publication owned by someone they follow,
- * record the opt-out on the follow's `excludedPublications` so the periodic
- * reconcile (see followed-publications-sync) doesn't re-subscribe them. Reads +
- * rewrites the `graph.follow` record for the pair; best-effort (never blocks the
- * unsubscribe). No-op when the publication's owner isn't a followed user.
- */
-async function excludePublicationFromFollow(
-  client: Parameters<typeof putUserFollowRecord>[0],
-  readerDid: string,
-  publicationUri: string,
-): Promise<void> {
-  const ownerDid = didFromAtUri(publicationUri);
-  if (!ownerDid) return;
-
-  const { db } = await import("#/db/index.server");
-  const { userFollows } = await import("#/db/schema");
-  const [row] = await db
-    .select({
-      excluded: userFollows.excludedPublications,
-      createdAt: userFollows.createdAt,
-    })
-    .from(userFollows)
-    .where(
-      and(
-        eq(userFollows.followerDid, readerDid),
-        eq(userFollows.subjectDid, ownerDid),
-        eq(userFollows.deleted, false),
-      ),
-    )
-    .limit(1);
-  if (!row) return; // owner isn't followed — a plain unsubscribe
-
-  const excluded = new Set((row.excluded as Array<string>) ?? []);
-  if (excluded.has(publicationUri)) return;
-  excluded.add(publicationUri);
-  const list = [...excluded];
-  const createdAt = row.createdAt?.toISOString() ?? new Date().toISOString();
-
-  const { uri, cid } = await putUserFollowRecord(
-    client,
-    readerDid,
-    ownerDid,
-    createdAt,
-    list,
-  );
-  await upsertUserFollow(uri, readerDid, subjectRkey(ownerDid), cid, {
-    subject: ownerDid,
-    excludedPublications: list,
-    createdAt,
-  });
-}
-
 const unfollowPublication = createServerFn({ method: "POST" })
   .middleware([dbMiddleware])
   .validator(publicationInput)
@@ -416,52 +360,13 @@ const unfollowPublication = createServerFn({ method: "POST" })
       }
       span.set("did", session.did);
 
-      // Externally-created follows (e.g. Leaflet's auto self-subscribe) live at
-      // TID rkeys, not our deterministic one — collect every record the
-      // read-model knows about for this pair so they all get deleted.
-      const sub = context.schema.subscriptions;
-      const rows = await context.db
-        .select({ rkey: sub.rkey })
-        .from(sub)
-        .where(
-          and(
-            eq(sub.subscriberDid, session.did),
-            eq(sub.publicationUri, data.publicationUri),
-            eq(sub.deleted, false),
-          ),
-        );
-      span.set("records", rows.length);
-
-      await deleteSubscriptionRecords(
-        session.client,
-        session.did,
+      const records = await unfollowPublicationForSession(
+        session,
+        context.db,
+        context.schema,
         data.publicationUri,
-        rows.map((row) => row.rkey),
       );
-
-      const rkeys = new Set([
-        subjectRkey(data.publicationUri),
-        ...rows.map((row) => row.rkey),
-      ]);
-      await Promise.all(
-        [...rkeys].map((rkey) =>
-          deleteRecord(
-            buildAtUri(session.did, Collections.subscription, rkey),
-            Collections.subscription,
-          ),
-        ),
-      );
-      // If this publication belongs to a followed user, remember the opt-out so
-      // reconcile won't re-subscribe. Best-effort.
-      try {
-        await excludePublicationFromFollow(
-          session.client,
-          session.did,
-          data.publicationUri,
-        );
-      } catch (error) {
-        console.warn("[reader] exclude-from-follow failed", error);
-      }
+      span.set("records", records);
       return { ok: true as const };
     }),
   );
@@ -578,50 +483,96 @@ const unfollowUser = createServerFn({ method: "POST" })
       }
       span.set("did", session.did);
 
-      // Follows written by other clients may live at TID rkeys — collect every
-      // record the read-model knows about for this pair so they all get deleted.
-      const uf = context.schema.userFollows;
-      const rows = await context.db
-        .select({ rkey: uf.rkey })
-        .from(uf)
-        .where(
-          and(
-            eq(uf.followerDid, session.did),
-            eq(uf.subjectDid, data.did),
-            eq(uf.deleted, false),
-          ),
-        );
-      span.set("records", rows.length);
-
-      await deleteUserFollowRecords(
-        session.client,
-        session.did,
+      const records = await unfollowUserForSession(
+        session,
+        context.db,
+        context.schema,
         data.did,
-        rows.map((row) => row.rkey),
       );
-
-      const rkeys = new Set([
-        subjectRkey(data.did),
-        ...rows.map((row) => row.rkey),
-      ]);
-      await Promise.all(
-        [...rkeys].map((rkey) =>
-          deleteRecord(
-            buildAtUri(session.did, Collections.userFollow, rkey),
-            Collections.userFollow,
-          ),
-        ),
-      );
-      // Tear down the subscriptions this follow created (symmetric with the
-      // sync on follow). Fire-and-forget.
-      void unsubscribeFollowedPublications(
-        session.client,
-        session.did,
-        data.did,
-      ).catch((error) => {
-        console.warn("[reader] follow publication teardown failed", error);
-      });
+      span.set("records", records);
       return { ok: true as const };
+    }),
+  );
+
+// ── Bulk subscription management (the /subscriptions directory) ─────────────
+
+/** A multi-select on `/subscriptions`: publications and people in one payload. */
+const subscriptionSelectionInput = z.object({
+  publicationUris: z.array(z.string().min(1)).max(200).default([]),
+  userDids: z.array(z.string().startsWith("did:")).max(200).default([]),
+});
+
+export interface BulkUnfollowResult {
+  publicationsRemoved: number;
+  peopleRemoved: number;
+  /** Per-subject failures; the rest of the batch still went through. */
+  failed: Array<{ id: string; error: string }>;
+}
+
+/**
+ * Unsubscribe from publications and unfollow people in one request. Writes are
+ * sequential (one restored PDS client, no parallel delete burst) and per-subject
+ * failures are collected rather than aborting the batch, so the UI can report
+ * exactly what survived.
+ */
+const unfollowSubscriptions = createServerFn({ method: "POST" })
+  .middleware([dbMiddleware])
+  .validator(subscriptionSelectionInput)
+  .handler(
+    observe("reader.unfollowSubscriptions", async ({ data, context }, span) => {
+      span.set("publications", data.publicationUris.length);
+      span.set("users", data.userDids.length);
+      const session = await getAtprotoSessionForRequest(getRequest());
+      if (!session) {
+        throw new Error("Sign in to manage subscriptions.");
+      }
+      span.set("did", session.did);
+
+      const failed: Array<{ id: string; error: string }> = [];
+      let publicationsRemoved = 0;
+      let peopleRemoved = 0;
+
+      for (const publicationUri of data.publicationUris) {
+        try {
+          await unfollowPublicationForSession(
+            session,
+            context.db,
+            context.schema,
+            publicationUri,
+          );
+          publicationsRemoved += 1;
+        } catch (error) {
+          console.warn(
+            "[reader] bulk unsubscribe failed",
+            publicationUri,
+            error,
+          );
+          failed.push({ id: publicationUri, error: String(error) });
+        }
+      }
+
+      for (const subjectDid of data.userDids) {
+        try {
+          await unfollowUserForSession(
+            session,
+            context.db,
+            context.schema,
+            subjectDid,
+          );
+          peopleRemoved += 1;
+        } catch (error) {
+          console.warn("[reader] bulk unfollow failed", subjectDid, error);
+          failed.push({ id: subjectDid, error: String(error) });
+        }
+      }
+
+      span.set("removed", publicationsRemoved + peopleRemoved);
+      span.set("failed", failed.length);
+      return {
+        publicationsRemoved,
+        peopleRemoved,
+        failed,
+      } satisfies BulkUnfollowResult;
     }),
   );
 
@@ -1326,6 +1277,20 @@ function unfollowUserMutationOptions() {
   });
 }
 
+/** One selection payload shared by the two bulk mutations. */
+export interface SubscriptionSelection {
+  publicationUris: Array<string>;
+  userDids: Array<string>;
+}
+
+function unfollowSubscriptionsMutationOptions() {
+  return mutationOptions({
+    mutationKey: ["reader", "unfollowSubscriptions"] as const,
+    mutationFn: async (selection: SubscriptionSelection) =>
+      unfollowSubscriptions({ data: selection }),
+  });
+}
+
 function recommendDocumentMutationOptions() {
   return mutationOptions({
     mutationKey: ["reader", "recommendDocument"] as const,
@@ -1424,6 +1389,9 @@ export const readerApi = {
   followUserMutationOptions,
   unfollowUser,
   unfollowUserMutationOptions,
+  // bulk subscription management (/subscriptions)
+  unfollowSubscriptions,
+  unfollowSubscriptionsMutationOptions,
   // like (site.standard.graph.recommend)
   getRecommendStatus,
   getRecommendStatusQueryOptions,

@@ -25,6 +25,7 @@ import { Route as LayoutPrivacyRouteImport } from './routes/_layout.privacy'
 import { Route as LayoutRecommendedRouteImport } from './routes/_layout.recommended'
 import { Route as LayoutSavedRouteImport } from './routes/_layout.saved'
 import { Route as LayoutSearchRouteImport } from './routes/_layout.search'
+import { Route as LayoutSubscriptionsRouteImport } from './routes/_layout.subscriptions'
 import { Route as LayoutTermsRouteImport } from './routes/_layout.terms'
 import { Route as DevDigestRouteImport } from './routes/dev.digest'
 import { Route as DevRtlRouteImport } from './routes/dev.rtl'
@@ -166,6 +167,11 @@ const LayoutSavedRoute = LayoutSavedRouteImport.update({
 const LayoutSearchRoute = LayoutSearchRouteImport.update({
   id: '/search',
   path: '/search',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutSubscriptionsRoute = LayoutSubscriptionsRouteImport.update({
+  id: '/subscriptions',
+  path: '/subscriptions',
   getParentRoute: () => LayoutRoute,
 } as any)
 const LayoutTermsRoute = LayoutTermsRouteImport.update({
@@ -514,6 +520,7 @@ export interface FileRoutesByFullPath {
   '/recommended': typeof LayoutRecommendedRoute
   '/saved': typeof LayoutSavedRoute
   '/search': typeof LayoutSearchRoute
+  '/subscriptions': typeof LayoutSubscriptionsRoute
   '/terms': typeof LayoutTermsRoute
   '/dev/digest': typeof DevDigestRoute
   '/dev/rtl': typeof DevRtlRoute
@@ -593,6 +600,7 @@ export interface FileRoutesByTo {
   '/recommended': typeof LayoutRecommendedRoute
   '/saved': typeof LayoutSavedRoute
   '/search': typeof LayoutSearchRoute
+  '/subscriptions': typeof LayoutSubscriptionsRoute
   '/terms': typeof LayoutTermsRoute
   '/dev/digest': typeof DevDigestRoute
   '/dev/rtl': typeof DevRtlRoute
@@ -675,6 +683,7 @@ export interface FileRoutesById {
   '/_layout/recommended': typeof LayoutRecommendedRoute
   '/_layout/saved': typeof LayoutSavedRoute
   '/_layout/search': typeof LayoutSearchRoute
+  '/_layout/subscriptions': typeof LayoutSubscriptionsRoute
   '/_layout/terms': typeof LayoutTermsRoute
   '/dev/digest': typeof DevDigestRoute
   '/dev/rtl': typeof DevRtlRoute
@@ -758,6 +767,7 @@ export interface FileRouteTypes {
     | '/recommended'
     | '/saved'
     | '/search'
+    | '/subscriptions'
     | '/terms'
     | '/dev/digest'
     | '/dev/rtl'
@@ -837,6 +847,7 @@ export interface FileRouteTypes {
     | '/recommended'
     | '/saved'
     | '/search'
+    | '/subscriptions'
     | '/terms'
     | '/dev/digest'
     | '/dev/rtl'
@@ -918,6 +929,7 @@ export interface FileRouteTypes {
     | '/_layout/recommended'
     | '/_layout/saved'
     | '/_layout/search'
+    | '/_layout/subscriptions'
     | '/_layout/terms'
     | '/dev/digest'
     | '/dev/rtl'
@@ -1147,6 +1159,13 @@ declare module '@tanstack/react-router' {
       path: '/search'
       fullPath: '/search'
       preLoaderRoute: typeof LayoutSearchRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/subscriptions': {
+      id: '/_layout/subscriptions'
+      path: '/subscriptions'
+      fullPath: '/subscriptions'
+      preLoaderRoute: typeof LayoutSubscriptionsRouteImport
       parentRoute: typeof LayoutRoute
     }
     '/_layout/terms': {
@@ -1660,6 +1679,7 @@ interface LayoutRouteChildren {
   LayoutRecommendedRoute: typeof LayoutRecommendedRoute
   LayoutSavedRoute: typeof LayoutSavedRoute
   LayoutSearchRoute: typeof LayoutSearchRoute
+  LayoutSubscriptionsRoute: typeof LayoutSubscriptionsRoute
   LayoutTermsRoute: typeof LayoutTermsRoute
   LayoutIndexRoute: typeof LayoutIndexRoute
   LayoutFeedbackReturnRoute: typeof LayoutFeedbackReturnRoute
@@ -1686,6 +1706,7 @@ const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutRecommendedRoute: LayoutRecommendedRoute,
   LayoutSavedRoute: LayoutSavedRoute,
   LayoutSearchRoute: LayoutSearchRoute,
+  LayoutSubscriptionsRoute: LayoutSubscriptionsRoute,
   LayoutTermsRoute: LayoutTermsRoute,
   LayoutIndexRoute: LayoutIndexRoute,
   LayoutFeedbackReturnRoute: LayoutFeedbackReturnRoute,

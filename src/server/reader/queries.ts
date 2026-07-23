@@ -927,6 +927,87 @@ export async function followedPublications(
   return rows.map((row) => toPublicationCard(row));
 }
 
+/** Directory-table stats for a followed person: their own publishing activity
+ * and how many readers follow them. */
+export interface FollowedUserStats {
+  did: string;
+  /** `publishedAt` of their most recent document (null if they've published none). */
+  lastDocumentAt: string | null;
+  documentCount: number;
+  followerCount: number;
+}
+
+/**
+ * Per-person aggregates for the /subscriptions directory — the people-row
+ * equivalent of `publication_stats`. Two grouped index scans (documents by
+ * author DID, user_follows by subject DID) rather than a per-row correlated
+ * subquery, so the cost is one round trip regardless of how many people the
+ * reader follows.
+ */
+export async function followedUserStats(
+  db: Db,
+  schema: Schema,
+  dids: Array<string>,
+): Promise<Array<FollowedUserStats>> {
+  if (dids.length === 0) {
+    return [];
+  }
+  const d = schema.documents;
+  const uf = schema.userFollows;
+
+  const [docRows, followerRows] = await Promise.all([
+    db
+      .select({
+        did: d.did,
+        lastDocumentAt: sql<string | null>`max(${d.publishedAt})`,
+        documentCount: sql<number>`count(*)::int`,
+      })
+      .from(d)
+      .where(and(inArray(d.did, dids), eq(d.deleted, false)))
+      .groupBy(d.did),
+    db
+      .select({
+        did: uf.subjectDid,
+        followerCount: sql<number>`count(distinct ${uf.followerDid})::int`,
+      })
+      .from(uf)
+      .where(and(inArray(uf.subjectDid, dids), eq(uf.deleted, false)))
+      .groupBy(uf.subjectDid),
+  ]);
+
+  const followers = new Map(
+    followerRows.map((row) => [row.did, row.followerCount]),
+  );
+  const byDid = new Map<string, FollowedUserStats>(
+    docRows.map((row) => {
+      const parsed = row.lastDocumentAt ? new Date(row.lastDocumentAt) : null;
+      return [
+        row.did,
+        {
+          did: row.did,
+          lastDocumentAt:
+            parsed && !Number.isNaN(parsed.getTime())
+              ? parsed.toISOString()
+              : null,
+          documentCount: row.documentCount,
+          followerCount: followers.get(row.did) ?? 0,
+        },
+      ];
+    }),
+  );
+
+  // People who have published nothing still need a row (0 articles, no date).
+  return dids.map(
+    (did) =>
+      byDid.get(did) ?? {
+        did,
+        lastDocumentAt: null,
+        documentCount: 0,
+        followerCount: followers.get(did) ?? 0,
+      },
+  );
+}
+
 /** Distinct publication AT-URIs a reader currently follows (active records). */
 export async function selectFollowUris(
   db: Db,

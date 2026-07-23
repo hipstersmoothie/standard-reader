@@ -76,6 +76,13 @@ const listMembershipInput = z.object({
   did: z.string().startsWith("did:"),
 });
 
+/** Append a multi-select (publications + people) to one of the reader's lists. */
+const listAdditionInput = z.object({
+  rkey: z.string().min(1),
+  publications: z.array(z.string().min(1)).max(200).default([]),
+  users: z.array(z.string().startsWith("did:")).max(200).default([]),
+});
+
 const rkeyInput = z.object({
   rkey: z.string().min(1),
 });
@@ -305,6 +312,53 @@ const addUserToList = createServerFn({ method: "POST" })
         users: [...list.users, data.did],
       });
       return { ok: true as const };
+    }),
+  );
+
+/**
+ * Append a multi-select of publications and people to one of the reader's
+ * lists. Server-side read-modify-write against the DB mirror (not a
+ * client-supplied member array) so a stale client cache can't silently drop
+ * members another session added; already-present members are no-ops.
+ */
+const addToList = createServerFn({ method: "POST" })
+  .middleware([dbMiddleware])
+  .validator(listAdditionInput)
+  .handler(
+    observe("lists.addToList", async ({ data, context }, span) => {
+      const session = await getAtprotoSessionForRequest(getRequest());
+      if (!session) {
+        throw new Error("Sign in to manage lists.");
+      }
+      span.set("did", session.did);
+      span.set("rkey", data.rkey);
+
+      const list = await readOwnListForEdit(context.db, session.did, data.rkey);
+      const publications = [...list.publications];
+      const users = [...list.users];
+      const havePub = new Set(publications);
+      const haveUser = new Set(users);
+      let added = 0;
+
+      for (const uri of data.publications) {
+        if (havePub.has(uri)) continue;
+        havePub.add(uri);
+        publications.push(uri);
+        added += 1;
+      }
+      for (const did of data.users) {
+        if (haveUser.has(did)) continue;
+        haveUser.add(did);
+        users.push(did);
+        added += 1;
+      }
+      span.set("added", added);
+
+      if (added === 0) {
+        return { ok: true as const, added: 0 };
+      }
+      await writeListMembers(session, data.rkey, list, { publications, users });
+      return { ok: true as const, added };
     }),
   );
 
@@ -700,6 +754,14 @@ function addUserToListMutationOptions() {
   });
 }
 
+function addToListMutationOptions() {
+  return mutationOptions({
+    mutationKey: ["reader", "addToList"] as const,
+    mutationFn: async (input: z.input<typeof listAdditionInput>) =>
+      addToList({ data: input }),
+  });
+}
+
 function removeUserFromListMutationOptions() {
   return mutationOptions({
     mutationKey: ["reader", "removeUserFromList"] as const,
@@ -742,6 +804,8 @@ export const listApi = {
   deleteAllListsMutationOptions,
   addUserToList,
   addUserToListMutationOptions,
+  addToList,
+  addToListMutationOptions,
   removeUserFromList,
   removeUserFromListMutationOptions,
   // public page
