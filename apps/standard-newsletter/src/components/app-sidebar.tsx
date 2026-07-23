@@ -29,8 +29,21 @@ import {
 } from "@standard-reader/design-system/theme/typography.stylex";
 
 import type { Publication } from "../data/publications";
+import type { ViewerData } from "../server/analytics";
 import { kfmt } from "../theme";
 import { PubGlyph } from "./ui";
+
+function initialsOf(name: string): string {
+  return (
+    name
+      .split(/\s+/)
+      .map((w) => w[0])
+      .filter(Boolean)
+      .slice(0, 2)
+      .join("")
+      .toUpperCase() || "?"
+  );
+}
 
 const styles = stylex.create({
   sidebar: {
@@ -261,7 +274,15 @@ const styles = stylex.create({
   },
 });
 
-export function AppSidebar({ publications }: { publications: Publication[] }) {
+export function AppSidebar({
+  publications,
+  viewer,
+}: {
+  publications: Publication[];
+  viewer: ViewerData | null;
+}) {
+  const displayName = viewer?.displayName ?? "Demo account";
+  const handleLine = viewer?.handle ? `@${viewer.handle}` : "not signed in";
   return (
     <aside {...stylex.props(styles.sidebar)}>
       <div {...stylex.props(styles.sidebarScroll)}>
@@ -307,10 +328,15 @@ export function AppSidebar({ publications }: { publications: Publication[] }) {
           placement="top start"
           trigger={
             <AriaButton {...stylex.props(styles.trigger)}>
-              <Avatar size="md" fallback="MD" alt="Mara Delgado" />
+              <Avatar
+                size="md"
+                src={viewer?.image ?? undefined}
+                fallback={initialsOf(displayName)}
+                alt={displayName}
+              />
               <span {...stylex.props(styles.identity)}>
-                <span {...stylex.props(styles.displayName)}>Mara Delgado</span>
-                <span {...stylex.props(styles.handle)}>@mara.dispatch.site</span>
+                <span {...stylex.props(styles.displayName)}>{displayName}</span>
+                <span {...stylex.props(styles.handle)}>{handleLine}</span>
               </span>
             </AriaButton>
           }
@@ -319,7 +345,11 @@ export function AppSidebar({ publications }: { publications: Publication[] }) {
           <MenuItem suffix={<Mail size={17} />}>Sender settings</MenuItem>
           <MenuItem suffix={<Settings size={17} />}>Settings</MenuItem>
           <MenuSeparator />
-          <MenuItem variant="destructive" suffix={<LogOut size={17} />}>
+          <MenuItem
+            href="/api/auth/logout"
+            variant="destructive"
+            suffix={<LogOut size={17} />}
+          >
             Log out
           </MenuItem>
         </Menu>

@@ -129,9 +129,15 @@ interface DocRow {
  * Load every publication with real identity + subscriber counts + posts.
  * Returns `null` when no DB is configured so the caller can use sample data.
  */
-export async function loadPublicationsFromDb(): Promise<Publication[] | null> {
+export async function loadPublicationsFromDb(
+  ownerDid?: string,
+): Promise<Publication[] | null> {
   const db = getDb();
   if (!db) return null;
+
+  const whereClause = ownerDid
+    ? and(eq(publications.deleted, false), eq(publications.did, ownerDid))
+    : eq(publications.deleted, false);
 
   const pubRows = await db
     .select({
@@ -153,7 +159,7 @@ export async function loadPublicationsFromDb(): Promise<Publication[] | null> {
       publicationStats,
       eq(publicationStats.publicationUri, publications.uri),
     )
-    .where(eq(publications.deleted, false))
+    .where(whereClause)
     .orderBy(desc(publicationStats.subscriberCount))
     .limit(50);
 

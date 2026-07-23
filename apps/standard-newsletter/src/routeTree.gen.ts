@@ -11,10 +11,16 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppRouteImport } from './routes/_app'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 import { Route as ApiResendWebhookRouteImport } from './routes/api.resend-webhook'
 import { Route as AppPPubIdRouteImport } from './routes/_app.p.$pubId'
+import { Route as ApiAuthLogoutRouteImport } from './routes/api/auth/logout'
 import { Route as AppPPubIdSendPathRouteImport } from './routes/_app.p.$pubId_.$sendPath'
+import { Route as ApiAuthAtprotoAuthorizeRouteImport } from './routes/api/auth/atproto/authorize'
+import { Route as ApiAuthAtprotoCallbackRouteImport } from './routes/api/auth/atproto/callback'
+import { Route as ApiAuthAtprotoJwksDotjsonRouteImport } from './routes/api/auth/atproto/jwks[.]json'
+import { Route as ApiAuthAtprotoMetadataDotjsonRouteImport } from './routes/api/auth/atproto/metadata[.]json'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -23,6 +29,11 @@ const IndexRoute = IndexRouteImport.update({
 } as any)
 const AppRoute = AppRouteImport.update({
   id: '/_app',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppDashboardRoute = AppDashboardRouteImport.update({
@@ -40,64 +51,133 @@ const AppPPubIdRoute = AppPPubIdRouteImport.update({
   path: '/p/$pubId',
   getParentRoute: () => AppRoute,
 } as any)
+const ApiAuthLogoutRoute = ApiAuthLogoutRouteImport.update({
+  id: '/api/auth/logout',
+  path: '/api/auth/logout',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppPPubIdSendPathRoute = AppPPubIdSendPathRouteImport.update({
   id: '/p/$pubId_/$sendPath',
   path: '/p/$pubId/$sendPath',
   getParentRoute: () => AppRoute,
 } as any)
+const ApiAuthAtprotoAuthorizeRoute = ApiAuthAtprotoAuthorizeRouteImport.update({
+  id: '/api/auth/atproto/authorize',
+  path: '/api/auth/atproto/authorize',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthAtprotoCallbackRoute = ApiAuthAtprotoCallbackRouteImport.update({
+  id: '/api/auth/atproto/callback',
+  path: '/api/auth/atproto/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthAtprotoJwksDotjsonRoute =
+  ApiAuthAtprotoJwksDotjsonRouteImport.update({
+    id: '/api/auth/atproto/jwks.json',
+    path: '/api/auth/atproto/jwks.json',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiAuthAtprotoMetadataDotjsonRoute =
+  ApiAuthAtprotoMetadataDotjsonRouteImport.update({
+    id: '/api/auth/atproto/metadata.json',
+    path: '/api/auth/atproto/metadata.json',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
   '/dashboard': typeof AppDashboardRoute
   '/api/resend-webhook': typeof ApiResendWebhookRoute
   '/p/$pubId': typeof AppPPubIdRoute
+  '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/p/$pubId/$sendPath': typeof AppPPubIdSendPathRoute
+  '/api/auth/atproto/authorize': typeof ApiAuthAtprotoAuthorizeRoute
+  '/api/auth/atproto/callback': typeof ApiAuthAtprotoCallbackRoute
+  '/api/auth/atproto/jwks.json': typeof ApiAuthAtprotoJwksDotjsonRoute
+  '/api/auth/atproto/metadata.json': typeof ApiAuthAtprotoMetadataDotjsonRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
   '/dashboard': typeof AppDashboardRoute
   '/api/resend-webhook': typeof ApiResendWebhookRoute
   '/p/$pubId': typeof AppPPubIdRoute
+  '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/p/$pubId/$sendPath': typeof AppPPubIdSendPathRoute
+  '/api/auth/atproto/authorize': typeof ApiAuthAtprotoAuthorizeRoute
+  '/api/auth/atproto/callback': typeof ApiAuthAtprotoCallbackRoute
+  '/api/auth/atproto/jwks.json': typeof ApiAuthAtprotoJwksDotjsonRoute
+  '/api/auth/atproto/metadata.json': typeof ApiAuthAtprotoMetadataDotjsonRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_app': typeof AppRouteWithChildren
+  '/login': typeof LoginRoute
   '/_app/dashboard': typeof AppDashboardRoute
   '/api/resend-webhook': typeof ApiResendWebhookRoute
   '/_app/p/$pubId': typeof AppPPubIdRoute
+  '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/_app/p/$pubId_/$sendPath': typeof AppPPubIdSendPathRoute
+  '/api/auth/atproto/authorize': typeof ApiAuthAtprotoAuthorizeRoute
+  '/api/auth/atproto/callback': typeof ApiAuthAtprotoCallbackRoute
+  '/api/auth/atproto/jwks.json': typeof ApiAuthAtprotoJwksDotjsonRoute
+  '/api/auth/atproto/metadata.json': typeof ApiAuthAtprotoMetadataDotjsonRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/login'
     | '/dashboard'
     | '/api/resend-webhook'
     | '/p/$pubId'
+    | '/api/auth/logout'
     | '/p/$pubId/$sendPath'
+    | '/api/auth/atproto/authorize'
+    | '/api/auth/atproto/callback'
+    | '/api/auth/atproto/jwks.json'
+    | '/api/auth/atproto/metadata.json'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/login'
     | '/dashboard'
     | '/api/resend-webhook'
     | '/p/$pubId'
+    | '/api/auth/logout'
     | '/p/$pubId/$sendPath'
+    | '/api/auth/atproto/authorize'
+    | '/api/auth/atproto/callback'
+    | '/api/auth/atproto/jwks.json'
+    | '/api/auth/atproto/metadata.json'
   id:
     | '__root__'
     | '/'
     | '/_app'
+    | '/login'
     | '/_app/dashboard'
     | '/api/resend-webhook'
     | '/_app/p/$pubId'
+    | '/api/auth/logout'
     | '/_app/p/$pubId_/$sendPath'
+    | '/api/auth/atproto/authorize'
+    | '/api/auth/atproto/callback'
+    | '/api/auth/atproto/jwks.json'
+    | '/api/auth/atproto/metadata.json'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
+  LoginRoute: typeof LoginRoute
   ApiResendWebhookRoute: typeof ApiResendWebhookRoute
+  ApiAuthLogoutRoute: typeof ApiAuthLogoutRoute
+  ApiAuthAtprotoAuthorizeRoute: typeof ApiAuthAtprotoAuthorizeRoute
+  ApiAuthAtprotoCallbackRoute: typeof ApiAuthAtprotoCallbackRoute
+  ApiAuthAtprotoJwksDotjsonRoute: typeof ApiAuthAtprotoJwksDotjsonRoute
+  ApiAuthAtprotoMetadataDotjsonRoute: typeof ApiAuthAtprotoMetadataDotjsonRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -114,6 +194,13 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app/dashboard': {
@@ -137,12 +224,47 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppPPubIdRouteImport
       parentRoute: typeof AppRoute
     }
+    '/api/auth/logout': {
+      id: '/api/auth/logout'
+      path: '/api/auth/logout'
+      fullPath: '/api/auth/logout'
+      preLoaderRoute: typeof ApiAuthLogoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_app/p/$pubId_/$sendPath': {
       id: '/_app/p/$pubId_/$sendPath'
       path: '/p/$pubId/$sendPath'
       fullPath: '/p/$pubId/$sendPath'
       preLoaderRoute: typeof AppPPubIdSendPathRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/api/auth/atproto/authorize': {
+      id: '/api/auth/atproto/authorize'
+      path: '/api/auth/atproto/authorize'
+      fullPath: '/api/auth/atproto/authorize'
+      preLoaderRoute: typeof ApiAuthAtprotoAuthorizeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/atproto/callback': {
+      id: '/api/auth/atproto/callback'
+      path: '/api/auth/atproto/callback'
+      fullPath: '/api/auth/atproto/callback'
+      preLoaderRoute: typeof ApiAuthAtprotoCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/atproto/jwks.json': {
+      id: '/api/auth/atproto/jwks.json'
+      path: '/api/auth/atproto/jwks.json'
+      fullPath: '/api/auth/atproto/jwks.json'
+      preLoaderRoute: typeof ApiAuthAtprotoJwksDotjsonRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/atproto/metadata.json': {
+      id: '/api/auth/atproto/metadata.json'
+      path: '/api/auth/atproto/metadata.json'
+      fullPath: '/api/auth/atproto/metadata.json'
+      preLoaderRoute: typeof ApiAuthAtprotoMetadataDotjsonRouteImport
+      parentRoute: typeof rootRouteImport
     }
   }
 }
@@ -164,7 +286,13 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
+  LoginRoute: LoginRoute,
   ApiResendWebhookRoute: ApiResendWebhookRoute,
+  ApiAuthLogoutRoute: ApiAuthLogoutRoute,
+  ApiAuthAtprotoAuthorizeRoute: ApiAuthAtprotoAuthorizeRoute,
+  ApiAuthAtprotoCallbackRoute: ApiAuthAtprotoCallbackRoute,
+  ApiAuthAtprotoJwksDotjsonRoute: ApiAuthAtprotoJwksDotjsonRoute,
+  ApiAuthAtprotoMetadataDotjsonRoute: ApiAuthAtprotoMetadataDotjsonRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

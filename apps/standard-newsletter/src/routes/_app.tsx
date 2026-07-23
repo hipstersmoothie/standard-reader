@@ -1,18 +1,33 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { Outlet, createFileRoute } from "@tanstack/react-router";
+import { Outlet, createFileRoute, redirect } from "@tanstack/react-router";
 
 import { AppSidebar } from "../components/app-sidebar";
-import { publicationsQueryOptions } from "../server/analytics";
+import {
+  getAppAccess,
+  publicationsQueryOptions,
+  viewerQueryOptions,
+} from "../server/analytics";
 import { C } from "../theme";
 
 export const Route = createFileRoute("/_app")({
-  loader: ({ context }) =>
-    context.queryClient.ensureQueryData(publicationsQueryOptions()),
+  loader: async ({ context, location }) => {
+    const access = await getAppAccess();
+    if (access.mode === "login") {
+      throw redirect({
+        to: "/login",
+        search: { redirect: location.pathname, error: undefined },
+      });
+    }
+    // Seed the viewer cache from the access check, then ensure publications.
+    context.queryClient.setQueryData(["viewer"], access.viewer);
+    await context.queryClient.ensureQueryData(publicationsQueryOptions());
+  },
   component: AppLayout,
 });
 
 function AppLayout() {
   const { data: publications } = useSuspenseQuery(publicationsQueryOptions());
+  const { data: viewer } = useSuspenseQuery(viewerQueryOptions());
   return (
     <div
       style={{
@@ -24,7 +39,7 @@ function AppLayout() {
         overflow: "hidden",
       }}
     >
-      <AppSidebar publications={publications} />
+      <AppSidebar publications={publications} viewer={viewer} />
       <div
         style={{
           flex: 1,
