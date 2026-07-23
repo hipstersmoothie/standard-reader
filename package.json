@@ -30,6 +30,7 @@
     "newsletter:start": "pnpm --filter standard-newsletter start",
     "newsletter:send": "pnpm --filter standard-newsletter newsletter:send",
     "newsletter:dispatch": "pnpm --filter standard-newsletter newsletter:dispatch",
+    "newsletter:seed": "pnpm --filter standard-newsletter newsletter:seed",
     "test": "pnpm -r --if-present test",
     "typecheck": "pnpm -r --if-present typecheck",
     "lint": "pnpm exec oxlint .",

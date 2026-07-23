@@ -11,7 +11,8 @@
     "test": "vitest run",
     "lint": "pnpm exec oxlint .",
     "newsletter:send": "pnpm exec tsx --env-file=.env scripts/send-newsletter.ts",
-    "newsletter:dispatch": "pnpm exec tsx --env-file=.env scripts/dispatch-sends.ts"
+    "newsletter:dispatch": "pnpm exec tsx --env-file=.env scripts/dispatch-sends.ts",
+    "newsletter:seed": "pnpm exec tsx --env-file=.env scripts/seed-subscribers.ts"
   },
   "dependencies": {
     "@atcute/client": "^5.1.1",
