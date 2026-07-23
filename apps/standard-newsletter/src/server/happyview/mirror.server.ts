@@ -6,7 +6,7 @@
  */
 
 import { newsletterSubscribers } from "@standard-reader/db/schema";
-import { sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 
 import { getDb } from "../../db/index.server";
 import type { DesiredSubscriber } from "./sync";
@@ -55,4 +55,22 @@ export async function upsertMirrorRows(
         unsubscribedAt: sql`excluded.unsubscribed_at`,
       },
     });
+}
+
+/** Flip a Bluesky subscriber's mirror row(s) to unsubscribed by their DID. */
+export async function markMirrorUnsubscribedByDid(
+  publicationUri: string,
+  subscriberDid: string,
+): Promise<void> {
+  const db = getDb();
+  if (!db) return;
+  await db
+    .update(newsletterSubscribers)
+    .set({ status: "unsubscribed", unsubscribedAt: new Date() })
+    .where(
+      and(
+        eq(newsletterSubscribers.publicationUri, publicationUri),
+        eq(newsletterSubscribers.subscriberDid, subscriberDid),
+      ),
+    );
 }

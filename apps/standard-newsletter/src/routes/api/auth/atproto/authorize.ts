@@ -12,7 +12,12 @@ export const Route = createFileRoute("/api/auth/atproto/authorize")({
       GET: async ({ request }) => {
         const url = new URL(request.url);
         const handle = url.searchParams.get("handle")?.trim();
-        const redirectParam = url.searchParams.get("redirect") ?? "/dashboard";
+        // Optional "subscribe with Bluesky" intent: after auth the callback
+        // writes a subscription record into the subscriber's own space repo.
+        const subscribe = url.searchParams.get("subscribe") ?? undefined;
+        const email = url.searchParams.get("email") ?? undefined;
+        const redirectParam =
+          url.searchParams.get("redirect") ?? (subscribe ? "/" : "/dashboard");
         if (!handle) {
           return Response.redirect(
             new URL("/login", url.origin).toString(),
@@ -25,7 +30,7 @@ export const Route = createFileRoute("/api/auth/atproto/authorize")({
         const { url: authUrl } = await atprotoOAuth.authorize({
           target: { type: "account", identifier: handle as ActorIdentifier },
           scope: "atproto",
-          state: { redirect: redirectParam, handle },
+          state: { redirect: redirectParam, handle, subscribe, email },
         });
         return Response.redirect(authUrl.toString(), 302);
       },

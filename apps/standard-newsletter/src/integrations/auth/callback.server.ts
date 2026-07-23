@@ -84,7 +84,27 @@ export async function handleAtprotoOAuthCallback(args: {
       userAgent: request.headers.get("user-agent") || undefined,
     });
 
-    const stateData = state as { redirect?: string } | undefined;
+    const stateData = state as
+      | { redirect?: string; subscribe?: string; email?: string }
+      | undefined;
+
+    // "Subscribe with Bluesky" intent: write the subscriber's own subscription
+    // record into the publication's permissioned space. Best-effort — a failure
+    // here must not break sign-in; the email path is unaffected.
+    if (stateData?.subscribe && stateData.email) {
+      try {
+        const { writeBlueskySubscription } =
+          await import("../../server/happyview/subscription-writer.server");
+        await writeBlueskySubscription({
+          session: oauthSession,
+          publicationUri: stateData.subscribe,
+          email: stateData.email,
+        });
+      } catch (error) {
+        console.error("[standard-newsletter] bluesky subscribe failed:", error);
+      }
+    }
+
     const returnTo =
       stateData?.redirect && stateData.redirect.startsWith("/")
         ? stateData.redirect
