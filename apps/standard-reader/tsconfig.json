@@ -14,7 +14,9 @@
     "paths": {
       "#/*": ["./src/*"],
       "@/*": ["./src/*"],
-      "@standard-reader/design-system/*": ["../../packages/design-system/src/*"]
+      "@standard-reader/design-system/*": ["../../packages/design-system/src/*"],
+      "@standard-reader/db": ["../../packages/db/src/index.ts"],
+      "@standard-reader/db/*": ["../../packages/db/src/*"]
     },
     "lib": ["ES2024", "DOM", "DOM.Iterable"],
     "types": ["vite/client"],

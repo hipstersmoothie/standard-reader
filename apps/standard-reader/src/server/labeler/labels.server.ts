@@ -11,7 +11,7 @@
 import { and, eq, inArray } from "drizzle-orm";
 import { cache as reactCache } from "react";
 
-import type { LabelPref, LabelVisibility } from "#/db/schema/labels";
+import type { LabelPref, LabelVisibility } from "@standard-reader/db/schema/labels";
 import type {
   ArticleCardLabel,
   Db,

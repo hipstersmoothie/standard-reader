@@ -104,6 +104,7 @@
     "@react-stately/utils": "^3.12.1",
     "@react-types/overlays": "^3.10.0",
     "@resvg/resvg-js": "^2.6.2",
+    "@standard-reader/db": "workspace:*",
     "@standard-reader/design-system": "workspace:*",
     "@standard-reader/renderer-core": "workspace:*",
     "@standard-reader/renderer-react": "workspace:*",

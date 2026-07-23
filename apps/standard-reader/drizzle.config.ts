@@ -6,7 +6,10 @@ if (!process.env.DATABASE_URL) {
 }
 
 export default defineConfig({
-  schema: "./src/db/schema.ts",
+  // Schema lives in the shared @standard-reader/db package; point drizzle-kit at
+  // the source file directly (no path alias) so migration generation resolves
+  // its relative ./schema/*.ts imports without needing the tsconfig alias.
+  schema: "../../packages/db/src/schema.ts",
   out: "./drizzle",
   dialect: "postgresql",
   dbCredentials: {

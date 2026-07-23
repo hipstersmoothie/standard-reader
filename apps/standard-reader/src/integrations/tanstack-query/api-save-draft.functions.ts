@@ -3,8 +3,8 @@ import { getRequest } from "@tanstack/react-start/server";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 
-import { SAVE_DRAFT_TTL_MS, saveDraft } from "#/db/schema/save-draft";
-import type { SaveDraft } from "#/db/schema/save-draft";
+import { SAVE_DRAFT_TTL_MS, saveDraft } from "@standard-reader/db/schema/save-draft";
+import type { SaveDraft } from "@standard-reader/db/schema/save-draft";
 import { getReaderContextForRequest } from "#/middleware/auth-session.server";
 
 /**

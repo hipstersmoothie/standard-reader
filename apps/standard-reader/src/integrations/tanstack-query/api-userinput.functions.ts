@@ -8,10 +8,10 @@ import { z } from "zod";
 import {
   FEEDBACK_DRAFT_TTL_MS,
   feedbackDraft,
-} from "#/db/schema/feedback-draft";
-import type { FeedbackDraft } from "#/db/schema/feedback-draft";
-import { UPVOTE_DRAFT_TTL_MS, upvoteDraft } from "#/db/schema/upvote-draft";
-import type { UpvoteDraft } from "#/db/schema/upvote-draft";
+} from "@standard-reader/db/schema/feedback-draft";
+import type { FeedbackDraft } from "@standard-reader/db/schema/feedback-draft";
+import { UPVOTE_DRAFT_TTL_MS, upvoteDraft } from "@standard-reader/db/schema/upvote-draft";
+import type { UpvoteDraft } from "@standard-reader/db/schema/upvote-draft";
 import type { FeedbackStatus } from "#/lib/userinput/space";
 import {
   STANDARD_READER_SPACE_URI,

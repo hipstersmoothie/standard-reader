@@ -1,7 +1,7 @@
 import { and, eq, sql } from "drizzle-orm";
 
 import { db } from "../src/db/index.ts";
-import { documents } from "../src/db/schema/documents.ts";
+import { documents } from "@standard-reader/db/schema/documents";
 
 const did = "did:plc:pzgvqg4ihnaihkrpmxqz5pu6";
 const pubUri =

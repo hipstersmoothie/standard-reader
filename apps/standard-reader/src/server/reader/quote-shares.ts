@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { and, desc, eq } from "drizzle-orm";
 
 import { db } from "#/db/index.server";
-import { quoteShares } from "#/db/schema/quote-shares";
+import { quoteShares } from "@standard-reader/db/schema/quote-shares";
 import { MAX_QUOTE_SHARE_LENGTH, normalizeQuoteText } from "#/lib/quote-share";
 
 const QUOTE_SHARE_ID_LENGTH = 10;

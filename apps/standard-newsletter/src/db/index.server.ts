@@ -14,7 +14,7 @@ import { drizzle as drizzleHttp } from "drizzle-orm/neon-http";
 import { type NodePgDatabase, drizzle as drizzlePg } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 
-import * as schema from "./schema";
+import * as schema from "@standard-reader/db/schema";
 
 export type NewsletterDb = NodePgDatabase<typeof schema>;
 

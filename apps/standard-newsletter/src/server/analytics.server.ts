@@ -18,7 +18,7 @@ import { and, desc, eq, inArray } from "drizzle-orm";
 
 import type { Publication, Send } from "../data/publications";
 import { getDb } from "../db/index.server";
-import { documents, publicationStats, publications } from "../db/schema";
+import { documents, publicationStats, publications } from "@standard-reader/db/schema";
 
 const DEFAULT_THEME = {
   background: "#fcf9f5",
