@@ -16,9 +16,11 @@
 
 import { and, desc, eq, inArray } from "drizzle-orm";
 
+import { documents, publicationStats, publications } from "@standard-reader/db/schema";
+
 import type { Publication, Send } from "../data/publications";
 import { getDb } from "../db/index.server";
-import { documents, publicationStats, publications } from "@standard-reader/db/schema";
+import { type DocSendMetrics, loadSendMetrics } from "./send-events.server";
 
 const DEFAULT_THEME = {
   background: "#fcf9f5",
@@ -72,15 +74,41 @@ function synthGrowth(id: string, subs: number): number[] {
   });
 }
 
-function toSend(pubId: string, subs: number, doc: DocRow): Send {
-  const seed = `${pubId}-${doc.rkey}`;
-  const recipients = Math.max(0, subs - synth(`${seed}-r`, 0, 60));
-  return {
+function toSend(
+  pubId: string,
+  subs: number,
+  doc: DocRow,
+  metrics?: DocSendMetrics,
+): Send {
+  const base = {
     title: doc.title,
     path: doc.path ?? doc.rkey,
     subject: doc.description ?? doc.title,
     when: formatWhen(doc.publishedAt),
-    recipients,
+  };
+
+  // Real delivery metrics when this post has actually been sent.
+  if (metrics) {
+    const denom = metrics.delivered || metrics.recipients || 1;
+    const round1 = (n: number) => Math.round(n * 1000) / 10;
+    return {
+      ...base,
+      recipients: metrics.recipients || subs,
+      openRate: round1(metrics.opens / denom),
+      clickRate: round1(metrics.clicks / denom),
+      unsubs: metrics.unsubs,
+      bounces: metrics.bounces,
+      delivered: metrics.delivered,
+      opensByHour: metrics.opensByHour,
+      topLinks: metrics.topLinks,
+    };
+  }
+
+  // Placeholder metrics for posts not yet mailed / sample data.
+  const seed = `${pubId}-${doc.rkey}`;
+  return {
+    ...base,
+    recipients: Math.max(0, subs - synth(`${seed}-r`, 0, 60)),
     openRate: synth(`${seed}-o`, 45, 66, 1),
     clickRate: synth(`${seed}-c`, 5, 14, 1),
     unsubs: synth(`${seed}-u`, 4, 22),
@@ -89,6 +117,7 @@ function toSend(pubId: string, subs: number, doc: DocRow): Send {
 }
 
 interface DocRow {
+  uri: string;
   rkey: string;
   title: string;
   path: string | null;
@@ -133,6 +162,7 @@ export async function loadPublicationsFromDb(): Promise<Publication[] | null> {
   const uris = pubRows.map((p) => p.uri);
   const docRows = await db
     .select({
+      uri: documents.uri,
       publicationUri: documents.publicationUri,
       rkey: documents.rkey,
       title: documents.title,
@@ -154,10 +184,14 @@ export async function loadPublicationsFromDb(): Promise<Publication[] | null> {
     docsByPub.set(d.publicationUri, list);
   }
 
+  // Real delivery metrics for the posts we'll show (empty until sends recorded).
+  const shownUris = [...docsByPub.values()].flat().map((d) => d.uri);
+  const metricsByDoc = await loadSendMetrics(shownUris);
+
   return pubRows.map((p) => {
     const subs = p.subscriberCount ?? 0;
     const docs = docsByPub.get(p.uri) ?? [];
-    const sends = docs.map((d) => toSend(p.rkey, subs, d));
+    const sends = docs.map((d) => toSend(p.rkey, subs, d, metricsByDoc.get(d.uri)));
     const cadences = ["Weekly", "Biweekly", "Monthly"];
     return {
       id: p.rkey,

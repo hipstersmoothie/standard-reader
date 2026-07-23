@@ -21,6 +21,15 @@ export interface Send {
   clickRate: number;
   unsubs: number;
   bounces: number;
+  /**
+   * Real delivery detail, present only when a send has been recorded (see
+   * newsletter_sends / newsletter_send_events). Absent on sample data and on
+   * posts that haven't been mailed yet — the send report falls back to a modeled
+   * curve/links in that case.
+   */
+  delivered?: number;
+  opensByHour?: number[];
+  topLinks?: { url: string; count: number }[];
 }
 
 export interface Publication {

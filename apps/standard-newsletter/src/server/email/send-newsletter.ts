@@ -1,14 +1,19 @@
 /**
  * Send one published document to a publication's subscriber list.
  *
- * This is the orchestration seam between the (future) subscriber store and the
- * Resend transport: render the post once, then fan out per recipient with a
- * per-recipient unsubscribe link, backing off if Resend rate-limits. Subscriber
- * loading and open/click tracking are stubbed here and land with the DB layer.
+ * This is the orchestration seam between the subscriber store and the Resend
+ * transport: render the post once, then fan out per recipient with a
+ * per-recipient unsubscribe link, backing off if Resend rate-limits. The send
+ * and its `delivered` events are recorded to newsletter_sends /
+ * newsletter_send_events; opens/clicks/bounces/unsubscribes arrive later via the
+ * Resend webhook and are appended as events too.
  */
 
 import { render } from "@react-email/render";
 
+import type { NewNewsletterSendEvent } from "@standard-reader/db/schema";
+
+import { recordEvents, recordSend } from "../send-events.server";
 import { emailConfig } from "./config";
 import { NewsletterEmail } from "./emails/NewsletterEmail";
 import { sendEmail } from "./resend";
@@ -20,6 +25,10 @@ export interface Subscriber {
 }
 
 export interface NewsletterSend {
+  /** Publication AT-URI (for the send record). */
+  publicationUri: string;
+  /** Document AT-URI — the send's stable id. */
+  documentUri: string;
   publicationName: string;
   /** Optional per-publication From override (`"Name <addr@domain>"`). */
   from?: string;
@@ -56,6 +65,8 @@ export async function sendNewsletter(
     rateLimited: false,
   };
 
+  const deliveredEvents: NewNewsletterSendEvent[] = [];
+
   for (const subscriber of subscribers) {
     const props = {
       publicationName: send.publicationName,
@@ -80,6 +91,12 @@ export async function sendNewsletter(
 
     if (result.ok) {
       report.delivered += 1;
+      deliveredEvents.push({
+        id: result.id ?? `${send.documentUri}:${subscriber.email}`,
+        sendId: send.documentUri,
+        recipient: subscriber.email,
+        type: "delivered",
+      });
     } else {
       report.failed += 1;
       if (result.rateLimited) {
@@ -88,6 +105,18 @@ export async function sendNewsletter(
       }
     }
   }
+
+  // Record the send and its delivered events. Opens/clicks/bounces/unsubscribes
+  // are appended later by the Resend webhook handler.
+  await recordSend({
+    id: send.documentUri,
+    publicationUri: send.publicationUri,
+    documentUri: send.documentUri,
+    subject: send.title,
+    fromAddress: send.from,
+    recipientCount: subscribers.length,
+  });
+  await recordEvents(deliveredEvents);
 
   return report;
 }

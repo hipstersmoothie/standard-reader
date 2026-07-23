@@ -27,3 +27,4 @@ export * from "./schema/relations.ts";
 export * from "./schema/feedback-draft.ts";
 export * from "./schema/upvote-draft.ts";
 export * from "./schema/save-draft.ts";
+export * from "./schema/newsletter.ts";

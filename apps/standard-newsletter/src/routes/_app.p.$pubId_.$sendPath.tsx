@@ -28,21 +28,27 @@ function SendDetail() {
   const send = pub?.sends.find((s) => s.path === sendPath);
   if (!pub || !send) return null;
 
-  const opens = Math.round((send.recipients * send.openRate) / 100);
-  const clicks = Math.round((send.recipients * send.clickRate) / 100);
-  const delivered = send.recipients - send.bounces;
-  const curve = Array.from({ length: 13 }, (_, i) => {
-    const x = i / 12;
-    return Math.round(opens * (1 - Math.exp(-3.2 * x)));
-  });
+  const delivered = send.delivered ?? send.recipients - send.bounces;
+  const opens = Math.round((delivered * send.openRate) / 100);
+  const clicks = Math.round((delivered * send.clickRate) / 100);
+  // Real cumulative-open curve when the send was recorded; else a modeled shape.
+  const curve =
+    send.opensByHour ??
+    Array.from({ length: 13 }, (_, i) => {
+      const x = i / 12;
+      return Math.round(opens * (1 - Math.exp(-3.2 * x)));
+    });
   const hourLabels = ["0h", "", "4h", "", "8h", "", "12h", "", "", "", "", "", "48h"];
-  const links = [
-    { label: `${pub.url}/${send.path}`, share: 0.52 },
-    { label: `${pub.url}/subscribe`, share: 0.19 },
-    { label: "View in the Reader app", share: 0.16 },
-    { label: `${pub.url}/archive`, share: 0.13 },
-  ].map((l) => ({ ...l, count: Math.round(clicks * l.share) }));
-  const maxLink = Math.max(...links.map((l) => l.count));
+  const links =
+    send.topLinks && send.topLinks.length > 0
+      ? send.topLinks.map((l) => ({ label: l.url, count: l.count }))
+      : [
+          { label: `${pub.url}/${send.path}`, share: 0.52 },
+          { label: `${pub.url}/subscribe`, share: 0.19 },
+          { label: "View in the Reader app", share: 0.16 },
+          { label: `${pub.url}/archive`, share: 0.13 },
+        ].map((l) => ({ label: l.label, count: Math.round(clicks * l.share) }));
+  const maxLink = Math.max(1, ...links.map((l) => l.count));
 
   return (
     <div style={{ height: "100%", overflow: "auto", background: C.pageBg }}>

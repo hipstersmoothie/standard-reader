@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
+import { Route as ApiResendWebhookRouteImport } from './routes/api.resend-webhook'
 import { Route as AppPPubIdRouteImport } from './routes/_app.p.$pubId'
 import { Route as AppPPubIdSendPathRouteImport } from './routes/_app.p.$pubId_.$sendPath'
 
@@ -29,6 +30,11 @@ const AppDashboardRoute = AppDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AppRoute,
 } as any)
+const ApiResendWebhookRoute = ApiResendWebhookRouteImport.update({
+  id: '/api/resend-webhook',
+  path: '/api/resend-webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppPPubIdRoute = AppPPubIdRouteImport.update({
   id: '/p/$pubId',
   path: '/p/$pubId',
@@ -43,12 +49,14 @@ const AppPPubIdSendPathRoute = AppPPubIdSendPathRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof AppDashboardRoute
+  '/api/resend-webhook': typeof ApiResendWebhookRoute
   '/p/$pubId': typeof AppPPubIdRoute
   '/p/$pubId/$sendPath': typeof AppPPubIdSendPathRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dashboard': typeof AppDashboardRoute
+  '/api/resend-webhook': typeof ApiResendWebhookRoute
   '/p/$pubId': typeof AppPPubIdRoute
   '/p/$pubId/$sendPath': typeof AppPPubIdSendPathRoute
 }
@@ -57,19 +65,31 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_app': typeof AppRouteWithChildren
   '/_app/dashboard': typeof AppDashboardRoute
+  '/api/resend-webhook': typeof ApiResendWebhookRoute
   '/_app/p/$pubId': typeof AppPPubIdRoute
   '/_app/p/$pubId_/$sendPath': typeof AppPPubIdSendPathRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/dashboard' | '/p/$pubId' | '/p/$pubId/$sendPath'
+  fullPaths:
+    | '/'
+    | '/dashboard'
+    | '/api/resend-webhook'
+    | '/p/$pubId'
+    | '/p/$pubId/$sendPath'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/dashboard' | '/p/$pubId' | '/p/$pubId/$sendPath'
+  to:
+    | '/'
+    | '/dashboard'
+    | '/api/resend-webhook'
+    | '/p/$pubId'
+    | '/p/$pubId/$sendPath'
   id:
     | '__root__'
     | '/'
     | '/_app'
     | '/_app/dashboard'
+    | '/api/resend-webhook'
     | '/_app/p/$pubId'
     | '/_app/p/$pubId_/$sendPath'
   fileRoutesById: FileRoutesById
@@ -77,6 +97,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
+  ApiResendWebhookRoute: typeof ApiResendWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -101,6 +122,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/dashboard'
       preLoaderRoute: typeof AppDashboardRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/api/resend-webhook': {
+      id: '/api/resend-webhook'
+      path: '/api/resend-webhook'
+      fullPath: '/api/resend-webhook'
+      preLoaderRoute: typeof ApiResendWebhookRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_app/p/$pubId': {
       id: '/_app/p/$pubId'
@@ -136,6 +164,7 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
+  ApiResendWebhookRoute: ApiResendWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

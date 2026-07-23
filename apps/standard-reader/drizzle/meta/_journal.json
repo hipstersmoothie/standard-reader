@@ -134,6 +134,13 @@
       "when": 1784603390663,
       "tag": "0018_discover_topic_counts",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1784832221754,
+      "tag": "0019_newsletter_sends",
+      "breakpoints": true
     }
   ]
 }

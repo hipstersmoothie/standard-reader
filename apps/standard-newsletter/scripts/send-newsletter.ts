@@ -15,6 +15,8 @@ import {
 } from "../src/server/email/send-newsletter";
 
 const send: NewsletterSend = {
+  publicationUri: "at://did:plc:demo/site.standard.publication/dispatch",
+  documentUri: "at://did:plc:demo/site.standard.document/this-week",
   publicationName: "The Dispatch",
   title: "This week on The Dispatch",
   preview: "A short note about what shipped this week.",
