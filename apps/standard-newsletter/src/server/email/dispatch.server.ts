@@ -17,7 +17,7 @@ import {
 import { getDb } from "../../db/index.server";
 import { reserveSend } from "../send-events.server";
 import { loadConfirmedSubscribers } from "../subscribers.server";
-import { previewText, renderDocumentBodyHtml } from "./render-document";
+import { extractMarkdown, previewText } from "./document-content";
 import { sendNewsletter } from "./send-newsletter";
 
 export interface DispatchResult {
@@ -49,6 +49,7 @@ export async function dispatchPendingSends(
       uri: documents.uri,
       title: documents.title,
       textContent: documents.textContent,
+      contentJson: documents.contentJson,
       canonicalUrl: documents.canonicalUrl,
       path: documents.path,
       publicationUri: documents.publicationUri,
@@ -109,7 +110,8 @@ export async function dispatchPendingSends(
         title: doc.title,
         preview: previewText(doc.textContent),
         canonicalUrl: canonicalUrlFor(doc.canonicalUrl, doc.pubUrl, doc.path),
-        bodyHtml: renderDocumentBodyHtml(doc.textContent),
+        markdown: extractMarkdown(doc.contentJson),
+        textContent: doc.textContent,
       },
       subscribers,
     );

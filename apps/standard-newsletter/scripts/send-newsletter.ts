@@ -21,7 +21,9 @@ const send: NewsletterSend = {
   title: "This week on The Dispatch",
   preview: "A short note about what shipped this week.",
   canonicalUrl: "https://dispatch.standard.site/this-week",
-  bodyHtml: "<p>Hello from Standard Newsletter.</p>",
+  markdown:
+    "## Hello\n\nThis is a sample post rendered with **react.email**. It supports _emphasis_, [links](https://standard.site), and lists:\n\n- one\n- two\n- three",
+  textContent: null,
 };
 
 const subscribers: Subscriber[] = [

@@ -35,8 +35,10 @@ export interface NewsletterSend {
   title: string;
   preview: string;
   canonicalUrl: string;
-  /** Pre-rendered HTML body of the post. */
-  bodyHtml: string;
+  /** Post body as markdown (rendered via React Email's <Markdown>). */
+  markdown: string | null;
+  /** Plaintext fallback body when there's no markdown. */
+  textContent: string | null;
 }
 
 export interface SendReport {
@@ -73,7 +75,8 @@ export async function sendNewsletter(
       title: send.title,
       preview: send.preview,
       canonicalUrl: send.canonicalUrl,
-      bodyHtml: send.bodyHtml,
+      markdown: send.markdown,
+      textContent: send.textContent,
       unsubscribeUrl: unsubscribeUrl(subscriber.unsubscribeToken),
     };
 
