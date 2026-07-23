@@ -1,3 +1,4 @@
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link, createFileRoute, redirect } from "@tanstack/react-router";
 
 import { Button } from "@standard-reader/design-system/button";
@@ -5,25 +6,27 @@ import { Button } from "@standard-reader/design-system/button";
 import { AreaChart } from "../components/charts";
 import { I, Ico } from "../components/icons";
 import { BigStat, StatBar } from "../components/ui";
-import type { Publication, Send } from "../data/publications";
-import { findPublication } from "../data/publications";
+import { publicationsQueryOptions } from "../server/analytics";
 import { C, NEG, POS, POSD, cardBox, fmt } from "../theme";
 
 export const Route = createFileRoute("/_app/p/$pubId_/$sendPath")({
-  loader: ({ params }) => {
-    const pub = findPublication(params.pubId);
+  loader: async ({ context, params }) => {
+    const pubs = await context.queryClient.ensureQueryData(
+      publicationsQueryOptions(),
+    );
+    const pub = pubs.find((p) => p.id === params.pubId);
     const send = pub?.sends.find((s) => s.path === params.sendPath);
     if (!pub || !send) throw redirect({ to: "/dashboard" });
-    return { pub, send };
   },
   component: SendDetail,
 });
 
 function SendDetail() {
-  const { pub, send } = Route.useLoaderData() as {
-    pub: Publication;
-    send: Send;
-  };
+  const { pubId, sendPath } = Route.useParams();
+  const { data: pubs } = useSuspenseQuery(publicationsQueryOptions());
+  const pub = pubs.find((p) => p.id === pubId);
+  const send = pub?.sends.find((s) => s.path === sendPath);
+  if (!pub || !send) return null;
 
   const opens = Math.round((send.recipients * send.openRate) / 100);
   const clicks = Math.round((send.recipients * send.clickRate) / 100);

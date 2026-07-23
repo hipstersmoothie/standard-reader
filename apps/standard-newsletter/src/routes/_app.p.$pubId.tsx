@@ -1,3 +1,4 @@
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 
@@ -5,15 +6,19 @@ import { AreaChart } from "../components/charts";
 import { I, Ico } from "../components/icons";
 import { PubGlyph, StatBar, StatCard } from "../components/ui";
 import { Delta } from "../components/ui";
-import type { Publication, Send } from "../data/publications";
-import { MONTHS, findPublication } from "../data/publications";
+import type { Send } from "../data/publications";
+import { MONTHS } from "../data/publications";
+import { publicationsQueryOptions } from "../server/analytics";
 import { C, POSD, cardBox, fmt, sectLabel } from "../theme";
 
 export const Route = createFileRoute("/_app/p/$pubId")({
-  loader: ({ params }) => {
-    const pub = findPublication(params.pubId);
-    if (!pub) throw redirect({ to: "/dashboard" });
-    return { pub };
+  loader: async ({ context, params }) => {
+    const pubs = await context.queryClient.ensureQueryData(
+      publicationsQueryOptions(),
+    );
+    if (!pubs.some((p) => p.id === params.pubId)) {
+      throw redirect({ to: "/dashboard" });
+    }
   },
   component: PubAnalytics,
 });
@@ -105,8 +110,11 @@ function SendRow({
 }
 
 function PubAnalytics() {
-  const { pub } = Route.useLoaderData() as { pub: Publication };
+  const { pubId } = Route.useParams();
+  const { data: pubs } = useSuspenseQuery(publicationsQueryOptions());
   const navigate = useNavigate();
+  const pub = pubs.find((p) => p.id === pubId);
+  if (!pub) return null;
   const t = pub.theme;
   const avgUnsub = Math.round(
     pub.sends.reduce((s, x) => s + x.unsubs, 0) / pub.sends.length,

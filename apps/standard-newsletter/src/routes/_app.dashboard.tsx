@@ -1,3 +1,4 @@
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import type { ReactNode } from "react";
@@ -5,7 +6,8 @@ import type { ReactNode } from "react";
 import { AreaChart } from "../components/charts";
 import { I, Ico } from "../components/icons";
 import { Delta, PubGlyph } from "../components/ui";
-import { MONTHS, PUBS } from "../data/publications";
+import { MONTHS } from "../data/publications";
+import { publicationsQueryOptions } from "../server/analytics";
 import { C, fmt, sectLabel } from "../theme";
 
 export const Route = createFileRoute("/_app/dashboard")({
@@ -14,22 +16,23 @@ export const Route = createFileRoute("/_app/dashboard")({
 
 function Dashboard() {
   const navigate = useNavigate();
+  const { data: pubs } = useSuspenseQuery(publicationsQueryOptions());
   const [hover, setHover] = useState(-1);
   const openPub = (id: string) =>
     navigate({ to: "/p/$pubId", params: { pubId: id } });
 
-  const totalSubs = PUBS.reduce((s, p) => s + p.subs, 0);
-  const totalDelta = PUBS.reduce((s, p) => s + p.delta, 0);
-  const sends30 = PUBS.reduce(
+  const totalSubs = pubs.reduce((s, p) => s + p.subs, 0);
+  const totalDelta = pubs.reduce((s, p) => s + p.delta, 0);
+  const sends30 = pubs.reduce(
     (s, p) => s + p.sends.filter((x) => /Jul|Jun 2[0-9]/.test(x.when)).length,
     0,
   );
-  const emailsSent = PUBS.reduce((s, p) => s + p.sends[0].recipients, 0);
-  const avgOpen = PUBS.reduce((s, p) => s + p.openRate * p.subs, 0) / totalSubs;
+  const emailsSent = pubs.reduce((s, p) => s + p.sends[0].recipients, 0);
+  const avgOpen = pubs.reduce((s, p) => s + p.openRate * p.subs, 0) / totalSubs;
   const avgClick =
-    PUBS.reduce((s, p) => s + p.clickRate * p.subs, 0) / totalSubs;
-  const agg = MONTHS.map((_, i) => PUBS.reduce((s, p) => s + p.growth[i], 0));
-  const allSends = PUBS.flatMap((p) => p.sends.map((s) => ({ ...s, pub: p })))
+    pubs.reduce((s, p) => s + p.clickRate * p.subs, 0) / totalSubs;
+  const agg = MONTHS.map((_, i) => pubs.reduce((s, p) => s + p.growth[i], 0));
+  const allSends = pubs.flatMap((p) => p.sends.map((s) => ({ ...s, pub: p })))
     .sort((a, b) => Date.parse(b.when) - Date.parse(a.when))
     .slice(0, 5);
 
@@ -194,7 +197,7 @@ function Dashboard() {
           <div>
             <div style={sectLabel}>Publications</div>
             <div style={{ borderBottom: `1px solid ${C.b6}` }}>
-              {PUBS.map((p, i) => (
+              {pubs.map((p, i) => (
                 <div
                   key={p.id}
                   onClick={() => openPub(p.id)}

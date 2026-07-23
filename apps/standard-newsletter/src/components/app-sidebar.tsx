@@ -28,7 +28,7 @@ import {
   tracking,
 } from "@standard-reader/design-system/theme/typography.stylex";
 
-import { PUBS } from "../data/publications";
+import type { Publication } from "../data/publications";
 import { kfmt } from "../theme";
 import { PubGlyph } from "./ui";
 
@@ -261,7 +261,7 @@ const styles = stylex.create({
   },
 });
 
-export function AppSidebar() {
+export function AppSidebar({ publications }: { publications: Publication[] }) {
   return (
     <aside {...stylex.props(styles.sidebar)}>
       <div {...stylex.props(styles.sidebarScroll)}>
@@ -285,7 +285,7 @@ export function AppSidebar() {
 
         <div {...stylex.props(styles.sideLabel)}>Publications</div>
         <div {...stylex.props(styles.followList)}>
-          {PUBS.map((p) => (
+          {publications.map((p) => (
             <Link
               key={p.id}
               to="/p/$pubId"

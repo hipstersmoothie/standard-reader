@@ -1,3 +1,4 @@
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import type { ReactNode } from "react";
@@ -6,10 +7,12 @@ import { Button } from "@standard-reader/design-system/button";
 
 import { I, Ico } from "../components/icons";
 import { PubGlyph } from "../components/ui";
-import { PUBS } from "../data/publications";
+import { publicationsQueryOptions } from "../server/analytics";
 import { C, POS, fmt, sectLabel } from "../theme";
 
 export const Route = createFileRoute("/")({
+  loader: ({ context }) =>
+    context.queryClient.ensureQueryData(publicationsQueryOptions()),
   component: Home,
 });
 
@@ -65,6 +68,7 @@ function Step({
 
 function Home() {
   const navigate = useNavigate();
+  const { data: pubs } = useSuspenseQuery(publicationsQueryOptions());
   const goDashboard = () => navigate({ to: "/dashboard" });
   const [calcEmails, setCalcEmails] = useState(50000);
   const price = Math.max(0, Math.ceil((calcEmails - 1000) / 1000));
@@ -201,7 +205,7 @@ function Home() {
                 variant="tertiary"
                 size="lg"
                 onPress={() =>
-                  navigate({ to: "/p/$pubId", params: { pubId: PUBS[0].id } })
+                  navigate({ to: "/p/$pubId", params: { pubId: pubs[0].id } })
                 }
               >
                 See a publication
@@ -221,7 +225,7 @@ function Home() {
             <div
               style={{ display: "flex", flexDirection: "column", gap: 12 }}
             >
-              {PUBS.map((p, i) => (
+              {pubs.slice(0, 3).map((p, i) => (
                 <div
                   key={p.id}
                   className="sn-rise"

@@ -1,13 +1,18 @@
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { Outlet, createFileRoute } from "@tanstack/react-router";
 
 import { AppSidebar } from "../components/app-sidebar";
+import { publicationsQueryOptions } from "../server/analytics";
 import { C } from "../theme";
 
 export const Route = createFileRoute("/_app")({
+  loader: ({ context }) =>
+    context.queryClient.ensureQueryData(publicationsQueryOptions()),
   component: AppLayout,
 });
 
 function AppLayout() {
+  const { data: publications } = useSuspenseQuery(publicationsQueryOptions());
   return (
     <div
       style={{
@@ -19,7 +24,7 @@ function AppLayout() {
         overflow: "hidden",
       }}
     >
-      <AppSidebar />
+      <AppSidebar publications={publications} />
       <div
         style={{
           flex: 1,
