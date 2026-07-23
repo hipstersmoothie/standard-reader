@@ -1,0 +1,41 @@
+/**
+ * CLI: send one document to a publication's subscribers via Resend.
+ *
+ *   pnpm --filter standard-newsletter newsletter:send
+ *
+ * Reads RESEND_API_KEY (and the NEWSLETTER_* overrides) from `.env`. Right now
+ * the subscriber list is a placeholder; it gets wired to the store with the DB
+ * layer. Runs as a dry stub unless RESEND_API_KEY is set.
+ */
+
+import {
+  type NewsletterSend,
+  type Subscriber,
+  sendNewsletter,
+} from "../src/server/email/send-newsletter";
+
+const send: NewsletterSend = {
+  publicationName: "The Dispatch",
+  title: "This week on The Dispatch",
+  preview: "A short note about what shipped this week.",
+  canonicalUrl: "https://dispatch.standard.site/this-week",
+  bodyHtml: "<p>Hello from Standard Newsletter.</p>",
+};
+
+const subscribers: Subscriber[] = [
+  { email: "reader@example.com", unsubscribeToken: "demo-token" },
+];
+
+if (!process.env.RESEND_API_KEY) {
+  console.log(
+    "RESEND_API_KEY not set — skipping real send. Configure .env to send for real.",
+  );
+  console.log(`Would send "${send.title}" to ${subscribers.length} subscriber(s).`);
+  process.exit(0);
+}
+
+const report = await sendNewsletter(send, subscribers);
+console.log(
+  `Sent "${send.title}": ${report.delivered}/${report.total} delivered, ${report.failed} failed` +
+    (report.rateLimited ? " (stopped on rate limit)" : ""),
+);

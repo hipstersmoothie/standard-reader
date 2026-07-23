@@ -1,0 +1,93 @@
+/**
+ * Send one published document to a publication's subscriber list.
+ *
+ * This is the orchestration seam between the (future) subscriber store and the
+ * Resend transport: render the post once, then fan out per recipient with a
+ * per-recipient unsubscribe link, backing off if Resend rate-limits. Subscriber
+ * loading and open/click tracking are stubbed here and land with the DB layer.
+ */
+
+import { render } from "@react-email/render";
+
+import { emailConfig } from "./config";
+import { NewsletterEmail } from "./emails/NewsletterEmail";
+import { sendEmail } from "./resend";
+
+export interface Subscriber {
+  email: string;
+  /** Opaque token used to build the one-click unsubscribe URL. */
+  unsubscribeToken: string;
+}
+
+export interface NewsletterSend {
+  publicationName: string;
+  /** Optional per-publication From override (`"Name <addr@domain>"`). */
+  from?: string;
+  title: string;
+  preview: string;
+  canonicalUrl: string;
+  /** Pre-rendered HTML body of the post. */
+  bodyHtml: string;
+}
+
+export interface SendReport {
+  total: number;
+  delivered: number;
+  failed: number;
+  rateLimited: boolean;
+}
+
+function unsubscribeUrl(token: string): string {
+  return `${emailConfig.publicUrl}/unsubscribe/${token}`;
+}
+
+/**
+ * Render the post once (the body is identical for everyone) and reuse it across
+ * recipients; only the unsubscribe link varies per subscriber.
+ */
+export async function sendNewsletter(
+  send: NewsletterSend,
+  subscribers: Subscriber[],
+): Promise<SendReport> {
+  const report: SendReport = {
+    total: subscribers.length,
+    delivered: 0,
+    failed: 0,
+    rateLimited: false,
+  };
+
+  for (const subscriber of subscribers) {
+    const props = {
+      publicationName: send.publicationName,
+      title: send.title,
+      preview: send.preview,
+      canonicalUrl: send.canonicalUrl,
+      bodyHtml: send.bodyHtml,
+      unsubscribeUrl: unsubscribeUrl(subscriber.unsubscribeToken),
+    };
+
+    const html = await render(NewsletterEmail(props));
+    const text = await render(NewsletterEmail(props), { plainText: true });
+
+    const result = await sendEmail({
+      to: subscriber.email,
+      from: send.from,
+      subject: send.title,
+      html,
+      text,
+      unsubscribeUrl: props.unsubscribeUrl,
+    });
+
+    if (result.ok) {
+      report.delivered += 1;
+    } else {
+      report.failed += 1;
+      if (result.rateLimited) {
+        report.rateLimited = true;
+        break;
+      }
+    }
+  }
+
+  return report;
+}

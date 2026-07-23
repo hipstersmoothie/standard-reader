@@ -1,0 +1,47 @@
+{
+  "name": "standard-newsletter",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev --port 3100",
+    "build": "vite build",
+    "start": "node .output/server/index.mjs",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "lint": "pnpm exec oxlint .",
+    "newsletter:send": "pnpm exec tsx --env-file=.env scripts/send-newsletter.ts"
+  },
+  "dependencies": {
+    "@react-email/components": "^1.0.12",
+    "@react-email/render": "^2.1.0",
+    "@standard-reader/design-system": "workspace:*",
+    "@stylexjs/stylex": "^0.19.0",
+    "@tanstack/react-query": "^5.101.0",
+    "@tanstack/react-router": "latest",
+    "@tanstack/react-router-ssr-query": "latest",
+    "@tanstack/react-start": "latest",
+    "@tanstack/router-plugin": "^1.132.0",
+    "dotenv": "^17.4.2",
+    "lucide-react": "^0.548.0",
+    "nitro": "3.0.260603-beta",
+    "react": "19.3.0-canary-ad78e251-20260616",
+    "react-aria-components": "^1.18.0",
+    "react-dom": "19.3.0-canary-ad78e251-20260616",
+    "resend": "^4.5.1",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@rolldown/plugin-babel": "0.2.3",
+    "@stylexjs/unplugin": "^0.19.0",
+    "@types/node": "^22.10.2",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^6.0.1",
+    "browserslist": "^4.28.2",
+    "lightningcss": "^1.32.0",
+    "oxlint": "1.48.0",
+    "tsx": "^4.22.4",
+    "typescript": "^6.0.2",
+    "vite": "8.1.0"
+  }
+}
