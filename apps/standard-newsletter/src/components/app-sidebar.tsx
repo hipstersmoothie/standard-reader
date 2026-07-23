@@ -1,320 +1,329 @@
-import { Link, useRouterState } from "@tanstack/react-router";
-import { useState } from "react";
-import type { ReactNode } from "react";
+import * as stylex from "@stylexjs/stylex";
+import { Link } from "@tanstack/react-router";
+import { LayoutGrid, LogOut, Mail, Settings, User } from "lucide-react";
+import { Button as AriaButton } from "react-aria-components";
+
+import { Avatar } from "@standard-reader/design-system/avatar";
+import {
+  Menu,
+  MenuItem,
+  MenuSeparator,
+} from "@standard-reader/design-system/menu";
+import {
+  focusColor,
+  primaryColor,
+  uiColor,
+} from "@standard-reader/design-system/theme/color.stylex";
+import { radius } from "@standard-reader/design-system/theme/radius.stylex";
+import {
+  gap,
+  horizontalSpace,
+  verticalSpace,
+} from "@standard-reader/design-system/theme/semantic-spacing.stylex";
+import {
+  fontFamily,
+  fontSize,
+  fontWeight,
+  lineHeight,
+  tracking,
+} from "@standard-reader/design-system/theme/typography.stylex";
 
 import { PUBS } from "../data/publications";
-import { C, kfmt } from "../theme";
-import { I, Ico } from "./icons";
+import { kfmt } from "../theme";
 import { PubGlyph } from "./ui";
 
-function NavRow({
-  active,
-  leading,
-  label,
-  badge,
-}: {
-  active: boolean;
-  leading: ReactNode;
-  label: string;
-  badge?: string;
-}) {
-  const [hover, setHover] = useState(false);
-  return (
-    <span
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 10,
-        width: "100%",
-        minWidth: 0,
-        padding: "7px 10px",
-        borderRadius: 9,
-        color: active ? C.t12 : C.a11,
-        background: active ? C.sel5 : hover ? C.hover4 : "transparent",
-        transition: "background .12s",
-        fontWeight: active ? 600 : 500,
-        fontSize: 14,
-      }}
-    >
-      {leading}
-      <span
-        style={{
-          flex: 1,
-          minWidth: 0,
-          textAlign: "left",
-          whiteSpace: "nowrap",
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-        }}
-      >
-        {label}
-      </span>
-      {badge != null && (
-        <span
-          style={{
-            flex: "none",
-            fontSize: 11,
-            color: C.mut,
-            background: C.ui3,
-            borderRadius: 20,
-            padding: "1px 8px",
-            fontFamily: C.mono,
-          }}
-        >
-          {badge}
-        </span>
-      )}
-    </span>
-  );
-}
-
-function SectionLabel({ children }: { children: ReactNode }) {
-  return (
-    <div
-      style={{
-        fontSize: 11,
-        textTransform: "uppercase",
-        letterSpacing: "0.06em",
-        color: C.mut,
-        padding: "0 10px",
-        marginBottom: 6,
-      }}
-    >
-      {children}
-    </div>
-  );
-}
-
-const linkReset = { textDecoration: "none", display: "block" } as const;
+const styles = stylex.create({
+  sidebar: {
+    backgroundColor: uiColor.bgSubtle,
+    boxSizing: "border-box",
+    display: "flex",
+    flexDirection: "column",
+    flexShrink: 0,
+    position: "sticky",
+    borderInlineEndColor: uiColor.border1,
+    borderInlineEndStyle: "solid",
+    borderInlineEndWidth: 1,
+    height: stylex.firstThatWorks("100dvh", "100vh"),
+    overflow: "hidden",
+    top: 0,
+    width: "264px",
+  },
+  sidebarScroll: {
+    overscrollBehavior: "contain",
+    display: "flex",
+    flexDirection: "column",
+    flexGrow: 1,
+    flexShrink: 1,
+    minHeight: 0,
+    overflowY: "auto",
+    paddingInlineStart: horizontalSpace["3xl"],
+    paddingInlineEnd: horizontalSpace["3xl"],
+    paddingTop: verticalSpace["8xl"],
+  },
+  brandLink: {
+    textDecoration: "none",
+    alignItems: "center",
+    display: "inline-flex",
+    width: "fit-content",
+    alignSelf: "flex-start",
+    borderRadius: radius.sm,
+    marginBottom: verticalSpace["7xl"],
+    paddingTop: verticalSpace.xxs,
+    paddingBottom: verticalSpace.xxs,
+    paddingInlineStart: horizontalSpace.xs,
+    paddingInlineEnd: horizontalSpace.xs,
+    outline: {
+      default: "none",
+      ":is([data-focus-visible])": `2px solid ${focusColor.ring}`,
+    },
+    outlineOffset: "2px",
+  },
+  wordmark: {
+    fontFamily: fontFamily.serif,
+    fontSize: "1.3rem",
+    fontWeight: fontWeight.medium,
+    letterSpacing: tracking.tight,
+    lineHeight: lineHeight.none,
+    color: uiColor.text2,
+  },
+  wordmarkAccent: {
+    color: primaryColor.solid2,
+  },
+  nav: {
+    columnGap: gap.xxs,
+    display: "flex",
+    flexDirection: "column",
+    rowGap: gap.xxs,
+  },
+  navItem: {
+    borderRadius: radius.sm,
+    textDecoration: "none",
+    alignItems: "center",
+    backgroundColor: {
+      default: "transparent",
+      ":hover": uiColor.component2,
+    },
+    outline: {
+      default: "none",
+      ":is([data-focus-visible])": `2px solid ${focusColor.ring}`,
+    },
+    outlineOffset: "-2px",
+    color: uiColor.text2,
+    columnGap: gap.xl,
+    display: "flex",
+    fontFamily: fontFamily.sans,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+    rowGap: gap.xl,
+    paddingBottom: verticalSpace.lg,
+    paddingInlineStart: horizontalSpace.lg,
+    paddingInlineEnd: horizontalSpace.lg,
+    paddingTop: verticalSpace.lg,
+  },
+  navItemActive: {
+    backgroundColor: primaryColor.component3,
+    color: primaryColor.text2,
+  },
+  navLabel: {
+    flexBasis: "0%",
+    flexGrow: 1,
+    flexShrink: 1,
+    minWidth: 0,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  },
+  count: {
+    borderRadius: radius.full,
+    backgroundColor: uiColor.component3,
+    color: uiColor.text1,
+    fontFamily: fontFamily.mono,
+    fontSize: "0.7rem",
+    paddingInlineStart: horizontalSpace.md,
+    paddingInlineEnd: horizontalSpace.md,
+  },
+  sideLabel: {
+    alignItems: "center",
+    color: uiColor.text1,
+    fontFamily: fontFamily.sans,
+    fontSize: "0.65rem",
+    fontWeight: fontWeight.semibold,
+    letterSpacing: tracking.widest,
+    textTransform: "uppercase",
+    paddingBottom: verticalSpace.md,
+    paddingInlineStart: horizontalSpace.lg,
+    paddingInlineEnd: horizontalSpace.lg,
+    paddingTop: verticalSpace["3xl"],
+  },
+  followList: {
+    columnGap: gap.none,
+    display: "flex",
+    flexDirection: "column",
+    rowGap: gap.none,
+  },
+  followRow: {
+    borderRadius: radius.sm,
+    textDecoration: "none",
+    alignItems: "center",
+    backgroundColor: {
+      default: "transparent",
+      ":hover": uiColor.component2,
+    },
+    outline: {
+      default: "none",
+      ":is([data-focus-visible])": `2px solid ${focusColor.ring}`,
+    },
+    outlineOffset: "-2px",
+    color: uiColor.text2,
+    columnGap: gap.lg,
+    display: "flex",
+    rowGap: gap.lg,
+    paddingBottom: verticalSpace.sm,
+    paddingTop: verticalSpace.sm,
+    paddingInlineStart: horizontalSpace.lg,
+    paddingInlineEnd: horizontalSpace.lg,
+  },
+  followRowActive: {
+    backgroundColor: primaryColor.component3,
+    color: primaryColor.text2,
+  },
+  followName: {
+    flexBasis: "0%",
+    flexGrow: 1,
+    flexShrink: 1,
+    minWidth: 0,
+    fontFamily: fontFamily.sans,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  },
+  foot: {
+    backgroundColor: uiColor.bgSubtle,
+    display: "flex",
+    flexDirection: "column",
+    flexShrink: 0,
+    rowGap: gap.xl,
+    columnGap: gap.xl,
+    paddingInlineStart: horizontalSpace["3xl"],
+    paddingInlineEnd: horizontalSpace["3xl"],
+    paddingTop: verticalSpace["3xl"],
+    paddingBottom: verticalSpace["3xl"],
+  },
+  trigger: {
+    borderRadius: radius.sm,
+    borderWidth: 0,
+    alignItems: "center",
+    backgroundColor: {
+      default: "transparent",
+      ":is([aria-expanded=true])": uiColor.component2,
+      ":is([data-hovered=true]):not([aria-expanded=true])": uiColor.component2,
+      ":is([data-pressed=true])": uiColor.component3,
+    },
+    color: uiColor.text2,
+    columnGap: gap.md,
+    rowGap: gap.md,
+    display: "flex",
+    fontFamily: fontFamily.sans,
+    width: "100%",
+    paddingTop: verticalSpace.sm,
+    paddingBottom: verticalSpace.sm,
+    paddingInlineStart: horizontalSpace.lg,
+    paddingInlineEnd: horizontalSpace.lg,
+  },
+  identity: {
+    display: "flex",
+    flexDirection: "column",
+    flexGrow: 1,
+    minWidth: 0,
+    rowGap: verticalSpace.xs,
+    textAlign: "start",
+  },
+  displayName: {
+    color: uiColor.text2,
+    fontFamily: fontFamily.sans,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
+    lineHeight: lineHeight.none,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  },
+  handle: {
+    color: uiColor.text1,
+    fontFamily: fontFamily.sans,
+    fontSize: fontSize.xs,
+    lineHeight: lineHeight.none,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  },
+});
 
 export function AppSidebar() {
-  const pathname = useRouterState({
-    select: (s) => s.location.pathname,
-  });
-  const [menuOpen, setMenuOpen] = useState(false);
-
   return (
-    <div
-      style={{
-        width: 266,
-        flex: "none",
-        height: "100%",
-        borderRight: `1px solid ${C.b6}`,
-        background: C.warm,
-        display: "flex",
-        flexDirection: "column",
-      }}
-    >
-      <div style={{ padding: "22px 20px 14px 24px", display: "flex" }}>
-        <Link to="/" title="Home" style={linkReset}>
-          <span
-            style={{
-              fontFamily: C.serif,
-              fontSize: "1.3rem",
-              fontWeight: 500,
-              letterSpacing: "-0.02em",
-              lineHeight: 1,
-              color: C.t12,
-            }}
-          >
-            Standard <span style={{ color: C.a9 }}>Newsletter</span>
+    <aside {...stylex.props(styles.sidebar)}>
+      <div {...stylex.props(styles.sidebarScroll)}>
+        <Link to="/" {...stylex.props(styles.brandLink)}>
+          <span {...stylex.props(styles.wordmark)}>
+            Standard{" "}
+            <span {...stylex.props(styles.wordmarkAccent)}>Newsletter</span>
           </span>
         </Link>
-      </div>
 
-      <div
-        style={{
-          flex: 1,
-          minHeight: 0,
-          overflowY: "auto",
-          overflowX: "hidden",
-          display: "flex",
-          flexDirection: "column",
-          gap: 20,
-          padding: "4px 12px 24px",
-        }}
-      >
-        <div>
-          <SectionLabel>Overview</SectionLabel>
-          <Link to="/dashboard" style={linkReset}>
-            <NavRow
-              active={pathname === "/dashboard"}
-              leading={<Ico d={I.grid} />}
-              label="Dashboard"
-            />
+        <nav {...stylex.props(styles.nav)}>
+          <Link
+            to="/dashboard"
+            {...stylex.props(styles.navItem)}
+            activeProps={stylex.props(styles.navItem, styles.navItemActive)}
+          >
+            <LayoutGrid size={18} />
+            <span {...stylex.props(styles.navLabel)}>Dashboard</span>
           </Link>
-        </div>
+        </nav>
 
-        <div>
-          <SectionLabel>Publications</SectionLabel>
+        <div {...stylex.props(styles.sideLabel)}>Publications</div>
+        <div {...stylex.props(styles.followList)}>
           {PUBS.map((p) => (
             <Link
               key={p.id}
               to="/p/$pubId"
               params={{ pubId: p.id }}
-              style={linkReset}
+              {...stylex.props(styles.followRow)}
+              activeProps={stylex.props(styles.followRow, styles.followRowActive)}
             >
-              <NavRow
-                active={pathname.startsWith(`/p/${p.id}`)}
-                leading={<PubGlyph pub={p} size={22} r={6} fs={12} />}
-                label={p.name}
-                badge={kfmt(p.subs)}
-              />
+              <PubGlyph pub={p} size={24} r={7} fs={12} />
+              <span {...stylex.props(styles.followName)}>{p.name}</span>
+              <span {...stylex.props(styles.count)}>{kfmt(p.subs)}</span>
             </Link>
           ))}
         </div>
       </div>
 
-      <div style={{ padding: "8px 12px 12px", position: "relative" }}>
-        {menuOpen && (
-          <>
-            <div
-              onClick={() => setMenuOpen(false)}
-              style={{ position: "fixed", inset: 0, zIndex: 20 }}
-            />
-            <div
-              style={{
-                position: "absolute",
-                bottom: 60,
-                left: 12,
-                right: 12,
-                zIndex: 30,
-                background: C.warm,
-                border: `1px solid ${C.b6}`,
-                borderRadius: 12,
-                boxShadow: "0 20px 44px -20px rgba(40,30,20,0.5)",
-                padding: 6,
-              }}
-            >
-              {[
-                { label: "View profile", icon: I.user },
-                { label: "Sender settings", icon: I.mail },
-                { label: "Settings", icon: I.settings },
-              ].map((m) => (
-                <MenuRow key={m.label} label={m.label} icon={m.icon} />
-              ))}
-              <div style={{ height: 1, background: C.b6, margin: "6px 4px" }} />
-              <MenuRow label="Log out" icon={I.logout} destructive />
-            </div>
-          </>
-        )}
-        <button
-          type="button"
-          onClick={() => setMenuOpen((o) => !o)}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 11,
-            padding: "8px 10px",
-            width: "100%",
-            border: "none",
-            background: "transparent",
-            borderRadius: 10,
-            cursor: "pointer",
-            font: "inherit",
-          }}
+      <div {...stylex.props(styles.foot)}>
+        <Menu
+          size="lg"
+          placement="top start"
+          trigger={
+            <AriaButton {...stylex.props(styles.trigger)}>
+              <Avatar size="md" fallback="MD" alt="Mara Delgado" />
+              <span {...stylex.props(styles.identity)}>
+                <span {...stylex.props(styles.displayName)}>Mara Delgado</span>
+                <span {...stylex.props(styles.handle)}>@mara.dispatch.site</span>
+              </span>
+            </AriaButton>
+          }
         >
-          <Avatar name="Mara Delgado" />
-          <span
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 2,
-              minWidth: 0,
-              flex: 1,
-              textAlign: "left",
-            }}
-          >
-            <span
-              style={{
-                fontSize: 13.5,
-                fontWeight: 600,
-                color: C.t12,
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-              }}
-            >
-              Mara Delgado
-            </span>
-            <span
-              style={{
-                fontSize: 12,
-                color: C.mut,
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-              }}
-            >
-              @mara.dispatch.site
-            </span>
-          </span>
-          <Ico d={I.chevD} s={16} style={{ flex: "none", color: C.mut }} />
-        </button>
+          <MenuItem suffix={<User size={17} />}>View profile</MenuItem>
+          <MenuItem suffix={<Mail size={17} />}>Sender settings</MenuItem>
+          <MenuItem suffix={<Settings size={17} />}>Settings</MenuItem>
+          <MenuSeparator />
+          <MenuItem variant="destructive" suffix={<LogOut size={17} />}>
+            Log out
+          </MenuItem>
+        </Menu>
       </div>
-    </div>
-  );
-}
-
-function MenuRow({
-  label,
-  icon,
-  destructive = false,
-}: {
-  label: string;
-  icon: string;
-  destructive?: boolean;
-}) {
-  const [hover, setHover] = useState(false);
-  return (
-    <div
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        gap: 12,
-        padding: "8px 10px",
-        borderRadius: 8,
-        fontSize: 14,
-        cursor: "pointer",
-        color: destructive ? "#a33a2a" : C.t12,
-        background: hover ? C.hover4 : "transparent",
-      }}
-    >
-      <span>{label}</span>
-      <Ico d={icon} s={17} style={{ color: destructive ? "#a33a2a" : C.mut }} />
-    </div>
-  );
-}
-
-function Avatar({ name }: { name: string }) {
-  const initials = name
-    .split(" ")
-    .map((w) => w[0])
-    .slice(0, 2)
-    .join("");
-  return (
-    <div
-      style={{
-        width: 34,
-        height: 34,
-        borderRadius: "50%",
-        background: C.a9,
-        color: "#fff",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        fontSize: 13,
-        fontWeight: 600,
-        flex: "none",
-        fontFamily: C.sans,
-      }}
-    >
-      {initials}
-    </div>
+    </aside>
   );
 }
