@@ -28,7 +28,12 @@ export interface DispatchResult {
   total?: number;
 }
 
-function canonicalUrlFor(
+/**
+ * The public URL for a sent post: an explicit canonical wins; otherwise join the
+ * publication origin and the post path, tolerating slashes on either side.
+ * Exported for tests.
+ */
+export function canonicalUrlFor(
   canonical: string | null,
   pubUrl: string,
   path: string | null,

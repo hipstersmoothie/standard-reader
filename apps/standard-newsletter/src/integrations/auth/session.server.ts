@@ -15,7 +15,14 @@ import { eq } from "drizzle-orm";
 import { getDb } from "../../db/index.server";
 import { AUTH_SESSION_TOKEN_COOKIE } from "./constants";
 
-function readCookie(header: string | null, name: string): string | undefined {
+/**
+ * Parse a single cookie value out of a `Cookie` header. Exported for tests; the
+ * session token is read this way and never trusted beyond looking up its row.
+ */
+export function readCookie(
+  header: string | null,
+  name: string,
+): string | undefined {
   if (!header) return undefined;
   for (const part of header.split(";")) {
     const eqIdx = part.indexOf("=");

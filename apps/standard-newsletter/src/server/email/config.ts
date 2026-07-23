@@ -24,6 +24,14 @@ export const emailConfig = {
   get resendApiKey(): string {
     return required("RESEND_API_KEY");
   },
+  /**
+   * Resend webhook signing secret (`whsec_...`), from the Resend dashboard's
+   * webhook settings. When unset, incoming webhooks are rejected in production
+   * (see the route) rather than trusted blindly.
+   */
+  get resendWebhookSecret(): string | undefined {
+    return process.env.RESEND_WEBHOOK_SECRET;
+  },
   /** Default From address, e.g. `newsletters@standard.site`. */
   get defaultFrom(): string {
     return optional("NEWSLETTER_FROM", "newsletters@standard.site");

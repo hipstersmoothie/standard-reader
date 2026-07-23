@@ -1,8 +1,10 @@
 /**
  * Analytics data access. `getPublications` runs on the server: it resolves the
  * signed-in user's DID and reads *their* publications from the shared reader DB
- * via `analytics.server`. Falls back to sample data when no DB is configured or
- * the query fails — so the app runs in dev/demo without credentials.
+ * via `analytics.server`. Falls back to sample data only when no DB is
+ * configured, so the app runs in dev/demo without credentials. Once
+ * DATABASE_URL is set, a query failure surfaces instead of masquerading as
+ * sample data.
  *
  * When signed in, the list is scoped to the user's own publications
  * (publications.did == their DID). When not signed in but a DB is present (e.g.
@@ -18,6 +20,10 @@ import { PUBS } from "../data/publications";
 
 export const getPublications = createServerFn({ method: "GET" }).handler(
   async (): Promise<Array<Publication>> => {
+    // Sample data is a dev/demo affordance for when no DB is configured. Once
+    // DATABASE_URL is set, a query failure is a real outage — surface it rather
+    // than silently serving fake numbers that look like real ones.
+    const configured = Boolean(process.env.DATABASE_URL);
     try {
       const [{ loadPublicationsFromDb }, { getCurrentUserDid }] =
         await Promise.all([
@@ -28,9 +34,15 @@ export const getPublications = createServerFn({ method: "GET" }).handler(
       const rows = await loadPublicationsFromDb(did);
       if (rows) return rows;
     } catch (error) {
+      if (configured) throw error;
       console.error(
         "[standard-newsletter] DB unavailable, using sample data:",
         error,
+      );
+    }
+    if (configured) {
+      throw new Error(
+        "[standard-newsletter] DATABASE_URL is set but the DB client is unavailable",
       );
     }
     return PUBS;
@@ -130,12 +142,15 @@ export interface PublicationSummaryData {
 export const getPublicationSummary = createServerFn({ method: "GET" })
   .validator((data: { pubId: string }) => data)
   .handler(async ({ data }): Promise<PublicationSummaryData | null> => {
+    const configured = Boolean(process.env.DATABASE_URL);
     try {
       const { loadPublicationSummary } = await import("./analytics.server");
       const row = await loadPublicationSummary(data.pubId);
       if (row) return row;
-      if (process.env.DATABASE_URL) return null;
+      // DB is configured and simply has no such publication — not a sample miss.
+      if (configured) return null;
     } catch (error) {
+      if (configured) throw error;
       console.error("[standard-newsletter] publication summary failed:", error);
     }
     const p = PUBS.find((x) => x.id === data.pubId);
