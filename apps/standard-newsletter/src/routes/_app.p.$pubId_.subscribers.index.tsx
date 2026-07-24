@@ -1,7 +1,12 @@
 import { Avatar } from "@standard-reader/design-system/avatar";
 import { Button } from "@standard-reader/design-system/button";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { Link, createFileRoute, redirect } from "@tanstack/react-router";
+import {
+  Link,
+  createFileRoute,
+  redirect,
+  useNavigate,
+} from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 
 import { I, Ico } from "../components/icons";
@@ -12,7 +17,7 @@ import {
 } from "../server/analytics";
 import { C, NEG, R, fmt } from "../theme";
 
-export const Route = createFileRoute("/_app/p/$pubId_/subscribers")({
+export const Route = createFileRoute("/_app/p/$pubId_/subscribers/")({
   loader: async ({ context, params }) => {
     const [pubs, subs] = await Promise.all([
       context.queryClient.ensureQueryData(publicationsQueryOptions()),
@@ -62,6 +67,7 @@ function toCsv(rows: Array<SubscriberRowData>): string {
 
 function Subscribers() {
   const { pubId } = Route.useParams();
+  const navigate = useNavigate();
   const { data } = useSuspenseQuery(publicationSubscribersQueryOptions(pubId));
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
@@ -158,8 +164,8 @@ function Subscribers() {
                 : `${fmt(counts.confirmed)} ${counts.confirmed === 1 ? "person receives" : "people receive"} ${data?.name}`}
             </div>
           </div>
-          {all.length > 0 ? (
-            <span style={{ marginLeft: "auto" }}>
+          <span style={{ marginLeft: "auto", display: "flex", gap: 10 }}>
+            {all.length > 0 ? (
               <Button variant="tertiary" size="sm" onPress={onExport}>
                 <span
                   style={{
@@ -172,8 +178,29 @@ function Subscribers() {
                   Export CSV
                 </span>
               </Button>
-            </span>
-          ) : null}
+            ) : null}
+            <Button
+              variant="primary"
+              size="sm"
+              onPress={() =>
+                navigate({
+                  to: "/p/$pubId/subscribers/import",
+                  params: { pubId },
+                })
+              }
+            >
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 7,
+                }}
+              >
+                <Ico d={I.upload} s={16} />
+                Import
+              </span>
+            </Button>
+          </span>
         </div>
 
         {all.length === 0 ? (

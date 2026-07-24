@@ -54,10 +54,27 @@ export async function importEmails(input: {
   publicationUri: string;
   emails: Array<string>;
 }): Promise<{ ok: boolean; count?: number; skipped?: string }> {
-  const config = getHappyViewConfig();
-  if (!config) return { ok: false, skipped: "no-happyview" };
   const parts = publicationParts(input.publicationUri);
   if (!parts) return { ok: false, skipped: "bad-publication" };
+
+  const config = getHappyViewConfig();
+  if (!config) {
+    // No HappyView instance: skip the author-owned space record and write the
+    // addresses straight into the send read model. The subscriber list then
+    // lives only in `newsletter_subscribers` rather than the author's repo —
+    // less portable, but import still works and posts still go out. Standing up
+    // HappyView later backfills the space record on the next sync.
+    const { upsertMirrorRows } = await import("./mirror.server");
+    await upsertMirrorRows(
+      input.publicationUri,
+      input.emails.map((email) => ({
+        email,
+        source: "email" as const,
+        status: "confirmed" as const,
+      })),
+    );
+    return { ok: true, count: input.emails.length };
+  }
 
   const uri = spaceUri({
     did: parts.did,

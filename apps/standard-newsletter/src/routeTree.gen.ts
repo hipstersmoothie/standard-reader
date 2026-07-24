@@ -26,11 +26,12 @@ import { Route as ApiAuthLogoutRouteImport } from './routes/api/auth/logout'
 import { Route as ApiSubscribersImportRouteImport } from './routes/api/subscribers.import'
 import { Route as ApiSubscriptionUnsubscribeRouteImport } from './routes/api/subscription.unsubscribe'
 import { Route as AppPPubIdSendPathRouteImport } from './routes/_app.p.$pubId_.$sendPath'
-import { Route as AppPPubIdSubscribersRouteImport } from './routes/_app.p.$pubId_.subscribers'
 import { Route as ApiAuthAtprotoAuthorizeRouteImport } from './routes/api/auth/atproto/authorize'
 import { Route as ApiAuthAtprotoCallbackRouteImport } from './routes/api/auth/atproto/callback'
 import { Route as ApiAuthAtprotoJwksDotjsonRouteImport } from './routes/api/auth/atproto/jwks[.]json'
 import { Route as ApiAuthAtprotoMetadataDotjsonRouteImport } from './routes/api/auth/atproto/metadata[.]json'
+import { Route as AppPPubIdSubscribersIndexRouteImport } from './routes/_app.p.$pubId_.subscribers.index'
+import { Route as AppPPubIdSubscribersImportRouteImport } from './routes/_app.p.$pubId_.subscribers.import'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -117,11 +118,6 @@ const AppPPubIdSendPathRoute = AppPPubIdSendPathRouteImport.update({
   path: '/p/$pubId/$sendPath',
   getParentRoute: () => AppRoute,
 } as any)
-const AppPPubIdSubscribersRoute = AppPPubIdSubscribersRouteImport.update({
-  id: '/p/$pubId_/subscribers',
-  path: '/p/$pubId/subscribers',
-  getParentRoute: () => AppRoute,
-} as any)
 const ApiAuthAtprotoAuthorizeRoute = ApiAuthAtprotoAuthorizeRouteImport.update({
   id: '/api/auth/atproto/authorize',
   path: '/api/auth/atproto/authorize',
@@ -144,6 +140,18 @@ const ApiAuthAtprotoMetadataDotjsonRoute =
     path: '/api/auth/atproto/metadata.json',
     getParentRoute: () => rootRouteImport,
   } as any)
+const AppPPubIdSubscribersIndexRoute =
+  AppPPubIdSubscribersIndexRouteImport.update({
+    id: '/p/$pubId_/subscribers/',
+    path: '/p/$pubId/subscribers/',
+    getParentRoute: () => AppRoute,
+  } as any)
+const AppPPubIdSubscribersImportRoute =
+  AppPPubIdSubscribersImportRouteImport.update({
+    id: '/p/$pubId_/subscribers/import',
+    path: '/p/$pubId/subscribers/import',
+    getParentRoute: () => AppRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -162,11 +170,12 @@ export interface FileRoutesByFullPath {
   '/api/subscribers/import': typeof ApiSubscribersImportRoute
   '/api/subscription/unsubscribe': typeof ApiSubscriptionUnsubscribeRoute
   '/p/$pubId/$sendPath': typeof AppPPubIdSendPathRoute
-  '/p/$pubId/subscribers': typeof AppPPubIdSubscribersRoute
   '/api/auth/atproto/authorize': typeof ApiAuthAtprotoAuthorizeRoute
   '/api/auth/atproto/callback': typeof ApiAuthAtprotoCallbackRoute
   '/api/auth/atproto/jwks.json': typeof ApiAuthAtprotoJwksDotjsonRoute
   '/api/auth/atproto/metadata.json': typeof ApiAuthAtprotoMetadataDotjsonRoute
+  '/p/$pubId/subscribers/import': typeof AppPPubIdSubscribersImportRoute
+  '/p/$pubId/subscribers/': typeof AppPPubIdSubscribersIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -185,11 +194,12 @@ export interface FileRoutesByTo {
   '/api/subscribers/import': typeof ApiSubscribersImportRoute
   '/api/subscription/unsubscribe': typeof ApiSubscriptionUnsubscribeRoute
   '/p/$pubId/$sendPath': typeof AppPPubIdSendPathRoute
-  '/p/$pubId/subscribers': typeof AppPPubIdSubscribersRoute
   '/api/auth/atproto/authorize': typeof ApiAuthAtprotoAuthorizeRoute
   '/api/auth/atproto/callback': typeof ApiAuthAtprotoCallbackRoute
   '/api/auth/atproto/jwks.json': typeof ApiAuthAtprotoJwksDotjsonRoute
   '/api/auth/atproto/metadata.json': typeof ApiAuthAtprotoMetadataDotjsonRoute
+  '/p/$pubId/subscribers/import': typeof AppPPubIdSubscribersImportRoute
+  '/p/$pubId/subscribers': typeof AppPPubIdSubscribersIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -210,11 +220,12 @@ export interface FileRoutesById {
   '/api/subscribers/import': typeof ApiSubscribersImportRoute
   '/api/subscription/unsubscribe': typeof ApiSubscriptionUnsubscribeRoute
   '/_app/p/$pubId_/$sendPath': typeof AppPPubIdSendPathRoute
-  '/_app/p/$pubId_/subscribers': typeof AppPPubIdSubscribersRoute
   '/api/auth/atproto/authorize': typeof ApiAuthAtprotoAuthorizeRoute
   '/api/auth/atproto/callback': typeof ApiAuthAtprotoCallbackRoute
   '/api/auth/atproto/jwks.json': typeof ApiAuthAtprotoJwksDotjsonRoute
   '/api/auth/atproto/metadata.json': typeof ApiAuthAtprotoMetadataDotjsonRoute
+  '/_app/p/$pubId_/subscribers/import': typeof AppPPubIdSubscribersImportRoute
+  '/_app/p/$pubId_/subscribers/': typeof AppPPubIdSubscribersIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -235,11 +246,12 @@ export interface FileRouteTypes {
     | '/api/subscribers/import'
     | '/api/subscription/unsubscribe'
     | '/p/$pubId/$sendPath'
-    | '/p/$pubId/subscribers'
     | '/api/auth/atproto/authorize'
     | '/api/auth/atproto/callback'
     | '/api/auth/atproto/jwks.json'
     | '/api/auth/atproto/metadata.json'
+    | '/p/$pubId/subscribers/import'
+    | '/p/$pubId/subscribers/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -258,11 +270,12 @@ export interface FileRouteTypes {
     | '/api/subscribers/import'
     | '/api/subscription/unsubscribe'
     | '/p/$pubId/$sendPath'
-    | '/p/$pubId/subscribers'
     | '/api/auth/atproto/authorize'
     | '/api/auth/atproto/callback'
     | '/api/auth/atproto/jwks.json'
     | '/api/auth/atproto/metadata.json'
+    | '/p/$pubId/subscribers/import'
+    | '/p/$pubId/subscribers'
   id:
     | '__root__'
     | '/'
@@ -282,11 +295,12 @@ export interface FileRouteTypes {
     | '/api/subscribers/import'
     | '/api/subscription/unsubscribe'
     | '/_app/p/$pubId_/$sendPath'
-    | '/_app/p/$pubId_/subscribers'
     | '/api/auth/atproto/authorize'
     | '/api/auth/atproto/callback'
     | '/api/auth/atproto/jwks.json'
     | '/api/auth/atproto/metadata.json'
+    | '/_app/p/$pubId_/subscribers/import'
+    | '/_app/p/$pubId_/subscribers/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -429,13 +443,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppPPubIdSendPathRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/p/$pubId_/subscribers': {
-      id: '/_app/p/$pubId_/subscribers'
-      path: '/p/$pubId/subscribers'
-      fullPath: '/p/$pubId/subscribers'
-      preLoaderRoute: typeof AppPPubIdSubscribersRouteImport
-      parentRoute: typeof AppRoute
-    }
     '/api/auth/atproto/authorize': {
       id: '/api/auth/atproto/authorize'
       path: '/api/auth/atproto/authorize'
@@ -464,6 +471,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthAtprotoMetadataDotjsonRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_app/p/$pubId_/subscribers/': {
+      id: '/_app/p/$pubId_/subscribers/'
+      path: '/p/$pubId/subscribers'
+      fullPath: '/p/$pubId/subscribers/'
+      preLoaderRoute: typeof AppPPubIdSubscribersIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/p/$pubId_/subscribers/import': {
+      id: '/_app/p/$pubId_/subscribers/import'
+      path: '/p/$pubId/subscribers/import'
+      fullPath: '/p/$pubId/subscribers/import'
+      preLoaderRoute: typeof AppPPubIdSubscribersImportRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
@@ -473,7 +494,8 @@ interface AppRouteChildren {
   AppSettingsRoute: typeof AppSettingsRoute
   AppPPubIdRoute: typeof AppPPubIdRoute
   AppPPubIdSendPathRoute: typeof AppPPubIdSendPathRoute
-  AppPPubIdSubscribersRoute: typeof AppPPubIdSubscribersRoute
+  AppPPubIdSubscribersImportRoute: typeof AppPPubIdSubscribersImportRoute
+  AppPPubIdSubscribersIndexRoute: typeof AppPPubIdSubscribersIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -482,7 +504,8 @@ const AppRouteChildren: AppRouteChildren = {
   AppSettingsRoute: AppSettingsRoute,
   AppPPubIdRoute: AppPPubIdRoute,
   AppPPubIdSendPathRoute: AppPPubIdSendPathRoute,
-  AppPPubIdSubscribersRoute: AppPPubIdSubscribersRoute,
+  AppPPubIdSubscribersImportRoute: AppPPubIdSubscribersImportRoute,
+  AppPPubIdSubscribersIndexRoute: AppPPubIdSubscribersIndexRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
