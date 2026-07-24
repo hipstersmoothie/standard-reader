@@ -1,5 +1,18 @@
 import { Avatar } from "@standard-reader/design-system/avatar";
+import { Badge } from "@standard-reader/design-system/badge";
 import { Button } from "@standard-reader/design-system/button";
+import {
+  EmptyState,
+  EmptyStateActions,
+  EmptyStateDescription,
+  EmptyStateImage,
+  EmptyStateTitle,
+} from "@standard-reader/design-system/empty-state";
+import { SearchField } from "@standard-reader/design-system/search-field";
+import {
+  SegmentedControl,
+  SegmentedControlItem,
+} from "@standard-reader/design-system/segmented-control";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import {
   Link,
@@ -7,7 +20,9 @@ import {
   redirect,
   useNavigate,
 } from "@tanstack/react-router";
+import { Users } from "lucide-react";
 import { useMemo, useState } from "react";
+import type { Key } from "react-aria-components";
 
 import { I, Ico } from "../components/icons";
 import type { SubscriberRowData } from "../server/analytics";
@@ -15,7 +30,7 @@ import {
   publicationSubscribersQueryOptions,
   publicationsQueryOptions,
 } from "../server/analytics";
-import { C, NEG, R, fmt } from "../theme";
+import { C, fmt } from "../theme";
 
 export const Route = createFileRoute("/_app/p/$pubId_/subscribers/")({
   loader: async ({ context, params }) => {
@@ -181,7 +196,6 @@ function Subscribers() {
             ) : null}
             <Button
               variant="primary"
-              size="sm"
               onPress={() =>
                 navigate({
                   to: "/p/$pubId/subscribers/import",
@@ -204,7 +218,15 @@ function Subscribers() {
         </div>
 
         {all.length === 0 ? (
-          <EmptyState name={data?.name ?? "this publication"} />
+          <SubscribersEmptyState
+            name={data?.name ?? "this publication"}
+            onImport={() =>
+              navigate({
+                to: "/p/$pubId/subscribers/import",
+                params: { pubId },
+              })
+            }
+          />
         ) : (
           <>
             <div
@@ -215,61 +237,29 @@ function Subscribers() {
                 marginBottom: 6,
               }}
             >
-              <div style={{ display: "flex", gap: 4 }}>
-                {tabs.map(([id, label]) => (
-                  <button
-                    key={id}
-                    type="button"
-                    onClick={() => setFilter(id)}
-                    style={{
-                      font: "inherit",
-                      cursor: "pointer",
-                      border: "none",
-                      background: filter === id ? C.sel5 : "transparent",
-                      color: filter === id ? C.a11 : C.mut,
-                      fontSize: 13,
-                      fontWeight: 500,
-                      padding: "6px 12px",
-                      borderRadius: R.md,
-                    }}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-              <label
-                style={{
-                  marginLeft: "auto",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  background: C.warm,
-                  border: `1px solid ${C.b6}`,
-                  borderRadius: R.md,
-                  padding: "7px 12px",
-                  width: 260,
+              <SegmentedControl
+                size="sm"
+                selectedKeys={new Set([filter])}
+                onSelectionChange={(keys) => {
+                  const next = [...(keys as Set<Key>)][0];
+                  if (typeof next === "string") setFilter(next as Filter);
                 }}
               >
-                <Ico
-                  d={I.search}
-                  s={15}
-                  style={{ color: C.mut, flex: "none" }}
-                />
-                <input
-                  value={q}
-                  onChange={(e) => setQ(e.target.value)}
+                {tabs.map(([id, label]) => (
+                  <SegmentedControlItem key={id} id={id} selection="fill">
+                    {label}
+                  </SegmentedControlItem>
+                ))}
+              </SegmentedControl>
+              <span style={{ marginLeft: "auto", width: 260 }}>
+                <SearchField
+                  size="sm"
+                  aria-label="Search subscribers"
                   placeholder="Search email"
-                  style={{
-                    border: "none",
-                    outline: "none",
-                    background: "transparent",
-                    font: "inherit",
-                    fontSize: 13.5,
-                    color: C.t12,
-                    width: "100%",
-                  }}
+                  value={q}
+                  onChange={setQ}
                 />
-              </label>
+              </span>
             </div>
 
             <div style={{ borderBottom: `1px solid ${C.b6}` }}>
@@ -356,10 +346,14 @@ function SubscriberRow({ s, cols }: { s: SubscriberRowData; cols: string }) {
               {s.email}
             </span>
             {s.status === "unsubscribed" ? (
-              <StatusPill label="Unsubbed" />
+              <Badge size="sm" variant="critical">
+                Unsubbed
+              </Badge>
             ) : null}
             {s.status === "pending" ? (
-              <StatusPill label="Pending" muted />
+              <Badge size="sm" variant="warning">
+                Pending
+              </Badge>
             ) : null}
           </div>
           {s.did ? (
@@ -398,77 +392,33 @@ function SubscriberRow({ s, cols }: { s: SubscriberRowData; cols: string }) {
   );
 }
 
-function StatusPill({ label, muted }: { label: string; muted?: boolean }) {
+function SubscribersEmptyState({
+  name,
+  onImport,
+}: {
+  name: string;
+  onImport: () => void;
+}) {
   return (
-    <span
-      style={{
-        flex: "none",
-        fontSize: 10.5,
-        textTransform: "uppercase",
-        letterSpacing: "0.04em",
-        color: muted ? C.mut : NEG,
-        background: muted
-          ? C.ui3
-          : `color-mix(in srgb, ${NEG} 12%, transparent)`,
-        borderRadius: R.sm,
-        padding: "1px 6px",
-      }}
-    >
-      {label}
-    </span>
-  );
-}
-
-function EmptyState({ name }: { name: string }) {
-  return (
-    <div
-      style={{
-        border: `1px solid ${C.b6}`,
-        borderRadius: R.lg,
-        background: C.warm,
-        padding: "48px 40px",
-        textAlign: "center",
-      }}
-    >
-      <div
-        style={{
-          width: 48,
-          height: 48,
-          borderRadius: R.lg,
-          background: C.sel5,
-          color: C.a11,
-          display: "inline-flex",
-          alignItems: "center",
-          justifyContent: "center",
-          marginBottom: 18,
-        }}
-      >
-        <Ico d={I.users} s={24} />
-      </div>
-      <div
-        style={{
-          fontFamily: C.serif,
-          fontSize: 21,
-          fontWeight: 500,
-          color: C.t12,
-          marginBottom: 8,
-        }}
-      >
-        No subscribers yet
-      </div>
-      <p
-        style={{
-          fontSize: 14.5,
-          lineHeight: 1.6,
-          color: C.mut,
-          maxWidth: 420,
-          margin: "0 auto",
-        }}
-      >
+    <EmptyState>
+      <EmptyStateImage>
+        <Users size={24} />
+      </EmptyStateImage>
+      <EmptyStateTitle>No subscribers yet</EmptyStateTitle>
+      <EmptyStateDescription>
         When someone subscribes to {name} — from the subscribe page or a Bluesky
-        record — they’ll appear here. You can also import an existing list from
-        Settings.
-      </p>
-    </div>
+        record — they’ll appear here. You can also import an existing list.
+      </EmptyStateDescription>
+      <EmptyStateActions>
+        <Button variant="primary" size="sm" onPress={onImport}>
+          <span
+            style={{ display: "inline-flex", alignItems: "center", gap: 7 }}
+          >
+            <Ico d={I.upload} s={16} />
+            Import subscribers
+          </span>
+        </Button>
+      </EmptyStateActions>
+    </EmptyState>
   );
 }
