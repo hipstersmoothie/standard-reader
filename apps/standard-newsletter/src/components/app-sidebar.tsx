@@ -24,7 +24,7 @@ import {
 } from "@standard-reader/design-system/theme/typography.stylex";
 import * as stylex from "@stylexjs/stylex";
 import { Link } from "@tanstack/react-router";
-import { LayoutGrid, LogOut, Mail, Settings, User } from "lucide-react";
+import { LayoutGrid, LogOut, Mail, Plus, Settings, User } from "lucide-react";
 import { Button as AriaButton } from "react-aria-components";
 
 import type { Publication } from "../data/publications";
@@ -173,15 +173,32 @@ const styles = stylex.create({
     flexDirection: "column",
     rowGap: gap.none,
   },
-  emptyNote: {
+  addRow: {
+    borderRadius: radius.sm,
+    textDecoration: "none",
+    alignItems: "center",
+    backgroundColor: {
+      default: "transparent",
+      ":hover": uiColor.component2,
+    },
+    outline: {
+      default: "none",
+      ":is([data-focus-visible])": `2px solid ${focusColor.ring}`,
+    },
+    outlineOffset: "-2px",
     color: uiColor.text1,
-    fontFamily: fontFamily.serif,
-    fontSize: fontSize.sm,
-    fontStyle: "italic",
+    columnGap: gap.lg,
+    display: "flex",
+    rowGap: gap.lg,
+    paddingBottom: verticalSpace.md,
     paddingInlineStart: horizontalSpace.lg,
     paddingInlineEnd: horizontalSpace.lg,
-    paddingTop: verticalSpace.xs,
-    paddingBottom: verticalSpace.xs,
+    paddingTop: verticalSpace.md,
+  },
+  addLabel: {
+    fontFamily: fontFamily.sans,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
   },
   followRow: {
     borderRadius: radius.sm,
@@ -313,10 +330,15 @@ export function AppSidebar({
           </Link>
         </nav>
 
-        <div {...stylex.props(styles.sideLabel)}>Publications</div>
+        <div {...stylex.props(styles.sideLabel)}>Newsletters</div>
         <div {...stylex.props(styles.followList)}>
           {publications.length === 0 ? (
-            <div {...stylex.props(styles.emptyNote)}>No publications yet</div>
+            // Nothing here until the author connects a publication, so the
+            // empty slot is the invitation to do it rather than a dead note.
+            <Link to="/connect" {...stylex.props(styles.addRow)}>
+              <Plus size={16} />
+              <span {...stylex.props(styles.addLabel)}>Add a newsletter</span>
+            </Link>
           ) : (
             publications.map((p) => (
               <Link
@@ -335,6 +357,12 @@ export function AppSidebar({
               </Link>
             ))
           )}
+          {publications.length > 0 ? (
+            <Link to="/connect" {...stylex.props(styles.addRow)}>
+              <Plus size={16} />
+              <span {...stylex.props(styles.addLabel)}>Add a newsletter</span>
+            </Link>
+          ) : null}
         </div>
       </div>
 

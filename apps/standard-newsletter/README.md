@@ -8,39 +8,42 @@ A TanStack Start app that shares the Standard Reader database and design system.
   Vite 8, Nitro SSR — the same toolchain as `standard-reader`.
 - **Styling:** StyleX + the shared `@standard-reader/design-system`.
 - **Data:** the shared Standard Reader Postgres (publications, documents) plus
-  three newsletter-owned tables (`newsletter_subscribers`, `newsletter_sends`,
-  `newsletter_send_events`) defined in `@standard-reader/db`.
+  four newsletter-owned tables (`newsletter_publications`,
+  `newsletter_subscribers`, `newsletter_sends`, `newsletter_send_events`)
+  defined in `@standard-reader/db`.
 - **Email:** Resend, with bodies rendered by `@standard-reader/renderer-email`
   (React Email components driven by the shared headless renderer).
 
-## Two run modes
+## Opt-in per publication
 
-The app is designed to run with **no credentials at all** so the UI is always
-explorable:
+Owning a standard.site publication does **not** make it a newsletter. The author
+connects one explicitly (**Add a newsletter**), which writes a
+`newsletter_publications` row — that opt-in is what everything keys off:
 
-| Mode        | Trigger                       | Behavior                                                                 |
-| ----------- | ----------------------------- | ------------------------------------------------------------------------ |
-| **demo**    | `DATABASE_URL` unset          | Every screen renders on bundled sample data; no auth, no sending.        |
-| **live**    | `DATABASE_URL` set            | Screens read real publications scoped to the signed-in user; sending on. |
+- the app lists only connected publications (a first-time account is empty),
+- the dispatcher only mails posts from connected publications,
+- `/subscribe/$pubId` only accepts signups for connected publications.
 
-Once `DATABASE_URL` is set, a failed query **surfaces** instead of silently
-falling back to sample numbers — sample data is a no-DB affordance, not an error
-mask.
+Disconnecting deletes the row but keeps the subscriber list and past sends, so
+reconnecting later resumes rather than starting over.
 
-## Local development
+## Running the app
+
+The app needs a `DATABASE_URL` — it reads all of its data from the Standard
+Reader database and has no offline/sample mode; a failed query surfaces as an
+error rather than serving placeholder numbers.
 
 ```bash
 pnpm install
 cp apps/standard-newsletter/.env.example apps/standard-newsletter/.env
+# set DATABASE_URL in .env (shared reader dev DB or a Neon branch of it)
 pnpm newsletter:dev            # http://127.0.0.1:3100
 ```
 
-With an empty `.env` you get **demo mode** — good enough for UI work.
-
-### Running against real data
+### Preparing data
 
 Point `DATABASE_URL` at a database that already has publications — the shared
-Standard Reader dev DB, or a [Neon](https://neon.tech) branch of it. The three
+Standard Reader dev DB, or a [Neon](https://neon.tech) branch of it. The four
 newsletter tables are created by the reader's migrations (it owns migration
 generation for the shared schema):
 
@@ -49,7 +52,9 @@ generation for the shared schema):
 pnpm db:migrate
 ```
 
-Then give a publication a subscriber list so the send path has recipients:
+Sign in and **Add a newsletter** to connect one of your publications (nothing is
+listed or mailed until you do). Then give it a subscriber list so the send path
+has recipients:
 
 ```bash
 pnpm newsletter:seed                       # lists available publication URIs
@@ -108,7 +113,7 @@ See [`.env.example`](./.env.example). Summary:
 
 | Variable                 | Required for      | Notes                                                        |
 | ------------------------ | ----------------- | ----------------------------------------------------------- |
-| `DATABASE_URL`           | live mode         | Shared reader DB. Unset ⇒ demo mode on sample data.         |
+| `DATABASE_URL`           | everything        | Shared reader DB. Required — the app has no offline mode.    |
 | `DB_DRIVER`              | —                 | `neon` or `pg`; auto-detected from the host otherwise.      |
 | `PUBLIC_URL`             | auth + links      | This app's public origin.                                   |
 | `ATPROTO_PRIVATE_KEY_JWK`| deployed sign-in  | ES256 private JWK (JSON). Not needed on localhost.          |

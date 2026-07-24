@@ -59,34 +59,73 @@ export function StatBar({ pct, color }: { pct: number; color: string }) {
   );
 }
 
+export type PubAvatarSize = "sm" | "md" | "lg" | "xl";
+
 /**
  * A publication's avatar: its `icon` blob when it has one, falling back to the
  * first letter of its name tinted with the publication's own accent — the
  * colored tile is how these screens tell publications apart at a glance, so the
  * fallback keeps it rather than dropping to the neutral default.
  *
+ * Takes loose fields rather than a `Publication` so the connect flow, which
+ * works with publications that aren't newsletters yet (and so have no theme),
+ * can use the same avatar.
+ *
  * Sizes map onto the design system's avatar scale: sm 24px, md 32px, lg 44px,
  * xl 56px.
  */
+export function PubAvatar({
+  name,
+  icon,
+  iconUrl,
+  accent,
+  accentForeground,
+  size = "lg",
+}: {
+  name: string;
+  icon: string;
+  iconUrl: string | null;
+  accent?: string;
+  accentForeground?: string;
+  size?: PubAvatarSize;
+}) {
+  return (
+    <Avatar
+      size={size}
+      src={iconUrl ?? undefined}
+      alt={name}
+      fallback={icon}
+      style={
+        accent && accentForeground
+          ? glyphStyles.tint(accent, accentForeground)
+          : glyphStyles.serif
+      }
+    />
+  );
+}
+
+/** {@link PubAvatar} for a connected publication, themed from its own colors. */
 export function PubGlyph({
   pub,
   size = "lg",
 }: {
   pub: Publication;
-  size?: "sm" | "md" | "lg" | "xl";
+  size?: PubAvatarSize;
 }) {
   return (
-    <Avatar
+    <PubAvatar
+      name={pub.name}
+      icon={pub.icon}
+      iconUrl={pub.iconUrl}
+      accent={pub.theme.accent}
+      accentForeground={pub.theme.accentForeground}
       size={size}
-      src={pub.iconUrl ?? undefined}
-      alt=""
-      fallback={pub.icon}
-      style={glyphStyles.tint(pub.theme.accent, pub.theme.accentForeground)}
     />
   );
 }
 
 const glyphStyles = stylex.create({
+  serif: { fontFamily: fontFamily["serif"] },
   tint: (background: string, foreground: string) => ({
     backgroundColor: background,
     color: foreground,

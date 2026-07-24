@@ -1,3 +1,4 @@
+import { Button } from "@standard-reader/design-system/button";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
@@ -76,7 +77,7 @@ function Dashboard() {
                 marginBottom: 8,
               }}
             >
-              No publications yet
+              No newsletters yet
             </div>
             <p
               style={{
@@ -84,13 +85,21 @@ function Dashboard() {
                 lineHeight: 1.6,
                 color: C.mut,
                 maxWidth: 420,
-                margin: "0 auto",
+                margin: "0 auto 22px",
               }}
             >
-              When you own a standard.site publication, it shows up here with
-              its subscriber growth and per-send delivery analytics. Publish a
-              post and connect your publication to get started.
+              Owning a standard.site publication doesn’t start mailing it — you
+              choose which of yours becomes a newsletter. Add one and every post
+              you publish to it goes out to its subscribers, with delivery and
+              readership analytics here.
             </p>
+            <Button
+              variant="primary"
+              size="lg"
+              onPress={() => navigate({ to: "/connect" })}
+            >
+              Add a newsletter
+            </Button>
           </div>
         </div>
       </div>
