@@ -120,9 +120,14 @@ function PubAnalytics() {
   const pub = pubs.find((p) => p.id === pubId);
   if (!pub) return null;
   const t = pub.theme;
-  const avgUnsub = Math.round(
-    pub.sends.reduce((s, x) => s + x.unsubs, 0) / pub.sends.length,
-  );
+  // A publication with no published posts has no sends; averaging over zero of
+  // them is NaN, not an error state.
+  const avgUnsub =
+    pub.sends.length > 0
+      ? Math.round(
+          pub.sends.reduce((s, x) => s + x.unsubs, 0) / pub.sends.length,
+        )
+      : 0;
 
   return (
     <div style={{ height: "100%", overflow: "auto", background: C.pageBg }}>

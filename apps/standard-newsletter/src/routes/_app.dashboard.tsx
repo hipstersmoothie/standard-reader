@@ -103,11 +103,24 @@ function Dashboard() {
     (s, p) => s + p.sends.filter((x) => /Jul|Jun 2[0-9]/.test(x.when)).length,
     0,
   );
-  const emailsSent = pubs.reduce((s, p) => s + p.sends[0].recipients, 0);
-  const avgOpen = pubs.reduce((s, p) => s + p.openRate * p.subs, 0) / totalSubs;
+  // A publication with no published posts has no sends, and a brand-new one has
+  // no subscribers — neither is an error, so every aggregate below tolerates the
+  // empty case rather than reading through to `undefined` or dividing by zero.
+  const emailsSent = pubs.reduce(
+    (s, p) => s + (p.sends[0]?.recipients ?? 0),
+    0,
+  );
+  const avgOpen =
+    totalSubs > 0
+      ? pubs.reduce((s, p) => s + p.openRate * p.subs, 0) / totalSubs
+      : 0;
   const avgClick =
-    pubs.reduce((s, p) => s + p.clickRate * p.subs, 0) / totalSubs;
-  const agg = MONTHS.map((_, i) => pubs.reduce((s, p) => s + p.growth[i], 0));
+    totalSubs > 0
+      ? pubs.reduce((s, p) => s + p.clickRate * p.subs, 0) / totalSubs
+      : 0;
+  const agg = MONTHS.map((_, i) =>
+    pubs.reduce((s, p) => s + (p.growth[i] ?? 0), 0),
+  );
   const allSends = pubs
     .flatMap((p) => p.sends.map((s) => ({ ...s, pub: p })))
     .toSorted((a, b) => Date.parse(b.when) - Date.parse(a.when))
