@@ -1,32 +1,74 @@
+import {
+  criticalColor,
+  primaryColor,
+  successColor,
+  uiColor,
+} from "@standard-reader/design-system/theme/color.stylex";
+import { fontFamily } from "@standard-reader/design-system/theme/typography.stylex";
+
 /**
- * Standard Newsletter's warm editorial palette ("Almanac"). Kept as a local
- * constants object rather than StyleX theme vars so the marketing chrome and
- * analytics screens stay self-contained and independent of the reader's default
- * (mauve) theme; per-publication colors come from each publication's own theme.
+ * Standard Newsletter's warm editorial palette ("Almanac"), expressed as design
+ * tokens rather than hex literals.
+ *
+ * Every value below is a StyleX variable reference (a `var(--…)` string at
+ * runtime), so it resolves against whatever theme is applied on `<body>` — see
+ * `./theme-editorial`, which is Standard Reader's editorial theme copied verbatim.
+ * That is what keeps the hand-rolled newsletter chrome and the design-system
+ * components (Button, Menu, Avatar) on the *same* palette; before, the chrome
+ * was hardcoded warm hexes while the components fell through to the design
+ * system's stock **pink** `primaryColor`.
+ *
+ * Because these are variables and not literals they work anywhere CSS does —
+ * including the inline `style={{…}}` objects these screens are built from, and
+ * inside `color-mix()` / gradient / `border` shorthands. For the places CSS
+ * variables *cannot* reach (email HTML, standalone `Response` pages, DB
+ * defaults) use the flattened hex mirror in `./theme-palette` instead.
+ *
+ * The key names are the original Radix-ish scale steps, kept so call sites read
+ * the same as before.
  */
 export const C = {
-  pageBg: "#f5f1ea",
-  warm: "#faf7f1",
-  ui3: "#ece6db",
-  hover4: "#f0eae0",
-  sel5: "#efe7d9",
-  b6: "#e4ddd0",
-  b7: "#d8cfc0",
-  b8: "#cabfad",
-  a9: "#ad7f58",
-  a11: "#6f5636",
-  t12: "#241d18",
-  mut: "#8c8074",
-  serif: "'Newsreader', ui-serif, Georgia, serif",
-  sans: "'Inter', system-ui, -apple-system, sans-serif",
-  mono: "'Spline Sans Mono', ui-monospace, Menlo, monospace",
-  ink: "#241d18",
+  /** Recessed page background. */
+  pageBg: uiColor.bgSubtle,
+  /** Raised surface — cards, sidebar, section bands. */
+  warm: uiColor.bg,
+  /** Subtle fill — progress-bar tracks, inset wells. */
+  ui3: uiColor.component2,
+  /** Hover fill. */
+  hover4: uiColor.component1,
+  /** Accent-tinted fill — icon chips, selected rows, pills. */
+  sel5: primaryColor.component1,
+  /** Hairline border. */
+  b6: uiColor.border1,
+  /** Border. */
+  b7: uiColor.border2,
+  /** Emphasized border. */
+  b8: uiColor.border3,
+  /** Solid terracotta accent. */
+  a9: primaryColor.solid1,
+  /** Accent text — links, secondary body copy. */
+  a11: primaryColor.text1,
+  /** Ink — primary text. */
+  t12: uiColor.text2,
+  /** Muted text — labels, meta, captions. */
+  mut: uiColor.text1,
+  /** Text sitting on a solid accent fill. */
+  onAccent: primaryColor.textContrast,
+  serif: fontFamily.serif,
+  sans: fontFamily.sans,
+  mono: fontFamily.mono,
+  /** Alias of {@link C.t12}. */
+  ink: uiColor.text2,
 } as const;
 
 /** Semantic accents: positive/negative deltas, delivery health. */
-export const POS = "#3f7d4e";
-export const POSD = "#4a9d6b";
-export const NEG = "#a33a2a";
+export const POS = successColor.text1;
+export const POSD = successColor.solid1;
+export const NEG = criticalColor.text1;
+
+/** Tinted surface + border for a critical (error) callout. */
+export const NEG_BG = criticalColor.component1;
+export const NEG_BORDER = criticalColor.border1;
 
 export const fmt = (n: number): string => n.toLocaleString("en-US");
 

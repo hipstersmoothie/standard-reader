@@ -4,6 +4,15 @@
   box-sizing: border-box;
 }
 
+html {
+  /* The editorial theme's values are `light-dark()` pairs (copied verbatim from
+     Standard Reader, which supports both). The newsletter chrome is light-only
+     for now, so pin the scheme and the light branch always wins. Supporting
+     dark mode later means relaxing this one declaration — the theme and the
+     token-backed `C` palette in `src/theme` already carry the dark values. */
+  color-scheme: light;
+}
+
 html,
 body,
 #app {
@@ -13,8 +22,8 @@ body,
 }
 
 body {
-  font-family:
-    "Newsreader", ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+  /* Background, text color, and font family come from the editorial theme
+     applied on <body> in `routes/__root.tsx`. */
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
