@@ -1,10 +1,30 @@
+import { Button } from "@standard-reader/design-system/button";
+import {
+  primaryColor,
+  uiColor,
+} from "@standard-reader/design-system/theme/color.stylex";
+import { radius } from "@standard-reader/design-system/theme/radius.stylex";
+import {
+  gap,
+  horizontalSpace,
+  verticalSpace,
+} from "@standard-reader/design-system/theme/semantic-spacing.stylex";
+import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
+import {
+  fontFamily,
+  fontSize,
+  fontWeight,
+  lineHeight,
+  tracking,
+} from "@standard-reader/design-system/theme/typography.stylex";
+import * as stylex from "@stylexjs/stylex";
 import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { useState } from "react";
 
+import { common } from "../common-styles";
 import type { MySubscription } from "../server/subscriptions.server";
-import { C, R } from "../theme";
 
 const getMySubscriptions = createServerFn({ method: "GET" }).handler(
   async (): Promise<{ signedIn: boolean; subs: Array<MySubscription> }> => {
@@ -21,6 +41,82 @@ const getMySubscriptions = createServerFn({ method: "GET" }).handler(
 export const Route = createFileRoute("/subscribe/manage")({
   loader: () => getMySubscriptions(),
   component: Manage,
+});
+
+const styles = stylex.create({
+  page: {
+    alignItems: "center",
+    backgroundColor: uiColor.bgSubtle,
+    color: uiColor.text2,
+    display: "flex",
+    fontFamily: fontFamily.sans,
+    justifyContent: "center",
+    minHeight: stylex.firstThatWorks("100dvh", "100vh"),
+    paddingBlockEnd: spacing["6"],
+    paddingBlockStart: spacing["6"],
+    paddingInlineEnd: spacing["6"],
+    paddingInlineStart: spacing["6"],
+  },
+  card: {
+    // A list of subscription rows; wider than a sign-up card, still one column.
+    maxWidth: "520px",
+    paddingBlockEnd: spacing["9"],
+    paddingBlockStart: spacing["9"],
+    paddingInlineEnd: spacing["8"],
+    paddingInlineStart: spacing["8"],
+    width: "100%",
+  },
+  title: {
+    fontFamily: fontFamily.serif,
+    fontSize: fontSize["2xl"],
+    fontWeight: fontWeight.medium,
+    letterSpacing: tracking.tight,
+    lineHeight: lineHeight.none,
+    marginBlockEnd: verticalSpace.sm,
+    marginBlockStart: 0,
+  },
+  intro: {
+    color: uiColor.text1,
+    fontSize: fontSize.sm,
+    lineHeight: lineHeight.base,
+    marginBlockEnd: spacing["6"],
+    marginBlockStart: 0,
+  },
+  note: {
+    color: uiColor.text1,
+    fontSize: fontSize.sm,
+    lineHeight: lineHeight.base,
+    marginBlockEnd: 0,
+    marginBlockStart: 0,
+  },
+  noteLink: {
+    color: primaryColor.text1,
+  },
+  list: {
+    display: "flex",
+    flexDirection: "column",
+    rowGap: gap.lg,
+  },
+  row: {
+    alignItems: "center",
+    backgroundColor: uiColor.bgSubtle,
+    borderColor: uiColor.border1,
+    borderRadius: radius.lg,
+    borderStyle: "solid",
+    borderWidth: 1,
+    columnGap: gap.xl,
+    display: "flex",
+    paddingBlockEnd: verticalSpace["2xl"],
+    paddingBlockStart: verticalSpace["2xl"],
+    paddingInlineEnd: horizontalSpace["3xl"],
+    paddingInlineStart: horizontalSpace["3xl"],
+    rowGap: gap.xl,
+  },
+  rowName: {
+    color: uiColor.text2,
+    fontFamily: fontFamily.serif,
+    fontSize: fontSize.base,
+  },
 });
 
 function Manage() {
@@ -51,104 +147,49 @@ function Manage() {
   };
 
   return (
-    <div
-      style={{
-        minHeight: "100dvh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        fontFamily: C.sans,
-        background: C.pageBg,
-        color: C.t12,
-        padding: 24,
-      }}
-    >
-      <div
-        style={{
-          width: "100%",
-          maxWidth: 520,
-          background: C.warm,
-          border: `1px solid ${C.b6}`,
-          borderRadius: R.lg,
-          padding: "36px 32px",
-        }}
-      >
-        <h1
-          style={{
-            fontFamily: C.serif,
-            fontSize: 24,
-            fontWeight: 500,
-            letterSpacing: "-0.02em",
-            margin: "0 0 6px",
-          }}
-        >
-          Your subscriptions
-        </h1>
-        <p style={{ fontSize: 13.5, color: C.mut, margin: "0 0 22px" }}>
+    <div {...stylex.props(styles.page)}>
+      <div {...stylex.props(common.card, styles.card)}>
+        <h1 {...stylex.props(styles.title)}>Your subscriptions</h1>
+        <p {...stylex.props(styles.intro)}>
           Subscriptions you made with Bluesky are records in your own repo.
           Unsubscribing deletes the record.
         </p>
 
         {initial.signedIn ? null : (
-          <p style={{ fontSize: 14, lineHeight: 1.6, color: C.a11 }}>
-            <a href="/login" style={{ color: C.a9 }}>
+          <p {...stylex.props(styles.note)}>
+            <a href="/login" {...stylex.props(styles.noteLink)}>
               Sign in with Bluesky
             </a>{" "}
             to manage your subscriptions.
           </p>
         )}
         {initial.signedIn && subs.length === 0 ? (
-          <p style={{ fontSize: 14, lineHeight: 1.6, color: C.mut }}>
+          <p {...stylex.props(styles.note)}>
             You have no Bluesky subscriptions. Ones you made with just an email
             are managed from the unsubscribe link in any email.
           </p>
         ) : null}
         {initial.signedIn && subs.length > 0 ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <div {...stylex.props(styles.list)}>
             {subs.map((sub) => (
-              <div
-                key={sub.publicationUri}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 12,
-                  padding: "14px 16px",
-                  border: `1px solid ${C.b6}`,
-                  borderRadius: R.lg,
-                  background: C.pageBg,
-                }}
-              >
+              <div key={sub.publicationUri} {...stylex.props(styles.row)}>
                 <span
-                  style={{
-                    flex: 1,
-                    minWidth: 0,
-                    fontFamily: C.serif,
-                    fontSize: 16,
-                    color: C.t12,
-                  }}
+                  {...stylex.props(
+                    common.flexFill,
+                    styles.rowName,
+                    common.truncate,
+                  )}
                 >
                   {sub.publicationName}
                 </span>
-                <button
-                  type="button"
-                  disabled={busy === sub.publicationUri}
-                  onClick={() => unsubscribe(sub.publicationUri)}
-                  style={{
-                    flex: "none",
-                    fontFamily: C.sans,
-                    fontSize: 13,
-                    fontWeight: 600,
-                    color: C.t12,
-                    background: "transparent",
-                    border: `1px solid ${C.b7}`,
-                    borderRadius: R.md,
-                    padding: "7px 12px",
-                    cursor: busy === sub.publicationUri ? "default" : "pointer",
-                    opacity: busy === sub.publicationUri ? 0.6 : 1,
-                  }}
+                <Button
+                  variant="tertiary"
+                  size="sm"
+                  isPending={busy === sub.publicationUri}
+                  onPress={() => unsubscribe(sub.publicationUri)}
                 >
-                  {busy === sub.publicationUri ? "Removing…" : "Unsubscribe"}
-                </button>
+                  Unsubscribe
+                </Button>
               </div>
             ))}
           </div>

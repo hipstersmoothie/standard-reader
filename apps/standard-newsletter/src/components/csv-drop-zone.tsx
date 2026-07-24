@@ -1,8 +1,107 @@
+import {
+  primaryColor,
+  successColor,
+  uiColor,
+} from "@standard-reader/design-system/theme/color.stylex";
+import { radius } from "@standard-reader/design-system/theme/radius.stylex";
+import {
+  gap,
+  horizontalSpace,
+  verticalSpace,
+} from "@standard-reader/design-system/theme/semantic-spacing.stylex";
+import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
+import {
+  fontSize,
+  fontWeight,
+} from "@standard-reader/design-system/theme/typography.stylex";
+import * as stylex from "@stylexjs/stylex";
 import { useRef, useState } from "react";
 
+import { common } from "../common-styles";
 import { extractEmails } from "../lib/emails";
-import { C, POS, R, fmt } from "../theme";
+import { fmt } from "../lib/format";
 import { I, Ico } from "./icons";
+
+const styles = stylex.create({
+  fileInput: { display: "none" },
+
+  dropZone: {
+    backgroundColor: uiColor.bg,
+    borderColor: uiColor.border2,
+    borderRadius: radius.lg,
+    borderStyle: "dashed",
+    // 1.5px: a dashed hairline reads as a dotted line at 1px and as a box at
+    // 2px, and the border scale has no half step.
+    borderWidth: "1.5px",
+    cursor: "pointer",
+    paddingBlockEnd: verticalSpace["8xl"],
+    paddingBlockStart: verticalSpace["8xl"],
+    paddingInlineEnd: horizontalSpace["5xl"],
+    paddingInlineStart: horizontalSpace["5xl"],
+    textAlign: "center",
+  },
+  dropZoneOver: {
+    borderColor: primaryColor.solid1,
+  },
+  dropIcon: {
+    marginBlockEnd: verticalSpace["2xl"],
+    marginInlineEnd: "auto",
+    marginInlineStart: "auto",
+  },
+  dropTitle: {
+    color: uiColor.text2,
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.semibold,
+    marginBottom: verticalSpace.xs,
+  },
+  dropHint: {
+    color: uiColor.text1,
+    fontSize: fontSize.sm,
+  },
+
+  chosen: {
+    alignItems: "center",
+    borderRadius: radius.md,
+    columnGap: gap["3xl"],
+    display: "flex",
+    paddingBlockEnd: verticalSpace["3xl"],
+    paddingBlockStart: verticalSpace["3xl"],
+    paddingInlineEnd: horizontalSpace["3xl"],
+    paddingInlineStart: horizontalSpace["3xl"],
+    rowGap: gap["3xl"],
+  },
+  chosenName: {
+    color: uiColor.text2,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
+  },
+  chosenCount: {
+    alignItems: "center",
+    color: successColor.text1,
+    columnGap: gap.sm,
+    display: "inline-flex",
+    fontSize: fontSize.sm,
+    marginTop: verticalSpace.xxs,
+    rowGap: gap.sm,
+  },
+  remove: {
+    backgroundColor: "transparent",
+    borderStyle: "none",
+    borderWidth: 0,
+    color: uiColor.text1,
+    cursor: "pointer",
+    fontFamily: "inherit",
+    fontSize: fontSize.sm,
+    paddingBlockEnd: 0,
+    paddingBlockStart: 0,
+    paddingInlineEnd: 0,
+    paddingInlineStart: 0,
+  },
+  // The file chip's icon tile sits between the `chip` sizes; 40px keeps it in
+  // proportion with the 19px glyph inside it.
+  fileChip: { height: spacing["10"], width: spacing["10"] },
+  uploadChip: { height: spacing["12"], width: spacing["12"] },
+});
 
 /**
  * The subscriber-CSV upload widget shared by the create-newsletter wizard and
@@ -35,7 +134,7 @@ export function CsvDropZone({
         ref={inputRef}
         type="file"
         accept=".csv,text/csv,text/plain"
-        style={{ display: "none" }}
+        {...stylex.props(styles.fileInput)}
         onChange={(e) => {
           const file = e.target.files?.[0];
           if (file) void ingest(file);
@@ -64,85 +163,32 @@ export function CsvDropZone({
             const file = e.dataTransfer.files?.[0];
             if (file) void ingest(file);
           }}
-          style={{
-            border: `1.5px dashed ${dragOver ? C.a9 : C.b7}`,
-            borderRadius: R.lg,
-            padding: "40px 24px",
-            textAlign: "center",
-            cursor: "pointer",
-            background: C.warm,
-          }}
+          {...stylex.props(styles.dropZone, dragOver && styles.dropZoneOver)}
         >
           <div
-            style={{
-              width: 46,
-              height: 46,
-              borderRadius: R.md,
-              background: C.sel5,
-              color: C.a11,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              margin: "0 auto 14px",
-            }}
+            {...stylex.props(
+              common.chip,
+              styles.uploadChip,
+              styles.dropIcon,
+            )}
           >
             <Ico d={I.upload} s={22} />
           </div>
-          <div
-            style={{
-              fontSize: 15,
-              fontWeight: 600,
-              color: C.t12,
-              marginBottom: 4,
-            }}
-          >
+          <div {...stylex.props(styles.dropTitle)}>
             Drop a CSV here, or click to browse
           </div>
-          <div style={{ fontSize: 13, color: C.mut }}>
+          <div {...stylex.props(styles.dropHint)}>
             One email per row. Name and signup date optional.
           </div>
         </div>
       ) : (
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 14,
-            border: `1px solid ${C.b6}`,
-            borderRadius: R.md,
-            padding: "16px 18px",
-            background: C.warm,
-          }}
-        >
-          <div
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: R.md,
-              background: C.sel5,
-              color: C.a11,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flex: "none",
-            }}
-          >
+        <div {...stylex.props(common.card, styles.chosen)}>
+          <div {...stylex.props(common.chip, styles.fileChip)}>
             <Ico d={I.file} s={19} />
           </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 14.5, fontWeight: 600, color: C.t12 }}>
-              {fileName}
-            </div>
-            <div
-              style={{
-                fontSize: 13,
-                color: POS,
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 6,
-                marginTop: 2,
-              }}
-            >
+          <div {...stylex.props(common.flexFill)}>
+            <div {...stylex.props(styles.chosenName)}>{fileName}</div>
+            <div {...stylex.props(styles.chosenCount)}>
               <Ico d={I.check} s={14} w={2.4} />
               {fmt(emails.length)} valid{" "}
               {emails.length === 1 ? "address" : "addresses"} ready to import
@@ -151,15 +197,7 @@ export function CsvDropZone({
           <button
             type="button"
             onClick={onClear}
-            style={{
-              font: "inherit",
-              border: "none",
-              background: "transparent",
-              fontSize: 13,
-              color: C.mut,
-              cursor: "pointer",
-              flex: "none",
-            }}
+            {...stylex.props(styles.remove, common.flexNone)}
           >
             Remove
           </button>

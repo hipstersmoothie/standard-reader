@@ -1,93 +1,262 @@
 import { Button } from "@standard-reader/design-system/button";
+import { animationDuration } from "@standard-reader/design-system/theme/animations.stylex";
+import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
+import {
+  gap,
+  horizontalSpace,
+  verticalSpace,
+} from "@standard-reader/design-system/theme/semantic-spacing.stylex";
+import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
+import {
+  fontFamily,
+  fontSize,
+  fontWeight,
+  lineHeight,
+  tracking,
+} from "@standard-reader/design-system/theme/typography.stylex";
+import * as stylex from "@stylexjs/stylex";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
 import type { ReactNode } from "react";
 
+import { common } from "../common-styles";
 import { AreaChart } from "../components/charts";
-import { I, Ico } from "../components/icons";
+import { I, Ico, icon } from "../components/icons";
 import { Delta, PubGlyph } from "../components/ui";
 import { MONTHS } from "../data/publications";
+import { fmt } from "../lib/format";
 import { publicationsQueryOptions } from "../server/analytics";
-import { C, R, fmt, sectLabel } from "../theme";
 
 export const Route = createFileRoute("/_app/dashboard")({
   component: Dashboard,
 });
 
+const styles = stylex.create({
+  intro: {
+    marginBlockEnd: spacing["8"],
+    marginBlockStart: 0,
+    // The standfirst wraps at a comfortable measure rather than the full
+    // 1000px column.
+    maxWidth: "620px",
+  },
+  titleGap: {
+    marginBottom: verticalSpace.sm,
+  },
+
+  empty: {
+    paddingBlockEnd: spacing["14"],
+    paddingBlockStart: spacing["14"],
+    paddingInlineEnd: spacing["10"],
+    paddingInlineStart: spacing["10"],
+    textAlign: "center",
+  },
+  emptyIcon: {
+    display: "inline-flex",
+    marginBottom: verticalSpace["4xl"],
+  },
+  emptyTitle: {
+    color: uiColor.text2,
+    fontFamily: fontFamily.serif,
+    fontSize: fontSize["2xl"],
+    fontWeight: fontWeight.medium,
+    marginBottom: verticalSpace.md,
+  },
+  emptyBody: {
+    color: uiColor.text1,
+    fontSize: fontSize.base,
+    lineHeight: lineHeight.base,
+    marginBlockEnd: verticalSpace["5xl"],
+    marginBlockStart: 0,
+    marginInlineEnd: "auto",
+    marginInlineStart: "auto",
+    maxWidth: "420px",
+  },
+  emptyHeading: {
+    marginBottom: spacing["8"],
+  },
+
+  kpis: {
+    display: "grid",
+    gridTemplateColumns: "repeat(4, 1fr)",
+    marginBottom: spacing["11"],
+  },
+  kpi: {
+    paddingBlockEnd: verticalSpace["5xl"],
+    paddingBlockStart: verticalSpace["5xl"],
+    paddingInlineEnd: horizontalSpace["5xl"],
+    paddingInlineStart: horizontalSpace["5xl"],
+  },
+  kpiDivided: {
+    borderInlineStartColor: uiColor.border1,
+    borderInlineStartStyle: "solid",
+    borderInlineStartWidth: 1,
+  },
+  kpiLabel: {
+    alignItems: "center",
+    color: uiColor.text1,
+    columnGap: gap.md,
+    display: "flex",
+    fontSize: fontSize.xs,
+    letterSpacing: tracking.wider,
+    marginBottom: verticalSpace.xl,
+    rowGap: gap.md,
+    textTransform: "uppercase",
+  },
+  kpiValue: {
+    color: uiColor.text2,
+    fontFamily: fontFamily.serif,
+    fontSize: fontSize["3xl"],
+    fontWeight: fontWeight.medium,
+    letterSpacing: tracking.tight,
+    lineHeight: lineHeight.none,
+    marginBottom: verticalSpace.lg,
+  },
+  kpiFoot: {
+    alignItems: "center",
+    color: uiColor.text1,
+    columnGap: gap.xs,
+    display: "flex",
+    fontSize: fontSize.xs,
+    rowGap: gap.xs,
+  },
+
+  chartBlock: {
+    marginBottom: spacing["12"],
+  },
+  chartHead: {
+    alignItems: "baseline",
+    columnGap: gap.xl,
+    display: "flex",
+    marginBottom: verticalSpace["3xl"],
+    rowGap: gap.xl,
+  },
+  chartTitle: {
+    color: uiColor.text2,
+    fontFamily: fontFamily.serif,
+    fontSize: fontSize.xl,
+  },
+
+  columns: {
+    alignItems: "start",
+    columnGap: spacing["14"],
+    display: "grid",
+    gridTemplateColumns: "1.4fr 1fr",
+    rowGap: spacing["14"],
+  },
+
+  pubRow: {
+    alignItems: "center",
+    backgroundColor: {
+      default: "transparent",
+      ":hover": uiColor.component1,
+    },
+    columnGap: gap["3xl"],
+    cursor: "pointer",
+    display: "flex",
+    paddingBlockEnd: verticalSpace["3xl"],
+    paddingBlockStart: verticalSpace["3xl"],
+    paddingInlineEnd: horizontalSpace.lg,
+    paddingInlineStart: horizontalSpace.lg,
+    rowGap: gap["3xl"],
+    transitionDuration: animationDuration.default,
+    transitionProperty: "background-color",
+  },
+  pubName: {
+    color: uiColor.text2,
+    fontFamily: fontFamily.serif,
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.medium,
+    letterSpacing: tracking.tight,
+  },
+  pubMeta: {
+    alignItems: "center",
+    color: uiColor.text1,
+    columnGap: gap.md,
+    display: "flex",
+    fontSize: fontSize.xs,
+    marginTop: verticalSpace.xxs,
+    rowGap: gap.md,
+  },
+  dot: {
+    opacity: 0.4,
+  },
+  // The open-rate column is fixed so the percentages line up down the list
+  // while the publication names flex.
+  pubRate: { textAlign: "right", width: "92px" },
+  pubRateValue: {
+    color: uiColor.text2,
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.semibold,
+  },
+  pubRateLabel: {
+    color: uiColor.text1,
+    fontSize: fontSize.xs,
+  },
+
+  sendRow: {
+    alignItems: "center",
+    columnGap: gap.xl,
+    cursor: "pointer",
+    display: "flex",
+    paddingBlockEnd: verticalSpace["2xl"],
+    paddingBlockStart: verticalSpace["2xl"],
+    paddingInlineEnd: horizontalSpace.sm,
+    paddingInlineStart: horizontalSpace.sm,
+    rowGap: gap.xl,
+  },
+  sendTitle: {
+    color: uiColor.text2,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+  },
+  sendMeta: {
+    color: uiColor.text1,
+    fontSize: fontSize.xs,
+  },
+  noSends: {
+    color: uiColor.text1,
+    fontFamily: fontFamily.serif,
+    fontSize: fontSize.sm,
+    fontStyle: "italic",
+    paddingBlockEnd: verticalSpace["4xl"],
+    paddingBlockStart: verticalSpace["4xl"],
+    paddingInlineEnd: horizontalSpace.sm,
+    paddingInlineStart: horizontalSpace.sm,
+  },
+});
+
 function Dashboard() {
   const navigate = useNavigate();
   const { data: pubs } = useSuspenseQuery(publicationsQueryOptions());
-  const [hover, setHover] = useState(-1);
   const openPub = (id: string) =>
     navigate({ to: "/p/$pubId", params: { pubId: id } });
 
   if (pubs.length === 0) {
     return (
-      <div style={{ height: "100%", overflow: "auto", background: C.pageBg }}>
+      <div {...stylex.props(common.screen)}>
         <div
-          style={{
-            maxWidth: 1000,
-            margin: "0 auto",
-            padding: "44px 40px 90px",
-          }}
+          {...stylex.props(
+            common.container,
+            common.screenPadRoomy,
+            common.measureFull,
+          )}
         >
-          <h1
-            style={{
-              fontFamily: C.serif,
-              fontWeight: 500,
-              fontSize: 34,
-              letterSpacing: "-0.02em",
-              margin: "0 0 30px",
-              color: C.t12,
-            }}
-          >
+          <h1 {...stylex.props(common.pageTitle, styles.emptyHeading)}>
             Dashboard
           </h1>
-          <div
-            style={{
-              border: `1px solid ${C.b6}`,
-              borderRadius: R.lg,
-              background: C.warm,
-              padding: "56px 40px",
-              textAlign: "center",
-            }}
-          >
+          <div {...stylex.props(common.card, styles.empty)}>
             <div
-              style={{
-                width: 48,
-                height: 48,
-                borderRadius: R.lg,
-                background: C.sel5,
-                color: C.a11,
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                marginBottom: 18,
-              }}
+              {...stylex.props(
+                common.chip,
+                common.chipXl,
+                common.chipRoomy,
+                styles.emptyIcon,
+              )}
             >
               <Ico d={I.mail} s={24} />
             </div>
-            <div
-              style={{
-                fontFamily: C.serif,
-                fontSize: 22,
-                fontWeight: 500,
-                color: C.t12,
-                marginBottom: 8,
-              }}
-            >
-              No newsletters yet
-            </div>
-            <p
-              style={{
-                fontSize: 14.5,
-                lineHeight: 1.6,
-                color: C.mut,
-                maxWidth: 420,
-                margin: "0 auto 22px",
-              }}
-            >
+            <div {...stylex.props(styles.emptyTitle)}>No newsletters yet</div>
+            <p {...stylex.props(styles.emptyBody)}>
               To get started choose one of your publications to start a
               newsletter for.
             </p>
@@ -173,109 +342,44 @@ function Dashboard() {
   ];
 
   return (
-    <div style={{ height: "100%", overflow: "auto", background: C.pageBg }}>
+    <div {...stylex.props(common.screen)}>
       <div
-        style={{ maxWidth: 1000, margin: "0 auto", padding: "44px 40px 90px" }}
+        {...stylex.props(
+          common.container,
+          common.screenPadRoomy,
+          common.measureFull,
+        )}
       >
-        <h1
-          style={{
-            fontFamily: C.serif,
-            fontWeight: 500,
-            fontSize: 34,
-            letterSpacing: "-0.02em",
-            margin: "0 0 6px",
-            color: C.t12,
-          }}
-        >
-          Dashboard
-        </h1>
-        <p
-          style={{
-            margin: "0 0 30px",
-            color: C.mut,
-            fontSize: 14.5,
-            maxWidth: 620,
-          }}
-        >
+        <h1 {...stylex.props(common.pageTitle, styles.titleGap)}>Dashboard</h1>
+        <p {...stylex.props(common.pageIntro, styles.intro)}>
           Delivery and readership across all of your publications. Each
           newsletter is a published post, mailed to that publication’s
           subscribers.
         </p>
 
         <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(4, 1fr)",
-            borderTop: `1px solid ${C.b6}`,
-            borderBottom: `1px solid ${C.b6}`,
-            marginBottom: 44,
-          }}
+          {...stylex.props(common.ruleAbove, common.ruleBelow, styles.kpis)}
         >
           {kpis.map((k, i) => (
             <div
               key={k.label}
-              style={{
-                padding: "22px 24px",
-                borderLeft: i === 0 ? "none" : `1px solid ${C.b6}`,
-              }}
+              {...stylex.props(styles.kpi, i > 0 && styles.kpiDivided)}
             >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  fontSize: 12,
-                  color: C.mut,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.05em",
-                  marginBottom: 12,
-                }}
-              >
-                <Ico d={k.icon} s={15} style={{ color: C.a11 }} />
+              <div {...stylex.props(styles.kpiLabel)}>
+                <Ico d={k.icon} s={15} style={icon.accentText} />
                 {k.label}
               </div>
-              <div
-                style={{
-                  fontFamily: C.serif,
-                  fontSize: 32,
-                  fontWeight: 500,
-                  letterSpacing: "-0.02em",
-                  lineHeight: 1,
-                  color: C.t12,
-                  marginBottom: 9,
-                }}
-              >
-                {k.value}
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 5,
-                  fontSize: 12.5,
-                  color: C.mut,
-                }}
-              >
-                {k.foot}
-              </div>
+              <div {...stylex.props(styles.kpiValue)}>{k.value}</div>
+              <div {...stylex.props(styles.kpiFoot)}>{k.foot}</div>
             </div>
           ))}
         </div>
 
         {hasGrowth ? (
-          <div style={{ marginBottom: 48 }}>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "baseline",
-                gap: 12,
-                marginBottom: 16,
-              }}
-            >
-              <div style={{ fontFamily: C.serif, fontSize: 20, color: C.t12 }}>
-                Total subscribers
-              </div>
-              <div style={{ fontSize: 12.5, color: C.mut, marginLeft: "auto" }}>
+          <div {...stylex.props(styles.chartBlock)}>
+            <div {...stylex.props(styles.chartHead)}>
+              <div {...stylex.props(styles.chartTitle)}>Total subscribers</div>
+              <div {...stylex.props(common.meta, common.pushEnd)}>
                 Last 12 months
               </div>
             </div>
@@ -289,18 +393,11 @@ function Dashboard() {
           </div>
         ) : null}
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1.4fr 1fr",
-            gap: 56,
-            alignItems: "start",
-          }}
-        >
+        <div {...stylex.props(styles.columns)}>
           <div>
-            <div style={sectLabel}>Publications</div>
-            <div style={{ borderBottom: `1px solid ${C.b6}` }}>
-              {pubs.map((p, i) => (
+            <div {...stylex.props(common.sectionLabel)}>Publications</div>
+            <div {...stylex.props(common.ruleBelow)}>
+              {pubs.map((p) => (
                 <div
                   key={p.id}
                   role="button"
@@ -309,84 +406,36 @@ function Dashboard() {
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ") openPub(p.id);
                   }}
-                  onMouseEnter={() => setHover(i)}
-                  onMouseLeave={() => setHover(-1)}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 14,
-                    padding: "16px 10px",
-                    borderTop: `1px solid ${C.b6}`,
-                    cursor: "pointer",
-                    background: hover === i ? C.hover4 : "transparent",
-                    transition: "background .12s",
-                  }}
+                  {...stylex.props(common.ruleAbove, styles.pubRow)}
                 >
                   <PubGlyph pub={p} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div
-                      style={{
-                        fontFamily: C.serif,
-                        fontSize: 17,
-                        fontWeight: 500,
-                        color: C.t12,
-                        letterSpacing: "-0.01em",
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                      }}
-                    >
+                  <div {...stylex.props(common.flexFill)}>
+                    <div {...stylex.props(styles.pubName, common.truncate)}>
                       {p.name}
                     </div>
-                    <div
-                      style={{
-                        fontSize: 12.5,
-                        color: C.mut,
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 8,
-                        marginTop: 2,
-                      }}
-                    >
+                    <div {...stylex.props(styles.pubMeta)}>
                       <span>{fmt(p.subs)} subscribers</span>
-                      <span style={{ opacity: 0.4 }}>·</span>
+                      <span {...stylex.props(styles.dot)}>·</span>
                       <Delta value={p.delta} />
                     </div>
                   </div>
-                  <div style={{ flex: "none", width: 92, textAlign: "right" }}>
-                    <div
-                      style={{ fontSize: 15, fontWeight: 600, color: C.t12 }}
-                    >
+                  <div {...stylex.props(common.flexNone, styles.pubRate)}>
+                    <div {...stylex.props(styles.pubRateValue)}>
                       {p.openRate}%
                     </div>
-                    <div style={{ fontSize: 11.5, color: C.mut }}>
-                      open rate
-                    </div>
+                    <div {...stylex.props(styles.pubRateLabel)}>open rate</div>
                   </div>
-                  <Ico
-                    d={I.chevR}
-                    s={17}
-                    style={{ color: C.mut, flex: "none" }}
-                  />
+                  <Ico d={I.chevR} s={17} style={[icon.muted, icon.fixed]} />
                 </div>
               ))}
             </div>
           </div>
 
           <div>
-            <div style={sectLabel}>Recent sends</div>
-            <div style={{ borderBottom: `1px solid ${C.b6}` }}>
+            <div {...stylex.props(common.sectionLabel)}>Recent sends</div>
+            <div {...stylex.props(common.ruleBelow)}>
               {recentSends.length === 0 ? (
-                <div
-                  style={{
-                    borderTop: `1px solid ${C.b6}`,
-                    padding: "18px 6px",
-                    fontSize: 13,
-                    color: C.mut,
-                    fontFamily: C.serif,
-                    fontStyle: "italic",
-                  }}
-                >
+                <div {...stylex.props(common.ruleAbove, styles.noSends)}>
                   Nothing sent yet.
                 </div>
               ) : null}
@@ -399,30 +448,14 @@ function Dashboard() {
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ") openPub(s.pub.id);
                   }}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 12,
-                    padding: "13px 6px",
-                    cursor: "pointer",
-                    borderTop: `1px solid ${C.b6}`,
-                  }}
+                  {...stylex.props(common.ruleAbove, styles.sendRow)}
                 >
                   <PubGlyph pub={s.pub} size="sm" />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div
-                      style={{
-                        fontSize: 13.5,
-                        color: C.t12,
-                        fontWeight: 500,
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                      }}
-                    >
+                  <div {...stylex.props(common.flexFill)}>
+                    <div {...stylex.props(styles.sendTitle, common.truncate)}>
                       {s.title}
                     </div>
-                    <div style={{ fontSize: 11.5, color: C.mut }}>
+                    <div {...stylex.props(styles.sendMeta)}>
                       {s.when.split(" · ")[0]} · {s.openRate}% open
                     </div>
                   </div>

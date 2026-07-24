@@ -1,11 +1,128 @@
 import { Avatar } from "@standard-reader/design-system/avatar";
-import { fontFamily } from "@standard-reader/design-system/theme/typography.stylex";
+import {
+  criticalColor,
+  primaryColor,
+  successColor,
+  uiColor,
+} from "@standard-reader/design-system/theme/color.stylex";
+import { radius } from "@standard-reader/design-system/theme/radius.stylex";
+import {
+  gap,
+  horizontalSpace,
+  verticalSpace,
+} from "@standard-reader/design-system/theme/semantic-spacing.stylex";
+import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
+import {
+  fontFamily,
+  fontSize,
+  fontWeight,
+  lineHeight,
+  tracking,
+} from "@standard-reader/design-system/theme/typography.stylex";
 import * as stylex from "@stylexjs/stylex";
 import type { ReactNode } from "react";
 
+import { common } from "../common-styles";
 import type { Publication } from "../data/publications";
-import { C, NEG, POS, R, cardBox } from "../theme";
 import { I, Ico } from "./icons";
+
+const styles = stylex.create({
+  delta: {
+    alignItems: "center",
+    columnGap: gap.xxs,
+    display: "inline-flex",
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.semibold,
+    rowGap: gap.xxs,
+  },
+  deltaUp: { color: successColor.text1 },
+  deltaDown: { color: criticalColor.text1 },
+
+  track: {
+    backgroundColor: uiColor.component2,
+    borderRadius: radius.sm,
+    height: spacing["1.5"],
+    overflow: "hidden",
+  },
+  fill: {
+    borderRadius: radius.sm,
+    height: "100%",
+  },
+  fillAccent: { backgroundColor: primaryColor.solid1 },
+  fillPositive: { backgroundColor: successColor.solid1 },
+  // Only the bar's length is data; its color comes from the metric's tone.
+  fillWidth: (pct: number) => ({ width: `${pct}%` }),
+
+  statCard: {
+    columnGap: gap.xl,
+    display: "flex",
+    flexDirection: "column",
+    paddingBlockEnd: verticalSpace["4xl"],
+    paddingBlockStart: verticalSpace["4xl"],
+    paddingInlineEnd: horizontalSpace["4xl"],
+    paddingInlineStart: horizontalSpace["4xl"],
+    rowGap: gap.xl,
+  },
+  statCardInteractive: {
+    cursor: "pointer",
+  },
+  statHead: {
+    alignItems: "center",
+    columnGap: gap.lg,
+    display: "flex",
+    rowGap: gap.lg,
+  },
+  statLabel: {
+    color: uiColor.text1,
+    fontSize: fontSize.xs,
+    letterSpacing: tracking.wider,
+    textTransform: "uppercase",
+  },
+  statValue: {
+    color: uiColor.text2,
+    fontFamily: fontFamily.serif,
+    fontSize: fontSize["4xl"],
+    fontWeight: fontWeight.medium,
+    letterSpacing: tracking.tight,
+    lineHeight: lineHeight.none,
+  },
+  statFoot: {
+    alignItems: "center",
+    color: uiColor.text1,
+    columnGap: gap.xs,
+    display: "flex",
+    fontSize: fontSize.xs,
+    rowGap: gap.xs,
+  },
+
+  bigStat: {
+    paddingBlockEnd: verticalSpace.xs,
+    paddingBlockStart: verticalSpace.xs,
+  },
+  bigStatLabel: {
+    color: uiColor.text1,
+    fontSize: fontSize.xs,
+    letterSpacing: tracking.wider,
+    marginBottom: verticalSpace.sm,
+    textTransform: "uppercase",
+  },
+  bigStatValue: {
+    color: uiColor.text2,
+    fontFamily: fontFamily.serif,
+    fontSize: fontSize["3xl"],
+    fontWeight: fontWeight.medium,
+    letterSpacing: tracking.tight,
+    lineHeight: lineHeight.none,
+  },
+  bigStatAccent: { color: primaryColor.text1 },
+  bigStatPositive: { color: successColor.text1 },
+  bigStatCritical: { color: criticalColor.text1 },
+  bigStatSub: {
+    color: uiColor.text1,
+    fontSize: fontSize.xs,
+    marginTop: verticalSpace.xs,
+  },
+});
 
 export function Delta({
   value,
@@ -17,18 +134,13 @@ export function Delta({
   invert?: boolean;
 }) {
   const good = invert ? value < 0 : value >= 0;
-  const col = good ? POS : NEG;
   const arrow = value >= 0 ? I.up : I.down;
   return (
     <span
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 3,
-        fontSize: 12.5,
-        color: col,
-        fontWeight: 600,
-      }}
+      {...stylex.props(
+        styles.delta,
+        good ? styles.deltaUp : styles.deltaDown,
+      )}
     >
       <Ico d={arrow} s={13} w={2.4} />
       {Math.abs(value)}
@@ -37,23 +149,27 @@ export function Delta({
   );
 }
 
-export function StatBar({ pct, color }: { pct: number; color: string }) {
+const BAR_TONE = {
+  accent: styles.fillAccent,
+  positive: styles.fillPositive,
+} as const;
+
+/** Opens read in the accent, clicks in the positive green. */
+export function StatBar({
+  pct,
+  tone = "accent",
+}: {
+  pct: number;
+  tone?: keyof typeof BAR_TONE;
+}) {
   return (
-    <div
-      style={{
-        height: 6,
-        borderRadius: R.sm,
-        background: C.ui3,
-        overflow: "hidden",
-      }}
-    >
+    <div {...stylex.props(styles.track)}>
       <div
-        style={{
-          width: `${Math.min(100, pct)}%`,
-          height: "100%",
-          background: color,
-          borderRadius: R.sm,
-        }}
+        {...stylex.props(
+          styles.fill,
+          BAR_TONE[tone],
+          styles.fillWidth(Math.min(100, pct)),
+        )}
       />
     </div>
   );
@@ -185,96 +301,55 @@ export function StatCard({
             }
           : undefined
       }
-      style={{
-        ...cardBox,
-        padding: "18px 20px",
-        display: "flex",
-        flexDirection: "column",
-        gap: 12,
-        cursor: interactive ? "pointer" : undefined,
-      }}
+      {...stylex.props(
+        common.card,
+        styles.statCard,
+        interactive && styles.statCardInteractive,
+      )}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <div
-          style={{
-            width: 28,
-            height: 28,
-            borderRadius: R.md,
-            background: C.sel5,
-            color: C.a11,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            flex: "none",
-          }}
-        >
+      <div {...stylex.props(styles.statHead)}>
+        <div {...stylex.props(common.chip, common.chipSm)}>
           <Ico d={icon} s={16} />
         </div>
-        <span
-          style={{
-            fontSize: 12.5,
-            color: C.mut,
-            textTransform: "uppercase",
-            letterSpacing: "0.05em",
-          }}
-        >
-          {label}
-        </span>
+        <span {...stylex.props(styles.statLabel)}>{label}</span>
       </div>
-      <div
-        style={{
-          fontFamily: C.serif,
-          fontSize: 34,
-          fontWeight: 500,
-          letterSpacing: "-0.02em",
-          lineHeight: 1,
-          color: C.t12,
-        }}
-      >
-        {value}
-      </div>
-      <div style={{ fontSize: 12.5, color: C.mut }}>{foot}</div>
+      <div {...stylex.props(styles.statValue)}>{value}</div>
+      <div {...stylex.props(styles.statFoot)}>{foot}</div>
     </div>
   );
 }
 
+const STAT_TONE = {
+  accent: styles.bigStatAccent,
+  positive: styles.bigStatPositive,
+  critical: styles.bigStatCritical,
+} as const;
+
+/**
+ * One figure in a send's delivery report. `tone` colors the number by what it
+ * means — opens in the accent, clicks positive, bounces critical; a metric with
+ * no verdict (delivered, unsubscribes) stays ink.
+ */
 export function BigStat({
   label,
   value,
   sub,
-  color,
+  tone,
 }: {
   label: string;
   value: string;
   sub: string;
-  color?: string;
+  tone?: keyof typeof STAT_TONE;
 }) {
   return (
-    <div style={{ padding: "4px 0" }}>
+    <div {...stylex.props(styles.bigStat)}>
+      <div {...stylex.props(styles.bigStatLabel)}>{label}</div>
       <div
-        style={{
-          fontSize: 12,
-          color: C.mut,
-          textTransform: "uppercase",
-          letterSpacing: "0.05em",
-          marginBottom: 7,
-        }}
-      >
-        {label}
-      </div>
-      <div
-        style={{
-          fontFamily: C.serif,
-          fontSize: 30,
-          fontWeight: 500,
-          letterSpacing: "-0.02em",
-          lineHeight: 1,
-          color: color ?? C.t12,
-        }}
+        {...stylex.props(styles.bigStatValue, tone && STAT_TONE[tone])}
       >
         {value}
       </div>
-      <div style={{ fontSize: 12, color: C.mut, marginTop: 5 }}>{sub}</div>
+      <div {...stylex.props(styles.bigStatSub)}>{sub}</div>
     </div>
   );
 }

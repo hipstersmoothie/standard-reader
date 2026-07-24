@@ -1,18 +1,63 @@
-import { C } from "../theme";
+import {
+  primaryColor,
+  uiColor,
+} from "@standard-reader/design-system/theme/color.stylex";
+import {
+  fontFamily,
+  fontSize,
+} from "@standard-reader/design-system/theme/typography.stylex";
+import * as stylex from "@stylexjs/stylex";
+
+const styles = stylex.create({
+  svg: {
+    display: "block",
+    overflow: "visible",
+  },
+  /** Horizontal guides behind the curve. */
+  guide: {
+    stroke: uiColor.border1,
+  },
+  /** The curve itself, and the dot marking the latest reading. */
+  line: {
+    fill: "none",
+    stroke: primaryColor.solid1,
+  },
+  marker: {
+    fill: primaryColor.solid1,
+  },
+  /** Gradient wash under the curve — the accent fading out downward. */
+  washTop: {
+    stopColor: primaryColor.solid1,
+    stopOpacity: 0.22,
+  },
+  washBottom: {
+    stopColor: primaryColor.solid1,
+    stopOpacity: 0,
+  },
+  axisLabel: {
+    fill: uiColor.text1,
+    fontFamily: fontFamily.sans,
+    fontSize: fontSize.xs,
+  },
+});
 
 /**
  * A compact, dependency-free area chart. Deterministic geometry (no animation
  * state) so it renders identically on the server and client.
+ *
+ * Paint comes from StyleX classes rather than `stroke=` / `fill=` attributes,
+ * so the chart follows the editorial theme like everything else — `stroke`,
+ * `fill`, and `stop-color` are ordinary CSS properties on SVG elements, and a
+ * class beats the attribute. The one attribute left is the `url(#…)` gradient
+ * reference, which is a paint server, not a color.
  */
 export function AreaChart({
   data,
   h = 150,
-  stroke = C.a9,
   labels,
 }: {
   data: Array<number>;
   h?: number;
-  stroke?: string;
   labels?: Array<string>;
 }) {
   const W = 720;
@@ -43,12 +88,12 @@ export function AreaChart({
       width="100%"
       height={h}
       preserveAspectRatio="none"
-      style={{ display: "block", overflow: "visible" }}
+      {...stylex.props(styles.svg)}
     >
       <defs>
         <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={stroke} stopOpacity="0.22" />
-          <stop offset="100%" stopColor={stroke} stopOpacity="0" />
+          <stop offset="0%" {...stylex.props(styles.washTop)} />
+          <stop offset="100%" {...stylex.props(styles.washBottom)} />
         </linearGradient>
       </defs>
       {[0.25, 0.5, 0.75].map((g) => (
@@ -58,30 +103,27 @@ export function AreaChart({
           x2={W - pad.r}
           y1={pad.t + ih * g}
           y2={pad.t + ih * g}
-          stroke={C.b6}
           strokeWidth="1"
+          {...stylex.props(styles.guide)}
         />
       ))}
       <path d={area} fill={`url(#${gid})`} />
       <path
         d={line}
-        fill="none"
-        stroke={stroke}
         strokeWidth="2.5"
         vectorEffect="non-scaling-stroke"
         strokeLinejoin="round"
         strokeLinecap="round"
+        {...stylex.props(styles.line)}
       />
-      <circle cx={last[0]} cy={last[1]} r="4" fill={stroke} />
+      <circle cx={last[0]} cy={last[1]} r="4" {...stylex.props(styles.marker)} />
       {labels?.map((l, i) => (
         <text
           key={i}
           x={pts[i][0]}
           y={h - 6}
-          fill={C.mut}
-          fontSize="10.5"
           textAnchor="middle"
-          fontFamily={C.sans}
+          {...stylex.props(styles.axisLabel)}
         >
           {l}
         </text>

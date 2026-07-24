@@ -1,11 +1,32 @@
+import {
+  primaryColor,
+  successColor,
+  uiColor,
+} from "@standard-reader/design-system/theme/color.stylex";
+import { radius } from "@standard-reader/design-system/theme/radius.stylex";
+import {
+  gap,
+  horizontalSpace,
+  verticalSpace,
+} from "@standard-reader/design-system/theme/semantic-spacing.stylex";
+import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
+import {
+  fontFamily,
+  fontSize,
+  fontWeight,
+  lineHeight,
+  tracking,
+} from "@standard-reader/design-system/theme/typography.stylex";
+import * as stylex from "@stylexjs/stylex";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link, createFileRoute, redirect } from "@tanstack/react-router";
 
+import { common } from "../common-styles";
 import { AreaChart } from "../components/charts";
 import { I, Ico } from "../components/icons";
 import { BigStat, StatBar } from "../components/ui";
+import { fmt } from "../lib/format";
 import { publicationsQueryOptions } from "../server/analytics";
-import { C, NEG, POS, POSD, R, cardBox, fmt } from "../theme";
 
 export const Route = createFileRoute("/_app/p/$pubId_/$sendPath")({
   loader: async ({ context, params }) => {
@@ -17,6 +38,133 @@ export const Route = createFileRoute("/_app/p/$pubId_/$sendPath")({
     if (!pub || !send) throw redirect({ to: "/dashboard" });
   },
   component: SendDetail,
+});
+
+const styles = stylex.create({
+  head: {
+    alignItems: "flex-start",
+    columnGap: gap["2xl"],
+    display: "flex",
+    marginBlockEnd: verticalSpace.xs,
+    marginBlockStart: spacing["3.5"],
+    rowGap: gap["2xl"],
+  },
+  status: {
+    alignItems: "center",
+    color: successColor.text1,
+    columnGap: gap.sm,
+    display: "inline-flex",
+    fontSize: fontSize.xs,
+    marginBottom: verticalSpace.lg,
+    rowGap: gap.sm,
+  },
+  statusDot: {
+    backgroundColor: successColor.solid1,
+    borderRadius: radius.full,
+    height: spacing["2"],
+    width: spacing["2"],
+  },
+  title: {
+    fontSize: fontSize["3xl"],
+  },
+  subject: {
+    alignItems: "center",
+    color: uiColor.text1,
+    columnGap: gap.md,
+    display: "flex",
+    fontSize: fontSize.sm,
+    marginTop: verticalSpace.md,
+    rowGap: gap.md,
+  },
+  subjectLine: { fontStyle: "italic" },
+  viewPost: {
+    alignItems: "center",
+    backgroundColor: uiColor.bg,
+    borderColor: uiColor.border2,
+    borderRadius: radius.md,
+    borderStyle: "solid",
+    borderWidth: 1,
+    color: uiColor.text2,
+    columnGap: gap.sm,
+    display: "inline-flex",
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+    paddingBlockEnd: verticalSpace.md,
+    paddingBlockStart: verticalSpace.md,
+    paddingInlineEnd: horizontalSpace.xl,
+    paddingInlineStart: horizontalSpace.xl,
+    rowGap: gap.sm,
+    textDecoration: "none",
+  },
+
+  summary: {
+    columnGap: gap["2xl"],
+    display: "grid",
+    gridTemplateColumns: "repeat(5, 1fr)",
+    marginBlockEnd: spacing["6"],
+    marginBlockStart: spacing["6"],
+    paddingBlockEnd: verticalSpace["4xl"],
+    paddingBlockStart: verticalSpace["4xl"],
+    paddingInlineEnd: horizontalSpace["6xl"],
+    paddingInlineStart: horizontalSpace["6xl"],
+    rowGap: gap["2xl"],
+  },
+
+  panels: {
+    alignItems: "start",
+    columnGap: gap["5xl"],
+    display: "grid",
+    gridTemplateColumns: "1.3fr 1fr",
+    rowGap: gap["5xl"],
+  },
+  panel: {
+    paddingBlockEnd: verticalSpace["5xl"],
+    paddingBlockStart: verticalSpace["5xl"],
+    paddingInlineEnd: horizontalSpace["5xl"],
+    paddingInlineStart: horizontalSpace["5xl"],
+  },
+  panelHead: {
+    alignItems: "baseline",
+    columnGap: gap.xl,
+    display: "flex",
+    marginBottom: verticalSpace["2xl"],
+    rowGap: gap.xl,
+  },
+  panelTitle: {
+    color: uiColor.text2,
+    fontFamily: fontFamily.serif,
+    fontSize: fontSize.lg,
+  },
+  panelTitleSpaced: {
+    marginBottom: verticalSpace["3xl"],
+  },
+
+  links: {
+    display: "flex",
+    flexDirection: "column",
+    rowGap: gap["2xl"],
+  },
+  linkHead: {
+    columnGap: gap.xl,
+    display: "flex",
+    justifyContent: "space-between",
+    marginBottom: verticalSpace.sm,
+    rowGap: gap.xl,
+  },
+  linkUrl: {
+    color: primaryColor.text1,
+    fontFamily: fontFamily.mono,
+    fontSize: fontSize.xs,
+  },
+  linkCount: {
+    color: uiColor.text2,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.semibold,
+  },
+  titleTight: {
+    letterSpacing: tracking.tight,
+    lineHeight: lineHeight.none,
+  },
 });
 
 function SendDetail() {
@@ -63,117 +211,57 @@ function SendDetail() {
   const maxLink = Math.max(1, ...links.map((l) => l.count));
 
   return (
-    <div style={{ height: "100%", overflow: "auto", background: C.pageBg }}>
+    <div {...stylex.props(common.screen)}>
       <div
-        style={{ maxWidth: 940, margin: "0 auto", padding: "30px 40px 90px" }}
+        {...stylex.props(
+          common.container,
+          common.screenPadTight,
+          common.measureWide,
+        )}
       >
         <Link
           to="/p/$pubId"
           params={{ pubId: pub.id }}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 6,
-            fontSize: 13,
-            color: C.mut,
-            textDecoration: "none",
-          }}
+          {...stylex.props(common.backLink)}
         >
           <Ico d={I.chevL} s={15} w={1.9} />
           {pub.name}
         </Link>
 
-        <div
-          style={{
-            display: "flex",
-            alignItems: "flex-start",
-            gap: 16,
-            margin: "14px 0 4px",
-          }}
-        >
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 7,
-                fontSize: 12.5,
-                color: POS,
-                marginBottom: 10,
-              }}
-            >
-              <span
-                style={{
-                  width: 7,
-                  height: 7,
-                  borderRadius: R.full,
-                  background: POSD,
-                }}
-              />
+        <div {...stylex.props(styles.head)}>
+          <div {...stylex.props(common.flexFill)}>
+            <div {...stylex.props(styles.status)}>
+              <span {...stylex.props(styles.statusDot)} />
               Delivered · {send.when}
             </div>
             <h1
-              style={{
-                fontFamily: C.serif,
-                fontWeight: 500,
-                fontSize: 32,
-                letterSpacing: "-0.02em",
-                margin: 0,
-                color: C.t12,
-                lineHeight: 1.12,
-              }}
+              {...stylex.props(
+                common.pageTitle,
+                styles.title,
+                styles.titleTight,
+              )}
             >
               {send.title}
             </h1>
-            <div
-              style={{
-                fontSize: 14,
-                color: C.mut,
-                marginTop: 8,
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-              }}
-            >
+            <div {...stylex.props(styles.subject)}>
               <Ico d={I.mail} s={15} />
-              <span style={{ fontStyle: "italic" }}>“{send.subject}”</span>
+              <span {...stylex.props(styles.subjectLine)}>
+                “{send.subject}”
+              </span>
             </div>
           </div>
-          <div style={{ flex: "none", display: "flex", gap: 10 }}>
-            <a
-              href={`https://${pub.url}/${send.path}`}
-              target="_blank"
-              rel="noreferrer"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 7,
-                fontSize: 13.5,
-                fontWeight: 500,
-                color: C.t12,
-                background: C.warm,
-                border: `1px solid ${C.b7}`,
-                borderRadius: R.md,
-                padding: "7px 13px",
-                textDecoration: "none",
-              }}
-            >
-              <Ico d={I.external} s={16} />
-              View post
-            </a>
-          </div>
+          <a
+            href={`https://${pub.url}/${send.path}`}
+            target="_blank"
+            rel="noreferrer"
+            {...stylex.props(common.flexNone, styles.viewPost)}
+          >
+            <Ico d={I.external} s={16} />
+            View post
+          </a>
         </div>
 
-        <div
-          style={{
-            ...cardBox,
-            padding: "20px 26px",
-            margin: "24px 0",
-            display: "grid",
-            gridTemplateColumns: "repeat(5, 1fr)",
-            gap: 16,
-          }}
-        >
+        <div {...stylex.props(common.card, styles.summary)}>
           <BigStat
             label="Delivered"
             value={fmt(delivered)}
@@ -183,13 +271,13 @@ function SendDetail() {
             label="Opens"
             value={`${send.openRate}%`}
             sub={`${fmt(opens)} unique`}
-            color={C.a11}
+            tone="accent"
           />
           <BigStat
             label="Clicks"
             value={`${send.clickRate}%`}
             sub={`${fmt(clicks)} unique`}
-            color={POS}
+            tone="positive"
           />
           <BigStat
             label="Unsubscribes"
@@ -200,83 +288,41 @@ function SendDetail() {
             label="Bounced"
             value={fmt(send.bounces)}
             sub={`${((send.bounces / send.recipients) * 100).toFixed(2)}%`}
-            color={NEG}
+            tone="critical"
           />
         </div>
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1.3fr 1fr",
-            gap: 24,
-            alignItems: "start",
-          }}
-        >
-          <div style={{ ...cardBox, padding: 22 }}>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "baseline",
-                gap: 12,
-                marginBottom: 14,
-              }}
-            >
-              <div style={{ fontFamily: C.serif, fontSize: 18, color: C.t12 }}>
-                Opens over time
-              </div>
-              <div style={{ fontSize: 12.5, color: C.mut, marginLeft: "auto" }}>
+        <div {...stylex.props(styles.panels)}>
+          <div {...stylex.props(common.card, styles.panel)}>
+            <div {...stylex.props(styles.panelHead)}>
+              <div {...stylex.props(styles.panelTitle)}>Opens over time</div>
+              <div {...stylex.props(common.meta, common.pushEnd)}>
                 First 48 hours
               </div>
             </div>
             <AreaChart data={curve} h={168} labels={hourLabels} />
           </div>
 
-          <div style={{ ...cardBox, padding: 22 }}>
+          <div {...stylex.props(common.card, styles.panel)}>
             <div
-              style={{
-                fontFamily: C.serif,
-                fontSize: 18,
-                color: C.t12,
-                marginBottom: 16,
-              }}
+              {...stylex.props(styles.panelTitle, styles.panelTitleSpaced)}
             >
               Top links clicked
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 15 }}>
+            <div {...stylex.props(styles.links)}>
               {links.map((l) => (
                 <div key={l.label}>
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      gap: 12,
-                      marginBottom: 6,
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontSize: 12.5,
-                        color: C.a11,
-                        fontFamily: C.mono,
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                      }}
-                    >
+                  <div {...stylex.props(styles.linkHead)}>
+                    <span {...stylex.props(styles.linkUrl, common.truncate)}>
                       {l.label}
                     </span>
                     <span
-                      style={{
-                        fontSize: 12.5,
-                        color: C.t12,
-                        fontWeight: 600,
-                        flex: "none",
-                      }}
+                      {...stylex.props(styles.linkCount, common.flexNone)}
                     >
                       {fmt(l.count)}
                     </span>
                   </div>
-                  <StatBar pct={(l.count / maxLink) * 100} color={C.a9} />
+                  <StatBar pct={(l.count / maxLink) * 100} />
                 </div>
               ))}
             </div>

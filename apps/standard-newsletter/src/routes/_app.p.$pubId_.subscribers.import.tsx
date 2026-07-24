@@ -1,4 +1,18 @@
+import { Alert } from "@standard-reader/design-system/alert";
 import { Button } from "@standard-reader/design-system/button";
+import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
+import {
+  gap,
+  horizontalSpace,
+  verticalSpace,
+} from "@standard-reader/design-system/theme/semantic-spacing.stylex";
+import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
+import {
+  fontSize,
+  fontWeight,
+  lineHeight,
+} from "@standard-reader/design-system/theme/typography.stylex";
+import * as stylex from "@stylexjs/stylex";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import {
   Link,
@@ -8,10 +22,11 @@ import {
 } from "@tanstack/react-router";
 import { useState } from "react";
 
+import { common } from "../common-styles";
 import { CsvDropZone } from "../components/csv-drop-zone";
-import { I, Ico } from "../components/icons";
+import { I, Ico, icon } from "../components/icons";
+import { fmt } from "../lib/format";
 import { publicationsQueryOptions } from "../server/analytics";
-import { C, NEG, POS, R, fmt } from "../theme";
 
 export const Route = createFileRoute("/_app/p/$pubId_/subscribers/import")({
   loader: async ({ context, params }) => {
@@ -26,6 +41,81 @@ export const Route = createFileRoute("/_app/p/$pubId_/subscribers/import")({
 });
 
 type State = "idle" | "importing" | "done" | "error";
+
+/** What actually went wrong, in the author's terms rather than the API's. */
+function importErrorMessage(error: string | null): string {
+  switch (error) {
+    case "no-happyview": {
+      return "Subscriber import isn’t available yet — permissioned storage isn’t configured for this instance.";
+    }
+    case "no-session": {
+      return "Your sign-in session expired. Sign in again and retry.";
+    }
+    case "not-owner":
+    case "unauthenticated": {
+      return "Import failed. Check that you own this publication and try again.";
+    }
+    default: {
+      return `Import failed: ${error ?? "unknown error"}`;
+    }
+  }
+}
+
+const styles = stylex.create({
+  title: {
+    fontSize: fontSize["3xl"],
+    marginBlockEnd: verticalSpace.md,
+    marginBlockStart: verticalSpace["3xl"],
+  },
+  intro: {
+    marginBlockEnd: spacing["7"],
+    maxWidth: "520px",
+  },
+
+  done: {
+    paddingBlockEnd: spacing["7"],
+    paddingBlockStart: spacing["7"],
+    paddingInlineEnd: horizontalSpace["6xl"],
+    paddingInlineStart: horizontalSpace["6xl"],
+  },
+  doneHead: {
+    alignItems: "center",
+    color: uiColor.text2,
+    columnGap: gap.md,
+    display: "inline-flex",
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.semibold,
+    marginBottom: verticalSpace.sm,
+    rowGap: gap.md,
+  },
+  doneBody: {
+    color: uiColor.text1,
+    fontSize: fontSize.sm,
+    lineHeight: lineHeight.base,
+    marginBlockEnd: 0,
+    marginBlockStart: 0,
+  },
+  doneActions: {
+    columnGap: gap.lg,
+    display: "flex",
+    marginTop: verticalSpace["4xl"],
+    rowGap: gap.lg,
+  },
+
+  optIn: {
+    alignItems: "center",
+    color: uiColor.text1,
+    columnGap: gap.lg,
+    display: "flex",
+    fontSize: fontSize.xs,
+    marginBlockEnd: spacing["8"],
+    marginBlockStart: spacing["6"],
+    rowGap: gap.lg,
+  },
+  error: {
+    marginBottom: verticalSpace["4xl"],
+  },
+});
 
 function ImportSubscribersPage() {
   const { pubId } = Route.useParams();
@@ -85,87 +175,43 @@ function ImportSubscribersPage() {
   };
 
   return (
-    <div style={{ height: "100%", overflow: "auto", background: C.pageBg }}>
+    <div {...stylex.props(common.screen)}>
       <div
-        style={{ maxWidth: 720, margin: "0 auto", padding: "30px 40px 90px" }}
+        {...stylex.props(
+          common.container,
+          common.screenPadTight,
+          common.measureNarrow,
+        )}
       >
         <Link
           to="/p/$pubId/subscribers"
           params={{ pubId }}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 6,
-            fontSize: 13,
-            color: C.mut,
-            textDecoration: "none",
-          }}
+          {...stylex.props(common.backLink)}
         >
           <Ico d={I.chevL} s={15} w={1.9} />
           {pub.name} subscribers
         </Link>
 
-        <h1
-          style={{
-            fontFamily: C.serif,
-            fontWeight: 500,
-            fontSize: 32,
-            letterSpacing: "-0.02em",
-            margin: "16px 0 8px",
-            color: C.t12,
-          }}
-        >
+        <h1 {...stylex.props(common.pageTitle, styles.title)}>
           Import subscribers
         </h1>
-        <p
-          style={{
-            fontSize: 14.5,
-            color: C.mut,
-            margin: "0 0 26px",
-            lineHeight: 1.6,
-            maxWidth: 520,
-          }}
-        >
+        <p {...stylex.props(common.pageIntro, styles.intro)}>
           Already have subscribers from another tool? Upload a CSV and we’ll add
           them to {pub.name} — saved to your publication’s subscriber-list
           record, data you own.
         </p>
 
         {state === "done" ? (
-          <div
-            style={{
-              border: `1px solid ${C.b6}`,
-              borderRadius: R.lg,
-              background: C.warm,
-              padding: "28px 26px",
-            }}
-          >
-            <div
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-                fontSize: 15,
-                fontWeight: 600,
-                color: C.t12,
-                marginBottom: 6,
-              }}
-            >
-              <Ico d={I.check} s={18} w={2.2} style={{ color: POS }} />
+          <div {...stylex.props(common.card, styles.done)}>
+            <div {...stylex.props(styles.doneHead)}>
+              <Ico d={I.check} s={18} w={2.2} style={icon.positive} />
               {fmt(count)} {count === 1 ? "subscriber" : "subscribers"} imported
             </div>
-            <p
-              style={{
-                fontSize: 13.5,
-                color: C.mut,
-                lineHeight: 1.6,
-                margin: 0,
-              }}
-            >
+            <p {...stylex.props(styles.doneBody)}>
               Imported readers are single opt-in — we’ll send a one-time
               confirmation before their first issue.
             </p>
-            <div style={{ display: "flex", gap: 10, marginTop: 18 }}>
+            <div {...stylex.props(styles.doneActions)}>
               <Button
                 variant="primary"
                 size="sm"
@@ -199,37 +245,21 @@ function ImportSubscribersPage() {
               }}
             />
 
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-                fontSize: 12.5,
-                color: C.mut,
-                margin: "22px 0 30px",
-              }}
-            >
-              <Ico d={I.check} s={15} style={{ color: POS, flex: "none" }} />
+            <div {...stylex.props(styles.optIn)}>
+              <Ico
+                d={I.check}
+                s={15}
+                style={[icon.positive, icon.fixed]}
+              />
               Imported readers are single opt-in — we’ll send them a one-time
               confirmation before their first issue.
             </div>
 
             {state === "error" ? (
-              <div
-                style={{
-                  fontSize: 13,
-                  color: NEG,
-                  marginBottom: 18,
-                  lineHeight: 1.6,
-                }}
-              >
-                {error === "no-happyview"
-                  ? "Subscriber import isn’t available yet — permissioned storage isn’t configured for this instance."
-                  : error === "no-session"
-                    ? "Your sign-in session expired. Sign in again and retry."
-                    : error === "not-owner" || error === "unauthenticated"
-                      ? "Import failed. Check that you own this publication and try again."
-                      : `Import failed: ${error ?? "unknown error"}`}
+              <div {...stylex.props(styles.error)}>
+                <Alert variant="critical" title="Import didn’t finish">
+                  {importErrorMessage(error)}
+                </Alert>
               </div>
             ) : null}
 

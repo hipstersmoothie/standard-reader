@@ -1,9 +1,31 @@
+import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
+import { fontFamily } from "@standard-reader/design-system/theme/typography.stylex";
+import * as stylex from "@stylexjs/stylex";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Outlet, createFileRoute, redirect } from "@tanstack/react-router";
 
 import { AppSidebar } from "../components/app-sidebar";
 import { getAppAccess, publicationsQueryOptions } from "../server/analytics";
-import { C } from "../theme";
+
+const styles = stylex.create({
+  shell: {
+    backgroundColor: uiColor.bgSubtle,
+    color: uiColor.text2,
+    display: "flex",
+    fontFamily: fontFamily.sans,
+    height: stylex.firstThatWorks("100dvh", "100vh"),
+    overflow: "hidden",
+  },
+  content: {
+    display: "flex",
+    flexBasis: "0%",
+    flexDirection: "column",
+    flexGrow: 1,
+    flexShrink: 1,
+    height: "100%",
+    minWidth: 0,
+  },
+});
 
 export const Route = createFileRoute("/_app")({
   loader: async ({ context, location }) => {
@@ -28,26 +50,9 @@ function AppLayout() {
   const { data: publications } = useSuspenseQuery(publicationsQueryOptions());
   const { viewer } = Route.useLoaderData();
   return (
-    <div
-      style={{
-        display: "flex",
-        height: "100vh",
-        fontFamily: C.sans,
-        background: C.pageBg,
-        color: C.t12,
-        overflow: "hidden",
-      }}
-    >
+    <div {...stylex.props(styles.shell)}>
       <AppSidebar publications={publications} viewer={viewer} />
-      <div
-        style={{
-          flex: 1,
-          minWidth: 0,
-          display: "flex",
-          flexDirection: "column",
-          height: "100%",
-        }}
-      >
+      <div {...stylex.props(styles.content)}>
         <Outlet />
       </div>
     </div>

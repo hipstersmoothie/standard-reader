@@ -7,6 +7,26 @@ import {
   AlertDialogHeader,
 } from "@standard-reader/design-system/alert-dialog";
 import { Button } from "@standard-reader/design-system/button";
+import { TextField } from "@standard-reader/design-system/text-field";
+import { animationDuration } from "@standard-reader/design-system/theme/animations.stylex";
+import {
+  successColor,
+  uiColor,
+} from "@standard-reader/design-system/theme/color.stylex";
+import {
+  gap,
+  horizontalSpace,
+  verticalSpace,
+} from "@standard-reader/design-system/theme/semantic-spacing.stylex";
+import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
+import {
+  fontFamily,
+  fontSize,
+  fontWeight,
+  lineHeight,
+  tracking,
+} from "@standard-reader/design-system/theme/typography.stylex";
+import * as stylex from "@stylexjs/stylex";
 import {
   useMutation,
   useQueryClient,
@@ -15,18 +35,19 @@ import {
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 
+import { common } from "../common-styles";
 import { AreaChart } from "../components/charts";
-import { I, Ico } from "../components/icons";
+import { I, Ico, icon } from "../components/icons";
 import { Delta, PubGlyph, StatBar, StatCard } from "../components/ui";
 import type { Publication, Send } from "../data/publications";
 import { MONTHS } from "../data/publications";
+import { fmt } from "../lib/format";
 import {
   disconnectPublicationFn,
   publicationsQueryOptions,
   senderDefaultsQueryOptions,
   updateSenderFn,
 } from "../server/analytics";
-import { C, NEG, POS, POSD, R, cardBox, fmt, sectLabel } from "../theme";
 
 export const Route = createFileRoute("/_app/p/$pubId")({
   loader: async ({ context, params }) => {
@@ -41,16 +62,229 @@ export const Route = createFileRoute("/_app/p/$pubId")({
   component: PubAnalytics,
 });
 
-function SendRow({
-  s,
-  onOpen,
-  last,
-}: {
-  s: Send;
-  onOpen: () => void;
-  last: boolean;
-}) {
-  const [hover, setHover] = useState(false);
+const styles = stylex.create({
+  // The masthead is painted in the publication's own stored theme, which is
+  // arbitrary runtime data rather than an app token.
+  masthead: (background: string, foreground: string) => ({
+    backgroundColor: background,
+    color: foreground,
+  }),
+  mastheadInner: {
+    alignItems: "flex-start",
+    columnGap: gap["4xl"],
+    display: "flex",
+    marginInlineEnd: "auto",
+    marginInlineStart: "auto",
+    maxWidth: "1000px",
+    paddingBlockEnd: spacing["8"],
+    paddingBlockStart: spacing["9"],
+    paddingInlineEnd: spacing["10"],
+    paddingInlineStart: spacing["10"],
+    rowGap: gap["4xl"],
+  },
+  pubName: {
+    fontFamily: fontFamily.serif,
+    fontSize: fontSize["3xl"],
+    fontWeight: fontWeight.medium,
+    letterSpacing: tracking.tight,
+    lineHeight: lineHeight.none,
+  },
+  pubDesc: {
+    fontSize: fontSize.sm,
+    lineHeight: lineHeight.sm,
+    marginTop: verticalSpace.sm,
+    maxWidth: "520px",
+    opacity: 0.82,
+  },
+  pubMeta: {
+    alignItems: "center",
+    columnGap: gap.xl,
+    display: "flex",
+    flexWrap: "wrap",
+    fontSize: fontSize.xs,
+    marginTop: verticalSpace["2xl"],
+    opacity: 0.75,
+    rowGap: gap.xl,
+  },
+  metaItem: {
+    alignItems: "center",
+    columnGap: gap.sm,
+    display: "inline-flex",
+    rowGap: gap.sm,
+  },
+  metaMono: { fontFamily: fontFamily.mono },
+  dot: { opacity: 0.4 },
+  mastheadActions: {
+    alignItems: "center",
+    columnGap: gap["3xl"],
+    display: "flex",
+    rowGap: gap["3xl"],
+  },
+  visitLink: {
+    alignItems: "center",
+    // Inherits the masthead's own foreground, whatever the publication's theme
+    // set it to.
+    color: "inherit",
+    columnGap: gap.sm,
+    display: "inline-flex",
+    fontSize: fontSize.sm,
+    opacity: 0.75,
+    rowGap: gap.sm,
+    textDecoration: "none",
+  },
+
+  cards: {
+    columnGap: gap["2xl"],
+    display: "grid",
+    gridTemplateColumns: "repeat(4, 1fr)",
+    marginBottom: spacing["6"],
+    rowGap: gap["2xl"],
+  },
+  growthCard: {
+    marginBottom: spacing["7"],
+    paddingBlockEnd: verticalSpace["5xl"],
+    paddingBlockStart: verticalSpace["5xl"],
+    paddingInlineEnd: horizontalSpace["5xl"],
+    paddingInlineStart: horizontalSpace["5xl"],
+  },
+  cardHead: {
+    alignItems: "baseline",
+    columnGap: gap.xl,
+    display: "flex",
+    marginBottom: verticalSpace["2xl"],
+    rowGap: gap.xl,
+  },
+  cardTitle: {
+    color: uiColor.text2,
+    fontFamily: fontFamily.serif,
+    fontSize: fontSize.lg,
+  },
+
+  sendsHead: {
+    alignItems: "flex-end",
+    display: "flex",
+    marginBottom: verticalSpace.xl,
+  },
+  sendsList: {
+    overflow: "hidden",
+  },
+  sendRow: {
+    alignItems: "center",
+    backgroundColor: {
+      default: "transparent",
+      ":hover": uiColor.component1,
+    },
+    // Rules separate the rows; the card's own border closes the list, so the
+    // last row does not draw one.
+    borderBottomColor: uiColor.border1,
+    borderBottomStyle: "solid",
+    borderBottomWidth: { default: 1, ":last-child": 0 },
+    columnGap: gap["2xl"],
+    cursor: "pointer",
+    display: "grid",
+    // Title · opens · clicks · unsubs · chevron. The metric columns are fixed
+    // so their bars line up down the list.
+    gridTemplateColumns: "1fr 120px 120px 84px 22px",
+    paddingBlockEnd: verticalSpace["3xl"],
+    paddingBlockStart: verticalSpace["3xl"],
+    paddingInlineEnd: horizontalSpace["3xl"],
+    paddingInlineStart: horizontalSpace["3xl"],
+    rowGap: gap["2xl"],
+    transitionDuration: animationDuration.default,
+    transitionProperty: "background-color",
+  },
+  sendTitle: {
+    color: uiColor.text2,
+    fontFamily: fontFamily.serif,
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.medium,
+    letterSpacing: tracking.tight,
+    lineHeight: lineHeight.sm,
+  },
+  sendWhen: {
+    color: uiColor.text1,
+    fontSize: fontSize.xs,
+    marginTop: verticalSpace.xxs,
+  },
+  barHead: {
+    display: "flex",
+    fontSize: fontSize.xs,
+    justifyContent: "space-between",
+    marginBottom: verticalSpace.xs,
+  },
+  barLabel: { color: uiColor.text1 },
+  barValue: { color: uiColor.text2, fontWeight: fontWeight.semibold },
+  unsubs: {
+    color: uiColor.text1,
+    fontSize: fontSize.xs,
+    textAlign: "right",
+  },
+  unsubsInner: {
+    alignItems: "center",
+    columnGap: gap.xs,
+    display: "inline-flex",
+    rowGap: gap.xs,
+  },
+
+  noSends: {
+    paddingBlockEnd: spacing["10"],
+    paddingBlockStart: spacing["10"],
+    paddingInlineEnd: horizontalSpace["5xl"],
+    paddingInlineStart: horizontalSpace["5xl"],
+    textAlign: "center",
+  },
+  noSendsTitle: {
+    color: uiColor.text2,
+    fontFamily: fontFamily.serif,
+    fontSize: fontSize.lg,
+    marginBottom: verticalSpace.sm,
+  },
+  noSendsBody: {
+    color: uiColor.text1,
+    fontSize: fontSize.sm,
+    lineHeight: lineHeight.base,
+    marginBlockEnd: 0,
+    marginBlockStart: 0,
+    marginInlineEnd: "auto",
+    marginInlineStart: "auto",
+    maxWidth: "380px",
+  },
+
+  sender: {
+    marginBottom: spacing["8"],
+  },
+  senderNote: {
+    color: uiColor.text1,
+    fontSize: fontSize.sm,
+    lineHeight: lineHeight.base,
+    marginBlockEnd: verticalSpace["3xl"],
+    marginBlockStart: verticalSpace.sm,
+    maxWidth: "520px",
+  },
+  senderFields: {
+    columnGap: gap["2xl"],
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    marginBottom: verticalSpace["2xl"],
+    rowGap: gap["2xl"],
+  },
+  senderActions: {
+    alignItems: "center",
+    columnGap: gap["3xl"],
+    display: "flex",
+    rowGap: gap["3xl"],
+  },
+  saved: {
+    alignItems: "center",
+    color: successColor.text1,
+    columnGap: gap.sm,
+    display: "inline-flex",
+    fontSize: fontSize.sm,
+    rowGap: gap.sm,
+  },
+});
+
+function SendRow({ s, onOpen }: { s: Send; onOpen: () => void }) {
   return (
     <div
       role="button"
@@ -59,75 +293,39 @@ function SendRow({
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") onOpen();
       }}
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
-      style={{
-        display: "grid",
-        gridTemplateColumns: "1fr 120px 120px 84px 22px",
-        gap: 16,
-        alignItems: "center",
-        padding: "16px 18px",
-        borderBottom: last ? "none" : `1px solid ${C.b6}`,
-        cursor: "pointer",
-        background: hover ? C.hover4 : "transparent",
-        transition: "background .12s",
-      }}
+      {...stylex.props(styles.sendRow)}
     >
-      <div style={{ minWidth: 0 }}>
-        <div
-          style={{
-            fontFamily: C.serif,
-            fontSize: 18,
-            fontWeight: 500,
-            color: C.t12,
-            letterSpacing: "-0.01em",
-            lineHeight: 1.2,
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-          }}
-        >
+      <div {...stylex.props(common.flexFill)}>
+        <div {...stylex.props(styles.sendTitle, common.truncate)}>
           {s.title}
         </div>
-        <div style={{ fontSize: 12, color: C.mut, marginTop: 3 }}>
+        <div {...stylex.props(styles.sendWhen)}>
           {s.when} · {fmt(s.recipients)} recipients
         </div>
       </div>
       <div>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            fontSize: 12.5,
-            marginBottom: 5,
-          }}
-        >
-          <span style={{ color: C.mut }}>Opens</span>
-          <span style={{ color: C.t12, fontWeight: 600 }}>{s.openRate}%</span>
+        <div {...stylex.props(styles.barHead)}>
+          <span {...stylex.props(styles.barLabel)}>Opens</span>
+          <span {...stylex.props(styles.barValue)}>{s.openRate}%</span>
         </div>
-        <StatBar pct={s.openRate} color={C.a9} />
+        <StatBar pct={s.openRate} />
       </div>
       <div>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            fontSize: 12.5,
-            marginBottom: 5,
-          }}
-        >
-          <span style={{ color: C.mut }}>Clicks</span>
-          <span style={{ color: C.t12, fontWeight: 600 }}>{s.clickRate}%</span>
+        <div {...stylex.props(styles.barHead)}>
+          <span {...stylex.props(styles.barLabel)}>Clicks</span>
+          <span {...stylex.props(styles.barValue)}>{s.clickRate}%</span>
         </div>
-        <StatBar pct={s.clickRate * 3.5} color={POSD} />
+        {/* Click rates run an order of magnitude below open rates, so the bar
+            is scaled to keep a typical 3–8% readable next to a 40% open bar. */}
+        <StatBar pct={s.clickRate * 3.5} tone="positive" />
       </div>
-      <div style={{ textAlign: "right", fontSize: 12.5, color: C.mut }}>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+      <div {...stylex.props(styles.unsubs)}>
+        <span {...stylex.props(styles.unsubsInner)}>
           <Ico d={I.userMinus} s={13} />
           {s.unsubs}
         </span>
       </div>
-      <Ico d={I.chevR} s={16} style={{ color: C.mut }} />
+      <Ico d={I.chevR} s={16} style={icon.muted} />
     </div>
   );
 }
@@ -195,84 +393,31 @@ function PubAnalytics() {
     : 0;
 
   return (
-    <div style={{ height: "100%", overflow: "auto", background: C.pageBg }}>
+    <div {...stylex.props(common.screen)}>
       <div
-        style={{
-          background: t.background,
-          color: t.foreground,
-          borderBottom: `1px solid ${C.b6}`,
-        }}
+        {...stylex.props(
+          common.ruleBelow,
+          styles.masthead(t.background, t.foreground),
+        )}
       >
-        <div
-          style={{
-            maxWidth: 1000,
-            margin: "0 auto",
-            padding: "36px 40px 30px",
-            display: "flex",
-            gap: 20,
-            alignItems: "flex-start",
-          }}
-        >
+        <div {...stylex.props(styles.mastheadInner)}>
           <PubGlyph pub={pub} size="xl" />
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div
-              style={{
-                fontFamily: C.serif,
-                fontSize: 30,
-                fontWeight: 500,
-                letterSpacing: "-0.02em",
-                lineHeight: 1.1,
-              }}
-            >
-              {pub.name}
-            </div>
-            <div
-              style={{
-                fontSize: 14,
-                lineHeight: 1.5,
-                opacity: 0.82,
-                marginTop: 7,
-                maxWidth: 520,
-              }}
-            >
-              {pub.desc}
-            </div>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 12,
-                flexWrap: "wrap",
-                marginTop: 13,
-                fontSize: 12.5,
-                opacity: 0.75,
-              }}
-            >
-              <span
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 7,
-                  fontFamily: C.mono,
-                }}
-              >
+          <div {...stylex.props(common.flexFill)}>
+            <div {...stylex.props(styles.pubName)}>{pub.name}</div>
+            <div {...stylex.props(styles.pubDesc)}>{pub.desc}</div>
+            <div {...stylex.props(styles.pubMeta)}>
+              <span {...stylex.props(styles.metaItem, styles.metaMono)}>
                 <Ico d={I.link} s={14} />
                 {pub.url}
               </span>
-              <span style={{ opacity: 0.4 }}>·</span>
+              <span {...stylex.props(styles.dot)}>·</span>
               {pub.cadence ? (
                 <>
-                  <span
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 6,
-                    }}
-                  >
+                  <span {...stylex.props(styles.metaItem)}>
                     <Ico d={I.calendar} s={14} />
                     {pub.cadence}
                   </span>
-                  <span style={{ opacity: 0.4 }}>·</span>
+                  <span {...stylex.props(styles.dot)}>·</span>
                 </>
               ) : null}
               <span>
@@ -280,27 +425,12 @@ function PubAnalytics() {
               </span>
             </div>
           </div>
-          <div
-            style={{
-              flex: "none",
-              display: "flex",
-              alignItems: "center",
-              gap: 16,
-            }}
-          >
+          <div {...stylex.props(common.flexNone, styles.mastheadActions)}>
             <a
               href={`https://${pub.url}`}
               target="_blank"
               rel="noreferrer"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 6,
-                fontSize: 13,
-                color: t.foreground,
-                opacity: 0.75,
-                textDecoration: "none",
-              }}
+              {...stylex.props(styles.visitLink)}
             >
               <Ico d={I.external} s={15} /> Visit site
             </a>
@@ -310,16 +440,13 @@ function PubAnalytics() {
       </div>
 
       <div
-        style={{ maxWidth: 1000, margin: "0 auto", padding: "26px 40px 90px" }}
+        {...stylex.props(
+          common.container,
+          common.screenPadTight,
+          common.measureFull,
+        )}
       >
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(4, 1fr)",
-            gap: 16,
-            marginBottom: 24,
-          }}
-        >
+        <div {...stylex.props(styles.cards)}>
           <StatCard
             icon={I.users}
             label="Subscribers"
@@ -361,19 +488,10 @@ function PubAnalytics() {
         </div>
 
         {pub.growth.length > 0 ? (
-          <div style={{ ...cardBox, padding: 22, marginBottom: 28 }}>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "baseline",
-                gap: 12,
-                marginBottom: 14,
-              }}
-            >
-              <div style={{ fontFamily: C.serif, fontSize: 18, color: C.t12 }}>
-                Subscriber growth
-              </div>
-              <div style={{ fontSize: 12.5, color: C.mut, marginLeft: "auto" }}>
+          <div {...stylex.props(common.card, styles.growthCard)}>
+            <div {...stylex.props(styles.cardHead)}>
+              <div {...stylex.props(styles.cardTitle)}>Subscriber growth</div>
+              <div {...stylex.props(common.meta, common.pushEnd)}>
                 Last 12 months
               </div>
             </div>
@@ -383,46 +501,28 @@ function PubAnalytics() {
 
         <SenderSettings pub={pub} />
 
-        <div
-          style={{ display: "flex", alignItems: "flex-end", marginBottom: 12 }}
-        >
-          <div style={sectLabel}>Newsletters sent</div>
-          <span style={{ marginLeft: "auto", fontSize: 12.5, color: C.mut }}>
+        <div {...stylex.props(styles.sendsHead)}>
+          <div {...stylex.props(common.sectionLabel)}>Newsletters sent</div>
+          <span {...stylex.props(common.meta, common.pushEnd)}>
             Each row is a published post mailed to subscribers
           </span>
         </div>
-        <div style={{ ...cardBox, overflow: "hidden" }}>
+        <div {...stylex.props(common.card, styles.sendsList)}>
           {pub.sends.length === 0 ? (
-            <div style={{ padding: "40px 24px", textAlign: "center" }}>
-              <div
-                style={{
-                  fontFamily: C.serif,
-                  fontSize: 18,
-                  color: C.t12,
-                  marginBottom: 6,
-                }}
-              >
+            <div {...stylex.props(styles.noSends)}>
+              <div {...stylex.props(styles.noSendsTitle)}>
                 No newsletters sent yet
               </div>
-              <p
-                style={{
-                  fontSize: 13.5,
-                  lineHeight: 1.6,
-                  color: C.mut,
-                  maxWidth: 380,
-                  margin: "0 auto",
-                }}
-              >
+              <p {...stylex.props(styles.noSendsBody)}>
                 New posts published to this publication are mailed to its
                 subscribers and their delivery reports appear here.
               </p>
             </div>
           ) : (
-            pub.sends.map((s, i) => (
+            pub.sends.map((s) => (
               <SendRow
                 key={s.path}
                 s={s}
-                last={i === pub.sends.length - 1}
                 onOpen={() =>
                   navigate({
                     to: "/p/$pubId/$sendPath",
@@ -467,69 +567,36 @@ function SenderSettings({ pub }: { pub: Publication }) {
   const invalidAddress =
     save.data && !save.data.ok && save.data.reason === "invalid-address";
 
-  const field: React.CSSProperties = {
-    width: "100%",
-    boxSizing: "border-box",
-    fontFamily: C.sans,
-    fontSize: 14,
-    padding: "10px 12px",
-    borderRadius: R.md,
-    border: `1px solid ${invalidAddress ? NEG : C.b7}`,
-    background: C.warm,
-    color: C.t12,
-  };
-  const label: React.CSSProperties = {
-    display: "block",
-    fontSize: 12.5,
-    color: C.mut,
-    marginBottom: 6,
-  };
-
   return (
-    <div style={{ marginBottom: 32 }}>
-      <div style={sectLabel}>Sender</div>
-      <p
-        style={{
-          fontSize: 13,
-          color: C.mut,
-          margin: "6px 0 16px",
-          lineHeight: 1.6,
-          maxWidth: 520,
-        }}
-      >
+    <div {...stylex.props(styles.sender)}>
+      <div {...stylex.props(common.sectionLabel)}>Sender</div>
+      <p {...stylex.props(styles.senderNote)}>
         How this newsletter appears in the inbox. Leave a field blank to use the
         default. The address must be on a verified sending domain.
       </p>
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: 16,
-          marginBottom: 14,
-        }}
-      >
-        <div>
-          <span style={label}>From name</span>
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder={defaults.fromName}
-            style={field}
-          />
-        </div>
-        <div>
-          <span style={label}>From address</span>
-          <input
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-            placeholder={defaults.fromAddress}
-            autoComplete="off"
-            autoCapitalize="none"
-            style={{ ...field, fontFamily: C.mono }}
-          />
-        </div>
+      <div {...stylex.props(styles.senderFields)}>
+        <TextField
+          label="From name"
+          value={name}
+          onChange={setName}
+          placeholder={defaults.fromName}
+        />
+        <TextField
+          label="From address"
+          value={address}
+          onChange={setAddress}
+          placeholder={defaults.fromAddress}
+          type="email"
+          autoComplete="off"
+          validationState={invalidAddress ? "invalid" : undefined}
+          errorMessage={
+            invalidAddress
+              ? "That doesn’t look like a valid email address."
+              : undefined
+          }
+        />
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+      <div {...stylex.props(styles.senderActions)}>
         <Button
           variant="primary"
           size="sm"
@@ -539,21 +606,8 @@ function SenderSettings({ pub }: { pub: Publication }) {
         >
           Save
         </Button>
-        {invalidAddress ? (
-          <span style={{ fontSize: 13, color: NEG }}>
-            That doesn’t look like a valid email address.
-          </span>
-        ) : null}
         {save.data?.ok && !dirty ? (
-          <span
-            style={{
-              fontSize: 13,
-              color: POS,
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 6,
-            }}
-          >
+          <span {...stylex.props(styles.saved)}>
             <Ico d={I.check} s={14} w={2.2} />
             Saved
           </span>

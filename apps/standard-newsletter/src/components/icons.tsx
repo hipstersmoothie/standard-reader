@@ -1,5 +1,30 @@
-import type { CSSProperties } from "react";
+import {
+  primaryColor,
+  successColor,
+  uiColor,
+} from "@standard-reader/design-system/theme/color.stylex";
+import * as stylex from "@stylexjs/stylex";
 
+/**
+ * The tints an {@link Ico} is asked for often enough to be worth naming, so
+ * call sites pass `icon.muted` rather than re-deriving the token each time.
+ */
+// eslint-disable-next-line react/only-export-components -- icon tints + Ico helper
+export const icon = stylex.create({
+  accent: { color: primaryColor.solid1 },
+  accentText: { color: primaryColor.text1 },
+  muted: { color: uiColor.text1 },
+  positive: { color: successColor.text1 },
+  /** Keeps a glyph at its natural size inside a flex row. */
+  fixed: { flexGrow: 0, flexShrink: 0 },
+});
+
+/**
+ * One of the {@link I} glyphs, drawn at `s` px in the current text color.
+ *
+ * `style` takes StyleX styles (not a raw CSS object) so callers tint or place
+ * the glyph from the same token scale as everything around it.
+ */
 export function Ico({
   d,
   s = 17,
@@ -9,7 +34,7 @@ export function Ico({
   d: string;
   s?: number;
   w?: number;
-  style?: CSSProperties;
+  style?: stylex.StyleXStyles;
 }) {
   return (
     <svg
@@ -21,7 +46,7 @@ export function Ico({
       strokeWidth={w}
       strokeLinecap="round"
       strokeLinejoin="round"
-      style={style}
+      {...stylex.props(style)}
       dangerouslySetInnerHTML={{ __html: d }}
     />
   );

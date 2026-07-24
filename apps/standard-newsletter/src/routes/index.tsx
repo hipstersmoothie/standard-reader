@@ -1,13 +1,34 @@
 import { Button } from "@standard-reader/design-system/button";
+import {
+  primaryColor,
+  uiColor,
+} from "@standard-reader/design-system/theme/color.stylex";
+import { radius } from "@standard-reader/design-system/theme/radius.stylex";
+import {
+  gap,
+  horizontalSpace,
+  verticalSpace,
+} from "@standard-reader/design-system/theme/semantic-spacing.stylex";
+import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
+import {
+  fontFamily,
+  fontSize,
+  fontWeight,
+  lineHeight,
+  tracking,
+} from "@standard-reader/design-system/theme/typography.stylex";
+import * as stylex from "@stylexjs/stylex";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import type { ReactNode } from "react";
 
-import { I, Ico } from "../components/icons";
+import { common } from "../common-styles";
+import { I, Ico, icon } from "../components/icons";
 import { PubGlyph } from "../components/ui";
+import { fmt } from "../lib/format";
+import { motion } from "../motion-styles";
 import { showcasePublicationsQueryOptions } from "../server/analytics";
-import { C, POS, R, fmt, sectLabel } from "../theme";
 
 export const Route = createFileRoute("/")({
   loader: ({ context }) =>
@@ -15,9 +36,393 @@ export const Route = createFileRoute("/")({
   component: Home,
 });
 
+const styles = stylex.create({
+  page: {
+    backgroundColor: uiColor.bgSubtle,
+    color: uiColor.text2,
+    fontFamily: fontFamily.sans,
+    height: stylex.firstThatWorks("100dvh", "100vh"),
+    overflow: "auto",
+  },
+  // The marketing page runs slightly wider than the app's 1000px measure so the
+  // two-column bands have room to breathe.
+  wrap: {
+    marginInlineEnd: "auto",
+    marginInlineStart: "auto",
+    maxWidth: "1040px",
+    paddingInlineEnd: spacing["10"],
+    paddingInlineStart: spacing["10"],
+  },
+
+  header: {
+    backdropFilter: "saturate(1.1) blur(10px)",
+    // The bar sits over scrolling content, so it is the page ground at 88%
+    // rather than a flat fill.
+    backgroundColor: `color-mix(in srgb, ${uiColor.bgSubtle} 88%, transparent)`,
+    borderBottomColor: uiColor.border1,
+    borderBottomStyle: "solid",
+    borderBottomWidth: 1,
+    position: "sticky",
+    top: 0,
+    zIndex: 10,
+  },
+  headerInner: {
+    alignItems: "center",
+    columnGap: gap["2xl"],
+    display: "flex",
+    paddingBlockEnd: verticalSpace["3xl"],
+    paddingBlockStart: verticalSpace["3xl"],
+    rowGap: gap["2xl"],
+  },
+  wordmark: {
+    color: uiColor.text2,
+    fontFamily: fontFamily.serif,
+    // Between `xl` and `2xl` — the wordmark is set to sit just above the nav
+    // controls without becoming a heading.
+    fontSize: "1.3rem",
+    fontWeight: fontWeight.medium,
+    letterSpacing: tracking.tight,
+    lineHeight: lineHeight.none,
+  },
+  wordmarkAccent: { color: primaryColor.solid1 },
+  headerActions: {
+    alignItems: "center",
+    columnGap: gap.lg,
+    display: "flex",
+    rowGap: gap.lg,
+  },
+
+  hero: {
+    backgroundImage: `radial-gradient(120% 100% at 80% -10%, ${primaryColor.component1} 0%, transparent 55%)`,
+    borderBottomColor: uiColor.border1,
+    borderBottomStyle: "solid",
+    borderBottomWidth: 1,
+    overflow: "hidden",
+    position: "relative",
+  },
+  heroInner: {
+    alignItems: "center",
+    columnGap: spacing["12"],
+    display: "grid",
+    gridTemplateColumns: "1.15fr 0.85fr",
+    paddingBlockEnd: spacing["20"],
+    paddingBlockStart: spacing["20"],
+    rowGap: spacing["12"],
+  },
+  heroTitle: {
+    color: uiColor.text2,
+    fontFamily: fontFamily.serif,
+    fontSize: fontSize["6xl"],
+    fontWeight: fontWeight.medium,
+    letterSpacing: tracking.tighter,
+    lineHeight: lineHeight.none,
+    marginBlockEnd: verticalSpace["5xl"],
+    marginBlockStart: 0,
+    textWrap: "balance",
+  },
+  heroBody: {
+    color: primaryColor.text1,
+    fontSize: fontSize.lg,
+    lineHeight: lineHeight.base,
+    marginBlockEnd: spacing["8"],
+    marginBlockStart: 0,
+    maxWidth: "480px",
+  },
+  heroActions: {
+    alignItems: "center",
+    columnGap: gap.xl,
+    display: "flex",
+    rowGap: gap.xl,
+  },
+
+  pizzazz: {
+    alignItems: "center",
+    columnGap: gap.xs,
+    display: "flex",
+    justifyContent: "center",
+    rowGap: gap.xs,
+  },
+  pubStack: {
+    display: "flex",
+    flexDirection: "column",
+    rowGap: gap.xl,
+  },
+  pubCard: {
+    alignItems: "center",
+    backgroundColor: uiColor.bg,
+    borderColor: uiColor.border1,
+    borderRadius: radius.lg,
+    borderStyle: "solid",
+    borderWidth: 1,
+    // A long, soft drop that lifts the card off the wash without a visible edge.
+    boxShadow: `0 10px 30px -20px color-mix(in srgb, ${uiColor.text2} 50%, transparent)`,
+    columnGap: gap.xl,
+    display: "flex",
+    paddingBlockEnd: verticalSpace.lg,
+    paddingBlockStart: verticalSpace.lg,
+    paddingInlineEnd: horizontalSpace["2xl"],
+    paddingInlineStart: horizontalSpace.lg,
+    rowGap: gap.xl,
+  },
+  pubCardName: {
+    color: uiColor.text2,
+    fontFamily: fontFamily.serif,
+    fontSize: fontSize.sm,
+    whiteSpace: "nowrap",
+  },
+  arrow: {
+    color: primaryColor.solid1,
+    paddingInlineEnd: horizontalSpace.xs,
+    paddingInlineStart: horizontalSpace.xs,
+  },
+  envelope: {
+    alignItems: "center",
+    backgroundColor: primaryColor.solid1,
+    borderRadius: radius.xl,
+    // A cast shadow in the accent's own hue, so the tile reads as lit rather
+    // than pasted on.
+    boxShadow: `0 22px 44px -18px color-mix(in srgb, ${primaryColor.solid1} 75%, transparent)`,
+    color: primaryColor.textContrast,
+    display: "flex",
+    height: spacing["28"],
+    justifyContent: "center",
+    width: spacing["28"],
+  },
+
+  band: {
+    backgroundColor: uiColor.bg,
+    borderBottomColor: uiColor.border1,
+    borderBottomStyle: "solid",
+    borderBottomWidth: 1,
+  },
+  bandInner: {
+    alignItems: "center",
+    columnGap: spacing["16"],
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    paddingBlockEnd: spacing["16"],
+    paddingBlockStart: spacing["16"],
+    rowGap: spacing["16"],
+  },
+  bandTitle: {
+    color: uiColor.text2,
+    fontFamily: fontFamily.serif,
+    fontSize: fontSize["3xl"],
+    fontWeight: fontWeight.medium,
+    letterSpacing: tracking.tight,
+    lineHeight: lineHeight.none,
+    marginBottom: verticalSpace["3xl"],
+  },
+  bandBody: {
+    color: primaryColor.text1,
+    fontSize: fontSize.base,
+    lineHeight: lineHeight.base,
+    marginBlockEnd: 0,
+    marginBlockStart: 0,
+  },
+  hostRow: {
+    alignItems: "center",
+    columnGap: gap["2xl"],
+    display: "flex",
+    paddingBlockEnd: verticalSpace["4xl"],
+    paddingBlockStart: verticalSpace["4xl"],
+    rowGap: gap["2xl"],
+  },
+  hostTitle: {
+    color: uiColor.text2,
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.semibold,
+  },
+  hostSub: {
+    color: uiColor.text1,
+    fontSize: fontSize.sm,
+    marginTop: verticalSpace.xxs,
+  },
+  hostFoot: {
+    alignItems: "center",
+    color: primaryColor.text1,
+    columnGap: gap.lg,
+    display: "flex",
+    fontSize: fontSize.sm,
+    paddingTop: verticalSpace["4xl"],
+    rowGap: gap.lg,
+  },
+
+  steps: {
+    paddingBlockEnd: verticalSpace.md,
+    paddingBlockStart: spacing["14"],
+  },
+  stepsLabel: {
+    marginBottom: verticalSpace["5xl"],
+  },
+  stepsGrid: {
+    columnGap: spacing["8"],
+    display: "grid",
+    gridTemplateColumns: "repeat(3, 1fr)",
+    rowGap: spacing["8"],
+  },
+  step: {
+    display: "flex",
+    flexDirection: "column",
+    rowGap: gap.xl,
+  },
+  stepHead: {
+    alignItems: "center",
+    columnGap: gap.xl,
+    display: "flex",
+    rowGap: gap.xl,
+  },
+  stepNumber: {
+    color: uiColor.text1,
+    fontFamily: fontFamily.mono,
+    fontSize: fontSize.xs,
+  },
+  stepTitle: {
+    color: uiColor.text2,
+    fontFamily: fontFamily.serif,
+    fontSize: fontSize.xl,
+    fontWeight: fontWeight.medium,
+    letterSpacing: tracking.tight,
+    lineHeight: lineHeight.none,
+  },
+  stepBody: {
+    color: primaryColor.text1,
+    fontSize: fontSize.sm,
+    lineHeight: lineHeight.base,
+  },
+
+  pricing: {
+    paddingBlockEnd: spacing["24"],
+    paddingBlockStart: spacing["20"],
+  },
+  pricingHead: {
+    alignItems: "baseline",
+    columnGap: gap.xl,
+    display: "flex",
+    marginBottom: spacing["8"],
+    rowGap: gap.xl,
+  },
+  pricingGrid: {
+    alignItems: "center",
+    columnGap: spacing["16"],
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    paddingTop: spacing["11"],
+    rowGap: spacing["16"],
+  },
+  priceLine: {
+    alignItems: "baseline",
+    columnGap: gap.md,
+    display: "flex",
+    marginBottom: verticalSpace.sm,
+    rowGap: gap.md,
+  },
+  price: {
+    color: uiColor.text2,
+    fontFamily: fontFamily.serif,
+    fontSize: fontSize["7xl"],
+    fontWeight: fontWeight.medium,
+    letterSpacing: tracking.tighter,
+    lineHeight: lineHeight.none,
+  },
+  priceUnit: {
+    color: uiColor.text1,
+    fontSize: fontSize.base,
+  },
+  pricingBody: {
+    color: primaryColor.text1,
+    fontSize: fontSize.base,
+    lineHeight: lineHeight.base,
+    marginBlockEnd: spacing["6"],
+    marginBlockStart: spacing["5"],
+    maxWidth: "400px",
+  },
+  freePill: {
+    alignItems: "center",
+    backgroundColor: primaryColor.component1,
+    borderRadius: radius.full,
+    color: primaryColor.text1,
+    columnGap: gap.md,
+    display: "inline-flex",
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
+    paddingBlockEnd: verticalSpace.md,
+    paddingBlockStart: verticalSpace.md,
+    paddingInlineEnd: horizontalSpace["3xl"],
+    paddingInlineStart: horizontalSpace["3xl"],
+    rowGap: gap.md,
+  },
+  pricingExample: {
+    color: uiColor.text1,
+    fontSize: fontSize.sm,
+    marginTop: verticalSpace["4xl"],
+  },
+
+  calculator: {
+    borderInlineStartColor: uiColor.border1,
+    borderInlineStartStyle: "solid",
+    borderInlineStartWidth: 1,
+    display: "flex",
+    flexDirection: "column",
+    paddingInlineStart: spacing["16"],
+    rowGap: gap["2xl"],
+  },
+  calcHead: {
+    alignItems: "baseline",
+    display: "flex",
+    justifyContent: "space-between",
+  },
+  calcLabel: {
+    color: uiColor.text1,
+    fontSize: fontSize.xs,
+    letterSpacing: tracking.wider,
+    textTransform: "uppercase",
+  },
+  calcValue: {
+    color: uiColor.text2,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
+  },
+  slider: {
+    accentColor: primaryColor.solid1,
+    cursor: "pointer",
+    width: "100%",
+  },
+  ticks: {
+    color: uiColor.text1,
+    display: "flex",
+    fontSize: fontSize.xs,
+    justifyContent: "space-between",
+    // Pulls the tick row up under the slider's track, past its thumb padding.
+    marginTop: `calc(-1 * ${spacing["1.5"]})`,
+  },
+  total: {
+    alignItems: "baseline",
+    columnGap: gap.sm,
+    display: "flex",
+    marginTop: verticalSpace.md,
+    rowGap: gap.sm,
+  },
+  totalValue: {
+    color: uiColor.text2,
+    fontFamily: fontFamily.serif,
+    fontSize: fontSize["5xl"],
+    fontWeight: fontWeight.medium,
+    letterSpacing: tracking.tighter,
+    lineHeight: lineHeight.none,
+  },
+  totalUnit: {
+    color: uiColor.text1,
+    fontSize: fontSize.base,
+  },
+  ctaSlot: {
+    marginTop: verticalSpace.sm,
+  },
+});
+
 function Step({
   n,
-  icon,
+  icon: glyph,
   title,
   body,
 }: {
@@ -27,51 +432,35 @@ function Step({
   body: string;
 }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
-        <div
-          style={{
-            width: 34,
-            height: 34,
-            borderRadius: R.md,
-            background: C.sel5,
-            color: C.a11,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            flex: "none",
-          }}
-        >
-          <Ico d={icon} s={18} />
+    <div {...stylex.props(styles.step)}>
+      <div {...stylex.props(styles.stepHead)}>
+        <div {...stylex.props(common.chip, common.chipMd)}>
+          <Ico d={glyph} s={18} />
         </div>
-        <span style={{ fontFamily: C.mono, fontSize: 12.5, color: C.mut }}>
-          0{n}
-        </span>
+        <span {...stylex.props(styles.stepNumber)}>0{n}</span>
       </div>
-      <div
-        style={{
-          fontFamily: C.serif,
-          fontSize: 21,
-          fontWeight: 500,
-          color: C.t12,
-          letterSpacing: "-0.01em",
-          lineHeight: 1.2,
-        }}
-      >
-        {title}
-      </div>
-      <div style={{ fontSize: 14, color: C.a11, lineHeight: 1.6 }}>{body}</div>
+      <div {...stylex.props(styles.stepTitle)}>{title}</div>
+      <div {...stylex.props(styles.stepBody)}>{body}</div>
     </div>
   );
 }
 
-function wrap(children: ReactNode) {
-  return (
-    <div style={{ maxWidth: 1040, margin: "0 auto", padding: "0 40px" }}>
-      {children}
-    </div>
-  );
+function Wrap({ children }: { children: ReactNode }) {
+  return <div {...stylex.props(styles.wrap)}>{children}</div>;
 }
+
+const HOSTING_ROWS = [
+  {
+    icon: I.grid,
+    t: "On a hosted platform",
+    s: "Publishing through Standard Writer or any client.",
+  },
+  {
+    icon: I.book,
+    t: "Self-hosted",
+    s: "Publishing on your own, wherever it lives.",
+  },
+];
 
 function Home() {
   const navigate = useNavigate();
@@ -81,56 +470,15 @@ function Home() {
   const price = Math.max(0, Math.ceil((calcEmails - 1000) / 1000));
 
   return (
-    <div
-      style={{
-        height: "100vh",
-        overflow: "auto",
-        fontFamily: C.sans,
-        background: C.pageBg,
-        color: C.t12,
-      }}
-    >
+    <div {...stylex.props(styles.page)}>
       {/* HEADER */}
-      <div
-        style={{
-          position: "sticky",
-          top: 0,
-          zIndex: 10,
-          background: `color-mix(in srgb, ${C.pageBg} 88%, transparent)`,
-          backdropFilter: "saturate(1.1) blur(10px)",
-          borderBottom: `1px solid ${C.b6}`,
-        }}
-      >
-        <div
-          style={{
-            maxWidth: 1040,
-            margin: "0 auto",
-            padding: "16px 40px",
-            display: "flex",
-            alignItems: "center",
-            gap: 16,
-          }}
-        >
-          <div
-            style={{
-              fontFamily: C.serif,
-              fontSize: "1.3rem",
-              fontWeight: 500,
-              letterSpacing: "-0.02em",
-              lineHeight: 1,
-              color: C.t12,
-            }}
-          >
-            Standard <span style={{ color: C.a9 }}>Newsletter</span>
+      <div {...stylex.props(styles.header)}>
+        <div {...stylex.props(styles.wrap, styles.headerInner)}>
+          <div {...stylex.props(styles.wordmark)}>
+            Standard{" "}
+            <span {...stylex.props(styles.wordmarkAccent)}>Newsletter</span>
           </div>
-          <span
-            style={{
-              marginLeft: "auto",
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-            }}
-          >
+          <span {...stylex.props(common.pushEnd, styles.headerActions)}>
             <Button variant="tertiary" size="sm" onPress={goDashboard}>
               Log in
             </Button>
@@ -142,62 +490,20 @@ function Home() {
       </div>
 
       {/* HERO */}
-      <div
-        style={{
-          position: "relative",
-          overflow: "hidden",
-          borderBottom: `1px solid ${C.b6}`,
-          background: `radial-gradient(120% 100% at 80% -10%, ${C.sel5} 0%, transparent 55%)`,
-        }}
-      >
-        <div
-          style={{
-            maxWidth: 1040,
-            margin: "0 auto",
-            padding: "84px 40px 74px",
-            display: "grid",
-            gridTemplateColumns: "1.15fr 0.85fr",
-            gap: 48,
-            alignItems: "center",
-          }}
-        >
+      <div {...stylex.props(styles.hero)}>
+        <div {...stylex.props(styles.wrap, styles.heroInner)}>
           <div>
-            <h1
-              style={{
-                fontFamily: C.serif,
-                fontWeight: 500,
-                fontSize: 56,
-                lineHeight: 1.03,
-                letterSpacing: "-0.03em",
-                margin: "0 0 22px",
-                color: C.t12,
-                textWrap: "balance",
-              }}
-            >
+            <h1 {...stylex.props(styles.heroTitle)}>
               Every post you publish, delivered to inboxes.
             </h1>
-            <p
-              style={{
-                fontSize: 17.5,
-                lineHeight: 1.6,
-                color: C.a11,
-                margin: "0 0 32px",
-                maxWidth: 480,
-              }}
-            >
+            <p {...stylex.props(styles.heroBody)}>
               Turn any standard.site publication into a newsletter. We mail each
               post you publish to your subscribers and hand you the readership
               analytics — you never write a second version.
             </p>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div {...stylex.props(styles.heroActions)}>
               <Button variant="primary" size="lg" onPress={goDashboard}>
-                <span
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 8,
-                  }}
-                >
+                <span {...stylex.props(common.buttonContent)}>
                   Open dashboard
                   <Ico d={I.chevR} s={17} w={2} />
                 </span>
@@ -220,67 +526,31 @@ function Home() {
           </div>
 
           {/* pizzazz: publications -> envelope */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 4,
-            }}
-          >
+          <div {...stylex.props(styles.pizzazz)}>
             {/* Real publications only. With none to show, the cards and the
                 arrow drop out and the envelope stands alone rather than
                 pointing at an empty column. */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div {...stylex.props(styles.pubStack)}>
               {pubs.slice(0, 3).map((p, i) => (
                 <div
                   key={p.id}
-                  className="sn-rise"
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 11,
-                    background: C.warm,
-                    border: `1px solid ${C.b6}`,
-                    borderRadius: R.lg,
-                    padding: "10px 14px 10px 10px",
-                    boxShadow: `0 10px 30px -20px color-mix(in srgb, ${C.ink} 50%, transparent)`,
-                    animationDelay: `${i * 0.09}s`,
-                  }}
+                  {...stylex.props(
+                    styles.pubCard,
+                    motion.rise,
+                    motion.stagger(i),
+                  )}
                 >
                   <PubGlyph pub={p} size="md" />
-                  <div
-                    style={{
-                      fontFamily: C.serif,
-                      fontSize: 14,
-                      color: C.t12,
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {p.name}
-                  </div>
+                  <div {...stylex.props(styles.pubCardName)}>{p.name}</div>
                 </div>
               ))}
             </div>
             {pubs.length > 0 ? (
-              <div style={{ color: C.a9, padding: "0 4px" }}>
+              <div {...stylex.props(styles.arrow)}>
                 <Ico d={I.chevR} s={26} w={2} />
               </div>
             ) : null}
-            <div
-              className="sn-float"
-              style={{
-                width: 108,
-                height: 108,
-                borderRadius: R.xl,
-                background: C.a9,
-                color: C.onAccent,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                boxShadow: `0 22px 44px -18px color-mix(in srgb, ${C.a9} 75%, transparent)`,
-              }}
-            >
+            <div {...stylex.props(styles.envelope, motion.float)}>
               <Ico d={I.mail} s={52} w={1.5} />
             </div>
           </div>
@@ -288,43 +558,16 @@ function Home() {
       </div>
 
       {/* ANY PUBLICATION */}
-      <div style={{ background: C.warm, borderBottom: `1px solid ${C.b6}` }}>
-        <div
-          style={{
-            maxWidth: 1040,
-            margin: "0 auto",
-            padding: "68px 40px",
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: 64,
-            alignItems: "center",
-          }}
-        >
+      <div {...stylex.props(styles.band)}>
+        <div {...stylex.props(styles.wrap, styles.bandInner)}>
           <div>
-            <div style={sectLabel}>
+            <div {...stylex.props(common.sectionLabel)}>
               Works with any standard.site publication
             </div>
-            <div
-              style={{
-                fontFamily: C.serif,
-                fontSize: 32,
-                fontWeight: 500,
-                color: C.t12,
-                letterSpacing: "-0.02em",
-                lineHeight: 1.14,
-                marginBottom: 16,
-              }}
-            >
+            <div {...stylex.props(styles.bandTitle)}>
               It doesn’t matter where your publication lives.
             </div>
-            <p
-              style={{
-                fontSize: 15.5,
-                lineHeight: 1.66,
-                color: C.a11,
-                margin: 0,
-              }}
-            >
+            <p {...stylex.props(styles.bandBody)}>
               Whether you write on one of the hosted platforms or publish
               everything yourself, your posts stay yours and stay portable. If
               it’s a standard.site publication, it can become a newsletter — no
@@ -332,67 +575,24 @@ function Home() {
             </p>
           </div>
           <div>
-            {[
-              {
-                icon: I.grid,
-                t: "On a hosted platform",
-                s: "Publishing through Standard Writer or any client.",
-              },
-              {
-                icon: I.book,
-                t: "Self-hosted",
-                s: "Publishing on your own, wherever it lives.",
-              },
-            ].map((r) => (
+            {HOSTING_ROWS.map((r) => (
               <div
                 key={r.t}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 16,
-                  padding: "18px 0",
-                  borderTop: `1px solid ${C.b6}`,
-                }}
+                {...stylex.props(common.ruleAbove, styles.hostRow)}
               >
-                <div
-                  style={{
-                    width: 38,
-                    height: 38,
-                    borderRadius: R.md,
-                    background: C.sel5,
-                    color: C.a11,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flex: "none",
-                  }}
-                >
+                <div {...stylex.props(common.chip, common.chipMd)}>
                   <Ico d={r.icon} s={19} />
                 </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 15, fontWeight: 600, color: C.t12 }}>
-                    {r.t}
-                  </div>
-                  <div style={{ fontSize: 13, color: C.mut, marginTop: 2 }}>
-                    {r.s}
-                  </div>
+                <div {...stylex.props(common.flexFill)}>
+                  <div {...stylex.props(styles.hostTitle)}>{r.t}</div>
+                  <div {...stylex.props(styles.hostSub)}>{r.s}</div>
                 </div>
-                <Ico d={I.check} s={19} style={{ color: POS, flex: "none" }} />
+                <Ico d={I.check} s={19} style={[icon.positive, icon.fixed]} />
               </div>
             ))}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-                paddingTop: 18,
-                borderTop: `1px solid ${C.b6}`,
-                fontSize: 14,
-                color: C.a11,
-              }}
-            >
+            <div {...stylex.props(common.ruleAbove, styles.hostFoot)}>
               <span>Your posts</span>
-              <Ico d={I.chevR} s={16} style={{ color: C.a9 }} />
+              <Ico d={I.chevR} s={16} style={icon.accent} />
               <span>your subscribers</span>
             </div>
           </div>
@@ -400,16 +600,12 @@ function Home() {
       </div>
 
       {/* HOW IT WORKS */}
-      {wrap(
-        <div style={{ padding: "56px 0 8px" }}>
-          <div style={{ ...sectLabel, marginBottom: 22 }}>How it works</div>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(3, 1fr)",
-              gap: 32,
-            }}
-          >
+      <Wrap>
+        <div {...stylex.props(styles.steps)}>
+          <div {...stylex.props(common.sectionLabel, styles.stepsLabel)}>
+            How it works
+          </div>
+          <div {...stylex.props(styles.stepsGrid)}>
             <Step
               n={1}
               icon={I.book}
@@ -429,176 +625,76 @@ function Home() {
               body="Opens, clicks, growth, and per-send reports across every publication — all in one dashboard."
             />
           </div>
-        </div>,
-      )}
+        </div>
+      </Wrap>
 
       {/* PRICING */}
-      {wrap(
-        <div style={{ padding: "76px 0 96px" }}>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "baseline",
-              gap: 12,
-              marginBottom: 32,
-            }}
-          >
-            <div style={sectLabel}>Pricing</div>
-            <span style={{ marginLeft: "auto", fontSize: 13, color: C.mut }}>
+      <Wrap>
+        <div {...stylex.props(styles.pricing)}>
+          <div {...stylex.props(styles.pricingHead)}>
+            <div {...stylex.props(common.sectionLabel)}>Pricing</div>
+            <span {...stylex.props(common.meta, common.pushEnd)}>
               Pay for what you send · every publication included
             </span>
           </div>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: 72,
-              alignItems: "center",
-              borderTop: `1px solid ${C.b6}`,
-              paddingTop: 44,
-            }}
-          >
+          <div {...stylex.props(common.ruleAbove, styles.pricingGrid)}>
             <div>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "baseline",
-                  gap: 8,
-                  marginBottom: 6,
-                }}
-              >
-                <span
-                  style={{
-                    fontFamily: C.serif,
-                    fontSize: 72,
-                    fontWeight: 500,
-                    letterSpacing: "-0.03em",
-                    lineHeight: 1,
-                    color: C.t12,
-                  }}
-                >
-                  $1
-                </span>
-                <span style={{ fontSize: 16, color: C.mut }}>
+              <div {...stylex.props(styles.priceLine)}>
+                <span {...stylex.props(styles.price)}>$1</span>
+                <span {...stylex.props(styles.priceUnit)}>
                   / 1,000 emails sent
                 </span>
               </div>
-              <p
-                style={{
-                  fontSize: 15.5,
-                  lineHeight: 1.66,
-                  color: C.a11,
-                  margin: "18px 0 22px",
-                  maxWidth: 400,
-                }}
-              >
+              <p {...stylex.props(styles.pricingBody)}>
                 You’re only billed for emails that actually go out. Send to one
                 publication or ten — the rate is the same, and it stays linear
                 at any volume.
               </p>
-              <div
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 9,
-                  background: C.sel5,
-                  color: C.a11,
-                  borderRadius: R.full,
-                  padding: "7px 15px",
-                  fontSize: 13.5,
-                  fontWeight: 600,
-                }}
-              >
+              <div {...stylex.props(styles.freePill)}>
                 <Ico d={I.check} s={16} w={2.2} />
                 First 1,000 emails free every month
               </div>
-              <div style={{ fontSize: 13, color: C.mut, marginTop: 18 }}>
+              <div {...stylex.props(styles.pricingExample)}>
                 e.g. a weekly send to 10,000 readers ≈ 43,000 emails/mo ≈ $42.
               </div>
             </div>
-            <div
-              style={{
-                paddingLeft: 72,
-                borderLeft: `1px solid ${C.b6}`,
-                display: "flex",
-                flexDirection: "column",
-                gap: 16,
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "baseline",
-                  justifyContent: "space-between",
-                }}
-              >
-                <span
-                  style={{
-                    fontSize: 12.5,
-                    color: C.mut,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.05em",
-                  }}
-                >
+            <div {...stylex.props(styles.calculator)}>
+              <div {...stylex.props(styles.calcHead)}>
+                <span {...stylex.props(styles.calcLabel)}>
                   Estimate your bill
                 </span>
-                <span style={{ fontSize: 14, color: C.t12, fontWeight: 600 }}>
+                <span {...stylex.props(styles.calcValue)}>
                   {fmt(calcEmails)} emails / mo
                 </span>
               </div>
               <input
                 type="range"
+                aria-label="Emails sent per month"
                 min={0}
                 max={500_000}
                 step={1000}
                 value={calcEmails}
                 onChange={(e) => setCalcEmails(+e.target.value)}
-                style={{ width: "100%", accentColor: C.a9, cursor: "pointer" }}
+                {...stylex.props(styles.slider)}
               />
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  fontSize: 11.5,
-                  color: C.mut,
-                  marginTop: -6,
-                }}
-              >
+              <div {...stylex.props(styles.ticks)}>
                 <span>0</span>
                 <span>250k</span>
                 <span>500k</span>
               </div>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "baseline",
-                  gap: 6,
-                  marginTop: 8,
-                }}
-              >
-                <span
-                  style={{
-                    fontFamily: C.serif,
-                    fontSize: 48,
-                    fontWeight: 500,
-                    letterSpacing: "-0.03em",
-                    lineHeight: 1,
-                    color: C.t12,
-                  }}
-                >
-                  ${price}
-                </span>
-                <span style={{ fontSize: 15, color: C.mut }}>/ month</span>
+              <div {...stylex.props(styles.total)}>
+                <span {...stylex.props(styles.totalValue)}>${price}</span>
+                <span {...stylex.props(styles.totalUnit)}>/ month</span>
               </div>
-              <div style={{ marginTop: 6 }}>
+              <div {...stylex.props(styles.ctaSlot)}>
                 <Button variant="primary" size="md" onPress={goDashboard}>
                   Get started
                 </Button>
               </div>
             </div>
           </div>
-        </div>,
-      )}
+        </div>
+      </Wrap>
     </div>
   );
 }

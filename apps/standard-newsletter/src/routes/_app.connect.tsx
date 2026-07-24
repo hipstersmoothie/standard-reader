@@ -1,4 +1,25 @@
+import { Alert } from "@standard-reader/design-system/alert";
 import { Button } from "@standard-reader/design-system/button";
+import {
+  primaryColor,
+  successColor,
+  uiColor,
+} from "@standard-reader/design-system/theme/color.stylex";
+import { radius } from "@standard-reader/design-system/theme/radius.stylex";
+import {
+  gap,
+  horizontalSpace,
+  verticalSpace,
+} from "@standard-reader/design-system/theme/semantic-spacing.stylex";
+import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
+import {
+  fontFamily,
+  fontSize,
+  fontWeight,
+  lineHeight,
+  tracking,
+} from "@standard-reader/design-system/theme/typography.stylex";
+import * as stylex from "@stylexjs/stylex";
 import {
   useMutation,
   useQueryClient,
@@ -7,15 +28,17 @@ import {
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 
+import { common } from "../common-styles";
 import { CsvDropZone } from "../components/csv-drop-zone";
-import { I, Ico } from "../components/icons";
+import { I, Ico, icon } from "../components/icons";
 import { PubAvatar } from "../components/ui";
+import { fmt } from "../lib/format";
+import { motion } from "../motion-styles";
 import type { ConnectablePublicationData } from "../server/analytics";
 import {
   connectPublicationFn,
   connectablePublicationsQueryOptions,
 } from "../server/analytics";
-import { C, POS, R, fmt } from "../theme";
 
 export const Route = createFileRoute("/_app/connect")({
   loader: ({ context }) =>
@@ -24,6 +47,279 @@ export const Route = createFileRoute("/_app/connect")({
 });
 
 const STEP_LABELS = ["Choose", "How it works", "Import list", "Done"];
+
+const styles = stylex.create({
+  back: {
+    alignItems: "center",
+    backgroundColor: "transparent",
+    borderStyle: "none",
+    borderWidth: 0,
+    color: uiColor.text1,
+    columnGap: gap.sm,
+    cursor: "pointer",
+    display: "inline-flex",
+    fontFamily: "inherit",
+    fontSize: fontSize.sm,
+    marginBottom: spacing["7"],
+    paddingBlockEnd: 0,
+    paddingBlockStart: 0,
+    paddingInlineEnd: 0,
+    paddingInlineStart: 0,
+    rowGap: gap.sm,
+  },
+
+  stepper: {
+    alignItems: "center",
+    display: "flex",
+    marginBottom: spacing["10"],
+  },
+  stepGroup: { display: "contents" },
+  step: {
+    alignItems: "center",
+    columnGap: gap.lg,
+    display: "flex",
+    rowGap: gap.lg,
+  },
+  bullet: {
+    alignItems: "center",
+    borderRadius: radius.full,
+    borderStyle: "solid",
+    borderWidth: 0,
+    display: "flex",
+    flexGrow: 0,
+    flexShrink: 0,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.semibold,
+    height: spacing["7"],
+    justifyContent: "center",
+    width: spacing["7"],
+  },
+  bulletDone: {
+    backgroundColor: primaryColor.solid1,
+    color: primaryColor.textContrast,
+  },
+  bulletCurrent: {
+    backgroundColor: primaryColor.component1,
+    borderColor: primaryColor.solid1,
+    borderWidth: 1,
+    color: primaryColor.text1,
+  },
+  bulletTodo: {
+    backgroundColor: "transparent",
+    borderColor: uiColor.border1,
+    borderWidth: 1,
+    color: uiColor.text1,
+  },
+  stepLabel: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+    whiteSpace: "nowrap",
+  },
+  stepLabelCurrent: {
+    color: uiColor.text2,
+    fontWeight: fontWeight.semibold,
+  },
+  stepLabelOther: { color: uiColor.text1 },
+  stepRule: {
+    backgroundColor: uiColor.border1,
+    flexBasis: "0%",
+    flexGrow: 1,
+    flexShrink: 1,
+    height: 1,
+    marginInlineEnd: horizontalSpace["3xl"],
+    marginInlineStart: horizontalSpace["3xl"],
+  },
+
+  empty: {
+    paddingBlockEnd: spacing["12"],
+    paddingBlockStart: spacing["12"],
+    paddingInlineEnd: spacing["10"],
+    paddingInlineStart: spacing["10"],
+    textAlign: "center",
+  },
+  emptyTitle: {
+    color: uiColor.text2,
+    fontFamily: fontFamily.serif,
+    fontSize: fontSize.xl,
+    fontWeight: fontWeight.medium,
+    marginBottom: verticalSpace.md,
+  },
+  emptyBody: {
+    color: uiColor.text1,
+    fontSize: fontSize.base,
+    lineHeight: lineHeight.base,
+    marginBlockEnd: 0,
+    marginBlockStart: 0,
+    marginInlineEnd: "auto",
+    marginInlineStart: "auto",
+    maxWidth: "420px",
+  },
+
+  stepTitle: {
+    marginBottom: verticalSpace.md,
+  },
+  stepIntro: {
+    marginBlockEnd: spacing["7"],
+    marginBlockStart: 0,
+  },
+
+  list: {
+    marginBottom: spacing["8"],
+  },
+  choice: {
+    alignItems: "center",
+    backgroundColor: {
+      default: "transparent",
+      ":hover": uiColor.component1,
+    },
+    borderStyle: "none",
+    borderWidth: 0,
+    columnGap: gap["2xl"],
+    cursor: "pointer",
+    display: "flex",
+    fontFamily: "inherit",
+    paddingBlockEnd: verticalSpace["3xl"],
+    paddingBlockStart: verticalSpace["3xl"],
+    paddingInlineEnd: horizontalSpace.xl,
+    paddingInlineStart: horizontalSpace.xl,
+    rowGap: gap["2xl"],
+    textAlign: "left",
+    width: "100%",
+  },
+  choiceSelected: {
+    backgroundColor: primaryColor.component1,
+  },
+  choiceName: {
+    color: uiColor.text2,
+    fontFamily: fontFamily.serif,
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.medium,
+    letterSpacing: tracking.tight,
+  },
+  choiceUrl: {
+    color: uiColor.text1,
+    fontFamily: fontFamily.mono,
+    fontSize: fontSize.xs,
+    marginTop: verticalSpace.xxs,
+  },
+  radio: {
+    borderColor: uiColor.border2,
+    borderRadius: radius.full,
+    borderStyle: "solid",
+    // 1.5px unselected → a 7px ring when selected: the thick ring *is* the
+    // filled state, so it steps outside the border scale by design.
+    borderWidth: "1.5px",
+    flexGrow: 0,
+    flexShrink: 0,
+    height: spacing["6"],
+    width: spacing["6"],
+  },
+  radioSelected: {
+    borderColor: primaryColor.solid1,
+    borderWidth: "7px",
+  },
+
+  howRow: {
+    alignItems: "flex-start",
+    columnGap: gap["2xl"],
+    display: "flex",
+    paddingBlockEnd: verticalSpace["4xl"],
+    paddingBlockStart: verticalSpace["4xl"],
+    paddingInlineEnd: horizontalSpace.xl,
+    paddingInlineStart: horizontalSpace.xl,
+    rowGap: gap["2xl"],
+  },
+  howTitle: {
+    color: uiColor.text2,
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.semibold,
+    marginBottom: verticalSpace.xxs,
+  },
+  howBody: {
+    color: primaryColor.text1,
+    fontSize: fontSize.sm,
+    lineHeight: lineHeight.sm,
+  },
+  howHead: {
+    alignItems: "center",
+    columnGap: gap.xl,
+    display: "flex",
+    marginBottom: verticalSpace.md,
+    rowGap: gap.xl,
+  },
+
+  navRow: {
+    display: "flex",
+    justifyContent: "space-between",
+  },
+  navRowEnd: {
+    display: "flex",
+    justifyContent: "flex-end",
+  },
+
+  dropSlot: {
+    marginBottom: spacing["6"],
+  },
+  optIn: {
+    alignItems: "center",
+    color: uiColor.text1,
+    columnGap: gap.lg,
+    display: "flex",
+    fontSize: fontSize.xs,
+    marginBottom: spacing["8"],
+    rowGap: gap.lg,
+  },
+  alertSlot: {
+    marginBottom: verticalSpace["4xl"],
+  },
+
+  done: {
+    paddingTop: spacing["8"],
+    textAlign: "center",
+  },
+  doneMark: {
+    color: primaryColor.solid1,
+    height: spacing["20"],
+    marginBlockEnd: spacing["7"],
+    marginInlineEnd: "auto",
+    marginInlineStart: "auto",
+    width: spacing["20"],
+  },
+  doneTitle: {
+    marginBottom: verticalSpace.xl,
+  },
+  doneBody: {
+    color: primaryColor.text1,
+    fontSize: fontSize.base,
+    lineHeight: lineHeight.base,
+    marginBlockEnd: verticalSpace.md,
+    marginBlockStart: 0,
+    marginInlineEnd: "auto",
+    marginInlineStart: "auto",
+    maxWidth: "440px",
+  },
+  doneImported: {
+    alignItems: "center",
+    color: successColor.text1,
+    columnGap: gap.sm,
+    display: "inline-flex",
+    fontSize: fontSize.sm,
+    marginBottom: verticalSpace.md,
+    rowGap: gap.sm,
+  },
+  doneNote: {
+    color: uiColor.text1,
+    fontSize: fontSize.sm,
+    marginBottom: verticalSpace.md,
+  },
+  doneActions: {
+    columnGap: gap.xl,
+    display: "flex",
+    justifyContent: "center",
+    marginTop: spacing["7"],
+    rowGap: gap.xl,
+  },
+});
 
 function CreateFlow() {
   const navigate = useNavigate();
@@ -80,27 +376,15 @@ function CreateFlow() {
     step === 0 ? navigate({ to: "/dashboard" }) : setStep((s) => s - 1);
 
   return (
-    <div style={{ height: "100%", overflow: "auto", background: C.pageBg }}>
+    <div {...stylex.props(common.screen)}>
       <div
-        style={{ maxWidth: 720, margin: "0 auto", padding: "40px 40px 90px" }}
+        {...stylex.props(
+          common.container,
+          common.screenPadRoomy,
+          common.measureNarrow,
+        )}
       >
-        <button
-          type="button"
-          onClick={back}
-          style={{
-            font: "inherit",
-            border: "none",
-            background: "transparent",
-            cursor: "pointer",
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 6,
-            fontSize: 13,
-            color: C.mut,
-            marginBottom: 26,
-            padding: 0,
-          }}
-        >
+        <button type="button" onClick={back} {...stylex.props(styles.back)}>
           <Ico d={I.chevL} s={15} w={1.9} />
           {step === 0 ? "Dashboard" : "Back"}
         </button>
@@ -140,11 +424,7 @@ function CreateFlow() {
             onBack={back}
             onFinish={() => finish.mutate()}
             pending={finish.isPending}
-            error={
-              finish.isError && finish.failureReason
-                ? String(finish.failureReason.message ?? "")
-                : null
-            }
+            failed={finish.isError}
           />
         ) : null}
 
@@ -166,60 +446,35 @@ function CreateFlow() {
 
 function Stepper({ step, labels }: { step: number; labels: Array<string> }) {
   return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 0,
-        marginBottom: 40,
-      }}
-    >
+    <div {...stylex.props(styles.stepper)}>
       {labels.map((l, i) => (
         <div
           key={l}
-          style={{ display: "contents" }}
+          {...stylex.props(styles.stepGroup)}
           aria-current={i === step ? "step" : undefined}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div {...stylex.props(styles.step)}>
             <div
-              style={{
-                width: 26,
-                height: 26,
-                borderRadius: R.full,
-                flex: "none",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 12.5,
-                fontWeight: 600,
-                background:
-                  i < step ? C.a9 : i === step ? C.sel5 : "transparent",
-                color: i < step ? C.onAccent : i === step ? C.a11 : C.mut,
-                border:
-                  i === step
-                    ? `1px solid ${C.a9}`
-                    : i > step
-                      ? `1px solid ${C.b6}`
-                      : "none",
-              }}
+              {...stylex.props(
+                styles.bullet,
+                i < step && styles.bulletDone,
+                i === step && styles.bulletCurrent,
+                i > step && styles.bulletTodo,
+              )}
             >
               {i < step ? <Ico d={I.check} s={14} w={2.4} /> : i + 1}
             </div>
             <span
-              style={{
-                fontSize: 13,
-                fontWeight: i === step ? 600 : 500,
-                color: i === step ? C.t12 : C.mut,
-                whiteSpace: "nowrap",
-              }}
+              {...stylex.props(
+                styles.stepLabel,
+                i === step ? styles.stepLabelCurrent : styles.stepLabelOther,
+              )}
             >
               {l}
             </span>
           </div>
           {i < labels.length - 1 ? (
-            <div
-              style={{ flex: 1, height: 1, background: C.b6, margin: "0 16px" }}
-            />
+            <div {...stylex.props(styles.stepRule)} />
           ) : null}
         </div>
       ))}
@@ -240,35 +495,9 @@ function ChooseStep({
 }) {
   if (connectable.length === 0) {
     return (
-      <div
-        style={{
-          border: `1px solid ${C.b6}`,
-          borderRadius: R.lg,
-          background: C.warm,
-          padding: "48px 40px",
-          textAlign: "center",
-        }}
-      >
-        <div
-          style={{
-            fontFamily: C.serif,
-            fontSize: 21,
-            fontWeight: 500,
-            color: C.t12,
-            marginBottom: 8,
-          }}
-        >
-          No publications to add
-        </div>
-        <p
-          style={{
-            fontSize: 14.5,
-            lineHeight: 1.6,
-            color: C.mut,
-            maxWidth: 420,
-            margin: "0 auto",
-          }}
-        >
+      <div {...stylex.props(common.card, styles.empty)}>
+        <div {...stylex.props(styles.emptyTitle)}>No publications to add</div>
+        <p {...stylex.props(styles.emptyBody)}>
           Every standard.site publication you own is already a newsletter — or
           you don’t have one yet. Create one in Standard Writer, or any
           standard.site client, and it’ll show up here.
@@ -278,30 +507,14 @@ function ChooseStep({
   }
   return (
     <div>
-      <h1
-        style={{
-          fontFamily: C.serif,
-          fontWeight: 500,
-          fontSize: 30,
-          letterSpacing: "-0.02em",
-          margin: "0 0 8px",
-          color: C.t12,
-        }}
-      >
+      <h1 {...stylex.props(common.pageTitleSm, styles.stepTitle)}>
         Which publication becomes a newsletter?
       </h1>
-      <p
-        style={{
-          fontSize: 14.5,
-          color: C.mut,
-          margin: "0 0 26px",
-          lineHeight: 1.6,
-        }}
-      >
+      <p {...stylex.props(common.pageIntro, styles.stepIntro)}>
         Pick any standard.site publication you own. We’ll mail each new post to
         its subscribers — you keep writing exactly where you do now.
       </p>
-      <div style={{ borderTop: `1px solid ${C.b6}`, marginBottom: 30 }}>
+      <div {...stylex.props(common.ruleAbove, styles.list)}>
         {connectable.map((p) => {
           const selected = chosenUri === p.uri;
           return (
@@ -309,21 +522,12 @@ function ChooseStep({
               key={p.uri}
               type="button"
               onClick={() => onChoose(p)}
-              style={{
-                font: "inherit",
-                textAlign: "left",
-                width: "100%",
-                display: "flex",
-                alignItems: "center",
-                gap: 15,
-                padding: "15px 12px",
-                borderBottom: `1px solid ${C.b6}`,
-                borderTop: "none",
-                borderLeft: "none",
-                borderRight: "none",
-                cursor: "pointer",
-                background: selected ? C.sel5 : "transparent",
-              }}
+              aria-pressed={selected}
+              {...stylex.props(
+                common.ruleBelow,
+                styles.choice,
+                selected && styles.choiceSelected,
+              )}
             >
               <PubAvatar
                 name={p.name}
@@ -331,54 +535,28 @@ function ChooseStep({
                 iconUrl={p.iconUrl}
                 size="lg"
               />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div
-                  style={{
-                    fontFamily: C.serif,
-                    fontSize: 17,
-                    fontWeight: 500,
-                    color: C.t12,
-                    letterSpacing: "-0.01em",
-                  }}
-                >
-                  {p.name}
-                </div>
-                <div
-                  style={{
-                    fontSize: 12.5,
-                    color: C.mut,
-                    fontFamily: C.mono,
-                    marginTop: 2,
-                  }}
-                >
-                  {p.url}
-                </div>
+              <div {...stylex.props(common.flexFill)}>
+                <div {...stylex.props(styles.choiceName)}>{p.name}</div>
+                <div {...stylex.props(styles.choiceUrl)}>{p.url}</div>
               </div>
               <div
-                style={{
-                  width: 22,
-                  height: 22,
-                  borderRadius: R.full,
-                  flex: "none",
-                  border: selected
-                    ? `7px solid ${C.a9}`
-                    : `1.5px solid ${C.b7}`,
-                }}
+                {...stylex.props(
+                  styles.radio,
+                  selected && styles.radioSelected,
+                )}
               />
             </button>
           );
         })}
       </div>
-      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+      <div {...stylex.props(styles.navRowEnd)}>
         <Button
           variant="primary"
           size="md"
           isDisabled={!chosenUri}
           onPress={onContinue}
         >
-          <span
-            style={{ display: "inline-flex", alignItems: "center", gap: 8 }}
-          >
+          <span {...stylex.props(common.buttonContent)}>
             Continue
             <Ico d={I.chevR} s={16} w={2} />
           </span>
@@ -422,97 +600,43 @@ function HowItWorksStep({
 }) {
   return (
     <div>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 13,
-          marginBottom: 8,
-        }}
-      >
+      <div {...stylex.props(styles.howHead)}>
         <PubAvatar
           name={pub.name}
           icon={pub.icon}
           iconUrl={pub.iconUrl}
           size="md"
         />
-        <h1
-          style={{
-            fontFamily: C.serif,
-            fontWeight: 500,
-            fontSize: 28,
-            letterSpacing: "-0.02em",
-            margin: 0,
-            color: C.t12,
-          }}
-        >
+        <h1 {...stylex.props(common.pageTitleSm)}>
           Here’s what turning on {pub.name} does
         </h1>
       </div>
-      <p
-        style={{
-          fontSize: 14.5,
-          color: C.mut,
-          margin: "0 0 28px",
-          lineHeight: 1.6,
-        }}
-      >
+      <p {...stylex.props(common.pageIntro, styles.stepIntro)}>
         No new writing tools, no second draft. Everything runs off the posts you
         already publish.
       </p>
-      <div style={{ borderTop: `1px solid ${C.b6}`, marginBottom: 30 }}>
+      <div {...stylex.props(common.ruleAbove, styles.list)}>
         {HOW_ROWS.map((r) => (
           <div
             key={r.t}
-            style={{
-              display: "flex",
-              alignItems: "flex-start",
-              gap: 15,
-              padding: "17px 12px",
-              borderBottom: `1px solid ${C.b6}`,
-            }}
+            {...stylex.props(common.ruleBelow, styles.howRow)}
           >
-            <div
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: R.md,
-                background: C.sel5,
-                color: C.a11,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flex: "none",
-              }}
-            >
+            <div {...stylex.props(common.chip, common.chipMd)}>
               <Ico d={r.icon} s={18} />
             </div>
             <div>
-              <div
-                style={{
-                  fontSize: 15,
-                  fontWeight: 600,
-                  color: C.t12,
-                  marginBottom: 3,
-                }}
-              >
-                {r.t}
-              </div>
-              <div style={{ fontSize: 13.5, color: C.a11, lineHeight: 1.55 }}>
-                {r.s}
-              </div>
+              <div {...stylex.props(styles.howTitle)}>{r.t}</div>
+              <div {...stylex.props(styles.howBody)}>{r.s}</div>
             </div>
           </div>
         ))}
       </div>
-      <div style={{ display: "flex", justifyContent: "space-between" }}>
+      <div {...stylex.props(styles.navRow)}>
         <Button variant="tertiary" size="md" onPress={onBack}>
           Back
         </Button>
         <Button variant="primary" size="md" onPress={onNext}>
-          <span
-            style={{ display: "inline-flex", alignItems: "center", gap: 8 }}
-          >
+          <span {...stylex.props(common.buttonContent)}>
             Got it
             <Ico d={I.chevR} s={16} w={2} />
           </span>
@@ -531,7 +655,7 @@ function ImportStep({
   onBack,
   onFinish,
   pending,
-  error,
+  failed,
 }: {
   pub: ConnectablePublicationData;
   emails: Array<string>;
@@ -541,35 +665,19 @@ function ImportStep({
   onBack: () => void;
   onFinish: () => void;
   pending: boolean;
-  error: string | null;
+  failed: boolean;
 }) {
   return (
     <div>
-      <h1
-        style={{
-          fontFamily: C.serif,
-          fontWeight: 500,
-          fontSize: 28,
-          letterSpacing: "-0.02em",
-          margin: "0 0 8px",
-          color: C.t12,
-        }}
-      >
+      <h1 {...stylex.props(common.pageTitleSm, styles.stepTitle)}>
         Bring an existing list?
       </h1>
-      <p
-        style={{
-          fontSize: 14.5,
-          color: C.mut,
-          margin: "0 0 26px",
-          lineHeight: 1.6,
-        }}
-      >
+      <p {...stylex.props(common.pageIntro, styles.stepIntro)}>
         Already have subscribers from another tool? Upload a CSV and we’ll add
         them to {pub.name}. You can always do this later — it’s optional.
       </p>
 
-      <div style={{ marginBottom: 22 }}>
+      <div {...stylex.props(styles.dropSlot)}>
         <CsvDropZone
           emails={emails}
           fileName={fileName}
@@ -578,40 +686,21 @@ function ImportStep({
         />
       </div>
 
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 10,
-          fontSize: 12.5,
-          color: C.mut,
-          marginBottom: 30,
-        }}
-      >
-        <Ico d={I.check} s={15} style={{ color: POS, flex: "none" }} />
+      <div {...stylex.props(styles.optIn)}>
+        <Ico d={I.check} s={15} style={[icon.positive, icon.fixed]} />
         Imported readers are single opt-in — we’ll send them a one-time
         confirmation before their first issue.
       </div>
 
-      {error ? (
-        <div
-          style={{
-            fontSize: 13,
-            color: C.mut,
-            marginBottom: 18,
-          }}
-        >
-          Something went wrong finishing up. Please try again.
+      {failed ? (
+        <div {...stylex.props(styles.alertSlot)}>
+          <Alert variant="critical" title="That didn’t finish">
+            Something went wrong finishing up. Please try again.
+          </Alert>
         </div>
       ) : null}
 
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-      >
+      <div {...stylex.props(styles.navRow)}>
         <Button
           variant="tertiary"
           size="md"
@@ -648,80 +737,39 @@ function DoneStep({
 }) {
   const importedOk = imported > 0 && !importError;
   return (
-    <div style={{ textAlign: "center", padding: "30px 0 0" }}>
+    <div {...stylex.props(styles.done)}>
       <div
-        className="sn-float"
-        style={{
-          width: 82,
-          height: 82,
-          borderRadius: R.full,
-          background: C.sel5,
-          color: C.a9,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          margin: "0 auto 26px",
-        }}
+        {...stylex.props(
+          common.chip,
+          common.chipRound,
+          styles.doneMark,
+          motion.float,
+        )}
       >
         <Ico d={I.sparkle} s={40} w={1.6} />
       </div>
-      <h1
-        style={{
-          fontFamily: C.serif,
-          fontWeight: 500,
-          fontSize: 34,
-          letterSpacing: "-0.02em",
-          margin: "0 0 12px",
-          color: C.t12,
-        }}
-      >
+      <h1 {...stylex.props(common.pageTitle, styles.doneTitle)}>
         {pub.name} is a newsletter.
       </h1>
-      <p
-        style={{
-          fontSize: 15.5,
-          color: C.a11,
-          margin: "0 auto 8px",
-          maxWidth: 440,
-          lineHeight: 1.6,
-        }}
-      >
+      <p {...stylex.props(styles.doneBody)}>
         The next post you publish goes straight to your subscribers. We’ll track
         how it lands and show you everything here.
       </p>
       {importedOk ? (
-        <div
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 7,
-            fontSize: 13,
-            color: POS,
-            marginBottom: 8,
-          }}
-        >
+        <div {...stylex.props(styles.doneImported)}>
           <Ico d={I.check} s={15} w={2.2} />
           {fmt(imported)} imported{" "}
           {imported === 1 ? "contact is" : "contacts are"} confirming now
         </div>
       ) : null}
       {imported > 0 && importError ? (
-        <div style={{ fontSize: 13, color: C.mut, marginBottom: 8 }}>
+        <div {...stylex.props(styles.doneNote)}>
           Your list wasn’t imported — you can add it later from Settings.
         </div>
       ) : null}
-      <div
-        style={{
-          display: "flex",
-          gap: 12,
-          justifyContent: "center",
-          marginTop: 26,
-        }}
-      >
+      <div {...stylex.props(styles.doneActions)}>
         <Button variant="primary" size="lg" onPress={onOpen}>
-          <span
-            style={{ display: "inline-flex", alignItems: "center", gap: 8 }}
-          >
+          <span {...stylex.props(common.buttonContent)}>
             Go to {pub.name}
             <Ico d={I.chevR} s={17} w={2} />
           </span>

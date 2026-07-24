@@ -1,9 +1,30 @@
+import { Alert } from "@standard-reader/design-system/alert";
+import { Button } from "@standard-reader/design-system/button";
+import { TextField } from "@standard-reader/design-system/text-field";
+import {
+  primaryColor,
+  uiColor,
+} from "@standard-reader/design-system/theme/color.stylex";
+import { radius } from "@standard-reader/design-system/theme/radius.stylex";
+import {
+  gap,
+  horizontalSpace,
+  verticalSpace,
+} from "@standard-reader/design-system/theme/semantic-spacing.stylex";
+import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
+import {
+  fontFamily,
+  fontSize,
+  fontWeight,
+  lineHeight,
+  tracking,
+} from "@standard-reader/design-system/theme/typography.stylex";
+import * as stylex from "@stylexjs/stylex";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useState } from "react";
 import type { FormEvent } from "react";
 
 import { getPublicationSummary } from "../server/analytics";
-import { C, NEG, R } from "../theme";
 
 export const Route = createFileRoute("/subscribe/$pubId")({
   loader: async ({ params }) => {
@@ -17,6 +38,133 @@ export const Route = createFileRoute("/subscribe/$pubId")({
 });
 
 type Status = "idle" | "submitting" | "done" | "error";
+
+const styles = stylex.create({
+  page: {
+    alignItems: "center",
+    backgroundColor: uiColor.bgSubtle,
+    color: uiColor.text2,
+    display: "flex",
+    fontFamily: fontFamily.sans,
+    justifyContent: "center",
+    minHeight: stylex.firstThatWorks("100dvh", "100vh"),
+    paddingBlockEnd: spacing["6"],
+    paddingBlockStart: spacing["6"],
+    paddingInlineEnd: spacing["6"],
+    paddingInlineStart: spacing["6"],
+  },
+  card: {
+    backgroundColor: uiColor.bg,
+    borderColor: uiColor.border1,
+    borderRadius: radius.lg,
+    borderStyle: "solid",
+    borderWidth: 1,
+    // A single-column sign-up card; wider than this and the copy outruns a
+    // comfortable line length.
+    maxWidth: "440px",
+    paddingBlockEnd: spacing["10"],
+    paddingBlockStart: spacing["10"],
+    paddingInlineEnd: spacing["9"],
+    paddingInlineStart: spacing["9"],
+    textAlign: "center",
+    width: "100%",
+  },
+  // The tile carries the publication's own stored accent, which is arbitrary
+  // runtime data rather than an app token.
+  mark: (background: string, foreground: string) => ({
+    backgroundColor: background,
+    color: foreground,
+  }),
+  markBox: {
+    alignItems: "center",
+    borderRadius: radius.lg,
+    display: "inline-flex",
+    fontFamily: fontFamily.serif,
+    fontSize: fontSize["2xl"],
+    height: spacing["14"],
+    justifyContent: "center",
+    marginBottom: verticalSpace["4xl"],
+    width: spacing["14"],
+  },
+  title: {
+    fontFamily: fontFamily.serif,
+    fontSize: fontSize["2xl"],
+    fontWeight: fontWeight.medium,
+    letterSpacing: tracking.tight,
+    lineHeight: lineHeight.none,
+    marginBlockEnd: verticalSpace.sm,
+    marginBlockStart: 0,
+  },
+  desc: {
+    color: uiColor.text1,
+    fontSize: fontSize.base,
+    lineHeight: lineHeight.base,
+    marginBlockEnd: spacing["6"],
+    marginBlockStart: 0,
+  },
+  /** Keeps the card's rhythm when a publication has no description. */
+  descSpacer: {
+    height: spacing["3"],
+  },
+
+  confirmation: {
+    backgroundColor: primaryColor.component1,
+    borderRadius: radius.lg,
+    color: uiColor.text2,
+    fontSize: fontSize.base,
+    lineHeight: lineHeight.base,
+    paddingBlockEnd: verticalSpace["4xl"],
+    paddingBlockStart: verticalSpace["4xl"],
+    paddingInlineEnd: horizontalSpace["4xl"],
+    paddingInlineStart: horizontalSpace["4xl"],
+    textAlign: "start",
+  },
+  manageLink: {
+    color: primaryColor.solid1,
+    fontSize: fontSize.sm,
+    marginTop: verticalSpace.xl,
+  },
+  mono: { fontFamily: fontFamily.mono },
+
+  form: {
+    display: "flex",
+    flexDirection: "column",
+    rowGap: gap.xl,
+    textAlign: "start",
+  },
+  // The publication's own accent is what a reader recognizes on this page, so
+  // the primary action is painted in it rather than the app's.
+  accentButton: (background: string, foreground: string) => ({
+    backgroundColor: background,
+    color: foreground,
+  }),
+  fineprint: {
+    color: uiColor.text1,
+    fontSize: fontSize.xs,
+    marginBlockEnd: 0,
+    marginBlockStart: verticalSpace.md,
+    textAlign: "start",
+  },
+
+  divider: {
+    alignItems: "center",
+    color: uiColor.text1,
+    columnGap: gap.xl,
+    display: "flex",
+    fontSize: fontSize.xs,
+    marginBlockEnd: spacing["5"],
+    marginBlockStart: spacing["5"],
+    rowGap: gap.xl,
+  },
+  dividerRule: {
+    backgroundColor: uiColor.border1,
+    flexBasis: "0%",
+    flexGrow: 1,
+    flexShrink: 1,
+    height: 1,
+  },
+  fullWidth: { width: "100%" },
+});
 
 function Subscribe() {
   const summary = Route.useLoaderData();
@@ -61,241 +209,113 @@ function Subscribe() {
   };
 
   const accent = summary.theme.accent;
+  const onAccent = summary.theme.accentForeground;
+
   return (
-    <div
-      style={{
-        minHeight: "100dvh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        fontFamily: C.sans,
-        background: C.pageBg,
-        color: C.t12,
-        padding: 24,
-      }}
-    >
-      <div
-        style={{
-          width: "100%",
-          maxWidth: 440,
-          background: C.warm,
-          border: `1px solid ${C.b6}`,
-          borderRadius: R.lg,
-          padding: "40px 36px",
-          textAlign: "center",
-        }}
-      >
+    <div {...stylex.props(styles.page)}>
+      <div {...stylex.props(styles.card)}>
         <div
-          style={{
-            width: 56,
-            height: 56,
-            borderRadius: R.lg,
-            background: accent,
-            color: summary.theme.accentForeground,
-            fontFamily: C.serif,
-            fontSize: 28,
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
-            marginBottom: 18,
-          }}
+          {...stylex.props(styles.markBox, styles.mark(accent, onAccent))}
         >
           {summary.name.trim()[0]?.toUpperCase() ?? "•"}
         </div>
-        <h1
-          style={{
-            fontFamily: C.serif,
-            fontSize: 26,
-            fontWeight: 500,
-            letterSpacing: "-0.02em",
-            margin: "0 0 6px",
-          }}
-        >
-          {summary.name}
-        </h1>
+        <h1 {...stylex.props(styles.title)}>{summary.name}</h1>
         {summary.description ? (
-          <p
-            style={{
-              fontSize: 14.5,
-              lineHeight: 1.6,
-              color: C.mut,
-              margin: "0 0 24px",
-            }}
-          >
-            {summary.description}
-          </p>
+          <p {...stylex.props(styles.desc)}>{summary.description}</p>
         ) : (
-          <div style={{ height: 12 }} />
+          <div {...stylex.props(styles.descSpacer)} />
         )}
 
         {welcomed ? (
-          <div
-            style={{
-              fontSize: 15,
-              lineHeight: 1.6,
-              color: C.t12,
-              background: C.sel5,
-              borderRadius: R.lg,
-              padding: "18px 20px",
-            }}
-          >
+          <div {...stylex.props(styles.confirmation)}>
             <strong>You’re subscribed.</strong> Your subscription is saved as a
             record in your own repo — new posts from {summary.name} will arrive
             by email. Unsubscribe anytime by deleting the record or using the
             link in any email.
-            <div style={{ marginTop: 12, fontSize: 13.5 }}>
-              <a href="/subscribe/manage" style={{ color: C.a9 }}>
-                Manage your subscriptions
-              </a>
+            <div {...stylex.props(styles.manageLink)}>
+              <a href="/subscribe/manage">Manage your subscriptions</a>
             </div>
           </div>
         ) : status === "done" ? (
-          <div
-            style={{
-              fontSize: 15,
-              lineHeight: 1.6,
-              color: C.t12,
-              background: C.sel5,
-              borderRadius: R.lg,
-              padding: "18px 20px",
-            }}
-          >
+          <div {...stylex.props(styles.confirmation)}>
             <strong>Almost there.</strong> We sent a confirmation link to{" "}
-            <span style={{ fontFamily: C.mono }}>{email}</span>. Click it to
+            <span {...stylex.props(styles.mono)}>{email}</span>. Click it to
             start receiving {summary.name} by email.
           </div>
         ) : (
           <>
-            <form onSubmit={onSubmit}>
-              <input
+            <form onSubmit={onSubmit} {...stylex.props(styles.form)}>
+              <TextField
+                aria-label="Email address"
                 type="email"
-                required
+                isRequired
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={setEmail}
                 placeholder="you@example.com"
                 autoComplete="email"
-                style={{
-                  width: "100%",
-                  boxSizing: "border-box",
-                  fontFamily: C.sans,
-                  fontSize: 15,
-                  padding: "12px 14px",
-                  borderRadius: R.md,
-                  border: `1px solid ${C.b7}`,
-                  background: C.pageBg,
-                  color: C.t12,
-                  marginBottom: 12,
-                }}
               />
-              <button
+              <Button
                 type="submit"
-                disabled={status === "submitting"}
-                style={{
-                  width: "100%",
-                  fontFamily: C.sans,
-                  fontSize: 15,
-                  fontWeight: 600,
-                  color: summary.theme.accentForeground,
-                  background: accent,
-                  border: "none",
-                  borderRadius: R.md,
-                  padding: "12px 16px",
-                  cursor: status === "submitting" ? "default" : "pointer",
-                  opacity: status === "submitting" ? 0.7 : 1,
-                }}
+                size="lg"
+                isPending={status === "submitting"}
+                style={[
+                  styles.fullWidth,
+                  styles.accentButton(accent, onAccent),
+                ]}
               >
-                {status === "submitting" ? "Subscribing…" : "Subscribe"}
-              </button>
+                Subscribe
+              </Button>
               {status === "error" ? (
-                <p style={{ fontSize: 13, color: NEG, marginTop: 12 }}>
-                  Something went wrong. Please check the address and try again.
-                </p>
+                <Alert variant="critical" title="That didn’t go through">
+                  Please check the address and try again.
+                </Alert>
               ) : null}
-              <p style={{ fontSize: 12, color: C.mut, marginTop: 16 }}>
+              <p {...stylex.props(styles.fineprint)}>
                 Double opt-in — you’ll confirm from your inbox. Unsubscribe
                 anytime.
               </p>
             </form>
 
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 12,
-                margin: "20px 0",
-                color: C.mut,
-                fontSize: 12,
-              }}
-            >
-              <span style={{ flex: 1, height: 1, background: C.b6 }} />
+            <div {...stylex.props(styles.divider)}>
+              <span {...stylex.props(styles.dividerRule)} />
               or
-              <span style={{ flex: 1, height: 1, background: C.b6 }} />
+              <span {...stylex.props(styles.dividerRule)} />
             </div>
 
             {showBluesky ? (
-              <form onSubmit={onBluesky}>
-                <input
-                  type="text"
-                  required
+              <form onSubmit={onBluesky} {...stylex.props(styles.form)}>
+                <TextField
+                  aria-label="Bluesky handle"
+                  isRequired
                   value={handle}
-                  onChange={(e) => setHandle(e.target.value)}
+                  onChange={setHandle}
                   placeholder="your-handle.bsky.social"
                   autoComplete="username"
-                  style={{
-                    width: "100%",
-                    boxSizing: "border-box",
-                    fontFamily: C.mono,
-                    fontSize: 14,
-                    padding: "12px 14px",
-                    borderRadius: R.md,
-                    border: `1px solid ${C.b7}`,
-                    background: C.pageBg,
-                    color: C.t12,
-                    marginBottom: 12,
-                  }}
+                  disablePasswordManagers
                 />
-                <button
+                <Button
                   type="submit"
-                  style={{
-                    width: "100%",
-                    fontFamily: C.sans,
-                    fontSize: 15,
-                    fontWeight: 600,
-                    color: C.t12,
-                    background: C.warm,
-                    border: `1px solid ${C.b7}`,
-                    borderRadius: R.md,
-                    padding: "12px 16px",
-                    cursor: "pointer",
-                  }}
+                  variant="secondary"
+                  size="lg"
+                  style={styles.fullWidth}
                 >
                   Continue with Bluesky
-                </button>
-                <p style={{ fontSize: 12, color: C.mut, marginTop: 12 }}>
+                </Button>
+                <p {...stylex.props(styles.fineprint)}>
                   We’ll save your subscription as a record in your own repo. Add
                   your email above first, then unsubscribe anytime by deleting
                   the record — or with the link in any email.
                 </p>
               </form>
             ) : (
-              <button
-                type="button"
-                onClick={() => setShowBluesky(true)}
-                style={{
-                  width: "100%",
-                  fontFamily: C.sans,
-                  fontSize: 15,
-                  fontWeight: 600,
-                  color: C.t12,
-                  background: "transparent",
-                  border: `1px solid ${C.b7}`,
-                  borderRadius: R.md,
-                  padding: "12px 16px",
-                  cursor: "pointer",
-                }}
+              <Button
+                variant="secondary"
+                size="lg"
+                onPress={() => setShowBluesky(true)}
+                style={styles.fullWidth}
               >
                 Subscribe with Bluesky
-              </button>
+              </Button>
             )}
           </>
         )}

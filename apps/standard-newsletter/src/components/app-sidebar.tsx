@@ -29,7 +29,7 @@ import { Button as AriaButton } from "react-aria-components";
 
 import type { Publication } from "../data/publications";
 import type { ViewerData } from "../server/analytics";
-import { kfmt } from "../theme";
+import { kfmt } from "../lib/format";
 import { PubGlyph } from "./ui";
 
 function initialsOf(name: string): string {
