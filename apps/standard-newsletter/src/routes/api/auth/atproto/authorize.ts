@@ -25,12 +25,30 @@ export const Route = createFileRoute("/api/auth/atproto/authorize")({
           );
         }
 
+        const state = { redirect: redirectParam, handle, subscribe, email };
+
+        // When HappyView is configured, broker sign-in through it so the
+        // session's DPoP key is one HappyView provisioned (required for space
+        // writes). Otherwise use the plain atproto client.
+        const { getHappyViewOAuth } =
+          await import("#/integrations/auth/happyview-oauth.server");
+        const hv = getHappyViewOAuth();
+        if (hv) {
+          const { OAUTH_SCOPE } =
+            await import("#/integrations/auth/atproto.server");
+          const authUrl = await hv.authorize(handle, {
+            scope: OAUTH_SCOPE,
+            state: JSON.stringify(state),
+          });
+          return Response.redirect(authUrl.toString(), 302);
+        }
+
         const { atprotoOAuth, OAUTH_SCOPE } =
           await import("#/integrations/auth/atproto.server");
         const { url: authUrl } = await atprotoOAuth.authorize({
           target: { type: "account", identifier: handle as ActorIdentifier },
           scope: OAUTH_SCOPE,
-          state: { redirect: redirectParam, handle, subscribe, email },
+          state,
         });
         return Response.redirect(authUrl.toString(), 302);
       },

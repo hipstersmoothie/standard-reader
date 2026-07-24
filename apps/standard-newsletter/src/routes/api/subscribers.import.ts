@@ -1,4 +1,3 @@
-import type { Did } from "@atcute/lexicons";
 import { createFileRoute } from "@tanstack/react-router";
 
 /**
@@ -51,18 +50,13 @@ export const Route = createFileRoute("/api/subscribers/import")({
           );
         }
 
-        const { atprotoOAuth } =
-          await import("#/integrations/auth/atproto.server");
-        let session: {
-          did: string;
-          handle: (pathname: string, init?: RequestInit) => Promise<Response>;
-        } | null = null;
-        try {
-          session = await atprotoOAuth.restore(authorDid as Did);
-        } catch (error) {
-          console.error("[subscribers/import] session restore failed:", error);
-          session = null;
-        }
+        // Restore the author's session for the space write from whichever
+        // client signed them in — with HappyView that's the brokered client,
+        // whose DPoP key HappyView provisioned (the atproto client's key isn't,
+        // and the write would 401).
+        const { restoreAuthorSession } =
+          await import("#/integrations/auth/happyview-oauth.server");
+        const session = await restoreAuthorSession(authorDid);
         if (!session) {
           return Response.json(
             { ok: false, error: "no-session" },

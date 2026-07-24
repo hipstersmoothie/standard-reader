@@ -30,6 +30,7 @@ import { Route as ApiAuthAtprotoAuthorizeRouteImport } from './routes/api/auth/a
 import { Route as ApiAuthAtprotoCallbackRouteImport } from './routes/api/auth/atproto/callback'
 import { Route as ApiAuthAtprotoJwksDotjsonRouteImport } from './routes/api/auth/atproto/jwks[.]json'
 import { Route as ApiAuthAtprotoMetadataDotjsonRouteImport } from './routes/api/auth/atproto/metadata[.]json'
+import { Route as ApiAuthHappyviewCallbackRouteImport } from './routes/api/auth/happyview/callback'
 import { Route as AppPPubIdSubscribersIndexRouteImport } from './routes/_app.p.$pubId_.subscribers.index'
 import { Route as AppPPubIdSubscribersImportRouteImport } from './routes/_app.p.$pubId_.subscribers.import'
 
@@ -140,6 +141,12 @@ const ApiAuthAtprotoMetadataDotjsonRoute =
     path: '/api/auth/atproto/metadata.json',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiAuthHappyviewCallbackRoute =
+  ApiAuthHappyviewCallbackRouteImport.update({
+    id: '/api/auth/happyview/callback',
+    path: '/api/auth/happyview/callback',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AppPPubIdSubscribersIndexRoute =
   AppPPubIdSubscribersIndexRouteImport.update({
     id: '/p/$pubId_/subscribers/',
@@ -174,6 +181,7 @@ export interface FileRoutesByFullPath {
   '/api/auth/atproto/callback': typeof ApiAuthAtprotoCallbackRoute
   '/api/auth/atproto/jwks.json': typeof ApiAuthAtprotoJwksDotjsonRoute
   '/api/auth/atproto/metadata.json': typeof ApiAuthAtprotoMetadataDotjsonRoute
+  '/api/auth/happyview/callback': typeof ApiAuthHappyviewCallbackRoute
   '/p/$pubId/subscribers/import': typeof AppPPubIdSubscribersImportRoute
   '/p/$pubId/subscribers/': typeof AppPPubIdSubscribersIndexRoute
 }
@@ -198,6 +206,7 @@ export interface FileRoutesByTo {
   '/api/auth/atproto/callback': typeof ApiAuthAtprotoCallbackRoute
   '/api/auth/atproto/jwks.json': typeof ApiAuthAtprotoJwksDotjsonRoute
   '/api/auth/atproto/metadata.json': typeof ApiAuthAtprotoMetadataDotjsonRoute
+  '/api/auth/happyview/callback': typeof ApiAuthHappyviewCallbackRoute
   '/p/$pubId/subscribers/import': typeof AppPPubIdSubscribersImportRoute
   '/p/$pubId/subscribers': typeof AppPPubIdSubscribersIndexRoute
 }
@@ -224,6 +233,7 @@ export interface FileRoutesById {
   '/api/auth/atproto/callback': typeof ApiAuthAtprotoCallbackRoute
   '/api/auth/atproto/jwks.json': typeof ApiAuthAtprotoJwksDotjsonRoute
   '/api/auth/atproto/metadata.json': typeof ApiAuthAtprotoMetadataDotjsonRoute
+  '/api/auth/happyview/callback': typeof ApiAuthHappyviewCallbackRoute
   '/_app/p/$pubId_/subscribers/import': typeof AppPPubIdSubscribersImportRoute
   '/_app/p/$pubId_/subscribers/': typeof AppPPubIdSubscribersIndexRoute
 }
@@ -250,6 +260,7 @@ export interface FileRouteTypes {
     | '/api/auth/atproto/callback'
     | '/api/auth/atproto/jwks.json'
     | '/api/auth/atproto/metadata.json'
+    | '/api/auth/happyview/callback'
     | '/p/$pubId/subscribers/import'
     | '/p/$pubId/subscribers/'
   fileRoutesByTo: FileRoutesByTo
@@ -274,6 +285,7 @@ export interface FileRouteTypes {
     | '/api/auth/atproto/callback'
     | '/api/auth/atproto/jwks.json'
     | '/api/auth/atproto/metadata.json'
+    | '/api/auth/happyview/callback'
     | '/p/$pubId/subscribers/import'
     | '/p/$pubId/subscribers'
   id:
@@ -299,6 +311,7 @@ export interface FileRouteTypes {
     | '/api/auth/atproto/callback'
     | '/api/auth/atproto/jwks.json'
     | '/api/auth/atproto/metadata.json'
+    | '/api/auth/happyview/callback'
     | '/_app/p/$pubId_/subscribers/import'
     | '/_app/p/$pubId_/subscribers/'
   fileRoutesById: FileRoutesById
@@ -320,6 +333,7 @@ export interface RootRouteChildren {
   ApiAuthAtprotoCallbackRoute: typeof ApiAuthAtprotoCallbackRoute
   ApiAuthAtprotoJwksDotjsonRoute: typeof ApiAuthAtprotoJwksDotjsonRoute
   ApiAuthAtprotoMetadataDotjsonRoute: typeof ApiAuthAtprotoMetadataDotjsonRoute
+  ApiAuthHappyviewCallbackRoute: typeof ApiAuthHappyviewCallbackRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -471,6 +485,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthAtprotoMetadataDotjsonRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/auth/happyview/callback': {
+      id: '/api/auth/happyview/callback'
+      path: '/api/auth/happyview/callback'
+      fullPath: '/api/auth/happyview/callback'
+      preLoaderRoute: typeof ApiAuthHappyviewCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_app/p/$pubId_/subscribers/': {
       id: '/_app/p/$pubId_/subscribers/'
       path: '/p/$pubId/subscribers'
@@ -527,6 +548,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAuthAtprotoCallbackRoute: ApiAuthAtprotoCallbackRoute,
   ApiAuthAtprotoJwksDotjsonRoute: ApiAuthAtprotoJwksDotjsonRoute,
   ApiAuthAtprotoMetadataDotjsonRoute: ApiAuthAtprotoMetadataDotjsonRoute,
+  ApiAuthHappyviewCallbackRoute: ApiAuthHappyviewCallbackRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

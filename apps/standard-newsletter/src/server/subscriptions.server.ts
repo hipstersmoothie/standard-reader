@@ -5,7 +5,6 @@
  * delete goes through the subscriber's own session. Config-gated on HappyView.
  */
 
-import type { Did } from "@atcute/lexicons";
 import {
   newsletterSubscribers,
   publications,
@@ -13,7 +12,7 @@ import {
 import { and, eq } from "drizzle-orm";
 
 import { getDb } from "../db/index.server";
-import { atprotoOAuth } from "../integrations/auth/atproto.server";
+import { restoreAuthorSession } from "../integrations/auth/happyview-oauth.server";
 import { parseSpaceUri, isSpaceRecordRef } from "./happyview/space-uri";
 
 export interface MySubscription {
@@ -76,15 +75,7 @@ export async function unsubscribeMine(
   const target = subs.find((s) => s.publicationUri === publicationUri);
   if (!target) return false;
 
-  let session: {
-    did: string;
-    handle: (pathname: string, init?: RequestInit) => Promise<Response>;
-  } | null = null;
-  try {
-    session = await atprotoOAuth.restore(viewerDid as Did);
-  } catch {
-    session = null;
-  }
+  const session = await restoreAuthorSession(viewerDid);
   if (!session) return false;
 
   const { deleteBlueskySubscription } =

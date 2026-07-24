@@ -5,9 +5,7 @@
  * against a live HappyView instance.
  */
 
-import type { Did } from "@atcute/lexicons";
-
-import { atprotoOAuth } from "../../integrations/auth/atproto.server";
+import { restoreAuthorSession } from "../../integrations/auth/happyview-oauth.server";
 import { bearerTransport, dpopTransport } from "./client";
 import type { DpopFetch } from "./client";
 import type { HappyViewConfig } from "./config";
@@ -53,14 +51,7 @@ export async function readSpaceForPublication(
   const ref = { did: parts.did, type: config.spaceType, skey: parts.rkey };
   const uri = spaceUri(ref);
 
-  let session: {
-    handle: (pathname: string, init?: RequestInit) => Promise<Response>;
-  } | null = null;
-  try {
-    session = await atprotoOAuth.restore(parts.did as Did);
-  } catch {
-    session = null;
-  }
+  const session = await restoreAuthorSession(parts.did);
   if (!session) return null;
 
   const dpop = dpopTransport(dpopFetchFromSession(session));

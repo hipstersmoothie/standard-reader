@@ -20,6 +20,7 @@
     "@atcute/identity-resolver-node": "^2.0.1",
     "@atcute/lexicons": "^2.0.2",
     "@atcute/oauth-node-client": "^2.0.1",
+    "@happyview/oauth-client-node": "^1.0.0",
     "@neondatabase/serverless": "^1.1.0",
     "@react-email/components": "^1.0.12",
     "@react-email/render": "^2.1.0",
