@@ -25,9 +25,15 @@ const DEFAULT_SPACE_TYPE = "app.standard-newsletter.list";
  * Requires at least HAPPYVIEW_URL and HAPPYVIEW_CLIENT_KEY.
  */
 export function getHappyViewConfig(): HappyViewConfig | null {
-  const url = process.env.HAPPYVIEW_URL?.replace(/\/+$/, "");
+  const rawUrl = process.env.HAPPYVIEW_URL?.trim();
   const clientKey = process.env.HAPPYVIEW_CLIENT_KEY;
-  if (!url || !clientKey) return null;
+  if (!rawUrl || !clientKey) return null;
+  // Tolerate a bare host in HAPPYVIEW_URL (e.g. "example.up.railway.app"):
+  // without a scheme, `${url}/xrpc/…` is a *relative* path and requests hit the
+  // local server instead of HappyView. Default to https and strip any trailing
+  // slash.
+  const withScheme = /^https?:\/\//.test(rawUrl) ? rawUrl : `https://${rawUrl}`;
+  const url = withScheme.replace(/\/+$/, "");
   return {
     url,
     clientKey,
