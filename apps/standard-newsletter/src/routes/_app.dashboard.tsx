@@ -88,17 +88,15 @@ function Dashboard() {
                 margin: "0 auto 22px",
               }}
             >
-              Owning a standard.site publication doesn’t start mailing it — you
-              choose which of yours becomes a newsletter. Add one and every post
-              you publish to it goes out to its subscribers, with delivery and
-              readership analytics here.
+              To get started choose one of your publications to start a
+              newsletter for.
             </p>
             <Button
               variant="primary"
               size="lg"
               onPress={() => navigate({ to: "/connect" })}
             >
-              Add a newsletter
+              Start a newsletter
             </Button>
           </div>
         </div>
@@ -108,32 +106,28 @@ function Dashboard() {
 
   const totalSubs = pubs.reduce((s, p) => s + p.subs, 0);
   const totalDelta = pubs.reduce((s, p) => s + p.delta, 0);
-  const sends30 = pubs.reduce(
-    (s, p) => s + p.sends.filter((x) => /Jul|Jun 2[0-9]/.test(x.when)).length,
-    0,
-  );
-  // A publication with no published posts has no sends, and a brand-new one has
-  // no subscribers — neither is an error, so every aggregate below tolerates the
-  // empty case rather than reading through to `undefined` or dividing by zero.
-  const emailsSent = pubs.reduce(
-    (s, p) => s + (p.sends[0]?.recipients ?? 0),
-    0,
-  );
-  const avgOpen =
-    totalSubs > 0
-      ? pubs.reduce((s, p) => s + p.openRate * p.subs, 0) / totalSubs
-      : 0;
-  const avgClick =
-    totalSubs > 0
-      ? pubs.reduce((s, p) => s + p.clickRate * p.subs, 0) / totalSubs
-      : 0;
-  const agg = MONTHS.map((_, i) =>
-    pubs.reduce((s, p) => s + (p.growth[i] ?? 0), 0),
-  );
   const allSends = pubs
     .flatMap((p) => p.sends.map((s) => ({ ...s, pub: p })))
-    .toSorted((a, b) => Date.parse(b.when) - Date.parse(a.when))
-    .slice(0, 5);
+    .toSorted((a, b) => b.sentAtMs - a.sentAtMs);
+  const recentSends = allSends.slice(0, 5);
+  // Real send counts and totals — a publication with no sends contributes 0,
+  // and averages over zero sends are 0, not fabricated.
+  const thirtyDaysAgo = Date.now() - 30 * 86_400_000;
+  const sends30 = allSends.filter((s) => s.sentAtMs >= thirtyDaysAgo).length;
+  const emailsSent = allSends.reduce((s, x) => s + x.recipients, 0);
+  const sentPubs = pubs.filter((p) => p.sends.length > 0);
+  const weight = sentPubs.reduce((s, p) => s + p.subs, 0);
+  const avgOpen =
+    weight > 0
+      ? sentPubs.reduce((s, p) => s + p.openRate * p.subs, 0) / weight
+      : 0;
+  const avgClick =
+    weight > 0
+      ? sentPubs.reduce((s, p) => s + p.clickRate * p.subs, 0) / weight
+      : 0;
+  // No historical subscriber timeseries in the read model, so there's no
+  // growth chart to draw (rather than a fabricated curve).
+  const hasGrowth = pubs.some((p) => p.growth.length > 0);
 
   const kpis: Array<{
     icon: string;
@@ -145,40 +139,36 @@ function Dashboard() {
       icon: I.users,
       label: "Subscribers",
       value: fmt(totalSubs),
-      foot: (
-        <>
-          <Delta value={totalDelta} />
-          <span>new in 30d</span>
-        </>
-      ),
+      foot:
+        totalDelta > 0 ? (
+          <>
+            <Delta value={totalDelta} />
+            <span>new this week</span>
+          </>
+        ) : (
+          <span>
+            across{" "}
+            {pubs.length === 1 ? "1 newsletter" : `${pubs.length} newsletters`}
+          </span>
+        ),
     },
     {
       icon: I.send,
       label: "Emails sent",
       value: fmt(emailsSent),
-      foot: <span>{sends30} campaigns · 30d</span>,
+      foot: <span>{sends30} sent · 30d</span>,
     },
     {
       icon: I.eye,
       label: "Avg open rate",
-      value: `${avgOpen.toFixed(1)}%`,
-      foot: (
-        <>
-          <Delta value={1.4} suffix="pt" />
-          <span>vs. prior</span>
-        </>
-      ),
+      value: emailsSent > 0 ? `${avgOpen.toFixed(1)}%` : "—",
+      foot: <span>across sends</span>,
     },
     {
       icon: I.cursor,
       label: "Avg click rate",
-      value: `${avgClick.toFixed(1)}%`,
-      foot: (
-        <>
-          <Delta value={0.6} suffix="pt" />
-          <span>vs. prior</span>
-        </>
-      ),
+      value: emailsSent > 0 ? `${avgClick.toFixed(1)}%` : "—",
+      foot: <span>across sends</span>,
     },
   ];
 
@@ -272,24 +262,32 @@ function Dashboard() {
           ))}
         </div>
 
-        <div style={{ marginBottom: 48 }}>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "baseline",
-              gap: 12,
-              marginBottom: 16,
-            }}
-          >
-            <div style={{ fontFamily: C.serif, fontSize: 20, color: C.t12 }}>
-              Total subscribers
+        {hasGrowth ? (
+          <div style={{ marginBottom: 48 }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "baseline",
+                gap: 12,
+                marginBottom: 16,
+              }}
+            >
+              <div style={{ fontFamily: C.serif, fontSize: 20, color: C.t12 }}>
+                Total subscribers
+              </div>
+              <div style={{ fontSize: 12.5, color: C.mut, marginLeft: "auto" }}>
+                Last 12 months
+              </div>
             </div>
-            <div style={{ fontSize: 12.5, color: C.mut, marginLeft: "auto" }}>
-              Last 12 months
-            </div>
+            <AreaChart
+              data={MONTHS.map((_, i) =>
+                pubs.reduce((s, p) => s + (p.growth[i] ?? 0), 0),
+              )}
+              h={180}
+              labels={MONTHS}
+            />
           </div>
-          <AreaChart data={agg} h={180} labels={MONTHS} />
-        </div>
+        ) : null}
 
         <div
           style={{
@@ -378,7 +376,21 @@ function Dashboard() {
           <div>
             <div style={sectLabel}>Recent sends</div>
             <div style={{ borderBottom: `1px solid ${C.b6}` }}>
-              {allSends.map((s) => (
+              {recentSends.length === 0 ? (
+                <div
+                  style={{
+                    borderTop: `1px solid ${C.b6}`,
+                    padding: "18px 6px",
+                    fontSize: 13,
+                    color: C.mut,
+                    fontFamily: C.serif,
+                    fontStyle: "italic",
+                  }}
+                >
+                  Nothing sent yet.
+                </div>
+              ) : null}
+              {recentSends.map((s) => (
                 <div
                   key={`${s.pub.id}-${s.path}`}
                   role="button"

@@ -1,13 +1,29 @@
-import { useSuspenseQuery } from "@tanstack/react-query";
+import {
+  AlertDialog,
+  AlertDialogActionButton,
+  AlertDialogCancelButton,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+} from "@standard-reader/design-system/alert-dialog";
+import { Button } from "@standard-reader/design-system/button";
+import {
+  useMutation,
+  useQueryClient,
+  useSuspenseQuery,
+} from "@tanstack/react-query";
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 
 import { AreaChart } from "../components/charts";
 import { I, Ico } from "../components/icons";
 import { Delta, PubGlyph, StatBar, StatCard } from "../components/ui";
-import type { Send } from "../data/publications";
+import type { Publication, Send } from "../data/publications";
 import { MONTHS } from "../data/publications";
-import { publicationsQueryOptions } from "../server/analytics";
+import {
+  disconnectPublicationFn,
+  publicationsQueryOptions,
+} from "../server/analytics";
 import { C, POSD, cardBox, fmt, sectLabel } from "../theme";
 
 export const Route = createFileRoute("/_app/p/$pubId")({
@@ -113,6 +129,54 @@ function SendRow({
   );
 }
 
+/**
+ * Disconnect ("remove") a newsletter. Confirms first because the publication
+ * leaves the app — but it's non-destructive to the data: the subscriber list and
+ * past sends are kept, so adding it again later resumes. On success the cache is
+ * invalidated and we return to the dashboard, since this publication's page no
+ * longer exists.
+ */
+function RemoveNewsletter({ pub }: { pub: Publication }) {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const remove = useMutation({
+    mutationFn: () =>
+      disconnectPublicationFn({ data: { publicationUri: pub.uri } }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["publications"] });
+      navigate({ to: "/dashboard" });
+    },
+  });
+
+  return (
+    <AlertDialog
+      trigger={
+        <Button variant="tertiary" size="sm">
+          Remove
+        </Button>
+      }
+    >
+      <AlertDialogHeader>Remove {pub.name}?</AlertDialogHeader>
+      <AlertDialogDescription>
+        New posts from {pub.name} will stop being mailed and it leaves your
+        dashboard. Its subscriber list and past sends are kept — you can add it
+        again anytime.
+      </AlertDialogDescription>
+      <AlertDialogFooter>
+        <AlertDialogCancelButton isDisabled={remove.isPending} />
+        <AlertDialogActionButton
+          variant="critical"
+          closeOnPress={false}
+          isPending={remove.isPending}
+          onPress={() => remove.mutate()}
+        >
+          Remove newsletter
+        </AlertDialogActionButton>
+      </AlertDialogFooter>
+    </AlertDialog>
+  );
+}
+
 function PubAnalytics() {
   const { pubId } = Route.useParams();
   const { data: pubs } = useSuspenseQuery(publicationsQueryOptions());
@@ -120,14 +184,12 @@ function PubAnalytics() {
   const pub = pubs.find((p) => p.id === pubId);
   if (!pub) return null;
   const t = pub.theme;
-  // A publication with no published posts has no sends; averaging over zero of
-  // them is NaN, not an error state.
-  const avgUnsub =
-    pub.sends.length > 0
-      ? Math.round(
-          pub.sends.reduce((s, x) => s + x.unsubs, 0) / pub.sends.length,
-        )
-      : 0;
+  const hasSends = pub.sends.length > 0;
+  // A publication with no sends has no averages; averaging over zero of them is
+  // NaN, and the cards show "—" rather than a fabricated rate.
+  const avgUnsub = hasSends
+    ? Math.round(pub.sends.reduce((s, x) => s + x.unsubs, 0) / pub.sends.length)
+    : 0;
 
   return (
     <div style={{ height: "100%", overflow: "auto", background: C.pageBg }}>
@@ -195,33 +257,52 @@ function PubAnalytics() {
                 {pub.url}
               </span>
               <span style={{ opacity: 0.4 }}>·</span>
-              <span
-                style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
-              >
-                <Ico d={I.calendar} s={14} />
-                {pub.cadence}
+              {pub.cadence ? (
+                <>
+                  <span
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
+                    }}
+                  >
+                    <Ico d={I.calendar} s={14} />
+                    {pub.cadence}
+                  </span>
+                  <span style={{ opacity: 0.4 }}>·</span>
+                </>
+              ) : null}
+              <span>
+                {pub.sends.length} {pub.sends.length === 1 ? "send" : "sends"}
               </span>
-              <span style={{ opacity: 0.4 }}>·</span>
-              <span>{pub.sends.length} sends</span>
             </div>
           </div>
-          <a
-            href={`https://${pub.url}`}
-            target="_blank"
-            rel="noreferrer"
+          <div
             style={{
               flex: "none",
-              display: "inline-flex",
+              display: "flex",
               alignItems: "center",
-              gap: 6,
-              fontSize: 13,
-              color: t.foreground,
-              opacity: 0.75,
-              textDecoration: "none",
+              gap: 16,
             }}
           >
-            <Ico d={I.external} s={15} /> Visit site
-          </a>
+            <a
+              href={`https://${pub.url}`}
+              target="_blank"
+              rel="noreferrer"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                fontSize: 13,
+                color: t.foreground,
+                opacity: 0.75,
+                textDecoration: "none",
+              }}
+            >
+              <Ico d={I.external} s={15} /> Visit site
+            </a>
+            <RemoveNewsletter pub={pub} />
+          </div>
         </div>
       </div>
 
@@ -241,49 +322,55 @@ function PubAnalytics() {
             label="Subscribers"
             value={fmt(pub.subs)}
             foot={
-              <span>
-                <Delta value={pub.delta} /> new in 30d
-              </span>
+              pub.delta > 0 ? (
+                <span>
+                  <Delta value={pub.delta} /> new this week
+                </span>
+              ) : (
+                <span>email subscribers</span>
+              )
             }
           />
           <StatCard
             icon={I.eye}
             label="Open rate"
-            value={`${pub.openRate}%`}
-            foot="avg across sends"
+            value={hasSends ? `${pub.openRate}%` : "—"}
+            foot={hasSends ? "avg across sends" : "no sends yet"}
           />
           <StatCard
             icon={I.cursor}
             label="Click rate"
-            value={`${pub.clickRate}%`}
-            foot="avg across sends"
+            value={hasSends ? `${pub.clickRate}%` : "—"}
+            foot={hasSends ? "avg across sends" : "no sends yet"}
           />
           <StatCard
             icon={I.userMinus}
             label="Unsubscribes"
-            value={`${avgUnsub}`}
-            foot="avg per send"
+            value={hasSends ? `${avgUnsub}` : "—"}
+            foot={hasSends ? "avg per send" : "no sends yet"}
           />
         </div>
 
-        <div style={{ ...cardBox, padding: 22, marginBottom: 28 }}>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "baseline",
-              gap: 12,
-              marginBottom: 14,
-            }}
-          >
-            <div style={{ fontFamily: C.serif, fontSize: 18, color: C.t12 }}>
-              Subscriber growth
+        {pub.growth.length > 0 ? (
+          <div style={{ ...cardBox, padding: 22, marginBottom: 28 }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "baseline",
+                gap: 12,
+                marginBottom: 14,
+              }}
+            >
+              <div style={{ fontFamily: C.serif, fontSize: 18, color: C.t12 }}>
+                Subscriber growth
+              </div>
+              <div style={{ fontSize: 12.5, color: C.mut, marginLeft: "auto" }}>
+                Last 12 months
+              </div>
             </div>
-            <div style={{ fontSize: 12.5, color: C.mut, marginLeft: "auto" }}>
-              Last 12 months
-            </div>
+            <AreaChart data={pub.growth} h={160} labels={MONTHS} />
           </div>
-          <AreaChart data={pub.growth} h={160} labels={MONTHS} />
-        </div>
+        ) : null}
 
         <div
           style={{ display: "flex", alignItems: "flex-end", marginBottom: 12 }}
