@@ -1,14 +1,14 @@
 /**
  * Analytics data access. `getPublications` runs on the server: it resolves the
  * signed-in user's DID and reads *their* publications from the shared reader DB
- * via `analytics.server`. Falls back to sample data only when no DB is
- * configured, so the app runs in dev/demo without credentials. Once
- * DATABASE_URL is set, a query failure surfaces instead of masquerading as
- * sample data.
+ * via `analytics.server`.
+ *
+ * Everything here is real data or an error — there is no sample/demo fallback.
+ * A DB failure surfaces rather than masquerading as plausible-looking numbers.
  *
  * When signed in, the list is scoped to the user's own publications
- * (publications.did == their DID). When not signed in but a DB is present (e.g.
- * the public marketing home), it shows the top publications as social proof.
+ * (publications.did == their DID). When not signed in (the public marketing
+ * home), it shows the top publications as social proof.
  */
 
 import { queryOptions } from "@tanstack/react-query";
@@ -16,36 +16,21 @@ import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 
 import type { Publication } from "../data/publications";
-import { PUBS } from "../data/publications";
+
+const NO_DB =
+  "[standard-newsletter] DATABASE_URL is not configured — the app reads all of its data from the Standard Reader database.";
 
 export const getPublications = createServerFn({ method: "GET" }).handler(
   async (): Promise<Array<Publication>> => {
-    // Sample data is a dev/demo affordance for when no DB is configured. Once
-    // DATABASE_URL is set, a query failure is a real outage — surface it rather
-    // than silently serving fake numbers that look like real ones.
-    const configured = Boolean(process.env.DATABASE_URL);
-    try {
-      const [{ loadPublicationsFromDb }, { getCurrentUserDid }] =
-        await Promise.all([
-          import("./analytics.server"),
-          import("../integrations/auth/session.server"),
-        ]);
-      const did = await getCurrentUserDid(getRequest());
-      const rows = await loadPublicationsFromDb(did);
-      if (rows) return rows;
-    } catch (error) {
-      if (configured) throw error;
-      console.error(
-        "[standard-newsletter] DB unavailable, using sample data:",
-        error,
-      );
-    }
-    if (configured) {
-      throw new Error(
-        "[standard-newsletter] DATABASE_URL is set but the DB client is unavailable",
-      );
-    }
-    return PUBS;
+    const [{ loadPublicationsFromDb }, { getCurrentUserDid }] =
+      await Promise.all([
+        import("./analytics.server"),
+        import("../integrations/auth/session.server"),
+      ]);
+    const did = await getCurrentUserDid(getRequest());
+    const rows = await loadPublicationsFromDb(did);
+    if (!rows) throw new Error(NO_DB);
+    return rows;
   },
 );
 
@@ -53,6 +38,34 @@ export function publicationsQueryOptions() {
   return queryOptions({
     queryKey: ["publications"],
     queryFn: () => getPublications(),
+    staleTime: 60_000,
+  });
+}
+
+/**
+ * Top publications for the public marketing home, as social proof.
+ *
+ * Deliberately lenient where {@link getPublications} is strict: the rail is
+ * decoration on a page anyone can reach, so a missing DB degrades it to empty
+ * rather than 500-ing the front door. It still never invents publications —
+ * empty means empty.
+ */
+export const getShowcasePublications = createServerFn({
+  method: "GET",
+}).handler(async (): Promise<Array<Publication>> => {
+  try {
+    const { loadPublicationsFromDb } = await import("./analytics.server");
+    return (await loadPublicationsFromDb()) ?? [];
+  } catch (error) {
+    console.error("[standard-newsletter] showcase publications failed:", error);
+    return [];
+  }
+});
+
+export function showcasePublicationsQueryOptions() {
+  return queryOptions({
+    queryKey: ["publications", "showcase"],
+    queryFn: () => getShowcasePublications(),
     staleTime: 60_000,
   });
 }
@@ -142,41 +155,23 @@ export interface PublicationSummaryData {
 export const getPublicationSummary = createServerFn({ method: "GET" })
   .validator((data: { pubId: string }) => data)
   .handler(async ({ data }): Promise<PublicationSummaryData | null> => {
-    const configured = Boolean(process.env.DATABASE_URL);
-    try {
-      const { loadPublicationSummary } = await import("./analytics.server");
-      const row = await loadPublicationSummary(data.pubId);
-      if (row) return row;
-      // DB is configured and simply has no such publication — not a sample miss.
-      if (configured) return null;
-    } catch (error) {
-      if (configured) throw error;
-      console.error("[standard-newsletter] publication summary failed:", error);
-    }
-    const p = PUBS.find((x) => x.id === data.pubId);
-    return p
-      ? {
-          uri: `sample:${p.id}`,
-          id: p.id,
-          name: p.name,
-          description: p.desc,
-          theme: p.theme,
-        }
-      : null;
+    if (!process.env.DATABASE_URL) throw new Error(NO_DB);
+    const { loadPublicationSummary } = await import("./analytics.server");
+    return await loadPublicationSummary(data.pubId);
   });
 
 /**
  * App access mode for the authenticated shell:
- * - `demo`  — no DATABASE_URL, run on sample data without auth.
  * - `authed` — signed in; scope to the user's publications.
- * - `login` — DB configured but not signed in; redirect to /login.
+ * - `login` — not signed in; redirect to /login.
+ *
+ * There is no unauthenticated mode. The shell shows one person's real
+ * publications and delivery numbers, so it needs a viewer to scope to.
  */
 export const getAppAccess = createServerFn({ method: "GET" }).handler(
-  async (): Promise<{
-    mode: "demo" | "authed" | "login";
-    viewer: ViewerData | null;
-  }> => {
-    if (!process.env.DATABASE_URL) return { mode: "demo", viewer: null };
+  async (): Promise<
+    { mode: "authed"; viewer: ViewerData } | { mode: "login"; viewer: null }
+  > => {
     try {
       const { getCurrentViewer } =
         await import("../integrations/auth/session.server");
@@ -185,7 +180,7 @@ export const getAppAccess = createServerFn({ method: "GET" }).handler(
         ? { mode: "authed", viewer }
         : { mode: "login", viewer: null };
     } catch {
-      return { mode: "demo", viewer: null };
+      return { mode: "login", viewer: null };
     }
   },
 );

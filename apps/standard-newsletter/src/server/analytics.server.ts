@@ -164,7 +164,7 @@ function toSend(
     };
   }
 
-  // Placeholder metrics for posts not yet mailed / sample data.
+  // Placeholder metrics for posts not yet mailed.
   const seed = `${pubId}-${doc.rkey}`;
   return {
     ...base,
@@ -187,7 +187,7 @@ interface DocRow {
 
 /**
  * Load every publication with real identity + subscriber counts + posts.
- * Returns `null` when no DB is configured so the caller can use sample data.
+ * Returns `null` when no DB is configured; the caller surfaces that as an error.
  */
 export async function loadPublicationsFromDb(
   ownerDid?: string,

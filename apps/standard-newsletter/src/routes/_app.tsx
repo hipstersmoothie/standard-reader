@@ -2,11 +2,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { Outlet, createFileRoute, redirect } from "@tanstack/react-router";
 
 import { AppSidebar } from "../components/app-sidebar";
-import {
-  getAppAccess,
-  publicationsQueryOptions,
-  viewerQueryOptions,
-} from "../server/analytics";
+import { getAppAccess, publicationsQueryOptions } from "../server/analytics";
 import { C } from "../theme";
 
 export const Route = createFileRoute("/_app")({
@@ -21,13 +17,16 @@ export const Route = createFileRoute("/_app")({
     // Seed the viewer cache from the access check, then ensure publications.
     context.queryClient.setQueryData(["viewer"], access.viewer);
     await context.queryClient.ensureQueryData(publicationsQueryOptions());
+    // Past the redirect above the viewer is guaranteed; hand it to the shell
+    // from the loader so the sidebar doesn't have to narrow a nullable query.
+    return { viewer: access.viewer };
   },
   component: AppLayout,
 });
 
 function AppLayout() {
   const { data: publications } = useSuspenseQuery(publicationsQueryOptions());
-  const { data: viewer } = useSuspenseQuery(viewerQueryOptions());
+  const { viewer } = Route.useLoaderData();
   return (
     <div
       style={{

@@ -1,8 +1,8 @@
 /**
  * HappyView (AT Proto Proposal 0016 permissioned-space AppView) configuration,
  * read from the environment. When unset, the permissioned-space paths are
- * disabled and the app stays on the email-only DB flow — same demo-mode
- * discipline as `getDb()`, so nothing regresses without a HappyView instance.
+ * disabled and the app stays on the email-only DB flow, so nothing regresses
+ * without a HappyView instance.
  *
  * See docs/happyview-runbook.md for how to stand one up on Railway.
  */

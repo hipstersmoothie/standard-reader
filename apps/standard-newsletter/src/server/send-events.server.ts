@@ -7,8 +7,8 @@
  * - `loadSendMetrics` aggregates real per-document delivery metrics for the
  *   analytics screens.
  *
- * All functions no-op / return empty when no DB is configured, so the app keeps
- * working on sample data.
+ * All functions no-op / return empty when no DB is configured — the analytics
+ * screens then render zeroed delivery detail rather than invented numbers.
  */
 
 import {

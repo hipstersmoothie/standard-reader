@@ -29,7 +29,7 @@ import { Button as AriaButton } from "react-aria-components";
 
 import type { Publication } from "../data/publications";
 import type { ViewerData } from "../server/analytics";
-import { kfmt } from "../theme";
+import { R, kfmt } from "../theme";
 import { PubGlyph } from "./ui";
 
 function initialsOf(name: string): string {
@@ -288,10 +288,10 @@ export function AppSidebar({
   viewer,
 }: {
   publications: Array<Publication>;
-  viewer: ViewerData | null;
+  viewer: ViewerData;
 }) {
-  const displayName = viewer?.displayName ?? "Demo account";
-  const handleLine = viewer?.handle ? `@${viewer.handle}` : "not signed in";
+  const displayName = viewer.displayName;
+  const handleLine = viewer.handle ? `@${viewer.handle}` : viewer.did;
   return (
     <aside {...stylex.props(styles.sidebar)}>
       <div {...stylex.props(styles.sidebarScroll)}>
@@ -329,7 +329,7 @@ export function AppSidebar({
                   styles.followRowActive,
                 )}
               >
-                <PubGlyph pub={p} size={24} r={7} fs={12} />
+                <PubGlyph pub={p} size={24} r={R.sm} fs={12} />
                 <span {...stylex.props(styles.followName)}>{p.name}</span>
                 <span {...stylex.props(styles.count)}>{kfmt(p.subs)}</span>
               </Link>

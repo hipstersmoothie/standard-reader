@@ -5,8 +5,9 @@
  * reader does: Neon-style hosts use the serverless HTTP driver, everything else
  * a `pg` pool.
  *
- * `db` is `null` when DATABASE_URL is unset, so the analytics layer can fall
- * back to sample data and the app still runs (dev/demo) without credentials.
+ * `db` is `null` when DATABASE_URL is unset. The app has no offline mode — the
+ * analytics layer turns that into an explicit error rather than serving
+ * placeholder data.
  */
 
 import { neon } from "@neondatabase/serverless";
