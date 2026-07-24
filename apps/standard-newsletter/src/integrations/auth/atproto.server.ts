@@ -3,9 +3,13 @@
  * @atcute/oauth-node-client: a confidential client (client_assertion signed with
  * ATPROTO_PRIVATE_KEY_JWK) in prod, a public client on localhost. Pre-flow state
  * and post-flow sessions persist in the shared `verification` table (KV), so a
- * user is the same account across both apps. Identity is only used to establish
- * who is signed in — reads come from our own DB, so the requested scope is just
- * `atproto`.
+ * user is the same account across both apps. Reads come from our own DB, so
+ * identity (`atproto`) covers those — but writing the author's `subscriberList`
+ * on their behalf needs record-write authority. We request exactly that and
+ * nothing more: a granular `repo` scope for the single
+ * `app.standard-newsletter.subscriberList` collection (create + update +
+ * delete). No broad `transition:generic`, so the consent screen shows precisely
+ * the one permission the app uses.
  */
 
 import {
@@ -23,11 +27,12 @@ import type {
   StoredSession,
   StoredState,
 } from "@atcute/oauth-node-client";
-import { OAuthClient } from "@atcute/oauth-node-client";
+import { OAuthClient, scope as atprotoScope } from "@atcute/oauth-node-client";
 import { verification } from "@standard-reader/db/schema";
 import { eq, like } from "drizzle-orm";
 
 import { getDb } from "../../db/index.server";
+import { SUBSCRIBER_LIST_COLLECTION } from "../../lexicons/newsletter";
 import { getPublicUrl } from "../../lib/public-url";
 import { requestLock } from "./request-lock.server";
 
@@ -35,7 +40,13 @@ const STORE_PREFIX = "newsletter-oauth";
 const STATE_TTL_MS = 15 * 60_000;
 const SESSION_TTL_MS = 180 * 24 * 60 * 60_000;
 const ROUTE_BASE = "/api/auth/atproto";
-const SCOPE = ["atproto"];
+const SCOPE = [
+  "atproto",
+  atprotoScope.repo({
+    collection: [SUBSCRIBER_LIST_COLLECTION],
+    action: ["create", "update", "delete"],
+  }),
+];
 
 type StoreKind = "session" | "state";
 
