@@ -7,7 +7,7 @@ import {
   publicationsQueryOptions,
   settingsQueryOptions,
 } from "../server/analytics";
-import { C, NEG, POS, sectLabel } from "../theme";
+import { C, NEG, POS, R, sectLabel } from "../theme";
 
 export const Route = createFileRoute("/_app/settings")({
   loader: async ({ context }) => {
@@ -22,11 +22,7 @@ export const Route = createFileRoute("/_app/settings")({
 type ImportState = "idle" | "importing" | "done" | "error";
 
 function ImportSubscribers() {
-  const { data: allPubs } = useSuspenseQuery(publicationsQueryOptions());
-  // Import needs a real publication AT-URI (DB-backed); sample data has none.
-  const pubs = allPubs.filter((p): p is typeof p & { uri: string } =>
-    Boolean(p.uri),
-  );
+  const { data: pubs } = useSuspenseQuery(publicationsQueryOptions());
   const [pubUri, setPubUri] = useState(pubs[0]?.uri ?? "");
   const [text, setText] = useState("");
   const [state, setState] = useState<ImportState>("idle");
@@ -59,7 +55,7 @@ function ImportSubscribers() {
     fontFamily: C.sans,
     fontSize: 14,
     padding: "10px 12px",
-    borderRadius: 10,
+    borderRadius: R.md,
     border: `1px solid ${C.b7}`,
     background: C.pageBg,
     color: C.t12,
@@ -113,7 +109,7 @@ function ImportSubscribers() {
               color: C.onAccent,
               background: C.a9,
               border: "none",
-              borderRadius: 10,
+              borderRadius: R.md,
               padding: "10px 18px",
               cursor:
                 state === "importing" || !text.trim() ? "default" : "pointer",

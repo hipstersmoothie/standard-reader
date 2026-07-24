@@ -4,7 +4,7 @@ import { getRequest } from "@tanstack/react-start/server";
 import { useState } from "react";
 
 import type { MySubscription } from "../server/subscriptions.server";
-import { C } from "../theme";
+import { C, R } from "../theme";
 
 const getMySubscriptions = createServerFn({ method: "GET" }).handler(
   async (): Promise<{ signedIn: boolean; subs: Array<MySubscription> }> => {
@@ -69,7 +69,7 @@ function Manage() {
           maxWidth: 520,
           background: C.warm,
           border: `1px solid ${C.b6}`,
-          borderRadius: 16,
+          borderRadius: R.lg,
           padding: "36px 32px",
         }}
       >
@@ -114,7 +114,7 @@ function Manage() {
                   gap: 12,
                   padding: "14px 16px",
                   border: `1px solid ${C.b6}`,
-                  borderRadius: 12,
+                  borderRadius: R.lg,
                   background: C.pageBg,
                 }}
               >
@@ -141,7 +141,7 @@ function Manage() {
                     color: C.t12,
                     background: "transparent",
                     border: `1px solid ${C.b7}`,
-                    borderRadius: 8,
+                    borderRadius: R.md,
                     padding: "7px 12px",
                     cursor: busy === sub.publicationUri ? "default" : "pointer",
                     opacity: busy === sub.publicationUri ? 0.6 : 1,

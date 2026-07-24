@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
 import type { Publication } from "../data/publications";
-import { C, NEG, POS, cardBox } from "../theme";
+import { C, NEG, POS, R, cardBox } from "../theme";
 import { I, Ico } from "./icons";
 
 export function Delta({
@@ -39,7 +39,7 @@ export function StatBar({ pct, color }: { pct: number; color: string }) {
     <div
       style={{
         height: 6,
-        borderRadius: 6,
+        borderRadius: R.sm,
         background: C.ui3,
         overflow: "hidden",
       }}
@@ -49,7 +49,7 @@ export function StatBar({ pct, color }: { pct: number; color: string }) {
           width: `${Math.min(100, pct)}%`,
           height: "100%",
           background: color,
-          borderRadius: 6,
+          borderRadius: R.sm,
         }}
       />
     </div>
@@ -59,12 +59,13 @@ export function StatBar({ pct, color }: { pct: number; color: string }) {
 export function PubGlyph({
   pub,
   size = 40,
-  r = 10,
+  r = R.md,
   fs = 20,
 }: {
   pub: Publication;
   size?: number;
-  r?: number;
+  /** Corner radius — a token from `R`, sized to the glyph. */
+  r?: string;
   fs?: number;
 }) {
   const t = pub.theme;
@@ -115,7 +116,7 @@ export function StatCard({
           style={{
             width: 28,
             height: 28,
-            borderRadius: 8,
+            borderRadius: R.md,
             background: C.sel5,
             color: C.a11,
             display: "flex",

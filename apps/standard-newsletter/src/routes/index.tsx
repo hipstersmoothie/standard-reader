@@ -6,12 +6,12 @@ import type { ReactNode } from "react";
 
 import { I, Ico } from "../components/icons";
 import { PubGlyph } from "../components/ui";
-import { publicationsQueryOptions } from "../server/analytics";
-import { C, POS, fmt, sectLabel } from "../theme";
+import { showcasePublicationsQueryOptions } from "../server/analytics";
+import { C, POS, R, fmt, sectLabel } from "../theme";
 
 export const Route = createFileRoute("/")({
   loader: ({ context }) =>
-    context.queryClient.ensureQueryData(publicationsQueryOptions()),
+    context.queryClient.ensureQueryData(showcasePublicationsQueryOptions()),
   component: Home,
 });
 
@@ -33,7 +33,7 @@ function Step({
           style={{
             width: 34,
             height: 34,
-            borderRadius: 9,
+            borderRadius: R.md,
             background: C.sel5,
             color: C.a11,
             display: "flex",
@@ -75,7 +75,7 @@ function wrap(children: ReactNode) {
 
 function Home() {
   const navigate = useNavigate();
-  const { data: pubs } = useSuspenseQuery(publicationsQueryOptions());
+  const { data: pubs } = useSuspenseQuery(showcasePublicationsQueryOptions());
   const goDashboard = () => navigate({ to: "/dashboard" });
   const [calcEmails, setCalcEmails] = useState(50_000);
   const price = Math.max(0, Math.ceil((calcEmails - 1000) / 1000));
@@ -202,15 +202,20 @@ function Home() {
                   <Ico d={I.chevR} s={17} w={2} />
                 </span>
               </Button>
-              <Button
-                variant="tertiary"
-                size="lg"
-                onPress={() =>
-                  navigate({ to: "/p/$pubId", params: { pubId: pubs[0].id } })
-                }
-              >
-                See a publication
-              </Button>
+              {/* Real publications only — with an empty DB there is nothing
+                  to point at, so the secondary CTA drops out rather than
+                  linking to a placeholder. */}
+              {pubs.length > 0 ? (
+                <Button
+                  variant="tertiary"
+                  size="lg"
+                  onPress={() =>
+                    navigate({ to: "/p/$pubId", params: { pubId: pubs[0].id } })
+                  }
+                >
+                  See a publication
+                </Button>
+              ) : null}
             </div>
           </div>
 
@@ -223,6 +228,9 @@ function Home() {
               gap: 4,
             }}
           >
+            {/* Real publications only. With none to show, the cards and the
+                arrow drop out and the envelope stands alone rather than
+                pointing at an empty column. */}
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               {pubs.slice(0, 3).map((p, i) => (
                 <div
@@ -234,13 +242,13 @@ function Home() {
                     gap: 11,
                     background: C.warm,
                     border: `1px solid ${C.b6}`,
-                    borderRadius: 12,
+                    borderRadius: R.lg,
                     padding: "10px 14px 10px 10px",
                     boxShadow: `0 10px 30px -20px color-mix(in srgb, ${C.ink} 50%, transparent)`,
                     animationDelay: `${i * 0.09}s`,
                   }}
                 >
-                  <PubGlyph pub={p} size={30} r={8} fs={15} />
+                  <PubGlyph pub={p} size={30} r={R.md} fs={15} />
                   <div
                     style={{
                       fontFamily: C.serif,
@@ -254,15 +262,17 @@ function Home() {
                 </div>
               ))}
             </div>
-            <div style={{ color: C.a9, padding: "0 4px" }}>
-              <Ico d={I.chevR} s={26} w={2} />
-            </div>
+            {pubs.length > 0 ? (
+              <div style={{ color: C.a9, padding: "0 4px" }}>
+                <Ico d={I.chevR} s={26} w={2} />
+              </div>
+            ) : null}
             <div
               className="sn-float"
               style={{
                 width: 108,
                 height: 108,
-                borderRadius: 22,
+                borderRadius: R.xl,
                 background: C.a9,
                 color: C.onAccent,
                 display: "flex",
@@ -348,7 +358,7 @@ function Home() {
                   style={{
                     width: 38,
                     height: 38,
-                    borderRadius: 10,
+                    borderRadius: R.md,
                     background: C.sel5,
                     color: C.a11,
                     display: "flex",
@@ -493,7 +503,7 @@ function Home() {
                   gap: 9,
                   background: C.sel5,
                   color: C.a11,
-                  borderRadius: 20,
+                  borderRadius: R.full,
                   padding: "7px 15px",
                   fontSize: 13.5,
                   fontWeight: 600,

@@ -4,6 +4,7 @@ import {
   successColor,
   uiColor,
 } from "@standard-reader/design-system/theme/color.stylex";
+import { radius } from "@standard-reader/design-system/theme/radius.stylex";
 import { fontFamily } from "@standard-reader/design-system/theme/typography.stylex";
 
 /**
@@ -70,6 +71,18 @@ export const NEG = criticalColor.text1;
 export const NEG_BG = criticalColor.component1;
 export const NEG_BORDER = criticalColor.border1;
 
+/**
+ * Corner radii, from the design system's scale. Matching its own conventions:
+ * `md` for controls (buttons, inputs, icon tiles — `useButtonStyles` /
+ * `useInputStyles`), `lg` for cards and panels (`Card`), `full` for pills and
+ * circles.
+ *
+ * Note each step is dual-valued: browsers that support `corner-shape: squircle`
+ * get a noticeably larger radius, which is intended — the shape reads tighter
+ * at the same visual weight.
+ */
+export const R = radius;
+
 export const fmt = (n: number): string => n.toLocaleString("en-US");
 
 export const kfmt = (n: number): string =>
@@ -87,6 +100,6 @@ export const sectLabel = {
 
 export const cardBox = {
   border: `1px solid ${C.b6}`,
-  borderRadius: 16,
+  borderRadius: R.lg,
   background: C.warm,
 };

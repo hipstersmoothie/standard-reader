@@ -5,7 +5,7 @@ import { AreaChart } from "../components/charts";
 import { I, Ico } from "../components/icons";
 import { BigStat, StatBar } from "../components/ui";
 import { publicationsQueryOptions } from "../server/analytics";
-import { C, NEG, POS, POSD, cardBox, fmt } from "../theme";
+import { C, NEG, POS, POSD, R, cardBox, fmt } from "../theme";
 
 export const Route = createFileRoute("/_app/p/$pubId_/$sendPath")({
   loader: async ({ context, params }) => {
@@ -106,7 +106,7 @@ function SendDetail() {
                 style={{
                   width: 7,
                   height: 7,
-                  borderRadius: "50%",
+                  borderRadius: R.full,
                   background: POSD,
                 }}
               />
@@ -153,7 +153,7 @@ function SendDetail() {
                 color: C.t12,
                 background: C.warm,
                 border: `1px solid ${C.b7}`,
-                borderRadius: 8,
+                borderRadius: R.md,
                 padding: "7px 13px",
                 textDecoration: "none",
               }}

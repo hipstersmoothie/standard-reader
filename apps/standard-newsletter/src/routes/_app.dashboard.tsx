@@ -8,7 +8,7 @@ import { I, Ico } from "../components/icons";
 import { Delta, PubGlyph } from "../components/ui";
 import { MONTHS } from "../data/publications";
 import { publicationsQueryOptions } from "../server/analytics";
-import { C, fmt, sectLabel } from "../theme";
+import { C, R, fmt, sectLabel } from "../theme";
 
 export const Route = createFileRoute("/_app/dashboard")({
   component: Dashboard,
@@ -46,7 +46,7 @@ function Dashboard() {
           <div
             style={{
               border: `1px solid ${C.b6}`,
-              borderRadius: 16,
+              borderRadius: R.lg,
               background: C.warm,
               padding: "56px 40px",
               textAlign: "center",
@@ -56,7 +56,7 @@ function Dashboard() {
               style={{
                 width: 48,
                 height: 48,
-                borderRadius: 12,
+                borderRadius: R.lg,
                 background: C.sel5,
                 color: C.a11,
                 display: "inline-flex",
@@ -374,7 +374,7 @@ function Dashboard() {
                     borderTop: `1px solid ${C.b6}`,
                   }}
                 >
-                  <PubGlyph pub={s.pub} size={26} r={7} fs={13} />
+                  <PubGlyph pub={s.pub} size={26} r={R.sm} fs={13} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div
                       style={{
