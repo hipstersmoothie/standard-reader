@@ -25,11 +25,11 @@ export const Route = createFileRoute("/api/auth/atproto/authorize")({
           );
         }
 
-        const { atprotoOAuth } =
+        const { atprotoOAuth, OAUTH_SCOPE } =
           await import("#/integrations/auth/atproto.server");
         const { url: authUrl } = await atprotoOAuth.authorize({
           target: { type: "account", identifier: handle as ActorIdentifier },
-          scope: "atproto",
+          scope: OAUTH_SCOPE,
           state: { redirect: redirectParam, handle, subscribe, email },
         });
         return Response.redirect(authUrl.toString(), 302);

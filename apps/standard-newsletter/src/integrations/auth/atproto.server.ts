@@ -48,6 +48,13 @@ const SCOPE = [
   }),
 ];
 
+/**
+ * The space-joined scope string the authorize request must send. The `authorize`
+ * call takes its own `scope`, so it has to use this — not a bare `"atproto"` —
+ * or the token comes back identity-only regardless of the client metadata.
+ */
+export const OAUTH_SCOPE = SCOPE.join(" ");
+
 type StoreKind = "session" | "state";
 
 function requireDb() {
