@@ -38,10 +38,13 @@ function CreateFlow() {
   );
 
   const [step, setStep] = useState(0);
-  const [chosenUri, setChosenUri] = useState<string | null>(null);
+  // Hold the whole chosen publication, not just its uri: finishing invalidates
+  // the publications cache, which drops the now-connected publication out of
+  // `connectable`, so a `connectable.find(...)` lookup would go null exactly
+  // when the Done step needs it.
+  const [chosen, setChosen] = useState<ConnectablePublicationData | null>(null);
   const [emails, setEmails] = useState<Array<string>>([]);
   const [fileName, setFileName] = useState<string | null>(null);
-  const chosen = connectable.find((p) => p.uri === chosenUri) ?? null;
 
   // Connect (opt-in) is required and idempotent; the CSV import is best-effort,
   // so a failed import still lands on the celebration step with a note rather
@@ -108,8 +111,8 @@ function CreateFlow() {
         {step === 0 ? (
           <ChooseStep
             connectable={connectable}
-            chosenUri={chosenUri}
-            onChoose={setChosenUri}
+            chosenUri={chosen?.uri ?? null}
+            onChoose={setChosen}
             onContinue={() => setStep(1)}
           />
         ) : null}
@@ -233,7 +236,7 @@ function ChooseStep({
 }: {
   connectable: Array<ConnectablePublicationData>;
   chosenUri: string | null;
-  onChoose: (uri: string) => void;
+  onChoose: (pub: ConnectablePublicationData) => void;
   onContinue: () => void;
 }) {
   if (connectable.length === 0) {
@@ -306,7 +309,7 @@ function ChooseStep({
             <button
               key={p.uri}
               type="button"
-              onClick={() => onChoose(p.uri)}
+              onClick={() => onChoose(p)}
               style={{
                 font: "inherit",
                 textAlign: "left",
