@@ -62,10 +62,35 @@ export function StatBar({ pct, color }: { pct: number; color: string }) {
 export type PubAvatarSize = "sm" | "md" | "lg" | "xl";
 
 /**
+ * Readable text color for a letter sitting on `bg`.
+ *
+ * A publication's stored `accentForeground` can't be trusted for this — real
+ * themes pair, e.g., a magenta accent with a green foreground, which is
+ * illegible on the tile. So we ignore it and pick white or ink from the
+ * background's own WCAG relative luminance instead. `#ffffff` / `#241d18` are
+ * the two literal endpoints of that choice (this is contrast math on an
+ * arbitrary runtime hex, not themeable spacing/scale values).
+ */
+function srgbChannel(pair: string): number {
+  const c = Number.parseInt(pair, 16) / 255;
+  return c <= 0.039_28 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+}
+
+function readableOn(bg: string): string {
+  const hex = bg.replace("#", "");
+  if (hex.length < 6) return "#ffffff";
+  const luminance =
+    0.2126 * srgbChannel(hex.slice(0, 2)) +
+    0.7152 * srgbChannel(hex.slice(2, 4)) +
+    0.0722 * srgbChannel(hex.slice(4, 6));
+  return luminance > 0.42 ? "#241d18" : "#ffffff";
+}
+
+/**
  * A publication's avatar: its `icon` blob when it has one, falling back to the
- * first letter of its name tinted with the publication's own accent — the
- * colored tile is how these screens tell publications apart at a glance, so the
- * fallback keeps it rather than dropping to the neutral default.
+ * first letter of its name on the publication's own accent — the colored tile
+ * is how these screens tell publications apart at a glance, so the fallback
+ * keeps it rather than dropping to the neutral default.
  *
  * Takes loose fields rather than a `Publication` so the connect flow, which
  * works with publications that aren't newsletters yet (and so have no theme),
@@ -79,14 +104,12 @@ export function PubAvatar({
   icon,
   iconUrl,
   accent,
-  accentForeground,
   size = "lg",
 }: {
   name: string;
   icon: string;
   iconUrl: string | null;
   accent?: string;
-  accentForeground?: string;
   size?: PubAvatarSize;
 }) {
   return (
@@ -96,15 +119,15 @@ export function PubAvatar({
       alt={name}
       fallback={icon}
       style={
-        accent && accentForeground
-          ? glyphStyles.tint(accent, accentForeground)
+        accent
+          ? glyphStyles.tint(accent, readableOn(accent))
           : glyphStyles.serif
       }
     />
   );
 }
 
-/** {@link PubAvatar} for a connected publication, themed from its own colors. */
+/** {@link PubAvatar} for a connected publication, themed from its own accent. */
 export function PubGlyph({
   pub,
   size = "lg",
@@ -118,7 +141,6 @@ export function PubGlyph({
       icon={pub.icon}
       iconUrl={pub.iconUrl}
       accent={pub.theme.accent}
-      accentForeground={pub.theme.accentForeground}
       size={size}
     />
   );
