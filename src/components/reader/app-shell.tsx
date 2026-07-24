@@ -39,6 +39,7 @@ import {
 import { formatSidebarUnreadCount } from "#/lib/format-count";
 import { parseInternalRoute } from "#/lib/internal-route";
 import { PageReaderProvider } from "#/lib/page-reader/page-reader-provider";
+import type { SidebarNavId } from "#/lib/sidebar-nav";
 import { useFormatters } from "#/lib/use-formatters";
 
 import { Avatar } from "../../design-system/avatar";
@@ -661,19 +662,37 @@ const styles = stylex.create({
 });
 
 interface NavLink {
+  /** Stable id used by "Customize sidebar" to hide the item. */
+  id: SidebarNavId;
   to: string;
   label: MessageDescriptor;
   icon: React.ReactNode;
 }
 
 const NAV: Array<NavLink> = [
-  { to: "/", label: msg`Home`, icon: <Home size={18} /> },
-  { to: "/latest", label: msg`Latest`, icon: <Newspaper size={18} /> },
-  { to: "/discover", label: msg`Discover`, icon: <Compass size={18} /> },
-  { to: "/search", label: msg`Search`, icon: <Search size={18} /> },
+  { id: "home", to: "/", label: msg`Home`, icon: <Home size={18} /> },
+  {
+    id: "latest",
+    to: "/latest",
+    label: msg`Latest`,
+    icon: <Newspaper size={18} />,
+  },
+  {
+    id: "discover",
+    to: "/discover",
+    label: msg`Discover`,
+    icon: <Compass size={18} />,
+  },
+  {
+    id: "search",
+    to: "/search",
+    label: msg`Search`,
+    icon: <Search size={18} />,
+  },
 ];
 
 const SAVED_NAV: NavLink = {
+  id: "saved",
   to: "/saved",
   label: msg`Saved for later`,
   icon: <Bookmark size={18} />,
@@ -683,6 +702,7 @@ const SAVED_NAV: NavLink = {
 const SAVED_SHORT_LABEL = msg`Saved`;
 
 const COLLECTIONS_NAV: NavLink = {
+  id: "collections",
   to: "/collections",
   label: msg`Collections`,
   icon: <Layers size={18} />,
@@ -1246,6 +1266,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // Apply the reader's saved group order (own + saved interleaved); new lists
   // fall to the bottom until moved.
   const sidebarPref = useSidebarPref(signedIn);
+  // "Customize sidebar" hides selected primary nav items (Subscriptions and its
+  // list groups are never hideable). When the toggle is off, show everything.
+  const visibleNav = sidebarPref.customizeNav
+    ? primaryNav.filter((item) => !sidebarPref.isNavHidden(item.id))
+    : primaryNav;
   const orderedGroups = orderGroups(listGroups, sidebarPref.order);
   const groupUris = orderedGroups.map((group) => group.listUri);
   const allCollapsed =
@@ -1301,7 +1326,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <div {...stylex.props(styles.sidebarScroll)}>
               <Brand style={styles.brandSidebar} to="/about" />
               <nav {...stylex.props(styles.nav)}>
-                {primaryNav.map((item) => (
+                {visibleNav.map((item) => (
                   <SidebarNavItem
                     key={item.to}
                     {...item}
@@ -1454,7 +1479,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
             <div {...stylex.props(styles.dock)}>
               <PageReaderBar />
-              <BottomNavSlot items={primaryNav} hasUnread={hasUnread} />
+              <BottomNavSlot items={visibleNav} hasUnread={hasUnread} />
             </div>
           </main>
 

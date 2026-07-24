@@ -372,6 +372,14 @@ source of truth; Neon holds a derived view for speed and cross-network querying.
   `site.standard.graph.subscription` records are written. Both `list` and `listSave` records are
   **mirrored into Neon** (`lists` + `list_saves` tables) by the tap ingester so the shell snapshot
   never blocks on PDS I/O. A backfill from the PDS runs on first access when no rows exist yet.
+- **Sidebar personalization:** `app.standard-reader.sidebarPref` — a per-reader singleton (rkey
+  `self`, mirrored into `sidebar_prefs`) holding the reader's list-group order (`listOrder`),
+  collapsed groups (`collapsed`), and — via the **Customize sidebar** toggle in Settings —
+  which primary nav items are hidden (`customizeNav` gates the `hiddenNav` id set). The
+  customizable items are the top nav links only (Home, Latest, Saved for later, Collections,
+  Discover, Search); Subscriptions and its list groups are never hideable. When the toggle is
+  off, every nav item shows regardless of `hiddenNav`. Hidden items drop from both the desktop
+  sidebar and the mobile bottom-nav.
 - **Routing:** URL-backed routes (TanStack Router) for every view — home / latest / discover /
   search / article / publication — with real back/forward navigation and shareable links.
   _(The original prototype used an in-memory view stack; the port moves to real URLs.)_

@@ -117,6 +117,11 @@ export const sidebarPrefs = pgTable("sidebar_prefs", {
   /** At-uris of the list groups the reader has collapsed. */
   collapsed: jsonb("collapsed").notNull().default([]),
 
+  /** Whether "Customize sidebar" is enabled (gates `hiddenNav`). */
+  customizeNav: boolean("customize_nav").notNull().default(false),
+  /** Stable ids of the primary nav items the reader has hidden. */
+  hiddenNav: jsonb("hidden_nav").notNull().default([]),
+
   /** `updatedAt` from the record. */
   updatedAt: timestamp("updated_at", { withTimezone: true }),
 

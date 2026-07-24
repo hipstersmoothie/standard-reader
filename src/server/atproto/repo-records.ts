@@ -651,6 +651,8 @@ export async function putSidebarPrefRecord(
   pref: {
     listOrder: Array<string>;
     collapsed: Array<string>;
+    customizeNav: boolean;
+    hiddenNav: Array<string>;
     updatedAt: string;
   },
 ): Promise<{ uri: string; cid: string }> {
@@ -662,6 +664,8 @@ export async function putSidebarPrefRecord(
       $type: COLLECTION.sidebarPref,
       listOrder: pref.listOrder,
       collapsed: pref.collapsed,
+      customizeNav: pref.customizeNav,
+      hiddenNav: pref.hiddenNav,
       updatedAt: pref.updatedAt,
     },
   });

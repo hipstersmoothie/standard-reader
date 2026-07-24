@@ -22,17 +22,24 @@ import { loadSidebarPref } from "#/server/reader/shell-snapshot.server";
  * reads it without PDS I/O; writes go through to the mirror immediately.
  */
 
-/** Ordering + collapsed state for the sidebar's list groups. */
+/** Ordering + collapsed state for the sidebar's list groups, plus which primary
+ * nav items are hidden. */
 export interface SidebarPref {
   /** Ordered at-uris of the reader's list groups (own + saved). */
   listOrder: Array<string>;
   /** At-uris of the list groups the reader has collapsed. */
   collapsed: Array<string>;
+  /** Whether "Customize sidebar" is enabled (gates `hiddenNav`). */
+  customizeNav: boolean;
+  /** Stable ids of the primary nav items the reader has hidden. */
+  hiddenNav: Array<string>;
 }
 
 const putSidebarPrefInput = z.object({
   listOrder: z.array(z.string().min(1)).max(1000).default([]),
   collapsed: z.array(z.string().min(1)).max(1000).default([]),
+  customizeNav: z.boolean().default(false),
+  hiddenNav: z.array(z.string().min(1).max(64)).max(32).default([]),
 });
 
 const getSidebarPref = createServerFn({ method: "GET" }).handler(
@@ -40,7 +47,12 @@ const getSidebarPref = createServerFn({ method: "GET" }).handler(
     // DID-only lookup (no PDS client restore) — preferences are DB data.
     const did = await getReaderDidForRequest(getRequest());
     if (!did) {
-      return { listOrder: [], collapsed: [] } satisfies SidebarPref;
+      return {
+        listOrder: [],
+        collapsed: [],
+        customizeNav: false,
+        hiddenNav: [],
+      } satisfies SidebarPref;
     }
     span.set("did", did);
     const pref = await loadSidebarPref(did);
@@ -61,6 +73,8 @@ const putSidebarPref = createServerFn({ method: "POST" })
       span.set("did", session.did);
       span.set("order", data.listOrder.length);
       span.set("collapsed", data.collapsed.length);
+      span.set("customizeNav", data.customizeNav);
+      span.set("hiddenNav", data.hiddenNav.length);
 
       const updatedAt = new Date().toISOString();
       const { uri, cid } = await putSidebarPrefRecord(
@@ -69,6 +83,8 @@ const putSidebarPref = createServerFn({ method: "POST" })
         {
           listOrder: data.listOrder,
           collapsed: data.collapsed,
+          customizeNav: data.customizeNav,
+          hiddenNav: data.hiddenNav,
           updatedAt,
         },
       );
@@ -77,6 +93,8 @@ const putSidebarPref = createServerFn({ method: "POST" })
       await upsertSidebarPref(uri, session.did, SIDEBAR_PREF_RKEY, cid, {
         listOrder: data.listOrder,
         collapsed: data.collapsed,
+        customizeNav: data.customizeNav,
+        hiddenNav: data.hiddenNav,
         updatedAt,
       });
       return { ok: true as const };

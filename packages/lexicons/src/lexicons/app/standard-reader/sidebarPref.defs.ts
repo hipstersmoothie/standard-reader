@@ -8,7 +8,7 @@ const $nsid = 'app.standard-reader.sidebarPref'
 
 export { $nsid }
 
-/** A reader's personal sidebar preferences: the display order of their subscription list groups and which groups are collapsed. A singleton record (rkey `self`). */
+/** A reader's personal sidebar preferences: the display order of their subscription list groups, which groups are collapsed, and which primary nav items are hidden. A singleton record (rkey `self`). */
 type Main = {
   $type: 'app.standard-reader.sidebarPref'
 
@@ -21,6 +21,16 @@ type Main = {
    * AT URIs of the list groups the reader has collapsed in the sidebar.
    */
   collapsed?: l.AtUriString[]
+
+  /**
+   * Whether the reader has enabled 'Customize sidebar'. When true, the `hiddenNav` items are hidden; when false or absent, every primary nav item is shown regardless of `hiddenNav`.
+   */
+  customizeNav?: boolean
+
+  /**
+   * Stable ids of the primary sidebar nav items the reader has hidden (e.g. 'home', 'latest', 'discover', 'search', 'saved', 'collections'). Subscriptions and its list groups are never hideable.
+   */
+  hiddenNav?: string[]
 
   /**
    * When these preferences were last changed.
@@ -43,6 +53,12 @@ const main = /*#__PURE__*/ l.record<'literal:self', Main>(
     collapsed: /*#__PURE__*/ l.optional(
       /*#__PURE__*/ l.array(/*#__PURE__*/ l.string({ format: 'at-uri' }), {
         maxLength: 1000,
+      }),
+    ),
+    customizeNav: /*#__PURE__*/ l.optional(/*#__PURE__*/ l.boolean()),
+    hiddenNav: /*#__PURE__*/ l.optional(
+      /*#__PURE__*/ l.array(/*#__PURE__*/ l.string({ maxLength: 64 }), {
+        maxLength: 32,
       }),
     ),
     updatedAt: /*#__PURE__*/ l.string({ format: 'datetime' }),
