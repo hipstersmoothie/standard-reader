@@ -16,7 +16,7 @@ import { dpopTransport, HappyViewError } from "./client";
 import type { DpopFetch } from "./client";
 import { getHappyViewConfig } from "./config";
 import { spaceUri } from "./space-uri";
-import { getRecord, putRecord } from "./spaces";
+import { ensureSpaceExists, getRecord, putRecord } from "./spaces";
 
 export interface AuthorSession {
   did: string;
@@ -53,6 +53,8 @@ export async function importEmails(input: {
   session: AuthorSession;
   publicationUri: string;
   emails: Array<string>;
+  /** Publication name — the space's display name when it's first created. */
+  spaceName?: string;
 }): Promise<{ ok: boolean; count?: number; skipped?: string }> {
   const parts = publicationParts(input.publicationUri);
   if (!parts) return { ok: false, skipped: "bad-publication" };
@@ -83,6 +85,21 @@ export async function importEmails(input: {
   });
   const transport = dpopTransport(sessionFetch(input.session));
   const now = new Date().toISOString();
+
+  // Each newsletter is a private space owned by the author: only they (the
+  // write member) see the full member list and all records; subscribers only
+  // ever know their own membership. `public` mint keeps signup open. Idempotent,
+  // so importing again just reuses the space.
+  await ensureSpaceExists(transport, config, {
+    type: config.spaceType,
+    skey: parts.rkey,
+    displayName: input.spaceName
+      ? `${input.spaceName} subscribers`
+      : "Newsletter subscribers",
+    mintPolicy: "public",
+    membershipPublic: false,
+    recordsPublic: false,
+  });
 
   // Load the current list (empty if it doesn't exist yet).
   let list: SubscriberListRecord;

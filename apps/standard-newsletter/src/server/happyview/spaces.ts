@@ -8,7 +8,7 @@
  * executes it. Shapes follow HappyView's documented request/response bodies.
  */
 
-import { callHappyView } from "./client";
+import { callHappyView, HappyViewError } from "./client";
 import type { SpaceTransport } from "./client";
 import type { HappyViewConfig } from "./config";
 import { buildHappyViewRequest } from "./request";
@@ -40,6 +40,10 @@ export interface CreateSpaceInput {
   mintPolicy?: MintPolicy;
   appAccess?: AppAccess;
   managingAppDid?: string;
+  /** When false, members can't enumerate the member list (only the author). */
+  membershipPublic?: boolean;
+  /** When false, records aren't world-readable — only via a space credential. */
+  recordsPublic?: boolean;
 }
 
 /** Create a space (author's DPoP session). Returns the space URI. */
@@ -58,6 +62,31 @@ export function createSpace(
       auth: { kind: "dpop" },
     }),
   );
+}
+
+/**
+ * Create the space if it doesn't already exist, tolerating a "already exists"
+ * race/repeat so callers can treat it as ensure-style. Any other error
+ * propagates.
+ */
+export async function ensureSpaceExists(
+  transport: SpaceTransport,
+  config: HappyViewConfig,
+  input: CreateSpaceInput,
+): Promise<void> {
+  try {
+    await createSpace(transport, config, input);
+  } catch (error) {
+    // HappyView returns a conflict (or a message saying so) when the space is
+    // already there — that's success for an ensure. Re-throw anything else.
+    const status = error instanceof HappyViewError ? error.status : undefined;
+    const message = error instanceof Error ? error.message.toLowerCase() : "";
+    const alreadyExists =
+      status === 409 ||
+      message.includes("already exists") ||
+      message.includes("already registered");
+    if (!alreadyExists) throw error;
+  }
 }
 
 /** Create a record in the caller's own repo in the space (auto TID rkey). */

@@ -50,7 +50,11 @@ function ImportSubscribersPage() {
       const res = await fetch("/api/subscribers/import", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ publicationUri: pub.uri, emails }),
+        body: JSON.stringify({
+          publicationUri: pub.uri,
+          emails,
+          spaceName: pub.name,
+        }),
       });
       const json = (await res.json().catch(() => null)) as {
         ok?: boolean;

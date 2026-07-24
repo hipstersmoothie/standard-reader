@@ -19,7 +19,11 @@ export const Route = createFileRoute("/api/subscribers/import")({
           );
         }
 
-        let body: { publicationUri?: unknown; emails?: unknown };
+        let body: {
+          publicationUri?: unknown;
+          emails?: unknown;
+          spaceName?: unknown;
+        };
         try {
           body = (await request.json()) as typeof body;
         } catch {
@@ -75,6 +79,8 @@ export const Route = createFileRoute("/api/subscribers/import")({
             session,
             publicationUri,
             emails,
+            spaceName:
+              typeof body.spaceName === "string" ? body.spaceName : undefined,
           });
           return Response.json(result, { status: result.ok ? 200 : 400 });
         } catch (error) {

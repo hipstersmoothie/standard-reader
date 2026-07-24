@@ -58,7 +58,11 @@ function CreateFlow() {
           const r = await fetch("/api/subscribers/import", {
             method: "POST",
             headers: { "content-type": "application/json" },
-            body: JSON.stringify({ publicationUri: chosen.uri, emails }),
+            body: JSON.stringify({
+              publicationUri: chosen.uri,
+              emails,
+              spaceName: chosen.name,
+            }),
           });
           const j = (await r.json()) as { ok?: boolean; error?: string };
           if (!j.ok) importError = j.error ?? "import-failed";
