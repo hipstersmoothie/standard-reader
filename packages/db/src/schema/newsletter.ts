@@ -19,6 +19,46 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 
+/**
+ * A publication the author has opted in to mailing as a newsletter.
+ *
+ * Owning a standard.site publication does **not** make it a newsletter — the
+ * author connects one explicitly, and a row here is that consent. Everything
+ * downstream keys off it: the app lists only connected publications, the
+ * dispatcher only mails their posts, and `/subscribe/$pubId` only accepts
+ * signups for them. A first-time account therefore starts empty, with nothing
+ * mailed on its behalf until it says so.
+ *
+ * Disconnecting deletes the row. Subscribers and past sends are left alone, so
+ * reconnecting later restores the list rather than starting over.
+ */
+export const newsletterPublications = pgTable(
+  "newsletter_publications",
+  {
+    /** The publication AT-URI — one row per connected publication. */
+    publicationUri: text("publication_uri").primaryKey(),
+    /**
+     * DID of the author who connected it. Recorded at connect time and checked
+     * against the publication's current owner on every write, so a transferred
+     * publication can't be mailed by its previous owner.
+     */
+    ownerDid: text("owner_did").notNull(),
+    connectedAt: timestamp("connected_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("newsletter_publications_owner_idx").on(
+      t.ownerDid,
+      t.connectedAt.desc(),
+    ),
+  ],
+);
+
+export type NewsletterPublication = typeof newsletterPublications.$inferSelect;
+export type NewNewsletterPublication =
+  typeof newsletterPublications.$inferInsert;
+
 export const newsletterSends = pgTable(
   "newsletter_sends",
   {
