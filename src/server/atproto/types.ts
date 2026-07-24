@@ -221,6 +221,10 @@ export interface SidebarPrefRecord {
   listOrder?: Array<string>;
   /** At-uris of the list groups the reader has collapsed. */
   collapsed?: Array<string>;
+  /** Whether "Customize sidebar" is enabled (gates `hiddenNav`). */
+  customizeNav?: boolean;
+  /** Stable ids of the primary nav items the reader has hidden. */
+  hiddenNav?: Array<string>;
   updatedAt?: string;
 }
 

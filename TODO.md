@@ -513,6 +513,13 @@ Build each on hip-ui components + StyleX tokens (no raw HTML/inline styles).
       readers get **Add list / Remove list**, which
       writes/deletes an `app.standard-reader.listSave` record — saved lists then render as
       extra sidebar groups (attributed `name · @owner`, label links to the list page).
+- [x] **Customize sidebar (hide nav items)** — a **Customize sidebar** toggle in Settings reveals a
+      per-item switch for each primary nav link (Home, Latest, Saved for later, Collections, Discover,
+      Search); turning one off hides it from both the desktop sidebar and the mobile bottom-nav.
+      Subscriptions and its list groups stay put (never hideable). Persisted on the
+      `app.standard-reader.sidebarPref` singleton (`customizeNav` gate + `hiddenNav` id set,
+      mirrored to `sidebar_prefs`); when the toggle is off every item shows regardless. Shared nav
+      metadata lives in `src/lib/sidebar-nav.ts`.
 - [x] **Saved lists act as virtual subscriptions** — feeds, the sidebar, unread counts, and
       mark-all-read operate on the reader's _effective_ follow set (subscriptions ∪ saved-list
       publications) via `effectiveFollowUris` in `src/server/reader/saved-lists.ts`; saved

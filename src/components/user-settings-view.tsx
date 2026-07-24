@@ -10,6 +10,7 @@ import { ChevronRight, Monitor, Moon, Sparkles, Sun } from "lucide-react";
 import { useCallback, useState } from "react";
 
 import { invalidateReadQueries } from "#/components/reader/read-optimistic";
+import { useSidebarPref } from "#/components/reader/use-sidebar-pref";
 import { ButtonLink } from "#/components/router-links";
 import { DirectionalIcon } from "#/design-system/directional-icon";
 import { auth } from "#/integrations/tanstack-query/api-auth.functions";
@@ -33,6 +34,7 @@ import {
   readingFontSizeLabel,
   readingMeasureLabel,
 } from "#/lib/reading-typography";
+import { CUSTOMIZABLE_SIDEBAR_NAV } from "#/lib/sidebar-nav";
 import type { ThemeMode } from "#/lib/theme";
 import { isThemeMode } from "#/lib/theme";
 import { useCountOldPostsAsUnread } from "#/lib/use-count-old-posts-as-unread";
@@ -436,6 +438,10 @@ export function UserSettingsView() {
   const { enabled: countOldAsUnread, setEnabled: setCountOldAsUnread } =
     useCountOldPostsAsUnread();
 
+  const { data: session } = useQuery(user.getSessionQueryOptions);
+  const signedIn = Boolean(session?.user);
+  const sidebarPref = useSidebarPref(signedIn);
+
   const deleteHistoryMutation = useMutation(
     readerApi.deleteAllReadHistoryMutationOptions(),
   );
@@ -688,6 +694,46 @@ export function UserSettingsView() {
           </SettingRow>
         </div>
       </section>
+
+      {signedIn ? (
+        <section {...stylex.props(styles.section)}>
+          <h2 {...stylex.props(styles.sectionHeading)}>
+            <Trans>Sidebar</Trans>
+          </h2>
+          <div {...stylex.props(styles.settingGroup)}>
+            <SettingRow
+              label={t`Customize sidebar`}
+              description={t`Turn on to choose which items appear in the sidebar. Subscriptions and your lists always stay.`}
+            >
+              <Switch
+                isSelected={sidebarPref.customizeNav}
+                onChange={sidebarPref.setCustomizeNav}
+                aria-label={t`Customize sidebar`}
+              />
+            </SettingRow>
+            {sidebarPref.customizeNav
+              ? CUSTOMIZABLE_SIDEBAR_NAV.map((item) => {
+                  const itemLabel = i18n._(item.label);
+                  const visible = !sidebarPref.isNavHidden(item.id);
+                  return (
+                    <div key={item.id}>
+                      <Separator />
+                      <SettingRow label={itemLabel}>
+                        <Switch
+                          isSelected={visible}
+                          onChange={(next) =>
+                            sidebarPref.setNavHidden(item.id, !next)
+                          }
+                          aria-label={t`Show ${itemLabel} in the sidebar`}
+                        />
+                      </SettingRow>
+                    </div>
+                  );
+                })
+              : null}
+          </div>
+        </section>
+      ) : null}
 
       <section {...stylex.props(styles.section)}>
         <h2 {...stylex.props(styles.sectionHeading)}>

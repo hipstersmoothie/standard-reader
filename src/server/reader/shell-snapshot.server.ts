@@ -68,6 +68,8 @@ export async function loadSidebarPref(did: string): Promise<SidebarPref> {
   return {
     listOrder: (row?.listOrder as Array<string>) ?? [],
     collapsed: (row?.collapsed as Array<string>) ?? [],
+    customizeNav: row?.customizeNav ?? false,
+    hiddenNav: (row?.hiddenNav as Array<string>) ?? [],
   };
 }
 

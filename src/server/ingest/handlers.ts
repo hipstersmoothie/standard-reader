@@ -873,6 +873,11 @@ export async function upsertSidebarPref(
         (item): item is string => typeof item === "string",
       )
     : [];
+  const hiddenNav = Array.isArray(record.hiddenNav)
+    ? record.hiddenNav.filter(
+        (item): item is string => typeof item === "string",
+      )
+    : [];
 
   const values = {
     ownerDid: did,
@@ -881,6 +886,8 @@ export async function upsertSidebarPref(
     rkey,
     listOrder,
     collapsed,
+    customizeNav: record.customizeNav === true,
+    hiddenNav,
     updatedAt: parseDate(record.updatedAt),
     deleted: false,
   };

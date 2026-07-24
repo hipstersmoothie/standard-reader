@@ -7,7 +7,12 @@ import type { SidebarPref } from "#/integrations/tanstack-query/api-sidebar-pref
 import { sidebarPrefApi } from "#/integrations/tanstack-query/api-sidebar-prefs.functions";
 import { sidebarPrefQueryOptions } from "#/integrations/tanstack-query/shell-queries";
 
-const EMPTY: SidebarPref = { listOrder: [], collapsed: [] };
+const EMPTY: SidebarPref = {
+  listOrder: [],
+  collapsed: [],
+  customizeNav: false,
+  hiddenNav: [],
+};
 
 /** Debounce collapse writes: rapid chevron toggles coalesce into one PDS write. */
 const COLLAPSE_WRITE_DELAY_MS = 600;
@@ -45,6 +50,14 @@ export interface SidebarPrefController {
   setAllCollapsed: (listUris: Array<string>, collapsed: boolean) => void;
   /** Persist a new group order immediately. */
   saveOrder: (order: Array<string>) => void;
+  /** Whether "Customize sidebar" is enabled (gates `isNavHidden`). */
+  customizeNav: boolean;
+  /** Toggle the "Customize sidebar" master switch (immediate write-through). */
+  setCustomizeNav: (enabled: boolean) => void;
+  /** Whether a primary nav item is hidden (only meaningful when `customizeNav`). */
+  isNavHidden: (navId: string) => boolean;
+  /** Show/hide one primary nav item (immediate write-through). */
+  setNavHidden: (navId: string, hidden: boolean) => void;
 }
 
 /**
@@ -138,7 +151,32 @@ export function useSidebarPref(signedIn: boolean): SidebarPrefController {
     [queryClient, options.queryKey, write],
   );
 
+  const setCustomizeNav = useCallback(
+    (enabled: boolean) => {
+      const current =
+        queryClient.getQueryData<SidebarPref>(options.queryKey) ?? EMPTY;
+      write({ ...current, customizeNav: enabled }, true);
+    },
+    [queryClient, options.queryKey, write],
+  );
+
+  const setNavHidden = useCallback(
+    (navId: string, hidden: boolean) => {
+      const current =
+        queryClient.getQueryData<SidebarPref>(options.queryKey) ?? EMPTY;
+      const set = new Set(current.hiddenNav);
+      if (hidden) {
+        set.add(navId);
+      } else {
+        set.delete(navId);
+      }
+      write({ ...current, hiddenNav: [...set] }, true);
+    },
+    [queryClient, options.queryKey, write],
+  );
+
   const collapsedSet = new Set(pref.collapsed);
+  const hiddenNavSet = new Set(pref.hiddenNav);
 
   return {
     order: pref.listOrder,
@@ -146,5 +184,9 @@ export function useSidebarPref(signedIn: boolean): SidebarPrefController {
     setCollapsed,
     setAllCollapsed,
     saveOrder,
+    customizeNav: pref.customizeNav,
+    setCustomizeNav,
+    isNavHidden: (navId: string) => hiddenNavSet.has(navId),
+    setNavHidden,
   };
 }

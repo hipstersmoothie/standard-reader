@@ -4,7 +4,7 @@
   "defs": {
     "main": {
       "type": "record",
-      "description": "A reader's personal sidebar preferences: the display order of their subscription list groups and which groups are collapsed. A singleton record (rkey `self`).",
+      "description": "A reader's personal sidebar preferences: the display order of their subscription list groups, which groups are collapsed, and which primary nav items are hidden. A singleton record (rkey `self`).",
       "key": "literal:self",
       "record": {
         "type": "object",
@@ -27,6 +27,19 @@
               "format": "at-uri"
             },
             "description": "AT URIs of the list groups the reader has collapsed in the sidebar."
+          },
+          "customizeNav": {
+            "type": "boolean",
+            "description": "Whether the reader has enabled 'Customize sidebar'. When true, the `hiddenNav` items are hidden; when false or absent, every primary nav item is shown regardless of `hiddenNav`."
+          },
+          "hiddenNav": {
+            "type": "array",
+            "maxLength": 32,
+            "items": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "description": "Stable ids of the primary sidebar nav items the reader has hidden (e.g. 'home', 'latest', 'discover', 'search', 'saved', 'collections'). Subscriptions and its list groups are never hideable."
           },
           "updatedAt": {
             "type": "string",
