@@ -3,24 +3,25 @@
  * posts from the shared Standard Reader database and shape them for the
  * analytics UI.
  *
- * IMPORTANT — data reality: the reader DB has real publications, subscriber
- * counts (`publication_stats`), and posts (`documents`), but it has NO email
- * delivery data (opens/clicks/unsubscribes/bounces, per-send recipients, or a
- * subscriber-growth time series). Those live only once the Resend send pipeline
- * records send events. Until that schema exists, the delivery metrics below are
- * DETERMINISTIC PLACEHOLDERS derived from stable ids — clearly synthetic, so the
- * screens stay populated without inventing a data source. Everything that IS
- * real (names, URLs, descriptions, themes, subscriber counts, the post list and
- * its titles/dates) comes straight from the DB.
+ * Everything here is real. Names, URLs, descriptions, and themes come from the
+ * reader's `publications`; the **subscriber count is the newsletter's own email
+ * list** (`newsletter_subscribers`, confirmed rows) — deliberately NOT the
+ * standard.site follower count in `publication_stats`, which is a different
+ * audience. Delivery metrics (opens/clicks/unsubscribes/bounces, recipients)
+ * come from the send pipeline via `loadSendMetrics`. Nothing is fabricated — a
+ * post that hasn't been mailed contributes no `Send`, so a publication with no
+ * sends reports zeros and empty states rather than invented numbers. The read
+ * model has no historical subscriber-growth series, so `growth` is empty until
+ * such a timeseries exists.
  */
 
 import {
   documents,
   newsletterPublications,
-  publicationStats,
+  newsletterSubscribers,
   publications,
 } from "@standard-reader/db/schema";
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 
 import type { Publication, PublicationTheme, Send } from "../data/publications";
 import { getDb } from "../db/index.server";
@@ -96,25 +97,6 @@ const DEFAULT_THEME = {
   accentForeground: PALETTE.accentForeground,
 };
 
-/** Stable 32-bit hash for deterministic synthetic metrics. */
-function hash(s: string): number {
-  let h = 2_166_136_261;
-  for (let i = 0; i < s.length; i++) {
-    h ^= s.codePointAt(i) ?? 0;
-    h = Math.imul(h, 16_777_619);
-  }
-  // eslint-disable-next-line unicorn/prefer-math-trunc -- >>> 0 is an unsigned 32-bit cast, not truncation
-  return h >>> 0;
-}
-
-/** Deterministic value in [lo, hi] from a seed (placeholder metric). */
-function synth(seed: string, lo: number, hi: number, decimals = 0): number {
-  const t = (hash(seed) % 1000) / 1000;
-  const v = lo + t * (hi - lo);
-  const f = 10 ** decimals;
-  return Math.round(v * f) / f;
-}
-
 /** Rate as a percentage rounded to one decimal (0.1234 → 12.3). */
 function round1(n: number): number {
   return Math.round(n * 1000) / 10;
@@ -137,54 +119,43 @@ function formatWhen(d: Date): string {
   return `${date} · ${time}`;
 }
 
-/** 12-point subscriber-growth series ramping up to the current count. */
-function synthGrowth(id: string, subs: number): Array<number> {
-  return Array.from({ length: 12 }, (_, i) => {
-    if (i === 11) return subs;
-    const base = 0.72 + 0.28 * (i / 11);
-    const jitter = 1 + synth(`${id}-g${i}`, -20, 20) / 1000;
-    return Math.round(subs * base * jitter);
-  });
+/**
+ * Human cadence from the intervals between real sends. Needs at least two sends
+ * to have an interval at all; returns "" otherwise so the UI can omit it rather
+ * than guess a schedule from a single (or zero) mailing.
+ */
+function cadenceFromSends(sentAtMs: Array<number>): string {
+  if (sentAtMs.length < 2) return "";
+  const sorted = [...sentAtMs].toSorted((a, b) => a - b);
+  let total = 0;
+  for (let i = 1; i < sorted.length; i++) total += sorted[i] - sorted[i - 1];
+  const avgDays = total / (sorted.length - 1) / 86_400_000;
+  if (avgDays <= 10) return "Weekly";
+  if (avgDays <= 20) return "Biweekly";
+  return "Monthly";
 }
 
-function toSend(
-  pubId: string,
-  subs: number,
-  doc: DocRow,
-  metrics?: DocSendMetrics,
-): Send {
-  const base = {
+/**
+ * A `Send` is a post that was actually mailed. Built entirely from its recorded
+ * delivery metrics — there is no placeholder branch, so a post that hasn't been
+ * sent simply isn't a send (see the caller, which drops docs without metrics).
+ */
+function toSend(doc: DocRow, metrics: DocSendMetrics): Send {
+  const denom = metrics.delivered || metrics.recipients || 1;
+  return {
     title: doc.title,
     path: doc.path ?? doc.rkey,
     subject: doc.description ?? doc.title,
-    when: formatWhen(doc.publishedAt),
-  };
-
-  // Real delivery metrics when this post has actually been sent.
-  if (metrics) {
-    const denom = metrics.delivered || metrics.recipients || 1;
-    return {
-      ...base,
-      recipients: metrics.recipients || subs,
-      openRate: round1(metrics.opens / denom),
-      clickRate: round1(metrics.clicks / denom),
-      unsubs: metrics.unsubs,
-      bounces: metrics.bounces,
-      delivered: metrics.delivered,
-      opensByHour: metrics.opensByHour,
-      topLinks: metrics.topLinks,
-    };
-  }
-
-  // Placeholder metrics for posts not yet mailed.
-  const seed = `${pubId}-${doc.rkey}`;
-  return {
-    ...base,
-    recipients: Math.max(0, subs - synth(`${seed}-r`, 0, 60)),
-    openRate: synth(`${seed}-o`, 45, 66, 1),
-    clickRate: synth(`${seed}-c`, 5, 14, 1),
-    unsubs: synth(`${seed}-u`, 4, 22),
-    bounces: synth(`${seed}-b`, 5, 22),
+    when: formatWhen(metrics.sentAt),
+    sentAtMs: metrics.sentAt.getTime(),
+    recipients: metrics.recipients,
+    openRate: round1(metrics.opens / denom),
+    clickRate: round1(metrics.clicks / denom),
+    unsubs: metrics.unsubs,
+    bounces: metrics.bounces,
+    delivered: metrics.delivered,
+    opensByHour: metrics.opensByHour,
+    topLinks: metrics.topLinks,
   };
 }
 
@@ -229,26 +200,35 @@ export async function loadPublicationsFromDb(
       themeBackground: publications.themeBackground,
       themeForeground: publications.themeForeground,
       themeAccentForeground: publications.themeAccentForeground,
-      subscriberCount: publicationStats.subscriberCount,
-      documentCount: publicationStats.documentCount,
-      subscribers7d: publicationStats.subscribers7d,
     })
     .from(publications)
     .innerJoin(
       newsletterPublications,
       eq(newsletterPublications.publicationUri, publications.uri),
     )
-    .leftJoin(
-      publicationStats,
-      eq(publicationStats.publicationUri, publications.uri),
-    )
     .where(whereClause)
-    .orderBy(desc(publicationStats.subscriberCount))
+    .orderBy(desc(newsletterPublications.connectedAt))
     .limit(50);
 
   if (pubRows.length === 0) return [];
 
   const uris = pubRows.map((p) => p.uri);
+
+  // The newsletter's own subscriber list — confirmed rows in
+  // `newsletter_subscribers`, NOT the standard.site follower count in
+  // `publication_stats`. A reader can follow the publication without being on
+  // the email list, so those numbers are unrelated; a newly connected
+  // publication has 0 email subscribers until people sign up.
+  const subCountRows = await db
+    .select({
+      publicationUri: newsletterSubscribers.publicationUri,
+      confirmed: sql<number>`(count(*) filter (where ${newsletterSubscribers.status} = 'confirmed'))::int`,
+      new7d: sql<number>`(count(*) filter (where ${newsletterSubscribers.status} = 'confirmed' and ${newsletterSubscribers.confirmedAt} >= now() - interval '7 days'))::int`,
+    })
+    .from(newsletterSubscribers)
+    .where(inArray(newsletterSubscribers.publicationUri, uris))
+    .groupBy(newsletterSubscribers.publicationUri);
+  const subsByPub = new Map(subCountRows.map((r) => [r.publicationUri, r]));
   const docRows = await db
     .select({
       uri: documents.uri,
@@ -281,12 +261,28 @@ export async function loadPublicationsFromDb(
   const metricsByDoc = await loadSendMetrics(shownUris);
 
   return pubRows.map((p) => {
-    const subs = p.subscriberCount ?? 0;
+    const counts = subsByPub.get(p.uri);
+    const subs = counts?.confirmed ?? 0;
     const docs = docsByPub.get(p.uri) ?? [];
-    const sends = docs.map((d) =>
-      toSend(p.rkey, subs, d, metricsByDoc.get(d.uri)),
-    );
-    const cadences = ["Weekly", "Biweekly", "Monthly"];
+    // Only mailed posts are sends. A post with no metrics row was never mailed,
+    // so it's dropped rather than shown with invented delivery numbers — a
+    // connected-but-never-sent publication has an empty `sends`, and the screens
+    // render their "nothing sent yet" states off that.
+    const sends = docs
+      .map((d) => {
+        const metrics = metricsByDoc.get(d.uri);
+        return metrics ? toSend(d, metrics) : null;
+      })
+      .filter((s): s is Send => s !== null)
+      .toSorted((a, b) => b.sentAtMs - a.sentAtMs);
+
+    const avgRate = (pick: (s: Send) => number) =>
+      sends.length > 0
+        ? Math.round(
+            (sends.reduce((sum, s) => sum + pick(s), 0) / sends.length) * 10,
+          ) / 10
+        : 0;
+
     return {
       id: p.rkey,
       uri: p.uri,
@@ -303,21 +299,13 @@ export async function loadPublicationsFromDb(
           p.themeAccentForeground ?? DEFAULT_THEME.accentForeground,
       },
       subs,
-      delta: p.subscribers7d ?? 0,
-      openRate:
-        sends.length > 0
-          ? Math.round(
-              (sends.reduce((s, x) => s + x.openRate, 0) / sends.length) * 10,
-            ) / 10
-          : synth(`${p.rkey}-o`, 45, 66, 1),
-      clickRate:
-        sends.length > 0
-          ? Math.round(
-              (sends.reduce((s, x) => s + x.clickRate, 0) / sends.length) * 10,
-            ) / 10
-          : synth(`${p.rkey}-c`, 5, 14, 1),
-      cadence: cadences[hash(p.rkey) % cadences.length],
-      growth: synthGrowth(p.rkey, subs),
+      delta: counts?.new7d ?? 0,
+      openRate: avgRate((s) => s.openRate),
+      clickRate: avgRate((s) => s.clickRate),
+      cadence: cadenceFromSends(sends.map((s) => s.sentAtMs)),
+      // No historical subscriber timeseries exists in the read model, so there
+      // is nothing to chart — an empty series, not a fabricated growth curve.
+      growth: [],
       sends,
     } satisfies Publication;
   });

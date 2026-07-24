@@ -16,7 +16,10 @@ export interface Send {
   title: string;
   path: string;
   subject: string;
+  /** Human-formatted send time (e.g. "Jul 21, 2026 · 3:00 PM"). */
   when: string;
+  /** Send time as epoch ms — for sorting and date math, since `when` is display-only. */
+  sentAtMs: number;
   recipients: number;
   openRate: number;
   clickRate: number;
