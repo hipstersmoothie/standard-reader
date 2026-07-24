@@ -38,7 +38,10 @@ export interface Publication {
   /** Publication AT-URI. */
   uri: string;
   name: string;
+  /** Single-character fallback shown when the publication has no icon blob. */
   icon: string;
+  /** The publication's `icon` blob on the CDN, or null when it has none. */
+  iconUrl: string | null;
   url: string;
   desc: string;
   theme: PublicationTheme;

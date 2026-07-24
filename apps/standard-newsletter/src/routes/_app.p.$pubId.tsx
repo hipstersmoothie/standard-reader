@@ -8,7 +8,7 @@ import { Delta, PubGlyph, StatBar, StatCard } from "../components/ui";
 import type { Send } from "../data/publications";
 import { MONTHS } from "../data/publications";
 import { publicationsQueryOptions } from "../server/analytics";
-import { C, POSD, R, cardBox, fmt, sectLabel } from "../theme";
+import { C, POSD, cardBox, fmt, sectLabel } from "../theme";
 
 export const Route = createFileRoute("/_app/p/$pubId")({
   loader: async ({ context, params }) => {
@@ -148,7 +148,7 @@ function PubAnalytics() {
             alignItems: "flex-start",
           }}
         >
-          <PubGlyph pub={pub} size={60} r={R.lg} fs={30} />
+          <PubGlyph pub={pub} size="xl" />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div
               style={{

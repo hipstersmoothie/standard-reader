@@ -1,3 +1,6 @@
+import { Avatar } from "@standard-reader/design-system/avatar";
+import { fontFamily } from "@standard-reader/design-system/theme/typography.stylex";
+import * as stylex from "@stylexjs/stylex";
 import type { ReactNode } from "react";
 
 import type { Publication } from "../data/publications";
@@ -56,39 +59,40 @@ export function StatBar({ pct, color }: { pct: number; color: string }) {
   );
 }
 
+/**
+ * A publication's avatar: its `icon` blob when it has one, falling back to the
+ * first letter of its name tinted with the publication's own accent — the
+ * colored tile is how these screens tell publications apart at a glance, so the
+ * fallback keeps it rather than dropping to the neutral default.
+ *
+ * Sizes map onto the design system's avatar scale: sm 24px, md 32px, lg 44px,
+ * xl 56px.
+ */
 export function PubGlyph({
   pub,
-  size = 40,
-  r = R.md,
-  fs = 20,
+  size = "lg",
 }: {
   pub: Publication;
-  size?: number;
-  /** Corner radius — a token from `R`, sized to the glyph. */
-  r?: string;
-  fs?: number;
+  size?: "sm" | "md" | "lg" | "xl";
 }) {
-  const t = pub.theme;
   return (
-    <div
-      style={{
-        width: size,
-        height: size,
-        borderRadius: r,
-        background: t.accent,
-        color: t.accentForeground,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        fontFamily: C.serif,
-        fontSize: fs,
-        flex: "none",
-      }}
-    >
-      {pub.icon}
-    </div>
+    <Avatar
+      size={size}
+      src={pub.iconUrl ?? undefined}
+      alt=""
+      fallback={pub.icon}
+      style={glyphStyles.tint(pub.theme.accent, pub.theme.accentForeground)}
+    />
   );
 }
+
+const glyphStyles = stylex.create({
+  tint: (background: string, foreground: string) => ({
+    backgroundColor: background,
+    color: foreground,
+    fontFamily: fontFamily["serif"],
+  }),
+});
 
 export function StatCard({
   icon,

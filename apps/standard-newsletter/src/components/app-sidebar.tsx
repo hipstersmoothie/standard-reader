@@ -29,7 +29,7 @@ import { Button as AriaButton } from "react-aria-components";
 
 import type { Publication } from "../data/publications";
 import type { ViewerData } from "../server/analytics";
-import { R, kfmt } from "../theme";
+import { kfmt } from "../theme";
 import { PubGlyph } from "./ui";
 
 function initialsOf(name: string): string {
@@ -329,7 +329,7 @@ export function AppSidebar({
                   styles.followRowActive,
                 )}
               >
-                <PubGlyph pub={p} size={24} r={R.sm} fs={12} />
+                <PubGlyph pub={p} size="sm" />
                 <span {...stylex.props(styles.followName)}>{p.name}</span>
                 <span {...stylex.props(styles.count)}>{kfmt(p.subs)}</span>
               </Link>

@@ -23,6 +23,7 @@ import { and, desc, eq, inArray } from "drizzle-orm";
 
 import type { Publication, PublicationTheme, Send } from "../data/publications";
 import { getDb } from "../db/index.server";
+import { publicationIconUrl } from "../lib/blob";
 import { PALETTE } from "../theme-palette";
 import { loadSendMetrics } from "./send-events.server";
 import type { DocSendMetrics } from "./send-events.server";
@@ -203,9 +204,11 @@ export async function loadPublicationsFromDb(
     .select({
       uri: publications.uri,
       rkey: publications.rkey,
+      did: publications.did,
       name: publications.name,
       url: publications.url,
       description: publications.description,
+      iconCid: publications.iconCid,
       themeAccent: publications.themeAccent,
       themeBackground: publications.themeBackground,
       themeForeground: publications.themeForeground,
@@ -269,6 +272,7 @@ export async function loadPublicationsFromDb(
       uri: p.uri,
       name: p.name,
       icon: (p.name.trim()[0] ?? "•").toUpperCase(),
+      iconUrl: publicationIconUrl(p.did, p.iconCid),
       url: displayUrl(p.url),
       desc: p.description ?? "",
       theme: {

@@ -387,7 +387,7 @@ function Dashboard() {
                     borderTop: `1px solid ${C.b6}`,
                   }}
                 >
-                  <PubGlyph pub={s.pub} size={26} r={R.sm} fs={13} />
+                  <PubGlyph pub={s.pub} size="sm" />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div
                       style={{

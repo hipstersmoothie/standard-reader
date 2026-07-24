@@ -248,7 +248,7 @@ function Home() {
                     animationDelay: `${i * 0.09}s`,
                   }}
                 >
-                  <PubGlyph pub={p} size={30} r={R.md} fs={15} />
+                  <PubGlyph pub={p} size="md" />
                   <div
                     style={{
                       fontFamily: C.serif,
