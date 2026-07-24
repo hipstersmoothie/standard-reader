@@ -9,10 +9,13 @@
 
 import {
   newsletterPublications,
+  newsletterSendEvents,
+  newsletterSends,
+  newsletterSubscribers,
   publicationStats,
   publications,
 } from "@standard-reader/db/schema";
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 
 import { getDb } from "../db/index.server";
 import { publicationIconUrl } from "../lib/blob";
@@ -154,4 +157,146 @@ export async function disconnectPublication(
     .returning({ uri: newsletterPublications.publicationUri });
 
   return deleted.length > 0;
+}
+
+export type SubscriberStatus = "confirmed" | "pending" | "unsubscribed";
+
+export interface SubscriberRow {
+  /** The subscriber's email — the primary identity we always have. */
+  email: string;
+  /** DID when the subscriber joined via Bluesky (source = "space"), else null. */
+  did: string | null;
+  status: SubscriberStatus;
+  /** "email" (signup / author import) or "space" (Bluesky record). */
+  source: string;
+  /** Join time as epoch ms and a preformatted label. */
+  joinedMs: number;
+  joined: string;
+  /**
+   * Share of this subscriber's delivered sends that they opened, 0–100, or null
+   * when nothing has been delivered to them yet (so the UI shows "—" instead of
+   * a misleading 0%).
+   */
+  openRate: number | null;
+}
+
+export interface PublicationSubscribers {
+  name: string;
+  /** Confirmed subscriber count — matches the publication page's headline. */
+  confirmed: number;
+  subscribers: Array<SubscriberRow>;
+}
+
+function formatJoined(d: Date): string {
+  return d.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+/**
+ * The subscriber list behind a publication's Subscribers count — the real email
+ * list from `newsletter_subscribers`, with each subscriber's open rate computed
+ * from their own delivered/opened send events.
+ *
+ * This is PII, so it's owner-scoped: it resolves the publication by rkey and
+ * returns null unless `ownerDid` currently owns it and has connected it. A
+ * request naming someone else's publication gets nothing.
+ */
+export async function loadPublicationSubscribers(
+  ownerDid: string,
+  pubRkey: string,
+): Promise<PublicationSubscribers | null> {
+  const db = getDb();
+  if (!db) return null;
+
+  const [pub] = await db
+    .select({ uri: publications.uri, name: publications.name })
+    .from(publications)
+    .innerJoin(
+      newsletterPublications,
+      eq(newsletterPublications.publicationUri, publications.uri),
+    )
+    .where(
+      and(
+        eq(publications.rkey, pubRkey),
+        eq(publications.did, ownerDid),
+        eq(publications.deleted, false),
+      ),
+    )
+    .limit(1);
+  if (!pub) return null;
+
+  const rows = await db
+    .select({
+      email: newsletterSubscribers.email,
+      did: newsletterSubscribers.subscriberDid,
+      status: newsletterSubscribers.status,
+      source: newsletterSubscribers.source,
+      createdAt: newsletterSubscribers.createdAt,
+      confirmedAt: newsletterSubscribers.confirmedAt,
+    })
+    .from(newsletterSubscribers)
+    .where(eq(newsletterSubscribers.publicationUri, pub.uri))
+    .orderBy(desc(newsletterSubscribers.createdAt));
+
+  // Per-subscriber open rate: over this publication's sends, how many each
+  // recipient was delivered vs opened. Recipients are keyed by email in the
+  // events table, matching the subscriber rows.
+  const sendIdRows = await db
+    .select({ id: newsletterSends.id })
+    .from(newsletterSends)
+    .where(eq(newsletterSends.publicationUri, pub.uri));
+  const openByEmail = new Map<string, { delivered: number; opened: number }>();
+  if (sendIdRows.length > 0) {
+    const engagement = await db
+      .select({
+        recipient: newsletterSendEvents.recipient,
+        delivered: sql<number>`(count(distinct ${newsletterSendEvents.sendId}) filter (where ${newsletterSendEvents.type} = 'delivered'))::int`,
+        opened: sql<number>`(count(distinct ${newsletterSendEvents.sendId}) filter (where ${newsletterSendEvents.type} = 'opened'))::int`,
+      })
+      .from(newsletterSendEvents)
+      .where(
+        inArray(
+          newsletterSendEvents.sendId,
+          sendIdRows.map((s) => s.id),
+        ),
+      )
+      .groupBy(newsletterSendEvents.recipient);
+    for (const e of engagement) {
+      openByEmail.set(e.recipient, {
+        delivered: e.delivered,
+        opened: e.opened,
+      });
+    }
+  }
+
+  const subscribers: Array<SubscriberRow> = rows.map((r) => {
+    const joinedAt = r.confirmedAt ?? r.createdAt;
+    const eng = openByEmail.get(r.email);
+    const openRate =
+      eng && eng.delivered > 0
+        ? Math.round((eng.opened / eng.delivered) * 1000) / 10
+        : null;
+    const status: SubscriberStatus =
+      r.status === "confirmed" || r.status === "unsubscribed"
+        ? r.status
+        : "pending";
+    return {
+      email: r.email,
+      did: r.did,
+      status,
+      source: r.source,
+      joinedMs: joinedAt.getTime(),
+      joined: formatJoined(joinedAt),
+      openRate,
+    };
+  });
+
+  return {
+    name: pub.name,
+    confirmed: subscribers.filter((s) => s.status === "confirmed").length,
+    subscribers,
+  };
 }

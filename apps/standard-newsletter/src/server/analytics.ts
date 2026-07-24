@@ -140,6 +140,50 @@ export const disconnectPublicationFn = createServerFn({ method: "POST" })
     return { ok: await disconnectPublication(did, data.publicationUri) };
   });
 
+/* ── Subscriber list ─────────────────────────────────────────────────────── */
+
+export interface SubscriberRowData {
+  email: string;
+  did: string | null;
+  status: "confirmed" | "pending" | "unsubscribed";
+  source: string;
+  joinedMs: number;
+  joined: string;
+  openRate: number | null;
+}
+
+export interface PublicationSubscribersData {
+  name: string;
+  confirmed: number;
+  subscribers: Array<SubscriberRowData>;
+}
+
+/**
+ * The subscriber list behind a publication's Subscribers count. Owner-scoped:
+ * returns null unless the signed-in user owns and has connected the publication,
+ * since this is the author's private email list.
+ */
+export const getPublicationSubscribers = createServerFn({ method: "GET" })
+  .validator((data: { pubId: string }) => data)
+  .handler(async ({ data }): Promise<PublicationSubscribersData | null> => {
+    const [{ loadPublicationSubscribers }, { getCurrentUserDid }] =
+      await Promise.all([
+        import("./newsletters.server"),
+        import("../integrations/auth/session.server"),
+      ]);
+    const did = await getCurrentUserDid(getRequest());
+    if (!did) return null;
+    return await loadPublicationSubscribers(did, data.pubId);
+  });
+
+export function publicationSubscribersQueryOptions(pubId: string) {
+  return queryOptions({
+    queryKey: ["publications", "subscribers", pubId],
+    queryFn: () => getPublicationSubscribers({ data: { pubId } }),
+    staleTime: 30_000,
+  });
+}
+
 export interface ViewerData {
   did: string;
   displayName: string;

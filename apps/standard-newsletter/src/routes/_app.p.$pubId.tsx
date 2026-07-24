@@ -321,13 +321,19 @@ function PubAnalytics() {
             icon={I.users}
             label="Subscribers"
             value={fmt(pub.subs)}
+            onClick={() =>
+              navigate({
+                to: "/p/$pubId/subscribers",
+                params: { pubId: pub.id },
+              })
+            }
             foot={
               pub.delta > 0 ? (
                 <span>
                   <Delta value={pub.delta} /> new this week
                 </span>
               ) : (
-                <span>email subscribers</span>
+                <span>View list →</span>
               )
             }
           />

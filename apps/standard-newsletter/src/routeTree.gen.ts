@@ -26,6 +26,7 @@ import { Route as ApiAuthLogoutRouteImport } from './routes/api/auth/logout'
 import { Route as ApiSubscribersImportRouteImport } from './routes/api/subscribers.import'
 import { Route as ApiSubscriptionUnsubscribeRouteImport } from './routes/api/subscription.unsubscribe'
 import { Route as AppPPubIdSendPathRouteImport } from './routes/_app.p.$pubId_.$sendPath'
+import { Route as AppPPubIdSubscribersRouteImport } from './routes/_app.p.$pubId_.subscribers'
 import { Route as ApiAuthAtprotoAuthorizeRouteImport } from './routes/api/auth/atproto/authorize'
 import { Route as ApiAuthAtprotoCallbackRouteImport } from './routes/api/auth/atproto/callback'
 import { Route as ApiAuthAtprotoJwksDotjsonRouteImport } from './routes/api/auth/atproto/jwks[.]json'
@@ -116,6 +117,11 @@ const AppPPubIdSendPathRoute = AppPPubIdSendPathRouteImport.update({
   path: '/p/$pubId/$sendPath',
   getParentRoute: () => AppRoute,
 } as any)
+const AppPPubIdSubscribersRoute = AppPPubIdSubscribersRouteImport.update({
+  id: '/p/$pubId_/subscribers',
+  path: '/p/$pubId/subscribers',
+  getParentRoute: () => AppRoute,
+} as any)
 const ApiAuthAtprotoAuthorizeRoute = ApiAuthAtprotoAuthorizeRouteImport.update({
   id: '/api/auth/atproto/authorize',
   path: '/api/auth/atproto/authorize',
@@ -156,6 +162,7 @@ export interface FileRoutesByFullPath {
   '/api/subscribers/import': typeof ApiSubscribersImportRoute
   '/api/subscription/unsubscribe': typeof ApiSubscriptionUnsubscribeRoute
   '/p/$pubId/$sendPath': typeof AppPPubIdSendPathRoute
+  '/p/$pubId/subscribers': typeof AppPPubIdSubscribersRoute
   '/api/auth/atproto/authorize': typeof ApiAuthAtprotoAuthorizeRoute
   '/api/auth/atproto/callback': typeof ApiAuthAtprotoCallbackRoute
   '/api/auth/atproto/jwks.json': typeof ApiAuthAtprotoJwksDotjsonRoute
@@ -178,6 +185,7 @@ export interface FileRoutesByTo {
   '/api/subscribers/import': typeof ApiSubscribersImportRoute
   '/api/subscription/unsubscribe': typeof ApiSubscriptionUnsubscribeRoute
   '/p/$pubId/$sendPath': typeof AppPPubIdSendPathRoute
+  '/p/$pubId/subscribers': typeof AppPPubIdSubscribersRoute
   '/api/auth/atproto/authorize': typeof ApiAuthAtprotoAuthorizeRoute
   '/api/auth/atproto/callback': typeof ApiAuthAtprotoCallbackRoute
   '/api/auth/atproto/jwks.json': typeof ApiAuthAtprotoJwksDotjsonRoute
@@ -202,6 +210,7 @@ export interface FileRoutesById {
   '/api/subscribers/import': typeof ApiSubscribersImportRoute
   '/api/subscription/unsubscribe': typeof ApiSubscriptionUnsubscribeRoute
   '/_app/p/$pubId_/$sendPath': typeof AppPPubIdSendPathRoute
+  '/_app/p/$pubId_/subscribers': typeof AppPPubIdSubscribersRoute
   '/api/auth/atproto/authorize': typeof ApiAuthAtprotoAuthorizeRoute
   '/api/auth/atproto/callback': typeof ApiAuthAtprotoCallbackRoute
   '/api/auth/atproto/jwks.json': typeof ApiAuthAtprotoJwksDotjsonRoute
@@ -226,6 +235,7 @@ export interface FileRouteTypes {
     | '/api/subscribers/import'
     | '/api/subscription/unsubscribe'
     | '/p/$pubId/$sendPath'
+    | '/p/$pubId/subscribers'
     | '/api/auth/atproto/authorize'
     | '/api/auth/atproto/callback'
     | '/api/auth/atproto/jwks.json'
@@ -248,6 +258,7 @@ export interface FileRouteTypes {
     | '/api/subscribers/import'
     | '/api/subscription/unsubscribe'
     | '/p/$pubId/$sendPath'
+    | '/p/$pubId/subscribers'
     | '/api/auth/atproto/authorize'
     | '/api/auth/atproto/callback'
     | '/api/auth/atproto/jwks.json'
@@ -271,6 +282,7 @@ export interface FileRouteTypes {
     | '/api/subscribers/import'
     | '/api/subscription/unsubscribe'
     | '/_app/p/$pubId_/$sendPath'
+    | '/_app/p/$pubId_/subscribers'
     | '/api/auth/atproto/authorize'
     | '/api/auth/atproto/callback'
     | '/api/auth/atproto/jwks.json'
@@ -417,6 +429,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppPPubIdSendPathRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/p/$pubId_/subscribers': {
+      id: '/_app/p/$pubId_/subscribers'
+      path: '/p/$pubId/subscribers'
+      fullPath: '/p/$pubId/subscribers'
+      preLoaderRoute: typeof AppPPubIdSubscribersRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/api/auth/atproto/authorize': {
       id: '/api/auth/atproto/authorize'
       path: '/api/auth/atproto/authorize'
@@ -454,6 +473,7 @@ interface AppRouteChildren {
   AppSettingsRoute: typeof AppSettingsRoute
   AppPPubIdRoute: typeof AppPPubIdRoute
   AppPPubIdSendPathRoute: typeof AppPPubIdSendPathRoute
+  AppPPubIdSubscribersRoute: typeof AppPPubIdSubscribersRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -462,6 +482,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppSettingsRoute: AppSettingsRoute,
   AppPPubIdRoute: AppPPubIdRoute,
   AppPPubIdSendPathRoute: AppPPubIdSendPathRoute,
+  AppPPubIdSubscribersRoute: AppPPubIdSubscribersRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)

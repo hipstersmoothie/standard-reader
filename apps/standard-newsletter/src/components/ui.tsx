@@ -160,20 +160,38 @@ export function StatCard({
   label,
   value,
   foot,
+  onClick,
 }: {
   icon: string;
   label: string;
   value: string;
   foot: ReactNode;
+  /** When set, the whole card becomes a button (e.g. Subscribers → the list). */
+  onClick?: () => void;
 }) {
+  const interactive = Boolean(onClick);
   return (
     <div
+      role={interactive ? "button" : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      onClick={onClick}
+      onKeyDown={
+        interactive
+          ? (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onClick?.();
+              }
+            }
+          : undefined
+      }
       style={{
         ...cardBox,
         padding: "18px 20px",
         display: "flex",
         flexDirection: "column",
         gap: 12,
+        cursor: interactive ? "pointer" : undefined,
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
