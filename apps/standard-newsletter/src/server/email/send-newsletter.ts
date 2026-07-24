@@ -52,6 +52,11 @@ function unsubscribeUrl(token: string): string {
   return `${emailConfig.publicUrl}/unsubscribe/${token}`;
 }
 
+/** Where a subscriber can review or remove their subscriptions. */
+function manageUrl(): string {
+  return `${emailConfig.publicUrl}/subscribe/manage`;
+}
+
 /**
  * Render the post once (the body is identical for everyone) and reuse it across
  * recipients; only the unsubscribe link varies per subscriber.
@@ -78,6 +83,7 @@ export async function sendNewsletter(
       document: send.document,
       textContent: send.textContent,
       unsubscribeUrl: unsubscribeUrl(subscriber.unsubscribeToken),
+      manageUrl: manageUrl(),
     };
 
     const html = await render(NewsletterEmail(props));

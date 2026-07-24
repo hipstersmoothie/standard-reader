@@ -37,6 +37,8 @@ export interface NewsletterEmailProps {
   /** Plaintext fallback body when the post has no structured content. */
   textContent: string | null;
   unsubscribeUrl: string;
+  /** Page where a subscriber can review or remove their subscriptions. */
+  manageUrl: string;
 }
 
 // Mail clients do not resolve CSS variables, so email styling reads the
@@ -91,6 +93,7 @@ export function NewsletterEmail({
   document,
   textContent,
   unsubscribeUrl,
+  manageUrl,
 }: NewsletterEmailProps) {
   const hasContent = Boolean(
     document && document.content != null && document.content !== "",
@@ -119,6 +122,10 @@ export function NewsletterEmail({
             You’re receiving this because you subscribe to {publicationName}.{" "}
             <Link href={unsubscribeUrl} style={link}>
               Unsubscribe
+            </Link>{" "}
+            or{" "}
+            <Link href={manageUrl} style={link}>
+              manage your subscriptions
             </Link>
             .
           </Text>

@@ -3,7 +3,7 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 
 import { getPublicationSummary } from "../server/analytics";
-import { C, NEG } from "../theme";
+import { C, NEG, R } from "../theme";
 
 export const Route = createFileRoute("/subscribe/$pubId")({
   loader: async ({ params }) => {
@@ -80,7 +80,7 @@ function Subscribe() {
           maxWidth: 440,
           background: C.warm,
           border: `1px solid ${C.b6}`,
-          borderRadius: 16,
+          borderRadius: R.lg,
           padding: "40px 36px",
           textAlign: "center",
         }}
@@ -89,7 +89,7 @@ function Subscribe() {
           style={{
             width: 56,
             height: 56,
-            borderRadius: 14,
+            borderRadius: R.lg,
             background: accent,
             color: summary.theme.accentForeground,
             fontFamily: C.serif,
@@ -135,7 +135,7 @@ function Subscribe() {
               lineHeight: 1.6,
               color: C.t12,
               background: C.sel5,
-              borderRadius: 12,
+              borderRadius: R.lg,
               padding: "18px 20px",
             }}
           >
@@ -143,6 +143,11 @@ function Subscribe() {
             record in your own repo — new posts from {summary.name} will arrive
             by email. Unsubscribe anytime by deleting the record or using the
             link in any email.
+            <div style={{ marginTop: 12, fontSize: 13.5 }}>
+              <a href="/subscribe/manage" style={{ color: C.a9 }}>
+                Manage your subscriptions
+              </a>
+            </div>
           </div>
         ) : status === "done" ? (
           <div
@@ -151,7 +156,7 @@ function Subscribe() {
               lineHeight: 1.6,
               color: C.t12,
               background: C.sel5,
-              borderRadius: 12,
+              borderRadius: R.lg,
               padding: "18px 20px",
             }}
           >
@@ -175,7 +180,7 @@ function Subscribe() {
                   fontFamily: C.sans,
                   fontSize: 15,
                   padding: "12px 14px",
-                  borderRadius: 10,
+                  borderRadius: R.md,
                   border: `1px solid ${C.b7}`,
                   background: C.pageBg,
                   color: C.t12,
@@ -193,7 +198,7 @@ function Subscribe() {
                   color: summary.theme.accentForeground,
                   background: accent,
                   border: "none",
-                  borderRadius: 10,
+                  borderRadius: R.md,
                   padding: "12px 16px",
                   cursor: status === "submitting" ? "default" : "pointer",
                   opacity: status === "submitting" ? 0.7 : 1,
@@ -242,7 +247,7 @@ function Subscribe() {
                     fontFamily: C.mono,
                     fontSize: 14,
                     padding: "12px 14px",
-                    borderRadius: 10,
+                    borderRadius: R.md,
                     border: `1px solid ${C.b7}`,
                     background: C.pageBg,
                     color: C.t12,
@@ -259,7 +264,7 @@ function Subscribe() {
                     color: C.t12,
                     background: C.warm,
                     border: `1px solid ${C.b7}`,
-                    borderRadius: 10,
+                    borderRadius: R.md,
                     padding: "12px 16px",
                     cursor: "pointer",
                   }}
@@ -284,7 +289,7 @@ function Subscribe() {
                   color: C.t12,
                   background: "transparent",
                   border: `1px solid ${C.b7}`,
-                  borderRadius: 10,
+                  borderRadius: R.md,
                   padding: "12px 16px",
                   cursor: "pointer",
                 }}
