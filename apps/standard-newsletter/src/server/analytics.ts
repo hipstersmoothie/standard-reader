@@ -140,6 +140,57 @@ export const disconnectPublicationFn = createServerFn({ method: "POST" })
     return { ok: await disconnectPublication(did, data.publicationUri) };
   });
 
+/**
+ * Set a newsletter's From identity. Empty strings clear a field back to the
+ * instance default. Ownership + address shape are validated server-side.
+ */
+export const updateSenderFn = createServerFn({ method: "POST" })
+  .validator(
+    (data: { publicationUri: string; fromName: string; fromAddress: string }) =>
+      data,
+  )
+  .handler(async ({ data }): Promise<{ ok: boolean; reason?: string }> => {
+    const [{ updateSender }, { getCurrentUserDid }] = await Promise.all([
+      import("./newsletters.server"),
+      import("../integrations/auth/session.server"),
+    ]);
+    const did = await getCurrentUserDid(getRequest());
+    if (!did) return { ok: false, reason: "not-signed-in" };
+    const outcome = await updateSender(
+      did,
+      data.publicationUri,
+      data.fromName,
+      data.fromAddress,
+    );
+    return outcome === "updated"
+      ? { ok: true }
+      : { ok: false, reason: outcome };
+  });
+
+/** Instance-default sender identity, shown as placeholders in the sender form. */
+export interface SenderDefaults {
+  fromName: string;
+  fromAddress: string;
+}
+
+export const getSenderDefaults = createServerFn({ method: "GET" }).handler(
+  async (): Promise<SenderDefaults> => {
+    const { emailConfig } = await import("./email/config");
+    return {
+      fromName: emailConfig.defaultFromName,
+      fromAddress: emailConfig.defaultFrom,
+    };
+  },
+);
+
+export function senderDefaultsQueryOptions() {
+  return queryOptions({
+    queryKey: ["sender-defaults"],
+    queryFn: () => getSenderDefaults(),
+    staleTime: Infinity,
+  });
+}
+
 /* ── Subscriber list ─────────────────────────────────────────────────────── */
 
 export interface SubscriberRowData {

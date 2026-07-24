@@ -162,6 +162,13 @@
       "when": 1784864645823,
       "tag": "0022_dry_bill_hollister",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1784868855887,
+      "tag": "0023_fancy_omega_sentinel",
+      "breakpoints": true
     }
   ]
 }

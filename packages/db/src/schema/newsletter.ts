@@ -43,6 +43,14 @@ export const newsletterPublications = pgTable(
      * publication can't be mailed by its previous owner.
      */
     ownerDid: text("owner_did").notNull(),
+    /**
+     * Per-newsletter sender identity. Null falls back to the instance defaults
+     * (`NEWSLETTER_FROM_NAME` / `NEWSLETTER_FROM`). `fromAddress` must be on a
+     * verified Resend domain — an arbitrary address won't deliver — so it's
+     * validated before it's stored.
+     */
+    fromName: text("from_name"),
+    fromAddress: text("from_address"),
     connectedAt: timestamp("connected_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

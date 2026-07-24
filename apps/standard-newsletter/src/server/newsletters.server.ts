@@ -159,6 +159,45 @@ export async function disconnectPublication(
   return deleted.length > 0;
 }
 
+export type UpdateSenderOutcome = "updated" | "not-owner" | "invalid-address";
+
+/**
+ * Set (or clear) a newsletter's From identity. Owner-scoped, and the address is
+ * validated to a plausible `local@domain.tld` shape — it still has to be on a
+ * verified Resend domain to actually deliver, but a malformed address is
+ * rejected here rather than failing silently at send time.
+ *
+ * An empty string for either field clears it back to the instance default.
+ */
+export async function updateSender(
+  ownerDid: string,
+  publicationUri: string,
+  fromName: string | null,
+  fromAddress: string | null,
+): Promise<UpdateSenderOutcome> {
+  const db = getDb();
+  if (!db) return "not-owner";
+
+  const name = fromName?.trim() || null;
+  const address = fromAddress?.trim() || null;
+  if (address !== null && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(address)) {
+    return "invalid-address";
+  }
+
+  const updated = await db
+    .update(newsletterPublications)
+    .set({ fromName: name, fromAddress: address })
+    .where(
+      and(
+        eq(newsletterPublications.publicationUri, publicationUri),
+        eq(newsletterPublications.ownerDid, ownerDid),
+      ),
+    )
+    .returning({ uri: newsletterPublications.publicationUri });
+
+  return updated.length > 0 ? "updated" : "not-owner";
+}
+
 export type SubscriberStatus = "confirmed" | "pending" | "unsubscribed";
 
 export interface SubscriberRow {

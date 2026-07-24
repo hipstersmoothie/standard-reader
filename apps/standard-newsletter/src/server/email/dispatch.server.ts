@@ -18,6 +18,7 @@ import { and, eq, isNull } from "drizzle-orm";
 import { getDb } from "../../db/index.server";
 import { reserveSend } from "../send-events.server";
 import { loadConfirmedSubscribers } from "../subscribers.server";
+import { emailConfig } from "./config";
 import { previewText } from "./document-content";
 import { sendNewsletter } from "./send-newsletter";
 
@@ -44,6 +45,21 @@ export function canonicalUrlFor(
   return path ? `${base}/${path.replace(/^\/+/, "")}` : base;
 }
 
+/**
+ * The `"Name <addr>"` From identity for a send: the publication's own override
+ * when set, each field falling back independently to the instance default. A
+ * per-newsletter address must be on a verified Resend domain — validated when
+ * it's saved, not here.
+ */
+export function fromIdentity(
+  fromName: string | null,
+  fromAddress: string | null,
+): string {
+  const name = fromName?.trim() || emailConfig.defaultFromName;
+  const address = fromAddress?.trim() || emailConfig.defaultFrom;
+  return `${name} <${address}>`;
+}
+
 export async function dispatchPendingSends(
   opts: { publicationUri?: string; limit?: number } = {},
 ): Promise<Array<DispatchResult>> {
@@ -64,6 +80,8 @@ export async function dispatchPendingSends(
       publicationUri: documents.publicationUri,
       pubName: publications.name,
       pubUrl: publications.url,
+      fromName: newsletterPublications.fromName,
+      fromAddress: newsletterPublications.fromAddress,
     })
     .from(documents)
     .innerJoin(publications, eq(publications.uri, documents.publicationUri))
@@ -123,6 +141,7 @@ export async function dispatchPendingSends(
         publicationUri: doc.publicationUri,
         documentUri: doc.uri,
         publicationName: doc.pubName,
+        from: fromIdentity(doc.fromName, doc.fromAddress),
         title: doc.title,
         preview: previewText(doc.textContent),
         canonicalUrl: canonicalUrlFor(doc.canonicalUrl, doc.pubUrl, doc.path),

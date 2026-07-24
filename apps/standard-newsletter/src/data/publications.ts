@@ -55,6 +55,10 @@ export interface Publication {
   cadence: string;
   growth: Array<number>;
   sends: Array<Send>;
+  /** Per-newsletter From display name, or null to use the instance default. */
+  fromName: string | null;
+  /** Per-newsletter From address, or null to use the instance default. */
+  fromAddress: string | null;
 }
 
 export const MONTHS = [

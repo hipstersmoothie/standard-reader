@@ -23,14 +23,17 @@ import { MONTHS } from "../data/publications";
 import {
   disconnectPublicationFn,
   publicationsQueryOptions,
+  senderDefaultsQueryOptions,
+  updateSenderFn,
 } from "../server/analytics";
-import { C, POSD, cardBox, fmt, sectLabel } from "../theme";
+import { C, NEG, POS, POSD, R, cardBox, fmt, sectLabel } from "../theme";
 
 export const Route = createFileRoute("/_app/p/$pubId")({
   loader: async ({ context, params }) => {
-    const pubs = await context.queryClient.ensureQueryData(
-      publicationsQueryOptions(),
-    );
+    const [pubs] = await Promise.all([
+      context.queryClient.ensureQueryData(publicationsQueryOptions()),
+      context.queryClient.ensureQueryData(senderDefaultsQueryOptions()),
+    ]);
     if (!pubs.some((p) => p.id === params.pubId)) {
       throw redirect({ to: "/dashboard" });
     }
@@ -378,6 +381,8 @@ function PubAnalytics() {
           </div>
         ) : null}
 
+        <SenderSettings pub={pub} />
+
         <div
           style={{ display: "flex", alignItems: "flex-end", marginBottom: 12 }}
         >
@@ -428,6 +433,131 @@ function PubAnalytics() {
             ))
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Per-newsletter From identity. Both fields fall back to the instance default
+ * (shown as the placeholder) when left blank, so an author only overrides what
+ * they want to change. Saving validates the address shape server-side; it must
+ * also be on a verified Resend domain to actually deliver.
+ */
+function SenderSettings({ pub }: { pub: Publication }) {
+  const queryClient = useQueryClient();
+  const { data: defaults } = useSuspenseQuery(senderDefaultsQueryOptions());
+  const [name, setName] = useState(pub.fromName ?? "");
+  const [address, setAddress] = useState(pub.fromAddress ?? "");
+
+  const dirty =
+    name !== (pub.fromName ?? "") || address !== (pub.fromAddress ?? "");
+
+  const save = useMutation({
+    mutationFn: () =>
+      updateSenderFn({
+        data: { publicationUri: pub.uri, fromName: name, fromAddress: address },
+      }),
+    onSuccess: async (result) => {
+      if (result.ok) {
+        await queryClient.invalidateQueries({ queryKey: ["publications"] });
+      }
+    },
+  });
+  const invalidAddress =
+    save.data && !save.data.ok && save.data.reason === "invalid-address";
+
+  const field: React.CSSProperties = {
+    width: "100%",
+    boxSizing: "border-box",
+    fontFamily: C.sans,
+    fontSize: 14,
+    padding: "10px 12px",
+    borderRadius: R.md,
+    border: `1px solid ${invalidAddress ? NEG : C.b7}`,
+    background: C.warm,
+    color: C.t12,
+  };
+  const label: React.CSSProperties = {
+    display: "block",
+    fontSize: 12.5,
+    color: C.mut,
+    marginBottom: 6,
+  };
+
+  return (
+    <div style={{ marginBottom: 32 }}>
+      <div style={sectLabel}>Sender</div>
+      <p
+        style={{
+          fontSize: 13,
+          color: C.mut,
+          margin: "6px 0 16px",
+          lineHeight: 1.6,
+          maxWidth: 520,
+        }}
+      >
+        How this newsletter appears in the inbox. Leave a field blank to use the
+        default. The address must be on a verified sending domain.
+      </p>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: 16,
+          marginBottom: 14,
+        }}
+      >
+        <div>
+          <span style={label}>From name</span>
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder={defaults.fromName}
+            style={field}
+          />
+        </div>
+        <div>
+          <span style={label}>From address</span>
+          <input
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+            placeholder={defaults.fromAddress}
+            autoComplete="off"
+            autoCapitalize="none"
+            style={{ ...field, fontFamily: C.mono }}
+          />
+        </div>
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+        <Button
+          variant="primary"
+          size="sm"
+          isPending={save.isPending}
+          isDisabled={!dirty}
+          onPress={() => save.mutate()}
+        >
+          Save
+        </Button>
+        {invalidAddress ? (
+          <span style={{ fontSize: 13, color: NEG }}>
+            That doesn’t look like a valid email address.
+          </span>
+        ) : null}
+        {save.data?.ok && !dirty ? (
+          <span
+            style={{
+              fontSize: 13,
+              color: POS,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+            }}
+          >
+            <Ico d={I.check} s={14} w={2.2} />
+            Saved
+          </span>
+        ) : null}
       </div>
     </div>
   );

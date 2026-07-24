@@ -200,6 +200,8 @@ export async function loadPublicationsFromDb(
       themeBackground: publications.themeBackground,
       themeForeground: publications.themeForeground,
       themeAccentForeground: publications.themeAccentForeground,
+      fromName: newsletterPublications.fromName,
+      fromAddress: newsletterPublications.fromAddress,
     })
     .from(publications)
     .innerJoin(
@@ -307,6 +309,8 @@ export async function loadPublicationsFromDb(
       // is nothing to chart — an empty series, not a fabricated growth curve.
       growth: [],
       sends,
+      fromName: p.fromName,
+      fromAddress: p.fromAddress,
     } satisfies Publication;
   });
 }
