@@ -70,6 +70,76 @@ export function showcasePublicationsQueryOptions() {
   });
 }
 
+/* ── Connecting publications ─────────────────────────────────────────────── */
+
+export interface ConnectablePublicationData {
+  uri: string;
+  id: string;
+  name: string;
+  description: string;
+  url: string;
+  icon: string;
+  iconUrl: string | null;
+  followers: number;
+  posts: number;
+}
+
+/** The signed-in author's publications that are not newsletters yet. */
+export const getConnectablePublications = createServerFn({
+  method: "GET",
+}).handler(async (): Promise<Array<ConnectablePublicationData>> => {
+  const [{ loadConnectablePublications }, { getCurrentUserDid }] =
+    await Promise.all([
+      import("./newsletters.server"),
+      import("../integrations/auth/session.server"),
+    ]);
+  const did = await getCurrentUserDid(getRequest());
+  if (!did) return [];
+  return await loadConnectablePublications(did);
+});
+
+export function connectablePublicationsQueryOptions() {
+  return queryOptions({
+    queryKey: ["publications", "connectable"],
+    queryFn: () => getConnectablePublications(),
+    staleTime: 30_000,
+  });
+}
+
+/**
+ * Opt a publication in to being mailed. Ownership is re-checked server-side
+ * against the publication's current owner — the URI from the client is a
+ * request, not a claim.
+ */
+export const connectPublicationFn = createServerFn({ method: "POST" })
+  .validator((data: { publicationUri: string }) => data)
+  .handler(async ({ data }): Promise<{ ok: boolean; reason?: string }> => {
+    const [{ connectPublication }, { getCurrentUserDid }] = await Promise.all([
+      import("./newsletters.server"),
+      import("../integrations/auth/session.server"),
+    ]);
+    const did = await getCurrentUserDid(getRequest());
+    if (!did) return { ok: false, reason: "not-signed-in" };
+    const outcome = await connectPublication(did, data.publicationUri);
+    return outcome === "not-owner"
+      ? { ok: false, reason: outcome }
+      : { ok: true };
+  });
+
+/** Stop mailing a publication. Subscribers and past sends are kept. */
+export const disconnectPublicationFn = createServerFn({ method: "POST" })
+  .validator((data: { publicationUri: string }) => data)
+  .handler(async ({ data }): Promise<{ ok: boolean }> => {
+    const [{ disconnectPublication }, { getCurrentUserDid }] =
+      await Promise.all([
+        import("./newsletters.server"),
+        import("../integrations/auth/session.server"),
+      ]);
+    const did = await getCurrentUserDid(getRequest());
+    if (!did) return { ok: false };
+    return { ok: await disconnectPublication(did, data.publicationUri) };
+  });
+
 export interface ViewerData {
   did: string;
   displayName: string;

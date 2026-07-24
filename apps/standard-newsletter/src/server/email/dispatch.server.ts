@@ -1,13 +1,14 @@
 /**
- * Post → send trigger. Finds published documents that haven't been mailed yet
- * (no newsletter_sends row), reserves each one (at-most-once), and sends it to
- * the publication's confirmed subscribers. Idempotent: the `isNull` filter plus
+ * Post → send trigger. Finds published documents of **connected** publications
+ * that haven't been mailed yet (no newsletter_sends row), reserves each one
+ * (at-most-once), and sends it to the publication's confirmed subscribers. Idempotent: the `isNull` filter plus
  * the reservation mean a document is mailed exactly once even across concurrent
  * or repeated runs. Drive it from a cron (the CLI at scripts/dispatch-sends.ts).
  */
 
 import {
   documents,
+  newsletterPublications,
   newsletterSends,
   publications,
 } from "@standard-reader/db/schema";
@@ -66,6 +67,13 @@ export async function dispatchPendingSends(
     })
     .from(documents)
     .innerJoin(publications, eq(publications.uri, documents.publicationUri))
+    // Only connected publications are mailed. Without this join the dispatcher
+    // would mail posts from every publication in the shared reader DB — the
+    // author's opt-in is what makes a publication a newsletter.
+    .innerJoin(
+      newsletterPublications,
+      eq(newsletterPublications.publicationUri, documents.publicationUri),
+    )
     .leftJoin(newsletterSends, eq(newsletterSends.id, documents.uri))
     .where(
       and(

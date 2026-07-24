@@ -16,6 +16,7 @@
 
 import {
   documents,
+  newsletterPublications,
   publicationStats,
   publications,
 } from "@standard-reader/db/schema";
@@ -36,7 +37,13 @@ export interface PublicationSummary {
   theme: PublicationTheme;
 }
 
-/** Public, unscoped lookup of one publication by rkey (for the subscribe page). */
+/**
+ * Public, unscoped lookup of one publication by rkey (for the subscribe page).
+ *
+ * Joins `newsletter_publications`, so a publication the author has not
+ * connected has no subscribe page — there is nothing to sign up for, and
+ * offering a form would promise mail that never arrives.
+ */
 export async function loadPublicationSummary(
   rkey: string,
 ): Promise<PublicationSummary | null> {
@@ -54,6 +61,10 @@ export async function loadPublicationSummary(
       themeAccentForeground: publications.themeAccentForeground,
     })
     .from(publications)
+    .innerJoin(
+      newsletterPublications,
+      eq(newsletterPublications.publicationUri, publications.uri),
+    )
     .where(and(eq(publications.rkey, rkey), eq(publications.deleted, false)))
     .limit(1);
   if (!row) return null;
@@ -187,7 +198,12 @@ interface DocRow {
 }
 
 /**
- * Load every publication with real identity + subscriber counts + posts.
+ * Load the **connected** publications — those the author opted in to mailing —
+ * with real identity, subscriber counts, and posts. Scoped to one author when
+ * `ownerDid` is given; unscoped for the marketing home's showcase rail.
+ *
+ * Owning a publication is not enough: it appears here only once connected (see
+ * `newsletter_publications`), which is why a first-time account sees nothing.
  * Returns `null` when no DB is configured; the caller surfaces that as an error.
  */
 export async function loadPublicationsFromDb(
@@ -218,6 +234,10 @@ export async function loadPublicationsFromDb(
       subscribers7d: publicationStats.subscribers7d,
     })
     .from(publications)
+    .innerJoin(
+      newsletterPublications,
+      eq(newsletterPublications.publicationUri, publications.uri),
+    )
     .leftJoin(
       publicationStats,
       eq(publicationStats.publicationUri, publications.uri),
