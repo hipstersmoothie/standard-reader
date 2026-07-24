@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { C, NEG, NEG_BG, NEG_BORDER } from "../theme";
+import { C, NEG, NEG_BG, NEG_BORDER, R } from "../theme";
 
 export const Route = createFileRoute("/login")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -33,7 +33,7 @@ function Login() {
           maxWidth: 400,
           background: C.warm,
           border: `1px solid ${C.b6}`,
-          borderRadius: 16,
+          borderRadius: R.lg,
           padding: "36px 32px",
         }}
       >
@@ -70,7 +70,7 @@ function Login() {
               color: NEG,
               background: NEG_BG,
               border: `1px solid ${NEG_BORDER}`,
-              borderRadius: 10,
+              borderRadius: R.md,
               padding: "9px 12px",
               marginBottom: 16,
             }}
@@ -90,11 +90,22 @@ function Login() {
         >
           Handle
         </label>
+        {/* Not a credential field — the handle is a public identifier and the
+            password is entered on the PDS, not here. Opt out of autofill and
+            tell the password managers that honor a hint to stay out of it, so
+            1Password doesn't dress this up as a username/password login. */}
         <input
           id="handle"
           name="handle"
           required
-          autoComplete="username"
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="none"
+          spellCheck={false}
+          data-1p-ignore
+          data-lpignore="true"
+          data-bwignore
+          data-form-type="other"
           placeholder="you.bsky.social"
           style={{
             width: "100%",
@@ -102,7 +113,7 @@ function Login() {
             fontFamily: C.mono,
             fontSize: 14,
             padding: "11px 13px",
-            borderRadius: 10,
+            borderRadius: R.md,
             border: `1px solid ${C.b7}`,
             background: C.pageBg,
             color: C.t12,
@@ -121,7 +132,7 @@ function Login() {
             color: C.onAccent,
             background: C.a9,
             border: "none",
-            borderRadius: 10,
+            borderRadius: R.md,
             padding: "12px 16px",
             cursor: "pointer",
           }}
