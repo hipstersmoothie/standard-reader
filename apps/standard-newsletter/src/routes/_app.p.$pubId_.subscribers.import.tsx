@@ -52,13 +52,14 @@ function ImportSubscribersPage() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ publicationUri: pub.uri, emails }),
       });
-      const json = (await res.json()) as {
+      const json = (await res.json().catch(() => null)) as {
         ok?: boolean;
         count?: number;
         error?: string;
         skipped?: string;
-      };
-      if (json.ok) {
+        message?: string;
+      } | null;
+      if (json?.ok) {
         setCount(json.count ?? emails.length);
         setState("done");
         setEmails([]);
@@ -68,7 +69,9 @@ function ImportSubscribersPage() {
         });
         await queryClient.invalidateQueries({ queryKey: ["publications"] });
       } else {
-        setError(json.error ?? json.skipped ?? "import-failed");
+        setError(
+          json?.message ?? json?.error ?? json?.skipped ?? "import-failed",
+        );
         setState("error");
       }
     } catch {
@@ -216,9 +219,13 @@ function ImportSubscribersPage() {
                   lineHeight: 1.6,
                 }}
               >
-                {error === "happyview-unconfigured" || error === "no-session"
+                {error === "no-happyview"
                   ? "Subscriber import isn’t available yet — permissioned storage isn’t configured for this instance."
-                  : "Import failed. Check that you own this publication and try again."}
+                  : error === "no-session"
+                    ? "Your sign-in session expired. Sign in again and retry."
+                    : error === "not-owner" || error === "unauthenticated"
+                      ? "Import failed. Check that you own this publication and try again."
+                      : `Import failed: ${error ?? "unknown error"}`}
               </div>
             ) : null}
 
