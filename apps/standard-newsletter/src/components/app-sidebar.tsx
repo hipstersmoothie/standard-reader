@@ -403,10 +403,16 @@ export function AppSidebar({
             Settings
           </MenuItem>
           <MenuSeparator />
+          {/* Not a route: `/api/auth/logout` clears the session cookie and
+              redirects. That has to be a real document navigation — routing to
+              it client-side would leave the signed-in caches in memory — so it
+              is an action rather than an `href` the router would intercept. */}
           <MenuItem
-            href="/api/auth/logout"
             variant="destructive"
             suffix={<LogOut size={17} />}
+            onAction={() => {
+              globalThis.location.href = "/api/auth/logout";
+            }}
           >
             Log out
           </MenuItem>

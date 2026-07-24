@@ -7,8 +7,10 @@ import {
   AlertDialogHeader,
 } from "@standard-reader/design-system/alert-dialog";
 import { Button } from "@standard-reader/design-system/button";
+// The design system's `Link` for the one link that leaves the app; in-app
+// navigation goes through TanStack Router's `Link` below.
+import { Link as ExternalLink } from "@standard-reader/design-system/link";
 import { TextField } from "@standard-reader/design-system/text-field";
-import { animationDuration } from "@standard-reader/design-system/theme/animations.stylex";
 import {
   successColor,
   uiColor,
@@ -32,7 +34,12 @@ import {
   useQueryClient,
   useSuspenseQuery,
 } from "@tanstack/react-query";
-import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
+import {
+  Link,
+  createFileRoute,
+  redirect,
+  useNavigate,
+} from "@tanstack/react-router";
 import { useState } from "react";
 
 import { common } from "../common-styles";
@@ -170,17 +177,12 @@ const styles = stylex.create({
   },
   sendRow: {
     alignItems: "center",
-    backgroundColor: {
-      default: "transparent",
-      ":hover": uiColor.component1,
-    },
     // Rules separate the rows; the card's own border closes the list, so the
     // last row does not draw one.
     borderBottomColor: uiColor.border1,
     borderBottomStyle: "solid",
     borderBottomWidth: { default: 1, ":last-child": 0 },
     columnGap: gap["2xl"],
-    cursor: "pointer",
     display: "grid",
     // Title · opens · clicks · unsubs · chevron. The metric columns are fixed
     // so their bars line up down the list.
@@ -190,8 +192,6 @@ const styles = stylex.create({
     paddingInlineEnd: horizontalSpace["3xl"],
     paddingInlineStart: horizontalSpace["3xl"],
     rowGap: gap["2xl"],
-    transitionDuration: animationDuration.default,
-    transitionProperty: "background-color",
   },
   sendTitle: {
     color: uiColor.text2,
@@ -284,16 +284,12 @@ const styles = stylex.create({
   },
 });
 
-function SendRow({ s, onOpen }: { s: Send; onOpen: () => void }) {
+function SendRow({ s, pubId }: { s: Send; pubId: string }) {
   return (
-    <div
-      role="button"
-      tabIndex={0}
-      onClick={onOpen}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") onOpen();
-      }}
-      {...stylex.props(styles.sendRow)}
+    <Link
+      to="/p/$pubId/$sendPath"
+      params={{ pubId, sendPath: s.path }}
+      {...stylex.props(common.rowLink, styles.sendRow)}
     >
       <div {...stylex.props(common.flexFill)}>
         <div {...stylex.props(styles.sendTitle, common.truncate)}>
@@ -308,7 +304,7 @@ function SendRow({ s, onOpen }: { s: Send; onOpen: () => void }) {
           <span {...stylex.props(styles.barLabel)}>Opens</span>
           <span {...stylex.props(styles.barValue)}>{s.openRate}%</span>
         </div>
-        <StatBar pct={s.openRate} />
+        <StatBar pct={s.openRate} label={`Open rate for ${s.title}`} />
       </div>
       <div>
         <div {...stylex.props(styles.barHead)}>
@@ -316,8 +312,13 @@ function SendRow({ s, onOpen }: { s: Send; onOpen: () => void }) {
           <span {...stylex.props(styles.barValue)}>{s.clickRate}%</span>
         </div>
         {/* Click rates run an order of magnitude below open rates, so the bar
-            is scaled to keep a typical 3–8% readable next to a 40% open bar. */}
-        <StatBar pct={s.clickRate * 3.5} tone="positive" />
+            is scaled to keep a typical 3–8% readable next to a 40% open bar.
+            The meter still announces the real rate. */}
+        <StatBar
+          pct={s.clickRate * 3.5}
+          label={`Click rate for ${s.title}: ${s.clickRate}%`}
+          variant="success"
+        />
       </div>
       <div {...stylex.props(styles.unsubs)}>
         <span {...stylex.props(styles.unsubsInner)}>
@@ -326,7 +327,7 @@ function SendRow({ s, onOpen }: { s: Send; onOpen: () => void }) {
         </span>
       </div>
       <Ico d={I.chevR} s={16} style={icon.muted} />
-    </div>
+    </Link>
   );
 }
 
@@ -381,7 +382,6 @@ function RemoveNewsletter({ pub }: { pub: Publication }) {
 function PubAnalytics() {
   const { pubId } = Route.useParams();
   const { data: pubs } = useSuspenseQuery(publicationsQueryOptions());
-  const navigate = useNavigate();
   const pub = pubs.find((p) => p.id === pubId);
   if (!pub) return null;
   const t = pub.theme;
@@ -426,14 +426,14 @@ function PubAnalytics() {
             </div>
           </div>
           <div {...stylex.props(common.flexNone, styles.mastheadActions)}>
-            <a
+            <ExternalLink
               href={`https://${pub.url}`}
               target="_blank"
               rel="noreferrer"
-              {...stylex.props(styles.visitLink)}
+              style={styles.visitLink}
             >
               <Ico d={I.external} s={15} /> Visit site
-            </a>
+            </ExternalLink>
             <RemoveNewsletter pub={pub} />
           </div>
         </div>
@@ -451,12 +451,8 @@ function PubAnalytics() {
             icon={I.users}
             label="Subscribers"
             value={fmt(pub.subs)}
-            onClick={() =>
-              navigate({
-                to: "/p/$pubId/subscribers",
-                params: { pubId: pub.id },
-              })
-            }
+            to="/p/$pubId/subscribers"
+            params={{ pubId: pub.id }}
             foot={
               pub.delta > 0 ? (
                 <span>
@@ -520,16 +516,7 @@ function PubAnalytics() {
             </div>
           ) : (
             pub.sends.map((s) => (
-              <SendRow
-                key={s.path}
-                s={s}
-                onOpen={() =>
-                  navigate({
-                    to: "/p/$pubId/$sendPath",
-                    params: { pubId: pub.id, sendPath: s.path },
-                  })
-                }
-              />
+              <SendRow key={s.path} s={s} pubId={pub.id} />
             ))
           )}
         </div>

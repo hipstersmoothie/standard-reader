@@ -1,4 +1,6 @@
+import { animationDuration } from "@standard-reader/design-system/theme/animations.stylex";
 import {
+  focusColor,
   primaryColor,
   uiColor,
 } from "@standard-reader/design-system/theme/color.stylex";
@@ -101,6 +103,27 @@ export const common = stylex.create({
     letterSpacing: tracking.wider,
     marginBottom: verticalSpace.xl,
     textTransform: "uppercase",
+  },
+  /**
+   * A whole list row that is a link to its subject. Compose with the row's own
+   * layout; this only supplies the link chrome — inherited color, no underline,
+   * a hover wash, and a focus ring — so a row reads as text, not as a link, but
+   * still behaves like one.
+   */
+  rowLink: {
+    backgroundColor: {
+      default: "transparent",
+      ":hover": uiColor.component1,
+    },
+    color: "inherit",
+    outline: {
+      default: "none",
+      ":is([data-focus-visible])": `2px solid ${focusColor.ring}`,
+    },
+    outlineOffset: "-2px",
+    textDecoration: "none",
+    transitionDuration: animationDuration.default,
+    transitionProperty: "background-color",
   },
   /** Back link to the parent screen. */
   backLink: {

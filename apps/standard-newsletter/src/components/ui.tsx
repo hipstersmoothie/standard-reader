@@ -1,17 +1,17 @@
 import { Avatar } from "@standard-reader/design-system/avatar";
+import type { MeterProps } from "@standard-reader/design-system/meter";
+import { Meter } from "@standard-reader/design-system/meter";
 import {
   criticalColor,
   primaryColor,
   successColor,
   uiColor,
 } from "@standard-reader/design-system/theme/color.stylex";
-import { radius } from "@standard-reader/design-system/theme/radius.stylex";
 import {
   gap,
   horizontalSpace,
   verticalSpace,
 } from "@standard-reader/design-system/theme/semantic-spacing.stylex";
-import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
 import {
   fontFamily,
   fontSize,
@@ -20,6 +20,7 @@ import {
   tracking,
 } from "@standard-reader/design-system/theme/typography.stylex";
 import * as stylex from "@stylexjs/stylex";
+import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 
 import { common } from "../common-styles";
@@ -38,20 +39,11 @@ const styles = stylex.create({
   deltaUp: { color: successColor.text1 },
   deltaDown: { color: criticalColor.text1 },
 
-  track: {
-    backgroundColor: uiColor.component2,
-    borderRadius: radius.sm,
-    height: spacing["1.5"],
-    overflow: "hidden",
+  meter: {
+    // The wrapper's label/value row is unused here — the surrounding row prints
+    // its own figure — so the meter collapses to just its track.
+    rowGap: gap.none,
   },
-  fill: {
-    borderRadius: radius.sm,
-    height: "100%",
-  },
-  fillAccent: { backgroundColor: primaryColor.solid1 },
-  fillPositive: { backgroundColor: successColor.solid1 },
-  // Only the bar's length is data; its color comes from the metric's tone.
-  fillWidth: (pct: number) => ({ width: `${pct}%` }),
 
   statCard: {
     columnGap: gap.xl,
@@ -63,8 +55,14 @@ const styles = stylex.create({
     paddingInlineStart: horizontalSpace["4xl"],
     rowGap: gap.xl,
   },
-  statCardInteractive: {
-    cursor: "pointer",
+  statCardLink: {
+    // `common.rowLink` hovers from transparent; a card starts on its own
+    // surface, so the resting fill has to be restated.
+    backgroundColor: {
+      default: uiColor.bg,
+      ":hover": uiColor.component1,
+    },
+    outlineOffset: "2px",
   },
   statHead: {
     alignItems: "center",
@@ -149,29 +147,34 @@ export function Delta({
   );
 }
 
-const BAR_TONE = {
-  accent: styles.fillAccent,
-  positive: styles.fillPositive,
-} as const;
-
-/** Opens read in the accent, clicks in the positive green. */
+/**
+ * A rate drawn as a bar — an open rate, a click rate, a link's share of the
+ * clicks.
+ *
+ * This is a `Meter`, not a `ProgressBar`: nothing here is completing, it is a
+ * measurement within a known range, which is the distinction the two ARIA roles
+ * draw. The design system's meter carries the role, the `aria-valuetext`, and
+ * the track; `label` names it for a screen reader while the visible label stays
+ * in the surrounding row.
+ */
 export function StatBar({
   pct,
-  tone = "accent",
+  label,
+  variant = "primary",
 }: {
   pct: number;
-  tone?: keyof typeof BAR_TONE;
+  label: string;
+  variant?: MeterProps["variant"];
 }) {
   return (
-    <div {...stylex.props(styles.track)}>
-      <div
-        {...stylex.props(
-          styles.fill,
-          BAR_TONE[tone],
-          styles.fillWidth(Math.min(100, pct)),
-        )}
-      />
-    </div>
+    <Meter
+      aria-label={label}
+      value={Math.min(100, pct)}
+      variant={variant}
+      showValueLabel={false}
+      size="sm"
+      style={styles.meter}
+    />
   );
 }
 
@@ -271,42 +274,31 @@ const glyphStyles = stylex.create({
   }),
 });
 
+/**
+ * One headline figure for a publication.
+ *
+ * Passing `to`/`params` makes the whole card the link to the detail behind the
+ * number (Subscribers → the list). That is a real `<a href>` rather than a
+ * `role="button"` div, so it opens in a new tab, shows its target on hover, and
+ * reaches the keyboard and screen reader without hand-written handlers.
+ */
 export function StatCard({
   icon,
   label,
   value,
   foot,
-  onClick,
+  to,
+  params,
 }: {
   icon: string;
   label: string;
   value: string;
   foot: ReactNode;
-  /** When set, the whole card becomes a button (e.g. Subscribers → the list). */
-  onClick?: () => void;
+  to?: string;
+  params?: Record<string, string>;
 }) {
-  const interactive = Boolean(onClick);
-  return (
-    <div
-      role={interactive ? "button" : undefined}
-      tabIndex={interactive ? 0 : undefined}
-      onClick={onClick}
-      onKeyDown={
-        interactive
-          ? (e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                onClick?.();
-              }
-            }
-          : undefined
-      }
-      {...stylex.props(
-        common.card,
-        styles.statCard,
-        interactive && styles.statCardInteractive,
-      )}
-    >
+  const body = (
+    <>
       <div {...stylex.props(styles.statHead)}>
         <div {...stylex.props(common.chip, common.chipSm)}>
           <Ico d={icon} s={16} />
@@ -315,7 +307,27 @@ export function StatCard({
       </div>
       <div {...stylex.props(styles.statValue)}>{value}</div>
       <div {...stylex.props(styles.statFoot)}>{foot}</div>
-    </div>
+    </>
+  );
+
+  if (to === undefined) {
+    return (
+      <div {...stylex.props(common.card, styles.statCard)}>{body}</div>
+    );
+  }
+  return (
+    <Link
+      to={to}
+      params={params}
+      {...stylex.props(
+        common.card,
+        common.rowLink,
+        styles.statCard,
+        styles.statCardLink,
+      )}
+    >
+      {body}
+    </Link>
   );
 }
 

@@ -1,5 +1,6 @@
 import { Alert } from "@standard-reader/design-system/alert";
 import { Button } from "@standard-reader/design-system/button";
+import { Link } from "@standard-reader/design-system/link";
 import { TextField } from "@standard-reader/design-system/text-field";
 import {
   primaryColor,
@@ -233,7 +234,7 @@ function Subscribe() {
             by email. Unsubscribe anytime by deleting the record or using the
             link in any email.
             <div {...stylex.props(styles.manageLink)}>
-              <a href="/subscribe/manage">Manage your subscriptions</a>
+              <Link href="/subscribe/manage">Manage your subscriptions</Link>
             </div>
           </div>
         ) : status === "done" ? (

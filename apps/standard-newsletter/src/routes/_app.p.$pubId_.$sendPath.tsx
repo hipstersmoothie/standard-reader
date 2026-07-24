@@ -1,3 +1,4 @@
+import { Link as ExternalLink } from "@standard-reader/design-system/link";
 import {
   primaryColor,
   successColor,
@@ -78,23 +79,18 @@ const styles = stylex.create({
   },
   subjectLine: { fontStyle: "italic" },
   viewPost: {
-    alignItems: "center",
     backgroundColor: uiColor.bg,
     borderColor: uiColor.border2,
     borderRadius: radius.md,
     borderStyle: "solid",
     borderWidth: 1,
     color: uiColor.text2,
-    columnGap: gap.sm,
-    display: "inline-flex",
     fontSize: fontSize.sm,
     fontWeight: fontWeight.medium,
     paddingBlockEnd: verticalSpace.md,
     paddingBlockStart: verticalSpace.md,
     paddingInlineEnd: horizontalSpace.xl,
     paddingInlineStart: horizontalSpace.xl,
-    rowGap: gap.sm,
-    textDecoration: "none",
   },
 
   summary: {
@@ -250,15 +246,18 @@ function SendDetail() {
               </span>
             </div>
           </div>
-          <a
+          {/* A link, not a button: it leaves for the published post. The design
+              system's `Link` carries the react-aria behavior; the chip shape is
+              local so it sits as a control next to the headline. */}
+          <ExternalLink
             href={`https://${pub.url}/${send.path}`}
             target="_blank"
             rel="noreferrer"
-            {...stylex.props(common.flexNone, styles.viewPost)}
+            style={[common.flexNone, styles.viewPost]}
           >
             <Ico d={I.external} s={16} />
             View post
-          </a>
+          </ExternalLink>
         </div>
 
         <div {...stylex.props(common.card, styles.summary)}>
@@ -322,7 +321,10 @@ function SendDetail() {
                       {fmt(l.count)}
                     </span>
                   </div>
-                  <StatBar pct={(l.count / maxLink) * 100} />
+                  <StatBar
+                    pct={(l.count / maxLink) * 100}
+                    label={`${l.label}: ${fmt(l.count)} clicks`}
+                  />
                 </div>
               ))}
             </div>

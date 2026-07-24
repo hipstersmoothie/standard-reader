@@ -4,6 +4,7 @@ import {
   uiColor,
 } from "@standard-reader/design-system/theme/color.stylex";
 import { radius } from "@standard-reader/design-system/theme/radius.stylex";
+import { Slider } from "@standard-reader/design-system/slider";
 import {
   gap,
   horizontalSpace,
@@ -384,8 +385,6 @@ const styles = stylex.create({
     fontWeight: fontWeight.semibold,
   },
   slider: {
-    accentColor: primaryColor.solid1,
-    cursor: "pointer",
     width: "100%",
   },
   ticks: {
@@ -393,8 +392,6 @@ const styles = stylex.create({
     display: "flex",
     fontSize: fontSize.xs,
     justifyContent: "space-between",
-    // Pulls the tick row up under the slider's track, past its thumb padding.
-    marginTop: `calc(-1 * ${spacing["1.5"]})`,
   },
   total: {
     alignItems: "baseline",
@@ -667,15 +664,18 @@ function Home() {
                   {fmt(calcEmails)} emails / mo
                 </span>
               </div>
-              <input
-                type="range"
+              {/* The value is already printed above in the row's own type, so
+                  the slider's built-in output stays off — but the thumb still
+                  announces it. */}
+              <Slider
                 aria-label="Emails sent per month"
-                min={0}
-                max={500_000}
+                minValue={0}
+                maxValue={500_000}
                 step={1000}
                 value={calcEmails}
-                onChange={(e) => setCalcEmails(+e.target.value)}
-                {...stylex.props(styles.slider)}
+                onChange={setCalcEmails}
+                showValueLabel={false}
+                style={styles.slider}
               />
               <div {...stylex.props(styles.ticks)}>
                 <span>0</span>

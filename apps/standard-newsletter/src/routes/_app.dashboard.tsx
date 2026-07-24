@@ -1,5 +1,4 @@
 import { Button } from "@standard-reader/design-system/button";
-import { animationDuration } from "@standard-reader/design-system/theme/animations.stylex";
 import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
 import {
   gap,
@@ -16,7 +15,7 @@ import {
 } from "@standard-reader/design-system/theme/typography.stylex";
 import * as stylex from "@stylexjs/stylex";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 
 import { common } from "../common-styles";
@@ -146,20 +145,13 @@ const styles = stylex.create({
 
   pubRow: {
     alignItems: "center",
-    backgroundColor: {
-      default: "transparent",
-      ":hover": uiColor.component1,
-    },
     columnGap: gap["3xl"],
-    cursor: "pointer",
     display: "flex",
     paddingBlockEnd: verticalSpace["3xl"],
     paddingBlockStart: verticalSpace["3xl"],
     paddingInlineEnd: horizontalSpace.lg,
     paddingInlineStart: horizontalSpace.lg,
     rowGap: gap["3xl"],
-    transitionDuration: animationDuration.default,
-    transitionProperty: "background-color",
   },
   pubName: {
     color: uiColor.text2,
@@ -196,7 +188,6 @@ const styles = stylex.create({
   sendRow: {
     alignItems: "center",
     columnGap: gap.xl,
-    cursor: "pointer",
     display: "flex",
     paddingBlockEnd: verticalSpace["2xl"],
     paddingBlockStart: verticalSpace["2xl"],
@@ -228,8 +219,6 @@ const styles = stylex.create({
 function Dashboard() {
   const navigate = useNavigate();
   const { data: pubs } = useSuspenseQuery(publicationsQueryOptions());
-  const openPub = (id: string) =>
-    navigate({ to: "/p/$pubId", params: { pubId: id } });
 
   if (pubs.length === 0) {
     return (
@@ -398,15 +387,11 @@ function Dashboard() {
             <div {...stylex.props(common.sectionLabel)}>Publications</div>
             <div {...stylex.props(common.ruleBelow)}>
               {pubs.map((p) => (
-                <div
+                <Link
                   key={p.id}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => openPub(p.id)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") openPub(p.id);
-                  }}
-                  {...stylex.props(common.ruleAbove, styles.pubRow)}
+                  to="/p/$pubId"
+                  params={{ pubId: p.id }}
+                  {...stylex.props(common.ruleAbove, common.rowLink, styles.pubRow)}
                 >
                   <PubGlyph pub={p} />
                   <div {...stylex.props(common.flexFill)}>
@@ -426,7 +411,7 @@ function Dashboard() {
                     <div {...stylex.props(styles.pubRateLabel)}>open rate</div>
                   </div>
                   <Ico d={I.chevR} s={17} style={[icon.muted, icon.fixed]} />
-                </div>
+                </Link>
               ))}
             </div>
           </div>
@@ -440,15 +425,11 @@ function Dashboard() {
                 </div>
               ) : null}
               {recentSends.map((s) => (
-                <div
+                <Link
                   key={`${s.pub.id}-${s.path}`}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => openPub(s.pub.id)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") openPub(s.pub.id);
-                  }}
-                  {...stylex.props(common.ruleAbove, styles.sendRow)}
+                  to="/p/$pubId"
+                  params={{ pubId: s.pub.id }}
+                  {...stylex.props(common.ruleAbove, common.rowLink, styles.sendRow)}
                 >
                   <PubGlyph pub={s.pub} size="sm" />
                   <div {...stylex.props(common.flexFill)}>
@@ -459,7 +440,7 @@ function Dashboard() {
                       {s.when.split(" · ")[0]} · {s.openRate}% open
                     </div>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           </div>

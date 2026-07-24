@@ -1,4 +1,5 @@
 import { Button } from "@standard-reader/design-system/button";
+import { Link } from "@standard-reader/design-system/link";
 import {
   primaryColor,
   uiColor,
@@ -157,9 +158,9 @@ function Manage() {
 
         {initial.signedIn ? null : (
           <p {...stylex.props(styles.note)}>
-            <a href="/login" {...stylex.props(styles.noteLink)}>
+            <Link href="/login" style={styles.noteLink}>
               Sign in with Bluesky
-            </a>{" "}
+            </Link>{" "}
             to manage your subscriptions.
           </p>
         )}

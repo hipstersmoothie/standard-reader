@@ -1,6 +1,7 @@
 import { Alert } from "@standard-reader/design-system/alert";
 import { Button } from "@standard-reader/design-system/button";
 import {
+  focusColor,
   primaryColor,
   successColor,
   uiColor,
@@ -27,6 +28,10 @@ import {
 } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
+import {
+  Radio as AriaRadio,
+  RadioGroup as AriaRadioGroup,
+} from "react-aria-components";
 
 import { common } from "../common-styles";
 import { CsvDropZone } from "../components/csv-drop-zone";
@@ -49,23 +54,12 @@ export const Route = createFileRoute("/_app/connect")({
 const STEP_LABELS = ["Choose", "How it works", "Import list", "Done"];
 
 const styles = stylex.create({
-  back: {
-    alignItems: "center",
-    backgroundColor: "transparent",
-    borderStyle: "none",
-    borderWidth: 0,
-    color: uiColor.text1,
-    columnGap: gap.sm,
-    cursor: "pointer",
-    display: "inline-flex",
-    fontFamily: "inherit",
-    fontSize: fontSize.sm,
+  backRow: {
+    display: "flex",
     marginBottom: spacing["7"],
-    paddingBlockEnd: 0,
-    paddingBlockStart: 0,
-    paddingInlineEnd: 0,
-    paddingInlineStart: 0,
-    rowGap: gap.sm,
+    // The button's own inset would push it off the column's left edge, so the
+    // row pulls it back into alignment with the content below.
+    marginInlineStart: `calc(-1 * ${horizontalSpace["xl"]})`,
   },
 
   stepper: {
@@ -171,13 +165,16 @@ const styles = stylex.create({
     backgroundColor: {
       default: "transparent",
       ":hover": uiColor.component1,
+      ":is([data-selected])": primaryColor.component1,
     },
-    borderStyle: "none",
-    borderWidth: 0,
     columnGap: gap["2xl"],
     cursor: "pointer",
     display: "flex",
-    fontFamily: "inherit",
+    outline: {
+      default: "none",
+      ":is([data-focus-visible])": `2px solid ${focusColor.ring}`,
+    },
+    outlineOffset: "-2px",
     paddingBlockEnd: verticalSpace["3xl"],
     paddingBlockStart: verticalSpace["3xl"],
     paddingInlineEnd: horizontalSpace.xl,
@@ -185,9 +182,6 @@ const styles = stylex.create({
     rowGap: gap["2xl"],
     textAlign: "left",
     width: "100%",
-  },
-  choiceSelected: {
-    backgroundColor: primaryColor.component1,
   },
   choiceName: {
     color: uiColor.text2,
@@ -384,10 +378,14 @@ function CreateFlow() {
           common.measureNarrow,
         )}
       >
-        <button type="button" onClick={back} {...stylex.props(styles.back)}>
-          <Ico d={I.chevL} s={15} w={1.9} />
-          {step === 0 ? "Dashboard" : "Back"}
-        </button>
+        <div {...stylex.props(styles.backRow)}>
+          <Button variant="tertiary" size="sm" onPress={back}>
+            <span {...stylex.props(common.buttonContent)}>
+              <Ico d={I.chevL} s={15} w={1.9} />
+              {step === 0 ? "Dashboard" : "Back"}
+            </span>
+          </Button>
+        </div>
 
         {step < 3 ? <Stepper step={step} labels={STEP_LABELS} /> : null}
 
@@ -514,41 +512,53 @@ function ChooseStep({
         Pick any standard.site publication you own. We’ll mail each new post to
         its subscribers — you keep writing exactly where you do now.
       </p>
-      <div {...stylex.props(common.ruleAbove, styles.list)}>
-        {connectable.map((p) => {
-          const selected = chosenUri === p.uri;
-          return (
-            <button
-              key={p.uri}
-              type="button"
-              onClick={() => onChoose(p)}
-              aria-pressed={selected}
-              {...stylex.props(
-                common.ruleBelow,
-                styles.choice,
-                selected && styles.choiceSelected,
-              )}
-            >
-              <PubAvatar
-                name={p.name}
-                icon={p.icon}
-                iconUrl={p.iconUrl}
-                size="lg"
-              />
-              <div {...stylex.props(common.flexFill)}>
-                <div {...stylex.props(styles.choiceName)}>{p.name}</div>
-                <div {...stylex.props(styles.choiceUrl)}>{p.url}</div>
-              </div>
-              <div
-                {...stylex.props(
-                  styles.radio,
-                  selected && styles.radioSelected,
-                )}
-              />
-            </button>
-          );
-        })}
-      </div>
+      {/* One choice out of many, so it is a real radio group: arrow keys move
+          between publications, the selection is announced, and the whole row is
+          the label. These are react-aria's primitives rather than the design
+          system's `Radio` — that one puts its dot on the left inside a gapped
+          column, and this list is flush hairline rows with the dot trailing. The
+          behavior is identical; only the shape differs.
+
+          `aria-label` stands in for a visible group label: the heading above
+          already asks the question. */}
+      <AriaRadioGroup
+        aria-label="Publication to turn into a newsletter"
+        value={chosenUri ?? ""}
+        onChange={(uri: string) => {
+          const pub = connectable.find((p) => p.uri === uri);
+          if (pub) onChoose(pub);
+        }}
+        {...stylex.props(common.ruleAbove, styles.list)}
+      >
+        {connectable.map((p) => (
+          <AriaRadio
+            key={p.uri}
+            value={p.uri}
+            {...stylex.props(common.ruleBelow, styles.choice)}
+          >
+            {({ isSelected }: { isSelected: boolean }) => (
+              <>
+                <PubAvatar
+                  name={p.name}
+                  icon={p.icon}
+                  iconUrl={p.iconUrl}
+                  size="lg"
+                />
+                <div {...stylex.props(common.flexFill)}>
+                  <div {...stylex.props(styles.choiceName)}>{p.name}</div>
+                  <div {...stylex.props(styles.choiceUrl)}>{p.url}</div>
+                </div>
+                <div
+                  {...stylex.props(
+                    styles.radio,
+                    isSelected && styles.radioSelected,
+                  )}
+                />
+              </>
+            )}
+          </AriaRadio>
+        ))}
+      </AriaRadioGroup>
       <div {...stylex.props(styles.navRowEnd)}>
         <Button
           variant="primary"

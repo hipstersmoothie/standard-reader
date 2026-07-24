@@ -5,8 +5,11 @@ import {
   HeadContent,
   Scripts,
   createRootRouteWithContext,
+  useNavigate,
 } from "@tanstack/react-router";
+import { useCallback } from "react";
 import type { ReactNode } from "react";
+import { RouterProvider as AriaRouterProvider } from "react-aria-components";
 
 import {
   editorialFonts,
@@ -66,6 +69,35 @@ export const Route = createRootRouteWithContext<RouterContext>()({
   shellComponent: RootDocument,
 });
 
+/**
+ * Bridges react-aria's link handling to TanStack Router.
+ *
+ * Every design-system component that takes an `href` — `Link`, `Button`,
+ * `MenuItem` — renders a react-aria link, and without this those all fall back
+ * to a full document load: the router cache is thrown away and the app boots
+ * again. With it they navigate through the router like a `<Link>` does.
+ *
+ * react-aria only routes through here for links it considers in-app
+ * (same-origin, no `target`, no modifier key), so `target="_blank"` links to a
+ * publication's site still leave normally. Server endpoints that are *not*
+ * routes — `/api/auth/logout` — are same-origin and would be captured, so they
+ * navigate explicitly instead of being written as a link.
+ */
+function AriaRouting({ children }: { children: ReactNode }) {
+  const navigate = useNavigate();
+  const routerNavigate = useCallback(
+    (to: string, options?: { replace?: boolean }) => {
+      void navigate({ to, replace: options?.replace });
+    },
+    [navigate],
+  );
+  return (
+    <AriaRouterProvider navigate={routerNavigate}>
+      {children}
+    </AriaRouterProvider>
+  );
+}
+
 function RootDocument({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
@@ -85,7 +117,9 @@ function RootDocument({ children }: { children: ReactNode }) {
           ui.text,
         )}
       >
-        <div id="app">{children}</div>
+        <div id="app">
+          <AriaRouting>{children}</AriaRouting>
+        </div>
         <Scripts />
       </body>
     </html>

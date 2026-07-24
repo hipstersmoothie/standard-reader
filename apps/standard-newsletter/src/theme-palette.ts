@@ -6,8 +6,9 @@
  * `apps/standard-reader/src/server/digest/emails/theme.ts`, so a Standard
  * Newsletter email and a Standard Digest email read as the same product).
  *
- * Use `C` from `./theme` for anything rendered in the app — it is token-backed
- * and follows the theme. Reach for this module only where CSS variables cannot:
+ * For anything rendered in the app, style with StyleX against the design
+ * system's token modules (`theme/color.stylex` and friends) — those follow the
+ * theme. Reach for this module only where CSS variables cannot:
  *
  * - **Email HTML** — mail clients strip `<style>` and do not resolve `var()`.
  * - **Standalone `Response` pages** — `lib/html-page.ts` ships its own `<style>`

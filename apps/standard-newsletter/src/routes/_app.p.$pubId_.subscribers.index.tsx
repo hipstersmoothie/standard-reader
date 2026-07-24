@@ -14,6 +14,14 @@ import {
   SegmentedControlItem,
 } from "@standard-reader/design-system/segmented-control";
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableColumn,
+  TableHeader,
+  TableRow,
+} from "@standard-reader/design-system/table";
+import {
   primaryColor,
   uiColor,
 } from "@standard-reader/design-system/theme/color.stylex";
@@ -27,7 +35,6 @@ import {
   fontFamily,
   fontSize,
   fontWeight,
-  tracking,
 } from "@standard-reader/design-system/theme/typography.stylex";
 import * as stylex from "@stylexjs/stylex";
 import { useSuspenseQuery } from "@tanstack/react-query";
@@ -131,30 +138,15 @@ const styles = stylex.create({
   // reflowing as the segmented control's tab labels change width.
   search: { width: "260px" },
 
-  // Subscriber · Source · Opens · Joined. The two trailing columns are fixed so
-  // the right-aligned numbers stay in a column as the email column flexes.
-  grid: {
-    columnGap: gap["2xl"],
-    display: "grid",
-    gridTemplateColumns: "2fr 1fr 96px 120px",
-    rowGap: gap["2xl"],
+  table: {
+    width: "100%",
   },
-  gridHead: {
-    color: uiColor.text1,
-    fontSize: fontSize.xs,
-    letterSpacing: tracking.wider,
-    paddingBlockEnd: verticalSpace.lg,
-    paddingBlockStart: verticalSpace.lg,
-    paddingInlineEnd: horizontalSpace.xl,
-    paddingInlineStart: horizontalSpace.xl,
-    textTransform: "uppercase",
+  /** Right-aligns the Opens / Joined columns and their header labels. */
+  numericColumn: {
+    textAlign: "right",
   },
-  row: {
-    alignItems: "center",
-    paddingBlockEnd: verticalSpace.xl,
-    paddingBlockStart: verticalSpace.xl,
-    paddingInlineEnd: horizontalSpace.xl,
-    paddingInlineStart: horizontalSpace.xl,
+  numericCell: {
+    justifyItems: "end",
   },
   identity: {
     alignItems: "center",
@@ -347,28 +339,35 @@ function Subscribers() {
               </span>
             </div>
 
-            <div {...stylex.props(common.ruleBelow)}>
-              <div
-                {...stylex.props(
-                  common.ruleAbove,
-                  styles.grid,
-                  styles.gridHead,
+            {/* A real table: four columns of one kind of record. That gets the
+                grid/rowheader semantics, column-header association, and arrow-key
+                navigation from react-aria instead of a CSS grid of divs. */}
+            <Table aria-label={`${data?.name} subscribers`} style={styles.table}>
+              <TableHeader variant="plain">
+                <TableColumn id="subscriber" isRowHeader>
+                  Subscriber
+                </TableColumn>
+                <TableColumn id="source">Source</TableColumn>
+                <TableColumn id="opens" style={styles.numericColumn}>
+                  Opens
+                </TableColumn>
+                <TableColumn id="joined" style={styles.numericColumn}>
+                  Joined
+                </TableColumn>
+              </TableHeader>
+              <TableBody<SubscriberRowData>
+                items={rows}
+                renderEmptyState={() => (
+                  <div {...stylex.props(styles.noMatch)}>
+                    No subscribers match “{q}”.
+                  </div>
                 )}
               >
-                <span>Subscriber</span>
-                <span>Source</span>
-                <span {...stylex.props(styles.joined)}>Opens</span>
-                <span {...stylex.props(styles.joined)}>Joined</span>
-              </div>
-              {rows.map((s) => (
-                <SubscriberRow key={s.email} s={s} />
-              ))}
-              {rows.length === 0 ? (
-                <div {...stylex.props(common.ruleAbove, styles.noMatch)}>
-                  No subscribers match “{q}”.
-                </div>
-              ) : null}
-            </div>
+                {(s: SubscriberRowData) => (
+                  <SubscriberRow key={s.email} s={s} />
+                )}
+              </TableBody>
+            </Table>
           </>
         )}
       </div>
@@ -378,49 +377,55 @@ function Subscribers() {
 
 function SubscriberRow({ s }: { s: SubscriberRowData }) {
   return (
-    <div
-      {...stylex.props(common.ruleAbove, styles.grid, styles.row)}
-    >
-      <div {...stylex.props(styles.identity)}>
-        <Avatar
-          size="sm"
-          alt=""
-          fallback={emailName(s.email).charAt(0).toUpperCase()}
-        />
-        <div {...stylex.props(common.flexFill)}>
-          <div {...stylex.props(styles.nameLine)}>
-            <span {...stylex.props(styles.email, common.truncate)}>
-              {s.email}
-            </span>
-            {s.status === "unsubscribed" ? (
-              <Badge size="sm" variant="critical">
-                Unsubbed
-              </Badge>
-            ) : null}
-            {s.status === "pending" ? (
-              <Badge size="sm" variant="warning">
-                Pending
-              </Badge>
+    <TableRow id={s.email}>
+      <TableCell>
+        <div {...stylex.props(styles.identity)}>
+          <Avatar
+            size="sm"
+            alt=""
+            fallback={emailName(s.email).charAt(0).toUpperCase()}
+          />
+          <div {...stylex.props(common.flexFill)}>
+            <div {...stylex.props(styles.nameLine)}>
+              <span {...stylex.props(styles.email, common.truncate)}>
+                {s.email}
+              </span>
+              {s.status === "unsubscribed" ? (
+                <Badge size="sm" variant="critical">
+                  Unsubbed
+                </Badge>
+              ) : null}
+              {s.status === "pending" ? (
+                <Badge size="sm" variant="warning">
+                  Pending
+                </Badge>
+              ) : null}
+            </div>
+            {s.did ? (
+              <div {...stylex.props(styles.did, common.truncate)}>{s.did}</div>
             ) : null}
           </div>
-          {s.did ? (
-            <div {...stylex.props(styles.did, common.truncate)}>{s.did}</div>
-          ) : null}
         </div>
-      </div>
-      <span {...stylex.props(styles.source)}>
-        {SOURCE_LABEL[s.source] ?? s.source}
-      </span>
-      <span
-        {...stylex.props(
-          styles.numeric,
-          s.openRate === null ? styles.numericMuted : styles.numericStrong,
-        )}
-      >
-        {s.openRate === null ? "—" : `${s.openRate}%`}
-      </span>
-      <span {...stylex.props(styles.joined)}>{s.joined}</span>
-    </div>
+      </TableCell>
+      <TableCell>
+        <span {...stylex.props(styles.source)}>
+          {SOURCE_LABEL[s.source] ?? s.source}
+        </span>
+      </TableCell>
+      <TableCell style={styles.numericCell}>
+        <span
+          {...stylex.props(
+            styles.numeric,
+            s.openRate === null ? styles.numericMuted : styles.numericStrong,
+          )}
+        >
+          {s.openRate === null ? "—" : `${s.openRate}%`}
+        </span>
+      </TableCell>
+      <TableCell style={styles.numericCell}>
+        <span {...stylex.props(styles.joined)}>{s.joined}</span>
+      </TableCell>
+    </TableRow>
   );
 }
 

@@ -14,8 +14,8 @@ import * as stylex from "@stylexjs/stylex";
  * Without these overrides the design system falls back to its stock palette,
  * whose `primaryColor` is **pink** — that is what made the newsletter's primary
  * buttons pink instead of terracotta. Applied once on `<body>` in `__root.tsx`
- * so every design-system component *and* every `C.*` token below resolves
- * against it (portalled popovers included).
+ * so every design-system component *and* every `stylex.create` block in the app
+ * resolves against it (portalled popovers included).
  *
  * The values are `light-dark()` pairs, but `src/styles.css` pins
  * `color-scheme: light` — the newsletter chrome is light-only for now, so the
