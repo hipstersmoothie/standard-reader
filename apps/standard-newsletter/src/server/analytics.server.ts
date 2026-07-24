@@ -23,6 +23,7 @@ import { and, desc, eq, inArray } from "drizzle-orm";
 
 import type { Publication, PublicationTheme, Send } from "../data/publications";
 import { getDb } from "../db/index.server";
+import { PALETTE } from "../theme-palette";
 import { loadSendMetrics } from "./send-events.server";
 import type { DocSendMetrics } from "./send-events.server";
 
@@ -70,11 +71,17 @@ export async function loadPublicationSummary(
   };
 }
 
+/**
+ * Fallback for publications whose theme columns are null. These are concrete
+ * colors, not CSS variables: they are stored/served as data and also end up in
+ * email HTML, where `var()` does not resolve. Sourced from the editorial hex
+ * mirror so an unthemed publication matches the site.
+ */
 const DEFAULT_THEME = {
-  background: "#fcf9f5",
-  foreground: "#3e332e",
-  accent: "#ad7f58",
-  accentForeground: "#ffffff",
+  background: PALETTE.card,
+  foreground: PALETTE.ink,
+  accent: PALETTE.accent,
+  accentForeground: PALETTE.accentForeground,
 };
 
 /** Stable 32-bit hash for deterministic synthetic metrics. */

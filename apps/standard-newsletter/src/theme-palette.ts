@@ -2,11 +2,11 @@
  * The editorial light palette, flattened to hex.
  *
  * These mirror the light-mode values of `editorialUi` / `editorialPrimary` in
- * `./editorial` (and match Standard Reader's email palette in
+ * `./theme-editorial` (and match Standard Reader's email palette in
  * `apps/standard-reader/src/server/digest/emails/theme.ts`, so a Standard
  * Newsletter email and a Standard Digest email read as the same product).
  *
- * Use `C` from `./index` for anything rendered in the app — it is token-backed
+ * Use `C` from `./theme` for anything rendered in the app — it is token-backed
  * and follows the theme. Reach for this module only where CSS variables cannot:
  *
  * - **Email HTML** — mail clients strip `<style>` and do not resolve `var()`.

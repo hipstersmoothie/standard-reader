@@ -7,7 +7,7 @@ import {
   publicationsQueryOptions,
   settingsQueryOptions,
 } from "../server/analytics";
-import { C, sectLabel } from "../theme";
+import { C, NEG, POS, sectLabel } from "../theme";
 
 export const Route = createFileRoute("/_app/settings")({
   loader: async ({ context }) => {
@@ -110,7 +110,7 @@ function ImportSubscribers() {
               fontFamily: C.sans,
               fontSize: 14,
               fontWeight: 600,
-              color: "#fff",
+              color: C.onAccent,
               background: C.a9,
               border: "none",
               borderRadius: 10,
@@ -123,12 +123,12 @@ function ImportSubscribers() {
             {state === "importing" ? "Importing…" : "Import"}
           </button>
           {state === "done" ? (
-            <span style={{ fontSize: 13, color: "#3f7d4e" }}>
+            <span style={{ fontSize: 13, color: POS }}>
               Imported — {count} active subscriber{count === 1 ? "" : "s"}.
             </span>
           ) : null}
           {state === "error" ? (
-            <span style={{ fontSize: 13, color: "#a33a2a" }}>
+            <span style={{ fontSize: 13, color: NEG }}>
               Import failed. Check that HappyView is configured and you own this
               publication.
             </span>
@@ -227,7 +227,7 @@ function Settings() {
               value={
                 <span
                   style={{
-                    color: data.sending.resendConfigured ? "#3f7d4e" : C.mut,
+                    color: data.sending.resendConfigured ? POS : C.mut,
                     fontWeight: 600,
                   }}
                 >

@@ -3,7 +3,7 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 
 import { getPublicationSummary } from "../server/analytics";
-import { C } from "../theme";
+import { C, NEG } from "../theme";
 
 export const Route = createFileRoute("/subscribe/$pubId")({
   loader: async ({ params }) => {
@@ -202,7 +202,7 @@ function Subscribe() {
                 {status === "submitting" ? "Subscribing…" : "Subscribe"}
               </button>
               {status === "error" ? (
-                <p style={{ fontSize: 13, color: "#a33a2a", marginTop: 12 }}>
+                <p style={{ fontSize: 13, color: NEG, marginTop: 12 }}>
                   Something went wrong. Please check the address and try again.
                 </p>
               ) : null}

@@ -25,6 +25,8 @@ import {
 import { DocumentEmailBody } from "@standard-reader/renderer-email";
 import type { StandardSiteDocument } from "@standard-reader/renderer-email";
 
+import { PALETTE, PALETTE_FONTS } from "../../../theme-palette";
+
 export interface NewsletterEmailProps {
   publicationName: string;
   title: string;
@@ -37,24 +39,29 @@ export interface NewsletterEmailProps {
   unsubscribeUrl: string;
 }
 
-const main = { backgroundColor: "#faf9f7", fontFamily: "Georgia, serif" };
+// Mail clients do not resolve CSS variables, so email styling reads the
+// flattened hex mirror of the editorial theme rather than the `C` tokens.
+const main = {
+  backgroundColor: PALETTE.card,
+  fontFamily: PALETTE_FONTS.serif,
+};
 const container = { maxWidth: "560px", margin: "0 auto", padding: "32px 24px" };
 const masthead = {
   fontSize: "14px",
   letterSpacing: "0.08em",
   textTransform: "uppercase" as const,
-  color: "#8a817c",
+  color: PALETTE.muted,
   margin: "0 0 24px",
 };
 const heading = { fontSize: "28px", lineHeight: "1.2", margin: "0 0 16px" };
 const paragraph = {
   fontSize: "17px",
   lineHeight: "1.6",
-  color: "#3e332e",
+  color: PALETTE.ink,
   margin: "0 0 16px",
 };
-const footer = { fontSize: "13px", color: "#8a817c", lineHeight: "1.6" };
-const link = { color: "#8a817c", textDecoration: "underline" };
+const footer = { fontSize: "13px", color: PALETTE.muted, lineHeight: "1.6" };
+const link = { color: PALETTE.accentInk, textDecoration: "underline" };
 
 function FallbackBody({ textContent }: { textContent: string | null }) {
   const paras = (textContent ?? "")
@@ -96,7 +103,7 @@ export function NewsletterEmail({
         <Container style={container}>
           <Text style={masthead}>{publicationName}</Text>
           <Heading style={heading}>
-            <Link href={canonicalUrl} style={{ color: "#1a1a1a" }}>
+            <Link href={canonicalUrl} style={{ color: PALETTE.ink }}>
               {title}
             </Link>
           </Heading>
@@ -107,7 +114,7 @@ export function NewsletterEmail({
               <FallbackBody textContent={textContent} />
             )}
           </Section>
-          <Hr style={{ borderColor: "#e7e2dd", margin: "32px 0 16px" }} />
+          <Hr style={{ borderColor: PALETTE.line, margin: "32px 0 16px" }} />
           <Text style={footer}>
             You’re receiving this because you subscribe to {publicationName}.{" "}
             <Link href={unsubscribeUrl} style={link}>

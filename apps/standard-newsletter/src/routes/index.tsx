@@ -96,7 +96,7 @@ function Home() {
           position: "sticky",
           top: 0,
           zIndex: 10,
-          background: "color-mix(in srgb, #f5f1ea 88%, transparent)",
+          background: `color-mix(in srgb, ${C.pageBg} 88%, transparent)`,
           backdropFilter: "saturate(1.1) blur(10px)",
           borderBottom: `1px solid ${C.b6}`,
         }}
@@ -236,7 +236,7 @@ function Home() {
                     border: `1px solid ${C.b6}`,
                     borderRadius: 12,
                     padding: "10px 14px 10px 10px",
-                    boxShadow: "0 10px 30px -20px rgba(40,30,20,0.5)",
+                    boxShadow: `0 10px 30px -20px color-mix(in srgb, ${C.ink} 50%, transparent)`,
                     animationDelay: `${i * 0.09}s`,
                   }}
                 >
@@ -264,11 +264,11 @@ function Home() {
                 height: 108,
                 borderRadius: 22,
                 background: C.a9,
-                color: "#fff",
+                color: C.onAccent,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                boxShadow: "0 22px 44px -18px rgba(173,127,88,0.75)",
+                boxShadow: `0 22px 44px -18px color-mix(in srgb, ${C.a9} 75%, transparent)`,
               }}
             >
               <Ico d={I.mail} s={52} w={1.5} />

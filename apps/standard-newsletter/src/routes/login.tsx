@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { C } from "../theme";
+import { C, NEG, NEG_BG, NEG_BORDER } from "../theme";
 
 export const Route = createFileRoute("/login")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -67,9 +67,9 @@ function Login() {
           <div
             style={{
               fontSize: 13,
-              color: "#a33a2a",
-              background: "#f7e9e6",
-              border: "1px solid #e6cdc7",
+              color: NEG,
+              background: NEG_BG,
+              border: `1px solid ${NEG_BORDER}`,
               borderRadius: 10,
               padding: "9px 12px",
               marginBottom: 16,
@@ -118,7 +118,7 @@ function Login() {
             fontFamily: C.sans,
             fontSize: 15,
             fontWeight: 600,
-            color: "#fff",
+            color: C.onAccent,
             background: C.a9,
             border: "none",
             borderRadius: 10,
