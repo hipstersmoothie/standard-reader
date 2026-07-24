@@ -7,6 +7,7 @@ import {
   articleBodyStyles,
   IFRAME_FRAME_BORDER_WIDTH,
 } from "../../body-styles";
+import { parsePixelDimension } from "./iframe-dimensions";
 
 const DEFAULT_ASPECT_RATIO = "16 / 9";
 
@@ -26,17 +27,6 @@ function iframeReferrerPolicy(url: string): React.HTMLAttributeReferrerPolicy {
   return needsReferrer ? "strict-origin-when-cross-origin" : "no-referrer";
 }
 
-function parseDimension(
-  value: string | number | undefined,
-): number | undefined {
-  if (typeof value === "number" && value > 0) return value;
-  if (typeof value === "string") {
-    const parsed = Number.parseFloat(value);
-    if (Number.isFinite(parsed) && parsed > 0) return parsed;
-  }
-  return undefined;
-}
-
 export function IframeEmbedView({
   url,
   height,
@@ -50,10 +40,10 @@ export function IframeEmbedView({
 
   if (!url.trim()) return null;
 
-  const ratioWidth = parseDimension(aspectRatio?.width);
-  const ratioHeight = parseDimension(aspectRatio?.height);
+  const ratioWidth = parsePixelDimension(aspectRatio?.width);
+  const ratioHeight = parsePixelDimension(aspectRatio?.height);
   const hasRatio = ratioWidth != null && ratioHeight != null;
-  const fixedHeight = parseDimension(height);
+  const fixedHeight = parsePixelDimension(height);
 
   // A declared aspect ratio means the embed should scale with the fluid
   // column width (e.g. a 16:9 video); a bare height with no ratio means the
@@ -106,8 +96,11 @@ export function MarkdownIframeEmbed({
   width?: string | number | null;
   height?: string | number | null;
 }) {
-  const embedWidth = parseDimension(width ?? undefined);
-  const embedHeight = parseDimension(height ?? undefined);
+  // Only a pixel width pairs with the height to form a real aspect ratio.
+  // `width="100%"` is a fluid-width hint, not a ratio numerator — treating it
+  // as one renders e.g. `width="100%" height="200"` at 2x the column width.
+  const embedWidth = parsePixelDimension(width);
+  const embedHeight = parsePixelDimension(height);
 
   return (
     <IframeEmbedView
