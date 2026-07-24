@@ -23,7 +23,7 @@ was scaffolded with npm and later switched to pnpm: `package-lock.json` was remo
 
 ## Auth
 
-To auth to apps use PERF_TEST_IDENTIFIER and PERF_TEST_Password.
+To auth to apps use PERF_TEST_IDENTIFIER and PERF_TEST_APP_PASSWORD. 
 
 ## Living docs — keep these current as we work
 

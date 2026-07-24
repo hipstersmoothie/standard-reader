@@ -17,10 +17,10 @@ import * as stylex from "@stylexjs/stylex";
  * so every design-system component *and* every `stylex.create` block in the app
  * resolves against it (portalled popovers included).
  *
- * The values are `light-dark()` pairs, but `src/styles.css` pins
- * `color-scheme: light` — the newsletter chrome is light-only for now, so the
- * light branch always wins. Supporting dark mode later is a matter of relaxing
- * that one declaration; nothing here needs to change.
+ * The values are `light-dark()` pairs, and which branch wins is decided
+ * entirely by `color-scheme` on <html>: `src/styles.css` defaults it to
+ * `light dark` (follow the OS) and an explicit choice from the user menu pins
+ * it to one or the other (`src/lib/theme.ts`). Nothing here is scheme-aware.
  */
 
 /** Warm paper + ink neutrals (light) / warm night reading surfaces (dark). */

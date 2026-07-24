@@ -3,6 +3,7 @@ import {
   Menu,
   MenuItem,
   MenuSeparator,
+  SubMenu,
 } from "@standard-reader/design-system/menu";
 import {
   focusColor,
@@ -24,13 +25,31 @@ import {
 } from "@standard-reader/design-system/theme/typography.stylex";
 import * as stylex from "@stylexjs/stylex";
 import { Link } from "@tanstack/react-router";
-import { LayoutGrid, LogOut, Plus, Settings, User } from "lucide-react";
+import { LayoutGrid, LogOut, Monitor, Moon, Plus, Sun } from "lucide-react";
+import type { Selection } from "react-aria-components";
 import { Button as AriaButton } from "react-aria-components";
 
 import type { Publication } from "../data/publications";
 import { kfmt } from "../lib/format";
+import type { ThemeMode } from "../lib/theme";
+import { isThemeMode } from "../lib/theme";
+import { useThemeMode } from "../lib/use-theme-mode";
 import type { ViewerData } from "../server/analytics";
 import { PubGlyph } from "./ui";
+
+/**
+ * The theme choices, in the order they read as a scale: the two explicit
+ * schemes, then handing the choice back to the OS.
+ */
+const THEME_OPTIONS: ReadonlyArray<{
+  mode: ThemeMode;
+  label: string;
+  icon: typeof Sun;
+}> = [
+  { mode: "light", label: "Light", icon: Sun },
+  { mode: "dark", label: "Dark", icon: Moon },
+  { mode: "system", label: "System", icon: Monitor },
+];
 
 function initialsOf(name: string): string {
   return (
@@ -309,6 +328,15 @@ export function AppSidebar({
 }) {
   const displayName = viewer.displayName;
   const handleLine = viewer.handle ? `@${viewer.handle}` : viewer.did;
+  const [themeMode, chooseThemeMode] = useThemeMode();
+
+  // Single-selection menus hand back a `Set`; `disallowEmptySelection` means it
+  // always holds exactly one of our three keys.
+  const onThemeSelectionChange = (keys: Selection) => {
+    const [key] = [...keys];
+    if (isThemeMode(key)) chooseThemeMode(key);
+  };
+
   return (
     <aside {...stylex.props(styles.sidebar)}>
       <div {...stylex.props(styles.sidebarScroll)}>
@@ -385,20 +413,26 @@ export function AppSidebar({
             </AriaButton>
           }
         >
-          <MenuItem
-            href={
-              viewer?.handle
-                ? `https://bsky.app/profile/${viewer.handle}`
-                : undefined
-            }
-            target="_blank"
-            suffix={<User size={17} />}
+          {/* The trigger carries no icon — its submenu chevron already says
+              what the row does, and the scheme icons belong to the choices. */}
+          <SubMenu
+            trigger={<MenuItem>Theme</MenuItem>}
+            aria-label="Theme"
+            selectionMode="single"
+            disallowEmptySelection
+            selectedKeys={[themeMode]}
+            onSelectionChange={onThemeSelectionChange}
           >
-            View profile
-          </MenuItem>
-          <MenuItem href="/settings" suffix={<Settings size={17} />}>
-            Settings
-          </MenuItem>
+            {THEME_OPTIONS.map((option) => (
+              <MenuItem
+                key={option.mode}
+                id={option.mode}
+                prefix={<option.icon size={17} />}
+              >
+                {option.label}
+              </MenuItem>
+            ))}
+          </SubMenu>
           <MenuSeparator />
           {/* Not a route: `/api/auth/logout` clears the session cookie and
               redirects. That has to be a real document navigation — routing to

@@ -7,10 +7,15 @@ import {
   createRootRouteWithContext,
   useNavigate,
 } from "@tanstack/react-router";
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import type { ReactNode } from "react";
 import { RouterProvider as AriaRouterProvider } from "react-aria-components";
 
+import {
+  THEME_PREPAINT_SCRIPT,
+  applyThemeMode,
+  readStoredThemeMode,
+} from "../lib/theme";
 import {
   editorialFonts,
   editorialPrimary,
@@ -65,6 +70,11 @@ export const Route = createRootRouteWithContext<RouterContext>()({
         ? { rel: "stylesheet", href: "/virtual:stylex.css" }
         : null,
     ].filter((link) => link !== null),
+    // Replays the stored light/dark choice onto `color-scheme` before the body
+    // paints. SSR can't know the preference, so the markup ships as "system"
+    // and this corrects it synchronously — no white flash on the way into a
+    // dark-mode session.
+    scripts: [{ children: THEME_PREPAINT_SCRIPT }],
   }),
   shellComponent: RootDocument,
 });
@@ -99,8 +109,16 @@ function AriaRouting({ children }: { children: ReactNode }) {
 }
 
 function RootDocument({ children }: { children: ReactNode }) {
+  // The pre-paint script already set `color-scheme` on <html>, but that is an
+  // attribute React did not render — hydrating the document element wipes it.
+  // Re-applying here (and suppressing the mismatch below) makes the choice
+  // survive hydration; the script is still what prevents the flash before it.
+  useEffect(() => {
+    applyThemeMode(readStoredThemeMode());
+  }, []);
+
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>

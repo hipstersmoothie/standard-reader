@@ -5,12 +5,12 @@
 }
 
 html {
-  /* The editorial theme's values are `light-dark()` pairs (copied verbatim from
-     Standard Reader, which supports both). The newsletter chrome is light-only
-     for now, so pin the scheme and the light branch always wins. Supporting
-     dark mode later means relaxing this one declaration — the theme and the
-     token-backed `C` palette in `src/theme` already carry the dark values. */
-  color-scheme: light;
+  /* The editorial theme's values are `light-dark()` pairs, so this declaration
+     is the whole light/dark switch. Naming both schemes is the "system" default:
+     the browser picks from the OS preference. An explicit choice is replayed
+     onto the inline style in <head> before first paint (`lib/theme.ts`), which
+     wins over this. */
+  color-scheme: light dark;
 }
 
 html,

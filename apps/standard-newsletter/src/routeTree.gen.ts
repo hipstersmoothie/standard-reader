@@ -14,7 +14,6 @@ import { Route as AppRouteImport } from './routes/_app'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppConnectRouteImport } from './routes/_app.connect'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
-import { Route as AppSettingsRouteImport } from './routes/_app.settings'
 import { Route as ApiResendWebhookRouteImport } from './routes/api.resend-webhook'
 import { Route as ApiSubscribeRouteImport } from './routes/api/subscribe'
 import { Route as SubscribePubIdRouteImport } from './routes/subscribe.$pubId'
@@ -57,11 +56,6 @@ const AppConnectRoute = AppConnectRouteImport.update({
 const AppDashboardRoute = AppDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppSettingsRoute = AppSettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
   getParentRoute: () => AppRoute,
 } as any)
 const ApiResendWebhookRoute = ApiResendWebhookRouteImport.update({
@@ -171,7 +165,6 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/connect': typeof AppConnectRoute
   '/dashboard': typeof AppDashboardRoute
-  '/settings': typeof AppSettingsRoute
   '/api/resend-webhook': typeof ApiResendWebhookRoute
   '/api/subscribe': typeof ApiSubscribeRoute
   '/subscribe/$pubId': typeof SubscribePubIdRoute
@@ -197,7 +190,6 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/connect': typeof AppConnectRoute
   '/dashboard': typeof AppDashboardRoute
-  '/settings': typeof AppSettingsRoute
   '/api/resend-webhook': typeof ApiResendWebhookRoute
   '/api/subscribe': typeof ApiSubscribeRoute
   '/subscribe/$pubId': typeof SubscribePubIdRoute
@@ -225,7 +217,6 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_app/connect': typeof AppConnectRoute
   '/_app/dashboard': typeof AppDashboardRoute
-  '/_app/settings': typeof AppSettingsRoute
   '/api/resend-webhook': typeof ApiResendWebhookRoute
   '/api/subscribe': typeof ApiSubscribeRoute
   '/subscribe/$pubId': typeof SubscribePubIdRoute
@@ -253,7 +244,6 @@ export interface FileRouteTypes {
     | '/login'
     | '/connect'
     | '/dashboard'
-    | '/settings'
     | '/api/resend-webhook'
     | '/api/subscribe'
     | '/subscribe/$pubId'
@@ -279,7 +269,6 @@ export interface FileRouteTypes {
     | '/login'
     | '/connect'
     | '/dashboard'
-    | '/settings'
     | '/api/resend-webhook'
     | '/api/subscribe'
     | '/subscribe/$pubId'
@@ -306,7 +295,6 @@ export interface FileRouteTypes {
     | '/login'
     | '/_app/connect'
     | '/_app/dashboard'
-    | '/_app/settings'
     | '/api/resend-webhook'
     | '/api/subscribe'
     | '/subscribe/$pubId'
@@ -383,13 +371,6 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof AppDashboardRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/settings': {
-      id: '/_app/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof AppSettingsRouteImport
       parentRoute: typeof AppRoute
     }
     '/api/resend-webhook': {
@@ -531,7 +512,6 @@ declare module '@tanstack/react-router' {
 interface AppRouteChildren {
   AppConnectRoute: typeof AppConnectRoute
   AppDashboardRoute: typeof AppDashboardRoute
-  AppSettingsRoute: typeof AppSettingsRoute
   AppPPubIdRoute: typeof AppPPubIdRoute
   AppPPubIdSendPathRoute: typeof AppPPubIdSendPathRoute
   AppPPubIdSettingsRoute: typeof AppPPubIdSettingsRoute
@@ -542,7 +522,6 @@ interface AppRouteChildren {
 const AppRouteChildren: AppRouteChildren = {
   AppConnectRoute: AppConnectRoute,
   AppDashboardRoute: AppDashboardRoute,
-  AppSettingsRoute: AppSettingsRoute,
   AppPPubIdRoute: AppPPubIdRoute,
   AppPPubIdSendPathRoute: AppPPubIdSendPathRoute,
   AppPPubIdSettingsRoute: AppPPubIdSettingsRoute,
