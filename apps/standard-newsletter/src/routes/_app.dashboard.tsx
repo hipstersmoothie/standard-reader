@@ -22,7 +22,6 @@ import { common } from "../common-styles";
 import { AreaChart } from "../components/charts";
 import { I, Ico, icon } from "../components/icons";
 import { Delta, PubGlyph } from "../components/ui";
-import { MONTHS } from "../data/publications";
 import { fmt } from "../lib/format";
 import { publicationsQueryOptions } from "../server/analytics";
 
@@ -283,9 +282,14 @@ function Dashboard() {
     weight > 0
       ? sentPubs.reduce((s, p) => s + p.clickRate * p.subs, 0) / weight
       : 0;
-  // No historical subscriber timeseries in the read model, so there's no
-  // growth chart to draw (rather than a fabricated curve).
-  const hasGrowth = pubs.some((p) => p.growth.length > 0);
+  // Every publication's series covers the same twelve months, so the totals
+  // line up index for index. An all-zero series is nothing to draw — a flat
+  // line along the axis reads as data.
+  const growthMonths = pubs[0]?.growth ?? [];
+  const growthTotals = growthMonths.map((_, i) =>
+    pubs.reduce((sum, p) => sum + (p.growth[i]?.subscribers ?? 0), 0),
+  );
+  const hasGrowth = growthTotals.some((v) => v > 0);
 
   const kpis: Array<{
     icon: string;
@@ -373,11 +377,9 @@ function Dashboard() {
               </div>
             </div>
             <AreaChart
-              data={MONTHS.map((_, i) =>
-                pubs.reduce((s, p) => s + (p.growth[i] ?? 0), 0),
-              )}
+              data={growthTotals}
               h={180}
-              labels={MONTHS}
+              labels={growthMonths.map((g) => g.month)}
             />
           </div>
         ) : null}

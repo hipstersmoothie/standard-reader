@@ -8,11 +8,11 @@
  * list** (`newsletter_subscribers`, confirmed rows) — deliberately NOT the
  * standard.site follower count in `publication_stats`, which is a different
  * audience. Delivery metrics (opens/clicks/unsubscribes/bounces, recipients)
- * come from the send pipeline via `loadSendMetrics`. Nothing is fabricated — a
- * post that hasn't been mailed contributes no `Send`, so a publication with no
- * sends reports zeros and empty states rather than invented numbers. The read
- * model has no historical subscriber-growth series, so `growth` is empty until
- * such a timeseries exists.
+ * come from the send pipeline via `loadSendMetrics`, and `growth` is the list's
+ * real month-by-month size from subscriber signup/unsubscribe timestamps (see
+ * `loadSubscriberGrowth`). Nothing is fabricated — a post that hasn't been
+ * mailed contributes no `Send`, so a publication with no sends reports zeros
+ * and empty states rather than invented numbers.
  */
 
 import {
@@ -21,9 +21,15 @@ import {
   newsletterSubscribers,
   publications,
 } from "@standard-reader/db/schema";
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNotNull, sql } from "drizzle-orm";
+import { unionAll } from "drizzle-orm/pg-core";
 
-import type { Publication, PublicationTheme, Send } from "../data/publications";
+import type {
+  GrowthPoint,
+  Publication,
+  PublicationTheme,
+  Send,
+} from "../data/publications";
 import { getDb } from "../db/index.server";
 import { publicationIconUrl } from "../lib/blob";
 import { PALETTE } from "../theme-palette";
@@ -159,6 +165,109 @@ function toSend(doc: DocRow, metrics: DocSendMetrics): Send {
   };
 }
 
+/** Months in the subscriber-growth series. */
+const GROWTH_MONTHS = 12;
+
+/** The series' buckets, oldest first: a sortable `YYYY-MM` key and its label. */
+function growthWindow(now: Date): Array<{ key: string; label: string }> {
+  const months: Array<{ key: string; label: string }> = [];
+  for (let i = GROWTH_MONTHS - 1; i >= 0; i--) {
+    const start = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1),
+    );
+    const month = String(start.getUTCMonth() + 1).padStart(2, "0");
+    months.push({
+      key: `${start.getUTCFullYear()}-${month}`,
+      label: start.toLocaleDateString("en-US", {
+        month: "short",
+        timeZone: "UTC",
+      }),
+    });
+  }
+  return months;
+}
+
+/**
+ * The real size of each publication's list at the end of each of the last 12
+ * months, from the timestamps on `newsletter_subscribers`: a subscriber who
+ * ever confirmed is +1 in the month they joined and −1 in the month they
+ * unsubscribed, so a running total is the list as it actually stood.
+ *
+ * The total opens with everything that happened *before* the window, so a list
+ * older than a year carries its history in, and the final point equals the
+ * confirmed count on the KPI cards. Publications with no subscribers get a flat
+ * zero series, which the screens read as "no chart to draw".
+ */
+async function loadSubscriberGrowth(
+  db: NonNullable<ReturnType<typeof getDb>>,
+  uris: Array<string>,
+  now: Date,
+): Promise<Map<string, Array<GrowthPoint>>> {
+  const ofThisList = inArray(newsletterSubscribers.publicationUri, uris);
+  // `confirmed_at` has only been written since confirmation was introduced, so
+  // a legacy confirmed row falls back to when it was created. A row that went
+  // pending → unsubscribed never counted, and must not subtract.
+  const everConfirmed = sql`(${newsletterSubscribers.confirmedAt} is not null or ${newsletterSubscribers.status} = 'confirmed')`;
+  const joinedMonth = sql<string>`to_char(date_trunc('month', coalesce(${newsletterSubscribers.confirmedAt}, ${newsletterSubscribers.createdAt}) at time zone 'UTC'), 'YYYY-MM')`;
+  const leftMonth = sql<string>`to_char(date_trunc('month', ${newsletterSubscribers.unsubscribedAt} at time zone 'UTC'), 'YYYY-MM')`;
+
+  const joined = db
+    .select({
+      uri: newsletterSubscribers.publicationUri,
+      month: joinedMonth,
+      delta: sql<number>`count(*)::int`,
+    })
+    .from(newsletterSubscribers)
+    .where(and(ofThisList, everConfirmed))
+    .groupBy(newsletterSubscribers.publicationUri, joinedMonth);
+
+  const left = db
+    .select({
+      uri: newsletterSubscribers.publicationUri,
+      month: leftMonth,
+      delta: sql<number>`(0 - count(*))::int`,
+    })
+    .from(newsletterSubscribers)
+    .where(
+      and(
+        ofThisList,
+        everConfirmed,
+        isNotNull(newsletterSubscribers.unsubscribedAt),
+      ),
+    )
+    .groupBy(newsletterSubscribers.publicationUri, leftMonth);
+
+  const rows = await unionAll(joined, left);
+
+  const deltasByPub = new Map<string, Map<string, number>>();
+  for (const row of rows) {
+    const byMonth = deltasByPub.get(row.uri) ?? new Map<string, number>();
+    byMonth.set(row.month, (byMonth.get(row.month) ?? 0) + Number(row.delta));
+    deltasByPub.set(row.uri, byMonth);
+  }
+
+  const months = growthWindow(now);
+  const opensAt = months[0].key;
+  const out = new Map<string, Array<GrowthPoint>>();
+  for (const uri of uris) {
+    const byMonth = deltasByPub.get(uri);
+    let running = 0;
+    if (byMonth) {
+      for (const [month, delta] of byMonth) {
+        if (month < opensAt) running += delta;
+      }
+    }
+    out.set(
+      uri,
+      months.map(({ key, label }) => {
+        running += byMonth?.get(key) ?? 0;
+        return { month: label, subscribers: running };
+      }),
+    );
+  }
+  return out;
+}
+
 interface DocRow {
   uri: string;
   rkey: string;
@@ -221,15 +330,20 @@ export async function loadPublicationsFromDb(
   // `publication_stats`. A reader can follow the publication without being on
   // the email list, so those numbers are unrelated; a newly connected
   // publication has 0 email subscribers until people sign up.
-  const subCountRows = await db
-    .select({
-      publicationUri: newsletterSubscribers.publicationUri,
-      confirmed: sql<number>`(count(*) filter (where ${newsletterSubscribers.status} = 'confirmed'))::int`,
-      new7d: sql<number>`(count(*) filter (where ${newsletterSubscribers.status} = 'confirmed' and ${newsletterSubscribers.confirmedAt} >= now() - interval '7 days'))::int`,
-    })
-    .from(newsletterSubscribers)
-    .where(inArray(newsletterSubscribers.publicationUri, uris))
-    .groupBy(newsletterSubscribers.publicationUri);
+  const [subCountRows, growthByPub] = await Promise.all([
+    db
+      .select({
+        publicationUri: newsletterSubscribers.publicationUri,
+        confirmed: sql<number>`(count(*) filter (where ${newsletterSubscribers.status} = 'confirmed'))::int`,
+        new7d: sql<number>`(count(*) filter (where ${newsletterSubscribers.status} = 'confirmed' and ${newsletterSubscribers.confirmedAt} >= now() - interval '7 days'))::int`,
+      })
+      .from(newsletterSubscribers)
+      .where(inArray(newsletterSubscribers.publicationUri, uris))
+      .groupBy(newsletterSubscribers.publicationUri),
+    // Concurrent with the counts: the growth series reads the same table, so
+    // the page pays one round trip for both rather than two in sequence.
+    loadSubscriberGrowth(db, uris, new Date()),
+  ]);
   const subsByPub = new Map(subCountRows.map((r) => [r.publicationUri, r]));
   const docRows = await db
     .select({
@@ -305,9 +419,7 @@ export async function loadPublicationsFromDb(
       openRate: avgRate((s) => s.openRate),
       clickRate: avgRate((s) => s.clickRate),
       cadence: cadenceFromSends(sends.map((s) => s.sentAtMs)),
-      // No historical subscriber timeseries exists in the read model, so there
-      // is nothing to chart — an empty series, not a fabricated growth curve.
-      growth: [],
+      growth: growthByPub.get(p.uri) ?? [],
       sends,
       fromName: p.fromName,
       fromAddress: p.fromAddress,

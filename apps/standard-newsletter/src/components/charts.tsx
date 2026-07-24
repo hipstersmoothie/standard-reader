@@ -64,13 +64,16 @@ export function AreaChart({
   const pad = { t: 12, r: 6, b: labels ? 22 : 8, l: 6 };
   const min = Math.min(...data);
   const max = Math.max(...data);
-  const span = max - min || 1;
+  const span = max - min;
   const iw = W - pad.l - pad.r;
   const ih = h - pad.t - pad.b;
   const pts = data.map((v, i) => {
     const x =
       pad.l + (data.length === 1 ? iw / 2 : (i / (data.length - 1)) * iw);
-    const y = pad.t + ih - ((v - min) / span) * ih;
+    // A series that never moves has no span to scale against; it rides the
+    // middle rather than being pinned to the floor as if it were the minimum.
+    const y =
+      span === 0 ? pad.t + ih / 2 : pad.t + ih - ((v - min) / span) * ih;
     return [x, y] as const;
   });
   const line = pts

@@ -134,6 +134,17 @@ const styles = stylex.create({
   panelTitleSpaced: {
     marginBottom: verticalSpace["3xl"],
   },
+  /** Stands in for a chart or a list that has no readership behind it yet. */
+  panelEmpty: {
+    color: uiColor.text1,
+    fontFamily: fontFamily.serif,
+    fontSize: fontSize.sm,
+    fontStyle: "italic",
+    marginBlockEnd: 0,
+    marginBlockStart: 0,
+    paddingBlockEnd: verticalSpace["3xl"],
+    paddingBlockStart: verticalSpace["3xl"],
+  },
 
   links: {
     display: "flex",
@@ -163,6 +174,14 @@ const styles = stylex.create({
   },
 });
 
+/**
+ * `n` as a percentage of `total`, formatted. A send to an empty list has a zero
+ * denominator, which would otherwise print "NaN%" all down the summary row.
+ */
+function share(n: number, total: number, digits = 1): string {
+  return (total > 0 ? (n / total) * 100 : 0).toFixed(digits);
+}
+
 function SendDetail() {
   const { pubId, sendPath } = Route.useParams();
   const { data: pubs } = useSuspenseQuery(publicationsQueryOptions());
@@ -173,13 +192,11 @@ function SendDetail() {
   const delivered = send.delivered ?? send.recipients - send.bounces;
   const opens = Math.round((delivered * send.openRate) / 100);
   const clicks = Math.round((delivered * send.clickRate) / 100);
-  // Real cumulative-open curve when the send was recorded; else a modeled shape.
-  const curve =
-    send.opensByHour ??
-    Array.from({ length: 13 }, (_, i) => {
-      const x = i / 12;
-      return Math.round(opens * (1 - Math.exp(-3.2 * x)));
-    });
+  // The cumulative-open curve is recorded per send, so it exists as 13 zeros
+  // from the moment the send does. A flat line along the axis reads as data —
+  // with nothing to plot, the panel says so instead.
+  const curve = send.opensByHour ?? [];
+  const hasOpenCurve = curve.some((v) => v > 0);
   const hourLabels = [
     "0h",
     "",
@@ -195,15 +212,12 @@ function SendDetail() {
     "",
     "48h",
   ];
-  const links =
-    send.topLinks && send.topLinks.length > 0
-      ? send.topLinks.map((l) => ({ label: l.url, count: l.count }))
-      : [
-          { label: `${pub.url}/${send.path}`, share: 0.52 },
-          { label: `${pub.url}/subscribe`, share: 0.19 },
-          { label: "View in the Reader app", share: 0.16 },
-          { label: `${pub.url}/archive`, share: 0.13 },
-        ].map((l) => ({ label: l.label, count: Math.round(clicks * l.share) }));
+  // Only links someone actually clicked. With no click events there is no list
+  // — inventing plausible URLs would read as a report on mail nobody opened.
+  const links = (send.topLinks ?? []).map((l) => ({
+    label: l.url,
+    count: l.count,
+  }));
   const maxLink = Math.max(1, ...links.map((l) => l.count));
 
   return (
@@ -264,7 +278,7 @@ function SendDetail() {
           <BigStat
             label="Delivered"
             value={fmt(delivered)}
-            sub={`${((delivered / send.recipients) * 100).toFixed(1)}% of ${fmt(send.recipients)}`}
+            sub={`${share(delivered, send.recipients)}% of ${fmt(send.recipients)}`}
           />
           <BigStat
             label="Opens"
@@ -281,12 +295,12 @@ function SendDetail() {
           <BigStat
             label="Unsubscribes"
             value={fmt(send.unsubs)}
-            sub={`${((send.unsubs / send.recipients) * 100).toFixed(2)}%`}
+            sub={`${share(send.unsubs, send.recipients, 2)}%`}
           />
           <BigStat
             label="Bounced"
             value={fmt(send.bounces)}
-            sub={`${((send.bounces / send.recipients) * 100).toFixed(2)}%`}
+            sub={`${share(send.bounces, send.recipients, 2)}%`}
             tone="critical"
           />
         </div>
@@ -299,7 +313,13 @@ function SendDetail() {
                 First 48 hours
               </div>
             </div>
-            <AreaChart data={curve} h={168} labels={hourLabels} />
+            {hasOpenCurve ? (
+              <AreaChart data={curve} h={168} labels={hourLabels} />
+            ) : (
+              <p {...stylex.props(styles.panelEmpty)}>
+                No opens recorded for this send yet.
+              </p>
+            )}
           </div>
 
           <div {...stylex.props(common.card, styles.panel)}>
@@ -308,26 +328,32 @@ function SendDetail() {
             >
               Top links clicked
             </div>
-            <div {...stylex.props(styles.links)}>
-              {links.map((l) => (
-                <div key={l.label}>
-                  <div {...stylex.props(styles.linkHead)}>
-                    <span {...stylex.props(styles.linkUrl, common.truncate)}>
-                      {l.label}
-                    </span>
-                    <span
-                      {...stylex.props(styles.linkCount, common.flexNone)}
-                    >
-                      {fmt(l.count)}
-                    </span>
+            {links.length === 0 ? (
+              <p {...stylex.props(styles.panelEmpty)}>
+                No link clicks recorded for this send yet.
+              </p>
+            ) : (
+              <div {...stylex.props(styles.links)}>
+                {links.map((l) => (
+                  <div key={l.label}>
+                    <div {...stylex.props(styles.linkHead)}>
+                      <span {...stylex.props(styles.linkUrl, common.truncate)}>
+                        {l.label}
+                      </span>
+                      <span
+                        {...stylex.props(styles.linkCount, common.flexNone)}
+                      >
+                        {fmt(l.count)}
+                      </span>
+                    </div>
+                    <StatBar
+                      pct={(l.count / maxLink) * 100}
+                      label={`${l.label}: ${fmt(l.count)} clicks`}
+                    />
                   </div>
-                  <StatBar
-                    pct={(l.count / maxLink) * 100}
-                    label={`${l.label}: ${fmt(l.count)} clicks`}
-                  />
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

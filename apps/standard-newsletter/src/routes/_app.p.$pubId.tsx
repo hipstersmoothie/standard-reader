@@ -47,7 +47,6 @@ import { AreaChart } from "../components/charts";
 import { I, Ico, icon } from "../components/icons";
 import { Delta, PubGlyph, StatBar, StatCard } from "../components/ui";
 import type { Publication, Send } from "../data/publications";
-import { MONTHS } from "../data/publications";
 import { fmt } from "../lib/format";
 import {
   disconnectPublicationFn,
@@ -386,6 +385,8 @@ function PubAnalytics() {
   if (!pub) return null;
   const t = pub.theme;
   const hasSends = pub.sends.length > 0;
+  // An all-zero series is nothing to chart — a flat line reads as data.
+  const hasGrowth = pub.growth.some((g) => g.subscribers > 0);
   // A publication with no sends has no averages; averaging over zero of them is
   // NaN, and the cards show "—" rather than a fabricated rate.
   const avgUnsub = hasSends
@@ -483,7 +484,7 @@ function PubAnalytics() {
           />
         </div>
 
-        {pub.growth.length > 0 ? (
+        {hasGrowth ? (
           <div {...stylex.props(common.card, styles.growthCard)}>
             <div {...stylex.props(styles.cardHead)}>
               <div {...stylex.props(styles.cardTitle)}>Subscriber growth</div>
@@ -491,7 +492,11 @@ function PubAnalytics() {
                 Last 12 months
               </div>
             </div>
-            <AreaChart data={pub.growth} h={160} labels={MONTHS} />
+            <AreaChart
+              data={pub.growth.map((g) => g.subscribers)}
+              h={160}
+              labels={pub.growth.map((g) => g.month)}
+            />
           </div>
         ) : null}
 

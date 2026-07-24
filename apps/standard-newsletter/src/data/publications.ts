@@ -27,13 +27,21 @@ export interface Send {
   bounces: number;
   /**
    * Real delivery detail, present only when a send has been recorded (see
-   * newsletter_sends / newsletter_send_events). Absent on posts that haven't
-   * been mailed yet — the send report falls back to a modeled curve/links in
-   * that case.
+   * newsletter_sends / newsletter_send_events). Both stay empty — an all-zero
+   * curve, no links — until readers actually open and click, and the send
+   * report renders an empty state rather than a modeled curve or sample links.
    */
   delivered?: number;
   opensByHour?: Array<number>;
   topLinks?: Array<{ url: string; count: number }>;
+}
+
+/** One month of the subscriber-growth series. */
+export interface GrowthPoint {
+  /** Short month label, e.g. "Jul". */
+  month: string;
+  /** Net confirmed subscribers at the end of that month. */
+  subscribers: number;
 }
 
 export interface Publication {
@@ -53,7 +61,11 @@ export interface Publication {
   openRate: number;
   clickRate: number;
   cadence: string;
-  growth: Array<number>;
+  /**
+   * The list's real size at the end of each of the last 12 months, oldest
+   * first. Empty only when the publication has no subscriber history at all.
+   */
+  growth: Array<GrowthPoint>;
   sends: Array<Send>;
   /** Per-newsletter From display name, or null to use the instance default. */
   fromName: string | null;
@@ -61,17 +73,3 @@ export interface Publication {
   fromAddress: string | null;
 }
 
-export const MONTHS = [
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-];
