@@ -163,8 +163,9 @@ function Settings() {
             />
           </div>
           <p {...stylex.props(styles.note)}>
-            Sending identity is configured via environment for now (a verified
-            Resend sender domain). Per-publication sender settings are coming.
+            These are the instance defaults, configured via environment (a
+            verified Resend sender domain). A newsletter can override the From
+            name and address on its own settings page.
           </p>
         </div>
       </div>

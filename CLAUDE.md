@@ -21,6 +21,10 @@ extra feature scaffolding were selected — this is the default blank React star
 was scaffolded with npm and later switched to pnpm: `package-lock.json` was removed and
 `pnpm-lock.yaml` is the committed lockfile. Use `pnpm` for all installs/scripts.
 
+## Auth
+
+To auth to apps use PERF_TEST_IDENTIFIER and PERF_TEST_Password.
+
 ## Living docs — keep these current as we work
 
 This repo has two source-of-truth planning docs that **must be kept up to date as work happens**:

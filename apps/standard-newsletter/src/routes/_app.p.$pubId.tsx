@@ -1,20 +1,8 @@
-import {
-  AlertDialog,
-  AlertDialogActionButton,
-  AlertDialogCancelButton,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-} from "@standard-reader/design-system/alert-dialog";
-import { Button } from "@standard-reader/design-system/button";
 // The design system's `Link` for the one link that leaves the app; in-app
 // navigation goes through TanStack Router's `Link` below.
 import { Link as ExternalLink } from "@standard-reader/design-system/link";
-import { TextField } from "@standard-reader/design-system/text-field";
-import {
-  successColor,
-  uiColor,
-} from "@standard-reader/design-system/theme/color.stylex";
+import { animationDuration } from "@standard-reader/design-system/theme/animations.stylex";
+import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
 import {
   gap,
   horizontalSpace,
@@ -29,38 +17,22 @@ import {
   tracking,
 } from "@standard-reader/design-system/theme/typography.stylex";
 import * as stylex from "@stylexjs/stylex";
-import {
-  useMutation,
-  useQueryClient,
-  useSuspenseQuery,
-} from "@tanstack/react-query";
-import {
-  Link,
-  createFileRoute,
-  redirect,
-  useNavigate,
-} from "@tanstack/react-router";
-import { useState } from "react";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { Link, createFileRoute, redirect } from "@tanstack/react-router";
 
 import { common } from "../common-styles";
 import { AreaChart } from "../components/charts";
 import { I, Ico, icon } from "../components/icons";
 import { Delta, PubGlyph, StatBar, StatCard } from "../components/ui";
-import type { Publication, Send } from "../data/publications";
+import type { Send } from "../data/publications";
 import { fmt } from "../lib/format";
-import {
-  disconnectPublicationFn,
-  publicationsQueryOptions,
-  senderDefaultsQueryOptions,
-  updateSenderFn,
-} from "../server/analytics";
+import { publicationsQueryOptions } from "../server/analytics";
 
 export const Route = createFileRoute("/_app/p/$pubId")({
   loader: async ({ context, params }) => {
-    const [pubs] = await Promise.all([
-      context.queryClient.ensureQueryData(publicationsQueryOptions()),
-      context.queryClient.ensureQueryData(senderDefaultsQueryOptions()),
-    ]);
+    const pubs = await context.queryClient.ensureQueryData(
+      publicationsQueryOptions(),
+    );
     if (!pubs.some((p) => p.id === params.pubId)) {
       throw redirect({ to: "/dashboard" });
     }
@@ -126,7 +98,7 @@ const styles = stylex.create({
     display: "flex",
     rowGap: gap["3xl"],
   },
-  visitLink: {
+  mastheadLink: {
     alignItems: "center",
     // Inherits the masthead's own foreground, whatever the publication's theme
     // set it to.
@@ -134,9 +106,11 @@ const styles = stylex.create({
     columnGap: gap.sm,
     display: "inline-flex",
     fontSize: fontSize.sm,
-    opacity: 0.75,
+    opacity: { default: 0.75, ":hover": 1 },
     rowGap: gap.sm,
     textDecoration: "none",
+    transitionDuration: animationDuration.default,
+    transitionProperty: "opacity",
   },
 
   cards: {
@@ -248,39 +222,6 @@ const styles = stylex.create({
     marginInlineStart: "auto",
     maxWidth: "380px",
   },
-
-  sender: {
-    marginBottom: spacing["8"],
-  },
-  senderNote: {
-    color: uiColor.text1,
-    fontSize: fontSize.sm,
-    lineHeight: lineHeight.base,
-    marginBlockEnd: verticalSpace["3xl"],
-    marginBlockStart: verticalSpace.sm,
-    maxWidth: "520px",
-  },
-  senderFields: {
-    columnGap: gap["2xl"],
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    marginBottom: verticalSpace["2xl"],
-    rowGap: gap["2xl"],
-  },
-  senderActions: {
-    alignItems: "center",
-    columnGap: gap["3xl"],
-    display: "flex",
-    rowGap: gap["3xl"],
-  },
-  saved: {
-    alignItems: "center",
-    color: successColor.text1,
-    columnGap: gap.sm,
-    display: "inline-flex",
-    fontSize: fontSize.sm,
-    rowGap: gap.sm,
-  },
 });
 
 function SendRow({ s, pubId }: { s: Send; pubId: string }) {
@@ -327,54 +268,6 @@ function SendRow({ s, pubId }: { s: Send; pubId: string }) {
       </div>
       <Ico d={I.chevR} s={16} style={icon.muted} />
     </Link>
-  );
-}
-
-/**
- * Disconnect ("remove") a newsletter. Confirms first because the publication
- * leaves the app — but it's non-destructive to the data: the subscriber list and
- * past sends are kept, so adding it again later resumes. On success the cache is
- * invalidated and we return to the dashboard, since this publication's page no
- * longer exists.
- */
-function RemoveNewsletter({ pub }: { pub: Publication }) {
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const remove = useMutation({
-    mutationFn: () =>
-      disconnectPublicationFn({ data: { publicationUri: pub.uri } }),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["publications"] });
-      navigate({ to: "/dashboard" });
-    },
-  });
-
-  return (
-    <AlertDialog
-      trigger={
-        <Button variant="tertiary" size="sm">
-          Remove
-        </Button>
-      }
-    >
-      <AlertDialogHeader>Remove {pub.name}?</AlertDialogHeader>
-      <AlertDialogDescription>
-        New posts from {pub.name} will stop being mailed and it leaves your
-        dashboard. Its subscriber list and past sends are kept — you can add it
-        again anytime.
-      </AlertDialogDescription>
-      <AlertDialogFooter>
-        <AlertDialogCancelButton isDisabled={remove.isPending} />
-        <AlertDialogActionButton
-          variant="critical"
-          closeOnPress={false}
-          isPending={remove.isPending}
-          onPress={() => remove.mutate()}
-        >
-          Remove newsletter
-        </AlertDialogActionButton>
-      </AlertDialogFooter>
-    </AlertDialog>
   );
 }
 
@@ -431,11 +324,17 @@ function PubAnalytics() {
               href={`https://${pub.url}`}
               target="_blank"
               rel="noreferrer"
-              style={styles.visitLink}
+              style={styles.mastheadLink}
             >
               <Ico d={I.external} s={15} /> Visit site
             </ExternalLink>
-            <RemoveNewsletter pub={pub} />
+            <Link
+              to="/p/$pubId/settings"
+              params={{ pubId: pub.id }}
+              {...stylex.props(styles.mastheadLink)}
+            >
+              <Ico d={I.settings} s={15} /> Settings
+            </Link>
           </div>
         </div>
       </div>
@@ -500,8 +399,6 @@ function PubAnalytics() {
           </div>
         ) : null}
 
-        <SenderSettings pub={pub} />
-
         <div {...stylex.props(styles.sendsHead)}>
           <div {...stylex.props(common.sectionLabel)}>Newsletters sent</div>
           <span {...stylex.props(common.meta, common.pushEnd)}>
@@ -520,90 +417,9 @@ function PubAnalytics() {
               </p>
             </div>
           ) : (
-            pub.sends.map((s) => (
-              <SendRow key={s.path} s={s} pubId={pub.id} />
-            ))
+            pub.sends.map((s) => <SendRow key={s.path} s={s} pubId={pub.id} />)
           )}
         </div>
-      </div>
-    </div>
-  );
-}
-
-/**
- * Per-newsletter From identity. Both fields fall back to the instance default
- * (shown as the placeholder) when left blank, so an author only overrides what
- * they want to change. Saving validates the address shape server-side; it must
- * also be on a verified Resend domain to actually deliver.
- */
-function SenderSettings({ pub }: { pub: Publication }) {
-  const queryClient = useQueryClient();
-  const { data: defaults } = useSuspenseQuery(senderDefaultsQueryOptions());
-  const [name, setName] = useState(pub.fromName ?? "");
-  const [address, setAddress] = useState(pub.fromAddress ?? "");
-
-  const dirty =
-    name !== (pub.fromName ?? "") || address !== (pub.fromAddress ?? "");
-
-  const save = useMutation({
-    mutationFn: () =>
-      updateSenderFn({
-        data: { publicationUri: pub.uri, fromName: name, fromAddress: address },
-      }),
-    onSuccess: async (result) => {
-      if (result.ok) {
-        await queryClient.invalidateQueries({ queryKey: ["publications"] });
-      }
-    },
-  });
-  const invalidAddress =
-    save.data && !save.data.ok && save.data.reason === "invalid-address";
-
-  return (
-    <div {...stylex.props(styles.sender)}>
-      <div {...stylex.props(common.sectionLabel)}>Sender</div>
-      <p {...stylex.props(styles.senderNote)}>
-        How this newsletter appears in the inbox. Leave a field blank to use the
-        default. The address must be on a verified sending domain.
-      </p>
-      <div {...stylex.props(styles.senderFields)}>
-        <TextField
-          label="From name"
-          value={name}
-          onChange={setName}
-          placeholder={defaults.fromName}
-        />
-        <TextField
-          label="From address"
-          value={address}
-          onChange={setAddress}
-          placeholder={defaults.fromAddress}
-          type="email"
-          autoComplete="off"
-          validationState={invalidAddress ? "invalid" : undefined}
-          errorMessage={
-            invalidAddress
-              ? "That doesn’t look like a valid email address."
-              : undefined
-          }
-        />
-      </div>
-      <div {...stylex.props(styles.senderActions)}>
-        <Button
-          variant="primary"
-          size="sm"
-          isPending={save.isPending}
-          isDisabled={!dirty}
-          onPress={() => save.mutate()}
-        >
-          Save
-        </Button>
-        {save.data?.ok && !dirty ? (
-          <span {...stylex.props(styles.saved)}>
-            <Ico d={I.check} s={14} w={2.2} />
-            Saved
-          </span>
-        ) : null}
       </div>
     </div>
   );

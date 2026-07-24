@@ -24,12 +24,12 @@ import {
 } from "@standard-reader/design-system/theme/typography.stylex";
 import * as stylex from "@stylexjs/stylex";
 import { Link } from "@tanstack/react-router";
-import { LayoutGrid, LogOut, Mail, Plus, Settings, User } from "lucide-react";
+import { LayoutGrid, LogOut, Plus, Settings, User } from "lucide-react";
 import { Button as AriaButton } from "react-aria-components";
 
 import type { Publication } from "../data/publications";
-import type { ViewerData } from "../server/analytics";
 import { kfmt } from "../lib/format";
+import type { ViewerData } from "../server/analytics";
 import { PubGlyph } from "./ui";
 
 function initialsOf(name: string): string {
@@ -395,9 +395,6 @@ export function AppSidebar({
             suffix={<User size={17} />}
           >
             View profile
-          </MenuItem>
-          <MenuItem href="/settings" suffix={<Mail size={17} />}>
-            Sender settings
           </MenuItem>
           <MenuItem href="/settings" suffix={<Settings size={17} />}>
             Settings
