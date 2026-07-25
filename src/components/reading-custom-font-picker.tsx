@@ -79,7 +79,9 @@ export function ReadingCustomFontPicker({
     <ComboBox
       label={label}
       aria-label={label == null ? t`Google Font` : undefined}
-      size="lg"
+      // Sized to match the rest of a settings row; `lg` stood a head above the
+      // segmented controls and switches beside it.
+      size="md"
       placeholder={t`Search Google Fonts`}
       items={items}
       inputValue={search}

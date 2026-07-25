@@ -3,10 +3,20 @@ import { eq } from "drizzle-orm";
 
 import type { Db, Schema } from "#/integrations/tanstack-query/api-shapes";
 import {
+  APPEARANCE_COOKIE,
+  appearanceScheme,
+  dbValueToAppearance,
+  parseAppearanceCookie,
+} from "#/lib/appearance";
+import {
   DEFAULT_USE_PUBLICATION_THEME,
   dbValueToUsePublicationTheme,
 } from "#/lib/publication-theme-preference";
-import type { ResolvedThemeScheme, ThemeMode } from "#/lib/theme";
+import type {
+  ResolvedThemeScheme,
+  ThemeMode,
+  ThemeSchemeMode,
+} from "#/lib/theme";
 import {
   THEME_COOKIE,
   dbValueToThemeMode,
@@ -14,20 +24,32 @@ import {
   resolveThemeScheme,
 } from "#/lib/theme";
 
+/**
+ * The reader's theme mode, with `custom` already collapsed to the scheme their
+ * palette renders in. Callers use this to pick a *scheme* (Shiki themes for
+ * code blocks), and a custom palette is never ambiguous about which one it is —
+ * so resolving it here keeps every downstream branch a plain light/dark/system.
+ */
 export async function themeModeForRequest(
   db: Db,
   schema: Schema,
   sessionUserId?: string | null,
-): Promise<ThemeMode> {
+): Promise<ThemeSchemeMode> {
   if (sessionUserId) {
     const row = await db.query.user.findFirst({
       where: eq(schema.user.id, sessionUserId),
-      columns: { themeMode: true },
+      columns: { themeMode: true, appearance: true },
     });
-    return dbValueToThemeMode(row?.themeMode ?? null);
+    const mode = dbValueToThemeMode(row?.themeMode ?? null);
+    return mode === "custom"
+      ? appearanceScheme(dbValueToAppearance(row?.appearance ?? null))
+      : mode;
   }
 
-  return parseThemeMode(getCookie(THEME_COOKIE));
+  const mode = parseThemeMode(getCookie(THEME_COOKIE));
+  return mode === "custom"
+    ? appearanceScheme(parseAppearanceCookie(getCookie(APPEARANCE_COOKIE)))
+    : mode;
 }
 
 /**

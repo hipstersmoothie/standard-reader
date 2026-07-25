@@ -38,11 +38,32 @@ const READING_LINE_HEIGHT = 1.68;
 /** Edge length of a task-list checkbox, relative to the reading font size. */
 const TASK_CHECKBOX_SIZE = "0.75em";
 
+/**
+ * Reading sizes, in rem so the appearance text-size dial carries them: that dial
+ * scales the root font size, which is what makes one setting move the chrome and
+ * the prose together. The reading-typography preference then picks between the
+ * small / default / large sets below, on top of that baseline.
+ */
+const READING_SIZE_DEFAULT = "1.1875rem";
+const READING_SIZE_DEFAULT_WIDE = "1.25rem";
+const READING_SIZE_SMALL = "1rem";
+const READING_SIZE_SMALL_WIDE = "1.0625rem";
+const READING_SIZE_LARGE = "1.3125rem";
+const READING_SIZE_LARGE_WIDE = "1.375rem";
+const READING_SIZE_PULLQUOTE = "1.6875rem";
+
+/** Atkinson, stated literally — see `bodyFontSans`. */
+const READING_SANS_STACK =
+  "'Atkinson Hyperlegible Next', 'Atkinson Hyperlegible Next Fallback: -apple-system', 'Atkinson Hyperlegible Next Fallback: Arial', system-ui, -apple-system, sans-serif";
+
 export const articleBodyStyles = stylex.create({
   body: {
     color: uiColor.text2,
     fontFamily: fontFamily.serif,
-    fontSize: { default: "1.1875rem", "@media (min-width: 40rem)": "1.25rem" },
+    fontSize: {
+      default: READING_SIZE_DEFAULT,
+      "@media (min-width: 40rem)": READING_SIZE_DEFAULT_WIDE,
+    },
     lineHeight: READING_LINE_HEIGHT,
     marginTop: spacing["9"],
     minWidth: 0,
@@ -114,7 +135,7 @@ export const articleBodyStyles = stylex.create({
   pullquote: {
     color: uiColor.text2,
     fontFamily: fontFamily.serif,
-    fontSize: "1.6875rem",
+    fontSize: READING_SIZE_PULLQUOTE,
     fontStyle: "italic",
     fontWeight: fontWeight.medium,
     lineHeight: 1.32,
@@ -660,7 +681,10 @@ export const articleBodyStyles = stylex.create({
     display: "flex",
     flexDirection: "column",
     fontFamily: fontFamily.serif,
-    fontSize: { default: "1.1875rem", "@media (min-width: 40rem)": "1.25rem" },
+    fontSize: {
+      default: READING_SIZE_DEFAULT,
+      "@media (min-width: 40rem)": READING_SIZE_DEFAULT_WIDE,
+    },
     lineHeight: READING_LINE_HEIGHT,
     paddingBottom: spacing["4"],
     paddingInlineStart: spacing["4"],
@@ -694,7 +718,7 @@ export const articleBodyStyles = stylex.create({
     display: "block",
     objectFit: "cover",
     height: "auto",
-    maxHeight: "240px",
+    maxHeight: "15rem",
     width: "100%",
   },
   facetUnderline: {
@@ -816,16 +840,25 @@ export const articleBodyStyles = stylex.create({
     minWidth: 0,
   },
   bodyFontSizeSmall: {
-    fontSize: { default: "1rem", "@media (min-width: 40rem)": "1.0625rem" },
+    fontSize: {
+      default: READING_SIZE_SMALL,
+      "@media (min-width: 40rem)": READING_SIZE_SMALL_WIDE,
+    },
   },
   bodyFontSizeLarge: {
     fontSize: {
-      default: "1.3125rem",
-      "@media (min-width: 40rem)": "1.375rem",
+      default: READING_SIZE_LARGE,
+      "@media (min-width: 40rem)": READING_SIZE_LARGE_WIDE,
     },
   },
+  /**
+   * An explicit reading-font override, so it names the family outright rather
+   * than going through `fontFamily.sans`: that token follows the appearance
+   * interface font, which would collapse this option into the default one for
+   * anyone who picked a font of their own.
+   */
   bodyFontSans: {
-    fontFamily: fontFamily.sans,
+    fontFamily: READING_SANS_STACK,
   },
 });
 

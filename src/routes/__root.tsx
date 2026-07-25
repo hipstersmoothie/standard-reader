@@ -16,11 +16,12 @@ import { I18nProvider as AriaI18nProvider } from "react-aria-components";
 
 import { NavTelemetry } from "../components/nav-telemetry";
 import {
-  editorialFonts,
-  editorialPrimary,
-  editorialShadow,
-  editorialUi,
-} from "../components/reader/theme";
+  APPEARANCE_SCALE_THEMES,
+  interfaceFontTheme,
+  paletteThemes,
+} from "../components/reader/appearance-themes";
+import { appearanceStyleVars } from "../components/reader/appearance-vars";
+import { editorialFonts, editorialShadow } from "../components/reader/theme";
 import { uiColor } from "../design-system/theme/color.stylex";
 import { ui } from "../design-system/theme/semantic-color.stylex";
 import { PlausibleAnalytics } from "../integrations/plausible/analytics";
@@ -30,6 +31,12 @@ import {
   savedListsQueryOptions,
   sidebarQueryOptions,
 } from "../integrations/tanstack-query/shell-queries";
+import {
+  DEFAULT_APPEARANCE,
+  appearanceScheme,
+  appearanceThemeColor,
+} from "../lib/appearance";
+import { googleFontsStylesheetUrl } from "../lib/google-fonts";
 import { i18nForLocale } from "../lib/i18n";
 import { intlLocale } from "../lib/locale";
 import { getPublicUrlClient } from "../lib/public-url";
@@ -53,10 +60,28 @@ interface RouterContext {
   queryClient: QueryClient;
 }
 
+/**
+ * The text-size dial as a root font-size multiplier.
+ *
+ * Scaling `html` reaches every rem in the app — type, spacing, radii, control
+ * boxes and the fixed widths of the shell — rather than only the tokens we
+ * remembered to route through a multiplier. Media queries are unaffected: they
+ * resolve against the initial font size, so breakpoints stay where they are and
+ * the layout switches at the same viewport width at every text size.
+ */
+const TEXT_SCALE_CSS = `
+html { font-size: calc(100% * var(--sr-text-scale, 1)); }
+`.trim();
+
+// A custom palette states its own scheme (its paper decides), so it pins
+// `color-scheme` rather than tracking the OS — that pin is also what resolves
+// every `light-dark()` in the Radix scales a curated palette is built from.
 const COLOR_SCHEME_CSS = `
 html[data-theme="light"] { color-scheme: light; }
 html[data-theme="dark"] { color-scheme: dark; }
 html[data-theme="system"] { color-scheme: light; }
+html[data-theme="custom"] { color-scheme: light; }
+html[data-theme="custom"][data-palette-scheme="dark"] { color-scheme: dark; }
 @media (prefers-color-scheme: dark) {
   html[data-theme="system"] { color-scheme: dark; }
 }
@@ -174,6 +199,13 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       user.getReadingTypographyPreferenceQueryOptions.queryKey,
       bootstrap.readingTypography,
     );
+    // Seeded here so the palette, its scheme and the dial multipliers are known
+    // during SSR — without this the shell paints the default theme first and
+    // swaps once the client query lands.
+    context.queryClient.setQueryData(
+      user.getAppearancePreferenceQueryOptions.queryKey,
+      bootstrap.appearance,
+    );
     context.queryClient.setQueryData(
       user.getUsePublicationThemePreferenceQueryOptions.queryKey,
       bootstrap.usePublicationTheme,
@@ -263,14 +295,41 @@ function RootDocument({ children }: { children: React.ReactNode }) {
     refetchOnWindowFocus: false,
   });
   const themeMode = themePreference?.mode ?? DEFAULT_THEME_MODE;
+  // Seeded by the same shell bootstrap as the theme mode, so the palette, its
+  // scheme, and the dial multipliers are all known during SSR — the custom
+  // theme paints on the first frame with no flash of the editorial one.
+  const { data: appearanceData } = useQuery({
+    ...user.getAppearancePreferenceQueryOptions,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+  });
+  const appearance = appearanceData?.preference ?? DEFAULT_APPEARANCE;
+  const isCustomTheme = themeMode === "custom";
+  const paletteScheme = appearanceScheme(appearance);
+  const appearanceVars = appearanceStyleVars(appearance, {
+    includePalette: isCustomTheme,
+  });
+  const customUiFontUrl =
+    appearance.font === "custom" && appearance.customFontFamily
+      ? googleFontsStylesheetUrl(appearance.customFontFamily)
+      : null;
+  const fontTheme = interfaceFontTheme(appearance.font);
   // Resolved server-side (DB -> cookie -> Accept-Language) and hydrated with
   // the shell bootstrap, so `lang`/`dir` are correct on the first paint and
   // there is no flash of mis-directed layout.
   const { locale, direction } = useLocale();
   // SSR can't see the OS preference, so "system" defaults to light for the
   // initial paint; RESOLVED_SCHEME_SCRIPT corrects it synchronously before the
-  // first paint, and the effect below keeps it in sync afterwards.
-  const ssrScheme = themeMode === "dark" ? "dark" : "light";
+  // first paint, and the effect below keeps it in sync afterwards. A custom
+  // palette needs no correcting — it carries its own scheme.
+  const ssrScheme = isCustomTheme
+    ? paletteScheme
+    : themeMode === "dark"
+      ? "dark"
+      : "light";
+  const themeColor = isCustomTheme
+    ? appearanceThemeColor(appearance)
+    : THEME_COLOR_BY_SCHEME[ssrScheme];
 
   // Keep the title-bar color on the *resolved* scheme as the user toggles theme
   // (or, in "system" mode, as the OS preference flips) without a reload.
@@ -278,6 +337,11 @@ function RootDocument({ children }: { children: React.ReactNode }) {
     if (globalThis.window === undefined) return;
     const query = globalThis.matchMedia("(prefers-color-scheme: dark)");
     const apply = () => {
+      const meta = document.querySelector('meta[name="theme-color"]');
+      if (themeMode === "custom") {
+        meta?.setAttribute("content", themeColor);
+        return;
+      }
       const resolved =
         themeMode === "dark"
           ? "dark"
@@ -286,29 +350,49 @@ function RootDocument({ children }: { children: React.ReactNode }) {
             : query.matches
               ? "dark"
               : "light";
-      const meta = document.querySelector('meta[name="theme-color"]');
       meta?.setAttribute("content", THEME_COLOR_BY_SCHEME[resolved]);
     };
     apply();
     if (themeMode !== "system") return;
     query.addEventListener("change", apply);
     return () => query.removeEventListener("change", apply);
-  }, [themeMode]);
+  }, [themeMode, themeColor]);
 
   return (
     <html
       lang={locale}
       dir={direction}
       data-theme={themeMode}
+      data-palette-scheme={isCustomTheme ? paletteScheme : undefined}
+      data-theme-color={isCustomTheme ? themeColor : undefined}
       data-embed={isSubscribeEmbed ? "subscribe" : undefined}
+      // The spacing / radius / control-size themes belong HERE, not on <body>.
+      // The semantic scales are declared as `--gap-md: var(--spacing-2)` at
+      // `:root`, and a custom property's value is resolved on the element that
+      // declares it — so overriding `--spacing-*` further down the tree changes
+      // padding that reads a spacing token directly, while every `gap`,
+      // `horizontalSpace` and `verticalSpace` keeps the value it already
+      // computed at the root. Applied on the same element, the override lands
+      // before those scales resolve and the whole spacing system moves with it.
+      {...stylex.props(isSubscribeEmbed ? undefined : APPEARANCE_SCALE_THEMES)}
+      style={isSubscribeEmbed ? undefined : appearanceVars}
       suppressHydrationWarning
     >
       <head>
         {/* Browser/PWA title-bar color. A single meta (no media query) whose
             content tracks the *resolved* scheme — set pre-paint by
             RESOLVED_SCHEME_SCRIPT and kept in sync by useThemeColorMeta — so an
-            explicit in-app light/dark override wins over the OS preference. */}
-        <meta name="theme-color" content={THEME_COLOR_BY_SCHEME[ssrScheme]} />
+            explicit in-app light/dark override wins over the OS preference. A
+            custom palette supplies its own page color instead. */}
+        <meta name="theme-color" content={themeColor} />
+        {customUiFontUrl ? (
+          <link
+            rel="stylesheet"
+            href={customUiFontUrl}
+            referrerPolicy="no-referrer"
+          />
+        ) : null}
+        <style dangerouslySetInnerHTML={{ __html: TEXT_SCALE_CSS }} />
         <style dangerouslySetInnerHTML={{ __html: COLOR_SCHEME_CSS }} />
         <script
           dangerouslySetInnerHTML={{ __html: EMBED_SUBSCRIBE_PATH_SCRIPT }}
@@ -321,9 +405,14 @@ function RootDocument({ children }: { children: React.ReactNode }) {
           isSubscribeEmbed
             ? rootStyles.embedShellBody
             : [
-                editorialUi,
-                editorialPrimary,
-                editorialFonts,
+                // One theme per token group: the palette replaces the editorial
+                // colors outright rather than layering over them, and the
+                // interface font (when the reader picked one) replaces the
+                // editorial stack the same way.
+                ...paletteThemes(
+                  isCustomTheme ? appearance.palette : "almanac",
+                ),
+                fontTheme ?? editorialFonts,
                 editorialShadow,
                 ui.bg,
                 ui.text,

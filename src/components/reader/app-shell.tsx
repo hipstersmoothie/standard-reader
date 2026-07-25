@@ -131,7 +131,10 @@ const styles = stylex.create({
     // stays pinned outside the scrollport and content never hides behind it.
     overflow: "hidden",
     top: 0,
-    width: "264px",
+    // rem, not px: the appearance text-size dial scales the root font size, and
+    // a sidebar pinned in px would keep its width while the labels inside it
+    // grew (264px at the default root size).
+    width: "16.5rem",
   },
   sidebarScroll: {
     overscrollBehavior: "contain",

@@ -462,6 +462,27 @@ Build each on hip-ui components + StyleX tokens (no raw HTML/inline styles).
 - [x] Global follow toggle reflects everywhere instantly (optimistic).
 - [x] Theme picker (light / dark / system) + editorial dark tokens + Shiki `standard-reader-dark`.
 - [x] Theme tokens / dark mode parity with prototype (remaining hardcoded surfaces).
+- [x] **Custom theme mode (palette + shape/type dials)** — Theme becomes
+      light / dark / system / **custom**; custom opens a palette picker of eight curated
+      Radix pairs (Almanac, Meadow, Press, Ink / Almanac Night, Archive, Tide, Ember) plus the
+      reader's own accent + paper. A palette states its own scheme — the paper color decides
+      light vs dark — so `color-scheme` is pinned rather than tracking the OS. Curated palettes
+      are static `createTheme`s over the vendored Radix scales (`appearance-themes.ts`); the
+      reader's own two colors run through the _publication_ scale generator under an `--sr-*`
+      prefix (`appearance-vars.ts`), so ink, borders and all 26 steps are derived and
+      contrast-checked. Palette tiles wear the real theme, so the preview can't drift.
+      Alongside it, four dials that apply in **every** theme mode: interface font
+      (editorial / sans / any Google family), text size (XS–XL, 14→24px), roundness
+      (sharp / soft / default), density (compact / default / relaxed). Text size scales the root
+      font size so every rem follows it (chrome, sidebar width, content shells, article body);
+      roundness and density are multipliers on the radius / spacing token scales, with density
+      held out of control geometry. The Reading section still overrides the article on top.
+      Along the way: a global `font-family: inherit` for form controls (they never inherited it,
+      so the segmented control and friends sat outside the type system), a stated font size on
+      segmented-control items, and layout `px` dimensions converted to `rem`. Persisted as `user.appearance` + the
+      `standard-reader-appearance` cookie (`drizzle/0021_melodic_texas_twister`), seeded through
+      `getShellBootstrap` so the first paint is already themed
+      (`#/lib/appearance`, `useAppearance`, `AppearancePalettePanel`).
 - [x] **"Use publication themes" preference** — Settings → Appearance toggle that repaints
       `/p/$did/$rkey` and `/a/$did/$rkey` in the publication's own `basicTheme` colors.
       `publicationThemeScaleVars` expands the four flat colors into light + dark UI/accent

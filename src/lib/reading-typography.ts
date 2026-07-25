@@ -113,7 +113,19 @@ export function parseReadingTypographyCookie(
     return DEFAULT_READING_TYPOGRAPHY;
   }
 
-  const parts = value.split(ENCODING_SEPARATOR);
+  // `Set-Cookie` percent-encodes the value, so the separators come back as
+  // `%3A` on the next request. Decode once before splitting, or a guest's
+  // stored preference reads as "all defaults" on every load.
+  let decoded = value;
+  if (value.includes("%")) {
+    try {
+      decoded = decodeURIComponent(value);
+    } catch {
+      decoded = value;
+    }
+  }
+
+  const parts = decoded.split(ENCODING_SEPARATOR);
   const [fontSize, measure, bodyFont, encodedCustomFont] = parts;
 
   const parsed: ReadingTypographyPreference = {
@@ -213,6 +225,11 @@ export function readingMeasureLabel(measure: ReadingMeasure): string {
   }
 }
 
+/**
+ * `serif` is the reading face the app itself is set to — Newsreader by default,
+ * or whatever interface font the reader chose under Appearance — so it is
+ * labelled for what it does rather than for the family it usually lands on.
+ */
 export function readingBodyFontLabel(bodyFont: ReadingBodyFont): string {
   switch (bodyFont) {
     case "sans": {
@@ -222,7 +239,7 @@ export function readingBodyFontLabel(bodyFont: ReadingBodyFont): string {
       return "Custom";
     }
     default: {
-      return "Serif";
+      return "Match app";
     }
   }
 }

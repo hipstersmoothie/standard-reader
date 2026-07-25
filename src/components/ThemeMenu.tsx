@@ -1,5 +1,5 @@
 import * as stylex from "@stylexjs/stylex";
-import { Monitor, Moon, Sun } from "lucide-react";
+import { Monitor, Moon, Palette, Sun } from "lucide-react";
 
 import { MenuItem, SubMenu } from "#/design-system/menu";
 import { uiColor } from "#/design-system/theme/color.stylex";
@@ -21,6 +21,8 @@ const THEME_OPTIONS: Array<{
   { id: "light", label: "Light", icon: Sun },
   { id: "dark", label: "Dark", icon: Moon },
   { id: "system", label: "System", icon: Monitor },
+  // The palette itself is chosen in Settings → Appearance; this switches to it.
+  { id: "custom", label: "Custom", icon: Palette },
 ];
 
 function ThemeMenuItems({ onSelect }: { onSelect: (next: ThemeMode) => void }) {

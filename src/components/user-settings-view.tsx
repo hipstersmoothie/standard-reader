@@ -6,7 +6,14 @@ import { Trans, useLingui } from "@lingui/react/macro";
 import * as stylex from "@stylexjs/stylex";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { ChevronRight, Monitor, Moon, Sparkles, Sun } from "lucide-react";
+import {
+  ChevronRight,
+  Monitor,
+  Moon,
+  Palette,
+  Sparkles,
+  Sun,
+} from "lucide-react";
 import { useCallback, useState } from "react";
 
 import { invalidateReadQueries } from "#/components/reader/read-optimistic";
@@ -58,6 +65,11 @@ import {
 import { Avatar } from "../design-system/avatar";
 import { Button } from "../design-system/button";
 import { Dialog, DialogBody, DialogHeader } from "../design-system/dialog";
+import {
+  Disclosure,
+  DisclosurePanel,
+  DisclosureTitle,
+} from "../design-system/disclosure";
 import { Flex } from "../design-system/flex";
 import { ProgressCircle } from "../design-system/progress-circle";
 import {
@@ -82,9 +94,15 @@ import {
   lineHeight,
   tracking,
 } from "../design-system/theme/typography.stylex";
+import {
+  AppearanceAdvancedRows,
+  AppearancePalettePanel,
+} from "./appearance-settings";
 import { Masthead, ReaderContent } from "./reader/primitives";
 import { ReadingCustomFontPicker } from "./reading-custom-font-picker";
 import { ReadingSettingsPreview } from "./reading-settings-preview";
+import { SettingRow } from "./settings-row";
+import { settingRowStyles } from "./settings-row-styles";
 import { TypographySegmentedControl } from "./typography-segmented-control";
 
 const MOBILE = "@media (max-width: 47.5rem)";
@@ -97,6 +115,7 @@ const THEME_OPTIONS: Array<{
   { id: "light", label: msg`Light`, icon: Sun },
   { id: "dark", label: msg`Dark`, icon: Moon },
   { id: "system", label: msg`System`, icon: Monitor },
+  { id: "custom", label: msg`Custom`, icon: Palette },
 ];
 
 /** The pseudo-locale is a translation-coverage tool, not a language to ship. */
@@ -147,55 +166,12 @@ const styles = stylex.create({
   },
   settingGroup: {
     borderColor: uiColor.border1,
-    borderRadius: spacing["2"],
+    borderRadius: radius.md,
     borderStyle: "solid",
     borderWidth: 1,
     overflow: "hidden",
     display: "flex",
     flexDirection: "column",
-  },
-  settingRow: {
-    alignItems: {
-      [MOBILE]: "stretch",
-      default: "center",
-    },
-    columnGap: gap["3xl"],
-    display: "flex",
-    flexDirection: {
-      [MOBILE]: "column",
-      default: "row",
-    },
-    justifyContent: "space-between",
-    rowGap: gap["lg"],
-    paddingBottom: verticalSpace["3xl"],
-    paddingInlineStart: horizontalSpace["3xl"],
-    paddingInlineEnd: horizontalSpace["3xl"],
-    paddingTop: verticalSpace["3xl"],
-  },
-  settingLabel: {
-    color: uiColor.text2,
-    fontFamily: fontFamily.sans,
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.medium,
-    lineHeight: lineHeight.sm,
-    marginBottom: verticalSpace.xs,
-    marginTop: verticalSpace.none,
-  },
-  settingDescription: {
-    color: uiColor.text1,
-    fontFamily: fontFamily.sans,
-    fontSize: fontSize.xs,
-    lineHeight: lineHeight.sm,
-    marginBottom: verticalSpace.none,
-    marginTop: verticalSpace.none,
-    maxWidth: "42ch",
-  },
-  settingControl: {
-    flexShrink: 0,
-    width: {
-      [MOBILE]: "100%",
-      default: "auto",
-    },
   },
   labelerList: {
     gap: gap.xs,
@@ -248,6 +224,27 @@ const styles = stylex.create({
       [MOBILE]: "100%",
       default: "auto",
     },
+  },
+  /** Line the disclosure up with the setting rows above it. */
+  advancedTitle: {
+    // The design-system disclosure rounds its own trigger, which reads as a
+    // floating box dropped inside the settings group. As the group's last row it
+    // should be flush like every row above it — the group is `overflow: hidden`,
+    // so its own corner shape still clips the bottom edge.
+    borderRadius: 0,
+    color: uiColor.text2,
+    fontSize: fontSize.sm,
+    paddingBottom: verticalSpace["3xl"],
+    paddingInlineStart: horizontalSpace["3xl"],
+    paddingInlineEnd: horizontalSpace["3xl"],
+    paddingTop: verticalSpace["3xl"],
+  },
+  /** The rows inside carry their own padding. */
+  advancedPanel: {
+    paddingBottom: verticalSpace.none,
+    paddingInlineStart: horizontalSpace.none,
+    paddingInlineEnd: horizontalSpace.none,
+    paddingTop: verticalSpace.none,
   },
   voiceSelect: {
     minWidth: {
@@ -315,28 +312,6 @@ const styles = stylex.create({
   },
 });
 
-function SettingRow({
-  label,
-  description,
-  children,
-}: {
-  label: string;
-  description?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div {...stylex.props(styles.settingRow)}>
-      <div>
-        <p {...stylex.props(styles.settingLabel)}>{label}</p>
-        {description ? (
-          <p {...stylex.props(styles.settingDescription)}>{description}</p>
-        ) : null}
-      </div>
-      <div {...stylex.props(styles.settingControl)}>{children}</div>
-    </div>
-  );
-}
-
 function DataDeletionRow({
   label,
   description,
@@ -359,8 +334,8 @@ function DataDeletionRow({
   return (
     <div {...stylex.props(styles.deletionRow)}>
       <div>
-        <p {...stylex.props(styles.settingLabel)}>{label}</p>
-        <p {...stylex.props(styles.settingDescription)}>{description}</p>
+        <p {...stylex.props(settingRowStyles.label)}>{label}</p>
+        <p {...stylex.props(settingRowStyles.description)}>{description}</p>
       </div>
       <AlertDialog
         isOpen={open}
@@ -597,45 +572,11 @@ export function UserSettingsView() {
         </h2>
         <div {...stylex.props(styles.settingGroup)}>
           <SettingRow
-            label={t`Theme`}
-            description={t`Choose light, dark, or match your system setting.`}
-          >
-            <SegmentedControl
-              selectedKeys={new Set([mode])}
-              onSelectionChange={(keys: Set<React.Key> | "all") => {
-                const key = keys === "all" ? undefined : String([...keys][0]);
-                if (isThemeMode(key)) setMode(key);
-              }}
-              style={styles.segmentedControl}
-            >
-              {THEME_OPTIONS.map(({ id, label, icon: Icon }) => (
-                <SegmentedControlItem key={id} id={id}>
-                  <Flex align="center" gap="xs">
-                    <Icon size={14} />
-                    {i18n._(label)}
-                  </Flex>
-                </SegmentedControlItem>
-              ))}
-            </SegmentedControl>
-          </SettingRow>
-          <Separator />
-          <SettingRow
-            label={t`Use publication themes`}
-            description={t`When on, a publication's page and its posts are shown in that publication's own colors. Publications that haven't set any colors keep the Standard Reader theme.`}
-          >
-            <Switch
-              isSelected={usePublicationTheme}
-              onChange={setUsePublicationTheme}
-              aria-label={t`Use publication themes`}
-            />
-          </SettingRow>
-          <Separator />
-          <SettingRow
             label={t`Language`}
             description={t`The language used for the reader interface. Articles are shown in the language they were written in.`}
           >
             <Select
-              size="lg"
+              size="md"
               aria-label={t`Language`}
               selectedKey={locale}
               onSelectionChange={(key) => {
@@ -655,6 +596,55 @@ export function UserSettingsView() {
               ))}
             </Select>
           </SettingRow>
+          <Separator />
+          <SettingRow
+            label={t`Use publication themes`}
+            description={t`When on, a publication's page and its posts are shown in that publication's own colors. Publications that haven't set any colors keep the Standard Reader theme.`}
+          >
+            <Switch
+              isSelected={usePublicationTheme}
+              onChange={setUsePublicationTheme}
+              aria-label={t`Use publication themes`}
+            />
+          </SettingRow>
+          <Separator />
+          <SettingRow
+            label={t`Theme`}
+            description={t`Light, dark, match your system — or Custom, to choose a palette of your own.`}
+          >
+            <SegmentedControl
+              selectedKeys={new Set([mode])}
+              onSelectionChange={(keys: Set<React.Key> | "all") => {
+                const key = keys === "all" ? undefined : String([...keys][0]);
+                if (isThemeMode(key)) setMode(key);
+              }}
+              style={styles.segmentedControl}
+            >
+              {THEME_OPTIONS.map(({ id, label, icon: Icon }) => (
+                <SegmentedControlItem key={id} id={id}>
+                  <Flex align="center" gap="xs">
+                    <Icon size={14} />
+                    {i18n._(label)}
+                  </Flex>
+                </SegmentedControlItem>
+              ))}
+            </SegmentedControl>
+          </SettingRow>
+          {mode === "custom" ? (
+            <>
+              <Separator />
+              <AppearancePalettePanel />
+            </>
+          ) : null}
+          <Separator />
+          <Disclosure>
+            <DisclosureTitle style={styles.advancedTitle}>
+              <Trans>Advanced</Trans>
+            </DisclosureTitle>
+            <DisclosurePanel contentStyle={styles.advancedPanel}>
+              <AppearanceAdvancedRows />
+            </DisclosurePanel>
+          </Disclosure>
         </div>
       </section>
 
@@ -941,7 +931,7 @@ export function UserSettingsView() {
             description={t`The voice used when you listen to an article with read aloud.`}
           >
             <Select
-              size="lg"
+              size="md"
               aria-label={t`Reader voice`}
               selectedKey={voice}
               style={styles.voiceSelect}

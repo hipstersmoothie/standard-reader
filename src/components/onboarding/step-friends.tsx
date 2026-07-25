@@ -7,6 +7,7 @@ import { ONBOARDING_FRIENDS_LIMIT } from "#/lib/onboarding";
 
 import { Flex } from "../../design-system/flex";
 import { uiColor } from "../../design-system/theme/color.stylex";
+import { radius } from "../../design-system/theme/radius.stylex";
 import { spacing } from "../../design-system/theme/spacing.stylex";
 import {
   fontFamily,
@@ -22,7 +23,7 @@ const styles = stylex.create({
   // step of the wizard reads as one list rather than three treatments.
   rows: {
     borderColor: uiColor.border1,
-    borderRadius: 12,
+    borderRadius: radius.lg,
     borderStyle: "solid",
     borderWidth: 1,
     display: "flex",

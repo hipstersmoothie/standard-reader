@@ -72,7 +72,7 @@ const MAX_ITEMS = 42;
 const innerPadding = {
   marginInlineStart: "auto",
   marginInlineEnd: "auto",
-  maxWidth: "1320px",
+  maxWidth: "82.5rem",
   paddingInlineStart: {
     default: spacing["5"],
     "@media (min-width: 40rem)": spacing["10"],
@@ -109,7 +109,7 @@ const styles = stylex.create({
     flexBasis: "0%",
     flexGrow: 1,
     flexShrink: 1,
-    minWidth: "240px",
+    minWidth: "15rem",
   },
   heroName: {
     color: uiColor.text2,

@@ -5,6 +5,26 @@
 }
 
 /*
+ * Form controls don't inherit `font-family` from their ancestors — the UA
+ * stylesheet gives every button, input and select its own system font. Most
+ * design-system controls (segmented control, select, menu, listbox, text field)
+ * never state a family of their own and so silently rendered in that UA font
+ * rather than the app's typeface; the interface-font preference
+ * (`src/lib/appearance.ts`) made that visible, since those controls were the one
+ * part of the UI it couldn't reach.
+ *
+ * Only the family is inherited: size, weight and line-height stay with each
+ * control, which sets them from the design-system tokens.
+ */
+button,
+input,
+select,
+textarea,
+optgroup {
+  font-family: inherit;
+}
+
+/*
  * Writing-direction multiplier for directional transforms.
  *
  * `transform: translateX()` is always physical — positive X moves right even in

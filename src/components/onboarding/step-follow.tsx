@@ -6,6 +6,7 @@ import { discoverApi } from "#/integrations/tanstack-query/api-discover.function
 
 import { Flex } from "../../design-system/flex";
 import { primaryColor, uiColor } from "../../design-system/theme/color.stylex";
+import { radius } from "../../design-system/theme/radius.stylex";
 import { verticalSpace } from "../../design-system/theme/semantic-spacing.stylex";
 import {
   fontFamily,
@@ -29,7 +30,7 @@ const styles = stylex.create({
   },
   rows: {
     borderColor: uiColor.border1,
-    borderRadius: 12,
+    borderRadius: radius.lg,
     borderStyle: "solid",
     borderWidth: 1,
     display: "flex",

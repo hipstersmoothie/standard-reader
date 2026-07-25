@@ -7,7 +7,7 @@ import type {
   CollectionEditorial,
 } from "#/lib/collections/manifest";
 import type { CollectionTheme } from "#/lib/collections/theme";
-import type { ThemeMode } from "#/lib/theme";
+import type { ThemeSchemeMode } from "#/lib/theme";
 import { MAX_MAGAZINE_FEATURES } from "#/magazine/constants";
 import { getReaderContextForRequest } from "#/middleware/auth-session.server";
 import type { ArticleDetailSourceRow } from "#/server/reader/article-detail-build";
@@ -324,7 +324,7 @@ export async function loadCollectionMagazine(
   const manifest = manifestFromCollectionRow(collectionEntry.row);
   if (!manifest) return null;
 
-  const themeMode: ThemeMode = await themeModeForRequest(
+  const themeMode: ThemeSchemeMode = await themeModeForRequest(
     db,
     schema,
     reader?.userId,

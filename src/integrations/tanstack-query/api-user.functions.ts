@@ -9,6 +9,22 @@ import { z } from "zod";
 import { revokeAtprotoSession } from "#/integrations/auth/atproto";
 import { AUTH_SESSION_TOKEN_COOKIE } from "#/integrations/auth/constants";
 import { hasEmailScope } from "#/integrations/auth/scope";
+import type { AppearancePreference } from "#/lib/appearance";
+import {
+  APPEARANCE_COOKIE,
+  APPEARANCE_COOKIE_MAX_AGE_SECONDS,
+  APPEARANCE_DENSITIES,
+  APPEARANCE_FONTS,
+  APPEARANCE_ROUNDNESS,
+  APPEARANCE_TEXT_SIZES,
+  DEFAULT_APPEARANCE,
+  PALETTE_IDS,
+  appearanceToCookieValue,
+  appearanceToDbValue,
+  dbValueToAppearance,
+  normalizeAppearance,
+  parseAppearanceCookie,
+} from "#/lib/appearance";
 import {
   COUNT_OLD_POSTS_AS_UNREAD_COOKIE,
   COUNT_OLD_POSTS_AS_UNREAD_COOKIE_MAX_AGE_SECONDS,
@@ -288,6 +304,9 @@ const getShellBootstrap = createServerFn({ method: "GET" }).handler(
           cookies[READING_TYPOGRAPHY_COOKIE],
         ),
       },
+      appearance: {
+        preference: parseAppearanceCookie(cookies[APPEARANCE_COOKIE]),
+      },
       usePublicationTheme: { enabled: DEFAULT_USE_PUBLICATION_THEME },
       collectionsAuthoring: { enabled: false },
       shell: null,
@@ -328,6 +347,7 @@ const getShellBootstrap = createServerFn({ method: "GET" }).handler(
             openLinksExternally: true,
             openCollectionsInMagazine: true,
             readingTypography: true,
+            appearance: true,
             usePublicationTheme: true,
             collectionsAuthoringEnabled: true,
             atstoreReviewPromptDismissed: true,
@@ -462,6 +482,7 @@ const getShellBootstrap = createServerFn({ method: "GET" }).handler(
       readingTypography: {
         preference: dbValueToReadingTypography(userRow.readingTypography),
       },
+      appearance: { preference: dbValueToAppearance(userRow.appearance) },
       usePublicationTheme: {
         enabled: dbValueToUsePublicationTheme(userRow.usePublicationTheme),
       },
@@ -959,6 +980,78 @@ const setReadingTypographyPreference = createServerFn({ method: "POST" })
     return { preference };
   });
 
+const HEX_INPUT = /^#?[0-9a-fA-F]{3}([0-9a-fA-F]{3})?$/;
+
+const appearanceInput = z.object({
+  preference: z.object({
+    palette: z.enum(PALETTE_IDS),
+    customPaper: z.string().regex(HEX_INPUT).optional(),
+    customAccent: z.string().regex(HEX_INPUT).optional(),
+    font: z.enum(APPEARANCE_FONTS),
+    customFontFamily: z.string().min(1).max(80).optional(),
+    textSize: z.enum(APPEARANCE_TEXT_SIZES),
+    roundness: z.enum(APPEARANCE_ROUNDNESS),
+    density: z.enum(APPEARANCE_DENSITIES),
+  }),
+});
+
+const getAppearancePreference = createServerFn({ method: "GET" })
+  .middleware([dbMiddleware, maybeAuthMiddleware])
+  .handler(
+    async ({
+      context,
+    }): Promise<{
+      preference: AppearancePreference;
+    }> => {
+      const session = context?.session;
+      if (session?.user) {
+        const row = await context.db.query.user.findFirst({
+          where: eq(context.schema.user.id, session.user.id),
+          columns: { appearance: true },
+        });
+        return { preference: dbValueToAppearance(row?.appearance ?? null) };
+      }
+
+      return {
+        preference: parseAppearanceCookie(getCookie(APPEARANCE_COOKIE)),
+      };
+    },
+  );
+
+const getAppearancePreferenceQueryOptions = queryOptions({
+  queryKey: ["appearancePreference"] as const,
+  queryFn: () => getAppearancePreference(),
+  staleTime: Number.POSITIVE_INFINITY,
+});
+
+const setAppearancePreference = createServerFn({ method: "POST" })
+  .middleware([dbMiddleware, maybeAuthMiddleware])
+  .validator(appearanceInput)
+  .handler(async ({ data, context }) => {
+    // `normalizeAppearance` is the authority: it drops fields the chosen
+    // options don't use and falls back to defaults for anything unusable, so a
+    // hand-rolled request can't persist a half-valid palette.
+    const preference = normalizeAppearance({
+      ...DEFAULT_APPEARANCE,
+      ...data.preference,
+    });
+
+    setCookie(APPEARANCE_COOKIE, appearanceToCookieValue(preference), {
+      path: "/",
+      sameSite: "lax",
+      maxAge: APPEARANCE_COOKIE_MAX_AGE_SECONDS,
+    });
+
+    if (context?.session?.user) {
+      await context.db
+        .update(context.schema.user)
+        .set({ appearance: appearanceToDbValue(preference) })
+        .where(eq(context.schema.user.id, context.session.user.id));
+    }
+
+    return { preference };
+  });
+
 const getTrackReadingHistoryPreference = createServerFn({ method: "GET" })
   .middleware([dbMiddleware, maybeAuthMiddleware])
   .handler(async ({ context }): Promise<{ enabled: boolean }> => {
@@ -1393,6 +1486,9 @@ export const user = {
   getReadingTypographyPreference,
   getReadingTypographyPreferenceQueryOptions,
   setReadingTypographyPreference,
+  getAppearancePreference,
+  getAppearancePreferenceQueryOptions,
+  setAppearancePreference,
   getTrackReadingHistoryPreference,
   getTrackReadingHistoryPreferenceQueryOptions,
   setTrackReadingHistoryPreference,

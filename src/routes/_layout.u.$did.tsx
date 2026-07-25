@@ -173,7 +173,7 @@ const styles = stylex.create({
     rowGap: spacing["4"],
     marginInlineStart: "auto",
     marginInlineEnd: "auto",
-    maxWidth: "1320px",
+    maxWidth: "82.5rem",
     paddingBottom: spacing["4"],
     paddingInlineStart: {
       default: spacing["5"],
@@ -205,7 +205,7 @@ const styles = stylex.create({
     flexBasis: "0%",
     flexGrow: 1,
     flexShrink: 1,
-    minWidth: "200px",
+    minWidth: "12.5rem",
     paddingTop: spacing["0.5"],
   },
   heroName: {
@@ -260,7 +260,7 @@ const styles = stylex.create({
     boxSizing: "border-box",
     marginInlineStart: "auto",
     marginInlineEnd: "auto",
-    maxWidth: "1320px",
+    maxWidth: "82.5rem",
     paddingInlineStart: {
       default: spacing["5"],
       [HERO_DESKTOP]: spacing["10"],
@@ -291,7 +291,7 @@ const styles = stylex.create({
     paddingTop: spacing["6"],
   },
   listRow: {
-    borderRadius: spacing["2"],
+    borderRadius: radius.md,
     borderTopColor: uiColor.border1,
     borderTopStyle: "solid",
     borderTopWidth: 1,

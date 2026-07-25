@@ -85,7 +85,7 @@ const styles = stylex.create({
     boxSizing: "border-box",
     marginInlineStart: "auto",
     marginInlineEnd: "auto",
-    maxWidth: "1040px",
+    maxWidth: "65rem",
     paddingBottom: spacing["24"],
     paddingInlineStart: {
       default: spacing["10"],
@@ -112,7 +112,7 @@ const styles = stylex.create({
   },
   sHead: {
     marginBottom: verticalSpace["8xl"],
-    maxWidth: "640px",
+    maxWidth: "40rem",
   },
   sHeadKicker: {
     display: "inline-block",
@@ -287,7 +287,7 @@ const styles = stylex.create({
     marginInlineStart: "auto",
     marginInlineEnd: "auto",
     marginTop: spacing["11"],
-    maxWidth: "760px",
+    maxWidth: "47.5rem",
     // eslint-disable-next-line @stylexjs/valid-styles
     maskImage: "linear-gradient(to bottom, #000 82%, transparent)",
     rowGap: spacing["2.5"],
@@ -796,7 +796,7 @@ const styles = stylex.create({
     fontSize: fontSize.sm,
     marginBottom: verticalSpace.none,
     marginTop: verticalSpace.none,
-    minWidth: "220px",
+    minWidth: "13.75rem",
   },
   builderLink: {
     marginTop: verticalSpace.none,

@@ -239,6 +239,10 @@ msgstr ""
 msgid "Opening the collection…"
 msgstr "컬렉션을 여는 중…"
 
+#: src/components/appearance-settings.tsx
+msgid "Density"
+msgstr ""
+
 #: src/components/reader/article-view.tsx
 msgid "Open on publication"
 msgstr "발행물에서 열기"
@@ -280,6 +284,7 @@ msgstr "피드백 보내기"
 msgid "<0>Session cookie.</0> After you sign in through the web app, the extension background worker reads your HttpOnly session cookie on {siteHost} to authenticate API requests. Content scripts do not read this cookie directly."
 msgstr "<0>세션 쿠키.</0> 웹 앱에서 로그인하면 확장 프로그램의 백그라운드 워커가 {siteHost}의 HttpOnly 세션 쿠키를 읽어 API 요청을 인증합니다. 콘텐츠 스크립트는 이 쿠키를 직접 읽지 않습니다."
 
+#: src/components/appearance-settings.tsx
 #: src/components/reader/collection-theme-editor.tsx
 #: src/components/user-settings-view.tsx
 msgid "Light"
@@ -318,9 +323,17 @@ msgstr ""
 msgid "Publications written by the people you follow on Bluesky, minus the ones you already subscribe to."
 msgstr ""
 
+#: src/components/reader/format-i18n.ts
+msgid "{years}y ago"
+msgstr ""
+
 #: src/components/reader/reorder-lists-modal.tsx
 msgid "List"
 msgstr "목록"
+
+#: src/components/appearance-settings.tsx
+msgid "The spacing between things — tighter for more on screen, looser for more room to read."
+msgstr ""
 
 #: src/components/docs/api-docs-request-panel.tsx
 msgid "Sign in to run this example (curl uses Bearer $ACCESS_TOKEN)."
@@ -349,6 +362,10 @@ msgstr "시리즈 이름과 테마 정하기"
 #: src/components/docs/docs-labelers-nav.tsx
 #: src/components/docs/labelers-docs-page.tsx
 msgid "Reference implementation"
+msgstr ""
+
+#: src/components/appearance-settings.tsx
+msgid "Extra large"
 msgstr ""
 
 #: src/routes/_layout.feedback.index.tsx
@@ -453,6 +470,10 @@ msgstr "계정에 저장된 데이터를 영구적으로 삭제합니다. 이 �
 msgid "Loading people"
 msgstr ""
 
+#: src/components/appearance-settings.tsx
+msgid "Links and labels on paper"
+msgstr ""
+
 #: src/components/reader/collection-theme-editor.tsx
 msgid "Read the piece →"
 msgstr "글 읽기 →"
@@ -493,6 +514,10 @@ msgstr "발행물을 팔로우하려면 로그인하세요"
 #: src/routes/_layout.discover.tsx
 msgid "Search publications"
 msgstr "발행물 검색"
+
+#: src/components/appearance-settings.tsx
+msgid "Small"
+msgstr ""
 
 #: src/routes/_layout.search.tsx
 msgid "Publications, handles, #tags, headlines…"
@@ -767,6 +792,7 @@ msgstr "토론"
 msgid "Content label"
 msgstr "콘텐츠 라벨"
 
+#: src/components/appearance-settings.tsx
 #: src/components/ReadingTypographyMenu.tsx
 #: src/components/user-settings-view.tsx
 msgid "Text size"
@@ -833,6 +859,11 @@ msgstr "아직 색인된 글이 없습니다."
 msgid "{0} added to {listName}."
 msgstr ""
 
+#: src/components/appearance-settings.tsx
+#: src/components/user-settings-view.tsx
+msgid "Custom"
+msgstr ""
+
 #: src/components/reader/about-view.tsx
 msgid "Read the API docs"
 msgstr "API 문서 보기"
@@ -868,6 +899,10 @@ msgstr ""
 
 #: src/components/reader/terms-view.tsx
 msgid "For more about how {SITE_NAME} works, see the <0>About</0> page. For questions about these terms for this deployment, contact the operator of the site at the URL above."
+msgstr ""
+
+#: src/components/appearance-settings.tsx
+msgid "Compact"
 msgstr ""
 
 #: src/components/reader/share-menu.tsx
@@ -931,6 +966,10 @@ msgstr "{documentCount, plural, one {문서} other {문서}}"
 msgid "Publishing"
 msgstr "발행"
 
+#: src/components/appearance-settings.tsx
+msgid "Roundness"
+msgstr ""
+
 #: src/components/docs/introduction-docs-page.tsx
 msgid "public XRPC queries and procedures for the Standard Reader read-model, with live examples."
 msgstr ""
@@ -971,6 +1010,10 @@ msgstr "문서가 발행물 레코드에 속한 경우에만 <0>site.standard.pu
 #: src/components/reader/about-view.tsx
 msgid "Your week"
 msgstr "이번 주"
+
+#: src/components/appearance-settings.tsx
+msgid "Relaxed"
+msgstr ""
 
 #: src/routes/_layout.history.tsx
 #: src/routes/_layout.recommended.tsx
@@ -1013,6 +1056,10 @@ msgstr "끄기"
 msgid "Run example"
 msgstr "예제 실행"
 
+#: src/components/appearance-settings.tsx
+msgid "Your paper is dark, so the app reads as a dark theme. Text, borders and every other step are derived from these two colors."
+msgstr ""
+
 #: src/components/user-settings-view.tsx
 msgid "When on, collection posts open in the magazine edition instead of the reader view."
 msgstr "켜면 컬렉션 글이 리더 보기 대신 매거진 에디션으로 열립니다."
@@ -1047,6 +1094,10 @@ msgstr "질문"
 #: src/components/reader/list-edit-modal.tsx
 msgid "Choose an item to add to the list"
 msgstr "목록에 추가할 항목을 선택하세요"
+
+#: src/components/appearance-settings.tsx
+msgid "Soft"
+msgstr ""
 
 #: src/magazine/magazine-end-subscribe.tsx
 msgid "Subscribed to list"
@@ -1110,9 +1161,18 @@ msgstr "이 목록에 대한 설명(공개 페이지에 표시됩니다)"
 msgid "Delete collection"
 msgstr "컬렉션 삭제"
 
+#: src/components/appearance-settings.tsx
+msgid "Interface font"
+msgstr ""
+
 #: src/routes/_layout.l.$did.$rkey.tsx
 msgid "No publications in this list."
 msgstr "이 목록에 발행물이 없습니다."
+
+#. placeholder {0}: palette.name
+#: src/components/appearance-settings.tsx
+msgid "{0}, dark"
+msgstr ""
 
 #: src/components/reader/save-to-collection-dialog.tsx
 msgid "Loading collections…"
@@ -1130,6 +1190,10 @@ msgstr "라벨러 둘러보기"
 #: src/components/reader/extension-privacy-view.tsx
 msgid "We do not run a separate analytics pipeline inside the extension."
 msgstr "확장 프로그램 내부에서 별도의 분석 파이프라인을 운영하지 않습니다."
+
+#: src/components/appearance-settings.tsx
+#~ msgid "Text, borders and every other step are derived from these two colors and checked for contrast."
+#~ msgstr ""
 
 #: src/routes/_layout.l.$did.$rkey.tsx
 msgid "Remove list"
@@ -1436,6 +1500,7 @@ msgstr "{durationMs}ms · {fetchedAt}에 가져옴"
 msgid "Loading feedback"
 msgstr "피드백 불러오는 중"
 
+#: src/components/appearance-settings.tsx
 #: src/components/reader/collection-theme-editor.tsx
 msgid "Accent"
 msgstr "강조 색"
@@ -1483,6 +1548,10 @@ msgstr "Chrome에 추가"
 #: src/components/docs/publishing-docs-page.tsx
 msgid "<0>Leaflet, Pckt, Offprint.</0> <1>pub.leaflet.content</1>, <2>blog.pckt.content</2>, and <3>app.offprint.content</3> — the block-based formats those tools write natively."
 msgstr "<0>Leaflet, Pckt, Offprint.</0> <1>pub.leaflet.content</1>, <2>blog.pckt.content</2>, <3>app.offprint.content</3> — 이 도구들이 기본으로 사용하는 블록 기반 형식입니다."
+
+#: src/components/appearance-settings.tsx
+msgid "XL"
+msgstr ""
 
 #: src/components/reader/about-view.tsx
 msgid "Set your own type"
@@ -1638,6 +1707,10 @@ msgstr "리더 뷰로 전환"
 msgid "<0>3. Declare your label values.</0> Describe each value (severity, default warn/hide, blur behavior) in an <1>app.standard-reader.labeler.service</1> descriptor, served from <2>app.standard-reader.labeler.getServices</2> (a <3>did:web</3> labeler has no repo to hold the record)."
 msgstr "<0>3. 라벨 값을 선언하세요.</0> 각 값(심각도, 기본 경고/숨김, 블러 동작)을 <1>app.standard-reader.labeler.service</1> 디스크립터에 기술하고 <2>app.standard-reader.labeler.getServices</2>로 제공하세요(<3>did:web</3> 라벨러는 레코드를 담을 저장소가 없습니다)."
 
+#: src/components/reader/format-i18n.ts
+msgid "{months}mo ago"
+msgstr ""
+
 #: src/components/user-settings-view.tsx
 msgid "To email your digest, Standard Reader needs your account email address. We'll ask your PDS to share it — you'll be sent to your login to approve the request, then brought right back here. Your email is used only to send the weekly digest, and you can turn it off any time."
 msgstr "다이제스트를 보내려면 Standard Reader에 계정 이메일 주소가 필요합니다. PDS에 공유를 요청하며, 로그인 화면에서 승인한 뒤 바로 이곳으로 돌아옵니다. 이메일은 주간 다이제스트 발송에만 사용되고 언제든 끌 수 있습니다."
@@ -1713,6 +1786,10 @@ msgstr ""
 msgid "Every unread article from this publication will be marked read. This can’t be undone."
 msgstr "이 발행물의 읽지 않은 아티클이 모두 읽음으로 표시됩니다. 되돌릴 수 없습니다."
 
+#: src/components/appearance-settings.tsx
+msgid "Your own colors"
+msgstr ""
+
 #: src/magazine/Magazine.tsx
 msgid "Setting the issue…"
 msgstr "호 설정 중…"
@@ -1765,6 +1842,11 @@ msgstr "{pubTotal, plural, one {발행물 #개} other {발행물 #개}}"
 msgid "Nothing new today"
 msgstr ""
 
+#. placeholder {0}: palette.name
+#: src/components/appearance-settings.tsx
+msgid "{0}, light"
+msgstr ""
+
 #: src/components/reader/collection-theme-editor.tsx
 msgid "Background"
 msgstr "배경"
@@ -1784,6 +1866,10 @@ msgstr "구독 중인 곳에서"
 #: src/components/reader/privacy-view.tsx
 msgid "<0>When you browse without signing in,</0> we serve public writing from our read-model index. We may store a theme preference cookie and, if you have signed in before on this device, a short list of recently used account handles (and optional avatar URLs) to speed up sign-in. We do not require an account to read."
 msgstr "<0>로그인하지 않고 둘러볼 때는</0> 읽기 모델 색인에 있는 공개 글을 제공합니다. 테마 설정 쿠키를 저장할 수 있으며, 이 기기에서 이전에 로그인한 적이 있다면 로그인을 빠르게 하기 위해 최근 사용한 계정 핸들 목록(및 선택적으로 아바타 URL)을 저장할 수 있습니다. 읽는 데 계정은 필요하지 않습니다."
+
+#: src/components/appearance-settings.tsx
+msgid "Paper"
+msgstr ""
 
 #: src/components/reader/about-view.tsx
 msgid "Flip one setting and article links open on the publication’s own site instead. Read wherever feels right to you."
@@ -2235,8 +2321,8 @@ msgid "by @{ownerHandle}"
 msgstr "@{ownerHandle} 님"
 
 #: src/components/user-settings-view.tsx
-msgid "Choose light, dark, or match your system setting."
-msgstr "라이트, 다크 또는 시스템 설정 따르기 중에서 선택하세요."
+#~ msgid "Choose light, dark, or match your system setting."
+#~ msgstr "라이트, 다크 또는 시스템 설정 따르기 중에서 선택하세요."
 
 #. placeholder {0}: rows.length
 #: src/components/reader/subscriptions-table.tsx
@@ -2254,6 +2340,10 @@ msgstr "완료"
 #: src/routes/_layout.index.tsx
 msgid "The latest long-form writing from across the network."
 msgstr "네트워크 전체의 최신 장문 글."
+
+#: src/components/appearance-settings.tsx
+msgid "Sets the app's colors — and, because the page color decides it, whether the app reads light or dark."
+msgstr ""
 
 #: src/routes/_layout.index.tsx
 msgid "{subscribedCount} unread across the publications you subscribe to."
@@ -2291,6 +2381,10 @@ msgstr "이미 {publicationName}을(를) 구독 중입니다. 새 글이 피드�
 msgid "The directory"
 msgstr "디렉터리"
 
+#: src/components/appearance-settings.tsx
+#~ msgid "Your accent sits close to the paper in tone, so a darkened version of it is used for text and links."
+#~ msgstr ""
+
 #: src/components/reader/about-view.tsx
 msgid "Trending this week"
 msgstr "이번 주 인기"
@@ -2319,6 +2413,10 @@ msgstr "아직 리스트가 없습니다"
 #: src/routes/_layout.discover.tsx
 msgid "Browse everything"
 msgstr "전체 둘러보기"
+
+#: src/components/appearance-settings.tsx
+msgid "Large"
+msgstr ""
 
 #: src/components/reader/about-view.tsx
 msgid "A Listen button reads any article aloud, right on your device, and highlights each word as it goes. The player follows you around the app — it’ll even read an embedded Bluesky post. Signed in, you can pick a voice."
@@ -2476,6 +2574,10 @@ msgstr ""
 msgid "The most-read writing across the network right now."
 msgstr "지금 네트워크에서 가장 많이 읽히는 글입니다."
 
+#: src/components/appearance-settings.tsx
+msgid "The typeface used across the app. Article text follows this too, unless you set a reading font below."
+msgstr ""
+
 #: src/magazine/magazine-end-like.tsx
 msgid "Recommend this issue"
 msgstr "이 호 추천하기"
@@ -2491,6 +2593,10 @@ msgstr "{count, plural, one {추천 #개} other {추천 #개}} — 클릭하면 
 #: src/routes/_layout.search.tsx
 msgid "{shown} of {total} matches"
 msgstr "일치 항목 {total}개 중 {shown}개"
+
+#: src/components/appearance-settings.tsx
+msgid "How rounded buttons, cards and inputs are."
+msgstr ""
 
 #: src/components/reader/collection-publication-editor.tsx
 msgid "What is this series about?"
@@ -2523,6 +2629,10 @@ msgstr ""
 #: src/components/labeler-detail-view.tsx
 msgid "This labeler didn’t publish any label definitions."
 msgstr "이 레이블러는 레이블 정의를 게시하지 않았습니다."
+
+#: src/components/reader/format-i18n.ts
+msgid "{days}d ago"
+msgstr ""
 
 #: src/components/user-settings-view.tsx
 msgid "Continue to approve"
@@ -2570,6 +2680,10 @@ msgstr "그래서 우리가 원하던 리더를 만들었습니다. 너비를 �
 #: src/routes/_layout.recommended.tsx
 msgid "Recommended articles"
 msgstr "추천 아티클"
+
+#: src/components/user-settings-view.tsx
+msgid "Light, dark, match your system — or Custom, to choose a palette of your own."
+msgstr ""
 
 #: src/components/labeler-detail-view.tsx
 msgid "Labeler views"
@@ -2654,6 +2768,10 @@ msgstr "콜로폰"
 msgid "Reader voice"
 msgstr "리더 음성"
 
+#: src/components/appearance-settings.tsx
+msgid "Sharp"
+msgstr ""
+
 #: src/components/reader/about-view.tsx
 msgid "What you get is a reading view made for long-form: a centered column, drop caps and pull quotes, full-bleed images you can open into a gallery. The page gets out of the way so the writing can do its work."
 msgstr "긴 글을 위해 만든 읽기 화면을 만나보세요. 가운데 정렬된 단, 드롭캡과 인용구, 갤러리로 열어볼 수 있는 전체 폭 이미지까지. 글이 제 몫을 하도록 페이지는 뒤로 물러납니다."
@@ -2703,6 +2821,10 @@ msgstr "링크가 만료되었습니다."
 #: src/components/reader/privacy-view.tsx
 msgid "You can sign out at any time, which clears your app session cookie. You can clear site cookies in your browser to remove theme and saved-handle preferences. You can change reading-history tracking and delete personal data from Settings. To remove other AT Protocol records you created through the app, use a compatible client or your repository tools."
 msgstr "언제든지 로그아웃할 수 있으며, 그러면 앱 세션 쿠키가 삭제됩니다. 브라우저에서 사이트 쿠키를 지우면 테마와 저장된 핸들 설정을 제거할 수 있습니다. 읽기 기록 추적은 설정에서 변경할 수 있고 개인 데이터도 삭제할 수 있습니다. 앱을 통해 생성한 다른 AT Protocol 레코드를 삭제하려면 호환되는 클라이언트나 리포지토리 도구를 사용하세요."
+
+#: src/components/appearance-settings.tsx
+msgid "XS"
+msgstr ""
 
 #: src/components/reader/article-below-fold.tsx
 msgid "Keep reading"
@@ -2884,6 +3006,10 @@ msgstr ""
 msgid "Share on Bluesky"
 msgstr "Bluesky에 공유"
 
+#: src/components/appearance-settings.tsx
+msgid "Reset"
+msgstr ""
+
 #: src/components/docs/docs-lexicons-nav.tsx
 #~ msgid "Lexicon reference"
 #~ msgstr "렉시콘 레퍼런스"
@@ -2939,6 +3065,10 @@ msgstr "한자리에 모인 대화"
 msgid "Mark all as read"
 msgstr "모두 읽음으로 표시"
 
+#: src/components/appearance-settings.tsx
+msgid "Scales every size in the app, article text included — from 14px up to 24px of interface text."
+msgstr ""
+
 #: src/components/reader/privacy-view.tsx
 msgid "Your display name, handle, avatar URL, and DID as returned by your account provider."
 msgstr "계정 제공자가 반환한 표시 이름, 핸들, 아바타 URL, DID입니다."
@@ -2970,6 +3100,10 @@ msgstr "다른 클라이언트로 공유"
 #: src/components/reader/extension-privacy-view.tsx
 msgid "What the extension does not do"
 msgstr "확장 프로그램이 하지 않는 일"
+
+#: src/components/appearance-settings.tsx
+msgid "Default"
+msgstr ""
 
 #: src/routes/_layout.index.tsx
 msgid "Loading recommendations"
@@ -3100,6 +3234,10 @@ msgstr "({min}:1 필요)"
 msgid "Every read record in your repository will be removed. Articles will appear unread again across the app. This cannot be undone."
 msgstr "저장소에 있는 모든 읽음 기록이 삭제됩니다. 앱 전체에서 글이 다시 읽지 않음으로 표시되며, 되돌릴 수 없습니다."
 
+#: src/components/appearance-settings.tsx
+msgid "Text, borders and every other step are derived from these two colors."
+msgstr ""
+
 #: src/components/reader/privacy-view.tsx
 msgid "If you install the {SITE_NAME} browser extension, it uses the same account and session cookie as this site. The extension sends page URLs to our <0>/api/extension/*</0> endpoints for index matching and keeps overlay settings in your browser's extension storage. See the <1>extension privacy policy</1> for details that apply only to the extension."
 msgstr "{SITE_NAME} 브라우저 확장 프로그램을 설치하면 이 사이트와 동일한 계정 및 세션 쿠키를 사용합니다. 확장 프로그램은 색인 매칭을 위해 페이지 URL을 <0>/api/extension/*</0> 엔드포인트로 전송하고, 오버레이 설정은 브라우저의 확장 프로그램 저장소에 보관합니다. 확장 프로그램에만 적용되는 자세한 내용은 <1>확장 프로그램 개인정보 처리방침</1>을 참고하세요."
@@ -3149,6 +3287,7 @@ msgstr ""
 msgid "Unfollowing {peopleCount, plural, one {this person} other {these # people}} also drops the subscriptions that follow created, so their publications leave your feed. Nothing you have saved, read, or recommended is affected."
 msgstr ""
 
+#: src/components/appearance-settings.tsx
 #: src/components/reader/collection-theme-editor.tsx
 #: src/components/user-settings-view.tsx
 msgid "Dark"
@@ -3369,6 +3508,10 @@ msgstr "라벨러는 DID로 구독하는 모더레이션 서비스입니다. 구
 msgid "Standard Reader meets you where you read"
 msgstr "Standard Reader는 당신이 읽는 곳으로 찾아갑니다"
 
+#: src/components/appearance-settings.tsx
+msgid "Reset appearance"
+msgstr ""
+
 #: src/components/reader/collection-theme-editor.tsx
 #: src/components/reader/markdown-field.tsx
 #: src/components/reading-settings-preview.tsx
@@ -3442,6 +3585,10 @@ msgstr "라벨러 검색"
 msgid "{weekday} · Your feed"
 msgstr "{weekday} · 내 피드"
 
+#: src/components/reader/format-i18n.ts
+msgid "yesterday"
+msgstr ""
+
 #: src/components/onboarding/step-settings.tsx
 #: src/components/user-settings-view.tsx
 msgid "Use publication themes"
@@ -3459,6 +3606,7 @@ msgstr "서비스 DID는 <0>{appviewDid}</0>입니다. 이 서비스는 스코�
 msgid "The Slow Web, Revisited"
 msgstr "느린 웹, 다시 보기"
 
+#: src/components/appearance-settings.tsx
 #: src/components/reading-custom-font-picker.tsx
 #: src/components/user-settings-view.tsx
 msgid "Google Font"
@@ -3554,6 +3702,10 @@ msgstr "피드백 검색"
 msgid "Unsubscribe"
 msgstr ""
 
+#: src/components/appearance-settings.tsx
+msgid "L"
+msgstr ""
+
 #: src/routes/_layout.search.tsx
 msgid "Load more ({remainingPublications} remaining)"
 msgstr "더 보기 ({remainingPublications}개 남음)"
@@ -3606,6 +3758,10 @@ msgstr "임베드 코드 복사"
 #: src/components/user-settings-view.tsx
 msgid "Delete all lists?"
 msgstr "모든 목록을 삭제할까요?"
+
+#: src/components/user-settings-view.tsx
+msgid "Advanced"
+msgstr ""
 
 #: src/components/onboarding/step-settings.tsx
 #: src/components/user-settings-view.tsx
@@ -3669,6 +3825,10 @@ msgstr "재생"
 #: src/routes/_layout.search.tsx
 msgid "Loading article matches"
 msgstr "검색된 글 불러오는 중"
+
+#: src/components/appearance-settings.tsx
+msgid "Extra small"
+msgstr ""
 
 #: src/components/reader/content/renderers/leaflet-standard-site-publication.tsx
 msgid "Publication not found."
@@ -3738,6 +3898,10 @@ msgstr "동작"
 msgid "Reading history"
 msgstr "읽은 기록"
 
+#: src/components/appearance-settings.tsx
+msgid "M"
+msgstr ""
+
 #: src/components/docs/labelers-docs-page.tsx
 msgid "<0>2. Serve labels.</0> Sign and emit <1>com.atproto.label.defs#label</1> objects, and expose the standard <2>com.atproto.label.queryLabels</2> (HTTP) and <3>com.atproto.label.subscribeLabels</3> (WebSocket) endpoints."
 msgstr "<0>2. 라벨 제공.</0> <1>com.atproto.label.defs#label</1> 객체를 서명해 발행하고, 표준 <2>com.atproto.label.queryLabels</2>(HTTP) 및 <3>com.atproto.label.subscribeLabels</3>(WebSocket) 엔드포인트를 공개하세요."
@@ -3800,6 +3964,10 @@ msgstr "이 목록에 발행물이 없습니다. 편집 대화상자에서 추�
 #: src/components/reader/subscribe-card.tsx
 msgid "Adding {publicationName} to your feed."
 msgstr "{publicationName}을(를) 피드에 추가하는 중입니다."
+
+#: src/components/appearance-settings.tsx
+#~ msgid "Your paper is dark, so the app reads as a dark theme. Text, borders and every other step are derived from these two colors and checked for contrast."
+#~ msgstr ""
 
 #: src/components/NavbarAuth.tsx
 #: src/components/reader/app-shell.tsx
@@ -3956,6 +4124,10 @@ msgstr "로그인과 레코드 접근은 사용자의 Personal Data Server와 �
 msgid "An included article"
 msgstr "포함된 글"
 
+#: src/components/appearance-settings.tsx
+msgid "Puts the palette, font, size, roundness and density back to their defaults."
+msgstr ""
+
 #: src/components/user-settings-view.tsx
 msgid "Subscribe to labelers to flag, blur, or hide content as you read."
 msgstr "라벨러를 구독하면 읽는 동안 콘텐츠를 표시하거나 흐리거나 숨길 수 있습니다."
@@ -4013,6 +4185,7 @@ msgstr "{weekday} · 네트워크 전체"
 msgid "Publish & share the run"
 msgstr "실행 결과 게시 및 공유"
 
+#: src/components/appearance-settings.tsx
 #: src/components/reader/collection-builder.tsx
 msgid "Editorial"
 msgstr "에디토리얼"
@@ -4175,6 +4348,10 @@ msgstr ""
 msgid "Open on {publicationName}"
 msgstr "{publicationName}에서 열기"
 
+#: src/components/appearance-settings.tsx
+msgid "Sans"
+msgstr ""
+
 #: src/components/reader/add-publication-modal.tsx
 msgid "Search publications or paste a handle"
 msgstr "발행물 검색 또는 핸들 붙여넣기"
@@ -4299,6 +4476,10 @@ msgstr "소리내어 읽기"
 msgid "Articles you've saved for later — in your repo, synced across devices."
 msgstr "나중에 읽으려고 저장한 글 — 내 저장소에 보관되어 기기 간에 동기화됩니다."
 
+#: src/components/reader/format-i18n.ts
+msgid "today"
+msgstr ""
+
 #: src/components/reader/article-view.tsx
 #: src/components/reader/content/renderers/shared/image-figure.tsx
 #: src/components/reader/content/renderers/shared/markdown-article.tsx
@@ -4406,6 +4587,7 @@ msgstr "주제로 필터"
 msgid "No unread articles from your follows right now."
 msgstr "지금은 팔로우한 곳에 읽지 않은 글이 없습니다."
 
+#: src/components/appearance-settings.tsx
 #: src/components/user-settings-view.tsx
 msgid "Search and pick any family from the Google Fonts catalog."
 msgstr "Google Fonts 카탈로그에서 원하는 서체를 검색해 선택하세요."
@@ -4534,6 +4716,10 @@ msgstr "<0>Atmosphere 계정으로 로그인하면</0>(예: Bluesky OAuth) AT Pr
 msgid "Powered by <0>Standard Reader</0>"
 msgstr "<0>Standard Reader</0> 제공"
 
+#: src/components/appearance-settings.tsx
+msgid "Your accent sits close to the paper in tone — it stays exactly as you picked it, but text and links set in it will be hard to read."
+msgstr ""
+
 #: src/components/reader/about-view.tsx
 msgid "Save from anywhere you browse"
 msgstr "어디서 둘러보든 저장하기"
@@ -4651,6 +4837,10 @@ msgstr "시작하기"
 msgid "You don't have any content tabs to show yet."
 msgstr "아직 표시할 콘텐츠 탭이 없습니다."
 
+#: src/components/appearance-settings.tsx
+msgid "Body text on paper"
+msgstr ""
+
 #: src/components/reader/article-view.tsx
 msgid "OK"
 msgstr "확인"
@@ -4719,6 +4909,10 @@ msgstr "@{0} · 문서는 있지만 발행물이 없음"
 msgid "{connectionLabel} via Semble"
 msgstr "Semble를 통한 {connectionLabel}"
 
+#: src/components/appearance-settings.tsx
+msgid "S"
+msgstr ""
+
 #: src/magazine/flow.tsx
 msgid "In this issue"
 msgstr "이번 호에서"
@@ -4729,4 +4923,8 @@ msgstr ""
 
 #: src/components/reader/terms-view.tsx
 msgid "Acceptable use"
+msgstr ""
+
+#: src/components/appearance-settings.tsx
+msgid "Palette"
 msgstr ""

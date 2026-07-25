@@ -26,6 +26,7 @@ import {
 } from "../theme/semantic-spacing.stylex";
 import { shadow } from "../theme/shadow.stylex";
 import type { Size, StyleXComponentProps } from "../theme/types";
+import { fontSize } from "../theme/typography.stylex";
 
 const styles = stylex.create({
   group: {
@@ -60,6 +61,18 @@ const styles = stylex.create({
     // eslint-disable-next-line @stylexjs/valid-styles
     textBoxTrim: "trim-both",
     borderWidth: 0,
+
+    // Stated rather than inherited: a <button> takes neither the family nor the
+    // size of its ancestors, so without this the items rendered at the UA
+    // default (~13px system font) — close enough to `sm` to look intentional,
+    // but outside the type scale, so no theme or text-size preference reached
+    // them. Matched to the design-system Button's own per-size mapping.
+    fontSize: {
+      ":is([data-size=lg] *)": fontSize["base"],
+      ":is([data-size=md] *)": fontSize["sm"],
+      ":is([data-size=sm] *)": fontSize["xs"],
+      default: fontSize["sm"],
+    },
 
     cornerShape: "squircle",
     gap: gap["xs"],

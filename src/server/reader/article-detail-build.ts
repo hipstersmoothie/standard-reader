@@ -27,7 +27,7 @@ import { OFFPRINT_CONTENT } from "#/lib/offprint/types";
 import { pcktBlocks, pcktCodeLanguage } from "#/lib/pckt/blocks";
 import { PCKT_CONTENT } from "#/lib/pckt/types";
 import { getPublicUrl } from "#/lib/public-url";
-import type { CodeHighlightsByScheme, ThemeMode } from "#/lib/theme";
+import type { CodeHighlightsByScheme, ThemeSchemeMode } from "#/lib/theme";
 import { EMPTY_CODE_HIGHLIGHTS } from "#/lib/theme";
 import { cdnImageUrl } from "#/server/atproto/blob";
 import { publicationFontsFromThemeJson } from "#/server/fonts/publication-fonts.server";
@@ -95,7 +95,7 @@ export interface BuildArticleDetailOptions {
 
 async function codeHighlightsForThemeMode(
   blocks: Array<Pick<LeafletCodeBlock, "language" | "plaintext">>,
-  themeMode: ThemeMode,
+  themeMode: ThemeSchemeMode,
   codeTheme: {
     accent: string | null;
     surfaces: ReturnType<typeof publicationRenderedSurfaces>;
@@ -205,7 +205,7 @@ export async function buildArticleDetail(
   schema: Schema,
   row: ArticleDetailSourceRow,
   contributors: Array<ArticleContributor>,
-  themeMode: ThemeMode,
+  themeMode: ThemeSchemeMode,
   options: BuildArticleDetailOptions = {},
 ): Promise<ArticleDetail> {
   const publication = publicationFromRow(row);
