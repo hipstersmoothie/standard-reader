@@ -983,6 +983,10 @@ msgstr ""
 msgid "RSS feed URL"
 msgstr ""
 
+#: src/lib/sidebar-nav.ts
+msgid "Your own curated sets of articles."
+msgstr ""
+
 #: src/components/reader/discover-topic-filters.tsx
 msgid "No topics match “{debouncedQuery}”."
 msgstr ""
@@ -2460,6 +2464,10 @@ msgstr ""
 msgid "Be the first to share a bug, idea, or question."
 msgstr ""
 
+#: src/lib/sidebar-nav.ts
+msgid "Browse the publication directory to find new writers."
+msgstr ""
+
 #: src/routes/_layout.index.tsx
 msgid "The most-read writing across the network right now."
 msgstr ""
@@ -3187,6 +3195,10 @@ msgstr ""
 
 #: src/routes/_layout.index.tsx
 msgid "Fresh"
+msgstr ""
+
+#: src/lib/sidebar-nav.ts
+msgid "Everything newest first, with unread and all-network filters."
 msgstr ""
 
 #: src/components/reader/mention-hover-card.tsx
@@ -4003,6 +4015,10 @@ msgstr ""
 msgid "Legal"
 msgstr ""
 
+#: src/lib/sidebar-nav.ts
+msgid "Articles you've bookmarked to read later."
+msgstr ""
+
 #: src/components/reader/app-shell.tsx
 msgid "{unread} unread"
 msgstr ""
@@ -4464,6 +4480,10 @@ msgstr ""
 msgid "Drag to change the order your lists appear in the sidebar."
 msgstr ""
 
+#: src/lib/sidebar-nav.ts
+msgid "Find publications, people, topics, and headlines."
+msgstr ""
+
 #: src/components/docs/publishing-docs-page.tsx
 msgid "Standard Reader indexes <0>site.standard.document</0> and <1>site.standard.publication</1> records out of AT Proto repos. Platforms like Leaflet, Pckt, and Offprint write these records for you as part of publishing, so their authors get the full reader treatment automatically. If you run your own site and hand-roll your own <2>site.standard</2> integration instead, you write those records yourself — this page covers what to add, including Markpub, the markdown format we recommend for a hand-rolled body."
 msgstr ""
@@ -4643,6 +4663,10 @@ msgstr ""
 #: src/magazine/Magazine.tsx
 #: src/routes/_layout.u.$did.tsx
 msgid "Reader"
+msgstr ""
+
+#: src/lib/sidebar-nav.ts
+msgid "Your day: a featured lead and the latest from your subscriptions."
 msgstr ""
 
 #: src/routes/_layout.tag.$tag.tsx

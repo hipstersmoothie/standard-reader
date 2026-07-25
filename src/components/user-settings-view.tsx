@@ -718,7 +718,10 @@ export function UserSettingsView() {
                   return (
                     <div key={item.id}>
                       <Separator />
-                      <SettingRow label={itemLabel}>
+                      <SettingRow
+                        label={itemLabel}
+                        description={i18n._(item.description)}
+                      >
                         <Switch
                           isSelected={visible}
                           onChange={(next) =>
