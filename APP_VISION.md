@@ -175,6 +175,44 @@ Sections, top to bottom:
   everyone; `user.reading_typography` when signed in (`fontSize:measure:bodyFont`
   encoding, with optional `:customFont` when body font is custom).
 
+- **Appearance (preference):** the theme control is light / dark / system /
+  **custom**. `custom` opens a palette picker: eight curated pairs — a Radix
+  accent with the gray Radix pairs it with (Almanac, Meadow, Press, Ink in light;
+  Almanac Night, Archive, Tide, Ember in dark) — plus the reader's own accent +
+  paper. A palette states its own scheme rather than following the OS: the paper
+  color decides light vs dark, and the shell pins `color-scheme` to it (which is
+  also what resolves `light-dark()` inside the Radix scales). Curated palettes are
+  static `createTheme`s over the vendored scales; the reader's own two colors go
+  through the same generator that paints publication themes, under an `--sr-*`
+  prefix, so ink, borders and every step in between are derived rather than asked
+  for. One deliberate difference from the publication path: a reader's stated
+  accent is **never substituted**. A publication whose accent can't clear 3:1
+  against its page gets that accent replaced by the page's ink, so a stranger's
+  site can't grey out our chrome; a reader theming their own app keeps exactly
+  the color they picked (choosing a primary color and being handed grey is a
+  worse answer), and the panel scores the generated ramp and warns instead.
+
+  Alongside the palette, four dials that apply in **every** theme mode because
+  none of them is color: interface font (editorial / sans / any Google family),
+  text size (XS–XL, 14→24px of interface text), roundness (sharp / soft /
+  default), and density (compact / default / relaxed). Text size scales the **root
+  font size**, so every rem in the app follows it — type, spacing, radii, control
+  boxes, the sidebar and the content shells — rather than only the tokens we
+  remembered to route through a multiplier; breakpoints are unaffected, since
+  media queries resolve against the initial font size. Roundness and density are
+  multipliers on the radius and spacing token scales, applied on the **root
+  element** — the semantic scales are declared as `--gap-md: var(--spacing-2)` at
+  `:root`, and a custom property resolves on the element that declares it, so an
+  override further down the tree moves padding that reads a spacing token
+  directly while every gap keeps the value it already computed. Density
+  deliberately stops
+  at the spacing _between_ things and leaves control geometry alone, because a
+  scale that stretched a switch's track but not its height distorts it. So a
+  single setting moves the chrome _and_ the article body — the Reading controls
+  above then override the article on top of that baseline. Cookie for everyone;
+  `user.appearance` when signed in (`null` = all defaults), seeded through
+  `getShellBootstrap` so the first paint is already themed.
+
 - **Use publication themes (preference):** settings-page toggle (Appearance) that
   repaints `/p/$did/$rkey` and `/a/$did/$rkey` in the publication's own
   `site.standard.theme.basic` colors. The four flat colors are expanded into full

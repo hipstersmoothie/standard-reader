@@ -239,6 +239,10 @@ msgstr ""
 msgid "Opening the collection…"
 msgstr "コレクションを開いています…"
 
+#: src/components/appearance-settings.tsx
+msgid "Density"
+msgstr ""
+
 #: src/components/reader/article-view.tsx
 msgid "Open on publication"
 msgstr "発行物で開く"
@@ -280,6 +284,7 @@ msgstr "フィードバックを送信"
 msgid "<0>Session cookie.</0> After you sign in through the web app, the extension background worker reads your HttpOnly session cookie on {siteHost} to authenticate API requests. Content scripts do not read this cookie directly."
 msgstr "<0>セッション Cookie。</0> ウェブアプリでサインインすると、拡張機能のバックグラウンドワーカーが {siteHost} の HttpOnly セッション Cookie を読み取って API リクエストを認証します。コンテンツスクリプトがこの Cookie を直接読むことはありません。"
 
+#: src/components/appearance-settings.tsx
 #: src/components/reader/collection-theme-editor.tsx
 #: src/components/user-settings-view.tsx
 msgid "Light"
@@ -318,9 +323,17 @@ msgstr ""
 msgid "Publications written by the people you follow on Bluesky, minus the ones you already subscribe to."
 msgstr ""
 
+#: src/components/reader/format-i18n.ts
+msgid "{years}y ago"
+msgstr ""
+
 #: src/components/reader/reorder-lists-modal.tsx
 msgid "List"
 msgstr "リスト"
+
+#: src/components/appearance-settings.tsx
+msgid "The spacing between things — tighter for more on screen, looser for more room to read."
+msgstr ""
 
 #: src/components/docs/api-docs-request-panel.tsx
 msgid "Sign in to run this example (curl uses Bearer $ACCESS_TOKEN)."
@@ -349,6 +362,10 @@ msgstr "シリーズに名前を付けてテーマを選ぶ"
 #: src/components/docs/docs-labelers-nav.tsx
 #: src/components/docs/labelers-docs-page.tsx
 msgid "Reference implementation"
+msgstr ""
+
+#: src/components/appearance-settings.tsx
+msgid "Extra large"
 msgstr ""
 
 #: src/routes/_layout.feedback.index.tsx
@@ -453,6 +470,10 @@ msgstr "アカウントに保存されているデータを完全に削除しま
 msgid "Loading people"
 msgstr ""
 
+#: src/components/appearance-settings.tsx
+msgid "Links and labels on paper"
+msgstr ""
+
 #: src/components/reader/collection-theme-editor.tsx
 msgid "Read the piece →"
 msgstr "記事を読む →"
@@ -493,6 +514,10 @@ msgstr "発行物をフォローするにはログインしてください"
 #: src/routes/_layout.discover.tsx
 msgid "Search publications"
 msgstr "発行物を検索"
+
+#: src/components/appearance-settings.tsx
+msgid "Small"
+msgstr ""
 
 #: src/routes/_layout.search.tsx
 msgid "Publications, handles, #tags, headlines…"
@@ -767,6 +792,7 @@ msgstr "ディスカッション"
 msgid "Content label"
 msgstr "コンテンツラベル"
 
+#: src/components/appearance-settings.tsx
 #: src/components/ReadingTypographyMenu.tsx
 #: src/components/user-settings-view.tsx
 msgid "Text size"
@@ -833,6 +859,11 @@ msgstr "インデックスされた投稿はまだありません。"
 msgid "{0} added to {listName}."
 msgstr ""
 
+#: src/components/appearance-settings.tsx
+#: src/components/user-settings-view.tsx
+msgid "Custom"
+msgstr ""
+
 #: src/components/reader/about-view.tsx
 msgid "Read the API docs"
 msgstr "API ドキュメントを読む"
@@ -868,6 +899,10 @@ msgstr ""
 
 #: src/components/reader/terms-view.tsx
 msgid "For more about how {SITE_NAME} works, see the <0>About</0> page. For questions about these terms for this deployment, contact the operator of the site at the URL above."
+msgstr ""
+
+#: src/components/appearance-settings.tsx
+msgid "Compact"
 msgstr ""
 
 #: src/components/reader/share-menu.tsx
@@ -931,6 +966,10 @@ msgstr "{documentCount, plural, one {文書} other {文書}}"
 msgid "Publishing"
 msgstr "公開"
 
+#: src/components/appearance-settings.tsx
+msgid "Roundness"
+msgstr ""
+
 #: src/components/docs/introduction-docs-page.tsx
 msgid "public XRPC queries and procedures for the Standard Reader read-model, with live examples."
 msgstr ""
@@ -971,6 +1010,10 @@ msgstr "<0>site.standard.publication</0> のヒントは、そのドキュメン
 #: src/components/reader/about-view.tsx
 msgid "Your week"
 msgstr "今週"
+
+#: src/components/appearance-settings.tsx
+msgid "Relaxed"
+msgstr ""
 
 #: src/routes/_layout.history.tsx
 #: src/routes/_layout.recommended.tsx
@@ -1013,6 +1056,10 @@ msgstr "オフ"
 msgid "Run example"
 msgstr "例を実行"
 
+#: src/components/appearance-settings.tsx
+msgid "Your paper is dark, so the app reads as a dark theme. Text, borders and every other step are derived from these two colors."
+msgstr ""
+
 #: src/components/user-settings-view.tsx
 msgid "When on, collection posts open in the magazine edition instead of the reader view."
 msgstr "オンにすると、コレクションの記事はリーダー表示ではなくマガジン版で開きます。"
@@ -1047,6 +1094,10 @@ msgstr "質問"
 #: src/components/reader/list-edit-modal.tsx
 msgid "Choose an item to add to the list"
 msgstr "リストに追加する項目を選択"
+
+#: src/components/appearance-settings.tsx
+msgid "Soft"
+msgstr ""
 
 #: src/magazine/magazine-end-subscribe.tsx
 msgid "Subscribed to list"
@@ -1110,9 +1161,18 @@ msgstr "このリストの説明（公開ページに表示されます）"
 msgid "Delete collection"
 msgstr "コレクションを削除"
 
+#: src/components/appearance-settings.tsx
+msgid "Interface font"
+msgstr ""
+
 #: src/routes/_layout.l.$did.$rkey.tsx
 msgid "No publications in this list."
 msgstr "このリストには発行物がありません。"
+
+#. placeholder {0}: palette.name
+#: src/components/appearance-settings.tsx
+msgid "{0}, dark"
+msgstr ""
 
 #: src/components/reader/save-to-collection-dialog.tsx
 msgid "Loading collections…"
@@ -1130,6 +1190,10 @@ msgstr "ラベラーを見る"
 #: src/components/reader/extension-privacy-view.tsx
 msgid "We do not run a separate analytics pipeline inside the extension."
 msgstr "拡張機能の内部で独自の分析パイプラインを運用することはありません。"
+
+#: src/components/appearance-settings.tsx
+#~ msgid "Text, borders and every other step are derived from these two colors and checked for contrast."
+#~ msgstr ""
 
 #: src/routes/_layout.l.$did.$rkey.tsx
 msgid "Remove list"
@@ -1436,6 +1500,7 @@ msgstr "{durationMs}ms · 取得 {fetchedAt}"
 msgid "Loading feedback"
 msgstr "フィードバックを読み込み中"
 
+#: src/components/appearance-settings.tsx
 #: src/components/reader/collection-theme-editor.tsx
 msgid "Accent"
 msgstr "アクセント"
@@ -1483,6 +1548,10 @@ msgstr "Chrome に追加"
 #: src/components/docs/publishing-docs-page.tsx
 msgid "<0>Leaflet, Pckt, Offprint.</0> <1>pub.leaflet.content</1>, <2>blog.pckt.content</2>, and <3>app.offprint.content</3> — the block-based formats those tools write natively."
 msgstr "<0>Leaflet、Pckt、Offprint。</0> <1>pub.leaflet.content</1>、<2>blog.pckt.content</2>、<3>app.offprint.content</3> — これらのツールがネイティブに書き出すブロックベースの形式です。"
+
+#: src/components/appearance-settings.tsx
+msgid "XL"
+msgstr ""
 
 #: src/components/reader/about-view.tsx
 msgid "Set your own type"
@@ -1638,6 +1707,10 @@ msgstr "リーダー表示に切り替え"
 msgid "<0>3. Declare your label values.</0> Describe each value (severity, default warn/hide, blur behavior) in an <1>app.standard-reader.labeler.service</1> descriptor, served from <2>app.standard-reader.labeler.getServices</2> (a <3>did:web</3> labeler has no repo to hold the record)."
 msgstr "<0>3. ラベルの値を宣言する。</0> 各値（深刻度、既定の警告/非表示、ぼかしの挙動）を <1>app.standard-reader.labeler.service</1> ディスクリプタに記述し、<2>app.standard-reader.labeler.getServices</2> から配信します（<3>did:web</3> のラベラーにはレコードを保持するリポジトリがないためです）。"
 
+#: src/components/reader/format-i18n.ts
+msgid "{months}mo ago"
+msgstr ""
+
 #: src/components/user-settings-view.tsx
 msgid "To email your digest, Standard Reader needs your account email address. We'll ask your PDS to share it — you'll be sent to your login to approve the request, then brought right back here. Your email is used only to send the weekly digest, and you can turn it off any time."
 msgstr "ダイジェストをメールで送るには、Standard Reader にアカウントのメールアドレスが必要です。PDS に共有を依頼するため、ログイン画面で許可していただき、その後ここに戻ります。メールアドレスは週刊ダイジェストの送信にのみ使用され、いつでもオフにできます。"
@@ -1713,6 +1786,10 @@ msgstr ""
 msgid "Every unread article from this publication will be marked read. This can’t be undone."
 msgstr "この発行物の未読記事がすべて既読になります。この操作は取り消せません。"
 
+#: src/components/appearance-settings.tsx
+msgid "Your own colors"
+msgstr ""
+
 #: src/magazine/Magazine.tsx
 msgid "Setting the issue…"
 msgstr "号を設定中…"
@@ -1765,6 +1842,11 @@ msgstr "{pubTotal, plural, one {# 件の発行物} other {# 件の発行物}}"
 msgid "Nothing new today"
 msgstr ""
 
+#. placeholder {0}: palette.name
+#: src/components/appearance-settings.tsx
+msgid "{0}, light"
+msgstr ""
+
 #: src/components/reader/collection-theme-editor.tsx
 msgid "Background"
 msgstr "背景"
@@ -1784,6 +1866,10 @@ msgstr "購読中の発行物から"
 #: src/components/reader/privacy-view.tsx
 msgid "<0>When you browse without signing in,</0> we serve public writing from our read-model index. We may store a theme preference cookie and, if you have signed in before on this device, a short list of recently used account handles (and optional avatar URLs) to speed up sign-in. We do not require an account to read."
 msgstr "<0>サインインせずに閲覧する場合、</0>読み取りモデルのインデックスから公開されている記事を配信します。テーマ設定の Cookie と、このデバイスで以前サインインしたことがある場合はサインインを速くするために最近使用したアカウントのハンドル（および任意でアバターの URL）の短いリストを保存することがあります。読むためにアカウントは必要ありません。"
+
+#: src/components/appearance-settings.tsx
+msgid "Paper"
+msgstr ""
 
 #: src/components/reader/about-view.tsx
 msgid "Flip one setting and article links open on the publication’s own site instead. Read wherever feels right to you."
@@ -2235,8 +2321,8 @@ msgid "by @{ownerHandle}"
 msgstr "@{ownerHandle} による"
 
 #: src/components/user-settings-view.tsx
-msgid "Choose light, dark, or match your system setting."
-msgstr "ライト、ダーク、またはシステム設定に合わせるかを選択します。"
+#~ msgid "Choose light, dark, or match your system setting."
+#~ msgstr "ライト、ダーク、またはシステム設定に合わせるかを選択します。"
 
 #. placeholder {0}: rows.length
 #: src/components/reader/subscriptions-table.tsx
@@ -2254,6 +2340,10 @@ msgstr "完了"
 #: src/routes/_layout.index.tsx
 msgid "The latest long-form writing from across the network."
 msgstr "ネットワーク全体の最新の長文記事です。"
+
+#: src/components/appearance-settings.tsx
+msgid "Sets the app's colors — and, because the page color decides it, whether the app reads light or dark."
+msgstr ""
 
 #: src/routes/_layout.index.tsx
 msgid "{subscribedCount} unread across the publications you subscribe to."
@@ -2291,6 +2381,10 @@ msgstr "{publicationName} はすでに購読済みです。新しい投稿はフ
 msgid "The directory"
 msgstr "ディレクトリ"
 
+#: src/components/appearance-settings.tsx
+#~ msgid "Your accent sits close to the paper in tone, so a darkened version of it is used for text and links."
+#~ msgstr ""
+
 #: src/components/reader/about-view.tsx
 msgid "Trending this week"
 msgstr "今週の急上昇"
@@ -2319,6 +2413,10 @@ msgstr "リストはまだありません"
 #: src/routes/_layout.discover.tsx
 msgid "Browse everything"
 msgstr "すべてを見る"
+
+#: src/components/appearance-settings.tsx
+msgid "Large"
+msgstr ""
 
 #: src/components/reader/about-view.tsx
 msgid "A Listen button reads any article aloud, right on your device, and highlights each word as it goes. The player follows you around the app — it’ll even read an embedded Bluesky post. Signed in, you can pick a voice."
@@ -2476,6 +2574,10 @@ msgstr ""
 msgid "The most-read writing across the network right now."
 msgstr "いまネットワークで最も読まれている記事です。"
 
+#: src/components/appearance-settings.tsx
+msgid "The typeface used across the app. Article text follows this too, unless you set a reading font below."
+msgstr ""
+
 #: src/magazine/magazine-end-like.tsx
 msgid "Recommend this issue"
 msgstr "この号をおすすめする"
@@ -2491,6 +2593,10 @@ msgstr "{count, plural, one {# 件の高評価} other {# 件の高評価}} — �
 #: src/routes/_layout.search.tsx
 msgid "{shown} of {total} matches"
 msgstr "{total} 件中 {shown} 件が一致"
+
+#: src/components/appearance-settings.tsx
+msgid "How rounded buttons, cards and inputs are."
+msgstr ""
 
 #: src/components/reader/collection-publication-editor.tsx
 msgid "What is this series about?"
@@ -2523,6 +2629,10 @@ msgstr ""
 #: src/components/labeler-detail-view.tsx
 msgid "This labeler didn’t publish any label definitions."
 msgstr "このラベラーはラベル定義を公開していません。"
+
+#: src/components/reader/format-i18n.ts
+msgid "{days}d ago"
+msgstr ""
 
 #: src/components/user-settings-view.tsx
 msgid "Continue to approve"
@@ -2570,6 +2680,10 @@ msgstr "そこで、私たちが欲しかった読書環境を作りました。
 #: src/routes/_layout.recommended.tsx
 msgid "Recommended articles"
 msgstr "おすすめの記事"
+
+#: src/components/user-settings-view.tsx
+msgid "Light, dark, match your system — or Custom, to choose a palette of your own."
+msgstr ""
 
 #: src/components/labeler-detail-view.tsx
 msgid "Labeler views"
@@ -2654,6 +2768,10 @@ msgstr "奥付"
 msgid "Reader voice"
 msgstr "読み上げの声"
 
+#: src/components/appearance-settings.tsx
+msgid "Sharp"
+msgstr ""
+
 #: src/components/reader/about-view.tsx
 msgid "What you get is a reading view made for long-form: a centered column, drop caps and pull quotes, full-bleed images you can open into a gallery. The page gets out of the way so the writing can do its work."
 msgstr "用意したのは、長文のために作られた読書ビューです。中央寄せのカラム、ドロップキャップとプルクオート、ギャラリーで開ける全幅画像。ページは前に出しゃばらず、文章そのものに仕事をさせます。"
@@ -2703,6 +2821,10 @@ msgstr "このリンクは期限切れです。"
 #: src/components/reader/privacy-view.tsx
 msgid "You can sign out at any time, which clears your app session cookie. You can clear site cookies in your browser to remove theme and saved-handle preferences. You can change reading-history tracking and delete personal data from Settings. To remove other AT Protocol records you created through the app, use a compatible client or your repository tools."
 msgstr "いつでもサインアウトでき、その際アプリのセッション Cookie は消去されます。テーマや保存されたハンドルの設定は、ブラウザでサイトの Cookie を削除すれば消せます。閲覧履歴の記録の変更と個人データの削除は設定から行えます。アプリを通じて作成したその他の AT Protocol レコードを削除するには、対応クライアントまたはリポジトリ用のツールをご利用ください。"
+
+#: src/components/appearance-settings.tsx
+msgid "XS"
+msgstr ""
 
 #: src/components/reader/article-below-fold.tsx
 msgid "Keep reading"
@@ -2884,6 +3006,10 @@ msgstr ""
 msgid "Share on Bluesky"
 msgstr "Bluesky で共有"
 
+#: src/components/appearance-settings.tsx
+msgid "Reset"
+msgstr ""
+
 #: src/components/docs/docs-lexicons-nav.tsx
 #~ msgid "Lexicon reference"
 #~ msgstr "レキシコンリファレンス"
@@ -2939,6 +3065,10 @@ msgstr "語られていることの、まとめ"
 msgid "Mark all as read"
 msgstr "すべて既読にする"
 
+#: src/components/appearance-settings.tsx
+msgid "Scales every size in the app, article text included — from 14px up to 24px of interface text."
+msgstr ""
+
 #: src/components/reader/privacy-view.tsx
 msgid "Your display name, handle, avatar URL, and DID as returned by your account provider."
 msgstr "アカウントプロバイダーから返された表示名、ハンドル、アバターの URL、DID です。"
@@ -2970,6 +3100,10 @@ msgstr "別のクライアントで共有"
 #: src/components/reader/extension-privacy-view.tsx
 msgid "What the extension does not do"
 msgstr "拡張機能が行わないこと"
+
+#: src/components/appearance-settings.tsx
+msgid "Default"
+msgstr ""
 
 #: src/routes/_layout.index.tsx
 msgid "Loading recommendations"
@@ -3100,6 +3234,10 @@ msgstr "（{min}:1 が必要）"
 msgid "Every read record in your repository will be removed. Articles will appear unread again across the app. This cannot be undone."
 msgstr "リポジトリ内のすべての既読記録が削除されます。アプリ全体で記事が再び未読として表示されます。この操作は取り消せません。"
 
+#: src/components/appearance-settings.tsx
+msgid "Text, borders and every other step are derived from these two colors."
+msgstr ""
+
 #: src/components/reader/privacy-view.tsx
 msgid "If you install the {SITE_NAME} browser extension, it uses the same account and session cookie as this site. The extension sends page URLs to our <0>/api/extension/*</0> endpoints for index matching and keeps overlay settings in your browser's extension storage. See the <1>extension privacy policy</1> for details that apply only to the extension."
 msgstr "{SITE_NAME} のブラウザ拡張機能をインストールすると、このサイトと同じアカウントとセッションクッキーが使われます。拡張機能はインデックス照合のためにページの URL を <0>/api/extension/*</0> エンドポイントへ送信し、オーバーレイの設定はブラウザの拡張機能ストレージに保存します。拡張機能のみに適用される詳細は<1>拡張機能のプライバシーポリシー</1>をご覧ください。"
@@ -3149,6 +3287,7 @@ msgstr ""
 msgid "Unfollowing {peopleCount, plural, one {this person} other {these # people}} also drops the subscriptions that follow created, so their publications leave your feed. Nothing you have saved, read, or recommended is affected."
 msgstr ""
 
+#: src/components/appearance-settings.tsx
 #: src/components/reader/collection-theme-editor.tsx
 #: src/components/user-settings-view.tsx
 msgid "Dark"
@@ -3369,6 +3508,10 @@ msgstr "ラベラーは DID を指定して購読するモデレーションサ�
 msgid "Standard Reader meets you where you read"
 msgstr "Standard Reader は、読む場所に寄り添います"
 
+#: src/components/appearance-settings.tsx
+msgid "Reset appearance"
+msgstr ""
+
 #: src/components/reader/collection-theme-editor.tsx
 #: src/components/reader/markdown-field.tsx
 #: src/components/reading-settings-preview.tsx
@@ -3442,6 +3585,10 @@ msgstr "ラベラーを検索"
 msgid "{weekday} · Your feed"
 msgstr "{weekday}・フィード"
 
+#: src/components/reader/format-i18n.ts
+msgid "yesterday"
+msgstr ""
+
 #: src/components/onboarding/step-settings.tsx
 #: src/components/user-settings-view.tsx
 msgid "Use publication themes"
@@ -3459,6 +3606,7 @@ msgstr "サービスの DID は <0>{appviewDid}</0> です。スコープを調�
 msgid "The Slow Web, Revisited"
 msgstr "スロー・ウェブ再訪"
 
+#: src/components/appearance-settings.tsx
 #: src/components/reading-custom-font-picker.tsx
 #: src/components/user-settings-view.tsx
 msgid "Google Font"
@@ -3554,6 +3702,10 @@ msgstr "フィードバックを検索"
 msgid "Unsubscribe"
 msgstr ""
 
+#: src/components/appearance-settings.tsx
+msgid "L"
+msgstr ""
+
 #: src/routes/_layout.search.tsx
 msgid "Load more ({remainingPublications} remaining)"
 msgstr "さらに読み込む（残り {remainingPublications} 件）"
@@ -3606,6 +3758,10 @@ msgstr "埋め込みコードをコピー"
 #: src/components/user-settings-view.tsx
 msgid "Delete all lists?"
 msgstr "すべてのリストを削除しますか？"
+
+#: src/components/user-settings-view.tsx
+msgid "Advanced"
+msgstr ""
 
 #: src/components/onboarding/step-settings.tsx
 #: src/components/user-settings-view.tsx
@@ -3669,6 +3825,10 @@ msgstr "再生"
 #: src/routes/_layout.search.tsx
 msgid "Loading article matches"
 msgstr "一致する記事を読み込み中"
+
+#: src/components/appearance-settings.tsx
+msgid "Extra small"
+msgstr ""
 
 #: src/components/reader/content/renderers/leaflet-standard-site-publication.tsx
 msgid "Publication not found."
@@ -3738,6 +3898,10 @@ msgstr "動作"
 msgid "Reading history"
 msgstr "閲覧履歴"
 
+#: src/components/appearance-settings.tsx
+msgid "M"
+msgstr ""
+
 #: src/components/docs/labelers-docs-page.tsx
 msgid "<0>2. Serve labels.</0> Sign and emit <1>com.atproto.label.defs#label</1> objects, and expose the standard <2>com.atproto.label.queryLabels</2> (HTTP) and <3>com.atproto.label.subscribeLabels</3> (WebSocket) endpoints."
 msgstr "<0>2. ラベルを配信する。</0><1>com.atproto.label.defs#label</1> オブジェクトに署名して発行し、標準の <2>com.atproto.label.queryLabels</2>（HTTP）と <3>com.atproto.label.subscribeLabels</3>（WebSocket）のエンドポイントを公開します。"
@@ -3800,6 +3964,10 @@ msgstr "このリストには発行物がありません。編集ダイアログ
 #: src/components/reader/subscribe-card.tsx
 msgid "Adding {publicationName} to your feed."
 msgstr "{publicationName} をフィードに追加しています。"
+
+#: src/components/appearance-settings.tsx
+#~ msgid "Your paper is dark, so the app reads as a dark theme. Text, borders and every other step are derived from these two colors and checked for contrast."
+#~ msgstr ""
 
 #: src/components/NavbarAuth.tsx
 #: src/components/reader/app-shell.tsx
@@ -3956,6 +4124,10 @@ msgstr "サインインとレコードへのアクセスは、あなたの Perso
 msgid "An included article"
 msgstr "収録記事"
 
+#: src/components/appearance-settings.tsx
+msgid "Puts the palette, font, size, roundness and density back to their defaults."
+msgstr ""
+
 #: src/components/user-settings-view.tsx
 msgid "Subscribe to labelers to flag, blur, or hide content as you read."
 msgstr "ラベラーを購読すると、読みながらコンテンツにフラグを付けたり、ぼかしたり、非表示にしたりできます。"
@@ -4013,6 +4185,7 @@ msgstr "{weekday}・ネットワーク全体"
 msgid "Publish & share the run"
 msgstr "公開して共有"
 
+#: src/components/appearance-settings.tsx
 #: src/components/reader/collection-builder.tsx
 msgid "Editorial"
 msgstr "編集部"
@@ -4175,6 +4348,10 @@ msgstr ""
 msgid "Open on {publicationName}"
 msgstr "{publicationName} で開く"
 
+#: src/components/appearance-settings.tsx
+msgid "Sans"
+msgstr ""
+
 #: src/components/reader/add-publication-modal.tsx
 msgid "Search publications or paste a handle"
 msgstr "発行物を検索、またはハンドルを貼り付け"
@@ -4299,6 +4476,10 @@ msgstr "読み上げ"
 msgid "Articles you've saved for later — in your repo, synced across devices."
 msgstr "あとで読むために保存した記事です。リポジトリに保存され、デバイス間で同期されます。"
 
+#: src/components/reader/format-i18n.ts
+msgid "today"
+msgstr ""
+
 #: src/components/reader/article-view.tsx
 #: src/components/reader/content/renderers/shared/image-figure.tsx
 #: src/components/reader/content/renderers/shared/markdown-article.tsx
@@ -4406,6 +4587,7 @@ msgstr "トピックで絞り込む"
 msgid "No unread articles from your follows right now."
 msgstr "フォロー中の未読記事は今のところありません。"
 
+#: src/components/appearance-settings.tsx
 #: src/components/user-settings-view.tsx
 msgid "Search and pick any family from the Google Fonts catalog."
 msgstr "Google Fonts のカタログから好きなフォントを検索して選べます。"
@@ -4534,6 +4716,10 @@ msgstr "<0>サインインすると</0>（例えば Bluesky OAuth 経由で）At
 msgid "Powered by <0>Standard Reader</0>"
 msgstr "Powered by <0>Standard Reader</0>"
 
+#: src/components/appearance-settings.tsx
+msgid "Your accent sits close to the paper in tone — it stays exactly as you picked it, but text and links set in it will be hard to read."
+msgstr ""
+
 #: src/components/reader/about-view.tsx
 msgid "Save from anywhere you browse"
 msgstr "どこで見ていても保存できる"
@@ -4651,6 +4837,10 @@ msgstr "はじめる"
 msgid "You don't have any content tabs to show yet."
 msgstr "表示できるコンテンツタブがまだありません。"
 
+#: src/components/appearance-settings.tsx
+msgid "Body text on paper"
+msgstr ""
+
 #: src/components/reader/article-view.tsx
 msgid "OK"
 msgstr "OK"
@@ -4719,6 +4909,10 @@ msgstr "@{0}・ドキュメントはありますが発行物がありません"
 msgid "{connectionLabel} via Semble"
 msgstr "Semble 経由の {connectionLabel}"
 
+#: src/components/appearance-settings.tsx
+msgid "S"
+msgstr ""
+
 #: src/magazine/flow.tsx
 msgid "In this issue"
 msgstr "この号の内容"
@@ -4729,4 +4923,8 @@ msgstr ""
 
 #: src/components/reader/terms-view.tsx
 msgid "Acceptable use"
+msgstr ""
+
+#: src/components/appearance-settings.tsx
+msgid "Palette"
 msgstr ""

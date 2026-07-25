@@ -13,12 +13,12 @@ import { Flex } from "../../design-system/flex";
 import { Separator } from "../../design-system/separator";
 import { Switch } from "../../design-system/switch";
 import { primaryColor, uiColor } from "../../design-system/theme/color.stylex";
+import { radius } from "../../design-system/theme/radius.stylex";
 import {
   gap,
   horizontalSpace,
   verticalSpace,
 } from "../../design-system/theme/semantic-spacing.stylex";
-import { spacing } from "../../design-system/theme/spacing.stylex";
 import {
   fontFamily,
   fontSize,
@@ -42,7 +42,7 @@ const styles = stylex.create({
   },
   group: {
     borderColor: uiColor.border1,
-    borderRadius: spacing["2"],
+    borderRadius: radius.md,
     borderStyle: "solid",
     borderWidth: 1,
     display: "flex",

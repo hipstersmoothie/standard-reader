@@ -31,8 +31,14 @@ export const user = pgTable("user", {
   did: text("did").unique(),
   image: text("image"),
   isAdmin: boolean("is_admin").default(false).notNull(),
-  /** `light` | `dark`; `null` follows system preference. */
+  /** `light` | `dark` | `custom`; `null` follows system preference. `custom`
+   * takes its colors — and its light/dark identity — from `appearance`. */
   themeMode: text("theme_mode"),
+  /** Compact `palette:paper:accent:font:family:textSize:roundness:density`
+   * encoding (`src/lib/appearance.ts`); `null` = defaults. Holds the custom
+   * palette plus the font/size/roundness/density dials, which apply in every
+   * theme mode. */
+  appearance: text("appearance"),
   /** BCP-47 tag from `LOCALES` (`src/lib/locale.ts`); `null` negotiates from
    * the request's `Accept-Language` header. */
   locale: text("locale"),

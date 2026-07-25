@@ -38,6 +38,7 @@ import {
   formatReaders,
   publicationUriFromParams,
 } from "../components/reader/format";
+import { formatLastActive } from "../components/reader/format-i18n";
 import {
   Handle,
   PublicationAvatar,
@@ -221,7 +222,7 @@ const styles = stylex.create({
     rowGap: spacing["4"],
     marginInlineStart: "auto",
     marginInlineEnd: "auto",
-    maxWidth: "1320px",
+    maxWidth: "82.5rem",
     paddingBottom: spacing["6"],
     paddingInlineStart: {
       default: spacing["5"],
@@ -252,7 +253,7 @@ const styles = stylex.create({
     flexBasis: "0%",
     flexGrow: 1,
     flexShrink: 1,
-    minWidth: "200px",
+    minWidth: "12.5rem",
     paddingTop: spacing["0.5"],
   },
   heroName: {
@@ -437,22 +438,6 @@ const styles = stylex.create({
   },
 });
 
-type TFunction = ReturnType<typeof useLingui>["t"];
-
-function lastActive(iso: string | null, t: TFunction): string {
-  if (!iso) return "—";
-  const parsed = Date.parse(iso);
-  if (Number.isNaN(parsed)) return "—";
-  const days = Math.floor((Date.now() - parsed) / 86_400_000);
-  if (days <= 0) return t`today`;
-  if (days === 1) return t`yesterday`;
-  if (days < 30) return t`${days}d ago`;
-  const months = Math.floor(days / 30);
-  if (days < 365) return t`${months}mo ago`;
-  const years = Math.floor(days / 365);
-  return t`${years}y ago`;
-}
-
 function Stat({
   value,
   label,
@@ -632,7 +617,7 @@ function PublicationProfileContent({
   embedMeta: PublicationEmbedMeta | null | undefined;
   socialProof: PublicationSocialProof | undefined;
 }) {
-  const { t } = useLingui();
+  const { t, i18n } = useLingui();
   const { publication: pub, owner } = header;
   const queryClient = useQueryClient();
   const { data: session } = useSuspenseQuery(user.getSessionQueryOptions);
@@ -815,7 +800,7 @@ function PublicationProfileContent({
             />
             <Stat value={String(pub.documentCount)} label={t`Posts`} />
             <Stat
-              value={lastActive(pub.lastDocumentAt ?? null, t)}
+              value={formatLastActive(i18n, pub.lastDocumentAt ?? null)}
               label={t`Last active`}
               isLast
             />

@@ -178,7 +178,7 @@ const styles = stylex.create({
     rowGap: spacing["4"],
     marginInlineStart: "auto",
     marginInlineEnd: "auto",
-    maxWidth: "1320px",
+    maxWidth: "82.5rem",
     paddingBottom: spacing["0"],
     paddingInlineStart: {
       default: spacing["5"],
@@ -195,7 +195,7 @@ const styles = stylex.create({
     flexBasis: "0%",
     flexGrow: 1,
     flexShrink: 1,
-    minWidth: "240px",
+    minWidth: "15rem",
     paddingTop: spacing["0.5"],
   },
   heroActs: {
@@ -258,7 +258,7 @@ const styles = stylex.create({
     boxSizing: "border-box",
     marginInlineStart: "auto",
     marginInlineEnd: "auto",
-    maxWidth: "1320px",
+    maxWidth: "82.5rem",
     paddingInlineStart: {
       default: spacing["5"],
       "@media (min-width: 40rem)": spacing["10"],

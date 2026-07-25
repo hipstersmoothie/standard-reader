@@ -158,7 +158,7 @@ const styles = stylex.create({
     textTransform: "uppercase",
   },
   previewAccentPill: {
-    borderRadius: "999px",
+    borderRadius: radius.full,
     backgroundColor: "var(--accent)",
     color: "var(--accent-contrast)",
     display: "inline-block",

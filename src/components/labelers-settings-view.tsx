@@ -17,6 +17,7 @@ import { Badge } from "../design-system/badge";
 import { TextField } from "../design-system/text-field";
 import { animationDuration } from "../design-system/theme/animations.stylex";
 import { uiColor } from "../design-system/theme/color.stylex";
+import { radius } from "../design-system/theme/radius.stylex";
 import {
   gap,
   verticalSpace,
@@ -212,7 +213,7 @@ const styles = stylex.create({
   card: {
     padding: spacing["4"],
     borderColor: { default: uiColor.border1, ":hover": uiColor.border2 },
-    borderRadius: spacing["3"],
+    borderRadius: radius.lg,
     borderStyle: "solid",
     borderWidth: spacing.px,
     gap: gap.md,

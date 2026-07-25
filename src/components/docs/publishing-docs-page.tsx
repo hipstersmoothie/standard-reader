@@ -105,7 +105,7 @@ function SubscribeEmbedSample({ origin }: { origin: string }) {
         borderRadius: "1.55rem",
         maxWidth: "100%",
         overflow: "hidden",
-        width: "400px",
+        width: "25rem",
       }}
     >
       {/* oxlint-disable-next-line iframe-has-title --

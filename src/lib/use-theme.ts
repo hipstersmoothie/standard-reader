@@ -3,6 +3,7 @@ import { useCallback, useSyncExternalStore } from "react";
 
 import { user } from "#/integrations/tanstack-query/api-user.functions";
 
+import { DEFAULT_APPEARANCE, appearanceScheme } from "./appearance";
 import type { ResolvedThemeScheme, ThemeMode } from "./theme";
 import {
   DEFAULT_THEME_MODE,
@@ -28,10 +29,23 @@ export function useTheme(): ThemeContextValue {
   });
   const mode = data?.mode ?? DEFAULT_THEME_MODE;
 
+  // A custom palette states its own light/dark, so the resolved scheme comes
+  // from the palette rather than the OS. Seeded by the shell bootstrap, so this
+  // is already correct during SSR — no hydration mismatch for the components
+  // that key off `resolvedScheme` (code highlighting, embeds).
+  const { data: appearanceData } = useQuery({
+    ...user.getAppearancePreferenceQueryOptions,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+  });
+  const paletteScheme = appearanceScheme(
+    appearanceData?.preference ?? DEFAULT_APPEARANCE,
+  );
+
   const resolvedScheme = useSyncExternalStore(
     subscribeToResolvedScheme,
-    () => resolveSchemeForMode(mode),
-    () => resolvedSchemeServerSnapshot(mode),
+    () => resolveSchemeForMode(mode, paletteScheme),
+    () => resolvedSchemeServerSnapshot(mode, paletteScheme),
   );
 
   const setMutation = useMutation({

@@ -99,7 +99,7 @@ const styles = stylex.create({
     boxSizing: "border-box",
     marginInlineStart: "auto",
     marginInlineEnd: "auto",
-    maxWidth: "1320px",
+    maxWidth: "82.5rem",
     paddingBottom: `var(--pub-page-content-bottom, ${spacing["20"]})`,
     paddingInlineStart: {
       default: spacing["5"],

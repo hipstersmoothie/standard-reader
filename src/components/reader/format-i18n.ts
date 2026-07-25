@@ -40,3 +40,27 @@ export function formatArticleReadStats(
     msg`${plural(readCount, { one: "# read", other: `${value} reads` })}`,
   );
 }
+
+/**
+ * Publication header meta: how long ago the publication last posted.
+ *
+ * Lives here, taking an `i18n`, because the earlier version took the `t` from
+ * `useLingui()` as a *parameter* — which Lingui's macro cannot see, so none of
+ * these strings were ever extracted and every one of them resolved to an empty
+ * string at runtime. The stat rendered its label with no value.
+ */
+export function formatLastActive(i18n: I18n, iso: string | null): string {
+  if (!iso) return "—";
+  const parsed = Date.parse(iso);
+  if (Number.isNaN(parsed)) return "—";
+  const days = Math.floor((Date.now() - parsed) / 86_400_000);
+  if (days <= 0) return i18n._(msg`today`);
+  if (days === 1) return i18n._(msg`yesterday`);
+  if (days < 30) return i18n._(msg`${days}d ago`);
+  if (days < 365) {
+    const months = Math.floor(days / 30);
+    return i18n._(msg`${months}mo ago`);
+  }
+  const years = Math.floor(days / 365);
+  return i18n._(msg`${years}y ago`);
+}

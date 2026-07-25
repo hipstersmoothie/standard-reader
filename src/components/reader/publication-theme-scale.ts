@@ -532,8 +532,17 @@ function buildLightUiScale(background: Rgb, foreground: Rgb): ColorScale {
  * reason as {@link buildDarkUiScale} — so a publisher's own dark palette drives
  * it rather than one derived from their light colors.
  */
-function buildDarkAccentScale(accent: Rgb, darkPageBg: Rgb): ColorScale {
+function buildDarkAccentScale(
+  accent: Rgb,
+  darkPageBg: Rgb,
+  trustStated = false,
+): ColorScale {
   const darkAccentBg = darken(accent, 0.78);
+  // `ensureContrast` flips to black or white when a color can't reach the
+  // ratio; `ensureReadable` moves its lightness instead, keeping the hue. For a
+  // publication we take the safe flip, but a reader who picked this color for
+  // their own app should still see their color.
+  const readable = trustStated ? ensureReadable : ensureContrast;
   return {
     bg: toHex(darkAccentBg),
     bgSubtle: toHex(lighten(darkAccentBg, 0.04)),
@@ -545,8 +554,8 @@ function buildDarkAccentScale(accent: Rgb, darkPageBg: Rgb): ColorScale {
     border3: toHex(lighten(darkAccentBg, 0.46)),
     solid1: toHex(lighten(accent, 0.12)),
     solid2: toHex(lighten(accent, 0.24)),
-    text1: toHex(ensureContrast(lighten(accent, 0.3), darkAccentBg, 3)),
-    text2: toHex(ensureContrast(lighten(accent, 0.55), darkAccentBg, 4.5)),
+    text1: toHex(readable(lighten(accent, 0.3), darkAccentBg, 3)),
+    text2: toHex(readable(lighten(accent, 0.55), darkAccentBg, 4.5)),
     textContrast: toHex(darkPageBg),
   };
 }
@@ -555,8 +564,9 @@ function buildDarkAccentScale(accent: Rgb, darkPageBg: Rgb): ColorScale {
  * Build the accent (primary) scale from the publication's accent color.
  * Light: accent tints on light bg; Dark: dark accent-tinted surfaces.
  */
-function buildLightAccentScale(accent: Rgb): ColorScale {
+function buildLightAccentScale(accent: Rgb, trustStated = false): ColorScale {
   const lightBg = lighten(accent, 0.86);
+  const readable = trustStated ? ensureReadable : ensureContrast;
   return {
     bg: toHex(lightBg),
     bgSubtle: toHex(lighten(accent, 0.82)),
@@ -568,8 +578,8 @@ function buildLightAccentScale(accent: Rgb): ColorScale {
     border3: toHex(lighten(accent, 0.16)),
     solid1: toHex(accent),
     solid2: toHex(darken(accent, 0.1)),
-    text1: toHex(ensureContrast(darken(accent, 0.1), lightBg, 3)),
-    text2: toHex(ensureContrast(darken(accent, 0.25), lightBg, 4.5)),
+    text1: toHex(readable(darken(accent, 0.1), lightBg, 3)),
+    text2: toHex(readable(darken(accent, 0.25), lightBg, 4.5)),
     textContrast: toHex(ensureContrast(WHITE, accent, 4.5)),
   };
 }
@@ -594,9 +604,12 @@ const UI_KEYS: ReadonlyArray<ScaleKey> = [
 
 const ACCENT_KEYS: ReadonlyArray<ScaleKey> = UI_KEYS;
 
-/** Prefixes that map scale keys → `--pub-*` CSS variable names. */
+/**
+ * Prefix that maps scale keys → `--pub-*` CSS variable names. Callers can pass
+ * their own (the reader's custom app palette generates `--sr-*` from the same
+ * color science — see `#/components/reader/appearance-vars`).
+ */
 const UI_PREFIX = "pub";
-const ACCENT_PREFIX = "pub-accent";
 
 function scaleKeyToVarName(
   prefix: string,
@@ -614,10 +627,24 @@ function scaleKeyToVarName(
  * Apply these on the same container that wears the `publicationUi` /
  * `publicationPrimary` StyleX theme classes — the theme classes reference
  * these vars via `light-dark(var(--pub-...-light), var(--pub-...-dark))`.
+ *
+ * `prefix` swaps `pub` for another namespace so a second consumer (the reader's
+ * own app palette) can reuse this color science without colliding with a
+ * publication theme nested inside it.
+ *
+ * `trustStatedAccent` turns off the accent's safety substitutions. A publication
+ * theme gets them: a low-contrast accent is replaced by the page's own ink so a
+ * stranger's site stays usable. A reader theming their *own* app does not — they
+ * picked that color deliberately, and silently handing back grey is a worse
+ * answer than an accent they can barely see. The settings panel scores the
+ * generated ramp and warns instead.
  */
 export function publicationThemeScaleVars(
   meta: PublicationThemeColors,
+  prefix: string = UI_PREFIX,
+  { trustStatedAccent = false }: { trustStatedAccent?: boolean } = {},
 ): CSSProperties {
+  const accentPrefix = `${prefix}-accent`;
   const colors = resolveQuoteOgColors({
     themeBackground: meta.themeBackground,
     themeForeground: meta.themeForeground,
@@ -631,7 +658,12 @@ export function publicationThemeScaleVars(
 
   const background = parseHex(colors.background) ?? fallbackBg;
   const foreground = parseHex(colors.foreground) ?? fallbackFg;
-  const accent = parseHex(colors.accent) ?? fallbackAccent;
+  // `resolveQuoteOgColors` swaps a low-contrast accent for the foreground; when
+  // the caller trusts the stated colors, take the accent before that happened.
+  const accent =
+    (trustStatedAccent ? parseHex(meta.themeAccent ?? "") : null) ??
+    parseHex(colors.accent) ??
+    fallbackAccent;
 
   // A theme states one background. Route it to the mode its own luminance
   // matches: a dark publication (Leaflet on black, a dark-scheme Offprint theme)
@@ -659,7 +691,7 @@ export function publicationThemeScaleVars(
     statedBgIsDark ? null : meta.neutral,
     lightBg,
   );
-  const accentLight = buildLightAccentScale(accent);
+  const accentLight = buildLightAccentScale(accent, trustStatedAccent);
 
   // Prefer the publisher's own dark palette (PCKT ships light+dark, Offprint
   // may ship a dark-scheme theme); otherwise use their stated background when it
@@ -702,22 +734,26 @@ export function publicationThemeScaleVars(
     authoredDark ? authoredDark.neutral : statedBgIsDark ? meta.neutral : null,
     WHITE,
   );
-  const accentDark = buildDarkAccentScale(darkAccent ?? accent, darkBg);
+  const accentDark = buildDarkAccentScale(
+    darkAccent ?? accent,
+    darkBg,
+    trustStatedAccent,
+  );
 
   const vars: Record<string, string> = {};
 
   for (const key of UI_KEYS) {
-    vars[scaleKeyToVarName(UI_PREFIX, key, false)] = uiLight[key];
-    vars[scaleKeyToVarName(UI_PREFIX, key, true)] = uiDark[key];
+    vars[scaleKeyToVarName(prefix, key, false)] = uiLight[key];
+    vars[scaleKeyToVarName(prefix, key, true)] = uiDark[key];
   }
   for (const key of ACCENT_KEYS) {
-    vars[scaleKeyToVarName(ACCENT_PREFIX, key, false)] = accentLight[key];
-    vars[scaleKeyToVarName(ACCENT_PREFIX, key, true)] = accentDark[key];
+    vars[scaleKeyToVarName(accentPrefix, key, false)] = accentLight[key];
+    vars[scaleKeyToVarName(accentPrefix, key, true)] = accentDark[key];
   }
 
   // Overlay backdrop — derived from foreground hue.
-  vars["--pub-overlay-light"] = toHex(darken(foreground, 0.6));
-  vars["--pub-overlay-dark"] = toHex(darken(BLACK, 0.2));
+  vars[`--${prefix}-overlay-light`] = toHex(darken(foreground, 0.6));
+  vars[`--${prefix}-overlay-dark`] = toHex(darken(BLACK, 0.2));
 
   // Stated link colour, per mode. Left unset when the publisher states none, so
   // `publicationLink` falls back to the accent's text step. Contrast is enforced
@@ -735,8 +771,8 @@ export function publicationThemeScaleVars(
     authoredDark ? authoredDark.link : meta.link,
     darkBg,
   );
-  if (lightLink) vars["--pub-link-light"] = lightLink;
-  if (darkLink) vars["--pub-link-dark"] = darkLink;
+  if (lightLink) vars[`--${prefix}-link-light`] = lightLink;
+  if (darkLink) vars[`--${prefix}-link-dark`] = darkLink;
 
   return vars as CSSProperties;
 }

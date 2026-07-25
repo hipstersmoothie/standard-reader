@@ -21,7 +21,7 @@ export const legalPageStyles = stylex.create({
     boxSizing: "border-box",
     marginInlineStart: "auto",
     marginInlineEnd: "auto",
-    maxWidth: "640px",
+    maxWidth: "40rem",
     paddingBottom: {
       [MOBILE]: spacing["20"],
       default: spacing["20"],
