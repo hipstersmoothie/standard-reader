@@ -27,6 +27,7 @@ import {
   articlePublicationUrl,
   documentUriFromParams,
 } from "../components/reader/format";
+import type { PublicationThemeColors } from "../components/reader/publication-theme-scale";
 import { prefetchCollectionMagazine } from "../magazine/load-magazine-data";
 
 const articleSearchSchema = z.object({
@@ -123,7 +124,13 @@ export const Route = createFileRoute("/_layout/a/$did/$rkey")({
       });
     }
 
-    return { article, sharedQuote };
+    // `publicationTheme` is read by `PublicationThemeScope` in the app shell —
+    // see its doc comment.
+    return {
+      article,
+      sharedQuote,
+      publicationTheme: articleThemeColors(article),
+    };
   },
   head: ({ loaderData, match }) => {
     const article = loaderData?.article as ArticleDetail | null | undefined;
@@ -234,4 +241,26 @@ function ArticleRoute() {
       sharedQuote={sharedQuote}
     />
   );
+}
+
+/**
+ * The owning publication's theme colors, as carried on the article itself.
+ * `collectionTheme` is populated for every article with a publication (not just
+ * collections), so the palette is already on the page — no extra round trip.
+ */
+function articleThemeColors(
+  article: ArticleDetail | null | undefined,
+): PublicationThemeColors {
+  const theme = article?.collectionTheme;
+  return {
+    themeBackground: theme?.background ?? null,
+    themeForeground: theme?.foreground ?? null,
+    themeAccent: theme?.accent ?? null,
+    themeAccentForeground: theme?.accentForeground ?? null,
+    dark: theme?.dark ?? null,
+    surface: theme?.surface ?? null,
+    surfaceHover: theme?.surfaceHover ?? null,
+    border: theme?.border ?? null,
+    fonts: theme?.publicationFonts ?? null,
+  };
 }

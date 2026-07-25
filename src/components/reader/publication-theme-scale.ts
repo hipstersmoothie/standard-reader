@@ -1,7 +1,159 @@
+import Color from "colorjs.io";
 import type { CSSProperties } from "react";
 
-import type { PublicationEmbedMeta } from "#/integrations/tanstack-query/api-publication.functions";
+import type { PublicationFonts } from "#/lib/publication-fonts";
 import { resolveQuoteOgColors } from "#/lib/publication-theme";
+import type {
+  ResolvedPublicationTheme,
+  ThemePalette,
+} from "#/lib/publication-theme-source";
+import { resolvePublicationTheme } from "#/lib/publication-theme-source";
+
+/**
+ * The four flat theme colors every themed surface starts from — the publication
+ * record's `basicTheme`, flattened onto the `publications` row. Structurally a
+ * subset of `PublicationEmbedMeta`, so that type can be passed directly.
+ */
+export interface PublicationThemeColors {
+  themeBackground: string | null;
+  themeForeground: string | null;
+  themeAccent: string | null;
+  themeAccentForeground: string | null;
+  /**
+   * The publisher's own dark palette, when their native theme carries one (see
+   * `#/lib/publication-theme-source`). Absent means "derive dark from the light
+   * colors", which is all `basicTheme` alone can support.
+   */
+  dark?: ThemePalette | null;
+  /** Stated light-mode neutral steps; absent slots stay derived. */
+  surface?: string | null;
+  surfaceHover?: string | null;
+  border?: string | null;
+  /** Stated link colour for light mode; dark comes from the dark palette. */
+  link?: string | null;
+  /** Stated neutral solid fill (Offprint `neutral`). */
+  neutral?: string | null;
+  /**
+   * Google Fonts families the publisher chose, already resolved from their
+   * platform's key format (see `#/lib/publication-fonts`). Unresolved fonts stay
+   * `null` so the reader keeps their own typography.
+   */
+  fonts?: PublicationFonts | null;
+}
+
+/** Pull the neutral anchors out of a palette, or null when it states none. */
+function anchorsOf(palette: {
+  surface?: string | null;
+  surfaceHover?: string | null;
+  border?: string | null;
+}): NeutralAnchors | null {
+  if (!palette.surface && !palette.surfaceHover && !palette.border) return null;
+  return {
+    surface: palette.surface ?? null,
+    surfaceHover: palette.surfaceHover ?? null,
+    border: palette.border ?? null,
+  };
+}
+
+/**
+ * The page surface and body text a reader actually sees in each mode — the
+ * *generated* values, which differ from the stated theme colours whenever a mode
+ * had to be synthesized. Anything matching against the rendered page (the code
+ * theme picker) must score on these, not on the stated background.
+ */
+export function publicationRenderedSurfaces(meta: PublicationThemeColors): {
+  light: { background: string; foreground: string };
+  dark: { background: string; foreground: string };
+} {
+  const vars = publicationThemeScaleVars(meta) as Record<string, string>;
+  return {
+    light: {
+      background: vars["--pub-bg-light"],
+      foreground: vars["--pub-text2-light"],
+    },
+    dark: {
+      background: vars["--pub-bg-dark"],
+      foreground: vars["--pub-text2-dark"],
+    },
+  };
+}
+
+/**
+ * Adapt a resolved publisher theme (`resolvePublicationTheme`) into the shape
+ * the scale generator and the flat `theme_*` columns share.
+ */
+export function themeColorsFromResolved(
+  theme: ResolvedPublicationTheme,
+): PublicationThemeColors {
+  return {
+    themeBackground: theme.light.background,
+    themeForeground: theme.light.foreground,
+    themeAccent: theme.light.accent,
+    themeAccentForeground: theme.light.accentForeground,
+    dark: theme.dark,
+    surface: theme.light.surface,
+    surfaceHover: theme.light.surfaceHover,
+    border: theme.light.border,
+    link: theme.light.link,
+    neutral: theme.light.neutral,
+  };
+}
+
+/**
+ * Build the theme for a `publications` row. The flat `theme_*` columns hold the
+ * flattened `basicTheme` baseline; `theme_json` additionally carries the
+ * publisher's native theme under `nativeTheme`, which wins per-slot when it
+ * expresses something the baseline can't (Leaflet's real page surface, an
+ * authored dark palette).
+ */
+export function publicationThemeFromRow(row: {
+  themeBackground: string | null;
+  themeForeground: string | null;
+  themeAccent: string | null;
+  themeAccentForeground: string | null;
+  themeJson: unknown;
+}): PublicationThemeColors {
+  const json =
+    row.themeJson && typeof row.themeJson === "object"
+      ? (row.themeJson as Record<string, unknown>)
+      : null;
+  const resolved = resolvePublicationTheme(json, json?.nativeTheme);
+  return {
+    themeBackground: resolved.light.background ?? row.themeBackground,
+    themeForeground: resolved.light.foreground ?? row.themeForeground,
+    themeAccent: resolved.light.accent ?? row.themeAccent,
+    themeAccentForeground:
+      resolved.light.accentForeground ?? row.themeAccentForeground,
+    dark: resolved.dark,
+    surface: resolved.light.surface,
+    surfaceHover: resolved.light.surfaceHover,
+    border: resolved.light.border,
+    link: resolved.light.link,
+    neutral: resolved.light.neutral,
+  };
+}
+
+/**
+ * Whether a publication actually carries theme colors of its own.
+ *
+ * `publicationThemeScaleVars` always produces a full palette — it falls back to
+ * the site's editorial-ish defaults when colors are missing. That fallback is
+ * right for surfaces that are inherently the publication's (OG cards, subscribe
+ * embeds), but on in-app pages it would swap the real design-system tokens for a
+ * hand-rolled approximation of them for no visual gain. Gate on this first and
+ * leave unthemed publications on the editorial theme.
+ */
+export function hasPublicationThemeColors(
+  colors: PublicationThemeColors | null | undefined,
+): colors is PublicationThemeColors {
+  if (!colors) return false;
+  return Boolean(
+    colors.themeBackground?.trim() ||
+    colors.themeForeground?.trim() ||
+    colors.themeAccent?.trim() ||
+    colors.themeAccentForeground?.trim(),
+  );
+}
 
 interface Rgb {
   r: number;
@@ -69,8 +221,118 @@ function highContrastFallback(bg: Rgb): Rgb {
   return contrastRatio(BLACK, bg) >= contrastRatio(WHITE, bg) ? BLACK : WHITE;
 }
 
+/**
+ * Whether a surface reads as dark — i.e. white text contrasts better than black
+ * against it. Drives which mode a publisher's stated background belongs to, and
+ * therefore which way the neutral ramp has to travel to stay visible.
+ */
+function isDarkColor(color: Rgb): boolean {
+  return contrastRatio(WHITE, color) > contrastRatio(BLACK, color);
+}
+
+/**
+ * Neutral stand-in used only when a colour can't be inverted (unparseable, or
+ * an achromatic value whose hue carries no information to preserve).
+ */
+const DEFAULT_LIGHT_BG: Rgb = { r: 253, g: 253, b: 252 };
+const DEFAULT_DARK_BG: Rgb = { r: 17, g: 17, b: 17 };
+
+/** Target lightness for a synthesized page background, in OKLCH terms. */
+const SYNTH_LIGHT_L = 0.975;
+const SYNTH_DARK_L = 0.17;
+/**
+ * How much of the source chroma a synthesized background keeps. The same chroma
+ * reads far more saturated at high lightness than at low, so a dark plum
+ * inverted at full chroma becomes a lurid pink rather than the pale, warm paper
+ * the publisher's palette implies.
+ */
+const SYNTH_LIGHT_CHROMA = 0.28;
+const SYNTH_DARK_CHROMA = 0.5;
+/** Ink for a synthesized mode: near the opposite end, keeping the hue. */
+const SYNTH_LIGHT_INK_L = 0.25;
+const SYNTH_DARK_INK_L = 0.92;
+
+/**
+ * A theme states one background. Rather than dropping the publisher's character
+ * on the mode they didn't author, mirror the colour through OKLCH: keep its hue,
+ * move lightness to the other end, and damp chroma so the result reads as paper
+ * or ink rather than a saturated wash. A warm near-black page becomes a warm
+ * cream one; a deep green becomes pale mint.
+ *
+ * Returns `null` when the colour can't be parsed, so callers fall back to a
+ * neutral default.
+ */
+function invertLightness(
+  color: Rgb,
+  target: "light" | "dark",
+  kind: "background" | "ink" = "background",
+): Rgb | null {
+  const toLight = target === "light";
+  try {
+    const oklch = new Color(toHex(color)).to("oklch");
+    const [, chroma, hue] = oklch.coords;
+    const lightness =
+      kind === "ink"
+        ? toLight
+          ? SYNTH_LIGHT_INK_L
+          : SYNTH_DARK_INK_L
+        : toLight
+          ? SYNTH_LIGHT_L
+          : SYNTH_DARK_L;
+    const damped =
+      (chroma ?? 0) * (toLight ? SYNTH_LIGHT_CHROMA : SYNTH_DARK_CHROMA);
+    const next = new Color("oklch", [lightness, damped, hue ?? 0]).to("srgb");
+    // `toGamut` keeps the hue while pulling chroma back into sRGB.
+    next.toGamut({ space: "srgb", method: "clip" });
+    return {
+      r: (next.coords[0] ?? 0) * 255,
+      g: (next.coords[1] ?? 0) * 255,
+      b: (next.coords[2] ?? 0) * 255,
+    };
+  } catch {
+    return null;
+  }
+}
+
 function ensureContrast(fg: Rgb, bg: Rgb, minRatio: number): Rgb {
   return contrastRatio(fg, bg) >= minRatio ? fg : highContrastFallback(bg);
+}
+
+/**
+ * Bring a colour up to a contrast ratio by moving its OKLCH lightness away from
+ * the background, keeping hue and chroma.
+ *
+ * Unlike {@link ensureContrast}, which flips to black or white, this preserves
+ * the colour's identity — essential for a publisher's stated link colour, where
+ * snapping to black would discard the very distinction we adopted it for. Plenty
+ * of real link colours (a teal `#0d9488` on white is ~3.9:1) sit just under AA
+ * and only need a nudge.
+ */
+function ensureReadable(color: Rgb, bg: Rgb, minRatio: number): Rgb {
+  if (contrastRatio(color, bg) >= minRatio) return color;
+  try {
+    const oklch = new Color(toHex(color)).to("oklch");
+    const [lightness, chroma, hue] = oklch.coords;
+    const towardsDark = !isDarkColor(bg);
+    let current = lightness ?? 0.5;
+    for (let step = 0; step < 50; step += 1) {
+      current += towardsDark ? -0.02 : 0.02;
+      if (current <= 0 || current >= 1) break;
+      const next = new Color("oklch", [current, chroma ?? 0, hue ?? 0]).to(
+        "srgb",
+      );
+      next.toGamut({ space: "srgb", method: "clip" });
+      const candidate = {
+        r: (next.coords[0] ?? 0) * 255,
+        g: (next.coords[1] ?? 0) * 255,
+        b: (next.coords[2] ?? 0) * 255,
+      };
+      if (contrastRatio(candidate, bg) >= minRatio) return candidate;
+    }
+  } catch {
+    // Fall through to the hard fallback below.
+  }
+  return highContrastFallback(bg);
 }
 
 /** Darken a color toward black by `amount` (0–1). */
@@ -107,33 +369,134 @@ interface ColorScale {
 }
 
 /**
- * Build the neutral (ui) scale from the publication's background + foreground.
- * Light: background tints; Dark: inverted dark surfaces with the same hue.
+ * A stated neutral solid (Offprint `neutral`) replaces the neutral fill we
+ * otherwise derive from the foreground. `solid2` is the lighter companion step.
  */
-function buildUiScale(
-  background: Rgb,
-  foreground: Rgb,
-  isDark: boolean,
+function applyNeutralSolid(
+  scale: ColorScale,
+  stated: string | null | undefined,
+  towards: Rgb,
 ): ColorScale {
-  if (isDark) {
-    const darkBg = darken(background, 0.82);
-    return {
-      bg: toHex(darkBg),
-      bgSubtle: toHex(lighten(darkBg, 0.03)),
-      component1: toHex(lighten(darkBg, 0.06)),
-      component2: toHex(lighten(darkBg, 0.1)),
-      component3: toHex(lighten(darkBg, 0.16)),
-      border1: toHex(lighten(darkBg, 0.18)),
-      border2: toHex(lighten(darkBg, 0.26)),
-      border3: toHex(lighten(darkBg, 0.36)),
-      solid1: toHex(lighten(darkBg, 0.72)),
-      solid2: toHex(lighten(darkBg, 0.6)),
-      text1: toHex(ensureContrast(lighten(foreground, 0.3), darkBg, 3)),
-      text2: toHex(ensureContrast(lighten(foreground, 0.75), darkBg, 4.5)),
-      textContrast: toHex(darkBg),
-    };
-  }
+  const parsed = stated ? parseHex(stated) : null;
+  if (!parsed) return scale;
+  return {
+    ...scale,
+    solid1: toHex(parsed),
+    solid2: toHex(mix(parsed, towards, 0.18)),
+  };
+}
 
+/**
+ * Where each neutral step sits on a 0→1 ramp from the page background (0) to the
+ * strongest border (1). Publisher-supplied colors are pinned at the step whose
+ * semantics they match, and the steps between anchors are interpolated — so a
+ * stated `base200` lands on `component1` exactly, rather than near it.
+ */
+const NEUTRAL_ELEVATION: Readonly<Record<string, number>> = {
+  bgSubtle: 0.1,
+  component1: 0.22,
+  component2: 0.34,
+  component3: 0.48,
+  border1: 0.58,
+  border2: 0.75,
+  border3: 1,
+};
+
+export interface NeutralAnchors {
+  /** Resting secondary surface — cards, sidebars (`component1`). */
+  surface: string | null;
+  /** Hover state of that surface (`component2`). */
+  surfaceHover: string | null;
+  /** Borders and dividers (`border1`). */
+  border: string | null;
+}
+
+const ANCHOR_ELEVATION = {
+  surface: NEUTRAL_ELEVATION.component1,
+  surfaceHover: NEUTRAL_ELEVATION.component2,
+  border: NEUTRAL_ELEVATION.border1,
+} as const;
+
+/**
+ * Re-lay the neutral steps along a piecewise-linear ramp through whatever the
+ * publisher actually stated, keeping the derived scale everywhere they said
+ * nothing. Returns the scale unchanged when there are no anchors, so
+ * publications that only carry a `basicTheme` render exactly as before.
+ */
+function applyNeutralAnchors(
+  derived: ColorScale,
+  background: Rgb,
+  anchors: NeutralAnchors | null,
+): ColorScale {
+  if (!anchors) return derived;
+
+  const points: Array<{ elevation: number; color: Rgb }> = [];
+  for (const key of ["surface", "surfaceHover", "border"] as const) {
+    const parsed = anchors[key] ? parseHex(anchors[key]) : null;
+    if (parsed)
+      points.push({ elevation: ANCHOR_ELEVATION[key], color: parsed });
+  }
+  if (points.length === 0) return derived;
+
+  const ramp = [
+    { elevation: 0, color: background },
+    ...points.toSorted((a, b) => a.elevation - b.elevation),
+    // The far end stays wherever the derived scale put it, so an anchored ramp
+    // still terminates at a border strong enough to read as one.
+    { elevation: 1, color: parseHex(derived.border3) ?? background },
+  ];
+
+  const next: ColorScale = { ...derived };
+  for (const [key, elevation] of Object.entries(NEUTRAL_ELEVATION)) {
+    let lo = ramp[0];
+    let hi = ramp.at(-1) as { elevation: number; color: Rgb };
+    for (let i = 0; i < ramp.length - 1; i += 1) {
+      if (
+        elevation >= ramp[i].elevation &&
+        elevation <= ramp[i + 1].elevation
+      ) {
+        lo = ramp[i];
+        hi = ramp[i + 1];
+        break;
+      }
+    }
+    const span = hi.elevation - lo.elevation;
+    const t = span === 0 ? 0 : (elevation - lo.elevation) / span;
+    next[key as keyof ColorScale] = toHex(mix(lo.color, hi.color, t));
+  }
+  return next;
+}
+
+/**
+ * Build the neutral (ui) scale from an already-dark background + foreground.
+ * Split out from {@link buildUiScale} so a publisher-authored dark palette can
+ * be used verbatim instead of one derived by darkening their light background.
+ */
+function buildDarkUiScale(darkBg: Rgb, foreground: Rgb): ColorScale {
+  return {
+    bg: toHex(darkBg),
+    bgSubtle: toHex(lighten(darkBg, 0.03)),
+    component1: toHex(lighten(darkBg, 0.06)),
+    component2: toHex(lighten(darkBg, 0.1)),
+    component3: toHex(lighten(darkBg, 0.16)),
+    border1: toHex(lighten(darkBg, 0.18)),
+    border2: toHex(lighten(darkBg, 0.26)),
+    border3: toHex(lighten(darkBg, 0.36)),
+    solid1: toHex(lighten(darkBg, 0.72)),
+    solid2: toHex(lighten(darkBg, 0.6)),
+    text1: toHex(ensureContrast(lighten(foreground, 0.3), darkBg, 3)),
+    text2: toHex(ensureContrast(lighten(foreground, 0.75), darkBg, 4.5)),
+    textContrast: toHex(darkBg),
+  };
+}
+
+/**
+ * Build the neutral (ui) scale for a light page background, tinting *downward*
+ * from it. Only valid when `background` really is light — a dark background
+ * darkened further collapses every step into the same near-black, which is what
+ * {@link isDarkColor} routing exists to prevent.
+ */
+function buildLightUiScale(background: Rgb, foreground: Rgb): ColorScale {
   return {
     bg: toHex(background),
     bgSubtle: toHex(darken(background, 0.02)),
@@ -152,33 +515,34 @@ function buildUiScale(
 }
 
 /**
+ * Accent scale against an already-dark page background. Split out for the same
+ * reason as {@link buildDarkUiScale} — so a publisher's own dark palette drives
+ * it rather than one derived from their light colors.
+ */
+function buildDarkAccentScale(accent: Rgb, darkPageBg: Rgb): ColorScale {
+  const darkAccentBg = darken(accent, 0.78);
+  return {
+    bg: toHex(darkAccentBg),
+    bgSubtle: toHex(lighten(darkAccentBg, 0.04)),
+    component1: toHex(lighten(darkAccentBg, 0.08)),
+    component2: toHex(lighten(darkAccentBg, 0.14)),
+    component3: toHex(lighten(darkAccentBg, 0.22)),
+    border1: toHex(lighten(darkAccentBg, 0.24)),
+    border2: toHex(lighten(darkAccentBg, 0.34)),
+    border3: toHex(lighten(darkAccentBg, 0.46)),
+    solid1: toHex(lighten(accent, 0.12)),
+    solid2: toHex(lighten(accent, 0.24)),
+    text1: toHex(ensureContrast(lighten(accent, 0.3), darkAccentBg, 3)),
+    text2: toHex(ensureContrast(lighten(accent, 0.55), darkAccentBg, 4.5)),
+    textContrast: toHex(darkPageBg),
+  };
+}
+
+/**
  * Build the accent (primary) scale from the publication's accent color.
  * Light: accent tints on light bg; Dark: dark accent-tinted surfaces.
  */
-function buildAccentScale(
-  accent: Rgb,
-  background: Rgb,
-  isDark: boolean,
-): ColorScale {
-  if (isDark) {
-    const darkAccentBg = darken(accent, 0.78);
-    return {
-      bg: toHex(darkAccentBg),
-      bgSubtle: toHex(lighten(darkAccentBg, 0.04)),
-      component1: toHex(lighten(darkAccentBg, 0.08)),
-      component2: toHex(lighten(darkAccentBg, 0.14)),
-      component3: toHex(lighten(darkAccentBg, 0.22)),
-      border1: toHex(lighten(darkAccentBg, 0.24)),
-      border2: toHex(lighten(darkAccentBg, 0.34)),
-      border3: toHex(lighten(darkAccentBg, 0.46)),
-      solid1: toHex(lighten(accent, 0.12)),
-      solid2: toHex(lighten(accent, 0.24)),
-      text1: toHex(ensureContrast(lighten(accent, 0.3), darkAccentBg, 3)),
-      text2: toHex(ensureContrast(lighten(accent, 0.55), darkAccentBg, 4.5)),
-      textContrast: toHex(darken(background, 0.82)),
-    };
-  }
-
+function buildLightAccentScale(accent: Rgb): ColorScale {
   const lightBg = lighten(accent, 0.86);
   return {
     bg: toHex(lightBg),
@@ -239,7 +603,7 @@ function scaleKeyToVarName(
  * these vars via `light-dark(var(--pub-...-light), var(--pub-...-dark))`.
  */
 export function publicationThemeScaleVars(
-  meta: PublicationEmbedMeta,
+  meta: PublicationThemeColors,
 ): CSSProperties {
   const colors = resolveQuoteOgColors({
     themeBackground: meta.themeBackground,
@@ -256,10 +620,76 @@ export function publicationThemeScaleVars(
   const foreground = parseHex(colors.foreground) ?? fallbackFg;
   const accent = parseHex(colors.accent) ?? fallbackAccent;
 
-  const uiLight = buildUiScale(background, foreground, false);
-  const uiDark = buildUiScale(background, foreground, true);
-  const accentLight = buildAccentScale(accent, background, false);
-  const accentDark = buildAccentScale(accent, background, true);
+  // A theme states one background. Route it to the mode its own luminance
+  // matches: a dark publication (Leaflet on black, a dark-scheme Offprint theme)
+  // supplies the *dark* page and light mode falls back to a neutral light one —
+  // rather than painting a dark page for a reader in light mode and deriving a
+  // ramp with nowhere to travel.
+  const statedBgIsDark = isDarkColor(background);
+  const lightBg = statedBgIsDark
+    ? (invertLightness(background, "light") ?? DEFAULT_LIGHT_BG)
+    : background;
+  // Ink for the synthesized mode is mirrored from their own text colour, so a
+  // warm palette keeps warm ink rather than falling back to flat black.
+  const lightFg = statedBgIsDark
+    ? (invertLightness(foreground, "light", "ink") ?? foreground)
+    : foreground;
+
+  // Stated neutral steps describe the surface they were authored against, so
+  // they may only anchor the ramp that actually uses that background.
+  const uiLight = applyNeutralSolid(
+    applyNeutralAnchors(
+      buildLightUiScale(lightBg, lightFg),
+      lightBg,
+      statedBgIsDark ? null : anchorsOf(meta),
+    ),
+    statedBgIsDark ? null : meta.neutral,
+    lightBg,
+  );
+  const accentLight = buildLightAccentScale(accent);
+
+  // Prefer the publisher's own dark palette (PCKT ships light+dark, Offprint
+  // may ship a dark-scheme theme); otherwise use their stated background when it
+  // is already dark, and only darken their light one as a last resort.
+  const authoredDark = meta.dark ?? null;
+  const authoredDarkBg = authoredDark?.background
+    ? parseHex(authoredDark.background)
+    : null;
+  const darkFg = authoredDark?.foreground
+    ? parseHex(authoredDark.foreground)
+    : null;
+  const darkAccent = authoredDark?.accent
+    ? parseHex(authoredDark.accent)
+    : null;
+
+  const darkBg =
+    authoredDarkBg ??
+    (statedBgIsDark
+      ? background
+      : (invertLightness(background, "dark") ?? DEFAULT_DARK_BG));
+  const derivedDarkFg =
+    darkFg ??
+    (statedBgIsDark
+      ? foreground
+      : (invertLightness(foreground, "dark", "ink") ?? foreground));
+  // The stated palette *is* the dark one when its background is dark, so its
+  // anchors belong here.
+  const darkAnchors = authoredDarkBg
+    ? anchorsOf(authoredDark ?? {})
+    : statedBgIsDark
+      ? anchorsOf(meta)
+      : null;
+
+  const uiDark = applyNeutralSolid(
+    applyNeutralAnchors(
+      buildDarkUiScale(darkBg, derivedDarkFg),
+      darkBg,
+      darkAnchors,
+    ),
+    authoredDark ? authoredDark.neutral : statedBgIsDark ? meta.neutral : null,
+    WHITE,
+  );
+  const accentDark = buildDarkAccentScale(darkAccent ?? accent, darkBg);
 
   const vars: Record<string, string> = {};
 
@@ -275,6 +705,25 @@ export function publicationThemeScaleVars(
   // Overlay backdrop — derived from foreground hue.
   vars["--pub-overlay-light"] = toHex(darken(foreground, 0.6));
   vars["--pub-overlay-dark"] = toHex(darken(BLACK, 0.2));
+
+  // Stated link colour, per mode. Left unset when the publisher states none, so
+  // `publicationLink` falls back to the accent's text step. Contrast is enforced
+  // against the page the link sits on — a publisher's link colour chosen for
+  // their own surface can be unreadable on a synthesized one.
+  const linkFor = (
+    stated: string | null | undefined,
+    pageBg: Rgb,
+  ): string | null => {
+    const parsed = stated ? parseHex(stated) : null;
+    return parsed ? toHex(ensureReadable(parsed, pageBg, 4.5)) : null;
+  };
+  const lightLink = linkFor(statedBgIsDark ? null : meta.link, lightBg);
+  const darkLink = linkFor(
+    authoredDark ? authoredDark.link : meta.link,
+    darkBg,
+  );
+  if (lightLink) vars["--pub-link-light"] = lightLink;
+  if (darkLink) vars["--pub-link-dark"] = darkLink;
 
   return vars as CSSProperties;
 }

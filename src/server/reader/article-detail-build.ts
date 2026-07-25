@@ -1,3 +1,7 @@
+import {
+  publicationRenderedSurfaces,
+  publicationThemeFromRow,
+} from "#/components/reader/publication-theme-scale";
 import type {
   ArticleContributor,
   ArticleDetail,
@@ -26,9 +30,11 @@ import { getPublicUrl } from "#/lib/public-url";
 import type { CodeHighlightsByScheme, ThemeMode } from "#/lib/theme";
 import { EMPTY_CODE_HIGHLIGHTS } from "#/lib/theme";
 import { cdnImageUrl } from "#/server/atproto/blob";
+import { publicationFontsFromThemeJson } from "#/server/fonts/publication-fonts.server";
 import { countDocumentComments } from "#/server/reader/document-comments";
 import { selectArticleCardsByUris } from "#/server/reader/queries";
 import { highlightLeafletCodeBlocks } from "#/server/shiki/highlighter";
+import { pickCodeTheme } from "#/server/shiki/match-theme";
 
 /** Row shape shared by single-article and collection bundle queries. */
 export interface ArticleDetailSourceRow {
@@ -72,6 +78,12 @@ export interface ArticleDetailSourceRow {
 }
 
 export interface BuildArticleDetailOptions {
+  /**
+   * Match the code theme to the publication's palette. Only set when the reader
+   * opted into publication themes — otherwise their code blocks would take a
+   * publication's colours while the rest of the page stayed editorial.
+   */
+  usePublicationTheme?: boolean;
   /** Skip recommend/read/comment counts (magazine bundle). */
   skipSocialCounts?: boolean;
   /** Skip newsletter compose for collection manifests (unused for magazine). */
@@ -83,18 +95,46 @@ export interface BuildArticleDetailOptions {
 async function codeHighlightsForThemeMode(
   blocks: Array<Pick<LeafletCodeBlock, "language" | "plaintext">>,
   themeMode: ThemeMode,
+  codeTheme: {
+    accent: string | null;
+    surfaces: ReturnType<typeof publicationRenderedSurfaces>;
+  } | null,
 ): Promise<CodeHighlightsByScheme> {
   if (blocks.length === 0) return EMPTY_CODE_HIGHLIGHTS;
 
+  // Match a bundled Shiki theme to the publication's palette so code blocks read
+  // as part of the page rather than a foreign panel dropped into it. Scored
+  // against the *rendered* surface for that scheme — the stated background can
+  // belong to the other mode entirely. Null keeps the editorial theme.
+  const themeFor = async (scheme: "light" | "dark") =>
+    codeTheme
+      ? ((await pickCodeTheme(
+          {
+            background: codeTheme.surfaces[scheme].background,
+            foreground: codeTheme.surfaces[scheme].foreground,
+            accent: codeTheme.accent,
+          },
+          scheme,
+        )) ?? undefined)
+      : undefined;
+
   if (themeMode === "system") {
+    const [lightTheme, darkTheme] = await Promise.all([
+      themeFor("light"),
+      themeFor("dark"),
+    ]);
     const [light, dark] = await Promise.all([
-      highlightLeafletCodeBlocks(blocks, "light"),
-      highlightLeafletCodeBlocks(blocks, "dark"),
+      highlightLeafletCodeBlocks(blocks, "light", lightTheme),
+      highlightLeafletCodeBlocks(blocks, "dark", darkTheme),
     ]);
     return { light, dark };
   }
 
-  const single = await highlightLeafletCodeBlocks(blocks, themeMode);
+  const single = await highlightLeafletCodeBlocks(
+    blocks,
+    themeMode,
+    await themeFor(themeMode),
+  );
   return themeMode === "dark"
     ? { light: {}, dark: single }
     : { light: single, dark: {} };
@@ -200,12 +240,36 @@ export async function buildArticleDetail(
     resolvedContentJson,
   );
 
+  // Resolved through the publisher's native theme so Leaflet/PCKT/Offprint
+  // publications contribute their real surface colors (and authored dark
+  // palette), not just the flattened `basicTheme` baseline. Resolved before the
+  // highlight pass because it also picks the code theme.
+  const publicationTheme = publicationThemeFromRow({
+    themeBackground: row.pubThemeBackground,
+    themeForeground: row.pubThemeForeground,
+    themeAccent: row.pubThemeAccent,
+    themeAccentForeground: row.pubThemeAccentForeground,
+    themeJson: row.pubThemeJson,
+  });
+
   const [codeHighlights, commentCount] = await Promise.all([
-    codeHighlightsForThemeMode(codeBlocks, themeMode),
+    codeHighlightsForThemeMode(
+      codeBlocks,
+      themeMode,
+      options.usePublicationTheme
+        ? {
+            accent: publicationTheme.themeAccent,
+            surfaces: publicationRenderedSurfaces(publicationTheme),
+          }
+        : null,
+    ),
     options.skipSocialCounts
       ? Promise.resolve(0)
       : countDocumentComments(db, schema, row.uri),
   ]);
+  const publicationFonts = await publicationFontsFromThemeJson(
+    row.pubThemeJson,
+  );
 
   return {
     uri: row.uri,
@@ -232,10 +296,18 @@ export async function buildArticleDetail(
     collection,
     collectionTheme: row.pubUri
       ? {
-          background: row.pubThemeBackground,
-          foreground: row.pubThemeForeground,
-          accent: row.pubThemeAccent,
-          accentForeground: row.pubThemeAccentForeground,
+          background: publicationTheme.themeBackground,
+          foreground: publicationTheme.themeForeground,
+          accent: publicationTheme.themeAccent,
+          accentForeground: publicationTheme.themeAccentForeground,
+          dark: publicationTheme.dark ?? null,
+          surface: publicationTheme.surface ?? null,
+          surfaceHover: publicationTheme.surfaceHover ?? null,
+          border: publicationTheme.border ?? null,
+          publicationFonts,
+          // The sidecar `app.standard-reader.publicationTheme` fonts still win
+          // for collections/magazine rendering; `publicationFonts` is the
+          // platform-native pair used by the reader's publication theming.
           fontTitle: themeFontsFromJson(row.pubThemeJson).title,
           fontBody: themeFontsFromJson(row.pubThemeJson).body,
         }

@@ -1,6 +1,11 @@
 import * as stylex from "@stylexjs/stylex";
 
-import { primaryColor, uiColor } from "../../design-system/theme/color.stylex";
+import {
+  linkColor,
+  primaryColor,
+  uiColor,
+} from "../../design-system/theme/color.stylex";
+import { fontFamily } from "../../design-system/theme/typography.stylex";
 
 /**
  * Publication-themed overrides for the design-system color tokens.
@@ -65,4 +70,35 @@ export const publicationPrimary = stylex.createTheme(primaryColor, {
     "light-dark(var(--pub-accent-text2-light), var(--pub-accent-text2-dark))",
   textContrast:
     "light-dark(var(--pub-accent-textContrast-light), var(--pub-accent-textContrast-dark))",
+});
+
+/**
+ * Publisher-chosen typefaces, layered over the editorial stack rather than
+ * replacing it: `--pub-font-title` / `--pub-font-body` are set at runtime only
+ * when a font actually resolved, and each falls back to the editorial family
+ * (and its Capsize metric-adjusted fallbacks) when it didn't. So a publication
+ * that states no fonts — or one whose font Google doesn't serve — renders in
+ * exactly the app's own typography.
+ */
+const EDITORIAL_TITLE =
+  "'Newsreader', 'Newsreader Fallback: Georgia', 'Newsreader Fallback: Times New Roman', Georgia, 'Times New Roman', serif";
+const EDITORIAL_SANS =
+  "'Atkinson Hyperlegible Next', 'Atkinson Hyperlegible Next Fallback: -apple-system', 'Atkinson Hyperlegible Next Fallback: Arial', system-ui, -apple-system, sans-serif";
+
+export const publicationFonts = stylex.createTheme(fontFamily, {
+  title: `var(--pub-font-title, ${EDITORIAL_TITLE})`,
+  serif: `var(--pub-font-body, ${EDITORIAL_TITLE})`,
+  sans: `var(--pub-font-body, ${EDITORIAL_SANS})`,
+  mono: "'Spline Sans Mono', 'Spline Sans Mono Fallback', ui-monospace, 'SFMono-Regular', monospace",
+});
+
+/**
+ * Publisher-stated link colour. Falls back to the accent's text step, which is
+ * exactly what links used before this token existed — so a publication that
+ * states no link colour renders identically.
+ */
+export const publicationLink = stylex.createTheme(linkColor, {
+  text: "light-dark(var(--pub-link-light, var(--pub-accent-text2-light)), var(--pub-link-dark, var(--pub-accent-text2-dark)))",
+  hover:
+    "light-dark(var(--pub-link-hover-light, var(--pub-accent-text1-light)), var(--pub-link-hover-dark, var(--pub-accent-text1-dark)))",
 });

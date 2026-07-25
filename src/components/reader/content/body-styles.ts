@@ -2,6 +2,7 @@ import * as stylex from "@stylexjs/stylex";
 import type { CSSProperties } from "react";
 
 import {
+  linkColor,
   primaryColor,
   uiColor,
   warningColor,
@@ -137,14 +138,14 @@ export const articleBodyStyles = stylex.create({
   },
   facetLink: {
     textDecoration: { default: "underline", ":hover": "none" },
-    color: primaryColor.text2,
+    color: linkColor.text,
     textUnderlineOffset: spacing["1.5"],
   },
   publicationBylineLink: {
     cornerShape: "squircle",
     borderRadius: radius.xs,
     textDecoration: { default: "underline", ":hover": "none" },
-    color: primaryColor.text2,
+    color: linkColor.text,
     textDecorationColor: "currentColor",
     textUnderlineOffset: spacing["1.5"],
     fontWeight: fontWeight.semibold,
@@ -185,7 +186,7 @@ export const articleBodyStyles = stylex.create({
     cornerShape: "squircle",
     borderRadius: radius.xs,
     textDecoration: "none",
-    color: primaryColor.text2,
+    color: linkColor.text,
     fontWeight: fontWeight.medium,
     paddingInline: spacing["0.5"],
   },
@@ -218,7 +219,7 @@ export const articleBodyStyles = stylex.create({
   },
   footnoteBackLink: {
     textDecoration: "none",
-    color: primaryColor.text2,
+    color: linkColor.text,
     marginInlineStart: spacing["1"],
   },
   codeBlock: {

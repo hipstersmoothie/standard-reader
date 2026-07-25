@@ -456,6 +456,89 @@ Build each on hip-ui components + StyleX tokens (no raw HTML/inline styles).
 - [x] Global follow toggle reflects everywhere instantly (optimistic).
 - [x] Theme picker (light / dark / system) + editorial dark tokens + Shiki `standard-reader-dark`.
 - [x] Theme tokens / dark mode parity with prototype (remaining hardcoded surfaces).
+- [x] **"Use publication themes" preference** — Settings → Appearance toggle that repaints
+      `/p/$did/$rkey` and `/a/$did/$rkey` in the publication's own `basicTheme` colors.
+      `publicationThemeScaleVars` expands the four flat colors into light + dark UI/accent
+      scales; the `publicationUi` / `publicationPrimary` StyleX themes (previously used only by
+      the themed subscribe login) override the design-system `uiColor` / `primaryColor` tokens
+      on a `PublicationThemeScope` wrapper. A route opts in by returning `publicationTheme`
+      from its loader; `AppShell` reads it off the deepest match (no apply-on-effect flash) and
+      wraps the content column **plus `SiteFooter`**, so the palette runs to the bottom of the
+      page. Sidebar and mobile bar stay Standard Reader chrome. Signed-in only:
+      `user.use_publication_theme` (`drizzle/0019_use_publication_theme`), served through
+      `getShellBootstrap` so the first paint is already themed. Gated on
+      `hasPublicationThemeColors`, so publications with no colors keep the editorial theme.
+      Theme colors ride along on the existing header query (`selectPublicationHeader`) and on
+      `article.collectionTheme` — no extra round trips (`#/lib/publication-theme-preference`,
+      `usePublicationThemePreference`).
+- [x] **Publisher-native themes beyond `basicTheme`** — ingest now keeps the platform's own
+      theme block as `theme_json.nativeTheme`, and `resolvePublicationTheme`
+      (`#/lib/publication-theme-source`, unit-tested against real Leaflet/PCKT/Offprint records)
+      narrows it per `$type`: Leaflet's `pageBackground`-over-`backgroundColor` page surface
+      (`basicTheme.background` only mirrors the canvas), and PCKT/Offprint **authored dark
+      palettes** used verbatim instead of darkening their light colors
+      (`buildDarkUiScale` / `buildDarkAccentScale`). Unknown `$type`s fall back to `basicTheme`.
+      **Existing rows only pick this up on re-ingest** — `theme_json.nativeTheme` is written by
+      `upsertPublication`, so a repo resync (`src/server/ingest/repo-sync.ts`) or the publisher's
+      next record update is needed to backfill it.
+- [x] **Stated neutral scale steps instead of derived ones** — `ThemePalette` carries optional
+      `surface` / `surfaceHover` / `border` anchors, and `applyNeutralAnchors`
+      (`publication-theme-scale.ts`) re-lays the neutral ramp as a piecewise-linear curve through
+      whatever the publisher actually stated, interpolating only between anchors. Offprint's
+      `base200` → `component1` and `base300` → `border1`; PCKT's `surfaceHover` → `component2`
+      (a hover fill, so it must not become the resting card surface). Publications stating nothing
+      keep the derived scale byte-for-byte. Light and dark anchor independently — light-mode
+      anchors never leak onto a derived dark ramp.
+- [x] **Route a stated background to the mode its luminance matches** — dark publications
+      (Leaflet on a black canvas, dark-scheme Offprint themes) were painting a dark page in
+      light mode, and the light ramp then _darkened_ from near-black so all eight neutral steps
+      landed within ~10 RGB units — invisible borders, cards indistinguishable from the page.
+      `isDarkColor` now decides which mode the stated background serves; the other mode is
+      synthesized by `invertLightness` — an OKLCH mirror that keeps the hue, moves lightness to
+      the opposite end (0.975 / 0.17, calibrated against the app's own editorial backgrounds),
+      and damps chroma so a dark plum inverts to pale paper rather than a lurid pink. The ink is
+      mirrored from the publisher's own text colour too, so a warm palette keeps warm ink.
+      Achromatic and unparseable colours fall back to neutral defaults.
+      `buildUiScale`/`buildAccentScale`
+      split into explicit `buildLight*`/`buildDark*` pairs so the caller supplies each mode's
+      background, and stated neutral anchors only apply to the ramp actually using the surface
+      they were authored against. Light publications are unaffected.
+- [x] **Fonts from native themes** — `#/lib/publication-fonts` reads each platform's font format
+      (Leaflet's self-describing `custom:<Family>:…` plus built-in keys, PCKT's single squashed
+      `font`, Offprint's `typography.headingFont`/`bodyFont` slugs) and resolves them against the
+      Google Fonts catalog by normalized key (lowercase, alphanumerics only) — no hand-maintained
+      per-platform table. `PLATFORM_FONT_ALIASES` covers the three keys that don't normalize onto
+      their family (`source-sans` → Source Sans 3, `cactusserif`, `anon`). Unresolved keys are
+      deliberately left alone so the reader keeps their own typography: PCKT's `legible` / `sans`
+      are generic slots, and `quattro` / `iawritermono` are iA Writer faces Google doesn't serve.
+      The catalog cache moved to `#/server/fonts/google-catalog.server` and is shared with the
+      reading-typography picker; a Google Fonts outage degrades to "no publisher fonts".
+      `publicationFonts` (a `createTheme` over `fontFamily`) layers `--pub-font-title` /
+      `--pub-font-body` over the editorial stack, so each slot falls back to the app's own family
+      when nothing resolved.
+      **Open:** how publication fonts should interact with the reader's explicit
+      **reading-typography** body-font choice — right now the publication's font wins inside the
+      themed scope. Arguably an explicit reader preference should take precedence.
+- [x] **Code blocks match the publication theme** — rather than synthesizing syntax colours from
+      four theme colours (inventing a whole colour system per publication, which reads as noise
+      next to hand-designed ones), `pickCodeTheme` (`#/server/shiki/match-theme`) scores Shiki's
+      65 bundled themes against the publication's background/text/accent by perceptual ΔE in
+      OKLab, weighted toward the accent, and filtered to the requested light/dark type. The
+      chosen theme is loaded on demand by the highlighter, falling back to the editorial theme
+      if it can't be registered. Gated per-reader: `usePublicationThemeForRequest` is resolved
+      alongside `themeModeForRequest`, so a reader with the preference off keeps editorial code
+      blocks. Two corrections after the first pass: scoring uses the **rendered** surface for
+      each scheme (`publicationRenderedSurfaces`) rather than the stated background, which can
+      belong to the other mode entirely and was being reused for both; and the background is a
+      **gate** (ΔE ≤ 0.035) rather than just a weighted term, because a code block is mostly
+      background — a cream `gruvbox-light-hard` panel was winning on accent alone against a
+      near-white page. Character still tracks the accent within the gate: magenta → `dracula`,
+      gold → `gruvbox-dark-hard`, teal → `min-light` / `vitesse-dark`.
+- [ ] **Decorative parts of native themes** — Leaflet `backgroundImage` (20%) / `wordmark` (2%) /
+      `pageWidth` (67%), PCKT `tileBackground` (71%) / `transparency` (95%) / `highlightShape` /
+      `corners`, Offprint `sizing` (85%) / `effects` (84%), plus PCKT's `link` colour (we have no
+      distinct link token). Deferred pending a product call on how far a publication's styling
+      should reach into reader chrome — these change shape and texture, not just palette.
 - [x] **"Open on original site" preference** — user-menu toggle that bypasses the in-app reader:
       document links (feed/search cards, "More from", embedded standard.site post cards) open the
       article's canonical URL in a new tab (marking it read), and `/a/$did/$rkey` redirects to the

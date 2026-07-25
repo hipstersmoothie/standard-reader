@@ -50,6 +50,14 @@ export interface PublicationRecord {
   description?: string;
   icon?: BlobRef;
   basicTheme?: BasicTheme;
+  /**
+   * The publishing platform's own richer theme, kept alongside the `basicTheme`
+   * interop baseline and discriminated by `$type` (`pub.leaflet.publication#theme`,
+   * `blog.pckt.theme`, `app.offprint.theme`, …). Left untyped on purpose — it is
+   * third-party and open-ended; `resolvePublicationTheme`
+   * (`#/lib/publication-theme-source`) narrows it per `$type`.
+   */
+  theme?: unknown;
   preferences?: { showInDiscover?: boolean };
 }
 

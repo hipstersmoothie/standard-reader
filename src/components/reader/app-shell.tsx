@@ -90,6 +90,7 @@ import { initials, listLinkParams, publicationLinkParams } from "./format";
 import { LanguageHintPrompt } from "./language-hint-prompt";
 import { ListEditModal } from "./list-edit-modal";
 import { PageReaderBar } from "./page-reader-bar";
+import { PublicationThemeScope } from "./publication-theme-scope";
 import { ReorderListsModal } from "./reorder-lists-modal";
 import {
   SelectionDockProvider,
@@ -1473,8 +1474,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 </Flex>
               )}
 
-              {children}
-              <SiteFooter />
+              {/* The footer sits inside the themed region so a publication's
+                  colors run to the bottom of the content column. */}
+              <PublicationThemeScope>
+                {children}
+                <SiteFooter />
+              </PublicationThemeScope>
             </div>
 
             <div {...stylex.props(styles.dock)}>

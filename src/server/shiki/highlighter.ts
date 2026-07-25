@@ -1,4 +1,4 @@
-import type { BundledLanguage, Highlighter } from "shiki";
+import type { BundledLanguage, BundledTheme, Highlighter } from "shiki";
 import { createHighlighter } from "shiki";
 
 import { codeBlockKey, normalizeLanguage } from "#/lib/code-highlight";
@@ -64,12 +64,38 @@ async function resolveLanguage(
   }
 }
 
+/**
+ * Ensure a bundled theme is registered, returning the editorial theme's name if
+ * it can't be loaded — a missing theme must never cost us the highlight.
+ */
+async function resolveTheme(
+  highlighter: Highlighter,
+  requested: string | undefined,
+  scheme: ResolvedThemeScheme,
+): Promise<string> {
+  const fallback = codeThemeNameForScheme(scheme);
+  if (!requested || requested === fallback) return fallback;
+  if (highlighter.getLoadedThemes().includes(requested)) return requested;
+  try {
+    await highlighter.loadTheme(requested as BundledTheme);
+    return requested;
+  } catch {
+    return fallback;
+  }
+}
+
 export async function highlightCodeBlock(
   plaintext: string,
   language: string | undefined,
   scheme: ResolvedThemeScheme = "light",
+  requestedTheme?: string,
 ): Promise<string> {
-  const themeName = codeThemeNameForScheme(scheme);
+  const highlighterForTheme = await getHighlighter();
+  const themeName = await resolveTheme(
+    highlighterForTheme,
+    requestedTheme,
+    scheme,
+  );
   const key = `${themeName}:${codeBlockKey({ language, plaintext })}`;
   const cached = htmlCache.get(key);
   if (cached) return cached;
@@ -92,6 +118,7 @@ export async function highlightCodeBlock(
 export async function highlightLeafletCodeBlocks(
   blocks: Array<LeafletCodeBlock>,
   scheme: ResolvedThemeScheme = "light",
+  requestedTheme?: string,
 ): Promise<Record<string, string>> {
   const unique = new Map<string, LeafletCodeBlock>();
   for (const block of blocks) {
@@ -108,6 +135,7 @@ export async function highlightLeafletCodeBlocks(
         block.plaintext,
         block.language,
         scheme,
+        requestedTheme,
       );
       return [key, html] as const;
     }),

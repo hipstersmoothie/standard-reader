@@ -3422,6 +3422,10 @@ msgstr "搜索标注服务"
 msgid "{weekday} · Your feed"
 msgstr "{weekday} · 你的信息流"
 
+#: src/components/user-settings-view.tsx
+msgid "Use publication themes"
+msgstr ""
+
 #: src/components/reader/collection-builder.tsx
 msgid "e.g. The Spring Reading Issue"
 msgstr "例如：春季阅读特辑"
@@ -4113,6 +4117,10 @@ msgstr "与开放网络友好共处"
 #: src/components/reader/privacy-view.tsx
 msgid "What we collect"
 msgstr "我们收集哪些信息"
+
+#: src/components/user-settings-view.tsx
+msgid "When on, a publication's page and its posts are shown in that publication's own colors. Publications that haven't set any colors keep the Standard Reader theme."
+msgstr ""
 
 #: src/components/reader/atstore-review-prompt.tsx
 msgid "Do you like Standard Reader?"

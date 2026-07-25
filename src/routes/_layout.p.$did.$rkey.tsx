@@ -45,6 +45,7 @@ import {
 } from "../components/reader/primitives";
 import { PublicationLatestNote } from "../components/reader/publication-latest-note";
 import { PublicationSocialProofLine } from "../components/reader/publication-social-proof";
+import type { PublicationThemeColors } from "../components/reader/publication-theme-scale";
 import {
   applyMarkReadManyOptimisticUpdate,
   invalidateReadQueries,
@@ -124,6 +125,7 @@ export const Route = createFileRoute("/_layout/p/$did/$rkey")({
       return {
         publicationName: null,
         publicationDescription: null,
+        publicationTheme: null,
       };
     }
 
@@ -142,6 +144,7 @@ export const Route = createFileRoute("/_layout/p/$did/$rkey")({
     const header = results[0] as {
       publication: { name: string; description: string };
       owner: { did: string; handle: string };
+      theme: PublicationThemeColors;
     } | null;
 
     if (header) {
@@ -155,6 +158,8 @@ export const Route = createFileRoute("/_layout/p/$did/$rkey")({
     return {
       publicationName: header?.publication.name ?? null,
       publicationDescription: header?.publication.description ?? null,
+      // Read by `PublicationThemeScope` in the app shell — see its doc comment.
+      publicationTheme: header?.theme ?? null,
     };
   },
   head: ({ loaderData, match }) => {

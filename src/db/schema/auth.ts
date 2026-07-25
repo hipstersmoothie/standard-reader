@@ -60,6 +60,12 @@ export const user = pgTable("user", {
    * users that existed before this preference shipped, to preserve their current
    * behaviour. */
   countOldPostsAsUnread: boolean("count_old_posts_as_unread"),
+  /** `true` paints publication pages and their documents in the publication's
+   * own `site.standard.theme.basic` colors; `null`/`false` = off (default), so
+   * the app's editorial theme is used everywhere. Publications that carry no
+   * theme colors keep the editorial theme either way. See
+   * `src/lib/publication-theme-preference.ts`. */
+  usePublicationTheme: boolean("use_publication_theme"),
   /** `network` shows the whole-network home feed; `null` = follows (default). */
   homeScope: text("home_scope"),
   /** Comma-separated author-profile tab ids the owner has hidden from their

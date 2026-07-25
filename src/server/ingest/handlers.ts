@@ -230,7 +230,16 @@ export async function upsertPublication(
     iconCid,
     iconMime: record.icon?.mimeType ?? null,
     ...theme,
-    themeJson: sanitizeJson(record.basicTheme),
+    // Keep the publisher's native theme next to the `basicTheme` baseline —
+    // Leaflet/PCKT/Offprint carry colors (and real dark palettes) the four
+    // flattened columns can't express. See `#/lib/publication-theme-source`.
+    themeJson:
+      record.basicTheme || record.theme
+        ? sanitizeJson({
+            ...record.basicTheme,
+            ...(record.theme ? { nativeTheme: record.theme } : {}),
+          })
+        : sanitizeJson(record.basicTheme),
     showInDiscover:
       (record.preferences?.showInDiscover ?? true) &&
       !isExcludedPublicationUrl(url),

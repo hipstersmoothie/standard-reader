@@ -41,6 +41,7 @@ import { useCountOldPostsAsUnread } from "#/lib/use-count-old-posts-as-unread";
 import { useLocale } from "#/lib/use-locale";
 import { useOpenCollectionsInMagazine } from "#/lib/use-open-collections-in-magazine";
 import { useOpenLinks } from "#/lib/use-open-links";
+import { usePublicationThemePreference } from "#/lib/use-publication-theme-preference";
 import { useReaderVoice } from "#/lib/use-reader-voice";
 import { useReadingTypography } from "#/lib/use-reading-typography";
 import { useTheme } from "#/lib/use-theme";
@@ -437,6 +438,8 @@ export function UserSettingsView() {
     useTrackReadingHistory();
   const { enabled: countOldAsUnread, setEnabled: setCountOldAsUnread } =
     useCountOldPostsAsUnread();
+  const { enabled: usePublicationTheme, setEnabled: setUsePublicationTheme } =
+    usePublicationThemePreference();
 
   const { data: session } = useQuery(user.getSessionQueryOptions);
   const signedIn = Boolean(session?.user);
@@ -614,6 +617,17 @@ export function UserSettingsView() {
                 </SegmentedControlItem>
               ))}
             </SegmentedControl>
+          </SettingRow>
+          <Separator />
+          <SettingRow
+            label={t`Use publication themes`}
+            description={t`When on, a publication's page and its posts are shown in that publication's own colors. Publications that haven't set any colors keep the Standard Reader theme.`}
+          >
+            <Switch
+              isSelected={usePublicationTheme}
+              onChange={setUsePublicationTheme}
+              aria-label={t`Use publication themes`}
+            />
           </SettingRow>
           <Separator />
           <SettingRow

@@ -3422,6 +3422,10 @@ msgstr "ラベラーを検索"
 msgid "{weekday} · Your feed"
 msgstr "{weekday}・フィード"
 
+#: src/components/user-settings-view.tsx
+msgid "Use publication themes"
+msgstr ""
+
 #: src/components/reader/collection-builder.tsx
 msgid "e.g. The Spring Reading Issue"
 msgstr "例: 春の読書特集号"
@@ -4113,6 +4117,10 @@ msgstr "オープンな Web と相性よく"
 #: src/components/reader/privacy-view.tsx
 msgid "What we collect"
 msgstr "収集する情報"
+
+#: src/components/user-settings-view.tsx
+msgid "When on, a publication's page and its posts are shown in that publication's own colors. Publications that haven't set any colors keep the Standard Reader theme."
+msgstr ""
 
 #: src/components/reader/atstore-review-prompt.tsx
 msgid "Do you like Standard Reader?"

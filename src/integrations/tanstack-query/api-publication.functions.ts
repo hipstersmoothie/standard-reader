@@ -30,6 +30,7 @@ import { loadCollectionMagazine } from "#/server/reader/collection-magazine";
 import type { ContentLinkTargets } from "#/server/reader/content-links";
 import { resolveContentLinkTargets } from "#/server/reader/content-links";
 import { attachCommentCountsToArticles } from "#/server/reader/document-comments";
+import type { PublicationHeader } from "#/server/reader/publication-header";
 import { selectPublicationHeader } from "#/server/reader/publication-header";
 import { resolveInlineMentions } from "#/server/reader/publication-mentions";
 import {
@@ -45,7 +46,10 @@ import {
   attachViewerRecommendedToArticles,
 } from "#/server/reader/recommended-by";
 import { effectiveFollowSets } from "#/server/reader/saved-lists";
-import { themeModeForRequest } from "#/server/theme-preference";
+import {
+  themeModeForRequest,
+  usePublicationThemeForRequest,
+} from "#/server/theme-preference";
 
 import type {
   ArticleCard,
@@ -119,11 +123,11 @@ const contentLinksInput = z.object({
   hrefs: z.array(z.string()).default([]),
 });
 
-/** Publication identity + stats for the profile hero (no document list). */
-export interface PublicationHeader {
-  publication: PublicationCard;
-  owner: ProfileSummary;
-}
+/**
+ * Publication identity + stats + theme colors for the profile hero (no document
+ * list). Re-exported from the query that builds it so the two can't drift.
+ */
+export type { PublicationHeader } from "#/server/reader/publication-header";
 
 export interface PublicationProfile {
   publication: PublicationCard;
@@ -498,7 +502,12 @@ const getArticle = createServerFn({ method: "GET" })
           }),
         );
 
-        const themeMode = await themeModeForRequest(db, schema, reader?.userId);
+        // Resolved per-reader alongside the theme mode: the code theme may only
+        // follow the publication when this reader opted into publication themes.
+        const [themeMode, usePublicationTheme] = await Promise.all([
+          themeModeForRequest(db, schema, reader?.userId),
+          usePublicationThemeForRequest(db, schema, reader?.userId),
+        ]);
 
         return buildArticleDetail(
           db,
@@ -507,6 +516,7 @@ const getArticle = createServerFn({ method: "GET" })
           contributors,
           themeMode,
           {
+            usePublicationTheme,
             readCount: readRows[0]?.count ?? 0,
             recommendCount: recommendRows[0]?.count ?? 0,
           },
