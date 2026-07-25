@@ -92,6 +92,7 @@ msgstr "記事を追加"
 
 #: src/components/reader/app-shell.tsx
 #: src/components/reader/article-below-fold.tsx
+#: src/lib/sidebar-nav.ts
 #: src/routes/_layout.discover.tsx
 #: src/routes/_layout.friends.tsx
 msgid "Discover"
@@ -229,6 +230,10 @@ msgstr "{publicationCountText} · {articleCountText}"
 #: src/components/reader/collection-builder.tsx
 msgid "Search by title or author, or paste a URL or at:// URI"
 msgstr "タイトルや著者で検索、または URL や at:// URI を貼り付け"
+
+#: src/components/user-settings-view.tsx
+msgid "Show {itemLabel} in the sidebar"
+msgstr ""
 
 #: src/routes/collection.$did.$rkey.tsx
 msgid "Opening the collection…"
@@ -623,6 +628,10 @@ msgstr "概要"
 msgid "Nothing saved yet"
 msgstr "まだ何も保存されていません"
 
+#: src/components/user-settings-view.tsx
+msgid "Turn on to choose which items appear in the sidebar. Subscriptions and your lists always stay."
+msgstr ""
+
 #: src/routes/_layout.tag.$tag.tsx
 msgid "{unfollowedCount, plural, one {Subscribe to {formattedUnfollowedCount} publication?} other {Subscribe to {formattedUnfollowedCount} publications?}}"
 msgstr "{unfollowedCount, plural, one {{formattedUnfollowedCount} 件の発行物を購読しますか？} other {{formattedUnfollowedCount} 件の発行物を購読しますか？}}"
@@ -880,6 +889,7 @@ msgstr "カバー画像を差し替え"
 
 #: src/components/labelers-settings-view.tsx
 #: src/components/reader/app-shell.tsx
+#: src/lib/sidebar-nav.ts
 msgid "Search"
 msgstr "検索"
 
@@ -1348,6 +1358,7 @@ msgstr "もう一つアプリを開くのは面倒ですか？購読中の発行
 #: src/components/reader/app-shell.tsx
 #: src/components/reader/collection-builder.tsx
 #: src/components/reader/collections-upgrade-gate.tsx
+#: src/lib/sidebar-nav.ts
 #: src/routes/_layout.collections.edit.$rkey.tsx
 #: src/routes/_layout.collections.index.tsx
 #: src/routes/_layout.collections.new.tsx
@@ -1960,6 +1971,10 @@ msgstr ""
 msgid "Original"
 msgstr "オリジナル"
 
+#: src/components/user-settings-view.tsx
+msgid "Customize sidebar"
+msgstr ""
+
 #: src/magazine/Magazine.tsx
 msgid "Next"
 msgstr "次へ"
@@ -1987,6 +2002,7 @@ msgstr "フォント"
 
 #: src/components/Header.tsx
 #: src/components/reader/app-shell.tsx
+#: src/lib/sidebar-nav.ts
 msgid "Home"
 msgstr "ホーム"
 
@@ -3881,6 +3897,10 @@ msgstr "拡張機能から保存やフォローをすると、{SITE_NAME} は We
 msgid "Create series"
 msgstr "シリーズを作成"
 
+#: src/components/user-settings-view.tsx
+msgid "Sidebar"
+msgstr ""
+
 #: src/components/onboarding/step-settings.tsx
 msgid "Reading & privacy"
 msgstr "読書とプライバシー"
@@ -4163,6 +4183,7 @@ msgid "A quiet place to begin"
 msgstr "静かに読みはじめる場所"
 
 #: src/components/reader/app-shell.tsx
+#: src/lib/sidebar-nav.ts
 #: src/routes/_layout.latest.tsx
 msgid "Latest"
 msgstr "最新"
@@ -4480,6 +4501,7 @@ msgstr "まだ Standard Reader にありません"
 #: src/components/reader/article-view.tsx
 #: src/components/reader/cards.tsx
 #: src/components/user-settings-view.tsx
+#: src/lib/sidebar-nav.ts
 #: src/routes/_layout.saved.tsx
 msgid "Saved for later"
 msgstr "あとで読む"

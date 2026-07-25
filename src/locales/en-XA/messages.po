@@ -92,6 +92,7 @@ msgstr ""
 
 #: src/components/reader/app-shell.tsx
 #: src/components/reader/article-below-fold.tsx
+#: src/lib/sidebar-nav.ts
 #: src/routes/_layout.discover.tsx
 #: src/routes/_layout.friends.tsx
 msgid "Discover"
@@ -228,6 +229,10 @@ msgstr ""
 
 #: src/components/reader/collection-builder.tsx
 msgid "Search by title or author, or paste a URL or at:// URI"
+msgstr ""
+
+#: src/components/user-settings-view.tsx
+msgid "Show {itemLabel} in the sidebar"
 msgstr ""
 
 #: src/routes/collection.$did.$rkey.tsx
@@ -623,6 +628,10 @@ msgstr ""
 msgid "Nothing saved yet"
 msgstr ""
 
+#: src/components/user-settings-view.tsx
+msgid "Turn on to choose which items appear in the sidebar. Subscriptions and your lists always stay."
+msgstr ""
+
 #: src/routes/_layout.tag.$tag.tsx
 msgid "{unfollowedCount, plural, one {Subscribe to {formattedUnfollowedCount} publication?} other {Subscribe to {formattedUnfollowedCount} publications?}}"
 msgstr ""
@@ -880,6 +889,7 @@ msgstr ""
 
 #: src/components/labelers-settings-view.tsx
 #: src/components/reader/app-shell.tsx
+#: src/lib/sidebar-nav.ts
 msgid "Search"
 msgstr ""
 
@@ -1348,6 +1358,7 @@ msgstr ""
 #: src/components/reader/app-shell.tsx
 #: src/components/reader/collection-builder.tsx
 #: src/components/reader/collections-upgrade-gate.tsx
+#: src/lib/sidebar-nav.ts
 #: src/routes/_layout.collections.edit.$rkey.tsx
 #: src/routes/_layout.collections.index.tsx
 #: src/routes/_layout.collections.new.tsx
@@ -1960,6 +1971,10 @@ msgstr ""
 msgid "Original"
 msgstr ""
 
+#: src/components/user-settings-view.tsx
+msgid "Customize sidebar"
+msgstr ""
+
 #: src/magazine/Magazine.tsx
 msgid "Next"
 msgstr ""
@@ -1987,6 +2002,7 @@ msgstr ""
 
 #: src/components/Header.tsx
 #: src/components/reader/app-shell.tsx
+#: src/lib/sidebar-nav.ts
 msgid "Home"
 msgstr ""
 
@@ -3881,6 +3897,10 @@ msgstr ""
 msgid "Create series"
 msgstr ""
 
+#: src/components/user-settings-view.tsx
+msgid "Sidebar"
+msgstr ""
+
 #: src/components/onboarding/step-settings.tsx
 msgid "Reading & privacy"
 msgstr ""
@@ -4163,6 +4183,7 @@ msgid "A quiet place to begin"
 msgstr ""
 
 #: src/components/reader/app-shell.tsx
+#: src/lib/sidebar-nav.ts
 #: src/routes/_layout.latest.tsx
 msgid "Latest"
 msgstr ""
@@ -4480,6 +4501,7 @@ msgstr ""
 #: src/components/reader/article-view.tsx
 #: src/components/reader/cards.tsx
 #: src/components/user-settings-view.tsx
+#: src/lib/sidebar-nav.ts
 #: src/routes/_layout.saved.tsx
 msgid "Saved for later"
 msgstr ""
