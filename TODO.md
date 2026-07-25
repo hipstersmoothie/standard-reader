@@ -632,14 +632,18 @@ Build each on hip-ui components + StyleX tokens (no raw HTML/inline styles).
       which imposes its own level-based indent/chevron-spacer styling — this keeps the sidebar's
       existing flush, no-indent row look) instead of a separate flat list + list-group sections:
       list groups and ungrouped publications/people are siblings at the top level, and each list's
-      own members are its children, rendered with the same row style regardless of nesting. When
-      `subscriptionSort` is **Default**, dragging supports every rearrangement: reorder lists,
+      own members are its children, rendered with the same row style regardless of nesting (both
+      use the same `columnGap`, so a nested member's avatar lines up with its group's name exactly
+      — a mismatched gap after the drag handle was the earlier cause of a slight nested-row
+      indent). Dragging is never implicitly on — a **Reorder subscriptions…** menu item (a
+      local, unpersisted toggle, not a `subscriptionSort` value) must be explicitly turned on
+      first; it flips to **Done reordering** while active, and is disabled (and auto-turned back
+      off) whenever `subscriptionSort` isn't **Default**, since an automatic sort computes its own
+      arrangement. While reordering is on, dragging supports every rearrangement: reorder lists,
       reorder members within a list, move a member between two lists, move a member into or out of
       a list, and reorder members relative to lists at the top level — with a custom drag preview
       pill (name + avatar) and a drop-target line indicator, both via `useDragAndDrop`'s
-      `renderDragPreview`/`renderDropIndicator`. An automatic sort (**Recent activity** / **A–Z** /
-      **Most unread**) disables dragging and renders its own computed arrangement instead — an
-      active automatic sort would otherwise silently override a manual arrangement. New
+      `renderDragPreview`/`renderDropIndicator`. New
       `treeOrder` field on `app.standard-reader.sidebarPref` (top-level order, list at-uris
       interleaved with ungrouped subject ids; supersedes the legacy `listOrder`-only field, kept as
       a fallback for readers who haven't touched the new tree yet) plus a new `setListMembers` list

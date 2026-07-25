@@ -478,21 +478,25 @@ source of truth; Neon holds a derived view for speed and cross-network querying.
   since its level-based indent/chevron-spacer styling would change the sidebar's existing flush
   row look — rather than a separate flat list plus list-group sections. List groups and ungrouped
   publications/people are siblings at the top level; each list's own members are its children,
-  rendered with the same row style regardless of nesting depth (no indent). The header's overflow
-  menu (`⋮`) holds a **Sort** submenu (**Default** — the reader's manual `treeOrder` arrangement,
-  or natural/stored order, untouched, and the actual default value; **Recent activity** —
+  rendered with the same row style regardless of nesting depth (no indent — both the group header
+  row and a member row use the identical `columnGap` after the drag handle, so a nested member's
+  avatar and its group's name start at the same x-position). The header's overflow menu (`⋮`)
+  holds a **Sort** submenu (**Default** — the reader's manual `treeOrder` arrangement, or
+  natural/stored order, untouched, and the actual default value; **Recent activity** —
   publications (`lastDocumentAt`) and people (`followedAt`) genuinely interleaved into one
   combined most-recent-first ranking; **A–Z**; **Most unread** — same interleaving, ranked by name
-  / unread count, applied to both a list group's own members and the groups themselves), plus
-  **New list** and **Collapse/Expand all**. When sort is **Default**, dragging in the tree supports
+  / unread count, applied to both a list group's own members and the groups themselves), plus a
+  **Reorder subscriptions…** toggle, **New list**, and **Collapse/Expand all**. Dragging is never
+  implicitly on: **Reorder subscriptions…** is a local (unpersisted) toggle the reader must
+  explicitly turn on — it relabels to **Done reordering** while active — and it's disabled (and
+  auto-reset off) whenever sort isn't **Default**, since an automatic sort computes its own
+  arrangement and a drag wouldn't stick. While reordering is on, dragging in the tree supports
   every rearrangement: reorder lists, reorder members within a list, move a member between two
   lists, move a member into or out of a list, and reorder members relative to lists at the top
   level — persisted via `treeOrder` (for top-level position) and a `setListMembers` mutation (full
   publications/users array replace, for a list's own membership/order), with a custom drag preview
   pill and a drop-target line indicator (`useDragAndDrop`'s `renderDragPreview` /
-  `renderDropIndicator`). An automatic sort disables dragging and renders its own computed
-  arrangement instead, since an active automatic sort would otherwise silently override a manual
-  arrangement. Cross-kind (publication vs. person) order **within** one list isn't separately
+  `renderDropIndicator`). Cross-kind (publication vs. person) order **within** one list isn't separately
   persisted — each kind keeps its own relative order, the same limitation `ListEditModal`'s member
   editor already has. Saved lists (owned by another reader) are read-only containers in the
   tree — only their own top-level position is draggable, not their membership. Mobile

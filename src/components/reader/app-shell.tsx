@@ -343,7 +343,10 @@ const styles = stylex.create({
     outlineOffset: "-2px",
     cursor: "pointer",
     color: uiColor.text1,
-    columnGap: gap.sm,
+    // Same columnGap as memberRow: with a drag handle of the same width
+    // preceding both, this keeps the group name and a nested member's avatar
+    // starting at the exact same x-position, whether or not dragging is on.
+    columnGap: gap.lg,
     display: "flex",
     fontFamily: fontFamily.sans,
     fontSize: "0.65rem",
@@ -1434,6 +1437,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   );
   // Creation only — editing lives on the list's own page.
   const [newListOpen, setNewListOpen] = useState(false);
+  // Drag-and-drop only activates once the reader explicitly turns on
+  // "Reorder subscriptions…" — it isn't implicitly on just because the sort
+  // mode happens to be "default". Reset if an automatic sort takes over.
+  const [reorderMode, setReorderMode] = useState(false);
+  useEffect(() => {
+    if (sidebarPref.subscriptionSort !== "default") {
+      setReorderMode(false);
+    }
+  }, [sidebarPref.subscriptionSort]);
 
   const openAddPublication = () => {
     setSubsSheetOpen(false);
@@ -1544,7 +1556,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   };
 
   const { dragAndDropHooks: subscriptionsDragAndDropHooks } = useDragAndDrop({
-    isDisabled: sidebarPref.subscriptionSort !== "default",
+    isDisabled: !reorderMode || sidebarPref.subscriptionSort !== "default",
     getItems: (keys) => [...keys].map((key) => ({ "text/plain": String(key) })),
     getDropOperation(target) {
       if (target.type !== "item") return "cancel";
@@ -1778,6 +1790,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                         </MenuItem>
                       </SubMenu>
                     ) : null}
+                    {hasUngrouped || hasListGroups ? (
+                      <MenuItem
+                        prefix={<GripVertical size={14} />}
+                        isDisabled={sidebarPref.subscriptionSort !== "default"}
+                        onAction={() => setReorderMode((prev) => !prev)}
+                      >
+                        {reorderMode ? (
+                          <Trans>Done reordering</Trans>
+                        ) : (
+                          <Trans>Reorder subscriptions…</Trans>
+                        )}
+                      </MenuItem>
+                    ) : null}
                     <MenuItem
                       prefix={<FolderPlus size={14} />}
                       onAction={() => setNewListOpen(true)}
@@ -1856,6 +1881,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                         <TreeItem
                           id={node.id}
                           textValue={node.name}
+                          // Always has at least one child (real members or the
+                          // "Empty list." placeholder) — react-aria's own
+                          // `hasChildItems` heuristic only counts >1 children,
+                          // which would hide the chevron for a single-member list.
+                          hasChildItems
                           onAction={() => navigateToList(router, node.listUri)}
                         >
                           <TreeItemContent>

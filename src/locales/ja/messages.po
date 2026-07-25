@@ -1752,8 +1752,8 @@ msgid "<0>3. Declare your label values.</0> Describe each value (severity, defau
 msgstr "<0>3. ラベルの値を宣言する。</0> 各値（深刻度、既定の警告/非表示、ぼかしの挙動）を <1>app.standard-reader.labeler.service</1> ディスクリプタに記述し、<2>app.standard-reader.labeler.getServices</2> から配信します（<3>did:web</3> のラベラーにはレコードを保持するリポジトリがないためです）。"
 
 #: src/components/reader/app-shell.tsx
-#~ msgid "Reorder subscriptions…"
-#~ msgstr ""
+msgid "Reorder subscriptions…"
+msgstr ""
 
 #: src/components/reader/format-i18n.ts
 msgid "{months}mo ago"
@@ -2794,6 +2794,10 @@ msgstr "ブラウザの設定に基づいてこの言語を選びました。い
 
 #: src/components/reader/text-selection-toolbar.tsx
 msgid "Dismiss selection"
+msgstr ""
+
+#: src/components/reader/app-shell.tsx
+msgid "Done reordering"
 msgstr ""
 
 #: src/routes/_layout.latest.tsx

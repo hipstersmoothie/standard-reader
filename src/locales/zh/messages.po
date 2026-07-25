@@ -1752,8 +1752,8 @@ msgid "<0>3. Declare your label values.</0> Describe each value (severity, defau
 msgstr "<0>3. 声明你的标签取值。</0> 在 <1>app.standard-reader.labeler.service</1> 描述文件中说明每个取值（严重程度、默认警告/隐藏、模糊行为），并通过 <2>app.standard-reader.labeler.getServices</2> 提供（<3>did:web</3> 标注服务没有仓库来存放该记录）。"
 
 #: src/components/reader/app-shell.tsx
-#~ msgid "Reorder subscriptions…"
-#~ msgstr ""
+msgid "Reorder subscriptions…"
+msgstr ""
 
 #: src/components/reader/format-i18n.ts
 msgid "{months}mo ago"
@@ -2794,6 +2794,10 @@ msgstr "我们根据您的浏览器选择了此语言，您可以随时切换。
 
 #: src/components/reader/text-selection-toolbar.tsx
 msgid "Dismiss selection"
+msgstr ""
+
+#: src/components/reader/app-shell.tsx
+msgid "Done reordering"
 msgstr ""
 
 #: src/routes/_layout.latest.tsx

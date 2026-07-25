@@ -1752,8 +1752,8 @@ msgid "<0>3. Declare your label values.</0> Describe each value (severity, defau
 msgstr "<0>3. Declare los valores de sus etiquetas.</0> Describa cada valor (gravedad, advertir/ocultar por defecto, comportamiento de desenfoque) en un descriptor <1>app.standard-reader.labeler.service</1>, servido desde <2>app.standard-reader.labeler.getServices</2> (un etiquetador <3>did:web</3> no tiene repositorio donde guardar el registro)."
 
 #: src/components/reader/app-shell.tsx
-#~ msgid "Reorder subscriptions…"
-#~ msgstr ""
+msgid "Reorder subscriptions…"
+msgstr ""
 
 #: src/components/reader/format-i18n.ts
 msgid "{months}mo ago"
@@ -2794,6 +2794,10 @@ msgstr "Elegimos este idioma según su navegador. Puede cambiarlo cuando quiera.
 
 #: src/components/reader/text-selection-toolbar.tsx
 msgid "Dismiss selection"
+msgstr ""
+
+#: src/components/reader/app-shell.tsx
+msgid "Done reordering"
 msgstr ""
 
 #: src/routes/_layout.latest.tsx

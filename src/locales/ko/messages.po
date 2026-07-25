@@ -1752,8 +1752,8 @@ msgid "<0>3. Declare your label values.</0> Describe each value (severity, defau
 msgstr "<0>3. 라벨 값을 선언하세요.</0> 각 값(심각도, 기본 경고/숨김, 블러 동작)을 <1>app.standard-reader.labeler.service</1> 디스크립터에 기술하고 <2>app.standard-reader.labeler.getServices</2>로 제공하세요(<3>did:web</3> 라벨러는 레코드를 담을 저장소가 없습니다)."
 
 #: src/components/reader/app-shell.tsx
-#~ msgid "Reorder subscriptions…"
-#~ msgstr ""
+msgid "Reorder subscriptions…"
+msgstr ""
 
 #: src/components/reader/format-i18n.ts
 msgid "{months}mo ago"
@@ -2794,6 +2794,10 @@ msgstr "브라우저 설정에 따라 이 언어를 선택했습니다. 언제�
 
 #: src/components/reader/text-selection-toolbar.tsx
 msgid "Dismiss selection"
+msgstr ""
+
+#: src/components/reader/app-shell.tsx
+msgid "Done reordering"
 msgstr ""
 
 #: src/routes/_layout.latest.tsx
