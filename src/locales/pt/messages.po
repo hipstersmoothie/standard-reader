@@ -822,7 +822,7 @@ msgstr "Ainda não há publicações indexadas."
 #. placeholder {0}: result.added
 #: src/components/reader/subscriptions-table.tsx
 msgid "{0} added to {listName}."
-msgstr "{0, plural, one {# adicionado para } other {# adicionados para }} {listName}"
+msgstr "{0, plural, one {# adicionado a} other {# adicionados a}} {listName}."
 
 #: src/components/reader/about-view.tsx
 msgid "Read the API docs"
