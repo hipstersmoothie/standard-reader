@@ -616,6 +616,34 @@ Build each on hip-ui components + StyleX tokens (no raw HTML/inline styles).
       `ListEditModal` (name + description fields, drag-to-reorder ListBox with per-row remove,
       react-aria autocomplete over the remaining subscriptions). List groups render above the
       flat "All" list (desktop sidebar only).
+- [x] **Sort / reorder the sidebar's flat subscription list** — a single overflow menu
+      (`⋮` next to the Subscriptions heading) replaces four separate icon buttons: a **Sort**
+      submenu (**Default**, **Recent activity**, **A–Z**, **Most unread**), plus direct actions
+      **Reorder subscriptions…**, **Reorder lists…**, **New list**, and **Collapse/Expand all**
+      (each conditionally shown). **Default** is a true no-op (the reader's natural/stored
+      order, untouched) and is the actual default value — **Recent activity** genuinely
+      interleaves publications (by `lastDocumentAt`) and people (by `followedAt`, new on
+      `FollowingUser`) into one combined most-recent-first ranking; **A–Z** / **Most unread**
+      interleave the same way by name / unread count (`orderSubscriptions` +
+      `OrderableSubscription.recentAt` in `use-sidebar-pref.ts`). **Reorder subscriptions…** opens
+      `ReorderSubscriptionsModal` (drag-and-drop, mirrors `ReorderListsModal`) as its own action
+      rather than a selectable sort mode — dragging and saving switches the reader onto
+      `subscriptionSort: "manual"` behind the scenes. New `subscriptionSort` / `subscriptionOrder`
+      fields on `app.standard-reader.sidebarPref` (mirrored to `sidebar_prefs`, migrations
+      `drizzle/0022_melted_joseph.sql` + `drizzle/0023_mushy_rawhide_kid.sql` for the
+      `"recent"` → `"default"` default-value change).
+- [x] **Sort applies to list groups too, but only when explicitly chosen** — **Recent activity**
+      / **A–Z** / **Most unread** all reorder each list group's own members (publications +
+      people, combined the same way as the flat rows) and the groups themselves (by recency / name
+      / total unread). **Default** and **manual** leave every list group's own stored membership
+      order and the reader's manual group arrangement (`ReorderListsModal`) completely untouched —
+      an automatic sort no longer silently overrides a manually-arranged list group. Because of
+      that, **Reorder lists…** is disabled in the overflow menu whenever `subscriptionSort` isn't
+      `"default"` (an automatic sort is active, so manual group arrangement wouldn't stick).
+      Computed in `app-shell.tsx` (`displayGroups` / `groupSort`, reusing `orderSubscriptions` per
+      group and again across the groups, with each group's own `recentAt` derived from its
+      most-recent member) and fed to both the desktop sidebar and the mobile
+      `SubscriptionsSheet`; the `/subscriptions` directory table's own column sorting is untouched.
 - [x] **Shareable list pages** — every list has a public route `/l/$did/$rkey` (hero with
       name/description/owner handle, **Articles** tab with a paginated feed across member
       publications + **Publications** tab with ranked member rows and follow buttons, social meta).

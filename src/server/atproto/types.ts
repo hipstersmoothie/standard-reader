@@ -227,6 +227,12 @@ export interface SidebarPrefRecord {
   $type?: string;
   /** Ordered at-uris of the reader's list groups (own + saved). */
   listOrder?: Array<string>;
+  /** How the sidebar's flat (ungrouped) subscription rows are ordered.
+   * Absent means "recent". */
+  subscriptionSort?: "default" | "recent" | "alpha" | "unread" | "manual";
+  /** Manual order (publication at-uris and/or person DIDs) for the sidebar's
+   * flat subscription rows, used when `subscriptionSort` is "manual". */
+  subscriptionOrder?: Array<string>;
   /** At-uris of the list groups the reader has collapsed. */
   collapsed?: Array<string>;
   /** Whether "Customize sidebar" is enabled (gates `hiddenNav`). */

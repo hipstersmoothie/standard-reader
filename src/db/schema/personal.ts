@@ -114,6 +114,12 @@ export const sidebarPrefs = pgTable("sidebar_prefs", {
 
   /** Ordered at-uris of the reader's list groups (own + saved). */
   listOrder: jsonb("list_order").notNull().default([]),
+  /** How the sidebar's flat (ungrouped) subscription rows are ordered:
+   * 'recent' | 'alpha' | 'unread' | 'manual'. */
+  subscriptionSort: text("subscription_sort").notNull().default("default"),
+  /** Manual order (publication at-uris and/or person DIDs) for the sidebar's
+   * flat subscription rows, used when `subscriptionSort` is 'manual'. */
+  subscriptionOrder: jsonb("subscription_order").notNull().default([]),
   /** At-uris of the list groups the reader has collapsed. */
   collapsed: jsonb("collapsed").notNull().default([]),
 

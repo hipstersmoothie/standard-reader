@@ -292,7 +292,7 @@ export function documentIsCollectionColumn(
 // ── Row → DTO mappers ───────────────────────────────────────────────────────
 
 /** Drizzle timestamps are `Date`; raw SQL / aggregates may return strings. */
-function toIsoTimestamp(
+export function toIsoTimestamp(
   value: Date | string | null | undefined,
 ): string | null {
   if (value == null) return null;

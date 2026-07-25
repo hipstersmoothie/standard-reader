@@ -877,6 +877,18 @@ export async function upsertSidebarPref(
         (item): item is string => typeof item === "string",
       )
     : [];
+  const subscriptionSort =
+    record.subscriptionSort === "alpha" ||
+    record.subscriptionSort === "unread" ||
+    record.subscriptionSort === "manual" ||
+    record.subscriptionSort === "recent"
+      ? record.subscriptionSort
+      : "default";
+  const subscriptionOrder = Array.isArray(record.subscriptionOrder)
+    ? record.subscriptionOrder.filter(
+        (item): item is string => typeof item === "string",
+      )
+    : [];
   const collapsed = Array.isArray(record.collapsed)
     ? record.collapsed.filter(
         (item): item is string => typeof item === "string",
@@ -894,6 +906,8 @@ export async function upsertSidebarPref(
     cid: cid ?? null,
     rkey,
     listOrder,
+    subscriptionSort,
+    subscriptionOrder,
     collapsed,
     customizeNav: record.customizeNav === true,
     hiddenNav,

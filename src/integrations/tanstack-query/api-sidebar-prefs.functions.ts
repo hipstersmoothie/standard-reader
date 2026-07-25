@@ -27,6 +27,12 @@ import { loadSidebarPref } from "#/server/reader/shell-snapshot.server";
 export interface SidebarPref {
   /** Ordered at-uris of the reader's list groups (own + saved). */
   listOrder: Array<string>;
+  /** How the sidebar's flat (ungrouped) subscription rows are ordered.
+   * Defaults to "default" (natural/stored order, untouched). */
+  subscriptionSort: "default" | "recent" | "alpha" | "unread" | "manual";
+  /** Manual order (publication at-uris and/or person DIDs) for the sidebar's
+   * flat subscription rows, used when `subscriptionSort` is "manual". */
+  subscriptionOrder: Array<string>;
   /** At-uris of the list groups the reader has collapsed. */
   collapsed: Array<string>;
   /** Whether "Customize sidebar" is enabled (gates `hiddenNav`). */
@@ -37,6 +43,10 @@ export interface SidebarPref {
 
 const putSidebarPrefInput = z.object({
   listOrder: z.array(z.string().min(1)).max(1000).default([]),
+  subscriptionSort: z
+    .enum(["default", "recent", "alpha", "unread", "manual"])
+    .default("default"),
+  subscriptionOrder: z.array(z.string().min(1).max(512)).max(2000).default([]),
   collapsed: z.array(z.string().min(1)).max(1000).default([]),
   customizeNav: z.boolean().default(false),
   hiddenNav: z.array(z.string().min(1).max(64)).max(32).default([]),
@@ -49,6 +59,8 @@ const getSidebarPref = createServerFn({ method: "GET" }).handler(
     if (!did) {
       return {
         listOrder: [],
+        subscriptionSort: "default",
+        subscriptionOrder: [],
         collapsed: [],
         customizeNav: false,
         hiddenNav: [],
@@ -57,6 +69,7 @@ const getSidebarPref = createServerFn({ method: "GET" }).handler(
     span.set("did", did);
     const pref = await loadSidebarPref(did);
     span.set("order", pref.listOrder.length);
+    span.set("subscriptionSort", pref.subscriptionSort);
     span.set("collapsed", pref.collapsed.length);
     return pref;
   }),
@@ -72,6 +85,7 @@ const putSidebarPref = createServerFn({ method: "POST" })
       }
       span.set("did", session.did);
       span.set("order", data.listOrder.length);
+      span.set("subscriptionSort", data.subscriptionSort);
       span.set("collapsed", data.collapsed.length);
       span.set("customizeNav", data.customizeNav);
       span.set("hiddenNav", data.hiddenNav.length);
@@ -82,6 +96,8 @@ const putSidebarPref = createServerFn({ method: "POST" })
         session.did,
         {
           listOrder: data.listOrder,
+          subscriptionSort: data.subscriptionSort,
+          subscriptionOrder: data.subscriptionOrder,
           collapsed: data.collapsed,
           customizeNav: data.customizeNav,
           hiddenNav: data.hiddenNav,
@@ -92,6 +108,8 @@ const putSidebarPref = createServerFn({ method: "POST" })
       // immediately, without waiting for the tap to deliver the event.
       await upsertSidebarPref(uri, session.did, SIDEBAR_PREF_RKEY, cid, {
         listOrder: data.listOrder,
+        subscriptionSort: data.subscriptionSort,
+        subscriptionOrder: data.subscriptionOrder,
         collapsed: data.collapsed,
         customizeNav: data.customizeNav,
         hiddenNav: data.hiddenNav,

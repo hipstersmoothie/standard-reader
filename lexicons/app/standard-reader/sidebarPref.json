@@ -4,7 +4,7 @@
   "defs": {
     "main": {
       "type": "record",
-      "description": "A reader's personal sidebar preferences: the display order of their subscription list groups, which groups are collapsed, and which primary nav items are hidden. A singleton record (rkey `self`).",
+      "description": "A reader's personal sidebar preferences: the display order of their subscription list groups, which groups are collapsed, how the flat (ungrouped) subscription rows are sorted, and which primary nav items are hidden. A singleton record (rkey `self`).",
       "key": "literal:self",
       "record": {
         "type": "object",
@@ -18,6 +18,21 @@
               "format": "at-uri"
             },
             "description": "Ordered AT URIs of the reader's list groups (own + saved) as shown top-to-bottom in the sidebar. Groups not present are appended in their default order."
+          },
+          "subscriptionSort": {
+            "type": "string",
+            "maxLength": 16,
+            "knownValues": ["default", "recent", "alpha", "unread", "manual"],
+            "description": "How the sidebar's flat (ungrouped) subscription rows are ordered: 'default' (natural/stored order, untouched — the default), 'recent' (most recent activity first, interleaving publications and people), 'alpha' (name), 'unread' (highest unread count first), or 'manual' (per `subscriptionOrder`). Absent means 'default'."
+          },
+          "subscriptionOrder": {
+            "type": "array",
+            "maxLength": 2000,
+            "items": {
+              "type": "string",
+              "maxLength": 512
+            },
+            "description": "Manual order (publication AT URIs and/or person DIDs) for the sidebar's flat subscription rows, used when `subscriptionSort` is 'manual'. Subjects not present are appended in their default order."
           },
           "collapsed": {
             "type": "array",

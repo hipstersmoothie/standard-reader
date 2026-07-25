@@ -7,13 +7,16 @@ import * as stylex from "@stylexjs/stylex";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useRouter, useRouterState } from "@tanstack/react-router";
 import {
+  ArrowDownWideNarrow,
   ArrowLeft,
   ArrowUpDown,
   Bookmark,
   ChevronsDownUp,
   ChevronsUpDown,
+  Cog,
   Compass,
   FolderPlus,
+  GripVertical,
   Home,
   Layers,
   Newspaper,
@@ -46,7 +49,6 @@ import { useCompactNav } from "#/lib/use-media-query";
 
 import { Avatar } from "../../design-system/avatar";
 import { Button } from "../../design-system/button";
-import { ButtonGroup } from "../../design-system/button-group";
 import {
   Disclosure,
   DisclosurePanel,
@@ -54,6 +56,7 @@ import {
 } from "../../design-system/disclosure";
 import { Flex } from "../../design-system/flex";
 import { IconButton } from "../../design-system/icon-button";
+import { Menu, MenuItem, SubMenu } from "../../design-system/menu";
 import { Skeleton } from "../../design-system/skeleton";
 import { SkipLink } from "../../design-system/skip-link";
 import { animationDuration } from "../../design-system/theme/animations.stylex";
@@ -94,6 +97,7 @@ import { ListEditModal } from "./list-edit-modal";
 import { PageReaderBar } from "./page-reader-bar";
 import { PublicationThemeScope } from "./publication-theme-scope";
 import { ReorderListsModal } from "./reorder-lists-modal";
+import { ReorderSubscriptionsModal } from "./reorder-subscriptions-modal";
 import {
   SelectionDockProvider,
   useSelectionDock,
@@ -103,7 +107,12 @@ import {
   SubscriptionsSheet,
   SubscriptionsSwitcher,
 } from "./subscriptions-sheet";
-import { orderGroups, useSidebarPref } from "./use-sidebar-pref";
+import type { OrderableSubscription } from "./use-sidebar-pref";
+import {
+  orderGroups,
+  orderSubscriptions,
+  useSidebarPref,
+} from "./use-sidebar-pref";
 
 const DESKTOP = "@media (min-width: 60rem)";
 
@@ -676,6 +685,14 @@ const styles = stylex.create({
     width: "100%",
   },
 });
+
+/** One row in the sidebar's flat (ungrouped) subscription list — a publication
+ * or a person, normalized so `orderSubscriptions` can sort them together. */
+type FlatSubscription = OrderableSubscription &
+  (
+    | { kind: "publication"; pub: FollowingPublication }
+    | { kind: "person"; user: FollowingUser }
+  );
 
 interface NavLink {
   /** Stable id used by "Customize sidebar" to hide the item. */
@@ -1304,6 +1321,60 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     ? primaryNav.filter((item) => !sidebarPref.isNavHidden(item.id))
     : primaryNav;
   const orderedGroups = orderGroups(listGroups, sidebarPref.order);
+  // Groups have no per-group manual order, so "manual" has nothing to fall
+  // back to — like "default", it leaves each list's own stored membership
+  // order (and the reader's manual group arrangement above) untouched.
+  // "alpha"/"unread"/"recent" apply the same ranking used for the flat rows
+  // to each group's members and to the groups themselves.
+  const groupSort =
+    sidebarPref.subscriptionSort === "alpha" ||
+    sidebarPref.subscriptionSort === "unread" ||
+    sidebarPref.subscriptionSort === "recent"
+      ? sidebarPref.subscriptionSort
+      : "default";
+  const displayGroups = orderSubscriptions(
+    orderedGroups.map((group) => {
+      const pubs = orderSubscriptions(
+        group.pubs.map((pub) => ({
+          ...pub,
+          id: pub.uri,
+          recentAt: pub.lastDocumentAt,
+        })),
+        groupSort,
+        [],
+      );
+      const users = orderSubscriptions(
+        group.users.map((person) => ({
+          ...person,
+          id: person.did,
+          name: person.displayName || person.handle || person.did,
+          unreadCount: person.unreadCount ?? 0,
+          recentAt: person.followedAt,
+        })),
+        groupSort,
+        [],
+      );
+      const groupUnreadCount =
+        pubs.reduce((sum, pub) => sum + pub.unreadCount, 0) +
+        users.reduce((sum, person) => sum + person.unreadCount, 0);
+      // Members are already sorted most-recent-first within their own kind,
+      // so the group's own recency is whichever kind's leading member is
+      // newest — the same signal "recent" uses for the flat rows.
+      const groupRecentAt = [pubs[0]?.recentAt, users[0]?.recentAt]
+        .filter((value): value is string => value != null)
+        .toSorted((a, b) => Date.parse(b) - Date.parse(a))[0];
+      return {
+        ...group,
+        id: group.listUri,
+        unreadCount: groupUnreadCount,
+        recentAt: groupRecentAt ?? null,
+        pubs,
+        users,
+      };
+    }),
+    groupSort,
+    [],
+  );
   const groupUris = orderedGroups.map((group) => group.listUri);
   const allCollapsed =
     groupUris.length > 0 &&
@@ -1326,9 +1397,40 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const ungroupedUsers = followingUsers.filter(
     (person) => !groupedUserDids.has(person.did),
   );
+  const hasUngrouped = ungrouped.length > 0 || ungroupedUsers.length > 0;
+  // "default" leaves the pubs-then-people split alone (each kind's own
+  // natural/server order); "recent" interleaves both kinds by their own
+  // recency signal into one combined, uniformly-ordered list.
+  const flatSubscriptions: Array<FlatSubscription> = orderSubscriptions(
+    [
+      ...ungrouped.map(
+        (pub): FlatSubscription => ({
+          kind: "publication",
+          pub,
+          id: pub.uri,
+          name: pub.name,
+          unreadCount: pub.unreadCount,
+          recentAt: pub.lastDocumentAt,
+        }),
+      ),
+      ...ungroupedUsers.map(
+        (followed): FlatSubscription => ({
+          kind: "person",
+          user: followed,
+          id: followed.did,
+          name: followed.displayName || followed.handle || followed.did,
+          unreadCount: followed.unreadCount ?? 0,
+          recentAt: followed.followedAt,
+        }),
+      ),
+    ],
+    sidebarPref.subscriptionSort,
+    sidebarPref.subscriptionOrder,
+  );
   // Creation only — editing lives on the list's own page.
   const [newListOpen, setNewListOpen] = useState(false);
   const [reorderOpen, setReorderOpen] = useState(false);
+  const [reorderSubsOpen, setReorderSubsOpen] = useState(false);
 
   const openAddPublication = () => {
     setSubsSheetOpen(false);
@@ -1343,6 +1445,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const openReorder = () => {
     setSubsSheetOpen(false);
     setReorderOpen(true);
+  };
+
+  const openReorderSubscriptions = () => {
+    setSubsSheetOpen(false);
+    setReorderSubsOpen(true);
   };
 
   const toggleAllGroups = () => {
@@ -1382,50 +1489,106 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   </span>
                 )}
                 {signedIn ? (
-                  <ButtonGroup
-                    aria-label={t`Subscription list actions`}
-                    style={styles.sideLabelActions}
-                  >
-                    {hasListGroups ? (
+                  <Menu
+                    trigger={
                       <IconButton
-                        aria-label={t`Reorder lists`}
+                        aria-label={t`Subscription list actions`}
                         size="sm"
                         variant="tertiary"
                         style={styles.headerIcon}
-                        onPress={openReorder}
                       >
-                        <ArrowUpDown size={14} />
+                        <Cog size={14} />
                       </IconButton>
-                    ) : null}
-                    <IconButton
-                      aria-label={t`New list`}
-                      size="sm"
-                      variant="tertiary"
-                      style={styles.headerIcon}
-                      onPress={() => setNewListOpen(true)}
-                    >
-                      <FolderPlus size={14} />
-                    </IconButton>
-                    {hasListGroups ? (
-                      <IconButton
-                        aria-label={
-                          allCollapsed
-                            ? t`Expand all lists`
-                            : t`Collapse all lists`
+                    }
+                    placement="bottom end"
+                  >
+                    {hasUngrouped || hasListGroups ? (
+                      <SubMenu
+                        trigger={
+                          <MenuItem prefix={<ArrowDownWideNarrow size={14} />}>
+                            <Trans>Sort</Trans>
+                          </MenuItem>
                         }
-                        size="sm"
-                        variant="tertiary"
-                        style={styles.headerIcon}
-                        onPress={toggleAllGroups}
+                        placement="right top"
+                        selectionMode="single"
+                        selectedKeys={new Set([sidebarPref.subscriptionSort])}
+                      >
+                        <MenuItem
+                          id="default"
+                          onAction={() =>
+                            sidebarPref.setSubscriptionSort("default")
+                          }
+                        >
+                          <Trans>Default</Trans>
+                        </MenuItem>
+                        <MenuItem
+                          id="recent"
+                          onAction={() =>
+                            sidebarPref.setSubscriptionSort("recent")
+                          }
+                        >
+                          <Trans>Recent activity</Trans>
+                        </MenuItem>
+                        <MenuItem
+                          id="alpha"
+                          onAction={() =>
+                            sidebarPref.setSubscriptionSort("alpha")
+                          }
+                        >
+                          <Trans>A–Z</Trans>
+                        </MenuItem>
+                        <MenuItem
+                          id="unread"
+                          onAction={() =>
+                            sidebarPref.setSubscriptionSort("unread")
+                          }
+                        >
+                          <Trans>Most unread</Trans>
+                        </MenuItem>
+                      </SubMenu>
+                    ) : null}
+                    {hasUngrouped ? (
+                      <MenuItem
+                        prefix={<GripVertical size={14} />}
+                        onAction={openReorderSubscriptions}
+                      >
+                        <Trans>Reorder subscriptions…</Trans>
+                      </MenuItem>
+                    ) : null}
+                    {hasListGroups ? (
+                      <MenuItem
+                        prefix={<ArrowUpDown size={14} />}
+                        isDisabled={sidebarPref.subscriptionSort !== "default"}
+                        onAction={openReorder}
+                      >
+                        <Trans>Reorder lists…</Trans>
+                      </MenuItem>
+                    ) : null}
+                    <MenuItem
+                      prefix={<FolderPlus size={14} />}
+                      onAction={() => setNewListOpen(true)}
+                    >
+                      <Trans>New list</Trans>
+                    </MenuItem>
+                    {hasListGroups ? (
+                      <MenuItem
+                        prefix={
+                          allCollapsed ? (
+                            <ChevronsUpDown size={14} />
+                          ) : (
+                            <ChevronsDownUp size={14} />
+                          )
+                        }
+                        onAction={toggleAllGroups}
                       >
                         {allCollapsed ? (
-                          <ChevronsUpDown size={14} />
+                          <Trans>Expand all lists</Trans>
                         ) : (
-                          <ChevronsDownUp size={14} />
+                          <Trans>Collapse all lists</Trans>
                         )}
-                      </IconButton>
+                      </MenuItem>
                     ) : null}
-                  </ButtonGroup>
+                  </Menu>
                 ) : null}
               </Flex>
               <div {...stylex.props(styles.followList)}>
@@ -1442,22 +1605,24 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     )}
                   </span>
                 ) : (
-                  <>
-                    {ungrouped.map((pub) => (
-                      <FollowRow key={pub.uri} pub={pub} />
-                    ))}
-                    {/* People live under Subscriptions too — one grouping keeps
-                      the sidebar's information architecture simple, even though
-                      "subscribing" (publications) and "following" (people) are
-                      technically different graph edges. People sorted into a
-                      list render under that list group instead (see below). */}
-                    {ungroupedUsers.map((followed) => (
-                      <FollowUserRow key={followed.did} user={followed} />
-                    ))}
-                  </>
+                  // People live under Subscriptions too — one grouping keeps the
+                  // sidebar's information architecture simple, even though
+                  // "subscribing" (publications) and "following" (people) are
+                  // technically different graph edges. People sorted into a list
+                  // render under that list group instead (see below). The sort
+                  // mode ("recent" excepted) interleaves both kinds by name /
+                  // unread count / manual order rather than keeping them in
+                  // separate blocks.
+                  flatSubscriptions.map((item) =>
+                    item.kind === "publication" ? (
+                      <FollowRow key={item.id} pub={item.pub} />
+                    ) : (
+                      <FollowUserRow key={item.id} user={item.user} />
+                    ),
+                  )
                 )}
               </div>
-              {orderedGroups.map((group) => (
+              {displayGroups.map((group) => (
                 <SidebarList
                   key={group.key}
                   name={group.name}
@@ -1544,8 +1709,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             isOpen={subsSheetOpen}
             onOpenChange={setSubsSheetOpen}
             following={following}
-            ungrouped={ungrouped}
-            groups={orderedGroups}
+            ungrouped={flatSubscriptions
+              .filter((item) => item.kind === "publication")
+              .map((item) => item.pub)}
+            groups={displayGroups}
             onAddPublication={openAddPublication}
             onNewList={signedIn ? openNewList : undefined}
             onReorder={signedIn && hasListGroups ? openReorder : undefined}
@@ -1574,6 +1741,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               name: group.name,
             }))}
             onSave={sidebarPref.saveOrder}
+          />
+          <ReorderSubscriptionsModal
+            isOpen={reorderSubsOpen}
+            onOpenChange={setReorderSubsOpen}
+            subscriptions={flatSubscriptions.map((item) => ({
+              id: item.id,
+              name: item.name,
+              avatarUrl:
+                item.kind === "publication"
+                  ? (item.pub.iconUrl ?? item.pub.ownerAvatarUrl)
+                  : item.user.avatarUrl,
+            }))}
+            onSave={sidebarPref.saveSubscriptionOrder}
           />
           <AtstoreReviewPrompt />
           <LanguageHintPrompt />

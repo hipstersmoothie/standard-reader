@@ -742,7 +742,6 @@ msgstr ""
 msgid "Take any of it as RSS"
 msgstr ""
 
-#: src/components/reader/app-shell.tsx
 #: src/components/reader/reorder-lists-modal.tsx
 #: src/components/reader/subscriptions-sheet.tsx
 msgid "Reorder lists"
@@ -844,6 +843,10 @@ msgstr ""
 msgid "Browse the directory"
 msgstr ""
 
+#: src/components/reader/reorder-subscriptions-modal.tsx
+msgid "You don't have any subscriptions to reorder yet."
+msgstr ""
+
 #: src/components/reader/article-view.tsx
 msgid "Did you enjoy this article?"
 msgstr ""
@@ -880,6 +883,10 @@ msgstr ""
 
 #: src/components/reader/about-view.tsx
 msgid "Read the API docs"
+msgstr ""
+
+#: src/components/reader/app-shell.tsx
+msgid "Reorder lists…"
 msgstr ""
 
 #: src/components/reader/about-view.tsx
@@ -1399,6 +1406,7 @@ msgstr ""
 #: src/components/reader/collection-publication-editor.tsx
 #: src/components/reader/collection-theme-editor.tsx
 #: src/components/reader/reorder-lists-modal.tsx
+#: src/components/reader/reorder-subscriptions-modal.tsx
 #: src/components/reader/subscriptions-unsubscribe-dialog.tsx
 #: src/components/user-settings-view.tsx
 #: src/routes/_layout.collections.new.tsx
@@ -1516,6 +1524,10 @@ msgstr ""
 
 #: src/components/labeler-detail-view.tsx
 msgid "Documents"
+msgstr ""
+
+#: src/components/reader/app-shell.tsx
+msgid "Most unread"
 msgstr ""
 
 #: src/components/docs/api-docs-request-panel.tsx
@@ -1663,6 +1675,7 @@ msgstr ""
 msgid "This account has documents but no publications to subscribe to"
 msgstr ""
 
+#: src/components/reader/app-shell.tsx
 #: src/routes/_layout.feedback.index.tsx
 msgid "Sort"
 msgstr ""
@@ -1739,6 +1752,10 @@ msgstr ""
 
 #: src/components/docs/labelers-docs-page.tsx
 msgid "<0>3. Declare your label values.</0> Describe each value (severity, default warn/hide, blur behavior) in an <1>app.standard-reader.labeler.service</1> descriptor, served from <2>app.standard-reader.labeler.getServices</2> (a <3>did:web</3> labeler has no repo to hold the record)."
+msgstr ""
+
+#: src/components/reader/app-shell.tsx
+msgid "Reorder subscriptions…"
 msgstr ""
 
 #: src/components/reader/format-i18n.ts
@@ -2346,6 +2363,7 @@ msgid "headless, unstyled packages that turn a document into your own components
 msgstr ""
 
 #: src/components/reader/reorder-lists-modal.tsx
+#: src/components/reader/reorder-subscriptions-modal.tsx
 msgid "Save order"
 msgstr ""
 
@@ -2732,6 +2750,10 @@ msgstr ""
 
 #: src/components/feedback/feedback-image-picker.tsx
 msgid "Could not upload that image."
+msgstr ""
+
+#: src/components/reader/app-shell.tsx
+msgid "Recent activity"
 msgstr ""
 
 #: src/components/NavbarAuth.tsx
@@ -3180,6 +3202,7 @@ msgid "What the extension does not do"
 msgstr ""
 
 #: src/components/appearance-settings.tsx
+#: src/components/reader/app-shell.tsx
 msgid "Default"
 msgstr ""
 
@@ -3233,6 +3256,7 @@ msgstr ""
 
 #: src/components/reader/app-shell.tsx
 #: src/components/reader/list-edit-modal.tsx
+#: src/components/reader/reorder-subscriptions-modal.tsx
 #: src/components/reader/subscriptions-sheet.tsx
 #: src/components/reader/subscriptions-table.tsx
 #: src/routes/_layout.index.tsx
@@ -3448,6 +3472,10 @@ msgstr ""
 
 #: src/components/reader/about-view.tsx
 msgid "In your inbox"
+msgstr ""
+
+#: src/components/reader/reorder-subscriptions-modal.tsx
+msgid "Drag to change the order your subscriptions appear in the sidebar."
 msgstr ""
 
 #: src/components/user-settings-view.tsx
@@ -3713,6 +3741,10 @@ msgstr ""
 
 #: src/routes/_layout.latest.tsx
 msgid "All caught up"
+msgstr ""
+
+#: src/components/reader/reorder-subscriptions-modal.tsx
+msgid "Reorder subscriptions"
 msgstr ""
 
 #: src/components/onboarding/welcome-wizard.tsx
@@ -4074,6 +4106,7 @@ msgstr ""
 msgid "Introduction"
 msgstr ""
 
+#: src/components/reader/app-shell.tsx
 #: src/routes/_layout.discover.tsx
 #: src/routes/_layout.tag.$tag.tsx
 msgid "A–Z"
@@ -4565,6 +4598,10 @@ msgstr ""
 
 #: src/components/reader/list-edit-modal.tsx
 msgid "Search your subscriptions"
+msgstr ""
+
+#: src/components/reader/reorder-subscriptions-modal.tsx
+msgid "Subscription"
 msgstr ""
 
 #: src/components/reader/collection-publication-editor.tsx
