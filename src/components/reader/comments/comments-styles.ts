@@ -108,9 +108,12 @@ export const commentStyles = stylex.create({
     unicodeBidi: "isolate",
   },
   authorHandle: {
+    overflow: "hidden",
     color: uiColor.text1,
     fontFamily: fontFamily.mono,
     fontSize: fontSize.xs,
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
     unicodeBidi: "isolate",
   },
   // Keeps a foreign-direction run (brand names, counts) from being reordered
@@ -131,6 +134,9 @@ export const commentStyles = stylex.create({
     fontSize: fontSize.lg,
     fontStyle: "italic",
     lineHeight: lineHeight.sm,
+    // Quoted user content can hold unbroken runs (URIs, DIDs, long tokens) —
+    // break them rather than letting the card push the page wider on mobile.
+    overflowWrap: "anywhere",
     borderInlineStartColor: primaryColor.solid1,
     borderInlineStartStyle: "solid",
     borderInlineStartWidth: spacing["1"],
@@ -152,6 +158,9 @@ export const commentStyles = stylex.create({
     fontFamily: fontFamily.sans,
     fontSize: fontSize.base,
     lineHeight: lineHeight.base,
+    // Comment bodies routinely contain bare at:// URIs and long URLs with no
+    // break opportunity; without this they overflow the card and the viewport.
+    overflowWrap: "anywhere",
     whiteSpace: "pre-line",
     marginBottom: spacing["0"],
     marginTop: spacing["0"],
