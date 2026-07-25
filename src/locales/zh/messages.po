@@ -196,6 +196,7 @@ msgid "Last updated July 20, 2026"
 msgstr ""
 
 #: src/components/reader/subscriptions-table.tsx
+#: src/routes/_layout.feedback.index.tsx
 msgid "Type"
 msgstr ""
 
@@ -517,6 +518,10 @@ msgstr "搜索刊物"
 
 #: src/components/appearance-settings.tsx
 msgid "Small"
+msgstr ""
+
+#: src/routes/_layout.feedback.index.tsx
+msgid "Only mine"
 msgstr ""
 
 #: src/routes/_layout.search.tsx
@@ -1633,6 +1638,10 @@ msgstr "全网动态"
 msgid "This account has documents but no publications to subscribe to"
 msgstr "此账号有文档，但没有可订阅的刊物"
 
+#: src/routes/_layout.feedback.index.tsx
+msgid "Sort"
+msgstr ""
+
 #: src/routes/_layout.discover.tsx
 #: src/routes/_layout.tag.$tag.tsx
 msgid "Active"
@@ -2111,6 +2120,10 @@ msgstr "{metaCount, plural, one {{formattedMetaCount} 篇文章} other {{formatt
 #: src/components/reader/profile-tabs-settings-modal.tsx
 msgid "Show {label} tab"
 msgstr "显示「{label}」标签页"
+
+#: src/routes/_layout.feedback.index.tsx
+msgid "Reset filters"
+msgstr ""
 
 #: src/routes/_layout.feedback.index.tsx
 msgid "Hide implemented"
@@ -2723,6 +2736,10 @@ msgstr "关注几个刊物，它们的最新文章就会出现在这里。"
 msgid "Subscribe to more publications to see what similar readers enjoy."
 msgstr "订阅更多刊物，看看兴趣相近的读者喜欢什么。"
 
+#: src/routes/_layout.feedback.index.tsx
+msgid "Filter and sort"
+msgstr ""
+
 #: src/components/feedback/feedback-dialog.tsx
 #: src/components/reader/collection-builder.tsx
 msgid "Title"
@@ -2988,6 +3005,10 @@ msgstr "关闭杂志"
 #: src/components/reader/collection-builder.tsx
 msgid "Introduce the collection… (markdown supported)"
 msgstr "介绍一下这个合集……（支持 markdown）"
+
+#: src/routes/_layout.feedback.index.tsx
+msgid "Filter"
+msgstr ""
 
 #: src/components/reader/friend-publishers.tsx
 msgid "Bluesky didn't answer in time, so this list may be incomplete. Reload to try again."
@@ -4060,6 +4081,10 @@ msgstr "朗读语音"
 
 #: src/routes/_layout.index.tsx
 msgid "Nothing left unread from the publications you follow. There's more on the network than you're following yet."
+msgstr ""
+
+#: src/routes/_layout.feedback.index.tsx
+msgid "Filter and sort — {activeFilters, plural, one {# filter active} other {# filters active}}"
 msgstr ""
 
 #: src/components/docs/renderers-docs-page.tsx

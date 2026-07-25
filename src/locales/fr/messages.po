@@ -196,6 +196,7 @@ msgid "Last updated July 20, 2026"
 msgstr ""
 
 #: src/components/reader/subscriptions-table.tsx
+#: src/routes/_layout.feedback.index.tsx
 msgid "Type"
 msgstr ""
 
@@ -517,6 +518,10 @@ msgstr "Rechercher des publications"
 
 #: src/components/appearance-settings.tsx
 msgid "Small"
+msgstr ""
+
+#: src/routes/_layout.feedback.index.tsx
+msgid "Only mine"
 msgstr ""
 
 #: src/routes/_layout.search.tsx
@@ -1633,6 +1638,10 @@ msgstr "À travers le réseau"
 msgid "This account has documents but no publications to subscribe to"
 msgstr "Ce compte possède des documents mais aucune publication à laquelle s'abonner"
 
+#: src/routes/_layout.feedback.index.tsx
+msgid "Sort"
+msgstr ""
+
 #: src/routes/_layout.discover.tsx
 #: src/routes/_layout.tag.$tag.tsx
 msgid "Active"
@@ -2111,6 +2120,10 @@ msgstr "{metaCount, plural, one {{formattedMetaCount} article} other {{formatted
 #: src/components/reader/profile-tabs-settings-modal.tsx
 msgid "Show {label} tab"
 msgstr "Afficher l’onglet {label}"
+
+#: src/routes/_layout.feedback.index.tsx
+msgid "Reset filters"
+msgstr ""
 
 #: src/routes/_layout.feedback.index.tsx
 msgid "Hide implemented"
@@ -2723,6 +2736,10 @@ msgstr "Suivez quelques publications et leurs derniers textes apparaîtront ici.
 msgid "Subscribe to more publications to see what similar readers enjoy."
 msgstr "Abonnez-vous à d’autres publications pour découvrir ce que des lecteurs comme vous apprécient."
 
+#: src/routes/_layout.feedback.index.tsx
+msgid "Filter and sort"
+msgstr ""
+
 #: src/components/feedback/feedback-dialog.tsx
 #: src/components/reader/collection-builder.tsx
 msgid "Title"
@@ -2988,6 +3005,10 @@ msgstr "Fermer le magazine"
 #: src/components/reader/collection-builder.tsx
 msgid "Introduce the collection… (markdown supported)"
 msgstr "Présentez la collection… (markdown pris en charge)"
+
+#: src/routes/_layout.feedback.index.tsx
+msgid "Filter"
+msgstr ""
 
 #: src/components/reader/friend-publishers.tsx
 msgid "Bluesky didn't answer in time, so this list may be incomplete. Reload to try again."
@@ -4060,6 +4081,10 @@ msgstr "Voix de la lecture à voix haute"
 
 #: src/routes/_layout.index.tsx
 msgid "Nothing left unread from the publications you follow. There's more on the network than you're following yet."
+msgstr ""
+
+#: src/routes/_layout.feedback.index.tsx
+msgid "Filter and sort — {activeFilters, plural, one {# filter active} other {# filters active}}"
 msgstr ""
 
 #: src/components/docs/renderers-docs-page.tsx

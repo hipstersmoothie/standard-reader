@@ -196,6 +196,7 @@ msgid "Last updated July 20, 2026"
 msgstr ""
 
 #: src/components/reader/subscriptions-table.tsx
+#: src/routes/_layout.feedback.index.tsx
 msgid "Type"
 msgstr ""
 
@@ -517,6 +518,10 @@ msgstr "발행물 검색"
 
 #: src/components/appearance-settings.tsx
 msgid "Small"
+msgstr ""
+
+#: src/routes/_layout.feedback.index.tsx
+msgid "Only mine"
 msgstr ""
 
 #: src/routes/_layout.search.tsx
@@ -1633,6 +1638,10 @@ msgstr "네트워크 전체"
 msgid "This account has documents but no publications to subscribe to"
 msgstr "이 계정에는 문서는 있지만 구독할 발행물이 없습니다"
 
+#: src/routes/_layout.feedback.index.tsx
+msgid "Sort"
+msgstr ""
+
 #: src/routes/_layout.discover.tsx
 #: src/routes/_layout.tag.$tag.tsx
 msgid "Active"
@@ -2111,6 +2120,10 @@ msgstr "{metaCount, plural, one {글 {formattedMetaCount}편} other {글 {format
 #: src/components/reader/profile-tabs-settings-modal.tsx
 msgid "Show {label} tab"
 msgstr "{label} 탭 표시"
+
+#: src/routes/_layout.feedback.index.tsx
+msgid "Reset filters"
+msgstr ""
 
 #: src/routes/_layout.feedback.index.tsx
 msgid "Hide implemented"
@@ -2723,6 +2736,10 @@ msgstr "발행물을 몇 개 팔로우하면 최신 글이 여기에 표시됩�
 msgid "Subscribe to more publications to see what similar readers enjoy."
 msgstr "더 많은 발행물을 구독하면 비슷한 독자들이 즐겨 읽는 글을 볼 수 있습니다."
 
+#: src/routes/_layout.feedback.index.tsx
+msgid "Filter and sort"
+msgstr ""
+
 #: src/components/feedback/feedback-dialog.tsx
 #: src/components/reader/collection-builder.tsx
 msgid "Title"
@@ -2988,6 +3005,10 @@ msgstr "매거진 닫기"
 #: src/components/reader/collection-builder.tsx
 msgid "Introduce the collection… (markdown supported)"
 msgstr "컬렉션을 소개해 주세요… (마크다운 지원)"
+
+#: src/routes/_layout.feedback.index.tsx
+msgid "Filter"
+msgstr ""
 
 #: src/components/reader/friend-publishers.tsx
 msgid "Bluesky didn't answer in time, so this list may be incomplete. Reload to try again."
@@ -4060,6 +4081,10 @@ msgstr "소리내어 읽기 음성"
 
 #: src/routes/_layout.index.tsx
 msgid "Nothing left unread from the publications you follow. There's more on the network than you're following yet."
+msgstr ""
+
+#: src/routes/_layout.feedback.index.tsx
+msgid "Filter and sort — {activeFilters, plural, one {# filter active} other {# filters active}}"
 msgstr ""
 
 #: src/components/docs/renderers-docs-page.tsx

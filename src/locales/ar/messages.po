@@ -196,6 +196,7 @@ msgid "Last updated July 20, 2026"
 msgstr ""
 
 #: src/components/reader/subscriptions-table.tsx
+#: src/routes/_layout.feedback.index.tsx
 msgid "Type"
 msgstr ""
 
@@ -517,6 +518,10 @@ msgstr "ابحث في المنشورات"
 
 #: src/components/appearance-settings.tsx
 msgid "Small"
+msgstr ""
+
+#: src/routes/_layout.feedback.index.tsx
+msgid "Only mine"
 msgstr ""
 
 #: src/routes/_layout.search.tsx
@@ -1633,6 +1638,10 @@ msgstr "عبر الشبكة"
 msgid "This account has documents but no publications to subscribe to"
 msgstr "لدى هذا الحساب مستندات لكن لا منشورات للاشتراك فيها"
 
+#: src/routes/_layout.feedback.index.tsx
+msgid "Sort"
+msgstr ""
+
 #: src/routes/_layout.discover.tsx
 #: src/routes/_layout.tag.$tag.tsx
 msgid "Active"
@@ -2111,6 +2120,10 @@ msgstr "{metaCount, plural, zero {لا توجد مقالات} one {مقال وا
 #: src/components/reader/profile-tabs-settings-modal.tsx
 msgid "Show {label} tab"
 msgstr "إظهار تبويب {label}"
+
+#: src/routes/_layout.feedback.index.tsx
+msgid "Reset filters"
+msgstr ""
 
 #: src/routes/_layout.feedback.index.tsx
 msgid "Hide implemented"
@@ -2723,6 +2736,10 @@ msgstr "تابِع بعض المنشورات وستظهر هنا أحدث كتا
 msgid "Subscribe to more publications to see what similar readers enjoy."
 msgstr "اشترك في مزيد من المنشورات لترى ما يستمتع به قرّاء مشابهون لك."
 
+#: src/routes/_layout.feedback.index.tsx
+msgid "Filter and sort"
+msgstr ""
+
 #: src/components/feedback/feedback-dialog.tsx
 #: src/components/reader/collection-builder.tsx
 msgid "Title"
@@ -2988,6 +3005,10 @@ msgstr "إغلاق المجلة"
 #: src/components/reader/collection-builder.tsx
 msgid "Introduce the collection… (markdown supported)"
 msgstr "قدّم للمجموعة… (يدعم markdown)"
+
+#: src/routes/_layout.feedback.index.tsx
+msgid "Filter"
+msgstr ""
 
 #: src/components/reader/friend-publishers.tsx
 msgid "Bluesky didn't answer in time, so this list may be incomplete. Reload to try again."
@@ -4060,6 +4081,10 @@ msgstr "صوت القراءة الجهرية"
 
 #: src/routes/_layout.index.tsx
 msgid "Nothing left unread from the publications you follow. There's more on the network than you're following yet."
+msgstr ""
+
+#: src/routes/_layout.feedback.index.tsx
+msgid "Filter and sort — {activeFilters, plural, one {# filter active} other {# filters active}}"
 msgstr ""
 
 #: src/components/docs/renderers-docs-page.tsx

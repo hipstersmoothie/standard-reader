@@ -196,6 +196,7 @@ msgid "Last updated July 20, 2026"
 msgstr "Last updated July 20, 2026"
 
 #: src/components/reader/subscriptions-table.tsx
+#: src/routes/_layout.feedback.index.tsx
 msgid "Type"
 msgstr "Type"
 
@@ -518,6 +519,10 @@ msgstr "Search publications"
 #: src/components/appearance-settings.tsx
 msgid "Small"
 msgstr "Small"
+
+#: src/routes/_layout.feedback.index.tsx
+msgid "Only mine"
+msgstr "Only mine"
 
 #: src/routes/_layout.search.tsx
 msgid "Publications, handles, #tags, headlines…"
@@ -1633,6 +1638,10 @@ msgstr "Across the network"
 msgid "This account has documents but no publications to subscribe to"
 msgstr "This account has documents but no publications to subscribe to"
 
+#: src/routes/_layout.feedback.index.tsx
+msgid "Sort"
+msgstr "Sort"
+
 #: src/routes/_layout.discover.tsx
 #: src/routes/_layout.tag.$tag.tsx
 msgid "Active"
@@ -2111,6 +2120,10 @@ msgstr "{metaCount, plural, one {{formattedMetaCount} article} other {{formatted
 #: src/components/reader/profile-tabs-settings-modal.tsx
 msgid "Show {label} tab"
 msgstr "Show {label} tab"
+
+#: src/routes/_layout.feedback.index.tsx
+msgid "Reset filters"
+msgstr "Reset filters"
 
 #: src/routes/_layout.feedback.index.tsx
 msgid "Hide implemented"
@@ -2723,6 +2736,10 @@ msgstr "Follow a few publications and their latest writing will show up here."
 msgid "Subscribe to more publications to see what similar readers enjoy."
 msgstr "Subscribe to more publications to see what similar readers enjoy."
 
+#: src/routes/_layout.feedback.index.tsx
+msgid "Filter and sort"
+msgstr "Filter and sort"
+
 #: src/components/feedback/feedback-dialog.tsx
 #: src/components/reader/collection-builder.tsx
 msgid "Title"
@@ -2988,6 +3005,10 @@ msgstr "Close magazine"
 #: src/components/reader/collection-builder.tsx
 msgid "Introduce the collection… (markdown supported)"
 msgstr "Introduce the collection… (markdown supported)"
+
+#: src/routes/_layout.feedback.index.tsx
+msgid "Filter"
+msgstr "Filter"
 
 #: src/components/reader/friend-publishers.tsx
 msgid "Bluesky didn't answer in time, so this list may be incomplete. Reload to try again."
@@ -4061,6 +4082,10 @@ msgstr "Listen aloud voice"
 #: src/routes/_layout.index.tsx
 msgid "Nothing left unread from the publications you follow. There's more on the network than you're following yet."
 msgstr "Nothing left unread from the publications you follow. There's more on the network than you're following yet."
+
+#: src/routes/_layout.feedback.index.tsx
+msgid "Filter and sort — {activeFilters, plural, one {# filter active} other {# filters active}}"
+msgstr "Filter and sort — {activeFilters, plural, one {# filter active} other {# filters active}}"
 
 #: src/components/docs/renderers-docs-page.tsx
 #~ msgid "Every renderer takes one input for the document — the content payload of a <0>site.standard.document</0>. The format is detected from the payload's <1>$type</1>."

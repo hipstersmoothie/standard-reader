@@ -16,15 +16,20 @@ import {
   ArrowUp,
   Bug,
   CheckCircle2,
+  Clock,
   ExternalLink,
   Eye,
   EyeOff,
   HelpCircle,
   Lightbulb,
+  List,
   MessageSquarePlus,
+  RotateCcw,
+  SlidersHorizontal,
   User,
 } from "lucide-react";
 import { Suspense, useEffect, useMemo, useState } from "react";
+import type { Selection } from "react-aria-components";
 
 import { FeedbackDialog } from "#/components/feedback/feedback-dialog";
 import { initials } from "#/components/reader/format";
@@ -34,6 +39,13 @@ import { Button } from "#/design-system/button";
 import { Flex } from "#/design-system/flex";
 import { IconButton } from "#/design-system/icon-button";
 import { Link } from "#/design-system/link";
+import {
+  Menu,
+  MenuItem,
+  MenuSection,
+  MenuSectionHeader,
+  MenuSeparator,
+} from "#/design-system/menu";
 import { SearchField } from "#/design-system/search-field";
 import {
   SegmentedControl,
@@ -209,17 +221,16 @@ const styles = stylex.create({
   },
 
   // ── Toolbar ────────────────────────────────────────────────────────
+  // One row at every width. Below 48rem it holds just the search field and
+  // the overflow menu; above it the tag, sort, and toggle controls join the
+  // same row inline (see `toolbarInline`). 48rem rather than 40rem because
+  // the four inline controls squeeze the search field down to ~140px at
+  // 40rem, clipping its placeholder.
   toolbar: {
-    alignItems: {
-      default: "stretch",
-      "@media (min-width: 40rem)": "center",
-    },
+    alignItems: "center",
     columnGap: gap.md,
     display: "flex",
-    flexDirection: {
-      default: "column",
-      "@media (min-width: 40rem)": "row",
-    },
+    flexDirection: "row",
     marginBottom: spacing["8"],
     rowGap: gap.md,
   },
@@ -228,26 +239,54 @@ const styles = stylex.create({
     minWidth: 0,
     width: "100%",
   },
+  // The narrow-viewport entry point to every filter. Hidden once the controls
+  // themselves fit on the row.
+  toolbarOverflow: {
+    display: {
+      default: "flex",
+      "@media (min-width: 48rem)": "none",
+    },
+    flexShrink: 0,
+  },
+  // `contents` so the controls inside lay out as direct children of the
+  // toolbar row rather than as a nested flex box; `none` below 48rem takes
+  // them out of the layout, the tab order, and the accessibility tree, since
+  // the overflow menu drives the same state there.
+  toolbarInline: {
+    display: {
+      default: "none",
+      "@media (min-width: 48rem)": "contents",
+    },
+  },
   toolbarSelect: {
     flexShrink: 0,
-    flexGrow: {
-      default: 1,
-      "@media (min-width: 40rem)": 0,
-    },
-    minWidth: {
-      default: 0,
-      "@media (min-width: 40rem)": spacing["48"],
-    },
-    width: {
-      default: "100%",
-      "@media (min-width: 40rem)": "auto",
-    },
+    minWidth: spacing["48"],
   },
   toolbarSort: {
     flexShrink: 0,
   },
   toolbarToggle: {
     flexShrink: 0,
+  },
+  filterTrigger: {
+    position: "relative",
+  },
+  // Marks the closed overflow trigger when a filter is hiding feedback, so a
+  // filtered-down list never reads as an empty board. Drawn as a pseudo-element
+  // rather than a child span: an extra element after the icon would match the
+  // design-system button's `:has(svg+*)` padding rule (meant for icon+label
+  // buttons) and pull the centred icon 4px off-centre.
+  filterTriggerActive: {
+    "::after": {
+      backgroundColor: primaryColor.solid1,
+      borderRadius: radius.full,
+      content: "''",
+      height: spacing["1.5"],
+      insetBlockStart: spacing["2"],
+      insetInlineEnd: spacing["2"],
+      position: "absolute",
+      width: spacing["1.5"],
+    },
   },
 
   // ── List & sections ────────────────────────────────────────────────
@@ -385,6 +424,9 @@ const styles = stylex.create({
     marginInlineStart: 0,
     marginInlineEnd: 0,
     marginTop: 0,
+    // Feedback bodies routinely contain bare at:// and https:// URLs with no
+    // break opportunity; without this they run past the card edge on mobile.
+    overflowWrap: "anywhere",
     whiteSpace: "pre-line",
   },
   cardFoot: {
@@ -792,6 +834,198 @@ const TAG_FILTER_OPTIONS: Array<{ id: TagFilter; label: MessageDescriptor }> = [
   { id: "question", label: msg`Questions` },
 ];
 
+const TAG_FILTER_ICON: Record<TagFilter, React.ReactNode> = {
+  all: <List size={16} strokeWidth={2} />,
+  bug: <Bug size={16} strokeWidth={2} />,
+  feature: <Lightbulb size={16} strokeWidth={2} />,
+  question: <HelpCircle size={16} strokeWidth={2} />,
+};
+
+const SORT_OPTIONS: Array<{
+  id: SortMode;
+  label: MessageDescriptor;
+  icon: React.ReactNode;
+}> = [
+  { icon: <ArrowUp size={16} strokeWidth={2} />, id: "top", label: msg`Top` },
+  { icon: <Clock size={16} strokeWidth={2} />, id: "new", label: msg`New` },
+];
+
+interface FilterControlsProps {
+  tagFilter: TagFilter;
+  onTagFilterChange: (next: TagFilter) => void;
+  sortMode: SortMode;
+  onSortModeChange: (next: SortMode) => void;
+  onlyMine: boolean;
+  onOnlyMineChange: (next: boolean) => void;
+  hideImplemented: boolean;
+  onHideImplementedChange: (next: boolean) => void;
+  signedIn: boolean;
+}
+
+/**
+ * The narrow-viewport home for every filter. Below 48rem the toolbar is just
+ * the search field and this trigger — the tag select, sort control, and the
+ * two toggles would otherwise stack into a column of orphaned controls (the
+ * fixed-size `IconButton`s in particular can't honour the row's stretch, so
+ * they landed as two unlabeled squares against the left edge).
+ *
+ * Selection lives on each `MenuSection`, so the sections read as one settings
+ * sheet: pick a type, pick a sort, flip the toggles, all without the menu
+ * closing between choices.
+ */
+function FeedbackFilterMenu({
+  tagFilter,
+  onTagFilterChange,
+  sortMode,
+  onSortModeChange,
+  onlyMine,
+  onOnlyMineChange,
+  hideImplemented,
+  onHideImplementedChange,
+  signedIn,
+}: FilterControlsProps) {
+  const { t, i18n } = useLingui();
+  // Only count the settings that *hide* feedback — sort reorders, and hiding
+  // implemented items is the default, so neither earns the trigger's dot.
+  const activeFilters = (tagFilter === "all" ? 0 : 1) + (onlyMine ? 1 : 0);
+  const canReset =
+    tagFilter !== "all" || sortMode !== "top" || onlyMine || !hideImplemented;
+  const label =
+    activeFilters === 0
+      ? t`Filter and sort`
+      : t`Filter and sort — ${plural(activeFilters, {
+          one: "# filter active",
+          other: "# filters active",
+        })}`;
+
+  const toggleKeys = new Set<string>();
+  if (onlyMine) toggleKeys.add("mine");
+  if (!hideImplemented) toggleKeys.add("implemented");
+
+  const handleToggleChange = (keys: Selection) => {
+    const selected =
+      keys === "all"
+        ? new Set(["mine", "implemented"])
+        : new Set([...keys].map(String));
+    if (signedIn) onOnlyMineChange(selected.has("mine"));
+    onHideImplementedChange(!selected.has("implemented"));
+  };
+
+  return (
+    <Menu
+      placement="bottom end"
+      trigger={
+        <IconButton
+          size="lg"
+          variant="secondary"
+          label={label}
+          // `label` only feeds the tooltip (react-aria wires it as
+          // `aria-describedby`, and only while open), so name the button
+          // explicitly for assistive tech and touch users.
+          aria-label={label}
+          style={[
+            styles.filterTrigger,
+            activeFilters > 0 && styles.filterTriggerActive,
+          ]}
+        >
+          <SlidersHorizontal size={16} strokeWidth={2} />
+        </IconButton>
+      }
+    >
+      <MenuSection
+        selectionMode="single"
+        disallowEmptySelection
+        shouldCloseOnSelect={false}
+        selectedKeys={new Set([tagFilter])}
+        onSelectionChange={(keys) => {
+          const next = keys === "all" ? undefined : [...keys][0];
+          if (typeof next === "string") onTagFilterChange(next as TagFilter);
+        }}
+      >
+        <MenuSectionHeader>
+          <Trans>Type</Trans>
+        </MenuSectionHeader>
+        {TAG_FILTER_OPTIONS.map((opt) => (
+          <MenuItem
+            key={opt.id}
+            id={opt.id}
+            prefix={TAG_FILTER_ICON[opt.id]}
+            textValue={i18n._(opt.label)}
+          >
+            {i18n._(opt.label)}
+          </MenuItem>
+        ))}
+      </MenuSection>
+      <MenuSeparator />
+      <MenuSection
+        selectionMode="single"
+        disallowEmptySelection
+        shouldCloseOnSelect={false}
+        selectedKeys={new Set([sortMode])}
+        onSelectionChange={(keys) => {
+          const next = keys === "all" ? undefined : [...keys][0];
+          if (typeof next === "string") onSortModeChange(next as SortMode);
+        }}
+      >
+        <MenuSectionHeader>
+          <Trans>Sort</Trans>
+        </MenuSectionHeader>
+        {SORT_OPTIONS.map((opt) => (
+          <MenuItem
+            key={opt.id}
+            id={opt.id}
+            prefix={opt.icon}
+            textValue={i18n._(opt.label)}
+          >
+            {i18n._(opt.label)}
+          </MenuItem>
+        ))}
+      </MenuSection>
+      <MenuSeparator />
+      <MenuSection
+        selectionMode="multiple"
+        selectedKeys={toggleKeys}
+        onSelectionChange={handleToggleChange}
+      >
+        <MenuSectionHeader>
+          <Trans>Filter</Trans>
+        </MenuSectionHeader>
+        {signedIn ? (
+          <MenuItem
+            id="mine"
+            prefix={<User size={16} strokeWidth={2} />}
+            textValue={t`Only mine`}
+          >
+            <Trans>Only mine</Trans>
+          </MenuItem>
+        ) : null}
+        <MenuItem
+          id="implemented"
+          prefix={<CheckCircle2 size={16} strokeWidth={2} />}
+          textValue={t`Show implemented`}
+        >
+          <Trans>Show implemented</Trans>
+        </MenuItem>
+      </MenuSection>
+      {canReset ? <MenuSeparator /> : null}
+      {canReset ? (
+        <MenuItem
+          prefix={<RotateCcw size={16} strokeWidth={2} />}
+          textValue={t`Reset filters`}
+          onAction={() => {
+            onTagFilterChange("all");
+            onSortModeChange("top");
+            onOnlyMineChange(false);
+            onHideImplementedChange(true);
+          }}
+        >
+          <Trans>Reset filters</Trans>
+        </MenuItem>
+      ) : null}
+    </Menu>
+  );
+}
+
 /**
  * Everything the masthead doesn't need — the discussions query, filters, and
  * upvote logic. Split out so `FeedbackPage`'s header + submit button render
@@ -1087,71 +1321,88 @@ function FeedbackDiscussions({
             value={search}
             onChange={setSearch}
           />
-          <Select
-            aria-label={t`Filter by tag`}
-            size="lg"
-            variant="secondary"
-            selectedKey={tagFilter}
-            style={styles.toolbarSelect}
-            onSelectionChange={(key) => {
-              if (key == null) return;
-              setTagFilter(String(key) as TagFilter);
-            }}
-          >
-            {TAG_FILTER_OPTIONS.map((opt) => (
-              <SelectItem
-                key={opt.id}
-                id={opt.id}
-                textValue={i18n._(opt.label)}
+          <div {...stylex.props(styles.toolbarOverflow)}>
+            <FeedbackFilterMenu
+              tagFilter={tagFilter}
+              onTagFilterChange={setTagFilter}
+              sortMode={sortMode}
+              onSortModeChange={setSortMode}
+              onlyMine={onlyMine}
+              onOnlyMineChange={setOnlyMine}
+              hideImplemented={hideImplemented}
+              onHideImplementedChange={setHideImplemented}
+              signedIn={signedIn}
+            />
+          </div>
+          <div {...stylex.props(styles.toolbarInline)}>
+            <Select
+              aria-label={t`Filter by tag`}
+              size="lg"
+              variant="secondary"
+              selectedKey={tagFilter}
+              style={styles.toolbarSelect}
+              onSelectionChange={(key) => {
+                if (key == null) return;
+                setTagFilter(String(key) as TagFilter);
+              }}
+            >
+              {TAG_FILTER_OPTIONS.map((opt) => (
+                <SelectItem
+                  key={opt.id}
+                  id={opt.id}
+                  textValue={i18n._(opt.label)}
+                >
+                  {i18n._(opt.label)}
+                </SelectItem>
+              ))}
+            </Select>
+            <SegmentedControl
+              aria-label={t`Sort by`}
+              size="lg"
+              style={styles.toolbarSort}
+              selectedKeys={new Set([sortMode])}
+              onSelectionChange={(keys) => {
+                const next = [...keys][0];
+                if (typeof next === "string") {
+                  setSortMode(next as SortMode);
+                }
+              }}
+            >
+              <SegmentedControlItem key="top" id="top">
+                <ArrowUp size={13} strokeWidth={2} /> <Trans>Top</Trans>
+              </SegmentedControlItem>
+              <SegmentedControlItem key="new" id="new">
+                <Trans>New</Trans>
+              </SegmentedControlItem>
+            </SegmentedControl>
+            {signedIn ? (
+              <IconButton
+                size="lg"
+                variant={onlyMine ? "primary" : "secondary"}
+                label={onlyMine ? t`Show all feedback` : t`Show only mine`}
+                style={styles.toolbarToggle}
+                aria-pressed={onlyMine}
+                onPress={() => setOnlyMine((v) => !v)}
               >
-                {i18n._(opt.label)}
-              </SelectItem>
-            ))}
-          </Select>
-          <SegmentedControl
-            aria-label={t`Sort by`}
-            size="lg"
-            style={styles.toolbarSort}
-            selectedKeys={new Set([sortMode])}
-            onSelectionChange={(keys) => {
-              const next = [...keys][0];
-              if (typeof next === "string") {
-                setSortMode(next as SortMode);
-              }
-            }}
-          >
-            <SegmentedControlItem key="top" id="top">
-              <ArrowUp size={13} strokeWidth={2} /> <Trans>Top</Trans>
-            </SegmentedControlItem>
-            <SegmentedControlItem key="new" id="new">
-              <Trans>New</Trans>
-            </SegmentedControlItem>
-          </SegmentedControl>
-          {signedIn ? (
+                <User size={16} strokeWidth={2} />
+              </IconButton>
+            ) : null}
             <IconButton
               size="lg"
-              variant={onlyMine ? "primary" : "secondary"}
-              label={onlyMine ? t`Show all feedback` : t`Show only mine`}
+              variant="secondary"
+              label={
+                hideImplemented ? t`Show implemented` : t`Hide implemented`
+              }
               style={styles.toolbarToggle}
-              aria-pressed={onlyMine}
-              onPress={() => setOnlyMine((v) => !v)}
+              onPress={() => setHideImplemented((v) => !v)}
             >
-              <User size={16} strokeWidth={2} />
+              {hideImplemented ? (
+                <EyeOff size={16} strokeWidth={2} />
+              ) : (
+                <Eye size={16} strokeWidth={2} />
+              )}
             </IconButton>
-          ) : null}
-          <IconButton
-            size="lg"
-            variant="secondary"
-            label={hideImplemented ? t`Show implemented` : t`Hide implemented`}
-            style={styles.toolbarToggle}
-            onPress={() => setHideImplemented((v) => !v)}
-          >
-            {hideImplemented ? (
-              <EyeOff size={16} strokeWidth={2} />
-            ) : (
-              <Eye size={16} strokeWidth={2} />
-            )}
-          </IconButton>
+          </div>
         </div>
       )}
 
