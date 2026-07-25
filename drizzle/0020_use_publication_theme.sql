@@ -1,0 +1,1 @@
+ALTER TABLE "user" ADD COLUMN "use_publication_theme" boolean;
