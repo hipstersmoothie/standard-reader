@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import { contrastRatio } from "#/lib/collections/color";
+
 import { customPaletteVars } from "./appearance-vars";
 import { publicationThemeScaleVars } from "./publication-theme-scale";
 
@@ -55,4 +57,34 @@ describe("the reader's own palette", () => {
   it("routes a dark paper to the dark scheme", () => {
     expect(vars("#1b1512", "#e0703a")["--sr-bg-dark"]).toBe("#1b1512");
   });
+});
+
+describe("muted text", () => {
+  /**
+   * `text1` is the secondary/muted step and `text2` the primary ink. The light
+   * scale used to derive the muted one by mixing toward *black*, which on a
+   * light page put it further from the paper than the ink itself — the two came
+   * out ~1.1:1 apart and read as one color.
+   */
+  it.each([
+    ["#fcfaf5", "#ad7f58", "light"],
+    ["#fcfcfd", "#3e63dd", "light"],
+    ["#1b1512", "#e0703a", "dark"],
+    ["#0f0f10", "#12a594", "dark"],
+  ] as const)(
+    "stays clearly distinct from the primary ink (%s)",
+    (paper, accent, scheme) => {
+      const v = vars(paper, accent);
+      const bg = v[`--sr-bg-${scheme}`];
+      const muted = v[`--sr-text1-${scheme}`];
+      const ink = v[`--sr-text2-${scheme}`];
+
+      // Reads as a different color from the ink...
+      expect(contrastRatio(muted, ink)).toBeGreaterThan(2);
+      // ...while still clearing AA against the page it sits on.
+      expect(contrastRatio(muted, bg)).toBeGreaterThanOrEqual(4.5);
+      // ...and staying lighter-weight than the ink, never darker.
+      expect(contrastRatio(ink, bg)).toBeGreaterThan(contrastRatio(muted, bg));
+    },
+  );
 });

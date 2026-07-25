@@ -481,11 +481,29 @@ function applyNeutralAnchors(
 }
 
 /**
+ * Muted body text (`text1`) for a page.
+ *
+ * Mixed toward the *background*, not toward black or white. The light scale used
+ * to derive this as `darken(foreground, …)`, which on a light page moves the
+ * "secondary" color further from the paper than the primary ink is — so the two
+ * read as the same near-black and the muted step did no work. The app's own
+ * editorial palette sits about 0.42 of the way from ink to page in both modes,
+ * which is the figure used here; `ensureReadable` then pulls it back if a
+ * particular pair lands under AA, keeping its hue rather than snapping to grey.
+ */
+const MUTED_TEXT_MIX = 0.42;
+
+function mutedText(ink: Rgb, background: Rgb): Rgb {
+  return ensureReadable(mix(ink, background, MUTED_TEXT_MIX), background, 4.5);
+}
+
+/**
  * Build the neutral (ui) scale from an already-dark background + foreground.
  * Split out from {@link buildUiScale} so a publisher-authored dark palette can
  * be used verbatim instead of one derived by darkening their light background.
  */
 function buildDarkUiScale(darkBg: Rgb, foreground: Rgb): ColorScale {
+  const darkInk = ensureContrast(lighten(foreground, 0.75), darkBg, 4.5);
   return {
     bg: toHex(darkBg),
     bgSubtle: toHex(lighten(darkBg, 0.03)),
@@ -497,8 +515,8 @@ function buildDarkUiScale(darkBg: Rgb, foreground: Rgb): ColorScale {
     border3: toHex(lighten(darkBg, 0.36)),
     solid1: toHex(lighten(darkBg, 0.72)),
     solid2: toHex(lighten(darkBg, 0.6)),
-    text1: toHex(ensureContrast(lighten(foreground, 0.3), darkBg, 3)),
-    text2: toHex(ensureContrast(lighten(foreground, 0.75), darkBg, 4.5)),
+    text1: toHex(mutedText(darkInk, darkBg)),
+    text2: toHex(darkInk),
     textContrast: toHex(darkBg),
   };
 }
@@ -510,6 +528,7 @@ function buildDarkUiScale(darkBg: Rgb, foreground: Rgb): ColorScale {
  * {@link isDarkColor} routing exists to prevent.
  */
 function buildLightUiScale(background: Rgb, foreground: Rgb): ColorScale {
+  const lightInk = ensureContrast(foreground, background, 4.5);
   return {
     bg: toHex(background),
     bgSubtle: toHex(darken(background, 0.02)),
@@ -521,8 +540,8 @@ function buildLightUiScale(background: Rgb, foreground: Rgb): ColorScale {
     border3: toHex(darken(background, 0.32)),
     solid1: toHex(darken(foreground, 0.75)),
     solid2: toHex(darken(foreground, 0.6)),
-    text1: toHex(ensureContrast(darken(foreground, 0.2), background, 3)),
-    text2: toHex(ensureContrast(foreground, background, 4.5)),
+    text1: toHex(mutedText(lightInk, background)),
+    text2: toHex(lightInk),
     textContrast: toHex(background),
   };
 }
