@@ -51,12 +51,16 @@ import {
   startLightboxViewTransition,
 } from "../../design-system/lightbox/transition";
 import { Menu, MenuItem } from "../../design-system/menu";
-import { animationDuration } from "../../design-system/theme/animations.stylex";
+import {
+  animationDuration,
+  animationTimingFunction,
+} from "../../design-system/theme/animations.stylex";
 import {
   criticalColor,
   primaryColor,
   uiColor,
 } from "../../design-system/theme/color.stylex";
+import { mediaQueries } from "../../design-system/theme/media-queries.stylex";
 import { radius } from "../../design-system/theme/radius.stylex";
 import {
   gap,
@@ -161,8 +165,23 @@ const styles = stylex.create({
   stickyChrome: {
     backgroundColor: `color-mix(in oklch, ${uiColor.bg} 95%, transparent)`,
     position: "sticky",
+    // Pins to the bottom edge of the app shell's mobile navbar, which publishes
+    // it as `--app-navbar-offset` (see `navbarOffset` in app-shell.tsx) — zero
+    // whenever that bar is hidden or absent, so this pins
+    // to the viewport top everywhere else. The bar animates its own sticky `top`
+    // rather than a transform precisely so this can animate `top` alongside it:
+    // same property, same duration, same easing, one timeline, no seam opening
+    // between the two as they move. Offsetting `top` rather than transforming
+    // also keeps it out of the way near the top of the page, where this header
+    // rides along in normal flow instead of sticking.
+    transitionDuration: animationDuration.slow,
+    transitionProperty: {
+      default: "top",
+      [mediaQueries.reducedMotion]: "none",
+    },
+    transitionTimingFunction: animationTimingFunction.easeInOut,
     zIndex: 20,
-    top: 0,
+    top: "var(--app-navbar-offset, 0px)",
   },
   topBar: {
     alignItems: "center",

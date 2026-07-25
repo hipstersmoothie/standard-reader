@@ -338,18 +338,31 @@ function FollowingAvatar({
   );
 }
 
+/**
+ * Mobile stand-in for the sidebar's subscriptions list. The badge counts
+ * *unread* articles, not subscriptions — same number the sidebar's "Latest"
+ * item carries, since that's the one worth a glance from the top bar.
+ */
 export function SubscriptionsSwitcher({
-  count,
+  unreadCount,
   onPress,
 }: {
-  count: number;
+  unreadCount: number | null;
   onPress: () => void;
 }) {
+  const { t } = useLingui();
+  const fmt = useFormatters();
+
   return (
     <AriaButton {...stylex.props(styles.switcher)} onPress={onPress}>
       <Trans>Subscriptions</Trans>
-      {count > 0 ? (
-        <span {...stylex.props(styles.switcherCount)}>{count}</span>
+      {unreadCount != null && unreadCount > 0 ? (
+        <span
+          {...stylex.props(styles.switcherCount)}
+          aria-label={t`${unreadCount} unread`}
+        >
+          {formatSidebarUnreadCount(fmt, unreadCount)}
+        </span>
       ) : null}
     </AriaButton>
   );

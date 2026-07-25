@@ -38,8 +38,10 @@ things you already subscribe to.
 - **Audience:** readers who want a calm, text-first home for long-form writing, plus a
   way to keep discovering new voices.
 - **Platform:** responsive web — desktop (persistent left sidebar) and mobile (top bar +
-  bottom tab nav). Same codebase, same components. **Browser extension** (WXT, MV3) as a
-  capture + bridge client for save/follow while browsing.
+  bottom tab nav). The mobile top bar scrolls away with the page and slides back in on any
+  scroll up, so reading gets the full screen without losing the way out. Same codebase,
+  same components. **Browser extension** (WXT, MV3) as a capture + bridge client for
+  save/follow while browsing.
 
 ---
 
@@ -130,7 +132,9 @@ Sections, top to bottom:
   `grid-lanes` where supported with plain CSS Grid fallback elsewhere; Leaflet galleries and
   single-image blocks share the reader lightbox, with image alt text surfaced inside the
   lightbox.
-- Sticky top bar: back, byline, follow, like, share; reading-progress bar.
+- Sticky top bar: back, byline, follow, like, share; reading-progress bar. On mobile it
+  pins below the shell's top bar whenever that one is revealed, so the two stack instead
+  of overlapping.
 - **Listen (page reader):** a top-bar "Listen" button reads the article aloud
   using on-device TTS (`kokoro-js`, lazy-loaded on first use). It narrates the
   title, description, byline, then body — including embedded Bluesky posts

@@ -30,6 +30,7 @@ import {
 import { useFocusRing } from "react-aria";
 
 import { DirectionalIcon } from "#/design-system/directional-icon";
+import { useAnimatedNavbar } from "#/design-system/navbar/useAnimatedNavbar";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
 import {
   listsQueryOptions,
@@ -41,6 +42,7 @@ import { parseInternalRoute } from "#/lib/internal-route";
 import { PageReaderProvider } from "#/lib/page-reader/page-reader-provider";
 import type { SidebarNavId } from "#/lib/sidebar-nav";
 import { useFormatters } from "#/lib/use-formatters";
+import { useCompactNav } from "#/lib/use-media-query";
 
 import { Avatar } from "../../design-system/avatar";
 import { Button } from "../../design-system/button";
@@ -445,6 +447,14 @@ const styles = stylex.create({
     columnGap: gap.lg,
     display: { [DESKTOP]: "none", default: "grid" },
     flexShrink: 0,
+    // Only bites once `useAnimatedNavbar` makes the bar sticky: it then has to
+    // clear positioned page content (cards, topic chips) but stay under the
+    // floating dock — and under a view's own sticky header (article-view's
+    // `stickyChrome`, at 20), which pins flush against this bar's bottom edge.
+    // The two abut exactly, so on a fractional device-pixel grid the seam can
+    // round either way; losing the tie means a stray half-pixel of this bar
+    // hides behind that header instead of clipping its top edge.
+    zIndex: 15,
     gridTemplateColumns: `${size.lg} 1fr ${size.lg}`,
     justifyContent: "space-between",
     borderBottomColor: uiColor.border1,
@@ -502,6 +512,8 @@ const styles = stylex.create({
     backgroundColor: uiColor.bg,
     display: { [DESKTOP]: "none", default: "flex" },
     flexShrink: 0,
+    // See `mobileDetailBar` — matters only while the bar is stuck to the top.
+    zIndex: 15,
     justifyContent: "space-between",
     borderBottomColor: uiColor.border1,
     borderBottomStyle: "solid",
@@ -1141,12 +1153,18 @@ function Brand({
   );
 }
 
-function MobileStaticPageBar({ title }: { title: string }) {
+function MobileStaticPageBar({
+  ref,
+  title,
+}: {
+  ref?: React.Ref<HTMLDivElement>;
+  title: string;
+}) {
   const { t } = useLingui();
   const router = useRouter();
 
   return (
-    <div {...stylex.props(styles.mobileDetailBar)}>
+    <div ref={ref} {...stylex.props(styles.mobileDetailBar)}>
       <IconButton
         aria-label={t`Back`}
         size="md"
@@ -1215,6 +1233,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [subsSheetOpen, setSubsSheetOpen] = useState(false);
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  // The mobile top bar scrolls away with the page, then slides back in as soon
+  // as you scroll up. The sidebar replaces it at desktop widths, so the hook
+  // only runs where the bar exists.
+  const compactNav = useCompactNav();
+  // `main` carries the offset the bar publishes, so anything inside it that
+  // pins its own sticky header (an open article pins a toolbar of nav controls)
+  // can sit against the bar's bottom edge.
+  const mainRef = useRef<HTMLElement>(null);
+  const { navBarProps: mobileBarProps, sentinel: mobileBarSentinel } =
+    useAnimatedNavbar({ enabled: compactNav, offsetTarget: mainRef });
 
   const { data: listsData, isPending: listsPending } = useQuery({
     ...listsQueryOptions(),
@@ -1460,23 +1488,45 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </Flex>
           </aside>
 
-          <main id="main-content" tabIndex={-1} {...stylex.props(styles.main)}>
-            <div {...stylex.props(styles.scroller)}>
-              {staticPageTitle ? (
-                <MobileStaticPageBar title={staticPageTitle} />
-              ) : (
-                <Flex align="center" justify="between" style={styles.mobileBar}>
-                  <Brand />
-                  <div {...stylex.props(styles.mobileBarActions)}>
+          <main
+            id="main-content"
+            ref={mainRef}
+            tabIndex={-1}
+            {...stylex.props(styles.main)}
+          >
+            {/* Both the bar and its at-the-top sentinel live outside the
+                scroller: `overflow-x: clip` there makes WebKit jitter sticky
+                children (see `styles.scroller`), and the bar turns sticky the
+                moment it animates back in. */}
+            {mobileBarSentinel}
+            {staticPageTitle ? (
+              <MobileStaticPageBar
+                title={staticPageTitle}
+                ref={mobileBarProps.ref}
+              />
+            ) : (
+              <Flex
+                ref={mobileBarProps.ref}
+                align="center"
+                justify="between"
+                style={styles.mobileBar}
+              >
+                <Brand />
+                <div {...stylex.props(styles.mobileBarActions)}>
+                  {/* Guests have nothing to switch between — the sheet would
+                      open on an empty list — so the bar is just brand + login. */}
+                  {signedIn ? (
                     <SubscriptionsSwitcher
-                      count={following.length}
+                      unreadCount={unreadCount}
                       onPress={() => setSubsSheetOpen(true)}
                     />
-                    <NavbarAuth />
-                  </div>
-                </Flex>
-              )}
+                  ) : null}
+                  <NavbarAuth />
+                </div>
+              </Flex>
+            )}
 
+            <div {...stylex.props(styles.scroller)}>
               {/* The footer sits inside the themed region so a publication's
                   colors run to the bottom of the content column. */}
               <PublicationThemeScope footer={<SiteFooter />}>
