@@ -58,9 +58,35 @@ function platformFromUrl(url: string): PublishingPlatform | null {
 }
 
 /**
+ * Skyreader publishes "linkblogs" — curated reshares of other people's posts —
+ * as `site.standard.document` records whose body reuses Leaflet's
+ * `pub.leaflet.content` lexicon. That makes `contentFormat` alone report them as
+ * Leaflet, so a linkblog would otherwise get a "Read on Leaflet" button linking
+ * to a `skyreader.app` URL — the platform mismatch behind this being a bug.
+ *
+ * Linkblogs always live on `skyreader.app` (each reader's on
+ * `linkblogs.skyreader.app`), never on Leaflet, so the canonical host is a
+ * reliable veto: a `skyreader.app` article is not one of the three platforms we
+ * attribute, whatever its content format claims.
+ */
+const SKYREADER_HOST = "skyreader.app";
+
+function isSkyreaderUrl(url: string): boolean {
+  let host: string;
+  try {
+    host = new URL(url).hostname.toLowerCase();
+  } catch {
+    return false;
+  }
+  return host === SKYREADER_HOST || host.endsWith(`.${SKYREADER_HOST}`);
+}
+
+/**
  * Which publishing platform an article came from, or null when it's from
  * somewhere else (or we can't tell). `contentFormat` wins over the URL because
- * custom domains are common on all three platforms.
+ * custom domains are common on all three platforms — the one exception is a
+ * Skyreader linkblog, whose host vetoes the reused Leaflet content format (see
+ * `isSkyreaderUrl`).
  */
 export function publishingPlatform({
   contentFormat,
@@ -69,6 +95,9 @@ export function publishingPlatform({
   contentFormat?: string | null;
   canonicalUrl?: string | null;
 }): PublishingPlatform | null {
+  // A Skyreader linkblog reuses Leaflet's content lexicon, so its host must veto
+  // the content-format check below before it reports the article as Leaflet.
+  if (canonicalUrl && isSkyreaderUrl(canonicalUrl)) return null;
   if (contentFormat) {
     const fromFormat = platformFromContentFormat(contentFormat);
     if (fromFormat) return fromFormat;

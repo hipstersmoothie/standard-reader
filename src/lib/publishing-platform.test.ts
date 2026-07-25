@@ -58,6 +58,34 @@ describe("publishingPlatform", () => {
     ).toBe("leaflet");
   });
 
+  it("does not attribute Skyreader linkblogs to Leaflet", () => {
+    // Linkblogs are `site.standard.document` records whose body reuses Leaflet's
+    // content lexicon, so the content format claims Leaflet; the skyreader.app
+    // host must override it. See the example in the issue.
+    expect(
+      publishingPlatform({
+        contentFormat: "pub.leaflet.content",
+        canonicalUrl:
+          "https://linkblogs.skyreader.app/did:plc:fip3nyk6tjo3senpq4ei2cxw/mrq9kxj2ifmrino54w",
+      }),
+    ).toBe(null);
+    expect(
+      publishingPlatform({
+        contentFormat: "pub.leaflet.document",
+        canonicalUrl: "https://skyreader.app/some-post",
+      }),
+    ).toBe(null);
+  });
+
+  it("does not match a host that merely ends with skyreader.app", () => {
+    expect(
+      publishingPlatform({
+        contentFormat: "pub.leaflet.content",
+        canonicalUrl: "https://notskyreader.app/post",
+      }),
+    ).toBe("leaflet");
+  });
+
   it("does not treat offprint.net as Offprint", () => {
     // offprint.net redirects to offprint.cafe, an unrelated product.
     expect(
