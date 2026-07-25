@@ -168,7 +168,7 @@ export function hasPublicationThemeColors(
   );
 }
 
-interface Rgb {
+export interface Rgb {
   r: number;
   g: number;
   b: number;
@@ -181,7 +181,7 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
-function parseHex(hex: string): Rgb | null {
+export function parseHex(hex: string): Rgb | null {
   const m = /^#([\da-f]{3}|[\da-f]{6})$/i.exec(hex.trim());
   if (!m) return null;
   const h = m[1];
@@ -199,7 +199,7 @@ function parseHex(hex: string): Rgb | null {
   };
 }
 
-function toHex(c: Rgb): string {
+export function toHex(c: Rgb): string {
   const ch = (v: number) =>
     clamp(Math.round(v), 0, 255).toString(16).padStart(2, "0");
   return `#${ch(c.r)}${ch(c.g)}${ch(c.b)}`;
@@ -365,7 +365,7 @@ function lighten(c: Rgb, amount: number): Rgb {
  * Light mode: tints of the accent on a light surface.
  * Dark mode: dark accent-tinted surfaces with bright text.
  */
-interface ColorScale {
+export interface ColorScale {
   bg: string;
   bgSubtle: string;
   component1: string;
@@ -532,7 +532,7 @@ function buildLightUiScale(background: Rgb, foreground: Rgb): ColorScale {
  * reason as {@link buildDarkUiScale} — so a publisher's own dark palette drives
  * it rather than one derived from their light colors.
  */
-function buildDarkAccentScale(accent: Rgb, darkPageBg: Rgb): ColorScale {
+export function buildDarkAccentScale(accent: Rgb, darkPageBg: Rgb): ColorScale {
   const darkAccentBg = darken(accent, 0.78);
   return {
     bg: toHex(darkAccentBg),
@@ -555,7 +555,7 @@ function buildDarkAccentScale(accent: Rgb, darkPageBg: Rgb): ColorScale {
  * Build the accent (primary) scale from the publication's accent color.
  * Light: accent tints on light bg; Dark: dark accent-tinted surfaces.
  */
-function buildLightAccentScale(accent: Rgb): ColorScale {
+export function buildLightAccentScale(accent: Rgb): ColorScale {
   const lightBg = lighten(accent, 0.86);
   return {
     bg: toHex(lightBg),

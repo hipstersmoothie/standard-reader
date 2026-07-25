@@ -10,6 +10,11 @@ import { revokeAtprotoSession } from "#/integrations/auth/atproto";
 import { AUTH_SESSION_TOKEN_COOKIE } from "#/integrations/auth/constants";
 import { hasEmailScope } from "#/integrations/auth/scope";
 import {
+  DEFAULT_ACCENT_COLOR,
+  accentColorToDbValue,
+  dbValueToAccentColor,
+} from "#/lib/accent-color-preference";
+import {
   COUNT_OLD_POSTS_AS_UNREAD_COOKIE,
   COUNT_OLD_POSTS_AS_UNREAD_COOKIE_MAX_AGE_SECONDS,
   countOldPostsAsUnreadToCookieValue,
@@ -289,6 +294,7 @@ const getShellBootstrap = createServerFn({ method: "GET" }).handler(
         ),
       },
       usePublicationTheme: { enabled: DEFAULT_USE_PUBLICATION_THEME },
+      accentColor: { color: DEFAULT_ACCENT_COLOR },
       collectionsAuthoring: { enabled: false },
       shell: null,
     };
@@ -329,6 +335,7 @@ const getShellBootstrap = createServerFn({ method: "GET" }).handler(
             openCollectionsInMagazine: true,
             readingTypography: true,
             usePublicationTheme: true,
+            accentColor: true,
             collectionsAuthoringEnabled: true,
             atstoreReviewPromptDismissed: true,
             userinputFeedbackEnabled: true,
@@ -464,6 +471,9 @@ const getShellBootstrap = createServerFn({ method: "GET" }).handler(
       },
       usePublicationTheme: {
         enabled: dbValueToUsePublicationTheme(userRow.usePublicationTheme),
+      },
+      accentColor: {
+        color: dbValueToAccentColor(userRow.accentColor),
       },
       collectionsAuthoring: {
         enabled: userRow.collectionsAuthoringEnabled === true,
@@ -1100,6 +1110,43 @@ const setUsePublicationThemePreference = createServerFn({ method: "POST" })
     return { enabled: data.enabled };
   });
 
+// Signed-in only — same reasoning as `getUsePublicationThemePreference` above.
+const getAccentColorPreference = createServerFn({ method: "GET" })
+  .middleware([dbMiddleware, maybeAuthMiddleware])
+  .handler(async ({ context }): Promise<{ color: string | null }> => {
+    const session = context?.session;
+    if (!session?.user) return { color: DEFAULT_ACCENT_COLOR };
+
+    const row = await context.db.query.user.findFirst({
+      where: eq(context.schema.user.id, session.user.id),
+      columns: { accentColor: true },
+    });
+    return { color: dbValueToAccentColor(row?.accentColor ?? null) };
+  });
+
+const getAccentColorPreferenceQueryOptions = queryOptions({
+  queryKey: ["accentColorPreference"] as const,
+  queryFn: () => getAccentColorPreference(),
+  staleTime: Number.POSITIVE_INFINITY,
+});
+
+const setAccentColorPreference = createServerFn({ method: "POST" })
+  .middleware([dbMiddleware, maybeAuthMiddleware])
+  .validator(z.object({ color: z.string().nullable() }))
+  .handler(async ({ data, context }): Promise<{ color: string | null }> => {
+    if (!context?.session?.user) {
+      return { color: DEFAULT_ACCENT_COLOR };
+    }
+
+    const color = accentColorToDbValue(data.color);
+    await context.db
+      .update(context.schema.user)
+      .set({ accentColor: color })
+      .where(eq(context.schema.user.id, context.session.user.id));
+
+    return { color };
+  });
+
 const homeScopeInput = z.object({
   scope: z.enum(["follows", "trending"]),
 });
@@ -1402,6 +1449,9 @@ export const user = {
   getUsePublicationThemePreference,
   getUsePublicationThemePreferenceQueryOptions,
   setUsePublicationThemePreference,
+  getAccentColorPreference,
+  getAccentColorPreferenceQueryOptions,
+  setAccentColorPreference,
   getHomeScopePreference,
   getHomeScopePreferenceQueryOptions,
   setHomeScopePreference,

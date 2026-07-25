@@ -833,6 +833,10 @@ msgstr "아직 색인된 글이 없습니다."
 msgid "{0} added to {listName}."
 msgstr ""
 
+#: src/components/user-settings-view.tsx
+msgid "Custom"
+msgstr ""
+
 #: src/components/reader/about-view.tsx
 msgid "Read the API docs"
 msgstr "API 문서 보기"
@@ -892,6 +896,10 @@ msgstr "커버 이미지 교체"
 #: src/lib/sidebar-nav.ts
 msgid "Search"
 msgstr "검색"
+
+#: src/components/user-settings-view.tsx
+msgid "Camel"
+msgstr ""
 
 #: src/routes/_layout.latest.tsx
 msgid "Nothing trending yet"
@@ -2098,6 +2106,10 @@ msgstr ""
 msgid "Share elsewhere"
 msgstr "다른 곳에 공유"
 
+#: src/components/user-settings-view.tsx
+msgid "Plum"
+msgstr ""
+
 #: src/components/docs/docs-publishing-nav.tsx
 #~ msgid "Publishing guide"
 #~ msgstr "발행 가이드"
@@ -2472,6 +2484,10 @@ msgstr "버그, 아이디어, 질문을 가장 먼저 남겨보세요."
 msgid "Browse the publication directory to find new writers."
 msgstr ""
 
+#: src/components/user-settings-view.tsx
+msgid "Accent color"
+msgstr ""
+
 #: src/routes/_layout.index.tsx
 msgid "The most-read writing across the network right now."
 msgstr "지금 네트워크에서 가장 많이 읽히는 글입니다."
@@ -2648,6 +2664,10 @@ msgstr "팔로우"
 #: src/components/reader/collection-builder.tsx
 msgid "Colophon"
 msgstr "콜로폰"
+
+#: src/components/user-settings-view.tsx
+msgid "Choose a preset or pick your own."
+msgstr ""
 
 #: src/components/ReaderVoiceMenu.tsx
 #: src/components/user-settings-view.tsx
@@ -2989,6 +3009,10 @@ msgstr "음성 샘플을 재생하지 못했습니다."
 msgid "{0, plural, one {# publication} other {{1} publications}}"
 msgstr ""
 
+#: src/components/user-settings-view.tsx
+msgid "Moss"
+msgstr ""
+
 #: src/components/reader/subscriptions-table.tsx
 msgid "Person"
 msgstr ""
@@ -3244,6 +3268,10 @@ msgstr "<0>app.standard-reader</0>의 권한은 DNS <1>_lexicon.*</1> TXT 레코
 #: src/components/reader/comments/comment-card.tsx
 msgid "on Margin"
 msgstr "Margin에서"
+
+#: src/components/user-settings-view.tsx
+msgid "Slate"
+msgstr ""
 
 #: src/components/reader/about-view.tsx
 msgid "Everything by one author"
@@ -3503,6 +3531,10 @@ msgstr "아직 없습니다 — 둘러보러 가볼까요."
 #: src/routes/_layout.search.tsx
 msgid "Searching…"
 msgstr "검색 중…"
+
+#: src/components/user-settings-view.tsx
+msgid "Rust"
+msgstr ""
 
 #: src/components/reader/app-shell.tsx
 msgid "Toggle list {name}"
@@ -4193,6 +4225,10 @@ msgstr "텍스트 선택 동작"
 #: src/routes/_layout.recommended.tsx
 msgid "Recommended"
 msgstr "추천"
+
+#: src/components/user-settings-view.tsx
+msgid "Teal"
+msgstr ""
 
 #: src/components/reader/cards.tsx
 msgid "This publication opted out of discovery, so it's hidden everywhere except here on your own profile."

@@ -833,6 +833,10 @@ msgstr ""
 msgid "{0} added to {listName}."
 msgstr ""
 
+#: src/components/user-settings-view.tsx
+msgid "Custom"
+msgstr ""
+
 #: src/components/reader/about-view.tsx
 msgid "Read the API docs"
 msgstr ""
@@ -891,6 +895,10 @@ msgstr ""
 #: src/components/reader/app-shell.tsx
 #: src/lib/sidebar-nav.ts
 msgid "Search"
+msgstr ""
+
+#: src/components/user-settings-view.tsx
+msgid "Camel"
 msgstr ""
 
 #: src/routes/_layout.latest.tsx
@@ -2098,6 +2106,10 @@ msgstr ""
 msgid "Share elsewhere"
 msgstr ""
 
+#: src/components/user-settings-view.tsx
+msgid "Plum"
+msgstr ""
+
 #: src/components/docs/docs-publishing-nav.tsx
 #~ msgid "Publishing guide"
 #~ msgstr ""
@@ -2472,6 +2484,10 @@ msgstr ""
 msgid "Browse the publication directory to find new writers."
 msgstr ""
 
+#: src/components/user-settings-view.tsx
+msgid "Accent color"
+msgstr ""
+
 #: src/routes/_layout.index.tsx
 msgid "The most-read writing across the network right now."
 msgstr ""
@@ -2647,6 +2663,10 @@ msgstr ""
 
 #: src/components/reader/collection-builder.tsx
 msgid "Colophon"
+msgstr ""
+
+#: src/components/user-settings-view.tsx
+msgid "Choose a preset or pick your own."
 msgstr ""
 
 #: src/components/ReaderVoiceMenu.tsx
@@ -2989,6 +3009,10 @@ msgstr ""
 msgid "{0, plural, one {# publication} other {{1} publications}}"
 msgstr ""
 
+#: src/components/user-settings-view.tsx
+msgid "Moss"
+msgstr ""
+
 #: src/components/reader/subscriptions-table.tsx
 msgid "Person"
 msgstr ""
@@ -3243,6 +3267,10 @@ msgstr ""
 
 #: src/components/reader/comments/comment-card.tsx
 msgid "on Margin"
+msgstr ""
+
+#: src/components/user-settings-view.tsx
+msgid "Slate"
 msgstr ""
 
 #: src/components/reader/about-view.tsx
@@ -3502,6 +3530,10 @@ msgstr ""
 #: src/components/reader/collection-builder.tsx
 #: src/routes/_layout.search.tsx
 msgid "Searching…"
+msgstr ""
+
+#: src/components/user-settings-view.tsx
+msgid "Rust"
 msgstr ""
 
 #: src/components/reader/app-shell.tsx
@@ -4192,6 +4224,10 @@ msgstr ""
 #: src/routes/_layout.discover.tsx
 #: src/routes/_layout.recommended.tsx
 msgid "Recommended"
+msgstr ""
+
+#: src/components/user-settings-view.tsx
+msgid "Teal"
 msgstr ""
 
 #: src/components/reader/cards.tsx

@@ -16,6 +16,7 @@ import { I18nProvider as AriaI18nProvider } from "react-aria-components";
 
 import { NavTelemetry } from "../components/nav-telemetry";
 import {
+  appAccentPrimary,
   editorialFonts,
   editorialPrimary,
   editorialShadow,
@@ -30,6 +31,10 @@ import {
   savedListsQueryOptions,
   sidebarQueryOptions,
 } from "../integrations/tanstack-query/shell-queries";
+import {
+  accentColorScaleVars,
+  resolveAccentSeedHex,
+} from "../lib/accent-color-scale";
 import { i18nForLocale } from "../lib/i18n";
 import { intlLocale } from "../lib/locale";
 import { getPublicUrlClient } from "../lib/public-url";
@@ -178,6 +183,10 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       user.getUsePublicationThemePreferenceQueryOptions.queryKey,
       bootstrap.usePublicationTheme,
     );
+    context.queryClient.setQueryData(
+      user.getAccentColorPreferenceQueryOptions.queryKey,
+      bootstrap.accentColor,
+    );
     if (bootstrap.shell) {
       context.queryClient.setQueryData(
         sidebarQueryOptions().queryKey,
@@ -263,6 +272,17 @@ function RootDocument({ children }: { children: React.ReactNode }) {
     refetchOnWindowFocus: false,
   });
   const themeMode = themePreference?.mode ?? DEFAULT_THEME_MODE;
+  // Accent color preference (Settings → Appearance, `#/lib/accent-color-scale`):
+  // `null` — the common case — keeps the hand-tuned `editorialPrimary` theme
+  // untouched below; only a resolved preset/custom seed swaps in
+  // `appAccentPrimary` and its `--app-accent-*` vars.
+  const { data: accentColorPreference } = useQuery({
+    ...user.getAccentColorPreferenceQueryOptions,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+  });
+  const accentSeed = resolveAccentSeedHex(accentColorPreference?.color ?? null);
+  const accentVars = accentSeed ? accentColorScaleVars(accentSeed) : null;
   // Resolved server-side (DB -> cookie -> Accept-Language) and hydrated with
   // the shell bootstrap, so `lang`/`dir` are correct on the first paint and
   // there is no flash of mis-directed layout.
@@ -322,7 +342,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
             ? rootStyles.embedShellBody
             : [
                 editorialUi,
-                editorialPrimary,
+                accentVars ? appAccentPrimary : editorialPrimary,
                 editorialFonts,
                 editorialShadow,
                 ui.bg,
@@ -330,6 +350,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
                 rootStyles.standaloneTitlebarBorder,
               ],
         )}
+        style={accentVars ?? undefined}
       >
         <PersistOAuthSavedHandle />
         <NavTelemetry />

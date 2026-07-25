@@ -20,6 +20,11 @@ import { listApi } from "#/integrations/tanstack-query/api-lists.functions";
 import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
 import type { DigestSectionKey } from "#/integrations/tanstack-query/api-user.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
+import {
+  ACCENT_COLOR_PRESETS,
+  accentColorPresetById,
+} from "#/lib/accent-color-presets";
+import { resolveAccentSeedHex } from "#/lib/accent-color-scale";
 import { DEFAULT_CUSTOM_GOOGLE_FONT } from "#/lib/google-fonts";
 import type { Locale } from "#/lib/locale";
 import { LOCALE_LABELS, LOCALES, PSEUDO_LOCALE, isLocale } from "#/lib/locale";
@@ -37,6 +42,7 @@ import {
 import { CUSTOMIZABLE_SIDEBAR_NAV } from "#/lib/sidebar-nav";
 import type { ThemeMode } from "#/lib/theme";
 import { isThemeMode } from "#/lib/theme";
+import { useAccentColorPreference } from "#/lib/use-accent-color-preference";
 import { useCountOldPostsAsUnread } from "#/lib/use-count-old-posts-as-unread";
 import { useLocale } from "#/lib/use-locale";
 import { useOpenCollectionsInMagazine } from "#/lib/use-open-collections-in-magazine";
@@ -57,6 +63,7 @@ import {
 } from "../design-system/alert-dialog";
 import { Avatar } from "../design-system/avatar";
 import { Button } from "../design-system/button";
+import { ColorPicker, DefaultColorEditor } from "../design-system/color-picker";
 import { Dialog, DialogBody, DialogHeader } from "../design-system/dialog";
 import { Flex } from "../design-system/flex";
 import { ProgressCircle } from "../design-system/progress-circle";
@@ -98,6 +105,16 @@ const THEME_OPTIONS: Array<{
   { id: "dark", label: msg`Dark`, icon: Moon },
   { id: "system", label: msg`System`, icon: Monitor },
 ];
+
+/** Display names for `ACCENT_COLOR_PRESETS` — see `#/lib/accent-color-presets`. */
+const ACCENT_COLOR_PRESET_LABELS: Record<string, MessageDescriptor> = {
+  camel: msg`Camel`,
+  moss: msg`Moss`,
+  teal: msg`Teal`,
+  slate: msg`Slate`,
+  plum: msg`Plum`,
+  rust: msg`Rust`,
+};
 
 /** The pseudo-locale is a translation-coverage tool, not a language to ship. */
 const LOCALE_OPTIONS: ReadonlyArray<Locale> = LOCALES.filter(
@@ -440,6 +457,8 @@ export function UserSettingsView() {
     useCountOldPostsAsUnread();
   const { enabled: usePublicationTheme, setEnabled: setUsePublicationTheme } =
     usePublicationThemePreference();
+  const { color: accentColor, setColor: setAccentColor } =
+    useAccentColorPreference();
 
   const { data: session } = useQuery(user.getSessionQueryOptions);
   const signedIn = Boolean(session?.user);
@@ -583,6 +602,19 @@ export function UserSettingsView() {
     });
   };
 
+  const accentColorPreset = accentColor
+    ? accentColorPresetById(accentColor)
+    : null;
+  // No preference stored yet → the trigger still shows the effective default
+  // (the "Camel" preset seed, matching `editorialPrimary`'s hand-tuned accent).
+  const accentColorSwatchValue =
+    resolveAccentSeedHex(accentColor) ?? ACCENT_COLOR_PRESETS[0].seed;
+  const accentColorLabel = accentColorPreset
+    ? i18n._(ACCENT_COLOR_PRESET_LABELS[accentColorPreset.id])
+    : accentColor
+      ? t`Custom`
+      : i18n._(ACCENT_COLOR_PRESET_LABELS.camel);
+
   return (
     <ReaderContent>
       <Masthead
@@ -628,6 +660,37 @@ export function UserSettingsView() {
               onChange={setUsePublicationTheme}
               aria-label={t`Use publication themes`}
             />
+          </SettingRow>
+          <Separator />
+          <SettingRow
+            label={t`Accent color`}
+            description={t`Choose a preset or pick your own.`}
+          >
+            <ColorPicker
+              label={accentColorLabel}
+              value={accentColorSwatchValue}
+              onChange={(color) => {
+                const hex = color.toString("hex");
+                const preset = ACCENT_COLOR_PRESETS.find(
+                  (candidate) =>
+                    candidate.seed.toLowerCase() === hex.toLowerCase(),
+                );
+                setAccentColor(preset ? preset.id : hex);
+              }}
+            >
+              <DefaultColorEditor
+                hasAlpha={false}
+                swatches={ACCENT_COLOR_PRESETS.map((preset) => preset.seed)}
+                onSwatchChange={(color) => {
+                  const hex = color.toString("hex");
+                  const preset = ACCENT_COLOR_PRESETS.find(
+                    (candidate) =>
+                      candidate.seed.toLowerCase() === hex.toLowerCase(),
+                  );
+                  setAccentColor(preset ? preset.id : hex);
+                }}
+              />
+            </ColorPicker>
           </SettingRow>
           <Separator />
           <SettingRow

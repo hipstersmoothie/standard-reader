@@ -833,6 +833,10 @@ msgstr "لا توجد منشورات مفهرسة بعد."
 msgid "{0} added to {listName}."
 msgstr ""
 
+#: src/components/user-settings-view.tsx
+msgid "Custom"
+msgstr ""
+
 #: src/components/reader/about-view.tsx
 msgid "Read the API docs"
 msgstr "اقرأ وثائق API"
@@ -892,6 +896,10 @@ msgstr "استبدال صورة الغلاف"
 #: src/lib/sidebar-nav.ts
 msgid "Search"
 msgstr "بحث"
+
+#: src/components/user-settings-view.tsx
+msgid "Camel"
+msgstr ""
 
 #: src/routes/_layout.latest.tsx
 msgid "Nothing trending yet"
@@ -2098,6 +2106,10 @@ msgstr ""
 msgid "Share elsewhere"
 msgstr "المشاركة في مكان آخر"
 
+#: src/components/user-settings-view.tsx
+msgid "Plum"
+msgstr ""
+
 #: src/components/docs/docs-publishing-nav.tsx
 #~ msgid "Publishing guide"
 #~ msgstr "دليل النشر"
@@ -2472,6 +2484,10 @@ msgstr "كن أول من يشارك خللًا أو فكرة أو سؤالًا."
 msgid "Browse the publication directory to find new writers."
 msgstr ""
 
+#: src/components/user-settings-view.tsx
+msgid "Accent color"
+msgstr ""
+
 #: src/routes/_layout.index.tsx
 msgid "The most-read writing across the network right now."
 msgstr "الأكثر قراءة عبر الشبكة الآن."
@@ -2648,6 +2664,10 @@ msgstr "متابعة"
 #: src/components/reader/collection-builder.tsx
 msgid "Colophon"
 msgstr "بيان الإصدار"
+
+#: src/components/user-settings-view.tsx
+msgid "Choose a preset or pick your own."
+msgstr ""
 
 #: src/components/ReaderVoiceMenu.tsx
 #: src/components/user-settings-view.tsx
@@ -2989,6 +3009,10 @@ msgstr "تعذّر تشغيل عيّنة الصوت."
 msgid "{0, plural, one {# publication} other {{1} publications}}"
 msgstr ""
 
+#: src/components/user-settings-view.tsx
+msgid "Moss"
+msgstr ""
+
 #: src/components/reader/subscriptions-table.tsx
 msgid "Person"
 msgstr ""
@@ -3244,6 +3268,10 @@ msgstr "تُحَل صلاحية <0>app.standard-reader</0> عبر سجلات DNS
 #: src/components/reader/comments/comment-card.tsx
 msgid "on Margin"
 msgstr "على Margin"
+
+#: src/components/user-settings-view.tsx
+msgid "Slate"
+msgstr ""
 
 #: src/components/reader/about-view.tsx
 msgid "Everything by one author"
@@ -3503,6 +3531,10 @@ msgstr "لا شيء بعد — ابدأ الاستكشاف."
 #: src/routes/_layout.search.tsx
 msgid "Searching…"
 msgstr "جارٍ البحث…"
+
+#: src/components/user-settings-view.tsx
+msgid "Rust"
+msgstr ""
 
 #: src/components/reader/app-shell.tsx
 msgid "Toggle list {name}"
@@ -4193,6 +4225,10 @@ msgstr "إجراءات تحديد النص"
 #: src/routes/_layout.recommended.tsx
 msgid "Recommended"
 msgstr "موصى به"
+
+#: src/components/user-settings-view.tsx
+msgid "Teal"
+msgstr ""
 
 #: src/components/reader/cards.tsx
 msgid "This publication opted out of discovery, so it's hidden everywhere except here on your own profile."

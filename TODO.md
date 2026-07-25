@@ -477,6 +477,21 @@ Build each on hip-ui components + StyleX tokens (no raw HTML/inline styles).
       Theme colors ride along on the existing header query (`selectPublicationHeader`) and on
       `article.collectionTheme` — no extra round trips (`#/lib/publication-theme-preference`,
       `usePublicationThemePreference`).
+- [x] **App-wide accent color preference** — Settings → Appearance row lets a signed-in reader
+      repaint the app's own accent token (not a publication's) from 6 curated presets (camel —
+      the existing default, moss, teal, slate, plum, rust) or any custom color, via the
+      design system's `ColorPicker` + `DefaultColorEditor` preset swatches. Reuses the
+      per-publication accent-scale derivation (`buildLightAccentScale` / `buildDarkAccentScale`,
+      exported from `publication-theme-scale.ts`) instead of hand-tuning a token set per option —
+      a preset is just a curated seed color run through the same generator
+      (`#/lib/accent-color-scale`, `#/lib/accent-color-presets`). A new `appAccentPrimary` StyleX
+      theme (`#/components/reader/theme`) reads `--app-accent-*` CSS vars, mirroring how
+      `publicationPrimary` reads `--pub-accent-*`; the root layout swaps it in for
+      `editorialPrimary` only when a preference is set, so a reader who never opens the setting
+      sees the exact hand-tuned default (unchanged pixels, including its P3 gamut variants).
+      Signed-in only, no cookie mirror: `user.accent_color` (`drizzle/0021_greedy_venom`,
+      preset id or `#rrggbb`), served through `getShellBootstrap`
+      (`#/lib/accent-color-preference`, `useAccentColorPreference`).
 - [x] **Publisher-native themes beyond `basicTheme`** — ingest now keeps the platform's own
       theme block as `theme_json.nativeTheme`, and `resolvePublicationTheme`
       (`#/lib/publication-theme-source`, unit-tested against real Leaflet/PCKT/Offprint records)

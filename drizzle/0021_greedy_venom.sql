@@ -1,0 +1,1 @@
+ALTER TABLE "user" ADD COLUMN "accent_color" text;

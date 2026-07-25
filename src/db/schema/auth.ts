@@ -66,6 +66,11 @@ export const user = pgTable("user", {
    * theme colors keep the editorial theme either way. See
    * `src/lib/publication-theme-preference.ts`. */
   usePublicationTheme: boolean("use_publication_theme"),
+  /** App-wide accent color preference: either an `#/lib/accent-color-presets`
+   * id or a literal `#rrggbb` hex; `null` = the default editorial "camel"
+   * accent (`editorialPrimary` in `#/components/reader/theme`). See
+   * `#/lib/accent-color-scale`. */
+  accentColor: text("accent_color"),
   /** `network` shows the whole-network home feed; `null` = follows (default). */
   homeScope: text("home_scope"),
   /** Comma-separated author-profile tab ids the owner has hidden from their

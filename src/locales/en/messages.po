@@ -833,6 +833,10 @@ msgstr "No posts indexed yet."
 msgid "{0} added to {listName}."
 msgstr "{0} added to {listName}."
 
+#: src/components/user-settings-view.tsx
+msgid "Custom"
+msgstr "Custom"
+
 #: src/components/reader/about-view.tsx
 msgid "Read the API docs"
 msgstr "Read the API docs"
@@ -892,6 +896,10 @@ msgstr "Replace cover image"
 #: src/lib/sidebar-nav.ts
 msgid "Search"
 msgstr "Search"
+
+#: src/components/user-settings-view.tsx
+msgid "Camel"
+msgstr "Camel"
 
 #: src/routes/_layout.latest.tsx
 msgid "Nothing trending yet"
@@ -2098,6 +2106,10 @@ msgstr "None of these publications have posted anything yet. Subscribe from the 
 msgid "Share elsewhere"
 msgstr "Share elsewhere"
 
+#: src/components/user-settings-view.tsx
+msgid "Plum"
+msgstr "Plum"
+
 #: src/components/docs/docs-publishing-nav.tsx
 #~ msgid "Publishing guide"
 #~ msgstr "Publishing guide"
@@ -2472,6 +2484,10 @@ msgstr "Be the first to share a bug, idea, or question."
 msgid "Browse the publication directory to find new writers."
 msgstr "Browse the publication directory to find new writers."
 
+#: src/components/user-settings-view.tsx
+msgid "Accent color"
+msgstr "Accent color"
+
 #: src/routes/_layout.index.tsx
 msgid "The most-read writing across the network right now."
 msgstr "The most-read writing across the network right now."
@@ -2648,6 +2664,10 @@ msgstr "Follow"
 #: src/components/reader/collection-builder.tsx
 msgid "Colophon"
 msgstr "Colophon"
+
+#: src/components/user-settings-view.tsx
+msgid "Choose a preset or pick your own."
+msgstr "Choose a preset or pick your own."
 
 #: src/components/ReaderVoiceMenu.tsx
 #: src/components/user-settings-view.tsx
@@ -2989,6 +3009,10 @@ msgstr "Couldn’t play the voice sample."
 msgid "{0, plural, one {# publication} other {{1} publications}}"
 msgstr "{0, plural, one {# publication} other {{1} publications}}"
 
+#: src/components/user-settings-view.tsx
+msgid "Moss"
+msgstr "Moss"
+
 #: src/components/reader/subscriptions-table.tsx
 msgid "Person"
 msgstr "Person"
@@ -3244,6 +3268,10 @@ msgstr "Authority for <0>app.standard-reader</0> resolves via DNS <1>_lexicon.*<
 #: src/components/reader/comments/comment-card.tsx
 msgid "on Margin"
 msgstr "on Margin"
+
+#: src/components/user-settings-view.tsx
+msgid "Slate"
+msgstr "Slate"
 
 #: src/components/reader/about-view.tsx
 msgid "Everything by one author"
@@ -3503,6 +3531,10 @@ msgstr "Nothing yet — go discover."
 #: src/routes/_layout.search.tsx
 msgid "Searching…"
 msgstr "Searching…"
+
+#: src/components/user-settings-view.tsx
+msgid "Rust"
+msgstr "Rust"
 
 #: src/components/reader/app-shell.tsx
 msgid "Toggle list {name}"
@@ -4193,6 +4225,10 @@ msgstr "Text selection actions"
 #: src/routes/_layout.recommended.tsx
 msgid "Recommended"
 msgstr "Recommended"
+
+#: src/components/user-settings-view.tsx
+msgid "Teal"
+msgstr "Teal"
 
 #: src/components/reader/cards.tsx
 msgid "This publication opted out of discovery, so it's hidden everywhere except here on your own profile."

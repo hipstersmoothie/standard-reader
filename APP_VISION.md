@@ -187,6 +187,17 @@ Sections, top to bottom:
   bottom of the page. The sidebar and mobile bar stay Standard Reader chrome.
   Signed-in only (`user.use_publication_theme`, `null` = off); publications with
   no colors of their own always keep the editorial theme.
+- **Accent color (preference):** settings-page control (Appearance) that repaints the
+  app's own accent token — not a publication's — from 6 curated presets (camel, the
+  existing default; moss; teal; slate; plum; rust) or any custom color, via the
+  design system's color picker. A preset is just a curated seed color run through the
+  same light+dark accent-scale derivation built for publication theming
+  (`buildLightAccentScale` / `buildDarkAccentScale`), so no per-option token set is
+  hand-tuned. A new `appAccentPrimary` StyleX theme reads `--app-accent-*` CSS vars set
+  via inline style, mirroring how `publicationPrimary` reads `--pub-accent-*`; the root
+  layout swaps it in for `editorialPrimary` only once a preference is set, so a reader
+  who never opens the setting sees the exact hand-tuned default. Signed-in only
+  (`user.accent_color`, `null` = the default camel accent).
 - **Publisher-native themes.** `site.standard.theme.basic` is the interop
   baseline (four opaque colors, light only), but records also carry the
   publishing platform's own theme under `theme`, discriminated by `$type`.

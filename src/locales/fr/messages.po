@@ -833,6 +833,10 @@ msgstr "Aucun article indexé pour l’instant."
 msgid "{0} added to {listName}."
 msgstr ""
 
+#: src/components/user-settings-view.tsx
+msgid "Custom"
+msgstr ""
+
 #: src/components/reader/about-view.tsx
 msgid "Read the API docs"
 msgstr "Lire la documentation de l’API"
@@ -892,6 +896,10 @@ msgstr "Remplacer l’image de couverture"
 #: src/lib/sidebar-nav.ts
 msgid "Search"
 msgstr "Rechercher"
+
+#: src/components/user-settings-view.tsx
+msgid "Camel"
+msgstr ""
 
 #: src/routes/_layout.latest.tsx
 msgid "Nothing trending yet"
@@ -2098,6 +2106,10 @@ msgstr ""
 msgid "Share elsewhere"
 msgstr "Partager ailleurs"
 
+#: src/components/user-settings-view.tsx
+msgid "Plum"
+msgstr ""
+
 #: src/components/docs/docs-publishing-nav.tsx
 #~ msgid "Publishing guide"
 #~ msgstr "Guide de publication"
@@ -2472,6 +2484,10 @@ msgstr "Soyez le premier à signaler un bug, une idée ou une question."
 msgid "Browse the publication directory to find new writers."
 msgstr ""
 
+#: src/components/user-settings-view.tsx
+msgid "Accent color"
+msgstr ""
+
 #: src/routes/_layout.index.tsx
 msgid "The most-read writing across the network right now."
 msgstr "Les textes les plus lus du réseau en ce moment."
@@ -2648,6 +2664,10 @@ msgstr "Suivre"
 #: src/components/reader/collection-builder.tsx
 msgid "Colophon"
 msgstr "Colophon"
+
+#: src/components/user-settings-view.tsx
+msgid "Choose a preset or pick your own."
+msgstr ""
 
 #: src/components/ReaderVoiceMenu.tsx
 #: src/components/user-settings-view.tsx
@@ -2989,6 +3009,10 @@ msgstr "Impossible de lire l'extrait vocal."
 msgid "{0, plural, one {# publication} other {{1} publications}}"
 msgstr ""
 
+#: src/components/user-settings-view.tsx
+msgid "Moss"
+msgstr ""
+
 #: src/components/reader/subscriptions-table.tsx
 msgid "Person"
 msgstr ""
@@ -3244,6 +3268,10 @@ msgstr "L'autorité pour <0>app.standard-reader</0> se résout via les enregistr
 #: src/components/reader/comments/comment-card.tsx
 msgid "on Margin"
 msgstr "sur Margin"
+
+#: src/components/user-settings-view.tsx
+msgid "Slate"
+msgstr ""
 
 #: src/components/reader/about-view.tsx
 msgid "Everything by one author"
@@ -3503,6 +3531,10 @@ msgstr "Rien pour l'instant — allez découvrir."
 #: src/routes/_layout.search.tsx
 msgid "Searching…"
 msgstr "Recherche…"
+
+#: src/components/user-settings-view.tsx
+msgid "Rust"
+msgstr ""
 
 #: src/components/reader/app-shell.tsx
 msgid "Toggle list {name}"
@@ -4193,6 +4225,10 @@ msgstr "Actions sur la sélection de texte"
 #: src/routes/_layout.recommended.tsx
 msgid "Recommended"
 msgstr "Recommandé"
+
+#: src/components/user-settings-view.tsx
+msgid "Teal"
+msgstr ""
 
 #: src/components/reader/cards.tsx
 msgid "This publication opted out of discovery, so it's hidden everywhere except here on your own profile."

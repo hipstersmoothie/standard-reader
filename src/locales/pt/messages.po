@@ -833,6 +833,10 @@ msgstr "Ainda não há publicações indexadas."
 msgid "{0} added to {listName}."
 msgstr ""
 
+#: src/components/user-settings-view.tsx
+msgid "Custom"
+msgstr ""
+
 #: src/components/reader/about-view.tsx
 msgid "Read the API docs"
 msgstr "Ler a documentação da API"
@@ -892,6 +896,10 @@ msgstr "Substituir imagem de capa"
 #: src/lib/sidebar-nav.ts
 msgid "Search"
 msgstr "Pesquisar"
+
+#: src/components/user-settings-view.tsx
+msgid "Camel"
+msgstr ""
 
 #: src/routes/_layout.latest.tsx
 msgid "Nothing trending yet"
@@ -2098,6 +2106,10 @@ msgstr "Nenhuma destas publicações publicou algo. Inscreva-se através da aba 
 msgid "Share elsewhere"
 msgstr "Compartilhar em outro lugar"
 
+#: src/components/user-settings-view.tsx
+msgid "Plum"
+msgstr ""
+
 #: src/components/docs/docs-publishing-nav.tsx
 #~ msgid "Publishing guide"
 #~ msgstr "Guia de publicação"
@@ -2472,6 +2484,10 @@ msgstr "Seja o primeiro a compartilhar um erro, uma ideia ou uma pergunta."
 msgid "Browse the publication directory to find new writers."
 msgstr ""
 
+#: src/components/user-settings-view.tsx
+msgid "Accent color"
+msgstr ""
+
 #: src/routes/_layout.index.tsx
 msgid "The most-read writing across the network right now."
 msgstr "Os textos mais lidos em toda a rede neste momento."
@@ -2648,6 +2664,10 @@ msgstr "Seguir"
 #: src/components/reader/collection-builder.tsx
 msgid "Colophon"
 msgstr "Colofão"
+
+#: src/components/user-settings-view.tsx
+msgid "Choose a preset or pick your own."
+msgstr ""
 
 #: src/components/ReaderVoiceMenu.tsx
 #: src/components/user-settings-view.tsx
@@ -2989,6 +3009,10 @@ msgstr "Não foi possível reproduzir a amostra de voz."
 msgid "{0, plural, one {# publication} other {{1} publications}}"
 msgstr "{0, plural, one {# publicação} other {{1} publicações}}"
 
+#: src/components/user-settings-view.tsx
+msgid "Moss"
+msgstr ""
+
 #: src/components/reader/subscriptions-table.tsx
 msgid "Person"
 msgstr ""
@@ -3244,6 +3268,10 @@ msgstr "A autoridade de <0>app.standard-reader</0> resolve-se através de regist
 #: src/components/reader/comments/comment-card.tsx
 msgid "on Margin"
 msgstr "no Margin"
+
+#: src/components/user-settings-view.tsx
+msgid "Slate"
+msgstr ""
 
 #: src/components/reader/about-view.tsx
 msgid "Everything by one author"
@@ -3503,6 +3531,10 @@ msgstr "Nada ainda — vá descobrir."
 #: src/routes/_layout.search.tsx
 msgid "Searching…"
 msgstr "Pesquisando…"
+
+#: src/components/user-settings-view.tsx
+msgid "Rust"
+msgstr ""
 
 #: src/components/reader/app-shell.tsx
 msgid "Toggle list {name}"
@@ -4193,6 +4225,10 @@ msgstr "Ações de seleção de texto"
 #: src/routes/_layout.recommended.tsx
 msgid "Recommended"
 msgstr "Recomendado"
+
+#: src/components/user-settings-view.tsx
+msgid "Teal"
+msgstr ""
 
 #: src/components/reader/cards.tsx
 msgid "This publication opted out of discovery, so it's hidden everywhere except here on your own profile."

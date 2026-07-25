@@ -92,6 +92,44 @@ export const editorialPrimary = stylex.createTheme(primaryColor, {
   },
 });
 
+/**
+ * App-wide accent color preference override — applied instead of
+ * `editorialPrimary` when a reader has chosen a preset or custom accent color
+ * (`#/lib/accent-color-scale`, Settings → Appearance). Values reference
+ * `--app-accent-*` CSS custom properties set at runtime via inline `style` on
+ * the same element, mirroring how `publicationPrimary`
+ * (`publication-theme-tokens.ts`) routes per-publication colors through
+ * `--pub-accent-*`. `linkColor`'s default already aliases `primaryColor.text2`,
+ * so links pick this up with no separate override.
+ */
+export const appAccentPrimary = stylex.createTheme(primaryColor, {
+  bg: "light-dark(var(--app-accent-bg-light), var(--app-accent-bg-dark))",
+  bgSubtle:
+    "light-dark(var(--app-accent-bgSubtle-light), var(--app-accent-bgSubtle-dark))",
+  component1:
+    "light-dark(var(--app-accent-component1-light), var(--app-accent-component1-dark))",
+  component2:
+    "light-dark(var(--app-accent-component2-light), var(--app-accent-component2-dark))",
+  component3:
+    "light-dark(var(--app-accent-component3-light), var(--app-accent-component3-dark))",
+  border1:
+    "light-dark(var(--app-accent-border1-light), var(--app-accent-border1-dark))",
+  border2:
+    "light-dark(var(--app-accent-border2-light), var(--app-accent-border2-dark))",
+  border3:
+    "light-dark(var(--app-accent-border3-light), var(--app-accent-border3-dark))",
+  solid1:
+    "light-dark(var(--app-accent-solid1-light), var(--app-accent-solid1-dark))",
+  solid2:
+    "light-dark(var(--app-accent-solid2-light), var(--app-accent-solid2-dark))",
+  text1:
+    "light-dark(var(--app-accent-text1-light), var(--app-accent-text1-dark))",
+  text2:
+    "light-dark(var(--app-accent-text2-light), var(--app-accent-text2-dark))",
+  textContrast:
+    "light-dark(var(--app-accent-textContrast-light), var(--app-accent-textContrast-dark))",
+});
+
 /** Newsreader (serif/display), Atkinson Hyperlegible Next (sans/UI), Spline Sans Mono (mono). */
 export const editorialFonts = stylex.createTheme(fontFamily, {
   // The `* Fallback: *` families are metric-adjusted @font-face rules generated
