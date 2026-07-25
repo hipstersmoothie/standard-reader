@@ -49,6 +49,23 @@ export interface ThemePalette {
   neutral: string | null;
   /** Secondary action colour (Offprint `secondary`). */
   secondary: string | null;
+  /**
+   * The canvas the page sits on, when it differs from the page surface. Leaflet
+   * paints a page card over a canvas; `background` is the card, this is what
+   * shows around it — and what a background image tiles across.
+   */
+  canvas: string | null;
+  /** Canvas background image (Leaflet `backgroundImage`). */
+  backgroundImage: PublicationBackgroundImage | null;
+}
+
+export interface PublicationBackgroundImage {
+  /** Blob CID; the URL needs the publication's DID, so it's built server-side. */
+  cid: string;
+  /** Tile rather than cover. */
+  repeat: boolean;
+  /** Tile width in px when repeating. */
+  width: number | null;
 }
 
 export interface ResolvedPublicationTheme {
@@ -68,6 +85,8 @@ export const EMPTY_PALETTE: ThemePalette = {
   link: null,
   neutral: null,
   secondary: null,
+  canvas: null,
+  backgroundImage: null,
 };
 
 interface Rgb {
@@ -194,6 +213,28 @@ function paletteFromBasicTheme(basicTheme: unknown): ThemePalette {
     link: null,
     neutral: null,
     secondary: null,
+    canvas: null,
+    backgroundImage: null,
+  };
+}
+
+/** `pub.leaflet.theme.backgroundImage` — a blob plus tiling hints. */
+function backgroundImageOf(value: unknown): PublicationBackgroundImage | null {
+  const image = asRecord(value);
+  if (!image) return null;
+  const blob = asRecord(image.image);
+  const ref = blob ? asRecord(blob.ref) : null;
+  const cid =
+    typeof ref?.$link === "string"
+      ? ref.$link
+      : typeof blob?.ref === "string"
+        ? blob.ref
+        : null;
+  if (!cid) return null;
+  return {
+    cid,
+    repeat: image.repeat === true,
+    width: typeof image.width === "number" ? image.width : null,
   };
 }
 
@@ -222,6 +263,9 @@ function paletteFromLeafletTheme(theme: Record<string, unknown>): ThemePalette {
     link: null,
     neutral: null,
     secondary: null,
+    // Only meaningful when the page sits on a distinct canvas.
+    canvas: showPage ? flattenColor(theme.backgroundColor, null) : null,
+    backgroundImage: backgroundImageOf(theme.backgroundImage),
   };
 }
 
@@ -254,6 +298,8 @@ function paletteFromOffprintTheme(
     link: null,
     neutral: flattenColor(colors.neutral, null),
     secondary: flattenColor(colors.secondary, null),
+    canvas: null,
+    backgroundImage: null,
   };
 }
 
@@ -276,6 +322,8 @@ function paletteFromPcktVariant(variant: unknown): ThemePalette {
     link: flattenColor(v.link, null),
     neutral: null,
     secondary: null,
+    canvas: null,
+    backgroundImage: null,
   };
 }
 
@@ -326,6 +374,8 @@ export function resolvePublicationTheme(
       link: light.link,
       neutral: light.neutral,
       secondary: light.secondary,
+      canvas: light.canvas,
+      backgroundImage: light.backgroundImage,
     },
     dark,
   };

@@ -1476,9 +1476,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
               {/* The footer sits inside the themed region so a publication's
                   colors run to the bottom of the content column. */}
-              <PublicationThemeScope>
+              <PublicationThemeScope footer={<SiteFooter />}>
                 {children}
-                <SiteFooter />
               </PublicationThemeScope>
             </div>
 

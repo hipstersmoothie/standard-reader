@@ -102,3 +102,42 @@ export const publicationLink = stylex.createTheme(linkColor, {
   hover:
     "light-dark(var(--pub-link-hover-light, var(--pub-accent-text1-light)), var(--pub-link-hover-dark, var(--pub-accent-text1-dark)))",
 });
+
+/**
+ * The page card: a route's own content, floated on the canvas image a
+ * publication's theme may supply.
+ *
+ * Applied by each page around the part that is *content* — the article's sticky
+ * reading chrome and the site footer are app furniture and stay outside it.
+ * Every value falls back to a no-op, so a page wearing this style is visually
+ * unchanged unless `PublicationThemeScope` is painting a canvas behind it (only
+ * then does it publish `--pub-page-*`).
+ *
+ * Deliberately no `overflow` — clipping here would break the sticky reading
+ * chrome, and the content already has its own padding.
+ */
+export const publicationPageCard = stylex.create({
+  card: {
+    backgroundColor: "var(--pub-page-surface, transparent)",
+    // Squircle corners, matching the app's other rounded surfaces.
+    cornerShape: "squircle",
+    borderRadius: "var(--pub-page-radius, 0)",
+    // Border width is variable too, so the card adds no box in the default
+    // no-canvas case — a transparent 1px border would still eat inner width.
+    borderColor: "var(--pub-page-border, transparent)",
+    borderStyle: "solid",
+    borderWidth: "var(--pub-page-border-width, 0)",
+    boxSizing: "border-box",
+    marginBlockEnd: "var(--pub-page-inset, 0)",
+    marginBlockStart: "var(--pub-page-inset, 0)",
+    // Centred at the reading measure, which the caller supplies — the content
+    // inside already sat at exactly this width, so without a canvas behind it
+    // this changes nothing.
+    marginInlineEnd: "auto",
+    marginInlineStart: "auto",
+    // Callers with their own measure (the article) override this by applying
+    // their width style after the card's.
+    maxWidth: "var(--pub-page-max-width, none)",
+    width: "100%",
+  },
+});

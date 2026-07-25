@@ -26,6 +26,14 @@ export interface CollectionTheme {
    * `app.standard-reader.publicationTheme` sidecar and drive magazine rendering.
    */
   publicationFonts?: PublicationFonts | null;
+  /** Canvas the page sits on, when Leaflet states one distinct from the page. */
+  canvas?: string | null;
+  /** Fixed canvas background image, resolved to a CDN URL server-side. */
+  publicationBackgroundImage?: {
+    url: string;
+    repeat: boolean;
+    width: number | null;
+  } | null;
 }
 
 function cleanFont(value: unknown): string | null {

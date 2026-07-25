@@ -32,6 +32,7 @@ import { EMPTY_CODE_HIGHLIGHTS } from "#/lib/theme";
 import { cdnImageUrl } from "#/server/atproto/blob";
 import { publicationFontsFromThemeJson } from "#/server/fonts/publication-fonts.server";
 import { countDocumentComments } from "#/server/reader/document-comments";
+import { publicationBackgroundImage } from "#/server/reader/publication-background";
 import { selectArticleCardsByUris } from "#/server/reader/queries";
 import { highlightLeafletCodeBlocks } from "#/server/shiki/highlighter";
 import { pickCodeTheme } from "#/server/shiki/match-theme";
@@ -304,7 +305,12 @@ export async function buildArticleDetail(
           surface: publicationTheme.surface ?? null,
           surfaceHover: publicationTheme.surfaceHover ?? null,
           border: publicationTheme.border ?? null,
+          canvas: publicationTheme.canvas ?? null,
           publicationFonts,
+          publicationBackgroundImage: publicationBackgroundImage(
+            row.pubThemeJson,
+            row.pubDid ?? row.did,
+          ),
           // The sidecar `app.standard-reader.publicationTheme` fonts still win
           // for collections/magazine rendering; `publicationFonts` is the
           // platform-native pair used by the reader's publication theming.

@@ -33,6 +33,17 @@ export interface PublicationThemeColors {
   link?: string | null;
   /** Stated neutral solid fill (Offprint `neutral`). */
   neutral?: string | null;
+  /** Canvas the page card sits on, when distinct from the page surface. */
+  canvas?: string | null;
+  /**
+   * Fixed canvas background image, already resolved to a URL server-side (the
+   * blob CID alone can't be turned into one without the publication's DID).
+   */
+  backgroundImage?: {
+    url: string;
+    repeat: boolean;
+    width: number | null;
+  } | null;
   /**
    * Google Fonts families the publisher chose, already resolved from their
    * platform's key format (see `#/lib/publication-fonts`). Unresolved fonts stay
@@ -96,6 +107,7 @@ export function themeColorsFromResolved(
     border: theme.light.border,
     link: theme.light.link,
     neutral: theme.light.neutral,
+    canvas: theme.light.canvas,
   };
 }
 
@@ -130,6 +142,7 @@ export function publicationThemeFromRow(row: {
     border: resolved.light.border,
     link: resolved.light.link,
     neutral: resolved.light.neutral,
+    canvas: resolved.light.canvas,
   };
 }
 

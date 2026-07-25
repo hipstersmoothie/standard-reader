@@ -144,6 +144,8 @@ describe("publicationThemeScaleVars neutral anchors", () => {
         link: null,
         neutral: null,
         secondary: null,
+        canvas: null,
+        backgroundImage: null,
       },
     });
     expect(v["--pub-bg-dark"]).toBe("#022c22");
@@ -194,6 +196,8 @@ describe("publicationThemeScaleVars neutral anchors", () => {
         link: "#5eead4",
         neutral: null,
         secondary: null,
+        canvas: null,
+        backgroundImage: null,
       },
     });
     // Light keeps the light palette's teal; dark takes the authored one.

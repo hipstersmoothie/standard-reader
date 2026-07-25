@@ -100,7 +100,7 @@ const styles = stylex.create({
     marginInlineStart: "auto",
     marginInlineEnd: "auto",
     maxWidth: "1320px",
-    paddingBottom: spacing["20"],
+    paddingBottom: `var(--pub-page-content-bottom, ${spacing["20"]})`,
     paddingInlineStart: {
       default: spacing["5"],
       "@media (min-width: 40rem)": spacing["10"],
