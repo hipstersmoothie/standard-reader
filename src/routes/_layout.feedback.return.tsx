@@ -122,6 +122,9 @@ export const Route = createFileRoute("/_layout/feedback/return")({
             title: draft.title,
             ...(draft.body ? { body: draft.body } : {}),
             tag: draft.tag as "bug" | "feature" | "question",
+            // Blob refs uploaded before the OAuth round trip — the bytes are
+            // already on the reader's PDS, waiting to be claimed by this record.
+            ...(draft.images?.length ? { images: draft.images } : {}),
           },
         });
         throw redirect({

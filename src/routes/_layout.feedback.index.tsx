@@ -38,6 +38,7 @@ import { Avatar } from "#/design-system/avatar";
 import { Button } from "#/design-system/button";
 import { Flex } from "#/design-system/flex";
 import { IconButton } from "#/design-system/icon-button";
+import { Lightbox } from "#/design-system/lightbox";
 import { Link } from "#/design-system/link";
 import {
   Menu,
@@ -59,6 +60,7 @@ import { amber } from "#/design-system/theme/colors/amber.stylex";
 import { blue } from "#/design-system/theme/colors/blue.stylex";
 import { green } from "#/design-system/theme/colors/green.stylex";
 import { red } from "#/design-system/theme/colors/red.stylex";
+import { mediaQueries } from "#/design-system/theme/media-queries.stylex";
 import { radius } from "#/design-system/theme/radius.stylex";
 import {
   gap,
@@ -429,6 +431,50 @@ const styles = stylex.create({
     overflowWrap: "anywhere",
     whiteSpace: "pre-line",
   },
+  attachments: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: gap.md,
+  },
+  // Landscape framing, matching the composer: a square crop of a window
+  // screenshot is a meaningless slice of chrome.
+  attachmentButton: {
+    backgroundColor: uiColor.bgSubtle,
+    borderColor: {
+      default: uiColor.border1,
+      ":is(:hover)": primaryColor.border3,
+    },
+    borderRadius: radius.md,
+    borderStyle: "solid",
+    borderWidth: 1,
+    cornerShape: "squircle",
+    cursor: "pointer",
+    display: "block",
+    height: spacing["16"],
+    outlineColor: primaryColor.solid1,
+    outlineOffset: spacing["0.5"],
+    outlineStyle: {
+      default: "none",
+      ":focus-visible": "solid",
+    },
+    outlineWidth: 2,
+    overflow: "hidden",
+    paddingBottom: 0,
+    paddingInlineEnd: 0,
+    paddingInlineStart: 0,
+    paddingTop: 0,
+    transitionDuration: {
+      default: animationDuration.fast,
+      [mediaQueries.reducedMotion]: "0s",
+    },
+    transitionProperty: "border-color",
+    width: spacing["24"],
+  },
+  attachmentImage: {
+    height: "100%",
+    objectFit: "cover",
+    width: "100%",
+  },
   cardFoot: {
     alignItems: "center",
     columnGap: gap["3xl"],
@@ -647,6 +693,60 @@ function implementedLabel(
   return tagFor(discussion) === "question" ? msg`Answered` : msg`Implemented`;
 }
 
+/**
+ * Screenshot attachments on a discussion, as a thumbnail strip that opens the
+ * shared `Lightbox`. Attachments are set at post time and never edited (see
+ * `UserinputDiscussion.images`), so there's no update path to worry about here.
+ */
+function DiscussionAttachments({
+  images,
+  title,
+}: {
+  images: NonNullable<UserinputDiscussion["images"]>;
+  title: string;
+}) {
+  const { t } = useLingui();
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
+
+  return (
+    <>
+      <div {...stylex.props(styles.attachments)}>
+        {images.map((image, index) => {
+          const alt = image.alt ?? t`Attachment ${index + 1} on “${title}”`;
+          return (
+            <button
+              key={image.url}
+              type="button"
+              {...stylex.props(styles.attachmentButton)}
+              aria-label={t`View ${alt}`}
+              onClick={() => setOpenIndex(index)}
+            >
+              <img
+                src={image.url}
+                alt={alt}
+                loading="lazy"
+                {...stylex.props(styles.attachmentImage)}
+              />
+            </button>
+          );
+        })}
+      </div>
+      <Lightbox
+        isOpen={openIndex !== null}
+        onOpenChange={(open) => {
+          if (!open) setOpenIndex(null);
+        }}
+        initialIndex={openIndex ?? 0}
+        alt={t`Attachments on “${title}”`}
+        images={images.map((image) => ({
+          src: image.url,
+          ...(image.alt ? { alt: image.alt } : {}),
+        }))}
+      />
+    </>
+  );
+}
+
 function DiscussionCard({
   discussion,
   signedIn,
@@ -707,6 +807,12 @@ function DiscussionCard({
       </div>
       {discussion.body ? (
         <p {...stylex.props(styles.cardBody)}>{discussion.body}</p>
+      ) : null}
+      {discussion.images?.length ? (
+        <DiscussionAttachments
+          images={discussion.images}
+          title={discussion.title}
+        />
       ) : null}
       <div {...stylex.props(styles.cardFoot)}>
         <Flex align="center" gap="sm" style={styles.author}>

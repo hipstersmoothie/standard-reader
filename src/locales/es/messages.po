@@ -405,6 +405,10 @@ msgstr "Elija una valoración."
 msgid "(current)"
 msgstr ""
 
+#: src/routes/_layout.feedback.index.tsx
+msgid "Attachments on “{title}”"
+msgstr ""
+
 #: src/components/reader/share-menu.tsx
 msgid "Portrait"
 msgstr "Vertical"
@@ -462,6 +466,11 @@ msgstr "{publicationCount, plural, one {publicación} other {publicaciones}}"
 #: src/components/docs/api-docs-intro.tsx
 msgid "Reader state endpoints also accept an optional <0>did</0> query param to read a reader's public indexed state without auth."
 msgstr "Los endpoints de estado del lector también aceptan un parámetro de consulta opcional <0>did</0> para leer el estado público indexado de un lector sin autenticación."
+
+#. placeholder {0}: index + 1
+#: src/routes/_layout.feedback.index.tsx
+msgid "Attachment {0} on “{title}”"
+msgstr ""
 
 #: src/components/user-settings-view.tsx
 msgid "Permanently remove data stored in your account. These actions delete records from your account and cannot be undone."
@@ -1158,6 +1167,14 @@ msgstr ""
 msgid "Embed subscribe"
 msgstr "Insertar botón de suscripción"
 
+#: src/components/feedback/feedback-image-picker.tsx
+msgid "That GIF is over 1 MB. Try a shorter clip, or attach a still image."
+msgstr ""
+
+#: src/components/feedback/feedback-image-picker.tsx
+#~ msgid "Add another screenshot"
+#~ msgstr ""
+
 #: src/components/reader/list-edit-modal.tsx
 msgid "What this list is about (shown on its public page)"
 msgstr "De qué trata esta lista (se muestra en su página pública)"
@@ -1534,6 +1551,10 @@ msgstr "Enlace copiado"
 msgid "Browser extension"
 msgstr "Extensión del navegador"
 
+#: src/components/feedback/feedback-image-picker.tsx
+msgid "Drop screenshots here"
+msgstr ""
+
 #: src/magazine/Magazine.tsx
 msgid "Setting the issue"
 msgstr "Estableciendo el número"
@@ -1860,6 +1881,10 @@ msgstr ""
 msgid "Background"
 msgstr "Fondo"
 
+#: src/components/feedback/feedback-image-picker.tsx
+msgid "Drop another screenshot"
+msgstr ""
+
 #: src/components/reader/article-view.tsx
 msgid "Nine pieces, laid out as spreads — made to be read slowly. Click the book icon in the header."
 msgstr "Nueve textos, dispuestos como páginas enfrentadas, hechos para leerse despacio. Haga clic en el icono del libro en el encabezado."
@@ -2029,6 +2054,10 @@ msgstr "Lo más reciente de todo lo que sigue"
 
 #: src/components/reader/subscriptions-table.tsx
 msgid "Added"
+msgstr ""
+
+#: src/components/feedback/feedback-image-picker.tsx
+msgid "Description for image {position}"
 msgstr ""
 
 #: src/components/user-settings-view.tsx
@@ -2450,6 +2479,10 @@ msgstr "No se encontraron publicaciones para esta cuenta."
 msgid "{0, plural, one {# publication} other {# publications}}"
 msgstr "{0, plural, one {# publicación} other {# publicaciones}}"
 
+#: src/components/feedback/feedback-image-picker.tsx
+msgid "Try again"
+msgstr ""
+
 #: src/components/reader/add-to-list-modal.tsx
 #: src/components/reader/collection-builder.tsx
 #: src/components/reader/list-edit-modal.tsx
@@ -2631,6 +2664,10 @@ msgstr "Solicitudes de funciones"
 msgid "View collection"
 msgstr "Ver la colección"
 
+#: src/components/feedback/feedback-image-picker.tsx
+msgid "Up to four screenshots. Large ones are resized before they upload."
+msgstr ""
+
 #: src/components/reader/about-view.tsx
 msgid "Turn on in Settings"
 msgstr "Activar en Configuración"
@@ -2688,6 +2725,10 @@ msgstr "Eliminar la lista"
 #: src/components/reader/about-view.tsx
 msgid "So we built the reader we wanted: a column you can size, a font you can choose, and a margin wide enough to think in."
 msgstr "Así que construimos el lector que queríamos: una columna que se puede dimensionar, una tipografía que se puede elegir y un margen lo bastante amplio para pensar en él."
+
+#: src/components/feedback/feedback-image-picker.tsx
+msgid "Could not upload that image."
+msgstr ""
 
 #: src/components/NavbarAuth.tsx
 #: src/routes/_layout.recommended.tsx
@@ -2904,6 +2945,10 @@ msgstr ""
 msgid "The voice used when you listen to an article with read aloud."
 msgstr "La voz que se usa al escuchar un artículo con la lectura en voz alta."
 
+#: src/components/feedback/feedback-image-picker.tsx
+msgid "Remove image {position}"
+msgstr ""
+
 #: src/components/user-settings-view.tsx
 msgid "Your five most recently saved-for-later articles."
 msgstr ""
@@ -2982,6 +3027,10 @@ msgstr "Explorar publicaciones"
 msgid "Standard Reader doesn’t trap your reading inside one app. Any slice of the network comes with its own RSS feed — pipe it straight into whatever reader you already use."
 msgstr "Standard Reader no encierra su lectura en una sola app. Cualquier parte de la red viene con su propio feed RSS: conéctelo directamente al lector que ya usa."
 
+#: src/components/feedback/feedback-image-picker.tsx
+#~ msgid "Choose images"
+#~ msgstr ""
+
 #: src/components/reader/privacy-view.tsx
 msgid "Third parties"
 msgstr "Terceros"
@@ -3020,6 +3069,10 @@ msgstr "Citado en"
 
 #: src/components/user-settings-view.tsx
 msgid "A couple of publications worth discovering."
+msgstr ""
+
+#: src/components/feedback/feedback-image-picker.tsx
+msgid "That image is too detailed to fit under 1 MB. Try cropping it first."
 msgstr ""
 
 #: src/components/reader/share-menu.tsx
@@ -3462,6 +3515,11 @@ msgstr "Mostrar implementadas"
 msgid "Drop a square image, or choose a file"
 msgstr "Suelte una imagen cuadrada o elija un archivo"
 
+#. placeholder {0}: images.length
+#: src/components/feedback/feedback-image-picker.tsx
+msgid "{0} of {FEEDBACK_IMAGE_MAX_COUNT} attached. Descriptions are optional, and help readers who use a screen reader."
+msgstr ""
+
 #: src/components/feedback/feedback-dialog.tsx
 msgid "Feedback submitted"
 msgstr "Comentario enviado"
@@ -3543,6 +3601,10 @@ msgstr "Vista previa"
 #: src/routes/_layout.friends.tsx
 #~ msgid "No one you follow publishes here yet"
 #~ msgstr ""
+
+#: src/components/feedback/feedback-image-picker.tsx
+msgid "Choose files"
+msgstr ""
 
 #: src/components/reader/terms-view.tsx
 msgid "You may read without an account. To follow publications, save articles, and take other social actions, you sign in with your Atmosphere account (for example via Bluesky OAuth). You are responsible for the security of your account and for the activity that happens through it. When you take an action that writes to your AT Protocol repository, those records live in <0>your</0> repository and are subject to the rules of the network and your account provider."
@@ -3721,6 +3783,10 @@ msgstr "Buscar comentarios"
 
 #: src/components/reader/subscriptions-unsubscribe-dialog.tsx
 msgid "Unsubscribe"
+msgstr ""
+
+#: src/components/feedback/feedback-image-picker.tsx
+msgid "Could not read that file."
 msgstr ""
 
 #: src/components/appearance-settings.tsx
@@ -4250,6 +4316,10 @@ msgstr "{unread} sin leer"
 msgid "Delete all bookmarks?"
 msgstr "¿Eliminar todos los marcadores?"
 
+#: src/components/feedback/feedback-dialog.tsx
+msgid "Uploading images…"
+msgstr ""
+
 #: src/components/docs/docs-nav-areas.ts
 #: src/components/docs/introduction-docs-page.tsx
 #: src/components/docs/labelers-docs-page.tsx
@@ -4313,6 +4383,10 @@ msgstr "{unreadCount} sin leer"
 #: src/components/reader/subscriptions-sheet.tsx
 msgid "Add publication"
 msgstr "Añadir publicación"
+
+#: src/components/feedback/feedback-image-picker.tsx
+#~ msgid "Drop screenshots here, or choose files"
+#~ msgstr ""
 
 #: src/components/feedback/feedback-dialog.tsx
 #: src/routes/_layout.feedback.index.tsx
@@ -4384,6 +4458,10 @@ msgstr "Buscar publicaciones o pegar un identificador"
 #: src/components/site-legal-links.tsx
 msgid "Source"
 msgstr "Fuente"
+
+#: src/components/feedback/feedback-image-picker.tsx
+msgid "That file isn't an image we can read."
+msgstr ""
 
 #: src/components/reader/text-selection-toolbar.tsx
 msgid "Text selection actions"
@@ -4607,6 +4685,11 @@ msgstr "{n, plural, one {# suscriptor} other {{value} suscriptores}}"
 #: src/components/reader/discover-topic-filters.tsx
 msgid "Filter by topic"
 msgstr "Filtrar por tema"
+
+#. placeholder {0}: image.file.name
+#: src/components/feedback/feedback-image-picker.tsx
+msgid "Uploading {0}"
+msgstr ""
 
 #: src/routes/_layout.latest.tsx
 msgid "No unread articles from your follows right now."
@@ -4921,6 +5004,10 @@ msgstr "Vistas de etiqueta"
 msgid "Closing credits on the end spread… (markdown supported)"
 msgstr "Créditos finales en la última doble página… (admite markdown)"
 
+#: src/routes/_layout.feedback.index.tsx
+msgid "View {alt}"
+msgstr ""
+
 #: src/magazine/Magazine.tsx
 msgid "{minutes}m"
 msgstr "{minutes}m"
@@ -4952,4 +5039,8 @@ msgstr ""
 
 #: src/components/appearance-settings.tsx
 msgid "Palette"
+msgstr ""
+
+#: src/components/feedback/feedback-image-picker.tsx
+msgid "Describe this image"
 msgstr ""

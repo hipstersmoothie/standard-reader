@@ -31,8 +31,15 @@ import { toasts } from "#/design-system/toast";
 import { auth } from "#/integrations/tanstack-query/api-auth.functions";
 import { userinputApi } from "#/integrations/tanstack-query/api-userinput.functions";
 import { isAtprotoScopeMissingError } from "#/lib/atproto/scope-error";
+import type { FeedbackImageDraft } from "#/lib/userinput/feedback-image-draft";
+import {
+  hasPendingUploads,
+  readyAttachments,
+} from "#/lib/userinput/feedback-image-draft";
 import type { FeedbackTag } from "#/lib/userinput/space";
 import { STANDARD_READER_FEEDBACK_TAGS } from "#/lib/userinput/space";
+
+import { FeedbackImagePicker } from "./feedback-image-picker";
 
 const styles = stylex.create({
   trigger: { display: "none" },
@@ -124,6 +131,7 @@ export function FeedbackDialog({ isOpen, onOpenChange }: FeedbackDialogProps) {
   const [tag, setTag] = useState<FeedbackTag>("bug");
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
+  const [images, setImages] = useState<Array<FeedbackImageDraft>>([]);
   const queryClient = useQueryClient();
 
   // Reset the form whenever the dialog is closed so a reopen is clean.
@@ -132,6 +140,7 @@ export function FeedbackDialog({ isOpen, onOpenChange }: FeedbackDialogProps) {
       setTag("bug");
       setTitle("");
       setBody("");
+      setImages([]);
     }
   }, [isOpen]);
 
@@ -144,6 +153,10 @@ export function FeedbackDialog({ isOpen, onOpenChange }: FeedbackDialogProps) {
         throw new Error(t`Please add a title.`);
       }
       const trimmedBody = body.trim();
+      // Blobs are already on the reader's PDS by now (the picker uploads on
+      // drop); only the refs travel with the record — or with the draft, if the
+      // scope upgrade sends us through OAuth first.
+      const attachments = readyAttachments(images);
 
       try {
         const result = await userinputApi.createUserinputDiscussion({
@@ -151,6 +164,7 @@ export function FeedbackDialog({ isOpen, onOpenChange }: FeedbackDialogProps) {
             title: trimmedTitle,
             ...(trimmedBody ? { body: trimmedBody } : {}),
             tag,
+            ...(attachments.length > 0 ? { images: attachments } : {}),
           },
         });
         await waitForDiscussionToAppear(queryClient, result.uri);
@@ -167,6 +181,7 @@ export function FeedbackDialog({ isOpen, onOpenChange }: FeedbackDialogProps) {
             title: trimmedTitle,
             ...(trimmedBody ? { body: trimmedBody } : {}),
             tag,
+            ...(attachments.length > 0 ? { images: attachments } : {}),
           },
         });
         const result = await auth.upgradeToUserinputFeedback({
@@ -198,6 +213,9 @@ export function FeedbackDialog({ isOpen, onOpenChange }: FeedbackDialogProps) {
   });
 
   const error = submitOrUpgrade.error;
+  // Submitting mid-upload would drop the still-pending attachments from the
+  // record, so hold the button until every blob ref has landed.
+  const uploading = hasPendingUploads(images);
 
   return (
     <Dialog
@@ -266,6 +284,12 @@ export function FeedbackDialog({ isOpen, onOpenChange }: FeedbackDialogProps) {
             autosize={false}
           />
 
+          <FeedbackImagePicker
+            images={images}
+            setImages={setImages}
+            isDisabled={submitOrUpgrade.isPending}
+          />
+
           {error ? (
             <span {...stylex.props(styles.error)}>
               {error instanceof Error
@@ -278,11 +302,11 @@ export function FeedbackDialog({ isOpen, onOpenChange }: FeedbackDialogProps) {
       <DialogFooter>
         <Button
           variant="primary"
-          isDisabled={title.trim().length === 0}
+          isDisabled={title.trim().length === 0 || uploading}
           isPending={submitOrUpgrade.isPending}
           onPress={() => submitOrUpgrade.mutate()}
         >
-          <Trans>Create</Trans>
+          {uploading ? <Trans>Uploading images…</Trans> : <Trans>Create</Trans>}
         </Button>
       </DialogFooter>
     </Dialog>

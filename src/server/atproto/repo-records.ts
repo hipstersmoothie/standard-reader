@@ -1043,6 +1043,11 @@ export async function deleteDocumentRecord(
  * to Standard Reader's feedback space.
  *
  * The body is omitted when empty so the lexicon's optional field stays unset.
+ * Same for `images` — up to four `#image` entries, each an already-uploaded
+ * blob ref (see {@link uploadBlob}) plus optional alt text. The lexicon's
+ * `#image` def is a plain object ref, not a union member, so the entries carry
+ * no `$type` (mirroring `app.bsky.embed.images#image`).
+ *
  * PDS validation is optimistic: app.userinput.* is a third-party namespace the
  * PDS may not have loaded, and `repoPutRecord` skips `validate:true` to allow
  * that (matching the rest of this module).
@@ -1057,6 +1062,7 @@ export async function createUserinputDiscussionRecord(
     body?: string | null;
     tags: Array<string>;
     createdAt: string;
+    images?: Array<{ blob: Record<string, unknown>; alt?: string | null }>;
   },
 ): Promise<{ uri: string; cid: string }> {
   const record: Record<string, unknown> = {
@@ -1073,6 +1079,13 @@ export async function createUserinputDiscussionRecord(
   const trimmedBody = input.body?.trim();
   if (trimmedBody) {
     record.body = trimmedBody;
+  }
+  const images = (input.images ?? []).slice(0, 4).map((entry) => {
+    const alt = entry.alt?.trim();
+    return alt ? { alt, image: entry.blob } : { image: entry.blob };
+  });
+  if (images.length > 0) {
+    record.images = images;
   }
   return repoPutRecord(client, {
     repo,

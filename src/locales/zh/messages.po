@@ -405,6 +405,10 @@ msgstr "请选择评分。"
 msgid "(current)"
 msgstr ""
 
+#: src/routes/_layout.feedback.index.tsx
+msgid "Attachments on “{title}”"
+msgstr ""
+
 #: src/components/reader/share-menu.tsx
 msgid "Portrait"
 msgstr "竖版"
@@ -462,6 +466,11 @@ msgstr "{publicationCount, plural, one {刊物} other {刊物}}"
 #: src/components/docs/api-docs-intro.tsx
 msgid "Reader state endpoints also accept an optional <0>did</0> query param to read a reader's public indexed state without auth."
 msgstr "读者状态接口还接受可选的 <0>did</0> 查询参数，无需鉴权即可读取某位读者的公开索引状态。"
+
+#. placeholder {0}: index + 1
+#: src/routes/_layout.feedback.index.tsx
+msgid "Attachment {0} on “{title}”"
+msgstr ""
 
 #: src/components/user-settings-view.tsx
 msgid "Permanently remove data stored in your account. These actions delete records from your account and cannot be undone."
@@ -1158,6 +1167,14 @@ msgstr ""
 msgid "Embed subscribe"
 msgstr "嵌入订阅按钮"
 
+#: src/components/feedback/feedback-image-picker.tsx
+msgid "That GIF is over 1 MB. Try a shorter clip, or attach a still image."
+msgstr ""
+
+#: src/components/feedback/feedback-image-picker.tsx
+#~ msgid "Add another screenshot"
+#~ msgstr ""
+
 #: src/components/reader/list-edit-modal.tsx
 msgid "What this list is about (shown on its public page)"
 msgstr "这个列表关于什么（显示在其公开页面上）"
@@ -1534,6 +1551,10 @@ msgstr "链接已复制"
 msgid "Browser extension"
 msgstr "浏览器扩展"
 
+#: src/components/feedback/feedback-image-picker.tsx
+msgid "Drop screenshots here"
+msgstr ""
+
 #: src/magazine/Magazine.tsx
 msgid "Setting the issue"
 msgstr "正在设置该期"
@@ -1860,6 +1881,10 @@ msgstr ""
 msgid "Background"
 msgstr "背景"
 
+#: src/components/feedback/feedback-image-picker.tsx
+msgid "Drop another screenshot"
+msgstr ""
+
 #: src/components/reader/article-view.tsx
 msgid "Nine pieces, laid out as spreads — made to be read slowly. Click the book icon in the header."
 msgstr "九篇文章，以跨页排版呈现——为慢读而作。点击页眉中的书本图标。"
@@ -2029,6 +2054,10 @@ msgstr "你订阅的所有人的最新内容"
 
 #: src/components/reader/subscriptions-table.tsx
 msgid "Added"
+msgstr ""
+
+#: src/components/feedback/feedback-image-picker.tsx
+msgid "Description for image {position}"
 msgstr ""
 
 #: src/components/user-settings-view.tsx
@@ -2450,6 +2479,10 @@ msgstr "未找到该账户下的刊物。"
 msgid "{0, plural, one {# publication} other {# publications}}"
 msgstr "{0, plural, one {# 个刊物} other {# 个刊物}}"
 
+#: src/components/feedback/feedback-image-picker.tsx
+msgid "Try again"
+msgstr ""
+
 #: src/components/reader/add-to-list-modal.tsx
 #: src/components/reader/collection-builder.tsx
 #: src/components/reader/list-edit-modal.tsx
@@ -2631,6 +2664,10 @@ msgstr "功能建议"
 msgid "View collection"
 msgstr "查看合集"
 
+#: src/components/feedback/feedback-image-picker.tsx
+msgid "Up to four screenshots. Large ones are resized before they upload."
+msgstr ""
+
 #: src/components/reader/about-view.tsx
 msgid "Turn on in Settings"
 msgstr "在设置中开启"
@@ -2688,6 +2725,10 @@ msgstr "删除列表"
 #: src/components/reader/about-view.tsx
 msgid "So we built the reader we wanted: a column you can size, a font you can choose, and a margin wide enough to think in."
 msgstr "于是我们做了自己想要的阅读器：可调宽度的正文栏、可自选的字体，以及宽到足以让人思考的页边。"
+
+#: src/components/feedback/feedback-image-picker.tsx
+msgid "Could not upload that image."
+msgstr ""
 
 #: src/components/NavbarAuth.tsx
 #: src/routes/_layout.recommended.tsx
@@ -2904,6 +2945,10 @@ msgstr ""
 msgid "The voice used when you listen to an article with read aloud."
 msgstr "朗读文章时使用的音色。"
 
+#: src/components/feedback/feedback-image-picker.tsx
+msgid "Remove image {position}"
+msgstr ""
+
 #: src/components/user-settings-view.tsx
 msgid "Your five most recently saved-for-later articles."
 msgstr ""
@@ -2982,6 +3027,10 @@ msgstr "浏览刊物"
 msgid "Standard Reader doesn’t trap your reading inside one app. Any slice of the network comes with its own RSS feed — pipe it straight into whatever reader you already use."
 msgstr "Standard Reader 不会把你的阅读困在一个应用里。网络的任何一部分都自带 RSS 源——直接接入你已经在用的阅读器即可。"
 
+#: src/components/feedback/feedback-image-picker.tsx
+#~ msgid "Choose images"
+#~ msgstr ""
+
 #: src/components/reader/privacy-view.tsx
 msgid "Third parties"
 msgstr "第三方"
@@ -3020,6 +3069,10 @@ msgstr "被引用于"
 
 #: src/components/user-settings-view.tsx
 msgid "A couple of publications worth discovering."
+msgstr ""
+
+#: src/components/feedback/feedback-image-picker.tsx
+msgid "That image is too detailed to fit under 1 MB. Try cropping it first."
 msgstr ""
 
 #: src/components/reader/share-menu.tsx
@@ -3462,6 +3515,11 @@ msgstr "显示已实现"
 msgid "Drop a square image, or choose a file"
 msgstr "拖入一张方形图片，或选择文件"
 
+#. placeholder {0}: images.length
+#: src/components/feedback/feedback-image-picker.tsx
+msgid "{0} of {FEEDBACK_IMAGE_MAX_COUNT} attached. Descriptions are optional, and help readers who use a screen reader."
+msgstr ""
+
 #: src/components/feedback/feedback-dialog.tsx
 msgid "Feedback submitted"
 msgstr "反馈已提交"
@@ -3543,6 +3601,10 @@ msgstr "预览"
 #: src/routes/_layout.friends.tsx
 #~ msgid "No one you follow publishes here yet"
 #~ msgstr ""
+
+#: src/components/feedback/feedback-image-picker.tsx
+msgid "Choose files"
+msgstr ""
 
 #: src/components/reader/terms-view.tsx
 msgid "You may read without an account. To follow publications, save articles, and take other social actions, you sign in with your Atmosphere account (for example via Bluesky OAuth). You are responsible for the security of your account and for the activity that happens through it. When you take an action that writes to your AT Protocol repository, those records live in <0>your</0> repository and are subject to the rules of the network and your account provider."
@@ -3721,6 +3783,10 @@ msgstr "搜索反馈"
 
 #: src/components/reader/subscriptions-unsubscribe-dialog.tsx
 msgid "Unsubscribe"
+msgstr ""
+
+#: src/components/feedback/feedback-image-picker.tsx
+msgid "Could not read that file."
 msgstr ""
 
 #: src/components/appearance-settings.tsx
@@ -4250,6 +4316,10 @@ msgstr "{unread} 篇未读"
 msgid "Delete all bookmarks?"
 msgstr "删除全部书签？"
 
+#: src/components/feedback/feedback-dialog.tsx
+msgid "Uploading images…"
+msgstr ""
+
 #: src/components/docs/docs-nav-areas.ts
 #: src/components/docs/introduction-docs-page.tsx
 #: src/components/docs/labelers-docs-page.tsx
@@ -4313,6 +4383,10 @@ msgstr "{unreadCount} 篇未读"
 #: src/components/reader/subscriptions-sheet.tsx
 msgid "Add publication"
 msgstr "添加刊物"
+
+#: src/components/feedback/feedback-image-picker.tsx
+#~ msgid "Drop screenshots here, or choose files"
+#~ msgstr ""
 
 #: src/components/feedback/feedback-dialog.tsx
 #: src/routes/_layout.feedback.index.tsx
@@ -4384,6 +4458,10 @@ msgstr "搜索刊物或粘贴 handle"
 #: src/components/site-legal-links.tsx
 msgid "Source"
 msgstr "来源"
+
+#: src/components/feedback/feedback-image-picker.tsx
+msgid "That file isn't an image we can read."
+msgstr ""
 
 #: src/components/reader/text-selection-toolbar.tsx
 msgid "Text selection actions"
@@ -4607,6 +4685,11 @@ msgstr "{n, plural, one {# 位订阅者} other {{value} 位订阅者}}"
 #: src/components/reader/discover-topic-filters.tsx
 msgid "Filter by topic"
 msgstr "按话题筛选"
+
+#. placeholder {0}: image.file.name
+#: src/components/feedback/feedback-image-picker.tsx
+msgid "Uploading {0}"
+msgstr ""
 
 #: src/routes/_layout.latest.tsx
 msgid "No unread articles from your follows right now."
@@ -4921,6 +5004,10 @@ msgstr "标签视图"
 msgid "Closing credits on the end spread… (markdown supported)"
 msgstr "尾页的结束语…（支持 markdown）"
 
+#: src/routes/_layout.feedback.index.tsx
+msgid "View {alt}"
+msgstr ""
+
 #: src/magazine/Magazine.tsx
 msgid "{minutes}m"
 msgstr "{minutes} 分"
@@ -4952,4 +5039,8 @@ msgstr ""
 
 #: src/components/appearance-settings.tsx
 msgid "Palette"
+msgstr ""
+
+#: src/components/feedback/feedback-image-picker.tsx
+msgid "Describe this image"
 msgstr ""

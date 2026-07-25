@@ -1,0 +1,1 @@
+ALTER TABLE "feedback_draft" ADD COLUMN "images" jsonb;

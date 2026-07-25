@@ -1,4 +1,6 @@
-import { index, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { index, jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+
+import type { FeedbackImageAttachment } from "#/lib/userinput/space";
 
 import { user } from "./auth.ts";
 
@@ -26,6 +28,15 @@ export const feedbackDraft = pgTable(
     body: text("body"),
     /** `"bug" | "feature" | "question"` — the space's declared tag values. */
     tag: text("tag").notNull(),
+    /**
+     * Image attachments as **blob refs**, not bytes. The reader's existing
+     * session already carries the `blob` scope (it's in `basicScope`), so the
+     * dialog uploads the images to their PDS *before* the OAuth round trip and
+     * only the refs wait here. The PDS holds an unreferenced blob well past the
+     * 15-minute draft TTL, so the record created on `/feedback/return` can
+     * still claim them.
+     */
+    images: jsonb("images").$type<Array<FeedbackImageAttachment>>(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

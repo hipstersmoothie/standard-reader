@@ -45,6 +45,46 @@ export type FeedbackTag =
   (typeof STANDARD_READER_FEEDBACK_TAGS)[number]["value"];
 
 /**
+ * Image attachment limits, taken verbatim from the `app.userinput.discussion`
+ * lexicon (`images` is `maxLength: 4` of `#image`, whose `image` blob declares
+ * `accept` + `maxSize`). The PDS enforces these on write, so the client
+ * downscales to fit rather than letting a 4 MB screenshot fail at the repo.
+ */
+export const FEEDBACK_IMAGE_MAX_COUNT = 4;
+export const FEEDBACK_IMAGE_MAX_BYTES = 1_000_000;
+export const FEEDBACK_IMAGE_MIME_TYPES = [
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+  "image/gif",
+] as const;
+
+/** Max graphemes the lexicon allows on an image's `alt`. */
+export const FEEDBACK_IMAGE_ALT_MAX_LENGTH = 2000;
+
+/** Plain JSON (TanStack server-fn payloads must be serializable; `unknown` isn't). */
+type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | Array<JsonValue>
+  | { [key: string]: JsonValue };
+
+/** A blob ref as it crosses a server-fn boundary — plain JSON, never `unknown`. */
+export type BlobRefJson = { [key: string]: JsonValue };
+
+/**
+ * An image attachment as carried between the client, the draft table, and the
+ * record writer: an already-uploaded blob ref (from `uploadFeedbackImage`) plus
+ * optional alt text. The bytes never round-trip — only the ref does.
+ */
+export interface FeedbackImageAttachment {
+  blob: BlobRefJson;
+  alt?: string;
+}
+
+/**
  * The constellation AppView that indexes userinput discussions. The
  * `app.userinput.discussion` lexicon says discussions are "indexed by
  * constellation at space.uri" — constellation is `constellation.microcosm.blue`,

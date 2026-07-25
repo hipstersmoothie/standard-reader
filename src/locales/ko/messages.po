@@ -405,6 +405,10 @@ msgstr "평점을 선택하세요."
 msgid "(current)"
 msgstr ""
 
+#: src/routes/_layout.feedback.index.tsx
+msgid "Attachments on “{title}”"
+msgstr ""
+
 #: src/components/reader/share-menu.tsx
 msgid "Portrait"
 msgstr "세로형"
@@ -462,6 +466,11 @@ msgstr "{publicationCount, plural, one {발행물} other {발행물}}"
 #: src/components/docs/api-docs-intro.tsx
 msgid "Reader state endpoints also accept an optional <0>did</0> query param to read a reader's public indexed state without auth."
 msgstr "리더 상태 엔드포인트는 인증 없이 독자의 공개 색인 상태를 읽기 위한 선택적 <0>did</0> 쿼리 파라미터도 받습니다."
+
+#. placeholder {0}: index + 1
+#: src/routes/_layout.feedback.index.tsx
+msgid "Attachment {0} on “{title}”"
+msgstr ""
 
 #: src/components/user-settings-view.tsx
 msgid "Permanently remove data stored in your account. These actions delete records from your account and cannot be undone."
@@ -1158,6 +1167,14 @@ msgstr ""
 msgid "Embed subscribe"
 msgstr "구독 임베드"
 
+#: src/components/feedback/feedback-image-picker.tsx
+msgid "That GIF is over 1 MB. Try a shorter clip, or attach a still image."
+msgstr ""
+
+#: src/components/feedback/feedback-image-picker.tsx
+#~ msgid "Add another screenshot"
+#~ msgstr ""
+
 #: src/components/reader/list-edit-modal.tsx
 msgid "What this list is about (shown on its public page)"
 msgstr "이 목록에 대한 설명(공개 페이지에 표시됩니다)"
@@ -1534,6 +1551,10 @@ msgstr "링크 복사됨"
 msgid "Browser extension"
 msgstr "브라우저 확장 프로그램"
 
+#: src/components/feedback/feedback-image-picker.tsx
+msgid "Drop screenshots here"
+msgstr ""
+
 #: src/magazine/Magazine.tsx
 msgid "Setting the issue"
 msgstr "호 설정 중"
@@ -1860,6 +1881,10 @@ msgstr ""
 msgid "Background"
 msgstr "배경"
 
+#: src/components/feedback/feedback-image-picker.tsx
+msgid "Drop another screenshot"
+msgstr ""
+
 #: src/components/reader/article-view.tsx
 msgid "Nine pieces, laid out as spreads — made to be read slowly. Click the book icon in the header."
 msgstr "펼침면으로 구성한 아홉 편의 글 — 천천히 읽도록 만들었습니다. 헤더의 책 아이콘을 클릭하세요."
@@ -2029,6 +2054,10 @@ msgstr "구독 중인 모든 곳의 최신 글"
 
 #: src/components/reader/subscriptions-table.tsx
 msgid "Added"
+msgstr ""
+
+#: src/components/feedback/feedback-image-picker.tsx
+msgid "Description for image {position}"
 msgstr ""
 
 #: src/components/user-settings-view.tsx
@@ -2450,6 +2479,10 @@ msgstr "이 계정에서 발행물을 찾을 수 없습니다."
 msgid "{0, plural, one {# publication} other {# publications}}"
 msgstr "{0, plural, one {발행물 #개} other {발행물 #개}}"
 
+#: src/components/feedback/feedback-image-picker.tsx
+msgid "Try again"
+msgstr ""
+
 #: src/components/reader/add-to-list-modal.tsx
 #: src/components/reader/collection-builder.tsx
 #: src/components/reader/list-edit-modal.tsx
@@ -2631,6 +2664,10 @@ msgstr "기능 요청"
 msgid "View collection"
 msgstr "컬렉션 보기"
 
+#: src/components/feedback/feedback-image-picker.tsx
+msgid "Up to four screenshots. Large ones are resized before they upload."
+msgstr ""
+
 #: src/components/reader/about-view.tsx
 msgid "Turn on in Settings"
 msgstr "설정에서 켜기"
@@ -2688,6 +2725,10 @@ msgstr "목록 삭제"
 #: src/components/reader/about-view.tsx
 msgid "So we built the reader we wanted: a column you can size, a font you can choose, and a margin wide enough to think in."
 msgstr "그래서 우리가 원하던 리더를 만들었습니다. 너비를 조절할 수 있는 단, 직접 고르는 글꼴, 그리고 생각할 여유가 있는 넓은 여백."
+
+#: src/components/feedback/feedback-image-picker.tsx
+msgid "Could not upload that image."
+msgstr ""
 
 #: src/components/NavbarAuth.tsx
 #: src/routes/_layout.recommended.tsx
@@ -2904,6 +2945,10 @@ msgstr ""
 msgid "The voice used when you listen to an article with read aloud."
 msgstr "읽어주기로 아티클을 들을 때 사용하는 음성입니다."
 
+#: src/components/feedback/feedback-image-picker.tsx
+msgid "Remove image {position}"
+msgstr ""
+
 #: src/components/user-settings-view.tsx
 msgid "Your five most recently saved-for-later articles."
 msgstr ""
@@ -2982,6 +3027,10 @@ msgstr "발행물 둘러보기"
 msgid "Standard Reader doesn’t trap your reading inside one app. Any slice of the network comes with its own RSS feed — pipe it straight into whatever reader you already use."
 msgstr "Standard Reader는 당신의 읽기를 하나의 앱에 가두지 않습니다. 네트워크의 어느 부분이든 자체 RSS 피드를 제공하니, 이미 쓰고 있는 리더로 바로 연결하세요."
 
+#: src/components/feedback/feedback-image-picker.tsx
+#~ msgid "Choose images"
+#~ msgstr ""
+
 #: src/components/reader/privacy-view.tsx
 msgid "Third parties"
 msgstr "제3자"
@@ -3020,6 +3069,10 @@ msgstr "인용된 곳"
 
 #: src/components/user-settings-view.tsx
 msgid "A couple of publications worth discovering."
+msgstr ""
+
+#: src/components/feedback/feedback-image-picker.tsx
+msgid "That image is too detailed to fit under 1 MB. Try cropping it first."
 msgstr ""
 
 #: src/components/reader/share-menu.tsx
@@ -3462,6 +3515,11 @@ msgstr "구현된 항목 보기"
 msgid "Drop a square image, or choose a file"
 msgstr "정사각형 이미지를 끌어다 놓거나 파일을 선택하세요"
 
+#. placeholder {0}: images.length
+#: src/components/feedback/feedback-image-picker.tsx
+msgid "{0} of {FEEDBACK_IMAGE_MAX_COUNT} attached. Descriptions are optional, and help readers who use a screen reader."
+msgstr ""
+
 #: src/components/feedback/feedback-dialog.tsx
 msgid "Feedback submitted"
 msgstr "피드백이 제출되었습니다"
@@ -3543,6 +3601,10 @@ msgstr "미리보기"
 #: src/routes/_layout.friends.tsx
 #~ msgid "No one you follow publishes here yet"
 #~ msgstr ""
+
+#: src/components/feedback/feedback-image-picker.tsx
+msgid "Choose files"
+msgstr ""
 
 #: src/components/reader/terms-view.tsx
 msgid "You may read without an account. To follow publications, save articles, and take other social actions, you sign in with your Atmosphere account (for example via Bluesky OAuth). You are responsible for the security of your account and for the activity that happens through it. When you take an action that writes to your AT Protocol repository, those records live in <0>your</0> repository and are subject to the rules of the network and your account provider."
@@ -3721,6 +3783,10 @@ msgstr "피드백 검색"
 
 #: src/components/reader/subscriptions-unsubscribe-dialog.tsx
 msgid "Unsubscribe"
+msgstr ""
+
+#: src/components/feedback/feedback-image-picker.tsx
+msgid "Could not read that file."
 msgstr ""
 
 #: src/components/appearance-settings.tsx
@@ -4250,6 +4316,10 @@ msgstr "안 읽음 {unread}"
 msgid "Delete all bookmarks?"
 msgstr "북마크를 모두 삭제할까요?"
 
+#: src/components/feedback/feedback-dialog.tsx
+msgid "Uploading images…"
+msgstr ""
+
 #: src/components/docs/docs-nav-areas.ts
 #: src/components/docs/introduction-docs-page.tsx
 #: src/components/docs/labelers-docs-page.tsx
@@ -4313,6 +4383,10 @@ msgstr "안 읽음 {unreadCount}"
 #: src/components/reader/subscriptions-sheet.tsx
 msgid "Add publication"
 msgstr "발행물 추가"
+
+#: src/components/feedback/feedback-image-picker.tsx
+#~ msgid "Drop screenshots here, or choose files"
+#~ msgstr ""
 
 #: src/components/feedback/feedback-dialog.tsx
 #: src/routes/_layout.feedback.index.tsx
@@ -4384,6 +4458,10 @@ msgstr "발행물 검색 또는 핸들 붙여넣기"
 #: src/components/site-legal-links.tsx
 msgid "Source"
 msgstr "출처"
+
+#: src/components/feedback/feedback-image-picker.tsx
+msgid "That file isn't an image we can read."
+msgstr ""
 
 #: src/components/reader/text-selection-toolbar.tsx
 msgid "Text selection actions"
@@ -4607,6 +4685,11 @@ msgstr "{n, plural, one {구독자 #명} other {구독자 {value}명}}"
 #: src/components/reader/discover-topic-filters.tsx
 msgid "Filter by topic"
 msgstr "주제로 필터"
+
+#. placeholder {0}: image.file.name
+#: src/components/feedback/feedback-image-picker.tsx
+msgid "Uploading {0}"
+msgstr ""
 
 #: src/routes/_layout.latest.tsx
 msgid "No unread articles from your follows right now."
@@ -4921,6 +5004,10 @@ msgstr "태그 보기"
 msgid "Closing credits on the end spread… (markdown supported)"
 msgstr "마지막 지면의 엔딩 크레딧… (마크다운 지원)"
 
+#: src/routes/_layout.feedback.index.tsx
+msgid "View {alt}"
+msgstr ""
+
 #: src/magazine/Magazine.tsx
 msgid "{minutes}m"
 msgstr "{minutes}분"
@@ -4952,4 +5039,8 @@ msgstr ""
 
 #: src/components/appearance-settings.tsx
 msgid "Palette"
+msgstr ""
+
+#: src/components/feedback/feedback-image-picker.tsx
+msgid "Describe this image"
 msgstr ""

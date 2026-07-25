@@ -12,8 +12,16 @@ import {
 import type { FeedbackDraft } from "#/db/schema/feedback-draft";
 import { UPVOTE_DRAFT_TTL_MS, upvoteDraft } from "#/db/schema/upvote-draft";
 import type { UpvoteDraft } from "#/db/schema/upvote-draft";
-import type { FeedbackStatus } from "#/lib/userinput/space";
+import type {
+  BlobRefJson,
+  FeedbackImageAttachment,
+  FeedbackStatus,
+} from "#/lib/userinput/space";
 import {
+  FEEDBACK_IMAGE_ALT_MAX_LENGTH,
+  FEEDBACK_IMAGE_MAX_BYTES,
+  FEEDBACK_IMAGE_MAX_COUNT,
+  FEEDBACK_IMAGE_MIME_TYPES,
   STANDARD_READER_SPACE_OWNER_DID,
   STANDARD_READER_SPACE_URI,
   USERINPUT_APPVIEW_BASE,
@@ -28,12 +36,14 @@ import {
   getAtprotoSessionForRequest,
   getReaderContextForRequest,
 } from "#/middleware/auth-session.server";
+import { blobCid, cdnImageUrl } from "#/server/atproto/blob";
 import { fetchRepoRecordWithFallback } from "#/server/atproto/fetch-record";
 import {
   createUserinputDiscussionRecord,
   createUserinputUpvoteRecord,
   deleteUserinputUpvoteRecord,
   listCollectionRecords,
+  uploadBlob,
 } from "#/server/atproto/repo-records";
 import { parseAtUri } from "#/server/atproto/uri";
 import { observe } from "#/server/observability/log";
@@ -67,6 +77,7 @@ async function createFeedbackDraft(input: {
   title: string;
   body: string | null;
   tag: "bug" | "feature" | "question";
+  images: Array<FeedbackImageAttachment> | null;
 }): Promise<{ id: string }> {
   const { db } = await import("#/db/index.server");
   const id = crypto.randomUUID();
@@ -76,6 +87,7 @@ async function createFeedbackDraft(input: {
     title: input.title,
     body: input.body,
     tag: input.tag,
+    images: input.images,
     expiresAt: new Date(Date.now() + FEEDBACK_DRAFT_TTL_MS),
   });
   return { id };
@@ -101,6 +113,20 @@ async function consumeFeedbackDraft(
   return deleted;
 }
 
+/**
+ * An image attachment on the wire: the blob ref returned by
+ * {@link uploadFeedbackImage} plus optional alt text. The ref is passed through
+ * opaquely (same as the collections cover-image path) — the PDS is the one that
+ * validates it when the record is written.
+ */
+const feedbackImageInput = z.object({
+  blob: z.custom<BlobRefJson>(
+    (value) => typeof value === "object" && value !== null,
+    { message: "Invalid image reference" },
+  ),
+  alt: z.string().trim().max(FEEDBACK_IMAGE_ALT_MAX_LENGTH).optional(),
+});
+
 const discussionInput = z.object({
   title: z
     .string()
@@ -111,7 +137,51 @@ const discussionInput = z.object({
     .max(20_000, "Body is too long (20000 characters max)")
     .optional(),
   tag: z.enum(["bug", "feature", "question"]),
+  images: z.array(feedbackImageInput).max(FEEDBACK_IMAGE_MAX_COUNT).optional(),
 });
+
+const uploadFeedbackImageInput = z.object({
+  dataBase64: z.string().min(1),
+  mimeType: z.enum(FEEDBACK_IMAGE_MIME_TYPES),
+});
+
+/**
+ * Upload one feedback screenshot to the reader's own PDS and return the blob
+ * ref to attach to the discussion record.
+ *
+ * Only the `blob` scope is needed here — it's part of `basicScope`, so every
+ * signed-in reader already has it. That's deliberate: the dialog can upload
+ * before it knows whether the `app.userinput.discussion` scope upgrade is
+ * required, and the refs survive the OAuth round trip inside the draft row.
+ *
+ * The size ceiling is the lexicon's (`maxSize: 1000000`); the client downscales
+ * to fit, and this is the backstop for anything that slips through.
+ */
+const uploadFeedbackImage = createServerFn({ method: "POST" })
+  .validator(uploadFeedbackImageInput)
+  .handler(
+    observe("userinput.uploadFeedbackImage", async ({ data }, span) => {
+      const session = await getAtprotoSessionForRequest(getRequest());
+      if (!session) throw new Error("Sign in to attach an image.");
+      span.set("did", session.did);
+      span.set("mimeType", data.mimeType);
+
+      const bytes = new Uint8Array(Buffer.from(data.dataBase64, "base64"));
+      span.set("bytes", bytes.byteLength);
+      if (bytes.byteLength === 0) {
+        throw new Error("That image is empty.");
+      }
+      if (bytes.byteLength > FEEDBACK_IMAGE_MAX_BYTES) {
+        throw new Error("Images must be under 1 MB.");
+      }
+      const blob = await uploadBlob(session.client, bytes, data.mimeType);
+      const cid = blobCid(blob as Parameters<typeof blobCid>[0]);
+      return {
+        blob: blob as BlobRefJson,
+        url: cid ? cdnImageUrl(session.did, cid, "jpeg") : null,
+      };
+    }),
+  );
 
 /**
  * Create an `app.userinput.discussion` record in the reader's repo. Throws if
@@ -139,6 +209,7 @@ const createUserinputDiscussion = createServerFn({ method: "POST" })
       }
       span.set("did", session.did);
       span.set("tag", data.tag);
+      span.set("images", data.images?.length ?? 0);
 
       const space = await resolveStandardReaderSpaceStrongRef();
       const createdAt = new Date().toISOString();
@@ -152,6 +223,7 @@ const createUserinputDiscussion = createServerFn({ method: "POST" })
           body: data.body ?? null,
           tags: [data.tag],
           createdAt,
+          ...(data.images?.length ? { images: data.images } : {}),
         },
       );
       span.set("uri", uri);
@@ -163,6 +235,7 @@ const draftInput = z.object({
   title: z.string().min(1).max(600),
   body: z.string().max(20_000).optional(),
   tag: z.enum(["bug", "feature", "question"]),
+  images: z.array(feedbackImageInput).max(FEEDBACK_IMAGE_MAX_COUNT).optional(),
 });
 
 /**
@@ -182,6 +255,7 @@ const createFeedbackDraftFn = createServerFn({ method: "POST" })
       title: data.title,
       body: data.body ?? null,
       tag: data.tag,
+      images: data.images?.length ? data.images : null,
     });
     return draft;
   });
@@ -242,6 +316,18 @@ export interface UserinputDiscussion {
   createdAt: string;
   upvoteCount: number;
   status?: FeedbackStatus;
+  /**
+   * Image attachments, already resolved to CDN URLs. Attachments are fixed at
+   * post time: `app.userinput.edit` snapshots only title/body/tags, so an edit
+   * can never add or remove them.
+   */
+  images?: Array<UserinputDiscussionImage>;
+}
+
+/** A discussion image attachment, resolved for the browser. */
+export interface UserinputDiscussionImage {
+  url: string;
+  alt: string | null;
 }
 
 /**
@@ -316,6 +402,28 @@ interface DiscussionRecordValue {
   tags?: Array<string>;
   createdAt: string;
   space?: { uri: string; cid?: string };
+  images?: Array<{ alt?: string; image?: unknown }>;
+}
+
+/**
+ * Resolve a discussion's `images` to browser-usable URLs. The blobs live in the
+ * *author's* repo, so they're addressed by the author DID + blob CID through
+ * the Bluesky CDN — the raw PDS `getBlob` URL is `private`/`attachment` and
+ * unusable as an `<img src>` (see `server/atproto/blob.ts`). Entries whose blob
+ * ref won't parse are dropped rather than rendering a broken image.
+ */
+function resolveDiscussionImages(
+  did: string,
+  value: DiscussionRecordValue,
+): Array<UserinputDiscussionImage> {
+  const out: Array<UserinputDiscussionImage> = [];
+  for (const entry of value.images ?? []) {
+    const cid = blobCid(entry?.image as Parameters<typeof blobCid>[0]);
+    if (!cid) continue;
+    out.push({ alt: entry.alt?.trim() || null, url: cdnImageUrl(did, cid) });
+    if (out.length >= FEEDBACK_IMAGE_MAX_COUNT) break;
+  }
+  return out;
 }
 
 /**
@@ -630,6 +738,7 @@ const listFeedbackDiscussions = createServerFn({ method: "GET" })
         // supersedes its title/body/tags. `createdAt` stays the original — it's
         // when the discussion was posted, not when it was last touched.
         const edit = edits.get(r.uri);
+        const images = resolveDiscussionImages(did, r.value);
         return {
           uri: r.uri,
           ...(r.cid ? { cid: r.cid } : {}),
@@ -640,6 +749,7 @@ const listFeedbackDiscussions = createServerFn({ method: "GET" })
           createdAt: r.value.createdAt,
           upvoteCount: upvoteCounts.get(r.uri) ?? 0,
           ...(status ? { status } : {}),
+          ...(images.length > 0 ? { images } : {}),
         };
       });
 
@@ -872,6 +982,7 @@ const consumeUpvoteDraftFn = createServerFn({ method: "GET" })
 
 export const userinputApi = {
   createUserinputDiscussion,
+  uploadFeedbackImage,
   createFeedbackDraft: createFeedbackDraftFn,
   consumeFeedbackDraft: consumeFeedbackDraftFn,
   listFeedbackDiscussions,
