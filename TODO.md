@@ -453,6 +453,12 @@ Build each on hip-ui components + StyleX tokens (no raw HTML/inline styles).
       `/feedback/return?upvote=<id>` consumes it and creates the record. The
       card optimistically marks upvoted (+1) and reconciles on settle. Subject
       cid is re-resolved server-side at write time.
+- [x] **"Show only mine" feedback filter** — a toolbar toggle (next to the
+      show/hide implemented control) filters `/feedback` to the signed-in
+      reader's own discussions by matching `author.did` against the session DID,
+      so readers can quickly retrieve the bugs, feature requests, and questions
+      they've submitted. Signed-in only; empty state prompts them to submit
+      feedback when they have none.
 - [x] Global follow toggle reflects everywhere instantly (optimistic).
 - [x] Theme picker (light / dark / system) + editorial dark tokens + Shiki `standard-reader-dark`.
 - [x] Theme tokens / dark mode parity with prototype (remaining hardcoded surfaces).
