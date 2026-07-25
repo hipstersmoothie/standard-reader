@@ -86,14 +86,23 @@ export function useSidebarPref(signedIn: boolean): SidebarPrefController {
     }
     const current =
       queryClient.getQueryData<SidebarPref>(options.queryKey) ?? EMPTY;
-    mutate({ listOrder: current.listOrder, collapsed: current.collapsed });
+    // Send the whole record: the server fn replaces the singleton, so any field
+    // left out is written back as its default (and silently lost).
+    mutate({
+      listOrder: current.listOrder,
+      collapsed: current.collapsed,
+      customizeNav: current.customizeNav,
+      hiddenNav: current.hiddenNav,
+    });
   }, [queryClient, options.queryKey, mutate]);
 
   // Flush any pending collapse write on unmount so it isn't dropped.
+  const flushRef = useRef(flush);
+  flushRef.current = flush;
   useEffect(
     () => () => {
       if (timer.current) {
-        clearTimeout(timer.current);
+        flushRef.current();
       }
     },
     [],
