@@ -92,6 +92,7 @@ msgstr "Artikel hinzufügen"
 
 #: src/components/reader/app-shell.tsx
 #: src/components/reader/article-below-fold.tsx
+#: src/lib/sidebar-nav.ts
 #: src/routes/_layout.discover.tsx
 #: src/routes/_layout.friends.tsx
 msgid "Discover"
@@ -229,6 +230,10 @@ msgstr "{publicationCountText} · {articleCountText}"
 #: src/components/reader/collection-builder.tsx
 msgid "Search by title or author, or paste a URL or at:// URI"
 msgstr "Nach Titel oder Autor suchen oder eine URL bzw. at://-URI einfügen"
+
+#: src/components/user-settings-view.tsx
+msgid "Show {itemLabel} in the sidebar"
+msgstr ""
 
 #: src/routes/collection.$did.$rkey.tsx
 msgid "Opening the collection…"
@@ -623,6 +628,10 @@ msgstr "Überblick"
 msgid "Nothing saved yet"
 msgstr "Noch nichts gespeichert"
 
+#: src/components/user-settings-view.tsx
+msgid "Turn on to choose which items appear in the sidebar. Subscriptions and your lists always stay."
+msgstr ""
+
 #: src/routes/_layout.tag.$tag.tsx
 msgid "{unfollowedCount, plural, one {Subscribe to {formattedUnfollowedCount} publication?} other {Subscribe to {formattedUnfollowedCount} publications?}}"
 msgstr "{unfollowedCount, plural, one {{formattedUnfollowedCount} Publikation abonnieren?} other {{formattedUnfollowedCount} Publikationen abonnieren?}}"
@@ -880,6 +889,7 @@ msgstr "Titelbild ersetzen"
 
 #: src/components/labelers-settings-view.tsx
 #: src/components/reader/app-shell.tsx
+#: src/lib/sidebar-nav.ts
 msgid "Search"
 msgstr "Suchen"
 
@@ -1348,6 +1358,7 @@ msgstr "Keine Lust, noch eine App zu prüfen? Abonnieren Sie eine wöchentliche 
 #: src/components/reader/app-shell.tsx
 #: src/components/reader/collection-builder.tsx
 #: src/components/reader/collections-upgrade-gate.tsx
+#: src/lib/sidebar-nav.ts
 #: src/routes/_layout.collections.edit.$rkey.tsx
 #: src/routes/_layout.collections.index.tsx
 #: src/routes/_layout.collections.new.tsx
@@ -1960,6 +1971,10 @@ msgstr ""
 msgid "Original"
 msgstr "Original"
 
+#: src/components/user-settings-view.tsx
+msgid "Customize sidebar"
+msgstr ""
+
 #: src/magazine/Magazine.tsx
 msgid "Next"
 msgstr "Weiter"
@@ -1987,6 +2002,7 @@ msgstr "Schriften"
 
 #: src/components/Header.tsx
 #: src/components/reader/app-shell.tsx
+#: src/lib/sidebar-nav.ts
 msgid "Home"
 msgstr "Start"
 
@@ -3881,6 +3897,10 @@ msgstr "Wenn Sie aus der Erweiterung heraus speichern oder folgen, schreibt {SIT
 msgid "Create series"
 msgstr "Reihe erstellen"
 
+#: src/components/user-settings-view.tsx
+msgid "Sidebar"
+msgstr ""
+
 #: src/components/onboarding/step-settings.tsx
 msgid "Reading & privacy"
 msgstr "Lesen & Datenschutz"
@@ -4163,6 +4183,7 @@ msgid "A quiet place to begin"
 msgstr "Ein ruhiger Ort zum Anfangen"
 
 #: src/components/reader/app-shell.tsx
+#: src/lib/sidebar-nav.ts
 #: src/routes/_layout.latest.tsx
 msgid "Latest"
 msgstr "Neueste"
@@ -4480,6 +4501,7 @@ msgstr "Noch nicht auf Standard Reader"
 #: src/components/reader/article-view.tsx
 #: src/components/reader/cards.tsx
 #: src/components/user-settings-view.tsx
+#: src/lib/sidebar-nav.ts
 #: src/routes/_layout.saved.tsx
 msgid "Saved for later"
 msgstr "Für später gespeichert"
