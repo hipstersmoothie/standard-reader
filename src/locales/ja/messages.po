@@ -2372,6 +2372,10 @@ msgstr "一致するユーザーはいません。"
 msgid "Empty list."
 msgstr "リストは空です。"
 
+#: src/routes/_layout.feedback.index.tsx
+msgid "Show only mine"
+msgstr ""
+
 #: src/components/reader/collection-theme-editor.tsx
 msgid "Preview mode"
 msgstr "プレビューモード"
@@ -2511,6 +2515,10 @@ msgstr "コレクションを表示"
 #: src/components/reader/about-view.tsx
 msgid "Turn on in Settings"
 msgstr "設定でオンにする"
+
+#: src/routes/_layout.feedback.index.tsx
+msgid "Share a bug, idea, or question to see it here."
+msgstr ""
 
 #: src/components/labeler-detail-view.tsx
 msgid "This labeler didn’t publish any label definitions."
@@ -3041,6 +3049,10 @@ msgstr ""
 msgid "Worth discovering"
 msgstr "見つける価値のあるもの"
 
+#: src/routes/_layout.feedback.index.tsx
+msgid "You haven't submitted any feedback yet."
+msgstr ""
+
 #: src/components/reader/collection-theme-editor.tsx
 #: src/routes/_layout.collections.index.tsx
 msgid "Theme & fonts"
@@ -3252,6 +3264,10 @@ msgstr "フィードバックを検索..."
 #: src/components/reader/page-reader-bar.tsx
 msgid "Follow along"
 msgstr "追って読む"
+
+#: src/routes/_layout.feedback.index.tsx
+msgid "Show all feedback"
+msgstr ""
 
 #: src/components/reader/add-publication-modal.tsx
 msgid "Couldn't resolve that handle."
