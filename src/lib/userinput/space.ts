@@ -17,6 +17,16 @@ export const STANDARD_READER_SPACE_URI =
 
 /** The space record's repo (used to look up the latest CID). */
 const SPACE_REPO_DID = "did:plc:f4os2wz5fjl56xpwcvtnqu7m";
+
+/**
+ * The DID that owns the feedback space — i.e. us. Exported so the read path can
+ * decide whose `app.userinput.edit` records it will honor: an edit is only
+ * trusted from the discussion's own author or from the space owner (moderator
+ * edits). Anyone can write an edit record pointing at anyone else's discussion,
+ * so this is a trust boundary, not a nicety.
+ */
+export const STANDARD_READER_SPACE_OWNER_DID = SPACE_REPO_DID;
+
 const SPACE_COLLECTION = "app.userinput.space";
 const SPACE_RKEY = "3mprrc56lgd2e";
 
@@ -72,6 +82,18 @@ export const USERINPUT_DISCUSSION_SOURCE = "app.userinput.discussion:space.uri";
  * `blue.microcosm.links.getBacklinksCount` to fetch per-discussion vote totals.
  */
 export const USERINPUT_UPVOTE_SOURCE = "app.userinput.upvote:subject.uri";
+
+/**
+ * Backlink source descriptor for edits pointing at a discussion.
+ *
+ * userinput.app never mutates a discussion record when the author edits it —
+ * the original record keeps its first-draft `title`/`body`/`tags` forever, and
+ * each edit is appended as a separate `app.userinput.edit` record carrying a
+ * full snapshot of the editable fields plus a `subject` strongRef back to the
+ * discussion. Reading the discussion record alone therefore always renders the
+ * *first* version. Latest `createdAt` wins, same as `app.userinput.status`.
+ */
+export const USERINPUT_EDIT_SOURCE = "app.userinput.edit:subject.uri";
 
 /** PDS endpoint for resolving records in our space's repo. */
 const SPACE_PDS = "https://stropharia.us-west.host.bsky.network";

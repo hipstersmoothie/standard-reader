@@ -14,9 +14,11 @@ import { UPVOTE_DRAFT_TTL_MS, upvoteDraft } from "#/db/schema/upvote-draft";
 import type { UpvoteDraft } from "#/db/schema/upvote-draft";
 import type { FeedbackStatus } from "#/lib/userinput/space";
 import {
+  STANDARD_READER_SPACE_OWNER_DID,
   STANDARD_READER_SPACE_URI,
   USERINPUT_APPVIEW_BASE,
   USERINPUT_DISCUSSION_SOURCE,
+  USERINPUT_EDIT_SOURCE,
   USERINPUT_LIST_DISCUSSIONS_METHOD,
   USERINPUT_UPVOTE_SOURCE,
   fetchStandardReaderDiscussionStatuses,
@@ -50,7 +52,9 @@ import { observe } from "#/server/observability/log";
  *
  * Read path: list discussions for our space via the constellation AppView
  * (`app.userinput.constellation.listDiscussions`). Also third-party, no DB
- * mirror.
+ * mirror. Note that a discussion record is immutable in practice — userinput.app
+ * appends `app.userinput.edit` records instead of rewriting it — so the read
+ * path must overlay the latest edit to show current content.
  */
 
 /**
@@ -377,6 +381,110 @@ async function fetchUpvoteCounts(
 }
 
 /**
+ * The value shape of an `app.userinput.edit` record — a full snapshot of the
+ * editable fields of its subject, not a patch.
+ */
+interface EditRecordValue {
+  title?: string;
+  body?: string;
+  tags?: Array<string>;
+  createdAt?: string;
+}
+
+/** The editable fields an edit record replaces on its subject discussion. */
+interface DiscussionEdit {
+  title?: string;
+  /** `null` when the edit cleared the body — see {@link fetchLatestEdit}. */
+  body: string | null;
+  tags?: Array<string>;
+}
+
+/**
+ * Fetch the current content of a discussion, i.e. the newest trusted
+ * `app.userinput.edit` record pointing at it. Returns `null` when the
+ * discussion has never been edited (the common case) or the lookup fails —
+ * either way the caller falls back to the original record.
+ *
+ * Only edits authored by the discussion's own author or by the space owner
+ * (moderator edits) are honored. Constellation indexes edits from *any* repo,
+ * so without this filter anyone could write an `app.userinput.edit` pointing at
+ * someone else's discussion and rewrite how it reads on our board.
+ */
+async function fetchLatestEdit(
+  discussionUri: string,
+  authorDid: string,
+): Promise<DiscussionEdit | null> {
+  try {
+    const url = new URL(
+      `${USERINPUT_APPVIEW_BASE}/xrpc/${USERINPUT_LIST_DISCUSSIONS_METHOD}`,
+    );
+    url.searchParams.set("subject", discussionUri);
+    url.searchParams.set("source", USERINPUT_EDIT_SOURCE);
+    const res = await fetch(url, {
+      signal: AbortSignal.timeout(8000),
+      headers: { accept: "application/json" },
+    });
+    if (!res.ok) return null;
+    const json = (await res.json()) as ConstellationBacklinksResponse;
+    const trusted = (json.records ?? []).filter(
+      (b) => b.did === authorDid || b.did === STANDARD_READER_SPACE_OWNER_DID,
+    );
+    if (trusted.length === 0) return null;
+
+    const values = await Promise.all(
+      trusted.map(async (b) => {
+        const record = await fetchRepoRecordWithFallback(backlinkUri(b));
+        return (record?.value ?? null) as EditRecordValue | null;
+      }),
+    );
+
+    // "Latest `createdAt` wins", same convention as `app.userinput.status`.
+    let latest: { value: EditRecordValue; createdAt: string } | null = null;
+    for (const value of values) {
+      if (!value?.createdAt) continue;
+      if (!latest || value.createdAt > latest.createdAt) {
+        latest = { value, createdAt: value.createdAt };
+      }
+    }
+    if (!latest) return null;
+
+    // Body is a snapshot field: an edit that omits it cleared it, so falling
+    // back to the original body here would resurrect deleted text. Title and
+    // tags fall back instead — a discussion always carries both, so an edit
+    // missing either is malformed, and keeping the original beats blanking the
+    // heading or silently re-defaulting the category.
+    return {
+      ...(latest.value.title ? { title: latest.value.title } : {}),
+      body: latest.value.body ?? null,
+      ...(latest.value.tags ? { tags: latest.value.tags } : {}),
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Fetch the latest edit for a set of discussions in parallel, keyed by
+ * discussion URI. Like {@link fetchUpvoteCounts}, constellation has no bulk
+ * variant, so this is one request per discussion — fine at feedback-board
+ * scale. Unedited discussions are simply absent from the map.
+ */
+async function fetchLatestEdits(
+  targets: Array<{ uri: string; authorDid: string }>,
+): Promise<Map<string, DiscussionEdit>> {
+  const out = new Map<string, DiscussionEdit>();
+  if (targets.length === 0) return out;
+  const edits = await Promise.all(
+    targets.map((t) => fetchLatestEdit(t.uri, t.authorDid)),
+  );
+  for (let i = 0; i < targets.length; i++) {
+    const edit = edits[i];
+    if (edit) out.set(targets[i].uri, edit);
+  }
+  return out;
+}
+
+/**
  * The value shape of an `app.userinput.upvote` record. The `subject` is a
  * strongRef (uri + cid) pointing at the discussion the viewer upvoted.
  */
@@ -424,6 +532,10 @@ async function fetchViewerUpvotedUris(
  * then fetch each discussion record via Slingshot/PDS, and finally hydrate
  * author profiles via the public Bluesky API. All server-side to keep the
  * origins out of the client bundle and allow caching + observation.
+ *
+ * Discussion records are never rewritten when their author edits them, so the
+ * fetched record is the *first* draft; {@link fetchLatestEdits} supplies the
+ * current title/body/tags and is overlaid before returning.
  */
 const listFeedbackDiscussions = createServerFn({ method: "GET" })
   .validator(listInput)
@@ -492,10 +604,14 @@ const listFeedbackDiscussions = createServerFn({ method: "GET" })
         ),
       ];
       const discussionUris = validRecords.map((r) => r.uri);
+      const editTargets = validRecords.map((r) => ({
+        uri: r.uri,
+        authorDid: /^at:\/\/([^/]+)/.exec(r.uri)?.[1] ?? "",
+      }));
 
       // Hydrate authors + fetch upvote counts + fetch the viewer's upvotes +
-      // fetch discussion statuses, all in parallel (all independent).
-      const [authors, upvoteCounts, viewerUpvotedUris, statuses] =
+      // fetch discussion statuses + fetch edits, all in parallel (independent).
+      const [authors, upvoteCounts, viewerUpvotedUris, statuses, edits] =
         await Promise.all([
           hydrateAuthors(authorDids),
           fetchUpvoteCounts(discussionUris),
@@ -503,18 +619,24 @@ const listFeedbackDiscussions = createServerFn({ method: "GET" })
             ? fetchViewerUpvotedUris(session.client, session.did)
             : Promise.resolve(new Set<string>()),
           fetchStandardReaderDiscussionStatuses(),
+          fetchLatestEdits(editTargets),
         ]);
+      span.set("edited", edits.size);
 
       const discussions: Array<UserinputDiscussion> = validRecords.map((r) => {
         const did = /^at:\/\/([^/]+)/.exec(r.uri)?.[1] ?? "";
         const status = statuses.get(r.uri);
+        // The discussion record holds the *first* draft forever; an edit record
+        // supersedes its title/body/tags. `createdAt` stays the original — it's
+        // when the discussion was posted, not when it was last touched.
+        const edit = edits.get(r.uri);
         return {
           uri: r.uri,
           ...(r.cid ? { cid: r.cid } : {}),
           author: authors.get(did) ?? { did },
-          title: r.value.title,
-          body: r.value.body ?? null,
-          tags: r.value.tags,
+          title: edit?.title ?? r.value.title,
+          body: (edit ? edit.body : r.value.body) ?? null,
+          tags: edit?.tags ?? r.value.tags,
           createdAt: r.value.createdAt,
           upvoteCount: upvoteCounts.get(r.uri) ?? 0,
           ...(status ? { status } : {}),
