@@ -46,6 +46,7 @@ import {
 import { PublicationLatestNote } from "../components/reader/publication-latest-note";
 import { PublicationSocialProofLine } from "../components/reader/publication-social-proof";
 import type { PublicationThemeColors } from "../components/reader/publication-theme-scale";
+import { publicationPageCard } from "../components/reader/publication-theme-tokens";
 import {
   applyMarkReadManyOptimisticUpdate,
   invalidateReadQueries,
@@ -740,7 +741,9 @@ function PublicationProfileContent({
   const rest = documents.slice(1);
 
   return (
-    <div>
+    // The publication's own header is page content, unlike an article's sticky
+    // reading chrome, so the hero sits inside the card.
+    <div {...stylex.props(publicationPageCard.card)}>
       <div {...stylex.props(styles.hero)}>
         <div {...stylex.props(styles.heroInner)}>
           <div {...stylex.props(styles.heroTop)}>

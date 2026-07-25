@@ -13,6 +13,7 @@ import {
   toPublicationCard,
 } from "#/integrations/tanstack-query/api-shapes";
 import { publicationFontsFromThemeJson } from "#/server/fonts/publication-fonts.server";
+import { publicationBackgroundImage } from "#/server/reader/publication-background";
 
 export interface PublicationHeader {
   publication: PublicationCard;
@@ -70,6 +71,7 @@ export async function selectPublicationHeader(
     theme: {
       ...publicationThemeFromRow(row),
       fonts: await publicationFontsFromThemeJson(row.themeJson),
+      backgroundImage: publicationBackgroundImage(row.themeJson, row.did),
     },
   };
 }

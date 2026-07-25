@@ -26,6 +26,8 @@ describe("resolvePublicationTheme", () => {
       link: null,
       neutral: null,
       secondary: null,
+      canvas: null,
+      backgroundImage: null,
     });
     expect(theme.dark).toBeNull();
   });
@@ -120,6 +122,8 @@ describe("resolvePublicationTheme", () => {
         link: "#5eead4",
         neutral: null,
         secondary: null,
+        canvas: null,
+        backgroundImage: null,
       });
     });
   });
@@ -151,6 +155,8 @@ describe("resolvePublicationTheme", () => {
         link: null,
         neutral: null,
         secondary: null,
+        canvas: null,
+        backgroundImage: null,
       });
       expect(theme.dark).toBeNull();
     });

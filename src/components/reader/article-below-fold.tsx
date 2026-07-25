@@ -39,7 +39,8 @@ const styles = stylex.create({
     boxSizing: "border-box",
     marginInlineStart: "auto",
     marginInlineEnd: "auto",
-    paddingBottom: spacing["20"],
+    // Trimmed inside a publication page card, which supplies its own margin.
+    paddingBottom: `var(--pub-page-content-bottom, ${spacing["20"]})`,
     paddingInlineStart: spacing["6"],
     paddingInlineEnd: spacing["6"],
     width: "100%",

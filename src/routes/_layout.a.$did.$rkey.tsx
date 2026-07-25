@@ -262,5 +262,7 @@ function articleThemeColors(
     surfaceHover: theme?.surfaceHover ?? null,
     border: theme?.border ?? null,
     fonts: theme?.publicationFonts ?? null,
+    canvas: theme?.canvas ?? null,
+    backgroundImage: theme?.publicationBackgroundImage ?? null,
   };
 }

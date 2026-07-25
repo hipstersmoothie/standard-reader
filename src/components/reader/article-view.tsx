@@ -100,6 +100,7 @@ import {
   PublicationAvatar,
   Topic,
 } from "./primitives";
+import { publicationPageCard } from "./publication-theme-tokens";
 import { QuoteShareLayer } from "./quote-share-layer";
 import { ReadOnPlatformButton } from "./read-on-platform";
 import { applyMarkReadOptimisticUpdate } from "./read-optimistic";
@@ -281,10 +282,12 @@ const styles = stylex.create({
     marginInlineEnd: "auto",
     maxWidth: "100%",
     minWidth: 0,
-    paddingBottom: spacing["24"],
+    paddingBottom: `var(--pub-page-content-bottom, ${spacing["24"]})`,
     paddingInlineStart: spacing["6"],
     paddingInlineEnd: spacing["6"],
-    paddingTop: spacing["14"],
+    // The page card already floats the content off the chrome above it, so the
+    // article needs less of its own lead-in there; unchanged without a canvas.
+    paddingTop: `var(--pub-page-content-top, ${spacing["14"]})`,
     width: "100%",
   },
   kicker: {
@@ -1175,223 +1178,235 @@ function ArticleViewBody({
 
       <ReaderWordHighlighter rootRef={articleRef} articleUri={article.uri} />
       <SaveDraftConsumer />
-      <article
-        ref={articleRef}
+      {/* The page card — the sticky chrome above stays outside it, so it reads
+          as app furniture rather than part of the publication's page. */}
+      <div
         {...stylex.props(
-          styles.article,
+          publicationPageCard.card,
           articleMeasureStyle(readingTypography),
         )}
       >
-        {showMagazineIntro ? (
-          <div {...stylex.props(styles.magazineIntro)}>
-            <Alert
-              title={t`There’s a magazine edition of this collection.`}
-              action={
-                <Button variant="primary" onPress={dismissMagazineIntro}>
-                  <Trans>OK</Trans>
-                </Button>
-              }
-            >
-              <Trans>
-                Nine pieces, laid out as spreads — made to be read slowly. Click
-                the book icon in the header.
-              </Trans>
-            </Alert>
-          </div>
-        ) : null}
+        <article
+          ref={articleRef}
+          {...stylex.props(
+            styles.article,
+            articleMeasureStyle(readingTypography),
+          )}
+        >
+          {showMagazineIntro ? (
+            <div {...stylex.props(styles.magazineIntro)}>
+              <Alert
+                title={t`There’s a magazine edition of this collection.`}
+                action={
+                  <Button variant="primary" onPress={dismissMagazineIntro}>
+                    <Trans>OK</Trans>
+                  </Button>
+                }
+              >
+                <Trans>
+                  Nine pieces, laid out as spreads — made to be read slowly.
+                  Click the book icon in the header.
+                </Trans>
+              </Alert>
+            </div>
+          ) : null}
 
-        {topic || labelRefs.length > 0 ? (
-          <div {...stylex.props(styles.kicker)}>
-            {labelRefs.length > 0 ? (
-              <div {...stylex.props(styles.labelBadges)}>
-                {labelRefs.map((ref) => (
-                  <LabelerPill
-                    key={`${ref.src}:${ref.val}`}
-                    src={ref.src}
-                    val={ref.val}
-                  />
-                ))}
-              </div>
-            ) : null}
-            {topic ? (
-              <Kicker>
-                <Topic name={topic} />
-              </Kicker>
-            ) : null}
-          </div>
-        ) : null}
-
-        {hero ? (
-          <button
-            aria-label={t`Open image`}
-            type="button"
-            onClick={() => {
-              flushSync(() => setHeroTransitionActive(true));
-              startLightboxViewTransition(() => setHeroLightboxOpen(true));
-            }}
-            style={
-              heroTransitionActive && !heroLightboxOpen
-                ? { viewTransitionName: LIGHTBOX_IMAGE_TRANSITION_NAME }
-                : undefined
-            }
-            {...stylex.props(styles.hero)}
-          >
-            <img
-              src={hero.url}
-              alt=""
-              referrerPolicy="no-referrer"
-              {...stylex.props(styles.heroImg)}
-            />
-          </button>
-        ) : null}
-        {hero ? (
-          <Lightbox
-            alt={t`Article header image`}
-            images={[
-              {
-                src: hero.url,
-                alt: "",
-                transitionName: heroTransitionActive
-                  ? LIGHTBOX_IMAGE_TRANSITION_NAME
-                  : undefined,
-              },
-            ]}
-            isOpen={heroLightboxOpen}
-            onOpenChange={(open) => {
-              setHeroLightboxOpen(open);
-              if (!open) setHeroTransitionActive(false);
-            }}
-          />
-        ) : null}
-
-        {/* dir="auto" for the same reason as the article body: this is author
-            content, not UI chrome, so it must not inherit the UI direction. */}
-        <h1 dir="auto" {...stylex.props(styles.title)}>
-          {article.title}
-        </h1>
-
-        {article.description && !articleDescriptionIsBodyExcerpt(article) ? (
-          <p dir="auto" {...stylex.props(styles.dek)}>
-            {article.description}
-          </p>
-        ) : null}
-
-        <div {...stylex.props(styles.byline)}>
-          <Avatar
-            size="lg"
-            src={authorAvatarUrl(article) ?? undefined}
-            fallback={initials(authorName)}
-            alt={authorName}
-          />
-          <div {...stylex.props(styles.bylineWho)}>
-            <div {...stylex.props(styles.bylineName)}>
-              {bylineDid ? (
-                <Link
-                  to="/u/$did"
-                  params={{ did: bylineDid }}
-                  {...stylex.props(styles.bylineNameLink)}
-                >
-                  {authorName}
-                </Link>
-              ) : (
-                authorName
-              )}
-
-              {showHandle && bylineDid ? (
-                <Link
-                  to="/u/$did"
-                  params={{ did: bylineDid }}
-                  {...stylex.props(
-                    styles.bylineNameLink,
-                    styles.bylineHandleLink,
-                  )}
-                >
-                  <Handle>@{handle}</Handle>
-                </Link>
-              ) : showHandle ? (
-                <Handle>@{handle}</Handle>
+          {topic || labelRefs.length > 0 ? (
+            <div {...stylex.props(styles.kicker)}>
+              {labelRefs.length > 0 ? (
+                <div {...stylex.props(styles.labelBadges)}>
+                  {labelRefs.map((ref) => (
+                    <LabelerPill
+                      key={`${ref.src}:${ref.val}`}
+                      src={ref.src}
+                      val={ref.val}
+                    />
+                  ))}
+                </div>
+              ) : null}
+              {topic ? (
+                <Kicker>
+                  <Topic name={topic} />
+                </Kicker>
               ) : null}
             </div>
-            <Flex align="center" gap="md" wrap style={styles.bylineMeta}>
-              <span>
-                <span {...stylex.props(styles.bylineMetaItem)}>{date}</span>
-                {readingLabel ? (
-                  <>
-                    <span aria-hidden> · </span>
-                    <span {...stylex.props(styles.bylineMetaItem)}>
-                      {readingLabel}
-                    </span>
-                  </>
-                ) : null}
-                {readStats ? (
-                  <>
-                    <span aria-hidden> · </span>
-                    <span {...stylex.props(styles.bylineMetaItem)}>
-                      {readStats}
-                    </span>
-                  </>
-                ) : null}
-              </span>
-              {hasEngagement ? (
-                <>
-                  <span aria-hidden>·</span>
-                  <ArticleEngagement
-                    recommendCount={article.recommendCount}
-                    commentCount={article.commentCount}
-                    size="sm"
-                  />
-                </>
-              ) : null}
-            </Flex>
-          </div>
-        </div>
+          ) : null}
 
-        {linkParams ? (
-          <QuoteShareLayer article={article} sharedQuote={sharedQuote}>
-            <ArticleContent article={article} />
-          </QuoteShareLayer>
-        ) : (
-          <ArticleContent article={article} />
-        )}
-
-        {article.collection?.colophon?.body ? (
-          <CollectionColophon body={article.collection.colophon.body} />
-        ) : null}
-
-        <ArticleLikePrompt
-          recommended={recommended}
-          onToggle={toggleRecommend}
-          recommendCount={recommendCount}
-        />
-
-        {pub ? (
-          <div {...stylex.props(styles.foot)}>
-            <PublicationAvatar pub={pub} size="lg" />
-            <Flex direction="column" gap="xs" style={styles.footGrow}>
-              <PublicationNameLink
-                publicationUri={article.publicationUri}
-                url={pub.url}
-                linkStyle={styles.footName}
-              >
-                {pub.name}
-              </PublicationNameLink>
-              {article.publicationOwnerHandle && bylineDid ? (
-                <AuthorProfileLink authorRef={bylineDid}>
-                  <Handle>@{article.publicationOwnerHandle}</Handle>
-                </AuthorProfileLink>
-              ) : null}
-            </Flex>
-            {article.publicationUri ? (
-              <FollowButton
-                publicationUri={article.publicationUri}
-                signedIn={signedIn}
+          {hero ? (
+            <button
+              aria-label={t`Open image`}
+              type="button"
+              onClick={() => {
+                flushSync(() => setHeroTransitionActive(true));
+                startLightboxViewTransition(() => setHeroLightboxOpen(true));
+              }}
+              style={
+                heroTransitionActive && !heroLightboxOpen
+                  ? { viewTransitionName: LIGHTBOX_IMAGE_TRANSITION_NAME }
+                  : undefined
+              }
+              {...stylex.props(styles.hero)}
+            >
+              <img
+                src={hero.url}
+                alt=""
+                referrerPolicy="no-referrer"
+                {...stylex.props(styles.heroImg)}
               />
-            ) : null}
-          </div>
-        ) : null}
-      </article>
+            </button>
+          ) : null}
+          {hero ? (
+            <Lightbox
+              alt={t`Article header image`}
+              images={[
+                {
+                  src: hero.url,
+                  alt: "",
+                  transitionName: heroTransitionActive
+                    ? LIGHTBOX_IMAGE_TRANSITION_NAME
+                    : undefined,
+                },
+              ]}
+              isOpen={heroLightboxOpen}
+              onOpenChange={(open) => {
+                setHeroLightboxOpen(open);
+                if (!open) setHeroTransitionActive(false);
+              }}
+            />
+          ) : null}
 
-      <ArticleBelowFold article={article} showComments={Boolean(linkParams)} />
+          {/* dir="auto" for the same reason as the article body: this is author
+            content, not UI chrome, so it must not inherit the UI direction. */}
+          <h1 dir="auto" {...stylex.props(styles.title)}>
+            {article.title}
+          </h1>
+
+          {article.description && !articleDescriptionIsBodyExcerpt(article) ? (
+            <p dir="auto" {...stylex.props(styles.dek)}>
+              {article.description}
+            </p>
+          ) : null}
+
+          <div {...stylex.props(styles.byline)}>
+            <Avatar
+              size="lg"
+              src={authorAvatarUrl(article) ?? undefined}
+              fallback={initials(authorName)}
+              alt={authorName}
+            />
+            <div {...stylex.props(styles.bylineWho)}>
+              <div {...stylex.props(styles.bylineName)}>
+                {bylineDid ? (
+                  <Link
+                    to="/u/$did"
+                    params={{ did: bylineDid }}
+                    {...stylex.props(styles.bylineNameLink)}
+                  >
+                    {authorName}
+                  </Link>
+                ) : (
+                  authorName
+                )}
+
+                {showHandle && bylineDid ? (
+                  <Link
+                    to="/u/$did"
+                    params={{ did: bylineDid }}
+                    {...stylex.props(
+                      styles.bylineNameLink,
+                      styles.bylineHandleLink,
+                    )}
+                  >
+                    <Handle>@{handle}</Handle>
+                  </Link>
+                ) : showHandle ? (
+                  <Handle>@{handle}</Handle>
+                ) : null}
+              </div>
+              <Flex align="center" gap="md" wrap style={styles.bylineMeta}>
+                <span>
+                  <span {...stylex.props(styles.bylineMetaItem)}>{date}</span>
+                  {readingLabel ? (
+                    <>
+                      <span aria-hidden> · </span>
+                      <span {...stylex.props(styles.bylineMetaItem)}>
+                        {readingLabel}
+                      </span>
+                    </>
+                  ) : null}
+                  {readStats ? (
+                    <>
+                      <span aria-hidden> · </span>
+                      <span {...stylex.props(styles.bylineMetaItem)}>
+                        {readStats}
+                      </span>
+                    </>
+                  ) : null}
+                </span>
+                {hasEngagement ? (
+                  <>
+                    <span aria-hidden>·</span>
+                    <ArticleEngagement
+                      recommendCount={article.recommendCount}
+                      commentCount={article.commentCount}
+                      size="sm"
+                    />
+                  </>
+                ) : null}
+              </Flex>
+            </div>
+          </div>
+
+          {linkParams ? (
+            <QuoteShareLayer article={article} sharedQuote={sharedQuote}>
+              <ArticleContent article={article} />
+            </QuoteShareLayer>
+          ) : (
+            <ArticleContent article={article} />
+          )}
+
+          {article.collection?.colophon?.body ? (
+            <CollectionColophon body={article.collection.colophon.body} />
+          ) : null}
+
+          <ArticleLikePrompt
+            recommended={recommended}
+            onToggle={toggleRecommend}
+            recommendCount={recommendCount}
+          />
+
+          {pub ? (
+            <div {...stylex.props(styles.foot)}>
+              <PublicationAvatar pub={pub} size="lg" />
+              <Flex direction="column" gap="xs" style={styles.footGrow}>
+                <PublicationNameLink
+                  publicationUri={article.publicationUri}
+                  url={pub.url}
+                  linkStyle={styles.footName}
+                >
+                  {pub.name}
+                </PublicationNameLink>
+                {article.publicationOwnerHandle && bylineDid ? (
+                  <AuthorProfileLink authorRef={bylineDid}>
+                    <Handle>@{article.publicationOwnerHandle}</Handle>
+                  </AuthorProfileLink>
+                ) : null}
+              </Flex>
+              {article.publicationUri ? (
+                <FollowButton
+                  publicationUri={article.publicationUri}
+                  signedIn={signedIn}
+                />
+              ) : null}
+            </div>
+          ) : null}
+        </article>
+
+        <ArticleBelowFold
+          article={article}
+          showComments={Boolean(linkParams)}
+        />
+      </div>
     </div>
   );
 }
