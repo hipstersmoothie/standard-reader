@@ -1036,6 +1036,10 @@ msgstr ""
 msgid "Browse your feed"
 msgstr ""
 
+#: src/components/appearance-settings.tsx
+msgid "Scales every size in the app, article text included — from 13px up to 22px of interface text."
+msgstr ""
+
 #: src/components/reader/rss-feed-button.tsx
 msgid "RSS feed URL"
 msgstr ""
@@ -3140,8 +3144,8 @@ msgid "Mark all as read"
 msgstr ""
 
 #: src/components/appearance-settings.tsx
-msgid "Scales every size in the app, article text included — from 14px up to 24px of interface text."
-msgstr ""
+#~ msgid "Scales every size in the app, article text included — from 14px up to 24px of interface text."
+#~ msgstr ""
 
 #: src/components/reader/privacy-view.tsx
 msgid "Your display name, handle, avatar URL, and DID as returned by your account provider."

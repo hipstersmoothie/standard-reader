@@ -186,17 +186,20 @@ export function paletteMeta(id: PaletteId): PaletteMeta | null {
 /**
  * Multipliers applied to the design-system token scales.
  *
- * The steps span 14px → 24px of base interface text, which carries the article
- * body from 19px to 28px. The top of the range is deliberately a big jump: a
- * size control that only nudges reads as "nothing happened", and the readers who
- * reach for the largest step want it to actually be large.
+ * The steps span 13px → 22px of base interface text, which carries the article
+ * body from ~17px to ~29px. Because this scales the root font size, every step
+ * resizes the whole app, so what a reader perceives is the *ratio* between
+ * steps, not the pixel difference: the ramp is kept at a roughly even 10–20%
+ * per step so no single step lands as a jarring jump. It accelerates gently
+ * toward the top — a size control that only nudges reads as "nothing happened",
+ * and the readers who reach for the largest step want it to actually be large.
  */
 export const TEXT_SIZE_SCALE: Record<AppearanceTextSize, string> = {
-  xs: "0.875",
-  small: "0.9375",
+  xs: "0.8125",
+  small: "0.90625",
   default: "1",
-  large: "1.25",
-  xl: "1.5",
+  large: "1.15",
+  xl: "1.375",
 };
 
 export const ROUNDNESS_SCALE: Record<AppearanceRoundness, string> = {

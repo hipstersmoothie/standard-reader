@@ -198,7 +198,8 @@ Sections, top to bottom:
 
   Alongside the palette, four dials that apply in **every** theme mode because
   none of them is color: interface font (editorial / sans / any Google family),
-  text size (XS–XL, 14→24px of interface text), roundness (sharp / soft /
+  text size (XS–XL, 13→22px of interface text, in even ~10–20% steps so no one
+  step reads as a jump), roundness (sharp / soft /
   default), and density (compact / default / relaxed). Text size scales the **root
   font size**, so every rem in the app follows it — type, spacing, radii, control
   boxes, the sidebar and the content shells — rather than only the tokens we

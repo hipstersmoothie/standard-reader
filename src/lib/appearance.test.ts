@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { AppearancePreference } from "./appearance";
 import {
   DEFAULT_APPEARANCE,
+  TEXT_SIZE_SCALE,
   appearanceIsDefault,
   appearanceScaleVars,
   appearanceScheme,
@@ -150,7 +151,9 @@ describe("scale vars", () => {
       ...DEFAULT_APPEARANCE,
       textSize: "large",
     });
-    expect(vars).toEqual({ "--sr-text-scale": "1.25" });
+    expect(vars).toEqual({
+      "--sr-text-scale": TEXT_SIZE_SCALE.large,
+    });
   });
 
   it("quotes a custom family so it can carry spaces", () => {

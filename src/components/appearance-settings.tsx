@@ -674,7 +674,7 @@ export function AppearanceAdvancedRows() {
       <Separator />
       <SettingRow
         label={t`Text size`}
-        description={t`Scales every size in the app, article text included — from 14px up to 24px of interface text.`}
+        description={t`Scales every size in the app, article text included — from 13px up to 22px of interface text.`}
       >
         <SegmentedControl
           aria-label={t`Text size`}
