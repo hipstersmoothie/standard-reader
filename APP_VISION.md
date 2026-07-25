@@ -175,6 +175,53 @@ Sections, top to bottom:
   everyone; `user.reading_typography` when signed in (`fontSize:measure:bodyFont`
   encoding, with optional `:customFont` when body font is custom).
 
+- **Use publication themes (preference):** settings-page toggle (Appearance) that
+  repaints `/p/$did/$rkey` and `/a/$did/$rkey` in the publication's own
+  `site.standard.theme.basic` colors. The four flat colors are expanded into full
+  light + dark UI/accent scales (`publicationThemeScaleVars`) that the
+  `publicationUi` / `publicationPrimary` StyleX themes read to override the
+  design-system `uiColor` / `primaryColor` tokens — the same machinery the themed
+  subscribe login already used. A route opts in by returning `publicationTheme`
+  from its loader; the app shell reads it off the deepest match and wraps the
+  content column **and the site footer**, so the publication's colors run to the
+  bottom of the page. The sidebar and mobile bar stay Standard Reader chrome.
+  Signed-in only (`user.use_publication_theme`, `null` = off); publications with
+  no colors of their own always keep the editorial theme.
+- **Publisher-native themes.** `site.standard.theme.basic` is the interop
+  baseline (four opaque colors, light only), but records also carry the
+  publishing platform's own theme under `theme`, discriminated by `$type`.
+  Ingest keeps it in `publications.theme_json` as `nativeTheme`, and
+  `resolvePublicationTheme` (`#/lib/publication-theme-source`) narrows it:
+  **Leaflet** (`pub.leaflet.publication#theme`) paints a page over a canvas, so
+  `pageBackground` composited over `backgroundColor` — not `basicTheme.background`,
+  which mirrors the canvas — is the surface the reader actually sees;
+  **PCKT** (`blog.pckt.theme`) and **Offprint** (`app.offprint.theme`, a
+  DaisyUI-shaped `base100`/`baseContent`/`primary` palette whose `colorScheme`
+  says which mode it is) can supply a real **dark** palette, which we use verbatim
+  instead of deriving one by darkening their light colors. Unknown `$type`s fall
+  back to `basicTheme`, so a new platform degrades rather than losing its colors.
+  Publishers who state **neutral scale steps** (Offprint `base200`/`base300`,
+  PCKT `surfaceHover`) get them pinned onto the matching token — `component1`,
+  `component2`, `border1` — with the steps between anchors interpolated, instead
+  of the whole ramp being derived by darkening the background. A theme states one
+  background, so it is **routed to the mode its own luminance matches** — a dark
+  publication supplies the dark page, and the mode they didn't author is
+  **synthesized by mirroring their colour through OKLCH** (`invertLightness`):
+  hue preserved, lightness moved to the other end (0.975 / 0.17, matching the
+  app's own editorial backgrounds), chroma damped because the same chroma reads
+  far more saturated at high lightness. A warm near-black page becomes warm cream
+  rather than generic near-white, and the ink is mirrored from their text colour
+  instead of dropping to flat black. Without this routing, a dark background
+  painted a dark page for a reader in light mode _and_ produced a ramp derived by
+  darkening near-black, collapsing every step into the same colour. **Fonts** are read
+  the same way (`#/lib/publication-fonts`): each platform's key format is resolved
+  against the Google Fonts catalog by normalized key, loaded via a scoped
+  stylesheet link, and layered over the editorial stack so anything that doesn't
+  resolve leaves the reader's own typography in place. Overlays (hover cards,
+  menus, dialogs) are re-pointed into the themed container with react-aria's
+  `UNSAFE_PortalProvider` so they inherit the palette instead of portalling to
+  `document.body` and reverting to app tokens.
+
 ### Publication profile
 
 - Banner + **inline header** (avatar, topic, name, description, stats, Share, Follow).

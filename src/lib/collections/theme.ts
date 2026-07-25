@@ -4,6 +4,9 @@
  * `app.standard-reader.publicationTheme` (merged into `themeJson` on ingest).
  * Shared across all of a user's collections. Client-safe.
  */
+import type { PublicationFonts } from "../publication-fonts";
+import type { ThemePalette } from "../publication-theme-source";
+
 export interface CollectionTheme {
   background: string | null;
   foreground: string | null;
@@ -11,6 +14,18 @@ export interface CollectionTheme {
   accentForeground: string | null;
   fontTitle: string | null;
   fontBody: string | null;
+  /** Publisher-authored dark palette, when their native theme ships one. */
+  dark?: ThemePalette | null;
+  /** Publisher-authored neutral scale steps, when stated. */
+  surface?: string | null;
+  surfaceHover?: string | null;
+  border?: string | null;
+  /**
+   * Google Fonts families from the platform-native theme, resolved server-side.
+   * Distinct from `fontTitle`/`fontBody`, which come from the
+   * `app.standard-reader.publicationTheme` sidecar and drive magazine rendering.
+   */
+  publicationFonts?: PublicationFonts | null;
 }
 
 function cleanFont(value: unknown): string | null {

@@ -3422,6 +3422,10 @@ msgstr "Search labelers"
 msgid "{weekday} · Your feed"
 msgstr "{weekday} · Your feed"
 
+#: src/components/user-settings-view.tsx
+msgid "Use publication themes"
+msgstr "Use publication themes"
+
 #: src/components/reader/collection-builder.tsx
 msgid "e.g. The Spring Reading Issue"
 msgstr "e.g. The Spring Reading Issue"
@@ -4113,6 +4117,10 @@ msgstr "Plays nice with the open web"
 #: src/components/reader/privacy-view.tsx
 msgid "What we collect"
 msgstr "What we collect"
+
+#: src/components/user-settings-view.tsx
+msgid "When on, a publication's page and its posts are shown in that publication's own colors. Publications that haven't set any colors keep the Standard Reader theme."
+msgstr "When on, a publication's page and its posts are shown in that publication's own colors. Publications that haven't set any colors keep the Standard Reader theme."
 
 #: src/components/reader/atstore-review-prompt.tsx
 msgid "Do you like Standard Reader?"

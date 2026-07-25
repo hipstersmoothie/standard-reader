@@ -67,6 +67,11 @@ import {
   parseHiddenTabs,
 } from "#/lib/profile-tabs";
 import {
+  DEFAULT_USE_PUBLICATION_THEME,
+  dbValueToUsePublicationTheme,
+  usePublicationThemeToDbValue,
+} from "#/lib/publication-theme-preference";
+import {
   READER_VOICE_COOKIE,
   READER_VOICE_COOKIE_MAX_AGE_SECONDS,
   READER_VOICE_PREFERENCES,
@@ -283,6 +288,7 @@ const getShellBootstrap = createServerFn({ method: "GET" }).handler(
           cookies[READING_TYPOGRAPHY_COOKIE],
         ),
       },
+      usePublicationTheme: { enabled: DEFAULT_USE_PUBLICATION_THEME },
       collectionsAuthoring: { enabled: false },
       shell: null,
     };
@@ -322,6 +328,7 @@ const getShellBootstrap = createServerFn({ method: "GET" }).handler(
             openLinksExternally: true,
             openCollectionsInMagazine: true,
             readingTypography: true,
+            usePublicationTheme: true,
             collectionsAuthoringEnabled: true,
             atstoreReviewPromptDismissed: true,
             userinputFeedbackEnabled: true,
@@ -454,6 +461,9 @@ const getShellBootstrap = createServerFn({ method: "GET" }).handler(
       },
       readingTypography: {
         preference: dbValueToReadingTypography(userRow.readingTypography),
+      },
+      usePublicationTheme: {
+        enabled: dbValueToUsePublicationTheme(userRow.usePublicationTheme),
       },
       collectionsAuthoring: {
         enabled: userRow.collectionsAuthoringEnabled === true,
@@ -1051,6 +1061,45 @@ const setCountOldPostsAsUnreadPreference = createServerFn({ method: "POST" })
     return { enabled: data.enabled };
   });
 
+// Signed-in only — the settings page is behind auth, so there is no cookie
+// mirror to keep in sync for guests (unlike the preferences above).
+const getUsePublicationThemePreference = createServerFn({ method: "GET" })
+  .middleware([dbMiddleware, maybeAuthMiddleware])
+  .handler(async ({ context }): Promise<{ enabled: boolean }> => {
+    const session = context?.session;
+    if (!session?.user) return { enabled: DEFAULT_USE_PUBLICATION_THEME };
+
+    const row = await context.db.query.user.findFirst({
+      where: eq(context.schema.user.id, session.user.id),
+      columns: { usePublicationTheme: true },
+    });
+    return {
+      enabled: dbValueToUsePublicationTheme(row?.usePublicationTheme ?? null),
+    };
+  });
+
+const getUsePublicationThemePreferenceQueryOptions = queryOptions({
+  queryKey: ["usePublicationThemePreference"] as const,
+  queryFn: () => getUsePublicationThemePreference(),
+  staleTime: Number.POSITIVE_INFINITY,
+});
+
+const setUsePublicationThemePreference = createServerFn({ method: "POST" })
+  .middleware([dbMiddleware, maybeAuthMiddleware])
+  .validator(z.object({ enabled: z.boolean() }))
+  .handler(async ({ data, context }): Promise<{ enabled: boolean }> => {
+    if (!context?.session?.user) {
+      return { enabled: DEFAULT_USE_PUBLICATION_THEME };
+    }
+
+    await context.db
+      .update(context.schema.user)
+      .set({ usePublicationTheme: usePublicationThemeToDbValue(data.enabled) })
+      .where(eq(context.schema.user.id, context.session.user.id));
+
+    return { enabled: data.enabled };
+  });
+
 const homeScopeInput = z.object({
   scope: z.enum(["follows", "trending"]),
 });
@@ -1350,6 +1399,9 @@ export const user = {
   getCountOldPostsAsUnreadPreference,
   getCountOldPostsAsUnreadPreferenceQueryOptions,
   setCountOldPostsAsUnreadPreference,
+  getUsePublicationThemePreference,
+  getUsePublicationThemePreferenceQueryOptions,
+  setUsePublicationThemePreference,
   getHomeScopePreference,
   getHomeScopePreferenceQueryOptions,
   setHomeScopePreference,

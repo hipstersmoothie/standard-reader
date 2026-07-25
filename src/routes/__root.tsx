@@ -174,6 +174,10 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       user.getReadingTypographyPreferenceQueryOptions.queryKey,
       bootstrap.readingTypography,
     );
+    context.queryClient.setQueryData(
+      user.getUsePublicationThemePreferenceQueryOptions.queryKey,
+      bootstrap.usePublicationTheme,
+    );
     if (bootstrap.shell) {
       context.queryClient.setQueryData(
         sidebarQueryOptions().queryKey,

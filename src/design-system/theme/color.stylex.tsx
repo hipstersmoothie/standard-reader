@@ -66,6 +66,23 @@ export const primaryColor = stylex.defineVars({
   textContrast: "white",
 });
 
+/**
+ * Link colour, separate from the accent.
+ *
+ * Body links used `primaryColor.text2` directly, which conflates "this is a
+ * link" with "this is the brand accent". Publishers distinguish the two — every
+ * PCKT theme states a `link` colour alongside its accent — so links need a token
+ * of their own to carry that.
+ *
+ * The defaults reference `primaryColor`, so the app looks exactly as before and
+ * any `createTheme` over `primaryColor` (e.g. `editorialPrimary`) still flows
+ * through; only a theme that overrides `linkColor` itself diverges.
+ */
+export const linkColor = stylex.defineVars({
+  text: primaryColor.text2,
+  hover: primaryColor.text1,
+});
+
 export const criticalColor = stylex.defineVars({
   bg: red.bg,
   bgSubtle: red.bgSubtle,
