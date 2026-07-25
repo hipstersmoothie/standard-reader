@@ -22,6 +22,7 @@ import {
   HelpCircle,
   Lightbulb,
   MessageSquarePlus,
+  User,
 } from "lucide-react";
 import { Suspense, useEffect, useMemo, useState } from "react";
 
@@ -797,7 +798,13 @@ const TAG_FILTER_OPTIONS: Array<{ id: TagFilter; label: MessageDescriptor }> = [
  * unconditionally instead of waiting on this data (see the route's
  * non-blocking loader).
  */
-function FeedbackDiscussions({ signedIn }: { signedIn: boolean }) {
+function FeedbackDiscussions({
+  signedIn,
+  viewerDid,
+}: {
+  signedIn: boolean;
+  viewerDid: string | null;
+}) {
   const { t, i18n } = useLingui();
   const [tagFilter, setTagFilter] = useState<TagFilter>("all");
   const [sortMode, setSortMode] = useState<SortMode>("top");
@@ -805,6 +812,10 @@ function FeedbackDiscussions({ signedIn }: { signedIn: boolean }) {
   // Hide discussions the space owner has marked "implemented" by default so the
   // list surfaces open feedback first; the toolbar toggle reveals them.
   const [hideImplemented, setHideImplemented] = useState(true);
+  // Filter to just the viewer's own feedback so they can quickly find the bugs,
+  // feature requests, and questions they've submitted. Only offered to signed-in
+  // readers (a guest has no `viewerDid`, so nothing to match against).
+  const [onlyMine, setOnlyMine] = useState(false);
   const queryClient = useQueryClient();
   const { data } = useSuspenseQuery(
     userinputApi.getFeedbackDiscussionsQueryOptions({ limit: 50 }),
@@ -934,6 +945,9 @@ function FeedbackDiscussions({ signedIn }: { signedIn: boolean }) {
   if (tagFilter !== "all") {
     discussions = discussions.filter((d) => tagFor(d) === tagFilter);
   }
+  if (onlyMine && viewerDid) {
+    discussions = discussions.filter((d) => d.author.did === viewerDid);
+  }
   if (hideImplemented) {
     discussions = discussions.filter((d) => d.status !== "implemented");
   }
@@ -989,11 +1003,23 @@ function FeedbackDiscussions({ signedIn }: { signedIn: boolean }) {
       </Message>
     );
   } else if (discussions.length === 0) {
-    body = (
-      <Message>
-        <Trans>No feedback matches your filters.</Trans>
-      </Message>
-    );
+    body =
+      onlyMine && tagFilter === "all" && !search ? (
+        <Message>
+          <Flex direction="column" gap="md">
+            <span>
+              <Trans>You haven&apos;t submitted any feedback yet.</Trans>
+            </span>
+            <span {...stylex.props(styles.messageEm)}>
+              <Trans>Share a bug, idea, or question to see it here.</Trans>
+            </span>
+          </Flex>
+        </Message>
+      ) : (
+        <Message>
+          <Trans>No feedback matches your filters.</Trans>
+        </Message>
+      );
   } else if (showGroups) {
     body = (
       <div {...stylex.props(styles.list)}>
@@ -1101,6 +1127,18 @@ function FeedbackDiscussions({ signedIn }: { signedIn: boolean }) {
               <Trans>New</Trans>
             </SegmentedControlItem>
           </SegmentedControl>
+          {signedIn ? (
+            <IconButton
+              size="lg"
+              variant={onlyMine ? "primary" : "secondary"}
+              label={onlyMine ? t`Show all feedback` : t`Show only mine`}
+              style={styles.toolbarToggle}
+              aria-pressed={onlyMine}
+              onPress={() => setOnlyMine((v) => !v)}
+            >
+              <User size={16} strokeWidth={2} />
+            </IconButton>
+          ) : null}
           <IconButton
             size="lg"
             variant="secondary"
@@ -1126,6 +1164,7 @@ function FeedbackPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const { data: session } = useQuery(user.getSessionQueryOptions);
   const signedIn = Boolean(session?.user);
+  const viewerDid = session?.user?.did ?? null;
 
   return (
     <ReaderContent>
@@ -1167,7 +1206,7 @@ function FeedbackPage() {
         </header>
 
         <Suspense fallback={<DiscussionListSkeleton />}>
-          <FeedbackDiscussions signedIn={signedIn} />
+          <FeedbackDiscussions signedIn={signedIn} viewerDid={viewerDid} />
         </Suspense>
       </div>
 
