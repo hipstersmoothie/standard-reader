@@ -1,3 +1,11 @@
+/**
+ * How long the fetched Google Fonts family catalog stays fresh — shared by the
+ * server-side cache and the client query, so it lives here rather than in the
+ * `.server` module (importing it from there would pull server-only code into
+ * the client bundle).
+ */
+export const GOOGLE_FONTS_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+
 /** Default Google Font when the user first picks Custom body font. */
 export const DEFAULT_CUSTOM_GOOGLE_FONT = "Lora";
 

@@ -1,4 +1,5 @@
 import {
+  GOOGLE_FONTS_CACHE_TTL_MS,
   isValidGoogleFontFamily,
   normalizeGoogleFontFamily,
 } from "#/lib/google-fonts";
@@ -13,7 +14,6 @@ import {
 import { normalizeFontKey } from "#/lib/publication-fonts";
 
 const GOOGLE_FONTS_METADATA_URL = "https://fonts.google.com/metadata/fonts";
-export const GOOGLE_FONTS_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
 let cachedFamilies: ReadonlyArray<string> | null = null;
 let cachedIndex: ReadonlyMap<string, string> | null = null;
