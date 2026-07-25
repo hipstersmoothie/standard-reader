@@ -6,6 +6,7 @@ import { Pressable } from "react-aria";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
 import { useCountOldPostsAsUnread } from "#/lib/use-count-old-posts-as-unread";
 import { useOpenLinks } from "#/lib/use-open-links";
+import { usePublicationThemePreference } from "#/lib/use-publication-theme-preference";
 import { useTrackReadingHistory } from "#/lib/use-track-reading-history";
 
 import { Flex } from "../../design-system/flex";
@@ -119,6 +120,8 @@ export function StepSettings() {
     useTrackReadingHistory();
   const { enabled: countOldAsUnread, setEnabled: setCountOldAsUnread } =
     useCountOldPostsAsUnread();
+  const { enabled: usePublicationTheme, setEnabled: setUsePublicationTheme } =
+    usePublicationThemePreference();
 
   const digestStatusQuery = useQuery(user.getWeeklyDigestStatusQueryOptions);
   const digestEnabled = Boolean(
@@ -162,6 +165,17 @@ export function StepSettings() {
               isSelected={countOldAsUnread}
               onChange={setCountOldAsUnread}
               aria-label={t`Mark old posts as unread`}
+            />
+          </Row>
+          <Separator />
+          <Row
+            label={t`Use publication themes`}
+            description={t`When on, a publication's page and its posts are shown in that publication's own colors and fonts. Publications that haven't set any keep the Standard Reader theme.`}
+          >
+            <Switch
+              isSelected={usePublicationTheme}
+              onChange={setUsePublicationTheme}
+              aria-label={t`Use publication themes`}
             />
           </Row>
         </div>

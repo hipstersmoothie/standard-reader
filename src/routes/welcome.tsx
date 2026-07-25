@@ -62,6 +62,9 @@ export const Route = createFileRoute("/welcome")({
         user.getCountOldPostsAsUnreadPreferenceQueryOptions,
       ),
       context.queryClient.ensureQueryData(
+        user.getUsePublicationThemePreferenceQueryOptions,
+      ),
+      context.queryClient.ensureQueryData(
         user.getOpenLinksPreferenceQueryOptions,
       ),
       context.queryClient.ensureQueryData(

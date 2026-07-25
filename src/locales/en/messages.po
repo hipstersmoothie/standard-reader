@@ -2823,6 +2823,10 @@ msgstr "{totalPeople, plural, one {# person you follow writes here} other {# peo
 msgid "Something went wrong"
 msgstr "Something went wrong"
 
+#: src/components/onboarding/step-settings.tsx
+msgid "When on, a publication's page and its posts are shown in that publication's own colors and fonts. Publications that haven't set any keep the Standard Reader theme."
+msgstr "When on, a publication's page and its posts are shown in that publication's own colors and fonts. Publications that haven't set any keep the Standard Reader theme."
+
 #: src/components/reader/about-view.tsx
 msgid "Browse publications"
 msgstr "Browse publications"
@@ -3422,6 +3426,7 @@ msgstr "Search labelers"
 msgid "{weekday} · Your feed"
 msgstr "{weekday} · Your feed"
 
+#: src/components/onboarding/step-settings.tsx
 #: src/components/user-settings-view.tsx
 msgid "Use publication themes"
 msgstr "Use publication themes"

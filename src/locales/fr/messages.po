@@ -2823,6 +2823,10 @@ msgstr ""
 msgid "Something went wrong"
 msgstr "Une erreur s’est produite"
 
+#: src/components/onboarding/step-settings.tsx
+msgid "When on, a publication's page and its posts are shown in that publication's own colors and fonts. Publications that haven't set any keep the Standard Reader theme."
+msgstr ""
+
 #: src/components/reader/about-view.tsx
 msgid "Browse publications"
 msgstr "Parcourir les publications"
@@ -3422,6 +3426,7 @@ msgstr "Rechercher des services d'étiquetage"
 msgid "{weekday} · Your feed"
 msgstr "{weekday} · Votre flux"
 
+#: src/components/onboarding/step-settings.tsx
 #: src/components/user-settings-view.tsx
 msgid "Use publication themes"
 msgstr ""
