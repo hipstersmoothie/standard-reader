@@ -169,6 +169,20 @@
       "when": 1785014567025,
       "tag": "0023_nosy_maverick",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1785015476908,
+      "tag": "0024_ambitious_oracle",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1785015493474,
+      "tag": "0025_orange_proteus",
+      "breakpoints": true
     }
   ]
 }

@@ -9,8 +9,8 @@ import { sidebarPrefQueryOptions } from "#/integrations/tanstack-query/shell-que
 
 const EMPTY: SidebarPref = {
   listOrder: [],
+  treeOrder: [],
   subscriptionSort: "default",
-  subscriptionOrder: [],
   collapsed: [],
   customizeNav: false,
   hiddenNav: [],
@@ -55,16 +55,15 @@ export interface OrderableSubscription {
   recentAt?: string | null;
 }
 
-/** Apply a sort mode to the sidebar's flat (ungrouped) subscription rows.
- * "default" is a no-op — callers pass rows in their natural/stored order and
- * this leaves that alone. "recent" interleaves every row by `recentAt` (most
- * recent first). The other modes reorder the combined list; `manual` falls
- * back to the incoming order for any subject not present in `order`, appended
- * at the end (stable). */
+/** Apply a sort mode to a set of subscription rows (flat ungrouped rows, or
+ * one list group's own members). "default" is a no-op — callers pass rows in
+ * their natural/stored order (or the reader's own manual `treeOrder`
+ * arrangement, applied separately at the top level) and this leaves that
+ * alone. "recent" interleaves every row by `recentAt` (most recent first);
+ * "alpha" / "unread" rank by name / unread count. */
 export function orderSubscriptions<T extends OrderableSubscription>(
   items: Array<T>,
   sort: SidebarPref["subscriptionSort"],
-  order: Array<string>,
 ): Array<T> {
   switch (sort) {
     case "recent": {
@@ -88,20 +87,6 @@ export function orderSubscriptions<T extends OrderableSubscription>(
         return a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
       });
     }
-    case "manual": {
-      if (order.length === 0) return items;
-      const rank = new Map(order.map((id, index) => [id, index]));
-      // toSorted is stable, so equal-rank (both-unknown) items keep their
-      // original relative order.
-      return items.toSorted((a, b) => {
-        const ra = rank.get(a.id);
-        const rb = rank.get(b.id);
-        if (ra == null && rb == null) return 0;
-        if (ra == null) return 1;
-        if (rb == null) return -1;
-        return ra - rb;
-      });
-    }
     default: {
       // "default" is a no-op: items already arrive in the caller's natural
       // (stored/creation) order.
@@ -110,24 +95,44 @@ export function orderSubscriptions<T extends OrderableSubscription>(
   }
 }
 
+/** Apply a saved `order` (ids of any kind) to items exposing an `id`. Ids
+ * absent from `order` keep their natural order and sort to the end — the
+ * same "manual with graceful fallback" pattern as {@link orderGroups}. */
+export function applyManualOrder<T extends { id: string }>(
+  items: Array<T>,
+  order: Array<string>,
+): Array<T> {
+  if (order.length === 0) {
+    return items;
+  }
+  const rank = new Map(order.map((id, index) => [id, index]));
+  return items.toSorted((a, b) => {
+    const ra = rank.get(a.id);
+    const rb = rank.get(b.id);
+    if (ra == null && rb == null) return 0;
+    if (ra == null) return 1;
+    if (rb == null) return -1;
+    return ra - rb;
+  });
+}
+
 export interface SidebarPrefController {
-  /** Saved list-group order (at-uris); empty means "default order". */
+  /** Legacy list-group order (at-uris); fallback while `treeOrder` is empty. */
   order: Array<string>;
+  /** Manual top-level tree order: list-group at-uris interleaved with
+   * ungrouped subscription ids. Empty until the reader arranges the tree. */
+  treeOrder: Array<string>;
   isCollapsed: (listUri: string) => boolean;
   /** Expand/collapse one group (debounced write-through). */
   setCollapsed: (listUri: string, collapsed: boolean) => void;
   /** Collapse or expand every group at once (debounced write-through). */
   setAllCollapsed: (listUris: Array<string>, collapsed: boolean) => void;
-  /** Persist a new group order immediately. */
-  saveOrder: (order: Array<string>) => void;
-  /** How the sidebar's flat subscription rows are sorted. */
+  /** How the sidebar's subscriptions are sorted. */
   subscriptionSort: SidebarPref["subscriptionSort"];
   /** Change the sort mode (immediate write-through). */
   setSubscriptionSort: (sort: SidebarPref["subscriptionSort"]) => void;
-  /** Saved manual order (at-uris / DIDs) for the flat subscription rows. */
-  subscriptionOrder: Array<string>;
-  /** Persist a new manual subscription order immediately (switches sort to "manual"). */
-  saveSubscriptionOrder: (order: Array<string>) => void;
+  /** Persist a new top-level tree order immediately. */
+  saveTreeOrder: (order: Array<string>) => void;
   /** Whether "Customize sidebar" is enabled (gates `isNavHidden`). */
   customizeNav: boolean;
   /** Toggle the "Customize sidebar" master switch (immediate write-through). */
@@ -168,8 +173,8 @@ export function useSidebarPref(signedIn: boolean): SidebarPrefController {
     // left out is written back as its default (and silently lost).
     mutate({
       listOrder: current.listOrder,
+      treeOrder: current.treeOrder,
       subscriptionSort: current.subscriptionSort,
-      subscriptionOrder: current.subscriptionOrder,
       collapsed: current.collapsed,
       customizeNav: current.customizeNav,
       hiddenNav: current.hiddenNav,
@@ -231,15 +236,6 @@ export function useSidebarPref(signedIn: boolean): SidebarPrefController {
     [queryClient, options.queryKey, write],
   );
 
-  const saveOrder = useCallback(
-    (order: Array<string>) => {
-      const current =
-        queryClient.getQueryData<SidebarPref>(options.queryKey) ?? EMPTY;
-      write({ ...current, listOrder: order }, true);
-    },
-    [queryClient, options.queryKey, write],
-  );
-
   const setSubscriptionSort = useCallback(
     (sort: SidebarPref["subscriptionSort"]) => {
       const current =
@@ -249,14 +245,11 @@ export function useSidebarPref(signedIn: boolean): SidebarPrefController {
     [queryClient, options.queryKey, write],
   );
 
-  const saveSubscriptionOrder = useCallback(
+  const saveTreeOrder = useCallback(
     (order: Array<string>) => {
       const current =
         queryClient.getQueryData<SidebarPref>(options.queryKey) ?? EMPTY;
-      write(
-        { ...current, subscriptionSort: "manual", subscriptionOrder: order },
-        true,
-      );
+      write({ ...current, treeOrder: order }, true);
     },
     [queryClient, options.queryKey, write],
   );
@@ -290,14 +283,13 @@ export function useSidebarPref(signedIn: boolean): SidebarPrefController {
 
   return {
     order: pref.listOrder,
+    treeOrder: pref.treeOrder,
     isCollapsed: (listUri: string) => collapsedSet.has(listUri),
     setCollapsed,
     setAllCollapsed,
-    saveOrder,
     subscriptionSort: pref.subscriptionSort,
     setSubscriptionSort,
-    subscriptionOrder: pref.subscriptionOrder,
-    saveSubscriptionOrder,
+    saveTreeOrder,
     customizeNav: pref.customizeNav,
     setCustomizeNav,
     isNavHidden: (navId: string) => hiddenNavSet.has(navId),

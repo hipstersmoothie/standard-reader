@@ -329,8 +329,8 @@ msgid "{years}y ago"
 msgstr ""
 
 #: src/components/reader/reorder-lists-modal.tsx
-msgid "List"
-msgstr "リスト"
+#~ msgid "List"
+#~ msgstr "リスト"
 
 #: src/components/appearance-settings.tsx
 msgid "The spacing between things — tighter for more on screen, looser for more room to read."
@@ -742,7 +742,6 @@ msgstr "プロフィールを表示"
 msgid "Take any of it as RSS"
 msgstr "すべて RSS でも読める"
 
-#: src/components/reader/reorder-lists-modal.tsx
 #: src/components/reader/subscriptions-sheet.tsx
 msgid "Reorder lists"
 msgstr "リストを並べ替え"
@@ -844,8 +843,8 @@ msgid "Browse the directory"
 msgstr ""
 
 #: src/components/reader/reorder-subscriptions-modal.tsx
-msgid "You don't have any subscriptions to reorder yet."
-msgstr ""
+#~ msgid "You don't have any subscriptions to reorder yet."
+#~ msgstr ""
 
 #: src/components/reader/article-view.tsx
 msgid "Did you enjoy this article?"
@@ -886,8 +885,8 @@ msgid "Read the API docs"
 msgstr "API ドキュメントを読む"
 
 #: src/components/reader/app-shell.tsx
-msgid "Reorder lists…"
-msgstr ""
+#~ msgid "Reorder lists…"
+#~ msgstr ""
 
 #: src/components/reader/about-view.tsx
 msgid "Shareable everywhere"
@@ -1405,8 +1404,6 @@ msgstr "開いたことのある記事です。リポジトリ内の公開レコ
 #: src/components/reader/collection-builder.tsx
 #: src/components/reader/collection-publication-editor.tsx
 #: src/components/reader/collection-theme-editor.tsx
-#: src/components/reader/reorder-lists-modal.tsx
-#: src/components/reader/reorder-subscriptions-modal.tsx
 #: src/components/reader/subscriptions-unsubscribe-dialog.tsx
 #: src/components/user-settings-view.tsx
 #: src/routes/_layout.collections.new.tsx
@@ -1755,8 +1752,8 @@ msgid "<0>3. Declare your label values.</0> Describe each value (severity, defau
 msgstr "<0>3. ラベルの値を宣言する。</0> 各値（深刻度、既定の警告/非表示、ぼかしの挙動）を <1>app.standard-reader.labeler.service</1> ディスクリプタに記述し、<2>app.standard-reader.labeler.getServices</2> から配信します（<3>did:web</3> のラベラーにはレコードを保持するリポジトリがないためです）。"
 
 #: src/components/reader/app-shell.tsx
-msgid "Reorder subscriptions…"
-msgstr ""
+#~ msgid "Reorder subscriptions…"
+#~ msgstr ""
 
 #: src/components/reader/format-i18n.ts
 msgid "{months}mo ago"
@@ -2277,8 +2274,8 @@ msgid "Your library"
 msgstr ""
 
 #: src/components/reader/reorder-lists-modal.tsx
-msgid "You don't have any lists to reorder yet."
-msgstr "並べ替えできるリストはまだありません。"
+#~ msgid "You don't have any lists to reorder yet."
+#~ msgstr "並べ替えできるリストはまだありません。"
 
 #: src/routes/_layout.index.tsx
 msgid "{weekday} · Trending"
@@ -2364,8 +2361,8 @@ msgstr ""
 
 #: src/components/reader/reorder-lists-modal.tsx
 #: src/components/reader/reorder-subscriptions-modal.tsx
-msgid "Save order"
-msgstr "並び順を保存"
+#~ msgid "Save order"
+#~ msgstr "並び順を保存"
 
 #: src/routes/_layout.discover.tsx
 msgid "No publications match this topic yet."
@@ -2574,6 +2571,10 @@ msgstr "レコードを表示"
 msgid "Optional: add a note about why you're saving this"
 msgstr "任意: 保存する理由をメモに残せます"
 
+#: src/components/reader/app-shell.tsx
+msgid "{count} unread"
+msgstr ""
+
 #: src/components/user-settings-view.tsx
 msgid "Best of your subscriptions"
 msgstr ""
@@ -2728,8 +2729,8 @@ msgid "Remove these?"
 msgstr ""
 
 #: src/components/reader/reorder-lists-modal.tsx
-msgid "Sidebar lists"
-msgstr "サイドバーのリスト"
+#~ msgid "Sidebar lists"
+#~ msgstr "サイドバーのリスト"
 
 #: src/components/labeler-detail-view.tsx
 msgid "Subscribe to choose how these labels are applied while you read."
@@ -3256,7 +3257,6 @@ msgstr ""
 
 #: src/components/reader/app-shell.tsx
 #: src/components/reader/list-edit-modal.tsx
-#: src/components/reader/reorder-subscriptions-modal.tsx
 #: src/components/reader/subscriptions-sheet.tsx
 #: src/components/reader/subscriptions-table.tsx
 #: src/routes/_layout.index.tsx
@@ -3475,8 +3475,8 @@ msgid "In your inbox"
 msgstr "受信トレイに"
 
 #: src/components/reader/reorder-subscriptions-modal.tsx
-msgid "Drag to change the order your subscriptions appear in the sidebar."
-msgstr ""
+#~ msgid "Drag to change the order your subscriptions appear in the sidebar."
+#~ msgstr ""
 
 #: src/components/user-settings-view.tsx
 msgid "Appearance, reading preferences, and personal data."
@@ -3744,8 +3744,8 @@ msgid "All caught up"
 msgstr "すべて読み終えました"
 
 #: src/components/reader/reorder-subscriptions-modal.tsx
-msgid "Reorder subscriptions"
-msgstr ""
+#~ msgid "Reorder subscriptions"
+#~ msgstr ""
 
 #: src/components/onboarding/welcome-wizard.tsx
 msgid "{selectedCount} selected"
@@ -3772,8 +3772,8 @@ msgid "Searching…"
 msgstr "検索中…"
 
 #: src/components/reader/app-shell.tsx
-msgid "Toggle list {name}"
-msgstr "リスト {name} を切り替え"
+#~ msgid "Toggle list {name}"
+#~ msgstr "リスト {name} を切り替え"
 
 #: src/components/reader/privacy-view.tsx
 msgid "Privacy policy"
@@ -4346,8 +4346,8 @@ msgid "Articles you've bookmarked to read later."
 msgstr ""
 
 #: src/components/reader/app-shell.tsx
-msgid "{unread} unread"
-msgstr "未読 {unread} 件"
+#~ msgid "{unread} unread"
+#~ msgstr "未読 {unread} 件"
 
 #: src/components/user-settings-view.tsx
 msgid "Delete all bookmarks?"
@@ -4410,7 +4410,6 @@ msgstr "その他のコレクション"
 msgid "One tasteful email a week"
 msgstr "週に1通、上質なメールを"
 
-#: src/components/reader/app-shell.tsx
 #: src/components/reader/subscriptions-sheet.tsx
 msgid "{unreadCount} unread"
 msgstr "未読 {unreadCount} 件"
@@ -4601,8 +4600,8 @@ msgid "Search your subscriptions"
 msgstr "購読中から検索"
 
 #: src/components/reader/reorder-subscriptions-modal.tsx
-msgid "Subscription"
-msgstr ""
+#~ msgid "Subscription"
+#~ msgstr ""
 
 #: src/components/reader/collection-publication-editor.tsx
 msgid "Icon"
@@ -4669,8 +4668,8 @@ msgid "Text"
 msgstr "テキスト"
 
 #: src/components/reader/app-shell.tsx
-msgid "Open list {name}"
-msgstr "リスト {name} を開く"
+#~ msgid "Open list {name}"
+#~ msgstr "リスト {name} を開く"
 
 #: src/components/reader/subscriptions-sheet.tsx
 msgid "Discover more publications"
@@ -4837,8 +4836,8 @@ msgid "List views"
 msgstr "リスト表示"
 
 #: src/components/reader/reorder-lists-modal.tsx
-msgid "Drag to change the order your lists appear in the sidebar."
-msgstr "ドラッグして、サイドバーでのリストの並び順を変更できます。"
+#~ msgid "Drag to change the order your lists appear in the sidebar."
+#~ msgstr "ドラッグして、サイドバーでのリストの並び順を変更できます。"
 
 #: src/lib/sidebar-nav.ts
 msgid "Find publications, people, topics, and headlines."

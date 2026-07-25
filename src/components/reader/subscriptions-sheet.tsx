@@ -64,6 +64,10 @@ export interface SubscriptionListGroup {
   name: string;
   /** AT-URI of the list; links the group to its public `/l/$did/$rkey` page. */
   listUri: string;
+  /** Rkey of an own list (null for a saved list — not editable by this reader). */
+  rkey: string | null;
+  /** Whether this reader owns the list (can edit its membership). */
+  editable: boolean;
   pubs: Array<FollowingPublication>;
   /** Followed users in this list (the people-in-lists grouping). */
   users: Array<FollowingUser>;

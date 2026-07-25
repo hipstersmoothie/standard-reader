@@ -616,34 +616,41 @@ Build each on hip-ui components + StyleX tokens (no raw HTML/inline styles).
       `ListEditModal` (name + description fields, drag-to-reorder ListBox with per-row remove,
       react-aria autocomplete over the remaining subscriptions). List groups render above the
       flat "All" list (desktop sidebar only).
-- [x] **Sort / reorder the sidebar's flat subscription list** — a single overflow menu
-      (`⋮` next to the Subscriptions heading) replaces four separate icon buttons: a **Sort**
-      submenu (**Default**, **Recent activity**, **A–Z**, **Most unread**), plus direct actions
-      **Reorder subscriptions…**, **Reorder lists…**, **New list**, and **Collapse/Expand all**
-      (each conditionally shown). **Default** is a true no-op (the reader's natural/stored
-      order, untouched) and is the actual default value — **Recent activity** genuinely
-      interleaves publications (by `lastDocumentAt`) and people (by `followedAt`, new on
-      `FollowingUser`) into one combined most-recent-first ranking; **A–Z** / **Most unread**
-      interleave the same way by name / unread count (`orderSubscriptions` +
-      `OrderableSubscription.recentAt` in `use-sidebar-pref.ts`). **Reorder subscriptions…** opens
-      `ReorderSubscriptionsModal` (drag-and-drop, mirrors `ReorderListsModal`) as its own action
-      rather than a selectable sort mode — dragging and saving switches the reader onto
-      `subscriptionSort: "manual"` behind the scenes. New `subscriptionSort` / `subscriptionOrder`
-      fields on `app.standard-reader.sidebarPref` (mirrored to `sidebar_prefs`, migrations
-      `drizzle/0022_melted_joseph.sql` + `drizzle/0023_mushy_rawhide_kid.sql` for the
-      `"recent"` → `"default"` default-value change).
-- [x] **Sort applies to list groups too, but only when explicitly chosen** — **Recent activity**
-      / **A–Z** / **Most unread** all reorder each list group's own members (publications +
-      people, combined the same way as the flat rows) and the groups themselves (by recency / name
-      / total unread). **Default** and **manual** leave every list group's own stored membership
-      order and the reader's manual group arrangement (`ReorderListsModal`) completely untouched —
-      an automatic sort no longer silently overrides a manually-arranged list group. Because of
-      that, **Reorder lists…** is disabled in the overflow menu whenever `subscriptionSort` isn't
-      `"default"` (an automatic sort is active, so manual group arrangement wouldn't stick).
-      Computed in `app-shell.tsx` (`displayGroups` / `groupSort`, reusing `orderSubscriptions` per
-      group and again across the groups, with each group's own `recentAt` derived from its
-      most-recent member) and fed to both the desktop sidebar and the mobile
-      `SubscriptionsSheet`; the `/subscriptions` directory table's own column sorting is untouched.
+- [x] **Sort the sidebar's subscriptions** — an overflow menu (`⋮` next to the Subscriptions
+      heading) holds a **Sort** submenu (**Default**, **Recent activity**, **A–Z**, **Most
+      unread**), plus **New list** and **Collapse/Expand all**. **Default** is a true no-op (the
+      reader's manually-arranged / natural order, untouched) and is the actual default value —
+      **Recent activity** genuinely interleaves publications (by `lastDocumentAt`) and people (by
+      `followedAt`, new on `FollowingUser`) into one combined most-recent-first ranking; **A–Z** /
+      **Most unread** interleave the same way by name / unread count (`orderSubscriptions` +
+      `OrderableSubscription.recentAt` in `use-sidebar-pref.ts`), applied to both a list group's
+      own members and the groups themselves. New `subscriptionSort` field on
+      `app.standard-reader.sidebarPref` (mirrored to `sidebar_prefs`).
+- [x] **Full drag-and-drop subscriptions tree (desktop sidebar)** — the sidebar's Subscriptions
+      section is a single one-level-deep tree (`design-system/tree`'s headless `Tree`/`TreeItem`,
+      react-aria-components' `useDragAndDrop`) instead of a separate flat list + list-group
+      sections: list groups and ungrouped publications/people are siblings at the top level, and
+      each list's own members are its children. When `subscriptionSort` is **Default**, dragging
+      supports every rearrangement: reorder lists, reorder members within a list, move a member
+      between two lists, move a member into or out of a list, and reorder members relative to
+      lists at the top level. An automatic sort (**Recent activity** / **A–Z** / **Most unread**)
+      disables dragging and renders its own computed arrangement instead — an active automatic
+      sort would otherwise silently override a manual arrangement. New `treeOrder` field on
+      `app.standard-reader.sidebarPref` (top-level order, list at-uris interleaved with ungrouped
+      subject ids; supersedes the legacy `listOrder`-only field, kept as a fallback for readers who
+      haven't touched the new tree yet) plus a new `setListMembers` list mutation (full
+      publications/users array replace in one write, used for member reorder/move). Cross-kind
+      (publication vs. person) order **within** one list isn't separately persisted — each kind
+      keeps its own relative order, same limitation `ListEditModal`'s member editor already has.
+      Saved lists (not owned by this reader) are read-only containers in the tree — only their own
+      top-level position is draggable, not their membership. The old `ReorderListsModal` /
+      `ReorderSubscriptionsModal` dialogs are removed, superseded by inline drag. Mobile
+      `SubscriptionsSheet` keeps its existing read-only rendering (no drag) — this pass is scoped
+      to the desktop sidebar. The `/subscriptions` directory table's own column sorting is
+      untouched. Migrations: `drizzle/0023_nosy_maverick.sql` (sidebarPref columns),
+      `drizzle/0024_ambitious_oracle.sql` + `drizzle/0025_orange_proteus.sql` (drop
+      `subscription_order` / add `tree_order`, split into two migrations to dodge drizzle-kit's
+      interactive rename-detection prompt in a non-TTY environment).
 - [x] **Shareable list pages** — every list has a public route `/l/$did/$rkey` (hero with
       name/description/owner handle, **Articles** tab with a paginated feed across member
       publications + **Publications** tab with ranked member rows and follow buttons, social meta).

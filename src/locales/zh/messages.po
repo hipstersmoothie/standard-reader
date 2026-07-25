@@ -329,8 +329,8 @@ msgid "{years}y ago"
 msgstr ""
 
 #: src/components/reader/reorder-lists-modal.tsx
-msgid "List"
-msgstr "列表"
+#~ msgid "List"
+#~ msgstr "列表"
 
 #: src/components/appearance-settings.tsx
 msgid "The spacing between things — tighter for more on screen, looser for more room to read."
@@ -742,7 +742,6 @@ msgstr "查看资料"
 msgid "Take any of it as RSS"
 msgstr "全部内容都可作为 RSS 获取"
 
-#: src/components/reader/reorder-lists-modal.tsx
 #: src/components/reader/subscriptions-sheet.tsx
 msgid "Reorder lists"
 msgstr "重新排序列表"
@@ -844,8 +843,8 @@ msgid "Browse the directory"
 msgstr ""
 
 #: src/components/reader/reorder-subscriptions-modal.tsx
-msgid "You don't have any subscriptions to reorder yet."
-msgstr ""
+#~ msgid "You don't have any subscriptions to reorder yet."
+#~ msgstr ""
 
 #: src/components/reader/article-view.tsx
 msgid "Did you enjoy this article?"
@@ -886,8 +885,8 @@ msgid "Read the API docs"
 msgstr "阅读 API 文档"
 
 #: src/components/reader/app-shell.tsx
-msgid "Reorder lists…"
-msgstr ""
+#~ msgid "Reorder lists…"
+#~ msgstr ""
 
 #: src/components/reader/about-view.tsx
 msgid "Shareable everywhere"
@@ -1405,8 +1404,6 @@ msgstr "你打开过的文章——存为你仓库中的公开记录，跨设备
 #: src/components/reader/collection-builder.tsx
 #: src/components/reader/collection-publication-editor.tsx
 #: src/components/reader/collection-theme-editor.tsx
-#: src/components/reader/reorder-lists-modal.tsx
-#: src/components/reader/reorder-subscriptions-modal.tsx
 #: src/components/reader/subscriptions-unsubscribe-dialog.tsx
 #: src/components/user-settings-view.tsx
 #: src/routes/_layout.collections.new.tsx
@@ -1755,8 +1752,8 @@ msgid "<0>3. Declare your label values.</0> Describe each value (severity, defau
 msgstr "<0>3. 声明你的标签取值。</0> 在 <1>app.standard-reader.labeler.service</1> 描述文件中说明每个取值（严重程度、默认警告/隐藏、模糊行为），并通过 <2>app.standard-reader.labeler.getServices</2> 提供（<3>did:web</3> 标注服务没有仓库来存放该记录）。"
 
 #: src/components/reader/app-shell.tsx
-msgid "Reorder subscriptions…"
-msgstr ""
+#~ msgid "Reorder subscriptions…"
+#~ msgstr ""
 
 #: src/components/reader/format-i18n.ts
 msgid "{months}mo ago"
@@ -2277,8 +2274,8 @@ msgid "Your library"
 msgstr ""
 
 #: src/components/reader/reorder-lists-modal.tsx
-msgid "You don't have any lists to reorder yet."
-msgstr "你还没有可以重新排序的列表。"
+#~ msgid "You don't have any lists to reorder yet."
+#~ msgstr "你还没有可以重新排序的列表。"
 
 #: src/routes/_layout.index.tsx
 msgid "{weekday} · Trending"
@@ -2364,8 +2361,8 @@ msgstr ""
 
 #: src/components/reader/reorder-lists-modal.tsx
 #: src/components/reader/reorder-subscriptions-modal.tsx
-msgid "Save order"
-msgstr "保存顺序"
+#~ msgid "Save order"
+#~ msgstr "保存顺序"
 
 #: src/routes/_layout.discover.tsx
 msgid "No publications match this topic yet."
@@ -2574,6 +2571,10 @@ msgstr "查看记录"
 msgid "Optional: add a note about why you're saving this"
 msgstr "可选：写下保存它的原因"
 
+#: src/components/reader/app-shell.tsx
+msgid "{count} unread"
+msgstr ""
+
 #: src/components/user-settings-view.tsx
 msgid "Best of your subscriptions"
 msgstr ""
@@ -2728,8 +2729,8 @@ msgid "Remove these?"
 msgstr ""
 
 #: src/components/reader/reorder-lists-modal.tsx
-msgid "Sidebar lists"
-msgstr "侧边栏列表"
+#~ msgid "Sidebar lists"
+#~ msgstr "侧边栏列表"
 
 #: src/components/labeler-detail-view.tsx
 msgid "Subscribe to choose how these labels are applied while you read."
@@ -3256,7 +3257,6 @@ msgstr ""
 
 #: src/components/reader/app-shell.tsx
 #: src/components/reader/list-edit-modal.tsx
-#: src/components/reader/reorder-subscriptions-modal.tsx
 #: src/components/reader/subscriptions-sheet.tsx
 #: src/components/reader/subscriptions-table.tsx
 #: src/routes/_layout.index.tsx
@@ -3475,8 +3475,8 @@ msgid "In your inbox"
 msgstr "在你的收件箱中"
 
 #: src/components/reader/reorder-subscriptions-modal.tsx
-msgid "Drag to change the order your subscriptions appear in the sidebar."
-msgstr ""
+#~ msgid "Drag to change the order your subscriptions appear in the sidebar."
+#~ msgstr ""
 
 #: src/components/user-settings-view.tsx
 msgid "Appearance, reading preferences, and personal data."
@@ -3744,8 +3744,8 @@ msgid "All caught up"
 msgstr "已全部读完"
 
 #: src/components/reader/reorder-subscriptions-modal.tsx
-msgid "Reorder subscriptions"
-msgstr ""
+#~ msgid "Reorder subscriptions"
+#~ msgstr ""
 
 #: src/components/onboarding/welcome-wizard.tsx
 msgid "{selectedCount} selected"
@@ -3772,8 +3772,8 @@ msgid "Searching…"
 msgstr "搜索中……"
 
 #: src/components/reader/app-shell.tsx
-msgid "Toggle list {name}"
-msgstr "切换列表 {name}"
+#~ msgid "Toggle list {name}"
+#~ msgstr "切换列表 {name}"
 
 #: src/components/reader/privacy-view.tsx
 msgid "Privacy policy"
@@ -4346,8 +4346,8 @@ msgid "Articles you've bookmarked to read later."
 msgstr ""
 
 #: src/components/reader/app-shell.tsx
-msgid "{unread} unread"
-msgstr "{unread} 篇未读"
+#~ msgid "{unread} unread"
+#~ msgstr "{unread} 篇未读"
 
 #: src/components/user-settings-view.tsx
 msgid "Delete all bookmarks?"
@@ -4410,7 +4410,6 @@ msgstr "其他合集"
 msgid "One tasteful email a week"
 msgstr "每周一封精致的邮件"
 
-#: src/components/reader/app-shell.tsx
 #: src/components/reader/subscriptions-sheet.tsx
 msgid "{unreadCount} unread"
 msgstr "{unreadCount} 篇未读"
@@ -4601,8 +4600,8 @@ msgid "Search your subscriptions"
 msgstr "搜索你的订阅"
 
 #: src/components/reader/reorder-subscriptions-modal.tsx
-msgid "Subscription"
-msgstr ""
+#~ msgid "Subscription"
+#~ msgstr ""
 
 #: src/components/reader/collection-publication-editor.tsx
 msgid "Icon"
@@ -4669,8 +4668,8 @@ msgid "Text"
 msgstr "文本"
 
 #: src/components/reader/app-shell.tsx
-msgid "Open list {name}"
-msgstr "打开列表 {name}"
+#~ msgid "Open list {name}"
+#~ msgstr "打开列表 {name}"
 
 #: src/components/reader/subscriptions-sheet.tsx
 msgid "Discover more publications"
@@ -4837,8 +4836,8 @@ msgid "List views"
 msgstr "列表视图"
 
 #: src/components/reader/reorder-lists-modal.tsx
-msgid "Drag to change the order your lists appear in the sidebar."
-msgstr "拖动以调整列表在侧边栏中的顺序。"
+#~ msgid "Drag to change the order your lists appear in the sidebar."
+#~ msgstr "拖动以调整列表在侧边栏中的顺序。"
 
 #: src/lib/sidebar-nav.ts
 msgid "Find publications, people, topics, and headlines."

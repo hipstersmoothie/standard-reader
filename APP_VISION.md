@@ -463,33 +463,37 @@ source of truth; Neon holds a derived view for speed and cross-network querying.
   **mirrored into Neon** (`lists` + `list_saves` tables) by the tap ingester so the shell snapshot
   never blocks on PDS I/O. A backfill from the PDS runs on first access when no rows exist yet.
 - **Sidebar personalization:** `app.standard-reader.sidebarPref` — a per-reader singleton (rkey
-  `self`, mirrored into `sidebar_prefs`) holding the reader's list-group order (`listOrder`),
-  collapsed groups (`collapsed`), the sort mode for the flat (ungrouped) subscription rows
-  (`subscriptionSort`) plus their manual order (`subscriptionOrder`), and — via the **Customize
-  sidebar** toggle in Settings — which primary nav items are hidden (`customizeNav` gates the
-  `hiddenNav` id set). The customizable items are the top nav links only (Home, Latest, Saved for
-  later, Collections, Discover, Search); Subscriptions and its list groups are never hideable. When
-  the toggle is off, every nav item shows regardless of `hiddenNav`. Hidden items drop from both
-  the desktop sidebar and the mobile bottom-nav.
-- **Reorder / sort the flat subscription list:** the sidebar's "Subscriptions" header carries a
-  single overflow menu (`⋮`) rather than a row of icon buttons. It holds a **Sort** submenu
-  (**Default** — the reader's natural/stored order, untouched, and the actual default value;
-  **Recent activity** — publications (`lastDocumentAt`) and people (`followedAt`) genuinely
-  interleaved into one combined most-recent-first ranking; **A–Z**; **Most unread** — same
-  interleaving, ranked by name / unread count) plus direct actions: **Reorder subscriptions…**
-  (opens `ReorderSubscriptionsModal`, the same react-aria `useDragAndDrop` + `ListBox` pattern as
-  "Reorder lists"; saving persists the dragged order as `subscriptionOrder` and switches
-  `subscriptionSort` to `"manual"` — it's an action, not a selectable sort mode, so it doesn't
-  compete with Sort for a slot in that list), **Reorder lists…**, **New list**, and
-  **Collapse/Expand all**. The Sort mode also reorders list groups: **Recent activity** / **A–Z** /
-  **Most unread** rank each group's own members and the groups themselves (a group's own recency is
-  its most-recent member's). **Default** and **manual** leave every list group's own stored
-  membership order and the reader's manual group arrangement completely untouched — an automatic
-  sort no longer silently overrides a manually-arranged list group. Because of that, **Reorder
-  lists…** is disabled whenever `subscriptionSort` isn't `"default"`, since an active automatic
-  sort means a manual group rearrangement wouldn't stick. List membership order and manual group
-  order are otherwise only changed via their own dedicated reorder UI (`ListEditModal`'s per-list
-  drag, and "Reorder lists"). The fully-sortable `/subscriptions` directory table is unaffected.
+  `self`, mirrored into `sidebar_prefs`) holding collapsed groups (`collapsed`), the sort mode
+  (`subscriptionSort`), the reader's manual top-level tree arrangement (`treeOrder` — list-group
+  at-uris interleaved with ungrouped publication at-uris / person DIDs; supersedes the legacy
+  `listOrder`-only field, kept as a fallback for readers who haven't touched the tree yet), and —
+  via the **Customize sidebar** toggle in Settings — which primary nav items are hidden
+  (`customizeNav` gates the `hiddenNav` id set). The customizable items are the top nav links only
+  (Home, Latest, Saved for later, Collections, Discover, Search); Subscriptions and its list groups
+  are never hideable. When the toggle is off, every nav item shows regardless of `hiddenNav`.
+  Hidden items drop from both the desktop sidebar and the mobile bottom-nav.
+- **Subscriptions tree (desktop sidebar):** the sidebar's Subscriptions section is one
+  drag-and-drop tree, one level deep — `design-system/tree`'s headless `Tree`/`TreeItem`
+  (react-aria-components' `useDragAndDrop`) — rather than a separate flat list plus list-group
+  sections. List groups and ungrouped publications/people are siblings at the top level; each
+  list's own members are its children. The header's overflow menu (`⋮`) holds a **Sort** submenu
+  (**Default** — the reader's manual `treeOrder` arrangement, or natural/stored order, untouched,
+  and the actual default value; **Recent activity** — publications (`lastDocumentAt`) and people
+  (`followedAt`) genuinely interleaved into one combined most-recent-first ranking; **A–Z**;
+  **Most unread** — same interleaving, ranked by name / unread count, applied to both a list
+  group's own members and the groups themselves), plus **New list** and **Collapse/Expand all**.
+  When sort is **Default**, dragging in the tree supports every rearrangement: reorder lists,
+  reorder members within a list, move a member between two lists, move a member into or out of a
+  list, and reorder members relative to lists at the top level — persisted via `treeOrder` (for
+  top-level position) and a `setListMembers` mutation (full publications/users array replace, for
+  a list's own membership/order). An automatic sort disables dragging and renders its own computed
+  arrangement instead, since an active automatic sort would otherwise silently override a manual
+  arrangement. Cross-kind (publication vs. person) order **within** one list isn't separately
+  persisted — each kind keeps its own relative order, the same limitation `ListEditModal`'s member
+  editor already has. Saved lists (owned by another reader) are read-only containers in the
+  tree — only their own top-level position is draggable, not their membership. Mobile
+  `SubscriptionsSheet` keeps its existing read-only rendering (no drag). The fully-sortable
+  `/subscriptions` directory table is unaffected.
 - **Routing:** URL-backed routes (TanStack Router) for every view — home / latest / discover /
   search / article / publication — with real back/forward navigation and shareable links.
   _(The original prototype used an in-memory view stack; the port moves to real URLs.)_

@@ -329,8 +329,8 @@ msgid "{years}y ago"
 msgstr ""
 
 #: src/components/reader/reorder-lists-modal.tsx
-msgid "List"
-msgstr "Liste"
+#~ msgid "List"
+#~ msgstr "Liste"
 
 #: src/components/appearance-settings.tsx
 msgid "The spacing between things — tighter for more on screen, looser for more room to read."
@@ -742,7 +742,6 @@ msgstr "Profil ansehen"
 msgid "Take any of it as RSS"
 msgstr "Alles davon als RSS beziehen"
 
-#: src/components/reader/reorder-lists-modal.tsx
 #: src/components/reader/subscriptions-sheet.tsx
 msgid "Reorder lists"
 msgstr "Listen neu ordnen"
@@ -844,8 +843,8 @@ msgid "Browse the directory"
 msgstr ""
 
 #: src/components/reader/reorder-subscriptions-modal.tsx
-msgid "You don't have any subscriptions to reorder yet."
-msgstr ""
+#~ msgid "You don't have any subscriptions to reorder yet."
+#~ msgstr ""
 
 #: src/components/reader/article-view.tsx
 msgid "Did you enjoy this article?"
@@ -886,8 +885,8 @@ msgid "Read the API docs"
 msgstr "API-Doku lesen"
 
 #: src/components/reader/app-shell.tsx
-msgid "Reorder lists…"
-msgstr ""
+#~ msgid "Reorder lists…"
+#~ msgstr ""
 
 #: src/components/reader/about-view.tsx
 msgid "Shareable everywhere"
@@ -1405,8 +1404,6 @@ msgstr "Von Ihnen geöffnete Artikel – öffentliche Records in Ihrem Repo, ger
 #: src/components/reader/collection-builder.tsx
 #: src/components/reader/collection-publication-editor.tsx
 #: src/components/reader/collection-theme-editor.tsx
-#: src/components/reader/reorder-lists-modal.tsx
-#: src/components/reader/reorder-subscriptions-modal.tsx
 #: src/components/reader/subscriptions-unsubscribe-dialog.tsx
 #: src/components/user-settings-view.tsx
 #: src/routes/_layout.collections.new.tsx
@@ -1755,8 +1752,8 @@ msgid "<0>3. Declare your label values.</0> Describe each value (severity, defau
 msgstr "<0>3. Deklarieren Sie Ihre Label-Werte.</0> Beschreiben Sie jeden Wert (Schweregrad, Standardverhalten Warnen/Ausblenden, Weichzeichnen) in einem <1>app.standard-reader.labeler.service</1>-Deskriptor, ausgeliefert über <2>app.standard-reader.labeler.getServices</2> (ein <3>did:web</3>-Labeler hat kein Repo für den Record)."
 
 #: src/components/reader/app-shell.tsx
-msgid "Reorder subscriptions…"
-msgstr ""
+#~ msgid "Reorder subscriptions…"
+#~ msgstr ""
 
 #: src/components/reader/format-i18n.ts
 msgid "{months}mo ago"
@@ -2277,8 +2274,8 @@ msgid "Your library"
 msgstr ""
 
 #: src/components/reader/reorder-lists-modal.tsx
-msgid "You don't have any lists to reorder yet."
-msgstr "Sie haben noch keine Listen zum Umsortieren."
+#~ msgid "You don't have any lists to reorder yet."
+#~ msgstr "Sie haben noch keine Listen zum Umsortieren."
 
 #: src/routes/_layout.index.tsx
 msgid "{weekday} · Trending"
@@ -2364,8 +2361,8 @@ msgstr ""
 
 #: src/components/reader/reorder-lists-modal.tsx
 #: src/components/reader/reorder-subscriptions-modal.tsx
-msgid "Save order"
-msgstr "Reihenfolge speichern"
+#~ msgid "Save order"
+#~ msgstr "Reihenfolge speichern"
 
 #: src/routes/_layout.discover.tsx
 msgid "No publications match this topic yet."
@@ -2574,6 +2571,10 @@ msgstr "Datensatz ansehen"
 msgid "Optional: add a note about why you're saving this"
 msgstr "Optional: Notiz, warum Sie dies speichern"
 
+#: src/components/reader/app-shell.tsx
+msgid "{count} unread"
+msgstr ""
+
 #: src/components/user-settings-view.tsx
 msgid "Best of your subscriptions"
 msgstr ""
@@ -2728,8 +2729,8 @@ msgid "Remove these?"
 msgstr ""
 
 #: src/components/reader/reorder-lists-modal.tsx
-msgid "Sidebar lists"
-msgstr "Seitenleisten-Listen"
+#~ msgid "Sidebar lists"
+#~ msgstr "Seitenleisten-Listen"
 
 #: src/components/labeler-detail-view.tsx
 msgid "Subscribe to choose how these labels are applied while you read."
@@ -3256,7 +3257,6 @@ msgstr ""
 
 #: src/components/reader/app-shell.tsx
 #: src/components/reader/list-edit-modal.tsx
-#: src/components/reader/reorder-subscriptions-modal.tsx
 #: src/components/reader/subscriptions-sheet.tsx
 #: src/components/reader/subscriptions-table.tsx
 #: src/routes/_layout.index.tsx
@@ -3475,8 +3475,8 @@ msgid "In your inbox"
 msgstr "In Ihrem Postfach"
 
 #: src/components/reader/reorder-subscriptions-modal.tsx
-msgid "Drag to change the order your subscriptions appear in the sidebar."
-msgstr ""
+#~ msgid "Drag to change the order your subscriptions appear in the sidebar."
+#~ msgstr ""
 
 #: src/components/user-settings-view.tsx
 msgid "Appearance, reading preferences, and personal data."
@@ -3744,8 +3744,8 @@ msgid "All caught up"
 msgstr "Alles gelesen"
 
 #: src/components/reader/reorder-subscriptions-modal.tsx
-msgid "Reorder subscriptions"
-msgstr ""
+#~ msgid "Reorder subscriptions"
+#~ msgstr ""
 
 #: src/components/onboarding/welcome-wizard.tsx
 msgid "{selectedCount} selected"
@@ -3772,8 +3772,8 @@ msgid "Searching…"
 msgstr "Wird gesucht …"
 
 #: src/components/reader/app-shell.tsx
-msgid "Toggle list {name}"
-msgstr "Liste {name} umschalten"
+#~ msgid "Toggle list {name}"
+#~ msgstr "Liste {name} umschalten"
 
 #: src/components/reader/privacy-view.tsx
 msgid "Privacy policy"
@@ -4346,8 +4346,8 @@ msgid "Articles you've bookmarked to read later."
 msgstr ""
 
 #: src/components/reader/app-shell.tsx
-msgid "{unread} unread"
-msgstr "{unread} ungelesen"
+#~ msgid "{unread} unread"
+#~ msgstr "{unread} ungelesen"
 
 #: src/components/user-settings-view.tsx
 msgid "Delete all bookmarks?"
@@ -4410,7 +4410,6 @@ msgstr "Weitere Sammlungen"
 msgid "One tasteful email a week"
 msgstr "Eine gute E-Mail pro Woche"
 
-#: src/components/reader/app-shell.tsx
 #: src/components/reader/subscriptions-sheet.tsx
 msgid "{unreadCount} unread"
 msgstr "{unreadCount} ungelesen"
@@ -4601,8 +4600,8 @@ msgid "Search your subscriptions"
 msgstr "Ihre Abos durchsuchen"
 
 #: src/components/reader/reorder-subscriptions-modal.tsx
-msgid "Subscription"
-msgstr ""
+#~ msgid "Subscription"
+#~ msgstr ""
 
 #: src/components/reader/collection-publication-editor.tsx
 msgid "Icon"
@@ -4669,8 +4668,8 @@ msgid "Text"
 msgstr "Text"
 
 #: src/components/reader/app-shell.tsx
-msgid "Open list {name}"
-msgstr "Liste {name} öffnen"
+#~ msgid "Open list {name}"
+#~ msgstr "Liste {name} öffnen"
 
 #: src/components/reader/subscriptions-sheet.tsx
 msgid "Discover more publications"
@@ -4837,8 +4836,8 @@ msgid "List views"
 msgstr "Listenansichten"
 
 #: src/components/reader/reorder-lists-modal.tsx
-msgid "Drag to change the order your lists appear in the sidebar."
-msgstr "Ziehen Sie, um die Reihenfolge Ihrer Listen in der Seitenleiste zu ändern."
+#~ msgid "Drag to change the order your lists appear in the sidebar."
+#~ msgstr "Ziehen Sie, um die Reihenfolge Ihrer Listen in der Seitenleiste zu ändern."
 
 #: src/lib/sidebar-nav.ts
 msgid "Find publications, people, topics, and headlines."

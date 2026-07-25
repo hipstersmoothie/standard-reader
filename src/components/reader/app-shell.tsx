@@ -4,19 +4,17 @@ import type { MessageDescriptor } from "@lingui/core";
 import { msg } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
 import * as stylex from "@stylexjs/stylex";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useRouter, useRouterState } from "@tanstack/react-router";
 import {
   ArrowDownWideNarrow,
   ArrowLeft,
-  ArrowUpDown,
   Bookmark,
   ChevronsDownUp,
   ChevronsUpDown,
   Cog,
   Compass,
   FolderPlus,
-  GripVertical,
   Home,
   Layers,
   Newspaper,
@@ -31,9 +29,12 @@ import {
   useState,
 } from "react";
 import { useFocusRing } from "react-aria";
+import { useDragAndDrop } from "react-aria-components";
 
 import { DirectionalIcon } from "#/design-system/directional-icon";
 import { useAnimatedNavbar } from "#/design-system/navbar/useAnimatedNavbar";
+import type { SubscriptionList } from "#/integrations/tanstack-query/api-lists.functions";
+import { listApi } from "#/integrations/tanstack-query/api-lists.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
 import {
   listsQueryOptions,
@@ -49,11 +50,6 @@ import { useCompactNav } from "#/lib/use-media-query";
 
 import { Avatar } from "../../design-system/avatar";
 import { Button } from "../../design-system/button";
-import {
-  Disclosure,
-  DisclosurePanel,
-  DisclosureTitle,
-} from "../../design-system/disclosure";
 import { Flex } from "../../design-system/flex";
 import { IconButton } from "../../design-system/icon-button";
 import { Menu, MenuItem, SubMenu } from "../../design-system/menu";
@@ -81,6 +77,7 @@ import {
   tracking,
 } from "../../design-system/theme/typography.stylex";
 import { ToastRegion } from "../../design-system/toast";
+import { Tree, TreeItem } from "../../design-system/tree";
 import type {
   FollowingPublication,
   FollowingUser,
@@ -96,8 +93,6 @@ import { LanguageHintPrompt } from "./language-hint-prompt";
 import { ListEditModal } from "./list-edit-modal";
 import { PageReaderBar } from "./page-reader-bar";
 import { PublicationThemeScope } from "./publication-theme-scope";
-import { ReorderListsModal } from "./reorder-lists-modal";
-import { ReorderSubscriptionsModal } from "./reorder-subscriptions-modal";
 import {
   SelectionDockProvider,
   useSelectionDock,
@@ -109,6 +104,7 @@ import {
 } from "./subscriptions-sheet";
 import type { OrderableSubscription } from "./use-sidebar-pref";
 import {
+  applyManualOrder,
   orderGroups,
   orderSubscriptions,
   useSidebarPref,
@@ -253,10 +249,6 @@ const styles = stylex.create({
     paddingInlineEnd: horizontalSpace.lg,
     paddingTop: verticalSpace["3xl"],
   },
-  sideLabelActions: {
-    alignItems: "center",
-    display: "flex",
-  },
   /** Inherits the label's type; only the hover/current affordance is its own. */
   sideLabelLink: {
     borderRadius: radius.sm,
@@ -273,58 +265,6 @@ const styles = stylex.create({
   sideLabelLinkActive: {
     color: primaryColor.text2,
   },
-  listLabel: {
-    alignItems: "center",
-    color: uiColor.text1,
-    fontFamily: fontFamily.sans,
-    fontSize: "0.65rem",
-    fontWeight: fontWeight.semibold,
-    letterSpacing: tracking.widest,
-    textTransform: "uppercase",
-    paddingBottom: verticalSpace.xxs,
-    paddingInlineStart: horizontalSpace.lg,
-    paddingInlineEnd: horizontalSpace.lg,
-    paddingTop: verticalSpace.lg,
-  },
-  /**
-   * Extra separation below an *expanded* group's rows. Lives inside the
-   * disclosure panel so collapsed groups stack tightly.
-   */
-  listGroupSpacer: {
-    height: verticalSpace.sm,
-  },
-  listName: {
-    overflow: "hidden",
-    flexBasis: "0%",
-    flexGrow: 1,
-    flexShrink: 1,
-    textOverflow: "ellipsis",
-    whiteSpace: "nowrap",
-    minWidth: 0,
-  },
-  /** Group name as a link to the list's public page. */
-  listTitleLink: {
-    textDecoration: {
-      default: "none",
-      ":hover": "underline",
-    },
-    alignItems: "center",
-    borderRadius: radius.xs,
-    outline: {
-      default: "none",
-      ":is([data-focus-visible])": `2px solid ${focusColor.ring}`,
-    },
-    outlineOffset: "2px",
-    color: {
-      default: uiColor.text1,
-      ":is([data-sidebar-label]:hover *)": uiColor.text2,
-    },
-    display: "flex",
-    flexBasis: "0%",
-    flexGrow: 1,
-    flexShrink: 1,
-    minWidth: 0,
-  },
   /** Header icons: muted until the header row is hovered. */
   headerIcon: {
     // No divider between grouped icon buttons.
@@ -334,75 +274,11 @@ const styles = stylex.create({
       ":is([data-sidebar-label]:hover *)": uiColor.text2,
     },
   },
-  /** Chevron-only disclosure trigger; sized to match the sm IconButton. */
-  listToggle: {
-    borderRadius: radius.sm,
-    justifyContent: "center",
-    height: size["2xl"],
-    paddingBottom: spacing["0"],
-    paddingInlineStart: spacing["0"],
-    paddingInlineEnd: spacing["0"],
-    paddingTop: spacing["0"],
-    width: size["2xl"],
-  },
-  listPanelContent: {
-    paddingBottom: spacing["0"],
-    paddingInlineStart: spacing["0"],
-    paddingInlineEnd: spacing["0"],
-    paddingTop: spacing["0"],
-  },
-  listEmpty: {
-    color: uiColor.text1,
-    fontFamily: fontFamily.serif,
-    fontSize: fontSize.sm,
-    fontStyle: "italic",
-    paddingInlineStart: horizontalSpace.lg,
-    paddingInlineEnd: horizontalSpace.lg,
-  },
   followList: {
     columnGap: gap.none,
     display: "flex",
     flexDirection: "column",
     rowGap: gap.none,
-  },
-  followRow: {
-    borderRadius: radius.sm,
-    textDecoration: "none",
-    alignItems: "center",
-    backgroundColor: {
-      default: "transparent",
-      ":hover": uiColor.component2,
-    },
-    outline: {
-      default: "none",
-      ":is([data-focus-visible])": `2px solid ${focusColor.ring}`,
-    },
-    outlineOffset: "-2px",
-    color: "inherit",
-    columnGap: gap.lg,
-    display: "flex",
-    rowGap: gap.lg,
-    paddingBottom: verticalSpace.sm,
-    paddingInlineStart: horizontalSpace.lg,
-    paddingInlineEnd: horizontalSpace.lg,
-    paddingTop: verticalSpace.sm,
-  },
-  followName: {
-    // Isolate only, no `dir="auto"`: this is a single-line NAME in a UI row.
-    // It must stay aligned with the sidebar's nav labels (right-aligned under
-    // RTL) while still ordering its own characters correctly. `dir="auto"`
-    // here would left-align it and break the column's rhythm.
-    unicodeBidi: "isolate",
-    overflow: "hidden",
-    color: uiColor.text2,
-    flexBasis: "0%",
-    flexGrow: 1,
-    flexShrink: 1,
-    fontFamily: fontFamily.sans,
-    fontSize: fontSize.sm,
-    textOverflow: "ellipsis",
-    whiteSpace: "nowrap",
-    minWidth: 0,
   },
   followUnread: {
     borderRadius: radius.full,
@@ -694,6 +570,41 @@ type FlatSubscription = OrderableSubscription &
     | { kind: "person"; user: FollowingUser }
   );
 
+/** A list group as a top-level tree node — its own members (pubs + people,
+ * combined into one display order) render as its children. */
+interface TreeListNode extends OrderableSubscription {
+  kind: "list";
+  listUri: string;
+  /** Rkey of an own list; null for a saved list (not editable by this reader). */
+  rkey: string | null;
+  editable: boolean;
+  members: Array<FlatSubscription>;
+}
+
+/** One top-level row in the sidebar's subscriptions tree: a list group or an
+ * ungrouped publication/person. */
+type TreeTopNode = TreeListNode | FlatSubscription;
+
+/** Move `draggedId` to just before/after `targetId` within `ids` (removing it
+ * from its old position first). Returns `ids` unchanged if `targetId` isn't
+ * present. */
+function reorderIds(
+  ids: Array<string>,
+  draggedId: string,
+  targetId: string,
+  dropPosition: "before" | "after",
+): Array<string> {
+  const withoutDragged = ids.filter((id) => id !== draggedId);
+  const targetIndex = withoutDragged.indexOf(targetId);
+  if (targetIndex === -1) return ids;
+  const insertAt = dropPosition === "after" ? targetIndex + 1 : targetIndex;
+  return [
+    ...withoutDragged.slice(0, insertAt),
+    draggedId,
+    ...withoutDragged.slice(insertAt),
+  ];
+}
+
 interface NavLink {
   /** Stable id used by "Customize sidebar" to hide the item. */
   id: SidebarNavId;
@@ -832,179 +743,60 @@ function FollowingAvatar({
   );
 }
 
-function FollowRow({ pub }: { pub: FollowingPublication }) {
+function UnreadBadge({ count }: { count: number }) {
   const { t } = useLingui();
   const fmt = useFormatters();
-  const focusRingProps = useFocusRingProps();
-  const rowProps = { ...focusRingProps, ...stylex.props(styles.followRow) };
+  return (
+    <span
+      {...stylex.props(styles.followUnread)}
+      aria-label={t`${count} unread`}
+    >
+      {formatSidebarUnreadCount(fmt, count)}
+    </span>
+  );
+}
+
+/** Navigate to a publication's page (on-site route, resolved internal link, or
+ * external url in a new tab) — mirrors the resolution order the old sidebar
+ * `<Link>` rows used. */
+function navigateToPublication(
+  router: ReturnType<typeof useRouter>,
+  pub: FollowingPublication,
+): void {
   const params = publicationLinkParams(pub.uri);
-  const avatar = (
-    <FollowingAvatar
-      name={pub.name}
-      iconUrl={pub.iconUrl ?? pub.ownerAvatarUrl}
-    />
-  );
-  const name = <span {...stylex.props(styles.followName)}>{pub.name}</span>;
-  const unreadCount = pub.unreadCount;
-  const unreadBadge =
-    unreadCount > 0 ? (
-      <span
-        {...stylex.props(styles.followUnread)}
-        aria-label={t`${unreadCount} unread`}
-      >
-        {formatSidebarUnreadCount(fmt, pub.unreadCount)}
-      </span>
-    ) : null;
-  const content = (
-    <>
-      {avatar}
-      {name}
-      {unreadBadge}
-    </>
-  );
-
   if (params) {
-    return (
-      <Link to="/p/$did/$rkey" params={params} {...rowProps}>
-        {content}
-      </Link>
-    );
+    void router.navigate({ to: "/p/$did/$rkey", params });
+    return;
   }
-
   const href = pub.url;
-  if (!href) {
-    return <div {...stylex.props(styles.followRow)}>{content}</div>;
-  }
-
+  if (!href) return;
   const internal = parseInternalRoute(href);
   if (internal?.params) {
-    return (
-      <Link to={internal.to} params={internal.params} {...rowProps}>
-        {content}
-      </Link>
-    );
+    void router.navigate({ to: internal.to, params: internal.params });
+    return;
   }
   if (internal) {
-    return (
-      <Link to={internal.to} {...rowProps}>
-        {content}
-      </Link>
-    );
+    void router.navigate({ to: internal.to });
+    return;
   }
-
-  return (
-    <a href={href} target="_blank" rel="noreferrer" {...rowProps}>
-      {content}
-    </a>
-  );
+  window.open(href, "_blank", "noopener,noreferrer");
 }
 
-function FollowUserRow({ user: followed }: { user: FollowingUser }) {
-  const { t } = useLingui();
-  const fmt = useFormatters();
-  const focusRingProps = useFocusRingProps();
-  const rowProps = { ...focusRingProps, ...stylex.props(styles.followRow) };
-  const name =
-    followed.displayName ??
-    (followed.handle ? `@${followed.handle}` : followed.did);
-  const unread = followed.unreadCount ?? 0;
-  return (
-    <Link to="/u/$did" params={{ did: followed.did }} {...rowProps}>
-      <FollowingAvatar name={name} iconUrl={followed.avatarUrl} />
-      <span {...stylex.props(styles.followName)}>{name}</span>
-      {unread > 0 ? (
-        <span
-          {...stylex.props(styles.followUnread)}
-          aria-label={t`${unread} unread`}
-        >
-          {formatSidebarUnreadCount(fmt, unread)}
-        </span>
-      ) : null}
-    </Link>
-  );
+function navigateToUser(
+  router: ReturnType<typeof useRouter>,
+  followed: FollowingUser,
+): void {
+  void router.navigate({ to: "/u/$did", params: { did: followed.did } });
 }
 
-function SidebarList({
-  name,
-  listUri,
-  pubs,
-  users,
-  isExpanded,
-  onExpandedChange,
-}: {
-  name: string;
-  /** AT-URI of the list; links the group to its public `/l/$did/$rkey` page. */
-  listUri: string;
-  pubs: Array<FollowingPublication>;
-  users: Array<FollowingUser>;
-  /** Controlled expansion so "collapse all" can drive every group at once. */
-  isExpanded: boolean;
-  onExpandedChange: (expanded: boolean) => void;
-}) {
-  const { t } = useLingui();
-  const fmt = useFormatters();
+function navigateToList(
+  router: ReturnType<typeof useRouter>,
+  listUri: string,
+): void {
   const link = listLinkParams(listUri);
-  const unreadTotal =
-    pubs.reduce((sum, pub) => sum + pub.unreadCount, 0) +
-    users.reduce((sum, person) => sum + (person.unreadCount ?? 0), 0);
-  const titleFocusRingProps = useFocusRingProps();
-
-  return (
-    <Disclosure isExpanded={isExpanded} onExpandedChange={onExpandedChange}>
-      <Flex
-        align="center"
-        justify="between"
-        gap="sm"
-        data-sidebar-label="true"
-        style={styles.listLabel}
-      >
-        {link ? (
-          <Link
-            to="/l/$did/$rkey"
-            params={link}
-            aria-label={t`Open list ${name}`}
-            {...titleFocusRingProps}
-            {...stylex.props(styles.listTitleLink)}
-          >
-            <span {...stylex.props(styles.listName)}>{name}</span>
-          </Link>
-        ) : (
-          <span {...stylex.props(styles.listName)}>{name}</span>
-        )}
-        <div {...stylex.props(styles.sideLabelActions)}>
-          {unreadTotal > 0 ? (
-            <span>{formatSidebarUnreadCount(fmt, unreadTotal)}</span>
-          ) : null}
-          <DisclosureTitle
-            style={styles.listToggle}
-            chevronStyle={styles.headerIcon}
-            aria-label={t`Toggle list ${name}`}
-          >
-            {null}
-          </DisclosureTitle>
-        </div>
-      </Flex>
-      <DisclosurePanel contentStyle={styles.listPanelContent}>
-        <div {...stylex.props(styles.followList)}>
-          {pubs.length === 0 && users.length === 0 ? (
-            <span {...stylex.props(styles.listEmpty)}>
-              <Trans>Empty list.</Trans>
-            </span>
-          ) : (
-            <>
-              {pubs.map((pub) => (
-                <FollowRow key={pub.uri} pub={pub} />
-              ))}
-              {users.map((person) => (
-                <FollowUserRow key={person.did} user={person} />
-              ))}
-            </>
-          )}
-        </div>
-        <div {...stylex.props(styles.listGroupSpacer)} aria-hidden />
-      </DisclosurePanel>
-    </Disclosure>
-  );
+  if (link) {
+    void router.navigate({ to: "/l/$did/$rkey", params: link });
+  }
 }
 
 const BottomNavItem = forwardRef<
@@ -1290,11 +1082,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       .map((did) => followingUsersByDid.get(did))
       .filter((person): person is FollowingUser => person != null);
   // Own + saved lists as render-ready groups (shared by sidebar and sheet).
+  // Only own lists (`editable`) can have their membership changed by dragging
+  // in the sidebar tree — a saved list's members belong to someone else.
   const listGroups: Array<SubscriptionListGroup> = [
     ...lists.map((list) => ({
       key: list.uri,
       name: list.name,
       listUri: list.uri,
+      rkey: list.rkey,
+      editable: true,
       pubs: list.publications
         .map((uri) => followingByUri.get(uri))
         .filter((pub): pub is FollowingPublication => pub != null),
@@ -1306,6 +1102,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         ? `${saved.list.name} · @${saved.owner.handle}`
         : saved.list.name,
       listUri: saved.list.uri,
+      rkey: null,
+      editable: false,
       pubs: saved.publications.map(
         (pub) => followingByUri.get(pub.uri) ?? { ...pub, unreadCount: 0 },
       ),
@@ -1341,7 +1139,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           recentAt: pub.lastDocumentAt,
         })),
         groupSort,
-        [],
       );
       const users = orderSubscriptions(
         group.users.map((person) => ({
@@ -1352,7 +1149,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           recentAt: person.followedAt,
         })),
         groupSort,
-        [],
       );
       const groupUnreadCount =
         pubs.reduce((sum, pub) => sum + pub.unreadCount, 0) +
@@ -1363,6 +1159,28 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       const groupRecentAt = [pubs[0]?.recentAt, users[0]?.recentAt]
         .filter((value): value is string => value != null)
         .toSorted((a, b) => Date.parse(b) - Date.parse(a))[0];
+      const members: Array<FlatSubscription> = [
+        ...pubs.map(
+          (pub): FlatSubscription => ({
+            kind: "publication",
+            pub,
+            id: pub.uri,
+            name: pub.name,
+            unreadCount: pub.unreadCount,
+            recentAt: pub.recentAt,
+          }),
+        ),
+        ...users.map(
+          (person): FlatSubscription => ({
+            kind: "person",
+            user: person,
+            id: person.did,
+            name: person.name,
+            unreadCount: person.unreadCount,
+            recentAt: person.recentAt,
+          }),
+        ),
+      ];
       return {
         ...group,
         id: group.listUri,
@@ -1370,10 +1188,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         recentAt: groupRecentAt ?? null,
         pubs,
         users,
+        members,
       };
     }),
     groupSort,
-    [],
   );
   const groupUris = orderedGroups.map((group) => group.listUri);
   const allCollapsed =
@@ -1425,12 +1243,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       ),
     ],
     sidebarPref.subscriptionSort,
-    sidebarPref.subscriptionOrder,
   );
   // Creation only — editing lives on the list's own page.
   const [newListOpen, setNewListOpen] = useState(false);
-  const [reorderOpen, setReorderOpen] = useState(false);
-  const [reorderSubsOpen, setReorderSubsOpen] = useState(false);
 
   const openAddPublication = () => {
     setSubsSheetOpen(false);
@@ -1442,19 +1257,218 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     setNewListOpen(true);
   };
 
-  const openReorder = () => {
-    setSubsSheetOpen(false);
-    setReorderOpen(true);
-  };
-
-  const openReorderSubscriptions = () => {
-    setSubsSheetOpen(false);
-    setReorderSubsOpen(true);
-  };
-
   const toggleAllGroups = () => {
     sidebarPref.setAllCollapsed(groupUris, !allCollapsed);
   };
+
+  // ── Subscriptions tree: one level deep (list groups + ungrouped rows),
+  // fully drag-and-drop rearrangeable when subscriptionSort is "default".
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const setListMembersMutation = useMutation(
+    listApi.setListMembersMutationOptions(),
+  );
+  const groupNodes: Array<TreeListNode> = displayGroups.map((group) => ({
+    kind: "list",
+    id: group.listUri,
+    name: group.name,
+    listUri: group.listUri,
+    rkey: group.rkey,
+    editable: group.editable,
+    unreadCount: group.unreadCount,
+    recentAt: group.recentAt,
+    members: group.members,
+  }));
+  const naturalTopOrder: Array<TreeTopNode> = [
+    ...groupNodes,
+    ...flatSubscriptions,
+  ];
+  const topNodes: Array<TreeTopNode> =
+    sidebarPref.subscriptionSort === "default"
+      ? applyManualOrder(naturalTopOrder, sidebarPref.treeOrder)
+      : naturalTopOrder;
+  const groupById = new Map(groupNodes.map((g) => [g.id, g]));
+  const topLevelIds = new Set(topNodes.map((n) => n.id));
+  const memberParentListUri = new Map<string, string>();
+  const memberKindById = new Map<string, "publication" | "person">();
+  for (const member of flatSubscriptions) {
+    memberKindById.set(member.id, member.kind);
+  }
+  for (const group of groupNodes) {
+    for (const member of group.members) {
+      memberParentListUri.set(member.id, group.id);
+      memberKindById.set(member.id, member.kind);
+    }
+  }
+
+  const saveListMembers = (
+    rkey: string,
+    publications: Array<string>,
+    users: Array<string>,
+  ) => {
+    queryClient.setQueryData(
+      listsQueryOptions().queryKey,
+      (current: Array<SubscriptionList> | undefined) =>
+        current?.map((list) =>
+          list.rkey === rkey ? { ...list, publications, users } : list,
+        ) ?? current,
+    );
+    setListMembersMutation.mutate({ rkey, publications, users });
+  };
+
+  const splitIdsByKind = (ids: Array<string>) => {
+    const publications: Array<string> = [];
+    const users: Array<string> = [];
+    for (const id of ids) {
+      if (memberKindById.get(id) === "person") {
+        users.push(id);
+      } else {
+        publications.push(id);
+      }
+    }
+    return { publications, users };
+  };
+
+  const saveGroupMemberOrder = (
+    group: TreeListNode,
+    memberIds: Array<string>,
+  ) => {
+    if (!group.rkey) return;
+    const { publications, users } = splitIdsByKind(memberIds);
+    saveListMembers(group.rkey, publications, users);
+  };
+
+  const removeFromGroup = (group: TreeListNode, id: string) => {
+    if (!group.rkey) return;
+    const remaining = group.members
+      .map((m) => m.id)
+      .filter((mid) => mid !== id);
+    saveGroupMemberOrder(group, remaining);
+  };
+
+  const dropFromTopLevel = (id: string) => {
+    sidebarPref.saveTreeOrder(
+      topNodes.map((n) => n.id).filter((nid) => nid !== id),
+    );
+  };
+
+  const { dragAndDropHooks: subscriptionsDragAndDropHooks } = useDragAndDrop({
+    isDisabled: sidebarPref.subscriptionSort !== "default",
+    getItems: (keys) => [...keys].map((key) => ({ "text/plain": String(key) })),
+    getDropOperation(target) {
+      if (target.type !== "item") return "cancel";
+      if (target.dropPosition === "on" && !groupById.has(String(target.key))) {
+        return "cancel";
+      }
+      return "move";
+    },
+    onMove(e) {
+      if (e.target.type !== "item") return;
+      const draggedId = String([...e.keys][0]);
+      const targetId = String(e.target.key);
+      const dropPosition = e.target.dropPosition;
+      if (draggedId === targetId) return;
+
+      const draggedGroup = groupById.get(draggedId);
+      const sourceListUri = draggedGroup
+        ? null
+        : (memberParentListUri.get(draggedId) ?? null);
+
+      if (draggedGroup) {
+        // Lists only ever live at the top level.
+        if (dropPosition === "on" || !topLevelIds.has(targetId)) return;
+        sidebarPref.saveTreeOrder(
+          reorderIds(
+            topNodes.map((n) => n.id),
+            draggedId,
+            targetId,
+            dropPosition,
+          ),
+        );
+        return;
+      }
+
+      const draggedKind = memberKindById.get(draggedId);
+      if (!draggedKind) return;
+      const sourceGroup = sourceListUri ? groupById.get(sourceListUri) : null;
+      // Can't remove a member from a list this reader doesn't own.
+      if (sourceListUri && !sourceGroup?.editable) return;
+
+      if (dropPosition === "on") {
+        const targetGroup = groupById.get(targetId);
+        if (!targetGroup?.editable || sourceListUri === targetGroup.id) return;
+        if (sourceGroup) {
+          removeFromGroup(sourceGroup, draggedId);
+        } else {
+          dropFromTopLevel(draggedId);
+        }
+        saveGroupMemberOrder(targetGroup, [
+          ...targetGroup.members.map((m) => m.id),
+          draggedId,
+        ]);
+        return;
+      }
+
+      if (topLevelIds.has(targetId)) {
+        // Landing at the top level — reorder there, removing from any
+        // editable source list first.
+        if (sourceGroup) {
+          removeFromGroup(sourceGroup, draggedId);
+          sidebarPref.saveTreeOrder(
+            reorderIds(
+              [draggedId, ...topNodes.map((n) => n.id)],
+              draggedId,
+              targetId,
+              dropPosition,
+            ),
+          );
+        } else {
+          sidebarPref.saveTreeOrder(
+            reorderIds(
+              topNodes.map((n) => n.id),
+              draggedId,
+              targetId,
+              dropPosition,
+            ),
+          );
+        }
+        return;
+      }
+
+      // Target is a member nested inside some (editable) list.
+      const targetListUri = memberParentListUri.get(targetId);
+      const targetGroup = targetListUri ? groupById.get(targetListUri) : null;
+      if (!targetGroup?.editable) return;
+
+      if (sourceListUri === targetGroup.id) {
+        saveGroupMemberOrder(
+          targetGroup,
+          reorderIds(
+            targetGroup.members.map((m) => m.id),
+            draggedId,
+            targetId,
+            dropPosition,
+          ),
+        );
+        return;
+      }
+
+      if (sourceGroup) {
+        removeFromGroup(sourceGroup, draggedId);
+      } else {
+        dropFromTopLevel(draggedId);
+      }
+      saveGroupMemberOrder(
+        targetGroup,
+        reorderIds(
+          [draggedId, ...targetGroup.members.map((m) => m.id)],
+          draggedId,
+          targetId,
+          dropPosition,
+        ),
+      );
+    },
+  });
 
   return (
     <PageReaderProvider>
@@ -1547,23 +1561,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                         </MenuItem>
                       </SubMenu>
                     ) : null}
-                    {hasUngrouped ? (
-                      <MenuItem
-                        prefix={<GripVertical size={14} />}
-                        onAction={openReorderSubscriptions}
-                      >
-                        <Trans>Reorder subscriptions…</Trans>
-                      </MenuItem>
-                    ) : null}
-                    {hasListGroups ? (
-                      <MenuItem
-                        prefix={<ArrowUpDown size={14} />}
-                        isDisabled={sidebarPref.subscriptionSort !== "default"}
-                        onAction={openReorder}
-                      >
-                        <Trans>Reorder lists…</Trans>
-                      </MenuItem>
-                    ) : null}
                     <MenuItem
                       prefix={<FolderPlus size={14} />}
                       onAction={() => setNewListOpen(true)}
@@ -1605,36 +1602,121 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     )}
                   </span>
                 ) : (
-                  // People live under Subscriptions too — one grouping keeps the
-                  // sidebar's information architecture simple, even though
-                  // "subscribing" (publications) and "following" (people) are
-                  // technically different graph edges. People sorted into a list
-                  // render under that list group instead (see below). The sort
-                  // mode ("recent" excepted) interleaves both kinds by name /
-                  // unread count / manual order rather than keeping them in
-                  // separate blocks.
-                  flatSubscriptions.map((item) =>
-                    item.kind === "publication" ? (
-                      <FollowRow key={item.id} pub={item.pub} />
-                    ) : (
-                      <FollowUserRow key={item.id} user={item.user} />
-                    ),
-                  )
+                  // One level deep: list groups (collapsible, own members as
+                  // children) and ungrouped publications/people share a single
+                  // tree so they can be freely drag-and-dropped relative to
+                  // each other — reorder lists, reorder or move members
+                  // between lists, and move members in or out of lists.
+                  // Enabled only when subscriptionSort is "default"; an
+                  // automatic sort computes its own arrangement instead.
+                  <Tree
+                    aria-label={t`Subscriptions`}
+                    items={topNodes}
+                    selectionMode="none"
+                    dragAndDropHooks={subscriptionsDragAndDropHooks}
+                    expandedKeys={
+                      new Set(
+                        groupNodes
+                          .filter((g) => !sidebarPref.isCollapsed(g.listUri))
+                          .map((g) => g.id),
+                      )
+                    }
+                    onExpandedChange={(keys) => {
+                      for (const g of groupNodes) {
+                        const shouldExpand = keys.has(g.id);
+                        const currentlyExpanded = !sidebarPref.isCollapsed(
+                          g.listUri,
+                        );
+                        if (shouldExpand !== currentlyExpanded) {
+                          sidebarPref.setCollapsed(g.listUri, !shouldExpand);
+                        }
+                      }
+                    }}
+                  >
+                    {(node: TreeTopNode) =>
+                      node.kind === "list" ? (
+                        <TreeItem
+                          id={node.id}
+                          title={node.name}
+                          textValue={node.name}
+                          suffix={
+                            node.unreadCount > 0 ? (
+                              <UnreadBadge count={node.unreadCount} />
+                            ) : undefined
+                          }
+                          onAction={() => navigateToList(router, node.listUri)}
+                        >
+                          {node.members.length === 0 ? (
+                            <TreeItem
+                              id={`${node.id}#empty`}
+                              title={t`Empty list.`}
+                              textValue={t`Empty list.`}
+                              isDisabled
+                            />
+                          ) : (
+                            node.members.map((member) => (
+                              <TreeItem
+                                key={member.id}
+                                id={member.id}
+                                title={member.name}
+                                textValue={member.name}
+                                prefix={
+                                  <FollowingAvatar
+                                    name={member.name}
+                                    iconUrl={
+                                      member.kind === "publication"
+                                        ? (member.pub.iconUrl ??
+                                          member.pub.ownerAvatarUrl)
+                                        : member.user.avatarUrl
+                                    }
+                                  />
+                                }
+                                suffix={
+                                  member.unreadCount > 0 ? (
+                                    <UnreadBadge count={member.unreadCount} />
+                                  ) : undefined
+                                }
+                                onAction={() =>
+                                  member.kind === "publication"
+                                    ? navigateToPublication(router, member.pub)
+                                    : navigateToUser(router, member.user)
+                                }
+                              />
+                            ))
+                          )}
+                        </TreeItem>
+                      ) : (
+                        <TreeItem
+                          id={node.id}
+                          title={node.name}
+                          textValue={node.name}
+                          prefix={
+                            <FollowingAvatar
+                              name={node.name}
+                              iconUrl={
+                                node.kind === "publication"
+                                  ? (node.pub.iconUrl ??
+                                    node.pub.ownerAvatarUrl)
+                                  : node.user.avatarUrl
+                              }
+                            />
+                          }
+                          suffix={
+                            node.unreadCount > 0 ? (
+                              <UnreadBadge count={node.unreadCount} />
+                            ) : undefined
+                          }
+                          onAction={() =>
+                            node.kind === "publication"
+                              ? navigateToPublication(router, node.pub)
+                              : navigateToUser(router, node.user)
+                          }
+                        />
+                      )
+                    }
+                  </Tree>
                 )}
               </div>
-              {displayGroups.map((group) => (
-                <SidebarList
-                  key={group.key}
-                  name={group.name}
-                  listUri={group.listUri}
-                  pubs={group.pubs}
-                  users={group.users}
-                  isExpanded={!sidebarPref.isCollapsed(group.listUri)}
-                  onExpandedChange={(expanded) =>
-                    sidebarPref.setCollapsed(group.listUri, !expanded)
-                  }
-                />
-              ))}
             </div>
 
             <Flex direction="column" gap="lg" style={styles.foot}>
@@ -1715,7 +1797,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             groups={displayGroups}
             onAddPublication={openAddPublication}
             onNewList={signedIn ? openNewList : undefined}
-            onReorder={signedIn && hasListGroups ? openReorder : undefined}
             allCollapsed={allCollapsed}
             onToggleAll={hasListGroups ? toggleAllGroups : undefined}
             isCollapsed={sidebarPref.isCollapsed}
@@ -1732,28 +1813,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             list={null}
             following={following}
             followingUsers={followingUsers}
-          />
-          <ReorderListsModal
-            isOpen={reorderOpen}
-            onOpenChange={setReorderOpen}
-            groups={orderedGroups.map((group) => ({
-              listUri: group.listUri,
-              name: group.name,
-            }))}
-            onSave={sidebarPref.saveOrder}
-          />
-          <ReorderSubscriptionsModal
-            isOpen={reorderSubsOpen}
-            onOpenChange={setReorderSubsOpen}
-            subscriptions={flatSubscriptions.map((item) => ({
-              id: item.id,
-              name: item.name,
-              avatarUrl:
-                item.kind === "publication"
-                  ? (item.pub.iconUrl ?? item.pub.ownerAvatarUrl)
-                  : item.user.avatarUrl,
-            }))}
-            onSave={sidebarPref.saveSubscriptionOrder}
           />
           <AtstoreReviewPrompt />
           <LanguageHintPrompt />
