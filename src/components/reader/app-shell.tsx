@@ -1873,6 +1873,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                                     <GripVertical aria-hidden size={14} />
                                   </AriaButton>
                                 ) : null}
+                                <span {...stylex.props(styles.groupName)}>
+                                  {node.name}
+                                </span>
+                                {node.unreadCount > 0 ? (
+                                  <UnreadBadge count={node.unreadCount} />
+                                ) : null}
                                 {hasChildItems ? (
                                   <AriaButton
                                     slot="chevron"
@@ -1884,12 +1890,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                                       <ChevronRight aria-hidden size={14} />
                                     )}
                                   </AriaButton>
-                                ) : null}
-                                <span {...stylex.props(styles.groupName)}>
-                                  {node.name}
-                                </span>
-                                {node.unreadCount > 0 ? (
-                                  <UnreadBadge count={node.unreadCount} />
                                 ) : null}
                               </div>
                             )}

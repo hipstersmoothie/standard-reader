@@ -30,7 +30,16 @@ export function sidebarPrefQueryOptions() {
 /** Seed sidebar + list queries from a single snapshot when bootstrap did not. */
 async function ensureShellSnapshot(queryClient: QueryClient): Promise<void> {
   const sidebarOpts = sidebarQueryOptions();
-  if (queryClient.getQueryData(sidebarOpts.queryKey) !== undefined) {
+  const sidebarPrefOpts = sidebarPrefQueryOptions();
+  // Both must already be seeded (e.g. by the root loader's bootstrap) for
+  // this to be a no-op — a partial seed (sidebar without sidebarPref) must
+  // still fall through to the snapshot fetch, or sidebarPref's collapsed /
+  // hiddenNav / subscriptionSort would silently read as defaults on first
+  // paint and visibly snap once a later client fetch resolves.
+  if (
+    queryClient.getQueryData(sidebarOpts.queryKey) !== undefined &&
+    queryClient.getQueryData(sidebarPrefOpts.queryKey) !== undefined
+  ) {
     return;
   }
 
@@ -45,10 +54,7 @@ async function ensureShellSnapshot(queryClient: QueryClient): Promise<void> {
     savedListsQueryOptions().queryKey,
     snapshot.savedLists,
   );
-  queryClient.setQueryData(
-    sidebarPrefQueryOptions().queryKey,
-    snapshot.sidebarPref,
-  );
+  queryClient.setQueryData(sidebarPrefOpts.queryKey, snapshot.sidebarPref);
 }
 
 /**

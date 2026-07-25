@@ -656,6 +656,16 @@ Build each on hip-ui components + StyleX tokens (no raw HTML/inline styles).
       `drizzle/0024_ambitious_oracle.sql` + `drizzle/0025_orange_proteus.sql` (drop
       `subscription_order` / add `tree_order`, split into two migrations to dodge drizzle-kit's
       interactive rename-detection prompt in a non-TTY environment).
+- [x] **Fixed: sidebarPref not seeded by the root bootstrap, causing a first-paint flash** —
+      `__root.tsx`'s root loader seeded `sidebar` / `lists` / `savedLists` from `getShellBootstrap()`
+      but never `sidebarPref`, even though `loadShellSnapshot` already returns it alongside the
+      other three. Every signed-in page load rendered list groups expanded and hidden nav items
+      visible for a tick, then snapped to the reader's real collapsed / hiddenNav / subscriptionSort
+      state once a client-side fetch resolved (also meant drag-and-drop could appear briefly
+      enabled/disabled incorrectly before the real sort mode loaded). Fixed by seeding
+      `sidebarPrefQueryOptions()` in `__root.tsx` alongside the other three, and by widening
+      `ensureShellSnapshot`'s (`shell-queries.ts`) already-seeded guard to require both `sidebar`
+      _and_ `sidebarPref` present — a partial seed no longer silently skips the snapshot fetch.
 - [x] **Shareable list pages** — every list has a public route `/l/$did/$rkey` (hero with
       name/description/owner handle, **Articles** tab with a paginated feed across member
       publications + **Publications** tab with ranked member rows and follow buttons, social meta).
