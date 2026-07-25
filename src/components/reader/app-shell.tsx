@@ -10,16 +10,19 @@ import {
   ArrowDownWideNarrow,
   ArrowLeft,
   Bookmark,
+  ChevronDown,
+  ChevronRight,
   ChevronsDownUp,
   ChevronsUpDown,
-  Cog,
   Compass,
   FolderPlus,
+  GripVertical,
   Home,
   Layers,
   Newspaper,
   Plus,
   Search,
+  Settings,
 } from "lucide-react";
 import {
   forwardRef,
@@ -29,7 +32,14 @@ import {
   useState,
 } from "react";
 import { useFocusRing } from "react-aria";
-import { useDragAndDrop } from "react-aria-components";
+import {
+  Button as AriaButton,
+  DropIndicator,
+  Tree,
+  TreeItem,
+  TreeItemContent,
+  useDragAndDrop,
+} from "react-aria-components";
 
 import { DirectionalIcon } from "#/design-system/directional-icon";
 import { useAnimatedNavbar } from "#/design-system/navbar/useAnimatedNavbar";
@@ -77,7 +87,6 @@ import {
   tracking,
 } from "../../design-system/theme/typography.stylex";
 import { ToastRegion } from "../../design-system/toast";
-import { Tree, TreeItem } from "../../design-system/tree";
 import type {
   FollowingPublication,
   FollowingUser,
@@ -279,6 +288,185 @@ const styles = stylex.create({
     display: "flex",
     flexDirection: "column",
     rowGap: gap.none,
+  },
+  /** A member row (publication or person) — same look whether it's a
+   * top-level ungrouped row or nested inside a list; deliberately no
+   * level-based indent so nested rows line up flush with top-level ones. */
+  memberRow: {
+    alignItems: "center",
+    borderRadius: radius.sm,
+    backgroundColor: {
+      default: "transparent",
+      ":is([data-hovered])": uiColor.component2,
+    },
+    outline: {
+      default: "none",
+      ":is([data-focus-visible])": `2px solid ${focusColor.ring}`,
+    },
+    outlineOffset: "-2px",
+    color: "inherit",
+    columnGap: gap.lg,
+    cursor: "pointer",
+    display: "flex",
+    rowGap: gap.lg,
+    paddingBottom: verticalSpace.sm,
+    paddingInlineStart: horizontalSpace.lg,
+    paddingInlineEnd: horizontalSpace.lg,
+    paddingTop: verticalSpace.sm,
+  },
+  memberName: {
+    unicodeBidi: "isolate",
+    overflow: "hidden",
+    color: uiColor.text2,
+    flexBasis: "0%",
+    flexGrow: 1,
+    flexShrink: 1,
+    fontFamily: fontFamily.sans,
+    fontSize: fontSize.sm,
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+    minWidth: 0,
+  },
+  /** A list group's header row — the same uppercase section-label look the
+   * sidebar always used for group titles. */
+  groupHeaderRow: {
+    alignItems: "center",
+    borderRadius: radius.sm,
+    backgroundColor: {
+      default: "transparent",
+      ":is([data-hovered])": uiColor.component2,
+    },
+    outline: {
+      default: "none",
+      ":is([data-focus-visible])": `2px solid ${focusColor.ring}`,
+    },
+    outlineOffset: "-2px",
+    cursor: "pointer",
+    color: uiColor.text1,
+    columnGap: gap.sm,
+    display: "flex",
+    fontFamily: fontFamily.sans,
+    fontSize: "0.65rem",
+    fontWeight: fontWeight.semibold,
+    letterSpacing: tracking.widest,
+    textTransform: "uppercase",
+    paddingBottom: verticalSpace.xxs,
+    paddingInlineStart: horizontalSpace.lg,
+    paddingInlineEnd: horizontalSpace.lg,
+    paddingTop: verticalSpace.lg,
+  },
+  groupName: {
+    overflow: "hidden",
+    flexBasis: "0%",
+    flexGrow: 1,
+    flexShrink: 1,
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+    minWidth: 0,
+  },
+  listEmpty: {
+    color: uiColor.text1,
+    fontFamily: fontFamily.serif,
+    fontSize: fontSize.sm,
+    fontStyle: "italic",
+    paddingInlineStart: horizontalSpace.lg,
+    paddingInlineEnd: horizontalSpace.lg,
+  },
+  chevronButton: {
+    alignItems: "center",
+    borderWidth: 0,
+    backgroundColor: "transparent",
+    color: "inherit",
+    display: "flex",
+    flexShrink: 0,
+    justifyContent: "center",
+    outline: {
+      default: "none",
+      ":is([data-focus-visible])": `2px solid ${focusColor.ring}`,
+    },
+    outlineOffset: "2px",
+    height: size["2xl"],
+    paddingBottom: spacing["0"],
+    paddingInlineStart: spacing["0"],
+    paddingInlineEnd: spacing["0"],
+    paddingTop: spacing["0"],
+    width: size["2xl"],
+  },
+  dragHandle: {
+    alignItems: "center",
+    borderWidth: 0,
+    backgroundColor: "transparent",
+    color: uiColor.text1,
+    cursor: "grab",
+    display: "flex",
+    flexShrink: 0,
+    justifyContent: "center",
+    outline: {
+      default: "none",
+      ":is([data-focus-visible])": `2px solid ${focusColor.ring}`,
+    },
+    outlineOffset: "2px",
+    height: size["2xl"],
+    paddingBottom: spacing["0"],
+    paddingInlineStart: spacing["0"],
+    paddingInlineEnd: spacing["0"],
+    paddingTop: spacing["0"],
+    width: size["2xl"],
+  },
+  /**
+   * Line between rows showing where the dragged item will land. Sized 2px
+   * with -1px vertical margins so it overlays the gap without shifting rows.
+   */
+  treeDropIndicator: {
+    borderRadius: radius.full,
+    height: 2,
+    marginBottom: -1,
+    marginTop: -1,
+    outline: "none",
+    backgroundColor: {
+      default: "transparent",
+      ":is([data-drop-target])": primaryColor.component3,
+    },
+  },
+  /** Floating pill shown under the cursor while dragging a row. */
+  treeDragPreview: {
+    alignItems: "center",
+    backgroundColor: uiColor.bg,
+    borderColor: uiColor.border2,
+    borderRadius: radius.md,
+    borderStyle: "solid",
+    borderWidth: 1,
+    boxShadow: "0 8px 24px rgba(0, 0, 0, 0.18)",
+    color: uiColor.text2,
+    columnGap: horizontalSpace.md,
+    display: "flex",
+    fontFamily: fontFamily.serif,
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.semibold,
+    maxWidth: "16rem",
+    paddingBottom: verticalSpace.sm,
+    paddingInlineStart: horizontalSpace.lg,
+    paddingInlineEnd: horizontalSpace.lg,
+    paddingTop: verticalSpace.sm,
+  },
+  treeDragPreviewName: {
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  },
+  treeDragPreviewBadge: {
+    borderRadius: radius.full,
+    backgroundColor: uiColor.component1,
+    color: uiColor.text1,
+    flexShrink: 0,
+    fontFamily: fontFamily.mono,
+    fontSize: fontSize.xs,
+    paddingInlineStart: horizontalSpace.md,
+    paddingInlineEnd: horizontalSpace.md,
+  },
+  treeDragPreviewGrip: {
+    color: uiColor.text1,
+    flexShrink: 0,
   },
   followUnread: {
     borderRadius: radius.full,
@@ -1291,13 +1479,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const topLevelIds = new Set(topNodes.map((n) => n.id));
   const memberParentListUri = new Map<string, string>();
   const memberKindById = new Map<string, "publication" | "person">();
+  const nameById = new Map(groupNodes.map((g) => [g.id, g.name]));
   for (const member of flatSubscriptions) {
     memberKindById.set(member.id, member.kind);
+    nameById.set(member.id, member.name);
   }
   for (const group of groupNodes) {
     for (const member of group.members) {
       memberParentListUri.set(member.id, group.id);
       memberKindById.set(member.id, member.kind);
+      nameById.set(member.id, member.name);
     }
   }
 
@@ -1361,6 +1552,32 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         return "cancel";
       }
       return "move";
+    },
+    renderDragPreview(dragItems) {
+      const first = dragItems[0]?.["text/plain"];
+      const name = (first && nameById.get(first)) || t`Subscription`;
+      const extra = dragItems.length - 1;
+      return (
+        <div {...stylex.props(styles.treeDragPreview)}>
+          <GripVertical
+            aria-hidden
+            size={14}
+            {...stylex.props(styles.treeDragPreviewGrip)}
+          />
+          <span {...stylex.props(styles.treeDragPreviewName)}>{name}</span>
+          {extra > 0 ? (
+            <span {...stylex.props(styles.treeDragPreviewBadge)}>+{extra}</span>
+          ) : null}
+        </div>
+      );
+    },
+    renderDropIndicator(target) {
+      return (
+        <DropIndicator
+          target={target}
+          {...stylex.props(styles.treeDropIndicator)}
+        />
+      );
     },
     onMove(e) {
       if (e.target.type !== "item") return;
@@ -1511,7 +1728,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                         variant="tertiary"
                         style={styles.headerIcon}
                       >
-                        <Cog size={14} />
+                        <Settings size={14} />
                       </IconButton>
                     }
                     placement="bottom end"
@@ -1613,6 +1830,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     aria-label={t`Subscriptions`}
                     items={topNodes}
                     selectionMode="none"
+                    {...stylex.props(styles.followList)}
                     dragAndDropHooks={subscriptionsDragAndDropHooks}
                     expandedKeys={
                       new Set(
@@ -1637,81 +1855,146 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                       node.kind === "list" ? (
                         <TreeItem
                           id={node.id}
-                          title={node.name}
                           textValue={node.name}
-                          suffix={
-                            node.unreadCount > 0 ? (
-                              <UnreadBadge count={node.unreadCount} />
-                            ) : undefined
-                          }
                           onAction={() => navigateToList(router, node.listUri)}
                         >
+                          <TreeItemContent>
+                            {({
+                              allowsDragging,
+                              hasChildItems,
+                              isExpanded,
+                            }) => (
+                              <div {...stylex.props(styles.groupHeaderRow)}>
+                                {allowsDragging ? (
+                                  <AriaButton
+                                    slot="drag"
+                                    {...stylex.props(styles.dragHandle)}
+                                  >
+                                    <GripVertical aria-hidden size={14} />
+                                  </AriaButton>
+                                ) : null}
+                                {hasChildItems ? (
+                                  <AriaButton
+                                    slot="chevron"
+                                    {...stylex.props(styles.chevronButton)}
+                                  >
+                                    {isExpanded ? (
+                                      <ChevronDown aria-hidden size={14} />
+                                    ) : (
+                                      <ChevronRight aria-hidden size={14} />
+                                    )}
+                                  </AriaButton>
+                                ) : null}
+                                <span {...stylex.props(styles.groupName)}>
+                                  {node.name}
+                                </span>
+                                {node.unreadCount > 0 ? (
+                                  <UnreadBadge count={node.unreadCount} />
+                                ) : null}
+                              </div>
+                            )}
+                          </TreeItemContent>
                           {node.members.length === 0 ? (
                             <TreeItem
                               id={`${node.id}#empty`}
-                              title={t`Empty list.`}
                               textValue={t`Empty list.`}
                               isDisabled
-                            />
+                            >
+                              <TreeItemContent>
+                                <span {...stylex.props(styles.listEmpty)}>
+                                  <Trans>Empty list.</Trans>
+                                </span>
+                              </TreeItemContent>
+                            </TreeItem>
                           ) : (
                             node.members.map((member) => (
                               <TreeItem
                                 key={member.id}
                                 id={member.id}
-                                title={member.name}
                                 textValue={member.name}
-                                prefix={
-                                  <FollowingAvatar
-                                    name={member.name}
-                                    iconUrl={
-                                      member.kind === "publication"
-                                        ? (member.pub.iconUrl ??
-                                          member.pub.ownerAvatarUrl)
-                                        : member.user.avatarUrl
-                                    }
-                                  />
-                                }
-                                suffix={
-                                  member.unreadCount > 0 ? (
-                                    <UnreadBadge count={member.unreadCount} />
-                                  ) : undefined
-                                }
                                 onAction={() =>
                                   member.kind === "publication"
                                     ? navigateToPublication(router, member.pub)
                                     : navigateToUser(router, member.user)
                                 }
-                              />
+                              >
+                                <TreeItemContent>
+                                  {({ allowsDragging }) => (
+                                    <div {...stylex.props(styles.memberRow)}>
+                                      {allowsDragging ? (
+                                        <AriaButton
+                                          slot="drag"
+                                          {...stylex.props(styles.dragHandle)}
+                                        >
+                                          <GripVertical aria-hidden size={14} />
+                                        </AriaButton>
+                                      ) : null}
+                                      <FollowingAvatar
+                                        name={member.name}
+                                        iconUrl={
+                                          member.kind === "publication"
+                                            ? (member.pub.iconUrl ??
+                                              member.pub.ownerAvatarUrl)
+                                            : member.user.avatarUrl
+                                        }
+                                      />
+                                      <span
+                                        {...stylex.props(styles.memberName)}
+                                      >
+                                        {member.name}
+                                      </span>
+                                      {member.unreadCount > 0 ? (
+                                        <UnreadBadge
+                                          count={member.unreadCount}
+                                        />
+                                      ) : null}
+                                    </div>
+                                  )}
+                                </TreeItemContent>
+                              </TreeItem>
                             ))
                           )}
                         </TreeItem>
                       ) : (
                         <TreeItem
                           id={node.id}
-                          title={node.name}
                           textValue={node.name}
-                          prefix={
-                            <FollowingAvatar
-                              name={node.name}
-                              iconUrl={
-                                node.kind === "publication"
-                                  ? (node.pub.iconUrl ??
-                                    node.pub.ownerAvatarUrl)
-                                  : node.user.avatarUrl
-                              }
-                            />
-                          }
-                          suffix={
-                            node.unreadCount > 0 ? (
-                              <UnreadBadge count={node.unreadCount} />
-                            ) : undefined
-                          }
                           onAction={() =>
                             node.kind === "publication"
                               ? navigateToPublication(router, node.pub)
                               : navigateToUser(router, node.user)
                           }
-                        />
+                        >
+                          <TreeItemContent>
+                            {({ allowsDragging }) => (
+                              <div {...stylex.props(styles.memberRow)}>
+                                {allowsDragging ? (
+                                  <AriaButton
+                                    slot="drag"
+                                    {...stylex.props(styles.dragHandle)}
+                                  >
+                                    <GripVertical aria-hidden size={14} />
+                                  </AriaButton>
+                                ) : null}
+                                <FollowingAvatar
+                                  name={node.name}
+                                  iconUrl={
+                                    node.kind === "publication"
+                                      ? (node.pub.iconUrl ??
+                                        node.pub.ownerAvatarUrl)
+                                      : node.user.avatarUrl
+                                  }
+                                />
+                                <span {...stylex.props(styles.memberName)}>
+                                  {node.name}
+                                </span>
+                                {node.unreadCount > 0 ? (
+                                  <UnreadBadge count={node.unreadCount} />
+                                ) : null}
+                              </div>
+                            )}
+                          </TreeItemContent>
+                        </TreeItem>
                       )
                     }
                   </Tree>

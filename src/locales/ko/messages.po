@@ -4599,9 +4599,9 @@ msgstr "추천했습니다."
 msgid "Search your subscriptions"
 msgstr "구독 검색"
 
-#: src/components/reader/reorder-subscriptions-modal.tsx
-#~ msgid "Subscription"
-#~ msgstr ""
+#: src/components/reader/app-shell.tsx
+msgid "Subscription"
+msgstr ""
 
 #: src/components/reader/collection-publication-editor.tsx
 msgid "Icon"

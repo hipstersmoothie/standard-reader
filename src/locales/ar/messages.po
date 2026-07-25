@@ -4599,9 +4599,9 @@ msgstr "تم التصويت."
 msgid "Search your subscriptions"
 msgstr "ابحث في اشتراكاتك"
 
-#: src/components/reader/reorder-subscriptions-modal.tsx
-#~ msgid "Subscription"
-#~ msgstr ""
+#: src/components/reader/app-shell.tsx
+msgid "Subscription"
+msgstr ""
 
 #: src/components/reader/collection-publication-editor.tsx
 msgid "Icon"

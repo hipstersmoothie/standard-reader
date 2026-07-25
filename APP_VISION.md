@@ -473,20 +473,24 @@ source of truth; Neon holds a derived view for speed and cross-network querying.
   are never hideable. When the toggle is off, every nav item shows regardless of `hiddenNav`.
   Hidden items drop from both the desktop sidebar and the mobile bottom-nav.
 - **Subscriptions tree (desktop sidebar):** the sidebar's Subscriptions section is one
-  drag-and-drop tree, one level deep — `design-system/tree`'s headless `Tree`/`TreeItem`
-  (react-aria-components' `useDragAndDrop`) — rather than a separate flat list plus list-group
-  sections. List groups and ungrouped publications/people are siblings at the top level; each
-  list's own members are its children. The header's overflow menu (`⋮`) holds a **Sort** submenu
-  (**Default** — the reader's manual `treeOrder` arrangement, or natural/stored order, untouched,
-  and the actual default value; **Recent activity** — publications (`lastDocumentAt`) and people
-  (`followedAt`) genuinely interleaved into one combined most-recent-first ranking; **A–Z**;
-  **Most unread** — same interleaving, ranked by name / unread count, applied to both a list
-  group's own members and the groups themselves), plus **New list** and **Collapse/Expand all**.
-  When sort is **Default**, dragging in the tree supports every rearrangement: reorder lists,
-  reorder members within a list, move a member between two lists, move a member into or out of a
-  list, and reorder members relative to lists at the top level — persisted via `treeOrder` (for
-  top-level position) and a `setListMembers` mutation (full publications/users array replace, for
-  a list's own membership/order). An automatic sort disables dragging and renders its own computed
+  drag-and-drop tree, one level deep, built directly on react-aria-components' headless
+  `Tree`/`TreeItem`/`TreeItemContent` + `useDragAndDrop` — not the `design-system/tree` wrapper,
+  since its level-based indent/chevron-spacer styling would change the sidebar's existing flush
+  row look — rather than a separate flat list plus list-group sections. List groups and ungrouped
+  publications/people are siblings at the top level; each list's own members are its children,
+  rendered with the same row style regardless of nesting depth (no indent). The header's overflow
+  menu (`⋮`) holds a **Sort** submenu (**Default** — the reader's manual `treeOrder` arrangement,
+  or natural/stored order, untouched, and the actual default value; **Recent activity** —
+  publications (`lastDocumentAt`) and people (`followedAt`) genuinely interleaved into one
+  combined most-recent-first ranking; **A–Z**; **Most unread** — same interleaving, ranked by name
+  / unread count, applied to both a list group's own members and the groups themselves), plus
+  **New list** and **Collapse/Expand all**. When sort is **Default**, dragging in the tree supports
+  every rearrangement: reorder lists, reorder members within a list, move a member between two
+  lists, move a member into or out of a list, and reorder members relative to lists at the top
+  level — persisted via `treeOrder` (for top-level position) and a `setListMembers` mutation (full
+  publications/users array replace, for a list's own membership/order), with a custom drag preview
+  pill and a drop-target line indicator (`useDragAndDrop`'s `renderDragPreview` /
+  `renderDropIndicator`). An automatic sort disables dragging and renders its own computed
   arrangement instead, since an active automatic sort would otherwise silently override a manual
   arrangement. Cross-kind (publication vs. person) order **within** one list isn't separately
   persisted — each kind keeps its own relative order, the same limitation `ListEditModal`'s member

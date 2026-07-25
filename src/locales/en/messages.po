@@ -4599,9 +4599,9 @@ msgstr "Upvoted."
 msgid "Search your subscriptions"
 msgstr "Search your subscriptions"
 
-#: src/components/reader/reorder-subscriptions-modal.tsx
-#~ msgid "Subscription"
-#~ msgstr "Subscription"
+#: src/components/reader/app-shell.tsx
+msgid "Subscription"
+msgstr "Subscription"
 
 #: src/components/reader/collection-publication-editor.tsx
 msgid "Icon"

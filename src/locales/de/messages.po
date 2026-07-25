@@ -4599,9 +4599,9 @@ msgstr "Hochgestimmt."
 msgid "Search your subscriptions"
 msgstr "Ihre Abos durchsuchen"
 
-#: src/components/reader/reorder-subscriptions-modal.tsx
-#~ msgid "Subscription"
-#~ msgstr ""
+#: src/components/reader/app-shell.tsx
+msgid "Subscription"
+msgstr ""
 
 #: src/components/reader/collection-publication-editor.tsx
 msgid "Icon"

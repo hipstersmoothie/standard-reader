@@ -627,21 +627,26 @@ Build each on hip-ui components + StyleX tokens (no raw HTML/inline styles).
       own members and the groups themselves. New `subscriptionSort` field on
       `app.standard-reader.sidebarPref` (mirrored to `sidebar_prefs`).
 - [x] **Full drag-and-drop subscriptions tree (desktop sidebar)** — the sidebar's Subscriptions
-      section is a single one-level-deep tree (`design-system/tree`'s headless `Tree`/`TreeItem`,
-      react-aria-components' `useDragAndDrop`) instead of a separate flat list + list-group
-      sections: list groups and ungrouped publications/people are siblings at the top level, and
-      each list's own members are its children. When `subscriptionSort` is **Default**, dragging
-      supports every rearrangement: reorder lists, reorder members within a list, move a member
-      between two lists, move a member into or out of a list, and reorder members relative to
-      lists at the top level. An automatic sort (**Recent activity** / **A–Z** / **Most unread**)
-      disables dragging and renders its own computed arrangement instead — an active automatic
-      sort would otherwise silently override a manual arrangement. New `treeOrder` field on
-      `app.standard-reader.sidebarPref` (top-level order, list at-uris interleaved with ungrouped
-      subject ids; supersedes the legacy `listOrder`-only field, kept as a fallback for readers who
-      haven't touched the new tree yet) plus a new `setListMembers` list mutation (full
-      publications/users array replace in one write, used for member reorder/move). Cross-kind
-      (publication vs. person) order **within** one list isn't separately persisted — each kind
-      keeps its own relative order, same limitation `ListEditModal`'s member editor already has.
+      section is a single one-level-deep tree built directly on react-aria-components' headless
+      `Tree`/`TreeItem`/`TreeItemContent` + `useDragAndDrop` (not the `design-system/tree` wrapper,
+      which imposes its own level-based indent/chevron-spacer styling — this keeps the sidebar's
+      existing flush, no-indent row look) instead of a separate flat list + list-group sections:
+      list groups and ungrouped publications/people are siblings at the top level, and each list's
+      own members are its children, rendered with the same row style regardless of nesting. When
+      `subscriptionSort` is **Default**, dragging supports every rearrangement: reorder lists,
+      reorder members within a list, move a member between two lists, move a member into or out of
+      a list, and reorder members relative to lists at the top level — with a custom drag preview
+      pill (name + avatar) and a drop-target line indicator, both via `useDragAndDrop`'s
+      `renderDragPreview`/`renderDropIndicator`. An automatic sort (**Recent activity** / **A–Z** /
+      **Most unread**) disables dragging and renders its own computed arrangement instead — an
+      active automatic sort would otherwise silently override a manual arrangement. New
+      `treeOrder` field on `app.standard-reader.sidebarPref` (top-level order, list at-uris
+      interleaved with ungrouped subject ids; supersedes the legacy `listOrder`-only field, kept as
+      a fallback for readers who haven't touched the new tree yet) plus a new `setListMembers` list
+      mutation (full publications/users array replace in one write, used for member reorder/move).
+      Cross-kind (publication vs. person) order **within** one list isn't separately persisted —
+      each kind keeps its own relative order, same limitation `ListEditModal`'s member editor
+      already has.
       Saved lists (not owned by this reader) are read-only containers in the tree — only their own
       top-level position is draggable, not their membership. The old `ReorderListsModal` /
       `ReorderSubscriptionsModal` dialogs are removed, superseded by inline drag. Mobile

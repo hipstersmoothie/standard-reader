@@ -4599,9 +4599,9 @@ msgstr "已点赞。"
 msgid "Search your subscriptions"
 msgstr "搜索你的订阅"
 
-#: src/components/reader/reorder-subscriptions-modal.tsx
-#~ msgid "Subscription"
-#~ msgstr ""
+#: src/components/reader/app-shell.tsx
+msgid "Subscription"
+msgstr ""
 
 #: src/components/reader/collection-publication-editor.tsx
 msgid "Icon"
