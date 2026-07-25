@@ -983,6 +983,10 @@ msgstr "Parcourir votre flux"
 msgid "RSS feed URL"
 msgstr "URL du flux RSS"
 
+#: src/lib/sidebar-nav.ts
+msgid "Your own curated sets of articles."
+msgstr ""
+
 #: src/components/reader/discover-topic-filters.tsx
 msgid "No topics match “{debouncedQuery}”."
 msgstr ""
@@ -2460,6 +2464,10 @@ msgstr "Lecture"
 msgid "Be the first to share a bug, idea, or question."
 msgstr "Soyez le premier à signaler un bug, une idée ou une question."
 
+#: src/lib/sidebar-nav.ts
+msgid "Browse the publication directory to find new writers."
+msgstr ""
+
 #: src/routes/_layout.index.tsx
 msgid "The most-read writing across the network right now."
 msgstr "Les textes les plus lus du réseau en ce moment."
@@ -3188,6 +3196,10 @@ msgstr "Votre salon de lecture"
 #: src/routes/_layout.index.tsx
 msgid "Fresh"
 msgstr "Récent"
+
+#: src/lib/sidebar-nav.ts
+msgid "Everything newest first, with unread and all-network filters."
+msgstr ""
 
 #: src/components/reader/mention-hover-card.tsx
 msgid "Verified"
@@ -4003,6 +4015,10 @@ msgstr "Cliquez sur Exécuter l'exemple pour obtenir une réponse en direct."
 msgid "Legal"
 msgstr "Mentions légales"
 
+#: src/lib/sidebar-nav.ts
+msgid "Articles you've bookmarked to read later."
+msgstr ""
+
 #: src/components/reader/app-shell.tsx
 msgid "{unread} unread"
 msgstr "{unread} non lus"
@@ -4464,6 +4480,10 @@ msgstr "Vues de liste"
 msgid "Drag to change the order your lists appear in the sidebar."
 msgstr "Faites glisser pour modifier l'ordre d'affichage de vos listes dans la barre latérale."
 
+#: src/lib/sidebar-nav.ts
+msgid "Find publications, people, topics, and headlines."
+msgstr ""
+
 #: src/components/docs/publishing-docs-page.tsx
 msgid "Standard Reader indexes <0>site.standard.document</0> and <1>site.standard.publication</1> records out of AT Proto repos. Platforms like Leaflet, Pckt, and Offprint write these records for you as part of publishing, so their authors get the full reader treatment automatically. If you run your own site and hand-roll your own <2>site.standard</2> integration instead, you write those records yourself — this page covers what to add, including Markpub, the markdown format we recommend for a hand-rolled body."
 msgstr "Standard Reader indexe les enregistrements <0>site.standard.document</0> et <1>site.standard.publication</1> des dépôts AT Proto. Des plateformes comme Leaflet, Pckt et Offprint écrivent ces enregistrements pour vous dans le cadre de la publication, si bien que leurs auteurs bénéficient automatiquement de toute l'expérience de lecture. Si vous gérez votre propre site et réalisez vous-même votre intégration <2>site.standard</2>, c'est à vous d'écrire ces enregistrements — cette page détaille ce qu'il faut ajouter, y compris Markpub, le format markdown que nous recommandons pour un corps d'article fait main."
@@ -4644,6 +4664,10 @@ msgstr "Vous pourrez les ajouter plus tard depuis Découvrir."
 #: src/routes/_layout.u.$did.tsx
 msgid "Reader"
 msgstr "Lecteur"
+
+#: src/lib/sidebar-nav.ts
+msgid "Your day: a featured lead and the latest from your subscriptions."
+msgstr ""
 
 #: src/routes/_layout.tag.$tag.tsx
 msgid "Tag views"

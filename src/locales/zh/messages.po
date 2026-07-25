@@ -983,6 +983,10 @@ msgstr "浏览你的信息流"
 msgid "RSS feed URL"
 msgstr "RSS 源地址"
 
+#: src/lib/sidebar-nav.ts
+msgid "Your own curated sets of articles."
+msgstr ""
+
 #: src/components/reader/discover-topic-filters.tsx
 msgid "No topics match “{debouncedQuery}”."
 msgstr ""
@@ -2460,6 +2464,10 @@ msgstr "正在阅读"
 msgid "Be the first to share a bug, idea, or question."
 msgstr "来做第一个提交缺陷、想法或问题的人。"
 
+#: src/lib/sidebar-nav.ts
+msgid "Browse the publication directory to find new writers."
+msgstr ""
+
 #: src/routes/_layout.index.tsx
 msgid "The most-read writing across the network right now."
 msgstr "当下整个网络阅读量最高的文章。"
@@ -3188,6 +3196,10 @@ msgstr "你的阅读室"
 #: src/routes/_layout.index.tsx
 msgid "Fresh"
 msgstr "最新"
+
+#: src/lib/sidebar-nav.ts
+msgid "Everything newest first, with unread and all-network filters."
+msgstr ""
 
 #: src/components/reader/mention-hover-card.tsx
 msgid "Verified"
@@ -4003,6 +4015,10 @@ msgstr "点击「运行示例」获取实时响应。"
 msgid "Legal"
 msgstr "法律条款"
 
+#: src/lib/sidebar-nav.ts
+msgid "Articles you've bookmarked to read later."
+msgstr ""
+
 #: src/components/reader/app-shell.tsx
 msgid "{unread} unread"
 msgstr "{unread} 篇未读"
@@ -4464,6 +4480,10 @@ msgstr "列表视图"
 msgid "Drag to change the order your lists appear in the sidebar."
 msgstr "拖动以调整列表在侧边栏中的顺序。"
 
+#: src/lib/sidebar-nav.ts
+msgid "Find publications, people, topics, and headlines."
+msgstr ""
+
 #: src/components/docs/publishing-docs-page.tsx
 msgid "Standard Reader indexes <0>site.standard.document</0> and <1>site.standard.publication</1> records out of AT Proto repos. Platforms like Leaflet, Pckt, and Offprint write these records for you as part of publishing, so their authors get the full reader treatment automatically. If you run your own site and hand-roll your own <2>site.standard</2> integration instead, you write those records yourself — this page covers what to add, including Markpub, the markdown format we recommend for a hand-rolled body."
 msgstr "Standard Reader 从 AT Proto 仓库中收录 <0>site.standard.document</0> 和 <1>site.standard.publication</1> 记录。Leaflet、Pckt、Offprint 等平台会在发布时替你写入这些记录，因此其作者可自动获得完整的阅读体验。如果你运行自己的站点并手动实现 <2>site.standard</2> 集成，则需自行写入这些记录——本页说明需要添加的内容，包括 Markpub，即我们推荐用于手写正文的 markdown 格式。"
@@ -4644,6 +4664,10 @@ msgstr "你可以稍后在「发现」中添加它们。"
 #: src/routes/_layout.u.$did.tsx
 msgid "Reader"
 msgstr "阅读器"
+
+#: src/lib/sidebar-nav.ts
+msgid "Your day: a featured lead and the latest from your subscriptions."
+msgstr ""
 
 #: src/routes/_layout.tag.$tag.tsx
 msgid "Tag views"

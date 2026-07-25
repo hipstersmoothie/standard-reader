@@ -983,6 +983,10 @@ msgstr "내 피드 둘러보기"
 msgid "RSS feed URL"
 msgstr "RSS 피드 URL"
 
+#: src/lib/sidebar-nav.ts
+msgid "Your own curated sets of articles."
+msgstr ""
+
 #: src/components/reader/discover-topic-filters.tsx
 msgid "No topics match “{debouncedQuery}”."
 msgstr ""
@@ -2460,6 +2464,10 @@ msgstr "읽는 중"
 msgid "Be the first to share a bug, idea, or question."
 msgstr "버그, 아이디어, 질문을 가장 먼저 남겨보세요."
 
+#: src/lib/sidebar-nav.ts
+msgid "Browse the publication directory to find new writers."
+msgstr ""
+
 #: src/routes/_layout.index.tsx
 msgid "The most-read writing across the network right now."
 msgstr "지금 네트워크에서 가장 많이 읽히는 글입니다."
@@ -3188,6 +3196,10 @@ msgstr "나의 독서 공간"
 #: src/routes/_layout.index.tsx
 msgid "Fresh"
 msgstr "새 글"
+
+#: src/lib/sidebar-nav.ts
+msgid "Everything newest first, with unread and all-network filters."
+msgstr ""
 
 #: src/components/reader/mention-hover-card.tsx
 msgid "Verified"
@@ -4003,6 +4015,10 @@ msgstr "예제 실행을 누르면 실시간 응답을 가져옵니다."
 msgid "Legal"
 msgstr "법적 고지"
 
+#: src/lib/sidebar-nav.ts
+msgid "Articles you've bookmarked to read later."
+msgstr ""
+
 #: src/components/reader/app-shell.tsx
 msgid "{unread} unread"
 msgstr "안 읽음 {unread}"
@@ -4464,6 +4480,10 @@ msgstr "목록 보기"
 msgid "Drag to change the order your lists appear in the sidebar."
 msgstr "끌어서 사이드바에 목록이 표시되는 순서를 바꿉니다."
 
+#: src/lib/sidebar-nav.ts
+msgid "Find publications, people, topics, and headlines."
+msgstr ""
+
 #: src/components/docs/publishing-docs-page.tsx
 msgid "Standard Reader indexes <0>site.standard.document</0> and <1>site.standard.publication</1> records out of AT Proto repos. Platforms like Leaflet, Pckt, and Offprint write these records for you as part of publishing, so their authors get the full reader treatment automatically. If you run your own site and hand-roll your own <2>site.standard</2> integration instead, you write those records yourself — this page covers what to add, including Markpub, the markdown format we recommend for a hand-rolled body."
 msgstr "Standard Reader는 AT Proto 저장소에서 <0>site.standard.document</0>와 <1>site.standard.publication</1> 레코드를 색인합니다. Leaflet, Pckt, Offprint 같은 플랫폼은 발행 과정에서 이 레코드를 대신 작성해 주므로, 해당 저자들은 자동으로 완전한 리더 경험을 얻습니다. 직접 사이트를 운영하며 <2>site.standard</2> 연동을 직접 구현한다면 이 레코드를 스스로 작성해야 합니다 — 이 페이지에서는 무엇을 추가해야 하는지, 그리고 직접 작성하는 본문에 권장하는 마크다운 형식인 Markpub까지 다룹니다."
@@ -4644,6 +4664,10 @@ msgstr "나중에 탐색에서 추가할 수 있습니다."
 #: src/routes/_layout.u.$did.tsx
 msgid "Reader"
 msgstr "리더"
+
+#: src/lib/sidebar-nav.ts
+msgid "Your day: a featured lead and the latest from your subscriptions."
+msgstr ""
 
 #: src/routes/_layout.tag.$tag.tsx
 msgid "Tag views"
