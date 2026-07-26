@@ -16,13 +16,14 @@
  * Either way the label server itself only answers queryLabels / subscribeLabels.
  */
 
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 
 import { db } from "#/db/index.server";
 import { labelerServices } from "#/db/schema";
 import { resolveHandleToDid } from "#/server/atproto/resolve-author-ref";
 
 import { resolveAtprotoLabeler } from "./atproto-labeler.server.ts";
+import { KNOWN_STANDARD_SITE_LABELERS } from "./known-labelers.ts";
 
 export interface LabelValueDef {
   identifier?: string;
@@ -131,6 +132,35 @@ export async function resolveLabelerEndpoint(
 ): Promise<string | null> {
   const row = await serviceRow(did);
   return row?.serviceEndpoint ?? null;
+}
+
+/**
+ * Give the curated labelers a `labeler_services` row if they don't have one.
+ *
+ * `KNOWN_STANDARD_SITE_LABELERS` decides whether a row is *listed*, so on its
+ * own it can never surface a labeler that has no row yet — and a labeler that
+ * declared itself on the network only gets one when somebody happens to look it
+ * up by handle. Without this the curated set is inert: the labelers we most
+ * want in the directory are exactly the ones missing from it.
+ *
+ * Called on the directory read. Costs one indexed query once every curated
+ * labeler is present; the network resolve happens on first sight only, and a
+ * DID that fails to resolve is negative-cached so this doesn't retry per load.
+ */
+export async function ensureKnownLabelersResolved(): Promise<void> {
+  const dids = [...KNOWN_STANDARD_SITE_LABELERS];
+  if (dids.length === 0) return;
+
+  const rows = await db
+    .select({ labelerDid: labelerServices.labelerDid })
+    .from(labelerServices)
+    .where(inArray(labelerServices.labelerDid, dids));
+  const present = new Set(rows.map((r) => r.labelerDid));
+  const missing = dids.filter((did) => !present.has(did));
+  if (missing.length === 0) return;
+
+  // resolveLabelerView backfills a row as a side effect of resolving.
+  await Promise.all(missing.map((did) => resolveLabelerView(did)));
 }
 
 /** A labeler's presentation, from its registration record. */

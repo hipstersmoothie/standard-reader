@@ -28,6 +28,7 @@ import {
 } from "#/server/labeler/labels.server";
 import type { LabelValueDef } from "#/server/labeler/resolve.server";
 import {
+  ensureKnownLabelersResolved,
   resolveActorDid,
   resolveLabelerView,
 } from "#/server/labeler/resolve.server";
@@ -166,6 +167,10 @@ const getKnownLabelers = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
   .handler(
     observe("labelers.getKnownLabelers", async ({ context }, span) => {
+      // Curated labelers that declared themselves on the network have no row
+      // until something resolves them, so seed them before listing.
+      await ensureKnownLabelersResolved();
+
       const session = await getAtprotoSessionForRequest(getRequest());
       const subscribed = session
         ? await subscribedLabelerDids(context.db, context.schema, session.did)
