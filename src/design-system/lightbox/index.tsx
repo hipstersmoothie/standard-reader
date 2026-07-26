@@ -17,6 +17,8 @@ import {
 } from "react-aria-components";
 
 import { DirectionalIcon } from "../directional-icon";
+import { useSwipeToDismiss } from "../gestures";
+import { useHaptics } from "../haptics/useHaptics";
 import { IconButton } from "../icon-button";
 import {
   animationDuration,
@@ -116,6 +118,9 @@ const styles = stylex.create({
     gridAutoFlow: "column",
     minHeight: 0,
     overflowX: "auto",
+    // Let the browser keep horizontal carousel paging while the swipe-to-close
+    // hook claims vertical drags (see useSwipeToDismiss).
+    touchAction: "pan-x",
     width: "100%",
   },
   slide: {
@@ -239,6 +244,8 @@ export function Lightbox({
   trigger,
 }: LightboxProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const haptics = useHaptics();
   const settleTimeoutRef = useRef<ReturnType<
     typeof globalThis.setTimeout
   > | null>(null);
@@ -259,6 +266,17 @@ export function Lightbox({
     isOpen && !hasSyncedOpenIndex ? clampedInitialIndex : currentIndex;
   const controlsIndex =
     isOpen && !hasSyncedOpenIndex ? clampedInitialIndex : settledIndex;
+
+  // Swipe/drag the image down to close, matching the other dismiss paths
+  // (Escape, backdrop press). Horizontal drags stay with the carousel.
+  const { moveProps: swipeProps } = useSwipeToDismiss({
+    surfaceRef: contentRef,
+    enabled: isOpen,
+    onDismiss: () => {
+      haptics.trigger("impactLight");
+      onOpenChange(false);
+    },
+  });
 
   useEffect(() => {
     if (isOpen) return;
@@ -436,6 +454,7 @@ export function Lightbox({
             </div>
             {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
             <div
+              ref={contentRef}
               {...stylex.props(styles.content)}
               onClick={(event) => {
                 if (event.target === event.currentTarget) onOpenChange(false);
@@ -443,6 +462,7 @@ export function Lightbox({
             >
               <div
                 ref={scrollRef}
+                {...swipeProps}
                 {...stylex.props(styles.track)}
                 onScroll={() => {
                   const scroll = scrollRef.current;
