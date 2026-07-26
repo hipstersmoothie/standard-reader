@@ -472,7 +472,7 @@ source of truth; Neon holds a derived view for speed and cross-network querying.
   (Home, Latest, Saved for later, Collections, Discover, Search); Subscriptions and its list groups
   are never hideable. When the toggle is off, every nav item shows regardless of `hiddenNav`.
   Hidden items drop from both the desktop sidebar and the mobile bottom-nav.
-- **Subscriptions tree (desktop sidebar):** the sidebar's Subscriptions section is one
+- **Subscriptions tree (desktop sidebar + mobile sheet):** the sidebar's Subscriptions section is one
   drag-and-drop tree, one level deep, built directly on react-aria-components' headless
   `Tree`/`TreeItem`/`TreeItemContent` + `useDragAndDrop` — not the `design-system/tree` wrapper,
   since its level-based indent/chevron-spacer styling would change the sidebar's existing flush
@@ -506,8 +506,16 @@ source of truth; Neon holds a derived view for speed and cross-network querying.
   separately persisted — each kind keeps its own relative order, the same limitation
   `ListEditModal`'s member editor already has. Saved lists (owned by another reader) are read-only
   containers in the tree — only their own top-level position is draggable, not their membership.
-  Mobile `SubscriptionsSheet` keeps its existing read-only rendering (no drag). The fully-sortable
-  `/subscriptions` directory table is unaffected.
+  Mobile's `SubscriptionsSheet` drawer has the same tree, sort, and reorder capability as the
+  desktop sidebar — the tree's data-building (`useSubscriptionsTree`) and rendering
+  (`SubscriptionsTree`) are shared code, not a reimplementation: the desktop sidebar computes the
+  tree once and passes the same `topNodes`/`groupNodes`/`dragAndDropHooks` down to the sheet, which
+  mounts its own `<Tree>` from that identical data/config (react-aria's `dragAndDropHooks` is a
+  stateless hook-factory bag, so it's safe for two separate `<Tree>` instances to share one), and
+  `reorderMode` itself is one shared, unpersisted toggle in `AppShell` rather than a per-surface
+  copy — only one of the two `<Tree>` mounts is ever visible/interactive at a given viewport width.
+  The old accordion-style `Disclosure` list groups and flat publication/person rows the sheet used
+  before are gone. The fully-sortable `/subscriptions` directory table is unaffected.
 - **Routing:** URL-backed routes (TanStack Router) for every view — home / latest / discover /
   search / article / publication — with real back/forward navigation and shareable links.
   _(The original prototype used an in-memory view stack; the port moves to real URLs.)_

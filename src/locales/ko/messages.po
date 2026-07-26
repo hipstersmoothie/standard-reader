@@ -398,6 +398,7 @@ msgid "Text on accent"
 msgstr "강조색 위 텍스트"
 
 #: src/components/reader/app-shell.tsx
+#: src/components/reader/subscriptions-sheet.tsx
 msgid "Finish reordering"
 msgstr ""
 
@@ -747,8 +748,8 @@ msgid "Take any of it as RSS"
 msgstr "무엇이든 RSS로 받기"
 
 #: src/components/reader/subscriptions-sheet.tsx
-msgid "Reorder lists"
-msgstr "목록 순서 변경"
+#~ msgid "Reorder lists"
+#~ msgstr "목록 순서 변경"
 
 #: src/components/user-settings-view.tsx
 msgid "Publication lists"
@@ -1528,6 +1529,7 @@ msgid "Documents"
 msgstr "문서"
 
 #: src/components/reader/app-shell.tsx
+#: src/components/reader/subscriptions-sheet.tsx
 msgid "Most unread"
 msgstr ""
 
@@ -1677,6 +1679,7 @@ msgid "This account has documents but no publications to subscribe to"
 msgstr "이 계정에는 문서는 있지만 구독할 발행물이 없습니다"
 
 #: src/components/reader/app-shell.tsx
+#: src/components/reader/subscriptions-sheet.tsx
 #: src/routes/_layout.feedback.index.tsx
 msgid "Sort"
 msgstr ""
@@ -1756,6 +1759,7 @@ msgid "<0>3. Declare your label values.</0> Describe each value (severity, defau
 msgstr "<0>3. 라벨 값을 선언하세요.</0> 각 값(심각도, 기본 경고/숨김, 블러 동작)을 <1>app.standard-reader.labeler.service</1> 디스크립터에 기술하고 <2>app.standard-reader.labeler.getServices</2>로 제공하세요(<3>did:web</3> 라벨러는 레코드를 담을 저장소가 없습니다)."
 
 #: src/components/reader/app-shell.tsx
+#: src/components/reader/subscriptions-sheet.tsx
 msgid "Reorder subscriptions…"
 msgstr ""
 
@@ -2011,8 +2015,8 @@ msgid "You've reached the end."
 msgstr "마지막까지 다 보셨습니다."
 
 #: src/components/reader/subscriptions-sheet.tsx
-msgid "Toggle list {listName}"
-msgstr "{listName} 리스트 전환"
+#~ msgid "Toggle list {listName}"
+#~ msgstr "{listName} 리스트 전환"
 
 #: src/components/reader/privacy-view.tsx
 msgid "OAuth tokens so we can read and write records in your repository on your behalf (for example follows, likes, saves, and publication lists)."
@@ -2534,8 +2538,7 @@ msgstr "이전과 이후 이미지 비교"
 msgid "No matching people."
 msgstr "일치하는 사람이 없습니다."
 
-#: src/components/reader/app-shell.tsx
-#: src/components/reader/subscriptions-sheet.tsx
+#: src/components/reader/subscriptions-tree.tsx
 msgid "Empty list."
 msgstr "빈 목록입니다."
 
@@ -2575,7 +2578,7 @@ msgstr "레코드 보기"
 msgid "Optional: add a note about why you're saving this"
 msgstr "선택 사항: 저장하는 이유를 메모로 남겨보세요"
 
-#: src/components/reader/app-shell.tsx
+#: src/components/reader/subscriptions-tree.tsx
 msgid "{count} unread"
 msgstr ""
 
@@ -2758,6 +2761,7 @@ msgid "Could not upload that image."
 msgstr ""
 
 #: src/components/reader/app-shell.tsx
+#: src/components/reader/subscriptions-sheet.tsx
 msgid "Recent activity"
 msgstr ""
 
@@ -3212,6 +3216,7 @@ msgstr "확장 프로그램이 하지 않는 일"
 
 #: src/components/appearance-settings.tsx
 #: src/components/reader/app-shell.tsx
+#: src/components/reader/subscriptions-sheet.tsx
 msgid "Default"
 msgstr ""
 
@@ -3267,6 +3272,7 @@ msgstr ""
 #: src/components/reader/list-edit-modal.tsx
 #: src/components/reader/subscriptions-sheet.tsx
 #: src/components/reader/subscriptions-table.tsx
+#: src/components/reader/subscriptions-tree.tsx
 #: src/routes/_layout.index.tsx
 #: src/routes/_layout.latest.tsx
 #: src/routes/_layout.subscriptions.tsx
@@ -4115,6 +4121,7 @@ msgid "Introduction"
 msgstr ""
 
 #: src/components/reader/app-shell.tsx
+#: src/components/reader/subscriptions-sheet.tsx
 #: src/routes/_layout.discover.tsx
 #: src/routes/_layout.tag.$tag.tsx
 msgid "A–Z"
@@ -4607,7 +4614,7 @@ msgstr "추천했습니다."
 msgid "Search your subscriptions"
 msgstr "구독 검색"
 
-#: src/components/reader/app-shell.tsx
+#: src/components/reader/use-subscriptions-tree.tsx
 msgid "Subscription"
 msgstr ""
 
@@ -4688,8 +4695,8 @@ msgid "Choose a series, give it a title and cover, then assemble the articles yo
 msgstr "시리즈를 고르고 제목과 표지를 정한 다음, 소개하고 싶은 글을 모아보세요."
 
 #: src/components/reader/subscriptions-sheet.tsx
-msgid "Open list {listName}"
-msgstr "{listName} 목록 열기"
+#~ msgid "Open list {listName}"
+#~ msgstr "{listName} 목록 열기"
 
 #: src/components/onboarding/welcome-wizard.tsx
 #: src/routes/_layout.collections.new.tsx

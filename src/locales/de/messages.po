@@ -398,6 +398,7 @@ msgid "Text on accent"
 msgstr "Text auf Akzentfarbe"
 
 #: src/components/reader/app-shell.tsx
+#: src/components/reader/subscriptions-sheet.tsx
 msgid "Finish reordering"
 msgstr ""
 
@@ -747,8 +748,8 @@ msgid "Take any of it as RSS"
 msgstr "Alles davon als RSS beziehen"
 
 #: src/components/reader/subscriptions-sheet.tsx
-msgid "Reorder lists"
-msgstr "Listen neu ordnen"
+#~ msgid "Reorder lists"
+#~ msgstr "Listen neu ordnen"
 
 #: src/components/user-settings-view.tsx
 msgid "Publication lists"
@@ -1528,6 +1529,7 @@ msgid "Documents"
 msgstr "Dokumente"
 
 #: src/components/reader/app-shell.tsx
+#: src/components/reader/subscriptions-sheet.tsx
 msgid "Most unread"
 msgstr ""
 
@@ -1677,6 +1679,7 @@ msgid "This account has documents but no publications to subscribe to"
 msgstr "Dieses Konto hat Dokumente, aber keine Publikationen zum Abonnieren"
 
 #: src/components/reader/app-shell.tsx
+#: src/components/reader/subscriptions-sheet.tsx
 #: src/routes/_layout.feedback.index.tsx
 msgid "Sort"
 msgstr ""
@@ -1756,6 +1759,7 @@ msgid "<0>3. Declare your label values.</0> Describe each value (severity, defau
 msgstr "<0>3. Deklarieren Sie Ihre Label-Werte.</0> Beschreiben Sie jeden Wert (Schweregrad, Standardverhalten Warnen/Ausblenden, Weichzeichnen) in einem <1>app.standard-reader.labeler.service</1>-Deskriptor, ausgeliefert über <2>app.standard-reader.labeler.getServices</2> (ein <3>did:web</3>-Labeler hat kein Repo für den Record)."
 
 #: src/components/reader/app-shell.tsx
+#: src/components/reader/subscriptions-sheet.tsx
 msgid "Reorder subscriptions…"
 msgstr ""
 
@@ -2011,8 +2015,8 @@ msgid "You've reached the end."
 msgstr "Sie sind am Ende angelangt."
 
 #: src/components/reader/subscriptions-sheet.tsx
-msgid "Toggle list {listName}"
-msgstr "Liste {listName} umschalten"
+#~ msgid "Toggle list {listName}"
+#~ msgstr "Liste {listName} umschalten"
 
 #: src/components/reader/privacy-view.tsx
 msgid "OAuth tokens so we can read and write records in your repository on your behalf (for example follows, likes, saves, and publication lists)."
@@ -2534,8 +2538,7 @@ msgstr "Bilder vorher und nachher vergleichen"
 msgid "No matching people."
 msgstr "Keine passenden Personen."
 
-#: src/components/reader/app-shell.tsx
-#: src/components/reader/subscriptions-sheet.tsx
+#: src/components/reader/subscriptions-tree.tsx
 msgid "Empty list."
 msgstr "Leere Liste."
 
@@ -2575,7 +2578,7 @@ msgstr "Datensatz ansehen"
 msgid "Optional: add a note about why you're saving this"
 msgstr "Optional: Notiz, warum Sie dies speichern"
 
-#: src/components/reader/app-shell.tsx
+#: src/components/reader/subscriptions-tree.tsx
 msgid "{count} unread"
 msgstr ""
 
@@ -2758,6 +2761,7 @@ msgid "Could not upload that image."
 msgstr ""
 
 #: src/components/reader/app-shell.tsx
+#: src/components/reader/subscriptions-sheet.tsx
 msgid "Recent activity"
 msgstr ""
 
@@ -3212,6 +3216,7 @@ msgstr "Was die Erweiterung nicht tut"
 
 #: src/components/appearance-settings.tsx
 #: src/components/reader/app-shell.tsx
+#: src/components/reader/subscriptions-sheet.tsx
 msgid "Default"
 msgstr ""
 
@@ -3267,6 +3272,7 @@ msgstr ""
 #: src/components/reader/list-edit-modal.tsx
 #: src/components/reader/subscriptions-sheet.tsx
 #: src/components/reader/subscriptions-table.tsx
+#: src/components/reader/subscriptions-tree.tsx
 #: src/routes/_layout.index.tsx
 #: src/routes/_layout.latest.tsx
 #: src/routes/_layout.subscriptions.tsx
@@ -4115,6 +4121,7 @@ msgid "Introduction"
 msgstr ""
 
 #: src/components/reader/app-shell.tsx
+#: src/components/reader/subscriptions-sheet.tsx
 #: src/routes/_layout.discover.tsx
 #: src/routes/_layout.tag.$tag.tsx
 msgid "A–Z"
@@ -4607,7 +4614,7 @@ msgstr "Hochgestimmt."
 msgid "Search your subscriptions"
 msgstr "Ihre Abos durchsuchen"
 
-#: src/components/reader/app-shell.tsx
+#: src/components/reader/use-subscriptions-tree.tsx
 msgid "Subscription"
 msgstr ""
 
@@ -4688,8 +4695,8 @@ msgid "Choose a series, give it a title and cover, then assemble the articles yo
 msgstr "Wählen Sie eine Reihe, geben Sie ihr Titel und Cover und stellen Sie dann die Artikel zusammen, die Sie zeigen möchten."
 
 #: src/components/reader/subscriptions-sheet.tsx
-msgid "Open list {listName}"
-msgstr "Liste {listName} öffnen"
+#~ msgid "Open list {listName}"
+#~ msgstr "Liste {listName} öffnen"
 
 #: src/components/onboarding/welcome-wizard.tsx
 #: src/routes/_layout.collections.new.tsx

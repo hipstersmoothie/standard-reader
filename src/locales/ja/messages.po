@@ -398,6 +398,7 @@ msgid "Text on accent"
 msgstr "アクセント上の文字"
 
 #: src/components/reader/app-shell.tsx
+#: src/components/reader/subscriptions-sheet.tsx
 msgid "Finish reordering"
 msgstr ""
 
@@ -747,8 +748,8 @@ msgid "Take any of it as RSS"
 msgstr "すべて RSS でも読める"
 
 #: src/components/reader/subscriptions-sheet.tsx
-msgid "Reorder lists"
-msgstr "リストを並べ替え"
+#~ msgid "Reorder lists"
+#~ msgstr "リストを並べ替え"
 
 #: src/components/user-settings-view.tsx
 msgid "Publication lists"
@@ -1528,6 +1529,7 @@ msgid "Documents"
 msgstr "ドキュメント"
 
 #: src/components/reader/app-shell.tsx
+#: src/components/reader/subscriptions-sheet.tsx
 msgid "Most unread"
 msgstr ""
 
@@ -1677,6 +1679,7 @@ msgid "This account has documents but no publications to subscribe to"
 msgstr "このアカウントにはドキュメントがありますが、購読できる発行物がありません"
 
 #: src/components/reader/app-shell.tsx
+#: src/components/reader/subscriptions-sheet.tsx
 #: src/routes/_layout.feedback.index.tsx
 msgid "Sort"
 msgstr ""
@@ -1756,6 +1759,7 @@ msgid "<0>3. Declare your label values.</0> Describe each value (severity, defau
 msgstr "<0>3. ラベルの値を宣言する。</0> 各値（深刻度、既定の警告/非表示、ぼかしの挙動）を <1>app.standard-reader.labeler.service</1> ディスクリプタに記述し、<2>app.standard-reader.labeler.getServices</2> から配信します（<3>did:web</3> のラベラーにはレコードを保持するリポジトリがないためです）。"
 
 #: src/components/reader/app-shell.tsx
+#: src/components/reader/subscriptions-sheet.tsx
 msgid "Reorder subscriptions…"
 msgstr ""
 
@@ -2011,8 +2015,8 @@ msgid "You've reached the end."
 msgstr "最後まで表示しました。"
 
 #: src/components/reader/subscriptions-sheet.tsx
-msgid "Toggle list {listName}"
-msgstr "リスト {listName} を開閉"
+#~ msgid "Toggle list {listName}"
+#~ msgstr "リスト {listName} を開閉"
 
 #: src/components/reader/privacy-view.tsx
 msgid "OAuth tokens so we can read and write records in your repository on your behalf (for example follows, likes, saves, and publication lists)."
@@ -2534,8 +2538,7 @@ msgstr "ビフォーとアフターの画像を比較"
 msgid "No matching people."
 msgstr "一致するユーザーはいません。"
 
-#: src/components/reader/app-shell.tsx
-#: src/components/reader/subscriptions-sheet.tsx
+#: src/components/reader/subscriptions-tree.tsx
 msgid "Empty list."
 msgstr "リストは空です。"
 
@@ -2575,7 +2578,7 @@ msgstr "レコードを表示"
 msgid "Optional: add a note about why you're saving this"
 msgstr "任意: 保存する理由をメモに残せます"
 
-#: src/components/reader/app-shell.tsx
+#: src/components/reader/subscriptions-tree.tsx
 msgid "{count} unread"
 msgstr ""
 
@@ -2758,6 +2761,7 @@ msgid "Could not upload that image."
 msgstr ""
 
 #: src/components/reader/app-shell.tsx
+#: src/components/reader/subscriptions-sheet.tsx
 msgid "Recent activity"
 msgstr ""
 
@@ -3212,6 +3216,7 @@ msgstr "拡張機能が行わないこと"
 
 #: src/components/appearance-settings.tsx
 #: src/components/reader/app-shell.tsx
+#: src/components/reader/subscriptions-sheet.tsx
 msgid "Default"
 msgstr ""
 
@@ -3267,6 +3272,7 @@ msgstr ""
 #: src/components/reader/list-edit-modal.tsx
 #: src/components/reader/subscriptions-sheet.tsx
 #: src/components/reader/subscriptions-table.tsx
+#: src/components/reader/subscriptions-tree.tsx
 #: src/routes/_layout.index.tsx
 #: src/routes/_layout.latest.tsx
 #: src/routes/_layout.subscriptions.tsx
@@ -4115,6 +4121,7 @@ msgid "Introduction"
 msgstr ""
 
 #: src/components/reader/app-shell.tsx
+#: src/components/reader/subscriptions-sheet.tsx
 #: src/routes/_layout.discover.tsx
 #: src/routes/_layout.tag.$tag.tsx
 msgid "A–Z"
@@ -4607,7 +4614,7 @@ msgstr "高評価しました。"
 msgid "Search your subscriptions"
 msgstr "購読中から検索"
 
-#: src/components/reader/app-shell.tsx
+#: src/components/reader/use-subscriptions-tree.tsx
 msgid "Subscription"
 msgstr ""
 
@@ -4688,8 +4695,8 @@ msgid "Choose a series, give it a title and cover, then assemble the articles yo
 msgstr "シリーズを選び、タイトルとカバーを付けて、掲載したい記事をまとめましょう。"
 
 #: src/components/reader/subscriptions-sheet.tsx
-msgid "Open list {listName}"
-msgstr "リスト {listName} を開く"
+#~ msgid "Open list {listName}"
+#~ msgstr "リスト {listName} を開く"
 
 #: src/components/onboarding/welcome-wizard.tsx
 #: src/routes/_layout.collections.new.tsx

@@ -626,8 +626,9 @@ Build each on hip-ui components + StyleX tokens (no raw HTML/inline styles).
       `OrderableSubscription.recentAt` in `use-sidebar-pref.ts`), applied to both a list group's
       own members and the groups themselves. New `subscriptionSort` field on
       `app.standard-reader.sidebarPref` (mirrored to `sidebar_prefs`).
-- [x] **Full drag-and-drop subscriptions tree (desktop sidebar)** — the sidebar's Subscriptions
-      section is a single one-level-deep tree built directly on react-aria-components' headless
+- [x] **Full drag-and-drop subscriptions tree (desktop sidebar + mobile sheet)** — the sidebar's
+      Subscriptions section is a single one-level-deep tree built directly on react-aria-components'
+      headless
       `Tree`/`TreeItem`/`TreeItemContent` + `useDragAndDrop` (not the `design-system/tree` wrapper,
       which imposes its own level-based indent/chevron-spacer styling — this keeps the sidebar's
       existing flush, no-indent row look) instead of a separate flat list + list-group sections:
@@ -660,9 +661,21 @@ Build each on hip-ui components + StyleX tokens (no raw HTML/inline styles).
       already has.
       Saved lists (not owned by this reader) are read-only containers in the tree — only their own
       top-level position is draggable, not their membership. The old `ReorderListsModal` /
-      `ReorderSubscriptionsModal` dialogs are removed, superseded by inline drag. Mobile
-      `SubscriptionsSheet` keeps its existing read-only rendering (no drag) — this pass is scoped
-      to the desktop sidebar. The `/subscriptions` directory table's own column sorting is
+      `ReorderSubscriptionsModal` dialogs are removed, superseded by inline drag.
+      The tree's data-building (`useSubscriptionsTree` in `use-subscriptions-tree.tsx`) and its
+      rendering (`SubscriptionsTree` in `subscriptions-tree.tsx`) are shared between surfaces: the
+      desktop sidebar (`app-shell.tsx`) computes the tree once and renders it directly, and passes
+      the same `topNodes`/`groupNodes`/`dragAndDropHooks` down to the mobile `SubscriptionsSheet`
+      drawer, which renders its own `<Tree>` instance from that same data/config (react-aria's
+      `dragAndDropHooks` is a stateless hook-factory bag, safe to share across two separate `<Tree>`
+      mounts) so the two surfaces can never drift apart. Mobile gained full parity with desktop:
+      the same **Sort** submenu, the same **Reorder subscriptions…** / **Done reordering** toggle
+      with the settings-gear/checkmark icon swap, and the same drag-and-drop tree (drag preview,
+      drop-line indicator, drop-target highlight) inside the bottom sheet — replacing the old
+      accordion-style `Disclosure` list groups and flat publication/person rows. The `reorderMode`
+      toggle itself is one shared, unpersisted `useState` in `AppShell` (not duplicated per
+      surface), since only one of the two `<Tree>` mounts is ever visible/interactive at a given
+      viewport width. The `/subscriptions` directory table's own column sorting is
       untouched. Migrations: `drizzle/0023_nosy_maverick.sql` (sidebarPref columns),
       `drizzle/0024_ambitious_oracle.sql` + `drizzle/0025_orange_proteus.sql` (drop
       `subscription_order` / add `tree_order`, split into two migrations to dodge drizzle-kit's

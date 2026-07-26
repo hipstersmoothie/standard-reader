@@ -11,8 +11,6 @@ import {
   ArrowLeft,
   Bookmark,
   Check,
-  ChevronDown,
-  ChevronRight,
   ChevronsDownUp,
   ChevronsUpDown,
   Compass,
@@ -33,14 +31,6 @@ import {
   useState,
 } from "react";
 import { useFocusRing } from "react-aria";
-import {
-  Button as AriaButton,
-  DropIndicator,
-  Tree,
-  TreeItem,
-  TreeItemContent,
-  useDragAndDrop,
-} from "react-aria-components";
 
 import { DirectionalIcon } from "#/design-system/directional-icon";
 import { useAnimatedNavbar } from "#/design-system/navbar/useAnimatedNavbar";
@@ -53,13 +43,11 @@ import {
   sidebarQueryOptions,
 } from "#/integrations/tanstack-query/shell-queries";
 import { formatSidebarUnreadCount } from "#/lib/format-count";
-import { parseInternalRoute } from "#/lib/internal-route";
 import { PageReaderProvider } from "#/lib/page-reader/page-reader-provider";
 import type { SidebarNavId } from "#/lib/sidebar-nav";
 import { useFormatters } from "#/lib/use-formatters";
 import { useCompactNav } from "#/lib/use-media-query";
 
-import { Avatar } from "../../design-system/avatar";
 import { Button } from "../../design-system/button";
 import { Flex } from "../../design-system/flex";
 import { IconButton } from "../../design-system/icon-button";
@@ -84,7 +72,6 @@ import {
   fontFamily,
   fontSize,
   fontWeight,
-  lineHeight,
   tracking,
 } from "../../design-system/theme/typography.stylex";
 import { ToastRegion } from "../../design-system/toast";
@@ -98,7 +85,6 @@ import { SiteFooter } from "../site-footer";
 import { AddPublicationModal } from "./add-publication-modal";
 import { AtstoreReviewPrompt } from "./atstore-review-prompt";
 import { BrandWordmark } from "./brand-wordmark";
-import { initials, listLinkParams, publicationLinkParams } from "./format";
 import { LanguageHintPrompt } from "./language-hint-prompt";
 import { ListEditModal } from "./list-edit-modal";
 import { PageReaderBar } from "./page-reader-bar";
@@ -112,13 +98,14 @@ import {
   SubscriptionsSheet,
   SubscriptionsSwitcher,
 } from "./subscriptions-sheet";
-import type { OrderableSubscription } from "./use-sidebar-pref";
+import type { FlatSubscription } from "./subscriptions-tree";
+import { SubscriptionsTree } from "./subscriptions-tree";
 import {
-  applyManualOrder,
   orderGroups,
   orderSubscriptions,
   useSidebarPref,
 } from "./use-sidebar-pref";
+import { useSubscriptionsTree } from "./use-subscriptions-tree";
 
 const DESKTOP = "@media (min-width: 60rem)";
 
@@ -284,232 +271,14 @@ const styles = stylex.create({
       ":is([data-sidebar-label]:hover *)": uiColor.text2,
     },
   },
+  /** Wraps whichever of skeleton / empty-note / tree is currently showing;
+   * the tree itself (`SubscriptionsTree`) applies this same flex-column
+   * layout to its own root, so this only matters for the other two cases. */
   followList: {
     columnGap: gap.none,
     display: "flex",
     flexDirection: "column",
     rowGap: gap.none,
-  },
-  /** A member row (publication or person) — same look whether it's a
-   * top-level ungrouped row or nested inside a list; deliberately no
-   * level-based indent so nested rows line up flush with top-level ones. */
-  memberRow: {
-    alignItems: "center",
-    borderRadius: radius.sm,
-    backgroundColor: {
-      default: "transparent",
-      ":is([data-hovered])": uiColor.component2,
-    },
-    outline: {
-      default: "none",
-      ":is([data-focus-visible])": `2px solid ${focusColor.ring}`,
-    },
-    outlineOffset: "-2px",
-    color: "inherit",
-    columnGap: gap.lg,
-    cursor: "pointer",
-    display: "flex",
-    rowGap: gap.lg,
-    paddingBottom: verticalSpace.sm,
-    paddingInlineStart: horizontalSpace.lg,
-    paddingInlineEnd: horizontalSpace.lg,
-    paddingTop: verticalSpace.sm,
-  },
-  memberName: {
-    unicodeBidi: "isolate",
-    overflow: "hidden",
-    color: uiColor.text2,
-    flexBasis: "0%",
-    flexGrow: 1,
-    flexShrink: 1,
-    fontFamily: fontFamily.sans,
-    fontSize: fontSize.sm,
-    textOverflow: "ellipsis",
-    whiteSpace: "nowrap",
-    minWidth: 0,
-  },
-  /** A list group's header row — the same uppercase section-label look the
-   * sidebar always used for group titles. */
-  groupHeaderRow: {
-    alignItems: "center",
-    borderRadius: radius.sm,
-    backgroundColor: {
-      default: "transparent",
-      ":is([data-hovered])": uiColor.component2,
-    },
-    outline: {
-      default: "none",
-      ":is([data-focus-visible])": `2px solid ${focusColor.ring}`,
-    },
-    outlineOffset: "-2px",
-    cursor: "pointer",
-    color: uiColor.text1,
-    // Same columnGap as memberRow: with a drag handle of the same width
-    // preceding both, this keeps the group name and a nested member's avatar
-    // starting at the exact same x-position, whether or not dragging is on.
-    columnGap: gap.lg,
-    display: "flex",
-    fontFamily: fontFamily.sans,
-    fontSize: "0.65rem",
-    fontWeight: fontWeight.semibold,
-    letterSpacing: tracking.widest,
-    textTransform: "uppercase",
-    paddingBottom: verticalSpace.xxs,
-    paddingInlineStart: horizontalSpace.lg,
-    paddingInlineEnd: horizontalSpace.lg,
-    paddingTop: verticalSpace.lg,
-  },
-  groupName: {
-    overflow: "hidden",
-    flexBasis: "0%",
-    flexGrow: 1,
-    flexShrink: 1,
-    textOverflow: "ellipsis",
-    whiteSpace: "nowrap",
-    minWidth: 0,
-  },
-  listEmpty: {
-    color: uiColor.text1,
-    fontFamily: fontFamily.serif,
-    fontSize: fontSize.sm,
-    fontStyle: "italic",
-    paddingInlineStart: horizontalSpace.lg,
-    paddingInlineEnd: horizontalSpace.lg,
-  },
-  chevronButton: {
-    alignItems: "center",
-    borderWidth: 0,
-    backgroundColor: "transparent",
-    color: "inherit",
-    display: "flex",
-    flexShrink: 0,
-    justifyContent: "center",
-    outline: {
-      default: "none",
-      ":is([data-focus-visible])": `2px solid ${focusColor.ring}`,
-    },
-    outlineOffset: "2px",
-    height: size["2xl"],
-    paddingBottom: spacing["0"],
-    paddingInlineStart: spacing["0"],
-    paddingInlineEnd: spacing["0"],
-    paddingTop: spacing["0"],
-    width: size["2xl"],
-  },
-  dragHandle: {
-    alignItems: "center",
-    borderWidth: 0,
-    backgroundColor: "transparent",
-    color: uiColor.text1,
-    cursor: "grab",
-    display: "flex",
-    flexShrink: 0,
-    // flex-start, not center: the icon sits flush against the button's own
-    // (left) edge, which is where content normally starts — centering it
-    // here would visually indent the icon from that edge.
-    justifyContent: "flex-start",
-    outline: {
-      default: "none",
-      ":is([data-focus-visible])": `2px solid ${focusColor.ring}`,
-    },
-    outlineOffset: "2px",
-    // Matches FollowingAvatar's own ("sm") height exactly, so a row's
-    // cross-axis size (and therefore its total height) is identical whether
-    // or not the drag handle is rendered — toggling reorder mode must never
-    // make rows taller. Narrower than tall (unlike the header's "sm"
-    // IconButton, size["2xl"] square) so the gap to the avatar/label that
-    // follows isn't inflated by empty trailing space inside the button.
-    height: size.xl,
-    paddingBottom: spacing["0"],
-    paddingInlineStart: spacing["0"],
-    paddingInlineEnd: spacing["0"],
-    paddingTop: spacing["0"],
-    width: size.lg,
-  },
-  /** Highlights a list row while it's the active "on" drop target (dropping a
-   * member INTO the list), distinct from the between-rows line indicator. */
-  treeItemDropTarget: {
-    borderRadius: radius.sm,
-    backgroundColor: {
-      default: "transparent",
-      ":is([data-drop-target])": primaryColor.component2,
-    },
-    outline: {
-      default: "none",
-      ":is([data-drop-target])": `2px solid ${primaryColor.solid1}`,
-    },
-    outlineOffset: "-2px",
-  },
-  /**
-   * Line between rows showing where the dragged item will land. Sized 2px
-   * with -1px vertical margins so it overlays the gap without shifting rows.
-   */
-  treeDropIndicator: {
-    borderRadius: radius.full,
-    height: 2,
-    marginBottom: -1,
-    marginTop: -1,
-    outline: "none",
-    backgroundColor: {
-      default: "transparent",
-      ":is([data-drop-target])": primaryColor.component3,
-    },
-  },
-  /** Floating pill shown under the cursor while dragging a row. */
-  treeDragPreview: {
-    alignItems: "center",
-    backgroundColor: uiColor.bg,
-    borderColor: uiColor.border2,
-    borderRadius: radius.md,
-    borderStyle: "solid",
-    borderWidth: 1,
-    boxShadow: "0 8px 24px rgba(0, 0, 0, 0.18)",
-    color: uiColor.text2,
-    columnGap: horizontalSpace.md,
-    display: "flex",
-    fontFamily: fontFamily.serif,
-    fontSize: fontSize.base,
-    fontWeight: fontWeight.semibold,
-    maxWidth: "16rem",
-    paddingBottom: verticalSpace.sm,
-    paddingInlineStart: horizontalSpace.lg,
-    paddingInlineEnd: horizontalSpace.lg,
-    paddingTop: verticalSpace.sm,
-  },
-  treeDragPreviewName: {
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-    whiteSpace: "nowrap",
-  },
-  treeDragPreviewBadge: {
-    borderRadius: radius.full,
-    backgroundColor: uiColor.component1,
-    color: uiColor.text1,
-    flexShrink: 0,
-    fontFamily: fontFamily.mono,
-    fontSize: fontSize.xs,
-    paddingInlineStart: horizontalSpace.md,
-    paddingInlineEnd: horizontalSpace.md,
-  },
-  treeDragPreviewGrip: {
-    color: uiColor.text1,
-    flexShrink: 0,
-  },
-  followUnread: {
-    borderRadius: radius.full,
-    backgroundColor: primaryColor.component3,
-    color: primaryColor.text2,
-    flexShrink: 0,
-    fontFamily: fontFamily.mono,
-    fontSize: "0.65rem",
-    fontWeight: fontWeight.semibold,
-    lineHeight: lineHeight.none,
-    textAlign: "center",
-    minWidth: spacing["4"],
-    paddingBottom: verticalSpace.xxs,
-    paddingInlineStart: horizontalSpace.sm,
-    paddingInlineEnd: horizontalSpace.sm,
-    paddingTop: verticalSpace.xxs,
   },
   emptyNote: {
     color: uiColor.text1,
@@ -777,49 +546,6 @@ const styles = stylex.create({
   },
 });
 
-/** One row in the sidebar's flat (ungrouped) subscription list — a publication
- * or a person, normalized so `orderSubscriptions` can sort them together. */
-type FlatSubscription = OrderableSubscription &
-  (
-    | { kind: "publication"; pub: FollowingPublication }
-    | { kind: "person"; user: FollowingUser }
-  );
-
-/** A list group as a top-level tree node — its own members (pubs + people,
- * combined into one display order) render as its children. */
-interface TreeListNode extends OrderableSubscription {
-  kind: "list";
-  listUri: string;
-  /** Rkey of an own list; null for a saved list (not editable by this reader). */
-  rkey: string | null;
-  editable: boolean;
-  members: Array<FlatSubscription>;
-}
-
-/** One top-level row in the sidebar's subscriptions tree: a list group or an
- * ungrouped publication/person. */
-type TreeTopNode = TreeListNode | FlatSubscription;
-
-/** Move `draggedId` to just before/after `targetId` within `ids` (removing it
- * from its old position first). Returns `ids` unchanged if `targetId` isn't
- * present. */
-function reorderIds(
-  ids: Array<string>,
-  draggedId: string,
-  targetId: string,
-  dropPosition: "before" | "after",
-): Array<string> {
-  const withoutDragged = ids.filter((id) => id !== draggedId);
-  const targetIndex = withoutDragged.indexOf(targetId);
-  if (targetIndex === -1) return ids;
-  const insertAt = dropPosition === "after" ? targetIndex + 1 : targetIndex;
-  return [
-    ...withoutDragged.slice(0, insertAt),
-    draggedId,
-    ...withoutDragged.slice(insertAt),
-  ];
-}
-
 interface NavLink {
   /** Stable id used by "Customize sidebar" to hide the item. */
   id: SidebarNavId;
@@ -939,79 +665,6 @@ function SubscriptionsHeading() {
       <Trans>Subscriptions</Trans>
     </Link>
   );
-}
-
-function FollowingAvatar({
-  name,
-  iconUrl,
-}: {
-  name: string;
-  iconUrl: string | null;
-}) {
-  return (
-    <Avatar
-      size="sm"
-      src={iconUrl ?? undefined}
-      fallback={initials(name)}
-      alt={name}
-    />
-  );
-}
-
-function UnreadBadge({ count }: { count: number }) {
-  const { t } = useLingui();
-  const fmt = useFormatters();
-  return (
-    <span
-      {...stylex.props(styles.followUnread)}
-      aria-label={t`${count} unread`}
-    >
-      {formatSidebarUnreadCount(fmt, count)}
-    </span>
-  );
-}
-
-/** Navigate to a publication's page (on-site route, resolved internal link, or
- * external url in a new tab) — mirrors the resolution order the old sidebar
- * `<Link>` rows used. */
-function navigateToPublication(
-  router: ReturnType<typeof useRouter>,
-  pub: FollowingPublication,
-): void {
-  const params = publicationLinkParams(pub.uri);
-  if (params) {
-    void router.navigate({ to: "/p/$did/$rkey", params });
-    return;
-  }
-  const href = pub.url;
-  if (!href) return;
-  const internal = parseInternalRoute(href);
-  if (internal?.params) {
-    void router.navigate({ to: internal.to, params: internal.params });
-    return;
-  }
-  if (internal) {
-    void router.navigate({ to: internal.to });
-    return;
-  }
-  window.open(href, "_blank", "noopener,noreferrer");
-}
-
-function navigateToUser(
-  router: ReturnType<typeof useRouter>,
-  followed: FollowingUser,
-): void {
-  void router.navigate({ to: "/u/$did", params: { did: followed.did } });
-}
-
-function navigateToList(
-  router: ReturnType<typeof useRouter>,
-  listUri: string,
-): void {
-  const link = listLinkParams(listUri);
-  if (link) {
-    void router.navigate({ to: "/l/$did/$rkey", params: link });
-  }
 }
 
 const BottomNavItem = forwardRef<
@@ -1487,47 +1140,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   // ── Subscriptions tree: one level deep (list groups + ungrouped rows),
   // fully drag-and-drop rearrangeable when subscriptionSort is "default".
-  const router = useRouter();
+  // Shared with the mobile sheet: both surfaces render the same
+  // `topNodes`/`groupNodes`/`dragAndDropHooks` (a `<Tree>` per surface, but
+  // one source of truth for data + drag behavior), so the desktop sidebar
+  // and mobile sheet never drift apart.
   const queryClient = useQueryClient();
   const setListMembersMutation = useMutation(
     listApi.setListMembersMutationOptions(),
   );
-  const groupNodes: Array<TreeListNode> = displayGroups.map((group) => ({
-    kind: "list",
-    id: group.listUri,
-    name: group.name,
-    listUri: group.listUri,
-    rkey: group.rkey,
-    editable: group.editable,
-    unreadCount: group.unreadCount,
-    recentAt: group.recentAt,
-    members: group.members,
-  }));
-  const naturalTopOrder: Array<TreeTopNode> = [
-    ...groupNodes,
-    ...flatSubscriptions,
-  ];
-  const topNodes: Array<TreeTopNode> =
-    sidebarPref.subscriptionSort === "default"
-      ? applyManualOrder(naturalTopOrder, sidebarPref.treeOrder)
-      : naturalTopOrder;
-  const groupById = new Map(groupNodes.map((g) => [g.id, g]));
-  const topLevelIds = new Set(topNodes.map((n) => n.id));
-  const memberParentListUri = new Map<string, string>();
-  const memberKindById = new Map<string, "publication" | "person">();
-  const nameById = new Map(groupNodes.map((g) => [g.id, g.name]));
-  for (const member of flatSubscriptions) {
-    memberKindById.set(member.id, member.kind);
-    nameById.set(member.id, member.name);
-  }
-  for (const group of groupNodes) {
-    for (const member of group.members) {
-      memberParentListUri.set(member.id, group.id);
-      memberKindById.set(member.id, member.kind);
-      nameById.set(member.id, member.name);
-    }
-  }
-
   const saveListMembers = (
     rkey: string,
     publications: Array<string>,
@@ -1542,191 +1162,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     );
     setListMembersMutation.mutate({ rkey, publications, users });
   };
-
-  const splitIdsByKind = (ids: Array<string>) => {
-    const publications: Array<string> = [];
-    const users: Array<string> = [];
-    for (const id of ids) {
-      if (memberKindById.get(id) === "person") {
-        users.push(id);
-      } else {
-        publications.push(id);
-      }
-    }
-    return { publications, users };
-  };
-
-  const saveGroupMemberOrder = (
-    group: TreeListNode,
-    memberIds: Array<string>,
-  ) => {
-    if (!group.rkey) return;
-    const { publications, users } = splitIdsByKind(memberIds);
-    saveListMembers(group.rkey, publications, users);
-  };
-
-  const removeFromGroup = (group: TreeListNode, id: string) => {
-    if (!group.rkey) return;
-    const remaining = group.members
-      .map((m) => m.id)
-      .filter((mid) => mid !== id);
-    saveGroupMemberOrder(group, remaining);
-  };
-
-  const dropFromTopLevel = (id: string) => {
-    sidebarPref.saveTreeOrder(
-      topNodes.map((n) => n.id).filter((nid) => nid !== id),
-    );
-  };
-
   // react-aria-components' per-item `allowsDragging` render prop reflects
   // only whether drag hooks exist at all (`!!dragState`), not `isDisabled` —
-  // so it can't gate the grip handle's visibility. Compute readiness
-  // ourselves and use that instead everywhere a row decides whether to show
-  // its drag handle.
+  // so it can't gate the grip handle's visibility. `dragEnabled` is computed
+  // ourselves and used instead everywhere a row decides whether to show its
+  // drag handle.
   const dragEnabled = reorderMode && sidebarPref.subscriptionSort === "default";
-  const { dragAndDropHooks: subscriptionsDragAndDropHooks } = useDragAndDrop({
-    isDisabled: !dragEnabled,
-    getItems: (keys) => [...keys].map((key) => ({ "text/plain": String(key) })),
-    getDropOperation(target) {
-      if (target.type !== "item") return "cancel";
-      if (target.dropPosition === "on" && !groupById.has(String(target.key))) {
-        return "cancel";
-      }
-      return "move";
-    },
-    renderDragPreview(dragItems) {
-      const first = dragItems[0]?.["text/plain"];
-      const name = (first && nameById.get(first)) || t`Subscription`;
-      const extra = dragItems.length - 1;
-      return (
-        <div {...stylex.props(styles.treeDragPreview)}>
-          <GripVertical
-            aria-hidden
-            size={14}
-            {...stylex.props(styles.treeDragPreviewGrip)}
-          />
-          <span {...stylex.props(styles.treeDragPreviewName)}>{name}</span>
-          {extra > 0 ? (
-            <span {...stylex.props(styles.treeDragPreviewBadge)}>+{extra}</span>
-          ) : null}
-        </div>
-      );
-    },
-    renderDropIndicator(target) {
-      return (
-        <DropIndicator
-          target={target}
-          {...stylex.props(styles.treeDropIndicator)}
-        />
-      );
-    },
-    onMove(e) {
-      if (e.target.type !== "item") return;
-      const draggedId = String([...e.keys][0]);
-      const targetId = String(e.target.key);
-      const dropPosition = e.target.dropPosition;
-      if (draggedId === targetId) return;
-
-      const draggedGroup = groupById.get(draggedId);
-      const sourceListUri = draggedGroup
-        ? null
-        : (memberParentListUri.get(draggedId) ?? null);
-
-      if (draggedGroup) {
-        // Lists only ever live at the top level.
-        if (dropPosition === "on" || !topLevelIds.has(targetId)) return;
-        sidebarPref.saveTreeOrder(
-          reorderIds(
-            topNodes.map((n) => n.id),
-            draggedId,
-            targetId,
-            dropPosition,
-          ),
-        );
-        return;
-      }
-
-      const draggedKind = memberKindById.get(draggedId);
-      if (!draggedKind) return;
-      const sourceGroup = sourceListUri ? groupById.get(sourceListUri) : null;
-      // Can't remove a member from a list this reader doesn't own.
-      if (sourceListUri && !sourceGroup?.editable) return;
-
-      if (dropPosition === "on") {
-        const targetGroup = groupById.get(targetId);
-        if (!targetGroup?.editable || sourceListUri === targetGroup.id) return;
-        if (sourceGroup) {
-          removeFromGroup(sourceGroup, draggedId);
-        } else {
-          dropFromTopLevel(draggedId);
-        }
-        saveGroupMemberOrder(targetGroup, [
-          ...targetGroup.members.map((m) => m.id),
-          draggedId,
-        ]);
-        return;
-      }
-
-      if (topLevelIds.has(targetId)) {
-        // Landing at the top level — reorder there, removing from any
-        // editable source list first.
-        if (sourceGroup) {
-          removeFromGroup(sourceGroup, draggedId);
-          sidebarPref.saveTreeOrder(
-            reorderIds(
-              [draggedId, ...topNodes.map((n) => n.id)],
-              draggedId,
-              targetId,
-              dropPosition,
-            ),
-          );
-        } else {
-          sidebarPref.saveTreeOrder(
-            reorderIds(
-              topNodes.map((n) => n.id),
-              draggedId,
-              targetId,
-              dropPosition,
-            ),
-          );
-        }
-        return;
-      }
-
-      // Target is a member nested inside some (editable) list.
-      const targetListUri = memberParentListUri.get(targetId);
-      const targetGroup = targetListUri ? groupById.get(targetListUri) : null;
-      if (!targetGroup?.editable) return;
-
-      if (sourceListUri === targetGroup.id) {
-        saveGroupMemberOrder(
-          targetGroup,
-          reorderIds(
-            targetGroup.members.map((m) => m.id),
-            draggedId,
-            targetId,
-            dropPosition,
-          ),
-        );
-        return;
-      }
-
-      if (sourceGroup) {
-        removeFromGroup(sourceGroup, draggedId);
-      } else {
-        dropFromTopLevel(draggedId);
-      }
-      saveGroupMemberOrder(
-        targetGroup,
-        reorderIds(
-          [draggedId, ...targetGroup.members.map((m) => m.id)],
-          draggedId,
-          targetId,
-          dropPosition,
-        ),
-      );
-    },
+  const { topNodes, groupNodes, dragAndDropHooks } = useSubscriptionsTree({
+    displayGroups,
+    flatSubscriptions,
+    subscriptionSort: sidebarPref.subscriptionSort,
+    treeOrder: sidebarPref.treeOrder,
+    saveTreeOrder: sidebarPref.saveTreeOrder,
+    saveListMembers,
+    dragEnabled,
   });
 
   return (
@@ -1892,180 +1341,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   // between lists, and move members in or out of lists.
                   // Enabled only when subscriptionSort is "default"; an
                   // automatic sort computes its own arrangement instead.
-                  <Tree
-                    aria-label={t`Subscriptions`}
-                    items={topNodes}
-                    selectionMode="none"
-                    {...stylex.props(styles.followList)}
-                    dragAndDropHooks={subscriptionsDragAndDropHooks}
-                    expandedKeys={
-                      new Set(
-                        groupNodes
-                          .filter((g) => !sidebarPref.isCollapsed(g.listUri))
-                          .map((g) => g.id),
-                      )
-                    }
-                    onExpandedChange={(keys) => {
-                      for (const g of groupNodes) {
-                        const shouldExpand = keys.has(g.id);
-                        const currentlyExpanded = !sidebarPref.isCollapsed(
-                          g.listUri,
-                        );
-                        if (shouldExpand !== currentlyExpanded) {
-                          sidebarPref.setCollapsed(g.listUri, !shouldExpand);
-                        }
-                      }
-                    }}
-                  >
-                    {(node: TreeTopNode) =>
-                      node.kind === "list" ? (
-                        <TreeItem
-                          id={node.id}
-                          textValue={node.name}
-                          // Always has at least one child (real members or the
-                          // "Empty list." placeholder) — react-aria's own
-                          // `hasChildItems` heuristic only counts >1 children,
-                          // which would hide the chevron for a single-member list.
-                          hasChildItems
-                          onAction={() => navigateToList(router, node.listUri)}
-                          {...stylex.props(styles.treeItemDropTarget)}
-                        >
-                          <TreeItemContent>
-                            {({ hasChildItems, isExpanded }) => (
-                              <div {...stylex.props(styles.groupHeaderRow)}>
-                                {dragEnabled ? (
-                                  <AriaButton
-                                    slot="drag"
-                                    {...stylex.props(styles.dragHandle)}
-                                  >
-                                    <GripVertical aria-hidden size={14} />
-                                  </AriaButton>
-                                ) : null}
-                                <span {...stylex.props(styles.groupName)}>
-                                  {node.name}
-                                </span>
-                                {node.unreadCount > 0 ? (
-                                  <UnreadBadge count={node.unreadCount} />
-                                ) : null}
-                                {hasChildItems ? (
-                                  <AriaButton
-                                    slot="chevron"
-                                    {...stylex.props(styles.chevronButton)}
-                                  >
-                                    {isExpanded ? (
-                                      <ChevronDown aria-hidden size={14} />
-                                    ) : (
-                                      <ChevronRight aria-hidden size={14} />
-                                    )}
-                                  </AriaButton>
-                                ) : null}
-                              </div>
-                            )}
-                          </TreeItemContent>
-                          {node.members.length === 0 ? (
-                            <TreeItem
-                              id={`${node.id}#empty`}
-                              textValue={t`Empty list.`}
-                              isDisabled
-                            >
-                              <TreeItemContent>
-                                <span {...stylex.props(styles.listEmpty)}>
-                                  <Trans>Empty list.</Trans>
-                                </span>
-                              </TreeItemContent>
-                            </TreeItem>
-                          ) : (
-                            node.members.map((member) => (
-                              <TreeItem
-                                key={member.id}
-                                id={member.id}
-                                textValue={member.name}
-                                onAction={() =>
-                                  member.kind === "publication"
-                                    ? navigateToPublication(router, member.pub)
-                                    : navigateToUser(router, member.user)
-                                }
-                              >
-                                <TreeItemContent>
-                                  {() => (
-                                    <div {...stylex.props(styles.memberRow)}>
-                                      {dragEnabled ? (
-                                        <AriaButton
-                                          slot="drag"
-                                          {...stylex.props(styles.dragHandle)}
-                                        >
-                                          <GripVertical aria-hidden size={14} />
-                                        </AriaButton>
-                                      ) : null}
-                                      <FollowingAvatar
-                                        name={member.name}
-                                        iconUrl={
-                                          member.kind === "publication"
-                                            ? (member.pub.iconUrl ??
-                                              member.pub.ownerAvatarUrl)
-                                            : member.user.avatarUrl
-                                        }
-                                      />
-                                      <span
-                                        {...stylex.props(styles.memberName)}
-                                      >
-                                        {member.name}
-                                      </span>
-                                      {member.unreadCount > 0 ? (
-                                        <UnreadBadge
-                                          count={member.unreadCount}
-                                        />
-                                      ) : null}
-                                    </div>
-                                  )}
-                                </TreeItemContent>
-                              </TreeItem>
-                            ))
-                          )}
-                        </TreeItem>
-                      ) : (
-                        <TreeItem
-                          id={node.id}
-                          textValue={node.name}
-                          onAction={() =>
-                            node.kind === "publication"
-                              ? navigateToPublication(router, node.pub)
-                              : navigateToUser(router, node.user)
-                          }
-                        >
-                          <TreeItemContent>
-                            {() => (
-                              <div {...stylex.props(styles.memberRow)}>
-                                {dragEnabled ? (
-                                  <AriaButton
-                                    slot="drag"
-                                    {...stylex.props(styles.dragHandle)}
-                                  >
-                                    <GripVertical aria-hidden size={14} />
-                                  </AriaButton>
-                                ) : null}
-                                <FollowingAvatar
-                                  name={node.name}
-                                  iconUrl={
-                                    node.kind === "publication"
-                                      ? (node.pub.iconUrl ??
-                                        node.pub.ownerAvatarUrl)
-                                      : node.user.avatarUrl
-                                  }
-                                />
-                                <span {...stylex.props(styles.memberName)}>
-                                  {node.name}
-                                </span>
-                                {node.unreadCount > 0 ? (
-                                  <UnreadBadge count={node.unreadCount} />
-                                ) : null}
-                              </div>
-                            )}
-                          </TreeItemContent>
-                        </TreeItem>
-                      )
-                    }
-                  </Tree>
+                  <SubscriptionsTree
+                    topNodes={topNodes}
+                    groupNodes={groupNodes}
+                    dragAndDropHooks={dragAndDropHooks}
+                    dragEnabled={dragEnabled}
+                    isCollapsed={sidebarPref.isCollapsed}
+                    setCollapsed={sidebarPref.setCollapsed}
+                  />
                 )}
               </div>
             </div>
@@ -2142,16 +1425,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             isOpen={subsSheetOpen}
             onOpenChange={setSubsSheetOpen}
             following={following}
-            ungrouped={flatSubscriptions
-              .filter((item) => item.kind === "publication")
-              .map((item) => item.pub)}
-            groups={displayGroups}
+            topNodes={topNodes}
+            groupNodes={groupNodes}
+            dragAndDropHooks={dragAndDropHooks}
+            dragEnabled={dragEnabled}
             onAddPublication={openAddPublication}
             onNewList={signedIn ? openNewList : undefined}
             allCollapsed={allCollapsed}
             onToggleAll={hasListGroups ? toggleAllGroups : undefined}
             isCollapsed={sidebarPref.isCollapsed}
             onSetCollapsed={sidebarPref.setCollapsed}
+            subscriptionSort={sidebarPref.subscriptionSort}
+            onSetSubscriptionSort={sidebarPref.setSubscriptionSort}
+            reorderMode={reorderMode}
+            onReorderModeChange={setReorderMode}
           />
           <AddPublicationModal
             isOpen={addModalOpen}
