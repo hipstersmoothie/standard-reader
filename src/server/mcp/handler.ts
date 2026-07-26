@@ -1,6 +1,9 @@
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 
 import { logEvent } from "#/server/observability/log";
+import type { RateLimitResult } from "#/server/rate-limit";
+import { rateLimitHeaders } from "#/server/rate-limit";
+import { checkRateLimit, checkRateLimitByIp } from "#/server/rate-limit-policy";
 
 import { protectedResourceMetadataUrl } from "./oauth/config";
 import {
@@ -38,6 +41,24 @@ function unauthorized(description: string): Response {
           `resource_metadata="${protectedResourceMetadataUrl()}"`,
       },
     },
+  );
+}
+
+/** JSON-RPC shaped 429, so an MCP client sees an error it can parse. */
+function rateLimited(result: RateLimitResult): Response {
+  return jsonResponse(
+    {
+      jsonrpc: "2.0",
+      error: {
+        code: -32_000,
+        message: `Rate limit exceeded. Retry in ${Math.ceil(
+          result.retryAfterMs / 1000,
+        )}s.`,
+      },
+      id: null,
+    },
+    429,
+    rateLimitHeaders(result),
   );
 }
 
@@ -88,6 +109,13 @@ export async function handleMcpRequest(request: Request): Promise<Response> {
     });
   }
 
+  // Before the token lookup, so an unauthenticated flood can't spend a
+  // database round trip per request.
+  const ipLimit = checkRateLimitByIp("mcpIp", request);
+  if (!ipLimit.allowed) {
+    return rateLimited(ipLimit);
+  }
+
   const token = bearerToken(request);
   if (!token) {
     return unauthorized("Authorization required");
@@ -116,6 +144,13 @@ export async function handleMcpRequest(request: Request): Promise<Response> {
     return unauthorized("The access token is expired, revoked, or unknown");
   }
 
+  // Charge the grant, not the IP: one connector shouldn't be able to spend
+  // another reader's budget by sharing an egress address.
+  const grantLimit = checkRateLimit("mcpGrant", `grant:${verified.grantId}`);
+  if (!grantLimit.allowed) {
+    return rateLimited(grantLimit);
+  }
+
   const session = new McpSession({
     did: verified.did,
     scopes: verified.scopes,
@@ -138,7 +173,10 @@ export async function handleMcpRequest(request: Request): Promise<Response> {
     // nothing and removes any chance of returning a stream we then abort.
     const body = await response.text();
     const headers = new Headers(response.headers);
-    for (const [key, value] of Object.entries(OAUTH_CORS_HEADERS)) {
+    for (const [key, value] of Object.entries({
+      ...OAUTH_CORS_HEADERS,
+      ...rateLimitHeaders(grantLimit),
+    })) {
       headers.set(key, value);
     }
     return new Response(body, {

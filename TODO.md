@@ -891,6 +891,14 @@ cookies on `/xrpc`. Live developer docs at [`/docs/api`](/docs/api).
 - [x] **XRPC test suite** — unit tests for registry, params, dispatch, and handlers
       (`src/server/xrpc/*.test.ts`); optional DB integration via
       `XRPC_INTEGRATION_TEST=1 pnpm test`.
+- [x] **Rate limiting** — every `/xrpc` request is charged against a coarse per-IP guard before
+      any work (protecting the `getSession` round trip authentication makes), then against a
+      per-caller budget keyed on the authenticated DID where there is one, with writes an order of
+      magnitude tighter than reads. Responses carry `RateLimit-*`; 429s carry `Retry-After`.
+      Budgets in `src/server/rate-limit-policy.ts`, covered by `dispatch.test.ts`.
+- [ ] **Shared rate-limit counters** — the limiter is in-memory, so each web replica enforces its
+      own copy and the effective ceiling is N× the configured budget. Fine as abuse control; move
+      to a shared store if the API ever needs real quotas.
 - [ ] **Publish lexicons to network** — `pnpm atproto:publish-lexicons` when `_lexicon.*` DNS ready.
 - [ ] **Production smoke test** — curl Tier 1 endpoints on `standard-reader.app` after deploy.
 - [x] **`/.well-known/*` routes were never served** — the router plugin skips dot-prefixed
@@ -934,15 +942,18 @@ implementation of anything.
 - [x] **Tests** — `src/server/mcp/*.test.ts` + `src/server/mcp/oauth/oauth.test.ts`: tool surface,
       auth gating, argument validation, PKCE, scope narrowing, audience binding, discovery
       documents, error shapes.
-- [ ] **Settings → Connected apps** — `mcpApi.listConnections` / `revokeConnection` are written
-      and tested-by-typecheck but not yet surfaced in the settings UI, so today a reader can only
-      revoke via the client's own disconnect (RFC 7009).
+- [x] **Settings → Connected apps** — `/settings` lists every live grant (client name, whether it
+      can write, last used) with a Disconnect button per row; revoking kills the grant and every
+      token descended from it. `mcpApi.listConnectionsQueryOptions` /
+      `revokeConnectionMutationOptions`.
 - [ ] **End-to-end connector test** — walk a real client (Claude connector) through discovery →
       registration → consent → tool call against a deploy. Discovery, the 401 challenge, and the
       tool surface are verified locally; the full round trip needs a deployed origin and a real
       reader session.
-- [ ] **Rate limiting** — `/mcp` and the token endpoint are unauthenticated-reachable; add
-      per-client limits before announcing it widely.
+- [x] **Rate limiting** — `/mcp` is guarded per-IP before the token lookup and per-grant after
+      it; the token/revocation endpoints per IP; dynamic registration on the tightest budget of
+      all (unauthenticated by design, and each call writes a row). Budgets live in
+      `src/server/rate-limit-policy.ts`.
 - [ ] **Prune job** — `pruneExpired()` runs opportunistically from the token endpoint. If MCP
       traffic is bursty, move it to the recompute cron instead.
 

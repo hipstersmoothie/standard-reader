@@ -1,6 +1,14 @@
+import { rateLimitHeaders } from "#/server/rate-limit";
+import { checkRateLimitByIp } from "#/server/rate-limit-policy";
+
 import { authenticateClient, registerClient, requireClient } from "./clients";
 import { isAcceptableResource, SUPPORTED_SCOPES } from "./config";
-import { jsonResponse, OAuthError, oauthErrorResponse } from "./errors";
+import {
+  jsonResponse,
+  OAuthError,
+  oauthErrorResponse,
+  oauthRateLimitedResponse,
+} from "./errors";
 import {
   exchangeAuthorizationCode,
   pruneExpired,
@@ -80,6 +88,13 @@ function optional(fields: Record<string, string>, key: string): string | null {
 
 /** `POST /api/mcp/register` — RFC 7591 dynamic client registration. */
 export async function handleRegister(request: Request): Promise<Response> {
+  // The tightest budget on this surface: registration is unauthenticated by
+  // design (that is what makes "paste the URL" work) and each call writes a row.
+  const limit = checkRateLimitByIp("oauthRegister", request);
+  if (!limit.allowed) {
+    return oauthRateLimitedResponse(limit, rateLimitHeaders(limit));
+  }
+
   try {
     let body: unknown;
     try {
@@ -123,6 +138,13 @@ export async function handleRegister(request: Request): Promise<Response> {
 
 /** `POST /api/mcp/token` — authorization-code exchange and refresh. */
 export async function handleToken(request: Request): Promise<Response> {
+  // Guards both the code exchange and refresh — and, because it runs before
+  // client lookup, the database round trip those need.
+  const limit = checkRateLimitByIp("oauthToken", request);
+  if (!limit.allowed) {
+    return oauthRateLimitedResponse(limit, rateLimitHeaders(limit));
+  }
+
   try {
     const fields = await readFields(request);
     const grantType = optional(fields, "grant_type");
@@ -179,6 +201,11 @@ export async function handleToken(request: Request): Promise<Response> {
 
 /** `POST /api/mcp/revoke` — RFC 7009 token revocation. */
 export async function handleRevoke(request: Request): Promise<Response> {
+  const limit = checkRateLimitByIp("oauthToken", request);
+  if (!limit.allowed) {
+    return oauthRateLimitedResponse(limit, rateLimitHeaders(limit));
+  }
+
   try {
     const fields = await readFields(request);
     const token = optional(fields, "token");

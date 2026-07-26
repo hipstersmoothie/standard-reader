@@ -732,6 +732,28 @@ client act _through_ Standard Reader as a reader who already signed in here.
   handlers as `via: "internal"`. Writes go to the reader's own repo with their own grant, so the
   PDS remains the authority on what they actually permitted. If their session has lapsed, tools
   say so and point them at signing in again rather than failing opaquely.
+- **Readers stay in control.** Settings → Connected apps lists every live grant — which client,
+  whether it can write, when it was last used — with a Disconnect button that revokes the grant
+  and every token descended from it.
+
+### Rate limiting
+
+Both public HTTP surfaces are throttled from one policy module
+(`src/server/rate-limit-policy.ts`), so the budgets live in one place and read as a set:
+
+- **`/xrpc`** — a coarse per-IP guard runs _before_ any work, because authenticating a request
+  costs a `getSession` round trip to the issuer PDS; then a per-caller budget keyed on the
+  authenticated DID (falling back to IP), with procedures an order of magnitude tighter than
+  queries because each one fans out to the caller's PDS.
+- **`/mcp`** — per-IP before the token lookup, then per-grant, so one connector can't spend
+  another reader's budget by sharing an egress address.
+- **OAuth endpoints** — token and revocation per IP; dynamic registration tightest of all, being
+  unauthenticated by design and a row write per call.
+
+Every response carries `RateLimit-*`; 429s add `Retry-After`, and both are CORS-exposed so browser
+clients can pace themselves rather than discovering the ceiling by hitting it. The limiter is
+in-memory per replica (`src/server/rate-limit.ts`) — with N replicas the effective ceiling is N×,
+which is fine for abuse control and avoids putting a shared counter on every request.
 
 ### Labels & moderation (labelers)
 

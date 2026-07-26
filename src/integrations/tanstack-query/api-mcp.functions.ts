@@ -1,3 +1,4 @@
+import { mutationOptions, queryOptions } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
@@ -132,10 +133,30 @@ const revokeConnection = createServerFn({ method: "POST" })
     return { revoked: true };
   });
 
+// ── React Query options (for the UI) ────────────────────────────────────────
+
+function listConnectionsQueryOptions() {
+  return queryOptions({
+    queryKey: ["reader", "mcpConnections"] as const,
+    queryFn: async () => listConnections(),
+    staleTime: 60_000,
+  });
+}
+
+function revokeConnectionMutationOptions() {
+  return mutationOptions({
+    mutationKey: ["reader", "revokeMcpConnection"] as const,
+    mutationFn: async (grantId: string) =>
+      revokeConnection({ data: { grantId } }),
+  });
+}
+
 export const mcpApi = {
   checkAuthorization,
   approve,
   deny,
   listConnections,
+  listConnectionsQueryOptions,
   revokeConnection,
+  revokeConnectionMutationOptions,
 };

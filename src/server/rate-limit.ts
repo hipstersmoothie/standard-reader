@@ -12,6 +12,18 @@ interface RateBucket {
   resetAt: number;
 }
 
+export interface RateLimitResult {
+  allowed: boolean;
+  /** How long until the window resets. `0` when the request was allowed. */
+  retryAfterMs: number;
+  /** The ceiling this key was measured against. */
+  limit: number;
+  /** Requests left in the current window. */
+  remaining: number;
+  /** Epoch ms at which the window resets. */
+  resetAt: number;
+}
+
 class RateLimiter {
   private buckets = new Map<string, RateBucket>();
   private sweepTimer: ReturnType<typeof setInterval> | null = null;
@@ -26,22 +38,37 @@ class RateLimiter {
    * Returns `{ allowed: true }` if under the limit (and increments the
    * counter), or `{ allowed: false, retryAfterMs }` when exceeded.
    */
-  check(
-    key: string,
-    limit: number,
-    windowMs: number,
-  ): { allowed: boolean; retryAfterMs: number } {
+  check(key: string, limit: number, windowMs: number): RateLimitResult {
     const now = Date.now();
     const bucket = this.buckets.get(key);
     if (!bucket || bucket.resetAt <= now) {
-      this.buckets.set(key, { count: 1, resetAt: now + windowMs });
-      return { allowed: true, retryAfterMs: 0 };
+      const resetAt = now + windowMs;
+      this.buckets.set(key, { count: 1, resetAt });
+      return {
+        allowed: true,
+        retryAfterMs: 0,
+        limit,
+        remaining: limit - 1,
+        resetAt,
+      };
     }
     if (bucket.count >= limit) {
-      return { allowed: false, retryAfterMs: bucket.resetAt - now };
+      return {
+        allowed: false,
+        retryAfterMs: bucket.resetAt - now,
+        limit,
+        remaining: 0,
+        resetAt: bucket.resetAt,
+      };
     }
     bucket.count += 1;
-    return { allowed: true, retryAfterMs: 0 };
+    return {
+      allowed: true,
+      retryAfterMs: 0,
+      limit,
+      remaining: limit - bucket.count,
+      resetAt: bucket.resetAt,
+    };
   }
 
   private sweep(): void {
@@ -68,4 +95,28 @@ export function getClientIp(request: Request): string {
     if (first) return first;
   }
   return request.headers.get("x-real-ip")?.trim() ?? "unknown";
+}
+
+/**
+ * `RateLimit-*` headers for an HTTP surface, per the IETF draft that most
+ * clients now read. Emitted on every response, not just rejections, so a
+ * well-behaved client can pace itself instead of discovering the ceiling by
+ * hitting it.
+ */
+export function rateLimitHeaders(
+  result: RateLimitResult,
+): Record<string, string> {
+  const resetSeconds = Math.max(
+    0,
+    Math.ceil((result.resetAt - Date.now()) / 1000),
+  );
+  const headers: Record<string, string> = {
+    "RateLimit-Limit": String(result.limit),
+    "RateLimit-Remaining": String(result.remaining),
+    "RateLimit-Reset": String(resetSeconds),
+  };
+  if (!result.allowed) {
+    headers["Retry-After"] = String(Math.ceil(result.retryAfterMs / 1000));
+  }
+  return headers;
 }

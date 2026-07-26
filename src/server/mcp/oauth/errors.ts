@@ -57,7 +57,8 @@ export const OAUTH_CORS_HEADERS: Record<string, string> = {
     "Authorization, Content-Type, Last-Event-ID, Mcp-Session-Id, " +
     "MCP-Protocol-Version",
   "Access-Control-Expose-Headers":
-    "Mcp-Session-Id, WWW-Authenticate, MCP-Protocol-Version",
+    "Mcp-Session-Id, WWW-Authenticate, MCP-Protocol-Version, RateLimit-Limit, " +
+    "RateLimit-Remaining, RateLimit-Reset, Retry-After",
   "Access-Control-Max-Age": "86400",
 };
 
@@ -81,6 +82,23 @@ export function jsonResponse(
       Pragma: "no-cache",
     },
   });
+}
+
+/** A throttled OAuth endpoint, in the shape RFC 6749 error responses use. */
+export function oauthRateLimitedResponse(
+  result: { retryAfterMs: number },
+  headers: Record<string, string>,
+): Response {
+  return jsonResponse(
+    {
+      error: "slow_down",
+      error_description: `Rate limit exceeded. Retry in ${Math.ceil(
+        result.retryAfterMs / 1000,
+      )}s.`,
+    },
+    429,
+    headers,
+  );
 }
 
 /** Render any thrown value as an OAuth error response. */

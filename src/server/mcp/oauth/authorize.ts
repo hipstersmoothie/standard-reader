@@ -218,7 +218,9 @@ export async function listGrantsForUser(userId: string) {
       clientName: row.client?.name ?? row.clientId,
       clientUri: row.client?.clientUri ?? null,
       scopes: row.scope.split(/\s+/).filter(Boolean),
-      createdAt: row.createdAt,
-      lastUsedAt: row.lastUsedAt,
+      // ISO strings, not Dates: every other server fn in the app hands the UI
+      // ISO and formats with `useFormatters`, so the wire shape stays uniform.
+      createdAt: row.createdAt.toISOString(),
+      lastUsedAt: row.lastUsedAt?.toISOString() ?? null,
     }));
 }
