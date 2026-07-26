@@ -682,6 +682,11 @@ Standard Reader speaks the standard AT Proto label protocol, so readers can subs
 - **Reading labels** uses `com.atproto.label.queryLabels` against each subscribed labeler; the
   reader sees a badge + content warning on labeled documents per their prefs. Settings →
   Labelers manages subscriptions and per-label toggles, and lists a labeler's labeled documents.
+- **Labels are verified on receipt**, per the [label spec](https://atproto.com/specs/label). The
+  periodic sync checks each label's `sig` against the signing key the labeler publishes as
+  `#atproto_label` in its DID document, and only verified labels reach the read-model — so every
+  request path serves labels we have already authenticated. A mismatch triggers one DID
+  re-resolution (the key-rotation case) before the label is dropped.
 - **claudeslop** is our example labeler: a standalone service (`services/claudeslop/`) that
   consumes Jetstream, scores documents for AI-written prose, signs labels, and serves
   `queryLabels` + `subscribeLabels` — a minimal reference implementation of the labeler API.

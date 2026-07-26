@@ -110,6 +110,17 @@ function encodeFrame(label: StoredLabel): Buffer {
   return Buffer.concat([Buffer.from(header), Buffer.from(body)]);
 }
 
+/**
+ * An error frame (`op: -1`), the stream equivalent of an XRPC error. The
+ * `subscribeLabels` lexicon declares `FutureCursor`, which we send when a
+ * client asks to replay from a `seq` we have never issued.
+ */
+function encodeErrorFrame(error: string, message: string): Buffer {
+  const header = dagCbor.encode({ op: -1 });
+  const body = dagCbor.encode({ error, message });
+  return Buffer.concat([Buffer.from(header), Buffer.from(body)]);
+}
+
 function handleQueryLabels(db: LabelerDb, url: URL, res: ServerResponse): void {
   const uriPatterns = url.searchParams.getAll("uriPatterns");
   if (uriPatterns.length === 0) {
@@ -203,6 +214,25 @@ function setupSubscribeLabels(
       // No cursor → future labels only. A cursor → replay everything after it.
       let lastSeq = cursorParam != null ? Number(cursorParam) : latestSeq(db);
       if (cursorParam != null) {
+        // A cursor beyond the labels we have ever issued is unsatisfiable: we
+        // would silently stream nothing and the client would wait forever for a
+        // backfill that can't arrive. The lexicon defines `FutureCursor` for
+        // exactly this — send it and close rather than accept the subscription.
+        if (!Number.isFinite(lastSeq) || lastSeq < 0) {
+          ws.send(
+            encodeErrorFrame(
+              "FutureCursor",
+              "Cursor must be a positive integer",
+            ),
+          );
+          ws.close();
+          return;
+        }
+        if (lastSeq > latestSeq(db)) {
+          ws.send(encodeErrorFrame("FutureCursor", "Cursor is in the future"));
+          ws.close();
+          return;
+        }
         for (const label of labelsAfter(db, lastSeq, 10_000)) {
           ws.send(encodeFrame(label));
           lastSeq = label.seq;

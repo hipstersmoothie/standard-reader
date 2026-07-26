@@ -35,10 +35,19 @@ export async function syncLabelerLabels(
     .where(eq(schema.labelSyncState.labelerDid, labelerDid))
     .limit(1);
 
-  const { diff, cursor } = await fetchLabelerLabelsSince(
+  const { diff, cursor, rejected } = await fetchLabelerLabelsSince(
     labelerDid,
     state[0]?.cursor ?? undefined,
   );
+
+  // A labeler serving labels we can't attribute to it is worth shouting about:
+  // either its signing key rotated in a way its DID document doesn't reflect,
+  // or something is forging labels under its DID. We drop them either way.
+  if (rejected > 0) {
+    console.warn(
+      `[labels] rejected ${rejected} unverifiable label(s) from ${labelerDid}`,
+    );
+  }
 
   const dl = schema.documentLabels;
   if (diff.active.length > 0) {

@@ -20,14 +20,29 @@ import type {
 import { assertSafeFetchUrl } from "#/server/security/ssrf-guard";
 
 import { resolveLabelerEndpoint } from "./resolve.server.ts";
+import { verifyLabels } from "./verify.server.ts";
 
-/** A raw label as served by a labeler's `queryLabels` (sync path only). */
+/**
+ * A raw label as served by a labeler's `queryLabels` (sync path only).
+ *
+ * Carries the full signed shape, not just what the UI needs: the signature
+ * covers every one of these fields, so they all have to survive the trip from
+ * the labeler to `verifyLabel` intact.
+ */
 export interface DisplayLabel {
+  /** Label schema version (`1`). Absent on labels predating the field. */
+  ver?: number;
   src: string;
   uri: string;
+  /** CID of the exact record version labeled, when the labeler pinned one. */
+  cid?: string;
   val: string;
   neg?: boolean;
   cts?: string;
+  /** Expiry; the label must not be applied after this instant. */
+  exp?: string;
+  /** Signature over the dag-cbor of this label sans `sig`. JSON uses `$bytes`. */
+  sig?: Uint8Array | { $bytes?: string };
 }
 
 // ── DB reads (request paths) ────────────────────────────────────────────────
@@ -356,11 +371,22 @@ export function resolveLabelDiff(labels: Array<DisplayLabel>): LabelDiff {
  * which our labelers support), reduced to a diff plus the cursor to persist
  * for next time. Omit `sinceCursor` to bootstrap a newly-registered labeler
  * from its full history. Used by the sync only.
+ *
+ * Every label is signature-checked against the labeler's published
+ * `#atproto_label` key before it reaches the diff, so nothing unverified is
+ * ever mirrored into the read-model. Labels that fail are dropped and counted;
+ * a non-zero `rejected` means the labeler served something we could not
+ * attribute to it, which the caller logs.
  */
 export async function fetchLabelerLabelsSince(
   did: string,
   sinceCursor: string | undefined,
-): Promise<{ diff: LabelDiff; cursor: string | undefined }> {
+): Promise<{
+  diff: LabelDiff;
+  cursor: string | undefined;
+  rejected: number;
+}> {
   const { labels, cursor } = await queryLabeler(did, ["*"], sinceCursor);
-  return { diff: resolveLabelDiff(labels), cursor };
+  const { verified, rejected } = await verifyLabels(labels, did);
+  return { diff: resolveLabelDiff(verified), cursor, rejected };
 }
