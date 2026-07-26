@@ -27,7 +27,6 @@ import {
   DrawerDescription,
   DrawerHeader,
 } from "../../design-system/drawer";
-import { Flex } from "../../design-system/flex";
 import { IconButton } from "../../design-system/icon-button";
 import { Menu, MenuItem, SubMenu } from "../../design-system/menu";
 import { animationDuration } from "../../design-system/theme/animations.stylex";
@@ -115,11 +114,6 @@ const styles = stylex.create({
     flexBasis: "0%",
     flexGrow: 1,
     flexShrink: 1,
-  },
-  /** Right-aligned tree actions (sort / reorder / collapse-all) menu trigger,
-   * above the subscriptions tree — mirrors the desktop sidebar's header. */
-  treeToolbar: {
-    marginBottom: verticalSpace.sm,
   },
   discoverLink: {
     borderWidth: 0,
@@ -304,106 +298,104 @@ export function SubscriptionsSheet({
               <FolderPlus size={17} /> <Trans>New list</Trans>
             </Button>
           ) : null}
+          {hasContent ? (
+            reorderMode ? (
+              <IconButton
+                aria-label={t`Finish reordering`}
+                size="lg"
+                variant="secondary"
+                onPress={() => onReorderModeChange(false)}
+              >
+                <Check size={18} />
+              </IconButton>
+            ) : (
+              <Menu
+                trigger={
+                  <IconButton
+                    aria-label={t`Subscription list actions`}
+                    size="lg"
+                    variant="secondary"
+                  >
+                    <Settings size={18} />
+                  </IconButton>
+                }
+                placement="bottom end"
+              >
+                <SubMenu
+                  trigger={
+                    <MenuItem prefix={<ArrowDownWideNarrow size={14} />}>
+                      <Trans>Sort</Trans>
+                    </MenuItem>
+                  }
+                  placement="left top"
+                  selectionMode="single"
+                  selectedKeys={new Set([subscriptionSort])}
+                >
+                  <MenuItem
+                    id="default"
+                    onAction={() => onSetSubscriptionSort("default")}
+                  >
+                    <Trans>Default</Trans>
+                  </MenuItem>
+                  <MenuItem
+                    id="recent"
+                    onAction={() => onSetSubscriptionSort("recent")}
+                  >
+                    <Trans>Recent activity</Trans>
+                  </MenuItem>
+                  <MenuItem
+                    id="alpha"
+                    onAction={() => onSetSubscriptionSort("alpha")}
+                  >
+                    <Trans>A–Z</Trans>
+                  </MenuItem>
+                  <MenuItem
+                    id="unread"
+                    onAction={() => onSetSubscriptionSort("unread")}
+                  >
+                    <Trans>Most unread</Trans>
+                  </MenuItem>
+                </SubMenu>
+                <MenuItem
+                  prefix={<GripVertical size={14} />}
+                  isDisabled={subscriptionSort !== "default"}
+                  onAction={() => onReorderModeChange(!reorderMode)}
+                >
+                  <Trans>Reorder subscriptions…</Trans>
+                </MenuItem>
+                {hasListGroups && onToggleAll ? (
+                  <MenuItem
+                    prefix={
+                      allCollapsed ? (
+                        <ChevronsUpDown size={14} />
+                      ) : (
+                        <ChevronsDownUp size={14} />
+                      )
+                    }
+                    onAction={onToggleAll}
+                  >
+                    {allCollapsed ? (
+                      <Trans>Expand all lists</Trans>
+                    ) : (
+                      <Trans>Collapse all lists</Trans>
+                    )}
+                  </MenuItem>
+                ) : null}
+              </Menu>
+            )
+          ) : null}
         </div>
 
         {hasContent ? (
-          <>
-            <Flex justify="end" style={styles.treeToolbar}>
-              {reorderMode ? (
-                <IconButton
-                  aria-label={t`Finish reordering`}
-                  size="sm"
-                  variant="tertiary"
-                  onPress={() => onReorderModeChange(false)}
-                >
-                  <Check size={14} />
-                </IconButton>
-              ) : (
-                <Menu
-                  trigger={
-                    <IconButton
-                      aria-label={t`Subscription list actions`}
-                      size="sm"
-                      variant="tertiary"
-                    >
-                      <Settings size={14} />
-                    </IconButton>
-                  }
-                  placement="bottom end"
-                >
-                  <SubMenu
-                    trigger={
-                      <MenuItem prefix={<ArrowDownWideNarrow size={14} />}>
-                        <Trans>Sort</Trans>
-                      </MenuItem>
-                    }
-                    placement="left top"
-                    selectionMode="single"
-                    selectedKeys={new Set([subscriptionSort])}
-                  >
-                    <MenuItem
-                      id="default"
-                      onAction={() => onSetSubscriptionSort("default")}
-                    >
-                      <Trans>Default</Trans>
-                    </MenuItem>
-                    <MenuItem
-                      id="recent"
-                      onAction={() => onSetSubscriptionSort("recent")}
-                    >
-                      <Trans>Recent activity</Trans>
-                    </MenuItem>
-                    <MenuItem
-                      id="alpha"
-                      onAction={() => onSetSubscriptionSort("alpha")}
-                    >
-                      <Trans>A–Z</Trans>
-                    </MenuItem>
-                    <MenuItem
-                      id="unread"
-                      onAction={() => onSetSubscriptionSort("unread")}
-                    >
-                      <Trans>Most unread</Trans>
-                    </MenuItem>
-                  </SubMenu>
-                  <MenuItem
-                    prefix={<GripVertical size={14} />}
-                    isDisabled={subscriptionSort !== "default"}
-                    onAction={() => onReorderModeChange(!reorderMode)}
-                  >
-                    <Trans>Reorder subscriptions…</Trans>
-                  </MenuItem>
-                  {hasListGroups && onToggleAll ? (
-                    <MenuItem
-                      prefix={
-                        allCollapsed ? (
-                          <ChevronsUpDown size={14} />
-                        ) : (
-                          <ChevronsDownUp size={14} />
-                        )
-                      }
-                      onAction={onToggleAll}
-                    >
-                      {allCollapsed ? (
-                        <Trans>Expand all lists</Trans>
-                      ) : (
-                        <Trans>Collapse all lists</Trans>
-                      )}
-                    </MenuItem>
-                  ) : null}
-                </Menu>
-              )}
-            </Flex>
-            <SubscriptionsTree
-              topNodes={topNodes}
-              groupNodes={groupNodes}
-              dragAndDropHooks={dragAndDropHooks}
-              dragEnabled={dragEnabled}
-              isCollapsed={isCollapsed}
-              setCollapsed={onSetCollapsed}
-              onNavigate={close}
-            />
-          </>
+          <SubscriptionsTree
+            topNodes={topNodes}
+            groupNodes={groupNodes}
+            dragAndDropHooks={dragAndDropHooks}
+            dragEnabled={dragEnabled}
+            isCollapsed={isCollapsed}
+            setCollapsed={onSetCollapsed}
+            onNavigate={close}
+          />
         ) : (
           <p {...stylex.props(styles.emptyNote)}>
             <Trans>You aren&apos;t following anything yet.</Trans>
