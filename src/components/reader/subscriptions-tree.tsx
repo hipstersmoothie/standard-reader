@@ -163,6 +163,13 @@ const styles = stylex.create({
     whiteSpace: "nowrap",
     minWidth: 0,
   },
+  /** Groups the unread count with the chevron, flush against each other (no
+   * gap) — only the row's other children (drag handle, name) get the row's
+   * own columnGap; matches the original sidebar's `sideLabelActions`. */
+  groupHeaderActions: {
+    alignItems: "center",
+    display: "flex",
+  },
   listEmpty: {
     color: uiColor.text1,
     fontFamily: fontFamily.serif,
@@ -415,23 +422,25 @@ export function SubscriptionsTree({
                     </AriaButton>
                   ) : null}
                   <span {...stylex.props(styles.groupName)}>{node.name}</span>
-                  {node.unreadCount > 0 ? (
-                    <span aria-label={t`${node.unreadCount} unread`}>
-                      {formatSidebarUnreadCount(fmt, node.unreadCount)}
-                    </span>
-                  ) : null}
-                  {hasChildItems ? (
-                    <AriaButton
-                      slot="chevron"
-                      {...stylex.props(styles.chevronButton)}
-                    >
-                      {isExpanded ? (
-                        <ChevronDown aria-hidden size={14} />
-                      ) : (
-                        <ChevronRight aria-hidden size={14} />
-                      )}
-                    </AriaButton>
-                  ) : null}
+                  <div {...stylex.props(styles.groupHeaderActions)}>
+                    {node.unreadCount > 0 ? (
+                      <span aria-label={t`${node.unreadCount} unread`}>
+                        {formatSidebarUnreadCount(fmt, node.unreadCount)}
+                      </span>
+                    ) : null}
+                    {hasChildItems ? (
+                      <AriaButton
+                        slot="chevron"
+                        {...stylex.props(styles.chevronButton)}
+                      >
+                        {isExpanded ? (
+                          <ChevronDown aria-hidden size={14} />
+                        ) : (
+                          <ChevronRight aria-hidden size={14} />
+                        )}
+                      </AriaButton>
+                    ) : null}
+                  </div>
                 </div>
               )}
             </TreeItemContent>
