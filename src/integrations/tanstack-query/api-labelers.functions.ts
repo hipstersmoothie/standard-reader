@@ -8,6 +8,7 @@ import { getRequest } from "@tanstack/react-start/server";
 import { and, eq, inArray, like, sql } from "drizzle-orm";
 import { z } from "zod";
 
+import { fetchBlueskyPublicProfiles } from "#/lib/bluesky-public-profile";
 import { getAtprotoSessionForRequest } from "#/middleware/auth-session.server";
 import {
   deleteLabelerSubscriptionRecord,
@@ -478,15 +479,30 @@ const getLabeledAccounts = createServerFn({ method: "GET" })
       }
       const profileByDid = new Map(profileRows.map((p) => [p.did, p]));
 
+      // A labeler can label any account on the network, and most labeled
+      // accounts never publish to standard.site — so we hold no `profiles` row
+      // for them and they would render as a bare `did:plc:…`. Fill those from
+      // the public AppView. Bounded to the DIDs on this page (one batched call
+      // per 25) and best-effort: an account that has since been deactivated is
+      // simply omitted, and falls back to its DID.
+      const unhydrated = dids.filter((did) => !profileByDid.has(did));
+      const bskyByDid = await fetchBlueskyPublicProfiles(unhydrated);
+      span.set("hydratedFromAppView", bskyByDid.size);
+      span.set("unhydrated", unhydrated.length - bskyByDid.size);
+
       span.set("count", dids.length);
       span.set("total", total);
       return {
-        accounts: dids.map((did) => ({
-          did,
-          handle: profileByDid.get(did)?.handle ?? null,
-          displayName: profileByDid.get(did)?.displayName ?? null,
-          avatarUrl: profileByDid.get(did)?.avatarUrl ?? null,
-        })),
+        accounts: dids.map((did) => {
+          const local = profileByDid.get(did);
+          const remote = bskyByDid.get(did);
+          return {
+            did,
+            handle: local?.handle ?? remote?.handle ?? null,
+            displayName: local?.displayName ?? remote?.displayName ?? null,
+            avatarUrl: local?.avatarUrl ?? remote?.avatarUrl ?? null,
+          };
+        }),
         labelsByDid,
         total,
         nextOffset:

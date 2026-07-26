@@ -54,6 +54,65 @@ export async function fetchBlueskyPublicProfileFields(
   }
 }
 
+/** Max actors per `getProfiles` call — the AppView caps the `actors` array at 25. */
+const GET_PROFILES_BATCH = 25;
+
+/**
+ * Batched {@link fetchBlueskyPublicProfileFields}: handle, display name, and
+ * avatar for many DIDs at once, keyed by DID.
+ *
+ * For accounts we hold no `profiles` row for. A labeler can label any account
+ * on the network, most of which never publish to standard.site and so are never
+ * mirrored into the read-model — without this they render as a bare
+ * `did:plc:…`. Best-effort: a failed batch yields no entries rather than
+ * throwing, and the caller falls back to the DID.
+ *
+ * Results are keyed by the DID the AppView echoes back, not by input position:
+ * deactivated and deleted accounts are simply omitted from the response, so
+ * zipping against the request array would misalign every profile after the
+ * first missing one.
+ */
+export async function fetchBlueskyPublicProfiles(
+  dids: Array<string>,
+): Promise<Map<string, BlueskyPublicProfileFields>> {
+  const out = new Map<string, BlueskyPublicProfileFields>();
+  const unique = [...new Set(dids)];
+  if (unique.length === 0) return out;
+
+  const batches: Array<Array<string>> = [];
+  for (let i = 0; i < unique.length; i += GET_PROFILES_BATCH) {
+    batches.push(unique.slice(i, i + GET_PROFILES_BATCH));
+  }
+
+  await Promise.all(
+    batches.map(async (batch) => {
+      try {
+        const url = new URL(
+          "xrpc/app.bsky.actor.getProfiles",
+          "https://public.api.bsky.app",
+        );
+        for (const did of batch) url.searchParams.append("actors", did);
+        const response = await fetch(url.toString(), {
+          headers: { Accept: "application/json" },
+          signal: AbortSignal.timeout(8000),
+        });
+        if (!response.ok) return;
+        const body = (await response.json()) as {
+          profiles?: Array<{ did?: string }>;
+        };
+        for (const profile of body.profiles ?? []) {
+          if (typeof profile.did === "string") {
+            out.set(profile.did, normalizeProfileResponse(profile));
+          }
+        }
+      } catch {
+        // Best-effort enrichment — leave these DIDs unhydrated.
+      }
+    }),
+  );
+  return out;
+}
+
 /**
  * Whether to set `user.image` from Bluesky's public avatar URL.
  */
