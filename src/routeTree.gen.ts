@@ -13,6 +13,9 @@ import { Route as DocsHeaderLayoutRouteImport } from './routes/_docs-header-layo
 import { Route as LayoutRouteImport } from './routes/_layout'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as WelcomeRouteImport } from './routes/welcome'
+import { Route as DotwellKnownDidDotjsonRouteImport } from './routes/[.]well-known/did[.]json'
+import { Route as DotwellKnownOauthAuthorizationServerRouteImport } from './routes/[.]well-known/oauth-authorization-server'
+import { Route as DotwellKnownOauthProtectedResourceDotjsonRouteImport } from './routes/[.]well-known/oauth-protected-resource[.]json'
 import { Route as LayoutIndexRouteImport } from './routes/_layout.index'
 import { Route as LayoutAboutRouteImport } from './routes/_layout.about'
 import { Route as LayoutCollectionsRouteImport } from './routes/_layout.collections'
@@ -31,8 +34,11 @@ import { Route as DevDigestRouteImport } from './routes/dev.digest'
 import { Route as DevRtlRouteImport } from './routes/dev.rtl'
 import { Route as DevWelcomeEmailRouteImport } from './routes/dev.welcome-email'
 import { Route as ExtensionConnectedRouteImport } from './routes/extension.connected'
+import { Route as McpIndexRouteImport } from './routes/mcp/index'
+import { Route as McpAuthorizeRouteImport } from './routes/mcp/authorize'
 import { Route as ReviewThanksRouteImport } from './routes/review.thanks'
 import { Route as XrpcSplatRouteImport } from './routes/xrpc/$'
+import { Route as DotwellKnownOauthProtectedResourceMcpRouteImport } from './routes/[.]well-known/oauth-protected-resource/mcp'
 import { Route as DocsHeaderLayoutDocsApiRouteImport } from './routes/_docs-header-layout.docs.api'
 import { Route as DocsHeaderLayoutDocsIntroductionRouteImport } from './routes/_docs-header-layout.docs.introduction'
 import { Route as DocsHeaderLayoutDocsLabelersRouteImport } from './routes/_docs-header-layout.docs.labelers'
@@ -61,6 +67,9 @@ import { Route as ApiExtensionNarrationRouteImport } from './routes/api/extensio
 import { Route as ApiExtensionRecommendRouteImport } from './routes/api/extension/recommend'
 import { Route as ApiExtensionResolveRouteImport } from './routes/api/extension/resolve'
 import { Route as ApiExtensionSessionRouteImport } from './routes/api/extension/session'
+import { Route as ApiMcpRegisterRouteImport } from './routes/api/mcp/register'
+import { Route as ApiMcpRevokeRouteImport } from './routes/api/mcp/revoke'
+import { Route as ApiMcpTokenRouteImport } from './routes/api/mcp/token'
 import { Route as ApiOgArticleRouteImport } from './routes/api/og/article'
 import { Route as ApiOgCollectionRouteImport } from './routes/api/og/collection'
 import { Route as ApiOgListRouteImport } from './routes/api/og/list'
@@ -109,6 +118,23 @@ const WelcomeRoute = WelcomeRouteImport.update({
   path: '/welcome',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DotwellKnownDidDotjsonRoute = DotwellKnownDidDotjsonRouteImport.update({
+  id: '/.well-known/did.json',
+  path: '/.well-known/did.json',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DotwellKnownOauthAuthorizationServerRoute =
+  DotwellKnownOauthAuthorizationServerRouteImport.update({
+    id: '/.well-known/oauth-authorization-server',
+    path: '/.well-known/oauth-authorization-server',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const DotwellKnownOauthProtectedResourceDotjsonRoute =
+  DotwellKnownOauthProtectedResourceDotjsonRouteImport.update({
+    id: '/.well-known/oauth-protected-resource.json',
+    path: '/.well-known/oauth-protected-resource.json',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const LayoutIndexRoute = LayoutIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -199,6 +225,16 @@ const ExtensionConnectedRoute = ExtensionConnectedRouteImport.update({
   path: '/extension/connected',
   getParentRoute: () => rootRouteImport,
 } as any)
+const McpIndexRoute = McpIndexRouteImport.update({
+  id: '/mcp/',
+  path: '/mcp/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const McpAuthorizeRoute = McpAuthorizeRouteImport.update({
+  id: '/mcp/authorize',
+  path: '/mcp/authorize',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ReviewThanksRoute = ReviewThanksRouteImport.update({
   id: '/review/thanks',
   path: '/review/thanks',
@@ -209,6 +245,12 @@ const XrpcSplatRoute = XrpcSplatRouteImport.update({
   path: '/xrpc/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DotwellKnownOauthProtectedResourceMcpRoute =
+  DotwellKnownOauthProtectedResourceMcpRouteImport.update({
+    id: '/.well-known/oauth-protected-resource/mcp',
+    path: '/.well-known/oauth-protected-resource/mcp',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const DocsHeaderLayoutDocsApiRoute = DocsHeaderLayoutDocsApiRouteImport.update({
   id: '/docs/api',
   path: '/docs/api',
@@ -352,6 +394,21 @@ const ApiExtensionResolveRoute = ApiExtensionResolveRouteImport.update({
 const ApiExtensionSessionRoute = ApiExtensionSessionRouteImport.update({
   id: '/api/extension/session',
   path: '/api/extension/session',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiMcpRegisterRoute = ApiMcpRegisterRouteImport.update({
+  id: '/api/mcp/register',
+  path: '/api/mcp/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiMcpRevokeRoute = ApiMcpRevokeRouteImport.update({
+  id: '/api/mcp/revoke',
+  path: '/api/mcp/revoke',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiMcpTokenRoute = ApiMcpTokenRouteImport.update({
+  id: '/api/mcp/token',
+  path: '/api/mcp/token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiOgArticleRoute = ApiOgArticleRouteImport.update({
@@ -509,6 +566,9 @@ export interface FileRoutesByFullPath {
   '/': typeof LayoutIndexRoute
   '/login': typeof LoginRoute
   '/welcome': typeof WelcomeRoute
+  '/.well-known/did.json': typeof DotwellKnownDidDotjsonRoute
+  '/.well-known/oauth-authorization-server': typeof DotwellKnownOauthAuthorizationServerRoute
+  '/.well-known/oauth-protected-resource.json': typeof DotwellKnownOauthProtectedResourceDotjsonRoute
   '/about': typeof LayoutAboutRoute
   '/collections': typeof LayoutCollectionsRouteWithChildren
   '/discover': typeof LayoutDiscoverRoute
@@ -526,8 +586,11 @@ export interface FileRoutesByFullPath {
   '/dev/rtl': typeof DevRtlRoute
   '/dev/welcome-email': typeof DevWelcomeEmailRoute
   '/extension/connected': typeof ExtensionConnectedRoute
+  '/mcp/authorize': typeof McpAuthorizeRoute
   '/review/thanks': typeof ReviewThanksRoute
   '/xrpc/$': typeof XrpcSplatRoute
+  '/mcp/': typeof McpIndexRoute
+  '/.well-known/oauth-protected-resource/mcp': typeof DotwellKnownOauthProtectedResourceMcpRoute
   '/docs/api': typeof DocsHeaderLayoutDocsApiRoute
   '/docs/introduction': typeof DocsHeaderLayoutDocsIntroductionRoute
   '/docs/labelers': typeof DocsHeaderLayoutDocsLabelersRoute
@@ -552,6 +615,9 @@ export interface FileRoutesByFullPath {
   '/api/extension/recommend': typeof ApiExtensionRecommendRoute
   '/api/extension/resolve': typeof ApiExtensionResolveRoute
   '/api/extension/session': typeof ApiExtensionSessionRoute
+  '/api/mcp/register': typeof ApiMcpRegisterRoute
+  '/api/mcp/revoke': typeof ApiMcpRevokeRoute
+  '/api/mcp/token': typeof ApiMcpTokenRoute
   '/api/og/article': typeof ApiOgArticleRoute
   '/api/og/collection': typeof ApiOgCollectionRoute
   '/api/og/list': typeof ApiOgListRoute
@@ -590,6 +656,9 @@ export interface FileRoutesByTo {
   '/': typeof LayoutIndexRoute
   '/login': typeof LoginRoute
   '/welcome': typeof WelcomeRoute
+  '/.well-known/did.json': typeof DotwellKnownDidDotjsonRoute
+  '/.well-known/oauth-authorization-server': typeof DotwellKnownOauthAuthorizationServerRoute
+  '/.well-known/oauth-protected-resource.json': typeof DotwellKnownOauthProtectedResourceDotjsonRoute
   '/about': typeof LayoutAboutRoute
   '/discover': typeof LayoutDiscoverRoute
   '/friends': typeof LayoutFriendsRoute
@@ -606,8 +675,11 @@ export interface FileRoutesByTo {
   '/dev/rtl': typeof DevRtlRoute
   '/dev/welcome-email': typeof DevWelcomeEmailRoute
   '/extension/connected': typeof ExtensionConnectedRoute
+  '/mcp/authorize': typeof McpAuthorizeRoute
   '/review/thanks': typeof ReviewThanksRoute
   '/xrpc/$': typeof XrpcSplatRoute
+  '/mcp': typeof McpIndexRoute
+  '/.well-known/oauth-protected-resource/mcp': typeof DotwellKnownOauthProtectedResourceMcpRoute
   '/docs/api': typeof DocsHeaderLayoutDocsApiRoute
   '/docs/introduction': typeof DocsHeaderLayoutDocsIntroductionRoute
   '/docs/labelers': typeof DocsHeaderLayoutDocsLabelersRoute
@@ -632,6 +704,9 @@ export interface FileRoutesByTo {
   '/api/extension/recommend': typeof ApiExtensionRecommendRoute
   '/api/extension/resolve': typeof ApiExtensionResolveRoute
   '/api/extension/session': typeof ApiExtensionSessionRoute
+  '/api/mcp/register': typeof ApiMcpRegisterRoute
+  '/api/mcp/revoke': typeof ApiMcpRevokeRoute
+  '/api/mcp/token': typeof ApiMcpTokenRoute
   '/api/og/article': typeof ApiOgArticleRoute
   '/api/og/collection': typeof ApiOgCollectionRoute
   '/api/og/list': typeof ApiOgListRoute
@@ -672,6 +747,9 @@ export interface FileRoutesById {
   '/_layout': typeof LayoutRouteWithChildren
   '/login': typeof LoginRoute
   '/welcome': typeof WelcomeRoute
+  '/.well-known/did.json': typeof DotwellKnownDidDotjsonRoute
+  '/.well-known/oauth-authorization-server': typeof DotwellKnownOauthAuthorizationServerRoute
+  '/.well-known/oauth-protected-resource.json': typeof DotwellKnownOauthProtectedResourceDotjsonRoute
   '/_layout/about': typeof LayoutAboutRoute
   '/_layout/collections': typeof LayoutCollectionsRouteWithChildren
   '/_layout/discover': typeof LayoutDiscoverRoute
@@ -689,9 +767,12 @@ export interface FileRoutesById {
   '/dev/rtl': typeof DevRtlRoute
   '/dev/welcome-email': typeof DevWelcomeEmailRoute
   '/extension/connected': typeof ExtensionConnectedRoute
+  '/mcp/authorize': typeof McpAuthorizeRoute
   '/review/thanks': typeof ReviewThanksRoute
   '/xrpc/$': typeof XrpcSplatRoute
   '/_layout/': typeof LayoutIndexRoute
+  '/mcp/': typeof McpIndexRoute
+  '/.well-known/oauth-protected-resource/mcp': typeof DotwellKnownOauthProtectedResourceMcpRoute
   '/_docs-header-layout/docs/api': typeof DocsHeaderLayoutDocsApiRoute
   '/_docs-header-layout/docs/introduction': typeof DocsHeaderLayoutDocsIntroductionRoute
   '/_docs-header-layout/docs/labelers': typeof DocsHeaderLayoutDocsLabelersRoute
@@ -716,6 +797,9 @@ export interface FileRoutesById {
   '/api/extension/recommend': typeof ApiExtensionRecommendRoute
   '/api/extension/resolve': typeof ApiExtensionResolveRoute
   '/api/extension/session': typeof ApiExtensionSessionRoute
+  '/api/mcp/register': typeof ApiMcpRegisterRoute
+  '/api/mcp/revoke': typeof ApiMcpRevokeRoute
+  '/api/mcp/token': typeof ApiMcpTokenRoute
   '/api/og/article': typeof ApiOgArticleRoute
   '/api/og/collection': typeof ApiOgCollectionRoute
   '/api/og/list': typeof ApiOgListRoute
@@ -756,6 +840,9 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/welcome'
+    | '/.well-known/did.json'
+    | '/.well-known/oauth-authorization-server'
+    | '/.well-known/oauth-protected-resource.json'
     | '/about'
     | '/collections'
     | '/discover'
@@ -773,8 +860,11 @@ export interface FileRouteTypes {
     | '/dev/rtl'
     | '/dev/welcome-email'
     | '/extension/connected'
+    | '/mcp/authorize'
     | '/review/thanks'
     | '/xrpc/$'
+    | '/mcp/'
+    | '/.well-known/oauth-protected-resource/mcp'
     | '/docs/api'
     | '/docs/introduction'
     | '/docs/labelers'
@@ -799,6 +889,9 @@ export interface FileRouteTypes {
     | '/api/extension/recommend'
     | '/api/extension/resolve'
     | '/api/extension/session'
+    | '/api/mcp/register'
+    | '/api/mcp/revoke'
+    | '/api/mcp/token'
     | '/api/og/article'
     | '/api/og/collection'
     | '/api/og/list'
@@ -837,6 +930,9 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/welcome'
+    | '/.well-known/did.json'
+    | '/.well-known/oauth-authorization-server'
+    | '/.well-known/oauth-protected-resource.json'
     | '/about'
     | '/discover'
     | '/friends'
@@ -853,8 +949,11 @@ export interface FileRouteTypes {
     | '/dev/rtl'
     | '/dev/welcome-email'
     | '/extension/connected'
+    | '/mcp/authorize'
     | '/review/thanks'
     | '/xrpc/$'
+    | '/mcp'
+    | '/.well-known/oauth-protected-resource/mcp'
     | '/docs/api'
     | '/docs/introduction'
     | '/docs/labelers'
@@ -879,6 +978,9 @@ export interface FileRouteTypes {
     | '/api/extension/recommend'
     | '/api/extension/resolve'
     | '/api/extension/session'
+    | '/api/mcp/register'
+    | '/api/mcp/revoke'
+    | '/api/mcp/token'
     | '/api/og/article'
     | '/api/og/collection'
     | '/api/og/list'
@@ -918,6 +1020,9 @@ export interface FileRouteTypes {
     | '/_layout'
     | '/login'
     | '/welcome'
+    | '/.well-known/did.json'
+    | '/.well-known/oauth-authorization-server'
+    | '/.well-known/oauth-protected-resource.json'
     | '/_layout/about'
     | '/_layout/collections'
     | '/_layout/discover'
@@ -935,9 +1040,12 @@ export interface FileRouteTypes {
     | '/dev/rtl'
     | '/dev/welcome-email'
     | '/extension/connected'
+    | '/mcp/authorize'
     | '/review/thanks'
     | '/xrpc/$'
     | '/_layout/'
+    | '/mcp/'
+    | '/.well-known/oauth-protected-resource/mcp'
     | '/_docs-header-layout/docs/api'
     | '/_docs-header-layout/docs/introduction'
     | '/_docs-header-layout/docs/labelers'
@@ -962,6 +1070,9 @@ export interface FileRouteTypes {
     | '/api/extension/recommend'
     | '/api/extension/resolve'
     | '/api/extension/session'
+    | '/api/mcp/register'
+    | '/api/mcp/revoke'
+    | '/api/mcp/token'
     | '/api/og/article'
     | '/api/og/collection'
     | '/api/og/list'
@@ -1002,12 +1113,18 @@ export interface RootRouteChildren {
   LayoutRoute: typeof LayoutRouteWithChildren
   LoginRoute: typeof LoginRoute
   WelcomeRoute: typeof WelcomeRoute
+  DotwellKnownDidDotjsonRoute: typeof DotwellKnownDidDotjsonRoute
+  DotwellKnownOauthAuthorizationServerRoute: typeof DotwellKnownOauthAuthorizationServerRoute
+  DotwellKnownOauthProtectedResourceDotjsonRoute: typeof DotwellKnownOauthProtectedResourceDotjsonRoute
   DevDigestRoute: typeof DevDigestRoute
   DevRtlRoute: typeof DevRtlRoute
   DevWelcomeEmailRoute: typeof DevWelcomeEmailRoute
   ExtensionConnectedRoute: typeof ExtensionConnectedRoute
+  McpAuthorizeRoute: typeof McpAuthorizeRoute
   ReviewThanksRoute: typeof ReviewThanksRoute
   XrpcSplatRoute: typeof XrpcSplatRoute
+  McpIndexRoute: typeof McpIndexRoute
+  DotwellKnownOauthProtectedResourceMcpRoute: typeof DotwellKnownOauthProtectedResourceMcpRoute
   ApiBskyPostRoute: typeof ApiBskyPostRoute
   ApiDevDigestPreviewRoute: typeof ApiDevDigestPreviewRoute
   ApiDevWelcomePreviewRoute: typeof ApiDevWelcomePreviewRoute
@@ -1020,6 +1137,9 @@ export interface RootRouteChildren {
   ApiExtensionRecommendRoute: typeof ApiExtensionRecommendRoute
   ApiExtensionResolveRoute: typeof ApiExtensionResolveRoute
   ApiExtensionSessionRoute: typeof ApiExtensionSessionRoute
+  ApiMcpRegisterRoute: typeof ApiMcpRegisterRoute
+  ApiMcpRevokeRoute: typeof ApiMcpRevokeRoute
+  ApiMcpTokenRoute: typeof ApiMcpTokenRoute
   ApiOgArticleRoute: typeof ApiOgArticleRoute
   ApiOgCollectionRoute: typeof ApiOgCollectionRoute
   ApiOgListRoute: typeof ApiOgListRoute
@@ -1075,6 +1195,27 @@ declare module '@tanstack/react-router' {
       path: '/welcome'
       fullPath: '/welcome'
       preLoaderRoute: typeof WelcomeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/.well-known/did.json': {
+      id: '/.well-known/did.json'
+      path: '/.well-known/did.json'
+      fullPath: '/.well-known/did.json'
+      preLoaderRoute: typeof DotwellKnownDidDotjsonRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/.well-known/oauth-authorization-server': {
+      id: '/.well-known/oauth-authorization-server'
+      path: '/.well-known/oauth-authorization-server'
+      fullPath: '/.well-known/oauth-authorization-server'
+      preLoaderRoute: typeof DotwellKnownOauthAuthorizationServerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/.well-known/oauth-protected-resource.json': {
+      id: '/.well-known/oauth-protected-resource.json'
+      path: '/.well-known/oauth-protected-resource.json'
+      fullPath: '/.well-known/oauth-protected-resource.json'
+      preLoaderRoute: typeof DotwellKnownOauthProtectedResourceDotjsonRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_layout/': {
@@ -1203,6 +1344,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ExtensionConnectedRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/mcp/': {
+      id: '/mcp/'
+      path: '/mcp'
+      fullPath: '/mcp/'
+      preLoaderRoute: typeof McpIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mcp/authorize': {
+      id: '/mcp/authorize'
+      path: '/mcp/authorize'
+      fullPath: '/mcp/authorize'
+      preLoaderRoute: typeof McpAuthorizeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/review/thanks': {
       id: '/review/thanks'
       path: '/review/thanks'
@@ -1215,6 +1370,13 @@ declare module '@tanstack/react-router' {
       path: '/xrpc/$'
       fullPath: '/xrpc/$'
       preLoaderRoute: typeof XrpcSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/.well-known/oauth-protected-resource/mcp': {
+      id: '/.well-known/oauth-protected-resource/mcp'
+      path: '/.well-known/oauth-protected-resource/mcp'
+      fullPath: '/.well-known/oauth-protected-resource/mcp'
+      preLoaderRoute: typeof DotwellKnownOauthProtectedResourceMcpRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_docs-header-layout/docs/api': {
@@ -1411,6 +1573,27 @@ declare module '@tanstack/react-router' {
       path: '/api/extension/session'
       fullPath: '/api/extension/session'
       preLoaderRoute: typeof ApiExtensionSessionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/mcp/register': {
+      id: '/api/mcp/register'
+      path: '/api/mcp/register'
+      fullPath: '/api/mcp/register'
+      preLoaderRoute: typeof ApiMcpRegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/mcp/revoke': {
+      id: '/api/mcp/revoke'
+      path: '/api/mcp/revoke'
+      fullPath: '/api/mcp/revoke'
+      preLoaderRoute: typeof ApiMcpRevokeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/mcp/token': {
+      id: '/api/mcp/token'
+      path: '/api/mcp/token'
+      fullPath: '/api/mcp/token'
+      preLoaderRoute: typeof ApiMcpTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/og/article': {
@@ -1729,12 +1912,21 @@ const rootRouteChildren: RootRouteChildren = {
   LayoutRoute: LayoutRouteWithChildren,
   LoginRoute: LoginRoute,
   WelcomeRoute: WelcomeRoute,
+  DotwellKnownDidDotjsonRoute: DotwellKnownDidDotjsonRoute,
+  DotwellKnownOauthAuthorizationServerRoute:
+    DotwellKnownOauthAuthorizationServerRoute,
+  DotwellKnownOauthProtectedResourceDotjsonRoute:
+    DotwellKnownOauthProtectedResourceDotjsonRoute,
   DevDigestRoute: DevDigestRoute,
   DevRtlRoute: DevRtlRoute,
   DevWelcomeEmailRoute: DevWelcomeEmailRoute,
   ExtensionConnectedRoute: ExtensionConnectedRoute,
+  McpAuthorizeRoute: McpAuthorizeRoute,
   ReviewThanksRoute: ReviewThanksRoute,
   XrpcSplatRoute: XrpcSplatRoute,
+  McpIndexRoute: McpIndexRoute,
+  DotwellKnownOauthProtectedResourceMcpRoute:
+    DotwellKnownOauthProtectedResourceMcpRoute,
   ApiBskyPostRoute: ApiBskyPostRoute,
   ApiDevDigestPreviewRoute: ApiDevDigestPreviewRoute,
   ApiDevWelcomePreviewRoute: ApiDevWelcomePreviewRoute,
@@ -1747,6 +1939,9 @@ const rootRouteChildren: RootRouteChildren = {
   ApiExtensionRecommendRoute: ApiExtensionRecommendRoute,
   ApiExtensionResolveRoute: ApiExtensionResolveRoute,
   ApiExtensionSessionRoute: ApiExtensionSessionRoute,
+  ApiMcpRegisterRoute: ApiMcpRegisterRoute,
+  ApiMcpRevokeRoute: ApiMcpRevokeRoute,
+  ApiMcpTokenRoute: ApiMcpTokenRoute,
   ApiOgArticleRoute: ApiOgArticleRoute,
   ApiOgCollectionRoute: ApiOgCollectionRoute,
   ApiOgListRoute: ApiOgListRoute,

@@ -893,6 +893,11 @@ cookies on `/xrpc`. Live developer docs at [`/docs/api`](/docs/api).
       `XRPC_INTEGRATION_TEST=1 pnpm test`.
 - [ ] **Publish lexicons to network** — `pnpm atproto:publish-lexicons` when `_lexicon.*` DNS ready.
 - [ ] **Production smoke test** — curl Tier 1 endpoints on `standard-reader.app` after deploy.
+- [x] **`/.well-known/*` routes were never served** — the router plugin skips dot-prefixed
+      directories, so `src/routes/.well-known/` produced no routes at all and
+      `/.well-known/did.json` + `/.well-known/oauth-protected-resource.json` 404'd in production
+      (the service DID document the API docs advertise). Renamed to `src/routes/[.]well-known/`,
+      the same escaping the files inside already used.
 - [x] **Token auth actually usable by third parties** — `verifyAccessToken` built its PDS client
       with a handler that passed atcute's _pathname_ straight to `fetch()`, so every write on a
       token-authenticated request threw on a relative URL; and `getSession`'s absent `scopes`
@@ -900,35 +905,46 @@ cookies on `/xrpc`. Live developer docs at [`/docs/api`](/docs/api).
       403-ing every scoped write. `scopes` is now `Array<string> | null`, where `null` means "no
       scope restriction to enforce". Covered by `src/server/xrpc/auth.test.ts`.
 
-### MCP server (`@standard-reader/mcp`)
+### Remote MCP server (`/mcp`)
 
-`packages/mcp-server/` — the XRPC API as a Model Context Protocol server, so any MCP client can
-search/read the network and act for a signed-in reader. Thin wrapper: `@atproto/lex-client` +
-`@standard-reader/lexicons`, no second implementation of anything.
+`standard-reader.app/mcp` served straight from the web service — paste the URL into any MCP
+client, authorize it, and a model can search/read the network and act for the reader. Tools call
+the same `XRPC_REGISTRY` handlers in-process (`src/server/mcp/`), so there is no second
+implementation of anything.
 
-- [x] **Package scaffold** — `@standard-reader/mcp`, `standard-reader-mcp` bin, stdio transport,
-      picked up by `pnpm packages:build` / `packages:publish` automatically.
+- [x] **`/mcp` endpoint** — `src/routes/mcp/index.tsx` on the SDK's
+      `WebStandardStreamableHTTPServerTransport` (stateless, buffered JSON, server + transport
+      built per request). GET/DELETE answer 405 with an explanation; OPTIONS does CORS.
 - [x] **15 tools grouped by intent** — `search`, `resolve`, `get_article`, `get_publication`,
       `get_author`, `get_feed`, `get_lists`, `get_library`, `get_status`, `bookmark`, `like`,
-      `mark_read`, `follow`, `manage_list`, `auth`. Labeler endpoints intentionally excluded.
-- [x] **Auth** — app-password session (`@atcute/password-session`), stored `0600` at
-      `$XDG_STATE_HOME/standard-reader-mcp/session.json` via `standard-reader-mcp login`, or from
-      `STANDARD_READER_IDENTIFIER` / `_APP_PASSWORD` for headless hosts. Never a tool argument.
-      OAuth is not usable here: a DPoP-bound token can't be validated by the AppView's
-      `getSession` forwarding (see §5 "AppView XRPC").
-- [x] **Argument validation + response trimming** — AT-URI / DID arguments checked against
-      `@atproto/lex-schema` string formats before the call; renderable body and search markup
-      dropped from responses unless requested.
-- [x] **Tests** — `packages/mcp-server/src/*.test.ts` (tool surface, routing, validation, auth
-      gating, session store) over an in-memory MCP transport with a stubbed fetch.
-- [ ] **Publish to npm** — `node scripts/publish-packages.mjs @standard-reader/mcp` once the
-      lexicons package's fixed `.d.ts` is republished (`0.1.1` on npm still ships the broken
-      `typeof lexicons.app.'standard-reader'` declaration).
-- [ ] **Live write smoke test** — exercise `bookmark` / `like` / `follow` end-to-end against
-      production with a real app password; the read path is verified, the write path depends on
-      the `auth.ts` fix above reaching a deploy.
-- [ ] **Remote MCP transport** — optionally serve the same `createServer()` over streamable HTTP
-      from the app itself, so users don't need a local process or an app password.
+      `mark_read`, `follow`, `manage_list`, `whoami`. Labeler endpoints intentionally excluded
+      (asserted by `src/server/mcp/methods.test.ts`).
+- [x] **In-process XRPC invocation** — `src/server/mcp/xrpc.ts` resolves the method in
+      `XRPC_REGISTRY` and calls its handler with a context built from the reader's restored AT
+      Proto OAuth session (`via: "internal"`). Writes hit the reader's own repo with their own
+      grant, so the PDS stays the authority.
+- [x] **OAuth 2.1 authorization server** — `src/server/mcp/oauth/`: RFC 9728 protected-resource + RFC 8414 AS metadata, RFC 7591 dynamic registration, PKCE-`S256`-only authorization code,
+      refresh with rotation, RFC 7009 revocation, RFC 8707 `resource` audience binding. Secrets
+      stored SHA-256 only; codes deleted as they are read.
+- [x] **Consent screen** — `/mcp/authorize`, reusing the app's existing sign-in. Plain-language
+      scope copy, approve/deny, and re-validation of every parameter server-side rather than
+      trusting the form post.
+- [x] **Schema + migration** — `mcp_client`, `mcp_auth_code`, `mcp_token`
+      (`drizzle/0024_ambitious_gargoyle.sql`).
+- [x] **Tests** — `src/server/mcp/*.test.ts` + `src/server/mcp/oauth/oauth.test.ts`: tool surface,
+      auth gating, argument validation, PKCE, scope narrowing, audience binding, discovery
+      documents, error shapes.
+- [ ] **Settings → Connected apps** — `mcpApi.listConnections` / `revokeConnection` are written
+      and tested-by-typecheck but not yet surfaced in the settings UI, so today a reader can only
+      revoke via the client's own disconnect (RFC 7009).
+- [ ] **End-to-end connector test** — walk a real client (Claude connector) through discovery →
+      registration → consent → tool call against a deploy. Discovery, the 401 challenge, and the
+      tool surface are verified locally; the full round trip needs a deployed origin and a real
+      reader session.
+- [ ] **Rate limiting** — `/mcp` and the token endpoint are unauthenticated-reachable; add
+      per-client limits before announcing it widely.
+- [ ] **Prune job** — `pruneExpired()` runs opportunistically from the token endpoint. If MCP
+      traffic is bursty, move it to the recompute cron instead.
 
 ## 14. Labelers (moderation)
 

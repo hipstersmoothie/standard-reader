@@ -206,8 +206,8 @@ read when data exists in the DB.**
 - `pnpm lex:lint` / `pnpm atproto:publish-lexicons` — validate / publish the app-owned
   `app.standard-reader.*` lexicons in `./lexicons/` via the `goat` CLI
   (`scripts/goat-lex.mjs`; needs `LEXICON_PUBLISH_*` creds + `_lexicon.*` DNS).
-- `pnpm mcp:build` / `mcp:dev` / `mcp:test` — the `@standard-reader/mcp` MCP server in
-  `packages/mcp-server/` (see its README). `mcp:dev` runs the stdio server from source.
+- The MCP server is a route on the app (`/mcp`), not a separate process — `pnpm dev` serves it.
+  Code lives in `src/server/mcp/`; run its tests with `pnpm exec vitest run src/server/mcp`.
 - `pnpm perf:test` — Playwright load-regression suite (`perf/load-regression.spec.ts`); dev server
   must be running (`pnpm dev`). Writes JSON reports to `perf/results/` (`latest-guest.json`,
   `latest-signed-in.json`, `latest-comparison.json`).
@@ -413,7 +413,7 @@ src/
   design-system/      # hip-ui (copy-and-own): components + StyleX theme tokens (theme/)
   styles.css          # minimal global reset only (no Tailwind)
   stylex-env.d.ts     # ambient types for the StyleX virtual modules
-  routeTree.gen.ts    # GENERATED at dev/build time — do not edit (gitignored)
+  routeTree.gen.ts    # GENERATED at dev/build time — do not edit (but committed)
 public/               # static assets (favicon, logos, manifest, robots.txt)
 config/oxlint/        # shared oxlint rules-base.json + overrides.json (incl. StyleX rules)
 vite.config.ts        # stylexPlugin() -> devtools() -> tanstackStart() -> viteReact()
@@ -457,8 +457,14 @@ tsconfig.json         # bundler resolution; "#/*" and "@/*" aliases -> ./src/*
 
 ## Known gotchas
 
-- `src/routeTree.gen.ts` is auto-generated and gitignored; it is created on the first `dev`/`build`.
-  Don't edit it or commit it. It is marked read-only in `.vscode/settings.json`.
+- **Route directories starting with `.` are invisible to the router plugin.** `src/routes/.well-known/`
+  generated no routes at all (so `/.well-known/did.json` 404'd in production). Escape the dot in
+  the directory name — `src/routes/[.]well-known/` — the same way the files inside already do.
+
+- `src/routeTree.gen.ts` is auto-generated at dev/build time but **is committed** (see the note
+  in `.gitignore`: a fresh clone can't lint or typecheck without it). Don't edit it by hand;
+  regenerate it with `pnpm build` and commit the result alongside route changes. It is marked
+  read-only in `.vscode/settings.json`.
 - `dev` uses port 3000 but will hop to the next free port if it's occupied — check the startup log
   for the actual URL.
 - Devtools code is automatically removed from production builds by `@tanstack/devtools-vite`.

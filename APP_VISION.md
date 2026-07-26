@@ -668,7 +668,8 @@ and extension HTTP routes call the same underlying logic. `/xrpc` uses AT Proto 
 HttpOnly session cookies.
 
 **Credential shapes the AppView accepts.** `Authorization` is validated one of two ways
-(`src/server/xrpc/auth.ts`):
+(`src/server/xrpc/auth.ts`); the in-app MCP server is a third, in-process path (`via: "internal"`)
+that presents no credential to itself at all:
 
 - **PDS service proxy** (`atproto-proxy: did:web:standard-reader.app#standard_reader_appview`) —
   the PDS mints a service JWT signed by the reader's repo key. Best for reads. It cannot serve
@@ -683,26 +684,54 @@ HttpOnly session cookies.
 So a third-party CLI or agent that needs writes authenticates with an app password; a browser
 app that holds its own DPoP key uses OAuth and talks to the PDS directly.
 
-### MCP server (`@standard-reader/mcp`)
+### Remote MCP server (`/mcp`)
 
-`packages/mcp-server/` publishes the XRPC API as a [Model Context
-Protocol](https://modelcontextprotocol.io) server, so any MCP client can search and read the
-network and act on a reader's behalf (bookmark, like, follow, mark read, curate lists).
+`standard-reader.app/mcp` is a [Model Context Protocol](https://modelcontextprotocol.io) server,
+so any MCP client (Claude, Cursor, …) can search and read the network and act on a reader's
+behalf — bookmark, like, follow, mark read, curate lists. It is a route on the web service, not a
+package a user installs: they paste the URL into their client and authorize it.
 
-- **Thin wrapper, no second implementation.** Calls go through `@atproto/lex-client` against the
-  generated `@standard-reader/lexicons` schemas. The package adds transport, auth, argument
-  validation, and grouping — no business logic.
+- **In-process, not over HTTP to ourselves.** Tools resolve the method in the same
+  `XRPC_REGISTRY` that `/xrpc` dispatches through and call its handler directly
+  (`src/server/mcp/xrpc.ts`). Same handlers, same read-model context, same auth rules — one less
+  network hop, and no token to mint for ourselves.
 - **~50 methods → 15 tools.** Grouped by intent, not endpoint (`search`, `resolve`,
   `get_article`, `get_publication`, `get_author`, `get_feed`, `get_lists`, `get_library`,
-  `get_status`, `bookmark`, `like`, `mark_read`, `follow`, `manage_list`, `auth`). A model picks
+  `get_status`, `bookmark`, `like`, `mark_read`, `follow`, `manage_list`, `whoami`). A model picks
   better from a short list of intents than a long list of endpoints. Labeler endpoints are
   deliberately excluded — moderation config belongs in settings, not a tool list.
-- **Auth is an app-password session**, per the credential rules above. Stored `0600` at
-  `$XDG_STATE_HOME/standard-reader-mcp/session.json` via `standard-reader-mcp login`, or supplied
-  as env vars for headless hosts. Never accepted as a tool argument, so it never enters a model's
-  context. Public reads need no credential.
+- **Stateless transport.** `WebStandardStreamableHTTPServerTransport` with no session id and
+  buffered JSON replies, built per request. Identity lives in the presented token, so any instance
+  behind the load balancer can serve any request.
 - **Responses are trimmed** (renderable body, search markup) unless explicitly requested, and
-  AT-URI / DID arguments are validated before they reach the API.
+  AT-URI / DID arguments are validated before they reach a handler.
+
+#### MCP OAuth (`src/server/mcp/oauth/`)
+
+Standard Reader is its own OAuth 2.1 **authorization server for MCP clients**. It is not an AT
+Protocol authorization server — the reader's PDS stays that. What it issues are tokens that let a
+client act _through_ Standard Reader as a reader who already signed in here.
+
+- **Discovery.** An unauthenticated `POST /mcp` answers `401` with
+  `WWW-Authenticate: … resource_metadata="…/.well-known/oauth-protected-resource/mcp"`. That
+  document (RFC 9728) points at the authorization server, whose metadata (RFC 8414) lives at
+  `/.well-known/oauth-authorization-server`.
+- **Registration is open** (RFC 7591, `POST /api/mcp/register`) — that is what makes "paste the
+  URL into your client" work. It grants nothing on its own: every token still needs a reader to
+  sign in and approve that specific client at `/mcp/authorize`.
+- **PKCE `S256` is mandatory**, public and confidential clients alike; there is no implicit flow.
+  Redirect URIs are exact-matched against what the client registered, and `resource` (RFC 8707)
+  must name this MCP server, so a token minted for someone else's server can't be replayed here.
+- **Two scopes**, shown in plain language on the consent screen: `mcp:read` (the reader's library
+  and anything public) and `mcp:write` (bookmark, like, follow, read state, lists).
+- **Secrets are only ever stored hashed** — client secrets, authorization codes, access and
+  refresh tokens are all SHA-256 and looked up by hash. Codes are deleted as they are read and
+  refresh tokens rotate, so a replay finds nothing.
+- **Acting for the reader.** A validated token resolves to a `user` row; the tools then restore
+  that reader's own AT Proto OAuth session (`restoreAuthenticatedClient`) and pass it to the XRPC
+  handlers as `via: "internal"`. Writes go to the reader's own repo with their own grant, so the
+  PDS remains the authority on what they actually permitted. If their session has lapsed, tools
+  say so and point them at signing in again rather than failing opaquely.
 
 ### Labels & moderation (labelers)
 

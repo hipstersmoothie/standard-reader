@@ -25,8 +25,17 @@ export type XrpcAuthContext = {
    * empty, so every scoped write is denied.
    */
   scopes: Array<string> | null;
-  /** How the request was authenticated. */
-  via: "accessToken" | "serviceJwt";
+  /**
+   * How the request was authenticated.
+   *
+   * `internal` means it never came over HTTP as an XRPC request at all — the
+   * in-process MCP server (`src/server/mcp/`) calls the same handlers with the
+   * reader's own restored OAuth session. Authorization for those calls happens
+   * one layer up (the MCP token's `mcp:write` scope) and one layer down (the
+   * PDS rejects any repo write the reader's grant doesn't cover), so there is
+   * no scope list to check in between.
+   */
+  via: "accessToken" | "internal" | "serviceJwt";
 };
 
 const GET_SESSION_TIMEOUT_MS = 8000;
@@ -195,7 +204,10 @@ export function requireScopes(
   auth: XrpcAuthContext,
   required: Array<string>,
 ): void {
-  if (auth.via === "serviceJwt") return;
+  // Neither of these carries an OAuth scope list to check: a service JWT
+  // authenticates the PDS-proxied caller, and `internal` is the in-process MCP
+  // server (see the `via` docs on XrpcAuthContext).
+  if (auth.via === "serviceJwt" || auth.via === "internal") return;
   // No scope list on the credential — an app-password session, which grants
   // unrestricted repo access. There is no narrower grant to check against.
   if (auth.scopes === null) return;

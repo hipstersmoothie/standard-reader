@@ -2,6 +2,7 @@ import { relations } from "drizzle-orm";
 
 import { documentContributors, documents } from "./documents.ts";
 import { recommends, subscriptions, userFollows } from "./graph.ts";
+import { mcpClient, mcpToken } from "./mcp.ts";
 import { bookmarks, reads } from "./personal.ts";
 import { profiles } from "./profiles.ts";
 import { publications } from "./publications.ts";
@@ -135,3 +136,14 @@ export const publicationCosubscriptionsRelations = relations(
     }),
   }),
 );
+
+export const mcpClientRelations = relations(mcpClient, ({ many }) => ({
+  tokens: many(mcpToken),
+}));
+
+export const mcpTokenRelations = relations(mcpToken, ({ one }) => ({
+  client: one(mcpClient, {
+    fields: [mcpToken.clientId],
+    references: [mcpClient.id],
+  }),
+}));

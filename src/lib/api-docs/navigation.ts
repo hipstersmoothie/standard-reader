@@ -4,6 +4,7 @@ export const API_DOCS_INTRO_IDS = {
   overview: "overview",
   discovery: "discovery",
   auth: "auth",
+  mcp: "mcp",
 } as const;
 
 export function apiDocsEndpointId(nsid: string): string {

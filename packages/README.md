@@ -50,13 +50,12 @@ of the parsing is duplicated; adding a framework is a rendering concern only.
 
 ### Also in this directory
 
-Two packages here are not renderers — they publish the **API** rather than the
+One package here is not a renderer — it publishes the **API** rather than the
 content format:
 
-| Package                      | What it is                                                                                                                                         |
-| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`lexicons`](./lexicons)     | `@standard-reader/lexicons` — the `app.standard-reader.*` XRPC API as typed AT Protocol lexicon schemas, generated with `@atproto/lex`. No client. |
-| [`mcp-server`](./mcp-server) | `@standard-reader/mcp` — a Model Context Protocol server over that API, so any MCP client can read the network and act for a signed-in reader.     |
+| Package                  | What it is                                                                                                                                         |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`lexicons`](./lexicons) | `@standard-reader/lexicons` — the `app.standard-reader.*` XRPC API as typed AT Protocol lexicon schemas, generated with `@atproto/lex`. No client. |
 
 The Standard Reader app itself consumes `renderer-react` (see
 `src/components/reader/content/standard-renderer.tsx`), supplying its own
