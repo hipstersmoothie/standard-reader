@@ -397,6 +397,10 @@ msgstr "소리 내어 읽기"
 msgid "Text on accent"
 msgstr "강조색 위 텍스트"
 
+#: src/components/reader/app-shell.tsx
+msgid "Finish reordering"
+msgstr ""
+
 #: src/components/reader/atstore-review-prompt.tsx
 msgid "Please choose a rating."
 msgstr "평점을 선택하세요."

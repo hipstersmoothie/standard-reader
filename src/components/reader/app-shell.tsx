@@ -10,6 +10,7 @@ import {
   ArrowDownWideNarrow,
   ArrowLeft,
   Bookmark,
+  Check,
   ChevronDown,
   ChevronRight,
   ChevronsDownUp,
@@ -403,7 +404,11 @@ const styles = stylex.create({
     cursor: "grab",
     display: "flex",
     flexShrink: 0,
-    justifyContent: "center",
+    // flex-start, not center: the button's hit target stays a comfortable
+    // size["2xl"] square, but the icon drawn inside it sits flush against
+    // the button's own (left) edge, which is where content normally starts —
+    // centering it here would visually indent the icon from that edge.
+    justifyContent: "flex-start",
     outline: {
       default: "none",
       ":is([data-focus-visible])": `2px solid ${focusColor.ring}`,
@@ -415,6 +420,20 @@ const styles = stylex.create({
     paddingInlineEnd: spacing["0"],
     paddingTop: spacing["0"],
     width: size["2xl"],
+  },
+  /** Highlights a list row while it's the active "on" drop target (dropping a
+   * member INTO the list), distinct from the between-rows line indicator. */
+  treeItemDropTarget: {
+    borderRadius: radius.sm,
+    backgroundColor: {
+      default: "transparent",
+      ":is([data-drop-target])": primaryColor.component2,
+    },
+    outline: {
+      default: "none",
+      ":is([data-drop-target])": `2px solid ${primaryColor.solid1}`,
+    },
+    outlineOffset: "-2px",
   },
   /**
    * Line between rows showing where the dragged item will land. Sized 2px
@@ -1555,8 +1574,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     );
   };
 
+  // react-aria-components' per-item `allowsDragging` render prop reflects
+  // only whether drag hooks exist at all (`!!dragState`), not `isDisabled` —
+  // so it can't gate the grip handle's visibility. Compute readiness
+  // ourselves and use that instead everywhere a row decides whether to show
+  // its drag handle.
+  const dragEnabled = reorderMode && sidebarPref.subscriptionSort === "default";
   const { dragAndDropHooks: subscriptionsDragAndDropHooks } = useDragAndDrop({
-    isDisabled: !reorderMode || sidebarPref.subscriptionSort !== "default",
+    isDisabled: !dragEnabled,
     getItems: (keys) => [...keys].map((key) => ({ "text/plain": String(key) })),
     getDropOperation(target) {
       if (target.type !== "item") return "cancel";
@@ -1731,7 +1756,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     <Trans>Subscriptions</Trans>
                   </span>
                 )}
-                {signedIn ? (
+                {signedIn && reorderMode ? (
+                  <IconButton
+                    aria-label={t`Finish reordering`}
+                    size="sm"
+                    variant="tertiary"
+                    style={styles.headerIcon}
+                    onPress={() => setReorderMode(false)}
+                  >
+                    <Check size={14} />
+                  </IconButton>
+                ) : null}
+                {signedIn && !reorderMode ? (
                   <Menu
                     trigger={
                       <IconButton
@@ -1887,15 +1923,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                           // which would hide the chevron for a single-member list.
                           hasChildItems
                           onAction={() => navigateToList(router, node.listUri)}
+                          {...stylex.props(styles.treeItemDropTarget)}
                         >
                           <TreeItemContent>
-                            {({
-                              allowsDragging,
-                              hasChildItems,
-                              isExpanded,
-                            }) => (
+                            {({ hasChildItems, isExpanded }) => (
                               <div {...stylex.props(styles.groupHeaderRow)}>
-                                {allowsDragging ? (
+                                {dragEnabled ? (
                                   <AriaButton
                                     slot="drag"
                                     {...stylex.props(styles.dragHandle)}
@@ -1949,9 +1982,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                                 }
                               >
                                 <TreeItemContent>
-                                  {({ allowsDragging }) => (
+                                  {() => (
                                     <div {...stylex.props(styles.memberRow)}>
-                                      {allowsDragging ? (
+                                      {dragEnabled ? (
                                         <AriaButton
                                           slot="drag"
                                           {...stylex.props(styles.dragHandle)}
@@ -1996,9 +2029,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                           }
                         >
                           <TreeItemContent>
-                            {({ allowsDragging }) => (
+                            {() => (
                               <div {...stylex.props(styles.memberRow)}>
-                                {allowsDragging ? (
+                                {dragEnabled ? (
                                   <AriaButton
                                     slot="drag"
                                     {...stylex.props(styles.dragHandle)}

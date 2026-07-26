@@ -397,6 +397,10 @@ msgstr "Reading aloud"
 msgid "Text on accent"
 msgstr "Text on accent"
 
+#: src/components/reader/app-shell.tsx
+msgid "Finish reordering"
+msgstr "Finish reordering"
+
 #: src/components/reader/atstore-review-prompt.tsx
 msgid "Please choose a rating."
 msgstr "Please choose a rating."

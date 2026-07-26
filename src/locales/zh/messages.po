@@ -397,6 +397,10 @@ msgstr "朗读"
 msgid "Text on accent"
 msgstr "强调色上的文字"
 
+#: src/components/reader/app-shell.tsx
+msgid "Finish reordering"
+msgstr ""
+
 #: src/components/reader/atstore-review-prompt.tsx
 msgid "Please choose a rating."
 msgstr "请选择评分。"

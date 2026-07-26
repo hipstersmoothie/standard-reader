@@ -637,13 +637,20 @@ Build each on hip-ui components + StyleX tokens (no raw HTML/inline styles).
       — a mismatched gap after the drag handle was the earlier cause of a slight nested-row
       indent). Dragging is never implicitly on — a **Reorder subscriptions…** menu item (a
       local, unpersisted toggle, not a `subscriptionSort` value) must be explicitly turned on
-      first; it flips to **Done reordering** while active, and is disabled (and auto-turned back
-      off) whenever `subscriptionSort` isn't **Default**, since an automatic sort computes its own
-      arrangement. While reordering is on, dragging supports every rearrangement: reorder lists,
-      reorder members within a list, move a member between two lists, move a member into or out of
-      a list, and reorder members relative to lists at the top level — with a custom drag preview
-      pill (name + avatar) and a drop-target line indicator, both via `useDragAndDrop`'s
-      `renderDragPreview`/`renderDropIndicator`. New
+      first; it flips to **Done reordering** while active, the overflow trigger itself swaps from
+      the settings gear to a checkmark (pressing it directly exits reorder mode), and it's disabled
+      (and auto-turned back off) whenever `subscriptionSort` isn't **Default**, since an automatic
+      sort computes its own arrangement. Drag handles only render while reordering is genuinely on:
+      react-aria-components' own per-item `allowsDragging` render prop reflects only whether drag
+      hooks exist at all (`!!dragState`), not `useDragAndDrop`'s `isDisabled`, so it stayed `true`
+      (and drag handles kept showing on every row) regardless of reorder mode — fixed by computing
+      a local `dragEnabled` flag instead of trusting that prop. While reordering is on, dragging
+      supports every rearrangement: reorder lists, reorder members within a list, move a member
+      between two lists, move a member into or out of a list, and reorder members relative to lists
+      at the top level — with a custom drag preview pill (name + avatar), a drop-target line
+      indicator between rows, and a highlighted list row while it's a valid "drop into" target
+      (`useDragAndDrop`'s `renderDragPreview`/`renderDropIndicator`/the `data-drop-target` attribute
+      react-aria-components sets on the target `TreeItem`). New
       `treeOrder` field on `app.standard-reader.sidebarPref` (top-level order, list at-uris
       interleaved with ungrouped subject ids; supersedes the legacy `listOrder`-only field, kept as
       a fallback for readers who haven't touched the new tree yet) plus a new `setListMembers` list

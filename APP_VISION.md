@@ -488,19 +488,25 @@ source of truth; Neon holds a derived view for speed and cross-network querying.
   / unread count, applied to both a list group's own members and the groups themselves), plus a
   **Reorder subscriptions…** toggle, **New list**, and **Collapse/Expand all**. Dragging is never
   implicitly on: **Reorder subscriptions…** is a local (unpersisted) toggle the reader must
-  explicitly turn on — it relabels to **Done reordering** while active — and it's disabled (and
-  auto-reset off) whenever sort isn't **Default**, since an automatic sort computes its own
-  arrangement and a drag wouldn't stick. While reordering is on, dragging in the tree supports
-  every rearrangement: reorder lists, reorder members within a list, move a member between two
-  lists, move a member into or out of a list, and reorder members relative to lists at the top
-  level — persisted via `treeOrder` (for top-level position) and a `setListMembers` mutation (full
-  publications/users array replace, for a list's own membership/order), with a custom drag preview
-  pill and a drop-target line indicator (`useDragAndDrop`'s `renderDragPreview` /
-  `renderDropIndicator`). Cross-kind (publication vs. person) order **within** one list isn't separately
-  persisted — each kind keeps its own relative order, the same limitation `ListEditModal`'s member
-  editor already has. Saved lists (owned by another reader) are read-only containers in the
-  tree — only their own top-level position is draggable, not their membership. Mobile
-  `SubscriptionsSheet` keeps its existing read-only rendering (no drag). The fully-sortable
+  explicitly turn on — it relabels to **Done reordering** while active, and the overflow trigger
+  itself swaps from the settings gear to a checkmark (pressing it directly exits reorder mode) —
+  and it's disabled (and auto-reset off) whenever sort isn't **Default**, since an automatic sort
+  computes its own arrangement and a drag wouldn't stick. Drag handles only render while reordering
+  is genuinely on: react-aria-components' own per-item `allowsDragging` render prop reflects only
+  whether drag hooks exist at all, not `useDragAndDrop`'s `isDisabled`, so the tree computes its
+  own `dragEnabled` flag instead of trusting that prop. While reordering is on, dragging in the
+  tree supports every rearrangement: reorder lists, reorder members within a list, move a member
+  between two lists, move a member into or out of a list, and reorder members relative to lists at
+  the top level — persisted via `treeOrder` (for top-level position) and a `setListMembers`
+  mutation (full publications/users array replace, for a list's own membership/order), with a
+  custom drag preview pill, a drop-target line indicator between rows, and a highlighted list row
+  while it's a valid "drop into" target (`useDragAndDrop`'s `renderDragPreview` /
+  `renderDropIndicator` / the `data-drop-target` attribute react-aria-components sets on the
+  target `TreeItem`). Cross-kind (publication vs. person) order **within** one list isn't
+  separately persisted — each kind keeps its own relative order, the same limitation
+  `ListEditModal`'s member editor already has. Saved lists (owned by another reader) are read-only
+  containers in the tree — only their own top-level position is draggable, not their membership.
+  Mobile `SubscriptionsSheet` keeps its existing read-only rendering (no drag). The fully-sortable
   `/subscriptions` directory table is unaffected.
 - **Routing:** URL-backed routes (TanStack Router) for every view — home / latest / discover /
   search / article / publication — with real back/forward navigation and shareable links.
