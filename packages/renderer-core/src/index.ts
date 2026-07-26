@@ -56,10 +56,29 @@ export {
 } from "./document/content-formats";
 export {
   markdownBlocks,
+  markdownBlocksFromText,
   markdownText,
   isMarkdownFormat,
   MARKDOWN_FORMATS,
 } from "./document/structured-content/markdown";
+export type { MarkdownFlavor } from "./document/structured-content/markdown";
+export {
+  markpubBlocks,
+  prepareMarkpubMarkdown,
+  parseMarkpubContent,
+  isMarkpubFormat,
+  MARKPUB_FORMATS,
+  MARKPUB_MARKDOWN,
+  MARKPUB_TEXT,
+} from "./document/structured-content/markpub";
+export type {
+  MarkpubDocument,
+  PreparedMarkpubMarkdown,
+} from "./document/structured-content/markpub";
+export {
+  gutenbergBlocks,
+  GUTENBERG_CONTENT,
+} from "./document/structured-content/gutenberg";
 export type {
   StructuredRenderableBlock,
   StructuredText,

@@ -690,6 +690,7 @@ function structuredToNode(
         src,
         alt: block.alt?.trim() || "",
         aspectRatio: structuredImageAspectRatio(block),
+        caption: block.caption?.trim() || undefined,
       };
     }
     case "code": {

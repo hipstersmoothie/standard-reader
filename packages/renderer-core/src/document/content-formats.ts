@@ -6,6 +6,10 @@ import {
 } from "./structured-content/blocknote";
 import { FABLES_CONTENT, fablesBlocks } from "./structured-content/fables";
 import {
+  GUTENBERG_CONTENT,
+  gutenbergBlocks,
+} from "./structured-content/gutenberg";
+import {
   ITEM_BLOCK_FORMATS,
   itemBlocks,
 } from "./structured-content/item-blocks";
@@ -13,6 +17,7 @@ import {
   MARKDOWN_FORMATS,
   markdownBlocks,
 } from "./structured-content/markdown";
+import { MARKPUB_FORMATS, markpubBlocks } from "./structured-content/markpub";
 import { OXA_CONTENT, oxaBlocks } from "./structured-content/oxa";
 import {
   PROSEMIRROR_CONTENT,
@@ -68,6 +73,7 @@ type BlockParser = (
 const STRUCTURED_FORMAT_PARSERS: Record<string, BlockParser> = {
   [BLOCKNOTE_CONTENT]: blocknoteBlocks,
   [FABLES_CONTENT]: fablesBlocks,
+  [GUTENBERG_CONTENT]: gutenbergBlocks,
   [OXA_CONTENT]: oxaBlocks,
   [PROSEMIRROR_CONTENT]: prosemirrorBlocks,
 };
@@ -76,6 +82,9 @@ for (const format of ITEM_BLOCK_FORMATS) {
 }
 for (const format of MARKDOWN_FORMATS) {
   STRUCTURED_FORMAT_PARSERS[format] = markdownBlocks;
+}
+for (const format of MARKPUB_FORMATS) {
+  STRUCTURED_FORMAT_PARSERS[format] = markpubBlocks;
 }
 
 /** Every third-party block-based content format the structured parser knows. */

@@ -1,6 +1,6 @@
 {
   "name": "@standard-reader/renderer-core",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Framework-agnostic core for rendering Standard Site documents: parsing + a normalized render tree.",
   "license": "MIT",
   "type": "module",

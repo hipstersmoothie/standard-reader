@@ -1,6 +1,6 @@
 {
   "name": "@standard-reader/renderer-angular",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Headless, unstyled Angular renderer for Standard Site documents.",
   "license": "MIT",
   "type": "module",
