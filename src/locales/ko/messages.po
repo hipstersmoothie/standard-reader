@@ -3012,6 +3012,7 @@ msgid "Jump to"
 msgstr "바로 가기"
 
 #: src/components/reader/content/renderers/leaflet-image-gallery.tsx
+#: src/components/reader/content/renderers/pckt-gallery.tsx
 msgid "Open image {position}"
 msgstr "{position}번째 이미지 열기"
 
@@ -3135,6 +3136,7 @@ msgid "Profile settings"
 msgstr "프로필 설정"
 
 #: src/components/reader/content/renderers/leaflet-image-gallery.tsx
+#: src/components/reader/content/renderers/pckt-gallery.tsx
 msgid "Image gallery"
 msgstr "이미지 갤러리"
 

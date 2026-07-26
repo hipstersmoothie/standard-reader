@@ -3012,6 +3012,7 @@ msgid "Jump to"
 msgstr "移動"
 
 #: src/components/reader/content/renderers/leaflet-image-gallery.tsx
+#: src/components/reader/content/renderers/pckt-gallery.tsx
 msgid "Open image {position}"
 msgstr "画像 {position} を開く"
 
@@ -3135,6 +3136,7 @@ msgid "Profile settings"
 msgstr "プロフィール設定"
 
 #: src/components/reader/content/renderers/leaflet-image-gallery.tsx
+#: src/components/reader/content/renderers/pckt-gallery.tsx
 msgid "Image gallery"
 msgstr "画像ギャラリー"
 

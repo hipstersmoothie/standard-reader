@@ -3012,6 +3012,7 @@ msgid "Jump to"
 msgstr "跳转到"
 
 #: src/components/reader/content/renderers/leaflet-image-gallery.tsx
+#: src/components/reader/content/renderers/pckt-gallery.tsx
 msgid "Open image {position}"
 msgstr "打开第 {position} 张图片"
 
@@ -3135,6 +3136,7 @@ msgid "Profile settings"
 msgstr "个人资料设置"
 
 #: src/components/reader/content/renderers/leaflet-image-gallery.tsx
+#: src/components/reader/content/renderers/pckt-gallery.tsx
 msgid "Image gallery"
 msgstr "图片库"
 

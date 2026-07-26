@@ -129,9 +129,12 @@ Sections, top to bottom:
   declared extensions (LaTeX via KaTeX, YAML front matter), ingest-time `text.textBlob`
   resolution, and facet/lens preprocessing (`baseFormatting` headers/strong/idify,
   `baseBlocks` front matter and horizontal rules). Leaflet image galleries use CSS
-  `grid-lanes` where supported with plain CSS Grid fallback elsewhere; Leaflet galleries and
-  single-image blocks share the reader lightbox, with image alt text surfaced inside the
-  lightbox.
+  `grid-lanes` where supported with plain CSS Grid fallback elsewhere. Every rendered image in
+  a document body — Leaflet galleries and single-image blocks, PCKT image and gallery blocks,
+  structured image grids/carousels, and markdown images — opens the shared reader lightbox, with
+  image alt text surfaced inside the lightbox and prev/next navigation across a gallery's images.
+  Magazine editions are the one exception: they bind their own lightbox to the rendered `<img>`
+  elements.
 - Sticky top bar: back, byline, follow, like, share; reading-progress bar. On mobile it
   pins below the shell's top bar whenever that one is revealed, so the two stack instead
   of overlapping.
