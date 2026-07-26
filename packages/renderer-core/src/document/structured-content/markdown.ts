@@ -290,6 +290,32 @@ function mapBlock(node: RootContent): Array<StructuredRenderableBlock> {
   }
 }
 
+/** Markdown dialect. `commonmark` drops the GFM extension (tables, task
+ *  lists, autolinks, strikethrough). */
+export type MarkdownFlavor = "gfm" | "commonmark";
+
+/**
+ * Renderable blocks for a raw markdown string, or null when it is blank or
+ * parses to nothing. Formats that carry markdown but need normalizing first
+ * (Markpub strips front matter and applies facets) go through here rather than
+ * {@link markdownBlocks}.
+ */
+export function markdownBlocksFromText(
+  text: string,
+  flavor: MarkdownFlavor = "gfm",
+): Array<StructuredRenderableBlock> | null {
+  const body = text.trim();
+  if (!body) return null;
+  const tree: Root = fromMarkdown(
+    body,
+    flavor === "commonmark"
+      ? {}
+      : { extensions: [gfm()], mdastExtensions: [gfmFromMarkdown()] },
+  );
+  const blocks = tree.children.flatMap(mapBlock);
+  return blocks.length > 0 ? blocks : null;
+}
+
 /**
  * Renderable blocks for a markdown `content` payload, or null when the format
  * isn't markdown or the body is empty. Registered for every
@@ -302,10 +328,5 @@ export function markdownBlocks(
 ): Array<StructuredRenderableBlock> | null {
   const text = markdownText(content, contentFormat);
   if (!text) return null;
-  const tree: Root = fromMarkdown(text, {
-    extensions: [gfm()],
-    mdastExtensions: [gfmFromMarkdown()],
-  });
-  const blocks = tree.children.flatMap(mapBlock);
-  return blocks.length > 0 ? blocks : null;
+  return markdownBlocksFromText(text);
 }

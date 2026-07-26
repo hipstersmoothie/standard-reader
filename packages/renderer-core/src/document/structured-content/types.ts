@@ -34,6 +34,7 @@ export type StructuredRenderableBlock =
       blob?: unknown;
       externalSrc?: string;
       alt?: string;
+      caption?: string;
       aspectRatio?: { width?: number; height?: number };
     }
   | { kind: "code"; plaintext: string; language?: string }

@@ -2,9 +2,10 @@
 
 The **framework-agnostic core** behind the Standard Reader renderers. It parses a
 Standard Site document — Leaflet, pckt, Offprint, markdown (the canonical
-`site.standard.content.markdown` plus markdown-in-record formats like Lemma), and
-every third-party block format Standard Reader understands — and normalizes it
-into a single render tree that any UI framework can walk.
+`site.standard.content.markdown`, markdown-in-record formats like Lemma, and
+Markpub/Mochott's `at.markpub.markdown`), SkyPress Gutenberg blocks, and every
+third-party block format Standard Reader understands — and normalizes it into a
+single render tree that any UI framework can walk.
 
 You usually don't depend on this directly: pick a framework renderer instead
 (see the [renderers overview](../README.md)). Reach for the core when you want to
@@ -111,10 +112,23 @@ overview](../README.md) links the reference implementations.
 
 The raw per-format parsers and vocabulary types are available too:
 `leafletBlocks`, `pcktBlocks`, `offprintBlocks`, `structuredFormatBlocks`,
-`markdownBlocks` / `markdownText` / `MARKDOWN_FORMATS`,
+`markdownBlocks` / `markdownBlocksFromText` / `markdownText` /
+`MARKDOWN_FORMATS`, `markpubBlocks` / `prepareMarkpubMarkdown` /
+`MARKPUB_FORMATS`, `gutenbergBlocks` / `GUTENBERG_CONTENT`,
 `collectLeafletFootnotes`, `segmentFacetedText`, `defaultImageUrlResolver`,
 `blobCid` / `cdnImageUrl`, and the `LeafletRenderableBlock` /
 `StructuredRenderableBlock` / `PcktRenderableBlock` types.
+
+### Format notes
+
+- **Markpub** (`at.markpub.markdown`) carries facets over the _markdown source_.
+  Facet-only constructs (headers, strong, horizontal rules, front matter) are
+  rewritten back into markdown syntax before parsing, so they arrive as real
+  blocks. `#idify` heading anchors and the `latex` extension are not modelled.
+- **SkyPress** (`blog.skypress.content.gutenberg`) block bodies are HTML
+  fragments. They are parsed into plaintext + facets rather than re-emitted as
+  markup, so a renderer never needs an HTML sanitizer. Raw-HTML content formats
+  (`org.wordpress.html`, `co.idno.html`, …) are _not_ supported for that reason.
 
 ## License
 

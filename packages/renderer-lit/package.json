@@ -1,6 +1,6 @@
 {
   "name": "@standard-reader/renderer-lit",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Headless, unstyled web-components renderer for Standard Site documents, built on Lit.",
   "license": "MIT",
   "type": "module",
