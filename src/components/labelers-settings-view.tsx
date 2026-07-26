@@ -28,6 +28,13 @@ import { Masthead, ReaderContent } from "./reader/primitives";
 
 const MOBILE = "@media (max-width: 47.5rem)";
 
+/**
+ * Label badges shown on a directory card before collapsing to "+N more". A
+ * labeler can declare dozens — Skywatch declares 35 — which would otherwise
+ * make one card tower over the rest of the grid.
+ */
+const MAX_VISIBLE_LABELS = 2;
+
 function labelValueNames(card: LabelerCard): Array<string> {
   return (card.labelValueDefinitions ?? []).map((def) => {
     const locales = def.locales as Array<{ name?: string }> | undefined;
@@ -109,11 +116,16 @@ function LabelerCardItem({ card }: { card: LabelerCard }) {
         ) : null}
         {names.length > 0 ? (
           <div {...stylex.props(styles.badges)}>
-            {names.map((name) => (
+            {names.slice(0, MAX_VISIBLE_LABELS).map((name) => (
               <Badge key={name} variant="warning">
                 {name}
               </Badge>
             ))}
+            {names.length > MAX_VISIBLE_LABELS ? (
+              <span {...stylex.props(styles.moreLabels)}>
+                <Trans>+{names.length - MAX_VISIBLE_LABELS} more</Trans>
+              </span>
+            ) : null}
           </div>
         ) : null}
       </div>
@@ -253,8 +265,14 @@ const styles = stylex.create({
   },
   badges: {
     gap: gap.sm,
+    alignItems: "center",
     display: "flex",
     flexWrap: "wrap",
+  },
+  moreLabels: {
+    color: uiColor.text1,
+    fontSize: fontSize.xs,
+    whiteSpace: "nowrap",
   },
   note: {
     color: uiColor.text1,

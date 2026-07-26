@@ -3763,6 +3763,11 @@ msgstr "Le DID du service est <0>{appviewDid}</0>. Le service publie un <1>docum
 msgid "The Slow Web, Revisited"
 msgstr "Le Slow Web, revisité"
 
+#. placeholder {0}: names.length - MAX_VISIBLE_LABELS
+#: src/components/labelers-settings-view.tsx
+msgid "+{0} more"
+msgstr ""
+
 #: src/components/appearance-settings.tsx
 #: src/components/reading-custom-font-picker.tsx
 #: src/components/user-settings-view.tsx

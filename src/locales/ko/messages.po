@@ -3763,6 +3763,11 @@ msgstr "서비스 DID는 <0>{appviewDid}</0>입니다. 이 서비스는 스코�
 msgid "The Slow Web, Revisited"
 msgstr "느린 웹, 다시 보기"
 
+#. placeholder {0}: names.length - MAX_VISIBLE_LABELS
+#: src/components/labelers-settings-view.tsx
+msgid "+{0} more"
+msgstr ""
+
 #: src/components/appearance-settings.tsx
 #: src/components/reading-custom-font-picker.tsx
 #: src/components/user-settings-view.tsx

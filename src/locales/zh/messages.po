@@ -3763,6 +3763,11 @@ msgstr "服务 DID 是 <0>{appviewDid}</0>。该服务为需要协商 scope 的�
 msgid "The Slow Web, Revisited"
 msgstr "重访慢速网络"
 
+#. placeholder {0}: names.length - MAX_VISIBLE_LABELS
+#: src/components/labelers-settings-view.tsx
+msgid "+{0} more"
+msgstr ""
+
 #: src/components/appearance-settings.tsx
 #: src/components/reading-custom-font-picker.tsx
 #: src/components/user-settings-view.tsx
