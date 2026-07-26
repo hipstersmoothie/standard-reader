@@ -118,6 +118,27 @@ export function LabelersDocsPage() {
         </p>
         <p {...stylex.props(docsStyles.prose)}>
           <Trans>
+            If you already run a labeler for the wider network, you can skip
+            that step: we also read the standard{" "}
+            <code {...stylex.props(docsStyles.codeInline)}>
+              app.bsky.labeler.service
+            </code>{" "}
+            record from your repo, so an existing AT Protocol labeler works here
+            unchanged. Search for its handle or DID on the Labelers page and it
+            resolves from your DID document.
+          </Trans>
+        </p>
+        <p {...stylex.props(docsStyles.prose)}>
+          <Trans>
+            Labels may apply to a document&apos;s{" "}
+            <code {...stylex.props(docsStyles.codeInline)}>at://</code> URI or
+            to an account DID. Account labels are shown on that account&apos;s
+            author and publication pages and on every document it published, so
+            a label about a publisher does not need to be re-emitted per post.
+          </Trans>
+        </p>
+        <p {...stylex.props(docsStyles.prose)}>
+          <Trans>
             <strong>4. Let readers subscribe.</strong> When a reader subscribes
             we write an{" "}
             <a

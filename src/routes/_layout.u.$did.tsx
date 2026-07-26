@@ -43,6 +43,7 @@ import {
   siteSocialMeta,
 } from "#/lib/site-metadata";
 
+import { AccountLabels } from "../components/reader/account-labels";
 import { AddToListButton } from "../components/reader/add-to-list-button";
 import { AuthorProfileLink } from "../components/reader/author-profile-link";
 import { ArticleRow, PubDirectoryRow } from "../components/reader/cards";
@@ -614,7 +615,7 @@ function AuthorProfileContent({
     );
   }
 
-  const { profile, stats } = initialPage;
+  const { profile, stats, labels: accountLabels } = initialPage;
   const name = authorDisplayName(profile) ?? t`Author`;
   const pageUrl = `${getPublicUrlClient()}/u/${did}`;
   // Three profile kinds drive the hero label and empty state:
@@ -685,6 +686,7 @@ function AuthorProfileContent({
               {profile.handle ? (
                 <Handle style={styles.heroHandle}>@{profile.handle}</Handle>
               ) : null}
+              <AccountLabels labels={accountLabels} />
             </div>
 
             <div {...stylex.props(styles.heroActs)}>

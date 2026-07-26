@@ -224,6 +224,10 @@ msgstr ""
 msgid "Not subscribed"
 msgstr "구독 안 함"
 
+#: src/components/labeler-detail-view.tsx
+msgid "{accountCount, plural, one {account} other {accounts}}"
+msgstr ""
+
 #: src/routes/_layout.search.tsx
 msgid "{publicationCountText} · {articleCountText}"
 msgstr "{publicationCountText} · {articleCountText}"
@@ -516,6 +520,10 @@ msgstr "구독 중인 발행물에서 최근 발행된 모든 글입니다."
 
 #: src/components/reader/subscriptions-table.tsx
 msgid "Last post"
+msgstr ""
+
+#: src/components/labeler-detail-view.tsx
+msgid "This labeler hasn’t labeled any accounts in the read-model yet."
 msgstr ""
 
 #: src/components/docs/introduction-docs-page.tsx
@@ -1176,6 +1184,10 @@ msgstr "아직 미리 볼 내용이 없습니다."
 msgid "{0, plural, one {# article} other {{documentLabel} articles}}"
 msgstr "{0, plural, one {글 #편} other {글 {documentLabel}편}}"
 
+#: src/components/labeler-detail-view.tsx
+msgid "Accounts"
+msgstr ""
+
 #: src/components/reader/terms-view.tsx
 msgid "Publications and articles belong to their authors. Reading or indexing them through {SITE_NAME} does not transfer any rights to us or to you. Respect the copyright and licensing choices of the writers whose work you read. The {SITE_NAME} software itself is open source and available under the license in its <0>source repository</0>."
 msgstr ""
@@ -1358,6 +1370,10 @@ msgstr "아직 피드백이 없습니다."
 #: src/components/reader/about-view.tsx
 msgid "Start exploring"
 msgstr "둘러보기 시작"
+
+#: src/components/docs/labelers-docs-page.tsx
+msgid "If you already run a labeler for the wider network, you can skip that step: we also read the standard <0>app.bsky.labeler.service</0> record from your repo, so an existing AT Protocol labeler works here unchanged. Search for its handle or DID on the Labelers page and it resolves from your DID document."
+msgstr ""
 
 #: src/components/reader/collection-builder.tsx
 msgid "Articles in collection"
@@ -2471,6 +2487,10 @@ msgstr "새 이미지를 끌어다 놓거나 선택하세요"
 #: src/routes/_layout.search.tsx
 msgid "Search publications and articles"
 msgstr "발행물과 글 검색"
+
+#: src/components/labeler-detail-view.tsx
+msgid "No labeled accounts"
+msgstr ""
 
 #: src/components/reader/article-below-fold.tsx
 #: src/components/reader/subscriptions-table.tsx
@@ -3684,6 +3704,10 @@ msgstr "2026년 6월 11일 최종 수정"
 
 #: src/routes/_layout.friends.tsx
 msgid "People you follow"
+msgstr ""
+
+#: src/components/docs/labelers-docs-page.tsx
+msgid "Labels may apply to a document's <0>at://</0> URI or to an account DID. Account labels are shown on that account's author and publication pages and on every document it published, so a label about a publisher does not need to be re-emitted per post."
 msgstr ""
 
 #: src/components/reader/collections-upgrade-gate.tsx

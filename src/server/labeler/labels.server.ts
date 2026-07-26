@@ -17,10 +17,26 @@ import type {
   Db,
   Schema,
 } from "#/integrations/tanstack-query/api-shapes";
+import type { LabelableCard } from "#/lib/label-subjects";
+import {
+  attachLabelsFromMap,
+  hiddenUrisFromLabels,
+  isCardHidden,
+  labelSubjects,
+} from "#/lib/label-subjects";
 import { assertSafeFetchUrl } from "#/server/security/ssrf-guard";
 
 import { resolveLabelerEndpoint } from "./resolve.server.ts";
 import { verifyLabels } from "./verify.server.ts";
+
+// Re-exported so label call sites have one import site for the whole concern.
+export type { LabelableCard };
+export {
+  attachLabelsFromMap,
+  hiddenUrisFromLabels,
+  isCardHidden,
+  labelSubjects,
+};
 
 /**
  * A raw label as served by a labeler's `queryLabels` (sync path only).
@@ -99,17 +115,25 @@ async function readerSubscriptionsImpl(
 }
 
 /**
- * Labels for `uris` from the caller's subscribed labelers, keyed by document
- * URI, with each label's effective visibility (the reader's pref, default
- * `warn`). Pure SQL against `document_labels` — no labeler network calls.
+ * Labels on `subjects` from the caller's subscribed labelers, keyed by subject,
+ * with each label's effective visibility (the reader's pref, default `warn`).
+ *
+ * A subject is either a **document AT-URI** or an **account DID**. Our own
+ * labelers score prose and so label documents; labelers on the wider network
+ * (pub-search, and every Bluesky-flavored moderation service) label accounts.
+ * `document_labels.uri` stores the subject verbatim either way, so one query
+ * serves both — callers just pass whichever subjects they hold.
+ *
+ * Pure SQL — no labeler network calls.
  */
-export async function readLabelsForUris(
+export async function readLabelsForSubjects(
   db: Db,
   schema: Schema,
   callerDid: string,
-  uris: Array<string>,
+  subjects: Array<string>,
 ): Promise<Map<string, Array<ArticleCardLabel>>> {
   const byUri = new Map<string, Array<ArticleCardLabel>>();
+  const uris = [...new Set(subjects)];
   if (uris.length === 0) return byUri;
   const { dids, visibility } = await readerSubscriptions(db, schema, callerDid);
   if (dids.length === 0) return byUri;
@@ -132,31 +156,49 @@ export async function readLabelsForUris(
   return byUri;
 }
 
+/** {@link readLabelsForSubjects} for document subjects. */
+export async function readLabelsForUris(
+  db: Db,
+  schema: Schema,
+  callerDid: string,
+  uris: Array<string>,
+): Promise<Map<string, Array<ArticleCardLabel>>> {
+  return readLabelsForSubjects(db, schema, callerDid, uris);
+}
+
+/**
+ * Labels on account DIDs, keyed by DID. Separate entry point from the document
+ * one purely so call sites read honestly about what they are labelling.
+ */
+export async function readAccountLabels(
+  db: Db,
+  schema: Schema,
+  callerDid: string | null | undefined,
+  dids: Array<string>,
+): Promise<Map<string, Array<ArticleCardLabel>>> {
+  if (!callerDid) return new Map();
+  return readLabelsForSubjects(db, schema, callerDid, dids);
+}
+
 /**
  * Attach each card's labels (from the caller's subscribed labelers, with
  * visibility) so rows can badge them without a client round-trip. Returns the
  * same cards with `labels` set; cheap for non-subscribers (no labeler rows).
  */
-export async function attachSubscribedLabels<
-  T extends { uri: string; labels?: Array<ArticleCardLabel> },
->(
+export async function attachSubscribedLabels<T extends LabelableCard>(
   db: Db,
   schema: Schema,
   callerDid: string | null | undefined,
   cards: Array<T>,
 ): Promise<Array<T>> {
   if (!callerDid || cards.length === 0) return cards;
-  const byUri = await readLabelsForUris(
+  const byUri = await readLabelsForSubjects(
     db,
     schema,
     callerDid,
-    cards.map((c) => c.uri),
+    labelSubjects(cards),
   );
-  if (byUri.size === 0) return cards;
-  return cards.map((card) => {
-    const labels = byUri.get(card.uri);
-    return labels ? { ...card, labels } : card;
-  });
+  return attachLabelsFromMap(cards, byUri);
 }
 
 /**
@@ -191,36 +233,6 @@ export async function labelsForDocument(
 }
 
 /**
- * Of an already-read label map, which URIs the reader has chosen to hide.
- *
- * Pure — pairs with {@link readLabelsForUris} for callers that need both the
- * hide-filter and the per-card labels. Reading the map once and deriving both
- * avoids issuing the same `document_labels` query twice per request (the feed
- * builders previously called `hiddenDocumentUris` and `attachSubscribedLabels`
- * back to back over the same URI set).
- */
-export function hiddenUrisFromLabels(
-  byUri: Map<string, Array<ArticleCardLabel>>,
-): Set<string> {
-  const hidden = new Set<string>();
-  for (const [uri, labels] of byUri) {
-    if (labels.some((l) => l.visibility === "hide")) hidden.add(uri);
-  }
-  return hidden;
-}
-
-/** Attach labels from an already-read map. Pure counterpart of {@link attachSubscribedLabels}. */
-export function attachLabelsFromMap<
-  T extends { uri: string; labels?: Array<ArticleCardLabel> },
->(cards: Array<T>, byUri: Map<string, Array<ArticleCardLabel>>): Array<T> {
-  if (byUri.size === 0) return cards;
-  return cards.map((card) => {
-    const labels = byUri.get(card.uri);
-    return labels ? { ...card, labels } : card;
-  });
-}
-
-/**
  * Of `uris`, which the reader has chosen to hide via a subscribed labeler's
  * label set to `hide`. Used to filter feeds. Pure SQL.
  */
@@ -232,15 +244,16 @@ export async function hiddenDocumentUris(
 ): Promise<Set<string>> {
   const hidden = new Set<string>();
   if (!callerDid || uris.length === 0) return hidden;
-  const byUri = await readLabelsForUris(db, schema, callerDid, uris);
-  for (const [uri, labels] of byUri) {
-    if (labels.some((l) => l.visibility === "hide")) hidden.add(uri);
-  }
-  return hidden;
+  const byUri = await readLabelsForSubjects(db, schema, callerDid, uris);
+  return hiddenUrisFromLabels(byUri);
 }
 
-/** Drop documents the reader has hidden via labels. Flat-array convenience. */
-export async function filterHiddenDocuments<T extends { uri: string }>(
+/**
+ * Drop documents the reader has hidden via labels — whether the `hide` label
+ * sits on the document itself or on the account that published it. Flat-array
+ * convenience.
+ */
+export async function filterHiddenDocuments<T extends LabelableCard>(
   db: Db,
   schema: Schema,
   callerDid: string | null | undefined,
@@ -250,9 +263,11 @@ export async function filterHiddenDocuments<T extends { uri: string }>(
     db,
     schema,
     callerDid,
-    cards.map((c) => c.uri),
+    labelSubjects(cards),
   );
-  return hidden.size === 0 ? cards : cards.filter((c) => !hidden.has(c.uri));
+  return hidden.size === 0
+    ? cards
+    : cards.filter((c) => !isCardHidden(c, hidden));
 }
 
 /** Distinct document URIs a labeler has labeled (labeler-detail listing). */

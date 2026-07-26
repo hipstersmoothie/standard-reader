@@ -10,14 +10,18 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { Check } from "lucide-react";
 import type { Key } from "react";
 import { useCallback } from "react";
 
 import { ArticleRow } from "#/components/reader/cards";
+import { LabelerPill } from "#/components/reader/labeler-pill";
 import { useInfiniteScrollSentinel } from "#/components/reader/use-infinite-scroll-sentinel";
-import type { LabelValueDef } from "#/integrations/tanstack-query/api-labelers.functions";
+import type {
+  LabelValueDef,
+  LabeledAccount,
+} from "#/integrations/tanstack-query/api-labelers.functions";
 import { labelerApi } from "#/integrations/tanstack-query/api-labelers.functions";
 import { useTrackReadingHistory } from "#/lib/use-track-reading-history";
 
@@ -33,6 +37,7 @@ import {
   SegmentedControlItem,
 } from "../design-system/segmented-control";
 import { Tab, TabList, TabPanel, Tabs } from "../design-system/tabs";
+import { animationDuration } from "../design-system/theme/animations.stylex";
 import { uiColor } from "../design-system/theme/color.stylex";
 import { radius } from "../design-system/theme/radius.stylex";
 import {
@@ -50,7 +55,53 @@ import {
 import { Kicker, ReaderContent } from "./reader/primitives";
 
 type Visibility = "ignore" | "warn" | "hide";
-export type LabelerView = "labels" | "documents";
+
+/**
+ * One account a labeler has labeled. Deliberately not an `ArticleRow`: the
+ * subject here is a publisher, not a document, so the row leads with identity
+ * and links to the profile. Falls back to the bare DID when we hold no profile
+ * for the account — a labeler can label someone we have never indexed.
+ */
+function LabeledAccountRow({
+  account,
+  src,
+  vals,
+}: {
+  account: LabeledAccount;
+  src: string;
+  vals: Array<string>;
+}) {
+  const name =
+    account.displayName?.trim() ||
+    (account.handle ? `@${account.handle}` : account.did);
+
+  return (
+    <Link
+      to="/u/$did"
+      params={{ did: account.did }}
+      {...stylex.props(styles.accountRow)}
+    >
+      <Avatar
+        size="md"
+        src={account.avatarUrl ?? undefined}
+        alt={name}
+        fallback={name.slice(0, 2).toUpperCase()}
+      />
+      <div {...stylex.props(styles.accountText)}>
+        <span {...stylex.props(styles.accountName)}>{name}</span>
+        {account.handle && account.displayName ? (
+          <span {...stylex.props(styles.accountHandle)}>@{account.handle}</span>
+        ) : null}
+      </div>
+      <div {...stylex.props(styles.accountLabels)}>
+        {vals.map((val) => (
+          <LabelerPill key={val} src={src} val={val} />
+        ))}
+      </div>
+    </Link>
+  );
+}
+export type LabelerView = "labels" | "documents" | "accounts";
 
 // Each label is a simple three-way toggle: off (ignore), warn (content warning /
 // blur), or hide (filter it out entirely).
@@ -94,6 +145,16 @@ export function LabelerDetailView({
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteQuery(labelerApi.getLabeledDocumentsInfiniteQueryOptions(did));
+  // A labeler's subjects are documents, accounts, or both — ours score prose,
+  // network labelers label publishers — so both listings are always fetched and
+  // each tab hides itself when its side is empty.
+  const {
+    data: accountPages,
+    isLoading: accountsIsLoading,
+    fetchNextPage: fetchNextAccounts,
+    hasNextPage: hasNextAccounts,
+    isFetchingNextPage: isFetchingNextAccounts,
+  } = useInfiniteQuery(labelerApi.getLabeledAccountsInfiniteQueryOptions(did));
   const { enabled: trackReading } = useTrackReadingHistory();
 
   const invalidate = () => {
@@ -128,6 +189,12 @@ export function LabelerDetailView({
     ...(labeledPages?.pages.map((page) => page.labelsByUri) ?? []),
   );
   const documentCount = labeledPages?.pages[0]?.total ?? 0;
+  const accounts = accountPages?.pages.flatMap((page) => page.accounts) ?? [];
+  const labelsByDid: Record<string, Array<string>> = Object.assign(
+    {},
+    ...(accountPages?.pages.map((page) => page.labelsByDid) ?? []),
+  );
+  const accountCount = accountPages?.pages[0]?.total ?? 0;
 
   const loadMore = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) void fetchNextPage();
@@ -136,6 +203,14 @@ export function LabelerDetailView({
     loadMore,
     hasNextPage,
     documents.length,
+  );
+  const loadMoreAccounts = useCallback(() => {
+    if (hasNextAccounts && !isFetchingNextAccounts) void fetchNextAccounts();
+  }, [fetchNextAccounts, hasNextAccounts, isFetchingNextAccounts]);
+  const loadMoreAccountsRef = useInfiniteScrollSentinel(
+    loadMoreAccounts,
+    hasNextAccounts,
+    accounts.length,
   );
 
   const onViewChange = (key: Key) => {
@@ -186,6 +261,12 @@ export function LabelerDetailView({
                 />
               </span>
             ) : null}
+            {accountCount > 0 ? (
+              <span>
+                <span {...stylex.props(styles.statValue)}>{accountCount}</span>
+                <Plural value={accountCount} one="account" other="accounts" />
+              </span>
+            ) : null}
           </div>
         </div>
 
@@ -219,6 +300,9 @@ export function LabelerDetailView({
               </Tab>
               <Tab id="documents">
                 <Trans>Documents</Trans>
+              </Tab>
+              <Tab id="accounts">
+                <Trans>Accounts</Trans>
               </Tab>
             </TabList>
           </div>
@@ -332,6 +416,49 @@ export function LabelerDetailView({
                 {hasNextPage ? (
                   <div
                     ref={loadMoreRef}
+                    aria-hidden
+                    {...stylex.props(styles.loadSentinel)}
+                  />
+                ) : null}
+              </div>
+            )}
+          </TabPanel>
+
+          <TabPanel id="accounts" style={styles.tabPanel}>
+            {accountsIsLoading ? (
+              <p {...stylex.props(styles.emptyNote)}>
+                <Trans>Loading…</Trans>
+              </p>
+            ) : accounts.length === 0 ? (
+              <EmptyState>
+                <EmptyStateTitle>
+                  <Trans>No labeled accounts</Trans>
+                </EmptyStateTitle>
+                <EmptyStateDescription>
+                  <Trans>
+                    This labeler hasn’t labeled any accounts in the read-model
+                    yet.
+                  </Trans>
+                </EmptyStateDescription>
+              </EmptyState>
+            ) : (
+              <div>
+                {accounts.map((account) => (
+                  <LabeledAccountRow
+                    key={account.did}
+                    account={account}
+                    src={did}
+                    vals={labelsByDid[account.did] ?? []}
+                  />
+                ))}
+                {isFetchingNextAccounts ? (
+                  <p {...stylex.props(styles.note)}>
+                    <Trans>Loading…</Trans>
+                  </p>
+                ) : null}
+                {hasNextAccounts ? (
+                  <div
+                    ref={loadMoreAccountsRef}
                     aria-hidden
                     {...stylex.props(styles.loadSentinel)}
                   />
@@ -516,5 +643,43 @@ const styles = stylex.create({
     height: 1,
     marginTop: spacing["6"],
     width: "100%",
+  },
+  accountRow: {
+    padding: spacing["3"],
+    borderBottomColor: uiColor.border1,
+    borderBottomStyle: "solid",
+    borderBottomWidth: spacing.px,
+    gap: gap.md,
+    alignItems: "center",
+    backgroundColor: { default: "transparent", ":hover": uiColor.component1 },
+    color: "inherit",
+    display: "flex",
+    textDecoration: "none",
+    transitionDuration: animationDuration.fast,
+    transitionProperty: "background-color",
+  },
+  accountText: {
+    gap: gap.xs,
+    display: "flex",
+    flexDirection: "column",
+    minWidth: 0,
+  },
+  accountName: {
+    color: uiColor.text2,
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.medium,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  },
+  accountHandle: {
+    color: uiColor.text1,
+    fontSize: fontSize.sm,
+  },
+  accountLabels: {
+    gap: gap.xs,
+    display: "flex",
+    flexWrap: "wrap",
+    marginInlineStart: "auto",
   },
 });

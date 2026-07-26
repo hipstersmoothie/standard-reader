@@ -7,7 +7,16 @@ import { normalizeAuthorRef } from "#/lib/author-profile";
 const PUBLIC_APPVIEW = "https://public.api.bsky.app";
 const RESOLVE_TIMEOUT_MS = 8000;
 
-async function resolveHandleToDid(handle: string): Promise<string | null> {
+/**
+ * Resolve a handle to a DID via the public AppView, which implements both
+ * resolution methods (`_atproto` DNS TXT and `/.well-known/atproto-did`). Use
+ * this rather than fetching the well-known directly: plenty of handles resolve
+ * only by DNS, and a site whose SPA catch-all answers 200 with HTML at the
+ * well-known path would otherwise look like a valid-but-garbage response.
+ */
+export async function resolveHandleToDid(
+  handle: string,
+): Promise<string | null> {
   try {
     const url = new URL(
       "/xrpc/com.atproto.identity.resolveHandle",

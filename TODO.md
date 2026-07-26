@@ -910,15 +910,28 @@ Standard AT Proto labels: subscribe to labelers, see/blur/hide their labels whil
       (publish V2 alongside legacy, dual-read, lazy migration) is landed; Phase 2 (deprecate legacy
       NSID + scope once no reader has old records) is pending. Requires the
       `_lexicon.labeler.standard-reader.app` DNS TXT record to publish the `labeler.*` group.
-- [x] **Discovery** — resolve a labeler by DID/handle (DID doc → `#atproto_labeler` →
-      descriptor); nothing hardcoded.
+- [x] **Discovery** — two registration paths into `labeler_services`, both read from the DB
+      afterwards. (a) Our labelers publish an `app.standard-reader.labeler.service` record, indexed
+      by tap. (b) Any AT Protocol labeler is resolved from its own declaration — DID doc
+      `#atproto_labeler` for the endpoint, `app.bsky.labeler.service` for the label-value
+      definitions — on first lookup, then backfilled (`source = 'atproto'`). Handle resolution goes
+      through the AppView resolver, so DNS-only handles work. Nothing hardcoded.
+- [x] **Account-scoped labels** — labels whose subject is a DID rather than a document. Network
+      labelers label accounts almost exclusively (pub-search's `bulk-generated`), so cards resolve
+      against both their URI and their author's DID, author/publication headers show account label
+      pills, and the labeler detail page has an Accounts tab beside Documents.
+- [ ] **pub-search in the directory by default** — the labeler resolves and is subscribable as soon
+      as anyone looks it up by handle, which then lists it for everyone. Decide whether the
+      directory should instead seed known third-party labelers explicitly, or auto-index
+      `app.bsky.labeler.service` off the firehose (would pull in every Bluesky moderation labeler,
+      so it needs filtering or a curation step first).
 - [x] **Settings → Labelers** — `/settings/labelers` (add by handle/DID, list subscriptions) +
       `/settings/labelers/$did` (info, subscribe, per-label hide/blur toggles, labeled documents).
 - [x] **Reader display** — badge + content warning on labeled documents per the reader's prefs.
 - [x] **claudeslop** — standalone reference labeler (`services/claudeslop/`): Jetstream → heuristic
       AI-writing detector → signed labels (SQLite) → `queryLabels` + `subscribeLabels`.
-- [ ] **Feed-level hiding** — filter `hide`-labeled documents out of feeds (currently surfaced
-      only on the article page).
+- [x] **Feed-level hiding** — `hide`-labeled rows are filtered out of the home and latest feeds,
+      by a label on the document or on its author's account.
 - [x] **Signature verification** — the label sync verifies every label's `sig` against the
       labeler's `#atproto_label` key (resolved from its DID document, cached, re-resolved once on
       mismatch to absorb key rotation) before mirroring it. Unsigned or unverifiable labels are

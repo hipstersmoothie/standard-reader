@@ -15,6 +15,9 @@ export interface LabelPref {
   visibility: LabelVisibility;
 }
 
+/** Where a labeler's registration came from (see `labelerServices.source`). */
+export type LabelerSource = "record" | "atproto";
+
 /** A label-value definition as carried on a labeler.service record's policies. */
 export interface LabelValueDefinition {
   identifier?: string;
@@ -44,6 +47,17 @@ export const labelerServices = pgTable(
     labelerDid: text("labeler_did").notNull(),
     /** Origin serving queryLabels / subscribeLabels. */
     serviceEndpoint: text("service_endpoint").notNull(),
+
+    /**
+     * How this labeler entered the directory:
+     * - `record` — an `app.standard-reader.labeler.service` record indexed off
+     *   the network (our own labelers; the row is owned by the record author).
+     * - `atproto` — resolved from the labeler's own AT Protocol declaration
+     *   (`#atproto_labeler` in the DID doc + `app.bsky.labeler.service`), for
+     *   labelers that never published an app record. Refreshed from the
+     *   network rather than from the firehose.
+     */
+    source: text("source").$type<LabelerSource>().notNull().default("record"),
 
     displayName: text("display_name"),
     description: text("description"),

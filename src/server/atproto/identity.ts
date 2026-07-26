@@ -91,10 +91,12 @@ function isFresh(entry: CacheEntry): boolean {
  * previously reached `new URL(path, host)` in fetch-record.ts unguarded and
  * threw an uncaught `TypeError: Invalid URL` that crashed repo reconcile for
  * that DID on every round-robin tick, forever. */
-function pdsFromDoc(doc: DidDocument): string | null {
-  const service = doc.service?.find(
-    (s) => s.id === "#atproto_pds" || s.type === "AtprotoPersonalDataServer",
-  );
+function serviceFromDoc(
+  doc: DidDocument,
+  id: string,
+  type: string,
+): string | null {
+  const service = doc.service?.find((s) => s.id === id || s.type === type);
   const endpoint = service?.serviceEndpoint;
   if (!endpoint) return null;
   try {
@@ -104,6 +106,24 @@ function pdsFromDoc(doc: DidDocument): string | null {
     return null;
   }
   return endpoint;
+}
+
+function pdsFromDoc(doc: DidDocument): string | null {
+  return serviceFromDoc(doc, "#atproto_pds", "AtprotoPersonalDataServer");
+}
+
+/**
+ * The label server a DID advertises in its DID document (`#atproto_labeler`),
+ * as every AT Protocol labeler does — this is how a labeler that has published
+ * no `app.standard-reader.labeler.service` record is still reachable. Not
+ * cached alongside {@link resolveIdentity}: it is read on the labeler
+ * registration path only, not per request.
+ */
+export async function resolveLabelerServiceEndpoint(
+  did: string,
+): Promise<string | null> {
+  const doc = await fetchDidDoc(did);
+  return doc ? serviceFromDoc(doc, "#atproto_labeler", "AtprotoLabeler") : null;
 }
 
 function handleFromDoc(doc: DidDocument): string | null {

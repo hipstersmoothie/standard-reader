@@ -28,6 +28,7 @@ import {
 } from "#/lib/site-metadata";
 import { useTrackReadingHistory } from "#/lib/use-track-reading-history";
 
+import { AccountLabelsForDid } from "../components/reader/account-labels";
 import { AddToListButton } from "../components/reader/add-to-list-modal";
 import {
   ArticleRow,
@@ -747,6 +748,7 @@ function PublicationProfileContent({
                   <Handle style={styles.heroHandle}>@{owner.handle}</Handle>
                 </Link>
               ) : null}
+              <AccountLabelsForDid did={pub.did} readerScope={readerScope} />
             </div>
 
             <div {...stylex.props(styles.heroActs)}>

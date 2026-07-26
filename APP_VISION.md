@@ -672,9 +672,19 @@ HttpOnly session cookies.
 Standard Reader speaks the standard AT Proto label protocol, so readers can subscribe to
 **labelers** (moderation services) exactly as they would in Bluesky:
 
-- **A labeler is just a DID.** We discover it the standard way — resolve the DID document, find
-  its `#atproto_labeler` service, and read its descriptor + label-value definitions. Nothing is
-  hardcoded; the first-party `claudeslop` labeler (below) is discovered like any third party.
+- **A labeler is just a DID**, and it can reach us two ways. Our own labelers register with an
+  `app.standard-reader.labeler.service` record, which tap indexes into `labeler_services`. Any
+  other AT Protocol labeler is picked up from its **own network declaration** — resolve the DID
+  document, find its `#atproto_labeler` service, and read the label-value definitions off its
+  `app.bsky.labeler.service` record. That second path is resolved on first lookup and backfilled
+  into the same table, so a labeler like [pub-search](https://pub-search.waow.tech/labels) works
+  with no action on their part, and every read path stays a plain DB read. Nothing is hardcoded.
+- **Labels apply to documents _or_ to accounts.** Ours score prose, so they label documents;
+  labelers on the wider network label accounts (pub-search's `bulk-generated` marks a publisher
+  whose documents are generated from a data source, not composed by an author). Both subject kinds
+  are stored in `document_labels` and resolved together: a card is matched against its own URI
+  _and_ its author's DID, so an account label badges every one of that account's rows, shows on the
+  author and publication headers, and honors a reader's `hide` pref across the feeds.
 - **Subscriptions are repo records** (`app.standard-reader.labeler.subscription`, V2; legacy
   `app.standard-reader.labelerSubscription` — nested under the `labeler` NSID group so a single
   `_lexicon.labeler.standard-reader.app` DNS record covers `labeler.defs`, `labeler.service`, and

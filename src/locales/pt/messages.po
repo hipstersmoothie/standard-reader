@@ -224,6 +224,10 @@ msgstr "Filtrar por nome, nome de usuário, ou tema"
 msgid "Not subscribed"
 msgstr "Não inscrito"
 
+#: src/components/labeler-detail-view.tsx
+msgid "{accountCount, plural, one {account} other {accounts}}"
+msgstr ""
+
 #: src/routes/_layout.search.tsx
 msgid "{publicationCountText} · {articleCountText}"
 msgstr "{publicationCountText} · {articleCountText}"
@@ -517,6 +521,10 @@ msgstr "Tudo o que foi publicado recentemente nas suas inscrições."
 #: src/components/reader/subscriptions-table.tsx
 msgid "Last post"
 msgstr "Último artigo"
+
+#: src/components/labeler-detail-view.tsx
+msgid "This labeler hasn’t labeled any accounts in the read-model yet."
+msgstr ""
 
 #: src/components/docs/introduction-docs-page.tsx
 msgid "publish AT Protocol labels Standard Reader shows — and can warn on or hide by — as readers read."
@@ -1176,6 +1184,10 @@ msgstr "Ainda não há nada para pré-visualizar."
 msgid "{0, plural, one {# article} other {{documentLabel} articles}}"
 msgstr "{0, plural, one {# artigo} other {{documentLabel} artigos}}"
 
+#: src/components/labeler-detail-view.tsx
+msgid "Accounts"
+msgstr ""
+
 #: src/components/reader/terms-view.tsx
 msgid "Publications and articles belong to their authors. Reading or indexing them through {SITE_NAME} does not transfer any rights to us or to you. Respect the copyright and licensing choices of the writers whose work you read. The {SITE_NAME} software itself is open source and available under the license in its <0>source repository</0>."
 msgstr "As publicações e os artigos pertencem aos seus autores. A leitura ou a indexação deles por meio do {SITE_NAME} não transfere quaisquer direitos para nós nem para você. Respeite os direitos autorais e as escolhas de licenciamento dos autores cujos trabalhos você lê. O software do {SITE_NAME} em si é de código aberto e está disponível sob a licença indicada em seu <0>repositório</0>."
@@ -1358,6 +1370,10 @@ msgstr "Ainda não há comentários."
 #: src/components/reader/about-view.tsx
 msgid "Start exploring"
 msgstr "Começar a explorar"
+
+#: src/components/docs/labelers-docs-page.tsx
+msgid "If you already run a labeler for the wider network, you can skip that step: we also read the standard <0>app.bsky.labeler.service</0> record from your repo, so an existing AT Protocol labeler works here unchanged. Search for its handle or DID on the Labelers page and it resolves from your DID document."
+msgstr ""
 
 #: src/components/reader/collection-builder.tsx
 msgid "Articles in collection"
@@ -2471,6 +2487,10 @@ msgstr "Arraste ou escolha uma nova imagem"
 #: src/routes/_layout.search.tsx
 msgid "Search publications and articles"
 msgstr "Pesquisar publicações e artigos"
+
+#: src/components/labeler-detail-view.tsx
+msgid "No labeled accounts"
+msgstr ""
 
 #: src/components/reader/article-below-fold.tsx
 #: src/components/reader/subscriptions-table.tsx
@@ -3685,6 +3705,10 @@ msgstr "Última atualização a 11 de junho de 2026"
 #: src/routes/_layout.friends.tsx
 msgid "People you follow"
 msgstr "Pessoas que você segue"
+
+#: src/components/docs/labelers-docs-page.tsx
+msgid "Labels may apply to a document's <0>at://</0> URI or to an account DID. Account labels are shown on that account's author and publication pages and on every document it published, so a label about a publisher does not need to be re-emitted per post."
+msgstr ""
 
 #: src/components/reader/collections-upgrade-gate.tsx
 msgid "Standard Reader needs write access to your site.standard publications and documents, plus your collection records, to author Collections. You'll be asked to approve this on your PDS login."

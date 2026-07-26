@@ -1,17 +1,28 @@
 /**
- * Labeler discovery, record-driven.
+ * Labeler discovery.
  *
- * A labeler is registered by an `app.standard-reader.labeler.service` record
- * (owned by its author's account). Tap indexes those into `labeler_services`, so
- * discovery is just a read-model lookup — no DID-document / getServices fetches.
- * The record carries where to reach the label server (`serviceEndpoint`), so the
- * label server itself only answers queryLabels / subscribeLabels.
+ * Two kinds of labeler land in the same `labeler_services` table, and every
+ * read path treats them identically:
+ *
+ * 1. **Registered by record** — an `app.standard-reader.labeler.service` record
+ *    owned by its author's account, indexed by tap. Our own labelers.
+ * 2. **Declared on the network** — any AT Protocol labeler, which advertises
+ *    `#atproto_labeler` in its DID document and publishes an
+ *    `app.bsky.labeler.service` record. These never reach us over the firehose
+ *    (we don't index that collection), so they are resolved on first lookup and
+ *    backfilled into the table — after which reads are pure DB, like everything
+ *    else.
+ *
+ * Either way the label server itself only answers queryLabels / subscribeLabels.
  */
 
 import { and, eq } from "drizzle-orm";
 
 import { db } from "#/db/index.server";
 import { labelerServices } from "#/db/schema";
+import { resolveHandleToDid } from "#/server/atproto/resolve-author-ref";
+
+import { resolveAtprotoLabeler } from "./atproto-labeler.server.ts";
 
 export interface LabelValueDef {
   identifier?: string;
@@ -30,7 +41,7 @@ export interface ResolvedLabelerView {
   labelValueDefinitions?: Array<LabelValueDef>;
 }
 
-async function serviceRow(did: string) {
+async function readServiceRow(did: string) {
   const [row] = await db
     .select()
     .from(labelerServices)
@@ -42,6 +53,67 @@ async function serviceRow(did: string) {
     )
     .limit(1);
   return row ?? null;
+}
+
+/**
+ * DIDs we have already checked and found not to be labelers, so a lookup for a
+ * non-labeler actor (someone typing any handle into the labeler search box)
+ * costs one DID-document fetch rather than one per request.
+ */
+const notALabeler = new Map<string, number>();
+const NEGATIVE_TTL_MS = 10 * 60 * 1000;
+
+function negativeCached(did: string): boolean {
+  const until = notALabeler.get(did);
+  if (until === undefined) return false;
+  if (until > Date.now()) return true;
+  notALabeler.delete(did);
+  return false;
+}
+
+/**
+ * Resolve a labeler that declared itself on the network but has no app record,
+ * and persist it so subsequent reads hit the DB. Keyed by the
+ * `app.bsky.labeler.service` record's own AT-URI, which is a real record URI
+ * and so can never collide with an app-record row.
+ */
+async function backfillAtprotoLabeler(did: string) {
+  if (negativeCached(did)) return null;
+
+  const declaration = await resolveAtprotoLabeler(did);
+  if (!declaration) {
+    notALabeler.set(did, Date.now() + NEGATIVE_TTL_MS);
+    return null;
+  }
+
+  const values = {
+    uri: `at://${did}/app.bsky.labeler.service/self`,
+    ownerDid: did,
+    rkey: "self",
+    labelerDid: did,
+    serviceEndpoint: declaration.serviceEndpoint,
+    displayName: declaration.displayName,
+    description: declaration.description,
+    avatarUrl: declaration.avatarUrl,
+    labelValueDefinitions: declaration.labelValueDefinitions,
+    source: "atproto" as const,
+    deleted: false,
+  };
+  await db
+    .insert(labelerServices)
+    .values(values)
+    .onConflictDoUpdate({ target: labelerServices.uri, set: values });
+
+  return readServiceRow(did);
+}
+
+/**
+ * A labeler's registration row, resolving it from the network on first sight.
+ * The DB is the read path; the network fetch happens only when no row exists
+ * yet (see the backfill pattern in CLAUDE.md).
+ */
+async function serviceRow(did: string) {
+  return (await readServiceRow(did)) ?? (await backfillAtprotoLabeler(did));
 }
 
 /** All registered labeler DIDs (the directory). */
@@ -77,22 +149,15 @@ export async function resolveLabelerView(
   };
 }
 
-/** Resolve a handle or DID to a DID (handles via the well-known lookup). */
+/**
+ * Resolve a handle or DID to a DID.
+ *
+ * Delegates to the shared AppView-backed resolver, which covers both handle
+ * resolution methods. This previously fetched `/.well-known/atproto-did`
+ * directly and so missed every DNS-only handle — including labelers whose site
+ * is an SPA that answers 200 with HTML at that path.
+ */
 export async function resolveActorDid(actor: string): Promise<string | null> {
   if (actor.startsWith("did:")) return actor;
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 4000);
-  try {
-    const r = await fetch(`https://${actor}/.well-known/atproto-did`, {
-      signal: controller.signal,
-    });
-    if (!r.ok) return null;
-    const text = await r.text();
-    const did = text.trim();
-    return did.startsWith("did:") ? did : null;
-  } catch {
-    return null;
-  } finally {
-    clearTimeout(timer);
-  }
+  return resolveHandleToDid(actor.trim().toLowerCase());
 }

@@ -21,6 +21,7 @@ import {
 } from "#/server/ingest/handlers";
 import {
   labelsForDocument,
+  readAccountLabels,
   subscribedLabelerDids,
 } from "#/server/labeler/labels.server";
 import type { LabelValueDef } from "#/server/labeler/resolve.server";
@@ -88,6 +89,22 @@ const labeledDocumentsInput = labelerInput.extend({
 export interface LabeledDocumentsPage {
   documents: Array<ArticleCard>;
   labelsByUri: Record<string, Array<string>>;
+  total: number;
+  nextOffset: number | null;
+}
+
+/** An account a labeler has labeled, as rendered on the labeler detail page. */
+export interface LabeledAccount {
+  did: string;
+  handle: string | null;
+  displayName: string | null;
+  avatarUrl: string | null;
+}
+
+/** One offset page of a labeler's labeled accounts. */
+export interface LabeledAccountsPage {
+  accounts: Array<LabeledAccount>;
+  labelsByDid: Record<string, Array<string>>;
   total: number;
   nextOffset: number | null;
 }
@@ -363,6 +380,119 @@ const getDocumentLabels = createServerFn({ method: "GET" })
     }),
   );
 
+/**
+ * Accounts a labeler has labeled, with the profile rows we hold for them.
+ *
+ * The counterpart of {@link getLabeledDocuments}: a labeler's subjects are
+ * either documents or accounts, and network labelers deal almost exclusively in
+ * accounts (pub-search labels a publisher, not each generated page). Without
+ * this a labeler like that has an entirely empty detail page.
+ *
+ * Subjects are matched by `did:` prefix rather than by a join, so an account we
+ * hold no profile row for still counts toward the total and renders as a bare
+ * DID rather than vanishing.
+ */
+const getLabeledAccounts = createServerFn({ method: "GET" })
+  .middleware([dbMiddleware])
+  .validator(labeledDocumentsInput)
+  .handler(
+    observe("labelers.getLabeledAccounts", async ({ data, context }, span) => {
+      span.set("labeler", data.labeler);
+      const dl = context.schema.documentLabels;
+      const where = and(eq(dl.src, data.labeler), like(dl.uri, "did:%"));
+
+      const [countRow, didRows] = await Promise.all([
+        context.db
+          .select({ count: sql<number>`count(distinct ${dl.uri})::int` })
+          .from(dl)
+          .where(where),
+        context.db
+          .selectDistinct({ did: dl.uri })
+          .from(dl)
+          .where(where)
+          .orderBy(dl.uri)
+          .limit(data.limit)
+          .offset(data.offset),
+      ]);
+
+      const total = countRow[0]?.count ?? 0;
+      const dids = didRows.map((r) => r.did);
+      const [valRows, profileRows] = await Promise.all([
+        dids.length > 0
+          ? context.db
+              .select({ uri: dl.uri, val: dl.val })
+              .from(dl)
+              .where(and(eq(dl.src, data.labeler), inArray(dl.uri, dids)))
+          : Promise.resolve([]),
+        dids.length > 0
+          ? context.db
+              .select({
+                did: context.schema.profiles.did,
+                handle: context.schema.profiles.handle,
+                displayName: context.schema.profiles.displayName,
+                avatarUrl: context.schema.profiles.avatarUrl,
+              })
+              .from(context.schema.profiles)
+              .where(inArray(context.schema.profiles.did, dids))
+          : Promise.resolve([]),
+      ]);
+
+      const labelsByDid: Record<string, Array<string>> = {};
+      for (const row of valRows) {
+        const vals = labelsByDid[row.uri] ?? [];
+        if (!vals.includes(row.val)) vals.push(row.val);
+        labelsByDid[row.uri] = vals;
+      }
+      const profileByDid = new Map(profileRows.map((p) => [p.did, p]));
+
+      span.set("count", dids.length);
+      span.set("total", total);
+      return {
+        accounts: dids.map((did) => ({
+          did,
+          handle: profileByDid.get(did)?.handle ?? null,
+          displayName: profileByDid.get(did)?.displayName ?? null,
+          avatarUrl: profileByDid.get(did)?.avatarUrl ?? null,
+        })),
+        labelsByDid,
+        total,
+        nextOffset:
+          dids.length > 0 && data.offset + dids.length < total
+            ? data.offset + dids.length
+            : null,
+      } satisfies LabeledAccountsPage;
+    }),
+  );
+
+/**
+ * Labels on an **account** for the signed-in reader.
+ *
+ * Its own round trip rather than a field on the publication header, because the
+ * header query is shared across readers (`["publication", "header", uri]`)
+ * while labels are viewer-specific — they depend on which labelers the reader
+ * subscribes to and the per-label visibility they chose.
+ */
+const getAccountLabels = createServerFn({ method: "GET" })
+  .middleware([dbMiddleware])
+  .validator(z.object({ did: z.string().trim().min(1) }))
+  .handler(
+    observe("labelers.getAccountLabels", async ({ data, context }, span) => {
+      const session = await getAtprotoSessionForRequest(getRequest());
+      if (!session) return { labels: [] satisfies Array<DocumentLabel> };
+      span.set("subject.did", data.did);
+
+      const byDid = await readAccountLabels(
+        context.db,
+        context.schema,
+        session.did,
+        [data.did],
+      );
+      const out: Array<DocumentLabel> = byDid.get(data.did) ?? [];
+      span.set("count", out.length);
+      return { labels: out };
+    }),
+  );
+
 const subscribeLabeler = createServerFn({ method: "POST" })
   .validator(labelerInput)
   .handler(
@@ -456,11 +586,34 @@ function getLabeledDocumentsInfiniteQueryOptions(
   });
 }
 
+function getLabeledAccountsInfiniteQueryOptions(
+  labeler: string,
+  limit = LABELED_DOCUMENTS_PAGE_SIZE,
+) {
+  return infiniteQueryOptions({
+    queryKey: ["labeler", labeler, "accounts", limit] as const,
+    queryFn: async ({ pageParam }) =>
+      getLabeledAccounts({ data: { labeler, limit, offset: pageParam } }),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) => lastPage.nextOffset ?? undefined,
+    enabled: labeler.length > 0,
+  });
+}
+
 function getDocumentLabelsQueryOptions(uri: string) {
   return queryOptions({
     queryKey: ["labels", uri] as const,
     queryFn: async () => getDocumentLabels({ data: { uri } }),
     enabled: uri.length > 0,
+    staleTime: 60_000,
+  });
+}
+
+function getAccountLabelsQueryOptions(did: string, readerScope = "guest") {
+  return queryOptions({
+    queryKey: ["labels", "account", readerScope, did] as const,
+    queryFn: async () => getAccountLabels({ data: { did } }),
+    enabled: did.length > 0,
     staleTime: 60_000,
   });
 }
@@ -498,8 +651,12 @@ export const labelerApi = {
   getLabelerQueryOptions,
   getLabeledDocuments,
   getLabeledDocumentsInfiniteQueryOptions,
+  getLabeledAccounts,
+  getLabeledAccountsInfiniteQueryOptions,
   getDocumentLabels,
   getDocumentLabelsQueryOptions,
+  getAccountLabels,
+  getAccountLabelsQueryOptions,
   subscribeLabeler,
   subscribeLabelerMutationOptions,
   unsubscribeLabeler,

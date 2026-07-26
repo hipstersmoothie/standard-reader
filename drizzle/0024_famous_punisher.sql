@@ -1,0 +1,1 @@
+ALTER TABLE "labeler_services" ADD COLUMN "source" text DEFAULT 'record' NOT NULL;

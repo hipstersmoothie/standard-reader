@@ -169,6 +169,13 @@
       "when": 1785031813106,
       "tag": "0023_zippy_boom_boom",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1785042169618,
+      "tag": "0024_famous_punisher",
+      "breakpoints": true
     }
   ]
 }
