@@ -1,10 +1,10 @@
 "use client";
 
-import { Trans } from "@lingui/react/macro";
+import { Trans, useLingui } from "@lingui/react/macro";
 import * as stylex from "@stylexjs/stylex";
 import { useMutation } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { BookMarked, Check, Pencil } from "lucide-react";
+import { BookOpen, PenLine } from "lucide-react";
 import { useEffect } from "react";
 
 import type { McpAuthorizeSearch } from "#/integrations/tanstack-query/api-mcp.functions";
@@ -14,53 +14,143 @@ import {
 } from "#/integrations/tanstack-query/api-mcp.functions";
 import { buildAuthRedirectPath } from "#/utils/auth-redirect";
 
+import { BrandWordmark } from "../../components/reader/brand-wordmark";
+import { SiteLegalLinks } from "../../components/site-legal-links";
+import { Avatar } from "../../design-system/avatar";
 import { Button } from "../../design-system/button";
-import { Card } from "../../design-system/card";
-import { Content } from "../../design-system/content";
 import { Flex } from "../../design-system/flex";
+import { uiColor } from "../../design-system/theme/color.stylex";
+import { breakpoints } from "../../design-system/theme/media-queries.stylex";
 import { radius } from "../../design-system/theme/radius.stylex";
-import { ui } from "../../design-system/theme/semantic-color.stylex";
+import { primary, ui } from "../../design-system/theme/semantic-color.stylex";
 import {
   horizontalSpace,
   size as sizeSpace,
   verticalSpace,
 } from "../../design-system/theme/semantic-spacing.stylex";
+import {
+  fontSize,
+  lineHeight,
+  tracking,
+} from "../../design-system/theme/typography.stylex";
 import { Body, Heading1 } from "../../design-system/typography";
+import { Text } from "../../design-system/typography/text";
 
 const styles = stylex.create({
-  page: {
-    marginInline: "auto",
-    maxWidth: sizeSpace["8xl"],
-    paddingBlock: verticalSpace["2xl"],
+  main: {
+    display: "flex",
+    flexDirection: "column",
+    minHeight: "100dvh",
   },
-  scopeRow: {
-    borderRadius: radius.md,
-    paddingBlock: verticalSpace.sm,
-    paddingInline: horizontalSpace.md,
+  container: {
+    alignItems: "center",
+    boxSizing: "border-box",
+    display: "flex",
+    flexDirection: "column",
+    flexGrow: 1,
+    justifyContent: "center",
+    paddingBlock: verticalSpace["8xl"],
+    paddingInline: horizontalSpace["4xl"],
   },
-  icon: {
+  // The consent column is a reading measure, not a spacing step: it is sized to
+  // hold two short lines of scope copy without wrapping awkwardly. `/login`
+  // sizes its form the same way.
+  column: {
+    maxWidth: "27rem",
+    width: "100%",
+  },
+  wordmark: {
+    paddingBottom: verticalSpace["5xl"],
+    textAlign: "center",
+  },
+  card: {
+    borderRadius: radius.lg,
+    cornerShape: "squircle",
+    paddingBlock: {
+      default: verticalSpace["5xl"],
+      [breakpoints.sm]: verticalSpace["6xl"],
+    },
+    paddingInline: {
+      default: horizontalSpace["4xl"],
+      [breakpoints.sm]: horizontalSpace["5xl"],
+    },
+  },
+  question: {
+    fontSize: fontSize["2xl"],
+    letterSpacing: tracking.tight,
+    lineHeight: lineHeight.sm,
+    marginBlock: verticalSpace.none,
+    textWrap: "balance",
+  },
+  // Two facts a reader can actually check: who they are, and where the code
+  // goes. Kept as a definition list so the pairing is real, not just visual.
+  facts: {
+    display: "grid",
+    gridTemplateColumns: "auto 1fr",
+    alignItems: "center",
+    columnGap: horizontalSpace["3xl"],
+    rowGap: verticalSpace["2xl"],
+    margin: verticalSpace.none,
+  },
+  factTerm: {
+    margin: verticalSpace.none,
+  },
+  factValue: {
+    display: "flex",
+    alignItems: "center",
+    gap: horizontalSpace.md,
+    margin: verticalSpace.none,
+    minWidth: 0,
+  },
+  factText: {
+    minWidth: 0,
+    overflowWrap: "anywhere",
+  },
+  scopeList: {
+    display: "flex",
+    flexDirection: "column",
+    listStyle: "none",
+    margin: verticalSpace.none,
+    padding: verticalSpace.none,
+  },
+  scopeItem: {
+    alignItems: "start",
+    borderTopColor: uiColor.border1,
+    borderTopStyle: "solid",
+    borderTopWidth: 1,
+    display: "flex",
+    gap: horizontalSpace["2xl"],
+    paddingBlock: verticalSpace["3xl"],
+  },
+  scopeItemLast: {
+    borderBottomColor: uiColor.border1,
+    borderBottomStyle: "solid",
+    borderBottomWidth: 1,
+  },
+  scopeIcon: {
+    color: uiColor.text1,
     flexShrink: 0,
-    height: sizeSpace.sm,
-    width: sizeSpace.sm,
+    height: sizeSpace.md,
+    marginTop: verticalSpace.xxs,
+    width: sizeSpace.md,
+  },
+  actions: {
+    display: "flex",
+    flexDirection: {
+      default: "column-reverse",
+      [breakpoints.sm]: "row",
+    },
+    gap: horizontalSpace["2xl"],
+  },
+  actionButton: {
+    flexGrow: 1,
+    justifyContent: "center",
+  },
+  legal: {
+    paddingBottom: verticalSpace["5xl"],
+    paddingInline: horizontalSpace["4xl"],
   },
 });
-
-/** Human-readable rendering of the scopes an MCP client asked for. */
-const SCOPE_COPY: Record<string, { title: string; detail: string }> = {
-  "mcp:read": {
-    title: "Read your reading",
-    detail:
-      "Your bookmarks, reading history, likes, subscriptions and lists, plus " +
-      "anything public on the network.",
-  },
-  "mcp:write": {
-    title: "Act on your behalf",
-    detail:
-      "Bookmark and like articles, follow publications and readers, mark " +
-      "things read, and change your lists. These become public records in " +
-      "your own repo.",
-  },
-};
 
 export const Route = createFileRoute("/mcp/authorize")({
   validateSearch: mcpAuthorizeSearchSchema,
@@ -77,9 +167,34 @@ function currentSearchPath(search: McpAuthorizeSearch): string {
   return `/mcp/authorize?${params.toString()}`;
 }
 
+/**
+ * Standing page shared by every state of the flow — a sibling of `/login`,
+ * which is the screen immediately before this one.
+ */
+function AuthorizeShell({ children }: { children: React.ReactNode }) {
+  return (
+    <main {...stylex.props(styles.main, primary.bgSubtle)}>
+      <div {...stylex.props(styles.container)}>
+        <div {...stylex.props(styles.column)}>
+          <div {...stylex.props(styles.wordmark)}>
+            <BrandWordmark />
+          </div>
+          <div {...stylex.props(styles.card, ui.bg, ui.borderDim)}>
+            {children}
+          </div>
+        </div>
+      </div>
+      <div {...stylex.props(styles.legal)}>
+        <SiteLegalLinks />
+      </div>
+    </main>
+  );
+}
+
 function AuthorizePage() {
   const view = Route.useLoaderData();
   const search = Route.useSearch();
+  const { t } = useLingui();
 
   // A protocol-level problem (bad response_type, unsupported scope) is the
   // client's to handle, so bounce straight back to it rather than showing the
@@ -106,122 +221,194 @@ function AuthorizePage() {
 
   if (view.status === "redirect") {
     return (
-      <Content>
-        <div {...stylex.props(styles.page)}>
-          <Body>
-            <Trans>Returning you to the app…</Trans>
+      <AuthorizeShell>
+        <Flex direction="column" gap="lg">
+          <Heading1 style={styles.question}>
+            <Trans>Taking you back…</Trans>
+          </Heading1>
+          <Body variant="secondary">
+            <Trans>
+              This request can&apos;t be completed here, so we&apos;re returning
+              you to the app that sent you.
+            </Trans>
           </Body>
-        </div>
-      </Content>
+        </Flex>
+      </AuthorizeShell>
     );
   }
 
   if (view.status === "error") {
+    const needsSignIn = view.code === "login_required";
     const signInHref = `/login?redirect=${encodeURIComponent(
       buildAuthRedirectPath(currentSearchPath(search)),
     )}`;
     return (
-      <Content>
-        <div {...stylex.props(styles.page)}>
-          <Card>
-            <Flex direction="column" gap="md">
-              <Heading1>
-                <Trans>Can&apos;t connect this app</Trans>
-              </Heading1>
-              <Body>{view.message}</Body>
-              {view.code === "login_required" ? (
-                <Button
-                  variant="primary"
-                  onPress={() => {
-                    globalThis.location.href = signInHref;
-                  }}
-                >
-                  <Trans>Sign in to Standard Reader</Trans>
-                </Button>
-              ) : null}
-            </Flex>
-          </Card>
-        </div>
-      </Content>
+      <AuthorizeShell>
+        <Flex direction="column" gap="4xl">
+          <Flex direction="column" gap="lg">
+            <Heading1 style={styles.question}>
+              {needsSignIn ? (
+                <Trans>Sign in to continue</Trans>
+              ) : (
+                <Trans>This app can&apos;t be connected</Trans>
+              )}
+            </Heading1>
+            <Body variant="secondary">{view.message}</Body>
+          </Flex>
+          {needsSignIn ? (
+            <Button
+              variant="primary"
+              size="lg"
+              style={styles.actionButton}
+              onPress={() => {
+                globalThis.location.href = signInHref;
+              }}
+            >
+              <Trans>Sign in to Standard Reader</Trans>
+            </Button>
+          ) : (
+            <Body variant="secondary">
+              <Trans>
+                Nothing has been shared. Head back to the app you came from and
+                try connecting again.
+              </Trans>
+            </Body>
+          )}
+        </Flex>
+      </AuthorizeShell>
     );
   }
 
   const busy = approve.isPending || deny.isPending;
+  const canWrite = view.scopes.includes("mcp:write");
+  const scopeCopy: Array<{
+    key: string;
+    icon: typeof BookOpen;
+    title: string;
+    detail: string;
+  }> = [];
+  if (view.scopes.includes("mcp:read")) {
+    scopeCopy.push({
+      key: "mcp:read",
+      icon: BookOpen,
+      title: t`Read your library`,
+      detail: t`Your saved articles, reading history, likes, subscriptions and lists — plus anything already public on the network.`,
+    });
+  }
+  if (canWrite) {
+    scopeCopy.push({
+      key: "mcp:write",
+      icon: PenLine,
+      title: t`Act on your behalf`,
+      detail: t`Save and like articles, follow publications and readers, mark things read, and change your lists. Each of these writes a public record to your repo.`,
+    });
+  }
 
   return (
-    <Content>
-      <div {...stylex.props(styles.page)}>
-        <Card>
-          <Flex direction="column" gap="lg">
-            <Flex direction="column" gap="sm">
-              <Heading1>
-                <Trans>Connect {view.clientName}?</Trans>
-              </Heading1>
-              <Body variant="secondary">
-                <Trans>
-                  {view.clientName} wants to use Standard Reader as{" "}
-                  {view.reader.handle}.
-                </Trans>
-              </Body>
-            </Flex>
+    <AuthorizeShell>
+      <Flex direction="column" gap="4xl">
+        <Heading1 style={styles.question}>
+          <Trans>Connect {view.clientName} to your account?</Trans>
+        </Heading1>
 
-            <Flex direction="column" gap="sm">
-              {view.scopes.map((scope) => {
-                const copy = SCOPE_COPY[scope];
-                const Icon = scope === "mcp:write" ? Pencil : BookMarked;
-                return (
-                  <Flex
-                    key={scope}
-                    gap="sm"
-                    align="start"
-                    style={[styles.scopeRow, ui.bgSubtle]}
-                  >
-                    <Icon {...stylex.props(styles.icon)} aria-hidden />
-                    <Flex direction="column" gap="xs">
-                      <Body>{copy?.title ?? scope}</Body>
-                      <Body variant="secondary">{copy?.detail ?? scope}</Body>
-                    </Flex>
+        <dl {...stylex.props(styles.facts)}>
+          <dt {...stylex.props(styles.factTerm)}>
+            <Text size="sm" variant="secondary">
+              <Trans>Signed in as</Trans>
+            </Text>
+          </dt>
+          <dd {...stylex.props(styles.factValue)}>
+            <Avatar
+              size="sm"
+              src={view.reader.avatar ?? undefined}
+              alt=""
+              fallback={view.reader.handle.slice(0, 1).toUpperCase()}
+            />
+            <Text size="sm" style={styles.factText}>
+              {view.reader.handle}
+            </Text>
+          </dd>
+
+          <dt {...stylex.props(styles.factTerm)}>
+            <Text size="sm" variant="secondary">
+              <Trans>Returns you to</Trans>
+            </Text>
+          </dt>
+          <dd {...stylex.props(styles.factValue)}>
+            <Text font="mono" size="sm" style={styles.factText}>
+              {view.redirectHost}
+            </Text>
+          </dd>
+        </dl>
+
+        <Flex direction="column" gap="lg">
+          <Text size="sm" variant="secondary">
+            <Trans>If you continue, it will be able to:</Trans>
+          </Text>
+          <ul {...stylex.props(styles.scopeList)}>
+            {scopeCopy.map((scope, index) => {
+              const Icon = scope.icon;
+              return (
+                <li
+                  key={scope.key}
+                  {...stylex.props(
+                    styles.scopeItem,
+                    index === scopeCopy.length - 1 && styles.scopeItemLast,
+                  )}
+                >
+                  <Icon {...stylex.props(styles.scopeIcon)} aria-hidden />
+                  <Flex direction="column" gap="xs">
+                    <Text size="base" weight="medium">
+                      {scope.title}
+                    </Text>
+                    <Text size="sm" variant="secondary" leading="base">
+                      {scope.detail}
+                    </Text>
                   </Flex>
-                );
-              })}
-            </Flex>
+                </li>
+              );
+            })}
+          </ul>
+        </Flex>
 
-            <Body variant="secondary">
-              <Trans>
-                You can disconnect this app at any time from Settings. Anything
-                it writes goes to your own AT Protocol repo and is public on the
-                network.
-              </Trans>
-            </Body>
+        <Text size="sm" variant="secondary" leading="base">
+          <Trans>
+            You can disconnect it at any time from Settings. Standard Reader
+            never shares your password — only the access you grant here.
+          </Trans>
+        </Text>
 
-            {approve.isError ? (
-              <Body variant="critical">
-                <Trans>
-                  Something went wrong approving this connection. Try again.
-                </Trans>
-              </Body>
-            ) : null}
+        {approve.isError || deny.isError ? (
+          <Text size="sm" variant="critical" leading="base" role="alert">
+            <Trans>
+              Something went wrong. Nothing was connected — try again.
+            </Trans>
+          </Text>
+        ) : null}
 
-            <Flex gap="sm">
-              <Button
-                variant="primary"
-                isDisabled={busy}
-                onPress={() => approve.mutate()}
-              >
-                <Check aria-hidden {...stylex.props(styles.icon)} />
-                <Trans>Approve</Trans>
-              </Button>
-              <Button
-                variant="secondary"
-                isDisabled={busy}
-                onPress={() => deny.mutate()}
-              >
-                <Trans>Cancel</Trans>
-              </Button>
-            </Flex>
-          </Flex>
-        </Card>
-      </div>
-    </Content>
+        <div {...stylex.props(styles.actions)}>
+          <Button
+            variant="secondary"
+            size="lg"
+            style={styles.actionButton}
+            isDisabled={approve.isPending}
+            isPending={deny.isPending}
+            onPress={() => deny.mutate()}
+          >
+            <Trans>Cancel</Trans>
+          </Button>
+          <Button
+            variant="primary"
+            size="lg"
+            style={styles.actionButton}
+            isDisabled={busy}
+            isPending={approve.isPending}
+            onPress={() => approve.mutate()}
+          >
+            <Trans>Connect</Trans>
+          </Button>
+        </div>
+      </Flex>
+    </AuthorizeShell>
   );
 }
