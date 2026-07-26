@@ -920,11 +920,14 @@ Standard AT Proto labels: subscribe to labelers, see/blur/hide their labels whil
       labelers label accounts almost exclusively (pub-search's `bulk-generated`), so cards resolve
       against both their URI and their author's DID, author/publication headers show account label
       pills, and the labeler detail page has an Accounts tab beside Documents.
-- [ ] **pub-search in the directory by default** — the labeler resolves and is subscribable as soon
-      as anyone looks it up by handle, which then lists it for everyone. Decide whether the
-      directory should instead seed known third-party labelers explicitly, or auto-index
-      `app.bsky.labeler.service` off the firehose (would pull in every Bluesky moderation labeler,
-      so it needs filtering or a curation step first).
+- [x] **Directory listing rule** — resolving a labeler by handle persists a row for it, so the
+      directory does not list everything in `labeler_services`. A labeler is listed when it
+      registered with an app record, is in `KNOWN_STANDARD_SITE_LABELERS` (a small curated set —
+      pub-search today), the viewer is subscribed to it, or it has labeled a subject we index
+      (`labelersWithIndexedSubjects`: a document, or an account that authors documents / owns a
+      publication). Anything else stays reachable by direct handle lookup and fully subscribable —
+      it just doesn't sit in front of every reader. Keeps arbitrary Bluesky moderation labelers out
+      of the directory without an allowlist gate on access.
 - [x] **Settings → Labelers** — `/settings/labelers` (add by handle/DID, list subscriptions) +
       `/settings/labelers/$did` (info, subscribe, per-label hide/blur toggles, labeled documents).
 - [x] **Reader display** — badge + content warning on labeled documents per the reader's prefs.

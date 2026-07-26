@@ -679,6 +679,12 @@ Standard Reader speaks the standard AT Proto label protocol, so readers can subs
   `app.bsky.labeler.service` record. That second path is resolved on first lookup and backfilled
   into the same table, so a labeler like [pub-search](https://pub-search.waow.tech/labels) works
   with no action on their part, and every read path stays a plain DB read. Nothing is hardcoded.
+- **The directory is curated; access is not.** Resolving a labeler by handle persists a row for
+  it, so the Labelers directory lists one only when it registered with us, is a labeler we know is
+  about standard.site, the viewer already subscribes to it, or it has labeled a subject we index.
+  Every other labeler stays findable by handle, subscribable, and synced — it just isn't put in
+  front of readers who have no reason to see it. That keeps the directory about this network
+  without turning discovery into an allowlist.
 - **Labels apply to documents _or_ to accounts.** Ours score prose, so they label documents;
   labelers on the wider network label accounts (pub-search's `bulk-generated` marks a publisher
   whose documents are generated from a data source, not composed by an author). Both subject kinds

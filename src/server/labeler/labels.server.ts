@@ -8,7 +8,7 @@
  * bottom of this file exist solely for that sync.
  */
 
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { cache as reactCache } from "react";
 
 import type { LabelPref, LabelVisibility } from "#/db/schema/labels";
@@ -218,6 +218,46 @@ export async function labelsForUris(
     for (const label of labels) out.push({ ...label, uri });
   }
   return out;
+}
+
+/**
+ * Of `labelerDids`, those that have labeled at least one subject we actually
+ * index — a document in `documents`, or an account that authors documents or
+ * owns a publication.
+ *
+ * This is the directory's proof-of-relevance test. Resolving a labeler by
+ * handle persists a `labeler_services` row for it, which is what makes it
+ * subscribable and syncable, but that alone shouldn't put an arbitrary Bluesky
+ * moderation service in front of every reader. Having labeled something in this
+ * corpus is evidence the labeler is about standard.site publishing.
+ *
+ * `EXISTS` rather than joins: matching a label's subject against `documents.did`
+ * would otherwise fan out across every document that account has published.
+ */
+export async function labelersWithIndexedSubjects(
+  db: Db,
+  schema: Schema,
+  labelerDids: Array<string>,
+): Promise<Set<string>> {
+  if (labelerDids.length === 0) return new Set();
+  const dl = schema.documentLabels;
+  const d = schema.documents;
+  const p = schema.publications;
+
+  const rows = await db
+    .selectDistinct({ src: dl.src })
+    .from(dl)
+    .where(
+      and(
+        inArray(dl.src, labelerDids),
+        sql`(
+          exists (select 1 from ${d} where ${d.uri} = ${dl.uri} and ${d.deleted} = false)
+          or exists (select 1 from ${d} where ${d.did} = ${dl.uri} and ${d.deleted} = false)
+          or exists (select 1 from ${p} where ${p.did} = ${dl.uri} and ${p.deleted} = false)
+        )`,
+      ),
+    );
+  return new Set(rows.map((r) => r.src));
 }
 
 /** Active labels on a single document for the caller's subscribed labelers. */
