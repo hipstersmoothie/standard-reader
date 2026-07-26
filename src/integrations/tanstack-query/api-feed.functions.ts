@@ -188,6 +188,10 @@ export interface FollowingUser {
   /** Unread documents this user contributes (authored or recommended). 0 when
    * read-tracking is off or the reader has read everything. */
   unreadCount?: number;
+  /** When the reader followed this person (ISO string), the only recency
+   * signal the sidebar has for people — used by the "Recent activity" sort
+   * to interleave people alongside publications' own `lastDocumentAt`. */
+  followedAt: string | null;
 }
 
 export interface SidebarData {

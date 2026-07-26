@@ -388,6 +388,37 @@ const removeUserFromList = createServerFn({ method: "POST" })
     }),
   );
 
+const setListMembersInput = z.object({
+  rkey: z.string().min(1),
+  publications: z.array(z.string().min(1)).max(500),
+  users: z.array(z.string().startsWith("did:")).max(500).default([]),
+});
+
+/**
+ * Replace a list's full member arrays (order and membership) in one write —
+ * used by the sidebar's drag-and-drop tree to reorder a list's own members,
+ * or move a member into/out of the list, without requiring the list's name.
+ */
+const setListMembers = createServerFn({ method: "POST" })
+  .middleware([dbMiddleware])
+  .validator(setListMembersInput)
+  .handler(
+    observe("lists.setListMembers", async ({ data, context }, span) => {
+      const session = await getAtprotoSessionForRequest(getRequest());
+      if (!session) {
+        throw new Error("Sign in to manage lists.");
+      }
+      span.set("did", session.did);
+      span.set("rkey", data.rkey);
+      const list = await readOwnListForEdit(context.db, session.did, data.rkey);
+      await writeListMembers(session, data.rkey, list, {
+        publications: data.publications,
+        users: data.users,
+      });
+      return { ok: true as const };
+    }),
+  );
+
 const deleteList = createServerFn({ method: "POST" })
   .validator(rkeyInput)
   .handler(
@@ -779,6 +810,14 @@ function removeUserFromListMutationOptions() {
   });
 }
 
+function setListMembersMutationOptions() {
+  return mutationOptions({
+    mutationKey: ["reader", "setListMembers"] as const,
+    mutationFn: async (input: z.input<typeof setListMembersInput>) =>
+      setListMembers({ data: input }),
+  });
+}
+
 function deleteAllListsMutationOptions() {
   return mutationOptions({
     mutationKey: ["reader", "deleteAllLists"] as const,
@@ -817,6 +856,8 @@ export const listApi = {
   addToListMutationOptions,
   removeUserFromList,
   removeUserFromListMutationOptions,
+  setListMembers,
+  setListMembersMutationOptions,
   // public page
   getList,
   getListQueryOptions,

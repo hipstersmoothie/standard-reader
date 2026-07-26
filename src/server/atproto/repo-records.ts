@@ -650,6 +650,8 @@ export async function putSidebarPrefRecord(
   repo: string,
   pref: {
     listOrder: Array<string>;
+    treeOrder: Array<string>;
+    subscriptionSort: "default" | "recent" | "alpha" | "unread";
     collapsed: Array<string>;
     customizeNav: boolean;
     hiddenNav: Array<string>;
@@ -663,6 +665,8 @@ export async function putSidebarPrefRecord(
     record: {
       $type: COLLECTION.sidebarPref,
       listOrder: pref.listOrder,
+      treeOrder: pref.treeOrder,
+      subscriptionSort: pref.subscriptionSort,
       collapsed: pref.collapsed,
       customizeNav: pref.customizeNav,
       hiddenNav: pref.hiddenNav,

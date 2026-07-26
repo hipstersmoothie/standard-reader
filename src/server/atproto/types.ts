@@ -225,8 +225,15 @@ export interface ListSaveRecord {
  * collapsed-group preferences. Singleton (rkey `self`). */
 export interface SidebarPrefRecord {
   $type?: string;
-  /** Ordered at-uris of the reader's list groups (own + saved). */
+  /** Legacy: ordered at-uris of the reader's list groups (own + saved).
+   * Fallback top-level list order only while `treeOrder` is empty. */
   listOrder?: Array<string>;
+  /** Manual top-level order of the subscriptions tree: list-group at-uris
+   * interleaved with ungrouped publication at-uris / person DIDs. Supersedes
+   * `listOrder` once populated. */
+  treeOrder?: Array<string>;
+  /** How the sidebar's subscriptions are ordered. Absent means "default". */
+  subscriptionSort?: "default" | "recent" | "alpha" | "unread";
   /** At-uris of the list groups the reader has collapsed. */
   collapsed?: Array<string>;
   /** Whether "Customize sidebar" is enabled (gates `hiddenNav`). */

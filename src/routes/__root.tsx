@@ -29,6 +29,7 @@ import { user } from "../integrations/tanstack-query/api-user.functions";
 import {
   listsQueryOptions,
   savedListsQueryOptions,
+  sidebarPrefQueryOptions,
   sidebarQueryOptions,
 } from "../integrations/tanstack-query/shell-queries";
 import {
@@ -222,6 +223,10 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       context.queryClient.setQueryData(
         savedListsQueryOptions().queryKey,
         bootstrap.shell.savedLists,
+      );
+      context.queryClient.setQueryData(
+        sidebarPrefQueryOptions().queryKey,
+        bootstrap.shell.sidebarPref,
       );
     }
   },

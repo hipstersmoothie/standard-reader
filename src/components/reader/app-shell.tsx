@@ -4,21 +4,24 @@ import type { MessageDescriptor } from "@lingui/core";
 import { msg } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
 import * as stylex from "@stylexjs/stylex";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useRouter, useRouterState } from "@tanstack/react-router";
 import {
+  ArrowDownWideNarrow,
   ArrowLeft,
-  ArrowUpDown,
   Bookmark,
+  Check,
   ChevronsDownUp,
   ChevronsUpDown,
   Compass,
   FolderPlus,
+  GripVertical,
   Home,
   Layers,
   Newspaper,
   Plus,
   Search,
+  Settings,
 } from "lucide-react";
 import {
   forwardRef,
@@ -31,6 +34,8 @@ import { useFocusRing } from "react-aria";
 
 import { DirectionalIcon } from "#/design-system/directional-icon";
 import { useAnimatedNavbar } from "#/design-system/navbar/useAnimatedNavbar";
+import type { SubscriptionList } from "#/integrations/tanstack-query/api-lists.functions";
+import { listApi } from "#/integrations/tanstack-query/api-lists.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
 import {
   listsQueryOptions,
@@ -38,22 +43,15 @@ import {
   sidebarQueryOptions,
 } from "#/integrations/tanstack-query/shell-queries";
 import { formatSidebarUnreadCount } from "#/lib/format-count";
-import { parseInternalRoute } from "#/lib/internal-route";
 import { PageReaderProvider } from "#/lib/page-reader/page-reader-provider";
 import type { SidebarNavId } from "#/lib/sidebar-nav";
 import { useFormatters } from "#/lib/use-formatters";
 import { useCompactNav } from "#/lib/use-media-query";
 
-import { Avatar } from "../../design-system/avatar";
 import { Button } from "../../design-system/button";
-import { ButtonGroup } from "../../design-system/button-group";
-import {
-  Disclosure,
-  DisclosurePanel,
-  DisclosureTitle,
-} from "../../design-system/disclosure";
 import { Flex } from "../../design-system/flex";
 import { IconButton } from "../../design-system/icon-button";
+import { Menu, MenuItem, SubMenu } from "../../design-system/menu";
 import { Skeleton } from "../../design-system/skeleton";
 import { SkipLink } from "../../design-system/skip-link";
 import { animationDuration } from "../../design-system/theme/animations.stylex";
@@ -74,7 +72,6 @@ import {
   fontFamily,
   fontSize,
   fontWeight,
-  lineHeight,
   tracking,
 } from "../../design-system/theme/typography.stylex";
 import { ToastRegion } from "../../design-system/toast";
@@ -88,12 +85,10 @@ import { SiteFooter } from "../site-footer";
 import { AddPublicationModal } from "./add-publication-modal";
 import { AtstoreReviewPrompt } from "./atstore-review-prompt";
 import { BrandWordmark } from "./brand-wordmark";
-import { initials, listLinkParams, publicationLinkParams } from "./format";
 import { LanguageHintPrompt } from "./language-hint-prompt";
 import { ListEditModal } from "./list-edit-modal";
 import { PageReaderBar } from "./page-reader-bar";
 import { PublicationThemeScope } from "./publication-theme-scope";
-import { ReorderListsModal } from "./reorder-lists-modal";
 import {
   SelectionDockProvider,
   useSelectionDock,
@@ -103,7 +98,14 @@ import {
   SubscriptionsSheet,
   SubscriptionsSwitcher,
 } from "./subscriptions-sheet";
-import { orderGroups, useSidebarPref } from "./use-sidebar-pref";
+import type { FlatSubscription } from "./subscriptions-tree";
+import { SubscriptionsTree } from "./subscriptions-tree";
+import {
+  orderGroups,
+  orderSubscriptions,
+  useSidebarPref,
+} from "./use-sidebar-pref";
+import { useSubscriptionsTree } from "./use-subscriptions-tree";
 
 const DESKTOP = "@media (min-width: 60rem)";
 
@@ -244,10 +246,6 @@ const styles = stylex.create({
     paddingInlineEnd: horizontalSpace.lg,
     paddingTop: verticalSpace["3xl"],
   },
-  sideLabelActions: {
-    alignItems: "center",
-    display: "flex",
-  },
   /** Inherits the label's type; only the hover/current affordance is its own. */
   sideLabelLink: {
     borderRadius: radius.sm,
@@ -264,58 +262,6 @@ const styles = stylex.create({
   sideLabelLinkActive: {
     color: primaryColor.text2,
   },
-  listLabel: {
-    alignItems: "center",
-    color: uiColor.text1,
-    fontFamily: fontFamily.sans,
-    fontSize: "0.65rem",
-    fontWeight: fontWeight.semibold,
-    letterSpacing: tracking.widest,
-    textTransform: "uppercase",
-    paddingBottom: verticalSpace.xxs,
-    paddingInlineStart: horizontalSpace.lg,
-    paddingInlineEnd: horizontalSpace.lg,
-    paddingTop: verticalSpace.lg,
-  },
-  /**
-   * Extra separation below an *expanded* group's rows. Lives inside the
-   * disclosure panel so collapsed groups stack tightly.
-   */
-  listGroupSpacer: {
-    height: verticalSpace.sm,
-  },
-  listName: {
-    overflow: "hidden",
-    flexBasis: "0%",
-    flexGrow: 1,
-    flexShrink: 1,
-    textOverflow: "ellipsis",
-    whiteSpace: "nowrap",
-    minWidth: 0,
-  },
-  /** Group name as a link to the list's public page. */
-  listTitleLink: {
-    textDecoration: {
-      default: "none",
-      ":hover": "underline",
-    },
-    alignItems: "center",
-    borderRadius: radius.xs,
-    outline: {
-      default: "none",
-      ":is([data-focus-visible])": `2px solid ${focusColor.ring}`,
-    },
-    outlineOffset: "2px",
-    color: {
-      default: uiColor.text1,
-      ":is([data-sidebar-label]:hover *)": uiColor.text2,
-    },
-    display: "flex",
-    flexBasis: "0%",
-    flexGrow: 1,
-    flexShrink: 1,
-    minWidth: 0,
-  },
   /** Header icons: muted until the header row is hovered. */
   headerIcon: {
     // No divider between grouped icon buttons.
@@ -325,91 +271,14 @@ const styles = stylex.create({
       ":is([data-sidebar-label]:hover *)": uiColor.text2,
     },
   },
-  /** Chevron-only disclosure trigger; sized to match the sm IconButton. */
-  listToggle: {
-    borderRadius: radius.sm,
-    justifyContent: "center",
-    height: size["2xl"],
-    paddingBottom: spacing["0"],
-    paddingInlineStart: spacing["0"],
-    paddingInlineEnd: spacing["0"],
-    paddingTop: spacing["0"],
-    width: size["2xl"],
-  },
-  listPanelContent: {
-    paddingBottom: spacing["0"],
-    paddingInlineStart: spacing["0"],
-    paddingInlineEnd: spacing["0"],
-    paddingTop: spacing["0"],
-  },
-  listEmpty: {
-    color: uiColor.text1,
-    fontFamily: fontFamily.serif,
-    fontSize: fontSize.sm,
-    fontStyle: "italic",
-    paddingInlineStart: horizontalSpace.lg,
-    paddingInlineEnd: horizontalSpace.lg,
-  },
+  /** Wraps whichever of skeleton / empty-note / tree is currently showing;
+   * the tree itself (`SubscriptionsTree`) applies this same flex-column
+   * layout to its own root, so this only matters for the other two cases. */
   followList: {
     columnGap: gap.none,
     display: "flex",
     flexDirection: "column",
     rowGap: gap.none,
-  },
-  followRow: {
-    borderRadius: radius.sm,
-    textDecoration: "none",
-    alignItems: "center",
-    backgroundColor: {
-      default: "transparent",
-      ":hover": uiColor.component2,
-    },
-    outline: {
-      default: "none",
-      ":is([data-focus-visible])": `2px solid ${focusColor.ring}`,
-    },
-    outlineOffset: "-2px",
-    color: "inherit",
-    columnGap: gap.lg,
-    display: "flex",
-    rowGap: gap.lg,
-    paddingBottom: verticalSpace.sm,
-    paddingInlineStart: horizontalSpace.lg,
-    paddingInlineEnd: horizontalSpace.lg,
-    paddingTop: verticalSpace.sm,
-  },
-  followName: {
-    // Isolate only, no `dir="auto"`: this is a single-line NAME in a UI row.
-    // It must stay aligned with the sidebar's nav labels (right-aligned under
-    // RTL) while still ordering its own characters correctly. `dir="auto"`
-    // here would left-align it and break the column's rhythm.
-    unicodeBidi: "isolate",
-    overflow: "hidden",
-    color: uiColor.text2,
-    flexBasis: "0%",
-    flexGrow: 1,
-    flexShrink: 1,
-    fontFamily: fontFamily.sans,
-    fontSize: fontSize.sm,
-    textOverflow: "ellipsis",
-    whiteSpace: "nowrap",
-    minWidth: 0,
-  },
-  followUnread: {
-    borderRadius: radius.full,
-    backgroundColor: primaryColor.component3,
-    color: primaryColor.text2,
-    flexShrink: 0,
-    fontFamily: fontFamily.mono,
-    fontSize: "0.65rem",
-    fontWeight: fontWeight.semibold,
-    lineHeight: lineHeight.none,
-    textAlign: "center",
-    minWidth: spacing["4"],
-    paddingBottom: verticalSpace.xxs,
-    paddingInlineStart: horizontalSpace.sm,
-    paddingInlineEnd: horizontalSpace.sm,
-    paddingTop: verticalSpace.xxs,
   },
   emptyNote: {
     color: uiColor.text1,
@@ -798,198 +667,6 @@ function SubscriptionsHeading() {
   );
 }
 
-function FollowingAvatar({
-  name,
-  iconUrl,
-}: {
-  name: string;
-  iconUrl: string | null;
-}) {
-  return (
-    <Avatar
-      size="sm"
-      src={iconUrl ?? undefined}
-      fallback={initials(name)}
-      alt={name}
-    />
-  );
-}
-
-function FollowRow({ pub }: { pub: FollowingPublication }) {
-  const { t } = useLingui();
-  const fmt = useFormatters();
-  const focusRingProps = useFocusRingProps();
-  const rowProps = { ...focusRingProps, ...stylex.props(styles.followRow) };
-  const params = publicationLinkParams(pub.uri);
-  const avatar = (
-    <FollowingAvatar
-      name={pub.name}
-      iconUrl={pub.iconUrl ?? pub.ownerAvatarUrl}
-    />
-  );
-  const name = <span {...stylex.props(styles.followName)}>{pub.name}</span>;
-  const unreadCount = pub.unreadCount;
-  const unreadBadge =
-    unreadCount > 0 ? (
-      <span
-        {...stylex.props(styles.followUnread)}
-        aria-label={t`${unreadCount} unread`}
-      >
-        {formatSidebarUnreadCount(fmt, pub.unreadCount)}
-      </span>
-    ) : null;
-  const content = (
-    <>
-      {avatar}
-      {name}
-      {unreadBadge}
-    </>
-  );
-
-  if (params) {
-    return (
-      <Link to="/p/$did/$rkey" params={params} {...rowProps}>
-        {content}
-      </Link>
-    );
-  }
-
-  const href = pub.url;
-  if (!href) {
-    return <div {...stylex.props(styles.followRow)}>{content}</div>;
-  }
-
-  const internal = parseInternalRoute(href);
-  if (internal?.params) {
-    return (
-      <Link to={internal.to} params={internal.params} {...rowProps}>
-        {content}
-      </Link>
-    );
-  }
-  if (internal) {
-    return (
-      <Link to={internal.to} {...rowProps}>
-        {content}
-      </Link>
-    );
-  }
-
-  return (
-    <a href={href} target="_blank" rel="noreferrer" {...rowProps}>
-      {content}
-    </a>
-  );
-}
-
-function FollowUserRow({ user: followed }: { user: FollowingUser }) {
-  const { t } = useLingui();
-  const fmt = useFormatters();
-  const focusRingProps = useFocusRingProps();
-  const rowProps = { ...focusRingProps, ...stylex.props(styles.followRow) };
-  const name =
-    followed.displayName ??
-    (followed.handle ? `@${followed.handle}` : followed.did);
-  const unread = followed.unreadCount ?? 0;
-  return (
-    <Link to="/u/$did" params={{ did: followed.did }} {...rowProps}>
-      <FollowingAvatar name={name} iconUrl={followed.avatarUrl} />
-      <span {...stylex.props(styles.followName)}>{name}</span>
-      {unread > 0 ? (
-        <span
-          {...stylex.props(styles.followUnread)}
-          aria-label={t`${unread} unread`}
-        >
-          {formatSidebarUnreadCount(fmt, unread)}
-        </span>
-      ) : null}
-    </Link>
-  );
-}
-
-function SidebarList({
-  name,
-  listUri,
-  pubs,
-  users,
-  isExpanded,
-  onExpandedChange,
-}: {
-  name: string;
-  /** AT-URI of the list; links the group to its public `/l/$did/$rkey` page. */
-  listUri: string;
-  pubs: Array<FollowingPublication>;
-  users: Array<FollowingUser>;
-  /** Controlled expansion so "collapse all" can drive every group at once. */
-  isExpanded: boolean;
-  onExpandedChange: (expanded: boolean) => void;
-}) {
-  const { t } = useLingui();
-  const fmt = useFormatters();
-  const link = listLinkParams(listUri);
-  const unreadTotal =
-    pubs.reduce((sum, pub) => sum + pub.unreadCount, 0) +
-    users.reduce((sum, person) => sum + (person.unreadCount ?? 0), 0);
-  const titleFocusRingProps = useFocusRingProps();
-
-  return (
-    <Disclosure isExpanded={isExpanded} onExpandedChange={onExpandedChange}>
-      <Flex
-        align="center"
-        justify="between"
-        gap="sm"
-        data-sidebar-label="true"
-        style={styles.listLabel}
-      >
-        {link ? (
-          <Link
-            to="/l/$did/$rkey"
-            params={link}
-            aria-label={t`Open list ${name}`}
-            {...titleFocusRingProps}
-            {...stylex.props(styles.listTitleLink)}
-          >
-            <span {...stylex.props(styles.listName)}>{name}</span>
-          </Link>
-        ) : (
-          <span {...stylex.props(styles.listName)}>{name}</span>
-        )}
-        <div {...stylex.props(styles.sideLabelActions)}>
-          {unreadTotal > 0 ? (
-            <span>{formatSidebarUnreadCount(fmt, unreadTotal)}</span>
-          ) : null}
-          <DisclosureTitle
-            style={styles.listToggle}
-            chevronStyle={styles.headerIcon}
-            aria-label={t`Toggle list ${name}`}
-          >
-            {null}
-          </DisclosureTitle>
-        </div>
-      </Flex>
-      <DisclosurePanel contentStyle={styles.listPanelContent}>
-        <div {...stylex.props(styles.followList)}>
-          {pubs.length === 0 && users.length === 0 ? (
-            <span {...stylex.props(styles.listEmpty)}>
-              <Trans>Empty list.</Trans>
-            </span>
-          ) : (
-            <>
-              {pubs.map((pub) => (
-                <FollowRow key={pub.uri} pub={pub} />
-              ))}
-              {users.map((person) => (
-                <FollowUserRow key={person.did} user={person} />
-              ))}
-            </>
-          )}
-        </div>
-        <div {...stylex.props(styles.listGroupSpacer)} aria-hidden />
-      </DisclosurePanel>
-    </Disclosure>
-  );
-}
-
 const BottomNavItem = forwardRef<
   HTMLAnchorElement,
   NavLink & { isActive: boolean; showBadgeDot?: boolean }
@@ -1273,11 +950,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       .map((did) => followingUsersByDid.get(did))
       .filter((person): person is FollowingUser => person != null);
   // Own + saved lists as render-ready groups (shared by sidebar and sheet).
+  // Only own lists (`editable`) can have their membership changed by dragging
+  // in the sidebar tree — a saved list's members belong to someone else.
   const listGroups: Array<SubscriptionListGroup> = [
     ...lists.map((list) => ({
       key: list.uri,
       name: list.name,
       listUri: list.uri,
+      rkey: list.rkey,
+      editable: true,
       pubs: list.publications
         .map((uri) => followingByUri.get(uri))
         .filter((pub): pub is FollowingPublication => pub != null),
@@ -1289,6 +970,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         ? `${saved.list.name} · @${saved.owner.handle}`
         : saved.list.name,
       listUri: saved.list.uri,
+      rkey: null,
+      editable: false,
       pubs: saved.publications.map(
         (pub) => followingByUri.get(pub.uri) ?? { ...pub, unreadCount: 0 },
       ),
@@ -1304,6 +987,80 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     ? primaryNav.filter((item) => !sidebarPref.isNavHidden(item.id))
     : primaryNav;
   const orderedGroups = orderGroups(listGroups, sidebarPref.order);
+  // Groups have no per-group manual order, so "manual" has nothing to fall
+  // back to — like "default", it leaves each list's own stored membership
+  // order (and the reader's manual group arrangement above) untouched.
+  // "alpha"/"unread"/"recent" apply the same ranking used for the flat rows
+  // to each group's members and to the groups themselves.
+  const groupSort =
+    sidebarPref.subscriptionSort === "alpha" ||
+    sidebarPref.subscriptionSort === "unread" ||
+    sidebarPref.subscriptionSort === "recent"
+      ? sidebarPref.subscriptionSort
+      : "default";
+  const displayGroups = orderSubscriptions(
+    orderedGroups.map((group) => {
+      const pubs = orderSubscriptions(
+        group.pubs.map((pub) => ({
+          ...pub,
+          id: pub.uri,
+          recentAt: pub.lastDocumentAt,
+        })),
+        groupSort,
+      );
+      const users = orderSubscriptions(
+        group.users.map((person) => ({
+          ...person,
+          id: person.did,
+          name: person.displayName || person.handle || person.did,
+          unreadCount: person.unreadCount ?? 0,
+          recentAt: person.followedAt,
+        })),
+        groupSort,
+      );
+      const groupUnreadCount =
+        pubs.reduce((sum, pub) => sum + pub.unreadCount, 0) +
+        users.reduce((sum, person) => sum + person.unreadCount, 0);
+      // Members are already sorted most-recent-first within their own kind,
+      // so the group's own recency is whichever kind's leading member is
+      // newest — the same signal "recent" uses for the flat rows.
+      const groupRecentAt = [pubs[0]?.recentAt, users[0]?.recentAt]
+        .filter((value): value is string => value != null)
+        .toSorted((a, b) => Date.parse(b) - Date.parse(a))[0];
+      const members: Array<FlatSubscription> = [
+        ...pubs.map(
+          (pub): FlatSubscription => ({
+            kind: "publication",
+            pub,
+            id: pub.uri,
+            name: pub.name,
+            unreadCount: pub.unreadCount,
+            recentAt: pub.recentAt,
+          }),
+        ),
+        ...users.map(
+          (person): FlatSubscription => ({
+            kind: "person",
+            user: person,
+            id: person.did,
+            name: person.name,
+            unreadCount: person.unreadCount,
+            recentAt: person.recentAt,
+          }),
+        ),
+      ];
+      return {
+        ...group,
+        id: group.listUri,
+        unreadCount: groupUnreadCount,
+        recentAt: groupRecentAt ?? null,
+        pubs,
+        users,
+        members,
+      };
+    }),
+    groupSort,
+  );
   const groupUris = orderedGroups.map((group) => group.listUri);
   const allCollapsed =
     groupUris.length > 0 &&
@@ -1326,9 +1083,46 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const ungroupedUsers = followingUsers.filter(
     (person) => !groupedUserDids.has(person.did),
   );
+  const hasUngrouped = ungrouped.length > 0 || ungroupedUsers.length > 0;
+  // "default" leaves the pubs-then-people split alone (each kind's own
+  // natural/server order); "recent" interleaves both kinds by their own
+  // recency signal into one combined, uniformly-ordered list.
+  const flatSubscriptions: Array<FlatSubscription> = orderSubscriptions(
+    [
+      ...ungrouped.map(
+        (pub): FlatSubscription => ({
+          kind: "publication",
+          pub,
+          id: pub.uri,
+          name: pub.name,
+          unreadCount: pub.unreadCount,
+          recentAt: pub.lastDocumentAt,
+        }),
+      ),
+      ...ungroupedUsers.map(
+        (followed): FlatSubscription => ({
+          kind: "person",
+          user: followed,
+          id: followed.did,
+          name: followed.displayName || followed.handle || followed.did,
+          unreadCount: followed.unreadCount ?? 0,
+          recentAt: followed.followedAt,
+        }),
+      ),
+    ],
+    sidebarPref.subscriptionSort,
+  );
   // Creation only — editing lives on the list's own page.
   const [newListOpen, setNewListOpen] = useState(false);
-  const [reorderOpen, setReorderOpen] = useState(false);
+  // Drag-and-drop only activates once the reader explicitly turns on
+  // "Reorder subscriptions…" — it isn't implicitly on just because the sort
+  // mode happens to be "default". Reset if an automatic sort takes over.
+  const [reorderMode, setReorderMode] = useState(false);
+  useEffect(() => {
+    if (sidebarPref.subscriptionSort !== "default") {
+      setReorderMode(false);
+    }
+  }, [sidebarPref.subscriptionSort]);
 
   const openAddPublication = () => {
     setSubsSheetOpen(false);
@@ -1340,14 +1134,49 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     setNewListOpen(true);
   };
 
-  const openReorder = () => {
-    setSubsSheetOpen(false);
-    setReorderOpen(true);
-  };
-
   const toggleAllGroups = () => {
     sidebarPref.setAllCollapsed(groupUris, !allCollapsed);
   };
+
+  // ── Subscriptions tree: one level deep (list groups + ungrouped rows),
+  // fully drag-and-drop rearrangeable when subscriptionSort is "default".
+  // Shared with the mobile sheet: both surfaces render the same
+  // `topNodes`/`groupNodes`/`dragAndDropHooks` (a `<Tree>` per surface, but
+  // one source of truth for data + drag behavior), so the desktop sidebar
+  // and mobile sheet never drift apart.
+  const queryClient = useQueryClient();
+  const setListMembersMutation = useMutation(
+    listApi.setListMembersMutationOptions(),
+  );
+  const saveListMembers = (
+    rkey: string,
+    publications: Array<string>,
+    users: Array<string>,
+  ) => {
+    queryClient.setQueryData(
+      listsQueryOptions().queryKey,
+      (current: Array<SubscriptionList> | undefined) =>
+        current?.map((list) =>
+          list.rkey === rkey ? { ...list, publications, users } : list,
+        ) ?? current,
+    );
+    setListMembersMutation.mutate({ rkey, publications, users });
+  };
+  // react-aria-components' per-item `allowsDragging` render prop reflects
+  // only whether drag hooks exist at all (`!!dragState`), not `isDisabled` —
+  // so it can't gate the grip handle's visibility. `dragEnabled` is computed
+  // ourselves and used instead everywhere a row decides whether to show its
+  // drag handle.
+  const dragEnabled = reorderMode && sidebarPref.subscriptionSort === "default";
+  const { topNodes, groupNodes, dragAndDropHooks } = useSubscriptionsTree({
+    displayGroups,
+    flatSubscriptions,
+    subscriptionSort: sidebarPref.subscriptionSort,
+    treeOrder: sidebarPref.treeOrder,
+    saveTreeOrder: sidebarPref.saveTreeOrder,
+    saveListMembers,
+    dragEnabled,
+  });
 
   return (
     <PageReaderProvider>
@@ -1381,51 +1210,114 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     <Trans>Subscriptions</Trans>
                   </span>
                 )}
-                {signedIn ? (
-                  <ButtonGroup
-                    aria-label={t`Subscription list actions`}
-                    style={styles.sideLabelActions}
+                {signedIn && reorderMode ? (
+                  <IconButton
+                    aria-label={t`Finish reordering`}
+                    size="sm"
+                    variant="tertiary"
+                    style={styles.headerIcon}
+                    onPress={() => setReorderMode(false)}
                   >
-                    {hasListGroups ? (
+                    <Check size={14} />
+                  </IconButton>
+                ) : null}
+                {signedIn && !reorderMode ? (
+                  <Menu
+                    trigger={
                       <IconButton
-                        aria-label={t`Reorder lists`}
+                        aria-label={t`Subscription list actions`}
                         size="sm"
                         variant="tertiary"
                         style={styles.headerIcon}
-                        onPress={openReorder}
                       >
-                        <ArrowUpDown size={14} />
+                        <Settings size={14} />
                       </IconButton>
-                    ) : null}
-                    <IconButton
-                      aria-label={t`New list`}
-                      size="sm"
-                      variant="tertiary"
-                      style={styles.headerIcon}
-                      onPress={() => setNewListOpen(true)}
-                    >
-                      <FolderPlus size={14} />
-                    </IconButton>
-                    {hasListGroups ? (
-                      <IconButton
-                        aria-label={
-                          allCollapsed
-                            ? t`Expand all lists`
-                            : t`Collapse all lists`
+                    }
+                    placement="bottom end"
+                  >
+                    {hasUngrouped || hasListGroups ? (
+                      <SubMenu
+                        trigger={
+                          <MenuItem prefix={<ArrowDownWideNarrow size={14} />}>
+                            <Trans>Sort</Trans>
+                          </MenuItem>
                         }
-                        size="sm"
-                        variant="tertiary"
-                        style={styles.headerIcon}
-                        onPress={toggleAllGroups}
+                        placement="right top"
+                        selectionMode="single"
+                        selectedKeys={new Set([sidebarPref.subscriptionSort])}
+                      >
+                        <MenuItem
+                          id="default"
+                          onAction={() =>
+                            sidebarPref.setSubscriptionSort("default")
+                          }
+                        >
+                          <Trans>Default</Trans>
+                        </MenuItem>
+                        <MenuItem
+                          id="recent"
+                          onAction={() =>
+                            sidebarPref.setSubscriptionSort("recent")
+                          }
+                        >
+                          <Trans>Recent activity</Trans>
+                        </MenuItem>
+                        <MenuItem
+                          id="alpha"
+                          onAction={() =>
+                            sidebarPref.setSubscriptionSort("alpha")
+                          }
+                        >
+                          <Trans>A–Z</Trans>
+                        </MenuItem>
+                        <MenuItem
+                          id="unread"
+                          onAction={() =>
+                            sidebarPref.setSubscriptionSort("unread")
+                          }
+                        >
+                          <Trans>Most unread</Trans>
+                        </MenuItem>
+                      </SubMenu>
+                    ) : null}
+                    {hasUngrouped || hasListGroups ? (
+                      <MenuItem
+                        prefix={<GripVertical size={14} />}
+                        isDisabled={sidebarPref.subscriptionSort !== "default"}
+                        onAction={() => setReorderMode((prev) => !prev)}
+                      >
+                        {reorderMode ? (
+                          <Trans>Done reordering</Trans>
+                        ) : (
+                          <Trans>Reorder subscriptions…</Trans>
+                        )}
+                      </MenuItem>
+                    ) : null}
+                    <MenuItem
+                      prefix={<FolderPlus size={14} />}
+                      onAction={() => setNewListOpen(true)}
+                    >
+                      <Trans>New list</Trans>
+                    </MenuItem>
+                    {hasListGroups ? (
+                      <MenuItem
+                        prefix={
+                          allCollapsed ? (
+                            <ChevronsUpDown size={14} />
+                          ) : (
+                            <ChevronsDownUp size={14} />
+                          )
+                        }
+                        onAction={toggleAllGroups}
                       >
                         {allCollapsed ? (
-                          <ChevronsUpDown size={14} />
+                          <Trans>Expand all lists</Trans>
                         ) : (
-                          <ChevronsDownUp size={14} />
+                          <Trans>Collapse all lists</Trans>
                         )}
-                      </IconButton>
+                      </MenuItem>
                     ) : null}
-                  </ButtonGroup>
+                  </Menu>
                 ) : null}
               </Flex>
               <div {...stylex.props(styles.followList)}>
@@ -1442,34 +1334,23 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     )}
                   </span>
                 ) : (
-                  <>
-                    {ungrouped.map((pub) => (
-                      <FollowRow key={pub.uri} pub={pub} />
-                    ))}
-                    {/* People live under Subscriptions too — one grouping keeps
-                      the sidebar's information architecture simple, even though
-                      "subscribing" (publications) and "following" (people) are
-                      technically different graph edges. People sorted into a
-                      list render under that list group instead (see below). */}
-                    {ungroupedUsers.map((followed) => (
-                      <FollowUserRow key={followed.did} user={followed} />
-                    ))}
-                  </>
+                  // One level deep: list groups (collapsible, own members as
+                  // children) and ungrouped publications/people share a single
+                  // tree so they can be freely drag-and-dropped relative to
+                  // each other — reorder lists, reorder or move members
+                  // between lists, and move members in or out of lists.
+                  // Enabled only when subscriptionSort is "default"; an
+                  // automatic sort computes its own arrangement instead.
+                  <SubscriptionsTree
+                    topNodes={topNodes}
+                    groupNodes={groupNodes}
+                    dragAndDropHooks={dragAndDropHooks}
+                    dragEnabled={dragEnabled}
+                    isCollapsed={sidebarPref.isCollapsed}
+                    setCollapsed={sidebarPref.setCollapsed}
+                  />
                 )}
               </div>
-              {orderedGroups.map((group) => (
-                <SidebarList
-                  key={group.key}
-                  name={group.name}
-                  listUri={group.listUri}
-                  pubs={group.pubs}
-                  users={group.users}
-                  isExpanded={!sidebarPref.isCollapsed(group.listUri)}
-                  onExpandedChange={(expanded) =>
-                    sidebarPref.setCollapsed(group.listUri, !expanded)
-                  }
-                />
-              ))}
             </div>
 
             <Flex direction="column" gap="lg" style={styles.foot}>
@@ -1544,15 +1425,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             isOpen={subsSheetOpen}
             onOpenChange={setSubsSheetOpen}
             following={following}
-            ungrouped={ungrouped}
-            groups={orderedGroups}
+            topNodes={topNodes}
+            groupNodes={groupNodes}
+            dragAndDropHooks={dragAndDropHooks}
+            dragEnabled={dragEnabled}
             onAddPublication={openAddPublication}
             onNewList={signedIn ? openNewList : undefined}
-            onReorder={signedIn && hasListGroups ? openReorder : undefined}
             allCollapsed={allCollapsed}
             onToggleAll={hasListGroups ? toggleAllGroups : undefined}
             isCollapsed={sidebarPref.isCollapsed}
             onSetCollapsed={sidebarPref.setCollapsed}
+            subscriptionSort={sidebarPref.subscriptionSort}
+            onSetSubscriptionSort={sidebarPref.setSubscriptionSort}
+            reorderMode={reorderMode}
+            onReorderModeChange={setReorderMode}
           />
           <AddPublicationModal
             isOpen={addModalOpen}
@@ -1565,15 +1451,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             list={null}
             following={following}
             followingUsers={followingUsers}
-          />
-          <ReorderListsModal
-            isOpen={reorderOpen}
-            onOpenChange={setReorderOpen}
-            groups={orderedGroups.map((group) => ({
-              listUri: group.listUri,
-              name: group.name,
-            }))}
-            onSave={sidebarPref.saveOrder}
           />
           <AtstoreReviewPrompt />
           <LanguageHintPrompt />

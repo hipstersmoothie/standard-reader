@@ -463,13 +463,59 @@ source of truth; Neon holds a derived view for speed and cross-network querying.
   **mirrored into Neon** (`lists` + `list_saves` tables) by the tap ingester so the shell snapshot
   never blocks on PDS I/O. A backfill from the PDS runs on first access when no rows exist yet.
 - **Sidebar personalization:** `app.standard-reader.sidebarPref` — a per-reader singleton (rkey
-  `self`, mirrored into `sidebar_prefs`) holding the reader's list-group order (`listOrder`),
-  collapsed groups (`collapsed`), and — via the **Customize sidebar** toggle in Settings —
-  which primary nav items are hidden (`customizeNav` gates the `hiddenNav` id set). The
-  customizable items are the top nav links only (Home, Latest, Saved for later, Collections,
-  Discover, Search); Subscriptions and its list groups are never hideable. When the toggle is
-  off, every nav item shows regardless of `hiddenNav`. Hidden items drop from both the desktop
-  sidebar and the mobile bottom-nav.
+  `self`, mirrored into `sidebar_prefs`) holding collapsed groups (`collapsed`), the sort mode
+  (`subscriptionSort`), the reader's manual top-level tree arrangement (`treeOrder` — list-group
+  at-uris interleaved with ungrouped publication at-uris / person DIDs; supersedes the legacy
+  `listOrder`-only field, kept as a fallback for readers who haven't touched the tree yet), and —
+  via the **Customize sidebar** toggle in Settings — which primary nav items are hidden
+  (`customizeNav` gates the `hiddenNav` id set). The customizable items are the top nav links only
+  (Home, Latest, Saved for later, Collections, Discover, Search); Subscriptions and its list groups
+  are never hideable. When the toggle is off, every nav item shows regardless of `hiddenNav`.
+  Hidden items drop from both the desktop sidebar and the mobile bottom-nav.
+- **Subscriptions tree (desktop sidebar + mobile sheet):** the sidebar's Subscriptions section is one
+  drag-and-drop tree, one level deep, built directly on react-aria-components' headless
+  `Tree`/`TreeItem`/`TreeItemContent` + `useDragAndDrop` — not the `design-system/tree` wrapper,
+  since its level-based indent/chevron-spacer styling would change the sidebar's existing flush
+  row look — rather than a separate flat list plus list-group sections. List groups and ungrouped
+  publications/people are siblings at the top level; each list's own members are its children,
+  rendered with the same row style regardless of nesting depth (no indent — both the group header
+  row and a member row use the identical `columnGap` after the drag handle, so a nested member's
+  avatar and its group's name start at the same x-position). The header's overflow menu (`⋮`)
+  holds a **Sort** submenu (**Default** — the reader's manual `treeOrder` arrangement, or
+  natural/stored order, untouched, and the actual default value; **Recent activity** —
+  publications (`lastDocumentAt`) and people (`followedAt`) genuinely interleaved into one
+  combined most-recent-first ranking; **A–Z**; **Most unread** — same interleaving, ranked by name
+  / unread count, applied to both a list group's own members and the groups themselves), plus a
+  **Reorder subscriptions…** toggle, **New list**, and **Collapse/Expand all**. Dragging is never
+  implicitly on: **Reorder subscriptions…** is a local (unpersisted) toggle the reader must
+  explicitly turn on — it relabels to **Done reordering** while active, and the overflow trigger
+  itself swaps from the settings gear to a checkmark (pressing it directly exits reorder mode) —
+  and it's disabled (and auto-reset off) whenever sort isn't **Default**, since an automatic sort
+  computes its own arrangement and a drag wouldn't stick. Drag handles only render while reordering
+  is genuinely on: react-aria-components' own per-item `allowsDragging` render prop reflects only
+  whether drag hooks exist at all, not `useDragAndDrop`'s `isDisabled`, so the tree computes its
+  own `dragEnabled` flag instead of trusting that prop. While reordering is on, dragging in the
+  tree supports every rearrangement: reorder lists, reorder members within a list, move a member
+  between two lists, move a member into or out of a list, and reorder members relative to lists at
+  the top level — persisted via `treeOrder` (for top-level position) and a `setListMembers`
+  mutation (full publications/users array replace, for a list's own membership/order), with a
+  custom drag preview pill, a drop-target line indicator between rows, and a highlighted list row
+  while it's a valid "drop into" target (`useDragAndDrop`'s `renderDragPreview` /
+  `renderDropIndicator` / the `data-drop-target` attribute react-aria-components sets on the
+  target `TreeItem`). Cross-kind (publication vs. person) order **within** one list isn't
+  separately persisted — each kind keeps its own relative order, the same limitation
+  `ListEditModal`'s member editor already has. Saved lists (owned by another reader) are read-only
+  containers in the tree — only their own top-level position is draggable, not their membership.
+  Mobile's `SubscriptionsSheet` drawer has the same tree, sort, and reorder capability as the
+  desktop sidebar — the tree's data-building (`useSubscriptionsTree`) and rendering
+  (`SubscriptionsTree`) are shared code, not a reimplementation: the desktop sidebar computes the
+  tree once and passes the same `topNodes`/`groupNodes`/`dragAndDropHooks` down to the sheet, which
+  mounts its own `<Tree>` from that identical data/config (react-aria's `dragAndDropHooks` is a
+  stateless hook-factory bag, so it's safe for two separate `<Tree>` instances to share one), and
+  `reorderMode` itself is one shared, unpersisted toggle in `AppShell` rather than a per-surface
+  copy — only one of the two `<Tree>` mounts is ever visible/interactive at a given viewport width.
+  The old accordion-style `Disclosure` list groups and flat publication/person rows the sheet used
+  before are gone. The fully-sortable `/subscriptions` directory table is unaffected.
 - **Routing:** URL-backed routes (TanStack Router) for every view — home / latest / discover /
   search / article / publication — with real back/forward navigation and shareable links.
   _(The original prototype used an in-memory view stack; the port moves to real URLs.)_

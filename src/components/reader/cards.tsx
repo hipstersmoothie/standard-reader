@@ -2557,6 +2557,7 @@ export function FriendPersonRow({
             handle: person.handle,
             displayName: person.displayName,
             avatarUrl: person.avatarUrl,
+            followedAt: new Date().toISOString(),
           }}
         />
       </div>

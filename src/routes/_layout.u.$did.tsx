@@ -735,6 +735,7 @@ function AuthorProfileContent({
                       handle: profile.handle,
                       displayName: profile.displayName ?? null,
                       avatarUrl: profile.avatarUrl ?? null,
+                      followedAt: new Date().toISOString(),
                     }}
                   />
                 </>
@@ -796,6 +797,7 @@ function AuthorProfileContent({
                     handle: profile.handle,
                     displayName: profile.displayName ?? null,
                     avatarUrl: profile.avatarUrl ?? null,
+                    followedAt: new Date().toISOString(),
                   }}
                 />
               </>

@@ -112,8 +112,16 @@ export const sidebarPrefs = pgTable("sidebar_prefs", {
   cid: text("cid"),
   rkey: text("rkey").notNull(),
 
-  /** Ordered at-uris of the reader's list groups (own + saved). */
+  /** Legacy: ordered at-uris of the reader's list groups (own + saved).
+   * Fallback top-level list order only while `treeOrder` is empty. */
   listOrder: jsonb("list_order").notNull().default([]),
+  /** Manual top-level order of the subscriptions tree: list-group at-uris
+   * interleaved with ungrouped publication at-uris / person DIDs. Supersedes
+   * `listOrder` once populated. */
+  treeOrder: jsonb("tree_order").notNull().default([]),
+  /** How the sidebar's subscriptions are ordered:
+   * 'default' | 'recent' | 'alpha' | 'unread'. */
+  subscriptionSort: text("subscription_sort").notNull().default("default"),
   /** At-uris of the list groups the reader has collapsed. */
   collapsed: jsonb("collapsed").notNull().default([]),
 

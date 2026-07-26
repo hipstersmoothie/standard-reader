@@ -2,31 +2,25 @@
 
 import { Plural, Trans, useLingui } from "@lingui/react/macro";
 import * as stylex from "@stylexjs/stylex";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import {
-  ArrowUpDown,
-  ChevronRight,
+  ArrowDownWideNarrow,
+  Check,
   ChevronsDownUp,
   ChevronsUpDown,
   Compass,
   FolderPlus,
+  GripVertical,
   Plus,
+  Settings,
 } from "lucide-react";
 import { Button as AriaButton } from "react-aria-components";
+import type { DragAndDropHooks } from "react-aria-components";
 
-import { AuthorProfileLink } from "#/components/reader/author-profile-link";
-import { DirectionalIcon } from "#/design-system/directional-icon";
 import { formatSidebarUnreadCount } from "#/lib/format-count";
 import { useFormatters } from "#/lib/use-formatters";
 
-import { Avatar } from "../../design-system/avatar";
 import { Button } from "../../design-system/button";
-import { ButtonGroup } from "../../design-system/button-group";
-import {
-  Disclosure,
-  DisclosurePanel,
-  DisclosureTitle,
-} from "../../design-system/disclosure";
 import {
   Drawer,
   DrawerBody,
@@ -34,13 +28,13 @@ import {
   DrawerHeader,
 } from "../../design-system/drawer";
 import { IconButton } from "../../design-system/icon-button";
+import { Menu, MenuItem, SubMenu } from "../../design-system/menu";
 import { animationDuration } from "../../design-system/theme/animations.stylex";
 import { primaryColor, uiColor } from "../../design-system/theme/color.stylex";
 import { radius } from "../../design-system/theme/radius.stylex";
 import {
   gap,
   horizontalSpace,
-  size,
   verticalSpace,
 } from "../../design-system/theme/semantic-spacing.stylex";
 import { spacing } from "../../design-system/theme/spacing.stylex";
@@ -54,9 +48,9 @@ import type {
   FollowingPublication,
   FollowingUser,
 } from "../../integrations/tanstack-query/api-feed.functions";
-import { parseInternalRoute } from "../../lib/internal-route";
-import { initials, listLinkParams, publicationLinkParams } from "./format";
-import { Handle } from "./primitives";
+import type { SidebarPref } from "../../integrations/tanstack-query/api-sidebar-prefs.functions";
+import type { TreeListNode, TreeTopNode } from "./subscriptions-tree";
+import { SubscriptionsTree } from "./subscriptions-tree";
 
 /** One sidebar list group (own or saved), precomputed by the app shell. */
 export interface SubscriptionListGroup {
@@ -64,6 +58,10 @@ export interface SubscriptionListGroup {
   name: string;
   /** AT-URI of the list; links the group to its public `/l/$did/$rkey` page. */
   listUri: string;
+  /** Rkey of an own list (null for a saved list — not editable by this reader). */
+  rkey: string | null;
+  /** Whether this reader owns the list (can edit its membership). */
+  editable: boolean;
   pubs: Array<FollowingPublication>;
   /** Followed users in this list (the people-in-lists grouping). */
   users: Array<FollowingUser>;
@@ -116,77 +114,6 @@ const styles = stylex.create({
     flexBasis: "0%",
     flexGrow: 1,
     flexShrink: 1,
-  },
-  /** Right-aligned reorder / collapse-all actions above the list groups. */
-  groupToolbar: {
-    justifyContent: "flex-end",
-    marginTop: verticalSpace.sm,
-  },
-  /** No divider between grouped icon buttons. */
-  toolbarIcon: {
-    borderInlineEndColor: "transparent",
-  },
-  list: {
-    display: "flex",
-    flexDirection: "column",
-  },
-  pubRow: {
-    font: "inherit",
-    borderWidth: 0,
-    alignItems: "center",
-    backgroundColor: {
-      default: "transparent",
-      ":active": uiColor.bgSubtle,
-    },
-    color: "inherit",
-    columnGap: gap.lg,
-    cursor: "pointer",
-    display: "flex",
-    rowGap: gap.lg,
-    textAlign: "start",
-    borderBottomColor: uiColor.border1,
-    borderBottomStyle: "solid",
-    borderBottomWidth: 1,
-    paddingBottom: verticalSpace.lg,
-    paddingInlineStart: horizontalSpace.sm,
-    paddingInlineEnd: horizontalSpace.sm,
-    paddingTop: verticalSpace.lg,
-    width: "100%",
-  },
-  pubInfo: {
-    flexBasis: "0%",
-    flexGrow: 1,
-    flexShrink: 1,
-    minWidth: 0,
-  },
-  pubName: {
-    overflow: "hidden",
-    color: uiColor.text2,
-    fontFamily: fontFamily.serif,
-    fontSize: fontSize.base,
-    fontWeight: fontWeight.semibold,
-    lineHeight: 1.2,
-    textOverflow: "ellipsis",
-    whiteSpace: "nowrap",
-  },
-  pubUnread: {
-    borderRadius: radius.full,
-    backgroundColor: primaryColor.component1,
-    color: primaryColor.text2,
-    flexShrink: 0,
-    fontFamily: fontFamily.mono,
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.semibold,
-    textAlign: "center",
-    minWidth: spacing["4"],
-    paddingBottom: verticalSpace.xxs,
-    paddingInlineStart: horizontalSpace.sm,
-    paddingInlineEnd: horizontalSpace.sm,
-    paddingTop: verticalSpace.xxs,
-  },
-  chevron: {
-    color: uiColor.text1,
-    flexShrink: 0,
   },
   discoverLink: {
     borderWidth: 0,
@@ -242,101 +169,7 @@ const styles = stylex.create({
     paddingBottom: verticalSpace["3xl"],
     paddingTop: verticalSpace["3xl"],
   },
-  /** Tiny uppercase group header row (mirrors the desktop sidebar). */
-  groupLabel: {
-    alignItems: "center",
-    color: uiColor.text1,
-    columnGap: gap.sm,
-    display: "flex",
-    fontFamily: fontFamily.sans,
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.semibold,
-    justifyContent: "space-between",
-    letterSpacing: tracking.widest,
-    rowGap: gap.sm,
-    textTransform: "uppercase",
-    paddingBottom: verticalSpace.xxs,
-    paddingTop: verticalSpace.lg,
-  },
-  /** Group name as a link to the list's public page. */
-  groupTitleLink: {
-    textDecoration: {
-      default: "none",
-      ":hover": "underline",
-    },
-    alignItems: "center",
-    color: uiColor.text1,
-    display: "flex",
-    flexBasis: "0%",
-    flexGrow: 1,
-    flexShrink: 1,
-    minWidth: 0,
-  },
-  groupName: {
-    overflow: "hidden",
-    flexBasis: "0%",
-    flexGrow: 1,
-    flexShrink: 1,
-    textOverflow: "ellipsis",
-    whiteSpace: "nowrap",
-    minWidth: 0,
-  },
-  groupActions: {
-    alignItems: "center",
-    columnGap: gap.sm,
-    display: "flex",
-    rowGap: gap.sm,
-  },
-  /** Chevron-only disclosure trigger; sized to match the sm IconButton. */
-  groupToggle: {
-    borderRadius: radius.sm,
-    justifyContent: "center",
-    height: size["2xl"],
-    paddingBottom: spacing["0"],
-    paddingInlineStart: spacing["0"],
-    paddingInlineEnd: spacing["0"],
-    paddingTop: spacing["0"],
-    width: size["2xl"],
-  },
-  groupPanelContent: {
-    paddingBottom: spacing["0"],
-    paddingInlineStart: spacing["0"],
-    paddingInlineEnd: spacing["0"],
-    paddingTop: spacing["0"],
-  },
-  /** Extra separation below an expanded group; collapses with the panel. */
-  groupSpacer: {
-    height: verticalSpace.sm,
-  },
-  groupEmpty: {
-    color: uiColor.text1,
-    fontFamily: fontFamily.serif,
-    fontSize: fontSize.sm,
-    fontStyle: "italic",
-    paddingBottom: verticalSpace.lg,
-    paddingTop: verticalSpace.lg,
-  },
 });
-
-function FollowingAvatar({
-  name,
-  iconUrl,
-  style,
-}: {
-  name: string;
-  iconUrl: string | null;
-  style?: stylex.StyleXStyles;
-}) {
-  return (
-    <Avatar
-      size="sm"
-      src={iconUrl ?? undefined}
-      fallback={initials(name)}
-      alt={name}
-      style={style}
-    />
-  );
-}
 
 /**
  * Mobile stand-in for the sidebar's subscriptions list. The badge counts
@@ -368,220 +201,51 @@ export function SubscriptionsSwitcher({
   );
 }
 
-function SheetPubRow({
-  pub,
-  onNavigate,
-}: {
-  pub: FollowingPublication;
-  onNavigate: () => void;
-}) {
-  const { t } = useLingui();
-  const fmt = useFormatters();
-  const navigate = useNavigate();
-
-  const unreadCount = pub.unreadCount;
-
-  const openPublication = () => {
-    onNavigate();
-    const params = publicationLinkParams(pub.uri);
-    if (params) {
-      void navigate({ to: "/p/$did/$rkey", params });
-      return;
-    }
-
-    const href = pub.url;
-    if (!href) return;
-
-    const internal = parseInternalRoute(href);
-    if (internal?.params) {
-      void navigate({ to: internal.to, params: internal.params });
-      return;
-    }
-    if (internal) {
-      void navigate({ to: internal.to });
-      return;
-    }
-
-    globalThis.open(href, "_blank", "noopener,noreferrer");
-  };
-
-  return (
-    <AriaButton {...stylex.props(styles.pubRow)} onPress={openPublication}>
-      <FollowingAvatar
-        name={pub.name}
-        iconUrl={pub.iconUrl ?? pub.ownerAvatarUrl}
-      />
-      <div {...stylex.props(styles.pubInfo)}>
-        <div {...stylex.props(styles.pubName)}>{pub.name}</div>
-        {pub.ownerHandle ? (
-          <AuthorProfileLink
-            authorRef={pub.did}
-            onClick={(event) => event.stopPropagation()}
-          >
-            <Handle>@{pub.ownerHandle}</Handle>
-          </AuthorProfileLink>
-        ) : null}
-      </div>
-      {pub.unreadCount > 0 ? (
-        <span
-          {...stylex.props(styles.pubUnread)}
-          aria-label={t`${unreadCount} unread`}
-        >
-          {formatSidebarUnreadCount(fmt, pub.unreadCount)}
-        </span>
-      ) : null}
-      <DirectionalIcon as={ChevronRight} size={16} style={styles.chevron} />
-    </AriaButton>
-  );
-}
-
-function SheetUserRow({
-  user: followed,
-  onNavigate,
-}: {
-  user: FollowingUser;
-  onNavigate: () => void;
-}) {
-  const { t } = useLingui();
-  const fmt = useFormatters();
-  const navigate = useNavigate();
-  const name =
-    followed.displayName ??
-    (followed.handle ? `@${followed.handle}` : followed.did);
-  const unreadCount = followed.unreadCount ?? 0;
-  return (
-    <AriaButton
-      {...stylex.props(styles.pubRow)}
-      onPress={() => {
-        onNavigate();
-        void navigate({ to: "/u/$did", params: { did: followed.did } });
-      }}
-    >
-      <FollowingAvatar name={name} iconUrl={followed.avatarUrl} />
-      <div {...stylex.props(styles.pubInfo)}>
-        <div {...stylex.props(styles.pubName)}>{name}</div>
-        {followed.handle ? <Handle>@{followed.handle}</Handle> : null}
-      </div>
-      {unreadCount > 0 ? (
-        <span
-          {...stylex.props(styles.pubUnread)}
-          aria-label={t`${unreadCount} unread`}
-        >
-          {formatSidebarUnreadCount(fmt, unreadCount)}
-        </span>
-      ) : null}
-      <DirectionalIcon as={ChevronRight} size={16} style={styles.chevron} />
-    </AriaButton>
-  );
-}
-
-function SheetListGroup({
-  group,
-  onNavigate,
-  isExpanded,
-  onExpandedChange,
-}: {
-  group: SubscriptionListGroup;
-  onNavigate: () => void;
-  isExpanded: boolean;
-  onExpandedChange: (expanded: boolean) => void;
-}) {
-  const { t } = useLingui();
-  const fmt = useFormatters();
-  const link = listLinkParams(group.listUri);
-  const listName = group.name;
-  const unreadTotal =
-    group.pubs.reduce((sum, pub) => sum + pub.unreadCount, 0) +
-    group.users.reduce((sum, person) => sum + (person.unreadCount ?? 0), 0);
-
-  return (
-    <Disclosure isExpanded={isExpanded} onExpandedChange={onExpandedChange}>
-      <div {...stylex.props(styles.groupLabel)}>
-        {link ? (
-          <Link
-            to="/l/$did/$rkey"
-            params={link}
-            aria-label={t`Open list ${listName}`}
-            onClick={onNavigate}
-            {...stylex.props(styles.groupTitleLink)}
-          >
-            <span {...stylex.props(styles.groupName)}>{group.name}</span>
-          </Link>
-        ) : (
-          <span {...stylex.props(styles.groupName)}>{group.name}</span>
-        )}
-        <div {...stylex.props(styles.groupActions)}>
-          {unreadTotal > 0 ? (
-            <span>{formatSidebarUnreadCount(fmt, unreadTotal)}</span>
-          ) : null}
-          <DisclosureTitle
-            style={styles.groupToggle}
-            aria-label={t`Toggle list ${listName}`}
-          >
-            {null}
-          </DisclosureTitle>
-        </div>
-      </div>
-      <DisclosurePanel contentStyle={styles.groupPanelContent}>
-        <div {...stylex.props(styles.list)}>
-          {group.pubs.length === 0 && group.users.length === 0 ? (
-            <span {...stylex.props(styles.groupEmpty)}>
-              <Trans>Empty list.</Trans>
-            </span>
-          ) : (
-            <>
-              {group.pubs.map((pub) => (
-                <SheetPubRow key={pub.uri} pub={pub} onNavigate={onNavigate} />
-              ))}
-              {group.users.map((person) => (
-                <SheetUserRow
-                  key={person.did}
-                  user={person}
-                  onNavigate={onNavigate}
-                />
-              ))}
-            </>
-          )}
-        </div>
-        <div {...stylex.props(styles.groupSpacer)} aria-hidden />
-      </DisclosurePanel>
-    </Disclosure>
-  );
-}
-
 export function SubscriptionsSheet({
   isOpen,
   onOpenChange,
   following,
-  ungrouped,
-  groups,
+  topNodes,
+  groupNodes,
+  dragAndDropHooks,
+  dragEnabled,
   onAddPublication,
   onNewList,
-  onReorder,
   allCollapsed = false,
   onToggleAll,
   isCollapsed,
   onSetCollapsed,
+  subscriptionSort,
+  onSetSubscriptionSort,
+  reorderMode,
+  onReorderModeChange,
 }: {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   following: Array<FollowingPublication>;
-  /** Follows not shown inside a list group (rendered flat, no label). */
-  ungrouped: Array<FollowingPublication>;
-  groups: Array<SubscriptionListGroup>;
+  /** List groups + ungrouped rows as one top-level order — shared with the
+   * desktop sidebar (see `subscriptions-tree.tsx`). */
+  topNodes: Array<TreeTopNode>;
+  groupNodes: Array<TreeListNode>;
+  dragAndDropHooks: DragAndDropHooks;
+  dragEnabled: boolean;
   onAddPublication: () => void;
   /** Opens the new-list modal; omit when signed out. */
   onNewList?: () => void;
-  /** Opens the reorder-lists dialog; omit when unavailable (signed out / no lists). */
-  onReorder?: () => void;
   /** Whether every list group is currently collapsed (drives the toggle icon). */
   allCollapsed?: boolean;
   /** Collapse or expand every group at once; omit when there are no groups. */
   onToggleAll?: () => void;
   /** Whether a given group (by list AT-URI) is collapsed. */
-  isCollapsed?: (listUri: string) => boolean;
+  isCollapsed: (listUri: string) => boolean;
   /** Persist a single group's collapsed state. */
-  onSetCollapsed?: (listUri: string, collapsed: boolean) => void;
+  onSetCollapsed: (listUri: string, collapsed: boolean) => void;
+  subscriptionSort: SidebarPref["subscriptionSort"];
+  onSetSubscriptionSort: (sort: SidebarPref["subscriptionSort"]) => void;
+  /** Whether the tree is in drag-to-reorder mode (local, unpersisted — shared
+   * with the desktop sidebar so only one toggle exists per reader session). */
+  reorderMode: boolean;
+  onReorderModeChange: (mode: boolean) => void;
 }) {
   const { t } = useLingui();
   const navigate = useNavigate();
@@ -592,6 +256,9 @@ export function SubscriptionsSheet({
     close();
     void navigate({ to: "/discover" });
   };
+
+  const hasContent = topNodes.length > 0;
+  const hasListGroups = groupNodes.length > 0;
 
   return (
     <Drawer
@@ -631,65 +298,109 @@ export function SubscriptionsSheet({
               <FolderPlus size={17} /> <Trans>New list</Trans>
             </Button>
           ) : null}
+          {hasContent ? (
+            reorderMode ? (
+              <IconButton
+                aria-label={t`Finish reordering`}
+                size="lg"
+                variant="secondary"
+                onPress={() => onReorderModeChange(false)}
+              >
+                <Check size={18} />
+              </IconButton>
+            ) : (
+              <Menu
+                trigger={
+                  <IconButton
+                    aria-label={t`Subscription list actions`}
+                    size="lg"
+                    variant="secondary"
+                  >
+                    <Settings size={18} />
+                  </IconButton>
+                }
+                placement="bottom end"
+              >
+                <SubMenu
+                  trigger={
+                    <MenuItem prefix={<ArrowDownWideNarrow size={14} />}>
+                      <Trans>Sort</Trans>
+                    </MenuItem>
+                  }
+                  placement="left top"
+                  selectionMode="single"
+                  selectedKeys={new Set([subscriptionSort])}
+                >
+                  <MenuItem
+                    id="default"
+                    onAction={() => onSetSubscriptionSort("default")}
+                  >
+                    <Trans>Default</Trans>
+                  </MenuItem>
+                  <MenuItem
+                    id="recent"
+                    onAction={() => onSetSubscriptionSort("recent")}
+                  >
+                    <Trans>Recent activity</Trans>
+                  </MenuItem>
+                  <MenuItem
+                    id="alpha"
+                    onAction={() => onSetSubscriptionSort("alpha")}
+                  >
+                    <Trans>A–Z</Trans>
+                  </MenuItem>
+                  <MenuItem
+                    id="unread"
+                    onAction={() => onSetSubscriptionSort("unread")}
+                  >
+                    <Trans>Most unread</Trans>
+                  </MenuItem>
+                </SubMenu>
+                <MenuItem
+                  prefix={<GripVertical size={14} />}
+                  isDisabled={subscriptionSort !== "default"}
+                  onAction={() => onReorderModeChange(!reorderMode)}
+                >
+                  <Trans>Reorder subscriptions…</Trans>
+                </MenuItem>
+                {hasListGroups && onToggleAll ? (
+                  <MenuItem
+                    prefix={
+                      allCollapsed ? (
+                        <ChevronsUpDown size={14} />
+                      ) : (
+                        <ChevronsDownUp size={14} />
+                      )
+                    }
+                    onAction={onToggleAll}
+                  >
+                    {allCollapsed ? (
+                      <Trans>Expand all lists</Trans>
+                    ) : (
+                      <Trans>Collapse all lists</Trans>
+                    )}
+                  </MenuItem>
+                ) : null}
+              </Menu>
+            )
+          ) : null}
         </div>
 
-        <div {...stylex.props(styles.list)}>
-          {following.length === 0 && groups.length === 0 ? (
-            <p {...stylex.props(styles.emptyNote)}>
-              <Trans>You aren&apos;t following anything yet.</Trans>
-            </p>
-          ) : (
-            ungrouped.map((pub) => (
-              <SheetPubRow key={pub.uri} pub={pub} onNavigate={close} />
-            ))
-          )}
-        </div>
-        {groups.length > 0 && (onToggleAll || onReorder) ? (
-          <ButtonGroup
-            aria-label={t`Subscription list actions`}
-            style={styles.groupToolbar}
-          >
-            {onReorder ? (
-              <IconButton
-                aria-label={t`Reorder lists`}
-                size="sm"
-                variant="tertiary"
-                style={styles.toolbarIcon}
-                onPress={onReorder}
-              >
-                <ArrowUpDown size={16} />
-              </IconButton>
-            ) : null}
-            {onToggleAll ? (
-              <IconButton
-                aria-label={
-                  allCollapsed ? t`Expand all lists` : t`Collapse all lists`
-                }
-                size="sm"
-                variant="tertiary"
-                style={styles.toolbarIcon}
-                onPress={onToggleAll}
-              >
-                {allCollapsed ? (
-                  <ChevronsUpDown size={16} />
-                ) : (
-                  <ChevronsDownUp size={16} />
-                )}
-              </IconButton>
-            ) : null}
-          </ButtonGroup>
-        ) : null}
-        {groups.map((group) => (
-          <SheetListGroup
-            key={group.key}
-            group={group}
+        {hasContent ? (
+          <SubscriptionsTree
+            topNodes={topNodes}
+            groupNodes={groupNodes}
+            dragAndDropHooks={dragAndDropHooks}
+            dragEnabled={dragEnabled}
+            isCollapsed={isCollapsed}
+            setCollapsed={onSetCollapsed}
             onNavigate={close}
-            isExpanded={isCollapsed ? !isCollapsed(group.listUri) : true}
-            onExpandedChange={(expanded) =>
-              onSetCollapsed?.(group.listUri, !expanded)
-            }
           />
-        ))}
+        ) : (
+          <p {...stylex.props(styles.emptyNote)}>
+            <Trans>You aren&apos;t following anything yet.</Trans>
+          </p>
+        )}
 
         <AriaButton
           {...stylex.props(styles.discoverLink)}

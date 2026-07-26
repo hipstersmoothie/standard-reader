@@ -616,6 +616,81 @@ Build each on hip-ui components + StyleX tokens (no raw HTML/inline styles).
       `ListEditModal` (name + description fields, drag-to-reorder ListBox with per-row remove,
       react-aria autocomplete over the remaining subscriptions). List groups render above the
       flat "All" list (desktop sidebar only).
+- [x] **Sort the sidebar's subscriptions** — an overflow menu (`⋮` next to the Subscriptions
+      heading) holds a **Sort** submenu (**Default**, **Recent activity**, **A–Z**, **Most
+      unread**), plus **New list** and **Collapse/Expand all**. **Default** is a true no-op (the
+      reader's manually-arranged / natural order, untouched) and is the actual default value —
+      **Recent activity** genuinely interleaves publications (by `lastDocumentAt`) and people (by
+      `followedAt`, new on `FollowingUser`) into one combined most-recent-first ranking; **A–Z** /
+      **Most unread** interleave the same way by name / unread count (`orderSubscriptions` +
+      `OrderableSubscription.recentAt` in `use-sidebar-pref.ts`), applied to both a list group's
+      own members and the groups themselves. New `subscriptionSort` field on
+      `app.standard-reader.sidebarPref` (mirrored to `sidebar_prefs`).
+- [x] **Full drag-and-drop subscriptions tree (desktop sidebar + mobile sheet)** — the sidebar's
+      Subscriptions section is a single one-level-deep tree built directly on react-aria-components'
+      headless
+      `Tree`/`TreeItem`/`TreeItemContent` + `useDragAndDrop` (not the `design-system/tree` wrapper,
+      which imposes its own level-based indent/chevron-spacer styling — this keeps the sidebar's
+      existing flush, no-indent row look) instead of a separate flat list + list-group sections:
+      list groups and ungrouped publications/people are siblings at the top level, and each list's
+      own members are its children, rendered with the same row style regardless of nesting (both
+      use the same `columnGap`, so a nested member's avatar lines up with its group's name exactly
+      — a mismatched gap after the drag handle was the earlier cause of a slight nested-row
+      indent). Dragging is never implicitly on — a **Reorder subscriptions…** menu item (a
+      local, unpersisted toggle, not a `subscriptionSort` value) must be explicitly turned on
+      first; it flips to **Done reordering** while active, the overflow trigger itself swaps from
+      the settings gear to a checkmark (pressing it directly exits reorder mode), and it's disabled
+      (and auto-turned back off) whenever `subscriptionSort` isn't **Default**, since an automatic
+      sort computes its own arrangement. Drag handles only render while reordering is genuinely on:
+      react-aria-components' own per-item `allowsDragging` render prop reflects only whether drag
+      hooks exist at all (`!!dragState`), not `useDragAndDrop`'s `isDisabled`, so it stayed `true`
+      (and drag handles kept showing on every row) regardless of reorder mode — fixed by computing
+      a local `dragEnabled` flag instead of trusting that prop. While reordering is on, dragging
+      supports every rearrangement: reorder lists, reorder members within a list, move a member
+      between two lists, move a member into or out of a list, and reorder members relative to lists
+      at the top level — with a custom drag preview pill (name + avatar), a drop-target line
+      indicator between rows, and a highlighted list row while it's a valid "drop into" target
+      (`useDragAndDrop`'s `renderDragPreview`/`renderDropIndicator`/the `data-drop-target` attribute
+      react-aria-components sets on the target `TreeItem`). New
+      `treeOrder` field on `app.standard-reader.sidebarPref` (top-level order, list at-uris
+      interleaved with ungrouped subject ids; supersedes the legacy `listOrder`-only field, kept as
+      a fallback for readers who haven't touched the new tree yet) plus a new `setListMembers` list
+      mutation (full publications/users array replace in one write, used for member reorder/move).
+      Cross-kind (publication vs. person) order **within** one list isn't separately persisted —
+      each kind keeps its own relative order, same limitation `ListEditModal`'s member editor
+      already has.
+      Saved lists (not owned by this reader) are read-only containers in the tree — only their own
+      top-level position is draggable, not their membership. The old `ReorderListsModal` /
+      `ReorderSubscriptionsModal` dialogs are removed, superseded by inline drag.
+      The tree's data-building (`useSubscriptionsTree` in `use-subscriptions-tree.tsx`) and its
+      rendering (`SubscriptionsTree` in `subscriptions-tree.tsx`) are shared between surfaces: the
+      desktop sidebar (`app-shell.tsx`) computes the tree once and renders it directly, and passes
+      the same `topNodes`/`groupNodes`/`dragAndDropHooks` down to the mobile `SubscriptionsSheet`
+      drawer, which renders its own `<Tree>` instance from that same data/config (react-aria's
+      `dragAndDropHooks` is a stateless hook-factory bag, safe to share across two separate `<Tree>`
+      mounts) so the two surfaces can never drift apart. Mobile gained full parity with desktop:
+      the same **Sort** submenu, the same **Reorder subscriptions…** / **Done reordering** toggle
+      with the settings-gear/checkmark icon swap, and the same drag-and-drop tree (drag preview,
+      drop-line indicator, drop-target highlight) inside the bottom sheet — replacing the old
+      accordion-style `Disclosure` list groups and flat publication/person rows. The `reorderMode`
+      toggle itself is one shared, unpersisted `useState` in `AppShell` (not duplicated per
+      surface), since only one of the two `<Tree>` mounts is ever visible/interactive at a given
+      viewport width. The `/subscriptions` directory table's own column sorting is
+      untouched. Migrations: one consolidated `drizzle/0023_zippy_boom_boom.sql` adds both
+      `subscription_sort` and `tree_order` to `sidebar_prefs` (an earlier draft of this PR added a
+      transient `subscription_order` column and dropped it again in a follow-up migration — since
+      neither had reached `main`, squashed into the single clean migration instead of preserving
+      that history).
+- [x] **Fixed: sidebarPref not seeded by the root bootstrap, causing a first-paint flash** —
+      `__root.tsx`'s root loader seeded `sidebar` / `lists` / `savedLists` from `getShellBootstrap()`
+      but never `sidebarPref`, even though `loadShellSnapshot` already returns it alongside the
+      other three. Every signed-in page load rendered list groups expanded and hidden nav items
+      visible for a tick, then snapped to the reader's real collapsed / hiddenNav / subscriptionSort
+      state once a client-side fetch resolved (also meant drag-and-drop could appear briefly
+      enabled/disabled incorrectly before the real sort mode loaded). Fixed by seeding
+      `sidebarPrefQueryOptions()` in `__root.tsx` alongside the other three, and by widening
+      `ensureShellSnapshot`'s (`shell-queries.ts`) already-seeded guard to require both `sidebar`
+      _and_ `sidebarPref` present — a partial seed no longer silently skips the snapshot fetch.
 - [x] **Shareable list pages** — every list has a public route `/l/$did/$rkey` (hero with
       name/description/owner handle, **Articles** tab with a paginated feed across member
       publications + **Publications** tab with ranked member rows and follow buttons, social meta).

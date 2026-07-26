@@ -14,6 +14,7 @@ import type {
   PublicationCard,
   Schema,
 } from "#/integrations/tanstack-query/api-shapes";
+import { toIsoTimestamp } from "#/integrations/tanstack-query/api-shapes";
 import type { SidebarPref } from "#/integrations/tanstack-query/api-sidebar-prefs.functions";
 import { scheduleFollowedPublicationReconcile } from "#/server/reader/followed-publications-sync.server";
 import {
@@ -67,6 +68,9 @@ export async function loadSidebarPref(did: string): Promise<SidebarPref> {
 
   return {
     listOrder: (row?.listOrder as Array<string>) ?? [],
+    treeOrder: (row?.treeOrder as Array<string>) ?? [],
+    subscriptionSort:
+      (row?.subscriptionSort as SidebarPref["subscriptionSort"]) ?? "default",
     collapsed: (row?.collapsed as Array<string>) ?? [],
     customizeNav: row?.customizeNav ?? false,
     hiddenNav: (row?.hiddenNav as Array<string>) ?? [],
@@ -170,12 +174,16 @@ async function loadFollowingUsers(
       handle: pr.handle,
       displayName: pr.displayName,
       avatarUrl: pr.avatarUrl,
+      followedAt: uf.createdAt,
     })
     .from(uf)
     .leftJoin(pr, eq(pr.did, uf.subjectDid))
     .where(and(eq(uf.followerDid, did), eq(uf.deleted, false)))
     .orderBy(sql`${uf.createdAt} desc nulls last`);
-  return rows;
+  return rows.map((row) => ({
+    ...row,
+    followedAt: toIsoTimestamp(row.followedAt),
+  }));
 }
 
 /** Own publication lists from the reader's repo (sidebar folders). */
