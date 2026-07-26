@@ -1,1 +1,0 @@
-ALTER TABLE "sidebar_prefs" DROP COLUMN "subscription_order";

@@ -1,2 +1,0 @@
-ALTER TABLE "sidebar_prefs" ADD COLUMN "subscription_sort" text DEFAULT 'default' NOT NULL;--> statement-breakpoint
-ALTER TABLE "sidebar_prefs" ADD COLUMN "subscription_order" jsonb DEFAULT '[]'::jsonb NOT NULL;

@@ -1,5 +1,5 @@
 {
-  "id": "c28c11ce-21bb-4085-8288-90fe55977fc3",
+  "id": "4f8379d8-eca8-4de0-b57e-f3d9275b6ef5",
   "prevId": "f5851281-7e5b-47c0-a87b-0aecae36f160",
   "version": "7",
   "dialect": "postgresql",
@@ -2136,19 +2136,19 @@
           "notNull": true,
           "default": "'[]'::jsonb"
         },
+        "tree_order": {
+          "name": "tree_order",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
+        },
         "subscription_sort": {
           "name": "subscription_sort",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
           "default": "'default'"
-        },
-        "subscription_order": {
-          "name": "subscription_order",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'[]'::jsonb"
         },
         "collapsed": {
           "name": "collapsed",

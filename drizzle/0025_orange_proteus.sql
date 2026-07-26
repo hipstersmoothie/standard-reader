@@ -1,1 +1,0 @@
-ALTER TABLE "sidebar_prefs" ADD COLUMN "tree_order" jsonb DEFAULT '[]'::jsonb NOT NULL;

@@ -676,10 +676,11 @@ Build each on hip-ui components + StyleX tokens (no raw HTML/inline styles).
       toggle itself is one shared, unpersisted `useState` in `AppShell` (not duplicated per
       surface), since only one of the two `<Tree>` mounts is ever visible/interactive at a given
       viewport width. The `/subscriptions` directory table's own column sorting is
-      untouched. Migrations: `drizzle/0023_nosy_maverick.sql` (sidebarPref columns),
-      `drizzle/0024_ambitious_oracle.sql` + `drizzle/0025_orange_proteus.sql` (drop
-      `subscription_order` / add `tree_order`, split into two migrations to dodge drizzle-kit's
-      interactive rename-detection prompt in a non-TTY environment).
+      untouched. Migrations: one consolidated `drizzle/0023_zippy_boom_boom.sql` adds both
+      `subscription_sort` and `tree_order` to `sidebar_prefs` (an earlier draft of this PR added a
+      transient `subscription_order` column and dropped it again in a follow-up migration — since
+      neither had reached `main`, squashed into the single clean migration instead of preserving
+      that history).
 - [x] **Fixed: sidebarPref not seeded by the root bootstrap, causing a first-paint flash** —
       `__root.tsx`'s root loader seeded `sidebar` / `lists` / `savedLists` from `getShellBootstrap()`
       but never `sidebarPref`, even though `loadShellSnapshot` already returns it alongside the
