@@ -404,22 +404,27 @@ const styles = stylex.create({
     cursor: "grab",
     display: "flex",
     flexShrink: 0,
-    // flex-start, not center: the button's hit target stays a comfortable
-    // size["2xl"] square, but the icon drawn inside it sits flush against
-    // the button's own (left) edge, which is where content normally starts —
-    // centering it here would visually indent the icon from that edge.
+    // flex-start, not center: the icon sits flush against the button's own
+    // (left) edge, which is where content normally starts — centering it
+    // here would visually indent the icon from that edge.
     justifyContent: "flex-start",
     outline: {
       default: "none",
       ":is([data-focus-visible])": `2px solid ${focusColor.ring}`,
     },
     outlineOffset: "2px",
-    height: size["2xl"],
+    // Matches FollowingAvatar's own ("sm") height exactly, so a row's
+    // cross-axis size (and therefore its total height) is identical whether
+    // or not the drag handle is rendered — toggling reorder mode must never
+    // make rows taller. Narrower than tall (unlike the header's "sm"
+    // IconButton, size["2xl"] square) so the gap to the avatar/label that
+    // follows isn't inflated by empty trailing space inside the button.
+    height: size.xl,
     paddingBottom: spacing["0"],
     paddingInlineStart: spacing["0"],
     paddingInlineEnd: spacing["0"],
     paddingTop: spacing["0"],
-    width: size["2xl"],
+    width: size.lg,
   },
   /** Highlights a list row while it's the active "on" drop target (dropping a
    * member INTO the list), distinct from the between-rows line indicator. */
