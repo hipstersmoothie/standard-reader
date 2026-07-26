@@ -266,6 +266,9 @@ export function buildStandardReaderComponents({
           </div>
         </figure>
       ),
+      // Unlike the native `StructuredImageDiffBlockView`, this renders the pair
+      // side by side with no compare slider, so each half is a plain static
+      // image and gets its own lightbox like every other rendered image.
       ImageDiff: ({ before, after }: ImageDiffProps) => (
         <figure {...stylex.props(articleBodyStyles.imageDiff)}>
           <div {...stylex.props(styles.diffPair)}>
@@ -274,12 +277,14 @@ export function buildStandardReaderComponents({
               alt={before.alt}
               aspectRatio={before.aspectRatio}
               fit="cover"
+              lightboxEnabled
             />
             <ImageFigureView
               src={after.src}
               alt={after.alt}
               aspectRatio={after.aspectRatio}
               fit="cover"
+              lightboxEnabled
             />
           </div>
         </figure>
