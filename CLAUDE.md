@@ -206,6 +206,8 @@ read when data exists in the DB.**
 - `pnpm lex:lint` / `pnpm atproto:publish-lexicons` — validate / publish the app-owned
   `app.standard-reader.*` lexicons in `./lexicons/` via the `goat` CLI
   (`scripts/goat-lex.mjs`; needs `LEXICON_PUBLISH_*` creds + `_lexicon.*` DNS).
+- `pnpm mcp:build` / `mcp:dev` / `mcp:test` — the `@standard-reader/mcp` MCP server in
+  `packages/mcp-server/` (see its README). `mcp:dev` runs the stdio server from source.
 - `pnpm perf:test` — Playwright load-regression suite (`perf/load-regression.spec.ts`); dev server
   must be running (`pnpm dev`). Writes JSON reports to `perf/results/` (`latest-guest.json`,
   `latest-signed-in.json`, `latest-comparison.json`).

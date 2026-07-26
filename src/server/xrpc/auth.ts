@@ -14,8 +14,17 @@ export type XrpcAuthContext = {
   did: Did;
   /** PDS client when authenticated via OAuth access token. */
   client: Client | null;
-  /** OAuth scopes from getSession, when available. */
-  scopes: Array<string>;
+  /**
+   * Scopes granted to the presented credential.
+   *
+   * `null` means the credential carries no scope restriction at all — an
+   * app-password session, whose `getSession` response has no `scopes` field
+   * because the token grants unrestricted repo access. There is nothing to
+   * enforce in that case, so {@link requireScopes} lets it through. An empty
+   * array is different: the auth server answered with a scope list and it was
+   * empty, so every scoped write is denied.
+   */
+  scopes: Array<string> | null;
   /** How the request was authenticated. */
   via: "accessToken" | "serviceJwt";
 };
@@ -139,16 +148,20 @@ async function verifyAccessToken(
     throw new AuthRequiredError("Invalid session response");
   }
   const client = new AtpClient({
-    handler: async (input, init) => {
+    // atcute hands the handler a *pathname*, not an absolute URL — it is the
+    // handler's job to bind it to a service origin. Resolving against the
+    // issuer PDS is what makes repo writes on behalf of a token-authenticated
+    // caller work at all; without it every write threw on `fetch("/xrpc/…")`.
+    handler: async (pathname, init) => {
       const headers = new Headers(init?.headers);
       headers.set("Authorization", `Bearer ${token}`);
-      return fetch(input, { ...init, headers });
+      return fetch(new URL(pathname, pds), { ...init, headers });
     },
   });
   return {
     did: session.did as Did,
     client,
-    scopes: session.scopes ?? [],
+    scopes: session.scopes ?? null,
     via: "accessToken",
   };
 }
@@ -183,6 +196,9 @@ export function requireScopes(
   required: Array<string>,
 ): void {
   if (auth.via === "serviceJwt") return;
+  // No scope list on the credential — an app-password session, which grants
+  // unrestricted repo access. There is no narrower grant to check against.
+  if (auth.scopes === null) return;
   for (const scope of required) {
     if (!auth.scopes.includes(scope)) {
       throw new ForbiddenError(`Missing required scope: ${scope}`);

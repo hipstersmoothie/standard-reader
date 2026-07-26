@@ -893,6 +893,42 @@ cookies on `/xrpc`. Live developer docs at [`/docs/api`](/docs/api).
       `XRPC_INTEGRATION_TEST=1 pnpm test`.
 - [ ] **Publish lexicons to network** — `pnpm atproto:publish-lexicons` when `_lexicon.*` DNS ready.
 - [ ] **Production smoke test** — curl Tier 1 endpoints on `standard-reader.app` after deploy.
+- [x] **Token auth actually usable by third parties** — `verifyAccessToken` built its PDS client
+      with a handler that passed atcute's _pathname_ straight to `fetch()`, so every write on a
+      token-authenticated request threw on a relative URL; and `getSession`'s absent `scopes`
+      field (app-password sessions, which grant unrestricted repo access) was coerced to `[]`,
+      403-ing every scoped write. `scopes` is now `Array<string> | null`, where `null` means "no
+      scope restriction to enforce". Covered by `src/server/xrpc/auth.test.ts`.
+
+### MCP server (`@standard-reader/mcp`)
+
+`packages/mcp-server/` — the XRPC API as a Model Context Protocol server, so any MCP client can
+search/read the network and act for a signed-in reader. Thin wrapper: `@atproto/lex-client` +
+`@standard-reader/lexicons`, no second implementation of anything.
+
+- [x] **Package scaffold** — `@standard-reader/mcp`, `standard-reader-mcp` bin, stdio transport,
+      picked up by `pnpm packages:build` / `packages:publish` automatically.
+- [x] **15 tools grouped by intent** — `search`, `resolve`, `get_article`, `get_publication`,
+      `get_author`, `get_feed`, `get_lists`, `get_library`, `get_status`, `bookmark`, `like`,
+      `mark_read`, `follow`, `manage_list`, `auth`. Labeler endpoints intentionally excluded.
+- [x] **Auth** — app-password session (`@atcute/password-session`), stored `0600` at
+      `$XDG_STATE_HOME/standard-reader-mcp/session.json` via `standard-reader-mcp login`, or from
+      `STANDARD_READER_IDENTIFIER` / `_APP_PASSWORD` for headless hosts. Never a tool argument.
+      OAuth is not usable here: a DPoP-bound token can't be validated by the AppView's
+      `getSession` forwarding (see §5 "AppView XRPC").
+- [x] **Argument validation + response trimming** — AT-URI / DID arguments checked against
+      `@atproto/lex-schema` string formats before the call; renderable body and search markup
+      dropped from responses unless requested.
+- [x] **Tests** — `packages/mcp-server/src/*.test.ts` (tool surface, routing, validation, auth
+      gating, session store) over an in-memory MCP transport with a stubbed fetch.
+- [ ] **Publish to npm** — `node scripts/publish-packages.mjs @standard-reader/mcp` once the
+      lexicons package's fixed `.d.ts` is republished (`0.1.1` on npm still ships the broken
+      `typeof lexicons.app.'standard-reader'` declaration).
+- [ ] **Live write smoke test** — exercise `bookmark` / `like` / `follow` end-to-end against
+      production with a real app password; the read path is verified, the write path depends on
+      the `auth.ts` fix above reaching a deploy.
+- [ ] **Remote MCP transport** — optionally serve the same `createServer()` over streamable HTTP
+      from the app itself, so users don't need a local process or an app password.
 
 ## 14. Labelers (moderation)
 

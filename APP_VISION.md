@@ -667,6 +667,43 @@ Implementation: shared handler layer in `src/server/xrpc/handlers/`; TanStack se
 and extension HTTP routes call the same underlying logic. `/xrpc` uses AT Proto auth only — no
 HttpOnly session cookies.
 
+**Credential shapes the AppView accepts.** `Authorization` is validated one of two ways
+(`src/server/xrpc/auth.ts`):
+
+- **PDS service proxy** (`atproto-proxy: did:web:standard-reader.app#standard_reader_appview`) —
+  the PDS mints a service JWT signed by the reader's repo key. Best for reads. It cannot serve
+  writes: a service JWT gives the AppView the reader's identity but no credential to write to
+  their repo with, so Tier 4 procedures reject it.
+- **Direct token** (`Authorization: Bearer|DPoP <token>`) — the AppView forwards the token to
+  `com.atproto.server.getSession` on the issuer PDS. Because it cannot forge a DPoP proof, this
+  only authenticates **bearer** tokens, i.e. app-password sessions. `getSession` omits `scopes`
+  for those (the token grants unrestricted repo access), which the scope check treats as
+  "nothing to enforce" rather than "no scopes granted".
+
+So a third-party CLI or agent that needs writes authenticates with an app password; a browser
+app that holds its own DPoP key uses OAuth and talks to the PDS directly.
+
+### MCP server (`@standard-reader/mcp`)
+
+`packages/mcp-server/` publishes the XRPC API as a [Model Context
+Protocol](https://modelcontextprotocol.io) server, so any MCP client can search and read the
+network and act on a reader's behalf (bookmark, like, follow, mark read, curate lists).
+
+- **Thin wrapper, no second implementation.** Calls go through `@atproto/lex-client` against the
+  generated `@standard-reader/lexicons` schemas. The package adds transport, auth, argument
+  validation, and grouping — no business logic.
+- **~50 methods → 15 tools.** Grouped by intent, not endpoint (`search`, `resolve`,
+  `get_article`, `get_publication`, `get_author`, `get_feed`, `get_lists`, `get_library`,
+  `get_status`, `bookmark`, `like`, `mark_read`, `follow`, `manage_list`, `auth`). A model picks
+  better from a short list of intents than a long list of endpoints. Labeler endpoints are
+  deliberately excluded — moderation config belongs in settings, not a tool list.
+- **Auth is an app-password session**, per the credential rules above. Stored `0600` at
+  `$XDG_STATE_HOME/standard-reader-mcp/session.json` via `standard-reader-mcp login`, or supplied
+  as env vars for headless hosts. Never accepted as a tool argument, so it never enters a model's
+  context. Public reads need no credential.
+- **Responses are trimmed** (renderable body, search markup) unless explicitly requested, and
+  AT-URI / DID arguments are validated before they reach the API.
+
 ### Labels & moderation (labelers)
 
 Standard Reader speaks the standard AT Proto label protocol, so readers can subscribe to

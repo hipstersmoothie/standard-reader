@@ -48,6 +48,16 @@ of the parsing is duplicated; adding a framework is a rendering concern only.
 | [`renderer-lit`](./renderer-lit)         | Lit / web components | `lit-html` templates            |
 | [`renderer-angular`](./renderer-angular) | Angular              | standalone components           |
 
+### Also in this directory
+
+Two packages here are not renderers — they publish the **API** rather than the
+content format:
+
+| Package                      | What it is                                                                                                                                         |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`lexicons`](./lexicons)     | `@standard-reader/lexicons` — the `app.standard-reader.*` XRPC API as typed AT Protocol lexicon schemas, generated with `@atproto/lex`. No client. |
+| [`mcp-server`](./mcp-server) | `@standard-reader/mcp` — a Model Context Protocol server over that API, so any MCP client can read the network and act for a signed-in reader.     |
+
 The Standard Reader app itself consumes `renderer-react` (see
 `src/components/reader/content/standard-renderer.tsx`), supplying its own
 design-system components through the `components` prop.
