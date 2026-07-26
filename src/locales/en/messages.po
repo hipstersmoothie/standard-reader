@@ -759,8 +759,10 @@ msgstr "Publication lists"
 msgid "These accounts you follow on Bluesky publish on standard.site. Subscribing puts their writing on your Home feed."
 msgstr "These accounts you follow on Bluesky publish on standard.site. Subscribing puts their writing on your Home feed."
 
+#. placeholder {0}: node.unreadCount
 #. placeholder {0}: row.unreadCount
 #: src/components/reader/subscriptions-table.tsx
+#: src/components/reader/subscriptions-tree.tsx
 msgid "{0} unread"
 msgstr "{0} unread"
 
