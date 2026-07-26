@@ -1,7 +1,7 @@
 "use client";
 
 import type { RefObject } from "react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useMove } from "react-aria";
 
 import {
@@ -15,9 +15,10 @@ export interface UseSwipeToDismissOptions {
   /** Fires once the surface has been dragged far or fast enough to dismiss. */
   onDismiss: () => void;
   /**
-   * The element that follows the drag. Its `transform` (and, when
-   * `fadeSurface` is set, `opacity`) is written directly for a jank-free,
-   * re-render-free gesture.
+   * The element that follows the drag. Its `transform` is written directly for
+   * a jank-free, re-render-free gesture. The hook only ever sets `transform`
+   * and `transition` on it, and always clears them back to `""` at rest, so it
+   * never leaves a residual style that could shift the element.
    */
   surfaceRef: RefObject<HTMLElement | null>;
   /** Direction the user swipes to dismiss. Defaults to `"down"`. */
@@ -33,10 +34,6 @@ export interface UseSwipeToDismissOptions {
   velocityThreshold?: number;
   /** Minimum travel before a flick counts, so taps never dismiss. Defaults to `24`. */
   minFlickDistance?: number;
-  /** Fade the surface as it is pulled away, for extra feedback. Defaults to `true`. */
-  fadeSurface?: boolean;
-  /** Opacity the surface reaches at a full pull when `fadeSurface` is on. Defaults to `0.35`. */
-  minOpacity?: number;
 }
 
 type MoveProps = ReturnType<typeof useMove>["moveProps"];
@@ -46,6 +43,12 @@ export interface UseSwipeToDismissResult {
   moveProps: MoveProps;
   /** True while the user is actively dragging along the dismiss axis. */
   isDragging: boolean;
+  /**
+   * Clears any transform/transition the gesture left on the surface. Safe to
+   * call any time (e.g. when the container opens) to guarantee a clean rest
+   * state.
+   */
+  reset: () => void;
 }
 
 /**
@@ -61,9 +64,7 @@ const AXIS_LOCK_SLOP = 8;
  * the `onDismiss` timer fires exactly when the fly-out transition ends.
  */
 const SETTLE_MS = 200; // keep in sync with animationDuration.slow ("200ms")
-const SETTLE_TRANSITION =
-  `transform ${animationDuration.slow} ${animationTimingFunction.easeOut}, ` +
-  `opacity ${animationDuration.slow} ${animationTimingFunction.easeOut}`;
+const SETTLE_TRANSITION = `transform ${animationDuration.slow} ${animationTimingFunction.easeOut}`;
 
 function prefersReducedMotion() {
   return globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
@@ -78,7 +79,9 @@ function prefersReducedMotion() {
  * drags are handed back to the browser (pair the draggable element with
  * `touch-action: pan-x` so a horizontal carousel still scrolls natively), and
  * keyboard "moves" from `useMove` are ignored so arrow-key navigation is
- * untouched.
+ * untouched. It writes nothing to the surface until a vertical drag actually
+ * starts, and clears everything on release — so it can never affect the
+ * surface's resting layout.
  */
 export function useSwipeToDismiss({
   onDismiss,
@@ -88,8 +91,6 @@ export function useSwipeToDismiss({
   distanceThreshold = 120,
   velocityThreshold = 0.35,
   minFlickDistance = 24,
-  fadeSurface = true,
-  minOpacity = 0.35,
 }: UseSwipeToDismissOptions): UseSwipeToDismissResult {
   const [isDragging, setIsDragging] = useState(false);
 
@@ -104,7 +105,6 @@ export function useSwipeToDismiss({
     offset: 0, // always >= 0: travel toward the dismiss direction
     velocity: 0, // px/ms toward the dismiss direction (smoothed)
     lastTime: 0,
-    fadeDistance: 1,
   });
   const settleTimer = useRef<ReturnType<typeof globalThis.setTimeout> | null>(
     null,
@@ -117,46 +117,40 @@ export function useSwipeToDismiss({
     }
   };
 
-  const writeSurface = (
-    offset: number,
-    opacity: number | null,
-    transition: string,
-  ) => {
+  const writeSurface = (offset: number, transition: string) => {
     const el = surfaceRef.current;
     if (!el) return;
     el.style.transition = transition;
     el.style.transform =
       offset === 0 ? "" : `translate3d(0, ${String(offset * dirSign)}px, 0)`;
-    if (fadeSurface) {
-      el.style.opacity = opacity === null ? "" : String(opacity);
-    }
   };
 
-  const surfaceOpacity = (offset: number) => {
-    const g = gesture.current;
-    const progress = Math.min(offset / g.fadeDistance, 1);
-    return 1 - progress * (1 - minOpacity);
-  };
+  // Wipe every inline style the gesture may have set, returning the surface to
+  // its stylesheet-defined resting position. Stable identity so consumers can
+  // safely depend on it in effects.
+  const resetSurface = useCallback(() => {
+    const el = surfaceRef.current;
+    if (!el) return;
+    el.style.transform = "";
+    el.style.transition = "";
+  }, [surfaceRef]);
 
   const endDrag = (dismiss: boolean) => {
-    const el = surfaceRef.current;
     const reduced = prefersReducedMotion();
     setIsDragging(false);
 
     if (dismiss) {
       if (reduced) {
-        writeSurface(0, null, "none");
-        if (el) el.style.willChange = "";
+        resetSurface();
         onDismiss();
         return;
       }
       // Fling the surface the rest of the way out, then close so the content
       // finishes its exit before the parent unmounts it.
       const viewport = globalThis.innerHeight || 0;
-      writeSurface(viewport, 0, SETTLE_TRANSITION);
+      writeSurface(viewport, SETTLE_TRANSITION);
       settleTimer.current = globalThis.setTimeout(() => {
         settleTimer.current = null;
-        if (el) el.style.willChange = "";
         onDismiss();
       }, SETTLE_MS);
       return;
@@ -166,16 +160,14 @@ export function useSwipeToDismiss({
     gesture.current.offset = 0;
     gesture.current.velocity = 0;
     if (reduced) {
-      writeSurface(0, null, "none");
-      if (el) el.style.willChange = "";
+      resetSurface();
       return;
     }
-    writeSurface(0, 1, SETTLE_TRANSITION);
+    writeSurface(0, SETTLE_TRANSITION);
     settleTimer.current = globalThis.setTimeout(() => {
       settleTimer.current = null;
-      // Drop the inline styles so nothing lingers before the next drag.
-      writeSurface(0, null, "");
-      if (el) el.style.willChange = "";
+      // Drop the inline transition so nothing lingers before the next drag.
+      resetSurface();
     }, SETTLE_MS);
   };
 
@@ -191,8 +183,6 @@ export function useSwipeToDismiss({
       g.offset = 0;
       g.velocity = 0;
       g.lastTime = globalThis.performance.now();
-      // Fade across ~60% of the viewport so the surface dims gradually.
-      g.fadeDistance = Math.max((globalThis.innerHeight || 0) * 0.6, 1);
     },
     onMove(event) {
       const g = gesture.current;
@@ -217,8 +207,6 @@ export function useSwipeToDismiss({
           g.axis = "vertical";
           g.lastTime = globalThis.performance.now();
           setIsDragging(true);
-          const el = surfaceRef.current;
-          if (el) el.style.willChange = "transform, opacity";
         } else {
           // Still within the slop — wait for a clear direction.
           return;
@@ -234,7 +222,7 @@ export function useSwipeToDismiss({
         const instant = (event.deltaY * dirSign) / dt;
         g.velocity = g.velocity * 0.7 + instant * 0.3;
       }
-      writeSurface(g.offset, surfaceOpacity(g.offset), "none");
+      writeSurface(g.offset, "none");
     },
     onMoveEnd(event) {
       if (event.pointerType === "keyboard") return;
@@ -243,8 +231,9 @@ export function useSwipeToDismiss({
       g.tracking = false;
       g.axis = null;
       if (!wasVertical) {
-        // A tap, or a gesture we yielded — nothing to settle.
+        // A tap, or a gesture we yielded — make sure nothing lingers.
         setIsDragging(false);
+        resetSurface();
         return;
       }
       const dismiss =
@@ -262,5 +251,9 @@ export function useSwipeToDismiss({
   const pointerMoveProps: MoveProps = { ...moveProps };
   delete pointerMoveProps.onKeyDown;
 
-  return { moveProps: enabled ? pointerMoveProps : {}, isDragging };
+  return {
+    moveProps: enabled ? pointerMoveProps : {},
+    isDragging,
+    reset: resetSurface,
+  };
 }

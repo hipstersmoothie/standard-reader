@@ -269,7 +269,7 @@ export function Lightbox({
 
   // Swipe/drag the image down to close, matching the other dismiss paths
   // (Escape, backdrop press). Horizontal drags stay with the carousel.
-  const { moveProps: swipeProps } = useSwipeToDismiss({
+  const { moveProps: swipeProps, reset: resetSwipe } = useSwipeToDismiss({
     surfaceRef: contentRef,
     enabled: isOpen,
     onDismiss: () => {
@@ -277,6 +277,13 @@ export function Lightbox({
       onOpenChange(false);
     },
   });
+
+  // Guarantee the content starts at its resting position every time the
+  // lightbox opens, so a gesture from a previous open can never leave the
+  // image offset.
+  useEffect(() => {
+    if (isOpen) resetSwipe();
+  }, [isOpen, resetSwipe]);
 
   useEffect(() => {
     if (isOpen) return;
