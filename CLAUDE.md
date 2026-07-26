@@ -353,6 +353,20 @@ prefetch every filter).
 - **Load-more** pagination may show skeleton immediately (no delay) — only initial tab loads use
   the grace period.
 
+### Tab switches must not push history
+
+Switching a tab / view / filter is a **view toggle, not a navigation**. Every `navigate(...)` that
+only changes a tab-ish search param (`tab`, `view`, `filter`, `scope`, `sort`, layout) MUST pass
+**`replace: true`** (with `resetScroll: false`) so the browser back button leaves the page instead
+of walking back through each tab the reader clicked. The same applies to effects that auto-correct
+an unreachable tab (e.g. `/latest?filter=unread` when reading history tracking is off) — pushing
+there traps the reader in a back/forward bounce.
+
+Current call sites: `_layout.index.tsx` (scope), `_layout.latest.tsx` (filter), `_layout.tag.$tag.tsx`
+(view + sort/layout), `_layout.u.$did.tsx` (tab), `_layout.l.$did.$rkey.tsx` (view),
+`_layout.friends.tsx` (view), `_layout.discover.tsx` (search patch), `_layout.search.tsx` (query),
+and `components/labeler-detail-view.tsx` (view).
+
 ### Perf test “ready” signal
 
 Playwright perf tests wait for `[data-app-scroller]` and `aria-busy='true'` to clear

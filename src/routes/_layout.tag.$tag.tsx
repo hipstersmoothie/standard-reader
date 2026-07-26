@@ -996,7 +996,13 @@ function TagPage() {
     if (next !== view) {
       setPendingViews((prev) => ({ ...prev, [tag]: next }));
     }
-    void navigate({ search: (prev: TagSearch) => ({ ...prev, view: next }) });
+    // `replace` so the browser back button leaves the tag page instead of
+    // walking back through every tab the reader clicked.
+    void navigate({
+      replace: true,
+      resetScroll: false,
+      search: (prev: TagSearch) => ({ ...prev, view: next }),
+    });
   };
 
   return (

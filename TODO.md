@@ -799,6 +799,16 @@ Backend/API exists; UI or copy is missing.
       (`src/server/markpub/resolve.ts`).
 - [x] **Discover — “Not following” filter** — toggle on [`_layout.discover.tsx`](src/routes/_layout.discover.tsx)
       All publications section to hide effective follow set ([`saved-lists.ts`](src/server/reader/saved-lists.ts)).
+- [x] **Tab switches no longer push history** — every tab / view / filter switch now navigates with
+      `replace: true` + `resetScroll: false`, so the back button leaves the page instead of
+      replaying each tab the reader clicked. Covers home scope ([`_layout.index.tsx`](src/routes/_layout.index.tsx)),
+      `/latest` filters ([`_layout.latest.tsx`](src/routes/_layout.latest.tsx), incl. the
+      unread → subscriptions auto-correct that previously trapped back/forward), tag views
+      ([`_layout.tag.$tag.tsx`](src/routes/_layout.tag.$tag.tsx)), author tabs
+      ([`_layout.u.$did.tsx`](src/routes/_layout.u.$did.tsx)), list views
+      ([`_layout.l.$did.$rkey.tsx`](src/routes/_layout.l.$did.$rkey.tsx)), and labeler views
+      ([`labeler-detail-view.tsx`](src/components/labeler-detail-view.tsx)). Convention recorded in
+      [`CLAUDE.md`](CLAUDE.md) → “Tab switches must not push history”.
 
 ## 10. Post-v1 — save-for-later (Tier 3)
 

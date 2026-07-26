@@ -601,7 +601,13 @@ function AuthorProfileContent({
   const navigate = useNavigate({ from: Route.fullPath });
   const onTabChange = (key: React.Key) => {
     const next = key as AuthorTab;
-    void navigate({ search: (prev: AuthorSearch) => ({ ...prev, tab: next }) });
+    // `replace` so the browser back button leaves the profile instead of
+    // walking back through every tab the reader clicked.
+    void navigate({
+      replace: true,
+      resetScroll: false,
+      search: (prev: AuthorSearch) => ({ ...prev, tab: next }),
+    });
   };
 
   if (!initialPage) {

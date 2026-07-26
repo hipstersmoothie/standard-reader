@@ -543,7 +543,13 @@ function HomeFeed({
     const next = keys === "all" ? "follows" : [...keys][0];
     if (next === "follows" || next === "trending") {
       setScope(next);
-      void navigate({ search: { scope: next }, resetScroll: false });
+      // `replace` so the browser back button leaves home instead of walking
+      // back through every scope the reader toggled.
+      void navigate({
+        replace: true,
+        resetScroll: false,
+        search: { scope: next },
+      });
     }
   };
 

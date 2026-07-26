@@ -660,7 +660,13 @@ function ListPage() {
 
   const onViewChange = (key: React.Key) => {
     const next = key as ListView;
-    void navigate({ search: { view: next } });
+    // `replace` so the browser back button leaves the list instead of walking
+    // back through every tab the reader clicked.
+    void navigate({
+      replace: true,
+      resetScroll: false,
+      search: { view: next },
+    });
   };
 
   if (!page.list) {

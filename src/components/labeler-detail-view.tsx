@@ -140,9 +140,13 @@ export function LabelerDetailView({
 
   const onViewChange = (key: Key) => {
     const next = key as LabelerView;
+    // `replace` so the browser back button leaves the labeler instead of
+    // walking back through every tab the reader clicked.
     void navigate({
       to: "/labelers/$did",
       params: { did },
+      replace: true,
+      resetScroll: false,
       search: { view: next },
     });
   };

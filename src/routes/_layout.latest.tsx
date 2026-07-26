@@ -435,7 +435,11 @@ function LatestFeedPanel({
               <Button
                 variant="secondary"
                 onPress={() =>
-                  void navigate({ search: { filter: "subscriptions" } })
+                  void navigate({
+                    replace: true,
+                    resetScroll: false,
+                    search: { filter: "subscriptions" },
+                  })
                 }
               >
                 <Trans>Show all subscriptions</Trans>
@@ -515,7 +519,13 @@ function Latest() {
 
   useEffect(() => {
     if (trackReading || filter !== "unread") return;
-    void navigate({ search: { filter: "subscriptions" } });
+    // `replace` — pushing here traps the reader: back would land on the
+    // unreachable `unread` filter and this effect would bounce them forward.
+    void navigate({
+      replace: true,
+      resetScroll: false,
+      search: { filter: "subscriptions" },
+    });
   }, [filter, navigate, trackReading]);
 
   useEffect(() => {
@@ -559,7 +569,13 @@ function Latest() {
 
   const onFilterChange = (keys: Set<React.Key> | "all") => {
     const next = keys === "all" ? "all" : ([...keys][0] as LatestFilter);
-    void navigate({ search: { filter: next }, resetScroll: false });
+    // `replace` so the browser back button leaves /latest instead of walking
+    // back through every filter the reader clicked.
+    void navigate({
+      replace: true,
+      resetScroll: false,
+      search: { filter: next },
+    });
   };
 
   const [markAllReadOpen, setMarkAllReadOpen] = useState(false);
