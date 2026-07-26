@@ -54,6 +54,15 @@ export function DocsApiNav() {
         >
           <Trans>Authentication</Trans>
         </a>
+        <a
+          href={`#${API_DOCS_INTRO_IDS.mcp}`}
+          {...stylex.props(
+            docsStyles.refNavLink,
+            active === API_DOCS_INTRO_IDS.mcp && docsStyles.refNavLinkActive,
+          )}
+        >
+          <Trans>MCP server</Trans>
+        </a>
       </div>
 
       {API_DOCS_SECTIONS.map((section) => {

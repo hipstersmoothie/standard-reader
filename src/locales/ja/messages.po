@@ -46,6 +46,10 @@ msgstr "このシリーズにコレクションを追加"
 msgid "Mark old posts as unread"
 msgstr "以前の投稿を未読として扱う"
 
+#: src/routes/mcp/authorize.tsx
+msgid "Something went wrong. Nothing was connected — try again."
+msgstr ""
+
 #: src/routes/_layout.u.$did.tsx
 msgid "{name} hasn't started reading or publishing here."
 msgstr "{name} さんはまだここで読んだり書いたりしていません。"
@@ -148,11 +152,19 @@ msgstr ""
 msgid "Content and intellectual property"
 msgstr ""
 
+#: src/components/user-settings-view.tsx
+msgid "Disconnect"
+msgstr ""
+
 #: src/components/docs/docs-nav-areas.ts
 #: src/components/docs/introduction-docs-page.tsx
 #: src/components/docs/lexicon-docs-intro.tsx
 msgid "Lexicons"
 msgstr "レキシコン"
+
+#: src/components/user-settings-view.tsx
+msgid "Can read only"
+msgstr ""
 
 #: src/routes/_layout.p.$did.$rkey.tsx
 #: src/routes/_layout.u.$did.tsx
@@ -384,6 +396,10 @@ msgstr "新しいコレクション…"
 #: src/components/reader/privacy-view.tsx
 msgid "We may update this policy as the product changes. The “Last updated” date at the top will change when we do. Continued use of the site after an update means you accept the revised policy."
 msgstr "製品の変更にあわせて、このポリシーを更新することがあります。更新した場合は冒頭の「最終更新日」が変わります。更新後もサイトを使い続けた場合、改訂後のポリシーに同意したものとみなされます。"
+
+#: src/routes/mcp/authorize.tsx
+msgid "Sign in to Standard Reader"
+msgstr ""
 
 #: src/components/onboarding/welcome-wizard.tsx
 msgid "Pick a few topics — we'll suggest publications to match. Optional."
@@ -622,6 +638,10 @@ msgstr "所有しているすべてのリストがアカウントから削除さ
 #: src/components/reader/atstore-review-prompt.tsx
 msgid "Review"
 msgstr "レビュー"
+
+#: src/routes/mcp/authorize.tsx
+msgid "Your saved articles, reading history, likes, subscriptions and lists — plus anything already public on the network."
+msgstr ""
 
 #: src/components/reader/about-view.tsx
 msgid "Sign in"
@@ -873,6 +893,12 @@ msgstr "フィードを満たすには {MIN_FOLLOWS} 件以上フォローして
 msgid "Follow all"
 msgstr "すべてフォロー"
 
+#. placeholder {0}: view.clientName
+#. placeholder {1}: view.reader.handle
+#: src/routes/mcp/authorize.tsx
+#~ msgid "{0} wants to use Standard Reader as {1}."
+#~ msgstr ""
+
 #: src/routes/_layout.u.$did.tsx
 msgid "No posts indexed yet."
 msgstr "インデックスされた投稿はまだありません。"
@@ -915,6 +941,10 @@ msgstr "追加するメンバーの種類"
 #: src/components/docs/labelers-docs-page.tsx
 msgid "A labeler is any DID that publishes AT Proto labels. Readers add one by DID on the <0>Labelers</0> page, and Standard Reader then shows that labeler's labels — and can warn on or hide labeled posts — as they read. Labelers are discovered the standard way; nothing about them is specific to us."
 msgstr ""
+
+#: src/routes/mcp/authorize.tsx
+#~ msgid "Something went wrong approving this connection. Try again."
+#~ msgstr ""
 
 #: src/components/docs/renderers-docs-page.tsx
 msgid "Rendering Standard Site documents"
@@ -1213,6 +1243,10 @@ msgstr "このリストには発行物がありません。"
 msgid "{0}, dark"
 msgstr ""
 
+#: src/components/user-settings-view.tsx
+msgid "Can read and act on your behalf"
+msgstr ""
+
 #: src/components/reader/save-to-collection-dialog.tsx
 msgid "Loading collections…"
 msgstr "コレクションを読み込み中…"
@@ -1243,6 +1277,11 @@ msgstr "リストを削除"
 #: src/routes/_layout.tag.$tag.tsx
 msgid "Loading articles"
 msgstr "記事を読み込み中"
+
+#. placeholder {0}: view.clientName
+#: src/routes/mcp/authorize.tsx
+msgid "Connect {0} to your account?"
+msgstr ""
 
 #: src/components/reader/about-view.tsx
 msgid "The reading experience"
@@ -1327,6 +1366,10 @@ msgstr "この記事を取り上げた理由（markdown 対応）"
 msgid "{count, plural, one {# upvote} other {# upvotes}} — click to upvote"
 msgstr "{count, plural, one {# 件の高評価} other {# 件の高評価}} — クリックで高評価"
 
+#: src/components/user-settings-view.tsx
+msgid "Apps you have connected to Standard Reader through its <0>MCP server</0>. Disconnecting one revokes its access immediately; it can ask to reconnect at any time."
+msgstr ""
+
 #: src/routes/_layout.history.tsx
 msgid "Read"
 msgstr "既読"
@@ -1370,6 +1413,10 @@ msgstr "システム"
 #: src/components/reader/save-to-collection-dialog.tsx
 msgid "Could not save to {appLabel}"
 msgstr "{appLabel} に保存できませんでした"
+
+#: src/routes/mcp/authorize.tsx
+msgid "If you continue, it will be able to:"
+msgstr ""
 
 #: src/components/docs/publishing-docs-page.tsx
 msgid "<0><1>Markpub</1> (recommended).</0> <2>at.markpub.markdown</2> — markdown with facets for rich text. It's not part of the site.standard spec either — no markdown format is — but it's the only one that's actually spec'd in a meaningful, reusable way, rather than one app's own ad hoc shape. Use this for a hand-rolled integration unless you already produce one of the platform formats below."
@@ -1417,6 +1464,7 @@ msgstr "開いたことのある記事です。リポジトリ内の公開レコ
 #: src/routes/_layout.l.$did.$rkey.tsx
 #: src/routes/_layout.tag.$tag.tsx
 #: src/routes/login.tsx
+#: src/routes/mcp/authorize.tsx
 msgid "Cancel"
 msgstr "キャンセル"
 
@@ -1441,6 +1489,10 @@ msgstr "本文に戻る"
 msgid "Search by name, handle, or topic…"
 msgstr "名前・ハンドル・トピックで検索…"
 
+#: src/components/user-settings-view.tsx
+msgid "Never used"
+msgstr ""
+
 #: src/components/reader/about-view.tsx
 msgid "Building something on the same index? There’s a public API."
 msgstr "同じインデックスを使って何かを作りますか？公開 API があります。"
@@ -1448,6 +1500,10 @@ msgstr "同じインデックスを使って何かを作りますか？公開 AP
 #: src/components/reader/comments/comments-section.tsx
 msgid "Discussion"
 msgstr "議論"
+
+#: src/components/docs/api-docs-intro.tsx
+msgid "It is an OAuth 2.1 protected resource: an unauthenticated request answers <0>401</0> with a <1>resource metadata</1> pointer, clients register themselves dynamically, and PKCE is required. Two scopes: <2>mcp:read</2> and <3>mcp:write</3>."
+msgstr ""
 
 #: src/routes/_layout.discover.tsx
 msgid "Recommended for you"
@@ -1619,6 +1675,10 @@ msgstr "質問"
 msgid "Where this collection is published — followers of the series receive it."
 msgstr "このコレクションを公開する場所です。シリーズのフォロワーに届きます。"
 
+#: src/components/user-settings-view.tsx
+msgid "No apps connected"
+msgstr ""
+
 #: src/components/reader/markdown-field.tsx
 msgid "Edit"
 msgstr "編集"
@@ -1669,6 +1729,10 @@ msgstr "{shown}+ 件の一致"
 #: src/routes/_layout.u.$did.tsx
 msgid "No liked articles yet."
 msgstr "いいねした記事はまだありません。"
+
+#: src/routes/mcp/authorize.tsx
+msgid "Returns you to"
+msgstr ""
 
 #: src/components/reader/article-below-fold.tsx
 #: src/routes/_layout.index.tsx
@@ -2020,6 +2084,10 @@ msgstr "最後まで表示しました。"
 #~ msgid "Toggle list {listName}"
 #~ msgstr "リスト {listName} を開閉"
 
+#: src/routes/mcp/authorize.tsx
+msgid "This app can't be connected"
+msgstr ""
+
 #: src/components/reader/privacy-view.tsx
 msgid "OAuth tokens so we can read and write records in your repository on your behalf (for example follows, likes, saves, and publication lists)."
 msgstr "ユーザーに代わってリポジトリのレコードを読み書きするための OAuth トークン（フォロー、いいね、保存、発行物リストなど）。"
@@ -2144,6 +2212,10 @@ msgstr "最近ネットワーク上で公開されたものはありません。
 msgid "Create"
 msgstr "作成"
 
+#: src/routes/mcp/authorize.tsx
+msgid "Act on your behalf"
+msgstr ""
+
 #: src/routes/_layout.index.tsx
 msgid "See all trending"
 msgstr "急上昇をすべて見る"
@@ -2177,6 +2249,10 @@ msgstr "{metaCount, plural, one {{formattedMetaCount} 件の記事} other {{form
 #: src/components/reader/profile-tabs-settings-modal.tsx
 msgid "Show {label} tab"
 msgstr "「{label}」タブを表示"
+
+#: src/components/docs/api-docs-intro.tsx
+msgid "This API is also served as a <0>Model Context Protocol</0> server at <1>{baseUrl}/mcp</1>. Paste that URL into an MCP client and authorize it; the fifty-odd methods above are grouped into fifteen tools, and the client can read the network and act on your behalf."
+msgstr ""
 
 #: src/routes/_layout.feedback.index.tsx
 msgid "Reset filters"
@@ -2294,6 +2370,10 @@ msgstr "{weekday} · 急上昇"
 #: src/components/reader/extension-privacy-view.tsx
 msgid "Network calls to {siteHost} run in the extension background worker, not in page scripts injected into sites you visit. That keeps your session handling in one place and limits what runs on third-party pages to URL matching, UI (overlay chip, Bluesky embed save button), and messaging with the background worker."
 msgstr "{siteHost} へのネットワーク通信は、訪問先のサイトに挿入されるページスクリプトではなく、拡張機能のバックグラウンドワーカーで実行されます。これによりセッション処理を一箇所にまとめ、第三者のページ上で動くものを URL の照合、UI（オーバーレイチップ、Bluesky 埋め込みの保存ボタン）、バックグラウンドワーカーとのメッセージングに限定しています。"
+
+#: src/routes/mcp/authorize.tsx
+msgid "Connect"
+msgstr ""
 
 #: src/routes/login.tsx
 msgid "Switch account"
@@ -2443,6 +2523,10 @@ msgstr "ようこそ"
 #: src/components/reader/privacy-view.tsx
 msgid "In-app preferences you set (theme, reading typography, whether to track reading history, and similar settings)."
 msgstr "アプリ内で設定した内容（テーマ、読書時のタイポグラフィ、閲覧履歴を記録するかどうか、その他類似の設定）。"
+
+#: src/routes/mcp/authorize.tsx
+msgid "Taking you back…"
+msgstr ""
 
 #: src/components/reader/subscribe-card.tsx
 msgid "You're already subscribed to {publicationName}. New posts will show up in your feed."
@@ -2802,6 +2886,10 @@ msgstr "日 · 午前8:00"
 msgid "We picked this language from your browser. You can switch it anytime."
 msgstr "ブラウザの設定に基づいてこの言語を選びました。いつでも変更できます。"
 
+#: src/routes/mcp/authorize.tsx
+msgid "Nothing has been shared. Head back to the app you came from and try connecting again."
+msgstr ""
+
 #: src/components/reader/text-selection-toolbar.tsx
 msgid "Dismiss selection"
 msgstr ""
@@ -2936,6 +3024,10 @@ msgstr "読み続ける"
 msgid "All"
 msgstr "すべて"
 
+#: src/routes/mcp/authorize.tsx
+#~ msgid "Returning you to the app…"
+#~ msgstr ""
+
 #: src/routes/_layout.friends.tsx
 #~ msgid "Publications written by the people you follow on Bluesky."
 #~ msgstr ""
@@ -3039,6 +3131,10 @@ msgstr "購読中の発行物のベストと、見つける価値のある発行
 #: src/components/reader/comments/comments-section.tsx
 msgid "Across the Atmosphere"
 msgstr "Atmosphere 全体"
+
+#: src/routes/mcp/authorize.tsx
+msgid "This request can't be completed here, so we're returning you to the app that sent you."
+msgstr ""
 
 #: src/routes/_layout.l.$did.$rkey.tsx
 msgid "No people in this list — add some from the edit dialog."
@@ -3242,6 +3338,11 @@ msgstr "音声サンプルを再生できませんでした。"
 msgid "{0, plural, one {# publication} other {{1} publications}}"
 msgstr ""
 
+#. placeholder {0}: view.clientName
+#: src/routes/mcp/authorize.tsx
+#~ msgid "Connect {0}?"
+#~ msgstr ""
+
 #: src/components/reader/subscriptions-table.tsx
 msgid "Person"
 msgstr ""
@@ -3261,6 +3362,10 @@ msgstr "アイコンを差し替え"
 
 #: src/components/reader/subscriptions-unsubscribe-dialog.tsx
 msgid "Unfollow"
+msgstr ""
+
+#: src/routes/mcp/authorize.tsx
+msgid "Read your library"
 msgstr ""
 
 #: src/components/onboarding/welcome-wizard.tsx
@@ -3851,6 +3956,10 @@ msgstr ""
 msgid "Load more ({remainingPublications} remaining)"
 msgstr "さらに読み込む（残り {remainingPublications} 件）"
 
+#: src/routes/mcp/authorize.tsx
+msgid "You can disconnect it at any time from Settings. Standard Reader never shares your password — only the access you grant here."
+msgstr ""
+
 #: src/components/reader/collection-theme-editor.tsx
 msgid "Title font"
 msgstr "見出しフォント"
@@ -3866,6 +3975,10 @@ msgstr ""
 #: src/components/docs/introduction-docs-page.tsx
 msgid "Build on Standard"
 msgstr ""
+
+#: src/routes/mcp/authorize.tsx
+#~ msgid "Can't connect this app"
+#~ msgstr ""
 
 #: src/components/NavbarAuth.tsx
 #: src/routes/login.tsx
@@ -4299,6 +4412,10 @@ msgstr "{displayTag} のタグが付いた {formattedUnfollowedCount} 件の発�
 msgid "Drop or choose a new image to replace"
 msgstr "置き換える画像をドロップまたは選択してください"
 
+#: src/routes/mcp/authorize.tsx
+#~ msgid "You can disconnect this app at any time from Settings. Anything it writes goes to your own AT Protocol repo and is public on the network."
+#~ msgstr ""
+
 #: src/routes/_layout.search.tsx
 msgid "Clear search"
 msgstr "検索をクリア"
@@ -4656,6 +4773,10 @@ msgstr ""
 msgid "View publication"
 msgstr "発行物を表示"
 
+#: src/routes/mcp/authorize.tsx
+msgid "Save and like articles, follow publications and readers, mark things read, and change your lists. Each of these writes a public record to your repo."
+msgstr ""
+
 #: src/components/reader/publication-latest-note.tsx
 msgid "Latest note"
 msgstr "最新のノート"
@@ -4841,6 +4962,10 @@ msgstr "この記事をおすすめする"
 msgid "Stop"
 msgstr "停止"
 
+#: src/components/user-settings-view.tsx
+msgid "Connected apps"
+msgstr ""
+
 #: src/components/reader/add-publication-modal.tsx
 msgid "Has documents but no publications"
 msgstr "ドキュメントはありますが発行物がありません"
@@ -4870,6 +4995,11 @@ msgstr "Standard Reader は AT Proto リポジトリから <0>site.standard.docu
 #: src/components/reader/list-edit-modal.tsx
 msgid "e.g. Tech, Friends, Cooking"
 msgstr "例：テクノロジー、友だち、料理"
+
+#. placeholder {0}: fmt.relativeTime(connection.lastUsedAt)
+#: src/components/user-settings-view.tsx
+msgid "Last used {0}"
+msgstr ""
 
 #: src/routes/_layout.feedback.index.tsx
 msgid "No feedback matches your filters."
@@ -4967,6 +5097,10 @@ msgstr "オン"
 msgid "Stop reading"
 msgstr "読み上げを停止"
 
+#: src/routes/mcp/authorize.tsx
+#~ msgid "Approve"
+#~ msgstr ""
+
 #: src/components/reader/document-share-menu.tsx
 #: src/components/reader/share-menu.tsx
 #: src/components/reader/text-selection-toolbar.tsx
@@ -4977,6 +5111,10 @@ msgstr "共有"
 #: src/components/user-settings-view.tsx
 msgid "Your weekly digest"
 msgstr "今週のダイジェスト"
+
+#: src/routes/mcp/authorize.tsx
+msgid "Sign in to continue"
+msgstr ""
 
 #: src/components/reader/discover-topic-filters.tsx
 msgid "Search all topics…"
@@ -5084,9 +5222,18 @@ msgstr "Semble 経由の {connectionLabel}"
 msgid "S"
 msgstr ""
 
+#: src/routes/mcp/authorize.tsx
+msgid "Signed in as"
+msgstr ""
+
 #: src/magazine/flow.tsx
 msgid "In this issue"
 msgstr "この号の内容"
+
+#: src/components/docs/api-docs-intro.tsx
+#: src/components/docs/docs-api-nav.tsx
+msgid "MCP server"
+msgstr ""
 
 #: src/components/reader/read-on-platform.tsx
 msgid "Read this on {name}"

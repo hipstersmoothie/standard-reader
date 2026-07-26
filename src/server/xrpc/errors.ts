@@ -18,11 +18,13 @@ export function xrpcJsonResponse(
   return new Response(JSON.stringify(body), { status, headers });
 }
 
-export function xrpcErrorResponse(error: XRPCError): Response {
-  const headers = new Headers({
-    "Content-Type": "application/json",
-    "Access-Control-Allow-Origin": "*",
-  });
+export function xrpcErrorResponse(
+  error: XRPCError,
+  extraHeaders?: HeadersInit,
+): Response {
+  const headers = new Headers(extraHeaders);
+  headers.set("Content-Type", "application/json");
+  headers.set("Access-Control-Allow-Origin", "*");
   if (error.statusCode === 401) {
     headers.set(
       "WWW-Authenticate",
@@ -35,12 +37,18 @@ export function xrpcErrorResponse(error: XRPCError): Response {
   });
 }
 
-export function handleXrpcError(cause: unknown): Response {
+export function handleXrpcError(
+  cause: unknown,
+  extraHeaders?: HeadersInit,
+): Response {
   if (cause instanceof XRPCError) {
-    return xrpcErrorResponse(cause);
+    return xrpcErrorResponse(cause, extraHeaders);
   }
   // Non-XRPCError exceptions (DB errors, library internals, etc.) must not
   // leak their raw messages to callers. Log server-side, return generic.
   console.error("[xrpc] unhandled error", cause);
-  return xrpcErrorResponse(new InvalidRequestError("Internal error"));
+  return xrpcErrorResponse(
+    new InvalidRequestError("Internal error"),
+    extraHeaders,
+  );
 }

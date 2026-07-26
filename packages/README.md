@@ -48,6 +48,15 @@ of the parsing is duplicated; adding a framework is a rendering concern only.
 | [`renderer-lit`](./renderer-lit)         | Lit / web components | `lit-html` templates            |
 | [`renderer-angular`](./renderer-angular) | Angular              | standalone components           |
 
+### Also in this directory
+
+One package here is not a renderer — it publishes the **API** rather than the
+content format:
+
+| Package                  | What it is                                                                                                                                         |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`lexicons`](./lexicons) | `@standard-reader/lexicons` — the `app.standard-reader.*` XRPC API as typed AT Protocol lexicon schemas, generated with `@atproto/lex`. No client. |
+
 The Standard Reader app itself consumes `renderer-react` (see
 `src/components/reader/content/standard-renderer.tsx`), supplying its own
 design-system components through the `components` prop.

@@ -9,12 +9,14 @@ import {
   xrpcBaseUrlClient,
 } from "#/lib/api-docs/discovery";
 import { API_DOCS_INTRO_IDS } from "#/lib/api-docs/navigation";
+import { getPublicUrlClient } from "#/lib/public-url";
 
 import { docsStyles } from "./docs-page.stylex";
 
 export function ApiDocsIntro() {
   const xrpcBaseUrl = xrpcBaseUrlClient();
   const appviewDid = appviewDidClient();
+  const baseUrl = getPublicUrlClient();
 
   return (
     <>
@@ -148,6 +150,43 @@ export function ApiDocsIntro() {
             Reader state endpoints also accept an optional{" "}
             <code {...stylex.props(docsStyles.codeInline)}>did</code> query
             param to read a reader&apos;s public indexed state without auth.
+          </Trans>
+        </p>
+
+        <h2 id={API_DOCS_INTRO_IDS.mcp} {...stylex.props(docsStyles.h2)}>
+          <Trans>MCP server</Trans>
+        </h2>
+        <p {...stylex.props(docsStyles.prose)}>
+          <Trans>
+            This API is also served as a{" "}
+            <a
+              href="https://modelcontextprotocol.io"
+              {...stylex.props(docsStyles.proseLink)}
+            >
+              Model Context Protocol
+            </a>{" "}
+            server at{" "}
+            <code {...stylex.props(docsStyles.codeInline)}>{baseUrl}/mcp</code>.
+            Paste that URL into an MCP client and authorize it; the fifty-odd
+            methods above are grouped into fifteen tools, and the client can
+            read the network and act on your behalf.
+          </Trans>
+        </p>
+        <p {...stylex.props(docsStyles.prose)}>
+          <Trans>
+            It is an OAuth 2.1 protected resource: an unauthenticated request
+            answers <code {...stylex.props(docsStyles.codeInline)}>401</code>{" "}
+            with a{" "}
+            <a
+              href="/.well-known/oauth-protected-resource/mcp"
+              {...stylex.props(docsStyles.proseLink)}
+            >
+              resource metadata
+            </a>{" "}
+            pointer, clients register themselves dynamically, and PKCE is
+            required. Two scopes:{" "}
+            <code {...stylex.props(docsStyles.codeInline)}>mcp:read</code> and{" "}
+            <code {...stylex.props(docsStyles.codeInline)}>mcp:write</code>.
           </Trans>
         </p>
       </div>

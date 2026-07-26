@@ -14,7 +14,7 @@ import {
   Sparkles,
   Sun,
 } from "lucide-react";
-import { useCallback, useState } from "react";
+import { Fragment, useCallback, useState } from "react";
 
 import { invalidateReadQueries } from "#/components/reader/read-optimistic";
 import { useSidebarPref } from "#/components/reader/use-sidebar-pref";
@@ -24,6 +24,7 @@ import { auth } from "#/integrations/tanstack-query/api-auth.functions";
 import { feedApi } from "#/integrations/tanstack-query/api-feed.functions";
 import { labelerApi } from "#/integrations/tanstack-query/api-labelers.functions";
 import { listApi } from "#/integrations/tanstack-query/api-lists.functions";
+import { mcpApi } from "#/integrations/tanstack-query/api-mcp.functions";
 import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
 import type { DigestSectionKey } from "#/integrations/tanstack-query/api-user.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
@@ -45,6 +46,7 @@ import { CUSTOMIZABLE_SIDEBAR_NAV } from "#/lib/sidebar-nav";
 import type { ThemeMode } from "#/lib/theme";
 import { isThemeMode } from "#/lib/theme";
 import { useCountOldPostsAsUnread } from "#/lib/use-count-old-posts-as-unread";
+import { useFormatters } from "#/lib/use-formatters";
 import { useLocale } from "#/lib/use-locale";
 import { useOpenCollectionsInMagazine } from "#/lib/use-open-collections-in-magazine";
 import { useOpenLinks } from "#/lib/use-open-links";
@@ -211,6 +213,30 @@ const styles = stylex.create({
     color: uiColor.text1,
     flexShrink: 0,
   },
+  connectionRow: {
+    alignItems: {
+      [MOBILE]: "stretch",
+      default: "center",
+    },
+    columnGap: gap["3xl"],
+    display: "flex",
+    flexDirection: {
+      [MOBILE]: "column",
+      default: "row",
+    },
+    justifyContent: "space-between",
+    paddingBlock: verticalSpace.md,
+    paddingInlineEnd: horizontalSpace.lg,
+    paddingInlineStart: horizontalSpace.lg,
+    rowGap: gap.lg,
+  },
+  connectionMeta: {
+    color: uiColor.text1,
+    fontFamily: fontFamily.sans,
+    fontSize: fontSize.sm,
+    lineHeight: lineHeight.sm,
+    marginBlock: verticalSpace.none,
+  },
   labelerEmpty: {
     marginBlock: verticalSpace.none,
     paddingBlock: verticalSpace["xl"],
@@ -370,6 +396,16 @@ export function UserSettingsView() {
   const { t, i18n } = useLingui();
   const queryClient = useQueryClient();
   const labelers = useQuery(labelerApi.getLabelersQueryOptions());
+  const connections = useQuery(mcpApi.listConnectionsQueryOptions());
+  const fmt = useFormatters();
+  const revokeConnectionMutation = useMutation({
+    ...mcpApi.revokeConnectionMutationOptions(),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: mcpApi.listConnectionsQueryOptions().queryKey,
+      });
+    },
+  });
   const { mode, setMode } = useTheme();
   const { locale, setLocale } = useLocale();
   const { preference: voice, setPreference: setVoice } = useReaderVoice();
@@ -1013,6 +1049,60 @@ export function UserSettingsView() {
                 );
               })}
             </div>
+          )}
+        </div>
+      </section>
+
+      <section {...stylex.props(styles.section)}>
+        <h2 {...stylex.props(styles.sectionHeading)}>
+          <Trans>Connected apps</Trans>
+        </h2>
+        <p {...stylex.props(styles.deletionIntro)}>
+          <Trans>
+            Apps you have connected to Standard Reader through its{" "}
+            <a href="/docs/api#mcp">MCP server</a>. Disconnecting one revokes
+            its access immediately; it can ask to reconnect at any time.
+          </Trans>
+        </p>
+        <div {...stylex.props(styles.settingGroup)}>
+          {connections.data?.connections.length ? (
+            connections.data.connections.map((connection, index) => (
+              <Fragment key={connection.id}>
+                {index > 0 ? <Separator /> : null}
+                <div {...stylex.props(styles.connectionRow)}>
+                  <div>
+                    <p {...stylex.props(settingRowStyles.label)}>
+                      {connection.clientName}
+                    </p>
+                    <p {...stylex.props(styles.connectionMeta)}>
+                      {connection.scopes.includes("mcp:write")
+                        ? t`Can read and act on your behalf`
+                        : t`Can read only`}
+                      {" · "}
+                      {connection.lastUsedAt
+                        ? t`Last used ${fmt.relativeTime(connection.lastUsedAt)}`
+                        : t`Never used`}
+                    </p>
+                  </div>
+                  <Button
+                    variant="critical-outline"
+                    isPending={
+                      revokeConnectionMutation.isPending &&
+                      revokeConnectionMutation.variables === connection.id
+                    }
+                    onPress={() =>
+                      revokeConnectionMutation.mutate(connection.id)
+                    }
+                  >
+                    <Trans>Disconnect</Trans>
+                  </Button>
+                </div>
+              </Fragment>
+            ))
+          ) : (
+            <p {...stylex.props(styles.labelerEmpty)}>
+              <Trans>No apps connected</Trans>
+            </p>
           )}
         </div>
       </section>

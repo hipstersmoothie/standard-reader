@@ -46,6 +46,10 @@ msgstr "Adicionar uma coleção a esta série"
 msgid "Mark old posts as unread"
 msgstr "Marcar artigos antigos como não lidos"
 
+#: src/routes/mcp/authorize.tsx
+msgid "Something went wrong. Nothing was connected — try again."
+msgstr ""
+
 #: src/routes/_layout.u.$did.tsx
 msgid "{name} hasn't started reading or publishing here."
 msgstr "{name} ainda não começou a ler nem a publicar aqui."
@@ -148,11 +152,19 @@ msgstr "Isso significa que você pode desenvolver na direção que precisar: ler
 msgid "Content and intellectual property"
 msgstr "Conteúdo e propriedade intelectual"
 
+#: src/components/user-settings-view.tsx
+msgid "Disconnect"
+msgstr ""
+
 #: src/components/docs/docs-nav-areas.ts
 #: src/components/docs/introduction-docs-page.tsx
 #: src/components/docs/lexicon-docs-intro.tsx
 msgid "Lexicons"
 msgstr "Léxicos"
+
+#: src/components/user-settings-view.tsx
+msgid "Can read only"
+msgstr ""
 
 #: src/routes/_layout.p.$did.$rkey.tsx
 #: src/routes/_layout.u.$did.tsx
@@ -384,6 +396,10 @@ msgstr "Nova coleção…"
 #: src/components/reader/privacy-view.tsx
 msgid "We may update this policy as the product changes. The “Last updated” date at the top will change when we do. Continued use of the site after an update means you accept the revised policy."
 msgstr "Podemos atualizar esta política à medida que o produto evolui. A data de “Última atualização” no topo será alterada quando o fizermos. A utilização continuada do site após uma atualização significa que aceita a política revista."
+
+#: src/routes/mcp/authorize.tsx
+msgid "Sign in to Standard Reader"
+msgstr ""
 
 #: src/components/onboarding/welcome-wizard.tsx
 msgid "Pick a few topics — we'll suggest publications to match. Optional."
@@ -622,6 +638,10 @@ msgstr "Todas as listas que possui serão removidas da sua conta. Quem tiver sal
 #: src/components/reader/atstore-review-prompt.tsx
 msgid "Review"
 msgstr "Avaliação"
+
+#: src/routes/mcp/authorize.tsx
+msgid "Your saved articles, reading history, likes, subscriptions and lists — plus anything already public on the network."
+msgstr ""
 
 #: src/components/reader/about-view.tsx
 msgid "Sign in"
@@ -873,6 +893,12 @@ msgstr "Siga pelo menos {MIN_FOLLOWS} para preencher o seu feed"
 msgid "Follow all"
 msgstr "Seguir todas"
 
+#. placeholder {0}: view.clientName
+#. placeholder {1}: view.reader.handle
+#: src/routes/mcp/authorize.tsx
+#~ msgid "{0} wants to use Standard Reader as {1}."
+#~ msgstr ""
+
 #: src/routes/_layout.u.$did.tsx
 msgid "No posts indexed yet."
 msgstr "Ainda não há publicações indexadas."
@@ -915,6 +941,10 @@ msgstr "Tipo de membro a adicionar"
 #: src/components/docs/labelers-docs-page.tsx
 msgid "A labeler is any DID that publishes AT Proto labels. Readers add one by DID on the <0>Labelers</0> page, and Standard Reader then shows that labeler's labels — and can warn on or hide labeled posts — as they read. Labelers are discovered the standard way; nothing about them is specific to us."
 msgstr "Um rotulador é qualquer DID que publique rótulos do AT Proto. Os usuários os adicionam pelo DID na página <0>Rotuladores</0>; o cliente então exibe os rótulos desse rotulador — podendo emitir avisos ou ocultar publicações marcadas — durante a leitura. Os rotuladores são descobertos da maneira padrão; não há nada neles que seja específico da plataforma."
+
+#: src/routes/mcp/authorize.tsx
+#~ msgid "Something went wrong approving this connection. Try again."
+#~ msgstr ""
 
 #: src/components/docs/renderers-docs-page.tsx
 msgid "Rendering Standard Site documents"
@@ -1213,6 +1243,10 @@ msgstr "Nenhuma publicação nesta lista."
 msgid "{0}, dark"
 msgstr ""
 
+#: src/components/user-settings-view.tsx
+msgid "Can read and act on your behalf"
+msgstr ""
+
 #: src/components/reader/save-to-collection-dialog.tsx
 msgid "Loading collections…"
 msgstr "Carregando coleções…"
@@ -1243,6 +1277,11 @@ msgstr "Remover lista"
 #: src/routes/_layout.tag.$tag.tsx
 msgid "Loading articles"
 msgstr "Carregando artigos"
+
+#. placeholder {0}: view.clientName
+#: src/routes/mcp/authorize.tsx
+msgid "Connect {0} to your account?"
+msgstr ""
 
 #: src/components/reader/about-view.tsx
 msgid "The reading experience"
@@ -1327,6 +1366,10 @@ msgstr "Porque esta peça está aqui? (suporta markdown)"
 msgid "{count, plural, one {# upvote} other {# upvotes}} — click to upvote"
 msgstr "{count, plural, one {# voto} other {# votos}} — clique para votar"
 
+#: src/components/user-settings-view.tsx
+msgid "Apps you have connected to Standard Reader through its <0>MCP server</0>. Disconnecting one revokes its access immediately; it can ask to reconnect at any time."
+msgstr ""
+
 #: src/routes/_layout.history.tsx
 msgid "Read"
 msgstr "Lido"
@@ -1370,6 +1413,10 @@ msgstr "Sistema"
 #: src/components/reader/save-to-collection-dialog.tsx
 msgid "Could not save to {appLabel}"
 msgstr "Não foi possível salvar em {appLabel}"
+
+#: src/routes/mcp/authorize.tsx
+msgid "If you continue, it will be able to:"
+msgstr ""
 
 #: src/components/docs/publishing-docs-page.tsx
 msgid "<0><1>Markpub</1> (recommended).</0> <2>at.markpub.markdown</2> — markdown with facets for rich text. It's not part of the site.standard spec either — no markdown format is — but it's the only one that's actually spec'd in a meaningful, reusable way, rather than one app's own ad hoc shape. Use this for a hand-rolled integration unless you already produce one of the platform formats below."
@@ -1417,6 +1464,7 @@ msgstr "Artigos que abriu — registos públicos no seu repositório, sincroniza
 #: src/routes/_layout.l.$did.$rkey.tsx
 #: src/routes/_layout.tag.$tag.tsx
 #: src/routes/login.tsx
+#: src/routes/mcp/authorize.tsx
 msgid "Cancel"
 msgstr "Cancelar"
 
@@ -1441,6 +1489,10 @@ msgstr "Voltar ao conteúdo"
 msgid "Search by name, handle, or topic…"
 msgstr "Pesquisar por nome, identificador ou tema…"
 
+#: src/components/user-settings-view.tsx
+msgid "Never used"
+msgstr ""
+
 #: src/components/reader/about-view.tsx
 msgid "Building something on the same index? There’s a public API."
 msgstr "Está a construir algo sobre o mesmo índice? Existe uma API pública."
@@ -1448,6 +1500,10 @@ msgstr "Está a construir algo sobre o mesmo índice? Existe uma API pública."
 #: src/components/reader/comments/comments-section.tsx
 msgid "Discussion"
 msgstr "Discussão"
+
+#: src/components/docs/api-docs-intro.tsx
+msgid "It is an OAuth 2.1 protected resource: an unauthenticated request answers <0>401</0> with a <1>resource metadata</1> pointer, clients register themselves dynamically, and PKCE is required. Two scopes: <2>mcp:read</2> and <3>mcp:write</3>."
+msgstr ""
 
 #: src/routes/_layout.discover.tsx
 msgid "Recommended for you"
@@ -1619,6 +1675,10 @@ msgstr "Perguntas"
 msgid "Where this collection is published — followers of the series receive it."
 msgstr "Onde esta coleção é publicada — seguidores da série receberão."
 
+#: src/components/user-settings-view.tsx
+msgid "No apps connected"
+msgstr ""
+
 #: src/components/reader/markdown-field.tsx
 msgid "Edit"
 msgstr "Editar"
@@ -1669,6 +1729,10 @@ msgstr "{shown}+ resultados"
 #: src/routes/_layout.u.$did.tsx
 msgid "No liked articles yet."
 msgstr "Ainda não há artigos recomendados."
+
+#: src/routes/mcp/authorize.tsx
+msgid "Returns you to"
+msgstr ""
 
 #: src/components/reader/article-below-fold.tsx
 #: src/routes/_layout.index.tsx
@@ -2020,6 +2084,10 @@ msgstr "Você chegou ao fim."
 #~ msgid "Toggle list {listName}"
 #~ msgstr "Alternar exibição da lista {listName}"
 
+#: src/routes/mcp/authorize.tsx
+msgid "This app can't be connected"
+msgstr ""
+
 #: src/components/reader/privacy-view.tsx
 msgid "OAuth tokens so we can read and write records in your repository on your behalf (for example follows, likes, saves, and publication lists)."
 msgstr "Tokens OAuth para podermos ler e escrever registos no seu repositório em seu nome (por exemplo quem você segue, recomenda, salva e listas de publicações)."
@@ -2144,6 +2212,10 @@ msgstr "Não foi publicado nada na rede recentemente."
 msgid "Create"
 msgstr "Criar"
 
+#: src/routes/mcp/authorize.tsx
+msgid "Act on your behalf"
+msgstr ""
+
 #: src/routes/_layout.index.tsx
 msgid "See all trending"
 msgstr "Ver tudo em alta"
@@ -2177,6 +2249,10 @@ msgstr "{metaCount, plural, one {{formattedMetaCount} artigo} other {{formattedM
 #: src/components/reader/profile-tabs-settings-modal.tsx
 msgid "Show {label} tab"
 msgstr "Mostrar aba {label}"
+
+#: src/components/docs/api-docs-intro.tsx
+msgid "This API is also served as a <0>Model Context Protocol</0> server at <1>{baseUrl}/mcp</1>. Paste that URL into an MCP client and authorize it; the fifty-odd methods above are grouped into fifteen tools, and the client can read the network and act on your behalf."
+msgstr ""
 
 #: src/routes/_layout.feedback.index.tsx
 msgid "Reset filters"
@@ -2294,6 +2370,10 @@ msgstr "{weekday} · Em alta"
 #: src/components/reader/extension-privacy-view.tsx
 msgid "Network calls to {siteHost} run in the extension background worker, not in page scripts injected into sites you visit. That keeps your session handling in one place and limits what runs on third-party pages to URL matching, UI (overlay chip, Bluesky embed save button), and messaging with the background worker."
 msgstr "As chamadas de rede para {siteHost} são executadas no processo em segundo plano da extensão, e não em scripts injetados nos sites que visita. Isso mantém a gestão da sessão num só lugar e limita o que corre em páginas de terceiros à correspondência de URL, à interface (chip de sobreposição, botão de salvar em links incorporados do Bluesky) e à comunicação com o processo em segundo plano."
+
+#: src/routes/mcp/authorize.tsx
+msgid "Connect"
+msgstr ""
 
 #: src/routes/login.tsx
 msgid "Switch account"
@@ -2443,6 +2523,10 @@ msgstr "Bem-vindo a"
 #: src/components/reader/privacy-view.tsx
 msgid "In-app preferences you set (theme, reading typography, whether to track reading history, and similar settings)."
 msgstr "As preferências que define na aplicação (tema, tipografia de leitura, se pretende registar o histórico de leitura e configurações semelhantes)."
+
+#: src/routes/mcp/authorize.tsx
+msgid "Taking you back…"
+msgstr ""
 
 #: src/components/reader/subscribe-card.tsx
 msgid "You're already subscribed to {publicationName}. New posts will show up in your feed."
@@ -2802,6 +2886,10 @@ msgstr "Dom · 8:00"
 msgid "We picked this language from your browser. You can switch it anytime."
 msgstr "Escolhemos este idioma com base no seu navegador. Pode alterá-lo quando quiser."
 
+#: src/routes/mcp/authorize.tsx
+msgid "Nothing has been shared. Head back to the app you came from and try connecting again."
+msgstr ""
+
 #: src/components/reader/text-selection-toolbar.tsx
 msgid "Dismiss selection"
 msgstr "Desfazer seleção"
@@ -2936,6 +3024,10 @@ msgstr "Continuar a ler"
 msgid "All"
 msgstr "Tudo"
 
+#: src/routes/mcp/authorize.tsx
+#~ msgid "Returning you to the app…"
+#~ msgstr ""
+
 #: src/routes/_layout.friends.tsx
 #~ msgid "Publications written by the people you follow on Bluesky."
 #~ msgstr "Publicações escritas pelas pessoas que você segue no Bluesky."
@@ -3039,6 +3131,10 @@ msgstr "Um e-mail semanal com o melhor das suas inscrições, mais algumas publi
 #: src/components/reader/comments/comments-section.tsx
 msgid "Across the Atmosphere"
 msgstr "Por toda a Atmosfera"
+
+#: src/routes/mcp/authorize.tsx
+msgid "This request can't be completed here, so we're returning you to the app that sent you."
+msgstr ""
 
 #: src/routes/_layout.l.$did.$rkey.tsx
 msgid "No people in this list — add some from the edit dialog."
@@ -3242,6 +3338,11 @@ msgstr "Não foi possível reproduzir a amostra de voz."
 msgid "{0, plural, one {# publication} other {{1} publications}}"
 msgstr "{0, plural, one {# publicação} other {{1} publicações}}"
 
+#. placeholder {0}: view.clientName
+#: src/routes/mcp/authorize.tsx
+#~ msgid "Connect {0}?"
+#~ msgstr ""
+
 #: src/components/reader/subscriptions-table.tsx
 msgid "Person"
 msgstr "Pessoa"
@@ -3262,6 +3363,10 @@ msgstr "Substituir ícone"
 #: src/components/reader/subscriptions-unsubscribe-dialog.tsx
 msgid "Unfollow"
 msgstr "Deixar de seguir"
+
+#: src/routes/mcp/authorize.tsx
+msgid "Read your library"
+msgstr ""
 
 #: src/components/onboarding/welcome-wizard.tsx
 msgid "You can subscribe to publications from Discover."
@@ -3851,6 +3956,10 @@ msgstr ""
 msgid "Load more ({remainingPublications} remaining)"
 msgstr "Carregar mais ({remainingPublications} restantes)"
 
+#: src/routes/mcp/authorize.tsx
+msgid "You can disconnect it at any time from Settings. Standard Reader never shares your password — only the access you grant here."
+msgstr ""
+
 #: src/components/reader/collection-theme-editor.tsx
 msgid "Title font"
 msgstr "Fonte dos títulos"
@@ -3866,6 +3975,10 @@ msgstr "Amigos veem"
 #: src/components/docs/introduction-docs-page.tsx
 msgid "Build on Standard"
 msgstr "Desenvolva no Standard"
+
+#: src/routes/mcp/authorize.tsx
+#~ msgid "Can't connect this app"
+#~ msgstr ""
 
 #: src/components/NavbarAuth.tsx
 #: src/routes/login.tsx
@@ -4299,6 +4412,10 @@ msgstr "Está prestes a se inscrever em {formattedUnfollowedCount} publicações
 msgid "Drop or choose a new image to replace"
 msgstr "Arraste ou escolha uma nova imagem para substituir"
 
+#: src/routes/mcp/authorize.tsx
+#~ msgid "You can disconnect this app at any time from Settings. Anything it writes goes to your own AT Protocol repo and is public on the network."
+#~ msgstr ""
+
 #: src/routes/_layout.search.tsx
 msgid "Clear search"
 msgstr "Limpar pesquisa"
@@ -4656,6 +4773,10 @@ msgstr "Seguidores"
 msgid "View publication"
 msgstr "Ver publicação"
 
+#: src/routes/mcp/authorize.tsx
+msgid "Save and like articles, follow publications and readers, mark things read, and change your lists. Each of these writes a public record to your repo."
+msgstr ""
+
 #: src/components/reader/publication-latest-note.tsx
 msgid "Latest note"
 msgstr "Nota mais recente"
@@ -4841,6 +4962,10 @@ msgstr "Recomendar este artigo"
 msgid "Stop"
 msgstr "Parar"
 
+#: src/components/user-settings-view.tsx
+msgid "Connected apps"
+msgstr ""
+
 #: src/components/reader/add-publication-modal.tsx
 msgid "Has documents but no publications"
 msgstr "Tem documentos mas nenhuma publicação"
@@ -4870,6 +4995,11 @@ msgstr "O Standard Reader indexa registos <0>site.standard.document</0> e <1>sit
 #: src/components/reader/list-edit-modal.tsx
 msgid "e.g. Tech, Friends, Cooking"
 msgstr "por exemplo Tecnologia, Amigos, Culinária"
+
+#. placeholder {0}: fmt.relativeTime(connection.lastUsedAt)
+#: src/components/user-settings-view.tsx
+msgid "Last used {0}"
+msgstr ""
 
 #: src/routes/_layout.feedback.index.tsx
 msgid "No feedback matches your filters."
@@ -4967,6 +5097,10 @@ msgstr "Ligado"
 msgid "Stop reading"
 msgstr "Parar de ler"
 
+#: src/routes/mcp/authorize.tsx
+#~ msgid "Approve"
+#~ msgstr ""
+
 #: src/components/reader/document-share-menu.tsx
 #: src/components/reader/share-menu.tsx
 #: src/components/reader/text-selection-toolbar.tsx
@@ -4977,6 +5111,10 @@ msgstr "Compartilhar"
 #: src/components/user-settings-view.tsx
 msgid "Your weekly digest"
 msgstr "O seu resumo semanal"
+
+#: src/routes/mcp/authorize.tsx
+msgid "Sign in to continue"
+msgstr ""
 
 #: src/components/reader/discover-topic-filters.tsx
 msgid "Search all topics…"
@@ -5084,9 +5222,18 @@ msgstr "{connectionLabel} via Semble"
 msgid "S"
 msgstr ""
 
+#: src/routes/mcp/authorize.tsx
+msgid "Signed in as"
+msgstr ""
+
 #: src/magazine/flow.tsx
 msgid "In this issue"
 msgstr "Nesta edição"
+
+#: src/components/docs/api-docs-intro.tsx
+#: src/components/docs/docs-api-nav.tsx
+msgid "MCP server"
+msgstr ""
 
 #: src/components/reader/read-on-platform.tsx
 msgid "Read this on {name}"

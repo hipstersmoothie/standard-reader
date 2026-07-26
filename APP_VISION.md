@@ -667,6 +667,94 @@ Implementation: shared handler layer in `src/server/xrpc/handlers/`; TanStack se
 and extension HTTP routes call the same underlying logic. `/xrpc` uses AT Proto auth only — no
 HttpOnly session cookies.
 
+**Credential shapes the AppView accepts.** `Authorization` is validated one of two ways
+(`src/server/xrpc/auth.ts`); the in-app MCP server is a third, in-process path (`via: "internal"`)
+that presents no credential to itself at all:
+
+- **PDS service proxy** (`atproto-proxy: did:web:standard-reader.app#standard_reader_appview`) —
+  the PDS mints a service JWT signed by the reader's repo key. Best for reads. It cannot serve
+  writes: a service JWT gives the AppView the reader's identity but no credential to write to
+  their repo with, so Tier 4 procedures reject it.
+- **Direct token** (`Authorization: Bearer|DPoP <token>`) — the AppView forwards the token to
+  `com.atproto.server.getSession` on the issuer PDS. Because it cannot forge a DPoP proof, this
+  only authenticates **bearer** tokens, i.e. app-password sessions. `getSession` omits `scopes`
+  for those (the token grants unrestricted repo access), which the scope check treats as
+  "nothing to enforce" rather than "no scopes granted".
+
+So a third-party CLI or agent that needs writes authenticates with an app password; a browser
+app that holds its own DPoP key uses OAuth and talks to the PDS directly.
+
+### Remote MCP server (`/mcp`)
+
+`standard-reader.app/mcp` is a [Model Context Protocol](https://modelcontextprotocol.io) server,
+so any MCP client (Claude, Cursor, …) can search and read the network and act on a reader's
+behalf — bookmark, like, follow, mark read, curate lists. It is a route on the web service, not a
+package a user installs: they paste the URL into their client and authorize it.
+
+- **In-process, not over HTTP to ourselves.** Tools resolve the method in the same
+  `XRPC_REGISTRY` that `/xrpc` dispatches through and call its handler directly
+  (`src/server/mcp/xrpc.ts`). Same handlers, same read-model context, same auth rules — one less
+  network hop, and no token to mint for ourselves.
+- **~50 methods → 15 tools.** Grouped by intent, not endpoint (`search`, `resolve`,
+  `get_article`, `get_publication`, `get_author`, `get_feed`, `get_lists`, `get_library`,
+  `get_status`, `bookmark`, `like`, `mark_read`, `follow`, `manage_list`, `whoami`). A model picks
+  better from a short list of intents than a long list of endpoints. Labeler endpoints are
+  deliberately excluded — moderation config belongs in settings, not a tool list.
+- **Stateless transport.** `WebStandardStreamableHTTPServerTransport` with no session id and
+  buffered JSON replies, built per request. Identity lives in the presented token, so any instance
+  behind the load balancer can serve any request.
+- **Responses are trimmed** (renderable body, search markup) unless explicitly requested, and
+  AT-URI / DID arguments are validated before they reach a handler.
+
+#### MCP OAuth (`src/server/mcp/oauth/`)
+
+Standard Reader is its own OAuth 2.1 **authorization server for MCP clients**. It is not an AT
+Protocol authorization server — the reader's PDS stays that. What it issues are tokens that let a
+client act _through_ Standard Reader as a reader who already signed in here.
+
+- **Discovery.** An unauthenticated `POST /mcp` answers `401` with
+  `WWW-Authenticate: … resource_metadata="…/.well-known/oauth-protected-resource/mcp"`. That
+  document (RFC 9728) points at the authorization server, whose metadata (RFC 8414) lives at
+  `/.well-known/oauth-authorization-server`.
+- **Registration is open** (RFC 7591, `POST /api/mcp/register`) — that is what makes "paste the
+  URL into your client" work. It grants nothing on its own: every token still needs a reader to
+  sign in and approve that specific client at `/mcp/authorize`.
+- **PKCE `S256` is mandatory**, public and confidential clients alike; there is no implicit flow.
+  Redirect URIs are exact-matched against what the client registered, and `resource` (RFC 8707)
+  must name this MCP server, so a token minted for someone else's server can't be replayed here.
+- **Two scopes**, shown in plain language on the consent screen: `mcp:read` (the reader's library
+  and anything public) and `mcp:write` (bookmark, like, follow, read state, lists).
+- **Secrets are only ever stored hashed** — client secrets, authorization codes, access and
+  refresh tokens are all SHA-256 and looked up by hash. Codes are deleted as they are read and
+  refresh tokens rotate, so a replay finds nothing.
+- **Acting for the reader.** A validated token resolves to a `user` row; the tools then restore
+  that reader's own AT Proto OAuth session (`restoreAuthenticatedClient`) and pass it to the XRPC
+  handlers as `via: "internal"`. Writes go to the reader's own repo with their own grant, so the
+  PDS remains the authority on what they actually permitted. If their session has lapsed, tools
+  say so and point them at signing in again rather than failing opaquely.
+- **Readers stay in control.** Settings → Connected apps lists every live grant — which client,
+  whether it can write, when it was last used — with a Disconnect button that revokes the grant
+  and every token descended from it.
+
+### Rate limiting
+
+Both public HTTP surfaces are throttled from one policy module
+(`src/server/rate-limit-policy.ts`), so the budgets live in one place and read as a set:
+
+- **`/xrpc`** — a coarse per-IP guard runs _before_ any work, because authenticating a request
+  costs a `getSession` round trip to the issuer PDS; then a per-caller budget keyed on the
+  authenticated DID (falling back to IP), with procedures an order of magnitude tighter than
+  queries because each one fans out to the caller's PDS.
+- **`/mcp`** — per-IP before the token lookup, then per-grant, so one connector can't spend
+  another reader's budget by sharing an egress address.
+- **OAuth endpoints** — token and revocation per IP; dynamic registration tightest of all, being
+  unauthenticated by design and a row write per call.
+
+Every response carries `RateLimit-*`; 429s add `Retry-After`, and both are CORS-exposed so browser
+clients can pace themselves rather than discovering the ceiling by hitting it. The limiter is
+in-memory per replica (`src/server/rate-limit.ts`) — with N replicas the effective ceiling is N×,
+which is fine for abuse control and avoids putting a shared counter on every request.
+
 ### Labels & moderation (labelers)
 
 Standard Reader speaks the standard AT Proto label protocol, so readers can subscribe to

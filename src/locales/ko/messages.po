@@ -46,6 +46,10 @@ msgstr "이 시리즈에 컬렉션 추가"
 msgid "Mark old posts as unread"
 msgstr "지난 글을 읽지 않음으로 표시"
 
+#: src/routes/mcp/authorize.tsx
+msgid "Something went wrong. Nothing was connected — try again."
+msgstr ""
+
 #: src/routes/_layout.u.$did.tsx
 msgid "{name} hasn't started reading or publishing here."
 msgstr "{name}님은 아직 여기서 읽거나 게시하지 않았습니다."
@@ -148,11 +152,19 @@ msgstr ""
 msgid "Content and intellectual property"
 msgstr ""
 
+#: src/components/user-settings-view.tsx
+msgid "Disconnect"
+msgstr ""
+
 #: src/components/docs/docs-nav-areas.ts
 #: src/components/docs/introduction-docs-page.tsx
 #: src/components/docs/lexicon-docs-intro.tsx
 msgid "Lexicons"
 msgstr "Lexicon"
+
+#: src/components/user-settings-view.tsx
+msgid "Can read only"
+msgstr ""
 
 #: src/routes/_layout.p.$did.$rkey.tsx
 #: src/routes/_layout.u.$did.tsx
@@ -384,6 +396,10 @@ msgstr "새 컬렉션…"
 #: src/components/reader/privacy-view.tsx
 msgid "We may update this policy as the product changes. The “Last updated” date at the top will change when we do. Continued use of the site after an update means you accept the revised policy."
 msgstr "제품이 변경되면 이 정책을 업데이트할 수 있습니다. 업데이트 시 상단의 “최종 수정일”이 변경됩니다. 업데이트 후에도 사이트를 계속 이용하면 개정된 정책에 동의하는 것으로 간주됩니다."
+
+#: src/routes/mcp/authorize.tsx
+msgid "Sign in to Standard Reader"
+msgstr ""
 
 #: src/components/onboarding/welcome-wizard.tsx
 msgid "Pick a few topics — we'll suggest publications to match. Optional."
@@ -622,6 +638,10 @@ msgstr "회원님이 소유한 모든 목록이 계정에서 삭제됩니다. �
 #: src/components/reader/atstore-review-prompt.tsx
 msgid "Review"
 msgstr "검토"
+
+#: src/routes/mcp/authorize.tsx
+msgid "Your saved articles, reading history, likes, subscriptions and lists — plus anything already public on the network."
+msgstr ""
 
 #: src/components/reader/about-view.tsx
 msgid "Sign in"
@@ -873,6 +893,12 @@ msgstr "피드를 채우려면 최소 {MIN_FOLLOWS}개를 팔로우하세요"
 msgid "Follow all"
 msgstr "모두 팔로우"
 
+#. placeholder {0}: view.clientName
+#. placeholder {1}: view.reader.handle
+#: src/routes/mcp/authorize.tsx
+#~ msgid "{0} wants to use Standard Reader as {1}."
+#~ msgstr ""
+
 #: src/routes/_layout.u.$did.tsx
 msgid "No posts indexed yet."
 msgstr "아직 색인된 글이 없습니다."
@@ -915,6 +941,10 @@ msgstr "추가할 멤버 유형"
 #: src/components/docs/labelers-docs-page.tsx
 msgid "A labeler is any DID that publishes AT Proto labels. Readers add one by DID on the <0>Labelers</0> page, and Standard Reader then shows that labeler's labels — and can warn on or hide labeled posts — as they read. Labelers are discovered the standard way; nothing about them is specific to us."
 msgstr ""
+
+#: src/routes/mcp/authorize.tsx
+#~ msgid "Something went wrong approving this connection. Try again."
+#~ msgstr ""
 
 #: src/components/docs/renderers-docs-page.tsx
 msgid "Rendering Standard Site documents"
@@ -1213,6 +1243,10 @@ msgstr "이 목록에 발행물이 없습니다."
 msgid "{0}, dark"
 msgstr ""
 
+#: src/components/user-settings-view.tsx
+msgid "Can read and act on your behalf"
+msgstr ""
+
 #: src/components/reader/save-to-collection-dialog.tsx
 msgid "Loading collections…"
 msgstr "컬렉션 불러오는 중…"
@@ -1243,6 +1277,11 @@ msgstr "목록 제거"
 #: src/routes/_layout.tag.$tag.tsx
 msgid "Loading articles"
 msgstr "글 불러오는 중"
+
+#. placeholder {0}: view.clientName
+#: src/routes/mcp/authorize.tsx
+msgid "Connect {0} to your account?"
+msgstr ""
 
 #: src/components/reader/about-view.tsx
 msgid "The reading experience"
@@ -1327,6 +1366,10 @@ msgstr "이 글을 고른 이유는? (마크다운 지원)"
 msgid "{count, plural, one {# upvote} other {# upvotes}} — click to upvote"
 msgstr "{count, plural, one {추천 #개} other {추천 #개}} — 클릭해서 추천"
 
+#: src/components/user-settings-view.tsx
+msgid "Apps you have connected to Standard Reader through its <0>MCP server</0>. Disconnecting one revokes its access immediately; it can ask to reconnect at any time."
+msgstr ""
+
 #: src/routes/_layout.history.tsx
 msgid "Read"
 msgstr "읽기"
@@ -1370,6 +1413,10 @@ msgstr "시스템"
 #: src/components/reader/save-to-collection-dialog.tsx
 msgid "Could not save to {appLabel}"
 msgstr "{appLabel}에 저장하지 못했습니다"
+
+#: src/routes/mcp/authorize.tsx
+msgid "If you continue, it will be able to:"
+msgstr ""
 
 #: src/components/docs/publishing-docs-page.tsx
 msgid "<0><1>Markpub</1> (recommended).</0> <2>at.markpub.markdown</2> — markdown with facets for rich text. It's not part of the site.standard spec either — no markdown format is — but it's the only one that's actually spec'd in a meaningful, reusable way, rather than one app's own ad hoc shape. Use this for a hand-rolled integration unless you already produce one of the platform formats below."
@@ -1417,6 +1464,7 @@ msgstr "열어본 아티클입니다. 내 저장소의 공개 레코드로, 여�
 #: src/routes/_layout.l.$did.$rkey.tsx
 #: src/routes/_layout.tag.$tag.tsx
 #: src/routes/login.tsx
+#: src/routes/mcp/authorize.tsx
 msgid "Cancel"
 msgstr "취소"
 
@@ -1441,6 +1489,10 @@ msgstr "본문으로 돌아가기"
 msgid "Search by name, handle, or topic…"
 msgstr "이름, 핸들, 주제로 검색…"
 
+#: src/components/user-settings-view.tsx
+msgid "Never used"
+msgstr ""
+
 #: src/components/reader/about-view.tsx
 msgid "Building something on the same index? There’s a public API."
 msgstr "같은 인덱스로 무언가 만들고 있나요? 공개 API가 있습니다."
@@ -1448,6 +1500,10 @@ msgstr "같은 인덱스로 무언가 만들고 있나요? 공개 API가 있습�
 #: src/components/reader/comments/comments-section.tsx
 msgid "Discussion"
 msgstr "논의"
+
+#: src/components/docs/api-docs-intro.tsx
+msgid "It is an OAuth 2.1 protected resource: an unauthenticated request answers <0>401</0> with a <1>resource metadata</1> pointer, clients register themselves dynamically, and PKCE is required. Two scopes: <2>mcp:read</2> and <3>mcp:write</3>."
+msgstr ""
 
 #: src/routes/_layout.discover.tsx
 msgid "Recommended for you"
@@ -1619,6 +1675,10 @@ msgstr "질문"
 msgid "Where this collection is published — followers of the series receive it."
 msgstr "이 컬렉션이 게시되는 곳입니다. 시리즈 팔로워에게 전달됩니다."
 
+#: src/components/user-settings-view.tsx
+msgid "No apps connected"
+msgstr ""
+
 #: src/components/reader/markdown-field.tsx
 msgid "Edit"
 msgstr "수정"
@@ -1669,6 +1729,10 @@ msgstr "{shown}개 이상 일치"
 #: src/routes/_layout.u.$did.tsx
 msgid "No liked articles yet."
 msgstr "아직 좋아요한 아티클이 없습니다."
+
+#: src/routes/mcp/authorize.tsx
+msgid "Returns you to"
+msgstr ""
 
 #: src/components/reader/article-below-fold.tsx
 #: src/routes/_layout.index.tsx
@@ -2020,6 +2084,10 @@ msgstr "마지막까지 다 보셨습니다."
 #~ msgid "Toggle list {listName}"
 #~ msgstr "{listName} 리스트 전환"
 
+#: src/routes/mcp/authorize.tsx
+msgid "This app can't be connected"
+msgstr ""
+
 #: src/components/reader/privacy-view.tsx
 msgid "OAuth tokens so we can read and write records in your repository on your behalf (for example follows, likes, saves, and publication lists)."
 msgstr "회원님을 대신해 저장소의 레코드를 읽고 쓸 수 있도록 하는 OAuth 토큰(예: 팔로우, 좋아요, 저장, 발행물 리스트)."
@@ -2144,6 +2212,10 @@ msgstr "최근 네트워크에 발행된 글이 없습니다."
 msgid "Create"
 msgstr "만들기"
 
+#: src/routes/mcp/authorize.tsx
+msgid "Act on your behalf"
+msgstr ""
+
 #: src/routes/_layout.index.tsx
 msgid "See all trending"
 msgstr "인기 글 전체 보기"
@@ -2177,6 +2249,10 @@ msgstr "{metaCount, plural, one {글 {formattedMetaCount}편} other {글 {format
 #: src/components/reader/profile-tabs-settings-modal.tsx
 msgid "Show {label} tab"
 msgstr "{label} 탭 표시"
+
+#: src/components/docs/api-docs-intro.tsx
+msgid "This API is also served as a <0>Model Context Protocol</0> server at <1>{baseUrl}/mcp</1>. Paste that URL into an MCP client and authorize it; the fifty-odd methods above are grouped into fifteen tools, and the client can read the network and act on your behalf."
+msgstr ""
 
 #: src/routes/_layout.feedback.index.tsx
 msgid "Reset filters"
@@ -2294,6 +2370,10 @@ msgstr "{weekday} · 인기"
 #: src/components/reader/extension-privacy-view.tsx
 msgid "Network calls to {siteHost} run in the extension background worker, not in page scripts injected into sites you visit. That keeps your session handling in one place and limits what runs on third-party pages to URL matching, UI (overlay chip, Bluesky embed save button), and messaging with the background worker."
 msgstr "{siteHost}로의 네트워크 요청은 방문하는 사이트에 삽입된 페이지 스크립트가 아니라 확장 프로그램의 백그라운드 워커에서 실행됩니다. 덕분에 세션 처리가 한곳에 모이고, 서드파티 페이지에서 실행되는 것은 URL 매칭, UI(오버레이 칩, Bluesky 임베드 저장 버튼), 백그라운드 워커와의 메시지 교환으로 제한됩니다."
+
+#: src/routes/mcp/authorize.tsx
+msgid "Connect"
+msgstr ""
 
 #: src/routes/login.tsx
 msgid "Switch account"
@@ -2443,6 +2523,10 @@ msgstr "환영합니다"
 #: src/components/reader/privacy-view.tsx
 msgid "In-app preferences you set (theme, reading typography, whether to track reading history, and similar settings)."
 msgstr "설정한 앱 내 환경설정(테마, 읽기 서체, 읽기 기록 추적 여부 등)."
+
+#: src/routes/mcp/authorize.tsx
+msgid "Taking you back…"
+msgstr ""
 
 #: src/components/reader/subscribe-card.tsx
 msgid "You're already subscribed to {publicationName}. New posts will show up in your feed."
@@ -2802,6 +2886,10 @@ msgstr "일 · 오전 8:00"
 msgid "We picked this language from your browser. You can switch it anytime."
 msgstr "브라우저 설정에 따라 이 언어를 선택했습니다. 언제든지 변경할 수 있습니다."
 
+#: src/routes/mcp/authorize.tsx
+msgid "Nothing has been shared. Head back to the app you came from and try connecting again."
+msgstr ""
+
 #: src/components/reader/text-selection-toolbar.tsx
 msgid "Dismiss selection"
 msgstr ""
@@ -2936,6 +3024,10 @@ msgstr "계속 읽기"
 msgid "All"
 msgstr "전체"
 
+#: src/routes/mcp/authorize.tsx
+#~ msgid "Returning you to the app…"
+#~ msgstr ""
+
 #: src/routes/_layout.friends.tsx
 #~ msgid "Publications written by the people you follow on Bluesky."
 #~ msgstr ""
@@ -3039,6 +3131,10 @@ msgstr "구독 중인 곳의 가장 좋은 글과 함께, 발견할 만한 발�
 #: src/components/reader/comments/comments-section.tsx
 msgid "Across the Atmosphere"
 msgstr "Atmosphere 전역에서"
+
+#: src/routes/mcp/authorize.tsx
+msgid "This request can't be completed here, so we're returning you to the app that sent you."
+msgstr ""
 
 #: src/routes/_layout.l.$did.$rkey.tsx
 msgid "No people in this list — add some from the edit dialog."
@@ -3242,6 +3338,11 @@ msgstr "음성 샘플을 재생하지 못했습니다."
 msgid "{0, plural, one {# publication} other {{1} publications}}"
 msgstr ""
 
+#. placeholder {0}: view.clientName
+#: src/routes/mcp/authorize.tsx
+#~ msgid "Connect {0}?"
+#~ msgstr ""
+
 #: src/components/reader/subscriptions-table.tsx
 msgid "Person"
 msgstr ""
@@ -3261,6 +3362,10 @@ msgstr "아이콘 교체"
 
 #: src/components/reader/subscriptions-unsubscribe-dialog.tsx
 msgid "Unfollow"
+msgstr ""
+
+#: src/routes/mcp/authorize.tsx
+msgid "Read your library"
 msgstr ""
 
 #: src/components/onboarding/welcome-wizard.tsx
@@ -3851,6 +3956,10 @@ msgstr ""
 msgid "Load more ({remainingPublications} remaining)"
 msgstr "더 보기 ({remainingPublications}개 남음)"
 
+#: src/routes/mcp/authorize.tsx
+msgid "You can disconnect it at any time from Settings. Standard Reader never shares your password — only the access you grant here."
+msgstr ""
+
 #: src/components/reader/collection-theme-editor.tsx
 msgid "Title font"
 msgstr "제목 글꼴"
@@ -3866,6 +3975,10 @@ msgstr ""
 #: src/components/docs/introduction-docs-page.tsx
 msgid "Build on Standard"
 msgstr ""
+
+#: src/routes/mcp/authorize.tsx
+#~ msgid "Can't connect this app"
+#~ msgstr ""
 
 #: src/components/NavbarAuth.tsx
 #: src/routes/login.tsx
@@ -4299,6 +4412,10 @@ msgstr "{displayTag} 태그가 달린 발행물 {formattedUnfollowedCount}개를
 msgid "Drop or choose a new image to replace"
 msgstr "새 이미지를 끌어다 놓거나 선택해 교체하세요"
 
+#: src/routes/mcp/authorize.tsx
+#~ msgid "You can disconnect this app at any time from Settings. Anything it writes goes to your own AT Protocol repo and is public on the network."
+#~ msgstr ""
+
 #: src/routes/_layout.search.tsx
 msgid "Clear search"
 msgstr "검색 지우기"
@@ -4656,6 +4773,10 @@ msgstr ""
 msgid "View publication"
 msgstr "발행물 보기"
 
+#: src/routes/mcp/authorize.tsx
+msgid "Save and like articles, follow publications and readers, mark things read, and change your lists. Each of these writes a public record to your repo."
+msgstr ""
+
 #: src/components/reader/publication-latest-note.tsx
 msgid "Latest note"
 msgstr "최근 노트"
@@ -4841,6 +4962,10 @@ msgstr "이 글 추천하기"
 msgid "Stop"
 msgstr "정지"
 
+#: src/components/user-settings-view.tsx
+msgid "Connected apps"
+msgstr ""
+
 #: src/components/reader/add-publication-modal.tsx
 msgid "Has documents but no publications"
 msgstr "문서는 있지만 발행물이 없음"
@@ -4870,6 +4995,11 @@ msgstr "Standard Reader는 AT Proto 저장소에서 <0>site.standard.document</0
 #: src/components/reader/list-edit-modal.tsx
 msgid "e.g. Tech, Friends, Cooking"
 msgstr "예: 기술, 친구, 요리"
+
+#. placeholder {0}: fmt.relativeTime(connection.lastUsedAt)
+#: src/components/user-settings-view.tsx
+msgid "Last used {0}"
+msgstr ""
 
 #: src/routes/_layout.feedback.index.tsx
 msgid "No feedback matches your filters."
@@ -4967,6 +5097,10 @@ msgstr "켬"
 msgid "Stop reading"
 msgstr "읽기 중지"
 
+#: src/routes/mcp/authorize.tsx
+#~ msgid "Approve"
+#~ msgstr ""
+
 #: src/components/reader/document-share-menu.tsx
 #: src/components/reader/share-menu.tsx
 #: src/components/reader/text-selection-toolbar.tsx
@@ -4977,6 +5111,10 @@ msgstr "공유"
 #: src/components/user-settings-view.tsx
 msgid "Your weekly digest"
 msgstr "주간 다이제스트"
+
+#: src/routes/mcp/authorize.tsx
+msgid "Sign in to continue"
+msgstr ""
 
 #: src/components/reader/discover-topic-filters.tsx
 msgid "Search all topics…"
@@ -5084,9 +5222,18 @@ msgstr "Semble를 통한 {connectionLabel}"
 msgid "S"
 msgstr ""
 
+#: src/routes/mcp/authorize.tsx
+msgid "Signed in as"
+msgstr ""
+
 #: src/magazine/flow.tsx
 msgid "In this issue"
 msgstr "이번 호에서"
+
+#: src/components/docs/api-docs-intro.tsx
+#: src/components/docs/docs-api-nav.tsx
+msgid "MCP server"
+msgstr ""
 
 #: src/components/reader/read-on-platform.tsx
 msgid "Read this on {name}"
