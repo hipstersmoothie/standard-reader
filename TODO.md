@@ -914,8 +914,10 @@ Standard AT Proto labels: subscribe to labelers, see/blur/hide their labels whil
       AI-writing detector → signed labels (SQLite) → `queryLabels` + `subscribeLabels`.
 - [ ] **Feed-level hiding** — filter `hide`-labeled documents out of feeds (currently surfaced
       only on the article page).
-- [ ] **Signature verification** — verify label `sig` against the labeler's `#atproto_label` key
-      when displaying (claudeslop signs; the app trusts the TLS endpoint for now).
+- [x] **Signature verification** — the label sync verifies every label's `sig` against the
+      labeler's `#atproto_label` key (resolved from its DID document, cached, re-resolved once on
+      mismatch to absorb key rotation) before mirroring it. Unsigned or unverifiable labels are
+      dropped and counted in the sync log. See `src/server/labeler/verify.server.ts`.
 - [ ] **subscribeLabels ingestion** — consume the labeler firehose into the read-model instead of
       live `queryLabels` per page, for lower latency.
 - [ ] **Deploy claudeslop** — Railway service + persistent SQLite volume; publish its did:web.
