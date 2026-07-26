@@ -24,12 +24,14 @@ import { KNOWN_STANDARD_SITE_LABELERS } from "#/server/labeler/known-labelers";
 import {
   labelersWithIndexedSubjects,
   labelsForDocument,
+  observedLabelValues,
   readAccountLabels,
   subscribedLabelerDids,
 } from "#/server/labeler/labels.server";
 import type { LabelValueDef } from "#/server/labeler/resolve.server";
 import {
   ensureKnownLabelersResolved,
+  refreshLabelerDefinitions,
   resolveActorDid,
   resolveLabelerView,
 } from "#/server/labeler/resolve.server";
@@ -255,12 +257,39 @@ const getLabeler = createServerFn({ method: "GET" })
       span.set("did", did);
 
       const session = await getAtprotoSessionForRequest(getRequest());
-      const [view, prefsRow] = await Promise.all([
+      const [initialView, prefsRow, observed] = await Promise.all([
         resolveLabelerView(did),
         session
           ? readPrefs(context.db, context.schema, session.did, did)
           : Promise.resolve({ prefs: [] as Array<LabelPref>, createdAt: null }),
+        observedLabelValues(context.db, context.schema, did),
       ]);
+
+      // A registration record is written *about* a labeler and drifts from what
+      // it actually emits. Any value missing a definition can't be given a
+      // visibility pref, so when we've synced values this labeler never
+      // declared, pull its own declaration and fill the gaps (rate-limited).
+      let view = initialView;
+      const declared = new Set(
+        (view?.labelValueDefinitions ?? []).map((d) => d.identifier),
+      );
+      const undeclared = observed.filter((val) => !declared.has(val));
+      if (undeclared.length > 0) {
+        span.set("undeclaredValues", undeclared.length);
+        if (await refreshLabelerDefinitions(did)) {
+          view = (await resolveLabelerView(did)) ?? view;
+        }
+      }
+
+      // Anything still undeclared after the refresh — a labeler emitting values
+      // it documents nowhere — becomes a bare definition, so the reader can
+      // still set a pref for it instead of being stuck on the `warn` default.
+      const finalDefs = [...(view?.labelValueDefinitions ?? [])];
+      const covered = new Set(finalDefs.map((d) => d.identifier));
+      for (const val of observed) {
+        if (!covered.has(val)) finalDefs.push({ identifier: val });
+      }
+
       let subscribed = false;
       if (session) {
         const subs = await subscribedLabelerDids(
@@ -271,7 +300,11 @@ const getLabeler = createServerFn({ method: "GET" })
         subscribed = subs.includes(did);
       }
       return {
-        labeler: (view ?? { did }) as LabelerCard,
+        labeler: {
+          ...((view ?? {}) as LabelerCard),
+          did,
+          labelValueDefinitions: finalDefs,
+        } as LabelerCard,
         subscribed,
         prefs: prefsRow.prefs,
       };

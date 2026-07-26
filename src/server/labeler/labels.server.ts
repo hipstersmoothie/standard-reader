@@ -260,6 +260,25 @@ export async function labelersWithIndexedSubjects(
   return new Set(rows.map((r) => r.src));
 }
 
+/**
+ * Distinct label values a labeler has actually emitted, per the read-model.
+ *
+ * A labeler's registration record declares what it *says* it emits, and the two
+ * drift — so this is the ground truth used to spot values with no definition.
+ */
+export async function observedLabelValues(
+  db: Db,
+  schema: Schema,
+  labelerDid: string,
+): Promise<Array<string>> {
+  const dl = schema.documentLabels;
+  const rows = await db
+    .selectDistinct({ val: dl.val })
+    .from(dl)
+    .where(eq(dl.src, labelerDid));
+  return rows.map((r) => r.val);
+}
+
 /** Active labels on a single document for the caller's subscribed labelers. */
 export async function labelsForDocument(
   db: Db,

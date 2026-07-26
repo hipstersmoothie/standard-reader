@@ -213,6 +213,20 @@ export function LabelerDetailView({
     accounts.length,
   );
 
+  // Only offer a subject tab once we know it has content. A labeler deals in
+  // documents, accounts, or both — ours score prose, network labelers label
+  // publishers — so an empty tab is the normal case, not an error. Gated on the
+  // loaded count rather than shown-then-hidden, so a labeler with nothing to
+  // list never flashes a tab that disappears.
+  const showDocuments = !labeledIsLoading && documentCount > 0;
+  const showAccounts = !accountsIsLoading && accountCount > 0;
+  // Fall back to Labels when the URL names a tab this labeler doesn't have.
+  const effectiveView: LabelerView =
+    (view === "documents" && !showDocuments) ||
+    (view === "accounts" && !showAccounts)
+      ? "labels"
+      : view;
+
   const onViewChange = (key: Key) => {
     const next = key as LabelerView;
     void navigate({
@@ -288,7 +302,7 @@ export function LabelerDetailView({
       </div>
 
       <Tabs
-        selectedKey={view}
+        selectedKey={effectiveView}
         onSelectionChange={onViewChange}
         style={styles.tabs}
       >
@@ -298,12 +312,16 @@ export function LabelerDetailView({
               <Tab id="labels">
                 <Trans>Labels</Trans>
               </Tab>
-              <Tab id="documents">
-                <Trans>Documents</Trans>
-              </Tab>
-              <Tab id="accounts">
-                <Trans>Accounts</Trans>
-              </Tab>
+              {showDocuments ? (
+                <Tab id="documents">
+                  <Trans>Documents</Trans>
+                </Tab>
+              ) : null}
+              {showAccounts ? (
+                <Tab id="accounts">
+                  <Trans>Accounts</Trans>
+                </Tab>
+              ) : null}
             </TabList>
           </div>
           <div {...stylex.props(styles.tabRule)} aria-hidden />

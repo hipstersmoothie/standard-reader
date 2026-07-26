@@ -163,6 +163,56 @@ export async function ensureKnownLabelersResolved(): Promise<void> {
   await Promise.all(missing.map((did) => resolveLabelerView(did)));
 }
 
+/**
+ * How long before we re-ask a labeler for its label-value definitions.
+ * Refreshes are triggered by seeing a label value we have no definition for,
+ * which stays true for a labeler that genuinely under-declares — the cooldown
+ * stops that from meaning a network call on every page load.
+ */
+const DEFINITIONS_REFRESH_MS = 60 * 60 * 1000;
+const definitionsRefreshedAt = new Map<string, number>();
+
+/**
+ * Merge a labeler's own `app.bsky.labeler.service` definitions into its stored
+ * row, and report whether anything new landed.
+ *
+ * An `app.standard-reader.labeler.service` record is written *about* a labeler,
+ * often by us, so it drifts: Skywatch's app record declared 2 label values
+ * while the labeler itself declares 35 and actively emits 28. Undeclared values
+ * are not cosmetic — the Labels tab is where per-label visibility is chosen, so
+ * a value with no definition cannot be configured at all.
+ *
+ * Definitions already on the row win per identifier, so a deliberate local
+ * override is never overwritten; the labeler's own declaration only fills gaps.
+ */
+export async function refreshLabelerDefinitions(did: string): Promise<boolean> {
+  const last = definitionsRefreshedAt.get(did);
+  if (last !== undefined && Date.now() - last < DEFINITIONS_REFRESH_MS) {
+    return false;
+  }
+  definitionsRefreshedAt.set(did, Date.now());
+
+  const row = await readServiceRow(did);
+  if (!row) return false;
+
+  const declaration = await resolveAtprotoLabeler(did);
+  const incoming = declaration?.labelValueDefinitions ?? [];
+  if (incoming.length === 0) return false;
+
+  const existing = (row.labelValueDefinitions ?? []) as Array<LabelValueDef>;
+  const known = new Set(existing.map((def) => def.identifier));
+  const added = incoming.filter(
+    (def) => def.identifier && !known.has(def.identifier),
+  );
+  if (added.length === 0) return false;
+
+  await db
+    .update(labelerServices)
+    .set({ labelValueDefinitions: [...existing, ...added] })
+    .where(eq(labelerServices.uri, row.uri));
+  return true;
+}
+
 /** A labeler's presentation, from its registration record. */
 export async function resolveLabelerView(
   did: string,
