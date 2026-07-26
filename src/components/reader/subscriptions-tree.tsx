@@ -360,6 +360,7 @@ export function SubscriptionsTree({
   style?: stylex.StyleXStyles;
 }) {
   const { t } = useLingui();
+  const fmt = useFormatters();
   const router = useRouter();
 
   const go = (action: () => void) => () => {
@@ -415,7 +416,9 @@ export function SubscriptionsTree({
                   ) : null}
                   <span {...stylex.props(styles.groupName)}>{node.name}</span>
                   {node.unreadCount > 0 ? (
-                    <UnreadBadge count={node.unreadCount} />
+                    <span aria-label={t`${node.unreadCount} unread`}>
+                      {formatSidebarUnreadCount(fmt, node.unreadCount)}
+                    </span>
                   ) : null}
                   {hasChildItems ? (
                     <AriaButton
