@@ -782,6 +782,11 @@ Backend/API exists; UI or copy is missing.
 - [x] **Content rendering gaps** — PCKT gallery renderer (`blog.pckt.block.gallery`); prod scan
       found 54 documents — implemented grid/list/carousel/masonry layouts via
       [`pckt-gallery.tsx`](src/components/reader/content/renderers/pckt-gallery.tsx).
+- [x] **PCKT gallery lightbox** — `blog.pckt.block.gallery` images were the last rendered doc
+      images without a lightbox. They now open the shared reader lightbox with prev/next across
+      the whole gallery and a thumbnail → lightbox view transition, matching
+      [`leaflet-image-gallery.tsx`](src/components/reader/content/renderers/leaflet-image-gallery.tsx).
+      Magazine editions still defer to their own image lightbox binding.
 - [x] **Leaflet image galleries + lightbox polish** — added `pub.leaflet.blocks.imageGallery`
       rendering with grid/carousel layouts, Leaflet-style shared lightbox for galleries + single
       images, CSS `grid-lanes` with plain CSS Grid fallback, and a shared-element open transition
