@@ -45,11 +45,7 @@ import { Flex } from "../../design-system/flex";
 import { IconButton } from "../../design-system/icon-button";
 import { Skeleton } from "../../design-system/skeleton";
 import { animationDuration } from "../../design-system/theme/animations.stylex";
-import {
-  criticalColor,
-  primaryColor,
-  uiColor,
-} from "../../design-system/theme/color.stylex";
+import { primaryColor, uiColor } from "../../design-system/theme/color.stylex";
 import { radius } from "../../design-system/theme/radius.stylex";
 import { shadow } from "../../design-system/theme/shadow.stylex";
 import {
@@ -170,12 +166,11 @@ const styles = stylex.create({
     fontSize: fontSize.xs,
     fontWeight: fontWeight.medium,
   },
-  // A quiet tint on the heart so the "Recommended by" eyebrow reads as a
-  // recommendation at a glance — noticeable, but the text stays muted so it
-  // never competes with the title.
+  // The heart inherits the eyebrow's muted text color — the red tint is
+  // reserved for the like count's filled heart (the viewer's own recommend),
+  // so a followed user's recommendation never reads as your own.
   recommendedByHeart: {
     alignItems: "center",
-    color: criticalColor.solid1,
     display: "inline-flex",
     flexShrink: 0,
   },
@@ -1029,29 +1024,17 @@ function OwnerHandleLink({
 
 /** Whether {@link RecommendedByLine} would render anything for this card. */
 function hasRecommendedByLine(article: ArticleCard): boolean {
-  return (
-    article.viewerHasRecommended || (article.recommendedBy?.length ?? 0) > 0
-  );
+  return (article.recommendedBy?.length ?? 0) > 0;
 }
 
 /**
- * Recommend attribution shown above the byline on document items. When the
- * viewer recommended the article themselves it reads "Recommended by you" (the
- * personal signal takes precedence); otherwise it collapses the followed users
- * who recommended it into one line ("@handle and N others"). Either way a red
- * heart marks it as a recommendation at a glance.
+ * Recommend attribution shown above the byline on document items: the followed
+ * users who recommended it, collapsed into one line ("@handle and N others"),
+ * with a heart in the eyebrow's own muted color. The viewer's own recommend is
+ * *not* shown here — it fills (and tints) the heart on the card's like count
+ * instead (see `LikeCount`).
  */
 function RecommendedByLine({ article }: { article: ArticleCard }) {
-  if (article.viewerHasRecommended) {
-    return (
-      <Flex align="center" gap="sm" style={styles.recommendedByLine}>
-        <span {...stylex.props(styles.recommendedByHeart)}>
-          <Heart size={13} aria-hidden fill="currentColor" />
-        </span>
-        <span>Recommended by you</span>
-      </Flex>
-    );
-  }
   const recommenders = article.recommendedBy;
   if (!recommenders || recommenders.length === 0) {
     return null;
@@ -1316,6 +1299,7 @@ function ArticleMetaLine({
         <ArticleEngagement
           recommendCount={article.recommendCount}
           commentCount={article.commentCount}
+          viewerHasRecommended={article.viewerHasRecommended}
         />
       ) : null}
       {hasEngagement && hasTrailing ? (
@@ -1665,10 +1649,10 @@ export function FeatureArticle({
     );
   }
 
-  // Byline-less (publication page): the recommend attribution still applies —
-  // "Recommended by you" or the followed-user line. Lift it out of the card link
-  // (it holds its own profile links) and let the shell own the row's border so
-  // the grid inside stays border-free.
+  // Byline-less (publication page): the followed-user recommend attribution
+  // still applies. Lift it out of the card link (it holds its own profile
+  // links) and let the shell own the row's border so the grid inside stays
+  // border-free.
   if (hasRecommendedByLine(article)) {
     return (
       <div {...stylex.props(styles.featureShell)}>
@@ -1962,6 +1946,7 @@ export function CompactRow({
               <ArticleEngagement
                 recommendCount={article.recommendCount}
                 commentCount={article.commentCount}
+                viewerHasRecommended={article.viewerHasRecommended}
               />
             </>
           ) : null}

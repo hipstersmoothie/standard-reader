@@ -43,8 +43,8 @@ function bumpCard(
   recommended: boolean,
 ): ArticleCard {
   if (card.uri !== documentUri) return card;
-  // Also flip the viewer's own recommend flag so the "Recommended by you"
-  // indicator toggles instantly, even when the count is unchanged (delta 0).
+  // Also flip the viewer's own recommend flag so the filled heart on the like
+  // count toggles instantly, even when the count is unchanged (delta 0).
   return {
     ...card,
     recommendCount: bumpCount(card.recommendCount, delta),

@@ -193,6 +193,7 @@ function MetaLine({
         recommendCount={article.recommendCount}
         commentCount={article.commentCount}
         size="xs"
+        viewerHasRecommended={article.viewerHasRecommended}
       />
     </Flex>
   );

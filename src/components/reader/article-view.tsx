@@ -960,7 +960,9 @@ function ArticleViewBody({
   } = useArticleBookmark(article.uri, signedIn);
 
   const readStats = formatArticleReadStats(i18n, article.readCount);
-  const hasEngagement = article.recommendCount > 0 || article.commentCount > 0;
+  // Use the optimistic recommend count so the byline heart fills (and the line
+  // appears on a first recommend) the instant the reader taps Recommend.
+  const hasEngagement = recommendCount > 0 || article.commentCount > 0;
   const hero = useMemo(() => resolveArticleHeroImage(article), [article]);
   const [heroLightboxOpen, setHeroLightboxOpen] = useState(false);
   const [heroTransitionActive, setHeroTransitionActive] = useState(false);
@@ -1366,9 +1368,10 @@ function ArticleViewBody({
                   <>
                     <span aria-hidden>·</span>
                     <ArticleEngagement
-                      recommendCount={article.recommendCount}
+                      recommendCount={recommendCount}
                       commentCount={article.commentCount}
                       size="sm"
+                      viewerHasRecommended={recommended}
                     />
                   </>
                 ) : null}

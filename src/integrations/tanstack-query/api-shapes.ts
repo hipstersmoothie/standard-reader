@@ -147,8 +147,8 @@ export interface ArticleCard {
   recommendedBy?: Array<ArticleCardRecommender>;
   /**
    * Whether the requesting reader has recommended this article themselves.
-   * Drives the "Recommended by you" indicator (red heart) shown on document
-   * items across the app. Attached server-side (see
+   * Fills (and tints) the heart on the document's like count across the app —
+   * there is no separate "Recommended by you" line. Attached server-side (see
    * `attachViewerRecommendedToArticles`); only meaningful when the query ran for
    * a signed-in reader, otherwise defaults to `false`.
    */

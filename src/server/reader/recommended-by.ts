@@ -79,7 +79,7 @@ export async function attachRecommendedByToArticles<
 
 /**
  * Flag the cards the requesting reader has recommended themselves, so document
- * items across the app can show the "Recommended by you" indicator. One batched,
+ * items across the app can fill the heart on the like count. One batched,
  * index-served query (rides the `(recommender_did, document_uri)` composite
  * index) sets `viewerHasRecommended: true` on matching cards; the rest keep the
  * `false` default from {@link toArticleCard}.
