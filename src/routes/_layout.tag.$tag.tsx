@@ -302,10 +302,18 @@ const styles = stylex.create({
   tabList: {
     borderBottomStyle: "none",
     borderBottomWidth: 0,
+    // Phones give the tabs the whole row (minus the sort control, when the
+    // Articles tab shows one) so they read as one full-width switch; from `sm`
+    // up they sit label-width on the leading edge.
+    flexGrow: { default: 1, [breakpoints.sm]: 0 },
     // The design-system TabList scrolls its own overflow, so it would happily
     // shrink to nothing beside the sort control. Pinning it keeps the tabs
     // intact and lets the control wrap to its own line on narrow screens.
     flexShrink: 0,
+  },
+  tabItem: {
+    // Even halves of whatever the list is given (see `tabList`).
+    flexGrow: { default: 1, [breakpoints.sm]: 0 },
   },
   // Shared slot geometry for the articles sort control. Two controls occupy it
   // — a compact icon menu and the full select — swapped by media query rather
@@ -357,6 +365,17 @@ const styles = stylex.create({
     rowGap: spacing["3"],
     marginBottom: spacing["5"],
     marginTop: spacing["2"],
+  },
+  // Below ~360px the four sort labels are wider than the row. Let the group cap
+  // at the row and scroll rather than shrink, which squeezed "Most posts" onto
+  // two lines and left the pill twice as tall as everything beside it.
+  directorySortControl: {
+    maxWidth: "100%",
+    overflowX: "auto",
+  },
+  directorySortItem: {
+    flexShrink: 0,
+    whiteSpace: "nowrap",
   },
   directoryToolbarAction: {
     // Trailing edge on whichever line it lands on — once it wraps it is alone
@@ -752,10 +771,15 @@ function TagPublicationsPanel({
           aria-label={t`Sort publications`}
           selectedKeys={new Set([sort])}
           onSelectionChange={onSortChange}
-          size="sm"
+          size="md"
+          style={styles.directorySortControl}
         >
           {SORT_OPTIONS.map((option) => (
-            <SegmentedControlItem key={option.id} id={option.id}>
+            <SegmentedControlItem
+              key={option.id}
+              id={option.id}
+              style={styles.directorySortItem}
+            >
               {i18n._(option.label)}
             </SegmentedControlItem>
           ))}
@@ -765,7 +789,7 @@ function TagPublicationsPanel({
           aria-label={t`Publication layout`}
           selectedKeys={new Set([layout])}
           onSelectionChange={onLayoutChange}
-          size="sm"
+          size="md"
         >
           <SegmentedControlItem id="list" aria-label={t`List view`}>
             <List size={16} />
@@ -1149,10 +1173,10 @@ function TagPage() {
         <div {...stylex.props(styles.tabBar)}>
           <div {...stylex.props(styles.tabBarInner)}>
             <TabList aria-label={t`Tag views`} style={styles.tabList}>
-              <Tab id="feed">
+              <Tab id="feed" style={styles.tabItem}>
                 <Trans>Articles</Trans>
               </Tab>
-              <Tab id="publications">
+              <Tab id="publications" style={styles.tabItem}>
                 <Trans>Publications</Trans>
               </Tab>
             </TabList>
