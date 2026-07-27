@@ -89,6 +89,12 @@ export const Route = createFileRoute("/collection/$did/$rkey")({
         shell: shellFromCollectionData(collection),
         isListMode: false,
         collection,
+        // The records this page is built from — rendered by `AtRecordMeta`.
+        atMeta: {
+          canonical: [uri],
+          alternate: [collection.collectionDoc.publicationUri],
+          author: [params.did],
+        },
       };
     }
 
@@ -101,6 +107,17 @@ export const Route = createFileRoute("/collection/$did/$rkey")({
       shell: shellFromArticle(article),
       isListMode: !article?.collection,
       collection: null as CollectionMagazineData | null,
+      // The records this page is built from — rendered by `AtRecordMeta`. In
+      // list mode the params name a list rather than a document, and the
+      // magazine is assembled from its members, so there is nothing single and
+      // canonical to point at.
+      atMeta: article
+        ? {
+            canonical: [uri],
+            alternate: [article.publicationUri],
+            author: [article.did],
+          }
+        : {},
     };
   },
   head: ({ loaderData, match }) => {

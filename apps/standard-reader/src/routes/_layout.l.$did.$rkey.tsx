@@ -74,7 +74,7 @@ import { useTrackReadingHistory } from "#/lib/use-track-reading-history";
 import { AuthorProfileLink } from "../components/reader/author-profile-link";
 import { ArticleRow, PubDirectoryRow } from "../components/reader/cards";
 import { FeedLoadMore } from "../components/reader/feed-load-more";
-import { initials } from "../components/reader/format";
+import { initials, listUriFromParams } from "../components/reader/format";
 import { ListEditModal } from "../components/reader/list-edit-modal";
 import { Handle, Kicker, ReaderContent } from "../components/reader/primitives";
 import { isArticleUnreadForReader } from "../components/reader/read-optimistic";
@@ -121,6 +121,14 @@ export const Route = createFileRoute("/_layout/l/$did/$rkey")({
       listName: page.list?.name ?? null,
       listDescription: page.list?.description ?? null,
       ownerHandle: page.owner?.handle ?? null,
+      // The records this page is built from — rendered by `AtRecordMeta`.
+      // Nothing is claimed when the list didn't resolve.
+      atMeta: page.list
+        ? {
+            canonical: [listUriFromParams(params.did, params.rkey)],
+            author: [page.owner?.did ?? params.did],
+          }
+        : {},
     };
   },
   head: ({ loaderData, match, params }) => {

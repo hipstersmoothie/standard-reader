@@ -18,7 +18,17 @@ import { DocsPublishingNav } from "./docs-publishing-nav";
 import { DocsRefShell } from "./docs-ref-shell";
 import { DocsSideNav } from "./docs-side-nav";
 
-const DISCOVERY_SNIPPET = `<link
+const DISCOVERY_SNIPPET = `<meta
+  name="at:canonical"
+  content="at://did:plc:you/site.standard.document/<rkey>"
+/>
+<meta
+  name="at:alternate"
+  content="at://did:plc:you/site.standard.publication/<rkey>"
+/>
+<meta name="at:author" content="at://did:plc:you" />`;
+
+const DISCOVERY_LEGACY_SNIPPET = `<link
   rel="site.standard.document"
   href="at://did:plc:you/site.standard.document/<rkey>"
 />
@@ -199,31 +209,55 @@ export function PublishingDocsPage() {
         </h2>
         <p {...stylex.props(docsStyles.prose)}>
           <Trans>
-            Discovery hints are part of the site.standard spec itself, and our
-            browser extension uses it too! When you land on a URL it hasn&apos;t
-            indexed yet, it looks in that page&apos;s{" "}
-            <code {...stylex.props(docsStyles.codeInline)}>head</code> for a{" "}
-            <code {...stylex.props(docsStyles.codeInline)}>link</code> tag whose{" "}
-            <code {...stylex.props(docsStyles.codeInline)}>rel</code> matches
-            the record&apos;s collection and whose{" "}
-            <code {...stylex.props(docsStyles.codeInline)}>href</code> is the
-            record&apos;s{" "}
-            <code {...stylex.props(docsStyles.codeInline)}>at://</code> URI.
+            Say in your page&apos;s{" "}
+            <code {...stylex.props(docsStyles.codeInline)}>head</code> which
+            records it is built from, and any client on the network can resolve
+            the page back to them. Our browser extension uses this: when you
+            land on a URL it hasn&apos;t indexed yet, it reads those tags rather
+            than guessing from the URL.
+          </Trans>
+        </p>
+        <p {...stylex.props(docsStyles.prose)}>
+          <Trans>
+            Use the <code {...stylex.props(docsStyles.codeInline)}>at:</code>{" "}
+            meta tags — the convention the Atmosphere settled on in 2026.{" "}
+            <code {...stylex.props(docsStyles.codeInline)}>at:canonical</code>{" "}
+            names the records the page is made of, the ones it would have no
+            reason to exist without.{" "}
+            <code {...stylex.props(docsStyles.codeInline)}>at:alternate</code>{" "}
+            names records the page merely shows — the publication a document
+            belongs to, a companion Bluesky post.{" "}
+            <code {...stylex.props(docsStyles.codeInline)}>at:author</code>{" "}
+            names the identity that wrote it. Every name repeats, so a page with
+            two alternates emits two tags.
           </Trans>
         </p>
         <CodePanel tag="head" code={DISCOVERY_SNIPPET} />
         <p {...stylex.props(docsStyles.prose)}>
           <Trans>
-            Include the{" "}
-            <code {...stylex.props(docsStyles.codeInline)}>
-              site.standard.publication
-            </code>{" "}
-            hint only if the document belongs to a publication record. Add both
-            regardless of which reader you care about — they&apos;re how any
-            client on the network resolves your page to its record, not just our
-            extension.
+            Standard Reader emits these on its own article, publication, list
+            and profile pages, and reads them from yours.
           </Trans>
         </p>
+        <h3 {...stylex.props(docsStyles.h3)}>
+          <Trans>The older link rels</Trans>
+        </h3>
+        <p {...stylex.props(docsStyles.prose)}>
+          <Trans>
+            Before the meta tags, discovery hints rode on{" "}
+            <code {...stylex.props(docsStyles.codeInline)}>link</code> tags
+            whose <code {...stylex.props(docsStyles.codeInline)}>rel</code> was
+            the record&apos;s collection. We still read these, so pages that
+            haven&apos;t migrated keep working — but an unregistered{" "}
+            <code {...stylex.props(docsStyles.codeInline)}>rel</code> value
+            isn&apos;t valid HTML, and it can&apos;t say why a record is on the
+            page. New sites should reach for the meta tags. If you already emit
+            the rels, the friendly move is what SkyPress did: keep them and put
+            the meta tags alongside, so nothing already reading the old ones
+            breaks.
+          </Trans>
+        </p>
+        <CodePanel tag="head" code={DISCOVERY_LEGACY_SNIPPET} />
 
         <h2
           {...stylex.props(docsStyles.h2)}

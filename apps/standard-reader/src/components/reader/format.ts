@@ -1,7 +1,7 @@
 /** Formatting helpers shared by the reader UI (kept apart from components). */
 
 import type { ArticleDetail } from "#/integrations/tanstack-query/api-publication.functions";
-import { STANDARD_NSID } from "#/lib/atproto/nsids";
+import { APP_NSID, STANDARD_NSID } from "#/lib/atproto/nsids";
 
 /** Byline author (lead contributor, else publication owner, else publication
  * name). Lives here (not in a component file) so both `article-view.tsx` and
@@ -73,6 +73,11 @@ export function listLinkParams(
   uri: string,
 ): { did: string; rkey: string } | null {
   return publicationLinkParams(uri);
+}
+
+/** Rebuild a list AT-URI from its `/l/$did/$rkey` route params. */
+export function listUriFromParams(did: string, rkey: string): string {
+  return `at://${did}/${APP_NSID.list}/${rkey}`;
 }
 
 /**

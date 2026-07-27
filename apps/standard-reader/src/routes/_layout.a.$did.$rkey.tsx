@@ -130,6 +130,18 @@ export const Route = createFileRoute("/_layout/a/$did/$rkey")({
       article,
       sharedQuote,
       publicationTheme: articleThemeColors(article),
+      // The records this page is built from — rendered by `AtRecordMeta`. The
+      // document is why the page exists; the publication it belongs to and its
+      // companion Bluesky post are things the page merely shows. Nothing is
+      // claimed when the document didn't resolve — a page that failed to find
+      // its record shouldn't assert one.
+      atMeta: article
+        ? {
+            canonical: [uri],
+            alternate: [article.publicationUri, article.bskyPostUri],
+            author: [article.did],
+          }
+        : {},
     };
   },
   head: ({ loaderData, match }) => {

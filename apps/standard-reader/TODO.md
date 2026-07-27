@@ -758,7 +758,16 @@ Build each on hip-ui components + StyleX tokens (no raw HTML/inline styles).
       `<link rel="site.standard.publication" href="at://…">` and `/a/...` emits
       `rel="site.standard.document"` (+ the publication hint when the document belongs to one),
       per https://standard.site/docs/verification/#discovery-hint (hints only; verification
-      stays with the publisher's `.well-known`).
+      stays with the publisher's `.well-known`). Kept alongside the `at:` meta tags below so
+      anything still reading the rels keeps working.
+- [x] **`at:` record meta tags** — the community convention that supersedes those rels
+      (`at:canonical` / `at:alternate` / `at:author`), adopted across the network in 2026.
+      `/a/...`, `/p/...`, `/l/...`, `/u/...` and `/collection/...` declare their records via an
+      `atMeta` key on loader data; `AtRecordMeta` renders them as raw tags in `RootDocument`'s
+      `<head>` (route `head.meta` dedupes by `name` and the convention repeats). We deliberately
+      do not emit `at:me` — every record we render belongs to someone else. Discovery-hint
+      parsing reads the meta tags first and falls back to the rels, so peers that drop the old
+      tags still resolve. See `src/lib/at-meta-tags.ts`.
 
 ## 7. Discovery engine (network-powered)
 

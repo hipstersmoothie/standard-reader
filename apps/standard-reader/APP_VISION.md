@@ -979,6 +979,36 @@ react-markdown remains for two things that are not document markdown: HTML-in-re
 (WordPress, Ghost, Known, Gutenberg-as-HTML), which need an HTML pipeline rather than a markdown
 one, and small in-app strings such as a collection colophon.
 
+### Record meta tags (`at:`)
+
+Every page we serve says, in its `<head>`, which AT Protocol records it is built from — the
+convention the Atmosphere converged on in 2026, and the successor to the unregistered
+`<link rel="site.standard.*">` discovery hints (which we keep emitting alongside, so nothing
+already reading them breaks).
+
+| Tag            | Means                               | Example on `/a/$did/$rkey`        |
+| -------------- | ----------------------------------- | --------------------------------- |
+| `at:canonical` | the records the page is made of     | the `site.standard.document`      |
+| `at:alternate` | records the page merely shows       | its publication, its Bluesky post |
+| `at:author`    | the identity that wrote the content | the document's repo DID           |
+
+Where they come from and why they're not route `head.meta`:
+
+- A route declares its records by returning an **`atMeta`** key from its loader
+  (`WithAtMeta` in `src/lib/at-meta-tags.ts`). `AtRecordMeta` reads the deepest match that has
+  one and renders the tags as raw elements in `RootDocument`'s `<head>`.
+- They **can't** be route `head.meta` entries: TanStack dedupes head meta by `name`, and these
+  names repeat — an article carries two `at:alternate` tags. Same reason `theme-color` is a raw
+  tag. `src/components/at-record-meta.ssr.test.ts` renders a router through the shell to keep
+  that property from regressing silently.
+- Covered routes: `/a/…` (document + publication + Bluesky post), `/p/…`, `/l/…`,
+  `/collection/…`, and `/u/…` — the profile page declares **no canonical**, since it is a
+  directory of someone's publications with their Bluesky profile draped over it and stands up
+  fine without that record.
+- We do **not** emit `at:me`. That tag asserts the page belongs to the identity, and every
+  record we render belongs to someone else; it's the right tag for a platform serving an
+  author's own site, not for a reader.
+
 ### Browser extension architecture
 
 ```
@@ -995,6 +1025,9 @@ Web page / bsky.app                Extension (WXT MV3)
 ```
 
 - **Resolve:** canonical URL → document/publication (`src/server/extension/resolve-page-url.server.ts`).
+  When the URL isn't indexed, fall back to the page's own record hints: the `at:canonical` /
+  `at:alternate` meta tags first, then the older `<link rel="site.standard.*">` tags
+  (`src/lib/discovery-hints.ts`). Our own pages emit both — see "Record meta tags" below.
 - **Writes:** bookmark + follow reuse existing repo-record + ingest handlers.
 - **Login completion:** `/extension/connected` landing tab after OAuth redirect.
 
