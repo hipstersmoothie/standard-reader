@@ -17,13 +17,9 @@ import type { ConversionTarget } from "@standard-reader/converter";
 import type { ParsedArgs } from "../args.js";
 import { ArgError, integer, one } from "../args.js";
 import type { DocumentRecord } from "../atproto.js";
-import {
-  listDocuments,
-  login,
-  resolveContent,
-  resolveCredentials,
-} from "../atproto.js";
+import { listDocuments, resolveContent } from "../atproto.js";
 import { pluralize, say, style } from "../output.js";
+import { openSession } from "../session.js";
 
 function contentFormatOf(record: DocumentRecord): string | null {
   const content = record.value.content;
@@ -49,13 +45,8 @@ export async function runList(args: ParsedArgs): Promise<number> {
   const json = args.flags.has("json");
   const limit = integer(args, "limit");
 
-  const session = await login(
-    resolveCredentials({
-      identifier: one(args, "identifier"),
-      password: one(args, "password"),
-      service: one(args, "pds"),
-    }),
-  );
+  // `list` never writes, so it runs against any public repo without signing in.
+  const session = await openSession(args, { needsWrite: false });
   const repo = one(args, "repo") ?? session.did;
 
   const allDocuments = await listDocuments(session, repo);

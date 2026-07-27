@@ -1043,9 +1043,18 @@ Re-emit a document's content into another format by running the renderer's norma
       Offprint facet feature set are inferred from published records (its lexicons are not vendored
       here). Confirm against the real lexicons and correct the constants in
       `packages/converter/src/targets/offprint.ts` / `src/facets.ts`.
-- [ ] **Round-trip regression fixtures** — capture real records in each format and assert
-      `A → B → A` keeps the text and inline formatting stable, to catch emitter drift the synthetic
-      fixtures miss.
+- [x] **Round-trip invariants** — `roundtrip.test.ts` converts a richly-structured document to each
+      target and feeds the result straight back through `buildRenderTree`, asserting the blocks,
+      inline marks, links and blob CIDs survive. This is what catches an emitter writing a record
+      no parser can read — the failure that would otherwise write cleanly and render blank.
+- [x] **Read without signing in** — `list` and `convert --dry-run` touch only public endpoints, so
+      they take `--repo <handle-or-did>` and need no credentials; a read-only session refuses the
+      write path outright. Requiring an app password to answer "what would this cost?" was asking
+      for a credential to do arithmetic.
+- [ ] **Nested lists in the markdown parser** — `renderer-core`'s `markdown.ts` flattens every list
+      item to a single line (`listItemText`), so a nested list in _any_ markdown document renders
+      flat in the app, converted or not. The Markpub emitter writes correct nested GFM; only the
+      read-back loses it. Fixing the parser would close the one gap in the Markpub round trip.
 - [ ] **Re-upload images for Markpub → block-format conversions** — going back from markdown,
       an `https://` image cannot become a Leaflet/Offprint blob without uploading it. Currently
       reported as unsupported; could offer `--upload-images` to fetch and `uploadBlob` them.

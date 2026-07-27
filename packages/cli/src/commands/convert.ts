@@ -28,16 +28,15 @@ import type { DocumentRecord, Session } from "../atproto.js";
 import {
   describeError,
   listDocuments,
-  login,
   putDocumentContent,
   resolveContent,
-  resolveCredentials,
 } from "../atproto.js";
 import { pluralize, renderIssues, say, style } from "../output.js";
 import type { AutoDecision, Policy } from "../policy.js";
 import { autoDecide, hasUnsupported } from "../policy.js";
 import type { Prompter } from "../prompt.js";
 import { createPrompter, PROMPT_HELP } from "../prompt.js";
+import { openSession } from "../session.js";
 
 type Outcome =
   | "converted"
@@ -121,21 +120,19 @@ export async function runConvert(args: ParsedArgs): Promise<number> {
     strict: args.flags.has("strict"),
   };
 
-  const session = await login(
-    resolveCredentials({
-      identifier: one(args, "identifier"),
-      password: one(args, "password"),
-      service: one(args, "pds"),
-    }),
-  );
+  // A dry run only reads, so it needs no credentials — see `session.ts`.
+  const session = await openSession(args, { needsWrite: !dryRun });
   const repo = one(args, "repo") ?? session.did;
 
   if (!json) {
     say(
-      `${style.dim("Signed in as")} ${style.bold(session.handle)} ${style.dim(`(${session.did})`)}`,
+      `${style.dim(session.canWrite ? "Signed in as" : "Reading")} ${style.bold(session.handle)} ${style.dim(`(${session.did})`)}`,
     );
     say(`${style.dim("Converting to")} ${style.bold(TARGET_LABEL[to])}`);
     if (dryRun) say(style.yellow("Dry run — nothing will be written."));
+    if (!session.canWrite) {
+      say(style.dim("Reading without signing in; this session cannot write."));
+    }
     say();
   }
 

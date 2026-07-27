@@ -22,8 +22,22 @@ something. That is what most of this CLI is about.
 
 ## Signing in
 
-An **app password**, not your account password — create one at
-<https://bsky.app/settings/app-passwords>.
+**Only writing needs credentials.** `list` and `convert --dry-run` read public
+endpoints (`listRecords`, `getBlob`) and do the conversion in memory, so they
+run against any published blog — including someone else's — with nothing
+configured:
+
+```bash
+standard-reader list --to pckt --repo someone.bsky.social
+standard-reader convert --to markpub --dry-run --repo someone.bsky.social --out ./preview
+```
+
+`--repo` takes a handle or a DID and resolves it the usual way: the domain's
+own `/.well-known/atproto-did` first, then a public resolver, then the DID
+document for the PDS endpoint.
+
+To write, sign in with an **app password** — not your account password. Create
+one at <https://bsky.app/settings/app-passwords>.
 
 ```bash
 export STANDARD_READER_IDENTIFIER=you.bsky.social
@@ -90,7 +104,7 @@ nothing.
 | `--backup-dir <dir>` | Where originals go (default `./standard-reader-backup-<time>`) |
 | `--no-backup`        | Don't save originals                                           |
 | `--json`             | Machine-readable report on stdout                              |
-| `--repo <did>`       | Read from another repo (writes still use your own credentials) |
+| `--repo <hnd\|did>`  | Read this repo instead of your own; no sign-in needed          |
 
 Exit code is `1` when any write failed, `2` on a usage error, `0` otherwise.
 

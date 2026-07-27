@@ -16,10 +16,16 @@ FORMATS
   markpub    at.markpub.markdown
 
 AUTHENTICATION
+  Only writing needs credentials. \`list\` and \`convert --dry-run\` read public
+  endpoints, so they run against any published blog with nothing configured:
+
+    standard-reader list --repo someone.bsky.social
+    standard-reader convert --to pckt --dry-run --repo someone.bsky.social
+
   --identifier <handle>   Account handle or DID    (env STANDARD_READER_IDENTIFIER)
   --password <app-pw>     Bluesky *app password*   (env STANDARD_READER_APP_PASSWORD)
   --pds <url>             PDS base URL             (env STANDARD_READER_PDS_URL)
-  --repo <did>            Read from another repo (writes still need your own credentials)
+  --repo <hnd|did>        Read this repo instead of your own (no sign-in needed)
 
 CONVERT OPTIONS
   -t, --to <format>       Target format (required)
@@ -48,7 +54,7 @@ WHEN A CONVERSION LOSES SOMETHING
 
 EXAMPLES
   standard-reader formats
-  standard-reader list --to pckt
+  standard-reader list --to pckt --repo someone.bsky.social
   standard-reader convert --to markpub --dry-run --out ./preview
   standard-reader convert --to pckt --from leaflet
   standard-reader convert --to offprint --rkey 3kabc --force

@@ -11,7 +11,7 @@ import type {
   ComAtprotoRepoListRecords,
   ComAtprotoRepoPutRecord,
 } from "@atcute/atproto";
-import { Client, ok } from "@atcute/client";
+import { Client, ok, simpleFetchHandler } from "@atcute/client";
 import type { InferInput } from "@atcute/lexicons/validations";
 import { PasswordSession } from "@atcute/password-session";
 
@@ -31,10 +31,16 @@ type PutRecordInput = InferInput<
 
 export interface Session {
   client: Client;
-  /** DID of the authenticated repo — the `repo` for every read and write. */
+  /** DID of the repo this session addresses — the `repo` for reads and writes. */
   did: string;
   handle: string;
   service: string;
+  /**
+   * Whether this session can write. False for the anonymous read-only session
+   * used by `list` and `convert --dry-run`, which need no credentials because
+   * `com.atproto.repo.listRecords` is a public endpoint.
+   */
+  canWrite: boolean;
 }
 
 export interface Credentials {
@@ -92,10 +98,118 @@ export async function login(credentials: Credentials): Promise<Session> {
   const did = session.did;
   if (!did) throw new CliError("Sign-in succeeded but returned no DID.");
   return {
+    canWrite: true,
     client: new Client({ handler: session }),
     did,
     handle: session.session.handle,
     service: credentials.service,
+  };
+}
+
+/** True when the environment or flags supply enough to sign in. */
+export function hasCredentials(input: {
+  identifier?: string;
+  password?: string;
+}): boolean {
+  const identifier =
+    input.identifier ?? process.env.STANDARD_READER_IDENTIFIER ?? "";
+  const password =
+    input.password ?? process.env.STANDARD_READER_APP_PASSWORD ?? "";
+  return Boolean(identifier && password);
+}
+
+// ---------------------------------------------------------------------------
+// Anonymous reads
+// ---------------------------------------------------------------------------
+
+const PLC_DIRECTORY = "https://plc.directory";
+const PUBLIC_APPVIEW = "https://public.api.bsky.app";
+
+async function fetchJson(url: string): Promise<unknown> {
+  const response = await fetch(url, { redirect: "follow" });
+  if (!response.ok) {
+    throw new CliError(`${url} responded ${response.status}`);
+  }
+  return response.json();
+}
+
+/** The PDS endpoint and handle a DID document advertises. */
+async function resolveDid(
+  did: string,
+): Promise<{ pds: string; handle: string }> {
+  let document: unknown;
+  if (did.startsWith("did:plc:")) {
+    document = await fetchJson(`${PLC_DIRECTORY}/${did}`);
+  } else if (did.startsWith("did:web:")) {
+    const host = did.slice("did:web:".length).replaceAll(":", "/");
+    document = await fetchJson(`https://${host}/.well-known/did.json`);
+  } else {
+    throw new CliError(`Unsupported DID method: ${did}`);
+  }
+
+  if (!isRecord(document)) throw new CliError(`No DID document for ${did}`);
+  const services = Array.isArray(document.service) ? document.service : [];
+  const pds = services.find(
+    (service): service is { serviceEndpoint: string } =>
+      isRecord(service) &&
+      service.type === "AtprotoPersonalDataServer" &&
+      typeof service.serviceEndpoint === "string",
+  )?.serviceEndpoint;
+  if (!pds) throw new CliError(`${did} advertises no PDS in its DID document`);
+
+  const aka = Array.isArray(document.alsoKnownAs) ? document.alsoKnownAs : [];
+  const handle = aka.find(
+    (entry): entry is string =>
+      typeof entry === "string" && entry.startsWith("at://"),
+  );
+  return { handle: handle?.slice("at://".length) ?? did, pds };
+}
+
+/** A handle or DID → its DID. */
+async function resolveIdentifier(identifier: string): Promise<string> {
+  if (identifier.startsWith("did:")) return identifier;
+
+  // The handle's own domain is authoritative and needs no third party.
+  try {
+    const response = await fetch(
+      `https://${identifier}/.well-known/atproto-did`,
+      { redirect: "follow" },
+    );
+    if (response.ok) {
+      const body = await response.text();
+      const text = body.trim();
+      if (text.startsWith("did:")) return text;
+    }
+  } catch {
+    // Fall through to the public resolver.
+  }
+
+  const resolved = await fetchJson(
+    `${PUBLIC_APPVIEW}/xrpc/com.atproto.identity.resolveHandle?handle=${encodeURIComponent(identifier)}`,
+  );
+  if (isRecord(resolved) && typeof resolved.did === "string") {
+    return resolved.did;
+  }
+  throw new CliError(`Could not resolve "${identifier}" to a DID`);
+}
+
+/**
+ * A read-only session against someone's PDS, with no credentials.
+ *
+ * `com.atproto.repo.listRecords` and `getBlob` are public, so surveying a repo
+ * and converting it in memory needs no sign-in at all — only writing does. This
+ * is what makes `list` and `convert --dry-run` runnable against any published
+ * blog, including one you do not own.
+ */
+export async function openPublicSession(identifier: string): Promise<Session> {
+  const did = await resolveIdentifier(identifier);
+  const { pds, handle } = await resolveDid(did);
+  return {
+    canWrite: false,
+    client: new Client({ handler: simpleFetchHandler({ service: pds }) }),
+    did,
+    handle,
+    service: pds,
   };
 }
 
@@ -165,6 +279,11 @@ export async function putDocumentContent(
     swapRecord: string;
   },
 ): Promise<{ uri: string; cid: string }> {
+  if (!session.canWrite) {
+    throw new CliError(
+      "This session is read-only. Sign in with --identifier and --password to write records.",
+    );
+  }
   const record = { ...input.record, content: input.content };
   const result = await ok(
     session.client.post("com.atproto.repo.putRecord", {

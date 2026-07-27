@@ -17,19 +17,16 @@ import type * as AtprotoModule from "../atproto.js";
 
 const listDocuments = vi.fn();
 const putDocumentContent = vi.fn();
+const login = vi.fn();
+const openPublicSession = vi.fn();
 
 vi.mock("../atproto.js", async (importOriginal) => {
   const actual = await importOriginal<typeof AtprotoModule>();
   return {
     ...actual,
     listDocuments: (...args: Array<unknown>) => listDocuments(...args),
-    login: () =>
-      Promise.resolve({
-        client: {},
-        did: "did:plc:testauthor",
-        handle: "author.test",
-        service: "https://pds.test",
-      }),
+    login: (...args: Array<unknown>) => login(...args),
+    openPublicSession: (...args: Array<unknown>) => openPublicSession(...args),
     putDocumentContent: (...args: Array<unknown>) =>
       putDocumentContent(...args),
     // The stubbed documents are all inline, so resolution is a pass-through.
@@ -79,10 +76,22 @@ async function run(argv: Array<string>) {
   return runConvert(parseArgs(["convert", ...argv]));
 }
 
+const SIGNED_IN = {
+  canWrite: true,
+  client: {},
+  did: "did:plc:testauthor",
+  handle: "author.test",
+  service: "https://pds.test",
+};
+
+const READ_ONLY = { ...SIGNED_IN, canWrite: false, handle: "someone.example" };
+
 beforeEach(() => {
   listDocuments.mockReset();
   putDocumentContent.mockReset();
   putDocumentContent.mockResolvedValue({ cid: "bafy-new", uri: "at://new" });
+  login.mockReset().mockResolvedValue(SIGNED_IN);
+  openPublicSession.mockReset().mockResolvedValue(READ_ONLY);
   process.env.STANDARD_READER_IDENTIFIER = "author.test";
   process.env.STANDARD_READER_APP_PASSWORD = "app-password";
 });
@@ -216,6 +225,36 @@ describe("convert", () => {
 
     expect(putDocumentContent).toHaveBeenCalledTimes(2);
     expect(code).toBe(1);
+  });
+
+  it("dry-runs someone else's blog with no credentials at all", async () => {
+    delete process.env.STANDARD_READER_IDENTIFIER;
+    delete process.env.STANDARD_READER_APP_PASSWORD;
+    listDocuments.mockResolvedValue([leafletDoc("aaa", [text("Hello")])]);
+
+    const code = await run([
+      "--to",
+      "markpub",
+      "--dry-run",
+      "--repo",
+      "someone.example",
+    ]);
+
+    expect(code).toBe(0);
+    expect(openPublicSession).toHaveBeenCalledWith("someone.example");
+    expect(login).not.toHaveBeenCalled();
+    expect(putDocumentContent).not.toHaveBeenCalled();
+  });
+
+  it("still demands credentials for a run that would write", async () => {
+    delete process.env.STANDARD_READER_IDENTIFIER;
+    delete process.env.STANDARD_READER_APP_PASSWORD;
+    login.mockRejectedValue(new Error("No account given."));
+
+    await expect(
+      run(["--to", "markpub", "--repo", "someone.example", "--yes"]),
+    ).rejects.toThrow();
+    expect(putDocumentContent).not.toHaveBeenCalled();
   });
 
   it("emits a machine-readable report under --json", async () => {
