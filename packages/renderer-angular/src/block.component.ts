@@ -102,6 +102,12 @@ import { RenderContextService } from "./render-context.service";
       } @else {
         <pre><code [class]="node.language ? 'language-' + node.language : null">{{ node.code }}</code></pre>
       }
+    } @else if (node.type === "html") {
+      @if (ctx.components.shared?.html; as tpl) {
+        <ng-container
+          *ngTemplateOutlet="tpl; context: { $implicit: { html: node.html } }"
+        />
+      }
     } @else if (node.type === "image") {
       @if (ctx.components.shared?.image; as tpl) {
         <ng-container *ngTemplateOutlet="tpl; context: { $implicit: node }" />

@@ -1,17 +1,17 @@
 import { describe, expect, it } from "vitest";
 
-import { buildRenderTree } from "../build";
-import { STRUCTURED_BLOCK_FORMATS } from "../document/content-formats";
+import { buildRenderTree } from "../build.js";
+import { STRUCTURED_BLOCK_FORMATS } from "../document/content-formats.js";
 import {
   isMarkpubFormat,
   MARKPUB_MARKDOWN,
   MARKPUB_TEXT,
   markpubBlocks,
   prepareMarkpubMarkdown,
-} from "../document/structured-content/markpub";
-import { segmentInline } from "../inline";
-import type { BlockNode, InlineNode } from "../nodes";
-import type { StandardSiteDocument } from "../types";
+} from "../document/structured-content/markpub.js";
+import { segmentInline } from "../inline.js";
+import type { BlockNode, InlineNode } from "../nodes.js";
+import type { StandardSiteDocument } from "../types.js";
 
 /** An `at.markpub.markdown` document wrapping a markdown body. */
 function markpubDoc(

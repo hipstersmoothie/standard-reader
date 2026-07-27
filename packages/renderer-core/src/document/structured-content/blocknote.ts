@@ -1,14 +1,14 @@
-import { isRecord } from "../../internal";
-import { utf8ByteLength } from "../../leaflet/utf8";
-import { normalizeImageAlt } from "./image";
-import { mergeTextRuns, syntheticFacet } from "./text-runs";
+import { isRecord } from "../../internal.js";
+import { utf8ByteLength } from "../../leaflet/utf8.js";
+import { normalizeImageAlt } from "./image.js";
+import { mergeTextRuns, syntheticFacet } from "./text-runs.js";
 /**
  * Parser for `org.blocknote.document#content` — BlockNote editor blocks.
  * Inline content is `styledText` runs (with a `styles` object) and `link`
  * wrappers; both are converted to AT Proto-style byte facets. Consecutive
  * `bulletListItem` / `numberedListItem` blocks are grouped into one list.
  */
-import type { StructuredRenderableBlock, StructuredText } from "./types";
+import type { StructuredRenderableBlock, StructuredText } from "./types.js";
 
 export const BLOCKNOTE_CONTENT = "org.blocknote.document#content";
 
@@ -165,11 +165,11 @@ export function blocknoteBlocks(
         if (previous?.kind === "taskList") previous.items.push(item);
         else result.push({ items: [item], kind: "taskList" });
       } else if (kind === "bulletList") {
-        if (previous?.kind === "bulletList") previous.items.push(text);
-        else result.push({ items: [text], kind: "bulletList" });
+        if (previous?.kind === "bulletList") previous.items.push({ text });
+        else result.push({ items: [{ text }], kind: "bulletList" });
       } else {
-        if (previous?.kind === "orderedList") previous.items.push(text);
-        else result.push({ items: [text], kind: "orderedList" });
+        if (previous?.kind === "orderedList") previous.items.push({ text });
+        else result.push({ items: [{ text }], kind: "orderedList" });
       }
       continue;
     }

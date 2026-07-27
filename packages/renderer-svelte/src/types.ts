@@ -1,5 +1,6 @@
 import type {
   AspectRatio,
+  CalloutKind,
   CollectionImage,
 } from "@standard-reader/renderer-core";
 import type { Snippet } from "svelte";
@@ -41,7 +42,18 @@ export interface SvelteSharedComponents extends SvelteInlineComponents {
   paragraph?: Snippet<[{ dropCap: boolean } & WithChildren]>;
   heading?: Snippet<[{ level: number } & WithChildren]>;
   blockquote?: Snippet<[WithChildren]>;
-  callout?: Snippet<[{ emoji?: string; color?: string } & WithChildren]>;
+  callout?: Snippet<
+    [
+      {
+        emoji?: string;
+        color?: string;
+        /** Normalized visual family for a `[!TYPE]` callout. */
+        kind?: CalloutKind;
+        title?: string;
+        fold?: "open" | "closed";
+      } & WithChildren,
+    ]
+  >;
   horizontalRule?: Snippet;
   bulletList?: Snippet<[WithChildren]>;
   orderedList?: Snippet<[{ start?: number } & WithChildren]>;
@@ -49,6 +61,12 @@ export interface SvelteSharedComponents extends SvelteInlineComponents {
   taskList?: Snippet<[WithChildren]>;
   taskListItem?: Snippet<[{ checked: boolean } & WithChildren]>;
   code?: Snippet<[{ code: string; language?: string }]>;
+  /**
+   * A raw HTML block from a markdown document. Renders nothing by default:
+   * injecting untrusted markup is the host's decision, with the host's own
+   * sanitizer. Supply this snippet to render it.
+   */
+  html?: Snippet<[{ html: string }]>;
   image?: Snippet<
     [
       {

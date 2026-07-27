@@ -1,11 +1,11 @@
-import { blobCid, cdnImageUrl } from "../atproto/blob";
-import { normalizeImageAlt } from "../document/structured-content/image";
+import { blobCid, cdnImageUrl } from "../atproto/blob.js";
+import { normalizeImageAlt } from "../document/structured-content/image.js";
 import {
   aspectRatioFromDimensions,
   externalHttpUrl,
   isRecord,
-} from "../internal";
-import type { PcktImageBlock } from "./types";
+} from "../internal.js";
+import type { PcktImageBlock } from "./types.js";
 
 /** Pull a CID from `blob:CID` src strings or blob refs. */
 function cidFromSrc(src: string): string | null {

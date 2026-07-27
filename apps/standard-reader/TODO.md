@@ -1010,3 +1010,82 @@ Standard AT Proto labels: subscribe to labelers, see/blur/hide their labels whil
 - [ ] **subscribeLabels ingestion** — consume the labeler firehose into the read-model instead of
       live `queryLabels` per page, for lower latency.
 - [ ] **Deploy claudeslop** — Railway service + persistent SQLite volume; publish its did:web.
+
+---
+
+## 15. Format conversion (`@standard-reader/converter` + CLI)
+
+Re-emit a document's content into another format by running the renderer's normalized
+`DocumentTree` backwards. See [`APP_VISION.md` §8](./APP_VISION.md#format-conversion-standard-readerconverter--the-standard-reader-cli).
+
+- [x] **Render-tree fidelity** — `renderer-core` carries the record-level facts a re-emit needs but
+      a renderer does not: `ImageSource` (blob ref, external src, raw aspect-ratio dims) on image
+      and collection nodes, plus the strongRef CIDs on Bluesky embeds and Leaflet polls. All
+      optional, so no renderer changes.
+- [x] **`@standard-reader/converter`** — `convertDocumentContent()` over the four targets
+      (`pub.leaflet.content`, `app.offprint.content`, `blog.pckt.content`, `at.markpub.markdown`).
+      Sources are anything `renderer-core` parses, so markdown / ProseMirror / BlockNote /
+      Gutenberg documents convert in for free.
+- [x] **Capability matrix** — `BLOCK_SUPPORT` grades every block type per target as
+      native / degraded / unsupported, with the note and fallback shown to the user.
+      `support.test.ts` runs all 4 × 29 combinations and asserts the emitters agree with it.
+- [x] **Facet dialect remapping** — inline formatting converts by rewriting feature `$type`s, so
+      byte offsets and plaintext are untouched; features a target's dialect lacks are dropped and
+      reported once per kind per block. Markpub instead renders inline formatting to markdown.
+- [x] **`@standard-reader/cli`** — the `standard-reader` binary: `formats`, `list [--to]`,
+      `convert --to`. App-password auth, blob-backed body resolution, `--dry-run` / `--out` /
+      `--json` / `--from` / `--rkey` / `--limit`.
+- [x] **OAuth sign-in** — `standard-reader login` runs the browser flow as a loopback public client
+      (`@atcute/oauth-node-client`), storing a DPoP-bound session in
+      `$XDG_CONFIG_HOME/standard-reader/credentials.json` at `0600`. Scoped to
+      `repo?collection=site.standard.document&action=update` and nothing else. The redirect URI is
+      persisted with the session because the loopback `client_id` embeds it, and a refresh must
+      present the identical string. App passwords remain for CI and take precedence when passed.
+- [ ] **Verify the full OAuth round trip against a live consent screen** — discovery, PAR and the
+      DPoP proof are exercised against a real PDS in `oauth.test.ts` and by hand, but the redirect,
+      code exchange and a later refresh need a human at a browser. Worth doing before publishing.
+- [x] **Safe writes** — per-record prompt for anything lossy (with `a` / `s` / `q` / `d`),
+      skip-by-default without a TTY, `--force` to override, originals backed up before overwrite,
+      `swapRecord` pinned to the converted-from CID, documents already in the target format
+      untouched.
+- [ ] **Verify the Offprint fragment names** — `…#listItem`, `…#taskItem`, `…#gridImage` and the
+      Offprint facet feature set are inferred from published records (its lexicons are not vendored
+      here). Confirm against the real lexicons and correct the constants in
+      `packages/converter/src/targets/offprint.ts` / `src/facets.ts`.
+- [x] **Round-trip invariants** — `roundtrip.test.ts` converts a richly-structured document to each
+      target and feeds the result straight back through `buildRenderTree`, asserting the blocks,
+      inline marks, links and blob CIDs survive. This is what catches an emitter writing a record
+      no parser can read — the failure that would otherwise write cleanly and render blank.
+- [x] **Read without signing in** — `list` and `convert --dry-run` touch only public endpoints, so
+      they take `--repo <handle-or-did>` and need no credentials; a read-only session refuses the
+      write path outright. Requiring an app password to answer "what would this cost?" was asking
+      for a credential to do arithmetic.
+- [x] **Nested lists in the markdown parser** — `renderer-core`'s `markdown.ts` dropped nested list
+      branches outright (`listItemText`), losing whole passages between parse and render. The
+      structured vocabulary now has `StructuredListItem` with `children`, the markdown parser
+      builds them, and `build.ts` maps them recursively into the render tree's existing nested
+      `ListItem`.
+- [ ] **Re-upload images for Markpub → block-format conversions** — going back from markdown,
+      an `https://` image cannot become a Leaflet/Offprint blob without uploading it. Currently
+      reported as unsupported; could offer `--upload-images` to fetch and `uploadBlob` them.
+- [x] **Stop using react-markdown for document markdown** — every markdown-bodied format
+      (`site.standard.content.markdown`, the thirteen markdown-in-record lexicons, and Markpub)
+      now renders through `@standard-reader/renderer-react`, so one parser backs every format the
+      reader shows. Getting there meant teaching `renderer-core`'s markdown parser everything the
+      app already displayed: nested lists, raw HTML (a new `html` block node that renders as
+      nothing by default, so sanitization stays the host's job), display math
+      (`micromark-extension-math`), inline images, callouts (`kind` / `title` / `fold`, with the
+      GFM + Obsidian aliases normalized in `callouts.ts`), and GFM footnotes (via
+      `structuredFormatDocument`, numbered by first reference).
+      react-markdown remains for HTML-in-record documents, which need an HTML pipeline rather
+      than a markdown one, and for small in-app strings such as a collection colophon.
+- [ ] **Inline math and inline HTML in the render tree** — `$…$` keeps its source and `<mark>x</mark>`
+      keeps its text, since `InlineNode` has no math or raw-HTML variant. Neither loses content;
+      neither renders as rich as react-markdown did. Adding inline nodes would touch all six
+      renderers, so it waits for a document that needs it.
+- [ ] **Drop the app's duplicate callout table** — `src/lib/markdown/callouts.ts` still owns a copy
+      of the type→kind mapping that `renderer-core` now exports. The HTML-in-record path is the
+      last caller; once that moves, delete it in favour of `calloutKindForType`.
+- [ ] **Convert a single record from the app** — the reading client stays read-first, but an
+      author viewing their own document could be offered the same conversion inline. Depends on
+      write scopes for `site.standard.document`.

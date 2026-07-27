@@ -1,3 +1,5 @@
+import type { CalloutKind } from "./callouts.js";
+
 /** Normalized rich-text paragraph shared by block-based content formats. */
 export interface StructuredText {
   plaintext: string;
@@ -11,6 +13,18 @@ export interface StructuredGridImage {
   aspectRatio?: { width?: number; height?: number };
 }
 
+/**
+ * One entry in a bullet or ordered list.
+ *
+ * `children` carries lists nested beneath this item. Most block formats have a
+ * flat list vocabulary and never set it; markdown genuinely nests, and dropping
+ * that nesting silently loses whole branches of a document.
+ */
+export interface StructuredListItem {
+  text: StructuredText;
+  children?: Array<StructuredRenderableBlock>;
+}
+
 export type StructuredRenderableBlock =
   | { kind: "text"; text: StructuredText }
   | { kind: "heading"; text: StructuredText; level?: number }
@@ -20,15 +34,19 @@ export type StructuredRenderableBlock =
       text: StructuredText;
       emoji?: string;
       color?: string;
+      /** Normalized visual family for `[!TYPE]` callouts. */
+      calloutKind?: CalloutKind;
+      title?: string;
+      fold?: "open" | "closed";
     }
   | { kind: "horizontalRule" }
-  | { kind: "bulletList"; items: Array<StructuredText> }
-  | { kind: "orderedList"; start?: number; items: Array<StructuredText> }
+  | { kind: "bulletList"; items: Array<StructuredListItem> }
+  | { kind: "orderedList"; start?: number; items: Array<StructuredListItem> }
   | {
       kind: "taskList";
       items: Array<{ checked?: boolean; text: StructuredText }>;
     }
-  | { kind: "blueskyEmbed"; postUri: string }
+  | { kind: "blueskyEmbed"; postUri: string; postCid?: string }
   | {
       kind: "image";
       blob?: unknown;
@@ -38,6 +56,8 @@ export type StructuredRenderableBlock =
       aspectRatio?: { width?: number; height?: number };
     }
   | { kind: "code"; plaintext: string; language?: string }
+  /** A raw HTML block; see the `html` node in `nodes.ts`. */
+  | { kind: "html"; html: string }
   | { kind: "iframe"; url: string; height?: number }
   | {
       kind: "website";

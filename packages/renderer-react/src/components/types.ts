@@ -1,3 +1,4 @@
+import type { CalloutKind } from "@standard-reader/renderer-core";
 import type { ComponentType, ReactNode } from "react";
 
 import type { AspectRatio, TableRow } from "../types";
@@ -96,7 +97,17 @@ export interface BlockquoteProps {
 export interface CalloutProps {
   emoji?: string;
   color?: string;
+  /** Normalized visual family for a `[!TYPE]` callout. */
+  kind?: CalloutKind;
+  /** Author-supplied title from the marker line. */
+  title?: string;
+  /** Set only when the callout was marked collapsible. */
+  fold?: "open" | "closed";
   children: ReactNode;
+}
+
+export interface HtmlProps {
+  html: string;
 }
 
 export interface ListProps {
@@ -206,6 +217,12 @@ export interface SharedBlockComponents {
   Heading: ComponentType<HeadingProps>;
   Blockquote: ComponentType<BlockquoteProps>;
   Callout: ComponentType<CalloutProps>;
+  /**
+   * A raw HTML block from a markdown document. Renders nothing by default:
+   * injecting untrusted markup is the host's decision, with the host's own
+   * sanitizer. Supply this component to render it.
+   */
+  Html: ComponentType<HtmlProps>;
   HorizontalRule: ComponentType<Record<string, never>>;
   BulletList: ComponentType<ListProps>;
   OrderedList: ComponentType<OrderedListProps>;

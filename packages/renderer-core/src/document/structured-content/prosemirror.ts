@@ -1,13 +1,13 @@
-import { isRecord } from "../../internal";
-import { utf8ByteLength } from "../../leaflet/utf8";
-import { normalizeImageAlt } from "./image";
-import { mergeTextRuns, syntheticFacet } from "./text-runs";
+import { isRecord } from "../../internal.js";
+import { utf8ByteLength } from "../../leaflet/utf8.js";
+import { normalizeImageAlt } from "./image.js";
+import { mergeTextRuns, syntheticFacet } from "./text-runs.js";
 /**
  * Parser for `com.wss.content.rich-text` — a ProseMirror document under
  * `doc`. Inline marks (bold/italic/code/link) are converted to AT Proto-style
  * byte facets so the shared faceted-text renderer styles them.
  */
-import type { StructuredRenderableBlock, StructuredText } from "./types";
+import type { StructuredRenderableBlock, StructuredText } from "./types.js";
 
 export const PROSEMIRROR_CONTENT = "com.wss.content.rich-text";
 
@@ -103,7 +103,7 @@ function asBlock(node: unknown): StructuredRenderableBlock | null {
       const children = Array.isArray(node.content) ? node.content : [];
       const items = children.flatMap((child) => {
         const text = listItemText(child);
-        return text ? [text] : [];
+        return text ? [{ text }] : [];
       });
       if (items.length === 0) return null;
       return node.type === "bulletList"

@@ -883,6 +883,9 @@ hand-tuned lists:
 ### Non-goals (for now)
 
 - A **read-first client**: no in-app posting or authoring publications. Discussion is surfaced read-only from Bluesky (link shares + quote shares) and margin.at (web annotations); threads open on bsky or margin.at.
+  - The `standard-reader` **CLI** (see §8) does write to an author's repo, but it is a separate
+    binary an author runs against their own account — not an in-app authoring surface. The reading
+    client stays read-first.
 
 ---
 
@@ -907,6 +910,74 @@ Standard Reader is a **port of an earlier no-build prototype** into this TanStac
   badges (bsky.app and its `social-app` forks — currently also Witchsky and Mu), options page,
   toolbar badge. See [`apps/extension/store/README.md`](../extension/store/README.md) for Chrome Web Store
   publish notes.
+
+### Format conversion (`@standard-reader/converter` + the `standard-reader` CLI)
+
+The reader already normalizes every content format into one render tree so it can _display_ any
+document. The same tree run backwards lets a document be **re-emitted into a different format** —
+so an author is not locked into whichever tool first wrote their posts.
+
+```
+  any source format ──► buildRenderTree() ──► DocumentTree ──┬─► renderers  (react, vue, lit, …)
+  (leaflet · pckt · offprint · markpub ·      renderer-core  └─► emitters   (leaflet · offprint ·
+   markdown · prosemirror · blocknote · …)                                    pckt · markpub)
+```
+
+- **[`packages/converter`](packages/converter)** — `convertDocumentContent()` takes a document's
+  `content` union and a target, and returns the new payload _plus a per-block issue list_. Sources
+  are anything `renderer-core` parses; targets are the four formats carrying most of the network's
+  long-form writing.
+- **[`packages/cli`](packages/cli)** — the `standard-reader` binary: `formats` (capability matrix),
+  `list` (survey a repo), `convert` (rewrite records via `putRecord`), and `login` / `logout` /
+  `whoami`.
+
+Sign-in is **AT Protocol OAuth**, not an app password. `login` opens a browser, the user authorizes
+on their own PDS, and the redirect lands on a loopback listener that exists only for the duration of
+the flow — no credential passes through the CLI. Because a CLI cannot hold a secret, it registers as
+a _loopback public client_: `client_id` is the `http://localhost?…` form the spec reserves for
+exactly this case, with `token_endpoint_auth_method: none` and DPoP-bound tokens. The `client_id`
+embeds the redirect URI, so the port bound at login is persisted with the session and replayed on
+every refresh — a different port is a different client. The granted scope is
+`atproto repo?collection=site.standard.document&action=update` and nothing else: the one collection
+the tool rewrites, update only. App passwords still work for CI, and win when passed explicitly.
+
+Two design points shape everything else:
+
+- **Loss is reported, never guessed at.** The formats do not describe the same set of things — pckt
+  has tables and Leaflet does not; Leaflet has footnotes and nobody else does; Offprint list items
+  hold one line, so nesting has nowhere to go. Issues are graded `lossy` (the words survive, the
+  presentation changes) vs `unsupported` (the block is not in the output). A
+  [capability matrix](packages/converter/src/capabilities.ts) is the single source of truth for
+  which is which, and a test asserts the emitters agree with it — a warning can never disagree with
+  what actually got written.
+- **The author decides per record.** The CLI shows what a conversion costs and asks about each
+  record that would lose something, so opting out of one article does not abandon the run. Records
+  that would lose content are skipped by default when there is no terminal to ask in; originals are
+  backed up before any overwrite; and every write is pinned with `swapRecord` to the CID it was
+  converted from.
+
+Images move by **blob reference** — a converted record points at the same blob in the same repo,
+with no re-upload. Markpub is the exception (markdown cannot address a repo blob), so blob-backed
+images become CDN URLs and the swap is reported.
+
+### One renderer for every format
+
+The reader does not special-case markdown any more. `site.standard.content.markdown`, the
+markdown-in-record third-party lexicons, and Markpub all render through
+[`@standard-reader/renderer-react`](packages/renderer-react) like Leaflet, pckt and Offprint do —
+`renderer-core` parses, the app supplies the components. A markdown heading and a Leaflet heading
+are the same component with the same styles, and a fix to either lands in both.
+
+Getting there meant teaching `renderer-core`'s markdown parser everything the app's old
+react-markdown stack displayed: nested lists, callouts, GFM footnotes, display math, inline images,
+and raw HTML. Raw HTML is a block node the renderers deliberately render as _nothing_ by default —
+deciding what markup is safe belongs to the host with its own sanitizer, not to a
+framework-agnostic library, so the app supplies an `Html` component backed by the schema the
+markdown pipeline always used.
+
+react-markdown remains for two things that are not document markdown: HTML-in-record documents
+(WordPress, Ghost, Known, Gutenberg-as-HTML), which need an HTML pipeline rather than a markdown
+one, and small in-app strings such as a collection colophon.
 
 ### Browser extension architecture
 

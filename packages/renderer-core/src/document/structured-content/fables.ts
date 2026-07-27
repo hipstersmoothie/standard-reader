@@ -4,8 +4,8 @@
  * Per-block visual styling (`style`) is intentionally dropped; the reader
  * applies its own typography.
  */
-import { isRecord } from "../../internal";
-import type { StructuredRenderableBlock } from "./types";
+import { isRecord } from "../../internal.js";
+import type { StructuredRenderableBlock } from "./types.js";
 
 export const FABLES_CONTENT = "ca.justexe.fables.blocks";
 

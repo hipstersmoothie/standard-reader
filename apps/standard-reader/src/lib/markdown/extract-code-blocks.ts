@@ -9,9 +9,9 @@ export interface ExtractedCodeBlock {
   plaintext: string;
 }
 
-// Same parser react-markdown uses (remark-parse + remark-gfm) so the code
-// nodes — and therefore the `codeBlockKey`s we precompute highlights for —
-// match what `MarkdownArticle` renders. GFM does not change fenced-code
+// The same remark parser `renderer-core` uses (remark-parse + remark-gfm), so
+// the code nodes — and therefore the `codeBlockKey`s we precompute highlights
+// for — match what the renderer produces. GFM does not change fenced-code
 // tokenization, but keeping it in step avoids any drift.
 const processor = unified().use(remarkParse).use(remarkGfm);
 
@@ -26,18 +26,16 @@ function walk(node: Nodes, out: Array<ExtractedCodeBlock>): void {
 }
 
 function pushCodeBlock(node: Code, out: Array<ExtractedCodeBlock>): void {
-  // `MarkdownArticle` only renders a `CodeBlockView` (the highlightable path)
-  // when react-markdown emits `class="language-<lang>"`, which happens only
-  // for fenced blocks that carry an info string. A languageless block renders
-  // as inline `<code>` and is never highlighted, so skip it here too.
+  // A block with no info string has no language to highlight, so there is
+  // nothing to precompute. It still renders as a code block — just an
+  // unhighlighted one.
   if (!node.lang) return;
 
-  // Mirror the renderer's own derivation exactly: it reads the language from
-  // `className` via `/language-(\w+)/`, and strips a single trailing newline
-  // from the text. Matching both keeps `codeBlockKey` in sync so the
-  // precomputed highlight is actually found at render time.
-  const className = `language-${node.lang}`;
-  const language = /language-(\w+)/.exec(className)?.[1];
+  // `renderer-core` passes mdast's `lang` and `value` through untouched, so
+  // matching them here keeps `codeBlockKey` in sync and the precomputed
+  // highlight is found at render time. The trailing-newline strip is a no-op
+  // for remark (which excludes it) and guards against a parser that does not.
+  const language = /(\w+)/.exec(node.lang)?.[1];
   out.push({ language, plaintext: node.value.replace(/\n$/, "") });
 }
 
@@ -45,7 +43,7 @@ function pushCodeBlock(node: Code, out: Array<ExtractedCodeBlock>): void {
  * Extract every highlightable fenced code block from markdown `text`, in
  * document order, so the server can precompute Shiki highlights for them.
  *
- * Uses the same remark parser as `MarkdownArticle`, so the resulting
+ * Uses the same remark parser as `renderer-core`, so the resulting
  * `{ language, plaintext }` pairs produce the same `codeBlockKey` the renderer
  * looks up — without this, markdown articles only get highlighted via the
  * client lazy-fetch fallback, which never runs outside `system` theme mode.

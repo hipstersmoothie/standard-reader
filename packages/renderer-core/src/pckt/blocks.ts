@@ -1,7 +1,7 @@
-import { narrationImageLines } from "../document/structured-content/image";
-import { isRecord } from "../internal";
-import { utf8ByteLength } from "../leaflet/utf8";
-import { pcktImageAlt } from "./image";
+import { narrationImageLines } from "../document/structured-content/image.js";
+import { isRecord } from "../internal.js";
+import { utf8ByteLength } from "../leaflet/utf8.js";
+import { pcktImageAlt } from "./image.js";
 import type {
   PcktBlockquoteBlock,
   PcktBlueskyEmbedBlock,
@@ -19,8 +19,8 @@ import type {
   PcktTaskListBlock,
   PcktTextBlock,
   PcktWebsiteBlock,
-} from "./types";
-import { PCKT_BLOCK, PCKT_CONTENT } from "./types";
+} from "./types.js";
+import { PCKT_BLOCK, PCKT_CONTENT } from "./types.js";
 
 function shiftFacets(
   facets: Array<PcktFacet> | undefined,

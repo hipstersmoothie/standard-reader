@@ -72,6 +72,7 @@ export const defaultComponents: VueComponents = {
         " ",
         children,
       ]),
+    html: () => null,
     code: ({ code, language }) =>
       h("pre", [
         h("code", { class: language ? `language-${language}` : undefined }, [

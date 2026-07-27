@@ -1,5 +1,5 @@
-import { narrationImageLines } from "../document/structured-content/image";
-import { isRecord } from "../internal";
+import { narrationImageLines } from "../document/structured-content/image.js";
+import { isRecord } from "../internal.js";
 import type {
   LeafletBlockquoteBlock,
   LeafletBskyPostBlock,
@@ -19,8 +19,8 @@ import type {
   LeafletTextBlock,
   LeafletUnorderedListBlock,
   LeafletWebsiteBlock,
-} from "./types";
-import { LEAFLET_BLOCK, LEAFLET_CONTENT, LEAFLET_PAGE } from "./types";
+} from "./types.js";
+import { LEAFLET_BLOCK, LEAFLET_CONTENT, LEAFLET_PAGE } from "./types.js";
 
 function unwrapPageBlock(entry: unknown): Record<string, unknown> | null {
   if (!isRecord(entry)) return null;

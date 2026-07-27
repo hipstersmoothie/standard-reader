@@ -237,6 +237,12 @@ read when data exists in the DB.**
 - The MCP server is a route on the app (`/mcp`), not a separate process — `pnpm dev` serves it.
   Code lives in `src/server/mcp/`; run its tests with
   `pnpm --filter standard-reader exec vitest run src/server/mcp`.
+- `pnpm convert:build` / `pnpm convert <args>` — build and run the `standard-reader` CLI
+  (`packages/cli`), which converts document records between the Leaflet / Offprint / pckt /
+  Markpub content formats using `packages/converter`. `formats`, `list` and `convert --dry-run`
+  need no credentials; writing runs `standard-reader login` (browser OAuth, scoped to
+  `site.standard.document` updates) or falls back to
+  `STANDARD_READER_IDENTIFIER` + `STANDARD_READER_APP_PASSWORD`.
 - `pnpm perf:test` — Playwright load-regression suite (`perf/load-regression.spec.ts`); dev server
   must be running (`pnpm dev`). Writes JSON reports to `perf/results/` (`latest-guest.json`,
   `latest-signed-in.json`, `latest-comparison.json`).

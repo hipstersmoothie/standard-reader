@@ -1,5 +1,21 @@
 "use client";
 
+/**
+ * The react-markdown pipeline.
+ *
+ * This is no longer how *document* markdown renders — `site.standard.content.markdown`,
+ * the markdown-in-record lexicons and Markpub all go through
+ * `@standard-reader/renderer-react` now, so there is one markdown parser behind
+ * every format the reader shows (see `markdown-content.tsx`).
+ *
+ * What is left needs an HTML pipeline rather than a markdown one:
+ *   · HTML-in-record documents (WordPress, Ghost, Known, Gutenberg-as-HTML),
+ *     which `rehype-raw` re-parses and `rehype-sanitize` filters. `renderer-core`
+ *     parses markdown, not HTML documents, so it has nothing to offer here.
+ *   · small in-app markdown strings such as a collection colophon, which are
+ *     not document bodies at all.
+ */
+
 import { useLingui } from "@lingui/react/macro";
 import { Lightbox } from "@standard-reader/design-system/lightbox";
 import {

@@ -1,6 +1,6 @@
-import { blobCid } from "../atproto/blob";
-import { aspectRatioFromDimensions, blobImageUrl } from "../internal";
-import type { LeafletImageBlock } from "./types";
+import { blobCid } from "../atproto/blob.js";
+import { aspectRatioFromDimensions, blobImageUrl } from "../internal.js";
+import type { LeafletImageBlock } from "./types.js";
 
 /** Pull the CID string from a leaflet `image` blob field. */
 export function leafletImageCid(image: unknown): string | null {

@@ -1,5 +1,6 @@
 import type {
   AspectRatio,
+  CalloutKind,
   CollectionImage,
 } from "@standard-reader/renderer-core";
 import type { VNode, VNodeArrayChildren } from "vue";
@@ -61,7 +62,14 @@ export interface VueSharedComponents extends VueInlineComponents {
   heading: (props: { level: number }, children: Renderable) => Renderable;
   blockquote: (children: Renderable) => Renderable;
   callout: (
-    props: { emoji?: string; color?: string },
+    props: {
+      emoji?: string;
+      color?: string;
+      /** Normalized visual family for a `[!TYPE]` callout. */
+      kind?: CalloutKind;
+      title?: string;
+      fold?: "open" | "closed";
+    },
     children: Renderable,
   ) => Renderable;
   horizontalRule: () => Renderable;
@@ -74,6 +82,12 @@ export interface VueSharedComponents extends VueInlineComponents {
     children: Renderable,
   ) => Renderable;
   code: (props: { code: string; language?: string }) => Renderable;
+  /**
+   * A raw HTML block from a markdown document. Renders nothing by default:
+   * injecting untrusted markup is the host's decision, with the host's own
+   * sanitizer. Supply this component to render it.
+   */
+  html: (props: { html: string }) => Renderable;
   image: (props: {
     src: string;
     alt: string;

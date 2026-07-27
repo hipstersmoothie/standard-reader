@@ -1,13 +1,13 @@
-import { isRecord } from "../../internal";
-import { normalizeImageAlt } from "./image";
-import { mergeTextRuns } from "./text-runs";
+import { isRecord } from "../../internal.js";
+import { normalizeImageAlt } from "./image.js";
+import { mergeTextRuns } from "./text-runs.js";
 /**
  * Parser for `items[]`-of-typed-blocks content formats that follow the
  * `<ns>.block.*` naming convention — currently `is.logue.content` and
  * `blog.afterword.content`. Both use leaflet-style byte facets, which the
  * shared faceted-text renderer already understands.
  */
-import type { StructuredRenderableBlock, StructuredText } from "./types";
+import type { StructuredRenderableBlock, StructuredText } from "./types.js";
 
 /** Known namespaced item formats: content `$type` → block `$type` prefix. */
 const ITEM_BLOCK_NAMESPACES: Record<string, string> = {
@@ -48,7 +48,7 @@ function listItems(value: Record<string, unknown>, ns: string) {
   const children = Array.isArray(value.content) ? value.content : [];
   return children.flatMap((child) => {
     const text = listItemText(child, ns);
-    return text ? [text] : [];
+    return text ? [{ text }] : [];
   });
 }
 
@@ -110,7 +110,10 @@ function asBlock(value: unknown, ns: string): StructuredRenderableBlock | null {
     case "blueskyEmbed": {
       const ref = value.postRef;
       const uri = isRecord(ref) && typeof ref.uri === "string" ? ref.uri : null;
-      return uri ? { kind: "blueskyEmbed", postUri: uri } : null;
+      if (!uri) return null;
+      const cid =
+        isRecord(ref) && typeof ref.cid === "string" ? ref.cid : undefined;
+      return { kind: "blueskyEmbed", postUri: uri, postCid: cid };
     }
     case "image": {
       return {
