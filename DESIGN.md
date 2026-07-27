@@ -6,7 +6,7 @@ description: A warm, calm, editorial reader and living directory for standard.si
 # The camel accent is authored in hex + Display-P3. Stitch's linter warns on
 # OKLCH (it validates hex sRGB only) — accepted here to preserve the real values.
 colors:
-  # Neutral — warm paper + warm ink ("Almanac" palette, APP_VISION.md §8)
+  # Neutral — warm paper + warm ink ("Almanac" palette, apps/standard-reader/APP_VISION.md §8)
   page-bg: "oklch(0.985 0.007 85)"
   surface-subtle: "oklch(0.965 0.01 84)"
   surface: "oklch(0.945 0.012 83)"
@@ -120,7 +120,7 @@ interface holds two jobs in one calm frame: it is a comfortable place to read lo
 and it is a curator confidently surfacing publications you don't follow yet. Every screen is
 judged by whether it makes the writing easier to fall into — chrome, controls, and color earn
 their place or are removed. The warmth is deliberate and physical: this is the **Almanac palette**
-(APP_VISION.md §8) — warm paper and warm ink in light, warm night-reading surfaces in dark — with a
+(apps/standard-reader/APP_VISION.md §8) — warm paper and warm ink in light, warm night-reading surfaces in dark — with a
 single earthen **camel** accent used as the one lamp of emphasis. The system whispers; the
 writing speaks.
 

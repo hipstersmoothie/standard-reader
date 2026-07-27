@@ -13,6 +13,10 @@ description: >-
 
 # Investigate a slow feed query
 
+> **Paths:** this repo is a pnpm monorepo. Bare `src/…`, `scripts/…`, `perf/…`
+> paths below — and `.env` — live under **`apps/standard-reader/`**. The `pnpm`
+> commands are root passthroughs and work unchanged from the repo root.
+
 This is the repeatable method behind the home-feed unread-cutoff fix (see memory
 `home-feed-unread-cutoff-seq-scan`). Use it whenever a feed read path
 (`feed.getHomePage`, `feed.getLatestFeed`, `feed.getDiscoverExtras`, tag/search)

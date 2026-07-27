@@ -1,27 +1,35 @@
-import * as stylex from "@stylexjs/stylex";
-import { MessageCircle, X } from "lucide-react";
-import { useEffect, useState } from "react";
-
-import { initials } from "#/components/reader/format";
-import { Avatar } from "#/design-system/avatar";
-import { Flex } from "#/design-system/flex";
-import { IconButton } from "#/design-system/icon-button";
-import { Skeleton } from "#/design-system/skeleton";
-import { Tab, TabList, TabPanel, Tabs } from "#/design-system/tabs";
-import { primaryColor, uiColor } from "#/design-system/theme/color.stylex";
+import { Avatar } from "@standard-reader/design-system/avatar";
+import { Flex } from "@standard-reader/design-system/flex";
+import { IconButton } from "@standard-reader/design-system/icon-button";
+import { Skeleton } from "@standard-reader/design-system/skeleton";
+import {
+  Tab,
+  TabList,
+  TabPanel,
+  Tabs,
+} from "@standard-reader/design-system/tabs";
+import {
+  primaryColor,
+  uiColor,
+} from "@standard-reader/design-system/theme/color.stylex";
 import {
   gap,
   horizontalSpace,
   verticalSpace,
-} from "#/design-system/theme/semantic-spacing.stylex";
-import { spacing } from "#/design-system/theme/spacing.stylex";
+} from "@standard-reader/design-system/theme/semantic-spacing.stylex";
+import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
 import {
   fontFamily,
   fontSize,
   fontWeight,
   lineHeight,
-} from "#/design-system/theme/typography.stylex";
-import { Text } from "#/design-system/typography/text";
+} from "@standard-reader/design-system/theme/typography.stylex";
+import { Text } from "@standard-reader/design-system/typography/text";
+import * as stylex from "@stylexjs/stylex";
+import { MessageCircle, X } from "lucide-react";
+import { useEffect, useState } from "react";
+
+import { initials } from "#/components/reader/format";
 // The extension is not localized yet (its strings are a separate i18n
 // surface), so it pins the default locale to preserve prior behaviour —
 // `formatRelativeTime` used to be hardcoded to English in `format.ts`.

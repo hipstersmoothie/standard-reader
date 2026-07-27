@@ -1,25 +1,28 @@
-import * as stylex from "@stylexjs/stylex";
-import { Headphones, Pause, Play, RotateCcw, SkipBack, X } from "lucide-react";
-
-import { formatTime } from "#/components/reader/format";
-import { SeekTrack } from "#/components/reader/seek-track";
-import { Button } from "#/design-system/button";
-import { IconButton } from "#/design-system/icon-button";
-import { Menu, MenuItem } from "#/design-system/menu";
-import { primaryColor, uiColor } from "#/design-system/theme/color.stylex";
-import { radius } from "#/design-system/theme/radius.stylex";
+import { Button } from "@standard-reader/design-system/button";
+import { IconButton } from "@standard-reader/design-system/icon-button";
+import { Menu, MenuItem } from "@standard-reader/design-system/menu";
+import {
+  primaryColor,
+  uiColor,
+} from "@standard-reader/design-system/theme/color.stylex";
+import { radius } from "@standard-reader/design-system/theme/radius.stylex";
 import {
   gap,
   horizontalSpace,
   verticalSpace,
-} from "#/design-system/theme/semantic-spacing.stylex";
+} from "@standard-reader/design-system/theme/semantic-spacing.stylex";
 import {
   fontFamily,
   fontSize,
   fontWeight,
   lineHeight,
   tracking,
-} from "#/design-system/theme/typography.stylex";
+} from "@standard-reader/design-system/theme/typography.stylex";
+import * as stylex from "@stylexjs/stylex";
+import { Headphones, Pause, Play, RotateCcw, SkipBack, X } from "lucide-react";
+
+import { formatTime } from "#/components/reader/format";
+import { SeekTrack } from "#/components/reader/seek-track";
 
 import { sendMessage } from "../lib/messaging";
 import type {

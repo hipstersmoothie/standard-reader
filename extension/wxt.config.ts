@@ -47,8 +47,11 @@ const stylexPlugins = [
     dev: isWxtDev,
     devMode: "css-only",
     aliases: {
-      "@/*": [path.join(repoRoot, "src/*")],
-      "#/*": [path.join(repoRoot, "src/*")],
+      "@/*": [path.join(repoRoot, "apps/standard-reader/src/*")],
+      "#/*": [path.join(repoRoot, "apps/standard-reader/src/*")],
+      "@standard-reader/design-system/*": [
+        path.join(repoRoot, "packages/design-system/src/*"),
+      ],
     },
     lightningcssOptions: {
       targets: browserslistToTargets(browserslist("baseline 2024")),
@@ -107,8 +110,12 @@ export default defineConfig({
     },
     resolve: {
       alias: {
-        "#": path.join(repoRoot, "src"),
-        "@": path.join(repoRoot, "src"),
+        "@standard-reader/design-system": path.join(
+          repoRoot,
+          "packages/design-system/src",
+        ),
+        "#": path.join(repoRoot, "apps/standard-reader/src"),
+        "@": path.join(repoRoot, "apps/standard-reader/src"),
       },
     },
     plugins: [
@@ -116,12 +123,15 @@ export default defineConfig({
       // aliases into shared app source (e.g. seek-track.tsx → useLingui). Without
       // this pass the macros ship untransformed and throw "executed outside the
       // context of compilation" at runtime. Mirrors vite.config.ts in the app, which
-      // uses the same plugin + excludes. `src/design-system` is intentionally
+      // uses the same plugin + excludes. The design-system package is intentionally
       // excluded — `lingui.config.ts` documents that macros don't work there and its
       // strings are passed in by callers instead.
       babel({
         plugins: ["@lingui/babel-plugin-lingui-macro"],
-        exclude: [/[/\\]node_modules[/\\]/, /\/src\/design-system\//],
+        exclude: [
+          /[/\\]node_modules[/\\]/,
+          /[/\\]packages[/\\]design-system[/\\]/,
+        ],
       }),
       ...stylexPlugins,
     ],

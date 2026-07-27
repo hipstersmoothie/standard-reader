@@ -1,17 +1,16 @@
-import * as stylex from "@stylexjs/stylex";
-import { Bookmark } from "lucide-react";
-
-import { Button } from "#/design-system/button";
-import { Flex } from "#/design-system/flex";
-import { radius } from "#/design-system/theme/radius.stylex";
-import { primary } from "#/design-system/theme/semantic-color.stylex";
+import { Button } from "@standard-reader/design-system/button";
+import { Flex } from "@standard-reader/design-system/flex";
+import { radius } from "@standard-reader/design-system/theme/radius.stylex";
+import { primary } from "@standard-reader/design-system/theme/semantic-color.stylex";
 import {
   horizontalSpace,
   size,
   verticalSpace,
-} from "#/design-system/theme/semantic-spacing.stylex";
-import { fontFamily } from "#/design-system/theme/typography.stylex";
-import { Body, Heading2 } from "#/design-system/typography";
+} from "@standard-reader/design-system/theme/semantic-spacing.stylex";
+import { fontFamily } from "@standard-reader/design-system/theme/typography.stylex";
+import { Body, Heading2 } from "@standard-reader/design-system/typography";
+import * as stylex from "@stylexjs/stylex";
+import { Bookmark } from "lucide-react";
 
 import type { ExtensionResolveResult } from "../lib/types";
 

@@ -1,3 +1,4 @@
+import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
 import * as stylex from "@stylexjs/stylex";
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useState } from "react";
@@ -8,7 +9,6 @@ import {
   editorialShadow,
   editorialUi,
 } from "#/components/reader/theme";
-import { uiColor } from "#/design-system/theme/color.stylex";
 
 import type { ExtensionThemeMode } from "../lib/extension-theme";
 import {

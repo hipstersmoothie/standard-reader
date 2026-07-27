@@ -312,4 +312,3 @@ for quick rollback uploads.
 - [`FIREFOX-DEPLOY.md`](./FIREFOX-DEPLOY.md) — Firefox updates
 - [`privacy-policy.md`](./privacy-policy.md) — policy text to host
 - [`../README.md`](../README.md) — extension dev setup, architecture
-- [`../../TODO.md`](../../TODO.md) — roadmap item for first publish
