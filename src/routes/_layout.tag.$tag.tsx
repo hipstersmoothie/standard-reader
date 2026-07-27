@@ -229,6 +229,13 @@ const styles = stylex.create({
     rowGap: spacing["2.5"],
     paddingTop: spacing["1"],
   },
+  // "Subscribe all" is a separate hero item from the RSS button (see the hero
+  // markup) — it is the one that wraps at narrow widths, so pin it to the
+  // trailing edge instead of letting a lone wrapped line fall back to the
+  // leading one.
+  heroFollow: {
+    marginInlineStart: "auto",
+  },
   heroName: {
     // Isolate only: this is a single-line NAME, so it must keep the
     // surrounding UI alignment while still ordering its own characters
@@ -744,6 +751,10 @@ function TagPublicationsPanel({
     <>
       <SectionHead
         title={t`All publications`}
+        // The tab above already says "Publications" — on a phone the heading
+        // only repeats it and pushes the sort/layout controls down a line. It
+        // stays on desktop, where it balances the toolbar on the trailing edge.
+        desktopOnlyTitle
         action={
           <div {...stylex.props(styles.directoryToolbarControls)}>
             <SegmentedControl
@@ -1120,16 +1131,23 @@ function TagPage() {
           </div>
         </div>
 
+        {/* RSS is its own hero item rather than sharing one with "Subscribe
+            all": grouped, the pair no longer fit beside the heading on the
+            Publications tab and wrapped as a unit, so the RSS button jumped a
+            line down every time you switched tabs on a phone. On its own it
+            always fits, and only "Subscribe all" wraps. */}
         <div {...stylex.props(styles.heroActs)}>
           <RssFeedButton
             name={displayTag}
             feedUrl={tagFeedUrl(getPublicUrlClient(), tag)}
             size="md"
           />
-          {isFeed ? null : (
-            <TagFollowAllButton tag={tag} publicationCount={publicationCount} />
-          )}
         </div>
+        {isFeed ? null : (
+          <div {...stylex.props(styles.heroActs, styles.heroFollow)}>
+            <TagFollowAllButton tag={tag} publicationCount={publicationCount} />
+          </div>
+        )}
       </div>
 
       <Tabs
