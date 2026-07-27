@@ -8,7 +8,7 @@ import { createContext, useContext } from "react";
  * This is a context rather than a direct read of the preference query because
  * `primitives.tsx` — where `LikeCount` / `CommentCount` / `ArticleEngagement`
  * live — is shared with the **browser extension**, which renders those
- * components standalone (`extension/src/components/PageChip.tsx`,
+ * components standalone (`apps/extension/src/components/PageChip.tsx`,
  * `PopupArticle.tsx`) with no query client and no app session. Importing
  * `#/lib/use-feed-preferences` there would drag the whole server-fn module —
  * and, through it, `src/db` — into the extension's bundle graph, which fails

@@ -1,5 +1,4 @@
 packages:
   - apps/*
-  - extension
   - packages/*
   - services/*

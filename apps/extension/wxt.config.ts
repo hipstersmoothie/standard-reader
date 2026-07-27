@@ -14,7 +14,7 @@ import {
   stylexDevServerOriginPlugins,
 } from "./src/lib/stylex-dev-origin-plugin.ts";
 
-const repoRoot = path.resolve(import.meta.dirname, "..");
+const repoRoot = path.resolve(import.meta.dirname, "../..");
 
 const require = createRequire(import.meta.url);
 /**

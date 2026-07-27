@@ -3,7 +3,7 @@
 # protected main):
 #
 #   1. Dispatch this workflow (Actions -> Release extension -> Run workflow).
-#      The `prepare` job bumps extension/package.json on a `release/extension-v*`
+#      The `prepare` job bumps apps/extension/package.json on a `release/extension-v*`
 #      branch and opens a PR. Nothing is published yet.
 #   2. Review and merge that PR. Merging fires the `publish` job, which builds
 #      the production Chrome + Firefox packages (plus a Firefox source archive
@@ -27,7 +27,7 @@
 #                            Settings -> Actions -> General. Needs `repo` scope
 #                            (classic) or Contents + Pull requests read/write
 #                            (fine-grained). The release PR only touches
-#                            extension/package.json, so no `workflow` scope is
+#                            apps/extension/package.json, so no `workflow` scope is
 #                            required. Falls back to GITHUB_TOKEN when unset.
 #
 #   Chrome Web Store  (https://wxt.dev/guide/essentials/publishing.html#chrome-web-store)
@@ -50,7 +50,7 @@ on:
   workflow_dispatch:
     inputs:
       bump:
-        description: "Semver bump applied to extension/package.json"
+        description: "Semver bump applied to apps/extension/package.json"
         type: choice
         options:
           - patch
@@ -104,12 +104,12 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      # Bump extension/package.json only (WXT embeds this in the packaged
+      # Bump apps/extension/package.json only (WXT embeds this in the packaged
       # manifest; the stores use it to detect updates). --no-git-tag-version
       # edits the file without committing — we commit it onto the release branch.
       - name: Bump version
         id: bump
-        working-directory: extension
+        working-directory: apps/extension
         run: |
           if [ -n "${{ inputs.version }}" ]; then
             npm version "${{ inputs.version }}" --no-git-tag-version --allow-same-version
@@ -128,7 +128,7 @@ jobs:
         run: |
           BRANCH="release/extension-v$VERSION"
           git checkout -b "$BRANCH"
-          git add extension/package.json
+          git add apps/extension/package.json
           git commit -m "Release extension v$VERSION"
           git push --force-with-lease origin "$BRANCH"
 
@@ -140,7 +140,7 @@ jobs:
               --head "$BRANCH" \
               --title "Release extension v$VERSION" \
               --body "$(cat <<EOF
-          Automated release PR — bumps \`extension/package.json\` to **v$VERSION**.
+          Automated release PR — bumps \`apps/extension/package.json\` to **v$VERSION**.
 
           Merging this PR builds the production Chrome and Firefox packages,
           uploads them to the Chrome Web Store and Firefox AMO, tags
@@ -177,7 +177,7 @@ jobs:
 
       - name: Read extension version
         id: version
-        run: echo "version=$(node -p "require('./extension/package.json').version")" >> "$GITHUB_OUTPUT"
+        run: echo "version=$(node -p "require('./apps/extension/package.json').version")" >> "$GITHUB_OUTPUT"
 
       - name: Build Chrome zip
         run: pnpm extension:zip
@@ -189,13 +189,13 @@ jobs:
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
-          mkdir -p extension/.output
+          mkdir -p apps/extension/.output
           git archive --format=zip \
-            --output="extension/.output/standard-reader-extension-$VERSION-sources.zip" \
+            --output="apps/extension/.output/standard-reader-extension-$VERSION-sources.zip" \
             HEAD
 
       - name: Validate upload (dry run)
-        working-directory: extension
+        working-directory: apps/extension
         env:
           VERSION: ${{ steps.version.outputs.version }}
           CHROME_EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
@@ -243,7 +243,7 @@ jobs:
 
       - name: Read extension version
         id: version
-        run: echo "version=$(node -p "require('./extension/package.json').version")" >> "$GITHUB_OUTPUT"
+        run: echo "version=$(node -p "require('./apps/extension/package.json').version")" >> "$GITHUB_OUTPUT"
 
       - name: Build Chrome zip
         run: pnpm extension:zip
@@ -259,9 +259,9 @@ jobs:
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
-          mkdir -p extension/.output
+          mkdir -p apps/extension/.output
           git archive --format=zip \
-            --output="extension/.output/standard-reader-extension-$VERSION-sources.zip" \
+            --output="apps/extension/.output/standard-reader-extension-$VERSION-sources.zip" \
             HEAD
 
       # Sanity-check the packaged version matches package.json before uploading.
@@ -271,7 +271,7 @@ jobs:
         run: |
           for target in chrome firefox; do
             manifest_version=$(unzip -p \
-              "extension/.output/standard-reader-extension-$VERSION-$target.zip" \
+              "apps/extension/.output/standard-reader-extension-$VERSION-$target.zip" \
               manifest.json | node -p "JSON.parse(require('fs').readFileSync(0)).version")
             if [ "$manifest_version" != "$VERSION" ]; then
               echo "::error::$target manifest version $manifest_version != $VERSION"
@@ -281,7 +281,7 @@ jobs:
           done
 
       - name: Publish to Chrome Web Store and Firefox AMO
-        working-directory: extension
+        working-directory: apps/extension
         env:
           VERSION: ${{ steps.version.outputs.version }}
           CHROME_EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
@@ -310,6 +310,6 @@ jobs:
           gh release create "extension-v$VERSION" \
             --title "Extension v$VERSION" \
             --generate-notes \
-            "extension/.output/standard-reader-extension-$VERSION-chrome.zip" \
-            "extension/.output/standard-reader-extension-$VERSION-firefox.zip" \
-            "extension/.output/standard-reader-extension-$VERSION-sources.zip"
+            "apps/extension/.output/standard-reader-extension-$VERSION-chrome.zip" \
+            "apps/extension/.output/standard-reader-extension-$VERSION-firefox.zip" \
+            "apps/extension/.output/standard-reader-extension-$VERSION-sources.zip"

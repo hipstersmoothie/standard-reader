@@ -871,7 +871,7 @@ After Tier 1–3, as appetite allows:
 
 ## 12. Browser extension (WXT)
 
-Full-featured MV3 extension in [`extension/`](extension/) — popup, page overlay, context menu,
+Full-featured MV3 extension in [`apps/extension/`](../extension/) — popup, page overlay, context menu,
 Bluesky badges (bsky.app + `social-app` forks Witchsky, Mu), options page. Backend routes under
 [`src/routes/api/extension/`](src/routes/api/extension/).
 
@@ -887,8 +887,8 @@ Bluesky badges (bsky.app + `social-app` forks Witchsky, Mu), options page. Backe
       toolbar badge, options page.
 - [x] **Extension privacy URL** — [`/privacy/extension`](src/routes/_layout.privacy.extension.tsx) with
       [`ExtensionPrivacyView`](src/components/reader/extension-privacy-view.tsx); cross-linked from site privacy policy.
-- [ ] **Manual QA** — run checklist in [`extension/README.md`](extension/README.md) (dev + prod).
-- [ ] **Chrome Web Store publish** — follow [`extension/store/DEPLOY.md`](extension/store/DEPLOY.md) (prod API, privacy URL, QA, screenshots, upload).
+- [ ] **Manual QA** — run checklist in [`apps/extension/README.md`](../extension/README.md) (dev + prod).
+- [ ] **Chrome Web Store publish** — follow [`apps/extension/store/DEPLOY.md`](../extension/store/DEPLOY.md) (prod API, privacy URL, QA, screenshots, upload).
 
 ## 13. AppView XRPC (public API)
 

@@ -24,7 +24,7 @@ export default defineConfig({
   ],
   test: {
     include: ["src/**/*.test.ts"],
-    exclude: ["perf/**", "extension/**", "node_modules/**"],
+    exclude: ["perf/**", "node_modules/**"],
     setupFiles: ["./vitest.setup.ts"],
   },
 });

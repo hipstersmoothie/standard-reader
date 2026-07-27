@@ -40,7 +40,7 @@ RUN /opt/pyenv/bin/python -c "import sys; sys.path.insert(0, 'services/claudeslo
 # subtree; onlyBuiltDependencies in the root package.json lets better-sqlite3
 # run its build.
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
-COPY extension/package.json extension/package.json
+COPY apps/extension/package.json apps/extension/package.json
 COPY services/claudeslop/package.json services/claudeslop/package.json
 COPY services/botlabeler/package.json services/botlabeler/package.json
 RUN pnpm install --filter claudeslop-labeler... --frozen-lockfile

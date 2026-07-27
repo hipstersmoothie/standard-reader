@@ -80,7 +80,7 @@ is a good baseline before you cut a store zip.
 
 ## Version and release notes
 
-1. Bump **`extension/package.json`** `"version"` (semver).
+1. Bump **`apps/extension/package.json`** `"version"` (semver).
 2. WXT embeds this in the packaged manifest; the store uses it to detect updates.
 3. Draft **release notes** for the dashboard (what changed for users/reviewers).
 
@@ -132,7 +132,7 @@ unzip -p extension/.output/*-chrome.zip manifest.json | jq '.version, .host_perm
 
 Confirm:
 
-- `version` matches `extension/package.json`
+- `version` matches `apps/extension/package.json`
 - Production hosts include `https://standard-reader.app/*`
 - You understand any dev/staging hosts still present (see [Review notes](#review-notes))
 
@@ -261,7 +261,7 @@ version, rebuild zip, resubmit with a note explaining the fix.
 ## Publishing updates
 
 1. Merge and deploy web app if API behavior changed.
-2. Bump `extension/package.json` version.
+2. Bump `apps/extension/package.json` version.
 3. `VITE_API_ORIGIN=https://standard-reader.app pnpm extension:zip`
 4. Re-run [Pre-flight QA](#pre-flight-qa) on changed behavior.
 5. Dashboard → your item → **Package** → upload new zip.
@@ -291,7 +291,7 @@ for quick rollback uploads.
 ```text
 [ ] Web app prod deploy includes /api/extension/* and /extension/connected
 [ ] Privacy policy URL live and linked in dashboard
-[ ] extension/package.json version bumped
+[ ] apps/extension/package.json version bumped
 [ ] VITE_API_ORIGIN=https://standard-reader.app for zip build
 [ ] pnpm extension:zip succeeded
 [ ] manifest.json version + host_permissions spot-checked

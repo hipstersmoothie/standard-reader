@@ -901,11 +901,11 @@ Standard Reader is a **port of an earlier no-build prototype** into this TanStac
 - **Observability:** Server functions emit `observe()` events to Honeycomb; client route transitions
   emit `nav.transition` via `telemetryApi.recordClientEvent`. Shell/sidebar queries use a 5-minute
   stale window and block child navigations only on a cold cache.
-- **Browser extension:** pnpm workspace package [`extension/`](extension/) built with WXT + hip-ui
+- **Browser extension:** pnpm workspace package [`apps/extension/`](../extension/) built with WXT + hip-ui
   (shared `#/*` → `src/design-system/`). Auth via HttpOnly session cookie; background worker calls
   `/api/extension/*` on the web app. Surfaces: popup, page overlay, context menu, Bluesky link
   badges (bsky.app and its `social-app` forks — currently also Witchsky and Mu), options page,
-  toolbar badge. See [`extension/store/README.md`](extension/store/README.md) for Chrome Web Store
+  toolbar badge. See [`apps/extension/store/README.md`](../extension/store/README.md) for Chrome Web Store
   publish notes.
 
 ### Browser extension architecture

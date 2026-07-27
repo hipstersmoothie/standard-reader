@@ -126,7 +126,7 @@ jobs:
         run: pnpm --filter standard-reader-extension compile
 
       - name: Lint extension
-        run: pnpm exec oxlint extension/src apps/standard-reader/src/server/extension apps/standard-reader/src/routes/api/extension apps/standard-reader/src/routes/extension.connected.tsx
+        run: pnpm exec oxlint apps/extension/src apps/standard-reader/src/server/extension apps/standard-reader/src/routes/api/extension apps/standard-reader/src/routes/extension.connected.tsx
 
       - name: Lint
         run: pnpm lint

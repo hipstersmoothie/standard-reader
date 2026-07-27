@@ -26,9 +26,9 @@ was scaffolded with npm and later switched to pnpm: `package-lock.json` was remo
 ```
 apps/standard-reader/   # the reader app (TanStack Start) — src/, scripts/, perf/,
                         #   drizzle/, lexicons/, public/, tap/, and its own configs
+apps/extension/         # the browser extension (WXT); shares app source via #/ and @/
 packages/               # workspace packages: design-system (shared UI) + the
                         #   publishable @standard-reader/renderer-* family + lexicons
-extension/              # the browser extension
 services/               # standalone labeler services (claudeslop, botlabeler)
 scripts/                # workspace-level tooling (package publishing)
 config/oxlint/          # shared lint config — applies to the whole repo
@@ -456,12 +456,12 @@ packages/design-system/
   src/                # hip-ui (copy-and-own): components + StyleX theme tokens (theme/)
   package.json        # exports ./theme, ./context, and ./<component> -> src/<component>/index.tsx
 packages/             # renderer-* family + lexicons (published to npm)
-extension/            # browser extension
+apps/extension/       # browser extension (WXT) — resolves #/ and @/ into the reader app
 services/             # standalone labeler services
 scripts/              # workspace-level tooling (publish-packages.mjs)
 config/oxlint/        # shared oxlint rules-base.json + overrides.json (incl. StyleX rules)
 package.json          # monorepo root: `pnpm --filter` passthroughs + repo-wide lint/format
-pnpm-workspace.yaml   # apps/*, extension, packages/*, services/*
+pnpm-workspace.yaml   # apps/*, packages/*, services/*
 ```
 
 ## Environment variables

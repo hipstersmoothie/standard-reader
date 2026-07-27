@@ -14,8 +14,8 @@ import { fileURLToPath } from "node:url";
  * - public/icon-320.{svg,png} — social / OG square
  * - public/icon-192.png, public/icon-512.png — manifest install icons
  * - public/apple-touch-icon.png — iOS home screen (180×180)
- * - extension/public/icons/icon-{16,32,48,128}.png — Chrome extension manifest
- * - extension/public/icon/{16,32,48,96,128}.png — legacy WXT icon paths
+ * - apps/extension/public/icons/icon-{16,32,48,128}.png — Chrome extension manifest
+ * - apps/extension/public/icon/{16,32,48,96,128}.png — legacy WXT icon paths
  *
  * Run: node scripts/generate-social-icon.mjs
  */
@@ -33,8 +33,8 @@ const appDir = join(dirname(fileURLToPath(import.meta.url)), "..");
 // The extension is a sibling workspace package, two levels up from the app.
 const repoRoot = join(appDir, "../..");
 const publicDir = join(appDir, "public");
-const extensionIconsDir = join(repoRoot, "extension/public/icons");
-const extensionIconDir = join(repoRoot, "extension/public/icon");
+const extensionIconsDir = join(repoRoot, "apps/extension/public/icons");
+const extensionIconDir = join(repoRoot, "apps/extension/public/icon");
 
 /** @type {Array<{ size: number; png: string; svg?: string; dir: string }>} */
 const OUTPUTS = [

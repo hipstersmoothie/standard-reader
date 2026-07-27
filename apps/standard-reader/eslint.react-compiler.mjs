@@ -10,8 +10,6 @@ export default [
       "**/dist/**",
       "**/.output/**",
       "packages/**",
-      "extension/**",
-      "src/design-system/**",
     ],
   },
   {

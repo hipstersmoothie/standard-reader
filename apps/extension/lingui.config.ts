@@ -8,4 +8,4 @@
  * The extension never runs `lingui extract` — catalogs are owned by the app —
  * so this only has to describe the same locales and macro behavior.
  */
-export { default } from "../apps/standard-reader/lingui.config";
+export { default } from "../standard-reader/lingui.config";
