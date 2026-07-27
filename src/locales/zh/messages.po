@@ -606,6 +606,10 @@ msgstr "正在加载刊物"
 msgid "{0} min read"
 msgstr "{0} 分钟阅读"
 
+#: src/components/user-settings-view.tsx
+msgid "Infinite scroll keeps pulling the next page as you reach the end of a list. Load more waits for you to ask."
+msgstr ""
+
 #: src/components/reader/article-view.tsx
 #: src/components/reader/cards.tsx
 msgid "Mark as unread"
@@ -736,6 +740,10 @@ msgstr "你可以使用任意 Atmosphere 账户，包括来自 Bluesky、Tangled
 #: src/components/reader/collection-theme-editor.tsx
 msgid "Text on background"
 msgstr "背景上的文字"
+
+#: src/components/user-settings-view.tsx
+msgid "Hide recommend and comment counts"
+msgstr ""
 
 #: src/components/reader/collection-theme-editor.tsx
 msgid "Contrast"
@@ -1456,6 +1464,10 @@ msgstr "匿名"
 msgid "The language used for the reader interface. Articles are shown in the language they were written in."
 msgstr "阅读器界面所用的语言。文章仍以其原文语言显示。"
 
+#: src/components/user-settings-view.tsx
+msgid "Feed"
+msgstr ""
+
 #: src/components/labeler-detail-view.tsx
 msgid "Labeler"
 msgstr "标注服务"
@@ -1707,6 +1719,10 @@ msgstr "面向 Standard Reader 索引读模型的公开 XRPC 查询与操作。"
 #: src/components/reader/collection-theme-editor.tsx
 msgid "Save theme"
 msgstr "保存主题"
+
+#: src/components/user-settings-view.tsx
+msgid "Loading more"
+msgstr ""
 
 #: src/routes/_layout.discover.tsx
 #: src/routes/_layout.p.$did.$rkey.tsx
@@ -2907,6 +2923,10 @@ msgstr ""
 msgid "Done reordering"
 msgstr ""
 
+#: src/components/user-settings-view.tsx
+msgid "Infinite scroll"
+msgstr ""
+
 #: src/routes/_layout.latest.tsx
 msgid "Follow a few publications and their latest writing will show up here."
 msgstr "关注几个刊物，它们的最新文章就会出现在这里。"
@@ -3653,6 +3673,10 @@ msgstr "无法解析该 handle。"
 #: src/components/reader/atstore-review-prompt.tsx
 msgid "Sharing a review on the <0>ATStore</0> will help both us and other users see what you think about Standard Reader."
 msgstr "在 <0>ATStore</0> 上分享评价，能帮助我们和其他用户了解你对 Standard Reader 的看法。"
+
+#: src/components/user-settings-view.tsx
+msgid "When on, the recommend and Bluesky discussion counts are hidden from article cards, lists, and bylines. You can still recommend an article — only the numbers go away."
+msgstr ""
 
 #: src/components/reader/text-selection-toolbar.tsx
 msgid "Listen from here"
@@ -5033,6 +5057,11 @@ msgstr ""
 #: src/components/reader/about-view.tsx
 msgid "Save from anywhere you browse"
 msgstr "在任何浏览的地方随手保存"
+
+#: src/components/reader/feed-load-more.tsx
+#: src/components/user-settings-view.tsx
+msgid "Load more"
+msgstr ""
 
 #: src/components/reader/friend-publishers.tsx
 #~ msgid "Loading"

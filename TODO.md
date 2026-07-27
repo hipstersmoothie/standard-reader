@@ -503,6 +503,22 @@ Build each on hip-ui components + StyleX tokens (no raw HTML/inline styles).
       Theme colors ride along on the existing header query (`selectPublicationHeader`) and on
       `article.collectionTheme` — no extra round trips (`#/lib/publication-theme-preference`,
       `usePublicationThemePreference`).
+- [x] **Feed settings** — a new Settings → **Feed** section with two signed-in-only dials
+      (`drizzle/0025_spotty_frightful_four`, both seeded through `getShellBootstrap` so the first
+      paint is already correct — otherwise the meta line pops and the sentinel can fire once
+      before the preference lands): - **Hide recommend and comment counts** (`user.hide_feed_metrics`, `null` = shown) drops the
+      engagement tallies wherever they read as a metric — article cards, result rows, the article
+      byline, mention hover cards, and the count on the end-of-article Recommend button. The
+      Recommend action itself never goes away. The gate lives in `LikeCount` / `CommentCount` /
+      `ArticleEngagement` (`#/components/reader/primitives`); every call site that draws a
+      separator dot around them reads the same `useFeedMetricsVisible()`, so the dot leaves with
+      the counts instead of dangling. - **Loading more** (`user.feed_pagination`, `null` = `infinite`) swaps infinite scroll for an
+      explicit **Load more** button. All 14 paginated lists now render one shared `FeedLoadMore`
+      (`#/components/reader/feed-load-more`) where they used to hand-roll a sentinel `div` — in
+      `infinite` mode it is the IntersectionObserver probe, in `button` mode it is the button and
+      nothing is observed. Discover's hand-rolled `IntersectionObserver` effect and `/u/$did`'s
+      `sentinelRef` plumbing collapse into it too. Call sites keep their own loading and
+      end-of-list markup (`#/lib/feed-preferences`, `useHideFeedMetrics`, `useFeedPagination`).
 - [x] **Publisher-native themes beyond `basicTheme`** — ingest now keeps the platform's own
       theme block as `theme_json.nativeTheme`, and `resolvePublicationTheme`
       (`#/lib/publication-theme-source`, unit-tested against real Leaflet/PCKT/Offprint records)

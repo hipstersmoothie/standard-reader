@@ -13,9 +13,9 @@ import { getPublicUrlClient } from "#/lib/public-url";
 import { pageSocialMeta } from "#/lib/site-metadata";
 import { buildAuthRedirectPath } from "#/utils/auth-redirect";
 
+import { FeedLoadMore } from "../components/reader/feed-load-more";
 import { Masthead, ReaderContent } from "../components/reader/primitives";
 import { ReaderQueueRows } from "../components/reader/reader-queue-rows";
-import { useInfiniteScrollSentinel } from "../components/reader/use-infinite-scroll-sentinel";
 import { Flex } from "../design-system/flex";
 import { uiColor } from "../design-system/theme/color.stylex";
 import { radius } from "../design-system/theme/radius.stylex";
@@ -90,11 +90,6 @@ const styles = stylex.create({
     fontSize: "0.88em",
     overflowWrap: "anywhere",
   },
-  loadSentinel: {
-    height: 1,
-    marginTop: spacing["6"],
-    width: "100%",
-  },
   loadingNote: {
     color: uiColor.text1,
     fontFamily: fontFamily.sans,
@@ -117,12 +112,6 @@ function ReaderSaved() {
       void fetchNextPage();
     }
   }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
-
-  const loadMoreRef = useInfiniteScrollSentinel(
-    loadMore,
-    hasNextPage,
-    saved.length,
-  );
 
   const queueRows = saved.map((item) => ({
     id: item.bookmarkUri,
@@ -180,13 +169,12 @@ function ReaderSaved() {
               <Trans>Loading…</Trans>
             </p>
           ) : null}
-          {hasNextPage ? (
-            <div
-              ref={loadMoreRef}
-              aria-hidden
-              {...stylex.props(styles.loadSentinel)}
-            />
-          ) : null}
+          <FeedLoadMore
+            hasMore={hasNextPage}
+            isLoading={isFetchingNextPage}
+            onLoadMore={loadMore}
+            itemCount={saved.length}
+          />
         </>
       )}
     </ReaderContent>

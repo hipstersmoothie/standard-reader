@@ -37,6 +37,7 @@ import {
 } from "../components/reader/cards";
 import { DiscoverTopicFilters } from "../components/reader/discover-topic-filters";
 import { sortDiscoverTopics } from "../components/reader/discover-topics";
+import { FeedLoadMore } from "../components/reader/feed-load-more";
 import { initials } from "../components/reader/format";
 import {
   Masthead,
@@ -268,11 +269,6 @@ const styles = stylex.create({
   },
   directoryGrid: {
     gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-  },
-  loadSentinel: {
-    height: 1,
-    marginTop: spacing["6"],
-    width: "100%",
   },
   endNote: {
     color: uiColor.text1,
@@ -662,7 +658,6 @@ function DiscoverDirectorySection({ signedIn }: { signedIn: boolean }) {
   const [searchInput, setSearchInput] = useState("");
   const [debouncedQ, setDebouncedQ] = useState("");
   const [hideFollowing, setHideFollowing] = useState(false);
-  const loadMoreSentinelRef = useRef<HTMLDivElement>(null);
   const loadingMoreRef = useRef(false);
 
   const { data: topics } = useSuspenseQuery(
@@ -791,26 +786,6 @@ function DiscoverDirectorySection({ signedIn }: { signedIn: boolean }) {
     }
   }, [debouncedQ, directoryNextOffset, sort, topic]);
 
-  useEffect(() => {
-    if (directoryNextOffset == null) return;
-
-    const sentinel = loadMoreSentinelRef.current;
-    if (!sentinel) return;
-
-    // Viewport observer — the page scrolls at the document level.
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((entry) => entry.isIntersecting)) {
-          void loadMoreDirectory();
-        }
-      },
-      { root: null, rootMargin: "1200px 0px", threshold: 0 },
-    );
-
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-  }, [directoryNextOffset, loadMoreDirectory]);
-
   return (
     <div {...stylex.props(styles.section)}>
       <SectionHead
@@ -905,10 +880,11 @@ function DiscoverDirectorySection({ signedIn }: { signedIn: boolean }) {
 
       {directoryItems.length > 0 && !isSearching ? (
         <>
-          <div
-            ref={loadMoreSentinelRef}
-            aria-hidden
-            {...stylex.props(styles.loadSentinel)}
+          <FeedLoadMore
+            hasMore={directoryNextOffset != null}
+            isLoading={loadingMore}
+            onLoadMore={() => void loadMoreDirectory()}
+            itemCount={directoryItems.length}
           />
           {loadingMore ? (
             <DiscoverDirectorySkeleton

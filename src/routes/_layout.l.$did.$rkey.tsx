@@ -47,13 +47,13 @@ import { useTrackReadingHistory } from "#/lib/use-track-reading-history";
 
 import { AuthorProfileLink } from "../components/reader/author-profile-link";
 import { ArticleRow, PubDirectoryRow } from "../components/reader/cards";
+import { FeedLoadMore } from "../components/reader/feed-load-more";
 import { initials } from "../components/reader/format";
 import { ListEditModal } from "../components/reader/list-edit-modal";
 import { Handle, Kicker, ReaderContent } from "../components/reader/primitives";
 import { isArticleUnreadForReader } from "../components/reader/read-optimistic";
 import { RssFeedButton } from "../components/reader/rss-feed-button";
 import { ShareMenu } from "../components/reader/share-menu";
-import { useInfiniteScrollSentinel } from "../components/reader/use-infinite-scroll-sentinel";
 import {
   AlertDialog,
   AlertDialogActionButton,
@@ -316,11 +316,6 @@ const styles = stylex.create({
   userHandle: {
     marginTop: spacing["0.5"],
   },
-  loadSentinel: {
-    height: 1,
-    marginTop: spacing["6"],
-    width: "100%",
-  },
   endNote: {
     color: uiColor.text1,
     fontFamily: fontFamily.serif,
@@ -406,12 +401,6 @@ function ListFeedPanel({
     }
   }, [did, nextOffset, rkey, serverHideRead]);
 
-  const loadMoreSentinelRef = useInfiniteScrollSentinel(
-    loadMore,
-    nextOffset != null,
-    nextOffset ?? 0,
-  );
-
   if (!hasMembers) {
     return (
       <div {...stylex.props(styles.emptyNote)}>
@@ -466,10 +455,11 @@ function ListFeedPanel({
         </p>
       ) : (
         <>
-          <div
-            ref={loadMoreSentinelRef}
-            aria-hidden
-            {...stylex.props(styles.loadSentinel)}
+          <FeedLoadMore
+            hasMore
+            isLoading={loadingMore}
+            onLoadMore={() => void loadMore()}
+            itemCount={items.length}
           />
           {loadingMore ? (
             <p {...stylex.props(styles.endNote)}>

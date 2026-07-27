@@ -1,3 +1,5 @@
+"use client";
+
 import * as stylex from "@stylexjs/stylex";
 import { Heart, MessageCircle } from "lucide-react";
 
@@ -23,6 +25,7 @@ import {
   tracking,
 } from "../../design-system/theme/typography.stylex";
 import type { PublicationCard } from "../../integrations/tanstack-query/api-shapes";
+import { useEngagementCountsVisible } from "./engagement-visibility";
 import { formatReaders, initials } from "./format";
 
 /* ── styles ─────────────────────────────────────────────────────────────── */
@@ -326,7 +329,8 @@ export function LikeCount({
   /** The viewer has recommended this article — fill and tint the heart. */
   filled?: boolean;
 }) {
-  if (count <= 0) return null;
+  const metricsVisible = useEngagementCountsVisible();
+  if (count <= 0 || !metricsVisible) return null;
   return (
     <Flex
       align="center"
@@ -361,7 +365,8 @@ export function CommentCount({
   count: number;
   size?: keyof typeof ENGAGEMENT_ICON_SIZE;
 }) {
-  if (count <= 0) return null;
+  const metricsVisible = useEngagementCountsVisible();
+  if (count <= 0 || !metricsVisible) return null;
   return (
     <Flex
       align="center"
@@ -378,7 +383,14 @@ export function CommentCount({
   );
 }
 
-/** Recommendation + Bluesky comment counts for article cards and bylines. */
+/**
+ * Recommendation + Bluesky comment counts for article cards and bylines.
+ *
+ * Renders nothing when the reader has hidden engagement counts
+ * (`./engagement-visibility`). Call sites that draw their own separator dot
+ * around it must gate on `useEngagementCountsVisible()` too, or the dot
+ * outlives the counts it was separating.
+ */
 export function ArticleEngagement({
   recommendCount,
   commentCount,
@@ -391,8 +403,9 @@ export function ArticleEngagement({
   /** The viewer recommended this article — fills the heart on the like count. */
   viewerHasRecommended?: boolean;
 }) {
-  const hasLikes = recommendCount > 0;
-  const hasComments = commentCount > 0;
+  const metricsVisible = useEngagementCountsVisible();
+  const hasLikes = metricsVisible && recommendCount > 0;
+  const hasComments = metricsVisible && commentCount > 0;
   if (!hasLikes && !hasComments) return null;
 
   return (

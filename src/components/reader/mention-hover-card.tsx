@@ -35,6 +35,7 @@ import { authorApi } from "#/integrations/tanstack-query/api-author.functions";
 import { publicationApi } from "#/integrations/tanstack-query/api-publication.functions";
 import { useFormatters } from "#/lib/use-formatters";
 
+import { useEngagementCountsVisible } from "./engagement-visibility";
 import { formatReaders, initials } from "./format";
 import { LikeCount, PublicationAvatar } from "./primitives";
 
@@ -426,6 +427,7 @@ export function DocumentHoverCardBody({
   fallbackTitle: string;
 }) {
   const fmt = useFormatters();
+  const metricsVisible = useEngagementCountsVisible();
   const { data: art, isLoading } = useQuery(
     publicationApi.getArticleCardQueryOptions(documentUri),
   );
@@ -476,7 +478,8 @@ export function DocumentHoverCardBody({
           {art?.description ? (
             <p {...stylex.props(styles.desc)}>{art.description}</p>
           ) : null}
-          {metaParts.length > 0 || (art && art.recommendCount > 0) ? (
+          {metaParts.length > 0 ||
+          (metricsVisible && art && art.recommendCount > 0) ? (
             <div {...stylex.props(styles.metaRow)}>
               {art &&
               (art.publicationIconUrl || art.publicationOwnerAvatarUrl) ? (

@@ -16,7 +16,7 @@ import type { Key } from "react";
 import { useCallback } from "react";
 
 import { ArticleRow } from "#/components/reader/cards";
-import { useInfiniteScrollSentinel } from "#/components/reader/use-infinite-scroll-sentinel";
+import { FeedLoadMore } from "#/components/reader/feed-load-more";
 import type { LabelValueDef } from "#/integrations/tanstack-query/api-labelers.functions";
 import { labelerApi } from "#/integrations/tanstack-query/api-labelers.functions";
 import { useTrackReadingHistory } from "#/lib/use-track-reading-history";
@@ -132,11 +132,6 @@ export function LabelerDetailView({
   const loadMore = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) void fetchNextPage();
   }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
-  const loadMoreRef = useInfiniteScrollSentinel(
-    loadMore,
-    hasNextPage,
-    documents.length,
-  );
 
   const onViewChange = (key: Key) => {
     const next = key as LabelerView;
@@ -329,13 +324,12 @@ export function LabelerDetailView({
                     <Trans>Loading…</Trans>
                   </p>
                 ) : null}
-                {hasNextPage ? (
-                  <div
-                    ref={loadMoreRef}
-                    aria-hidden
-                    {...stylex.props(styles.loadSentinel)}
-                  />
-                ) : null}
+                <FeedLoadMore
+                  hasMore={hasNextPage}
+                  isLoading={isFetchingNextPage}
+                  onLoadMore={loadMore}
+                  itemCount={documents.length}
+                />
               </div>
             )}
           </TabPanel>
@@ -511,10 +505,5 @@ const styles = stylex.create({
     textAlign: "center",
     paddingBottom: spacing["8"],
     paddingTop: spacing["8"],
-  },
-  loadSentinel: {
-    height: 1,
-    marginTop: spacing["6"],
-    width: "100%",
   },
 });

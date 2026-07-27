@@ -33,6 +33,16 @@ import {
   dbValueToCountOldPostsAsUnread,
   parseCountOldPostsAsUnreadCookie,
 } from "#/lib/count-old-posts-as-unread";
+import type { FeedPagination } from "#/lib/feed-preferences";
+import {
+  DEFAULT_FEED_PAGINATION,
+  DEFAULT_HIDE_FEED_METRICS,
+  FEED_PAGINATION_MODES,
+  dbValueToFeedPagination,
+  dbValueToHideFeedMetrics,
+  feedPaginationToDbValue,
+  hideFeedMetricsToDbValue,
+} from "#/lib/feed-preferences";
 import {
   DEFAULT_GUEST_HOME_SCOPE,
   HOME_SCOPE_COOKIE,
@@ -308,6 +318,8 @@ const getShellBootstrap = createServerFn({ method: "GET" }).handler(
         preference: parseAppearanceCookie(cookies[APPEARANCE_COOKIE]),
       },
       usePublicationTheme: { enabled: DEFAULT_USE_PUBLICATION_THEME },
+      hideFeedMetrics: { hidden: DEFAULT_HIDE_FEED_METRICS },
+      feedPagination: { mode: DEFAULT_FEED_PAGINATION },
       collectionsAuthoring: { enabled: false },
       shell: null,
     };
@@ -349,6 +361,8 @@ const getShellBootstrap = createServerFn({ method: "GET" }).handler(
             readingTypography: true,
             appearance: true,
             usePublicationTheme: true,
+            hideFeedMetrics: true,
+            feedPagination: true,
             collectionsAuthoringEnabled: true,
             atstoreReviewPromptDismissed: true,
             userinputFeedbackEnabled: true,
@@ -485,6 +499,12 @@ const getShellBootstrap = createServerFn({ method: "GET" }).handler(
       appearance: { preference: dbValueToAppearance(userRow.appearance) },
       usePublicationTheme: {
         enabled: dbValueToUsePublicationTheme(userRow.usePublicationTheme),
+      },
+      hideFeedMetrics: {
+        hidden: dbValueToHideFeedMetrics(userRow.hideFeedMetrics),
+      },
+      feedPagination: {
+        mode: dbValueToFeedPagination(userRow.feedPagination),
       },
       collectionsAuthoring: {
         enabled: userRow.collectionsAuthoringEnabled === true,
@@ -1193,6 +1213,74 @@ const setUsePublicationThemePreference = createServerFn({ method: "POST" })
     return { enabled: data.enabled };
   });
 
+// Feed presentation preferences — signed-in only, like the publication theme
+// above (the settings page is behind auth), so no cookie mirror for guests.
+const getHideFeedMetricsPreference = createServerFn({ method: "GET" })
+  .middleware([dbMiddleware, maybeAuthMiddleware])
+  .handler(async ({ context }): Promise<{ hidden: boolean }> => {
+    const session = context?.session;
+    if (!session?.user) return { hidden: DEFAULT_HIDE_FEED_METRICS };
+
+    const row = await context.db.query.user.findFirst({
+      where: eq(context.schema.user.id, session.user.id),
+      columns: { hideFeedMetrics: true },
+    });
+    return { hidden: dbValueToHideFeedMetrics(row?.hideFeedMetrics ?? null) };
+  });
+
+const getHideFeedMetricsPreferenceQueryOptions = queryOptions({
+  queryKey: ["hideFeedMetricsPreference"] as const,
+  queryFn: () => getHideFeedMetricsPreference(),
+  staleTime: Number.POSITIVE_INFINITY,
+});
+
+const setHideFeedMetricsPreference = createServerFn({ method: "POST" })
+  .middleware([dbMiddleware, maybeAuthMiddleware])
+  .validator(z.object({ hidden: z.boolean() }))
+  .handler(async ({ data, context }): Promise<{ hidden: boolean }> => {
+    if (!context?.session?.user) return { hidden: DEFAULT_HIDE_FEED_METRICS };
+
+    await context.db
+      .update(context.schema.user)
+      .set({ hideFeedMetrics: hideFeedMetricsToDbValue(data.hidden) })
+      .where(eq(context.schema.user.id, context.session.user.id));
+
+    return { hidden: data.hidden };
+  });
+
+const getFeedPaginationPreference = createServerFn({ method: "GET" })
+  .middleware([dbMiddleware, maybeAuthMiddleware])
+  .handler(async ({ context }): Promise<{ mode: FeedPagination }> => {
+    const session = context?.session;
+    if (!session?.user) return { mode: DEFAULT_FEED_PAGINATION };
+
+    const row = await context.db.query.user.findFirst({
+      where: eq(context.schema.user.id, session.user.id),
+      columns: { feedPagination: true },
+    });
+    return { mode: dbValueToFeedPagination(row?.feedPagination ?? null) };
+  });
+
+const getFeedPaginationPreferenceQueryOptions = queryOptions({
+  queryKey: ["feedPaginationPreference"] as const,
+  queryFn: () => getFeedPaginationPreference(),
+  staleTime: Number.POSITIVE_INFINITY,
+});
+
+const setFeedPaginationPreference = createServerFn({ method: "POST" })
+  .middleware([dbMiddleware, maybeAuthMiddleware])
+  .validator(z.object({ mode: z.enum(FEED_PAGINATION_MODES) }))
+  .handler(async ({ data, context }): Promise<{ mode: FeedPagination }> => {
+    if (!context?.session?.user) return { mode: DEFAULT_FEED_PAGINATION };
+
+    await context.db
+      .update(context.schema.user)
+      .set({ feedPagination: feedPaginationToDbValue(data.mode) })
+      .where(eq(context.schema.user.id, context.session.user.id));
+
+    return { mode: data.mode };
+  });
+
 const homeScopeInput = z.object({
   scope: z.enum(["follows", "trending"]),
 });
@@ -1498,6 +1586,12 @@ export const user = {
   getUsePublicationThemePreference,
   getUsePublicationThemePreferenceQueryOptions,
   setUsePublicationThemePreference,
+  getHideFeedMetricsPreference,
+  getHideFeedMetricsPreferenceQueryOptions,
+  setHideFeedMetricsPreference,
+  getFeedPaginationPreference,
+  getFeedPaginationPreferenceQueryOptions,
+  setFeedPaginationPreference,
   getHomeScopePreference,
   getHomeScopePreferenceQueryOptions,
   setHomeScopePreference,

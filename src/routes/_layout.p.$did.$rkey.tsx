@@ -34,6 +34,7 @@ import {
   FeatureArticle,
   FollowButton,
 } from "../components/reader/cards";
+import { FeedLoadMore } from "../components/reader/feed-load-more";
 import {
   formatReaders,
   publicationUriFromParams,
@@ -55,7 +56,6 @@ import {
 } from "../components/reader/read-optimistic";
 import { RssFeedButton } from "../components/reader/rss-feed-button";
 import { ShareMenu } from "../components/reader/share-menu";
-import { useInfiniteScrollSentinel } from "../components/reader/use-infinite-scroll-sentinel";
 import {
   AlertDialog,
   AlertDialogActionButton,
@@ -386,11 +386,6 @@ const styles = stylex.create({
     paddingBottom: spacing["8"],
     paddingTop: spacing["8"],
   },
-  loadSentinel: {
-    height: 1,
-    marginTop: spacing["6"],
-    width: "100%",
-  },
   endNote: {
     color: uiColor.text1,
     fontFamily: fontFamily.serif,
@@ -716,12 +711,6 @@ function PublicationProfileContent({
     }
   }, [nextOffset, uri]);
 
-  const loadMoreSentinelRef = useInfiniteScrollSentinel(
-    loadMore,
-    nextOffset != null,
-    nextOffset ?? 0,
-  );
-
   const lead = documents[0];
   const rest = documents.slice(1);
 
@@ -885,10 +874,11 @@ function PublicationProfileContent({
           )}
           {documents.length > 0 ? (
             <div>
-              <div
-                ref={loadMoreSentinelRef}
-                aria-hidden
-                {...stylex.props(styles.loadSentinel)}
+              <FeedLoadMore
+                hasMore={nextOffset != null}
+                isLoading={loadingMore}
+                onLoadMore={() => void loadMore()}
+                itemCount={documents.length}
               />
               {loadingMore ? (
                 <div {...stylex.props(styles.endNote)}>

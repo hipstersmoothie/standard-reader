@@ -19,12 +19,12 @@ import {
   PubDirectoryRow,
   PubDirectoryRowSkeleton,
 } from "../components/reader/cards";
+import { FeedLoadMore } from "../components/reader/feed-load-more";
 import {
   Kicker,
   ReaderContent,
   SectionHead,
 } from "../components/reader/primitives";
-import { useInfiniteScrollSentinel } from "../components/reader/use-infinite-scroll-sentinel";
 import { Button } from "../design-system/button";
 import { Flex } from "../design-system/flex";
 import { IconButton } from "../design-system/icon-button";
@@ -141,11 +141,6 @@ const styles = stylex.create({
     display: "flex",
     justifyContent: "center",
     marginTop: spacing["6"],
-  },
-  loadSentinel: {
-    height: 1,
-    marginTop: spacing["6"],
-    width: "100%",
   },
   emptyNote: {
     color: uiColor.text1,
@@ -473,12 +468,6 @@ function Search() {
     }
   }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
-  const loadMoreArticlesRef = useInfiniteScrollSentinel(
-    loadMoreArticles,
-    hasNextPage,
-    articles.length,
-  );
-
   const trimmedInput = input.trim();
   const hasQuery = debouncedQ.length > 0;
   const inputPending = trimmedInput !== debouncedQ;
@@ -606,13 +595,12 @@ function Search() {
                       />
                     ))
                   : null}
-                {hasNextPage ? (
-                  <div
-                    ref={loadMoreArticlesRef}
-                    aria-hidden
-                    {...stylex.props(styles.loadSentinel)}
-                  />
-                ) : null}
+                <FeedLoadMore
+                  hasMore={hasNextPage}
+                  isLoading={isFetchingNextPage}
+                  onLoadMore={loadMoreArticles}
+                  itemCount={articles.length}
+                />
               </section>
             )
           ) : null}
