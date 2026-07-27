@@ -24,6 +24,7 @@ import {
   Tag,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { Selection } from "react-aria-components";
 import { z } from "zod";
 
 import {
@@ -58,6 +59,8 @@ import {
 import { Button } from "#/design-system/button";
 import { Flex } from "#/design-system/flex";
 import { Grid } from "#/design-system/grid";
+import { IconButton } from "#/design-system/icon-button";
+import { Menu, MenuItem } from "#/design-system/menu";
 import {
   SegmentedControl,
   SegmentedControlItem,
@@ -66,6 +69,7 @@ import { Select, SelectItem } from "#/design-system/select";
 import { Skeleton } from "#/design-system/skeleton";
 import { Tab, TabList, TabPanel, Tabs } from "#/design-system/tabs";
 import { uiColor } from "#/design-system/theme/color.stylex";
+import { breakpoints } from "#/design-system/theme/media-queries.stylex";
 import { gap } from "#/design-system/theme/semantic-spacing.stylex";
 import { spacing } from "#/design-system/theme/spacing.stylex";
 import {
@@ -303,14 +307,29 @@ const styles = stylex.create({
     // intact and lets the control wrap to its own line on narrow screens.
     flexShrink: 0,
   },
+  // Shared slot geometry for the articles sort control. Two controls occupy it
+  // — a compact icon menu and the full select — swapped by media query rather
+  // than by a JS viewport check, so SSR emits both and neither can hydrate to
+  // the wrong one. `display: none` also drops the hidden one from the a11y
+  // tree, so the duplicate label is never announced twice.
   tabBarSort: {
     flexShrink: 0,
     // Trailing edge whether or not the row wrapped (`space-between` would pull
     // a wrapped control back to the leading edge).
     marginInlineStart: "auto",
-    minWidth: spacing["40"],
-    // Lift the trigger off the rule the tab labels rest on.
+    // Lift the control off the rule the tab labels rest on.
     paddingBottom: spacing["2"],
+  },
+  // One breakpoint drives both slots (never `max-width` for one and
+  // `min-width` for the other — they'd both match at exactly 40rem).
+  tabBarSortCompact: {
+    display: { default: "flex", [breakpoints.sm]: "none" },
+  },
+  tabBarSortFull: {
+    display: { default: "none", [breakpoints.sm]: "flex" },
+  },
+  tabBarSortSelect: {
+    minWidth: spacing["40"],
   },
   tabRule: {
     borderBottomColor: uiColor.border1,
@@ -1061,6 +1080,12 @@ function TagPage() {
     });
   };
 
+  /** Menu hands back a `Selection`; the select hands back a single key. */
+  const onArticleSortSelection = (keys: Selection) => {
+    if (keys === "all") return;
+    onArticleSortChange([...keys][0] ?? null);
+  };
+
   return (
     <div>
       <div {...stylex.props(styles.heroInner)}>
@@ -1126,25 +1151,57 @@ function TagPage() {
             {/* Articles-only: the Publications tab carries its own sort in the
                 directory toolbar. */}
             {isFeed ? (
-              <Select
-                aria-label={t`Sort articles`}
-                size="sm"
-                variant="secondary"
-                prefix={<ArrowDownWideNarrow size={14} aria-hidden />}
-                selectedKey={articleSort}
-                style={styles.tabBarSort}
-                onSelectionChange={onArticleSortChange}
-              >
-                {ARTICLE_SORT_OPTIONS.map((option) => (
-                  <SelectItem
-                    key={option.id}
-                    id={option.id}
-                    textValue={i18n._(option.label)}
+              <>
+                <div
+                  {...stylex.props(styles.tabBarSort, styles.tabBarSortCompact)}
+                >
+                  <Menu
+                    placement="bottom end"
+                    selectionMode="single"
+                    selectedKeys={new Set([articleSort])}
+                    onSelectionChange={onArticleSortSelection}
+                    trigger={
+                      <IconButton
+                        aria-label={t`Sort articles`}
+                        size="md"
+                        variant="secondary"
+                      >
+                        <ArrowDownWideNarrow size={16} />
+                      </IconButton>
+                    }
                   >
-                    {i18n._(option.label)}
-                  </SelectItem>
-                ))}
-              </Select>
+                    {ARTICLE_SORT_OPTIONS.map((option) => (
+                      <MenuItem key={option.id} id={option.id}>
+                        {i18n._(option.label)}
+                      </MenuItem>
+                    ))}
+                  </Menu>
+                </div>
+
+                <div
+                  {...stylex.props(styles.tabBarSort, styles.tabBarSortFull)}
+                >
+                  <Select
+                    aria-label={t`Sort articles`}
+                    size="md"
+                    variant="secondary"
+                    prefix={<ArrowDownWideNarrow size={14} aria-hidden />}
+                    selectedKey={articleSort}
+                    style={styles.tabBarSortSelect}
+                    onSelectionChange={onArticleSortChange}
+                  >
+                    {ARTICLE_SORT_OPTIONS.map((option) => (
+                      <SelectItem
+                        key={option.id}
+                        id={option.id}
+                        textValue={i18n._(option.label)}
+                      >
+                        {i18n._(option.label)}
+                      </SelectItem>
+                    ))}
+                  </Select>
+                </div>
+              </>
             ) : null}
           </div>
           <div {...stylex.props(styles.tabRule)} aria-hidden />
