@@ -117,42 +117,69 @@ export function RssFeedButton({
         </Button>
       )}
 
-      <Dialog
+      <RssFeedDialog
+        name={name}
+        feedUrl={feedUrl}
         isOpen={open}
         onOpenChange={setOpen}
-        size="md"
-        fitContent
-        trigger={<span hidden aria-hidden />}
-      >
-        <DialogHeader>
-          <span {...stylex.props(styles.dialogTitle)}>
-            <Trans>RSS feed</Trans>
-          </span>
-        </DialogHeader>
-        <DialogBody style={styles.body}>
-          <SmallBody variant="secondary">
-            <Trans>
-              Subscribe to {name} in any RSS reader — new articles show up there
-              as soon as they publish.
-            </Trans>
-          </SmallBody>
-          <Flex align="center" gap="sm">
-            <input
-              readOnly
-              aria-label={t`RSS feed URL`}
-              value={feedUrl}
-              onFocus={(event) => event.currentTarget.select()}
-              {...stylex.props(styles.field)}
-            />
-            <CopyToClipboardButton text={feedUrl} size="lg" />
-          </Flex>
-        </DialogBody>
-        <DialogFooter>
-          <Button variant="secondary" onPress={() => setOpen(false)}>
-            <Trans>Close</Trans>
-          </Button>
-        </DialogFooter>
-      </Dialog>
+      />
     </>
+  );
+}
+
+/**
+ * The dialog on its own, for surfaces that open it from something other than
+ * the button — e.g. an overflow menu item in the publication hero.
+ */
+export function RssFeedDialog({
+  feedUrl,
+  name,
+  isOpen,
+  onOpenChange,
+}: {
+  feedUrl: string;
+  name: string;
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const { t } = useLingui();
+
+  return (
+    <Dialog
+      isOpen={isOpen}
+      onOpenChange={onOpenChange}
+      size="md"
+      fitContent
+      trigger={<span hidden aria-hidden />}
+    >
+      <DialogHeader>
+        <span {...stylex.props(styles.dialogTitle)}>
+          <Trans>RSS feed</Trans>
+        </span>
+      </DialogHeader>
+      <DialogBody style={styles.body}>
+        <SmallBody variant="secondary">
+          <Trans>
+            Subscribe to {name} in any RSS reader — new articles show up there
+            as soon as they publish.
+          </Trans>
+        </SmallBody>
+        <Flex align="center" gap="sm">
+          <input
+            readOnly
+            aria-label={t`RSS feed URL`}
+            value={feedUrl}
+            onFocus={(event) => event.currentTarget.select()}
+            {...stylex.props(styles.field)}
+          />
+          <CopyToClipboardButton text={feedUrl} size="lg" />
+        </Flex>
+      </DialogBody>
+      <DialogFooter>
+        <Button variant="secondary" onPress={() => onOpenChange(false)}>
+          <Trans>Close</Trans>
+        </Button>
+      </DialogFooter>
+    </Dialog>
   );
 }

@@ -863,7 +863,7 @@ export function FollowButton({
 }: {
   publicationUri: string;
   signedIn: boolean;
-  size?: "sm" | "md";
+  size?: "sm" | "md" | "lg";
   /** Publication card for optimistic sidebar updates when toggling follow. */
   pub?: PublicationCard;
   /** @deprecated Prefer letting the button read follow status from React Query. */
@@ -898,7 +898,7 @@ export function FollowButton({
   ) : (
     <Plus size={mobileIconSize} aria-hidden />
   );
-  const desktopIconSize = size === "md" ? 18 : 15;
+  const desktopIconSize = size === "sm" ? 15 : 18;
   const desktopIcon = following ? (
     <Check size={desktopIconSize} aria-hidden />
   ) : (
@@ -916,7 +916,7 @@ export function FollowButton({
           style={style}
           onClick={stopFollowBubble}
         >
-          {desktopIcon} <Trans>Follow</Trans>
+          {desktopIcon} <Trans>Subscribe</Trans>
         </ButtonLink>
       );
     }
@@ -940,7 +940,7 @@ export function FollowButton({
           style={styles.followResponsiveFull}
           onClick={stopFollowBubble}
         >
-          {desktopIcon} <Trans>Follow</Trans>
+          {desktopIcon} <Trans>Subscribe</Trans>
         </ButtonLink>
       </>
     );

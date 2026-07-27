@@ -7,8 +7,8 @@ import {
   useSuspenseQuery,
 } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { CheckCheck, ExternalLink } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { z } from "zod";
 
 import { authorApi } from "#/integrations/tanstack-query/api-author.functions";
 import { notesApi } from "#/integrations/tanstack-query/api-notes.functions";
@@ -28,12 +28,7 @@ import {
 } from "#/lib/site-metadata";
 import { useTrackReadingHistory } from "#/lib/use-track-reading-history";
 
-import { AddToListButton } from "../components/reader/add-to-list-modal";
-import {
-  ArticleRow,
-  FeatureArticle,
-  FollowButton,
-} from "../components/reader/cards";
+import { ArticleRow, FeatureArticle } from "../components/reader/cards";
 import { FeedLoadMore } from "../components/reader/feed-load-more";
 import {
   formatReaders,
@@ -45,6 +40,8 @@ import {
   PublicationAvatar,
   ReaderContent,
 } from "../components/reader/primitives";
+import type { PublicationMarkAllRead } from "../components/reader/publication-actions";
+import { PublicationActions } from "../components/reader/publication-actions";
 import { PublicationLatestNote } from "../components/reader/publication-latest-note";
 import { PublicationSocialProofLine } from "../components/reader/publication-social-proof";
 import type { PublicationThemeColors } from "../components/reader/publication-theme-scale";
@@ -54,18 +51,7 @@ import {
   invalidateReadQueries,
   isArticleUnreadForReader,
 } from "../components/reader/read-optimistic";
-import { RssFeedButton } from "../components/reader/rss-feed-button";
-import { ShareMenu } from "../components/reader/share-menu";
-import {
-  AlertDialog,
-  AlertDialogActionButton,
-  AlertDialogCancelButton,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-} from "../design-system/alert-dialog";
 import { Flex } from "../design-system/flex";
-import { IconButton } from "../design-system/icon-button";
 import { Skeleton } from "../design-system/skeleton";
 import { uiColor } from "../design-system/theme/color.stylex";
 import { radius } from "../design-system/theme/radius.stylex";
@@ -89,8 +75,16 @@ const PUBLICATION_RECENT_LIMIT = 12;
 const PUBLICATION_PAGE_SIZE = 20;
 const PUBLICATION_SKELETON_ROWS = 5;
 
+const publicationSearch = z.object({
+  /** Reader-scoped view filter over the archive. Kept in the URL so a filtered
+   * view survives reload, back/forward, and sharing. */
+  filter: z.enum(["all", "unread", "read", "recommended"]).default("all"),
+});
+
 export const Route = createFileRoute("/_layout/p/$did/$rkey")({
-  loader: async ({ context, params, preload }) => {
+  validateSearch: publicationSearch,
+  loaderDeps: ({ search }) => ({ filter: search.filter }),
+  loader: async ({ context, params, preload, deps }) => {
     const uri = publicationUriFromParams(params.did, params.rkey);
     const session = await context.queryClient.ensureQueryData(
       user.getSessionQueryOptions,
@@ -103,6 +97,7 @@ export const Route = createFileRoute("/_layout/p/$did/$rkey")({
         limit: PUBLICATION_RECENT_LIMIT,
         offset: 0,
         readerScope,
+        filter: deps.filter,
       });
     const socialProofOptions =
       publicationApi.getPublicationSocialProofQueryOptions(uri);
@@ -324,35 +319,6 @@ const styles = stylex.create({
     fontWeight: fontWeight.medium,
     letterSpacing: tracking.wide,
     textTransform: "uppercase",
-  },
-  heroActsMobile: {
-    display: { default: "flex", [HERO_DESKTOP]: "none" },
-    flexDirection: "column",
-    rowGap: spacing["2.5"],
-  },
-  heroActsMobilePrimary: {
-    display: "flex",
-  },
-  heroFollowFull: {
-    flexGrow: 1,
-    width: "100%",
-  },
-  heroActsMobileSecondary: {
-    alignItems: "center",
-    columnGap: spacing["1.5"],
-    display: "flex",
-    flexWrap: "wrap",
-    rowGap: spacing["1.5"],
-  },
-  heroActs: {
-    alignItems: "center",
-    columnGap: spacing["1.5"],
-    display: { default: "none", [HERO_DESKTOP]: "flex" },
-    flexShrink: 0,
-    flexWrap: "wrap",
-    justifyContent: "flex-end",
-    rowGap: spacing["2.5"],
-    paddingTop: spacing["1"],
   },
   writing: {
     marginTop: spacing["8"],
@@ -615,6 +581,8 @@ function PublicationProfileContent({
   const { t, i18n } = useLingui();
   const { publication: pub, owner } = header;
   const queryClient = useQueryClient();
+  const { filter } = Route.useSearch();
+  const navigate = Route.useNavigate();
   const { data: session } = useSuspenseQuery(user.getSessionQueryOptions);
   const readerScope = user.readerQueryScope(session);
   const { data: initialPage } = useSuspenseQuery(
@@ -622,6 +590,7 @@ function PublicationProfileContent({
       limit: PUBLICATION_RECENT_LIMIT,
       offset: 0,
       readerScope,
+      filter,
     }),
   );
 
@@ -679,14 +648,14 @@ function PublicationProfileContent({
     },
   });
 
-  const showMarkAllRead = signedIn && unreadDocumentUris.length > 0;
-  const markAllReadButton = showMarkAllRead ? (
-    <MarkAllReadButton
-      isPending={markingAllRead}
-      closeSignal={markAllReadCloseSignal}
-      onConfirm={() => markAllRead(uri)}
-    />
-  ) : null;
+  const markAllReadAction: PublicationMarkAllRead | null =
+    signedIn && unreadDocumentUris.length > 0
+      ? {
+          isPending: markingAllRead,
+          closeSignal: markAllReadCloseSignal,
+          onConfirm: () => markAllRead(uri),
+        }
+      : null;
 
   const loadMore = useCallback(async () => {
     if (nextOffset == null || loadingMoreRef.current) return;
@@ -698,6 +667,7 @@ function PublicationProfileContent({
           publicationUri: uri,
           limit: PUBLICATION_PAGE_SIZE,
           offset: nextOffset,
+          filter,
         },
       });
       setDocuments((prev) => {
@@ -709,7 +679,7 @@ function PublicationProfileContent({
       loadingMoreRef.current = false;
       setLoadingMore(false);
     }
-  }, [nextOffset, uri]);
+  }, [filter, nextOffset, uri]);
 
   const lead = documents[0];
   const rest = documents.slice(1);
@@ -738,42 +708,19 @@ function PublicationProfileContent({
               ) : null}
             </div>
 
-            <div {...stylex.props(styles.heroActs)}>
-              {markAllReadButton}
-              <ShareMenu
-                variant="icon"
-                pageUrl={`${getPublicUrlClient()}/p/${did}/${rkey}`}
-                embed={embedMeta ?? undefined}
-              />
-              <RssFeedButton
-                name={pub.name}
-                feedUrl={publicationFeedUrl(getPublicUrlClient(), did, rkey)}
-                size="md"
-              />
-              {pub.url ? (
-                <IconButton
-                  variant="secondary"
-                  size="md"
-                  label={t`Open publication`}
-                  onPress={() => {
-                    window.open(pub.url, "_blank", "noopener,noreferrer");
-                  }}
-                >
-                  <ExternalLink size={15} />
-                </IconButton>
-              ) : null}
-              <AddToListButton
-                publicationUri={pub.uri}
-                signedIn={signedIn}
-                size="md"
-              />
-              <FollowButton
-                publicationUri={pub.uri}
-                signedIn={signedIn}
-                size="md"
-                pub={pub}
-              />
-            </div>
+            <PublicationActions
+              pub={pub}
+              pageUrl={`${getPublicUrlClient()}/p/${did}/${rkey}`}
+              feedUrl={publicationFeedUrl(getPublicUrlClient(), did, rkey)}
+              signedIn={signedIn}
+              embed={embedMeta}
+              markAllRead={markAllReadAction}
+              filter={filter}
+              trackReading={trackReading}
+              onFilterChange={(next) => {
+                void navigate({ search: { filter: next }, resetScroll: false });
+              }}
+            />
           </div>
 
           {pub.description ? (
@@ -798,50 +745,6 @@ function PublicationProfileContent({
           {signedIn && socialProof && socialProof.total > 0 ? (
             <PublicationSocialProofLine {...socialProof} />
           ) : null}
-
-          <div {...stylex.props(styles.heroActsMobile)}>
-            <div {...stylex.props(styles.heroActsMobilePrimary)}>
-              <FollowButton
-                publicationUri={pub.uri}
-                signedIn={signedIn}
-                size="md"
-                pub={pub}
-                responsive={false}
-                style={styles.heroFollowFull}
-              />
-            </div>
-            <div {...stylex.props(styles.heroActsMobileSecondary)}>
-              {markAllReadButton}
-              <AddToListButton
-                publicationUri={pub.uri}
-                signedIn={signedIn}
-                size="md"
-              />
-              <RssFeedButton
-                name={pub.name}
-                feedUrl={publicationFeedUrl(getPublicUrlClient(), did, rkey)}
-                size="md"
-              />
-              <ShareMenu
-                variant="icon"
-                size="md"
-                pageUrl={`${getPublicUrlClient()}/p/${did}/${rkey}`}
-                embed={embedMeta ?? undefined}
-              />
-              {pub.url ? (
-                <IconButton
-                  variant="secondary"
-                  size="md"
-                  label={t`Open publication`}
-                  onPress={() => {
-                    window.open(pub.url, "_blank", "noopener,noreferrer");
-                  }}
-                >
-                  <ExternalLink size={15} />
-                </IconButton>
-              ) : null}
-            </div>
-          </div>
         </div>
       </div>
 
@@ -850,7 +753,15 @@ function PublicationProfileContent({
           <PublicationLatestNote publicationUri={uri} />
           {documents.length === 0 ? (
             <div {...stylex.props(styles.emptyNote)}>
-              <Trans>No posts indexed from this publication yet.</Trans>
+              {filter === "unread" ? (
+                <Trans>You’ve read everything from this publication.</Trans>
+              ) : filter === "read" ? (
+                <Trans>You haven’t read anything here yet.</Trans>
+              ) : filter === "recommended" ? (
+                <Trans>You haven’t recommended anything here yet.</Trans>
+              ) : (
+                <Trans>No posts indexed from this publication yet.</Trans>
+              )}
             </div>
           ) : (
             <div>
@@ -894,55 +805,5 @@ function PublicationProfileContent({
         </Flex>
       </ReaderContent>
     </div>
-  );
-}
-
-function MarkAllReadButton({
-  isPending,
-  closeSignal,
-  onConfirm,
-}: {
-  isPending: boolean;
-  /** Bumped by the parent when the mutation succeeds so the dialog closes. */
-  closeSignal: number;
-  onConfirm: () => void;
-}) {
-  const { t } = useLingui();
-  const [open, setOpen] = useState(false);
-
-  useEffect(() => {
-    setOpen(false);
-  }, [closeSignal]);
-
-  return (
-    <AlertDialog
-      isOpen={open}
-      onOpenChange={setOpen}
-      trigger={
-        <IconButton variant="secondary" size="md" label={t`Mark all as read`}>
-          <CheckCheck size={18} />
-        </IconButton>
-      }
-    >
-      <AlertDialogHeader>
-        <Trans>Mark all as read?</Trans>
-      </AlertDialogHeader>
-      <AlertDialogDescription>
-        <Trans>
-          Every unread article from this publication will be marked read. This
-          can’t be undone.
-        </Trans>
-      </AlertDialogDescription>
-      <AlertDialogFooter>
-        <AlertDialogCancelButton isDisabled={isPending} />
-        <AlertDialogActionButton
-          closeOnPress={false}
-          isPending={isPending}
-          onPress={onConfirm}
-        >
-          <Trans>Mark all as read</Trans>
-        </AlertDialogActionButton>
-      </AlertDialogFooter>
-    </AlertDialog>
   );
 }

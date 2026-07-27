@@ -83,6 +83,11 @@ export const IconButton = ({
     >
       <Button
         size={size}
+        // `label` is the accessible name as well as the tooltip text. The
+        // button has no text of its own, and the tooltip's `aria-describedby`
+        // only exists while it is open, so without this the button announces
+        // as an unnamed "button". An explicit `aria-label` in `props` wins.
+        aria-label={label}
         style={[styles.button as unknown as stylex.StyleXStyles, style]}
         {...props}
       >

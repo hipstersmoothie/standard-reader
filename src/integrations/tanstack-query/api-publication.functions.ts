@@ -33,6 +33,7 @@ import { attachCommentCountsToArticles } from "#/server/reader/document-comments
 import type { PublicationHeader } from "#/server/reader/publication-header";
 import { selectPublicationHeader } from "#/server/reader/publication-header";
 import { resolveInlineMentions } from "#/server/reader/publication-mentions";
+import type { PublicationDocumentFilter } from "#/server/reader/queries";
 import {
   articleRecommendedPublications,
   publicationFollowedByCoReaders,
@@ -86,6 +87,8 @@ const documentsInput = z.object({
   publicationUri: z.string().min(1),
   limit: z.number().int().min(1).max(30).default(20),
   offset: z.number().int().min(0).default(0),
+  /** Reader-scoped view filter; ignored for signed-out readers. */
+  filter: z.enum(["all", "unread", "read", "recommended"]).default("all"),
 });
 
 const articleInput = z.object({
@@ -128,6 +131,9 @@ const contentLinksInput = z.object({
  * list). Re-exported from the query that builds it so the two can't drift.
  */
 export type { PublicationHeader } from "#/server/reader/publication-header";
+
+/** Reader-scoped view filter for a publication's archive. */
+export type { PublicationDocumentFilter } from "#/server/reader/queries";
 
 export interface PublicationProfile {
   publication: PublicationCard;
@@ -314,11 +320,21 @@ const getPublicationDocuments = createServerFn({ method: "GET" })
         } = context;
         span.set("publicationUri", data.publicationUri);
         span.set("offset", data.offset);
+        span.set("filter", data.filter);
         const did = await attachReaderSpanContext(span, getRequest());
         const trackReading = did == null ? false : trackReadingEnabled;
         const readForDid = trackReading && did ? did : undefined;
         const countOldPostsAsUnread =
           did == null ? true : countOldPostsAsUnreadEnabled;
+        // Read/unread only mean something when the reader tracks reading
+        // history; without it every row reads as unread, so the two views would
+        // be "everything" and "nothing".
+        const filter =
+          data.filter === "unread" || data.filter === "read"
+            ? trackReading
+              ? data.filter
+              : "all"
+            : data.filter;
 
         // The page rows and the reader's follow set are independent reads — the
         // follow set only needs `did` — so resolve them in one wave instead of
@@ -330,6 +346,8 @@ const getPublicationDocuments = createServerFn({ method: "GET" })
             offset: data.offset,
             readForDid,
             countOldPostsAsUnread,
+            filter,
+            readerDid: did ?? undefined,
           }),
           did ? effectiveFollowSets(db, schema, did) : Promise.resolve(null),
         ]);
@@ -894,7 +912,13 @@ function getPublicationDocumentsQueryOptions(
     limit = 20,
     offset = 0,
     readerScope = "guest",
-  }: { limit?: number; offset?: number; readerScope?: string } = {},
+    filter = "all",
+  }: {
+    limit?: number;
+    offset?: number;
+    readerScope?: string;
+    filter?: PublicationDocumentFilter;
+  } = {},
 ) {
   return queryOptions({
     queryKey: [
@@ -904,9 +928,12 @@ function getPublicationDocumentsQueryOptions(
       limit,
       offset,
       readerScope,
+      filter,
     ] as const,
     queryFn: async () =>
-      getPublicationDocuments({ data: { publicationUri, limit, offset } }),
+      getPublicationDocuments({
+        data: { publicationUri, limit, offset, filter },
+      }),
   });
 }
 

@@ -743,6 +743,43 @@ export async function selectArticleCards(
   return rows.map((row) => toArticleCard(row));
 }
 
+/** Reader-scoped view filters on a publication's archive. */
+export type PublicationDocumentFilter =
+  | "all"
+  | "unread"
+  | "read"
+  | "recommended";
+
+/**
+ * WHERE clause for a publication page's reader-scoped filter, or `undefined`
+ * when there is nothing to narrow (the default `all` view, or a signed-out
+ * reader who has no read/recommend state to filter by).
+ *
+ * `read` is the exact complement of {@link documentUnreadWhere}, so the rows it
+ * returns are precisely the ones whose inline `isRead` renders true — the two
+ * views always partition the archive with no row in both or neither.
+ */
+function publicationFilterWhere(
+  schema: Schema,
+  filter: PublicationDocumentFilter | undefined,
+  readerDid: string | undefined,
+  opts?: UnreadCutoffOpts,
+): SQL | undefined {
+  if (!filter || filter === "all" || !readerDid) return undefined;
+  if (filter === "recommended") {
+    const rec = schema.recommends;
+    // Qualifies the outer `documents.uri` — see `documentReadExistsColumn`.
+    return sql`exists (
+      select 1 from ${rec}
+      where ${rec.documentUri} = "documents"."uri"
+        and ${rec.recommenderDid} = ${readerDid}
+        and ${rec.deleted} = false
+    )`;
+  }
+  const unread = documentUnreadWhere(schema, readerDid, opts);
+  return filter === "unread" ? unread : sql`not (${unread})`;
+}
+
 /**
  * Article cards for a single publication profile — documents table only (no
  * publication/profile join). Publication-scoped pages set `showByline={false}`,
@@ -760,6 +797,16 @@ export async function selectPublicationArticleCards(
     /** When false, treat posts published before the reader subscribed to this
      * publication as read (see {@link UnreadCutoffOpts}). */
     countOldPostsAsUnread?: boolean;
+    /**
+     * Reader-scoped view filter. Every value but `all` needs `readerDid`; the
+     * caller drops the filter for signed-out readers. Unlike the network feeds
+     * this is scoped to one publication by an indexed equality, so the
+     * correlated read/cutoff subqueries only run over that publication's rows.
+     */
+    filter?: PublicationDocumentFilter;
+    /** The requesting reader, for `filter`. Usually the same as `readForDid`,
+     * but set even when reading history is off (recommends don't need it). */
+    readerDid?: string;
   },
 ): Promise<Array<ArticleCard>> {
   const d = schema.documents;
@@ -806,6 +853,9 @@ export async function selectPublicationArticleCards(
         eq(d.deleted, false),
         documentPublishedNotInFuture(d),
         eq(d.publicationUri, opts.publicationUri),
+        publicationFilterWhere(schema, opts.filter, opts.readerDid, {
+          countOldPostsAsUnread: opts.countOldPostsAsUnread,
+        }),
       ),
     )
     .orderBy(...documentsNewestFirst(d))
