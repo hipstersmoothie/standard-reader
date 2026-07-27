@@ -11,6 +11,18 @@ export interface StructuredGridImage {
   aspectRatio?: { width?: number; height?: number };
 }
 
+/**
+ * One entry in a bullet or ordered list.
+ *
+ * `children` carries lists nested beneath this item. Most block formats have a
+ * flat list vocabulary and never set it; markdown genuinely nests, and dropping
+ * that nesting silently loses whole branches of a document.
+ */
+export interface StructuredListItem {
+  text: StructuredText;
+  children?: Array<StructuredRenderableBlock>;
+}
+
 export type StructuredRenderableBlock =
   | { kind: "text"; text: StructuredText }
   | { kind: "heading"; text: StructuredText; level?: number }
@@ -22,8 +34,8 @@ export type StructuredRenderableBlock =
       color?: string;
     }
   | { kind: "horizontalRule" }
-  | { kind: "bulletList"; items: Array<StructuredText> }
-  | { kind: "orderedList"; start?: number; items: Array<StructuredText> }
+  | { kind: "bulletList"; items: Array<StructuredListItem> }
+  | { kind: "orderedList"; start?: number; items: Array<StructuredListItem> }
   | {
       kind: "taskList";
       items: Array<{ checked?: boolean; text: StructuredText }>;

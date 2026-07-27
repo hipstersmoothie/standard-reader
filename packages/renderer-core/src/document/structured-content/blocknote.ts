@@ -165,11 +165,11 @@ export function blocknoteBlocks(
         if (previous?.kind === "taskList") previous.items.push(item);
         else result.push({ items: [item], kind: "taskList" });
       } else if (kind === "bulletList") {
-        if (previous?.kind === "bulletList") previous.items.push(text);
-        else result.push({ items: [text], kind: "bulletList" });
+        if (previous?.kind === "bulletList") previous.items.push({ text });
+        else result.push({ items: [{ text }], kind: "bulletList" });
       } else {
-        if (previous?.kind === "orderedList") previous.items.push(text);
-        else result.push({ items: [text], kind: "orderedList" });
+        if (previous?.kind === "orderedList") previous.items.push({ text });
+        else result.push({ items: [{ text }], kind: "orderedList" });
       }
       continue;
     }

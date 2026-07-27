@@ -7,7 +7,10 @@ import {
   structuredImageAspectRatio,
   structuredImageHasSource,
 } from "./document/structured-content/image.js";
-import type { StructuredRenderableBlock } from "./document/structured-content/types.js";
+import type {
+  StructuredListItem,
+  StructuredRenderableBlock,
+} from "./document/structured-content/types.js";
 import { defaultImageUrlResolver, resolveGridImages } from "./image.js";
 import { externalHttpUrl, isRecord } from "./internal.js";
 import {
@@ -664,6 +667,25 @@ function pcktToNode(
 // Structured (Offprint + third-party)
 // ---------------------------------------------------------------------------
 
+/**
+ * A structured list item → a render-tree {@link ListItem}, nested lists and all.
+ *
+ * The formats with a flat list vocabulary simply never set `children`; markdown
+ * does, and this is where that nesting reaches the renderers.
+ */
+function structuredListItem(
+  item: StructuredListItem,
+  ctx: BuildContext,
+): ListItem {
+  return {
+    runs: item.text.plaintext.trim() ? [item.text] : [],
+    children: (item.children ?? []).flatMap((child) => {
+      const node = structuredToNode(child, ctx);
+      return node ? [node] : [];
+    }),
+  };
+}
+
 function structuredToNode(
   block: StructuredRenderableBlock,
   ctx: BuildContext,
@@ -702,14 +724,14 @@ function structuredToNode(
     case "bulletList": {
       return {
         type: "bulletList",
-        items: block.items.map((text) => ({ runs: [text], children: [] })),
+        items: block.items.map((item) => structuredListItem(item, ctx)),
       };
     }
     case "orderedList": {
       return {
         type: "orderedList",
         start: block.start,
-        items: block.items.map((text) => ({ runs: [text], children: [] })),
+        items: block.items.map((item) => structuredListItem(item, ctx)),
       };
     }
     case "taskList": {

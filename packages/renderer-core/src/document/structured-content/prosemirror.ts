@@ -103,7 +103,7 @@ function asBlock(node: unknown): StructuredRenderableBlock | null {
       const children = Array.isArray(node.content) ? node.content : [];
       const items = children.flatMap((child) => {
         const text = listItemText(child);
-        return text ? [text] : [];
+        return text ? [{ text }] : [];
       });
       if (items.length === 0) return null;
       return node.type === "bulletList"

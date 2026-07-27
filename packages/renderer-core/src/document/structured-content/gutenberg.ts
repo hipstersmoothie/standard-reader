@@ -257,18 +257,19 @@ function listBlock(
       ? items
       : legacyListItems(stringAttr(attributes, "values"));
   if (resolved.length === 0) return [];
+  const listItems = resolved.map((text) => ({ text }));
 
   if (attributes.ordered === true) {
     const start = attributes.start;
     return [
       {
-        items: resolved,
+        items: listItems,
         kind: "orderedList",
         start: typeof start === "number" ? start : undefined,
       },
     ];
   }
-  return [{ items: resolved, kind: "bulletList" }];
+  return [{ items: listItems, kind: "bulletList" }];
 }
 
 function quoteBlock(

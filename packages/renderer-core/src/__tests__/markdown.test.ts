@@ -95,6 +95,82 @@ describe("buildRenderTree — markdown", () => {
     expect(code.code).toBe("const x = 1;");
   });
 
+  it("keeps nested lists nested, to any depth", () => {
+    // Nested branches used to be dropped outright, so a document could lose
+    // whole passages between the parse and the render with nothing reported.
+    const tree = build(
+      markdownDoc(
+        [
+          "- outer one",
+          "  - inner a",
+          "  - inner b",
+          "    - deeper still",
+          "- outer two",
+        ].join("\n"),
+      ),
+    );
+
+    const list = tree.children[0] as Extract<BlockNode, { type: "bulletList" }>;
+    expect(list.type).toBe("bulletList");
+    expect(list.items.map((item) => item.runs[0]?.plaintext)).toEqual([
+      "outer one",
+      "outer two",
+    ]);
+
+    const inner = list.items[0]?.children[0] as Extract<
+      BlockNode,
+      { type: "bulletList" }
+    >;
+    expect(inner.items.map((item) => item.runs[0]?.plaintext)).toEqual([
+      "inner a",
+      "inner b",
+    ]);
+
+    const deepest = inner.items[1]?.children[0] as Extract<
+      BlockNode,
+      { type: "bulletList" }
+    >;
+    expect(deepest.items[0]?.runs[0]?.plaintext).toBe("deeper still");
+
+    // A leaf item carries no phantom child list.
+    expect(list.items[1]?.children).toEqual([]);
+  });
+
+  it("nests an ordered list under a bullet and keeps its start", () => {
+    // The blank line is load-bearing: CommonMark only lets an ordered list
+    // interrupt a paragraph when it starts at 1, so `3.` needs the break to be
+    // a list at all rather than a lazy continuation of "steps".
+    const tree = build(
+      markdownDoc(["- steps", "", "  3. third", "  4. fourth"].join("\n")),
+    );
+
+    const list = tree.children[0] as Extract<BlockNode, { type: "bulletList" }>;
+    const nested = list.items[0]?.children[0] as Extract<
+      BlockNode,
+      { type: "orderedList" }
+    >;
+    expect(nested.type).toBe("orderedList");
+    expect(nested.start).toBe(3);
+    expect(nested.items.map((item) => item.runs[0]?.plaintext)).toEqual([
+      "third",
+      "fourth",
+    ]);
+  });
+
+  it("keeps a branch whose parent item has no text of its own", () => {
+    // An item that is only a nested list still has to hold its children,
+    // rather than vanishing and taking them with it.
+    const tree = build(markdownDoc(["-", "  - orphaned child"].join("\n")));
+
+    const list = tree.children[0] as Extract<BlockNode, { type: "bulletList" }>;
+    expect(list.items[0]?.runs).toEqual([]);
+    const inner = list.items[0]?.children[0] as Extract<
+      BlockNode,
+      { type: "bulletList" }
+    >;
+    expect(inner.items[0]?.runs[0]?.plaintext).toBe("orphaned child");
+  });
+
   it("converts inline emphasis and links into segmentable facets", () => {
     const tree = build(
       markdownDoc("See **bold** and [a link](https://x.test)."),

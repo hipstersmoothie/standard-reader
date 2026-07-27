@@ -28,6 +28,7 @@ import { isRecord } from "../../internal.js";
 import { utf8ByteLength } from "../../leaflet/utf8.js";
 import { mergeTextRuns, syntheticFacet } from "./text-runs.js";
 import type {
+  StructuredListItem,
   StructuredRenderableBlock,
   StructuredTableCell,
   StructuredText,
@@ -185,8 +186,7 @@ function paragraphImage(
   return null;
 }
 
-/** Flatten one list item to a single rich-text line (nested lists dropped —
- *  the structured list vocabulary is flat, matching the other parsers). */
+/** The item's own paragraphs, joined into one rich-text line. */
 function listItemText(item: {
   children: Array<RootContent>;
 }): StructuredText | null {
@@ -201,6 +201,31 @@ function listItemText(item: {
     index === 0 ? [text] : [{ plaintext: "\n" }, text],
   );
   return mergeTextRuns(separated);
+}
+
+/**
+ * One list item: its own text, plus any lists nested beneath it.
+ *
+ * Markdown is the one format here that genuinely nests lists, and a nested
+ * branch is content — not decoration — so dropping it loses whole passages of a
+ * document with nothing to show for it.
+ */
+function listItem(item: {
+  children: Array<RootContent>;
+}): StructuredListItem | null {
+  const text = listItemText(item);
+  const children = item.children.flatMap((child) => {
+    if (child.type !== "list") return [];
+    const nested = mapList(child);
+    return nested ? [nested] : [];
+  });
+
+  if (!text) {
+    // An item that is only a nested list still has to keep the branch, so it
+    // becomes an empty parent rather than disappearing with its children.
+    return children.length > 0 ? { children, text: { plaintext: "" } } : null;
+  }
+  return children.length > 0 ? { children, text } : { text };
 }
 
 function mapList(node: {
@@ -219,8 +244,8 @@ function mapList(node: {
     return items.length > 0 ? { items, kind: "taskList" } : null;
   }
   const items = node.children.flatMap((item) => {
-    const text = listItemText(item);
-    return text ? [text] : [];
+    const parsed = listItem(item);
+    return parsed ? [parsed] : [];
   });
   if (items.length === 0) return null;
   return node.ordered

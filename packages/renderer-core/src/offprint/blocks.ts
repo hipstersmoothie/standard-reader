@@ -4,6 +4,7 @@ import {
 } from "../document/structured-content/image.js";
 import type {
   StructuredGridImage,
+  StructuredListItem,
   StructuredRenderableBlock,
   StructuredText,
 } from "../document/structured-content/types.js";
@@ -20,13 +21,13 @@ function asText(value: unknown): StructuredText | null {
   };
 }
 
-function listItemsFromChildren(children: unknown): Array<StructuredText> {
+function listItemsFromChildren(children: unknown): Array<StructuredListItem> {
   if (!Array.isArray(children)) return [];
-  const items: Array<StructuredText> = [];
+  const items: Array<StructuredListItem> = [];
   for (const child of children) {
     if (!isRecord(child)) continue;
     const text = asText(child.content);
-    if (text?.plaintext.trim()) items.push(text);
+    if (text?.plaintext.trim()) items.push({ text });
   }
   return items;
 }

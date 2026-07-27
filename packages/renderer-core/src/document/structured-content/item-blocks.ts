@@ -48,7 +48,7 @@ function listItems(value: Record<string, unknown>, ns: string) {
   const children = Array.isArray(value.content) ? value.content : [];
   return children.flatMap((child) => {
     const text = listItemText(child, ns);
-    return text ? [text] : [];
+    return text ? [{ text }] : [];
   });
 }
 

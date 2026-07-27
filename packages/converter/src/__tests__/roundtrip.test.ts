@@ -211,7 +211,7 @@ describe("round trip: leaflet → markpub", () => {
       ["paragraph", "Every platform wants a moat around its users."],
       ["paragraph", "As @someone.example put it, the walls are the product."],
       ["bulletList", "Drawbridges"],
-      // "go both ways" is missing here but *is* in the record — see below.
+      ["bulletList", "go both ways"],
       ["bulletList", "Moats do not"],
       ["code", "const moat = false;"],
       // No Bluesky embed in markdown — it became a link.
@@ -221,18 +221,12 @@ describe("round trip: leaflet → markpub", () => {
   });
 
   /**
-   * The nested item above is not lost by the converter, and this is the
-   * distinction worth keeping straight: the emitted markdown carries the
-   * nesting, so the *record* is faithful and any markdown reader shows it.
-   * What flattens it is `renderer-core`'s own markdown parser, which reduces
-   * every list item to one line — a pre-existing limitation that applies to
-   * every markdown document the reader renders, converted or not.
-   *
-   * Asserting on the emitted source rather than the re-parse keeps this test
-   * honest about which layer the loss belongs to; if the parser learns nesting,
-   * the outline above changes and this stays true.
+   * Asserted on the emitted source as well as on the re-parse above, because
+   * the two can fail independently: the markdown could carry the nesting while
+   * the parser drops it (which it did until the parser learned to nest), or the
+   * emitter could stop indenting and the parse would go quietly flat.
    */
-  it("writes the nesting into the markdown even though the parser flattens it", () => {
+  it("writes the nesting into the markdown source", () => {
     const result = convertDocumentContent({
       authorDid: AUTHOR_DID,
       content: SOURCE,
