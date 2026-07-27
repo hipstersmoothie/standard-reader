@@ -20,6 +20,7 @@ const VALUE_FLAGS = new Set([
   "backup-dir",
   "identifier",
   "password",
+  "did",
   "pds",
   "repo",
 ]);

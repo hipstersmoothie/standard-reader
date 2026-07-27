@@ -1035,6 +1035,15 @@ Re-emit a document's content into another format by running the renderer's norma
 - [x] **`@standard-reader/cli`** — the `standard-reader` binary: `formats`, `list [--to]`,
       `convert --to`. App-password auth, blob-backed body resolution, `--dry-run` / `--out` /
       `--json` / `--from` / `--rkey` / `--limit`.
+- [x] **OAuth sign-in** — `standard-reader login` runs the browser flow as a loopback public client
+      (`@atcute/oauth-node-client`), storing a DPoP-bound session in
+      `$XDG_CONFIG_HOME/standard-reader/credentials.json` at `0600`. Scoped to
+      `repo?collection=site.standard.document&action=update` and nothing else. The redirect URI is
+      persisted with the session because the loopback `client_id` embeds it, and a refresh must
+      present the identical string. App passwords remain for CI and take precedence when passed.
+- [ ] **Verify the full OAuth round trip against a live consent screen** — discovery, PAR and the
+      DPoP proof are exercised against a real PDS in `oauth.test.ts` and by hand, but the redirect,
+      code exchange and a later refresh need a human at a browser. Worth doing before publishing.
 - [x] **Safe writes** — per-record prompt for anything lossy (with `a` / `s` / `q` / `d`),
       skip-by-default without a TTY, `--force` to override, originals backed up before overwrite,
       `swapRecord` pinned to the converted-from CID, documents already in the target format

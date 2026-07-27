@@ -4,6 +4,9 @@ USAGE
   standard-reader <command> [options]
 
 COMMANDS
+  login [handle]       Sign in through your browser (recommended)
+  logout               Revoke and forget the saved sign-in
+  whoami               Show the signed-in account
   list                 Show the account's documents and what converting them would cost
   convert --to <fmt>   Convert document records and write them back to the repo
   formats              Print the block-by-block capability matrix for every format
@@ -22,6 +25,14 @@ AUTHENTICATION
     standard-reader list --repo someone.bsky.social
     standard-reader convert --to pckt --dry-run --repo someone.bsky.social
 
+  To write, run \`standard-reader login\`. It opens your browser, you authorize on
+  your own server, and the CLI stores a token scoped to updating
+  site.standard.document records — nothing else. Your password never reaches
+  this process, and \`standard-reader logout\` revokes the token.
+
+  --did <did>             Use this saved account when several are signed in
+
+  App passwords still work for scripts and CI, and take precedence when given:
   --identifier <handle>   Account handle or DID    (env STANDARD_READER_IDENTIFIER)
   --password <app-pw>     Bluesky *app password*   (env STANDARD_READER_APP_PASSWORD)
   --pds <url>             PDS base URL             (env STANDARD_READER_PDS_URL)
@@ -53,6 +64,7 @@ WHEN A CONVERSION LOSES SOMETHING
   elsewhere in the meantime fails rather than being clobbered.
 
 EXAMPLES
+  standard-reader login
   standard-reader formats
   standard-reader list --to pckt --repo someone.bsky.social
   standard-reader convert --to markpub --dry-run --out ./preview

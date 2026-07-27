@@ -15,6 +15,9 @@ import { Client, ok, simpleFetchHandler } from "@atcute/client";
 import type { InferInput } from "@atcute/lexicons/validations";
 import { PasswordSession } from "@atcute/password-session";
 
+import { clientForSavedSession } from "./oauth/client.js";
+import { forgetSession, readSavedSession } from "./oauth/store.js";
+
 const DOCUMENT_COLLECTION = "site.standard.document";
 
 /**
@@ -41,6 +44,8 @@ export interface Session {
    * `com.atproto.repo.listRecords` is a public endpoint.
    */
   canWrite: boolean;
+  /** How the session was established, for the sign-in line the CLI prints. */
+  auth: "oauth" | "app-password" | "none";
 }
 
 export interface Credentials {
@@ -72,15 +77,13 @@ export function resolveCredentials(input: {
     process.env.STANDARD_READER_PDS_URL ??
     "https://bsky.social";
 
-  if (!identifier) {
+  if (!identifier || !password) {
     throw new CliError(
-      "No account given. Pass --identifier or set STANDARD_READER_IDENTIFIER.",
-    );
-  }
-  if (!password) {
-    throw new CliError(
-      "No app password given. Pass --password or set STANDARD_READER_APP_PASSWORD.\n" +
-        "Create one at https://bsky.app/settings/app-passwords — do not use your account password.",
+      "Not signed in. Run `standard-reader login` to authorize through your browser.\n\n" +
+        "For CI, an app password works too — set STANDARD_READER_IDENTIFIER and\n" +
+        "STANDARD_READER_APP_PASSWORD (or pass --identifier and --password).\n" +
+        "Create one at https://bsky.app/settings/app-passwords; never use your\n" +
+        "account password.",
     );
   }
   return { identifier, password, service };
@@ -98,12 +101,60 @@ export async function login(credentials: Credentials): Promise<Session> {
   const did = session.did;
   if (!did) throw new CliError("Sign-in succeeded but returned no DID.");
   return {
+    auth: "app-password",
     canWrite: true,
     client: new Client({ handler: session }),
     did,
     handle: session.session.handle,
     service: credentials.service,
   };
+}
+
+/**
+ * Restore the OAuth session saved by `standard-reader login`, refreshing the
+ * access token if it has gone stale. Returns null when there is nothing saved.
+ *
+ * A refresh failure is reported as "sign in again" rather than surfaced raw:
+ * public clients have a short refresh window, so an expired grant is the
+ * expected end of a session rather than a fault to debug.
+ */
+export async function restoreOAuthSession(
+  did?: string,
+): Promise<Session | null> {
+  const saved = await readSavedSession(did);
+  if (!saved) return null;
+
+  try {
+    const client = clientForSavedSession(saved);
+    const session = await client.restore(saved.did);
+    return {
+      auth: "oauth",
+      canWrite: true,
+      client: new Client({ handler: session }),
+      did: saved.did,
+      handle: saved.handle,
+      service: saved.service,
+    };
+  } catch (error) {
+    throw new CliError(
+      `The saved sign-in for ${saved.handle} is no longer valid (${describeError(error)}).\n` +
+        "Run `standard-reader login` to sign in again.",
+    );
+  }
+}
+
+/** Revoke the saved session with the authorization server, then forget it. */
+export async function signOut(did?: string): Promise<Array<string>> {
+  const saved = await readSavedSession(did);
+  if (!saved) return forgetSession(did);
+  try {
+    const client = clientForSavedSession(saved);
+    await client.revoke(saved.did);
+  } catch {
+    // The grant may already be expired or revoked upstream. Either way the
+    // local copy still has to go, which `revoke` would not have reached.
+  }
+  return forgetSession(saved.did);
 }
 
 /** True when the environment or flags supply enough to sign in. */
@@ -205,6 +256,7 @@ export async function openPublicSession(identifier: string): Promise<Session> {
   const did = await resolveIdentifier(identifier);
   const { pds, handle } = await resolveDid(did);
   return {
+    auth: "none",
     canWrite: false,
     client: new Client({ handler: simpleFetchHandler({ service: pds }) }),
     did,

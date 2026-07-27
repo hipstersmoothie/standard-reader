@@ -6,6 +6,7 @@ before anything is written.
 
 ```bash
 npx @standard-reader/cli formats          # what survives which conversion
+npx @standard-reader/cli login            # sign in through your browser
 npx @standard-reader/cli list --to pckt   # what's in your repo, and what it'd cost
 npx @standard-reader/cli convert --to pckt
 ```
@@ -22,10 +23,37 @@ something. That is what most of this CLI is about.
 
 ## Signing in
 
-**Only writing needs credentials.** `list` and `convert --dry-run` read public
-endpoints (`listRecords`, `getBlob`) and do the conversion in memory, so they
-run against any published blog — including someone else's — with nothing
-configured:
+```bash
+standard-reader login          # opens your browser
+standard-reader whoami
+standard-reader logout         # revokes the token, then forgets it
+```
+
+`login` runs the AT Protocol OAuth flow: it opens your browser, you authorize
+on **your own server**, and the redirect comes back to a loopback listener that
+exists only for those few seconds. Your password never reaches this process.
+
+The token it stores is scoped to exactly what the tool does:
+
+```
+atproto repo?collection=site.standard.document&action=update
+```
+
+It cannot post, follow, delete, upload, or read your email — the consent screen
+will say so. Revoke it any time with `logout`, or from your account settings,
+without disturbing any other tool.
+
+The session lives in `$XDG_CONFIG_HOME/standard-reader/credentials.json`
+(`~/.config/...` by default), written `0600`. Sign-ins are per-account; with
+more than one, pick with `--did`.
+
+> Because a CLI cannot keep a secret, this registers as a _public_ client, and
+> those get a shorter refresh window than a web app — expect to run `login`
+> again every couple of weeks.
+
+**Reading needs no credentials at all.** `list` and `convert --dry-run` touch
+only public endpoints, so they run against any published blog — including
+someone else's — with nothing configured:
 
 ```bash
 standard-reader list --to pckt --repo someone.bsky.social
@@ -36,8 +64,10 @@ standard-reader convert --to markpub --dry-run --repo someone.bsky.social --out 
 own `/.well-known/atproto-did` first, then a public resolver, then the DID
 document for the PDS endpoint.
 
-To write, sign in with an **app password** — not your account password. Create
-one at <https://bsky.app/settings/app-passwords>.
+### App passwords
+
+Still supported, for CI and scripts, and they take precedence when passed
+explicitly:
 
 ```bash
 export STANDARD_READER_IDENTIFIER=you.bsky.social
@@ -45,7 +75,9 @@ export STANDARD_READER_APP_PASSWORD=xxxx-xxxx-xxxx-xxxx
 export STANDARD_READER_PDS_URL=https://bsky.social   # optional
 ```
 
-or pass `--identifier`, `--password`, `--pds`.
+or pass `--identifier`, `--password`, `--pds`. Prefer `login` when a human is
+present: an app password grants full account access, and this tool needs one
+collection.
 
 ## Commands
 
@@ -105,6 +137,7 @@ nothing.
 | `--no-backup`        | Don't save originals                                           |
 | `--json`             | Machine-readable report on stdout                              |
 | `--repo <hnd\|did>`  | Read this repo instead of your own; no sign-in needed          |
+| `--did <did>`        | Use this saved account when several are signed in              |
 
 Exit code is `1` when any write failed, `2` on a usage error, `0` otherwise.
 

@@ -1,11 +1,13 @@
 /**
- * Choosing between a signed-in session and an anonymous one.
+ * Which session a command opens, and what it is allowed to do.
  *
- * Only writing needs credentials. `list`, and `convert --dry-run`, read public
- * endpoints (`listRecords`, `getBlob`) and do the conversion in memory — so
- * they run against any published blog, including someone else's, with nothing
- * configured. Requiring an app password to answer "what would this cost?" would
- * be asking for a credential to do arithmetic.
+ * Two rules shape this. Credentials are required for writing and for nothing
+ * else — getting that wrong in one direction makes `--dry-run` demand a
+ * credential to answer a question that touches no records, and in the other
+ * lets a read-only session reach a write path. And when credentials *are*
+ * needed, a saved OAuth sign-in is preferred over an app password: it is
+ * scoped to the one collection this tool writes, and revoking it does not mean
+ * rotating a credential that other tools also hold.
  */
 
 import type { ParsedArgs } from "./args.js";
@@ -17,6 +19,7 @@ import {
   login,
   openPublicSession,
   resolveCredentials,
+  restoreOAuthSession,
 } from "./atproto.js";
 
 export interface OpenSessionOptions {
@@ -32,6 +35,14 @@ export async function openSession(
   const password = one(args, "password");
   const repo = one(args, "repo");
 
+  // An explicit app password on the command line is a deliberate choice, so it
+  // wins; otherwise a saved OAuth session is the better credential.
+  const explicitPassword = Boolean(password ?? identifier);
+  if (!explicitPassword) {
+    const oauth = await restoreOAuthSession(one(args, "did"));
+    if (oauth) return oauth;
+  }
+
   if (options.needsWrite || hasCredentials({ identifier, password })) {
     return login(
       resolveCredentials({
@@ -44,9 +55,8 @@ export async function openSession(
 
   if (!repo) {
     throw new CliError(
-      "Nothing to read. Either sign in (--identifier + --password, or the\n" +
-        "STANDARD_READER_* environment variables) or name a repo to read\n" +
-        "without signing in: --repo <handle-or-did>.",
+      "Nothing to read. Either sign in with `standard-reader login`, or name a\n" +
+        "repo to read without signing in: --repo <handle-or-did>.",
     );
   }
 

@@ -14,6 +14,7 @@ import type * as AtprotoModule from "../atproto.js";
 
 const login = vi.fn();
 const openPublicSession = vi.fn();
+const restoreOAuthSession = vi.fn();
 
 vi.mock("../atproto.js", async (importOriginal) => {
   const actual = await importOriginal<typeof AtprotoModule>();
@@ -21,6 +22,8 @@ vi.mock("../atproto.js", async (importOriginal) => {
     ...actual,
     login: (...args: Array<unknown>) => login(...args),
     openPublicSession: (...args: Array<unknown>) => openPublicSession(...args),
+    restoreOAuthSession: (...args: Array<unknown>) =>
+      restoreOAuthSession(...args),
   };
 });
 
@@ -34,8 +37,64 @@ beforeEach(() => {
   openPublicSession
     .mockReset()
     .mockResolvedValue({ canWrite: false, did: "did:plc:them" });
+  // No saved OAuth sign-in unless a test says otherwise.
+  restoreOAuthSession.mockReset().mockResolvedValue(null);
   delete process.env.STANDARD_READER_IDENTIFIER;
   delete process.env.STANDARD_READER_APP_PASSWORD;
+});
+
+describe("openSession — OAuth first", () => {
+  const oauth = { auth: "oauth", canWrite: true, did: "did:plc:me" };
+
+  it("uses a saved OAuth sign-in in preference to an app password", async () => {
+    // An app password sitting in the environment should not beat a session the
+    // user deliberately established, and which is scoped far more narrowly.
+    process.env.STANDARD_READER_IDENTIFIER = "me.example";
+    process.env.STANDARD_READER_APP_PASSWORD = "app-password";
+    restoreOAuthSession.mockResolvedValue(oauth);
+
+    expect(await openSession(args([]), { needsWrite: true })).toBe(oauth);
+    expect(login).not.toHaveBeenCalled();
+  });
+
+  it("uses the saved sign-in for a read too, with no repo named", async () => {
+    restoreOAuthSession.mockResolvedValue(oauth);
+    expect(await openSession(args([]), { needsWrite: false })).toBe(oauth);
+  });
+
+  it("lets an explicit --password override the saved sign-in", async () => {
+    // Passing a credential on the command line is a deliberate act, usually
+    // for CI or to act as a different account.
+    restoreOAuthSession.mockResolvedValue(oauth);
+
+    await openSession(
+      args(["--identifier", "other.example", "--password", "pw"]),
+      { needsWrite: true },
+    );
+
+    expect(login).toHaveBeenCalledTimes(1);
+    expect(restoreOAuthSession).not.toHaveBeenCalled();
+  });
+
+  it("passes --did through so one of several accounts can be chosen", async () => {
+    restoreOAuthSession.mockResolvedValue(oauth);
+    await openSession(args(["--did", "did:plc:pick"]), { needsWrite: true });
+    expect(restoreOAuthSession).toHaveBeenCalledWith("did:plc:pick");
+  });
+
+  it("falls back to an app password when nothing is saved", async () => {
+    process.env.STANDARD_READER_IDENTIFIER = "me.example";
+    process.env.STANDARD_READER_APP_PASSWORD = "app-password";
+
+    await openSession(args([]), { needsWrite: true });
+    expect(login).toHaveBeenCalledTimes(1);
+  });
+
+  it("points at `login` when a write has no credential at all", async () => {
+    await expect(openSession(args([]), { needsWrite: false })).rejects.toThrow(
+      /standard-reader login/,
+    );
+  });
 });
 
 describe("openSession", () => {

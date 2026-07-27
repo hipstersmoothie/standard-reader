@@ -5,6 +5,7 @@ import { CliError, describeError } from "./atproto.js";
 import { runConvert } from "./commands/convert.js";
 import { runFormats } from "./commands/formats.js";
 import { runList } from "./commands/list.js";
+import { runLogin, runLogout, runWhoami } from "./commands/login.js";
 import { HELP } from "./help.js";
 import { say, style, warn } from "./output.js";
 
@@ -36,6 +37,15 @@ export async function runCli(argv: Array<string>): Promise<number> {
       }
       case "formats": {
         return runFormats(args);
+      }
+      case "login": {
+        return await runLogin(args);
+      }
+      case "logout": {
+        return await runLogout(args);
+      }
+      case "whoami": {
+        return await runWhoami(args);
       }
       default: {
         warn(style.red(`Unknown command "${args.command}".`));

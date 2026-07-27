@@ -928,7 +928,18 @@ so an author is not locked into whichever tool first wrote their posts.
   are anything `renderer-core` parses; targets are the four formats carrying most of the network's
   long-form writing.
 - **[`packages/cli`](packages/cli)** — the `standard-reader` binary: `formats` (capability matrix),
-  `list` (survey a repo), `convert` (rewrite records via `putRecord`).
+  `list` (survey a repo), `convert` (rewrite records via `putRecord`), and `login` / `logout` /
+  `whoami`.
+
+Sign-in is **AT Protocol OAuth**, not an app password. `login` opens a browser, the user authorizes
+on their own PDS, and the redirect lands on a loopback listener that exists only for the duration of
+the flow — no credential passes through the CLI. Because a CLI cannot hold a secret, it registers as
+a _loopback public client_: `client_id` is the `http://localhost?…` form the spec reserves for
+exactly this case, with `token_endpoint_auth_method: none` and DPoP-bound tokens. The `client_id`
+embeds the redirect URI, so the port bound at login is persisted with the session and replayed on
+every refresh — a different port is a different client. The granted scope is
+`atproto repo?collection=site.standard.document&action=update` and nothing else: the one collection
+the tool rewrites, update only. App passwords still work for CI, and win when passed explicitly.
 
 Two design points shape everything else:
 
