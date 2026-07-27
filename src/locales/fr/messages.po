@@ -468,6 +468,7 @@ msgstr "Touchez le cœur sur un article pour le recommander. Vos recommandations
 
 #: src/routes/_layout.index.tsx
 #: src/routes/_layout.latest.tsx
+#: src/routes/_layout.tag.$tag.tsx
 msgid "Trending"
 msgstr "Tendances"
 
@@ -699,6 +700,10 @@ msgstr ""
 #: src/routes/_layout.tag.$tag.tsx
 msgid "{unfollowedCount, plural, one {Subscribe to {formattedUnfollowedCount} publication?} other {Subscribe to {formattedUnfollowedCount} publications?}}"
 msgstr "{unfollowedCount, plural, one {S’abonner à {formattedUnfollowedCount} publication ?} other {S’abonner à {formattedUnfollowedCount} publications ?}}"
+
+#: src/routes/_layout.tag.$tag.tsx
+msgid "Sort articles"
+msgstr ""
 
 #: src/routes/_layout.tag.$tag.tsx
 msgid "No articles match this tag yet."
@@ -1298,6 +1303,10 @@ msgstr ""
 #: src/components/reader/extension-privacy-view.tsx
 msgid "You can disable the page overlay and Bluesky embed save button in the extension options page. You can sign out from the web app to invalidate the session cookie the extension uses. Uninstalling the extension removes locally stored settings from your browser profile."
 msgstr "Vous pouvez désactiver la surcouche de page et le bouton d'enregistrement des intégrations Bluesky depuis la page d'options de l'extension. Vous pouvez vous déconnecter de l'application web pour invalider le cookie de session utilisé par l'extension. Désinstaller l'extension supprime les réglages stockés localement dans votre profil de navigateur."
+
+#: src/routes/_layout.tag.$tag.tsx
+msgid "Recent"
+msgstr ""
 
 #: src/components/reader/list-edit-modal.tsx
 msgid "List members"
@@ -4920,6 +4929,10 @@ msgstr "Pour en savoir plus sur le fonctionnement de {SITE_NAME}, consultez la p
 #: src/routes/_layout.l.$did.$rkey.tsx
 msgid "Copy link"
 msgstr "Copier le lien"
+
+#: src/routes/_layout.tag.$tag.tsx
+msgid "Most popular"
+msgstr ""
 
 #: src/components/user-settings-view.tsx
 msgid "A weekly email with the best of what you subscribe to, plus a couple of publications worth discovering. Turning this on asks your PDS to share your email address."

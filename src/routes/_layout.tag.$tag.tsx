@@ -15,7 +15,14 @@ import {
   useNavigate,
   useRouterState,
 } from "@tanstack/react-router";
-import { Check, LayoutGrid, List, Plus, Tag } from "lucide-react";
+import {
+  ArrowDownWideNarrow,
+  Check,
+  LayoutGrid,
+  List,
+  Plus,
+  Tag,
+} from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
 
@@ -55,6 +62,7 @@ import {
   SegmentedControl,
   SegmentedControlItem,
 } from "#/design-system/segmented-control";
+import { Select, SelectItem } from "#/design-system/select";
 import { Skeleton } from "#/design-system/skeleton";
 import { Tab, TabList, TabPanel, Tabs } from "#/design-system/tabs";
 import { uiColor } from "#/design-system/theme/color.stylex";
@@ -69,6 +77,7 @@ import {
 } from "#/design-system/theme/typography.stylex";
 import type { ArticleCard } from "#/integrations/tanstack-query/api-shapes";
 import type {
+  TagArticleSort,
   TagFollowSummary,
   TagPublicationCard,
   TagPublicationDirectoryPage,
@@ -112,6 +121,9 @@ function normalizeTagSearch(search: unknown) {
 const tagSearchShape = z.object({
   view: z.enum(["feed", "publications"]).default("feed"),
   sort: z.enum(["tagged", "readers", "active", "az"]).default("tagged"),
+  /** Articles-tab ranking. Named apart from `sort` (the publications-tab
+   * directory ranking) so the two tabs keep independent state in the URL. */
+  articleSort: z.enum(["recent", "trending", "popular"]).default("recent"),
   layout: z.enum(["grid", "list"]).default("list"),
 });
 
@@ -123,7 +135,11 @@ type TagView = TagSearch["view"];
 export const Route = createFileRoute("/_layout/tag/$tag")({
   validateSearch: tagSearchSchema,
   staleTime: 60_000,
-  loaderDeps: ({ search }) => ({ view: search.view, sort: search.sort }),
+  loaderDeps: ({ search }) => ({
+    view: search.view,
+    sort: search.sort,
+    articleSort: search.articleSort,
+  }),
   loader: async ({ context, params, deps }) => {
     const tag = decodeURIComponent(params.tag);
     const page = await tagApi.getTagPage({
@@ -131,6 +147,7 @@ export const Route = createFileRoute("/_layout/tag/$tag")({
         tag,
         view: deps.view,
         sort: deps.sort,
+        articleSort: deps.articleSort,
         limit: PAGE_SIZE,
         offset: 0,
       },
@@ -139,6 +156,7 @@ export const Route = createFileRoute("/_layout/tag/$tag")({
       tag,
       view: deps.view,
       sort: deps.sort,
+      articleSort: deps.articleSort,
       limit: PAGE_SIZE,
       offset: 0,
     });
@@ -255,7 +273,14 @@ const styles = stylex.create({
     width: "100%",
   },
   tabBarInner: {
+    // Tabs on the leading edge, the active tab's sort control on the trailing
+    // edge, both sitting on the shared rule below (`alignItems: flex-end`).
+    alignItems: "flex-end",
     boxSizing: "border-box",
+    columnGap: spacing["4"],
+    display: "flex",
+    flexWrap: "wrap",
+    rowGap: spacing["2"],
     marginInlineStart: "auto",
     marginInlineEnd: "auto",
     maxWidth: "82.5rem",
@@ -273,6 +298,19 @@ const styles = stylex.create({
   tabList: {
     borderBottomStyle: "none",
     borderBottomWidth: 0,
+    // The design-system TabList scrolls its own overflow, so it would happily
+    // shrink to nothing beside the sort control. Pinning it keeps the tabs
+    // intact and lets the control wrap to its own line on narrow screens.
+    flexShrink: 0,
+  },
+  tabBarSort: {
+    flexShrink: 0,
+    // Trailing edge whether or not the row wrapped (`space-between` would pull
+    // a wrapped control back to the leading edge).
+    marginInlineStart: "auto",
+    minWidth: spacing["40"],
+    // Lift the trigger off the rule the tab labels rest on.
+    paddingBottom: spacing["2"],
   },
   tabRule: {
     borderBottomColor: uiColor.border1,
@@ -355,6 +393,12 @@ const SORT_OPTIONS = [
   { id: "readers", label: msg`Readers` },
   { id: "active", label: msg`Active` },
   { id: "az", label: msg`A–Z` },
+] as const;
+
+const ARTICLE_SORT_OPTIONS = [
+  { id: "recent", label: msg`Recent` },
+  { id: "trending", label: msg`Trending` },
+  { id: "popular", label: msg`Most popular` },
 ] as const;
 
 function ArticleRowSkeleton({
@@ -440,7 +484,13 @@ function TagDirectorySkeleton({
   );
 }
 
-function TagArticlesPanel({ tag }: { tag: string }) {
+function TagArticlesPanel({
+  tag,
+  articleSort,
+}: {
+  tag: string;
+  articleSort: TagArticleSort;
+}) {
   const { t } = useLingui();
   const queryClient = useQueryClient();
   const { data: session } = useQuery(user.getSessionQueryOptions);
@@ -454,6 +504,7 @@ function TagArticlesPanel({ tag }: { tag: string }) {
   } = useQuery({
     ...tagApi.getArticlesQueryOptions({
       tag,
+      articleSort,
       limit: PAGE_SIZE,
       offset: 0,
     }),
@@ -475,7 +526,7 @@ function TagArticlesPanel({ tag }: { tag: string }) {
   useEffect(() => {
     setLoadedMore([]);
     setLoadedMoreNextOffset(null);
-  }, [tag]);
+  }, [tag, articleSort]);
 
   const items = useMemo(
     () => [...(feed?.items ?? []), ...loadedMore],
@@ -494,7 +545,7 @@ function TagArticlesPanel({ tag }: { tag: string }) {
     setLoadingMore(true);
     try {
       const page = await tagApi.getArticles({
-        data: { tag, limit: PAGE_SIZE, offset: nextOffset },
+        data: { tag, articleSort, limit: PAGE_SIZE, offset: nextOffset },
       });
       setLoadedMore((prev) => [...prev, ...page.items]);
       setLoadedMoreNextOffset(page.nextOffset);
@@ -502,7 +553,7 @@ function TagArticlesPanel({ tag }: { tag: string }) {
       loadingMoreRef.current = false;
       setLoadingMore(false);
     }
-  }, [nextOffset, tag]);
+  }, [articleSort, nextOffset, tag]);
 
   const loadMoreSentinelRef = useInfiniteScrollSentinel(
     loadMore,
@@ -925,11 +976,11 @@ function TagFollowAllButton({
 }
 
 function TagPage() {
-  const { t } = useLingui();
+  const { t, i18n } = useLingui();
   const fmt = useFormatters();
   const { tag: rawTag } = Route.useParams();
   const tag = decodeURIComponent(rawTag);
-  const { view, sort, layout } = Route.useSearch();
+  const { view, sort, articleSort, layout } = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
   const routePending = useRouterState({ select: (state) => state.isLoading });
   const [pendingViews, setPendingViews] = useState<
@@ -964,6 +1015,7 @@ function TagPage() {
       void queryClient.prefetchQuery(
         tagApi.getArticlesQueryOptions({
           tag,
+          articleSort,
           limit: PAGE_SIZE,
           offset: 0,
         }),
@@ -984,7 +1036,7 @@ function TagPage() {
 
     const idleId = scheduleIdle(prefetchOtherTab);
     return () => cancelIdle(idleId);
-  }, [queryClient, routePending, sort, tag, view]);
+  }, [articleSort, queryClient, routePending, sort, tag, view]);
 
   const pendingView = pendingViews[tag] ?? null;
   const activeView = routePending ? (pendingView ?? view) : view;
@@ -997,6 +1049,16 @@ function TagPage() {
       setPendingViews((prev) => ({ ...prev, [tag]: next }));
     }
     void navigate({ search: (prev: TagSearch) => ({ ...prev, view: next }) });
+  };
+
+  const onArticleSortChange = (key: React.Key | null) => {
+    if (key == null) return;
+    const next = String(key) as TagArticleSort;
+    void navigate({
+      replace: true,
+      resetScroll: false,
+      search: (prev: TagSearch) => ({ ...prev, articleSort: next }),
+    });
   };
 
   return (
@@ -1060,13 +1122,39 @@ function TagPage() {
                 <Trans>Publications</Trans>
               </Tab>
             </TabList>
+
+            {/* Articles-only: the Publications tab carries its own sort in the
+                directory toolbar. */}
+            {isFeed ? (
+              <Select
+                aria-label={t`Sort articles`}
+                size="sm"
+                variant="secondary"
+                prefix={<ArrowDownWideNarrow size={14} aria-hidden />}
+                selectedKey={articleSort}
+                style={styles.tabBarSort}
+                onSelectionChange={onArticleSortChange}
+              >
+                {ARTICLE_SORT_OPTIONS.map((option) => (
+                  <SelectItem
+                    key={option.id}
+                    id={option.id}
+                    textValue={i18n._(option.label)}
+                  >
+                    {i18n._(option.label)}
+                  </SelectItem>
+                ))}
+              </Select>
+            ) : null}
           </div>
           <div {...stylex.props(styles.tabRule)} aria-hidden />
         </div>
 
         <ReaderContent>
           <TabPanel id="feed" style={styles.tabPanel}>
-            {isFeed ? <TagArticlesPanel tag={tag} /> : null}
+            {isFeed ? (
+              <TagArticlesPanel tag={tag} articleSort={articleSort} />
+            ) : null}
           </TabPanel>
           <TabPanel id="publications" style={styles.tabPanel}>
             {isFeed ? null : (

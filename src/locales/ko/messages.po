@@ -468,6 +468,7 @@ msgstr "글의 하트를 탭해 추천하세요. 추천은 회원님의 repo에 
 
 #: src/routes/_layout.index.tsx
 #: src/routes/_layout.latest.tsx
+#: src/routes/_layout.tag.$tag.tsx
 msgid "Trending"
 msgstr "인기"
 
@@ -699,6 +700,10 @@ msgstr ""
 #: src/routes/_layout.tag.$tag.tsx
 msgid "{unfollowedCount, plural, one {Subscribe to {formattedUnfollowedCount} publication?} other {Subscribe to {formattedUnfollowedCount} publications?}}"
 msgstr "{unfollowedCount, plural, one {발행물 {formattedUnfollowedCount}개를 구독할까요?} other {발행물 {formattedUnfollowedCount}개를 구독할까요?}}"
+
+#: src/routes/_layout.tag.$tag.tsx
+msgid "Sort articles"
+msgstr ""
 
 #: src/routes/_layout.tag.$tag.tsx
 msgid "No articles match this tag yet."
@@ -1298,6 +1303,10 @@ msgstr ""
 #: src/components/reader/extension-privacy-view.tsx
 msgid "You can disable the page overlay and Bluesky embed save button in the extension options page. You can sign out from the web app to invalidate the session cookie the extension uses. Uninstalling the extension removes locally stored settings from your browser profile."
 msgstr "확장 프로그램 옵션 페이지에서 페이지 오버레이와 Bluesky 임베드 저장 버튼을 끌 수 있습니다. 웹 앱에서 로그아웃하면 확장 프로그램이 사용하는 세션 쿠키가 무효화됩니다. 확장 프로그램을 삭제하면 브라우저 프로필에 로컬로 저장된 설정도 제거됩니다."
+
+#: src/routes/_layout.tag.$tag.tsx
+msgid "Recent"
+msgstr ""
 
 #: src/components/reader/list-edit-modal.tsx
 msgid "List members"
@@ -4920,6 +4929,10 @@ msgstr "{SITE_NAME}의 작동 방식에 대한 자세한 내용은 <0>소개</0>
 #: src/routes/_layout.l.$did.$rkey.tsx
 msgid "Copy link"
 msgstr "링크 복사"
+
+#: src/routes/_layout.tag.$tag.tsx
+msgid "Most popular"
+msgstr ""
 
 #: src/components/user-settings-view.tsx
 msgid "A weekly email with the best of what you subscribe to, plus a couple of publications worth discovering. Turning this on asks your PDS to share your email address."

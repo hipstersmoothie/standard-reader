@@ -113,8 +113,12 @@ Sections, top to bottom:
 
 - Route `/tag/$tag`; linked from topic chips on article cards, publication cards, and
   article kickers.
-- **Articles** tab: chronological feed of indexed, published articles carrying the tag
-  (case-insensitive) on discover-eligible publications.
+- **Articles** tab: indexed, published articles carrying the tag (case-insensitive) on
+  discover-eligible publications, with a **Recent / Trending / Most popular** sort select
+  sitting in the tab row. Trending ranks by the precomputed `documents.trending_score`;
+  Most popular ranks by all-time likes then Bluesky backlinks. Both rank rather than
+  filter — score ties fall back to newest-first, so the list stays paginable on a
+  low-traffic tag.
 - **Publications** tab: discover-eligible publications with at least one such document,
   with per-publication **tagged-post counts**, Most posts / Readers / Active / A–Z sort,
   and grid ⇄ list toggle.

@@ -211,6 +211,26 @@ export function publicationCardColumns(schema: Schema) {
 }
 
 /**
+ * Scalar subquery: all-time non-deleted likes on a document. Served as an
+ * index-only scan by `recommends_doc_recommender_created_idx` (partial on
+ * `deleted = false`), so it is cheap enough to also drive an `ORDER BY` over a
+ * filtered document set (see the tag feed's "Most liked" sort).
+ *
+ * Shared with {@link articleCardColumns} so a query that both selects and sorts
+ * on the count uses one expression rather than two that can drift apart.
+ */
+export function documentRecommendCountSql(schema: Schema) {
+  const d = schema.documents;
+  const rec = schema.recommends;
+  return sql<number>`coalesce((
+      select count(*)::int
+      from ${rec}
+      where ${rec.documentUri} = ${d.uri}
+        and ${rec.deleted} = false
+    ), 0)`.mapWith(Number);
+}
+
+/**
  * Select-columns for an {@link ArticleCard}. Pulls the document plus its
  * publication's name/icon and the owner profile's banner; queries should
  * `leftJoin` publications on `publications.uri = documents.publication_uri`
@@ -231,7 +251,6 @@ export function articleCardColumns(schema: Schema) {
   // `documents.did`) at the same time. Joining the same table object twice
   // throws "Alias 'profiles' is already used in this query".
   const pa = alias(schema.profiles, "pa");
-  const rec = schema.recommends;
   return {
     uri: d.uri,
     did: d.did,
@@ -259,12 +278,7 @@ export function articleCardColumns(schema: Schema) {
     textContent: d.textContent,
     hasRenderableBody: d.hasRenderableBody,
     isCollection: documentIsCollectionColumn(d.collectionJson),
-    recommendCount: sql<number>`coalesce((
-      select count(*)::int
-      from ${rec}
-      where ${rec.documentUri} = ${d.uri}
-        and ${rec.deleted} = false
-    ), 0)`.mapWith(Number),
+    recommendCount: documentRecommendCountSql(schema),
   };
 }
 

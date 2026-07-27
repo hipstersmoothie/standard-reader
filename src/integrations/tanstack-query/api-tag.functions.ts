@@ -38,6 +38,11 @@ export type { TagPublicationCard };
 
 const directorySort = z.enum(["tagged", "readers", "active", "az"]);
 
+/** Ranking for the tag page's **Articles** tab (see {@link ArticleCardSort}). */
+const articleSortEnum = z.enum(["recent", "trending", "popular"]);
+
+export type TagArticleSort = z.infer<typeof articleSortEnum>;
+
 const tagInput = z.object({
   tag: z.string().trim().min(1).max(80),
 });
@@ -59,6 +64,7 @@ export interface TagArticleDirectoryPage {
 }
 
 const articlesPageInput = tagInput.extend({
+  articleSort: articleSortEnum.default("recent"),
   limit: z.number().int().min(1).max(60).default(24),
   offset: z.number().int().min(0).default(0),
 });
@@ -106,6 +112,7 @@ const getArticles = createServerFn({ method: "GET" })
         context;
       const did = await attachReaderSpanContext(span, getRequest());
       span.set("tag", data.tag);
+      span.set("articleSort", data.articleSort);
       span.set("offset", data.offset);
 
       const trackReading = did == null ? false : trackReadingEnabled;
@@ -118,6 +125,7 @@ const getArticles = createServerFn({ method: "GET" })
         selectArticleCards(db, schema, {
           tag: data.tag,
           discoverOnly: true,
+          sort: data.articleSort,
           limit: data.limit,
           offset: data.offset,
           readForDid: trackReading && did ? did : undefined,
@@ -186,6 +194,7 @@ const getPublications = createServerFn({ method: "GET" })
 const tagPageInput = tagInput.extend({
   view: z.enum(["feed", "publications"]),
   sort: directorySort.default("tagged"),
+  articleSort: articleSortEnum.default("recent"),
   limit: z.number().int().min(1).max(60).default(24),
   offset: z.number().int().min(0).default(0),
 });
@@ -222,6 +231,8 @@ const getTagPage = createServerFn({ method: "GET" })
       span.set("offset", data.offset);
       if (data.view === "publications") {
         span.set("sort", data.sort);
+      } else {
+        span.set("articleSort", data.articleSort);
       }
 
       const trackReading = did == null ? false : trackReadingEnabled;
@@ -236,6 +247,7 @@ const getTagPage = createServerFn({ method: "GET" })
             ? selectArticleCards(db, schema, {
                 tag: data.tag,
                 discoverOnly: true,
+                sort: data.articleSort,
                 limit: data.limit,
                 offset: data.offset,
                 readForDid: trackReading && did ? did : undefined,
@@ -429,12 +441,14 @@ function getArticleCountQueryOptions({ tag }: z.input<typeof tagInput>) {
 
 function getArticlesQueryOptions({
   tag,
+  articleSort = "recent",
   limit = 24,
   offset = 0,
 }: z.input<typeof articlesPageInput>) {
   return queryOptions({
-    queryKey: ["tag", "articles", tag, limit, offset] as const,
-    queryFn: async () => getArticles({ data: { tag, limit, offset } }),
+    queryKey: ["tag", "articles", tag, articleSort, limit, offset] as const,
+    queryFn: async () =>
+      getArticles({ data: { tag, articleSort, limit, offset } }),
   });
 }
 
@@ -465,6 +479,7 @@ function seedTagPageCaches(
   {
     tag,
     sort = "tagged",
+    articleSort = "recent",
     limit = 24,
     offset = 0,
   }: z.input<typeof tagPageInput>,
@@ -480,7 +495,7 @@ function seedTagPageCaches(
 
   if (page.articles) {
     queryClient.setQueryData(
-      getArticlesQueryOptions({ tag, limit, offset }).queryKey,
+      getArticlesQueryOptions({ tag, articleSort, limit, offset }).queryKey,
       page.articles,
     );
   }
