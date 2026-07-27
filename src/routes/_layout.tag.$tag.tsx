@@ -40,11 +40,7 @@ import {
   rollbackBulkFollowOptimisticUpdate,
 } from "#/components/reader/follow-optimistic";
 import { tagDisplayTitle } from "#/components/reader/format";
-import {
-  Kicker,
-  ReaderContent,
-  SectionHead,
-} from "#/components/reader/primitives";
+import { Kicker, ReaderContent } from "#/components/reader/primitives";
 import { isArticleUnreadForReader } from "#/components/reader/read-optimistic";
 import { RssFeedButton } from "#/components/reader/rss-feed-button";
 import { ButtonLink } from "#/components/router-links";
@@ -226,15 +222,12 @@ const styles = stylex.create({
     display: "flex",
     flexWrap: "wrap",
     justifyContent: "flex-end",
+    // No-op while it shares a line with the info column (which grows to eat the
+    // slack); on the narrowest phones, where it wraps below, it keeps the
+    // button on the trailing edge rather than orphaning it on the leading one.
+    marginInlineStart: "auto",
     rowGap: spacing["2.5"],
     paddingTop: spacing["1"],
-  },
-  // "Subscribe all" is a separate hero item from the RSS button (see the hero
-  // markup) — it is the one that wraps at narrow widths, so pin it to the
-  // trailing edge instead of letting a lone wrapped line fall back to the
-  // leading one.
-  heroFollow: {
-    marginInlineStart: "auto",
   },
   heroName: {
     // Isolate only: this is a single-line NAME, so it must keep the
@@ -352,23 +345,23 @@ const styles = stylex.create({
   directoryGrid: {
     gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
   },
-  directoryToolbarControls: {
+  // Sort + layout on the leading edge, "Subscribe all" on the trailing one.
+  // The three controls are siblings rather than a controls group beside the
+  // button, so a phone can break them across two lines wherever they stop
+  // fitting instead of dropping the whole group at once.
+  directoryToolbar: {
     alignItems: "center",
     columnGap: spacing["2.5"],
     display: "flex",
-    flexShrink: 0,
     flexWrap: "wrap",
-    justifyContent: {
-      default: "space-between",
-      "@media (min-width: 40rem)": "flex-start",
-    },
     rowGap: spacing["3"],
-    maxWidth: "100%",
-    minWidth: 0,
-    width: {
-      default: "100%",
-      "@media (min-width: 40rem)": "auto",
-    },
+    marginBottom: spacing["5"],
+    marginTop: spacing["2"],
+  },
+  directoryToolbarAction: {
+    // Trailing edge on whichever line it lands on — once it wraps it is alone
+    // on that line, where `justify-content` would leave it at the leading one.
+    marginInlineStart: "auto",
   },
   loadSentinel: {
     height: 1,
@@ -644,10 +637,12 @@ function TagPublicationsPanel({
   tag,
   sort,
   layout,
+  publicationCount,
 }: {
   tag: string;
   sort: "tagged" | "readers" | "active" | "az";
   layout: "grid" | "list";
+  publicationCount: number;
 }) {
   const { t, i18n } = useLingui();
   const navigate = useNavigate({ from: Route.fullPath });
@@ -749,41 +744,43 @@ function TagPublicationsPanel({
 
   return (
     <>
-      <SectionHead
-        title={t`All publications`}
-        // The tab above already says "Publications" — on a phone the heading
-        // only repeats it and pushes the sort/layout controls down a line. It
-        // stays on desktop, where it balances the toolbar on the trailing edge.
-        desktopOnlyTitle
-        action={
-          <div {...stylex.props(styles.directoryToolbarControls)}>
-            <SegmentedControl
-              selectedKeys={new Set([sort])}
-              onSelectionChange={onSortChange}
-              size="sm"
-            >
-              {SORT_OPTIONS.map((option) => (
-                <SegmentedControlItem key={option.id} id={option.id}>
-                  {i18n._(option.label)}
-                </SegmentedControlItem>
-              ))}
-            </SegmentedControl>
+      {/* No section title: the tab above already reads "Publications", so the
+          head only repeated it and cost a line on a phone. The sort control
+          takes the slot, with "Subscribe all" opposite it. */}
+      <div {...stylex.props(styles.directoryToolbar)}>
+        <SegmentedControl
+          aria-label={t`Sort publications`}
+          selectedKeys={new Set([sort])}
+          onSelectionChange={onSortChange}
+          size="sm"
+        >
+          {SORT_OPTIONS.map((option) => (
+            <SegmentedControlItem key={option.id} id={option.id}>
+              {i18n._(option.label)}
+            </SegmentedControlItem>
+          ))}
+        </SegmentedControl>
 
-            <SegmentedControl
-              selectedKeys={new Set([layout])}
-              onSelectionChange={onLayoutChange}
-              size="sm"
-            >
-              <SegmentedControlItem id="list" aria-label={t`List view`}>
-                <List size={16} />
-              </SegmentedControlItem>
-              <SegmentedControlItem id="grid" aria-label={t`Grid view`}>
-                <LayoutGrid size={16} />
-              </SegmentedControlItem>
-            </SegmentedControl>
+        <SegmentedControl
+          aria-label={t`Publication layout`}
+          selectedKeys={new Set([layout])}
+          onSelectionChange={onLayoutChange}
+          size="sm"
+        >
+          <SegmentedControlItem id="list" aria-label={t`List view`}>
+            <List size={16} />
+          </SegmentedControlItem>
+          <SegmentedControlItem id="grid" aria-label={t`Grid view`}>
+            <LayoutGrid size={16} />
+          </SegmentedControlItem>
+        </SegmentedControl>
+
+        {publicationCount > 0 ? (
+          <div {...stylex.props(styles.directoryToolbarAction)}>
+            <TagFollowAllButton tag={tag} publicationCount={publicationCount} />
           </div>
-        }
-      />
+        ) : null}
+      </div>
 
       {showDirectorySkeleton ? (
         <TagDirectorySkeleton layout={layout} />
@@ -1131,11 +1128,10 @@ function TagPage() {
           </div>
         </div>
 
-        {/* RSS is its own hero item rather than sharing one with "Subscribe
-            all": grouped, the pair no longer fit beside the heading on the
-            Publications tab and wrapped as a unit, so the RSS button jumped a
-            line down every time you switched tabs on a phone. On its own it
-            always fits, and only "Subscribe all" wraps. */}
+        {/* RSS is the hero's only action on either tab — "Subscribe all" lives
+            in the Publications toolbar. Sharing this slot, the pair no longer
+            fit beside the heading on a phone and wrapped as a unit, so the RSS
+            button jumped a line down every time you switched tabs. */}
         <div {...stylex.props(styles.heroActs)}>
           <RssFeedButton
             name={displayTag}
@@ -1143,11 +1139,6 @@ function TagPage() {
             size="md"
           />
         </div>
-        {isFeed ? null : (
-          <div {...stylex.props(styles.heroActs, styles.heroFollow)}>
-            <TagFollowAllButton tag={tag} publicationCount={publicationCount} />
-          </div>
-        )}
       </div>
 
       <Tabs
@@ -1233,7 +1224,12 @@ function TagPage() {
           </TabPanel>
           <TabPanel id="publications" style={styles.tabPanel}>
             {isFeed ? null : (
-              <TagPublicationsPanel tag={tag} sort={sort} layout={layout} />
+              <TagPublicationsPanel
+                tag={tag}
+                sort={sort}
+                layout={layout}
+                publicationCount={publicationCount}
+              />
             )}
           </TabPanel>
         </ReaderContent>

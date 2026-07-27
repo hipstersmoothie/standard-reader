@@ -1100,6 +1100,10 @@ msgstr ""
 msgid "No topics match “{debouncedQuery}”."
 msgstr "Nenhum tema corresponde a “{debouncedQuery}”"
 
+#: src/routes/_layout.tag.$tag.tsx
+msgid "Publication layout"
+msgstr ""
+
 #: src/components/onboarding/step-settings.tsx
 msgid "Coming soon"
 msgstr "Em breve"
@@ -1291,6 +1295,10 @@ msgstr ""
 #: src/components/reader/about-view.tsx
 msgid "The reading experience"
 msgstr "A experiência de leitura"
+
+#: src/routes/_layout.tag.$tag.tsx
+msgid "Sort publications"
+msgstr ""
 
 #: src/routes/_layout.tsx
 msgid "Loading page"
@@ -1541,7 +1549,6 @@ msgid "Done"
 msgstr "Concluído"
 
 #: src/routes/_layout.discover.tsx
-#: src/routes/_layout.tag.$tag.tsx
 msgid "All publications"
 msgstr "Todas as publicações"
 

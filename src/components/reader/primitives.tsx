@@ -214,11 +214,6 @@ const styles = stylex.create({
   sectionHeadTitle: {
     minWidth: 0,
   },
-  // `display: none` (not `visibility`) so the hidden title contributes neither
-  // row gap nor a11y-tree noise — the head collapses to just its action row.
-  sectionHeadTitleDesktopOnly: {
-    display: { default: "none", "@media (min-width: 40rem)": "flex" },
-  },
   sectionHeadAction: {
     flexShrink: 0,
     minWidth: 0,
@@ -427,7 +422,6 @@ export function SectionHead({
   action,
   icon,
   stackOnMobile = true,
-  desktopOnlyTitle = false,
   size = "lg",
 }: {
   kicker?: React.ReactNode;
@@ -436,13 +430,6 @@ export function SectionHead({
   icon?: React.ReactNode;
   /** Set false to keep the action inline with the title even on narrow screens (e.g. a compact icon button). */
   stackOnMobile?: boolean;
-  /**
-   * Set true to drop the title (and kicker) below 40rem, leaving only the
-   * action row. For heads whose title only earns its space as desktop balance
-   * — on a phone it repeats what the surrounding chrome already says and
-   * pushes the controls down a line.
-   */
-  desktopOnlyTitle?: boolean;
   /**
    * `"lg"` is the page-level head used on Discover and Search. Use `"md"` for a
    * group nested under a surface that already has its own title, so the head
@@ -457,14 +444,7 @@ export function SectionHead({
         !stackOnMobile && styles.sectionHeadRow,
       )}
     >
-      <Flex
-        direction="column"
-        gap="md"
-        style={[
-          styles.sectionHeadTitle,
-          desktopOnlyTitle && styles.sectionHeadTitleDesktopOnly,
-        ]}
-      >
+      <Flex direction="column" gap="md" style={styles.sectionHeadTitle}>
         {kicker != null && <Kicker icon={icon}>{kicker}</Kicker>}
         <span
           {...stylex.props(

@@ -344,9 +344,9 @@ prefetch every filter).
   flash on fast loads and prefetched tabs.
 - **During the grace period:** keep static chrome visible; use a minimal `aria-busy` placeholder,
   not the empty state.
-- **Skeleton scope:** skeleton replaces **rows/content only**, not page chrome. Example: publications
-  tab keeps the “All publications” `SectionHead` and sort/layout controls mounted; only the
-  directory grid/list skeletons below.
+- **Skeleton scope:** skeleton replaces **rows/content only**, not page chrome. Example: the tag
+  page's publications tab keeps its toolbar (sort + layout controls, `Subscribe all`) mounted; only
+  the directory grid/list skeletons below.
 - **Revisits:** rely on React Query cache + prefetch — do not show loading again when cached data
   exists. Do not key skeleton off loader-populated cache checks alone (loaders seed cache before
   paint, so that always reads “cached”).

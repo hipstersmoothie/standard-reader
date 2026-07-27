@@ -1100,6 +1100,10 @@ msgstr ""
 msgid "No topics match “{debouncedQuery}”."
 msgstr ""
 
+#: src/routes/_layout.tag.$tag.tsx
+msgid "Publication layout"
+msgstr ""
+
 #: src/components/onboarding/step-settings.tsx
 msgid "Coming soon"
 msgstr "近日公開"
@@ -1291,6 +1295,10 @@ msgstr ""
 #: src/components/reader/about-view.tsx
 msgid "The reading experience"
 msgstr "読書体験"
+
+#: src/routes/_layout.tag.$tag.tsx
+msgid "Sort publications"
+msgstr ""
 
 #: src/routes/_layout.tsx
 msgid "Loading page"
@@ -1541,7 +1549,6 @@ msgid "Done"
 msgstr "完了"
 
 #: src/routes/_layout.discover.tsx
-#: src/routes/_layout.tag.$tag.tsx
 msgid "All publications"
 msgstr "すべての発行物"
 

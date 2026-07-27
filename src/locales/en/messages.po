@@ -1100,6 +1100,10 @@ msgstr "Your own curated sets of articles."
 msgid "No topics match “{debouncedQuery}”."
 msgstr "No topics match “{debouncedQuery}”."
 
+#: src/routes/_layout.tag.$tag.tsx
+msgid "Publication layout"
+msgstr "Publication layout"
+
 #: src/components/onboarding/step-settings.tsx
 msgid "Coming soon"
 msgstr "Coming soon"
@@ -1291,6 +1295,10 @@ msgstr "Connect {0} to your account?"
 #: src/components/reader/about-view.tsx
 msgid "The reading experience"
 msgstr "The reading experience"
+
+#: src/routes/_layout.tag.$tag.tsx
+msgid "Sort publications"
+msgstr "Sort publications"
 
 #: src/routes/_layout.tsx
 msgid "Loading page"
@@ -1541,7 +1549,6 @@ msgid "Done"
 msgstr "Done"
 
 #: src/routes/_layout.discover.tsx
-#: src/routes/_layout.tag.$tag.tsx
 msgid "All publications"
 msgstr "All publications"
 
