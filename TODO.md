@@ -814,6 +814,13 @@ Backend/API exists; UI or copy is missing.
       from thumbnail → lightbox in
       [`leaflet-image-gallery.tsx`](src/components/reader/content/renderers/leaflet-image-gallery.tsx)
       and [`src/design-system/lightbox/index.tsx`](src/design-system/lightbox/index.tsx).
+- [x] **Lightbox swipe-down-to-close** — drag/flick the image down to dismiss the lightbox, via a
+      shared headless [`useSwipeToDismiss`](src/design-system/gestures/use-swipe-to-dismiss.ts)
+      hook built on React Aria's `useMove` (normalises mouse/touch/pen, ignores keyboard so
+      arrow-key paging is untouched). The carousel keeps native horizontal paging through
+      `touch-action: pan-x`, the surface translates/fades with the drag, and release either flings
+      it out (distance or velocity threshold) or springs it back — all reduced-motion aware and
+      with a light haptic on dismiss.
 - [x] **`at.markpub.markdown`** — full [Markpub.at](https://markpub.at/) support: dedicated
       renderer (`src/lib/markpub/*`, [`markpub-content.tsx`](src/components/reader/content/renderers/markpub-content.tsx)),
       flavor/extensions, facet/lens preprocessing, ingest-time `text.textBlob` fetch
