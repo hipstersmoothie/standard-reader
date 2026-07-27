@@ -14,6 +14,7 @@ import {
 
 import { AppLink } from "#/components/reader/app-link";
 import { articleBodyStyles } from "#/components/reader/content/body-styles";
+import { MentionChipBody } from "#/components/reader/content/mention-chip";
 import { initials } from "#/components/reader/format";
 import {
   DocumentHoverCardBody,
@@ -164,18 +165,23 @@ function UserLinkChip({
           params={{ did: ident }}
           {...triggerProps}
           data-hovered={isHovered || undefined}
-          {...stylex.props(articleBodyStyles.facetMentionLink, styles.chip)}
+          {...stylex.props(articleBodyStyles.facetMentionLink)}
         >
-          {avatarUrl ? (
-            <Avatar
-              size="sm"
-              src={avatarUrl}
-              fallback={initials(label)}
-              alt={handle ?? ""}
-              style={styles.avatar}
-            />
-          ) : null}
-          {children}
+          <MentionChipBody
+            avatar={
+              avatarUrl ? (
+                <Avatar
+                  size="sm"
+                  src={avatarUrl}
+                  fallback={initials(label)}
+                  alt={handle ?? ""}
+                  style={articleBodyStyles.facetMentionAvatar}
+                />
+              ) : null
+            }
+          >
+            {children}
+          </MentionChipBody>
         </Link>
       )}
     </EntityHoverCard>
@@ -213,18 +219,23 @@ function ArticleLinkChip({
           params={{ did: target.did, rkey: target.rkey }}
           {...triggerProps}
           data-hovered={isHovered || undefined}
-          {...stylex.props(articleBodyStyles.facetMentionLink, styles.chip)}
+          {...stylex.props(articleBodyStyles.facetMentionLink)}
         >
-          {target.publicationIconUrl ? (
-            <Avatar
-              size="sm"
-              src={target.publicationIconUrl}
-              alt=""
-              fallback={initials(target.title)}
-              style={styles.avatar}
-            />
-          ) : null}
-          {children}
+          <MentionChipBody
+            avatar={
+              target.publicationIconUrl ? (
+                <Avatar
+                  size="sm"
+                  src={target.publicationIconUrl}
+                  alt=""
+                  fallback={initials(target.title)}
+                  style={articleBodyStyles.facetMentionAvatar}
+                />
+              ) : null
+            }
+          >
+            {children}
+          </MentionChipBody>
         </Link>
       )}
     </EntityHoverCard>
@@ -265,16 +276,21 @@ function PublicationLinkChip({
           params={{ did: target.did, rkey: target.rkey }}
           {...triggerProps}
           data-hovered={isHovered || undefined}
-          {...stylex.props(articleBodyStyles.facetMentionLink, styles.chip)}
+          {...stylex.props(articleBodyStyles.facetMentionLink)}
         >
-          {target.iconUrl ? (
-            <PublicationAvatar
-              pub={{ name: target.name, iconUrl: target.iconUrl }}
-              size="sm"
-              style={styles.avatar}
-            />
-          ) : null}
-          {children}
+          <MentionChipBody
+            avatar={
+              target.iconUrl ? (
+                <PublicationAvatar
+                  pub={{ name: target.name, iconUrl: target.iconUrl }}
+                  size="sm"
+                  style={articleBodyStyles.facetMentionAvatar}
+                />
+              ) : null
+            }
+          >
+            {children}
+          </MentionChipBody>
         </Link>
       )}
     </EntityHoverCard>
@@ -292,16 +308,3 @@ function nodeText(node: React.ReactNode): string | undefined {
   }
   return;
 }
-
-const styles = stylex.create({
-  chip: {
-    whiteSpace: "nowrap",
-  },
-  avatar: {
-    display: "inline-flex",
-    width: "1.05em",
-    height: "1.05em",
-    marginInlineEnd: "0.25em",
-    verticalAlign: "-0.2em",
-  },
-});

@@ -5,6 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Fragment } from "react";
 
+import { MentionChipBody } from "#/components/reader/content/mention-chip";
 import { SmartArticleLink } from "#/components/reader/content/smart-article-link";
 import { initials } from "#/components/reader/format";
 import {
@@ -48,20 +49,6 @@ import { findFacetFeature, hasFacetKind } from "./facets";
 import { useFootnoteNumber } from "./footnote-context";
 import { useInlineMentions } from "./publication-mention-context";
 
-const styles = stylex.create({
-  mentionChip: {
-    whiteSpace: "nowrap",
-  },
-  // Shrink the design-system Avatar to sit inline with body text.
-  mentionAvatar: {
-    display: "inline-flex",
-    width: "1.05em",
-    height: "1.05em",
-    marginInlineEnd: "0.25em",
-    verticalAlign: "-0.2em",
-  },
-});
-
 /**
  * Inline publication reference — the pub's icon (when it has one) + name,
  * linking to its Standard Reader page. Mirrors how Leaflet renders publication
@@ -100,19 +87,21 @@ function PublicationMentionChip({
           params={{ did: mention.did, rkey: mention.rkey }}
           {...triggerProps}
           data-hovered={isHovered || undefined}
-          {...stylex.props(
-            articleBodyStyles.facetMentionLink,
-            styles.mentionChip,
-          )}
+          {...stylex.props(articleBodyStyles.facetMentionLink)}
         >
-          {mention.iconUrl ? (
-            <PublicationAvatar
-              pub={{ name: mention.name, iconUrl: mention.iconUrl }}
-              size="sm"
-              style={styles.mentionAvatar}
-            />
-          ) : null}
-          {children}
+          <MentionChipBody
+            avatar={
+              mention.iconUrl ? (
+                <PublicationAvatar
+                  pub={{ name: mention.name, iconUrl: mention.iconUrl }}
+                  size="sm"
+                  style={articleBodyStyles.facetMentionAvatar}
+                />
+              ) : null
+            }
+          >
+            {children}
+          </MentionChipBody>
         </Link>
       )}
     </EntityHoverCard>
@@ -156,21 +145,23 @@ function DocumentMentionChip({
           params={{ did: mention.did, rkey: mention.rkey }}
           {...triggerProps}
           data-hovered={isHovered || undefined}
-          {...stylex.props(
-            articleBodyStyles.facetMentionLink,
-            styles.mentionChip,
-          )}
+          {...stylex.props(articleBodyStyles.facetMentionLink)}
         >
-          {mention.iconUrl ? (
-            <Avatar
-              size="sm"
-              src={mention.iconUrl}
-              alt=""
-              fallback={initials(mention.title)}
-              style={styles.mentionAvatar}
-            />
-          ) : null}
-          {children}
+          <MentionChipBody
+            avatar={
+              mention.iconUrl ? (
+                <Avatar
+                  size="sm"
+                  src={mention.iconUrl}
+                  alt=""
+                  fallback={initials(mention.title)}
+                  style={articleBodyStyles.facetMentionAvatar}
+                />
+              ) : null
+            }
+          >
+            {children}
+          </MentionChipBody>
         </Link>
       )}
     </EntityHoverCard>
@@ -216,21 +207,23 @@ function ActorMentionChip({
           params={{ did }}
           {...triggerProps}
           data-hovered={isHovered || undefined}
-          {...stylex.props(
-            articleBodyStyles.facetMentionLink,
-            styles.mentionChip,
-          )}
+          {...stylex.props(articleBodyStyles.facetMentionLink)}
         >
-          {actor ? (
-            <Avatar
-              size="sm"
-              src={actor.avatarUrl ?? undefined}
-              fallback={initials(actor.handle ?? label)}
-              alt={actor.handle ?? ""}
-              style={styles.mentionAvatar}
-            />
-          ) : null}
-          {label}
+          <MentionChipBody
+            avatar={
+              actor ? (
+                <Avatar
+                  size="sm"
+                  src={actor.avatarUrl ?? undefined}
+                  fallback={initials(actor.handle ?? label)}
+                  alt={actor.handle ?? ""}
+                  style={articleBodyStyles.facetMentionAvatar}
+                />
+              ) : null
+            }
+          >
+            {label}
+          </MentionChipBody>
         </Link>
       )}
     </EntityHoverCard>
@@ -278,21 +271,23 @@ function LinkedActorChip({
           params={{ did: ident }}
           {...triggerProps}
           data-hovered={isHovered || undefined}
-          {...stylex.props(
-            articleBodyStyles.facetMentionLink,
-            styles.mentionChip,
-          )}
+          {...stylex.props(articleBodyStyles.facetMentionLink)}
         >
-          {actor ? (
-            <Avatar
-              size="sm"
-              src={actor.avatarUrl ?? undefined}
-              fallback={initials(actor.handle ?? label)}
-              alt={actor.handle ?? ""}
-              style={styles.mentionAvatar}
-            />
-          ) : null}
-          {label}
+          <MentionChipBody
+            avatar={
+              actor ? (
+                <Avatar
+                  size="sm"
+                  src={actor.avatarUrl ?? undefined}
+                  fallback={initials(actor.handle ?? label)}
+                  alt={actor.handle ?? ""}
+                  style={articleBodyStyles.facetMentionAvatar}
+                />
+              ) : null
+            }
+          >
+            {label}
+          </MentionChipBody>
         </Link>
       )}
     </EntityHoverCard>
