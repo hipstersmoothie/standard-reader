@@ -173,7 +173,7 @@ function buildReaderListPage<T>(
 
 /**
  * Flag the queue items (saved / history) whose article the viewer recommended,
- * so the rows show the "Recommended by you" indicator. One batched query over
+ * so the rows show a filled heart on the like count. One batched query over
  * the page's cards; a no-op when nothing on the page is recommended.
  */
 async function flagViewerRecommendedItems<

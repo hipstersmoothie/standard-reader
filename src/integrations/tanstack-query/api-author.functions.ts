@@ -335,7 +335,7 @@ const getAuthorProfile = createServerFn({ method: "GET" })
               did,
             ),
           ]);
-        // Flag the viewer's own recommends so cards show "Recommended by you".
+        // Flag the viewer's own recommends so cards fill the like-count heart.
         const [documentsWithRecs, recommendationsWithRecs] = await Promise.all([
           attachViewerRecommendedToArticles(
             db,

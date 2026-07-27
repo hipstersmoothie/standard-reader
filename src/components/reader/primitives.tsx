@@ -5,7 +5,11 @@ import { Text } from "#/design-system/typography/text.tsx";
 
 import { Avatar } from "../../design-system/avatar";
 import { Flex } from "../../design-system/flex";
-import { primaryColor, uiColor } from "../../design-system/theme/color.stylex";
+import {
+  criticalColor,
+  primaryColor,
+  uiColor,
+} from "../../design-system/theme/color.stylex";
 import { radius } from "../../design-system/theme/radius.stylex";
 import { ui } from "../../design-system/theme/semantic-color.stylex";
 import { gap } from "../../design-system/theme/semantic-spacing.stylex";
@@ -60,6 +64,17 @@ const styles = stylex.create({
   },
   likeCountSm: {
     fontSize: fontSize.sm,
+  },
+  likeCountHeart: {
+    alignItems: "center",
+    display: "inline-flex",
+    flexShrink: 0,
+  },
+  // The viewer's own recommend: a filled, tinted heart on the count instead of
+  // a separate "Recommended by you" line. The number stays muted so only the
+  // heart carries the signal.
+  likeCountHeartFilled: {
+    color: criticalColor.solid1,
   },
   commentCount: {
     color: uiColor.text1,
@@ -295,13 +310,21 @@ export function MetaLine({ children }: { children: React.ReactNode }) {
 
 const ENGAGEMENT_ICON_SIZE = { sm: 14, xs: 12 } as const;
 
-/** Network recommendation count with a heart icon; renders nothing when `count` is zero. */
+/**
+ * Network recommendation count with a heart icon; renders nothing when `count`
+ * is zero. When `filled` is set the viewer recommended this article themselves —
+ * the heart fills and takes the critical tint, which is the whole "you
+ * recommended this" signal (there is no separate attribution line for it).
+ */
 export function LikeCount({
   count,
   size = "xs",
+  filled = false,
 }: {
   count: number;
   size?: keyof typeof ENGAGEMENT_ICON_SIZE;
+  /** The viewer has recommended this article — fill and tint the heart. */
+  filled?: boolean;
 }) {
   if (count <= 0) return null;
   return (
@@ -310,7 +333,21 @@ export function LikeCount({
       gap="xs"
       style={[styles.likeCount, size === "sm" && styles.likeCountSm]}
     >
-      <Heart size={ENGAGEMENT_ICON_SIZE[size]} aria-hidden strokeWidth={2} />
+      <span
+        {...stylex.props(
+          styles.likeCountHeart,
+          filled && styles.likeCountHeartFilled,
+        )}
+        {...(filled
+          ? { role: "img", "aria-label": "Recommended by you" }
+          : { "aria-hidden": true })}
+      >
+        <Heart
+          size={ENGAGEMENT_ICON_SIZE[size]}
+          strokeWidth={2}
+          fill={filled ? "currentColor" : "none"}
+        />
+      </span>
       <span>{formatReaders(count)}</span>
     </Flex>
   );
@@ -346,10 +383,13 @@ export function ArticleEngagement({
   recommendCount,
   commentCount,
   size = "xs",
+  viewerHasRecommended = false,
 }: {
   recommendCount: number;
   commentCount: number;
   size?: keyof typeof ENGAGEMENT_ICON_SIZE;
+  /** The viewer recommended this article — fills the heart on the like count. */
+  viewerHasRecommended?: boolean;
 }) {
   const hasLikes = recommendCount > 0;
   const hasComments = commentCount > 0;
@@ -357,7 +397,13 @@ export function ArticleEngagement({
 
   return (
     <Flex align="center" gap="md" wrap style={styles.meta}>
-      {hasLikes ? <LikeCount count={recommendCount} size={size} /> : null}
+      {hasLikes ? (
+        <LikeCount
+          count={recommendCount}
+          size={size}
+          filled={viewerHasRecommended}
+        />
+      ) : null}
       {hasLikes && hasComments ? (
         <span aria-hidden {...stylex.props(styles.metaDot)}>
           ·

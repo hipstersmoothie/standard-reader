@@ -408,13 +408,15 @@ Build each on hip-ui components + StyleX tokens (no raw HTML/inline styles).
 - [x] **Search result snippets** — `ts_headline` excerpts in `searchArticles` /
       `searchPublications`; highlighted `<mark>` terms in `ArticleRow` and
       `PubDirectoryRow` on `/search`.
-- [x] **"Recommended by you" indicator** — document cards across every surface (home, latest,
-      discover, tag, publication, author, search, saved, and history feeds) show a red heart +
-      "Recommended by you" eyebrow when the signed-in reader has recommended that document. Attached
-      server-side in one batched, index-served query (`attachViewerRecommendedToArticles` →
-      `viewerHasRecommended` on `ArticleCard`), toggled optimistically alongside the recommend
-      action (`recommend-optimistic.ts`), and rendered by `RecommendedByLine` (the viewer's own
-      signal takes precedence over the followed-user "@handle and N others" attribution).
+- [x] **Viewer's own recommend indicator** — document items across every surface (home, latest,
+      discover, tag, publication, author, search, saved, history, article byline, and mention hover
+      cards) **fill and tint the heart on the document's like count** when the signed-in reader has
+      recommended that document — no separate "Recommended by you" eyebrow. Attached server-side in
+      one batched, index-served query (`attachViewerRecommendedToArticles` → `viewerHasRecommended`
+      on `ArticleCard`), toggled optimistically alongside the recommend action
+      (`recommend-optimistic.ts`), and rendered by `LikeCount` / `ArticleEngagement`
+      (`primitives.tsx`) via the `filled` / `viewerHasRecommended` props. `RecommendedByLine`
+      (`cards.tsx`) now carries only the followed-user "@handle and N others" attribution.
 - [x] **Article** (reading view) — ~680px measure, drop-cap, pull quotes, hero, sticky bar (back/byline/follow/save/share), reading-progress bar, footer pub card + "More from {publication}". Route `/a/$did/$rkey` (`_layout.a.$did.$rkey.tsx`); feed/profile cards link here; `publicationApi.getArticle` returns core content + stale-while-revalidate `commentCount`; below-the-fold rails (`moreFrom`, `readersAlsoFollow`) and discussion load client-side via `getArticleExtras` + `commentsApi.getDocumentComments`. Save toggle writes `site.standard.graph.recommend`; like counts on cards + article byline.
 - [x] **Article discussion** — Bluesky comment section on documents: Constellation backlink discovery for external + app quote-share URLs, direct replies to the author's `bskyPostRef` (excluded from the list itself), hydrated via public AppView, facet-rendered commentary, reply counts linking to bsky threads (`commentsApi.getDocumentComments`).
 - [x] **Article discussion — margin.at** — merge `at.margin.note` / `at.margin.annotation` / `at.margin.highlight` and `network.cosmik.card` NOTE cards on the document's canonical URL into the same Discussion feed via Constellation (`at.margin.*` at `.target.source`, cosmik at `.url` / `.content.url`); hydrate from author PDS + Bluesky/margin profile; quote-style cards for `TextQuoteSelector` passages; reply counts via `at.margin.reply`; margin notes link to margin.at; cosmik NOTE cards link to Semble (`semble.so/url?id=…`); cosmik URL bookmarks excluded from counts.

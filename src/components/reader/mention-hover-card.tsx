@@ -495,7 +495,12 @@ export function DocumentHoverCardBody({
                   <DotJoined parts={metaParts} />
                 </span>
               ) : null}
-              {art ? <LikeCount count={art.recommendCount} /> : null}
+              {art ? (
+                <LikeCount
+                  count={art.recommendCount}
+                  filled={art.viewerHasRecommended}
+                />
+              ) : null}
             </div>
           ) : null}
         </>

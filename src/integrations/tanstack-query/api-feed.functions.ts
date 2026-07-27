@@ -412,7 +412,7 @@ async function buildHomeFeedCritical(
       ? attachRecommendedByToArticles(db, schema, ctx.followedUserDids, cards)
       : Promise.resolve(cards),
   ]);
-  // Flag the viewer's own recommends so cards show "Recommended by you".
+  // Flag the viewer's own recommends so cards fill the like-count heart.
   const withViewerRecs = await attachViewerRecommendedToArticles(
     db,
     schema,
