@@ -50,6 +50,8 @@ export type StructuredRenderableBlock =
       aspectRatio?: { width?: number; height?: number };
     }
   | { kind: "code"; plaintext: string; language?: string }
+  /** A raw HTML block; see the `html` node in `nodes.ts`. */
+  | { kind: "html"; html: string }
   | { kind: "iframe"; url: string; height?: number }
   | {
       kind: "website";

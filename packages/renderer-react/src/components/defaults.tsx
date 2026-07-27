@@ -65,6 +65,7 @@ export const defaultComponents: RendererComponents = {
         {children}
       </li>
     ),
+    Html: () => null,
     Code: ({ code, language }) => (
       <pre>
         <code className={language ? `language-${language}` : undefined}>

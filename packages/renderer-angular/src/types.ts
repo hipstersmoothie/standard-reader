@@ -29,6 +29,12 @@ export interface AngularSharedComponents {
     caption?: string;
   }>;
   code?: Tpl<{ code: string; language?: string }>;
+  /**
+   * A raw HTML block from a markdown document. Renders nothing by default:
+   * injecting untrusted markup is the host's decision, with the host's own
+   * sanitizer. Supply this template to render it.
+   */
+  html?: Tpl<{ html: string }>;
   iframe?: Tpl<{
     url: string;
     height?: number;

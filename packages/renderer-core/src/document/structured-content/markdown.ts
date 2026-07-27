@@ -22,7 +22,9 @@ import type {
 } from "mdast";
 import { fromMarkdown } from "mdast-util-from-markdown";
 import { gfmFromMarkdown } from "mdast-util-gfm";
+import { mathFromMarkdown } from "mdast-util-math";
 import { gfm } from "micromark-extension-gfm";
+import { math } from "micromark-extension-math";
 
 import { isRecord } from "../../internal.js";
 import { utf8ByteLength } from "../../leaflet/utf8.js";
@@ -136,6 +138,18 @@ function collectRuns(
       }
       case "break": {
         out.push({ text: "\n", kinds, link });
+        break;
+      }
+      case "inlineMath": {
+        // No inline math node in the vocabulary yet, so keep the TeX source
+        // verbatim rather than dropping the expression on the floor.
+        out.push({ text: `$${node.value}$`, kinds, link });
+        break;
+      }
+      case "image": {
+        // A standalone image becomes its own block (see `mapParagraph`); one
+        // sitting inside a sentence keeps its alt text so the meaning survives.
+        if (node.alt?.trim()) out.push({ text: node.alt, kinds, link });
         break;
       }
       default: {
@@ -265,13 +279,49 @@ function mapTable(rows: Array<MdTableRow>): StructuredRenderableBlock | null {
   return mapped.length > 0 ? { kind: "table", rows: mapped } : null;
 }
 
+/**
+ * A paragraph → its blocks.
+ *
+ * Usually one text block, but an image inside a paragraph has no inline node to
+ * live in, so the paragraph is split around it: prose, image, prose. That keeps
+ * the picture (previously dropped outright) at the cost of a line break.
+ */
+function mapParagraph(
+  children: Array<PhrasingContent>,
+): Array<StructuredRenderableBlock> {
+  const standalone = paragraphImage(children);
+  if (standalone) return [standalone];
+
+  const blocks: Array<StructuredRenderableBlock> = [];
+  let run: Array<PhrasingContent> = [];
+
+  const flush = () => {
+    if (run.length === 0) return;
+    const text = inlineText(run);
+    if (text.plaintext.trim()) blocks.push({ kind: "text", text });
+    run = [];
+  };
+
+  for (const child of children) {
+    if (child.type === "image" && child.url) {
+      flush();
+      blocks.push({
+        alt: child.alt ?? undefined,
+        externalSrc: child.url,
+        kind: "image",
+      });
+      continue;
+    }
+    run.push(child);
+  }
+  flush();
+  return blocks;
+}
+
 function mapBlock(node: RootContent): Array<StructuredRenderableBlock> {
   switch (node.type) {
     case "paragraph": {
-      const image = paragraphImage(node.children);
-      if (image) return [image];
-      const text = inlineText(node.children);
-      return text.plaintext.trim() ? [{ kind: "text", text }] : [];
+      return mapParagraph(node.children);
     }
     case "heading": {
       const text = inlineText(node.children);
@@ -294,6 +344,16 @@ function mapBlock(node: RootContent): Array<StructuredRenderableBlock> {
           plaintext: node.value,
         },
       ];
+    }
+    case "math": {
+      const tex = node.value.trim();
+      return tex ? [{ kind: "math", tex }] : [];
+    }
+    case "html": {
+      const html = node.value.trim();
+      // Kept verbatim; whether to render it is the host's call — see the
+      // `html` node in `nodes.ts`.
+      return html ? [{ html, kind: "html" }] : [];
     }
     case "list": {
       const list = mapList(node);
@@ -331,11 +391,17 @@ export function markdownBlocksFromText(
 ): Array<StructuredRenderableBlock> | null {
   const body = text.trim();
   if (!body) return null;
+  // Math is its own extension, not part of GFM, so it applies to both flavors.
+  // Single-dollar inline math stays enabled to match how these documents are
+  // rendered today; it is the reason a bare `$5 … $10` can read as math.
   const tree: Root = fromMarkdown(
     body,
     flavor === "commonmark"
-      ? {}
-      : { extensions: [gfm()], mdastExtensions: [gfmFromMarkdown()] },
+      ? { extensions: [math()], mdastExtensions: [mathFromMarkdown()] }
+      : {
+          extensions: [gfm(), math()],
+          mdastExtensions: [gfmFromMarkdown(), mathFromMarkdown()],
+        },
   );
   const blocks = tree.children.flatMap(mapBlock);
   return blocks.length > 0 ? blocks : null;

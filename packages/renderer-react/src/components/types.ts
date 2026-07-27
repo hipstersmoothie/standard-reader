@@ -99,6 +99,10 @@ export interface CalloutProps {
   children: ReactNode;
 }
 
+export interface HtmlProps {
+  html: string;
+}
+
 export interface ListProps {
   children: ReactNode;
 }
@@ -206,6 +210,12 @@ export interface SharedBlockComponents {
   Heading: ComponentType<HeadingProps>;
   Blockquote: ComponentType<BlockquoteProps>;
   Callout: ComponentType<CalloutProps>;
+  /**
+   * A raw HTML block from a markdown document. Renders nothing by default:
+   * injecting untrusted markup is the host's decision, with the host's own
+   * sanitizer. Supply this component to render it.
+   */
+  Html: ComponentType<HtmlProps>;
   HorizontalRule: ComponentType<Record<string, never>>;
   BulletList: ComponentType<ListProps>;
   OrderedList: ComponentType<OrderedListProps>;

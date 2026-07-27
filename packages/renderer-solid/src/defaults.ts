@@ -86,6 +86,7 @@ export const defaultComponents: SolidComponents = {
         " ",
         children,
       ),
+    html: () => null,
     code: ({ code, language }) =>
       el(
         "pre",

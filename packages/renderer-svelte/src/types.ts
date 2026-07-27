@@ -49,6 +49,12 @@ export interface SvelteSharedComponents extends SvelteInlineComponents {
   taskList?: Snippet<[WithChildren]>;
   taskListItem?: Snippet<[{ checked: boolean } & WithChildren]>;
   code?: Snippet<[{ code: string; language?: string }]>;
+  /**
+   * A raw HTML block from a markdown document. Renders nothing by default:
+   * injecting untrusted markup is the host's decision, with the host's own
+   * sanitizer. Supply this snippet to render it.
+   */
+  html?: Snippet<[{ html: string }]>;
   image?: Snippet<
     [
       {

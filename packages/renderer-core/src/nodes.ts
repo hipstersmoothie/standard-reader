@@ -105,6 +105,15 @@ export type BlockNode =
   | { type: "orderedList"; start?: number; items: Array<ListItem> }
   | { type: "taskList"; items: Array<TaskItem> }
   | { type: "code"; code: string; language?: string }
+  /**
+   * A raw HTML block from a markdown source.
+   *
+   * Carried rather than dropped, because deleting it loses real content — but
+   * deliberately *not* rendered by the default components: injecting untrusted
+   * markup is a decision only the host can make, with its own sanitizer. Supply
+   * an `Html` component to render it.
+   */
+  | { type: "html"; html: string }
   | {
       type: "image";
       src: string;

@@ -78,6 +78,8 @@
         class={node.language ? `language-${node.language}` : undefined}
         >{node.code}</code
       ></pre>{/if}
+{:else if node.type === "html"}
+  {#if s.html}{@render s.html({ html: node.html })}{/if}
 {:else if node.type === "image"}
   {#if s.image}{@render s.image({
       src: node.src,

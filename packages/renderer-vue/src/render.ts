@@ -128,6 +128,9 @@ function renderBlock(node: BlockNode, ctx: RenderContext): Renderable {
     case "code": {
       return shared.code({ code: node.code, language: node.language });
     }
+    case "html": {
+      return shared.html({ html: node.html });
+    }
     case "image": {
       return shared.image({
         src: node.src,

@@ -10,6 +10,13 @@ import { segmentInline } from "../inline.js";
 import type { BlockNode } from "../nodes.js";
 import type { StandardSiteDocument } from "../types.js";
 
+/** A document whose body is a display-math block between two paragraphs. */
+function build_math() {
+  return markdownDoc(
+    ["Before", "", "$$", "E = mc^2", "$$", "", "After"].join("\n"),
+  );
+}
+
 /** buildRenderTree, asserting a non-null tree so tests can use it directly. */
 function build(doc: StandardSiteDocument) {
   const tree = buildRenderTree(doc);
@@ -93,6 +100,60 @@ describe("buildRenderTree — markdown", () => {
     const code = tree.children[4] as Extract<BlockNode, { type: "code" }>;
     expect(code.language).toBe("js");
     expect(code.code).toBe("const x = 1;");
+  });
+
+  it("keeps a raw HTML block instead of deleting it", () => {
+    // Previously dropped outright, which quietly removed real content from a
+    // document. Rendering it is the host's call; carrying it is not.
+    const tree = build(
+      markdownDoc('Before\n\n<div class="x">raw</div>\n\nAfter'),
+    );
+    expect(tree.children.map(kinds)).toEqual([
+      "paragraph",
+      "html",
+      "paragraph",
+    ]);
+    const html = tree.children[1] as Extract<BlockNode, { type: "html" }>;
+    expect(html.html).toBe('<div class="x">raw</div>');
+  });
+
+  it("maps a display-math block to a math node", () => {
+    const tree = build(build_math());
+    expect(tree.children.map(kinds)).toEqual([
+      "paragraph",
+      "math",
+      "paragraph",
+    ]);
+    const math = tree.children[1] as Extract<BlockNode, { type: "math" }>;
+    expect(math.tex).toBe("E = mc^2");
+  });
+
+  it("keeps inline math as its source, having nowhere else to put it", () => {
+    const tree = build(markdownDoc("Einstein said $E = mc^2$ once."));
+    const paragraph = tree.children[0] as Extract<
+      BlockNode,
+      { type: "paragraph" }
+    >;
+    expect(paragraph.text.plaintext).toBe("Einstein said $E = mc^2$ once.");
+  });
+
+  it("splits a paragraph around an inline image rather than dropping it", () => {
+    const tree = build(
+      markdownDoc("Text with an ![a cat](https://x.test/i.png) image."),
+    );
+    expect(tree.children.map(kinds)).toEqual([
+      "paragraph",
+      "image",
+      "paragraph",
+    ]);
+    const image = tree.children[1] as Extract<BlockNode, { type: "image" }>;
+    expect(image.src).toBe("https://x.test/i.png");
+    expect(image.alt).toBe("a cat");
+  });
+
+  it("still lifts a standalone image into a single block", () => {
+    const tree = build(markdownDoc("![just a cat](https://x.test/i.png)"));
+    expect(tree.children.map(kinds)).toEqual(["image"]);
   });
 
   it("keeps nested lists nested, to any depth", () => {

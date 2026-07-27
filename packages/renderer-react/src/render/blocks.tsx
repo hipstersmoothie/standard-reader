@@ -135,6 +135,9 @@ function RenderBlock({ node }: { node: BlockNode }) {
     case "code": {
       return <shared.Code code={node.code} language={node.language} />;
     }
+    case "html": {
+      return <shared.Html html={node.html} />;
+    }
     case "image": {
       return (
         <shared.Image

@@ -770,6 +770,9 @@ function structuredToNode(
     case "code": {
       return { type: "code", code: block.plaintext, language: block.language };
     }
+    case "html": {
+      return { type: "html", html: block.html };
+    }
     case "iframe": {
       return { type: "iframe", url: block.url, height: block.height };
     }

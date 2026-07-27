@@ -67,6 +67,12 @@ export interface SolidSharedComponents extends SolidInlineComponents {
     children: Renderable,
   ) => Renderable;
   code: (props: { code: string; language?: string }) => Renderable;
+  /**
+   * A raw HTML block from a markdown document. Renders nothing by default:
+   * injecting untrusted markup is the host's decision, with the host's own
+   * sanitizer. Supply this component to render it.
+   */
+  html: (props: { html: string }) => Renderable;
   image: (props: {
     src: string;
     alt: string;

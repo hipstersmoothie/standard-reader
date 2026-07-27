@@ -320,6 +320,10 @@ function blockToMarkdown(ctx: Ctx, node: BlockNode): string | null {
     case "website": {
       return linkLine(node.title?.trim() || node.src, node.src);
     }
+    case "html": {
+      // Markdown embeds raw HTML verbatim, so this is a straight pass-through.
+      return node.html;
+    }
     case "table": {
       return tableToMarkdown(ctx, node);
     }

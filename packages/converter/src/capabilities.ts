@@ -22,6 +22,18 @@ export type BlockSupport =
   /** The target cannot carry this at all; the block is dropped. */
   | { level: "none"; note: string };
 
+/**
+ * Raw HTML only exists because markdown allows it, and only markdown can carry
+ * it back out. The block formats have no field for arbitrary markup, and
+ * inventing one would produce a record their own readers ignore.
+ */
+const HTML_UNSUPPORTED: BlockSupport = {
+  level: "none",
+  note:
+    "Raw HTML has no equivalent in a block-based format; only a markdown " +
+    "target can carry it.",
+};
+
 const UNKNOWN_BLOCK: BlockSupport = {
   level: "none",
   note:
@@ -92,6 +104,7 @@ const LEAFLET: Record<BlockType, BlockSupport> = {
   code: NATIVE,
   heading: NATIVE,
   horizontalRule: NATIVE,
+  html: HTML_UNSUPPORTED,
   iframe: NATIVE,
   image: NATIVE,
   imageCarousel: NATIVE,
@@ -135,6 +148,7 @@ const OFFPRINT: Record<BlockType, BlockSupport> = {
   code: NATIVE,
   heading: NATIVE,
   horizontalRule: NATIVE,
+  html: HTML_UNSUPPORTED,
   iframe: NATIVE,
   image: NATIVE,
   imageCarousel: NATIVE,
@@ -186,6 +200,7 @@ const PCKT: Record<BlockType, BlockSupport> = {
   code: NATIVE,
   heading: NATIVE,
   horizontalRule: NATIVE,
+  html: HTML_UNSUPPORTED,
   iframe: NATIVE,
   image: NATIVE,
   imageCarousel: IMAGES_IN_SEQUENCE,
@@ -244,6 +259,7 @@ const MARKPUB: Record<BlockType, BlockSupport> = {
   code: NATIVE,
   heading: NATIVE,
   horizontalRule: NATIVE,
+  html: NATIVE,
   iframe: MARKDOWN_LINK,
   image: NATIVE,
   imageCarousel: {

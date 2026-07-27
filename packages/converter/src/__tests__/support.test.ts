@@ -50,6 +50,7 @@ const SAMPLES: Record<BlockType, BlockNode> = {
   code: { code: "x = 1", language: "py", type: "code" },
   heading: { level: 2, text: text("Title"), type: "heading" },
   horizontalRule: { type: "horizontalRule" },
+  html: { html: "<div>raw</div>", type: "html" },
   iframe: { height: 400, type: "iframe", url: "https://example.com/embed" },
   image: { ...image("A cat"), type: "image" },
   imageCarousel: {
