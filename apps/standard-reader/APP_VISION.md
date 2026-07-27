@@ -883,6 +883,9 @@ hand-tuned lists:
 ### Non-goals (for now)
 
 - A **read-first client**: no in-app posting or authoring publications. Discussion is surfaced read-only from Bluesky (link shares + quote shares) and margin.at (web annotations); threads open on bsky or margin.at.
+  - The `standard-reader` **CLI** (see §8) does write to an author's repo, but it is a separate
+    binary an author runs against their own account — not an in-app authoring surface. The reading
+    client stays read-first.
 
 ---
 
@@ -907,6 +910,44 @@ Standard Reader is a **port of an earlier no-build prototype** into this TanStac
   badges (bsky.app and its `social-app` forks — currently also Witchsky and Mu), options page,
   toolbar badge. See [`apps/extension/store/README.md`](../extension/store/README.md) for Chrome Web Store
   publish notes.
+
+### Format conversion (`@standard-reader/converter` + the `standard-reader` CLI)
+
+The reader already normalizes every content format into one render tree so it can _display_ any
+document. The same tree run backwards lets a document be **re-emitted into a different format** —
+so an author is not locked into whichever tool first wrote their posts.
+
+```
+  any source format ──► buildRenderTree() ──► DocumentTree ──┬─► renderers  (react, vue, lit, …)
+  (leaflet · pckt · offprint · markpub ·      renderer-core  └─► emitters   (leaflet · offprint ·
+   markdown · prosemirror · blocknote · …)                                    pckt · markpub)
+```
+
+- **[`packages/converter`](packages/converter)** — `convertDocumentContent()` takes a document's
+  `content` union and a target, and returns the new payload _plus a per-block issue list_. Sources
+  are anything `renderer-core` parses; targets are the four formats carrying most of the network's
+  long-form writing.
+- **[`packages/cli`](packages/cli)** — the `standard-reader` binary: `formats` (capability matrix),
+  `list` (survey a repo), `convert` (rewrite records via `putRecord`).
+
+Two design points shape everything else:
+
+- **Loss is reported, never guessed at.** The formats do not describe the same set of things — pckt
+  has tables and Leaflet does not; Leaflet has footnotes and nobody else does; Offprint list items
+  hold one line, so nesting has nowhere to go. Issues are graded `lossy` (the words survive, the
+  presentation changes) vs `unsupported` (the block is not in the output). A
+  [capability matrix](packages/converter/src/capabilities.ts) is the single source of truth for
+  which is which, and a test asserts the emitters agree with it — a warning can never disagree with
+  what actually got written.
+- **The author decides per record.** The CLI shows what a conversion costs and asks about each
+  record that would lose something, so opting out of one article does not abandon the run. Records
+  that would lose content are skipped by default when there is no terminal to ask in; originals are
+  backed up before any overwrite; and every write is pinned with `swapRecord` to the CID it was
+  converted from.
+
+Images move by **blob reference** — a converted record points at the same blob in the same repo,
+with no re-upload. Markpub is the exception (markdown cannot address a repo blob), so blob-backed
+images become CDN URLs and the swap is reported.
 
 ### Browser extension architecture
 

@@ -1,11 +1,11 @@
-import { isRecord } from "../internal";
-import { asTextBlock } from "./blocks";
+import { isRecord } from "../internal.js";
+import { asTextBlock } from "./blocks.js";
 import type {
   LeafletFacet,
   LeafletFacetFeature,
   LeafletRenderableBlock,
-} from "./types";
-import { LEAFLET_FACET } from "./types";
+} from "./types.js";
+import { LEAFLET_FACET } from "./types.js";
 
 /**
  * A single footnote referenced somewhere in the document body. Leaflet stores

@@ -1010,3 +1010,45 @@ Standard AT Proto labels: subscribe to labelers, see/blur/hide their labels whil
 - [ ] **subscribeLabels ingestion** — consume the labeler firehose into the read-model instead of
       live `queryLabels` per page, for lower latency.
 - [ ] **Deploy claudeslop** — Railway service + persistent SQLite volume; publish its did:web.
+
+---
+
+## 15. Format conversion (`@standard-reader/converter` + CLI)
+
+Re-emit a document's content into another format by running the renderer's normalized
+`DocumentTree` backwards. See [`APP_VISION.md` §8](./APP_VISION.md#format-conversion-standard-readerconverter--the-standard-reader-cli).
+
+- [x] **Render-tree fidelity** — `renderer-core` carries the record-level facts a re-emit needs but
+      a renderer does not: `ImageSource` (blob ref, external src, raw aspect-ratio dims) on image
+      and collection nodes, plus the strongRef CIDs on Bluesky embeds and Leaflet polls. All
+      optional, so no renderer changes.
+- [x] **`@standard-reader/converter`** — `convertDocumentContent()` over the four targets
+      (`pub.leaflet.content`, `app.offprint.content`, `blog.pckt.content`, `at.markpub.markdown`).
+      Sources are anything `renderer-core` parses, so markdown / ProseMirror / BlockNote /
+      Gutenberg documents convert in for free.
+- [x] **Capability matrix** — `BLOCK_SUPPORT` grades every block type per target as
+      native / degraded / unsupported, with the note and fallback shown to the user.
+      `support.test.ts` runs all 4 × 29 combinations and asserts the emitters agree with it.
+- [x] **Facet dialect remapping** — inline formatting converts by rewriting feature `$type`s, so
+      byte offsets and plaintext are untouched; features a target's dialect lacks are dropped and
+      reported once per kind per block. Markpub instead renders inline formatting to markdown.
+- [x] **`@standard-reader/cli`** — the `standard-reader` binary: `formats`, `list [--to]`,
+      `convert --to`. App-password auth, blob-backed body resolution, `--dry-run` / `--out` /
+      `--json` / `--from` / `--rkey` / `--limit`.
+- [x] **Safe writes** — per-record prompt for anything lossy (with `a` / `s` / `q` / `d`),
+      skip-by-default without a TTY, `--force` to override, originals backed up before overwrite,
+      `swapRecord` pinned to the converted-from CID, documents already in the target format
+      untouched.
+- [ ] **Verify the Offprint fragment names** — `…#listItem`, `…#taskItem`, `…#gridImage` and the
+      Offprint facet feature set are inferred from published records (its lexicons are not vendored
+      here). Confirm against the real lexicons and correct the constants in
+      `packages/converter/src/targets/offprint.ts` / `src/facets.ts`.
+- [ ] **Round-trip regression fixtures** — capture real records in each format and assert
+      `A → B → A` keeps the text and inline formatting stable, to catch emitter drift the synthetic
+      fixtures miss.
+- [ ] **Re-upload images for Markpub → block-format conversions** — going back from markdown,
+      an `https://` image cannot become a Leaflet/Offprint blob without uploading it. Currently
+      reported as unsupported; could offer `--upload-images` to fetch and `uploadBlob` them.
+- [ ] **Convert a single record from the app** — the reading client stays read-first, but an
+      author viewing their own document could be offered the same conversion inline. Depends on
+      write scopes for `site.standard.document`.

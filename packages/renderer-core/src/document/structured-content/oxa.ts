@@ -3,8 +3,8 @@
  * array of `pub.oxa.blocks.defs#*` entries. Facets are already emitted in the
  * leaflet/AT Proto byte-facet shape, so they pass straight through.
  */
-import { isRecord } from "../../internal";
-import type { StructuredRenderableBlock, StructuredText } from "./types";
+import { isRecord } from "../../internal.js";
+import type { StructuredRenderableBlock, StructuredText } from "./types.js";
 
 export const OXA_CONTENT = "pub.oxa.document.document";
 

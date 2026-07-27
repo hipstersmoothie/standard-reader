@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
 
-import { buildRenderTree } from "../build";
+import { buildRenderTree } from "../build.js";
 import {
   isMarkdownFormat,
   markdownText,
   MARKDOWN_FORMATS,
-} from "../document/structured-content/markdown";
-import { segmentInline } from "../inline";
-import type { BlockNode } from "../nodes";
-import type { StandardSiteDocument } from "../types";
+} from "../document/structured-content/markdown.js";
+import { segmentInline } from "../inline.js";
+import type { BlockNode } from "../nodes.js";
+import type { StandardSiteDocument } from "../types.js";
 
 /** buildRenderTree, asserting a non-null tree so tests can use it directly. */
 function build(doc: StandardSiteDocument) {

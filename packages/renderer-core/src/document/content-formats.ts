@@ -1,29 +1,32 @@
-import { isRecord } from "../internal";
-import { LEAFLET_CONTENT } from "../leaflet/types";
+import { isRecord } from "../internal.js";
+import { LEAFLET_CONTENT } from "../leaflet/types.js";
 import {
   BLOCKNOTE_CONTENT,
   blocknoteBlocks,
-} from "./structured-content/blocknote";
-import { FABLES_CONTENT, fablesBlocks } from "./structured-content/fables";
+} from "./structured-content/blocknote.js";
+import { FABLES_CONTENT, fablesBlocks } from "./structured-content/fables.js";
 import {
   GUTENBERG_CONTENT,
   gutenbergBlocks,
-} from "./structured-content/gutenberg";
+} from "./structured-content/gutenberg.js";
 import {
   ITEM_BLOCK_FORMATS,
   itemBlocks,
-} from "./structured-content/item-blocks";
+} from "./structured-content/item-blocks.js";
 import {
   MARKDOWN_FORMATS,
   markdownBlocks,
-} from "./structured-content/markdown";
-import { MARKPUB_FORMATS, markpubBlocks } from "./structured-content/markpub";
-import { OXA_CONTENT, oxaBlocks } from "./structured-content/oxa";
+} from "./structured-content/markdown.js";
+import {
+  MARKPUB_FORMATS,
+  markpubBlocks,
+} from "./structured-content/markpub.js";
+import { OXA_CONTENT, oxaBlocks } from "./structured-content/oxa.js";
 import {
   PROSEMIRROR_CONTENT,
   prosemirrorBlocks,
-} from "./structured-content/prosemirror";
-import type { StructuredRenderableBlock } from "./structured-content/types";
+} from "./structured-content/prosemirror.js";
+import type { StructuredRenderableBlock } from "./structured-content/types.js";
 
 /** `pub.leaflet.document` — a full Leaflet document whose `pages` match the
  *  `pub.leaflet.content` shape. */

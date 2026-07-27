@@ -1,14 +1,14 @@
 import {
   normalizeImageAlt,
   parseStructuredGridImage,
-} from "../document/structured-content/image";
+} from "../document/structured-content/image.js";
 import type {
   StructuredGridImage,
   StructuredRenderableBlock,
   StructuredText,
-} from "../document/structured-content/types";
-import { isRecord } from "../internal";
-import { OFFPRINT_BLOCK, OFFPRINT_CONTENT } from "./types";
+} from "../document/structured-content/types.js";
+import { isRecord } from "../internal.js";
+import { OFFPRINT_BLOCK, OFFPRINT_CONTENT } from "./types.js";
 
 function asText(value: unknown): StructuredText | null {
   if (!isRecord(value)) return null;
@@ -162,7 +162,10 @@ function asRenderableBlock(value: unknown): StructuredRenderableBlock | null {
     const post = value.post;
     const uri =
       isRecord(post) && typeof post.uri === "string" ? post.uri : null;
-    return uri ? { kind: "blueskyEmbed", postUri: uri } : null;
+    if (!uri) return null;
+    const cid =
+      isRecord(post) && typeof post.cid === "string" ? post.cid : undefined;
+    return { kind: "blueskyEmbed", postUri: uri, postCid: cid };
   }
 
   if (value.$type === OFFPRINT_BLOCK.webEmbed) {

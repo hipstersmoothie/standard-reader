@@ -12,7 +12,7 @@
  * tree of marks, links, mentions and footnote references.
  */
 
-import type { AspectRatio } from "./types";
+import type { AspectRatio } from "./types.js";
 
 /** A run of rich text: plaintext plus byte-indexed AT-Proto facets. */
 export interface RichText {
@@ -48,10 +48,33 @@ export type InlineNode =
       contentPlaintext?: string;
     };
 
+/**
+ * The image's source as it appeared in the record, carried alongside the
+ * resolved `src` URL.
+ *
+ * Renderers only need `src`; this is for consumers that re-emit a document
+ * into another content format (see `@standard-reader/converter`) and must
+ * reference the same PDS blob rather than a CDN URL.
+ */
+export interface ImageSource {
+  /** Raw blob ref from the record, when the image is blob-backed. */
+  blob?: unknown;
+  /** External `https` source, when the image is not blob-backed. */
+  externalSrc?: string;
+  /**
+   * Raw `aspectRatio` dimensions as the record carried them. `BlockNode`'s
+   * `aspectRatio` is the derived ratio (with a 16∶9 fallback), so re-emitting a
+   * record needs the original width/height back.
+   */
+  aspectRatio?: { width?: number; height?: number };
+}
+
 export interface CollectionImage {
   src: string;
   alt: string;
   aspectRatio?: AspectRatio;
+  /** Original record-level source, for format-to-format conversion. */
+  source?: ImageSource;
 }
 
 export interface TableCell {
@@ -89,6 +112,8 @@ export type BlockNode =
       aspectRatio?: AspectRatio;
       fullBleed?: boolean;
       caption?: string;
+      /** Original record-level source, for format-to-format conversion. */
+      source?: ImageSource;
     }
   | {
       type: "iframe";
@@ -112,7 +137,7 @@ export type BlockNode =
       caption?: string;
       alignment?: string;
     }
-  | { type: "blueskyEmbed"; postUri: string }
+  | { type: "blueskyEmbed"; postUri: string; postCid?: string }
   | {
       type: "imageGrid";
       images: Array<CollectionImage>;
@@ -134,7 +159,7 @@ export type BlockNode =
     }
   | { type: "unknown"; blockType: string }
   // Platform-specific blocks — usually interactive or data-backed embeds.
-  | { type: "leaflet.poll"; pollUri: string }
+  | { type: "leaflet.poll"; pollUri: string; pollCid?: string }
   | { type: "leaflet.signup" }
   | { type: "leaflet.separator" }
   | { type: "leaflet.standardSitePost"; uri: string }

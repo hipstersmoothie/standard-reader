@@ -27,12 +27,12 @@
  * parser has no math extension, so `$$…$$` stays literal text).
  */
 
-import { isRecord } from "../../internal";
-import type { LeafletFacet, LeafletFacetFeature } from "../../leaflet/types";
-import { sliceUtf8, utf8ByteLength } from "../../leaflet/utf8";
-import type { MarkdownFlavor } from "./markdown";
-import { markdownBlocksFromText } from "./markdown";
-import type { StructuredRenderableBlock } from "./types";
+import { isRecord } from "../../internal.js";
+import type { LeafletFacet, LeafletFacetFeature } from "../../leaflet/types.js";
+import { sliceUtf8, utf8ByteLength } from "../../leaflet/utf8.js";
+import type { MarkdownFlavor } from "./markdown.js";
+import { markdownBlocksFromText } from "./markdown.js";
+import type { StructuredRenderableBlock } from "./types.js";
 
 export const MARKPUB_MARKDOWN = "at.markpub.markdown";
 export const MARKPUB_TEXT = "at.markpub.text";

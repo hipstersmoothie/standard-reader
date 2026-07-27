@@ -1,6 +1,6 @@
-import { isRecord } from "../../internal";
-import { utf8ByteLength } from "../../leaflet/utf8";
-import type { StructuredText } from "./types";
+import { isRecord } from "../../internal.js";
+import { utf8ByteLength } from "../../leaflet/utf8.js";
+import type { StructuredText } from "./types.js";
 
 /** Shift facet byte ranges forward by `byteOffset` (run concatenation). */
 function offsetFacets(

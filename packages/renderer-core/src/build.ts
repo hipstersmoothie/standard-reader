@@ -2,60 +2,79 @@ import {
   LEAFLET_DOCUMENT_FORMAT,
   leafletDocumentContent,
   structuredFormatBlocks,
-} from "./document/content-formats";
+} from "./document/content-formats.js";
 import {
   structuredImageAspectRatio,
   structuredImageHasSource,
-} from "./document/structured-content/image";
-import type { StructuredRenderableBlock } from "./document/structured-content/types";
-import { defaultImageUrlResolver, resolveGridImages } from "./image";
-import { externalHttpUrl, isRecord } from "./internal";
+} from "./document/structured-content/image.js";
+import type { StructuredRenderableBlock } from "./document/structured-content/types.js";
+import { defaultImageUrlResolver, resolveGridImages } from "./image.js";
+import { externalHttpUrl, isRecord } from "./internal.js";
 import {
   asTextBlock as leafletAsTextBlock,
   leafletBlocks,
   leafletWebsiteSrc,
-} from "./leaflet/blocks";
-import { collectLeafletFootnotes } from "./leaflet/footnotes";
-import { leafletImageAspectRatio } from "./leaflet/image";
+} from "./leaflet/blocks.js";
+import { collectLeafletFootnotes } from "./leaflet/footnotes.js";
+import { leafletImageAspectRatio } from "./leaflet/image.js";
 import type {
   LeafletImageGalleryBlock,
   LeafletListItem,
   LeafletRenderableBlock,
-} from "./leaflet/types";
-import { LEAFLET_CONTENT } from "./leaflet/types";
+} from "./leaflet/types.js";
+import { LEAFLET_CONTENT } from "./leaflet/types.js";
 import type {
   BlockNode,
   DocumentTree,
   FootnoteEntry,
+  ImageSource,
   ListItem,
   RichText,
   TableRow,
-} from "./nodes";
-import { offprintBlocks } from "./offprint/blocks";
-import { OFFPRINT_CONTENT } from "./offprint/types";
+} from "./nodes.js";
+import { offprintBlocks } from "./offprint/blocks.js";
+import { OFFPRINT_CONTENT } from "./offprint/types.js";
 import {
   asTextBlock as pcktAsTextBlock,
   pcktBlocks,
   pcktCodeLanguage,
-} from "./pckt/blocks";
-import { pcktImageAlt, pcktImageAspectRatio } from "./pckt/image";
+} from "./pckt/blocks.js";
+import { pcktImageAlt, pcktImageAspectRatio } from "./pckt/image.js";
 import type {
   PcktImageBlock,
   PcktListBlock,
   PcktRenderableBlock,
   PcktTableBlock,
   PcktTaskListBlock,
-} from "./pckt/types";
-import { PCKT_BLOCK } from "./pckt/types";
+} from "./pckt/types.js";
+import { PCKT_BLOCK } from "./pckt/types.js";
 import type {
   ImageUrlResolver,
   RendererOptions,
   StandardSiteDocument,
-} from "./types";
+} from "./types.js";
 
 interface BuildContext {
   authorDid: string | undefined;
   resolveImageUrl: ImageUrlResolver;
+}
+
+/** An {@link ImageSource} carrying only the fields the record actually set. */
+function imageSource(
+  blob: unknown,
+  externalSrc?: string,
+  aspectRatio?: { width?: number; height?: number },
+): ImageSource {
+  const source: ImageSource = {};
+  if (blob != null) source.blob = blob;
+  if (externalSrc) source.externalSrc = externalSrc;
+  if (aspectRatio?.width != null && aspectRatio.height != null) {
+    source.aspectRatio = {
+      width: aspectRatio.width,
+      height: aspectRatio.height,
+    };
+  }
+  return source;
 }
 
 function resolveFormat(doc: StandardSiteDocument): string | null {
@@ -280,7 +299,12 @@ function leafletToNode(
     }
     case "bskyPost": {
       const uri = block.block.postRef?.uri;
-      return uri ? { type: "blueskyEmbed", postUri: uri } : null;
+      if (!uri) return null;
+      return {
+        type: "blueskyEmbed",
+        postUri: uri,
+        postCid: block.block.postRef?.cid,
+      };
     }
     case "image": {
       const src = ctx.resolveImageUrl({
@@ -294,6 +318,11 @@ function leafletToNode(
         alt: block.block.alt?.trim() || "",
         aspectRatio: leafletImageAspectRatio(block.block),
         fullBleed: block.block.fullBleed,
+        source: imageSource(
+          block.block.image,
+          undefined,
+          block.block.aspectRatio,
+        ),
       };
     }
     case "code": {
@@ -334,7 +363,12 @@ function leafletToNode(
     }
     case "poll": {
       const uri = block.block.pollRef?.uri;
-      return uri ? { type: "leaflet.poll", pollUri: uri } : null;
+      if (!uri) return null;
+      return {
+        type: "leaflet.poll",
+        pollUri: uri,
+        pollCid: block.block.pollRef?.cid,
+      };
     }
     case "separator": {
       return { type: "leaflet.separator" };
@@ -392,6 +426,7 @@ function leafletGalleryNode(
         src,
         alt: image.alt?.trim() || "",
         aspectRatio: leafletImageAspectRatio(image),
+        source: imageSource(image.image, undefined, image.aspectRatio),
       },
     ];
   });
@@ -406,19 +441,23 @@ function leafletGalleryNode(
 // pckt
 // ---------------------------------------------------------------------------
 
-function pcktImageSrc(block: PcktImageBlock, ctx: BuildContext): string | null {
+/** The record-level source of a pckt image: an external URL or a blob ref. */
+function pcktImageSource(block: PcktImageBlock): ImageSource | null {
   const attrs = block.attrs;
   if (!attrs) return null;
   const src = attrs.src;
-  if (externalHttpUrl(src)) {
-    return ctx.resolveImageUrl({ externalSrc: src, authorDid: ctx.authorDid });
-  }
+  const ratio = attrs.aspectRatio ?? {
+    width: attrs.naturalWidth,
+    height: attrs.naturalHeight,
+  };
+  const external = externalHttpUrl(src);
+  if (external) return imageSource(undefined, external, ratio);
   let blob = attrs.blob;
   if (blob == null && typeof src === "string" && src.startsWith("blob:")) {
     const cid = src.slice("blob:".length);
     if (cid) blob = { ref: cid };
   }
-  return ctx.resolveImageUrl({ blob, authorDid: ctx.authorDid });
+  return imageSource(blob, undefined, ratio);
 }
 
 function pcktRuns(content: Array<Record<string, unknown>> | undefined): {
@@ -558,16 +597,24 @@ function pcktToNode(
     }
     case "blueskyEmbed": {
       const uri = block.block.postRef?.uri;
-      return uri ? { type: "blueskyEmbed", postUri: uri } : null;
+      if (!uri) return null;
+      return {
+        type: "blueskyEmbed",
+        postUri: uri,
+        postCid: block.block.postRef?.cid,
+      };
     }
     case "image": {
-      const src = pcktImageSrc(block.block, ctx);
+      const source = pcktImageSource(block.block);
+      if (!source) return null;
+      const src = ctx.resolveImageUrl({ ...source, authorDid: ctx.authorDid });
       if (!src) return null;
       return {
         type: "image",
         src,
         alt: pcktImageAlt(block.block),
         aspectRatio: pcktImageAspectRatio(block.block),
+        source,
       };
     }
     case "code": {
@@ -675,7 +722,11 @@ function structuredToNode(
       };
     }
     case "blueskyEmbed": {
-      return { type: "blueskyEmbed", postUri: block.postUri };
+      return {
+        type: "blueskyEmbed",
+        postUri: block.postUri,
+        postCid: block.postCid,
+      };
     }
     case "image": {
       if (!structuredImageHasSource(block)) return null;
@@ -691,6 +742,7 @@ function structuredToNode(
         alt: block.alt?.trim() || "",
         aspectRatio: structuredImageAspectRatio(block),
         caption: block.caption?.trim() || undefined,
+        source: imageSource(block.blob, block.externalSrc, block.aspectRatio),
       };
     }
     case "code": {

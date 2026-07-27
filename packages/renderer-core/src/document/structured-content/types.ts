@@ -28,7 +28,7 @@ export type StructuredRenderableBlock =
       kind: "taskList";
       items: Array<{ checked?: boolean; text: StructuredText }>;
     }
-  | { kind: "blueskyEmbed"; postUri: string }
+  | { kind: "blueskyEmbed"; postUri: string; postCid?: string }
   | {
       kind: "image";
       blob?: unknown;

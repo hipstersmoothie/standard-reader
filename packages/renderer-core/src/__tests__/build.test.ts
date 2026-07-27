@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { buildRenderTree } from "../build";
-import { segmentInline } from "../inline";
-import type { BlockNode } from "../nodes";
-import type { StandardSiteDocument } from "../types";
+import { buildRenderTree } from "../build.js";
+import { segmentInline } from "../inline.js";
+import type { BlockNode } from "../nodes.js";
+import type { StandardSiteDocument } from "../types.js";
 
 const AUTHOR = "did:plc:testauthor";
 

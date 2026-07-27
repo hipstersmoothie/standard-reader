@@ -24,15 +24,15 @@ import { fromMarkdown } from "mdast-util-from-markdown";
 import { gfmFromMarkdown } from "mdast-util-gfm";
 import { gfm } from "micromark-extension-gfm";
 
-import { isRecord } from "../../internal";
-import { utf8ByteLength } from "../../leaflet/utf8";
-import { mergeTextRuns, syntheticFacet } from "./text-runs";
+import { isRecord } from "../../internal.js";
+import { utf8ByteLength } from "../../leaflet/utf8.js";
+import { mergeTextRuns, syntheticFacet } from "./text-runs.js";
 import type {
   StructuredRenderableBlock,
   StructuredTableCell,
   StructuredText,
-} from "./types";
-import { STANDARD_MARKDOWN_CONTENT } from "./types";
+} from "./types.js";
+import { STANDARD_MARKDOWN_CONTENT } from "./types.js";
 
 type MarkdownExtractor = (content: Record<string, unknown>) => unknown;
 
