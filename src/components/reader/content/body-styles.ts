@@ -171,10 +171,25 @@ export const articleBodyStyles = stylex.create({
     textUnderlineOffset: spacing["1.5"],
     fontWeight: fontWeight.semibold,
   },
+  /**
+   * Inline mention chip — an entity's avatar + name rendered as a pill inside
+   * prose. The label is arbitrary author content (publication names, document
+   * titles), so the chip wraps like the text around it; pinning it to one line
+   * pushed long Leaflet titles past the reading column and off the screen on
+   * mobile.
+   */
   facetMentionLink: {
     cornerShape: "squircle",
     borderRadius: radius.xs,
     textDecoration: "none",
+    whiteSpace: "normal",
+    // Labels that are one unbroken run (long handles, URL-ish names) have no
+    // wrap opportunity of their own; break inside them rather than overflow.
+    overflowWrap: "break-word",
+    // Give each line fragment of a wrapped chip its own padding and rounded
+    // corners, so it still reads as a pill and not a sliced rectangle.
+    // eslint-disable-next-line @stylexjs/valid-styles
+    boxDecorationBreak: "clone",
     backgroundColor: {
       default: primaryColor.component1,
       ":is([data-hovered=true])": primaryColor.component2,
@@ -185,6 +200,14 @@ export const articleBodyStyles = stylex.create({
     textUnderlineOffset: spacing["1.5"],
     paddingBlock: spacing["1.5"],
     paddingInline: spacing["2"],
+  },
+  /** Shrinks the design-system Avatar to sit inline with body text. */
+  facetMentionAvatar: {
+    display: "inline-flex",
+    width: "1.05em",
+    height: "1.05em",
+    marginInlineEnd: "0.25em",
+    verticalAlign: "-0.2em",
   },
   facetCode: {
     borderRadius: radius.sm,
