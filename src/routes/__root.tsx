@@ -21,6 +21,7 @@ import {
   paletteThemes,
 } from "../components/reader/appearance-themes";
 import { appearanceStyleVars } from "../components/reader/appearance-vars";
+import { EngagementCountsVisibleProvider } from "../components/reader/engagement-visibility";
 import { editorialFonts, editorialShadow } from "../components/reader/theme";
 import { uiColor } from "../design-system/theme/color.stylex";
 import { ui } from "../design-system/theme/semantic-color.stylex";
@@ -47,6 +48,7 @@ import {
   RESOLVED_SCHEME_SCRIPT,
   THEME_COLOR_BY_SCHEME,
 } from "../lib/theme";
+import { useFeedMetricsVisible } from "../lib/use-feed-preferences";
 import { useLocale } from "../lib/use-locale";
 import { ReloadPrompt } from "../pwa/reload-prompt";
 import { saveHandle } from "../utils/saved-handles";
@@ -312,6 +314,10 @@ function RootDocument({ children }: { children: React.ReactNode }) {
     refetchOnWindowFocus: false,
   });
   const themeMode = themePreference?.mode ?? DEFAULT_THEME_MODE;
+  // Read once here and handed down by context: the components that draw the
+  // counts live in `reader/primitives`, which the browser extension also
+  // imports, so they must not reach for a server fn themselves.
+  const engagementCountsVisible = useFeedMetricsVisible();
   // Seeded by the same shell bootstrap as the theme mode, so the palette, its
   // scheme, and the dial multipliers are all known during SSR — the custom
   // theme paints on the first frame with no flash of the editorial one.
@@ -446,7 +452,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
             back to the browser default. Lingui: message translation. */}
         <AriaI18nProvider locale={intlLocale(locale)}>
           <LinguiProvider i18n={i18nForLocale(locale)}>
-            {children}
+            <EngagementCountsVisibleProvider value={engagementCountsVisible}>
+              {children}
+            </EngagementCountsVisibleProvider>
           </LinguiProvider>
         </AriaI18nProvider>
 

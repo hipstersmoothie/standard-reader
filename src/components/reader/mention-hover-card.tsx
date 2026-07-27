@@ -33,9 +33,9 @@ import {
 import { usePopoverStyles } from "#/design-system/theme/usePopoverStyles";
 import { authorApi } from "#/integrations/tanstack-query/api-author.functions";
 import { publicationApi } from "#/integrations/tanstack-query/api-publication.functions";
-import { useFeedMetricsVisible } from "#/lib/use-feed-preferences";
 import { useFormatters } from "#/lib/use-formatters";
 
+import { useEngagementCountsVisible } from "./engagement-visibility";
 import { formatReaders, initials } from "./format";
 import { LikeCount, PublicationAvatar } from "./primitives";
 
@@ -427,7 +427,7 @@ export function DocumentHoverCardBody({
   fallbackTitle: string;
 }) {
   const fmt = useFormatters();
-  const metricsVisible = useFeedMetricsVisible();
+  const metricsVisible = useEngagementCountsVisible();
   const { data: art, isLoading } = useQuery(
     publicationApi.getArticleCardQueryOptions(documentUri),
   );

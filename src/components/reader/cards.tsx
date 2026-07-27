@@ -30,7 +30,6 @@ import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
 import { parseInternalRoute } from "#/lib/internal-route";
 import { tsHeadlineHasMatch } from "#/lib/search-headline";
-import { useFeedMetricsVisible } from "#/lib/use-feed-preferences";
 import { useFormatters } from "#/lib/use-formatters";
 import { useOpenCollectionsInMagazine } from "#/lib/use-open-collections-in-magazine";
 import { useOpenLinks } from "#/lib/use-open-links";
@@ -62,6 +61,7 @@ import type {
   ArticleCard,
   PublicationCard,
 } from "../../integrations/tanstack-query/api-shapes";
+import { useEngagementCountsVisible } from "./engagement-visibility";
 import {
   applyFollowOptimisticUpdate,
   invalidateFollowQueries,
@@ -1263,7 +1263,7 @@ function ArticleMetaLine({
   /** When set, replaces article tags in the meta line (e.g. labeler label values). */
   metaLabels?: Array<{ src: string; val: string }>;
 }) {
-  const metricsVisible = useFeedMetricsVisible();
+  const metricsVisible = useEngagementCountsVisible();
   const hasEngagement =
     metricsVisible && (article.recommendCount > 0 || article.commentCount > 0);
   const topics = metaLabels == null ? articleTopics(article) : [];
@@ -1908,7 +1908,7 @@ export function CompactRow({
   article: ArticleCard;
   rank: number;
 }) {
-  const metricsVisible = useFeedMetricsVisible();
+  const metricsVisible = useEngagementCountsVisible();
   const hasEngagement =
     metricsVisible && (article.recommendCount > 0 || article.commentCount > 0);
   const showCollection = article.isCollection;

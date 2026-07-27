@@ -34,7 +34,6 @@ import { user } from "#/integrations/tanstack-query/api-user.functions";
 import { resolveArticleHeroImage } from "#/lib/document/lead-image";
 import { usePageReader } from "#/lib/page-reader/page-reader-context";
 import { publishingPlatform } from "#/lib/publishing-platform";
-import { useFeedMetricsVisible } from "#/lib/use-feed-preferences";
 import { useFormatters } from "#/lib/use-formatters";
 import { useOpenCollectionsInMagazine } from "#/lib/use-open-collections-in-magazine";
 import { useReadingTypography } from "#/lib/use-reading-typography";
@@ -87,6 +86,7 @@ import {
 } from "./content/extract-text";
 import { MarkdownArticle } from "./content/renderers/shared/markdown-article";
 import { DocumentShareMenu } from "./document-share-menu";
+import { useEngagementCountsVisible } from "./engagement-visibility";
 import {
   articlePublicationUrl,
   documentLinkParams,
@@ -967,7 +967,7 @@ function ArticleViewBody({
   } = useArticleBookmark(article.uri, signedIn);
 
   const readStats = formatArticleReadStats(i18n, article.readCount);
-  const metricsVisible = useFeedMetricsVisible();
+  const metricsVisible = useEngagementCountsVisible();
   // Use the optimistic recommend count so the byline heart fills (and the line
   // appears on a first recommend) the instant the reader taps Recommend.
   const hasEngagement =
