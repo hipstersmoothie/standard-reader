@@ -24,7 +24,6 @@ import {
   Tag,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { Selection } from "react-aria-components";
 import { z } from "zod";
 
 import {
@@ -55,8 +54,6 @@ import {
 import { Button } from "#/design-system/button";
 import { Flex } from "#/design-system/flex";
 import { Grid } from "#/design-system/grid";
-import { IconButton } from "#/design-system/icon-button";
-import { Menu, MenuItem } from "#/design-system/menu";
 import {
   SegmentedControl,
   SegmentedControlItem,
@@ -302,42 +299,18 @@ const styles = stylex.create({
   tabList: {
     borderBottomStyle: "none",
     borderBottomWidth: 0,
-    // Phones give the tabs the whole row (minus the sort control, when the
-    // Articles tab shows one) so they read as one full-width switch; from `sm`
-    // up they sit label-width on the leading edge.
+    // Phones give the tabs the whole row so they read as one full-width switch;
+    // from `sm` up they sit label-width on the leading edge. Nothing else may
+    // share this row — a control beside them on one tab only would size the
+    // tabs differently per tab.
     flexGrow: { default: 1, [breakpoints.sm]: 0 },
-    // The design-system TabList scrolls its own overflow, so it would happily
-    // shrink to nothing beside the sort control. Pinning it keeps the tabs
-    // intact and lets the control wrap to its own line on narrow screens.
+    // The design-system TabList scrolls its own overflow, so it would otherwise
+    // shrink to nothing rather than keep the labels intact.
     flexShrink: 0,
   },
   tabItem: {
     // Even halves of whatever the list is given (see `tabList`).
     flexGrow: { default: 1, [breakpoints.sm]: 0 },
-  },
-  // Shared slot geometry for the articles sort control. Two controls occupy it
-  // — a compact icon menu and the full select — swapped by media query rather
-  // than by a JS viewport check, so SSR emits both and neither can hydrate to
-  // the wrong one. `display: none` also drops the hidden one from the a11y
-  // tree, so the duplicate label is never announced twice.
-  tabBarSort: {
-    flexShrink: 0,
-    // Trailing edge whether or not the row wrapped (`space-between` would pull
-    // a wrapped control back to the leading edge).
-    marginInlineStart: "auto",
-    // Lift the control off the rule the tab labels rest on.
-    paddingBottom: spacing["2"],
-  },
-  // One breakpoint drives both slots (never `max-width` for one and
-  // `min-width` for the other — they'd both match at exactly 40rem).
-  tabBarSortCompact: {
-    display: { default: "flex", [breakpoints.sm]: "none" },
-  },
-  tabBarSortFull: {
-    display: { default: "none", [breakpoints.sm]: "flex" },
-  },
-  tabBarSortSelect: {
-    minWidth: spacing["40"],
   },
   tabRule: {
     borderBottomColor: uiColor.border1,
@@ -353,11 +326,11 @@ const styles = stylex.create({
   directoryGrid: {
     gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
   },
-  // Sort + layout on the leading edge, "Subscribe all" on the trailing one.
-  // The three controls are siblings rather than a controls group beside the
-  // button, so a phone can break them across two lines wherever they stop
-  // fitting instead of dropping the whole group at once.
-  directoryToolbar: {
+  // Both panels open with this row: view controls on the leading edge, the
+  // panel's action (if any) on the trailing one. Every control is a direct
+  // child rather than a nested group, so a phone can break the row wherever
+  // the controls stop fitting instead of dropping a whole group at once.
+  panelToolbar: {
     alignItems: "center",
     columnGap: spacing["2.5"],
     display: "flex",
@@ -365,6 +338,9 @@ const styles = stylex.create({
     rowGap: spacing["3"],
     marginBottom: spacing["5"],
     marginTop: spacing["2"],
+  },
+  panelToolbarSelect: {
+    minWidth: spacing["40"],
   },
   // Below ~360px the four sort labels are wider than the row. Let the group cap
   // at the row and scroll rather than shrink, which squeezed "Most posts" onto
@@ -529,8 +505,9 @@ function TagArticlesPanel({
   tag: string;
   articleSort: TagArticleSort;
 }) {
-  const { t } = useLingui();
+  const { t, i18n } = useLingui();
   const queryClient = useQueryClient();
+  const navigate = useNavigate({ from: Route.fullPath });
   const { data: session } = useQuery(user.getSessionQueryOptions);
   const signedIn = Boolean(session?.user);
   const { enabled: trackReading } = useTrackReadingHistory();
@@ -599,24 +576,75 @@ function TagArticlesPanel({
     nextOffset ?? 0,
   );
 
+  const onArticleSortChange = (key: React.Key | null) => {
+    if (key == null) return;
+    void navigate({
+      replace: true,
+      resetScroll: false,
+      search: (prev: TagSearch) => ({
+        ...prev,
+        articleSort: String(key) as TagArticleSort,
+      }),
+    });
+  };
+
+  // Chrome stays put across loads and empty states — only the rows below swap.
+  const toolbar = (
+    <div {...stylex.props(styles.panelToolbar)}>
+      <Select
+        aria-label={t`Sort articles`}
+        size="md"
+        variant="secondary"
+        prefix={<ArrowDownWideNarrow size={14} aria-hidden />}
+        selectedKey={articleSort}
+        style={styles.panelToolbarSelect}
+        onSelectionChange={onArticleSortChange}
+      >
+        {ARTICLE_SORT_OPTIONS.map((option) => (
+          <SelectItem
+            key={option.id}
+            id={option.id}
+            textValue={i18n._(option.label)}
+          >
+            {i18n._(option.label)}
+          </SelectItem>
+        ))}
+      </Select>
+    </div>
+  );
+
   if (showSkeleton) {
-    return <TagArticlesSkeleton />;
+    return (
+      <>
+        {toolbar}
+        <TagArticlesSkeleton />
+      </>
+    );
   }
 
   if (isLoading) {
-    return <div aria-busy="true" aria-label={t`Loading articles`} />;
+    return (
+      <>
+        {toolbar}
+        <div aria-busy="true" aria-label={t`Loading articles`} />
+      </>
+    );
   }
 
   if (items.length === 0) {
     return (
-      <p {...stylex.props(styles.empty)}>
-        <Trans>No articles match this tag yet.</Trans>
-      </p>
+      <>
+        {toolbar}
+        <p {...stylex.props(styles.empty)}>
+          <Trans>No articles match this tag yet.</Trans>
+        </p>
+      </>
     );
   }
 
   return (
     <>
+      {toolbar}
       <div>
         {items.map((article, index) => (
           <ArticleRow
@@ -766,7 +794,7 @@ function TagPublicationsPanel({
       {/* No section title: the tab above already reads "Publications", so the
           head only repeated it and cost a line on a phone. The sort control
           takes the slot, with "Subscribe all" opposite it. */}
-      <div {...stylex.props(styles.directoryToolbar)}>
+      <div {...stylex.props(styles.panelToolbar)}>
         <SegmentedControl
           aria-label={t`Sort publications`}
           selectedKeys={new Set([sort])}
@@ -1027,7 +1055,7 @@ function TagFollowAllButton({
 }
 
 function TagPage() {
-  const { t, i18n } = useLingui();
+  const { t } = useLingui();
   const fmt = useFormatters();
   const { tag: rawTag } = Route.useParams();
   const tag = decodeURIComponent(rawTag);
@@ -1102,22 +1130,6 @@ function TagPage() {
     void navigate({ search: (prev: TagSearch) => ({ ...prev, view: next }) });
   };
 
-  const onArticleSortChange = (key: React.Key | null) => {
-    if (key == null) return;
-    const next = String(key) as TagArticleSort;
-    void navigate({
-      replace: true,
-      resetScroll: false,
-      search: (prev: TagSearch) => ({ ...prev, articleSort: next }),
-    });
-  };
-
-  /** Menu hands back a `Selection`; the select hands back a single key. */
-  const onArticleSortSelection = (keys: Selection) => {
-    if (keys === "all") return;
-    onArticleSortChange([...keys][0] ?? null);
-  };
-
   return (
     <div>
       <div {...stylex.props(styles.heroInner)}>
@@ -1180,62 +1192,9 @@ function TagPage() {
                 <Trans>Publications</Trans>
               </Tab>
             </TabList>
-
-            {/* Articles-only: the Publications tab carries its own sort in the
-                directory toolbar. */}
-            {isFeed ? (
-              <>
-                <div
-                  {...stylex.props(styles.tabBarSort, styles.tabBarSortCompact)}
-                >
-                  <Menu
-                    placement="bottom end"
-                    selectionMode="single"
-                    selectedKeys={new Set([articleSort])}
-                    onSelectionChange={onArticleSortSelection}
-                    trigger={
-                      <IconButton
-                        aria-label={t`Sort articles`}
-                        size="md"
-                        variant="secondary"
-                      >
-                        <ArrowDownWideNarrow size={16} />
-                      </IconButton>
-                    }
-                  >
-                    {ARTICLE_SORT_OPTIONS.map((option) => (
-                      <MenuItem key={option.id} id={option.id}>
-                        {i18n._(option.label)}
-                      </MenuItem>
-                    ))}
-                  </Menu>
-                </div>
-
-                <div
-                  {...stylex.props(styles.tabBarSort, styles.tabBarSortFull)}
-                >
-                  <Select
-                    aria-label={t`Sort articles`}
-                    size="md"
-                    variant="secondary"
-                    prefix={<ArrowDownWideNarrow size={14} aria-hidden />}
-                    selectedKey={articleSort}
-                    style={styles.tabBarSortSelect}
-                    onSelectionChange={onArticleSortChange}
-                  >
-                    {ARTICLE_SORT_OPTIONS.map((option) => (
-                      <SelectItem
-                        key={option.id}
-                        id={option.id}
-                        textValue={i18n._(option.label)}
-                      >
-                        {i18n._(option.label)}
-                      </SelectItem>
-                    ))}
-                  </Select>
-                </div>
-              </>
-            ) : null}
+            {/* Nothing else belongs on this row: a control that only one tab
+                shows would leave the stretched tabs a different width per tab.
+                Both sorts live in their panel's toolbar instead. */}
           </div>
           <div {...stylex.props(styles.tabRule)} aria-hidden />
         </div>
