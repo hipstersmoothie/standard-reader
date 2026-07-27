@@ -99,7 +99,7 @@ const LEAFLET: Record<BlockType, BlockSupport> = {
   callout: {
     level: "degraded",
     note: "Leaflet has no callout block.",
-    fallback: "a blockquote (the emoji and colour are dropped)",
+    fallback: "a blockquote (the type, title, emoji and colour are dropped)",
   },
   code: NATIVE,
   heading: NATIVE,
@@ -195,7 +195,7 @@ const PCKT: Record<BlockType, BlockSupport> = {
   callout: {
     level: "degraded",
     note: "pckt has no callout block.",
-    fallback: "a blockquote (the emoji and colour are dropped)",
+    fallback: "a blockquote (the type, title, emoji and colour are dropped)",
   },
   code: NATIVE,
   heading: NATIVE,

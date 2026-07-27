@@ -30,8 +30,8 @@
 import { isRecord } from "../../internal.js";
 import type { LeafletFacet, LeafletFacetFeature } from "../../leaflet/types.js";
 import { sliceUtf8, utf8ByteLength } from "../../leaflet/utf8.js";
-import type { MarkdownFlavor } from "./markdown.js";
-import { markdownBlocksFromText } from "./markdown.js";
+import type { MarkdownDocument, MarkdownFlavor } from "./markdown.js";
+import { markdownDocumentFromText } from "./markdown.js";
 import type { StructuredRenderableBlock } from "./types.js";
 
 export const MARKPUB_MARKDOWN = "at.markpub.markdown";
@@ -396,5 +396,26 @@ export function markpubBlocks(
       : content;
   const prepared = prepareMarkpubMarkdown(payload);
   if (!prepared) return null;
-  return markdownBlocksFromText(prepared.body, prepared.flavor);
+  return (
+    markdownDocumentFromText(prepared.body, prepared.flavor)?.blocks ?? null
+  );
+}
+
+/** Blocks *and* footnotes for a Markpub payload; see `markdownDocumentFromText`. */
+export function markpubDocument(
+  content: unknown,
+  contentFormat?: string | null,
+): MarkdownDocument | null {
+  const format =
+    isRecord(content) && typeof content.$type === "string"
+      ? content.$type
+      : contentFormat;
+  if (!isMarkpubFormat(format)) return null;
+  const payload =
+    isRecord(content) && typeof content.$type !== "string"
+      ? { ...content, $type: format }
+      : content;
+  const prepared = prepareMarkpubMarkdown(payload);
+  if (!prepared) return null;
+  return markdownDocumentFromText(prepared.body, prepared.flavor);
 }

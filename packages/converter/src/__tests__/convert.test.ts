@@ -555,6 +555,64 @@ describe("→ markpub", () => {
   });
 });
 
+describe("callouts and footnotes now survive markdown", () => {
+  it("carries a markdown callout into Offprint's callout block", () => {
+    const result = convert(
+      markpubContent("> [!WARNING] Careful\n> Mind the gap."),
+      "offprint",
+    );
+    expect(items(result)[0]).toMatchObject({
+      $type: "app.offprint.block.callout",
+      plaintext: "Mind the gap.",
+    });
+    // Offprint has a callout block but no marker type or title to put them in.
+    expect(codes(result)).toContain("detail-dropped");
+  });
+
+  it("round-trips a callout marker through markpub", () => {
+    const result = convert(
+      markpubContent("> [!WARNING]- Careful\n> Mind the gap."),
+      "markpub",
+    );
+    expect(result.unchanged).toBe(true);
+
+    // Via a block format and back, the marker is reconstructed.
+    const viaOffprint = convert(
+      markpubContent("> [!WARNING] Careful\n> Mind the gap."),
+      "offprint",
+    );
+    const back = convert(viaOffprint.content, "markpub");
+    expect(markdown(back)).toContain("> Mind the gap.");
+  });
+
+  it("carries markdown footnotes into Leaflet, which has real footnotes", () => {
+    const result = convert(
+      markpubContent("A claim[^1].\n\n[^1]: The evidence."),
+      "leaflet",
+    );
+    const block = leafletBlocks(result)[0] as {
+      facets: Array<{ features: Array<Record<string, unknown>> }>;
+    };
+    const footnote = block.facets[0]?.features.find((feature) =>
+      String(feature.$type).endsWith("#footnote"),
+    );
+    expect(footnote).toMatchObject({
+      $type: "pub.leaflet.richtext.facet#footnote",
+      footnoteId: "1",
+    });
+    expect(result.lossless).toBe(true);
+  });
+
+  it("reports markdown footnotes as lost when the target has none", () => {
+    const result = convert(
+      markpubContent("A claim[^1].\n\n[^1]: The evidence."),
+      "pckt",
+    );
+    expect(codes(result)).toContain("footnotes-unsupported");
+    expect(result.lossless).toBe(false);
+  });
+});
+
 describe("markpub → block formats", () => {
   it("parses markdown back into pckt blocks", () => {
     const result = convert(

@@ -99,7 +99,13 @@ function renderBlock(node: BlockNode, ctx: RenderContext): Renderable {
     }
     case "callout": {
       return shared.callout(
-        { emoji: node.emoji, color: node.color },
+        {
+          emoji: node.emoji,
+          color: node.color,
+          kind: node.kind,
+          title: node.title,
+          fold: node.fold,
+        },
         facet(node.text, ctx),
       );
     }

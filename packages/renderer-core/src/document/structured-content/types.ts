@@ -1,3 +1,5 @@
+import type { CalloutKind } from "./callouts.js";
+
 /** Normalized rich-text paragraph shared by block-based content formats. */
 export interface StructuredText {
   plaintext: string;
@@ -32,6 +34,10 @@ export type StructuredRenderableBlock =
       text: StructuredText;
       emoji?: string;
       color?: string;
+      /** Normalized visual family for `[!TYPE]` callouts. */
+      calloutKind?: CalloutKind;
+      title?: string;
+      fold?: "open" | "closed";
     }
   | { kind: "horizontalRule" }
   | { kind: "bulletList"; items: Array<StructuredListItem> }

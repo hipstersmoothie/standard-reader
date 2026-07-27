@@ -102,6 +102,64 @@ describe("buildRenderTree — markdown", () => {
     expect(code.code).toBe("const x = 1;");
   });
 
+  it("reads a [!TYPE] blockquote as a callout", () => {
+    const tree = build(markdownDoc("> [!NOTE]\n> Something worth knowing."));
+    const callout = tree.children[0] as Extract<BlockNode, { type: "callout" }>;
+    expect(callout.type).toBe("callout");
+    expect(callout.kind).toBe("note");
+    expect(callout.text.plaintext).toBe("Something worth knowing.");
+  });
+
+  it("normalizes callout aliases and reads the fold and title", () => {
+    const tree = build(
+      markdownDoc("> [!caution]- Heads up\n> Body here.\n>\n> More body."),
+    );
+    const callout = tree.children[0] as Extract<BlockNode, { type: "callout" }>;
+    // `caution` renders red on GitHub, so it maps to the danger family.
+    expect(callout.kind).toBe("danger");
+    expect(callout.title).toBe("Heads up");
+    expect(callout.fold).toBe("closed");
+    expect(callout.text.plaintext).toBe("Body here.\nMore body.");
+  });
+
+  it("leaves an ordinary blockquote alone", () => {
+    const tree = build(markdownDoc("> Just a quote."));
+    expect(tree.children.map(kinds)).toEqual(["blockquote"]);
+  });
+
+  it("collects GFM footnotes and numbers them by first reference", () => {
+    const tree = build(
+      markdownDoc(
+        "A claim[^b] and another[^a].\n\n[^a]: Second note.\n[^b]: First note.",
+      ),
+    );
+
+    // Numbered by the order a reader meets them, not by definition order.
+    expect(tree.footnotes).toEqual([
+      { id: "b", number: 1, text: { plaintext: "First note." } },
+      { id: "a", number: 2, text: { plaintext: "Second note." } },
+    ]);
+    expect(tree.footnoteNumbers.get("b")).toBe(1);
+
+    const paragraph = tree.children[0] as Extract<
+      BlockNode,
+      { type: "paragraph" }
+    >;
+    const inline = segmentInline(paragraph.text, tree.footnoteNumbers);
+    expect(inline.filter((node) => node.type === "footnoteRef")).toEqual([
+      { type: "footnoteRef", footnoteId: "b", number: 1 },
+      { type: "footnoteRef", footnoteId: "a", number: 2 },
+    ]);
+  });
+
+  it("drops a footnote definition nothing refers to", () => {
+    const tree = build(
+      markdownDoc("Body text.\n\n[^orphan]: Nobody cites me."),
+    );
+    expect(tree.footnotes).toEqual([]);
+    expect(tree.children.map(kinds)).toEqual(["paragraph"]);
+  });
+
   it("keeps a raw HTML block instead of deleting it", () => {
     // Previously dropped outright, which quietly removed real content from a
     // document. Rendering it is the host's call; carrying it is not.

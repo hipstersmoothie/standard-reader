@@ -276,6 +276,15 @@ function blockToMarkdown(ctx: Ctx, node: BlockNode): string | null {
     }
     case "callout": {
       const body = richTextToMarkdown(node.text, ctx);
+      const lines = body.split("\n").map((line) => `> ${line}`);
+      // A callout that came from `[!TYPE]` goes back out as one, so the marker
+      // (and its title and fold) survives the round trip intact.
+      if (node.kind) {
+        const fold =
+          node.fold === "open" ? "+" : node.fold === "closed" ? "-" : "";
+        const title = node.title ? ` ${node.title}` : "";
+        return `> [!${node.kind.toUpperCase()}]${fold}${title}\n${lines.join("\n")}`;
+      }
       return `> ${node.emoji ? `${node.emoji} ` : ""}${body}`;
     }
     case "horizontalRule":

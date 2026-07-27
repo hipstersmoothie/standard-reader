@@ -1,5 +1,6 @@
 import type {
   AspectRatio,
+  CalloutKind,
   CollectionImage,
 } from "@standard-reader/renderer-core";
 import type { TemplateResult, nothing } from "lit";
@@ -60,7 +61,14 @@ export interface LitSharedComponents extends LitInlineComponents {
   heading: (props: { level: number }, children: Renderable) => Renderable;
   blockquote: (children: Renderable) => Renderable;
   callout: (
-    props: { emoji?: string; color?: string },
+    props: {
+      emoji?: string;
+      color?: string;
+      /** Normalized visual family for a `[!TYPE]` callout. */
+      kind?: CalloutKind;
+      title?: string;
+      fold?: "open" | "closed";
+    },
     children: Renderable,
   ) => Renderable;
   horizontalRule: () => Renderable;

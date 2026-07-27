@@ -52,7 +52,17 @@ export { offprintBlocks } from "./offprint/blocks.js";
 export { OFFPRINT_CONTENT } from "./offprint/types.js";
 
 export {
+  calloutKindForType,
+  parseCalloutMarker,
+} from "./document/structured-content/callouts.js";
+export type {
+  CalloutKind,
+  CalloutMarker,
+} from "./document/structured-content/callouts.js";
+
+export {
   structuredFormatBlocks,
+  structuredFormatDocument,
   STRUCTURED_BLOCK_FORMATS,
   isStructuredBlockFormat,
   leafletDocumentContent,

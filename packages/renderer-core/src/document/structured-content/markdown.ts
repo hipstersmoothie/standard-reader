@@ -28,6 +28,7 @@ import { math } from "micromark-extension-math";
 
 import { isRecord } from "../../internal.js";
 import { utf8ByteLength } from "../../leaflet/utf8.js";
+import { parseCalloutMarker } from "./callouts.js";
 import { mergeTextRuns, syntheticFacet } from "./text-runs.js";
 import type {
   StructuredListItem,
@@ -101,6 +102,8 @@ interface InlineRun {
   /** Facet suffix kinds (`bold`, `italic`, `code`, `strikethrough`). */
   kinds: Array<string>;
   link?: string;
+  /** Identifier of a footnote referenced immediately after this run. */
+  footnoteId?: string;
 }
 
 /** Flatten nested phrasing content into styled runs, accumulating marks. */
@@ -152,6 +155,15 @@ function collectRuns(
         if (node.alt?.trim()) out.push({ text: node.alt, kinds, link });
         break;
       }
+      case "footnoteReference": {
+        // A footnote facet spans the text it annotates — the same shape Leaflet
+        // uses — so the marker attaches to the run just before it. A reference
+        // with no preceding text has nothing to span; the note still renders at
+        // the end of the document, it just gets no inline marker.
+        const previous = out.at(-1);
+        if (previous && previous.text) previous.footnoteId = node.identifier;
+        break;
+      }
       default: {
         // image (inline), html, footnoteReference, etc. carry no plain body
         // we can faithfully inline — skip rather than emit noise.
@@ -171,12 +183,22 @@ function inlineText(nodes: Array<PhrasingContent>): StructuredText {
   for (const run of runs) {
     const byteStart = utf8ByteLength(plaintext);
     plaintext += run.text;
-    const facet = syntheticFacet(
-      byteStart,
-      utf8ByteLength(plaintext),
-      run.kinds,
-      run.link,
-    );
+    const byteEnd = utf8ByteLength(plaintext);
+    const facet = syntheticFacet(byteStart, byteEnd, run.kinds, run.link);
+
+    if (run.footnoteId && byteEnd > byteStart) {
+      const feature = {
+        $type: "site.standard.richtext.facet#footnote",
+        footnoteId: run.footnoteId,
+      };
+      if (facet) {
+        (facet.features as Array<unknown>).push(feature);
+        facets.push(facet);
+      } else {
+        facets.push({ features: [feature], index: { byteEnd, byteStart } });
+      }
+      continue;
+    }
     if (facet) facets.push(facet);
   }
   return facets.length > 0 ? { facets, plaintext } : { plaintext };
@@ -267,6 +289,55 @@ function mapList(node: {
     : { items, kind: "bulletList" };
 }
 
+/**
+ * A blockquote opening with `[!TYPE]` is a callout, not a quote.
+ *
+ * The marker is sliced off the first paragraph and the remaining paragraphs are
+ * joined, because the callout node holds a single run of text — the same shape
+ * Offprint's callout block uses.
+ */
+function mapCallout(node: {
+  children: Array<RootContent>;
+}): StructuredRenderableBlock | null {
+  const [first, ...rest] = node.children;
+  if (first?.type !== "paragraph") return null;
+  const [lead] = first.children;
+  if (lead?.type !== "text") return null;
+
+  const marker = parseCalloutMarker(lead.value);
+  if (!marker) return null;
+
+  // Re-emit the first paragraph without its marker line.
+  const body: Array<PhrasingContent> = [
+    { type: "text", value: lead.value.slice(marker.matchLength) },
+    ...first.children.slice(1),
+  ];
+
+  const runs = [inlineText(body)].filter((run) => run.plaintext.trim());
+  for (const child of rest) {
+    if (child.type !== "paragraph") continue;
+    const run = inlineText(child.children);
+    if (run.plaintext.trim()) runs.push(run);
+  }
+
+  const text =
+    runs.length === 0
+      ? { plaintext: "" }
+      : mergeTextRuns(
+          runs.flatMap((run, index) =>
+            index === 0 ? [run] : [{ plaintext: "\n" }, run],
+          ),
+        );
+
+  return {
+    calloutKind: marker.kind,
+    kind: "callout",
+    text,
+    ...(marker.title ? { title: marker.title } : {}),
+    ...(marker.fold ? { fold: marker.fold } : {}),
+  };
+}
+
 function mapTable(rows: Array<MdTableRow>): StructuredRenderableBlock | null {
   const mapped = rows.map((row, rowIndex) =>
     row.children.map(
@@ -330,6 +401,8 @@ function mapBlock(node: RootContent): Array<StructuredRenderableBlock> {
         : [];
     }
     case "blockquote": {
+      const callout = mapCallout(node);
+      if (callout) return [callout];
       const blocks = node.children.flatMap(mapBlock);
       return blocks.length > 0 ? [{ blocks, kind: "blockquote" }] : [];
     }
@@ -363,6 +436,10 @@ function mapBlock(node: RootContent): Array<StructuredRenderableBlock> {
       const table = mapTable(node.children);
       return table ? [table] : [];
     }
+    case "footnoteDefinition": {
+      // Collected by `collectFootnotes` and rendered as an endnote instead.
+      return [];
+    }
     case "image": {
       return [
         { alt: node.alt ?? undefined, externalSrc: node.url, kind: "image" },
@@ -385,16 +462,95 @@ export type MarkdownFlavor = "gfm" | "commonmark";
  * (Markpub strips front matter and applies facets) go through here rather than
  * {@link markdownBlocks}.
  */
+/**
+ * A parsed markdown body: its blocks, plus any GFM footnotes.
+ *
+ * Footnotes need their own channel because they are not blocks — they are
+ * endnotes referenced from inline text, and the render tree models them that
+ * way (`DocumentTree.footnotes` + `footnoteNumbers`).
+ */
+export interface MarkdownDocument {
+  blocks: Array<StructuredRenderableBlock>;
+  footnotes: Array<{ id: string; text: StructuredText }>;
+}
+
+/** Recursively find footnote references and definitions in document order. */
+function collectFootnotes(tree: Root): MarkdownDocument["footnotes"] {
+  const order: Array<string> = [];
+  const seen = new Set<string>();
+  const definitions = new Map<string, Array<RootContent>>();
+
+  const visit = (nodes: Array<RootContent | PhrasingContent>) => {
+    for (const node of nodes) {
+      if (node.type === "footnoteReference") {
+        if (!seen.has(node.identifier)) {
+          seen.add(node.identifier);
+          order.push(node.identifier);
+        }
+        continue;
+      }
+      if (node.type === "footnoteDefinition") {
+        definitions.set(node.identifier, node.children);
+        // Visit the body too: a footnote may reference another footnote.
+        visit(node.children);
+        continue;
+      }
+      const children = (node as { children?: Array<RootContent> }).children;
+      if (Array.isArray(children)) visit(children);
+    }
+  };
+  visit(tree.children);
+
+  // Numbered by first reference, which is the order a reader meets them.
+  // A definition nothing refers to is dropped rather than dangling.
+  return order.flatMap((id) => {
+    const body = definitions.get(id);
+    if (!body) return [];
+    const runs = body.flatMap((child) =>
+      child.type === "paragraph"
+        ? [inlineText(child.children)].filter((run) => run.plaintext.trim())
+        : [],
+    );
+    if (runs.length === 0) return [];
+    const text =
+      runs.length === 1 && runs[0]
+        ? runs[0]
+        : mergeTextRuns(
+            runs.flatMap((run, index) =>
+              index === 0 ? [run] : [{ plaintext: "\n" }, run],
+            ),
+          );
+    return [{ id, text }];
+  });
+}
+
+/** Parse markdown into blocks *and* footnotes. */
+export function markdownDocumentFromText(
+  text: string,
+  flavor: MarkdownFlavor = "gfm",
+): MarkdownDocument | null {
+  const body = text.trim();
+  if (!body) return null;
+  const tree = parseMarkdown(body, flavor);
+  const blocks = tree.children.flatMap(mapBlock);
+  if (blocks.length === 0) return null;
+  return { blocks, footnotes: collectFootnotes(tree) };
+}
+
 export function markdownBlocksFromText(
   text: string,
   flavor: MarkdownFlavor = "gfm",
 ): Array<StructuredRenderableBlock> | null {
-  const body = text.trim();
-  if (!body) return null;
-  // Math is its own extension, not part of GFM, so it applies to both flavors.
-  // Single-dollar inline math stays enabled to match how these documents are
-  // rendered today; it is the reason a bare `$5 … $10` can read as math.
-  const tree: Root = fromMarkdown(
+  return markdownDocumentFromText(text, flavor)?.blocks ?? null;
+}
+
+/**
+ * Math is its own extension, not part of GFM, so it applies to both flavors.
+ * Single-dollar inline math stays enabled to match how these documents render
+ * today; it is the reason a bare `$5 … $10` can read as math.
+ */
+function parseMarkdown(body: string, flavor: MarkdownFlavor): Root {
+  return fromMarkdown(
     body,
     flavor === "commonmark"
       ? { extensions: [math()], mdastExtensions: [mathFromMarkdown()] }
@@ -403,8 +559,6 @@ export function markdownBlocksFromText(
           mdastExtensions: [gfmFromMarkdown(), mathFromMarkdown()],
         },
   );
-  const blocks = tree.children.flatMap(mapBlock);
-  return blocks.length > 0 ? blocks : null;
 }
 
 /**

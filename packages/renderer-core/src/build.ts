@@ -1,7 +1,7 @@
 import {
   LEAFLET_DOCUMENT_FORMAT,
   leafletDocumentContent,
-  structuredFormatBlocks,
+  structuredFormatDocument,
 } from "./document/content-formats.js";
 import {
   structuredImageAspectRatio,
@@ -144,12 +144,22 @@ export function buildRenderTree(
       return node ? [node] : [];
     });
   } else {
-    const structured: Array<StructuredRenderableBlock> | null =
+    const document =
       format === OFFPRINT_CONTENT
-        ? offprintBlocks(content)
-        : structuredFormatBlocks(content, format);
-    if (!structured) return null;
-    children = structured.flatMap((block) => {
+        ? { blocks: offprintBlocks(content), footnotes: [] }
+        : structuredFormatDocument(content, format);
+    if (!document) return null;
+
+    // Markdown footnotes arrive in first-reference order, so numbering them is
+    // just their position; every other structured format returns none.
+    const numbers = new Map<string, number>();
+    footnotes = document.footnotes.map((note, index) => {
+      numbers.set(note.id, index + 1);
+      return { id: note.id, number: index + 1, text: note.text };
+    });
+    footnoteNumbers = numbers;
+
+    children = document.blocks.flatMap((block) => {
       const node = structuredToNode(block, ctx);
       return node ? [node] : [];
     });
@@ -716,6 +726,9 @@ function structuredToNode(
         text: block.text,
         emoji: block.emoji,
         color: block.color,
+        kind: block.calloutKind,
+        title: block.title,
+        fold: block.fold,
       };
     }
     case "horizontalRule": {

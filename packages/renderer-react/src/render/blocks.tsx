@@ -94,7 +94,13 @@ function RenderBlock({ node }: { node: BlockNode }) {
     }
     case "callout": {
       return (
-        <shared.Callout emoji={node.emoji} color={node.color}>
+        <shared.Callout
+          emoji={node.emoji}
+          color={node.color}
+          kind={node.kind}
+          title={node.title}
+          fold={node.fold}
+        >
           <shared.FacetText
             plaintext={node.text.plaintext}
             facets={node.text.facets}

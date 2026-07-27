@@ -12,6 +12,7 @@
  * tree of marks, links, mentions and footnote references.
  */
 
+import type { CalloutKind } from "./document/structured-content/callouts.js";
 import type { AspectRatio } from "./types.js";
 
 /** A run of rich text: plaintext plus byte-indexed AT-Proto facets. */
@@ -99,7 +100,18 @@ export type BlockNode =
   | { type: "paragraph"; text: RichText; dropCap: boolean }
   | { type: "heading"; level: number; text: RichText }
   | { type: "blockquote"; paragraphs: Array<RichText> }
-  | { type: "callout"; text: RichText; emoji?: string; color?: string }
+  | {
+      type: "callout";
+      text: RichText;
+      emoji?: string;
+      color?: string;
+      /** Normalized visual family (`note`, `warning`, …) for `[!TYPE]` callouts. */
+      kind?: CalloutKind;
+      /** Author-supplied title from the marker line. */
+      title?: string;
+      /** Set only when the callout was marked collapsible. */
+      fold?: "open" | "closed";
+    }
   | { type: "horizontalRule" }
   | { type: "bulletList"; items: Array<ListItem> }
   | { type: "orderedList"; start?: number; items: Array<ListItem> }

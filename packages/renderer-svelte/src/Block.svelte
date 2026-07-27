@@ -40,6 +40,9 @@
   {#if s.callout}{@render s.callout({
       emoji: node.emoji,
       color: node.color,
+      kind: node.kind,
+      title: node.title,
+      fold: node.fold,
       children: body,
     })}{:else}<aside role="note"
       >{#if node.emoji}<span aria-hidden="true">{node.emoji} </span>{/if}{@render body()}</aside

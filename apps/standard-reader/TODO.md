@@ -1064,17 +1064,13 @@ Re-emit a document's content into another format by running the renderer's norma
       parser to match what the app already shows. Landed so far: nested lists, raw HTML (a new
       `html` block node, rendered by nothing by default so sanitization stays the host's job),
       display math (`micromark-extension-math`), and inline images (the paragraph splits around
-      them instead of dropping them). Still missing before the swap is safe:
-      - [ ] **Callouts** — the parser reads `> [!NOTE]` as a plain blockquote. The `callout` node
-            has `emoji`/`color` but not the `kind` / `title` / `fold` the app's `Callout` component
-            takes (see `src/lib/markdown/callouts.ts`), so the node and all six renderers need
-            those fields threaded through.
-      - [ ] **GFM footnotes** — references and definitions are both dropped. `DocumentTree` already
-            carries `footnotes` + `footnoteNumbers` and `segmentInline` already emits `footnoteRef`
-            (Leaflet uses both), but the structured parser has no channel to return footnotes
-            through, so `markdownBlocks` needs a richer return shape.
-      - [ ] **Inline math** — kept as its `$…$` source, since `InlineNode` has no math variant.
-      - [ ] **Inline HTML** — tags are stripped and the text kept (`<mark>x</mark>` → `x`).
+      them instead of dropping them). Still missing before the swap is safe: - [ ] **Callouts** — the parser reads `> [!NOTE]` as a plain blockquote. The `callout` node
+      has `emoji`/`color` but not the `kind` / `title` / `fold` the app's `Callout` component
+      takes (see `src/lib/markdown/callouts.ts`), so the node and all six renderers need
+      those fields threaded through. - [ ] **GFM footnotes** — references and definitions are both dropped. `DocumentTree` already
+      carries `footnotes` + `footnoteNumbers` and `segmentInline` already emits `footnoteRef`
+      (Leaflet uses both), but the structured parser has no channel to return footnotes
+      through, so `markdownBlocks` needs a richer return shape. - [ ] **Inline math** — kept as its `$…$` source, since `InlineNode` has no math variant. - [ ] **Inline HTML** — tags are stripped and the text kept (`<mark>x</mark>` → `x`).
 - [ ] **Convert a single record from the app** — the reading client stays read-first, but an
       author viewing their own document could be offered the same conversion inline. Depends on
       write scopes for `site.standard.document`.

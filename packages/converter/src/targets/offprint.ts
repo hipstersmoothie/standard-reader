@@ -166,6 +166,16 @@ function emitBlock(ctx: Ctx, node: BlockNode): Array<Block> {
       ];
     }
     case "callout": {
+      if (node.kind || node.title) {
+        noteDropped(
+          ctx,
+          node,
+          ctx.blockIndex,
+          "Offprint callouts carry an emoji and a colour, not a `[!TYPE]` " +
+            "marker with a title",
+          "the callout is kept; its type and title are not",
+        );
+      }
       return [
         compact({
           $type: BLOCK.callout,
