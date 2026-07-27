@@ -45,11 +45,7 @@ import { Flex } from "../../design-system/flex";
 import { IconButton } from "../../design-system/icon-button";
 import { Skeleton } from "../../design-system/skeleton";
 import { animationDuration } from "../../design-system/theme/animations.stylex";
-import {
-  criticalColor,
-  primaryColor,
-  uiColor,
-} from "../../design-system/theme/color.stylex";
+import { primaryColor, uiColor } from "../../design-system/theme/color.stylex";
 import { radius } from "../../design-system/theme/radius.stylex";
 import { shadow } from "../../design-system/theme/shadow.stylex";
 import {
@@ -170,12 +166,11 @@ const styles = stylex.create({
     fontSize: fontSize.xs,
     fontWeight: fontWeight.medium,
   },
-  // A quiet tint on the heart so the "Recommended by" eyebrow reads as a
-  // recommendation at a glance — noticeable, but the text stays muted so it
-  // never competes with the title.
+  // The heart inherits the eyebrow's muted text color — the red tint is
+  // reserved for the like count's filled heart (the viewer's own recommend),
+  // so a followed user's recommendation never reads as your own.
   recommendedByHeart: {
     alignItems: "center",
-    color: criticalColor.solid1,
     display: "inline-flex",
     flexShrink: 0,
   },
@@ -1035,8 +1030,8 @@ function hasRecommendedByLine(article: ArticleCard): boolean {
 /**
  * Recommend attribution shown above the byline on document items: the followed
  * users who recommended it, collapsed into one line ("@handle and N others"),
- * with a red heart marking it as a recommendation at a glance. The viewer's own
- * recommend is *not* shown here — it fills the heart on the card's like count
+ * with a heart in the eyebrow's own muted color. The viewer's own recommend is
+ * *not* shown here — it fills (and tints) the heart on the card's like count
  * instead (see `LikeCount`).
  */
 function RecommendedByLine({ article }: { article: ArticleCard }) {
