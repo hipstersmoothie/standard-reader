@@ -1,0 +1,328 @@
+"use client";
+
+import { Trans, useLingui } from "@lingui/react/macro";
+import {
+  AlertDialog,
+  AlertDialogActionButton,
+  AlertDialogCancelButton,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+} from "@standard-reader/design-system/alert-dialog";
+import { ButtonGroup } from "@standard-reader/design-system/button-group";
+import { IconButton } from "@standard-reader/design-system/icon-button";
+import {
+  Menu,
+  MenuItem,
+  MenuSeparator,
+  SubMenu,
+} from "@standard-reader/design-system/menu";
+import { primaryColor } from "@standard-reader/design-system/theme/color.stylex";
+import { breakpoints } from "@standard-reader/design-system/theme/media-queries.stylex";
+import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
+import * as stylex from "@stylexjs/stylex";
+import { useQuery } from "@tanstack/react-query";
+import {
+  CheckCheck,
+  ChevronDown,
+  ExternalLink,
+  ListPlus,
+  Rss,
+} from "lucide-react";
+import { useEffect, useState } from "react";
+import type { Key } from "react-aria-components";
+
+import { MenuItemLink } from "#/components/router-links";
+import type {
+  PublicationDocumentFilter,
+  PublicationEmbedMeta,
+} from "#/integrations/tanstack-query/api-publication.functions";
+import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
+import { useLoginSearch } from "#/utils/use-login-search";
+
+import type { PublicationCard } from "../../integrations/tanstack-query/api-shapes";
+import { AddToListModal } from "./add-to-list-modal";
+import { FollowButton } from "./cards";
+import { RssFeedDialog } from "./rss-feed-button";
+import { ShareMenuItems, useShareActions } from "./share-menu";
+
+const MENU_ICON = 14;
+
+const styles = stylex.create({
+  /**
+   * On desktop the group sits at the end of the hero's top row; on mobile it
+   * wraps onto its own full-width line under the publication name.
+   */
+  group: {
+    flexBasis: { default: "100%", [breakpoints.sm]: "auto" },
+    flexShrink: 0,
+    marginInlineStart: { default: null, [breakpoints.sm]: "auto" },
+    paddingTop: { default: null, [breakpoints.sm]: spacing["1"] },
+  },
+  /**
+   * The label segment takes the slack, so on mobile it fills the row and the
+   * chevron stays square. On desktop the group is content-width, so there is no
+   * slack to take and this is a no-op.
+   *
+   * `FollowButton` takes a single style, not a list — passing an array here
+   * leaks straight through to the DOM `style` prop, so the accent variant below
+   * repeats these rules rather than layering on top of them.
+   */
+  subscribe: {
+    flexGrow: 1,
+    justifyContent: "center",
+  },
+  /**
+   * Same, plus the seam. Grouped buttons drop their inline-start border, so the
+   * divider is the label segment's inline-end border; on the accent state the
+   * design system paints it in the accent's own border step, which all but
+   * disappears against the accent fill. One step darker keeps the split legible.
+   */
+  subscribeAccent: {
+    borderInlineEndColor: primaryColor.border3,
+    flexGrow: 1,
+    justifyContent: "center",
+  },
+});
+
+export interface PublicationMarkAllRead {
+  isPending: boolean;
+  /** Bumped by the parent when the mutation succeeds so the dialog closes. */
+  closeSignal: number;
+  onConfirm: () => void;
+}
+
+/**
+ * The archive filter, as a submenu off "Filter". Read and unread need the
+ * reader's reading history; without it they'd split the archive into
+ * "everything" and "nothing", so they're dropped rather than shown broken.
+ */
+function FilterSubMenu({
+  filter,
+  trackReading,
+  onFilterChange,
+}: {
+  filter: PublicationDocumentFilter;
+  trackReading: boolean;
+  onFilterChange: (filter: PublicationDocumentFilter) => void;
+}) {
+  const { t } = useLingui();
+  const labels: Record<PublicationDocumentFilter, string> = {
+    all: t`All`,
+    read: t`Read`,
+    recommended: t`Recommended`,
+    unread: t`Unread`,
+  };
+  const options: Array<PublicationDocumentFilter> = trackReading
+    ? ["all", "unread", "read", "recommended"]
+    : ["all", "recommended"];
+
+  return (
+    <SubMenu
+      selectionMode="single"
+      selectedKeys={new Set([filter])}
+      onSelectionChange={(keys) => {
+        const next = [...(keys as Set<Key>)][0];
+        if (next) onFilterChange(next as PublicationDocumentFilter);
+      }}
+      trigger={
+        // No icon: the submenu chevron already marks this row as a branch, and
+        // the row carries a value, which no icon can say better than the value.
+        <MenuItem textValue={t`Filter`}>
+          <Trans>Filter: {labels[filter]}</Trans>
+        </MenuItem>
+      }
+    >
+      {options.map((option) => (
+        <MenuItem key={option} id={option} textValue={labels[option]}>
+          {labels[option]}
+        </MenuItem>
+      ))}
+    </SubMenu>
+  );
+}
+
+/**
+ * The publication hero's action cluster: a split button whose primary segment
+ * subscribes and whose chevron opens every other action for the publication.
+ *
+ * One control instead of six keeps the hero calm and reads the same on mobile,
+ * where the split button goes full-width instead of collapsing into an icon row.
+ * Dialogs are rendered as siblings of the menu (not menu children) so they
+ * survive the menu closing on selection.
+ */
+export function PublicationActions({
+  pub,
+  pageUrl,
+  feedUrl,
+  signedIn,
+  embed,
+  markAllRead,
+  filter,
+  trackReading,
+  onFilterChange,
+}: {
+  pub: PublicationCard;
+  pageUrl: string;
+  feedUrl: string;
+  signedIn: boolean;
+  embed: PublicationEmbedMeta | null | undefined;
+  /** Present only when the reader has unread articles here. */
+  markAllRead: PublicationMarkAllRead | null;
+  filter: PublicationDocumentFilter;
+  /** Whether the reader keeps reading history — gates the read/unread filters. */
+  trackReading: boolean;
+  onFilterChange: (filter: PublicationDocumentFilter) => void;
+}) {
+  const { t } = useLingui();
+  const loginSearch = useLoginSearch();
+  const share = useShareActions({ pageUrl, embed: embed ?? undefined });
+  const [listOpen, setListOpen] = useState(false);
+  const [rssOpen, setRssOpen] = useState(false);
+  const [markAllReadOpen, setMarkAllReadOpen] = useState(false);
+
+  const { data: followStatus } = useQuery({
+    ...readerApi.getFollowStatusQueryOptions(pub.uri),
+    enabled: signedIn,
+  });
+  // Both segments share one variant so the split button reads as a single
+  // control. Subscribed is a settled state, so the group goes quiet with it —
+  // as does the signed-out group, whose subscribe is really a login link.
+  const variant =
+    signedIn && !followStatus?.isFollowing ? "primary" : "secondary";
+
+  const markAllReadCloseSignal = markAllRead?.closeSignal;
+  useEffect(() => {
+    setMarkAllReadOpen(false);
+  }, [markAllReadCloseSignal]);
+
+  return (
+    <>
+      <ButtonGroup style={styles.group}>
+        <FollowButton
+          publicationUri={pub.uri}
+          signedIn={signedIn}
+          size="lg"
+          pub={pub}
+          responsive={false}
+          style={
+            variant === "primary" ? styles.subscribeAccent : styles.subscribe
+          }
+        />
+        <Menu
+          placement="bottom end"
+          trigger={
+            <IconButton variant={variant} label={t`More actions`} size="lg">
+              <ChevronDown size={16} />
+            </IconButton>
+          }
+        >
+          {signedIn ? (
+            <MenuItem
+              onPress={() => setListOpen(true)}
+              suffix={<ListPlus size={MENU_ICON} />}
+              textValue={t`Add to list`}
+            >
+              <Trans>Add to list</Trans>
+            </MenuItem>
+          ) : (
+            <MenuItemLink
+              to="/login"
+              search={loginSearch}
+              suffix={<ListPlus size={MENU_ICON} />}
+              textValue={t`Add to list`}
+            >
+              <Trans>Add to list</Trans>
+            </MenuItemLink>
+          )}
+          {markAllRead ? (
+            <MenuItem
+              onPress={() => setMarkAllReadOpen(true)}
+              suffix={<CheckCheck size={MENU_ICON} />}
+              textValue={t`Mark all as read`}
+            >
+              <Trans>Mark all as read</Trans>
+            </MenuItem>
+          ) : null}
+          {signedIn ? (
+            <FilterSubMenu
+              filter={filter}
+              trackReading={trackReading}
+              onFilterChange={onFilterChange}
+            />
+          ) : null}
+
+          <MenuSeparator />
+
+          <ShareMenuItems share={share} />
+
+          <MenuSeparator />
+
+          <MenuItem
+            onPress={() => setRssOpen(true)}
+            suffix={<Rss size={MENU_ICON} />}
+            textValue={t`RSS feed`}
+          >
+            <Trans>RSS feed</Trans>
+          </MenuItem>
+          {pub.url ? (
+            <MenuItem
+              onPress={() => {
+                globalThis.open(pub.url ?? "", "_blank", "noopener,noreferrer");
+              }}
+              suffix={<ExternalLink size={MENU_ICON} />}
+              textValue={t`Visit publication site`}
+            >
+              <Trans>Visit publication site</Trans>
+            </MenuItem>
+          ) : null}
+        </Menu>
+      </ButtonGroup>
+
+      {share.embedDialog}
+
+      <RssFeedDialog
+        name={pub.name}
+        feedUrl={feedUrl}
+        isOpen={rssOpen}
+        onOpenChange={setRssOpen}
+      />
+
+      {signedIn ? (
+        <AddToListModal
+          isOpen={listOpen}
+          onOpenChange={setListOpen}
+          publicationUri={pub.uri}
+        />
+      ) : null}
+
+      {markAllRead ? (
+        <AlertDialog
+          isOpen={markAllReadOpen}
+          onOpenChange={setMarkAllReadOpen}
+          trigger={<span hidden aria-hidden />}
+        >
+          <AlertDialogHeader>
+            <Trans>Mark all as read?</Trans>
+          </AlertDialogHeader>
+          <AlertDialogDescription>
+            <Trans>
+              Every unread article from this publication will be marked read.
+              This can’t be undone.
+            </Trans>
+          </AlertDialogDescription>
+          <AlertDialogFooter>
+            <AlertDialogCancelButton isDisabled={markAllRead.isPending} />
+            <AlertDialogActionButton
+              closeOnPress={false}
+              isPending={markAllRead.isPending}
+              onPress={markAllRead.onConfirm}
+            >
+              <Trans>Mark all as read</Trans>
+            </AlertDialogActionButton>
+          </AlertDialogFooter>
+        </AlertDialog>
+      ) : null}
+    </>
+  );
+}

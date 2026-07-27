@@ -1,0 +1,48 @@
+{
+  "name": "@standard-reader/design-system",
+  "version": "0.1.0",
+  "description": "hip-ui design system (StyleX + react-aria) shared across Standard apps. Ships source; the consuming app compiles StyleX.",
+  "private": true,
+  "type": "module",
+  "sideEffects": true,
+  "exports": {
+    "./theme": "./src/theme/index.ts",
+    "./theme/*": "./src/theme/*",
+    "./context": "./src/context.ts",
+    "./*": "./src/*/index.tsx"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@origin-space/image-cropper": "^0.1.9",
+    "@react-aria/overlays": "^3.32.1",
+    "@react-aria/utils": "^3.34.1",
+    "@react-stately/utils": "^3.12.1",
+    "@react-types/overlays": "^3.10.0",
+    "@stylexjs/stylex": "^0.19.0",
+    "@window-splitter/react": "^1.1.3",
+    "katex": "^0.17.0",
+    "lucide-react": "^0.548.0",
+    "media-chrome": "^4.19.1",
+    "react-aria": "^3.49.0",
+    "react-aria-components": "^1.18.0",
+    "react-markdown": "^10.1.0",
+    "react-stately": "^3.47.0",
+    "rehype-sanitize": "^6.0.0",
+    "remark-gfm": "^4.0.1",
+    "web-haptics": "^0.0.6"
+  },
+  "peerDependencies": {
+    "react": ">=19",
+    "react-dom": ">=19"
+  },
+  "devDependencies": {
+    "@stylexjs/unplugin": "^0.19.0",
+    "@types/node": "^22.19.20",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "vitest": "^4.1.8"
+  }
+}
