@@ -606,6 +606,10 @@ msgstr "Loading publications"
 msgid "{0} min read"
 msgstr "{0} min read"
 
+#: src/components/user-settings-view.tsx
+msgid "Infinite scroll keeps pulling the next page as you reach the end of a list. Load more waits for you to ask."
+msgstr "Infinite scroll keeps pulling the next page as you reach the end of a list. Load more waits for you to ask."
+
 #: src/components/reader/article-view.tsx
 #: src/components/reader/cards.tsx
 msgid "Mark as unread"
@@ -736,6 +740,10 @@ msgstr "You can use any Atmosphere account, including accounts from Bluesky, Tan
 #: src/components/reader/collection-theme-editor.tsx
 msgid "Text on background"
 msgstr "Text on background"
+
+#: src/components/user-settings-view.tsx
+msgid "Hide recommend and comment counts"
+msgstr "Hide recommend and comment counts"
 
 #: src/components/reader/collection-theme-editor.tsx
 msgid "Contrast"
@@ -1456,6 +1464,10 @@ msgstr "Anonymous"
 msgid "The language used for the reader interface. Articles are shown in the language they were written in."
 msgstr "The language used for the reader interface. Articles are shown in the language they were written in."
 
+#: src/components/user-settings-view.tsx
+msgid "Feed"
+msgstr "Feed"
+
 #: src/components/labeler-detail-view.tsx
 msgid "Labeler"
 msgstr "Labeler"
@@ -1707,6 +1719,10 @@ msgstr "Public XRPC queries and procedures for the Standard Reader indexed read-
 #: src/components/reader/collection-theme-editor.tsx
 msgid "Save theme"
 msgstr "Save theme"
+
+#: src/components/user-settings-view.tsx
+msgid "Loading more"
+msgstr "Loading more"
 
 #: src/routes/_layout.discover.tsx
 #: src/routes/_layout.p.$did.$rkey.tsx
@@ -2907,6 +2923,10 @@ msgstr "Dismiss selection"
 msgid "Done reordering"
 msgstr "Done reordering"
 
+#: src/components/user-settings-view.tsx
+msgid "Infinite scroll"
+msgstr "Infinite scroll"
+
 #: src/routes/_layout.latest.tsx
 msgid "Follow a few publications and their latest writing will show up here."
 msgstr "Follow a few publications and their latest writing will show up here."
@@ -3653,6 +3673,10 @@ msgstr "Couldn't resolve that handle."
 #: src/components/reader/atstore-review-prompt.tsx
 msgid "Sharing a review on the <0>ATStore</0> will help both us and other users see what you think about Standard Reader."
 msgstr "Sharing a review on the <0>ATStore</0> will help both us and other users see what you think about Standard Reader."
+
+#: src/components/user-settings-view.tsx
+msgid "When on, the recommend and Bluesky discussion counts are hidden from article cards, lists, and bylines. You can still recommend an article — only the numbers go away."
+msgstr "When on, the recommend and Bluesky discussion counts are hidden from article cards, lists, and bylines. You can still recommend an article — only the numbers go away."
 
 #: src/components/reader/text-selection-toolbar.tsx
 msgid "Listen from here"
@@ -5033,6 +5057,11 @@ msgstr "Your accent sits close to the paper in tone — it stays exactly as you 
 #: src/components/reader/about-view.tsx
 msgid "Save from anywhere you browse"
 msgstr "Save from anywhere you browse"
+
+#: src/components/reader/feed-load-more.tsx
+#: src/components/user-settings-view.tsx
+msgid "Load more"
+msgstr "Load more"
 
 #: src/components/reader/friend-publishers.tsx
 #~ msgid "Loading"

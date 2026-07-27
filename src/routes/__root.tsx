@@ -211,6 +211,18 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       user.getUsePublicationThemePreferenceQueryOptions.queryKey,
       bootstrap.usePublicationTheme,
     );
+    // Seeded so article cards paint their engagement counts (or don't) on the
+    // first pass — a later client query would visibly pop the meta line — and
+    // so a "Load more" reader never sees the infinite-scroll sentinel fire once
+    // before the preference lands.
+    context.queryClient.setQueryData(
+      user.getHideFeedMetricsPreferenceQueryOptions.queryKey,
+      bootstrap.hideFeedMetrics,
+    );
+    context.queryClient.setQueryData(
+      user.getFeedPaginationPreferenceQueryOptions.queryKey,
+      bootstrap.feedPagination,
+    );
     if (bootstrap.shell) {
       context.queryClient.setQueryData(
         sidebarQueryOptions().queryKey,

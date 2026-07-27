@@ -28,6 +28,7 @@ import { mcpApi } from "#/integrations/tanstack-query/api-mcp.functions";
 import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
 import type { DigestSectionKey } from "#/integrations/tanstack-query/api-user.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
+import { isFeedPagination } from "#/lib/feed-preferences";
 import { DEFAULT_CUSTOM_GOOGLE_FONT } from "#/lib/google-fonts";
 import type { Locale } from "#/lib/locale";
 import { LOCALE_LABELS, LOCALES, PSEUDO_LOCALE, isLocale } from "#/lib/locale";
@@ -46,6 +47,10 @@ import { CUSTOMIZABLE_SIDEBAR_NAV } from "#/lib/sidebar-nav";
 import type { ThemeMode } from "#/lib/theme";
 import { isThemeMode } from "#/lib/theme";
 import { useCountOldPostsAsUnread } from "#/lib/use-count-old-posts-as-unread";
+import {
+  useFeedPagination,
+  useHideFeedMetrics,
+} from "#/lib/use-feed-preferences";
 import { useFormatters } from "#/lib/use-formatters";
 import { useLocale } from "#/lib/use-locale";
 import { useOpenCollectionsInMagazine } from "#/lib/use-open-collections-in-magazine";
@@ -451,6 +456,10 @@ export function UserSettingsView() {
     useCountOldPostsAsUnread();
   const { enabled: usePublicationTheme, setEnabled: setUsePublicationTheme } =
     usePublicationThemePreference();
+  const { hidden: hideFeedMetrics, setHidden: setHideFeedMetrics } =
+    useHideFeedMetrics();
+  const { mode: feedPagination, setMode: setFeedPagination } =
+    useFeedPagination();
 
   const { data: session } = useQuery(user.getSessionQueryOptions);
   const signedIn = Boolean(session?.user);
@@ -731,6 +740,45 @@ export function UserSettingsView() {
               onChange={setCountOldAsUnread}
               aria-label={t`Mark old posts as unread`}
             />
+          </SettingRow>
+        </div>
+      </section>
+
+      <section {...stylex.props(styles.section)}>
+        <h2 {...stylex.props(styles.sectionHeading)}>
+          <Trans>Feed</Trans>
+        </h2>
+        <div {...stylex.props(styles.settingGroup)}>
+          <SettingRow
+            label={t`Hide recommend and comment counts`}
+            description={t`When on, the recommend and Bluesky discussion counts are hidden from article cards, lists, and bylines. You can still recommend an article — only the numbers go away.`}
+          >
+            <Switch
+              isSelected={hideFeedMetrics}
+              onChange={setHideFeedMetrics}
+              aria-label={t`Hide recommend and comment counts`}
+            />
+          </SettingRow>
+          <Separator />
+          <SettingRow
+            label={t`Loading more`}
+            description={t`Infinite scroll keeps pulling the next page as you reach the end of a list. Load more waits for you to ask.`}
+          >
+            <SegmentedControl
+              selectedKeys={new Set([feedPagination])}
+              onSelectionChange={(keys: Set<React.Key> | "all") => {
+                const key = keys === "all" ? undefined : String([...keys][0]);
+                if (isFeedPagination(key)) setFeedPagination(key);
+              }}
+              style={styles.segmentedControl}
+            >
+              <SegmentedControlItem id="infinite">
+                <Trans>Infinite scroll</Trans>
+              </SegmentedControlItem>
+              <SegmentedControlItem id="button">
+                <Trans>Load more</Trans>
+              </SegmentedControlItem>
+            </SegmentedControl>
           </SettingRow>
         </div>
       </section>

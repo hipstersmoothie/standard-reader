@@ -35,6 +35,7 @@ import { useTrackReadingHistory } from "#/lib/use-track-reading-history";
 import { useLoginSearch } from "#/utils/use-login-search";
 
 import { ArticleRow } from "../components/reader/cards";
+import { FeedLoadMore } from "../components/reader/feed-load-more";
 import { Masthead, ReaderContent } from "../components/reader/primitives";
 import {
   applyMarkReadManyOptimisticUpdate,
@@ -42,7 +43,6 @@ import {
   isArticleUnreadForReader,
 } from "../components/reader/read-optimistic";
 import { RssFeedButton } from "../components/reader/rss-feed-button";
-import { useInfiniteScrollSentinel } from "../components/reader/use-infinite-scroll-sentinel";
 import {
   AlertDialog,
   AlertDialogActionButton,
@@ -201,11 +201,6 @@ const styles = stylex.create({
   },
   articleSkeletonFirst: {
     paddingTop: spacing["0"],
-  },
-  loadSentinel: {
-    height: 1,
-    marginTop: spacing["6"],
-    width: "100%",
   },
   endNote: {
     color: uiColor.text1,
@@ -367,12 +362,6 @@ function LatestFeedPanel({
     }
   }, [filter, nextOffset, pageSize]);
 
-  const loadMoreSentinelRef = useInfiniteScrollSentinel(
-    loadMoreFeed,
-    nextOffset != null,
-    nextOffset ?? 0,
-  );
-
   const isTrending = filter === "trending";
   const isNetwork = !signedIn || filter === "all" || isTrending;
 
@@ -467,10 +456,11 @@ function LatestFeedPanel({
         </p>
       ) : (
         <>
-          <div
-            ref={loadMoreSentinelRef}
-            aria-hidden
-            {...stylex.props(styles.loadSentinel)}
+          <FeedLoadMore
+            hasMore
+            isLoading={loadingMore}
+            onLoadMore={() => void loadMoreFeed()}
+            itemCount={items.length}
           />
           {loadingMore ? <LatestFeedSkeleton rows={3} /> : null}
         </>

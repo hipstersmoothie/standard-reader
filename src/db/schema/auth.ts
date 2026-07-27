@@ -72,6 +72,14 @@ export const user = pgTable("user", {
    * theme colors keep the editorial theme either way. See
    * `src/lib/publication-theme-preference.ts`. */
   usePublicationTheme: boolean("use_publication_theme"),
+  /** `true` hides the recommend + comment counts wherever they're shown as a
+   * metric (article cards, rows, the article byline, hover cards, the recommend
+   * button's count); `null`/`false` = shown (default). The Recommend action
+   * itself is never hidden. See `src/lib/feed-preferences.ts`. */
+  hideFeedMetrics: boolean("hide_feed_metrics"),
+  /** `button` replaces the infinite-scroll sentinel in paginated lists with an
+   * explicit "Load more" button; `null` = `infinite` (default). */
+  feedPagination: text("feed_pagination"),
   /** `network` shows the whole-network home feed; `null` = follows (default). */
   homeScope: text("home_scope"),
   /** Comma-separated author-profile tab ids the owner has hidden from their

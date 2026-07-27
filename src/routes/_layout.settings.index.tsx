@@ -43,6 +43,12 @@ export const Route = createFileRoute("/_layout/settings/")({
       context.queryClient.ensureQueryData(
         user.getUsePublicationThemePreferenceQueryOptions,
       ),
+      context.queryClient.ensureQueryData(
+        user.getHideFeedMetricsPreferenceQueryOptions,
+      ),
+      context.queryClient.ensureQueryData(
+        user.getFeedPaginationPreferenceQueryOptions,
+      ),
       context.queryClient.prefetchQuery(
         googleFontsApi.getGoogleFontFamiliesQueryOptions,
       ),

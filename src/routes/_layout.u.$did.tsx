@@ -13,7 +13,6 @@ import {
   useNavigate,
 } from "@tanstack/react-router";
 import { ExternalLink, ListPlus, Settings } from "lucide-react";
-import type { RefObject } from "react";
 import { useCallback, useRef, useState } from "react";
 import { Link as AriaLink } from "react-aria-components";
 import { z } from "zod";
@@ -46,6 +45,7 @@ import {
 import { AddToListButton } from "../components/reader/add-to-list-button";
 import { AuthorProfileLink } from "../components/reader/author-profile-link";
 import { ArticleRow, PubDirectoryRow } from "../components/reader/cards";
+import { FeedLoadMore } from "../components/reader/feed-load-more";
 import { FollowUserButton } from "../components/reader/follow-user-button";
 import { LinkifiedText } from "../components/reader/linkified-text";
 import {
@@ -58,7 +58,6 @@ import { ProfileTabsSettingsModal } from "../components/reader/profile-tabs-sett
 import { RssFeedButton } from "../components/reader/rss-feed-button";
 import { ShareMenu } from "../components/reader/share-menu";
 import { AuthorSifaResumeChip } from "../components/reader/sifa-resume-chip";
-import { useInfiniteScrollSentinel } from "../components/reader/use-infinite-scroll-sentinel";
 import { Avatar } from "../design-system/avatar";
 import { Badge } from "../design-system/badge";
 import { Button } from "../design-system/button";
@@ -425,11 +424,6 @@ const styles = stylex.create({
     gap: spacing["2"],
     marginTop: spacing["2"],
   },
-  loadSentinel: {
-    height: 1,
-    marginTop: spacing["6"],
-    width: "100%",
-  },
   endNote: {
     color: uiColor.text1,
     fontFamily: fontFamily.serif,
@@ -449,10 +443,8 @@ function authorDisplayName(profile: {
   return null;
 }
 
-function useInfiniteScroll(
-  nextOffset: number | null,
-  loadMore: () => Promise<void>,
-) {
+/** Guards the next-page fetch and tracks its in-flight state for `LoadMoreFooter`. */
+function useLoadMore(nextOffset: number | null, loadMore: () => Promise<void>) {
   const loadingMoreRef = useRef(false);
   const [loadingMore, setLoadingMore] = useState(false);
 
@@ -468,24 +460,18 @@ function useInfiniteScroll(
     }
   }, [loadMore, nextOffset]);
 
-  const sentinelRef = useInfiniteScrollSentinel(
-    load,
-    nextOffset != null,
-    nextOffset ?? 0,
-  );
-
-  return { loadingMore, sentinelRef };
+  return { loadingMore, load };
 }
 
 function LoadMoreFooter({
   nextOffset,
   loadingMore,
-  sentinelRef,
+  onLoadMore,
   showEndNote = false,
 }: {
   nextOffset: number | null;
   loadingMore: boolean;
-  sentinelRef: RefObject<HTMLDivElement | null>;
+  onLoadMore: () => void;
   showEndNote?: boolean;
 }) {
   if (nextOffset == null) {
@@ -498,10 +484,11 @@ function LoadMoreFooter({
 
   return (
     <div>
-      <div
-        ref={sentinelRef}
-        aria-hidden
-        {...stylex.props(styles.loadSentinel)}
+      <FeedLoadMore
+        hasMore
+        isLoading={loadingMore}
+        onLoadMore={onLoadMore}
+        itemCount={nextOffset}
       />
       {loadingMore ? (
         <div {...stylex.props(styles.endNote)}>
@@ -1069,7 +1056,7 @@ function AuthorPublicationsPanel({
     });
     setNextOffset(page.nextOffset);
   }, [did, nextOffset]);
-  const scroll = useInfiniteScroll(nextOffset, loadMore);
+  const scroll = useLoadMore(nextOffset, loadMore);
 
   if (items.length === 0) {
     return (
@@ -1120,7 +1107,7 @@ function AuthorPublicationsPanel({
       <LoadMoreFooter
         nextOffset={nextOffset}
         loadingMore={scroll.loadingMore}
-        sentinelRef={scroll.sentinelRef}
+        onLoadMore={() => void scroll.load()}
       />
     </div>
   );
@@ -1152,7 +1139,7 @@ function AuthorPostsPanel({
     });
     setNextOffset(page.nextOffset);
   }, [did, nextOffset]);
-  const scroll = useInfiniteScroll(nextOffset, loadMore);
+  const scroll = useLoadMore(nextOffset, loadMore);
 
   if (items.length === 0) {
     return (
@@ -1175,7 +1162,7 @@ function AuthorPostsPanel({
       <LoadMoreFooter
         nextOffset={nextOffset}
         loadingMore={scroll.loadingMore}
-        sentinelRef={scroll.sentinelRef}
+        onLoadMore={() => void scroll.load()}
       />
     </div>
   );
@@ -1207,7 +1194,7 @@ function AuthorLikesPanel({
     });
     setNextOffset(page.nextOffset);
   }, [did, nextOffset]);
-  const scroll = useInfiniteScroll(nextOffset, loadMore);
+  const scroll = useLoadMore(nextOffset, loadMore);
 
   if (items.length === 0) {
     return (
@@ -1230,7 +1217,7 @@ function AuthorLikesPanel({
       <LoadMoreFooter
         nextOffset={nextOffset}
         loadingMore={scroll.loadingMore}
-        sentinelRef={scroll.sentinelRef}
+        onLoadMore={() => void scroll.load()}
       />
     </div>
   );
@@ -1259,7 +1246,7 @@ function AuthorSubscriptionsPanel({
     });
     setNextOffset(page.nextOffset);
   }, [did, nextOffset]);
-  const scroll = useInfiniteScroll(nextOffset, loadMore);
+  const scroll = useLoadMore(nextOffset, loadMore);
 
   if (items.length === 0) {
     return (
@@ -1282,7 +1269,7 @@ function AuthorSubscriptionsPanel({
       <LoadMoreFooter
         nextOffset={nextOffset}
         loadingMore={scroll.loadingMore}
-        sentinelRef={scroll.sentinelRef}
+        onLoadMore={() => void scroll.load()}
       />
     </div>
   );
@@ -1311,7 +1298,7 @@ function AuthorReadersPanel({
     });
     setNextOffset(page.nextOffset);
   }, [did, nextOffset]);
-  const scroll = useInfiniteScroll(nextOffset, loadMore);
+  const scroll = useLoadMore(nextOffset, loadMore);
 
   if (items.length === 0) {
     return (
@@ -1333,7 +1320,7 @@ function AuthorReadersPanel({
       <LoadMoreFooter
         nextOffset={nextOffset}
         loadingMore={scroll.loadingMore}
-        sentinelRef={scroll.sentinelRef}
+        onLoadMore={() => void scroll.load()}
       />
     </div>
   );

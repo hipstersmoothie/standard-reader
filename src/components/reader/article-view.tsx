@@ -34,6 +34,7 @@ import { user } from "#/integrations/tanstack-query/api-user.functions";
 import { resolveArticleHeroImage } from "#/lib/document/lead-image";
 import { usePageReader } from "#/lib/page-reader/page-reader-context";
 import { publishingPlatform } from "#/lib/publishing-platform";
+import { useFeedMetricsVisible } from "#/lib/use-feed-preferences";
 import { useFormatters } from "#/lib/use-formatters";
 import { useOpenCollectionsInMagazine } from "#/lib/use-open-collections-in-magazine";
 import { useReadingTypography } from "#/lib/use-reading-typography";
@@ -753,7 +754,9 @@ function ArticleLikePrompt({
 }: {
   recommended: boolean;
   onToggle: () => void;
-  recommendCount: number;
+  /** `null` when the reader has hidden engagement counts — the button keeps its
+   * label and stays pressable, it just drops the tally. */
+  recommendCount: number | null;
 }) {
   return (
     <div {...stylex.props(styles.likePrompt)}>
@@ -786,10 +789,14 @@ function ArticleLikePrompt({
             <Trans>Recommend this article</Trans>
           )}
         </span>
-        <span aria-hidden {...stylex.props(styles.likeButtonDivider)} />
-        <span {...stylex.props(styles.likeButtonCount)}>
-          {formatReaders(recommendCount)}
-        </span>
+        {recommendCount == null ? null : (
+          <>
+            <span aria-hidden {...stylex.props(styles.likeButtonDivider)} />
+            <span {...stylex.props(styles.likeButtonCount)}>
+              {formatReaders(recommendCount)}
+            </span>
+          </>
+        )}
       </Button>
     </div>
   );
@@ -960,9 +967,11 @@ function ArticleViewBody({
   } = useArticleBookmark(article.uri, signedIn);
 
   const readStats = formatArticleReadStats(i18n, article.readCount);
+  const metricsVisible = useFeedMetricsVisible();
   // Use the optimistic recommend count so the byline heart fills (and the line
   // appears on a first recommend) the instant the reader taps Recommend.
-  const hasEngagement = recommendCount > 0 || article.commentCount > 0;
+  const hasEngagement =
+    metricsVisible && (recommendCount > 0 || article.commentCount > 0);
   const hero = useMemo(() => resolveArticleHeroImage(article), [article]);
   const [heroLightboxOpen, setHeroLightboxOpen] = useState(false);
   const [heroTransitionActive, setHeroTransitionActive] = useState(false);
@@ -1394,7 +1403,7 @@ function ArticleViewBody({
           <ArticleLikePrompt
             recommended={recommended}
             onToggle={toggleRecommend}
-            recommendCount={recommendCount}
+            recommendCount={metricsVisible ? recommendCount : null}
           />
 
           {pub ? (

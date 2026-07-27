@@ -237,6 +237,24 @@ Sections, top to bottom:
   bottom of the page. The sidebar and mobile bar stay Standard Reader chrome.
   Signed-in only (`user.use_publication_theme`, `null` = off); publications with
   no colors of their own always keep the editorial theme.
+
+- **Feed presentation (preferences):** two settings-page dials under **Feed**,
+  both signed-in only and both seeded through `getShellBootstrap` so the first
+  paint is already correct. **Hide recommend and comment counts**
+  (`user.hide_feed_metrics`, `null` = shown) suppresses the engagement tallies
+  wherever they read as a metric — article cards, result rows, the article
+  byline, mention hover cards, and the count on the end-of-article Recommend
+  button. The Recommend action itself is never hidden; the number is. The gate
+  lives in `LikeCount` / `CommentCount` / `ArticleEngagement`
+  (`#/components/reader/primitives`), and every call site that draws a separator
+  dot around them reads the same `useFeedMetricsVisible()` so the dot leaves with
+  the counts. **Loading more** (`user.feed_pagination`, `null` = `infinite`)
+  chooses between infinite scroll and an explicit **Load more** button. Every
+  paginated list in the app renders one shared `FeedLoadMore`
+  (`#/components/reader/feed-load-more`) in place of a bare sentinel `div`: in
+  `infinite` mode it is the IntersectionObserver probe, in `button` mode it is
+  the button and nothing is observed. Call sites keep their own loading and
+  end-of-list markup.
 - **Publisher-native themes.** `site.standard.theme.basic` is the interop
   baseline (four opaque colors, light only), but records also carry the
   publishing platform's own theme under `theme`, discriminated by `$type`.

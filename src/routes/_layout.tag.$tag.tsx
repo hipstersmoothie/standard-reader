@@ -34,6 +34,7 @@ import {
   PubDirectoryRow,
   PubDirectoryRowSkeleton,
 } from "#/components/reader/cards";
+import { FeedLoadMore } from "#/components/reader/feed-load-more";
 import {
   applyBulkFollowOptimisticUpdate,
   invalidateFollowQueries,
@@ -94,8 +95,6 @@ import { useDelayedLoading } from "#/lib/use-delayed-loading";
 import { useFormatters } from "#/lib/use-formatters";
 import { useTrackReadingHistory } from "#/lib/use-track-reading-history";
 import { useLoginSearch } from "#/utils/use-login-search";
-
-import { useInfiniteScrollSentinel } from "../components/reader/use-infinite-scroll-sentinel";
 
 const PAGE_SIZE = 24;
 /** Ask before bulk-follow when a tag has more than this many unfollowed publications. */
@@ -363,11 +362,6 @@ const styles = stylex.create({
       "@media (min-width: 40rem)": "auto",
     },
   },
-  loadSentinel: {
-    height: 1,
-    marginTop: spacing["6"],
-    width: "100%",
-  },
   endNote: {
     color: uiColor.text1,
     fontFamily: fontFamily.serif,
@@ -574,12 +568,6 @@ function TagArticlesPanel({
     }
   }, [articleSort, nextOffset, tag]);
 
-  const loadMoreSentinelRef = useInfiniteScrollSentinel(
-    loadMore,
-    nextOffset != null,
-    nextOffset ?? 0,
-  );
-
   if (showSkeleton) {
     return <TagArticlesSkeleton />;
   }
@@ -615,10 +603,11 @@ function TagArticlesPanel({
 
       {items.length > 0 ? (
         <>
-          <div
-            ref={loadMoreSentinelRef}
-            aria-hidden
-            {...stylex.props(styles.loadSentinel)}
+          <FeedLoadMore
+            hasMore={nextOffset != null}
+            isLoading={loadingMore}
+            onLoadMore={() => void loadMore()}
+            itemCount={items.length}
           />
           {loadingMore ? (
             <TagArticlesSkeleton rows={LOAD_MORE_SKELETON_COUNT} />
@@ -734,12 +723,6 @@ function TagPublicationsPanel({
     }
   }, [nextOffset, sort, tag]);
 
-  const loadMoreSentinelRef = useInfiniteScrollSentinel(
-    loadMore,
-    nextOffset != null,
-    nextOffset ?? 0,
-  );
-
   return (
     <>
       <SectionHead
@@ -809,10 +792,11 @@ function TagPublicationsPanel({
 
       {directoryItems.length > 0 && !isDirectoryLoading ? (
         <>
-          <div
-            ref={loadMoreSentinelRef}
-            aria-hidden
-            {...stylex.props(styles.loadSentinel)}
+          <FeedLoadMore
+            hasMore={nextOffset != null}
+            isLoading={loadingMore}
+            onLoadMore={() => void loadMore()}
+            itemCount={directoryItems.length}
           />
           {loadingMore ? (
             <TagDirectorySkeleton

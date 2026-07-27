@@ -29,12 +29,12 @@ import {
   PubDirectoryRow,
   PubDirectoryRowSkeleton,
 } from "../components/reader/cards";
+import { FeedLoadMore } from "../components/reader/feed-load-more";
 import {
   FriendPublishersDegradedNote,
   FriendPublishersSummary,
 } from "../components/reader/friend-publishers";
 import { Masthead, ReaderContent } from "../components/reader/primitives";
-import { useInfiniteScrollSentinel } from "../components/reader/use-infinite-scroll-sentinel";
 import { Flex } from "../design-system/flex";
 import { uiColor } from "../design-system/theme/color.stylex";
 import { radius } from "../design-system/theme/radius.stylex";
@@ -143,11 +143,6 @@ const styles = stylex.create({
     maxWidth: "60ch",
     overflowWrap: "anywhere",
   },
-  loadSentinel: {
-    height: 1,
-    marginTop: spacing["6"],
-    width: "100%",
-  },
   loadingNote: {
     color: uiColor.text1,
     fontFamily: fontFamily.sans,
@@ -229,12 +224,6 @@ function FriendsPage() {
       void fetchNextPage();
     }
   }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
-
-  const loadMoreRef = useInfiniteScrollSentinel(
-    loadMore,
-    hasNextPage,
-    publications.length,
-  );
 
   const onViewChange = (key: React.Key) => {
     void navigate({ search: { view: key as FriendsView }, replace: true });
@@ -335,13 +324,12 @@ function FriendsPage() {
                   <Trans>Loading…</Trans>
                 </p>
               ) : null}
-              {hasNextPage ? (
-                <div
-                  ref={loadMoreRef}
-                  aria-hidden
-                  {...stylex.props(styles.loadSentinel)}
-                />
-              ) : null}
+              <FeedLoadMore
+                hasMore={hasNextPage}
+                isLoading={isFetchingNextPage}
+                onLoadMore={loadMore}
+                itemCount={publications.length}
+              />
             </TabPanel>
 
             <TabPanel id="people" style={styles.tabPanel}>
@@ -383,12 +371,6 @@ function FriendPeoplePanel() {
       void fetchNextPage();
     }
   }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
-
-  const loadMoreRef = useInfiniteScrollSentinel(
-    loadMore,
-    hasNextPage,
-    people.length,
-  );
 
   if (!mounted || isPending) {
     return (
@@ -436,13 +418,12 @@ function FriendPeoplePanel() {
           <Trans>Loading…</Trans>
         </p>
       ) : null}
-      {hasNextPage ? (
-        <div
-          ref={loadMoreRef}
-          aria-hidden
-          {...stylex.props(styles.loadSentinel)}
-        />
-      ) : null}
+      <FeedLoadMore
+        hasMore={hasNextPage}
+        isLoading={isFetchingNextPage}
+        onLoadMore={loadMore}
+        itemCount={people.length}
+      />
     </>
   );
 }
@@ -472,12 +453,6 @@ function FriendArticlesPanel() {
       void fetchNextPage();
     }
   }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
-
-  const loadMoreRef = useInfiniteScrollSentinel(
-    loadMore,
-    hasNextPage,
-    items.length,
-  );
 
   if (!mounted || isPending) {
     return (
@@ -529,13 +504,12 @@ function FriendArticlesPanel() {
           <Trans>Loading…</Trans>
         </p>
       ) : null}
-      {hasNextPage ? (
-        <div
-          ref={loadMoreRef}
-          aria-hidden
-          {...stylex.props(styles.loadSentinel)}
-        />
-      ) : null}
+      <FeedLoadMore
+        hasMore={hasNextPage}
+        isLoading={isFetchingNextPage}
+        onLoadMore={loadMore}
+        itemCount={items.length}
+      />
     </>
   );
 }

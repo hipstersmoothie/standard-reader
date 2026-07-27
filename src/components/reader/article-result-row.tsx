@@ -13,6 +13,7 @@ import {
   lineHeight,
 } from "#/design-system/theme/typography.stylex";
 import type { ArticleCard } from "#/integrations/tanstack-query/api-shapes";
+import { useFeedMetricsVisible } from "#/lib/use-feed-preferences";
 import { useFormatters } from "#/lib/use-formatters";
 
 import { formatReadingTime, initials } from "./format";
@@ -169,7 +170,9 @@ function MetaLine({
   article: ArticleCard;
   parts: Array<string>;
 }) {
-  const hasEngagement = article.recommendCount > 0 || article.commentCount > 0;
+  const metricsVisible = useFeedMetricsVisible();
+  const hasEngagement =
+    metricsVisible && (article.recommendCount > 0 || article.commentCount > 0);
   if (parts.length === 0 && !hasEngagement) return null;
 
   return (

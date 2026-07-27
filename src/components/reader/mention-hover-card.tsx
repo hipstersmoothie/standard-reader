@@ -33,6 +33,7 @@ import {
 import { usePopoverStyles } from "#/design-system/theme/usePopoverStyles";
 import { authorApi } from "#/integrations/tanstack-query/api-author.functions";
 import { publicationApi } from "#/integrations/tanstack-query/api-publication.functions";
+import { useFeedMetricsVisible } from "#/lib/use-feed-preferences";
 import { useFormatters } from "#/lib/use-formatters";
 
 import { formatReaders, initials } from "./format";
@@ -426,6 +427,7 @@ export function DocumentHoverCardBody({
   fallbackTitle: string;
 }) {
   const fmt = useFormatters();
+  const metricsVisible = useFeedMetricsVisible();
   const { data: art, isLoading } = useQuery(
     publicationApi.getArticleCardQueryOptions(documentUri),
   );
@@ -476,7 +478,8 @@ export function DocumentHoverCardBody({
           {art?.description ? (
             <p {...stylex.props(styles.desc)}>{art.description}</p>
           ) : null}
-          {metaParts.length > 0 || (art && art.recommendCount > 0) ? (
+          {metaParts.length > 0 ||
+          (metricsVisible && art && art.recommendCount > 0) ? (
             <div {...stylex.props(styles.metaRow)}>
               {art &&
               (art.publicationIconUrl || art.publicationOwnerAvatarUrl) ? (
