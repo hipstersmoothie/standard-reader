@@ -1387,6 +1387,7 @@ msgstr "{count, plural, one {# voto} other {# votos}} — clique para votar"
 msgid "Apps you have connected to Standard Reader through its <0>MCP server</0>. Disconnecting one revokes its access immediately; it can ask to reconnect at any time."
 msgstr ""
 
+#: src/components/reader/publication-actions.tsx
 #: src/routes/_layout.history.tsx
 msgid "Read"
 msgstr "Lido"
@@ -1446,6 +1447,10 @@ msgstr "Ocultar artigos lidos"
 #: src/components/reader/collection-builder.tsx
 msgid "Collection cover"
 msgstr "Capa da coleção"
+
+#: src/components/reader/publication-actions.tsx
+msgid "Visit publication site"
+msgstr ""
 
 #: src/components/reader/terms-view.tsx
 msgid "Attempt to disrupt, overload, or gain unauthorized access to the service, its infrastructure, or other users' accounts."
@@ -1792,6 +1797,7 @@ msgstr "Com tecnologia Standard Reader"
 msgid "Clear selection"
 msgstr "Limpar a seleção"
 
+#: src/components/reader/publication-actions.tsx
 #: src/components/reader/rss-feed-button.tsx
 #: src/routes/_layout.l.$did.$rkey.tsx
 msgid "RSS feed"
@@ -1929,7 +1935,7 @@ msgstr "Inscrevendo-se"
 msgid "Your account"
 msgstr "Sua conta"
 
-#: src/routes/_layout.p.$did.$rkey.tsx
+#: src/components/reader/publication-actions.tsx
 msgid "Every unread article from this publication will be marked read. This can’t be undone."
 msgstr "Todos os artigos não lidos desta publicação serão marcados como lidos. Esta ação não pode ser desfeita."
 
@@ -2141,6 +2147,7 @@ msgstr "Código do link de inscrição"
 
 #: src/components/reader/add-to-list-button.tsx
 #: src/components/reader/add-to-list-modal.tsx
+#: src/components/reader/publication-actions.tsx
 #: src/components/reader/subscriptions-table.tsx
 msgid "Add to list"
 msgstr "Adicionar à lista"
@@ -2488,6 +2495,7 @@ msgid "Author sections"
 msgstr "Seções do autor"
 
 #: src/components/reader/article-view.tsx
+#: src/components/reader/publication-actions.tsx
 #: src/routes/_layout.l.$did.$rkey.tsx
 msgid "More actions"
 msgstr "Mais ações"
@@ -2710,6 +2718,7 @@ msgstr "A gerar áudio… {percent}%"
 msgid "Renderers"
 msgstr "Renderizadores"
 
+#: src/components/reader/publication-actions.tsx
 #: src/components/reader/subscriptions-table.tsx
 #: src/routes/_layout.latest.tsx
 msgid "Unread"
@@ -2833,8 +2842,8 @@ msgstr "Continuar para aprovar"
 msgid "<0>T</0>here is a particular pleasure in reading something that was made to be read, and not to be measured. It asks nothing of you but your attention."
 msgstr "<0>H</0>á um prazer particular em ler algo que foi feito para ser lido, e não para ser medido. Nada pede de si além da sua atenção."
 
+#: src/components/reader/publication-actions.tsx
 #: src/routes/_layout.latest.tsx
-#: src/routes/_layout.p.$did.$rkey.tsx
 msgid "Mark all as read?"
 msgstr "Marcar tudo como lido?"
 
@@ -2970,7 +2979,6 @@ msgstr "Notas de rodapé"
 msgid "Every publication the network knows about — {publicationCount} and counting. Subscribe to the ones worth your mornings."
 msgstr "Todas as publicações que a rede conhece — {publicationCount} e contando. Inscreva-se nas que merecem as suas manhãs."
 
-#: src/components/reader/cards.tsx
 #: src/components/reader/follow-user-button.tsx
 msgid "Follow"
 msgstr "Seguir"
@@ -3047,6 +3055,7 @@ msgid "Keep reading"
 msgstr "Continuar a ler"
 
 #: src/components/reader/discover-topic-filters.tsx
+#: src/components/reader/publication-actions.tsx
 #: src/routes/_layout.discover.tsx
 #: src/routes/_layout.feedback.index.tsx
 #: src/routes/_layout.latest.tsx
@@ -3222,6 +3231,7 @@ msgstr "Fechar revista"
 msgid "Introduce the collection… (markdown supported)"
 msgstr "Apresente a coleção… (com suporte para markdown)"
 
+#: src/components/reader/publication-actions.tsx
 #: src/routes/_layout.feedback.index.tsx
 msgid "Filter"
 msgstr ""
@@ -3302,8 +3312,8 @@ msgstr "Ainda não há publicações com esta etiqueta."
 msgid "The conversation, gathered"
 msgstr "A conversa, reunida"
 
+#: src/components/reader/publication-actions.tsx
 #: src/routes/_layout.latest.tsx
-#: src/routes/_layout.p.$did.$rkey.tsx
 msgid "Mark all as read"
 msgstr "Marcar tudo como lido"
 
@@ -3424,6 +3434,10 @@ msgstr "Inscrições"
 msgid "{0, plural, one {# post} other {{1} posts}}"
 msgstr "{0, plural, one {# publicação} other {{1} publicações}}"
 
+#: src/routes/_layout.p.$did.$rkey.tsx
+msgid "You haven’t read anything here yet."
+msgstr ""
+
 #: src/components/docs/api-docs-intro.tsx
 #: src/components/docs/docs-api-nav.tsx
 msgid "Authentication"
@@ -3487,6 +3501,10 @@ msgstr "(requer {min}:1)"
 #: src/components/user-settings-view.tsx
 msgid "Every read record in your repository will be removed. Articles will appear unread again across the app. This cannot be undone."
 msgstr "Todos os registos de leitura no seu repositório serão removidos. Os artigos voltarão a aparecer como não lidos em toda a aplicação. Esta ação não pode ser desfeita."
+
+#: src/routes/_layout.p.$did.$rkey.tsx
+msgid "You’ve read everything from this publication."
+msgstr ""
 
 #: src/components/appearance-settings.tsx
 msgid "Text, borders and every other step are derived from these two colors."
@@ -3815,6 +3833,11 @@ msgstr "Em execução"
 #: src/components/site-legal-links.tsx
 msgid "Privacy"
 msgstr "Privacidade"
+
+#. placeholder {0}: labels[filter]
+#: src/components/reader/publication-actions.tsx
+msgid "Filter: {0}"
+msgstr ""
 
 #: src/components/reader/privacy-view.tsx
 msgid "Last updated June 11, 2026"
@@ -4256,6 +4279,10 @@ msgstr "Adicionando {publicationName} ao seu feed."
 #~ msgid "Your paper is dark, so the app reads as a dark theme. Text, borders and every other step are derived from these two colors and checked for contrast."
 #~ msgstr ""
 
+#: src/routes/_layout.p.$did.$rkey.tsx
+msgid "You haven’t recommended anything here yet."
+msgstr ""
+
 #: src/components/NavbarAuth.tsx
 #: src/components/reader/app-shell.tsx
 #: src/components/user-settings-view.tsx
@@ -4548,8 +4575,8 @@ msgid "Hide"
 msgstr "Ocultar"
 
 #: src/routes/_layout.p.$did.$rkey.tsx
-msgid "Open publication"
-msgstr "Abrir publicação"
+#~ msgid "Open publication"
+#~ msgstr "Abrir publicação"
 
 #: src/components/reader/link-share-menu.tsx
 msgid "Send to Disperse"
@@ -4673,6 +4700,7 @@ msgid "Text selection actions"
 msgstr "Ações de seleção de texto"
 
 #: src/components/reader/article-view.tsx
+#: src/components/reader/publication-actions.tsx
 #: src/magazine/magazine-end-like.tsx
 #: src/routes/_layout.discover.tsx
 #: src/routes/_layout.recommended.tsx

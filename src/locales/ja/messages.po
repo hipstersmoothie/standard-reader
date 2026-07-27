@@ -1387,6 +1387,7 @@ msgstr "{count, plural, one {# 件の高評価} other {# 件の高評価}} — �
 msgid "Apps you have connected to Standard Reader through its <0>MCP server</0>. Disconnecting one revokes its access immediately; it can ask to reconnect at any time."
 msgstr ""
 
+#: src/components/reader/publication-actions.tsx
 #: src/routes/_layout.history.tsx
 msgid "Read"
 msgstr "既読"
@@ -1446,6 +1447,10 @@ msgstr "既読の記事を隠す"
 #: src/components/reader/collection-builder.tsx
 msgid "Collection cover"
 msgstr "コレクションの表紙"
+
+#: src/components/reader/publication-actions.tsx
+msgid "Visit publication site"
+msgstr ""
 
 #: src/components/reader/terms-view.tsx
 msgid "Attempt to disrupt, overload, or gain unauthorized access to the service, its infrastructure, or other users' accounts."
@@ -1792,6 +1797,7 @@ msgstr "Powered by Standard Reader"
 msgid "Clear selection"
 msgstr ""
 
+#: src/components/reader/publication-actions.tsx
 #: src/components/reader/rss-feed-button.tsx
 #: src/routes/_layout.l.$did.$rkey.tsx
 msgid "RSS feed"
@@ -1929,7 +1935,7 @@ msgstr "購読中"
 msgid "Your account"
 msgstr ""
 
-#: src/routes/_layout.p.$did.$rkey.tsx
+#: src/components/reader/publication-actions.tsx
 msgid "Every unread article from this publication will be marked read. This can’t be undone."
 msgstr "この発行物の未読記事がすべて既読になります。この操作は取り消せません。"
 
@@ -2141,6 +2147,7 @@ msgstr "購読リンクのコード"
 
 #: src/components/reader/add-to-list-button.tsx
 #: src/components/reader/add-to-list-modal.tsx
+#: src/components/reader/publication-actions.tsx
 #: src/components/reader/subscriptions-table.tsx
 msgid "Add to list"
 msgstr "リストに追加"
@@ -2488,6 +2495,7 @@ msgid "Author sections"
 msgstr "著者セクション"
 
 #: src/components/reader/article-view.tsx
+#: src/components/reader/publication-actions.tsx
 #: src/routes/_layout.l.$did.$rkey.tsx
 msgid "More actions"
 msgstr "その他の操作"
@@ -2710,6 +2718,7 @@ msgstr "音声を生成中… {percent}%"
 msgid "Renderers"
 msgstr ""
 
+#: src/components/reader/publication-actions.tsx
 #: src/components/reader/subscriptions-table.tsx
 #: src/routes/_layout.latest.tsx
 msgid "Unread"
@@ -2833,8 +2842,8 @@ msgstr "続けて承認する"
 msgid "<0>T</0>here is a particular pleasure in reading something that was made to be read, and not to be measured. It asks nothing of you but your attention."
 msgstr "<0>読</0>まれるために作られ、測られるために作られたのではない文章を読むことには、格別の喜びがあります。求められるのは、注意を向けることだけです。"
 
+#: src/components/reader/publication-actions.tsx
 #: src/routes/_layout.latest.tsx
-#: src/routes/_layout.p.$did.$rkey.tsx
 msgid "Mark all as read?"
 msgstr "すべて既読にしますか？"
 
@@ -2970,7 +2979,6 @@ msgstr "脚注"
 msgid "Every publication the network knows about — {publicationCount} and counting. Subscribe to the ones worth your mornings."
 msgstr "ネットワークが把握しているすべての発行物 — {publicationCount} 件、さらに増え続けています。朝の時間を使う価値のある発行物を購読しましょう。"
 
-#: src/components/reader/cards.tsx
 #: src/components/reader/follow-user-button.tsx
 msgid "Follow"
 msgstr "フォロー"
@@ -3047,6 +3055,7 @@ msgid "Keep reading"
 msgstr "読み続ける"
 
 #: src/components/reader/discover-topic-filters.tsx
+#: src/components/reader/publication-actions.tsx
 #: src/routes/_layout.discover.tsx
 #: src/routes/_layout.feedback.index.tsx
 #: src/routes/_layout.latest.tsx
@@ -3222,6 +3231,7 @@ msgstr "雑誌を閉じる"
 msgid "Introduce the collection… (markdown supported)"
 msgstr "コレクションの紹介文…（markdown 対応）"
 
+#: src/components/reader/publication-actions.tsx
 #: src/routes/_layout.feedback.index.tsx
 msgid "Filter"
 msgstr ""
@@ -3302,8 +3312,8 @@ msgstr "このタグに一致する発行物はまだありません。"
 msgid "The conversation, gathered"
 msgstr "語られていることの、まとめ"
 
+#: src/components/reader/publication-actions.tsx
 #: src/routes/_layout.latest.tsx
-#: src/routes/_layout.p.$did.$rkey.tsx
 msgid "Mark all as read"
 msgstr "すべて既読にする"
 
@@ -3424,6 +3434,10 @@ msgstr "購読"
 msgid "{0, plural, one {# post} other {{1} posts}}"
 msgstr "{0, plural, one {投稿 # 件} other {投稿 {1} 件}}"
 
+#: src/routes/_layout.p.$did.$rkey.tsx
+msgid "You haven’t read anything here yet."
+msgstr ""
+
 #: src/components/docs/api-docs-intro.tsx
 #: src/components/docs/docs-api-nav.tsx
 msgid "Authentication"
@@ -3487,6 +3501,10 @@ msgstr "（{min}:1 が必要）"
 #: src/components/user-settings-view.tsx
 msgid "Every read record in your repository will be removed. Articles will appear unread again across the app. This cannot be undone."
 msgstr "リポジトリ内のすべての既読記録が削除されます。アプリ全体で記事が再び未読として表示されます。この操作は取り消せません。"
+
+#: src/routes/_layout.p.$did.$rkey.tsx
+msgid "You’ve read everything from this publication."
+msgstr ""
 
 #: src/components/appearance-settings.tsx
 msgid "Text, borders and every other step are derived from these two colors."
@@ -3815,6 +3833,11 @@ msgstr "実行中"
 #: src/components/site-legal-links.tsx
 msgid "Privacy"
 msgstr "プライバシー"
+
+#. placeholder {0}: labels[filter]
+#: src/components/reader/publication-actions.tsx
+msgid "Filter: {0}"
+msgstr ""
 
 #: src/components/reader/privacy-view.tsx
 msgid "Last updated June 11, 2026"
@@ -4256,6 +4279,10 @@ msgstr "{publicationName} をフィードに追加しています。"
 #~ msgid "Your paper is dark, so the app reads as a dark theme. Text, borders and every other step are derived from these two colors and checked for contrast."
 #~ msgstr ""
 
+#: src/routes/_layout.p.$did.$rkey.tsx
+msgid "You haven’t recommended anything here yet."
+msgstr ""
+
 #: src/components/NavbarAuth.tsx
 #: src/components/reader/app-shell.tsx
 #: src/components/user-settings-view.tsx
@@ -4548,8 +4575,8 @@ msgid "Hide"
 msgstr "非表示"
 
 #: src/routes/_layout.p.$did.$rkey.tsx
-msgid "Open publication"
-msgstr "発行物を開く"
+#~ msgid "Open publication"
+#~ msgstr "発行物を開く"
 
 #: src/components/reader/link-share-menu.tsx
 msgid "Send to Disperse"
@@ -4673,6 +4700,7 @@ msgid "Text selection actions"
 msgstr "テキスト選択時の操作"
 
 #: src/components/reader/article-view.tsx
+#: src/components/reader/publication-actions.tsx
 #: src/magazine/magazine-end-like.tsx
 #: src/routes/_layout.discover.tsx
 #: src/routes/_layout.recommended.tsx

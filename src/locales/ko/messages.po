@@ -1387,6 +1387,7 @@ msgstr "{count, plural, one {추천 #개} other {추천 #개}} — 클릭해서 
 msgid "Apps you have connected to Standard Reader through its <0>MCP server</0>. Disconnecting one revokes its access immediately; it can ask to reconnect at any time."
 msgstr ""
 
+#: src/components/reader/publication-actions.tsx
 #: src/routes/_layout.history.tsx
 msgid "Read"
 msgstr "읽기"
@@ -1446,6 +1447,10 @@ msgstr "읽은 아티클 숨기기"
 #: src/components/reader/collection-builder.tsx
 msgid "Collection cover"
 msgstr "컬렉션 커버"
+
+#: src/components/reader/publication-actions.tsx
+msgid "Visit publication site"
+msgstr ""
 
 #: src/components/reader/terms-view.tsx
 msgid "Attempt to disrupt, overload, or gain unauthorized access to the service, its infrastructure, or other users' accounts."
@@ -1792,6 +1797,7 @@ msgstr "Standard Reader 제공"
 msgid "Clear selection"
 msgstr ""
 
+#: src/components/reader/publication-actions.tsx
 #: src/components/reader/rss-feed-button.tsx
 #: src/routes/_layout.l.$did.$rkey.tsx
 msgid "RSS feed"
@@ -1929,7 +1935,7 @@ msgstr "구독 중"
 msgid "Your account"
 msgstr ""
 
-#: src/routes/_layout.p.$did.$rkey.tsx
+#: src/components/reader/publication-actions.tsx
 msgid "Every unread article from this publication will be marked read. This can’t be undone."
 msgstr "이 발행물의 읽지 않은 아티클이 모두 읽음으로 표시됩니다. 되돌릴 수 없습니다."
 
@@ -2141,6 +2147,7 @@ msgstr "구독 링크 코드"
 
 #: src/components/reader/add-to-list-button.tsx
 #: src/components/reader/add-to-list-modal.tsx
+#: src/components/reader/publication-actions.tsx
 #: src/components/reader/subscriptions-table.tsx
 msgid "Add to list"
 msgstr "리스트에 추가"
@@ -2488,6 +2495,7 @@ msgid "Author sections"
 msgstr "글쓴이 섹션"
 
 #: src/components/reader/article-view.tsx
+#: src/components/reader/publication-actions.tsx
 #: src/routes/_layout.l.$did.$rkey.tsx
 msgid "More actions"
 msgstr "더 보기"
@@ -2710,6 +2718,7 @@ msgstr "오디오 생성 중… {percent}%"
 msgid "Renderers"
 msgstr ""
 
+#: src/components/reader/publication-actions.tsx
 #: src/components/reader/subscriptions-table.tsx
 #: src/routes/_layout.latest.tsx
 msgid "Unread"
@@ -2833,8 +2842,8 @@ msgstr "계속해서 승인"
 msgid "<0>T</0>here is a particular pleasure in reading something that was made to be read, and not to be measured. It asks nothing of you but your attention."
 msgstr "<0>읽</0>히기 위해 만들어진 글, 측정되기 위해 만들어지지 않은 글을 읽는 데에는 특별한 즐거움이 있습니다. 그 글은 당신의 주의 말고는 아무것도 요구하지 않습니다."
 
+#: src/components/reader/publication-actions.tsx
 #: src/routes/_layout.latest.tsx
-#: src/routes/_layout.p.$did.$rkey.tsx
 msgid "Mark all as read?"
 msgstr "모두 읽음으로 표시할까요?"
 
@@ -2970,7 +2979,6 @@ msgstr "각주"
 msgid "Every publication the network knows about — {publicationCount} and counting. Subscribe to the ones worth your mornings."
 msgstr "네트워크가 알고 있는 모든 발행물 — {publicationCount}개, 그리고 계속 늘어나는 중. 당신의 아침을 함께할 만한 곳을 구독하세요."
 
-#: src/components/reader/cards.tsx
 #: src/components/reader/follow-user-button.tsx
 msgid "Follow"
 msgstr "팔로우"
@@ -3047,6 +3055,7 @@ msgid "Keep reading"
 msgstr "계속 읽기"
 
 #: src/components/reader/discover-topic-filters.tsx
+#: src/components/reader/publication-actions.tsx
 #: src/routes/_layout.discover.tsx
 #: src/routes/_layout.feedback.index.tsx
 #: src/routes/_layout.latest.tsx
@@ -3222,6 +3231,7 @@ msgstr "매거진 닫기"
 msgid "Introduce the collection… (markdown supported)"
 msgstr "컬렉션을 소개해 주세요… (마크다운 지원)"
 
+#: src/components/reader/publication-actions.tsx
 #: src/routes/_layout.feedback.index.tsx
 msgid "Filter"
 msgstr ""
@@ -3302,8 +3312,8 @@ msgstr "아직 이 태그와 일치하는 발행물이 없습니다."
 msgid "The conversation, gathered"
 msgstr "한자리에 모인 대화"
 
+#: src/components/reader/publication-actions.tsx
 #: src/routes/_layout.latest.tsx
-#: src/routes/_layout.p.$did.$rkey.tsx
 msgid "Mark all as read"
 msgstr "모두 읽음으로 표시"
 
@@ -3424,6 +3434,10 @@ msgstr "구독"
 msgid "{0, plural, one {# post} other {{1} posts}}"
 msgstr "{0, plural, one {게시물 #개} other {게시물 {1}개}}"
 
+#: src/routes/_layout.p.$did.$rkey.tsx
+msgid "You haven’t read anything here yet."
+msgstr ""
+
 #: src/components/docs/api-docs-intro.tsx
 #: src/components/docs/docs-api-nav.tsx
 msgid "Authentication"
@@ -3487,6 +3501,10 @@ msgstr "({min}:1 필요)"
 #: src/components/user-settings-view.tsx
 msgid "Every read record in your repository will be removed. Articles will appear unread again across the app. This cannot be undone."
 msgstr "저장소에 있는 모든 읽음 기록이 삭제됩니다. 앱 전체에서 글이 다시 읽지 않음으로 표시되며, 되돌릴 수 없습니다."
+
+#: src/routes/_layout.p.$did.$rkey.tsx
+msgid "You’ve read everything from this publication."
+msgstr ""
 
 #: src/components/appearance-settings.tsx
 msgid "Text, borders and every other step are derived from these two colors."
@@ -3815,6 +3833,11 @@ msgstr "진행 중"
 #: src/components/site-legal-links.tsx
 msgid "Privacy"
 msgstr "개인정보"
+
+#. placeholder {0}: labels[filter]
+#: src/components/reader/publication-actions.tsx
+msgid "Filter: {0}"
+msgstr ""
 
 #: src/components/reader/privacy-view.tsx
 msgid "Last updated June 11, 2026"
@@ -4256,6 +4279,10 @@ msgstr "{publicationName}을(를) 피드에 추가하는 중입니다."
 #~ msgid "Your paper is dark, so the app reads as a dark theme. Text, borders and every other step are derived from these two colors and checked for contrast."
 #~ msgstr ""
 
+#: src/routes/_layout.p.$did.$rkey.tsx
+msgid "You haven’t recommended anything here yet."
+msgstr ""
+
 #: src/components/NavbarAuth.tsx
 #: src/components/reader/app-shell.tsx
 #: src/components/user-settings-view.tsx
@@ -4548,8 +4575,8 @@ msgid "Hide"
 msgstr "숨기기"
 
 #: src/routes/_layout.p.$did.$rkey.tsx
-msgid "Open publication"
-msgstr "발행물 열기"
+#~ msgid "Open publication"
+#~ msgstr "발행물 열기"
 
 #: src/components/reader/link-share-menu.tsx
 msgid "Send to Disperse"
@@ -4673,6 +4700,7 @@ msgid "Text selection actions"
 msgstr "텍스트 선택 동작"
 
 #: src/components/reader/article-view.tsx
+#: src/components/reader/publication-actions.tsx
 #: src/magazine/magazine-end-like.tsx
 #: src/routes/_layout.discover.tsx
 #: src/routes/_layout.recommended.tsx

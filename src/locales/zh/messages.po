@@ -1387,6 +1387,7 @@ msgstr "{count, plural, one {# 次赞同} other {# 次赞同}} — 点击赞同"
 msgid "Apps you have connected to Standard Reader through its <0>MCP server</0>. Disconnecting one revokes its access immediately; it can ask to reconnect at any time."
 msgstr ""
 
+#: src/components/reader/publication-actions.tsx
 #: src/routes/_layout.history.tsx
 msgid "Read"
 msgstr "阅读"
@@ -1446,6 +1447,10 @@ msgstr "隐藏已读文章"
 #: src/components/reader/collection-builder.tsx
 msgid "Collection cover"
 msgstr "合集封面"
+
+#: src/components/reader/publication-actions.tsx
+msgid "Visit publication site"
+msgstr ""
 
 #: src/components/reader/terms-view.tsx
 msgid "Attempt to disrupt, overload, or gain unauthorized access to the service, its infrastructure, or other users' accounts."
@@ -1792,6 +1797,7 @@ msgstr "由 Standard Reader 提供支持"
 msgid "Clear selection"
 msgstr ""
 
+#: src/components/reader/publication-actions.tsx
 #: src/components/reader/rss-feed-button.tsx
 #: src/routes/_layout.l.$did.$rkey.tsx
 msgid "RSS feed"
@@ -1929,7 +1935,7 @@ msgstr "正在订阅"
 msgid "Your account"
 msgstr ""
 
-#: src/routes/_layout.p.$did.$rkey.tsx
+#: src/components/reader/publication-actions.tsx
 msgid "Every unread article from this publication will be marked read. This can’t be undone."
 msgstr "该刊物的所有未读文章都将标记为已读。此操作无法撤销。"
 
@@ -2141,6 +2147,7 @@ msgstr "订阅链接代码"
 
 #: src/components/reader/add-to-list-button.tsx
 #: src/components/reader/add-to-list-modal.tsx
+#: src/components/reader/publication-actions.tsx
 #: src/components/reader/subscriptions-table.tsx
 msgid "Add to list"
 msgstr "添加到列表"
@@ -2488,6 +2495,7 @@ msgid "Author sections"
 msgstr "作者栏目"
 
 #: src/components/reader/article-view.tsx
+#: src/components/reader/publication-actions.tsx
 #: src/routes/_layout.l.$did.$rkey.tsx
 msgid "More actions"
 msgstr "更多操作"
@@ -2710,6 +2718,7 @@ msgstr "正在生成音频… {percent}%"
 msgid "Renderers"
 msgstr ""
 
+#: src/components/reader/publication-actions.tsx
 #: src/components/reader/subscriptions-table.tsx
 #: src/routes/_layout.latest.tsx
 msgid "Unread"
@@ -2833,8 +2842,8 @@ msgstr "继续以批准"
 msgid "<0>T</0>here is a particular pleasure in reading something that was made to be read, and not to be measured. It asks nothing of you but your attention."
 msgstr "<0>阅</0>读那些为阅读而写、而非为衡量而写的文字，自有一种独特的乐趣。它别无所求，只要你的注意力。"
 
+#: src/components/reader/publication-actions.tsx
 #: src/routes/_layout.latest.tsx
-#: src/routes/_layout.p.$did.$rkey.tsx
 msgid "Mark all as read?"
 msgstr "将全部标为已读？"
 
@@ -2970,7 +2979,6 @@ msgstr "脚注"
 msgid "Every publication the network knows about — {publicationCount} and counting. Subscribe to the ones worth your mornings."
 msgstr "网络已知的全部刊物——{publicationCount} 个，还在增加。订阅那些值得你清晨时光的刊物。"
 
-#: src/components/reader/cards.tsx
 #: src/components/reader/follow-user-button.tsx
 msgid "Follow"
 msgstr "关注"
@@ -3047,6 +3055,7 @@ msgid "Keep reading"
 msgstr "继续阅读"
 
 #: src/components/reader/discover-topic-filters.tsx
+#: src/components/reader/publication-actions.tsx
 #: src/routes/_layout.discover.tsx
 #: src/routes/_layout.feedback.index.tsx
 #: src/routes/_layout.latest.tsx
@@ -3222,6 +3231,7 @@ msgstr "关闭杂志"
 msgid "Introduce the collection… (markdown supported)"
 msgstr "介绍一下这个合集……（支持 markdown）"
 
+#: src/components/reader/publication-actions.tsx
 #: src/routes/_layout.feedback.index.tsx
 msgid "Filter"
 msgstr ""
@@ -3302,8 +3312,8 @@ msgstr "暂时没有符合此标签的刊物。"
 msgid "The conversation, gathered"
 msgstr "汇集在一起的讨论"
 
+#: src/components/reader/publication-actions.tsx
 #: src/routes/_layout.latest.tsx
-#: src/routes/_layout.p.$did.$rkey.tsx
 msgid "Mark all as read"
 msgstr "全部标记为已读"
 
@@ -3424,6 +3434,10 @@ msgstr "订阅"
 msgid "{0, plural, one {# post} other {{1} posts}}"
 msgstr "{0, plural, one {# 篇内容} other {{1} 篇内容}}"
 
+#: src/routes/_layout.p.$did.$rkey.tsx
+msgid "You haven’t read anything here yet."
+msgstr ""
+
 #: src/components/docs/api-docs-intro.tsx
 #: src/components/docs/docs-api-nav.tsx
 msgid "Authentication"
@@ -3487,6 +3501,10 @@ msgstr "（需要 {min}:1）"
 #: src/components/user-settings-view.tsx
 msgid "Every read record in your repository will be removed. Articles will appear unread again across the app. This cannot be undone."
 msgstr "你仓库中的所有已读记录都将被移除。文章会在整个应用中重新显示为未读。此操作无法撤销。"
+
+#: src/routes/_layout.p.$did.$rkey.tsx
+msgid "You’ve read everything from this publication."
+msgstr ""
 
 #: src/components/appearance-settings.tsx
 msgid "Text, borders and every other step are derived from these two colors."
@@ -3815,6 +3833,11 @@ msgstr "运行中"
 #: src/components/site-legal-links.tsx
 msgid "Privacy"
 msgstr "隐私"
+
+#. placeholder {0}: labels[filter]
+#: src/components/reader/publication-actions.tsx
+msgid "Filter: {0}"
+msgstr ""
 
 #: src/components/reader/privacy-view.tsx
 msgid "Last updated June 11, 2026"
@@ -4256,6 +4279,10 @@ msgstr "正在将 {publicationName} 添加到你的信息流。"
 #~ msgid "Your paper is dark, so the app reads as a dark theme. Text, borders and every other step are derived from these two colors and checked for contrast."
 #~ msgstr ""
 
+#: src/routes/_layout.p.$did.$rkey.tsx
+msgid "You haven’t recommended anything here yet."
+msgstr ""
+
 #: src/components/NavbarAuth.tsx
 #: src/components/reader/app-shell.tsx
 #: src/components/user-settings-view.tsx
@@ -4548,8 +4575,8 @@ msgid "Hide"
 msgstr "隐藏"
 
 #: src/routes/_layout.p.$did.$rkey.tsx
-msgid "Open publication"
-msgstr "打开刊物"
+#~ msgid "Open publication"
+#~ msgstr "打开刊物"
 
 #: src/components/reader/link-share-menu.tsx
 msgid "Send to Disperse"
@@ -4673,6 +4700,7 @@ msgid "Text selection actions"
 msgstr "选中文本操作"
 
 #: src/components/reader/article-view.tsx
+#: src/components/reader/publication-actions.tsx
 #: src/magazine/magazine-end-like.tsx
 #: src/routes/_layout.discover.tsx
 #: src/routes/_layout.recommended.tsx
