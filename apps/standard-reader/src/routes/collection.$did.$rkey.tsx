@@ -149,6 +149,29 @@ export const Route = createFileRoute("/collection/$did/$rkey")({
       }),
       links: [
         ...magazineThemeFontHeadLinks(theme),
+        // standard.site discovery hints — a collection edition renders a
+        // `site.standard.document` like any article view does, so it carries the
+        // same hints (alongside the `at:` meta tags from the loader's `atMeta`).
+        // See https://standard.site/docs/verification/#discovery-hint
+        ...(collection
+          ? [
+              {
+                rel: "site.standard.document",
+                href: documentUriFromParams(
+                  match.params.did,
+                  match.params.rkey,
+                ),
+              },
+              ...(collection.collectionDoc.publicationUri
+                ? [
+                    {
+                      rel: "site.standard.publication",
+                      href: collection.collectionDoc.publicationUri,
+                    },
+                  ]
+                : []),
+            ]
+          : []),
         {
           rel: "alternate",
           type: "application/rss+xml",

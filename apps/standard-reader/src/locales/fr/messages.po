@@ -1539,6 +1539,10 @@ msgstr ""
 msgid "Recommended for you"
 msgstr "Recommandé pour vous"
 
+#: src/components/docs/publishing-docs-page.tsx
+msgid "The site.standard link rels"
+msgstr ""
+
 #: src/components/feedback/feedback-dialog.tsx
 msgid "Something went wrong while submitting your feedback."
 msgstr "Une erreur est survenue lors de l'envoi de votre retour."
@@ -2278,6 +2282,10 @@ msgstr "Abonnez-vous à cette liste pour lire les nouveaux articles de ses publi
 msgid "{itemCount} of {MAX_ITEMS}"
 msgstr "{itemCount} sur {MAX_ITEMS}"
 
+#: src/components/docs/publishing-docs-page.tsx
+msgid "Emit these too. Discovery hints are part of the site.standard spec itself — a <0>link</0> tag whose <1>rel</1> is the record's collection and whose <2>href</2> is its <3>at://</3> URI — and plenty of clients across the network still read only these. Include the <4>site.standard.publication</4> hint when the document belongs to a publication record."
+msgstr ""
+
 #: src/routes/_layout.latest.tsx
 msgid "{metaCount, plural, one {{formattedMetaCount} article} other {{formattedMetaCount} articles}}"
 msgstr "{metaCount, plural, one {{formattedMetaCount} article} other {{formattedMetaCount} articles}}"
@@ -2522,8 +2530,8 @@ msgid "Finish"
 msgstr "Terminer"
 
 #: src/components/docs/publishing-docs-page.tsx
-msgid "Before the meta tags, discovery hints rode on <0>link</0> tags whose <1>rel</1> was the record's collection. We still read these, so pages that haven't migrated keep working — but an unregistered <2>rel</2> value isn't valid HTML, and it can't say why a record is on the page. New sites should reach for the meta tags. If you already emit the rels, the friendly move is what SkyPress did: keep them and put the meta tags alongside, so nothing already reading the old ones breaks."
-msgstr ""
+#~ msgid "Before the meta tags, discovery hints rode on <0>link</0> tags whose <1>rel</1> was the record's collection. We still read these, so pages that haven't migrated keep working — but an unregistered <2>rel</2> value isn't valid HTML, and it can't say why a record is on the page. New sites should reach for the meta tags. If you already emit the rels, the friendly move is what SkyPress did: keep them and put the meta tags alongside, so nothing already reading the old ones breaks."
+#~ msgstr ""
 
 #: src/routes/_layout.friends.tsx
 #~ msgid "We checked the people you follow on Bluesky against every publication on the network and didn't find a match. As more of them start publishing, they'll show up here."
@@ -2601,6 +2609,10 @@ msgstr "Rechercher des publications et des articles"
 #: src/components/reader/subscriptions-table.tsx
 msgid "Publication"
 msgstr "Publication"
+
+#: src/components/docs/publishing-docs-page.tsx
+msgid "Standard Reader emits these on its own article, publication, collection, list and profile pages, and reads them from yours."
+msgstr ""
 
 #: src/components/reader/add-to-list-button.tsx
 msgid "No lists yet"
@@ -3802,8 +3814,8 @@ msgid "Labelers are moderation services you subscribe to by DID. Subscribe to se
 msgstr "Les services d'étiquetage sont des services de modération auxquels vous vous abonnez par DID. Abonnez-vous pour voir leurs étiquettes — et flouter ou masquer les publications étiquetées — pendant votre lecture."
 
 #: src/components/docs/publishing-docs-page.tsx
-msgid "The older link rels"
-msgstr ""
+#~ msgid "The older link rels"
+#~ msgstr ""
 
 #: src/components/reader/about-view.tsx
 msgid "Standard Reader meets you where you read"
@@ -3853,6 +3865,10 @@ msgstr "Confidentialité"
 #. placeholder {0}: labels[filter]
 #: src/components/reader/publication-actions.tsx
 msgid "Filter: {0}"
+msgstr ""
+
+#: src/components/docs/publishing-docs-page.tsx
+msgid "The two say overlapping things, and that's fine: the meta tags carry intent the rels can't, while the rels are what the site.standard spec asks for. Carry both, which is what Standard Reader itself does on every article, publication and collection page."
 msgstr ""
 
 #: src/components/reader/privacy-view.tsx
@@ -4881,8 +4897,8 @@ msgid "<0>Structured blocks.</0> Rich block-editor documents, each in that edito
 msgstr "<0>Blocs structurés.</0> Documents riches issus d'éditeurs de blocs, chacun dans le schéma propre à son éditeur — par exemple <1>org.blocknote.document#content</1> (BlockNote) ou <2>pub.oxa.document.document</2> (Oxa). Utile uniquement si vous en produisez déjà ; inutile de l'adopter en partant de zéro."
 
 #: src/components/docs/publishing-docs-page.tsx
-msgid "Standard Reader emits these on its own article, publication, list and profile pages, and reads them from yours."
-msgstr ""
+#~ msgid "Standard Reader emits these on its own article, publication, list and profile pages, and reads them from yours."
+#~ msgstr ""
 
 #: src/components/reader/collection-theme-editor.tsx
 msgid "Text"

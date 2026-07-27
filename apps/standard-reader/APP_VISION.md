@@ -982,9 +982,10 @@ one, and small in-app strings such as a collection colophon.
 ### Record meta tags (`at:`)
 
 Every page we serve says, in its `<head>`, which AT Protocol records it is built from — the
-convention the Atmosphere converged on in 2026, and the successor to the unregistered
-`<link rel="site.standard.*">` discovery hints (which we keep emitting alongside, so nothing
-already reading them breaks).
+convention the Atmosphere converged on in 2026. These sit **alongside**, not instead of, the
+`<link rel="site.standard.*">` discovery hints: the rels are part of the site.standard spec and
+plenty of clients read only those, while the meta tags carry intent the rels can't express.
+Article, publication and collection pages emit both.
 
 | Tag            | Means                               | Example on `/a/$did/$rkey`        |
 | -------------- | ----------------------------------- | --------------------------------- |

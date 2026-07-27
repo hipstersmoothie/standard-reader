@@ -235,26 +235,37 @@ export function PublishingDocsPage() {
         <CodePanel tag="head" code={DISCOVERY_SNIPPET} />
         <p {...stylex.props(docsStyles.prose)}>
           <Trans>
-            Standard Reader emits these on its own article, publication, list
-            and profile pages, and reads them from yours.
+            Standard Reader emits these on its own article, publication,
+            collection, list and profile pages, and reads them from yours.
           </Trans>
         </p>
         <h3 {...stylex.props(docsStyles.h3)}>
-          <Trans>The older link rels</Trans>
+          <Trans>The site.standard link rels</Trans>
         </h3>
         <p {...stylex.props(docsStyles.prose)}>
           <Trans>
-            Before the meta tags, discovery hints rode on{" "}
-            <code {...stylex.props(docsStyles.codeInline)}>link</code> tags
-            whose <code {...stylex.props(docsStyles.codeInline)}>rel</code> was
-            the record&apos;s collection. We still read these, so pages that
-            haven&apos;t migrated keep working — but an unregistered{" "}
-            <code {...stylex.props(docsStyles.codeInline)}>rel</code> value
-            isn&apos;t valid HTML, and it can&apos;t say why a record is on the
-            page. New sites should reach for the meta tags. If you already emit
-            the rels, the friendly move is what SkyPress did: keep them and put
-            the meta tags alongside, so nothing already reading the old ones
-            breaks.
+            Emit these too. Discovery hints are part of the site.standard spec
+            itself — a{" "}
+            <code {...stylex.props(docsStyles.codeInline)}>link</code> tag whose{" "}
+            <code {...stylex.props(docsStyles.codeInline)}>rel</code> is the
+            record&apos;s collection and whose{" "}
+            <code {...stylex.props(docsStyles.codeInline)}>href</code> is its{" "}
+            <code {...stylex.props(docsStyles.codeInline)}>at://</code> URI —
+            and plenty of clients across the network still read only these.
+            Include the{" "}
+            <code {...stylex.props(docsStyles.codeInline)}>
+              site.standard.publication
+            </code>{" "}
+            hint when the document belongs to a publication record.
+          </Trans>
+        </p>
+        <p {...stylex.props(docsStyles.prose)}>
+          <Trans>
+            The two say overlapping things, and that&apos;s fine: the meta tags
+            carry intent the rels can&apos;t, while the rels are what the
+            site.standard spec asks for. Carry both, which is what Standard
+            Reader itself does on every article, publication and collection
+            page.
           </Trans>
         </p>
         <CodePanel tag="head" code={DISCOVERY_LEGACY_SNIPPET} />

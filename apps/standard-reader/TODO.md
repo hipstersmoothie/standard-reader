@@ -758,10 +758,11 @@ Build each on hip-ui components + StyleX tokens (no raw HTML/inline styles).
       `<link rel="site.standard.publication" href="at://…">` and `/a/...` emits
       `rel="site.standard.document"` (+ the publication hint when the document belongs to one),
       per https://standard.site/docs/verification/#discovery-hint (hints only; verification
-      stays with the publisher's `.well-known`). Kept alongside the `at:` meta tags below so
-      anything still reading the rels keeps working.
-- [x] **`at:` record meta tags** — the community convention that supersedes those rels
-      (`at:canonical` / `at:alternate` / `at:author`), adopted across the network in 2026.
+      stays with the publisher's `.well-known`). `/collection/...` emits the same pair for the
+      collection manifest document. Part of the site.standard spec and still the only thing many
+      clients read — kept permanently, not a migration step.
+- [x] **`at:` record meta tags** — the community convention adopted across the network in 2026
+      (`at:canonical` / `at:alternate` / `at:author`), emitted _alongside_ the rels above.
       `/a/...`, `/p/...`, `/l/...`, `/u/...` and `/collection/...` declare their records via an
       `atMeta` key on loader data; `AtRecordMeta` renders them as raw tags in `RootDocument`'s
       `<head>` (route `head.meta` dedupes by `name` and the convention repeats). We deliberately

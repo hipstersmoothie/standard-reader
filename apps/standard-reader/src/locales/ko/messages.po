@@ -1539,6 +1539,10 @@ msgstr ""
 msgid "Recommended for you"
 msgstr "추천 콘텐츠"
 
+#: src/components/docs/publishing-docs-page.tsx
+msgid "The site.standard link rels"
+msgstr ""
+
 #: src/components/feedback/feedback-dialog.tsx
 msgid "Something went wrong while submitting your feedback."
 msgstr "피드백을 보내는 중 문제가 발생했습니다."
@@ -2278,6 +2282,10 @@ msgstr "이 리스트를 구독하면 소속 발행물의 새 글을 받아볼 �
 msgid "{itemCount} of {MAX_ITEMS}"
 msgstr "{MAX_ITEMS}개 중 {itemCount}개"
 
+#: src/components/docs/publishing-docs-page.tsx
+msgid "Emit these too. Discovery hints are part of the site.standard spec itself — a <0>link</0> tag whose <1>rel</1> is the record's collection and whose <2>href</2> is its <3>at://</3> URI — and plenty of clients across the network still read only these. Include the <4>site.standard.publication</4> hint when the document belongs to a publication record."
+msgstr ""
+
 #: src/routes/_layout.latest.tsx
 msgid "{metaCount, plural, one {{formattedMetaCount} article} other {{formattedMetaCount} articles}}"
 msgstr "{metaCount, plural, one {글 {formattedMetaCount}편} other {글 {formattedMetaCount}편}}"
@@ -2522,8 +2530,8 @@ msgid "Finish"
 msgstr "완료"
 
 #: src/components/docs/publishing-docs-page.tsx
-msgid "Before the meta tags, discovery hints rode on <0>link</0> tags whose <1>rel</1> was the record's collection. We still read these, so pages that haven't migrated keep working — but an unregistered <2>rel</2> value isn't valid HTML, and it can't say why a record is on the page. New sites should reach for the meta tags. If you already emit the rels, the friendly move is what SkyPress did: keep them and put the meta tags alongside, so nothing already reading the old ones breaks."
-msgstr ""
+#~ msgid "Before the meta tags, discovery hints rode on <0>link</0> tags whose <1>rel</1> was the record's collection. We still read these, so pages that haven't migrated keep working — but an unregistered <2>rel</2> value isn't valid HTML, and it can't say why a record is on the page. New sites should reach for the meta tags. If you already emit the rels, the friendly move is what SkyPress did: keep them and put the meta tags alongside, so nothing already reading the old ones breaks."
+#~ msgstr ""
 
 #: src/routes/_layout.friends.tsx
 #~ msgid "We checked the people you follow on Bluesky against every publication on the network and didn't find a match. As more of them start publishing, they'll show up here."
@@ -2601,6 +2609,10 @@ msgstr "발행물과 글 검색"
 #: src/components/reader/subscriptions-table.tsx
 msgid "Publication"
 msgstr "발행물"
+
+#: src/components/docs/publishing-docs-page.tsx
+msgid "Standard Reader emits these on its own article, publication, collection, list and profile pages, and reads them from yours."
+msgstr ""
 
 #: src/components/reader/add-to-list-button.tsx
 msgid "No lists yet"
@@ -3802,8 +3814,8 @@ msgid "Labelers are moderation services you subscribe to by DID. Subscribe to se
 msgstr "라벨러는 DID로 구독하는 모더레이션 서비스입니다. 구독하면 읽는 동안 해당 라벨을 확인하고, 라벨이 붙은 게시물을 흐리게 하거나 숨길 수 있습니다."
 
 #: src/components/docs/publishing-docs-page.tsx
-msgid "The older link rels"
-msgstr ""
+#~ msgid "The older link rels"
+#~ msgstr ""
 
 #: src/components/reader/about-view.tsx
 msgid "Standard Reader meets you where you read"
@@ -3853,6 +3865,10 @@ msgstr "개인정보"
 #. placeholder {0}: labels[filter]
 #: src/components/reader/publication-actions.tsx
 msgid "Filter: {0}"
+msgstr ""
+
+#: src/components/docs/publishing-docs-page.tsx
+msgid "The two say overlapping things, and that's fine: the meta tags carry intent the rels can't, while the rels are what the site.standard spec asks for. Carry both, which is what Standard Reader itself does on every article, publication and collection page."
 msgstr ""
 
 #: src/components/reader/privacy-view.tsx
@@ -4881,8 +4897,8 @@ msgid "<0>Structured blocks.</0> Rich block-editor documents, each in that edito
 msgstr "<0>구조화된 블록.</0> 리치 블록 에디터 문서로, 각각 해당 에디터 고유의 스키마를 사용합니다 — 예: <1>org.blocknote.document#content</1>(BlockNote) 또는 <2>pub.oxa.document.document</2>(Oxa). 이미 이런 형식을 쓰고 있을 때만 유용하며, 처음부터 도입할 만하지는 않습니다."
 
 #: src/components/docs/publishing-docs-page.tsx
-msgid "Standard Reader emits these on its own article, publication, list and profile pages, and reads them from yours."
-msgstr ""
+#~ msgid "Standard Reader emits these on its own article, publication, list and profile pages, and reads them from yours."
+#~ msgstr ""
 
 #: src/components/reader/collection-theme-editor.tsx
 msgid "Text"

@@ -4,10 +4,11 @@
  *
  * Proposed on the Atmosphere forum ("Mapping web pages to canonical AT
  * records") and shipped across the network through mid-2026 — Leaflet,
- * Frontpage, Semble, aturi.to, µ, SkyPress. It supersedes the ad-hoc
- * `<link rel="site.standard.document">` discovery hints: a `rel` value nobody
- * registered isn't valid HTML, and `rel` can't express *why* a record is on the
- * page. Four names:
+ * Frontpage, Semble, aturi.to, µ, SkyPress. It covers ground the older
+ * `<link rel="site.standard.document">` discovery hints can't: `rel` says
+ * *which* record, never *why* it's on the page. It does not replace them —
+ * the rels are part of the site.standard spec and plenty of clients read only
+ * those, so our record pages emit both. Four names:
  *
  * - `at:canonical` — the records the page is made of. If they went away, the
  *   page would have no reason to exist.
