@@ -41,6 +41,7 @@ import {
   articleCardColumns,
   articleQueueCardColumns,
   documentIsCollectionColumn,
+  documentRecommendCountSql,
   publicationCardColumns,
   publicationSortNameSql,
   toArticleCard,
@@ -86,6 +87,27 @@ const RECOMMENDATION_BLEND = {
  */
 const CUTOFF_POOL_MULT = 5;
 
+/**
+ * Ranking for a plain (non-follow-feed) article list.
+ *
+ * - `recent` — newest first (`published_at desc`). The default everywhere.
+ * - `trending` — precomputed `documents.trending_score` first, then recency.
+ *   The score is only maintained for the 4-day discover slice (see
+ *   `recompute.ts`), so this ranks rather than filters: currently-hot articles
+ *   float to the top and everything else keeps its chronological order, which
+ *   keeps the list paginable instead of near-empty on a niche tag.
+ * - `popular` — all-time likes (`recommends`), then Bluesky backlinks, then
+ *   recency. Computed live because `distinct_recommender_count` shares
+ *   `trending_score`'s 4-day staleness and would rank an all-time list wrong.
+ *
+ * PERF: `popular` sorts on a correlated subquery, so Postgres evaluates it for
+ * every row the `WHERE` admits — not just the page. That is fine for a filtered
+ * list (today: one tag, served by `documents_tags_norm_idx`, with each count an
+ * index-only scan on the partial `recommends_doc_recommender_created_idx`), but
+ * do NOT reach for it on an unfiltered feed; pre-aggregate instead.
+ */
+export type ArticleCardSort = "recent" | "trending" | "popular";
+
 export interface ArticleCardQuery {
   /** Restrict to documents in these publications (e.g. a reader's follows). */
   publicationUris?: Array<string>;
@@ -116,6 +138,12 @@ export interface ArticleCardQuery {
    * to today's behaviour. See {@link UnreadCutoffOpts}.
    */
   countOldPostsAsUnread?: boolean;
+  /**
+   * Ranking for the plain (non-follow-feed) path. Ignored in follow-feed union
+   * mode, which is always ordered by its computed `feedAt`. Defaults to
+   * `recent`.
+   */
+  sort?: ArticleCardSort;
   limit: number;
   offset?: number;
 }
@@ -708,7 +736,7 @@ export async function selectArticleCards(
 
   const rows = await query
     .where(and(...conds))
-    .orderBy(...documentsNewestFirst(d))
+    .orderBy(...articleCardOrderBy(schema, opts.sort))
     .limit(opts.limit)
     .offset(opts.offset ?? 0);
 
@@ -2039,6 +2067,32 @@ function documentCarriesTagWhere(d: Schema["documents"], tag: string): SQL {
  */
 function documentsNewestFirst(d: Schema["documents"]): Array<SQL> {
   return [sql`${d.publishedAt} desc nulls last`, desc(d.uri)];
+}
+
+/**
+ * `ORDER BY` for an {@link ArticleCardSort}. Every ranking falls back to
+ * newest-first, so score ties (the common case — `trending_score` is 0 outside
+ * the 4-day discover slice, and most articles have no likes) stay chronological
+ * and `documents.uri` keeps paging deterministic.
+ */
+function articleCardOrderBy(
+  schema: Schema,
+  sort: ArticleCardSort = "recent",
+): Array<SQL> {
+  const d = schema.documents;
+  const newestFirst = documentsNewestFirst(d);
+
+  if (sort === "trending") {
+    return [sql`${d.trendingScore} desc`, ...newestFirst];
+  }
+  if (sort === "popular") {
+    return [
+      sql`${documentRecommendCountSql(schema)} desc`,
+      sql`coalesce(${d.backlinkCount}, 0) desc`,
+      ...newestFirst,
+    ];
+  }
+  return newestFirst;
 }
 
 /** Count indexed, published articles carrying a tag on discover-eligible pubs. */

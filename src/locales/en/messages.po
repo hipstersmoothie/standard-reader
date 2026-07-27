@@ -468,6 +468,7 @@ msgstr "Tap the heart on any article to recommend it. Your recommendations live 
 
 #: src/routes/_layout.index.tsx
 #: src/routes/_layout.latest.tsx
+#: src/routes/_layout.tag.$tag.tsx
 msgid "Trending"
 msgstr "Trending"
 
@@ -699,6 +700,10 @@ msgstr "Turn on to choose which items appear in the sidebar. Subscriptions and y
 #: src/routes/_layout.tag.$tag.tsx
 msgid "{unfollowedCount, plural, one {Subscribe to {formattedUnfollowedCount} publication?} other {Subscribe to {formattedUnfollowedCount} publications?}}"
 msgstr "{unfollowedCount, plural, one {Subscribe to {formattedUnfollowedCount} publication?} other {Subscribe to {formattedUnfollowedCount} publications?}}"
+
+#: src/routes/_layout.tag.$tag.tsx
+msgid "Sort articles"
+msgstr "Sort articles"
 
 #: src/routes/_layout.tag.$tag.tsx
 msgid "No articles match this tag yet."
@@ -1298,6 +1303,10 @@ msgstr "The core, and new frameworks"
 #: src/components/reader/extension-privacy-view.tsx
 msgid "You can disable the page overlay and Bluesky embed save button in the extension options page. You can sign out from the web app to invalidate the session cookie the extension uses. Uninstalling the extension removes locally stored settings from your browser profile."
 msgstr "You can disable the page overlay and Bluesky embed save button in the extension options page. You can sign out from the web app to invalidate the session cookie the extension uses. Uninstalling the extension removes locally stored settings from your browser profile."
+
+#: src/routes/_layout.tag.$tag.tsx
+msgid "Recent"
+msgstr "Recent"
 
 #: src/components/reader/list-edit-modal.tsx
 msgid "List members"
@@ -4920,6 +4929,10 @@ msgstr "For more about how {SITE_NAME} works, see the <0>About</0> page. For pri
 #: src/routes/_layout.l.$did.$rkey.tsx
 msgid "Copy link"
 msgstr "Copy link"
+
+#: src/routes/_layout.tag.$tag.tsx
+msgid "Most popular"
+msgstr "Most popular"
 
 #: src/components/user-settings-view.tsx
 msgid "A weekly email with the best of what you subscribe to, plus a couple of publications worth discovering. Turning this on asks your PDS to share your email address."

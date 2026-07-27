@@ -468,6 +468,7 @@ msgstr "轻点任意文章上的爱心即可推荐它。你的推荐以 <0>site.
 
 #: src/routes/_layout.index.tsx
 #: src/routes/_layout.latest.tsx
+#: src/routes/_layout.tag.$tag.tsx
 msgid "Trending"
 msgstr "热门"
 
@@ -699,6 +700,10 @@ msgstr ""
 #: src/routes/_layout.tag.$tag.tsx
 msgid "{unfollowedCount, plural, one {Subscribe to {formattedUnfollowedCount} publication?} other {Subscribe to {formattedUnfollowedCount} publications?}}"
 msgstr "{unfollowedCount, plural, one {订阅 {formattedUnfollowedCount} 个刊物？} other {订阅 {formattedUnfollowedCount} 个刊物？}}"
+
+#: src/routes/_layout.tag.$tag.tsx
+msgid "Sort articles"
+msgstr ""
 
 #: src/routes/_layout.tag.$tag.tsx
 msgid "No articles match this tag yet."
@@ -1298,6 +1303,10 @@ msgstr ""
 #: src/components/reader/extension-privacy-view.tsx
 msgid "You can disable the page overlay and Bluesky embed save button in the extension options page. You can sign out from the web app to invalidate the session cookie the extension uses. Uninstalling the extension removes locally stored settings from your browser profile."
 msgstr "你可以在扩展的选项页面中关闭页面浮层和 Bluesky 嵌入保存按钮。你可以在网页版退出登录，使扩展所用的会话 cookie 失效。卸载扩展会从浏览器配置文件中删除本地存储的设置。"
+
+#: src/routes/_layout.tag.$tag.tsx
+msgid "Recent"
+msgstr ""
 
 #: src/components/reader/list-edit-modal.tsx
 msgid "List members"
@@ -4920,6 +4929,10 @@ msgstr "想进一步了解 {SITE_NAME} 的运作方式，请查看<0>关于</0>�
 #: src/routes/_layout.l.$did.$rkey.tsx
 msgid "Copy link"
 msgstr "复制链接"
+
+#: src/routes/_layout.tag.$tag.tsx
+msgid "Most popular"
+msgstr ""
 
 #: src/components/user-settings-view.tsx
 msgid "A weekly email with the best of what you subscribe to, plus a couple of publications worth discovering. Turning this on asks your PDS to share your email address."

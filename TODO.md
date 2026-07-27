@@ -366,6 +366,9 @@ in structured o11y (`observe`) and reads from the Neon read-model.
 - [x] Tag directory: `/tag/$tag` lists publications with indexed posts carrying the tag
       and per-publication tagged-post counts; topic chips on cards link there.
       `tagApi` in `api-tag.functions.ts`.
+- [x] Tag Articles tab sort: Recent / Trending / Most popular select in the tab row
+      (`?articleSort=`, its own search param so the Publications-tab `sort` is
+      independent). Backed by `ArticleCardSort` on `selectArticleCards`.
 - [x] Publication profile query (header + owner identity, recent writing,
       readers-also-follow). `publicationApi.getPublicationProfile`.
 - [x] Article query (full content + publication card + byline contributors +

@@ -468,6 +468,7 @@ msgstr ""
 
 #: src/routes/_layout.index.tsx
 #: src/routes/_layout.latest.tsx
+#: src/routes/_layout.tag.$tag.tsx
 msgid "Trending"
 msgstr ""
 
@@ -698,6 +699,10 @@ msgstr ""
 
 #: src/routes/_layout.tag.$tag.tsx
 msgid "{unfollowedCount, plural, one {Subscribe to {formattedUnfollowedCount} publication?} other {Subscribe to {formattedUnfollowedCount} publications?}}"
+msgstr ""
+
+#: src/routes/_layout.tag.$tag.tsx
+msgid "Sort articles"
 msgstr ""
 
 #: src/routes/_layout.tag.$tag.tsx
@@ -1297,6 +1302,10 @@ msgstr ""
 
 #: src/components/reader/extension-privacy-view.tsx
 msgid "You can disable the page overlay and Bluesky embed save button in the extension options page. You can sign out from the web app to invalidate the session cookie the extension uses. Uninstalling the extension removes locally stored settings from your browser profile."
+msgstr ""
+
+#: src/routes/_layout.tag.$tag.tsx
+msgid "Recent"
 msgstr ""
 
 #: src/components/reader/list-edit-modal.tsx
@@ -4919,6 +4928,10 @@ msgstr ""
 #: src/components/reader/share-menu.tsx
 #: src/routes/_layout.l.$did.$rkey.tsx
 msgid "Copy link"
+msgstr ""
+
+#: src/routes/_layout.tag.$tag.tsx
+msgid "Most popular"
 msgstr ""
 
 #: src/components/user-settings-view.tsx
