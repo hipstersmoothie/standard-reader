@@ -949,6 +949,25 @@ Images move by **blob reference** — a converted record points at the same blob
 with no re-upload. Markpub is the exception (markdown cannot address a repo blob), so blob-backed
 images become CDN URLs and the swap is reported.
 
+### One renderer for every format
+
+The reader does not special-case markdown any more. `site.standard.content.markdown`, the
+markdown-in-record third-party lexicons, and Markpub all render through
+[`@standard-reader/renderer-react`](packages/renderer-react) like Leaflet, pckt and Offprint do —
+`renderer-core` parses, the app supplies the components. A markdown heading and a Leaflet heading
+are the same component with the same styles, and a fix to either lands in both.
+
+Getting there meant teaching `renderer-core`'s markdown parser everything the app's old
+react-markdown stack displayed: nested lists, callouts, GFM footnotes, display math, inline images,
+and raw HTML. Raw HTML is a block node the renderers deliberately render as _nothing_ by default —
+deciding what markup is safe belongs to the host with its own sanitizer, not to a
+framework-agnostic library, so the app supplies an `Html` component backed by the schema the
+markdown pipeline always used.
+
+react-markdown remains for two things that are not document markdown: HTML-in-record documents
+(WordPress, Ghost, Known, Gutenberg-as-HTML), which need an HTML pipeline rather than a markdown
+one, and small in-app strings such as a collection colophon.
+
 ### Browser extension architecture
 
 ```

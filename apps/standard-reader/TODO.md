@@ -1051,26 +1051,32 @@ Re-emit a document's content into another format by running the renderer's norma
       they take `--repo <handle-or-did>` and need no credentials; a read-only session refuses the
       write path outright. Requiring an app password to answer "what would this cost?" was asking
       for a credential to do arithmetic.
-- [ ] **Nested lists in the markdown parser** — `renderer-core`'s `markdown.ts` flattens every list
-      item to a single line (`listItemText`), so a nested list in _any_ markdown document renders
-      flat in the app, converted or not. The Markpub emitter writes correct nested GFM; only the
-      read-back loses it. Fixing the parser would close the one gap in the Markpub round trip.
+- [x] **Nested lists in the markdown parser** — `renderer-core`'s `markdown.ts` dropped nested list
+      branches outright (`listItemText`), losing whole passages between parse and render. The
+      structured vocabulary now has `StructuredListItem` with `children`, the markdown parser
+      builds them, and `build.ts` maps them recursively into the render tree's existing nested
+      `ListItem`.
 - [ ] **Re-upload images for Markpub → block-format conversions** — going back from markdown,
       an `https://` image cannot become a Leaflet/Offprint blob without uploading it. Currently
       reported as unsupported; could offer `--upload-images` to fetch and `uploadBlob` them.
-- [ ] **Stop using react-markdown in the app** — the app renders markdown through its own
-      react-markdown stack while `renderer-react` renders every other format, so there are two
-      markdown implementations to keep in step. Closing the gap needs `renderer-core`'s markdown
-      parser to match what the app already shows. Landed so far: nested lists, raw HTML (a new
-      `html` block node, rendered by nothing by default so sanitization stays the host's job),
-      display math (`micromark-extension-math`), and inline images (the paragraph splits around
-      them instead of dropping them). Still missing before the swap is safe: - [ ] **Callouts** — the parser reads `> [!NOTE]` as a plain blockquote. The `callout` node
-      has `emoji`/`color` but not the `kind` / `title` / `fold` the app's `Callout` component
-      takes (see `src/lib/markdown/callouts.ts`), so the node and all six renderers need
-      those fields threaded through. - [ ] **GFM footnotes** — references and definitions are both dropped. `DocumentTree` already
-      carries `footnotes` + `footnoteNumbers` and `segmentInline` already emits `footnoteRef`
-      (Leaflet uses both), but the structured parser has no channel to return footnotes
-      through, so `markdownBlocks` needs a richer return shape. - [ ] **Inline math** — kept as its `$…$` source, since `InlineNode` has no math variant. - [ ] **Inline HTML** — tags are stripped and the text kept (`<mark>x</mark>` → `x`).
+- [x] **Stop using react-markdown for document markdown** — every markdown-bodied format
+      (`site.standard.content.markdown`, the thirteen markdown-in-record lexicons, and Markpub)
+      now renders through `@standard-reader/renderer-react`, so one parser backs every format the
+      reader shows. Getting there meant teaching `renderer-core`'s markdown parser everything the
+      app already displayed: nested lists, raw HTML (a new `html` block node that renders as
+      nothing by default, so sanitization stays the host's job), display math
+      (`micromark-extension-math`), inline images, callouts (`kind` / `title` / `fold`, with the
+      GFM + Obsidian aliases normalized in `callouts.ts`), and GFM footnotes (via
+      `structuredFormatDocument`, numbered by first reference).
+      react-markdown remains for HTML-in-record documents, which need an HTML pipeline rather
+      than a markdown one, and for small in-app strings such as a collection colophon.
+- [ ] **Inline math and inline HTML in the render tree** — `$…$` keeps its source and `<mark>x</mark>`
+      keeps its text, since `InlineNode` has no math or raw-HTML variant. Neither loses content;
+      neither renders as rich as react-markdown did. Adding inline nodes would touch all six
+      renderers, so it waits for a document that needs it.
+- [ ] **Drop the app's duplicate callout table** — `src/lib/markdown/callouts.ts` still owns a copy
+      of the type→kind mapping that `renderer-core` now exports. The HTML-in-record path is the
+      last caller; once that moves, delete it in favour of `calloutKindForType`.
 - [ ] **Convert a single record from the app** — the reading client stays read-first, but an
       author viewing their own document could be offered the same conversion inline. Depends on
       write scopes for `site.standard.document`.

@@ -11,12 +11,10 @@ import { OFFPRINT_CONTENT } from "#/lib/offprint/types";
 import { PCKT_CONTENT } from "#/lib/pckt/types";
 
 import type { ContentRenderer } from "../types";
-import { AltMarkdownContentRenderer } from "./alt-markdown-content";
 import { HtmlContentRenderer } from "./html-content";
 import { LeafletContentRenderer } from "./leaflet-content";
 import { LeafletDocumentContentRenderer } from "./leaflet-document-content";
 import { MarkdownContentRenderer } from "./markdown-content";
-import { MarkpubContentRenderer } from "./markpub-content";
 import { OffprintContentRenderer } from "./offprint-content";
 import { PcktContentRenderer } from "./pckt-content";
 import { StructuredFormatContentRenderer } from "./structured-format-content";
@@ -28,11 +26,13 @@ export const CONTENT_RENDERERS: Record<string, ContentRenderer> = {
   [PCKT_CONTENT]: PcktContentRenderer,
   [OFFPRINT_CONTENT]: OffprintContentRenderer,
   [STANDARD_MARKDOWN_CONTENT]: MarkdownContentRenderer,
-  [MARKPUB_MARKDOWN]: MarkpubContentRenderer,
+  [MARKPUB_MARKDOWN]: MarkdownContentRenderer,
 };
 
+// Markdown-in-record third-party lexicons (wtr, unthread, lichen, …) go
+// through the same renderer; `renderer-core` knows how to find each one's body.
 for (const format of ALT_MARKDOWN_FORMATS) {
-  CONTENT_RENDERERS[format] = AltMarkdownContentRenderer;
+  CONTENT_RENDERERS[format] = MarkdownContentRenderer;
 }
 for (const format of HTML_CONTENT_FORMATS) {
   CONTENT_RENDERERS[format] = HtmlContentRenderer;

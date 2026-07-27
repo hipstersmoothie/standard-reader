@@ -11,6 +11,7 @@ import type {
   FootnoteItemProps,
   FootnotesProps,
   HeadingProps,
+  HtmlProps,
   IframeProps,
   ImageCollectionProps,
   ImageDiffProps,
@@ -38,6 +39,7 @@ import * as stylex from "@stylexjs/stylex";
 import { createElement } from "react";
 
 import type { ArticleDetail } from "#/integrations/tanstack-query/api-publication.functions";
+import { sanitizeArticleHtml } from "#/lib/markdown/sanitize-html";
 import type { CodeHighlightsByScheme } from "#/lib/theme";
 
 import { articleBodyStyles } from "./body-styles";
@@ -50,6 +52,7 @@ import { OffprintComponentBlockView } from "./renderers/offprint-component";
 import { PcktGalleryBlockView } from "./renderers/pckt-gallery";
 import { PcktNoteEmbedView } from "./renderers/pckt-note-embed";
 import { BskyPostEmbedView } from "./renderers/shared/bsky-post-embed";
+import { Callout } from "./renderers/shared/callout";
 import { CodeBlockView } from "./renderers/shared/code-block";
 import { FacetedPlaintext } from "./renderers/shared/faceted-text";
 import { IframeEmbedView } from "./renderers/shared/iframe-embed";
@@ -88,7 +91,8 @@ export function buildStandardReaderComponents({
   blobContext,
   codeHighlights,
 }: {
-  blobContext: ContentBlobContext;
+  /** Absent for formats with no blob-backed images, e.g. markdown-in-record. */
+  blobContext?: ContentBlobContext;
   codeHighlights?: CodeHighlightsByScheme;
 }): RendererComponentsInput {
   return {
@@ -123,16 +127,29 @@ export function buildStandardReaderComponents({
           {children}
         </blockquote>
       ),
-      Callout: ({ emoji, children }: CalloutProps) => (
-        <aside {...stylex.props(articleBodyStyles.callout)} role="note">
-          {emoji ? (
-            <span {...stylex.props(articleBodyStyles.calloutEmoji)} aria-hidden>
-              {emoji}
-            </span>
-          ) : null}
-          <div {...stylex.props(articleBodyStyles.calloutBody)}>{children}</div>
-        </aside>
-      ),
+      // A markdown `[!TYPE]` callout carries a kind, so it gets the full
+      // styled component (icon, colour, optional fold). Block formats supply an
+      // emoji instead, and keep the plainer aside.
+      Callout: ({ emoji, kind, title, fold, children }: CalloutProps) =>
+        kind ? (
+          <Callout kind={kind} title={title ?? ""} fold={fold}>
+            {children}
+          </Callout>
+        ) : (
+          <aside {...stylex.props(articleBodyStyles.callout)} role="note">
+            {emoji ? (
+              <span
+                {...stylex.props(articleBodyStyles.calloutEmoji)}
+                aria-hidden
+              >
+                {emoji}
+              </span>
+            ) : null}
+            <div {...stylex.props(articleBodyStyles.calloutBody)}>
+              {children}
+            </div>
+          </aside>
+        ),
       HorizontalRule: () => (
         <hr {...stylex.props(articleBodyStyles.horizontalRule)} />
       ),
@@ -163,6 +180,13 @@ export function buildStandardReaderComponents({
           <span>{children}</span>
         </li>
       ),
+      // Raw HTML from a markdown body, sanitized with the app's own schema —
+      // `renderer-core` carries the markup but refuses to decide what is safe.
+      Html: ({ html }: HtmlProps) => {
+        const safe = sanitizeArticleHtml(html);
+        if (!safe) return null;
+        return <div dangerouslySetInnerHTML={{ __html: safe }} />;
+      },
       Code: ({ code, language }: CodeProps) => (
         <CodeBlockView
           plaintext={code}
