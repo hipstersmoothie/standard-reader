@@ -6,7 +6,7 @@ reviewed and versioned; paste them into the routine's prompt at
 https://claude.ai/code/routines.
 
 Each fire delivers one piece of user feedback from the Standard Reader board on
-userinput.app, along with the branch to work on.i ne
+userinput.app, along with the branch to work on.
 
 ---
 

@@ -1,16 +1,29 @@
 name: Feedback agent
 
-# Polls the userinput.app feedback board and fires a Claude Code Routine for
-# every discussion newly marked `planned`. The agent itself runs as a cloud
-# session on Anthropic infrastructure — this workflow only hosts the ~5s poller,
-# so there is no ANTHROPIC_API_KEY here and no agent code on the runner.
+# Reads the userinput.app feedback board and fires a Claude Code Routine for
+# every discussion newly marked `planned`. Driven by an airglow.run webhook
+# (`repository_dispatch`) the moment a status record lands, with the cron as a
+# backstop. The agent itself runs as a cloud session on Anthropic infrastructure
+# — this workflow only hosts the ~5s poller, so there is no ANTHROPIC_API_KEY
+# here and no agent code on the runner.
 #
-# See scripts/feedback-agent-poll.ts and .github/feedback-agent-routine.md.
+# See scripts/feedback-agent-poll.ts, .github/feedback-agent-routine.md, and the
+# "Feedback agent" block in apps/standard-reader/.env.example for the airglow
+# webhook config.
 
 on:
+  # Primary trigger: airglow.run watches our org repo for a new
+  # `app.userinput.status` record and POSTs a `repository_dispatch` here the
+  # instant a discussion is marked. See the "Feedback agent" block in
+  # apps/standard-reader/.env.example for the airglow webhook config. The poller
+  # re-scans the board and only acts on `planned` items, so a dispatch fired for
+  # any other state simply reports "0 dispatched".
+  repository_dispatch:
+    types: [feedback-planned]
   schedule:
-    # GitHub's cron is best-effort and frequently runs late; "every 15 minutes"
-    # means "within the hour" in practice, which is fine for this.
+    # Backstop for any dispatch airglow misses. GitHub's cron is best-effort and
+    # frequently runs late; "every 15 minutes" means "within the hour" in
+    # practice, which is fine for a safety net behind the webhook.
     - cron: "*/15 * * * *"
   workflow_dispatch:
     inputs:
@@ -54,5 +67,5 @@ jobs:
           CLAUDE_ROUTINE_ID: ${{ secrets.CLAUDE_ROUTINE_ID }}
           CLAUDE_ROUTINE_TOKEN: ${{ secrets.CLAUDE_ROUTINE_TOKEN }}
           GH_TOKEN: ${{ github.token }}
-          DISCUSSION_URI: ${{ inputs.discussion_uri }}
+          DISCUSSION_URI: ${{ inputs.discussion_uri || github.event.client_payload.uri }}
           DRY_RUN: ${{ inputs.dry_run && '1' || '' }}
