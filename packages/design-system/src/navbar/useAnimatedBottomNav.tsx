@@ -54,13 +54,26 @@ function prefersReducedMotion() {
  * lays out on the main thread), this one is free to animate `transform`: nothing
  * pins itself to a bottom bar, so the composited property is the better pick.
  *
+ * Two rules this hook keeps, both learned from iOS Safari deciding how tall the
+ * page is based on what the page pins to the viewport:
+ *
+ * 1. **Never write to the fixed element.** `stackTarget` must be an in-flow
+ *    wrapper *inside* the viewport-pinned dock, never the dock itself. Putting a
+ *    transform on the pinned element promotes it to a composited layer, and
+ *    Safari reads that as a reason to hold its toolbars open and shorten the
+ *    dynamic viewport — the page then stops short of the bottom edge.
+ * 2. **A resting bar carries no inline styles at all**, not even a
+ *    `translateY(0)`. An identity transform still makes a layer and a stacking
+ *    context, so it still counts against rule 1; the reveal clears itself once
+ *    it lands.
+ *
  * Like the top bar's hook, everything it drives is written straight to the DOM.
  * Scroll direction flips constantly and re-rendering the shell on each flip
  * would cost far more than the two style writes the flip actually needs.
  */
 export const useAnimatedBottomNav = ({
   enabled = true,
-  dockTarget,
+  stackTarget,
   scrollContainer: scrollContainerProp,
 }: {
   /**
@@ -69,13 +82,15 @@ export const useAnimatedBottomNav = ({
    */
   enabled?: boolean;
   /**
-   * The bottom-anchored stack the bar is the last child of. When the bar hides,
-   * the dock slides down by the bar's footprint so whatever floats above it
-   * (the page-reader transport) drops into the vacated slot instead of hovering
-   * over a gap. Both moves are transforms on the same duration and easing, so
-   * they stay locked together. Omit it and only the bar itself moves.
+   * The in-flow stack the bar is the last child of, inside the dock that pins
+   * itself to the viewport — **not** the pinned element itself (see rule 1
+   * above). When the bar hides, the stack slides down by the bar's footprint so
+   * whatever floats above it (the page-reader transport) drops into the vacated
+   * slot instead of hovering over a gap. Both moves are transforms on the same
+   * duration and easing, so they stay locked together. Omit it and only the bar
+   * itself moves.
    */
-  dockTarget?: React.RefObject<HTMLElement | null>;
+  stackTarget?: React.RefObject<HTMLElement | null>;
   /**
    * The element that scrolls. Omit it when the document itself is the scroll
    * container: the hook then listens on the window and measures the viewport.
@@ -91,44 +106,63 @@ export const useAnimatedBottomNav = ({
   const hidden = useRef(false);
   const animated = useRef(false);
   // How far the bar has to travel to clear the bottom edge, and how much of that
-  // travel the dock takes on. Measured only while the bar sits in place — the
+  // travel the stack takes on. Measured only while the bar sits in place — the
   // geometry lies once a transform is on it.
   const distance = useRef(0);
   const collapse = useRef(0);
+  // Viewport and document heights, cached rather than read per scroll frame:
+  // `innerHeight` and `scrollHeight` both force layout, and forcing it on every
+  // frame of a scroll is the one thing a scroll handler must not do.
+  const viewportHeight = useRef(0);
+  const scrollHeight = useRef(0);
   const enabledRef = useRef(enabled);
 
   const apply = useCallback(() => {
     const nav = navRef.current;
-    const dock = dockTarget?.current;
+    const stack = stackTarget?.current;
     if (!nav) return;
 
-    // Nothing to show for a bar that has never moved, and a resting bar should
-    // not leave a `translateY(0)` behind: a transform on the dock would make it
-    // the containing block for any fixed-position child that lands in it.
-    if (!enabledRef.current || (!hidden.current && !animated.current)) {
+    const clear = () => {
       nav.style.removeProperty("transform");
       nav.style.removeProperty("transition");
-      dock?.style.removeProperty("transform");
-      dock?.style.removeProperty("transition");
+      stack?.style.removeProperty("transform");
+      stack?.style.removeProperty("transition");
+    };
+
+    const reducedMotion = prefersReducedMotion();
+
+    if (!enabledRef.current || !hidden.current) {
+      // Back at rest with nothing to undo, or with no motion to animate: drop
+      // every inline style so the resting DOM is exactly what the markup says.
+      if (!enabledRef.current || !animated.current || reducedMotion) {
+        animated.current = false;
+        clear();
+        return;
+      }
+      // Otherwise animate home and let `transitionend` do the clearing.
+      const transition = `transform ${animationDuration.slow} ${animationTimingFunction.easeInOut}`;
+      nav.style.transition = transition;
+      nav.style.transform = "translateY(0px)";
+      if (stack) {
+        stack.style.transition = transition;
+        stack.style.transform = "translateY(0px)";
+      }
       return;
     }
 
     const transition =
-      animated.current && !prefersReducedMotion()
+      animated.current && !reducedMotion
         ? `transform ${animationDuration.slow} ${animationTimingFunction.easeInOut}`
         : "none";
-    // The dock carries part of the travel, so the bar only owes the remainder —
+    // The stack carries part of the travel, so the bar only owes the remainder —
     // nested transforms compose, and the two together still add up to `distance`.
-    const dockShift = hidden.current ? collapse.current : 0;
-    const navShift = hidden.current ? distance.current - collapse.current : 0;
-
     nav.style.transition = transition;
-    nav.style.transform = `translateY(${navShift}px)`;
-    if (dock) {
-      dock.style.transition = transition;
-      dock.style.transform = `translateY(${dockShift}px)`;
+    nav.style.transform = `translateY(${distance.current - collapse.current}px)`;
+    if (stack) {
+      stack.style.transition = transition;
+      stack.style.transform = `translateY(${collapse.current}px)`;
     }
-  }, [dockTarget]);
+  }, [stackTarget]);
 
   const setHidden = useCallback(
     (next: boolean) => {
@@ -150,17 +184,19 @@ export const useAnimatedBottomNav = ({
       if (!node) return;
 
       const measure = () => {
-        // Only truthful while the bar is at rest; hidden geometry is the
-        // transformed geometry, and re-deriving from it would compound.
+        viewportHeight.current = globalThis.innerHeight;
+        scrollHeight.current = document.documentElement.scrollHeight;
+        // The rest is only truthful while the bar is at rest; hidden geometry is
+        // the transformed geometry, and re-deriving from it would compound.
         if (hidden.current) return;
         const rect = node.getBoundingClientRect();
-        const dock = dockTarget?.current;
-        // The bar is the dock's last child, so its footprint is its own height
+        const stack = stackTarget?.current;
+        // The bar is the stack's last child, so its footprint is its own height
         // plus the gap that separates it from whatever sits above it.
-        const rowGap = dock
-          ? Number.parseFloat(globalThis.getComputedStyle(dock).rowGap)
+        const rowGap = stack
+          ? Number.parseFloat(globalThis.getComputedStyle(stack).rowGap)
           : 0;
-        collapse.current = dock
+        collapse.current = stack
           ? rect.height + (Number.isNaN(rowGap) ? 0 : rowGap)
           : 0;
         // Distance to the bottom edge rather than a bare height: the dock floats
@@ -171,9 +207,23 @@ export const useAnimatedBottomNav = ({
 
       measure();
       // The bar grows with the reader's text-size dial, and a hidden bar sits
-      // one footprint below the fold, so neither number can be a constant.
+      // one footprint below the fold, so neither number can be a constant. The
+      // document is watched too, so the cached page height follows content that
+      // loads in (embeds, images) without a scroll-time layout read.
       const resizeObserver = new ResizeObserver(measure);
       resizeObserver.observe(node);
+      resizeObserver.observe(document.documentElement);
+
+      // Clearing on `transitionend` is what keeps rule 2 — the reveal is the
+      // only write that leaves an identity transform behind, and it undoes it
+      // as soon as it lands.
+      const onTransitionEnd = (event: TransitionEvent) => {
+        if (event.target !== node || event.propertyName !== "transform") return;
+        if (hidden.current) return;
+        animated.current = false;
+        apply();
+      };
+      node.addEventListener("transitionend", onTransitionEnd);
 
       // A hidden bar is off-screen but still in the tab order. Bring it back
       // rather than let keyboard focus wander somewhere the reader can't see.
@@ -182,19 +232,20 @@ export const useAnimatedBottomNav = ({
 
       return () => {
         resizeObserver.disconnect();
+        node.removeEventListener("transitionend", onTransitionEnd);
         node.removeEventListener("focusin", onFocusIn);
         navRef.current = null;
-        // The dock outlives the bar — a selection toolbar takes the slot over,
+        // The stack outlives the bar — a selection toolbar takes the slot over,
         // and routes swap the bar out. Hand it back unshifted, or whatever
         // replaces the bar inherits an offset meant for a bar that is gone.
         hidden.current = false;
         animated.current = false;
-        const dock = dockTarget?.current;
-        dock?.style.removeProperty("transform");
-        dock?.style.removeProperty("transition");
+        const stack = stackTarget?.current;
+        stack?.style.removeProperty("transform");
+        stack?.style.removeProperty("transition");
       };
     },
-    [apply, dockTarget, setHidden],
+    [apply, setHidden, stackTarget],
   );
 
   // Turning the hook off drops the bar back into place. Clear the state with it,
@@ -222,17 +273,17 @@ export const useAnimatedBottomNav = ({
         : globalThis.scrollY;
       const viewport = container
         ? container.clientHeight
-        : globalThis.innerHeight;
-      const scrollHeight = container
+        : viewportHeight.current;
+      const pageHeight = container
         ? container.scrollHeight
-        : document.documentElement.scrollHeight;
+        : scrollHeight.current;
 
       // Two places the bar always belongs: the top of the page, where hiding it
       // buys nothing, and the end of the page, where the reader has finished and
       // wants somewhere to go next.
       if (
         currentScrollY <= SCROLL_THRESHOLD ||
-        currentScrollY + viewport >= scrollHeight - SCROLL_THRESHOLD
+        currentScrollY + viewport >= pageHeight - SCROLL_THRESHOLD
       ) {
         setHidden(false);
         lastScrollY.current = currentScrollY;
