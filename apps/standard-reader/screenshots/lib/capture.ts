@@ -116,6 +116,21 @@ export async function captureShot({
     });
     await waitForShotReady(page, timeoutMs);
 
+    // An auth-gated route bounces to /login when the session isn't accepted —
+    // and the login page paints and settles like any other, so without this the
+    // run reports success and writes a screenshot of the sign-in form. Every
+    // signed-in shot would silently become the same picture.
+    if (
+      shot.auth === "signed-in" &&
+      new URL(page.url()).pathname.startsWith("/login")
+    ) {
+      throw new Error(
+        `Redirected to ${page.url()} — the session was not accepted for this route. ` +
+          `Check PERF_TEST_IDENTIFIER / PERF_TEST_APP_PASSWORD (the app must be able to ` +
+          `restore an AT Proto client for the account, not just match a session row).`,
+      );
+    }
+
     for (const interaction of shot.interactions ?? []) {
       await page
         .getByRole(interaction.role, {

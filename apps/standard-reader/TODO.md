@@ -961,6 +961,12 @@ cookies on `/xrpc`. Live developer docs at [`/docs/api`](/docs/api).
 - [ ] **Run the first capture pass** — `public/guide/` is empty until someone runs
       `pnpm guide:shots` against a dev server with `PERF_TEST_*` credentials and fixtures set.
       `<GuideFigure>` degrades to its caption until then, so the pages read fine meanwhile.
+      Two things have to be true, and neither held in the agent sandbox where the pages were
+      written: (1) the account's app password must be in the **dev server's** `.env` too, or
+      every auth-gated route bounces to `/login` (the capture now fails loudly instead of
+      saving the sign-in form); (2) the browser must reach the image CDN, or the shots come
+      out with broken-image icons where every avatar and cover image should be — see
+      `GUIDE_SHOTS_PROXY` in `screenshots/README.md`. Check one shot by eye after the run.
 - [ ] **Search across the guide** — Debbie's write-up calls for search once the content grows;
       the guide currently relies on the sidebar and the per-page rails.
 - [x] **XRPC test suite** — unit tests for registry, params, dispatch, and handlers
