@@ -409,12 +409,16 @@ const styles = stylex.create({
     display: "flex",
     flexDirection: "column",
     pointerEvents: "none",
+    // Nothing writes to this element. The bottom nav's hide-on-scroll animation
+    // shifts `dockStack` inside it instead: a transform here would promote the
+    // viewport-pinned dock to a composited layer, and iOS Safari answers that by
+    // holding its toolbars open and shortening the dynamic viewport — the page
+    // then stops short of the bottom edge with a dead strip below the content.
     // Pinned to the viewport (the document is the scroll container now, so an
     // absolute dock would ride to the bottom of the whole article instead of
     // floating above the fold). Offset by the sidebar width on desktop so the
     // floating card stays centered over the content column.
     position: "fixed",
-    rowGap: gap.lg,
     zIndex: 30,
     // Sit a floor of 16px above the bottom, or hug the home-indicator safe area
     // where that's larger. On iOS (standalone PWA) the ~34px safe-area inset
@@ -427,6 +431,17 @@ const styles = stylex.create({
     paddingInlineStart: horizontalSpace["3xl"],
     paddingInlineEnd: horizontalSpace["3xl"],
     insetInlineEnd: 0,
+  },
+  // The dock's contents, in normal flow. This is what the hide-on-scroll
+  // animation transforms — see the note on `dock`. It owns the row gap because
+  // the animation measures the bar's footprint from it.
+  dockStack: {
+    alignItems: "center",
+    display: "flex",
+    flexDirection: "column",
+    pointerEvents: "none",
+    rowGap: gap.lg,
+    width: "100%",
   },
   bottomNav: {
     display: { [DESKTOP]: "none", default: "flex" },
@@ -715,11 +730,11 @@ function navItemActive(pathname: string, to: string): boolean {
 function BottomNav({
   items,
   hasUnread,
-  dockRef,
+  stackRef,
 }: {
   items: Array<NavLink>;
   hasUnread: boolean;
-  dockRef: React.RefObject<HTMLDivElement | null>;
+  stackRef: React.RefObject<HTMLDivElement | null>;
 }) {
   // Mirror of the mobile top bar: scrolling down slides the pill out through the
   // bottom edge, scrolling up brings it back, so an article gets the full height
@@ -729,7 +744,7 @@ function BottomNav({
   const compactNav = useCompactNav();
   const { navBarProps } = useAnimatedBottomNav({
     enabled: compactNav,
-    dockTarget: dockRef,
+    stackTarget: stackRef,
   });
   const pathname = useRouterState({
     select: (s: { location: { pathname: string } }) => s.location.pathname,
@@ -811,22 +826,22 @@ function BottomNav({
 function BottomNavSlot({
   items,
   hasUnread,
-  dockRef,
+  stackRef,
 }: {
   items: Array<NavLink>;
   hasUnread: boolean;
-  dockRef: React.RefObject<HTMLDivElement | null>;
+  stackRef: React.RefObject<HTMLDivElement | null>;
 }) {
   const dock = useSelectionDock();
 
   // The selection toolbar is a response to something the reader just did, so it
   // never hides on scroll. Unmounting `BottomNav` also tears down the hook,
-  // which drops the dock back to its resting offset for the toolbar.
+  // which drops the stack back to its resting offset for the toolbar.
   if (dock?.isActive) {
     return <div {...stylex.props(styles.selectionSlot)} ref={dock.setSlot} />;
   }
 
-  return <BottomNav items={items} hasUnread={hasUnread} dockRef={dockRef} />;
+  return <BottomNav items={items} hasUnread={hasUnread} stackRef={stackRef} />;
 }
 
 function Brand({
@@ -938,10 +953,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const mainRef = useRef<HTMLElement>(null);
   const { navBarProps: mobileBarProps, sentinel: mobileBarSentinel } =
     useAnimatedNavbar({ enabled: compactNav, offsetTarget: mainRef });
-  // The bottom nav slides down out of the dock as you scroll; the dock follows
-  // it partway so the page-reader transport stacked above drops into the
-  // vacated slot rather than hovering over a gap.
-  const dockRef = useRef<HTMLDivElement>(null);
+  // The bottom nav slides down out of the dock as you scroll; the dock's inner
+  // stack follows it partway so the page-reader transport above drops into the
+  // vacated slot rather than hovering over a gap. The stack, never the dock —
+  // the dock is pinned to the viewport and must stay untransformed.
+  const dockStackRef = useRef<HTMLDivElement>(null);
 
   const { data: listsData, isPending: listsPending } = useQuery({
     ...listsQueryOptions(),
@@ -1437,13 +1453,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </PublicationThemeScope>
             </div>
 
-            <div ref={dockRef} {...stylex.props(styles.dock)}>
-              <PageReaderBar />
-              <BottomNavSlot
-                items={visibleNav}
-                hasUnread={hasUnread}
-                dockRef={dockRef}
-              />
+            <div {...stylex.props(styles.dock)}>
+              <div ref={dockStackRef} {...stylex.props(styles.dockStack)}>
+                <PageReaderBar />
+                <BottomNavSlot
+                  items={visibleNav}
+                  hasUnread={hasUnread}
+                  stackRef={dockStackRef}
+                />
+              </div>
             </div>
           </main>
 
