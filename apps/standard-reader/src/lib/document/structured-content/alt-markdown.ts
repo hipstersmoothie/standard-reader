@@ -2,48 +2,38 @@
  * Markdown-in-record content formats: third-party lexicons whose `content`
  * union entry is just a markdown string under a format-specific key. They all
  * funnel into the same markdown pipeline as `site.standard.content.markdown`.
+ *
+ * The format→body-key table lives in `@standard-reader/renderer-core` (it is
+ * the same table its markdown parser dispatches on); the app kept a second copy
+ * until the two were reconciled. What's left here is the app's own framing:
+ * "alt" markdown means every markdown-in-record format *except* the canonical
+ * `site.standard.content.markdown`, which has its own route.
  */
+
+import {
+  isMarkdownFormat,
+  MARKDOWN_FORMATS,
+  markdownText,
+  STANDARD_MARKDOWN_CONTENT,
+} from "@standard-reader/renderer-core";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-type MarkdownExtractor = (content: Record<string, unknown>) => string | null;
-
-const field =
-  (key: string): MarkdownExtractor =>
-  (content) => {
-    const text = content[key];
-    return typeof text === "string" ? text : null;
-  };
-
 /**
- * Known markdown-in-record formats, keyed by content `$type`. Each entry
- * extracts the raw markdown body from the format's payload shape.
- *
- * `at.markpub.markdown` is handled by the dedicated markpub module instead.
+ * Known markdown-in-record formats. `at.markpub.markdown` is handled by the
+ * dedicated markpub module instead, and never appears here.
  */
-const ALT_MARKDOWN_EXTRACTORS: Record<string, MarkdownExtractor> = {
-  "actor.rpg.news#markdown": field("value"),
-  "app.blento.markdown": field("value"),
-  "app.wtr.content.markdown": field("markdown"),
-  "at.unthread.content": field("content"),
-  "com.pricelessmisc.content.markdown": field("markdown"),
-  "com.scanash.content.markdown": field("markdown"),
-  "dev.disnet.blog.content.markdown": field("markdown"),
-  "download.darkworld.content.markdown#markdown": field("body"),
-  "me.tompscanlan.content.markdown": field("markdown"),
-  "net.commoninternet.lichen.content.markdown": field("text"),
-  "pub.lemma.blog.entry": field("content"),
-  "rip.nate.content.markdown": field("text"),
-  "site.standard.document#markdown": field("value"),
-};
-
-export const ALT_MARKDOWN_FORMATS = Object.keys(ALT_MARKDOWN_EXTRACTORS);
+export const ALT_MARKDOWN_FORMATS = MARKDOWN_FORMATS.filter(
+  (format) => format !== STANDARD_MARKDOWN_CONTENT,
+);
 
 /** Whether `format` is a known markdown-in-record content `$type`. */
 export function isAltMarkdownFormat(format: string | null | undefined) {
-  return Boolean(format && format in ALT_MARKDOWN_EXTRACTORS);
+  return Boolean(
+    format && format !== STANDARD_MARKDOWN_CONTENT && isMarkdownFormat(format),
+  );
 }
 
 /**
@@ -58,9 +48,7 @@ export function altMarkdownText(
   if (!isRecord(content)) return null;
   const format =
     typeof content.$type === "string" ? content.$type : contentFormat;
-  if (!format) return null;
-  const extract = ALT_MARKDOWN_EXTRACTORS[format];
-  if (!extract) return null;
-  const text = extract(content)?.trim();
+  if (!isAltMarkdownFormat(format)) return null;
+  const text = markdownText(content, format)?.trim();
   return text || null;
 }

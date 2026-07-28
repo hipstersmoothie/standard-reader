@@ -1,18 +1,11 @@
-import { LEAFLET_CONTENT } from "../leaflet/types";
 import {
-  BLOCKNOTE_CONTENT,
-  blocknoteBlocks,
-} from "./structured-content/blocknote";
-import { FABLES_CONTENT, fablesBlocks } from "./structured-content/fables";
-import {
-  ITEM_BLOCK_FORMATS,
-  itemBlocks,
-} from "./structured-content/item-blocks";
-import { OXA_CONTENT, oxaBlocks } from "./structured-content/oxa";
-import {
-  PROSEMIRROR_CONTENT,
-  prosemirrorBlocks,
-} from "./structured-content/prosemirror";
+  GUTENBERG_CONTENT,
+  isMarkdownFormat,
+  isMarkpubFormat,
+  STRUCTURED_BLOCK_FORMATS as RENDERER_CORE_BLOCK_FORMATS,
+  structuredFormatBlocks as renderCoreStructuredBlocks,
+} from "@standard-reader/renderer-core";
+
 /**
  * Central dispatch for third-party document content formats beyond the four
  * first-class families (leaflet / pckt / offprint / standard markdown).
@@ -21,7 +14,11 @@ import {
  * the renderable-body check:
  *  - markdown-in-record  → `altMarkdownText` (alt-markdown.ts)
  *  - HTML-in-record      → `htmlContentBody` / `htmlContentPlaintext` (html.ts)
- *  - block-based         → `structuredFormatBlocks` (parsers below)
+ *  - block-based         → `structuredFormatBlocks` (parsed by `renderer-core`)
+ *
+ * The block parsers live in `@standard-reader/renderer-core` — the app used to
+ * carry a second copy of each one, which is how its blocks ended up a version
+ * behind (flat list items, no raw-HTML block, no image captions).
  *
  * `pub.leaflet.document` is special-cased: it's a full Leaflet document whose
  * `pages` match `pub.leaflet.content`, so it adapts onto the existing leaflet
@@ -51,64 +48,37 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-export const LEAFLET_DOCUMENT_FORMAT = "pub.leaflet.document";
+/**
+ * `pub.leaflet.document` — the full-document twin of `pub.leaflet.content`,
+ * adapted onto the leaflet block parser by `leafletDocumentContent` (both owned
+ * by `renderer-core`).
+ */
+export {
+  LEAFLET_DOCUMENT_FORMAT,
+  leafletDocumentContent,
+} from "@standard-reader/renderer-core";
 
 /**
- * `pub.leaflet.document` blocks carry their text under `text`, while the
- * `pub.leaflet.content` parser expects `plaintext` — mirror it across.
+ * The block-based formats *this app* routes through the structured path:
+ * everything `renderer-core` parses to blocks, minus the formats the app
+ * already has a more specific route for — the markdown-bodied ones (rendered by
+ * `renderer-react` via the markdown renderer, plaintext via `altMarkdownText` /
+ * `markpubPlaintext`) and SkyPress Gutenberg (serialized to HTML by
+ * `html.ts`). Core can parse those too; the app just doesn't ask it to.
  */
-function normalizeLeafletDocumentBlock(entry: unknown): unknown {
-  if (!isRecord(entry)) return entry;
-  // Page-wrapper entries nest the actual block under `block`.
-  if (isRecord(entry.block)) {
-    return { ...entry, block: normalizeLeafletDocumentBlock(entry.block) };
-  }
-  if (typeof entry.text === "string" && entry.plaintext === undefined) {
-    return { ...entry, plaintext: entry.text };
-  }
-  return entry;
-}
+const STRUCTURED_FORMAT_SET = new Set(
+  RENDERER_CORE_BLOCK_FORMATS.filter(
+    (format) =>
+      !isMarkdownFormat(format) &&
+      !isMarkpubFormat(format) &&
+      format !== GUTENBERG_CONTENT,
+  ),
+);
 
-/**
- * Adapt a `pub.leaflet.document` payload (same `pages` shape as
- * `pub.leaflet.content`) so the leaflet block parser/renderer accept it.
- */
-export function leafletDocumentContent(content: unknown): unknown {
-  if (!isRecord(content)) return null;
-  if (content.$type !== LEAFLET_DOCUMENT_FORMAT) return null;
-  const pages = Array.isArray(content.pages)
-    ? content.pages.map((page) => {
-        if (!isRecord(page) || !Array.isArray(page.blocks)) return page;
-        return {
-          ...page,
-          blocks: page.blocks.map((entry) =>
-            normalizeLeafletDocumentBlock(entry),
-          ),
-        };
-      })
-    : content.pages;
-  return { ...content, $type: LEAFLET_CONTENT, pages };
-}
-
-type BlockParser = (
-  content: unknown,
-  contentFormat?: string | null,
-) => Array<StructuredRenderableBlock>;
-
-const STRUCTURED_FORMAT_PARSERS: Record<string, BlockParser> = {
-  [BLOCKNOTE_CONTENT]: blocknoteBlocks,
-  [FABLES_CONTENT]: fablesBlocks,
-  [OXA_CONTENT]: oxaBlocks,
-  [PROSEMIRROR_CONTENT]: prosemirrorBlocks,
-};
-for (const format of ITEM_BLOCK_FORMATS) {
-  STRUCTURED_FORMAT_PARSERS[format] = itemBlocks;
-}
-
-export const STRUCTURED_BLOCK_FORMATS = Object.keys(STRUCTURED_FORMAT_PARSERS);
+export const STRUCTURED_BLOCK_FORMATS = [...STRUCTURED_FORMAT_SET];
 
 export function isStructuredBlockFormat(format: string | null | undefined) {
-  return Boolean(format && format in STRUCTURED_FORMAT_PARSERS);
+  return Boolean(format && STRUCTURED_FORMAT_SET.has(format));
 }
 
 /**
@@ -123,8 +93,6 @@ export function structuredFormatBlocks(
     isRecord(content) && typeof content.$type === "string"
       ? content.$type
       : contentFormat;
-  if (!format) return null;
-  const parse = STRUCTURED_FORMAT_PARSERS[format];
-  if (!parse) return null;
-  return parse(content, format);
+  if (!format || !STRUCTURED_FORMAT_SET.has(format)) return null;
+  return renderCoreStructuredBlocks(content, format);
 }

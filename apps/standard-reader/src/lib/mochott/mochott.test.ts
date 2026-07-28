@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
 
+import { structuredFormatBlocks } from "#/lib/document/content-formats";
 import { hasRenderableArticleBody } from "#/lib/document/renderable";
 import { documentSearchText } from "#/lib/document/search-text";
 
-import { mochottPlaintext, mochottRenderableBlocks } from "./plaintext";
+import { mochottPlaintext } from "./plaintext";
 import { MOCHOTT_ARTICLE, mochottArticleContent } from "./types";
 
 /** A `site.mochott.article` record with a TipTap body. */
@@ -54,9 +55,9 @@ describe("mochottArticleContent", () => {
 });
 
 describe("mochott body text", () => {
-  it("parses blocks through renderer-core", () => {
+  it("parses blocks through the shared structured dispatch", () => {
     expect(
-      mochottRenderableBlocks(article()).map((block) => block.kind),
+      structuredFormatBlocks(article())?.map((block) => block.kind),
     ).toEqual(["heading", "text"]);
   });
 
@@ -71,8 +72,8 @@ describe("mochott body text", () => {
   });
 
   it("has no text (and no blocks) for a bodyless record", () => {
-    expect(mochottPlaintext({ $type: MOCHOTT_ARTICLE })).toBe("");
-    expect(mochottRenderableBlocks({ $type: MOCHOTT_ARTICLE })).toEqual([]);
+    expect(mochottPlaintext({ $type: MOCHOTT_ARTICLE })).toBeNull();
+    expect(structuredFormatBlocks({ $type: MOCHOTT_ARTICLE })).toBeNull();
   });
 });
 

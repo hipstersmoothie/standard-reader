@@ -20,11 +20,19 @@ export function plaintextLinesFromStructuredBlock(
       );
     }
     case "callout": {
-      return textLines(block.text);
+      const title = block.title?.trim();
+      return title ? [title, ...textLines(block.text)] : textLines(block.text);
     }
     case "bulletList":
     case "orderedList": {
-      return block.items.flatMap((item) => textLines(item));
+      return block.items.flatMap((item) => [
+        ...textLines(item.text),
+        // Lists nest: a sub-list is a block under its parent item, and dropping
+        // it would silently lose whole branches of the document.
+        ...(item.children ?? []).flatMap((child) =>
+          plaintextLinesFromStructuredBlock(child),
+        ),
+      ]);
     }
     case "taskList": {
       return block.items.flatMap((item) => textLines(item.text));
@@ -44,7 +52,7 @@ export function plaintextLinesFromStructuredBlock(
       );
     }
     case "image": {
-      return narrationImageLines(block.alt);
+      return narrationImageLines(block.caption, block.alt);
     }
     case "button": {
       const lines = [block.caption?.trim(), block.text.trim()].filter(Boolean);
@@ -68,11 +76,14 @@ export function plaintextLinesFromStructuredBlock(
       const caption = block.caption?.trim();
       return caption ? [...altLines, caption] : altLines;
     }
+    // Blocks with no prose of their own. `html` is markup, not text — a
+    // consumer that wants its words has to parse and sanitize it first.
     case "horizontalRule":
     case "blueskyEmbed":
     case "iframe":
     case "gallery":
     case "offprintComponent":
+    case "html":
     case "unknown": {
       return [];
     }

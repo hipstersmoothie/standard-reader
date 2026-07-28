@@ -161,7 +161,7 @@ export function articleReadingText(
   }
   if (contentType === MOCHOTT_ARTICLE) {
     const text = mochottPlaintext(article.contentJson, contentType);
-    if (text.trim()) return text;
+    if (text?.trim()) return text;
   }
 
   const structured = structuredFormatBlocks(article.contentJson, contentType);

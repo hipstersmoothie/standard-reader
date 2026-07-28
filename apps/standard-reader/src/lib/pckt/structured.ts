@@ -59,11 +59,11 @@ function mapPcktBlock(block: PcktRenderableBlock): StructuredRenderableBlock {
           if (Array.isArray(content)) {
             return content.flatMap((entry) => {
               const text = asTextBlock(entry);
-              return text?.plaintext.trim() ? [text] : [];
+              return text?.plaintext.trim() ? [{ text }] : [];
             });
           }
           const text = asTextBlock(content);
-          return text?.plaintext.trim() ? [text] : [];
+          return text?.plaintext.trim() ? [{ text }] : [];
         }),
       };
     }
@@ -77,11 +77,11 @@ function mapPcktBlock(block: PcktRenderableBlock): StructuredRenderableBlock {
           if (Array.isArray(content)) {
             return content.flatMap((entry) => {
               const text = asTextBlock(entry);
-              return text?.plaintext.trim() ? [text] : [];
+              return text?.plaintext.trim() ? [{ text }] : [];
             });
           }
           const text = asTextBlock(content);
-          return text?.plaintext.trim() ? [text] : [];
+          return text?.plaintext.trim() ? [{ text }] : [];
         }),
       };
     }

@@ -106,9 +106,27 @@ export {
   GUTENBERG_CONTENT,
 } from "./document/structured-content/gutenberg.js";
 export type {
+  StandardMarkdownContent,
+  StructuredGridImage,
+  StructuredItemsContent,
+  StructuredListItem,
   StructuredRenderableBlock,
+  StructuredTableCell,
+  StructuredTableRow,
   StructuredText,
 } from "./document/structured-content/types.js";
+export { STANDARD_MARKDOWN_CONTENT } from "./document/structured-content/types.js";
+
+// Image helpers shared by the structured formats: alt/caption normalization,
+// blob-or-external source resolution, and Offprint `#gridImage` parsing.
+export {
+  narrationImageLines,
+  normalizeImageAlt,
+  parseStructuredGridImage,
+  structuredImageAspectRatio,
+  structuredImageHasSource,
+  structuredImageUrl,
+} from "./document/structured-content/image.js";
 
 export { collectLeafletFootnotes } from "./leaflet/footnotes.js";
 export type { LeafletFootnote } from "./leaflet/footnotes.js";

@@ -985,6 +985,14 @@ react-markdown remains for two things that are not document markdown: HTML-in-re
 (WordPress, Ghost, Known, Gutenberg-as-HTML), which need an HTML pipeline rather than a markdown
 one, and small in-app strings such as a collection colophon.
 
+**One block vocabulary, too.** The app used to keep a second copy of `StructuredRenderableBlock`
+and of every parser that produces it. The copies drifted — core grew nested list items, image
+captions, raw-HTML blocks and callout metadata that the app's copy never received — so a document
+core could parse could not be handed to an app consumer. The types and parsers now live only in
+`renderer-core`; the app re-exports them, and `structuredFormatBlocks` delegates to core's dispatch.
+The app still walks blocks itself for the third-party block formats (`StructuredBlockView`); folding
+that last path into `renderer-react` is the remaining step.
+
 ### Record meta tags (`at:`)
 
 Every page we serve says, in its `<head>`, which AT Protocol records it is built from — the

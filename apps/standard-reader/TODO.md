@@ -1123,6 +1123,31 @@ Re-emit a document's content into another format by running the renderer's norma
       keeps its text, since `InlineNode` has no math or raw-HTML variant. Neither loses content;
       neither renders as rich as react-markdown did. Adding inline nodes would touch all six
       renderers, so it waits for a document that needs it.
+- [x] **One structured block vocabulary** — the app carried its own copy of `StructuredRenderableBlock`
+      and of every parser that produces it (blocknote, fables, oxa, prosemirror, item-blocks,
+      offprint, the image/text-run helpers). The copies drifted: core grew nested list items, image
+      captions, raw-HTML blocks, callout metadata and `postCid`, none of which reached the app — so
+      a format core parsed could not be handed to an app consumer at all (which is what blocked
+      routing mochott through the app's structured path). The app's types and parsers are now
+      re-exports of `@standard-reader/renderer-core`; `structuredFormatBlocks` delegates to core's
+      dispatch, and the app's consumers (block view, plaintext walker, quote-highlight offsets,
+      pckt→structured mapping) handle the fuller vocabulary. `ImageFigureView` gained a real
+      `caption` (it only ever showed alt text), so a format that captions images separately —
+      mochott does — finally displays it.
+- [ ] **Nested lists in the ProseMirror and BlockNote parsers** — `StructuredListItem` carries
+      `children` now, but `renderer-core`'s `prosemirror.ts` / `blocknote.ts` still only collect an
+      item's paragraphs, so a sub-list in a wss or BlockNote document is dropped at parse time the
+      way markdown's was before. Same fix as `markdown.ts` got.
+- [ ] **Route the structured formats through `renderer-react` too** — `StructuredFormatContentRenderer`
+      and `StructuredBlockView` are now the only in-app renderer that walks blocks itself; markdown,
+      Markpub and mochott all go through `StandardDocumentRenderer`. Collapsing the last one would
+      delete the app's second render path (and give the structured formats footnotes), but it means
+      re-checking the visual output of every third-party format, so it is its own change.
+- [ ] **Decide Gutenberg's route** — `renderer-core` has a native SkyPress Gutenberg block parser;
+      the app still serializes those documents to HTML and renders them through the HTML pipeline.
+      The structured path would give real blocks (and a sanitizer-free render), but it changes what
+      those documents look like, so the app deliberately excludes the format from its structured set
+      for now.
 - [ ] **Drop the app's duplicate callout table** — `src/lib/markdown/callouts.ts` still owns a copy
       of the type→kind mapping that `renderer-core` now exports. The HTML-in-record path is the
       last caller; once that moves, delete it in favour of `calloutKindForType`.
