@@ -75,7 +75,7 @@ export const PAGE_OG_CARDS = {
     path: "/about",
     title: "A home for the writing you love",
     tagline:
-      "New writing from the standard.site publications you subscribe to — calm, chronological, and yours to take anywhere.",
+      "New writing from the standard.site publications you subscribe to: calm, chronological, and yours to take anywhere.",
   },
   docsIntroduction: {
     path: "/docs/introduction",

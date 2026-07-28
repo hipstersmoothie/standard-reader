@@ -1095,8 +1095,8 @@ export function AboutView() {
   const firstPub = pubs[0];
   const secondPub = pubs[1];
   const discoverDek = countLabel
-    ? t`Most readers stop at what you already subscribe to. Standard Reader treats finding your next favourite as part of the job. Browse all ${countLabel} publications on the network — not just the handful you've heard of.`
-    : t`Most readers stop at what you already subscribe to. Standard Reader treats finding your next favourite as part of the job. Browse every publications on the network — not just the handful you've heard of.`;
+    ? t`Most readers stop at what you already subscribe to. Standard Reader treats finding your next favourite as part of the job. Browse all ${countLabel} publications on the network, not just the handful you've heard of.`
+    : t`Most readers stop at what you already subscribe to. Standard Reader treats finding your next favourite as part of the job. Browse every publications on the network, not just the handful you've heard of.`;
 
   return (
     <article {...stylex.props(styles.root)} data-screen-label="About">
@@ -1118,9 +1118,8 @@ export function AboutView() {
               standard.site
             </a>{" "}
             you care about. New writing simply arrives, in the order it was
-            written — no feed to fight, nothing shouting for your attention.
-            Just good long-form, and a genuinely nice way to keep finding more
-            of it.
+            written: no feed to fight, nothing shouting for your attention. Just
+            good long-form, and a genuinely nice way to keep finding more of it.
           </Trans>
         </p>
         <div {...stylex.props(styles.ctaRow, styles.heroCtaRow)}>
@@ -1135,7 +1134,7 @@ export function AboutView() {
           <div {...stylex.props(styles.count)}>
             <Trans>
               <span {...stylex.props(styles.countNum)}>{countLabel}</span>{" "}
-              publications indexed — and counting
+              publications indexed, and counting
             </Trans>
           </div>
         ) : null}
@@ -1172,8 +1171,8 @@ export function AboutView() {
             <p {...stylex.props(styles.splitPara, styles.splitParaLast)}>
               <Trans>
                 And it never feels sealed off. We connect each article to the
-                conversation happening across the Atmosphere — the open network
-                beyond this app — gathering the Bluesky posts and replies about
+                conversation happening across the Atmosphere (the open network
+                beyond this app), gathering the Bluesky posts and replies about
                 a piece, the notes left in its margins, and the other writing
                 that cites it, quietly beneath what you&rsquo;re reading.
               </Trans>
@@ -1227,15 +1226,15 @@ export function AboutView() {
         <div {...stylex.props(styles.miniGrid)}>
           <MiniFeature icon={SlidersHorizontal} title={t`Set your own type`}>
             <Trans>
-              Choose body text size, column width, and font — serif, sans, or
-              any Google Font. Read the way that’s easy on your eyes.
+              Choose body text size, column width, and font: serif, sans, or any
+              Google Font. Read the way that’s easy on your eyes.
             </Trans>
           </MiniFeature>
           <MiniFeature icon={Headphones} title={t`Listen to anything`}>
             <Trans>
               A Listen button reads any article aloud, right on your device, and
               highlights each word as it goes. The player follows you around the
-              app — it’ll even read an embedded Bluesky post. Signed in, you can
+              app; it’ll even read an embedded Bluesky post. Signed in, you can
               pick a voice.
             </Trans>
           </MiniFeature>
@@ -1289,7 +1288,7 @@ export function AboutView() {
         <SectionHead
           kicker={t`Integrations`}
           title={t`Standard Reader meets you where you read`}
-          dek={t`It doesn't ask you to leave the rest of the web behind. It reaches out to it — and stays a good citizen of the wider network.`}
+          dek={t`It doesn't ask you to leave the rest of the web behind. It reaches out to it, and stays a good citizen of the wider network.`}
         />
 
         <div {...stylex.props(styles.intGrid)}>
@@ -1307,7 +1306,7 @@ export function AboutView() {
               <p {...stylex.props(styles.intDesc)}>
                 <Trans>
                   A lightweight browser extension lets you save and subscribe to
-                  publications while you’re out on the web — with subtle badges
+                  publications while you’re out on the web, with subtle badges
                   on bsky.app and a one-click overlay on any page you land on.
                   Your reading list fills itself.
                 </Trans>
@@ -1325,7 +1324,7 @@ export function AboutView() {
 
           <IntegrationCard
             icon={Heart}
-            title={t`Save, like, subscribe — everywhere`}
+            title={t`Save, like, subscribe: everywhere`}
           >
             <Trans>
               One tap from the reading view, on any device, instantly in sync.
@@ -1336,8 +1335,8 @@ export function AboutView() {
           <IntegrationCard icon={Users} title={t`The conversation, gathered`}>
             <Trans>
               Under each article you see the discussion from across the open
-              network — Bluesky posts and replies, margin notes, links from
-              other pieces that cite it, and related reading. All read-only, all
+              network: Bluesky posts and replies, margin notes, links from other
+              pieces that cite it, and related reading. All read-only, all
               linking back to the source.
             </Trans>
           </IntegrationCard>
@@ -1345,7 +1344,7 @@ export function AboutView() {
           <IntegrationCard icon={Share2} title={t`Shareable everywhere`}>
             <Trans>
               Publications, lists, and collections each get a clean link with a
-              rich preview card — plus a subscribe button a publication can drop
+              rich preview card, plus a subscribe button a publication can drop
               on its own site.
             </Trans>
           </IntegrationCard>
@@ -1356,7 +1355,7 @@ export function AboutView() {
             link={{ to: "/collections", label: t`See collections` }}
           >
             <Trans>
-              Build named, shareable lists of publications — a playlist for
+              Build named, shareable lists of publications: a playlist for
               reading. Anyone can add your list to their own reader in a single
               tap.
             </Trans>
@@ -1446,7 +1445,7 @@ export function AboutView() {
                 <Trans>
                   Don’t want another app to check? Opt into a weekly email with
                   the best of the publications you subscribe to, plus a couple
-                  worth discovering. One email, one click to leave — and you can
+                  worth discovering. One email, one click to leave, and you can
                   preview exactly what it looks like before you ever turn it on.
                 </Trans>
               </p>
@@ -1474,7 +1473,7 @@ export function AboutView() {
               <p {...stylex.props(styles.panelPara)}>
                 <Trans>
                   Standard Reader doesn’t trap your reading inside one app. Any
-                  slice of the network comes with its own RSS feed — pipe it
+                  slice of the network comes with its own RSS feed: pipe it
                   straight into whatever reader you already use.
                 </Trans>
               </p>
@@ -1510,8 +1509,8 @@ export function AboutView() {
         <p {...stylex.props(styles.closeDek)}>
           <Trans>
             Read without an account. Sign in with Bluesky when you want to
-            subscribe, like, and save — and take all of it with you, wherever
-            you choose to read next.
+            subscribe, like, and save, and take all of it with you, wherever you
+            choose to read next.
           </Trans>
         </p>
         <div {...stylex.props(styles.ctaRow, styles.heroCtaRow)}>
