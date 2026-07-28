@@ -1,0 +1,1 @@
+ALTER TABLE "labeler_subscriptions" ADD COLUMN "enabled" boolean DEFAULT true NOT NULL;

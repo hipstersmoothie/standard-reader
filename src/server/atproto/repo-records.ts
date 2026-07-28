@@ -365,6 +365,7 @@ export async function putLabelerSubscriptionRecord(
   labelerDid: string,
   createdAt: string,
   labels?: Array<{ val: string; visibility: "ignore" | "warn" | "hide" }>,
+  enabled?: boolean,
 ): Promise<{ uri: string; cid: string }> {
   return repoPutRecord(client, {
     repo,
@@ -374,6 +375,9 @@ export async function putLabelerSubscriptionRecord(
       $type: COLLECTION.labelerSubscriptionV2,
       labeler: labelerDid,
       ...(labels && labels.length > 0 ? { labels } : {}),
+      // Only written when disabled: absent means enabled, so an untouched
+      // subscription keeps the same record shape it has always had.
+      ...(enabled === false ? { enabled: false } : {}),
       createdAt,
     },
   });

@@ -175,9 +175,14 @@ export function LabelerDetailView({
     ...labelerApi.setLabelerPrefMutationOptions(),
     onSuccess: invalidate,
   });
+  const setEnabled = useMutation({
+    ...labelerApi.setLabelerEnabledMutationOptions(),
+    onSuccess: invalidate,
+  });
 
   const card = labeler.data?.labeler ?? { did };
   const subscribed = labeler.data?.subscribed ?? false;
+  const enabled = labeler.data?.enabled ?? true;
   const prefs = new Map<string, Visibility>(
     (labeler.data?.prefs ?? []).map((p) => [p.val, p.visibility]),
   );
@@ -285,6 +290,21 @@ export function LabelerDetailView({
         </div>
 
         <div {...stylex.props(styles.heroActs)}>
+          {/* Muting is only meaningful once subscribed — for a labeler kept on
+              another app but not wanted here. It sits beside Subscribed rather
+              than replacing it, so the two states stay distinguishable. */}
+          {subscribed ? (
+            <Button
+              variant="secondary"
+              size="md"
+              isPending={setEnabled.isPending}
+              onPress={() =>
+                setEnabled.mutate({ labeler: card.did, enabled: !enabled })
+              }
+            >
+              {enabled ? <Trans>Mute here</Trans> : <Trans>Unmute</Trans>}
+            </Button>
+          ) : null}
           <Button
             variant={subscribed ? "secondary" : "primary"}
             size="md"
@@ -329,6 +349,15 @@ export function LabelerDetailView({
 
         <ReaderContent>
           <TabPanel id="labels" style={styles.tabPanel}>
+            {subscribed && !enabled ? (
+              <p {...stylex.props(styles.note)}>
+                <Trans>
+                  Muted here — this labeler’s labels aren’t applied while you
+                  read on Standard Reader. Your subscription and the settings
+                  below are kept, and unmuting restores them.
+                </Trans>
+              </p>
+            ) : null}
             <div {...stylex.props(styles.settingGroup)}>
               {defs.length === 0 ? (
                 <p {...stylex.props(styles.note)}>

@@ -693,6 +693,12 @@ Standard Reader speaks the standard AT Proto label protocol, so readers can subs
   read-modify-write would silently drop settings we couldn't see. So unsubscribing in Standard
   Reader is local and never edits anyone's Bluesky moderation, and the port runs exactly once so
   those local choices are never overwritten.
+- **Muting is per-app.** Porting someone's Bluesky setup wholesale means importing labelers they
+  may want _there_ but not _here_ — a vanity or novelty labeler is fun on a feed and noise in a
+  reader. So a subscription can be muted (`enabled: false`) rather than dropped: the subscription
+  and its per-label preferences stay exactly as they are, and only label resolution skips it, so
+  unmuting restores what they had instead of starting from defaults. Absent means enabled, so no
+  existing subscription is affected.
 - **Labels apply to documents _or_ to accounts.** Ours score prose, so they label documents;
   labelers on the wider network label accounts (pub-search's `bulk-generated` marks a publisher
   whose documents are generated from a data source, not composed by an author). Both subject kinds

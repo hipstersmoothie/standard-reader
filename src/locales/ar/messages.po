@@ -2685,6 +2685,10 @@ msgstr "أوصِ بهذا العدد"
 msgid "You aren't following anything yet."
 msgstr "لا تتابع أي شيء بعد."
 
+#: src/components/labeler-detail-view.tsx
+msgid "Muted here — this labeler’s labels aren’t applied while you read on Standard Reader. Your subscription and the settings below are kept, and unmuting restores them."
+msgstr ""
+
 #: src/routes/_layout.feedback.index.tsx
 msgid "{count, plural, one {# upvote} other {# upvotes}} — click to undo"
 msgstr "{count, plural, zero {لا تأييدات} one {تأييد واحد} two {تأييدان} few {# تأييدات} many {# تأييدًا} other {# تأييد}} — انقر للتراجع"
@@ -3009,6 +3013,10 @@ msgstr "الصوت المستخدم عند الاستماع إلى مقال عب
 
 #: src/components/feedback/feedback-image-picker.tsx
 msgid "Remove image {position}"
+msgstr ""
+
+#: src/components/labelers-settings-view.tsx
+msgid "Muted — not applied while you read here."
 msgstr ""
 
 #: src/components/user-settings-view.tsx
@@ -3633,6 +3641,10 @@ msgstr "إغلاق التبويب"
 #~ msgid "Quick start"
 #~ msgstr ""
 
+#: src/components/labelers-settings-view.tsx
+msgid "Mute"
+msgstr ""
+
 #: src/components/ReaderVoiceMenu.tsx
 #: src/components/user-settings-view.tsx
 msgid "Auto"
@@ -3721,6 +3733,11 @@ msgstr "جميع المقالات التي حفظتها لوقت لاحق."
 
 #: src/components/reader/subscriptions-unsubscribe-dialog.tsx
 msgid "Unfollow?"
+msgstr ""
+
+#: src/components/labeler-detail-view.tsx
+#: src/components/labelers-settings-view.tsx
+msgid "Unmute"
 msgstr ""
 
 #: src/components/reader/about-view.tsx
@@ -4729,6 +4746,10 @@ msgstr "اكتشف منشورات أخرى"
 msgid "Choose a series, give it a title and cover, then assemble the articles you want to feature."
 msgstr "اختر سلسلة، وامنحها عنوانًا وغلافًا، ثم جمّع المقالات التي تريد إبرازها."
 
+#: src/components/labeler-detail-view.tsx
+msgid "Mute here"
+msgstr ""
+
 #: src/components/reader/subscriptions-sheet.tsx
 #~ msgid "Open list {listName}"
 #~ msgstr "فتح القائمة {listName}"
@@ -5101,6 +5122,10 @@ msgstr ""
 #: src/magazine/Magazine.tsx
 msgid "{minutes}m"
 msgstr "{minutes}د"
+
+#: src/components/docs/labelers-docs-page.tsx
+msgid "That record also carries an <0>enabled</0> flag. A reader can mute your labeler here — keeping the subscription and their per-label settings, but not applying your labels while they read — without unsubscribing, which is useful when they follow a labeler on another app that they don’t want acting on long-form reading. Its absence means enabled."
+msgstr ""
 
 #. placeholder {0}: account.handle
 #: src/components/reader/add-publication-modal.tsx

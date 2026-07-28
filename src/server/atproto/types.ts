@@ -199,6 +199,8 @@ export interface LabelerSubscriptionRecord {
   $type?: string;
   labeler: string;
   labels?: Array<LabelPrefRecord>;
+  /** Absent means enabled; `false` mutes the labeler without unsubscribing. */
+  enabled?: boolean;
   createdAt?: string;
 }
 

@@ -63,7 +63,14 @@ export interface DisplayLabel {
 
 // ── DB reads (request paths) ────────────────────────────────────────────────
 
-/** The labeler DIDs a reader is subscribed to (from the read-model mirror). */
+/**
+ * The labeler DIDs a reader is subscribed to (from the read-model mirror).
+ *
+ * Includes labelers the reader has **disabled** — this answers "what is in my
+ * list", which the settings and directory surfaces need in order to show a
+ * muted labeler at all. Label resolution uses `readerSubscriptions` instead,
+ * which filters them out.
+ */
 export async function subscribedLabelerDids(
   db: Db,
   schema: Schema,
@@ -99,10 +106,21 @@ async function readerSubscriptionsImpl(
   callerDid: string,
 ): Promise<{ dids: Array<string>; visibility: Map<string, LabelVisibility> }> {
   const ls = schema.labelerSubscriptions;
+  // `enabled = false` labelers are deliberately excluded here and *only* here:
+  // this is the label-resolution path, so a muted labeler stops badging,
+  // warning, and hiding across every surface at once. It stays in the reader's
+  // subscription list (see `subscribedLabelerDids`) with its prefs intact, so
+  // re-enabling restores exactly what they had.
   const rows = await db
     .select({ labelerDid: ls.labelerDid, prefs: ls.prefs })
     .from(ls)
-    .where(and(eq(ls.subscriberDid, callerDid), eq(ls.deleted, false)));
+    .where(
+      and(
+        eq(ls.subscriberDid, callerDid),
+        eq(ls.deleted, false),
+        eq(ls.enabled, true),
+      ),
+    );
   const dids = new Set<string>();
   const visibility = new Map<string, LabelVisibility>();
   for (const row of rows) {

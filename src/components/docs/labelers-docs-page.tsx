@@ -151,6 +151,17 @@ export function LabelersDocsPage() {
             preferences.
           </Trans>
         </p>
+        <p {...stylex.props(docsStyles.prose)}>
+          <Trans>
+            That record also carries an{" "}
+            <code {...stylex.props(docsStyles.codeInline)}>enabled</code> flag.
+            A reader can mute your labeler here — keeping the subscription and
+            their per-label settings, but not applying your labels while they
+            read — without unsubscribing, which is useful when they follow a
+            labeler on another app that they don’t want acting on long-form
+            reading. Its absence means enabled.
+          </Trans>
+        </p>
 
         <h2 id={LABELERS_DOCS_IDS.reference} {...stylex.props(docsStyles.h2)}>
           <Trans>Reference implementation</Trans>

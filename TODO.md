@@ -938,6 +938,14 @@ Standard AT Proto labels: subscribe to labelers, see/blur/hide their labels whil
       the reader has since unsubscribed from here.
 - [x] **Subscribe / unsubscribe from the directory** — each card on `/labelers` carries the control,
       and subscribed labelers sort to the top so a reader lands on their own setup.
+- [x] **Mute a labeler without unsubscribing** — `enabled` on
+      `app.standard-reader.labeler.subscription` (absent = enabled; only an explicit `false` mutes,
+      so existing records are unaffected). For a labeler a reader keeps on Bluesky but doesn't want
+      acting here. The subscription and its per-label prefs are untouched; only label _resolution_
+      skips it (`readerSubscriptionsImpl`), so muting stops badges, warnings, and hiding everywhere
+      at once, and unmuting restores exactly what they had. `setLabelerPref` carries `enabled`
+      through, since `putRecord` replaces the whole record and would otherwise un-mute on any pref
+      change. Mute/Unmute sits on both the directory card and the labeler page.
 - [ ] **Give our labelers real did:plc accounts** — `claudeslop` and `botlabeler` are `did:web`, and
       a `did:web` has no repo, so they cannot publish the standard `app.bsky.labeler.service`
       record. That is the only reason the custom `app.standard-reader.labeler.{service,defs}` +

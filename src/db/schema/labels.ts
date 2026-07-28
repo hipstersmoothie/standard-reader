@@ -114,6 +114,14 @@ export const labelerSubscriptions = pgTable(
     /** Per-label visibility overrides (mirrors the record's `labels`). */
     prefs: jsonb("prefs").$type<Array<LabelPref>>(),
 
+    /**
+     * Whether this labeler's labels are applied while reading. `false` keeps
+     * the subscription and its `prefs` intact but stops the labeler acting
+     * here — for a labeler a reader wants on Bluesky but not on Standard
+     * Reader. Distinct from unsubscribing, which drops the row entirely.
+     */
+    enabled: boolean("enabled").notNull().default(true),
+
     /** `createdAt` from the record. */
     createdAt: timestamp("created_at", { withTimezone: true }),
 

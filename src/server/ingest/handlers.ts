@@ -6,6 +6,7 @@ import {
 } from "#/lib/collections/manifest";
 import { hasRenderableArticleBody } from "#/lib/document/renderable";
 import { documentSearchText } from "#/lib/document/search-text";
+import { labelerSubscriptionEnabled } from "#/lib/labeler-subscription";
 import { isExcludedPublicationUrl } from "#/lib/publication/exclusions";
 import {
   FETCHED_CONTENT_FORMATS,
@@ -599,6 +600,7 @@ export async function upsertLabelerSubscription(
     rkey,
     labelerDid: record.labeler,
     prefs,
+    enabled: labelerSubscriptionEnabled(record),
     createdAt: parseDate(record.createdAt),
     deleted: false,
     updatedAt: sql`now()`,

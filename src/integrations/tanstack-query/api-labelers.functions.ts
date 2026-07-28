@@ -62,6 +62,12 @@ export interface LabelerCard {
 /** A labeler in the directory, with the caller's subscription state. */
 export interface LabelerListItem extends LabelerCard {
   subscribed: boolean;
+  /**
+   * Whether a subscribed labeler's labels actually apply here. `false` means
+   * the reader muted it — kept in their list, with prefs intact, but not
+   * acting. Always `true` for labelers they aren't subscribed to.
+   */
+  enabled: boolean;
   subscriberCount: number;
 }
 
@@ -124,10 +130,14 @@ async function readPrefs(
   schema: Schema,
   subscriberDid: string,
   labelerDid: string,
-): Promise<{ prefs: Array<LabelPref>; createdAt: string | null }> {
+): Promise<{
+  prefs: Array<LabelPref>;
+  createdAt: string | null;
+  enabled: boolean;
+}> {
   const ls = schema.labelerSubscriptions;
   const [row] = await db
-    .select({ prefs: ls.prefs, createdAt: ls.createdAt })
+    .select({ prefs: ls.prefs, createdAt: ls.createdAt, enabled: ls.enabled })
     .from(ls)
     .where(
       and(
@@ -140,6 +150,7 @@ async function readPrefs(
   return {
     prefs: (row?.prefs as Array<LabelPref> | null) ?? [],
     createdAt: row?.createdAt ? new Date(row.createdAt).toISOString() : null,
+    enabled: row?.enabled ?? true,
   };
 }
 
@@ -173,11 +184,21 @@ const getKnownLabelers = createServerFn({ method: "GET" })
       await ensureKnownLabelersResolved();
 
       const session = await getAtprotoSessionForRequest(getRequest());
-      const subscribed = session
-        ? await subscribedLabelerDids(context.db, context.schema, session.did)
-        : [];
-      const subSet = new Set(subscribed);
       const ls = context.schema.labelerSubscriptions;
+      // The caller's own subscriptions, including muted ones — a disabled
+      // labeler still belongs in their list, just marked as not acting.
+      const mine = session
+        ? await context.db
+            .select({ labelerDid: ls.labelerDid, enabled: ls.enabled })
+            .from(ls)
+            .where(
+              and(eq(ls.subscriberDid, session.did), eq(ls.deleted, false)),
+            )
+        : [];
+      const subSet = new Set(mine.map((row) => row.labelerDid));
+      const disabledSet = new Set(
+        mine.filter((row) => !row.enabled).map((row) => row.labelerDid),
+      );
       const countRows = await context.db
         .select({
           labelerDid: ls.labelerDid,
@@ -211,6 +232,7 @@ const getKnownLabelers = createServerFn({ method: "GET" })
               (row.labelValueDefinitions as Array<LabelValueDef> | null) ??
               undefined,
             subscribed: subSet.has(row.labelerDid),
+            enabled: !disabledSet.has(row.labelerDid),
             subscriberCount: countByDid.get(row.labelerDid) ?? 0,
           }),
         )
@@ -235,7 +257,11 @@ const getLabeler = createServerFn({ method: "GET" })
         resolveLabelerView(did),
         session
           ? readPrefs(context.db, context.schema, session.did, did)
-          : Promise.resolve({ prefs: [] as Array<LabelPref>, createdAt: null }),
+          : Promise.resolve({
+              prefs: [] as Array<LabelPref>,
+              createdAt: null,
+              enabled: true,
+            }),
         observedLabelValues(context.db, context.schema, did),
       ]);
 
@@ -281,6 +307,7 @@ const getLabeler = createServerFn({ method: "GET" })
         } as LabelerCard,
         subscribed,
         prefs: prefsRow.prefs,
+        enabled: prefsRow.enabled,
       };
     }),
   );
@@ -296,7 +323,7 @@ const setLabelerPref = createServerFn({ method: "POST" })
       span.set("labeler", data.labeler);
       span.set("val", data.val);
 
-      const { prefs, createdAt } = await readPrefs(
+      const { prefs, createdAt, enabled } = await readPrefs(
         context.db,
         context.schema,
         session.did,
@@ -308,21 +335,81 @@ const setLabelerPref = createServerFn({ method: "POST" })
       ];
       const when = createdAt ?? new Date().toISOString();
 
+      // `enabled` is carried through: putRecord replaces the whole record, so
+      // omitting it here would silently re-enable a labeler the reader muted
+      // just because they adjusted one of its label preferences.
       const { uri, cid } = await putLabelerSubscriptionRecord(
         session.client,
         session.did,
         data.labeler,
         when,
         next,
+        enabled,
       );
       await upsertLabelerSubscription(
         uri,
         session.did,
         subjectRkey(data.labeler),
         cid,
-        { labeler: data.labeler, labels: next, createdAt: when },
+        { labeler: data.labeler, labels: next, enabled, createdAt: when },
       );
       return { ok: true as const, prefs: next };
+    }),
+  );
+
+/**
+ * Mute or unmute a labeler without unsubscribing from it.
+ *
+ * For a labeler a reader keeps on another app but doesn't want acting here:
+ * the subscription and its per-label preferences stay exactly as they are, and
+ * only label resolution skips it — so re-enabling restores what they had
+ * rather than starting from defaults.
+ */
+const setLabelerEnabled = createServerFn({ method: "POST" })
+  .middleware([dbMiddleware])
+  .validator(
+    z.object({
+      labeler: z.string().trim().min(1),
+      enabled: z.boolean(),
+    }),
+  )
+  .handler(
+    observe("labelers.setEnabled", async ({ data, context }, span) => {
+      const session = await getAtprotoSessionForRequest(getRequest());
+      if (!session) throw new Error("Sign in to manage labelers.");
+      span.set("did", session.did);
+      span.set("labeler", data.labeler);
+      span.set("enabled", data.enabled);
+
+      const { prefs, createdAt } = await readPrefs(
+        context.db,
+        context.schema,
+        session.did,
+        data.labeler,
+      );
+      const when = createdAt ?? new Date().toISOString();
+
+      const { uri, cid } = await putLabelerSubscriptionRecord(
+        session.client,
+        session.did,
+        data.labeler,
+        when,
+        prefs,
+        data.enabled,
+      );
+      await upsertLabelerSubscription(
+        uri,
+        session.did,
+        subjectRkey(data.labeler),
+        cid,
+        {
+          labeler: data.labeler,
+          labels: prefs,
+          enabled: data.enabled,
+          createdAt: when,
+        },
+      );
+      return { ok: true as const, enabled: data.enabled };
     }),
   );
 
@@ -682,6 +769,14 @@ function setLabelerPrefMutationOptions() {
   });
 }
 
+function setLabelerEnabledMutationOptions() {
+  return mutationOptions({
+    mutationKey: ["reader", "setLabelerEnabled"] as const,
+    mutationFn: async (input: { labeler: string; enabled: boolean }) =>
+      setLabelerEnabled({ data: input }),
+  });
+}
+
 function subscribeLabelerMutationOptions() {
   return mutationOptions({
     mutationKey: ["reader", "subscribeLabeler"] as const,
@@ -719,4 +814,6 @@ export const labelerApi = {
   unsubscribeLabelerMutationOptions,
   setLabelerPref,
   setLabelerPrefMutationOptions,
+  setLabelerEnabled,
+  setLabelerEnabledMutationOptions,
 };

@@ -183,6 +183,13 @@
       "when": 1785268039683,
       "tag": "0025_sour_jackal",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1785269345960,
+      "tag": "0026_public_wallow",
+      "breakpoints": true
     }
   ]
 }

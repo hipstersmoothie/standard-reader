@@ -97,16 +97,19 @@ function matchesLabeler(card: LabelerCard, query: string): boolean {
 function LabelerCardItem({
   card,
   subscribed,
+  enabled,
   signedIn,
 }: {
   card: LabelerCard;
   subscribed: boolean;
+  enabled: boolean;
   signedIn: boolean;
 }) {
   const { t } = useLingui();
   const queryClient = useQueryClient();
   const names = labelValueNames(card);
   const displayName = card.displayName ?? card.did;
+  const muted = subscribed && !enabled;
 
   const invalidate = () => {
     void queryClient.invalidateQueries({ queryKey: ["labeler"] });
@@ -119,6 +122,10 @@ function LabelerCardItem({
   });
   const unsubscribe = useMutation({
     ...labelerApi.unsubscribeLabelerMutationOptions(),
+    onSuccess: invalidate,
+  });
+  const setEnabled = useMutation({
+    ...labelerApi.setLabelerEnabledMutationOptions(),
     onSuccess: invalidate,
   });
 
@@ -142,20 +149,41 @@ function LabelerCardItem({
           </div>
         </Link>
         {signedIn ? (
-          <Button
-            variant={subscribed ? "secondary" : "primary"}
-            size="sm"
-            isPending={subscribed ? unsubscribe.isPending : subscribe.isPending}
-            onPress={() =>
-              subscribed
-                ? unsubscribe.mutate(card.did)
-                : subscribe.mutate(card.did)
-            }
-          >
-            {subscribed ? t`Unsubscribe` : t`Subscribe`}
-          </Button>
+          <div {...stylex.props(styles.cardActs)}>
+            {subscribed ? (
+              <Button
+                variant="secondary"
+                size="sm"
+                isPending={setEnabled.isPending}
+                onPress={() =>
+                  setEnabled.mutate({ labeler: card.did, enabled: muted })
+                }
+              >
+                {muted ? t`Unmute` : t`Mute`}
+              </Button>
+            ) : null}
+            <Button
+              variant={subscribed ? "secondary" : "primary"}
+              size="sm"
+              isPending={
+                subscribed ? unsubscribe.isPending : subscribe.isPending
+              }
+              onPress={() =>
+                subscribed
+                  ? unsubscribe.mutate(card.did)
+                  : subscribe.mutate(card.did)
+              }
+            >
+              {subscribed ? t`Unsubscribe` : t`Subscribe`}
+            </Button>
+          </div>
         ) : null}
       </div>
+      {muted ? (
+        <p {...stylex.props(styles.mutedNote)}>
+          <Trans>Muted — not applied while you read here.</Trans>
+        </p>
+      ) : null}
       {card.description ? (
         <p {...stylex.props(styles.cardDescription)}>{card.description}</p>
       ) : null}
@@ -219,6 +247,17 @@ export function LabelersSettingsView() {
       .map((item) => item.did),
   );
   if (lookupCard && lookup.data?.subscribed) subscribedDids.add(lookupCard.did);
+  // Muted labelers, so a search result shows Unmute rather than Mute. The
+  // lookup card is a bare LabelerCard with no `enabled`, so its state comes
+  // from the lookup response alongside `subscribed`.
+  const mutedDids = new Set(
+    listed
+      .filter((item) => "enabled" in item && !item.enabled)
+      .map((item) => item.did),
+  );
+  if (lookupCard && lookup.data?.enabled === false) {
+    mutedDids.add(lookupCard.did);
+  }
   const visibleCards = [
     ...listed.filter((item) => subscribedDids.has(item.did)),
     ...listed.filter((item) => !subscribedDids.has(item.did)),
@@ -253,6 +292,7 @@ export function LabelersSettingsView() {
             key={item.did}
             card={item}
             subscribed={subscribedDids.has(item.did)}
+            enabled={!mutedDids.has(item.did)}
             signedIn={signedIn}
           />
         ))}
@@ -285,6 +325,17 @@ const styles = stylex.create({
     color: "inherit",
     cursor: "pointer",
     display: "block",
+  },
+  cardActs: {
+    gap: gap.xs,
+    alignItems: "center",
+    display: "flex",
+    flexShrink: 0,
+  },
+  mutedNote: {
+    color: uiColor.text1,
+    fontSize: fontSize.sm,
+    fontStyle: "italic",
   },
   cardIdentity: {
     gap: gap.lg,
