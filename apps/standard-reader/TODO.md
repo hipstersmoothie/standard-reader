@@ -949,6 +949,20 @@ cookies on `/xrpc`. Live developer docs at [`/docs/api`](/docs/api).
 - [x] **Tier 3–4** — personalized reads + write procedures with scope enforcement.
 - [x] **API docs page** — `/docs/api` catalog, in-process live examples, footer link.
 - [x] **Lexicon docs page** — `/docs/lexicons` reference for all `app.standard-reader.*` schemas.
+- [x] **Reader guide (`/guide`)** — the non-technical counterpart to `/docs/*`: eight
+      task-shaped pages (welcome, getting started, reading, finding, keeping track,
+      personalizing, beyond the app, your data) on their own route tree and topbar, structure
+      declared once in `src/lib/guide/navigation.ts`. Linked from the footer, the account menu,
+      About, and the developer docs topbar; every page ends at `/feedback`.
+- [x] **Automated guide screenshots** — `pnpm guide:shots` drives Playwright through the shot
+      manifest in `src/lib/guide/screenshots.ts` and writes `public/guide/*.png`, so refreshing
+      every picture after a UI change is one command. Signed-in shots reuse the perf suite's
+      session bootstrap; captures wait on the same `aria-busy` ready signal.
+- [ ] **Run the first capture pass** — `public/guide/` is empty until someone runs
+      `pnpm guide:shots` against a dev server with `PERF_TEST_*` credentials and fixtures set.
+      `<GuideFigure>` degrades to its caption until then, so the pages read fine meanwhile.
+- [ ] **Search across the guide** — Debbie's write-up calls for search once the content grows;
+      the guide currently relies on the sidebar and the per-page rails.
 - [x] **XRPC test suite** — unit tests for registry, params, dispatch, and handlers
       (`src/server/xrpc/*.test.ts`); optional DB integration via
       `XRPC_INTEGRATION_TEST=1 pnpm test`.

@@ -77,6 +77,54 @@ export const PAGE_OG_CARDS = {
     tagline:
       "New writing from the standard.site publications you subscribe to — calm, chronological, and yours to take anywhere.",
   },
+  guide: {
+    path: "/guide",
+    title: "Reader guide",
+    tagline:
+      "How to use Standard Reader — following, reading, listening, and making it yours. No technical knowledge needed.",
+  },
+  guideGettingStarted: {
+    path: "/guide/getting-started",
+    title: "Getting started",
+    tagline:
+      "Sign in, follow your first publications, and learn where everything lives.",
+  },
+  guideReading: {
+    path: "/guide/reading",
+    title: "Reading an article",
+    tagline:
+      "Every control on an article — including having it read aloud, and making the text comfortable.",
+  },
+  guideFinding: {
+    path: "/guide/finding",
+    title: "Finding things to read",
+    tagline:
+      "Home, Latest, Discover, search, and topics — five ways to find your next read.",
+  },
+  guideKeepingTrack: {
+    path: "/guide/keeping-track",
+    title: "Keeping track",
+    tagline:
+      "Saving, recommending, reading history, lists, and managing everything you follow.",
+  },
+  guidePersonalizing: {
+    path: "/guide/personalizing",
+    title: "Making it yours",
+    tagline:
+      "Colors, type, density, feed behavior, moderation, and the weekly digest.",
+  },
+  guideEverywhere: {
+    path: "/guide/everywhere",
+    title: "Beyond the app",
+    tagline:
+      "The browser extension, installing Standard Reader, reading offline, and sharing.",
+  },
+  guideYourData: {
+    path: "/guide/your-data",
+    title: "Your account and data",
+    tagline:
+      "Where your reading lives, what Standard Reader stores, and how to take it with you.",
+  },
   docsIntroduction: {
     path: "/docs/introduction",
     title: "Introduction",
