@@ -12,6 +12,7 @@ import type {
   LabelerSubscriptionRecord,
   ListRecord,
   ListSaveRecord,
+  MochottArticleRecord,
   PublicationRecord,
   PublicationThemeRecord,
   ReadRecord,
@@ -36,6 +37,7 @@ import {
   upsertLabelerSubscription,
   upsertList,
   upsertListSave,
+  upsertMochottArticle,
   upsertPublication,
   upsertPublicationTheme,
   upsertRead,
@@ -159,6 +161,14 @@ async function handleRecord(payload: TapRecordPayload): Promise<void> {
         did,
         rkey,
         record as unknown as CollectionSidecarRecord,
+      );
+      return;
+    }
+    case Collections.mochottArticle: {
+      await upsertMochottArticle(
+        did,
+        rkey,
+        record as unknown as MochottArticleRecord,
       );
       return;
     }

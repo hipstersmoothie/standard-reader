@@ -13,6 +13,8 @@ import { leafletPlaintext } from "#/lib/leaflet/plaintext";
 import { LEAFLET_CONTENT } from "#/lib/leaflet/types";
 import { markpubPlaintext } from "#/lib/markpub/markdown";
 import { MARKPUB_MARKDOWN } from "#/lib/markpub/types";
+import { mochottPlaintext } from "#/lib/mochott/plaintext";
+import { MOCHOTT_ARTICLE } from "#/lib/mochott/types";
 import { offprintPlaintext } from "#/lib/offprint/plaintext";
 import { OFFPRINT_CONTENT } from "#/lib/offprint/types";
 import { pcktPlaintext } from "#/lib/pckt/plaintext";
@@ -130,6 +132,9 @@ export function documentExtractedText(
   }
   if (format === MARKPUB_MARKDOWN) {
     return markpubPlaintext(contentJson);
+  }
+  if (format === MOCHOTT_ARTICLE) {
+    return mochottPlaintext(contentJson, format);
   }
   if (format === LEAFLET_DOCUMENT_FORMAT) {
     return leafletPlaintext(leafletDocumentContent(contentJson));

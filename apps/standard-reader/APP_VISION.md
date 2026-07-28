@@ -132,7 +132,13 @@ Sections, top to bottom:
   ([Markpub.at](https://markpub.at/)) is fully supported: GFM vs CommonMark flavor,
   declared extensions (LaTeX via KaTeX, YAML front matter), ingest-time `text.textBlob`
   resolution, and facet/lens preprocessing (`baseFormatting` headers/strong/idify,
-  `baseBlocks` front matter and horizontal rules). Leaflet image galleries use CSS
+  `baseBlocks` front matter and horizontal rules). **`site.mochott.article`**
+  ([mochott](https://mochott.site)) is fully supported: mochott's `site.standard.document` carries no
+  body at all — it lives in a `site.mochott.article` at the same rkey — so that collection is
+  delivered by the tap and indexed onto the document row as its content (sidecar-style, like
+  `app.standard-reader.collection`, with a repo fetch as the catch-up path), then rendered from its
+  TipTap tree by `renderer-core`.
+  Leaflet image galleries use CSS
   `grid-lanes` where supported with plain CSS Grid fallback elsewhere. Every rendered image in
   a document body — Leaflet galleries and single-image blocks, PCKT image and gallery blocks,
   structured image grids/carousels, and markdown images — opens the shared reader lightbox, with
@@ -978,6 +984,14 @@ markdown pipeline always used.
 react-markdown remains for two things that are not document markdown: HTML-in-record documents
 (WordPress, Ghost, Known, Gutenberg-as-HTML), which need an HTML pipeline rather than a markdown
 one, and small in-app strings such as a collection colophon.
+
+**One block vocabulary, too.** The app used to keep a second copy of `StructuredRenderableBlock`
+and of every parser that produces it. The copies drifted — core grew nested list items, image
+captions, raw-HTML blocks and callout metadata that the app's copy never received — so a document
+core could parse could not be handed to an app consumer. The types and parsers now live only in
+`renderer-core`; the app re-exports them, and `structuredFormatBlocks` delegates to core's dispatch.
+The app still walks blocks itself for the third-party block formats (`StructuredBlockView`); folding
+that last path into `renderer-react` is the remaining step.
 
 ### Record meta tags (`at:`)
 

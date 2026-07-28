@@ -194,10 +194,11 @@ export function buildStandardReaderComponents({
           codeHighlights={codeHighlights}
         />
       ),
-      Image: ({ src, alt, aspectRatio, fullBleed }: ImageProps) => (
+      Image: ({ src, alt, aspectRatio, caption, fullBleed }: ImageProps) => (
         <ImageFigureView
           src={src}
           alt={alt}
+          caption={caption}
           aspectRatio={aspectRatio}
           fullBleed={fullBleed}
           lightboxEnabled

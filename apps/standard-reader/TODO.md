@@ -828,6 +828,36 @@ Backend/API exists; UI or copy is missing.
       renderer (`src/lib/markpub/*`, [`markpub-content.tsx`](src/components/reader/content/renderers/markpub-content.tsx)),
       flavor/extensions, facet/lens preprocessing, ingest-time `text.textBlob` fetch
       (`src/server/markpub/resolve.ts`).
+- [x] **`site.mochott.article` in `renderer-core`** — [mochott](https://mochott.site) publishes each
+      post twice: a `site.standard.document` with the card metadata, and a `site.mochott.article` at
+      the **same rkey** carrying the body as a TipTap document. `renderer-core` parses that record
+      ([`mochott.ts`](../../packages/renderer-core/src/document/structured-content/mochott.ts)) onto
+      the shared block vocabulary — link cards → `website`, embeds → `iframe`, custom blocks →
+      interpolated (escaped) `html`, `/api/image/{did}/{cid}` → the PDS blob, and the inline
+      `footnote` nodes lifted into the document footnote channel.
+- [x] **Ingest the mochott sibling record** — a mochott `site.standard.document` carries no `content`
+      at all. Unlike Greengale (whose document carries a `#contentRef` uri, so `hasPendingFetch` has
+      something to key on), nothing points at the sibling — it is found by convention: same did,
+      same rkey. So it is wired as a **sidecar**, like `app.standard-reader.collection`:
+      `site.mochott.article` joins `TAP_COLLECTION_FILTERS`, and `upsertMochottArticle` indexes the
+      article record onto the document row as `contentFormat = site.mochott.article`, recomputing
+      `text_content` / `has_renderable_body`. Either arrival order converges: a document that
+      arrives without content reads the row first and falls back to fetching the article from the
+      repo (`src/server/mochott/resolve.ts`) — which also covers repo enumeration, where only
+      documents are listed — and never blanks a body the sidecar already stored. Deleting the
+      article clears the document's content. Rendering goes through `renderer-react`
+      ([`mochott-content.tsx`](src/components/reader/content/renderers/mochott-content.tsx)) so the
+      inline footnotes reach the endnotes; search text, the renderable flag and the page reader
+      share one parse ([`plaintext.ts`](src/lib/mochott/plaintext.ts)).
+- [x] **Backfill existing mochott documents** — `pnpm backfill:mochott-articles` (with `--dry-run`,
+      `--refresh`, or a list of DIDs) groups bodyless rows by repo and probes each repo once for
+      `site.mochott.article`, so a repo with none costs a single `listRecords` call
+      ([`backfill-mochott-articles.ts`](scripts/backfill-mochott-articles.ts)).
+- [ ] **Syntax highlighting for mochott (and Markpub) code blocks** — `codeBlocksFromContent` in
+      [`article-detail-build.ts`](src/server/reader/article-detail-build.ts) only collects code for
+      leaflet / pckt / offprint / standard-markdown, so third-party formats render code unhighlighted.
+      Mochott bodies do carry `codeBlock` nodes; wiring them means routing the format's blocks
+      through the same collector.
 - [x] **Discover — “Not following” filter** — toggle on [`_layout.discover.tsx`](src/routes/_layout.discover.tsx)
       All publications section to hide effective follow set ([`saved-lists.ts`](src/server/reader/saved-lists.ts)).
 
@@ -1093,6 +1123,40 @@ Re-emit a document's content into another format by running the renderer's norma
       keeps its text, since `InlineNode` has no math or raw-HTML variant. Neither loses content;
       neither renders as rich as react-markdown did. Adding inline nodes would touch all six
       renderers, so it waits for a document that needs it.
+- [x] **One structured block vocabulary** — the app carried its own copy of `StructuredRenderableBlock`
+      and of every parser that produces it (blocknote, fables, oxa, prosemirror, item-blocks,
+      offprint, the image/text-run helpers). The copies drifted: core grew nested list items, image
+      captions, raw-HTML blocks, callout metadata and `postCid`, none of which reached the app — so
+      a format core parsed could not be handed to an app consumer at all (which is what blocked
+      routing mochott through the app's structured path). The app's types and parsers are now
+      re-exports of `@standard-reader/renderer-core`; `structuredFormatBlocks` delegates to core's
+      dispatch, and the app's consumers (block view, plaintext walker, quote-highlight offsets,
+      pckt→structured mapping) handle the fuller vocabulary. `ImageFigureView` gained a real
+      `caption` (it only ever showed alt text), so a format that captions images separately —
+      mochott does — finally displays it.
+- [x] **Nested lists in the ProseMirror and BlockNote parsers** — the earlier nested-list work
+      taught `markdown.ts` and gave `StructuredListItem` its `children`, but the other two block
+      parsers kept flattening, each for its own reason: ProseMirror nests a sub-list _inside_ the
+      parent `listItem` and only the item's paragraphs were read, while BlockNote hangs its subtree
+      off the block's `children` array — which the parser never looked at, so _every_ indented
+      block was dropped, not just lists. Both now recurse
+      ([`structured-lists.test.ts`](../../packages/renderer-core/src/__tests__/structured-lists.test.ts)).
+      A subtree under a BlockNote _checklist_ item follows the list rather than nesting in it,
+      because the vocabulary's `taskList` items have no `children` (markdown has the same gap).
+- [ ] **Nesting for task-list items** — `taskList` items are `{checked, text}` in both the structured
+      vocabulary and the render tree's `TaskItem`, so a checklist item with an indented sub-list
+      cannot hold it. Adding `children` there means touching `build.ts` and all six renderers, so it
+      waits for a document that needs it.
+- [ ] **Route the structured formats through `renderer-react` too** — `StructuredFormatContentRenderer`
+      and `StructuredBlockView` are now the only in-app renderer that walks blocks itself; markdown,
+      Markpub and mochott all go through `StandardDocumentRenderer`. Collapsing the last one would
+      delete the app's second render path (and give the structured formats footnotes), but it means
+      re-checking the visual output of every third-party format, so it is its own change.
+- [ ] **Decide Gutenberg's route** — `renderer-core` has a native SkyPress Gutenberg block parser;
+      the app still serializes those documents to HTML and renders them through the HTML pipeline.
+      The structured path would give real blocks (and a sanitizer-free render), but it changes what
+      those documents look like, so the app deliberately excludes the format from its structured set
+      for now.
 - [ ] **Drop the app's duplicate callout table** — `src/lib/markdown/callouts.ts` still owns a copy
       of the type→kind mapping that `renderer-core` now exports. The HTML-in-record path is the
       last caller; once that moves, delete it in favour of `calloutKindForType`.

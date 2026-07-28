@@ -19,6 +19,8 @@ import { leafletPlaintext } from "#/lib/leaflet/plaintext";
 import { LEAFLET_CONTENT } from "#/lib/leaflet/types";
 import { markpubNarrationText } from "#/lib/markpub/markdown";
 import { MARKPUB_MARKDOWN } from "#/lib/markpub/types";
+import { mochottPlaintext } from "#/lib/mochott/plaintext";
+import { MOCHOTT_ARTICLE } from "#/lib/mochott/types";
 import { offprintPlaintext } from "#/lib/offprint/plaintext";
 import { OFFPRINT_CONTENT } from "#/lib/offprint/types";
 import { pcktLeadingHeadingMatchesDescription } from "#/lib/pckt/blocks";
@@ -155,6 +157,10 @@ export function articleReadingText(
   }
   if (contentType === MARKPUB_MARKDOWN) {
     const text = markpubNarrationText(article.contentJson);
+    if (text?.trim()) return text;
+  }
+  if (contentType === MOCHOTT_ARTICLE) {
+    const text = mochottPlaintext(article.contentJson, contentType);
     if (text?.trim()) return text;
   }
 

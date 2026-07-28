@@ -314,7 +314,12 @@ function appendStructuredRenderedText(
     case "bulletList":
     case "orderedList": {
       for (const item of block.items) {
-        appendText(parts, item.plaintext);
+        appendText(parts, item.text.plaintext);
+        // Nested lists render inside their parent item, so their text lands
+        // here too — the offsets have to match the rendered DOM exactly.
+        for (const child of item.children ?? []) {
+          appendStructuredRenderedText(child, parts);
+        }
       }
       return;
     }
@@ -359,12 +364,15 @@ function appendStructuredRenderedText(
       appendText(parts, block.caption);
       return;
     }
+    // Blocks with no rendered text of their own — `html` included, since the
+    // structured block view sanitizes it into markup we can't align against.
     case "horizontalRule":
     case "blueskyEmbed":
     case "image":
     case "iframe":
     case "gallery":
     case "offprintComponent":
+    case "html":
     case "unknown": {
       return;
     }

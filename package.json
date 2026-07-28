@@ -43,6 +43,7 @@
     "backfill:search-text": "pnpm --filter standard-reader backfill:search-text",
     "backfill:renderable": "pnpm --filter standard-reader backfill:renderable",
     "backfill:content-formats": "pnpm --filter standard-reader backfill:content-formats",
+    "backfill:mochott-articles": "pnpm --filter standard-reader backfill:mochott-articles",
     "backfill:repo-documents": "pnpm --filter standard-reader backfill:repo-documents",
     "backfill:lists": "pnpm --filter standard-reader backfill:lists",
     "scan:unsupported-blocks": "pnpm --filter standard-reader scan:unsupported-blocks",

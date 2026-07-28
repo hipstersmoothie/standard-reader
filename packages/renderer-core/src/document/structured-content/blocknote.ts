@@ -8,7 +8,11 @@ import { mergeTextRuns, syntheticFacet } from "./text-runs.js";
  * wrappers; both are converted to AT Proto-style byte facets. Consecutive
  * `bulletListItem` / `numberedListItem` blocks are grouped into one list.
  */
-import type { StructuredRenderableBlock, StructuredText } from "./types.js";
+import type {
+  StructuredListItem,
+  StructuredRenderableBlock,
+  StructuredText,
+} from "./types.js";
 
 export const BLOCKNOTE_CONTENT = "org.blocknote.document#content";
 
@@ -143,39 +147,57 @@ export function blocknoteBlocks(
   const format =
     typeof content.$type === "string" ? content.$type : contentFormat;
   if (format !== BLOCKNOTE_CONTENT) return [];
-  const blocks = Array.isArray(content.blocks) ? content.blocks : [];
+  return blocksFrom(Array.isArray(content.blocks) ? content.blocks : []);
+}
 
+/**
+ * BlockNote nests by hanging a `children` array off the parent block rather
+ * than inside the list, so a sub-list is a child of the item above it. Parsing
+ * only the top level (as this did before `StructuredListItem` grew `children`)
+ * dropped every indented branch.
+ */
+function blocksFrom(entries: Array<unknown>): Array<StructuredRenderableBlock> {
   const result: Array<StructuredRenderableBlock> = [];
 
-  for (const entry of blocks) {
+  for (const entry of entries) {
     if (!isRecord(entry)) continue;
     const type = typeof entry.type === "string" ? entry.type : "";
     const kind = listKind(type);
+    const children = blocksFrom(
+      Array.isArray(entry.children) ? entry.children : [],
+    );
 
     // Group consecutive items of the same list kind into one list block.
     if (kind) {
       const text = inlineText(entry);
-      if (!text) continue;
+      if (!text) {
+        // An empty item still carries its subtree — keep the content.
+        result.push(...children);
+        continue;
+      }
       const previous = result.at(-1);
       if (kind === "taskList") {
+        // `taskList` items have no `children` in the vocabulary, so a subtree
+        // under a checklist item follows the list instead of nesting in it.
         const item = {
           checked: isRecord(entry.props) && entry.props.checked === true,
           text,
         };
         if (previous?.kind === "taskList") previous.items.push(item);
         else result.push({ items: [item], kind: "taskList" });
-      } else if (kind === "bulletList") {
-        if (previous?.kind === "bulletList") previous.items.push({ text });
-        else result.push({ items: [{ text }], kind: "bulletList" });
+        result.push(...children);
       } else {
-        if (previous?.kind === "orderedList") previous.items.push({ text });
-        else result.push({ items: [{ text }], kind: "orderedList" });
+        const item: StructuredListItem = { text };
+        if (children.length > 0) item.children = children;
+        if (previous?.kind === kind) previous.items.push(item);
+        else result.push({ items: [item], kind });
       }
       continue;
     }
 
     const block = singleBlock(entry);
     if (block) result.push(block);
+    result.push(...children);
   }
 
   return result;

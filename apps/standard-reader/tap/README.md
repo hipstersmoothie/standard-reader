@@ -71,7 +71,10 @@ deliver. Our defaults (see `docker-compose.yml`):
 - `TAP_COLLECTION_FILTERS=site.standard.*,app.bsky.actor.profile,app.standard-reader.read,app.standard-reader.bookmark`
   — of those repos, deliver only the standard.site collections we model, Bluesky
   profiles, and our own app-owned reader records (read, bookmark, and
-  `app.standard-reader.labeler.subscription`) written back by the app.
+  `app.standard-reader.labeler.subscription`) written back by the app. Plus
+  `site.mochott.article`: mochott's documents carry no body, so the article
+  record at the same rkey _is_ the document's content (see
+  `src/server/mochott/resolve.ts`).
 
 This indexes **all publications, their documents, contributor/owner profiles,
 and any subscription/recommend records that live in publisher repos.**

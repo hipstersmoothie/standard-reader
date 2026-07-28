@@ -7,6 +7,7 @@ import {
   structuredImageUrl,
 } from "#/lib/document/structured-content/image";
 import type { StructuredRenderableBlock } from "#/lib/document/structured-content/types";
+import { sanitizeArticleHtml } from "#/lib/markdown/sanitize-html";
 import type { CodeHighlightsByScheme } from "#/lib/theme";
 
 import type { ContentBlobContext } from "../types";
@@ -76,6 +77,16 @@ export function StructuredBlockView({
   codeHighlights?: CodeHighlightsByScheme;
   dropCap?: boolean;
 }) {
+  /** Lists nest; their children are ordinary blocks, rendered right back here. */
+  const renderNested = (child: StructuredRenderableBlock, index: number) => (
+    <StructuredBlockView
+      key={index}
+      block={child}
+      blobContext={blobContext}
+      codeHighlights={codeHighlights}
+    />
+  );
+
   switch (block.kind) {
     case "text": {
       return (
@@ -114,11 +125,20 @@ export function StructuredBlockView({
       return <HorizontalRuleView />;
     }
     case "bulletList": {
-      return <StructuredBulletListView items={block.items} />;
+      return (
+        <StructuredBulletListView
+          items={block.items}
+          renderChildBlock={renderNested}
+        />
+      );
     }
     case "orderedList": {
       return (
-        <StructuredOrderedListView items={block.items} start={block.start} />
+        <StructuredOrderedListView
+          items={block.items}
+          renderChildBlock={renderNested}
+          start={block.start}
+        />
       );
     }
     case "taskList": {
@@ -135,6 +155,7 @@ export function StructuredBlockView({
         <ImageFigureView
           src={src}
           alt={normalizeImageAlt(block.alt)}
+          caption={block.caption}
           aspectRatio={structuredImageAspectRatio(block)}
           lightboxEnabled
           fit="natural"
@@ -207,6 +228,12 @@ export function StructuredBlockView({
       return (
         <StructuredImageDiffBlockView block={block} blobContext={blobContext} />
       );
+    }
+    case "html": {
+      // Raw markup from the record, sanitized with the app's own schema —
+      // `renderer-core` carries it but refuses to decide what is safe.
+      const safe = sanitizeArticleHtml(block.html);
+      return safe ? <div dangerouslySetInnerHTML={{ __html: safe }} /> : null;
     }
     case "unknown": {
       return <UnknownBlockView blockType={block.blockType} />;

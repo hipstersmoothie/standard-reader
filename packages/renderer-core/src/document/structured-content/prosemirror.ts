@@ -7,7 +7,11 @@ import { mergeTextRuns, syntheticFacet } from "./text-runs.js";
  * `doc`. Inline marks (bold/italic/code/link) are converted to AT Proto-style
  * byte facets so the shared faceted-text renderer styles them.
  */
-import type { StructuredRenderableBlock, StructuredText } from "./types.js";
+import type {
+  StructuredListItem,
+  StructuredRenderableBlock,
+  StructuredText,
+} from "./types.js";
 
 export const PROSEMIRROR_CONTENT = "com.wss.content.rich-text";
 
@@ -63,9 +67,7 @@ function inlineText(node: Record<string, unknown>): StructuredText | null {
 }
 
 /** Texts of every paragraph nested under a list item. */
-function listItemText(item: unknown): StructuredText | null {
-  if (!isRecord(item) || item.type !== "listItem") return null;
-  const children = Array.isArray(item.content) ? item.content : [];
+function listItemText(children: Array<unknown>): StructuredText | null {
   const texts = children.flatMap((child) => {
     if (!isRecord(child) || child.type !== "paragraph") return [];
     const text = inlineText(child);
@@ -78,6 +80,28 @@ function listItemText(item: unknown): StructuredText | null {
     index === 0 ? [text] : [{ plaintext: "\n" }, text],
   );
   return mergeTextRuns(separated);
+}
+
+/**
+ * A `listItem`: its own paragraphs, plus anything nested beneath it.
+ *
+ * ProseMirror nests a sub-list *inside* the parent item, so reading only the
+ * item's paragraphs (as this did before `StructuredListItem` grew `children`)
+ * dropped whole branches of the document.
+ */
+function listItem(item: unknown): StructuredListItem | null {
+  if (!isRecord(item) || item.type !== "listItem") return null;
+  const children = Array.isArray(item.content) ? item.content : [];
+  const text = listItemText(children);
+  const nested = children.flatMap((child) => {
+    if (!isRecord(child) || child.type === "paragraph") return [];
+    const block = asBlock(child);
+    return block ? [block] : [];
+  });
+  if (!text && nested.length === 0) return null;
+  const parsed: StructuredListItem = { text: text ?? { plaintext: "" } };
+  if (nested.length > 0) parsed.children = nested;
+  return parsed;
 }
 
 function asBlock(node: unknown): StructuredRenderableBlock | null {
@@ -102,8 +126,8 @@ function asBlock(node: unknown): StructuredRenderableBlock | null {
     case "orderedList": {
       const children = Array.isArray(node.content) ? node.content : [];
       const items = children.flatMap((child) => {
-        const text = listItemText(child);
-        return text ? [{ text }] : [];
+        const item = listItem(child);
+        return item ? [item] : [];
       });
       if (items.length === 0) return null;
       return node.type === "bulletList"

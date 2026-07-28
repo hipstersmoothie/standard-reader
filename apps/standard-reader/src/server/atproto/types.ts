@@ -90,6 +90,20 @@ export interface DocumentRecord {
   readerCollection?: unknown;
 }
 
+/**
+ * `site.mochott.article` — mochott's body sidecar, sitting at the same rkey as
+ * its `site.standard.document` (see `#/lib/mochott/types`).
+ */
+export interface MochottArticleRecord {
+  $type?: string;
+  title?: string;
+  /** TipTap document node (`{ type: "doc", content: [...] }`). */
+  content?: { type?: string } & Record<string, unknown>;
+  textContent?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 /** `app.standard-reader.collection` sidecar for a curated magazine edition. */
 export interface CollectionSidecarRecord {
   $type?: string;

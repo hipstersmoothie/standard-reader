@@ -57,6 +57,7 @@ const styles = stylex.create({
 export function ImageFigureView({
   src,
   alt,
+  caption,
   aspectRatio = 16 / 9,
   fullBleed = false,
   lightboxEnabled = false,
@@ -64,6 +65,9 @@ export function ImageFigureView({
 }: {
   src: string;
   alt?: string;
+  /** Caption text when the format carries one separately from `alt` (mochott
+   *  puts the image's description here). Falls back to the alt text. */
+  caption?: string;
   aspectRatio?: number;
   fullBleed?: boolean;
   lightboxEnabled?: boolean;
@@ -77,6 +81,7 @@ export function ImageFigureView({
   const [transitionActive, setTransitionActive] = useState(false);
   const magazine = use(MagazineColorContext);
   const altText = normalizeImageAlt(alt);
+  const captionText = normalizeImageAlt(caption) || altText;
   const canOpenLightbox = lightboxEnabled && !magazine;
   const transitionName = LIGHTBOX_IMAGE_TRANSITION_NAME;
   const natural = fit === "natural" && !magazine;
@@ -134,12 +139,14 @@ export function ImageFigureView({
       ) : (
         image
       )}
-      {altText ? (
+      {captionText ? (
         <figcaption
-          aria-hidden="true"
+          // A caption that just repeats the alt text would be announced twice;
+          // one that says something else is content in its own right.
+          aria-hidden={captionText === altText ? "true" : undefined}
           {...stylex.props(articleBodyStyles.imageCaption)}
         >
-          {altText}
+          {captionText}
         </figcaption>
       ) : null}
       {canOpenLightbox ? (

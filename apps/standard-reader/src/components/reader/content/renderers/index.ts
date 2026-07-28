@@ -7,6 +7,7 @@ import {
 import { STANDARD_MARKDOWN_CONTENT } from "#/lib/document/structured-content/types";
 import { LEAFLET_CONTENT } from "#/lib/leaflet/types";
 import { MARKPUB_MARKDOWN } from "#/lib/markpub/types";
+import { MOCHOTT_ARTICLE } from "#/lib/mochott/types";
 import { OFFPRINT_CONTENT } from "#/lib/offprint/types";
 import { PCKT_CONTENT } from "#/lib/pckt/types";
 
@@ -15,6 +16,7 @@ import { HtmlContentRenderer } from "./html-content";
 import { LeafletContentRenderer } from "./leaflet-content";
 import { LeafletDocumentContentRenderer } from "./leaflet-document-content";
 import { MarkdownContentRenderer } from "./markdown-content";
+import { MochottContentRenderer } from "./mochott-content";
 import { OffprintContentRenderer } from "./offprint-content";
 import { PcktContentRenderer } from "./pckt-content";
 import { StructuredFormatContentRenderer } from "./structured-format-content";
@@ -40,3 +42,8 @@ for (const format of HTML_CONTENT_FORMATS) {
 for (const format of STRUCTURED_BLOCK_FORMATS) {
   CONTENT_RENDERERS[format] = StructuredFormatContentRenderer;
 }
+
+// Mochott is registered as a structured format for the plaintext/renderable
+// paths, but it renders through `renderer-core` so its inline footnotes reach
+// the document's endnotes — so it claims its slot back after the loop above.
+CONTENT_RENDERERS[MOCHOTT_ARTICLE] = MochottContentRenderer;

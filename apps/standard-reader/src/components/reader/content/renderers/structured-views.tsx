@@ -2,11 +2,16 @@
 
 import * as stylex from "@stylexjs/stylex";
 import { ExternalLink } from "lucide-react";
+import type { ReactNode } from "react";
 
 import { HighlightedPlaintext } from "#/components/reader/quote-highlight-context";
 import { useQuoteHighlightTracker } from "#/components/reader/quote-highlight-tracker";
 import { normalizeImageAlt } from "#/lib/document/structured-content/image";
-import type { StructuredText } from "#/lib/document/structured-content/types";
+import type {
+  StructuredListItem,
+  StructuredRenderableBlock,
+  StructuredText,
+} from "#/lib/document/structured-content/types";
 import type { QuoteHighlightRange } from "#/lib/quote-highlight-text";
 
 import { articleBodyStyles } from "../body-styles";
@@ -57,25 +62,49 @@ export function WebsiteCardBody({
   );
 }
 
+/**
+ * A list item's own text, plus any list nested beneath it.
+ *
+ * The nested blocks are rendered by the caller (`StructuredBlockView`) rather
+ * than here: the block view already knows how to render every kind, and having
+ * it call back in avoids a cycle between the two modules.
+ */
+interface StructuredListViewProps {
+  items: Array<StructuredListItem>;
+  renderChildBlock?: (
+    block: StructuredRenderableBlock,
+    index: number,
+  ) => ReactNode;
+}
+
+function renderNestedBlocks(
+  children: Array<StructuredRenderableBlock> | undefined,
+  renderChildBlock: StructuredListViewProps["renderChildBlock"],
+): ReactNode {
+  if (!children?.length || !renderChildBlock) return null;
+  return children.map((child, index) => renderChildBlock(child, index));
+}
+
 export function StructuredBulletListView({
   items,
-}: {
-  items: Array<StructuredText>;
-}) {
+  renderChildBlock,
+}: StructuredListViewProps) {
   const tracker = useQuoteHighlightTracker();
   if (items.length === 0) return null;
 
   return (
     <ul {...stylex.props(articleBodyStyles.list)}>
       {items.map((item, index) => {
-        const highlightRange = tracker?.consume(item.plaintext.length) ?? null;
+        const highlightRange =
+          tracker?.consume(item.text.plaintext.length) ?? null;
         return (
           <li key={index} {...stylex.props(articleBodyStyles.listItem)}>
             <HighlightedFacetedPlaintext
-              plaintext={item.plaintext}
-              facets={item.facets}
+              plaintext={item.text.plaintext}
+              facets={item.text.facets}
               highlightRange={highlightRange}
             />
+            {renderNestedBlocks(item.children, renderChildBlock)}
           </li>
         );
       })}
@@ -85,25 +114,25 @@ export function StructuredBulletListView({
 
 export function StructuredOrderedListView({
   items,
+  renderChildBlock,
   start,
-}: {
-  items: Array<StructuredText>;
-  start?: number;
-}) {
+}: StructuredListViewProps & { start?: number }) {
   const tracker = useQuoteHighlightTracker();
   if (items.length === 0) return null;
 
   return (
     <ol {...stylex.props(articleBodyStyles.list)} start={start ?? 1}>
       {items.map((item, index) => {
-        const highlightRange = tracker?.consume(item.plaintext.length) ?? null;
+        const highlightRange =
+          tracker?.consume(item.text.plaintext.length) ?? null;
         return (
           <li key={index} {...stylex.props(articleBodyStyles.listItem)}>
             <HighlightedFacetedPlaintext
-              plaintext={item.plaintext}
-              facets={item.facets}
+              plaintext={item.text.plaintext}
+              facets={item.text.facets}
               highlightRange={highlightRange}
             />
+            {renderNestedBlocks(item.children, renderChildBlock)}
           </li>
         );
       })}
