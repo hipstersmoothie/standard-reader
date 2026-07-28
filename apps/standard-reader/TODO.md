@@ -1134,10 +1134,19 @@ Re-emit a document's content into another format by running the renderer's norma
       pckt→structured mapping) handle the fuller vocabulary. `ImageFigureView` gained a real
       `caption` (it only ever showed alt text), so a format that captions images separately —
       mochott does — finally displays it.
-- [ ] **Nested lists in the ProseMirror and BlockNote parsers** — `StructuredListItem` carries
-      `children` now, but `renderer-core`'s `prosemirror.ts` / `blocknote.ts` still only collect an
-      item's paragraphs, so a sub-list in a wss or BlockNote document is dropped at parse time the
-      way markdown's was before. Same fix as `markdown.ts` got.
+- [x] **Nested lists in the ProseMirror and BlockNote parsers** — the earlier nested-list work
+      taught `markdown.ts` and gave `StructuredListItem` its `children`, but the other two block
+      parsers kept flattening, each for its own reason: ProseMirror nests a sub-list _inside_ the
+      parent `listItem` and only the item's paragraphs were read, while BlockNote hangs its subtree
+      off the block's `children` array — which the parser never looked at, so _every_ indented
+      block was dropped, not just lists. Both now recurse
+      ([`structured-lists.test.ts`](../../packages/renderer-core/src/__tests__/structured-lists.test.ts)).
+      A subtree under a BlockNote _checklist_ item follows the list rather than nesting in it,
+      because the vocabulary's `taskList` items have no `children` (markdown has the same gap).
+- [ ] **Nesting for task-list items** — `taskList` items are `{checked, text}` in both the structured
+      vocabulary and the render tree's `TaskItem`, so a checklist item with an indented sub-list
+      cannot hold it. Adding `children` there means touching `build.ts` and all six renderers, so it
+      waits for a document that needs it.
 - [ ] **Route the structured formats through `renderer-react` too** — `StructuredFormatContentRenderer`
       and `StructuredBlockView` are now the only in-app renderer that walks blocks itself; markdown,
       Markpub and mochott all go through `StandardDocumentRenderer`. Collapsing the last one would
