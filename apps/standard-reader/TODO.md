@@ -828,6 +828,18 @@ Backend/API exists; UI or copy is missing.
       renderer (`src/lib/markpub/*`, [`markpub-content.tsx`](src/components/reader/content/renderers/markpub-content.tsx)),
       flavor/extensions, facet/lens preprocessing, ingest-time `text.textBlob` fetch
       (`src/server/markpub/resolve.ts`).
+- [x] **`site.mochott.article` in `renderer-core`** — [mochott](https://mochott.site) publishes each
+      post twice: a `site.standard.document` with the card metadata, and a `site.mochott.article` at
+      the **same rkey** carrying the body as a TipTap document. `renderer-core` parses that record
+      ([`mochott.ts`](../../packages/renderer-core/src/document/structured-content/mochott.ts)) onto
+      the shared block vocabulary — link cards → `website`, embeds → `iframe`, custom blocks →
+      interpolated (escaped) `html`, `/api/image/{did}/{cid}` → the PDS blob, and the inline
+      `footnote` nodes lifted into the document footnote channel.
+- [ ] **Ingest the mochott sibling record** — a mochott `site.standard.document` carries no `content`
+      at all, so the reader still shows those posts bodyless. Ingest needs to fetch the
+      `site.mochott.article` at the same rkey (the same shape as the out-of-record bodies
+      `resolveFetchedContent` already resolves) and store it with
+      `contentFormat = site.mochott.article`, which `renderer-core` now renders.
 - [x] **Discover — “Not following” filter** — toggle on [`_layout.discover.tsx`](src/routes/_layout.discover.tsx)
       All publications section to hide effective follow set ([`saved-lists.ts`](src/server/reader/saved-lists.ts)).
 

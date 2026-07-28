@@ -25,6 +25,11 @@ import {
   markpubBlocks,
   markpubDocument,
 } from "./structured-content/markpub.js";
+import {
+  MOCHOTT_FORMATS,
+  mochottBlocks,
+  mochottDocument,
+} from "./structured-content/mochott.js";
 import { OXA_CONTENT, oxaBlocks } from "./structured-content/oxa.js";
 import {
   PROSEMIRROR_CONTENT,
@@ -93,6 +98,9 @@ for (const format of MARKDOWN_FORMATS) {
 for (const format of MARKPUB_FORMATS) {
   STRUCTURED_FORMAT_PARSERS[format] = markpubBlocks;
 }
+for (const format of MOCHOTT_FORMATS) {
+  STRUCTURED_FORMAT_PARSERS[format] = mochottBlocks;
+}
 
 /** Every third-party block-based content format the structured parser knows. */
 export const STRUCTURED_BLOCK_FORMATS = Object.keys(STRUCTURED_FORMAT_PARSERS);
@@ -124,6 +132,9 @@ export function structuredFormatDocument(
 
   if (MARKPUB_FORMATS.includes(format)) {
     return markpubDocument(content, format);
+  }
+  if (MOCHOTT_FORMATS.includes(format)) {
+    return mochottDocument(content, format);
   }
   if (MARKDOWN_FORMATS.includes(format)) {
     const text = markdownText(content, format);

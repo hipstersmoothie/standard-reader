@@ -75,7 +75,10 @@ export {
   isMarkdownFormat,
   MARKDOWN_FORMATS,
 } from "./document/structured-content/markdown.js";
-export type { MarkdownFlavor } from "./document/structured-content/markdown.js";
+export type {
+  MarkdownDocument,
+  MarkdownFlavor,
+} from "./document/structured-content/markdown.js";
 export {
   markpubBlocks,
   prepareMarkpubMarkdown,
@@ -89,6 +92,15 @@ export type {
   MarkpubDocument,
   PreparedMarkpubMarkdown,
 } from "./document/structured-content/markpub.js";
+export {
+  mochottBlocks,
+  mochottDocument,
+  mochottDocNode,
+  isMochottFormat,
+  MOCHOTT_FORMATS,
+  MOCHOTT_ARTICLE,
+  MOCHOTT_TIPTAP,
+} from "./document/structured-content/mochott.js";
 export {
   gutenbergBlocks,
   GUTENBERG_CONTENT,

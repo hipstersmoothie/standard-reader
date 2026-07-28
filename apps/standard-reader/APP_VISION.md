@@ -132,7 +132,11 @@ Sections, top to bottom:
   ([Markpub.at](https://markpub.at/)) is fully supported: GFM vs CommonMark flavor,
   declared extensions (LaTeX via KaTeX, YAML front matter), ingest-time `text.textBlob`
   resolution, and facet/lens preprocessing (`baseFormatting` headers/strong/idify,
-  `baseBlocks` front matter and horizontal rules). Leaflet image galleries use CSS
+  `baseBlocks` front matter and horizontal rules). **`site.mochott.article`**
+  ([mochott](https://mochott.site)) is parsed by `renderer-core` — mochott writes the body as a
+  TipTap document in a sibling record at the same rkey as its `site.standard.document`, so the
+  reader renders that record's content (ingesting it is still outstanding; see TODO §9).
+  Leaflet image galleries use CSS
   `grid-lanes` where supported with plain CSS Grid fallback elsewhere. Every rendered image in
   a document body — Leaflet galleries and single-image blocks, PCKT image and gallery blocks,
   structured image grids/carousels, and markdown images — opens the shared reader lightbox, with

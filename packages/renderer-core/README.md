@@ -3,9 +3,9 @@
 The **framework-agnostic core** behind the Standard Reader renderers. It parses a
 Standard Site document — Leaflet, pckt, Offprint, markdown (the canonical
 `site.standard.content.markdown`, markdown-in-record formats like Lemma, and
-Markpub/Mochott's `at.markpub.markdown`), SkyPress Gutenberg blocks, and every
-third-party block format Standard Reader understands — and normalizes it into a
-single render tree that any UI framework can walk.
+Markpub's `at.markpub.markdown`), SkyPress Gutenberg blocks, mochott's TipTap
+articles, and every third-party block format Standard Reader understands — and
+normalizes it into a single render tree that any UI framework can walk.
 
 You usually don't depend on this directly: pick a framework renderer instead
 (see the [renderers overview](../README.md)). Reach for the core when you want to
@@ -114,7 +114,8 @@ The raw per-format parsers and vocabulary types are available too:
 `leafletBlocks`, `pcktBlocks`, `offprintBlocks`, `structuredFormatBlocks`,
 `markdownBlocks` / `markdownBlocksFromText` / `markdownText` /
 `MARKDOWN_FORMATS`, `markpubBlocks` / `prepareMarkpubMarkdown` /
-`MARKPUB_FORMATS`, `gutenbergBlocks` / `GUTENBERG_CONTENT`,
+`MARKPUB_FORMATS`, `mochottBlocks` / `mochottDocument` / `MOCHOTT_FORMATS`,
+`gutenbergBlocks` / `GUTENBERG_CONTENT`,
 `collectLeafletFootnotes`, `segmentFacetedText`, `defaultImageUrlResolver`,
 `blobCid` / `cdnImageUrl`, and the `LeafletRenderableBlock` /
 `StructuredRenderableBlock` / `PcktRenderableBlock` types.
@@ -125,6 +126,17 @@ The raw per-format parsers and vocabulary types are available too:
   Facet-only constructs (headers, strong, horizontal rules, front matter) are
   rewritten back into markdown syntax before parsing, so they arrive as real
   blocks. `#idify` heading anchors and the `latex` extension are not modelled.
+- **Mochott** (`site.mochott.article`) publishes each post twice: a
+  `site.standard.document` with the card metadata, and a `site.mochott.article`
+  at the **same rkey** holding the body as a TipTap document. Only the article
+  record has renderable content, so pass that record (or its bare `content` doc
+  node, tagged `site.mochott.article#tiptapDocument`) as the document's
+  `content`. Its link cards become `website` blocks, embeds become `iframe`s,
+  inline footnotes are lifted into `tree.footnotes`, and images — served through
+  mochott's `/api/image/{did}/{cid}` proxy — resolve back to the PDS blob.
+  A `customBlock` is the author's own HTML template with its values
+  interpolated (and escaped), so it arrives as an `html` block for the consumer
+  to sanitize.
 - **SkyPress** (`blog.skypress.content.gutenberg`) block bodies are HTML
   fragments. They are parsed into plaintext + facets rather than re-emitted as
   markup, so a renderer never needs an HTML sanitizer. Raw-HTML content formats
