@@ -8,6 +8,7 @@ import { DirectionalIcon } from "@standard-reader/design-system/directional-icon
 import { Flex } from "@standard-reader/design-system/flex";
 import { IconButton } from "@standard-reader/design-system/icon-button";
 import { Menu, MenuItem, SubMenu } from "@standard-reader/design-system/menu";
+import { useAnimatedBottomNav } from "@standard-reader/design-system/navbar/useAnimatedBottomNav";
 import { useAnimatedNavbar } from "@standard-reader/design-system/navbar/useAnimatedNavbar";
 import { Skeleton } from "@standard-reader/design-system/skeleton";
 import { SkipLink } from "@standard-reader/design-system/skip-link";
@@ -714,10 +715,22 @@ function navItemActive(pathname: string, to: string): boolean {
 function BottomNav({
   items,
   hasUnread,
+  dockRef,
 }: {
   items: Array<NavLink>;
   hasUnread: boolean;
+  dockRef: React.RefObject<HTMLDivElement | null>;
 }) {
+  // Mirror of the mobile top bar: scrolling down slides the pill out through the
+  // bottom edge, scrolling up brings it back, so an article gets the full height
+  // of the screen while the reader is moving through it. The hook only runs on
+  // the compact layout, where this nav is the one that exists — at desktop
+  // widths the sidebar replaces it and the pill is `display: none`.
+  const compactNav = useCompactNav();
+  const { navBarProps } = useAnimatedBottomNav({
+    enabled: compactNav,
+    dockTarget: dockRef,
+  });
   const pathname = useRouterState({
     select: (s: { location: { pathname: string } }) => s.location.pathname,
   });
@@ -761,7 +774,7 @@ function BottomNav({
   );
 
   return (
-    <nav {...stylex.props(styles.bottomNav)}>
+    <nav {...navBarProps} {...stylex.props(styles.bottomNav)}>
       <div {...stylex.props(styles.fabBar)}>
         {indicator ? (
           <span
@@ -798,17 +811,22 @@ function BottomNav({
 function BottomNavSlot({
   items,
   hasUnread,
+  dockRef,
 }: {
   items: Array<NavLink>;
   hasUnread: boolean;
+  dockRef: React.RefObject<HTMLDivElement | null>;
 }) {
   const dock = useSelectionDock();
 
+  // The selection toolbar is a response to something the reader just did, so it
+  // never hides on scroll. Unmounting `BottomNav` also tears down the hook,
+  // which drops the dock back to its resting offset for the toolbar.
   if (dock?.isActive) {
     return <div {...stylex.props(styles.selectionSlot)} ref={dock.setSlot} />;
   }
 
-  return <BottomNav items={items} hasUnread={hasUnread} />;
+  return <BottomNav items={items} hasUnread={hasUnread} dockRef={dockRef} />;
 }
 
 function Brand({
@@ -920,6 +938,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const mainRef = useRef<HTMLElement>(null);
   const { navBarProps: mobileBarProps, sentinel: mobileBarSentinel } =
     useAnimatedNavbar({ enabled: compactNav, offsetTarget: mainRef });
+  // The bottom nav slides down out of the dock as you scroll; the dock follows
+  // it partway so the page-reader transport stacked above drops into the
+  // vacated slot rather than hovering over a gap.
+  const dockRef = useRef<HTMLDivElement>(null);
 
   const { data: listsData, isPending: listsPending } = useQuery({
     ...listsQueryOptions(),
@@ -1415,9 +1437,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </PublicationThemeScope>
             </div>
 
-            <div {...stylex.props(styles.dock)}>
+            <div ref={dockRef} {...stylex.props(styles.dock)}>
               <PageReaderBar />
-              <BottomNavSlot items={visibleNav} hasUnread={hasUnread} />
+              <BottomNavSlot
+                items={visibleNav}
+                hasUnread={hasUnread}
+                dockRef={dockRef}
+              />
             </div>
           </main>
 

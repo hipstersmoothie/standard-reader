@@ -404,6 +404,11 @@ in structured o11y (`observe`) and reads from the Neon read-model.
 Build each on hip-ui components + StyleX tokens (no raw HTML/inline styles).
 
 - [x] App shell: desktop persistent left sidebar; mobile top bar + bottom tab nav; Following list.
+- [x] **Mobile chrome gets out of the way while reading** — the top bar already scrolled
+      away and slid back on scroll up (`useAnimatedNavbar`); the bottom tab nav now mirrors
+      it downward (`useAnimatedBottomNav`), sliding out through the bottom edge as you read
+      forward and coming back on a small scroll up. The dock follows it partway so the page
+      reader transport drops into the vacated slot instead of floating over a gap.
 - [x] **Home** — masthead (date + unread count), featured lead, latest unread rows, right rail (Trending articles + You might follow).
 - [x] **Latest** — chronological list, segmented Unread / Subscriptions / All-network filter with counts (Unread = unread docs from subs, Subscriptions = all docs from subs, All = whole network).
 - [x] **Discover** — Recommended / Followed-by-people-you-follow / Trending / All (chips, sort, grid⇄list toggle).
