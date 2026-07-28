@@ -132,6 +132,16 @@ export const Route = createFileRoute("/_layout/u/$did")({
       displayName,
       description: profile?.description ?? null,
       handle: profile?.handle ?? null,
+      // The records this page is built from — rendered by `AtRecordMeta`.
+      // No canonical, deliberately: this page is a directory of someone's
+      // publications with their Bluesky profile draped over it. Drop the profile
+      // record and the page still stands, which makes it an alternate.
+      atMeta: {
+        alternate: profile
+          ? [`at://${profile.did}/app.bsky.actor.profile/self`]
+          : [],
+        author: [profile?.did ?? params.did],
+      },
     };
   },
   head: ({ loaderData, match }) => {

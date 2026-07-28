@@ -89,6 +89,12 @@ export const Route = createFileRoute("/collection/$did/$rkey")({
         shell: shellFromCollectionData(collection),
         isListMode: false,
         collection,
+        // The records this page is built from — rendered by `AtRecordMeta`.
+        atMeta: {
+          canonical: [uri],
+          alternate: [collection.collectionDoc.publicationUri],
+          author: [params.did],
+        },
       };
     }
 
@@ -101,6 +107,17 @@ export const Route = createFileRoute("/collection/$did/$rkey")({
       shell: shellFromArticle(article),
       isListMode: !article?.collection,
       collection: null as CollectionMagazineData | null,
+      // The records this page is built from — rendered by `AtRecordMeta`. In
+      // list mode the params name a list rather than a document, and the
+      // magazine is assembled from its members, so there is nothing single and
+      // canonical to point at.
+      atMeta: article
+        ? {
+            canonical: [uri],
+            alternate: [article.publicationUri],
+            author: [article.did],
+          }
+        : {},
     };
   },
   head: ({ loaderData, match }) => {
@@ -132,6 +149,29 @@ export const Route = createFileRoute("/collection/$did/$rkey")({
       }),
       links: [
         ...magazineThemeFontHeadLinks(theme),
+        // standard.site discovery hints — a collection edition renders a
+        // `site.standard.document` like any article view does, so it carries the
+        // same hints (alongside the `at:` meta tags from the loader's `atMeta`).
+        // See https://standard.site/docs/verification/#discovery-hint
+        ...(collection
+          ? [
+              {
+                rel: "site.standard.document",
+                href: documentUriFromParams(
+                  match.params.did,
+                  match.params.rkey,
+                ),
+              },
+              ...(collection.collectionDoc.publicationUri
+                ? [
+                    {
+                      rel: "site.standard.publication",
+                      href: collection.collectionDoc.publicationUri,
+                    },
+                  ]
+                : []),
+            ]
+          : []),
         {
           rel: "alternate",
           type: "application/rss+xml",

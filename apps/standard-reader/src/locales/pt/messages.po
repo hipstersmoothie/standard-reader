@@ -898,6 +898,10 @@ msgstr "Tipo de comentário"
 msgid "Enable the weekly digest"
 msgstr "Ativar o resumo semanal"
 
+#: src/components/docs/publishing-docs-page.tsx
+msgid "Say in your page's <0>head</0> which records it is built from, and any client on the network can resolve the page back to them. Our browser extension uses this: when you land on a URL it hasn't indexed yet, it reads those tags rather than guessing from the URL."
+msgstr ""
+
 #: src/components/onboarding/welcome-wizard.tsx
 msgid "Follow at least {MIN_FOLLOWS} to fill your feed"
 msgstr "Siga pelo menos {MIN_FOLLOWS} para preencher o seu feed"
@@ -1074,8 +1078,8 @@ msgid "your collection"
 msgstr "a sua coleção"
 
 #: src/components/docs/publishing-docs-page.tsx
-msgid "Include the <0>site.standard.publication</0> hint only if the document belongs to a publication record. Add both regardless of which reader you care about — they're how any client on the network resolves your page to its record, not just our extension."
-msgstr "Inclua a dica <0>site.standard.publication</0> apenas se o documento pertencer a um registo de publicação. Adicione ambas, independentemente do leitor que lhe interessa — é assim que qualquer cliente na rede resolve a sua página para o respetivo registo, não só a nossa extensão."
+#~ msgid "Include the <0>site.standard.publication</0> hint only if the document belongs to a publication record. Add both regardless of which reader you care about — they're how any client on the network resolves your page to its record, not just our extension."
+#~ msgstr "Inclua a dica <0>site.standard.publication</0> apenas se o documento pertencer a um registo de publicação. Adicione ambas, independentemente do leitor que lhe interessa — é assim que qualquer cliente na rede resolve a sua página para o respetivo registo, não só a nossa extensão."
 
 #: src/components/reader/about-view.tsx
 msgid "Your week"
@@ -1534,6 +1538,10 @@ msgstr ""
 #: src/routes/_layout.discover.tsx
 msgid "Recommended for you"
 msgstr "Recomendado para você"
+
+#: src/components/docs/publishing-docs-page.tsx
+msgid "The site.standard link rels"
+msgstr ""
 
 #: src/components/feedback/feedback-dialog.tsx
 msgid "Something went wrong while submitting your feedback."
@@ -2041,8 +2049,8 @@ msgid "No matching subscriptions."
 msgstr "Nenhuma inscrição corresponde."
 
 #: src/components/docs/publishing-docs-page.tsx
-msgid "Discovery hints are part of the site.standard spec itself, and our browser extension uses it too! When you land on a URL it hasn't indexed yet, it looks in that page's <0>head</0> for a <1>link</1> tag whose <2>rel</2> matches the record's collection and whose <3>href</3> is the record's <4>at://</4> URI."
-msgstr "As dicas de descoberta fazem parte da própria especificação site.standard, e a nossa extensão de navegador também as usa! Quando chega a um URL que ainda não indexou, procura no <0>head</0> dessa página uma etiqueta <1>link</1> cujo <2>rel</2> corresponda à coleção do registo e cujo <3>href</3> seja o URI <4>at://</4> do registo."
+#~ msgid "Discovery hints are part of the site.standard spec itself, and our browser extension uses it too! When you land on a URL it hasn't indexed yet, it looks in that page's <0>head</0> for a <1>link</1> tag whose <2>rel</2> matches the record's collection and whose <3>href</3> is the record's <4>at://</4> URI."
+#~ msgstr "As dicas de descoberta fazem parte da própria especificação site.standard, e a nossa extensão de navegador também as usa! Quando chega a um URL que ainda não indexou, procura no <0>head</0> dessa página uma etiqueta <1>link</1> cujo <2>rel</2> corresponda à coleção do registo e cujo <3>href</3> seja o URI <4>at://</4> do registo."
 
 #: src/components/docs/api-docs-request-panel.tsx
 msgid "Re-run"
@@ -2273,6 +2281,10 @@ msgstr "Inscreva-se nesta lista para ler os novos artigos das suas publicações
 #: src/components/reader/collection-builder.tsx
 msgid "{itemCount} of {MAX_ITEMS}"
 msgstr "{itemCount} de {MAX_ITEMS}"
+
+#: src/components/docs/publishing-docs-page.tsx
+msgid "Emit these too. Discovery hints are part of the site.standard spec itself — a <0>link</0> tag whose <1>rel</1> is the record's collection and whose <2>href</2> is its <3>at://</3> URI — and plenty of clients across the network still read only these. Include the <4>site.standard.publication</4> hint when the document belongs to a publication record."
+msgstr ""
 
 #: src/routes/_layout.latest.tsx
 msgid "{metaCount, plural, one {{formattedMetaCount} article} other {{formattedMetaCount} articles}}"
@@ -2517,6 +2529,10 @@ msgstr "{0} total"
 msgid "Finish"
 msgstr "Concluir"
 
+#: src/components/docs/publishing-docs-page.tsx
+#~ msgid "Before the meta tags, discovery hints rode on <0>link</0> tags whose <1>rel</1> was the record's collection. We still read these, so pages that haven't migrated keep working — but an unregistered <2>rel</2> value isn't valid HTML, and it can't say why a record is on the page. New sites should reach for the meta tags. If you already emit the rels, the friendly move is what SkyPress did: keep them and put the meta tags alongside, so nothing already reading the old ones breaks."
+#~ msgstr ""
+
 #: src/routes/_layout.friends.tsx
 #~ msgid "We checked the people you follow on Bluesky against every publication on the network and didn't find a match. As more of them start publishing, they'll show up here."
 #~ msgstr "Verificamos as pessoas que você segue no Bluesky buscando por publicações na rede e não encontramos nenhuma correspondância. Assim que eles começarem a publicar, irão aparecer aqui."
@@ -2593,6 +2609,10 @@ msgstr "Pesquisar publicações e artigos"
 #: src/components/reader/subscriptions-table.tsx
 msgid "Publication"
 msgstr "Publicação"
+
+#: src/components/docs/publishing-docs-page.tsx
+msgid "Standard Reader emits these on its own article, publication, collection, list and profile pages, and reads them from yours."
+msgstr ""
 
 #: src/components/reader/add-to-list-button.tsx
 msgid "No lists yet"
@@ -3265,6 +3285,10 @@ msgstr ""
 #~ msgid "Lexicon reference"
 #~ msgstr "Referência do lexicon"
 
+#: src/components/docs/publishing-docs-page.tsx
+msgid "Use the <0>at:</0> meta tags — the convention the Atmosphere settled on in 2026. <1>at:canonical</1> names the records the page is made of, the ones it would have no reason to exist without. <2>at:alternate</2> names records the page merely shows — the publication a document belongs to, a companion Bluesky post. <3>at:author</3> names the identity that wrote it. Every name repeats, so a page with two alternates emits two tags."
+msgstr ""
+
 #: src/components/reader/profile-tabs-settings-modal.tsx
 #: src/routes/_layout.u.$did.tsx
 msgid "Profile settings"
@@ -3789,6 +3813,10 @@ msgstr "Ainda não há nada para ler aqui."
 msgid "Labelers are moderation services you subscribe to by DID. Subscribe to see their labels — and blur or hide labeled posts — while you read."
 msgstr "Os rotuladores são serviços de moderação em que se inscreve por DID. Inscreva-se para ver seus rótulos — e desfocar ou ocultar publicações rotuladas — enquanto lê."
 
+#: src/components/docs/publishing-docs-page.tsx
+#~ msgid "The older link rels"
+#~ msgstr ""
+
 #: src/components/reader/about-view.tsx
 msgid "Standard Reader meets you where you read"
 msgstr "O Standard Reader vai ter consigo onde quer que leia"
@@ -3837,6 +3865,10 @@ msgstr "Privacidade"
 #. placeholder {0}: labels[filter]
 #: src/components/reader/publication-actions.tsx
 msgid "Filter: {0}"
+msgstr ""
+
+#: src/components/docs/publishing-docs-page.tsx
+msgid "The two say overlapping things, and that's fine: the meta tags carry intent the rels can't, while the rels are what the site.standard spec asks for. Carry both, which is what Standard Reader itself does on every article, publication and collection page."
 msgstr ""
 
 #: src/components/reader/privacy-view.tsx
@@ -4863,6 +4895,10 @@ msgstr "Inscreva-se em {publicationName}"
 #: src/components/docs/publishing-docs-page.tsx
 msgid "<0>Structured blocks.</0> Rich block-editor documents, each in that editor's own schema — e.g. <1>org.blocknote.document#content</1> (BlockNote) or <2>pub.oxa.document.document</2> (Oxa). Only useful if you're already producing one of these; not worth adopting from scratch."
 msgstr "<0>Blocos estruturados.</0> Documentos de editores de blocos, cada um no esquema do próprio editor — por exemplo <1>org.blocknote.document#content</1> (BlockNote) ou <2>pub.oxa.document.document</2> (Oxa). Só é útil se já estiver a produzir um destes; não vale a pena adotar de raiz."
+
+#: src/components/docs/publishing-docs-page.tsx
+#~ msgid "Standard Reader emits these on its own article, publication, list and profile pages, and reads them from yours."
+#~ msgstr ""
 
 #: src/components/reader/collection-theme-editor.tsx
 msgid "Text"

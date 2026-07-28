@@ -123,6 +123,8 @@ export const Route = createFileRoute("/_layout/p/$did/$rkey")({
         publicationName: null,
         publicationDescription: null,
         publicationTheme: null,
+        // Derivable from the params alone, so a preload pass carries it too.
+        atMeta: { canonical: [uri], author: [params.did] },
       };
     }
 
@@ -157,6 +159,9 @@ export const Route = createFileRoute("/_layout/p/$did/$rkey")({
       publicationDescription: header?.publication.description ?? null,
       // Read by `PublicationThemeScope` in the app shell — see its doc comment.
       publicationTheme: header?.theme ?? null,
+      // The records this page is built from — rendered by `AtRecordMeta`.
+      // Nothing is claimed when the publication didn't resolve.
+      atMeta: header ? { canonical: [uri], author: [header.owner.did] } : {},
     };
   },
   head: ({ loaderData, match }) => {

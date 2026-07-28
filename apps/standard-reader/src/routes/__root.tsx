@@ -16,6 +16,7 @@ import { useEffect, useLayoutEffect } from "react";
 // them apart.
 import { I18nProvider as AriaI18nProvider } from "react-aria-components";
 
+import { AtRecordMeta } from "../components/at-record-meta";
 import { NavTelemetry } from "../components/nav-telemetry";
 import {
   APPEARANCE_SCALE_THEMES,
@@ -408,6 +409,10 @@ function RootDocument({ children }: { children: React.ReactNode }) {
             explicit in-app light/dark override wins over the OS preference. A
             custom palette supplies its own page color instead. */}
         <meta name="theme-color" content={themeColor} />
+        {/* Which AT Protocol records this page is built from. Raw tags for the
+            same reason theme-color is — the `at:` names repeat and route
+            `head.meta` dedupes by name. See `#/lib/at-meta-tags`. */}
+        <AtRecordMeta />
         {customUiFontUrl ? (
           <link
             rel="stylesheet"
