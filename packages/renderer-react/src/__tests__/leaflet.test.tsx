@@ -175,6 +175,17 @@ describe("leaflet rendering", () => {
     expect(container.querySelector("hr")).not.toBeNull();
   });
 
+  it("renders an html block in a sandboxed srcdoc iframe", () => {
+    const { container } = renderDoc(
+      leafletDoc([leaflet.html("<p>widget</p>", 243)]),
+    );
+    const frame = container.querySelector("iframe");
+    expect(frame?.getAttribute("srcdoc")).toBe("<p>widget</p>");
+    expect(frame?.getAttribute("height")).toBe("243");
+    // `allow-same-origin` on a srcdoc frame would run the embed in our origin.
+    expect(frame?.getAttribute("sandbox")).toBe("allow-scripts");
+  });
+
   it("returns null for an empty document", () => {
     const { container } = renderDoc(leafletDoc([]));
     expect(container.firstChild).toBeNull();

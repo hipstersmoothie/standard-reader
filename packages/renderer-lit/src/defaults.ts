@@ -98,6 +98,14 @@ export const defaultComponents: LitComponents = {
         ${children}
       </li>`,
     html: () => nothing,
+    htmlEmbed: ({ html: markup, height }) =>
+      html`<iframe
+        srcdoc=${markup}
+        height=${height ?? nothing}
+        loading="lazy"
+        sandbox="allow-scripts"
+        title="Embedded content"
+      ></iframe>`,
     code: ({ code, language }) =>
       html`<pre><code class=${
         language ? `language-${language}` : nothing

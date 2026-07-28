@@ -73,6 +73,14 @@ export const defaultComponents: VueComponents = {
         children,
       ]),
     html: () => null,
+    htmlEmbed: ({ html, height }) =>
+      h("iframe", {
+        srcdoc: html,
+        height,
+        loading: "lazy",
+        sandbox: "allow-scripts",
+        title: "Embedded content",
+      }),
     code: ({ code, language }) =>
       h("pre", [
         h("code", { class: language ? `language-${language}` : undefined }, [

@@ -43,6 +43,11 @@ export const lf = {
     level,
     plaintext,
   }),
+  html: (html: string, height?: number) => ({
+    $type: "pub.leaflet.blocks.html",
+    html,
+    ...(height == null ? {} : { height }),
+  }),
   image: (alt = "", aspectRatio?: { width: number; height: number }) => ({
     $type: "pub.leaflet.blocks.image",
     alt,

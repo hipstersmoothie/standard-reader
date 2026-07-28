@@ -46,6 +46,11 @@ export const leaflet = {
     plaintext,
     ...(language ? { language } : {}),
   }),
+  html: (html: string, height?: number) => ({
+    $type: "pub.leaflet.blocks.html",
+    html,
+    ...(height == null ? {} : { height }),
+  }),
   horizontalRule: () => ({ $type: "pub.leaflet.blocks.horizontalRule" }),
   separator: () => ({ $type: "pub.leaflet.blocks.separator" }),
   signup: () => ({ $type: "pub.leaflet.blocks.signup" }),

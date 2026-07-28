@@ -67,6 +67,22 @@ export interface SvelteSharedComponents extends SvelteInlineComponents {
    * sanitizer. Supply this snippet to render it.
    */
   html?: Snippet<[{ html: string }]>;
+  /**
+   * A self-contained HTML embed (Leaflet's `pub.leaflet.blocks.html`). Unlike
+   * `html`, this one renders by default, inside a sandboxed `srcdoc` iframe as
+   * the format specifies. If you override it, keep the sandbox and keep
+   * `allow-same-origin` out of it — with `srcdoc` that grants the embed your
+   * own origin.
+   */
+  htmlEmbed?: Snippet<
+    [
+      {
+        html: string;
+        height?: number;
+        aspectRatio?: { width?: number; height?: number };
+      },
+    ]
+  >;
   image?: Snippet<
     [
       {

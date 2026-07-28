@@ -156,6 +156,17 @@ describe("leaflet → pckt", () => {
     expect(issue?.fallback).toContain("code block");
   });
 
+  it("drops a Leaflet HTML embed, which pckt has no block for", () => {
+    const result = convert(
+      leafletContent([lf.text("intro"), lf.html("<p>widget</p>", 243)]),
+      "pckt",
+    );
+    expect(items(result)).toHaveLength(1);
+    const [issue] = unsupported(result);
+    expect(issue?.blockType).toBe("htmlEmbed");
+    expect(issue?.blockIndex).toBe(1);
+  });
+
   it("drops a Leaflet poll and flags it as unsupported", () => {
     const result = convert(
       leafletContent([
@@ -425,6 +436,19 @@ describe("leaflet → offprint", () => {
     });
     expect(result.issues).toEqual([]);
   });
+
+  it("round-trips an HTML embed with its height", () => {
+    const result = convert(
+      leafletContent([lf.html("<p>widget</p>", 243)]),
+      "leaflet",
+    );
+    expect(leafletBlocks(result)[0]).toEqual({
+      $type: "pub.leaflet.blocks.html",
+      height: 243,
+      html: "<p>widget</p>",
+    });
+    expect(result.issues).toEqual([]);
+  });
 });
 
 describe("→ markpub", () => {
@@ -454,6 +478,33 @@ describe("→ markpub", () => {
     expect(markdown(result)).toBe(
       "**bold** [link](https://example.com) `code`",
     );
+  });
+
+  it("keeps an HTML embed sandboxed instead of inlining its markup", () => {
+    const result = convert(
+      leafletContent([lf.html('<script>alert("x")</script>', 243)]),
+      "markpub",
+    );
+    expect(markdown(result)).toBe(
+      '<iframe srcdoc="&lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt;"' +
+        ' height="243" sandbox="allow-scripts" loading="lazy"' +
+        ' title="Embedded content"></iframe>',
+    );
+    expect(result.issues[0]?.severity).toBe("lossy");
+    expect(result.issues[0]?.fallback).toContain("srcdoc");
+  });
+
+  it("keeps a multi-line HTML embed on one line so the html block survives", () => {
+    const result = convert(
+      leafletContent([
+        lf.html("<style>\n\np { color: red }\n\n</style><p>hi</p>"),
+      ]),
+      "markpub",
+    );
+    // A literal blank line inside the attribute would end the markdown HTML
+    // block and render the rest of the tag as prose.
+    expect(markdown(result)).not.toContain("\n");
+    expect(markdown(result)).toContain("&#10;&#10;p { color: red }");
   });
 
   it("keeps text whose formatting markdown lacks, and warns once", () => {

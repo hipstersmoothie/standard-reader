@@ -110,6 +110,12 @@ export interface HtmlProps {
   html: string;
 }
 
+export interface HtmlEmbedProps {
+  html: string;
+  height?: number;
+  aspectRatio?: { width?: number; height?: number };
+}
+
 export interface ListProps {
   children: ReactNode;
 }
@@ -223,6 +229,14 @@ export interface SharedBlockComponents {
    * sanitizer. Supply this component to render it.
    */
   Html: ComponentType<HtmlProps>;
+  /**
+   * A self-contained HTML embed (Leaflet's `pub.leaflet.blocks.html`). Unlike
+   * `Html`, this one renders by default, inside a sandboxed `srcdoc` iframe as
+   * the format specifies. If you override it, keep the sandbox and keep
+   * `allow-same-origin` out of it — with `srcdoc` that grants the embed your
+   * own origin.
+   */
+  HtmlEmbed: ComponentType<HtmlEmbedProps>;
   HorizontalRule: ComponentType<Record<string, never>>;
   BulletList: ComponentType<ListProps>;
   OrderedList: ComponentType<OrderedListProps>;

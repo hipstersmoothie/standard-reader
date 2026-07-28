@@ -1048,6 +1048,7 @@ msgstr ""
 msgid "public XRPC queries and procedures for the Standard Reader read-model, with live examples."
 msgstr "consultas e procedimentos XRPC públicos para o modelo de leitura Standard Reader, com exemplos em tempo real."
 
+#: src/components/reader/content/renderers/shared/html-embed.tsx
 #: src/components/reader/content/renderers/shared/iframe-embed.tsx
 msgid "Embedded content"
 msgstr "Conteúdo incorporado"

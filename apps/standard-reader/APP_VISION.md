@@ -138,6 +138,10 @@ Sections, top to bottom:
   delivered by the tap and indexed onto the document row as its content (sidecar-style, like
   `app.standard-reader.collection`, with a repo fetch as the catch-up path), then rendered from its
   TipTap tree by `renderer-core`.
+  Leaflet's `pub.leaflet.blocks.html` — the author's own HTML — renders in a
+  sandboxed `srcdoc` iframe at the height the block asks for, matching what the lexicon
+  specifies. The sandbox grants scripts only: `allow-same-origin` on a `srcdoc` frame would
+  run the author's markup in the reader's own origin.
   Leaflet image galleries use CSS
   `grid-lanes` where supported with plain CSS Grid fallback elsewhere. Every rendered image in
   a document body — Leaflet galleries and single-image blocks, PCKT image and gallery blocks,

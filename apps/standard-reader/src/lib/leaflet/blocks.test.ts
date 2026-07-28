@@ -185,3 +185,43 @@ describe("leafletBlocks website", () => {
     ).toBe("https://current.example.com");
   });
 });
+
+describe("leafletBlocks html", () => {
+  function htmlDoc(block: Record<string, unknown>) {
+    return {
+      $type: LEAFLET_CONTENT,
+      pages: [
+        {
+          $type: LEAFLET_PAGE.linearDocument,
+          id: "root",
+          blocks: [{ $type: LEAFLET_PAGE.linearDocumentBlock, block }],
+        },
+      ],
+    };
+  }
+
+  it("parses an html block with its requested height", () => {
+    const blocks = leafletBlocks(
+      htmlDoc({
+        $type: LEAFLET_BLOCK.html,
+        height: 243,
+        html: "<p>widget</p>",
+      }),
+    );
+
+    expect(blocks).toEqual([
+      {
+        kind: "html",
+        block: expect.objectContaining({ height: 243, html: "<p>widget</p>" }),
+      },
+    ]);
+  });
+
+  it("drops an html block with no markup instead of calling it unsupported", () => {
+    const blocks = leafletBlocks(
+      htmlDoc({ $type: LEAFLET_BLOCK.html, html: "   " }),
+    );
+
+    expect(blocks).toEqual([]);
+  });
+});

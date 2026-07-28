@@ -47,6 +47,22 @@ function escapeInline(value: string): string {
   return value.replaceAll(/([\\`*_[\]~<>|])/g, String.raw`\$1`);
 }
 
+/**
+ * Escape a value so it survives inside a double-quoted HTML attribute, on one
+ * line. The line breaks become character references rather than staying
+ * literal: a blank line anywhere inside the attribute would close the markdown
+ * HTML block early and leave the rest of the tag rendered as prose.
+ */
+function escapeHtmlAttribute(value: string): string {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("\r", "&#13;")
+    .replaceAll("\n", "&#10;");
+}
+
 /** Wrap inline code in a fence long enough to contain any backticks inside. */
 function inlineCode(value: string): string {
   let longest = 0;
@@ -332,6 +348,15 @@ function blockToMarkdown(ctx: Ctx, node: BlockNode): string | null {
     case "html": {
       // Markdown embeds raw HTML verbatim, so this is a straight pass-through.
       return node.html;
+    }
+    case "htmlEmbed": {
+      // Carry the embed as the sandboxed iframe the source format renders it
+      // in — inlining the markup instead would run the author's scripts in the
+      // reading page itself.
+      const height = node.height ? ` height="${node.height}"` : "";
+      return `<iframe srcdoc="${escapeHtmlAttribute(
+        node.html,
+      )}"${height} sandbox="allow-scripts" loading="lazy" title="Embedded content"></iframe>`;
     }
     case "table": {
       return tableToMarkdown(ctx, node);

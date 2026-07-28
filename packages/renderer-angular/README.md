@@ -145,7 +145,8 @@ Override these once and they apply to Leaflet, pckt, Offprint and every
 third-party format. Only the media and data-backed blocks are template-
 overridable:
 
-**Blocks:** `image`, `code`, `iframe`, `website`, `table`, `math`, `button`,
+**Blocks:** `image`, `code`, `html`, `htmlEmbed`, `iframe`, `website`, `table`,
+`math`, `button`,
 `blueskyEmbed`, `imageGrid`, `imageCarousel`, `imageDiff`, `unknown`.
 
 Structural blocks (paragraphs, headings, blockquotes, lists, callouts,

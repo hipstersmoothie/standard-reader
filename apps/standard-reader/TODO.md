@@ -824,6 +824,14 @@ Backend/API exists; UI or copy is missing.
       from thumbnail → lightbox in
       [`leaflet-image-gallery.tsx`](src/components/reader/content/renderers/leaflet-image-gallery.tsx)
       and [`src/design-system/lightbox/index.tsx`](src/design-system/lightbox/index.tsx).
+- [x] **`pub.leaflet.blocks.html`** — Leaflet shipped an HTML block (author markup, optional
+      `height` / `aspectRatio`) that read as an unsupported-block placeholder. It now parses in
+      both `renderer-core` and the app's leaflet lib, maps onto a new `htmlEmbed` node distinct
+      from markdown's raw-`html` node, and renders through
+      [`html-embed.tsx`](src/components/reader/content/renderers/shared/html-embed.tsx) — a
+      `srcdoc` iframe sandboxed to `allow-scripts` only, sharing the sizing frame with
+      `iframe-embed.tsx`. The converter carries it natively to Leaflet and as a sandboxed
+      `<iframe srcdoc>` to Markpub; Offprint and pckt have no block for it and report it dropped.
 - [x] **`at.markpub.markdown`** — full [Markpub.at](https://markpub.at/) support: dedicated
       renderer (`src/lib/markpub/*`, [`markpub-content.tsx`](src/components/reader/content/renderers/markpub-content.tsx)),
       flavor/extensions, facet/lens preprocessing, ingest-time `text.textBlob` fetch

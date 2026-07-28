@@ -34,6 +34,19 @@ const HTML_UNSUPPORTED: BlockSupport = {
     "target can carry it.",
 };
 
+/**
+ * A Leaflet HTML block is a whole document that renders inside a sandboxed
+ * iframe. The other block formats have no field for one, and flattening the
+ * markup into the body would run the author's scripts in the reading page
+ * itself — a downgrade no conversion should make silently.
+ */
+const HTML_EMBED_UNSUPPORTED: BlockSupport = {
+  level: "none",
+  note:
+    "An HTML embed is a self-contained document that renders in a sandboxed " +
+    "iframe; this format has no block that can carry one.",
+};
+
 const UNKNOWN_BLOCK: BlockSupport = {
   level: "none",
   note:
@@ -105,6 +118,7 @@ const LEAFLET: Record<BlockType, BlockSupport> = {
   heading: NATIVE,
   horizontalRule: NATIVE,
   html: HTML_UNSUPPORTED,
+  htmlEmbed: NATIVE,
   iframe: NATIVE,
   image: NATIVE,
   imageCarousel: NATIVE,
@@ -149,6 +163,7 @@ const OFFPRINT: Record<BlockType, BlockSupport> = {
   heading: NATIVE,
   horizontalRule: NATIVE,
   html: HTML_UNSUPPORTED,
+  htmlEmbed: HTML_EMBED_UNSUPPORTED,
   iframe: NATIVE,
   image: NATIVE,
   imageCarousel: NATIVE,
@@ -201,6 +216,7 @@ const PCKT: Record<BlockType, BlockSupport> = {
   heading: NATIVE,
   horizontalRule: NATIVE,
   html: HTML_UNSUPPORTED,
+  htmlEmbed: HTML_EMBED_UNSUPPORTED,
   iframe: NATIVE,
   image: NATIVE,
   imageCarousel: IMAGES_IN_SEQUENCE,
@@ -260,6 +276,13 @@ const MARKPUB: Record<BlockType, BlockSupport> = {
   heading: NATIVE,
   horizontalRule: NATIVE,
   html: NATIVE,
+  htmlEmbed: {
+    level: "degraded",
+    note:
+      "Markdown has no embed block, but it does carry raw HTML, so the embed " +
+      "keeps its sandbox rather than being flattened into the body.",
+    fallback: "a sandboxed <iframe srcdoc> (the aspect ratio is dropped)",
+  },
   iframe: MARKDOWN_LINK,
   image: NATIVE,
   imageCarousel: {

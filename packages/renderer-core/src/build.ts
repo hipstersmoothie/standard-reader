@@ -345,6 +345,14 @@ function leafletToNode(
         language: block.block.language,
       };
     }
+    case "html": {
+      return {
+        type: "htmlEmbed",
+        html: block.block.html,
+        height: block.block.height,
+        aspectRatio: block.block.aspectRatio,
+      };
+    }
     case "iframe": {
       return {
         type: "iframe",

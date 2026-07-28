@@ -1048,6 +1048,7 @@ msgstr ""
 msgid "public XRPC queries and procedures for the Standard Reader read-model, with live examples."
 msgstr ""
 
+#: src/components/reader/content/renderers/shared/html-embed.tsx
 #: src/components/reader/content/renderers/shared/iframe-embed.tsx
 msgid "Embedded content"
 msgstr "埋め込みコンテンツ"

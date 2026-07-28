@@ -122,6 +122,12 @@ The raw per-format parsers and vocabulary types are available too:
 
 ### Format notes
 
+- **Leaflet** (`pub.leaflet.content`) has two kinds of markup block, and they
+  are deliberately not the same node. `pub.leaflet.blocks.html` is a whole
+  document the format renders through a sandboxed iframe's `srcdoc`, so it maps
+  to `htmlEmbed` and the default components render it. A markdown source's raw
+  markup maps to `html` instead, which renders nothing until the host supplies
+  a component with its own sanitizer.
 - **Markpub** (`at.markpub.markdown`) carries facets over the _markdown source_.
   Facet-only constructs (headers, strong, horizontal rules, front matter) are
   rewritten back into markdown syntax before parsing, so they arrive as real
