@@ -6,7 +6,10 @@ import { and, eq } from "drizzle-orm";
 import { db } from "#/db/index.server";
 import * as schema from "#/db/schema";
 import { AUTH_SESSION_TOKEN_COOKIE } from "#/integrations/auth/constants";
-import { hasEmailScope } from "#/integrations/auth/scope";
+import {
+  hasBskyPreferencesScope,
+  hasEmailScope,
+} from "#/integrations/auth/scope";
 import {
   fetchBlueskyPublicProfileFields,
   shouldApplyBlueskyAvatarFromPublicUrl,
@@ -193,6 +196,21 @@ export async function handleAtprotoOAuthCallback(args: {
         }
       } catch (error) {
         console.warn("Failed to send digest welcome email on callback:", error);
+      }
+    }
+
+    // Port the reader's Bluesky labeler subscriptions on their first sign-in,
+    // so their moderation setup is already in place when they land. Stamped
+    // one-shot inside the importer; read-only against Bluesky. Best-effort —
+    // sign-in must never fail because a labeler was unreachable.
+    if (hasBskyPreferencesScope(grantedScope)) {
+      try {
+        const { importBskyLabelerSubscriptions } =
+          await import("#/server/labeler/import-bsky.server");
+        const client = new Client({ handler: oauthSession });
+        await importBskyLabelerSubscriptions(client, userId, did);
+      } catch (error) {
+        console.warn("Failed to import Bluesky labelers on callback:", error);
       }
     }
 

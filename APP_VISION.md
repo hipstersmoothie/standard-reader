@@ -679,12 +679,20 @@ Standard Reader speaks the standard AT Proto label protocol, so readers can subs
   `app.bsky.labeler.service` record. That second path is resolved on first lookup and backfilled
   into the same table, so a labeler like [pub-search](https://pub-search.waow.tech/labels) works
   with no action on their part, and every read path stays a plain DB read. Nothing is hardcoded.
-- **The directory is curated; access is not.** Resolving a labeler by handle persists a row for
-  it, so the Labelers directory lists one only when it registered with us, is a labeler we know is
-  about standard.site, the viewer already subscribes to it, or it has labeled a subject we index.
-  Every other labeler stays findable by handle, subscribable, and synced — it just isn't put in
-  front of readers who have no reason to see it. That keeps the directory about this network
-  without turning discovery into an allowlist.
+- **Every labeler, not just ours.** The directory lists every labeler we know of, with no relevance
+  filter — readers bring their moderation setup with them, so a labeler that has never touched a
+  standard.site document is still theirs to see and manage. A small curated DID list is _seeded_
+  into the table on load, since a network-declared labeler has no row until something resolves it;
+  that seeds visibility, it never gates it. Subscribe and unsubscribe live on the directory cards
+  themselves, and a reader's own labelers sort to the top.
+- **Your Bluesky moderation comes with you.** Bluesky keeps subscribed labelers in account
+  preferences rather than repo records, so on a reader's first sign-in we read
+  `app.bsky.actor.getPreferences` and recreate their setup here — labelers plus each label's
+  visibility. They do nothing; they log in and it's already there. The read is **one-way**: we
+  never call `putPreferences`, because it replaces the whole preferences blob and a partial-scope
+  read-modify-write would silently drop settings we couldn't see. So unsubscribing in Standard
+  Reader is local and never edits anyone's Bluesky moderation, and the port runs exactly once so
+  those local choices are never overwritten.
 - **Labels apply to documents _or_ to accounts.** Ours score prose, so they label documents;
   labelers on the wider network label accounts (pub-search's `bulk-generated` marks a publisher
   whose documents are generated from a data source, not composed by an author). Both subject kinds

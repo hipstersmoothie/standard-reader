@@ -2,7 +2,7 @@
 
 import { Trans, useLingui } from "@lingui/react/macro";
 import * as stylex from "@stylexjs/stylex";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 
@@ -11,9 +11,11 @@ import type {
   LabelerListItem,
 } from "#/integrations/tanstack-query/api-labelers.functions";
 import { labelerApi } from "#/integrations/tanstack-query/api-labelers.functions";
+import { user } from "#/integrations/tanstack-query/api-user.functions";
 
 import { Avatar } from "../design-system/avatar";
 import { Badge } from "../design-system/badge";
+import { Button } from "../design-system/button";
 import { TextField } from "../design-system/text-field";
 import { animationDuration } from "../design-system/theme/animations.stylex";
 import { uiColor } from "../design-system/theme/color.stylex";
@@ -87,19 +89,47 @@ function matchesLabeler(card: LabelerCard, query: string): boolean {
   return labelerSearchText(card).includes(trimmed.toLowerCase());
 }
 
-/** Labeler directory card — entire surface links to the labeler profile. */
-function LabelerCardItem({ card }: { card: LabelerCard }) {
+/**
+ * Labeler directory card. The identity block links to the labeler's page; the
+ * subscribe/unsubscribe control sits outside that link rather than nested
+ * inside it, so a click on either does one unambiguous thing.
+ */
+function LabelerCardItem({
+  card,
+  subscribed,
+  signedIn,
+}: {
+  card: LabelerCard;
+  subscribed: boolean;
+  signedIn: boolean;
+}) {
+  const { t } = useLingui();
+  const queryClient = useQueryClient();
   const names = labelValueNames(card);
   const displayName = card.displayName ?? card.did;
 
+  const invalidate = () => {
+    void queryClient.invalidateQueries({ queryKey: ["labeler"] });
+    void queryClient.invalidateQueries({ queryKey: ["reader", "labelers"] });
+    void queryClient.invalidateQueries({ queryKey: ["labels"] });
+  };
+  const subscribe = useMutation({
+    ...labelerApi.subscribeLabelerMutationOptions(),
+    onSuccess: invalidate,
+  });
+  const unsubscribe = useMutation({
+    ...labelerApi.unsubscribeLabelerMutationOptions(),
+    onSuccess: invalidate,
+  });
+
   return (
-    <Link
-      to="/labelers/$did"
-      params={{ did: card.did }}
-      {...stylex.props(styles.cardLink)}
-    >
-      <div {...stylex.props(styles.card)}>
-        <div {...stylex.props(styles.cardHead)}>
+    <div {...stylex.props(styles.card)}>
+      <div {...stylex.props(styles.cardHead)}>
+        <Link
+          to="/labelers/$did"
+          params={{ did: card.did }}
+          {...stylex.props(styles.cardLink, styles.cardIdentity)}
+        >
           <Avatar
             size="lg"
             src={card.avatar}
@@ -110,32 +140,48 @@ function LabelerCardItem({ card }: { card: LabelerCard }) {
             <span {...stylex.props(styles.cardName)}>{displayName}</span>
             <p {...stylex.props(styles.cardDid)}>{card.did}</p>
           </div>
-        </div>
-        {card.description ? (
-          <p {...stylex.props(styles.cardDescription)}>{card.description}</p>
-        ) : null}
-        {names.length > 0 ? (
-          <div {...stylex.props(styles.badges)}>
-            {names.slice(0, MAX_VISIBLE_LABELS).map((name) => (
-              <Badge key={name} variant="warning">
-                {name}
-              </Badge>
-            ))}
-            {names.length > MAX_VISIBLE_LABELS ? (
-              <span {...stylex.props(styles.moreLabels)}>
-                <Trans>+{names.length - MAX_VISIBLE_LABELS} more</Trans>
-              </span>
-            ) : null}
-          </div>
+        </Link>
+        {signedIn ? (
+          <Button
+            variant={subscribed ? "secondary" : "primary"}
+            size="sm"
+            isPending={subscribed ? unsubscribe.isPending : subscribe.isPending}
+            onPress={() =>
+              subscribed
+                ? unsubscribe.mutate(card.did)
+                : subscribe.mutate(card.did)
+            }
+          >
+            {subscribed ? t`Unsubscribe` : t`Subscribe`}
+          </Button>
         ) : null}
       </div>
-    </Link>
+      {card.description ? (
+        <p {...stylex.props(styles.cardDescription)}>{card.description}</p>
+      ) : null}
+      {names.length > 0 ? (
+        <div {...stylex.props(styles.badges)}>
+          {names.slice(0, MAX_VISIBLE_LABELS).map((name) => (
+            <Badge key={name} variant="warning">
+              {name}
+            </Badge>
+          ))}
+          {names.length > MAX_VISIBLE_LABELS ? (
+            <span {...stylex.props(styles.moreLabels)}>
+              <Trans>+{names.length - MAX_VISIBLE_LABELS} more</Trans>
+            </span>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
   );
 }
 
 export function LabelersSettingsView() {
   const { t } = useLingui();
   const known = useQuery(labelerApi.getKnownLabelersQueryOptions());
+  const { data: session } = useQuery(user.getSessionQueryOptions);
+  const signedIn = session?.user?.did != null;
 
   const [search, setSearch] = useState("");
   const searchTrim = search.trim();
@@ -159,11 +205,24 @@ export function LabelersSettingsView() {
   const showLookup =
     lookupCard != null && !labelers.some((item) => item.did === lookupCard.did);
 
-  const visibleCards = sortLabelersBySubscribers(
+  const listed = sortLabelersBySubscribers(
     showLookup
       ? [lookupCard, ...filtered.filter((item) => item.did !== lookupCard.did)]
       : filtered,
   );
+  // A reader arriving from Bluesky lands with their ported labelers already
+  // subscribed — surface those first so the page opens on *their* setup rather
+  // than on whatever the network happens to subscribe to most.
+  const subscribedDids = new Set(
+    listed
+      .filter((item) => "subscribed" in item && item.subscribed)
+      .map((item) => item.did),
+  );
+  if (lookupCard && lookup.data?.subscribed) subscribedDids.add(lookupCard.did);
+  const visibleCards = [
+    ...listed.filter((item) => subscribedDids.has(item.did)),
+    ...listed.filter((item) => !subscribedDids.has(item.did)),
+  ];
 
   return (
     <ReaderContent>
@@ -190,7 +249,12 @@ export function LabelersSettingsView() {
 
       <div {...stylex.props(styles.grid)}>
         {visibleCards.map((item: LabelerListItem | LabelerCard) => (
-          <LabelerCardItem key={item.did} card={item} />
+          <LabelerCardItem
+            key={item.did}
+            card={item}
+            subscribed={subscribedDids.has(item.did)}
+            signedIn={signedIn}
+          />
         ))}
       </div>
 
@@ -221,6 +285,15 @@ const styles = stylex.create({
     color: "inherit",
     cursor: "pointer",
     display: "block",
+  },
+  cardIdentity: {
+    gap: gap.lg,
+    alignItems: "center",
+    display: "flex",
+    // Takes the free space so the subscribe control sits hard against the card
+    // edge, and so a long DID truncates instead of pushing the button off.
+    flexGrow: 1,
+    minWidth: 0,
   },
   card: {
     padding: spacing["4"],

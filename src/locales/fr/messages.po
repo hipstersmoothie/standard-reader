@@ -1573,6 +1573,7 @@ msgid "Today"
 msgstr "Aujourd'hui"
 
 #: src/components/labeler-detail-view.tsx
+#: src/components/labelers-settings-view.tsx
 #: src/components/reader/cards.tsx
 #: src/components/reader/subscribe-card.tsx
 #: src/magazine/magazine-end-subscribe.tsx
@@ -3864,6 +3865,7 @@ msgstr "Laissez-nous un avis sur ATStore."
 msgid "Search feedback"
 msgstr "Rechercher dans les retours"
 
+#: src/components/labelers-settings-view.tsx
 #: src/components/reader/subscriptions-unsubscribe-dialog.tsx
 msgid "Unsubscribe"
 msgstr ""

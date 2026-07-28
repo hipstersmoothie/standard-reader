@@ -20,9 +20,7 @@ import {
   deleteRecord,
   upsertLabelerSubscription,
 } from "#/server/ingest/handlers";
-import { KNOWN_STANDARD_SITE_LABELERS } from "#/server/labeler/known-labelers";
 import {
-  labelersWithIndexedSubjects,
   labelsForDocument,
   observedLabelValues,
   readAccountLabels,
@@ -192,39 +190,15 @@ const getKnownLabelers = createServerFn({ method: "GET" })
         countRows.map((row) => [row.labelerDid, row.subscriberCount]),
       );
 
+      // Every labeler we know of, with no relevance filter: readers bring their
+      // moderation setup with them from Bluesky, so a labeler that has never
+      // touched a standard.site document is still theirs to see and manage.
       const svc = context.schema.labelerServices;
-      const allRows = await context.db
+      const rows = await context.db
         .select()
         .from(svc)
         .where(eq(svc.deleted, false));
-
-      // Resolving a labeler by handle persists a row for it, so the table also
-      // holds labelers nobody here has a reason to see. List one only if it
-      // registered with us, is a labeler we know is about standard.site, or is
-      // already subscribed to / has labeled something in our corpus. Anything
-      // else stays reachable by direct lookup but out of the directory.
-      const unproven = allRows
-        .filter(
-          (row) =>
-            row.source !== "record" &&
-            !KNOWN_STANDARD_SITE_LABELERS.has(row.labelerDid) &&
-            !subSet.has(row.labelerDid),
-        )
-        .map((row) => row.labelerDid);
-      const proven = await labelersWithIndexedSubjects(
-        context.db,
-        context.schema,
-        unproven,
-      );
-      const rows = allRows.filter(
-        (row) =>
-          row.source === "record" ||
-          KNOWN_STANDARD_SITE_LABELERS.has(row.labelerDid) ||
-          subSet.has(row.labelerDid) ||
-          proven.has(row.labelerDid),
-      );
       span.set("count", rows.length);
-      span.set("unlisted", allRows.length - rows.length);
 
       return rows
         .map(

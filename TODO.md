@@ -920,14 +920,35 @@ Standard AT Proto labels: subscribe to labelers, see/blur/hide their labels whil
       labelers label accounts almost exclusively (pub-search's `bulk-generated`), so cards resolve
       against both their URI and their author's DID, author/publication headers show account label
       pills, and the labeler detail page has an Accounts tab beside Documents.
-- [x] **Directory listing rule** — resolving a labeler by handle persists a row for it, so the
-      directory does not list everything in `labeler_services`. A labeler is listed when it
-      registered with an app record, is in `KNOWN_STANDARD_SITE_LABELERS` (a small curated set —
-      pub-search today), the viewer is subscribed to it, or it has labeled a subject we index
-      (`labelersWithIndexedSubjects`: a document, or an account that authors documents / owns a
-      publication). Anything else stays reachable by direct handle lookup and fully subscribable —
-      it just doesn't sit in front of every reader. Keeps arbitrary Bluesky moderation labelers out
-      of the directory without an allowlist gate on access.
+- [x] **Directory lists every labeler** — no relevance filter. Readers bring their moderation setup
+      with them from Bluesky, so a labeler that has never touched a standard.site document is still
+      theirs to see and manage. (An earlier curation rule — list only labelers registered with us or
+      demonstrably labeling our corpus — was removed as a deviation.)
+      `KNOWN_STANDARD_SITE_LABELERS` survives as a **seed** list only: a network-declared labeler has
+      no row until something resolves it, so those DIDs are resolved eagerly when the directory
+      loads (`ensureKnownLabelersResolved`). Being absent from it hides nothing — it just means the
+      labeler has to reach us some other way (handle lookup, or a reader's ported subscriptions).
+- [x] **Port Bluesky labeler subscriptions** — on a reader's first sign-in we read
+      `app.bsky.actor.getPreferences` (scope `rpc:app.bsky.actor.getPreferences`), and for each
+      `labelersPref` entry create the matching subscription, carrying over `contentLabelPref`
+      visibility (Bluesky's `show` maps to our `ignore`; a labeler-scoped pref beats a global one).
+      Their moderation setup is in place with no action from them. **Read-only** — we never call
+      `putPreferences`, so nothing here can rewrite someone's Bluesky settings. One-shot, stamped by
+      `user.bskyLabelersImportedAt`: importing is additive, so re-running would resurrect labelers
+      the reader has since unsubscribed from here.
+- [x] **Subscribe / unsubscribe from the directory** — each card on `/labelers` carries the control,
+      and subscribed labelers sort to the top so a reader lands on their own setup.
+- [ ] **Give our labelers real did:plc accounts** — `claudeslop` and `botlabeler` are `did:web`, and
+      a `did:web` has no repo, so they cannot publish the standard `app.bsky.labeler.service`
+      record. That is the only reason the custom `app.standard-reader.labeler.{service,defs}` +
+      `getServices` descriptor path still exists. Migrating them to `did:plc` accounts with repos
+      lets us delete those lexicons entirely and leaves no deviation. Requires creating accounts and
+      re-signing under new DIDs; labels already emitted keep the old `src` until re-emitted.
+- [ ] **Retire `app.standard-reader.labeler.subscription`** — blocked on the above and on a local
+      write target. Bluesky preferences are read-only to us, so a reader's own subscribes /
+      unsubscribes need somewhere to live; today that is this record in their repo. Retiring it
+      means either moving that state into our DB (giving up repo ownership of it) or writing
+      Bluesky preferences (rejected: `putPreferences` is read-modify-write over the whole blob).
 - [x] **Settings → Labelers** — `/settings/labelers` (add by handle/DID, list subscriptions) +
       `/settings/labelers/$did` (info, subscribe, per-label hide/blur toggles, labeled documents).
 - [x] **Reader display** — badge + content warning on labeled documents per the reader's prefs.

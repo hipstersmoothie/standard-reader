@@ -138,6 +138,14 @@ export const user = pgTable("user", {
   weeklyDigestWelcomeSentAt: timestamp("weekly_digest_welcome_sent_at", {
     withTimezone: true,
   }),
+  /** When this reader's Bluesky labeler subscriptions were ported over, so the
+   * import runs exactly once. It must not repeat: importing is additive, so a
+   * re-run would resurrect any labeler the reader has since unsubscribed from
+   * here. Bluesky preferences are read-only to us (see `bsky-prefs.server.ts`),
+   * which is why divergence after the port is expected and fine. */
+  bskyLabelersImportedAt: timestamp("bsky_labelers_imported_at", {
+    withTimezone: true,
+  }),
   createdAt: timestamp("created_at", { withTimezone: true })
     .defaultNow()
     .notNull(),

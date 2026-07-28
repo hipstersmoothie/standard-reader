@@ -1573,6 +1573,7 @@ msgid "Today"
 msgstr ""
 
 #: src/components/labeler-detail-view.tsx
+#: src/components/labelers-settings-view.tsx
 #: src/components/reader/cards.tsx
 #: src/components/reader/subscribe-card.tsx
 #: src/magazine/magazine-end-subscribe.tsx
@@ -3864,6 +3865,7 @@ msgstr ""
 msgid "Search feedback"
 msgstr ""
 
+#: src/components/labelers-settings-view.tsx
 #: src/components/reader/subscriptions-unsubscribe-dialog.tsx
 msgid "Unsubscribe"
 msgstr ""

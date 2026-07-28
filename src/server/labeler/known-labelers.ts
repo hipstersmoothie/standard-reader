@@ -1,16 +1,17 @@
 /**
- * Labelers we know are about standard.site publishing.
+ * Third-party labelers we seed into the directory.
  *
- * The Labelers directory lists a labeler when it either registered with an
- * `app.standard-reader.labeler.service` record or has demonstrably labeled
- * something in our corpus (see `labelersWithIndexedSubjects`). That second test
- * is evidence-based, so it can only pass *after* a labeler has emitted labels —
- * which leaves a relevant labeler invisible until it does.
+ * A labeler that declares itself on the network (DID doc `#atproto_labeler` +
+ * `app.bsky.labeler.service`) has no `labeler_services` row until something
+ * resolves it, and nothing resolves it until someone searches for it by name —
+ * so a labeler nobody has heard of stays invisible forever. These DIDs are
+ * resolved eagerly when the directory loads (`ensureKnownLabelersResolved`) to
+ * break that circle.
  *
- * This list closes that gap: a small, explicit set of third-party labelers we
- * have looked at and judged to be about this network. It is a curation seam,
- * not a trust or allowlist boundary — being absent from it never blocks anyone
- * from finding a labeler by handle, subscribing to it, or syncing its labels.
+ * This is a **seed list, not a filter**: the directory lists every labeler it
+ * knows of, and being absent from here only means a labeler has to be surfaced
+ * some other way — resolved by handle lookup, or ported in with a reader's
+ * Bluesky subscriptions — before it appears. It never gates access.
  */
 export const KNOWN_STANDARD_SITE_LABELERS: ReadonlySet<string> = new Set([
   // pub-search.waow.tech — labels accounts whose documents are generated from a
