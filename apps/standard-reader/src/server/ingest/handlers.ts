@@ -6,12 +6,14 @@ import {
 } from "#/lib/collections/manifest";
 import { hasRenderableArticleBody } from "#/lib/document/renderable";
 import { documentSearchText } from "#/lib/document/search-text";
+import { MOCHOTT_ARTICLE, mochottArticleContent } from "#/lib/mochott/types";
 import { isExcludedPublicationUrl } from "#/lib/publication/exclusions";
 import {
   FETCHED_CONTENT_FORMATS,
   resolveFetchedContent,
 } from "#/server/content/resolve";
 import { resolveLeafletContent } from "#/server/leaflet/resolve";
+import { fetchMochottArticleContent } from "#/server/mochott/resolve";
 import { resolvePcktContent } from "#/server/pckt/resolve";
 import { assertSafeFetchUrl } from "#/server/security/ssrf-guard";
 
@@ -54,6 +56,7 @@ import type {
   LabelerSubscriptionRecord,
   ListRecord,
   ListSaveRecord,
+  MochottArticleRecord,
   PublicationRecord,
   PublicationThemeRecord,
   ReadRecord,
@@ -285,6 +288,40 @@ export async function upsertPublication(
   await ensureTracked(did, "publication");
 }
 
+/**
+ * The mochott body for a document that arrived without content: whatever the
+ * tap already indexed onto the row, else the `site.mochott.article` at the same
+ * rkey fetched from the repo.
+ *
+ * Reading the row first matters twice over — it saves a network call on every
+ * mochott edit (the document and the article are two events for one save), and
+ * it keeps the upsert from blanking a body the sidecar handler already stored
+ * when the fetch misses. Documents from platforms that simply have no body cost
+ * one row read and one 404.
+ */
+async function mochottBodyFor(
+  uri: string,
+  did: string,
+  rkey: string,
+  pds: string | null | undefined,
+): Promise<unknown> {
+  const existing = await db
+    .select({
+      contentFormat: documents.contentFormat,
+      contentJson: documents.contentJson,
+    })
+    .from(documents)
+    .where(eq(documents.uri, uri))
+    .limit(1);
+  const indexed = existing[0];
+  if (indexed?.contentFormat === MOCHOTT_ARTICLE && indexed.contentJson) {
+    return indexed.contentJson;
+  }
+
+  const fetched = await fetchMochottArticleContent(did, rkey, pds);
+  return fetched == null ? null : sanitizeJson(fetched);
+}
+
 export async function upsertDocument(
   uri: string,
   did: string,
@@ -359,6 +396,13 @@ export async function upsertDocument(
     );
     contentJson = sanitizeJson(resolved.content);
     contentFormat = resolved.contentFormat;
+  }
+  if (contentJson == null) {
+    const mochott = await mochottBodyFor(uri, did, rkey, ownerPds);
+    if (mochott != null) {
+      contentJson = mochott;
+      contentFormat = MOCHOTT_ARTICLE;
+    }
   }
   const textContent = documentSearchText({
     textContent: cleanOptional(record.textContent),
@@ -987,6 +1031,52 @@ export async function applyIdentity(
     .onConflictDoUpdate({ target: profiles.did, set });
 }
 
+/**
+ * Index a `site.mochott.article` onto the `site.standard.document` at the same
+ * rkey. Mochott's document record carries no `content` at all — the body lives
+ * in this sibling — so the article record *is* the document's content.
+ *
+ * Nothing here creates a document row: if the article arrives first, the
+ * document upsert picks the body up itself (see `mochottArticleContent` in
+ * `upsertDocument`). Both orders converge on the same row.
+ */
+export async function upsertMochottArticle(
+  did: string,
+  rkey: string,
+  record: MochottArticleRecord,
+): Promise<void> {
+  const content = mochottArticleContent(record);
+  if (content == null) return;
+
+  const contentJson = sanitizeJson(content) as Record<string, unknown>;
+  const existing = await db
+    .select({ textContent: documents.textContent, uri: documents.uri })
+    .from(documents)
+    .where(and(eq(documents.did, did), eq(documents.rkey, rkey)))
+    .limit(1);
+  const row = existing[0];
+  if (!row) return;
+
+  await db
+    .update(documents)
+    .set({
+      contentFormat: MOCHOTT_ARTICLE,
+      contentJson,
+      hasRenderableBody: hasRenderableArticleBody({
+        textContent: row.textContent,
+        contentJson,
+        contentFormat: MOCHOTT_ARTICLE,
+      }),
+      textContent: documentSearchText({
+        textContent: row.textContent,
+        contentJson,
+        contentFormat: MOCHOTT_ARTICLE,
+      }),
+      updatedAt: sql`now()`,
+    })
+    .where(eq(documents.uri, row.uri));
+}
+
 /** Index an `app.standard-reader.collection` sidecar onto its document row. */
 export async function upsertCollectionSidecar(
   did: string,
@@ -1128,6 +1218,28 @@ export async function deleteRecord(
         .set({ collectionJson: null, updatedAt: sql`now()` })
         .where(
           and(eq(documents.did, parsed.did), eq(documents.rkey, parsed.rkey)),
+        );
+      return;
+    }
+    case Collections.mochottArticle: {
+      // The body was the article record; without it the document has none, so
+      // clear the content rather than serve a body the author deleted.
+      const parsed = parseAtUri(uri);
+      if (!parsed) return;
+      await db
+        .update(documents)
+        .set({
+          contentFormat: null,
+          contentJson: null,
+          hasRenderableBody: false,
+          updatedAt: sql`now()`,
+        })
+        .where(
+          and(
+            eq(documents.did, parsed.did),
+            eq(documents.rkey, parsed.rkey),
+            eq(documents.contentFormat, MOCHOTT_ARTICLE),
+          ),
         );
       return;
     }

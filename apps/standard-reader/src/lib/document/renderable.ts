@@ -13,6 +13,8 @@ import { leafletBlocks } from "#/lib/leaflet/blocks";
 import { LEAFLET_CONTENT } from "#/lib/leaflet/types";
 import { markpubPlaintext } from "#/lib/markpub/markdown";
 import { MARKPUB_MARKDOWN } from "#/lib/markpub/types";
+import { mochottRenderableBlocks } from "#/lib/mochott/plaintext";
+import { MOCHOTT_ARTICLE } from "#/lib/mochott/types";
 import { offprintBlocks } from "#/lib/offprint/blocks";
 import { OFFPRINT_CONTENT } from "#/lib/offprint/types";
 import { pcktBlocks } from "#/lib/pckt/blocks";
@@ -64,6 +66,9 @@ export function hasRenderableArticleBody(article: ArticleBodyFields): boolean {
   }
   if (contentType === MARKPUB_MARKDOWN) {
     return Boolean(markpubPlaintext(article.contentJson));
+  }
+  if (contentType === MOCHOTT_ARTICLE) {
+    return mochottRenderableBlocks(article.contentJson).length > 0;
   }
   if (contentType === LEAFLET_DOCUMENT_FORMAT) {
     return (

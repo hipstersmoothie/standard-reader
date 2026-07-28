@@ -133,9 +133,11 @@ Sections, top to bottom:
   declared extensions (LaTeX via KaTeX, YAML front matter), ingest-time `text.textBlob`
   resolution, and facet/lens preprocessing (`baseFormatting` headers/strong/idify,
   `baseBlocks` front matter and horizontal rules). **`site.mochott.article`**
-  ([mochott](https://mochott.site)) is parsed by `renderer-core` — mochott writes the body as a
-  TipTap document in a sibling record at the same rkey as its `site.standard.document`, so the
-  reader renders that record's content (ingesting it is still outstanding; see TODO §9).
+  ([mochott](https://mochott.site)) is fully supported: mochott's `site.standard.document` carries no
+  body at all — it lives in a `site.mochott.article` at the same rkey — so that collection is
+  delivered by the tap and indexed onto the document row as its content (sidecar-style, like
+  `app.standard-reader.collection`, with a repo fetch as the catch-up path), then rendered from its
+  TipTap tree by `renderer-core`.
   Leaflet image galleries use CSS
   `grid-lanes` where supported with plain CSS Grid fallback elsewhere. Every rendered image in
   a document body — Leaflet galleries and single-image blocks, PCKT image and gallery blocks,

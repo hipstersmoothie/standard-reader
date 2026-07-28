@@ -835,16 +835,29 @@ Backend/API exists; UI or copy is missing.
       the shared block vocabulary — link cards → `website`, embeds → `iframe`, custom blocks →
       interpolated (escaped) `html`, `/api/image/{did}/{cid}` → the PDS blob, and the inline
       `footnote` nodes lifted into the document footnote channel.
-- [ ] **Ingest the mochott sibling record** — a mochott `site.standard.document` carries no `content`
-      at all, so the reader still shows those posts bodyless. Unlike Greengale (whose document
-      carries a `#contentRef` uri, so `hasPendingFetch` has something to key on), nothing points at
-      the sibling — it is found by convention: same did, same rkey, collection
-      `site.mochott.article`. That makes it the **sidecar** shape, not the fetched-content shape:
-      follow `upsertCollectionSidecar` — add the collection to `TAP_COLLECTION_FILTERS` and index the
-      article's `content` onto the document row as `contentFormat = site.mochott.article`
-      (recomputing `text_content` / `has_renderable_body`), with the reverse lookup in
-      `upsertDocument` for when the article arrives first, and a delete case. Rows already ingested
-      need a Greengale-style read-path fallback keyed off "document has no content", plus a backfill.
+- [x] **Ingest the mochott sibling record** — a mochott `site.standard.document` carries no `content`
+      at all. Unlike Greengale (whose document carries a `#contentRef` uri, so `hasPendingFetch` has
+      something to key on), nothing points at the sibling — it is found by convention: same did,
+      same rkey. So it is wired as a **sidecar**, like `app.standard-reader.collection`:
+      `site.mochott.article` joins `TAP_COLLECTION_FILTERS`, and `upsertMochottArticle` indexes the
+      article record onto the document row as `contentFormat = site.mochott.article`, recomputing
+      `text_content` / `has_renderable_body`. Either arrival order converges: a document that
+      arrives without content reads the row first and falls back to fetching the article from the
+      repo (`src/server/mochott/resolve.ts`) — which also covers repo enumeration, where only
+      documents are listed — and never blanks a body the sidecar already stored. Deleting the
+      article clears the document's content. Rendering goes through `renderer-react`
+      ([`mochott-content.tsx`](src/components/reader/content/renderers/mochott-content.tsx)) so the
+      inline footnotes reach the endnotes; search text, the renderable flag and the page reader
+      share one parse ([`plaintext.ts`](src/lib/mochott/plaintext.ts)).
+- [x] **Backfill existing mochott documents** — `pnpm backfill:mochott-articles` (with `--dry-run`,
+      `--refresh`, or a list of DIDs) groups bodyless rows by repo and probes each repo once for
+      `site.mochott.article`, so a repo with none costs a single `listRecords` call
+      ([`backfill-mochott-articles.ts`](scripts/backfill-mochott-articles.ts)).
+- [ ] **Syntax highlighting for mochott (and Markpub) code blocks** — `codeBlocksFromContent` in
+      [`article-detail-build.ts`](src/server/reader/article-detail-build.ts) only collects code for
+      leaflet / pckt / offprint / standard-markdown, so third-party formats render code unhighlighted.
+      Mochott bodies do carry `codeBlock` nodes; wiring them means routing the format's blocks
+      through the same collector.
 - [x] **Discover — “Not following” filter** — toggle on [`_layout.discover.tsx`](src/routes/_layout.discover.tsx)
       All publications section to hide effective follow set ([`saved-lists.ts`](src/server/reader/saved-lists.ts)).
 

@@ -8,6 +8,7 @@
  */
 
 import { APP_NSID, STANDARD_NSID } from "../../lib/atproto/nsids.ts";
+import { MOCHOTT_ARTICLE } from "../../lib/mochott/types.ts";
 
 export interface ParsedAtUri {
   did: string;
@@ -23,6 +24,8 @@ export const Collections = {
   recommend: STANDARD_NSID.recommend,
   theme: "site.standard.theme.basic",
   bskyProfile: "app.bsky.actor.profile",
+  /** Mochott's body sidecar — a `site.standard.document` at the same rkey. */
+  mochottArticle: MOCHOTT_ARTICLE,
   read: APP_NSID.read,
   bookmark: APP_NSID.bookmark,
   collection: APP_NSID.collection,

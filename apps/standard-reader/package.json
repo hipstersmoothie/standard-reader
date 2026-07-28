@@ -28,6 +28,7 @@
     "backfill:search-text": "pnpm exec tsx --env-file=.env scripts/backfill-search-text.ts",
     "backfill:renderable": "pnpm exec tsx --env-file=.env scripts/backfill-renderable-body.ts",
     "backfill:content-formats": "pnpm exec tsx --env-file=.env scripts/backfill-content-formats.ts",
+    "backfill:mochott-articles": "pnpm exec tsx --env-file=.env scripts/backfill-mochott-articles.ts",
     "backfill:repo-documents": "pnpm exec tsx --env-file=.env scripts/backfill-repo-documents.ts",
     "backfill:lists": "pnpm exec tsx --env-file=.env scripts/backfill-lists.ts",
     "scan:unsupported-blocks": "pnpm exec tsx --env-file=.env scripts/scan-unsupported-blocks.ts",
