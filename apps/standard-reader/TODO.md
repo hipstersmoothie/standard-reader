@@ -836,10 +836,15 @@ Backend/API exists; UI or copy is missing.
       interpolated (escaped) `html`, `/api/image/{did}/{cid}` → the PDS blob, and the inline
       `footnote` nodes lifted into the document footnote channel.
 - [ ] **Ingest the mochott sibling record** — a mochott `site.standard.document` carries no `content`
-      at all, so the reader still shows those posts bodyless. Ingest needs to fetch the
-      `site.mochott.article` at the same rkey (the same shape as the out-of-record bodies
-      `resolveFetchedContent` already resolves) and store it with
-      `contentFormat = site.mochott.article`, which `renderer-core` now renders.
+      at all, so the reader still shows those posts bodyless. Unlike Greengale (whose document
+      carries a `#contentRef` uri, so `hasPendingFetch` has something to key on), nothing points at
+      the sibling — it is found by convention: same did, same rkey, collection
+      `site.mochott.article`. That makes it the **sidecar** shape, not the fetched-content shape:
+      follow `upsertCollectionSidecar` — add the collection to `TAP_COLLECTION_FILTERS` and index the
+      article's `content` onto the document row as `contentFormat = site.mochott.article`
+      (recomputing `text_content` / `has_renderable_body`), with the reverse lookup in
+      `upsertDocument` for when the article arrives first, and a delete case. Rows already ingested
+      need a Greengale-style read-path fallback keyed off "document has no content", plus a backfill.
 - [x] **Discover — “Not following” filter** — toggle on [`_layout.discover.tsx`](src/routes/_layout.discover.tsx)
       All publications section to hide effective follow set ([`saved-lists.ts`](src/server/reader/saved-lists.ts)).
 
