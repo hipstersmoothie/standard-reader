@@ -1048,6 +1048,7 @@ msgstr "Roundness"
 msgid "public XRPC queries and procedures for the Standard Reader read-model, with live examples."
 msgstr "public XRPC queries and procedures for the Standard Reader read-model, with live examples."
 
+#: src/components/reader/content/renderers/shared/html-embed.tsx
 #: src/components/reader/content/renderers/shared/iframe-embed.tsx
 msgid "Embedded content"
 msgstr "Embedded content"

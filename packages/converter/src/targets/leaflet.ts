@@ -36,6 +36,7 @@ const BLOCK = {
   code: "pub.leaflet.blocks.code",
   header: "pub.leaflet.blocks.header",
   horizontalRule: "pub.leaflet.blocks.horizontalRule",
+  html: "pub.leaflet.blocks.html",
   iframe: "pub.leaflet.blocks.iframe",
   image: "pub.leaflet.blocks.image",
   imageGallery: "pub.leaflet.blocks.imageGallery",
@@ -287,6 +288,16 @@ function emitBlock(ctx: Ctx, node: BlockNode): Array<Block> {
           aspectRatio: aspectRatio(node),
           fullBleed: node.fullBleed,
           image: blob,
+        }),
+      ];
+    }
+    case "htmlEmbed": {
+      return [
+        compact({
+          $type: BLOCK.html,
+          aspectRatio: node.aspectRatio,
+          height: node.height,
+          html: node.html,
         }),
       ];
     }

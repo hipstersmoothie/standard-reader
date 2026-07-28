@@ -81,6 +81,18 @@ export interface SolidSharedComponents extends SolidInlineComponents {
    * sanitizer. Supply this component to render it.
    */
   html: (props: { html: string }) => Renderable;
+  /**
+   * A self-contained HTML embed (Leaflet's `pub.leaflet.blocks.html`). Unlike
+   * `html`, this one renders by default, inside a sandboxed `srcdoc` iframe as
+   * the format specifies. If you override it, keep the sandbox and keep
+   * `allow-same-origin` out of it — with `srcdoc` that grants the embed your
+   * own origin.
+   */
+  htmlEmbed: (props: {
+    html: string;
+    height?: number;
+    aspectRatio?: { width?: number; height?: number };
+  }) => Renderable;
   image: (props: {
     src: string;
     alt: string;

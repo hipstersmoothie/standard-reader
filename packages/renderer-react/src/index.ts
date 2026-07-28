@@ -32,6 +32,7 @@ export type {
   ParagraphProps,
   HeadingProps,
   HtmlProps,
+  HtmlEmbedProps,
   BlockquoteProps,
   CalloutProps,
   ListProps,

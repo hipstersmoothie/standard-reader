@@ -32,6 +32,7 @@ import { CodeBlockView } from "./shared/code-block";
 import { TextBlockView } from "./shared/faceted-text";
 import { HeadingBlockView } from "./shared/heading-block";
 import { HorizontalRuleView } from "./shared/horizontal-rule";
+import { HtmlEmbedView } from "./shared/html-embed";
 import { IframeEmbedView } from "./shared/iframe-embed";
 import { ImageFigureView } from "./shared/image-figure";
 import { UnknownBlockView } from "./shared/unknown-block";
@@ -124,6 +125,15 @@ export function LeafletBlockView({
           plaintext={block.block.plaintext}
           language={block.block.language}
           codeHighlights={codeHighlights}
+        />
+      );
+    }
+    case "html": {
+      return (
+        <HtmlEmbedView
+          html={block.block.html}
+          height={block.block.height}
+          aspectRatio={block.block.aspectRatio}
         />
       );
     }

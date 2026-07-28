@@ -144,6 +144,15 @@ function RenderBlock({ node }: { node: BlockNode }) {
     case "html": {
       return <shared.Html html={node.html} />;
     }
+    case "htmlEmbed": {
+      return (
+        <shared.HtmlEmbed
+          html={node.html}
+          height={node.height}
+          aspectRatio={node.aspectRatio}
+        />
+      );
+    }
     case "image": {
       return (
         <shared.Image

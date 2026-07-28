@@ -126,6 +126,24 @@ export type BlockNode =
    * an `Html` component to render it.
    */
   | { type: "html"; html: string }
+  /**
+   * A self-contained HTML document the author supplied as an *embed*, not as
+   * markup to splice into the page — Leaflet's `pub.leaflet.blocks.html`.
+   *
+   * Unlike `html`, this one is rendered by the default components, because the
+   * format defines it as running inside a sandboxed iframe's `srcdoc`: the
+   * markup never touches the host document, so no host sanitizer is implied.
+   * Keep the sandbox when overriding `HtmlEmbed`, and in particular keep
+   * `allow-same-origin` out of it — with `srcdoc` that would hand the embed the
+   * embedder's origin.
+   */
+  | {
+      type: "htmlEmbed";
+      html: string;
+      /** Fixed pixel height requested by the block. */
+      height?: number;
+      aspectRatio?: { width?: number; height?: number };
+    }
   | {
       type: "image";
       src: string;

@@ -24,6 +24,7 @@ export const LEAFLET_BLOCK = {
   bskyPost: "pub.leaflet.blocks.bskyPost",
   image: "pub.leaflet.blocks.image",
   code: "pub.leaflet.blocks.code",
+  html: "pub.leaflet.blocks.html",
   iframe: "pub.leaflet.blocks.iframe",
   website: "pub.leaflet.blocks.website",
   math: "pub.leaflet.blocks.math",
@@ -110,6 +111,18 @@ export interface LeafletCodeBlock {
   $type?: string;
   language?: string;
   plaintext: string;
+}
+
+/**
+ * Author-supplied markup. Leaflet's lexicon specifies it is rendered through a
+ * sandboxed iframe's `srcdoc`, never injected into the host document.
+ */
+export interface LeafletHtmlBlock {
+  $type?: string;
+  html: string;
+  /** Fixed pixel height (16–1600 per the lexicon). */
+  height?: number;
+  aspectRatio?: LeafletImageAspectRatio;
 }
 
 export interface LeafletIframeBlock {
@@ -216,6 +229,7 @@ export type LeafletRenderableBlock =
   | { kind: "bskyPost"; block: LeafletBskyPostBlock }
   | { kind: "image"; block: LeafletImageBlock }
   | { kind: "code"; block: LeafletCodeBlock }
+  | { kind: "html"; block: LeafletHtmlBlock }
   | { kind: "iframe"; block: LeafletIframeBlock }
   | { kind: "website"; block: LeafletWebsiteBlock }
   | { kind: "math"; block: LeafletMathBlock }

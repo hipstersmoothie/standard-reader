@@ -51,6 +51,11 @@ const SAMPLES: Record<BlockType, BlockNode> = {
   heading: { level: 2, text: text("Title"), type: "heading" },
   horizontalRule: { type: "horizontalRule" },
   html: { html: "<div>raw</div>", type: "html" },
+  htmlEmbed: {
+    height: 240,
+    html: "<style>body{margin:0}</style><p>widget</p>",
+    type: "htmlEmbed",
+  },
   iframe: { height: 400, type: "iframe", url: "https://example.com/embed" },
   image: { ...image("A cat"), type: "image" },
   imageCarousel: {

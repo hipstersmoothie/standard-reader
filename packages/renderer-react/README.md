@@ -127,7 +127,8 @@ third-party format.
 
 **Blocks:** `Root`, `Paragraph`, `Heading`, `Blockquote`, `Callout`,
 `HorizontalRule`, `BulletList`, `OrderedList`, `ListItem`, `TaskList`,
-`TaskListItem`, `Code`, `Image`, `Iframe`, `Website`, `Table`, `Math`,
+`TaskListItem`, `Code`, `Html`, `HtmlEmbed`, `Image`, `Iframe`, `Website`,
+`Table`, `Math`,
 `Button`, `BlueskyEmbed`, `ImageGrid`, `ImageCarousel`, `ImageDiff`,
 `Footnotes`, `FootnoteItem`, `Unknown`.
 

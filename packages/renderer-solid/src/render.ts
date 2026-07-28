@@ -136,6 +136,13 @@ function renderBlock(node: BlockNode, ctx: RenderContext): Renderable {
     case "html": {
       return shared.html({ html: node.html });
     }
+    case "htmlEmbed": {
+      return shared.htmlEmbed({
+        html: node.html,
+        height: node.height,
+        aspectRatio: node.aspectRatio,
+      });
+    }
     case "image": {
       return shared.image({
         src: node.src,

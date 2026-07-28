@@ -106,6 +106,7 @@ Two consequences worth knowing:
 | math           |    ✓    |    ✓     |  ~   |    ~    |
 | button         |    ✓    |    ✓     |  ~   |    ~    |
 | iframe / embed |    ✓    |    ✓     |  ✓   |    ~    |
+| HTML embed     |    ✓    |    ✗     |  ✗   |    ~    |
 | bookmark card  |    ✓    |    ✓     |  ✓   |    ~    |
 | Bluesky post   |    ✓    |    ✓     |  ✓   |    ~    |
 | image grid     |    ✓    |    ✓     |  ~   |    ~    |
