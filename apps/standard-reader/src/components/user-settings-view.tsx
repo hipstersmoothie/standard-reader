@@ -192,8 +192,8 @@ const styles = stylex.create({
     paddingBlock: verticalSpace.md,
     display: "flex",
     flexDirection: "column",
-    paddingInlineStart: horizontalSpace.lg,
     paddingInlineEnd: horizontalSpace.lg,
+    paddingInlineStart: horizontalSpace.lg,
   },
   labelerLink: {
     borderRadius: radius.md,
@@ -207,8 +207,8 @@ const styles = stylex.create({
     fontSize: fontSize.sm,
     fontWeight: fontWeight.medium,
     justifyContent: "space-between",
-    paddingInlineStart: horizontalSpace.md,
     paddingInlineEnd: horizontalSpace.md,
+    paddingInlineStart: horizontalSpace.md,
   },
   labelerMain: {
     alignItems: "center",
@@ -226,6 +226,7 @@ const styles = stylex.create({
     flexShrink: 0,
   },
   connectionRow: {
+    paddingBlock: verticalSpace.md,
     alignItems: {
       [MOBILE]: "stretch",
       default: "center",
@@ -237,25 +238,24 @@ const styles = stylex.create({
       default: "row",
     },
     justifyContent: "space-between",
-    paddingBlock: verticalSpace.md,
     paddingInlineEnd: horizontalSpace.lg,
     paddingInlineStart: horizontalSpace.lg,
     rowGap: gap.lg,
   },
   connectionMeta: {
+    marginBlock: verticalSpace.none,
     color: uiColor.text1,
     fontFamily: fontFamily.sans,
     fontSize: fontSize.sm,
     lineHeight: lineHeight.sm,
-    marginBlock: verticalSpace.none,
   },
   labelerEmpty: {
     marginBlock: verticalSpace.none,
     paddingBlock: verticalSpace["xl"],
     color: uiColor.text1,
     fontSize: fontSize.sm,
-    paddingInlineStart: horizontalSpace["3xl"],
     paddingInlineEnd: horizontalSpace["3xl"],
+    paddingInlineStart: horizontalSpace["3xl"],
   },
   segmentedControl: {
     width: {
@@ -272,16 +272,16 @@ const styles = stylex.create({
     borderRadius: 0,
     color: uiColor.text2,
     fontSize: fontSize.sm,
-    paddingBottom: verticalSpace["3xl"],
-    paddingInlineStart: horizontalSpace["3xl"],
     paddingInlineEnd: horizontalSpace["3xl"],
+    paddingInlineStart: horizontalSpace["3xl"],
+    paddingBottom: verticalSpace["3xl"],
     paddingTop: verticalSpace["3xl"],
   },
   /** The rows inside carry their own padding. */
   advancedPanel: {
-    paddingBottom: verticalSpace.none,
-    paddingInlineStart: horizontalSpace.none,
     paddingInlineEnd: horizontalSpace.none,
+    paddingInlineStart: horizontalSpace.none,
+    paddingBottom: verticalSpace.none,
     paddingTop: verticalSpace.none,
   },
   voiceSelect: {
@@ -306,10 +306,10 @@ const styles = stylex.create({
       default: "row",
     },
     justifyContent: "space-between",
+    paddingInlineEnd: horizontalSpace["3xl"],
+    paddingInlineStart: horizontalSpace["3xl"],
     rowGap: gap["lg"],
     paddingBottom: verticalSpace["3xl"],
-    paddingInlineStart: horizontalSpace["3xl"],
-    paddingInlineEnd: horizontalSpace["3xl"],
     paddingTop: verticalSpace["3xl"],
   },
   deletionIntro: {
@@ -322,14 +322,14 @@ const styles = stylex.create({
     maxWidth: "52ch",
   },
   digestPreviewBody: {
+    paddingInlineEnd: horizontalSpace.none,
+    paddingInlineStart: horizontalSpace.none,
     marginBottom: verticalSpace.none,
     marginTop: verticalSpace.none,
-    paddingInlineStart: horizontalSpace.none,
-    paddingInlineEnd: horizontalSpace.none,
   },
   digestPreviewContainer: {
-    minHeight: "70vh",
     position: "relative",
+    minHeight: "70vh",
     width: "100%",
   },
   digestPreviewFrame: {
@@ -342,9 +342,9 @@ const styles = stylex.create({
     opacity: 0,
   },
   digestPreviewSpinner: {
+    inset: 0,
     alignItems: "center",
     display: "flex",
-    inset: 0,
     justifyContent: "center",
     position: "absolute",
   },

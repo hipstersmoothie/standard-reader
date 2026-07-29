@@ -28,17 +28,17 @@ const styles = stylex.create({
     fontSize: fontSize.sm,
     fontWeight: fontWeight.semibold,
     letterSpacing: tracking.widest,
-    marginBottom: verticalSpace.md,
     textTransform: "uppercase",
+    marginBottom: verticalSpace.md,
   },
   rows: {
     borderColor: uiColor.border1,
     borderRadius: radius.lg,
     borderStyle: "solid",
     borderWidth: 1,
+    overflow: "hidden",
     display: "flex",
     flexDirection: "column",
-    overflow: "hidden",
   },
 });
 

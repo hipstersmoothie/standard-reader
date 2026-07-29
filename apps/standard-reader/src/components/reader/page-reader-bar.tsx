@@ -102,6 +102,8 @@ const styles = stylex.create({
     boxSizing: "border-box",
     display: "flex",
     flexDirection: "column",
+    paddingInlineEnd: horizontalSpace.xl,
+    paddingInlineStart: horizontalSpace.xl,
     pointerEvents: {
       default: "auto",
       ":is([data-exiting])": "none",
@@ -109,8 +111,6 @@ const styles = stylex.create({
     rowGap: gap.md,
     maxWidth: { [DESKTOP]: "min(540px, calc(100vw - 36px))", default: "480px" },
     paddingBottom: verticalSpace.lg,
-    paddingInlineStart: horizontalSpace.xl,
-    paddingInlineEnd: horizontalSpace.xl,
     paddingTop: verticalSpace.lg,
     width: { [DESKTOP]: "max-content", default: "calc(100vw - 24px)" },
   },
@@ -192,6 +192,8 @@ const styles = stylex.create({
       default: "cubic-bezier(0.32, 0.72, 0, 1)",
       ":is([data-exiting])": animationTimingFunction.easeIn,
     },
+    insetInlineEnd: { [DESKTOP]: "auto", default: 0 },
+    insetInlineStart: { [DESKTOP]: `calc(100% + ${gap.md})`, default: "auto" },
     pointerEvents: {
       default: "auto",
       ":is([data-exiting])": "none",
@@ -202,8 +204,6 @@ const styles = stylex.create({
       default: "translate(calc(var(--dir) * 40%), -40%)",
     },
     zIndex: 1,
-    insetInlineStart: { [DESKTOP]: `calc(100% + ${gap.md})`, default: "auto" },
-    insetInlineEnd: { [DESKTOP]: "auto", default: 0 },
     top: { [DESKTOP]: "50%", default: 0 },
   },
   followFab: {
@@ -235,9 +235,9 @@ const styles = stylex.create({
   divider: {
     backgroundColor: uiColor.border1,
     flexShrink: 0,
-    height: spacing["5"],
-    marginInlineStart: horizontalSpace.xl,
     marginInlineEnd: horizontalSpace.sm,
+    marginInlineStart: horizontalSpace.xl,
+    height: spacing["5"],
     width: spacing.px,
   },
 });

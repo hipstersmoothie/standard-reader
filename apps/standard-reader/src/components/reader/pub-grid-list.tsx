@@ -164,6 +164,10 @@ const styles = stylex.create({
       "@media (min-width: 40rem)": "300px",
     },
     gridAutoFlow: "column",
+    marginInlineEnd: `calc(${spacing["2"]} * -1)`,
+    marginInlineStart: `calc(${spacing["2"]} * -1)`,
+    paddingInlineEnd: spacing["2"],
+    paddingInlineStart: spacing["2"],
     rowGap: gap.lg,
     // eslint-disable-next-line @stylexjs/valid-styles
     scrollbarWidth: "thin",
@@ -171,40 +175,36 @@ const styles = stylex.create({
     // the scroll clip region; the matching negative margins keep the cards
     // aligned with the section (same trick this rail uses vertically).
     marginTop: `calc(${spacing["3"]} * -1)`,
-    marginInlineStart: `calc(${spacing["2"]} * -1)`,
-    marginInlineEnd: `calc(${spacing["2"]} * -1)`,
     overflowX: "auto",
     paddingBottom: spacing["2"],
-    paddingInlineStart: spacing["2"],
-    paddingInlineEnd: spacing["2"],
     paddingTop: spacing["3"],
   },
   grid: {
-    display: "grid",
     columnGap: gap.lg,
-    rowGap: gap.lg,
+    display: "grid",
     gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+    rowGap: gap.lg,
   },
   list: {
     display: "flex",
     flexDirection: "column",
   },
   item: {
-    cursor: "pointer",
-    display: "flex",
-    flexDirection: "column",
     outline: {
       default: "none",
       ":is([data-focus-visible])": `2px solid ${focusColor.ring}`,
     },
+    cursor: "pointer",
+    display: "flex",
+    flexDirection: "column",
     outlineOffset: "2px",
+    scrollMarginInlineEnd: spacing["6"],
+    scrollMarginInlineStart: spacing["6"],
+    scrollMarginBottom: spacing["6"],
     // Breathing room when a focused item is scrolled into view (in the rail's
     // horizontal scroller or the page's vertical scroller) so it never hugs
     // the container edge or hides under the masthead.
     scrollMarginTop: spacing["6"],
-    scrollMarginBottom: spacing["6"],
-    scrollMarginInlineStart: spacing["6"],
-    scrollMarginInlineEnd: spacing["6"],
   },
   // Match each item's ring radius to the content it wraps: cards are rounded
   // (radius.md), directory rows are near-square.

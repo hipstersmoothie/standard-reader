@@ -958,12 +958,12 @@ const styles = stylex.create({
     marginInlineStart: "auto",
   },
   selectionCount: {
-    marginRight: spacing["2"],
     color: uiColor.text2,
     fontFamily: fontFamily.sans,
     fontSize: fontSize.sm,
     fontWeight: fontWeight.semibold,
     paddingInlineEnd: horizontalSpace.sm,
+    marginRight: spacing["2"],
   },
   tableScroll: {
     // Wide content scrolls inside its own port; the page never scrolls sideways.
@@ -1006,37 +1006,38 @@ const styles = stylex.create({
     borderRadius: radius.sm,
   },
   nameStack: {
+    gap: gap.xxs,
     display: "flex",
     flexDirection: "column",
-    gap: gap.xxs,
     minWidth: 0,
   },
   name: {
+    overflow: "hidden",
     color: uiColor.text2,
     fontFamily: fontFamily.serif,
     fontSize: fontSize.base,
     fontWeight: fontWeight.medium,
     lineHeight: lineHeight.sm,
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
     // The column's own width is the cap now — the virtualizer's TableLayout
     // sizes columns — so this just gives the ellipsis something to clip
     // against instead of truncating short of the space available.
     maxWidth: "100%",
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-    whiteSpace: "nowrap",
   },
   handle: {
+    overflow: "hidden",
     color: uiColor.text1,
     fontFamily: fontFamily.mono,
     fontSize: fontSize.xs,
     lineHeight: lineHeight.sm,
-    maxWidth: "100%",
-    overflow: "hidden",
     textOverflow: "ellipsis",
     whiteSpace: "nowrap",
+    maxWidth: "100%",
   },
   /** Narrow-only trailing stack: unread pill over the last-post date. */
   inlineTrailing: {
+    gap: gap.xxs,
     alignItems: "end",
     display: {
       default: "none",
@@ -1044,7 +1045,6 @@ const styles = stylex.create({
     },
     flexDirection: "column",
     flexShrink: 0,
-    gap: gap.xxs,
     marginInlineStart: "auto",
     paddingInlineStart: horizontalSpace.md,
   },
@@ -1056,16 +1056,16 @@ const styles = stylex.create({
     whiteSpace: "nowrap",
   },
   inlineUnread: {
-    backgroundColor: primaryColor.component1,
     borderRadius: radius.full,
+    backgroundColor: primaryColor.component1,
     color: primaryColor.text1,
     flexShrink: 0,
     fontFamily: fontFamily.mono,
     fontSize: fontSize.xs,
     fontWeight: fontWeight.semibold,
-    paddingBottom: verticalSpace.xxs,
     paddingInlineEnd: horizontalSpace.md,
     paddingInlineStart: horizontalSpace.md,
+    paddingBottom: verticalSpace.xxs,
     paddingTop: verticalSpace.xxs,
   },
   kindCell: {
@@ -1093,16 +1093,16 @@ const styles = stylex.create({
     fontSize: fontSize.sm,
   },
   lists: {
+    overflow: "hidden",
     color: uiColor.text1,
     // Block, not inline: an inline span has no width to clip against, so the
     // ellipsis never appears and long list names just get cut off.
     display: "block",
     fontFamily: fontFamily.sans,
     fontSize: fontSize.sm,
-    maxWidth: "100%",
-    overflow: "hidden",
     textOverflow: "ellipsis",
     whiteSpace: "nowrap",
+    maxWidth: "100%",
   },
   empty: {
     color: uiColor.text1,
@@ -1121,8 +1121,8 @@ const styles = stylex.create({
     fontFamily: fontFamily.serif,
     fontSize: fontSize.lg,
     lineHeight: lineHeight.sm,
-    maxWidth: "40ch",
     overflowWrap: "anywhere",
     textAlign: "center",
+    maxWidth: "40ch",
   },
 });

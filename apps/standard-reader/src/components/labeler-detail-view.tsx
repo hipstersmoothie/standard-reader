@@ -351,19 +351,19 @@ const styles = stylex.create({
     columnGap: spacing["5"],
     display: "flex",
     flexWrap: "wrap",
-    rowGap: spacing["4"],
-    marginInlineStart: "auto",
     marginInlineEnd: "auto",
-    maxWidth: "82.5rem",
-    paddingBottom: spacing["0"],
-    paddingInlineStart: {
-      default: spacing["5"],
-      "@media (min-width: 40rem)": spacing["10"],
-    },
+    marginInlineStart: "auto",
     paddingInlineEnd: {
       default: spacing["5"],
       "@media (min-width: 40rem)": spacing["10"],
     },
+    paddingInlineStart: {
+      default: spacing["5"],
+      "@media (min-width: 40rem)": spacing["10"],
+    },
+    rowGap: spacing["4"],
+    maxWidth: "82.5rem",
+    paddingBottom: spacing["0"],
     paddingTop: spacing["6"],
     width: "100%",
   },
@@ -439,17 +439,17 @@ const styles = stylex.create({
   },
   tabBarInner: {
     boxSizing: "border-box",
-    marginInlineStart: "auto",
     marginInlineEnd: "auto",
-    maxWidth: "82.5rem",
-    paddingInlineStart: {
-      default: spacing["5"],
-      "@media (min-width: 40rem)": spacing["10"],
-    },
+    marginInlineStart: "auto",
     paddingInlineEnd: {
       default: spacing["5"],
       "@media (min-width: 40rem)": spacing["10"],
     },
+    paddingInlineStart: {
+      default: spacing["5"],
+      "@media (min-width: 40rem)": spacing["10"],
+    },
+    maxWidth: "82.5rem",
     paddingTop: spacing["4"],
     width: "100%",
   },
@@ -464,8 +464,8 @@ const styles = stylex.create({
     width: "100%",
   },
   tabPanel: {
-    paddingInlineStart: spacing["0"],
     paddingInlineEnd: spacing["0"],
+    paddingInlineStart: spacing["0"],
     paddingTop: spacing["6"],
   },
   settingGroup: {

@@ -26,9 +26,9 @@ const styles = stylex.create({
     borderRadius: radius.lg,
     borderStyle: "solid",
     borderWidth: 1,
+    overflow: "hidden",
     display: "flex",
     flexDirection: "column",
-    overflow: "hidden",
   },
   more: {
     color: uiColor.text1,

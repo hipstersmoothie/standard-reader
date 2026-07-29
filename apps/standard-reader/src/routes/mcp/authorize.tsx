@@ -46,14 +46,14 @@ const styles = stylex.create({
     minHeight: "100dvh",
   },
   container: {
+    paddingBlock: verticalSpace["8xl"],
+    paddingInline: horizontalSpace["4xl"],
     alignItems: "center",
     boxSizing: "border-box",
     display: "flex",
     flexDirection: "column",
     flexGrow: 1,
     justifyContent: "center",
-    paddingBlock: verticalSpace["8xl"],
-    paddingInline: horizontalSpace["4xl"],
   },
   // The consent column is a reading measure, not a spacing step: it is sized to
   // hold two short lines of scope copy without wrapping awkwardly. `/login`
@@ -63,8 +63,8 @@ const styles = stylex.create({
     width: "100%",
   },
   wordmark: {
-    paddingBottom: verticalSpace["5xl"],
     textAlign: "center",
+    paddingBottom: verticalSpace["5xl"],
   },
   card: {
     borderRadius: radius.lg,
@@ -79,51 +79,51 @@ const styles = stylex.create({
     },
   },
   question: {
+    marginBlock: verticalSpace.none,
     fontSize: fontSize["2xl"],
     letterSpacing: tracking.tight,
     lineHeight: lineHeight.sm,
-    marginBlock: verticalSpace.none,
     textWrap: "balance",
   },
   // Two facts a reader can actually check: who they are, and where the code
   // goes. Kept as a definition list so the pairing is real, not just visual.
   facts: {
-    display: "grid",
-    gridTemplateColumns: "auto 1fr",
+    margin: verticalSpace.none,
     alignItems: "center",
     columnGap: horizontalSpace["3xl"],
+    display: "grid",
+    gridTemplateColumns: "auto 1fr",
     rowGap: verticalSpace["2xl"],
-    margin: verticalSpace.none,
   },
   factTerm: {
     margin: verticalSpace.none,
   },
   factValue: {
-    display: "flex",
-    alignItems: "center",
-    gap: horizontalSpace.md,
     margin: verticalSpace.none,
+    gap: horizontalSpace.md,
+    alignItems: "center",
+    display: "flex",
     minWidth: 0,
   },
   factText: {
-    minWidth: 0,
     overflowWrap: "anywhere",
+    minWidth: 0,
   },
   scopeList: {
-    display: "flex",
-    flexDirection: "column",
-    listStyle: "none",
     margin: verticalSpace.none,
     padding: verticalSpace.none,
+    listStyle: "none",
+    display: "flex",
+    flexDirection: "column",
   },
   scopeItem: {
+    gap: horizontalSpace["2xl"],
+    paddingBlock: verticalSpace["3xl"],
     alignItems: "start",
+    display: "flex",
     borderTopColor: uiColor.border1,
     borderTopStyle: "solid",
     borderTopWidth: 1,
-    display: "flex",
-    gap: horizontalSpace["2xl"],
-    paddingBlock: verticalSpace["3xl"],
   },
   scopeItemLast: {
     borderBottomColor: uiColor.border1,
@@ -138,20 +138,20 @@ const styles = stylex.create({
     width: sizeSpace.md,
   },
   actions: {
+    gap: horizontalSpace["2xl"],
     display: "flex",
     flexDirection: {
       default: "column-reverse",
       [breakpoints.sm]: "row",
     },
-    gap: horizontalSpace["2xl"],
   },
   actionButton: {
     flexGrow: 1,
     justifyContent: "center",
   },
   legal: {
-    paddingBottom: verticalSpace["5xl"],
     paddingInline: horizontalSpace["4xl"],
+    paddingBottom: verticalSpace["5xl"],
   },
 });
 

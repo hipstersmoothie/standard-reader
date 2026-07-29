@@ -21,18 +21,18 @@ import { useFormatters } from "#/lib/use-formatters";
 // the page's rhythm rather than standing out as boxed UI chrome.
 const styles = stylex.create({
   block: {
-    display: "block",
     textDecoration: "none",
     color: "inherit",
+    display: "block",
     borderBottomColor: uiColor.border1,
     borderBottomStyle: "solid",
     borderBottomWidth: 1,
     paddingBottom: spacing["7"],
   },
   labelRow: {
-    display: "flex",
     alignItems: "baseline",
     columnGap: gap.md,
+    display: "flex",
     marginBottom: spacing["3"],
   },
   label: {
@@ -47,21 +47,21 @@ const styles = stylex.create({
     fontSize: fontSize.sm,
   },
   text: {
-    color: uiColor.text2,
-    fontFamily: fontFamily.serif,
-    fontSize: fontSize.xl,
-    lineHeight: lineHeight.sm,
-    marginTop: spacing["0"],
-    marginBottom: spacing["0"],
-    maxWidth: "60ch",
     textDecoration: {
       default: "none",
       ":hover": "underline",
     },
+    color: uiColor.text2,
+    fontFamily: fontFamily.serif,
+    fontSize: fontSize.xl,
+    lineHeight: lineHeight.sm,
     textDecorationThickness: "1px",
     textUnderlineOffset: "3px",
     // eslint-disable-next-line @stylexjs/valid-styles
     textWrap: "pretty",
+    marginBottom: spacing["0"],
+    marginTop: spacing["0"],
+    maxWidth: "60ch",
   },
 });
 

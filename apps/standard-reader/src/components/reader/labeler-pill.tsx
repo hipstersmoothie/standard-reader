@@ -142,16 +142,16 @@ const styles = stylex.create({
     alignItems: "center",
     display: "flex",
     justifyContent: "space-between",
+    marginInlineEnd: `calc(-1 * ${horizontalSpace.md})`,
+    // Full-bleed footer: the popover content pads with `horizontalSpace.md`,
+    // so negate it so the divider + footer span the card edge to edge.
+    marginInlineStart: `calc(-1 * ${horizontalSpace.md})`,
+    paddingInlineEnd: horizontalSpace.md,
+    paddingInlineStart: horizontalSpace.md,
     // Top border acts as the full-width separator from the body.
     borderTopColor: uiColor.border1,
     borderTopStyle: "solid",
     borderTopWidth: 1,
-    // Full-bleed footer: the popover content pads with `horizontalSpace.md`,
-    // so negate it so the divider + footer span the card edge to edge.
-    marginInlineStart: `calc(-1 * ${horizontalSpace.md})`,
-    marginInlineEnd: `calc(-1 * ${horizontalSpace.md})`,
-    paddingInlineStart: horizontalSpace.md,
-    paddingInlineEnd: horizontalSpace.md,
     paddingTop: verticalSpace.sm,
   },
   source: {

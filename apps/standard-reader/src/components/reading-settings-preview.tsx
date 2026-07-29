@@ -57,13 +57,13 @@ type PreviewStatus = "idle" | "loading" | "playing" | "error";
 
 const styles = stylex.create({
   card: {
+    paddingInlineEnd: horizontalSpace["3xl"],
+    paddingInlineStart: horizontalSpace["3xl"],
     borderBottomColor: uiColor.border1,
     borderBottomStyle: "solid",
     borderBottomWidth: 1,
     marginBottom: verticalSpace["3xl"],
     paddingBottom: verticalSpace["3xl"],
-    paddingInlineStart: horizontalSpace["3xl"],
-    paddingInlineEnd: horizontalSpace["3xl"],
     paddingTop: verticalSpace["3xl"],
   },
   label: {
@@ -77,9 +77,9 @@ const styles = stylex.create({
     marginTop: verticalSpace.none,
   },
   article: {
-    marginBottom: verticalSpace["3xl"],
-    marginInlineStart: "auto",
     marginInlineEnd: "auto",
+    marginInlineStart: "auto",
+    marginBottom: verticalSpace["3xl"],
     width: "100%",
   },
   previewBody: {
@@ -119,8 +119,8 @@ const styles = stylex.create({
     width: spacing["3.5"],
   },
   buttonIconLayer: {
-    position: "absolute",
     insetInlineStart: 0,
+    position: "absolute",
     top: 0,
   },
   buttonIconHidden: {

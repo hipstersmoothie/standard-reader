@@ -161,13 +161,13 @@ export function PublicationThemeScope({
 
 const styles = stylex.create({
   scope: {
+    color: uiColor.text2,
     // Stand in for the content column this replaces as a flex child of the app
     // shell's scroller, so wrapping doesn't shift the page's layout.
     display: "flex",
     flexDirection: "column",
     flexGrow: 1,
     minWidth: 0,
-    color: uiColor.text2,
   },
   /** No canvas image: the column is simply the publication's page colour. */
   scopeFlat: {
@@ -180,24 +180,24 @@ const styles = stylex.create({
    * stays put while the page scrolls.
    */
   scopeWithCanvasImage: {
-    backgroundAttachment: "fixed",
-    backgroundColor: `var(--pub-canvas-color, ${uiColor.bg})`,
-    backgroundImage: "var(--pub-canvas-image)",
-    backgroundPosition: "center center",
-    backgroundRepeat: "var(--pub-canvas-repeat)",
-    backgroundSize: "var(--pub-canvas-size)",
-    // Published for `publicationPageCard` below. Only set in this branch, so a
-    // page card is inert unless there's actually a canvas to frame it against.
-    "--pub-page-surface": uiColor.bg,
-    "--pub-page-radius": radius.lg,
-    "--pub-page-inset": verticalSpace["10xl"],
     "--pub-page-border": uiColor.border1,
     "--pub-page-border-width": "1px",
-    "--pub-page-content-top": verticalSpace["8xl"],
     "--pub-page-content-bottom": verticalSpace["10xl"],
+    "--pub-page-content-top": verticalSpace["8xl"],
+    "--pub-page-inset": verticalSpace["10xl"],
     // Narrower than the 1320px reading shell so the canvas frames the page on
     // desktop instead of being squeezed to a sliver at the very edges.
     "--pub-page-max-width": "1080px",
+    "--pub-page-radius": radius.lg,
+    // Published for `publicationPageCard` below. Only set in this branch, so a
+    // page card is inert unless there's actually a canvas to frame it against.
+    "--pub-page-surface": uiColor.bg,
+    backgroundPosition: "center center",
+    backgroundAttachment: "fixed",
+    backgroundColor: `var(--pub-canvas-color, ${uiColor.bg})`,
+    backgroundImage: "var(--pub-canvas-image)",
+    backgroundRepeat: "var(--pub-canvas-repeat)",
+    backgroundSize: "var(--pub-canvas-size)",
   },
   /** Footer sits on the page colour, not the canvas image. */
   footerSurface: {

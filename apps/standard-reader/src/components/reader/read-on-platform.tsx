@@ -53,10 +53,10 @@ import { PlatformMark } from "./platform-logo";
  */
 const brand = stylex.create({
   leaflet: {
-    "--fill": "#57822B",
-    "--ink": "#FFFFFF",
-    "--fill-hover": "#4A7025",
     "--edge": "transparent",
+    "--fill": "#57822B",
+    "--fill-hover": "#4A7025",
+    "--ink": "#FFFFFF",
   },
   /**
    * pckt is the one platform without a single usable primary: its identity is
@@ -71,29 +71,30 @@ const brand = stylex.create({
    * pckt publishes it; don't recolor it.
    */
   pckt: {
-    "--fill": uiColor.component1,
-    "--ink": uiColor.text2,
-    "--fill-hover": uiColor.component2,
     "--edge": uiColor.border1,
+    "--fill": uiColor.component1,
+    "--fill-hover": uiColor.component2,
+    "--ink": uiColor.text2,
   },
   offprint: {
-    "--fill": "light-dark(#09090b, #e4e4e7)",
-    "--ink": "light-dark(#e4e4e7, #09090b)",
-    "--fill-hover": "light-dark(#1c1c20, #d1d1d6)",
     "--edge": "transparent",
+    "--fill": "light-dark(#09090b, #e4e4e7)",
+    "--fill-hover": "light-dark(#1c1c20, #d1d1d6)",
+    "--ink": "light-dark(#e4e4e7, #09090b)",
   },
 });
 
 const styles = stylex.create({
   base: {
-    alignItems: "center",
-    backgroundColor: { default: "var(--fill)", ":hover": "var(--fill-hover)" },
     // Same corner treatment as every other button in the app
     // (`useButtonStyles`), so the branded fill is the only thing that sets
     // these apart from the native controls beside them.
     borderRadius: radius.md,
-    cornerShape: "squircle",
     borderStyle: "none",
+    cornerShape: "squircle",
+    textDecoration: "none",
+    alignItems: "center",
+    backgroundColor: { default: "var(--fill)", ":hover": "var(--fill-hover)" },
     // An inset ring rather than a real border: platforms whose fill already
     // separates from the page use `transparent` here, and an inset shadow keeps
     // every variant exactly the same height regardless.
@@ -102,20 +103,19 @@ const styles = stylex.create({
     color: "var(--ink)",
     display: "inline-flex",
     flexShrink: 0,
-    textDecoration: "none",
-    transitionDuration: animationDuration.default,
-    transitionProperty: "background-color",
-    transitionTimingFunction: animationTimingFunction.easeOut,
     outlineColor: focusColor.ring,
     outlineOffset: 2,
     outlineStyle: { default: "none", ":focus-visible": "solid" },
     outlineWidth: 2,
+    transitionDuration: animationDuration.default,
+    transitionProperty: "background-color",
+    transitionTimingFunction: animationTimingFunction.easeOut,
   },
   /** End-of-article: room to breathe, matches the app's `lg` control height. */
   md: {
     gap: gap.lg,
-    height: spacing["11"],
     paddingInline: spacing["4"],
+    height: spacing["11"],
   },
   /**
    * Header: sits in a row of 2rem icon buttons, so it matches their height
@@ -124,8 +124,8 @@ const styles = stylex.create({
    */
   sm: {
     gap: gap.md,
-    height: spacing["8"],
     paddingInline: spacing["2.5"],
+    height: spacing["8"],
   },
   /**
    * Logo art has no leading; text does. Centering an untrimmed text box against
@@ -148,9 +148,9 @@ const styles = stylex.create({
   },
   /** Leaflet publishes no wordmark, so its name is set in the app's own sans. */
   leafletLockup: {
+    gap: gap.sm,
     alignItems: "center",
     display: "inline-flex",
-    gap: gap.sm,
   },
   leafletName: {
     fontFamily: fontFamily.sans,
@@ -194,20 +194,14 @@ const styles = stylex.create({
   },
   /** Icon-only: square, so the mark sits dead center at the same 2rem height. */
   icon: {
-    aspectRatio: "1",
-    height: spacing["8"],
-    justifyContent: "center",
     paddingInline: 0,
+    aspectRatio: "1",
+    justifyContent: "center",
+    height: spacing["8"],
   },
   arrow: {
     flexShrink: 0,
     opacity: 0.8,
-    transitionDuration: animationDuration.default,
-    transitionProperty: {
-      default: "transform",
-      "@media (prefers-reduced-motion: reduce)": "none",
-    },
-    transitionTimingFunction: animationTimingFunction.easeOut,
     // The arrow leaves toward the corner it points at. `--dir` flips the
     // horizontal component under RTL (see styles.css). The fill change still
     // lands under reduced motion — only the travel is dropped.
@@ -218,6 +212,12 @@ const styles = stylex.create({
         "@media (prefers-reduced-motion: reduce)": "translate(0, 0)",
       },
     },
+    transitionDuration: animationDuration.default,
+    transitionProperty: {
+      default: "transform",
+      "@media (prefers-reduced-motion: reduce)": "none",
+    },
+    transitionTimingFunction: animationTimingFunction.easeOut,
   },
 });
 

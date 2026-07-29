@@ -13,19 +13,19 @@ import { registerServiceWorker } from "./register";
 
 const styles = stylex.create({
   toast: {
-    position: "fixed",
-    insetBlockEnd: `max(${spacing["4"]}, env(safe-area-inset-bottom))`,
-    insetInlineStart: "50%",
-    transform: "translateX(-50%)",
-    zIndex: 1000,
-    display: "flex",
-    alignItems: "center",
+    borderRadius: radius["lg"],
     gap: spacing["4"],
-    maxInlineSize: "calc(100vw - 2rem)",
     paddingBlock: spacing["3"],
     paddingInline: spacing["4"],
-    borderRadius: radius["lg"],
+    alignItems: "center",
     boxShadow: shadow["lg"],
+    display: "flex",
+    insetBlockEnd: `max(${spacing["4"]}, env(safe-area-inset-bottom))`,
+    insetInlineStart: "50%",
+    maxInlineSize: "calc(100vw - 2rem)",
+    position: "fixed",
+    transform: "translateX(-50%)",
+    zIndex: 1000,
   },
   message: {
     fontSize: "0.9375rem",

@@ -89,29 +89,28 @@ const styles = stylex.create({
    * top-level ungrouped row or nested inside a list; deliberately no
    * level-based indent so nested rows line up flush with top-level ones. */
   memberRow: {
-    alignItems: "center",
     borderRadius: radius.sm,
-    backgroundColor: {
-      default: "transparent",
-      ":is([data-hovered])": uiColor.component2,
-    },
     outline: {
       default: "none",
       ":is([data-focus-visible])": `2px solid ${focusColor.ring}`,
     },
-    outlineOffset: "-2px",
+    alignItems: "center",
+    backgroundColor: {
+      default: "transparent",
+      ":is([data-hovered])": uiColor.component2,
+    },
     color: "inherit",
     columnGap: gap.lg,
     cursor: "pointer",
     display: "flex",
+    outlineOffset: "-2px",
+    paddingInlineEnd: horizontalSpace.lg,
+    paddingInlineStart: horizontalSpace.lg,
     rowGap: gap.lg,
     paddingBottom: verticalSpace.sm,
-    paddingInlineStart: horizontalSpace.lg,
-    paddingInlineEnd: horizontalSpace.lg,
     paddingTop: verticalSpace.sm,
   },
   memberName: {
-    unicodeBidi: "isolate",
     overflow: "hidden",
     color: uiColor.text2,
     flexBasis: "0%",
@@ -120,38 +119,39 @@ const styles = stylex.create({
     fontFamily: fontFamily.sans,
     fontSize: fontSize.sm,
     textOverflow: "ellipsis",
+    unicodeBidi: "isolate",
     whiteSpace: "nowrap",
     minWidth: 0,
   },
   /** A list group's header row — the same uppercase section-label look the
    * sidebar always used for group titles. */
   groupHeaderRow: {
-    alignItems: "center",
     borderRadius: radius.sm,
-    backgroundColor: {
-      default: "transparent",
-      ":is([data-hovered])": uiColor.component2,
-    },
     outline: {
       default: "none",
       ":is([data-focus-visible])": `2px solid ${focusColor.ring}`,
     },
-    outlineOffset: "-2px",
-    cursor: "pointer",
+    alignItems: "center",
+    backgroundColor: {
+      default: "transparent",
+      ":is([data-hovered])": uiColor.component2,
+    },
     color: uiColor.text1,
     // Same columnGap as memberRow: with a drag handle of the same width
     // preceding both, this keeps the group name and a nested member's avatar
     // starting at the exact same x-position, whether or not dragging is on.
     columnGap: gap.lg,
+    cursor: "pointer",
     display: "flex",
     fontFamily: fontFamily.sans,
     fontSize: "0.65rem",
     fontWeight: fontWeight.semibold,
     letterSpacing: tracking.widest,
+    outlineOffset: "-2px",
+    paddingInlineEnd: horizontalSpace.lg,
+    paddingInlineStart: horizontalSpace.lg,
     textTransform: "uppercase",
     paddingBottom: verticalSpace.xxs,
-    paddingInlineStart: horizontalSpace.lg,
-    paddingInlineEnd: horizontalSpace.lg,
     paddingTop: verticalSpace.lg,
   },
   groupName: {
@@ -175,32 +175,36 @@ const styles = stylex.create({
     fontFamily: fontFamily.serif,
     fontSize: fontSize.sm,
     fontStyle: "italic",
-    paddingInlineStart: horizontalSpace.lg,
     paddingInlineEnd: horizontalSpace.lg,
+    paddingInlineStart: horizontalSpace.lg,
   },
   chevronButton: {
-    alignItems: "center",
     borderWidth: 0,
+    outline: {
+      default: "none",
+      ":is([data-focus-visible])": `2px solid ${focusColor.ring}`,
+    },
+    alignItems: "center",
     backgroundColor: "transparent",
     color: "inherit",
     display: "flex",
     flexShrink: 0,
     justifyContent: "center",
-    outline: {
-      default: "none",
-      ":is([data-focus-visible])": `2px solid ${focusColor.ring}`,
-    },
     outlineOffset: "2px",
+    paddingInlineEnd: spacing["0"],
+    paddingInlineStart: spacing["0"],
     height: size["2xl"],
     paddingBottom: spacing["0"],
-    paddingInlineStart: spacing["0"],
-    paddingInlineEnd: spacing["0"],
     paddingTop: spacing["0"],
     width: size["2xl"],
   },
   dragHandle: {
-    alignItems: "center",
     borderWidth: 0,
+    outline: {
+      default: "none",
+      ":is([data-focus-visible])": `2px solid ${focusColor.ring}`,
+    },
+    alignItems: "center",
     backgroundColor: "transparent",
     color: uiColor.text1,
     cursor: "grab",
@@ -210,11 +214,9 @@ const styles = stylex.create({
     // (left) edge, which is where content normally starts — centering it
     // here would visually indent the icon from that edge.
     justifyContent: "flex-start",
-    outline: {
-      default: "none",
-      ":is([data-focus-visible])": `2px solid ${focusColor.ring}`,
-    },
     outlineOffset: "2px",
+    paddingInlineEnd: spacing["0"],
+    paddingInlineStart: spacing["0"],
     // Matches FollowingAvatar's own ("sm") height exactly, so a row's
     // cross-axis size (and therefore its total height) is identical whether
     // or not the drag handle is rendered — toggling reorder mode must never
@@ -223,8 +225,6 @@ const styles = stylex.create({
     // follows isn't inflated by empty trailing space inside the button.
     height: size.xl,
     paddingBottom: spacing["0"],
-    paddingInlineStart: spacing["0"],
-    paddingInlineEnd: spacing["0"],
     paddingTop: spacing["0"],
     width: size.lg,
   },
@@ -232,13 +232,13 @@ const styles = stylex.create({
    * member INTO the list), distinct from the between-rows line indicator. */
   treeItemDropTarget: {
     borderRadius: radius.sm,
-    backgroundColor: {
-      default: "transparent",
-      ":is([data-drop-target])": primaryColor.component2,
-    },
     outline: {
       default: "none",
       ":is([data-drop-target])": `2px solid ${primaryColor.solid1}`,
+    },
+    backgroundColor: {
+      default: "transparent",
+      ":is([data-drop-target])": primaryColor.component2,
     },
     outlineOffset: "-2px",
   },
@@ -251,11 +251,11 @@ const styles = stylex.create({
     fontSize: "0.65rem",
     fontWeight: fontWeight.semibold,
     lineHeight: lineHeight.none,
+    paddingInlineEnd: horizontalSpace.sm,
+    paddingInlineStart: horizontalSpace.sm,
     textAlign: "center",
     minWidth: spacing["4"],
     paddingBottom: verticalSpace.xxs,
-    paddingInlineStart: horizontalSpace.sm,
-    paddingInlineEnd: horizontalSpace.sm,
     paddingTop: verticalSpace.xxs,
   },
 });

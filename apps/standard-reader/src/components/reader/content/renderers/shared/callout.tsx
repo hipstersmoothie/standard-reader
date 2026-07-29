@@ -57,16 +57,16 @@ const KIND_ICON: Record<CalloutKind, LucideIcon> = {
 
 const styles = stylex.create({
   callout: {
-    backgroundColor: "var(--callout-surface)",
     borderColor: "var(--callout-border)",
+    borderRadius: radius.md,
     borderStyle: "solid",
     borderWidth: 1,
-    borderRadius: radius.md,
     cornerShape: "squircle",
+    overflow: "hidden",
+    backgroundColor: "var(--callout-surface)",
     fontFamily: fontFamily.sans,
     marginBottom: spacing["6"],
     marginTop: spacing["6"],
-    overflow: "hidden",
   },
   header: {
     alignItems: "center",
@@ -77,16 +77,16 @@ const styles = stylex.create({
     fontSize: fontSize.base,
     fontWeight: fontWeight.semibold,
     lineHeight: 1.4,
+    paddingInlineEnd: spacing["4"],
+    paddingInlineStart: spacing["4"],
     // Tighter than the top padding: the title should sit close to the body it
     // introduces rather than floating in the middle of the box.
     paddingBottom: spacing["2"],
-    paddingInlineStart: spacing["4"],
-    paddingInlineEnd: spacing["4"],
     paddingTop: spacing["3"],
   },
   headerButton: {
-    backgroundColor: "transparent",
     borderWidth: 0,
+    backgroundColor: "transparent",
     cursor: "pointer",
     textAlign: "start",
     width: "100%",
@@ -103,10 +103,10 @@ const styles = stylex.create({
   },
   chevron: {
     flexShrink: 0,
-    height: "1.125rem",
     transitionDuration: animationDuration.default,
     transitionProperty: "rotate",
     transitionTimingFunction: "ease",
+    height: "1.125rem",
     width: "1.125rem",
   },
   chevronOpen: {
@@ -116,16 +116,10 @@ const styles = stylex.create({
     transform: "none",
   },
   body: {
-    // No font family: inherit the article's serif so callout prose matches the
-    // surrounding body copy.
-    color: "var(--callout-body)",
-    fontSize: fontSize.base,
-    lineHeight: 1.55,
-    // Bottom padding mirrors the header's vertical padding so the prose sits
-    // evenly inside the box instead of hugging one edge.
-    paddingBottom: spacing["3"],
-    paddingInlineStart: spacing["4"],
-    paddingInlineEnd: spacing["4"],
+    // eslint-disable-next-line @stylexjs/no-legacy-contextual-styles, @stylexjs/valid-styles
+    ":is(*) > :last-child": {
+      marginBottom: spacing["0"],
+    },
     // Callout prose reuses the article paragraph style (a full 1.5rem bottom
     // margin), which leaves an oversized, unbalanced gap inside the box. Tighten
     // the gap between stacked blocks and drop the trailing margin so the body
@@ -134,10 +128,16 @@ const styles = stylex.create({
     ":is(*) > p": {
       marginBottom: spacing["3"],
     },
-    // eslint-disable-next-line @stylexjs/no-legacy-contextual-styles, @stylexjs/valid-styles
-    ":is(*) > :last-child": {
-      marginBottom: spacing["0"],
-    },
+    // No font family: inherit the article's serif so callout prose matches the
+    // surrounding body copy.
+    color: "var(--callout-body)",
+    fontSize: fontSize.base,
+    lineHeight: 1.55,
+    paddingInlineEnd: spacing["4"],
+    paddingInlineStart: spacing["4"],
+    // Bottom padding mirrors the header's vertical padding so the prose sits
+    // evenly inside the box instead of hugging one edge.
+    paddingBottom: spacing["3"],
   },
 });
 
@@ -167,34 +167,34 @@ const KIND_FAMILY: Record<CalloutKind, CalloutFamily> = {
 
 const familyTheme = stylex.create({
   primary: {
-    "--callout-surface": primaryColor.bgSubtle,
-    "--callout-border": primaryColor.border1,
     "--callout-accent": primaryColor.text1,
     "--callout-body": primaryColor.text2,
+    "--callout-border": primaryColor.border1,
+    "--callout-surface": primaryColor.bgSubtle,
   },
   neutral: {
-    "--callout-surface": uiColor.bgSubtle,
-    "--callout-border": uiColor.border1,
     "--callout-accent": uiColor.text1,
     "--callout-body": uiColor.text2,
+    "--callout-border": uiColor.border1,
+    "--callout-surface": uiColor.bgSubtle,
   },
   success: {
-    "--callout-surface": successColor.bgSubtle,
-    "--callout-border": successColor.border1,
     "--callout-accent": successColor.text1,
     "--callout-body": successColor.text2,
+    "--callout-border": successColor.border1,
+    "--callout-surface": successColor.bgSubtle,
   },
   warning: {
-    "--callout-surface": warningColor.bgSubtle,
-    "--callout-border": warningColor.border1,
     "--callout-accent": warningColor.text1,
     "--callout-body": warningColor.text2,
+    "--callout-border": warningColor.border1,
+    "--callout-surface": warningColor.bgSubtle,
   },
   critical: {
-    "--callout-surface": criticalColor.bgSubtle,
-    "--callout-border": criticalColor.border1,
     "--callout-accent": criticalColor.text1,
     "--callout-body": criticalColor.text2,
+    "--callout-border": criticalColor.border1,
+    "--callout-surface": criticalColor.bgSubtle,
   },
 });
 

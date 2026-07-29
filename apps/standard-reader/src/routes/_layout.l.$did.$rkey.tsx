@@ -167,19 +167,19 @@ const styles = stylex.create({
     columnGap: spacing["5"],
     display: "flex",
     flexWrap: "wrap",
-    rowGap: spacing["4"],
-    marginInlineStart: "auto",
     marginInlineEnd: "auto",
-    maxWidth: "82.5rem",
-    paddingBottom: spacing["0"],
-    paddingInlineStart: {
-      default: spacing["5"],
-      "@media (min-width: 40rem)": spacing["10"],
-    },
+    marginInlineStart: "auto",
     paddingInlineEnd: {
       default: spacing["5"],
       "@media (min-width: 40rem)": spacing["10"],
     },
+    paddingInlineStart: {
+      default: spacing["5"],
+      "@media (min-width: 40rem)": spacing["10"],
+    },
+    rowGap: spacing["4"],
+    maxWidth: "82.5rem",
+    paddingBottom: spacing["0"],
     paddingTop: spacing["6"],
     width: "100%",
   },
@@ -191,16 +191,16 @@ const styles = stylex.create({
     paddingTop: spacing["0.5"],
   },
   heroName: {
-    // Isolate only: this is a single-line NAME, so it must keep the
-    // surrounding UI alignment while still ordering its own characters
-    // correctly. `dir="auto"` here would left-align it inside an RTL page.
-    unicodeBidi: "isolate",
     color: uiColor.text2,
     fontFamily: fontFamily.serif,
     fontSize: { default: "1.85rem", "@media (min-width: 48rem)": "2rem" },
     fontWeight: fontWeight.semibold,
     letterSpacing: tracking.tight,
     lineHeight: lineHeight.xs,
+    // Isolate only: this is a single-line NAME, so it must keep the
+    // surrounding UI alignment while still ordering its own characters
+    // correctly. `dir="auto"` here would left-align it inside an RTL page.
+    unicodeBidi: "isolate",
     marginBottom: spacing["0"],
     marginTop: spacing["2"],
   },
@@ -240,7 +240,7 @@ const styles = stylex.create({
   heroActs: {
     alignItems: "center",
     columnGap: spacing["1.5"],
-    display: { default: "none", [HERO_DESKTOP]: "flex" },
+    display: { [HERO_DESKTOP]: "flex", default: "none", },
     flexWrap: "wrap",
     justifyContent: "flex-end",
     rowGap: spacing["2.5"],
@@ -248,7 +248,7 @@ const styles = stylex.create({
   },
   heroActsMobile: {
     alignItems: "center",
-    display: { default: "flex", [HERO_DESKTOP]: "none" },
+    display: { [HERO_DESKTOP]: "none", default: "flex", },
     flexShrink: 0,
     justifyContent: "flex-end",
     paddingTop: spacing["1"],
@@ -261,17 +261,17 @@ const styles = stylex.create({
   },
   tabBarInner: {
     boxSizing: "border-box",
-    marginInlineStart: "auto",
     marginInlineEnd: "auto",
-    maxWidth: "82.5rem",
-    paddingInlineStart: {
-      default: spacing["5"],
-      "@media (min-width: 40rem)": spacing["10"],
-    },
+    marginInlineStart: "auto",
     paddingInlineEnd: {
       default: spacing["5"],
       "@media (min-width: 40rem)": spacing["10"],
     },
+    paddingInlineStart: {
+      default: spacing["5"],
+      "@media (min-width: 40rem)": spacing["10"],
+    },
+    maxWidth: "82.5rem",
     paddingTop: spacing["4"],
     width: "100%",
   },
@@ -286,8 +286,8 @@ const styles = stylex.create({
     width: "100%",
   },
   tabPanel: {
-    paddingInlineStart: spacing["0"],
     paddingInlineEnd: spacing["0"],
+    paddingInlineStart: spacing["0"],
     paddingTop: spacing["6"],
   },
   emptyNote: {
@@ -301,11 +301,11 @@ const styles = stylex.create({
   },
   userRow: {
     alignItems: "center",
+    columnGap: spacing["3"],
+    display: "flex",
     borderTopColor: uiColor.border1,
     borderTopStyle: "solid",
     borderTopWidth: 1,
-    columnGap: spacing["3"],
-    display: "flex",
     paddingBottom: spacing["3"],
     paddingTop: spacing["3"],
   },
@@ -317,8 +317,8 @@ const styles = stylex.create({
     flexShrink: 0,
   },
   userLink: {
-    color: "inherit",
     textDecoration: { default: "none", ":hover": "underline" },
+    color: "inherit",
   },
   userName: {
     color: uiColor.text2,

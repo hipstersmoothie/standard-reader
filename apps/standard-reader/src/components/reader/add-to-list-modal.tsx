@@ -58,13 +58,13 @@ const styles = stylex.create({
     width: "100%",
   },
   tabList: {
-    paddingInlineStart: horizontalSpace["2xl"],
     paddingInlineEnd: horizontalSpace["2xl"],
+    paddingInlineStart: horizontalSpace["2xl"],
   },
   tabPanel: {
-    paddingBottom: verticalSpace["3xl"],
-    paddingInlineStart: horizontalSpace.xl,
     paddingInlineEnd: horizontalSpace.xl,
+    paddingInlineStart: horizontalSpace.xl,
+    paddingBottom: verticalSpace["3xl"],
     paddingTop: verticalSpace["2xl"],
   },
   list: {
@@ -84,9 +84,9 @@ const styles = stylex.create({
     fontFamily: fontFamily.serif,
     fontSize: fontSize.sm,
     fontStyle: "italic",
-    paddingBottom: verticalSpace.lg,
-    paddingInlineStart: horizontalSpace.xl,
     paddingInlineEnd: horizontalSpace.xl,
+    paddingInlineStart: horizontalSpace.xl,
+    paddingBottom: verticalSpace.lg,
     paddingTop: verticalSpace.lg,
   },
   check: {

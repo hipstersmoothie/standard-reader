@@ -195,19 +195,19 @@ const styles = stylex.create({
     display: "flex",
     flexShrink: 0,
     justifyContent: "space-between",
+    paddingInlineEnd: {
+      default: spacing["4"],
+      "@media (min-width: 40rem)": spacing["5"],
+    },
+    paddingInlineStart: {
+      default: spacing["4"],
+      "@media (min-width: 40rem)": spacing["5"],
+    },
     rowGap: gap.lg,
     borderBottomColor: uiColor.border1,
     borderBottomStyle: "solid",
     borderBottomWidth: 1,
     paddingBottom: spacing["3"],
-    paddingInlineStart: {
-      default: spacing["4"],
-      "@media (min-width: 40rem)": spacing["5"],
-    },
-    paddingInlineEnd: {
-      default: spacing["4"],
-      "@media (min-width: 40rem)": spacing["5"],
-    },
     paddingTop: spacing["3"],
   },
   progressTrack: {
@@ -266,45 +266,45 @@ const styles = stylex.create({
     fontFamily: fontFamily.sans,
     fontSize: fontSize.sm,
     fontWeight: fontWeight.medium,
+    paddingInlineEnd: spacing["0"],
+    paddingInlineStart: spacing["0"],
     rowGap: gap.md,
     textUnderlineOffset: "2px",
     minWidth: 0,
     paddingBottom: spacing["0"],
-    paddingInlineStart: spacing["0"],
-    paddingInlineEnd: spacing["0"],
     paddingTop: spacing["0"],
   },
   pubBylineName: {
-    // Single-line NAME/TITLE in a UI row: isolate for correct character
-    // ordering, but let alignment follow the surrounding UI (right under
-    // RTL). `dir="auto"` here would left-align it and break the column.
-    unicodeBidi: "isolate",
     overflow: "hidden",
     color: uiColor.text2,
     flexShrink: 1,
     textOverflow: "ellipsis",
+    // Single-line NAME/TITLE in a UI row: isolate for correct character
+    // ordering, but let alignment follow the surrounding UI (right under
+    // RTL). `dir="auto"` here would left-align it and break the column.
+    unicodeBidi: "isolate",
     whiteSpace: "nowrap",
     minWidth: 0,
   },
   progress: {
     backgroundColor: primaryColor.solid1,
+    insetInlineStart: 0,
     position: "absolute",
     transitionDuration: animationDuration.fast,
     transitionProperty: "width",
     transitionTimingFunction: "linear",
     height: "100%",
-    insetInlineStart: 0,
     top: 0,
   },
   article: {
     boxSizing: "border-box",
-    marginInlineStart: "auto",
     marginInlineEnd: "auto",
+    marginInlineStart: "auto",
+    paddingInlineEnd: spacing["6"],
+    paddingInlineStart: spacing["6"],
     maxWidth: "100%",
     minWidth: 0,
     paddingBottom: `var(--pub-page-content-bottom, ${spacing["24"]})`,
-    paddingInlineStart: spacing["6"],
-    paddingInlineEnd: spacing["6"],
     // The page card already floats the content off the chrome above it, so the
     // article needs less of its own lead-in there; unchanged without a canvas.
     paddingTop: `var(--pub-page-content-top, ${spacing["14"]})`,
@@ -346,12 +346,12 @@ const styles = stylex.create({
     fontSize: fontSize.xl,
     fontStyle: "italic",
     lineHeight: lineHeight.sm,
+    marginInlineEnd: "auto",
+    marginInlineStart: "auto",
     textAlign: "center",
     // eslint-disable-next-line @stylexjs/valid-styles
     textWrap: "balance",
     marginBottom: spacing["7"],
-    marginInlineStart: "auto",
-    marginInlineEnd: "auto",
     marginTop: spacing["0"],
     maxWidth: "48ch",
   },
@@ -389,22 +389,22 @@ const styles = stylex.create({
     minWidth: 0,
   },
   bylineName: {
-    // On mobile the name + @handle rarely fit on one line, so stack them as a
-    // tight two-line byline instead of letting the handle wrap with the wide
-    // inline gap. From `sm` up they sit inline again.
-    columnGap: gap.lg,
-    rowGap: spacing["1"],
     alignItems: {
       default: "flex-start",
       "@media (min-width: 40rem)": "center",
     },
     color: uiColor.text2,
+    // On mobile the name + @handle rarely fit on one line, so stack them as a
+    // tight two-line byline instead of letting the handle wrap with the wide
+    // inline gap. From `sm` up they sit inline again.
+    columnGap: gap.lg,
     display: "flex",
     flexDirection: { default: "column", "@media (min-width: 40rem)": "row" },
     flexWrap: "wrap",
     fontFamily: fontFamily.serif,
     fontSize: fontSize.base,
     fontWeight: fontWeight.semibold,
+    rowGap: spacing["1"],
     maxWidth: "100%",
     minWidth: 0,
   },
@@ -434,15 +434,15 @@ const styles = stylex.create({
     unicodeBidi: "isolate",
   },
   hero: {
+    padding: spacing["0"],
     borderRadius: radius.lg,
+    borderWidth: 0,
     overflow: "hidden",
     aspectRatio: "16 / 9",
-    marginBottom: spacing["8"],
-    padding: spacing["0"],
-    borderWidth: 0,
     backgroundColor: "transparent",
     cursor: "zoom-in",
     display: "block",
+    marginBottom: spacing["8"],
     width: "100%",
   },
   heroImg: {
@@ -488,8 +488,8 @@ const styles = stylex.create({
     fontSize: fontSize.lg,
     fontStyle: "italic",
     lineHeight: lineHeight.base,
-    marginInlineStart: "auto",
     marginInlineEnd: "auto",
+    marginInlineStart: "auto",
     maxWidth: "46ch",
   },
   emptyNote: {
@@ -543,12 +543,12 @@ const styles = stylex.create({
     alignItems: "center",
     backgroundColor: uiColor.bg,
     display: "inline-flex",
+    paddingInlineEnd: horizontalSpace["2xl"],
+    paddingInlineStart: horizontalSpace["2xl"],
     transitionDuration: animationDuration.fast,
     transitionProperty: "background-color, border-color, color",
     transitionTimingFunction: "ease-in-out",
     paddingBottom: verticalSpace.md,
-    paddingInlineStart: horizontalSpace["2xl"],
-    paddingInlineEnd: horizontalSpace["2xl"],
     paddingTop: verticalSpace.md,
   },
   likeButtonActive: {
@@ -556,10 +556,10 @@ const styles = stylex.create({
     backgroundColor: criticalColor.bgSubtle,
   },
   likeButtonHeart: {
-    color: criticalColor.solid1,
-    flexShrink: 0,
-    display: "flex",
     alignItems: "center",
+    color: criticalColor.solid1,
+    display: "flex",
+    flexShrink: 0,
     justifyContent: "center",
   },
   likeButtonLabel: {

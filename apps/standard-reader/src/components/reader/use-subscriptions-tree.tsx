@@ -55,23 +55,23 @@ const styles = stylex.create({
    */
   treeDropIndicator: {
     borderRadius: radius.full,
-    height: 2,
-    marginBottom: -1,
-    marginTop: -1,
     outline: "none",
     backgroundColor: {
       default: "transparent",
       ":is([data-drop-target])": primaryColor.component3,
     },
+    height: 2,
+    marginBottom: -1,
+    marginTop: -1,
   },
   /** Floating pill shown under the cursor while dragging a row. */
   treeDragPreview: {
-    alignItems: "center",
-    backgroundColor: uiColor.bg,
     borderColor: uiColor.border2,
     borderRadius: radius.md,
     borderStyle: "solid",
     borderWidth: 1,
+    alignItems: "center",
+    backgroundColor: uiColor.bg,
     boxShadow: "0 8px 24px rgba(0, 0, 0, 0.18)",
     color: uiColor.text2,
     columnGap: horizontalSpace.md,
@@ -79,10 +79,10 @@ const styles = stylex.create({
     fontFamily: fontFamily.serif,
     fontSize: fontSize.base,
     fontWeight: fontWeight.semibold,
+    paddingInlineEnd: horizontalSpace.lg,
+    paddingInlineStart: horizontalSpace.lg,
     maxWidth: "16rem",
     paddingBottom: verticalSpace.sm,
-    paddingInlineStart: horizontalSpace.lg,
-    paddingInlineEnd: horizontalSpace.lg,
     paddingTop: verticalSpace.sm,
   },
   treeDragPreviewName: {
@@ -97,8 +97,8 @@ const styles = stylex.create({
     flexShrink: 0,
     fontFamily: fontFamily.mono,
     fontSize: fontSize.xs,
-    paddingInlineStart: horizontalSpace.md,
     paddingInlineEnd: horizontalSpace.md,
+    paddingInlineStart: horizontalSpace.md,
   },
   treeDragPreviewGrip: {
     color: uiColor.text1,

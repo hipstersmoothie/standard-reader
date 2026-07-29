@@ -19,13 +19,13 @@ const ARROW_SECONDS = 5;
 const styles = stylex.create({
   trackHit: {
     boxSizing: "border-box",
+    cursor: { default: "pointer", ":is([aria-disabled=true])": "default" },
     // Media scrubbers do not mirror: time flows left-to-right even in an RTL
     // UI. Pinning the track to LTR keeps three things consistent that would
     // otherwise disagree under RTL — the fill's `insetInlineStart` anchor, the
     // physical `clientX - rect.left` seek math below, and ArrowLeft/ArrowRight
     // meaning back/forward. No effect in LTR.
     direction: "ltr",
-    cursor: { default: "pointer", ":is([aria-disabled=true])": "default" },
     position: "relative",
     touchAction: "none",
     paddingBottom: verticalSpace.xs,
@@ -44,12 +44,12 @@ const styles = stylex.create({
   trackFill: {
     borderRadius: radius.full,
     backgroundColor: primaryColor.solid1,
+    insetInlineStart: 0,
     position: "absolute",
     transitionDuration: animationDuration.default,
     transitionProperty: "width",
     transitionTimingFunction: "linear",
     height: "100%",
-    insetInlineStart: 0,
     top: 0,
   },
 });

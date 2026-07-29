@@ -51,11 +51,11 @@ const styles = stylex.create({
     justifyContent: "center",
   },
   clusterItem: {
-    marginInlineStart: "-0.6rem",
     borderColor: primaryColor.bgSubtle,
     borderRadius: "50%",
     borderStyle: "solid",
     borderWidth: 2,
+    marginInlineStart: "-0.6rem",
   },
 });
 

@@ -29,9 +29,6 @@ import { useFormatters } from "#/lib/use-formatters";
 // it as metadata. The whole card links to the note on pckt.
 const styles = stylex.create({
   card: {
-    position: "relative",
-    display: "flex",
-    flexDirection: "column",
     borderColor: {
       default: uiColor.border1,
       ":hover": uiColor.border2,
@@ -39,26 +36,29 @@ const styles = stylex.create({
     borderRadius: radius.md,
     borderStyle: "solid",
     borderWidth: 1,
-    paddingTop: spacing["4"],
-    paddingInline: spacing["4"],
-    paddingBottom: spacing["3"],
     marginBlock: spacing["6"],
-    transitionProperty: "border-color",
+    paddingInline: spacing["4"],
+    display: "flex",
+    flexDirection: "column",
+    position: "relative",
     transitionDuration: animationDuration.default,
+    transitionProperty: "border-color",
+    paddingBottom: spacing["3"],
+    paddingTop: spacing["4"],
   },
   // Stretched link: a transparent overlay that makes the whole card open the
   // note on pckt, while the quoted document (layered above it) keeps its own
   // in-app link — so neither anchor nests inside the other.
   stretchedLink: {
-    position: "absolute",
     inset: 0,
-    zIndex: 0,
     borderRadius: radius.md,
+    position: "absolute",
+    zIndex: 0,
   },
   header: {
-    display: "flex",
-    alignItems: "center",
     gap: gap.lg,
+    alignItems: "center",
+    display: "flex",
     minWidth: 0,
   },
   avatarRound: {
@@ -67,15 +67,15 @@ const styles = stylex.create({
   meta: {
     display: "flex",
     flexDirection: "column",
-    minWidth: 0,
     flexGrow: 1,
-    rowGap: spacing["2"],
     lineHeight: lineHeight.xs,
+    rowGap: spacing["2"],
+    minWidth: 0,
   },
   name: {
-    fontWeight: fontWeight.semibold,
-    fontSize: fontSize.base,
     color: uiColor.text2,
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.semibold,
   },
   handle: {
     color: uiColor.text1,
@@ -86,9 +86,9 @@ const styles = stylex.create({
     fontFamily: fontFamily.serif,
     fontSize: fontSize.lg,
     lineHeight: lineHeight.sm,
-    marginTop: spacing["3"],
     whiteSpace: "pre-wrap",
     wordBreak: "break-word",
+    marginTop: spacing["3"],
   },
   time: {
     color: uiColor.text1,
@@ -99,29 +99,29 @@ const styles = stylex.create({
   // fill (not a nested bordered card) groups it; it isn't a separate link — the
   // whole note card opens on pckt, where the quote is live.
   quote: {
-    position: "relative",
-    zIndex: 1,
-    display: "flex",
-    alignItems: "center",
-    gap: gap.lg,
-    marginTop: spacing["4"],
     padding: spacing["2"],
     borderRadius: radius.sm,
+    gap: gap.lg,
+    textDecoration: "none",
+    alignItems: "center",
     backgroundColor: {
       default: uiColor.component1,
       ":hover": uiColor.component2,
     },
-    textDecoration: "none",
     color: "inherit",
-    transitionProperty: "background-color",
+    display: "flex",
+    position: "relative",
     transitionDuration: animationDuration.default,
+    transitionProperty: "background-color",
+    zIndex: 1,
+    marginTop: spacing["4"],
   },
   quoteThumb: {
-    width: spacing["12"],
-    height: spacing["12"],
     borderRadius: radius.xs,
-    objectFit: "cover",
     flexShrink: 0,
+    objectFit: "cover",
+    height: spacing["12"],
+    width: spacing["12"],
   },
   quoteCol: {
     display: "flex",
@@ -130,25 +130,25 @@ const styles = stylex.create({
     minWidth: 0,
   },
   quoteTitle: {
+    overflow: "hidden",
+    WebkitBoxOrient: "vertical",
+    WebkitLineClamp: 2,
+    color: uiColor.text2,
+    display: "-webkit-box",
     fontFamily: fontFamily.serif,
     fontSize: fontSize.base,
     fontWeight: fontWeight.semibold,
-    color: uiColor.text2,
     lineHeight: lineHeight.sm,
-    display: "-webkit-box",
-    WebkitLineClamp: 2,
-    WebkitBoxOrient: "vertical",
-    overflow: "hidden",
     // -webkit-box clamps to a fixed line count; a hair of bottom padding keeps
     // serif descenders on the last line from being trimmed by overflow:hidden.
     paddingBottom: "0.1em",
   },
   quoteByline: {
-    fontSize: fontSize.sm,
-    color: uiColor.text1,
-    whiteSpace: "nowrap",
     overflow: "hidden",
+    color: uiColor.text1,
+    fontSize: fontSize.sm,
     textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
   },
 });
 

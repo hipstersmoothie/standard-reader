@@ -219,19 +219,19 @@ const styles = stylex.create({
     boxSizing: "border-box",
     display: "flex",
     flexDirection: "column",
-    rowGap: spacing["4"],
-    marginInlineStart: "auto",
     marginInlineEnd: "auto",
+    marginInlineStart: "auto",
+    paddingInlineEnd: {
+      [HERO_DESKTOP]: spacing["10"],
+      default: spacing["5"],
+    },
+    paddingInlineStart: {
+      [HERO_DESKTOP]: spacing["10"],
+      default: spacing["5"],
+    },
+    rowGap: spacing["4"],
     maxWidth: "82.5rem",
     paddingBottom: spacing["6"],
-    paddingInlineStart: {
-      default: spacing["5"],
-      [HERO_DESKTOP]: spacing["10"],
-    },
-    paddingInlineEnd: {
-      default: spacing["5"],
-      [HERO_DESKTOP]: spacing["10"],
-    },
     paddingTop: spacing["6"],
     width: "100%",
   },
@@ -257,16 +257,16 @@ const styles = stylex.create({
     paddingTop: spacing["0.5"],
   },
   heroName: {
-    // Isolate only: this is a single-line NAME, so it must keep the
-    // surrounding UI alignment while still ordering its own characters
-    // correctly. `dir="auto"` here would left-align it inside an RTL page.
-    unicodeBidi: "isolate",
     color: uiColor.text2,
     fontFamily: fontFamily.serif,
     fontSize: { default: "1.85rem", "@media (min-width: 48rem)": "2rem" },
     fontWeight: fontWeight.semibold,
     letterSpacing: tracking.tight,
     lineHeight: lineHeight.xs,
+    // Isolate only: this is a single-line NAME, so it must keep the
+    // surrounding UI alignment while still ordering its own characters
+    // correctly. `dir="auto"` here would left-align it inside an RTL page.
+    unicodeBidi: "isolate",
     marginBottom: spacing["0"],
     marginTop: spacing["2"],
   },

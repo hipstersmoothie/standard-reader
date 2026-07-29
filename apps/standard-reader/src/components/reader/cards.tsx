@@ -112,9 +112,9 @@ const styles = stylex.create({
     color: "inherit",
     cursor: "pointer",
     display: "block",
-    position: "relative",
     // See `cardLink` — long unbreakable names/handles must wrap, not overflow.
     overflowWrap: "anywhere",
+    position: "relative",
   },
   cardOverlay: {
     inset: 0,
@@ -138,10 +138,10 @@ const styles = stylex.create({
     fontWeight: fontWeight.medium,
   },
   bylineName: {
+    color: uiColor.text2,
     // Single-line NAME/TITLE in a UI row: isolate for ordering, but let
     // alignment follow the surrounding UI (right under RTL).
     unicodeBidi: "isolate",
-    color: uiColor.text2,
   },
   bylineEyebrow: {
     textDecoration: "none",
@@ -156,8 +156,8 @@ const styles = stylex.create({
     color: uiColor.text1,
   },
   pubDirHandle: {
-    minWidth: 0,
     overflowWrap: "anywhere",
+    minWidth: 0,
   },
   bylineWhen: {
     color: uiColor.text1,
@@ -179,8 +179,8 @@ const styles = stylex.create({
     flexShrink: 0,
   },
   recommendedByName: {
-    color: uiColor.text2,
     textDecoration: "none",
+    color: uiColor.text2,
   },
   feature: {
     alignItems: "center",
@@ -240,11 +240,11 @@ const styles = stylex.create({
     gap: gap["2xl"],
     display: "flex",
     flexDirection: "column",
+    // See `cardLink` — long unbreakable names/handles must wrap, not overflow.
+    overflowWrap: "anywhere",
     borderBottomColor: uiColor.border1,
     borderBottomStyle: "solid",
     borderBottomWidth: 1,
-    // See `cardLink` — long unbreakable names/handles must wrap, not overflow.
-    overflowWrap: "anywhere",
     paddingBottom: spacing["6"],
     paddingTop: spacing["6"],
   },
@@ -364,14 +364,14 @@ const styles = stylex.create({
     width: "1.4rem",
   },
   compactTitle: {
-    // Single-line NAME/TITLE in a UI row: isolate for ordering, but let
-    // alignment follow the surrounding UI (right under RTL).
-    unicodeBidi: "isolate",
     color: uiColor.text2,
     fontFamily: fontFamily.serif,
     fontSize: fontSize.lg,
     fontWeight: fontWeight.medium,
     lineHeight: lineHeight.sm,
+    // Single-line NAME/TITLE in a UI row: isolate for ordering, but let
+    // alignment follow the surrounding UI (right under RTL).
+    unicodeBidi: "isolate",
   },
   miniRowLink: {
     borderRadius: radius.sm,
@@ -380,10 +380,10 @@ const styles = stylex.create({
       ":hover": uiColor.component1,
     },
     display: "block",
-    marginInlineStart: `calc(-1 * ${spacing["4"]})`,
     marginInlineEnd: `calc(-1 * ${spacing["4"]})`,
-    paddingInlineStart: spacing["4"],
+    marginInlineStart: `calc(-1 * ${spacing["4"]})`,
     paddingInlineEnd: spacing["4"],
+    paddingInlineStart: spacing["4"],
   },
   miniRowBody: {
     alignItems: "center",
@@ -402,9 +402,6 @@ const styles = stylex.create({
     flexShrink: 0,
   },
   miniName: {
-    // Single-line NAME/TITLE in a UI row: isolate for ordering, but let
-    // alignment follow the surrounding UI (right under RTL).
-    unicodeBidi: "isolate",
     overflow: "hidden",
     color: uiColor.text2,
     fontFamily: fontFamily.serif,
@@ -412,6 +409,9 @@ const styles = stylex.create({
     fontWeight: fontWeight.semibold,
     lineHeight: lineHeight.sm,
     textOverflow: "ellipsis",
+    // Single-line NAME/TITLE in a UI row: isolate for ordering, but let
+    // alignment follow the surrounding UI (right under RTL).
+    unicodeBidi: "isolate",
     whiteSpace: "nowrap",
   },
   grow: {
@@ -424,14 +424,14 @@ const styles = stylex.create({
     width: "100%",
   },
   titleInRow: {
-    // Single-line NAME/TITLE in a UI row: isolate for ordering, but let
-    // alignment follow the surrounding UI (right under RTL).
-    unicodeBidi: "isolate",
     flexBasis: "0%",
     flexGrow: "1",
     flexShrink: "1",
     // eslint-disable-next-line @stylexjs/valid-styles
     textWrap: "balance",
+    // Single-line NAME/TITLE in a UI row: isolate for ordering, but let
+    // alignment follow the surrounding UI (right under RTL).
+    unicodeBidi: "isolate",
     minWidth: 0,
   },
   titleRowDate: {
@@ -476,6 +476,8 @@ const styles = stylex.create({
     boxSizing: "border-box",
     display: "flex",
     flexDirection: "column",
+    paddingInlineEnd: spacing["5"],
+    paddingInlineStart: spacing["5"],
     scrollSnapAlign: "start",
     transform: {
       default: null,
@@ -488,8 +490,6 @@ const styles = stylex.create({
     },
     height: "100%",
     paddingBottom: spacing["5"],
-    paddingInlineStart: spacing["5"],
-    paddingInlineEnd: spacing["5"],
     paddingTop: spacing["5"],
   },
   pubCardRail: {
@@ -504,15 +504,15 @@ const styles = stylex.create({
     width: "100%",
   },
   pubCardName: {
-    // Single-line NAME/TITLE in a UI row: isolate for ordering, but let
-    // alignment follow the surrounding UI (right under RTL).
-    unicodeBidi: "isolate",
     color: uiColor.text2,
     fontFamily: fontFamily.serif,
     fontSize: fontSize.xl,
     fontWeight: fontWeight.semibold,
     letterSpacing: tracking.tight,
     lineHeight: lineHeight.sm,
+    // Single-line NAME/TITLE in a UI row: isolate for ordering, but let
+    // alignment follow the surrounding UI (right under RTL).
+    unicodeBidi: "isolate",
     marginTop: spacing["0"],
   },
   pubCardDesc: {
@@ -526,14 +526,14 @@ const styles = stylex.create({
     marginTop: spacing["2.5"],
   },
   pubCardDescClamp: {
-    display: "-webkit-box",
-    flexBasis: "auto",
-    flexGrow: 0,
     overflow: "hidden",
     // eslint-disable-next-line @stylexjs/valid-styles
     WebkitBoxOrient: "vertical",
     // eslint-disable-next-line @stylexjs/valid-styles
     WebkitLineClamp: 3,
+    display: "-webkit-box",
+    flexBasis: "auto",
+    flexGrow: 0,
   },
   pubCardGrow: {
     flexBasis: "0%",
@@ -599,12 +599,14 @@ const styles = stylex.create({
     opacity: 0.5,
   },
   pubHiddenBadge: {
-    alignItems: "center",
-    backgroundColor: uiColor.bgSubtle,
     borderColor: uiColor.border2,
+    borderRadius: radius.full,
     borderStyle: "solid",
     borderWidth: 1,
-    borderRadius: radius.full,
+    paddingBlock: spacing["0.5"],
+    paddingInline: spacing["2"],
+    alignItems: "center",
+    backgroundColor: uiColor.bgSubtle,
     color: uiColor.text1,
     columnGap: spacing["1"],
     display: "inline-flex",
@@ -613,8 +615,6 @@ const styles = stylex.create({
     fontSize: fontSize.xs,
     fontWeight: fontWeight.medium,
     lineHeight: lineHeight.sm,
-    paddingBlock: spacing["0.5"],
-    paddingInline: spacing["2"],
     whiteSpace: "nowrap",
   },
   pubCardSkeleton: {
@@ -722,9 +722,6 @@ const styles = stylex.create({
     },
   },
   pubDirName: {
-    // Single-line NAME/TITLE in a UI row: isolate for ordering, but let
-    // alignment follow the surrounding UI (right under RTL).
-    unicodeBidi: "isolate",
     color: uiColor.text2,
     fontFamily: fontFamily.serif,
     // A step down on phones: at `xl` the name alone eats the row, pushing the
@@ -737,6 +734,9 @@ const styles = stylex.create({
     letterSpacing: tracking.tight,
     lineHeight: lineHeight.sm,
     overflowWrap: "anywhere",
+    // Single-line NAME/TITLE in a UI row: isolate for ordering, but let
+    // alignment follow the surrounding UI (right under RTL).
+    unicodeBidi: "isolate",
     maxWidth: "100%",
     minWidth: 0,
   },
@@ -800,9 +800,6 @@ const styles = stylex.create({
     minWidth: 0,
   },
   modalPubName: {
-    // Single-line NAME/TITLE in a UI row: isolate for ordering, but let
-    // alignment follow the surrounding UI (right under RTL).
-    unicodeBidi: "isolate",
     overflow: "hidden",
     color: uiColor.text2,
     fontFamily: fontFamily.serif,
@@ -811,6 +808,9 @@ const styles = stylex.create({
     letterSpacing: tracking.tight,
     lineHeight: lineHeight.sm,
     textOverflow: "ellipsis",
+    // Single-line NAME/TITLE in a UI row: isolate for ordering, but let
+    // alignment follow the surrounding UI (right under RTL).
+    unicodeBidi: "isolate",
     whiteSpace: "nowrap",
     minWidth: 0,
   },

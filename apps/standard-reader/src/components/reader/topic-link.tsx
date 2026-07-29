@@ -20,26 +20,26 @@ function stopNestedNavigation(event: React.SyntheticEvent<HTMLElement>) {
 
 const styles = stylex.create({
   topic: {
-    // Single-line NAME/TITLE in a UI row: isolate for correct character
-    // ordering, but let alignment follow the surrounding UI (right under
-    // RTL). `dir="auto"` here would left-align it and break the column.
-    unicodeBidi: "isolate",
     color: primaryColor.text2,
     fontFamily: fontFamily.sans,
     fontSize: fontSize.xs,
     fontWeight: fontWeight.semibold,
     letterSpacing: tracking.wide,
     textTransform: "uppercase",
-  },
-  link: {
     // Single-line NAME/TITLE in a UI row: isolate for correct character
     // ordering, but let alignment follow the surrounding UI (right under
     // RTL). `dir="auto"` here would left-align it and break the column.
     unicodeBidi: "isolate",
+  },
+  link: {
     textDecoration: { default: "none", ":hover": "underline" },
     cursor: "pointer",
     textDecorationColor: "currentColor",
     textUnderlineOffset: "2px",
+    // Single-line NAME/TITLE in a UI row: isolate for correct character
+    // ordering, but let alignment follow the surrounding UI (right under
+    // RTL). `dir="auto"` here would left-align it and break the column.
+    unicodeBidi: "isolate",
   },
   nestedInteractive: {
     pointerEvents: "auto",

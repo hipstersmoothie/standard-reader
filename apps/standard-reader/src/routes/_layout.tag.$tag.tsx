@@ -201,19 +201,19 @@ const styles = stylex.create({
     columnGap: spacing["5"],
     display: "flex",
     flexWrap: "wrap",
-    rowGap: spacing["4"],
-    marginInlineStart: "auto",
     marginInlineEnd: "auto",
-    maxWidth: "82.5rem",
-    paddingBottom: spacing["0"],
-    paddingInlineStart: {
-      default: spacing["5"],
-      "@media (min-width: 40rem)": spacing["10"],
-    },
+    marginInlineStart: "auto",
     paddingInlineEnd: {
       default: spacing["5"],
       "@media (min-width: 40rem)": spacing["10"],
     },
+    paddingInlineStart: {
+      default: spacing["5"],
+      "@media (min-width: 40rem)": spacing["10"],
+    },
+    rowGap: spacing["4"],
+    maxWidth: "82.5rem",
+    paddingBottom: spacing["0"],
     paddingTop: spacing["6"],
     width: "100%",
   },
@@ -234,16 +234,16 @@ const styles = stylex.create({
     paddingTop: spacing["1"],
   },
   heroName: {
-    // Isolate only: this is a single-line NAME, so it must keep the
-    // surrounding UI alignment while still ordering its own characters
-    // correctly. `dir="auto"` here would left-align it inside an RTL page.
-    unicodeBidi: "isolate",
     color: uiColor.text2,
     fontFamily: fontFamily.serif,
     fontSize: { default: "1.85rem", "@media (min-width: 48rem)": "2rem" },
     fontWeight: fontWeight.semibold,
     letterSpacing: tracking.tight,
     lineHeight: lineHeight.xs,
+    // Isolate only: this is a single-line NAME, so it must keep the
+    // surrounding UI alignment while still ordering its own characters
+    // correctly. `dir="auto"` here would left-align it inside an RTL page.
+    unicodeBidi: "isolate",
     marginBottom: spacing["0"],
     marginTop: spacing["2"],
   },
@@ -288,28 +288,28 @@ const styles = stylex.create({
     columnGap: spacing["4"],
     display: "flex",
     flexWrap: "wrap",
-    rowGap: spacing["2"],
-    marginInlineStart: "auto",
     marginInlineEnd: "auto",
-    maxWidth: "82.5rem",
-    paddingInlineStart: {
-      default: spacing["5"],
-      "@media (min-width: 40rem)": spacing["10"],
-    },
+    marginInlineStart: "auto",
     paddingInlineEnd: {
       default: spacing["5"],
       "@media (min-width: 40rem)": spacing["10"],
     },
+    paddingInlineStart: {
+      default: spacing["5"],
+      "@media (min-width: 40rem)": spacing["10"],
+    },
+    rowGap: spacing["2"],
+    maxWidth: "82.5rem",
     paddingTop: spacing["4"],
     width: "100%",
   },
   tabList: {
-    borderBottomStyle: "none",
-    borderBottomWidth: 0,
     // The design-system TabList scrolls its own overflow, so it would happily
     // shrink to nothing beside the sort control. Pinning it keeps the tabs
     // intact and lets the control wrap to its own line on narrow screens.
     flexShrink: 0,
+    borderBottomStyle: "none",
+    borderBottomWidth: 0,
   },
   // Shared slot geometry for the articles sort control. Two controls occupy it
   // — a compact icon menu and the full select — swapped by media query rather
@@ -342,8 +342,8 @@ const styles = stylex.create({
     width: "100%",
   },
   tabPanel: {
-    paddingInlineStart: spacing["0"],
     paddingInlineEnd: spacing["0"],
+    paddingInlineStart: spacing["0"],
     paddingTop: spacing["6"],
   },
   directoryGrid: {

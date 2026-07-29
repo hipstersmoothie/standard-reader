@@ -163,14 +163,14 @@ const styles = stylex.create({
     marginBottom: spacing["12"],
   },
   friendsPrompt: {
-    alignItems: {
-      default: "stretch",
-      "@media (min-width: 40rem)": "center",
-    },
     borderColor: uiColor.border1,
     borderRadius: radius.md,
     borderStyle: "solid",
     borderWidth: 1,
+    alignItems: {
+      default: "stretch",
+      "@media (min-width: 40rem)": "center",
+    },
     columnGap: spacing["5"],
     display: "flex",
     flexDirection: {
@@ -178,12 +178,12 @@ const styles = stylex.create({
       "@media (min-width: 40rem)": "row",
     },
     justifyContent: "space-between",
-    marginBottom: spacing["12"],
-    paddingBottom: spacing["4"],
     paddingInlineEnd: spacing["5"],
     paddingInlineStart: spacing["5"],
-    paddingTop: spacing["4"],
     rowGap: spacing["4"],
+    marginBottom: spacing["12"],
+    paddingBottom: spacing["4"],
+    paddingTop: spacing["4"],
   },
   friendsPromptMain: {
     alignItems: "center",

@@ -74,9 +74,9 @@ export const Route = createFileRoute("/_layout/search")({
 
 const styles = stylex.create({
   header: {
+    gap: gap.md,
     display: "flex",
     flexDirection: "column",
-    gap: gap.md,
     paddingTop: {
       default: spacing["6"],
       "@media (min-width: 40rem)": spacing["10"],
@@ -111,10 +111,10 @@ const styles = stylex.create({
       "@media (min-width: 48rem)": fontSize["4xl"],
     },
     outlineStyle: "none",
+    paddingInlineEnd: spacing["0"],
+    paddingInlineStart: spacing["0"],
     minWidth: 0,
     paddingBottom: spacing["0"],
-    paddingInlineStart: spacing["0"],
-    paddingInlineEnd: spacing["0"],
     paddingTop: spacing["0"],
   },
   searchInputPlaceholder: {

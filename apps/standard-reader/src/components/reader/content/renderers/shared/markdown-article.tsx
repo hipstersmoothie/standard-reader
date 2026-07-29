@@ -62,8 +62,9 @@ const markdownStyles = stylex.create({
     marginTop: spacing["0"],
   },
   imageButton: {
-    backgroundColor: "transparent",
+    padding: spacing["0"],
     borderWidth: 0,
+    backgroundColor: "transparent",
     cursor: "zoom-in",
     display: "block",
     // Spacing below a standalone image is owned by the enclosing <figure>
@@ -72,7 +73,6 @@ const markdownStyles = stylex.create({
     marginBottom: spacing["0"],
     marginTop: spacing["0"],
     maxWidth: "100%",
-    padding: spacing["0"],
   },
   imageButtonImage: {
     borderRadius: radius.sm,
@@ -84,8 +84,8 @@ const markdownStyles = stylex.create({
   // (used by structured image blocks) is untouched: center the caption under
   // the image and open up a touch more breathing room above it.
   imageCaption: {
-    marginTop: gap.xl,
     textAlign: "center",
+    marginTop: gap.xl,
   },
 });
 

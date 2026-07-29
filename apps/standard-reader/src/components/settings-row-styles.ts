@@ -36,10 +36,10 @@ export const settingRowStyles = stylex.create({
       default: "row",
     },
     justifyContent: "space-between",
+    paddingInlineEnd: horizontalSpace["3xl"],
+    paddingInlineStart: horizontalSpace["3xl"],
     rowGap: gap["lg"],
     paddingBottom: verticalSpace["3xl"],
-    paddingInlineStart: horizontalSpace["3xl"],
-    paddingInlineEnd: horizontalSpace["3xl"],
     paddingTop: verticalSpace["3xl"],
   },
   label: {

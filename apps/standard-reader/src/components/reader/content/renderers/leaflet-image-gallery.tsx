@@ -38,9 +38,9 @@ const galleryStyles = stylex.create({
     width: "100%",
   },
   itemFigure: {
-    marginBottom: spacing["0"],
-    marginInlineStart: spacing["0"],
     marginInlineEnd: spacing["0"],
+    marginInlineStart: spacing["0"],
+    marginBottom: spacing["0"],
     marginTop: spacing["0"],
     width: "100%",
   },

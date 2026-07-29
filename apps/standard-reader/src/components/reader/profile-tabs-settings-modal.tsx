@@ -19,9 +19,9 @@ import { PROFILE_TAB_LABELS } from "#/lib/profile-tabs";
 
 const styles = stylex.create({
   row: {
+    gap: spacing["4"],
     alignItems: "center",
     display: "flex",
-    gap: spacing["4"],
     justifyContent: "space-between",
     paddingBottom: spacing["3"],
     paddingTop: spacing["3"],
