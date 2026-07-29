@@ -5,10 +5,18 @@ import * as stylex from "@stylexjs/stylex";
 import { Link } from "@tanstack/react-router";
 
 import { docsStyles } from "../../docs/docs-page.stylex";
-import { GuideFigure } from "../guide-figure";
+import { GuideFigure, GuideAssetFigure } from "../guide-figure";
 import { guideStyles } from "../guide-page.stylex";
 import { GuideCallout, UiLabel } from "../guide-primitives";
 import { GuideShell } from "../guide-shell";
+
+/**
+ * The share card for a real passage, captured from `/api/og/quote`. Refresh it
+ * with any share link from an article's selection toolbar:
+ *   curl -o public/guide/share-card.png \
+ *     "$PUBLIC_URL/api/og/quote?did=<did>&rkey=<rkey>&q=<shareId>"
+ */
+const SAMPLE_QUOTE_CARD_SRC = "/guide/share-card.png";
 
 export function ReadingGuidePage() {
   const { t } = useLingui();
@@ -242,13 +250,24 @@ export function ReadingGuidePage() {
           an annotation.
         </Trans>
       </p>
-      <GuideCallout title={<Trans>Nothing is published</Trans>}>
+      <p {...stylex.props(docsStyles.prose)}>
         <Trans>
-          Highlighting text and making a passage link does not post anything or
-          mark up the article for other readers. It creates a link, and the link
-          is only as public as the places you paste it.
+          Paste that link anywhere that unfurls a preview — Bluesky, a chat, a
+          document — and the passage itself is the preview:
         </Trans>
-      </GuideCallout>
+      </p>
+      <GuideAssetFigure
+        src={SAMPLE_QUOTE_CARD_SRC}
+        width={1200}
+        height={630}
+        alt={t`A share preview card: a large quotation mark above the shared passage set in italic serif, with the publication's icon, name, handle, and description along the bottom.`}
+        caption={
+          <Trans>
+            The card is generated from the passage you picked, so what people
+            see first is the sentence you wanted them to read.
+          </Trans>
+        }
+      />
 
       <h2 {...stylex.props(docsStyles.h2)} id="conversation">
         <Trans>Comments and related reading</Trans>

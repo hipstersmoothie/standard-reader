@@ -11,6 +11,59 @@ import { readDomResolvedScheme, subscribeToResolvedScheme } from "#/lib/theme";
 import { guideStyles } from "./guide-page.stylex";
 
 /**
+ * A figure for an image that isn't a page capture — a committed asset rather
+ * than something `pnpm guide:shots` produces.
+ *
+ * Deliberately not pointed at the live `/api/og/*` endpoints: those render
+ * through satori + resvg per request, which is far too slow to hang a docs
+ * page on, and they 404 once the record behind them goes away. Degrades to its
+ * caption like {@link GuideFigure}.
+ */
+export function GuideAssetFigure({
+  src,
+  alt,
+  width,
+  height,
+  caption,
+}: {
+  src: string;
+  alt: string;
+  width: number;
+  height: number;
+  caption?: ReactNode;
+}) {
+  const [failed, setFailed] = useState(false);
+
+  if (failed) {
+    return caption == null ? null : (
+      <p {...stylex.props(guideStyles.figureCaption)}>{caption}</p>
+    );
+  }
+
+  return (
+    <figure {...stylex.props(guideStyles.figure)}>
+      <span {...stylex.props(guideStyles.figureFrame)}>
+        <img
+          src={src}
+          alt={alt}
+          width={width}
+          height={height}
+          loading="lazy"
+          decoding="async"
+          onError={() => setFailed(true)}
+          {...stylex.props(guideStyles.figureImage)}
+        />
+      </span>
+      {caption == null ? null : (
+        <figcaption {...stylex.props(guideStyles.figureCaption)}>
+          {caption}
+        </figcaption>
+      )}
+    </figure>
+  );
+}
+
+/**
  * A screenshot in the guide.
  *
  * The picture itself is produced by `pnpm guide:shots` — this component only
