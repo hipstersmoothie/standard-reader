@@ -156,7 +156,8 @@ function asBlock(node: unknown): StructuredRenderableBlock | null {
         : null;
     }
     case "embed": {
-      // External embed (observed: bsky.app post URLs) — render as a link card.
+      // External embed (observed: bsky.app post URLs) — emitted as a website
+      // block; renderers may upgrade a known AT-Proto URL to a native embed.
       return typeof node.url === "string"
         ? { kind: "website", src: node.url }
         : null;

@@ -1,9 +1,17 @@
+import { BSKY_WEB_CLIENT_HOSTS } from "../../../standard-reader/src/lib/atproto/bsky-clients.ts";
+
 // bsky.app and web clients forked from its `social-app` codebase share the
 // same post/embed DOM shape, so they all get the in-embed "Save to Standard
-// Reader" button. Add a fork's host here and every permission / content
-// script match / exclusion list below picks it up.
-const BSKY_HOSTS = ["bsky.app", "witchsky.app", "mu.social"] as const;
-const DEV_BSKY_HOSTS = ["staging.bsky.app"] as const;
+// Reader" button. The host list is shared with the reader app (which resolves
+// links to these clients into in-app embeds); add a fork there and every
+// permission / content script match / exclusion list below picks it up.
+const DEV_BSKY_HOSTS: ReadonlyArray<string> = [
+  "staging.bsky.app",
+  "main.bsky.dev",
+];
+const BSKY_HOSTS: ReadonlyArray<string> = BSKY_WEB_CLIENT_HOSTS.filter(
+  (host) => !DEV_BSKY_HOSTS.includes(host),
+);
 
 /** Production host permissions for store builds (build / zip). */
 export const PRODUCTION_HOST_PERMISSIONS = [
@@ -13,12 +21,12 @@ export const PRODUCTION_HOST_PERMISSIONS = [
 ] as const;
 
 /** Extra hosts for local dev and staging (`pnpm extension:dev`). */
-export const DEV_HOST_PERMISSIONS = [
+export const DEV_HOST_PERMISSIONS: ReadonlyArray<string> = [
   "https://staging.standard-reader.app/*",
   "http://127.0.0.1:3000/*",
   "http://127.0.0.1:3001/*",
-  "https://staging.bsky.app/*",
-] as const;
+  ...DEV_BSKY_HOSTS.map((host) => `https://${host}/*`),
+];
 
 export function hostPermissions(includeDev: boolean): Array<string> {
   return includeDev
@@ -55,7 +63,7 @@ export function pageOverlayExcludeMatches(includeDev: boolean): Array<string> {
   if (includeDev) {
     excludes.push(
       "*://staging.standard-reader.app/*",
-      "*://staging.bsky.app/*",
+      ...DEV_BSKY_HOSTS.map((host) => `*://${host}/*`),
       "*://localhost/*",
       "*://127.0.0.1/*",
     );
@@ -76,6 +84,8 @@ export function authCallbackMatches(includeDev: boolean): Array<string> {
 
 export function bskyEmbedMatches(includeDev: boolean): Array<string> {
   const matches = BSKY_HOSTS.map((host) => `https://${host}/*`);
-  if (includeDev) matches.push("https://staging.bsky.app/*");
+  if (includeDev) {
+    matches.push(...DEV_BSKY_HOSTS.map((host) => `https://${host}/*`));
+  }
   return matches;
 }

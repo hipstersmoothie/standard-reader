@@ -99,6 +99,10 @@ msgstr "Rendering Content in Standard Reader"
 msgid "Articles gaining attention across the network right now."
 msgstr "Articles gaining attention across the network right now."
 
+#: src/components/reader/content/renderers/shared/bsky-client-embed.tsx
+msgid "{value, plural, one {# member} other {# members}}"
+msgstr "{value, plural, one {# member} other {# members}}"
+
 #: src/components/reader/collection-builder.tsx
 msgid "Add an article"
 msgstr "Add an article"
@@ -410,9 +414,9 @@ msgstr "Publications written by the people you follow on Bluesky, minus the ones
 msgid "{years}y ago"
 msgstr "{years}y ago"
 
-#: src/components/reader/reorder-lists-modal.tsx
-#~ msgid "List"
-#~ msgstr "List"
+#: src/components/reader/content/renderers/shared/bsky-client-embed.tsx
+msgid "List"
+msgstr "List"
 
 #: src/components/appearance-settings.tsx
 msgid "The spacing between things — tighter for more on screen, looser for more room to read."
@@ -1971,6 +1975,7 @@ msgstr "The language used for the reader interface. Articles are shown in the la
 #~ msgid "Following, saving, recommending, and — once you follow more than a handful of publications — keeping the whole thing tidy."
 #~ msgstr "Following, saving, recommending, and — once you follow more than a handful of publications — keeping the whole thing tidy."
 
+#: src/components/reader/content/renderers/shared/bsky-client-embed.tsx
 #: src/components/user-settings-view.tsx
 msgid "Feed"
 msgstr "Feed"
@@ -3253,6 +3258,10 @@ msgstr "You agree not to use {SITE_NAME} to:"
 msgid "e.g. Dispatches from the Atmosphere"
 msgstr "e.g. Dispatches from the Atmosphere"
 
+#: src/components/reader/content/renderers/shared/bsky-client-embed.tsx
+msgid "{value, plural, one {# join} other {# joins}}"
+msgstr "{value, plural, one {# join} other {# joins}}"
+
 #: src/components/docs/introduction-docs-page.tsx
 msgid "the AT Protocol schemas that define Standard records and the shared definitions they build on."
 msgstr "the AT Protocol schemas that define Standard records and the shared definitions they build on."
@@ -3561,6 +3570,10 @@ msgstr "Preview mode"
 #: src/components/site-legal-links.tsx
 msgid "Guide"
 msgstr "Guide"
+
+#: src/components/reader/content/renderers/shared/bsky-client-embed.tsx
+msgid "{value, plural, one {# like} other {# likes}}"
+msgstr "{value, plural, one {# like} other {# likes}}"
 
 #: src/routes/_layout.collections.new.tsx
 msgid "On your first collection we create one series to hold them — a special collection you can subscribe to, rename, and theme later."
@@ -4042,6 +4055,10 @@ msgstr "Home, Latest, Discover, search, and topics."
 msgid "{0}+ articles"
 msgstr "{0}+ articles"
 
+#: src/components/reader/content/renderers/shared/bsky-client-embed.tsx
+msgid "Starter pack"
+msgstr "Starter pack"
+
 #: src/routes/_layout.feedback.return.tsx
 msgid "That link expired."
 msgstr "That link expired."
@@ -4335,6 +4352,10 @@ msgstr "Bluesky didn't answer in time, so this list may be incomplete. Reload to
 #: src/components/reader/article-below-fold.tsx
 msgid "Cited in"
 msgstr "Cited in"
+
+#: src/components/reader/content/renderers/shared/bsky-client-embed.tsx
+msgid "{value, plural, one {# follower} other {# followers}}"
+msgstr "{value, plural, one {# follower} other {# followers}}"
 
 #: src/components/user-settings-view.tsx
 msgid "A couple of publications worth discovering."
@@ -5954,6 +5975,10 @@ msgstr "Click Run example to fetch a live response with your session."
 #: src/components/guide/pages/your-data-guide-page.tsx
 msgid "At the bottom of settings, <0>Personal data</0> deletes categories of records outright: your reading history, your saved articles, or the publication lists you made. Each asks for confirmation and explains what will change."
 msgstr "At the bottom of settings, <0>Personal data</0> deletes categories of records outright: your reading history, your saved articles, or the publication lists you made. Each asks for confirmation and explains what will change."
+
+#: src/components/reader/content/renderers/shared/bsky-client-embed.tsx
+msgid "Profile"
+msgstr "Profile"
 
 #: src/components/reader/friend-publishers.tsx
 msgid "{publicationCount, plural, one {# publication} other {# publications}}"

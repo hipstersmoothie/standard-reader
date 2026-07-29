@@ -2,6 +2,7 @@
 
 import * as stylex from "@stylexjs/stylex";
 import { Post, PostSkeleton } from "bsky-react-post";
+import type { ReactNode } from "react";
 import { use } from "react";
 
 import "bsky-react-post/theme.css";
@@ -16,6 +17,26 @@ export function BskyPostEmbedView({
 }: {
   postUri: string | undefined;
 }) {
+  const ref = postUri ? parseBskyPostRef(postUri) : null;
+  return <BskyPostView ident={ref?.did} rkey={ref?.id} />;
+}
+
+/**
+ * An embedded Bluesky post addressed by repo + record key. `ident` is a DID or
+ * a handle — a link from a web client (`bsky.app/profile/<handle>/post/<rkey>`
+ * and its forks) can carry either. `notFound` stands in when the post can't be
+ * fetched (deleted, blocked); it defaults to nothing, matching how an author's
+ * explicit post block behaves when its target disappears.
+ */
+export function BskyPostView({
+  ident,
+  rkey,
+  notFound = null,
+}: {
+  ident: string | undefined;
+  rkey: string | undefined;
+  notFound?: ReactNode;
+}) {
   const magazine = use(MagazineColorContext);
   const { resolvedScheme } = useTheme();
   const colorScheme = magazine
@@ -23,10 +44,7 @@ export function BskyPostEmbedView({
       ? "dark"
       : "light"
     : resolvedScheme;
-  if (!postUri) return null;
-
-  const ref = parseBskyPostRef(postUri);
-  if (!ref) return null;
+  if (!ident || !rkey) return null;
 
   return (
     <div
@@ -36,11 +54,11 @@ export function BskyPostEmbedView({
       data-theme={colorScheme}
     >
       <Post
-        did={ref.did}
-        id={ref.id}
-        apiUrl={bskyPostApiUrl(ref.did, ref.id)}
+        {...(ident.startsWith("did:") ? { did: ident } : { handle: ident })}
+        id={rkey}
+        apiUrl={bskyPostApiUrl(ident, rkey)}
         fallback={<PostSkeleton />}
-        components={{ PostNotFound: () => <></> }}
+        components={{ PostNotFound: () => <>{notFound}</> }}
       />
     </div>
   );
