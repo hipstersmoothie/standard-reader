@@ -19,7 +19,7 @@ export function GettingStartedGuidePage() {
       title={<Trans>Getting started</Trans>}
       dek={
         <Trans>
-          Sign in, pick a few publications to follow, and learn where everything
+          Sign in, subscribe to a few publications, and learn where everything
           lives. Ten minutes, once.
         </Trans>
       }
@@ -57,22 +57,23 @@ export function GettingStartedGuidePage() {
       </GuideCallout>
 
       <h2 {...stylex.props(docsStyles.h2)} id="first-follows">
-        <Trans>Following your first publications</Trans>
+        <Trans>Subscribing to your first publications</Trans>
       </h2>
       <p {...stylex.props(docsStyles.prose)}>
         <Trans>
           The first time you sign in, a short setup walks you through it: pick a
           few topics you care about, see which of the people you already follow
-          on Bluesky write here, follow anything that appeals, and choose how
-          you like your text. You can skip any step, and skip the whole thing.
+          on Bluesky write here, subscribe to anything that appeals, and choose
+          how you like your text. You can skip any step, and skip the whole
+          thing.
         </Trans>
       </p>
       <p {...stylex.props(docsStyles.prose)}>
         <Trans>
-          After that, following is one button. Anywhere you see a publication —
-          a card in a feed, the top of an article, a publication&apos;s own page
-          — there is a <UiLabel>Follow</UiLabel> button next to its name. Select
-          it again to stop following. Nothing else changes: the button just
+          After that it is one button. Anywhere you see a publication — a card
+          in a feed, the top of an article, a publication&apos;s own page —
+          there is a <UiLabel>Subscribe</UiLabel> button next to its name.
+          Select it again to unsubscribe. Nothing else changes: the button just
           decides whether new writing from that publication reaches your Home
           and Latest.
         </Trans>
@@ -107,7 +108,8 @@ export function GettingStartedGuidePage() {
           </UiLabel>{" "}
           —{" "}
           <Trans>
-            your day: one featured article, then what is new from your follows.
+            your day: one featured article, then what is new from the
+            publications you subscribe to.
           </Trans>
         </li>
         <li {...stylex.props(guideStyles.listItem)}>
@@ -117,7 +119,7 @@ export function GettingStartedGuidePage() {
           —{" "}
           <Trans>
             everything new in the order it was published, with tabs for unread,
-            your follows, and the whole network.
+            your subscriptions, and the whole network.
           </Trans>
         </li>
         <li {...stylex.props(guideStyles.listItem)}>
@@ -151,10 +153,10 @@ export function GettingStartedGuidePage() {
       </ul>
       <p {...stylex.props(docsStyles.prose)}>
         <Trans>
-          Below those, the publications you follow are listed for quick access.
-          The <UiLabel>Subscriptions</UiLabel> heading above them opens the full
-          management view. At the very bottom, your avatar opens a menu with
-          your profile, reading history, recommended articles, feedback,
+          Below those, the publications you subscribe to are listed for quick
+          access. The <UiLabel>Subscriptions</UiLabel> heading above them opens
+          the full management view. At the very bottom, your avatar opens a menu
+          with your profile, reading history, recommended articles, feedback,
           settings, and log out.
         </Trans>
       </p>
@@ -179,6 +181,32 @@ export function GettingStartedGuidePage() {
           </Trans>
         }
       />
+
+      <h2 {...stylex.props(docsStyles.h2)} id="install">
+        <Trans>Installing Standard Reader</Trans>
+      </h2>
+      <p {...stylex.props(docsStyles.prose)}>
+        <Trans>
+          Standard Reader can be installed like an app, straight from the
+          browser, with no store involved. On a phone, use your browser&apos;s{" "}
+          <UiLabel>Add to Home Screen</UiLabel>; on a computer, look for the
+          install button in the address bar. You get an icon, a window without
+          browser chrome, and the same account you already have.
+        </Trans>
+      </p>
+
+      <h2 {...stylex.props(docsStyles.h2)} id="offline">
+        <Trans>Reading offline</Trans>
+      </h2>
+      <p {...stylex.props(docsStyles.prose)}>
+        <Trans>
+          Pages you have already visited stay available when your connection
+          drops, and you get a plain offline page rather than a browser error
+          when you reach for something that was never loaded. When a new version
+          of the app is ready it offers to reload, rather than changing under
+          you mid-article.
+        </Trans>
+      </p>
 
       <h2 {...stylex.props(docsStyles.h2)} id="without-account">
         <Trans>Reading without an account</Trans>

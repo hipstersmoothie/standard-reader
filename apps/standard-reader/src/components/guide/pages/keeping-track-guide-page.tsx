@@ -18,29 +18,73 @@ export function KeepingTrackGuidePage() {
       title={<Trans>Keeping track</Trans>}
       dek={
         <Trans>
-          Following, saving, recommending, and — once you follow more than a
-          handful of publications — keeping the whole thing tidy.
+          Following, saving, recommending, and — once you subscribe to more than
+          a handful of publications — keeping the whole thing tidy.
         </Trans>
       }
     >
-      <h2 {...stylex.props(docsStyles.h2, docsStyles.h2First)} id="following">
-        <Trans>Following a publication</Trans>
+      <h2 {...stylex.props(docsStyles.h2, docsStyles.h2First)} id="subscribing">
+        <Trans>Subscribing to a publication</Trans>
       </h2>
       <p {...stylex.props(docsStyles.prose)}>
         <Trans>
-          <UiLabel>Follow</UiLabel> is the only subscription there is. New
-          writing from anything you follow appears on Home and in Latest, and
-          the publication is listed in your sidebar. There is no email sign-up
-          and no separate account with the publisher.
+          <UiLabel>Subscribe</UiLabel> is the whole mechanism. New writing from
+          anything you subscribe to appears on Home and in Latest, and the
+          publication is listed in your sidebar. There is no email sign-up and
+          no separate account with the publisher.
         </Trans>
       </p>
       <p {...stylex.props(docsStyles.prose)}>
         <Trans>
-          You can also follow a <b>person</b> rather than a publication, from
-          their author page. That covers everything they publish now and
-          anything they start later.
+          The button sits next to a publication&apos;s name wherever you meet it
+          — a card in a feed, the top of an article, the publication&apos;s own
+          page. Select it again to unsubscribe.
         </Trans>
       </p>
+
+      <h2 {...stylex.props(docsStyles.h2)} id="following-a-person">
+        <Trans>Following a person</Trans>
+      </h2>
+      <p {...stylex.props(docsStyles.prose)}>
+        <Trans>
+          People work differently. You <b>subscribe</b> to a publication; you{" "}
+          <UiLabel>Follow</UiLabel> a person, from their author page. The
+          distinction matters, because following a person does two things a
+          subscription does not.
+        </Trans>
+      </p>
+      <p {...stylex.props(docsStyles.prose)}>
+        <Trans>
+          First, it covers <b>everything they publish</b> — every publication
+          they run today, and any they start later, without you having to notice
+          and subscribe to it. Writers here often keep several: a main one,
+          something occasional, a project that turns into its own thing.
+        </Trans>
+      </p>
+      <p {...stylex.props(docsStyles.prose)}>
+        <Trans>
+          Second, it brings you <b>what they recommend</b>. Articles they have
+          recommended start appearing in your feed, marked with who recommended
+          them. That is the quiet engine behind finding new writing here: you
+          are not only subscribing to what someone writes, you are borrowing
+          their taste in what to read.
+        </Trans>
+      </p>
+      <p {...stylex.props(docsStyles.prose)}>
+        <Trans>
+          So subscribe to the publication when you want that particular thing,
+          and follow the person when you want the writer — and their reading. In
+          the sidebar and in Subscriptions the two are listed together, with a{" "}
+          <UiLabel>Type</UiLabel> column telling them apart.
+        </Trans>
+      </p>
+      <GuideCallout title={<Trans>Unfollowing a person</Trans>}>
+        <Trans>
+          Because following a person is what created the subscriptions to their
+          publications, unfollowing them takes those with it. The confirmation
+          says how many, so nothing disappears by surprise.
+        </Trans>
+      </GuideCallout>
 
       <h2 {...stylex.props(docsStyles.h2)} id="saving">
         <Trans>Saving for later</Trans>
@@ -104,7 +148,7 @@ export function KeepingTrackGuidePage() {
       </GuideCallout>
 
       <h2 {...stylex.props(docsStyles.h2)} id="subscriptions">
-        <Trans>Managing everything you follow</Trans>
+        <Trans>Managing your subscriptions</Trans>
       </h2>
       <p {...stylex.props(docsStyles.prose)}>
         <Trans>
@@ -140,57 +184,20 @@ export function KeepingTrackGuidePage() {
         }
       />
 
-      <h2 {...stylex.props(docsStyles.h2)} id="lists">
-        <Trans>Grouping publications into lists</Trans>
-      </h2>
       <p {...stylex.props(docsStyles.prose)}>
         <Trans>
-          A list is a folder for publications — <b>Work</b>, <b>Fiction</b>,{" "}
-          <b>Read on Sunday</b>, whatever is useful. Lists appear as their own
-          groups in the sidebar, so you can read one part of your follows
-          without the rest.
-        </Trans>
-      </p>
-      <p {...stylex.props(docsStyles.prose)}>
-        <Trans>
-          Make one with <UiLabel>New list</UiLabel> in the sidebar, or add a
-          publication to a list from its <UiLabel>Add to list</UiLabel> menu. A
-          publication can be in as many lists as you like, and being in a list
-          does not change your feeds — it only changes how they are grouped.
-        </Trans>
-      </p>
-
-      <h2 {...stylex.props(docsStyles.h2)} id="collections">
-        <Trans>Collections</Trans>
-      </h2>
-      <p {...stylex.props(docsStyles.prose)}>
-        <Trans>
-          A collection is an issue you assemble yourself: articles from anywhere
-          on the network, gathered, ordered, given a cover, and rendered as a
-          magazine edition other people can read and subscribe to. Group several
-          into a series and it behaves like a publication of your own.
-        </Trans>
-      </p>
-      <p {...stylex.props(docsStyles.prose)}>
-        <Trans>
-          Collections live under{" "}
-          <Link to="/collections" {...stylex.props(docsStyles.proseLink)}>
-            Collections
+          Once the table itself gets long, two things pick up where it leaves
+          off:{" "}
+          <Link to="/guide/lists" {...stylex.props(docsStyles.proseLink)}>
+            lists
           </Link>{" "}
-          in the sidebar. Because publishing one writes a new kind of record to
-          your account, the first time you make one you will be asked to grant
-          an extra permission — that is the{" "}
-          <UiLabel>Upgrade permissions</UiLabel> prompt, and it only appears
-          once.
+          group what you follow into the sidebar, and{" "}
+          <Link to="/guide/collections" {...stylex.props(docsStyles.proseLink)}>
+            collections
+          </Link>{" "}
+          let you assemble articles into an edition of your own.
         </Trans>
       </p>
-      <GuideFigure
-        shot="collections"
-        alt={t`The Collections screen showing covers of magazine-style editions the reader has assembled, grouped into a series.`}
-        caption={
-          <Trans>Collections you have made, grouped into a series.</Trans>
-        }
-      />
     </GuideShell>
   );
 }

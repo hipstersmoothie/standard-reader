@@ -48,7 +48,7 @@ export function ReadingGuidePage() {
       <ul {...stylex.props(docsStyles.prose)}>
         <li {...stylex.props(guideStyles.listItem)}>
           <UiLabel>
-            <Trans>Follow</Trans>
+            <Trans>Subscribe</Trans>
           </UiLabel>{" "}
           —{" "}
           <Trans>get this publication&apos;s new writing in your feeds.</Trans>
@@ -197,6 +197,58 @@ export function ReadingGuidePage() {
           meaningful when you do — that is the trade.
         </Trans>
       </p>
+
+      <h2 {...stylex.props(docsStyles.h2)} id="sharing">
+        <Trans>Sharing an article</Trans>
+      </h2>
+      <p {...stylex.props(docsStyles.prose)}>
+        <Trans>
+          <UiLabel>Share</UiLabel> copies a link, or posts the article to
+          Bluesky with a proper preview card. On a phone it can hand off to
+          whatever you normally share with.
+        </Trans>
+      </p>
+      <p {...stylex.props(docsStyles.prose)}>
+        <Trans>
+          Links you share work for anyone, signed in or not — they open the
+          article in the reader, and nobody is asked to make an account to read
+          it.
+        </Trans>
+      </p>
+
+      <h2 {...stylex.props(docsStyles.h2)} id="sharing-a-passage">
+        <Trans>Sharing a passage</Trans>
+      </h2>
+      <p {...stylex.props(docsStyles.prose)}>
+        <Trans>
+          Sharing a whole article is a blunt instrument when what struck you was
+          one paragraph. Select any text in an article and a small toolbar
+          appears over the selection.
+        </Trans>
+      </p>
+      <p {...stylex.props(docsStyles.prose)}>
+        <Trans>
+          <UiLabel>Share</UiLabel> there gives you a link to <b>that passage</b>
+          . Whoever opens it lands on the article with your words highlighted,
+          exactly where you left off — so the point you were making is the first
+          thing they see, not something they have to hunt for.
+        </Trans>
+      </p>
+      <p {...stylex.props(docsStyles.prose)}>
+        <Trans>
+          The same toolbar can start the narration from that paragraph with{" "}
+          <UiLabel>Read from here</UiLabel>, and — if you use them — save the
+          passage to <UiLabel>Margin</UiLabel> or <UiLabel>Semble</UiLabel> as
+          an annotation.
+        </Trans>
+      </p>
+      <GuideCallout title={<Trans>Nothing is published</Trans>}>
+        <Trans>
+          Highlighting text and making a passage link does not post anything or
+          mark up the article for other readers. It creates a link, and the link
+          is only as public as the places you paste it.
+        </Trans>
+      </GuideCallout>
 
       <h2 {...stylex.props(docsStyles.h2)} id="conversation">
         <Trans>Comments and related reading</Trans>

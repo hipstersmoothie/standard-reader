@@ -113,11 +113,23 @@ export const PAGE_OG_CARDS = {
     tagline:
       "Colors, type, density, feed behavior, moderation, and the weekly digest.",
   },
-  guideEverywhere: {
-    path: "/guide/everywhere",
-    title: "Beyond the app",
+  guideLists: {
+    path: "/guide/lists",
+    title: "Lists and your sidebar",
     tagline:
-      "The browser extension, installing Standard Reader, reading offline, and sharing.",
+      "Group what you subscribe to, and arrange the sidebar around how you read.",
+  },
+  guideCollections: {
+    path: "/guide/collections",
+    title: "Collections",
+    tagline:
+      "Assemble articles into a magazine edition other people can read and follow.",
+  },
+  guideExtension: {
+    path: "/guide/extension",
+    title: "The browser extension",
+    tagline:
+      "Save and subscribe from anywhere on the web, without breaking your stride.",
   },
   guideYourData: {
     path: "/guide/your-data",
@@ -149,9 +161,9 @@ export const PAGE_OG_CARDS = {
     tagline:
       "Published app.standard-reader.* record schemas for reader repo state.",
   },
-  docsPublishing: {
-    path: "/docs/publishing",
-    title: "Publishing",
+  guidePublishing: {
+    path: "/guide/publishing",
+    title: "Publishing your site",
     tagline: "Wire a personal site's own site.standard.* records by hand.",
   },
   docsRenderers: {

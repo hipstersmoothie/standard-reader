@@ -32,17 +32,17 @@ export function WelcomeGuidePage() {
       <p {...stylex.props(docsStyles.prose)}>
         <Trans>
           Standard Reader is a reader for online magazines, newsletters, and
-          personal blogs. You follow the ones you like, and their new writing
-          shows up here — in order, without an algorithm deciding what you see
-          or an inbox to keep clean.
+          personal blogs. You subscribe to the ones you like, and their new
+          writing shows up here — in order, without an algorithm deciding what
+          you see or an inbox to keep clean.
         </Trans>
       </p>
       <p {...stylex.props(docsStyles.prose)}>
         <Trans>
           It is also a directory. Because every publication here speaks the same
           open format, the app can show you the whole known network, not just
-          the part you already follow. Finding a new voice is meant to be as
-          easy as catching up on the ones you have.
+          the part you already subscribe to. Finding a new voice is meant to be
+          as easy as catching up on the ones you have.
         </Trans>
       </p>
 
@@ -52,7 +52,7 @@ export function WelcomeGuidePage() {
         caption={
           <Trans>
             Home leads with one article worth your attention, then everything
-            new from the publications you follow.
+            new from the publications you subscribe to.
           </Trans>
         }
       />
@@ -69,8 +69,8 @@ export function WelcomeGuidePage() {
       <p {...stylex.props(docsStyles.prose)}>
         <Trans>
           Standard Reader works the other way round. You sign in with a Bluesky
-          account, and the things you do here — what you follow, save,
-          recommend, and read — are written into your own account&apos;s
+          account, and the things you do here — what you subscribe to, follow,
+          save, recommend, and read — are written into your own account&apos;s
           storage, the same place your Bluesky posts live. We keep a copy so the
           app is fast, but the original is yours. Another app built on the same
           network can read it, and if you stop using Standard Reader, none of it

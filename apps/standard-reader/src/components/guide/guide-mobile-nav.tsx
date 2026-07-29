@@ -6,7 +6,12 @@ import { useNavigate } from "@tanstack/react-router";
 import { useCallback } from "react";
 
 import type { GuideArea } from "#/lib/guide/navigation";
-import { GUIDE_AREAS, GUIDE_SECTIONS } from "#/lib/guide/navigation";
+import {
+  GUIDE_AREAS,
+  GUIDE_GROUPS,
+  GUIDE_SECTIONS,
+  guideAreasInGroup,
+} from "#/lib/guide/navigation";
 
 import { docsStyles } from "../docs/docs-page.stylex";
 import { useDocsScrollSpyActive } from "../docs/docs-scroll-spy-context";
@@ -53,15 +58,17 @@ export function GuideMobileNav({ area }: { area: GuideArea }) {
         onChange={onChange}
         aria-label={t`Jump to section`}
       >
-        <optgroup label={t`Guide`}>
-          {GUIDE_AREAS.map((item) => (
-            <option key={item.area} value={item.to}>
-              {item.area === area
-                ? `${i18n._(item.label)} ${t`(current)`}`
-                : i18n._(item.label)}
-            </option>
-          ))}
-        </optgroup>
+        {GUIDE_GROUPS.map((group) => (
+          <optgroup key={group.group} label={i18n._(group.label)}>
+            {guideAreasInGroup(group.group).map((item) => (
+              <option key={item.area} value={item.to}>
+                {item.area === area
+                  ? `${i18n._(item.label)} ${t`(current)`}`
+                  : i18n._(item.label)}
+              </option>
+            ))}
+          </optgroup>
+        ))}
         <optgroup label={t`On this page`}>
           {sections.map((section) => (
             <option key={section.id} value={section.id}>

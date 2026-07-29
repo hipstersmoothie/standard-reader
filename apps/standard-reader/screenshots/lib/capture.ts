@@ -38,10 +38,58 @@ export function resolveShotPath(shotPath: string): string | null {
   return resolved;
 }
 
+/** No DOM mutation for this long counts as "the page has stopped moving". */
+const DOM_QUIET_MS = 700;
+
 /**
- * Ready = the app shell's `<main>` landmark is painted and nothing inside it
- * still reports `aria-busy`. Same signal the perf suite measures against
- * (`perf/lib/measure.ts`), so a screenshot never catches a skeleton.
+ * Wait until the DOM stops changing.
+ *
+ * `aria-busy` is deliberately *not* set by the app's deferred tiers — feed tab
+ * counts, home rails, discover rails all resolve after first paint and stay off
+ * the perf suite's ready chain on purpose (see `AGENTS.md`). Virtualized tables
+ * fill in a frame later again. So the perf ready signal is exactly the wrong
+ * moment to photograph: it is the earliest point the page is usable, and a
+ * screenshot wants the latest point it is still.
+ *
+ * Best-effort: a page that never goes quiet gets photographed anyway rather
+ * than failing the run.
+ */
+async function waitForDomQuiet(page: Page, timeoutMs: number): Promise<void> {
+  try {
+    await page.waitForFunction(
+      (quietMs) => {
+        const w = globalThis as unknown as {
+          __shotLastMutation?: number;
+          __shotObserver?: MutationObserver;
+        };
+        if (!w.__shotObserver) {
+          w.__shotLastMutation = performance.now();
+          w.__shotObserver = new MutationObserver(() => {
+            w.__shotLastMutation = performance.now();
+          });
+          w.__shotObserver.observe(document.body, {
+            attributes: true,
+            characterData: true,
+            childList: true,
+            subtree: true,
+          });
+        }
+        return performance.now() - (w.__shotLastMutation ?? 0) > quietMs;
+      },
+      DOM_QUIET_MS,
+      { polling: 100, timeout: timeoutMs },
+    );
+  } catch {
+    // Something on the page animates the DOM forever. Take the shot regardless.
+  }
+}
+
+/**
+ * Ready = the app shell's `<main>` landmark is painted, nothing inside it still
+ * reports `aria-busy`, the network has gone idle, fonts have swapped in, and
+ * the DOM has stopped changing. The last three matter as much as the first two:
+ * without them the shots catch skeleton pills where tab counts belong and an
+ * empty body under a virtualized table's header.
  */
 async function waitForShotReady(page: Page, timeoutMs: number): Promise<void> {
   const main = page.locator("main#main-content");
@@ -54,11 +102,18 @@ async function waitForShotReady(page: Page, timeoutMs: number): Promise<void> {
     { timeout: timeoutMs },
   );
 
+  // Deferred queries are in flight at this point, not finished.
+  await page
+    .waitForLoadState("networkidle", { timeout: timeoutMs })
+    .catch(() => {});
+
   // Fonts finish after the busy flags clear; a shot taken mid-swap shows the
   // fallback stack.
   await page.evaluate(async () => {
     await document.fonts.ready;
   });
+
+  await waitForDomQuiet(page, timeoutMs);
 }
 
 export interface CaptureResult {

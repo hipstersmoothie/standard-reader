@@ -61,17 +61,6 @@ export function PersonalizingGuidePage() {
           you chose is the color you get.
         </Trans>
       </p>
-      <GuideFigure
-        shot="settings-appearance"
-        alt={t`The custom palette picker: a row of eight preset color palettes, each shown as a tile of its paper and accent colors, with controls beneath for choosing your own two colors.`}
-        caption={
-          <Trans>
-            Eight presets, or your own paper and accent. The rest of the
-            interface is derived from them.
-          </Trans>
-        }
-      />
-
       <h2 {...stylex.props(docsStyles.h2)} id="type-and-density">
         <Trans>Type size, shape, and density</Trans>
       </h2>
@@ -145,7 +134,7 @@ export function PersonalizingGuidePage() {
           original website instead of in the reader, whether collections open as
           magazine editions, whether your reading history is recorded, and
           whether a publication&apos;s whole back catalogue counts as unread the
-          moment you follow it.
+          moment you subscribe to it.
         </Trans>
       </p>
 
@@ -192,9 +181,9 @@ export function PersonalizingGuidePage() {
       <p {...stylex.props(docsStyles.prose)}>
         <Trans>
           Turn on <UiLabel>Weekly digest email</UiLabel> and once a week you get
-          a summary of what the publications you follow have published, with a
-          preview shown on the settings page before you commit. It is off unless
-          you ask for it, and one setting turns it off again.
+          a summary of what the publications you subscribe to have published,
+          with a preview shown on the settings page before you commit. It is off
+          unless you ask for it, and one setting turns it off again.
         </Trans>
       </p>
 

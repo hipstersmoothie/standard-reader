@@ -48,10 +48,9 @@ export function GuideShell({
       <div {...stylex.props(docsStyles.refLayout)}>
         <GuideSideNav area={area} />
         <main {...stylex.props(docsStyles.refMain)}>
+          {/* No kicker: the topbar and the sidebar heading already say where
+              you are, and a third "Reader guide" above every h1 is noise. */}
           <div {...stylex.props(docsStyles.masthead)}>
-            <div {...stylex.props(docsStyles.kicker)}>
-              <Trans>Reader guide</Trans>
-            </div>
             <h1 {...stylex.props(docsStyles.title)}>{title}</h1>
             <p {...stylex.props(docsStyles.dek)}>{dek}</p>
           </div>

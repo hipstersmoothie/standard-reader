@@ -31,7 +31,7 @@ export function FindingGuidePage() {
         <Trans>
           Home is the catch-up screen. It opens with the date and how much you
           have not read, leads with one featured article, and then lists what is
-          new from the publications you follow.
+          new from the publications you subscribe to.
         </Trans>
       </p>
       <p {...stylex.props(docsStyles.prose)}>
@@ -57,7 +57,7 @@ export function FindingGuidePage() {
           <UiLabel>
             <Trans>Unread</Trans>
           </UiLabel>{" "}
-          — <Trans>what is left from the publications you follow.</Trans>
+          — <Trans>what is left from the publications you subscribe to.</Trans>
         </li>
         <li {...stylex.props(guideStyles.listItem)}>
           <UiLabel>
@@ -65,7 +65,7 @@ export function FindingGuidePage() {
           </UiLabel>{" "}
           —{" "}
           <Trans>
-            everything from your follows, read or not. This is the default.
+            everything you subscribe to, read or not. This is the default.
           </Trans>
         </li>
         <li {...stylex.props(guideStyles.listItem)}>
@@ -115,7 +115,7 @@ export function FindingGuidePage() {
           <UiLabel>
             <Trans>Recommended for you</Trans>
           </UiLabel>{" "}
-          — <Trans>tuned to what you already follow.</Trans>
+          — <Trans>tuned to what you already subscribe to.</Trans>
         </li>
         <li {...stylex.props(guideStyles.listItem)}>
           <UiLabel>
@@ -226,7 +226,7 @@ export function FindingGuidePage() {
         <Trans>
           Pasting a handle works even for publications the network has not
           indexed yet — it goes and asks that author&apos;s account directly.
-          Follow it and it starts appearing in your feeds like any other.
+          Subscribe and it starts appearing in your feeds like any other.
         </Trans>
       </GuideCallout>
     </GuideShell>

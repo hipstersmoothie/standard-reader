@@ -123,7 +123,10 @@ export function IntroductionDocsPage() {
             </Trans>
           </li>
           <li>
-            <Link to="/docs/publishing" {...stylex.props(docsStyles.proseLink)}>
+            <Link
+              to="/guide/publishing"
+              {...stylex.props(docsStyles.proseLink)}
+            >
               <Trans>Publishing</Trans>
             </Link>{" "}
             —{" "}

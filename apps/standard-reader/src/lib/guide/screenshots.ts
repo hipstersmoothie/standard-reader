@@ -171,16 +171,6 @@ export const GUIDE_SHOTS = [
     summary: "Settings — appearance, reading, feed, and personal data.",
   },
   {
-    id: "settings-appearance",
-    path: "/settings",
-    auth: "signed-in",
-    viewport: DESKTOP,
-    schemes: LIGHT_ONLY,
-    interactions: [{ role: "button", name: "Custom" }],
-    optional: true,
-    summary: "The palette picker inside Appearance.",
-  },
-  {
     id: "feedback",
     path: "/feedback",
     auth: "guest",

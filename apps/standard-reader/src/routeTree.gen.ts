@@ -47,11 +47,14 @@ import { Route as DocsHeaderLayoutDocsLexiconsRouteImport } from './routes/_docs
 import { Route as DocsHeaderLayoutDocsPublishingRouteImport } from './routes/_docs-header-layout.docs.publishing'
 import { Route as DocsHeaderLayoutDocsRenderersRouteImport } from './routes/_docs-header-layout.docs.renderers'
 import { Route as GuideLayoutGuideIndexRouteImport } from './routes/_guide-layout.guide.index'
-import { Route as GuideLayoutGuideEverywhereRouteImport } from './routes/_guide-layout.guide.everywhere'
+import { Route as GuideLayoutGuideCollectionsRouteImport } from './routes/_guide-layout.guide.collections'
+import { Route as GuideLayoutGuideExtensionRouteImport } from './routes/_guide-layout.guide.extension'
 import { Route as GuideLayoutGuideFindingRouteImport } from './routes/_guide-layout.guide.finding'
 import { Route as GuideLayoutGuideGettingStartedRouteImport } from './routes/_guide-layout.guide.getting-started'
 import { Route as GuideLayoutGuideKeepingTrackRouteImport } from './routes/_guide-layout.guide.keeping-track'
+import { Route as GuideLayoutGuideListsRouteImport } from './routes/_guide-layout.guide.lists'
 import { Route as GuideLayoutGuidePersonalizingRouteImport } from './routes/_guide-layout.guide.personalizing'
+import { Route as GuideLayoutGuidePublishingRouteImport } from './routes/_guide-layout.guide.publishing'
 import { Route as GuideLayoutGuideReadingRouteImport } from './routes/_guide-layout.guide.reading'
 import { Route as GuideLayoutGuideYourDataRouteImport } from './routes/_guide-layout.guide.your-data'
 import { Route as LayoutCollectionsIndexRouteImport } from './routes/_layout.collections.index'
@@ -304,10 +307,16 @@ const GuideLayoutGuideIndexRoute = GuideLayoutGuideIndexRouteImport.update({
   path: '/guide/',
   getParentRoute: () => GuideLayoutRoute,
 } as any)
-const GuideLayoutGuideEverywhereRoute =
-  GuideLayoutGuideEverywhereRouteImport.update({
-    id: '/guide/everywhere',
-    path: '/guide/everywhere',
+const GuideLayoutGuideCollectionsRoute =
+  GuideLayoutGuideCollectionsRouteImport.update({
+    id: '/guide/collections',
+    path: '/guide/collections',
+    getParentRoute: () => GuideLayoutRoute,
+  } as any)
+const GuideLayoutGuideExtensionRoute =
+  GuideLayoutGuideExtensionRouteImport.update({
+    id: '/guide/extension',
+    path: '/guide/extension',
     getParentRoute: () => GuideLayoutRoute,
   } as any)
 const GuideLayoutGuideFindingRoute = GuideLayoutGuideFindingRouteImport.update({
@@ -327,10 +336,21 @@ const GuideLayoutGuideKeepingTrackRoute =
     path: '/guide/keeping-track',
     getParentRoute: () => GuideLayoutRoute,
   } as any)
+const GuideLayoutGuideListsRoute = GuideLayoutGuideListsRouteImport.update({
+  id: '/guide/lists',
+  path: '/guide/lists',
+  getParentRoute: () => GuideLayoutRoute,
+} as any)
 const GuideLayoutGuidePersonalizingRoute =
   GuideLayoutGuidePersonalizingRouteImport.update({
     id: '/guide/personalizing',
     path: '/guide/personalizing',
+    getParentRoute: () => GuideLayoutRoute,
+  } as any)
+const GuideLayoutGuidePublishingRoute =
+  GuideLayoutGuidePublishingRouteImport.update({
+    id: '/guide/publishing',
+    path: '/guide/publishing',
     getParentRoute: () => GuideLayoutRoute,
   } as any)
 const GuideLayoutGuideReadingRoute = GuideLayoutGuideReadingRouteImport.update({
@@ -655,11 +675,14 @@ export interface FileRoutesByFullPath {
   '/docs/lexicons': typeof DocsHeaderLayoutDocsLexiconsRoute
   '/docs/publishing': typeof DocsHeaderLayoutDocsPublishingRoute
   '/docs/renderers': typeof DocsHeaderLayoutDocsRenderersRoute
-  '/guide/everywhere': typeof GuideLayoutGuideEverywhereRoute
+  '/guide/collections': typeof GuideLayoutGuideCollectionsRoute
+  '/guide/extension': typeof GuideLayoutGuideExtensionRoute
   '/guide/finding': typeof GuideLayoutGuideFindingRoute
   '/guide/getting-started': typeof GuideLayoutGuideGettingStartedRoute
   '/guide/keeping-track': typeof GuideLayoutGuideKeepingTrackRoute
+  '/guide/lists': typeof GuideLayoutGuideListsRoute
   '/guide/personalizing': typeof GuideLayoutGuidePersonalizingRoute
+  '/guide/publishing': typeof GuideLayoutGuidePublishingRoute
   '/guide/reading': typeof GuideLayoutGuideReadingRoute
   '/guide/your-data': typeof GuideLayoutGuideYourDataRoute
   '/collections/new': typeof LayoutCollectionsNewRoute
@@ -752,11 +775,14 @@ export interface FileRoutesByTo {
   '/docs/lexicons': typeof DocsHeaderLayoutDocsLexiconsRoute
   '/docs/publishing': typeof DocsHeaderLayoutDocsPublishingRoute
   '/docs/renderers': typeof DocsHeaderLayoutDocsRenderersRoute
-  '/guide/everywhere': typeof GuideLayoutGuideEverywhereRoute
+  '/guide/collections': typeof GuideLayoutGuideCollectionsRoute
+  '/guide/extension': typeof GuideLayoutGuideExtensionRoute
   '/guide/finding': typeof GuideLayoutGuideFindingRoute
   '/guide/getting-started': typeof GuideLayoutGuideGettingStartedRoute
   '/guide/keeping-track': typeof GuideLayoutGuideKeepingTrackRoute
+  '/guide/lists': typeof GuideLayoutGuideListsRoute
   '/guide/personalizing': typeof GuideLayoutGuidePersonalizingRoute
+  '/guide/publishing': typeof GuideLayoutGuidePublishingRoute
   '/guide/reading': typeof GuideLayoutGuideReadingRoute
   '/guide/your-data': typeof GuideLayoutGuideYourDataRoute
   '/collections/new': typeof LayoutCollectionsNewRoute
@@ -854,11 +880,14 @@ export interface FileRoutesById {
   '/_docs-header-layout/docs/lexicons': typeof DocsHeaderLayoutDocsLexiconsRoute
   '/_docs-header-layout/docs/publishing': typeof DocsHeaderLayoutDocsPublishingRoute
   '/_docs-header-layout/docs/renderers': typeof DocsHeaderLayoutDocsRenderersRoute
-  '/_guide-layout/guide/everywhere': typeof GuideLayoutGuideEverywhereRoute
+  '/_guide-layout/guide/collections': typeof GuideLayoutGuideCollectionsRoute
+  '/_guide-layout/guide/extension': typeof GuideLayoutGuideExtensionRoute
   '/_guide-layout/guide/finding': typeof GuideLayoutGuideFindingRoute
   '/_guide-layout/guide/getting-started': typeof GuideLayoutGuideGettingStartedRoute
   '/_guide-layout/guide/keeping-track': typeof GuideLayoutGuideKeepingTrackRoute
+  '/_guide-layout/guide/lists': typeof GuideLayoutGuideListsRoute
   '/_guide-layout/guide/personalizing': typeof GuideLayoutGuidePersonalizingRoute
+  '/_guide-layout/guide/publishing': typeof GuideLayoutGuidePublishingRoute
   '/_guide-layout/guide/reading': typeof GuideLayoutGuideReadingRoute
   '/_guide-layout/guide/your-data': typeof GuideLayoutGuideYourDataRoute
   '/_layout/collections/new': typeof LayoutCollectionsNewRoute
@@ -954,11 +983,14 @@ export interface FileRouteTypes {
     | '/docs/lexicons'
     | '/docs/publishing'
     | '/docs/renderers'
-    | '/guide/everywhere'
+    | '/guide/collections'
+    | '/guide/extension'
     | '/guide/finding'
     | '/guide/getting-started'
     | '/guide/keeping-track'
+    | '/guide/lists'
     | '/guide/personalizing'
+    | '/guide/publishing'
     | '/guide/reading'
     | '/guide/your-data'
     | '/collections/new'
@@ -1051,11 +1083,14 @@ export interface FileRouteTypes {
     | '/docs/lexicons'
     | '/docs/publishing'
     | '/docs/renderers'
-    | '/guide/everywhere'
+    | '/guide/collections'
+    | '/guide/extension'
     | '/guide/finding'
     | '/guide/getting-started'
     | '/guide/keeping-track'
+    | '/guide/lists'
     | '/guide/personalizing'
+    | '/guide/publishing'
     | '/guide/reading'
     | '/guide/your-data'
     | '/collections/new'
@@ -1152,11 +1187,14 @@ export interface FileRouteTypes {
     | '/_docs-header-layout/docs/lexicons'
     | '/_docs-header-layout/docs/publishing'
     | '/_docs-header-layout/docs/renderers'
-    | '/_guide-layout/guide/everywhere'
+    | '/_guide-layout/guide/collections'
+    | '/_guide-layout/guide/extension'
     | '/_guide-layout/guide/finding'
     | '/_guide-layout/guide/getting-started'
     | '/_guide-layout/guide/keeping-track'
+    | '/_guide-layout/guide/lists'
     | '/_guide-layout/guide/personalizing'
+    | '/_guide-layout/guide/publishing'
     | '/_guide-layout/guide/reading'
     | '/_guide-layout/guide/your-data'
     | '/_layout/collections/new'
@@ -1544,11 +1582,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GuideLayoutGuideIndexRouteImport
       parentRoute: typeof GuideLayoutRoute
     }
-    '/_guide-layout/guide/everywhere': {
-      id: '/_guide-layout/guide/everywhere'
-      path: '/guide/everywhere'
-      fullPath: '/guide/everywhere'
-      preLoaderRoute: typeof GuideLayoutGuideEverywhereRouteImport
+    '/_guide-layout/guide/collections': {
+      id: '/_guide-layout/guide/collections'
+      path: '/guide/collections'
+      fullPath: '/guide/collections'
+      preLoaderRoute: typeof GuideLayoutGuideCollectionsRouteImport
+      parentRoute: typeof GuideLayoutRoute
+    }
+    '/_guide-layout/guide/extension': {
+      id: '/_guide-layout/guide/extension'
+      path: '/guide/extension'
+      fullPath: '/guide/extension'
+      preLoaderRoute: typeof GuideLayoutGuideExtensionRouteImport
       parentRoute: typeof GuideLayoutRoute
     }
     '/_guide-layout/guide/finding': {
@@ -1572,11 +1617,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GuideLayoutGuideKeepingTrackRouteImport
       parentRoute: typeof GuideLayoutRoute
     }
+    '/_guide-layout/guide/lists': {
+      id: '/_guide-layout/guide/lists'
+      path: '/guide/lists'
+      fullPath: '/guide/lists'
+      preLoaderRoute: typeof GuideLayoutGuideListsRouteImport
+      parentRoute: typeof GuideLayoutRoute
+    }
     '/_guide-layout/guide/personalizing': {
       id: '/_guide-layout/guide/personalizing'
       path: '/guide/personalizing'
       fullPath: '/guide/personalizing'
       preLoaderRoute: typeof GuideLayoutGuidePersonalizingRouteImport
+      parentRoute: typeof GuideLayoutRoute
+    }
+    '/_guide-layout/guide/publishing': {
+      id: '/_guide-layout/guide/publishing'
+      path: '/guide/publishing'
+      fullPath: '/guide/publishing'
+      preLoaderRoute: typeof GuideLayoutGuidePublishingRouteImport
       parentRoute: typeof GuideLayoutRoute
     }
     '/_guide-layout/guide/reading': {
@@ -1996,22 +2055,28 @@ const DocsHeaderLayoutRouteWithChildren =
   DocsHeaderLayoutRoute._addFileChildren(DocsHeaderLayoutRouteChildren)
 
 interface GuideLayoutRouteChildren {
-  GuideLayoutGuideEverywhereRoute: typeof GuideLayoutGuideEverywhereRoute
+  GuideLayoutGuideCollectionsRoute: typeof GuideLayoutGuideCollectionsRoute
+  GuideLayoutGuideExtensionRoute: typeof GuideLayoutGuideExtensionRoute
   GuideLayoutGuideFindingRoute: typeof GuideLayoutGuideFindingRoute
   GuideLayoutGuideGettingStartedRoute: typeof GuideLayoutGuideGettingStartedRoute
   GuideLayoutGuideKeepingTrackRoute: typeof GuideLayoutGuideKeepingTrackRoute
+  GuideLayoutGuideListsRoute: typeof GuideLayoutGuideListsRoute
   GuideLayoutGuidePersonalizingRoute: typeof GuideLayoutGuidePersonalizingRoute
+  GuideLayoutGuidePublishingRoute: typeof GuideLayoutGuidePublishingRoute
   GuideLayoutGuideReadingRoute: typeof GuideLayoutGuideReadingRoute
   GuideLayoutGuideYourDataRoute: typeof GuideLayoutGuideYourDataRoute
   GuideLayoutGuideIndexRoute: typeof GuideLayoutGuideIndexRoute
 }
 
 const GuideLayoutRouteChildren: GuideLayoutRouteChildren = {
-  GuideLayoutGuideEverywhereRoute: GuideLayoutGuideEverywhereRoute,
+  GuideLayoutGuideCollectionsRoute: GuideLayoutGuideCollectionsRoute,
+  GuideLayoutGuideExtensionRoute: GuideLayoutGuideExtensionRoute,
   GuideLayoutGuideFindingRoute: GuideLayoutGuideFindingRoute,
   GuideLayoutGuideGettingStartedRoute: GuideLayoutGuideGettingStartedRoute,
   GuideLayoutGuideKeepingTrackRoute: GuideLayoutGuideKeepingTrackRoute,
+  GuideLayoutGuideListsRoute: GuideLayoutGuideListsRoute,
   GuideLayoutGuidePersonalizingRoute: GuideLayoutGuidePersonalizingRoute,
+  GuideLayoutGuidePublishingRoute: GuideLayoutGuidePublishingRoute,
   GuideLayoutGuideReadingRoute: GuideLayoutGuideReadingRoute,
   GuideLayoutGuideYourDataRoute: GuideLayoutGuideYourDataRoute,
   GuideLayoutGuideIndexRoute: GuideLayoutGuideIndexRoute,

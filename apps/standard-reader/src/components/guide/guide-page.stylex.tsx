@@ -28,14 +28,24 @@ import * as stylex from "@stylexjs/stylex";
 
 const NARROW = "@media (max-width: 47.5rem)";
 const GUIDE_MAX = "56rem";
+/**
+ * The prose measure (`docsStyles.prose`). Figures match it so an image lines up
+ * with the paragraph above it instead of overhanging the column.
+ */
+const CONTENT_MAX = "72ch";
 
 export const guideStyles = stylex.create({
+  brandLink: {
+    alignItems: "center",
+    display: "inline-flex",
+    textDecoration: "none",
+  },
   figure: {
     marginBottom: spacing["8"],
     marginInlineStart: verticalSpace.none,
     marginInlineEnd: verticalSpace.none,
     marginTop: spacing["6"],
-    maxWidth: GUIDE_MAX,
+    maxWidth: CONTENT_MAX,
   },
   figureFrame: {
     borderColor: uiColor.border1,
@@ -44,39 +54,59 @@ export const guideStyles = stylex.create({
     borderWidth: spacing["px"],
     backgroundColor: uiColor.bgSubtle,
     boxShadow: shadow.sm,
-    display: "block",
+    display: "flex",
+    justifyContent: "center",
+    marginInlineStart: "auto",
+    marginInlineEnd: "auto",
+    maxWidth: "100%",
     overflow: "hidden",
+    // Hug the image rather than the column, so a portrait shot doesn't sit in
+    // a frame twice its width.
+    width: "fit-content",
   },
   figureImage: {
     display: "block",
     height: "auto",
+    // A phone-shaped screenshot is taller than it is wide, so at column width
+    // it fills the screen and reads as the page rather than an illustration of
+    // it. Cap it against the viewport — no spacing token is viewport-relative,
+    // which is what this needs to be.
+    maxHeight: "75vh",
     maxWidth: "100%",
-    width: "100%",
+    width: "auto",
   },
   figureCaption: {
     color: uiColor.text1,
     fontFamily: fontFamily.sans,
     fontSize: fontSize.sm,
     lineHeight: lineHeight.base,
+    marginInlineStart: "auto",
+    marginInlineEnd: "auto",
     marginTop: spacing["3"],
     maxWidth: "68ch",
+    textAlign: "center",
   },
+  /**
+   * A magazine sets an aside apart with rules and space, not a tinted box with
+   * an accent stripe down one edge — that stripe traces the corner radius and
+   * peels, and it is the single most machine-made shape in a docs page. Two
+   * hairlines and the label carrying the accent do the same job silently.
+   */
   callout: {
-    borderInlineStartColor: primaryColor.border2,
-    borderInlineStartStyle: "solid",
-    borderInlineStartWidth: spacing["0.5"],
-    borderRadius: radius.sm,
-    backgroundColor: uiColor.bgSubtle,
-    marginBottom: spacing["6"],
-    marginTop: spacing["6"],
-    maxWidth: "72ch",
-    paddingBottom: spacing["4"],
-    paddingInlineStart: spacing["5"],
-    paddingInlineEnd: spacing["5"],
-    paddingTop: spacing["4"],
+    borderBlockEndColor: uiColor.border1,
+    borderBlockEndStyle: "solid",
+    borderBlockEndWidth: spacing["px"],
+    borderBlockStartColor: uiColor.border1,
+    borderBlockStartStyle: "solid",
+    borderBlockStartWidth: spacing["px"],
+    marginBottom: spacing["8"],
+    marginTop: spacing["8"],
+    maxWidth: CONTENT_MAX,
+    paddingBottom: spacing["5"],
+    paddingTop: spacing["5"],
   },
   calloutTitle: {
-    color: uiColor.text2,
+    color: primaryColor.text2,
     fontFamily: fontFamily.sans,
     fontSize: fontSize.xs,
     fontWeight: fontWeight.bold,
@@ -219,6 +249,9 @@ export const guideStyles = stylex.create({
   },
   pageNavLabel: {
     color: uiColor.text1,
+    // Both of these are spans, so without a block display the kicker and the
+    // title run together on one line and the title's margin does nothing.
+    display: "block",
     fontFamily: fontFamily.sans,
     fontSize: fontSize.xs,
     letterSpacing: "0.14em",
@@ -226,6 +259,7 @@ export const guideStyles = stylex.create({
   },
   pageNavTitle: {
     color: primaryColor.text2,
+    display: "block",
     fontFamily: fontFamily.sans,
     fontSize: fontSize.base,
     fontWeight: fontWeight.medium,

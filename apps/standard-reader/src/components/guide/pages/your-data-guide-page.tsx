@@ -29,10 +29,10 @@ export function YourDataGuidePage() {
       </h2>
       <p {...stylex.props(docsStyles.prose)}>
         <Trans>
-          When you follow a publication, save an article, recommend one, or open
-          one, that fact is written into <b>your own account&apos;s storage</b>{" "}
-          — the same place your Bluesky profile and posts are kept, run by
-          whoever hosts your account.
+          When you subscribe to a publication, save an article, recommend one,
+          or open one, that fact is written into{" "}
+          <b>your own account&apos;s storage</b> — the same place your Bluesky
+          profile and posts are kept, run by whoever hosts your account.
         </Trans>
       </p>
       <p {...stylex.props(docsStyles.prose)}>
@@ -44,8 +44,8 @@ export function YourDataGuidePage() {
       <ul {...stylex.props(docsStyles.prose)}>
         <li {...stylex.props(guideStyles.listItem)}>
           <Trans>
-            Your follows and saves are yours. If you stop using Standard Reader,
-            they stay where they are.
+            Your subscriptions and saves are yours. If you stop using Standard
+            Reader, they stay where they are.
           </Trans>
         </li>
         <li {...stylex.props(guideStyles.listItem)}>
