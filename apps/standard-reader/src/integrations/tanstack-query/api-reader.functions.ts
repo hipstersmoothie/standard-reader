@@ -5,7 +5,8 @@ import {
 } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import type { SQL } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { z } from "zod";
 
@@ -41,8 +42,12 @@ import {
   unfollowUserForSession,
 } from "#/server/reader/unfollow-subject.server";
 
-import type { ArticleCard } from "./api-shapes";
-import { articleQueueCardColumns, toArticleCard } from "./api-shapes";
+import type { ArticleCard, Schema } from "./api-shapes";
+import {
+  articleQueueCardColumns,
+  publicationSortNameSql,
+  toArticleCard,
+} from "./api-shapes";
 import { dbMiddleware } from "./db-middleware";
 
 /**
@@ -76,6 +81,19 @@ export const READER_QUEUE_PAGE_SIZE = 20;
 const readerListInput = z.object({
   limit: z.number().int().min(1).max(100).default(READER_QUEUE_PAGE_SIZE),
   offset: z.number().int().min(0).default(0),
+});
+
+/** Sort orders exposed on the `/saved` page. */
+export const SAVED_SORT_VALUES = [
+  "added",
+  "published",
+  "publication",
+  "title",
+] as const;
+export type SavedSort = (typeof SAVED_SORT_VALUES)[number];
+
+const savedListInput = readerListInput.extend({
+  sort: z.enum(SAVED_SORT_VALUES).default("added"),
 });
 
 /** One offset page of a personal reader queue (likes, saved, history). */
@@ -967,9 +985,43 @@ const getBookmarkStatus = createServerFn({ method: "GET" })
     }),
   );
 
+/**
+ * `ORDER BY` for a {@link SavedSort}. Every ranking carries a stable tiebreak
+ * (`bookmarks.uri`) so pagination never mixes or drops rows across pages.
+ *
+ * Bookmark lists are scoped to one reader (small, per-user data — not a
+ * network-wide feed), so unlike the feed-scale orderings in
+ * `src/server/reader/queries.ts`, these sorts rely on `bookmarks_owner_idx` to
+ * narrow the row set and then sort in memory rather than needing dedicated
+ * composite indexes.
+ * NULLS LAST is spelled out (not Drizzle's bare `desc()`, which emits NULLS
+ * FIRST) so left-joined rows for a deleted/missing document sort to the end
+ * instead of the top.
+ */
+function savedOrderBy(schema: Schema, sort: SavedSort): Array<SQL> {
+  const b = schema.bookmarks;
+  const d = schema.documents;
+  const p = schema.publications;
+
+  if (sort === "published") {
+    return [sql`${d.publishedAt} desc nulls last`, desc(b.uri)];
+  }
+  if (sort === "publication") {
+    return [
+      asc(publicationSortNameSql(p.name, p.url)),
+      sql`${d.publishedAt} desc nulls last`,
+      desc(b.uri),
+    ];
+  }
+  if (sort === "title") {
+    return [sql`lower(${d.title}) asc nulls last`, desc(b.uri)];
+  }
+  return [sql`${b.createdAt} desc nulls last`, desc(b.uri)];
+}
+
 const getSaved = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
-  .validator(readerListInput)
+  .validator(savedListInput)
   .handler(
     observe("reader.getSaved", async ({ data, context }, span) => {
       const did = await getReaderDidForRequest(getRequest());
@@ -979,6 +1031,7 @@ const getSaved = createServerFn({ method: "GET" })
       span.set("did", did);
       span.set("limit", data.limit);
       span.set("offset", data.offset);
+      span.set("sort", data.sort);
 
       const b = context.schema.bookmarks;
       const d = context.schema.documents;
@@ -1006,9 +1059,11 @@ const getSaved = createServerFn({ method: "GET" })
           .leftJoin(pr, eq(pr.did, p.did))
           .leftJoin(pa, eq(pa.did, d.did))
           .where(where)
-          // NULLS LAST matches `bookmarks_owner_idx` (owner_did, created_at DESC
-          // NULLS LAST); see getReadingHistory for why bare `desc()` is slow.
-          .orderBy(sql`${b.createdAt} desc nulls last`)
+          // The "added" (default) sort matches `bookmarks_owner_idx` (owner_did,
+          // created_at DESC NULLS LAST); see getReadingHistory for why bare
+          // `desc()` is slow. Other sorts filter via that same index, then sort
+          // in memory — see savedOrderBy.
+          .orderBy(...savedOrderBy(context.schema, data.sort))
           .limit(data.limit)
           .offset(data.offset),
       ]);
@@ -1265,12 +1320,13 @@ function getLikesInfiniteQueryOptions({
 }
 
 function getSavedInfiniteQueryOptions({
+  sort = "added",
   limit = READER_QUEUE_PAGE_SIZE,
-}: { limit?: number } = {}) {
+}: { sort?: SavedSort; limit?: number } = {}) {
   return infiniteQueryOptions({
-    queryKey: ["reader", "saved", limit] as const,
+    queryKey: ["reader", "saved", sort, limit] as const,
     queryFn: async ({ pageParam }) =>
-      getSaved({ data: { limit, offset: pageParam } }),
+      getSaved({ data: { sort, limit, offset: pageParam } }),
     initialPageParam: 0,
     getNextPageParam: (lastPage) => lastPage.nextOffset ?? undefined,
   });

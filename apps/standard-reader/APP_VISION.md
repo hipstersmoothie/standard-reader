@@ -371,7 +371,9 @@ Sections, top to bottom:
 
 ### Reader profile (saved for later)
 
-- Signed-in reader's **save queue** (`app.standard-reader.bookmark`), newest first.
+- Signed-in reader's **save queue** (`app.standard-reader.bookmark`), newest-saved first by default.
+- Sortable via `?sort=` — date saved (default), published date, publication (alphabetical), or
+  title (alphabetical); Menu (compact) / Select (full) control, mirroring `/tag`'s article sort.
 - Route `/saved`; linked from the sidebar (with saved count badge). Requires auth (redirects to login).
 
 ### Reader profile (liked articles)
