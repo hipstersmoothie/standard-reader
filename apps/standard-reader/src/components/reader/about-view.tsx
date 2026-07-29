@@ -28,6 +28,7 @@ import { Link } from "@tanstack/react-router";
 import {
   AppWindow,
   ArrowRight,
+  BookOpen,
   Bookmark,
   Check,
   Flame,
@@ -1277,7 +1278,10 @@ export function AboutView() {
           ))}
         </div>
 
-        <div {...stylex.props(styles.discoverCta)}>
+        <div {...stylex.props(styles.ctaRow, styles.discoverCta)}>
+          <CtaButton to="/guide" variant="ghost" icon={BookOpen}>
+            <Trans>Read the guide</Trans>
+          </CtaButton>
           <CtaButton to="/discover" variant="ink" trailingArrow>
             <Trans>Browse publications</Trans>
           </CtaButton>

@@ -457,6 +457,33 @@ Single search field with two modes (detected from input):
   both the flag and `hasUserinputFeedbackScope(account.scope)`). Readers only
   grant once.
 
+### Reader guide (`/guide`)
+
+The **non-technical** documentation, deliberately separate from the developer docs at
+`/docs/*`. Eight task-shaped pages under `/guide` — Welcome, Getting started, Reading an
+article, Finding things to read, Keeping track, Making it yours, Beyond the app, Your account
+and data — written for someone who only wants to read, with no AT Protocol vocabulary and
+every feature named the way the UI names it.
+
+- **Own route tree.** `src/routes/_guide-layout.tsx` + `_guide-layout.guide.*.tsx`, with its
+  own topbar (`GuideTopbar`) tagged "Reader guide". It reuses the docs shell's layout and
+  prose styles (`docsStyles`) and scroll-spy so both doc sets share one rhythm, but it never
+  renders `DOCS_AREAS` — the developer docs are a sibling, reachable from a cross-link in
+  each topbar, not a section of the guide.
+- **One source of truth for structure.** `src/lib/guide/navigation.ts` declares the pages
+  (`GUIDE_AREAS`) and every heading on them (`GUIDE_SECTIONS`). The sidebar, the "On this
+  page" rail, the mobile jump select, the scroll-spy, and the prev/next footer all read it,
+  so a page cannot drift from its own table of contents.
+- **Screenshots are generated, not pasted.** `src/lib/guide/screenshots.ts` declares every
+  picture (route, auth mode, viewport, light/dark, optional pre-capture interactions);
+  `pnpm guide:shots` (`screenshots.config.ts` + `screenshots/capture.spec.ts`) drives a real
+  browser through the list and writes `public/guide/*.png`. Captures wait on the same
+  `aria-busy` ready signal the perf suite measures against, and signed-in shots reuse the perf
+  suite's session bootstrap. `<GuideFigure>` reads the same manifest for the image's intrinsic
+  size, requires alt text, and degrades to its caption when a shot has not been captured yet.
+- **Discoverable.** Linked from the site footer, the signed-in account menu, the About page,
+  and the developer docs topbar. Every guide page ends with a link to `/feedback`.
+
 ---
 
 ## 5. State model & data ownership

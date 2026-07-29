@@ -17,6 +17,7 @@
     "perf:test:guest": "playwright test --grep \"load regression — guest\"",
     "perf:test:signed-in": "playwright test --grep \"load regression — signed in\"",
     "perf:view": "node scripts/perf-view.mjs",
+    "guide:shots": "playwright test --config=screenshots.config.ts",
     "perf:explain": "FEED_PERF_TEST=1 vitest run src/server/reader/queries.explain.test.ts",
     "ingest:dev": "tsx --env-file=.env --require @opentelemetry/auto-instrumentations-node/register src/server/ingest/service.ts",
     "ingest:start": "tsx --require @opentelemetry/auto-instrumentations-node/register src/server/ingest/service.ts",

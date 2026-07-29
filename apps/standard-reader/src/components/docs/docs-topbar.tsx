@@ -22,6 +22,11 @@ export function DocsTopbar() {
           <Trans>Docs</Trans>
         </span>
       </div>
+      <nav {...stylex.props(docsStyles.topbarNav)}>
+        <Link to="/guide" {...stylex.props(docsStyles.topbarNavLink)}>
+          <Trans>Reader guide</Trans>
+        </Link>
+      </nav>
     </header>
   );
 }

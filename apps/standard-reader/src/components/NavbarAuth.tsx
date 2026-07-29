@@ -25,6 +25,7 @@ import * as stylex from "@stylexjs/stylex";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import {
+  BookOpen,
   Globe,
   Heart,
   History,
@@ -243,6 +244,9 @@ export function NavbarAuth({
           textValue={t`Recommended articles`}
         >
           <Trans>Recommended articles</Trans>
+        </MenuItemLink>
+        <MenuItemLink to="/guide" suffix={<BookOpen />} textValue={t`Guide`}>
+          <Trans>Guide</Trans>
         </MenuItemLink>
         <MenuItemLink
           to="/feedback"

@@ -32,6 +32,7 @@
     "perf:test:guest": "pnpm --filter standard-reader perf:test:guest",
     "perf:test:signed-in": "pnpm --filter standard-reader perf:test:signed-in",
     "perf:view": "pnpm --filter standard-reader perf:view",
+    "guide:shots": "pnpm --filter standard-reader guide:shots",
     "perf:explain": "pnpm --filter standard-reader perf:explain",
     "ingest:dev": "pnpm --filter standard-reader ingest:dev",
     "ingest:start": "pnpm --filter standard-reader ingest:start",
