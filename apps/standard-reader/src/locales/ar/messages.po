@@ -256,6 +256,10 @@ msgstr "جارٍ فتح المجموعة…"
 msgid "Density"
 msgstr ""
 
+#: src/routes/_layout.saved.tsx
+msgid "Date saved"
+msgstr ""
+
 #: src/components/reader/article-view.tsx
 msgid "Open on publication"
 msgstr "فتح في المنشورة"
@@ -677,6 +681,10 @@ msgstr "خصوصية الإضافة"
 #: src/components/reading-settings-preview.tsx
 msgid "Loading voice sample"
 msgstr "جارٍ تحميل عينة الصوت"
+
+#: src/routes/_layout.saved.tsx
+msgid "Sort saved articles"
+msgstr ""
 
 #: src/components/docs/api-docs-intro.tsx
 #: src/components/docs/docs-api-nav.tsx
@@ -2608,6 +2616,7 @@ msgstr "البحث في المنشورات والمقالات"
 
 #: src/components/reader/article-below-fold.tsx
 #: src/components/reader/subscriptions-table.tsx
+#: src/routes/_layout.saved.tsx
 msgid "Publication"
 msgstr "منشورة"
 
@@ -2953,6 +2962,10 @@ msgstr ""
 msgid "Done reordering"
 msgstr ""
 
+#: src/routes/_layout.saved.tsx
+msgid "Published date"
+msgstr ""
+
 #: src/components/user-settings-view.tsx
 msgid "Infinite scroll"
 msgstr ""
@@ -2971,6 +2984,7 @@ msgstr ""
 
 #: src/components/feedback/feedback-dialog.tsx
 #: src/components/reader/collection-builder.tsx
+#: src/routes/_layout.saved.tsx
 msgid "Title"
 msgstr "العنوان"
 
