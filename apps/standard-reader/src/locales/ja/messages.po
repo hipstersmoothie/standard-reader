@@ -123,12 +123,12 @@ msgid "Every renderer takes one input for the document — the content payload o
 msgstr ""
 
 #: src/components/reader/about-view.tsx
-msgid "One tap from the reading view, on any device, instantly in sync. Your library is always where you left it."
-msgstr "どの端末でも、閲覧画面からワンタップで即座に同期。ライブラリはいつでも続きから。"
+#~ msgid "One tap from the reading view, on any device, instantly in sync. Your library is always where you left it."
+#~ msgstr "どの端末でも、閲覧画面からワンタップで即座に同期。ライブラリはいつでも続きから。"
 
 #: src/components/reader/about-view.tsx
-msgid "Curated lists & collections"
-msgstr "厳選リストとコレクション"
+#~ msgid "Curated lists & collections"
+#~ msgstr "厳選リストとコレクション"
 
 #: src/components/docs/renderers-docs-page.tsx
 #~ msgid "Vue 3."
@@ -179,6 +179,7 @@ msgstr ""
 #: src/components/docs/docs-nav-areas.ts
 #: src/components/docs/introduction-docs-page.tsx
 #: src/components/docs/lexicon-docs-intro.tsx
+#: src/components/reader/about-view.tsx
 msgid "Lexicons"
 msgstr "レキシコン"
 
@@ -256,6 +257,10 @@ msgstr "タイトルを入力してください。"
 #~ msgid "Pasting a handle works even for publications the network has not indexed yet — it goes and asks that author's account directly. Follow it and it starts appearing in your feeds like any other."
 #~ msgstr ""
 
+#: src/components/reader/about-view.tsx
+msgid "There’s an MCP server on the same host, so you can point an agent at the network too."
+msgstr ""
+
 #: src/components/reader/subscriptions-table.tsx
 msgid "Filter by name, handle, or topic"
 msgstr ""
@@ -302,8 +307,8 @@ msgid "(this is what Standard Reader itself uses)"
 msgstr ""
 
 #: src/components/reader/about-view.tsx
-msgid "And it never feels sealed off. We connect each article to the conversation happening across the Atmosphere — the open network beyond this app — gathering the Bluesky posts and replies about a piece, the notes left in its margins, and the other writing that cites it, quietly beneath what you’re reading."
-msgstr "そして閉じた場所にはなりません。それぞれの記事を Atmosphere（このアプリの外に広がるオープンなネットワーク）で交わされる会話につなぎ、その記事についての Bluesky の投稿や返信、余白に残されたメモ、引用している他の文章を、読んでいるものの下にそっと集めます。"
+#~ msgid "And it never feels sealed off. We connect each article to the conversation happening across the Atmosphere — the open network beyond this app — gathering the Bluesky posts and replies about a piece, the notes left in its margins, and the other writing that cites it, quietly beneath what you’re reading."
+#~ msgstr "そして閉じた場所にはなりません。それぞれの記事を Atmosphere（このアプリの外に広がるオープンなネットワーク）で交わされる会話につなぎ、その記事についての Bluesky の投稿や返信、余白に残されたメモ、引用している他の文章を、読んでいるものの下にそっと集めます。"
 
 #: src/components/guide/guide-shell.tsx
 msgid "Still stuck, or something here doesn't match what you see? <0>Tell us on the feedback board</0> — questions are welcome there, not just bug reports."
@@ -316,6 +321,10 @@ msgstr "実行中…"
 #: src/components/onboarding/welcome-wizard.tsx
 msgid "Your Home feed is built from subscriptions. Three is a good start."
 msgstr "ホームフィードは購読から作られます。まずは3つから始めましょう。"
+
+#: src/components/reader/about-view.tsx
+msgid "A note in the margin"
+msgstr ""
 
 #: src/components/reader/collection-theme-editor.tsx
 msgid "Colors"
@@ -389,6 +398,10 @@ msgstr "購読しています…"
 msgid "People"
 msgstr ""
 
+#: src/components/reader/about-view.tsx
+msgid "Every piece is a door to the next one"
+msgstr ""
+
 #: src/routes/_layout.friends.tsx
 msgid "Publications written by the people you follow on Bluesky, minus the ones you already subscribe to."
 msgstr ""
@@ -417,6 +430,7 @@ msgstr ""
 msgid "Switch to light paper"
 msgstr "明るい紙に切り替える"
 
+#: src/components/reader/about-view.tsx
 #: src/components/reader/comments/comment-card.tsx
 msgid "on Bluesky"
 msgstr "Bluesky で"
@@ -426,8 +440,8 @@ msgid "Set these now, or change them any time in Settings."
 msgstr "今すぐ設定するか、あとで設定からいつでも変更できます。"
 
 #: src/components/reader/about-view.tsx
-msgid "Most readers stop at what you already subscribe to. Standard Reader treats finding your next favourite as part of the job. Browse every publications on the network — not just the handful you've heard of."
-msgstr "多くのリーダーは、すでに購読しているものを見せて終わりです。Standard Reader は次のお気に入りを見つけることも役目だと考えています。名前を知っている一握りだけでなく、ネットワーク上のすべての発行物を見てまわりましょう。"
+#~ msgid "Most readers stop at what you already subscribe to. Standard Reader treats finding your next favourite as part of the job. Browse every publications on the network — not just the handful you've heard of."
+#~ msgstr "多くのリーダーは、すでに購読しているものを見せて終わりです。Standard Reader は次のお気に入りを見つけることも役目だと考えています。名前を知っている一握りだけでなく、ネットワーク上のすべての発行物を見てまわりましょう。"
 
 #: src/components/guide/pages/collections-guide-page.tsx
 msgid "Open <0>Collections</0> in the sidebar and start a new one."
@@ -682,8 +696,8 @@ msgid "Making a collection"
 msgstr ""
 
 #: src/components/reader/about-view.tsx
-msgid "Read the guide"
-msgstr ""
+#~ msgid "Read the guide"
+#~ msgstr ""
 
 #: src/components/reader/app-shell.tsx
 #: src/components/site-legal-links.tsx
@@ -811,6 +825,10 @@ msgstr "拡張機能のプライバシー"
 msgid "Signing in"
 msgstr ""
 
+#: src/components/reader/about-view.tsx
+msgid "Public API — no key required"
+msgstr ""
+
 #: src/components/reading-settings-preview.tsx
 msgid "Loading voice sample"
 msgstr "音声サンプルを読み込み中"
@@ -874,6 +892,11 @@ msgstr "再試行"
 
 #: src/lib/guide/navigation.ts
 msgid "Welcome"
+msgstr ""
+
+#. placeholder {0}: SUPPORTED_CONTENT_FORMATS.size
+#: src/components/reader/about-view.tsx
+msgid "An article is a record in its author’s own repository, and every publishing tool on the network writes that record a little differently. Standard Reader reads {0} of those content formats and renders them all into the same calm page — so a reader never has to care which tool a writer chose."
 msgstr ""
 
 #: src/components/user-settings-view.tsx
@@ -1003,6 +1026,10 @@ msgstr ""
 msgid "Bookmarks"
 msgstr "ブックマーク"
 
+#: src/components/reader/about-view.tsx
+msgid "None of this is ours. We gather it from the Atmosphere — the open network these apps all share — and show it under the piece it’s about. Every line links back to where it was actually written, no account or comment box required, and it works whether or not the author ever opted in."
+msgstr ""
+
 #: src/components/reader/save-to-collection-dialog.tsx
 msgid "Saved to {savedName} on {appLabel}."
 msgstr "{appLabel} の {savedName} に保存しました。"
@@ -1057,6 +1084,10 @@ msgstr "オープンウェブのための静かな読書室。2分だけ使っ�
 #: src/routes/_layout.collections.index.tsx
 msgid "New series"
 msgstr "新しいシリーズ"
+
+#: src/components/reader/about-view.tsx
+msgid "Blogs never really solved the conversation. Comment boxes belonged to the blog, went unread, filled with spam, and vanished when the site did. So the talking moved somewhere else — and stopped being attached to the writing at all."
+msgstr ""
 
 #: src/components/guide/pages/your-data-guide-page.tsx
 msgid "These deletions remove the records from your account itself, not just from our copy — which is why they cannot be undone. Deleting your reading history, for example, makes everything look unread again everywhere."
@@ -1130,6 +1161,10 @@ msgstr ""
 msgid "Under that, <0>Cited in</0> lists other articles that link to this one, and <1>Related reading</1> suggests pieces from across the network on the same subjects — usually from publications you have not met yet."
 msgstr ""
 
+#: src/components/reader/about-view.tsx
+msgid "Essays and serialized writing"
+msgstr ""
+
 #: src/components/guide/pages/getting-started-guide-page.tsx
 #: src/lib/guide/navigation.ts
 #~ msgid "Following your first publications"
@@ -1182,8 +1217,8 @@ msgid "Custom"
 msgstr ""
 
 #: src/components/reader/about-view.tsx
-msgid "Read the API docs"
-msgstr "API ドキュメントを読む"
+#~ msgid "Read the API docs"
+#~ msgstr "API ドキュメントを読む"
 
 #: src/components/guide/pages/reading-guide-page.tsx
 msgid "Select <0>Listen</0> in the top bar and the article is read aloud. The first time takes a few seconds to warm up; after that it starts straight away."
@@ -1198,8 +1233,8 @@ msgstr ""
 #~ msgstr ""
 
 #: src/components/reader/about-view.tsx
-msgid "Shareable everywhere"
-msgstr "どこでも共有できる"
+#~ msgid "Shareable everywhere"
+#~ msgstr "どこでも共有できる"
 
 #: src/magazine/Magazine.tsx
 msgid "Close table of contents"
@@ -1232,6 +1267,10 @@ msgstr ""
 
 #: src/components/docs/introduction-docs-page.tsx
 msgid "how to make a site discoverable on Standard and have its content read inline, without adopting a platform."
+msgstr ""
+
+#: src/components/reader/about-view.tsx
+msgid "Most readers stop at what they already subscribe to. Standard Reader treats the next voice as part of the job: the piece you just finished points at who cited it, what it’s related to, and who else is worth following — across every publication on the network, not just the handful you’ve heard of."
 msgstr ""
 
 #: src/components/reader/terms-view.tsx
@@ -1303,6 +1342,10 @@ msgstr ""
 msgid "To move several at once, open <0>Subscriptions</0>, select the rows you want, and add them all to a list in one action. That is much faster than doing it publication by publication."
 msgstr ""
 
+#: src/components/reader/about-view.tsx
+msgid "Blocks, pages, and footnotes"
+msgstr ""
+
 #: src/components/user-settings-view.tsx
 msgid "Appearance"
 msgstr "外観"
@@ -1354,6 +1397,10 @@ msgstr "アカウント"
 msgid "Collapse all lists"
 msgstr "すべてのリストを折りたたむ"
 
+#: src/components/reader/about-view.tsx
+msgid "Four essays covering the same ground, from publications you don’t follow yet."
+msgstr ""
+
 #: src/components/reader/article-view.tsx
 msgid "We couldn’t find that article."
 msgstr "その記事は見つかりませんでした。"
@@ -1388,6 +1435,10 @@ msgstr "自分のコレクション"
 
 #: src/components/guide/pages/finding-guide-page.tsx
 msgid "Search covers publication names, people's handles, topics, and the text of articles. Results are split into publications and articles, and each result shows the passage that matched with your words highlighted, so you can tell a real match from a coincidence without opening it."
+msgstr ""
+
+#: src/components/reader/about-view.tsx
+msgid "“…made to be read, and not to be measured.”"
 msgstr ""
 
 #: src/components/guide/pages/getting-started-guide-page.tsx
@@ -1505,6 +1556,10 @@ msgstr "高速な全文検索"
 #: src/components/reader/save-to-collection-dialog.tsx
 msgid "Collection name"
 msgstr "コレクション名"
+
+#: src/components/reader/about-view.tsx
+msgid "+{UNNAMED_FORMAT_COUNT} more"
+msgstr ""
 
 #: src/components/guide/pages/reading-guide-page.tsx
 #: src/lib/guide/navigation.ts
@@ -1698,8 +1753,8 @@ msgid "What every control on an article does — including having it read aloud 
 msgstr ""
 
 #: src/components/reader/about-view.tsx
-msgid "The reading experience"
-msgstr "読書体験"
+#~ msgid "The reading experience"
+#~ msgstr "読書体験"
 
 #: src/routes/_layout.tsx
 msgid "Loading page"
@@ -1736,6 +1791,10 @@ msgstr ""
 #: src/components/guide/pages/keeping-track-guide-page.tsx
 #~ msgid "Collections live under <0>Collections</0> in the sidebar. Because publishing one writes a new kind of record to your account, the first time you make one you will be asked to grant an extra permission — that is the <1>Upgrade permissions</1> prompt, and it only appears once."
 #~ msgstr ""
+
+#: src/components/reader/about-view.tsx
+msgid "Also read natively:"
+msgstr ""
 
 #. placeholder {0}: pub.name
 #: src/components/reader/article-below-fold.tsx
@@ -1777,8 +1836,8 @@ msgstr "このページの発行物はすべて購読済みです。さらにス
 #~ msgstr ""
 
 #: src/components/reader/about-view.tsx
-msgid "Under each article you see the discussion from across the open network — Bluesky posts and replies, margin notes, links from other pieces that cite it, and related reading. All read-only, all linking back to the source."
-msgstr "各記事の下では、オープンなネットワーク全体の反応をまとめて確認できます。Bluesky の投稿や返信、マージンノート、その記事を引用した他の記事からのリンク、関連する読み物などです。すべて読み取り専用で、元の投稿へリンクしています。"
+#~ msgid "Under each article you see the discussion from across the open network — Bluesky posts and replies, margin notes, links from other pieces that cite it, and related reading. All read-only, all linking back to the source."
+#~ msgstr "各記事の下では、オープンなネットワーク全体の反応をまとめて確認できます。Bluesky の投稿や返信、マージンノート、その記事を引用した他の記事からのリンク、関連する読み物などです。すべて読み取り専用で、元の投稿へリンクしています。"
 
 #: src/routes/_layout.latest.tsx
 msgid "Show all subscriptions"
@@ -1831,8 +1890,8 @@ msgid "{total, plural, one {# match} other {# matches}}"
 msgstr "{total, plural, one {# 件の一致} other {# 件の一致}}"
 
 #: src/components/reader/about-view.tsx
-msgid "Publications, lists, and collections each get a clean link with a rich preview card — plus a subscribe button a publication can drop on its own site."
-msgstr "発行物・リスト・コレクションのそれぞれに、リッチなプレビューカード付きのすっきりしたリンクが用意されます。発行物が自分のサイトに設置できる購読ボタンも使えます。"
+#~ msgid "Publications, lists, and collections each get a clean link with a rich preview card — plus a subscribe button a publication can drop on its own site."
+#~ msgstr "発行物・リスト・コレクションのそれぞれに、リッチなプレビューカード付きのすっきりしたリンクが用意されます。発行物が自分のサイトに設置できる購読ボタンも使えます。"
 
 #: src/components/reader/discover-topic-filters.tsx
 msgid "Search topics"
@@ -1857,6 +1916,10 @@ msgstr "コレクション内の記事"
 #: src/components/user-settings-view.tsx
 msgid "System"
 msgstr "システム"
+
+#: src/components/reader/about-view.tsx
+msgid "Every feed, directory, and search query the app itself runs."
+msgstr ""
 
 #: src/components/reader/save-to-collection-dialog.tsx
 msgid "Could not save to {appLabel}"
@@ -1964,8 +2027,8 @@ msgid "Never used"
 msgstr ""
 
 #: src/components/reader/about-view.tsx
-msgid "Building something on the same index? There’s a public API."
-msgstr "同じインデックスを使って何かを作りますか？公開 API があります。"
+#~ msgid "Building something on the same index? There’s a public API."
+#~ msgstr "同じインデックスを使って何かを作りますか？公開 API があります。"
 
 #: src/components/reader/comments/comments-section.tsx
 msgid "Discussion"
@@ -2196,6 +2259,10 @@ msgstr "このコレクションを公開する場所です。シリーズのフ
 msgid "No apps connected"
 msgstr ""
 
+#: src/components/reader/about-view.tsx
+msgid "Nothing about it is fixed. Set the measure, the type size, and the typeface to whatever your eyes want, in light or dark, and the setting follows you to every article you open after it."
+msgstr ""
+
 #: src/components/reader/markdown-field.tsx
 msgid "Edit"
 msgstr "編集"
@@ -2215,6 +2282,10 @@ msgstr "Standard Reader のインデックス済み読み取りモデル向け�
 #: src/components/reader/collection-theme-editor.tsx
 msgid "Save theme"
 msgstr "テーマを保存"
+
+#: src/components/reader/about-view.tsx
+msgid "A reply"
+msgstr ""
 
 #: src/components/guide/pages/getting-started-guide-page.tsx
 msgid "your day: one featured article, then what is new from the publications you subscribe to."
@@ -2397,6 +2468,10 @@ msgstr ""
 #~ msgid "Carry on browsing. The overlay appears where it is useful and stays out of the way where it is not."
 #~ msgstr ""
 
+#: src/components/reader/about-view.tsx
+msgid "And if your reader of choice is one you already have, any slice of the network comes with its own feed — pipe it straight in and never open this app at all."
+msgstr ""
+
 #: src/components/user-settings-view.tsx
 msgid "To email your digest, Standard Reader needs your account email address. We'll ask your PDS to share it — you'll be sent to your login to approve the request, then brought right back here. Your email is used only to send the weekly digest, and you can turn it off any time."
 msgstr "ダイジェストをメールで送るには、Standard Reader にアカウントのメールアドレスが必要です。PDS に共有を依頼するため、ログイン画面で許可していただき、その後ここに戻ります。メールアドレスは週刊ダイジェストの送信にのみ使用され、いつでもオフにできます。"
@@ -2406,7 +2481,6 @@ msgid "Where your reading is kept, who else can see it, what you agreed to when 
 msgstr ""
 
 #: src/components/guide/pages/publishing-guide-page.tsx
-#: src/components/reader/about-view.tsx
 #: src/lib/guide/navigation.ts
 msgid "Discovery"
 msgstr "ディスカバリー"
@@ -2533,6 +2607,10 @@ msgstr "備忘録をつけるということ"
 msgid "Most reading apps keep your list of follows on their own servers. If the app shuts down, your list goes with it."
 msgstr ""
 
+#: src/components/reader/about-view.tsx
+msgid "Keep the good sentence"
+msgstr ""
+
 #: src/routes/_layout.u.$did.tsx
 msgid "Featured in"
 msgstr "掲載先"
@@ -2624,8 +2702,8 @@ msgid "Paper"
 msgstr ""
 
 #: src/components/reader/about-view.tsx
-msgid "Flip one setting and article links open on the publication’s own site instead. Read wherever feels right to you."
-msgstr "設定を一つ切り替えるだけで、記事のリンクが発行物自身のサイトで開くようになります。心地よい場所で読んでください。"
+#~ msgid "Flip one setting and article links open on the publication’s own site instead. Read wherever feels right to you."
+#~ msgstr "設定を一つ切り替えるだけで、記事のリンクが発行物自身のサイトで開くようになります。心地よい場所で読んでください。"
 
 #: src/components/guide/pages/finding-guide-page.tsx
 msgid "Discover is the directory of every publication the network knows about — not a curated shelf. It runs top to bottom from most personal to most complete:"
@@ -2690,8 +2768,12 @@ msgid "{0, plural, one {follower} other {followers}}"
 msgstr "{0, plural, one {フォロワー} other {フォロワー}}"
 
 #: src/components/reader/about-view.tsx
-msgid "Most readers stop at what you already subscribe to. Standard Reader treats finding your next favourite as part of the job. Browse all {countLabel} publications on the network — not just the handful you've heard of."
-msgstr "多くのリーダーは、すでに購読しているものまでしか見せてくれません。Standard Reader は、次のお気に入りを見つけることも役目のうちだと考えています。名前を知っている一握りだけでなく、ネットワーク上の {countLabel} 件すべての発行物を見てまわれます。"
+#~ msgid "Most readers stop at what you already subscribe to. Standard Reader treats finding your next favourite as part of the job. Browse all {countLabel} publications on the network — not just the handful you've heard of."
+#~ msgstr "多くのリーダーは、すでに購読しているものまでしか見せてくれません。Standard Reader は、次のお気に入りを見つけることも役目のうちだと考えています。名前を知っている一握りだけでなく、ネットワーク上の {countLabel} 件すべての発行物を見てまわれます。"
+
+#: src/components/reader/about-view.tsx
+msgid "A lightweight browser extension lets you save and subscribe to publications while you’re out on the web — with subtle badges on bsky.app and a one-click overlay on any page you land on. Your reading list fills itself, and every save, like, and subscribe is instantly in sync with whatever device you read on next."
+msgstr ""
 
 #: src/components/labeler-detail-view.tsx
 msgid "Labels"
@@ -2767,6 +2849,10 @@ msgstr ""
 #: src/components/reader/collections-upgrade-gate.tsx
 msgid "Upgrade to author Collections"
 msgstr "コレクションを作成するにはアップグレード"
+
+#: src/components/reader/about-view.tsx
+msgid "Render a document in your own app —"
+msgstr ""
 
 #: src/components/reader/privacy-view.tsx
 msgid "Your social actions (follows, likes, saves, lists) are written to your AT Protocol repository and are visible according to the network's rules and your account settings. Our Postgres database holds a network read-model, app session state, and cached public metadata — not the canonical copies of publications."
@@ -2872,12 +2958,20 @@ msgstr "最終更新: 2026年6月13日"
 msgid "{shown, plural, one {# match} other {# matches}}"
 msgstr "{shown, plural, one {# 件の一致} other {# 件の一致}}"
 
+#: src/components/reader/about-view.tsx
+msgid "Select a passage and share it as a typeset card that links back to the article — or keep reading and pick up exactly where you left off next time."
+msgstr ""
+
 #: src/components/onboarding/welcome-wizard.tsx
 msgid "People you follow write here"
 msgstr ""
 
 #: src/components/guide/pages/extension-guide-page.tsx
 msgid "Good writing rarely turns up while you are already in a reading app. The extension puts saving and subscribing on every page you visit."
+msgstr ""
+
+#: src/components/reader/about-view.tsx
+msgid "Drop a Standard document into your own app, in your own framework."
 msgstr ""
 
 #: src/magazine/flow.tsx
@@ -3051,6 +3145,10 @@ msgstr ""
 #: src/components/docs/docs-publishing-nav.tsx
 #~ msgid "Publishing guide"
 #~ msgstr "公開ガイド"
+
+#: src/components/reader/about-view.tsx
+msgid "Prefer the original? Flip one setting and article links open on the publication’s own site instead — Standard Reader will still keep your place."
+msgstr ""
 
 #: src/components/guide/pages/reading-guide-page.tsx
 msgid "<0>Share</0> copies a link, or posts the article to Bluesky with a proper preview card. On a phone it can hand off to whatever you normally share with."
@@ -3425,6 +3523,10 @@ msgstr "問題が発生しました。"
 msgid "The best of what you subscribe to"
 msgstr "購読中の発行物のベスト"
 
+#: src/components/reader/about-view.tsx
+msgid "Under this article"
+msgstr ""
+
 #: src/components/reader/save-to-collection-dialog.tsx
 msgid "Note"
 msgstr "メモ"
@@ -3526,6 +3628,7 @@ msgstr "音声を生成中… {percent}%"
 
 #: src/components/docs/docs-nav-areas.ts
 #: src/components/docs/introduction-docs-page.tsx
+#: src/components/reader/about-view.tsx
 msgid "Renderers"
 msgstr ""
 
@@ -3565,8 +3668,8 @@ msgid "What Standard Reader is"
 msgstr ""
 
 #: src/components/reader/about-view.tsx
-msgid "Prefer the original?"
-msgstr "オリジナルで読みますか？"
+#~ msgid "Prefer the original?"
+#~ msgstr "オリジナルで読みますか？"
 
 #: src/components/reader/subscriptions-table.tsx
 msgid "Could not add to list"
@@ -3787,6 +3890,10 @@ msgstr "ブラウザの設定に基づいてこの言語を選びました。い
 
 #: src/routes/mcp/authorize.tsx
 msgid "Nothing has been shared. Head back to the app you came from and try connecting again."
+msgstr ""
+
+#: src/components/reader/about-view.tsx
+msgid "“This is the whole argument in one clause. Worth sitting with.”"
 msgstr ""
 
 #: src/components/reader/text-selection-toolbar.tsx
@@ -4013,8 +4120,8 @@ msgid "Save and subscribe from anywhere on the web, without breaking your stride
 msgstr ""
 
 #: src/components/reader/about-view.tsx
-msgid "Integrations"
-msgstr "連携"
+#~ msgid "Integrations"
+#~ msgstr "連携"
 
 #. placeholder {0}: person.subscriberCount
 #. placeholder {0}: pub.subscriberCount
@@ -4137,6 +4244,10 @@ msgstr ""
 msgid "This request can't be completed here, so we're returning you to the app that sent you."
 msgstr ""
 
+#: src/components/reader/about-view.tsx
+msgid "Read the docs"
+msgstr ""
+
 #: src/routes/_layout.l.$did.$rkey.tsx
 msgid "No people in this list — add some from the edit dialog."
 msgstr "このリストにユーザーがいません。編集ダイアログから追加してください。"
@@ -4167,8 +4278,8 @@ msgid "Browse publications"
 msgstr "発行物を見る"
 
 #: src/components/reader/about-view.tsx
-msgid "Standard Reader doesn’t trap your reading inside one app. Any slice of the network comes with its own RSS feed — pipe it straight into whatever reader you already use."
-msgstr "Standard Reader は読書を1つのアプリに閉じ込めません。ネットワークのどの断面にも独自の RSS フィードが付いてくるので、すでに使っているリーダーにそのまま流し込めます。"
+#~ msgid "Standard Reader doesn’t trap your reading inside one app. Any slice of the network comes with its own RSS feed — pipe it straight into whatever reader you already use."
+#~ msgstr "Standard Reader は読書を1つのアプリに閉じ込めません。ネットワークのどの断面にも独自の RSS フィードが付いてくるので、すでに使っているリーダーにそのまま流し込めます。"
 
 #: src/components/feedback/feedback-image-picker.tsx
 #~ msgid "Choose images"
@@ -4236,6 +4347,10 @@ msgstr ""
 
 #: src/components/feedback/feedback-image-picker.tsx
 msgid "That image is too detailed to fit under 1 MB. Try cropping it first."
+msgstr ""
+
+#: src/components/reader/about-view.tsx
+msgid "“Been thinking about this all week. The measurement is the part that ruins it — not the writing.”"
 msgstr ""
 
 #: src/components/reader/share-menu.tsx
@@ -4310,13 +4425,17 @@ msgstr "フィードバックを読み込めませんでした <0>({0})</0>。�
 msgid "No publications match this tag yet."
 msgstr "このタグに一致する発行物はまだありません。"
 
+#: src/components/reader/about-view.tsx
+msgid "Written wherever they write"
+msgstr ""
+
 #: src/components/guide/pages/finding-guide-page.tsx
 msgid "If you already know what you are looking for, the <0>Add publication</0> button opens a single field that does three things at once. Leave it empty and it shows what is trending. Type a few words and it searches the directory. Paste a handle or a domain — <1>@stdout.dev</1>, <2>stdout.dev</2> — and it looks that author up directly."
 msgstr ""
 
 #: src/components/reader/about-view.tsx
-msgid "The conversation, gathered"
-msgstr "語られていることの、まとめ"
+#~ msgid "The conversation, gathered"
+#~ msgstr "語られていることの、まとめ"
 
 #: src/components/reader/publication-actions.tsx
 #: src/routes/_layout.latest.tsx
@@ -4344,8 +4463,8 @@ msgstr ""
 #~ msgstr ""
 
 #: src/components/reader/about-view.tsx
-msgid "Save, like, subscribe — everywhere"
-msgstr "保存も、いいねも、購読も、どこでも"
+#~ msgid "Save, like, subscribe — everywhere"
+#~ msgstr "保存も、いいねも、購読も、どこでも"
 
 #: src/components/reader/subscriptions-unsubscribe-dialog.tsx
 msgid "Unsubscribe?"
@@ -4402,6 +4521,7 @@ msgstr ""
 
 #: src/components/docs/docs-nav-areas.ts
 #: src/components/docs/introduction-docs-page.tsx
+#: src/components/reader/about-view.tsx
 msgid "API"
 msgstr "API"
 
@@ -4415,6 +4535,10 @@ msgstr "アイコンを差し替え"
 
 #: src/components/reader/subscriptions-unsubscribe-dialog.tsx
 msgid "Unfollow"
+msgstr ""
+
+#: src/components/reader/about-view.tsx
+msgid "Standard Reader doesn’t ask you to move in. It goes out to the web you already use, and hands your reading back in whatever shape suits you."
 msgstr ""
 
 #: src/routes/mcp/authorize.tsx
@@ -4473,6 +4597,10 @@ msgstr "認証"
 
 #: src/components/reader/terms-view.tsx
 msgid "Changes to these terms"
+msgstr ""
+
+#: src/components/reader/about-view.tsx
+msgid "Short-form posts and long reads"
 msgstr ""
 
 #: src/components/reader/about-view.tsx
@@ -4541,6 +4669,10 @@ msgstr ""
 #: src/components/reader/privacy-view.tsx
 msgid "If you install the {SITE_NAME} browser extension, it uses the same account and session cookie as this site. The extension sends page URLs to our <0>/api/extension/*</0> endpoints for index matching and keeps overlay settings in your browser's extension storage. See the <1>extension privacy policy</1> for details that apply only to the extension."
 msgstr "{SITE_NAME} のブラウザ拡張機能をインストールすると、このサイトと同じアカウントとセッションクッキーが使われます。拡張機能はインデックス照合のためにページの URL を <0>/api/extension/*</0> エンドポイントへ送信し、オーバーレイの設定はブラウザの拡張機能ストレージに保存します。拡張機能のみに適用される詳細は<1>拡張機能のプライバシーポリシー</1>をご覧ください。"
+
+#: src/components/reader/about-view.tsx
+msgid "And when a run of them turns out to be good together, collect them into a named list — a playlist for reading. Anyone can add the whole thing to their own reader in a single tap."
+msgstr ""
 
 #: src/components/reader/list-edit-modal.tsx
 msgid "Remove {memberName} from list"
@@ -4698,8 +4830,8 @@ msgid "Saves a link to your <0>{appLabel}</0> collection."
 msgstr "リンクを <0>{appLabel}</0> コレクションに保存します。"
 
 #: src/components/reader/about-view.tsx
-msgid "In your inbox"
-msgstr "受信トレイに"
+#~ msgid "In your inbox"
+#~ msgstr "受信トレイに"
 
 #: src/components/reader/reorder-subscriptions-modal.tsx
 #~ msgid "Drag to change the order your subscriptions appear in the sidebar."
@@ -4713,6 +4845,7 @@ msgstr "外観、読書設定、個人データ。"
 msgid "Authority for <0>app.standard-reader</0> resolves via DNS <1>_lexicon.*</1> TXT records to the publishing account."
 msgstr "<0>app.standard-reader</0> の権限は、DNS の <1>_lexicon.*</1> TXT レコードを経由して公開元アカウントに解決されます。"
 
+#: src/components/reader/about-view.tsx
 #: src/components/reader/comments/comment-card.tsx
 msgid "on Margin"
 msgstr "Margin で"
@@ -4749,6 +4882,10 @@ msgstr "そのハンドルを解決できませんでした。"
 msgid "Good to know"
 msgstr ""
 
+#: src/components/reader/about-view.tsx
+msgid "Most readers stop at what they already subscribe to. Standard Reader treats the next voice as part of the job: the piece you just finished points at who cited it, what it’s related to, and who else is worth following — across all {countLabel} publications on the network, not just the handful you’ve heard of."
+msgstr ""
+
 #: src/components/reader/atstore-review-prompt.tsx
 msgid "Sharing a review on the <0>ATStore</0> will help both us and other users see what you think about Standard Reader."
 msgstr "<0>ATStore</0> でレビューを共有していただくと、Standard Reader についてのご意見を私たちにも他のユーザーにも届けられます。"
@@ -4756,6 +4893,10 @@ msgstr "<0>ATStore</0> でレビューを共有していただくと、Standard 
 #: src/components/guide/pages/everywhere-guide-page.tsx
 #~ msgid "On Bluesky, quiet badges mark the people whose writing you can read here."
 #~ msgstr ""
+
+#: src/components/reader/about-view.tsx
+msgid "Publish labels others can subscribe to, or consume the ones we do."
+msgstr ""
 
 #: src/components/guide/pages/extension-guide-page.tsx
 msgid "The full account is on the <0>extension privacy page</0>."
@@ -4888,13 +5029,17 @@ msgstr "ここにはまだ読むものがありません。"
 msgid "Labelers are moderation services you subscribe to by DID. Subscribe to see their labels — and blur or hide labeled posts — while you read."
 msgstr "ラベラーは DID を指定して購読するモデレーションサービスです。購読すると、読書中にラベルを確認したり、ラベル付きの投稿をぼかしたり非表示にしたりできます。"
 
+#: src/components/reader/about-view.tsx
+msgid "The part blogging always missed"
+msgstr ""
+
 #: src/components/docs/publishing-docs-page.tsx
 #~ msgid "The older link rels"
 #~ msgstr ""
 
 #: src/components/reader/about-view.tsx
-msgid "Standard Reader meets you where you read"
-msgstr "Standard Reader は、読む場所に寄り添います"
+#~ msgid "Standard Reader meets you where you read"
+#~ msgstr "Standard Reader は、読む場所に寄り添います"
 
 #: src/components/appearance-settings.tsx
 msgid "Reset appearance"
@@ -5088,6 +5233,10 @@ msgstr ""
 #: src/routes/_layout.latest.tsx
 msgid "All caught up"
 msgstr "すべて読み終えました"
+
+#: src/components/reader/about-view.tsx
+msgid "Everything here is linkable, too. Publications, lists, and collections each get a clean URL with a rich preview card — plus a subscribe button a publication can drop straight onto its own site."
+msgstr ""
 
 #: src/components/reader/reorder-subscriptions-modal.tsx
 #~ msgid "Reorder subscriptions"
@@ -5284,6 +5433,7 @@ msgstr "ネットワークを検索"
 msgid "Search Google Fonts"
 msgstr "Google Fonts を検索"
 
+#: src/components/reader/about-view.tsx
 #: src/components/reader/article-below-fold.tsx
 msgid "Related reading"
 msgstr "関連する記事"
@@ -5522,8 +5672,8 @@ msgid "If something is confusing, broken, or missing, the <0>feedback board</0> 
 msgstr ""
 
 #: src/components/reader/about-view.tsx
-msgid "A lightweight browser extension lets you save and subscribe to publications while you’re out on the web — with subtle badges on bsky.app and a one-click overlay on any page you land on. Your reading list fills itself."
-msgstr "軽量なブラウザ拡張機能を使えば、ウェブを見ている最中でも発行物を保存・購読できます。bsky.app 上のさりげないバッジと、どのページでもワンクリックで開くオーバーレイ付き。読むものリストが自然に埋まっていきます。"
+#~ msgid "A lightweight browser extension lets you save and subscribe to publications while you’re out on the web — with subtle badges on bsky.app and a one-click overlay on any page you land on. Your reading list fills itself."
+#~ msgstr "軽量なブラウザ拡張機能を使えば、ウェブを見ている最中でも発行物を保存・購読できます。bsky.app 上のさりげないバッジと、どのページでもワンクリックで開くオーバーレイ付き。読むものリストが自然に埋まっていきます。"
 
 #: src/components/docs/docs-nav-areas.ts
 msgid "Introduction"
@@ -5763,8 +5913,8 @@ msgid "Open any article while signed in and it'll show up here. Your history liv
 msgstr "サインイン状態で記事を開くと、ここに表示されます。履歴はリポジトリ内に <0>app.standard-reader.read</0> レコードとして保存されます。"
 
 #: src/components/reader/about-view.tsx
-msgid "Build named, shareable lists of publications — a playlist for reading. Anyone can add your list to their own reader in a single tap."
-msgstr "名前を付けて共有できる発行物のリストを作りましょう。読書のプレイリストです。だれでもワンタップで自分のリーダーに追加できます。"
+#~ msgid "Build named, shareable lists of publications — a playlist for reading. Anyone can add your list to their own reader in a single tap."
+#~ msgstr "名前を付けて共有できる発行物のリストを作りましょう。読書のプレイリストです。だれでもワンタップで自分のリーダーに追加できます。"
 
 #: src/routes/_layout.u.$did.tsx
 msgid "Author"
@@ -5852,6 +6002,7 @@ msgstr ""
 #: src/components/docs/introduction-docs-page.tsx
 #: src/components/docs/labelers-docs-page.tsx
 #: src/components/labelers-settings-view.tsx
+#: src/components/reader/about-view.tsx
 #: src/components/reader/app-shell.tsx
 #: src/components/user-settings-view.tsx
 msgid "Labelers"
@@ -5862,8 +6013,8 @@ msgid "Choose your language"
 msgstr "言語を選択"
 
 #: src/components/reader/about-view.tsx
-msgid "Find the ones you didn't know you wanted"
-msgstr "自分でも気づいていなかったお気に入りを見つけよう"
+#~ msgid "Find the ones you didn't know you wanted"
+#~ msgstr "自分でも気づいていなかったお気に入りを見つけよう"
 
 #: src/components/labeler-detail-view.tsx
 msgid "Hide"
@@ -5949,8 +6100,8 @@ msgid "Supported content formats"
 msgstr "対応するコンテンツ形式"
 
 #: src/components/reader/about-view.tsx
-msgid "Plays nice with the open web"
-msgstr "オープンな Web と相性よく"
+#~ msgid "Plays nice with the open web"
+#~ msgstr "オープンな Web と相性よく"
 
 #: src/components/reader/privacy-view.tsx
 msgid "What we collect"
@@ -5975,6 +6126,10 @@ msgstr "Standard Reader は気に入りましたか？"
 #: src/components/reader/save-to-collection-dialog.tsx
 msgid "Use original link"
 msgstr "元のリンクを使う"
+
+#: src/components/reader/about-view.tsx
+msgid "Everything this app runs on is public. The schemas are open, the read-model is queryable, and the renderer that draws these pages is published for you to use — so a reading app, a search tool, or a better client than this one is a weekend, not a platform deal."
+msgstr ""
 
 #: src/components/guide/pages/publishing-guide-page.tsx
 msgid "Every publication page also serves a themed, embeddable subscribe widget — an iframe you can drop on your own site so visitors can subscribe without leaving your page. The easiest way to get it: open your publication's page on Standard Reader, use <0>Share → Embed subscribe</0>, pick landscape or portrait, and copy the snippet — no account or ownership check required to generate it."
@@ -6117,6 +6272,10 @@ msgstr "まだ議論はありません。"
 msgid "A single publication"
 msgstr "単一の発行物"
 
+#: src/components/reader/about-view.tsx
+msgid "Build on the same index"
+msgstr ""
+
 #: src/routes/extension.connected.tsx
 msgid "Return to the Standard Reader extension — this tab will close automatically."
 msgstr "Standard Reader の拡張機能に戻ってください。このタブは自動的に閉じます。"
@@ -6224,6 +6383,10 @@ msgstr ""
 #: src/components/reader/publication-latest-note.tsx
 msgid "Latest note"
 msgstr "最新のノート"
+
+#: src/components/reader/about-view.tsx
+msgid "The record schemas a publication, document, or follow is made of."
+msgstr ""
 
 #: src/components/guide/pages/personalizing-guide-page.tsx
 #: src/lib/guide/navigation.ts
@@ -6377,6 +6540,10 @@ msgstr "横長"
 msgid "Edit collection"
 msgstr "コレクションを編集"
 
+#: src/components/reader/about-view.tsx
+msgid "That is a real response from the endpoint this page just called — no key, no sign-up, no rate-limit form. The same is true of every feed, directory, and search query the reader itself runs."
+msgstr ""
+
 #: src/components/guide/pages/getting-started-guide-page.tsx
 #~ msgid "After that, following is one button. Anywhere you see a publication — a card in a feed, the top of an article, a publication's own page — there is a <0>Follow</0> button next to its name. Select it again to stop following. Nothing else changes: the button just decides whether new writing from that publication reaches your Home and Latest."
 #~ msgstr ""
@@ -6425,8 +6592,12 @@ msgid "Opening the issue…"
 msgstr "号を開いています…"
 
 #: src/components/reader/about-view.tsx
-msgid "It doesn't ask you to leave the rest of the web behind. It reaches out to it — and stays a good citizen of the wider network."
-msgstr "Web のほかの部分を手放すことを求めたりはしません。むしろそこに手を伸ばし、広いネットワークのよき一員であり続けます。"
+msgid "However you like to read it"
+msgstr ""
+
+#: src/components/reader/about-view.tsx
+#~ msgid "It doesn't ask you to leave the rest of the web behind. It reaches out to it — and stays a good citizen of the wider network."
+#~ msgstr "Web のほかの部分を手放すことを求めたりはしません。むしろそこに手を伸ばし、広いネットワークのよき一員であり続けます。"
 
 #: src/routes/_layout.collections.edit.$rkey.tsx
 msgid "We couldn’t load that collection to edit."
@@ -6488,6 +6659,10 @@ msgstr "Standard Reader は AT Proto リポジトリから <0>site.standard.docu
 #: src/components/reader/list-edit-modal.tsx
 msgid "e.g. Tech, Friends, Cooking"
 msgstr "例：テクノロジー、友だち、料理"
+
+#: src/components/reader/about-view.tsx
+msgid "Semble"
+msgstr ""
 
 #. placeholder {0}: fmt.relativeTime(connection.lastUsedAt)
 #: src/components/user-settings-view.tsx
@@ -6631,6 +6806,10 @@ msgstr "オン"
 
 #: src/components/guide/pages/your-data-guide-page.tsx
 msgid "We keep a copy of the public network — publications, articles, and who follows what — so the app can search, rank, and load quickly. That copy includes the records described above. It is a cache of things that are already public, not a second private profile of you."
+msgstr ""
+
+#: src/components/reader/about-view.tsx
+msgid "Two other pieces link to this one — you can read them from here."
 msgstr ""
 
 #: src/components/reader/page-reader-bar.tsx
@@ -6790,6 +6969,10 @@ msgstr ""
 #: src/components/guide/pages/getting-started-guide-page.tsx
 #: src/lib/guide/navigation.ts
 msgid "Finding your way around"
+msgstr ""
+
+#: src/components/reader/about-view.tsx
+msgid "Cited by"
 msgstr ""
 
 #: src/routes/mcp/authorize.tsx

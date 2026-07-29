@@ -123,12 +123,12 @@ msgid "Every renderer takes one input for the document — the content payload o
 msgstr ""
 
 #: src/components/reader/about-view.tsx
-msgid "One tap from the reading view, on any device, instantly in sync. Your library is always where you left it."
-msgstr "Ein Tippen aus der Leseansicht, auf jedem Gerät, sofort synchron. Ihre Bibliothek ist immer dort, wo Sie aufgehört haben."
+#~ msgid "One tap from the reading view, on any device, instantly in sync. Your library is always where you left it."
+#~ msgstr "Ein Tippen aus der Leseansicht, auf jedem Gerät, sofort synchron. Ihre Bibliothek ist immer dort, wo Sie aufgehört haben."
 
 #: src/components/reader/about-view.tsx
-msgid "Curated lists & collections"
-msgstr "Kuratierte Listen & Sammlungen"
+#~ msgid "Curated lists & collections"
+#~ msgstr "Kuratierte Listen & Sammlungen"
 
 #: src/components/docs/renderers-docs-page.tsx
 #~ msgid "Vue 3."
@@ -179,6 +179,7 @@ msgstr ""
 #: src/components/docs/docs-nav-areas.ts
 #: src/components/docs/introduction-docs-page.tsx
 #: src/components/docs/lexicon-docs-intro.tsx
+#: src/components/reader/about-view.tsx
 msgid "Lexicons"
 msgstr "Lexicons"
 
@@ -256,6 +257,10 @@ msgstr "Bitte fügen Sie einen Titel hinzu."
 #~ msgid "Pasting a handle works even for publications the network has not indexed yet — it goes and asks that author's account directly. Follow it and it starts appearing in your feeds like any other."
 #~ msgstr ""
 
+#: src/components/reader/about-view.tsx
+msgid "There’s an MCP server on the same host, so you can point an agent at the network too."
+msgstr ""
+
 #: src/components/reader/subscriptions-table.tsx
 msgid "Filter by name, handle, or topic"
 msgstr ""
@@ -302,8 +307,8 @@ msgid "(this is what Standard Reader itself uses)"
 msgstr ""
 
 #: src/components/reader/about-view.tsx
-msgid "And it never feels sealed off. We connect each article to the conversation happening across the Atmosphere — the open network beyond this app — gathering the Bluesky posts and replies about a piece, the notes left in its margins, and the other writing that cites it, quietly beneath what you’re reading."
-msgstr "Und es wirkt nie abgeschottet. Wir verbinden jeden Artikel mit dem Gespräch in der Atmosphere – dem offenen Netzwerk jenseits dieser App – und sammeln die Bluesky-Beiträge und Antworten zu einem Text, die Notizen an seinen Rändern und die anderen Texte, die ihn zitieren, unauffällig unter dem, was Sie gerade lesen."
+#~ msgid "And it never feels sealed off. We connect each article to the conversation happening across the Atmosphere — the open network beyond this app — gathering the Bluesky posts and replies about a piece, the notes left in its margins, and the other writing that cites it, quietly beneath what you’re reading."
+#~ msgstr "Und es wirkt nie abgeschottet. Wir verbinden jeden Artikel mit dem Gespräch in der Atmosphere – dem offenen Netzwerk jenseits dieser App – und sammeln die Bluesky-Beiträge und Antworten zu einem Text, die Notizen an seinen Rändern und die anderen Texte, die ihn zitieren, unauffällig unter dem, was Sie gerade lesen."
 
 #: src/components/guide/guide-shell.tsx
 msgid "Still stuck, or something here doesn't match what you see? <0>Tell us on the feedback board</0> — questions are welcome there, not just bug reports."
@@ -316,6 +321,10 @@ msgstr "läuft …"
 #: src/components/onboarding/welcome-wizard.tsx
 msgid "Your Home feed is built from subscriptions. Three is a good start."
 msgstr "Ihr Home-Feed entsteht aus Abos. Drei sind ein guter Anfang."
+
+#: src/components/reader/about-view.tsx
+msgid "A note in the margin"
+msgstr ""
 
 #: src/components/reader/collection-theme-editor.tsx
 msgid "Colors"
@@ -389,6 +398,10 @@ msgstr "Wird abonniert …"
 msgid "People"
 msgstr ""
 
+#: src/components/reader/about-view.tsx
+msgid "Every piece is a door to the next one"
+msgstr ""
+
 #: src/routes/_layout.friends.tsx
 msgid "Publications written by the people you follow on Bluesky, minus the ones you already subscribe to."
 msgstr ""
@@ -417,6 +430,7 @@ msgstr ""
 msgid "Switch to light paper"
 msgstr "Zu hellem Papier wechseln"
 
+#: src/components/reader/about-view.tsx
 #: src/components/reader/comments/comment-card.tsx
 msgid "on Bluesky"
 msgstr "auf Bluesky"
@@ -426,8 +440,8 @@ msgid "Set these now, or change them any time in Settings."
 msgstr "Legen Sie das jetzt fest oder ändern Sie es jederzeit in den Einstellungen."
 
 #: src/components/reader/about-view.tsx
-msgid "Most readers stop at what you already subscribe to. Standard Reader treats finding your next favourite as part of the job. Browse every publications on the network — not just the handful you've heard of."
-msgstr "Die meisten Leser bleiben bei dem, was sie schon abonniert haben. Für Standard Reader gehört es zur Aufgabe, Ihren nächsten Favoriten zu finden. Stöbern Sie in allen Publikationen im Netzwerk – nicht nur in den wenigen, von denen Sie schon gehört haben."
+#~ msgid "Most readers stop at what you already subscribe to. Standard Reader treats finding your next favourite as part of the job. Browse every publications on the network — not just the handful you've heard of."
+#~ msgstr "Die meisten Leser bleiben bei dem, was sie schon abonniert haben. Für Standard Reader gehört es zur Aufgabe, Ihren nächsten Favoriten zu finden. Stöbern Sie in allen Publikationen im Netzwerk – nicht nur in den wenigen, von denen Sie schon gehört haben."
 
 #: src/components/guide/pages/collections-guide-page.tsx
 msgid "Open <0>Collections</0> in the sidebar and start a new one."
@@ -682,8 +696,8 @@ msgid "Making a collection"
 msgstr ""
 
 #: src/components/reader/about-view.tsx
-msgid "Read the guide"
-msgstr ""
+#~ msgid "Read the guide"
+#~ msgstr ""
 
 #: src/components/reader/app-shell.tsx
 #: src/components/site-legal-links.tsx
@@ -811,6 +825,10 @@ msgstr "Datenschutz der Erweiterung"
 msgid "Signing in"
 msgstr ""
 
+#: src/components/reader/about-view.tsx
+msgid "Public API — no key required"
+msgstr ""
+
 #: src/components/reading-settings-preview.tsx
 msgid "Loading voice sample"
 msgstr "Stimmprobe wird geladen"
@@ -874,6 +892,11 @@ msgstr "Erneut versuchen"
 
 #: src/lib/guide/navigation.ts
 msgid "Welcome"
+msgstr ""
+
+#. placeholder {0}: SUPPORTED_CONTENT_FORMATS.size
+#: src/components/reader/about-view.tsx
+msgid "An article is a record in its author’s own repository, and every publishing tool on the network writes that record a little differently. Standard Reader reads {0} of those content formats and renders them all into the same calm page — so a reader never has to care which tool a writer chose."
 msgstr ""
 
 #: src/components/user-settings-view.tsx
@@ -1003,6 +1026,10 @@ msgstr ""
 msgid "Bookmarks"
 msgstr "Lesezeichen"
 
+#: src/components/reader/about-view.tsx
+msgid "None of this is ours. We gather it from the Atmosphere — the open network these apps all share — and show it under the piece it’s about. Every line links back to where it was actually written, no account or comment box required, and it works whether or not the author ever opted in."
+msgstr ""
+
 #: src/components/reader/save-to-collection-dialog.tsx
 msgid "Saved to {savedName} on {appLabel}."
 msgstr "In {savedName} auf {appLabel} gespeichert."
@@ -1057,6 +1084,10 @@ msgstr "Ein ruhiger Leseraum für das offene Web. Nehmen wir uns zwei Minuten, u
 #: src/routes/_layout.collections.index.tsx
 msgid "New series"
 msgstr "Neue Reihe"
+
+#: src/components/reader/about-view.tsx
+msgid "Blogs never really solved the conversation. Comment boxes belonged to the blog, went unread, filled with spam, and vanished when the site did. So the talking moved somewhere else — and stopped being attached to the writing at all."
+msgstr ""
 
 #: src/components/guide/pages/your-data-guide-page.tsx
 msgid "These deletions remove the records from your account itself, not just from our copy — which is why they cannot be undone. Deleting your reading history, for example, makes everything look unread again everywhere."
@@ -1130,6 +1161,10 @@ msgstr ""
 msgid "Under that, <0>Cited in</0> lists other articles that link to this one, and <1>Related reading</1> suggests pieces from across the network on the same subjects — usually from publications you have not met yet."
 msgstr ""
 
+#: src/components/reader/about-view.tsx
+msgid "Essays and serialized writing"
+msgstr ""
+
 #: src/components/guide/pages/getting-started-guide-page.tsx
 #: src/lib/guide/navigation.ts
 #~ msgid "Following your first publications"
@@ -1182,8 +1217,8 @@ msgid "Custom"
 msgstr ""
 
 #: src/components/reader/about-view.tsx
-msgid "Read the API docs"
-msgstr "API-Doku lesen"
+#~ msgid "Read the API docs"
+#~ msgstr "API-Doku lesen"
 
 #: src/components/guide/pages/reading-guide-page.tsx
 msgid "Select <0>Listen</0> in the top bar and the article is read aloud. The first time takes a few seconds to warm up; after that it starts straight away."
@@ -1198,8 +1233,8 @@ msgstr ""
 #~ msgstr ""
 
 #: src/components/reader/about-view.tsx
-msgid "Shareable everywhere"
-msgstr "Überall teilbar"
+#~ msgid "Shareable everywhere"
+#~ msgstr "Überall teilbar"
 
 #: src/magazine/Magazine.tsx
 msgid "Close table of contents"
@@ -1232,6 +1267,10 @@ msgstr ""
 
 #: src/components/docs/introduction-docs-page.tsx
 msgid "how to make a site discoverable on Standard and have its content read inline, without adopting a platform."
+msgstr ""
+
+#: src/components/reader/about-view.tsx
+msgid "Most readers stop at what they already subscribe to. Standard Reader treats the next voice as part of the job: the piece you just finished points at who cited it, what it’s related to, and who else is worth following — across every publication on the network, not just the handful you’ve heard of."
 msgstr ""
 
 #: src/components/reader/terms-view.tsx
@@ -1303,6 +1342,10 @@ msgstr ""
 msgid "To move several at once, open <0>Subscriptions</0>, select the rows you want, and add them all to a list in one action. That is much faster than doing it publication by publication."
 msgstr ""
 
+#: src/components/reader/about-view.tsx
+msgid "Blocks, pages, and footnotes"
+msgstr ""
+
 #: src/components/user-settings-view.tsx
 msgid "Appearance"
 msgstr "Darstellung"
@@ -1354,6 +1397,10 @@ msgstr "Konto"
 msgid "Collapse all lists"
 msgstr "Alle Listen einklappen"
 
+#: src/components/reader/about-view.tsx
+msgid "Four essays covering the same ground, from publications you don’t follow yet."
+msgstr ""
+
 #: src/components/reader/article-view.tsx
 msgid "We couldn’t find that article."
 msgstr "Dieser Artikel wurde nicht gefunden."
@@ -1388,6 +1435,10 @@ msgstr "Ihre Sammlung"
 
 #: src/components/guide/pages/finding-guide-page.tsx
 msgid "Search covers publication names, people's handles, topics, and the text of articles. Results are split into publications and articles, and each result shows the passage that matched with your words highlighted, so you can tell a real match from a coincidence without opening it."
+msgstr ""
+
+#: src/components/reader/about-view.tsx
+msgid "“…made to be read, and not to be measured.”"
 msgstr ""
 
 #: src/components/guide/pages/getting-started-guide-page.tsx
@@ -1505,6 +1556,10 @@ msgstr "Schnelle Volltextsuche"
 #: src/components/reader/save-to-collection-dialog.tsx
 msgid "Collection name"
 msgstr "Name der Sammlung"
+
+#: src/components/reader/about-view.tsx
+msgid "+{UNNAMED_FORMAT_COUNT} more"
+msgstr ""
 
 #: src/components/guide/pages/reading-guide-page.tsx
 #: src/lib/guide/navigation.ts
@@ -1698,8 +1753,8 @@ msgid "What every control on an article does — including having it read aloud 
 msgstr ""
 
 #: src/components/reader/about-view.tsx
-msgid "The reading experience"
-msgstr "Das Leseerlebnis"
+#~ msgid "The reading experience"
+#~ msgstr "Das Leseerlebnis"
 
 #: src/routes/_layout.tsx
 msgid "Loading page"
@@ -1736,6 +1791,10 @@ msgstr ""
 #: src/components/guide/pages/keeping-track-guide-page.tsx
 #~ msgid "Collections live under <0>Collections</0> in the sidebar. Because publishing one writes a new kind of record to your account, the first time you make one you will be asked to grant an extra permission — that is the <1>Upgrade permissions</1> prompt, and it only appears once."
 #~ msgstr ""
+
+#: src/components/reader/about-view.tsx
+msgid "Also read natively:"
+msgstr ""
 
 #. placeholder {0}: pub.name
 #: src/components/reader/article-below-fold.tsx
@@ -1777,8 +1836,8 @@ msgstr "Sie haben jede Publikation auf dieser Seite abonniert – scrollen Sie w
 #~ msgstr ""
 
 #: src/components/reader/about-view.tsx
-msgid "Under each article you see the discussion from across the open network — Bluesky posts and replies, margin notes, links from other pieces that cite it, and related reading. All read-only, all linking back to the source."
-msgstr "Unter jedem Artikel sehen Sie die Diskussion aus dem gesamten offenen Netzwerk – Bluesky-Posts und -Antworten, Randnotizen, Links aus anderen Texten, die ihn zitieren, und verwandte Lektüre. Alles nur lesend, alles mit Link zur Quelle."
+#~ msgid "Under each article you see the discussion from across the open network — Bluesky posts and replies, margin notes, links from other pieces that cite it, and related reading. All read-only, all linking back to the source."
+#~ msgstr "Unter jedem Artikel sehen Sie die Diskussion aus dem gesamten offenen Netzwerk – Bluesky-Posts und -Antworten, Randnotizen, Links aus anderen Texten, die ihn zitieren, und verwandte Lektüre. Alles nur lesend, alles mit Link zur Quelle."
 
 #: src/routes/_layout.latest.tsx
 msgid "Show all subscriptions"
@@ -1831,8 +1890,8 @@ msgid "{total, plural, one {# match} other {# matches}}"
 msgstr "{total, plural, one {# Treffer} other {# Treffer}}"
 
 #: src/components/reader/about-view.tsx
-msgid "Publications, lists, and collections each get a clean link with a rich preview card — plus a subscribe button a publication can drop on its own site."
-msgstr "Publikationen, Listen und Sammlungen bekommen jeweils einen sauberen Link mit einer schönen Vorschaukarte – plus einen Abo-Button, den eine Publikation auf ihrer eigenen Website einbauen kann."
+#~ msgid "Publications, lists, and collections each get a clean link with a rich preview card — plus a subscribe button a publication can drop on its own site."
+#~ msgstr "Publikationen, Listen und Sammlungen bekommen jeweils einen sauberen Link mit einer schönen Vorschaukarte – plus einen Abo-Button, den eine Publikation auf ihrer eigenen Website einbauen kann."
 
 #: src/components/reader/discover-topic-filters.tsx
 msgid "Search topics"
@@ -1857,6 +1916,10 @@ msgstr "Artikel in der Sammlung"
 #: src/components/user-settings-view.tsx
 msgid "System"
 msgstr "System"
+
+#: src/components/reader/about-view.tsx
+msgid "Every feed, directory, and search query the app itself runs."
+msgstr ""
 
 #: src/components/reader/save-to-collection-dialog.tsx
 msgid "Could not save to {appLabel}"
@@ -1964,8 +2027,8 @@ msgid "Never used"
 msgstr ""
 
 #: src/components/reader/about-view.tsx
-msgid "Building something on the same index? There’s a public API."
-msgstr "Sie bauen etwas auf demselben Index? Es gibt eine öffentliche API."
+#~ msgid "Building something on the same index? There’s a public API."
+#~ msgstr "Sie bauen etwas auf demselben Index? Es gibt eine öffentliche API."
 
 #: src/components/reader/comments/comments-section.tsx
 msgid "Discussion"
@@ -2196,6 +2259,10 @@ msgstr "Wo diese Sammlung erscheint – Follower der Reihe erhalten sie."
 msgid "No apps connected"
 msgstr ""
 
+#: src/components/reader/about-view.tsx
+msgid "Nothing about it is fixed. Set the measure, the type size, and the typeface to whatever your eyes want, in light or dark, and the setting follows you to every article you open after it."
+msgstr ""
+
 #: src/components/reader/markdown-field.tsx
 msgid "Edit"
 msgstr "Bearbeiten"
@@ -2215,6 +2282,10 @@ msgstr "Öffentliche XRPC-Queries und -Procedures für das indexierte Lesemodell
 #: src/components/reader/collection-theme-editor.tsx
 msgid "Save theme"
 msgstr "Theme speichern"
+
+#: src/components/reader/about-view.tsx
+msgid "A reply"
+msgstr ""
 
 #: src/components/guide/pages/getting-started-guide-page.tsx
 msgid "your day: one featured article, then what is new from the publications you subscribe to."
@@ -2397,6 +2468,10 @@ msgstr ""
 #~ msgid "Carry on browsing. The overlay appears where it is useful and stays out of the way where it is not."
 #~ msgstr ""
 
+#: src/components/reader/about-view.tsx
+msgid "And if your reader of choice is one you already have, any slice of the network comes with its own feed — pipe it straight in and never open this app at all."
+msgstr ""
+
 #: src/components/user-settings-view.tsx
 msgid "To email your digest, Standard Reader needs your account email address. We'll ask your PDS to share it — you'll be sent to your login to approve the request, then brought right back here. Your email is used only to send the weekly digest, and you can turn it off any time."
 msgstr "Um Ihren Digest per E-Mail zu senden, benötigt Standard Reader die E-Mail-Adresse Ihres Kontos. Wir fragen Ihren PDS danach – Sie werden zur Anmeldung geleitet, um die Anfrage zu bestätigen, und kommen direkt hierher zurück. Ihre E-Mail-Adresse wird nur für den wöchentlichen Digest verwendet und Sie können ihn jederzeit abschalten."
@@ -2406,7 +2481,6 @@ msgid "Where your reading is kept, who else can see it, what you agreed to when 
 msgstr ""
 
 #: src/components/guide/pages/publishing-guide-page.tsx
-#: src/components/reader/about-view.tsx
 #: src/lib/guide/navigation.ts
 msgid "Discovery"
 msgstr "Entdecken"
@@ -2533,6 +2607,10 @@ msgstr "Über das Führen eines Commonplace Books"
 msgid "Most reading apps keep your list of follows on their own servers. If the app shuts down, your list goes with it."
 msgstr ""
 
+#: src/components/reader/about-view.tsx
+msgid "Keep the good sentence"
+msgstr ""
+
 #: src/routes/_layout.u.$did.tsx
 msgid "Featured in"
 msgstr "Erschienen in"
@@ -2624,8 +2702,8 @@ msgid "Paper"
 msgstr ""
 
 #: src/components/reader/about-view.tsx
-msgid "Flip one setting and article links open on the publication’s own site instead. Read wherever feels right to you."
-msgstr "Eine Einstellung umlegen und Artikellinks öffnen stattdessen die Website der Publikation. Lesen Sie dort, wo es sich für Sie richtig anfühlt."
+#~ msgid "Flip one setting and article links open on the publication’s own site instead. Read wherever feels right to you."
+#~ msgstr "Eine Einstellung umlegen und Artikellinks öffnen stattdessen die Website der Publikation. Lesen Sie dort, wo es sich für Sie richtig anfühlt."
 
 #: src/components/guide/pages/finding-guide-page.tsx
 msgid "Discover is the directory of every publication the network knows about — not a curated shelf. It runs top to bottom from most personal to most complete:"
@@ -2690,8 +2768,12 @@ msgid "{0, plural, one {follower} other {followers}}"
 msgstr "{0, plural, one {Follower} other {Follower}}"
 
 #: src/components/reader/about-view.tsx
-msgid "Most readers stop at what you already subscribe to. Standard Reader treats finding your next favourite as part of the job. Browse all {countLabel} publications on the network — not just the handful you've heard of."
-msgstr "Die meisten Leser bleiben bei dem, was sie schon abonniert haben. Standard Reader sieht es als Teil seiner Aufgabe, Ihren nächsten Favoriten zu finden. Stöbern Sie durch alle {countLabel} Publikationen im Netzwerk – nicht nur die paar, die Sie kennen."
+#~ msgid "Most readers stop at what you already subscribe to. Standard Reader treats finding your next favourite as part of the job. Browse all {countLabel} publications on the network — not just the handful you've heard of."
+#~ msgstr "Die meisten Leser bleiben bei dem, was sie schon abonniert haben. Standard Reader sieht es als Teil seiner Aufgabe, Ihren nächsten Favoriten zu finden. Stöbern Sie durch alle {countLabel} Publikationen im Netzwerk – nicht nur die paar, die Sie kennen."
+
+#: src/components/reader/about-view.tsx
+msgid "A lightweight browser extension lets you save and subscribe to publications while you’re out on the web — with subtle badges on bsky.app and a one-click overlay on any page you land on. Your reading list fills itself, and every save, like, and subscribe is instantly in sync with whatever device you read on next."
+msgstr ""
 
 #: src/components/labeler-detail-view.tsx
 msgid "Labels"
@@ -2767,6 +2849,10 @@ msgstr ""
 #: src/components/reader/collections-upgrade-gate.tsx
 msgid "Upgrade to author Collections"
 msgstr "Upgrade, um Sammlungen zu erstellen"
+
+#: src/components/reader/about-view.tsx
+msgid "Render a document in your own app —"
+msgstr ""
 
 #: src/components/reader/privacy-view.tsx
 msgid "Your social actions (follows, likes, saves, lists) are written to your AT Protocol repository and are visible according to the network's rules and your account settings. Our Postgres database holds a network read-model, app session state, and cached public metadata — not the canonical copies of publications."
@@ -2872,12 +2958,20 @@ msgstr "Zuletzt aktualisiert am 13. Juni 2026"
 msgid "{shown, plural, one {# match} other {# matches}}"
 msgstr "{shown, plural, one {# Treffer} other {# Treffer}}"
 
+#: src/components/reader/about-view.tsx
+msgid "Select a passage and share it as a typeset card that links back to the article — or keep reading and pick up exactly where you left off next time."
+msgstr ""
+
 #: src/components/onboarding/welcome-wizard.tsx
 msgid "People you follow write here"
 msgstr ""
 
 #: src/components/guide/pages/extension-guide-page.tsx
 msgid "Good writing rarely turns up while you are already in a reading app. The extension puts saving and subscribing on every page you visit."
+msgstr ""
+
+#: src/components/reader/about-view.tsx
+msgid "Drop a Standard document into your own app, in your own framework."
 msgstr ""
 
 #: src/magazine/flow.tsx
@@ -3051,6 +3145,10 @@ msgstr ""
 #: src/components/docs/docs-publishing-nav.tsx
 #~ msgid "Publishing guide"
 #~ msgstr "Leitfaden zum Veröffentlichen"
+
+#: src/components/reader/about-view.tsx
+msgid "Prefer the original? Flip one setting and article links open on the publication’s own site instead — Standard Reader will still keep your place."
+msgstr ""
 
 #: src/components/guide/pages/reading-guide-page.tsx
 msgid "<0>Share</0> copies a link, or posts the article to Bluesky with a proper preview card. On a phone it can hand off to whatever you normally share with."
@@ -3425,6 +3523,10 @@ msgstr "Etwas ist schiefgelaufen."
 msgid "The best of what you subscribe to"
 msgstr "Das Beste aus Ihren Abos"
 
+#: src/components/reader/about-view.tsx
+msgid "Under this article"
+msgstr ""
+
 #: src/components/reader/save-to-collection-dialog.tsx
 msgid "Note"
 msgstr "Notiz"
@@ -3526,6 +3628,7 @@ msgstr "Audio wird erzeugt… {percent} %"
 
 #: src/components/docs/docs-nav-areas.ts
 #: src/components/docs/introduction-docs-page.tsx
+#: src/components/reader/about-view.tsx
 msgid "Renderers"
 msgstr ""
 
@@ -3565,8 +3668,8 @@ msgid "What Standard Reader is"
 msgstr ""
 
 #: src/components/reader/about-view.tsx
-msgid "Prefer the original?"
-msgstr "Lieber das Original?"
+#~ msgid "Prefer the original?"
+#~ msgstr "Lieber das Original?"
 
 #: src/components/reader/subscriptions-table.tsx
 msgid "Could not add to list"
@@ -3787,6 +3890,10 @@ msgstr "Diese Sprache wurde anhand Ihres Browsers gewählt. Sie können sie jede
 
 #: src/routes/mcp/authorize.tsx
 msgid "Nothing has been shared. Head back to the app you came from and try connecting again."
+msgstr ""
+
+#: src/components/reader/about-view.tsx
+msgid "“This is the whole argument in one clause. Worth sitting with.”"
 msgstr ""
 
 #: src/components/reader/text-selection-toolbar.tsx
@@ -4013,8 +4120,8 @@ msgid "Save and subscribe from anywhere on the web, without breaking your stride
 msgstr ""
 
 #: src/components/reader/about-view.tsx
-msgid "Integrations"
-msgstr "Integrationen"
+#~ msgid "Integrations"
+#~ msgstr "Integrationen"
 
 #. placeholder {0}: person.subscriberCount
 #. placeholder {0}: pub.subscriberCount
@@ -4137,6 +4244,10 @@ msgstr ""
 msgid "This request can't be completed here, so we're returning you to the app that sent you."
 msgstr ""
 
+#: src/components/reader/about-view.tsx
+msgid "Read the docs"
+msgstr ""
+
 #: src/routes/_layout.l.$did.$rkey.tsx
 msgid "No people in this list — add some from the edit dialog."
 msgstr "Keine Personen in dieser Liste — fügen Sie welche über den Bearbeiten-Dialog hinzu."
@@ -4167,8 +4278,8 @@ msgid "Browse publications"
 msgstr "Publikationen durchstöbern"
 
 #: src/components/reader/about-view.tsx
-msgid "Standard Reader doesn’t trap your reading inside one app. Any slice of the network comes with its own RSS feed — pipe it straight into whatever reader you already use."
-msgstr "Standard Reader sperrt Ihre Lektüre nicht in eine App. Jeder Ausschnitt des Netzwerks hat einen eigenen RSS-Feed — leiten Sie ihn direkt in den Reader, den Sie ohnehin nutzen."
+#~ msgid "Standard Reader doesn’t trap your reading inside one app. Any slice of the network comes with its own RSS feed — pipe it straight into whatever reader you already use."
+#~ msgstr "Standard Reader sperrt Ihre Lektüre nicht in eine App. Jeder Ausschnitt des Netzwerks hat einen eigenen RSS-Feed — leiten Sie ihn direkt in den Reader, den Sie ohnehin nutzen."
 
 #: src/components/feedback/feedback-image-picker.tsx
 #~ msgid "Choose images"
@@ -4236,6 +4347,10 @@ msgstr ""
 
 #: src/components/feedback/feedback-image-picker.tsx
 msgid "That image is too detailed to fit under 1 MB. Try cropping it first."
+msgstr ""
+
+#: src/components/reader/about-view.tsx
+msgid "“Been thinking about this all week. The measurement is the part that ruins it — not the writing.”"
 msgstr ""
 
 #: src/components/reader/share-menu.tsx
@@ -4310,13 +4425,17 @@ msgstr "Feedback konnte nicht geladen werden <0>({0})</0>. Versuchen Sie es glei
 msgid "No publications match this tag yet."
 msgstr "Noch keine Publikationen zu diesem Tag."
 
+#: src/components/reader/about-view.tsx
+msgid "Written wherever they write"
+msgstr ""
+
 #: src/components/guide/pages/finding-guide-page.tsx
 msgid "If you already know what you are looking for, the <0>Add publication</0> button opens a single field that does three things at once. Leave it empty and it shows what is trending. Type a few words and it searches the directory. Paste a handle or a domain — <1>@stdout.dev</1>, <2>stdout.dev</2> — and it looks that author up directly."
 msgstr ""
 
 #: src/components/reader/about-view.tsx
-msgid "The conversation, gathered"
-msgstr "Das Gespräch, gebündelt"
+#~ msgid "The conversation, gathered"
+#~ msgstr "Das Gespräch, gebündelt"
 
 #: src/components/reader/publication-actions.tsx
 #: src/routes/_layout.latest.tsx
@@ -4344,8 +4463,8 @@ msgstr ""
 #~ msgstr ""
 
 #: src/components/reader/about-view.tsx
-msgid "Save, like, subscribe — everywhere"
-msgstr "Speichern, liken, abonnieren – überall"
+#~ msgid "Save, like, subscribe — everywhere"
+#~ msgstr "Speichern, liken, abonnieren – überall"
 
 #: src/components/reader/subscriptions-unsubscribe-dialog.tsx
 msgid "Unsubscribe?"
@@ -4402,6 +4521,7 @@ msgstr ""
 
 #: src/components/docs/docs-nav-areas.ts
 #: src/components/docs/introduction-docs-page.tsx
+#: src/components/reader/about-view.tsx
 msgid "API"
 msgstr "API"
 
@@ -4415,6 +4535,10 @@ msgstr "Symbol ersetzen"
 
 #: src/components/reader/subscriptions-unsubscribe-dialog.tsx
 msgid "Unfollow"
+msgstr ""
+
+#: src/components/reader/about-view.tsx
+msgid "Standard Reader doesn’t ask you to move in. It goes out to the web you already use, and hands your reading back in whatever shape suits you."
 msgstr ""
 
 #: src/routes/mcp/authorize.tsx
@@ -4473,6 +4597,10 @@ msgstr "Anmeldung"
 
 #: src/components/reader/terms-view.tsx
 msgid "Changes to these terms"
+msgstr ""
+
+#: src/components/reader/about-view.tsx
+msgid "Short-form posts and long reads"
 msgstr ""
 
 #: src/components/reader/about-view.tsx
@@ -4541,6 +4669,10 @@ msgstr ""
 #: src/components/reader/privacy-view.tsx
 msgid "If you install the {SITE_NAME} browser extension, it uses the same account and session cookie as this site. The extension sends page URLs to our <0>/api/extension/*</0> endpoints for index matching and keeps overlay settings in your browser's extension storage. See the <1>extension privacy policy</1> for details that apply only to the extension."
 msgstr "Wenn Sie die Browser-Erweiterung von {SITE_NAME} installieren, nutzt sie dasselbe Konto und Sitzungs-Cookie wie diese Seite. Die Erweiterung sendet Seiten-URLs zum Index-Abgleich an unsere <0>/api/extension/*</0>-Endpunkte und speichert Overlay-Einstellungen im Erweiterungsspeicher Ihres Browsers. Details, die nur für die Erweiterung gelten, finden Sie in der <1>Datenschutzerklärung der Erweiterung</1>."
+
+#: src/components/reader/about-view.tsx
+msgid "And when a run of them turns out to be good together, collect them into a named list — a playlist for reading. Anyone can add the whole thing to their own reader in a single tap."
+msgstr ""
 
 #: src/components/reader/list-edit-modal.tsx
 msgid "Remove {memberName} from list"
@@ -4698,8 +4830,8 @@ msgid "Saves a link to your <0>{appLabel}</0> collection."
 msgstr "Speichert einen Link in Ihrer <0>{appLabel}</0>-Sammlung."
 
 #: src/components/reader/about-view.tsx
-msgid "In your inbox"
-msgstr "In Ihrem Postfach"
+#~ msgid "In your inbox"
+#~ msgstr "In Ihrem Postfach"
 
 #: src/components/reader/reorder-subscriptions-modal.tsx
 #~ msgid "Drag to change the order your subscriptions appear in the sidebar."
@@ -4713,6 +4845,7 @@ msgstr "Darstellung, Leseeinstellungen und persönliche Daten."
 msgid "Authority for <0>app.standard-reader</0> resolves via DNS <1>_lexicon.*</1> TXT records to the publishing account."
 msgstr "Die Autorität für <0>app.standard-reader</0> wird über DNS-TXT-Einträge <1>_lexicon.*</1> zum veröffentlichenden Konto aufgelöst."
 
+#: src/components/reader/about-view.tsx
 #: src/components/reader/comments/comment-card.tsx
 msgid "on Margin"
 msgstr "auf Margin"
@@ -4749,6 +4882,10 @@ msgstr "Dieses Handle konnte nicht aufgelöst werden."
 msgid "Good to know"
 msgstr ""
 
+#: src/components/reader/about-view.tsx
+msgid "Most readers stop at what they already subscribe to. Standard Reader treats the next voice as part of the job: the piece you just finished points at who cited it, what it’s related to, and who else is worth following — across all {countLabel} publications on the network, not just the handful you’ve heard of."
+msgstr ""
+
 #: src/components/reader/atstore-review-prompt.tsx
 msgid "Sharing a review on the <0>ATStore</0> will help both us and other users see what you think about Standard Reader."
 msgstr "Eine Bewertung im <0>ATStore</0> hilft uns und anderen Nutzern zu sehen, was Sie von Standard Reader halten."
@@ -4756,6 +4893,10 @@ msgstr "Eine Bewertung im <0>ATStore</0> hilft uns und anderen Nutzern zu sehen,
 #: src/components/guide/pages/everywhere-guide-page.tsx
 #~ msgid "On Bluesky, quiet badges mark the people whose writing you can read here."
 #~ msgstr ""
+
+#: src/components/reader/about-view.tsx
+msgid "Publish labels others can subscribe to, or consume the ones we do."
+msgstr ""
 
 #: src/components/guide/pages/extension-guide-page.tsx
 msgid "The full account is on the <0>extension privacy page</0>."
@@ -4888,13 +5029,17 @@ msgstr "Hier gibt es noch nichts zu lesen."
 msgid "Labelers are moderation services you subscribe to by DID. Subscribe to see their labels — and blur or hide labeled posts — while you read."
 msgstr "Labeler sind Moderationsdienste, die Sie per DID abonnieren. Abonnieren Sie sie, um beim Lesen ihre Label zu sehen – und gelabelte Beiträge unkenntlich zu machen oder auszublenden."
 
+#: src/components/reader/about-view.tsx
+msgid "The part blogging always missed"
+msgstr ""
+
 #: src/components/docs/publishing-docs-page.tsx
 #~ msgid "The older link rels"
 #~ msgstr ""
 
 #: src/components/reader/about-view.tsx
-msgid "Standard Reader meets you where you read"
-msgstr "Standard Reader ist da, wo Sie lesen"
+#~ msgid "Standard Reader meets you where you read"
+#~ msgstr "Standard Reader ist da, wo Sie lesen"
 
 #: src/components/appearance-settings.tsx
 msgid "Reset appearance"
@@ -5088,6 +5233,10 @@ msgstr ""
 #: src/routes/_layout.latest.tsx
 msgid "All caught up"
 msgstr "Alles gelesen"
+
+#: src/components/reader/about-view.tsx
+msgid "Everything here is linkable, too. Publications, lists, and collections each get a clean URL with a rich preview card — plus a subscribe button a publication can drop straight onto its own site."
+msgstr ""
 
 #: src/components/reader/reorder-subscriptions-modal.tsx
 #~ msgid "Reorder subscriptions"
@@ -5284,6 +5433,7 @@ msgstr "Netzwerk durchsuchen"
 msgid "Search Google Fonts"
 msgstr "Google Fonts durchsuchen"
 
+#: src/components/reader/about-view.tsx
 #: src/components/reader/article-below-fold.tsx
 msgid "Related reading"
 msgstr "Passend dazu"
@@ -5522,8 +5672,8 @@ msgid "If something is confusing, broken, or missing, the <0>feedback board</0> 
 msgstr ""
 
 #: src/components/reader/about-view.tsx
-msgid "A lightweight browser extension lets you save and subscribe to publications while you’re out on the web — with subtle badges on bsky.app and a one-click overlay on any page you land on. Your reading list fills itself."
-msgstr "Eine schlanke Browser-Erweiterung lässt Sie Publikationen speichern und abonnieren, während Sie im Web unterwegs sind – mit dezenten Badges auf bsky.app und einem Overlay mit einem Klick auf jeder Seite. Ihre Leseliste füllt sich von selbst."
+#~ msgid "A lightweight browser extension lets you save and subscribe to publications while you’re out on the web — with subtle badges on bsky.app and a one-click overlay on any page you land on. Your reading list fills itself."
+#~ msgstr "Eine schlanke Browser-Erweiterung lässt Sie Publikationen speichern und abonnieren, während Sie im Web unterwegs sind – mit dezenten Badges auf bsky.app und einem Overlay mit einem Klick auf jeder Seite. Ihre Leseliste füllt sich von selbst."
 
 #: src/components/docs/docs-nav-areas.ts
 msgid "Introduction"
@@ -5763,8 +5913,8 @@ msgid "Open any article while signed in and it'll show up here. Your history liv
 msgstr "Öffnen Sie angemeldet einen beliebigen Artikel und er erscheint hier. Ihr Verlauf liegt als <0>app.standard-reader.read</0>-Records in Ihrem Repo."
 
 #: src/components/reader/about-view.tsx
-msgid "Build named, shareable lists of publications — a playlist for reading. Anyone can add your list to their own reader in a single tap."
-msgstr "Erstellen Sie benannte, teilbare Listen von Publikationen — eine Playlist zum Lesen. Jeder kann Ihre Liste mit einem Tipp in den eigenen Reader übernehmen."
+#~ msgid "Build named, shareable lists of publications — a playlist for reading. Anyone can add your list to their own reader in a single tap."
+#~ msgstr "Erstellen Sie benannte, teilbare Listen von Publikationen — eine Playlist zum Lesen. Jeder kann Ihre Liste mit einem Tipp in den eigenen Reader übernehmen."
 
 #: src/routes/_layout.u.$did.tsx
 msgid "Author"
@@ -5852,6 +6002,7 @@ msgstr ""
 #: src/components/docs/introduction-docs-page.tsx
 #: src/components/docs/labelers-docs-page.tsx
 #: src/components/labelers-settings-view.tsx
+#: src/components/reader/about-view.tsx
 #: src/components/reader/app-shell.tsx
 #: src/components/user-settings-view.tsx
 msgid "Labelers"
@@ -5862,8 +6013,8 @@ msgid "Choose your language"
 msgstr "Sprache auswählen"
 
 #: src/components/reader/about-view.tsx
-msgid "Find the ones you didn't know you wanted"
-msgstr "Finden Sie, was Sie noch gar nicht vermisst haben"
+#~ msgid "Find the ones you didn't know you wanted"
+#~ msgstr "Finden Sie, was Sie noch gar nicht vermisst haben"
 
 #: src/components/labeler-detail-view.tsx
 msgid "Hide"
@@ -5949,8 +6100,8 @@ msgid "Supported content formats"
 msgstr "Unterstützte Inhaltsformate"
 
 #: src/components/reader/about-view.tsx
-msgid "Plays nice with the open web"
-msgstr "Versteht sich mit dem offenen Web"
+#~ msgid "Plays nice with the open web"
+#~ msgstr "Versteht sich mit dem offenen Web"
 
 #: src/components/reader/privacy-view.tsx
 msgid "What we collect"
@@ -5975,6 +6126,10 @@ msgstr "Gefällt Ihnen Standard Reader?"
 #: src/components/reader/save-to-collection-dialog.tsx
 msgid "Use original link"
 msgstr "Originallink verwenden"
+
+#: src/components/reader/about-view.tsx
+msgid "Everything this app runs on is public. The schemas are open, the read-model is queryable, and the renderer that draws these pages is published for you to use — so a reading app, a search tool, or a better client than this one is a weekend, not a platform deal."
+msgstr ""
 
 #: src/components/guide/pages/publishing-guide-page.tsx
 msgid "Every publication page also serves a themed, embeddable subscribe widget — an iframe you can drop on your own site so visitors can subscribe without leaving your page. The easiest way to get it: open your publication's page on Standard Reader, use <0>Share → Embed subscribe</0>, pick landscape or portrait, and copy the snippet — no account or ownership check required to generate it."
@@ -6117,6 +6272,10 @@ msgstr "Noch keine Diskussion."
 msgid "A single publication"
 msgstr "Eine einzelne Publikation"
 
+#: src/components/reader/about-view.tsx
+msgid "Build on the same index"
+msgstr ""
+
 #: src/routes/extension.connected.tsx
 msgid "Return to the Standard Reader extension — this tab will close automatically."
 msgstr "Zurück zur Standard-Reader-Erweiterung — dieser Tab schließt sich automatisch."
@@ -6224,6 +6383,10 @@ msgstr ""
 #: src/components/reader/publication-latest-note.tsx
 msgid "Latest note"
 msgstr "Neueste Notiz"
+
+#: src/components/reader/about-view.tsx
+msgid "The record schemas a publication, document, or follow is made of."
+msgstr ""
 
 #: src/components/guide/pages/personalizing-guide-page.tsx
 #: src/lib/guide/navigation.ts
@@ -6377,6 +6540,10 @@ msgstr "Querformat"
 msgid "Edit collection"
 msgstr "Sammlung bearbeiten"
 
+#: src/components/reader/about-view.tsx
+msgid "That is a real response from the endpoint this page just called — no key, no sign-up, no rate-limit form. The same is true of every feed, directory, and search query the reader itself runs."
+msgstr ""
+
 #: src/components/guide/pages/getting-started-guide-page.tsx
 #~ msgid "After that, following is one button. Anywhere you see a publication — a card in a feed, the top of an article, a publication's own page — there is a <0>Follow</0> button next to its name. Select it again to stop following. Nothing else changes: the button just decides whether new writing from that publication reaches your Home and Latest."
 #~ msgstr ""
@@ -6425,8 +6592,12 @@ msgid "Opening the issue…"
 msgstr "Ausgabe wird geöffnet…"
 
 #: src/components/reader/about-view.tsx
-msgid "It doesn't ask you to leave the rest of the web behind. It reaches out to it — and stays a good citizen of the wider network."
-msgstr "Sie müssen den Rest des Webs nicht hinter sich lassen. Der Reader greift danach — und bleibt ein guter Bürger im weiteren Netzwerk."
+msgid "However you like to read it"
+msgstr ""
+
+#: src/components/reader/about-view.tsx
+#~ msgid "It doesn't ask you to leave the rest of the web behind. It reaches out to it — and stays a good citizen of the wider network."
+#~ msgstr "Sie müssen den Rest des Webs nicht hinter sich lassen. Der Reader greift danach — und bleibt ein guter Bürger im weiteren Netzwerk."
 
 #: src/routes/_layout.collections.edit.$rkey.tsx
 msgid "We couldn’t load that collection to edit."
@@ -6488,6 +6659,10 @@ msgstr "Standard Reader indexiert <0>site.standard.document</0>- und <1>site.sta
 #: src/components/reader/list-edit-modal.tsx
 msgid "e.g. Tech, Friends, Cooking"
 msgstr "z. B. Technik, Freunde, Kochen"
+
+#: src/components/reader/about-view.tsx
+msgid "Semble"
+msgstr ""
 
 #. placeholder {0}: fmt.relativeTime(connection.lastUsedAt)
 #: src/components/user-settings-view.tsx
@@ -6631,6 +6806,10 @@ msgstr "An"
 
 #: src/components/guide/pages/your-data-guide-page.tsx
 msgid "We keep a copy of the public network — publications, articles, and who follows what — so the app can search, rank, and load quickly. That copy includes the records described above. It is a cache of things that are already public, not a second private profile of you."
+msgstr ""
+
+#: src/components/reader/about-view.tsx
+msgid "Two other pieces link to this one — you can read them from here."
 msgstr ""
 
 #: src/components/reader/page-reader-bar.tsx
@@ -6790,6 +6969,10 @@ msgstr ""
 #: src/components/guide/pages/getting-started-guide-page.tsx
 #: src/lib/guide/navigation.ts
 msgid "Finding your way around"
+msgstr ""
+
+#: src/components/reader/about-view.tsx
+msgid "Cited by"
 msgstr ""
 
 #: src/routes/mcp/authorize.tsx
