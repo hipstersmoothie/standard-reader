@@ -251,6 +251,7 @@ export function LabelerDetailView({
   const card = labeler.data?.labeler ?? { did };
   const subscribed = labeler.data?.subscribed ?? false;
   const enabled = labeler.data?.enabled ?? true;
+  const health = labeler.data?.health ?? null;
   const prefs = new Map<string, Visibility>(
     (labeler.data?.prefs ?? []).map((p) => [p.val, p.visibility]),
   );
@@ -424,6 +425,35 @@ export function LabelerDetailView({
 
         <ReaderContent>
           <TabPanel id="labels" style={styles.tabPanel}>
+            {/* A labeler can be listed, declare a full set of labels, and still
+                deliver nothing — because its server is down, or because what it
+                serves doesn't verify against the signing key it publishes. Say
+                so, rather than leaving an empty tab that looks like "no labels
+                yet". */}
+            {health?.error ? (
+              <p {...stylex.props(styles.warnNote)}>
+                <Trans>
+                  This labeler’s server couldn’t be reached, so its labels
+                  aren’t available right now. We’ll keep trying.
+                </Trans>
+              </p>
+            ) : health && health.rejected > 0 && health.stored === 0 ? (
+              <p {...stylex.props(styles.warnNote)}>
+                <Trans>
+                  None of this labeler’s labels could be verified against the
+                  signing key it publishes, so none are applied. That’s a
+                  problem on the labeler’s end.
+                </Trans>
+              </p>
+            ) : health && health.rejected > 0 ? (
+              <p {...stylex.props(styles.warnNote)}>
+                <Plural
+                  value={health.rejected}
+                  one="One of this labeler’s labels couldn’t be verified and was skipped."
+                  other="# of this labeler’s labels couldn’t be verified and were skipped."
+                />
+              </p>
+            ) : null}
             {subscribed && !enabled ? (
               <p {...stylex.props(styles.note)}>
                 <Trans>
@@ -750,6 +780,17 @@ const styles = stylex.create({
     fontSize: fontSize.sm,
     lineHeight: lineHeight.base,
     marginTop: spacing["1.5"],
+  },
+  warnNote: {
+    color: uiColor.text1,
+    fontSize: fontSize.sm,
+    borderRadius: radius.md,
+    backgroundColor: uiColor.component1,
+    borderInlineStartColor: uiColor.border2,
+    borderInlineStartStyle: "solid",
+    borderInlineStartWidth: spacing.px,
+    paddingBlock: spacing["2"],
+    paddingInline: spacing["3"],
   },
   note: {
     color: uiColor.text1,

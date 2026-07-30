@@ -174,7 +174,17 @@ export function labelSigningBytes(label: DisplayLabel): Uint8Array {
   };
   if (label.cid) out.cid = label.cid;
   if (label.exp) out.exp = label.exp;
-  if (label.neg) out.neg = true;
+  // `neg` is included whenever the labeler serialized it — **including when it
+  // is `false`** — because the signature covers the object as that labeler
+  // encoded it. Dropping a present `neg: false` silently broke every label from
+  // labelers that write the field explicitly rather than omitting it: three of
+  // the labelers a real reader subscribes to went from 0% to 100% verified on
+  // this one line. Labelers that omit `neg` on active labels are unaffected,
+  // since it stays absent here too.
+  if (label.neg !== undefined) out.neg = label.neg;
+  // Deliberately an allowlist of the lexicon's fields. Label servers have been
+  // seen adding their own `id` to responses, which was never part of the signed
+  // object — signing over "everything except sig" would fail on those.
   return dagCbor.encode(out);
 }
 

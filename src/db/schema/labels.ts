@@ -1,6 +1,7 @@
 import {
   boolean,
   index,
+  integer,
   jsonb,
   pgTable,
   primaryKey,
@@ -197,6 +198,20 @@ export const labelSyncState = pgTable("label_sync_state", {
   labelerDid: text("labeler_did").primaryKey(),
   /** Last `cursor` consumed from the labeler's `queryLabels`. */
   cursor: text("cursor"),
+
+  /**
+   * Health of the last sync, so a labeler that is *broken* can be told apart
+   * from one that simply hasn't labeled anything. Without this the two are
+   * indistinguishable in the UI: a reader subscribes, sees a full list of label
+   * toggles, and receives nothing forever with no explanation.
+   */
+  /** Labels stored on the last run (active, verified). */
+  storedCount: integer("stored_count").notNull().default(0),
+  /** Labels dropped on the last run because their signature didn't verify. */
+  rejectedCount: integer("rejected_count").notNull().default(0),
+  /** Why the last run couldn't reach the labeler at all; null when it could. */
+  lastError: text("last_error"),
+
   syncedAt: timestamp("synced_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

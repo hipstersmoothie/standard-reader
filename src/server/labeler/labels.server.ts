@@ -350,20 +350,37 @@ async function queryLabeler(
   did: string,
   uris: Array<string>,
   sinceCursor?: string,
-): Promise<{ labels: Array<DisplayLabel>; cursor: string | undefined }> {
+): Promise<{
+  labels: Array<DisplayLabel>;
+  cursor: string | undefined;
+  error?: string;
+}> {
   const base = await resolveLabelerEndpoint(did);
-  if (!base) return { labels: [], cursor: sinceCursor };
+  if (!base) {
+    return {
+      labels: [],
+      cursor: sinceCursor,
+      error: "No label server declared",
+    };
+  }
   // Defense-in-depth: re-validate the stored endpoint before fetching, in
   // case a malicious URL was stored before the ingest-time guard was added
   // (security audit C3).
   try {
     assertSafeFetchUrl(base);
   } catch {
-    return { labels: [], cursor: sinceCursor };
+    return {
+      labels: [],
+      cursor: sinceCursor,
+      error: "Unsafe label server URL",
+    };
   }
 
   const labels: Array<DisplayLabel> = [];
   let cursor = sinceCursor;
+  // Only reported when the very first page fails: a break part-way through is a
+  // successful partial sync that the cursor resumes, not a broken labeler.
+  let transportError: string | undefined;
   for (let page = 0; page < MAX_LABEL_PAGES; page++) {
     const url = new URL(`${base}/xrpc/com.atproto.label.queryLabels`);
     for (const u of uris) url.searchParams.append("uriPatterns", u);
@@ -372,7 +389,12 @@ async function queryLabeler(
     if (cursor) url.searchParams.set("cursor", cursor);
     try {
       const res = await fetchWithTimeout(url.toString());
-      if (!res.ok) break;
+      if (!res.ok) {
+        if (page === 0) {
+          transportError = `Label server returned HTTP ${res.status}`;
+        }
+        break;
+      }
       const json = (await res.json()) as {
         labels?: Array<DisplayLabel>;
         cursor?: string;
@@ -381,11 +403,14 @@ async function queryLabeler(
       labels.push(...batch);
       if (!json.cursor || batch.length === 0) break;
       cursor = json.cursor;
-    } catch {
+    } catch (error) {
+      if (page === 0) {
+        transportError = `Couldn't reach the label server (${error instanceof Error ? error.message : "unknown error"})`;
+      }
       break;
     }
   }
-  return { labels, cursor };
+  return { labels, cursor, error: transportError };
 }
 
 /** The latest state per (src, uri, val), split into active vs. negated. */
@@ -437,8 +462,10 @@ export async function fetchLabelerLabelsSince(
   diff: LabelDiff;
   cursor: string | undefined;
   rejected: number;
+  /** Set when the labeler couldn't be reached at all, for the health display. */
+  error?: string;
 }> {
-  const { labels, cursor } = await queryLabeler(did, ["*"], sinceCursor);
+  const { labels, cursor, error } = await queryLabeler(did, ["*"], sinceCursor);
   const { verified, rejected } = await verifyLabels(labels, did);
-  return { diff: resolveLabelDiff(verified), cursor, rejected };
+  return { diff: resolveLabelDiff(verified), cursor, rejected, error };
 }

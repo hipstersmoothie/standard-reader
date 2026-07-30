@@ -51,7 +51,7 @@ export async function syncLabelerLabels(
     .where(eq(schema.labelSyncState.labelerDid, labelerDid))
     .limit(1);
 
-  const { diff, cursor, rejected } = await fetchLabelerLabelsSince(
+  const { diff, cursor, rejected, error } = await fetchLabelerLabelsSince(
     labelerDid,
     state[0]?.cursor ?? undefined,
   );
@@ -93,12 +93,21 @@ export async function syncLabelerLabels(
     await db.delete(dl).where(or(...matches));
   }
 
+  // Health is recorded alongside the cursor so the labeler page can tell a
+  // labeler that is broken or unreachable from one that has simply labeled
+  // nothing — indistinguishable to a reader otherwise.
+  const health = {
+    cursor: cursor ?? null,
+    storedCount: diff.active.length,
+    rejectedCount: rejected,
+    lastError: error ?? null,
+  };
   await db
     .insert(schema.labelSyncState)
-    .values({ labelerDid, cursor: cursor ?? null })
+    .values({ labelerDid, ...health })
     .onConflictDoUpdate({
       target: schema.labelSyncState.labelerDid,
-      set: { cursor: cursor ?? null, syncedAt: sql`now()` },
+      set: { ...health, syncedAt: sql`now()` },
     });
 
   return diff.active.length + diff.negated.length;

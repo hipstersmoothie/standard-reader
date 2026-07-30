@@ -493,6 +493,11 @@ msgstr "Permanently remove data stored in your account. These actions delete rec
 msgid "Loading people"
 msgstr "Loading people"
 
+#. placeholder {0}: health.rejected
+#: src/components/labeler-detail-view.tsx
+msgid "{0, plural, one {One of this labeler’s labels couldn’t be verified and was skipped.} other {# of this labeler’s labels couldn’t be verified and were skipped.}}"
+msgstr "{0, plural, one {One of this labeler’s labels couldn’t be verified and was skipped.} other {# of this labeler’s labels couldn’t be verified and were skipped.}}"
+
 #: src/components/appearance-settings.tsx
 msgid "Links and labels on paper"
 msgstr "Links and labels on paper"
@@ -1365,6 +1370,10 @@ msgstr "Search topics"
 #: src/routes/_layout.collections.index.tsx
 msgid "No collections in this series yet."
 msgstr "No collections in this series yet."
+
+#: src/components/labeler-detail-view.tsx
+msgid "None of this labeler’s labels could be verified against the signing key it publishes, so none are applied. That’s a problem on the labeler’s end."
+msgstr "None of this labeler’s labels could be verified against the signing key it publishes, so none are applied. That’s a problem on the labeler’s end."
 
 #: src/routes/_layout.feedback.index.tsx
 msgid "No feedback yet."
@@ -5167,6 +5176,10 @@ msgstr "Read this on {name}"
 #: src/components/reader/terms-view.tsx
 msgid "Acceptable use"
 msgstr "Acceptable use"
+
+#: src/components/labeler-detail-view.tsx
+msgid "This labeler’s server couldn’t be reached, so its labels aren’t available right now. We’ll keep trying."
+msgstr "This labeler’s server couldn’t be reached, so its labels aren’t available right now. We’ll keep trying."
 
 #: src/components/appearance-settings.tsx
 msgid "Palette"

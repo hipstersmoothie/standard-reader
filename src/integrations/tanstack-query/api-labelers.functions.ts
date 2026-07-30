@@ -93,6 +93,26 @@ export interface LabelPref {
   visibility: LabelVisibility;
 }
 
+/**
+ * How the last label sync went for a labeler.
+ *
+ * Exists so the UI can distinguish a labeler that is *broken* — unreachable, or
+ * serving labels that don't verify against its published signing key — from one
+ * that has simply labeled nothing yet. Those look identical otherwise: a reader
+ * subscribes, sees a full list of label toggles, and receives nothing, forever,
+ * with no explanation.
+ */
+export interface LabelerHealth {
+  /** Labels stored on the last run. */
+  stored: number;
+  /** Labels dropped on the last run because their signature didn't verify. */
+  rejected: number;
+  /** Why the labeler couldn't be reached, when it couldn't. */
+  error: string | null;
+  /** When we last tried. Null if we never have. */
+  syncedAt: string | null;
+}
+
 export interface DocumentLabel {
   src: string;
   val: string;
@@ -381,7 +401,8 @@ const getLabeler = createServerFn({ method: "GET" })
       span.set("did", did);
 
       const session = await getAtprotoSessionForRequest(getRequest());
-      const [initialView, prefsRow, observed] = await Promise.all([
+      const st = context.schema.labelSyncState;
+      const [initialView, prefsRow, observed, syncRows] = await Promise.all([
         resolveLabelerView(did),
         session
           ? readPrefs(context.db, context.schema, session.did, did)
@@ -391,7 +412,28 @@ const getLabeler = createServerFn({ method: "GET" })
               enabled: true,
             }),
         observedLabelValues(context.db, context.schema, did),
+        context.db
+          .select({
+            stored: st.storedCount,
+            rejected: st.rejectedCount,
+            error: st.lastError,
+            syncedAt: st.syncedAt,
+          })
+          .from(st)
+          .where(eq(st.labelerDid, did))
+          .limit(1),
       ]);
+
+      const syncRow = syncRows[0];
+      const health: LabelerHealth = {
+        stored: syncRow?.stored ?? 0,
+        rejected: syncRow?.rejected ?? 0,
+        error: syncRow?.error ?? null,
+        syncedAt: syncRow?.syncedAt
+          ? new Date(syncRow.syncedAt).toISOString()
+          : null,
+      };
+      span.set("health.rejected", health.rejected);
 
       // A registration record is written *about* a labeler and drifts from what
       // it actually emits. Any value missing a definition can't be given a
@@ -436,6 +478,7 @@ const getLabeler = createServerFn({ method: "GET" })
         subscribed,
         prefs: prefsRow.prefs,
         enabled: prefsRow.enabled,
+        health,
       };
     }),
   );

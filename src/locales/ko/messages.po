@@ -493,6 +493,11 @@ msgstr "계정에 저장된 데이터를 영구적으로 삭제합니다. 이 �
 msgid "Loading people"
 msgstr ""
 
+#. placeholder {0}: health.rejected
+#: src/components/labeler-detail-view.tsx
+msgid "{0, plural, one {One of this labeler’s labels couldn’t be verified and was skipped.} other {# of this labeler’s labels couldn’t be verified and were skipped.}}"
+msgstr ""
+
 #: src/components/appearance-settings.tsx
 msgid "Links and labels on paper"
 msgstr ""
@@ -1365,6 +1370,10 @@ msgstr ""
 #: src/routes/_layout.collections.index.tsx
 msgid "No collections in this series yet."
 msgstr "이 시리즈에는 아직 컬렉션이 없습니다."
+
+#: src/components/labeler-detail-view.tsx
+msgid "None of this labeler’s labels could be verified against the signing key it publishes, so none are applied. That’s a problem on the labeler’s end."
+msgstr ""
 
 #: src/routes/_layout.feedback.index.tsx
 msgid "No feedback yet."
@@ -5166,6 +5175,10 @@ msgstr ""
 
 #: src/components/reader/terms-view.tsx
 msgid "Acceptable use"
+msgstr ""
+
+#: src/components/labeler-detail-view.tsx
+msgid "This labeler’s server couldn’t be reached, so its labels aren’t available right now. We’ll keep trying."
 msgstr ""
 
 #: src/components/appearance-settings.tsx
