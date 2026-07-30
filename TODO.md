@@ -928,6 +928,34 @@ Standard AT Proto labels: subscribe to labelers, see/blur/hide their labels whil
       no row until something resolves it, so those DIDs are resolved eagerly when the directory
       loads (`ensureKnownLabelersResolved`). Being absent from it hides nothing — it just means the
       labeler has to reach us some other way (handle lookup, or a reader's ported subscriptions).
+- [x] **Discover every labeler on the network** — `discover.server.ts`. A labeler declares itself
+      with one `app.bsky.labeler.service` record, so the full set is every repo holding one, which
+      relays answer via `com.atproto.sync.listReposByCollection` (~537 repos; ~460 still resolve to
+      a live service, the rest are abandoned declarations). `startLabelerDiscovery` scans every 6h
+      in the ingest worker and resolves only DIDs we have no usable row for; `pnpm sync-labelers`
+      runs it by hand. **The relay index is not authoritative** — five labelers among one test
+      reader's real Bluesky subscriptions are absent from it — so discovery is additive and the
+      on-demand backfill still matters. Rows missing a handle are re-resolved (capped per run,
+      did:web excluded) so the directory heals itself rather than showing a bare DID forever.
+- [x] **Don't poll every labeler in the directory** — `syncAllLabels` now covers labelers with a live
+      subscription plus our own (`source: "record"`), not every row. The sync runs every 2 minutes,
+      so listing the network without this scoping would have meant hundreds of requests per minute to
+      other operators' label servers — and `document_labels` filling with labels nobody asked for.
+- [x] **Server-side search + pagination for the directory** — hundreds of labelers declare ~15k label
+      values between them (>3 MB of definition JSON), so the client can no longer hold the table.
+      `getKnownLabelers` takes `{query, limit, offset}`, orders subscribed-first in SQL (a
+      client-side sort would only reorder the page it holds), and sends each card just the couple of
+      label names it renders plus a total (`labelNames`/`labelCount`). Search matches name, handle,
+      description, DID and declared label identifiers; debounced 250ms client-side. ~13 kB/page.
+- [x] **Show handles, not DIDs** — `labeler_services.handle` (migration `0027`), resolved from the
+      DID document's `alsoKnownAs`. did:web labelers declare none, but for them the DID *is* the
+      host, so it's derived at render (`labelerHandle`). DID remains the fallback.
+- [x] **Never block sign-in on the labeler port** — each ported labeler costs a DID-document fetch,
+      two repo reads and a PDS write, and running that inline in the OAuth callback added tens of
+      seconds to login. `scheduleBskyLabelerImport` is fire-and-forget with in-process guards and a
+      scope/stamp check, kicked off by the callback and re-triggered by the signed-in shell read (so
+      it covers readers whose session predates the preferences scope, without a second login).
+      Resolves are concurrent; the repo writes stay sequential since they all commit to one repo.
 - [x] **Port Bluesky labeler subscriptions** — on a reader's first sign-in we read
       `app.bsky.actor.getPreferences` (scope `rpc:app.bsky.actor.getPreferences`), and for each
       `labelersPref` entry create the matching subscription, carrying over `contentLabelPref`

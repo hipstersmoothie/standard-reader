@@ -23,6 +23,7 @@ import type {
   LabeledAccount,
 } from "#/integrations/tanstack-query/api-labelers.functions";
 import { labelerApi } from "#/integrations/tanstack-query/api-labelers.functions";
+import { labelerHandle, labelerHandleOrDid } from "#/lib/labeler-handle";
 import { useTrackReadingHistory } from "#/lib/use-track-reading-history";
 
 import { Avatar } from "../design-system/avatar";
@@ -186,7 +187,8 @@ export function LabelerDetailView({
   const prefs = new Map<string, Visibility>(
     (labeler.data?.prefs ?? []).map((p) => [p.val, p.visibility]),
   );
-  const name = card.displayName ?? card.did;
+  const name =
+    card.displayName ?? labelerHandle(card.did, card.handle) ?? card.did;
   const defs = card.labelValueDefinitions ?? [];
   const documents = labeledPages?.pages.flatMap((page) => page.documents) ?? [];
   const labelsByUri: Record<string, Array<string>> = Object.assign(
@@ -263,7 +265,9 @@ export function LabelerDetailView({
             <p {...stylex.props(styles.heroDesc)}>{card.description}</p>
           ) : null}
           <div {...stylex.props(styles.stats)}>
-            <span {...stylex.props(styles.did)}>{card.did}</span>
+            <span {...stylex.props(styles.did)}>
+              {labelerHandleOrDid(card.did, card.handle)}
+            </span>
             {defs.length > 0 ? (
               <span>
                 <span {...stylex.props(styles.statValue)}>{defs.length}</span>

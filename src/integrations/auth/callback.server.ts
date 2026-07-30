@@ -199,18 +199,24 @@ export async function handleAtprotoOAuthCallback(args: {
       }
     }
 
-    // Port the reader's Bluesky labeler subscriptions on their first sign-in,
-    // so their moderation setup is already in place when they land. Stamped
-    // one-shot inside the importer; read-only against Bluesky. Best-effort —
-    // sign-in must never fail because a labeler was unreachable.
+    // Port the reader's Bluesky labeler subscriptions, so their moderation setup
+    // is already in place when they land. Kicked off here and deliberately **not
+    // awaited**: each labeler costs a DID-document fetch, two repo reads and a
+    // PDS write, which added tens of seconds to sign-in when it ran inline. The
+    // scheduler owns the scope check and the one-shot stamp, and the signed-in
+    // shell read re-triggers it, so a reader whose import hasn't finished (or
+    // never started) still gets it without another login.
     if (hasBskyPreferencesScope(grantedScope)) {
       try {
-        const { importBskyLabelerSubscriptions } =
+        const { scheduleBskyLabelerImport } =
           await import("#/server/labeler/import-bsky.server");
-        const client = new Client({ handler: oauthSession });
-        await importBskyLabelerSubscriptions(client, userId, did);
+        scheduleBskyLabelerImport(
+          new Client({ handler: oauthSession }),
+          userId,
+          did,
+        );
       } catch (error) {
-        console.warn("Failed to import Bluesky labelers on callback:", error);
+        console.warn("Failed to schedule Bluesky labeler import:", error);
       }
     }
 

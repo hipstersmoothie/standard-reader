@@ -679,20 +679,43 @@ Standard Reader speaks the standard AT Proto label protocol, so readers can subs
   `app.bsky.labeler.service` record. That second path is resolved on first lookup and backfilled
   into the same table, so a labeler like [pub-search](https://pub-search.waow.tech/labels) works
   with no action on their part, and every read path stays a plain DB read. Nothing is hardcoded.
-- **Every labeler, not just ours.** The directory lists every labeler we know of, with no relevance
-  filter — readers bring their moderation setup with them, so a labeler that has never touched a
-  standard.site document is still theirs to see and manage. A small curated DID list is _seeded_
-  into the table on load, since a network-declared labeler has no row until something resolves it;
-  that seeds visibility, it never gates it. Subscribe and unsubscribe live on the directory cards
-  themselves, and a reader's own labelers sort to the top.
+- **Every labeler on the network, not just ours.** The directory lists the whole network with no
+  relevance filter — readers bring their moderation setup with them, so a labeler that has never
+  touched a standard.site document is still theirs to see and manage. A labeler declares itself by
+  publishing one `app.bsky.labeler.service` record, so the complete set is "every repo holding a
+  record in that collection", which relays answer via `com.atproto.sync.listReposByCollection`
+  (~537 repos, ~460 of which still resolve to a live service). A timer in the ingest worker scans
+  for those, resolves the ones we don't hold, and upserts them, so the directory read stays a plain
+  DB query. That index is **not** authoritative — it only covers repos its relay carries, and real
+  labelers are missing from it — so discovery is additive: it seeds the directory in bulk while
+  subscribing or looking a labeler up still backfills on demand. Subscribe and unsubscribe live on
+  the directory cards, and a reader's own labelers sort to the top.
+- **Listing the network is not polling the network.** Being in the directory does not mean we ask a
+  labeler for labels; that is driven by subscriptions. The label sync runs every two minutes, so
+  scoping it to the whole table would mean hundreds of requests per minute to other operators'
+  label servers for labels nobody here asked to see. It covers labelers with at least one live
+  subscription, plus our own.
+- **Hundreds of rows means server-side search.** Those labelers declare ~15k label values between
+  them — over 3 MB of definition JSON — so the directory pages in SQL and a card is sent only the
+  couple of label names it renders plus a total. Search (name, handle, description, DID, and
+  declared label identifiers) runs in Postgres, debounced from the client; one page is ~13 kB.
+- **Handles, not DIDs.** A card shows `@handle`, resolved from the DID document's `alsoKnownAs` and
+  stored alongside the row. did:web labelers — ours — declare no `alsoKnownAs`, but for them the
+  DID *is* the host, so it's derived at render. The DID remains the fallback so the identifier is
+  never lost.
 - **Your Bluesky moderation comes with you.** Bluesky keeps subscribed labelers in account
-  preferences rather than repo records, so on a reader's first sign-in we read
-  `app.bsky.actor.getPreferences` and recreate their setup here — labelers plus each label's
-  visibility. They do nothing; they log in and it's already there. The read is **one-way**: we
-  never call `putPreferences`, because it replaces the whole preferences blob and a partial-scope
-  read-modify-write would silently drop settings we couldn't see. So unsubscribing in Standard
-  Reader is local and never edits anyone's Bluesky moderation, and the port runs exactly once so
-  those local choices are never overwritten.
+  preferences rather than repo records, so we read `app.bsky.actor.getPreferences` and recreate
+  their setup here — labelers plus each label's visibility. They do nothing; they log in and it's
+  already there. The read is **one-way**: we never call `putPreferences`, because it replaces the
+  whole preferences blob and a partial-scope read-modify-write would silently drop settings we
+  couldn't see. So unsubscribing in Standard Reader is local and never edits anyone's Bluesky
+  moderation, and the port runs exactly once so those local choices are never overwritten.
+- **Porting never blocks a login.** Each ported labeler costs a DID-document fetch, two repo reads
+  and a PDS write, which put tens of seconds on the sign-in path when it ran inline in the OAuth
+  callback. The import is scheduled fire-and-forget instead — kicked off by the callback and
+  re-triggered by the signed-in shell read, so a reader whose import hasn't finished (or whose
+  session predates the preferences scope) still gets it without another login. Nothing a reader
+  waits on ever awaits a labeler backfill.
 - **Muting is per-app.** Porting someone's Bluesky setup wholesale means importing labelers they
   may want _there_ but not _here_ — a vanity or novelty labeler is fun on a feed and noise in a
   reader. So a subscription can be muted (`enabled: false`) rather than dropped: the subscription

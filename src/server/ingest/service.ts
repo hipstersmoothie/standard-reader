@@ -7,6 +7,7 @@ import { and, eq, or, sql } from "drizzle-orm";
 import { db } from "../../db/index.ts";
 import { ingestState, subscriptions, trackedRepos } from "../../db/schema.ts";
 import type { TapEvent } from "../atproto/types.ts";
+import { startLabelerDiscovery } from "../labeler/discover.server.ts";
 import { startLabelSync } from "../labeler/sync.server.ts";
 import { logEvent } from "../observability/log.ts";
 import { verifyIngestAuth } from "./auth.ts";
@@ -619,6 +620,7 @@ const pendingTrackedReconcile = startPendingTrackedReconcile(
 );
 const publisherRepoReconcile = startPublisherRepoReconcile();
 const labelSync = startLabelSync();
+const labelerDiscovery = startLabelerDiscovery();
 
 for (const signal of ["SIGINT", "SIGTERM"] as const) {
   process.on(signal, () => {
@@ -626,6 +628,7 @@ for (const signal of ["SIGINT", "SIGTERM"] as const) {
       pendingTrackedReconcile.stop();
       publisherRepoReconcile.stop();
       labelSync.stop();
+      labelerDiscovery.stop();
       await tapChannel.destroy();
       await labelerTapChannel?.destroy();
       await docsTapChannel?.destroy();

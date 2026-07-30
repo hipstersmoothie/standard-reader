@@ -60,6 +60,13 @@ export const labelerServices = pgTable(
     source: text("source").$type<LabelerSource>().notNull().default("record"),
 
     displayName: text("display_name"),
+    /**
+     * The labeler's handle, from its DID document's `alsoKnownAs`. Shown instead
+     * of the raw DID on directory cards. Null for labelers whose document
+     * declares no handle — notably did:web, where the host is derivable from the
+     * DID itself (see `labelerHandle` in `src/lib/labeler-handle.ts`).
+     */
+    handle: text("handle"),
     description: text("description"),
     /** Resolved avatar blob URL (owner PDS getBlob), if any. */
     avatarUrl: text("avatar_url"),

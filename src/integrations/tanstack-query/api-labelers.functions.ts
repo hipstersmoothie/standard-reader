@@ -53,14 +53,29 @@ export type { LabelValueDef };
 
 export interface LabelerCard {
   did: string;
+  /** Handle from the labeler's DID document, when it declares one. */
+  handle?: string;
   displayName?: string;
   description?: string;
   avatar?: string;
   labelValueDefinitions?: Array<LabelValueDef>;
 }
 
-/** A labeler in the directory, with the caller's subscription state. */
+/**
+ * A labeler in the directory, with the caller's subscription state.
+ *
+ * Carries `labelNames`/`labelCount` rather than the full
+ * `labelValueDefinitions` the detail page uses. The directory lists every
+ * labeler on the network — hundreds of them, declaring ~15k label values
+ * between them, which is over 3 MB of definition JSON with locales and
+ * severities. A card only ever renders the first couple of names plus a
+ * "+N more", so that is all it is sent.
+ */
 export interface LabelerListItem extends LabelerCard {
+  /** Localized label names, capped at what a card can show. */
+  labelNames: Array<string>;
+  /** How many label values this labeler declares in total. */
+  labelCount: number;
   subscribed: boolean;
   /**
    * Whether a subscribed labeler's labels actually apply here. `false` means
@@ -175,18 +190,62 @@ const getLabelers = createServerFn({ method: "GET" })
     }),
   );
 
+/** Label names to send per directory card before collapsing to "+N more". */
+const CARD_LABEL_NAMES = 2;
+
+/** Default page size for the labeler directory. */
+export const KNOWN_LABELERS_PAGE_SIZE = 36;
+
+const knownLabelersInput = z.object({
+  query: z.string().trim().max(200).default(""),
+  limit: z.number().int().min(1).max(100).default(KNOWN_LABELERS_PAGE_SIZE),
+  offset: z.number().int().min(0).default(0),
+});
+
+/** One offset page of the labeler directory. */
+export interface KnownLabelersPage {
+  labelers: Array<LabelerListItem>;
+  total: number;
+  nextOffset: number | null;
+}
+
+/** The localized names of a labeler's first few label values. */
+function cardLabelNames(
+  definitions: Array<LabelValueDef> | null,
+): Array<string> {
+  return (definitions ?? []).slice(0, CARD_LABEL_NAMES).map((def) => {
+    const name = def.locales?.[0]?.name;
+    if (typeof name === "string" && name.length > 0) return name;
+    return typeof def.identifier === "string" ? def.identifier : "label";
+  });
+}
+
+/**
+ * The labeler directory: every labeler on the network, paged.
+ *
+ * No relevance filter — readers bring their moderation setup with them from
+ * Bluesky, so a labeler that has never touched a standard.site document is still
+ * theirs to see and manage. Since that means hundreds of rows, searching and
+ * paging happen in SQL rather than by shipping the whole table to the client.
+ */
 const getKnownLabelers = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
+  .validator(knownLabelersInput)
   .handler(
-    observe("labelers.getKnownLabelers", async ({ context }, span) => {
+    observe("labelers.getKnownLabelers", async ({ data, context }, span) => {
       // Curated labelers that declared themselves on the network have no row
       // until something resolves them, so seed them before listing.
       await ensureKnownLabelersResolved();
 
       const session = await getAtprotoSessionForRequest(getRequest());
       const ls = context.schema.labelerSubscriptions;
+      const svc = context.schema.labelerServices;
+      span.set("query", data.query);
+      span.set("offset", data.offset);
+
       // The caller's own subscriptions, including muted ones — a disabled
-      // labeler still belongs in their list, just marked as not acting.
+      // labeler still belongs in their list, just marked as not acting. Small
+      // per-reader set, so it is fetched whole and applied to the page below.
       const mine = session
         ? await context.db
             .select({ labelerDid: ls.labelerDid, enabled: ls.enabled })
@@ -199,46 +258,107 @@ const getKnownLabelers = createServerFn({ method: "GET" })
       const disabledSet = new Set(
         mine.filter((row) => !row.enabled).map((row) => row.labelerDid),
       );
-      const countRows = await context.db
+
+      const subscriberCount = context.db
         .select({
           labelerDid: ls.labelerDid,
-          subscriberCount: sql<number>`count(*)::int`,
+          count: sql<number>`count(*)::int`.as("count"),
         })
         .from(ls)
         .where(eq(ls.deleted, false))
-        .groupBy(ls.labelerDid);
-      const countByDid = new Map(
-        countRows.map((row) => [row.labelerDid, row.subscriberCount]),
+        .groupBy(ls.labelerDid)
+        .as("subscriber_count");
+
+      // Matched against name, handle, description and the declared label
+      // identifiers, so searching "spam" finds labelers that emit it.
+      const term = data.query.toLowerCase();
+      const where = and(
+        eq(svc.deleted, false),
+        term.length > 0
+          ? sql`(
+              lower(coalesce(${svc.displayName}, '')) like ${`%${term}%`}
+              or lower(coalesce(${svc.handle}, '')) like ${`%${term}%`}
+              or lower(coalesce(${svc.description}, '')) like ${`%${term}%`}
+              or lower(${svc.labelerDid}) like ${`%${term}%`}
+              or exists (
+                select 1 from jsonb_array_elements(
+                  coalesce(${svc.labelValueDefinitions}, '[]'::jsonb)
+                ) as def
+                where lower(coalesce(def->>'identifier', '')) like ${`%${term}%`}
+              )
+            )`
+          : undefined,
       );
 
-      // Every labeler we know of, with no relevance filter: readers bring their
-      // moderation setup with them from Bluesky, so a labeler that has never
-      // touched a standard.site document is still theirs to see and manage.
-      const svc = context.schema.labelerServices;
-      const rows = await context.db
-        .select()
-        .from(svc)
-        .where(eq(svc.deleted, false));
-      span.set("count", rows.length);
+      // The caller's own subscriptions sort first so the page opens on *their*
+      // setup rather than on whatever the network subscribes to most. Done in
+      // SQL because with pagination a client-side sort would only reorder the
+      // page it happens to be holding.
+      const subscribedDids = [...subSet];
+      const isSubscribed =
+        subscribedDids.length > 0
+          ? sql<boolean>`(${svc.labelerDid} = any(${subscribedDids}))`
+          : sql<boolean>`false`;
 
-      return rows
-        .map(
-          (row): LabelerListItem => ({
-            did: row.labelerDid,
-            displayName: row.displayName ?? undefined,
-            description: row.description ?? undefined,
-            avatar: row.avatarUrl ?? undefined,
-            labelValueDefinitions:
-              (row.labelValueDefinitions as Array<LabelValueDef> | null) ??
-              undefined,
-            subscribed: subSet.has(row.labelerDid),
-            enabled: !disabledSet.has(row.labelerDid),
-            subscriberCount: countByDid.get(row.labelerDid) ?? 0,
-          }),
-        )
-        .toSorted(
-          (a, b) => b.subscriberCount - a.subscriberCount,
-        ) satisfies Array<LabelerListItem>;
+      const [countRow, rows] = await Promise.all([
+        context.db
+          .select({ count: sql<number>`count(*)::int` })
+          .from(svc)
+          .where(where),
+        context.db
+          .select({
+            labelerDid: svc.labelerDid,
+            handle: svc.handle,
+            displayName: svc.displayName,
+            description: svc.description,
+            avatarUrl: svc.avatarUrl,
+            labelValueDefinitions: svc.labelValueDefinitions,
+            subscriberCount: subscriberCount.count,
+          })
+          .from(svc)
+          .leftJoin(
+            subscriberCount,
+            eq(subscriberCount.labelerDid, svc.labelerDid),
+          )
+          .where(where)
+          .orderBy(
+            sql`${isSubscribed} desc`,
+            sql`coalesce(${subscriberCount.count}, 0) desc`,
+            sql`coalesce(${svc.displayName}, ${svc.handle}, ${svc.labelerDid}) asc`,
+          )
+          .limit(data.limit)
+          .offset(data.offset),
+      ]);
+
+      const total = countRow[0]?.count ?? 0;
+      span.set("count", rows.length);
+      span.set("total", total);
+
+      const labelers = rows.map((row): LabelerListItem => {
+        const defs =
+          (row.labelValueDefinitions as Array<LabelValueDef> | null) ?? null;
+        return {
+          did: row.labelerDid,
+          handle: row.handle ?? undefined,
+          displayName: row.displayName ?? undefined,
+          description: row.description ?? undefined,
+          avatar: row.avatarUrl ?? undefined,
+          labelNames: cardLabelNames(defs),
+          labelCount: defs?.length ?? 0,
+          subscribed: subSet.has(row.labelerDid),
+          enabled: !disabledSet.has(row.labelerDid),
+          subscriberCount: row.subscriberCount ?? 0,
+        };
+      });
+
+      return {
+        labelers,
+        total,
+        nextOffset:
+          rows.length > 0 && data.offset + rows.length < total
+            ? data.offset + rows.length
+            : null,
+      } satisfies KnownLabelersPage;
     }),
   );
 
@@ -699,10 +819,16 @@ function getLabelersQueryOptions() {
   });
 }
 
-function getKnownLabelersQueryOptions() {
-  return queryOptions({
-    queryKey: ["reader", "knownLabelers"] as const,
-    queryFn: async () => getKnownLabelers(),
+function getKnownLabelersInfiniteQueryOptions(
+  query = "",
+  limit = KNOWN_LABELERS_PAGE_SIZE,
+) {
+  return infiniteQueryOptions({
+    queryKey: ["reader", "knownLabelers", query, limit] as const,
+    queryFn: async ({ pageParam }) =>
+      getKnownLabelers({ data: { query, limit, offset: pageParam } }),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) => lastPage.nextOffset ?? undefined,
     staleTime: 5 * 60_000,
   });
 }
@@ -797,7 +923,7 @@ export const labelerApi = {
   getLabelers,
   getLabelersQueryOptions,
   getKnownLabelers,
-  getKnownLabelersQueryOptions,
+  getKnownLabelersInfiniteQueryOptions,
   getLabeler,
   getLabelerQueryOptions,
   getLabeledDocuments,

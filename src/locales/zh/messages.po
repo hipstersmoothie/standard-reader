@@ -957,7 +957,6 @@ msgstr "热门刊物"
 msgid "Replace cover image"
 msgstr "替换封面图"
 
-#: src/components/labelers-settings-view.tsx
 #: src/components/reader/app-shell.tsx
 #: src/lib/sidebar-nav.ts
 msgid "Search"
@@ -2275,6 +2274,10 @@ msgstr "分享到其他平台"
 #~ msgid "Publishing guide"
 #~ msgstr "发布指南"
 
+#: src/components/labelers-settings-view.tsx
+msgid "Search by name, handle, or label"
+msgstr ""
+
 #: src/components/reader/article-below-fold.tsx
 msgid "Worth subscribing to"
 msgstr "值得订阅"
@@ -2328,6 +2331,7 @@ msgstr ""
 msgid "A publication on Standard is a <0>site.standard.document</0> record in the author's AT Protocol repository — not a row in a database we own. Standard Reader indexes those records into a public read-model and renders them, but nothing about the format is proprietary: the schemas are open, the content is portable across publishing platforms, and the same renderer we ship is available to you."
 msgstr ""
 
+#: src/components/labelers-settings-view.tsx
 #: src/routes/_layout.latest.tsx
 msgid "On the network"
 msgstr "网络上"
@@ -2603,6 +2607,10 @@ msgstr "可选：写下保存它的原因"
 
 #: src/components/reader/subscriptions-tree.tsx
 msgid "{count} unread"
+msgstr ""
+
+#: src/components/labelers-settings-view.tsx
+msgid "Show more labelers"
 msgstr ""
 
 #: src/components/user-settings-view.tsx
@@ -3781,7 +3789,7 @@ msgstr "服务 DID 是 <0>{appviewDid}</0>。该服务为需要协商 scope 的�
 msgid "The Slow Web, Revisited"
 msgstr "重访慢速网络"
 
-#. placeholder {0}: names.length - MAX_VISIBLE_LABELS
+#. placeholder {0}: labelTotal - names.length
 #: src/components/labelers-settings-view.tsx
 msgid "+{0} more"
 msgstr ""

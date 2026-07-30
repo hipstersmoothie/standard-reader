@@ -957,7 +957,6 @@ msgstr "인기 발행물"
 msgid "Replace cover image"
 msgstr "커버 이미지 교체"
 
-#: src/components/labelers-settings-view.tsx
 #: src/components/reader/app-shell.tsx
 #: src/lib/sidebar-nav.ts
 msgid "Search"
@@ -2275,6 +2274,10 @@ msgstr "다른 곳에 공유"
 #~ msgid "Publishing guide"
 #~ msgstr "발행 가이드"
 
+#: src/components/labelers-settings-view.tsx
+msgid "Search by name, handle, or label"
+msgstr ""
+
 #: src/components/reader/article-below-fold.tsx
 msgid "Worth subscribing to"
 msgstr "구독할 만한 곳"
@@ -2328,6 +2331,7 @@ msgstr ""
 msgid "A publication on Standard is a <0>site.standard.document</0> record in the author's AT Protocol repository — not a row in a database we own. Standard Reader indexes those records into a public read-model and renders them, but nothing about the format is proprietary: the schemas are open, the content is portable across publishing platforms, and the same renderer we ship is available to you."
 msgstr ""
 
+#: src/components/labelers-settings-view.tsx
 #: src/routes/_layout.latest.tsx
 msgid "On the network"
 msgstr "네트워크에서"
@@ -2603,6 +2607,10 @@ msgstr "선택 사항: 저장하는 이유를 메모로 남겨보세요"
 
 #: src/components/reader/subscriptions-tree.tsx
 msgid "{count} unread"
+msgstr ""
+
+#: src/components/labelers-settings-view.tsx
+msgid "Show more labelers"
 msgstr ""
 
 #: src/components/user-settings-view.tsx
@@ -3781,7 +3789,7 @@ msgstr "서비스 DID는 <0>{appviewDid}</0>입니다. 이 서비스는 스코�
 msgid "The Slow Web, Revisited"
 msgstr "느린 웹, 다시 보기"
 
-#. placeholder {0}: names.length - MAX_VISIBLE_LABELS
+#. placeholder {0}: labelTotal - names.length
 #: src/components/labelers-settings-view.tsx
 msgid "+{0} more"
 msgstr ""

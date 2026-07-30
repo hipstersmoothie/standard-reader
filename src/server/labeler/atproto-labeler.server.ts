@@ -34,6 +34,8 @@ const BSKY_ACTOR_PROFILE = "app.bsky.actor.profile";
 export interface AtprotoLabelerDeclaration {
   did: string;
   serviceEndpoint: string;
+  /** Handle from the DID document's `alsoKnownAs`, if it declares one. */
+  handle: string | null;
   displayName: string | null;
   description: string | null;
   avatarUrl: string | null;
@@ -117,6 +119,7 @@ export async function resolveAtprotoLabeler(
   return {
     did,
     serviceEndpoint,
+    handle: trimmed(handle ?? undefined)?.toLowerCase() ?? null,
     // Fall back to the handle: a labeler operator's profile often carries an
     // empty `displayName` (pub-search's is literally ""), and a directory card
     // reading "did:plc:aywbh…" helps nobody.

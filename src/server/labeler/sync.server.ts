@@ -7,7 +7,7 @@
  * (see `labels.server.ts`). Run it on a schedule from the ingest worker.
  */
 
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, exists, or, sql } from "drizzle-orm";
 
 import { db as database } from "#/db/index.server";
 import * as dbSchema from "#/db/schema";
@@ -83,16 +83,46 @@ export async function syncLabelerLabels(
   return diff.active.length + diff.negated.length;
 }
 
-/** Sync every registered labeler. Failures are logged and skipped per-labeler. */
+/**
+ * Sync every labeler someone actually reads with. Failures are logged and
+ * skipped per-labeler.
+ *
+ * Scoped to labelers with at least one live subscription, plus our own
+ * first-party (`source: "record"`) labelers. **Not** every row in
+ * `labeler_services`: that table mirrors the whole network for the directory
+ * (hundreds of labelers, see `discover.server.ts`), and polling all of them on
+ * this timer would mean tens of thousands of daily requests to other people's
+ * label servers for labels nobody here has asked to see — and would fill
+ * `document_labels` with them.
+ */
 export async function syncAllLabels(
   db: Db,
   schema: Schema,
 ): Promise<{ labelers: number; labels: number }> {
   const ls = schema.labelerServices;
+  const subs = schema.labelerSubscriptions;
   const rows = await db
     .selectDistinct({ did: ls.labelerDid })
     .from(ls)
-    .where(eq(ls.deleted, false));
+    .where(
+      and(
+        eq(ls.deleted, false),
+        or(
+          eq(ls.source, "record"),
+          exists(
+            db
+              .select({ one: sql`1` })
+              .from(subs)
+              .where(
+                and(
+                  eq(subs.labelerDid, ls.labelerDid),
+                  eq(subs.deleted, false),
+                ),
+              ),
+          ),
+        ),
+      ),
+    );
 
   let labels = 0;
   for (const { did } of rows) {

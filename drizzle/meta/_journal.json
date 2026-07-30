@@ -190,6 +190,13 @@
       "when": 1785269345960,
       "tag": "0026_public_wallow",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1785382922879,
+      "tag": "0027_lonely_lake",
+      "breakpoints": true
     }
   ]
 }

@@ -2,7 +2,12 @@
 
 import { Trans, useLingui } from "@lingui/react/macro";
 import * as stylex from "@stylexjs/stylex";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 
@@ -12,6 +17,8 @@ import type {
 } from "#/integrations/tanstack-query/api-labelers.functions";
 import { labelerApi } from "#/integrations/tanstack-query/api-labelers.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
+import { labelerHandle, labelerHandleOrDid } from "#/lib/labeler-handle";
+import { useDebouncedValue } from "#/lib/use-debounced-value";
 
 import { Avatar } from "../design-system/avatar";
 import { Badge } from "../design-system/badge";
@@ -37,14 +44,35 @@ const MOBILE = "@media (max-width: 47.5rem)";
  */
 const MAX_VISIBLE_LABELS = 2;
 
-function labelValueNames(card: LabelerCard): Array<string> {
-  return (card.labelValueDefinitions ?? []).map((def) => {
-    const locales = def.locales as Array<{ name?: string }> | undefined;
-    return (
-      locales?.[0]?.name ??
-      (typeof def.identifier === "string" ? def.identifier : "label")
-    );
-  });
+/** Typing pause before the directory search hits the server. */
+const SEARCH_DEBOUNCE_MS = 250;
+
+/**
+ * Badge names for a card, plus how many labels the labeler declares in total.
+ *
+ * Directory rows arrive pre-trimmed as `labelNames`/`labelCount` (the full
+ * definitions are megabytes across the whole network). The lookup card is a
+ * plain `LabelerCard` straight from a resolve and still carries definitions, so
+ * both shapes are handled here.
+ */
+function labelSummary(card: LabelerCard | LabelerListItem): {
+  names: Array<string>;
+  total: number;
+} {
+  if ("labelNames" in card) {
+    return { names: card.labelNames, total: card.labelCount };
+  }
+  const defs = card.labelValueDefinitions ?? [];
+  return {
+    names: defs.slice(0, MAX_VISIBLE_LABELS).map((def) => {
+      const locales = def.locales as Array<{ name?: string }> | undefined;
+      return (
+        locales?.[0]?.name ??
+        (typeof def.identifier === "string" ? def.identifier : "label")
+      );
+    }),
+    total: defs.length,
+  };
 }
 
 function initials(card: LabelerCard): string {
@@ -53,40 +81,6 @@ function initials(card: LabelerCard): string {
     .replace(/^did:\w+:/, "")
     .slice(0, 2)
     .toUpperCase();
-}
-
-function labelerSearchText(card: LabelerCard): string {
-  const parts = [
-    card.displayName,
-    card.did,
-    card.description,
-    ...labelValueNames(card),
-    ...(card.labelValueDefinitions ?? []).map((def) => def.identifier),
-  ];
-  return parts
-    .filter(
-      (part): part is string => typeof part === "string" && part.length > 0,
-    )
-    .join("\n")
-    .toLowerCase();
-}
-
-function labelerSubscriberCount(card: LabelerCard | LabelerListItem): number {
-  return "subscriberCount" in card ? card.subscriberCount : 0;
-}
-
-function sortLabelersBySubscribers<T extends LabelerCard>(
-  items: Array<T>,
-): Array<T> {
-  return [...items].toSorted(
-    (a, b) => labelerSubscriberCount(b) - labelerSubscriberCount(a),
-  );
-}
-
-function matchesLabeler(card: LabelerCard, query: string): boolean {
-  const trimmed = query.trim();
-  if (!trimmed) return true;
-  return labelerSearchText(card).includes(trimmed.toLowerCase());
 }
 
 /**
@@ -107,8 +101,9 @@ function LabelerCardItem({
 }) {
   const { t } = useLingui();
   const queryClient = useQueryClient();
-  const names = labelValueNames(card);
-  const displayName = card.displayName ?? card.did;
+  const { names, total: labelTotal } = labelSummary(card);
+  const displayName =
+    card.displayName ?? labelerHandle(card.did, card.handle) ?? card.did;
   const muted = subscribed && !enabled;
 
   const invalidate = () => {
@@ -145,7 +140,9 @@ function LabelerCardItem({
           />
           <div {...stylex.props(styles.cardHeadText)}>
             <span {...stylex.props(styles.cardName)}>{displayName}</span>
-            <p {...stylex.props(styles.cardDid)}>{card.did}</p>
+            <p {...stylex.props(styles.cardDid)}>
+              {labelerHandleOrDid(card.did, card.handle)}
+            </p>
           </div>
         </Link>
         {signedIn ? (
@@ -189,14 +186,14 @@ function LabelerCardItem({
       ) : null}
       {names.length > 0 ? (
         <div {...stylex.props(styles.badges)}>
-          {names.slice(0, MAX_VISIBLE_LABELS).map((name) => (
+          {names.map((name) => (
             <Badge key={name} variant="warning">
               {name}
             </Badge>
           ))}
-          {names.length > MAX_VISIBLE_LABELS ? (
+          {labelTotal > names.length ? (
             <span {...stylex.props(styles.moreLabels)}>
-              <Trans>+{names.length - MAX_VISIBLE_LABELS} more</Trans>
+              <Trans>+{labelTotal - names.length} more</Trans>
             </span>
           ) : null}
         </div>
@@ -207,40 +204,40 @@ function LabelerCardItem({
 
 export function LabelersSettingsView() {
   const { t } = useLingui();
-  const known = useQuery(labelerApi.getKnownLabelersQueryOptions());
   const { data: session } = useQuery(user.getSessionQueryOptions);
   const signedIn = session?.user?.did != null;
 
   const [search, setSearch] = useState("");
   const searchTrim = search.trim();
+  // The directory lists every labeler on the network, so searching and paging
+  // are server-side; debounce so typing doesn't fire a query per keystroke.
+  const debouncedSearch = useDebouncedValue(searchTrim, SEARCH_DEBOUNCE_MS);
 
-  const labelers = useMemo(() => known.data ?? [], [known.data]);
-  const filtered = useMemo(
-    () =>
-      sortLabelersBySubscribers(
-        labelers.filter((item) => matchesLabeler(item, searchTrim)),
-      ),
-    [labelers, searchTrim],
+  const known = useInfiniteQuery(
+    labelerApi.getKnownLabelersInfiniteQueryOptions(debouncedSearch),
   );
+  const labelers = useMemo(
+    () => known.data?.pages.flatMap((page) => page.labelers) ?? [],
+    [known.data],
+  );
+  const total = known.data?.pages[0]?.total ?? 0;
 
-  const lookupLocallyMatched = searchTrim.length > 0 && filtered.length > 0;
+  // Only consulted when the server search comes back empty: a reader can paste
+  // a DID or handle for a labeler we have not discovered yet, and resolving it
+  // both shows the card and backfills it into the directory.
   const lookup = useQuery({
-    ...labelerApi.getLabelerQueryOptions(searchTrim),
-    enabled: searchTrim.length > 0 && !lookupLocallyMatched,
+    ...labelerApi.getLabelerQueryOptions(debouncedSearch),
+    enabled:
+      debouncedSearch.length > 0 && !known.isFetching && labelers.length === 0,
   });
 
   const lookupCard = lookup.data?.labeler ?? null;
   const showLookup =
     lookupCard != null && !labelers.some((item) => item.did === lookupCard.did);
 
-  const listed = sortLabelersBySubscribers(
-    showLookup
-      ? [lookupCard, ...filtered.filter((item) => item.did !== lookupCard.did)]
-      : filtered,
-  );
-  // A reader arriving from Bluesky lands with their ported labelers already
-  // subscribed — surface those first so the page opens on *their* setup rather
-  // than on whatever the network happens to subscribe to most.
+  const listed: Array<LabelerListItem | LabelerCard> = showLookup
+    ? [lookupCard, ...labelers]
+    : labelers;
   const subscribedDids = new Set(
     listed
       .filter((item) => "subscribed" in item && item.subscribed)
@@ -258,10 +255,21 @@ export function LabelersSettingsView() {
   if (lookupCard && lookup.data?.enabled === false) {
     mutedDids.add(lookupCard.did);
   }
-  const visibleCards = [
-    ...listed.filter((item) => subscribedDids.has(item.did)),
-    ...listed.filter((item) => !subscribedDids.has(item.did)),
-  ];
+  // Subscribed-first ordering is applied in SQL, but the lookup card arrives
+  // outside that ordering, so keep it pinned with the reader's own labelers.
+  const visibleCards = showLookup
+    ? [
+        ...listed.filter((item) => subscribedDids.has(item.did)),
+        ...listed.filter((item) => !subscribedDids.has(item.did)),
+      ]
+    : listed;
+
+  const searching = debouncedSearch.length > 0;
+  const nothingFound =
+    searching &&
+    !known.isFetching &&
+    !lookup.isFetching &&
+    visibleCards.length === 0;
 
   return (
     <ReaderContent>
@@ -269,18 +277,20 @@ export function LabelersSettingsView() {
         kicker={t`Moderation`}
         title={t`Labelers`}
         dek={t`Labelers are moderation services you subscribe to by DID. Subscribe to see their labels — and blur or hide labeled posts — while you read.`}
+        metaLabel={t`On the network`}
+        metaValue={total > 0 ? String(total) : undefined}
       />
 
       <TextField
         aria-label={t`Search labelers`}
-        placeholder={t`Search`}
+        placeholder={t`Search by name, handle, or label`}
         value={search}
         onChange={setSearch}
         size="lg"
         style={styles.searchInput}
       />
 
-      {searchTrim && lookup.isFetched && visibleCards.length === 0 ? (
+      {nothingFound ? (
         <p {...stylex.props(styles.note)}>
           <Trans>No labelers match “{searchTrim}”.</Trans>
         </p>
@@ -298,7 +308,19 @@ export function LabelersSettingsView() {
         ))}
       </div>
 
-      {!known.isLoading && labelers.length === 0 && !searchTrim ? (
+      {known.hasNextPage ? (
+        <div {...stylex.props(styles.loadMore)}>
+          <Button
+            variant="secondary"
+            isPending={known.isFetchingNextPage}
+            onPress={() => void known.fetchNextPage()}
+          >
+            <Trans>Show more labelers</Trans>
+          </Button>
+        </div>
+      ) : null}
+
+      {!known.isLoading && total === 0 && !searching ? (
         <p {...stylex.props(styles.note)}>
           <Trans>No known labelers yet.</Trans>
         </p>
@@ -392,11 +414,20 @@ const styles = stylex.create({
     alignItems: "center",
     display: "flex",
     flexWrap: "wrap",
+    // Grid rows stretch every card to the tallest in the row, so a short card
+    // otherwise leaves its labels floating in the middle. `auto` eats the slack
+    // above the badges instead, keeping them on the bottom edge across the row.
+    marginBlockStart: "auto",
   },
   moreLabels: {
     color: uiColor.text1,
     fontSize: fontSize.xs,
     whiteSpace: "nowrap",
+  },
+  loadMore: {
+    display: "flex",
+    justifyContent: "center",
+    marginBlockStart: verticalSpace["2xl"],
   },
   note: {
     color: uiColor.text1,

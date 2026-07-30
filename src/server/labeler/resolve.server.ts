@@ -36,6 +36,7 @@ export interface LabelValueDef {
 
 export interface ResolvedLabelerView {
   did: string;
+  handle?: string;
   displayName?: string;
   description?: string;
   avatar?: string;
@@ -93,6 +94,7 @@ async function backfillAtprotoLabeler(did: string) {
     rkey: "self",
     labelerDid: did,
     serviceEndpoint: declaration.serviceEndpoint,
+    handle: declaration.handle,
     displayName: declaration.displayName,
     description: declaration.description,
     avatarUrl: declaration.avatarUrl,
@@ -221,6 +223,7 @@ export async function resolveLabelerView(
   if (!row) return null;
   return {
     did,
+    handle: row.handle ?? undefined,
     displayName: row.displayName ?? undefined,
     description: row.description ?? undefined,
     avatar: row.avatarUrl ?? undefined,

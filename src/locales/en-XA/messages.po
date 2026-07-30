@@ -957,7 +957,6 @@ msgstr ""
 msgid "Replace cover image"
 msgstr ""
 
-#: src/components/labelers-settings-view.tsx
 #: src/components/reader/app-shell.tsx
 #: src/lib/sidebar-nav.ts
 msgid "Search"
@@ -2275,6 +2274,10 @@ msgstr ""
 #~ msgid "Publishing guide"
 #~ msgstr ""
 
+#: src/components/labelers-settings-view.tsx
+msgid "Search by name, handle, or label"
+msgstr ""
+
 #: src/components/reader/article-below-fold.tsx
 msgid "Worth subscribing to"
 msgstr ""
@@ -2328,6 +2331,7 @@ msgstr ""
 msgid "A publication on Standard is a <0>site.standard.document</0> record in the author's AT Protocol repository — not a row in a database we own. Standard Reader indexes those records into a public read-model and renders them, but nothing about the format is proprietary: the schemas are open, the content is portable across publishing platforms, and the same renderer we ship is available to you."
 msgstr ""
 
+#: src/components/labelers-settings-view.tsx
 #: src/routes/_layout.latest.tsx
 msgid "On the network"
 msgstr ""
@@ -2603,6 +2607,10 @@ msgstr ""
 
 #: src/components/reader/subscriptions-tree.tsx
 msgid "{count} unread"
+msgstr ""
+
+#: src/components/labelers-settings-view.tsx
+msgid "Show more labelers"
 msgstr ""
 
 #: src/components/user-settings-view.tsx
@@ -3781,7 +3789,7 @@ msgstr ""
 msgid "The Slow Web, Revisited"
 msgstr ""
 
-#. placeholder {0}: names.length - MAX_VISIBLE_LABELS
+#. placeholder {0}: labelTotal - names.length
 #: src/components/labelers-settings-view.tsx
 msgid "+{0} more"
 msgstr ""

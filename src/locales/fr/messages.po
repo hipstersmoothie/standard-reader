@@ -957,7 +957,6 @@ msgstr "Publications en tendance"
 msgid "Replace cover image"
 msgstr "Remplacer l’image de couverture"
 
-#: src/components/labelers-settings-view.tsx
 #: src/components/reader/app-shell.tsx
 #: src/lib/sidebar-nav.ts
 msgid "Search"
@@ -2275,6 +2274,10 @@ msgstr "Partager ailleurs"
 #~ msgid "Publishing guide"
 #~ msgstr "Guide de publication"
 
+#: src/components/labelers-settings-view.tsx
+msgid "Search by name, handle, or label"
+msgstr ""
+
 #: src/components/reader/article-below-fold.tsx
 msgid "Worth subscribing to"
 msgstr "Publications à suivre"
@@ -2328,6 +2331,7 @@ msgstr ""
 msgid "A publication on Standard is a <0>site.standard.document</0> record in the author's AT Protocol repository — not a row in a database we own. Standard Reader indexes those records into a public read-model and renders them, but nothing about the format is proprietary: the schemas are open, the content is portable across publishing platforms, and the same renderer we ship is available to you."
 msgstr ""
 
+#: src/components/labelers-settings-view.tsx
 #: src/routes/_layout.latest.tsx
 msgid "On the network"
 msgstr "Sur le réseau"
@@ -2603,6 +2607,10 @@ msgstr "Facultatif : ajoutez une note expliquant pourquoi vous enregistrez ceci"
 
 #: src/components/reader/subscriptions-tree.tsx
 msgid "{count} unread"
+msgstr ""
+
+#: src/components/labelers-settings-view.tsx
+msgid "Show more labelers"
 msgstr ""
 
 #: src/components/user-settings-view.tsx
@@ -3781,7 +3789,7 @@ msgstr "Le DID du service est <0>{appviewDid}</0>. Le service publie un <1>docum
 msgid "The Slow Web, Revisited"
 msgstr "Le Slow Web, revisité"
 
-#. placeholder {0}: names.length - MAX_VISIBLE_LABELS
+#. placeholder {0}: labelTotal - names.length
 #: src/components/labelers-settings-view.tsx
 msgid "+{0} more"
 msgstr ""

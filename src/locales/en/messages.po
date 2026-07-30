@@ -957,7 +957,6 @@ msgstr "Trending publications"
 msgid "Replace cover image"
 msgstr "Replace cover image"
 
-#: src/components/labelers-settings-view.tsx
 #: src/components/reader/app-shell.tsx
 #: src/lib/sidebar-nav.ts
 msgid "Search"
@@ -2275,6 +2274,10 @@ msgstr "Share elsewhere"
 #~ msgid "Publishing guide"
 #~ msgstr "Publishing guide"
 
+#: src/components/labelers-settings-view.tsx
+msgid "Search by name, handle, or label"
+msgstr "Search by name, handle, or label"
+
 #: src/components/reader/article-below-fold.tsx
 msgid "Worth subscribing to"
 msgstr "Worth subscribing to"
@@ -2328,6 +2331,7 @@ msgstr "All the format-specific work happens once, in a framework-agnostic core 
 msgid "A publication on Standard is a <0>site.standard.document</0> record in the author's AT Protocol repository — not a row in a database we own. Standard Reader indexes those records into a public read-model and renders them, but nothing about the format is proprietary: the schemas are open, the content is portable across publishing platforms, and the same renderer we ship is available to you."
 msgstr "A publication on Standard is a <0>site.standard.document</0> record in the author's AT Protocol repository — not a row in a database we own. Standard Reader indexes those records into a public read-model and renders them, but nothing about the format is proprietary: the schemas are open, the content is portable across publishing platforms, and the same renderer we ship is available to you."
 
+#: src/components/labelers-settings-view.tsx
 #: src/routes/_layout.latest.tsx
 msgid "On the network"
 msgstr "On the network"
@@ -2604,6 +2608,10 @@ msgstr "Optional: add a note about why you're saving this"
 #: src/components/reader/subscriptions-tree.tsx
 msgid "{count} unread"
 msgstr "{count} unread"
+
+#: src/components/labelers-settings-view.tsx
+msgid "Show more labelers"
+msgstr "Show more labelers"
 
 #: src/components/user-settings-view.tsx
 msgid "Best of your subscriptions"
@@ -3781,7 +3789,7 @@ msgstr "Service DID is <0>{appviewDid}</0>. The service advertises a <1>DID docu
 msgid "The Slow Web, Revisited"
 msgstr "The Slow Web, Revisited"
 
-#. placeholder {0}: names.length - MAX_VISIBLE_LABELS
+#. placeholder {0}: labelTotal - names.length
 #: src/components/labelers-settings-view.tsx
 msgid "+{0} more"
 msgstr "+{0} more"
