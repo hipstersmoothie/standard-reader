@@ -13,6 +13,7 @@ describe("isBskyClientHost", () => {
     expect(isBskyClientHost("Witchsky.app")).toBe(true);
     expect(isBskyClientHost("mu.social")).toBe(true);
     expect(isBskyClientHost("deer.social")).toBe(true);
+    expect(isBskyClientHost("blacksky.community")).toBe(true);
   });
 
   it("rejects lookalikes and unrelated hosts", () => {
@@ -20,6 +21,8 @@ describe("isBskyClientHost", () => {
     // A subdomain is a different site, not a client we know the grammar of.
     expect(isBskyClientHost("evil.bsky.app")).toBe(false);
     expect(isBskyClientHost("bsky.app.evil.com")).toBe(false);
+    // Blacksky's WordPress site, not their client — `/profile/…` 404s there.
+    expect(isBskyClientHost("blackskyweb.xyz")).toBe(false);
   });
 });
 

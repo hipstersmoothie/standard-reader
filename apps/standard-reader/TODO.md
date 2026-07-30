@@ -833,7 +833,7 @@ Backend/API exists; UI or copy is missing.
       `iframe-embed.tsx`. The converter carries it natively to Leaflet and as a sandboxed
       `<iframe srcdoc>` to Markpub; Offprint and pckt have no block for it and report it dropped.
 - [x] **Alternate Bluesky client embeds** — links to `social-app` forks (Witchsky, Mu,
-      deer.social) were only ever plain link cards, so an article citing
+      deer.social, Blacksky) were only ever plain link cards, so an article citing
       `witchsky.app/profile/…/feed/…` showed a bare "Witchsky" card. The client host list moved
       into [`lib/atproto/bsky-clients.ts`](src/lib/atproto/bsky-clients.ts) — shared with the
       extension's [`manifest-hosts.ts`](../extension/src/lib/manifest-hosts.ts), which used to

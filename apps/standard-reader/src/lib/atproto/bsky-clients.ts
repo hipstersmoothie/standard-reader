@@ -22,6 +22,9 @@ export const BSKY_WEB_CLIENT_HOSTS = [
   "deer.social",
   "witchsky.app",
   "mu.social",
+  // Blacksky's client. Not `blackskyweb.xyz` — that is their WordPress site,
+  // and it is the host their articles usually link to.
+  "blacksky.community",
 ] as const;
 
 const HOSTS = new Set<string>(BSKY_WEB_CLIENT_HOSTS);
