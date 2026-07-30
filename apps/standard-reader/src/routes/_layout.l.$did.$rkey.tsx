@@ -240,7 +240,7 @@ const styles = stylex.create({
   heroActs: {
     alignItems: "center",
     columnGap: spacing["1.5"],
-    display: { [HERO_DESKTOP]: "flex", default: "none", },
+    display: { [HERO_DESKTOP]: "flex", default: "none" },
     flexWrap: "wrap",
     justifyContent: "flex-end",
     rowGap: spacing["2.5"],
@@ -248,7 +248,7 @@ const styles = stylex.create({
   },
   heroActsMobile: {
     alignItems: "center",
-    display: { [HERO_DESKTOP]: "none", default: "flex", },
+    display: { [HERO_DESKTOP]: "none", default: "flex" },
     flexShrink: 0,
     justifyContent: "flex-end",
     paddingTop: spacing["1"],
