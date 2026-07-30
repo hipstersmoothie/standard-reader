@@ -17,6 +17,8 @@ For the full product vision (screens, data model, discovery engine), see
 [`apps/standard-reader/APP_VISION.md`](./apps/standard-reader/APP_VISION.md). The actionable
 roadmap lives in [`apps/standard-reader/TODO.md`](./apps/standard-reader/TODO.md).
 
+> Looking to give feedback? Please submit it [here](https://userinput.app/#/s/did:plc:f4os2wz5fjl56xpwcvtnqu7m/3mprrc56lgd2e).
+
 ## Stack
 
 - **Framework:** [TanStack Start](https://tanstack.com/start) + TanStack Router
