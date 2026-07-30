@@ -1212,3 +1212,16 @@ Re-emit a document's content into another format by running the renderer's norma
 - [ ] **Convert a single record from the app** — the reading client stays read-first, but an
       author viewing their own document could be offered the same conversion inline. Depends on
       write scopes for `site.standard.document`.
+- [x] **Markdown stuffed into a single Leaflet `text`/`blockquote` block's `plaintext`** — Skyreader
+      linkblogs reuse `pub.leaflet.content` but write raw markdown (blank-line-separated paragraphs,
+      leading `"> "` blockquotes) into one block's `plaintext` instead of using Leaflet's structured
+      blocks. The Leaflet block path (`leafletToNode` in `build.ts`) rendered that `plaintext`
+      verbatim as a single paragraph node, so multi-paragraph bodies collapsed into one run-on clump
+      and literal `>` markers showed up as text instead of a blockquote. `renderer-core`'s
+      [`leaflet/plaintext-paragraphs.ts`](../../packages/renderer-core/src/leaflet/plaintext-paragraphs.ts)
+      now splits a Leaflet `text`/`blockquote` block's `plaintext` on blank lines into separate
+      paragraph/blockquote nodes, converting a leading `"> "` line into a real `blockquote` node and
+      reindexing each block's byte-offset facets (mentions, links) onto the split segment they land
+      in — a facet split across two segments is dropped rather than corrupted. Genuine Leaflet
+      content (single-line block plaintext, no blank lines) round-trips unchanged, so this is a no-op
+      for every non-Skyreader document.
