@@ -352,6 +352,66 @@ export async function reconcileRepoFromPds(
   };
 }
 
+/**
+ * Re-read every indexed publisher's `site.standard.publication` records from
+ * their PDS and re-upsert them, so a newly mirrored record field lands on
+ * existing rows without waiting for each author to edit their publication.
+ *
+ * The hourly reconcile round-robin (see below) eventually does the same thing,
+ * but only 50 repos per sweep — too slow to bring a new column to life. This
+ * walks every publisher once and touches nothing else: documents are left alone,
+ * and a repo that fails is logged and skipped rather than aborting the pass.
+ */
+export async function backfillPublicationRecords(): Promise<{
+  repos: number;
+  publications: number;
+  failed: number;
+}> {
+  const repos = await db
+    .selectDistinct({ did: publications.did })
+    .from(publications)
+    .where(eq(publications.deleted, false))
+    .orderBy(asc(publications.did));
+
+  let upserted = 0;
+  let failed = 0;
+
+  for (const repo of repos) {
+    try {
+      const identity = await resolveIdentity(repo.did);
+      if (!identity.pds) {
+        failed += 1;
+        continue;
+      }
+      const result = await listRepoRecords(
+        repo.did,
+        Collections.publication,
+        identity.pds,
+      );
+      for (const record of result.records) {
+        if (!record.value) continue;
+        await upsertPublication(
+          record.uri,
+          repo.did,
+          rkeyOf(record.uri),
+          record.cid,
+          record.value as unknown as PublicationRecord,
+        );
+        upserted += 1;
+      }
+    } catch (error) {
+      failed += 1;
+      logEvent("ingest.publicationBackfill", {
+        did: repo.did,
+        error: error instanceof Error ? error.message : String(error),
+        ok: false,
+      });
+    }
+  }
+
+  return { repos: repos.length, publications: upserted, failed };
+}
+
 /** Round-robin publisher repos (least recently reconciled first).
  *
  * Repos marked `backfill_state = 'gone'` (PDS confirmed the repo was deleted /

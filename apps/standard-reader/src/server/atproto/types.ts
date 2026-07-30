@@ -58,7 +58,15 @@ export interface PublicationRecord {
    * (`#/lib/publication-theme-source`) narrows it per `$type`.
    */
   theme?: unknown;
-  preferences?: { showInDiscover?: boolean };
+  preferences?: {
+    showInDiscover?: boolean;
+    /**
+     * `"ltr"` | `"rtl"` (lexicon default `"rtl"`). The publisher's prev/next
+     * reading direction — `"ltr"` marks a serial that reads forwards from its
+     * first post. See `#/lib/publication/serial`.
+     */
+    prevNextDirection?: string;
+  };
 }
 
 /** `site.standard.document#contributor`. */

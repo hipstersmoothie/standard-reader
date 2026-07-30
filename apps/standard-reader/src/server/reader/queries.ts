@@ -807,6 +807,13 @@ export async function selectPublicationArticleCards(
     /** The requesting reader, for `filter`. Usually the same as `readForDid`,
      * but set even when reading history is off (recommends don't need it). */
     readerDid?: string;
+    /**
+     * Archive ordering. Defaults to newest-first; serial publications pass
+     * `"oldest"` so the page opens on issue #1 (see
+     * `#/lib/publication/serial`). Callers must keep this stable across a
+     * paginated run — the offsets are computed against one ordering.
+     */
+    order?: "newest" | "oldest";
   },
 ): Promise<Array<ArticleCard>> {
   const d = schema.documents;
@@ -858,7 +865,11 @@ export async function selectPublicationArticleCards(
         }),
       ),
     )
-    .orderBy(...documentsNewestFirst(d))
+    .orderBy(
+      ...(opts.order === "oldest"
+        ? documentsOldestFirst(d)
+        : documentsNewestFirst(d)),
+    )
     .limit(opts.limit)
     .offset(opts.offset ?? 0);
 
@@ -2115,8 +2126,22 @@ function documentCarriesTagWhere(d: Schema["documents"], tag: string): SQL {
  * documents plus a top-N heapsort (726ms) where the index gives an ordered scan
  * that stops after ~37 rows (0.3ms).
  */
-function documentsNewestFirst(d: Schema["documents"]): Array<SQL> {
+export function documentsNewestFirst(d: Schema["documents"]): Array<SQL> {
   return [sql`${d.publishedAt} desc nulls last`, desc(d.uri)];
+}
+
+/**
+ * Oldest-first document ordering — a serial publication reads forwards from its
+ * first post (see `#/lib/publication/serial`), so its archive is listed in
+ * publication order rather than reverse-chronological.
+ *
+ * Spelled as the exact reverse of {@link documentsNewestFirst}, down to the NULLS
+ * placement, so the two are mirror images and Postgres can serve either by
+ * walking the same `(publication_uri, published_at)` index in the matching
+ * direction rather than sorting.
+ */
+export function documentsOldestFirst(d: Schema["documents"]): Array<SQL> {
+  return [sql`${d.publishedAt} asc nulls first`, asc(d.uri)];
 }
 
 /**

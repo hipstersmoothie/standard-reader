@@ -315,6 +315,40 @@ Sections, top to bottom:
   `UNSAFE_PortalProvider` so they inherit the palette instead of portalling to
   `document.body` and reverting to app tokens.
 
+### Serial publications (books & comics)
+
+A publisher who sets `preferences.prevNextDirection = "ltr"` on their
+`site.standard.publication` is saying the publication **reads forwards from its first post**
+rather than newest-first — a serial. That one flag is the whole signal; the lexicon has no
+field for what _kind_ of serial it is, so the kind is app-derived (`recomputeSerialKinds`, in
+the hourly sweep): a publication whose recent posts each render at least one image and carry
+only a short note of prose is a **comic**, anything else a **book**. Both are mirrored on the
+read-model row (`publications.prev_next_direction`, `publications.serial_kind`) and travel to
+the UI as `PublicationCard.serial` (see `#/lib/publication/serial`).
+
+What changes for a serial:
+
+- **Publication profile** lists its archive **oldest-first** (issue #1 leads instead of the
+  latest post) and offers "Start from issue one" / "Start from chapter one" in the hero. The
+  ordering is resolved server-side inside `getPublicationDocuments`, so the client never has to
+  know the reading order to ask for the right page.
+- **Comics open in the comic reader** (`/comic/$did/$rkey`) — a fixed dark theater that flips
+  through the issue's pages one at a time. The pages _are_ the images the body renders, in
+  reading order (`#/lib/document/images`), so nothing is authored specially for it. Arrow keys /
+  space / Page keys, `Home` / `End`, tap-zones and swipe all page; the current page lives in the
+  URL (page turns replace the history entry, so Back leaves the reader). Past the last page is
+  an end card with the next issue. The article route redirects a comic issue here unless
+  `?view=reader` — which is also the "Read the notes" escape, because a comic's prose commentary
+  belongs to the reading view, not the theater.
+- **Books get "Up next"** under the article: the following chapter, or a note that the reader has
+  caught up. Position ("3 of 12") and neighbours come from `getSeriesContext`
+  (`#/server/reader/series`), loaded client-side after the article paints like the other
+  below-the-fold rails. "Next" here means the chronologically _later_ post — the opposite of an
+  ordinary blog's prev/next, which walks backwards into the archive.
+
+Misclassification is never a trap: the comic reader always links to the reading view, and a
+comic issue with no pages falls back to it outright.
+
 ### Publication profile
 
 - Banner + **inline header** (avatar, topic, name, description, stats, Share, Follow).
@@ -679,7 +713,11 @@ re-auth because `prompt: consent` re-consent isn't reliable across PDS providers
 
 - **From `standard.site` lexicons** (reuse everything we can):
   - `site.standard.publication` — a publication (`url`, `name`, `description`, `icon` blob,
-    `basicTheme`, `preferences.showInDiscover`). _In the UI we call these "publications"._
+    `basicTheme`, `preferences.showInDiscover`, `preferences.prevNextDirection`). _In the UI we
+    call these "publications"._ `prevNextDirection` is the publisher's prev/next reading
+    direction: the lexicon default `"rtl"` is an ordinary reverse-chronological blog, while
+    `"ltr"` declares that the publication **reads forwards from its first post** — a serial.
+    See "Serial publications (books & comics)" below.
   - `site.standard.document` — an **article** (`site` → publication at-uri **or** an `https://`
     URL for a "loose document" with no publication record, `title`, `path`, `content`/`textContent`,
     `coverImage` blob = hero, `tags`, `contributors`, `publishedAt`). When `site` is an `https://`
@@ -695,7 +733,9 @@ re-auth because `prompt: consent` re-consent isn't reliable across PDS providers
     repo DID. We backfill identity/profile data (handle, display name, avatar, banner, bio) from
     the AT Proto identity layer + Bluesky `app.bsky.actor.profile`.
   - Note: there's **no** "featured" flag or "topic" in the lexicons — both are app-derived
-    (`topic` = a publication's most frequent document tag; Discover chips = top-N topics).
+    (`topic` = a publication's most frequent document tag; Discover chips = top-N topics). A
+    serial's **kind** (comic vs book) is app-derived the same way — the lexicon says a
+    publication reads forwards, not what it is.
 - **App-owned lexicons** under the `app.standard-reader` namespace (JSON in `lexicons/`):
   - `app.standard-reader.read` — an article marked read (`subject` = document at-uri).
   - `app.standard-reader.bookmark` — an article saved for later (`subject` = document at-uri +
@@ -889,7 +929,8 @@ AT Proto network (standard.site publications, profiles, follows)
   `src/db/index.ts` picks the driver from the connection string), managed with **Drizzle**
   (`src/db/schema/`), powers feeds, the
   directory, search (GIN `tsvector`), recommendations, and trending. Derived aggregates
-  (`publication_stats`, `publication_cosubscriptions`) are recomputed on a schedule. It is a
+  (`publication_stats`, `publication_cosubscriptions`, `publications.topic`,
+  `publications.serial_kind`) are recomputed on a schedule. It is a
   cache — never the source of truth.
 - **Writes:** user actions (follow, like, read state) are written as records to the user's repo
   and reflected back into the cache.

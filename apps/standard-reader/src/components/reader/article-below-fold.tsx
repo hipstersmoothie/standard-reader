@@ -32,6 +32,7 @@ import { articleMeasureStyle } from "./content/body-styles";
 import { articleCardReadingText } from "./content/extract-text";
 import { documentLinkParams, readingMinutes } from "./format";
 import { SectionHead } from "./primitives";
+import { SeriesUpNext } from "./series-up-next";
 import { useArticleExtras } from "./use-article-extras";
 
 const styles = stylex.create({
@@ -372,6 +373,11 @@ export function ArticleBelowFold({
 
   return (
     <>
+      {/* A serial's next issue comes before the generic rails: on a publication
+          that reads front-to-back, continuing the story is the only thing the
+          reader is likely to want next. */}
+      {pub?.serial ? <SeriesUpNext documentUri={article.uri} /> : null}
+
       {pub && extras ? (
         <MoreFromSection pub={pub} moreFrom={extras.moreFrom} />
       ) : null}

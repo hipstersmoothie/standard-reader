@@ -10,6 +10,7 @@ import {
   sql,
 } from "drizzle-orm";
 
+import { documentImages } from "#/lib/document/images";
 import { hasRenderableArticleBody } from "#/lib/document/renderable";
 import {
   documentExtractedText,
@@ -17,6 +18,8 @@ import {
   repairCompoundedSearchText,
 } from "#/lib/document/search-text";
 import { EXCLUDED_PUBLICATION_URL_PATTERN } from "#/lib/publication/exclusions";
+import type { SerialKind } from "#/lib/publication/serial";
+import { SERIAL_DIRECTION } from "#/lib/publication/serial";
 import {
   ARTICLE_BLEND,
   BACKLINK_SYNC_CONCURRENCY,
@@ -557,6 +560,103 @@ export async function recomputeTopics(): Promise<void> {
   });
 }
 
+/** Documents sampled per serial publication when classifying it. */
+const SERIAL_SAMPLE_SIZE = 40;
+
+/**
+ * A comic page's prose is a note *about* the art, not the work itself. Anything
+ * longer than this (~700 words) is a chapter of writing that happens to carry an
+ * illustration, so it does not count as a page of comic.
+ */
+const COMIC_PAGE_MAX_TEXT_LENGTH = 4000;
+
+/** Share of sampled posts that must read as comic pages to call it a comic. */
+const COMIC_PAGE_SHARE = 0.6;
+
+/**
+ * Derive `publications.serial_kind` for serial publications — the ones whose
+ * publisher set `preferences.prevNextDirection = "ltr"`, declaring that the
+ * publication reads forwards from its first post (see
+ * `#/lib/publication/serial`).
+ *
+ * The lexicon says nothing about *what* the serial is, so it is inferred from
+ * the posts: a post whose body renders at least one image and carries only a
+ * short note of prose is a page of comic; a post that is mostly writing is a
+ * chapter. A publication whose recent posts are mostly comic pages is a
+ * `"comic"` (and opens in the comic reader), everything else a `"book"`.
+ *
+ * Only serial publications are sampled — there are few of them, and `content_json`
+ * is large per row — and `serial_kind` is cleared on any publication that is no
+ * longer a serial so a preference flipped back to `"rtl"` doesn't linger.
+ */
+export async function recomputeSerialKinds(): Promise<void> {
+  // A publication that stopped being a serial keeps no derived kind.
+  await db
+    .update(publications)
+    .set({ serialKind: null })
+    .where(
+      and(
+        isNotNull(publications.serialKind),
+        or(
+          isNull(publications.prevNextDirection),
+          sql`${publications.prevNextDirection} <> ${SERIAL_DIRECTION}`,
+        ),
+      ),
+    );
+
+  const serials = await db
+    .select({ uri: publications.uri })
+    .from(publications)
+    .where(
+      and(
+        eq(publications.prevNextDirection, SERIAL_DIRECTION),
+        eq(publications.deleted, false),
+      ),
+    );
+
+  for (const { uri } of serials) {
+    // Sampled newest-first: a long-running serial's current form is what a
+    // reader arriving today will page through.
+    const sample = await db
+      .select({
+        did: documents.did,
+        contentJson: documents.contentJson,
+        contentFormat: documents.contentFormat,
+        textLength:
+          sql<number>`coalesce(char_length(${documents.textContent}), 0)`.mapWith(
+            Number,
+          ),
+      })
+      .from(documents)
+      .where(
+        and(eq(documents.publicationUri, uri), eq(documents.deleted, false)),
+      )
+      .orderBy(sql`${documents.publishedAt} desc nulls last`)
+      .limit(SERIAL_SAMPLE_SIZE);
+
+    if (sample.length === 0) continue;
+
+    const comicPages = sample.filter((row) => {
+      if (row.textLength > COMIC_PAGE_MAX_TEXT_LENGTH) return false;
+      return (
+        documentImages({
+          did: row.did,
+          contentJson: row.contentJson as never,
+          contentFormat: row.contentFormat,
+        }).length > 0
+      );
+    }).length;
+
+    const kind: SerialKind =
+      comicPages / sample.length >= COMIC_PAGE_SHARE ? "comic" : "book";
+
+    await db
+      .update(publications)
+      .set({ serialKind: kind, updatedAt: sql`now()` })
+      .where(eq(publications.uri, uri));
+  }
+}
+
 /**
  * Fill or refresh `documents.text_content` from record text plus structured
  * content blocks so GIN search covers full article bodies.
@@ -809,5 +909,6 @@ export async function recomputeDerived(): Promise<void> {
   await recomputeCosubscriptions();
   await recomputeCorecommends();
   await recomputeTopics();
+  await recomputeSerialKinds();
   await recomputeDocumentTrending();
 }

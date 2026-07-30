@@ -183,6 +183,13 @@
       "when": 1785126968224,
       "tag": "0025_spotty_frightful_four",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1785384859236,
+      "tag": "0026_pale_thanos",
+      "breakpoints": true
     }
   ]
 }

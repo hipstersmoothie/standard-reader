@@ -4,6 +4,8 @@ import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { alias } from "drizzle-orm/pg-core";
 
 import type * as DbSchema from "#/db/schema";
+import type { SerialPublication } from "#/lib/publication/serial";
+import { resolveSerialPublication } from "#/lib/publication/serial";
 import { cdnImageUrl } from "#/server/atproto/blob";
 
 /**
@@ -53,6 +55,15 @@ export interface PublicationCard {
    * excluded server-side, so the flag stays `false`.
    */
   hiddenFromDiscover: boolean;
+  /**
+   * Set when the publisher declared that this publication reads forwards from
+   * its first post (`preferences.prevNextDirection = "ltr"`) — a serial book or
+   * comic. `kind` is app-derived (`recomputeSerialKinds`) and decides the reading
+   * experience: a `"comic"` opens in the page-flip reader, a `"book"` reads as
+   * ordinary articles with an "Up next" link to the following issue. Null for
+   * ordinary reverse-chronological publications. See `#/lib/publication/serial`.
+   */
+  serial: SerialPublication | null;
   subscriberCount: number;
   documentCount: number;
   lastDocumentAt: string | null;
@@ -204,6 +215,8 @@ export function publicationCardColumns(schema: Schema) {
     topic: p.topic,
     verified: p.verified,
     showInDiscover: p.showInDiscover,
+    prevNextDirection: p.prevNextDirection,
+    serialKind: p.serialKind,
     subscriberCount: st.subscriberCount,
     documentCount: st.documentCount,
     lastDocumentAt: st.lastDocumentAt,
@@ -332,6 +345,13 @@ type PublicationCardRow = {
    * "not hidden" — those surfaces never carry opted-out pubs.
    */
   showInDiscover?: boolean | null;
+  /**
+   * `preferences.prevNextDirection` and the derived serial kind. Both are
+   * optional so hand-assembled rows can omit them; absent reads as "ordinary
+   * publication", which is what every non-serial is.
+   */
+  prevNextDirection?: string | null;
+  serialKind?: string | null;
   subscriberCount: number | null;
   documentCount: number | null;
   lastDocumentAt: Date | string | null;
@@ -402,6 +422,7 @@ export function toPublicationCard(row: PublicationCardRow): PublicationCard {
     topic: row.topic,
     verified: row.verified,
     hiddenFromDiscover: row.showInDiscover === false,
+    serial: resolveSerialPublication(row.prevNextDirection, row.serialKind),
     subscriberCount: row.subscriberCount ?? 0,
     documentCount: row.documentCount ?? 0,
     lastDocumentAt: toIsoTimestamp(row.lastDocumentAt),

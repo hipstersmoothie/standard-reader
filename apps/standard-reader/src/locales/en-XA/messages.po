@@ -25,6 +25,11 @@ msgstr ""
 msgid "Authoring Collections needs additional permissions to publish collections and documents on your behalf. You can revoke this any time from your account settings."
 msgstr ""
 
+#. placeholder {0}: next.pageCount
+#: src/components/reader/series-up-next.tsx
+msgid "{0, plural, one {# page} other {# pages}}"
+msgstr ""
+
 #: src/routes/_layout.l.$did.$rkey.tsx
 msgid "No people in this list."
 msgstr ""
@@ -37,6 +42,7 @@ msgstr ""
 msgid "Your Latest"
 msgstr ""
 
+#: src/components/comic/comic-reader.tsx
 #: src/magazine/Magazine.tsx
 msgid "Next page"
 msgstr ""
@@ -245,6 +251,10 @@ msgstr ""
 msgid "Recommendations from real reading patterns"
 msgstr ""
 
+#: src/components/reader/series-up-next.tsx
+msgid "Next chapter"
+msgstr ""
+
 #: src/magazine/magazine-end-like.tsx
 msgid "Did you enjoy this issue?"
 msgstr ""
@@ -296,6 +306,11 @@ msgstr ""
 #: src/routes/collection.$did.$rkey.tsx
 msgid "Opening the collection…"
 msgstr ""
+
+#. placeholder {0}: next.pageCount
+#: src/components/reader/series-up-next.tsx
+#~ msgid "{0} pages"
+#~ msgstr ""
 
 #: src/components/appearance-settings.tsx
 #: src/components/guide/pages/personalizing-guide-page.tsx
@@ -404,6 +419,10 @@ msgstr ""
 
 #: src/components/reader/about-view.tsx
 msgid "Every piece is a door to the next one"
+msgstr ""
+
+#: src/components/comic/comic-not-found.tsx
+msgid "We couldn’t find that issue."
 msgstr ""
 
 #: src/routes/_layout.friends.tsx
@@ -947,6 +966,10 @@ msgstr ""
 msgid "Contrast"
 msgstr ""
 
+#: src/components/reader/serial-start.tsx
+msgid "Start from chapter one"
+msgstr ""
+
 #: src/components/docs/api-docs-request-panel.tsx
 msgid "Copied"
 msgstr ""
@@ -1191,6 +1214,10 @@ msgstr ""
 msgid "Follow all"
 msgstr ""
 
+#: src/routes/_layout.p.$did.$rkey.tsx
+msgid "That's every issue published so far."
+msgstr ""
+
 #. placeholder {0}: view.clientName
 #. placeholder {1}: view.reader.handle
 #: src/routes/mcp/authorize.tsx
@@ -1409,6 +1436,7 @@ msgstr ""
 msgid "We couldn’t find that article."
 msgstr ""
 
+#: src/components/comic/comic-reader.tsx
 #: src/magazine/Magazine.tsx
 msgid "Previous page"
 msgstr ""
@@ -2005,6 +2033,10 @@ msgstr ""
 msgid "Every saved article will be removed from your repository. Your Saved for later list will be empty. This cannot be undone."
 msgstr ""
 
+#: src/components/comic/comic-reader.tsx
+msgid "All issues"
+msgstr ""
+
 #: src/components/guide/pages/everywhere-guide-page.tsx
 #~ msgid "There is also an embeddable <0>Follow</0> button you can put on your own site, from the <1>Share</1> menu on your publication's page."
 #~ msgstr ""
@@ -2193,6 +2225,10 @@ msgstr ""
 
 #: src/components/feedback/feedback-image-picker.tsx
 msgid "Drop screenshots here"
+msgstr ""
+
+#: src/components/comic/comic-reader.tsx
+msgid "Read the notes"
 msgstr ""
 
 #: src/magazine/Magazine.tsx
@@ -2416,8 +2452,11 @@ msgstr ""
 msgid "Log out"
 msgstr ""
 
+#. placeholder {0}: series.position
 #. placeholder {0}: visibleRows.length
 #. placeholder {1}: rows.length
+#. placeholder {1}: series.total
+#: src/components/reader/series-up-next.tsx
 #: src/components/reader/subscriptions-table.tsx
 msgid "{0} of {1}"
 msgstr ""
@@ -2472,6 +2511,12 @@ msgstr ""
 #: src/components/guide/pages/everywhere-guide-page.tsx
 #~ msgid "Carry on browsing. The overlay appears where it is useful and stays out of the way where it is not."
 #~ msgstr ""
+
+#. placeholder {0}: index + 1
+#. placeholder {1}: pages.length
+#: src/components/comic/comic-reader.tsx
+msgid "Page {0} of {1}"
+msgstr ""
 
 #: src/components/reader/about-view.tsx
 msgid "And if your reader of choice is one you already have, any slice of the network comes with its own feed — pipe it straight in and never open this app at all."
@@ -2599,6 +2644,10 @@ msgstr ""
 #: src/components/docs/docs-renderers-nav.tsx
 #~ msgid "Renderers guide"
 #~ msgstr ""
+
+#: src/components/comic/comic-reader.tsx
+msgid "Read this issue as an article"
+msgstr ""
 
 #: src/components/reader/subscribe-card.tsx
 msgid "Couldn't subscribe"
@@ -2929,6 +2978,10 @@ msgstr ""
 
 #: src/components/user-settings-view.tsx
 msgid "Publications to explore"
+msgstr ""
+
+#: src/components/reader/serial-start.tsx
+msgid "A serial comic — these issues read in order, from the first."
 msgstr ""
 
 #: src/routes/_layout.history.tsx
@@ -3501,6 +3554,11 @@ msgstr ""
 msgid "A Listen button reads any article aloud, right on your device, and highlights each word as it goes. The player follows you around the app — it’ll even read an embedded Bluesky post. Signed in, you can pick a voice."
 msgstr ""
 
+#. placeholder {0}: next.title
+#: src/components/reader/series-up-next.tsx
+msgid "Read the next instalment: {0}"
+msgstr ""
+
 #: src/components/reader/atstore-review-prompt.tsx
 msgid "Something went wrong while preparing your review."
 msgstr ""
@@ -3621,6 +3679,10 @@ msgstr ""
 
 #: src/components/reader/subscriptions-tree.tsx
 msgid "{count} unread"
+msgstr ""
+
+#: src/components/comic/comic-reader.tsx
+msgid "You’re caught up"
 msgstr ""
 
 #: src/components/user-settings-view.tsx
@@ -3763,6 +3825,10 @@ msgstr ""
 
 #: src/components/feedback/feedback-image-picker.tsx
 msgid "Up to four screenshots. Large ones are resized before they upload."
+msgstr ""
+
+#: src/routes/comic.$did.$rkey.tsx
+msgid "Comic reader"
 msgstr ""
 
 #: src/components/guide/pages/extension-guide-page.tsx
@@ -4070,6 +4136,10 @@ msgstr ""
 #: src/components/guide/pages/lists-guide-page.tsx
 #: src/lib/guide/navigation.ts
 msgid "Lists in the sidebar"
+msgstr ""
+
+#: src/components/comic/comic-reader.tsx
+msgid "End of issue"
 msgstr ""
 
 #: src/components/guide/pages/extension-guide-page.tsx
@@ -4783,6 +4853,11 @@ msgstr ""
 msgid "The publications you follow haven't published anything recently."
 msgstr ""
 
+#: src/components/comic/comic-reader.tsx
+#: src/components/reader/series-up-next.tsx
+msgid "Next issue"
+msgstr ""
+
 #: src/components/labeler-detail-view.tsx
 #: src/components/reader/about-view.tsx
 #: src/routes/_layout.friends.tsx
@@ -4989,6 +5064,11 @@ msgstr ""
 
 #: src/components/reader/comments/comment-card.tsx
 msgid "on Semble"
+msgstr ""
+
+#. placeholder {0}: next.title
+#: src/components/comic/comic-reader.tsx
+msgid "Read the next issue: {0}"
 msgstr ""
 
 #: src/components/user-settings-view.tsx
@@ -5405,6 +5485,10 @@ msgstr ""
 msgid "Log in"
 msgstr ""
 
+#: src/components/reader/series-up-next.tsx
+msgid "Up next"
+msgstr ""
+
 #: src/components/onboarding/step-settings.tsx
 msgid "Keep reading history"
 msgstr ""
@@ -5529,6 +5613,11 @@ msgstr ""
 msgid "The core / new frameworks"
 msgstr ""
 
+#. placeholder {0}: index + 1
+#: src/components/comic/comic-reader.tsx
+msgid "Page {0}"
+msgstr ""
+
 #: src/components/reader/about-view.tsx
 msgid "Subscribe to the publications on <0>standard.site</0> you care about. New writing simply arrives, in the order it was written — no feed to fight, nothing shouting for your attention. Just good long-form, and a genuinely nice way to keep finding more of it."
 msgstr ""
@@ -5583,6 +5672,10 @@ msgstr ""
 
 #: src/components/appearance-settings.tsx
 msgid "M"
+msgstr ""
+
+#: src/components/reader/series-up-next.tsx
+msgid "You’ve read every chapter published so far."
 msgstr ""
 
 #: src/components/guide/pages/getting-started-guide-page.tsx
@@ -5728,6 +5821,10 @@ msgstr ""
 msgid "How requests are handled"
 msgstr ""
 
+#: src/components/reader/serial-start.tsx
+msgid "A serial — these chapters read in order, from the first."
+msgstr ""
+
 #: src/components/guide/pages/keeping-track-guide-page.tsx
 #: src/lib/guide/navigation.ts
 msgid "Your reading history"
@@ -5815,6 +5912,12 @@ msgstr ""
 #: src/components/docs/renderers-docs-page.tsx
 #~ msgid "Every renderer takes one input for the document — the content payload of a <0>site.standard.document</0>. The format is detected from the payload's <1>$type</1>."
 #~ msgstr ""
+
+#. placeholder {0}: series.position
+#. placeholder {1}: series.total
+#: src/components/comic/comic-reader.tsx
+msgid "{publicationName} · {0} of {1}"
+msgstr ""
 
 #: src/routes/_layout.tag.$tag.tsx
 msgid "Tag"
@@ -6156,6 +6259,11 @@ msgstr ""
 msgid "Use original link"
 msgstr ""
 
+#: src/components/comic/comic-reader.tsx
+#: src/components/reader/series-up-next.tsx
+msgid "The end, for now"
+msgstr ""
+
 #: src/components/reader/about-view.tsx
 msgid "Everything this app runs on is public. The schemas are open, the read-model is queryable, and the renderer that draws these pages is published for you to use — so a reading app, a search tool, or a better client than this one is a weekend, not a platform deal."
 msgstr ""
@@ -6196,8 +6304,16 @@ msgstr ""
 msgid "Search publications or paste a handle"
 msgstr ""
 
+#: src/components/comic/comic-reader.tsx
+msgid "This issue has no pages to show."
+msgstr ""
+
 #: src/components/site-legal-links.tsx
 msgid "Source"
+msgstr ""
+
+#: src/components/comic/comic-reader.tsx
+msgid "This is the latest issue. Subscribe to hear when the next one lands."
 msgstr ""
 
 #: src/components/feedback/feedback-image-picker.tsx
@@ -6628,6 +6744,10 @@ msgstr ""
 #~ msgid "It doesn't ask you to leave the rest of the web behind. It reaches out to it — and stays a good citizen of the wider network."
 #~ msgstr ""
 
+#: src/components/comic/comic-reader.tsx
+msgid "Close the comic reader"
+msgstr ""
+
 #: src/routes/_layout.collections.edit.$rkey.tsx
 msgid "We couldn’t load that collection to edit."
 msgstr ""
@@ -6919,6 +7039,10 @@ msgstr ""
 msgid "Published AT Proto record schemas for reader state in each user's PDS."
 msgstr ""
 
+#: src/components/reader/serial-start.tsx
+msgid "Start from issue one"
+msgstr ""
+
 #: src/routes/_layout.discover.tsx
 msgid "Loading publication directory"
 msgstr ""
@@ -6952,6 +7076,10 @@ msgstr ""
 
 #: src/lib/sidebar-nav.ts
 msgid "Your day: a featured lead and the latest from your subscriptions."
+msgstr ""
+
+#: src/components/reader/series-up-next.tsx
+msgid "You’ve read every issue published so far."
 msgstr ""
 
 #: src/routes/_layout.tag.$tag.tsx

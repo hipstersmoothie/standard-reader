@@ -57,6 +57,8 @@ type BundleSqlRow = {
   pub_owner_display_name: string | null;
   pub_topic: string | null;
   pub_verified: boolean | null;
+  pub_prev_next_direction: string | null;
+  pub_serial_kind: string | null;
   pub_subscriber_count: number | null;
   pub_document_count: number | null;
   pub_last_document_at: Date | string | null;
@@ -144,6 +146,8 @@ function mapSqlRowToSource(row: BundleSqlRow): ArticleDetailSourceRow {
     pubOwnerDisplayName: row.pub_owner_display_name,
     pubTopic: row.pub_topic,
     pubVerified: row.pub_verified,
+    pubPrevNextDirection: row.pub_prev_next_direction,
+    pubSerialKind: row.pub_serial_kind,
     pubSubscriberCount: row.pub_subscriber_count,
     pubDocumentCount: row.pub_document_count,
     pubLastDocumentAt: toDate(row.pub_last_document_at),
@@ -247,6 +251,8 @@ async function fetchCollectionMagazineRows(
       pr_pub.display_name AS pub_owner_display_name,
       p.topic AS pub_topic,
       p.verified AS pub_verified,
+      p.prev_next_direction AS pub_prev_next_direction,
+      p.serial_kind AS pub_serial_kind,
       st.subscriber_count AS pub_subscriber_count,
       st.document_count AS pub_document_count,
       st.last_document_at AS pub_last_document_at,

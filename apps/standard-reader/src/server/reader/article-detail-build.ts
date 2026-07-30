@@ -73,6 +73,10 @@ export interface ArticleDetailSourceRow {
   pubOwnerDisplayName: string | null;
   pubTopic: string | null;
   pubVerified: boolean | null;
+  /** `preferences.prevNextDirection` + the derived serial kind — drive the
+   * serial reading experience (comic reader / "Up next"). */
+  pubPrevNextDirection: string | null;
+  pubSerialKind: string | null;
   pubSubscriberCount: number | null;
   pubDocumentCount: number | null;
   pubLastDocumentAt: Date | null;
@@ -156,6 +160,8 @@ function publicationFromRow(
     ownerHandle: row.pubOwnerHandle,
     topic: row.pubTopic,
     verified: row.pubVerified ?? false,
+    prevNextDirection: row.pubPrevNextDirection,
+    serialKind: row.pubSerialKind,
     subscriberCount: row.pubSubscriberCount,
     documentCount: row.pubDocumentCount,
     lastDocumentAt: row.pubLastDocumentAt,

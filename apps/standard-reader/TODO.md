@@ -244,7 +244,8 @@ Check items off as they land.
 - [x] Replace `demo_users` placeholder with real tables (`src/db/schema/`, migration `0000`,
       applied to Neon).
 - [x] `publications` (`site.standard.publication`: uri/cid/did, name, url, description, icon blob,
-      flattened `basicTheme`, `showInDiscover`, app-derived `topic`, verification state).
+      flattened `basicTheme`, `showInDiscover`, `prevNextDirection`, app-derived `topic` +
+      `serialKind`, verification state).
 - [x] `documents` (`site.standard.document`: uri, publication ref + raw `site`, title, path,
       canonical URL, description, `content`/`textContent`, cover image blob, tags, app-derived
       `featured`, `bskyPostRef`, published/updated) + `document_contributors`.
@@ -882,6 +883,33 @@ Backend/API exists; UI or copy is missing.
       `--refresh`, or a list of DIDs) groups bodyless rows by repo and probes each repo once for
       `site.mochott.article`, so a repo with none costs a single `listRecords` call
       ([`backfill-mochott-articles.ts`](scripts/backfill-mochott-articles.ts)).
+- [x] **Serial publications — comic reader + "Up next"** — `preferences.prevNextDirection = "ltr"`
+      on a `site.standard.publication` is the publisher declaring that the publication reads
+      forwards from its first post. Mirrored as `publications.prev_next_direction`
+      (`drizzle/0026_pale_thanos.sql`, ingest handler) and paired with an app-derived
+      `publications.serial_kind` — comic vs book — from `recomputeSerialKinds` in the hourly sweep
+      ([`recompute.ts`](src/server/ingest/recompute.ts)): a publication whose recent posts each
+      render an image and carry only a short note of prose is a comic. Both travel to the UI as
+      `PublicationCard.serial` ([`serial.ts`](src/lib/publication/serial.ts)).
+      Serial publication pages list their archive **oldest-first** (resolved server-side in
+      `getPublicationDocuments`, so the client needn't know the order to page it) and offer
+      "Start from issue one" ([`serial-start.tsx`](src/components/reader/serial-start.tsx)).
+      **Comics** open in a new page-flip reader at `/comic/$did/$rkey`
+      ([`comic-reader.tsx`](src/components/comic/comic-reader.tsx)) — a fixed dark theater over the
+      images the body renders, in reading order
+      ([`images.ts`](src/lib/document/images.ts)), with keyboard / tap-zone / swipe paging, the page
+      in the URL, and an end card carrying the next issue. The article route redirects a comic issue
+      there unless `?view=reader`, which is also the reader's way back to the author's notes.
+      **Books** get an "Up next" section under the article
+      ([`series-up-next.tsx`](src/components/reader/series-up-next.tsx)) driven by
+      `getSeriesContext` ([`series.ts`](src/server/reader/series.ts)) — position, the following
+      issue, or a caught-up note. Backfill: `pnpm backfill:serial`
+      ([`backfill-serial-publications.ts`](scripts/backfill-serial-publications.ts)) re-reads every
+      publisher's publication records, then derives the kinds.
+- [ ] **Reader preference for the comic reader** — comics currently always open in the theater (with
+      "Read the notes" as the escape). The magazine has an `open_collections_in_magazine` toggle;
+      the comic reader deserves the same opt-out, plus a per-publication override for a serial the
+      derivation calls a comic and the reader would rather read as an article.
 - [ ] **Syntax highlighting for mochott (and Markpub) code blocks** — `codeBlocksFromContent` in
       [`article-detail-build.ts`](src/server/reader/article-detail-build.ts) only collects code for
       leaflet / pckt / offprint / standard-markdown, so third-party formats render code unhighlighted.

@@ -70,6 +70,7 @@ function makePub(uri: string, name: string): PublicationCard {
     topic: null,
     verified: false,
     hiddenFromDiscover: false,
+    serial: null,
     subscriberCount: 0,
     documentCount: 0,
     lastDocumentAt: null,

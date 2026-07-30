@@ -8,6 +8,7 @@ import { hasRenderableArticleBody } from "#/lib/document/renderable";
 import { documentSearchText } from "#/lib/document/search-text";
 import { MOCHOTT_ARTICLE, mochottArticleContent } from "#/lib/mochott/types";
 import { isExcludedPublicationUrl } from "#/lib/publication/exclusions";
+import { parsePrevNextDirection } from "#/lib/publication/serial";
 import {
   FETCHED_CONTENT_FORMATS,
   resolveFetchedContent,
@@ -246,6 +247,13 @@ export async function upsertPublication(
     showInDiscover:
       (record.preferences?.showInDiscover ?? true) &&
       !isExcludedPublicationUrl(url),
+    // The publisher's prev/next direction; `"ltr"` marks a serial that reads
+    // forwards from its first post. `serial_kind` is *not* set here — it's
+    // derived from the publication's posts by `recomputeSerialKinds`, and this
+    // upsert must not blank it on every record edit.
+    prevNextDirection: parsePrevNextDirection(
+      record.preferences?.prevNextDirection,
+    ),
     deleted: false,
     updatedAt: sql`now()`,
   };

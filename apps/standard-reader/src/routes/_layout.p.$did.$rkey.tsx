@@ -67,6 +67,7 @@ import {
   invalidateReadQueries,
   isArticleUnreadForReader,
 } from "../components/reader/read-optimistic";
+import { SerialStart } from "../components/reader/serial-start";
 import type { ArticleCard } from "../integrations/tanstack-query/api-shapes";
 
 /** Documents loaded with the profile (page 0) before infinite scroll kicks in. */
@@ -750,6 +751,16 @@ function PublicationProfileContent({
           {signedIn && socialProof && socialProof.total > 0 ? (
             <PublicationSocialProofLine {...socialProof} />
           ) : null}
+
+          {/* A serial reads front-to-back, so its hero offers issue #1 rather
+              than leaving the reader to scroll for it. */}
+          {pub.serial ? (
+            <SerialStart
+              serial={pub.serial}
+              first={documents[0]}
+              isFullArchive={filter === "all"}
+            />
+          ) : null}
         </div>
       </div>
 
@@ -802,7 +813,11 @@ function PublicationProfileContent({
                 </div>
               ) : nextOffset == null ? (
                 <div {...stylex.props(styles.endNote)}>
-                  <Trans>You&apos;ve reached the end.</Trans>
+                  {pub.serial ? (
+                    <Trans>That&apos;s every issue published so far.</Trans>
+                  ) : (
+                    <Trans>You&apos;ve reached the end.</Trans>
+                  )}
                 </div>
               ) : null}
             </div>

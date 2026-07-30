@@ -90,6 +90,7 @@ import { Route as ApiOgPublicationRouteImport } from './routes/api/og/publicatio
 import { Route as ApiOgQuoteRouteImport } from './routes/api/og/quote'
 import { Route as ApiOgSiteRouteImport } from './routes/api/og/site'
 import { Route as CollectionDidRkeyRouteImport } from './routes/collection.$did.$rkey'
+import { Route as ComicDidRkeyRouteImport } from './routes/comic.$did.$rkey'
 import { Route as FeedLatestDidRouteImport } from './routes/feed.latest.$did'
 import { Route as FeedTagTagRouteImport } from './routes/feed.tag.$tag'
 import { Route as FeedUDidRouteImport } from './routes/feed.u.$did'
@@ -529,6 +530,11 @@ const CollectionDidRkeyRoute = CollectionDidRkeyRouteImport.update({
   path: '/collection/$did/$rkey',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ComicDidRkeyRoute = ComicDidRkeyRouteImport.update({
+  id: '/comic/$did/$rkey',
+  path: '/comic/$did/$rkey',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const FeedLatestDidRoute = FeedLatestDidRouteImport.update({
   id: '/feed/latest/$did',
   path: '/feed/latest/$did',
@@ -714,6 +720,7 @@ export interface FileRoutesByFullPath {
   '/api/og/quote': typeof ApiOgQuoteRoute
   '/api/og/site': typeof ApiOgSiteRoute
   '/collection/$did/$rkey': typeof CollectionDidRkeyRoute
+  '/comic/$did/$rkey': typeof ComicDidRkeyRoute
   '/feed/latest/$did': typeof FeedLatestDidRoute
   '/feed/tag/$tag': typeof FeedTagTagRoute
   '/feed/u/$did': typeof FeedUDidRoute
@@ -814,6 +821,7 @@ export interface FileRoutesByTo {
   '/api/og/quote': typeof ApiOgQuoteRoute
   '/api/og/site': typeof ApiOgSiteRoute
   '/collection/$did/$rkey': typeof CollectionDidRkeyRoute
+  '/comic/$did/$rkey': typeof ComicDidRkeyRoute
   '/feed/latest/$did': typeof FeedLatestDidRoute
   '/feed/tag/$tag': typeof FeedTagTagRoute
   '/feed/u/$did': typeof FeedUDidRoute
@@ -919,6 +927,7 @@ export interface FileRoutesById {
   '/api/og/quote': typeof ApiOgQuoteRoute
   '/api/og/site': typeof ApiOgSiteRoute
   '/collection/$did/$rkey': typeof CollectionDidRkeyRoute
+  '/comic/$did/$rkey': typeof ComicDidRkeyRoute
   '/feed/latest/$did': typeof FeedLatestDidRoute
   '/feed/tag/$tag': typeof FeedTagTagRoute
   '/feed/u/$did': typeof FeedUDidRoute
@@ -1022,6 +1031,7 @@ export interface FileRouteTypes {
     | '/api/og/quote'
     | '/api/og/site'
     | '/collection/$did/$rkey'
+    | '/comic/$did/$rkey'
     | '/feed/latest/$did'
     | '/feed/tag/$tag'
     | '/feed/u/$did'
@@ -1122,6 +1132,7 @@ export interface FileRouteTypes {
     | '/api/og/quote'
     | '/api/og/site'
     | '/collection/$did/$rkey'
+    | '/comic/$did/$rkey'
     | '/feed/latest/$did'
     | '/feed/tag/$tag'
     | '/feed/u/$did'
@@ -1226,6 +1237,7 @@ export interface FileRouteTypes {
     | '/api/og/quote'
     | '/api/og/site'
     | '/collection/$did/$rkey'
+    | '/comic/$did/$rkey'
     | '/feed/latest/$did'
     | '/feed/tag/$tag'
     | '/feed/u/$did'
@@ -1295,6 +1307,7 @@ export interface RootRouteChildren {
   ApiOgQuoteRoute: typeof ApiOgQuoteRoute
   ApiOgSiteRoute: typeof ApiOgSiteRoute
   CollectionDidRkeyRoute: typeof CollectionDidRkeyRoute
+  ComicDidRkeyRoute: typeof ComicDidRkeyRoute
   FeedLatestDidRoute: typeof FeedLatestDidRoute
   FeedTagTagRoute: typeof FeedTagTagRoute
   FeedUDidRoute: typeof FeedUDidRoute
@@ -1883,6 +1896,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CollectionDidRkeyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/comic/$did/$rkey': {
+      id: '/comic/$did/$rkey'
+      path: '/comic/$did/$rkey'
+      fullPath: '/comic/$did/$rkey'
+      preLoaderRoute: typeof ComicDidRkeyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/feed/latest/$did': {
       id: '/feed/latest/$did'
       path: '/feed/latest/$did'
@@ -2214,6 +2234,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiOgQuoteRoute: ApiOgQuoteRoute,
   ApiOgSiteRoute: ApiOgSiteRoute,
   CollectionDidRkeyRoute: CollectionDidRkeyRoute,
+  ComicDidRkeyRoute: ComicDidRkeyRoute,
   FeedLatestDidRoute: FeedLatestDidRoute,
   FeedTagTagRoute: FeedTagTagRoute,
   FeedUDidRoute: FeedUDidRoute,

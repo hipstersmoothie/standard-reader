@@ -47,6 +47,12 @@ import {
   attachViewerRecommendedToArticles,
 } from "#/server/reader/recommended-by";
 import { effectiveFollowSets } from "#/server/reader/saved-lists";
+import type { SeriesContext } from "#/server/reader/series";
+import {
+  NO_SERIES_CONTEXT,
+  selectPublicationSerial,
+  selectSeriesContext,
+} from "#/server/reader/series";
 import {
   themeModeForRequest,
   usePublicationThemeForRequest,
@@ -119,6 +125,10 @@ const embedInput = z.object({
 });
 
 const articleCardInput = z.object({
+  documentUri: z.string().min(1),
+});
+
+const seriesContextInput = z.object({
   documentUri: z.string().min(1),
 });
 
@@ -336,21 +346,28 @@ const getPublicationDocuments = createServerFn({ method: "GET" })
               : "all"
             : data.filter;
 
-        // The page rows and the reader's follow set are independent reads — the
-        // follow set only needs `did` — so resolve them in one wave instead of
-        // chaining. (`effectiveFollowSets` is request-memoized.)
-        const [documents, followSets] = await Promise.all([
-          selectPublicationArticleCards(db, schema, {
-            publicationUri: data.publicationUri,
-            limit: data.limit,
-            offset: data.offset,
-            readForDid,
-            countOldPostsAsUnread,
-            filter,
-            readerDid: did ?? undefined,
-          }),
+        // A serial publication reads forwards from its first post, so its
+        // archive is listed oldest-first (see `#/lib/publication/serial`). The
+        // rows can't be selected until the order is known, so this primary-key
+        // lookup goes out alongside the reader's follow set — the only other
+        // read that doesn't depend on it. (`effectiveFollowSets` is
+        // request-memoized.)
+        const [serial, followSets] = await Promise.all([
+          selectPublicationSerial(db, schema, data.publicationUri),
           did ? effectiveFollowSets(db, schema, did) : Promise.resolve(null),
         ]);
+        span.set("serialKind", serial?.kind ?? "none");
+
+        const documents = await selectPublicationArticleCards(db, schema, {
+          publicationUri: data.publicationUri,
+          limit: data.limit,
+          offset: data.offset,
+          readForDid,
+          countOldPostsAsUnread,
+          filter,
+          readerDid: did ?? undefined,
+          order: serial ? "oldest" : "newest",
+        });
 
         // "Recommended by @follow" attribution — same signal, same batched query
         // (one round trip over the page's rows, served by the partial
@@ -454,6 +471,8 @@ const getArticle = createServerFn({ method: "GET" })
                 >`coalesce(${pr.displayName}, ${pa.displayName})`,
                 pubTopic: p.topic,
                 pubVerified: p.verified,
+                pubPrevNextDirection: p.prevNextDirection,
+                pubSerialKind: p.serialKind,
                 pubSubscriberCount: st.subscriberCount,
                 pubDocumentCount: st.documentCount,
                 pubLastDocumentAt: st.lastDocumentAt,
@@ -811,6 +830,61 @@ const getArticleCard = createServerFn({ method: "GET" })
     ),
   );
 
+/**
+ * Where a post sits in its publication and what comes next — the "Up next" link
+ * under a serial book's article and the comic reader's end-of-issue card.
+ *
+ * Returns {@link NO_SERIES_CONTEXT} for a loose document (no publication); the
+ * neighbours are still resolved for an ordinary blog, whose `serial` is null, so
+ * the caller decides whether a continuation makes sense rather than this query
+ * guessing.
+ */
+const getSeriesContext = createServerFn({ method: "GET" })
+  .middleware([dbMiddleware])
+  .validator(seriesContextInput)
+  .handler(
+    observe(
+      "publication.getSeriesContext",
+      async ({ data, context }, span): Promise<SeriesContext> => {
+        const { db, schema } = context;
+        const d = schema.documents;
+        const p = schema.publications;
+        span.set("documentUri", data.documentUri);
+
+        const [row] = await db
+          .select({
+            publicationUri: d.publicationUri,
+            publishedAt: d.publishedAt,
+            prevNextDirection: p.prevNextDirection,
+            serialKind: p.serialKind,
+          })
+          .from(d)
+          .leftJoin(p, eq(p.uri, d.publicationUri))
+          .where(eq(d.uri, data.documentUri))
+          .limit(1);
+
+        if (!row?.publicationUri) {
+          span.set("found", false);
+          return NO_SERIES_CONTEXT;
+        }
+        span.set("found", true);
+        span.set("serialKind", row.serialKind ?? "none");
+
+        const series = await selectSeriesContext(db, schema, {
+          documentUri: data.documentUri,
+          publicationUri: row.publicationUri,
+          publishedAt: row.publishedAt,
+          prevNextDirection: row.prevNextDirection,
+          serialKind: row.serialKind,
+        });
+        span.set("position", series.position);
+        span.set("total", series.total);
+        span.set("hasNext", series.next != null);
+        return series;
+      },
+    ),
+  );
+
 // POST (not GET): a content-heavy article can reference dozens of link URLs,
 // which would overflow a GET query string. Still side-effect-free; TanStack
 // Query caches by queryKey client-side regardless of method.
@@ -980,6 +1054,19 @@ function getPublicationSocialProofQueryOptions(
   });
 }
 
+/**
+ * Series position + neighbours. Cached for a minute: a serial gains issues
+ * slowly, and both readers of this (the article's "Up next" and the comic
+ * reader's end card) may mount for the same document in one session.
+ */
+function getSeriesContextQueryOptions(documentUri: string) {
+  return queryOptions({
+    queryKey: ["series", documentUri] as const,
+    queryFn: async () => getSeriesContext({ data: { documentUri } }),
+    staleTime: 60_000,
+  });
+}
+
 function getPublicationEmbedMetaQueryOptions(publicationUri: string) {
   return queryOptions({
     queryKey: ["publication", "embedMeta", publicationUri] as const,
@@ -1007,6 +1094,8 @@ export const publicationApi = {
   getCollectionQueryOptions,
   getArticleExtras,
   getArticleExtrasQueryOptions,
+  getSeriesContext,
+  getSeriesContextQueryOptions,
   getInlineMentions,
   getInlineMentionsQueryOptions,
   getContentLinkTargets,

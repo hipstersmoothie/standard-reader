@@ -32,6 +32,7 @@
     "backfill:mochott-articles": "pnpm exec tsx --env-file=.env scripts/backfill-mochott-articles.ts",
     "backfill:repo-documents": "pnpm exec tsx --env-file=.env scripts/backfill-repo-documents.ts",
     "backfill:lists": "pnpm exec tsx --env-file=.env scripts/backfill-lists.ts",
+    "backfill:serial": "pnpm exec tsx --env-file=.env scripts/backfill-serial-publications.ts",
     "scan:unsupported-blocks": "pnpm exec tsx --env-file=.env scripts/scan-unsupported-blocks.ts",
     "scan:discussion-sources": "pnpm exec tsx --env-file=.env scripts/scan-discussion-sources.ts",
     "icons:generate": "node scripts/generate-social-icon.mjs",

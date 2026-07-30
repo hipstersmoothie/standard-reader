@@ -26,6 +26,7 @@ function pub(
     topic: null,
     verified: false,
     hiddenFromDiscover: false,
+    serial: null,
     subscriberCount,
     documentCount: 1,
     lastDocumentAt: null,
