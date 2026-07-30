@@ -123,12 +123,12 @@ msgid "Every renderer takes one input for the document — the content payload o
 msgstr ""
 
 #: src/components/reader/about-view.tsx
-msgid "One tap from the reading view, on any device, instantly in sync. Your library is always where you left it."
-msgstr "읽기 화면에서 한 번만 탭하면 모든 기기에 즉시 동기화됩니다. 라이브러리는 항상 멈춘 그 자리에 있습니다."
+#~ msgid "One tap from the reading view, on any device, instantly in sync. Your library is always where you left it."
+#~ msgstr "읽기 화면에서 한 번만 탭하면 모든 기기에 즉시 동기화됩니다. 라이브러리는 항상 멈춘 그 자리에 있습니다."
 
 #: src/components/reader/about-view.tsx
-msgid "Curated lists & collections"
-msgstr "큐레이션된 리스트 & 컬렉션"
+#~ msgid "Curated lists & collections"
+#~ msgstr "큐레이션된 리스트 & 컬렉션"
 
 #: src/components/docs/renderers-docs-page.tsx
 #~ msgid "Vue 3."
@@ -179,6 +179,7 @@ msgstr ""
 #: src/components/docs/docs-nav-areas.ts
 #: src/components/docs/introduction-docs-page.tsx
 #: src/components/docs/lexicon-docs-intro.tsx
+#: src/components/reader/about-view.tsx
 msgid "Lexicons"
 msgstr "Lexicon"
 
@@ -256,6 +257,10 @@ msgstr "제목을 입력하세요."
 #~ msgid "Pasting a handle works even for publications the network has not indexed yet — it goes and asks that author's account directly. Follow it and it starts appearing in your feeds like any other."
 #~ msgstr ""
 
+#: src/components/reader/about-view.tsx
+msgid "There’s an MCP server on the same host, so you can point an agent at the network too."
+msgstr ""
+
 #: src/components/reader/subscriptions-table.tsx
 msgid "Filter by name, handle, or topic"
 msgstr ""
@@ -302,8 +307,8 @@ msgid "(this is what Standard Reader itself uses)"
 msgstr ""
 
 #: src/components/reader/about-view.tsx
-msgid "And it never feels sealed off. We connect each article to the conversation happening across the Atmosphere — the open network beyond this app — gathering the Bluesky posts and replies about a piece, the notes left in its margins, and the other writing that cites it, quietly beneath what you’re reading."
-msgstr "그리고 결코 닫혀 있다고 느껴지지 않습니다. 저희는 각 글을 Atmosphere — 이 앱 너머의 열린 네트워크 — 에서 벌어지는 대화와 연결해, 그 글에 대한 Bluesky 게시물과 답글, 여백에 남겨진 메모, 그리고 그 글을 인용한 다른 글들을 읽고 있는 화면 아래에 조용히 모아 둡니다."
+#~ msgid "And it never feels sealed off. We connect each article to the conversation happening across the Atmosphere — the open network beyond this app — gathering the Bluesky posts and replies about a piece, the notes left in its margins, and the other writing that cites it, quietly beneath what you’re reading."
+#~ msgstr "그리고 결코 닫혀 있다고 느껴지지 않습니다. 저희는 각 글을 Atmosphere — 이 앱 너머의 열린 네트워크 — 에서 벌어지는 대화와 연결해, 그 글에 대한 Bluesky 게시물과 답글, 여백에 남겨진 메모, 그리고 그 글을 인용한 다른 글들을 읽고 있는 화면 아래에 조용히 모아 둡니다."
 
 #: src/components/guide/guide-shell.tsx
 msgid "Still stuck, or something here doesn't match what you see? <0>Tell us on the feedback board</0> — questions are welcome there, not just bug reports."
@@ -316,6 +321,10 @@ msgstr "실행 중…"
 #: src/components/onboarding/welcome-wizard.tsx
 msgid "Your Home feed is built from subscriptions. Three is a good start."
 msgstr "홈 피드는 구독을 바탕으로 만들어집니다. 세 개면 시작하기 좋습니다."
+
+#: src/components/reader/about-view.tsx
+msgid "A note in the margin"
+msgstr ""
 
 #: src/components/reader/collection-theme-editor.tsx
 msgid "Colors"
@@ -389,6 +398,10 @@ msgstr "구독하는 중…"
 msgid "People"
 msgstr ""
 
+#: src/components/reader/about-view.tsx
+msgid "Every piece is a door to the next one"
+msgstr ""
+
 #: src/routes/_layout.friends.tsx
 msgid "Publications written by the people you follow on Bluesky, minus the ones you already subscribe to."
 msgstr ""
@@ -417,6 +430,7 @@ msgstr ""
 msgid "Switch to light paper"
 msgstr "밝은 종이로 전환"
 
+#: src/components/reader/about-view.tsx
 #: src/components/reader/comments/comment-card.tsx
 msgid "on Bluesky"
 msgstr "Bluesky에서"
@@ -426,8 +440,8 @@ msgid "Set these now, or change them any time in Settings."
 msgstr "지금 설정하거나 설정에서 언제든지 변경하세요."
 
 #: src/components/reader/about-view.tsx
-msgid "Most readers stop at what you already subscribe to. Standard Reader treats finding your next favourite as part of the job. Browse every publications on the network — not just the handful you've heard of."
-msgstr "대부분의 리더는 이미 구독한 것에서 멈춥니다. Standard Reader는 다음에 좋아할 것을 찾아주는 일까지 자기 몫으로 여깁니다. 이름을 들어본 몇 곳뿐 아니라 네트워크의 모든 발행물을 둘러보세요."
+#~ msgid "Most readers stop at what you already subscribe to. Standard Reader treats finding your next favourite as part of the job. Browse every publications on the network — not just the handful you've heard of."
+#~ msgstr "대부분의 리더는 이미 구독한 것에서 멈춥니다. Standard Reader는 다음에 좋아할 것을 찾아주는 일까지 자기 몫으로 여깁니다. 이름을 들어본 몇 곳뿐 아니라 네트워크의 모든 발행물을 둘러보세요."
 
 #: src/components/guide/pages/collections-guide-page.tsx
 msgid "Open <0>Collections</0> in the sidebar and start a new one."
@@ -682,8 +696,8 @@ msgid "Making a collection"
 msgstr ""
 
 #: src/components/reader/about-view.tsx
-msgid "Read the guide"
-msgstr ""
+#~ msgid "Read the guide"
+#~ msgstr ""
 
 #: src/components/reader/app-shell.tsx
 #: src/components/site-legal-links.tsx
@@ -811,6 +825,10 @@ msgstr "확장 프로그램 개인정보 보호"
 msgid "Signing in"
 msgstr ""
 
+#: src/components/reader/about-view.tsx
+msgid "Public API — no key required"
+msgstr ""
+
 #: src/components/reading-settings-preview.tsx
 msgid "Loading voice sample"
 msgstr "음성 샘플 불러오는 중"
@@ -874,6 +892,11 @@ msgstr "다시 시도"
 
 #: src/lib/guide/navigation.ts
 msgid "Welcome"
+msgstr ""
+
+#. placeholder {0}: SUPPORTED_CONTENT_FORMATS.size
+#: src/components/reader/about-view.tsx
+msgid "An article is a record in its author’s own repository, and every publishing tool on the network writes that record a little differently. Standard Reader reads {0} of those content formats and renders them all into the same calm page — so a reader never has to care which tool a writer chose."
 msgstr ""
 
 #: src/components/user-settings-view.tsx
@@ -1003,6 +1026,10 @@ msgstr ""
 msgid "Bookmarks"
 msgstr "북마크"
 
+#: src/components/reader/about-view.tsx
+msgid "None of this is ours. We gather it from the Atmosphere — the open network these apps all share — and show it under the piece it’s about. Every line links back to where it was actually written, no account or comment box required, and it works whether or not the author ever opted in."
+msgstr ""
+
 #: src/components/reader/save-to-collection-dialog.tsx
 msgid "Saved to {savedName} on {appLabel}."
 msgstr "{appLabel}의 {savedName}에 저장했습니다."
@@ -1057,6 +1084,10 @@ msgstr "열린 웹을 위한 차분한 독서 공간. 2분만 들여 나에게 �
 #: src/routes/_layout.collections.index.tsx
 msgid "New series"
 msgstr "새 시리즈"
+
+#: src/components/reader/about-view.tsx
+msgid "Blogs never really solved the conversation. Comment boxes belonged to the blog, went unread, filled with spam, and vanished when the site did. So the talking moved somewhere else — and stopped being attached to the writing at all."
+msgstr ""
 
 #: src/components/guide/pages/your-data-guide-page.tsx
 msgid "These deletions remove the records from your account itself, not just from our copy — which is why they cannot be undone. Deleting your reading history, for example, makes everything look unread again everywhere."
@@ -1130,6 +1161,10 @@ msgstr ""
 msgid "Under that, <0>Cited in</0> lists other articles that link to this one, and <1>Related reading</1> suggests pieces from across the network on the same subjects — usually from publications you have not met yet."
 msgstr ""
 
+#: src/components/reader/about-view.tsx
+msgid "Essays and serialized writing"
+msgstr ""
+
 #: src/components/guide/pages/getting-started-guide-page.tsx
 #: src/lib/guide/navigation.ts
 #~ msgid "Following your first publications"
@@ -1182,8 +1217,8 @@ msgid "Custom"
 msgstr ""
 
 #: src/components/reader/about-view.tsx
-msgid "Read the API docs"
-msgstr "API 문서 보기"
+#~ msgid "Read the API docs"
+#~ msgstr "API 문서 보기"
 
 #: src/components/guide/pages/reading-guide-page.tsx
 msgid "Select <0>Listen</0> in the top bar and the article is read aloud. The first time takes a few seconds to warm up; after that it starts straight away."
@@ -1198,8 +1233,8 @@ msgstr ""
 #~ msgstr ""
 
 #: src/components/reader/about-view.tsx
-msgid "Shareable everywhere"
-msgstr "어디서나 공유 가능"
+#~ msgid "Shareable everywhere"
+#~ msgstr "어디서나 공유 가능"
 
 #: src/magazine/Magazine.tsx
 msgid "Close table of contents"
@@ -1232,6 +1267,10 @@ msgstr ""
 
 #: src/components/docs/introduction-docs-page.tsx
 msgid "how to make a site discoverable on Standard and have its content read inline, without adopting a platform."
+msgstr ""
+
+#: src/components/reader/about-view.tsx
+msgid "Most readers stop at what they already subscribe to. Standard Reader treats the next voice as part of the job: the piece you just finished points at who cited it, what it’s related to, and who else is worth following — across every publication on the network, not just the handful you’ve heard of."
 msgstr ""
 
 #: src/components/reader/terms-view.tsx
@@ -1303,6 +1342,10 @@ msgstr ""
 msgid "To move several at once, open <0>Subscriptions</0>, select the rows you want, and add them all to a list in one action. That is much faster than doing it publication by publication."
 msgstr ""
 
+#: src/components/reader/about-view.tsx
+msgid "Blocks, pages, and footnotes"
+msgstr ""
+
 #: src/components/user-settings-view.tsx
 msgid "Appearance"
 msgstr "화면 설정"
@@ -1354,6 +1397,10 @@ msgstr "계정"
 msgid "Collapse all lists"
 msgstr "모든 목록 접기"
 
+#: src/components/reader/about-view.tsx
+msgid "Four essays covering the same ground, from publications you don’t follow yet."
+msgstr ""
+
 #: src/components/reader/article-view.tsx
 msgid "We couldn’t find that article."
 msgstr "해당 글을 찾을 수 없습니다."
@@ -1388,6 +1435,10 @@ msgstr "내 컬렉션"
 
 #: src/components/guide/pages/finding-guide-page.tsx
 msgid "Search covers publication names, people's handles, topics, and the text of articles. Results are split into publications and articles, and each result shows the passage that matched with your words highlighted, so you can tell a real match from a coincidence without opening it."
+msgstr ""
+
+#: src/components/reader/about-view.tsx
+msgid "“…made to be read, and not to be measured.”"
 msgstr ""
 
 #: src/components/guide/pages/getting-started-guide-page.tsx
@@ -1505,6 +1556,10 @@ msgstr "빠른 전문 검색"
 #: src/components/reader/save-to-collection-dialog.tsx
 msgid "Collection name"
 msgstr "컬렉션 이름"
+
+#: src/components/reader/about-view.tsx
+msgid "+{UNNAMED_FORMAT_COUNT} more"
+msgstr ""
 
 #: src/components/guide/pages/reading-guide-page.tsx
 #: src/lib/guide/navigation.ts
@@ -1698,8 +1753,8 @@ msgid "What every control on an article does — including having it read aloud 
 msgstr ""
 
 #: src/components/reader/about-view.tsx
-msgid "The reading experience"
-msgstr "읽기 경험"
+#~ msgid "The reading experience"
+#~ msgstr "읽기 경험"
 
 #: src/routes/_layout.tsx
 msgid "Loading page"
@@ -1736,6 +1791,10 @@ msgstr ""
 #: src/components/guide/pages/keeping-track-guide-page.tsx
 #~ msgid "Collections live under <0>Collections</0> in the sidebar. Because publishing one writes a new kind of record to your account, the first time you make one you will be asked to grant an extra permission — that is the <1>Upgrade permissions</1> prompt, and it only appears once."
 #~ msgstr ""
+
+#: src/components/reader/about-view.tsx
+msgid "Also read natively:"
+msgstr ""
 
 #. placeholder {0}: pub.name
 #: src/components/reader/article-below-fold.tsx
@@ -1777,8 +1836,8 @@ msgstr "이 페이지의 모든 발행물을 구독 중입니다. 더 보려면 
 #~ msgstr ""
 
 #: src/components/reader/about-view.tsx
-msgid "Under each article you see the discussion from across the open network — Bluesky posts and replies, margin notes, links from other pieces that cite it, and related reading. All read-only, all linking back to the source."
-msgstr "각 아티클 아래에서 열린 네트워크 전체의 논의를 볼 수 있습니다. Bluesky 게시물과 답글, 마진 노트, 이 글을 인용한 다른 글의 링크, 관련 읽을거리까지. 모두 읽기 전용이며 원본으로 연결됩니다."
+#~ msgid "Under each article you see the discussion from across the open network — Bluesky posts and replies, margin notes, links from other pieces that cite it, and related reading. All read-only, all linking back to the source."
+#~ msgstr "각 아티클 아래에서 열린 네트워크 전체의 논의를 볼 수 있습니다. Bluesky 게시물과 답글, 마진 노트, 이 글을 인용한 다른 글의 링크, 관련 읽을거리까지. 모두 읽기 전용이며 원본으로 연결됩니다."
 
 #: src/routes/_layout.latest.tsx
 msgid "Show all subscriptions"
@@ -1831,8 +1890,8 @@ msgid "{total, plural, one {# match} other {# matches}}"
 msgstr "{total, plural, one {검색 결과 #개} other {검색 결과 #개}}"
 
 #: src/components/reader/about-view.tsx
-msgid "Publications, lists, and collections each get a clean link with a rich preview card — plus a subscribe button a publication can drop on its own site."
-msgstr "발행물, 리스트, 컬렉션마다 리치 미리보기 카드가 달린 깔끔한 링크가 생깁니다. 발행물이 자체 사이트에 넣을 수 있는 구독 버튼도 함께 제공됩니다."
+#~ msgid "Publications, lists, and collections each get a clean link with a rich preview card — plus a subscribe button a publication can drop on its own site."
+#~ msgstr "발행물, 리스트, 컬렉션마다 리치 미리보기 카드가 달린 깔끔한 링크가 생깁니다. 발행물이 자체 사이트에 넣을 수 있는 구독 버튼도 함께 제공됩니다."
 
 #: src/components/reader/discover-topic-filters.tsx
 msgid "Search topics"
@@ -1857,6 +1916,10 @@ msgstr "컬렉션 내 아티클"
 #: src/components/user-settings-view.tsx
 msgid "System"
 msgstr "시스템"
+
+#: src/components/reader/about-view.tsx
+msgid "Every feed, directory, and search query the app itself runs."
+msgstr ""
 
 #: src/components/reader/save-to-collection-dialog.tsx
 msgid "Could not save to {appLabel}"
@@ -1964,8 +2027,8 @@ msgid "Never used"
 msgstr ""
 
 #: src/components/reader/about-view.tsx
-msgid "Building something on the same index? There’s a public API."
-msgstr "같은 인덱스로 무언가 만들고 있나요? 공개 API가 있습니다."
+#~ msgid "Building something on the same index? There’s a public API."
+#~ msgstr "같은 인덱스로 무언가 만들고 있나요? 공개 API가 있습니다."
 
 #: src/components/reader/comments/comments-section.tsx
 msgid "Discussion"
@@ -2196,6 +2259,10 @@ msgstr "이 컬렉션이 게시되는 곳입니다. 시리즈 팔로워에게 �
 msgid "No apps connected"
 msgstr ""
 
+#: src/components/reader/about-view.tsx
+msgid "Nothing about it is fixed. Set the measure, the type size, and the typeface to whatever your eyes want, in light or dark, and the setting follows you to every article you open after it."
+msgstr ""
+
 #: src/components/reader/markdown-field.tsx
 msgid "Edit"
 msgstr "수정"
@@ -2215,6 +2282,10 @@ msgstr "Standard Reader 인덱스 읽기 모델을 위한 공개 XRPC 쿼리와 
 #: src/components/reader/collection-theme-editor.tsx
 msgid "Save theme"
 msgstr "테마 저장"
+
+#: src/components/reader/about-view.tsx
+msgid "A reply"
+msgstr ""
 
 #: src/components/guide/pages/getting-started-guide-page.tsx
 msgid "your day: one featured article, then what is new from the publications you subscribe to."
@@ -2397,6 +2468,10 @@ msgstr ""
 #~ msgid "Carry on browsing. The overlay appears where it is useful and stays out of the way where it is not."
 #~ msgstr ""
 
+#: src/components/reader/about-view.tsx
+msgid "And if your reader of choice is one you already have, any slice of the network comes with its own feed — pipe it straight in and never open this app at all."
+msgstr ""
+
 #: src/components/user-settings-view.tsx
 msgid "To email your digest, Standard Reader needs your account email address. We'll ask your PDS to share it — you'll be sent to your login to approve the request, then brought right back here. Your email is used only to send the weekly digest, and you can turn it off any time."
 msgstr "다이제스트를 보내려면 Standard Reader에 계정 이메일 주소가 필요합니다. PDS에 공유를 요청하며, 로그인 화면에서 승인한 뒤 바로 이곳으로 돌아옵니다. 이메일은 주간 다이제스트 발송에만 사용되고 언제든 끌 수 있습니다."
@@ -2406,7 +2481,6 @@ msgid "Where your reading is kept, who else can see it, what you agreed to when 
 msgstr ""
 
 #: src/components/guide/pages/publishing-guide-page.tsx
-#: src/components/reader/about-view.tsx
 #: src/lib/guide/navigation.ts
 msgid "Discovery"
 msgstr "발견"
@@ -2533,6 +2607,10 @@ msgstr "비망록을 쓴다는 것"
 msgid "Most reading apps keep your list of follows on their own servers. If the app shuts down, your list goes with it."
 msgstr ""
 
+#: src/components/reader/about-view.tsx
+msgid "Keep the good sentence"
+msgstr ""
+
 #: src/routes/_layout.u.$did.tsx
 msgid "Featured in"
 msgstr "게재 매체"
@@ -2624,8 +2702,8 @@ msgid "Paper"
 msgstr ""
 
 #: src/components/reader/about-view.tsx
-msgid "Flip one setting and article links open on the publication’s own site instead. Read wherever feels right to you."
-msgstr "설정 하나만 바꾸면 글 링크가 해당 발행물의 사이트에서 열립니다. 편한 곳에서 읽으세요."
+#~ msgid "Flip one setting and article links open on the publication’s own site instead. Read wherever feels right to you."
+#~ msgstr "설정 하나만 바꾸면 글 링크가 해당 발행물의 사이트에서 열립니다. 편한 곳에서 읽으세요."
 
 #: src/components/guide/pages/finding-guide-page.tsx
 msgid "Discover is the directory of every publication the network knows about — not a curated shelf. It runs top to bottom from most personal to most complete:"
@@ -2690,8 +2768,12 @@ msgid "{0, plural, one {follower} other {followers}}"
 msgstr "{0, plural, one {팔로워} other {팔로워}}"
 
 #: src/components/reader/about-view.tsx
-msgid "Most readers stop at what you already subscribe to. Standard Reader treats finding your next favourite as part of the job. Browse all {countLabel} publications on the network — not just the handful you've heard of."
-msgstr "대부분의 리더는 이미 구독한 것에서 멈춥니다. Standard Reader는 다음에 좋아할 글을 찾아 주는 것까지 자기 일로 여깁니다. 네트워크의 발행물 {countLabel}곳을 모두 둘러보세요 — 이름을 들어본 몇 곳만이 아니라요."
+#~ msgid "Most readers stop at what you already subscribe to. Standard Reader treats finding your next favourite as part of the job. Browse all {countLabel} publications on the network — not just the handful you've heard of."
+#~ msgstr "대부분의 리더는 이미 구독한 것에서 멈춥니다. Standard Reader는 다음에 좋아할 글을 찾아 주는 것까지 자기 일로 여깁니다. 네트워크의 발행물 {countLabel}곳을 모두 둘러보세요 — 이름을 들어본 몇 곳만이 아니라요."
+
+#: src/components/reader/about-view.tsx
+msgid "A lightweight browser extension lets you save and subscribe to publications while you’re out on the web — with subtle badges on bsky.app and a one-click overlay on any page you land on. Your reading list fills itself, and every save, like, and subscribe is instantly in sync with whatever device you read on next."
+msgstr ""
 
 #: src/components/labeler-detail-view.tsx
 msgid "Labels"
@@ -2767,6 +2849,10 @@ msgstr ""
 #: src/components/reader/collections-upgrade-gate.tsx
 msgid "Upgrade to author Collections"
 msgstr "업그레이드하고 컬렉션 만들기"
+
+#: src/components/reader/about-view.tsx
+msgid "Render a document in your own app —"
+msgstr ""
 
 #: src/components/reader/privacy-view.tsx
 msgid "Your social actions (follows, likes, saves, lists) are written to your AT Protocol repository and are visible according to the network's rules and your account settings. Our Postgres database holds a network read-model, app session state, and cached public metadata — not the canonical copies of publications."
@@ -2872,12 +2958,20 @@ msgstr "2026년 6월 13일 최종 업데이트"
 msgid "{shown, plural, one {# match} other {# matches}}"
 msgstr "{shown, plural, one {#개 일치} other {#개 일치}}"
 
+#: src/components/reader/about-view.tsx
+msgid "Select a passage and share it as a typeset card that links back to the article — or keep reading and pick up exactly where you left off next time."
+msgstr ""
+
 #: src/components/onboarding/welcome-wizard.tsx
 msgid "People you follow write here"
 msgstr ""
 
 #: src/components/guide/pages/extension-guide-page.tsx
 msgid "Good writing rarely turns up while you are already in a reading app. The extension puts saving and subscribing on every page you visit."
+msgstr ""
+
+#: src/components/reader/about-view.tsx
+msgid "Drop a Standard document into your own app, in your own framework."
 msgstr ""
 
 #: src/magazine/flow.tsx
@@ -3051,6 +3145,10 @@ msgstr ""
 #: src/components/docs/docs-publishing-nav.tsx
 #~ msgid "Publishing guide"
 #~ msgstr "발행 가이드"
+
+#: src/components/reader/about-view.tsx
+msgid "Prefer the original? Flip one setting and article links open on the publication’s own site instead — Standard Reader will still keep your place."
+msgstr ""
 
 #: src/components/guide/pages/reading-guide-page.tsx
 msgid "<0>Share</0> copies a link, or posts the article to Bluesky with a proper preview card. On a phone it can hand off to whatever you normally share with."
@@ -3425,6 +3523,10 @@ msgstr "문제가 발생했습니다."
 msgid "The best of what you subscribe to"
 msgstr "구독 중인 곳의 가장 좋은 글"
 
+#: src/components/reader/about-view.tsx
+msgid "Under this article"
+msgstr ""
+
 #: src/components/reader/save-to-collection-dialog.tsx
 msgid "Note"
 msgstr "노트"
@@ -3526,6 +3628,7 @@ msgstr "오디오 생성 중… {percent}%"
 
 #: src/components/docs/docs-nav-areas.ts
 #: src/components/docs/introduction-docs-page.tsx
+#: src/components/reader/about-view.tsx
 msgid "Renderers"
 msgstr ""
 
@@ -3565,8 +3668,8 @@ msgid "What Standard Reader is"
 msgstr ""
 
 #: src/components/reader/about-view.tsx
-msgid "Prefer the original?"
-msgstr "원문으로 볼까요?"
+#~ msgid "Prefer the original?"
+#~ msgstr "원문으로 볼까요?"
 
 #: src/components/reader/subscriptions-table.tsx
 msgid "Could not add to list"
@@ -3787,6 +3890,10 @@ msgstr "브라우저 설정에 따라 이 언어를 선택했습니다. 언제�
 
 #: src/routes/mcp/authorize.tsx
 msgid "Nothing has been shared. Head back to the app you came from and try connecting again."
+msgstr ""
+
+#: src/components/reader/about-view.tsx
+msgid "“This is the whole argument in one clause. Worth sitting with.”"
 msgstr ""
 
 #: src/components/reader/text-selection-toolbar.tsx
@@ -4013,8 +4120,8 @@ msgid "Save and subscribe from anywhere on the web, without breaking your stride
 msgstr ""
 
 #: src/components/reader/about-view.tsx
-msgid "Integrations"
-msgstr "연동"
+#~ msgid "Integrations"
+#~ msgstr "연동"
 
 #. placeholder {0}: person.subscriberCount
 #. placeholder {0}: pub.subscriberCount
@@ -4137,6 +4244,10 @@ msgstr ""
 msgid "This request can't be completed here, so we're returning you to the app that sent you."
 msgstr ""
 
+#: src/components/reader/about-view.tsx
+msgid "Read the docs"
+msgstr ""
+
 #: src/routes/_layout.l.$did.$rkey.tsx
 msgid "No people in this list — add some from the edit dialog."
 msgstr "이 목록에 사람이 없습니다 — 편집 대화상자에서 추가하세요."
@@ -4167,8 +4278,8 @@ msgid "Browse publications"
 msgstr "발행물 둘러보기"
 
 #: src/components/reader/about-view.tsx
-msgid "Standard Reader doesn’t trap your reading inside one app. Any slice of the network comes with its own RSS feed — pipe it straight into whatever reader you already use."
-msgstr "Standard Reader는 당신의 읽기를 하나의 앱에 가두지 않습니다. 네트워크의 어느 부분이든 자체 RSS 피드를 제공하니, 이미 쓰고 있는 리더로 바로 연결하세요."
+#~ msgid "Standard Reader doesn’t trap your reading inside one app. Any slice of the network comes with its own RSS feed — pipe it straight into whatever reader you already use."
+#~ msgstr "Standard Reader는 당신의 읽기를 하나의 앱에 가두지 않습니다. 네트워크의 어느 부분이든 자체 RSS 피드를 제공하니, 이미 쓰고 있는 리더로 바로 연결하세요."
 
 #: src/components/feedback/feedback-image-picker.tsx
 #~ msgid "Choose images"
@@ -4236,6 +4347,10 @@ msgstr ""
 
 #: src/components/feedback/feedback-image-picker.tsx
 msgid "That image is too detailed to fit under 1 MB. Try cropping it first."
+msgstr ""
+
+#: src/components/reader/about-view.tsx
+msgid "“Been thinking about this all week. The measurement is the part that ruins it — not the writing.”"
 msgstr ""
 
 #: src/components/reader/share-menu.tsx
@@ -4310,13 +4425,17 @@ msgstr "의견을 불러오지 못했습니다 <0>({0})</0>. 잠시 후 다시 �
 msgid "No publications match this tag yet."
 msgstr "아직 이 태그와 일치하는 발행물이 없습니다."
 
+#: src/components/reader/about-view.tsx
+msgid "Written wherever they write"
+msgstr ""
+
 #: src/components/guide/pages/finding-guide-page.tsx
 msgid "If you already know what you are looking for, the <0>Add publication</0> button opens a single field that does three things at once. Leave it empty and it shows what is trending. Type a few words and it searches the directory. Paste a handle or a domain — <1>@stdout.dev</1>, <2>stdout.dev</2> — and it looks that author up directly."
 msgstr ""
 
 #: src/components/reader/about-view.tsx
-msgid "The conversation, gathered"
-msgstr "한자리에 모인 대화"
+#~ msgid "The conversation, gathered"
+#~ msgstr "한자리에 모인 대화"
 
 #: src/components/reader/publication-actions.tsx
 #: src/routes/_layout.latest.tsx
@@ -4344,8 +4463,8 @@ msgstr ""
 #~ msgstr ""
 
 #: src/components/reader/about-view.tsx
-msgid "Save, like, subscribe — everywhere"
-msgstr "저장, 좋아요, 구독 — 어디서나"
+#~ msgid "Save, like, subscribe — everywhere"
+#~ msgstr "저장, 좋아요, 구독 — 어디서나"
 
 #: src/components/reader/subscriptions-unsubscribe-dialog.tsx
 msgid "Unsubscribe?"
@@ -4402,6 +4521,7 @@ msgstr ""
 
 #: src/components/docs/docs-nav-areas.ts
 #: src/components/docs/introduction-docs-page.tsx
+#: src/components/reader/about-view.tsx
 msgid "API"
 msgstr "API"
 
@@ -4415,6 +4535,10 @@ msgstr "아이콘 교체"
 
 #: src/components/reader/subscriptions-unsubscribe-dialog.tsx
 msgid "Unfollow"
+msgstr ""
+
+#: src/components/reader/about-view.tsx
+msgid "Standard Reader doesn’t ask you to move in. It goes out to the web you already use, and hands your reading back in whatever shape suits you."
 msgstr ""
 
 #: src/routes/mcp/authorize.tsx
@@ -4473,6 +4597,10 @@ msgstr "인증"
 
 #: src/components/reader/terms-view.tsx
 msgid "Changes to these terms"
+msgstr ""
+
+#: src/components/reader/about-view.tsx
+msgid "Short-form posts and long reads"
 msgstr ""
 
 #: src/components/reader/about-view.tsx
@@ -4541,6 +4669,10 @@ msgstr ""
 #: src/components/reader/privacy-view.tsx
 msgid "If you install the {SITE_NAME} browser extension, it uses the same account and session cookie as this site. The extension sends page URLs to our <0>/api/extension/*</0> endpoints for index matching and keeps overlay settings in your browser's extension storage. See the <1>extension privacy policy</1> for details that apply only to the extension."
 msgstr "{SITE_NAME} 브라우저 확장 프로그램을 설치하면 이 사이트와 동일한 계정 및 세션 쿠키를 사용합니다. 확장 프로그램은 색인 매칭을 위해 페이지 URL을 <0>/api/extension/*</0> 엔드포인트로 전송하고, 오버레이 설정은 브라우저의 확장 프로그램 저장소에 보관합니다. 확장 프로그램에만 적용되는 자세한 내용은 <1>확장 프로그램 개인정보 처리방침</1>을 참고하세요."
+
+#: src/components/reader/about-view.tsx
+msgid "And when a run of them turns out to be good together, collect them into a named list — a playlist for reading. Anyone can add the whole thing to their own reader in a single tap."
+msgstr ""
 
 #: src/components/reader/list-edit-modal.tsx
 msgid "Remove {memberName} from list"
@@ -4698,8 +4830,8 @@ msgid "Saves a link to your <0>{appLabel}</0> collection."
 msgstr "<0>{appLabel}</0> 컬렉션에 링크를 저장합니다."
 
 #: src/components/reader/about-view.tsx
-msgid "In your inbox"
-msgstr "내 받은 글"
+#~ msgid "In your inbox"
+#~ msgstr "내 받은 글"
 
 #: src/components/reader/reorder-subscriptions-modal.tsx
 #~ msgid "Drag to change the order your subscriptions appear in the sidebar."
@@ -4713,6 +4845,7 @@ msgstr "화면, 읽기 환경설정, 개인 정보."
 msgid "Authority for <0>app.standard-reader</0> resolves via DNS <1>_lexicon.*</1> TXT records to the publishing account."
 msgstr "<0>app.standard-reader</0>의 권한은 DNS <1>_lexicon.*</1> TXT 레코드를 통해 발행 계정으로 확인됩니다."
 
+#: src/components/reader/about-view.tsx
 #: src/components/reader/comments/comment-card.tsx
 msgid "on Margin"
 msgstr "Margin에서"
@@ -4749,6 +4882,10 @@ msgstr "해당 핸들을 확인하지 못했습니다."
 msgid "Good to know"
 msgstr ""
 
+#: src/components/reader/about-view.tsx
+msgid "Most readers stop at what they already subscribe to. Standard Reader treats the next voice as part of the job: the piece you just finished points at who cited it, what it’s related to, and who else is worth following — across all {countLabel} publications on the network, not just the handful you’ve heard of."
+msgstr ""
+
 #: src/components/reader/atstore-review-prompt.tsx
 msgid "Sharing a review on the <0>ATStore</0> will help both us and other users see what you think about Standard Reader."
 msgstr "<0>ATStore</0>에 리뷰를 남겨 주시면 저희와 다른 사용자 모두 Standard Reader에 대한 생각을 알 수 있습니다."
@@ -4756,6 +4893,10 @@ msgstr "<0>ATStore</0>에 리뷰를 남겨 주시면 저희와 다른 사용자 
 #: src/components/guide/pages/everywhere-guide-page.tsx
 #~ msgid "On Bluesky, quiet badges mark the people whose writing you can read here."
 #~ msgstr ""
+
+#: src/components/reader/about-view.tsx
+msgid "Publish labels others can subscribe to, or consume the ones we do."
+msgstr ""
 
 #: src/components/guide/pages/extension-guide-page.tsx
 msgid "The full account is on the <0>extension privacy page</0>."
@@ -4888,13 +5029,17 @@ msgstr "아직 읽을 글이 없습니다."
 msgid "Labelers are moderation services you subscribe to by DID. Subscribe to see their labels — and blur or hide labeled posts — while you read."
 msgstr "라벨러는 DID로 구독하는 모더레이션 서비스입니다. 구독하면 읽는 동안 해당 라벨을 확인하고, 라벨이 붙은 게시물을 흐리게 하거나 숨길 수 있습니다."
 
+#: src/components/reader/about-view.tsx
+msgid "The part blogging always missed"
+msgstr ""
+
 #: src/components/docs/publishing-docs-page.tsx
 #~ msgid "The older link rels"
 #~ msgstr ""
 
 #: src/components/reader/about-view.tsx
-msgid "Standard Reader meets you where you read"
-msgstr "Standard Reader는 당신이 읽는 곳으로 찾아갑니다"
+#~ msgid "Standard Reader meets you where you read"
+#~ msgstr "Standard Reader는 당신이 읽는 곳으로 찾아갑니다"
 
 #: src/components/appearance-settings.tsx
 msgid "Reset appearance"
@@ -5088,6 +5233,10 @@ msgstr ""
 #: src/routes/_layout.latest.tsx
 msgid "All caught up"
 msgstr "모두 확인했습니다"
+
+#: src/components/reader/about-view.tsx
+msgid "Everything here is linkable, too. Publications, lists, and collections each get a clean URL with a rich preview card — plus a subscribe button a publication can drop straight onto its own site."
+msgstr ""
 
 #: src/components/reader/reorder-subscriptions-modal.tsx
 #~ msgid "Reorder subscriptions"
@@ -5284,6 +5433,7 @@ msgstr "네트워크 검색"
 msgid "Search Google Fonts"
 msgstr "Google Fonts 검색"
 
+#: src/components/reader/about-view.tsx
 #: src/components/reader/article-below-fold.tsx
 msgid "Related reading"
 msgstr "함께 읽기"
@@ -5522,8 +5672,8 @@ msgid "If something is confusing, broken, or missing, the <0>feedback board</0> 
 msgstr ""
 
 #: src/components/reader/about-view.tsx
-msgid "A lightweight browser extension lets you save and subscribe to publications while you’re out on the web — with subtle badges on bsky.app and a one-click overlay on any page you land on. Your reading list fills itself."
-msgstr "가벼운 브라우저 확장 프로그램으로 웹을 둘러보다가 바로 발행물을 저장하고 구독할 수 있습니다. bsky.app에는 은은한 배지가, 방문하는 어떤 페이지에서든 원클릭 오버레이가 나타납니다. 읽을 목록이 저절로 채워집니다."
+#~ msgid "A lightweight browser extension lets you save and subscribe to publications while you’re out on the web — with subtle badges on bsky.app and a one-click overlay on any page you land on. Your reading list fills itself."
+#~ msgstr "가벼운 브라우저 확장 프로그램으로 웹을 둘러보다가 바로 발행물을 저장하고 구독할 수 있습니다. bsky.app에는 은은한 배지가, 방문하는 어떤 페이지에서든 원클릭 오버레이가 나타납니다. 읽을 목록이 저절로 채워집니다."
 
 #: src/components/docs/docs-nav-areas.ts
 msgid "Introduction"
@@ -5763,8 +5913,8 @@ msgid "Open any article while signed in and it'll show up here. Your history liv
 msgstr "로그인한 상태로 글을 열면 여기에 표시됩니다. 기록은 내 저장소에 <0>app.standard-reader.read</0> 레코드로 보관됩니다."
 
 #: src/components/reader/about-view.tsx
-msgid "Build named, shareable lists of publications — a playlist for reading. Anyone can add your list to their own reader in a single tap."
-msgstr "이름을 붙여 공유할 수 있는 발행물 목록을 만드세요. 읽기용 플레이리스트입니다. 누구나 한 번의 탭으로 자기 리더에 추가할 수 있습니다."
+#~ msgid "Build named, shareable lists of publications — a playlist for reading. Anyone can add your list to their own reader in a single tap."
+#~ msgstr "이름을 붙여 공유할 수 있는 발행물 목록을 만드세요. 읽기용 플레이리스트입니다. 누구나 한 번의 탭으로 자기 리더에 추가할 수 있습니다."
 
 #: src/routes/_layout.u.$did.tsx
 msgid "Author"
@@ -5852,6 +6002,7 @@ msgstr ""
 #: src/components/docs/introduction-docs-page.tsx
 #: src/components/docs/labelers-docs-page.tsx
 #: src/components/labelers-settings-view.tsx
+#: src/components/reader/about-view.tsx
 #: src/components/reader/app-shell.tsx
 #: src/components/user-settings-view.tsx
 msgid "Labelers"
@@ -5862,8 +6013,8 @@ msgid "Choose your language"
 msgstr "언어 선택"
 
 #: src/components/reader/about-view.tsx
-msgid "Find the ones you didn't know you wanted"
-msgstr "원하는 줄 몰랐던 것들을 찾아보세요"
+#~ msgid "Find the ones you didn't know you wanted"
+#~ msgstr "원하는 줄 몰랐던 것들을 찾아보세요"
 
 #: src/components/labeler-detail-view.tsx
 msgid "Hide"
@@ -5949,8 +6100,8 @@ msgid "Supported content formats"
 msgstr "지원하는 콘텐츠 형식"
 
 #: src/components/reader/about-view.tsx
-msgid "Plays nice with the open web"
-msgstr "열린 웹과 잘 어울립니다"
+#~ msgid "Plays nice with the open web"
+#~ msgstr "열린 웹과 잘 어울립니다"
 
 #: src/components/reader/privacy-view.tsx
 msgid "What we collect"
@@ -5975,6 +6126,10 @@ msgstr "Standard Reader가 마음에 드시나요?"
 #: src/components/reader/save-to-collection-dialog.tsx
 msgid "Use original link"
 msgstr "원본 링크 사용"
+
+#: src/components/reader/about-view.tsx
+msgid "Everything this app runs on is public. The schemas are open, the read-model is queryable, and the renderer that draws these pages is published for you to use — so a reading app, a search tool, or a better client than this one is a weekend, not a platform deal."
+msgstr ""
 
 #: src/components/guide/pages/publishing-guide-page.tsx
 msgid "Every publication page also serves a themed, embeddable subscribe widget — an iframe you can drop on your own site so visitors can subscribe without leaving your page. The easiest way to get it: open your publication's page on Standard Reader, use <0>Share → Embed subscribe</0>, pick landscape or portrait, and copy the snippet — no account or ownership check required to generate it."
@@ -6117,6 +6272,10 @@ msgstr "아직 토론이 없습니다."
 msgid "A single publication"
 msgstr "단일 발행물"
 
+#: src/components/reader/about-view.tsx
+msgid "Build on the same index"
+msgstr ""
+
 #: src/routes/extension.connected.tsx
 msgid "Return to the Standard Reader extension — this tab will close automatically."
 msgstr "Standard Reader 확장 프로그램으로 돌아가세요 — 이 탭은 자동으로 닫힙니다."
@@ -6224,6 +6383,10 @@ msgstr ""
 #: src/components/reader/publication-latest-note.tsx
 msgid "Latest note"
 msgstr "최근 노트"
+
+#: src/components/reader/about-view.tsx
+msgid "The record schemas a publication, document, or follow is made of."
+msgstr ""
 
 #: src/components/guide/pages/personalizing-guide-page.tsx
 #: src/lib/guide/navigation.ts
@@ -6377,6 +6540,10 @@ msgstr "가로"
 msgid "Edit collection"
 msgstr "컬렉션 편집"
 
+#: src/components/reader/about-view.tsx
+msgid "That is a real response from the endpoint this page just called — no key, no sign-up, no rate-limit form. The same is true of every feed, directory, and search query the reader itself runs."
+msgstr ""
+
 #: src/components/guide/pages/getting-started-guide-page.tsx
 #~ msgid "After that, following is one button. Anywhere you see a publication — a card in a feed, the top of an article, a publication's own page — there is a <0>Follow</0> button next to its name. Select it again to stop following. Nothing else changes: the button just decides whether new writing from that publication reaches your Home and Latest."
 #~ msgstr ""
@@ -6425,8 +6592,12 @@ msgid "Opening the issue…"
 msgstr "호를 여는 중…"
 
 #: src/components/reader/about-view.tsx
-msgid "It doesn't ask you to leave the rest of the web behind. It reaches out to it — and stays a good citizen of the wider network."
-msgstr "웹의 나머지를 등지라고 요구하지 않습니다. 오히려 손을 내밀며, 더 넓은 네트워크의 좋은 구성원으로 남습니다."
+msgid "However you like to read it"
+msgstr ""
+
+#: src/components/reader/about-view.tsx
+#~ msgid "It doesn't ask you to leave the rest of the web behind. It reaches out to it — and stays a good citizen of the wider network."
+#~ msgstr "웹의 나머지를 등지라고 요구하지 않습니다. 오히려 손을 내밀며, 더 넓은 네트워크의 좋은 구성원으로 남습니다."
 
 #: src/routes/_layout.collections.edit.$rkey.tsx
 msgid "We couldn’t load that collection to edit."
@@ -6488,6 +6659,10 @@ msgstr "Standard Reader는 AT Proto 저장소에서 <0>site.standard.document</0
 #: src/components/reader/list-edit-modal.tsx
 msgid "e.g. Tech, Friends, Cooking"
 msgstr "예: 기술, 친구, 요리"
+
+#: src/components/reader/about-view.tsx
+msgid "Semble"
+msgstr ""
 
 #. placeholder {0}: fmt.relativeTime(connection.lastUsedAt)
 #: src/components/user-settings-view.tsx
@@ -6631,6 +6806,10 @@ msgstr "켬"
 
 #: src/components/guide/pages/your-data-guide-page.tsx
 msgid "We keep a copy of the public network — publications, articles, and who follows what — so the app can search, rank, and load quickly. That copy includes the records described above. It is a cache of things that are already public, not a second private profile of you."
+msgstr ""
+
+#: src/components/reader/about-view.tsx
+msgid "Two other pieces link to this one — you can read them from here."
 msgstr ""
 
 #: src/components/reader/page-reader-bar.tsx
@@ -6790,6 +6969,10 @@ msgstr ""
 #: src/components/guide/pages/getting-started-guide-page.tsx
 #: src/lib/guide/navigation.ts
 msgid "Finding your way around"
+msgstr ""
+
+#: src/components/reader/about-view.tsx
+msgid "Cited by"
 msgstr ""
 
 #: src/routes/mcp/authorize.tsx
