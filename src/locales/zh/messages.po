@@ -144,6 +144,10 @@ msgstr "在外部打开文章"
 msgid "That means you can build in whichever direction you need — read the indexed network through the API, render documents inside your own app, model your own records against the lexicons, or make your existing site discoverable and readable on Standard."
 msgstr ""
 
+#: src/components/labelers-settings-view.tsx
+msgid "Muted"
+msgstr ""
+
 #: src/components/reader/terms-view.tsx
 msgid "Content and intellectual property"
 msgstr ""
@@ -3650,8 +3654,8 @@ msgstr "关闭标签页"
 #~ msgstr ""
 
 #: src/components/labelers-settings-view.tsx
-msgid "Mute"
-msgstr ""
+#~ msgid "Mute"
+#~ msgstr ""
 
 #: src/components/ReaderVoiceMenu.tsx
 #: src/components/user-settings-view.tsx
@@ -3745,8 +3749,8 @@ msgstr ""
 
 #: src/components/labeler-detail-view.tsx
 #: src/components/labelers-settings-view.tsx
-msgid "Unmute"
-msgstr ""
+#~ msgid "Unmute"
+#~ msgstr ""
 
 #: src/components/reader/about-view.tsx
 msgid "Listen to anything"
@@ -4319,6 +4323,10 @@ msgstr "阅读与隐私"
 msgid "About"
 msgstr "关于"
 
+#: src/components/labeler-detail-view.tsx
+msgid "Muted here"
+msgstr ""
+
 #: src/components/reader/privacy-view.tsx
 msgid "Sign-in and record access go through your Personal Data Server and the wider AT Protocol network. Infrastructure providers (such as our database host) process data on our behalf under their own terms. Embedded media, fonts, or links on article pages may load resources from other sites when you open them."
 msgstr "登录和记录访问都经由你的 Personal Data Server 以及更广的 AT Protocol 网络。基础设施提供方（例如我们的数据库托管商）会依其自身条款代我们处理数据。文章页中嵌入的媒体、字体或链接，可能在你打开时从其他站点加载资源。"
@@ -4755,8 +4763,8 @@ msgid "Choose a series, give it a title and cover, then assemble the articles yo
 msgstr "选择一个系列，为它取标题、配封面，然后编排你想推荐的文章。"
 
 #: src/components/labeler-detail-view.tsx
-msgid "Mute here"
-msgstr ""
+#~ msgid "Mute here"
+#~ msgstr ""
 
 #: src/components/reader/subscriptions-sheet.tsx
 #~ msgid "Open list {listName}"

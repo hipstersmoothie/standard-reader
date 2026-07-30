@@ -144,6 +144,10 @@ msgstr "Abrir artigos externamente"
 msgid "That means you can build in whichever direction you need — read the indexed network through the API, render documents inside your own app, model your own records against the lexicons, or make your existing site discoverable and readable on Standard."
 msgstr "Isso significa que você pode desenvolver na direção que precisar: ler a rede indexada via API, renderizar documentos dentro do seu próprio aplicativo, modelar seus registros com base nos léxicos ou tornar seu site existente detectável e legível no Standard."
 
+#: src/components/labelers-settings-view.tsx
+msgid "Muted"
+msgstr ""
+
 #: src/components/reader/terms-view.tsx
 msgid "Content and intellectual property"
 msgstr "Conteúdo e propriedade intelectual"
@@ -3650,8 +3654,8 @@ msgstr "Fechar aba"
 #~ msgstr "Início rápido"
 
 #: src/components/labelers-settings-view.tsx
-msgid "Mute"
-msgstr ""
+#~ msgid "Mute"
+#~ msgstr ""
 
 #: src/components/ReaderVoiceMenu.tsx
 #: src/components/user-settings-view.tsx
@@ -3745,8 +3749,8 @@ msgstr "Deixar de seguir?"
 
 #: src/components/labeler-detail-view.tsx
 #: src/components/labelers-settings-view.tsx
-msgid "Unmute"
-msgstr ""
+#~ msgid "Unmute"
+#~ msgstr ""
 
 #: src/components/reader/about-view.tsx
 msgid "Listen to anything"
@@ -4319,6 +4323,10 @@ msgstr "Leitura e privacidade"
 msgid "About"
 msgstr "Sobre"
 
+#: src/components/labeler-detail-view.tsx
+msgid "Muted here"
+msgstr ""
+
 #: src/components/reader/privacy-view.tsx
 msgid "Sign-in and record access go through your Personal Data Server and the wider AT Protocol network. Infrastructure providers (such as our database host) process data on our behalf under their own terms. Embedded media, fonts, or links on article pages may load resources from other sites when you open them."
 msgstr "O início de sessão e o acesso aos registos passam pelo seu Personal Data Server e pela restante rede AT Protocol. Os fornecedores de infraestrutura (como o hospedagem da nossa base de dados) processam dados em nosso nome sob seus próprios termos. Mídia incorporada, fontes ou links nas páginas dos artigos podem carregar recursos de outros sites quando os abre."
@@ -4755,8 +4763,8 @@ msgid "Choose a series, give it a title and cover, then assemble the articles yo
 msgstr "Escolha uma série, dê-lhe um título e uma capa e depois reúna os artigos que quer destacar."
 
 #: src/components/labeler-detail-view.tsx
-msgid "Mute here"
-msgstr ""
+#~ msgid "Mute here"
+#~ msgstr ""
 
 #: src/components/reader/subscriptions-sheet.tsx
 #~ msgid "Open list {listName}"

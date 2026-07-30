@@ -17,6 +17,7 @@
 import type { Client } from "@atcute/client";
 
 import type { LabelVisibility } from "#/db/schema/labels";
+import { subscriptionLabelPrefs } from "#/lib/labeler-subscription";
 
 /** A reader's labeler setup as declared in their Bluesky preferences. */
 export interface BskyLabelerPrefs {
@@ -123,18 +124,23 @@ export async function fetchBskyLabelerPrefs(
  * The per-label prefs to store for one labeler, combining that labeler's own
  * `contentLabelPref` entries with any global (labeler-less) ones. Labeler-
  * scoped entries win over global ones for the same label value.
+ *
+ * Labels the reader expressed no Bluesky opinion about fall to the same default
+ * a fresh subscription gets (`warn`), so a ported labeler and a hand-subscribed
+ * one behave identically — the only difference being the choices Bluesky
+ * actually recorded.
  */
 export function prefsForLabeler(
   prefs: BskyLabelerPrefs,
   labelerDid: string,
   labelValues: Array<string>,
 ): Array<{ val: string; visibility: LabelVisibility }> {
-  const out: Array<{ val: string; visibility: LabelVisibility }> = [];
+  const preset = new Map<string, LabelVisibility>();
   for (const val of labelValues) {
     const scoped = prefs.visibility.get(`${labelerDid} ${val}`);
     const global = prefs.visibility.get(`* ${val}`);
     const visibility = scoped ?? global;
-    if (visibility) out.push({ val, visibility });
+    if (visibility) preset.set(val, visibility);
   }
-  return out;
+  return subscriptionLabelPrefs(labelValues, preset);
 }

@@ -9,6 +9,7 @@ import { and, eq, inArray, like, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import { fetchBlueskyPublicProfiles } from "#/lib/bluesky-public-profile";
+import { subscriptionLabelPrefs } from "#/lib/labeler-subscription";
 import { getAtprotoSessionForRequest } from "#/middleware/auth-session.server";
 import {
   deleteLabelerSubscriptionRecord,
@@ -295,10 +296,21 @@ const getKnownLabelers = createServerFn({ method: "GET" })
       // SQL because with pagination a client-side sort would only reorder the
       // page it happens to be holding.
       const subscribedDids = [...subSet];
-      const isSubscribed =
-        subscribedDids.length > 0
-          ? sql<boolean>`(${svc.labelerDid} = any(${subscribedDids}))`
-          : sql<boolean>`false`;
+      // `inArray`, not a hand-written `= any(...)`: drizzle binds a JS array as
+      // a single scalar parameter, so Postgres rejects it with "malformed array
+      // literal" and the whole directory 500s for anyone holding a subscription.
+      //
+      // With nothing subscribed the term is dropped entirely rather than
+      // ordering by a constant — Postgres rejects that too ("non-integer
+      // constant in ORDER BY"), which would break the directory for every
+      // reader who hasn't subscribed to anything yet.
+      const orderBy = [
+        ...(subscribedDids.length > 0
+          ? [sql`${inArray(svc.labelerDid, subscribedDids)} desc`]
+          : []),
+        sql`coalesce(${subscriberCount.count}, 0) desc`,
+        sql`coalesce(${svc.displayName}, ${svc.handle}, ${svc.labelerDid}) asc`,
+      ];
 
       const [countRow, rows] = await Promise.all([
         context.db
@@ -321,11 +333,7 @@ const getKnownLabelers = createServerFn({ method: "GET" })
             eq(subscriberCount.labelerDid, svc.labelerDid),
           )
           .where(where)
-          .orderBy(
-            sql`${isSubscribed} desc`,
-            sql`coalesce(${subscriberCount.count}, 0) desc`,
-            sql`coalesce(${svc.displayName}, ${svc.handle}, ${svc.labelerDid}) asc`,
-          )
+          .orderBy(...orderBy)
           .limit(data.limit)
           .offset(data.offset),
       ]);
@@ -765,19 +773,33 @@ const subscribeLabeler = createServerFn({ method: "POST" })
       span.set("did", session.did);
       span.set("labeler", data.labeler);
 
+      // Start every declared label at `warn` rather than leaving prefs empty:
+      // an empty record made the toggles show a render-time fallback that was
+      // never written anywhere, so what the reader saw wasn't what their repo
+      // said — and a labeler editing its own `defaultSetting` later would
+      // silently change how their existing subscription behaved.
+      const view = await resolveLabelerView(data.labeler);
+      const labels = subscriptionLabelPrefs(
+        (view?.labelValueDefinitions ?? [])
+          .map((def) => def.identifier)
+          .filter((id): id is string => typeof id === "string"),
+      );
+      span.set("labelCount", labels.length);
+
       const createdAt = new Date().toISOString();
       const { uri, cid } = await putLabelerSubscriptionRecord(
         session.client,
         session.did,
         data.labeler,
         createdAt,
+        labels,
       );
       await upsertLabelerSubscription(
         uri,
         session.did,
         subjectRkey(data.labeler),
         cid,
-        { labeler: data.labeler, createdAt },
+        { labeler: data.labeler, labels, createdAt },
       );
       return { ok: true as const };
     }),

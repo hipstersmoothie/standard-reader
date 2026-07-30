@@ -701,7 +701,7 @@ Standard Reader speaks the standard AT Proto label protocol, so readers can subs
   declared label identifiers) runs in Postgres, debounced from the client; one page is ~13 kB.
 - **Handles, not DIDs.** A card shows `@handle`, resolved from the DID document's `alsoKnownAs` and
   stored alongside the row. did:web labelers — ours — declare no `alsoKnownAs`, but for them the
-  DID *is* the host, so it's derived at render. The DID remains the fallback so the identifier is
+  DID _is_ the host, so it's derived at render. The DID remains the fallback so the identifier is
   never lost.
 - **Your Bluesky moderation comes with you.** Bluesky keeps subscribed labelers in account
   preferences rather than repo records, so we read `app.bsky.actor.getPreferences` and recreate
@@ -721,7 +721,20 @@ Standard Reader speaks the standard AT Proto label protocol, so readers can subs
   reader. So a subscription can be muted (`enabled: false`) rather than dropped: the subscription
   and its per-label preferences stay exactly as they are, and only label resolution skips it, so
   unmuting restores what they had instead of starting from defaults. Absent means enabled, so no
-  existing subscription is affected.
+  existing subscription is affected. It reads as a **switch** labelled "Muted" — a switch names the
+  state it shows, where a button would name an action.
+- **Subscribing writes real preferences.** A new subscription stores an explicit visibility for every
+  label the labeler declares, defaulting to `warn`. Storing nothing and falling back at render time
+  meant the UI showed preferences that existed nowhere in the reader's repo, and let a labeler
+  change how an existing subscription behaved just by editing its own `defaultSetting`. `warn` is
+  the reversible middle: `hide` would make documents vanish with no explanation, and `ignore` would
+  make a fresh subscription look broken. The Bluesky import obeys the same rule, so a ported labeler
+  and a hand-subscribed one differ only where Bluesky actually recorded a choice.
+- **Preference changes are optimistic.** Each one is a PDS write, so the control moves immediately
+  and the write's response is the authoritative state — nothing is refetched. Only document label
+  treatment is invalidated, because a visibility preference changes neither the labeler nor its place
+  in the directory. Waiting on the round trip and refetching around it made the page feel frozen for
+  about a second per click.
 - **Labels apply to documents _or_ to accounts.** Ours score prose, so they label documents;
   labelers on the wider network label accounts (pub-search's `bulk-generated` marks a publisher
   whose documents are generated from a data source, not composed by an author). Both subject kinds

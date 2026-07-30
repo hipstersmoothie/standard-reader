@@ -144,6 +144,10 @@ msgstr "Abrir los posts externamente"
 msgid "That means you can build in whichever direction you need — read the indexed network through the API, render documents inside your own app, model your own records against the lexicons, or make your existing site discoverable and readable on Standard."
 msgstr ""
 
+#: src/components/labelers-settings-view.tsx
+msgid "Muted"
+msgstr ""
+
 #: src/components/reader/terms-view.tsx
 msgid "Content and intellectual property"
 msgstr ""
@@ -3650,8 +3654,8 @@ msgstr "Cerrar pestaña"
 #~ msgstr ""
 
 #: src/components/labelers-settings-view.tsx
-msgid "Mute"
-msgstr ""
+#~ msgid "Mute"
+#~ msgstr ""
 
 #: src/components/ReaderVoiceMenu.tsx
 #: src/components/user-settings-view.tsx
@@ -3745,8 +3749,8 @@ msgstr ""
 
 #: src/components/labeler-detail-view.tsx
 #: src/components/labelers-settings-view.tsx
-msgid "Unmute"
-msgstr ""
+#~ msgid "Unmute"
+#~ msgstr ""
 
 #: src/components/reader/about-view.tsx
 msgid "Listen to anything"
@@ -4319,6 +4323,10 @@ msgstr "Lectura y privacidad"
 msgid "About"
 msgstr "Acerca de"
 
+#: src/components/labeler-detail-view.tsx
+msgid "Muted here"
+msgstr ""
+
 #: src/components/reader/privacy-view.tsx
 msgid "Sign-in and record access go through your Personal Data Server and the wider AT Protocol network. Infrastructure providers (such as our database host) process data on our behalf under their own terms. Embedded media, fonts, or links on article pages may load resources from other sites when you open them."
 msgstr "El inicio de sesión y el acceso a los registros pasan por su Personal Data Server y por la red AT Protocol en general. Los proveedores de infraestructura (como nuestro alojamiento de base de datos) procesan datos en nuestro nombre bajo sus propios términos. El contenido multimedia, las fuentes o los enlaces incrustados en las páginas de artículos pueden cargar recursos de otros sitios al abrirlos."
@@ -4755,8 +4763,8 @@ msgid "Choose a series, give it a title and cover, then assemble the articles yo
 msgstr "Elija una serie, póngale título y portada, y luego reúna los artículos que quiera destacar."
 
 #: src/components/labeler-detail-view.tsx
-msgid "Mute here"
-msgstr ""
+#~ msgid "Mute here"
+#~ msgstr ""
 
 #: src/components/reader/subscriptions-sheet.tsx
 #~ msgid "Open list {listName}"

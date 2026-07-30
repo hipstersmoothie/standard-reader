@@ -153,7 +153,25 @@ describe("prefsForLabeler", () => {
     ).toEqual([{ val: "spam", visibility: "hide" }]);
   });
 
-  it("omits label values the reader has no opinion about", () => {
-    expect(prefsForLabeler(prefs([]), PUB_SEARCH, ["spam"])).toEqual([]);
+  it("defaults label values the reader has no opinion about to warn", () => {
+    // A ported labeler should behave like a hand-subscribed one: every declared
+    // label gets an explicit pref, and Bluesky's recorded choices are the only
+    // thing that differs. Leaving these out meant an imported labeler's toggles
+    // showed a render-time fallback that was never written to the repo.
+    expect(prefsForLabeler(prefs([]), PUB_SEARCH, ["spam"])).toEqual([
+      { val: "spam", visibility: "warn" },
+    ]);
+  });
+
+  it("keeps a Bluesky choice while defaulting its siblings", () => {
+    expect(
+      prefsForLabeler(prefs([[`${PUB_SEARCH} spam`, "hide"]]), PUB_SEARCH, [
+        "spam",
+        "bot",
+      ]),
+    ).toEqual([
+      { val: "spam", visibility: "hide" },
+      { val: "bot", visibility: "warn" },
+    ]);
   });
 });

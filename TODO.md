@@ -948,7 +948,7 @@ Standard AT Proto labels: subscribe to labelers, see/blur/hide their labels whil
       label names it renders plus a total (`labelNames`/`labelCount`). Search matches name, handle,
       description, DID and declared label identifiers; debounced 250ms client-side. ~13 kB/page.
 - [x] **Show handles, not DIDs** — `labeler_services.handle` (migration `0027`), resolved from the
-      DID document's `alsoKnownAs`. did:web labelers declare none, but for them the DID *is* the
+      DID document's `alsoKnownAs`. did:web labelers declare none, but for them the DID _is_ the
       host, so it's derived at render (`labelerHandle`). DID remains the fallback.
 - [x] **Never block sign-in on the labeler port** — each ported labeler costs a DID-document fetch,
       two repo reads and a PDS write, and running that inline in the OAuth callback added tens of
@@ -973,7 +973,23 @@ Standard AT Proto labels: subscribe to labelers, see/blur/hide their labels whil
       skips it (`readerSubscriptionsImpl`), so muting stops badges, warnings, and hiding everywhere
       at once, and unmuting restores exactly what they had. `setLabelerPref` carries `enabled`
       through, since `putRecord` replaces the whole record and would otherwise un-mute on any pref
-      change. Mute/Unmute sits on both the directory card and the labeler page.
+      change. Rendered as a **switch** labelled "Muted" (state, not action) on both the directory
+      card and the labeler page — on means muted, the inverse of `enabled`.
+- [x] **Subscribing writes an explicit pref for every label**, defaulting to `warn`
+      (`subscriptionLabelPrefs`). Previously a new subscription stored no prefs and the toggles
+      showed a render-time fallback that was never written anywhere, so the UI disagreed with the
+      repo — and a labeler editing its own `defaultSetting` later would silently change how an
+      existing subscription behaved. `warn` rather than the labeler's declared default because
+      `hide` makes documents vanish unexplained and `ignore` makes the subscription look broken.
+      The Bluesky import follows the same rule, so a ported labeler and a hand-subscribed one are
+      indistinguishable apart from the choices Bluesky actually recorded.
+- [x] **Label toggles apply optimistically** — each change is a PDS write, and waiting on it before
+      moving the control (then refetching the labeler and every `["labels"]` query on top) froze the
+      page for about a second per click. The control moves immediately; the write returns the
+      authoritative prefs so nothing is refetched, and only `["labels"]` is invalidated since a
+      visibility pref changes document treatment, not the labeler or its directory placement.
+      Muting is optimistic the same way. Also fixed: `["reader", "labelers"]` is not a prefix of
+      `["reader", "knownLabelers"]`, so the card you just acted on kept its stale state.
 - [ ] **Give our labelers real did:plc accounts** — `claudeslop` and `botlabeler` are `did:web`, and
       a `did:web` has no repo, so they cannot publish the standard `app.bsky.labeler.service`
       record. That is the only reason the custom `app.standard-reader.labeler.{service,defs}` +

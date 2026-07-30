@@ -144,6 +144,10 @@ msgstr "فتح المنشورات خارجيًا"
 msgid "That means you can build in whichever direction you need — read the indexed network through the API, render documents inside your own app, model your own records against the lexicons, or make your existing site discoverable and readable on Standard."
 msgstr ""
 
+#: src/components/labelers-settings-view.tsx
+msgid "Muted"
+msgstr ""
+
 #: src/components/reader/terms-view.tsx
 msgid "Content and intellectual property"
 msgstr ""
@@ -3650,8 +3654,8 @@ msgstr "إغلاق التبويب"
 #~ msgstr ""
 
 #: src/components/labelers-settings-view.tsx
-msgid "Mute"
-msgstr ""
+#~ msgid "Mute"
+#~ msgstr ""
 
 #: src/components/ReaderVoiceMenu.tsx
 #: src/components/user-settings-view.tsx
@@ -3745,8 +3749,8 @@ msgstr ""
 
 #: src/components/labeler-detail-view.tsx
 #: src/components/labelers-settings-view.tsx
-msgid "Unmute"
-msgstr ""
+#~ msgid "Unmute"
+#~ msgstr ""
 
 #: src/components/reader/about-view.tsx
 msgid "Listen to anything"
@@ -4319,6 +4323,10 @@ msgstr "القراءة والخصوصية"
 msgid "About"
 msgstr "حول"
 
+#: src/components/labeler-detail-view.tsx
+msgid "Muted here"
+msgstr ""
+
 #: src/components/reader/privacy-view.tsx
 msgid "Sign-in and record access go through your Personal Data Server and the wider AT Protocol network. Infrastructure providers (such as our database host) process data on our behalf under their own terms. Embedded media, fonts, or links on article pages may load resources from other sites when you open them."
 msgstr "يمرّ تسجيل الدخول والوصول إلى السجلات عبر خادم بياناتك الشخصي (PDS) وشبكة AT Protocol الأوسع. ويعالج مزوّدو البنية التحتية (مثل مضيف قاعدة بياناتنا) البيانات نيابةً عنّا وفق شروطهم الخاصة. وقد تحمّل الوسائط أو الخطوط أو الروابط المضمّنة في صفحات المقالات موارد من مواقع أخرى عند فتحها."
@@ -4755,8 +4763,8 @@ msgid "Choose a series, give it a title and cover, then assemble the articles yo
 msgstr "اختر سلسلة، وامنحها عنوانًا وغلافًا، ثم جمّع المقالات التي تريد إبرازها."
 
 #: src/components/labeler-detail-view.tsx
-msgid "Mute here"
-msgstr ""
+#~ msgid "Mute here"
+#~ msgstr ""
 
 #: src/components/reader/subscriptions-sheet.tsx
 #~ msgid "Open list {listName}"

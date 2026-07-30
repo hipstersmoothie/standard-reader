@@ -144,6 +144,10 @@ msgstr "외부에서 글 열기"
 msgid "That means you can build in whichever direction you need — read the indexed network through the API, render documents inside your own app, model your own records against the lexicons, or make your existing site discoverable and readable on Standard."
 msgstr ""
 
+#: src/components/labelers-settings-view.tsx
+msgid "Muted"
+msgstr ""
+
 #: src/components/reader/terms-view.tsx
 msgid "Content and intellectual property"
 msgstr ""
@@ -3650,8 +3654,8 @@ msgstr "탭 닫기"
 #~ msgstr ""
 
 #: src/components/labelers-settings-view.tsx
-msgid "Mute"
-msgstr ""
+#~ msgid "Mute"
+#~ msgstr ""
 
 #: src/components/ReaderVoiceMenu.tsx
 #: src/components/user-settings-view.tsx
@@ -3745,8 +3749,8 @@ msgstr ""
 
 #: src/components/labeler-detail-view.tsx
 #: src/components/labelers-settings-view.tsx
-msgid "Unmute"
-msgstr ""
+#~ msgid "Unmute"
+#~ msgstr ""
 
 #: src/components/reader/about-view.tsx
 msgid "Listen to anything"
@@ -4319,6 +4323,10 @@ msgstr "읽기와 개인정보"
 msgid "About"
 msgstr "소개"
 
+#: src/components/labeler-detail-view.tsx
+msgid "Muted here"
+msgstr ""
+
 #: src/components/reader/privacy-view.tsx
 msgid "Sign-in and record access go through your Personal Data Server and the wider AT Protocol network. Infrastructure providers (such as our database host) process data on our behalf under their own terms. Embedded media, fonts, or links on article pages may load resources from other sites when you open them."
 msgstr "로그인과 레코드 접근은 사용자의 Personal Data Server와 더 넓은 AT Protocol 네트워크를 거칩니다. 인프라 제공업체(예: 데이터베이스 호스트)는 자체 약관에 따라 저희를 대신해 데이터를 처리합니다. 글 페이지에 삽입된 미디어, 폰트, 링크는 열람할 때 다른 사이트의 리소스를 불러올 수 있습니다."
@@ -4755,8 +4763,8 @@ msgid "Choose a series, give it a title and cover, then assemble the articles yo
 msgstr "시리즈를 고르고 제목과 표지를 정한 다음, 소개하고 싶은 글을 모아보세요."
 
 #: src/components/labeler-detail-view.tsx
-msgid "Mute here"
-msgstr ""
+#~ msgid "Mute here"
+#~ msgstr ""
 
 #: src/components/reader/subscriptions-sheet.tsx
 #~ msgid "Open list {listName}"

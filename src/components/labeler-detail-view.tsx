@@ -37,6 +37,7 @@ import {
   SegmentedControl,
   SegmentedControlItem,
 } from "../design-system/segmented-control";
+import { Switch } from "../design-system/switch";
 import { Tab, TabList, TabPanel, Tabs } from "../design-system/tabs";
 import { animationDuration } from "../design-system/theme/animations.stylex";
 import { uiColor } from "../design-system/theme/color.stylex";
@@ -104,6 +105,9 @@ function LabeledAccountRow({
 }
 export type LabelerView = "labels" | "documents" | "accounts";
 
+/** The cached payload of `getLabeler`, patched in place by the mutations below. */
+type LabelerQueryData = Awaited<ReturnType<typeof labelerApi.getLabeler>>;
+
 // Each label is a simple three-way toggle: off (ignore), warn (content warning /
 // blur), or hide (filter it out entirely).
 const VISIBILITY_OPTIONS: Array<{ id: Visibility; label: MessageDescriptor }> =
@@ -158,11 +162,22 @@ export function LabelerDetailView({
   } = useInfiniteQuery(labelerApi.getLabeledAccountsInfiniteQueryOptions(did));
   const { enabled: trackReading } = useTrackReadingHistory();
 
+  const labelerKey = ["labeler", did] as const;
+
   const invalidate = () => {
-    void queryClient.invalidateQueries({ queryKey: ["labeler", did] });
+    void queryClient.invalidateQueries({ queryKey: labelerKey });
     void queryClient.invalidateQueries({ queryKey: ["reader", "labelers"] });
+    void queryClient.invalidateQueries({
+      queryKey: ["reader", "knownLabelers"],
+    });
     void queryClient.invalidateQueries({ queryKey: ["labels"] });
   };
+
+  /** Patch this labeler's cached entry without refetching it. */
+  const patchLabeler = (patch: Partial<LabelerQueryData>) =>
+    queryClient.setQueryData(labelerKey, (old: LabelerQueryData | undefined) =>
+      old ? { ...old, ...patch } : old,
+    );
 
   const subscribe = useMutation({
     ...labelerApi.subscribeLabelerMutationOptions(),
@@ -172,13 +187,65 @@ export function LabelerDetailView({
     ...labelerApi.unsubscribeLabelerMutationOptions(),
     onSuccess: invalidate,
   });
+
+  /**
+   * Per-label visibility, applied optimistically.
+   *
+   * Every change is a PDS write, so waiting on the round trip before moving the
+   * control — and then refetching the labeler and every label query on top —
+   * made the page feel frozen for a second per click. The control moves
+   * immediately instead, and since the write returns the authoritative prefs
+   * there is nothing to refetch: only the *document* label treatment changed, so
+   * only `["labels"]` is invalidated. The labeler's own metadata and its place in
+   * the directory are untouched by a visibility pref.
+   */
   const setPref = useMutation({
     ...labelerApi.setLabelerPrefMutationOptions(),
-    onSuccess: invalidate,
+    onMutate: async (input) => {
+      await queryClient.cancelQueries({ queryKey: labelerKey });
+      const previous = queryClient.getQueryData<LabelerQueryData>(labelerKey);
+      patchLabeler({
+        prefs: [
+          ...(previous?.prefs ?? []).filter((p) => p.val !== input.val),
+          { val: input.val, visibility: input.visibility },
+        ],
+      });
+      return { previous };
+    },
+    onError: (_error, _input, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(labelerKey, context.previous);
+      }
+    },
+    onSuccess: (result) => {
+      patchLabeler({ prefs: result.prefs });
+      void queryClient.invalidateQueries({ queryKey: ["labels"] });
+    },
   });
+
+  /** Muting, applied optimistically for the same reason as {@link setPref}. */
   const setEnabled = useMutation({
     ...labelerApi.setLabelerEnabledMutationOptions(),
-    onSuccess: invalidate,
+    onMutate: async (input) => {
+      await queryClient.cancelQueries({ queryKey: labelerKey });
+      const previous = queryClient.getQueryData<LabelerQueryData>(labelerKey);
+      patchLabeler({ enabled: input.enabled });
+      return { previous };
+    },
+    onError: (_error, _input, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(labelerKey, context.previous);
+      }
+    },
+    onSuccess: (result) => {
+      patchLabeler({ enabled: result.enabled });
+      // Muting changes how labels are treated everywhere, and the directory
+      // card's muted state — but not this labeler's own metadata.
+      void queryClient.invalidateQueries({ queryKey: ["labels"] });
+      void queryClient.invalidateQueries({
+        queryKey: ["reader", "knownLabelers"],
+      });
+    },
   });
 
   const card = labeler.data?.labeler ?? { did };
@@ -298,16 +365,20 @@ export function LabelerDetailView({
               another app but not wanted here. It sits beside Subscribed rather
               than replacing it, so the two states stay distinguishable. */}
           {subscribed ? (
-            <Button
-              variant="secondary"
-              size="md"
-              isPending={setEnabled.isPending}
-              onPress={() =>
-                setEnabled.mutate({ labeler: card.did, enabled: !enabled })
+            // A switch names the state it shows, so this reads "Muted here"
+            // rather than the "Mute"/"Unmute" action a button would. On means
+            // muted, which is the inverse of `enabled`.
+            <Switch
+              isSelected={!enabled}
+              isDisabled={setEnabled.isPending}
+              onChange={(muted) =>
+                setEnabled.mutate({ labeler: card.did, enabled: !muted })
               }
+              labelVariant="left"
+              style={styles.muteSwitch}
             >
-              {enabled ? <Trans>Mute here</Trans> : <Trans>Unmute</Trans>}
-            </Button>
+              <Trans>Muted here</Trans>
+            </Switch>
           ) : null}
           <Button
             variant={subscribed ? "secondary" : "primary"}
@@ -390,7 +461,7 @@ export function LabelerDetailView({
                       </div>
                       <SegmentedControl
                         selectedKeys={new Set([current])}
-                        isDisabled={!subscribed || setPref.isPending}
+                        isDisabled={!subscribed}
                         onSelectionChange={(keys) => {
                           const key = String([...keys][0] ?? "");
                           if (
@@ -530,19 +601,19 @@ const styles = stylex.create({
     columnGap: spacing["5"],
     display: "flex",
     flexWrap: "wrap",
-    rowGap: spacing["4"],
-    marginInlineStart: "auto",
     marginInlineEnd: "auto",
-    maxWidth: "82.5rem",
-    paddingBottom: spacing["0"],
-    paddingInlineStart: {
-      default: spacing["5"],
-      "@media (min-width: 40rem)": spacing["10"],
-    },
+    marginInlineStart: "auto",
     paddingInlineEnd: {
       default: spacing["5"],
       "@media (min-width: 40rem)": spacing["10"],
     },
+    paddingInlineStart: {
+      default: spacing["5"],
+      "@media (min-width: 40rem)": spacing["10"],
+    },
+    rowGap: spacing["4"],
+    maxWidth: "82.5rem",
+    paddingBottom: spacing["0"],
     paddingTop: spacing["6"],
     width: "100%",
   },
@@ -603,12 +674,15 @@ const styles = stylex.create({
   },
   heroActs: {
     alignItems: "center",
-    columnGap: spacing["1.5"],
+    columnGap: gap.md,
     display: "flex",
     flexWrap: "wrap",
     justifyContent: "flex-end",
     rowGap: spacing["2.5"],
     paddingTop: spacing["1"],
+  },
+  muteSwitch: {
+    flexShrink: 0,
   },
   tabs: {
     paddingBottom: spacing["10"],
@@ -618,17 +692,17 @@ const styles = stylex.create({
   },
   tabBarInner: {
     boxSizing: "border-box",
-    marginInlineStart: "auto",
     marginInlineEnd: "auto",
-    maxWidth: "82.5rem",
-    paddingInlineStart: {
-      default: spacing["5"],
-      "@media (min-width: 40rem)": spacing["10"],
-    },
+    marginInlineStart: "auto",
     paddingInlineEnd: {
       default: spacing["5"],
       "@media (min-width: 40rem)": spacing["10"],
     },
+    paddingInlineStart: {
+      default: spacing["5"],
+      "@media (min-width: 40rem)": spacing["10"],
+    },
+    maxWidth: "82.5rem",
     paddingTop: spacing["4"],
     width: "100%",
   },
@@ -643,8 +717,8 @@ const styles = stylex.create({
     width: "100%",
   },
   tabPanel: {
-    paddingInlineStart: spacing["0"],
     paddingInlineEnd: spacing["0"],
+    paddingInlineStart: spacing["0"],
     paddingTop: spacing["6"],
   },
   settingGroup: {
@@ -697,17 +771,17 @@ const styles = stylex.create({
   },
   accountRow: {
     padding: spacing["3"],
-    borderBottomColor: uiColor.border1,
-    borderBottomStyle: "solid",
-    borderBottomWidth: spacing.px,
     gap: gap.md,
+    textDecoration: "none",
     alignItems: "center",
     backgroundColor: { default: "transparent", ":hover": uiColor.component1 },
     color: "inherit",
     display: "flex",
-    textDecoration: "none",
     transitionDuration: animationDuration.fast,
     transitionProperty: "background-color",
+    borderBottomColor: uiColor.border1,
+    borderBottomStyle: "solid",
+    borderBottomWidth: spacing.px,
   },
   accountText: {
     gap: gap.xs,
@@ -716,10 +790,10 @@ const styles = stylex.create({
     minWidth: 0,
   },
   accountName: {
+    overflow: "hidden",
     color: uiColor.text2,
     fontSize: fontSize.base,
     fontWeight: fontWeight.medium,
-    overflow: "hidden",
     textOverflow: "ellipsis",
     whiteSpace: "nowrap",
   },

@@ -23,6 +23,7 @@ import { useDebouncedValue } from "#/lib/use-debounced-value";
 import { Avatar } from "../design-system/avatar";
 import { Badge } from "../design-system/badge";
 import { Button } from "../design-system/button";
+import { Switch } from "../design-system/switch";
 import { TextField } from "../design-system/text-field";
 import { animationDuration } from "../design-system/theme/animations.stylex";
 import { uiColor } from "../design-system/theme/color.stylex";
@@ -109,6 +110,11 @@ function LabelerCardItem({
   const invalidate = () => {
     void queryClient.invalidateQueries({ queryKey: ["labeler"] });
     void queryClient.invalidateQueries({ queryKey: ["reader", "labelers"] });
+    // `["reader", "labelers"]` is *not* a prefix of `["reader", "knownLabelers"]`,
+    // so without this the card you just acted on kept its old state.
+    void queryClient.invalidateQueries({
+      queryKey: ["reader", "knownLabelers"],
+    });
     void queryClient.invalidateQueries({ queryKey: ["labels"] });
   };
   const subscribe = useMutation({
@@ -148,16 +154,20 @@ function LabelerCardItem({
         {signedIn ? (
           <div {...stylex.props(styles.cardActs)}>
             {subscribed ? (
-              <Button
-                variant="secondary"
-                size="sm"
-                isPending={setEnabled.isPending}
-                onPress={() =>
-                  setEnabled.mutate({ labeler: card.did, enabled: muted })
+              // A switch reports state, so it reads "Muted" rather than the
+              // "Mute"/"Unmute" action a button would name. On means muted, so
+              // `enabled` is its inverse.
+              <Switch
+                isSelected={muted}
+                isDisabled={setEnabled.isPending}
+                onChange={(next) =>
+                  setEnabled.mutate({ labeler: card.did, enabled: !next })
                 }
+                labelVariant="left"
+                style={styles.muteSwitch}
               >
-                {muted ? t`Unmute` : t`Mute`}
-              </Button>
+                {t`Muted`}
+              </Switch>
             ) : null}
             <Button
               variant={subscribed ? "secondary" : "primary"}
@@ -348,8 +358,11 @@ const styles = stylex.create({
     cursor: "pointer",
     display: "block",
   },
+  muteSwitch: {
+    flexShrink: 0,
+  },
   cardActs: {
-    gap: gap.xs,
+    gap: gap.md,
     alignItems: "center",
     display: "flex",
     flexShrink: 0,
