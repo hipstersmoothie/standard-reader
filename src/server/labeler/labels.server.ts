@@ -337,6 +337,24 @@ async function fetchWithTimeout(url: string, ms = 4000): Promise<Response> {
 const MAX_LABEL_PAGES = 200;
 
 /**
+ * Page sizes tried in order, shrinking after a failure and **never growing back**.
+ *
+ * Not just tuning: some label servers fail *deterministically* on a large page
+ * at a particular cursor. The Account Activity Labeler answers HTTP 500 for
+ * `limit=250` at one offset every single time, while serving `limit=100` from
+ * that same cursor without complaint — so a fixed 250 stopped its sync at 2000
+ * labels permanently, since every later run stalled on the same page.
+ *
+ * Monotonic by measurement, not by preference: a version that climbed back up
+ * after a few clean pages made *less* progress (0 labels per run vs 175),
+ * because the same server also answers some offsets with a bogus empty page —
+ * 200, no labels, no cursor — at larger limits, which is indistinguishable from
+ * a legitimate end of stream. Growing the page size back walked straight into
+ * one and ended the run early.
+ */
+const PAGE_LIMITS = [250, 100, 25] as const;
+
+/**
  * Query a labeler's `queryLabels`, paginating from `sinceCursor` (or from the
  * beginning if omitted) until exhausted. Returns the labels fetched plus the
  * cursor to resume from next time.
@@ -378,22 +396,49 @@ async function queryLabeler(
 
   const labels: Array<DisplayLabel> = [];
   let cursor = sinceCursor;
-  // Only reported when the very first page fails: a break part-way through is a
-  // successful partial sync that the cursor resumes, not a broken labeler.
   let transportError: string | undefined;
-  for (let page = 0; page < MAX_LABEL_PAGES; page++) {
+  // Page size shrinks on failure and never grows back. Some label servers fail
+  // deterministically on a large page at a particular offset — the Account
+  // Activity Labeler answers 500 for `limit=250` at one cursor while happily
+  // serving `limit=100` from the same one. Retrying smaller walks past it.
+  let limitIndex = 0;
+  let pages = 0;
+
+  while (pages < MAX_LABEL_PAGES) {
+    const limit = PAGE_LIMITS[limitIndex] ?? PAGE_LIMITS.at(-1) ?? 25;
     const url = new URL(`${base}/xrpc/com.atproto.label.queryLabels`);
     for (const u of uris) url.searchParams.append("uriPatterns", u);
     url.searchParams.append("sources", did);
-    url.searchParams.set("limit", "250");
+    url.searchParams.set("limit", String(limit));
     if (cursor) url.searchParams.set("cursor", cursor);
+
+    /**
+     * Give up on this page, or shrink and retry.
+     *
+     * A failure part-way through used to be treated as a successful partial
+     * sync on the theory that the saved cursor would resume it. That only holds
+     * for a *transient* failure: a deterministic one means every later run stops
+     * at the same page and the labeler is capped forever — which is exactly what
+     * pinned that labeler at 2000 of its labels. So the error is now reported
+     * whether or not we got anything, and the caller records it.
+     */
+    const failed = (reason: string): boolean => {
+      if (limitIndex + 1 < PAGE_LIMITS.length) {
+        limitIndex++;
+        return false;
+      }
+      transportError =
+        pages === 0
+          ? reason
+          : `${reason} after ${labels.length} label(s); sync is incomplete`;
+      return true;
+    };
+
     try {
       const res = await fetchWithTimeout(url.toString());
       if (!res.ok) {
-        if (page === 0) {
-          transportError = `Label server returned HTTP ${res.status}`;
-        }
-        break;
+        if (failed(`Label server returned HTTP ${res.status}`)) break;
+        continue;
       }
       const json = (await res.json()) as {
         labels?: Array<DisplayLabel>;
@@ -401,13 +446,13 @@ async function queryLabeler(
       };
       const batch = json.labels ?? [];
       labels.push(...batch);
+      pages++;
       if (!json.cursor || batch.length === 0) break;
       cursor = json.cursor;
     } catch (error) {
-      if (page === 0) {
-        transportError = `Couldn't reach the label server (${error instanceof Error ? error.message : "unknown error"})`;
-      }
-      break;
+      const reason = `Couldn't reach the label server (${error instanceof Error ? error.message : "unknown error"})`;
+      if (failed(reason)) break;
+      continue;
     }
   }
   return { labels, cursor, error: transportError };

@@ -1050,6 +1050,25 @@ Standard AT Proto labels: subscribe to labelers, see/blur/hide their labels whil
       caps a bind at 65535 parameters and this binds four per row; Blacksky's ~22.5k labels overflowed
       the int16 count, Skywatch's ~55k exhausted drizzle's stack), and negations delete 500 per
       statement instead of one round trip each.
+- [x] **Shrink the page size when a label server fails mid-walk** — `queryLabels` was hard-coded to
+      `limit=250`, and the Account Activity Labeler answers HTTP 500 for that limit at one cursor
+      _every_ time while serving `limit=100` from the same cursor. Because the cursor is persisted,
+      every later run stalled on the identical page: that labeler was pinned at 2000 of its labels
+      forever. Page size now steps 250 → 100 → 25 on failure and the run reports
+      "sync is incomplete" instead of looking healthy (the old comment claimed a mid-walk break was
+      "a successful partial sync that the cursor resumes", which only holds for a _transient_
+      failure). Got that labeler from 2000 to 2175.
+      A version that grew the page size back after a few clean pages was **measurably worse** — 0 new
+      labels per run vs 175 — because the same server also answers some offsets with a bogus empty
+      page (HTTP 200, no labels, no cursor) at limits ≥ 5, which is indistinguishable from a real end
+      of stream; growing back walked into one and ended the run early. Kept monotonic, documented why.
+- [ ] **Account Activity Labeler (`did:plc:oubsyca6hhgqhmbbk27lvs7c`) cannot be fully synced.** Its
+      `queryLabels` is broken three ways: deterministic 500s at large limits, bogus empty pages at
+      limits ≥ 5 for some offsets, and `uriPatterns` filtering that returns 0 labels even for accounts
+      it demonstrably labeled (verified against a known-labeled subject). Only `limit=1` advances past
+      cursor 7286515, and 1 request per label is not a viable steady state — so we hold 2175 of its
+      labels and stop, with the incomplete state surfaced on its page. Nothing to fix on our side
+      short of a crawler that would hammer them; revisit if they fix pagination.
 - [ ] **subscribeLabels ingestion** — consume the labeler firehose into the read-model instead of
       live `queryLabels` per page, for lower latency.
 - [ ] **Deploy claudeslop** — Railway service + persistent SQLite volume; publish its did:web.
