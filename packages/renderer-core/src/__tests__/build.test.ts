@@ -144,8 +144,13 @@ describe("buildRenderTree — leaflet", () => {
   it("splits a text block's blank-line-separated markdown into separate paragraphs", () => {
     // Skyreader linkblogs stuff markdown into a single `text` block's plaintext
     // instead of using Leaflet's structured blocks.
-    const tree = build(leafletDoc([lf.text("First paragraph.\n\nSecond paragraph.")]));
-    expect(tree.children.map((n) => n.type)).toEqual(["paragraph", "paragraph"]);
+    const tree = build(
+      leafletDoc([lf.text("First paragraph.\n\nSecond paragraph.")]),
+    );
+    expect(tree.children.map((n) => n.type)).toEqual([
+      "paragraph",
+      "paragraph",
+    ]);
     const [first, second] = tree.children as Array<
       Extract<BlockNode, { type: "paragraph" }>
     >;
@@ -155,20 +160,18 @@ describe("buildRenderTree — leaflet", () => {
 
   it("renders a leading '> ' markdown line as a blockquote and keeps facets aligned", () => {
     const plaintext =
-      '> Quoted from @renderg.host here.\n\nA reply that mentions @mu.social too.';
+      "> Quoted from @renderg.host here.\n\nA reply that mentions @mu.social too.";
     const quoteFacetStart = plaintext.indexOf("@renderg.host");
     const replyFacetStart = plaintext.indexOf("@mu.social");
     const facets = [
-      facet(
-        quoteFacetStart,
-        quoteFacetStart + "@renderg.host".length,
-        { $type: "pub.leaflet.richtext.facet#didMention", did: "did:plc:a" },
-      ),
-      facet(
-        replyFacetStart,
-        replyFacetStart + "@mu.social".length,
-        { $type: "pub.leaflet.richtext.facet#didMention", did: "did:plc:b" },
-      ),
+      facet(quoteFacetStart, quoteFacetStart + "@renderg.host".length, {
+        $type: "pub.leaflet.richtext.facet#didMention",
+        did: "did:plc:a",
+      }),
+      facet(replyFacetStart, replyFacetStart + "@mu.social".length, {
+        $type: "pub.leaflet.richtext.facet#didMention",
+        did: "did:plc:b",
+      }),
     ];
     const tree = build(leafletDoc([lf.text(plaintext, facets)]));
     expect(tree.children.map((n) => n.type)).toEqual([
@@ -176,8 +179,13 @@ describe("buildRenderTree — leaflet", () => {
       "paragraph",
     ]);
 
-    const quote = tree.children[0] as Extract<BlockNode, { type: "blockquote" }>;
-    expect(quote.paragraphs[0]?.plaintext).toBe("Quoted from @renderg.host here.");
+    const quote = tree.children[0] as Extract<
+      BlockNode,
+      { type: "blockquote" }
+    >;
+    expect(quote.paragraphs[0]?.plaintext).toBe(
+      "Quoted from @renderg.host here.",
+    );
     expect(quote.paragraphs[0]?.facets).toHaveLength(1);
     const quoteFacet = quote.paragraphs[0]?.facets?.[0] as {
       index: { byteStart: number; byteEnd: number };
@@ -196,7 +204,10 @@ describe("buildRenderTree — leaflet", () => {
       index: { byteStart: number; byteEnd: number };
     };
     expect(
-      reply.text.plaintext.slice(replyFacet.index.byteStart, replyFacet.index.byteEnd),
+      reply.text.plaintext.slice(
+        replyFacet.index.byteStart,
+        replyFacet.index.byteEnd,
+      ),
     ).toBe("@mu.social");
   });
 

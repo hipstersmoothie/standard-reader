@@ -276,22 +276,23 @@ function leafletToNode(
       return splitMarkdownishPlaintext(
         block.block.plaintext,
         block.block.facets,
-      ).map((paragraph): BlockNode =>
-        paragraph.kind === "blockquote"
-          ? {
-              type: "blockquote",
-              paragraphs: [
-                { plaintext: paragraph.plaintext, facets: paragraph.facets },
-              ],
-            }
-          : {
-              type: "paragraph",
-              dropCap: false,
-              text: {
-                plaintext: paragraph.plaintext,
-                facets: paragraph.facets,
+      ).map(
+        (paragraph): BlockNode =>
+          paragraph.kind === "blockquote"
+            ? {
+                type: "blockquote",
+                paragraphs: [
+                  { plaintext: paragraph.plaintext, facets: paragraph.facets },
+                ],
+              }
+            : {
+                type: "paragraph",
+                dropCap: false,
+                text: {
+                  plaintext: paragraph.plaintext,
+                  facets: paragraph.facets,
+                },
               },
-            },
       );
     }
     case "header": {
