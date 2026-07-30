@@ -1012,6 +1012,20 @@ Standard AT Proto labels: subscribe to labelers, see/blur/hide their labels whil
       labeler's `#atproto_label` key (resolved from its DID document, cached, re-resolved once on
       mismatch to absorb key rotation) before mirroring it. Unsigned or unverifiable labels are
       dropped and counted in the sync log. See `src/server/labeler/verify.server.ts`.
+      **Measured against the network** (20 polled labelers, 600 labels): 10 labelers verify 100%,
+      accounting for ~76% of labels. Our canonicalization is confirmed correct by those — but three
+      labelers (`stechlab-labels`, `us-gov-funding`, and `github-labeler` on 44 of 50) serve signed
+      labels that verify against **no key those DIDs have ever published**: not the current
+      `#atproto_label` key, not a retired one, not the repo or rotation keys (checked the whole
+      plc.directory audit log). Broken signing on their end, not key rotation and not our encoding.
+      Six more endpoints refuse connections outright. Dropping all of these is correct; the problem
+      is that it is _silent_.
+- [ ] **Surface a labeler that can't be verified or reached.** A reader can subscribe to a labeler,
+      see its full list of label toggles, and receive zero labels forever, with the only signal a
+      server-side `console.warn`. Persist per-labeler sync health (last success, labels rejected,
+      last transport error) alongside `label_sync_state` and show it on the labeler page — a labeler
+      whose signatures don't check out is materially different from one that simply hasn't labeled
+      anything yet, and today they look identical.
 - [ ] **subscribeLabels ingestion** — consume the labeler firehose into the read-model instead of
       live `queryLabels` per page, for lower latency.
 - [ ] **Deploy claudeslop** — Railway service + persistent SQLite volume; publish its did:web.
