@@ -70,6 +70,16 @@ export const articleBodyStyles = stylex.create({
     lineHeight: READING_LINE_HEIGHT,
     marginTop: spacing["9"],
     minWidth: 0,
+    // The article scroller deliberately carries no outer `overflow-x` clip
+    // (see the comment on `article-view.tsx`'s `root` style) because every
+    // wide block — code, tables, math, carousels — already scrolls inside its
+    // own `overflow-x: auto` box. A plain link's visible text isn't boxed
+    // like that, so a long unbroken URL rendered as link text (a bare-URL
+    // autolink, or link text that mirrors its href) had no wrap opportunity
+    // and overflowed the reading column, widening the whole page and the
+    // viewport a reader can pinch-zoom into. Same fix, same reasoning, as
+    // `commentaryParagraph` in comments-styles.ts.
+    overflowWrap: "anywhere",
   },
   bodyAfterHero: {
     marginTop: spacing["0"],

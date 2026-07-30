@@ -934,7 +934,10 @@
 /* ---- end card ---- */
 .mag .colophon-spread {
   justify-content: center;
+  max-width: 100%;
   min-height: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
