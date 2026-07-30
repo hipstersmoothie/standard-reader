@@ -9,6 +9,7 @@ import {
   ArrowRight,
   BookOpen,
   Bookmark,
+  Bot,
   Check,
   CircleCheck,
   EyeOff,
@@ -443,6 +444,22 @@ const styles = stylex.create({
   },
   metaDot: {
     color: uiColor.text1,
+  },
+  botByline: {
+    alignItems: "center",
+    color: uiColor.text1,
+    columnGap: gap.xs,
+    display: "inline-flex",
+    flexShrink: 0,
+  },
+  srOnly: {
+    borderWidth: 0,
+    clipPath: "inset(50%)",
+    height: spacing.px,
+    overflow: "hidden",
+    position: "absolute",
+    whiteSpace: "nowrap",
+    width: spacing.px,
   },
   collectionMagMeta: {
     alignItems: "center",
@@ -1141,6 +1158,7 @@ function Byline({
           </span>
         </PublicationNameLink>
       )}
+      <BotByline isBot={article.authorIsBot} />
       {includeDate && date ? (
         <>
           <span aria-hidden {...stylex.props(styles.metaDot)}>
@@ -1786,6 +1804,25 @@ export function MarkUnreadButton({
 
 /* ── Article row (list) ─────────────────────────────────────────────────── */
 
+/**
+ * Marks a byline whose account self-declares as a bot (a `bot` self-label on its
+ * profile record). Its own statement, so it needs no labeler — this used to be
+ * published as a label by a first-party labeler that did nothing else.
+ *
+ * Sits outside the publication/author link so clicking it doesn't navigate.
+ */
+function BotByline({ isBot }: { isBot: boolean }) {
+  if (!isBot) return null;
+  return (
+    <span {...stylex.props(styles.botByline)}>
+      <Bot size={12} aria-hidden />
+      <span {...stylex.props(styles.srOnly)}>
+        <Trans>Bot</Trans>
+      </span>
+    </span>
+  );
+}
+
 export function ArticleRow({
   article,
   unread = false,
@@ -1954,6 +1991,7 @@ export function CompactRow({
           ) : (
             <span>Unknown</span>
           )}
+          <BotByline isBot={article.authorIsBot} />
           {hasEngagement ? (
             <>
               <span aria-hidden {...stylex.props(styles.metaDot)}>

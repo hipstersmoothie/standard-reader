@@ -44,6 +44,7 @@ export async function selectPublicationHeader(
       ownerDisplayName: pr.displayName,
       ownerDescription: pr.description,
       ownerBannerUrl: pr.bannerUrl,
+      ownerIsBot: pr.isBot,
       themeBackground: p.themeBackground,
       themeForeground: p.themeForeground,
       themeAccent: p.themeAccent,
@@ -67,6 +68,7 @@ export async function selectPublicationHeader(
       description: row.ownerDescription,
       avatarUrl: row.ownerAvatarUrl,
       bannerUrl: row.ownerBannerUrl,
+      isBot: row.ownerIsBot ?? false,
     },
     theme: {
       ...publicationThemeFromRow(row),

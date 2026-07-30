@@ -1087,6 +1087,37 @@ Standard AT Proto labels: subscribe to labelers, see/blur/hide their labels whil
       alphabetically, the same for everyone. Subscribed-first made the page a mirror of the reader's
       existing setup rather than somewhere to find something new. (This also removes the conditional
       ORDER BY term that caused the `non-integer constant in ORDER BY` failure.)
+- [x] **Remove our own labelers entirely** — `services/claudeslop`, `services/botlabeler`,
+      `scripts/register-labelers.ts`, the `known-labelers` seed, the
+      `app.standard-reader.labeler.service` lexicon, `upsertLabelerService` + its consumer/delete
+      cases, the `TAP_LABELER_API_URL` channel, and `labeler_services.source` (migration `0029`).
+      Any labeler can label any content, so a first-party one bought nothing the network doesn't
+      provide, and the custom descriptor record was a deviation that existed _only_ because a
+      `did:web` has no repo to publish the standard declaration from. `syncAllLabels` is now purely
+      subscription-driven — the exception that polled our own labelers whether or not anyone
+      subscribed is gone. `labeler.defs` is kept: it holds `labelerView`/`labelerPolicies` for the
+      `getLabeler`/`getLabelers` public API, which still describes the directory.
+      Data: dropped the two `did:web` rows and their 1,645 labels; Skywatch re-resolved through the
+      standard path (it is in the relay's index, so registering it by record was never necessary).
+      460 labelers remain, all handle-resolved. Document labels are now 0 — nothing on the network
+      labels `site.standard.document` URIs.
+- [x] **Bot mark from the profile's own self-label** — `profiles.is_bot` (migration `0029`), set in the
+      profile ingest from `declaresBot()` (`src/lib/self-labels.ts`, a `bot` entry in the record's
+      `com.atproto.label.defs#selfLabels`). Rendered next to the name on `/u/$did` and, via
+      `ArticleCard.authorIsBot`, on every feed row for that account — a publication owned by a bot
+      counts as a bot, and `documents.did` is the publication owner for publication-bound documents,
+      so one field covers both. Replaces the entire bot labeler: the signal was the account's own
+      statement in a record we already index, so no labeler, no signature check, no round trip.
+      Also read from the AppView (`viewDeclaresBot`, matching `labels` entries whose `src` is the
+      account's own DID) so accounts whose profile record hasn't come past on the firehose still get
+      it, plus `pnpm backfill:bot-flags` to reconcile every already-indexed profile in both
+      directions (an account can retract the self-label). Backfill found 61 bots across 14,173
+      profiles, covering 2,981 documents.
+- [x] **Labeler docs point at the protocol** — the "declare your label values" step now describes the
+      standard `app.bsky.labeler.service` + `#atproto_labeler` declaration and links
+      atproto.com/specs/label and /specs/moderation, and the reference-implementation section (which
+      pointed at `services/claudeslop`) is now "Further reading". Nothing Standard Reader specific is
+      required to be a labeler here.
 - [ ] **subscribeLabels ingestion** — consume the labeler firehose into the read-model instead of
       live `queryLabels` per page, for lower latency.
 - [ ] **Deploy claudeslop** — Railway service + persistent SQLite volume; publish its did:web.

@@ -8,20 +8,19 @@ import { hasRenderableArticleBody } from "#/lib/document/renderable";
 import { documentSearchText } from "#/lib/document/search-text";
 import { labelerSubscriptionEnabled } from "#/lib/labeler-subscription";
 import { isExcludedPublicationUrl } from "#/lib/publication/exclusions";
+import { declaresBot } from "#/lib/self-labels";
 import {
   FETCHED_CONTENT_FORMATS,
   resolveFetchedContent,
 } from "#/server/content/resolve";
 import { resolveLeafletContent } from "#/server/leaflet/resolve";
 import { resolvePcktContent } from "#/server/pckt/resolve";
-import { assertSafeFetchUrl } from "#/server/security/ssrf-guard";
 
 import { db } from "../../db/index.ts";
 import {
   bookmarks,
   documentContributors,
   documents,
-  labelerServices,
   labelerSubscriptions,
   listSaves,
   lists,
@@ -34,7 +33,7 @@ import {
   subscriptions,
   userFollows,
 } from "../../db/schema.ts";
-import { blobCid, bskyImageUrl, getBlobUrl } from "../atproto/blob.ts";
+import { blobCid, bskyImageUrl } from "../atproto/blob.ts";
 import { listRepoRecords } from "../atproto/fetch-record.ts";
 import {
   authorPds,
@@ -51,7 +50,6 @@ import type {
   CollectionSidecarRecord,
   CollectionsPublicationRecord,
   DocumentRecord,
-  LabelerServiceRecord,
   LabelerSubscriptionRecord,
   ListRecord,
   ListSaveRecord,
@@ -616,69 +614,6 @@ export async function upsertLabelerSubscription(
   await ensureTracked(did, "reader");
 }
 
-/**
- * `app.standard-reader.labeler.service` — a labeler registered by its owner
- * (the record author). Drives the Labelers directory + where to query labels.
- * The avatar blob lives in the owner's repo, so resolve it via the owner's PDS.
- */
-export async function upsertLabelerService(
-  uri: string,
-  did: string,
-  rkey: string,
-  cid: string | undefined,
-  record: LabelerServiceRecord,
-): Promise<void> {
-  if (
-    typeof record.did !== "string" ||
-    typeof record.serviceEndpoint !== "string"
-  ) {
-    return;
-  }
-
-  // `serviceEndpoint` is attacker-controlled (from the firehose record) and is
-  // fetched automatically by the label sync worker. Reject unsafe URLs before
-  // storing to prevent SSRF (security audit C3).
-  try {
-    assertSafeFetchUrl(record.serviceEndpoint);
-  } catch {
-    return;
-  }
-
-  const owner = getCachedIdentity(did);
-  const ownerPds = await authorPds(did, owner?.pds ?? null);
-  const avatarBlobCid = blobCid(record.avatar);
-  const avatarUrl =
-    avatarBlobCid && ownerPds ? getBlobUrl(ownerPds, did, avatarBlobCid) : null;
-  const labelValueDefinitions = Array.isArray(
-    record.policies?.labelValueDefinitions,
-  )
-    ? record.policies.labelValueDefinitions
-    : null;
-
-  const values = {
-    uri,
-    cid: cid ?? null,
-    ownerDid: did,
-    rkey,
-    labelerDid: record.did,
-    serviceEndpoint: record.serviceEndpoint,
-    displayName: cleanOptional(record.displayName),
-    description: cleanOptional(record.description),
-    avatarUrl,
-    labelValueDefinitions,
-    createdAt: parseDate(record.createdAt),
-    deleted: false,
-    updatedAt: sql`now()`,
-  };
-
-  await db
-    .insert(labelerServices)
-    .values(values)
-    .onConflictDoUpdate({ target: labelerServices.uri, set: values });
-
-  await ensureTracked(did, "manual");
-}
-
 export async function upsertRecommend(
   uri: string,
   did: string,
@@ -937,6 +872,8 @@ export async function upsertBskyProfile(
     did,
     displayName: cleanOptional(record.displayName),
     description: cleanOptional(record.description),
+    // The account's own `bot` self-label, straight off the record it lives in.
+    isBot: declaresBot(record),
     avatarUrl: avatarCid ? bskyImageUrl("avatar", did, avatarCid) : null,
     bannerUrl: bannerCid ? bskyImageUrl("banner", did, bannerCid) : null,
     bskyProfileUri: uri,
@@ -1108,10 +1045,6 @@ export async function deleteRecord(
       await db
         .delete(labelerSubscriptions)
         .where(eq(labelerSubscriptions.uri, uri));
-      return;
-    }
-    case Collections.labelerService: {
-      await db.delete(labelerServices).where(eq(labelerServices.uri, uri));
       return;
     }
     case Collections.read: {

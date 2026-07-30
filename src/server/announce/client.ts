@@ -1,7 +1,7 @@
 /**
  * Log in as the Standard Reader posting account via a Bluesky app password and
  * return an `@atcute/client` `Client` ready to write records. Mirrors the bot
- * login in `scripts/register-labelers.ts`.
+ * login.
  *
  * NOTE: deliberately does NOT go through `isAppPasswordAuthEnabled()` (the
  * dev/perf-only gate in `app-password-session.server.ts`, disabled in

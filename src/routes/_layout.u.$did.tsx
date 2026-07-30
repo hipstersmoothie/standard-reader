@@ -12,7 +12,7 @@ import {
   redirect,
   useNavigate,
 } from "@tanstack/react-router";
-import { ExternalLink, ListPlus, Settings } from "lucide-react";
+import { Bot, ExternalLink, ListPlus, Settings } from "lucide-react";
 import type { RefObject } from "react";
 import { useCallback, useRef, useState } from "react";
 import { Link as AriaLink } from "react-aria-components";
@@ -222,6 +222,23 @@ const styles = stylex.create({
     lineHeight: lineHeight.xs,
     marginBottom: spacing["0"],
     marginTop: spacing["2"],
+  },
+  botMark: {
+    gap: spacing["1"],
+    alignItems: "center",
+    color: uiColor.text1,
+    display: "inline-flex",
+    marginInlineStart: spacing["2"],
+    verticalAlign: "middle",
+  },
+  srOnly: {
+    borderWidth: 0,
+    clipPath: "inset(50%)",
+    height: spacing.px,
+    overflow: "hidden",
+    position: "absolute",
+    whiteSpace: "nowrap",
+    width: spacing.px,
   },
   heroHandle: {
     marginTop: spacing["1"],
@@ -682,7 +699,23 @@ function AuthorProfileContent({
                   )}
                 </Kicker>
               )}
-              <h1 {...stylex.props(styles.heroName)}>{name}</h1>
+              <h1 {...stylex.props(styles.heroName)}>
+                {name}
+                {/* The account's own `bot` self-label, read off its profile
+                    record. Not a labeler's verdict — its own statement — so it
+                    sits with the name rather than among the labels below. */}
+                {profile.isBot ? (
+                  <span
+                    {...stylex.props(styles.botMark)}
+                    title={t`This account self-identifies as a bot`}
+                  >
+                    <Bot size={16} aria-hidden />
+                    <span {...stylex.props(styles.srOnly)}>
+                      <Trans>Bot</Trans>
+                    </span>
+                  </span>
+                ) : null}
+              </h1>
               {profile.handle ? (
                 <Handle style={styles.heroHandle}>@{profile.handle}</Handle>
               ) : null}

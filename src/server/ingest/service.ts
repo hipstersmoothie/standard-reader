@@ -606,9 +606,6 @@ server.listen(port(), "::", () => {
 const tapChannel = startTapChannel(
   ingestConfig.tapApiUrl ?? "http://127.0.0.1:2480",
 );
-const labelerTapChannel = ingestConfig.tapLabelerApiUrl
-  ? startTapChannel(ingestConfig.tapLabelerApiUrl)
-  : null;
 // Optional third tap instance signaled on `site.standard.document`, so repos
 // that publish documents without a publication record ("loose documents") get
 // tracked + backfilled.
@@ -630,7 +627,6 @@ for (const signal of ["SIGINT", "SIGTERM"] as const) {
       labelSync.stop();
       labelerDiscovery.stop();
       await tapChannel.destroy();
-      await labelerTapChannel?.destroy();
       await docsTapChannel?.destroy();
       const { flushTelemetry } = await import("../observability/log.ts");
       await flushTelemetry();

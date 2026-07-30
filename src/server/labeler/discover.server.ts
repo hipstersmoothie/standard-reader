@@ -236,7 +236,6 @@ export async function syncNetworkLabelers(
             description: declaration.description,
             avatarUrl: declaration.avatarUrl,
             labelValueDefinitions: declaration.labelValueDefinitions,
-            source: "atproto" as const,
             deleted: false,
           },
         ]

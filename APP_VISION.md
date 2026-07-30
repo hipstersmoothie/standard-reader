@@ -672,13 +672,20 @@ HttpOnly session cookies.
 Standard Reader speaks the standard AT Proto label protocol, so readers can subscribe to
 **labelers** (moderation services) exactly as they would in Bluesky:
 
-- **A labeler is just a DID**, and it can reach us two ways. Our own labelers register with an
-  `app.standard-reader.labeler.service` record, which tap indexes into `labeler_services`. Any
-  other AT Protocol labeler is picked up from its **own network declaration** — resolve the DID
-  document, find its `#atproto_labeler` service, and read the label-value definitions off its
-  `app.bsky.labeler.service` record. That second path is resolved on first lookup and backfilled
-  into the same table, so a labeler like [pub-search](https://pub-search.waow.tech/labels) works
-  with no action on their part, and every read path stays a plain DB read. Nothing is hardcoded.
+- **A labeler is just a DID, and there is one way in.** A labeler advertises
+  `#atproto_labeler` in its DID document and publishes an `app.bsky.labeler.service`
+  record describing its label values. That is the standard AT Protocol declaration; we resolve it on
+  first sight and backfill it, after which reads are pure DB.
+- **We don't run labelers.** We used to ship two (`claudeslop`, scoring AI-ish prose, and a bot
+  labeler), plus an `app.standard-reader.labeler.service` descriptor record that existed only because
+  a `did:web` has no repo and so cannot publish the standard declaration. All of it is gone. A
+  labeler can already label any content on the network, so running our own bought nothing the
+  network doesn't provide, and the custom descriptor was a deviation other clients would have had to
+  learn. The one signal we actually used — an account declaring itself a bot — was already in the
+  profile record we index (`labels`, a `com.atproto.label.defs#selfLabels` entry), so we read it
+  there and show a small bot mark on the profile and on that account's feed rows. A labeler that
+  re-published the account's own statement as a signed label was a network round trip to learn
+  something we had in hand.
 - **Every labeler on the network, not just ours.** The directory lists the whole network with no
   relevance filter — readers bring their moderation setup with them, so a labeler that has never
   touched a standard.site document is still theirs to see and manage. A labeler declares itself by

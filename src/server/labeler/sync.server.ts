@@ -117,13 +117,16 @@ export async function syncLabelerLabels(
  * Sync every labeler someone actually reads with. Failures are logged and
  * skipped per-labeler.
  *
- * Scoped to labelers with at least one live subscription, plus our own
- * first-party (`source: "record"`) labelers. **Not** every row in
+ * Scoped to labelers with at least one live subscription. **Not** every row in
  * `labeler_services`: that table mirrors the whole network for the directory
  * (hundreds of labelers, see `discover.server.ts`), and polling all of them on
  * this timer would mean tens of thousands of daily requests to other people's
  * label servers for labels nobody here has asked to see — and would fill
  * `document_labels` with them.
+ *
+ * Subscriptions are now the only thing that puts a labeler on this timer. There
+ * used to be an exception for our own first-party labelers, which were polled
+ * whether or not anyone subscribed; they no longer exist.
  */
 export async function syncAllLabels(
   db: Db,
@@ -137,19 +140,13 @@ export async function syncAllLabels(
     .where(
       and(
         eq(ls.deleted, false),
-        or(
-          eq(ls.source, "record"),
-          exists(
-            db
-              .select({ one: sql`1` })
-              .from(subs)
-              .where(
-                and(
-                  eq(subs.labelerDid, ls.labelerDid),
-                  eq(subs.deleted, false),
-                ),
-              ),
-          ),
+        exists(
+          db
+            .select({ one: sql`1` })
+            .from(subs)
+            .where(
+              and(eq(subs.labelerDid, ls.labelerDid), eq(subs.deleted, false)),
+            ),
         ),
       ),
     );

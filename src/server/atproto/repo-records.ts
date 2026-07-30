@@ -413,21 +413,6 @@ export async function deleteLegacyLabelerSubscriptionRecord(
   });
 }
 
-/** Write an `app.standard-reader.labeler.service` record (labeler registration). */
-export async function putLabelerServiceRecord(
-  client: Client,
-  repo: string,
-  rkey: string,
-  record: Record<string, unknown>,
-): Promise<{ uri: string; cid: string }> {
-  return repoPutRecord(client, {
-    repo,
-    collection: COLLECTION.labelerService,
-    rkey,
-    record: { $type: COLLECTION.labelerService, ...record },
-  });
-}
-
 /** Write a `site.standard.graph.recommend` (like) for `documentUri`. */
 export async function putRecommendRecord(
   client: Client,

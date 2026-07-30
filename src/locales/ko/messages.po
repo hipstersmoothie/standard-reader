@@ -284,6 +284,11 @@ msgstr "색상"
 msgid "Create account"
 msgstr "계정 만들기"
 
+#: src/components/docs/docs-labelers-nav.tsx
+#: src/components/docs/labelers-docs-page.tsx
+msgid "Further reading"
+msgstr ""
+
 #: src/components/reader/page-reader-bar.tsx
 msgid "Loading voice…"
 msgstr "음성 불러오는 중…"
@@ -308,8 +313,8 @@ msgid "Your use of {SITE_NAME} is also governed by our <0>privacy policy</0>, wh
 msgstr ""
 
 #: src/components/docs/labelers-docs-page.tsx
-msgid "For a complete, minimal reference implementation (Jetstream → detect → sign → SQLite → serve), see the <0>claudeslop</0> labeler in <1>services/claudeslop</1>."
-msgstr "완전하고 최소한의 참조 구현(Jetstream → 감지 → 서명 → SQLite → 제공)은 <1>services/claudeslop</1>의 <0>claudeslop</0> 레이블러를 참고하세요."
+#~ msgid "For a complete, minimal reference implementation (Jetstream → detect → sign → SQLite → serve), see the <0>claudeslop</0> labeler in <1>services/claudeslop</1>."
+#~ msgstr "완전하고 최소한의 참조 구현(Jetstream → 감지 → 서명 → SQLite → 제공)은 <1>services/claudeslop</1>의 <0>claudeslop</0> 레이블러를 참고하세요."
 
 #: src/components/reader/text-selection-toolbar.tsx
 msgid "Dismiss"
@@ -368,14 +373,18 @@ msgstr "지금 설정하거나 설정에서 언제든지 변경하세요."
 msgid "Most readers stop at what you already subscribe to. Standard Reader treats finding your next favourite as part of the job. Browse every publications on the network — not just the handful you've heard of."
 msgstr "대부분의 리더는 이미 구독한 것에서 멈춥니다. Standard Reader는 다음에 좋아할 것을 찾아주는 일까지 자기 몫으로 여깁니다. 이름을 들어본 몇 곳뿐 아니라 네트워크의 모든 발행물을 둘러보세요."
 
+#: src/components/docs/labelers-docs-page.tsx
+msgid "<0>3. Declare your label values.</0> Publish an <1>app.bsky.labeler.service</1> record in your repo describing each value — severity, default warn/hide, blur behavior — and advertise <2>#atproto_labeler</2> in your DID document. That is the standard AT Protocol declaration, documented in the <3>labels specification</3>; there is nothing Standard Reader specific to do."
+msgstr ""
+
 #: src/routes/_layout.collections.index.tsx
 msgid "Name your series & pick a theme"
 msgstr "시리즈 이름과 테마 정하기"
 
 #: src/components/docs/docs-labelers-nav.tsx
 #: src/components/docs/labelers-docs-page.tsx
-msgid "Reference implementation"
-msgstr ""
+#~ msgid "Reference implementation"
+#~ msgstr ""
 
 #: src/components/appearance-settings.tsx
 msgid "Extra large"
@@ -887,6 +896,10 @@ msgstr "피드백 유형"
 msgid "Enable the weekly digest"
 msgstr "주간 다이제스트 켜기"
 
+#: src/components/docs/labelers-docs-page.tsx
+msgid "Standard Reader no longer ships labelers of its own. Running one taught us nothing the network doesn't already provide, and for the one signal we did use — an account declaring itself a bot — the answer was already in its profile record, so we read it there instead of asking a labeler to repeat it."
+msgstr ""
+
 #: src/components/onboarding/welcome-wizard.tsx
 msgid "Follow at least {MIN_FOLLOWS} to fill your feed"
 msgstr "피드를 채우려면 최소 {MIN_FOLLOWS}개를 팔로우하세요"
@@ -1389,8 +1402,8 @@ msgid "Start exploring"
 msgstr "둘러보기 시작"
 
 #: src/components/docs/labelers-docs-page.tsx
-msgid "If you already run a labeler for the wider network, you can skip that step: we also read the standard <0>app.bsky.labeler.service</0> record from your repo, so an existing AT Protocol labeler works here unchanged. Search for its handle or DID on the Labelers page and it resolves from your DID document."
-msgstr ""
+#~ msgid "If you already run a labeler for the wider network, you can skip that step: we also read the standard <0>app.bsky.labeler.service</0> record from your repo, so an existing AT Protocol labeler works here unchanged. Search for its handle or DID on the Labelers page and it resolves from your DID document."
+#~ msgstr ""
 
 #: src/components/reader/collection-builder.tsx
 msgid "Articles in collection"
@@ -1794,8 +1807,8 @@ msgid "Switch to reader view"
 msgstr "리더 뷰로 전환"
 
 #: src/components/docs/labelers-docs-page.tsx
-msgid "<0>3. Declare your label values.</0> Describe each value (severity, default warn/hide, blur behavior) in an <1>app.standard-reader.labeler.service</1> descriptor, served from <2>app.standard-reader.labeler.getServices</2> (a <3>did:web</3> labeler has no repo to hold the record)."
-msgstr "<0>3. 라벨 값을 선언하세요.</0> 각 값(심각도, 기본 경고/숨김, 블러 동작)을 <1>app.standard-reader.labeler.service</1> 디스크립터에 기술하고 <2>app.standard-reader.labeler.getServices</2>로 제공하세요(<3>did:web</3> 라벨러는 레코드를 담을 저장소가 없습니다)."
+#~ msgid "<0>3. Declare your label values.</0> Describe each value (severity, default warn/hide, blur behavior) in an <1>app.standard-reader.labeler.service</1> descriptor, served from <2>app.standard-reader.labeler.getServices</2> (a <3>did:web</3> labeler has no repo to hold the record)."
+#~ msgstr "<0>3. 라벨 값을 선언하세요.</0> 각 값(심각도, 기본 경고/숨김, 블러 동작)을 <1>app.standard-reader.labeler.service</1> 디스크립터에 기술하고 <2>app.standard-reader.labeler.getServices</2>로 제공하세요(<3>did:web</3> 라벨러는 레코드를 담을 저장소가 없습니다)."
 
 #: src/components/reader/app-shell.tsx
 #: src/components/reader/subscriptions-sheet.tsx
@@ -2383,6 +2396,11 @@ msgstr ""
 msgid "e.g. Dispatches from the Atmosphere"
 msgstr "예: Dispatches from the Atmosphere"
 
+#: src/components/reader/cards.tsx
+#: src/routes/_layout.u.$did.tsx
+msgid "Bot"
+msgstr ""
+
 #: src/components/docs/introduction-docs-page.tsx
 msgid "the AT Protocol schemas that define Standard records and the shared definitions they build on."
 msgstr ""
@@ -2561,6 +2579,10 @@ msgstr "{0, plural, one {발행물 #개} other {발행물 #개}}"
 
 #: src/components/feedback/feedback-image-picker.tsx
 msgid "Try again"
+msgstr ""
+
+#: src/routes/_layout.u.$did.tsx
+msgid "This account self-identifies as a bot"
 msgstr ""
 
 #: src/components/reader/add-to-list-modal.tsx
@@ -3083,6 +3105,10 @@ msgstr "{position}번째 이미지 열기"
 msgid "AppView API"
 msgstr "AppView API"
 
+#: src/components/docs/labelers-docs-page.tsx
+msgid "We used to also accept a labeler registered by a Standard Reader‑specific descriptor record. That is gone. It existed only so a <0>did:web</0> labeler — which has no repo, and so cannot publish the standard declaration — could join the directory. If you already run a labeler for the wider network it works here unchanged, which was always the point: a labeler can label any content on the network, so there is no reason for this app to invent its own way of describing one."
+msgstr ""
+
 #: src/components/reader/article-view.tsx
 msgid "There’s a magazine edition of this collection."
 msgstr "이 컬렉션의 매거진 에디션이 있습니다."
@@ -3526,6 +3552,10 @@ msgstr ""
 #: src/components/reader/about-view.tsx
 msgid "Listen to this example read aloud"
 msgstr "이 예시를 소리내어 읽기로 들어보기"
+
+#: src/components/docs/labelers-docs-page.tsx
+msgid "Labelers are an AT Protocol concept, not a Standard Reader one, so the protocol documentation is the reference: <0>labels</0> covers the label object, its signature and the <1>queryLabels</1> / <2>subscribeLabels</2> endpoints, and <3>moderation</3> covers how labels are meant to be applied. Anything that satisfies those works here."
+msgstr ""
 
 #: src/routes/_layout.index.tsx
 msgid "Your reading room"

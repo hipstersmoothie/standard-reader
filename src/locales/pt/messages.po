@@ -284,6 +284,11 @@ msgstr "Cores"
 msgid "Create account"
 msgstr "Criar conta"
 
+#: src/components/docs/docs-labelers-nav.tsx
+#: src/components/docs/labelers-docs-page.tsx
+msgid "Further reading"
+msgstr ""
+
 #: src/components/reader/page-reader-bar.tsx
 msgid "Loading voice…"
 msgstr "Carregando voz…"
@@ -308,8 +313,8 @@ msgid "Your use of {SITE_NAME} is also governed by our <0>privacy policy</0>, wh
 msgstr "O seu uso do {SITE_NAME} também é regido pela nossa <0>política de privacidade</0>, que descreve o que coletamos, onde seus dados ficam armazenados e as opções que você possui."
 
 #: src/components/docs/labelers-docs-page.tsx
-msgid "For a complete, minimal reference implementation (Jetstream → detect → sign → SQLite → serve), see the <0>claudeslop</0> labeler in <1>services/claudeslop</1>."
-msgstr "Para uma implementação de referência completa e minimalista (Jetstream → detetar → assinar → SQLite → servir), consulte o rotulador <0>claudeslop</0> em <1>services/claudeslop</1>."
+#~ msgid "For a complete, minimal reference implementation (Jetstream → detect → sign → SQLite → serve), see the <0>claudeslop</0> labeler in <1>services/claudeslop</1>."
+#~ msgstr "Para uma implementação de referência completa e minimalista (Jetstream → detetar → assinar → SQLite → servir), consulte o rotulador <0>claudeslop</0> em <1>services/claudeslop</1>."
 
 #: src/components/reader/text-selection-toolbar.tsx
 msgid "Dismiss"
@@ -368,14 +373,18 @@ msgstr "Defina isto agora ou altere quando quiser nas Configurações."
 msgid "Most readers stop at what you already subscribe to. Standard Reader treats finding your next favourite as part of the job. Browse every publications on the network — not just the handful you've heard of."
 msgstr "A maioria dos leitores para no que já está inscrito. O Standard Reader trata a descoberta do seu próximo favorito como parte do trabalho. Explore todas as publicações da rede — não apenas as de que já ouviu falar."
 
+#: src/components/docs/labelers-docs-page.tsx
+msgid "<0>3. Declare your label values.</0> Publish an <1>app.bsky.labeler.service</1> record in your repo describing each value — severity, default warn/hide, blur behavior — and advertise <2>#atproto_labeler</2> in your DID document. That is the standard AT Protocol declaration, documented in the <3>labels specification</3>; there is nothing Standard Reader specific to do."
+msgstr ""
+
 #: src/routes/_layout.collections.index.tsx
 msgid "Name your series & pick a theme"
 msgstr "Dê um nome a sua série e escolha um tema"
 
 #: src/components/docs/docs-labelers-nav.tsx
 #: src/components/docs/labelers-docs-page.tsx
-msgid "Reference implementation"
-msgstr "Implementação de referência"
+#~ msgid "Reference implementation"
+#~ msgstr "Implementação de referência"
 
 #: src/components/appearance-settings.tsx
 msgid "Extra large"
@@ -887,6 +896,10 @@ msgstr "Tipo de comentário"
 msgid "Enable the weekly digest"
 msgstr "Ativar o resumo semanal"
 
+#: src/components/docs/labelers-docs-page.tsx
+msgid "Standard Reader no longer ships labelers of its own. Running one taught us nothing the network doesn't already provide, and for the one signal we did use — an account declaring itself a bot — the answer was already in its profile record, so we read it there instead of asking a labeler to repeat it."
+msgstr ""
+
 #: src/components/onboarding/welcome-wizard.tsx
 msgid "Follow at least {MIN_FOLLOWS} to fill your feed"
 msgstr "Siga pelo menos {MIN_FOLLOWS} para preencher o seu feed"
@@ -1389,8 +1402,8 @@ msgid "Start exploring"
 msgstr "Começar a explorar"
 
 #: src/components/docs/labelers-docs-page.tsx
-msgid "If you already run a labeler for the wider network, you can skip that step: we also read the standard <0>app.bsky.labeler.service</0> record from your repo, so an existing AT Protocol labeler works here unchanged. Search for its handle or DID on the Labelers page and it resolves from your DID document."
-msgstr ""
+#~ msgid "If you already run a labeler for the wider network, you can skip that step: we also read the standard <0>app.bsky.labeler.service</0> record from your repo, so an existing AT Protocol labeler works here unchanged. Search for its handle or DID on the Labelers page and it resolves from your DID document."
+#~ msgstr ""
 
 #: src/components/reader/collection-builder.tsx
 msgid "Articles in collection"
@@ -1794,8 +1807,8 @@ msgid "Switch to reader view"
 msgstr "Mudar para modo leitor"
 
 #: src/components/docs/labelers-docs-page.tsx
-msgid "<0>3. Declare your label values.</0> Describe each value (severity, default warn/hide, blur behavior) in an <1>app.standard-reader.labeler.service</1> descriptor, served from <2>app.standard-reader.labeler.getServices</2> (a <3>did:web</3> labeler has no repo to hold the record)."
-msgstr "<0>3. Declare os valores dos seus rótulos.</0> Descreva cada valor (gravidade, avisar/ocultar por padrão, desfocar) num descritor <1>app.standard-reader.labeler.service</1>, servido a partir de <2>app.standard-reader.labeler.getServices</2> (um rotulador <3>did:web</3> não tem repositório para salvar o registo)."
+#~ msgid "<0>3. Declare your label values.</0> Describe each value (severity, default warn/hide, blur behavior) in an <1>app.standard-reader.labeler.service</1> descriptor, served from <2>app.standard-reader.labeler.getServices</2> (a <3>did:web</3> labeler has no repo to hold the record)."
+#~ msgstr "<0>3. Declare os valores dos seus rótulos.</0> Descreva cada valor (gravidade, avisar/ocultar por padrão, desfocar) num descritor <1>app.standard-reader.labeler.service</1>, servido a partir de <2>app.standard-reader.labeler.getServices</2> (um rotulador <3>did:web</3> não tem repositório para salvar o registo)."
 
 #: src/components/reader/app-shell.tsx
 #: src/components/reader/subscriptions-sheet.tsx
@@ -2383,6 +2396,11 @@ msgstr "Você concorda em não usar o {SITE_NAME} para:"
 msgid "e.g. Dispatches from the Atmosphere"
 msgstr "por ex. Relatos da Atmosfera"
 
+#: src/components/reader/cards.tsx
+#: src/routes/_layout.u.$did.tsx
+msgid "Bot"
+msgstr ""
+
 #: src/components/docs/introduction-docs-page.tsx
 msgid "the AT Protocol schemas that define Standard records and the shared definitions they build on."
 msgstr "os esquemas do Protocolo AT que definem registros Standard e as definições compartilhadas nas quais eles se baseiam."
@@ -2561,6 +2579,10 @@ msgstr "{0, plural, one {# publicação} other {# publicações}}"
 
 #: src/components/feedback/feedback-image-picker.tsx
 msgid "Try again"
+msgstr ""
+
+#: src/routes/_layout.u.$did.tsx
+msgid "This account self-identifies as a bot"
 msgstr ""
 
 #: src/components/reader/add-to-list-modal.tsx
@@ -3083,6 +3105,10 @@ msgstr "Abrir imagem {position}"
 msgid "AppView API"
 msgstr "API do AppView"
 
+#: src/components/docs/labelers-docs-page.tsx
+msgid "We used to also accept a labeler registered by a Standard Reader‑specific descriptor record. That is gone. It existed only so a <0>did:web</0> labeler — which has no repo, and so cannot publish the standard declaration — could join the directory. If you already run a labeler for the wider network it works here unchanged, which was always the point: a labeler can label any content on the network, so there is no reason for this app to invent its own way of describing one."
+msgstr ""
+
 #: src/components/reader/article-view.tsx
 msgid "There’s a magazine edition of this collection."
 msgstr "Existe uma edição em revista desta coleção."
@@ -3526,6 +3552,10 @@ msgstr "Limpar filtro"
 #: src/components/reader/about-view.tsx
 msgid "Listen to this example read aloud"
 msgstr "Ouvir este exemplo lido em voz alta"
+
+#: src/components/docs/labelers-docs-page.tsx
+msgid "Labelers are an AT Protocol concept, not a Standard Reader one, so the protocol documentation is the reference: <0>labels</0> covers the label object, its signature and the <1>queryLabels</1> / <2>subscribeLabels</2> endpoints, and <3>moderation</3> covers how labels are meant to be applied. Anything that satisfies those works here."
+msgstr ""
 
 #: src/routes/_layout.index.tsx
 msgid "Your reading room"

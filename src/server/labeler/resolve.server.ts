@@ -1,29 +1,26 @@
 /**
- * Labeler discovery.
+ * Labeler resolution.
  *
- * Two kinds of labeler land in the same `labeler_services` table, and every
- * read path treats them identically:
+ * There is exactly one kind of labeler: one declared on the network, advertising
+ * `#atproto_labeler` in its DID document and publishing an
+ * `app.bsky.labeler.service` record. Those never reach us over the firehose (we
+ * don't index that collection), so they are resolved on first sight and
+ * backfilled into `labeler_services` — after which reads are pure DB.
  *
- * 1. **Registered by record** — an `app.standard-reader.labeler.service` record
- *    owned by its author's account, indexed by tap. Our own labelers.
- * 2. **Declared on the network** — any AT Protocol labeler, which advertises
- *    `#atproto_labeler` in its DID document and publishes an
- *    `app.bsky.labeler.service` record. These never reach us over the firehose
- *    (we don't index that collection), so they are resolved on first lookup and
- *    backfilled into the table — after which reads are pure DB, like everything
- *    else.
- *
- * Either way the label server itself only answers queryLabels / subscribeLabels.
+ * We used to also accept a labeler registered by an `app.standard-reader.labeler.service`
+ * record, which existed only so our own two did:web labelers could join the
+ * directory (a did:web has no repo, so it cannot publish the standard
+ * declaration). Those labelers are gone: any labeler can already label any
+ * content, so running our own bought nothing that the network doesn't provide.
  */
 
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 
 import { db } from "#/db/index.server";
 import { labelerServices } from "#/db/schema";
 import { resolveHandleToDid } from "#/server/atproto/resolve-author-ref";
 
 import { resolveAtprotoLabeler } from "./atproto-labeler.server.ts";
-import { KNOWN_STANDARD_SITE_LABELERS } from "./known-labelers.ts";
 
 export interface LabelValueDef {
   identifier?: string;
@@ -134,35 +131,6 @@ export async function resolveLabelerEndpoint(
 ): Promise<string | null> {
   const row = await serviceRow(did);
   return row?.serviceEndpoint ?? null;
-}
-
-/**
- * Give the curated labelers a `labeler_services` row if they don't have one.
- *
- * `KNOWN_STANDARD_SITE_LABELERS` decides whether a row is *listed*, so on its
- * own it can never surface a labeler that has no row yet — and a labeler that
- * declared itself on the network only gets one when somebody happens to look it
- * up by handle. Without this the curated set is inert: the labelers we most
- * want in the directory are exactly the ones missing from it.
- *
- * Called on the directory read. Costs one indexed query once every curated
- * labeler is present; the network resolve happens on first sight only, and a
- * DID that fails to resolve is negative-cached so this doesn't retry per load.
- */
-export async function ensureKnownLabelersResolved(): Promise<void> {
-  const dids = [...KNOWN_STANDARD_SITE_LABELERS];
-  if (dids.length === 0) return;
-
-  const rows = await db
-    .select({ labelerDid: labelerServices.labelerDid })
-    .from(labelerServices)
-    .where(inArray(labelerServices.labelerDid, dids));
-  const present = new Set(rows.map((r) => r.labelerDid));
-  const missing = dids.filter((did) => !present.has(did));
-  if (missing.length === 0) return;
-
-  // resolveLabelerView backfills a row as a side effect of resolving.
-  await Promise.all(missing.map((did) => resolveLabelerView(did)));
 }
 
 /**

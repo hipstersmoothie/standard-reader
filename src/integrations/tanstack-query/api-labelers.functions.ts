@@ -30,7 +30,6 @@ import {
 } from "#/server/labeler/labels.server";
 import type { LabelValueDef } from "#/server/labeler/resolve.server";
 import {
-  ensureKnownLabelersResolved,
   readLabelDefinitionsFor,
   readLabelDefinitionsPage,
   refreshLabelerDefinitions,
@@ -279,10 +278,6 @@ const getKnownLabelers = createServerFn({ method: "GET" })
   .validator(knownLabelersInput)
   .handler(
     observe("labelers.getKnownLabelers", async ({ data, context }, span) => {
-      // Curated labelers that declared themselves on the network have no row
-      // until something resolves them, so seed them before listing.
-      await ensureKnownLabelersResolved();
-
       const session = await getAtprotoSessionForRequest(getRequest());
       const ls = context.schema.labelerSubscriptions;
       const svc = context.schema.labelerServices;

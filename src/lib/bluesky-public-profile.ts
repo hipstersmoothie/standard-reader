@@ -1,17 +1,24 @@
 /**
  * Profile fields from public.api.bsky.app (stable JSON for login flows).
  */
+
+import { viewDeclaresBot } from "./self-labels.ts";
+
 export type BlueskyPublicProfileFields = {
   handle: string | null;
   displayName: string | null;
   avatarUrl: string | null;
+  /** The account self-declares as a bot (a `bot` self-label on its profile). */
+  isBot: boolean;
 };
 
 function normalizeProfileResponse(raw: unknown): BlueskyPublicProfileFields {
   const profileData = raw as {
+    did?: string | null;
     handle?: string | null;
     displayName?: string | null;
     avatar?: string | null;
+    labels?: unknown;
   };
   const handle = profileData.handle?.trim();
   const displayName = profileData.displayName?.trim();
@@ -29,6 +36,10 @@ function normalizeProfileResponse(raw: unknown): BlueskyPublicProfileFields {
         : null,
     displayName: displayName && displayName.length > 0 ? displayName : null,
     avatarUrl,
+    isBot:
+      typeof profileData.did === "string"
+        ? viewDeclaresBot(profileData.did, profileData.labels)
+        : false,
   };
 }
 

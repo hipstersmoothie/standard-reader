@@ -16,9 +16,6 @@ export interface LabelPref {
   visibility: LabelVisibility;
 }
 
-/** Where a labeler's registration came from (see `labelerServices.source`). */
-export type LabelerSource = "record" | "atproto";
-
 /** A label-value definition as carried on a labeler.service record's policies. */
 export interface LabelValueDefinition {
   identifier?: string;
@@ -30,9 +27,10 @@ export interface LabelValueDefinition {
 }
 
 /**
- * `app.standard-reader.labeler.service` records — the registration of a labeler,
- * indexed off the network (the owner DID is the labeler's author). Drives the
- * Labelers directory and where to reach each labeler's label server.
+ * Every labeler on the AT Protocol network, resolved from its own declaration
+ * (`#atproto_labeler` in the DID document + an `app.bsky.labeler.service`
+ * record). Drives the Labelers directory and where to reach each label server.
+ * Populated by the periodic scan in `discover.server.ts`.
  */
 export const labelerServices = pgTable(
   "labeler_services",
@@ -48,17 +46,6 @@ export const labelerServices = pgTable(
     labelerDid: text("labeler_did").notNull(),
     /** Origin serving queryLabels / subscribeLabels. */
     serviceEndpoint: text("service_endpoint").notNull(),
-
-    /**
-     * How this labeler entered the directory:
-     * - `record` — an `app.standard-reader.labeler.service` record indexed off
-     *   the network (our own labelers; the row is owned by the record author).
-     * - `atproto` — resolved from the labeler's own AT Protocol declaration
-     *   (`#atproto_labeler` in the DID doc + `app.bsky.labeler.service`), for
-     *   labelers that never published an app record. Refreshed from the
-     *   network rather than from the firehose.
-     */
-    source: text("source").$type<LabelerSource>().notNull().default("record"),
 
     displayName: text("display_name"),
     /**

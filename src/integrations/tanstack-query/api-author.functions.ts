@@ -162,6 +162,7 @@ async function resolveAuthorProfile(
       description: pr.description,
       avatarUrl: pr.avatarUrl,
       bannerUrl: pr.bannerUrl,
+      isBot: pr.isBot,
     })
     .from(pr)
     .where(eq(pr.did, did))
@@ -182,6 +183,9 @@ async function resolveAuthorProfile(
       description: row.description,
       avatarUrl: row.avatarUrl ?? publicProfile?.avatarUrl ?? null,
       bannerUrl: row.bannerUrl,
+      // The AppView reports the same self-label for accounts whose profile
+      // record hasn't come past on the firehose yet, so it fills the gap.
+      isBot: row.isBot || (publicProfile?.isBot ?? false),
     };
   }
 
@@ -197,6 +201,7 @@ async function resolveAuthorProfile(
     description: null,
     avatarUrl: publicProfile?.avatarUrl ?? null,
     bannerUrl: null,
+    isBot: publicProfile?.isBot ?? false,
   };
 }
 
