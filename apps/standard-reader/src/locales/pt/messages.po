@@ -2665,6 +2665,10 @@ msgstr "Reordenar {itemTitle}"
 msgid "Back to feedback"
 msgstr "Voltar a feedback"
 
+#: src/components/reader/content/renderers/shared/bsky-client-embed.tsx
+msgid "View on {name}"
+msgstr ""
+
 #: src/routes/_layout.search.tsx
 msgid "{pubTotal, plural, one {# publication} other {# publications}}"
 msgstr "{pubTotal, plural, one {# publicação} other {# publicações}}"

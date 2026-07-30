@@ -9,29 +9,65 @@
  * manifest generation, which loads outside the app's bundler.
  */
 
+/** How a client is named and colored when an embed is branded with it. */
+export interface BskyClientBrand {
+  /** Client name as it calls itself, shown on the embed. */
+  name: string;
+  /**
+   * The client's own brand color — its `<meta name="theme-color">` or published
+   * manifest `theme_color`. Null when the client publishes neither, in which
+   * case a branded embed keeps the reader's default border.
+   *
+   * Never used raw: it is run through the Radix scale generator so the embed
+   * gets a properly contrasted tint in both light and dark.
+   */
+  accent: string | null;
+}
+
 /**
- * Hosts whose URLs address AT Protocol records via the `social-app` grammar.
- * Adding a fork here makes every link to it resolve in-app: profile links
- * become mention chips routed to `/u/$did`, and post / feed / list / starter
- * pack cards become native embeds.
+ * Every client whose URLs address AT Protocol records via the `social-app`
+ * grammar, keyed by host. **This table is the one place to add a fork** — the
+ * host list below derives from it, and so does the extension's manifest. Adding
+ * an entry makes links to that client resolve in-app: profile links become
+ * mention chips routed to `/u/$did`, and post / feed / list / starter pack
+ * links become native embeds branded with the client's name and color.
  */
-export const BSKY_WEB_CLIENT_HOSTS = [
-  "bsky.app",
-  "staging.bsky.app",
-  "main.bsky.dev",
-  "deer.social",
-  "witchsky.app",
-  "mu.social",
+export const BSKY_WEB_CLIENTS: Readonly<Record<string, BskyClientBrand>> = {
+  // Bluesky publishes no theme-color meta; #0085FF is its brand blue
+  // (`primary_500` in the social-app palette).
+  "bsky.app": { accent: "#0085FF", name: "Bluesky" },
+  "staging.bsky.app": { accent: "#0085FF", name: "Bluesky" },
+  "main.bsky.dev": { accent: "#0085FF", name: "Bluesky" },
+  "deer.social": { accent: "#4B9B6C", name: "deer.social" },
+  "witchsky.app": { accent: "#ED5345", name: "Witchsky" },
+  // No reachable theme-color or manifest — branded by name only.
+  "mu.social": { accent: null, name: "Mu" },
   // Blacksky's client. Not `blackskyweb.xyz` — that is their WordPress site,
   // and it is the host their articles usually link to.
-  "blacksky.community",
-] as const;
+  "blacksky.community": { accent: "#6060E9", name: "Blacksky" },
+};
 
+/** Hosts of every known client, derived from {@link BSKY_WEB_CLIENTS}. */
+export const BSKY_WEB_CLIENT_HOSTS: ReadonlyArray<string> =
+  Object.keys(BSKY_WEB_CLIENTS);
+
+// A Set, not `host in BSKY_WEB_CLIENTS`: `in` walks the prototype chain, so a
+// URL whose hostname is `constructor` or `valueOf` would pass as a client.
 const HOSTS = new Set<string>(BSKY_WEB_CLIENT_HOSTS);
 
 /** True when `hostname` is a known Bluesky web client (case-insensitive). */
 export function isBskyClientHost(hostname: string): boolean {
   return HOSTS.has(hostname.trim().toLowerCase());
+}
+
+/**
+ * Branding for a client host. Unknown hosts fall back to the bare host as the
+ * name with no accent, so a caller never has to null-check.
+ */
+export function bskyClientBrand(host: string): BskyClientBrand {
+  const key = host.trim().toLowerCase();
+  const brand = HOSTS.has(key) ? BSKY_WEB_CLIENTS[key] : undefined;
+  return brand ?? { accent: null, name: key };
 }
 
 /** The AT Protocol record kinds a `social-app` URL can address. */

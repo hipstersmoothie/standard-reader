@@ -2665,6 +2665,10 @@ msgstr "{itemTitle} を並べ替え"
 msgid "Back to feedback"
 msgstr "フィードバックに戻る"
 
+#: src/components/reader/content/renderers/shared/bsky-client-embed.tsx
+msgid "View on {name}"
+msgstr ""
+
 #: src/routes/_layout.search.tsx
 msgid "{pubTotal, plural, one {# publication} other {# publications}}"
 msgstr "{pubTotal, plural, one {# 件の発行物} other {# 件の発行物}}"

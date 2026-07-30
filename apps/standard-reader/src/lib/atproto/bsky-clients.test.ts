@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  BSKY_WEB_CLIENT_HOSTS,
+  bskyClientBrand,
   bskyClientProfileIdent,
   bskyClientRefAtUri,
   isBskyClientHost,
@@ -23,6 +25,56 @@ describe("isBskyClientHost", () => {
     expect(isBskyClientHost("bsky.app.evil.com")).toBe(false);
     // Blacksky's WordPress site, not their client — `/profile/…` 404s there.
     expect(isBskyClientHost("blackskyweb.xyz")).toBe(false);
+  });
+
+  it("does not treat Object prototype keys as clients", () => {
+    // The client table is an object literal, so a plain `host in table` check
+    // would pass `constructor` — a legal hostname (`https://constructor/`).
+    expect(isBskyClientHost("constructor")).toBe(false);
+    expect(isBskyClientHost("valueOf")).toBe(false);
+    expect(isBskyClientHost("__proto__")).toBe(false);
+  });
+});
+
+describe("bskyClientBrand", () => {
+  it("names and colors each known client", () => {
+    expect(bskyClientBrand("witchsky.app")).toEqual({
+      accent: "#ED5345",
+      name: "Witchsky",
+    });
+    expect(bskyClientBrand("Blacksky.Community").name).toBe("Blacksky");
+    expect(bskyClientBrand("bsky.app").name).toBe("Bluesky");
+  });
+
+  it("carries a null accent for a client that publishes no brand color", () => {
+    expect(bskyClientBrand("mu.social")).toEqual({
+      accent: null,
+      name: "Mu",
+    });
+  });
+
+  it("falls back to the bare host, never a prototype value", () => {
+    expect(bskyClientBrand("example.com")).toEqual({
+      accent: null,
+      name: "example.com",
+    });
+    expect(bskyClientBrand("constructor")).toEqual({
+      accent: null,
+      name: "constructor",
+    });
+  });
+
+  it("gives every known client a name and a usable accent", () => {
+    expect(BSKY_WEB_CLIENT_HOSTS.length).toBeGreaterThan(0);
+    for (const host of BSKY_WEB_CLIENT_HOSTS) {
+      // Hosts are lowercase, so `bskyClientBrand` never has to normalize a key
+      // that the table itself got wrong.
+      expect(host).toBe(host.toLowerCase());
+      const { name, accent } = bskyClientBrand(host);
+      expect(name).not.toBe("");
+      // The accent is fed to the Radix scale generator, which needs real hex.
+      if (accent !== null) expect(accent).toMatch(/^#[0-9a-f]{6}$/i);
+    }
   });
 });
 

@@ -2665,6 +2665,10 @@ msgstr "{itemTitle} 순서 변경"
 msgid "Back to feedback"
 msgstr "피드백으로 돌아가기"
 
+#: src/components/reader/content/renderers/shared/bsky-client-embed.tsx
+msgid "View on {name}"
+msgstr ""
+
 #: src/routes/_layout.search.tsx
 msgid "{pubTotal, plural, one {# publication} other {# publications}}"
 msgstr "{pubTotal, plural, one {발행물 #개} other {발행물 #개}}"

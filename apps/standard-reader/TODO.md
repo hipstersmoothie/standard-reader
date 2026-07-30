@@ -846,6 +846,13 @@ Backend/API exists; UI or copy is missing.
       everything else renders an entity card hydrated from the public AppView
       ([`bsky-entities.ts`](src/server/atproto/bsky-entities.ts)). Unresolvable records fall back
       to the original link card.
+- [x] **Brand client embeds** — `BSKY_WEB_CLIENTS` carries each client's name plus its published
+      `theme-color` / manifest `theme_color`, and the host list derives from that table so there
+      is one place to add a fork. Entity cards show the client name beside the record kind and
+      take an accent-tinted border; a post from a fork gets a "View on <client>" line, since
+      `bsky-react-post` owns the post card's markup and links it back to bsky.app. The raw brand
+      hex is never painted — it goes through `buildMagazinePalette`, the same Radix generator
+      behind publication cards, for contrast-safe light + dark values.
 - [x] **`at.markpub.markdown`** — full [Markpub.at](https://markpub.at/) support: dedicated
       renderer (`src/lib/markpub/*`, [`markpub-content.tsx`](src/components/reader/content/renderers/markpub-content.tsx)),
       flavor/extensions, facet/lens preprocessing, ingest-time `text.textBlob` fetch

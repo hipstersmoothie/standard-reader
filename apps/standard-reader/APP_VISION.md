@@ -151,9 +151,12 @@ Sections, top to bottom:
   elements.
 - **Bluesky web-client links resolve to their records.** `bsky.app` and the clients forked from
   its `social-app` codebase — Witchsky, Mu, deer.social, Blacksky — share one URL grammar and
-  address the
-  same AT Protocol records, so a link to any of them is a link to the _record_, not to a
-  third-party page. The host list lives in
+  address the same AT Protocol records, so a link to any of them is a link to the _record_, not
+  to a third-party page. **Embeds are branded with the client the link came from** — its name beside
+  the record kind, and its own `theme-color` run through the same Radix scale generator the
+  magazine palette uses, so the border tint and brand text stay contrast-safe in light and dark
+  (never the raw hex). A client with no published brand color is branded by name only. The
+  client table lives in
   [`lib/atproto/bsky-clients.ts`](src/lib/atproto/bsky-clients.ts) and is shared with the
   extension's manifest generation; adding a fork there lights it up everywhere at once. Inline
   profile links become mention chips routed to `/u/$did`; a link-card block (Leaflet

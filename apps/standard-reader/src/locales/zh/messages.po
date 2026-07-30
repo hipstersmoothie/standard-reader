@@ -2665,6 +2665,10 @@ msgstr "重新排序 {itemTitle}"
 msgid "Back to feedback"
 msgstr "返回反馈"
 
+#: src/components/reader/content/renderers/shared/bsky-client-embed.tsx
+msgid "View on {name}"
+msgstr ""
+
 #: src/routes/_layout.search.tsx
 msgid "{pubTotal, plural, one {# publication} other {# publications}}"
 msgstr "{pubTotal, plural, one {# 个刊物} other {# 个刊物}}"
