@@ -160,6 +160,14 @@ export function LabelerDetailView({
     hasNextPage: hasNextAccounts,
     isFetchingNextPage: isFetchingNextAccounts,
   } = useInfiniteQuery(labelerApi.getLabeledAccountsInfiniteQueryOptions(did));
+  // A labeler's declared labels are paged too: ATlas declares 4,995 of them, and
+  // rendering that many visibility controls at once is what made this page crawl.
+  const {
+    data: labelDefPages,
+    fetchNextPage: fetchNextLabelDefs,
+    hasNextPage: hasNextLabelDefs,
+    isFetchingNextPage: isFetchingNextLabelDefs,
+  } = useInfiniteQuery(labelerApi.getLabelerLabelsInfiniteQueryOptions(did));
   const { enabled: trackReading } = useTrackReadingHistory();
 
   const labelerKey = ["labeler", did] as const;
@@ -257,7 +265,14 @@ export function LabelerDetailView({
   );
   const name =
     card.displayName ?? labelerHandle(card.did, card.handle) ?? card.did;
-  const defs = card.labelValueDefinitions ?? [];
+  // The paged query owns the list once it has loaded; `getLabeler`'s first page
+  // is the fallback so the tab has content on the very first paint.
+  const pagedDefs =
+    labelDefPages?.pages.flatMap((page) => page.definitions) ?? [];
+  const defs =
+    pagedDefs.length > 0 ? pagedDefs : (card.labelValueDefinitions ?? []);
+  const declaredLabelCount =
+    labelDefPages?.pages[0]?.total ?? labeler.data?.labelCount ?? defs.length;
   const documents = labeledPages?.pages.flatMap((page) => page.documents) ?? [];
   const labelsByUri: Record<string, Array<string>> = Object.assign(
     {},
@@ -286,6 +301,14 @@ export function LabelerDetailView({
     loadMoreAccounts,
     hasNextAccounts,
     accounts.length,
+  );
+  const loadMoreLabelDefs = useCallback(() => {
+    if (hasNextLabelDefs && !isFetchingNextLabelDefs) void fetchNextLabelDefs();
+  }, [fetchNextLabelDefs, hasNextLabelDefs, isFetchingNextLabelDefs]);
+  const loadMoreLabelDefsRef = useInfiniteScrollSentinel(
+    loadMoreLabelDefs,
+    hasNextLabelDefs,
+    labelDefPages?.pages.reduce((n, p) => n + p.definitions.length, 0) ?? 0,
   );
 
   // Only offer a subject tab once we know it has content. A labeler deals in
@@ -336,10 +359,14 @@ export function LabelerDetailView({
             <span {...stylex.props(styles.did)}>
               {labelerHandleOrDid(card.did, card.handle)}
             </span>
-            {defs.length > 0 ? (
+            {/* The total this labeler declares, not the page we happen to have
+                loaded — the Labels tab pages in on scroll. */}
+            {declaredLabelCount > 0 ? (
               <span>
-                <span {...stylex.props(styles.statValue)}>{defs.length}</span>
-                <Plural value={defs.length} one="label" other="labels" />
+                <span {...stylex.props(styles.statValue)}>
+                  {declaredLabelCount}
+                </span>
+                <Plural value={declaredLabelCount} one="label" other="labels" />
               </span>
             ) : null}
             {documentCount > 0 ? (
@@ -524,6 +551,22 @@ export function LabelerDetailView({
                     read.
                   </Trans>
                 </p>
+              ) : null}
+              {/* Paged on scroll rather than virtualized: each row owns a
+                  SegmentedControl, and react-aria's Virtualizer wants a
+                  collection component (ListBox/GridList), whose row semantics
+                  fight interactive controls nested inside them. This also keeps
+                  the tab consistent with Documents and Accounts below. */}
+              {hasNextLabelDefs ? (
+                <div ref={loadMoreLabelDefsRef} {...stylex.props(styles.note)}>
+                  {isFetchingNextLabelDefs ? (
+                    <Trans>Loading more labels…</Trans>
+                  ) : (
+                    <Trans>
+                      Showing {defs.length} of {declaredLabelCount} labels.
+                    </Trans>
+                  )}
+                </div>
               ) : null}
             </div>
           </TabPanel>

@@ -158,6 +158,10 @@ msgstr ""
 msgid "Lexicons"
 msgstr "Lexicon"
 
+#: src/components/labeler-detail-view.tsx
+msgid "{declaredLabelCount, plural, one {label} other {labels}}"
+msgstr ""
+
 #: src/routes/_layout.p.$did.$rkey.tsx
 #: src/routes/_layout.u.$did.tsx
 msgid "Posts"
@@ -1391,6 +1395,10 @@ msgstr ""
 msgid "Articles in collection"
 msgstr "合集中的文章"
 
+#: src/components/labeler-detail-view.tsx
+msgid "Loading more labels…"
+msgstr ""
+
 #: src/components/user-settings-view.tsx
 msgid "System"
 msgstr "跟随系统"
@@ -2015,6 +2023,11 @@ msgstr "{0, plural, one {位关注者} other {位关注者}}"
 #: src/components/reader/about-view.tsx
 msgid "Most readers stop at what you already subscribe to. Standard Reader treats finding your next favourite as part of the job. Browse all {countLabel} publications on the network — not just the handful you've heard of."
 msgstr "大多数阅读器止步于你已经订阅的内容。Standard Reader 把帮你找到下一个心头好也当作本职。浏览网络上全部 {countLabel} 个刊物——不只是你听说过的那几个。"
+
+#. placeholder {0}: defs.length
+#: src/components/labeler-detail-view.tsx
+msgid "Showing {0} of {declaredLabelCount} labels."
+msgstr ""
 
 #: src/components/labeler-detail-view.tsx
 msgid "Labels"
@@ -3871,8 +3884,8 @@ msgstr "复制链接代码"
 
 #. placeholder {0}: defs.length
 #: src/components/labeler-detail-view.tsx
-msgid "{0, plural, one {label} other {labels}}"
-msgstr "{0, plural, one {标签} other {标签}}"
+#~ msgid "{0, plural, one {label} other {labels}}"
+#~ msgstr "{0, plural, one {标签} other {标签}}"
 
 #: src/routes/_layout.feedback.return.tsx
 msgid "Your feedback has been posted to <0>userinput.app</0>. Thanks for helping us improve Standard Reader."

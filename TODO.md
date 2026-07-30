@@ -1012,20 +1012,44 @@ Standard AT Proto labels: subscribe to labelers, see/blur/hide their labels whil
       labeler's `#atproto_label` key (resolved from its DID document, cached, re-resolved once on
       mismatch to absorb key rotation) before mirroring it. Unsigned or unverifiable labels are
       dropped and counted in the sync log. See `src/server/labeler/verify.server.ts`.
-      **Measured against the network** (20 polled labelers, 600 labels): 10 labelers verify 100%,
-      accounting for ~76% of labels. Our canonicalization is confirmed correct by those — but three
-      labelers (`stechlab-labels`, `us-gov-funding`, and `github-labeler` on 44 of 50) serve signed
-      labels that verify against **no key those DIDs have ever published**: not the current
-      `#atproto_label` key, not a retired one, not the repo or rotation keys (checked the whole
-      plc.directory audit log). Broken signing on their end, not key rotation and not our encoding.
-      Six more endpoints refuse connections outright. Dropping all of these is correct; the problem
-      is that it is _silent_.
-- [ ] **Surface a labeler that can't be verified or reached.** A reader can subscribe to a labeler,
-      see its full list of label toggles, and receive zero labels forever, with the only signal a
-      server-side `console.warn`. Persist per-labeler sync health (last success, labels rejected,
-      last transport error) alongside `label_sync_state` and show it on the labeler page — a labeler
-      whose signatures don't check out is materially different from one that simply hasn't labeled
-      anything yet, and today they look identical.
+      **`neg` must be included whenever the labeler serialized it, `false` included.** Labelers
+      disagree on how to encode a non-negated label — some omit `neg`, others write `neg: false` —
+      and the signature covers whichever form that labeler produced. Dropping a present `neg: false`
+      invalidated every active label from the second group while their `neg: true` retractions still
+      verified. Measured across the labelers a real reader subscribes to, rejections went
+      **23,923 → 1**: stechlab 0 → 2000 labels, us-gov-funding 0 → 816, github-labeler 0 → 384.
+      An earlier note here blamed those labelers' signing; that was wrong, and the giveaway was that
+      _some_ of github-labeler's labels verified with the same key and the same code — which rules out
+      both a bad key and bad canonicalization. The test suite could not catch it because its own
+      `producerSigningBytes` helper reproduced the same assumption, so producer and verifier agreed on
+      the same mistake; tests now sign each convention explicitly. Note also that some label servers
+      add a non-lexicon `id` to responses, so signing over "everything except `sig`" is _not_ the fix —
+      the field allowlist is deliberate. Separately, seven of twenty polled endpoints refuse
+      connections; dropping those is correct, and it is no longer silent (below).
+- [x] **Surface a labeler that can't be verified or reached** — `label_sync_state` now records
+      `stored_count` / `rejected_count` / `last_error` per labeler (migration `0028`), and the Labels
+      tab says which of the three it is. A reader could otherwise subscribe, see a full list of
+      toggles, and receive nothing forever with only a server-side `console.warn`. Seven of twenty
+      polled labelers refuse connections; they now say so instead of looking empty.
+- [x] **Page a labeler's declared labels** — ATlas (a place labeler) declares **4,995** label values,
+      717 kB of JSON. The detail page read that row whole (~1s) and then rendered 4,995 segmented
+      controls. Definitions are now sliced in SQL (`jsonb_array_elements … with ordinality`) so the
+      blob never crosses the wire, 50 at a time, loading more on scroll via the same
+      `useInfiniteScrollSentinel` the Documents and Accounts tabs use. Paged queries measure
+      70–90ms. **Not** react-aria's `Virtualizer`: it wants a collection component (ListBox/GridList)
+      whose row semantics conflict with the interactive `SegmentedControl` each row owns.
+      Two consequences handled: the header stat shows the declared total rather than the loaded page,
+      and `getLabeler` additionally returns definitions for the values a labeler has actually
+      _emitted_ (`readLabelDefinitionsFor`) so a label pill anywhere in the app can still resolve its
+      display name when that value sits past the first page.
+- [x] **Label pills are neutral, and carry the labeler's avatar** — they were `warning`-yellow, which
+      implied a severity the labeler never claimed; most labels state something unalarming ("Bot", a
+      place, a GitHub repo). Severity is the reader's own per-label choice (off / warn / hide), not a
+      property of the label. The avatar names who is speaking instead.
+- [x] **Don't crash the sync on a real labeler's history** — inserts chunk at 1000 rows (Postgres
+      caps a bind at 65535 parameters and this binds four per row; Blacksky's ~22.5k labels overflowed
+      the int16 count, Skywatch's ~55k exhausted drizzle's stack), and negations delete 500 per
+      statement instead of one round trip each.
 - [ ] **subscribeLabels ingestion** — consume the labeler firehose into the read-model instead of
       live `queryLabels` per page, for lower latency.
 - [ ] **Deploy claudeslop** — Railway service + persistent SQLite volume; publish its did:web.

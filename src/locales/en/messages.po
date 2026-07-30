@@ -158,6 +158,10 @@ msgstr "Content and intellectual property"
 msgid "Lexicons"
 msgstr "Lexicons"
 
+#: src/components/labeler-detail-view.tsx
+msgid "{declaredLabelCount, plural, one {label} other {labels}}"
+msgstr "{declaredLabelCount, plural, one {label} other {labels}}"
+
 #: src/routes/_layout.p.$did.$rkey.tsx
 #: src/routes/_layout.u.$did.tsx
 msgid "Posts"
@@ -1391,6 +1395,10 @@ msgstr "If you already run a labeler for the wider network, you can skip that st
 msgid "Articles in collection"
 msgstr "Articles in collection"
 
+#: src/components/labeler-detail-view.tsx
+msgid "Loading more labels…"
+msgstr "Loading more labels…"
+
 #: src/components/user-settings-view.tsx
 msgid "System"
 msgstr "System"
@@ -2015,6 +2023,11 @@ msgstr "{0, plural, one {follower} other {followers}}"
 #: src/components/reader/about-view.tsx
 msgid "Most readers stop at what you already subscribe to. Standard Reader treats finding your next favourite as part of the job. Browse all {countLabel} publications on the network — not just the handful you've heard of."
 msgstr "Most readers stop at what you already subscribe to. Standard Reader treats finding your next favourite as part of the job. Browse all {countLabel} publications on the network — not just the handful you've heard of."
+
+#. placeholder {0}: defs.length
+#: src/components/labeler-detail-view.tsx
+msgid "Showing {0} of {declaredLabelCount} labels."
+msgstr "Showing {0} of {declaredLabelCount} labels."
 
 #: src/components/labeler-detail-view.tsx
 msgid "Labels"
@@ -3871,8 +3884,8 @@ msgstr "Copy link code"
 
 #. placeholder {0}: defs.length
 #: src/components/labeler-detail-view.tsx
-msgid "{0, plural, one {label} other {labels}}"
-msgstr "{0, plural, one {label} other {labels}}"
+#~ msgid "{0, plural, one {label} other {labels}}"
+#~ msgstr "{0, plural, one {label} other {labels}}"
 
 #: src/routes/_layout.feedback.return.tsx
 msgid "Your feedback has been posted to <0>userinput.app</0>. Thanks for helping us improve Standard Reader."

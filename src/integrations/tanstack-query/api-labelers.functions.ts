@@ -30,9 +30,12 @@ import {
 import type { LabelValueDef } from "#/server/labeler/resolve.server";
 import {
   ensureKnownLabelersResolved,
+  readLabelDefinitionsFor,
+  readLabelDefinitionsPage,
   refreshLabelerDefinitions,
   resolveActorDid,
   resolveLabelerView,
+  resolveLabelerViewPage,
 } from "#/server/labeler/resolve.server";
 import { observe } from "#/server/observability/log";
 import { documentPublishedNotInFuture } from "#/server/reader/document-filters";
@@ -125,6 +128,27 @@ const uriInput = z.object({ uri: z.string().trim().min(1) });
 
 /** Default page size for a labeler's labeled-documents infinite scroll. */
 export const LABELED_DOCUMENTS_PAGE_SIZE = 30;
+
+/**
+ * Label definitions per page on the labeler detail view.
+ *
+ * A labeler can declare thousands — ATlas, a place labeler, declares 4,995 —
+ * which is 717 kB of JSON and as many visibility controls. The Labels tab pages
+ * through them on scroll instead.
+ */
+export const LABEL_DEFINITIONS_PAGE_SIZE = 50;
+
+const labelDefinitionsInput = labelerInput.extend({
+  limit: z.number().int().min(1).max(200).default(LABEL_DEFINITIONS_PAGE_SIZE),
+  offset: z.number().int().min(0).default(0),
+});
+
+/** One offset page of a labeler's declared label definitions. */
+export interface LabelDefinitionsPage {
+  definitions: Array<LabelValueDef>;
+  total: number;
+  nextOffset: number | null;
+}
 
 const labeledDocumentsInput = labelerInput.extend({
   limit: z.number().int().min(1).max(100).default(LABELED_DOCUMENTS_PAGE_SIZE),
@@ -402,8 +426,8 @@ const getLabeler = createServerFn({ method: "GET" })
 
       const session = await getAtprotoSessionForRequest(getRequest());
       const st = context.schema.labelSyncState;
-      const [initialView, prefsRow, observed, syncRows] = await Promise.all([
-        resolveLabelerView(did),
+      const [view, prefsRow, observed, syncRows] = await Promise.all([
+        resolveLabelerViewPage(did, LABEL_DEFINITIONS_PAGE_SIZE),
         session
           ? readPrefs(context.db, context.schema, session.did, did)
           : Promise.resolve({
@@ -435,30 +459,64 @@ const getLabeler = createServerFn({ method: "GET" })
       };
       span.set("health.rejected", health.rejected);
 
-      // A registration record is written *about* a labeler and drifts from what
-      // it actually emits. Any value missing a definition can't be given a
-      // visibility pref, so when we've synced values this labeler never
-      // declared, pull its own declaration and fill the gaps (rate-limited).
-      let view = initialView;
-      const declared = new Set(
-        (view?.labelValueDefinitions ?? []).map((d) => d.identifier),
+      const labelCount = view?.labelCount ?? 0;
+      const page = view?.labelValueDefinitions ?? [];
+      // Definitions for values this labeler has actually emitted, wherever they
+      // sit in its array. Without this a label pill on a feed couldn't resolve
+      // its display name for any labeler declaring more than one page — the
+      // value it names is usually further down.
+      const emitted =
+        labelCount > page.length
+          ? await readLabelDefinitionsFor(did, observed)
+          : [];
+      // Gap-filling below compares what a labeler *emits* against what it
+      // *declares*, so it needs the complete declaration — which we only have
+      // when the labeler declares no more than one page. Past that we show the
+      // page and say how many more there are: a labeler declaring thousands of
+      // values (ATlas declares 4,995 places) is plainly not under-declaring, and
+      // reasoning about "undeclared" from a partial list would invent values it
+      // does declare, just further down.
+      const haveAllDefinitions = labelCount <= page.length;
+      const seenIdentifier = new Set(
+        page.map((d: LabelValueDef) => d.identifier),
       );
-      const undeclared = observed.filter((val) => !declared.has(val));
-      if (undeclared.length > 0) {
-        span.set("undeclaredValues", undeclared.length);
-        if (await refreshLabelerDefinitions(did)) {
-          view = (await resolveLabelerView(did)) ?? view;
+      const finalDefs = [
+        ...page,
+        ...emitted.filter((d) => !seenIdentifier.has(d.identifier)),
+      ];
+
+      if (haveAllDefinitions) {
+        // A registration record is written *about* a labeler and drifts from
+        // what it actually emits. A value with no definition can't be given a
+        // visibility pref at all, so when we've synced values this labeler never
+        // declared, pull its own declaration and fill the gaps (rate-limited).
+        const declared = new Set(page.map((d: LabelValueDef) => d.identifier));
+        const undeclared = observed.filter((val: string) => !declared.has(val));
+        if (undeclared.length > 0) {
+          span.set("undeclaredValues", undeclared.length);
+          if (await refreshLabelerDefinitions(did)) {
+            const refreshed = await resolveLabelerViewPage(
+              did,
+              LABEL_DEFINITIONS_PAGE_SIZE,
+            );
+            if (refreshed) {
+              finalDefs.length = 0;
+              finalDefs.push(...(refreshed.labelValueDefinitions ?? []));
+            }
+          }
+        }
+
+        // Anything still undeclared — a labeler emitting values it documents
+        // nowhere — becomes a bare definition, so the reader can still set a
+        // pref for it instead of being stuck on the `warn` default.
+        const covered = new Set(
+          finalDefs.map((d: LabelValueDef) => d.identifier),
+        );
+        for (const val of observed) {
+          if (!covered.has(val)) finalDefs.push({ identifier: val });
         }
       }
-
-      // Anything still undeclared after the refresh — a labeler emitting values
-      // it documents nowhere — becomes a bare definition, so the reader can
-      // still set a pref for it instead of being stuck on the `warn` default.
-      const finalDefs = [...(view?.labelValueDefinitions ?? [])];
-      const covered = new Set(finalDefs.map((d) => d.identifier));
-      for (const val of observed) {
-        if (!covered.has(val)) finalDefs.push({ identifier: val });
-      }
+      span.set("labelCount", labelCount);
 
       let subscribed = false;
       if (session) {
@@ -475,6 +533,8 @@ const getLabeler = createServerFn({ method: "GET" })
           did,
           labelValueDefinitions: finalDefs,
         } as LabelerCard,
+        /** Total label values this labeler declares, not just the page above. */
+        labelCount: Math.max(labelCount, finalDefs.length),
         subscribed,
         prefs: prefsRow.prefs,
         enabled: prefsRow.enabled,
@@ -581,6 +641,43 @@ const setLabelerEnabled = createServerFn({ method: "POST" })
         },
       );
       return { ok: true as const, enabled: data.enabled };
+    }),
+  );
+
+/**
+ * One page of a labeler's declared label definitions.
+ *
+ * Separate from {@link getLabeler} so the Labels tab can scroll through a
+ * labeler that declares thousands of values without the first paint carrying
+ * them all.
+ */
+const getLabelerLabels = createServerFn({ method: "GET" })
+  .validator(labelDefinitionsInput)
+  .handler(
+    observe("labelers.getLabelerLabels", async ({ data }, span) => {
+      const did = await resolveActorDid(data.labeler);
+      if (!did) {
+        return {
+          definitions: [],
+          total: 0,
+          nextOffset: null,
+        } satisfies LabelDefinitionsPage;
+      }
+      const { definitions, total } = await readLabelDefinitionsPage(
+        did,
+        data.limit,
+        data.offset,
+      );
+      span.set("count", definitions.length);
+      span.set("total", total);
+      return {
+        definitions,
+        total,
+        nextOffset:
+          definitions.length > 0 && data.offset + definitions.length < total
+            ? data.offset + definitions.length
+            : null,
+      } satisfies LabelDefinitionsPage;
     }),
   );
 
@@ -906,6 +1003,21 @@ function getLabelerQueryOptions(actor: string) {
   });
 }
 
+function getLabelerLabelsInfiniteQueryOptions(
+  labeler: string,
+  limit = LABEL_DEFINITIONS_PAGE_SIZE,
+) {
+  return infiniteQueryOptions({
+    queryKey: ["labeler", labeler, "labelDefs", limit] as const,
+    queryFn: async ({ pageParam }) =>
+      getLabelerLabels({ data: { labeler, limit, offset: pageParam } }),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) => lastPage.nextOffset ?? undefined,
+    enabled: labeler.length > 0,
+    staleTime: 5 * 60_000,
+  });
+}
+
 function getLabeledDocumentsInfiniteQueryOptions(
   labeler: string,
   limit = LABELED_DOCUMENTS_PAGE_SIZE,
@@ -991,6 +1103,8 @@ export const labelerApi = {
   getKnownLabelersInfiniteQueryOptions,
   getLabeler,
   getLabelerQueryOptions,
+  getLabelerLabels,
+  getLabelerLabelsInfiniteQueryOptions,
   getLabeledDocuments,
   getLabeledDocumentsInfiniteQueryOptions,
   getLabeledAccounts,

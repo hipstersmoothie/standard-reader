@@ -196,8 +196,11 @@ function LabelerCardItem({
       ) : null}
       {names.length > 0 ? (
         <div {...stylex.props(styles.badges)}>
+          {/* Neutral, not `warning`: most labels state something unalarming
+              ("Bot", a place name, a repo), and severity is the reader's own
+              per-label choice rather than a property of the label. */}
           {names.map((name) => (
-            <Badge key={name} variant="warning">
+            <Badge key={name} variant="default">
               {name}
             </Badge>
           ))}

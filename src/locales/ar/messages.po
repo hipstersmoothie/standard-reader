@@ -158,6 +158,10 @@ msgstr ""
 msgid "Lexicons"
 msgstr "Lexicons"
 
+#: src/components/labeler-detail-view.tsx
+msgid "{declaredLabelCount, plural, one {label} other {labels}}"
+msgstr ""
+
 #: src/routes/_layout.p.$did.$rkey.tsx
 #: src/routes/_layout.u.$did.tsx
 msgid "Posts"
@@ -1391,6 +1395,10 @@ msgstr ""
 msgid "Articles in collection"
 msgstr "المقالات في المجموعة"
 
+#: src/components/labeler-detail-view.tsx
+msgid "Loading more labels…"
+msgstr ""
+
 #: src/components/user-settings-view.tsx
 msgid "System"
 msgstr "النظام"
@@ -2015,6 +2023,11 @@ msgstr "{0, plural, zero {متابع} one {متابع} two {متابعان} few 
 #: src/components/reader/about-view.tsx
 msgid "Most readers stop at what you already subscribe to. Standard Reader treats finding your next favourite as part of the job. Browse all {countLabel} publications on the network — not just the handful you've heard of."
 msgstr "يكتفي معظم القرّاء بما اشتركوا فيه بالفعل. أما Standard Reader فيعتبر العثور على مفضّلتك التالية جزءًا من مهمته. تصفّح كل المنشورات على الشبكة وعددها {countLabel} — لا الحفنة التي سمعت بها فقط."
+
+#. placeholder {0}: defs.length
+#: src/components/labeler-detail-view.tsx
+msgid "Showing {0} of {declaredLabelCount} labels."
+msgstr ""
 
 #: src/components/labeler-detail-view.tsx
 msgid "Labels"
@@ -3871,8 +3884,8 @@ msgstr "نسخ كود الرابط"
 
 #. placeholder {0}: defs.length
 #: src/components/labeler-detail-view.tsx
-msgid "{0, plural, one {label} other {labels}}"
-msgstr "{0, plural, zero {تصنيفات} one {تصنيف} two {تصنيفان} few {تصنيفات} many {تصنيفًا} other {تصنيف}}"
+#~ msgid "{0, plural, one {label} other {labels}}"
+#~ msgstr "{0, plural, zero {تصنيفات} one {تصنيف} two {تصنيفان} few {تصنيفات} many {تصنيفًا} other {تصنيف}}"
 
 #: src/routes/_layout.feedback.return.tsx
 msgid "Your feedback has been posted to <0>userinput.app</0>. Thanks for helping us improve Standard Reader."

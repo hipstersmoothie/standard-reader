@@ -158,6 +158,10 @@ msgstr ""
 msgid "Lexicons"
 msgstr "Lexicon"
 
+#: src/components/labeler-detail-view.tsx
+msgid "{declaredLabelCount, plural, one {label} other {labels}}"
+msgstr ""
+
 #: src/routes/_layout.p.$did.$rkey.tsx
 #: src/routes/_layout.u.$did.tsx
 msgid "Posts"
@@ -1391,6 +1395,10 @@ msgstr ""
 msgid "Articles in collection"
 msgstr "컬렉션 내 아티클"
 
+#: src/components/labeler-detail-view.tsx
+msgid "Loading more labels…"
+msgstr ""
+
 #: src/components/user-settings-view.tsx
 msgid "System"
 msgstr "시스템"
@@ -2015,6 +2023,11 @@ msgstr "{0, plural, one {팔로워} other {팔로워}}"
 #: src/components/reader/about-view.tsx
 msgid "Most readers stop at what you already subscribe to. Standard Reader treats finding your next favourite as part of the job. Browse all {countLabel} publications on the network — not just the handful you've heard of."
 msgstr "대부분의 리더는 이미 구독한 것에서 멈춥니다. Standard Reader는 다음에 좋아할 글을 찾아 주는 것까지 자기 일로 여깁니다. 네트워크의 발행물 {countLabel}곳을 모두 둘러보세요 — 이름을 들어본 몇 곳만이 아니라요."
+
+#. placeholder {0}: defs.length
+#: src/components/labeler-detail-view.tsx
+msgid "Showing {0} of {declaredLabelCount} labels."
+msgstr ""
 
 #: src/components/labeler-detail-view.tsx
 msgid "Labels"
@@ -3871,8 +3884,8 @@ msgstr "링크 코드 복사"
 
 #. placeholder {0}: defs.length
 #: src/components/labeler-detail-view.tsx
-msgid "{0, plural, one {label} other {labels}}"
-msgstr "{0, plural, one {라벨} other {라벨}}"
+#~ msgid "{0, plural, one {label} other {labels}}"
+#~ msgstr "{0, plural, one {라벨} other {라벨}}"
 
 #: src/routes/_layout.feedback.return.tsx
 msgid "Your feedback has been posted to <0>userinput.app</0>. Thanks for helping us improve Standard Reader."
