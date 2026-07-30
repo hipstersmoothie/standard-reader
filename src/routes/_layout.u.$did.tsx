@@ -686,7 +686,6 @@ function AuthorProfileContent({
               {profile.handle ? (
                 <Handle style={styles.heroHandle}>@{profile.handle}</Handle>
               ) : null}
-              <AccountLabels labels={accountLabels} />
             </div>
 
             <div {...stylex.props(styles.heroActs)}>
@@ -750,6 +749,11 @@ function AuthorProfileContent({
               <LinkifiedText text={profile.description} />
             </p>
           ) : null}
+
+          {/* Below the bio rather than beside the handle: a label is something a
+              third party says about this account, so it reads after the account's
+              own words instead of interrupting its identity line. */}
+          <AccountLabels labels={accountLabels} />
 
           <div {...stylex.props(styles.heroActsMobile)}>
             <ShareMenu variant="icon" size="md" pageUrl={pageUrl} />

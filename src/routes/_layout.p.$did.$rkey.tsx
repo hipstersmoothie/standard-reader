@@ -748,7 +748,6 @@ function PublicationProfileContent({
                   <Handle style={styles.heroHandle}>@{owner.handle}</Handle>
                 </Link>
               ) : null}
-              <AccountLabelsForDid did={pub.did} readerScope={readerScope} />
             </div>
 
             <div {...stylex.props(styles.heroActs)}>
@@ -794,6 +793,11 @@ function PublicationProfileContent({
               {pub.description}
             </p>
           ) : null}
+
+          {/* Below the description, matching the author profile: a label is a
+              third party's statement about this account, so it reads after the
+              publication's own words rather than interrupting its identity line. */}
+          <AccountLabelsForDid did={pub.did} readerScope={readerScope} />
 
           <div {...stylex.props(styles.statStrip)}>
             <Stat
