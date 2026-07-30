@@ -12,11 +12,27 @@ import { and, eq, exists, or, sql } from "drizzle-orm";
 import { db as database } from "#/db/index.server";
 import * as dbSchema from "#/db/schema";
 import type { Db, Schema } from "#/integrations/tanstack-query/api-shapes";
+import { chunk } from "#/lib/concurrency";
 
 import { fetchLabelerLabelsSince } from "./labels.server.ts";
 
 /** How often the ingest worker re-syncs labeler labels into the read-model. */
 const SYNC_INTERVAL_MS = 2 * 60_000;
+
+/**
+ * Rows per insert statement.
+ *
+ * Postgres binds parameters with an int16 count, capping a single statement at
+ * 65535, and this insert binds four per row. A labeler's first sync pulls its
+ * whole history — Blacksky returned ~22.5k labels (90,140 parameters) and failed
+ * with `bind message has 24700 parameter formats but 0 parameters`, while
+ * Skywatch's ~55k exhausted drizzle's stack building one giant statement. Both
+ * are network-sized inputs, not edge cases, so the write is always chunked.
+ */
+const INSERT_CHUNK = 1000;
+
+/** Negations per delete statement (two bound parameters each). */
+const DELETE_CHUNK = 500;
 
 /**
  * Apply one labeler's new labels since its last synced cursor: upsert active
@@ -50,11 +66,11 @@ export async function syncLabelerLabels(
   }
 
   const dl = schema.documentLabels;
-  if (diff.active.length > 0) {
+  for (const batch of chunk(diff.active, INSERT_CHUNK)) {
     await db
       .insert(dl)
       .values(
-        diff.active.map((l) => ({
+        batch.map((l) => ({
           src: labelerDid,
           uri: l.uri,
           val: l.val,
@@ -66,10 +82,15 @@ export async function syncLabelerLabels(
         set: { cts: sql`excluded.cts`, syncedAt: sql`now()` },
       });
   }
-  for (const n of diff.negated) {
-    await db
-      .delete(dl)
-      .where(and(eq(dl.src, n.src), eq(dl.uri, n.uri), eq(dl.val, n.val)));
+
+  // Negations are deleted a batch per statement rather than one at a time: a
+  // labeler with thousands of them otherwise means thousands of sequential
+  // round trips, and this database is a region away from the worker.
+  for (const batch of chunk(diff.negated, DELETE_CHUNK)) {
+    const matches = batch.map((n) =>
+      and(eq(dl.src, n.src), eq(dl.uri, n.uri), eq(dl.val, n.val)),
+    );
+    await db.delete(dl).where(or(...matches));
   }
 
   await db
