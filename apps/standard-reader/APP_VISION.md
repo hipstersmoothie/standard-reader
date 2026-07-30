@@ -149,6 +149,21 @@ Sections, top to bottom:
   image alt text surfaced inside the lightbox and prev/next navigation across a gallery's images.
   Magazine editions are the one exception: they bind their own lightbox to the rendered `<img>`
   elements.
+- **Bluesky web-client links resolve to their records.** `bsky.app` and the clients forked from
+  its `social-app` codebase — Witchsky, Mu, deer.social, Blacksky — share one URL grammar and
+  address the same AT Protocol records, so a link to any of them is a link to the _record_, not
+  to a third-party page. **Embeds are branded with the client the link came from** — its name beside
+  the record kind, and its own `theme-color` run through the same Radix scale generator the
+  magazine palette uses, so the border tint and brand text stay contrast-safe in light and dark
+  (never the raw hex). A client with no published brand color is branded by name only. The
+  client table lives in
+  [`lib/atproto/bsky-clients.ts`](src/lib/atproto/bsky-clients.ts) and is shared with the
+  extension's manifest generation; adding a fork there lights it up everywhere at once. Inline
+  profile links become mention chips routed to `/u/$did`; a link-card block (Leaflet
+  `website`, PCKT `website`, ProseMirror `embed`) whose target is a post becomes a native post
+  embed, and a profile / feed / list / starter-pack link becomes an entity card hydrated from
+  the public AppView. When a record can't be resolved — deleted, blocked, AppView down — the
+  ordinary link card stands in, so a dead reference never leaves a hole in the article.
 - Sticky top bar: back, byline, follow, like, share; reading-progress bar. On mobile it
   pins below the shell's top bar whenever that one is revealed, so the two stack instead
   of overlapping.

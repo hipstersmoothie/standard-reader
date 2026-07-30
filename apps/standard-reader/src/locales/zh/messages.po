@@ -99,6 +99,10 @@ msgstr "在 Standard Reader 中渲染内容"
 msgid "Articles gaining attention across the network right now."
 msgstr "此刻正在全网获得关注的文章。"
 
+#: src/components/reader/content/renderers/shared/bsky-client-embed.tsx
+msgid "{value, plural, one {# member} other {# members}}"
+msgstr ""
+
 #: src/components/reader/collection-builder.tsx
 msgid "Add an article"
 msgstr "添加文章"
@@ -410,9 +414,9 @@ msgstr ""
 msgid "{years}y ago"
 msgstr ""
 
-#: src/components/reader/reorder-lists-modal.tsx
-#~ msgid "List"
-#~ msgstr "列表"
+#: src/components/reader/content/renderers/shared/bsky-client-embed.tsx
+msgid "List"
+msgstr "列表"
 
 #: src/components/appearance-settings.tsx
 msgid "The spacing between things — tighter for more on screen, looser for more room to read."
@@ -1971,6 +1975,7 @@ msgstr "阅读器界面所用的语言。文章仍以其原文语言显示。"
 #~ msgid "Following, saving, recommending, and — once you follow more than a handful of publications — keeping the whole thing tidy."
 #~ msgstr ""
 
+#: src/components/reader/content/renderers/shared/bsky-client-embed.tsx
 #: src/components/user-settings-view.tsx
 msgid "Feed"
 msgstr ""
@@ -2660,6 +2665,10 @@ msgstr "重新排序 {itemTitle}"
 msgid "Back to feedback"
 msgstr "返回反馈"
 
+#: src/components/reader/content/renderers/shared/bsky-client-embed.tsx
+msgid "View on {name}"
+msgstr ""
+
 #: src/routes/_layout.search.tsx
 msgid "{pubTotal, plural, one {# publication} other {# publications}}"
 msgstr "{pubTotal, plural, one {# 个刊物} other {# 个刊物}}"
@@ -3253,6 +3262,10 @@ msgstr ""
 msgid "e.g. Dispatches from the Atmosphere"
 msgstr "例如：来自 Atmosphere 的快讯"
 
+#: src/components/reader/content/renderers/shared/bsky-client-embed.tsx
+msgid "{value, plural, one {# join} other {# joins}}"
+msgstr ""
+
 #: src/components/docs/introduction-docs-page.tsx
 msgid "the AT Protocol schemas that define Standard records and the shared definitions they build on."
 msgstr ""
@@ -3560,6 +3573,10 @@ msgstr "预览模式"
 #: src/components/NavbarAuth.tsx
 #: src/components/site-legal-links.tsx
 msgid "Guide"
+msgstr ""
+
+#: src/components/reader/content/renderers/shared/bsky-client-embed.tsx
+msgid "{value, plural, one {# like} other {# likes}}"
 msgstr ""
 
 #: src/routes/_layout.collections.new.tsx
@@ -4042,6 +4059,10 @@ msgstr ""
 msgid "{0}+ articles"
 msgstr "{0}+ 篇文章"
 
+#: src/components/reader/content/renderers/shared/bsky-client-embed.tsx
+msgid "Starter pack"
+msgstr ""
+
 #: src/routes/_layout.feedback.return.tsx
 msgid "That link expired."
 msgstr "该链接已过期。"
@@ -4335,6 +4356,10 @@ msgstr ""
 #: src/components/reader/article-below-fold.tsx
 msgid "Cited in"
 msgstr "被引用于"
+
+#: src/components/reader/content/renderers/shared/bsky-client-embed.tsx
+msgid "{value, plural, one {# follower} other {# followers}}"
+msgstr ""
 
 #: src/components/user-settings-view.tsx
 msgid "A couple of publications worth discovering."
@@ -5953,6 +5978,10 @@ msgstr "点击「运行示例」，用你的会话获取实时响应。"
 
 #: src/components/guide/pages/your-data-guide-page.tsx
 msgid "At the bottom of settings, <0>Personal data</0> deletes categories of records outright: your reading history, your saved articles, or the publication lists you made. Each asks for confirmation and explains what will change."
+msgstr ""
+
+#: src/components/reader/content/renderers/shared/bsky-client-embed.tsx
+msgid "Profile"
 msgstr ""
 
 #: src/components/reader/friend-publishers.tsx

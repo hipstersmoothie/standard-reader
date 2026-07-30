@@ -832,6 +832,27 @@ Backend/API exists; UI or copy is missing.
       `srcdoc` iframe sandboxed to `allow-scripts` only, sharing the sizing frame with
       `iframe-embed.tsx`. The converter carries it natively to Leaflet and as a sandboxed
       `<iframe srcdoc>` to Markpub; Offprint and pckt have no block for it and report it dropped.
+- [x] **Alternate Bluesky client embeds** — links to `social-app` forks (Witchsky, Mu,
+      deer.social, Blacksky) were only ever plain link cards, so an article citing
+      `witchsky.app/profile/…/feed/…` showed a bare "Witchsky" card. The client host list moved
+      into [`lib/atproto/bsky-clients.ts`](src/lib/atproto/bsky-clients.ts) — shared with the
+      extension's [`manifest-hosts.ts`](../extension/src/lib/manifest-hosts.ts), which used to
+      carry its own copy — behind `parseBskyClientUrl`, which maps a client URL onto the record
+      it addresses (profile / post / feed / list / starter pack). `actorLinkIdent` and
+      `parseInternalRoute` now accept every fork, so inline profile links become mention chips
+      routed to `/u/$did`; link-card blocks upgrade through
+      [`bsky-client-embed.tsx`](src/components/reader/content/renderers/shared/bsky-client-embed.tsx)
+      — posts reuse the existing Bluesky post embed (now handle-addressable, not DID-only),
+      everything else renders an entity card hydrated from the public AppView
+      ([`bsky-entities.ts`](src/server/atproto/bsky-entities.ts)). Unresolvable records fall back
+      to the original link card.
+- [x] **Brand client embeds** — `BSKY_WEB_CLIENTS` carries each client's name plus its published
+      `theme-color` / manifest `theme_color`, and the host list derives from that table so there
+      is one place to add a fork. Entity cards show the client name beside the record kind and
+      take an accent-tinted border; a post from a fork gets a "View on <client>" line, since
+      `bsky-react-post` owns the post card's markup and links it back to bsky.app. The raw brand
+      hex is never painted — it goes through `buildMagazinePalette`, the same Radix generator
+      behind publication cards, for contrast-safe light + dark values.
 - [x] **`at.markpub.markdown`** — full [Markpub.at](https://markpub.at/) support: dedicated
       renderer (`src/lib/markpub/*`, [`markpub-content.tsx`](src/components/reader/content/renderers/markpub-content.tsx)),
       flavor/extensions, facet/lens preprocessing, ingest-time `text.textBlob` fetch

@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 
 import { HighlightedPlaintext } from "#/components/reader/quote-highlight-context";
 import { useQuoteHighlightTracker } from "#/components/reader/quote-highlight-tracker";
+import { parseBskyClientUrl } from "#/lib/atproto/bsky-clients";
 import { normalizeImageAlt } from "#/lib/document/structured-content/image";
 import type {
   StructuredListItem,
@@ -15,6 +16,7 @@ import type {
 import type { QuoteHighlightRange } from "#/lib/quote-highlight-text";
 
 import { articleBodyStyles } from "../body-styles";
+import { BskyClientEmbedView } from "./shared/bsky-client-embed";
 import { HighlightedFacetedPlaintext } from "./shared/faceted-text";
 
 export function WebsiteCardBody({
@@ -241,7 +243,7 @@ export function StructuredWebsiteView({
     ? (tracker?.consume(cardDescription.length) ?? null)
     : null;
 
-  return (
+  const card = (
     <a
       href={src}
       target="_blank"
@@ -265,4 +267,15 @@ export function StructuredWebsiteView({
       />
     </a>
   );
+
+  // The quote-highlight tracker has already consumed this block's text above,
+  // so swapping in an embed here doesn't shift later blocks' offsets.
+  const clientRef = parseBskyClientUrl(src);
+  if (clientRef) {
+    return (
+      <BskyClientEmbedView url={src} clientRef={clientRef} fallback={card} />
+    );
+  }
+
+  return card;
 }

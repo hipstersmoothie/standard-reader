@@ -99,6 +99,10 @@ msgstr "عرض المحتوى في Standard Reader"
 msgid "Articles gaining attention across the network right now."
 msgstr "مقالات تحظى بالاهتمام عبر الشبكة الآن."
 
+#: src/components/reader/content/renderers/shared/bsky-client-embed.tsx
+msgid "{value, plural, one {# member} other {# members}}"
+msgstr ""
+
 #: src/components/reader/collection-builder.tsx
 msgid "Add an article"
 msgstr "إضافة مقال"
@@ -410,9 +414,9 @@ msgstr ""
 msgid "{years}y ago"
 msgstr ""
 
-#: src/components/reader/reorder-lists-modal.tsx
-#~ msgid "List"
-#~ msgstr "قائمة"
+#: src/components/reader/content/renderers/shared/bsky-client-embed.tsx
+msgid "List"
+msgstr "قائمة"
 
 #: src/components/appearance-settings.tsx
 msgid "The spacing between things — tighter for more on screen, looser for more room to read."
@@ -1971,6 +1975,7 @@ msgstr "اللغة المستخدمة في واجهة القارئ. تُعرض �
 #~ msgid "Following, saving, recommending, and — once you follow more than a handful of publications — keeping the whole thing tidy."
 #~ msgstr ""
 
+#: src/components/reader/content/renderers/shared/bsky-client-embed.tsx
 #: src/components/user-settings-view.tsx
 msgid "Feed"
 msgstr ""
@@ -2660,6 +2665,10 @@ msgstr "إعادة ترتيب {itemTitle}"
 msgid "Back to feedback"
 msgstr "العودة إلى الملاحظات"
 
+#: src/components/reader/content/renderers/shared/bsky-client-embed.tsx
+msgid "View on {name}"
+msgstr ""
+
 #: src/routes/_layout.search.tsx
 msgid "{pubTotal, plural, one {# publication} other {# publications}}"
 msgstr "{pubTotal, plural, zero {لا منشورات} one {منشورة واحدة} two {منشورتان} few {# منشورات} many {# منشورة} other {# منشورة}}"
@@ -3253,6 +3262,10 @@ msgstr ""
 msgid "e.g. Dispatches from the Atmosphere"
 msgstr "مثال: رسائل من Atmosphere"
 
+#: src/components/reader/content/renderers/shared/bsky-client-embed.tsx
+msgid "{value, plural, one {# join} other {# joins}}"
+msgstr ""
+
 #: src/components/docs/introduction-docs-page.tsx
 msgid "the AT Protocol schemas that define Standard records and the shared definitions they build on."
 msgstr ""
@@ -3560,6 +3573,10 @@ msgstr "وضع المعاينة"
 #: src/components/NavbarAuth.tsx
 #: src/components/site-legal-links.tsx
 msgid "Guide"
+msgstr ""
+
+#: src/components/reader/content/renderers/shared/bsky-client-embed.tsx
+msgid "{value, plural, one {# like} other {# likes}}"
 msgstr ""
 
 #: src/routes/_layout.collections.new.tsx
@@ -4042,6 +4059,10 @@ msgstr ""
 msgid "{0}+ articles"
 msgstr "أكثر من {0} مقال"
 
+#: src/components/reader/content/renderers/shared/bsky-client-embed.tsx
+msgid "Starter pack"
+msgstr ""
+
 #: src/routes/_layout.feedback.return.tsx
 msgid "That link expired."
 msgstr "انتهت صلاحية ذلك الرابط."
@@ -4335,6 +4356,10 @@ msgstr ""
 #: src/components/reader/article-below-fold.tsx
 msgid "Cited in"
 msgstr "مذكور في"
+
+#: src/components/reader/content/renderers/shared/bsky-client-embed.tsx
+msgid "{value, plural, one {# follower} other {# followers}}"
+msgstr ""
 
 #: src/components/user-settings-view.tsx
 msgid "A couple of publications worth discovering."
@@ -5953,6 +5978,10 @@ msgstr "انقر على «تشغيل المثال» لجلب استجابة حي
 
 #: src/components/guide/pages/your-data-guide-page.tsx
 msgid "At the bottom of settings, <0>Personal data</0> deletes categories of records outright: your reading history, your saved articles, or the publication lists you made. Each asks for confirmation and explains what will change."
+msgstr ""
+
+#: src/components/reader/content/renderers/shared/bsky-client-embed.tsx
+msgid "Profile"
 msgstr ""
 
 #: src/components/reader/friend-publishers.tsx
