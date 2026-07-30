@@ -13,6 +13,7 @@ import { subscriptionLabelPrefs } from "#/lib/labeler-subscription";
 import { getAtprotoSessionForRequest } from "#/middleware/auth-session.server";
 import {
   deleteLabelerSubscriptionRecord,
+  deleteLegacyLabelerSubscriptionRecord,
   putLabelerSubscriptionRecord,
   subjectRkey,
 } from "#/server/atproto/repo-records";
@@ -339,19 +340,13 @@ const getKnownLabelers = createServerFn({ method: "GET" })
       // setup rather than on whatever the network subscribes to most. Done in
       // SQL because with pagination a client-side sort would only reorder the
       // page it happens to be holding.
-      const subscribedDids = [...subSet];
-      // `inArray`, not a hand-written `= any(...)`: drizzle binds a JS array as
-      // a single scalar parameter, so Postgres rejects it with "malformed array
-      // literal" and the whole directory 500s for anyone holding a subscription.
-      //
-      // With nothing subscribed the term is dropped entirely rather than
-      // ordering by a constant — Postgres rejects that too ("non-integer
-      // constant in ORDER BY"), which would break the directory for every
-      // reader who hasn't subscribed to anything yet.
+      // Deliberately *not* subscribed-first. This is the directory — a view of
+      // the whole network — so it ranks by how many readers here subscribe and
+      // then alphabetically, the same for everyone. Floating the caller's own
+      // labelers to the top made the page a mirror of their existing setup
+      // rather than somewhere to find something new; their own are reachable via
+      // search, and each card already shows its state.
       const orderBy = [
-        ...(subscribedDids.length > 0
-          ? [sql`${inArray(svc.labelerDid, subscribedDids)} desc`]
-          : []),
         sql`coalesce(${subscriberCount.count}, 0) desc`,
         sql`coalesce(${svc.displayName}, ${svc.handle}, ${svc.labelerDid}) asc`,
       ];
@@ -954,19 +949,41 @@ const unsubscribeLabeler = createServerFn({ method: "POST" })
       span.set("did", session.did);
       span.set("labeler", data.labeler);
 
-      await deleteLabelerSubscriptionRecord(
-        session.client,
-        session.did,
-        data.labeler,
-      );
-      await deleteRecord(
-        buildAtUri(
+      // Both NSIDs, both sides. This previously deleted the **V2** record from
+      // the PDS but the **legacy**-keyed row from the read-model — so for the V2
+      // subscriptions everything now writes (including every labeler ported from
+      // Bluesky) the mirror row survived, and since the DB is the read path the
+      // labeler stayed subscribed and its labels kept applying. Unsubscribing
+      // looked like it did nothing.
+      //
+      // A reader can also hold a legacy record that no longer has a V2 twin, and
+      // `subscribedLabelerDids` reads both, so leaving either behind resurrects
+      // the subscription.
+      const rkey = subjectRkey(data.labeler);
+      await Promise.all([
+        deleteLabelerSubscriptionRecord(
+          session.client,
           session.did,
-          Collections.labelerSubscription,
-          subjectRkey(data.labeler),
+          data.labeler,
         ),
-        Collections.labelerSubscription,
-      );
+        deleteLegacyLabelerSubscriptionRecord(
+          session.client,
+          session.did,
+          data.labeler,
+        ).catch(() => {
+          // Absent for most readers; a missing record is not a failure.
+        }),
+      ]);
+      await Promise.all([
+        deleteRecord(
+          buildAtUri(session.did, Collections.labelerSubscriptionV2, rkey),
+          Collections.labelerSubscriptionV2,
+        ),
+        deleteRecord(
+          buildAtUri(session.did, Collections.labelerSubscription, rkey),
+          Collections.labelerSubscription,
+        ),
+      ]);
       return { ok: true as const };
     }),
   );

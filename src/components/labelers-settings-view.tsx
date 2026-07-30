@@ -2,13 +2,9 @@
 
 import { Trans, useLingui } from "@lingui/react/macro";
 import * as stylex from "@stylexjs/stylex";
-import {
-  useInfiniteQuery,
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
+import { Check } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import type {
@@ -16,14 +12,12 @@ import type {
   LabelerListItem,
 } from "#/integrations/tanstack-query/api-labelers.functions";
 import { labelerApi } from "#/integrations/tanstack-query/api-labelers.functions";
-import { user } from "#/integrations/tanstack-query/api-user.functions";
 import { labelerHandle, labelerHandleOrDid } from "#/lib/labeler-handle";
 import { useDebouncedValue } from "#/lib/use-debounced-value";
 
 import { Avatar } from "../design-system/avatar";
 import { Badge } from "../design-system/badge";
 import { Button } from "../design-system/button";
-import { Switch } from "../design-system/switch";
 import { TextField } from "../design-system/text-field";
 import { animationDuration } from "../design-system/theme/animations.stylex";
 import { uiColor } from "../design-system/theme/color.stylex";
@@ -85,59 +79,40 @@ function initials(card: LabelerCard): string {
 }
 
 /**
- * Labeler directory card. The identity block links to the labeler's page; the
- * subscribe/unsubscribe control sits outside that link rather than nested
- * inside it, so a click on either does one unambiguous thing.
+ * Labeler directory card — a link, and nothing else.
+ *
+ * Subscribe and mute used to live here. They don't any more: the whole card is
+ * one target that opens the labeler's page, which is where subscribing belongs
+ * because that is the only place showing what a labeler actually declares and
+ * what it has labeled. Deciding to trust a moderation service from a two-line
+ * card was the wrong shape, and per-card controls also meant every card carried
+ * three mutations and its own invalidation.
+ *
+ * State is still shown, just passively: a "Subscribed" mark, and a muted card
+ * dimmed so it reads as present-but-inactive.
  */
 function LabelerCardItem({
   card,
   subscribed,
   enabled,
-  signedIn,
 }: {
   card: LabelerCard;
   subscribed: boolean;
   enabled: boolean;
-  signedIn: boolean;
 }) {
-  const { t } = useLingui();
-  const queryClient = useQueryClient();
   const { names, total: labelTotal } = labelSummary(card);
   const displayName =
     card.displayName ?? labelerHandle(card.did, card.handle) ?? card.did;
   const muted = subscribed && !enabled;
 
-  const invalidate = () => {
-    void queryClient.invalidateQueries({ queryKey: ["labeler"] });
-    void queryClient.invalidateQueries({ queryKey: ["reader", "labelers"] });
-    // `["reader", "labelers"]` is *not* a prefix of `["reader", "knownLabelers"]`,
-    // so without this the card you just acted on kept its old state.
-    void queryClient.invalidateQueries({
-      queryKey: ["reader", "knownLabelers"],
-    });
-    void queryClient.invalidateQueries({ queryKey: ["labels"] });
-  };
-  const subscribe = useMutation({
-    ...labelerApi.subscribeLabelerMutationOptions(),
-    onSuccess: invalidate,
-  });
-  const unsubscribe = useMutation({
-    ...labelerApi.unsubscribeLabelerMutationOptions(),
-    onSuccess: invalidate,
-  });
-  const setEnabled = useMutation({
-    ...labelerApi.setLabelerEnabledMutationOptions(),
-    onSuccess: invalidate,
-  });
-
   return (
-    <div {...stylex.props(styles.card)}>
+    <Link
+      to="/labelers/$did"
+      params={{ did: card.did }}
+      {...stylex.props(styles.cardLink, styles.card, muted && styles.cardMuted)}
+    >
       <div {...stylex.props(styles.cardHead)}>
-        <Link
-          to="/labelers/$did"
-          params={{ did: card.did }}
-          {...stylex.props(styles.cardLink, styles.cardIdentity)}
-        >
+        <div {...stylex.props(styles.cardIdentity)}>
           <Avatar
             size="lg"
             src={card.avatar}
@@ -150,47 +125,14 @@ function LabelerCardItem({
               {labelerHandleOrDid(card.did, card.handle)}
             </p>
           </div>
-        </Link>
-        {signedIn ? (
-          <div {...stylex.props(styles.cardActs)}>
-            {subscribed ? (
-              // A switch reports state, so it reads "Muted" rather than the
-              // "Mute"/"Unmute" action a button would name. On means muted, so
-              // `enabled` is its inverse.
-              <Switch
-                isSelected={muted}
-                isDisabled={setEnabled.isPending}
-                onChange={(next) =>
-                  setEnabled.mutate({ labeler: card.did, enabled: !next })
-                }
-                labelVariant="left"
-                style={styles.muteSwitch}
-              >
-                {t`Muted`}
-              </Switch>
-            ) : null}
-            <Button
-              variant={subscribed ? "secondary" : "primary"}
-              size="sm"
-              isPending={
-                subscribed ? unsubscribe.isPending : subscribe.isPending
-              }
-              onPress={() =>
-                subscribed
-                  ? unsubscribe.mutate(card.did)
-                  : subscribe.mutate(card.did)
-              }
-            >
-              {subscribed ? t`Unsubscribe` : t`Subscribe`}
-            </Button>
-          </div>
+        </div>
+        {subscribed ? (
+          <span {...stylex.props(styles.stateMark)}>
+            <Check size={14} aria-hidden />
+            {muted ? <Trans>Muted</Trans> : <Trans>Subscribed</Trans>}
+          </span>
         ) : null}
       </div>
-      {muted ? (
-        <p {...stylex.props(styles.mutedNote)}>
-          <Trans>Muted — not applied while you read here.</Trans>
-        </p>
-      ) : null}
       {card.description ? (
         <p {...stylex.props(styles.cardDescription)}>{card.description}</p>
       ) : null}
@@ -211,15 +153,12 @@ function LabelerCardItem({
           ) : null}
         </div>
       ) : null}
-    </div>
+    </Link>
   );
 }
 
 export function LabelersSettingsView() {
   const { t } = useLingui();
-  const { data: session } = useQuery(user.getSessionQueryOptions);
-  const signedIn = session?.user?.did != null;
-
   const [search, setSearch] = useState("");
   const searchTrim = search.trim();
   // The directory lists every labeler on the network, so searching and paging
@@ -257,9 +196,9 @@ export function LabelersSettingsView() {
       .map((item) => item.did),
   );
   if (lookupCard && lookup.data?.subscribed) subscribedDids.add(lookupCard.did);
-  // Muted labelers, so a search result shows Unmute rather than Mute. The
-  // lookup card is a bare LabelerCard with no `enabled`, so its state comes
-  // from the lookup response alongside `subscribed`.
+  // Muted labelers, so the card renders dimmed. The lookup card is a bare
+  // LabelerCard with no `enabled`, so its state comes from the lookup response
+  // alongside `subscribed`.
   const mutedDids = new Set(
     listed
       .filter((item) => "enabled" in item && !item.enabled)
@@ -316,7 +255,6 @@ export function LabelersSettingsView() {
             card={item}
             subscribed={subscribedDids.has(item.did)}
             enabled={!mutedDids.has(item.did)}
-            signedIn={signedIn}
           />
         ))}
       </div>
@@ -361,19 +299,14 @@ const styles = stylex.create({
     cursor: "pointer",
     display: "block",
   },
-  muteSwitch: {
-    flexShrink: 0,
-  },
-  cardActs: {
-    gap: gap.md,
+  stateMark: {
+    gap: gap.xs,
     alignItems: "center",
-    display: "flex",
-    flexShrink: 0,
-  },
-  mutedNote: {
     color: uiColor.text1,
-    fontSize: fontSize.sm,
-    fontStyle: "italic",
+    display: "inline-flex",
+    flexShrink: 0,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.medium,
   },
   cardIdentity: {
     gap: gap.lg,
@@ -396,6 +329,12 @@ const styles = stylex.create({
     flexDirection: "column",
     transitionDuration: animationDuration.fast,
     transitionProperty: "border-color, background-color",
+  },
+  cardMuted: {
+    // Dimmed so a muted labeler reads as present-but-inactive at a glance. The
+    // controls are deliberately excluded from the fade — you need to be able to
+    // see and hit Unmute — so the opacity lands on the content, not the card.
+    opacity: 0.55,
   },
   cardHead: {
     gap: gap.lg,

@@ -848,6 +848,7 @@ msgid "New series"
 msgstr "Neue Reihe"
 
 #: src/components/labeler-detail-view.tsx
+#: src/components/labelers-settings-view.tsx
 #: src/components/reader/cards.tsx
 #: src/magazine/magazine-end-subscribe.tsx
 #: src/routes/_layout.tag.$tag.tsx
@@ -1593,7 +1594,6 @@ msgid "Today"
 msgstr "Heute"
 
 #: src/components/labeler-detail-view.tsx
-#: src/components/labelers-settings-view.tsx
 #: src/components/reader/cards.tsx
 #: src/components/reader/subscribe-card.tsx
 #: src/magazine/magazine-end-subscribe.tsx
@@ -3050,8 +3050,8 @@ msgid "Remove image {position}"
 msgstr ""
 
 #: src/components/labelers-settings-view.tsx
-msgid "Muted — not applied while you read here."
-msgstr ""
+#~ msgid "Muted — not applied while you read here."
+#~ msgstr ""
 
 #: src/components/user-settings-view.tsx
 msgid "Your five most recently saved-for-later articles."
@@ -3916,7 +3916,6 @@ msgstr "Bewerten Sie uns im ATStore."
 msgid "Search feedback"
 msgstr "Feedback durchsuchen"
 
-#: src/components/labelers-settings-view.tsx
 #: src/components/reader/subscriptions-unsubscribe-dialog.tsx
 msgid "Unsubscribe"
 msgstr ""

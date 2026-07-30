@@ -1069,6 +1069,24 @@ Standard AT Proto labels: subscribe to labelers, see/blur/hide their labels whil
       cursor 7286515, and 1 request per label is not a viable steady state — so we hold 2175 of its
       labels and stop, with the incomplete state surfaced on its page. Nothing to fix on our side
       short of a crawler that would hammer them; revisit if they fix pagination.
+- [x] **Fix unsubscribe, which silently did nothing** — it deleted the **V2** record from the PDS but
+      built the read-model delete URI with the **legacy** NSID. Since every subscription written today
+      is V2 (including every labeler ported from Bluesky), the mirror row survived — and the DB is the
+      read path, so the labeler stayed subscribed and its labels kept applying. It now deletes both
+      NSIDs on both sides; a reader can also hold a legacy record with no V2 twin, and
+      `subscribedLabelerDids` reads both, so leaving either behind resurrects the subscription.
+      Note this is _not_ a Bluesky limitation: unsubscribing here is local by design (we never write
+      Bluesky preferences) and the one-shot import means it is never resurrected on the next login, so
+      there is nothing to redirect a reader to Bluesky for.
+- [x] **Directory cards are links only** — subscribe and mute are gone from `/labelers`. The whole card
+      opens the labeler's page, which is the only place that shows what a labeler declares and what it
+      has labeled; deciding to trust a moderation service from a two-line card was the wrong shape.
+      State is still shown passively (a Subscribed/Muted mark, and muted cards dimmed), and each card
+      no longer carries three mutations plus its own cache invalidation.
+- [x] **Directory no longer front-loads the caller's own labelers** — it ranks by subscriber count then
+      alphabetically, the same for everyone. Subscribed-first made the page a mirror of the reader's
+      existing setup rather than somewhere to find something new. (This also removes the conditional
+      ORDER BY term that caused the `non-integer constant in ORDER BY` failure.)
 - [ ] **subscribeLabels ingestion** — consume the labeler firehose into the read-model instead of
       live `queryLabels` per page, for lower latency.
 - [ ] **Deploy claudeslop** — Railway service + persistent SQLite volume; publish its did:web.
