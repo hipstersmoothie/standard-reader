@@ -60,7 +60,6 @@ import {
   Handle,
   PublicationAvatar,
   ReaderContent,
-  SectionHead,
 } from "../components/reader/primitives";
 import type { PublicationMarkAllRead } from "../components/reader/publication-actions";
 import { PublicationActions } from "../components/reader/publication-actions";
@@ -807,7 +806,6 @@ function PublicationProfileContent({
           <PublicationLatestNote publicationUri={uri} />
           {showShelf ? (
             <Flex direction="column" gap="5xl">
-              <SectionHead kicker={t`The shelf`} title={t`Issues`} size="md" />
               {shelf?.grouped ? (
                 <ComicShelf issues={shelf.issues} />
               ) : (
