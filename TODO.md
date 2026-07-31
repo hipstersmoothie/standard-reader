@@ -1113,6 +1113,11 @@ Standard AT Proto labels: subscribe to labelers, see/blur/hide their labels whil
       it, plus `pnpm backfill:bot-flags` to reconcile every already-indexed profile in both
       directions (an account can retract the self-label). Backfill found 61 bots across 14,173
       profiles, covering 2,981 documents.
+      Shown on all three surfaces a bot's work appears: the profile (`/u/$did`), feed rows
+      (`ArticleCard.authorIsBot`), and the article-page byline
+      (`ArticleDetail.publicationOwnerIsBot` / `ArticleContributor.isBot`, following the same
+      lead-contributor-else-publication-owner fallback as the rest of that byline — a publication
+      owned by a bot marks its articles even with no contributor listed, which is the common case).
 - [x] **Labeler docs point at the protocol** — the "declare your label values" step now describes the
       standard `app.bsky.labeler.service` + `#atproto_labeler` declaration and links
       atproto.com/specs/label and /specs/moderation, and the reference-implementation section (which
