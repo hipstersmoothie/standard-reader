@@ -616,6 +616,11 @@ msgstr ""
 msgid "Loading labelers"
 msgstr ""
 
+#. placeholder {0}: labels[order]
+#: src/components/reader/publication-actions.tsx
+msgid "Order: {0}"
+msgstr ""
+
 #: src/components/reader/share-menu.tsx
 msgid "Landscape fits a compact row. Height adjusts automatically once the embed loads. Change the iframe width as needed."
 msgstr ""
@@ -1979,6 +1984,10 @@ msgstr ""
 
 #: src/routes/_layout.search.tsx
 msgid "{total, plural, one {# match} other {# matches}}"
+msgstr ""
+
+#: src/components/reader/publication-actions.tsx
+msgid "Newest first"
 msgstr ""
 
 #: src/components/reader/about-view.tsx
@@ -4303,6 +4312,10 @@ msgstr ""
 #~ msgid "Returning you to the app…"
 #~ msgstr ""
 
+#: src/components/reader/publication-actions.tsx
+msgid "Oldest first"
+msgstr ""
+
 #: src/routes/_layout.friends.tsx
 #~ msgid "Publications written by the people you follow on Bluesky."
 #~ msgstr ""
@@ -6126,6 +6139,10 @@ msgstr ""
 #: src/components/reader/app-shell.tsx
 #: src/components/site-legal-links.tsx
 msgid "About"
+msgstr ""
+
+#: src/components/reader/publication-actions.tsx
+msgid "Order"
 msgstr ""
 
 #: src/components/labeler-detail-view.tsx

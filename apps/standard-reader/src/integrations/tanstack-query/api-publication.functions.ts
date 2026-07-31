@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
-import { getRequest } from "@tanstack/react-start/server";
+import { getCookie, getRequest, setCookie } from "@tanstack/react-start/server";
 import { and, eq, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { z } from "zod";
@@ -9,6 +9,14 @@ import { publicationLinkParams } from "#/components/reader/format";
 import type { CollectionManifest } from "#/lib/collections/manifest";
 import type { CollectionTheme } from "#/lib/collections/theme";
 import type { InlineMentionRefs } from "#/lib/leaflet/publication-mentions";
+import type { ArchiveOrder } from "#/lib/publication/archive-order";
+import {
+  ARCHIVE_ORDER_COOKIE,
+  ARCHIVE_ORDER_COOKIE_MAX_AGE_SECONDS,
+  defaultArchiveOrder,
+  readArchiveOrderOverride,
+  withArchiveOrderOverride,
+} from "#/lib/publication/archive-order";
 import type { CodeHighlightsByScheme } from "#/lib/theme";
 import {
   getReaderContextForRequest,
@@ -96,6 +104,23 @@ const headerInput = z.object({
 const profileInput = z.object({
   publicationUri: z.string().min(1),
   recentLimit: z.number().int().min(1).max(30).default(10),
+});
+
+/**
+ * The archive-order cookie, or null outside a request scope (scripts, tests,
+ * in-process callers) where there is no reader to have a preference.
+ */
+function readArchiveOrderCookie(): string | null {
+  try {
+    return getCookie(ARCHIVE_ORDER_COOKIE) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+const archiveOrderInput = z.object({
+  publicationUri: z.string().min(1),
+  order: z.enum(["newest", "oldest"]),
 });
 
 const documentsInput = z.object({
@@ -211,6 +236,14 @@ export interface PublicationEmbedMeta {
 export interface PublicationDocumentsPage {
   items: Array<ArticleCard>;
   nextOffset: number | null;
+  /**
+   * The order these rows are in. Reported rather than assumed by the caller:
+   * it depends on the publication's own serial flag *and* on the reader's
+   * cookie override, and the menu has to show which one actually won.
+   */
+  order: ArchiveOrder;
+  /** True when `order` is the reader's choice rather than the publication's. */
+  orderOverridden: boolean;
 }
 
 export interface ArticleContributor {
@@ -403,6 +436,19 @@ const getPublicationDocuments = createServerFn({ method: "GET" })
         ]);
         span.set("serialKind", serial?.kind ?? "none");
 
+        // The publisher's flag is a claim about their own work, and one they
+        // can get wrong, so a reader who disagrees gets the last word (see
+        // `#/lib/publication/archive-order`). Read here rather than passed in
+        // by the client so the order is right in the SSR'd HTML instead of
+        // flipping after hydration.
+        const orderOverride = readArchiveOrderOverride(
+          readArchiveOrderCookie(),
+          data.publicationUri,
+        );
+        const order = orderOverride ?? defaultArchiveOrder(serial != null);
+        span.set("order", order);
+        span.set("orderOverridden", orderOverride != null);
+
         const documents = await selectPublicationArticleCards(db, schema, {
           publicationUri: data.publicationUri,
           limit: data.limit,
@@ -411,7 +457,7 @@ const getPublicationDocuments = createServerFn({ method: "GET" })
           countOldPostsAsUnread,
           filter,
           readerDid: did ?? undefined,
-          order: serial ? "oldest" : "newest",
+          order,
         });
 
         // "Recommended by @follow" attribution — same signal, same batched query
@@ -448,6 +494,8 @@ const getPublicationDocuments = createServerFn({ method: "GET" })
           items,
           nextOffset:
             documents.length === data.limit ? data.offset + data.limit : null,
+          order,
+          orderOverridden: orderOverride != null,
         };
       },
     ),
@@ -983,6 +1031,34 @@ const getComicSpine = createServerFn({ method: "GET" })
   );
 
 /**
+ * Remember that this reader wants one publication's archive in a particular
+ * order, whatever the publisher's record says.
+ *
+ * Cookie only — no DB write and no migration to remember a display preference
+ * that a signed-out reader deserves just as much. The caller invalidates this
+ * publication's document queries afterwards; the next fetch (and every SSR from
+ * here on) reads the new value.
+ */
+const setPublicationArchiveOrder = createServerFn({ method: "POST" })
+  .validator(archiveOrderInput)
+  .handler(async ({ data }): Promise<{ order: ArchiveOrder }> => {
+    setCookie(
+      ARCHIVE_ORDER_COOKIE,
+      withArchiveOrderOverride(
+        readArchiveOrderCookie(),
+        data.publicationUri,
+        data.order,
+      ),
+      {
+        path: "/",
+        sameSite: "lax",
+        maxAge: ARCHIVE_ORDER_COOKIE_MAX_AGE_SECONDS,
+      },
+    );
+    return { order: data.order };
+  });
+
+/**
  * A comic's issues as a shelf of covers, for the publication page. Comes back
  * `grouped: false` when the titles don't follow the issue convention, and the
  * page keeps its ordinary archive list.
@@ -1271,6 +1347,7 @@ export const publicationApi = {
   getPublicationProfileQueryOptions,
   getPublicationDocuments,
   getPublicationDocumentsQueryOptions,
+  setPublicationArchiveOrder,
   getPublicationEmbedMeta,
   getPublicationEmbedMetaQueryOptions,
   getPublicationSocialProof,

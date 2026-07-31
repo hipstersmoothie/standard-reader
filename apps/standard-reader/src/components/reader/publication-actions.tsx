@@ -38,6 +38,7 @@ import type {
   PublicationEmbedMeta,
 } from "#/integrations/tanstack-query/api-publication.functions";
 import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
+import type { ArchiveOrder } from "#/lib/publication/archive-order";
 import { useLoginSearch } from "#/utils/use-login-search";
 
 import type { PublicationCard } from "../../integrations/tanstack-query/api-shapes";
@@ -143,6 +144,50 @@ function FilterSubMenu({
 }
 
 /**
+ * Which end of the archive leads, as a submenu off "Order".
+ *
+ * A serial lists oldest-first so chapter one leads, and that comes from a flag
+ * the publisher sets on their own record — which they can get wrong in both
+ * directions. This is how a reader disagrees, for this publication only.
+ */
+function OrderSubMenu({
+  order,
+  onOrderChange,
+}: {
+  order: ArchiveOrder;
+  onOrderChange: (order: ArchiveOrder) => void;
+}) {
+  const { t } = useLingui();
+  const labels: Record<ArchiveOrder, string> = {
+    newest: t`Newest first`,
+    oldest: t`Oldest first`,
+  };
+  const options: Array<ArchiveOrder> = ["newest", "oldest"];
+
+  return (
+    <SubMenu
+      selectionMode="single"
+      selectedKeys={new Set([order])}
+      onSelectionChange={(keys) => {
+        const next = [...(keys as Set<Key>)][0];
+        if (next) onOrderChange(next as ArchiveOrder);
+      }}
+      trigger={
+        <MenuItem textValue={t`Order`}>
+          <Trans>Order: {labels[order]}</Trans>
+        </MenuItem>
+      }
+    >
+      {options.map((option) => (
+        <MenuItem key={option} id={option} textValue={labels[option]}>
+          {labels[option]}
+        </MenuItem>
+      ))}
+    </SubMenu>
+  );
+}
+
+/**
  * The publication hero's action cluster: a split button whose primary segment
  * subscribes and whose chevron opens every other action for the publication.
  *
@@ -161,6 +206,8 @@ export function PublicationActions({
   filter,
   trackReading,
   onFilterChange,
+  order,
+  onOrderChange,
 }: {
   pub: PublicationCard;
   pageUrl: string;
@@ -173,6 +220,9 @@ export function PublicationActions({
   /** Whether the reader keeps reading history — gates the read/unread filters. */
   trackReading: boolean;
   onFilterChange: (filter: PublicationDocumentFilter) => void;
+  /** The order the archive is actually in, override included. */
+  order: ArchiveOrder;
+  onOrderChange: (order: ArchiveOrder) => void;
 }) {
   const { t } = useLingui();
   const loginSearch = useLoginSearch();
@@ -251,6 +301,9 @@ export function PublicationActions({
               onFilterChange={onFilterChange}
             />
           ) : null}
+          {/* Not gated on sign-in: the override rides in a cookie, so it works
+              for a guest exactly as well as for a reader with an account. */}
+          <OrderSubMenu order={order} onOrderChange={onOrderChange} />
 
           <MenuSeparator />
 

@@ -616,6 +616,11 @@ msgstr "Ainda não há artigos das publicações ou pessoas desta lista."
 msgid "Loading labelers"
 msgstr ""
 
+#. placeholder {0}: labels[order]
+#: src/components/reader/publication-actions.tsx
+msgid "Order: {0}"
+msgstr ""
+
 #: src/components/reader/share-menu.tsx
 msgid "Landscape fits a compact row. Height adjusts automatically once the embed loads. Change the iframe width as needed."
 msgstr "O formato horizontal cabe numa linha compacta. A altura ajusta-se automaticamente assim que o elemento carrega. Altere a largura do iframe conforme necessário."
@@ -1980,6 +1985,10 @@ msgstr ""
 #: src/routes/_layout.search.tsx
 msgid "{total, plural, one {# match} other {# matches}}"
 msgstr "{total, plural, one {# resultado} other {# resultados}}"
+
+#: src/components/reader/publication-actions.tsx
+msgid "Newest first"
+msgstr ""
 
 #: src/components/reader/about-view.tsx
 #~ msgid "Publications, lists, and collections each get a clean link with a rich preview card — plus a subscribe button a publication can drop on its own site."
@@ -4303,6 +4312,10 @@ msgstr ""
 #~ msgid "Returning you to the app…"
 #~ msgstr ""
 
+#: src/components/reader/publication-actions.tsx
+msgid "Oldest first"
+msgstr ""
+
 #: src/routes/_layout.friends.tsx
 #~ msgid "Publications written by the people you follow on Bluesky."
 #~ msgstr "Publicações escritas pelas pessoas que você segue no Bluesky."
@@ -6127,6 +6140,10 @@ msgstr "Leitura e privacidade"
 #: src/components/site-legal-links.tsx
 msgid "About"
 msgstr "Sobre"
+
+#: src/components/reader/publication-actions.tsx
+msgid "Order"
+msgstr ""
 
 #: src/components/labeler-detail-view.tsx
 msgid "Muted here"

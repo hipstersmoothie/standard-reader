@@ -37,6 +37,7 @@ import type {
 import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
 import { getPublicUrlClient } from "#/lib/public-url";
+import type { ArchiveOrder } from "#/lib/publication/archive-order";
 import {
   publicationFeedUrl,
   publicationOgImageUrl,
@@ -670,6 +671,23 @@ function PublicationProfileContent({
     },
   });
 
+  // The archive's order lives in a cookie, so the server owns it — there's no
+  // client state to keep in step. Setting it invalidates this publication's
+  // document queries and the refetch comes back the other way round. The comic
+  // shelf is deliberately left alone: a comic's issues run #1..#N whichever way
+  // the archive is listed, so the spine reads in publication order regardless.
+  const { mutate: setArchiveOrder } = useMutation({
+    mutationFn: (next: ArchiveOrder) =>
+      publicationApi.setPublicationArchiveOrder({
+        data: { publicationUri: uri, order: next },
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: ["publication", "documents", uri],
+      });
+    },
+  });
+
   const markAllReadAction: PublicationMarkAllRead | null =
     signedIn && unreadDocumentUris.length > 0
       ? {
@@ -753,6 +771,8 @@ function PublicationProfileContent({
               embed={embedMeta}
               markAllRead={markAllReadAction}
               filter={filter}
+              order={initialPage.order}
+              onOrderChange={(next) => setArchiveOrder(next)}
               trackReading={trackReading}
               onFilterChange={(next) => {
                 void navigate({ search: { filter: next }, resetScroll: false });
