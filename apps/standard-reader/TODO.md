@@ -1318,6 +1318,25 @@ Standard AT Proto labels: subscribe to labelers, see/blur/hide their labels whil
       account was visible on the profile and in feeds but vanished on the article itself. Rendered
       under the byline via the viewer-scoped `AccountLabelsForDid`, same placement rule as the profile
       and publication headers.
+- [x] **Hide unreachable labelers from the directory** — **272 of 460 declared labelers are dead**:
+      domains that no longer resolve, hosts refusing connections, 502/530s, certificates that stopped
+      matching their own name. Spot-checked six at random and all six were genuinely broken, so this
+      is the real shape of the network, not a probe artifact. They can never label anything, so
+      listing them is worse than useless.
+      The probe already contacted every labeler and _discarded_ the outcome — it now records
+      `labeler_services.reachable` (migration `0028`). The directory filters on it, **except for
+      labelers the caller subscribes to**, which stay visible with a "Not responding" warning: quietly
+      dropping something out of someone's own list is the more confusing failure, and it is the only
+      place they can unsubscribe from it. Guest sees 188; a reader with six dead subscriptions sees 194.
+      Recovery is built in: verdicts carry a TTL, so a labeler that comes back is re-enabled
+      automatically. The TTLs are **split** — a healthy labeler's classification barely changes so it
+      is left a week, while an unreachable one is _hidden_, making staleness costlier, so it is
+      re-checked every other day (~136 requests/day). Verified end to end by marking pub-search dead
+      and watching one probe restore it.
+      Also fixed: the stale query had **no `ORDER BY`**, so with 460 labelers and a batch of 60 the
+      planner could return the same rows every run and starve the rest indefinitely. Now oldest-first.
+      No cron needed — the ingest worker's discovery timer already owns this; a second scheduler would
+      duplicate it and need its own service and auth.
 - [ ] **subscribeLabels ingestion** — consume the labeler firehose into the read-model instead of
       live `queryLabels` per page, for lower latency.
 - [ ] **Deploy claudeslop** — Railway service + persistent SQLite volume; publish its did:web.

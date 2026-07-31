@@ -5,7 +5,7 @@ import {
 } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
-import { and, eq, inArray, like, sql } from "drizzle-orm";
+import { and, eq, inArray, like, or, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import { fetchBlueskyPublicProfiles } from "#/lib/bluesky-public-profile";
@@ -94,6 +94,11 @@ export interface LabelerListItem extends LabelerCard {
    * enough to be worth leading the directory with and marking on the card.
    */
   labelsDocuments: boolean;
+  /**
+   * The labeler's server answered when last probed. Only ever `false` here for
+   * a labeler the caller subscribes to — unreachable ones are otherwise hidden.
+   */
+  reachable: boolean;
 }
 
 export type LabelVisibility = "ignore" | "warn" | "hide";
@@ -319,8 +324,21 @@ const getKnownLabelers = createServerFn({ method: "GET" })
       // Matched against name, handle, description and the declared label
       // identifiers, so searching "spam" finds labelers that emit it.
       const term = data.query.toLowerCase();
+      // A labeler whose server has stopped answering can never label anything,
+      // so listing it is worse than useless — those are hidden. One the caller
+      // is *already subscribed to* stays visible (marked, see below): silently
+      // dropping something out of their own list is the more confusing failure,
+      // and it's the only place they can unsubscribe from it.
+      const subscribedDids = [...subSet];
+      const visible = or(
+        sql`coalesce(${svc.reachable}, true)`,
+        subscribedDids.length > 0
+          ? inArray(svc.labelerDid, subscribedDids)
+          : undefined,
+      );
       const where = and(
         eq(svc.deleted, false),
+        visible,
         term.length > 0
           ? sql`(
               lower(coalesce(${svc.displayName}, '')) like ${`%${term}%`}
@@ -372,6 +390,7 @@ const getKnownLabelers = createServerFn({ method: "GET" })
             labelValueDefinitions: svc.labelValueDefinitions,
             subscriberCount: subscriberCount.count,
             labelsDocuments: svc.labelsStandardSite,
+            reachable: svc.reachable,
           })
           .from(svc)
           .leftJoin(
@@ -403,6 +422,7 @@ const getKnownLabelers = createServerFn({ method: "GET" })
           enabled: !disabledSet.has(row.labelerDid),
           subscriberCount: row.subscriberCount ?? 0,
           labelsDocuments: row.labelsDocuments ?? false,
+          reachable: row.reachable ?? true,
         };
       });
 

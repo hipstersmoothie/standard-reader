@@ -1565,6 +1565,10 @@ msgstr ""
 msgid "When on, collection posts open in the magazine edition instead of the reader view."
 msgstr "オンにすると、コレクションの記事はリーダー表示ではなくマガジン版で開きます。"
 
+#: src/components/labelers-settings-view.tsx
+msgid "Not responding — its labels aren’t being applied"
+msgstr ""
+
 #: src/components/docs/docs-api-nav.tsx
 #~ msgid "API reference"
 #~ msgstr "API リファレンス"

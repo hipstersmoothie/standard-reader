@@ -6,7 +6,10 @@ import { Badge } from "@standard-reader/design-system/badge";
 import { Button } from "@standard-reader/design-system/button";
 import { TextField } from "@standard-reader/design-system/text-field";
 import { animationDuration } from "@standard-reader/design-system/theme/animations.stylex";
-import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
+import {
+  uiColor,
+  warningColor,
+} from "@standard-reader/design-system/theme/color.stylex";
 import { radius } from "@standard-reader/design-system/theme/radius.stylex";
 import {
   gap,
@@ -20,7 +23,7 @@ import {
 import * as stylex from "@stylexjs/stylex";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Check, FileText } from "lucide-react";
+import { Check, FileText, TriangleAlert } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import type {
@@ -109,6 +112,9 @@ function LabelerCardItem({
   // which is worth saying out loud — it is also why they sort first.
   const labelsDocuments =
     "labelsDocuments" in card ? card.labelsDocuments : false;
+  // Only ever false for a labeler you subscribe to — unreachable ones are
+  // otherwise kept out of the directory entirely.
+  const unreachable = "reachable" in card && !card.reachable;
   const displayName =
     card.displayName ?? labelerHandle(card.did, card.handle) ?? card.did;
   const muted = subscribed && !enabled;
@@ -143,6 +149,12 @@ function LabelerCardItem({
       </div>
       {card.description ? (
         <p {...stylex.props(styles.cardDescription)}>{card.description}</p>
+      ) : null}
+      {unreachable ? (
+        <p {...stylex.props(styles.warnMark)}>
+          <TriangleAlert size={13} aria-hidden />
+          <Trans>Not responding — its labels aren’t being applied</Trans>
+        </p>
       ) : null}
       {labelsDocuments ? (
         <p {...stylex.props(styles.docsMark)}>
@@ -312,6 +324,15 @@ const styles = stylex.create({
     color: "inherit",
     cursor: "pointer",
     display: "block",
+  },
+  warnMark: {
+    gap: gap.xs,
+    alignItems: "center",
+    color: warningColor.text1,
+    display: "inline-flex",
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.medium,
+    marginBlock: spacing["0"],
   },
   docsMark: {
     gap: gap.xs,

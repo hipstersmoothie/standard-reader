@@ -64,6 +64,20 @@ export const labelerServices = pgTable(
     /** When the probe above last ran, so it can be re-checked on a cadence. */
     labelsProbedAt: timestamp("labels_probed_at", { withTimezone: true }),
 
+    /**
+     * The labeler's server answered when we last asked.
+     *
+     * A meaningful share of the directory is abandoned — domains that no longer
+     * resolve, hosts that refuse connections, certificates that stopped matching
+     * their own name. Listing those is worse than useless: they can never label
+     * anything, so they are hidden from the directory. A reader already
+     * subscribed to one still sees it, marked, because silently dropping
+     * something from their own list would be the more confusing failure.
+     *
+     * Null means "not probed yet", which is distinct from a probed `false`.
+     */
+    reachable: boolean("reachable"),
+
     displayName: text("display_name"),
     /**
      * The labeler's handle, from its DID document's `alsoKnownAs`. Shown instead

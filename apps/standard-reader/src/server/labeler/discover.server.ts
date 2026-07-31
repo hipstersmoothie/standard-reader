@@ -26,7 +26,7 @@
  * `syncAllLabels` in `sync.server.ts`.
  */
 
-import { and, eq, inArray, isNull, lt, notLike, or } from "drizzle-orm";
+import { and, eq, inArray, isNull, lt, notLike, or, sql } from "drizzle-orm";
 
 import { db as database } from "#/db/index.server";
 import * as dbSchema from "#/db/schema";
@@ -290,7 +290,7 @@ export function startLabelerDiscovery(): { stop: () => void } {
         const probe = await probeStandardSiteLabelers(database, dbSchema);
         if (probe.probed > 0) {
           console.info(
-            `[labelers] probed ${probe.probed}, ${probe.standardSite} aimed at standard.site`,
+            `[labelers] probed ${probe.probed}, ${probe.standardSite} aimed at standard.site, ${probe.unreachable} unreachable`,
           );
         }
       })
@@ -306,8 +306,19 @@ export function startLabelerDiscovery(): { stop: () => void } {
 
 /** Labelers probed per run, so a scan never spikes into hundreds of requests. */
 const PROBE_BATCH = 60;
-/** How long a probe verdict stands before it is re-checked. */
+/**
+ * How long a probe verdict stands before it is re-checked.
+ *
+ * Split, because the two verdicts age differently. Whether a labeler *aims* at
+ * standard.site barely changes, so a healthy one is left alone for a week. But
+ * an unreachable one is **hidden from the directory**, and staying hidden after
+ * coming back online is the worse failure — so those are re-checked every other
+ * day. That is ~136 requests a day against hosts that are mostly still dead,
+ * which is cheap enough to be worth a labeler returning within two days rather
+ * than seven.
+ */
 const PROBE_TTL_MS = 7 * 24 * 60 * 60_000;
+const UNREACHABLE_PROBE_TTL_MS = 2 * 24 * 60 * 60_000;
 /** Labels sampled per labeler when deciding whether it aims at standard.site. */
 const PROBE_SAMPLE = 250;
 
@@ -335,8 +346,9 @@ const PROBE_SAMPLE = 250;
 export async function probeStandardSiteLabelers(
   db: Db = database,
   schema: Schema = dbSchema,
-): Promise<{ probed: number; standardSite: number }> {
+): Promise<{ probed: number; standardSite: number; unreachable: number }> {
   const svc = schema.labelerServices;
+  const now = Date.now();
   const stale = await db
     .select({ labelerDid: svc.labelerDid, uri: svc.uri })
     .from(svc)
@@ -345,38 +357,68 @@ export async function probeStandardSiteLabelers(
         eq(svc.deleted, false),
         or(
           isNull(svc.labelsProbedAt),
-          lt(svc.labelsProbedAt, new Date(Date.now() - PROBE_TTL_MS)),
+          // Unreachable labelers come back sooner than healthy ones get
+          // re-classified — see the TTLs above.
+          and(
+            eq(svc.reachable, false),
+            lt(svc.labelsProbedAt, new Date(now - UNREACHABLE_PROBE_TTL_MS)),
+          ),
+          lt(svc.labelsProbedAt, new Date(now - PROBE_TTL_MS)),
         ),
       ),
     )
+    // Oldest first. Without an order the batch is whatever the planner returns,
+    // which can hand back the same rows every run and starve the rest — with
+    // 460 labelers and a batch of 60, some would simply never be re-probed.
+    .orderBy(sql`${svc.labelsProbedAt} asc nulls first`)
     .limit(PROBE_BATCH);
-  if (stale.length === 0) return { probed: 0, standardSite: 0 };
+  if (stale.length === 0) return { probed: 0, standardSite: 0, unreachable: 0 };
 
   const verdicts = await mapWithConcurrency(
     stale,
     RESOLVE_CONCURRENCY,
     async (row) => {
       try {
-        const { labels } = await sampleLabels(row.labelerDid, PROBE_SAMPLE);
+        const { labels, error } = await sampleLabels(
+          row.labelerDid,
+          PROBE_SAMPLE,
+        );
+        // A transport error is a verdict, not a reason to skip: recording it is
+        // what keeps dead labelers out of the directory, and what stops them
+        // being re-probed on every single run forever.
+        if (error) return { ...row, reachable: false, hit: false };
         const subjects = [...new Set(labels.map((l) => l.uri))];
-        return { ...row, hit: await labelsOurCorpus(db, schema, subjects) };
+        return {
+          ...row,
+          reachable: true,
+          hit: await labelsOurCorpus(db, schema, subjects),
+        };
       } catch {
-        // Unreachable or misbehaving: leave it unprobed to retry next run.
-        return null;
+        return { ...row, reachable: false, hit: false };
       }
     },
   );
 
   let standardSite = 0;
+  let unreachable = 0;
   for (const verdict of verdicts) {
     if (!verdict) continue;
     if (verdict.hit) standardSite++;
+    if (!verdict.reachable) unreachable++;
     await db
       .update(labelerServices)
-      .set({ labelsStandardSite: verdict.hit, labelsProbedAt: new Date() })
+      .set({
+        labelsStandardSite: verdict.hit,
+        reachable: verdict.reachable,
+        labelsProbedAt: new Date(),
+      })
       .where(eq(labelerServices.uri, verdict.uri));
   }
-  return { probed: verdicts.filter(Boolean).length, standardSite };
+  return {
+    probed: verdicts.filter(Boolean).length,
+    standardSite,
+    unreachable,
+  };
 }
 
 /**

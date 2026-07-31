@@ -518,9 +518,9 @@ export function resolveLabelDiff(labels: Array<DisplayLabel>): LabelDiff {
 export async function sampleLabels(
   did: string,
   limit: number,
-): Promise<{ labels: Array<DisplayLabel> }> {
-  const { labels } = await queryLabeler(did, ["*"], undefined, limit);
-  return { labels: labels.slice(0, limit) };
+): Promise<{ labels: Array<DisplayLabel>; error?: string }> {
+  const { labels, error } = await queryLabeler(did, ["*"], undefined, limit);
+  return { labels: labels.slice(0, limit), error };
 }
 
 export async function fetchLabelerLabelsSince(
