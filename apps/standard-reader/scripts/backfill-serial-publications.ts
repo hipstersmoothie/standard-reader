@@ -6,6 +6,10 @@
  * derive `serial_kind` (comic vs book) for the publications that turn out to be
  * serials. Safe to re-run — both passes are idempotent.
  *
+ * Not required for correctness: `ensurePublicationSerial` backfills each
+ * publication on its first view anyway. This just warms them all at once, so the
+ * first reader of each publication doesn't pay the PDS read.
+ *
  *   pnpm backfill:serial
  */
 import { recomputeSerialKinds } from "../src/server/ingest/recompute.ts";

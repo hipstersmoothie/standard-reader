@@ -8,7 +8,10 @@ import { hasRenderableArticleBody } from "#/lib/document/renderable";
 import { documentSearchText } from "#/lib/document/search-text";
 import { MOCHOTT_ARTICLE, mochottArticleContent } from "#/lib/mochott/types";
 import { isExcludedPublicationUrl } from "#/lib/publication/exclusions";
-import { parsePrevNextDirection } from "#/lib/publication/serial";
+import {
+  BLOG_DIRECTION,
+  parsePrevNextDirection,
+} from "#/lib/publication/serial";
 import {
   FETCHED_CONTENT_FORMATS,
   resolveFetchedContent,
@@ -248,12 +251,18 @@ export async function upsertPublication(
       (record.preferences?.showInDiscover ?? true) &&
       !isExcludedPublicationUrl(url),
     // The publisher's prev/next direction; `"ltr"` marks a serial that reads
-    // forwards from its first post. `serial_kind` is *not* set here — it's
-    // derived from the publication's posts by `recomputeSerialKinds`, and this
-    // upsert must not blank it on every record edit.
-    prevNextDirection: parsePrevNextDirection(
-      record.preferences?.prevNextDirection,
-    ),
+    // forwards from its first post. A record we've seen that states nothing
+    // stores the lexicon default rather than null, so NULL keeps one unambiguous
+    // meaning downstream: *this publication has never been mirrored since the
+    // column existed*. That is what lets the read path tell "ordinary blog"
+    // apart from "not looked yet" and backfill exactly once per publication
+    // (`ensurePublicationSerial`) instead of re-asking the PDS forever.
+    //
+    // `serial_kind` is *not* set here — it's derived from the publication's
+    // posts, and this upsert must not blank it on every record edit.
+    prevNextDirection:
+      parsePrevNextDirection(record.preferences?.prevNextDirection) ??
+      BLOG_DIRECTION,
     deleted: false,
     updatedAt: sql`now()`,
   };

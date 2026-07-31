@@ -326,6 +326,16 @@ only a short note of prose is a **comic**, anything else a **book**. Both are mi
 read-model row (`publications.prev_next_direction`, `publications.serial_kind`) and travel to
 the UI as `PublicationCard.serial` (see `#/lib/publication/serial`).
 
+Both are filled **on demand** as well as by the sweep. The tap only writes
+`prev_next_direction` when a publication record is created or updated, so a publication indexed
+before the column existed would stay dark until its author happened to edit it. A NULL there
+therefore means "never mirrored", not "ordinary blog" — `upsertPublication` stores the lexicon
+default `"rtl"` for a record that states nothing, which is what keeps the two apart — and
+`ensurePublicationSerial` (`#/server/reader/series`) reads the record from the PDS once, writes
+what it says, and derives the kind on the spot if it turns out to be a serial. Standard
+`backfillXFromRepo` behaviour: one PDS read per publication, ever, then the DB serves it.
+`pnpm backfill:serial` warms every publication at once so no reader pays that first read.
+
 What changes for a serial:
 
 - **Publication profile** lists its archive **oldest-first** (issue #1 leads instead of the

@@ -50,7 +50,7 @@ import { effectiveFollowSets } from "#/server/reader/saved-lists";
 import type { SeriesContext } from "#/server/reader/series";
 import {
   NO_SERIES_CONTEXT,
-  selectPublicationSerial,
+  ensurePublicationSerial,
   selectSeriesContext,
 } from "#/server/reader/series";
 import {
@@ -348,12 +348,13 @@ const getPublicationDocuments = createServerFn({ method: "GET" })
 
         // A serial publication reads forwards from its first post, so its
         // archive is listed oldest-first (see `#/lib/publication/serial`). The
-        // rows can't be selected until the order is known, so this primary-key
-        // lookup goes out alongside the reader's follow set — the only other
-        // read that doesn't depend on it. (`effectiveFollowSets` is
-        // request-memoized.)
+        // rows can't be selected until the order is known, so this lookup goes
+        // out alongside the reader's follow set — the only other read that
+        // doesn't depend on it. (`effectiveFollowSets` is request-memoized.)
+        // It backfills from the PDS on the first view of a publication indexed
+        // before the column existed; every later view is served from the DB.
         const [serial, followSets] = await Promise.all([
-          selectPublicationSerial(db, schema, data.publicationUri),
+          ensurePublicationSerial(db, schema, data.publicationUri),
           did ? effectiveFollowSets(db, schema, did) : Promise.resolve(null),
         ]);
         span.set("serialKind", serial?.kind ?? "none");
@@ -546,7 +547,7 @@ const getArticle = createServerFn({ method: "GET" })
           usePublicationThemeForRequest(db, schema, reader?.userId),
         ]);
 
-        return buildArticleDetail(
+        const detail = await buildArticleDetail(
           db,
           schema,
           sourceRow,
@@ -558,6 +559,24 @@ const getArticle = createServerFn({ method: "GET" })
             recommendCount: recommendRows[0]?.count ?? 0,
           },
         );
+
+        // A publication indexed before `prev_next_direction` existed carries no
+        // serial metadata until something looks. Back it in here as well as on
+        // the publication page, so a reader who lands straight on a comic issue
+        // from a shared link still gets the comic reader rather than a column of
+        // stacked pages. One PDS read per publication, ever.
+        if (detail?.publication && sourceRow.pubPrevNextDirection == null) {
+          detail.publication = {
+            ...detail.publication,
+            serial: await ensurePublicationSerial(
+              db,
+              schema,
+              detail.publication.uri,
+            ),
+          };
+        }
+
+        return detail;
       },
     ),
   );
@@ -870,6 +889,13 @@ const getSeriesContext = createServerFn({ method: "GET" })
         span.set("found", true);
         span.set("serialKind", row.serialKind ?? "none");
 
+        // Unmirrored publication: resolve (and persist) its serial metadata
+        // before deciding whether this post has a series at all.
+        const serial =
+          row.prevNextDirection == null
+            ? await ensurePublicationSerial(db, schema, row.publicationUri)
+            : undefined;
+
         const series = await selectSeriesContext(db, schema, {
           documentUri: data.documentUri,
           publicationUri: row.publicationUri,
@@ -877,6 +903,9 @@ const getSeriesContext = createServerFn({ method: "GET" })
           prevNextDirection: row.prevNextDirection,
           serialKind: row.serialKind,
         });
+        if (serial !== undefined) {
+          series.serial = serial;
+        }
         span.set("position", series.position);
         span.set("total", series.total);
         span.set("hasNext", series.next != null);

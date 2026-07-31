@@ -60,6 +60,9 @@ describe("resolveSerialPublication", () => {
 
   it("is null for an ordinary publication, derived kind or not", () => {
     expect(resolveSerialPublication("rtl", null)).toBeNull();
+    // NULL direction means "never mirrored" rather than "ordinary" — the read
+    // path backfills it (`ensurePublicationSerial`) before this is consulted, so
+    // reading it as non-serial here is the safe holding answer, not a verdict.
     expect(resolveSerialPublication(null, null)).toBeNull();
     // A stale `serial_kind` on a publication that flipped back to `rtl` must
     // not resurrect the serial treatment.

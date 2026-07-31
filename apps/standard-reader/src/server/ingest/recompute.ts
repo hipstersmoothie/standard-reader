@@ -10,7 +10,6 @@ import {
   sql,
 } from "drizzle-orm";
 
-import { documentImages } from "#/lib/document/images";
 import { hasRenderableArticleBody } from "#/lib/document/renderable";
 import {
   documentExtractedText,
@@ -18,8 +17,8 @@ import {
   repairCompoundedSearchText,
 } from "#/lib/document/search-text";
 import { EXCLUDED_PUBLICATION_URL_PATTERN } from "#/lib/publication/exclusions";
-import type { SerialKind } from "#/lib/publication/serial";
 import { SERIAL_DIRECTION } from "#/lib/publication/serial";
+import { deriveSerialKind } from "#/server/reader/series";
 import {
   ARTICLE_BLEND,
   BACKLINK_SYNC_CONCURRENCY,
@@ -31,6 +30,7 @@ import {
 } from "#/server/reader/trending-scoring";
 
 import { db } from "../../db/index.ts";
+import * as schema from "../../db/schema.ts";
 import { documents, profiles, publications } from "../../db/schema.ts";
 import { getBacklinkCountForTarget } from "../atproto/constellation.ts";
 import {
@@ -560,30 +560,17 @@ export async function recomputeTopics(): Promise<void> {
   });
 }
 
-/** Documents sampled per serial publication when classifying it. */
-const SERIAL_SAMPLE_SIZE = 40;
-
-/**
- * A comic page's prose is a note *about* the art, not the work itself. Anything
- * longer than this (~700 words) is a chapter of writing that happens to carry an
- * illustration, so it does not count as a page of comic.
- */
-const COMIC_PAGE_MAX_TEXT_LENGTH = 4000;
-
-/** Share of sampled posts that must read as comic pages to call it a comic. */
-const COMIC_PAGE_SHARE = 0.6;
-
 /**
  * Derive `publications.serial_kind` for serial publications — the ones whose
  * publisher set `preferences.prevNextDirection = "ltr"`, declaring that the
  * publication reads forwards from its first post (see
  * `#/lib/publication/serial`).
  *
- * The lexicon says nothing about *what* the serial is, so it is inferred from
- * the posts: a post whose body renders at least one image and carries only a
- * short note of prose is a page of comic; a post that is mostly writing is a
- * chapter. A publication whose recent posts are mostly comic pages is a
- * `"comic"` (and opens in the comic reader), everything else a `"book"`.
+ * The classification itself lives in `deriveSerialKind`
+ * (`#/server/reader/series`), shared with the on-demand read path so a
+ * publication can't be judged one way by the sweep and another way on a page
+ * load. This pass is the safety net that keeps every serial current as its posts
+ * change; the read path only ever classifies one that has never been judged.
  *
  * Only serial publications are sampled — there are few of them, and `content_json`
  * is large per row — and `serial_kind` is cleared on any publication that is no
@@ -615,45 +602,7 @@ export async function recomputeSerialKinds(): Promise<void> {
     );
 
   for (const { uri } of serials) {
-    // Sampled newest-first: a long-running serial's current form is what a
-    // reader arriving today will page through.
-    const sample = await db
-      .select({
-        did: documents.did,
-        contentJson: documents.contentJson,
-        contentFormat: documents.contentFormat,
-        textLength:
-          sql<number>`coalesce(char_length(${documents.textContent}), 0)`.mapWith(
-            Number,
-          ),
-      })
-      .from(documents)
-      .where(
-        and(eq(documents.publicationUri, uri), eq(documents.deleted, false)),
-      )
-      .orderBy(sql`${documents.publishedAt} desc nulls last`)
-      .limit(SERIAL_SAMPLE_SIZE);
-
-    if (sample.length === 0) continue;
-
-    const comicPages = sample.filter((row) => {
-      if (row.textLength > COMIC_PAGE_MAX_TEXT_LENGTH) return false;
-      return (
-        documentImages({
-          did: row.did,
-          contentJson: row.contentJson as never,
-          contentFormat: row.contentFormat,
-        }).length > 0
-      );
-    }).length;
-
-    const kind: SerialKind =
-      comicPages / sample.length >= COMIC_PAGE_SHARE ? "comic" : "book";
-
-    await db
-      .update(publications)
-      .set({ serialKind: kind, updatedAt: sql`now()` })
-      .where(eq(publications.uri, uri));
+    await deriveSerialKind(db, schema, uri);
   }
 }
 
