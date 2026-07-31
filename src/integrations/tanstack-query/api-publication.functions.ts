@@ -181,6 +181,8 @@ export interface ArticleContributor {
   displayName: string | null;
   handle: string | null;
   avatarUrl: string | null;
+  /** Contributor self-declares as a bot (a `bot` self-label on its profile). */
+  isBot: boolean;
 }
 
 export interface ArticleDetail {
@@ -211,6 +213,12 @@ export interface ArticleDetail {
   collectionTheme: CollectionTheme | null;
   /** Owning profile handle for the sticky byline (`@handle`). */
   publicationOwnerHandle: string | null;
+  /**
+   * The publication owner self-declares as a bot. A publication owned by a bot
+   * counts as a bot, so this drives the byline mark whenever the article has no
+   * distinct lead contributor.
+   */
+  publicationOwnerIsBot: boolean;
   /** Owning profile display name — the byline author when no contributor. */
   publicationOwnerDisplayName: string | null;
   contributors: Array<ArticleContributor>;
@@ -448,6 +456,7 @@ const getArticle = createServerFn({ method: "GET" })
                 pubOwnerDisplayName: sql<
                   string | null
                 >`coalesce(${pr.displayName}, ${pa.displayName})`,
+                pubOwnerIsBot: sql<boolean>`coalesce(${pr.isBot}, ${pa.isBot}, false)`,
                 pubTopic: p.topic,
                 pubVerified: p.verified,
                 pubSubscriberCount: st.subscriberCount,
@@ -469,6 +478,7 @@ const getArticle = createServerFn({ method: "GET" })
                 profileDisplayName: pr.displayName,
                 handle: pr.handle,
                 avatarUrl: pr.avatarUrl,
+                isBot: pr.isBot,
               })
               .from(dc)
               .leftJoin(pr, eq(pr.did, dc.did))
@@ -513,6 +523,7 @@ const getArticle = createServerFn({ method: "GET" })
             displayName: c.displayName ?? c.profileDisplayName,
             handle: c.handle,
             avatarUrl: c.avatarUrl,
+            isBot: c.isBot ?? false,
           }),
         );
 

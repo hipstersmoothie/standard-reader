@@ -13,6 +13,7 @@ import {
   ArrowLeft,
   BookOpen,
   Bookmark,
+  Bot,
   Circle,
   CircleCheck,
   ExternalLink,
@@ -414,6 +415,22 @@ const styles = stylex.create({
     textUnderlineOffset: "2px",
     minWidth: 0,
   },
+  bylineBot: {
+    alignItems: "center",
+    color: uiColor.text1,
+    columnGap: spacing["1"],
+    display: "inline-flex",
+    flexShrink: 0,
+  },
+  srOnly: {
+    borderWidth: 0,
+    clipPath: "inset(50%)",
+    height: spacing.px,
+    overflow: "hidden",
+    position: "absolute",
+    whiteSpace: "nowrap",
+    width: spacing.px,
+  },
   bylineHandleLink: {
     overflow: "hidden",
     textOverflow: "ellipsis",
@@ -602,6 +619,16 @@ function authorAvatarUrl(article: ArticleDetail): string | null {
     article.publication?.ownerAvatarUrl ??
     null
   );
+}
+
+/**
+ * Whether the byline account self-declares as a bot — same lead-contributor,
+ * else publication-owner fallback as the rest of the byline. A publication owned
+ * by a bot counts as a bot.
+ */
+function authorIsBot(article: ArticleDetail): boolean {
+  const lead = article.contributors[0];
+  return lead ? lead.isBot : article.publicationOwnerIsBot;
 }
 
 /** DID for the byline author (lead contributor, else publication owner). */
@@ -1326,6 +1353,18 @@ function ArticleViewBody({
                 ) : (
                   authorName
                 )}
+
+                {authorIsBot(article) ? (
+                  <span
+                    {...stylex.props(styles.bylineBot)}
+                    title={t`This account self-identifies as a bot`}
+                  >
+                    <Bot size={14} aria-hidden />
+                    <span {...stylex.props(styles.srOnly)}>
+                      <Trans>Bot</Trans>
+                    </span>
+                  </span>
+                ) : null}
 
                 {showHandle && bylineDid ? (
                   <Link

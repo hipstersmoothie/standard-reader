@@ -2396,6 +2396,7 @@ msgstr "Você concorda em não usar o {SITE_NAME} para:"
 msgid "e.g. Dispatches from the Atmosphere"
 msgstr "por ex. Relatos da Atmosfera"
 
+#: src/components/reader/article-view.tsx
 #: src/components/reader/cards.tsx
 #: src/routes/_layout.u.$did.tsx
 msgid "Bot"
@@ -2581,6 +2582,7 @@ msgstr "{0, plural, one {# publicação} other {# publicações}}"
 msgid "Try again"
 msgstr ""
 
+#: src/components/reader/article-view.tsx
 #: src/routes/_layout.u.$did.tsx
 msgid "This account self-identifies as a bot"
 msgstr ""

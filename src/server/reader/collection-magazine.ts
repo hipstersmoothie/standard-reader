@@ -74,6 +74,9 @@ type LocalContributor = {
   displayName: string | null;
   handle: string | null;
   avatarUrl: string | null;
+  /** Magazine bundles don't join the profile, so contributors here are never
+   * marked as bots; the byline falls back to the publication owner's flag. */
+  isBot: boolean;
 };
 
 export interface CollectionMagazineFeature {
@@ -158,6 +161,7 @@ function contributorFromRow(row: BundleSqlRow): LocalContributor | null {
     displayName: row.contrib_display_name ?? row.contrib_profile_display_name,
     handle: row.contrib_handle,
     avatarUrl: row.contrib_avatar_url,
+    isBot: false,
   };
 }
 
