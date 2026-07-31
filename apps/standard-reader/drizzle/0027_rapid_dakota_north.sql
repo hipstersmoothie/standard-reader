@@ -1,0 +1,1 @@
+ALTER TABLE "documents" ADD COLUMN "body_image_count" integer;

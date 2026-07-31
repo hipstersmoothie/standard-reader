@@ -1533,6 +1533,11 @@ msgstr ""
 msgid "The Subscriptions screen: a sortable table where each row is a publication or person the reader follows, with columns for type, unread count, last post, articles, followers, topic, and lists."
 msgstr ""
 
+#. placeholder {0}: index + 1
+#: src/components/comic/comic-reader.tsx
+msgid "Page {0} of {totalPages}"
+msgstr ""
+
 #: src/components/reader/save-to-collection-dialog.tsx
 msgid "e.g. To Read"
 msgstr "例如：待读"
@@ -1951,6 +1956,10 @@ msgstr "跟随系统"
 
 #: src/components/reader/about-view.tsx
 msgid "Every feed, directory, and search query the app itself runs."
+msgstr ""
+
+#: src/components/comic/comic-reader.tsx
+msgid "You’ve read every page published so far. Subscribe to hear when the next one lands."
 msgstr ""
 
 #: src/components/reader/save-to-collection-dialog.tsx
@@ -2515,8 +2524,8 @@ msgstr ""
 #. placeholder {0}: index + 1
 #. placeholder {1}: pages.length
 #: src/components/comic/comic-reader.tsx
-msgid "Page {0} of {1}"
-msgstr ""
+#~ msgid "Page {0} of {1}"
+#~ msgstr ""
 
 #: src/components/reader/about-view.tsx
 msgid "And if your reader of choice is one you already have, any slice of the network comes with its own feed — pipe it straight in and never open this app at all."
@@ -2737,6 +2746,10 @@ msgstr "背景"
 
 #: src/components/feedback/feedback-image-picker.tsx
 msgid "Drop another screenshot"
+msgstr ""
+
+#: src/components/comic/comic-reader.tsx
+msgid "This comic has no pages to show."
 msgstr ""
 
 #: src/components/reader/article-view.tsx
@@ -3198,6 +3211,10 @@ msgstr "分享到其他平台"
 
 #: src/components/guide/pages/your-data-guide-page.tsx
 msgid "Signing in asks for permission to write only the kinds of records the app actually needs — follows, saves, recommendations, read records, and lists. It cannot post to Bluesky as you."
+msgstr ""
+
+#: src/components/comic/comic-reader.tsx
+msgid "Opening the comic…"
 msgstr ""
 
 #: src/components/guide/pages/collections-guide-page.tsx
@@ -4139,8 +4156,8 @@ msgid "Lists in the sidebar"
 msgstr ""
 
 #: src/components/comic/comic-reader.tsx
-msgid "End of issue"
-msgstr ""
+#~ msgid "End of issue"
+#~ msgstr ""
 
 #: src/components/guide/pages/extension-guide-page.tsx
 msgid "The extension checks the address of the page you are on to work out whether there is anything to offer, and it acts on your account only when you click something. It does not read your browsing history or the contents of pages."
@@ -4329,6 +4346,10 @@ msgstr "遍览 Atmosphere"
 
 #: src/lib/guide/navigation.ts
 msgid "Assemble articles into a magazine edition others can read and follow."
+msgstr ""
+
+#: src/components/comic/comic-reader.tsx
+msgid "Loading page…"
 msgstr ""
 
 #: src/routes/mcp/authorize.tsx
@@ -4853,7 +4874,6 @@ msgstr "使用 Bluesky 登录以订阅。我们仅请求向你的账号添加此
 msgid "The publications you follow haven't published anything recently."
 msgstr ""
 
-#: src/components/comic/comic-reader.tsx
 #: src/components/reader/series-up-next.tsx
 msgid "Next issue"
 msgstr ""
@@ -5068,8 +5088,8 @@ msgstr "在 Semble 上"
 
 #. placeholder {0}: next.title
 #: src/components/comic/comic-reader.tsx
-msgid "Read the next issue: {0}"
-msgstr ""
+#~ msgid "Read the next issue: {0}"
+#~ msgstr ""
 
 #: src/components/user-settings-view.tsx
 msgid "On — delivered to {digestEmail}. The best of the publications you subscribe to, plus a couple worth discovering."
@@ -5431,6 +5451,10 @@ msgstr ""
 #: src/components/reader/collection-builder.tsx
 msgid "No articles yet — use “Add an article” to get started."
 msgstr "还没有文章——使用「添加文章」开始吧。"
+
+#: src/components/comic/comic-reader.tsx
+msgid "The end"
+msgstr ""
 
 #: src/components/reader/atstore-review-prompt.tsx
 msgid "Leave us a review on ATStore."
@@ -5916,8 +5940,8 @@ msgstr ""
 #. placeholder {0}: series.position
 #. placeholder {1}: series.total
 #: src/components/comic/comic-reader.tsx
-msgid "{publicationName} · {0} of {1}"
-msgstr ""
+#~ msgid "{publicationName} · {0} of {1}"
+#~ msgstr ""
 
 #: src/routes/_layout.tag.$tag.tsx
 msgid "Tag"
@@ -6305,16 +6329,16 @@ msgid "Search publications or paste a handle"
 msgstr "搜索刊物或粘贴 handle"
 
 #: src/components/comic/comic-reader.tsx
-msgid "This issue has no pages to show."
-msgstr ""
+#~ msgid "This issue has no pages to show."
+#~ msgstr ""
 
 #: src/components/site-legal-links.tsx
 msgid "Source"
 msgstr "来源"
 
 #: src/components/comic/comic-reader.tsx
-msgid "This is the latest issue. Subscribe to hear when the next one lands."
-msgstr ""
+#~ msgid "This is the latest issue. Subscribe to hear when the next one lands."
+#~ msgstr ""
 
 #: src/components/feedback/feedback-image-picker.tsx
 msgid "That file isn't an image we can read."

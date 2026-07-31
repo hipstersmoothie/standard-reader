@@ -27,6 +27,12 @@ import type { ArticleDetailSourceRow } from "#/server/reader/article-detail-buil
 import { buildArticleDetail } from "#/server/reader/article-detail-build";
 import type { CollectionMagazineData } from "#/server/reader/collection-magazine";
 import { loadCollectionMagazine } from "#/server/reader/collection-magazine";
+import type { ComicPage, ComicSpine } from "#/server/reader/comic";
+import {
+  COMIC_CHUNK_ISSUES,
+  selectComicPages,
+  selectComicSpine,
+} from "#/server/reader/comic";
 import type { ContentLinkTargets } from "#/server/reader/content-links";
 import { resolveContentLinkTargets } from "#/server/reader/content-links";
 import { attachCommentCountsToArticles } from "#/server/reader/document-comments";
@@ -130,6 +136,17 @@ const articleCardInput = z.object({
 
 const seriesContextInput = z.object({
   documentUri: z.string().min(1),
+});
+
+const comicSpineInput = z.object({
+  publicationUri: z.string().min(1),
+});
+
+const comicPagesInput = z.object({
+  publicationUri: z.string().min(1),
+  /** Index into the spine's issues, not a page number. */
+  issueOffset: z.number().int().min(0).default(0),
+  issueLimit: z.number().int().min(1).max(20).default(COMIC_CHUNK_ISSUES),
 });
 
 const contentLinksInput = z.object({
@@ -914,6 +931,55 @@ const getSeriesContext = createServerFn({ method: "GET" })
     ),
   );
 
+/**
+ * A comic publication's spine: every issue's title and length, no bodies. The
+ * comic reader loads this once and derives absolute page numbers from it.
+ */
+const getComicSpine = createServerFn({ method: "GET" })
+  .middleware([dbMiddleware])
+  .validator(comicSpineInput)
+  .handler(
+    observe(
+      "publication.getComicSpine",
+      async ({ data, context }, span): Promise<ComicSpine> => {
+        const { db, schema } = context;
+        span.set("publicationUri", data.publicationUri);
+        const spine = await selectComicSpine(db, schema, data.publicationUri);
+        span.set("issues", spine.issues.length);
+        span.set("totalPages", spine.totalPages);
+        return spine;
+      },
+    ),
+  );
+
+/**
+ * One chunk of a comic's pages — the images for a window of issues, absolutely
+ * indexed. The reader asks for the chunk it is about to reach.
+ */
+const getComicPages = createServerFn({ method: "GET" })
+  .middleware([dbMiddleware])
+  .validator(comicPagesInput)
+  .handler(
+    observe(
+      "publication.getComicPages",
+      async (
+        { data, context },
+        span,
+      ): Promise<{ pages: Array<ComicPage>; totalPages: number }> => {
+        const { db, schema } = context;
+        span.set("publicationUri", data.publicationUri);
+        span.set("issueOffset", data.issueOffset);
+        const { pages, spine } = await selectComicPages(db, schema, {
+          publicationUri: data.publicationUri,
+          issueOffset: data.issueOffset,
+          issueLimit: data.issueLimit,
+        });
+        span.set("pages", pages.length);
+        return { pages, totalPages: spine.totalPages };
+      },
+    ),
+  );
+
 // POST (not GET): a content-heavy article can reference dozens of link URLs,
 // which would overflow a GET query string. Still side-effect-free; TanStack
 // Query caches by queryKey client-side regardless of method.
@@ -1096,6 +1162,39 @@ function getSeriesContextQueryOptions(documentUri: string) {
   });
 }
 
+/** The comic spine changes only when the publication gains or edits an issue. */
+function getComicSpineQueryOptions(publicationUri: string) {
+  return queryOptions({
+    queryKey: ["comic", "spine", publicationUri] as const,
+    queryFn: async () => getComicSpine({ data: { publicationUri } }),
+    staleTime: 300_000,
+  });
+}
+
+/**
+ * One chunk of comic pages. Keyed by its issue window so chunks accumulate in
+ * the cache instead of replacing each other — paging back through a comic
+ * re-reads what it already fetched.
+ */
+function getComicPagesQueryOptions(
+  publicationUri: string,
+  issueOffset: number,
+  issueLimit: number = COMIC_CHUNK_ISSUES,
+) {
+  return queryOptions({
+    queryKey: [
+      "comic",
+      "pages",
+      publicationUri,
+      issueOffset,
+      issueLimit,
+    ] as const,
+    queryFn: async () =>
+      getComicPages({ data: { publicationUri, issueOffset, issueLimit } }),
+    staleTime: 300_000,
+  });
+}
+
 function getPublicationEmbedMetaQueryOptions(publicationUri: string) {
   return queryOptions({
     queryKey: ["publication", "embedMeta", publicationUri] as const,
@@ -1125,6 +1224,10 @@ export const publicationApi = {
   getArticleExtrasQueryOptions,
   getSeriesContext,
   getSeriesContextQueryOptions,
+  getComicSpine,
+  getComicSpineQueryOptions,
+  getComicPages,
+  getComicPagesQueryOptions,
   getInlineMentions,
   getInlineMentionsQueryOptions,
   getContentLinkTargets,

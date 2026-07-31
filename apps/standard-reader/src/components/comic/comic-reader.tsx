@@ -3,7 +3,6 @@
 import { Trans, useLingui } from "@lingui/react/macro";
 import { Flex } from "@standard-reader/design-system/flex";
 import { IconButton } from "@standard-reader/design-system/icon-button";
-import { radius } from "@standard-reader/design-system/theme/radius.stylex";
 import { gap } from "@standard-reader/design-system/theme/semantic-spacing.stylex";
 import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
 import {
@@ -15,21 +14,17 @@ import {
 } from "@standard-reader/design-system/theme/typography.stylex";
 import * as stylex from "@stylexjs/stylex";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
 import { ChevronLeft, ChevronRight, FileText, X } from "lucide-react";
 import type { PointerEvent as ReactPointerEvent } from "react";
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 
-import type { ArticleDetail } from "#/integrations/tanstack-query/api-publication.functions";
 import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
-import type { DocumentImage } from "#/lib/document/images";
-import { documentImages } from "#/lib/document/images";
 import { useTrackReadingHistory } from "#/lib/use-track-reading-history";
-import type { SeriesContext } from "#/server/reader/series";
 
 import { documentLinkParams, publicationLinkParams } from "../reader/format";
 import { applyMarkReadOptimisticUpdate } from "../reader/read-optimistic";
 import { ButtonLink, IconButtonLink } from "../router-links";
+import { issueAtPage, pageOfIssue, useComicPages } from "./use-comic-pages";
 
 /**
  * The theater is one fixed look in both colour schemes: art is the whole point,
@@ -42,9 +37,6 @@ const THEATER_CHROME = "rgba(255, 255, 255, 0.62)";
 const THEATER_CHROME_STRONG = "rgba(255, 255, 255, 0.92)";
 const THEATER_RULE = "rgba(255, 255, 255, 0.14)";
 const THEATER_SURFACE = "rgba(255, 255, 255, 0.08)";
-
-/** Pages kept warm ahead of the current one so a flip never waits on a fetch. */
-const PRELOAD_AHEAD = 2;
 
 /** Horizontal travel (px) that counts as a swipe rather than a tap. */
 const SWIPE_THRESHOLD_PX = 44;
@@ -201,19 +193,6 @@ const styles = stylex.create({
     lineHeight: lineHeight.xs,
     unicodeBidi: "isolate",
   },
-  endCover: {
-    objectFit: "cover",
-    cornerShape: "squircle",
-    borderColor: THEATER_RULE,
-    borderRadius: radius.lg,
-    borderStyle: "solid",
-    borderWidth: 1,
-    height: "auto",
-    marginInlineEnd: "auto",
-    marginInlineStart: "auto",
-    maxWidth: spacing["40"],
-    width: "100%",
-  },
   endDek: {
     color: THEATER_CHROME,
     fontFamily: fontFamily.serif,
@@ -228,10 +207,15 @@ const styles = stylex.create({
     justifyContent: "center",
     rowGap: gap["2xl"],
   },
-  nextLink: {
-    textDecoration: "none",
-    color: "inherit",
-    display: "block",
+  pagePlaceholder: {
+    alignItems: "center",
+    color: THEATER_CHROME,
+    display: "flex",
+    fontFamily: fontFamily.sans,
+    fontSize: fontSize.sm,
+    justifyContent: "center",
+    height: "100%",
+    width: "100%",
   },
   emptyNote: {
     color: THEATER_CHROME,
@@ -244,9 +228,9 @@ const styles = stylex.create({
   },
 });
 
-/** The document's own reading view — a comic's author notes live there. */
-function NotesAction({ article }: { article: ArticleDetail }) {
-  const params = documentLinkParams(article.uri);
+/** The current issue's own reading view — a comic's author notes live there. */
+function NotesAction({ issueUri }: { issueUri: string | null }) {
+  const params = issueUri ? documentLinkParams(issueUri) : null;
   if (!params) return null;
   return (
     <ButtonLink
@@ -278,72 +262,39 @@ function AllIssuesAction({ publicationUri }: { publicationUri: string }) {
 }
 
 /**
- * What the reader sees after the last page: the next issue, or the end of the
- * series so far. The issue's own prose (a comic's author notes) is one link
- * away — the comic reader shows the art, the reading view shows the writing.
+ * The back cover. Reached past the last page of the last issue — there is no
+ * per-issue end card, because issues run into each other here the way pages of
+ * one book do.
  */
 function ComicEndCard({
-  article,
-  series,
+  publicationUri,
+  lastIssueUri,
 }: {
-  article: ArticleDetail;
-  series: SeriesContext | null | undefined;
+  publicationUri: string | null;
+  lastIssueUri: string | null;
 }) {
-  const { t } = useLingui();
-  const next = series?.next ?? null;
-
   return (
     <div {...stylex.props(styles.endCard)}>
       <Flex direction="column" gap="6xl">
-        {next ? (
-          <Link
-            to={next.pageCount > 0 ? "/comic/$did/$rkey" : "/a/$did/$rkey"}
-            params={{ did: next.did, rkey: next.rkey }}
-            aria-label={t`Read the next issue: ${next.title}`}
-            {...stylex.props(styles.nextLink)}
-          >
-            <Flex direction="column" gap="4xl">
-              <span {...stylex.props(styles.endKicker)}>
-                <Trans>Next issue</Trans>
-              </span>
-              {next.imageUrl ? (
-                <img
-                  src={next.imageUrl}
-                  alt=""
-                  loading="lazy"
-                  decoding="async"
-                  {...stylex.props(styles.endCover)}
-                />
-              ) : null}
-              <span {...stylex.props(styles.endTitle)}>{next.title}</span>
-              {next.description?.trim() ? (
-                <span dir="auto" {...stylex.props(styles.endDek)}>
-                  {next.description}
-                </span>
-              ) : null}
-            </Flex>
-          </Link>
-        ) : (
-          <Flex direction="column" gap="4xl">
-            <span {...stylex.props(styles.endKicker)}>
-              <Trans>The end, for now</Trans>
-            </span>
-            <span {...stylex.props(styles.endTitle)}>
-              <Trans>You’re caught up</Trans>
-            </span>
-            <span {...stylex.props(styles.endDek)}>
-              <Trans>
-                This is the latest issue. Subscribe to hear when the next one
-                lands.
-              </Trans>
-            </span>
-          </Flex>
-        )}
+        <Flex direction="column" gap="4xl">
+          <span {...stylex.props(styles.endKicker)}>
+            <Trans>The end, for now</Trans>
+          </span>
+          <span {...stylex.props(styles.endTitle)}>
+            <Trans>You’re caught up</Trans>
+          </span>
+          <span {...stylex.props(styles.endDek)}>
+            <Trans>
+              You’ve read every page published so far. Subscribe to hear when
+              the next one lands.
+            </Trans>
+          </span>
+        </Flex>
 
         <div {...stylex.props(styles.endActions)}>
-          <NotesAction article={article} />
-          {article.publicationUri ? (
-            <AllIssuesAction publicationUri={article.publicationUri} />
+          <NotesAction issueUri={lastIssueUri} />
+          {publicationUri ? (
+            <AllIssuesAction publicationUri={publicationUri} />
           ) : null}
         </div>
       </Flex>
@@ -352,73 +303,83 @@ function ComicEndCard({
 }
 
 export interface ComicReaderProps {
-  article: ArticleDetail;
-  series: SeriesContext | null | undefined;
-  /** 1-based page number; `pages.length + 1` is the end card. */
-  page: number;
+  publicationUri: string | null;
+  publicationName: string | null;
+  /** The issue the reader arrived through — where an unpositioned open starts. */
+  anchorIssueUri: string;
+  /** 1-based page across the whole publication; `totalPages + 1` is the end card. */
+  page: number | undefined;
   onPageChange: (page: number) => void;
   signedIn: boolean;
 }
 
 /**
- * A page-flip reader for one issue of a comic.
+ * A page-flip reader for a whole comic publication.
  *
- * The issue's pages are the images its body renders, in reading order
- * (`documentImages`) — the same list the article view would have drawn, shown
- * one page at a time instead of stacked in a column. Serial publications read
- * forwards (see `#/lib/publication/serial`), so "next" is always the following
- * page and, past the last one, the following issue.
+ * The unit here is the publication, not the issue: every issue's images, in
+ * publication order, as one continuous run of pages. Opening the cover and
+ * holding down the next key walks the entire comic — issues run into each other
+ * the way pages of one book do, rather than stopping at an end-of-issue card.
  *
- * The current page lives in the URL, so a reload or a shared link lands on the
- * same page. Page turns replace the history entry rather than stacking one, so
- * Back leaves the reader instead of walking every page in reverse.
+ * Only the pages near the reader are fetched (`useComicPages`); the spine gives
+ * the total page count up front, so the counter is honest from the first frame
+ * even though almost nothing has been loaded. The current page lives in the URL,
+ * and page turns replace the history entry so Back leaves the reader rather than
+ * walking every page in reverse.
  */
 export function ComicReader({
-  article,
-  series,
+  publicationUri,
+  publicationName,
+  anchorIssueUri,
   page,
   onPageChange,
   signedIn,
 }: ComicReaderProps) {
   const { t } = useLingui();
-  const pages = useMemo<Array<DocumentImage>>(
-    () => documentImages(article),
-    [article],
-  );
-  // One past the last page is the end card, so `pages.length + 1` is in range.
-  const lastIndex = pages.length;
-  const index = Math.min(Math.max(page - 1, 0), lastIndex);
-  const atEnd = index === lastIndex;
-  const current = pages[index];
 
+  // Before the spine resolves there is no absolute numbering, so an open with no
+  // `?page=` sits on the first page until it can be placed at the anchor issue.
+  const requestedIndex = page == null ? 0 : page - 1;
+  const { issues, totalPages, pages, isSpinePending, isPagePending } =
+    useComicPages(publicationUri, requestedIndex);
+
+  const lastIndex = totalPages;
+  const index = Math.min(Math.max(requestedIndex, 0), Math.max(lastIndex, 0));
+  const atEnd = totalPages > 0 && index === lastIndex;
+  const current = pages.get(index) ?? null;
+
+  // An open with no page lands on the issue the reader clicked, which is only
+  // knowable once the spine gives that issue its offset.
+  const placedRef = useRef(false);
+  useEffect(() => {
+    if (placedRef.current || page != null || issues.length === 0) return;
+    placedRef.current = true;
+    const start = pageOfIssue(issues, anchorIssueUri);
+    if (start > 0) onPageChange(start + 1);
+  }, [anchorIssueUri, issues, onPageChange, page]);
+
+  const currentIssue = issueAtPage(issues, index);
+  const issueUri = currentIssue?.uri ?? null;
+  const lastIssueUri = issues.at(-1)?.uri ?? null;
+
+  // Reading state follows the pages: an issue counts as read once the reader is
+  // inside it, so walking the comic marks the archive off behind you.
   const queryClient = useQueryClient();
   const { enabled: trackReading } = useTrackReadingHistory();
   const { mutate: markRead } = useMutation(readerApi.markReadMutationOptions());
-  const markedUriRef = useRef<string | null>(null);
+  const markedRef = useRef(new Set<string>());
 
   useEffect(() => {
-    if (!signedIn || !trackReading || markedUriRef.current === article.uri) {
-      return;
-    }
-    markedUriRef.current = article.uri;
-    applyMarkReadOptimisticUpdate(
-      queryClient,
-      article.uri,
-      article.publicationUri,
-    );
-    markRead(article.uri);
-  }, [
-    article.publicationUri,
-    article.uri,
-    markRead,
-    queryClient,
-    signedIn,
-    trackReading,
-  ]);
+    if (!signedIn || !trackReading || !issueUri) return;
+    if (markedRef.current.has(issueUri)) return;
+    markedRef.current.add(issueUri);
+    applyMarkReadOptimisticUpdate(queryClient, issueUri, publicationUri);
+    markRead(issueUri);
+  }, [issueUri, markRead, publicationUri, queryClient, signedIn, trackReading]);
 
   const goTo = useCallback(
     (nextIndex: number) => {
-      const clamped = Math.min(Math.max(nextIndex, 0), lastIndex);
+      const clamped = Math.min(Math.max(nextIndex, 0), Math.max(lastIndex, 0));
       if (clamped === index) return;
       onPageChange(clamped + 1);
     },
@@ -487,11 +448,10 @@ export function ComicReader({
     [goNext, goPrevious],
   );
 
-  const publicationParams = article.publicationUri
-    ? publicationLinkParams(article.publicationUri)
+  const publicationParams = publicationUri
+    ? publicationLinkParams(publicationUri)
     : null;
-  const articleParams = documentLinkParams(article.uri);
-  const publicationName = article.publication?.name ?? null;
+  const notesParams = issueUri ? documentLinkParams(issueUri) : null;
 
   return (
     <div {...stylex.props(styles.theater)}>
@@ -510,24 +470,18 @@ export function ComicReader({
 
         <div {...stylex.props(styles.titles)}>
           {publicationName ? (
-            <div {...stylex.props(styles.kicker)}>
-              {series && series.total > 0 ? (
-                <Trans>
-                  {publicationName} · {series.position} of {series.total}
-                </Trans>
-              ) : (
-                publicationName
-              )}
-            </div>
+            <div {...stylex.props(styles.kicker)}>{publicationName}</div>
           ) : null}
-          <div {...stylex.props(styles.title)}>{article.title}</div>
+          <div {...stylex.props(styles.title)}>
+            {currentIssue?.title ?? publicationName ?? ""}
+          </div>
         </div>
 
-        {articleParams ? (
+        {notesParams ? (
           <IconButtonLink
             variant="tertiary"
             to="/a/$did/$rkey"
-            params={articleParams}
+            params={notesParams}
             search={{ view: "reader" }}
             aria-label={t`Read this issue as an article`}
             style={styles.chromeControl}
@@ -542,24 +496,40 @@ export function ComicReader({
         onPointerDown={onPointerDown}
         onPointerUp={onPointerUp}
       >
-        {pages.length === 0 ? (
-          <div {...stylex.props(styles.emptyNote)}>
-            <Trans>This issue has no pages to show.</Trans>
+        {isSpinePending ? (
+          <div {...stylex.props(styles.pagePlaceholder)} aria-busy="true">
+            <Trans>Opening the comic…</Trans>
           </div>
-        ) : atEnd || !current ? (
-          <ComicEndCard article={article} series={series} />
+        ) : totalPages === 0 ? (
+          <div {...stylex.props(styles.emptyNote)}>
+            <Trans>This comic has no pages to show.</Trans>
+          </div>
+        ) : atEnd ? (
+          <ComicEndCard
+            publicationUri={publicationUri}
+            lastIssueUri={lastIssueUri}
+          />
         ) : (
           <>
-            <img
-              key={current.url}
-              src={current.url}
-              alt={current.alt || t`Page ${index + 1}`}
-              // The first page is the largest thing on screen and the reason the
-              // route exists; later pages arrive warm from the preloads below.
-              loading={index === 0 ? "eager" : "lazy"}
-              decoding="async"
-              {...stylex.props(styles.page)}
-            />
+            {current ? (
+              <img
+                key={current.url}
+                src={current.url}
+                alt={current.alt || t`Page ${index + 1}`}
+                // The page in hand is the reason the route exists; the chunk
+                // loader keeps its neighbours warm, so nothing else is eager.
+                loading="eager"
+                decoding="async"
+                {...stylex.props(styles.page)}
+              />
+            ) : (
+              <div
+                {...stylex.props(styles.pagePlaceholder)}
+                aria-busy={isPagePending ? "true" : undefined}
+              >
+                <Trans>Loading page…</Trans>
+              </div>
+            )}
             <button
               type="button"
               aria-label={t`Previous page`}
@@ -576,20 +546,7 @@ export function ComicReader({
         )}
       </div>
 
-      {/* Pages just ahead — fetched but never laid out, so a flip is instant. */}
-      <div hidden>
-        {pages.slice(index + 1, index + 1 + PRELOAD_AHEAD).map((image) => (
-          <img
-            key={image.url}
-            src={image.url}
-            alt=""
-            loading="eager"
-            decoding="async"
-          />
-        ))}
-      </div>
-
-      {pages.length > 0 ? (
+      {totalPages > 0 ? (
         <div {...stylex.props(styles.bar, styles.bottomBar)}>
           <IconButton
             variant="tertiary"
@@ -606,10 +563,10 @@ export function ComicReader({
           </IconButton>
           <span {...stylex.props(styles.counter)} aria-live="polite">
             {atEnd ? (
-              <Trans>End of issue</Trans>
+              <Trans>The end</Trans>
             ) : (
               <Trans>
-                Page {index + 1} of {pages.length}
+                Page {index + 1} of {totalPages}
               </Trans>
             )}
           </span>

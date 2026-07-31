@@ -190,6 +190,13 @@
       "when": 1785384859236,
       "tag": "0026_pale_thanos",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1785474117065,
+      "tag": "0027_rapid_dakota_north",
+      "breakpoints": true
     }
   ]
 }

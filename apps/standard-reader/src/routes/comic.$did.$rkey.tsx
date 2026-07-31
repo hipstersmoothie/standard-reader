@@ -1,5 +1,5 @@
 import { useLingui } from "@lingui/react/macro";
-import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { z } from "zod";
 
@@ -23,19 +23,12 @@ export const Route = createFileRoute("/comic/$did/$rkey")({
   loader: async ({ context, params, preload }) => {
     const uri = documentUriFromParams(params.did, params.rkey);
     const { queryClient } = context;
-    const seriesOptions = publicationApi.getSeriesContextQueryOptions(uri);
-
     if (preload) {
       void queryClient.prefetchQuery(
         publicationApi.getArticleQueryOptions(uri),
       );
-      void queryClient.prefetchQuery(seriesOptions);
       return { title: null, publicationName: null, description: null };
     }
-
-    // The series context feeds the end-of-issue card, which sits past the last
-    // page — warm it without holding up the first page's paint.
-    void queryClient.prefetchQuery(seriesOptions);
 
     const article = await queryClient.ensureQueryData(
       publicationApi.getArticleQueryOptions(uri),
@@ -54,9 +47,24 @@ export const Route = createFileRoute("/comic/$did/$rkey")({
       });
     }
 
+    // The reader spans the whole publication, so the spine — every issue's
+    // title and length — is what it opens on. Awaited: without it there are no
+    // absolute page numbers and nowhere to place the issue that was clicked.
+    if (article.publicationUri) {
+      await queryClient
+        .ensureQueryData(
+          publicationApi.getComicSpineQueryOptions(article.publicationUri),
+        )
+        .catch(() => null);
+      void queryClient.prefetchQuery(
+        publicationApi.getComicPagesQueryOptions(article.publicationUri, 0),
+      );
+    }
+
     return {
       title: article.title,
       publicationName: article.publication?.name ?? null,
+      publicationUri: article.publicationUri,
       description: article.description,
       // The records this page is built from — rendered by `AtRecordMeta`.
       atMeta: {
@@ -110,9 +118,6 @@ function ComicRoute() {
   const { data: article } = useSuspenseQuery(
     publicationApi.getArticleQueryOptions(uri),
   );
-  const { data: series } = useQuery(
-    publicationApi.getSeriesContextQueryOptions(uri),
-  );
   const { data: session } = useSuspenseQuery(user.getSessionQueryOptions);
 
   if (!article) {
@@ -122,10 +127,13 @@ function ComicRoute() {
   return (
     <div aria-label={t`Comic reader`}>
       <ComicReader
-        key={article.uri}
-        article={article}
-        series={series}
-        page={page ?? 1}
+        // Keyed by publication, not by document: crossing from one issue into
+        // the next is a page turn inside one reader, not a new reader.
+        key={article.publicationUri ?? article.uri}
+        publicationUri={article.publicationUri}
+        publicationName={article.publication?.name ?? null}
+        anchorIssueUri={article.uri}
+        page={page}
         // Page turns replace the entry so Back leaves the reader rather than
         // walking every page in reverse; the page still lives in the URL, so a
         // reload or a shared link lands where the reader left off.

@@ -1,9 +1,11 @@
 import { and, eq, inArray, isNull, or, sql } from "drizzle-orm";
 
+import type { JsonValue } from "#/integrations/tanstack-query/api-shapes";
 import {
   collectionManifestFromSources,
   parseCollectionManifest,
 } from "#/lib/collections/manifest";
+import { documentImages } from "#/lib/document/images";
 import { hasRenderableArticleBody } from "#/lib/document/renderable";
 import { documentSearchText } from "#/lib/document/search-text";
 import { MOCHOTT_ARTICLE, mochottArticleContent } from "#/lib/mochott/types";
@@ -467,6 +469,14 @@ export async function upsertDocument(
     contentFormat,
     collectionJson: collectionManifest,
     hasRenderableBody: renderableBody,
+    // The comic reader's page length for this document. Derived here so the
+    // reader can compute absolute page numbers across a whole publication from
+    // the index alone, without opening every body.
+    bodyImageCount: documentImages({
+      did,
+      contentJson: contentJson as JsonValue,
+      contentFormat,
+    }).length,
     coverImageCid: coverCid,
     coverImageMime: record.coverImage?.mimeType ?? null,
     tags: Array.isArray(record.tags)

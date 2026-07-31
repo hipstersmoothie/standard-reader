@@ -896,10 +896,17 @@ Backend/API exists; UI or copy is missing.
       "Start from issue one" ([`serial-start.tsx`](src/components/reader/serial-start.tsx)).
       **Comics** open in a new page-flip reader at `/comic/$did/$rkey`
       ([`comic-reader.tsx`](src/components/comic/comic-reader.tsx)) — a fixed dark theater over the
-      images the body renders, in reading order
-      ([`images.ts`](src/lib/document/images.ts)), with keyboard / tap-zone / swipe paging, the page
-      in the URL, and an end card carrying the next issue. The article route redirects a comic issue
-      there unless `?view=reader`, which is also the reader's way back to the author's notes.
+      **whole publication**: every issue's images, in publication order, as one continuous run of
+      pages under a single absolute page number, so opening the cover walks the entire comic rather
+      than stopping at the end of each issue. Pages are the images each body renders
+      ([`images.ts`](src/lib/document/images.ts)); keyboard / tap-zone / swipe paging, the page in
+      the URL, each issue marked read as the reader enters it. Loaded in two tiers
+      ([`comic.ts`](src/server/reader/comic.ts)): a **spine** of every issue's title and length (no
+      bodies — this is what makes absolute page numbers possible and the counter honest immediately,
+      via `documents.body_image_count` derived at ingest and backfilled on demand), plus **chunks**
+      of image URLs for a window of issues, held one chunk either side of the reader
+      ([`use-comic-pages.ts`](src/components/comic/use-comic-pages.ts)). The article route redirects
+      a comic issue there unless `?view=reader`, which is also the reader's way back to the notes.
       **Books** get an "Up next" section under the article
       ([`series-up-next.tsx`](src/components/reader/series-up-next.tsx)) driven by
       `getSeriesContext` ([`series.ts`](src/server/reader/series.ts)) — position, the following
