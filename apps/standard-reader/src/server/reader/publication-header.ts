@@ -14,6 +14,7 @@ import {
 } from "#/integrations/tanstack-query/api-shapes";
 import { publicationFontsFromThemeJson } from "#/server/fonts/publication-fonts.server";
 import { publicationBackgroundImage } from "#/server/reader/publication-background";
+import { ensurePublicationSerial } from "#/server/reader/series";
 
 export interface PublicationHeader {
   publication: PublicationCard;
@@ -58,8 +59,20 @@ export async function selectPublicationHeader(
 
   if (!row) return null;
 
+  // The hero's serial treatment ("A serial comic", "Start from issue one") reads
+  // off this card, while the archive's reading order is resolved separately in
+  // `getPublicationDocuments` — and the two run in parallel. Without this, the
+  // very first view of a publication whose `prev_next_direction` was never
+  // mirrored paints a half-applied page: the archive correctly oldest-first, but
+  // no serial hero, because this query raced the backfill the other one did.
+  // A no-op (one indexed read) once the column is populated.
+  const publication = toPublicationCard(row);
+  if (row.prevNextDirection == null) {
+    publication.serial = await ensurePublicationSerial(db, schema, row.uri);
+  }
+
   return {
-    publication: toPublicationCard(row),
+    publication,
     owner: {
       did: row.did,
       handle: row.ownerHandle,
