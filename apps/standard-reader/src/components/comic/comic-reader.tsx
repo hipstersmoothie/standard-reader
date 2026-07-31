@@ -540,6 +540,15 @@ export function ComicReader({
   const visibleRef = useRef(true);
   const activityRef = useRef(0);
 
+  // Stepping aside waits for the reader to start reading. A comic that has just
+  // opened is a page nobody has turned yet: the bars are the introduction — what
+  // this is, where they are in it, how to leave — and a countdown running under
+  // that introduction takes it away from anyone who reads it at their own pace,
+  // or who set the comic down for a moment before starting. The first page turn
+  // is the reader saying they have the idea, and only then does the idle window
+  // start running.
+  const [hasPaged, setHasPaged] = useState(false);
+
   const setChrome = useCallback((next: boolean) => {
     visibleRef.current = next;
     setChromeVisible(next);
@@ -560,13 +569,13 @@ export function ComicReader({
     setChrome(!visibleRef.current);
   }, [noteActivity, setChrome]);
 
-  // Nothing to get out of the way of until there is a page to read: the loading
-  // state, the empty note and the back cover are all things the reader is meant
-  // to act on, so the chrome stays put for them. An open note is the same case —
-  // the bars would fade out under a translucent scrim, then be back the moment
-  // it closes.
+  // Nothing to get out of the way of until there is a page to read *and* a
+  // reader turning them: the loading state, the empty note and the back cover
+  // are all things the reader is meant to act on, an open note would fade the
+  // bars out under a translucent scrim only to bring them back the moment it
+  // closes, and a comic nobody has paged through yet is still being introduced.
   const chromeCanRest =
-    totalPages > 0 && !isSpinePending && !atEnd && !noteOpen;
+    hasPaged && totalPages > 0 && !isSpinePending && !atEnd && !noteOpen;
 
   useEffect(() => {
     if (!chromeVisible || chromeHeld || !chromeCanRest) return;
@@ -602,6 +611,11 @@ export function ComicReader({
       // A page turn is not a request for the chrome back — but if it is already
       // out, tapping through pages shouldn't make it vanish mid-tap.
       noteActivity();
+      // ...and it is what starts the chrome's idle window, whether the turn came
+      // from a swipe, a tap zone, a footer button or a key. Only a turn that
+      // actually moves: this sits past the early return, so pressing previous on
+      // page one doesn't count as reading the comic.
+      setHasPaged(true);
       onPageChange(clamped + 1);
     },
     [index, lastIndex, noteActivity, onPageChange],

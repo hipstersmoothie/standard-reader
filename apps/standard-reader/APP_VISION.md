@@ -383,7 +383,9 @@ What changes for a serial:
   reading order (`#/lib/document/images`), so nothing is authored specially for it. Arrow keys /
   space / Page keys, `Home` / `End`, tap-zones and swipe all page; the current page lives in the
   URL (page turns replace the history entry, so Back leaves the reader). Past the last page is
-  an end card with the next issue. The article route redirects a comic issue here unless
+  an end card with the next issue. The floating chrome **stays until the reader turns their first
+  page** — on arrival the bars are the introduction, and a countdown running under it takes that
+  away from anyone reading at their own pace — and only then starts stepping aside on an idle beat. The article route redirects a comic issue here unless
   `?view=reader` — which is also the "Read the notes" escape, because a comic's prose commentary
   belongs to the reading view, not the theater.
   The top bar carries a **full-screen toggle** (`f`, or the button at its end) that puts the
