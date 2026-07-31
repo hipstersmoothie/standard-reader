@@ -903,9 +903,17 @@ Backend/API exists; UI or copy is missing.
       **Books** get an "Up next" section under the article
       ([`series-up-next.tsx`](src/components/reader/series-up-next.tsx)) driven by
       `getSeriesContext` ([`series.ts`](src/server/reader/series.ts)) — position, the following
-      issue, or a caught-up note. Backfill: `pnpm backfill:serial`
-      ([`backfill-serial-publications.ts`](scripts/backfill-serial-publications.ts)) re-reads every
-      publisher's publication records, then derives the kinds.
+      issue, or a caught-up note.
+      Serial metadata fills in **on demand** as well as on the sweep: the tap only writes
+      `prev_next_direction` on a record create/update, so `ensurePublicationSerial` treats a NULL
+      as "never mirrored" (the ingest handler stores the lexicon default `"rtl"` for a record that
+      states nothing, keeping the two apart), reads the record from the PDS once, and derives the
+      kind on the spot for a serial — the `backfillXFromRepo` pattern. Without it a publication
+      indexed before the column existed stayed an ordinary blog until its author edited the record
+      or the 50-repos-an-hour reconcile round-robin reached it, which never completes in a preview
+      environment. `pnpm backfill:serial`
+      ([`backfill-serial-publications.ts`](scripts/backfill-serial-publications.ts)) warms every
+      publication at once so no reader pays the first PDS read.
 - [ ] **Reader preference for the comic reader** — comics currently always open in the theater (with
       "Read the notes" as the escape). The magazine has an `open_collections_in_magazine` toggle;
       the comic reader deserves the same opt-out, plus a per-publication override for a serial the
