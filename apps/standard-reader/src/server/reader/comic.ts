@@ -37,7 +37,9 @@ import {
   parseComicIssueTitle,
   titlesLookLikeIssues,
 } from "#/lib/comic/issue-title";
+import { comicPageNote } from "#/lib/comic/page-note";
 import { documentImages } from "#/lib/document/images";
+import { documentExtractedText } from "#/lib/document/search-text";
 import { documentPublishedNotInFuture } from "#/server/reader/document-filters";
 import { selectUnreadDocumentUris } from "#/server/reader/queries";
 
@@ -73,6 +75,17 @@ export interface ComicPage {
   issueTitle: string;
   /** 1-based page number within its own issue. */
   pageInIssue: number;
+  /**
+   * The prose this page's post carries beside the art (`#/lib/comic/page-note`),
+   * or null when the post is art and nothing else — which is most of them.
+   *
+   * Carried per page rather than per issue: it belongs to the post, and a post
+   * that contributes several pages says the same thing about all of them, so
+   * every one of its pages can show it. The repetition costs a duplicate string
+   * in the payload for the rare multi-image post, and saves the reader having to
+   * map a page back to a document to find out whether there is anything to read.
+   */
+  note: string | null;
 }
 
 /**
@@ -203,6 +216,11 @@ export async function selectComicSpine(
  * than trusted from `body_image_count`: if a publisher edits an issue between
  * the spine load and the chunk load, the stored count is briefly stale, and the
  * pages themselves are the truth. The count is refreshed when they disagree.
+ *
+ * The chunk also carries each page's note — the prose its post published with
+ * the art. It rides here because this is the one query that opens the bodies
+ * anyway; asking for it separately would re-read the same rows to answer a
+ * question this one already has in hand.
  */
 export async function selectComicPages(
   db: Db,
@@ -227,6 +245,7 @@ export async function selectComicPages(
       did: d.did,
       contentJson: d.contentJson,
       contentFormat: d.contentFormat,
+      textContent: d.textContent,
     })
     .from(d)
     .where(
@@ -248,6 +267,16 @@ export async function selectComicPages(
       contentFormat: row.contentFormat,
     });
 
+    // The body we can parse is preferred over the stored text: `text_content`
+    // is the *search* blob (record text plus extracted body), and old backfills
+    // are known to have compounded copies into it — fine for a search index,
+    // not for something a reader is asked to read. It stands in only when the
+    // body yields no text at all.
+    const bodyText =
+      documentExtractedText(row.contentJson as JsonValue, row.contentFormat) ??
+      row.textContent;
+    const note = comicPageNote(bodyText, images);
+
     for (const [i, image] of images.entries()) {
       pages.push({
         index: issue.pageOffset + i,
@@ -257,6 +286,7 @@ export async function selectComicPages(
         issueUri: issue.uri,
         issueTitle: issue.title,
         pageInIssue: i + 1,
+        note,
       });
     }
 

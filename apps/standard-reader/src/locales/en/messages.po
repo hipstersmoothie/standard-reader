@@ -933,6 +933,10 @@ msgstr "These are separate from the app-wide appearance settings, which is delib
 msgid "Nothing saved yet"
 msgstr "Nothing saved yet"
 
+#: src/components/comic/comic-page-note.tsx
+msgid "Read the full post"
+msgstr "Read the full post"
+
 #: src/components/user-settings-view.tsx
 msgid "Turn on to choose which items appear in the sidebar. Subscriptions and your lists always stay."
 msgstr "Turn on to choose which items appear in the sidebar. Subscriptions and your lists always stay."
@@ -2659,6 +2663,10 @@ msgstr "The End."
 msgid "We couldn't find that author."
 msgstr "We couldn't find that author."
 
+#: src/components/comic/comic-reader.tsx
+msgid "Read the note with this page"
+msgstr "Read the note with this page"
+
 #: src/components/guide/pages/extension-guide-page.tsx
 msgid "You come across something worth reading in the middle of doing something else. Without the extension that means copying a link and finding somewhere to put it. With it, saving is one click, wherever you are."
 msgstr "You come across something worth reading in the middle of doing something else. Without the extension that means copying a link and finding somewhere to put it. With it, saving is one click, wherever you are."
@@ -3686,6 +3694,10 @@ msgstr "A Listen button reads any article aloud, right on your device, and highl
 #: src/components/reader/series-up-next.tsx
 msgid "Read the next instalment: {0}"
 msgstr "Read the next instalment: {0}"
+
+#: src/components/comic/comic-page-note.tsx
+msgid "Note for {issueTitle}"
+msgstr "Note for {issueTitle}"
 
 #: src/components/reader/atstore-review-prompt.tsx
 msgid "Something went wrong while preparing your review."
@@ -6938,6 +6950,10 @@ msgstr "Recommend this article"
 #: src/components/reader/about-view.tsx
 msgid "Stop"
 msgstr "Stop"
+
+#: src/components/comic/comic-page-note.tsx
+msgid "Close the note"
+msgstr "Close the note"
 
 #: src/components/guide/pages/your-data-guide-page.tsx
 #: src/components/user-settings-view.tsx

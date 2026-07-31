@@ -911,7 +911,15 @@ Backend/API exists; UI or copy is missing.
       leaves the art alone ([`use-fullscreen.ts`](src/components/comic/use-fullscreen.ts)) —
       unprefixed API only (the app targets `baseline 2024`), absent rather than disabled where the
       browser refuses element full screen (iOS Safari), and driven off `fullscreenchange` so
-      Escape, F11 and the OS keep the icon honest. The stage keeps `touch-action: pan-y pinch-zoom`
+      Escape, F11 and the OS keep the icon honest. Beside it, a **note button** lays the writing a
+      page published with over the art
+      ([`comic-page-note.tsx`](src/components/comic/comic-page-note.tsx)) — a translucent scrim,
+      the prose in the theater's own type, and a "Read the full post" escape — so a caption no
+      longer costs a navigation to the reading view. The note rides on `ComicPage` from the chunk
+      query that already opens each body, and is the body plaintext minus the pages' own alt text
+      ([`page-note.ts`](src/lib/comic/page-note.ts)), since the extractors narrate images by their
+      alt. It is a React Aria modal portalled into the theater rather than `document.body`, which
+      is what keeps it on screen in full screen. The stage keeps `touch-action: pan-y pinch-zoom`
       so a dense page can be pinched into, and **flips to `manipulation` while zoomed** — reserving
       horizontal drags for the swipe is what makes paging work at rest, but it pins a zoomed reader
       to a single vertical track, and swipe stands down at that scale anyway (as it does while a

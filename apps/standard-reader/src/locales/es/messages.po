@@ -933,6 +933,10 @@ msgstr ""
 msgid "Nothing saved yet"
 msgstr "Todavía no hay nada guardado"
 
+#: src/components/comic/comic-page-note.tsx
+msgid "Read the full post"
+msgstr ""
+
 #: src/components/user-settings-view.tsx
 msgid "Turn on to choose which items appear in the sidebar. Subscriptions and your lists always stay."
 msgstr ""
@@ -2659,6 +2663,10 @@ msgstr "Fin."
 msgid "We couldn't find that author."
 msgstr "No encontramos a ese autor."
 
+#: src/components/comic/comic-reader.tsx
+msgid "Read the note with this page"
+msgstr ""
+
 #: src/components/guide/pages/extension-guide-page.tsx
 msgid "You come across something worth reading in the middle of doing something else. Without the extension that means copying a link and finding somewhere to put it. With it, saving is one click, wherever you are."
 msgstr ""
@@ -3685,6 +3693,10 @@ msgstr "Un botón de Escuchar lee cualquier artículo en voz alta, directamente 
 #. placeholder {0}: next.title
 #: src/components/reader/series-up-next.tsx
 msgid "Read the next instalment: {0}"
+msgstr ""
+
+#: src/components/comic/comic-page-note.tsx
+msgid "Note for {issueTitle}"
 msgstr ""
 
 #: src/components/reader/atstore-review-prompt.tsx
@@ -6938,6 +6950,10 @@ msgstr "Recomendar este artículo"
 #: src/components/reader/about-view.tsx
 msgid "Stop"
 msgstr "Detener"
+
+#: src/components/comic/comic-page-note.tsx
+msgid "Close the note"
+msgstr ""
 
 #: src/components/guide/pages/your-data-guide-page.tsx
 #: src/components/user-settings-view.tsx
