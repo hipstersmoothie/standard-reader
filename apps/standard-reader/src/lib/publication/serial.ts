@@ -5,8 +5,12 @@
  * declared prev/next reading direction. The lexicon default is `"rtl"`, which
  * is the ordinary blog order (newest post first, "next" walks backwards into
  * the archive). A publisher who sets `"ltr"` is saying the opposite: the
- * publication reads forwards from its *first* post, so a reader arriving at the
- * publication should start at issue #1 and walk forwards.
+ * publication reads forwards from its *first* post, so "next" is the later
+ * issue and the work has a front and a back.
+ *
+ * That is about reading order *inside* the work — prev/next, "Up next", the
+ * comic reader's page numbering. The archive itself still lists newest-first
+ * like everything else (see `#/lib/publication/archive-order`).
  *
  * That single flag is what marks a publication as a serial here. What kind of
  * serial it is has no field in the lexicon, so it is app-derived from the

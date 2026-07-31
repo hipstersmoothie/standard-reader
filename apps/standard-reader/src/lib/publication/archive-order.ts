@@ -1,18 +1,19 @@
 /**
  * Reader overrides for the order a publication's archive is listed in.
  *
- * An ordinary publication lists newest-first; a serial lists oldest-first, so
- * chapter one leads (see `#/lib/publication/serial`). Whether a publication is a
- * serial comes from `preferences.prevNextDirection` on its record — the
- * publisher's claim about their own work, and one they can get wrong. A blog
- * whose author set the flag without meaning "read me front to back" reads
- * backwards for everyone; a serial whose author never set it reads backwards
- * too.
+ * Every publication lists newest-first, serials included. A serial reads
+ * forwards from its first post (see `#/lib/publication/serial`), and the archive
+ * used to be turned around to match — but an archive answers "what's new here?"
+ * far more often than "where does this start?", and a reader who is caught up on
+ * a running comic had to page to the end of it to find the page they came for.
+ * The serial treatment that matters is the reading order *inside* the work
+ * (prev/next, "Up next", the comic reader's page numbering), not which end of the
+ * shelf faces out.
  *
- * So the reader gets the last word. The override is per publication — disagreeing
- * with one publisher's label says nothing about the next — and lives in a cookie
- * so the server can honor it while rendering, rather than the archive painting
- * one way and flipping after hydration.
+ * A reader who does want to start at the beginning gets the last word. The
+ * override is per publication — disagreeing about one archive says nothing about
+ * the next — and lives in a cookie so the server can honor it while rendering,
+ * rather than the archive painting one way and flipping after hydration.
  *
  * Deliberately not stored on the user row: it costs a migration and a write path
  * to remember a display preference that a signed-out reader should get too.
@@ -36,9 +37,13 @@ export const ARCHIVE_ORDER_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 365;
  */
 export const ARCHIVE_ORDER_MAX_ENTRIES = 24;
 
-/** The order a publication lists in when the reader hasn't said otherwise. */
-export function defaultArchiveOrder(isSerial: boolean): ArchiveOrder {
-  return isSerial ? "oldest" : "newest";
+/**
+ * The order a publication lists in when the reader hasn't said otherwise —
+ * newest first, whatever the publication is. Named rather than inlined so the
+ * default has one home to argue with (see the note at the top of this file).
+ */
+export function defaultArchiveOrder(): ArchiveOrder {
+  return "newest";
 }
 
 function parseArchiveOrder(value: string | undefined): ArchiveOrder | null {

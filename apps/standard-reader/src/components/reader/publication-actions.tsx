@@ -146,9 +146,10 @@ function FilterSubMenu({
 /**
  * Which end of the archive leads, as a submenu off "Order".
  *
- * A serial lists oldest-first so chapter one leads, and that comes from a flag
- * the publisher sets on their own record — which they can get wrong in both
- * directions. This is how a reader disagrees, for this publication only.
+ * Every archive leads with the latest post, serials included — an archive is
+ * read far more often to see what's new than to find where a work begins. This
+ * is how a reader who wants to start at the beginning says so, for this
+ * publication only (see `#/lib/publication/archive-order`).
  */
 function OrderSubMenu({
   order,

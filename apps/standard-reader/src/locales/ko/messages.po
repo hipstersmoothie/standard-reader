@@ -2974,6 +2974,11 @@ msgstr "회원님을 대신해 저장소의 레코드를 읽고 쓸 수 있도�
 msgid "Copy"
 msgstr "복사"
 
+#. placeholder {0}: issue.label
+#: src/components/comic/comic-shelf.tsx
+msgid "Continue {0}"
+msgstr ""
+
 #: src/components/reader/content/renderers/shared/image-figure.tsx
 #: src/components/reader/content/renderers/shared/markdown-article.tsx
 #: src/magazine/Magazine.tsx

@@ -160,7 +160,9 @@ export const Route = createFileRoute("/_layout/p/$did/$rkey")({
     // of the page's first paint rather than something that pops in after it.
     if (header?.publication.serial?.kind === "comic" && deps.filter === "all") {
       await context.queryClient
-        .ensureQueryData(publicationApi.getComicShelfQueryOptions(uri))
+        .ensureQueryData(
+          publicationApi.getComicShelfQueryOptions(uri, { readerScope }),
+        )
         .catch(() => null);
     }
 
@@ -662,6 +664,24 @@ function PublicationProfileContent({
           unreadDocumentUris.includes(doc.uri) ? { ...doc, isRead: true } : doc,
         ),
       );
+      // The server marks the whole publication read, not just the rows this page
+      // has loaded, so the shelf's dots all go out — clearing them here rather
+      // than refetching, because the `read` records reach the read model through
+      // the firehose and a refetch this soon would paint them straight back on.
+      queryClient.setQueryData(
+        publicationApi.getComicShelfQueryOptions(uri, { readerScope }).queryKey,
+        (shelf) =>
+          shelf
+            ? {
+                ...shelf,
+                issues: shelf.issues.map((issue) =>
+                  issue.unreadPages.length > 0
+                    ? { ...issue, unreadPages: [] }
+                    : issue,
+                ),
+              }
+            : shelf,
+      );
     },
     onSuccess: () => {
       setMarkAllReadCloseSignal((count) => count + 1);
@@ -729,7 +749,7 @@ function PublicationProfileContent({
   // "half of issue 3".
   const shelfEnabled = pub.serial?.kind === "comic" && filter === "all";
   const { data: shelf, isPending: shelfPending } = useQuery({
-    ...publicationApi.getComicShelfQueryOptions(uri),
+    ...publicationApi.getComicShelfQueryOptions(uri, { readerScope }),
     enabled: shelfEnabled,
   });
   // Until it resolves we don't know whether the titles group at all, and
@@ -817,7 +837,12 @@ function PublicationProfileContent({
           {showShelf ? (
             <Flex direction="column" gap="5xl">
               {shelf?.grouped ? (
-                <ComicShelf issues={shelf.issues} order={initialPage.order} />
+                <ComicShelf
+                  issues={shelf.issues}
+                  order={initialPage.order}
+                  trackReading={trackReading}
+                  signedIn={signedIn}
+                />
               ) : (
                 <ComicShelfSkeleton />
               )}

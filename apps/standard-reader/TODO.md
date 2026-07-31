@@ -891,9 +891,12 @@ Backend/API exists; UI or copy is missing.
       ([`recompute.ts`](src/server/ingest/recompute.ts)): a publication whose recent posts each
       render an image and carry only a short note of prose is a comic. Both travel to the UI as
       `PublicationCard.serial` ([`serial.ts`](src/lib/publication/serial.ts)).
-      Serial publication pages list their archive **oldest-first** (resolved server-side in
-      `getPublicationDocuments`, so the client needn't know the order to page it) and offer
-      "Start from issue one" ([`serial-start.tsx`](src/components/reader/serial-start.tsx)).
+      Serial publication pages list their archive **newest-first** like every other publication —
+      an archive answers "what's new here?" far more often than "where does this start?" — with a
+      per-publication cookie override for a reader who wants to start at the beginning, resolved
+      server-side in `getPublicationDocuments`
+      ([`archive-order.ts`](src/lib/publication/archive-order.ts)) so the client needn't know the
+      order to page it.
       **Comics** open in a new page-flip reader at `/comic/$did/$rkey`
       ([`comic-reader.tsx`](src/components/comic/comic-reader.tsx)) — a fixed dark theater over the
       **whole publication**: every issue's images, in publication order, as one continuous run of
@@ -941,6 +944,14 @@ Backend/API exists; UI or copy is missing.
       treated as a guess — under 70% of titles parsing, or a single group, leaves `grouped: false`
       and the ordinary list stands, as do the read/unread filters. Awaited in the route loader for
       comics so the shelf is part of first paint.
+      **Unread works by the issue**: an issue is unread while any of its pages is, so the shelf is
+      reader-scoped — `selectComicShelf` hands each issue the reader's unread pages
+      (`selectUnreadDocumentUris`, the same query the archive filter and "mark all as read" use),
+      the cover wears the ordinary unread dot, and clicking it opens the reader on the first page
+      that reader hasn't seen rather than back at the cover
+      ([`shelf-progress.ts`](src/lib/comic/shelf-progress.ts)). `read` records mirror in through
+      the firehose, so the server's answer is corrected client-side from the same read caches the
+      feeds' unread dots use — walking a comic and stepping back out leaves no stale dots behind.
 - [ ] **Reader preference for the comic reader** — comics currently always open in the theater (with
       "Read the notes" as the escape). The magazine has an `open_collections_in_magazine` toggle;
       the comic reader deserves the same opt-out, plus a per-publication override for a serial the

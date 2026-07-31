@@ -2974,6 +2974,11 @@ msgstr "Tokens de OAuth para poder leer y escribir registros en su repositorio e
 msgid "Copy"
 msgstr "Copiar"
 
+#. placeholder {0}: issue.label
+#: src/components/comic/comic-shelf.tsx
+msgid "Continue {0}"
+msgstr ""
+
 #: src/components/reader/content/renderers/shared/image-figure.tsx
 #: src/components/reader/content/renderers/shared/markdown-article.tsx
 #: src/magazine/Magazine.tsx

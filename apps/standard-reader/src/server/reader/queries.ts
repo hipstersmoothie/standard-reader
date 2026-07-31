@@ -808,10 +808,10 @@ export async function selectPublicationArticleCards(
      * but set even when reading history is off (recommends don't need it). */
     readerDid?: string;
     /**
-     * Archive ordering. Defaults to newest-first; serial publications pass
-     * `"oldest"` so the page opens on issue #1 (see
-     * `#/lib/publication/serial`). Callers must keep this stable across a
-     * paginated run — the offsets are computed against one ordering.
+     * Archive ordering. Defaults to newest-first; `"oldest"` is a reader asking
+     * to start at the beginning (see `#/lib/publication/archive-order`).
+     * Callers must keep this stable across a paginated run — the offsets are
+     * computed against one ordering.
      */
     order?: "newest" | "oldest";
   },
@@ -2131,9 +2131,10 @@ export function documentsNewestFirst(d: Schema["documents"]): Array<SQL> {
 }
 
 /**
- * Oldest-first document ordering — a serial publication reads forwards from its
- * first post (see `#/lib/publication/serial`), so its archive is listed in
- * publication order rather than reverse-chronological.
+ * Oldest-first document ordering — publication order rather than
+ * reverse-chronological, for a reader who has asked to read an archive from its
+ * beginning (see `#/lib/publication/archive-order`), and for the comic spine,
+ * whose absolute page numbers only mean anything front-to-back.
  *
  * Spelled as the exact reverse of {@link documentsNewestFirst}, down to the NULLS
  * placement, so the two are mirror images and Postgres can serve either by
