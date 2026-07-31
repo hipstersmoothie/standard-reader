@@ -22,6 +22,7 @@ import {
 import * as stylex from "@stylexjs/stylex";
 import { Link } from "@tanstack/react-router";
 
+import type { ArchiveOrder } from "#/lib/publication/archive-order";
 import type { ComicShelfIssue } from "#/server/reader/comic";
 
 /** Comic covers are taller than they are wide — the standard trade paperback. */
@@ -159,11 +160,23 @@ export function ComicShelfSkeleton() {
  *
  * The caller decides whether a shelf is warranted (`ComicShelf.grouped`); this
  * only draws it.
+ *
+ * `issues` always arrive in publication order (#1 first) — the spine reads that
+ * way so absolute page numbers mean something. `order` is the reader's view of
+ * the archive, and the shelf is the archive here, so it follows: a reader who
+ * asked for newest first gets the latest issue at the top left.
  */
-export function ComicShelf({ issues }: { issues: Array<ComicShelfIssue> }) {
+export function ComicShelf({
+  issues,
+  order,
+}: {
+  issues: Array<ComicShelfIssue>;
+  order: ArchiveOrder;
+}) {
+  const shelved = order === "newest" ? [...issues].toReversed() : issues;
   return (
     <div {...stylex.props(styles.shelf)}>
-      {issues.map((issue) => (
+      {shelved.map((issue) => (
         <ComicShelfCard key={issue.uri} issue={issue} />
       ))}
     </div>

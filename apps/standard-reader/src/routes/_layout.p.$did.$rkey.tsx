@@ -673,9 +673,10 @@ function PublicationProfileContent({
 
   // The archive's order lives in a cookie, so the server owns it — there's no
   // client state to keep in step. Setting it invalidates this publication's
-  // document queries and the refetch comes back the other way round. The comic
-  // shelf is deliberately left alone: a comic's issues run #1..#N whichever way
-  // the archive is listed, so the spine reads in publication order regardless.
+  // document queries; the refetch comes back the other way round and carries the
+  // new `order`, which is also what re-shelves a comic's covers (the shelf's own
+  // query is untouched — the spine is always in publication order, and the shelf
+  // reverses it for display).
   const { mutate: setArchiveOrder } = useMutation({
     mutationFn: (next: ArchiveOrder) =>
       publicationApi.setPublicationArchiveOrder({
@@ -816,7 +817,7 @@ function PublicationProfileContent({
           {showShelf ? (
             <Flex direction="column" gap="5xl">
               {shelf?.grouped ? (
-                <ComicShelf issues={shelf.issues} />
+                <ComicShelf issues={shelf.issues} order={initialPage.order} />
               ) : (
                 <ComicShelfSkeleton />
               )}
