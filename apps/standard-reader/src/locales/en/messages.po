@@ -2993,6 +2993,10 @@ msgstr "Signed out?"
 msgid "Publications to explore"
 msgstr "Publications to explore"
 
+#: src/components/reader/article-view.tsx
+msgid "Read as comic"
+msgstr "Read as comic"
+
 #: src/components/reader/serial-start.tsx
 msgid "A serial comic — these issues read in order, from the first."
 msgstr "A serial comic — these issues read in order, from the first."

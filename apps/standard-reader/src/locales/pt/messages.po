@@ -2993,6 +2993,10 @@ msgstr ""
 msgid "Publications to explore"
 msgstr "Publicações para explorar"
 
+#: src/components/reader/article-view.tsx
+msgid "Read as comic"
+msgstr ""
+
 #: src/components/reader/serial-start.tsx
 msgid "A serial comic — these issues read in order, from the first."
 msgstr ""

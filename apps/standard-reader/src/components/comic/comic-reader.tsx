@@ -25,6 +25,7 @@ import { documentLinkParams, publicationLinkParams } from "../reader/format";
 import { applyMarkReadOptimisticUpdate } from "../reader/read-optimistic";
 import { ButtonLink, IconButtonLink } from "../router-links";
 import { issueAtPage, pageOfIssue, useComicPages } from "./use-comic-pages";
+import { usePagePreload } from "./use-page-preload";
 
 /**
  * The theater is one fixed look in both colour schemes: art is the whole point,
@@ -91,10 +92,15 @@ const styles = stylex.create({
     boxShadow: "none",
   },
   titles: {
+    display: "flex",
     flexBasis: "0%",
+    flexDirection: "column",
     flexGrow: 1,
     flexShrink: 1,
     minWidth: 0,
+    // The publication name and the issue title are two separate lines of type,
+    // not one block — without this they collide.
+    rowGap: gap.xs,
   },
   kicker: {
     color: THEATER_CHROME,
@@ -115,7 +121,10 @@ const styles = stylex.create({
     fontFamily: fontFamily.serif,
     fontSize: fontSize.base,
     fontWeight: fontWeight.semibold,
-    lineHeight: lineHeight.xs,
+    // `lineHeight.xs` is 0.8 — tighter than the type itself, so `overflow:
+    // hidden` (which the ellipsis needs) sliced the descenders off a title like
+    // "Fray In The Veil". `sm` gives the line box room to hold them.
+    lineHeight: lineHeight.sm,
     overflow: "hidden",
     textOverflow: "ellipsis",
     unicodeBidi: "isolate",
@@ -140,8 +149,12 @@ const styles = stylex.create({
     maxWidth: "100%",
   },
   // Half-width invisible hit areas: the natural way to page through art on a
-  // phone, and harmless on desktop, where the footer carries real controls.
+  // phone. They are pointer affordances only — the footer buttons are the
+  // accessible, focusable controls, so these stay out of the tab order and take
+  // no focus ring (clicking one otherwise left a ring hanging over the art for
+  // the rest of the session, since arrow keys keep the focus there).
   zone: {
+    outline: "none",
     borderWidth: 0,
     cursor: "pointer",
     backgroundColor: "transparent",
@@ -358,6 +371,10 @@ export function ComicReader({
     if (start > 0) onPageChange(start + 1);
   }, [anchorIssueUri, issues, onPageChange, page]);
 
+  // Decode the neighbouring pages now, so a turn shows art rather than a blank
+  // frame — the whole point of a comic is the image being there.
+  usePagePreload(pages, index);
+
   const currentIssue = issueAtPage(issues, index);
   const issueUri = currentIssue?.uri ?? null;
   const lastIssueUri = issues.at(-1)?.uri ?? null;
@@ -532,13 +549,21 @@ export function ComicReader({
             )}
             <button
               type="button"
-              aria-label={t`Previous page`}
+              // The footer control of the same name is the accessible one; this
+              // is a pointer target, so it is hidden from assistive tech and the
+              // tab order rather than duplicating that button.
+              aria-hidden
+              tabIndex={-1}
               onClick={goPrevious}
               {...stylex.props(styles.zone, styles.zonePrev)}
             />
             <button
               type="button"
-              aria-label={t`Next page`}
+              // The footer control of the same name is the accessible one; this
+              // is a pointer target, so it is hidden from assistive tech and the
+              // tab order rather than duplicating that button.
+              aria-hidden
+              tabIndex={-1}
               onClick={goNext}
               {...stylex.props(styles.zone, styles.zoneNext)}
             />

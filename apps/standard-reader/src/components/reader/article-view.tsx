@@ -48,6 +48,7 @@ import { Link, useRouter } from "@tanstack/react-router";
 import {
   ArrowLeft,
   BookOpen,
+  Images,
   Bookmark,
   Circle,
   CircleCheck,
@@ -66,6 +67,7 @@ import { labelerApi } from "#/integrations/tanstack-query/api-labelers.functions
 import type { ArticleDetail } from "#/integrations/tanstack-query/api-publication.functions";
 import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
+import { documentImages } from "#/lib/document/images";
 import { resolveArticleHeroImage } from "#/lib/document/lead-image";
 import { usePageReader } from "#/lib/page-reader/page-reader-context";
 import { publishingPlatform } from "#/lib/publishing-platform";
@@ -669,6 +671,7 @@ function ReadToggleButton({
  */
 function ReaderSecondaryActionsMenu({
   onOpenMagazine,
+  onOpenComic,
   onOpenPublication,
   publicationName,
   showReadToggle,
@@ -678,6 +681,7 @@ function ReaderSecondaryActionsMenu({
   onToggleBookmark,
 }: {
   onOpenMagazine: (() => void) | null;
+  onOpenComic: (() => void) | null;
   onOpenPublication: (() => void) | null;
   publicationName?: string | null;
   showReadToggle: boolean;
@@ -702,6 +706,15 @@ function ReaderSecondaryActionsMenu({
           textValue={t`Open magazine edition`}
         >
           <Trans>Open magazine edition</Trans>
+        </MenuItem>
+      ) : null}
+      {onOpenComic ? (
+        <MenuItem
+          prefix={<Images size={16} />}
+          onPress={onOpenComic}
+          textValue={t`Read as comic`}
+        >
+          <Trans>Read as comic</Trans>
         </MenuItem>
       ) : null}
       {onOpenPublication ? (
@@ -936,6 +949,24 @@ function ArticleViewBody({
           });
         }
       : null;
+  // A comic issue opened as an article (via "Read the notes", or `?view=reader`)
+  // had no way back to the pages — the redirect that brought a reader here only
+  // runs without that flag. `replace` so the two views don't stack in history.
+  const handleOpenComic =
+    article.publication?.serial?.kind === "comic" &&
+    linkParams &&
+    // A text-only post inside a comic (an announcement, a hiatus note) has no
+    // pages, and the comic route would bounce straight back here — so it gets
+    // no button offering the trip.
+    documentImages(article).length > 0
+      ? () => {
+          void router.navigate({
+            to: "/comic/$did/$rkey",
+            params: linkParams,
+            replace: true,
+          });
+        }
+      : null;
   const handleOpenPublication = publicationArticleUrl
     ? () => {
         globalThis.open(publicationArticleUrl, "_blank", "noopener,noreferrer");
@@ -1123,6 +1154,16 @@ function ArticleViewBody({
                   <BookOpen size={18} />
                 </IconButton>
               ) : null}
+              {handleOpenComic ? (
+                <IconButton
+                  variant="secondary"
+                  size="md"
+                  label={t`Read as comic`}
+                  onPress={handleOpenComic}
+                >
+                  <Images size={18} />
+                </IconButton>
+              ) : null}
               {/* A recognized platform gets its branded mark pulled out to the
                   end of the row instead (see below) — it reads as the
                   destination, not as one more grey utility glyph. */}
@@ -1156,6 +1197,7 @@ function ArticleViewBody({
             <div {...stylex.props(styles.topActsOverflow)}>
               <ReaderSecondaryActionsMenu
                 onOpenMagazine={handleOpenMagazine}
+                onOpenComic={handleOpenComic}
                 // A recognized platform keeps its own branded button visible on
                 // mobile (below), so it must not also appear in here.
                 onOpenPublication={platform ? null : handleOpenPublication}
