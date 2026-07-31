@@ -1083,19 +1083,276 @@ Standard AT Proto labels: subscribe to labelers, see/blur/hide their labels whil
       (publish V2 alongside legacy, dual-read, lazy migration) is landed; Phase 2 (deprecate legacy
       NSID + scope once no reader has old records) is pending. Requires the
       `_lexicon.labeler.standard-reader.app` DNS TXT record to publish the `labeler.*` group.
-- [x] **Discovery** — resolve a labeler by DID/handle (DID doc → `#atproto_labeler` →
-      descriptor); nothing hardcoded.
+- [x] **Discovery** — two registration paths into `labeler_services`, both read from the DB
+      afterwards. (a) Our labelers publish an `app.standard-reader.labeler.service` record, indexed
+      by tap. (b) Any AT Protocol labeler is resolved from its own declaration — DID doc
+      `#atproto_labeler` for the endpoint, `app.bsky.labeler.service` for the label-value
+      definitions — on first lookup, then backfilled (`source = 'atproto'`). Handle resolution goes
+      through the AppView resolver, so DNS-only handles work. Nothing hardcoded.
+- [x] **Account-scoped labels** — labels whose subject is a DID rather than a document. Network
+      labelers label accounts almost exclusively (pub-search's `bulk-generated`), so cards resolve
+      against both their URI and their author's DID, author/publication headers show account label
+      pills, and the labeler detail page has an Accounts tab beside Documents.
+- [x] **Directory lists every labeler** — no relevance filter. Readers bring their moderation setup
+      with them from Bluesky, so a labeler that has never touched a standard.site document is still
+      theirs to see and manage. (An earlier curation rule — list only labelers registered with us or
+      demonstrably labeling our corpus — was removed as a deviation.)
+      `KNOWN_STANDARD_SITE_LABELERS` survives as a **seed** list only: a network-declared labeler has
+      no row until something resolves it, so those DIDs are resolved eagerly when the directory
+      loads (`ensureKnownLabelersResolved`). Being absent from it hides nothing — it just means the
+      labeler has to reach us some other way (handle lookup, or a reader's ported subscriptions).
+- [x] **Discover every labeler on the network** — `discover.server.ts`. A labeler declares itself
+      with one `app.bsky.labeler.service` record, so the full set is every repo holding one, which
+      relays answer via `com.atproto.sync.listReposByCollection` (~537 repos; ~460 still resolve to
+      a live service, the rest are abandoned declarations). `startLabelerDiscovery` scans every 6h
+      in the ingest worker and resolves only DIDs we have no usable row for; `pnpm sync-labelers`
+      runs it by hand. **The relay index is not authoritative** — five labelers among one test
+      reader's real Bluesky subscriptions are absent from it — so discovery is additive and the
+      on-demand backfill still matters. Rows missing a handle are re-resolved (capped per run,
+      did:web excluded) so the directory heals itself rather than showing a bare DID forever.
+- [x] **Don't poll every labeler in the directory** — `syncAllLabels` now covers labelers with a live
+      subscription plus our own (`source: "record"`), not every row. The sync runs every 2 minutes,
+      so listing the network without this scoping would have meant hundreds of requests per minute to
+      other operators' label servers — and `document_labels` filling with labels nobody asked for.
+- [x] **Server-side search + pagination for the directory** — hundreds of labelers declare ~15k label
+      values between them (>3 MB of definition JSON), so the client can no longer hold the table.
+      `getKnownLabelers` takes `{query, limit, offset}`, orders subscribed-first in SQL (a
+      client-side sort would only reorder the page it holds), and sends each card just the couple of
+      label names it renders plus a total (`labelNames`/`labelCount`). Search matches name, handle,
+      description, DID and declared label identifiers; debounced 250ms client-side. ~13 kB/page.
+- [x] **Show handles, not DIDs** — `labeler_services.handle` (migration `0027`), resolved from the
+      DID document's `alsoKnownAs`. did:web labelers declare none, but for them the DID _is_ the
+      host, so it's derived at render (`labelerHandle`). DID remains the fallback.
+- [x] **Never block sign-in on the labeler port** — each ported labeler costs a DID-document fetch,
+      two repo reads and a PDS write, and running that inline in the OAuth callback added tens of
+      seconds to login. `scheduleBskyLabelerImport` is fire-and-forget with in-process guards and a
+      scope/stamp check, kicked off by the callback and re-triggered by the signed-in shell read (so
+      it covers readers whose session predates the preferences scope, without a second login).
+      Resolves are concurrent; the repo writes stay sequential since they all commit to one repo.
+- [x] **Port Bluesky labeler subscriptions** — on a reader's first sign-in we read
+      `app.bsky.actor.getPreferences` (scope `rpc:app.bsky.actor.getPreferences`), and for each
+      `labelersPref` entry create the matching subscription, carrying over `contentLabelPref`
+      visibility (Bluesky's `show` maps to our `ignore`; a labeler-scoped pref beats a global one).
+      Their moderation setup is in place with no action from them. **Read-only** — we never call
+      `putPreferences`, so nothing here can rewrite someone's Bluesky settings. One-shot, stamped by
+      `user.bskyLabelersImportedAt`: importing is additive, so re-running would resurrect labelers
+      the reader has since unsubscribed from here.
+- [x] **Subscribe / unsubscribe from the directory** — each card on `/labelers` carries the control,
+      and subscribed labelers sort to the top so a reader lands on their own setup.
+- [x] **Mute a labeler without unsubscribing** — `enabled` on
+      `app.standard-reader.labeler.subscription` (absent = enabled; only an explicit `false` mutes,
+      so existing records are unaffected). For a labeler a reader keeps on Bluesky but doesn't want
+      acting here. The subscription and its per-label prefs are untouched; only label _resolution_
+      skips it (`readerSubscriptionsImpl`), so muting stops badges, warnings, and hiding everywhere
+      at once, and unmuting restores exactly what they had. `setLabelerPref` carries `enabled`
+      through, since `putRecord` replaces the whole record and would otherwise un-mute on any pref
+      change. Rendered as a **switch** labelled "Muted" (state, not action) on both the directory
+      card and the labeler page — on means muted, the inverse of `enabled`.
+- [x] **Subscribing writes an explicit pref for every label**, defaulting to `warn`
+      (`subscriptionLabelPrefs`). Previously a new subscription stored no prefs and the toggles
+      showed a render-time fallback that was never written anywhere, so the UI disagreed with the
+      repo — and a labeler editing its own `defaultSetting` later would silently change how an
+      existing subscription behaved. `warn` rather than the labeler's declared default because
+      `hide` makes documents vanish unexplained and `ignore` makes the subscription look broken.
+      The Bluesky import follows the same rule, so a ported labeler and a hand-subscribed one are
+      indistinguishable apart from the choices Bluesky actually recorded.
+- [x] **Label toggles apply optimistically** — each change is a PDS write, and waiting on it before
+      moving the control (then refetching the labeler and every `["labels"]` query on top) froze the
+      page for about a second per click. The control moves immediately; the write returns the
+      authoritative prefs so nothing is refetched, and only `["labels"]` is invalidated since a
+      visibility pref changes document treatment, not the labeler or its directory placement.
+      Muting is optimistic the same way. Also fixed: `["reader", "labelers"]` is not a prefix of
+      `["reader", "knownLabelers"]`, so the card you just acted on kept its stale state.
+- [ ] **Give our labelers real did:plc accounts** — `claudeslop` and `botlabeler` are `did:web`, and
+      a `did:web` has no repo, so they cannot publish the standard `app.bsky.labeler.service`
+      record. That is the only reason the custom `app.standard-reader.labeler.{service,defs}` +
+      `getServices` descriptor path still exists. Migrating them to `did:plc` accounts with repos
+      lets us delete those lexicons entirely and leaves no deviation. Requires creating accounts and
+      re-signing under new DIDs; labels already emitted keep the old `src` until re-emitted.
+- [ ] **Retire `app.standard-reader.labeler.subscription`** — blocked on the above and on a local
+      write target. Bluesky preferences are read-only to us, so a reader's own subscribes /
+      unsubscribes need somewhere to live; today that is this record in their repo. Retiring it
+      means either moving that state into our DB (giving up repo ownership of it) or writing
+      Bluesky preferences (rejected: `putPreferences` is read-modify-write over the whole blob).
 - [x] **Settings → Labelers** — `/settings/labelers` (add by handle/DID, list subscriptions) +
       `/settings/labelers/$did` (info, subscribe, per-label hide/blur toggles, labeled documents).
 - [x] **Reader display** — badge + content warning on labeled documents per the reader's prefs.
 - [x] **claudeslop** — standalone reference labeler (`services/claudeslop/`): Jetstream → heuristic
       AI-writing detector → signed labels (SQLite) → `queryLabels` + `subscribeLabels`.
-- [ ] **Feed-level hiding** — filter `hide`-labeled documents out of feeds (currently surfaced
-      only on the article page).
+- [x] **Feed-level hiding** — `hide`-labeled rows are filtered out of the home and latest feeds,
+      by a label on the document or on its author's account.
 - [x] **Signature verification** — the label sync verifies every label's `sig` against the
       labeler's `#atproto_label` key (resolved from its DID document, cached, re-resolved once on
       mismatch to absorb key rotation) before mirroring it. Unsigned or unverifiable labels are
       dropped and counted in the sync log. See `src/server/labeler/verify.server.ts`.
+      **`neg` must be included whenever the labeler serialized it, `false` included.** Labelers
+      disagree on how to encode a non-negated label — some omit `neg`, others write `neg: false` —
+      and the signature covers whichever form that labeler produced. Dropping a present `neg: false`
+      invalidated every active label from the second group while their `neg: true` retractions still
+      verified. Measured across the labelers a real reader subscribes to, rejections went
+      **23,923 → 1**: stechlab 0 → 2000 labels, us-gov-funding 0 → 816, github-labeler 0 → 384.
+      An earlier note here blamed those labelers' signing; that was wrong, and the giveaway was that
+      _some_ of github-labeler's labels verified with the same key and the same code — which rules out
+      both a bad key and bad canonicalization. The test suite could not catch it because its own
+      `producerSigningBytes` helper reproduced the same assumption, so producer and verifier agreed on
+      the same mistake; tests now sign each convention explicitly. Note also that some label servers
+      add a non-lexicon `id` to responses, so signing over "everything except `sig`" is _not_ the fix —
+      the field allowlist is deliberate. Separately, seven of twenty polled endpoints refuse
+      connections; dropping those is correct, and it is no longer silent (below).
+- [x] **Surface a labeler that can't be verified or reached** — `label_sync_state` now records
+      `stored_count` / `rejected_count` / `last_error` per labeler (migration `0028`), and the Labels
+      tab says which of the three it is. A reader could otherwise subscribe, see a full list of
+      toggles, and receive nothing forever with only a server-side `console.warn`. Seven of twenty
+      polled labelers refuse connections; they now say so instead of looking empty.
+- [x] **Page a labeler's declared labels** — ATlas (a place labeler) declares **4,995** label values,
+      717 kB of JSON. The detail page read that row whole (~1s) and then rendered 4,995 segmented
+      controls. Definitions are now sliced in SQL (`jsonb_array_elements … with ordinality`) so the
+      blob never crosses the wire, 50 at a time, loading more on scroll via the same
+      `useInfiniteScrollSentinel` the Documents and Accounts tabs use. Paged queries measure
+      70–90ms. **Not** react-aria's `Virtualizer`: it wants a collection component (ListBox/GridList)
+      whose row semantics conflict with the interactive `SegmentedControl` each row owns.
+      Two consequences handled: the header stat shows the declared total rather than the loaded page,
+      and `getLabeler` additionally returns definitions for the values a labeler has actually
+      _emitted_ (`readLabelDefinitionsFor`) so a label pill anywhere in the app can still resolve its
+      display name when that value sits past the first page.
+- [x] **Label pills are neutral, and carry the labeler's avatar** — they were `warning`-yellow, which
+      implied a severity the labeler never claimed; most labels state something unalarming ("Bot", a
+      place, a GitHub repo). Severity is the reader's own per-label choice (off / warn / hide), not a
+      property of the label. The avatar names who is speaking instead.
+- [x] **Don't crash the sync on a real labeler's history** — inserts chunk at 1000 rows (Postgres
+      caps a bind at 65535 parameters and this binds four per row; Blacksky's ~22.5k labels overflowed
+      the int16 count, Skywatch's ~55k exhausted drizzle's stack), and negations delete 500 per
+      statement instead of one round trip each.
+- [x] **Shrink the page size when a label server fails mid-walk** — `queryLabels` was hard-coded to
+      `limit=250`, and the Account Activity Labeler answers HTTP 500 for that limit at one cursor
+      _every_ time while serving `limit=100` from the same cursor. Because the cursor is persisted,
+      every later run stalled on the identical page: that labeler was pinned at 2000 of its labels
+      forever. Page size now steps 250 → 100 → 25 on failure and the run reports
+      "sync is incomplete" instead of looking healthy (the old comment claimed a mid-walk break was
+      "a successful partial sync that the cursor resumes", which only holds for a _transient_
+      failure). Got that labeler from 2000 to 2175.
+      A version that grew the page size back after a few clean pages was **measurably worse** — 0 new
+      labels per run vs 175 — because the same server also answers some offsets with a bogus empty
+      page (HTTP 200, no labels, no cursor) at limits ≥ 5, which is indistinguishable from a real end
+      of stream; growing back walked into one and ended the run early. Kept monotonic, documented why.
+- [ ] **Account Activity Labeler (`did:plc:oubsyca6hhgqhmbbk27lvs7c`) cannot be fully synced.** Its
+      `queryLabels` is broken three ways: deterministic 500s at large limits, bogus empty pages at
+      limits ≥ 5 for some offsets, and `uriPatterns` filtering that returns 0 labels even for accounts
+      it demonstrably labeled (verified against a known-labeled subject). Only `limit=1` advances past
+      cursor 7286515, and 1 request per label is not a viable steady state — so we hold 2175 of its
+      labels and stop, with the incomplete state surfaced on its page. Nothing to fix on our side
+      short of a crawler that would hammer them; revisit if they fix pagination.
+- [x] **Fix unsubscribe, which silently did nothing** — it deleted the **V2** record from the PDS but
+      built the read-model delete URI with the **legacy** NSID. Since every subscription written today
+      is V2 (including every labeler ported from Bluesky), the mirror row survived — and the DB is the
+      read path, so the labeler stayed subscribed and its labels kept applying. It now deletes both
+      NSIDs on both sides; a reader can also hold a legacy record with no V2 twin, and
+      `subscribedLabelerDids` reads both, so leaving either behind resurrects the subscription.
+      Note this is _not_ a Bluesky limitation: unsubscribing here is local by design (we never write
+      Bluesky preferences) and the one-shot import means it is never resurrected on the next login, so
+      there is nothing to redirect a reader to Bluesky for.
+- [x] **Directory cards are links only** — subscribe and mute are gone from `/labelers`. The whole card
+      opens the labeler's page, which is the only place that shows what a labeler declares and what it
+      has labeled; deciding to trust a moderation service from a two-line card was the wrong shape.
+      State is still shown passively (a Subscribed/Muted mark, and muted cards dimmed), and each card
+      no longer carries three mutations plus its own cache invalidation.
+- [x] **Directory no longer front-loads the caller's own labelers** — it ranks by subscriber count then
+      alphabetically, the same for everyone. Subscribed-first made the page a mirror of the reader's
+      existing setup rather than somewhere to find something new. (This also removes the conditional
+      ORDER BY term that caused the `non-integer constant in ORDER BY` failure.)
+- [x] **Remove our own labelers entirely** — `services/claudeslop`, `services/botlabeler`,
+      `scripts/register-labelers.ts`, the `known-labelers` seed, the
+      `app.standard-reader.labeler.service` lexicon, `upsertLabelerService` + its consumer/delete
+      cases, the `TAP_LABELER_API_URL` channel, and `labeler_services.source` (migration `0029`).
+      Any labeler can label any content, so a first-party one bought nothing the network doesn't
+      provide, and the custom descriptor record was a deviation that existed _only_ because a
+      `did:web` has no repo to publish the standard declaration from. `syncAllLabels` is now purely
+      subscription-driven — the exception that polled our own labelers whether or not anyone
+      subscribed is gone. `labeler.defs` is kept: it holds `labelerView`/`labelerPolicies` for the
+      `getLabeler`/`getLabelers` public API, which still describes the directory.
+      Data: dropped the two `did:web` rows and their 1,645 labels; Skywatch re-resolved through the
+      standard path (it is in the relay's index, so registering it by record was never necessary).
+      460 labelers remain, all handle-resolved. Document labels are now 0 — nothing on the network
+      labels `site.standard.document` URIs.
+- [x] **Bot mark from the profile's own self-label** — `profiles.is_bot` (migration `0029`), set in the
+      profile ingest from `declaresBot()` (`src/lib/self-labels.ts`, a `bot` entry in the record's
+      `com.atproto.label.defs#selfLabels`). Rendered next to the name on `/u/$did` and, via
+      `ArticleCard.authorIsBot`, on every feed row for that account — a publication owned by a bot
+      counts as a bot, and `documents.did` is the publication owner for publication-bound documents,
+      so one field covers both. Replaces the entire bot labeler: the signal was the account's own
+      statement in a record we already index, so no labeler, no signature check, no round trip.
+      Also read from the AppView (`viewDeclaresBot`, matching `labels` entries whose `src` is the
+      account's own DID) so accounts whose profile record hasn't come past on the firehose still get
+      it, plus `pnpm backfill:bot-flags` to reconcile every already-indexed profile in both
+      directions (an account can retract the self-label). Backfill found 61 bots across 14,173
+      profiles, covering 2,981 documents.
+      Shown on all three surfaces a bot's work appears: the profile (`/u/$did`), feed rows
+      (`ArticleCard.authorIsBot`), and the article-page byline
+      (`ArticleDetail.publicationOwnerIsBot` / `ArticleContributor.isBot`, following the same
+      lead-contributor-else-publication-owner fallback as the rest of that byline — a publication
+      owned by a bot marks its articles even with no contributor listed, which is the common case).
+- [x] **Labeler docs point at the protocol** — the "declare your label values" step now describes the
+      standard `app.bsky.labeler.service` + `#atproto_labeler` declaration and links
+      atproto.com/specs/label and /specs/moderation, and the reference-implementation section (which
+      pointed at `services/claudeslop`) is now "Further reading". Nothing Standard Reader specific is
+      required to be a labeler here.
+- [x] **Surface labelers aimed at standard.site** — the directory leads with them and each card says
+      "Labels articles here". Almost every labeler on the network targets Bluesky posts and accounts;
+      one aimed here is worth finding, and would otherwise sit behind hundreds of them.
+      **Not derivable from `document_labels`**: that only holds labels for labelers somebody already
+      subscribes to, and a directory exists to surface the ones you haven't. So each labeler is asked
+      directly — `probeStandardSiteLabelers` samples one page of its labels on the discovery timer,
+      60 per run with a 7-day TTL, and stores the verdict on `labeler_services.labels_standard_site`
+      (migration `0027`).
+      **The subject is usually an account, not a document.** pub-search labels _publisher accounts_
+      (`bulk-mirror` on the DIDs behind drivepatents.com, crownnote.com, …) and never a document URI,
+      so a document-only test missed it entirely — which is what the first attempt did.
+      **It has to be a share, not an any-match.** With 250 subjects sampled, nearly every
+      general-purpose labeler eventually tags somebody who also publishes here: any-match flagged 21,
+      including Pride Labeller, Warhammer Labeler and NFLair. The measured distribution separates
+      cleanly — pub-search 94% ours, GitHub Contributor Labeler 32% (labels GitHub users, some of whom
+      publish here; correctly excluded), everything else 0–6% — so the bar is a 50% share over at
+      least 10 sampled subjects. The 10-subject floor matters too: at 5, two incidental matches
+      cleared 50% and flagged two five-label labelers. Final result: 2 of 460, pub-search among them.
+- [x] **Account labels on the article page** — the reading view showed none, so a label on the byline
+      account was visible on the profile and in feeds but vanished on the article itself. Rendered
+      under the byline via the viewer-scoped `AccountLabelsForDid`, same placement rule as the profile
+      and publication headers.
+- [x] **Hide unreachable labelers from the directory** — **272 of 460 declared labelers are dead**:
+      domains that no longer resolve, hosts refusing connections, 502/530s, certificates that stopped
+      matching their own name. Spot-checked six at random and all six were genuinely broken, so this
+      is the real shape of the network, not a probe artifact. They can never label anything, so
+      listing them is worse than useless.
+      The probe already contacted every labeler and _discarded_ the outcome — it now records
+      `labeler_services.reachable` (migration `0028`). The directory filters on it, **except for
+      labelers the caller subscribes to**, which stay visible with a "Not responding" warning: quietly
+      dropping something out of someone's own list is the more confusing failure, and it is the only
+      place they can unsubscribe from it. Guest sees 188; a reader with six dead subscriptions sees 194.
+      Recovery is built in: verdicts carry a TTL, so a labeler that comes back is re-enabled
+      automatically. The TTLs are **split** — a healthy labeler's classification barely changes so it
+      is left a week, while an unreachable one is _hidden_, making staleness costlier, so it is
+      re-checked every other day (~136 requests/day). Verified end to end by marking pub-search dead
+      and watching one probe restore it.
+      Also fixed: the stale query had **no `ORDER BY`**, so with 460 labelers and a batch of 60 the
+      planner could return the same rows every run and starve the rest indefinitely. Now oldest-first.
+      No cron needed — the ingest worker's discovery timer already owns this; a second scheduler would
+      duplicate it and need its own service and auth.
+- [x] **Mirror every _active_ labeler, hourly** — the sync covered only labelers somebody subscribed
+      to (17 of 460). It now covers every labeler whose server answers (`reachable = true`), plus
+      subscribed ones regardless in case that verdict is stale.
+      **The interval was the cost, not the count.** At the old 2-minute cadence that is 720 runs/day,
+      so ~190 labelers would have meant **135k requests/day** to other operators. Hourly is ~4.5k for
+      the same coverage, and labels are not time-critical the way a feed is.
+      **62% of what we stored was never read.** Every read path resolves exactly two subject kinds —
+      a `site.standard.document` URI and an account DID — but the sync mirrored everything a labeler
+      emitted, and most of them spend themselves on Bluesky posts. 207k of 331k rows were dead
+      weight. `isRenderableLabelSubject` filters at sync time; purging the existing rows took
+      `document_labels` from 156 MB to 35 MB. Mirroring the whole active directory then landed at
+      **221k rows / 70 MB** — against the 1–3 GB it would have been unfiltered.
+      The per-labeler loop was sequential, which at a 4s timeout each is >12 minutes of mostly
+      waiting; it runs 8 at a time via `mapWithConcurrency`, with errors swallowed per labeler so one
+      bad endpoint can't abort the run. A catch-up run measured 194 labelers in 379s; steady-state
+      runs are incremental and far shorter, so hourly leaves the worker idle ~90% of the time.
 - [ ] **subscribeLabels ingestion** — consume the labeler firehose into the read-model instead of
       live `queryLabels` per page, for lower latency.
 - [ ] **Deploy claudeslop** — Railway service + persistent SQLite volume; publish its did:web.

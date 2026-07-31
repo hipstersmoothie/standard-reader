@@ -16,6 +16,7 @@ import {
 } from "#/middleware/auth-session.server";
 import { cdnImageUrl } from "#/server/atproto/blob";
 import { buildCanonicalUrl } from "#/server/ingest/mappers";
+import { readAccountLabels } from "#/server/labeler/labels.server";
 import { observe } from "#/server/observability/log";
 import { attachReaderSpanContext } from "#/server/observability/span-context.ts";
 import type { MarginConnectionItem } from "#/server/reader/article-constellation-extras";
@@ -54,6 +55,7 @@ import {
 
 import type {
   ArticleCard,
+  ArticleCardLabel,
   JsonValue,
   ProfileSummary,
   PublicationCard,
@@ -139,6 +141,13 @@ export interface PublicationProfile {
   publication: PublicationCard;
   owner: ProfileSummary;
   recentDocuments: Array<ArticleCard>;
+  /**
+   * Labels on the **account** that owns this publication, from the viewer's
+   * subscribed labelers. Network labelers label accounts rather than documents
+   * (pub-search's `bulk-generated` marks a publisher whose documents are
+   * generated from a data source), so a publication inherits its owner's.
+   */
+  labels: Array<ArticleCardLabel>;
 }
 
 export interface PublicationSocialProof {
@@ -178,6 +187,8 @@ export interface ArticleContributor {
   displayName: string | null;
   handle: string | null;
   avatarUrl: string | null;
+  /** Contributor self-declares as a bot (a `bot` self-label on its profile). */
+  isBot: boolean;
 }
 
 export interface ArticleDetail {
@@ -208,6 +219,12 @@ export interface ArticleDetail {
   collectionTheme: CollectionTheme | null;
   /** Owning profile handle for the sticky byline (`@handle`). */
   publicationOwnerHandle: string | null;
+  /**
+   * The publication owner self-declares as a bot. A publication owned by a bot
+   * counts as a bot, so this drives the byline mark whenever the article has no
+   * distinct lead contributor.
+   */
+  publicationOwnerIsBot: boolean;
   /** Owning profile display name — the byline author when no contributor. */
   publicationOwnerDisplayName: string | null;
   contributors: Array<ArticleContributor>;
@@ -291,15 +308,20 @@ const getPublicationProfile = createServerFn({ method: "GET" })
         }
         span.set("found", true);
 
-        const recentWithComments = await attachCommentCountsToArticles(
-          db,
-          schema,
-          recentDocuments,
-        );
+        const [recentWithComments, accountLabels] = await Promise.all([
+          attachCommentCountsToArticles(db, schema, recentDocuments),
+          readAccountLabels(db, schema, did, [header.publication.did]),
+        ]);
 
+        // This fn is viewer-scoped (its query key carries `readerScope`), which
+        // is why labels can ride on it. `getPublicationHeader` is not — its key
+        // is `["publication", "header", uri]`, shared across readers — so the
+        // publication page reads account labels through the separate
+        // viewer-scoped `getAccountLabels` query instead.
         return {
           ...header,
           recentDocuments: recentWithComments,
+          labels: accountLabels.get(header.publication.did) ?? [],
         };
       },
     ),
@@ -452,6 +474,7 @@ const getArticle = createServerFn({ method: "GET" })
                 pubOwnerDisplayName: sql<
                   string | null
                 >`coalesce(${pr.displayName}, ${pa.displayName})`,
+                pubOwnerIsBot: sql<boolean>`coalesce(${pr.isBot}, ${pa.isBot}, false)`,
                 pubTopic: p.topic,
                 pubVerified: p.verified,
                 pubSubscriberCount: st.subscriberCount,
@@ -473,6 +496,7 @@ const getArticle = createServerFn({ method: "GET" })
                 profileDisplayName: pr.displayName,
                 handle: pr.handle,
                 avatarUrl: pr.avatarUrl,
+                isBot: pr.isBot,
               })
               .from(dc)
               .leftJoin(pr, eq(pr.did, dc.did))
@@ -517,6 +541,7 @@ const getArticle = createServerFn({ method: "GET" })
             displayName: c.displayName ?? c.profileDisplayName,
             handle: c.handle,
             avatarUrl: c.avatarUrl,
+            isBot: c.isBot ?? false,
           }),
         );
 

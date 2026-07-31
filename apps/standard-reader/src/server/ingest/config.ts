@@ -22,15 +22,6 @@ export const ingestConfig = {
   },
 
   /**
-   * Optional second tap instance signaled on `app.standard-reader.labeler.service`
-   * (`TAP_LABELER_API_URL`) so repos that register a labeler get tracked and
-   * their records indexed. Shares `TAP_ADMIN_PASSWORD`.
-   */
-  get tapLabelerApiUrl(): string | null {
-    return process.env.TAP_LABELER_API_URL ?? null;
-  },
-
-  /**
    * Optional third tap instance signaled on `site.standard.document`
    * (`TAP_DOCS_API_URL`) so repos that publish documents without a publication
    * record ("loose documents", e.g. Leaflet-hosted) get tracked + backfilled.

@@ -1,6 +1,7 @@
 import {
   boolean,
   index,
+  integer,
   jsonb,
   pgTable,
   primaryKey,
@@ -26,9 +27,10 @@ export interface LabelValueDefinition {
 }
 
 /**
- * `app.standard-reader.labeler.service` records — the registration of a labeler,
- * indexed off the network (the owner DID is the labeler's author). Drives the
- * Labelers directory and where to reach each labeler's label server.
+ * Every labeler on the AT Protocol network, resolved from its own declaration
+ * (`#atproto_labeler` in the DID document + an `app.bsky.labeler.service`
+ * record). Drives the Labelers directory and where to reach each label server.
+ * Populated by the periodic scan in `discover.server.ts`.
  */
 export const labelerServices = pgTable(
   "labeler_services",
@@ -45,7 +47,45 @@ export const labelerServices = pgTable(
     /** Origin serving queryLabels / subscribeLabels. */
     serviceEndpoint: text("service_endpoint").notNull(),
 
+    /**
+     * This labeler labels **standard.site** subjects — a `site.standard.document`
+     * URI, or the account of a publisher we index.
+     *
+     * Almost every labeler on the network is aimed at Bluesky posts and
+     * accounts; one aimed here is worth leading the directory with. It can't be
+     * derived from `document_labels`, because that only holds labels for
+     * labelers somebody already subscribes to — and a directory exists to
+     * surface the ones you *haven't* subscribed to. So it is probed directly
+     * (see `probeStandardSiteLabelers`) and stored.
+     *
+     * Null means "not probed yet", which is distinct from a probed `false`.
+     */
+    labelsStandardSite: boolean("labels_standard_site"),
+    /** When the probe above last ran, so it can be re-checked on a cadence. */
+    labelsProbedAt: timestamp("labels_probed_at", { withTimezone: true }),
+
+    /**
+     * The labeler's server answered when we last asked.
+     *
+     * A meaningful share of the directory is abandoned — domains that no longer
+     * resolve, hosts that refuse connections, certificates that stopped matching
+     * their own name. Listing those is worse than useless: they can never label
+     * anything, so they are hidden from the directory. A reader already
+     * subscribed to one still sees it, marked, because silently dropping
+     * something from their own list would be the more confusing failure.
+     *
+     * Null means "not probed yet", which is distinct from a probed `false`.
+     */
+    reachable: boolean("reachable"),
+
     displayName: text("display_name"),
+    /**
+     * The labeler's handle, from its DID document's `alsoKnownAs`. Shown instead
+     * of the raw DID on directory cards. Null for labelers whose document
+     * declares no handle — notably did:web, where the host is derivable from the
+     * DID itself (see `labelerHandle` in `src/lib/labeler-handle.ts`).
+     */
+    handle: text("handle"),
     description: text("description"),
     /** Resolved avatar blob URL (owner PDS getBlob), if any. */
     avatarUrl: text("avatar_url"),
@@ -99,6 +139,14 @@ export const labelerSubscriptions = pgTable(
 
     /** Per-label visibility overrides (mirrors the record's `labels`). */
     prefs: jsonb("prefs").$type<Array<LabelPref>>(),
+
+    /**
+     * Whether this labeler's labels are applied while reading. `false` keeps
+     * the subscription and its `prefs` intact but stops the labeler acting
+     * here — for a labeler a reader wants on Bluesky but not on Standard
+     * Reader. Distinct from unsubscribing, which drops the row entirely.
+     */
+    enabled: boolean("enabled").notNull().default(true),
 
     /** `createdAt` from the record. */
     createdAt: timestamp("created_at", { withTimezone: true }),
@@ -168,6 +216,20 @@ export const labelSyncState = pgTable("label_sync_state", {
   labelerDid: text("labeler_did").primaryKey(),
   /** Last `cursor` consumed from the labeler's `queryLabels`. */
   cursor: text("cursor"),
+
+  /**
+   * Health of the last sync, so a labeler that is *broken* can be told apart
+   * from one that simply hasn't labeled anything. Without this the two are
+   * indistinguishable in the UI: a reader subscribes, sees a full list of label
+   * toggles, and receives nothing forever with no explanation.
+   */
+  /** Labels stored on the last run (active, verified). */
+  storedCount: integer("stored_count").notNull().default(0),
+  /** Labels dropped on the last run because their signature didn't verify. */
+  rejectedCount: integer("rejected_count").notNull().default(0),
+  /** Why the last run couldn't reach the labeler at all; null when it could. */
+  lastError: text("last_error"),
+
   syncedAt: timestamp("synced_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

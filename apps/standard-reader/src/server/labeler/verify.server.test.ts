@@ -317,3 +317,85 @@ describe("labelSignatureBytes", () => {
     expect(labelSignatureBytes(baseLabel as DisplayLabel)).toBeNull();
   });
 });
+
+/**
+ * Labelers disagree on how to serialize a non-negated label: some omit `neg`
+ * entirely, others write `neg: false`. The signature covers whichever form that
+ * labeler encoded, so both have to verify.
+ *
+ * This is deliberately signed here rather than through `signAsLabeler`, because
+ * that helper reproduces the same "drop a falsy neg" assumption the verifier
+ * used to make — producer and verifier agreeing on the same mistake is why this
+ * class of bug survived the rest of this file.
+ */
+describe("labelSigningBytes — neg serialization conventions", () => {
+  let keypair: Secp256k1Keypair;
+
+  beforeEach(async () => {
+    resetSigningKeyCache();
+    keypair = await Secp256k1Keypair.create({ exportable: true });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    resetSigningKeyCache();
+  });
+
+  /** Sign over exactly `fields`, as a labeler encoding that shape would. */
+  async function signExactly(
+    kp: Secp256k1Keypair,
+    fields: Record<string, unknown>,
+  ) {
+    const sig = await kp.sign(dagCbor.encode(fields));
+    return {
+      ...fields,
+      sig: { $bytes: Buffer.from(sig).toString("base64") },
+    } as unknown as DisplayLabel;
+  }
+
+  const core = {
+    ver: 1,
+    src: LABELER_DID,
+    uri: "did:plc:labeledaccount",
+    val: "bot",
+    cts: "2026-06-24T00:00:00.000Z",
+  };
+
+  it("accepts a label whose producer wrote neg: false explicitly", async () => {
+    mockDidDoc(keypair);
+    const label = await signExactly(keypair, { ...core, neg: false });
+    await expect(verifyLabel(label, LABELER_DID)).resolves.toBe(true);
+  });
+
+  it("accepts a label whose producer omitted neg entirely", async () => {
+    mockDidDoc(keypair);
+    const label = await signExactly(keypair, { ...core });
+    await expect(verifyLabel(label, LABELER_DID)).resolves.toBe(true);
+  });
+
+  it("accepts a negation carrying neg: true", async () => {
+    mockDidDoc(keypair);
+    const label = await signExactly(keypair, { ...core, neg: true });
+    await expect(verifyLabel(label, LABELER_DID)).resolves.toBe(true);
+  });
+
+  it("still rejects a label whose neg was flipped after signing", async () => {
+    // The whole point of the signature: re-including `neg` must not become a
+    // way to smuggle an unsigned value through.
+    mockDidDoc(keypair);
+    const label = await signExactly(keypair, { ...core, neg: false });
+    await expect(
+      verifyLabel({ ...label, neg: true }, LABELER_DID),
+    ).resolves.toBe(false);
+  });
+
+  it("ignores a non-lexicon field a label server bolted on", async () => {
+    // Some servers leak their own row `id` into queryLabels responses; it was
+    // never part of the signed object, so it must not affect verification.
+    mockDidDoc(keypair);
+    const label = await signExactly(keypair, { ...core, neg: false });
+    await expect(
+      verifyLabel({ ...label, id: 918 } as never, LABELER_DID),
+    ).resolves.toBe(true);
+  });
+});

@@ -96,6 +96,16 @@ export interface ArticleCard {
   authorAvatarUrl: string | null;
   /** Document author's display name (fallback byline label for loose docs). */
   authorDisplayName: string | null;
+  /**
+   * The byline account self-declares as a bot (a `bot` entry in its profile
+   * record's `labels`). For a publication-bound document this is the same
+   * profile as the publication owner, so one field covers both cases.
+   *
+   * Read off the profile record we already index — this used to require a
+   * first-party labeler that did nothing but re-publish the same
+   * self-declaration as a label.
+   */
+  authorIsBot: boolean;
   /** Free-form tags from the document record. */
   tags: Array<string> | null;
   /**
@@ -178,6 +188,12 @@ export interface ProfileSummary {
   description: string | null;
   avatarUrl: string | null;
   bannerUrl: string | null;
+  /**
+   * The account self-declares as a bot (a `bot` entry in its profile record's
+   * `labels`). Its own statement, read off the record — not a label from a
+   * moderation service.
+   */
+  isBot: boolean;
 }
 
 // ── Drizzle column projections ──────────────────────────────────────────────
@@ -274,6 +290,7 @@ export function articleCardColumns(schema: Schema) {
     authorHandle: pa.handle,
     authorAvatarUrl: pa.avatarUrl,
     authorDisplayName: pa.displayName,
+    authorIsBot: pa.isBot,
     tags: d.tags,
     textContent: d.textContent,
     hasRenderableBody: d.hasRenderableBody,
@@ -431,6 +448,7 @@ type ArticleCardRow = {
   authorHandle: string | null;
   authorAvatarUrl: string | null;
   authorDisplayName: string | null;
+  authorIsBot?: boolean | null;
   tags: Array<string> | null;
   matchedTags?: Array<string> | null;
   textContent?: string | null;
@@ -470,6 +488,7 @@ export function toArticleCard(row: ArticleCardRow): ArticleCard {
     publicationBannerUrl: row.publicationBannerUrl,
     publicationTopic: row.publicationTopic,
     authorHandle: row.authorHandle,
+    authorIsBot: row.authorIsBot ?? false,
     authorAvatarUrl: row.authorAvatarUrl,
     authorDisplayName: row.authorDisplayName,
     tags: row.tags,

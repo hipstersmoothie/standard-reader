@@ -3495,6 +3495,7 @@ export async function publicationSubscribers(
       description: pr.description,
       avatarUrl: pr.avatarUrl,
       bannerUrl: pr.bannerUrl,
+      isBot: pr.isBot,
     })
     .from(pr)
     .where(inArray(pr.did, dids));
@@ -3511,6 +3512,7 @@ export async function publicationSubscribers(
         description: null,
         avatarUrl: null,
         bannerUrl: null,
+        isBot: false,
       },
   );
 

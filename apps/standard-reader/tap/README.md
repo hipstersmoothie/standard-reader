@@ -99,19 +99,12 @@ whole graph, pick one:
   `TAP_SIGNAL_COLLECTION=site.standard.graph.subscription` (and the same
   filters/webhook) to also seed from subscriber repos.
 
-**Labeler discovery** uses exactly this pattern: `docker-compose.yml` runs a
-second tap (`tap-labeler`, port 2481) signaled on
-`app.standard-reader.labeler.service`, so any repo that registers a labeler is
-tracked and its record indexed. The ingest worker consumes it via
-`TAP_LABELER_API_URL`. In production, run it as a second tap service alongside
-the primary.
-
-**Loose-document discovery** uses the same pattern: `docker-compose.yml` runs a
-third tap (`tap-docs`, port 2482) signaled on `site.standard.document`, so repos
-that publish documents without a publication record (e.g. Leaflet-hosted, or any
-doc whose `site` is an `https://` URL) get tracked + backfilled. The ingest
-worker consumes it via `TAP_DOCS_API_URL`. In production, run it as a third tap
-service alongside the primary. Publication-bound documents are already covered
+**Loose-document discovery** uses exactly this pattern: `docker-compose.yml` runs
+a second tap (`tap-docs`, port 2482) signaled on `site.standard.document`, so
+repos that publish documents without a publication record (e.g. Leaflet-hosted,
+or any doc whose `site` is an `https://` URL) get tracked + backfilled. The
+ingest worker consumes it via `TAP_DOCS_API_URL`. In production, run it as a
+second tap service alongside the primary. Publication-bound documents are already covered
 by the primary tap's `site.standard.publication` signal; this instance catches
 the orphan set. (Could be folded into the primary tap later by switching its
 `TAP_SIGNAL_COLLECTION` to `site.standard.document`.)

@@ -12,7 +12,7 @@ import { useDocsScrollSpyActive } from "./docs-scroll-spy-context";
 const LINKS = [
   { id: LABELERS_DOCS_IDS.overview, label: msg`Overview` },
   { id: LABELERS_DOCS_IDS.running, label: msg`Running a labeler` },
-  { id: LABELERS_DOCS_IDS.reference, label: msg`Reference implementation` },
+  { id: LABELERS_DOCS_IDS.reference, label: msg`Further reading` },
 ] as const;
 
 export function DocsLabelersNav() {

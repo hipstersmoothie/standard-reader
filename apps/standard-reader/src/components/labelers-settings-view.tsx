@@ -3,9 +3,14 @@
 import { Trans, useLingui } from "@lingui/react/macro";
 import { Avatar } from "@standard-reader/design-system/avatar";
 import { Badge } from "@standard-reader/design-system/badge";
+import { Button } from "@standard-reader/design-system/button";
+import { Skeleton } from "@standard-reader/design-system/skeleton";
 import { TextField } from "@standard-reader/design-system/text-field";
 import { animationDuration } from "@standard-reader/design-system/theme/animations.stylex";
-import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
+import {
+  uiColor,
+  warningColor,
+} from "@standard-reader/design-system/theme/color.stylex";
 import { radius } from "@standard-reader/design-system/theme/radius.stylex";
 import {
   gap,
@@ -17,8 +22,9 @@ import {
   fontWeight,
 } from "@standard-reader/design-system/theme/typography.stylex";
 import * as stylex from "@stylexjs/stylex";
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
+import { Check, FileText, TriangleAlert } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import type {
@@ -26,19 +32,50 @@ import type {
   LabelerListItem,
 } from "#/integrations/tanstack-query/api-labelers.functions";
 import { labelerApi } from "#/integrations/tanstack-query/api-labelers.functions";
+import { labelerHandle, labelerHandleOrDid } from "#/lib/labeler-handle";
+import { useDebouncedValue } from "#/lib/use-debounced-value";
+import { useDelayedLoading } from "#/lib/use-delayed-loading";
 
 import { Masthead, ReaderContent } from "./reader/primitives";
 
 const MOBILE = "@media (max-width: 47.5rem)";
 
-function labelValueNames(card: LabelerCard): Array<string> {
-  return (card.labelValueDefinitions ?? []).map((def) => {
-    const locales = def.locales as Array<{ name?: string }> | undefined;
-    return (
-      locales?.[0]?.name ??
-      (typeof def.identifier === "string" ? def.identifier : "label")
-    );
-  });
+/**
+ * Label badges shown on a directory card before collapsing to "+N more". A
+ * labeler can declare dozens — Skywatch declares 35 — which would otherwise
+ * make one card tower over the rest of the grid.
+ */
+const MAX_VISIBLE_LABELS = 2;
+
+/** Typing pause before the directory search hits the server. */
+const SEARCH_DEBOUNCE_MS = 250;
+
+/**
+ * Badge names for a card, plus how many labels the labeler declares in total.
+ *
+ * Directory rows arrive pre-trimmed as `labelNames`/`labelCount` (the full
+ * definitions are megabytes across the whole network). The lookup card is a
+ * plain `LabelerCard` straight from a resolve and still carries definitions, so
+ * both shapes are handled here.
+ */
+function labelSummary(card: LabelerCard | LabelerListItem): {
+  names: Array<string>;
+  total: number;
+} {
+  if ("labelNames" in card) {
+    return { names: card.labelNames, total: card.labelCount };
+  }
+  const defs = card.labelValueDefinitions ?? [];
+  return {
+    names: defs.slice(0, MAX_VISIBLE_LABELS).map((def) => {
+      const locales = def.locales as Array<{ name?: string }> | undefined;
+      return (
+        locales?.[0]?.name ??
+        (typeof def.identifier === "string" ? def.identifier : "label")
+      );
+    }),
+    total: defs.length,
+  };
 }
 
 function initials(card: LabelerCard): string {
@@ -49,53 +86,49 @@ function initials(card: LabelerCard): string {
     .toUpperCase();
 }
 
-function labelerSearchText(card: LabelerCard): string {
-  const parts = [
-    card.displayName,
-    card.did,
-    card.description,
-    ...labelValueNames(card),
-    ...(card.labelValueDefinitions ?? []).map((def) => def.identifier),
-  ];
-  return parts
-    .filter(
-      (part): part is string => typeof part === "string" && part.length > 0,
-    )
-    .join("\n")
-    .toLowerCase();
-}
-
-function labelerSubscriberCount(card: LabelerCard | LabelerListItem): number {
-  return "subscriberCount" in card ? card.subscriberCount : 0;
-}
-
-function sortLabelersBySubscribers<T extends LabelerCard>(
-  items: Array<T>,
-): Array<T> {
-  return [...items].toSorted(
-    (a, b) => labelerSubscriberCount(b) - labelerSubscriberCount(a),
-  );
-}
-
-function matchesLabeler(card: LabelerCard, query: string): boolean {
-  const trimmed = query.trim();
-  if (!trimmed) return true;
-  return labelerSearchText(card).includes(trimmed.toLowerCase());
-}
-
-/** Labeler directory card — entire surface links to the labeler profile. */
-function LabelerCardItem({ card }: { card: LabelerCard }) {
-  const names = labelValueNames(card);
-  const displayName = card.displayName ?? card.did;
+/**
+ * Labeler directory card — a link, and nothing else.
+ *
+ * Subscribe and mute used to live here. They don't any more: the whole card is
+ * one target that opens the labeler's page, which is where subscribing belongs
+ * because that is the only place showing what a labeler actually declares and
+ * what it has labeled. Deciding to trust a moderation service from a two-line
+ * card was the wrong shape, and per-card controls also meant every card carried
+ * three mutations and its own invalidation.
+ *
+ * State is still shown, just passively: a "Subscribed" mark, and a muted card
+ * dimmed so it reads as present-but-inactive.
+ */
+function LabelerCardItem({
+  card,
+  subscribed,
+  enabled,
+}: {
+  card: LabelerCard | LabelerListItem;
+  subscribed: boolean;
+  enabled: boolean;
+}) {
+  const { names, total: labelTotal } = labelSummary(card);
+  // Almost every labeler on the network labels Bluesky posts and accounts. One
+  // that has labeled a standard.site document is aimed at what this app shows,
+  // which is worth saying out loud — it is also why they sort first.
+  const labelsDocuments =
+    "labelsDocuments" in card ? card.labelsDocuments : false;
+  // Only ever false for a labeler you subscribe to — unreachable ones are
+  // otherwise kept out of the directory entirely.
+  const unreachable = "reachable" in card && !card.reachable;
+  const displayName =
+    card.displayName ?? labelerHandle(card.did, card.handle) ?? card.did;
+  const muted = subscribed && !enabled;
 
   return (
     <Link
       to="/labelers/$did"
       params={{ did: card.did }}
-      {...stylex.props(styles.cardLink)}
+      {...stylex.props(styles.cardLink, styles.card, muted && styles.cardMuted)}
     >
-      <div {...stylex.props(styles.card)}>
-        <div {...stylex.props(styles.cardHead)}>
+      <div {...stylex.props(styles.cardHead)}>
+        <div {...stylex.props(styles.cardIdentity)}>
           <Avatar
             size="lg"
             src={card.avatar}
@@ -104,57 +137,166 @@ function LabelerCardItem({ card }: { card: LabelerCard }) {
           />
           <div {...stylex.props(styles.cardHeadText)}>
             <span {...stylex.props(styles.cardName)}>{displayName}</span>
-            <p {...stylex.props(styles.cardDid)}>{card.did}</p>
+            <p {...stylex.props(styles.cardDid)}>
+              {labelerHandleOrDid(card.did, card.handle)}
+            </p>
           </div>
         </div>
-        {card.description ? (
-          <p {...stylex.props(styles.cardDescription)}>{card.description}</p>
-        ) : null}
-        {names.length > 0 ? (
-          <div {...stylex.props(styles.badges)}>
-            {names.map((name) => (
-              <Badge key={name} variant="warning">
-                {name}
-              </Badge>
-            ))}
-          </div>
+        {subscribed ? (
+          <span {...stylex.props(styles.stateMark)}>
+            <Check size={14} aria-hidden />
+            {muted ? <Trans>Muted</Trans> : <Trans>Subscribed</Trans>}
+          </span>
         ) : null}
       </div>
+      {card.description ? (
+        <p {...stylex.props(styles.cardDescription)}>{card.description}</p>
+      ) : null}
+      {unreachable ? (
+        <p {...stylex.props(styles.warnMark)}>
+          <TriangleAlert size={13} aria-hidden />
+          <Trans>Not responding — its labels aren’t being applied</Trans>
+        </p>
+      ) : null}
+      {labelsDocuments ? (
+        <p {...stylex.props(styles.docsMark)}>
+          <FileText size={13} aria-hidden />
+          <Trans>Labels articles here</Trans>
+        </p>
+      ) : null}
+      {names.length > 0 ? (
+        <div {...stylex.props(styles.badges)}>
+          {/* Neutral, not `warning`: most labels state something unalarming
+              ("Bot", a place name, a repo), and severity is the reader's own
+              per-label choice rather than a property of the label. */}
+          {names.map((name) => (
+            <Badge key={name} variant="default">
+              {name}
+            </Badge>
+          ))}
+          {labelTotal > names.length ? (
+            <span {...stylex.props(styles.moreLabels)}>
+              <Trans>+{labelTotal - names.length} more</Trans>
+            </span>
+          ) : null}
+        </div>
+      ) : null}
     </Link>
+  );
+}
+
+/** Grace period before a skeleton appears, so a fast load never flashes one. */
+const SKELETON_DELAY_MS = 150;
+/** Enough cards to fill the fold without implying a specific result count. */
+const SKELETON_CARDS = 6;
+
+/**
+ * Placeholder for the directory grid.
+ *
+ * Mirrors the real card's shape — avatar, two lines of identity, a description
+ * line, a badge row — so the layout doesn't jump when the data lands. Only the
+ * grid is skeletonized: the masthead and the search field stay mounted, so
+ * typing during a load never loses focus.
+ */
+function LabelerCardsSkeleton() {
+  const { t } = useLingui();
+  return (
+    <div
+      {...stylex.props(styles.grid)}
+      aria-busy="true"
+      aria-label={t`Loading labelers`}
+    >
+      {Array.from({ length: SKELETON_CARDS }, (_, i) => (
+        <div key={i} {...stylex.props(styles.card)}>
+          <div {...stylex.props(styles.cardHead)}>
+            <div {...stylex.props(styles.cardIdentity)}>
+              <Skeleton variant="circle" size="lg" />
+              <div {...stylex.props(styles.cardHeadText)}>
+                <Skeleton variant="rectangle" height="1rem" width="9rem" />
+                <Skeleton variant="rectangle" height="0.75rem" width="12rem" />
+              </div>
+            </div>
+          </div>
+          <Skeleton variant="rectangle" height="0.75rem" width="100%" />
+          <div {...stylex.props(styles.badges)}>
+            <Skeleton variant="rectangle" height="1.25rem" width="4.5rem" />
+            <Skeleton variant="rectangle" height="1.25rem" width="3.5rem" />
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }
 
 export function LabelersSettingsView() {
   const { t } = useLingui();
-  const known = useQuery(labelerApi.getKnownLabelersQueryOptions());
-
   const [search, setSearch] = useState("");
   const searchTrim = search.trim();
+  // The directory lists every labeler on the network, so searching and paging
+  // are server-side; debounce so typing doesn't fire a query per keystroke.
+  const debouncedSearch = useDebouncedValue(searchTrim, SEARCH_DEBOUNCE_MS);
 
-  const labelers = useMemo(() => known.data ?? [], [known.data]);
-  const filtered = useMemo(
-    () =>
-      sortLabelersBySubscribers(
-        labelers.filter((item) => matchesLabeler(item, searchTrim)),
-      ),
-    [labelers, searchTrim],
+  const known = useInfiniteQuery(
+    labelerApi.getKnownLabelersInfiniteQueryOptions(debouncedSearch),
   );
+  const labelers = useMemo(
+    () => known.data?.pages.flatMap((page) => page.labelers) ?? [],
+    [known.data],
+  );
+  const total = known.data?.pages[0]?.total ?? 0;
+  // `isLoading`, not `isFetching`: a background refetch already has rows on
+  // screen and shouldn't blank them. A new search term is a new query key, so
+  // it counts as loading and does get the skeleton.
+  const showSkeleton = useDelayedLoading(known.isLoading, SKELETON_DELAY_MS);
 
-  const lookupLocallyMatched = searchTrim.length > 0 && filtered.length > 0;
+  // Only consulted when the server search comes back empty: a reader can paste
+  // a DID or handle for a labeler we have not discovered yet, and resolving it
+  // both shows the card and backfills it into the directory.
   const lookup = useQuery({
-    ...labelerApi.getLabelerQueryOptions(searchTrim),
-    enabled: searchTrim.length > 0 && !lookupLocallyMatched,
+    ...labelerApi.getLabelerQueryOptions(debouncedSearch),
+    enabled:
+      debouncedSearch.length > 0 && !known.isFetching && labelers.length === 0,
   });
 
   const lookupCard = lookup.data?.labeler ?? null;
   const showLookup =
     lookupCard != null && !labelers.some((item) => item.did === lookupCard.did);
 
-  const visibleCards = sortLabelersBySubscribers(
-    showLookup
-      ? [lookupCard, ...filtered.filter((item) => item.did !== lookupCard.did)]
-      : filtered,
+  const listed: Array<LabelerListItem | LabelerCard> = showLookup
+    ? [lookupCard, ...labelers]
+    : labelers;
+  const subscribedDids = new Set(
+    listed
+      .filter((item) => "subscribed" in item && item.subscribed)
+      .map((item) => item.did),
   );
+  if (lookupCard && lookup.data?.subscribed) subscribedDids.add(lookupCard.did);
+  // Muted labelers, so the card renders dimmed. The lookup card is a bare
+  // LabelerCard with no `enabled`, so its state comes from the lookup response
+  // alongside `subscribed`.
+  const mutedDids = new Set(
+    listed
+      .filter((item) => "enabled" in item && !item.enabled)
+      .map((item) => item.did),
+  );
+  if (lookupCard && lookup.data?.enabled === false) {
+    mutedDids.add(lookupCard.did);
+  }
+  // Subscribed-first ordering is applied in SQL, but the lookup card arrives
+  // outside that ordering, so keep it pinned with the reader's own labelers.
+  const visibleCards = showLookup
+    ? [
+        ...listed.filter((item) => subscribedDids.has(item.did)),
+        ...listed.filter((item) => !subscribedDids.has(item.did)),
+      ]
+    : listed;
+
+  const searching = debouncedSearch.length > 0;
+  const nothingFound =
+    searching &&
+    !known.isFetching &&
+    !lookup.isFetching &&
+    visibleCards.length === 0;
 
   return (
     <ReaderContent>
@@ -162,30 +304,65 @@ export function LabelersSettingsView() {
         kicker={t`Moderation`}
         title={t`Labelers`}
         dek={t`Labelers are moderation services you subscribe to by DID. Subscribe to see their labels — and blur or hide labeled posts — while you read.`}
+        metaLabel={t`On the network`}
+        // Skeletoned rather than left blank: the count arriving from nothing
+        // shifts the masthead, and a placeholder holds the space.
+        metaValue={
+          known.isLoading ? (
+            <Skeleton variant="rectangle" height="2rem" width="3.5rem" />
+          ) : total > 0 ? (
+            String(total)
+          ) : undefined
+        }
       />
 
       <TextField
         aria-label={t`Search labelers`}
-        placeholder={t`Search`}
+        placeholder={t`Search by name, handle, or label`}
         value={search}
         onChange={setSearch}
         size="lg"
         style={styles.searchInput}
       />
 
-      {searchTrim && lookup.isFetched && visibleCards.length === 0 ? (
+      {nothingFound ? (
         <p {...stylex.props(styles.note)}>
           <Trans>No labelers match “{searchTrim}”.</Trans>
         </p>
       ) : null}
 
-      <div {...stylex.props(styles.grid)}>
-        {visibleCards.map((item: LabelerListItem | LabelerCard) => (
-          <LabelerCardItem key={item.did} card={item} />
-        ))}
-      </div>
+      {showSkeleton ? (
+        <LabelerCardsSkeleton />
+      ) : known.isLoading ? (
+        // Inside the grace period: claim busy for assistive tech and the perf
+        // ready signal, but draw nothing — a skeleton here would only flash.
+        <div aria-busy="true" aria-label={t`Loading labelers`} />
+      ) : (
+        <div {...stylex.props(styles.grid)}>
+          {visibleCards.map((item: LabelerListItem | LabelerCard) => (
+            <LabelerCardItem
+              key={item.did}
+              card={item}
+              subscribed={subscribedDids.has(item.did)}
+              enabled={!mutedDids.has(item.did)}
+            />
+          ))}
+        </div>
+      )}
 
-      {!known.isLoading && labelers.length === 0 && !searchTrim ? (
+      {known.hasNextPage ? (
+        <div {...stylex.props(styles.loadMore)}>
+          <Button
+            variant="secondary"
+            isPending={known.isFetchingNextPage}
+            onPress={() => void known.fetchNextPage()}
+          >
+            <Trans>Show more labelers</Trans>
+          </Button>
+        </div>
+      ) : null}
+
+      {!known.isLoading && total === 0 && !searching ? (
         <p {...stylex.props(styles.note)}>
           <Trans>No known labelers yet.</Trans>
         </p>
@@ -213,6 +390,42 @@ const styles = stylex.create({
     cursor: "pointer",
     display: "block",
   },
+  warnMark: {
+    gap: gap.xs,
+    alignItems: "center",
+    color: warningColor.text1,
+    display: "inline-flex",
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.medium,
+    marginBlock: spacing["0"],
+  },
+  docsMark: {
+    gap: gap.xs,
+    alignItems: "center",
+    color: uiColor.text1,
+    display: "inline-flex",
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.medium,
+    marginBlock: spacing["0"],
+  },
+  stateMark: {
+    gap: gap.xs,
+    alignItems: "center",
+    color: uiColor.text1,
+    display: "inline-flex",
+    flexShrink: 0,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.medium,
+  },
+  cardIdentity: {
+    gap: gap.lg,
+    alignItems: "center",
+    display: "flex",
+    // Takes the free space so the subscribe control sits hard against the card
+    // edge, and so a long DID truncates instead of pushing the button off.
+    flexGrow: 1,
+    minWidth: 0,
+  },
   card: {
     padding: spacing["4"],
     borderColor: { default: uiColor.border1, ":hover": uiColor.border2 },
@@ -225,6 +438,12 @@ const styles = stylex.create({
     flexDirection: "column",
     transitionDuration: animationDuration.fast,
     transitionProperty: "border-color, background-color",
+  },
+  cardMuted: {
+    // Dimmed so a muted labeler reads as present-but-inactive at a glance. The
+    // controls are deliberately excluded from the fade — you need to be able to
+    // see and hit Unmute — so the opacity lands on the content, not the card.
+    opacity: 0.55,
   },
   cardHead: {
     gap: gap.lg,
@@ -256,8 +475,23 @@ const styles = stylex.create({
   },
   badges: {
     gap: gap.sm,
+    alignItems: "center",
     display: "flex",
     flexWrap: "wrap",
+    // Grid rows stretch every card to the tallest in the row, so a short card
+    // otherwise leaves its labels floating in the middle. `auto` eats the slack
+    // above the badges instead, keeping them on the bottom edge across the row.
+    marginBlockStart: "auto",
+  },
+  moreLabels: {
+    color: uiColor.text1,
+    fontSize: fontSize.xs,
+    whiteSpace: "nowrap",
+  },
+  loadMore: {
+    display: "flex",
+    justifyContent: "center",
+    marginBlockStart: verticalSpace["2xl"],
   },
   note: {
     color: uiColor.text1,

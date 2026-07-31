@@ -19,7 +19,9 @@ import {
   attachSubscribedLabels,
   filterHiddenDocuments,
   hiddenUrisFromLabels,
-  readLabelsForUris,
+  isCardHidden,
+  labelSubjects,
+  readLabelsForSubjects,
 } from "#/server/labeler/labels.server";
 import type { Span } from "#/server/observability/log";
 import { observe } from "#/server/observability/log";
@@ -403,10 +405,9 @@ async function buildHomeFeedCritical(
   // This replaced three serial round trips (hidden → labels → recommends, where
   // the first two issued the *same* `document_labels` query) with one wave.
   const cards = [...(featured ? [featured] : []), ...latestUnread];
-  const cardUris = cards.map((article) => article.uri);
   const [labelsByUri, withRecs] = await Promise.all([
     ctx.did
-      ? readLabelsForUris(db, schema, ctx.did, cardUris)
+      ? readLabelsForSubjects(db, schema, ctx.did, labelSubjects(cards))
       : Promise.resolve(new Map<string, Array<ArticleCardLabel>>()),
     ctx.followedUserDids.length > 0
       ? attachRecommendedByToArticles(db, schema, ctx.followedUserDids, cards)
@@ -423,8 +424,10 @@ async function buildHomeFeedCritical(
   // Drop anything the reader hid via a subscribed labeler's label.
   const hidden = hiddenUrisFromLabels(labelsByUri);
   if (hidden.size > 0) {
-    if (featured && hidden.has(featured.uri)) featured = null;
-    latestUnread = latestUnread.filter((article) => !hidden.has(article.uri));
+    if (featured && isCardHidden(featured, hidden)) featured = null;
+    latestUnread = latestUnread.filter(
+      (article) => !isCardHidden(article, hidden),
+    );
   }
 
   span.set("rows", latestUnread.length);
@@ -433,7 +436,7 @@ async function buildHomeFeedCritical(
   const withCounts = await attachCommentCountsToArticles(
     db,
     schema,
-    withViewerRecs.filter((article) => !hidden.has(article.uri)),
+    withViewerRecs.filter((article) => !isCardHidden(article, hidden)),
   );
   const enrichedWithRecs = attachLabelsFromMap(withCounts, labelsByUri);
   const byUri = new Map(
@@ -687,12 +690,7 @@ async function loadLatestFeedCritical(
   // "all" / signed-out / trending paths, which have no followed-user context).
   const [labelsByUri, withRecs] = await Promise.all([
     did
-      ? readLabelsForUris(
-          db,
-          schema,
-          did,
-          items.map((item) => item.uri),
-        )
+      ? readLabelsForSubjects(db, schema, did, labelSubjects(items))
       : Promise.resolve(new Map<string, Array<ArticleCardLabel>>()),
     did && data.filter !== "all" && followedUserDids.length > 0
       ? attachRecommendedByToArticles(db, schema, followedUserDids, items)
@@ -702,7 +700,7 @@ async function loadLatestFeedCritical(
   // Hide labeled posts for the reader, but page on the pre-filter count so
   // pagination still advances (a page may just show slightly fewer rows).
   const hidden = hiddenUrisFromLabels(labelsByUri);
-  const visibleItems = withRecs.filter((item) => !hidden.has(item.uri));
+  const visibleItems = withRecs.filter((item) => !isCardHidden(item, hidden));
   // No DB work: reads cached counts and schedules background revalidation.
   const enrichedItems = await attachCommentCountsToArticles(
     db,

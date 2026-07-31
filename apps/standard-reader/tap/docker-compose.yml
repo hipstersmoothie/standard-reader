@@ -34,7 +34,7 @@ services:
       # our own app-owned reader records (read, bookmark, list, listSave, etc.)
       # written back by the app. Must stay in sync with the `Collections` enum in
       # src/server/atproto/uri.ts and the dispatch in src/server/ingest/consumer.ts.
-      TAP_COLLECTION_FILTERS: "${TAP_COLLECTION_FILTERS:-site.standard.publication,site.standard.document,site.standard.graph.subscription,site.standard.graph.recommend,app.standard-reader.graph.follow,app.bsky.actor.profile,app.standard-reader.read,app.standard-reader.bookmark,app.standard-reader.list,app.standard-reader.listSave,site.mochott.article,app.standard-reader.collection,app.standard-reader.collectionsPublication,app.standard-reader.publicationTheme,app.standard-reader.labelerSubscription,app.standard-reader.labeler.subscription,app.standard-reader.labeler.service}"
+      TAP_COLLECTION_FILTERS: "${TAP_COLLECTION_FILTERS:-site.standard.publication,site.standard.document,site.standard.graph.subscription,site.standard.graph.recommend,app.standard-reader.graph.follow,app.bsky.actor.profile,app.standard-reader.read,app.standard-reader.bookmark,app.standard-reader.list,app.standard-reader.listSave,site.mochott.article,app.standard-reader.collection,app.standard-reader.collectionsPublication,app.standard-reader.publicationTheme,app.standard-reader.labelerSubscription,app.standard-reader.labeler.subscription}"
 
       # Basic-auth credential for tap's admin API + WebSocket channel (user is
       # always `admin`). The ingest worker uses the same value to connect.
@@ -47,35 +47,12 @@ services:
       # Lets TAP_WEBHOOK_URL reach the host on Linux as well as macOS/Windows.
       - "host.docker.internal:host-gateway"
 
-  # Second signal instance: tracks every repo that publishes an
-  # `app.standard-reader.labeler.service` record, so registering a labeler is all
-  # an operator does. The ingest worker consumes this channel too (TAP_LABELER_API_URL).
-  tap-labeler:
-    image: ghcr.io/bluesky-social/indigo/tap:latest
-    restart: unless-stopped
-    ports:
-      - "127.0.0.1:2481:2481"
-    environment:
-      TAP_DATABASE_URL: "sqlite:///data/tap-labeler.db"
-      TAP_BIND: ":2481"
-      TAP_RELAY_URL: "${TAP_RELAY_URL:-https://relay1.us-east.bsky.network}"
-      TAP_PLC_URL: "${TAP_PLC_URL:-https://plc.directory}"
-      TAP_SIGNAL_COLLECTION: "app.standard-reader.labeler.service"
-      TAP_COLLECTION_FILTERS: "app.standard-reader.labeler.service"
-      TAP_ADMIN_PASSWORD: "${TAP_ADMIN_PASSWORD:?set TAP_ADMIN_PASSWORD in .env}"
-      TAP_LOG_LEVEL: "${TAP_LOG_LEVEL:-info}"
-    volumes:
-      - tap-labeler-data:/data
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-
   # Loose-documents signal instance: tracks every repo that publishes a
   # `site.standard.document` record, so authors with no publication record
   # (e.g. Leaflet-hosted, or any https `site` doc) still get tracked +
   # backfilled. Publication-bound documents are already covered by the primary
   # tap instance's `site.standard.publication` signal; this one catches the
-  # orphan set. The ingest worker consumes it via `TAP_DOCS_API_URL`. Mirrors
-  # tap-labeler exactly. (Could be folded into the primary tap instance later
+  # orphan set. The ingest worker consumes it via `TAP_DOCS_API_URL`. (Could be folded into the primary tap instance later
   # by switching its `TAP_SIGNAL_COLLECTION` to `site.standard.document`.)
   tap-docs:
     image: ghcr.io/bluesky-social/indigo/tap:latest
@@ -90,7 +67,7 @@ services:
       TAP_SIGNAL_COLLECTION: "site.standard.document"
       # Deliver the same collections as the primary tap (publishers often own
       # loose docs too, plus their profile/subscriptions/recommends/lists).
-      TAP_COLLECTION_FILTERS: "${TAP_COLLECTION_FILTERS:-site.standard.publication,site.standard.document,site.standard.graph.subscription,site.standard.graph.recommend,app.standard-reader.graph.follow,app.bsky.actor.profile,app.standard-reader.read,app.standard-reader.bookmark,app.standard-reader.list,app.standard-reader.listSave,site.mochott.article,app.standard-reader.collection,app.standard-reader.collectionsPublication,app.standard-reader.publicationTheme,app.standard-reader.labelerSubscription,app.standard-reader.labeler.subscription,app.standard-reader.labeler.service}"
+      TAP_COLLECTION_FILTERS: "${TAP_COLLECTION_FILTERS:-site.standard.publication,site.standard.document,site.standard.graph.subscription,site.standard.graph.recommend,app.standard-reader.graph.follow,app.bsky.actor.profile,app.standard-reader.read,app.standard-reader.bookmark,app.standard-reader.list,app.standard-reader.listSave,site.mochott.article,app.standard-reader.collection,app.standard-reader.collectionsPublication,app.standard-reader.publicationTheme,app.standard-reader.labelerSubscription,app.standard-reader.labeler.subscription}"
       TAP_ADMIN_PASSWORD: "${TAP_ADMIN_PASSWORD:?set TAP_ADMIN_PASSWORD in .env}"
       TAP_LOG_LEVEL: "${TAP_LOG_LEVEL:-info}"
     volumes:
@@ -100,5 +77,4 @@ services:
 
 volumes:
   tap-data:
-  tap-labeler-data:
   tap-docs-data:

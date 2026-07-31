@@ -44,6 +44,7 @@ import {
 } from "#/lib/site-metadata";
 import { useTrackReadingHistory } from "#/lib/use-track-reading-history";
 
+import { AccountLabelsForDid } from "../components/reader/account-labels";
 import { ArticleRow, FeatureArticle } from "../components/reader/cards";
 import { FeedLoadMore } from "../components/reader/feed-load-more";
 import {
@@ -733,6 +734,11 @@ function PublicationProfileContent({
               {pub.description}
             </p>
           ) : null}
+
+          {/* Below the description, matching the author profile: a label is a
+              third party's statement about this account, so it reads after the
+              publication's own words rather than interrupting its identity line. */}
+          <AccountLabelsForDid did={pub.did} readerScope={readerScope} />
 
           <div {...stylex.props(styles.statStrip)}>
             <Stat
