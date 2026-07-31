@@ -26,7 +26,7 @@
  * `syncAllLabels` in `sync.server.ts`.
  */
 
-import { and, eq, inArray, isNull, notLike } from "drizzle-orm";
+import { and, eq, inArray, isNull, lt, notLike, or } from "drizzle-orm";
 
 import { db as database } from "#/db/index.server";
 import * as dbSchema from "#/db/schema";
@@ -35,6 +35,7 @@ import type { Db, Schema } from "#/integrations/tanstack-query/api-shapes";
 import { chunk, mapWithConcurrency } from "#/lib/concurrency";
 
 import { resolveAtprotoLabeler } from "./atproto-labeler.server.ts";
+import { sampleLabels } from "./labels.server.ts";
 
 /** Collection a labeler declares itself in. One record per labeler, rkey `self`. */
 const LABELER_COLLECTION = "app.bsky.labeler.service";
@@ -277,21 +278,152 @@ export async function syncNetworkLabelers(
  */
 export function startLabelerDiscovery(): { stop: () => void } {
   const run = () => {
-    void syncNetworkLabelers(database, dbSchema).then(
-      (result) => {
+    void syncNetworkLabelers(database, dbSchema)
+      .then(async (result) => {
         if (result.added > 0 || result.attempted > 0) {
           console.info(
             `[labelers] discovery: ${result.discovered} on network, ${result.added} added, ${result.refreshed} refreshed, ${result.unresolvable} unresolvable`,
           );
         }
-      },
-      (error: unknown) => {
+        // Classify a slice of the directory each run, so which labelers aim at
+        // standard.site converges without any single scan spiking.
+        const probe = await probeStandardSiteLabelers(database, dbSchema);
+        if (probe.probed > 0) {
+          console.info(
+            `[labelers] probed ${probe.probed}, ${probe.standardSite} aimed at standard.site`,
+          );
+        }
+      })
+      .catch((error: unknown) => {
         console.warn("[labelers] discovery failed", error);
-      },
-    );
+      });
   };
   run();
   const timer = setInterval(run, DISCOVERY_INTERVAL_MS);
   timer.unref?.();
   return { stop: () => clearInterval(timer) };
+}
+
+/** Labelers probed per run, so a scan never spikes into hundreds of requests. */
+const PROBE_BATCH = 60;
+/** How long a probe verdict stands before it is re-checked. */
+const PROBE_TTL_MS = 7 * 24 * 60 * 60_000;
+/** Labels sampled per labeler when deciding whether it aims at standard.site. */
+const PROBE_SAMPLE = 250;
+
+/**
+ * Decide which labelers are aimed at **standard.site** and record it.
+ *
+ * A labeler qualifies when something it labels is ours: a
+ * `site.standard.document` URI, or the account of a publisher we index.
+ * pub-search is the motivating case — it labels *publisher accounts*
+ * (`bulk-mirror` on the DIDs behind drivepatents.com, crownnote.com, …), never
+ * document URIs, so a document-only test misses it entirely.
+ *
+ * This can't be read out of `document_labels`: that table only holds labels for
+ * labelers somebody already subscribes to, and a directory is for finding the
+ * ones you haven't. So each labeler is asked directly, one sampled page.
+ *
+ * Sampling is the honest trade. A labeler built for standard.site labels little
+ * else, so it shows up in the first page; a Bluesky-facing labeler with 50k
+ * labels might have a handful of ours further in and be missed. That is the
+ * intended reading — "aimed at this network", not "has ever touched it".
+ *
+ * Bounded to {@link PROBE_BATCH} per run and best-effort per labeler, so the
+ * whole directory converges over a few scans without ever spiking.
+ */
+export async function probeStandardSiteLabelers(
+  db: Db = database,
+  schema: Schema = dbSchema,
+): Promise<{ probed: number; standardSite: number }> {
+  const svc = schema.labelerServices;
+  const stale = await db
+    .select({ labelerDid: svc.labelerDid, uri: svc.uri })
+    .from(svc)
+    .where(
+      and(
+        eq(svc.deleted, false),
+        or(
+          isNull(svc.labelsProbedAt),
+          lt(svc.labelsProbedAt, new Date(Date.now() - PROBE_TTL_MS)),
+        ),
+      ),
+    )
+    .limit(PROBE_BATCH);
+  if (stale.length === 0) return { probed: 0, standardSite: 0 };
+
+  const verdicts = await mapWithConcurrency(
+    stale,
+    RESOLVE_CONCURRENCY,
+    async (row) => {
+      try {
+        const { labels } = await sampleLabels(row.labelerDid, PROBE_SAMPLE);
+        const subjects = [...new Set(labels.map((l) => l.uri))];
+        return { ...row, hit: await labelsOurCorpus(db, schema, subjects) };
+      } catch {
+        // Unreachable or misbehaving: leave it unprobed to retry next run.
+        return null;
+      }
+    },
+  );
+
+  let standardSite = 0;
+  for (const verdict of verdicts) {
+    if (!verdict) continue;
+    if (verdict.hit) standardSite++;
+    await db
+      .update(labelerServices)
+      .set({ labelsStandardSite: verdict.hit, labelsProbedAt: new Date() })
+      .where(eq(labelerServices.uri, verdict.uri));
+  }
+  return { probed: verdicts.filter(Boolean).length, standardSite };
+}
+
+/**
+ * Whether this labeler is *aimed* at standard.site, by what share of a sample it
+ * points at our corpus — a document URI, or the account of a publisher we index.
+ *
+ * A share, not "any": with 250 subjects sampled, almost every general-purpose
+ * labeler eventually tags somebody who also publishes here, and an any-match
+ * test flagged 21 of them — Pride Labeller, Warhammer Labeler, NFLair. The
+ * measured distribution separates cleanly, so the threshold isn't arbitrary:
+ * pub-search is 94% ours, GitHub Contributor Labeler 32% (it labels GitHub
+ * users, some of whom publish here — correctly not one of ours), and everything
+ * else 0–6%.
+ */
+const STANDARD_SITE_SHARE = 0.5;
+/**
+ * Below this many subjects a share means nothing. At 5, two incidental matches
+ * clear the threshold: it flagged Kevara Labeler and colibri, each of which has
+ * five labels total and happened to tag a publisher. pub-search samples 16, so
+ * this floor separates "aimed at standard.site" from "too small to tell".
+ */
+const MIN_PROBE_SUBJECTS = 10;
+
+async function labelsOurCorpus(
+  db: Db,
+  schema: Schema,
+  subjects: Array<string>,
+): Promise<boolean> {
+  if (subjects.length < MIN_PROBE_SUBJECTS) return false;
+
+  // Document subjects are decidable from the URI alone.
+  let ours = subjects.filter((uri) =>
+    uri.includes("/site.standard.document/"),
+  ).length;
+
+  const dids = subjects.filter((uri) => uri.startsWith("did:"));
+  for (const batch of chunk(dids, 200)) {
+    const hits = await db
+      .selectDistinct({ did: schema.publications.did })
+      .from(schema.publications)
+      .where(
+        and(
+          inArray(schema.publications.did, batch),
+          eq(schema.publications.deleted, false),
+        ),
+      );
+    ours += hits.length;
+  }
+  return ours / subjects.length >= STANDARD_SITE_SHARE;
 }

@@ -316,18 +316,6 @@ const getKnownLabelers = createServerFn({ method: "GET" })
         .groupBy(ls.labelerDid)
         .as("subscriber_count");
 
-      // Labelers that have labeled a **standard.site document** — i.e. ones
-      // aimed at this network rather than at Bluesky posts and accounts, which
-      // is what nearly every labeler does. Backed by a partial index on exactly
-      // this predicate (see `documentLabels`), so it costs ~0.02ms instead of a
-      // seq scan over every label we hold.
-      const dl = context.schema.documentLabels;
-      const documentLabelers = context.db
-        .selectDistinct({ src: dl.src })
-        .from(dl)
-        .where(sql`${dl.uri} like 'at://%/site.standard.document/%'`)
-        .as("document_labelers");
-
       // Matched against name, handle, description and the declared label
       // identifiers, so searching "spam" finds labelers that emit it.
       const term = data.query.toLowerCase();
@@ -364,7 +352,7 @@ const getKnownLabelers = createServerFn({ method: "GET" })
       // few enough that they would otherwise be buried under hundreds of
       // Bluesky-facing moderation services ranked by subscriber count.
       const orderBy = [
-        sql`(${documentLabelers.src} is not null) desc`,
+        sql`coalesce(${svc.labelsStandardSite}, false) desc`,
         sql`coalesce(${subscriberCount.count}, 0) desc`,
         sql`coalesce(${svc.displayName}, ${svc.handle}, ${svc.labelerDid}) asc`,
       ];
@@ -383,14 +371,13 @@ const getKnownLabelers = createServerFn({ method: "GET" })
             avatarUrl: svc.avatarUrl,
             labelValueDefinitions: svc.labelValueDefinitions,
             subscriberCount: subscriberCount.count,
-            labelsDocuments: sql<boolean>`(${documentLabelers.src} is not null)`,
+            labelsDocuments: svc.labelsStandardSite,
           })
           .from(svc)
           .leftJoin(
             subscriberCount,
             eq(subscriberCount.labelerDid, svc.labelerDid),
           )
-          .leftJoin(documentLabelers, eq(documentLabelers.src, svc.labelerDid))
           .where(where)
           .orderBy(...orderBy)
           .limit(data.limit)

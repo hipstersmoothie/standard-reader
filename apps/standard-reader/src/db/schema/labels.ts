@@ -1,4 +1,3 @@
-import { sql } from "drizzle-orm";
 import {
   boolean,
   index,
@@ -47,6 +46,23 @@ export const labelerServices = pgTable(
     labelerDid: text("labeler_did").notNull(),
     /** Origin serving queryLabels / subscribeLabels. */
     serviceEndpoint: text("service_endpoint").notNull(),
+
+    /**
+     * This labeler labels **standard.site** subjects — a `site.standard.document`
+     * URI, or the account of a publisher we index.
+     *
+     * Almost every labeler on the network is aimed at Bluesky posts and
+     * accounts; one aimed here is worth leading the directory with. It can't be
+     * derived from `document_labels`, because that only holds labels for
+     * labelers somebody already subscribes to — and a directory exists to
+     * surface the ones you *haven't* subscribed to. So it is probed directly
+     * (see `probeStandardSiteLabelers`) and stored.
+     *
+     * Null means "not probed yet", which is distinct from a probed `false`.
+     */
+    labelsStandardSite: boolean("labels_standard_site"),
+    /** When the probe above last ran, so it can be re-checked on a cadence. */
+    labelsProbedAt: timestamp("labels_probed_at", { withTimezone: true }),
 
     displayName: text("display_name"),
     /**
@@ -170,21 +186,6 @@ export const documentLabels = pgTable(
     index("document_labels_uri_idx").on(table.uri),
     // Replace-by-labeler during sync + labeler-detail document listing.
     index("document_labels_src_idx").on(table.src),
-    /**
-     * Which labelers label **standard.site documents** — the signal that a
-     * labeler is aimed at this network rather than at Bluesky posts and
-     * accounts, which is what almost every labeler does.
-     *
-     * Partial, because the predicate has a leading wildcard: matching
-     * `at://…/site.standard.document/…` can't use the plain `src` index, and
-     * asking the question live cost a 70ms parallel seq scan over the whole
-     * table (185ms for a single busy labeler). With this it is 0.02ms, and the
-     * index is 8 kB because so few rows qualify — which is the whole point of
-     * surfacing them.
-     */
-    index("document_labels_standard_doc_src_idx")
-      .on(table.src)
-      .where(sql`${table.uri} like 'at://%/site.standard.document/%'`),
   ],
 );
 

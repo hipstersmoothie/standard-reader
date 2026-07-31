@@ -1296,18 +1296,28 @@ Standard AT Proto labels: subscribe to labelers, see/blur/hide their labels whil
       atproto.com/specs/label and /specs/moderation, and the reference-implementation section (which
       pointed at `services/claudeslop`) is now "Further reading". Nothing Standard Reader specific is
       required to be a labeler here.
-- [x] **Surface labelers that label standard.site documents** — the directory leads with them and each
-      card says "Labels articles here". Almost every labeler on the network labels Bluesky posts and
-      accounts; one that has labeled a `site.standard.document` is aimed at what this app actually
-      shows, and there are few enough that they would otherwise be buried under hundreds of
-      Bluesky-facing services ranked by subscriber count.
-      Backed by a **partial index** on `document_labels(src) where uri like
-    'at://%/site.standard.document/%'` (migration `0027`). The predicate has a leading wildcard, so
-      the plain `src` index can't serve it: asking the question live was a 70ms parallel seq scan over
-      331k rows (185ms for one busy labeler). With the index it is 0.02ms, and the index is 8 kB
-      precisely because so few rows qualify — which is the point of surfacing them.
-      **Currently matches zero labelers**: ours were the only ones labeling documents and they are
-      gone, so this is the signal that tells you when a genuine standard.site labeler shows up.
+- [x] **Surface labelers aimed at standard.site** — the directory leads with them and each card says
+      "Labels articles here". Almost every labeler on the network targets Bluesky posts and accounts;
+      one aimed here is worth finding, and would otherwise sit behind hundreds of them.
+      **Not derivable from `document_labels`**: that only holds labels for labelers somebody already
+      subscribes to, and a directory exists to surface the ones you haven't. So each labeler is asked
+      directly — `probeStandardSiteLabelers` samples one page of its labels on the discovery timer,
+      60 per run with a 7-day TTL, and stores the verdict on `labeler_services.labels_standard_site`
+      (migration `0027`).
+      **The subject is usually an account, not a document.** pub-search labels _publisher accounts_
+      (`bulk-mirror` on the DIDs behind drivepatents.com, crownnote.com, …) and never a document URI,
+      so a document-only test missed it entirely — which is what the first attempt did.
+      **It has to be a share, not an any-match.** With 250 subjects sampled, nearly every
+      general-purpose labeler eventually tags somebody who also publishes here: any-match flagged 21,
+      including Pride Labeller, Warhammer Labeler and NFLair. The measured distribution separates
+      cleanly — pub-search 94% ours, GitHub Contributor Labeler 32% (labels GitHub users, some of whom
+      publish here; correctly excluded), everything else 0–6% — so the bar is a 50% share over at
+      least 10 sampled subjects. The 10-subject floor matters too: at 5, two incidental matches
+      cleared 50% and flagged two five-label labelers. Final result: 2 of 460, pub-search among them.
+- [x] **Account labels on the article page** — the reading view showed none, so a label on the byline
+      account was visible on the profile and in feeds but vanished on the article itself. Rendered
+      under the byline via the viewer-scoped `AccountLabelsForDid`, same placement rule as the profile
+      and publication headers.
 - [ ] **subscribeLabels ingestion** — consume the labeler firehose into the read-model instead of
       live `queryLabels` per page, for lower latency.
 - [ ] **Deploy claudeslop** — Railway service + persistent SQLite volume; publish its did:web.

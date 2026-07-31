@@ -76,6 +76,7 @@ import { useReadingTypography } from "#/lib/use-reading-typography";
 import { useTrackReadingHistory } from "#/lib/use-track-reading-history";
 import { prefetchCollectionMagazine } from "#/magazine/load-magazine-data";
 
+import { AccountLabelsForDid } from "./account-labels";
 import { ArticleBelowFold } from "./article-below-fold";
 import { FollowButton } from "./cards";
 import { ArticleContent } from "./content/article-content";
@@ -980,6 +981,9 @@ function ArticleViewBody({
 
   const { data: session } = useSuspenseQuery(user.getSessionQueryOptions);
   const signedIn = Boolean(session?.user);
+  // Account labels are viewer-specific (which labelers you subscribe to, and
+  // the visibility you chose), so they key off the reader, not the article.
+  const readerScope = user.readerQueryScope(session);
 
   const {
     recommended,
@@ -1424,6 +1428,16 @@ function ArticleViewBody({
                   </>
                 ) : null}
               </Flex>
+              {/* What a subscribed labeler says about the byline account. Same
+                  placement rule as the profile and publication headers: a third
+                  party's statement reads after the account's own identity line,
+                  not inside it. */}
+              {bylineDid ? (
+                <AccountLabelsForDid
+                  did={bylineDid}
+                  readerScope={readerScope}
+                />
+              ) : null}
             </div>
           </div>
 

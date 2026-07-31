@@ -368,6 +368,9 @@ async function queryLabeler(
   did: string,
   uris: Array<string>,
   sinceCursor?: string,
+  /** Stop after roughly this many labels — used by the classification probe,
+   * which wants one small page rather than the labeler's whole history. */
+  maxLabels?: number,
 ): Promise<{
   labels: Array<DisplayLabel>;
   cursor: string | undefined;
@@ -405,7 +408,10 @@ async function queryLabeler(
   let pages = 0;
 
   while (pages < MAX_LABEL_PAGES) {
-    const limit = PAGE_LIMITS[limitIndex] ?? PAGE_LIMITS.at(-1) ?? 25;
+    const limit = Math.min(
+      PAGE_LIMITS[limitIndex] ?? PAGE_LIMITS.at(-1) ?? 25,
+      maxLabels ?? Number.MAX_SAFE_INTEGER,
+    );
     const url = new URL(`${base}/xrpc/com.atproto.label.queryLabels`);
     for (const u of uris) url.searchParams.append("uriPatterns", u);
     url.searchParams.append("sources", did);
@@ -447,6 +453,7 @@ async function queryLabeler(
       const batch = json.labels ?? [];
       labels.push(...batch);
       pages++;
+      if (maxLabels !== undefined && labels.length >= maxLabels) break;
       if (!json.cursor || batch.length === 0) break;
       cursor = json.cursor;
     } catch (error) {
@@ -500,6 +507,22 @@ export function resolveLabelDiff(labels: Array<DisplayLabel>): LabelDiff {
  * a non-zero `rejected` means the labeler served something we could not
  * attribute to it, which the caller logs.
  */
+/**
+ * One unverified page of a labeler's labels, for cheap classification.
+ *
+ * Deliberately skips signature verification and the read-model entirely: the
+ * caller only wants to know *what kind of thing* this labeler labels (see
+ * `probeStandardSiteLabelers`), not to trust or store any of it. Verification
+ * still gates everything that reaches `document_labels`.
+ */
+export async function sampleLabels(
+  did: string,
+  limit: number,
+): Promise<{ labels: Array<DisplayLabel> }> {
+  const { labels } = await queryLabeler(did, ["*"], undefined, limit);
+  return { labels: labels.slice(0, limit) };
+}
+
 export async function fetchLabelerLabelsSince(
   did: string,
   sinceCursor: string | undefined,
