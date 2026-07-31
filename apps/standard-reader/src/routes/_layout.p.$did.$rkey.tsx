@@ -28,6 +28,7 @@ import { z } from "zod";
 
 import { usePullToRefresh } from "#/components/reader/pull-to-refresh";
 import { authorApi } from "#/integrations/tanstack-query/api-author.functions";
+import { blocksApi } from "#/integrations/tanstack-query/api-blocks.functions";
 import { notesApi } from "#/integrations/tanstack-query/api-notes.functions";
 import { publicationApi } from "#/integrations/tanstack-query/api-publication.functions";
 import type {
@@ -52,6 +53,7 @@ import {
   ComicShelfSkeleton,
 } from "../components/comic/comic-shelf";
 import { AccountLabelsForDid } from "../components/reader/account-labels";
+import { BlockedNotice } from "../components/reader/blocked-notice";
 import { ArticleRow, FeatureArticle } from "../components/reader/cards";
 import { FeedLoadMore } from "../components/reader/feed-load-more";
 import {
@@ -564,6 +566,18 @@ function PublicationProfile() {
   );
   const signedIn = Boolean(session?.user);
 
+  // The route's `did` param is the publication owner (an AT-URI's authority),
+  // so the block check needs no extra lookup. The archive query already returns
+  // nothing for a blocked owner; this is what says why.
+  const { data: block } = useQuery({
+    ...blocksApi.getBlockStateQueryOptions(did),
+    enabled: signedIn,
+  });
+  const { data: blocksSettings } = useQuery({
+    ...blocksApi.getBlocksSettingsQueryOptions({ limit: 1 }),
+    enabled: Boolean(block),
+  });
+
   const { data: socialProof } = useQuery({
     ...publicationApi.getPublicationSocialProofQueryOptions(uri),
     enabled: signedIn,
@@ -575,6 +589,18 @@ function PublicationProfile() {
         <div {...stylex.props(styles.emptyNote)}>
           <Trans>We couldn’t find that publication.</Trans>
         </div>
+      </ReaderContent>
+    );
+  }
+
+  if (block) {
+    return (
+      <ReaderContent>
+        <BlockedNotice
+          block={block}
+          name={header.owner.displayName ?? header.owner.handle}
+          canWrite={blocksSettings?.canWrite ?? false}
+        />
       </ReaderContent>
     );
   }

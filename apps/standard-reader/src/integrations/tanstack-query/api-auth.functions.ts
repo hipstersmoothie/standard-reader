@@ -14,6 +14,7 @@ import type { AuthScopeIntent } from "#/integrations/auth/scope";
 import {
   ATSTORE_REVIEW_SCOPE,
   formatOAuthScope,
+  hasBskyBlockWriteScope,
   hasCollectionsScope,
   hasEmailScope,
   hasMarginScope,
@@ -268,6 +269,7 @@ interface UpgradeScopeOverrides {
   margin?: boolean;
   semble?: boolean;
   email?: boolean;
+  blocking?: boolean;
 }
 
 /**
@@ -301,6 +303,7 @@ async function resolveUpgradeScope(
       marginSaveEnabled: true,
       sembleSaveEnabled: true,
       weeklyDigestEnabled: true,
+      blockingEnabled: true,
     },
     with: {
       accounts: {
@@ -329,6 +332,9 @@ async function resolveUpgradeScope(
   const requestEmail =
     overrides.email ??
     (row?.weeklyDigestEnabled === true || hasEmailScope(grantedScope));
+  const requestBlocking =
+    overrides.blocking ??
+    (row?.blockingEnabled === true || hasBskyBlockWriteScope(grantedScope));
 
   return resolveAuthScopeForUser(
     {
@@ -337,6 +343,7 @@ async function resolveUpgradeScope(
       marginSaveEnabled: requestMargin,
       sembleSaveEnabled: requestSemble,
       weeklyDigestEnabled: requestEmail,
+      blockingEnabled: requestBlocking,
     },
     undefined,
     {
@@ -344,6 +351,7 @@ async function resolveUpgradeScope(
       margin: requestMargin,
       semble: requestSemble,
       email: requestEmail,
+      blocking: requestBlocking,
     },
   );
 }
@@ -713,6 +721,65 @@ const upgradeToMargin = createServerFn({ method: "POST" })
   });
 
 /**
+ * Progressive scope upgrade: let the signed-in reader create blocks from
+ * inside Standard Reader. Mirrors {@link upgradeToMargin} for
+ * `BSKY_BLOCK_WRITE_SCOPE` / `user.blockingEnabled`.
+ *
+ * Only the *write* needs consent. Blocks the reader already has are enforced
+ * whether or not they ever run this — that is the whole point of honouring the
+ * records rather than storing our own.
+ */
+const upgradeToBlocking = createServerFn({ method: "POST" })
+  .validator(upgradeToCollectionsInputSchema)
+  .handler(async ({ data }) => {
+    const request = getRequest();
+    const [{ db }, schema, { getReaderContextForRequest }] = await Promise.all([
+      import("#/db/index.server"),
+      import("#/db/schema"),
+      import("#/middleware/auth-session.server"),
+    ]);
+
+    const reader = await getReaderContextForRequest(request);
+    if (!reader) {
+      throw new Error("Unauthorized");
+    }
+
+    await db
+      .update(schema.user)
+      .set({ blockingEnabled: true })
+      .where(eq(schema.user.id, reader.userId));
+
+    try {
+      await revokeAtprotoSession(
+        reader.did as Parameters<typeof revokeAtprotoSession>[0],
+      );
+    } catch (error) {
+      console.warn(
+        "Failed to revoke Atproto session during blocking upgrade:",
+        error,
+      );
+    }
+
+    const redirectTarget = sanitizeAuthRedirectTarget(
+      data.redirect,
+      request.url,
+    );
+
+    const { url } = await atprotoOAuth.authorize({
+      target: {
+        type: "account",
+        identifier: reader.did as ActorIdentifier,
+      },
+      scope: await resolveUpgradeScope(reader.userId, { blocking: true }),
+      state: {
+        redirect: redirectTarget,
+      },
+    });
+
+    return { authorizationUrl: url.toString() };
+  });
+
+/**
  * Progressive scope upgrade: opt the signed-in reader into saving articles to
  * their Semble collections. Mirrors {@link upgradeToMargin} for
  * `SEMBLE_FULL_SCOPE` / `user.sembleSaveEnabled`.
@@ -868,6 +935,7 @@ export const auth = {
   upgradeToUserinputFeedback,
   upgradeToMargin,
   upgradeToSemble,
+  upgradeToBlocking,
   upgradeToWeeklyDigest,
   disableWeeklyDigest,
   getSavedHandles: getSavedHandlesServer,

@@ -139,6 +139,7 @@ const getArticles = createServerFn({ method: "GET" })
           offset: data.offset,
           readForDid: trackReading && did ? did : undefined,
           countOldPostsAsUnread,
+          viewerDid: did ?? undefined,
         }),
         did ? effectiveFollowSets(db, schema, did) : Promise.resolve(null),
       ]);
@@ -179,7 +180,7 @@ const getPublications = createServerFn({ method: "GET" })
   .handler(
     observe("tag.getPublications", async ({ data, context }, span) => {
       const { db, schema, excludeWebBridgeEnabled } = context;
-      await attachReaderSpanContext(span, getRequest());
+      const did = await attachReaderSpanContext(span, getRequest());
       span.set("tag", data.tag);
       span.set("sort", data.sort);
       span.set("offset", data.offset);
@@ -190,6 +191,7 @@ const getPublications = createServerFn({ method: "GET" })
         limit: data.limit,
         offset: data.offset,
         excludeWebBridge: excludeWebBridgeEnabled,
+        viewerDid: did ?? undefined,
       });
 
       span.set("count", items.length);
@@ -269,6 +271,7 @@ const getTagPage = createServerFn({ method: "GET" })
                 offset: data.offset,
                 readForDid: trackReading && did ? did : undefined,
                 countOldPostsAsUnread,
+                viewerDid: did ?? undefined,
               }).then((rows) => attachCommentCountsToArticles(db, schema, rows))
             : tagDirectoryPublications(db, schema, {
                 tag: data.tag,
@@ -276,6 +279,7 @@ const getTagPage = createServerFn({ method: "GET" })
                 limit: data.limit,
                 offset: data.offset,
                 excludeWebBridge,
+                viewerDid: did ?? undefined,
               }),
           data.view === "feed" && did
             ? effectiveFollowSets(db, schema, did)

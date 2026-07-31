@@ -758,11 +758,12 @@ const getLabeledDocuments = createServerFn({ method: "GET" })
         labelsByUri[row.uri] = vals;
       }
 
+      const viewerSession = await getAtprotoSessionForRequest(getRequest());
       const documents = await selectArticleCardsByUris(
         context.db,
         context.schema,
         uris,
-        { lite: true },
+        { lite: true, viewerDid: viewerSession?.did },
       );
       span.set("count", documents.length);
       span.set("total", total);

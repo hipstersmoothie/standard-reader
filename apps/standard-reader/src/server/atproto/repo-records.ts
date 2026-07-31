@@ -356,6 +356,106 @@ export async function deleteUserFollowRecords(
   );
 }
 
+// ── Bluesky blocks ──────────────────────────────────────────────────────────
+//
+// A block is a portable `app.bsky.graph.block` record in the reader's own repo,
+// not something we model ourselves — blocking here blocks everywhere. See
+// `db/schema/blocks.ts` for why there is no Standard Reader block lexicon.
+
+export const BSKY_BLOCK_COLLECTION = "app.bsky.graph.block";
+export const BSKY_LISTBLOCK_COLLECTION = "app.bsky.graph.listblock";
+
+/**
+ * Block `subjectDid` for `repo`, or return the existing record if there is one.
+ *
+ * Keyed by {@link subjectRkey} rather than a TID so blocking twice is the same
+ * record: a reader who blocks from two tabs, or re-blocks after a failed sync,
+ * ends up with one block rather than a pile of equivalent ones. Bluesky itself
+ * writes TID rkeys, and those are honoured on read — we just don't add more.
+ */
+export async function putBskyBlockRecord(
+  client: Client,
+  repo: string,
+  subjectDid: string,
+  createdAt: string,
+): Promise<{ uri: string; cid: string }> {
+  return repoPutRecord(client, {
+    repo,
+    collection: BSKY_BLOCK_COLLECTION,
+    rkey: subjectRkey(subjectDid),
+    record: {
+      $type: BSKY_BLOCK_COLLECTION,
+      subject: subjectDid,
+      createdAt,
+    },
+  });
+}
+
+/**
+ * Delete the reader's block records for `subjectDid`.
+ *
+ * Takes `knownRkeys` because the reader's existing blocks were almost certainly
+ * written by Bluesky under TID rkeys, which {@link subjectRkey} can't derive —
+ * callers pass the rkeys from the read-model mirror so unblocking works on a
+ * block made anywhere, not just one made here. Mirrors
+ * {@link deleteUserFollowRecords}.
+ */
+export async function deleteBskyBlockRecords(
+  client: Client,
+  repo: string,
+  subjectDid: string,
+  knownRkeys: Array<string> = [],
+): Promise<void> {
+  const rkeys = new Set([subjectRkey(subjectDid), ...knownRkeys]);
+  await Promise.all(
+    [...rkeys].map((rkey) =>
+      repoDeleteRecord(client, {
+        repo,
+        collection: BSKY_BLOCK_COLLECTION,
+        rkey,
+      }),
+    ),
+  );
+}
+
+/** Subscribe `repo` to a moderation list (`app.bsky.graph.listblock`). */
+export async function putBskyListBlockRecord(
+  client: Client,
+  repo: string,
+  listUri: string,
+  createdAt: string,
+): Promise<{ uri: string; cid: string }> {
+  return repoPutRecord(client, {
+    repo,
+    collection: BSKY_LISTBLOCK_COLLECTION,
+    rkey: subjectRkey(listUri),
+    record: {
+      $type: BSKY_LISTBLOCK_COLLECTION,
+      subject: listUri,
+      createdAt,
+    },
+  });
+}
+
+/** Unsubscribe `repo` from a moderation list. See {@link deleteBskyBlockRecords}. */
+export async function deleteBskyListBlockRecords(
+  client: Client,
+  repo: string,
+  listUri: string,
+  knownRkeys: Array<string> = [],
+): Promise<void> {
+  const rkeys = new Set([subjectRkey(listUri), ...knownRkeys]);
+  await Promise.all(
+    [...rkeys].map((rkey) =>
+      repoDeleteRecord(client, {
+        repo,
+        collection: BSKY_LISTBLOCK_COLLECTION,
+        rkey,
+      }),
+    ),
+  );
+}
+
 /** Write an `app.standard-reader.labeler.subscription` (V2) for `labelerDid`.
  *  V2 is the nested-NSID successor to the flat `labelerSubscription`; new writes
  *  go here. Reads accept both until per-reader migration completes. */

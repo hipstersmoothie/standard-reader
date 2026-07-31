@@ -23,6 +23,7 @@ import {
 } from "#/server/atproto/bsky-posts";
 import { getPostBacklinksForTarget } from "#/server/atproto/constellation";
 import { fetchMarginNotesForUrls } from "#/server/atproto/margin-notes";
+import { blockedDidsAmong } from "#/server/blocks/blocks";
 import { buildCanonicalUrl } from "#/server/ingest/mappers";
 import type { LeafletCommentContext } from "#/server/leaflet/comments";
 import { fetchLeafletCommentsForDocument } from "#/server/leaflet/comments";
@@ -545,12 +546,29 @@ export async function attachCommentCountsToArticles<
  * The Discussion items for a document, rebuilt on every request so an open
  * thread is never stale. The build also refreshes this document's badge count.
  */
-export function fetchDocumentComments(
+export async function fetchDocumentComments(
   dbClient: typeof db,
   schemaModule: typeof schema,
   documentUri: string,
+  /**
+   * The reader this discussion is being rendered for. Comments by an account
+   * they are blocked from are dropped — a block that hides someone's writing
+   * but leaves their replies under it hasn't hidden them.
+   */
+  viewerDid?: string | null,
 ): Promise<Array<DocumentComment>> {
-  return loadDocumentComments(dbClient, schemaModule, documentUri, "fresh");
+  // Filtered *after* the cache, never inside it: the cache is keyed by document
+  // alone, so filtering during the build would let the first reader to open a
+  // thread decide what every later reader sees. The badge count is the cached
+  // (unfiltered) length for the same reason — a per-reader count would need a
+  // per-reader cache, and a badge one too high is a smaller wrong than a
+  // blocked reply showing up in somebody else's thread.
+  return filterBlockedComments(
+    dbClient,
+    schemaModule,
+    viewerDid,
+    await loadDocumentComments(dbClient, schemaModule, documentUri, "fresh"),
+  );
 }
 
 async function buildDocumentComments(
@@ -619,4 +637,29 @@ async function buildDocumentComments(
   return comments.toSorted(
     (a, b) => new Date(a.indexedAt).getTime() - new Date(b.indexedAt).getTime(),
   );
+}
+
+/**
+ * Drop comments whose author the reader is blocked from.
+ *
+ * These come from Bluesky, Margin, Semble, pckt and Leaflet rather than our
+ * read-model, so there is no query to filter — the authors are resolved and
+ * checked after the fact.
+ */
+async function filterBlockedComments(
+  dbClient: typeof db,
+  schemaModule: typeof schema,
+  viewerDid: string | null | undefined,
+  comments: Array<DocumentComment>,
+): Promise<Array<DocumentComment>> {
+  if (!viewerDid || comments.length === 0) return comments;
+  const blocked = await blockedDidsAmong(
+    dbClient,
+    schemaModule,
+    viewerDid,
+    comments.map((comment) => comment.author.did),
+  );
+  return blocked.size === 0
+    ? comments
+    : comments.filter((comment) => !blocked.has(comment.author.did));
 }

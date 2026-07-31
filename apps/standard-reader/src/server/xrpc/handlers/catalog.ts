@@ -5,6 +5,7 @@ import { fetchBlueskyPublicProfileFields } from "#/lib/bluesky-public-profile";
 import { isUsableHandle, resolveIdentity } from "#/server/atproto/identity";
 import { ipldToLexJson } from "#/server/atproto/ipld-json";
 import { resolveAuthorDid } from "#/server/atproto/resolve-author-ref";
+import { filterBlockedCards } from "#/server/blocks/blocks";
 import {
   resolvePageUrl,
   resolvePageUrls,
@@ -157,9 +158,12 @@ export async function handleGetDocument(ctx: XrpcRequestContext) {
   const documentUri = requireParam(ctx.params, "document");
   const readForDid =
     ctx.auth && ctx.trackReadingEnabled ? ctx.auth.did : undefined;
-  const cards = await selectArticleCardsByUris(ctx.db, ctx.schema, [
-    documentUri,
-  ]);
+  const cards = await selectArticleCardsByUris(
+    ctx.db,
+    ctx.schema,
+    [documentUri],
+    { viewerDid: ctx.auth?.did },
+  );
   let card = cards[0];
   if (!card) {
     throw new InvalidRequestError("Document not found");
@@ -325,6 +329,7 @@ export async function handleGetPublicationDocuments(ctx: XrpcRequestContext) {
     offset,
     readForDid,
     countOldPostsAsUnread: ctx.auth ? ctx.countOldPostsAsUnreadEnabled : true,
+    viewerDid: ctx.auth?.did,
   });
   const items = await enrichDocuments(ctx, rows, readForDid);
   return {
@@ -426,6 +431,7 @@ export async function handleGetDocumentContext(ctx: XrpcRequestContext) {
       ? selectCards(ctx.db, ctx.schema, {
           publicationUris: [row.publicationUri],
           limit: 4,
+          viewerDid: readerDid,
         })
       : Promise.resolve([]),
     relatedArticles(ctx.db, ctx.schema, {
@@ -433,12 +439,12 @@ export async function handleGetDocumentContext(ctx: XrpcRequestContext) {
       publicationUri: row.publicationUri,
       limit: 6,
       excludeWebBridge: ctx.excludeWebBridgeEnabled,
-    }),
+    }).then((rows) => filterBlockedCards(ctx.db, ctx.schema, readerDid, rows)),
     articleRecommendedPublications(ctx.db, ctx.schema, {
       publicationUri: row.publicationUri,
       readerDid,
       limit: 6,
-    }),
+    }).then((rows) => filterBlockedCards(ctx.db, ctx.schema, readerDid, rows)),
   ]);
 
   const moreFrom = moreFromRaw.filter((doc) => doc.uri !== row.uri).slice(0, 3);

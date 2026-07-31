@@ -847,6 +847,15 @@ review-only OAuth client metadata/callback path rather than widening the default
 client metadata scope. Granted scopes may come back either as `include:` sets or
 expanded `repo:` tokens, so permission checks must accept both formats.
 
+**Blocks** are granular too, and one-sided in an unusual way: _reading_ someone's blocks needs
+no scope at all (`com.atproto.repo.listRecords` is public), so a reader's existing blocks are
+enforced from their first page load whatever they granted. Only _writing_ one needs consent — a
+granular `repo?collection=app.bsky.graph.block&collection=app.bsky.graph.listblock` scope,
+requested by `upgradeToBlocking` the first time they press Block and persisted via
+`user.blockingEnabled` so later logins re-request it silently. It targets Bluesky's lexicon
+deliberately: a block is a portable record, and one that only worked in this app would not be a
+block. See "Blocks & block lists" below.
+
 **userinput.app feedback** takes a different approach: `app.userinput.discussion`
 and `app.userinput.upvote` have no permission-set lexicons, so the default OAuth
 client advertises granular `repo?collection=app.userinput.discussion` and
@@ -1167,6 +1176,57 @@ Standard Reader speaks the standard AT Proto label protocol, so readers can subs
   ever needs to be portable, a record + mirror can be layered on the same table.
   `document_push_queue` is the send outbox. **Notifications are independent of subscribing** —
   the bell doesn't change your feed and doesn't require a subscription.
+
+### Blocks & block lists
+
+A reader's blocks follow them here, in both directions, with no setup and no import step.
+
+- **A block is a record, not a setting.** `app.bsky.graph.block` already lives in the blocker's
+  repo and every AT Protocol app that honours a block reads that same record. So there is no
+  `app.standard-reader.block` and there never should be: we mirror Bluesky's lexicon, and blocking
+  from here writes the record the rest of the network already reads. Block someone in Standard
+  Reader and they are blocked on Bluesky too, and wherever the reader goes next. This is the
+  opposite call from labeler subscriptions, and for a concrete reason — Bluesky keeps _those_ in a
+  preferences blob with no per-key write, which is why they had to be ported into records of our
+  own.
+- **Honouring a block costs no OAuth scope.** `com.atproto.repo.listRecords` is public, so the
+  reader's existing blocks are read straight from their PDS and enforced from their first page
+  load. Only _writing_ a block needs consent (`BSKY_BLOCK_WRITE_SCOPE`, persisted via
+  `user.blockingEnabled`), and it is requested the first time they press Block rather than on
+  sign-in — a reader who never blocks from here never sees the prompt, and one who signed in before
+  the feature existed still has every block they made elsewhere enforced.
+- **Four ways to be blocked, all equal in effect.** The reader blocks someone; someone blocks the
+  reader; the account is on a moderation list the reader blocks (`app.bsky.graph.listblock` +
+  `listitem`); or the account blocks a list the reader is _on_ (Bluesky's `blockedByList`). All
+  four hide content, which is what makes a block feel like a block rather than a mute.
+- **Blocks can't ride the tap.** The firehose ingester tracks the repos we index; a block against
+  one of our readers can be written by any repo on the network. So blocks are pulled **per reader,
+  on a cadence** (`server/blocks/sync.server.ts`): their own records from their PDS, incoming
+  blocks from Constellation's backlink index, and list membership from the public AppView. The
+  sweep is scheduled from the OAuth callback and the signed-in shell read, TTL-guarded so a page
+  load between sweeps costs nothing, and forced inline right after a block/unblock write so the
+  change takes effect on the very next page.
+- **Outgoing replaces, incoming only adds.** The reader's own records are the authoritative set, so
+  a sweep can soft-delete the ones that are gone. Blocks _against_ them come from a best-effort
+  index, and a sweep that came back short must never read as "nobody blocks you any more" — that
+  would un-hide content the moment Constellation hiccuped.
+- **Enforced in SQL where a page paginates, in JS where it doesn't.** Feeds, search, directories and
+  archives filter with a `NOT EXISTS` predicate (`notBlockedByViewer`) so a block never shortens a
+  page or strands results behind an offset; rails, profile tabs and third-party discussion
+  (Bluesky, Margin, Semble, pckt, Leaflet) post-filter, where a shorter list is fine. Every helper
+  is bounded by the DIDs a page is about to render, never by the reader's block set — a reader on a
+  40k-member blocklist has to stay an index probe.
+- **Blocked pages explain themselves.** A blocked profile, publication or article renders the block
+  rather than an empty page or a bare "not found": which direction it runs, and an Unblock control
+  only when the block is the reader's own to undo. The article body is withheld outright — the
+  reason is a separate, opt-in read, so nothing about a blocked document (not even its title)
+  crosses the wire.
+- **Big blocklists are mirrored partially, and say so.** The largest public lists run to six
+  figures; past the mirror cap a list is stored truncated and flagged, because silently
+  under-enforcing a blocklist is worse than admitting the limit.
+- **Settings → Blocked accounts** lists the reader's own blocks and their subscribed block lists,
+  with how much of each list is mirrored. It only offers Unblock for blocks they made: someone
+  else's decision is not theirs to undo, and a button that pretended otherwise would be a lie.
 
 ---
 

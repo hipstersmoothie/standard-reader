@@ -578,6 +578,7 @@ const getListFeed = createServerFn({ method: "GET" })
         readForDid: trackReading ? session?.did : undefined,
         unreadForDid,
         countOldPostsAsUnread,
+        viewerDid: session?.did,
         limit: data.limit,
         offset: data.offset,
       });

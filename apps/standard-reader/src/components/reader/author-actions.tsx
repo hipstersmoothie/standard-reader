@@ -34,6 +34,7 @@ import { listApi } from "#/integrations/tanstack-query/api-lists.functions";
 import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
 import { useLoginSearch } from "#/utils/use-login-search";
 
+import { BlockUserMenuItem } from "./block-user-menu-item";
 import { FollowUserButton } from "./follow-user-button";
 import { NotifyButton } from "./notify-button";
 import { RssFeedDialog } from "./rss-feed-button";
@@ -315,6 +316,18 @@ export function AuthorActions({
                 <Trans>Resume</Trans>
               </MenuItem>
             ) : null}
+            {/* Last, and behind its own separator: blocking is the one item
+                here that hides things rather than opening them. */}
+            {isOwnProfile || !signedIn ? null : (
+              <>
+                <MenuSeparator />
+                <BlockUserMenuItem
+                  did={did}
+                  name={user.displayName ?? handle}
+                  iconSize={MENU_ICON}
+                />
+              </>
+            )}
           </Menu>
         </ButtonGroup>
         {isOwnProfile ? null : (

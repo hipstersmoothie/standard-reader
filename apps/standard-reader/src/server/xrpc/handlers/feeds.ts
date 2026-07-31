@@ -2,6 +2,7 @@ import { TRENDING_PAGE_LIMIT } from "#/integrations/tanstack-query/api-feed.func
 import { articleCardsAsAllRead } from "#/lib/track-reading-history";
 import { resolveAuthorDid } from "#/server/atproto/resolve-author-ref";
 import { parseAtUri } from "#/server/atproto/uri";
+import { filterBlockedCards } from "#/server/blocks/blocks";
 import {
   followedPublications,
   selectArticleCards,
@@ -51,6 +52,7 @@ export async function handleGetLatestFeed(ctx: XrpcRequestContext) {
             readForDid: trackReading && subjectDid ? subjectDid : undefined,
             scope: "page",
             excludeWebBridge,
+            viewerDid: ctx.auth?.did,
           })
         : []
       : await selectArticleCards(ctx.db, ctx.schema, {
@@ -63,6 +65,7 @@ export async function handleGetLatestFeed(ctx: XrpcRequestContext) {
               }),
           readForDid: trackReading && subjectDid ? subjectDid : undefined,
           countOldPostsAsUnread,
+          viewerDid: ctx.auth?.did,
           limit,
           offset,
         });
@@ -88,9 +91,14 @@ export async function handleGetLatestFeed(ctx: XrpcRequestContext) {
 
 export async function handleGetTrendingPublications(ctx: XrpcRequestContext) {
   const limit = intParam(ctx.params, "limit", 12, { min: 1, max: 100 });
-  const items = await trendingPublications(ctx.db, ctx.schema, limit, {
-    excludeWebBridge: ctx.excludeWebBridgeEnabled,
-  });
+  const items = await filterBlockedCards(
+    ctx.db,
+    ctx.schema,
+    ctx.auth?.did,
+    await trendingPublications(ctx.db, ctx.schema, limit, {
+      excludeWebBridge: ctx.excludeWebBridgeEnabled,
+    }),
+  );
   return { items: items.map((item) => toPublicationView(item)) };
 }
 
@@ -103,6 +111,7 @@ export async function handleGetTrendingDocuments(ctx: XrpcRequestContext) {
     scope,
     readForDid,
     excludeWebBridge: ctx.excludeWebBridgeEnabled,
+    viewerDid: ctx.auth?.did,
   });
   const enriched = await enrichDocuments(ctx, items, readForDid);
   return { items: enriched.map((item) => toDocumentView(item)) };
@@ -121,6 +130,7 @@ export async function handleGetTagFeed(ctx: XrpcRequestContext) {
       limit,
       offset,
       excludeWebBridge: ctx.excludeWebBridgeEnabled,
+      viewerDid: ctx.auth?.did,
     });
     return {
       view: "publications" as const,
@@ -142,6 +152,7 @@ export async function handleGetTagFeed(ctx: XrpcRequestContext) {
     offset,
     readForDid,
     countOldPostsAsUnread: ctx.auth ? ctx.countOldPostsAsUnreadEnabled : true,
+    viewerDid: ctx.auth?.did,
   });
   const items = await enrichDocuments(ctx, rows, readForDid);
   return {
@@ -233,6 +244,7 @@ export async function handleGetListFeed(ctx: XrpcRequestContext) {
     publicationUris: list.publications,
     readForDid,
     countOldPostsAsUnread: ctx.auth ? ctx.countOldPostsAsUnreadEnabled : true,
+    viewerDid: ctx.auth?.did,
     limit,
     offset,
   });

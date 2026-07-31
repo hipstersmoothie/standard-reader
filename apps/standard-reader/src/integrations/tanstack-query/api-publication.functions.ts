@@ -6,6 +6,8 @@ import { alias } from "drizzle-orm/pg-core";
 import { z } from "zod";
 
 import { publicationLinkParams } from "#/components/reader/format";
+import type { BlockEdge } from "#/lib/blocks";
+import { uriAuthorityDid } from "#/lib/blocks";
 import type { CollectionManifest } from "#/lib/collections/manifest";
 import type { CollectionTheme } from "#/lib/collections/theme";
 import type { InlineMentionRefs } from "#/lib/leaflet/publication-mentions";
@@ -24,6 +26,11 @@ import {
   getReaderDidForRequest,
 } from "#/middleware/auth-session.server";
 import { cdnImageUrl } from "#/server/atproto/blob";
+import {
+  blockEdgeFor,
+  filterBlockedCards,
+  firstBlockAmong,
+} from "#/server/blocks/blocks";
 import { buildCanonicalUrl } from "#/server/ingest/mappers";
 import { readAccountLabels } from "#/server/labeler/labels.server";
 import { observe } from "#/server/observability/log";
@@ -198,6 +205,12 @@ export type { PublicationDocumentFilter } from "#/server/reader/queries";
 export interface PublicationProfile {
   publication: PublicationCard;
   owner: ProfileSummary;
+  /**
+   * Set when the viewer and this publication's owner are blocked from each
+   * other. The header still resolves so the page can explain itself, but
+   * `recentDocuments` comes back empty — see the note on `AuthorProfile.block`.
+   */
+  block: BlockEdge | null;
   recentDocuments: Array<ArticleCard>;
   /**
    * Labels on the **account** that owns this publication, from the viewer's
@@ -358,14 +371,24 @@ const getPublicationProfile = createServerFn({ method: "GET" })
         const countOldPostsAsUnread =
           did == null ? true : countOldPostsAsUnreadEnabled;
 
+        // The publication URI's authority *is* its owner's DID, so the block
+        // check needs no extra lookup and can run before the archive read.
+        const ownerDid = uriAuthorityDid(data.publicationUri);
+        const block = ownerDid
+          ? await blockEdgeFor(db, schema, did, ownerDid)
+          : null;
+
         const [header, recentDocuments] = await Promise.all([
           selectPublicationHeader(db, schema, data.publicationUri),
-          selectPublicationArticleCards(db, schema, {
-            publicationUri: data.publicationUri,
-            limit: data.recentLimit,
-            readForDid,
-            countOldPostsAsUnread,
-          }),
+          block
+            ? Promise.resolve([])
+            : selectPublicationArticleCards(db, schema, {
+                publicationUri: data.publicationUri,
+                limit: data.recentLimit,
+                readForDid,
+                countOldPostsAsUnread,
+                viewerDid: did ?? undefined,
+              }),
         ]);
 
         if (!header) {
@@ -373,6 +396,10 @@ const getPublicationProfile = createServerFn({ method: "GET" })
           return null;
         }
         span.set("found", true);
+        if (block) {
+          span.set("blocked", block.direction);
+          return { ...header, block, recentDocuments: [], labels: [] };
+        }
 
         const [recentWithComments, accountLabels] = await Promise.all([
           attachCommentCountsToArticles(db, schema, recentDocuments),
@@ -386,6 +413,7 @@ const getPublicationProfile = createServerFn({ method: "GET" })
         // viewer-scoped `getAccountLabels` query instead.
         return {
           ...header,
+          block: null,
           recentDocuments: recentWithComments,
           labels: accountLabels.get(header.publication.did) ?? [],
         };
@@ -441,6 +469,20 @@ const getPublicationDocuments = createServerFn({ method: "GET" })
         span.set("order", order);
         span.set("orderOverridden", orderOverride != null);
 
+        const archiveOwnerDid = uriAuthorityDid(data.publicationUri);
+        if (
+          archiveOwnerDid &&
+          (await blockEdgeFor(db, schema, did, archiveOwnerDid))
+        ) {
+          span.set("blocked", true);
+          return {
+            items: [],
+            nextOffset: null,
+            order,
+            orderOverridden: orderOverride != null,
+          };
+        }
+
         const documents = await selectPublicationArticleCards(db, schema, {
           publicationUri: data.publicationUri,
           limit: data.limit,
@@ -450,6 +492,7 @@ const getPublicationDocuments = createServerFn({ method: "GET" })
           filter,
           readerDid: did ?? undefined,
           order,
+          viewerDid: did ?? undefined,
         });
 
         // "Recommended by @follow" attribution — same signal, same batched query
@@ -614,6 +657,20 @@ const getArticle = createServerFn({ method: "GET" })
           return null;
         }
         span.set("found", true);
+
+        // A blocked article is withheld outright rather than returned with its
+        // body stripped: nothing about it — title, excerpt, cover, byline —
+        // should reach the viewer. The page explains itself through
+        // `getArticleBlock`, which the not-found state asks for, so the common
+        // path pays nothing for the rare one.
+        const articleBlock = await firstBlockAmong(db, schema, reader?.did, [
+          row.did,
+          row.pubDid,
+        ]);
+        if (articleBlock) {
+          span.set("blocked", articleBlock.direction);
+          return null;
+        }
 
         const sourceRow = row as ArticleDetailSourceRow;
         const contributors: Array<ArticleContributor> = contributorRows.map(
@@ -849,6 +906,7 @@ const getArticleExtras = createServerFn({ method: "GET" })
             ? selectArticleCards(db, schema, {
                 publicationUris: [row.publicationUri],
                 limit: 4,
+                viewerDid: readerDid ?? undefined,
               })
             : Promise.resolve([]),
           relatedArticles(db, schema, {
@@ -856,18 +914,18 @@ const getArticleExtras = createServerFn({ method: "GET" })
             publicationUri: row.publicationUri,
             limit: data.relatedLimit,
             excludeWebBridge: excludeWebBridgeEnabled,
-          }),
+          }).then((rows) => filterBlockedCards(db, schema, readerDid, rows)),
           articleRecommendedPublications(db, schema, {
             publicationUri: row.publicationUri,
             readerDid,
             limit: data.alsoFollowLimit,
-          }),
+          }).then((rows) => filterBlockedCards(db, schema, readerDid, rows)),
           linkUrls.length > 0
             ? fetchCitedInArticles(db, schema, {
                 urls: linkUrls,
                 excludeDocumentUri: row.uri,
                 limit: 3,
-              })
+              }).then((rows) => filterBlockedCards(db, schema, readerDid, rows))
             : Promise.resolve([]),
           linkUrls.length > 0
             ? fetchMarginConnections(db, schema, {
@@ -933,11 +991,12 @@ const getArticleCard = createServerFn({ method: "GET" })
       async ({ data, context }, span): Promise<ArticleCard | null> => {
         const { db, schema } = context;
         span.set("documentUri", data.documentUri);
+        const viewerDid = await getReaderDidForRequest(getRequest());
         const [card] = await selectArticleCardsByUris(
           db,
           schema,
           [data.documentUri],
-          { lite: true },
+          { lite: true, viewerDid: viewerDid ?? undefined },
         );
         span.set("found", card != null);
         return card ?? null;
@@ -1255,6 +1314,84 @@ function getPublicationDocumentsQueryOptions(
   });
 }
 
+/** Why an article isn't rendering, when the reason is a block. */
+export interface ArticleBlockState {
+  block: BlockEdge;
+  /** The blocked account, so the notice can name somebody rather than a DID. */
+  account: Pick<ProfileSummary, "did" | "handle" | "displayName" | "avatarUrl">;
+}
+
+/**
+ * The block withholding an article, if that is why it didn't render.
+ *
+ * Asked for only by the article page's empty state, so a page that resolves
+ * normally never pays for it. `getArticle` deliberately returns `null` for a
+ * blocked document rather than a stripped-down one — nothing about it should
+ * cross the wire — which is why the explanation is a second, opt-in read.
+ */
+const getArticleBlock = createServerFn({ method: "GET" })
+  .middleware([dbMiddleware])
+  .validator(articleInput)
+  .handler(
+    observe(
+      "publication.getArticleBlock",
+      async ({ data, context }, span): Promise<ArticleBlockState | null> => {
+        const { db, schema } = context;
+        const d = schema.documents;
+        const p = schema.publications;
+        const pr = schema.profiles;
+        span.set("documentUri", data.documentUri);
+
+        const viewerDid = await getReaderDidForRequest(getRequest());
+        if (!viewerDid) return null;
+
+        const [row] = await db
+          .select({ did: d.did, pubDid: p.did })
+          .from(d)
+          .leftJoin(p, eq(p.uri, d.publicationUri))
+          .where(eq(d.uri, data.documentUri))
+          .limit(1);
+        if (!row) return null;
+
+        const block = await firstBlockAmong(db, schema, viewerDid, [
+          row.did,
+          row.pubDid,
+        ]);
+        if (!block) return null;
+        span.set("blocked", block.direction);
+
+        const [profile] = await db
+          .select({
+            did: pr.did,
+            handle: pr.handle,
+            displayName: pr.displayName,
+            avatarUrl: pr.avatarUrl,
+          })
+          .from(pr)
+          .where(eq(pr.did, block.did))
+          .limit(1);
+
+        return {
+          block,
+          account: profile ?? {
+            did: block.did,
+            handle: null,
+            displayName: null,
+            avatarUrl: null,
+          },
+        };
+      },
+    ),
+  );
+
+function getArticleBlockQueryOptions(documentUri: string) {
+  return queryOptions({
+    queryKey: ["article", "block", documentUri] as const,
+    queryFn: async () => getArticleBlock({ data: { documentUri } }),
+    staleTime: 60_000,
+  });
+}
+
 function getArticleQueryOptions(documentUri: string) {
   return queryOptions({
     queryKey: ["article", documentUri] as const,
@@ -1384,6 +1521,8 @@ export const publicationApi = {
   getPublicationSocialProofQueryOptions,
   getArticle,
   getArticleQueryOptions,
+  getArticleBlock,
+  getArticleBlockQueryOptions,
   getArticleCard,
   getArticleCardQueryOptions,
   getCollection,

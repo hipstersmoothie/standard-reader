@@ -14,6 +14,7 @@ import {
   dbValueToTrackReadingHistory,
 } from "#/lib/track-reading-history";
 import { getReaderContextForRequest } from "#/middleware/auth-session.server";
+import { filterBlockedCards } from "#/server/blocks/blocks";
 import {
   attachLabelsFromMap,
   attachSubscribedLabels,
@@ -295,9 +296,14 @@ async function resolveHomeFeedContext(
         publicationUris: followUris,
         followedUserDids,
         countOldPostsAsUnread,
+        ...(did ? { viewerDid: did } : {}),
         ...(trackReading && did ? { readForDid: did, unreadForDid: did } : {}),
       }
-    : { discoverOnly: true, excludeWebBridge };
+    : {
+        discoverOnly: true,
+        excludeWebBridge,
+        ...(did ? { viewerDid: did } : {}),
+      };
 
   return {
     did,
@@ -327,15 +333,25 @@ async function buildHomeFeedCritical(
   // The publications rail (sidebar) is fetched alongside so both ship in the
   // critical payload.
   if (isTrending) {
-    const [trendingPubs, trendingRaw] = await Promise.all([
+    const [trendingPubsRaw, trendingRaw] = await Promise.all([
       trendingPublications(db, schema, HOME_RAIL_LIMIT, {
         excludeWebBridge: ctx.excludeWebBridge,
       }),
       trendingArticles(db, schema, HOME_TRENDING_ROW_LIMIT + 1, {
         readForDid: trackReading && ctx.did ? ctx.did : undefined,
         excludeWebBridge: ctx.excludeWebBridge,
+        viewerDid: ctx.did ?? undefined,
       }),
     ]);
+    // Publication rails aren't paginated, so blocked owners are dropped from
+    // the page rather than excluded in SQL — a shorter rail is fine where a
+    // shorter *feed* page would strand results behind the offset.
+    const trendingPubs = await filterBlockedCards(
+      db,
+      schema,
+      ctx.did,
+      trendingPubsRaw,
+    );
     span.set("trendingPublications", trendingPubs.length);
 
     const trendingFiltered = await filterHiddenDocuments(
@@ -380,7 +396,7 @@ async function buildHomeFeedCritical(
 
   // Trending publications rail (sidebar). Cheap indexed top-N, fetched
   // alongside the main rows so it's part of the critical payload.
-  const [trendingPubs, featuredLead, rows] = await Promise.all([
+  const [trendingPubsRaw, featuredLead, rows] = await Promise.all([
     trendingPublications(db, schema, HOME_RAIL_LIMIT, {
       excludeWebBridge: ctx.excludeWebBridge,
     }),
@@ -394,6 +410,12 @@ async function buildHomeFeedCritical(
       limit: HOME_ROW_LIMIT + 1,
     }),
   ]);
+  const trendingPubs = await filterBlockedCards(
+    db,
+    schema,
+    ctx.did,
+    trendingPubsRaw,
+  );
   span.set("trendingPublications", trendingPubs.length);
 
   let featured: ArticleCard | null = featuredLead[0] ?? rows[0] ?? null;
@@ -488,7 +510,7 @@ async function buildHomeFeedExtras(
     { excludeWebBridge },
   );
 
-  const youMightFollow =
+  const youMightFollowRaw =
     personalized && did
       ? await recommendedPublications(db, schema, did, HOME_RAIL_LIMIT, {
           excludeUris: trendingPubUris,
@@ -504,6 +526,14 @@ async function buildHomeFeedExtras(
           rotationSeed("home", did ?? "anon"),
           { excludeWebBridge },
         );
+  // Never recommend a publication whose owner the reader is blocked from —
+  // "you might follow" is the one rail where that would read as an endorsement.
+  const youMightFollow = await filterBlockedCards(
+    db,
+    schema,
+    did,
+    youMightFollowRaw,
+  );
 
   span.set("youMightFollow", youMightFollow.length);
 
@@ -695,6 +725,7 @@ async function loadLatestFeedCritical(
             readForDid: trackReading && did ? did : undefined,
             scope: "page",
             excludeWebBridge,
+            viewerDid: did ?? undefined,
           })
         : []
       : await selectArticleCards(db, schema, {
@@ -708,6 +739,7 @@ async function loadLatestFeedCritical(
               }),
           readForDid: trackReading && did ? did : undefined,
           countOldPostsAsUnread,
+          viewerDid: did ?? undefined,
           limit: data.limit,
           offset: data.offset,
         });

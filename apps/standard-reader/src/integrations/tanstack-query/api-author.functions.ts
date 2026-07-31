@@ -4,6 +4,7 @@ import { getRequest } from "@tanstack/react-start/server";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 
+import type { BlockEdge } from "#/lib/blocks";
 import { fetchBlueskyPublicProfileFields } from "#/lib/bluesky-public-profile";
 import type { HideableTabId } from "#/lib/profile-tabs";
 import { parseHiddenTabs } from "#/lib/profile-tabs";
@@ -11,6 +12,7 @@ import { getReaderDidForRequest } from "#/middleware/auth-session.server";
 import { resolveIdentity } from "#/server/atproto/identity";
 import { resolveAuthorDid } from "#/server/atproto/resolve-author-ref";
 import { resolveSifaProfileUrl } from "#/server/atproto/sifa-profile";
+import { blockEdgeFor, filterBlockedCards } from "#/server/blocks/blocks";
 import { readAccountLabels } from "#/server/labeler/labels.server";
 import { observe } from "#/server/observability/log";
 import {
@@ -93,6 +95,15 @@ export interface AuthorSummary {
 
 export interface AuthorProfile {
   profile: ProfileSummary;
+  /**
+   * Set when the viewer and this account are blocked from each other. The
+   * profile still resolves — identity, and *which* way the block runs, are what
+   * the page needs to explain itself — but every content list comes back empty
+   * and the stats read zero, so nothing they wrote reaches the viewer.
+   *
+   * Null for signed-out viewers and for everyone not blocked.
+   */
+  block: BlockEdge | null;
   stats: {
     publicationCount: number;
     documentCount: number;
@@ -263,6 +274,39 @@ const getAuthorProfile = createServerFn({ method: "GET" })
         const includeHidden = viewerDid != null && viewerDid === did;
         span.set("ownProfile", includeHidden);
 
+        // Resolved before anything else is read: a blocked profile renders as
+        // the block, not as a profile with the rows filtered out. Loading the
+        // tabs first and emptying them afterwards would pay for content the
+        // viewer must not see, and would leak counts through the stats.
+        const block = await blockEdgeFor(db, schema, viewerDid, did);
+        if (block) {
+          span.set("blocked", block.direction);
+          return {
+            profile: await resolveAuthorProfile(db, schema, did),
+            block,
+            stats: {
+              publicationCount: 0,
+              documentCount: 0,
+              subscriberCount: 0,
+              subscriptionCount: 0,
+              recommendationCount: 0,
+            },
+            publications: [],
+            publicationsNextOffset: null,
+            subscriptions: [],
+            subscriptionsNextOffset: null,
+            readers: [],
+            readersNextOffset: null,
+            recommendations: [],
+            recommendationsNextOffset: null,
+            documents: [],
+            documentsNextOffset: null,
+            hiddenTabs: [],
+            showLikes: false,
+            labels: [],
+          };
+        }
+
         const [
           profile,
           stats,
@@ -371,6 +415,7 @@ const getAuthorProfile = createServerFn({ method: "GET" })
 
         return {
           profile,
+          block: null,
           stats,
           publications,
           publicationsNextOffset:
@@ -493,6 +538,11 @@ const getAuthorPublications = createServerFn({ method: "GET" })
         const includeHidden = viewerDid != null && viewerDid === did;
         span.set("ownProfile", includeHidden);
 
+        if (await blockEdgeFor(db, schema, viewerDid, did)) {
+          span.set("blocked", true);
+          return { items: [], nextOffset: null };
+        }
+
         const items = await authorPublications(db, schema, {
           ...data,
           did,
@@ -521,11 +571,17 @@ const getAuthorSubscriptions = createServerFn({ method: "GET" })
         span.set("did", did);
         span.set("offset", data.offset);
 
+        const viewerDid = await getReaderDidForRequest(getRequest());
+        if (await blockEdgeFor(db, schema, viewerDid, did)) {
+          span.set("blocked", true);
+          return { items: [], nextOffset: null };
+        }
+
         const page = await authorSubscriptions(db, schema, { ...data, did });
         span.set("count", page.items.length);
 
         return {
-          items: page.items,
+          items: await filterBlockedCards(db, schema, viewerDid, page.items),
           nextOffset: nextOffsetForPage(
             data.offset,
             data.limit,
@@ -549,11 +605,17 @@ const getAuthorReaders = createServerFn({ method: "GET" })
         span.set("did", did);
         span.set("offset", data.offset);
 
+        const viewerDid = await getReaderDidForRequest(getRequest());
+        if (await blockEdgeFor(db, schema, viewerDid, did)) {
+          span.set("blocked", true);
+          return { items: [], nextOffset: null };
+        }
+
         const page = await authorReaders(db, schema, { ...data, did });
         span.set("count", page.items.length);
 
         return {
-          items: page.items,
+          items: await filterBlockedCards(db, schema, viewerDid, page.items),
           nextOffset: nextOffsetForPage(
             data.offset,
             data.limit,
@@ -583,6 +645,10 @@ const getAuthorRecommendations = createServerFn({ method: "GET" })
           authorRecommendations(db, schema, { ...data, did }),
           getReaderDidForRequest(getRequest()),
         ]);
+        if (await blockEdgeFor(db, schema, viewerDid, did)) {
+          span.set("blocked", true);
+          return { items: [], nextOffset: null };
+        }
         span.set("count", page.items.length);
 
         // Likes tab: exclude the profile owner from the attribution (see
@@ -632,6 +698,10 @@ const getAuthorDocuments = createServerFn({ method: "GET" })
           authorDocuments(db, schema, { ...data, did }),
           getReaderDidForRequest(getRequest()),
         ]);
+        if (await blockEdgeFor(db, schema, viewerDid, did)) {
+          span.set("blocked", true);
+          return { items: [], nextOffset: null };
+        }
         span.set("count", page.items.length);
 
         // Writing tab: this author's own posts — the helper already drops

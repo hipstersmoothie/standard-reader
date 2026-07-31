@@ -44,6 +44,16 @@ const getShellSnapshot = createServerFn({ method: "GET" }).handler(
         session.did,
       );
 
+      // Re-sync the reader's blocks on the same cadence, and for the same
+      // reason: blocks apply on every surface, so they can't wait for a visit
+      // to settings. Unlike the labeler import this repeats — blocks change,
+      // and a block made on Bluesky ten minutes ago should be in force here.
+      // TTL-guarded internally, so a signed-in reader's every page load is a
+      // no-op between sweeps.
+      const { scheduleReaderBlockSync } =
+        await import("#/server/blocks/sync.server");
+      scheduleReaderBlockSync(session.did);
+
       return loadShellSnapshot(db, schema, {
         did: session.did,
         client: session.client,

@@ -66,6 +66,7 @@ import { Route as LayoutLabelersIndexRouteImport } from './routes/_layout.labele
 import { Route as LayoutLabelersDidRouteImport } from './routes/_layout.labelers.$did'
 import { Route as LayoutPrivacyExtensionRouteImport } from './routes/_layout.privacy.extension'
 import { Route as LayoutSettingsIndexRouteImport } from './routes/_layout.settings.index'
+import { Route as LayoutSettingsBlocksRouteImport } from './routes/_layout.settings.blocks'
 import { Route as LayoutTagTagRouteImport } from './routes/_layout.tag.$tag'
 import { Route as LayoutTopicsIndexRouteImport } from './routes/_layout.topics.index'
 import { Route as LayoutTopicsSlugRouteImport } from './routes/_layout.topics.$slug'
@@ -414,6 +415,11 @@ const LayoutSettingsIndexRoute = LayoutSettingsIndexRouteImport.update({
   path: '/settings/',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutSettingsBlocksRoute = LayoutSettingsBlocksRouteImport.update({
+  id: '/settings/blocks',
+  path: '/settings/blocks',
+  getParentRoute: () => LayoutRoute,
+} as any)
 const LayoutTagTagRoute = LayoutTagTagRouteImport.update({
   id: '/tag/$tag',
   path: '/tag/$tag',
@@ -720,6 +726,7 @@ export interface FileRoutesByFullPath {
   '/feedback/return': typeof LayoutFeedbackReturnRoute
   '/labelers/$did': typeof LayoutLabelersDidRoute
   '/privacy/extension': typeof LayoutPrivacyExtensionRoute
+  '/settings/blocks': typeof LayoutSettingsBlocksRoute
   '/tag/$tag': typeof LayoutTagTagRoute
   '/topics/$slug': typeof LayoutTopicsSlugRoute
   '/u/$did': typeof LayoutUDidRoute
@@ -825,6 +832,7 @@ export interface FileRoutesByTo {
   '/feedback/return': typeof LayoutFeedbackReturnRoute
   '/labelers/$did': typeof LayoutLabelersDidRoute
   '/privacy/extension': typeof LayoutPrivacyExtensionRoute
+  '/settings/blocks': typeof LayoutSettingsBlocksRoute
   '/tag/$tag': typeof LayoutTagTagRoute
   '/topics/$slug': typeof LayoutTopicsSlugRoute
   '/u/$did': typeof LayoutUDidRoute
@@ -935,6 +943,7 @@ export interface FileRoutesById {
   '/_layout/feedback/return': typeof LayoutFeedbackReturnRoute
   '/_layout/labelers/$did': typeof LayoutLabelersDidRoute
   '/_layout/privacy/extension': typeof LayoutPrivacyExtensionRoute
+  '/_layout/settings/blocks': typeof LayoutSettingsBlocksRoute
   '/_layout/tag/$tag': typeof LayoutTagTagRoute
   '/_layout/topics/$slug': typeof LayoutTopicsSlugRoute
   '/_layout/u/$did': typeof LayoutUDidRoute
@@ -1043,6 +1052,7 @@ export interface FileRouteTypes {
     | '/feedback/return'
     | '/labelers/$did'
     | '/privacy/extension'
+    | '/settings/blocks'
     | '/tag/$tag'
     | '/topics/$slug'
     | '/u/$did'
@@ -1148,6 +1158,7 @@ export interface FileRouteTypes {
     | '/feedback/return'
     | '/labelers/$did'
     | '/privacy/extension'
+    | '/settings/blocks'
     | '/tag/$tag'
     | '/topics/$slug'
     | '/u/$did'
@@ -1257,6 +1268,7 @@ export interface FileRouteTypes {
     | '/_layout/feedback/return'
     | '/_layout/labelers/$did'
     | '/_layout/privacy/extension'
+    | '/_layout/settings/blocks'
     | '/_layout/tag/$tag'
     | '/_layout/topics/$slug'
     | '/_layout/u/$did'
@@ -1777,6 +1789,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutSettingsIndexRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/settings/blocks': {
+      id: '/_layout/settings/blocks'
+      path: '/settings/blocks'
+      fullPath: '/settings/blocks'
+      preLoaderRoute: typeof LayoutSettingsBlocksRouteImport
+      parentRoute: typeof LayoutRoute
+    }
     '/_layout/tag/$tag': {
       id: '/_layout/tag/$tag'
       path: '/tag/$tag'
@@ -2229,6 +2248,7 @@ interface LayoutRouteChildren {
   LayoutIndexRoute: typeof LayoutIndexRoute
   LayoutFeedbackReturnRoute: typeof LayoutFeedbackReturnRoute
   LayoutLabelersDidRoute: typeof LayoutLabelersDidRoute
+  LayoutSettingsBlocksRoute: typeof LayoutSettingsBlocksRoute
   LayoutTagTagRoute: typeof LayoutTagTagRoute
   LayoutTopicsSlugRoute: typeof LayoutTopicsSlugRoute
   LayoutUDidRoute: typeof LayoutUDidRoute
@@ -2258,6 +2278,7 @@ const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutIndexRoute: LayoutIndexRoute,
   LayoutFeedbackReturnRoute: LayoutFeedbackReturnRoute,
   LayoutLabelersDidRoute: LayoutLabelersDidRoute,
+  LayoutSettingsBlocksRoute: LayoutSettingsBlocksRoute,
   LayoutTagTagRoute: LayoutTagTagRoute,
   LayoutTopicsSlugRoute: LayoutTopicsSlugRoute,
   LayoutUDidRoute: LayoutUDidRoute,

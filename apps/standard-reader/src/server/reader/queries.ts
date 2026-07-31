@@ -56,6 +56,7 @@ import {
   WEB_BRIDGE_HANDLE_PATTERN,
 } from "#/lib/atproto/bridged-repo";
 import { EXCLUDED_PUBLICATION_URL_PATTERN } from "#/lib/publication/exclusions";
+import { notBlockedByViewer } from "#/server/blocks/blocks";
 import { documentPublishedNotInFuture } from "#/server/reader/document-filters";
 import {
   discoverEligibleArticleWhere,
@@ -163,6 +164,17 @@ export interface ArticleCardQuery {
    * `recent`.
    */
   sort?: ArticleCardSort;
+  /**
+   * The reader this page is being rendered for. Documents by an account they
+   * are blocked from — in either direction — are excluded in SQL rather than
+   * dropped afterwards, so a block never shortens a page or strands results
+   * behind an offset. See {@link notBlockedByViewer}.
+   *
+   * Distinct from `readForDid` / `unreadForDid`, which are about read state:
+   * blocks apply whether or not the reader tracks reading, and to signed-in
+   * readers on discover surfaces where the other two are unset.
+   */
+  viewerDid?: string;
   limit: number;
   offset?: number;
 }
@@ -447,6 +459,8 @@ async function selectFollowFeedCandidateUris(
     featuredOnly?: boolean;
     unreadForDid?: string;
     countOldPostsAsUnread?: boolean;
+    /** See {@link ArticleCardQuery.viewerDid}. */
+    viewerDid?: string;
     limit: number;
     offset: number;
   },
@@ -471,6 +485,8 @@ export function buildFollowFeedCandidateSql(
     featuredOnly?: boolean;
     unreadForDid?: string;
     countOldPostsAsUnread?: boolean;
+    /** See {@link ArticleCardQuery.viewerDid}. */
+    viewerDid?: string;
     limit: number;
     offset: number;
   },
@@ -498,6 +514,12 @@ export function buildFollowFeedCandidateSql(
   if (opts.featuredOnly) base.push(eq(d.featured, true));
   if (opts.unreadForDid)
     base.push(documentNotReadWhere(schema, opts.unreadForDid));
+  // Applied to every union branch, not just the direct one: a followed
+  // publication can carry a guest post by an account the reader blocks, and a
+  // followed user can recommend one.
+  if (opts.viewerDid) {
+    base.push(notBlockedByViewer(schema, opts.viewerDid, sql`${d.did}`));
+  }
   const baseWhere = and(...base) ?? sql`true`;
 
   // Cutoff strategy: apply the cutoff AFTER the union, on a small bounded
@@ -725,6 +747,7 @@ export async function selectArticleCards(
       featuredOnly: opts.featuredOnly,
       unreadForDid: opts.unreadForDid,
       countOldPostsAsUnread: opts.countOldPostsAsUnread,
+      viewerDid: opts.viewerDid,
       limit: opts.limit,
       offset: opts.offset ?? 0,
     });
@@ -732,6 +755,7 @@ export async function selectArticleCards(
     return selectArticleCardsByUris(db, schema, pageUris, {
       readForDid: opts.readForDid,
       countOldPostsAsUnread: opts.countOldPostsAsUnread,
+      viewerDid: opts.viewerDid,
     });
   }
 
@@ -777,6 +801,9 @@ export async function selectArticleCards(
   }
   if (opts.tag) {
     conds.push(documentCarriesTagWhere(d, opts.tag));
+  }
+  if (opts.viewerDid) {
+    conds.push(notBlockedByViewer(schema, opts.viewerDid, sql`${d.did}`));
   }
 
   const columns = articleCardColumns(schema);
@@ -899,6 +926,8 @@ export async function selectPublicationArticleCards(
      * computed against one ordering.
      */
     order?: "newest" | "oldest";
+    /** See {@link ArticleCardQuery.viewerDid}. */
+    viewerDid?: string;
   },
 ): Promise<Array<ArticleCard>> {
   const d = schema.documents;
@@ -948,6 +977,11 @@ export async function selectPublicationArticleCards(
         publicationFilterWhere(schema, opts.filter, opts.readerDid, {
           countOldPostsAsUnread: opts.countOldPostsAsUnread,
         }),
+        // A publication the reader can still open (they are not blocked from
+        // its owner) can carry guest posts by accounts they are blocked from.
+        ...(opts.viewerDid
+          ? [notBlockedByViewer(schema, opts.viewerDid, sql`${d.did}`)]
+          : []),
       ),
     )
     .orderBy(
@@ -1564,6 +1598,8 @@ export interface TrendingArticlesQuery {
   scope?: TrendingArticlesScope;
   /** Hide web-bridge mirrors — see {@link ArticleCardQuery.excludeWebBridge}. */
   excludeWebBridge?: boolean;
+  /** See {@link ArticleCardQuery.viewerDid}. */
+  viewerDid?: string;
 }
 
 function trendingArticleWhere(
@@ -1571,6 +1607,7 @@ function trendingArticleWhere(
   scope: TrendingArticlesScope,
   excludeUris: Array<string> = [],
   excludeWebBridge = false,
+  viewerDid?: string,
 ) {
   const d = schema.documents;
   const p = schema.publications;
@@ -1600,6 +1637,10 @@ function trendingArticleWhere(
     conds.push(notInArray(d.uri, excludeUris));
   }
 
+  if (viewerDid) {
+    conds.push(notBlockedByViewer(schema, viewerDid, sql`${d.did}`));
+  }
+
   return conds;
 }
 
@@ -1624,6 +1665,7 @@ export async function trendingArticles(
     offset = 0,
     readForDid,
     scope = "rail",
+    viewerDid,
   }: TrendingArticlesQuery = {},
 ): Promise<Array<ArticleCard>> {
   const d = schema.documents;
@@ -1640,7 +1682,13 @@ export async function trendingArticles(
       .leftJoin(pa, eq(pa.did, d.did))
       .where(
         and(
-          ...trendingArticleWhere(schema, scope, excludeUris, excludeWebBridge),
+          ...trendingArticleWhere(
+            schema,
+            scope,
+            excludeUris,
+            excludeWebBridge,
+            viewerDid,
+          ),
         ),
       )
       .orderBy(desc(d.trendingScore), desc(d.publishedAt))
@@ -1661,7 +1709,13 @@ export async function trendingArticles(
     .leftJoin(pa, eq(pa.did, d.did))
     .where(
       and(
-        ...trendingArticleWhere(schema, scope, excludeUris, excludeWebBridge),
+        ...trendingArticleWhere(
+          schema,
+          scope,
+          excludeUris,
+          excludeWebBridge,
+          viewerDid,
+        ),
       ),
     )
     .orderBy(desc(d.trendingScore), desc(d.publishedAt))
@@ -2173,6 +2227,7 @@ export async function discoverDirectoryPublications(
     offset,
     query = null,
     excludeWebBridge = false,
+    viewerDid,
   }: {
     topic?: string | null;
     /** `effective` = publication topic only; `document` = topic or any document tag. */
@@ -2183,6 +2238,8 @@ export async function discoverDirectoryPublications(
     query?: string | null;
     /** Hide web-bridge mirrors — see {@link ArticleCardQuery.excludeWebBridge}. */
     excludeWebBridge?: boolean;
+    /** See {@link ArticleCardQuery.viewerDid}. */
+    viewerDid?: string;
   },
 ): Promise<Array<PublicationCard>> {
   const p = schema.publications;
@@ -2194,6 +2251,9 @@ export async function discoverDirectoryPublications(
   const conds = [discoverEligiblePublicationWhere(p)];
   if (excludeWebBridge) {
     conds.push(notWebBridgePublicationOwnerWhere(schema));
+  }
+  if (viewerDid) {
+    conds.push(notBlockedByViewer(schema, viewerDid, sql`${p.did}`));
   }
   if (topic) {
     conds.push(
@@ -2522,6 +2582,7 @@ export async function tagDirectoryPublications(
     limit,
     offset,
     excludeWebBridge = false,
+    viewerDid,
   }: {
     tag: string;
     sort: TagDirectorySort;
@@ -2529,6 +2590,8 @@ export async function tagDirectoryPublications(
     offset: number;
     /** Hide web-bridge mirrors — see {@link ArticleCardQuery.excludeWebBridge}. */
     excludeWebBridge?: boolean;
+    /** See {@link ArticleCardQuery.viewerDid}. */
+    viewerDid?: string;
   },
 ): Promise<Array<TagPublicationCard>> {
   const p = schema.publications;
@@ -2544,6 +2607,9 @@ export async function tagDirectoryPublications(
     publicationHasTaggedDocumentSql(p, d, tag),
     ...(excludeWebBridge ? [notWebBridgePublicationOwnerWhere(schema)] : []),
   ];
+  if (viewerDid) {
+    conds.push(notBlockedByViewer(schema, viewerDid, sql`${p.did}`));
+  }
 
   const sortName = publicationSortNameSql(p.name, p.url);
 
@@ -3299,6 +3365,8 @@ export async function selectArticleCardsByUris(
     lite?: boolean;
     readForDid?: string;
     countOldPostsAsUnread?: boolean;
+    /** See {@link ArticleCardQuery.viewerDid}. */
+    viewerDid?: string;
   },
 ): Promise<Array<ArticleCard>> {
   if (uris.length === 0) {
@@ -3331,6 +3399,9 @@ export async function selectArticleCardsByUris(
         inArray(d.uri, uris),
         eq(d.deleted, false),
         documentPublishedNotInFuture(d),
+        ...(opts?.viewerDid
+          ? [notBlockedByViewer(schema, opts.viewerDid, sql`${d.did}`)]
+          : []),
       ),
     );
 

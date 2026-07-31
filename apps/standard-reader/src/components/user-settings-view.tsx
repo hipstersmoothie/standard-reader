@@ -68,6 +68,7 @@ import { invalidateReadQueries } from "#/components/reader/read-optimistic";
 import { useSidebarPref } from "#/components/reader/use-sidebar-pref";
 import { ButtonLink } from "#/components/router-links";
 import { auth } from "#/integrations/tanstack-query/api-auth.functions";
+import { blocksApi } from "#/integrations/tanstack-query/api-blocks.functions";
 import { feedApi } from "#/integrations/tanstack-query/api-feed.functions";
 import { labelerApi } from "#/integrations/tanstack-query/api-labelers.functions";
 import { listApi } from "#/integrations/tanstack-query/api-lists.functions";
@@ -412,6 +413,11 @@ export function UserSettingsView() {
   const { t, i18n } = useLingui();
   const queryClient = useQueryClient();
   const labelers = useQuery(labelerApi.getLabelersQueryOptions());
+  // Just the headline count — the list itself lives on `/settings/blocks`.
+  const blocks = useQuery(
+    blocksApi.getBlocksSettingsQueryOptions({ limit: 1 }),
+  );
+  const blockCount = blocks.data?.accountCount ?? null;
   const connections = useQuery(mcpApi.listConnectionsQueryOptions());
   const fmt = useFormatters();
   const revokeConnectionMutation = useMutation({
@@ -1159,6 +1165,19 @@ export function UserSettingsView() {
           <Trans>Moderation</Trans>
         </h2>
         <div {...stylex.props(styles.settingGroup)}>
+          <SettingRow
+            label={t`Blocked accounts`}
+            description={t`Your Bluesky blocks apply here too — blocked accounts disappear from your feeds, search, and discussion, in both directions.`}
+          >
+            <ButtonLink to="/settings/blocks" variant="secondary" size="sm">
+              {blockCount == null ? (
+                <Trans>Manage blocks</Trans>
+              ) : (
+                <Trans>Manage {blockCount} blocks</Trans>
+              )}
+            </ButtonLink>
+          </SettingRow>
+          <Separator />
           <SettingRow
             label={t`Labelers`}
             description={t`Subscribe to labelers to flag, blur, or hide content as you read.`}
