@@ -8,7 +8,6 @@ import type {
   CollectionSidecarRecord,
   CollectionsPublicationRecord,
   DocumentRecord,
-  LabelerServiceRecord,
   LabelerSubscriptionRecord,
   ListRecord,
   ListSaveRecord,
@@ -33,7 +32,6 @@ import {
   upsertCollectionSidecar,
   upsertCollectionsPublication,
   upsertDocument,
-  upsertLabelerService,
   upsertLabelerSubscription,
   upsertList,
   upsertListSave,
@@ -129,16 +127,6 @@ async function handleRecord(payload: TapRecordPayload): Promise<void> {
         rkey,
         cid,
         record as unknown as LabelerSubscriptionRecord,
-      );
-      return;
-    }
-    case Collections.labelerService: {
-      await upsertLabelerService(
-        uri,
-        did,
-        rkey,
-        cid,
-        record as unknown as LabelerServiceRecord,
       );
       return;
     }

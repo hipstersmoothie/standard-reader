@@ -7,6 +7,7 @@ import { and, eq, or, sql } from "drizzle-orm";
 import { db } from "../../db/index.ts";
 import { ingestState, subscriptions, trackedRepos } from "../../db/schema.ts";
 import type { TapEvent } from "../atproto/types.ts";
+import { startLabelerDiscovery } from "../labeler/discover.server.ts";
 import { startLabelSync } from "../labeler/sync.server.ts";
 import { logEvent } from "../observability/log.ts";
 import { verifyIngestAuth } from "./auth.ts";
@@ -599,15 +600,10 @@ server.listen(port(), "::", () => {
   }
 });
 
-// Primary signal (publishers) + an optional second tap instance signaled on
-// `app.standard-reader.labeler.service`, so any repo that registers a labeler is
-// tracked and its record indexed — no manual repo tracking needed.
+// Primary signal (publishers).
 const tapChannel = startTapChannel(
   ingestConfig.tapApiUrl ?? "http://127.0.0.1:2480",
 );
-const labelerTapChannel = ingestConfig.tapLabelerApiUrl
-  ? startTapChannel(ingestConfig.tapLabelerApiUrl)
-  : null;
 // Optional third tap instance signaled on `site.standard.document`, so repos
 // that publish documents without a publication record ("loose documents") get
 // tracked + backfilled.
@@ -619,6 +615,7 @@ const pendingTrackedReconcile = startPendingTrackedReconcile(
 );
 const publisherRepoReconcile = startPublisherRepoReconcile();
 const labelSync = startLabelSync();
+const labelerDiscovery = startLabelerDiscovery();
 
 for (const signal of ["SIGINT", "SIGTERM"] as const) {
   process.on(signal, () => {
@@ -626,8 +623,8 @@ for (const signal of ["SIGINT", "SIGTERM"] as const) {
       pendingTrackedReconcile.stop();
       publisherRepoReconcile.stop();
       labelSync.stop();
+      labelerDiscovery.stop();
       await tapChannel.destroy();
-      await labelerTapChannel?.destroy();
       await docsTapChannel?.destroy();
       const { flushTelemetry } = await import("../observability/log.ts");
       await flushTelemetry();

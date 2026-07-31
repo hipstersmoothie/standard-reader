@@ -11,6 +11,7 @@ import { getReaderDidForRequest } from "#/middleware/auth-session.server";
 import { resolveIdentity } from "#/server/atproto/identity";
 import { resolveAuthorDid } from "#/server/atproto/resolve-author-ref";
 import { resolveSifaProfileUrl } from "#/server/atproto/sifa-profile";
+import { readAccountLabels } from "#/server/labeler/labels.server";
 import { observe } from "#/server/observability/log";
 import {
   authorDocuments,
@@ -29,6 +30,7 @@ import { effectiveFollowSets } from "#/server/reader/saved-lists";
 
 import type {
   ArticleCard,
+  ArticleCardLabel,
   Db,
   ProfileSummary,
   PublicationCard,
@@ -112,6 +114,13 @@ export interface AuthorProfile {
   hiddenTabs: Array<HideableTabId>;
   /** Whether the opt-in "Recommendations" tab is enabled on this profile. */
   showLikes: boolean;
+  /**
+   * Labels on this **account** from the viewer's subscribed labelers. Network
+   * labelers (pub-search's `bulk-generated`, Bluesky moderation services) label
+   * accounts rather than documents, so this is where their labels surface.
+   * Empty for signed-out viewers and for those subscribed to no labeler.
+   */
+  labels: Array<ArticleCardLabel>;
 }
 
 export interface AuthorPublicationsPage {
@@ -153,6 +162,7 @@ async function resolveAuthorProfile(
       description: pr.description,
       avatarUrl: pr.avatarUrl,
       bannerUrl: pr.bannerUrl,
+      isBot: pr.isBot,
     })
     .from(pr)
     .where(eq(pr.did, did))
@@ -173,6 +183,9 @@ async function resolveAuthorProfile(
       description: row.description,
       avatarUrl: row.avatarUrl ?? publicProfile?.avatarUrl ?? null,
       bannerUrl: row.bannerUrl,
+      // The AppView reports the same self-label for accounts whose profile
+      // record hasn't come past on the firehose yet, so it fills the gap.
+      isBot: row.isBot || (publicProfile?.isBot ?? false),
     };
   }
 
@@ -188,6 +201,7 @@ async function resolveAuthorProfile(
     description: null,
     avatarUrl: publicProfile?.avatarUrl ?? null,
     bannerUrl: null,
+    isBot: publicProfile?.isBot ?? false,
   };
 }
 
@@ -336,20 +350,24 @@ const getAuthorProfile = createServerFn({ method: "GET" })
             ),
           ]);
         // Flag the viewer's own recommends so cards fill the like-count heart.
-        const [documentsWithRecs, recommendationsWithRecs] = await Promise.all([
-          attachViewerRecommendedToArticles(
-            db,
-            schema,
-            viewerDid,
-            documentsAttributed,
-          ),
-          attachViewerRecommendedToArticles(
-            db,
-            schema,
-            viewerDid,
-            recommendationsAttributed,
-          ),
-        ]);
+        // Account labels ride along in the same wave — one extra indexed read
+        // for a single DID, and only when the viewer is signed in.
+        const [accountLabels, documentsWithRecs, recommendationsWithRecs] =
+          await Promise.all([
+            readAccountLabels(db, schema, viewerDid, [did]),
+            attachViewerRecommendedToArticles(
+              db,
+              schema,
+              viewerDid,
+              documentsAttributed,
+            ),
+            attachViewerRecommendedToArticles(
+              db,
+              schema,
+              viewerDid,
+              recommendationsAttributed,
+            ),
+          ]);
 
         return {
           profile,
@@ -389,6 +407,7 @@ const getAuthorProfile = createServerFn({ method: "GET" })
           ),
           hiddenTabs,
           showLikes,
+          labels: accountLabels.get(did) ?? [],
         };
       },
     ),

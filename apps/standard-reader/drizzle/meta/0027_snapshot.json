@@ -1,6 +1,6 @@
 {
-  "id": "a461dfef-102a-4e6e-b176-71870e8eb6ef",
-  "prevId": "01f005d9-0991-4475-a89d-055b950679bd",
+  "id": "2c4fbe49-f641-4d3a-b8ae-087a158912e1",
+  "prevId": "6e7dae1a-74c5-47a5-a414-40c9efa080c8",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -450,6 +450,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "bsky_labelers_imported_at": {
+          "name": "bsky_labelers_imported_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -583,6 +589,13 @@
           "primaryKey": false,
           "notNull": true,
           "default": true
+        },
+        "is_bot": {
+          "name": "is_bot",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
         },
         "display_name": {
           "name": "display_name",
@@ -792,18 +805,6 @@
           "notNull": true,
           "default": true
         },
-        "prev_next_direction": {
-          "name": "prev_next_direction",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "serial_kind": {
-          "name": "serial_kind",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
         "collections_publication": {
           "name": "collections_publication",
           "type": "boolean",
@@ -946,22 +947,6 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "publications_serial_idx": {
-          "name": "publications_serial_idx",
-          "columns": [
-            {
-              "expression": "prev_next_direction",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "where": "deleted = false",
           "concurrently": false,
           "method": "btree",
           "with": {}
@@ -1158,12 +1143,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": true
-        },
-        "body_image_count": {
-          "name": "body_image_count",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
         },
         "cover_image_cid": {
           "name": "cover_image_cid",
@@ -3233,6 +3212,26 @@
           "primaryKey": false,
           "notNull": false
         },
+        "stored_count": {
+          "name": "stored_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "rejected_count": {
+          "name": "rejected_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "last_error": {
+          "name": "last_error",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "synced_at": {
           "name": "synced_at",
           "type": "timestamp with time zone",
@@ -3289,8 +3288,26 @@
           "primaryKey": false,
           "notNull": true
         },
+        "labels_standard_site": {
+          "name": "labels_standard_site",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "labels_probed_at": {
+          "name": "labels_probed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
         "display_name": {
           "name": "display_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "handle": {
+          "name": "handle",
           "type": "text",
           "primaryKey": false,
           "notNull": false
@@ -3404,6 +3421,13 @@
           "type": "jsonb",
           "primaryKey": false,
           "notNull": false
+        },
+        "enabled": {
+          "name": "enabled",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
         },
         "created_at": {
           "name": "created_at",

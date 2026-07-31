@@ -46,6 +46,7 @@ function makeCard(uri: string, isRead: boolean): ArticleCard {
     authorHandle: null,
     authorAvatarUrl: null,
     authorDisplayName: null,
+    authorIsBot: false,
     tags: null,
     textContent: null,
     recommendCount: 0,

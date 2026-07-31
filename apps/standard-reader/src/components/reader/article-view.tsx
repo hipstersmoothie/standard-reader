@@ -50,6 +50,7 @@ import {
   BookOpen,
   Images,
   Bookmark,
+  Bot,
   Circle,
   CircleCheck,
   ExternalLink,
@@ -77,6 +78,7 @@ import { useReadingTypography } from "#/lib/use-reading-typography";
 import { useTrackReadingHistory } from "#/lib/use-track-reading-history";
 import { prefetchCollectionMagazine } from "#/magazine/load-magazine-data";
 
+import { AccountLabelsForDid } from "./account-labels";
 import { ArticleBelowFold } from "./article-below-fold";
 import { FollowButton } from "./cards";
 import { ArticleContent } from "./content/article-content";
@@ -417,6 +419,22 @@ const styles = stylex.create({
     textUnderlineOffset: "2px",
     minWidth: 0,
   },
+  bylineBot: {
+    alignItems: "center",
+    color: uiColor.text1,
+    columnGap: spacing["1"],
+    display: "inline-flex",
+    flexShrink: 0,
+  },
+  srOnly: {
+    borderWidth: 0,
+    clipPath: "inset(50%)",
+    height: spacing.px,
+    overflow: "hidden",
+    position: "absolute",
+    whiteSpace: "nowrap",
+    width: spacing.px,
+  },
   bylineHandleLink: {
     overflow: "hidden",
     textOverflow: "ellipsis",
@@ -605,6 +623,16 @@ function authorAvatarUrl(article: ArticleDetail): string | null {
     article.publication?.ownerAvatarUrl ??
     null
   );
+}
+
+/**
+ * Whether the byline account self-declares as a bot — same lead-contributor,
+ * else publication-owner fallback as the rest of the byline. A publication owned
+ * by a bot counts as a bot.
+ */
+function authorIsBot(article: ArticleDetail): boolean {
+  const lead = article.contributors[0];
+  return lead ? lead.isBot : article.publicationOwnerIsBot;
 }
 
 /** DID for the byline author (lead contributor, else publication owner). */
@@ -984,6 +1012,9 @@ function ArticleViewBody({
 
   const { data: session } = useSuspenseQuery(user.getSessionQueryOptions);
   const signedIn = Boolean(session?.user);
+  // Account labels are viewer-specific (which labelers you subscribe to, and
+  // the visibility you chose), so they key off the reader, not the article.
+  const readerScope = user.readerQueryScope(session);
 
   const {
     recommended,
@@ -1380,6 +1411,18 @@ function ArticleViewBody({
                   authorName
                 )}
 
+                {authorIsBot(article) ? (
+                  <span
+                    {...stylex.props(styles.bylineBot)}
+                    title={t`This account self-identifies as a bot`}
+                  >
+                    <Bot size={14} aria-hidden />
+                    <span {...stylex.props(styles.srOnly)}>
+                      <Trans>Bot</Trans>
+                    </span>
+                  </span>
+                ) : null}
+
                 {showHandle && bylineDid ? (
                   <Link
                     to="/u/$did"
@@ -1427,6 +1470,16 @@ function ArticleViewBody({
                   </>
                 ) : null}
               </Flex>
+              {/* What a subscribed labeler says about the byline account. Same
+                  placement rule as the profile and publication headers: a third
+                  party's statement reads after the account's own identity line,
+                  not inside it. */}
+              {bylineDid ? (
+                <AccountLabelsForDid
+                  did={bylineDid}
+                  readerScope={readerScope}
+                />
+              ) : null}
             </div>
           </div>
 

@@ -20,6 +20,11 @@
             "description": "Per-label visibility overrides for this labeler's label values.",
             "items": { "type": "ref", "ref": "#labelPref" }
           },
+          "enabled": {
+            "type": "boolean",
+            "default": true,
+            "description": "Whether this labeler's labels are applied while reading. `false` keeps the subscription (and its per-label preferences) but stops the labeler acting here — for a labeler the reader wants on another app but not this one. Absent means enabled."
+          },
           "createdAt": {
             "type": "string",
             "format": "datetime",

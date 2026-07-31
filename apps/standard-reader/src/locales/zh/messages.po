@@ -178,6 +178,10 @@ msgstr ""
 #~ msgid "Standard Reader works the other way round. You sign in with a Bluesky account, and the things you do here — what you follow, save, recommend, and read — are written into your own account's storage, the same place your Bluesky posts live. We keep a copy so the app is fast, but the original is yours. Another app built on the same network can read it, and if you stop using Standard Reader, none of it disappears."
 #~ msgstr ""
 
+#: src/components/labelers-settings-view.tsx
+msgid "Muted"
+msgstr ""
+
 #: src/components/reader/terms-view.tsx
 msgid "Content and intellectual property"
 msgstr ""
@@ -195,6 +199,10 @@ msgstr "Lexicon"
 
 #: src/components/user-settings-view.tsx
 msgid "Can read only"
+msgstr ""
+
+#: src/components/labeler-detail-view.tsx
+msgid "{declaredLabelCount, plural, one {label} other {labels}}"
 msgstr ""
 
 #: src/routes/_layout.p.$did.$rkey.tsx
@@ -242,6 +250,10 @@ msgstr "文章头图"
 msgid "Last updated July 20, 2026"
 msgstr ""
 
+#: src/components/labeler-detail-view.tsx
+msgid "Labels can’t be verified"
+msgstr ""
+
 #: src/components/reader/subscriptions-table.tsx
 #: src/routes/_layout.feedback.index.tsx
 msgid "Type"
@@ -287,6 +299,10 @@ msgstr ""
 msgid "Not subscribed"
 msgstr "未订阅"
 
+#: src/components/labeler-detail-view.tsx
+msgid "{accountCount, plural, one {account} other {accounts}}"
+msgstr ""
+
 #: src/routes/_layout.search.tsx
 msgid "{publicationCountText} · {articleCountText}"
 msgstr "{publicationCountText} · {articleCountText}"
@@ -306,11 +322,6 @@ msgstr ""
 #: src/routes/collection.$did.$rkey.tsx
 msgid "Opening the collection…"
 msgstr "正在打开合集…"
-
-#. placeholder {0}: next.pageCount
-#: src/components/reader/series-up-next.tsx
-#~ msgid "{0} pages"
-#~ msgstr ""
 
 #: src/components/appearance-settings.tsx
 #: src/components/guide/pages/personalizing-guide-page.tsx
@@ -357,6 +368,11 @@ msgstr "创建账户"
 msgid "The same article on a phone. Chrome gets out of the way as you read."
 msgstr ""
 
+#: src/components/docs/docs-labelers-nav.tsx
+#: src/components/docs/labelers-docs-page.tsx
+msgid "Further reading"
+msgstr ""
+
 #: src/components/reader/page-reader-bar.tsx
 msgid "Loading voice…"
 msgstr "正在加载语音…"
@@ -385,8 +401,8 @@ msgid "Your use of {SITE_NAME} is also governed by our <0>privacy policy</0>, wh
 msgstr ""
 
 #: src/components/docs/labelers-docs-page.tsx
-msgid "For a complete, minimal reference implementation (Jetstream → detect → sign → SQLite → serve), see the <0>claudeslop</0> labeler in <1>services/claudeslop</1>."
-msgstr "如需完整而精简的参考实现（Jetstream → 检测 → 签名 → SQLite → 提供服务），请参见 <1>services/claudeslop</1> 中的 <0>claudeslop</0> 标注服务。"
+#~ msgid "For a complete, minimal reference implementation (Jetstream → detect → sign → SQLite → serve), see the <0>claudeslop</0> labeler in <1>services/claudeslop</1>."
+#~ msgstr "如需完整而精简的参考实现（Jetstream → 检测 → 签名 → SQLite → 提供服务），请参见 <1>services/claudeslop</1> 中的 <0>claudeslop</0> 标注服务。"
 
 #: src/components/guide/pages/collections-guide-page.tsx
 msgid "Several collections can be grouped into a <0>series</0> — a run of issues under one name. A series behaves like a publication of your own: it has a page, readers can follow it, and each new edition reaches them the way any other publication would."
@@ -470,6 +486,10 @@ msgstr "现在设置，或随时在「设置」中更改。"
 msgid "Open <0>Collections</0> in the sidebar and start a new one."
 msgstr ""
 
+#: src/components/docs/labelers-docs-page.tsx
+msgid "<0>3. Declare your label values.</0> Publish an <1>app.bsky.labeler.service</1> record in your repo describing each value — severity, default warn/hide, blur behavior — and advertise <2>#atproto_labeler</2> in your DID document. That is the standard AT Protocol declaration, documented in the <3>labels specification</3>; there is nothing Standard Reader specific to do."
+msgstr ""
+
 #: src/routes/_layout.collections.index.tsx
 msgid "Name your series & pick a theme"
 msgstr "为系列命名并选择主题"
@@ -480,8 +500,8 @@ msgstr ""
 
 #: src/components/docs/docs-labelers-nav.tsx
 #: src/components/docs/labelers-docs-page.tsx
-msgid "Reference implementation"
-msgstr ""
+#~ msgid "Reference implementation"
+#~ msgstr ""
 
 #: src/components/appearance-settings.tsx
 msgid "Extra large"
@@ -586,6 +606,10 @@ msgstr ""
 msgid "No articles from this list's publications or people yet."
 msgstr "此列表中的刊物或人尚无文章。"
 
+#: src/components/labelers-settings-view.tsx
+msgid "Loading labelers"
+msgstr ""
+
 #: src/components/reader/share-menu.tsx
 msgid "Landscape fits a compact row. Height adjusts automatically once the embed loads. Change the iframe width as needed."
 msgstr "横版适合紧凑的一行。嵌入内容加载后高度会自动调整。可按需修改 iframe 宽度。"
@@ -639,6 +663,11 @@ msgstr "永久删除存储在你账户中的数据。这些操作会从你的账
 msgid "Loading people"
 msgstr ""
 
+#. placeholder {0}: health.rejected
+#: src/components/labeler-detail-view.tsx
+msgid "{0, plural, one {One of this labeler’s labels couldn’t be verified and was skipped.} other {# of this labeler’s labels couldn’t be verified and were skipped.}}"
+msgstr ""
+
 #: src/components/appearance-settings.tsx
 msgid "Links and labels on paper"
 msgstr ""
@@ -683,6 +712,10 @@ msgstr ""
 
 #: src/components/guide/pages/reading-guide-page.tsx
 msgid "If you would rather the app did not keep a history of what you have opened, you can turn that off in settings. Unread counts stop being meaningful when you do — that is the trade."
+msgstr ""
+
+#: src/components/labeler-detail-view.tsx
+msgid "This labeler hasn’t labeled any accounts in the read-model yet."
 msgstr ""
 
 #: src/components/docs/introduction-docs-page.tsx
@@ -1121,6 +1154,7 @@ msgid "These deletions remove the records from your account itself, not just fro
 msgstr ""
 
 #: src/components/labeler-detail-view.tsx
+#: src/components/labelers-settings-view.tsx
 #: src/components/reader/cards.tsx
 #: src/magazine/magazine-end-subscribe.tsx
 #: src/routes/_layout.tag.$tag.tsx
@@ -1186,6 +1220,10 @@ msgstr ""
 
 #: src/components/guide/pages/reading-guide-page.tsx
 msgid "Under that, <0>Cited in</0> lists other articles that link to this one, and <1>Related reading</1> suggests pieces from across the network on the same subjects — usually from publications you have not met yet."
+msgstr ""
+
+#: src/components/docs/labelers-docs-page.tsx
+msgid "Standard Reader no longer ships labelers of its own. Running one taught us nothing the network doesn't already provide, and for the one signal we did use — an account declaring itself a bot — the answer was already in its profile record, so we read it there instead of asking a labeler to repeat it."
 msgstr ""
 
 #: src/components/reader/about-view.tsx
@@ -1336,7 +1374,6 @@ msgstr "替换封面图"
 
 #: src/components/guide/pages/finding-guide-page.tsx
 #: src/components/guide/pages/getting-started-guide-page.tsx
-#: src/components/labelers-settings-view.tsx
 #: src/components/reader/app-shell.tsx
 #: src/lib/guide/navigation.ts
 #: src/lib/sidebar-nav.ts
@@ -1564,6 +1601,10 @@ msgstr ""
 msgid "When on, collection posts open in the magazine edition instead of the reader view."
 msgstr "开启后，合集帖子将以杂志版式打开，而非阅读视图。"
 
+#: src/components/labelers-settings-view.tsx
+msgid "Not responding — its labels aren’t being applied"
+msgstr ""
+
 #: src/components/docs/docs-api-nav.tsx
 #~ msgid "API reference"
 #~ msgstr "API 参考"
@@ -1694,6 +1735,10 @@ msgstr ""
 #: src/components/reader/cards.tsx
 msgid "{0, plural, one {# article} other {{documentLabel} articles}}"
 msgstr "{0, plural, one {# 篇文章} other {{documentLabel} 篇文章}}"
+
+#: src/components/labeler-detail-view.tsx
+msgid "Accounts"
+msgstr ""
 
 #: src/components/reader/terms-view.tsx
 msgid "Publications and articles belong to their authors. Reading or indexing them through {SITE_NAME} does not transfer any rights to us or to you. Respect the copyright and licensing choices of the writers whose work you read. The {SITE_NAME} software itself is open source and available under the license in its <0>source repository</0>."
@@ -1938,6 +1983,10 @@ msgstr ""
 msgid "No collections in this series yet."
 msgstr "此系列中还没有合集。"
 
+#: src/components/labeler-detail-view.tsx
+msgid "None of this labeler’s labels could be verified against the signing key it publishes, so none are applied. That’s a problem on the labeler’s end."
+msgstr ""
+
 #: src/routes/_layout.feedback.index.tsx
 msgid "No feedback yet."
 msgstr "暂无反馈。"
@@ -1949,6 +1998,10 @@ msgstr "开始探索"
 #: src/components/reader/collection-builder.tsx
 msgid "Articles in collection"
 msgstr "合集中的文章"
+
+#: src/components/labeler-detail-view.tsx
+msgid "Loading more labels…"
+msgstr ""
 
 #: src/components/user-settings-view.tsx
 msgid "System"
@@ -2063,6 +2116,10 @@ msgstr "上一篇"
 #: src/components/reader/content/renderers/shared/footnotes-section.tsx
 msgid "Back to content"
 msgstr "回到正文"
+
+#: src/components/labeler-detail-view.tsx
+msgid "Show more labels"
+msgstr ""
 
 #: src/routes/_layout.discover.tsx
 msgid "Search by name, handle, or topic…"
@@ -2501,8 +2558,8 @@ msgstr ""
 #~ msgstr ""
 
 #: src/components/docs/labelers-docs-page.tsx
-msgid "<0>3. Declare your label values.</0> Describe each value (severity, default warn/hide, blur behavior) in an <1>app.standard-reader.labeler.service</1> descriptor, served from <2>app.standard-reader.labeler.getServices</2> (a <3>did:web</3> labeler has no repo to hold the record)."
-msgstr "<0>3. 声明你的标签取值。</0> 在 <1>app.standard-reader.labeler.service</1> 描述文件中说明每个取值（严重程度、默认警告/隐藏、模糊行为），并通过 <2>app.standard-reader.labeler.getServices</2> 提供（<3>did:web</3> 标注服务没有仓库来存放该记录）。"
+#~ msgid "<0>3. Declare your label values.</0> Describe each value (severity, default warn/hide, blur behavior) in an <1>app.standard-reader.labeler.service</1> descriptor, served from <2>app.standard-reader.labeler.getServices</2> (a <3>did:web</3> labeler has no repo to hold the record)."
+#~ msgstr "<0>3. 声明你的标签取值。</0> 在 <1>app.standard-reader.labeler.service</1> 描述文件中说明每个取值（严重程度、默认警告/隐藏、模糊行为），并通过 <2>app.standard-reader.labeler.getServices</2> 提供（<3>did:web</3> 标注服务没有仓库来存放该记录）。"
 
 #: src/components/reader/app-shell.tsx
 #: src/components/reader/subscriptions-sheet.tsx
@@ -2519,12 +2576,6 @@ msgstr ""
 
 #: src/components/guide/pages/everywhere-guide-page.tsx
 #~ msgid "Carry on browsing. The overlay appears where it is useful and stays out of the way where it is not."
-#~ msgstr ""
-
-#. placeholder {0}: index + 1
-#. placeholder {1}: pages.length
-#: src/components/comic/comic-reader.tsx
-#~ msgid "Page {0} of {1}"
 #~ msgstr ""
 
 #: src/components/reader/about-view.tsx
@@ -2842,6 +2893,11 @@ msgstr "{0, plural, one {位关注者} other {位关注者}}"
 #~ msgid "Most readers stop at what you already subscribe to. Standard Reader treats finding your next favourite as part of the job. Browse all {countLabel} publications on the network — not just the handful you've heard of."
 #~ msgstr "大多数阅读器止步于你已经订阅的内容。Standard Reader 把帮你找到下一个心头好也当作本职。浏览网络上全部 {countLabel} 个刊物——不只是你听说过的那几个。"
 
+#. placeholder {0}: defs.length
+#: src/components/labeler-detail-view.tsx
+msgid "Showing {0} of {declaredLabelCount} labels."
+msgstr ""
+
 #: src/components/reader/about-view.tsx
 msgid "A lightweight browser extension lets you save and subscribe to publications while you’re out on the web — with subtle badges on bsky.app and a one-click overlay on any page you land on. Your reading list fills itself, and every save, like, and subscribe is instantly in sync with whatever device you read on next."
 msgstr ""
@@ -3104,6 +3160,10 @@ msgstr "字体"
 msgid "Home"
 msgstr "首页"
 
+#: src/components/labeler-detail-view.tsx
+msgid "This labeler’s labels aren’t applied while you read on Standard Reader. Your subscription and the settings below are kept, and unmuting restores them."
+msgstr ""
+
 #: src/magazine/flow.tsx
 msgid "Subscribe to this list to read new articles from its publications."
 msgstr "订阅此列表，即可阅读其中刊物的新文章。"
@@ -3229,6 +3289,10 @@ msgstr ""
 #~ msgid "Publishing guide"
 #~ msgstr "发布指南"
 
+#: src/components/labelers-settings-view.tsx
+msgid "Search by name, handle, or label"
+msgstr ""
+
 #: src/components/reader/about-view.tsx
 msgid "Prefer the original? Flip one setting and article links open on the publication’s own site instead — Standard Reader will still keep your place."
 msgstr ""
@@ -3307,6 +3371,7 @@ msgstr ""
 msgid "A publication on Standard is a <0>site.standard.document</0> record in the author's AT Protocol repository — not a row in a database we own. Standard Reader indexes those records into a public read-model and renders them, but nothing about the format is proprietary: the schemas are open, the content is portable across publishing platforms, and the same renderer we ship is available to you."
 msgstr ""
 
+#: src/components/labelers-settings-view.tsx
 #: src/routes/_layout.latest.tsx
 msgid "On the network"
 msgstr "网络上"
@@ -3338,6 +3403,12 @@ msgstr "例如：来自 Atmosphere 的快讯"
 
 #: src/components/reader/content/renderers/shared/bsky-client-embed.tsx
 msgid "{value, plural, one {# join} other {# joins}}"
+msgstr ""
+
+#: src/components/reader/article-view.tsx
+#: src/components/reader/cards.tsx
+#: src/routes/_layout.u.$did.tsx
+msgid "Bot"
 msgstr ""
 
 #: src/components/docs/introduction-docs-page.tsx
@@ -3510,6 +3581,10 @@ msgstr "你已订阅 {publicationName}。新内容会出现在你的信息流中
 msgid "The directory"
 msgstr "目录"
 
+#: src/components/labeler-detail-view.tsx
+msgid "Some labels skipped"
+msgstr ""
+
 #: src/components/appearance-settings.tsx
 #~ msgid "Your accent sits close to the paper in tone, so a darkened version of it is used for text and links."
 #~ msgstr ""
@@ -3544,6 +3619,10 @@ msgstr "搜索刊物和文章"
 
 #: src/components/guide/pages/lists-guide-page.tsx
 msgid "A publication can be in as many lists as you like, or none. Lists are also <0>public</0>: each one has its own page and its own feed, and <1>other people can follow it</1>. Following a list subscribes someone to everything in it at once — so a good list is a way to hand a whole reading habit to somebody, and it keeps working as you add to it."
+msgstr ""
+
+#: src/components/labeler-detail-view.tsx
+msgid "No labeled accounts"
 msgstr ""
 
 #: src/components/reader/article-below-fold.tsx
@@ -3601,6 +3680,11 @@ msgstr "{0, plural, one {# 个刊物} other {# 个刊物}}"
 
 #: src/components/feedback/feedback-image-picker.tsx
 msgid "Try again"
+msgstr ""
+
+#: src/components/reader/article-view.tsx
+#: src/routes/_layout.u.$did.tsx
+msgid "This account self-identifies as a bot"
 msgstr ""
 
 #: src/components/reader/add-to-list-modal.tsx
@@ -3700,6 +3784,10 @@ msgstr ""
 
 #: src/components/reader/subscriptions-tree.tsx
 msgid "{count} unread"
+msgstr ""
+
+#: src/components/labelers-settings-view.tsx
+msgid "Show more labelers"
 msgstr ""
 
 #: src/components/comic/comic-reader.tsx
@@ -3807,6 +3895,10 @@ msgstr "推荐本期"
 #: src/components/reader/subscriptions-sheet.tsx
 msgid "You aren't following anything yet."
 msgstr "你还没有关注任何内容。"
+
+#: src/components/labeler-detail-view.tsx
+#~ msgid "Muted here — this labeler’s labels aren’t applied while you read on Standard Reader. Your subscription and the settings below are kept, and unmuting restores them."
+#~ msgstr ""
 
 #: src/routes/_layout.feedback.index.tsx
 msgid "{count, plural, one {# upvote} other {# upvotes}} — click to undo"
@@ -4159,10 +4251,6 @@ msgstr "该链接已过期。"
 msgid "Lists in the sidebar"
 msgstr ""
 
-#: src/components/comic/comic-reader.tsx
-#~ msgid "End of issue"
-#~ msgstr ""
-
 #: src/components/guide/pages/extension-guide-page.tsx
 msgid "The extension checks the address of the page you are on to work out whether there is anything to offer, and it acts on your account only when you click something. It does not read your browsing history or the contents of pages."
 msgstr ""
@@ -4320,9 +4408,17 @@ msgstr ""
 msgid "Open image {position}"
 msgstr "打开第 {position} 张图片"
 
+#: src/components/labeler-detail-view.tsx
+msgid "Not responding"
+msgstr ""
+
 #: src/components/docs/api-docs-intro.tsx
 msgid "AppView API"
 msgstr "AppView API"
+
+#: src/components/docs/labelers-docs-page.tsx
+msgid "We used to also accept a labeler registered by a Standard Reader‑specific descriptor record. That is gone. It existed only so a <0>did:web</0> labeler — which has no repo, and so cannot publish the standard declaration — could join the directory. If you already run a labeler for the wider network it works here unchanged, which was always the point: a labeler can label any content on the network, so there is no reason for this app to invent its own way of describing one."
+msgstr ""
 
 #: src/components/reader/article-view.tsx
 msgid "There’s a magazine edition of this collection."
@@ -4925,6 +5021,10 @@ msgstr ""
 msgid "Listen to this example read aloud"
 msgstr "听听这段示例朗读"
 
+#: src/components/docs/labelers-docs-page.tsx
+msgid "Labelers are an AT Protocol concept, not a Standard Reader one, so the protocol documentation is the reference: <0>labels</0> covers the label object, its signature and the <1>queryLabels</1> / <2>subscribeLabels</2> endpoints, and <3>moderation</3> covers how labels are meant to be applied. Anything that satisfies those works here."
+msgstr ""
+
 #: src/routes/_layout.index.tsx
 msgid "Your reading room"
 msgstr "你的阅读室"
@@ -5090,11 +5190,6 @@ msgstr "上移"
 msgid "on Semble"
 msgstr "在 Semble 上"
 
-#. placeholder {0}: next.title
-#: src/components/comic/comic-reader.tsx
-#~ msgid "Read the next issue: {0}"
-#~ msgstr ""
-
 #: src/components/user-settings-view.tsx
 msgid "On — delivered to {digestEmail}. The best of the publications you subscribe to, plus a couple worth discovering."
 msgstr "已开启——发送至 {digestEmail}。汇集你订阅刊物中的精选内容，外加几个值得发现的新刊物。"
@@ -5251,6 +5346,10 @@ msgstr "最后更新于 2026 年 6 月 11 日"
 msgid "People you follow"
 msgstr ""
 
+#: src/components/docs/labelers-docs-page.tsx
+msgid "Labels may apply to a document's <0>at://</0> URI or to an account DID. Account labels are shown on that account's author and publication pages and on every document it published, so a label about a publisher does not need to be re-emitted per post."
+msgstr ""
+
 #: src/components/guide/pages/lists-guide-page.tsx
 msgid "<0>Reorder subscriptions…</0> lets you drag your lists into the order you want, so the ones you read most sit at the top. Select <1>Finish reordering</1> when you are done."
 msgstr ""
@@ -5320,6 +5419,11 @@ msgstr "服务 DID 是 <0>{appviewDid}</0>。该服务为需要协商 scope 的�
 msgid "The Slow Web, Revisited"
 msgstr "重访慢速网络"
 
+#. placeholder {0}: labelTotal - names.length
+#: src/components/labelers-settings-view.tsx
+msgid "+{0} more"
+msgstr ""
+
 #: src/components/guide/pages/personalizing-guide-page.tsx
 #~ msgid "Eight presets, or your own paper and accent. The rest of the interface is derived from them."
 #~ msgstr ""
@@ -5333,6 +5437,10 @@ msgstr "Google Font"
 #: src/components/reader/collection-builder.tsx
 msgid "Create collection"
 msgstr "创建合集"
+
+#: src/components/labelers-settings-view.tsx
+msgid "Labels articles here"
+msgstr ""
 
 #: src/components/guide/pages/getting-started-guide-page.tsx
 msgid "the queue of articles you put aside. A badge shows how many are waiting."
@@ -5419,8 +5527,8 @@ msgstr "复制链接代码"
 
 #. placeholder {0}: defs.length
 #: src/components/labeler-detail-view.tsx
-msgid "{0, plural, one {label} other {labels}}"
-msgstr "{0, plural, one {标签} other {标签}}"
+#~ msgid "{0, plural, one {label} other {labels}}"
+#~ msgstr "{0, plural, one {标签} other {标签}}"
 
 #: src/routes/_layout.feedback.return.tsx
 msgid "Your feedback has been posted to <0>userinput.app</0>. Thanks for helping us improve Standard Reader."
@@ -5941,12 +6049,6 @@ msgstr ""
 #~ msgid "Every renderer takes one input for the document — the content payload of a <0>site.standard.document</0>. The format is detected from the payload's <1>$type</1>."
 #~ msgstr ""
 
-#. placeholder {0}: series.position
-#. placeholder {1}: series.total
-#: src/components/comic/comic-reader.tsx
-#~ msgid "{publicationName} · {0} of {1}"
-#~ msgstr ""
-
 #: src/routes/_layout.tag.$tag.tsx
 msgid "Tag"
 msgstr "标签"
@@ -6010,6 +6112,10 @@ msgstr "阅读与隐私"
 #: src/components/site-legal-links.tsx
 msgid "About"
 msgstr "关于"
+
+#: src/components/labeler-detail-view.tsx
+msgid "Muted here"
+msgstr ""
 
 #: src/components/reader/privacy-view.tsx
 msgid "Sign-in and record access go through your Personal Data Server and the wider AT Protocol network. Infrastructure providers (such as our database host) process data on our behalf under their own terms. Embedded media, fonts, or links on article pages may load resources from other sites when you open them."
@@ -6332,17 +6438,9 @@ msgstr ""
 msgid "Search publications or paste a handle"
 msgstr "搜索刊物或粘贴 handle"
 
-#: src/components/comic/comic-reader.tsx
-#~ msgid "This issue has no pages to show."
-#~ msgstr ""
-
 #: src/components/site-legal-links.tsx
 msgid "Source"
 msgstr "来源"
-
-#: src/components/comic/comic-reader.tsx
-#~ msgid "This is the latest issue. Subscribe to hear when the next one lands."
-#~ msgstr ""
 
 #: src/components/feedback/feedback-image-picker.tsx
 msgid "That file isn't an image we can read."
@@ -7126,6 +7224,10 @@ msgstr ""
 msgid "{minutes}m"
 msgstr "{minutes} 分"
 
+#: src/components/docs/labelers-docs-page.tsx
+msgid "That record also carries an <0>enabled</0> flag. A reader can mute your labeler here — keeping the subscription and their per-label settings, but not applying your labels while they read — without unsubscribing, which is useful when they follow a labeler on another app that they don’t want acting on long-form reading. Its absence means enabled."
+msgstr ""
+
 #. placeholder {0}: account.handle
 #: src/components/reader/add-publication-modal.tsx
 msgid "@{0} · Has documents but no publications"
@@ -7192,6 +7294,10 @@ msgstr ""
 
 #: src/components/reader/terms-view.tsx
 msgid "Acceptable use"
+msgstr ""
+
+#: src/components/labeler-detail-view.tsx
+msgid "This labeler’s server couldn’t be reached, so its labels aren’t available right now. We’ll keep trying."
 msgstr ""
 
 #: src/components/appearance-settings.tsx
