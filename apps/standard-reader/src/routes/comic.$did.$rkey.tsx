@@ -3,6 +3,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { z } from "zod";
 
+import { comicChunkOffset } from "#/components/comic/use-comic-pages";
 import { publicationApi } from "#/integrations/tanstack-query/api-publication.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
 import { documentImages } from "#/lib/document/images";
@@ -20,7 +21,8 @@ const comicSearchSchema = z.object({
 
 export const Route = createFileRoute("/comic/$did/$rkey")({
   validateSearch: comicSearchSchema,
-  loader: async ({ context, params, preload }) => {
+  loaderDeps: ({ search }) => ({ page: search.page }),
+  loader: async ({ context, params, preload, deps }) => {
     const uri = documentUriFromParams(params.did, params.rkey);
     const { queryClient } = context;
     if (preload) {
@@ -51,14 +53,36 @@ export const Route = createFileRoute("/comic/$did/$rkey")({
     // title and length — is what it opens on. Awaited: without it there are no
     // absolute page numbers and nowhere to place the issue that was clicked.
     if (article.publicationUri) {
-      await queryClient
+      const spine = await queryClient
         .ensureQueryData(
           publicationApi.getComicSpineQueryOptions(article.publicationUri),
         )
         .catch(() => null);
-      void queryClient.prefetchQuery(
-        publicationApi.getComicPagesQueryOptions(article.publicationUri, 0),
-      );
+
+      // Warm the chunk holding the page this request actually opens on, not
+      // the first chunk in the book. A deep link (`?page=30`) or an entry
+      // through a late issue otherwise paints a loading placeholder and only
+      // finds its page after hydration.
+      if (spine) {
+        const startIndex =
+          deps.page == null
+            ? (spine.issues.find((issue) => issue.uri === uri)?.pageOffset ?? 0)
+            : deps.page - 1;
+        const issueIndex = Math.max(
+          0,
+          spine.issues.findIndex(
+            (issue) => startIndex < issue.pageOffset + issue.pageCount,
+          ),
+        );
+        await queryClient
+          .ensureQueryData(
+            publicationApi.getComicPagesQueryOptions(
+              article.publicationUri,
+              comicChunkOffset(issueIndex),
+            ),
+          )
+          .catch(() => null);
+      }
     }
 
     return {

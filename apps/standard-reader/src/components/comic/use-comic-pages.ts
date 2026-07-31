@@ -53,7 +53,12 @@ export function pageOfIssue(
   return issues.find((issue) => issue.uri === issueUri)?.pageOffset ?? 0;
 }
 
-function chunkForIssueIndex(issueIndex: number): number {
+/**
+ * The chunk an issue belongs to, as its starting issue index. Shared with the
+ * route loader so a chunk it warms is the exact one the reader then asks for —
+ * a different alignment would fetch the same pages under a second cache key.
+ */
+export function comicChunkOffset(issueIndex: number): number {
   return Math.floor(issueIndex / CHUNK_ISSUES) * CHUNK_ISSUES;
 }
 
@@ -89,7 +94,7 @@ export function useComicPages(
         (issue) => currentIndex < issue.pageOffset + issue.pageCount,
       ),
     );
-    const center = chunkForIssueIndex(issueIndex);
+    const center = comicChunkOffset(issueIndex);
     const offsets: Array<number> = [];
     for (let step = -CHUNK_RADIUS; step <= CHUNK_RADIUS; step += 1) {
       const offset = center + step * CHUNK_ISSUES;
