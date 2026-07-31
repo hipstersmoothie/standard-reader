@@ -1,1 +1,0 @@
-ALTER TABLE "labeler_services" ADD COLUMN "handle" text;

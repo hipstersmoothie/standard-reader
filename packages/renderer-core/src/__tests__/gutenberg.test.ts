@@ -1,15 +1,15 @@
 import { describe, expect, it } from "vitest";
 
-import { buildRenderTree } from "../build";
-import { STRUCTURED_BLOCK_FORMATS } from "../document/content-formats";
+import { buildRenderTree } from "../build.js";
+import { STRUCTURED_BLOCK_FORMATS } from "../document/content-formats.js";
 import {
   GUTENBERG_CONTENT,
   gutenbergBlocks,
   gutenbergInlineText,
-} from "../document/structured-content/gutenberg";
-import { segmentInline } from "../inline";
-import type { BlockNode, InlineNode } from "../nodes";
-import type { StandardSiteDocument } from "../types";
+} from "../document/structured-content/gutenberg.js";
+import { segmentInline } from "../inline.js";
+import type { BlockNode, InlineNode } from "../nodes.js";
+import type { StandardSiteDocument } from "../types.js";
 
 interface RawBlock {
   name: string;
@@ -139,6 +139,7 @@ describe("buildRenderTree — gutenberg blocks", () => {
       alt: "A cat",
       aspectRatio: 16 / 9,
       caption: "Photo by someone",
+      source: { externalSrc: "https://example.com/cat.jpg" },
       src: "https://example.com/cat.jpg",
       type: "image",
     });

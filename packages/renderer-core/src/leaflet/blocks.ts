@@ -1,5 +1,5 @@
-import { narrationImageLines } from "../document/structured-content/image";
-import { isRecord } from "../internal";
+import { narrationImageLines } from "../document/structured-content/image.js";
+import { isRecord } from "../internal.js";
 import type {
   LeafletBlockquoteBlock,
   LeafletBskyPostBlock,
@@ -7,6 +7,7 @@ import type {
   LeafletCodeBlock,
   LeafletContent,
   LeafletHeaderBlock,
+  LeafletHtmlBlock,
   LeafletIframeBlock,
   LeafletImageBlock,
   LeafletImageGalleryBlock,
@@ -19,8 +20,8 @@ import type {
   LeafletTextBlock,
   LeafletUnorderedListBlock,
   LeafletWebsiteBlock,
-} from "./types";
-import { LEAFLET_BLOCK, LEAFLET_CONTENT, LEAFLET_PAGE } from "./types";
+} from "./types.js";
+import { LEAFLET_BLOCK, LEAFLET_CONTENT, LEAFLET_PAGE } from "./types.js";
 
 function unwrapPageBlock(entry: unknown): Record<string, unknown> | null {
   if (!isRecord(entry)) return null;
@@ -143,6 +144,17 @@ function asRenderableBlock(value: unknown): LeafletRenderableBlock | null {
 
   const code = asCodeBlock(value);
   if (code) return { kind: "code", block: code };
+
+  if (value.$type === LEAFLET_BLOCK.html) {
+    // An empty document has nothing to frame; drop it rather than let it fall
+    // through to the unsupported-block placeholder.
+    const html = typeof value.html === "string" ? value.html : null;
+    if (!html?.trim()) return null;
+    return {
+      kind: "html",
+      block: value as unknown as LeafletHtmlBlock,
+    };
+  }
 
   const iframe = asIframeBlock(value);
   if (iframe) return { kind: "iframe", block: iframe };
@@ -475,6 +487,7 @@ export function plaintextLinesFromBlock(
     case "horizontalRule":
     case "separator":
     case "poll":
+    case "html":
     case "iframe":
     case "unknown": {
       return [];

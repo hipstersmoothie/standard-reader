@@ -1,8 +1,8 @@
-import { structuredImageAspectRatio } from "./document/structured-content/image";
-import type { StructuredGridImage } from "./document/structured-content/types";
-import { blobImageUrl, externalHttpUrl } from "./internal";
-import type { CollectionImage } from "./nodes";
-import type { ImageUrlResolver } from "./types";
+import { structuredImageAspectRatio } from "./document/structured-content/image.js";
+import type { StructuredGridImage } from "./document/structured-content/types.js";
+import { blobImageUrl, externalHttpUrl } from "./internal.js";
+import type { CollectionImage, ImageSource } from "./nodes.js";
+import type { ImageUrlResolver } from "./types.js";
 
 /**
  * The default image URL resolver: pass through absolute `https` sources, and
@@ -21,6 +21,15 @@ export const defaultImageUrlResolver: ImageUrlResolver = ({
   return blobImageUrl(blob, authorDid);
 };
 
+/** The record-level source of a grid image, for format-to-format conversion. */
+function gridImageSource(image: StructuredGridImage): ImageSource {
+  const source: ImageSource = {};
+  if (image.blob != null) source.blob = image.blob;
+  const { width, height } = image.aspectRatio ?? {};
+  if (width != null && height != null) source.aspectRatio = { width, height };
+  return source;
+}
+
 /** Resolve a list of structured grid images to renderable collection images. */
 export function resolveGridImages(
   images: Array<StructuredGridImage>,
@@ -35,6 +44,7 @@ export function resolveGridImages(
         src,
         alt: image.alt ?? "",
         aspectRatio: structuredImageAspectRatio(image),
+        source: gridImageSource(image),
       },
     ];
   });

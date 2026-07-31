@@ -99,7 +99,13 @@ function renderBlock(node: BlockNode, ctx: RenderContext): Renderable {
     }
     case "callout": {
       return shared.callout(
-        { emoji: node.emoji, color: node.color },
+        {
+          emoji: node.emoji,
+          color: node.color,
+          kind: node.kind,
+          title: node.title,
+          fold: node.fold,
+        },
         facet(node.text, ctx),
       );
     }
@@ -126,6 +132,16 @@ function renderBlock(node: BlockNode, ctx: RenderContext): Renderable {
     }
     case "code": {
       return shared.code({ code: node.code, language: node.language });
+    }
+    case "html": {
+      return shared.html({ html: node.html });
+    }
+    case "htmlEmbed": {
+      return shared.htmlEmbed({
+        html: node.html,
+        height: node.height,
+        aspectRatio: node.aspectRatio,
+      });
     }
     case "image": {
       return shared.image({

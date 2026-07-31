@@ -1,6 +1,6 @@
-import { findFacetFeature, hasFacetKind } from "./facets";
-import { segmentFacetedText } from "./leaflet/facets";
-import type { InlineNode, MarkKind, RichText } from "./nodes";
+import { findFacetFeature, hasFacetKind } from "./facets.js";
+import { segmentFacetedText } from "./leaflet/facets.js";
+import type { InlineNode, MarkKind, RichText } from "./nodes.js";
 
 function wrapMark(node: InlineNode, mark: MarkKind): InlineNode {
   return { type: "mark", mark, children: [node] };

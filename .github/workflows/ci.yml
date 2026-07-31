@@ -80,7 +80,7 @@ jobs:
       # the deploy's pre-deploy `pnpm db:migrate` tries to apply them. Offline
       # check (no DB connection); the URL only satisfies drizzle.config.ts.
       - name: Check migrations
-        run: pnpm exec drizzle-kit check
+        run: pnpm --filter standard-reader exec drizzle-kit check
         env:
           DATABASE_URL: postgres://drizzle:drizzle@localhost:5432/drizzle
 
@@ -108,9 +108,9 @@ jobs:
       - name: Check i18n catalogs are up to date
         run: |
           pnpm i18n:extract
-          if ! git diff --quiet -- src/locales; then
-            echo "::error::Translation catalogs are stale. Run 'pnpm i18n:extract' and commit src/locales."
-            git --no-pager diff --stat -- src/locales
+          if ! git diff --quiet -- apps/standard-reader/src/locales; then
+            echo "::error::Translation catalogs are stale. Run 'pnpm i18n:extract' and commit apps/standard-reader/src/locales."
+            git --no-pager diff --stat -- apps/standard-reader/src/locales
             exit 1
           fi
 
@@ -126,7 +126,7 @@ jobs:
         run: pnpm --filter standard-reader-extension compile
 
       - name: Lint extension
-        run: pnpm exec oxlint extension/src src/server/extension src/routes/api/extension src/routes/extension.connected.tsx
+        run: pnpm exec oxlint apps/extension/src apps/standard-reader/src/server/extension apps/standard-reader/src/routes/api/extension apps/standard-reader/src/routes/extension.connected.tsx
 
       - name: Lint
         run: pnpm lint
@@ -226,7 +226,7 @@ jobs:
           api_key: ${{ secrets.NEON_API_KEY }}
 
       - name: Set preview DATABASE_URL
-        run: node scripts/railway-set-preview-db.mjs
+        run: node apps/standard-reader/scripts/railway-set-preview-db.mjs
         env:
           RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
           RAILWAY_PROJECT_ID: fbde7ed0-9be3-4364-8892-c4aa80b2f79e

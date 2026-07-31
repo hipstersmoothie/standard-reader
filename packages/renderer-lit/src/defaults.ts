@@ -74,9 +74,9 @@ export const defaultComponents: LitComponents = {
     blockquote: (children) => html`<blockquote>${children}</blockquote>`,
     callout: ({ emoji }, children) =>
       html`<aside role="note">
-        ${emoji
-          ? html`<span aria-hidden="true">${emoji} </span>`
-          : nothing}${children}
+        ${
+          emoji ? html`<span aria-hidden="true">${emoji} </span>` : nothing
+        }${children}
       </aside>`,
     horizontalRule: () => html`<hr />`,
     bulletList: (children) =>
@@ -97,10 +97,19 @@ export const defaultComponents: LitComponents = {
         <input type="checkbox" ?checked=${checked} readonly disabled />
         ${children}
       </li>`,
+    html: () => nothing,
+    htmlEmbed: ({ html: markup, height }) =>
+      html`<iframe
+        srcdoc=${markup}
+        height=${height ?? nothing}
+        loading="lazy"
+        sandbox="allow-scripts"
+        title="Embedded content"
+      ></iframe>`,
     code: ({ code, language }) =>
-      html`<pre><code class=${language
-        ? `language-${language}`
-        : nothing}>${code}</code></pre>`,
+      html`<pre><code class=${
+        language ? `language-${language}` : nothing
+      }>${code}</code></pre>`,
     image: ({ src, alt, caption }) =>
       html`<figure>
         <img

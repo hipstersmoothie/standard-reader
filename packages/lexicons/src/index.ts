@@ -39,7 +39,18 @@ import * as lexicons from "./lexicons/index.js";
  * Every `app.standard-reader.*` lexicon schema (queries, procedures, records),
  * keyed by the final NSID segment — e.g. {@link standardReader.getDocument}.
  */
-export const standardReader = lexicons.app["standard-reader"];
+export type StandardReaderLexicons = (typeof lexicons.app)["standard-reader"];
+
+/**
+ * Every `app.standard-reader.*` lexicon schema (queries, procedures, records),
+ * keyed by the final NSID segment — e.g. {@link standardReader.getDocument}.
+ *
+ * The type annotation is load-bearing: without it, declaration emit writes the
+ * inferred type as `typeof lexicons.app.'standard-reader'`, which is not valid
+ * TypeScript and makes the published `.d.ts` unparseable for consumers.
+ */
+export const standardReader: StandardReaderLexicons =
+  lexicons.app["standard-reader"];
 
 /**
  * Public base URL of the Standard Reader AppView (its XRPC service lives under

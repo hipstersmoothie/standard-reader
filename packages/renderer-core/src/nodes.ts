@@ -12,7 +12,8 @@
  * tree of marks, links, mentions and footnote references.
  */
 
-import type { AspectRatio } from "./types";
+import type { CalloutKind } from "./document/structured-content/callouts.js";
+import type { AspectRatio } from "./types.js";
 
 /** A run of rich text: plaintext plus byte-indexed AT-Proto facets. */
 export interface RichText {
@@ -48,10 +49,33 @@ export type InlineNode =
       contentPlaintext?: string;
     };
 
+/**
+ * The image's source as it appeared in the record, carried alongside the
+ * resolved `src` URL.
+ *
+ * Renderers only need `src`; this is for consumers that re-emit a document
+ * into another content format (see `@standard-reader/converter`) and must
+ * reference the same PDS blob rather than a CDN URL.
+ */
+export interface ImageSource {
+  /** Raw blob ref from the record, when the image is blob-backed. */
+  blob?: unknown;
+  /** External `https` source, when the image is not blob-backed. */
+  externalSrc?: string;
+  /**
+   * Raw `aspectRatio` dimensions as the record carried them. `BlockNode`'s
+   * `aspectRatio` is the derived ratio (with a 16∶9 fallback), so re-emitting a
+   * record needs the original width/height back.
+   */
+  aspectRatio?: { width?: number; height?: number };
+}
+
 export interface CollectionImage {
   src: string;
   alt: string;
   aspectRatio?: AspectRatio;
+  /** Original record-level source, for format-to-format conversion. */
+  source?: ImageSource;
 }
 
 export interface TableCell {
@@ -76,12 +100,50 @@ export type BlockNode =
   | { type: "paragraph"; text: RichText; dropCap: boolean }
   | { type: "heading"; level: number; text: RichText }
   | { type: "blockquote"; paragraphs: Array<RichText> }
-  | { type: "callout"; text: RichText; emoji?: string; color?: string }
+  | {
+      type: "callout";
+      text: RichText;
+      emoji?: string;
+      color?: string;
+      /** Normalized visual family (`note`, `warning`, …) for `[!TYPE]` callouts. */
+      kind?: CalloutKind;
+      /** Author-supplied title from the marker line. */
+      title?: string;
+      /** Set only when the callout was marked collapsible. */
+      fold?: "open" | "closed";
+    }
   | { type: "horizontalRule" }
   | { type: "bulletList"; items: Array<ListItem> }
   | { type: "orderedList"; start?: number; items: Array<ListItem> }
   | { type: "taskList"; items: Array<TaskItem> }
   | { type: "code"; code: string; language?: string }
+  /**
+   * A raw HTML block from a markdown source.
+   *
+   * Carried rather than dropped, because deleting it loses real content — but
+   * deliberately *not* rendered by the default components: injecting untrusted
+   * markup is a decision only the host can make, with its own sanitizer. Supply
+   * an `Html` component to render it.
+   */
+  | { type: "html"; html: string }
+  /**
+   * A self-contained HTML document the author supplied as an *embed*, not as
+   * markup to splice into the page — Leaflet's `pub.leaflet.blocks.html`.
+   *
+   * Unlike `html`, this one is rendered by the default components, because the
+   * format defines it as running inside a sandboxed iframe's `srcdoc`: the
+   * markup never touches the host document, so no host sanitizer is implied.
+   * Keep the sandbox when overriding `HtmlEmbed`, and in particular keep
+   * `allow-same-origin` out of it — with `srcdoc` that would hand the embed the
+   * embedder's origin.
+   */
+  | {
+      type: "htmlEmbed";
+      html: string;
+      /** Fixed pixel height requested by the block. */
+      height?: number;
+      aspectRatio?: { width?: number; height?: number };
+    }
   | {
       type: "image";
       src: string;
@@ -89,6 +151,8 @@ export type BlockNode =
       aspectRatio?: AspectRatio;
       fullBleed?: boolean;
       caption?: string;
+      /** Original record-level source, for format-to-format conversion. */
+      source?: ImageSource;
     }
   | {
       type: "iframe";
@@ -112,7 +176,7 @@ export type BlockNode =
       caption?: string;
       alignment?: string;
     }
-  | { type: "blueskyEmbed"; postUri: string }
+  | { type: "blueskyEmbed"; postUri: string; postCid?: string }
   | {
       type: "imageGrid";
       images: Array<CollectionImage>;
@@ -134,7 +198,7 @@ export type BlockNode =
     }
   | { type: "unknown"; blockType: string }
   // Platform-specific blocks — usually interactive or data-backed embeds.
-  | { type: "leaflet.poll"; pollUri: string }
+  | { type: "leaflet.poll"; pollUri: string; pollCid?: string }
   | { type: "leaflet.signup" }
   | { type: "leaflet.separator" }
   | { type: "leaflet.standardSitePost"; uri: string }

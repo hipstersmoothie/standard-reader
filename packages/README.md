@@ -48,6 +48,35 @@ of the parsing is duplicated; adding a framework is a rendering concern only.
 | [`renderer-lit`](./renderer-lit)         | Lit / web components | `lit-html` templates            |
 | [`renderer-angular`](./renderer-angular) | Angular              | standalone components           |
 
+### Also in this directory
+
+Three packages here are not renderers. One publishes the **API** rather than the
+content format; the other two go the opposite way through `renderer-core` —
+instead of turning a document into UI, they turn it back into a _different_
+content format:
+
+| Package                    | What it is                                                                                                                                                       |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`lexicons`](./lexicons)   | `@standard-reader/lexicons` — the `app.standard-reader.*` XRPC API as typed AT Protocol lexicon schemas, generated with `@atproto/lex`. No client.               |
+| [`converter`](./converter) | `@standard-reader/converter` — convert a document's content between the Leaflet, Offprint, pckt and Markpub formats, with a per-block report of what each costs. |
+| [`cli`](./cli)             | `@standard-reader/cli` — the `standard-reader` binary: convert the document records in your own repo, one prompt per record that would lose something.           |
+
+```
+                 ┌──────────────────────────────────┐
+                 │   @standard-reader/renderer-core   │
+                 │        DocumentTree (one tree)     │
+                 └──────────────────────────────────┘
+                      │                          │
+        render ◄──────┘                          └──────► re-emit
+   react · vue · solid · svelte                    converter → leaflet ·
+   lit · angular                                   offprint · pckt · markpub
+```
+
+Because conversion re-emits the _same_ normalized tree the renderers walk, it
+inherits every source format core can parse: markdown-in-record, ProseMirror,
+BlockNote and Gutenberg documents all convert into the four target formats
+without the converter knowing anything about them.
+
 The Standard Reader app itself consumes `renderer-react` (see
 `src/components/reader/content/standard-renderer.tsx`), supplying its own
 design-system components through the `components` prop.
@@ -113,6 +142,8 @@ Each package is a workspace package built and tested on its own:
 pnpm --filter @standard-reader/renderer-core test
 pnpm --filter @standard-reader/renderer-vue typecheck
 pnpm --filter @standard-reader/renderer-lit build
+pnpm --filter @standard-reader/converter test
+pnpm convert:build && pnpm convert formats   # build + run the CLI locally
 ```
 
 Repo-wide `pnpm lint` / `pnpm exec oxfmt` cover the packages too. Each package

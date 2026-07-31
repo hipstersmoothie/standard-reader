@@ -17,10 +17,10 @@
  * dropped rather than flattened into visible text.
  */
 
-import { isRecord } from "../../internal";
-import { utf8ByteLength } from "../../leaflet/utf8";
-import { syntheticFacet } from "./text-runs";
-import type { StructuredRenderableBlock, StructuredText } from "./types";
+import { isRecord } from "../../internal.js";
+import { utf8ByteLength } from "../../leaflet/utf8.js";
+import { syntheticFacet } from "./text-runs.js";
+import type { StructuredRenderableBlock, StructuredText } from "./types.js";
 
 export const GUTENBERG_CONTENT = "blog.skypress.content.gutenberg";
 
@@ -257,18 +257,19 @@ function listBlock(
       ? items
       : legacyListItems(stringAttr(attributes, "values"));
   if (resolved.length === 0) return [];
+  const listItems = resolved.map((text) => ({ text }));
 
   if (attributes.ordered === true) {
     const start = attributes.start;
     return [
       {
-        items: resolved,
+        items: listItems,
         kind: "orderedList",
         start: typeof start === "number" ? start : undefined,
       },
     ];
   }
-  return [{ items: resolved, kind: "bulletList" }];
+  return [{ items: listItems, kind: "bulletList" }];
 }
 
 function quoteBlock(

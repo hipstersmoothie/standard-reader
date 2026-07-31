@@ -1,0 +1,508 @@
+import type { SQL } from "drizzle-orm";
+import { sql } from "drizzle-orm";
+import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import { alias } from "drizzle-orm/pg-core";
+
+import type * as DbSchema from "#/db/schema";
+import { cdnImageUrl } from "#/server/atproto/blob";
+
+/**
+ * Shared shapes + helpers for the read-model query layer (`APP_VISION.md` §5).
+ *
+ * The personal write path lives in `api-reader.functions.ts`; this module backs
+ * the *read* queries (feeds, directory, profiles, articles, search). It defines
+ * the serializable DTOs the UI consumes, the Drizzle column projections that
+ * produce them, and the row→DTO mappers. Kept dependency-light (types + pure
+ * mappers only — no server-only imports) so it can be referenced from anywhere.
+ */
+
+/** A JSON-serializable value (e.g. a document's raw `content` union object). */
+export type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | Array<JsonValue>
+  | { [key: string]: JsonValue };
+
+/** The full schema module (matches `dbMiddleware`'s `context.schema`). */
+export type Schema = typeof DbSchema;
+/** The Drizzle client type (matches `dbMiddleware`'s `context.db`). */
+export type Db = NodePgDatabase<Schema>;
+
+/** A publication as rendered in cards, rails, and the directory. */
+export interface PublicationCard {
+  uri: string;
+  did: string;
+  name: string;
+  url: string;
+  description: string | null;
+  iconUrl: string | null;
+  /** Owning profile's avatar, used as an icon fallback when the pub has none. */
+  ownerAvatarUrl: string | null;
+  /** Owning profile's handle (e.g. `alice.bsky.social`). */
+  ownerHandle: string | null;
+  topic: string | null;
+  verified: boolean;
+  /**
+   * True when the publication opted out of discovery
+   * (`preferences.showInDiscover = false`). Hidden publications are filtered out
+   * of every listing except the owner's own profile, where the card renders
+   * dimmed with an explanatory label — this flag drives that treatment. It is
+   * only ever `true` on that one surface; everywhere else hidden pubs are
+   * excluded server-side, so the flag stays `false`.
+   */
+  hiddenFromDiscover: boolean;
+  subscriberCount: number;
+  documentCount: number;
+  lastDocumentAt: string | null;
+  /** `ts_headline` HTML for the name in search results. */
+  searchNameHtml?: string | null;
+  /** `ts_headline` HTML excerpt for search results. */
+  searchSnippetHtml?: string | null;
+}
+
+/** An article (document) as rendered in feed rows, rails, and search results. */
+export interface ArticleCard {
+  uri: string;
+  did: string;
+  title: string;
+  description: string | null;
+  path: string | null;
+  canonicalUrl: string | null;
+  coverImageUrl: string | null;
+  publishedAt: string;
+  featured: boolean;
+  publicationUri: string | null;
+  publicationName: string | null;
+  publicationIconUrl: string | null;
+  /** Owning profile's avatar, used as a byline-icon fallback when the pub has none. */
+  publicationOwnerAvatarUrl: string | null;
+  /** Owning profile's handle (e.g. `alice.bsky.social`). */
+  publicationOwnerHandle: string | null;
+  /** Owning publication's banner (from the owner profile), for cover fallback. */
+  publicationBannerUrl: string | null;
+  /** Owning publication's derived topic (e.g. "Design"), for meta labels. */
+  publicationTopic: string | null;
+  /**
+   * Document author's Bluesky handle (e.g. `alice.bsky.social`). Joined from
+   * `profiles` on `documents.did`. For publication-bound documents this is the
+   * same profile as the publication owner; for loose documents (no
+   * publication) this is the only byline source. Surfaces in the UI when the
+   * publication name is null.
+   */
+  authorHandle: string | null;
+  /** Document author's avatar URL (fallback byline icon for loose documents). */
+  authorAvatarUrl: string | null;
+  /** Document author's display name (fallback byline label for loose docs). */
+  authorDisplayName: string | null;
+  /**
+   * The byline account self-declares as a bot (a `bot` entry in its profile
+   * record's `labels`). For a publication-bound document this is the same
+   * profile as the publication owner, so one field covers both cases.
+   *
+   * Read off the profile record we already index — this used to require a
+   * first-party labeler that did nothing but re-publish the same
+   * self-declaration as a label.
+   */
+  authorIsBot: boolean;
+  /** Free-form tags from the document record. */
+  tags: Array<string> | null;
+  /**
+   * Tags on this document that matched the search query (search results only).
+   * Lets the card surface the tag that produced the match even when it isn't
+   * among the leading tags — and highlight it as the reason for the hit. Absent
+   * outside search.
+   */
+  matchedTags?: Array<string>;
+  /** Plaintext body when indexed (used for reading-time on cards). */
+  textContent: string | null;
+  /** Network likes (`site.standard.graph.recommend`). */
+  recommendCount: number;
+  /** Bluesky link/quote posts + margin.at notes on this article (Constellation). */
+  commentCount: number;
+  /**
+   * Whether the reader can render an in-app body. `false` for "external" posts
+   * (plain text / bsky-anchored / no structured content) — those link straight
+   * out to the publication site in a new tab instead of routing through
+   * `/a/$did/$rkey`.
+   */
+  hasRenderableBody: boolean;
+  /**
+   * Whether the requesting reader has marked this read. Only meaningful when the
+   * query was scoped to a reader (`readForDid`); otherwise defaults to `false`.
+   */
+  isRead: boolean;
+  /**
+   * Whether this document is a curated collection with a magazine edition
+   * (`collection_json` manifest with at least one item).
+   */
+  isCollection: boolean;
+  /** `ts_headline` HTML for the title in search results. */
+  searchTitleHtml?: string | null;
+  /** `ts_headline` HTML excerpt for search results. */
+  searchSnippetHtml?: string | null;
+  /**
+   * Labels on this document from the reader's subscribed labelers, with the
+   * reader's per-label visibility. Attached server-side (see
+   * `attachSubscribedLabels`) so rows render badges without a client round-trip.
+   */
+  labels?: Array<ArticleCardLabel>;
+  /**
+   * Followed users who recommended this article — the reason it surfaced in the
+   * home feed. Drives the "Recommended by @handle" attribution line. Attached
+   * server-side (see `attachRecommendedByToArticles`); absent for cards that
+   * reached the feed as an author's own post or a subscribed publication's.
+   */
+  recommendedBy?: Array<ArticleCardRecommender>;
+  /**
+   * Whether the requesting reader has recommended this article themselves.
+   * Fills (and tints) the heart on the document's like count across the app —
+   * there is no separate "Recommended by you" line. Attached server-side (see
+   * `attachViewerRecommendedToArticles`); only meaningful when the query ran for
+   * a signed-in reader, otherwise defaults to `false`.
+   */
+  viewerHasRecommended: boolean;
+}
+
+/** A followed user who recommended an article (for feed attribution). */
+export interface ArticleCardRecommender {
+  did: string;
+  handle: string | null;
+  displayName: string | null;
+  avatarUrl: string | null;
+}
+
+/** A label from a subscribed labeler, as carried on an {@link ArticleCard}. */
+export interface ArticleCardLabel {
+  src: string;
+  val: string;
+  visibility: "ignore" | "warn" | "hide";
+}
+
+/** A profile summary (byline / publication owner). */
+export interface ProfileSummary {
+  did: string;
+  handle: string | null;
+  displayName: string | null;
+  description: string | null;
+  avatarUrl: string | null;
+  bannerUrl: string | null;
+  /**
+   * The account self-declares as a bot (a `bot` entry in its profile record's
+   * `labels`). Its own statement, read off the record — not a label from a
+   * moderation service.
+   */
+  isBot: boolean;
+}
+
+// ── Drizzle column projections ──────────────────────────────────────────────
+
+/**
+ * Select-columns for a {@link PublicationCard}. Pulls the canonical record from
+ * `publications`, the derived counts from `publication_stats`, and the owner's
+ * avatar from `profiles`; queries should `leftJoin` stats (a publication may not
+ * have a stats row yet) and `profiles` on `profiles.did = publications.did`.
+ */
+export function publicationCardColumns(schema: Schema) {
+  const p = schema.publications;
+  const st = schema.publicationStats;
+  const pr = schema.profiles;
+  return {
+    uri: p.uri,
+    did: p.did,
+    name: p.name,
+    url: p.url,
+    description: p.description,
+    iconCid: p.iconCid,
+    ownerAvatarUrl: pr.avatarUrl,
+    ownerHandle: pr.handle,
+    topic: p.topic,
+    verified: p.verified,
+    showInDiscover: p.showInDiscover,
+    subscriberCount: st.subscriberCount,
+    documentCount: st.documentCount,
+    lastDocumentAt: st.lastDocumentAt,
+  };
+}
+
+/**
+ * Scalar subquery: all-time non-deleted likes on a document. Served as an
+ * index-only scan by `recommends_doc_recommender_created_idx` (partial on
+ * `deleted = false`), so it is cheap enough to also drive an `ORDER BY` over a
+ * filtered document set (see the tag feed's "Most liked" sort).
+ *
+ * Shared with {@link articleCardColumns} so a query that both selects and sorts
+ * on the count uses one expression rather than two that can drift apart.
+ */
+export function documentRecommendCountSql(schema: Schema) {
+  const d = schema.documents;
+  const rec = schema.recommends;
+  return sql<number>`coalesce((
+      select count(*)::int
+      from ${rec}
+      where ${rec.documentUri} = ${d.uri}
+        and ${rec.deleted} = false
+    ), 0)`.mapWith(Number);
+}
+
+/**
+ * Select-columns for an {@link ArticleCard}. Pulls the document plus its
+ * publication's name/icon and the owner profile's banner; queries should
+ * `leftJoin` publications on `publications.uri = documents.publication_uri`
+ * (loose documents have none), `profiles` (`pr`) on `profiles.did =
+ * publications.did` (the publication owner), **and** `profiles` (`pa`) on
+ * `profiles.did = documents.did` (the document author). The author join is
+ * what gives loose documents — which have no publication row — a byline
+ * (handle + avatar). For publication-bound documents the author and owner are
+ * the same DID, so `pa` and `pr` resolve to the same profile; the mapper
+ * prefers the publication fields and falls back to the author fields.
+ */
+export function articleCardColumns(schema: Schema) {
+  const d = schema.documents;
+  const p = schema.publications;
+  const pr = schema.profiles;
+  // Distinct alias of `profiles` so a query can join the publication owner
+  // (`pr`, on `publications.did`) and the document author (`pa`, on
+  // `documents.did`) at the same time. Joining the same table object twice
+  // throws "Alias 'profiles' is already used in this query".
+  const pa = alias(schema.profiles, "pa");
+  return {
+    uri: d.uri,
+    did: d.did,
+    title: d.title,
+    description: d.description,
+    path: d.path,
+    canonicalUrl: d.canonicalUrl,
+    coverImageCid: d.coverImageCid,
+    publishedAt: d.publishedAt,
+    featured: d.featured,
+    publicationUri: d.publicationUri,
+    publicationName: p.name,
+    publicationDid: p.did,
+    publicationIconCid: p.iconCid,
+    publicationOwnerAvatarUrl: pr.avatarUrl,
+    publicationOwnerHandle: pr.handle,
+    publicationBannerUrl: pr.bannerUrl,
+    publicationTopic: p.topic,
+    // Author profile (joined on documents.did). For loose documents this is
+    // the only profile signal; the mapper falls back to it for byline fields.
+    authorHandle: pa.handle,
+    authorAvatarUrl: pa.avatarUrl,
+    authorDisplayName: pa.displayName,
+    authorIsBot: pa.isBot,
+    tags: d.tags,
+    textContent: d.textContent,
+    hasRenderableBody: d.hasRenderableBody,
+    isCollection: documentIsCollectionColumn(d.collectionJson),
+    recommendCount: documentRecommendCountSql(schema),
+  };
+}
+
+/**
+ * Lighter {@link ArticleCard} projection for personal queue pages (saved,
+ * likes, history). Omits `textContent` — list rows never render bodies, and
+ * full essays bloat the query + SSR dehydration.
+ */
+export function articleQueueCardColumns(schema: Schema) {
+  const { textContent: _textContent, ...columns } = articleCardColumns(schema);
+  return columns;
+}
+
+/** True when `collection_json` carries a non-empty items manifest. */
+export function documentIsCollectionColumn(
+  collectionJson: Schema["documents"]["collectionJson"],
+): SQL<boolean> {
+  return sql<boolean>`(
+    ${collectionJson} is not null
+    and jsonb_typeof(${collectionJson}->'items') = 'array'
+    and jsonb_array_length(${collectionJson}->'items') > 0
+  )`.mapWith(Boolean);
+}
+
+// ── Row → DTO mappers ───────────────────────────────────────────────────────
+
+/** Drizzle timestamps are `Date`; raw SQL / aggregates may return strings. */
+export function toIsoTimestamp(
+  value: Date | string | null | undefined,
+): string | null {
+  if (value == null) return null;
+  if (value instanceof Date) return value.toISOString();
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
+}
+
+type PublicationCardRow = {
+  uri: string;
+  did: string;
+  name: string;
+  url: string;
+  description: string | null;
+  iconCid: string | null;
+  ownerAvatarUrl: string | null;
+  ownerHandle: string | null;
+  topic: string | null;
+  verified: boolean;
+  /**
+   * Present when the row was built via {@link publicationCardColumns}; absent on
+   * hand-assembled rows (e.g. header/detail projections). Absent is treated as
+   * "not hidden" — those surfaces never carry opted-out pubs.
+   */
+  showInDiscover?: boolean | null;
+  subscriberCount: number | null;
+  documentCount: number | null;
+  lastDocumentAt: Date | string | null;
+  searchNameHtml?: string | null;
+  searchSnippetHtml?: string | null;
+};
+
+/**
+ * A human label for a publication. The lexicon requires `name`, but some
+ * records carry an empty string — fall back to the URL host, then a generic
+ * label, so cards never render blank.
+ */
+export function publicationDisplayName(name: string, url: string): string {
+  const trimmed = name.trim();
+  if (trimmed) return trimmed;
+  try {
+    const host = new URL(url).hostname.replace(/^www\./, "");
+    if (host) return host;
+  } catch {
+    // url is empty or malformed — fall through to the generic label
+  }
+  return "Untitled publication";
+}
+
+/**
+ * SQL sort key aligned with {@link publicationDisplayName} — trim stored name,
+ * else lowercased URL host (no `www.`), else a stable fallback label.
+ */
+export function publicationSortNameSql(
+  name: typeof DbSchema.publications.name,
+  url: typeof DbSchema.publications.url,
+): SQL {
+  return sql`case
+    when nullif(trim(${name}), '') is not null then lower(trim(${name}))
+    when ${url} ~ '^https?://' then lower(
+      regexp_replace(
+        regexp_replace(substring(${url} from '^https?://([^/?#]+)'), '^www\\.', ''),
+        ':[0-9]+$', ''
+      )
+    )
+    else 'untitled publication'
+  end`;
+}
+
+/** Sort followed publications by most recent activity, then display name. */
+export function sortFollowingPublications<
+  T extends Pick<PublicationCard, "lastDocumentAt" | "name">,
+>(pubs: Array<T>): Array<T> {
+  return pubs.toSorted((a, b) => {
+    const aTime = a.lastDocumentAt ? Date.parse(a.lastDocumentAt) : 0;
+    const bTime = b.lastDocumentAt ? Date.parse(b.lastDocumentAt) : 0;
+    if (bTime !== aTime) return bTime - aTime;
+    return a.name.localeCompare(b.name);
+  });
+}
+
+export function toPublicationCard(row: PublicationCardRow): PublicationCard {
+  return {
+    uri: row.uri,
+    did: row.did,
+    name: publicationDisplayName(row.name, row.url),
+    url: row.url,
+    description: row.description,
+    // Icons may carry alpha (square logos on themed backgrounds); keep PNG.
+    iconUrl: row.iconCid ? cdnImageUrl(row.did, row.iconCid, "png") : null,
+    ownerAvatarUrl: row.ownerAvatarUrl,
+    ownerHandle: row.ownerHandle,
+    topic: row.topic,
+    verified: row.verified,
+    hiddenFromDiscover: row.showInDiscover === false,
+    subscriberCount: row.subscriberCount ?? 0,
+    documentCount: row.documentCount ?? 0,
+    lastDocumentAt: toIsoTimestamp(row.lastDocumentAt),
+    searchNameHtml: row.searchNameHtml ?? undefined,
+    searchSnippetHtml: row.searchSnippetHtml ?? undefined,
+  };
+}
+
+type ArticleCardRow = {
+  uri: string;
+  did: string;
+  title: string;
+  description: string | null;
+  path: string | null;
+  canonicalUrl: string | null;
+  coverImageCid: string | null;
+  publishedAt: Date;
+  featured: boolean;
+  publicationUri: string | null;
+  publicationName: string | null;
+  publicationIconCid: string | null;
+  publicationDid: string | null;
+  publicationOwnerAvatarUrl: string | null;
+  publicationOwnerHandle: string | null;
+  publicationBannerUrl: string | null;
+  publicationTopic: string | null;
+  authorHandle: string | null;
+  authorAvatarUrl: string | null;
+  authorDisplayName: string | null;
+  authorIsBot?: boolean | null;
+  tags: Array<string> | null;
+  matchedTags?: Array<string> | null;
+  textContent?: string | null;
+  hasRenderableBody?: boolean | null;
+  isCollection?: boolean | null;
+  recommendCount: number | null;
+  isRead?: boolean | null;
+  searchTitleHtml?: string | null;
+  searchSnippetHtml?: string | null;
+};
+
+export function toArticleCard(row: ArticleCardRow): ArticleCard {
+  return {
+    uri: row.uri,
+    did: row.did,
+    title: row.title,
+    description: row.description,
+    path: row.path,
+    canonicalUrl: row.canonicalUrl,
+    coverImageUrl: row.coverImageCid
+      ? cdnImageUrl(row.did, row.coverImageCid, "jpeg")
+      : null,
+    publishedAt: row.publishedAt.toISOString(),
+    featured: row.featured,
+    publicationUri: row.publicationUri,
+    publicationName: row.publicationName,
+    publicationIconUrl:
+      row.publicationIconCid && row.publicationDid
+        ? cdnImageUrl(row.publicationDid, row.publicationIconCid, "png")
+        : null,
+    // Publication owner = author for publication-bound documents; for loose
+    // documents there's no publication row, so fall back to the author profile
+    // (joined on documents.did) so bylines + avatars resolve.
+    publicationOwnerAvatarUrl:
+      row.publicationOwnerAvatarUrl ?? row.authorAvatarUrl,
+    publicationOwnerHandle: row.publicationOwnerHandle ?? row.authorHandle,
+    publicationBannerUrl: row.publicationBannerUrl,
+    publicationTopic: row.publicationTopic,
+    authorHandle: row.authorHandle,
+    authorIsBot: row.authorIsBot ?? false,
+    authorAvatarUrl: row.authorAvatarUrl,
+    authorDisplayName: row.authorDisplayName,
+    tags: row.tags,
+    matchedTags: row.matchedTags ?? undefined,
+    textContent: row.textContent ?? null,
+    hasRenderableBody: row.hasRenderableBody ?? true,
+    isCollection: row.isCollection ?? false,
+    recommendCount: row.recommendCount ?? 0,
+    commentCount: 0,
+    isRead: row.isRead ?? false,
+    // Defaults to false; `attachViewerRecommendedToArticles` flips it to true
+    // for the signed-in reader's own recommends after the card is built.
+    viewerHasRecommended: false,
+    searchTitleHtml: row.searchTitleHtml ?? undefined,
+    searchSnippetHtml: row.searchSnippetHtml ?? undefined,
+  };
+}

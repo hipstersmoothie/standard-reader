@@ -1,11 +1,11 @@
-import { blobCid } from "../../atproto/blob";
+import { blobCid } from "../../atproto/blob.js";
 import {
   aspectRatioFromDimensions,
   blobImageUrl,
   externalHttpUrl,
   isRecord,
-} from "../../internal";
-import type { StructuredGridImage } from "./types";
+} from "../../internal.js";
+import type { StructuredGridImage } from "./types.js";
 
 /** First non-empty trimmed string from format-specific alt/caption/title fields. */
 export function normalizeImageAlt(

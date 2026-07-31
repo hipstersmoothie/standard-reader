@@ -29,6 +29,24 @@ export interface AngularSharedComponents {
     caption?: string;
   }>;
   code?: Tpl<{ code: string; language?: string }>;
+  /**
+   * A raw HTML block from a markdown document. Renders nothing by default:
+   * injecting untrusted markup is the host's decision, with the host's own
+   * sanitizer. Supply this template to render it.
+   */
+  html?: Tpl<{ html: string }>;
+  /**
+   * A self-contained HTML embed (Leaflet's `pub.leaflet.blocks.html`). Unlike
+   * `html`, this one renders by default, inside a sandboxed `srcdoc` iframe as
+   * the format specifies. If you override it, keep the sandbox and keep
+   * `allow-same-origin` out of it — with `srcdoc` that grants the embed your
+   * own origin.
+   */
+  htmlEmbed?: Tpl<{
+    html: string;
+    height?: number;
+    aspectRatio?: { width?: number; height?: number };
+  }>;
   iframe?: Tpl<{
     url: string;
     height?: number;

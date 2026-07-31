@@ -8,7 +8,7 @@
  * risking a cycle.
  */
 
-import { blobCid, cdnImageUrl } from "./atproto/blob";
+import { blobCid, cdnImageUrl } from "./atproto/blob.js";
 
 /** Narrow to a plain (non-array) object. */
 export function isRecord(value: unknown): value is Record<string, unknown> {

@@ -14,7 +14,10 @@ read/unread, publication lists) is written back to **your** repo as records — 
 cached by us.
 
 For the full product vision (screens, data model, discovery engine), see
-[`APP_VISION.md`](./APP_VISION.md). The actionable roadmap lives in [`TODO.md`](./TODO.md).
+[`apps/standard-reader/APP_VISION.md`](./apps/standard-reader/APP_VISION.md). The actionable
+roadmap lives in [`apps/standard-reader/TODO.md`](./apps/standard-reader/TODO.md).
+
+> Looking to give feedback? Please submit it [here](https://userinput.app/#/s/did:plc:f4os2wz5fjl56xpwcvtnqu7m/3mprrc56lgd2e).
 
 ## Stack
 
@@ -34,8 +37,9 @@ Requires Node ≥ 22.6 and pnpm (pinned via `package.json#packageManager`).
 
 ```bash
 pnpm install
-cp .env.example .env   # fill in values — see comments in the file
-pnpm dev               # http://127.0.0.1:3000
+# The app reads its env from its own package directory, not the repo root.
+cp apps/standard-reader/.env.example apps/standard-reader/.env   # fill in values
+pnpm dev                                                          # http://127.0.0.1:3000
 ```
 
 At minimum you need `DATABASE_URL` (a Neon Postgres connection string — a local Postgres works
@@ -95,9 +99,10 @@ packages/             # publishable document renderers (@standard-reader/rendere
 
 ## Living docs
 
-- [`APP_VISION.md`](./APP_VISION.md) — product vision: concept, screens, data model,
-  architecture. Kept in sync with reality as decisions change.
-- [`TODO.md`](./TODO.md) — the roadmap derived from the vision.
+- [`apps/standard-reader/APP_VISION.md`](./apps/standard-reader/APP_VISION.md) — product vision:
+  concept, screens, data model, architecture. Kept in sync with reality as decisions change.
+- [`apps/standard-reader/TODO.md`](./apps/standard-reader/TODO.md) — the roadmap derived from the
+  vision.
 - [`AGENTS.md`](./AGENTS.md) — repo conventions for AI agents (design-system rules, lint setup,
   gotchas).
 - [`packages/README.md`](./packages/README.md) — the document renderer family: the

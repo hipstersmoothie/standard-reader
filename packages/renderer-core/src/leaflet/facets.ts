@@ -1,6 +1,6 @@
-import { isRecord } from "../internal";
-import type { LeafletFacet, LeafletFacetFeature } from "./types";
-import { sliceUtf8, utf8ByteLength } from "./utf8";
+import { isRecord } from "../internal.js";
+import type { LeafletFacet, LeafletFacetFeature } from "./types.js";
+import { sliceUtf8, utf8ByteLength } from "./utf8.js";
 
 export interface FacetSegment {
   text: string;

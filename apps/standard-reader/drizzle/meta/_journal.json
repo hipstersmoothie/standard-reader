@@ -1,0 +1,195 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1783755575976,
+      "tag": "0000_baseline",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1783755795748,
+      "tag": "0001_chief_steel_serpent",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1783756315202,
+      "tag": "0002_foamy_dracula",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1783786111882,
+      "tag": "0003_ambiguous_harrier",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1783801540681,
+      "tag": "0004_spooky_nova",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1783827138040,
+      "tag": "0005_melodic_patriot",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1783840059554,
+      "tag": "0006_woozy_the_anarchist",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1783915158067,
+      "tag": "0007_sharp_trish_tilby",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1783917002944,
+      "tag": "0008_lucky_night_nurse",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1783923145449,
+      "tag": "0009_exotic_albert_cleary",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1783925971131,
+      "tag": "0010_perfect_kate_bishop",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1783986461002,
+      "tag": "0011_rapid_thor_girl",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1783989034421,
+      "tag": "0012_fix_count_old_unread_backfill",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1784099620903,
+      "tag": "0013_tags_topic_in_search_vector",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1784099620904,
+      "tag": "0014_indexable_document_tags",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1784360505232,
+      "tag": "0015_early_vapor",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1784403276074,
+      "tag": "0016_fresh_kulan_gath",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1784430903472,
+      "tag": "0017_digest_section_prefs",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1784603390663,
+      "tag": "0018_discover_topic_counts",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1784936864607,
+      "tag": "0019_big_payback",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1784956568171,
+      "tag": "0020_use_publication_theme",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1784961657747,
+      "tag": "0021_melodic_texas_twister",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1785011244158,
+      "tag": "0022_silent_alex_power",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1785031813106,
+      "tag": "0023_zippy_boom_boom",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1785086321839,
+      "tag": "0024_ambitious_gargoyle",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1785126968224,
+      "tag": "0025_spotty_frightful_four",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1785469802108,
+      "tag": "0026_mixed_robin_chapel",
+      "breakpoints": true
+    }
+  ]
+}

@@ -65,6 +65,18 @@ export const defaultComponents: RendererComponents = {
         {children}
       </li>
     ),
+    Html: () => null,
+    HtmlEmbed: ({ html, height }) => (
+      <iframe
+        srcDoc={html}
+        height={height}
+        loading="lazy"
+        // No `allow-same-origin`: a srcdoc iframe granted it runs in the
+        // embedder's origin, which would defeat the sandbox entirely.
+        sandbox="allow-scripts"
+        title="Embedded content"
+      />
+    ),
     Code: ({ code, language }) => (
       <pre>
         <code className={language ? `language-${language}` : undefined}>

@@ -1,3 +1,4 @@
+import type { CalloutKind } from "@standard-reader/renderer-core";
 import type { ComponentType, ReactNode } from "react";
 
 import type { AspectRatio, TableRow } from "../types";
@@ -96,7 +97,23 @@ export interface BlockquoteProps {
 export interface CalloutProps {
   emoji?: string;
   color?: string;
+  /** Normalized visual family for a `[!TYPE]` callout. */
+  kind?: CalloutKind;
+  /** Author-supplied title from the marker line. */
+  title?: string;
+  /** Set only when the callout was marked collapsible. */
+  fold?: "open" | "closed";
   children: ReactNode;
+}
+
+export interface HtmlProps {
+  html: string;
+}
+
+export interface HtmlEmbedProps {
+  html: string;
+  height?: number;
+  aspectRatio?: { width?: number; height?: number };
 }
 
 export interface ListProps {
@@ -206,6 +223,20 @@ export interface SharedBlockComponents {
   Heading: ComponentType<HeadingProps>;
   Blockquote: ComponentType<BlockquoteProps>;
   Callout: ComponentType<CalloutProps>;
+  /**
+   * A raw HTML block from a markdown document. Renders nothing by default:
+   * injecting untrusted markup is the host's decision, with the host's own
+   * sanitizer. Supply this component to render it.
+   */
+  Html: ComponentType<HtmlProps>;
+  /**
+   * A self-contained HTML embed (Leaflet's `pub.leaflet.blocks.html`). Unlike
+   * `Html`, this one renders by default, inside a sandboxed `srcdoc` iframe as
+   * the format specifies. If you override it, keep the sandbox and keep
+   * `allow-same-origin` out of it — with `srcdoc` that grants the embed your
+   * own origin.
+   */
+  HtmlEmbed: ComponentType<HtmlEmbedProps>;
   HorizontalRule: ComponentType<Record<string, never>>;
   BulletList: ComponentType<ListProps>;
   OrderedList: ComponentType<OrderedListProps>;

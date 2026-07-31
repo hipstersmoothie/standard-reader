@@ -86,6 +86,15 @@ export const defaultComponents: SolidComponents = {
         " ",
         children,
       ),
+    html: () => null,
+    htmlEmbed: ({ html, height }) =>
+      el("iframe", {
+        srcdoc: html,
+        height,
+        loading: "lazy",
+        sandbox: "allow-scripts",
+        title: "Embedded content",
+      }),
     code: ({ code, language }) =>
       el(
         "pre",

@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { buildRenderTree } from "../build";
-import { segmentInline } from "../inline";
-import type { BlockNode } from "../nodes";
-import type { StandardSiteDocument } from "../types";
+import { buildRenderTree } from "../build.js";
+import { segmentInline } from "../inline.js";
+import type { BlockNode } from "../nodes.js";
+import type { StandardSiteDocument } from "../types.js";
 
 const AUTHOR = "did:plc:testauthor";
 
@@ -40,6 +40,11 @@ const lf = {
   poll: (uri: string) => ({
     $type: "pub.leaflet.blocks.poll",
     pollRef: { uri },
+  }),
+  html: (html: string, height?: number) => ({
+    $type: "pub.leaflet.blocks.html",
+    html,
+    ...(height == null ? {} : { height }),
   }),
   unorderedList: (items: Array<string>) => ({
     $type: "pub.leaflet.blocks.unorderedList",
@@ -108,6 +113,24 @@ describe("buildRenderTree — leaflet", () => {
     expect(tree.footnotes).toHaveLength(1);
     expect(tree.footnotes[0]).toMatchObject({ id: "fn1", number: 1 });
     expect(tree.footnoteNumbers.get("fn1")).toBe(1);
+  });
+
+  it("carries an html block through as a sized embed", () => {
+    const tree = build(
+      leafletDoc([lf.html("<p>widget</p>", 243), lf.text("After")]),
+    );
+    expect(tree.children.map((n) => n.type)).toEqual([
+      "htmlEmbed",
+      "paragraph",
+    ]);
+    const embed = tree.children[0] as Extract<BlockNode, { type: "htmlEmbed" }>;
+    expect(embed.html).toBe("<p>widget</p>");
+    expect(embed.height).toBe(243);
+  });
+
+  it("drops an html block with no markup rather than rendering an empty frame", () => {
+    const tree = build(leafletDoc([lf.html("   "), lf.text("After")]));
+    expect(tree.children.map((n) => n.type)).toEqual(["paragraph"]);
   });
 
   it("builds nested list items", () => {

@@ -102,6 +102,30 @@ import { RenderContextService } from "./render-context.service";
       } @else {
         <pre><code [class]="node.language ? 'language-' + node.language : null">{{ node.code }}</code></pre>
       }
+    } @else if (node.type === "html") {
+      @if (ctx.components.shared?.html; as tpl) {
+        <ng-container
+          *ngTemplateOutlet="tpl; context: { $implicit: { html: node.html } }"
+        />
+      }
+    } @else if (node.type === "htmlEmbed") {
+      @if (ctx.components.shared?.htmlEmbed; as tpl) {
+        <ng-container *ngTemplateOutlet="tpl; context: { $implicit: node }" />
+      } @else {
+        <!--
+          Angular sanitizes srcdoc as an HTML security context, so this fallback
+          shows the embed with its scripts and styles stripped. Supply an
+          htmlEmbed template with a trusted value for full fidelity — and keep
+          allow-same-origin out of the sandbox when you do.
+        -->
+        <iframe
+          [attr.srcdoc]="node.html"
+          [attr.height]="node.height ?? null"
+          loading="lazy"
+          sandbox="allow-scripts"
+          title="Embedded content"
+        ></iframe>
+      }
     } @else if (node.type === "image") {
       @if (ctx.components.shared?.image; as tpl) {
         <ng-container *ngTemplateOutlet="tpl; context: { $implicit: node }" />

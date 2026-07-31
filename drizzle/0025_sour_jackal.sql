@@ -1,1 +1,0 @@
-ALTER TABLE "user" ADD COLUMN "bsky_labelers_imported_at" timestamp with time zone;

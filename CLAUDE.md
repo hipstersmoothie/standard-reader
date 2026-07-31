@@ -21,16 +21,39 @@ extra feature scaffolding were selected — this is the default blank React star
 was scaffolded with npm and later switched to pnpm: `package-lock.json` was removed and
 `pnpm-lock.yaml` is the committed lockfile. Use `pnpm` for all installs/scripts.
 
+## Repository layout — this is a pnpm monorepo
+
+```
+apps/standard-reader/   # the reader app (TanStack Start) — src/, scripts/, perf/,
+                        #   drizzle/, lexicons/, public/, tap/, and its own configs
+apps/extension/         # the browser extension (WXT); shares app source via #/ and @/
+packages/               # workspace packages: design-system (shared UI) + the
+                        #   publishable @standard-reader/renderer-* family + lexicons
+services/               # standalone labeler services (claudeslop, botlabeler)
+scripts/                # workspace-level tooling (package publishing)
+config/oxlint/          # shared lint config — applies to the whole repo
+```
+
+**Reading paths in this file:** bare `src/…`, `scripts/…`, `perf/…`, `drizzle/…`, and
+`lexicons/…` paths are relative to **`apps/standard-reader/`** unless written out in full.
+
+The workspace root (`pnpm-workspace.yaml`) covers `apps/*`, `extension`, `packages/*`, and
+`services/*`. Lint and format run **repo-wide from the root** (one oxlint/oxfmt config); build,
+typecheck, test, and every app task are `pnpm --filter` passthroughs — so `pnpm dev`, `pnpm build`,
+`pnpm test`, `pnpm db:migrate`, etc. still work unchanged from the root.
+
 ## Living docs — keep these current as we work
 
 This repo has two source-of-truth planning docs that **must be kept up to date as work happens**:
 
-- [`APP_VISION.md`](./APP_VISION.md) — the product vision (concept, architecture, scope). When a
-  decision changes the product direction, data model, lexicons, or architecture, **update
-  `APP_VISION.md` in the same change** so it never drifts from reality.
-- [`TODO.md`](./TODO.md) — the actionable roadmap derived from the vision. As you complete work,
-  **check off the relevant items**; when scope changes or new work is discovered, **add/adjust
-  items**. Keep `TODO.md` in sync with `APP_VISION.md`.
+- [`apps/standard-reader/APP_VISION.md`](./apps/standard-reader/APP_VISION.md) — the product
+  vision (concept, architecture, scope). When a decision changes the product direction, data
+  model, lexicons, or architecture, **update `apps/standard-reader/APP_VISION.md` in the same
+  change** so it never drifts from reality.
+- [`apps/standard-reader/TODO.md`](./apps/standard-reader/TODO.md) — the actionable roadmap
+  derived from the vision. As you complete work, **check off the relevant items**; when scope
+  changes or new work is discovered, **add/adjust items**. Keep it in sync with
+  `apps/standard-reader/APP_VISION.md`.
 
 Treat updating these docs as part of "done" for any meaningful change, not an afterthought.
 
@@ -69,8 +92,9 @@ pnpm install                          # generates pnpm-lock.yaml
 - **Framework:** TanStack Start + TanStack Router (file-based routing), React 19.
 - **Build/toolchain (CLI default):** Vite 8, `@vitejs/plugin-react`, `@tanstack/router-plugin`.
 - **Design system:** [hip-ui](https://hip-ui.tngl.io) — a copy-and-own, StyleX + react-aria
-  component library vendored into `src/design-system/`. **Build UI from these components and
-  tokens** (see "Design system" below).
+  component library vendored into the `@standard-reader/design-system` workspace package
+  (`packages/design-system/`). **Build UI from these components and tokens** (see "Design system"
+  below).
 - **Styling:** StyleX (`@stylexjs/stylex`) is the only styling layer, compiled by
   `@stylexjs/unplugin` in `vite.config.ts`. **Tailwind has been removed** (no `@tailwindcss/vite`,
   `tailwindcss`, or `@tailwindcss/typography`, and `styles.css` is now just a tiny reset). Build all
@@ -84,20 +108,24 @@ pnpm install                          # generates pnpm-lock.yaml
 
 ## Design system (hip-ui) — use it for all UI
 
-This project vendors the **hip-ui** design system into `src/design-system/` (a "copy-and-own"
-StyleX + [react-aria-components](https://react-spectrum.adobe.com/react-aria/) library). When
-building or changing UI, **use these components and tokens instead of hand-rolling markup, raw
-HTML elements, or ad-hoc CSS / inline styles.**
+This project vendors the **hip-ui** design system into `packages/design-system/` (a "copy-and-own"
+StyleX + [react-aria-components](https://react-spectrum.adobe.com/react-aria/) library), consumed
+as the workspace package `@standard-reader/design-system`. When building or changing UI, **use
+these components and tokens instead of hand-rolling markup, raw HTML elements, or ad-hoc CSS /
+inline styles.**
+
+The package **ships source, not a build** — the consuming app compiles StyleX. It must stay
+app-agnostic: never import app code (`#/…`) from inside `packages/design-system/`.
 
 ### Rules
 
-- **Prefer design-system components.** Import from `src/design-system/<component>` (aliases `#/` and
-  `@/` both map to `./src`, e.g. `import { Button } from "#/design-system/button"`). Components are
+- **Prefer design-system components.** Import from `@standard-reader/design-system/<component>`
+  (e.g. `import { Button } from "@standard-reader/design-system/button"`). Components are
   named exports built on react-aria, so they're accessible by default (use their props rather than
-  re-implementing keyboard/ARIA behavior). Browse `src/design-system/*/index.tsx` for the catalog
-  (Button, Card, Dialog, Flex, Grid, TextField, Select, Menu, Toast, etc.).
+  re-implementing keyboard/ARIA behavior). Browse `packages/design-system/src/*/index.tsx` for the
+  catalog (Button, Card, Dialog, Flex, Grid, TextField, Select, Menu, Toast, etc.).
 - **Use theme tokens, never hardcoded values.** Pull design tokens from the StyleX theme in
-  `src/design-system/theme/` (re-exported from `src/design-system/theme/index.ts`): colors and
+  `@standard-reader/design-system/theme` (`packages/design-system/src/theme/`): colors and
   `semantic-color`, `spacing` / `semantic-spacing` (`gap`), `radius`, `shadow`, `typography`,
   `animations` (`animationDuration`), and `media-queries`. Reference them in `stylex.create(...)`
   (e.g. `gap: gap["md"]`, `transitionDuration: animationDuration.fast`) instead of literal
@@ -131,7 +159,7 @@ shipped component patterns rather than guessing:
    (accepts a title, docs slug, or `/docs` URL path; single or array).
 
 If the MCP server isn't connected, the same docs are vendored at
-`node_modules/hip-ui/dist/mcp/docs/` and component source lives in `src/design-system/`.
+`node_modules/hip-ui/dist/mcp/docs/` and component source lives in `packages/design-system/src/`.
 
 ### StyleX build wiring
 
@@ -206,6 +234,15 @@ read when data exists in the DB.**
 - `pnpm lex:lint` / `pnpm atproto:publish-lexicons` — validate / publish the app-owned
   `app.standard-reader.*` lexicons in `./lexicons/` via the `goat` CLI
   (`scripts/goat-lex.mjs`; needs `LEXICON_PUBLISH_*` creds + `_lexicon.*` DNS).
+- The MCP server is a route on the app (`/mcp`), not a separate process — `pnpm dev` serves it.
+  Code lives in `src/server/mcp/`; run its tests with
+  `pnpm --filter standard-reader exec vitest run src/server/mcp`.
+- `pnpm convert:build` / `pnpm convert <args>` — build and run the `standard-reader` CLI
+  (`packages/cli`), which converts document records between the Leaflet / Offprint / pckt /
+  Markpub content formats using `packages/converter`. `formats`, `list` and `convert --dry-run`
+  need no credentials; writing runs `standard-reader login` (browser OAuth, scoped to
+  `site.standard.document` updates) or falls back to
+  `STANDARD_READER_IDENTIFIER` + `STANDARD_READER_APP_PASSWORD`.
 - `pnpm perf:test` — Playwright load-regression suite (`perf/load-regression.spec.ts`); dev server
   must be running (`pnpm dev`). Writes JSON reports to `perf/results/` (`latest-guest.json`,
   `latest-signed-in.json`, `latest-comparison.json`).
@@ -387,7 +424,7 @@ Linting uses [oxlint](https://oxc.rs) (pinned `oxlint@1.48.0`) and formatting us
 - `.oxfmtrc.json` — oxfmt config: 2-space indent, 80 col, semicolons, double quotes,
   trailing commas (`all`), `lf`. Ignores generated files and lockfiles.
 - **The design system is linted and formatted** (no longer excluded). `pnpm lint` runs over the
-  whole repo incl. `src/design-system/` (0 errors). Because it's copy-and-own, a few violations in
+  whole repo incl. `packages/design-system/` (0 errors). Because it's copy-and-own, a few violations in
   the pristine hip-ui copy were fixed in place (e.g. `video/index.tsx`: `transitionDuration` now
   uses `animationDuration.default`, and `.filter()` callbacks are wrapped).
 - oxlint JS plugins in use (devDependencies): `@eslint-community/eslint-plugin-eslint-comments`,
@@ -401,27 +438,43 @@ Linting uses [oxlint](https://oxc.rs) (pinned `oxlint@1.48.0`) and formatting us
 ## Project structure
 
 ```
-src/
-  router.tsx          # getRouter() factory + Register module augmentation
-  routes/
-    __root.tsx        # root shell: applies DS theme tokens to <body>, Header/Footer, devtools
-    index.tsx         # "/" home route — DS placeholder (Page/Content/Flex/Button)
-    about.tsx         # "/about" route — DS placeholder (Page/Content)
-  components/         # app-specific components (Header, Footer, ThemeToggle) — StyleX, no Tailwind
-  design-system/      # hip-ui (copy-and-own): components + StyleX theme tokens (theme/)
-  styles.css          # minimal global reset only (no Tailwind)
-  stylex-env.d.ts     # ambient types for the StyleX virtual modules
-  routeTree.gen.ts    # GENERATED at dev/build time — do not edit (gitignored)
-public/               # static assets (favicon, logos, manifest, robots.txt)
+apps/standard-reader/
+  src/
+    router.tsx        # getRouter() factory + Register module augmentation
+    routes/
+      __root.tsx      # root shell: applies DS theme tokens to <body>, Header/Footer, devtools
+    components/       # app-specific components — StyleX, no Tailwind
+    server/           # server fns, ingest, XRPC, MCP
+    db/               # Drizzle schema for the Neon read-model
+    styles.css        # minimal global reset only (no Tailwind)
+    stylex-env.d.ts   # ambient types for the StyleX virtual modules
+    routeTree.gen.ts  # GENERATED at dev/build time — do not edit (but committed)
+  public/             # static assets (favicon, logos, manifest, robots.txt)
+  scripts/            # app scripts (backfills, digest, lexicon publishing, perf)
+  perf/               # Playwright load-regression suite
+  drizzle/            # migrations + snapshots
+  lexicons/           # app.standard-reader.* lexicon schemas
+  vite.config.ts      # stylexPlugin() -> devtools() -> tanstackStart() -> viteReact()
+  tsconfig.json       # bundler resolution; "#/*" + "@/*" -> ./src/*, and
+                      #   "@standard-reader/design-system/*" -> ../../packages/design-system/src/*
+  eslint.stylex-autofix.mjs # ESLint flat config used only for `pnpm fix-stylex-keys`
+packages/design-system/
+  src/                # hip-ui (copy-and-own): components + StyleX theme tokens (theme/)
+  package.json        # exports ./theme, ./context, and ./<component> -> src/<component>/index.tsx
+packages/             # renderer-* family + lexicons (published to npm)
+apps/extension/       # browser extension (WXT) — resolves #/ and @/ into the reader app
+services/             # standalone labeler services
+scripts/              # workspace-level tooling (publish-packages.mjs)
 config/oxlint/        # shared oxlint rules-base.json + overrides.json (incl. StyleX rules)
-vite.config.ts        # stylexPlugin() -> devtools() -> tanstackStart() -> viteReact()
-eslint.stylex-autofix.mjs # ESLint flat config used only for `pnpm fix-stylex-keys`
-tsconfig.json         # bundler resolution; "#/*" and "@/*" aliases -> ./src/*
+package.json          # monorepo root: `pnpm --filter` passthroughs + repo-wide lint/format
+pnpm-workspace.yaml   # apps/*, packages/*, services/*
 ```
 
 ## Environment variables
 
-- No environment variables are required to run the blank starter.
+- **The app's `.env` lives at `apps/standard-reader/.env`**, not the repo root — Vite's `envDir`
+  and every `tsx --env-file=.env` script resolve it from the app package directory. Template:
+  `apps/standard-reader/.env.example`.
 - When you add config, follow TanStack Start's env model: only variables prefixed with `VITE_`
   are exposed to client code; everything else stays server-only. `.env` / `.env.*` are gitignored
   (`.env.example` is allowed). For details load
@@ -455,8 +508,14 @@ tsconfig.json         # bundler resolution; "#/*" and "@/*" aliases -> ./src/*
 
 ## Known gotchas
 
-- `src/routeTree.gen.ts` is auto-generated and gitignored; it is created on the first `dev`/`build`.
-  Don't edit it or commit it. It is marked read-only in `.vscode/settings.json`.
+- **Route directories starting with `.` are invisible to the router plugin.** `src/routes/.well-known/`
+  generated no routes at all (so `/.well-known/did.json` 404'd in production). Escape the dot in
+  the directory name — `src/routes/[.]well-known/` — the same way the files inside already do.
+
+- `src/routeTree.gen.ts` is auto-generated at dev/build time but **is committed** (see the note
+  in `.gitignore`: a fresh clone can't lint or typecheck without it). Don't edit it by hand;
+  regenerate it with `pnpm build` and commit the result alongside route changes. It is marked
+  read-only in `.vscode/settings.json`.
 - `dev` uses port 3000 but will hop to the next free port if it's occupied — check the startup log
   for the actual URL.
 - Devtools code is automatically removed from production builds by `@tanstack/devtools-vite`.

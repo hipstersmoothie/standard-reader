@@ -1,5 +1,6 @@
 import type {
   AspectRatio,
+  CalloutKind,
   CollectionImage,
 } from "@standard-reader/renderer-core";
 import type { VNode, VNodeArrayChildren } from "vue";
@@ -61,7 +62,14 @@ export interface VueSharedComponents extends VueInlineComponents {
   heading: (props: { level: number }, children: Renderable) => Renderable;
   blockquote: (children: Renderable) => Renderable;
   callout: (
-    props: { emoji?: string; color?: string },
+    props: {
+      emoji?: string;
+      color?: string;
+      /** Normalized visual family for a `[!TYPE]` callout. */
+      kind?: CalloutKind;
+      title?: string;
+      fold?: "open" | "closed";
+    },
     children: Renderable,
   ) => Renderable;
   horizontalRule: () => Renderable;
@@ -74,6 +82,24 @@ export interface VueSharedComponents extends VueInlineComponents {
     children: Renderable,
   ) => Renderable;
   code: (props: { code: string; language?: string }) => Renderable;
+  /**
+   * A raw HTML block from a markdown document. Renders nothing by default:
+   * injecting untrusted markup is the host's decision, with the host's own
+   * sanitizer. Supply this component to render it.
+   */
+  html: (props: { html: string }) => Renderable;
+  /**
+   * A self-contained HTML embed (Leaflet's `pub.leaflet.blocks.html`). Unlike
+   * `html`, this one renders by default, inside a sandboxed `srcdoc` iframe as
+   * the format specifies. If you override it, keep the sandbox and keep
+   * `allow-same-origin` out of it — with `srcdoc` that grants the embed your
+   * own origin.
+   */
+  htmlEmbed: (props: {
+    html: string;
+    height?: number;
+    aspectRatio?: { width?: number; height?: number };
+  }) => Renderable;
   image: (props: {
     src: string;
     alt: string;

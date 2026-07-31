@@ -40,6 +40,9 @@
   {#if s.callout}{@render s.callout({
       emoji: node.emoji,
       color: node.color,
+      kind: node.kind,
+      title: node.title,
+      fold: node.fold,
       children: body,
     })}{:else}<aside role="note"
       >{#if node.emoji}<span aria-hidden="true">{node.emoji} </span>{/if}{@render body()}</aside
@@ -78,6 +81,20 @@
         class={node.language ? `language-${node.language}` : undefined}
         >{node.code}</code
       ></pre>{/if}
+{:else if node.type === "html"}
+  {#if s.html}{@render s.html({ html: node.html })}{/if}
+{:else if node.type === "htmlEmbed"}
+  {#if s.htmlEmbed}{@render s.htmlEmbed({
+      html: node.html,
+      height: node.height,
+      aspectRatio: node.aspectRatio,
+    })}{:else}<iframe
+      srcdoc={node.html}
+      height={node.height}
+      loading="lazy"
+      sandbox="allow-scripts"
+      title="Embedded content"
+    ></iframe>{/if}
 {:else if node.type === "image"}
   {#if s.image}{@render s.image({
       src: node.src,

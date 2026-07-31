@@ -90,7 +90,7 @@ watching this run, so resolve them yourself rather than stalling:
   `src/design-system/` (StyleX only, never inline spacing or color values — always
   theme tokens, consult the hip-ui MCP server before UI work), and §3(c) — reads
   come from the Neon read-model, never the PDS, when a table exists.
-- Update `TODO.md` and `APP_VISION.md` in the same change when the work touches
+- Update `apps/standard-reader/APP_VISION.md` in the same change when the work touches
   what they describe. `AGENTS.md` treats this as part of "done".
 - Run `pnpm build && pnpm lint && pnpm typecheck && pnpm test` before opening the
   PR. `build` must come first — it generates the gitignored `src/routeTree.gen.ts`

@@ -145,9 +145,9 @@ vite.config.ts.timestamp-*
 .vite/
 
 # Playwright perf regression
-perf/results/
-perf/report/
-perf/.auth-state.json
+**/perf/results/
+**/perf/report/
+**/perf/.auth-state.json
 playwright-report/
 test-results/
 
@@ -165,4 +165,4 @@ todos.json
 
 # Lingui compiled catalogs (generated from .po by `pnpm i18n:compile`;
 # the Vite plugin compiles .po directly, so these are build artifacts)
-src/locales/*/messages.ts
+**/src/locales/*/messages.ts
