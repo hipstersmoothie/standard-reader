@@ -7,6 +7,7 @@ import {
   attachLabelsFromMap,
   hiddenUrisFromLabels,
   isCardHidden,
+  isRenderableLabelSubject,
   labelSubjects,
   mergeLabels,
 } from "./label-subjects";
@@ -114,5 +115,34 @@ describe("hiddenUrisFromLabels", () => {
       [AUTHOR, [label("src", "b", "hide")]],
     ]);
     expect(hiddenUrisFromLabels(byUri)).toEqual(new Set([AUTHOR]));
+  });
+});
+
+describe("isRenderableLabelSubject", () => {
+  it("keeps account DIDs — profiles, publication headers, bylines", () => {
+    expect(isRenderableLabelSubject("did:plc:abc123")).toBe(true);
+    expect(isRenderableLabelSubject("did:web:example.com")).toBe(true);
+  });
+
+  it("keeps standard.site documents — article cards and article pages", () => {
+    expect(
+      isRenderableLabelSubject("at://did:plc:abc/site.standard.document/xyz"),
+    ).toBe(true);
+  });
+
+  it("drops Bluesky posts, which have no surface here", () => {
+    // 62% of what labelers emit; mirroring it was pure dead weight.
+    expect(
+      isRenderableLabelSubject("at://did:plc:abc/app.bsky.feed.post/xyz"),
+    ).toBe(false);
+  });
+
+  it("drops other record types we never render", () => {
+    expect(
+      isRenderableLabelSubject("at://did:plc:abc/app.bsky.actor.profile/self"),
+    ).toBe(false);
+    expect(
+      isRenderableLabelSubject("at://did:plc:abc/app.bsky.graph.list/xyz"),
+    ).toBe(false);
   });
 });

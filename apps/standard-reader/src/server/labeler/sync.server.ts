@@ -12,12 +12,28 @@ import { and, eq, exists, or, sql } from "drizzle-orm";
 import { db as database } from "#/db/index.server";
 import * as dbSchema from "#/db/schema";
 import type { Db, Schema } from "#/integrations/tanstack-query/api-shapes";
-import { chunk } from "#/lib/concurrency";
+import { chunk, mapWithConcurrency } from "#/lib/concurrency";
+import { isRenderableLabelSubject } from "#/lib/label-subjects";
 
 import { fetchLabelerLabelsSince } from "./labels.server.ts";
 
-/** How often the ingest worker re-syncs labeler labels into the read-model. */
-const SYNC_INTERVAL_MS = 2 * 60_000;
+/**
+ * How often the ingest worker re-syncs labeler labels into the read-model.
+ *
+ * Hourly, not the old two minutes. The interval — not the number of labelers —
+ * is what sets the load: at two minutes that is 720 runs a day, so covering the
+ * ~190 reachable labelers would have meant 135k requests a day to other
+ * people's servers. Hourly makes the same coverage ~4.5k. Labels are not
+ * time-critical the way a feed is; a label arriving within the hour is fine.
+ */
+const SYNC_INTERVAL_MS = 60 * 60_000;
+
+/**
+ * Labelers synced at once. They are independent HTTP endpoints, so the run is
+ * bound by the slowest few rather than the sum — sequentially, ~190 labelers at
+ * a 4s timeout each is over 12 minutes of mostly waiting.
+ */
+const SYNC_CONCURRENCY = 8;
 
 /**
  * Rows per insert statement.
@@ -65,8 +81,13 @@ export async function syncLabelerLabels(
     );
   }
 
+  // Keep only what this app can render — see `isRenderableLabelSubject`. Most
+  // labelers spend themselves on Bluesky posts, which have no surface here.
+  const active = diff.active.filter((l) => isRenderableLabelSubject(l.uri));
+  const negated = diff.negated.filter((l) => isRenderableLabelSubject(l.uri));
+
   const dl = schema.documentLabels;
-  for (const batch of chunk(diff.active, INSERT_CHUNK)) {
+  for (const batch of chunk(active, INSERT_CHUNK)) {
     await db
       .insert(dl)
       .values(
@@ -86,7 +107,7 @@ export async function syncLabelerLabels(
   // Negations are deleted a batch per statement rather than one at a time: a
   // labeler with thousands of them otherwise means thousands of sequential
   // round trips, and this database is a region away from the worker.
-  for (const batch of chunk(diff.negated, DELETE_CHUNK)) {
+  for (const batch of chunk(negated, DELETE_CHUNK)) {
     const matches = batch.map((n) =>
       and(eq(dl.src, n.src), eq(dl.uri, n.uri), eq(dl.val, n.val)),
     );
@@ -98,7 +119,7 @@ export async function syncLabelerLabels(
   // nothing — indistinguishable to a reader otherwise.
   const health = {
     cursor: cursor ?? null,
-    storedCount: diff.active.length,
+    storedCount: active.length,
     rejectedCount: rejected,
     lastError: error ?? null,
   };
@@ -110,7 +131,7 @@ export async function syncLabelerLabels(
       set: { ...health, syncedAt: sql`now()` },
     });
 
-  return diff.active.length + diff.negated.length;
+  return active.length + negated.length;
 }
 
 /**
@@ -140,26 +161,48 @@ export async function syncAllLabels(
     .where(
       and(
         eq(ls.deleted, false),
-        exists(
-          db
-            .select({ one: sql`1` })
-            .from(subs)
-            .where(
-              and(eq(subs.labelerDid, ls.labelerDid), eq(subs.deleted, false)),
-            ),
+        or(
+          // Every labeler whose server still answers. `reachable` is null until
+          // the probe reaches it, so an unprobed labeler is skipped rather than
+          // assumed alive — 272 of 460 are dead, and syncing those is 4s of
+          // timeout each, every run, forever.
+          eq(ls.reachable, true),
+          // Subscribed labelers are synced regardless: somebody is reading them,
+          // and a stale `reachable` shouldn't silently stop their labels.
+          exists(
+            db
+              .select({ one: sql`1` })
+              .from(subs)
+              .where(
+                and(
+                  eq(subs.labelerDid, ls.labelerDid),
+                  eq(subs.deleted, false),
+                ),
+              ),
+          ),
         ),
       ),
     );
 
-  let labels = 0;
-  for (const { did } of rows) {
-    try {
-      labels += await syncLabelerLabels(db, schema, did);
-    } catch (error: unknown) {
-      console.error(`[labels] sync failed for ${did}`, error);
-    }
-  }
-  return { labelers: rows.length, labels };
+  // Bounded concurrency, not a sequential loop: these are independent servers,
+  // and one slow labeler shouldn't hold up the other 190. Errors are swallowed
+  // per labeler so a single bad endpoint can't abort the run.
+  const counts = await mapWithConcurrency(
+    rows,
+    SYNC_CONCURRENCY,
+    async ({ did }) => {
+      try {
+        return await syncLabelerLabels(db, schema, did);
+      } catch (error: unknown) {
+        console.error(`[labels] sync failed for ${did}`, error);
+        return 0;
+      }
+    },
+  );
+  return {
+    labelers: rows.length,
+    labels: counts.reduce((sum, n) => sum + n, 0),
+  };
 }
 
 /**

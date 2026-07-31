@@ -86,3 +86,20 @@ export function hiddenUrisFromLabels(
   }
   return hidden;
 }
+
+/**
+ * Whether a label's subject is one this app can ever render.
+ *
+ * Every read path resolves labels for exactly two kinds of subject: a
+ * `site.standard.document` URI (article cards and article pages) and an account
+ * DID (profiles, publication headers, and a document's byline). A labeler that
+ * also labels Bluesky posts is the norm — most of them do almost nothing else —
+ * and those labels have no surface here at all.
+ *
+ * Mirroring them anyway made 62% of `document_labels` dead weight: 207k of 331k
+ * rows across just eleven labelers, none of it ever read. Filtering at sync time
+ * is what makes mirroring the whole active directory affordable.
+ */
+export function isRenderableLabelSubject(uri: string): boolean {
+  return uri.startsWith("did:") || uri.includes("/site.standard.document/");
+}

@@ -1337,6 +1337,22 @@ Standard AT Proto labels: subscribe to labelers, see/blur/hide their labels whil
       planner could return the same rows every run and starve the rest indefinitely. Now oldest-first.
       No cron needed — the ingest worker's discovery timer already owns this; a second scheduler would
       duplicate it and need its own service and auth.
+- [x] **Mirror every _active_ labeler, hourly** — the sync covered only labelers somebody subscribed
+      to (17 of 460). It now covers every labeler whose server answers (`reachable = true`), plus
+      subscribed ones regardless in case that verdict is stale.
+      **The interval was the cost, not the count.** At the old 2-minute cadence that is 720 runs/day,
+      so ~190 labelers would have meant **135k requests/day** to other operators. Hourly is ~4.5k for
+      the same coverage, and labels are not time-critical the way a feed is.
+      **62% of what we stored was never read.** Every read path resolves exactly two subject kinds —
+      a `site.standard.document` URI and an account DID — but the sync mirrored everything a labeler
+      emitted, and most of them spend themselves on Bluesky posts. 207k of 331k rows were dead
+      weight. `isRenderableLabelSubject` filters at sync time; purging the existing rows took
+      `document_labels` from 156 MB to 35 MB. Mirroring the whole active directory then landed at
+      **221k rows / 70 MB** — against the 1–3 GB it would have been unfiltered.
+      The per-labeler loop was sequential, which at a 4s timeout each is >12 minutes of mostly
+      waiting; it runs 8 at a time via `mapWithConcurrency`, with errors swallowed per labeler so one
+      bad endpoint can't abort the run. A catch-up run measured 194 labelers in 379s; steady-state
+      runs are incremental and far shorter, so hourly leaves the worker idle ~90% of the time.
 - [ ] **subscribeLabels ingestion** — consume the labeler firehose into the read-model instead of
       live `queryLabels` per page, for lower latency.
 - [ ] **Deploy claudeslop** — Railway service + persistent SQLite volume; publish its did:web.
