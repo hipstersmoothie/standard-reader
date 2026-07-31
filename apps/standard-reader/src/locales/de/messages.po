@@ -244,6 +244,10 @@ msgstr "Kopfbild des Artikels"
 msgid "Last updated July 20, 2026"
 msgstr ""
 
+#: src/components/labeler-detail-view.tsx
+msgid "Labels can’t be verified"
+msgstr ""
+
 #: src/components/reader/subscriptions-table.tsx
 #: src/routes/_layout.feedback.index.tsx
 msgid "Type"
@@ -587,6 +591,10 @@ msgstr ""
 #: src/routes/_layout.l.$did.$rkey.tsx
 msgid "No articles from this list's publications or people yet."
 msgstr "Noch keine Artikel aus den Publikationen oder von den Personen dieser Liste."
+
+#: src/components/labelers-settings-view.tsx
+msgid "Loading labelers"
+msgstr ""
 
 #: src/components/reader/share-menu.tsx
 msgid "Landscape fits a compact row. Height adjusts automatically once the embed loads. Change the iframe width as needed."
@@ -3093,6 +3101,10 @@ msgstr "Schriften"
 msgid "Home"
 msgstr "Start"
 
+#: src/components/labeler-detail-view.tsx
+msgid "This labeler’s labels aren’t applied while you read on Standard Reader. Your subscription and the settings below are kept, and unmuting restores them."
+msgstr ""
+
 #: src/magazine/flow.tsx
 msgid "Subscribe to this list to read new articles from its publications."
 msgstr "Abonnieren Sie diese Liste, um neue Artikel ihrer Publikationen zu lesen."
@@ -3506,6 +3518,10 @@ msgstr "Sie haben {publicationName} bereits abonniert. Neue Beiträge erscheinen
 msgid "The directory"
 msgstr "Das Verzeichnis"
 
+#: src/components/labeler-detail-view.tsx
+msgid "Some labels skipped"
+msgstr ""
+
 #: src/components/appearance-settings.tsx
 #~ msgid "Your accent sits close to the paper in tone, so a darkened version of it is used for text and links."
 #~ msgstr ""
@@ -3809,8 +3825,8 @@ msgid "You aren't following anything yet."
 msgstr "Sie folgen noch niemandem."
 
 #: src/components/labeler-detail-view.tsx
-msgid "Muted here — this labeler’s labels aren’t applied while you read on Standard Reader. Your subscription and the settings below are kept, and unmuting restores them."
-msgstr ""
+#~ msgid "Muted here — this labeler’s labels aren’t applied while you read on Standard Reader. Your subscription and the settings below are kept, and unmuting restores them."
+#~ msgstr ""
 
 #: src/routes/_layout.feedback.index.tsx
 msgid "{count, plural, one {# upvote} other {# upvotes}} — click to undo"
@@ -4315,6 +4331,10 @@ msgstr ""
 #: src/components/reader/content/renderers/pckt-gallery.tsx
 msgid "Open image {position}"
 msgstr "Bild {position} öffnen"
+
+#: src/components/labeler-detail-view.tsx
+msgid "Not responding"
+msgstr ""
 
 #: src/components/docs/api-docs-intro.tsx
 msgid "AppView API"

@@ -3,6 +3,7 @@
 import type { MessageDescriptor } from "@lingui/core";
 import { msg } from "@lingui/core/macro";
 import { Plural, Trans, useLingui } from "@lingui/react/macro";
+import { Alert } from "@standard-reader/design-system/alert";
 import { Avatar } from "@standard-reader/design-system/avatar";
 import { Button } from "@standard-reader/design-system/button";
 import {
@@ -27,6 +28,7 @@ import { radius } from "@standard-reader/design-system/theme/radius.stylex";
 import {
   size as boxSize,
   gap,
+  verticalSpace,
 } from "@standard-reader/design-system/theme/semantic-spacing.stylex";
 import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
 import {
@@ -450,37 +452,53 @@ export function LabelerDetailView({
                 so, rather than leaving an empty tab that looks like "no labels
                 yet". */}
             {health?.error ? (
-              <p {...stylex.props(styles.warnNote)}>
+              <Alert
+                variant="warning"
+                title={t`Not responding`}
+                style={styles.statusBanner}
+              >
                 <Trans>
                   This labeler’s server couldn’t be reached, so its labels
                   aren’t available right now. We’ll keep trying.
                 </Trans>
-              </p>
+              </Alert>
             ) : health && health.rejected > 0 && health.stored === 0 ? (
-              <p {...stylex.props(styles.warnNote)}>
+              <Alert
+                variant="critical"
+                title={t`Labels can’t be verified`}
+                style={styles.statusBanner}
+              >
                 <Trans>
                   None of this labeler’s labels could be verified against the
                   signing key it publishes, so none are applied. That’s a
                   problem on the labeler’s end.
                 </Trans>
-              </p>
+              </Alert>
             ) : health && health.rejected > 0 ? (
-              <p {...stylex.props(styles.warnNote)}>
+              <Alert
+                variant="warning"
+                title={t`Some labels skipped`}
+                style={styles.statusBanner}
+              >
                 <Plural
                   value={health.rejected}
                   one="One of this labeler’s labels couldn’t be verified and was skipped."
                   other="# of this labeler’s labels couldn’t be verified and were skipped."
                 />
-              </p>
+              </Alert>
             ) : null}
             {subscribed && !enabled ? (
-              <p {...stylex.props(styles.note)}>
+              <Alert
+                variant="info"
+                title={t`Muted here`}
+                style={styles.statusBanner}
+              >
                 <Trans>
-                  Muted here — this labeler’s labels aren’t applied while you
-                  read on Standard Reader. Your subscription and the settings
-                  below are kept, and unmuting restores them.
+                  This labeler’s labels aren’t applied while you read on
+                  Standard Reader. Your subscription and the settings below are
+                  kept, and unmuting restores them.
                 </Trans>
-              </p>
+              </Alert>
             ) : null}
             <div {...stylex.props(styles.settingGroup)}>
               {defs.length === 0 ? (
@@ -822,16 +840,8 @@ const styles = stylex.create({
     lineHeight: lineHeight.base,
     marginTop: spacing["1.5"],
   },
-  warnNote: {
-    color: uiColor.text1,
-    fontSize: fontSize.sm,
-    borderRadius: radius.md,
-    backgroundColor: uiColor.component1,
-    borderInlineStartColor: uiColor.border2,
-    borderInlineStartStyle: "solid",
-    borderInlineStartWidth: spacing.px,
-    paddingBlock: spacing["2"],
-    paddingInline: spacing["3"],
+  statusBanner: {
+    marginBlockEnd: verticalSpace.xl,
   },
   note: {
     color: uiColor.text1,

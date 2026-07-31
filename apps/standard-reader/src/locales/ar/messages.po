@@ -244,6 +244,10 @@ msgstr "صورة رأس المقال"
 msgid "Last updated July 20, 2026"
 msgstr ""
 
+#: src/components/labeler-detail-view.tsx
+msgid "Labels can’t be verified"
+msgstr ""
+
 #: src/components/reader/subscriptions-table.tsx
 #: src/routes/_layout.feedback.index.tsx
 msgid "Type"
@@ -587,6 +591,10 @@ msgstr ""
 #: src/routes/_layout.l.$did.$rkey.tsx
 msgid "No articles from this list's publications or people yet."
 msgstr "لا توجد مقالات بعد من منشورات هذه القائمة أو أشخاصها."
+
+#: src/components/labelers-settings-view.tsx
+msgid "Loading labelers"
+msgstr ""
 
 #: src/components/reader/share-menu.tsx
 msgid "Landscape fits a compact row. Height adjusts automatically once the embed loads. Change the iframe width as needed."
@@ -3093,6 +3101,10 @@ msgstr "الخطوط"
 msgid "Home"
 msgstr "الرئيسية"
 
+#: src/components/labeler-detail-view.tsx
+msgid "This labeler’s labels aren’t applied while you read on Standard Reader. Your subscription and the settings below are kept, and unmuting restores them."
+msgstr ""
+
 #: src/magazine/flow.tsx
 msgid "Subscribe to this list to read new articles from its publications."
 msgstr "اشترك في هذه القائمة لقراءة المقالات الجديدة من منشوراتها."
@@ -3506,6 +3518,10 @@ msgstr "أنت مشترك بالفعل في {publicationName}. ستظهر الم
 msgid "The directory"
 msgstr "الدليل"
 
+#: src/components/labeler-detail-view.tsx
+msgid "Some labels skipped"
+msgstr ""
+
 #: src/components/appearance-settings.tsx
 #~ msgid "Your accent sits close to the paper in tone, so a darkened version of it is used for text and links."
 #~ msgstr ""
@@ -3809,8 +3825,8 @@ msgid "You aren't following anything yet."
 msgstr "لا تتابع أي شيء بعد."
 
 #: src/components/labeler-detail-view.tsx
-msgid "Muted here — this labeler’s labels aren’t applied while you read on Standard Reader. Your subscription and the settings below are kept, and unmuting restores them."
-msgstr ""
+#~ msgid "Muted here — this labeler’s labels aren’t applied while you read on Standard Reader. Your subscription and the settings below are kept, and unmuting restores them."
+#~ msgstr ""
 
 #: src/routes/_layout.feedback.index.tsx
 msgid "{count, plural, one {# upvote} other {# upvotes}} — click to undo"
@@ -4315,6 +4331,10 @@ msgstr ""
 #: src/components/reader/content/renderers/pckt-gallery.tsx
 msgid "Open image {position}"
 msgstr "افتح الصورة {position}"
+
+#: src/components/labeler-detail-view.tsx
+msgid "Not responding"
+msgstr ""
 
 #: src/components/docs/api-docs-intro.tsx
 msgid "AppView API"

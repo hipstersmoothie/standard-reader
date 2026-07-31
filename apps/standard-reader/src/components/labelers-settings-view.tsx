@@ -4,6 +4,7 @@ import { Trans, useLingui } from "@lingui/react/macro";
 import { Avatar } from "@standard-reader/design-system/avatar";
 import { Badge } from "@standard-reader/design-system/badge";
 import { Button } from "@standard-reader/design-system/button";
+import { Skeleton } from "@standard-reader/design-system/skeleton";
 import { TextField } from "@standard-reader/design-system/text-field";
 import { animationDuration } from "@standard-reader/design-system/theme/animations.stylex";
 import {
@@ -33,6 +34,7 @@ import type {
 import { labelerApi } from "#/integrations/tanstack-query/api-labelers.functions";
 import { labelerHandle, labelerHandleOrDid } from "#/lib/labeler-handle";
 import { useDebouncedValue } from "#/lib/use-debounced-value";
+import { useDelayedLoading } from "#/lib/use-delayed-loading";
 
 import { Masthead, ReaderContent } from "./reader/primitives";
 
@@ -183,6 +185,49 @@ function LabelerCardItem({
   );
 }
 
+/** Grace period before a skeleton appears, so a fast load never flashes one. */
+const SKELETON_DELAY_MS = 150;
+/** Enough cards to fill the fold without implying a specific result count. */
+const SKELETON_CARDS = 6;
+
+/**
+ * Placeholder for the directory grid.
+ *
+ * Mirrors the real card's shape — avatar, two lines of identity, a description
+ * line, a badge row — so the layout doesn't jump when the data lands. Only the
+ * grid is skeletonized: the masthead and the search field stay mounted, so
+ * typing during a load never loses focus.
+ */
+function LabelerCardsSkeleton() {
+  const { t } = useLingui();
+  return (
+    <div
+      {...stylex.props(styles.grid)}
+      aria-busy="true"
+      aria-label={t`Loading labelers`}
+    >
+      {Array.from({ length: SKELETON_CARDS }, (_, i) => (
+        <div key={i} {...stylex.props(styles.card)}>
+          <div {...stylex.props(styles.cardHead)}>
+            <div {...stylex.props(styles.cardIdentity)}>
+              <Skeleton variant="circle" size="lg" />
+              <div {...stylex.props(styles.cardHeadText)}>
+                <Skeleton variant="rectangle" height="1rem" width="9rem" />
+                <Skeleton variant="rectangle" height="0.75rem" width="12rem" />
+              </div>
+            </div>
+          </div>
+          <Skeleton variant="rectangle" height="0.75rem" width="100%" />
+          <div {...stylex.props(styles.badges)}>
+            <Skeleton variant="rectangle" height="1.25rem" width="4.5rem" />
+            <Skeleton variant="rectangle" height="1.25rem" width="3.5rem" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function LabelersSettingsView() {
   const { t } = useLingui();
   const [search, setSearch] = useState("");
@@ -199,6 +244,10 @@ export function LabelersSettingsView() {
     [known.data],
   );
   const total = known.data?.pages[0]?.total ?? 0;
+  // `isLoading`, not `isFetching`: a background refetch already has rows on
+  // screen and shouldn't blank them. A new search term is a new query key, so
+  // it counts as loading and does get the skeleton.
+  const showSkeleton = useDelayedLoading(known.isLoading, SKELETON_DELAY_MS);
 
   // Only consulted when the server search comes back empty: a reader can paste
   // a DID or handle for a labeler we have not discovered yet, and resolving it
@@ -256,7 +305,15 @@ export function LabelersSettingsView() {
         title={t`Labelers`}
         dek={t`Labelers are moderation services you subscribe to by DID. Subscribe to see their labels — and blur or hide labeled posts — while you read.`}
         metaLabel={t`On the network`}
-        metaValue={total > 0 ? String(total) : undefined}
+        // Skeletoned rather than left blank: the count arriving from nothing
+        // shifts the masthead, and a placeholder holds the space.
+        metaValue={
+          known.isLoading ? (
+            <Skeleton variant="rectangle" height="2rem" width="3.5rem" />
+          ) : total > 0 ? (
+            String(total)
+          ) : undefined
+        }
       />
 
       <TextField
@@ -274,16 +331,24 @@ export function LabelersSettingsView() {
         </p>
       ) : null}
 
-      <div {...stylex.props(styles.grid)}>
-        {visibleCards.map((item: LabelerListItem | LabelerCard) => (
-          <LabelerCardItem
-            key={item.did}
-            card={item}
-            subscribed={subscribedDids.has(item.did)}
-            enabled={!mutedDids.has(item.did)}
-          />
-        ))}
-      </div>
+      {showSkeleton ? (
+        <LabelerCardsSkeleton />
+      ) : known.isLoading ? (
+        // Inside the grace period: claim busy for assistive tech and the perf
+        // ready signal, but draw nothing — a skeleton here would only flash.
+        <div aria-busy="true" aria-label={t`Loading labelers`} />
+      ) : (
+        <div {...stylex.props(styles.grid)}>
+          {visibleCards.map((item: LabelerListItem | LabelerCard) => (
+            <LabelerCardItem
+              key={item.did}
+              card={item}
+              subscribed={subscribedDids.has(item.did)}
+              enabled={!mutedDids.has(item.did)}
+            />
+          ))}
+        </div>
+      )}
 
       {known.hasNextPage ? (
         <div {...stylex.props(styles.loadMore)}>
