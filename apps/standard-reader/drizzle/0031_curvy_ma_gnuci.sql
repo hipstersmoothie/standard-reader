@@ -1,0 +1,1 @@
+CREATE INDEX "block_list_items_list_subject_idx" ON "block_list_items" USING btree ("list_uri","subject_did");

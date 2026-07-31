@@ -1431,6 +1431,55 @@ Standard AT Proto labels: subscribe to labelers, see/blur/hide their labels whil
       live `queryLabels` per page, for lower latency.
 - [ ] **Deploy claudeslop** — Railway service + persistent SQLite volume; publish its did:web.
 
+### Blocks & block lists
+
+A reader's Bluesky blocks apply here, in both directions, with no setup. See
+[`APP_VISION.md` §"Blocks & block lists"](./APP_VISION.md#blocks--block-lists).
+
+- [x] **Honour `app.bsky.graph.block` rather than inventing our own lexicon** — a block is already a
+      portable repo record every AT Protocol app reads, so blocking here writes that record and
+      blocking elsewhere is honoured here. An `app.standard-reader.block` would have been a block
+      that only worked in one app.
+- [x] **Read-model mirror** (migration `0031`) — `blocks`, `block_lists`, `block_list_items`,
+      `block_list_sync_state`, `block_sync_state`. One `blocks` row per record covers both
+      directions (`blocker_did` / `subject_did`), so the four block sources collapse to a four-branch
+      union.
+- [x] **Per-reader sync, not the firehose tap** — a block against one of our readers can be written
+      by any repo on the network, and the tap only tracks repos we index. `syncReaderBlocks` pulls
+      the reader's own records from their PDS (unauthenticated `listRecords`), incoming blocks from
+      Constellation backlinks (`app.bsky.graph.block:.subject`), and mod-list membership from the
+      public AppView. Scheduled from the OAuth callback and the signed-in shell read, TTL-guarded
+      (15 min), forced inline after a block/unblock write.
+- [x] **Outgoing replaces, incoming only adds** — the reader's own records are authoritative so a
+      sweep can soft-delete what's gone; incoming blocks come from a best-effort index, and a short
+      sweep must never read as "nobody blocks you any more".
+- [x] **Blocked-by-list** — Bluesky's `blockedByList`: lists the reader is _on_ (Constellation on
+      `app.bsky.graph.listitem:.subject`) crossed with who blocks those lists. Bounded to
+      `MAX_INCOMING_LISTS`, since being on a list is common and each one costs a record fetch plus a
+      Constellation query.
+- [x] **Enforcement** — SQL `NOT EXISTS` (`notBlockedByViewer`) on everything paginated (home,
+      latest, trending, tag, search, discover directory, publication archives, list feeds, XRPC
+      feeds); JS post-filter on rails, profile tabs, friend surfaces and third-party discussion
+      (Bluesky / Margin / Semble / pckt / Leaflet). Always bounded by the DIDs a page renders, never
+      by the reader's block set — a 40k-member blocklist has to stay an index probe.
+- [x] **Blocked pages explain themselves** — profile, publication and article render the block and
+      which direction it runs, with Unblock only when it's the reader's own. The article body is
+      withheld outright and the reason is a separate opt-in read, so nothing about a blocked
+      document crosses the wire.
+- [x] **Writing needs consent, reading doesn't** — `listRecords` is public, so existing blocks are
+      enforced whatever scope was granted. `upgradeToBlocking` requests the write scope on the first
+      Block press, persisted via `user.blockingEnabled` (migration `0032`).
+- [x] **Settings → Blocked accounts** (`/settings/blocks`) — the reader's own blocks and their
+      subscribed block lists, with each list's mirrored size and a Partial badge past the cap.
+- [ ] **Mutes** — `app.bsky.graph.muteActor` / mute lists are a separate, softer signal (hide from
+      feeds but keep the profile reachable) and are not mirrored yet.
+- [ ] **Full mirror for large blocklists** — lists past `MAX_LIST_PAGES` are stored truncated and
+      flagged. Fine for the common case; a list with six-figure membership is under-enforced until
+      the mirror is paged in the background rather than inline in a reader's sweep.
+- [ ] **Incoming-block freshness** — incoming rows are additive and never expire, so someone who
+      unblocks the reader elsewhere stays blocked here until their own record read (only if they are
+      also a reader here). Needs a periodic re-verification pass against Constellation.
+
 ---
 
 ## 15. Format conversion (`@standard-reader/converter` + CLI)

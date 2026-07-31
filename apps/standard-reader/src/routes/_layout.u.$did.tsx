@@ -49,13 +49,16 @@ import {
   AUTHOR_ACTIVITY_PAGE_SIZE,
   authorApi,
 } from "#/integrations/tanstack-query/api-author.functions";
+import { blocksApi } from "#/integrations/tanstack-query/api-blocks.functions";
 import { listApi } from "#/integrations/tanstack-query/api-lists.functions";
 import type { SubscriptionList } from "#/integrations/tanstack-query/api-lists.functions";
 import type {
   ArticleCard,
+  ProfileSummary,
   PublicationCard,
 } from "#/integrations/tanstack-query/api-shapes";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
+import type { BlockEdge } from "#/lib/blocks";
 import type { HideableTabId, ProfileTabId } from "#/lib/profile-tabs";
 import { getPublicUrlClient } from "#/lib/public-url";
 import {
@@ -67,6 +70,8 @@ import {
 import { AccountLabels } from "../components/reader/account-labels";
 import { AddToListButton } from "../components/reader/add-to-list-button";
 import { AuthorProfileLink } from "../components/reader/author-profile-link";
+import { BlockUserButton } from "../components/reader/block-user-button";
+import { BlockedNotice } from "../components/reader/blocked-notice";
 import { ArticleRow, PubDirectoryRow } from "../components/reader/cards";
 import { FeedLoadMore } from "../components/reader/feed-load-more";
 import { FollowUserButton } from "../components/reader/follow-user-button";
@@ -545,7 +550,41 @@ function AuthorProfilePage() {
     return null;
   }
 
+  // A blocked profile renders as the block, not as an empty profile: the
+  // server already withheld every tab, and a profile with six zeroed counts
+  // would read as "this person has written nothing" rather than the truth.
+  if (initialPage.block) {
+    return (
+      <BlockedProfile block={initialPage.block} profile={initialPage.profile} />
+    );
+  }
+
   return <AuthorProfileContent key={did} did={did} initialPage={initialPage} />;
+}
+
+/**
+ * A profile the viewer is blocked from, in either direction. Keeps the person's
+ * identity — a name is what makes the notice legible — and nothing else.
+ */
+function BlockedProfile({
+  block,
+  profile,
+}: {
+  block: BlockEdge;
+  profile: ProfileSummary;
+}) {
+  const blocks = useQuery(
+    blocksApi.getBlocksSettingsQueryOptions({ limit: 1 }),
+  );
+  return (
+    <ReaderContent>
+      <BlockedNotice
+        block={block}
+        name={profile.displayName ?? profile.handle}
+        canWrite={blocks.data?.canWrite ?? false}
+      />
+    </ReaderContent>
+  );
 }
 
 function AuthorProfileContent({
@@ -763,6 +802,12 @@ function AuthorProfileContent({
               ) : (
                 <>
                   {session?.user?.did ? <AddToListButton did={did} /> : null}
+                  {session?.user?.did ? (
+                    <BlockUserButton
+                      did={did}
+                      name={profile.displayName ?? profile.handle}
+                    />
+                  ) : null}
                   <FollowUserButton
                     did={did}
                     signedIn={session?.user?.did != null}
@@ -830,6 +875,12 @@ function AuthorProfileContent({
             ) : (
               <>
                 {session?.user?.did ? <AddToListButton did={did} /> : null}
+                {session?.user?.did ? (
+                  <BlockUserButton
+                    did={did}
+                    name={profile.displayName ?? profile.handle}
+                  />
+                ) : null}
                 <FollowUserButton
                   did={did}
                   signedIn={session?.user?.did != null}

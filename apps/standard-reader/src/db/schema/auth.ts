@@ -110,6 +110,15 @@ export const user = pgTable("user", {
   /** `true` enables the Semble/Cosmik (network.cosmik.*) save scope tier on
    * the next sign-in, mirroring {@link marginSaveEnabled}. */
   sembleSaveEnabled: boolean("semble_save_enabled"),
+  /** `true` enables write access to the reader's Bluesky block records
+   * (`app.bsky.graph.block` / `.listblock`) on the next sign-in, mirroring
+   * {@link marginSaveEnabled}. Set when the reader goes through the "block from
+   * here" upgrade flow; the source of truth for "actually granted" is
+   * `account.scope` (see `hasBskyBlockWriteScope`).
+   *
+   * Only *writing* needs this. Blocks the reader already made are enforced for
+   * everyone, granted or not — they are public repo records. */
+  blockingEnabled: boolean("blocking_enabled"),
   /** `true` stops the one-time ATStore review prompt toast from showing again. */
   atstoreReviewPromptDismissed: boolean("atstore_review_prompt_dismissed"),
   /** `true` once the first-run onboarding wizard was finished or dismissed;

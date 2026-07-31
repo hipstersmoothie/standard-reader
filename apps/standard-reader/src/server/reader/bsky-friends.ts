@@ -448,6 +448,11 @@ async function resolveFriendPublications(
   ]);
   const subscribed = new Set(subscribedRows.map((row) => row.uri));
 
+  // Blocked owners are dropped by `blockedFriendPublicationUris`, applied by the
+  // callers rather than here: this module is reachable from the client bundle,
+  // so it must not import the server-only block reader. Following someone on
+  // Bluesky and being blocked by them is not a contradiction — a block is
+  // one-sided, and the follow can predate it.
   return {
     publications: rankFriendPublications(followedDids, byAuthor, subscribed),
     degraded,

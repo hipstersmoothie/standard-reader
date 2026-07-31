@@ -5,6 +5,7 @@ import type { db } from "#/db/index.server";
 import type * as schema from "#/db/schema";
 import type { ArticleCard } from "#/integrations/tanstack-query/api-shapes";
 import { getPublicUrl } from "#/lib/public-url";
+import { filterBlockedCards } from "#/server/blocks/blocks";
 import { buildCanonicalUrl } from "#/server/ingest/mappers";
 import {
   fetchCitedInArticles,
@@ -88,6 +89,8 @@ export async function resolveDiscussion(
   dbClient: typeof db,
   schemaModule: typeof schema,
   documentUri: string,
+  /** The reader this panel is for, so their blocks apply here too. */
+  viewerDid?: string | null,
 ): Promise<ExtensionDiscussionResponse> {
   const d = schemaModule.documents;
   const p = schemaModule.publications;
@@ -109,6 +112,7 @@ export async function resolveDiscussion(
     dbClient,
     schemaModule,
     documentUri,
+    viewerDid,
   );
 
   if (!row) {
@@ -137,19 +141,24 @@ export async function resolveDiscussion(
       ? selectArticleCards(dbClient, schemaModule, {
           publicationUris: [row.publicationUri],
           limit: 4,
+          viewerDid: viewerDid ?? undefined,
         })
       : Promise.resolve([]),
     relatedArticles(dbClient, schemaModule, {
       documentUri: row.uri,
       publicationUri: row.publicationUri,
       limit: 8,
-    }),
+    }).then((rows) =>
+      filterBlockedCards(dbClient, schemaModule, viewerDid, rows),
+    ),
     linkUrls.length > 0
       ? fetchCitedInArticles(dbClient, schemaModule, {
           urls: linkUrls,
           excludeDocumentUri: row.uri,
           limit: 8,
-        })
+        }).then((rows) =>
+          filterBlockedCards(dbClient, schemaModule, viewerDid, rows),
+        )
       : Promise.resolve([]),
     linkUrls.length > 0
       ? fetchMarginConnections(dbClient, schemaModule, {

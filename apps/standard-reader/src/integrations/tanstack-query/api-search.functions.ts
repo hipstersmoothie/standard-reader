@@ -15,6 +15,7 @@ import { blobCid, cdnImageUrl } from "#/server/atproto/blob";
 import { listRepoRecords } from "#/server/atproto/fetch-record";
 import { resolveIdentity } from "#/server/atproto/identity";
 import type { PublicationRecord } from "#/server/atproto/types";
+import { filterBlockedCards, notBlockedByViewer } from "#/server/blocks/blocks";
 import { ensureTracked } from "#/server/ingest/tap-client";
 import { observe } from "#/server/observability/log";
 import { attachReaderSpanContext } from "#/server/observability/span-context.ts";
@@ -98,7 +99,7 @@ const searchPublications = createServerFn({ method: "GET" })
       const { db, schema } = context;
       span.set("q", data.q);
       span.set("offset", data.offset);
-      await attachReaderSpanContext(span, getRequest());
+      const did = await attachReaderSpanContext(span, getRequest());
 
       const page = await searchIndexedPublications(
         db,
@@ -125,6 +126,12 @@ const searchPublications = createServerFn({ method: "GET" })
           items = await resolvePublicationCards(db, schema, hints.handleLookup);
         }
         total = items.length;
+      }
+
+      const visible = await filterBlockedCards(db, schema, did, items);
+      if (visible.length !== items.length) {
+        total = Math.max(0, total - (items.length - visible.length));
+        items = visible;
       }
 
       span.set("total", total);
@@ -174,6 +181,9 @@ const searchArticles = createServerFn({ method: "GET" })
         eq(d.deleted, false),
         matchClause,
         notExcludedPublicationArticleWhere(p),
+        // Search is paginated, so blocked authors are excluded in SQL rather
+        // than dropped from the page — see `notBlockedByViewer`.
+        ...(did ? [notBlockedByViewer(schema, did, sql`${d.did}`)] : []),
       );
 
       // Page the bare document URIs (newest first) in an inner subquery, then

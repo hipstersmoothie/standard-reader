@@ -44,9 +44,10 @@ export async function handleGetHomeFeed(ctx: XrpcRequestContext) {
     ? {
         publicationUris: followUris,
         countOldPostsAsUnread: ctx.countOldPostsAsUnreadEnabled,
+        viewerDid: did,
         ...(trackReading ? { readForDid: did, unreadForDid: did } : {}),
       }
-    : { discoverOnly: true as const };
+    : { discoverOnly: true as const, viewerDid: did };
 
   const [featuredLead, rows] = await Promise.all([
     selectArticleCards(ctx.db, ctx.schema, {
