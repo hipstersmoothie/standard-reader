@@ -1006,8 +1006,8 @@ msgid "Contrast"
 msgstr "コントラスト"
 
 #: src/components/reader/serial-start.tsx
-msgid "Start from chapter one"
-msgstr ""
+#~ msgid "Start from chapter one"
+#~ msgstr ""
 
 #: src/components/docs/api-docs-request-panel.tsx
 msgid "Copied"
@@ -3064,8 +3064,8 @@ msgid "Read as comic"
 msgstr ""
 
 #: src/components/reader/serial-start.tsx
-msgid "A serial comic — these issues read in order, from the first."
-msgstr ""
+#~ msgid "A serial comic — these issues read in order, from the first."
+#~ msgstr ""
 
 #: src/routes/_layout.history.tsx
 #: src/routes/_layout.latest.tsx
@@ -5973,8 +5973,8 @@ msgid "How requests are handled"
 msgstr "リクエストの処理方法"
 
 #: src/components/reader/serial-start.tsx
-msgid "A serial — these chapters read in order, from the first."
-msgstr ""
+#~ msgid "A serial — these chapters read in order, from the first."
+#~ msgstr ""
 
 #: src/components/guide/pages/keeping-track-guide-page.tsx
 #: src/lib/guide/navigation.ts
@@ -7181,8 +7181,8 @@ msgid "Published AT Proto record schemas for reader state in each user's PDS."
 msgstr "各ユーザーの PDS に保存されるリーダー状態のために公開された AT Proto レコードスキーマ。"
 
 #: src/components/reader/serial-start.tsx
-msgid "Start from issue one"
-msgstr ""
+#~ msgid "Start from issue one"
+#~ msgstr ""
 
 #: src/routes/_layout.discover.tsx
 msgid "Loading publication directory"
