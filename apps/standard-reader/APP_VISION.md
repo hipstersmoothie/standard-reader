@@ -334,6 +334,15 @@ default `"rtl"` for a record that states nothing, which is what keeps the two ap
 `ensurePublicationSerial` (`#/server/reader/series`) reads the record from the PDS once, writes
 what it says, and derives the kind on the spot if it turns out to be a serial. Standard
 `backfillXFromRepo` behaviour: one PDS read per publication, ever, then the DB serves it.
+
+**Both columns count as unresolved, not just the direction** (`needsSerialResolution`,
+`#/lib/publication/serial`). A row reading `"ltr"` with no `serial_kind` is a serial the sweep
+hasn't judged yet, and `resolveSerialPublication` renders it as a **book** — the right thing to
+draw, and the wrong thing to stop asking about, because everything a comic gets hangs off
+`serial.kind`: the shelf of covers, the redirect into the page-flip reader. The two read paths
+that surface those (`selectPublicationHeader` and `getArticle`) resolve on demand whenever either
+column is missing, so a comic can't sit reading as a book until the next hourly sweep. An ordinary
+blog (`"rtl"`) is resolved whatever its kind says, which keeps this off the common path.
 `pnpm backfill:serial` warms them all up front so no reader pays that first read. It scopes itself
 to the publications that could answer — `prevNextDirection` is Leaflet's field, so only Leaflet
 publications still holding a NULL are visited — reads their records from Slingshot rather than
@@ -374,9 +383,37 @@ What changes for a serial:
   reading order (`#/lib/document/images`), so nothing is authored specially for it. Arrow keys /
   space / Page keys, `Home` / `End`, tap-zones and swipe all page; the current page lives in the
   URL (page turns replace the history entry, so Back leaves the reader). Past the last page is
-  an end card with the next issue. The article route redirects a comic issue here unless
+  an end card with the next issue. The floating chrome **stays until the reader turns their first
+  page** — on arrival the bars are the introduction, and a countdown running under it takes that
+  away from anyone reading at their own pace — and only then starts stepping aside on an idle beat. The article route redirects a comic issue here unless
   `?view=reader` — which is also the "Read the notes" escape, because a comic's prose commentary
   belongs to the reading view, not the theater.
+  The top bar carries a **full-screen toggle** (`f`, or the button at its end) that puts the
+  theater itself full screen, so the browser's own furniture leaves the art alone
+  (`#/components/comic/use-fullscreen`). The button appears only where the browser says it will
+  actually do it (`fullscreenEnabled`, either spelling), which on **iPhone is never**: iOS reserves
+  full screen for `<video>`, WebKit's bug for element full screen (206854) has been open since
+  2020, the prefixed request was closed `WONTFIX` in favour of it, and the Safari 27 beta still
+  doesn't have it. An inert button there reads as a broken reader rather than as a platform limit,
+  so it is dropped — the iPhone answer to full screen is the home-screen install the app already
+  supports (`display: standalone`, `apple-mobile-web-app-capable`, `viewport-fit=cover`, which is
+  why the theater's bars pad with `env(safe-area-inset-*)`). None of this is iPhone-specific in the
+  code: the flag also covers an iframe without `allowfullscreen`, and when Safari ships the API the
+  control appears with no release from us. The WebKit-prefixed spelling is tried when the standard
+  one is absent (iPadOS below 16.4), and the icon's state follows `fullscreenchange`, since Escape,
+  F11 and the OS all exit without asking the app.
+- **A page's note reads over the page.** Comic posts often publish a line or two beside the art —
+  a caption, a process note, a word about next week — and in the theater that writing had nowhere
+  to go but the reading view, a navigation away from the page it was written about. The top bar's
+  note button lays it over the art instead (`#/components/comic/comic-page-note`): a translucent
+  dark scrim, the prose in the theater's own type, and a "Read the full post" escape to the
+  reading view. The note travels on the page (`ComicPage.note`), extracted in the chunk query that
+  already opens the body, and is the body's plaintext **minus the pages' own alt text** — the
+  extractors narrate image blocks by their alt, which describes the page the reader is already
+  looking at (`#/lib/comic/page-note`). Most pages carry none, so the control is disabled rather
+  than absent: a bar that reshuffled on every page turn is worse than a quiet button. The overlay
+  is a React Aria modal portalled **into the theater**, not `document.body`, so it survives full
+  screen.
 - **Books get "Up next"** under the article: the following chapter, or a note that the reader has
   caught up. Position ("3 of 12") and neighbours come from `getSeriesContext`
   (`#/server/reader/series`), loaded client-side after the article paints like the other

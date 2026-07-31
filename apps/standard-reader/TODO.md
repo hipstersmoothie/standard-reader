@@ -904,9 +904,27 @@ Backend/API exists; UI or copy is missing.
       than stopping at the end of each issue. Pages are the images each body renders
       ([`images.ts`](src/lib/document/images.ts)); keyboard / tap-zone / swipe paging, the page in
       the URL, each issue marked read as the reader enters it. The **chrome floats over the art and
-      auto-hides**: the bars show themselves on entry, step aside after an idle beat, and come back
-      on a middle-zone tap, a mouse move, or Tab — they stay put for the loading, empty and back-cover
-      states, and pin open under pointer or focus. The stage keeps `touch-action: pan-y pinch-zoom`
+      auto-hides**: the bars show themselves on entry and stay until the reader turns their first
+      page — a comic nobody has paged through yet is still being introduced, and a countdown under
+      that introduction takes it from anyone reading at their own pace — then step aside after an
+      idle beat and come back on a middle-zone tap, a mouse move, or Tab. They also stay put for the
+      loading, empty and back-cover states, and pin open under pointer or focus. The top bar ends with a **full-screen toggle**
+      (`f`, or the button) that puts the theater element full screen so the browser's own chrome
+      leaves the art alone ([`use-fullscreen.ts`](src/components/comic/use-fullscreen.ts)) —
+      drawn only where the browser says it will do it (`fullscreenEnabled`, either spelling) — which
+      on iPhone is never, since iOS reserves full screen for `<video>` and WebKit bug 206854 has
+      been open since 2020, so an inert button there would read as a broken reader rather than a
+      platform limit (the iPhone answer is the home-screen install the app already supports). Falls
+      back to the WebKit-prefixed spelling (iPadOS below 16.4) and is driven off `fullscreenchange`
+      so Escape, F11 and the OS keep the icon honest. Beside it, a **note button** lays the writing a
+      page published with over the art
+      ([`comic-page-note.tsx`](src/components/comic/comic-page-note.tsx)) — a translucent scrim,
+      the prose in the theater's own type, and a "Read the full post" escape — so a caption no
+      longer costs a navigation to the reading view. The note rides on `ComicPage` from the chunk
+      query that already opens each body, and is the body plaintext minus the pages' own alt text
+      ([`page-note.ts`](src/lib/comic/page-note.ts)), since the extractors narrate images by their
+      alt. It is a React Aria modal portalled into the theater rather than `document.body`, which
+      is what keeps it on screen in full screen. The stage keeps `touch-action: pan-y pinch-zoom`
       so a dense page can be pinched into, and **flips to `manipulation` while zoomed** — reserving
       horizontal drags for the swipe is what makes paging work at rest, but it pins a zoomed reader
       to a single vertical track, and swipe stands down at that scale anyway (as it does while a

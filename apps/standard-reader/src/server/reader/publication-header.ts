@@ -12,6 +12,7 @@ import {
   publicationCardColumns,
   toPublicationCard,
 } from "#/integrations/tanstack-query/api-shapes";
+import { needsSerialResolution } from "#/lib/publication/serial";
 import { publicationFontsFromThemeJson } from "#/server/fonts/publication-fonts.server";
 import { publicationBackgroundImage } from "#/server/reader/publication-background";
 import { ensurePublicationSerial } from "#/server/reader/series";
@@ -60,15 +61,17 @@ export async function selectPublicationHeader(
 
   if (!row) return null;
 
-  // The hero's serial treatment ("A serial comic", "Start from issue one") reads
-  // off this card, while the archive's reading order is resolved separately in
-  // `getPublicationDocuments` — and the two run in parallel. Without this, the
-  // very first view of a publication whose `prev_next_direction` was never
-  // mirrored paints a half-applied page: the archive correctly oldest-first, but
-  // no serial hero, because this query raced the backfill the other one did.
-  // A no-op (one indexed read) once the column is populated.
+  // Everything a comic gets — the shelf of covers instead of an archive list,
+  // the redirect into the page-flip reader — hangs off `serial.kind`, and this
+  // is the query the publication page reads it from. So this is where a
+  // publication whose serial columns aren't resolved yet gets resolved: a NULL
+  // direction (indexed before the column existed), or a serial the hourly sweep
+  // hasn't classified, which `resolveSerialPublication` renders as a book and
+  // would otherwise stay one for as long as the sweep took to reach it. A no-op
+  // (one indexed read) once the columns are populated, and never entered at all
+  // for an ordinary blog.
   const publication = toPublicationCard(row);
-  if (row.prevNextDirection == null) {
+  if (needsSerialResolution(row.prevNextDirection, row.serialKind)) {
     publication.serial = await ensurePublicationSerial(db, schema, row.uri);
   }
 

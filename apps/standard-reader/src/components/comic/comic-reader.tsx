@@ -19,7 +19,15 @@ import {
 } from "@standard-reader/design-system/theme/typography.stylex";
 import * as stylex from "@stylexjs/stylex";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, FileText, X } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  FileText,
+  Maximize,
+  MessageSquareText,
+  Minimize,
+  X,
+} from "lucide-react";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -29,20 +37,12 @@ import { useTrackReadingHistory } from "#/lib/use-track-reading-history";
 import { documentLinkParams, publicationLinkParams } from "../reader/format";
 import { applyMarkReadOptimisticUpdate } from "../reader/read-optimistic";
 import { ButtonLink, IconButtonLink } from "../router-links";
+import { ComicPageNote } from "./comic-page-note";
+import { ICON_SIZE, ICON_STROKE } from "./theater-palette";
+import { theaterColor } from "./theater.stylex";
 import { issueAtPage, pageOfIssue, useComicPages } from "./use-comic-pages";
+import { useFullscreen } from "./use-fullscreen";
 import { usePagePreload } from "./use-page-preload";
-
-/**
- * The theater is one fixed look in both colour schemes: art is the whole point,
- * and a page of comic reads against near-black whatever the rest of the app is
- * doing. Same reasoning (and the same shape of literal) as the design system's
- * lightbox, which is the other surface that exists to show one image.
- */
-const THEATER_BACKDROP = "light-dark(rgb(9, 8, 10), rgb(4, 4, 6))";
-const THEATER_CHROME = "rgba(255, 255, 255, 0.62)";
-const THEATER_CHROME_STRONG = "rgba(255, 255, 255, 0.92)";
-const THEATER_RULE = "rgba(255, 255, 255, 0.14)";
-const THEATER_SURFACE = "rgba(255, 255, 255, 0.08)";
 
 /**
  * The bars float over the art now, so they carry their own legibility: a scrim
@@ -79,13 +79,10 @@ const CHROME_IDLE_MS = 2600;
  */
 const ZOOMED_SCALE = 1.01;
 
-const ICON_SIZE = 18;
-const ICON_STROKE = 1.75;
-
 const styles = stylex.create({
   theater: {
     inset: 0,
-    backgroundColor: THEATER_BACKDROP,
+    backgroundColor: theaterColor.backdrop,
     // `dvh`, so collapsing mobile browser chrome doesn't crop the page.
     height: "100dvh",
     position: "fixed",
@@ -164,13 +161,16 @@ const styles = stylex.create({
   chromeControl: {
     backgroundColor: {
       default: "transparent",
-      [HOVER_CAPABLE]: { default: "transparent", ":hover": THEATER_SURFACE },
+      [HOVER_CAPABLE]: {
+        default: "transparent",
+        ":hover": theaterColor.surface,
+      },
       ":is([data-disabled])": "transparent",
     },
-    color: THEATER_CHROME_STRONG,
+    color: theaterColor.chromeStrong,
     flexShrink: 0,
     opacity: { default: 1, ":is([data-disabled])": 0.35 },
-    borderColor: THEATER_RULE,
+    borderColor: theaterColor.rule,
     boxShadow: "none",
   },
   titles: {
@@ -185,7 +185,7 @@ const styles = stylex.create({
     rowGap: gap.xs,
   },
   kicker: {
-    color: THEATER_CHROME,
+    color: theaterColor.chrome,
     fontFamily: fontFamily.sans,
     fontSize: "0.65rem",
     fontWeight: fontWeight.medium,
@@ -199,7 +199,7 @@ const styles = stylex.create({
     whiteSpace: "nowrap",
   },
   title: {
-    color: THEATER_CHROME_STRONG,
+    color: theaterColor.chromeStrong,
     fontFamily: fontFamily.serif,
     fontSize: fontSize.base,
     fontWeight: fontWeight.semibold,
@@ -282,7 +282,7 @@ const styles = stylex.create({
     width: "auto",
   },
   counter: {
-    color: THEATER_CHROME,
+    color: theaterColor.chrome,
     fontFamily: fontFamily.sans,
     fontSize: fontSize.xs,
     fontVariantNumeric: "tabular-nums",
@@ -305,7 +305,7 @@ const styles = stylex.create({
     width: "100%",
   },
   endKicker: {
-    color: THEATER_CHROME,
+    color: theaterColor.chrome,
     fontFamily: fontFamily.sans,
     fontSize: "0.68rem",
     fontWeight: fontWeight.medium,
@@ -313,7 +313,7 @@ const styles = stylex.create({
     textTransform: "uppercase",
   },
   endTitle: {
-    color: THEATER_CHROME_STRONG,
+    color: theaterColor.chromeStrong,
     fontFamily: fontFamily.serif,
     fontSize: fontSize["2xl"],
     fontWeight: fontWeight.semibold,
@@ -321,7 +321,7 @@ const styles = stylex.create({
     unicodeBidi: "isolate",
   },
   endDek: {
-    color: THEATER_CHROME,
+    color: theaterColor.chrome,
     fontFamily: fontFamily.serif,
     fontSize: fontSize.base,
     lineHeight: lineHeight.sm,
@@ -336,7 +336,7 @@ const styles = stylex.create({
   },
   pagePlaceholder: {
     alignItems: "center",
-    color: THEATER_CHROME,
+    color: theaterColor.chrome,
     display: "flex",
     fontFamily: fontFamily.sans,
     fontSize: fontSize.sm,
@@ -345,7 +345,7 @@ const styles = stylex.create({
     width: "100%",
   },
   emptyNote: {
-    color: THEATER_CHROME,
+    color: theaterColor.chrome,
     fontFamily: fontFamily.serif,
     fontSize: fontSize.lg,
     fontStyle: "italic",
@@ -508,6 +508,28 @@ export function ComicReader({
     markRead(issueUri);
   }, [issueUri, markRead, publicationUri, queryClient, signedIn, trackReading]);
 
+  // Full screen is asked for on the theater rather than the document, so the
+  // fixed backdrop is what fills the screen and every control goes with it.
+  const theaterRef = useRef<HTMLDivElement>(null);
+  const {
+    supported: fullscreenSupported,
+    active: fullscreenActive,
+    toggle: toggleFullscreen,
+  } = useFullscreen(theaterRef);
+
+  // The writing this page published with, if it published any. It travels on
+  // the page itself, so a page still loading simply has no note yet — which
+  // reads the same as a page that never had one, and both leave the control
+  // disabled rather than making it appear and vanish while the reader pages.
+  const note = current?.note ?? null;
+  const [noteOpen, setNoteOpen] = useState(false);
+
+  // A note belongs to the page it was written about, so it closes when the
+  // reader turns away from it rather than following them through the comic.
+  useEffect(() => {
+    setNoteOpen(false);
+  }, [issueUri]);
+
   // The chrome shows itself, then steps aside. A comic is read by looking at
   // it, and on a phone two permanent bars are the loudest thing on screen — so
   // they introduce the reader's controls once and then leave, and the middle of
@@ -517,6 +539,15 @@ export function ComicReader({
   const [chromeHeld, setChromeHeld] = useState(false);
   const visibleRef = useRef(true);
   const activityRef = useRef(0);
+
+  // Stepping aside waits for the reader to start reading. A comic that has just
+  // opened is a page nobody has turned yet: the bars are the introduction — what
+  // this is, where they are in it, how to leave — and a countdown running under
+  // that introduction takes it away from anyone who reads it at their own pace,
+  // or who set the comic down for a moment before starting. The first page turn
+  // is the reader saying they have the idea, and only then does the idle window
+  // start running.
+  const [hasPaged, setHasPaged] = useState(false);
 
   const setChrome = useCallback((next: boolean) => {
     visibleRef.current = next;
@@ -538,10 +569,13 @@ export function ComicReader({
     setChrome(!visibleRef.current);
   }, [noteActivity, setChrome]);
 
-  // Nothing to get out of the way of until there is a page to read: the loading
-  // state, the empty note and the back cover are all things the reader is meant
-  // to act on, so the chrome stays put for them.
-  const chromeCanRest = totalPages > 0 && !isSpinePending && !atEnd;
+  // Nothing to get out of the way of until there is a page to read *and* a
+  // reader turning them: the loading state, the empty note and the back cover
+  // are all things the reader is meant to act on, an open note would fade the
+  // bars out under a translucent scrim only to bring them back the moment it
+  // closes, and a comic nobody has paged through yet is still being introduced.
+  const chromeCanRest =
+    hasPaged && totalPages > 0 && !isSpinePending && !atEnd && !noteOpen;
 
   useEffect(() => {
     if (!chromeVisible || chromeHeld || !chromeCanRest) return;
@@ -577,6 +611,11 @@ export function ComicReader({
       // A page turn is not a request for the chrome back — but if it is already
       // out, tapping through pages shouldn't make it vanish mid-tap.
       noteActivity();
+      // ...and it is what starts the chrome's idle window, whether the turn came
+      // from a swipe, a tap zone, a footer button or a key. Only a turn that
+      // actually moves: this sits past the early return, so pressing previous on
+      // page one doesn't count as reading the comic.
+      setHasPaged(true);
       onPageChange(clamped + 1);
     },
     [index, lastIndex, noteActivity, onPageChange],
@@ -588,6 +627,10 @@ export function ComicReader({
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.metaKey || event.ctrlKey || event.altKey) return;
+      // The note owns the keyboard while it is up — paging the comic behind it
+      // would move a page the reader can't see. Escape is the dialog's own
+      // (react-aria closes on it), which is why nothing here handles it.
+      if (noteOpen) return;
       switch (event.key) {
         // Hidden chrome is out of the tab order, so reaching for it has to put
         // it back. Not prevented: this Tab still moves focus, and the next one
@@ -619,6 +662,17 @@ export function ComicReader({
           goTo(0);
           break;
         }
+        // The shortcut every video player already taught readers. Escape is the
+        // way back out, and the browser owns that one — hence no case for it.
+        case "f":
+        case "F": {
+          event.preventDefault();
+          // The screen is about to change shape under them, so the bars come
+          // back to say what happened rather than leaving it to be guessed.
+          revealChrome();
+          toggleFullscreen();
+          break;
+        }
         default: {
           break;
         }
@@ -626,7 +680,15 @@ export function ComicReader({
     };
     globalThis.addEventListener("keydown", onKeyDown);
     return () => globalThis.removeEventListener("keydown", onKeyDown);
-  }, [goNext, goPrevious, goTo, lastIndex, revealChrome]);
+  }, [
+    goNext,
+    goPrevious,
+    goTo,
+    lastIndex,
+    noteOpen,
+    revealChrome,
+    toggleFullscreen,
+  ]);
 
   // A mouse has no equivalent of the middle-third tap, so moving it is what
   // brings the chrome back — the same bargain a video player makes. Touch moves
@@ -731,7 +793,11 @@ export function ComicReader({
   const chromeHidden = !chromeVisible;
 
   return (
-    <div {...stylex.props(styles.theater)} onPointerMove={onPointerMove}>
+    <div
+      ref={theaterRef}
+      {...stylex.props(styles.theater)}
+      onPointerMove={onPointerMove}
+    >
       <div
         {...stylex.props(styles.stage, zoomed && styles.stageZoomed)}
         onPointerCancel={onPointerCancel}
@@ -854,6 +920,25 @@ export function ComicReader({
             </div>
           </div>
 
+          {/* Beside the article link, because they answer the same question at
+              different depths: the note is the words this page came with, the
+              link is the whole post they came from. Disabled rather than
+              absent, so the bar doesn't reshuffle every time a page with a note
+              turns into one without. */}
+          <IconButton
+            variant="tertiary"
+            aria-label={t`Read the note with this page`}
+            isDisabled={note == null}
+            onPress={() => setNoteOpen(true)}
+            style={styles.chromeControl}
+          >
+            <MessageSquareText
+              aria-hidden
+              size={ICON_SIZE}
+              strokeWidth={ICON_STROKE}
+            />
+          </IconButton>
+
           {notesParams ? (
             <IconButtonLink
               variant="tertiary"
@@ -869,6 +954,40 @@ export function ComicReader({
                 strokeWidth={ICON_STROKE}
               />
             </IconButtonLink>
+          ) : null}
+
+          {/* Last in the bar, where a player puts it, and only where the
+              browser will actually do it. On iPhone it never will — iOS
+              reserves full screen for `<video>`, and the WebKit bug for element
+              full screen (206854) has sat open since 2020 — so the button is
+              dropped there rather than left inert: a press that does nothing
+              reads as a broken reader, not as a platform limit. There the
+              home-screen install is the real full screen, and the theater is
+              already built for that window. Nothing here is iPhone-specific:
+              when Safari ships it, the flag flips and the button appears. */}
+          {fullscreenSupported ? (
+            <IconButton
+              variant="tertiary"
+              aria-label={
+                fullscreenActive ? t`Exit full screen` : t`Enter full screen`
+              }
+              onPress={toggleFullscreen}
+              style={styles.chromeControl}
+            >
+              {fullscreenActive ? (
+                <Minimize
+                  aria-hidden
+                  size={ICON_SIZE}
+                  strokeWidth={ICON_STROKE}
+                />
+              ) : (
+                <Maximize
+                  aria-hidden
+                  size={ICON_SIZE}
+                  strokeWidth={ICON_STROKE}
+                />
+              )}
+            </IconButton>
           ) : null}
         </div>
 
@@ -919,6 +1038,17 @@ export function ComicReader({
           </div>
         ) : null}
       </div>
+
+      {/* Rendered last so it lands over the chrome as well as the art, and
+          portalled into the theater above so full screen keeps it on screen. */}
+      <ComicPageNote
+        note={note}
+        issueTitle={currentIssue?.title ?? publicationName ?? ""}
+        issueUri={issueUri}
+        isOpen={noteOpen}
+        onOpenChange={setNoteOpen}
+        container={theaterRef}
+      />
     </div>
   );
 }

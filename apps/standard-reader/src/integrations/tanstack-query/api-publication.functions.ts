@@ -17,6 +17,7 @@ import {
   readArchiveOrderOverride,
   withArchiveOrderOverride,
 } from "#/lib/publication/archive-order";
+import { needsSerialResolution } from "#/lib/publication/serial";
 import type { CodeHighlightsByScheme } from "#/lib/theme";
 import {
   getReaderContextForRequest,
@@ -646,12 +647,20 @@ const getArticle = createServerFn({ method: "GET" })
           },
         );
 
-        // A publication indexed before `prev_next_direction` existed carries no
+        // A publication whose serial columns aren't resolved yet carries no
         // serial metadata until something looks. Back it in here as well as on
         // the publication page, so a reader who lands straight on a comic issue
         // from a shared link still gets the comic reader rather than a column of
-        // stacked pages. One PDS read per publication, ever.
-        if (detail?.publication && sourceRow.pubPrevNextDirection == null) {
+        // stacked pages — this route's redirect into it reads `serial.kind`,
+        // which is `"book"` for a serial the sweep hasn't classified. One PDS
+        // read per publication, ever.
+        if (
+          detail?.publication &&
+          needsSerialResolution(
+            sourceRow.pubPrevNextDirection,
+            sourceRow.pubSerialKind,
+          )
+        ) {
           detail.publication = {
             ...detail.publication,
             serial: await ensurePublicationSerial(

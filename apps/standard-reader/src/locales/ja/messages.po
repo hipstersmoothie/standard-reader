@@ -933,6 +933,10 @@ msgstr ""
 msgid "Nothing saved yet"
 msgstr "まだ何も保存されていません"
 
+#: src/components/comic/comic-page-note.tsx
+msgid "Read the full post"
+msgstr ""
+
 #: src/components/user-settings-view.tsx
 msgid "Turn on to choose which items appear in the sidebar. Subscriptions and your lists always stay."
 msgstr ""
@@ -2659,6 +2663,10 @@ msgstr "完。"
 msgid "We couldn't find that author."
 msgstr "その著者は見つかりませんでした。"
 
+#: src/components/comic/comic-reader.tsx
+msgid "Read the note with this page"
+msgstr ""
+
 #: src/components/guide/pages/extension-guide-page.tsx
 msgid "You come across something worth reading in the middle of doing something else. Without the extension that means copying a link and finding somewhere to put it. With it, saving is one click, wherever you are."
 msgstr ""
@@ -3313,6 +3321,10 @@ msgstr ""
 #~ msgid "Publishing guide"
 #~ msgstr "公開ガイド"
 
+#: src/components/comic/comic-reader.tsx
+msgid "Exit full screen"
+msgstr ""
+
 #: src/components/labelers-settings-view.tsx
 msgid "Search by name, handle, or label"
 msgstr ""
@@ -3681,6 +3693,10 @@ msgstr "「読み上げ」ボタンで、どの記事もデバイス上で音声
 #. placeholder {0}: next.title
 #: src/components/reader/series-up-next.tsx
 msgid "Read the next instalment: {0}"
+msgstr ""
+
+#: src/components/comic/comic-page-note.tsx
+msgid "Note for {issueTitle}"
 msgstr ""
 
 #: src/components/reader/atstore-review-prompt.tsx
@@ -5056,6 +5072,10 @@ msgstr ""
 #: src/routes/_layout.index.tsx
 msgid "Your reading room"
 msgstr "あなたの読書室"
+
+#: src/components/comic/comic-reader.tsx
+msgid "Enter full screen"
+msgstr ""
 
 #: src/routes/_layout.index.tsx
 msgid "Fresh"
@@ -6930,6 +6950,10 @@ msgstr "この記事をおすすめする"
 #: src/components/reader/about-view.tsx
 msgid "Stop"
 msgstr "停止"
+
+#: src/components/comic/comic-page-note.tsx
+msgid "Close the note"
+msgstr ""
 
 #: src/components/guide/pages/your-data-guide-page.tsx
 #: src/components/user-settings-view.tsx
