@@ -83,29 +83,44 @@ export const COMIC_PAGE_MAX_TEXT_LENGTH = 4000;
 /** Share of sampled posts that must read as comic pages to call it a comic. */
 export const COMIC_PAGE_SHARE = 0.6;
 
+/** One sampled post, as the classifier reads it. */
+export interface SerialSampleRow {
+  did: string;
+  title: string;
+  contentJson: unknown;
+  contentFormat: string | null;
+  textLength: number;
+}
+
+/** What a sample says about a publication, before anything is written down. */
+export interface SerialSampleVerdict {
+  /** Posts examined — up to {@link SERIAL_SAMPLE_SIZE}, newest first. */
+  sampled: number;
+  /** Sampled posts that read as a page of comic. */
+  comicPages: number;
+  /** `comicPages / sampled`, the number {@link COMIC_PAGE_SHARE} is tested against. */
+  share: number;
+  /** Null when there was nothing to judge. */
+  kind: SerialKind | null;
+}
+
 /**
- * Classify one serial publication as a comic or a book from its posts, and
- * persist the answer on the row.
+ * The newest posts of a publication, as the classifier needs them.
  *
- * A post whose body renders at least one image and carries only a short note of
- * prose is a page of comic; a post that is mostly writing is a chapter. Sampled
- * newest-first: a long-running serial's current form is what a reader arriving
- * today will page through. Returns null when the publication has no posts yet —
- * there is nothing to judge, and the next sweep will try again.
- *
- * Shared by the hourly sweep (`recomputeSerialKinds`) and the on-demand path
- * below, so a publication can't be classified two different ways depending on
- * which one got to it first.
+ * Sampled newest-first: a long-running serial's current form is what a reader
+ * arriving today will page through.
  */
-export async function deriveSerialKind(
+export async function selectSerialSample(
   db: Db,
   schema: Schema,
   publicationUri: string,
-): Promise<SerialKind | null> {
+  limit: number = SERIAL_SAMPLE_SIZE,
+): Promise<Array<SerialSampleRow>> {
   const d = schema.documents;
-  const sample = await db
+  return await db
     .select({
       did: d.did,
+      title: d.title,
       contentJson: d.contentJson,
       contentFormat: d.contentFormat,
       textLength:
@@ -114,9 +129,26 @@ export async function deriveSerialKind(
     .from(d)
     .where(and(eq(d.publicationUri, publicationUri), eq(d.deleted, false)))
     .orderBy(sql`${d.publishedAt} desc nulls last`)
-    .limit(SERIAL_SAMPLE_SIZE);
+    .limit(limit);
+}
 
-  if (sample.length === 0) return null;
+/**
+ * Judge a sample: comic, book, or nothing to say.
+ *
+ * A post whose body renders at least one image and carries only a short note of
+ * prose is a page of comic; a post that is mostly writing is a chapter.
+ *
+ * Pure, and separate from the write below, so the scan script
+ * (`scripts/scan-comic-publications.ts`) can ask the same question of any
+ * publication without changing it — one definition of "this is a comic",
+ * whoever is asking.
+ */
+export function classifySerialSample(
+  sample: Array<SerialSampleRow>,
+): SerialSampleVerdict {
+  if (sample.length === 0) {
+    return { sampled: 0, comicPages: 0, share: 0, kind: null };
+  }
 
   const comicPages = sample.filter((row) => {
     if (row.textLength > COMIC_PAGE_MAX_TEXT_LENGTH) return false;
@@ -129,8 +161,34 @@ export async function deriveSerialKind(
     );
   }).length;
 
-  const kind: SerialKind =
-    comicPages / sample.length >= COMIC_PAGE_SHARE ? "comic" : "book";
+  const share = comicPages / sample.length;
+  return {
+    sampled: sample.length,
+    comicPages,
+    share,
+    kind: share >= COMIC_PAGE_SHARE ? "comic" : "book",
+  };
+}
+
+/**
+ * Classify one serial publication as a comic or a book from its posts, and
+ * persist the answer on the row.
+ *
+ * Returns null when the publication has no posts yet — there is nothing to
+ * judge, and the next sweep will try again.
+ *
+ * Shared by the hourly sweep (`recomputeSerialKinds`) and the on-demand path
+ * below, so a publication can't be classified two different ways depending on
+ * which one got to it first.
+ */
+export async function deriveSerialKind(
+  db: Db,
+  schema: Schema,
+  publicationUri: string,
+): Promise<SerialKind | null> {
+  const sample = await selectSerialSample(db, schema, publicationUri);
+  const { kind } = classifySerialSample(sample);
+  if (!kind) return null;
 
   await db
     .update(schema.publications)

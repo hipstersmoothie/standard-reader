@@ -610,6 +610,14 @@ const tapChannel = startTapChannel(
 const docsTapChannel = ingestConfig.tapDocsApiUrl
   ? startTapChannel(ingestConfig.tapDocsApiUrl)
   : null;
+// Bridged repos (Bridgy Fed's `*.brid.gy` mirrors) stream on their own tap
+// instance. Each channel carries its own in-flight budget, so bridge traffic
+// can't occupy the slots publisher and reader events need — and because the
+// instance is separate, a bulk bridge backfill queues behind its own resyncer
+// instead of everyone else's.
+const bridgeTapChannel = ingestConfig.tapBridgeApiUrl
+  ? startTapChannel(ingestConfig.tapBridgeApiUrl)
+  : null;
 const pendingTrackedReconcile = startPendingTrackedReconcile(
   reconcileTrackedWithBackfill,
 );
@@ -626,6 +634,7 @@ for (const signal of ["SIGINT", "SIGTERM"] as const) {
       labelerDiscovery.stop();
       await tapChannel.destroy();
       await docsTapChannel?.destroy();
+      await bridgeTapChannel?.destroy();
       const { flushTelemetry } = await import("../observability/log.ts");
       await flushTelemetry();
       process.exit(0);

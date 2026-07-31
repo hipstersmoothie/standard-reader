@@ -171,6 +171,28 @@ Check items off as they land.
 
 ## 1. Data ingestion — tap → Neon
 
+- [x] **Bridged repos on their own tap** (2026-07-31). Bridgy Fed began publishing
+      `site.standard.document` for every site it mirrors; ~969k documents landed in one day
+      (99.98% of that day's inserts) across 909 `*.brid.gy` repos, and the backfill saturated
+      tap's resyncer and the ingest channels (`inflight` pinned, ack timeouts, outbox retry
+      storm). Added a `tap-bridge` Railway service (own volume, own resync queue, **no signal
+      collection** — it only carries repos we add). `ensureTracked` /
+      `reconcilePendingTrackedRepos` route `*.brid.gy` there via `TAP_BRIDGE_API_URL`; with no
+      lane configured the bulk `*.web.brid.gy` bridge is turned away instead. See
+      `#/lib/atproto/bridged-repo`. Isolation is per-tap and per-channel only — the ingest
+      process and Neon pool are shared.
+  - [ ] Optional next step: a dedicated `ingest-bridge` worker for full process/pool isolation.
+        Needs a channel-selection guard — `service.ts` currently always starts the main channel.
+- [x] **Self-healing reconcile** (2026-07-31). tap can advance past a commit whose record never
+      reaches the read-model, silently and without dead-lettering (confirmed in prod: a live post
+      was missing while tap's cursor was already past it). `repairRepoIfAdvanced` compares each
+      repo's `getLatestCommit` against `tracked_repos.last_seen_rev` and re-applies what's
+      missing, gated by head-rev then CID so unchanged repos cost one request. Now covers **every**
+      tracked repo — readers previously had no safety net, which is why "mark all as read" could
+      revert.
+  - [ ] Remove the `IS NULL` latch in `backfillSerialPublicationRecords` — it writes
+        `prev_next_direction` without touching `cid`, so a bad read can never be re-derived and
+        the CID gate cannot detect it (this is what left a comic reading as a blog).
 - [x] Stand up the **tap instance** to backfill all `standard.site` data from the network
       (`tap/` — docker-compose for `bluesky-social/indigo` cmd/tap, signal collection
       `site.standard.publication`, filters `site.standard.*` + `app.bsky.actor.profile`, webhook

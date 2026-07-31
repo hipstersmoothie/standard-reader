@@ -36,6 +36,7 @@
     "backfill:serial": "pnpm exec tsx --env-file=.env scripts/backfill-serial-publications.ts",
     "scan:unsupported-blocks": "pnpm exec tsx --env-file=.env scripts/scan-unsupported-blocks.ts",
     "scan:discussion-sources": "pnpm exec tsx --env-file=.env scripts/scan-discussion-sources.ts",
+    "scan:comics": "pnpm exec tsx --env-file=.env scripts/scan-comic-publications.ts",
     "icons:generate": "node scripts/generate-social-icon.mjs",
     "honeycomb:seed": "node --env-file=.env scripts/honeycomb-seed.mjs",
     "typecheck": "tsc --noEmit",

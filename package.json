@@ -50,6 +50,7 @@
     "backfill:serial": "pnpm --filter standard-reader backfill:serial",
     "scan:unsupported-blocks": "pnpm --filter standard-reader scan:unsupported-blocks",
     "scan:discussion-sources": "pnpm --filter standard-reader scan:discussion-sources",
+    "scan:comics": "pnpm --filter standard-reader scan:comics",
     "icons:generate": "pnpm --filter standard-reader icons:generate",
     "honeycomb:seed": "pnpm --filter standard-reader honeycomb:seed",
     "typecheck": "pnpm -r --if-present typecheck",

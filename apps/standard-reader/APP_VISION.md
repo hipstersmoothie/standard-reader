@@ -1067,11 +1067,35 @@ AT Proto network (standard.site publications, profiles, follows)
   `site.standard.publication` to discover publishers; a second `tap-labeler` instance signals on
   `app.standard-reader.labeler.service`; and a third `tap-docs` instance signals on
   `site.standard.document` so repos that publish "loose documents" (no publication record — e.g.
-  Leaflet-hosted) get tracked + backfilled. A separate ingest worker (`pnpm ingest:dev`) connects
-  to each tap's acknowledged WebSocket channel, maps records to rows idempotently, and expands
-  tap's tracked-repo set along the graph via `/repos/add`. tap + the worker are the single
-  ingestion path for both backfill and live sync (locally and in prod); the product app server
-  does not process the firehose.
+  Leaflet-hosted) get tracked + backfilled. A fourth **`tap-bridge`** instance carries bridged
+  repos and signals on nothing — see "Bridged repos" below. A separate ingest worker
+  (`pnpm ingest:dev`) connects to each tap's acknowledged WebSocket channel, maps records to rows
+  idempotently, and expands tap's tracked-repo set along the graph via `/repos/add`. tap + the
+  worker are the single ingestion path for both backfill and live sync (locally and in prod); the
+  product app server does not process the firehose.
+- **Bridged repos have their own lane.** [Bridgy Fed](https://fed.brid.gy) mirrors the wider web
+  into AT Proto: `*.web.brid.gy` is a site Bridgy discovered (tens of thousands of them, thousands
+  of posts each, no publisher intent), and `*.ap.brid.gy` is an ActivityPub blog whose author chose
+  to bridge. Both are welcome, but pointing that bulk at the primary tap put every publisher and
+  reader behind bridge backfills _inside tap's resyncer queue_ — and that queue is per tap
+  instance. So `ensureTracked` routes any `*.brid.gy` repo to `TAP_BRIDGE_API_URL`
+  (`#/lib/atproto/bridged-repo`, `#/server/ingest/tap-client`); a bridge backfill can then only
+  delay other bridged repos. With no bridge lane configured the bulk web bridge is turned away
+  instead — configuring the isolated tap is what turns Bridgy fully on, rather than a second
+  switch. Isolation is per-tap and per-channel (each channel has its own in-flight budget); the
+  ingest **process and Neon pool are still shared**, so a dedicated bridge worker is the next step
+  if write pressure matters.
+- **The read-model repairs itself against the PDS.** tap can advance its cursor past a commit whose
+  record never reaches us — no error, no dead letter, and "no events" is indistinguishable from "no
+  changes" from the read-model's side. So the reconcile sweep no longer trusts the stream: for
+  every tracked repo it compares `com.atproto.sync.getLatestCommit` against
+  `tracked_repos.last_seen_rev` and re-applies anything missing (`repairRepoIfAdvanced` in
+  `#/server/ingest/repo-sync`). Two gates keep it affordable — an unchanged head costs one request
+  and stops, and only records whose CID differs from the mirrored row are written. Repaired records
+  replay through `handleRecord`, the same dispatcher tap feeds, so a repaired row and a live one
+  are written by identical code. The sweep covers **every** tracked repo, not just publishers:
+  restricting it to `publication`/`document` is what once left readers' reads and subscriptions
+  with no safety net at all.
 - **Read-model:** **Neon Postgres** in dev/prod (a local Postgres for testing — the DB client in
   `src/db/index.ts` picks the driver from the connection string), managed with **Drizzle**
   (`src/db/schema/`), powers feeds, the

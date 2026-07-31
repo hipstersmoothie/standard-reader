@@ -47,7 +47,18 @@ import {
 
 const STREAM_ID = "tap";
 
-async function handleRecord(payload: TapRecordPayload): Promise<void> {
+/**
+ * Apply one record event to the read-model.
+ *
+ * Exported because the PDS reconcile sweep replays records through this very
+ * function (`#/server/ingest/repo-sync`). A repo that tap stopped streaming has
+ * to be repaired from its PDS, and the repaired rows must be indistinguishable
+ * from live-ingested ones — routing both through one dispatcher is what
+ * guarantees that. A second, parallel "backfill" mapping would be free to drift
+ * from this one, and the drift would only ever show up as a subtly wrong row in
+ * whichever collection someone forgot to keep in step.
+ */
+export async function handleRecord(payload: TapRecordPayload): Promise<void> {
   const { did, collection, rkey, action, cid, record } = payload;
   const uri = buildAtUri(did, collection, rkey);
 

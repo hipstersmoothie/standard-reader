@@ -1,7 +1,12 @@
 import { eq, inArray, isNull, sql } from "drizzle-orm";
 
 import { db } from "../../db/index.ts";
-import { trackedRepos } from "../../db/schema.ts";
+import { profiles, trackedRepos } from "../../db/schema.ts";
+import {
+  isBridgedHandle,
+  isExcludedBridgeHandle,
+} from "../../lib/atproto/bridged-repo.ts";
+import { getCachedIdentity, resolveIdentity } from "../atproto/identity.ts";
 import { logEvent } from "../observability/log.ts";
 import { ingestConfig } from "./config.ts";
 
@@ -30,11 +35,17 @@ function basicAuthHeader(): Record<string, string> {
 }
 
 /**
- * POST a batch of DIDs to tap's `/repos/add`, triggering backfill. No-op when
- * tap's API URL isn't configured (static seeding mode).
+ * POST a batch of DIDs to a tap's `/repos/add`, triggering backfill. No-op when
+ * that tap's API URL isn't configured (static seeding mode).
+ *
+ * `apiUrl` defaults to the main tap; the bridge lane passes its own so bulk
+ * bridged repos never enter the same resync queue as publishers and readers
+ * (see {@link tapUrlForRepo}).
  */
-async function tapAddRepos(dids: Array<string>): Promise<boolean> {
-  const apiUrl = ingestConfig.tapApiUrl;
+async function tapAddRepos(
+  dids: Array<string>,
+  apiUrl: string | null = ingestConfig.tapApiUrl,
+): Promise<boolean> {
   if (!apiUrl || dids.length === 0) {
     return false;
   }
@@ -71,6 +82,40 @@ async function markAddedToTap(dids: Array<string>): Promise<void> {
 }
 
 /**
+ * This repo's handle, for lane routing.
+ *
+ * The cached identity answers first, and for tap-delivered work it almost
+ * always can: an identity event primes the handle before any record from that
+ * repo is applied. Only a genuinely unseen DID pays the DID-document lookup,
+ * and that is the same call the repo would need moments later anyway. Null on
+ * failure, which every caller reads as "treat it as an ordinary repo".
+ */
+async function handleForRepo(did: string): Promise<string | null> {
+  const cached = getCachedIdentity(did);
+  if (cached) return cached.handle;
+  const resolved = await resolveIdentity(did).catch(() => null);
+  return resolved?.handle ?? null;
+}
+
+/**
+ * Which tap a repo belongs to: the bridge lane for `*.brid.gy`, the main tap
+ * for everyone else.
+ *
+ * Returns null when the repo has no lane at all — the bulk web bridge with no
+ * `TAP_BRIDGE_API_URL` configured — and the caller then leaves it untracked.
+ */
+function tapUrlForRepo(handle: string | null): string | null {
+  const bridgeUrl = ingestConfig.tapBridgeApiUrl;
+  if (isExcludedBridgeHandle(handle, { hasBridgeLane: bridgeUrl != null })) {
+    return null;
+  }
+  if (bridgeUrl && isBridgedHandle(handle)) {
+    return bridgeUrl;
+  }
+  return ingestConfig.tapApiUrl;
+}
+
+/**
  * Ensure a repo is in our tracking set and (best-effort) registered with tap.
  * Discovery is idempotent: we upsert the `tracked_repos` row, then call tap
  * `/repos/add` when dynamic tracking is enabled and the repo has not yet been
@@ -85,6 +130,12 @@ export async function ensureTracked(
   did: string,
   reason: TrackReason,
 ): Promise<void> {
+  const tapUrl = tapUrlForRepo(await handleForRepo(did));
+  if (tapUrl == null) {
+    // A bulk bridge repo with no isolated lane to put it in.
+    return;
+  }
+
   const inserted = await db
     .insert(trackedRepos)
     .values({ did, reason })
@@ -96,7 +147,7 @@ export async function ensureTracked(
   }
 
   if (inserted.length > 0) {
-    const ok = await tapAddRepos([did]);
+    const ok = await tapAddRepos([did], tapUrl);
     if (ok) {
       await markAddedToTap([did]);
     }
@@ -113,7 +164,7 @@ export async function ensureTracked(
     return;
   }
 
-  const ok = await tapAddRepos([did]);
+  const ok = await tapAddRepos([did], tapUrl);
   if (ok) {
     await markAddedToTap([did]);
   }
@@ -123,6 +174,13 @@ export async function ensureTracked(
  * Register every repo in `tracked_repos` that tap never acknowledged. The web
  * app may discover reader repos without `TAP_API_URL` configured; the ingest
  * worker runs this on startup and on a timer so those repos still backfill.
+ *
+ * Routed per lane, exactly like {@link ensureTracked} — this sweep sees rows
+ * that predate the current routing, so handing them all to the main tap would
+ * quietly undo the split (and, with no bridge lane configured, re-subscribe to
+ * the very repos that were turned away). The mirrored `profiles.handle` decides
+ * the lane, joined here rather than resolved per DID so a long pending list
+ * stays one query.
  */
 export async function reconcilePendingTrackedRepos(): Promise<{
   added: number;
@@ -134,23 +192,37 @@ export async function reconcilePendingTrackedRepos(): Promise<{
   }
 
   const pending = await db
-    .select({ did: trackedRepos.did })
+    .select({ did: trackedRepos.did, handle: profiles.handle })
     .from(trackedRepos)
+    .leftJoin(profiles, eq(profiles.did, trackedRepos.did))
     .where(isNull(trackedRepos.addedToTapAt));
 
-  if (pending.length === 0) {
+  // One batch per tap; repos with no lane are dropped rather than added.
+  const byLane = new Map<string, Array<string>>();
+  for (const row of pending) {
+    const tapUrl = tapUrlForRepo(row.handle);
+    if (tapUrl == null) continue;
+    const bucket = byLane.get(tapUrl);
+    if (bucket) bucket.push(row.did);
+    else byLane.set(tapUrl, [row.did]);
+  }
+
+  const dids = [...byLane.values()].flat();
+  if (dids.length === 0) {
     return { added: 0, addedDids: [], attempted: 0 };
   }
 
-  const dids = pending.map((row) => row.did);
   const addedDids: Array<string> = [];
-
-  if (await tapAddRepos(dids)) {
-    await markAddedToTap(dids);
-    addedDids.push(...dids);
-  } else {
-    for (const did of dids) {
-      if (await tapAddRepos([did])) {
+  for (const [tapUrl, laneDids] of byLane) {
+    if (await tapAddRepos(laneDids, tapUrl)) {
+      await markAddedToTap(laneDids);
+      addedDids.push(...laneDids);
+      continue;
+    }
+    // Batch rejected — fall back to one at a time so a single bad DID can't
+    // strand the rest of the lane.
+    for (const did of laneDids) {
+      if (await tapAddRepos([did], tapUrl)) {
         await markAddedToTap([did]);
         addedDids.push(did);
       }
