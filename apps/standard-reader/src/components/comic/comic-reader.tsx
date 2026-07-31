@@ -72,6 +72,13 @@ const SWIPE_THRESHOLD_PX = 44;
 /** How long the chrome sits untouched before it gets out of the art's way. */
 const CHROME_IDLE_MS = 2600;
 
+/**
+ * Visual-viewport scale past which the reader counts as zoomed in. Not `> 1`:
+ * iOS reports a scale a hair off 1 at rest often enough that an exact
+ * comparison flickers.
+ */
+const ZOOMED_SCALE = 1.01;
+
 const ICON_SIZE = 18;
 const ICON_STROKE = 1.75;
 
@@ -106,7 +113,13 @@ const styles = stylex.create({
     flexShrink: 0,
     pointerEvents: "auto",
     transitionDuration: animationDuration.slow,
-    transitionProperty: "opacity, transform, visibility",
+    // `visibility` is deliberately NOT transitioned. A transitioned visibility
+    // change is deferred to the end of the run, while `pointer-events` flips
+    // the instant the class lands — so any transition that stalls (a throttled
+    // or backgrounded tab will do it) strands the bar fully painted and
+    // completely dead, taking the taps meant for the art underneath with it.
+    // Keeping them on the same instant path makes painted-but-dead impossible.
+    transitionProperty: "opacity, transform",
     transitionTimingFunction: animationTimingFunction.easeOut,
     paddingInlineEnd: spacing["3"],
     paddingInlineStart: spacing["3"],
@@ -210,6 +223,18 @@ const styles = stylex.create({
     // can only ever be read at whatever size fits the screen. Horizontal drags
     // are still ours — that is what leaves swipe to us rather than the browser.
     touchAction: "pan-y pinch-zoom",
+  },
+  /**
+   * Zoomed in, the browser gets both axes back. Reserving horizontal drags for
+   * the swipe is what makes paging work at rest, but it also pins a reader who
+   * has pinched into a panel to a single vertical track — they can go up and
+   * down the page and never across it. Swipe already stands down at this scale,
+   * so the reservation is buying nothing. `manipulation` rather than `auto`:
+   * pan and pinch freely, but no double-tap zoom, which on a screen where a tap
+   * turns the page would fire a page turn on the way to magnifying a panel.
+   */
+  stageZoomed: {
+    touchAction: "manipulation",
   },
   page: {
     objectFit: "contain",
@@ -614,6 +639,19 @@ export function ComicReader({
     [revealChrome],
   );
 
+  // Whether the reader has pinched in decides who owns a horizontal drag, and
+  // that has to be settled in CSS before the gesture starts — `touch-action` is
+  // read at touch-down, so it cannot be worked out from the drag itself.
+  const [zoomed, setZoomed] = useState(false);
+  useEffect(() => {
+    const viewport = globalThis.visualViewport;
+    if (!viewport) return;
+    const sync = () => setZoomed(viewport.scale > ZOOMED_SCALE);
+    sync();
+    viewport.addEventListener("resize", sync);
+    return () => viewport.removeEventListener("resize", sync);
+  }, []);
+
   // Swipe is tracked on the stage rather than the whole theater, so a drag that
   // starts on the chrome doesn't flip the page. The tap zones sit on top of the
   // stage and are the real event target, but pointer events bubble, so the
@@ -660,7 +698,7 @@ export function ComicReader({
       // Once the reader has pinched in, a one-finger drag is how they get to
       // the rest of the page. Paging on it would snatch the panel away mid-look;
       // the tap zones and the footer buttons still turn pages while zoomed.
-      if ((globalThis.visualViewport?.scale ?? 1) > 1) return;
+      if ((globalThis.visualViewport?.scale ?? 1) > ZOOMED_SCALE) return;
       const dx = event.clientX - start.x;
       const dy = event.clientY - start.y;
       if (Math.abs(dx) < SWIPE_THRESHOLD_PX || Math.abs(dy) > Math.abs(dx)) {
@@ -695,7 +733,7 @@ export function ComicReader({
   return (
     <div {...stylex.props(styles.theater)} onPointerMove={onPointerMove}>
       <div
-        {...stylex.props(styles.stage)}
+        {...stylex.props(styles.stage, zoomed && styles.stageZoomed)}
         onPointerCancel={onPointerCancel}
         onPointerDown={onPointerDown}
         onPointerUp={onPointerUp}
@@ -742,7 +780,11 @@ export function ComicReader({
               aria-hidden
               tabIndex={-1}
               onClick={() => onZoneTap(goPrevious)}
-              {...stylex.props(styles.zone, styles.zonePrev)}
+              {...stylex.props(
+                styles.zone,
+                styles.zonePrev,
+                zoomed && styles.stageZoomed,
+              )}
             />
             <button
               type="button"
@@ -752,7 +794,11 @@ export function ComicReader({
               aria-hidden
               tabIndex={-1}
               onClick={() => onZoneTap(toggleChrome)}
-              {...stylex.props(styles.zone, styles.zoneChrome)}
+              {...stylex.props(
+                styles.zone,
+                styles.zoneChrome,
+                zoomed && styles.stageZoomed,
+              )}
             />
             <button
               type="button"
@@ -762,7 +808,11 @@ export function ComicReader({
               aria-hidden
               tabIndex={-1}
               onClick={() => onZoneTap(goNext)}
-              {...stylex.props(styles.zone, styles.zoneNext)}
+              {...stylex.props(
+                styles.zone,
+                styles.zoneNext,
+                zoomed && styles.stageZoomed,
+              )}
             />
           </>
         )}
