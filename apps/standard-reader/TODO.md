@@ -900,7 +900,14 @@ Backend/API exists; UI or copy is missing.
       pages under a single absolute page number, so opening the cover walks the entire comic rather
       than stopping at the end of each issue. Pages are the images each body renders
       ([`images.ts`](src/lib/document/images.ts)); keyboard / tap-zone / swipe paging, the page in
-      the URL, each issue marked read as the reader enters it. Loaded in two tiers
+      the URL, each issue marked read as the reader enters it. The **chrome floats over the art and
+      auto-hides**: the bars show themselves on entry, step aside after an idle beat, and come back
+      on a middle-zone tap, a mouse move, or Tab — they stay put for the loading, empty and back-cover
+      states, and pin open under pointer or focus. The stage keeps `touch-action: pan-y pinch-zoom`
+      so a dense page can be pinched into, and **flips to `manipulation` while zoomed** — reserving
+      horizontal drags for the swipe is what makes paging work at rest, but it pins a zoomed reader
+      to a single vertical track, and swipe stands down at that scale anyway (as it does while a
+      second finger is down). Loaded in two tiers
       ([`comic.ts`](src/server/reader/comic.ts)): a **spine** of every issue's title and length (no
       bodies — this is what makes absolute page numbers possible and the counter honest immediately,
       via `documents.body_image_count` derived at ingest and backfilled on demand), plus **chunks**

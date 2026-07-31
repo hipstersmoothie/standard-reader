@@ -3,6 +3,11 @@
 import { Trans, useLingui } from "@lingui/react/macro";
 import { Flex } from "@standard-reader/design-system/flex";
 import { IconButton } from "@standard-reader/design-system/icon-button";
+import {
+  animationDuration,
+  animationTimingFunction,
+} from "@standard-reader/design-system/theme/animations.stylex";
+import { mediaQueries } from "@standard-reader/design-system/theme/media-queries.stylex";
 import { gap } from "@standard-reader/design-system/theme/semantic-spacing.stylex";
 import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
 import {
@@ -16,7 +21,7 @@ import * as stylex from "@stylexjs/stylex";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, FileText, X } from "lucide-react";
 import type { PointerEvent as ReactPointerEvent } from "react";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
 import { useTrackReadingHistory } from "#/lib/use-track-reading-history";
@@ -39,8 +44,40 @@ const THEATER_CHROME_STRONG = "rgba(255, 255, 255, 0.92)";
 const THEATER_RULE = "rgba(255, 255, 255, 0.14)";
 const THEATER_SURFACE = "rgba(255, 255, 255, 0.08)";
 
+/**
+ * The bars float over the art now, so they carry their own legibility: a scrim
+ * that fades out over the bar's own height rather than a rule dividing the
+ * screen into three boxes.
+ *
+ * The top one holds two lines of type over whatever the page happens to be —
+ * often a bright panel — so it sits on a near-solid band and does its fading
+ * lower down, past the text. A single linear ramp left the title swimming.
+ */
+const THEATER_SCRIM_TOP = `linear-gradient(
+  to bottom,
+  rgba(0, 0, 0, 0.94) 0%,
+  rgba(0, 0, 0, 0.88) 40%,
+  rgba(0, 0, 0, 0.55) 70%,
+  rgba(0, 0, 0, 0) 100%
+)`;
+const THEATER_SCRIM_BOTTOM =
+  "linear-gradient(to top, rgba(0, 0, 0, 0.82), rgba(0, 0, 0, 0))";
+
+/** A pointer that can actually hover — not a finger the browser pretends can. */
+const HOVER_CAPABLE = "@media (hover: hover)";
+
 /** Horizontal travel (px) that counts as a swipe rather than a tap. */
 const SWIPE_THRESHOLD_PX = 44;
+
+/** How long the chrome sits untouched before it gets out of the art's way. */
+const CHROME_IDLE_MS = 2600;
+
+/**
+ * Visual-viewport scale past which the reader counts as zoomed in. Not `> 1`:
+ * iOS reports a scale a hair off 1 at rest often enough that an exact
+ * comparison flickers.
+ */
+const ZOOMED_SCALE = 1.01;
 
 const ICON_SIZE = 18;
 const ICON_STROKE = 1.75;
@@ -49,40 +86,85 @@ const styles = stylex.create({
   theater: {
     inset: 0,
     backgroundColor: THEATER_BACKDROP,
-    display: "flex",
-    flexDirection: "column",
     // `dvh`, so collapsing mobile browser chrome doesn't crop the page.
     height: "100dvh",
     position: "fixed",
     width: "100%",
+  },
+  /**
+   * The chrome floats over the art instead of boxing it in, so a page gets the
+   * whole screen — on a phone the two bars were eating the height the art
+   * needed most. The layer itself is inert; only the bars take pointer events,
+   * so a tap between them still lands on the paging zones underneath.
+   */
+  chromeLayer: {
+    inset: 0,
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "space-between",
+    pointerEvents: "none",
+    position: "absolute",
+    zIndex: 2,
   },
   bar: {
     alignItems: "center",
     columnGap: gap["2xl"],
     display: "flex",
     flexShrink: 0,
+    pointerEvents: "auto",
+    transitionDuration: animationDuration.slow,
+    // `visibility` is deliberately NOT transitioned. A transitioned visibility
+    // change is deferred to the end of the run, while `pointer-events` flips
+    // the instant the class lands — so any transition that stalls (a throttled
+    // or backgrounded tab will do it) strands the bar fully painted and
+    // completely dead, taking the taps meant for the art underneath with it.
+    // Keeping them on the same instant path makes painted-but-dead impossible.
+    transitionProperty: "opacity, transform",
+    transitionTimingFunction: animationTimingFunction.easeOut,
     paddingInlineEnd: spacing["3"],
     paddingInlineStart: spacing["3"],
-    paddingBottom: spacing["2"],
-    paddingTop: spacing["2"],
   },
   topBar: {
-    borderBottomColor: THEATER_RULE,
-    borderBottomStyle: "solid",
-    borderBottomWidth: 1,
+    backgroundImage: THEATER_SCRIM_TOP,
+    // The scrim needs room to fall off well below the type, and the top edge
+    // has to clear the notch/status bar in a standalone window.
+    paddingBottom: spacing["12"],
+    paddingTop: `calc(env(safe-area-inset-top, 0px) + ${spacing["3"]})`,
   },
   bottomBar: {
-    borderTopColor: THEATER_RULE,
-    borderTopStyle: "solid",
-    borderTopWidth: 1,
+    backgroundImage: THEATER_SCRIM_BOTTOM,
     justifyContent: "center",
+    paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + ${spacing["3"]})`,
+    paddingTop: spacing["8"],
+  },
+  // Hidden chrome leaves the tab order as well as the screen, and drifts the
+  // short distance a bar would travel rather than sliding fully off — it is
+  // getting out of the way, not exiting.
+  barHidden: {
+    opacity: 0,
+    pointerEvents: "none",
+    visibility: "hidden",
+  },
+  barHiddenTop: {
+    transform: {
+      default: `translateY(calc(${spacing["2"]} * -1))`,
+      [mediaQueries.reducedMotion]: "none",
+    },
+  },
+  barHiddenBottom: {
+    transform: {
+      default: `translateY(${spacing["2"]})`,
+      [mediaQueries.reducedMotion]: "none",
+    },
   },
   // The theater's palette is fixed, so the design-system buttons in its chrome
-  // take these colours instead of the app's UI scale.
+  // take these colours instead of the app's UI scale. The lit state is for real
+  // hover only: on a touch screen `:hover` latches onto whatever was tapped
+  // last and leaves a grey box sitting on the bar until something else is.
   chromeControl: {
     backgroundColor: {
       default: "transparent",
-      ":hover": THEATER_SURFACE,
+      [HOVER_CAPABLE]: { default: "transparent", ":hover": THEATER_SURFACE },
       ":is([data-disabled])": "transparent",
     },
     color: THEATER_CHROME_STRONG,
@@ -131,16 +213,28 @@ const styles = stylex.create({
     whiteSpace: "nowrap",
   },
   stage: {
+    inset: 0,
     alignItems: "center",
     display: "flex",
-    flexBasis: "0%",
-    flexGrow: 1,
-    flexShrink: 1,
     justifyContent: "center",
-    minHeight: 0,
     overflow: "hidden",
-    position: "relative",
-    touchAction: "pan-y",
+    position: "absolute",
+    // `pan-y` alone excludes pinch, which on a phone means a dense page of art
+    // can only ever be read at whatever size fits the screen. Horizontal drags
+    // are still ours — that is what leaves swipe to us rather than the browser.
+    touchAction: "pan-y pinch-zoom",
+  },
+  /**
+   * Zoomed in, the browser gets both axes back. Reserving horizontal drags for
+   * the swipe is what makes paging work at rest, but it also pins a reader who
+   * has pinched into a panel to a single vertical track — they can go up and
+   * down the page and never across it. Swipe already stands down at this scale,
+   * so the reservation is buying nothing. `manipulation` rather than `auto`:
+   * pan and pinch freely, but no double-tap zoom, which on a screen where a tap
+   * turns the page would fire a page turn on the way to magnifying a panel.
+   */
+  stageZoomed: {
+    touchAction: "manipulation",
   },
   page: {
     objectFit: "contain",
@@ -148,11 +242,16 @@ const styles = stylex.create({
     maxHeight: "100%",
     maxWidth: "100%",
   },
-  // Half-width invisible hit areas: the natural way to page through art on a
-  // phone. They are pointer affordances only — the footer buttons are the
-  // accessible, focusable controls, so these stay out of the tab order and take
-  // no focus ring (clicking one otherwise left a ring hanging over the art for
-  // the rest of the session, since arrow keys keep the focus there).
+  // Invisible hit areas: the natural way to page through art on a phone. The
+  // outer edges turn pages and the wide middle calls the chrome back — the only
+  // way back to the controls once they have stepped aside, so it gets the bulk
+  // of the screen and the flippers get the margins a thumb already reaches for.
+  // They are pointer affordances only: the footer buttons are the accessible,
+  // focusable controls, so these stay out of the tab order and take no focus
+  // ring (clicking one otherwise left a ring hanging over the art for the rest
+  // of the session, since arrow keys keep the focus there). They take no tap
+  // highlight either — a grey rectangle flashing across a page of art on every
+  // turn is the browser drawing a button the reader isn't supposed to see.
   zone: {
     outline: "none",
     borderWidth: 0,
@@ -161,13 +260,26 @@ const styles = stylex.create({
     insetBlock: 0,
     padding: spacing["0"],
     position: "absolute",
-    width: "50%",
+    // The zones cover the stage, so they are what a swipe — or a pinch —
+    // actually lands on. Without this they inherit nothing and default to
+    // `auto`, and the browser claims any horizontal drag for itself
+    // (back-navigation, overscroll): it fires `pointercancel` and the page
+    // never turns. `touch-action` does not inherit, so the stage's copy of this
+    // does not cover them.
+    touchAction: "pan-y pinch-zoom",
+    WebkitTapHighlightColor: "transparent",
+    width: "18%",
   },
   zonePrev: {
     insetInlineStart: 0,
   },
   zoneNext: {
     insetInlineEnd: 0,
+  },
+  zoneChrome: {
+    insetInlineEnd: "18%",
+    insetInlineStart: "18%",
+    width: "auto",
   },
   counter: {
     color: THEATER_CHROME,
@@ -185,8 +297,10 @@ const styles = stylex.create({
     overflowY: "auto",
     paddingInlineEnd: spacing["5"],
     paddingInlineStart: spacing["5"],
-    paddingBottom: spacing["8"],
-    paddingTop: spacing["8"],
+    // The chrome sits on top of the stage here rather than beside it, so a card
+    // long enough to scroll has to keep its ends clear of both bars.
+    paddingBottom: spacing["20"],
+    paddingTop: spacing["20"],
     textAlign: "center",
     width: "100%",
   },
@@ -394,13 +508,78 @@ export function ComicReader({
     markRead(issueUri);
   }, [issueUri, markRead, publicationUri, queryClient, signedIn, trackReading]);
 
+  // The chrome shows itself, then steps aside. A comic is read by looking at
+  // it, and on a phone two permanent bars are the loudest thing on screen — so
+  // they introduce the reader's controls once and then leave, and the middle of
+  // the screen calls them back. `visibleRef` mirrors the state so a mouse
+  // moving over an already-visible bar doesn't re-render on every frame.
+  const [chromeVisible, setChromeVisible] = useState(true);
+  const [chromeHeld, setChromeHeld] = useState(false);
+  const visibleRef = useRef(true);
+  const activityRef = useRef(0);
+
+  const setChrome = useCallback((next: boolean) => {
+    visibleRef.current = next;
+    setChromeVisible(next);
+  }, []);
+
+  /** Any sign of life restarts the idle window; only some of it un-hides. */
+  const noteActivity = useCallback(() => {
+    activityRef.current = Date.now();
+  }, []);
+
+  const revealChrome = useCallback(() => {
+    noteActivity();
+    if (!visibleRef.current) setChrome(true);
+  }, [noteActivity, setChrome]);
+
+  const toggleChrome = useCallback(() => {
+    noteActivity();
+    setChrome(!visibleRef.current);
+  }, [noteActivity, setChrome]);
+
+  // Nothing to get out of the way of until there is a page to read: the loading
+  // state, the empty note and the back cover are all things the reader is meant
+  // to act on, so the chrome stays put for them.
+  const chromeCanRest = totalPages > 0 && !isSpinePending && !atEnd;
+
+  useEffect(() => {
+    if (!chromeVisible || chromeHeld || !chromeCanRest) return;
+    let timer: ReturnType<typeof setTimeout>;
+    // Re-arms against the last interaction rather than counting down from the
+    // render, so paging or moving the mouse extends the window without the
+    // effect having to re-run on every event.
+    const arm = () => {
+      const remaining = CHROME_IDLE_MS - (Date.now() - activityRef.current);
+      if (remaining <= 0) {
+        setChrome(false);
+        return;
+      }
+      timer = setTimeout(arm, remaining);
+    };
+    arm();
+    return () => clearTimeout(timer);
+  }, [chromeCanRest, chromeHeld, chromeVisible, setChrome]);
+
+  // Pointer and focus inside the chrome pin it open — a bar must not fade out
+  // from under the cursor resting on it, or from under a keyboard focus ring.
+  // The layer is `pointer-events: none`, so only the bars raise these.
+  const holdChrome = useCallback(() => setChromeHeld(true), []);
+  const releaseChrome = useCallback(() => {
+    noteActivity();
+    setChromeHeld(false);
+  }, [noteActivity]);
+
   const goTo = useCallback(
     (nextIndex: number) => {
       const clamped = Math.min(Math.max(nextIndex, 0), Math.max(lastIndex, 0));
       if (clamped === index) return;
+      // A page turn is not a request for the chrome back — but if it is already
+      // out, tapping through pages shouldn't make it vanish mid-tap.
+      noteActivity();
       onPageChange(clamped + 1);
     },
-    [index, lastIndex, onPageChange],
+    [index, lastIndex, noteActivity, onPageChange],
   );
 
   const goNext = useCallback(() => goTo(index + 1), [goTo, index]);
@@ -410,6 +589,13 @@ export function ComicReader({
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.metaKey || event.ctrlKey || event.altKey) return;
       switch (event.key) {
+        // Hidden chrome is out of the tab order, so reaching for it has to put
+        // it back. Not prevented: this Tab still moves focus, and the next one
+        // lands on the close button.
+        case "Tab": {
+          revealChrome();
+          break;
+        }
         case " ":
         case "ArrowRight":
         case "PageDown": {
@@ -440,76 +626,115 @@ export function ComicReader({
     };
     globalThis.addEventListener("keydown", onKeyDown);
     return () => globalThis.removeEventListener("keydown", onKeyDown);
-  }, [goNext, goPrevious, goTo, lastIndex]);
+  }, [goNext, goPrevious, goTo, lastIndex, revealChrome]);
+
+  // A mouse has no equivalent of the middle-third tap, so moving it is what
+  // brings the chrome back — the same bargain a video player makes. Touch moves
+  // are left alone: a swipe through a page is reading, not reaching for a menu.
+  const onPointerMove = useCallback(
+    (event: ReactPointerEvent) => {
+      if (event.pointerType !== "mouse") return;
+      revealChrome();
+    },
+    [revealChrome],
+  );
+
+  // Whether the reader has pinched in decides who owns a horizontal drag, and
+  // that has to be settled in CSS before the gesture starts — `touch-action` is
+  // read at touch-down, so it cannot be worked out from the drag itself.
+  const [zoomed, setZoomed] = useState(false);
+  useEffect(() => {
+    const viewport = globalThis.visualViewport;
+    if (!viewport) return;
+    const sync = () => setZoomed(viewport.scale > ZOOMED_SCALE);
+    sync();
+    viewport.addEventListener("resize", sync);
+    return () => viewport.removeEventListener("resize", sync);
+  }, []);
 
   // Swipe is tracked on the stage rather than the whole theater, so a drag that
-  // starts on the chrome doesn't flip the page.
+  // starts on the chrome doesn't flip the page. The tap zones sit on top of the
+  // stage and are the real event target, but pointer events bubble, so the
+  // gesture is read here for all three of them at once.
   const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
+  const tapConsumedRef = useRef(false);
+  const activePointersRef = useRef(0);
+
   const onPointerDown = useCallback((event: ReactPointerEvent) => {
+    // `isPrimary` is the first contact of a fresh gesture, so it doubles as the
+    // resync point: a `pointerup` lost off the edge of the screen would
+    // otherwise leave the count stuck above zero and swipe dead for the session.
+    activePointersRef.current = event.isPrimary
+      ? 1
+      : activePointersRef.current + 1;
+    tapConsumedRef.current = false;
     if (event.pointerType === "mouse") return;
+    // A second finger means a pinch, not a swipe — its two contacts travel in
+    // opposite directions, and either one on its own reads as a page turn.
+    if (activePointersRef.current > 1) {
+      swipeStartRef.current = null;
+      tapConsumedRef.current = true;
+      return;
+    }
     swipeStartRef.current = { x: event.clientX, y: event.clientY };
   }, []);
+
+  const endPointer = useCallback(() => {
+    activePointersRef.current = Math.max(activePointersRef.current - 1, 0);
+  }, []);
+
+  const onPointerCancel = useCallback(() => {
+    endPointer();
+    swipeStartRef.current = null;
+  }, [endPointer]);
+
   const onPointerUp = useCallback(
     (event: ReactPointerEvent) => {
+      const multiTouch = activePointersRef.current > 1;
+      endPointer();
       const start = swipeStartRef.current;
       swipeStartRef.current = null;
-      if (!start) return;
+      if (!start || multiTouch) return;
+      // Once the reader has pinched in, a one-finger drag is how they get to
+      // the rest of the page. Paging on it would snatch the panel away mid-look;
+      // the tap zones and the footer buttons still turn pages while zoomed.
+      if ((globalThis.visualViewport?.scale ?? 1) > ZOOMED_SCALE) return;
       const dx = event.clientX - start.x;
       const dy = event.clientY - start.y;
       if (Math.abs(dx) < SWIPE_THRESHOLD_PX || Math.abs(dy) > Math.abs(dx)) {
         return;
       }
+      // A drag that begins and ends on the same zone still resolves to a click,
+      // which would fire that zone's action on top of the swipe's — turning two
+      // pages, or turning one back. The click is told to stand down.
+      tapConsumedRef.current = true;
       if (dx < 0) goNext();
       else goPrevious();
     },
-    [goNext, goPrevious],
+    [endPointer, goNext, goPrevious],
   );
+
+  /** Zone taps, minus the phantom click trailing a swipe or a pinch across one. */
+  const onZoneTap = useCallback((action: () => void) => {
+    if (tapConsumedRef.current) {
+      tapConsumedRef.current = false;
+      return;
+    }
+    action();
+  }, []);
 
   const publicationParams = publicationUri
     ? publicationLinkParams(publicationUri)
     : null;
   const notesParams = issueUri ? documentLinkParams(issueUri) : null;
 
+  const chromeHidden = !chromeVisible;
+
   return (
-    <div {...stylex.props(styles.theater)}>
-      <div {...stylex.props(styles.bar, styles.topBar)}>
-        {publicationParams ? (
-          <IconButtonLink
-            variant="tertiary"
-            to="/p/$did/$rkey"
-            params={publicationParams}
-            aria-label={t`Close the comic reader`}
-            style={styles.chromeControl}
-          >
-            <X aria-hidden size={ICON_SIZE} strokeWidth={ICON_STROKE} />
-          </IconButtonLink>
-        ) : null}
-
-        <div {...stylex.props(styles.titles)}>
-          {publicationName ? (
-            <div {...stylex.props(styles.kicker)}>{publicationName}</div>
-          ) : null}
-          <div {...stylex.props(styles.title)}>
-            {currentIssue?.title ?? publicationName ?? ""}
-          </div>
-        </div>
-
-        {notesParams ? (
-          <IconButtonLink
-            variant="tertiary"
-            to="/a/$did/$rkey"
-            params={notesParams}
-            search={{ view: "reader" }}
-            aria-label={t`Read this issue as an article`}
-            style={styles.chromeControl}
-          >
-            <FileText aria-hidden size={ICON_SIZE} strokeWidth={ICON_STROKE} />
-          </IconButtonLink>
-        ) : null}
-      </div>
-
+    <div {...stylex.props(styles.theater)} onPointerMove={onPointerMove}>
       <div
-        {...stylex.props(styles.stage)}
+        {...stylex.props(styles.stage, zoomed && styles.stageZoomed)}
+        onPointerCancel={onPointerCancel}
         onPointerDown={onPointerDown}
         onPointerUp={onPointerUp}
       >
@@ -554,8 +779,26 @@ export function ComicReader({
               // tab order rather than duplicating that button.
               aria-hidden
               tabIndex={-1}
-              onClick={goPrevious}
-              {...stylex.props(styles.zone, styles.zonePrev)}
+              onClick={() => onZoneTap(goPrevious)}
+              {...stylex.props(
+                styles.zone,
+                styles.zonePrev,
+                zoomed && styles.stageZoomed,
+              )}
+            />
+            <button
+              type="button"
+              // The chrome's own controls are the accessible way to reach every
+              // action behind this; it exists so a thumb in the middle of the
+              // screen can call the bars back without turning a page.
+              aria-hidden
+              tabIndex={-1}
+              onClick={() => onZoneTap(toggleChrome)}
+              {...stylex.props(
+                styles.zone,
+                styles.zoneChrome,
+                zoomed && styles.stageZoomed,
+              )}
             />
             <button
               type="button"
@@ -564,52 +807,118 @@ export function ComicReader({
               // tab order rather than duplicating that button.
               aria-hidden
               tabIndex={-1}
-              onClick={goNext}
-              {...stylex.props(styles.zone, styles.zoneNext)}
+              onClick={() => onZoneTap(goNext)}
+              {...stylex.props(
+                styles.zone,
+                styles.zoneNext,
+                zoomed && styles.stageZoomed,
+              )}
             />
           </>
         )}
       </div>
 
-      {totalPages > 0 ? (
-        <div {...stylex.props(styles.bar, styles.bottomBar)}>
-          <IconButton
-            variant="tertiary"
-            aria-label={t`Previous page`}
-            isDisabled={index === 0}
-            onPress={goPrevious}
-            style={styles.chromeControl}
-          >
-            <ChevronLeft
-              aria-hidden
-              size={ICON_SIZE}
-              strokeWidth={ICON_STROKE}
-            />
-          </IconButton>
-          <span {...stylex.props(styles.counter)} aria-live="polite">
-            {atEnd ? (
-              <Trans>The end</Trans>
-            ) : (
-              <Trans>
-                Page {index + 1} of {totalPages}
-              </Trans>
-            )}
-          </span>
-          <IconButton
-            variant="tertiary"
-            aria-label={t`Next page`}
-            isDisabled={atEnd}
-            onPress={goNext}
-            style={styles.chromeControl}
-          >
-            <ChevronRight
-              aria-hidden
-              size={ICON_SIZE}
-              strokeWidth={ICON_STROKE}
-            />
-          </IconButton>
+      <div
+        {...stylex.props(styles.chromeLayer)}
+        onBlur={releaseChrome}
+        onFocus={holdChrome}
+        onPointerOut={releaseChrome}
+        onPointerOver={holdChrome}
+      >
+        <div
+          {...stylex.props(
+            styles.bar,
+            styles.topBar,
+            chromeHidden && styles.barHidden,
+            chromeHidden && styles.barHiddenTop,
+          )}
+        >
+          {publicationParams ? (
+            <IconButtonLink
+              variant="tertiary"
+              to="/p/$did/$rkey"
+              params={publicationParams}
+              aria-label={t`Close the comic reader`}
+              style={styles.chromeControl}
+            >
+              <X aria-hidden size={ICON_SIZE} strokeWidth={ICON_STROKE} />
+            </IconButtonLink>
+          ) : null}
+
+          <div {...stylex.props(styles.titles)}>
+            {publicationName ? (
+              <div {...stylex.props(styles.kicker)}>{publicationName}</div>
+            ) : null}
+            <div {...stylex.props(styles.title)}>
+              {currentIssue?.title ?? publicationName ?? ""}
+            </div>
+          </div>
+
+          {notesParams ? (
+            <IconButtonLink
+              variant="tertiary"
+              to="/a/$did/$rkey"
+              params={notesParams}
+              search={{ view: "reader" }}
+              aria-label={t`Read this issue as an article`}
+              style={styles.chromeControl}
+            >
+              <FileText
+                aria-hidden
+                size={ICON_SIZE}
+                strokeWidth={ICON_STROKE}
+              />
+            </IconButtonLink>
+          ) : null}
         </div>
-      ) : null}
+
+        {totalPages > 0 ? (
+          <div
+            {...stylex.props(
+              styles.bar,
+              styles.bottomBar,
+              chromeHidden && styles.barHidden,
+              chromeHidden && styles.barHiddenBottom,
+            )}
+          >
+            <IconButton
+              variant="tertiary"
+              aria-label={t`Previous page`}
+              isDisabled={index === 0}
+              onPress={goPrevious}
+              style={styles.chromeControl}
+            >
+              <ChevronLeft
+                aria-hidden
+                size={ICON_SIZE}
+                strokeWidth={ICON_STROKE}
+              />
+            </IconButton>
+            <span {...stylex.props(styles.counter)} aria-live="polite">
+              {atEnd ? (
+                <Trans>The end</Trans>
+              ) : (
+                <Trans>
+                  Page {index + 1} of {totalPages}
+                </Trans>
+              )}
+            </span>
+            <IconButton
+              variant="tertiary"
+              aria-label={t`Next page`}
+              isDisabled={atEnd}
+              onPress={goNext}
+              style={styles.chromeControl}
+            >
+              <ChevronRight
+                aria-hidden
+                size={ICON_SIZE}
+                strokeWidth={ICON_STROKE}
+              />
+            </IconButton>
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }
