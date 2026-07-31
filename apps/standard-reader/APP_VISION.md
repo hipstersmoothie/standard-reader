@@ -342,10 +342,13 @@ of re-upserting whole rows to set one column.
 
 What changes for a serial:
 
-- **Publication profile** lists its archive **oldest-first** (issue #1 leads instead of the
-  latest post) and offers "Start from issue one" / "Start from chapter one" in the hero. The
-  ordering is resolved server-side inside `getPublicationDocuments`, so the client never has to
-  know the reading order to ask for the right page.
+- **The archive still leads with the latest post.** A serial reads forwards, but its archive is
+  read far more often to see what is new than to find where the work begins, so every
+  publication — serial or not — lists newest-first (`defaultArchiveOrder`,
+  `#/lib/publication/archive-order`). A reader who does want to start at the beginning flips it
+  from the publication menu; the override is a per-publication cookie, resolved server-side
+  inside `getPublicationDocuments`, so the client never has to know the order to ask for the
+  right page and the SSR'd HTML is already in it.
 - **A comic's archive is a shelf of covers, not a list of pages.** A comic posts one page per
   document, so its archive is dozens of near-identical rows — `FITV #1 Cover`, `FITV #1, Pg. 1`.
   Titles almost always carry series, issue and page, so `selectComicShelf`
@@ -354,7 +357,18 @@ What changes for a serial:
   art — the reader browses issues instead of scrolling pages. It is a naming convention, not a
   lexicon field, so it is treated as a guess: fewer than 70% of titles parsing, or everything
   landing in one group, leaves `grouped: false` and the ordinary archive list stands. The
-  read/unread filters keep the list too — a shelf can't say "half of issue 3".
+  read/unread filters keep the list too — those are per-page views, and a shelf shows whole
+  issues.
+- **An issue is unread while any of its pages is**, and its cover opens on the first page the
+  reader hasn't seen. Read state is per document, and a comic's documents are its pages, so the
+  shelf asks for the reader's unread URIs across the whole publication (`selectUnreadDocumentUris`
+  — the same query the archive's unread filter and "mark all as read" run) and hands each issue
+  the pages it still owes them. The cover wears the ordinary unread dot and links to
+  `?page=<first unread>`, so picking a comic back up is one click from the shelf rather than a
+  hunt through the page counter. `read` records reach the read model through the firehose, so a
+  reader who has just walked those pages is ahead of the server: the shelf's answer is corrected
+  in the client from the same read caches every other unread dot uses
+  (`#/lib/comic/shelf-progress`).
 - **Comics open in the comic reader** (`/comic/$did/$rkey`) — a fixed dark theater that flips
   through the issue's pages one at a time. The pages _are_ the images the body renders, in
   reading order (`#/lib/document/images`), so nothing is authored specially for it. Arrow keys /

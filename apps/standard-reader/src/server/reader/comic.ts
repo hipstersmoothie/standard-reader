@@ -39,6 +39,7 @@ import {
 } from "#/lib/comic/issue-title";
 import { documentImages } from "#/lib/document/images";
 import { documentPublishedNotInFuture } from "#/server/reader/document-filters";
+import { selectUnreadDocumentUris } from "#/server/reader/queries";
 
 /** One issue of a comic, as the reader's spine sees it. */
 export interface ComicIssue {
@@ -80,6 +81,16 @@ export interface ComicPage {
  * the reader a comfortable runway before it needs the next one.
  */
 export const COMIC_CHUNK_ISSUES = 5;
+
+/**
+ * How deep into a comic the shelf tracks unread pages. The cap keeps a reader
+ * scoped query bounded on a publication that could hold any number of pages; it
+ * drops the *oldest* unread pages first (the lookup is newest-first), so a
+ * reader who has never opened a comic this long sees the recent issues marked
+ * honestly and the very oldest ones sitting quiet — which is 2,000 pages of
+ * reading away from mattering.
+ */
+const COMIC_UNREAD_PAGE_LIMIT = 2000;
 
 /**
  * Fill `body_image_count` for documents that don't have it yet, and return the
@@ -280,6 +291,14 @@ export async function countDocumentsMissingPageCount(
   return row?.count ?? 0;
 }
 
+/** A page of an issue the reader hasn't opened yet. */
+export interface ComicUnreadPage {
+  /** The page's own document — what a `read` record is written against. */
+  uri: string;
+  /** Absolute 0-based page index, so the reader can be opened straight on it. */
+  pageOffset: number;
+}
+
 /** One issue on the shelf — a run of pages fronted by its cover. */
 export interface ComicShelfIssue {
   /** Issue number from the titles, null for pages that named none. */
@@ -297,6 +316,16 @@ export interface ComicShelfIssue {
   /** Documents (pages) collapsed into this issue. */
   documentCount: number;
   publishedAt: string;
+  /**
+   * The pages of this issue the reader hasn't opened, in reading order. An issue
+   * is unread while this holds anything — a comic read halfway through is not
+   * read — and its first entry is where opening the issue drops the reader.
+   *
+   * Always empty for a signed-out reader, or one who doesn't keep reading
+   * history: there is no read state to report, and an issue that can never be
+   * marked read must not sit there wearing an unread dot forever.
+   */
+  unreadPages: Array<ComicUnreadPage>;
 }
 
 export interface ComicShelf {
@@ -327,13 +356,40 @@ export interface ComicShelf {
  *
  * Only one body per issue is opened — the cover's, for its art — so the cost is
  * a handful of rows however long the comic runs.
+ *
+ * With `readForDid`, each issue also carries the pages that reader hasn't opened
+ * (`unreadPages`) — the shelf is where a reader picks up a comic, and picking it
+ * up means going to the next page they haven't seen, not back to the cover.
  */
 export async function selectComicShelf(
   db: Db,
   schema: Schema,
   publicationUri: string,
+  opts: {
+    /** Reader whose unread pages to report; omit for a shared, reader-agnostic
+     * shelf. */
+    readForDid?: string;
+    /** When false, pages published before the reader subscribed count as read
+     * — the same cutoff the archive's unread filter applies. */
+    countOldPostsAsUnread?: boolean;
+  } = {},
 ): Promise<ComicShelf> {
-  const spine = await selectComicSpine(db, schema, publicationUri);
+  // Independent reads: the unread set is the whole publication's, so it doesn't
+  // wait on the spine to know which documents to ask about. Same query the
+  // archive's unread filter and "mark all as read" run, so no two surfaces can
+  // disagree about what this reader still owes the comic.
+  const [spine, unreadUris] = await Promise.all([
+    selectComicSpine(db, schema, publicationUri),
+    opts.readForDid
+      ? selectUnreadDocumentUris(db, schema, {
+          readerDid: opts.readForDid,
+          publicationUris: [publicationUri],
+          countOldPostsAsUnread: opts.countOldPostsAsUnread,
+          limit: COMIC_UNREAD_PAGE_LIMIT,
+        })
+      : Promise.resolve<Array<string>>([]),
+  ]);
+  const unread = new Set(unreadUris);
   const empty: ComicShelf = {
     publicationUri,
     issues: [],
@@ -425,6 +481,15 @@ export async function selectComicShelf(
       ),
       documentCount: group.pages.length,
       publishedAt: first.issue.publishedAt,
+      // In reading order, because the group is: the first entry is the page the
+      // reader is owed. A page whose document isn't in the unread set — read, or
+      // published before this reader subscribed — is simply absent.
+      unreadPages: group.pages
+        .filter((page) => unread.has(page.issue.uri))
+        .map((page) => ({
+          uri: page.issue.uri,
+          pageOffset: page.issue.pageOffset,
+        })),
     });
   }
 

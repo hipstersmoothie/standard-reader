@@ -2974,6 +2974,11 @@ msgstr "OAuth tokens so we can read and write records in your repository on your
 msgid "Copy"
 msgstr "Copy"
 
+#. placeholder {0}: issue.label
+#: src/components/comic/comic-shelf.tsx
+msgid "Continue {0}"
+msgstr "Continue {0}"
+
 #: src/components/reader/content/renderers/shared/image-figure.tsx
 #: src/components/reader/content/renderers/shared/markdown-article.tsx
 #: src/magazine/Magazine.tsx

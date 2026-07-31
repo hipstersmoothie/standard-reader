@@ -29,9 +29,8 @@ describe("archiveOrderKey", () => {
 });
 
 describe("defaultArchiveOrder", () => {
-  it("leads with chapter one for a serial and the latest post otherwise", () => {
-    expect(defaultArchiveOrder(true)).toBe("oldest");
-    expect(defaultArchiveOrder(false)).toBe("newest");
+  it("leads with the latest post, serial or not", () => {
+    expect(defaultArchiveOrder()).toBe("newest");
   });
 });
 

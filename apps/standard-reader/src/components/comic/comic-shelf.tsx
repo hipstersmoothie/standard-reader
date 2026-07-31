@@ -8,7 +8,11 @@ import {
 import { Flex } from "@standard-reader/design-system/flex";
 import { Skeleton } from "@standard-reader/design-system/skeleton";
 import { animationDuration } from "@standard-reader/design-system/theme/animations.stylex";
-import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
+import {
+  primaryColor,
+  uiColor,
+} from "@standard-reader/design-system/theme/color.stylex";
+import { radius } from "@standard-reader/design-system/theme/radius.stylex";
 import { gap } from "@standard-reader/design-system/theme/semantic-spacing.stylex";
 import { shadow } from "@standard-reader/design-system/theme/shadow.stylex";
 import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
@@ -20,10 +24,15 @@ import {
   tracking,
 } from "@standard-reader/design-system/theme/typography.stylex";
 import * as stylex from "@stylexjs/stylex";
+import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
+import { useCallback } from "react";
 
+import { comicIssueProgress } from "#/lib/comic/shelf-progress";
 import type { ArchiveOrder } from "#/lib/publication/archive-order";
-import type { ComicShelfIssue } from "#/server/reader/comic";
+import type { ComicShelfIssue, ComicUnreadPage } from "#/server/reader/comic";
+
+import { isArticleUnreadForReader } from "../reader/read-optimistic";
 
 /** Comic covers are taller than they are wide — the standard trade paperback. */
 const COVER_ASPECT_RATIO = 2 / 3;
@@ -81,6 +90,17 @@ const styles = stylex.create({
     unicodeBidi: "isolate",
     lineHeight: lineHeight.sm,
   },
+  // Same mark, same size, same colour as an unread article row's — a comic
+  // issue is one more thing the reader hasn't got to yet.
+  unreadDot: {
+    borderRadius: radius.full,
+    backgroundColor: primaryColor.solid1,
+    display: "inline-block",
+    flexShrink: 0,
+    height: "7px",
+    marginTop: spacing["1.5"],
+    width: "7px",
+  },
   meta: {
     color: uiColor.text1,
     fontFamily: fontFamily.sans,
@@ -91,16 +111,24 @@ const styles = stylex.create({
   },
 });
 
-function ComicShelfCard({ issue }: { issue: ComicShelfIssue }) {
+function ComicShelfCard({
+  issue,
+  isStillUnread,
+}: {
+  issue: ComicShelfIssue;
+  isStillUnread: (page: ComicUnreadPage) => boolean;
+}) {
   const { t } = useLingui();
+  const { startPage, unread } = comicIssueProgress(issue, isStillUnread);
   return (
     <Link
       to="/comic/$did/$rkey"
       params={{ did: issue.did, rkey: issue.rkey }}
-      // The cover art isn't always the issue's first page, so the page is named
-      // explicitly rather than left to the anchor document's own offset.
-      search={{ page: issue.pageOffset + 1 }}
-      aria-label={t`Read ${issue.label}`}
+      // Where the reader left off, or the issue's own first page — either way
+      // named explicitly, since the cover art isn't always the first page and
+      // the anchor document's offset would land on it rather than on them.
+      search={{ page: startPage }}
+      aria-label={unread ? t`Continue ${issue.label}` : t`Read ${issue.label}`}
       {...stylex.props(styles.issue)}
     >
       <AspectRatio aspectRatio={COVER_ASPECT_RATIO} style={styles.cover}>
@@ -120,7 +148,14 @@ function ComicShelfCard({ issue }: { issue: ComicShelfIssue }) {
         )}
       </AspectRatio>
       <Flex direction="column" gap="xs">
-        <span {...stylex.props(styles.label)}>{issue.label}</span>
+        <Flex gap="md" align="start">
+          {unread ? (
+            // The link's own label already says "Continue", so the dot is
+            // decoration for anyone reading it out.
+            <span aria-hidden {...stylex.props(styles.unreadDot)} />
+          ) : null}
+          <span {...stylex.props(styles.label)}>{issue.label}</span>
+        </Flex>
         <span {...stylex.props(styles.meta)}>
           <Plural value={issue.pageCount} one="# page" other="# pages" />
         </span>
@@ -163,21 +198,49 @@ export function ComicShelfSkeleton() {
  *
  * `issues` always arrive in publication order (#1 first) — the spine reads that
  * way so absolute page numbers mean something. `order` is the reader's view of
- * the archive, and the shelf is the archive here, so it follows: a reader who
- * asked for newest first gets the latest issue at the top left.
+ * the archive, and the shelf is the archive here, so it follows: the latest
+ * issue leads unless the reader asked to start at the beginning.
+ *
+ * An issue is marked unread while any of its pages is, and its cover opens on
+ * the first of those pages. The server's answer is corrected here with the
+ * reads this session already knows about, which is what keeps a comic the reader
+ * has just walked through from still wearing its dots on the way back out (see
+ * `#/lib/comic/shelf-progress`).
  */
 export function ComicShelf({
   issues,
   order,
+  trackReading,
+  signedIn,
 }: {
   issues: Array<ComicShelfIssue>;
   order: ArchiveOrder;
+  /** Whether the reader keeps reading history — no history, no unread state. */
+  trackReading: boolean;
+  signedIn: boolean;
 }) {
+  const queryClient = useQueryClient();
+  const isStillUnread = useCallback(
+    (page: ComicUnreadPage) =>
+      // The server already said this page is unread; the cache is only ever
+      // allowed to take that back, which is exactly what an article row does.
+      isArticleUnreadForReader(
+        queryClient,
+        { uri: page.uri, isRead: false },
+        { trackReading, signedIn },
+      ),
+    [queryClient, signedIn, trackReading],
+  );
+
   const shelved = order === "newest" ? [...issues].toReversed() : issues;
   return (
     <div {...stylex.props(styles.shelf)}>
       {shelved.map((issue) => (
-        <ComicShelfCard key={issue.uri} issue={issue} />
+        <ComicShelfCard
+          key={issue.uri}
+          issue={issue}
+          isStillUnread={isStillUnread}
+        />
       ))}
     </div>
   );
