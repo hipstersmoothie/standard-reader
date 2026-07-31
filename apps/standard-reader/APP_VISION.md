@@ -334,6 +334,15 @@ default `"rtl"` for a record that states nothing, which is what keeps the two ap
 `ensurePublicationSerial` (`#/server/reader/series`) reads the record from the PDS once, writes
 what it says, and derives the kind on the spot if it turns out to be a serial. Standard
 `backfillXFromRepo` behaviour: one PDS read per publication, ever, then the DB serves it.
+
+**Both columns count as unresolved, not just the direction** (`needsSerialResolution`,
+`#/lib/publication/serial`). A row reading `"ltr"` with no `serial_kind` is a serial the sweep
+hasn't judged yet, and `resolveSerialPublication` renders it as a **book** — the right thing to
+draw, and the wrong thing to stop asking about, because everything a comic gets hangs off
+`serial.kind`: the shelf of covers, the redirect into the page-flip reader. The two read paths
+that surface those (`selectPublicationHeader` and `getArticle`) resolve on demand whenever either
+column is missing, so a comic can't sit reading as a book until the next hourly sweep. An ordinary
+blog (`"rtl"`) is resolved whatever its kind says, which keeps this off the common path.
 `pnpm backfill:serial` warms them all up front so no reader pays that first read. It scopes itself
 to the publications that could answer — `prevNextDirection` is Leaflet's field, so only Leaflet
 publications still holding a NULL are visited — reads their records from Slingshot rather than

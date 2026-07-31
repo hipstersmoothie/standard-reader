@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   isSerialDirection,
+  needsSerialResolution,
   parsePrevNextDirection,
   parseSerialKind,
   resolveSerialPublication,
@@ -67,5 +68,31 @@ describe("resolveSerialPublication", () => {
     // A stale `serial_kind` on a publication that flipped back to `rtl` must
     // not resurrect the serial treatment.
     expect(resolveSerialPublication("rtl", "comic")).toBeNull();
+  });
+});
+
+describe("needsSerialResolution", () => {
+  it("asks again for a row that was never mirrored", () => {
+    expect(needsSerialResolution(null, null)).toBe(true);
+    expect(needsSerialResolution(undefined, "comic")).toBe(true);
+    expect(needsSerialResolution("sideways", "comic")).toBe(true);
+  });
+
+  it("asks again for a serial whose kind nobody has judged", () => {
+    // The case that loses a comic its shelf and its reader: rendered as a
+    // book by `resolveSerialPublication`, but not actually resolved.
+    expect(needsSerialResolution("ltr", null)).toBe(true);
+    expect(needsSerialResolution("ltr", "nonsense")).toBe(true);
+    expect(resolveSerialPublication("ltr", null)).toEqual({ kind: "book" });
+  });
+
+  it("is done once the serial has both", () => {
+    expect(needsSerialResolution("ltr", "comic")).toBe(false);
+    expect(needsSerialResolution("ltr", "book")).toBe(false);
+  });
+
+  it("never re-asks about an ordinary blog", () => {
+    expect(needsSerialResolution("rtl", null)).toBe(false);
+    expect(needsSerialResolution("rtl", "comic")).toBe(false);
   });
 });

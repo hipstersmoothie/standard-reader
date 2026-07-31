@@ -73,3 +73,30 @@ export function resolveSerialPublication(
   if (!isSerialDirection(prevNextDirection)) return null;
   return { kind: parseSerialKind(serialKind) ?? "book" };
 }
+
+/**
+ * Whether a publication's stored serial columns still need resolving from the
+ * record and its posts (`ensurePublicationSerial`).
+ *
+ * There are two ways to be unresolved, and only checking the first one is a trap.
+ * A NULL `prevNextDirection` means the row was indexed before the column existed
+ * — nothing is known. But a row that says `"ltr"` with no `serialKind` is *also*
+ * unresolved: it is a serial whose kind the hourly sweep hasn't judged yet, and
+ * {@link resolveSerialPublication} answers `"book"` for it, because prose is the
+ * safe default to *render*. It is not a safe default to stop looking at: a comic
+ * left reading as a book loses its shelf of covers and its page-flip reader, and
+ * nothing on the read path would ever ask again.
+ *
+ * An ordinary blog (`"rtl"`) is fully resolved whatever `serialKind` says, so
+ * this stays false for almost every publication — which is what keeps the
+ * on-demand resolution off the common path.
+ */
+export function needsSerialResolution(
+  prevNextDirection: unknown,
+  serialKind: unknown,
+): boolean {
+  if (parsePrevNextDirection(prevNextDirection) == null) return true;
+  return (
+    isSerialDirection(prevNextDirection) && parseSerialKind(serialKind) == null
+  );
+}
