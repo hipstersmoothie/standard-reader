@@ -382,6 +382,18 @@ What changes for a serial:
   (`#/components/comic/use-fullscreen`). The button is absent, not disabled, where the browser
   won't do it — iOS Safari reserves full screen for `<video>` — and its state follows
   `fullscreenchange`, since Escape, F11 and the OS all exit without asking the app.
+- **A page's note reads over the page.** Comic posts often publish a line or two beside the art —
+  a caption, a process note, a word about next week — and in the theater that writing had nowhere
+  to go but the reading view, a navigation away from the page it was written about. The top bar's
+  note button lays it over the art instead (`#/components/comic/comic-page-note`): a translucent
+  dark scrim, the prose in the theater's own type, and a "Read the full post" escape to the
+  reading view. The note travels on the page (`ComicPage.note`), extracted in the chunk query that
+  already opens the body, and is the body's plaintext **minus the pages' own alt text** — the
+  extractors narrate image blocks by their alt, which describes the page the reader is already
+  looking at (`#/lib/comic/page-note`). Most pages carry none, so the control is disabled rather
+  than absent: a bar that reshuffled on every page turn is worse than a quiet button. The overlay
+  is a React Aria modal portalled **into the theater**, not `document.body`, so it survives full
+  screen.
 - **Books get "Up next"** under the article: the following chapter, or a note that the reader has
   caught up. Position ("3 of 12") and neighbours come from `getSeriesContext`
   (`#/server/reader/series`), loaded client-side after the article paints like the other
