@@ -984,12 +984,14 @@ const getSeriesContext = createServerFn({ method: "GET" })
         span.set("found", true);
         span.set("serialKind", row.serialKind ?? "none");
 
-        // Unmirrored publication: resolve (and persist) its serial metadata
-        // before deciding whether this post has a series at all.
-        const serial =
-          row.prevNextDirection == null
-            ? await ensurePublicationSerial(db, schema, row.publicationUri)
-            : undefined;
+        // Unjudged publication: resolve (and persist) its serial metadata before
+        // deciding whether this post has a series at all.
+        const serial = needsSerialResolution(
+          row.prevNextDirection,
+          row.serialKind,
+        )
+          ? await ensurePublicationSerial(db, schema, row.publicationUri)
+          : undefined;
 
         const series = await selectSeriesContext(db, schema, {
           documentUri: data.documentUri,

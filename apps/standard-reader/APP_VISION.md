@@ -319,12 +319,31 @@ Sections, top to bottom:
 
 A publisher who sets `preferences.prevNextDirection = "ltr"` on their
 `site.standard.publication` is saying the publication **reads forwards from its first post**
-rather than newest-first — a serial. That one flag is the whole signal; the lexicon has no
-field for what _kind_ of serial it is, so the kind is app-derived (`recomputeSerialKinds`, in
-the hourly sweep): a publication whose recent posts each render at least one image and carry
-only a short note of prose is a **comic**, anything else a **book**. Both are mirrored on the
-read-model row (`publications.prev_next_direction`, `publications.serial_kind`) and travel to
-the UI as `PublicationCard.serial` (see `#/lib/publication/serial`).
+rather than newest-first — a serial. The lexicon has no field for what _kind_ of serial it is,
+so the kind is app-derived (`recomputeSerialKinds`, in the hourly sweep): a publication whose
+recent posts each render at least one image and carry only a short note of prose is a **comic**,
+anything else a **book**. Both are mirrored on the read-model row
+(`publications.prev_next_direction`, `publications.serial_kind`) and travel to the UI as
+`PublicationCard.serial` (see `#/lib/publication/serial`).
+
+**Comics are also inferred, because most of them never declare.** `prevNextDirection` is a
+preference buried in a publishing tool's settings, and a comic posted through Leaflet arrives
+looking exactly like a blog — so waiting for the flag means most comics on the network read as
+columns of stacked images forever. A publication that declares nothing is therefore allowed to be
+a comic **on evidence**: its recent posts are pages of art (the same test the declared path runs)
+_and_ its titles run in sequence (`titlesLookLikeComicSequence`, `#/lib/comic/issue-title`), over
+at least `INFERRED_COMIC_MIN_POSTS` posts. Both signals are required because either alone is
+ordinary — a photoblog is art without a sequence, a numbered essay series is a sequence without
+art — and the minimum stops two posts called `Page 1` and `Page 2` from being a pattern. Only
+comics are inferred: a serial **book** is indistinguishable from a blog from the outside, so it
+still needs the publisher to say so. An explicit `"rtl"` is treated the same as a missing one,
+since it is the lexicon default and reads as "never touched the setting" far more often than as
+"my comic is a blog".
+
+Sequence detection covers the two conventions comics actually use: **numbered issues**
+(`FITV #2, Pg. 7`) and **named runs of pages** (`Prologue p.18`, `Chapter 2 — Page 7`, `Page 4`).
+Both insist on a marker — `#` for an issue, `p`/`pg`/`page` for a page — so a title that merely
+ends in a number stays prose.
 
 Both are filled **on demand** as well as by the sweep. The tap only writes
 `prev_next_direction` when a publication record is created or updated, so a publication indexed
@@ -341,8 +360,22 @@ hasn't judged yet, and `resolveSerialPublication` renders it as a **book** — t
 draw, and the wrong thing to stop asking about, because everything a comic gets hangs off
 `serial.kind`: the shelf of covers, the redirect into the page-flip reader. The two read paths
 that surface those (`selectPublicationHeader` and `getArticle`) resolve on demand whenever either
-column is missing, so a comic can't sit reading as a book until the next hourly sweep. An ordinary
-blog (`"rtl"`) is resolved whatever its kind says, which keeps this off the common path.
+column is missing, so a comic can't sit reading as a book until the next hourly sweep.
+
+An **undeclared** publication with no `serial_kind` is unresolved for the same reason — it may be
+a comic that never said so, and nothing else would ask. That puts the derivation on every
+publication's path rather than only its serials', so the answer is written down either way,
+including the negative: `serial_kind = 'blog'` (`JUDGED_NOT_SERIAL`) means "we looked; it is an
+ordinary publication". It is not a `SerialKind`, so `parseSerialKind` refuses it and every read
+path sees the blog it is; it exists only to stop us asking again. The undeclared derivation also
+checks the titles on their own cheap query first and only opens `content_json` for publications
+that pass, so a blog costs one indexed read over 40 titles, once. The hourly sweep **re-derives**
+the inferred comics alongside the declared serials — there are few of either, and a comic cleared
+between sweeps would lose its shelf and its reader on every feed card until someone opened it —
+and **clears** the `'blog'` markers, which are most of the table and would cost a sample of the
+whole network to confirm. Clearing hands that question back to the read path: one title read, on
+the next view of a publication someone is reading, which is also how a blog that turns into a
+comic gets noticed at all.
 `pnpm backfill:serial` warms them all up front so no reader pays that first read. It scopes itself
 to the publications that could answer — `prevNextDirection` is Leaflet's field, so only Leaflet
 publications still holding a NULL are visited — reads their records from Slingshot rather than
@@ -360,14 +393,15 @@ What changes for a serial:
   right page and the SSR'd HTML is already in it.
 - **A comic's archive is a shelf of covers, not a list of pages.** A comic posts one page per
   document, so its archive is dozens of near-identical rows — `FITV #1 Cover`, `FITV #1, Pg. 1`.
-  Titles almost always carry series, issue and page, so `selectComicShelf`
-  (`#/server/reader/comic`) parses the issue number out of them (`#/lib/comic/issue-title`),
-  collapses consecutive pages back into the issues they came from, and shows each issue's cover
-  art — the reader browses issues instead of scrolling pages. It is a naming convention, not a
-  lexicon field, so it is treated as a guess: fewer than 70% of titles parsing, or everything
-  landing in one group, leaves `grouped: false` and the ordinary archive list stands. The
-  read/unread filters keep the list too — those are per-page views, and a shelf shows whole
-  issues.
+  Titles carry the part the page belongs to, so `selectComicShelf` (`#/server/reader/comic`)
+  parses it back out (`parseComicTitlePart`, `#/lib/comic/issue-title`), collapses consecutive
+  pages sharing a part — an issue number, or an arc name like `Prologue p.18` — into one entry,
+  and shows each part's cover art; the reader browses issues instead of scrolling pages. It is a
+  naming convention, not a lexicon field, so it is treated as a guess: fewer than 70% of titles
+  parsing, or everything landing in one group, leaves `grouped: false` and the ordinary archive
+  list stands. A comic that runs `Page 1`…`Page 60` straight through has nothing to shelve and
+  lands there by design. The read/unread filters keep the list too — those are per-page views,
+  and a shelf shows whole issues.
 - **An issue is unread while any of its pages is**, and its cover opens on the first page the
   reader hasn't seen. Read state is per document, and a comic's documents are its pages, so the
   shelf asks for the reader's unread URIs across the whole publication (`selectUnreadDocumentUris`
@@ -790,8 +824,9 @@ re-auth because `prompt: consent` re-consent isn't reliable across PDS providers
     `basicTheme`, `preferences.showInDiscover`, `preferences.prevNextDirection`). _In the UI we
     call these "publications"._ `prevNextDirection` is the publisher's prev/next reading
     direction: the lexicon default `"rtl"` is an ordinary reverse-chronological blog, while
-    `"ltr"` declares that the publication **reads forwards from its first post** — a serial.
-    See "Serial publications (books & comics)" below.
+    `"ltr"` declares that the publication **reads forwards from its first post** — a serial. Most
+    comics never set it, so a publication whose posts and titles read as a comic is treated as one
+    without the declaration. See "Serial publications (books & comics)" below.
   - `site.standard.document` — an **article** (`site` → publication at-uri **or** an `https://`
     URL for a "loose document" with no publication record, `title`, `path`, `content`/`textContent`,
     `coverImage` blob = hero, `tags`, `contributors`, `publishedAt`). When `site` is an `https://`

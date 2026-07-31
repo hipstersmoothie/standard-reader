@@ -56,12 +56,14 @@ export interface PublicationCard {
    */
   hiddenFromDiscover: boolean;
   /**
-   * Set when the publisher declared that this publication reads forwards from
-   * its first post (`preferences.prevNextDirection = "ltr"`) — a serial book or
-   * comic. `kind` is app-derived (`recomputeSerialKinds`) and decides the reading
-   * experience: a `"comic"` opens in the page-flip reader, a `"book"` reads as
-   * ordinary articles with an "Up next" link to the following issue. Null for
-   * ordinary reverse-chronological publications. See `#/lib/publication/serial`.
+   * Set when this publication reads forwards from its first post — a serial book
+   * or comic. Either the publisher declared it
+   * (`preferences.prevNextDirection = "ltr"`), or the posts themselves make the
+   * case: pages of art with titles that run in sequence is a comic whether or not
+   * anyone said so. `kind` is app-derived and decides the reading experience: a
+   * `"comic"` opens in the page-flip reader, a `"book"` reads as ordinary
+   * articles with an "Up next" link to the following issue. Null for ordinary
+   * reverse-chronological publications. See `#/lib/publication/serial`.
    */
   serial: SerialPublication | null;
   subscriberCount: number;

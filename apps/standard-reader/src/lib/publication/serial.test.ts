@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   isSerialDirection,
+  JUDGED_NOT_SERIAL,
   needsSerialResolution,
   parsePrevNextDirection,
   parseSerialKind,
@@ -59,15 +60,27 @@ describe("resolveSerialPublication", () => {
     });
   });
 
-  it("is null for an ordinary publication, derived kind or not", () => {
+  it("is null for an undeclared publication with nothing derived", () => {
     expect(resolveSerialPublication("rtl", null)).toBeNull();
     // NULL direction means "never mirrored" rather than "ordinary" — the read
     // path backfills it (`ensurePublicationSerial`) before this is consulted, so
     // reading it as non-serial here is the safe holding answer, not a verdict.
     expect(resolveSerialPublication(null, null)).toBeNull();
-    // A stale `serial_kind` on a publication that flipped back to `rtl` must
-    // not resurrect the serial treatment.
-    expect(resolveSerialPublication("rtl", "comic")).toBeNull();
+    // The judged-a-blog marker is not a kind, so it reads as no serial at all.
+    expect(resolveSerialPublication("rtl", JUDGED_NOT_SERIAL)).toBeNull();
+  });
+
+  it("lets a derived comic stand without the declaration", () => {
+    // Most comics never set `prevNextDirection`, and `"rtl"` is the lexicon
+    // default — so a derived `"comic"` on one is evidence, not a stale flag.
+    expect(resolveSerialPublication("rtl", "comic")).toEqual({ kind: "comic" });
+    expect(resolveSerialPublication(null, "comic")).toEqual({ kind: "comic" });
+  });
+
+  it("never infers a book", () => {
+    // Prose that reads front-to-back is indistinguishable from a blog, so a
+    // `"book"` without the declaration is a stale row, not a serial.
+    expect(resolveSerialPublication("rtl", "book")).toBeNull();
   });
 });
 
@@ -91,8 +104,17 @@ describe("needsSerialResolution", () => {
     expect(needsSerialResolution("ltr", "book")).toBe(false);
   });
 
-  it("never re-asks about an ordinary blog", () => {
-    expect(needsSerialResolution("rtl", null)).toBe(false);
+  it("asks about an undeclared publication nobody has judged", () => {
+    // It could be a comic that never declared one, and no other read path
+    // would ever look.
+    expect(needsSerialResolution("rtl", null)).toBe(true);
+  });
+
+  it("never re-asks once an undeclared publication has a verdict", () => {
+    expect(needsSerialResolution("rtl", JUDGED_NOT_SERIAL)).toBe(false);
     expect(needsSerialResolution("rtl", "comic")).toBe(false);
+    // A stale `"book"` is still a verdict — the sweep retires it, not a re-ask
+    // on every page view.
+    expect(needsSerialResolution("rtl", "book")).toBe(false);
   });
 });

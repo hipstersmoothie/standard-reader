@@ -562,53 +562,87 @@ export async function recomputeTopics(): Promise<void> {
 }
 
 /**
- * Derive `publications.serial_kind` for serial publications — the ones whose
- * publisher set `preferences.prevNextDirection = "ltr"`, declaring that the
- * publication reads forwards from its first post (see
+ * Derive `publications.serial_kind` for declared serial publications — the ones
+ * whose publisher set `preferences.prevNextDirection = "ltr"`, declaring that
+ * the publication reads forwards from its first post (see
  * `#/lib/publication/serial`).
  *
  * The classification itself lives in `deriveSerialKind`
  * (`#/server/reader/series`), shared with the on-demand read path so a
  * publication can't be judged one way by the sweep and another way on a page
- * load. This pass is the safety net that keeps every serial current as its posts
- * change; the read path only ever classifies one that has never been judged.
+ * load. This pass is the safety net that keeps every declared serial current as
+ * its posts change; the read path only ever classifies one that has never been
+ * judged.
  *
- * Only serial publications are sampled — there are few of them, and `content_json`
- * is large per row — and `serial_kind` is cleared on any publication that is no
- * longer a serial so a preference flipped back to `"rtl"` doesn't linger.
+ * It also keeps the **inferred** comics current — the undeclared publications
+ * whose posts and titles made the case for themselves. There are few of those
+ * too, and they are re-derived rather than cleared: a comic that vanished
+ * between sweeps would take the shelf and the page-flip reader off every feed
+ * card until someone opened the publication and the read path judged it again.
+ *
+ * The `JUDGED_NOT_SERIAL` markers are the one thing wiped outright. They are the
+ * blogs — most of the table — and re-deriving them here would sample the whole
+ * network hourly to learn what it already said. Clearing instead hands the
+ * question back to the read path, which answers it from the titles alone, once,
+ * on the next view of a publication someone is actually reading — and which is
+ * how a blog that turns into a comic gets noticed at all.
  */
 const SERIAL_KIND_CONCURRENCY = 6;
 
 export async function recomputeSerialKinds(): Promise<void> {
-  // A publication that stopped being a serial keeps no derived kind.
+  const undeclared = or(
+    isNull(publications.prevNextDirection),
+    sql`${publications.prevNextDirection} <> ${SERIAL_DIRECTION}`,
+  );
+
+  // Drop the blog markers, and any `"book"` left on a publication that flipped
+  // back to `"rtl"` — books are only ever declared, so one there is stale. The
+  // inferred comics are kept and re-derived below.
   await db
     .update(publications)
     .set({ serialKind: null })
     .where(
       and(
         isNotNull(publications.serialKind),
-        or(
-          isNull(publications.prevNextDirection),
-          sql`${publications.prevNextDirection} <> ${SERIAL_DIRECTION}`,
-        ),
+        sql`${publications.serialKind} <> 'comic'`,
+        undeclared,
       ),
     );
 
-  const serials = await db
-    .select({ uri: publications.uri })
-    .from(publications)
-    .where(
-      and(
-        eq(publications.prevNextDirection, SERIAL_DIRECTION),
-        eq(publications.deleted, false),
+  const [serials, inferredComics] = await Promise.all([
+    db
+      .select({ uri: publications.uri })
+      .from(publications)
+      .where(
+        and(
+          eq(publications.prevNextDirection, SERIAL_DIRECTION),
+          eq(publications.deleted, false),
+        ),
       ),
-    );
+    db
+      .select({ uri: publications.uri })
+      .from(publications)
+      .where(
+        and(
+          eq(publications.serialKind, "comic"),
+          undeclared,
+          eq(publications.deleted, false),
+        ),
+      ),
+  ]);
 
   // Each classification samples up to 40 bodies, so the rows are wide; a few in
   // flight hides the round trips without pulling a lot of `content_json` into
-  // memory at once.
-  await mapWithConcurrency(serials, SERIAL_KIND_CONCURRENCY, ({ uri }) =>
-    deriveSerialKind(db, schema, uri),
+  // memory at once. An inferred comic is re-judged as what it is — undeclared —
+  // so one that stopped looking like a comic falls back to a blog rather than
+  // being promoted to a book it never claimed to be.
+  await mapWithConcurrency(
+    [
+      ...serials.map((row) => ({ uri: row.uri, declared: true })),
+      ...inferredComics.map((row) => ({ uri: row.uri, declared: false })),
+    ],
+    SERIAL_KIND_CONCURRENCY,
+    ({ uri, declared }) => deriveSerialKind(db, schema, uri, { declared }),
   );
 }
 

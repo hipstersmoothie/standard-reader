@@ -890,7 +890,8 @@ Backend/API exists; UI or copy is missing.
       `publications.serial_kind` — comic vs book — from `recomputeSerialKinds` in the hourly sweep
       ([`recompute.ts`](src/server/ingest/recompute.ts)): a publication whose recent posts each
       render an image and carry only a short note of prose is a comic. Both travel to the UI as
-      `PublicationCard.serial` ([`serial.ts`](src/lib/publication/serial.ts)).
+      `PublicationCard.serial` ([`serial.ts`](src/lib/publication/serial.ts)). (Comics that never
+      declared are inferred — see "Comics without the declaration" below.)
       Serial publication pages list their archive **newest-first** like every other publication —
       an archive answers "what's new here?" far more often than "where does this start?" — with a
       per-publication cookie override for a reader who wants to start at the beginning, resolved
@@ -955,13 +956,14 @@ Backend/API exists; UI or copy is missing.
       rather than a full `upsertPublication` per row. ~40s where the per-repo shape measured
       ~46 min of PDS reads alone.
       A comic publication's page shows a **shelf of covers** instead of its archive list
-      ([`comic-shelf.tsx`](src/components/comic/comic-shelf.tsx)): `selectComicShelf` parses the
-      issue number out of each post title ([`issue-title.ts`](src/lib/comic/issue-title.ts)),
-      collapses consecutive pages into issues, and fronts each with its cover art, so a reader
-      browses issues rather than scrolling `#1 Cover`, `#1, Pg. 1`, `#1, Pg. 2`. The convention is
-      treated as a guess — under 70% of titles parsing, or a single group, leaves `grouped: false`
-      and the ordinary list stands, as do the read/unread filters. Awaited in the route loader for
-      comics so the shelf is part of first paint.
+      ([`comic-shelf.tsx`](src/components/comic/comic-shelf.tsx)): `selectComicShelf` parses each
+      post title's part out of it (`parseComicTitlePart`,
+      [`issue-title.ts`](src/lib/comic/issue-title.ts)), collapses consecutive pages sharing a part
+      — an issue number, or an arc name like `Prologue p.18` — and fronts each with its cover art,
+      so a reader browses issues rather than scrolling `#1 Cover`, `#1, Pg. 1`, `#1, Pg. 2`. The
+      convention is treated as a guess — under 70% of titles parsing, or a single group, leaves
+      `grouped: false` and the ordinary list stands, as do the read/unread filters. Awaited in the
+      route loader for comics so the shelf is part of first paint.
       **Unread works by the issue**: an issue is unread while any of its pages is, so the shelf is
       reader-scoped — `selectComicShelf` hands each issue the reader's unread pages
       (`selectUnreadDocumentUris`, the same query the archive filter and "mark all as read" use),
@@ -970,6 +972,23 @@ Backend/API exists; UI or copy is missing.
       ([`shelf-progress.ts`](src/lib/comic/shelf-progress.ts)). `read` records mirror in through
       the firehose, so the server's answer is corrected client-side from the same read caches the
       feeds' unread dots use — walking a comic and stepping back out leaves no stale dots behind.
+- [x] **Comics without the declaration** — `prevNextDirection` is a setting buried in a publishing
+      tool, and most comics never set it, so the serial treatment above reached almost none of the
+      comics on the network (`Astarion and Veluthe's Infinite Adventure` — 18 image-only posts
+      titled `Prologue p.1`…`Prologue P.18` — read as an ordinary blog). A publication that
+      declares nothing may now be a comic **on evidence**: pages of art (the existing sample) _and_
+      titles that run in sequence, over at least `INFERRED_COMIC_MIN_POSTS` posts. Both are
+      required — a photoblog is art without a sequence, a numbered essay series is a sequence
+      without art — and only comics are inferred, since a serial book is indistinguishable from a
+      blog. The title parser gained the **page convention** (`Prologue p.18`, `Chapter 2 — Page 7`,
+      `Page 4`) alongside the issue one (`FITV #2, Pg. 7`); both insist on a marker so a title that
+      merely ends in a number stays prose ([`issue-title.ts`](src/lib/comic/issue-title.ts)), and
+      the shelf groups by whichever the publication uses. Judging an undeclared publication is
+      recorded either way, including `serial_kind = 'blog'` (`JUDGED_NOT_SERIAL`) for the ordinary
+      ones, so `needsSerialResolution` asks once rather than once a page view; the titles are
+      checked on their own cheap query and `content_json` is only opened for candidates. The hourly
+      sweep re-derives the inferred comics with the declared serials (so one never flickers back to
+      a blog on feed cards) and clears the `'blog'` markers, handing those back to the read path.
 - [ ] **Reader preference for the comic reader** — comics currently always open in the theater (with
       "Read the notes" as the escape). The magazine has an `open_collections_in_magazine` toggle;
       the comic reader deserves the same opt-out, plus a per-publication override for a serial the

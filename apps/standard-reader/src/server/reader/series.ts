@@ -16,10 +16,13 @@ import type {
   Schema,
 } from "#/integrations/tanstack-query/api-shapes";
 import { toIsoTimestamp } from "#/integrations/tanstack-query/api-shapes";
+import { titlesLookLikeComicSequence } from "#/lib/comic/issue-title";
 import { documentImages } from "#/lib/document/images";
 import type { SerialKind, SerialPublication } from "#/lib/publication/serial";
 import {
   BLOG_DIRECTION,
+  isSerialDirection,
+  JUDGED_NOT_SERIAL,
   parsePrevNextDirection,
   resolveSerialPublication,
 } from "#/lib/publication/serial";
@@ -84,14 +87,70 @@ export const COMIC_PAGE_MAX_TEXT_LENGTH = 4000;
 export const COMIC_PAGE_SHARE = 0.6;
 
 /**
- * Classify one serial publication as a comic or a book from its posts, and
- * persist the answer on the row.
+ * Posts an undeclared publication needs before it can be inferred to be a comic.
+ *
+ * A publisher who declared a serial gets taken at their word on their first
+ * post. An inference has nothing but the pattern, and two image posts titled
+ * `Page 1` and `Page 2` are as likely to be the start of anything else — so it
+ * waits for enough of a run to be a pattern rather than a coincidence. The cost
+ * of waiting is that a new comic reads as a blog for its first few pages; the
+ * cost of not waiting is dropping readers of something that isn't a comic into
+ * a page-flip reader.
+ */
+export const INFERRED_COMIC_MIN_POSTS = 5;
+
+/** The newest titles in a publication — the cheap half of a classification. */
+async function selectSerialSampleTitles(
+  db: Db,
+  schema: Schema,
+  publicationUri: string,
+): Promise<Array<string>> {
+  const d = schema.documents;
+  const rows = await db
+    .select({ title: d.title })
+    .from(d)
+    .where(and(eq(d.publicationUri, publicationUri), eq(d.deleted, false)))
+    .orderBy(sql`${d.publishedAt} desc nulls last`)
+    .limit(SERIAL_SAMPLE_SIZE);
+  return rows.map((row) => row.title);
+}
+
+async function persistSerialKind(
+  db: Db,
+  schema: Schema,
+  publicationUri: string,
+  kind: string,
+): Promise<void> {
+  await db
+    .update(schema.publications)
+    .set({ serialKind: kind, updatedAt: sql`now()` })
+    .where(eq(schema.publications.uri, publicationUri));
+}
+
+/**
+ * Classify one publication from its posts, and persist the answer on the row.
  *
  * A post whose body renders at least one image and carries only a short note of
  * prose is a page of comic; a post that is mostly writing is a chapter. Sampled
  * newest-first: a long-running serial's current form is what a reader arriving
  * today will page through. Returns null when the publication has no posts yet —
  * there is nothing to judge, and the next sweep will try again.
+ *
+ * `declared` is whether the publisher marked the publication a serial, and it
+ * changes what the sample has to prove (see `#/lib/publication/serial`):
+ *
+ *  - **declared** — the publication is a serial either way, so the sample only
+ *    picks the flavour: pages of art is a `"comic"`, anything else a `"book"`.
+ *  - **undeclared** — it has to earn the serial treatment. Pages of art *and*
+ *    titles that run in sequence makes it a `"comic"`; anything else is written
+ *    down as an ordinary blog (`JUDGED_NOT_SERIAL`) so nothing asks again until
+ *    the sweep clears it. Never a `"book"` — prose that reads front-to-back is
+ *    not something we can tell from a blog.
+ *
+ * The undeclared path checks the titles first, on their own cheap query, and
+ * only opens `content_json` for the publications that pass. Every publication on
+ * the network runs this once; only the handful that look like comics pay for the
+ * bodies.
  *
  * Shared by the hourly sweep (`recomputeSerialKinds`) and the on-demand path
  * below, so a publication can't be classified two different ways depending on
@@ -101,7 +160,20 @@ export async function deriveSerialKind(
   db: Db,
   schema: Schema,
   publicationUri: string,
+  opts: { declared: boolean },
 ): Promise<SerialKind | null> {
+  if (!opts.declared) {
+    const titles = await selectSerialSampleTitles(db, schema, publicationUri);
+    if (titles.length === 0) return null;
+    if (
+      titles.length < INFERRED_COMIC_MIN_POSTS ||
+      !titlesLookLikeComicSequence(titles)
+    ) {
+      await persistSerialKind(db, schema, publicationUri, JUDGED_NOT_SERIAL);
+      return null;
+    }
+  }
+
   const d = schema.documents;
   const sample = await db
     .select({
@@ -129,14 +201,15 @@ export async function deriveSerialKind(
     );
   }).length;
 
-  const kind: SerialKind =
-    comicPages / sample.length >= COMIC_PAGE_SHARE ? "comic" : "book";
+  const readsAsComic = comicPages / sample.length >= COMIC_PAGE_SHARE;
 
-  await db
-    .update(schema.publications)
-    .set({ serialKind: kind, updatedAt: sql`now()` })
-    .where(eq(schema.publications.uri, publicationUri));
+  if (!opts.declared && !readsAsComic) {
+    await persistSerialKind(db, schema, publicationUri, JUDGED_NOT_SERIAL);
+    return null;
+  }
 
+  const kind: SerialKind = readsAsComic ? "comic" : "book";
+  await persistSerialKind(db, schema, publicationUri, kind);
   return kind;
 }
 
@@ -156,11 +229,16 @@ export async function deriveSerialKind(
  * default rather than NULL for a record that states nothing, so this fires
  * exactly once per publication rather than on every view of every ordinary blog.
  *
- * The kind is derived the same way — on demand, and only for publications that
- * turn out to be serials — so a comic never has to spend an hour reading as a
- * book while it waits for the sweep. Both steps are best-effort: a PDS that
- * won't answer leaves the row alone and reads as an ordinary publication, which
- * is exactly what it looked like a moment ago.
+ * The kind is derived the same way — on demand, for any publication nobody has
+ * judged yet — so a comic never has to spend an hour reading as a book (or as a
+ * blog, when its publisher declared nothing) while it waits for the sweep. Both
+ * steps are best-effort: a PDS that won't answer leaves the row alone and reads
+ * as an ordinary publication, which is exactly what it looked like a moment ago.
+ *
+ * Judging an undeclared publication is what puts this on every publication's
+ * path rather than only its serials', so the answer is written down either way
+ * — including the negative (`JUDGED_NOT_SERIAL`). A blog costs one query over
+ * its titles, once.
  */
 export async function ensurePublicationSerial(
   db: Db,
@@ -185,12 +263,12 @@ export async function ensurePublicationSerial(
   }
 
   const serial = resolveSerialPublication(direction, row.serialKind);
-  if (!serial || row.serialKind != null) return serial;
+  if (row.serialKind != null) return serial;
 
-  // A serial we haven't classified yet: judge it now from its own posts.
-  const kind = await deriveSerialKind(db, schema, publicationUri).catch(
-    () => null,
-  );
+  // Never judged: read the publication's own posts and decide now.
+  const kind = await deriveSerialKind(db, schema, publicationUri, {
+    declared: isSerialDirection(direction),
+  }).catch(() => null);
   return kind ? { kind } : serial;
 }
 

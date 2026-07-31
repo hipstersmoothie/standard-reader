@@ -33,9 +33,8 @@ import type {
 } from "#/integrations/tanstack-query/api-shapes";
 import { toIsoTimestamp } from "#/integrations/tanstack-query/api-shapes";
 import {
-  isCoverPageLabel,
-  parseComicIssueTitle,
-  titlesLookLikeIssues,
+  parseComicTitlePart,
+  titlesLookLikeComicSequence,
 } from "#/lib/comic/issue-title";
 import { comicPageNote } from "#/lib/comic/page-note";
 import { documentImages } from "#/lib/document/images";
@@ -331,9 +330,15 @@ export interface ComicUnreadPage {
 
 /** One issue on the shelf — a run of pages fronted by its cover. */
 export interface ComicShelfIssue {
-  /** Issue number from the titles, null for pages that named none. */
+  /**
+   * Issue number from the titles, null when they group by a named arc
+   * (`Prologue p.18`) or named nothing at all.
+   */
   issueNumber: number | null;
-  /** What to print under the cover — `#2`, or the document title as a fallback. */
+  /**
+   * What to print under the cover — `#2`, the arc's name, or the front page's
+   * document title as a fallback.
+   */
   label: string;
   /** The document whose art fronts the issue. */
   uri: string;
@@ -363,10 +368,11 @@ export interface ComicShelf {
   issues: Array<ComicShelfIssue>;
   totalPages: number;
   /**
-   * False when the publication's titles don't follow the issue convention. The
-   * caller keeps its ordinary archive list rather than showing a shelf built on
-   * guesses — a comic that names its posts some other way is not broken, it just
-   * can't be grouped this way.
+   * False when the publication's titles follow neither naming convention, or
+   * when they put every page in one part — a comic that runs `Page 1`…`Page 60`
+   * straight through has nothing to shelve. The caller keeps its ordinary
+   * archive list rather than showing a shelf built on guesses; a comic that
+   * names its posts some other way is not broken, it just can't be grouped.
    */
   grouped: boolean;
 }
@@ -376,10 +382,10 @@ export interface ComicShelf {
  *
  * A comic posts one page per document, so its archive is dozens of near-identical
  * rows — `FITV #1 Cover`, `FITV #1, Pg. 1`, `FITV #1, Pg. 2` — when the thing a
- * reader browses is *issues*. The issue number lives only in those titles (the
- * lexicon has no field for it), so it is parsed back out
- * (`#/lib/comic/issue-title`) and consecutive pages sharing a number collapse
- * into one shelf entry.
+ * reader browses is *issues*. Which part a page belongs to lives only in those
+ * titles (the lexicon has no field for it), so it is parsed back out
+ * (`#/lib/comic/issue-title`) and consecutive pages sharing a part — an issue
+ * number, or an arc name like `Prologue p.18` — collapse into one shelf entry.
  *
  * Because it rests on a naming convention, it declines rather than guesses: a
  * publication whose titles mostly don't parse comes back `grouped: false`.
@@ -427,32 +433,34 @@ export async function selectComicShelf(
     grouped: false,
   };
   if (spine.issues.length === 0) return empty;
-  if (!titlesLookLikeIssues(spine.issues.map((issue) => issue.title))) {
+  if (!titlesLookLikeComicSequence(spine.issues.map((issue) => issue.title))) {
     return empty;
   }
 
   // Walk the spine in reading order, starting a new shelf entry whenever the
-  // issue number changes. A page whose title doesn't parse joins the issue it
-  // sits inside rather than splitting it — an interstitial with an odd title is
-  // still part of that issue.
+  // part changes — a new issue number, or a new named arc. A page whose title
+  // doesn't parse joins the part it sits inside rather than splitting it: an
+  // interstitial with an odd title is still part of that issue.
   type Group = {
+    key: string;
+    label: string;
     issueNumber: number | null;
     pages: Array<{ issue: (typeof spine.issues)[number]; isCover: boolean }>;
   };
   const groups: Array<Group> = [];
   for (const issue of spine.issues) {
-    const parsed = parseComicIssueTitle(issue.title);
+    const part = parseComicTitlePart(issue.title);
     const last = groups.at(-1);
-    const sameIssue =
-      last != null &&
-      (parsed == null || last.issueNumber === parsed.issueNumber);
-    const entry = {
-      issue,
-      isCover: parsed != null && isCoverPageLabel(parsed.pageLabel),
-    };
-    if (sameIssue) last.pages.push(entry);
+    const samePart = last != null && (part == null || last.key === part.key);
+    const entry = { issue, isCover: part?.isCover ?? false };
+    if (samePart) last.pages.push(entry);
     else
-      groups.push({ issueNumber: parsed?.issueNumber ?? null, pages: [entry] });
+      groups.push({
+        key: part?.key ?? "",
+        label: part?.label ?? "",
+        issueNumber: part?.issueNumber ?? null,
+        pages: [entry],
+      });
   }
 
   // The cover is the page that says it is one; failing that, the issue's first
@@ -496,8 +504,9 @@ export async function selectComicShelf(
 
     issues.push({
       issueNumber: group.issueNumber,
-      label:
-        group.issueNumber == null ? front.issue.title : `#${group.issueNumber}`,
+      // `#2` or the arc's name; a part the titles left unnamed is printed with
+      // its front page's own title, which is the only name it has.
+      label: group.label || front.issue.title,
       uri: front.issue.uri,
       did: front.issue.did,
       rkey: front.issue.rkey,

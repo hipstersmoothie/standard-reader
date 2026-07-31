@@ -63,10 +63,13 @@ export const publications = pgTable(
      * `#/lib/publication/serial`. */
     prevNextDirection: text("prev_next_direction"),
 
-    /** App-derived (`recomputeSerialKinds`): which flavour of serial this is —
-     * `"comic"` when its posts are mostly pages of art, else `"book"`. Null for
-     * publications that aren't serials. The lexicon has no such field, so it is
-     * inferred from the posts. */
+    /** App-derived (`deriveSerialKind`): which flavour of serial this is —
+     * `"comic"` when its posts are mostly pages of art, else `"book"`. On a
+     * publication that declared no direction, `"comic"` is an inference from
+     * the posts and titles, `"blog"` (`JUDGED_NOT_SERIAL`) records that we
+     * looked and it is an ordinary publication, and NULL means nobody has
+     * judged it yet. The lexicon has no such field. See
+     * `#/lib/publication/serial`. */
     serialKind: text("serial_kind"),
 
     /** Mirrors `app.standard-reader.collectionsPublication` — marks this
