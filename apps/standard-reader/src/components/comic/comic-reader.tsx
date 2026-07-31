@@ -511,11 +511,8 @@ export function ComicReader({
   // Full screen is asked for on the theater rather than the document, so the
   // fixed backdrop is what fills the screen and every control goes with it.
   const theaterRef = useRef<HTMLDivElement>(null);
-  const {
-    supported: fullscreenSupported,
-    active: fullscreenActive,
-    toggle: toggleFullscreen,
-  } = useFullscreen(theaterRef);
+  const { active: fullscreenActive, toggle: toggleFullscreen } =
+    useFullscreen(theaterRef);
 
   // The writing this page published with, if it published any. It travels on
   // the page itself, so a page still loading simply has no note yet — which
@@ -956,34 +953,33 @@ export function ComicReader({
             </IconButtonLink>
           ) : null}
 
-          {/* Last in the bar, where a player puts it. Absent rather than
-              disabled where the browser won't do it (iOS Safari): a control
-              that can never work is one more thing between a reader and the
-              art. */}
-          {fullscreenSupported ? (
-            <IconButton
-              variant="tertiary"
-              aria-label={
-                fullscreenActive ? t`Exit full screen` : t`Enter full screen`
-              }
-              onPress={toggleFullscreen}
-              style={styles.chromeControl}
-            >
-              {fullscreenActive ? (
-                <Minimize
-                  aria-hidden
-                  size={ICON_SIZE}
-                  strokeWidth={ICON_STROKE}
-                />
-              ) : (
-                <Maximize
-                  aria-hidden
-                  size={ICON_SIZE}
-                  strokeWidth={ICON_STROKE}
-                />
-              )}
-            </IconButton>
-          ) : null}
+          {/* Last in the bar, where a player puts it, and always drawn. Where
+              the platform refuses element full screen (iPhone reserves it for
+              `<video>`) the press does nothing — but a visible control the OS
+              won't honour is a limit the reader can see, where a missing one is
+              a limit they can only guess at. */}
+          <IconButton
+            variant="tertiary"
+            aria-label={
+              fullscreenActive ? t`Exit full screen` : t`Enter full screen`
+            }
+            onPress={toggleFullscreen}
+            style={styles.chromeControl}
+          >
+            {fullscreenActive ? (
+              <Minimize
+                aria-hidden
+                size={ICON_SIZE}
+                strokeWidth={ICON_STROKE}
+              />
+            ) : (
+              <Maximize
+                aria-hidden
+                size={ICON_SIZE}
+                strokeWidth={ICON_STROKE}
+              />
+            )}
+          </IconButton>
         </div>
 
         {totalPages > 0 ? (

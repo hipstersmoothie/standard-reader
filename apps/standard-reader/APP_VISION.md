@@ -390,9 +390,16 @@ What changes for a serial:
   belongs to the reading view, not the theater.
   The top bar carries a **full-screen toggle** (`f`, or the button at its end) that puts the
   theater itself full screen, so the browser's own furniture leaves the art alone
-  (`#/components/comic/use-fullscreen`). The button is absent, not disabled, where the browser
-  won't do it — iOS Safari reserves full screen for `<video>` — and its state follows
-  `fullscreenchange`, since Escape, F11 and the OS all exit without asking the app.
+  (`#/components/comic/use-fullscreen`). It is **always drawn**, including where the platform
+  refuses element full screen — iPhone reserves it for `<video>`, so the press does nothing there.
+  Hiding it on `document.fullscreenEnabled` was the first cut, and it made the feature invisible on
+  the device most likely to want it: a control the OS won't honour is a limit a reader can see,
+  where a missing control is one they can only guess at. The WebKit-prefixed spelling is tried when
+  the standard one is absent (iPadOS below 16.4), and the icon's state follows `fullscreenchange`,
+  since Escape, F11 and the OS all exit without asking the app.
+  On iPhone the real full-screen path is the home-screen install the app already supports
+  (`display: standalone`, `apple-mobile-web-app-capable`, `viewport-fit=cover` — which is why the
+  theater's bars pad with `env(safe-area-inset-*)`).
 - **A page's note reads over the page.** Comic posts often publish a line or two beside the art —
   a caption, a process note, a word about next week — and in the theater that writing had nowhere
   to go but the reading view, a navigation away from the page it was written about. The top bar's

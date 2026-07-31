@@ -3,13 +3,29 @@
 import type { RefObject } from "react";
 import { useCallback, useEffect, useState } from "react";
 
+/**
+ * Safari shipped full screen under a prefix years before it shipped the
+ * standard names, and still answers to the prefixed ones. iPadOS below 16.4 has
+ * only these; the app's `baseline 2024` target doesn't cover them, but they cost
+ * four lines and they are the difference between a working control and a dead
+ * one on a device someone is actually holding.
+ */
+interface WebkitFullscreenElement extends HTMLElement {
+  webkitRequestFullscreen?: () => Promise<void> | void;
+}
+
+interface WebkitFullscreenDocument extends Document {
+  webkitFullscreenElement?: Element | null;
+  webkitExitFullscreen?: () => Promise<void> | void;
+}
+
+/** The element the browser currently has full screen, prefixes included. */
+function fullscreenElement(): Element | null {
+  const doc = document as WebkitFullscreenDocument;
+  return doc.fullscreenElement ?? doc.webkitFullscreenElement ?? null;
+}
+
 export interface FullscreenControl {
-  /**
-   * Whether this browser will put an element full screen at all. False on iOS
-   * Safari, which reserves full screen for `<video>` — the control that offers
-   * it has to be absent there rather than present and dead.
-   */
-  supported: boolean;
   /** Whether *this* element is the one currently filling the screen. */
   active: boolean;
   toggle: () => void;
@@ -20,52 +36,62 @@ export interface FullscreenControl {
  *
  * The theater already covers the viewport, so what full screen buys a comic is
  * the browser's own furniture — tab strip, address bar, OS chrome — getting out
- * from around the art. That is the whole feature; everything here is about
- * asking for it safely.
+ * from around the art.
  *
- * Support is detected after mount rather than during render: this component is
- * server-rendered, and a server that guessed "supported" would hand the client
- * a button that may not belong there (and a mismatch to reconcile). The state
- * follows `fullscreenchange` rather than the calls themselves, so the browser
- * stays the authority — Escape, F11 and the OS all exit without asking us, and
- * the icon has to keep up with them.
+ * The control is offered unconditionally rather than hidden where
+ * `document.fullscreenEnabled` is false. That flag is honest — on iPhone it
+ * means the Fullscreen API genuinely cannot put an element full screen, since
+ * iOS reserves that for `<video>` — but hiding the button on the strength of it
+ * makes the feature invisible on the device most likely to want it, and leaves a
+ * reader hunting for a control that was never drawn. A button that the platform
+ * refuses is a platform limit the reader can see; a missing button is one they
+ * can only guess at.
  *
- * Unprefixed API only. `browserslist("baseline 2024")` (the app's own target,
- * see `vite.config.ts`) puts every browser that supports element full screen at
- * all on the standard names, so the vendor-prefixed fallbacks would be dead
- * code guarding against browsers that fail the detection anyway.
+ * The state follows `fullscreenchange` rather than the calls themselves, so the
+ * browser stays the authority — Escape, F11 and the OS all exit without asking
+ * us, and the icon has to keep up with them.
  */
 export function useFullscreen(
   target: RefObject<HTMLElement | null>,
 ): FullscreenControl {
-  const [supported, setSupported] = useState(false);
   const [active, setActive] = useState(false);
 
   useEffect(() => {
     if (globalThis.document === undefined) return;
-    setSupported(document.fullscreenEnabled);
 
-    // Scoped to our own element: another element going full screen (a video in
-    // a background tab of the same document) is not this reader's business.
-    const sync = () => setActive(document.fullscreenElement === target.current);
+    // Scoped to our own element: another element going full screen (a video
+    // elsewhere in the same document) is not this reader's business.
+    const sync = () => setActive(fullscreenElement() === target.current);
     sync();
     document.addEventListener("fullscreenchange", sync);
-    return () => document.removeEventListener("fullscreenchange", sync);
+    document.addEventListener("webkitfullscreenchange", sync);
+    return () => {
+      document.removeEventListener("fullscreenchange", sync);
+      document.removeEventListener("webkitfullscreenchange", sync);
+    };
   }, [target]);
 
   const toggle = useCallback(() => {
-    const element = target.current;
+    const element = target.current as WebkitFullscreenElement | null;
     if (!element) return;
-    // Both calls reject when the browser refuses — a request outside a user
-    // gesture, a permissions policy that forbids it. There is nothing to tell
-    // the reader that the screen not changing doesn't already say, and an
-    // unhandled rejection would be noise in the console for it.
-    const request =
-      document.fullscreenElement === element
-        ? document.exitFullscreen()
-        : element.requestFullscreen();
-    void request.catch(() => {});
+    const doc = document as WebkitFullscreenDocument;
+
+    // Every one of these is absent on a browser that doesn't do element full
+    // screen, and rejects on one that does but won't right now (a request
+    // outside a user gesture, a permissions policy, an iframe without
+    // `allowfullscreen`). Both cases end here: there is nothing to tell the
+    // reader that the screen not changing doesn't already say, and an unhandled
+    // rejection would be console noise for it.
+    const run = async () => {
+      if (fullscreenElement() === element) {
+        await (doc.exitFullscreen?.() ?? doc.webkitExitFullscreen?.());
+      } else {
+        await (element.requestFullscreen?.() ??
+          element.webkitRequestFullscreen?.());
+      }
+    };
+    void run().catch(() => {});
   }, [target]);
 
-  return { supported, active, toggle };
+  return { active, toggle };
 }
