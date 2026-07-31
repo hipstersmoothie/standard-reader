@@ -20,7 +20,7 @@ import {
 import * as stylex from "@stylexjs/stylex";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Check } from "lucide-react";
+import { Check, FileText } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import type {
@@ -99,11 +99,16 @@ function LabelerCardItem({
   subscribed,
   enabled,
 }: {
-  card: LabelerCard;
+  card: LabelerCard | LabelerListItem;
   subscribed: boolean;
   enabled: boolean;
 }) {
   const { names, total: labelTotal } = labelSummary(card);
+  // Almost every labeler on the network labels Bluesky posts and accounts. One
+  // that has labeled a standard.site document is aimed at what this app shows,
+  // which is worth saying out loud — it is also why they sort first.
+  const labelsDocuments =
+    "labelsDocuments" in card ? card.labelsDocuments : false;
   const displayName =
     card.displayName ?? labelerHandle(card.did, card.handle) ?? card.did;
   const muted = subscribed && !enabled;
@@ -138,6 +143,12 @@ function LabelerCardItem({
       </div>
       {card.description ? (
         <p {...stylex.props(styles.cardDescription)}>{card.description}</p>
+      ) : null}
+      {labelsDocuments ? (
+        <p {...stylex.props(styles.docsMark)}>
+          <FileText size={13} aria-hidden />
+          <Trans>Labels articles here</Trans>
+        </p>
       ) : null}
       {names.length > 0 ? (
         <div {...stylex.props(styles.badges)}>
@@ -301,6 +312,15 @@ const styles = stylex.create({
     color: "inherit",
     cursor: "pointer",
     display: "block",
+  },
+  docsMark: {
+    gap: gap.xs,
+    alignItems: "center",
+    color: uiColor.text1,
+    display: "inline-flex",
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.medium,
+    marginBlock: spacing["0"],
   },
   stateMark: {
     gap: gap.xs,

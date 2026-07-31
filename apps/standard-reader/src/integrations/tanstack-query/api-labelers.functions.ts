@@ -88,6 +88,12 @@ export interface LabelerListItem extends LabelerCard {
    */
   enabled: boolean;
   subscriberCount: number;
+  /**
+   * This labeler has labeled at least one `site.standard.document` — meaning it
+   * is aimed at this network, not just at Bluesky posts and accounts. Rare
+   * enough to be worth leading the directory with and marking on the card.
+   */
+  labelsDocuments: boolean;
 }
 
 export type LabelVisibility = "ignore" | "warn" | "hide";
@@ -310,6 +316,18 @@ const getKnownLabelers = createServerFn({ method: "GET" })
         .groupBy(ls.labelerDid)
         .as("subscriber_count");
 
+      // Labelers that have labeled a **standard.site document** — i.e. ones
+      // aimed at this network rather than at Bluesky posts and accounts, which
+      // is what nearly every labeler does. Backed by a partial index on exactly
+      // this predicate (see `documentLabels`), so it costs ~0.02ms instead of a
+      // seq scan over every label we hold.
+      const dl = context.schema.documentLabels;
+      const documentLabelers = context.db
+        .selectDistinct({ src: dl.src })
+        .from(dl)
+        .where(sql`${dl.uri} like 'at://%/site.standard.document/%'`)
+        .as("document_labelers");
+
       // Matched against name, handle, description and the declared label
       // identifiers, so searching "spam" finds labelers that emit it.
       const term = data.query.toLowerCase();
@@ -341,7 +359,12 @@ const getKnownLabelers = createServerFn({ method: "GET" })
       // labelers to the top made the page a mirror of their existing setup
       // rather than somewhere to find something new; their own are reachable via
       // search, and each card already shows its state.
+      // Labelers that label standard.site documents lead the directory: they
+      // are the ones relevant to what this app actually shows, and there are
+      // few enough that they would otherwise be buried under hundreds of
+      // Bluesky-facing moderation services ranked by subscriber count.
       const orderBy = [
+        sql`(${documentLabelers.src} is not null) desc`,
         sql`coalesce(${subscriberCount.count}, 0) desc`,
         sql`coalesce(${svc.displayName}, ${svc.handle}, ${svc.labelerDid}) asc`,
       ];
@@ -360,12 +383,14 @@ const getKnownLabelers = createServerFn({ method: "GET" })
             avatarUrl: svc.avatarUrl,
             labelValueDefinitions: svc.labelValueDefinitions,
             subscriberCount: subscriberCount.count,
+            labelsDocuments: sql<boolean>`(${documentLabelers.src} is not null)`,
           })
           .from(svc)
           .leftJoin(
             subscriberCount,
             eq(subscriberCount.labelerDid, svc.labelerDid),
           )
+          .leftJoin(documentLabelers, eq(documentLabelers.src, svc.labelerDid))
           .where(where)
           .orderBy(...orderBy)
           .limit(data.limit)
@@ -390,6 +415,7 @@ const getKnownLabelers = createServerFn({ method: "GET" })
           subscribed: subSet.has(row.labelerDid),
           enabled: !disabledSet.has(row.labelerDid),
           subscriberCount: row.subscriberCount ?? 0,
+          labelsDocuments: row.labelsDocuments ?? false,
         };
       });
 

@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import {
   boolean,
   index,
@@ -169,6 +170,21 @@ export const documentLabels = pgTable(
     index("document_labels_uri_idx").on(table.uri),
     // Replace-by-labeler during sync + labeler-detail document listing.
     index("document_labels_src_idx").on(table.src),
+    /**
+     * Which labelers label **standard.site documents** — the signal that a
+     * labeler is aimed at this network rather than at Bluesky posts and
+     * accounts, which is what almost every labeler does.
+     *
+     * Partial, because the predicate has a leading wildcard: matching
+     * `at://…/site.standard.document/…` can't use the plain `src` index, and
+     * asking the question live cost a 70ms parallel seq scan over the whole
+     * table (185ms for a single busy labeler). With this it is 0.02ms, and the
+     * index is 8 kB because so few rows qualify — which is the whole point of
+     * surfacing them.
+     */
+    index("document_labels_standard_doc_src_idx")
+      .on(table.src)
+      .where(sql`${table.uri} like 'at://%/site.standard.document/%'`),
   ],
 );
 

@@ -1,0 +1,1 @@
+CREATE INDEX "document_labels_standard_doc_src_idx" ON "document_labels" USING btree ("src") WHERE "document_labels"."uri" like 'at://%/site.standard.document/%';

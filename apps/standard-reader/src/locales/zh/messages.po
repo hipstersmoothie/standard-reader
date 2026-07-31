@@ -5330,6 +5330,10 @@ msgstr "Google Font"
 msgid "Create collection"
 msgstr "创建合集"
 
+#: src/components/labelers-settings-view.tsx
+msgid "Labels articles here"
+msgstr ""
+
 #: src/components/guide/pages/getting-started-guide-page.tsx
 msgid "the queue of articles you put aside. A badge shows how many are waiting."
 msgstr ""

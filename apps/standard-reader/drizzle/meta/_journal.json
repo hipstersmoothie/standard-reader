@@ -190,6 +190,13 @@
       "when": 1785469802108,
       "tag": "0026_mixed_robin_chapel",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1785470294628,
+      "tag": "0027_bright_war_machine",
+      "breakpoints": true
     }
   ]
 }
