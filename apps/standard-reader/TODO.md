@@ -904,9 +904,11 @@ Backend/API exists; UI or copy is missing.
       than stopping at the end of each issue. Pages are the images each body renders
       ([`images.ts`](src/lib/document/images.ts)); keyboard / tap-zone / swipe paging, the page in
       the URL, each issue marked read as the reader enters it. The **chrome floats over the art and
-      auto-hides**: the bars show themselves on entry, step aside after an idle beat, and come back
-      on a middle-zone tap, a mouse move, or Tab — they stay put for the loading, empty and back-cover
-      states, and pin open under pointer or focus. The top bar ends with a **full-screen toggle**
+      auto-hides**: the bars show themselves on entry and stay until the reader turns their first
+      page — a comic nobody has paged through yet is still being introduced, and a countdown under
+      that introduction takes it from anyone reading at their own pace — then step aside after an
+      idle beat and come back on a middle-zone tap, a mouse move, or Tab. They also stay put for the
+      loading, empty and back-cover states, and pin open under pointer or focus. The top bar ends with a **full-screen toggle**
       (`f`, or the button) that puts the theater element full screen so the browser's own chrome
       leaves the art alone ([`use-fullscreen.ts`](src/components/comic/use-fullscreen.ts)) —
       unprefixed API only (the app targets `baseline 2024`), absent rather than disabled where the
