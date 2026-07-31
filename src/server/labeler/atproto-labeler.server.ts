@@ -1,14 +1,11 @@
 /**
- * Resolve a *standard* AT Protocol labeler — one that has published no
- * `app.standard-reader.labeler.service` record.
+ * Resolve an AT Protocol labeler from its own declaration.
  *
- * Our own labelers register themselves with an app record (see
- * `resolve.server.ts`), but the wider network declares a labeler the Bluesky
- * way: an `#atproto_labeler` service in the DID document pointing at the label
- * server, plus an `app.bsky.labeler.service` record in the operator's repo
- * carrying the label-value definitions. Everything we need for a directory
- * card and for `queryLabels` sync is in those two places, so a labeler like
- * pub-search works with no action on their part.
+ * A labeler declares itself with an `#atproto_labeler` service in its DID
+ * document pointing at the label server, plus an `app.bsky.labeler.service`
+ * record in its repo carrying the label-value definitions. Everything we need
+ * for a directory card and for `queryLabels` sync is in those two places, so any
+ * labeler on the network works here with no action on their part.
  *
  * This module does network I/O and is therefore **not** a request path. It runs
  * once at registration; the result is persisted into `labeler_services` so all

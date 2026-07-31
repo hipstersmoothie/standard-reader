@@ -114,10 +114,9 @@ function pdsFromDoc(doc: DidDocument): string | null {
 
 /**
  * The label server a DID advertises in its DID document (`#atproto_labeler`),
- * as every AT Protocol labeler does — this is how a labeler that has published
- * no `app.standard-reader.labeler.service` record is still reachable. Not
- * cached alongside {@link resolveIdentity}: it is read on the labeler
- * registration path only, not per request.
+ * as every AT Protocol labeler does. Not cached alongside
+ * {@link resolveIdentity}: it is read when a labeler is first resolved, not per
+ * request.
  */
 export async function resolveLabelerServiceEndpoint(
   did: string,

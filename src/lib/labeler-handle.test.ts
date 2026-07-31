@@ -31,7 +31,7 @@ describe("labelerHandle", () => {
   });
 
   test("derives the handle for a did:web labeler with no alsoKnownAs", () => {
-    // Our own labelers are did:web and their documents carry no alsoKnownAs.
+    // A did:web document typically carries no alsoKnownAs at all.
     expect(labelerHandle("did:web:botlabeler.standard-reader.app", null)).toBe(
       "botlabeler.standard-reader.app",
     );

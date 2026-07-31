@@ -28,8 +28,6 @@ push to `main`. Every service uses the `RAILPACK` builder.
 | `tap`            | `ghcr.io/.../tap` Docker image on a `/data` volume | (Docker, no railpack)  | Long-running firehose consumer; admin API on `:2480` (private)         |
 | `ingest`         | `pnpm ingest:start` (= `tsx src/server/ingest/service.ts`) | `railway.ingest.json`  | Binds `[::]:3099`; consumes `tap.railway.internal:2480`               |
 | `recompute-cron` | `node scripts/recompute-cron.mjs`                 | `railway.cron.json`    | `0 * * * *`; POSTs the ingest worker's `/api/ingest/recompute`; `restartPolicyType: NEVER` |
-| `claudeslop`     | `pnpm --filter claudeslop-labeler start`           | `services/claudeslop/railway.json` | `/health` (may not yet be deployed — see TODO.md)            |
-| `botlabeler`     | `pnpm --filter botlabeler start`                   | `services/botlabeler/railway.json` | `/health` (sidecar labeler)                                  |
 
 **Runbook gotcha:** Railway auto-detects only the root `railway.json`. Every
 non-web service needs its **Config File Path** set explicitly (Dashboard →
@@ -174,7 +172,7 @@ If a deploy is misbehaving, check that these are present and correct:
   `ATPROTO_PRIVATE_KEY_JWK`, `HONEYCOMB_API_KEY`, `HONEYCOMB_DATASET`,
   `INGEST_WEBHOOK_SECRET`, `TAP_API_URL` (= `http://tap.railway.internal:2480`)
 - `ingest`: `DATABASE_URL`, `INGEST_WEBHOOK_SECRET`, `TAP_API_URL`,
-  `TAP_LABELER_API_URL`, `HONEYCOMB_API_KEY`, `INGEST_PORT` (= `3099`)
+  `HONEYCOMB_API_KEY`, `INGEST_PORT` (= `3099`)
 - `tap`: `TAP_ADMIN_PASSWORD` (must equal `INGEST_WEBHOOK_SECRET`),
   `TAP_SIGNAL_COLLECTION`, `TAP_COLLECTION_FILTERS`, `TAP_DATABASE_URL`
 - `recompute-cron`: `INGEST_WEBHOOK_SECRET`, `INGEST_PORT` / service URL for

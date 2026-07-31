@@ -151,9 +151,8 @@ export async function syncNetworkLabelers(
 
   // What we already hold for these DIDs, in bounded batches so the IN list
   // can't grow past what Postgres is happy to plan. Keyed by `labelerDid`
-  // rather than by record URI: a labeler registered with one of our own
-  // `app.standard-reader.labeler.service` records has a different URI, so
-  // matching on URI would insert a second row and list it twice.
+  // rather than by record URI, so a row written under any other URI shape can
+  // never be duplicated into a second listing for the same labeler.
   const existing = new Map<string, { uri: string; handle: string | null }>();
   for (const batch of chunk(discovered, 500)) {
     const rows = await db

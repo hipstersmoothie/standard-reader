@@ -3,5 +3,4 @@
  */
 
 export * as defs from './labeler/defs.js'
-export * as service from './labeler/service.js'
 export * as subscription from './labeler/subscription.js'

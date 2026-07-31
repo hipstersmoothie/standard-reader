@@ -146,11 +146,10 @@ const definitionsRefreshedAt = new Map<string, number>();
  * Merge a labeler's own `app.bsky.labeler.service` definitions into its stored
  * row, and report whether anything new landed.
  *
- * An `app.standard-reader.labeler.service` record is written *about* a labeler,
- * often by us, so it drifts: Skywatch's app record declared 2 label values
- * while the labeler itself declares 35 and actively emits 28. Undeclared values
- * are not cosmetic — the Labels tab is where per-label visibility is chosen, so
- * a value with no definition cannot be configured at all.
+ * A labeler's stored definitions can lag what it actually emits — it may add a
+ * label value without our row hearing about it. Undeclared values are not
+ * cosmetic: the Labels tab is where per-label visibility is chosen, so a value
+ * with no definition cannot be configured at all.
  *
  * Definitions already on the row win per identifier, so a deliberate local
  * override is never overwritten; the labeler's own declaration only fills gaps.

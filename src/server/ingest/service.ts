@@ -600,9 +600,7 @@ server.listen(port(), "::", () => {
   }
 });
 
-// Primary signal (publishers) + an optional second tap instance signaled on
-// `app.standard-reader.labeler.service`, so any repo that registers a labeler is
-// tracked and its record indexed — no manual repo tracking needed.
+// Primary signal (publishers).
 const tapChannel = startTapChannel(
   ingestConfig.tapApiUrl ?? "http://127.0.0.1:2480",
 );

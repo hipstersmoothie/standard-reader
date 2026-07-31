@@ -23,6 +23,11 @@ type Main = {
   labels?: LabelPref[]
 
   /**
+   * Whether this labeler's labels are applied while reading. `false` keeps the subscription (and its per-label preferences) but stops the labeler acting here — for a labeler the reader wants on another app but not this one. Absent means enabled.
+   */
+  enabled?: boolean
+
+  /**
    * When the reader subscribed to the labeler.
    */
   createdAt: l.DatetimeString
@@ -40,6 +45,9 @@ const main = /*#__PURE__*/ l.record<'any', Main>(
       /*#__PURE__*/ l.array(
         /*#__PURE__*/ l.ref<LabelPref>((() => labelPref) as any),
       ),
+    ),
+    enabled: /*#__PURE__*/ l.optional(
+      /*#__PURE__*/ l.withDefault(/*#__PURE__*/ l.boolean(), true),
     ),
     createdAt: /*#__PURE__*/ l.string({ format: 'datetime' }),
   }),
