@@ -911,12 +911,12 @@ Backend/API exists; UI or copy is missing.
       loading, empty and back-cover states, and pin open under pointer or focus. The top bar ends with a **full-screen toggle**
       (`f`, or the button) that puts the theater element full screen so the browser's own chrome
       leaves the art alone ([`use-fullscreen.ts`](src/components/comic/use-fullscreen.ts)) —
-      always drawn, including where the platform refuses element full screen (iPhone reserves it for
-      `<video>`, so the press is inert there): hiding it on `document.fullscreenEnabled` made the
-      feature invisible on the device most likely to want it. Falls back to the WebKit-prefixed
-      spelling (iPadOS below 16.4) and is driven off `fullscreenchange` so Escape, F11 and the OS
-      keep the icon honest. The iPhone answer to full screen is the home-screen install the app
-      already supports. Beside it, a **note button** lays the writing a
+      drawn only where the browser says it will do it (`fullscreenEnabled`, either spelling) — which
+      on iPhone is never, since iOS reserves full screen for `<video>` and WebKit bug 206854 has
+      been open since 2020, so an inert button there would read as a broken reader rather than a
+      platform limit (the iPhone answer is the home-screen install the app already supports). Falls
+      back to the WebKit-prefixed spelling (iPadOS below 16.4) and is driven off `fullscreenchange`
+      so Escape, F11 and the OS keep the icon honest. Beside it, a **note button** lays the writing a
       page published with over the art
       ([`comic-page-note.tsx`](src/components/comic/comic-page-note.tsx)) — a translucent scrim,
       the prose in the theater's own type, and a "Read the full post" escape — so a caption no

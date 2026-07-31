@@ -390,16 +390,18 @@ What changes for a serial:
   belongs to the reading view, not the theater.
   The top bar carries a **full-screen toggle** (`f`, or the button at its end) that puts the
   theater itself full screen, so the browser's own furniture leaves the art alone
-  (`#/components/comic/use-fullscreen`). It is **always drawn**, including where the platform
-  refuses element full screen — iPhone reserves it for `<video>`, so the press does nothing there.
-  Hiding it on `document.fullscreenEnabled` was the first cut, and it made the feature invisible on
-  the device most likely to want it: a control the OS won't honour is a limit a reader can see,
-  where a missing control is one they can only guess at. The WebKit-prefixed spelling is tried when
-  the standard one is absent (iPadOS below 16.4), and the icon's state follows `fullscreenchange`,
-  since Escape, F11 and the OS all exit without asking the app.
-  On iPhone the real full-screen path is the home-screen install the app already supports
-  (`display: standalone`, `apple-mobile-web-app-capable`, `viewport-fit=cover` — which is why the
-  theater's bars pad with `env(safe-area-inset-*)`).
+  (`#/components/comic/use-fullscreen`). The button appears only where the browser says it will
+  actually do it (`fullscreenEnabled`, either spelling), which on **iPhone is never**: iOS reserves
+  full screen for `<video>`, WebKit's bug for element full screen (206854) has been open since
+  2020, the prefixed request was closed `WONTFIX` in favour of it, and the Safari 27 beta still
+  doesn't have it. An inert button there reads as a broken reader rather than as a platform limit,
+  so it is dropped — the iPhone answer to full screen is the home-screen install the app already
+  supports (`display: standalone`, `apple-mobile-web-app-capable`, `viewport-fit=cover`, which is
+  why the theater's bars pad with `env(safe-area-inset-*)`). None of this is iPhone-specific in the
+  code: the flag also covers an iframe without `allowfullscreen`, and when Safari ships the API the
+  control appears with no release from us. The WebKit-prefixed spelling is tried when the standard
+  one is absent (iPadOS below 16.4), and the icon's state follows `fullscreenchange`, since Escape,
+  F11 and the OS all exit without asking the app.
 - **A page's note reads over the page.** Comic posts often publish a line or two beside the art —
   a caption, a process note, a word about next week — and in the theater that writing had nowhere
   to go but the reading view, a navigation away from the page it was written about. The top bar's

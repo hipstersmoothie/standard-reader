@@ -30,12 +30,20 @@ function stubFullscreenApi({ standard = true, webkit = false }: Stub = {}) {
     );
   };
 
-  const key =
-    webkit && !standard ? "webkitFullscreenElement" : "fullscreenElement";
-  Object.defineProperty(document, key, {
-    configurable: true,
-    get: () => current,
-  });
+  const prefixed = webkit && !standard;
+  Object.defineProperty(
+    document,
+    prefixed ? "webkitFullscreenElement" : "fullscreenElement",
+    { configurable: true, get: () => current },
+  );
+  // The `*Enabled` flag is how a browser answers "will I do this at all", and
+  // it is spelled to match whichever API it has. A browser with neither leaves
+  // both false — an iPhone.
+  Object.defineProperty(
+    document,
+    prefixed ? "webkitFullscreenEnabled" : "fullscreenEnabled",
+    { configurable: true, get: () => standard || webkit },
+  );
 
   const requestFullscreen = vi.fn(async () => setCurrent(element));
   const exitFullscreen = vi.fn(async () => setCurrent(null));
@@ -70,7 +78,12 @@ afterEach(() => {
     configurable: true,
     get: () => null,
   });
+  Object.defineProperty(document, "fullscreenEnabled", {
+    configurable: true,
+    get: () => false,
+  });
   Reflect.deleteProperty(document, "webkitFullscreenElement");
+  Reflect.deleteProperty(document, "webkitFullscreenEnabled");
   Reflect.deleteProperty(document, "webkitExitFullscreen");
   // Drops the shadowing own-property, putting jsdom's prototype method back.
   Reflect.deleteProperty(document, "exitFullscreen");
@@ -81,6 +94,7 @@ describe("useFullscreen", () => {
     const { element, requestFullscreen } = stubFullscreenApi();
     const { result } = renderHook(() => useFullscreen({ current: element }));
 
+    expect(result.current.supported).toBe(true);
     expect(result.current.active).toBe(false);
 
     await act(async () => result.current.toggle());
@@ -107,6 +121,8 @@ describe("useFullscreen", () => {
     });
     const { result } = renderHook(() => useFullscreen({ current: element }));
 
+    expect(result.current.supported).toBe(true);
+
     await act(async () => result.current.toggle());
     expect(requestFullscreen).toHaveBeenCalledTimes(1);
     expect(result.current.active).toBe(true);
@@ -116,11 +132,14 @@ describe("useFullscreen", () => {
     expect(result.current.active).toBe(false);
   });
 
-  it("does nothing at all where the platform has no full screen", async () => {
-    // An iPhone: neither spelling exists, and the press has to be a no-op
-    // rather than a crash — the control is drawn there regardless.
+  it("offers nothing where the platform has no full screen", async () => {
+    // An iPhone: neither spelling exists. The caller drops the control on
+    // `supported`, and a press that somehow arrives anyway is a no-op rather
+    // than a crash.
     const { element } = stubFullscreenApi({ standard: false });
     const { result } = renderHook(() => useFullscreen({ current: element }));
+
+    expect(result.current.supported).toBe(false);
 
     await act(async () => result.current.toggle());
 

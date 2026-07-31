@@ -511,8 +511,11 @@ export function ComicReader({
   // Full screen is asked for on the theater rather than the document, so the
   // fixed backdrop is what fills the screen and every control goes with it.
   const theaterRef = useRef<HTMLDivElement>(null);
-  const { active: fullscreenActive, toggle: toggleFullscreen } =
-    useFullscreen(theaterRef);
+  const {
+    supported: fullscreenSupported,
+    active: fullscreenActive,
+    toggle: toggleFullscreen,
+  } = useFullscreen(theaterRef);
 
   // The writing this page published with, if it published any. It travels on
   // the page itself, so a page still loading simply has no note yet — which
@@ -953,33 +956,39 @@ export function ComicReader({
             </IconButtonLink>
           ) : null}
 
-          {/* Last in the bar, where a player puts it, and always drawn. Where
-              the platform refuses element full screen (iPhone reserves it for
-              `<video>`) the press does nothing — but a visible control the OS
-              won't honour is a limit the reader can see, where a missing one is
-              a limit they can only guess at. */}
-          <IconButton
-            variant="tertiary"
-            aria-label={
-              fullscreenActive ? t`Exit full screen` : t`Enter full screen`
-            }
-            onPress={toggleFullscreen}
-            style={styles.chromeControl}
-          >
-            {fullscreenActive ? (
-              <Minimize
-                aria-hidden
-                size={ICON_SIZE}
-                strokeWidth={ICON_STROKE}
-              />
-            ) : (
-              <Maximize
-                aria-hidden
-                size={ICON_SIZE}
-                strokeWidth={ICON_STROKE}
-              />
-            )}
-          </IconButton>
+          {/* Last in the bar, where a player puts it, and only where the
+              browser will actually do it. On iPhone it never will — iOS
+              reserves full screen for `<video>`, and the WebKit bug for element
+              full screen (206854) has sat open since 2020 — so the button is
+              dropped there rather than left inert: a press that does nothing
+              reads as a broken reader, not as a platform limit. There the
+              home-screen install is the real full screen, and the theater is
+              already built for that window. Nothing here is iPhone-specific:
+              when Safari ships it, the flag flips and the button appears. */}
+          {fullscreenSupported ? (
+            <IconButton
+              variant="tertiary"
+              aria-label={
+                fullscreenActive ? t`Exit full screen` : t`Enter full screen`
+              }
+              onPress={toggleFullscreen}
+              style={styles.chromeControl}
+            >
+              {fullscreenActive ? (
+                <Minimize
+                  aria-hidden
+                  size={ICON_SIZE}
+                  strokeWidth={ICON_STROKE}
+                />
+              ) : (
+                <Maximize
+                  aria-hidden
+                  size={ICON_SIZE}
+                  strokeWidth={ICON_STROKE}
+                />
+              )}
+            </IconButton>
+          ) : null}
         </div>
 
         {totalPages > 0 ? (
