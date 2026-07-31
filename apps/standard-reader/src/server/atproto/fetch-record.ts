@@ -88,9 +88,21 @@ export async function fetchRepoRecordWithFallback(
   uri: string,
   pds?: string | null,
   timeoutMs?: number,
+  opts: { preferPds?: boolean } = {},
 ): Promise<RecordResponse | null> {
   const parsed = parseAtUri(uri);
   if (!parsed) return null;
+
+  // `preferPds` inverts the order for callers whose *decision* is derived from
+  // the record rather than merely displayed from it. Slingshot is a cache, and
+  // a cached copy that predates an edit reads as a confident, wrong answer —
+  // that is how a publication whose record says `prevNextDirection: "ltr"` got
+  // recorded as an ordinary blog. Where a stale read would be written down as
+  // fact, ask the authority.
+  if (opts.preferPds && pds) {
+    const fromPds = await getRecordFromBase(pds, parsed, timeoutMs);
+    if (fromPds) return fromPds;
+  }
 
   const fromSlingshot = await getRecordFromBase(
     slingshotBaseUrl(),

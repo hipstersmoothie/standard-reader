@@ -17,9 +17,7 @@ import {
   userFollows,
 } from "../../db/schema.ts";
 import { chunk, mapWithConcurrency } from "../../lib/concurrency.ts";
-import type { PrevNextDirection } from "../../lib/publication/serial.ts";
 import {
-  BLOG_DIRECTION,
   SERIAL_DIRECTION,
   parsePrevNextDirection,
 } from "../../lib/publication/serial.ts";
@@ -41,6 +39,21 @@ import { handleRecord } from "./consumer.ts";
 import { upsertDocument, upsertPublication } from "./handlers.ts";
 
 const DELETE_CHUNK = 500;
+
+/**
+ * Repos repaired at once inside one batch.
+ *
+ * A repair is almost entirely waiting — listRecords pages, CID lookups, record
+ * writes — and the worker and its database sit in different regions, so the
+ * sequential loop this replaces spent nearly all of its time idle and capped
+ * the sweep at roughly one repo per round trip. Raising the *batch* alone did
+ * nothing for that; only overlapping the waiting does.
+ *
+ * Kept deliberately modest. Most repos resolve to a handful of shared PDS
+ * hosts, so this is really this many requests deep against those few hosts,
+ * and the same worker is serving live ingest at the same time.
+ */
+const RECONCILE_CONCURRENCY = 8;
 
 /** Publisher repos reconciled per hourly recompute sweep. */
 const RECONCILE_BATCH_DEFAULT = 50;
@@ -531,8 +544,6 @@ export async function reconcileRepoFromPds(
 const SERIAL_BACKFILL_CONCURRENCY = 16;
 /** Leaflet's own host, and each publication's subdomain of it. */
 const LEAFLET_URL_PATTERN = String.raw`^https?://([^/]+\.)?${LEAFLET_HOST.replaceAll(".", String.raw`\.`)}(/|$)`;
-/** URIs per bulk `UPDATE` — one round trip covers this many publications. */
-const SERIAL_UPDATE_CHUNK = 500;
 
 /**
  * Publications that could carry `preferences.prevNextDirection`.
@@ -563,29 +574,29 @@ function leafletPublication() {
 }
 
 /**
- * Warm `prev_next_direction` on the publications that predate the column.
+ * Re-mirror every Leaflet publication from its own record.
  *
- * The tap only writes the column on a record create or update, so a publication
- * indexed before it existed keeps a NULL until its author happens to edit the
- * record. `ensurePublicationSerial` fixes that one publication at a time on
- * first view; this fills them in ahead of any reader.
+ * `preferences.prevNextDirection` is Leaflet's field — it is how a publisher
+ * says "this reads forwards from post one", and it is the only thing that marks
+ * a serial — so this pass warms it ahead of any reader rather than leaving each
+ * publication to `ensurePublicationSerial` on first view.
  *
- * Three things keep it quick where the obvious shape — walk every publisher,
- * `listRecords` their repo, re-upsert what comes back — is not:
+ * It used to do that by writing that single column, guarded by `IS NULL` so it
+ * would never overwrite the tap. Both halves of that were wrong. Writing one
+ * column left `cid` pointing at a record the row no longer matched, so every
+ * CID-gated repair downstream saw a row that looked faithfully mirrored and
+ * skipped it. And `IS NULL` meant the value could only ever be written once:
+ * one stale read was permanent, with nothing on any schedule able to revisit
+ * it. That is exactly how a comic came to be stored as an ordinary blog — the
+ * record had said `"ltr"` for weeks.
  *
- * - **Only Leaflet publications, only NULL rows.** See {@link leafletPublication}.
- * - **Records come from Slingshot**, the caching proxy, addressed by at-URI. No
- *   DID document to resolve, no slow or unreachable PDS to wait on, and the
- *   reads run {@link SERIAL_BACKFILL_CONCURRENCY} at a time.
- * - **One `UPDATE` per direction per chunk**, rather than a full
- *   `upsertPublication` per publication. This pass is about a single column;
- *   rewriting every row's name, theme and stats to set it would cost several
- *   round trips each and touch far more than it means to.
+ * So it now re-upserts the whole record through {@link upsertPublication}: the
+ * row and its `cid` move together and cannot disagree, and a later run can
+ * always correct an earlier one. Records are read {@link
+ * fetchRepoRecordWithFallback | PDS-first}, because a decision derived from a
+ * cached copy is how the wrong value got written in the first place.
  *
- * `IS NULL` stays in the `UPDATE` predicate, so a value the tap wrote while this
- * was running wins over the (older) record this read. Safe to re-run; a
- * publication whose record can't be read is left NULL for the read path to
- * retry.
+ * Idempotent, and safe to re-run.
  */
 export async function backfillSerialPublicationRecords(): Promise<{
   candidates: number;
@@ -594,79 +605,59 @@ export async function backfillSerialPublicationRecords(): Promise<{
   failed: number;
 }> {
   const candidates = await db
-    .select({ uri: publications.uri })
+    .select({ uri: publications.uri, did: publications.did })
     .from(publications)
-    .where(
-      and(
-        eq(publications.deleted, false),
-        isNull(publications.prevNextDirection),
-        leafletPublication(),
-      ),
-    )
+    .where(and(eq(publications.deleted, false), leafletPublication()))
     .orderBy(asc(publications.uri));
 
-  const directions = await mapWithConcurrency(
+  let read = 0;
+  let serials = 0;
+  let failed = 0;
+
+  await mapWithConcurrency(
     candidates,
     SERIAL_BACKFILL_CONCURRENCY,
-    async ({ uri }): Promise<PrevNextDirection | null> => {
+    async ({ uri, did }): Promise<void> => {
       try {
-        const fetched = await fetchRepoRecordWithFallback(uri);
-        const value = fetched?.value;
-        if (!value || typeof value !== "object") return null;
-        const record = value as PublicationRecord;
-        // A record that states nothing stores the lexicon default, not NULL —
-        // the same rule `upsertPublication` follows, and what keeps NULL
-        // meaning "never mirrored" downstream.
-        return (
-          parsePrevNextDirection(record.preferences?.prevNextDirection) ??
-          BLOG_DIRECTION
+        const identity = await resolveIdentity(did).catch(() => null);
+        const fetched = await fetchRepoRecordWithFallback(
+          uri,
+          identity?.pds,
+          undefined,
+          { preferPds: true },
         );
+        const value = fetched?.value;
+        if (!value || typeof value !== "object") {
+          failed += 1;
+          return;
+        }
+        const record = value as PublicationRecord;
+
+        // Write the whole record, not the one column. The bespoke UPDATE this
+        // replaces set `prev_next_direction` while leaving `cid` untouched,
+        // which made the row claim to be a faithful mirror of a record it no
+        // longer matched — invisible to every CID-gated repair downstream.
+        await upsertPublication(uri, did, rkeyOf(uri), fetched?.cid, record);
+
+        read += 1;
+        if (
+          parsePrevNextDirection(record.preferences?.prevNextDirection) ===
+          SERIAL_DIRECTION
+        ) {
+          serials += 1;
+        }
       } catch (error) {
+        failed += 1;
         logEvent("ingest.serialBackfill", {
           uri,
           error: error instanceof Error ? error.message : String(error),
           ok: false,
         });
-        return null;
       }
     },
   );
 
-  const byDirection = new Map<PrevNextDirection, Array<string>>();
-  let failed = 0;
-  for (const [index, direction] of directions.entries()) {
-    const uri = candidates[index]?.uri;
-    if (!uri || !direction) {
-      failed += 1;
-      continue;
-    }
-    const bucket = byDirection.get(direction);
-    if (bucket) bucket.push(uri);
-    else byDirection.set(direction, [uri]);
-  }
-
-  let read = 0;
-  for (const [direction, uris] of byDirection) {
-    for (const part of chunk(uris, SERIAL_UPDATE_CHUNK)) {
-      await db
-        .update(publications)
-        .set({ prevNextDirection: direction, updatedAt: sql`now()` })
-        .where(
-          and(
-            inArray(publications.uri, part),
-            isNull(publications.prevNextDirection),
-          ),
-        );
-      read += part.length;
-    }
-  }
-
-  return {
-    candidates: candidates.length,
-    read,
-    serials: byDirection.get(SERIAL_DIRECTION)?.length ?? 0,
-    failed,
-  };
+  return { candidates: candidates.length, read, serials, failed };
 }
 
 export interface RepoRepairResult extends RepoReconcileResult {
@@ -798,12 +789,12 @@ export async function reconcilePublisherReposBatch(
   let goneMarked = 0;
   let migrated = 0;
 
-  for (const repo of repos) {
+  await mapWithConcurrency(repos, RECONCILE_CONCURRENCY, async (repo) => {
     try {
       const result = await repairRepoIfAdvanced(repo.did);
       if (result.unchanged) {
         // Head matched `last_seen_rev` — one request, nothing to do.
-        continue;
+        return;
       }
       if (result.gone) {
         // PDS reports the repo is permanently gone (and the migration retry
@@ -821,7 +812,7 @@ export async function reconcilePublisherReposBatch(
           prunedDocuments: pruned.documents,
           prunedPublications: pruned.publications,
         });
-        continue;
+        return;
       }
       if (result.skipped) {
         // Identity couldn't be resolved to a usable PDS (unreachable DID doc,
@@ -834,7 +825,7 @@ export async function reconcilePublisherReposBatch(
           ok: false,
           reason: "unresolved-pds",
         });
-        continue;
+        return;
       }
       if (result.migrated) {
         migrated += 1;
@@ -870,8 +861,7 @@ export async function reconcilePublisherReposBatch(
         ok: false,
       });
     }
-  }
-
+  });
   return {
     attempted: repos.length,
     goneMarked,
