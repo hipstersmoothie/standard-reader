@@ -25,7 +25,9 @@ msgstr "网络中已知的全部刊物——订阅那些值得你清晨时光的
 msgid "Authoring Collections needs additional permissions to publish collections and documents on your behalf. You can revoke this any time from your account settings."
 msgstr "创作合集需要额外权限，以便代表你发布合集和文档。你可以随时在账户设置中撤销。"
 
+#. placeholder {0}: issue.pageCount
 #. placeholder {0}: next.pageCount
+#: src/components/comic/comic-shelf.tsx
 #: src/components/reader/series-up-next.tsx
 msgid "{0, plural, one {# page} other {# pages}}"
 msgstr ""
@@ -331,6 +333,10 @@ msgstr ""
 #: src/components/reader/article-view.tsx
 msgid "Open on publication"
 msgstr "在刊物中打开"
+
+#: src/routes/_layout.p.$did.$rkey.tsx
+msgid "Issues"
+msgstr ""
 
 #: src/components/docs/renderers-docs-page.tsx
 msgid "(this is what Standard Reader itself uses)"
@@ -1006,6 +1012,10 @@ msgstr ""
 #: src/components/docs/api-docs-request-panel.tsx
 msgid "Copied"
 msgstr "已复制"
+
+#: src/routes/_layout.p.$did.$rkey.tsx
+msgid "The shelf"
+msgstr ""
 
 #: src/components/reader/about-view.tsx
 msgid "See collections"
@@ -5096,6 +5106,11 @@ msgstr "跟随阅读"
 
 #: src/routes/_layout.feedback.index.tsx
 msgid "Show all feedback"
+msgstr ""
+
+#. placeholder {0}: issue.label
+#: src/components/comic/comic-shelf.tsx
+msgid "Read {0}"
 msgstr ""
 
 #: src/components/reader/add-publication-modal.tsx

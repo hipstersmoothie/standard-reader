@@ -44,6 +44,10 @@ import {
 } from "#/lib/site-metadata";
 import { useTrackReadingHistory } from "#/lib/use-track-reading-history";
 
+import {
+  ComicShelf,
+  ComicShelfSkeleton,
+} from "../components/comic/comic-shelf";
 import { AccountLabelsForDid } from "../components/reader/account-labels";
 import { ArticleRow, FeatureArticle } from "../components/reader/cards";
 import { FeedLoadMore } from "../components/reader/feed-load-more";
@@ -56,6 +60,7 @@ import {
   Handle,
   PublicationAvatar,
   ReaderContent,
+  SectionHead,
 } from "../components/reader/primitives";
 import type { PublicationMarkAllRead } from "../components/reader/publication-actions";
 import { PublicationActions } from "../components/reader/publication-actions";
@@ -143,10 +148,22 @@ export const Route = createFileRoute("/_layout/p/$did/$rkey")({
     }
     const results = await Promise.all(awaitables);
     const header = results[0] as {
-      publication: { name: string; description: string };
+      publication: {
+        name: string;
+        description: string;
+        serial?: { kind: string } | null;
+      };
       owner: { did: string; handle: string };
       theme: PublicationThemeColors;
     } | null;
+
+    // A comic's archive is replaced by a shelf of covers, so the shelf is part
+    // of the page's first paint rather than something that pops in after it.
+    if (header?.publication.serial?.kind === "comic" && deps.filter === "all") {
+      await context.queryClient
+        .ensureQueryData(publicationApi.getComicShelfQueryOptions(uri))
+        .catch(() => null);
+    }
 
     if (header) {
       void context.queryClient.prefetchQuery(
@@ -688,6 +705,21 @@ function PublicationProfileContent({
     }
   }, [filter, nextOffset, uri]);
 
+  // A comic posts one page per document, so its full archive is a long list of
+  // near-identical rows. When the titles carry issue numbers, those pages are
+  // collapsed back into issues and shown as covers instead. Only over the full
+  // archive: the read/unread filters are per-page, and a shelf can't express
+  // "half of issue 3".
+  const shelfEnabled = pub.serial?.kind === "comic" && filter === "all";
+  const { data: shelf, isPending: shelfPending } = useQuery({
+    ...publicationApi.getComicShelfQueryOptions(uri),
+    enabled: shelfEnabled,
+  });
+  // Until it resolves we don't know whether the titles group at all, and
+  // painting the page list only to swap it for a shelf is the worse flicker.
+  // The loader awaits this for comics, so it is normally already settled.
+  const showShelf = shelfEnabled && (shelfPending || Boolean(shelf?.grouped));
+
   const lead = documents[0];
   const rest = documents.slice(1);
 
@@ -773,7 +805,16 @@ function PublicationProfileContent({
       <ReaderContent>
         <Flex direction="column" gap="6xl" style={styles.writing}>
           <PublicationLatestNote publicationUri={uri} />
-          {documents.length === 0 ? (
+          {showShelf ? (
+            <Flex direction="column" gap="5xl">
+              <SectionHead kicker={t`The shelf`} title={t`Issues`} size="md" />
+              {shelf?.grouped ? (
+                <ComicShelf issues={shelf.issues} />
+              ) : (
+                <ComicShelfSkeleton />
+              )}
+            </Flex>
+          ) : documents.length === 0 ? (
             <div {...stylex.props(styles.emptyNote)}>
               {filter === "unread" ? (
                 <Trans>You’ve read everything from this publication.</Trans>
@@ -805,7 +846,8 @@ function PublicationProfileContent({
               ))}
             </div>
           )}
-          {documents.length > 0 ? (
+          {/* The shelf is complete on arrival — every issue, no paging. */}
+          {!showShelf && documents.length > 0 ? (
             <div>
               <FeedLoadMore
                 hasMore={nextOffset != null}

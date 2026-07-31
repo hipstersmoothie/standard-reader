@@ -28,10 +28,11 @@ import type { ArticleDetailSourceRow } from "#/server/reader/article-detail-buil
 import { buildArticleDetail } from "#/server/reader/article-detail-build";
 import type { CollectionMagazineData } from "#/server/reader/collection-magazine";
 import { loadCollectionMagazine } from "#/server/reader/collection-magazine";
-import type { ComicPage, ComicSpine } from "#/server/reader/comic";
+import type { ComicPage, ComicShelf, ComicSpine } from "#/server/reader/comic";
 import {
   COMIC_CHUNK_ISSUES,
   selectComicPages,
+  selectComicShelf,
   selectComicSpine,
 } from "#/server/reader/comic";
 import type { ContentLinkTargets } from "#/server/reader/content-links";
@@ -141,6 +142,10 @@ const seriesContextInput = z.object({
 });
 
 const comicSpineInput = z.object({
+  publicationUri: z.string().min(1),
+});
+
+const comicShelfInput = z.object({
   publicationUri: z.string().min(1),
 });
 
@@ -978,6 +983,28 @@ const getComicSpine = createServerFn({ method: "GET" })
   );
 
 /**
+ * A comic's issues as a shelf of covers, for the publication page. Comes back
+ * `grouped: false` when the titles don't follow the issue convention, and the
+ * page keeps its ordinary archive list.
+ */
+const getComicShelf = createServerFn({ method: "GET" })
+  .middleware([dbMiddleware])
+  .validator(comicShelfInput)
+  .handler(
+    observe(
+      "publication.getComicShelf",
+      async ({ data, context }, span): Promise<ComicShelf> => {
+        const { db, schema } = context;
+        span.set("publicationUri", data.publicationUri);
+        const shelf = await selectComicShelf(db, schema, data.publicationUri);
+        span.set("grouped", shelf.grouped);
+        span.set("issues", shelf.issues.length);
+        return shelf;
+      },
+    ),
+  );
+
+/**
  * One chunk of a comic's pages — the images for a window of issues, absolutely
  * indexed. The reader asks for the chunk it is about to reach.
  */
@@ -1187,6 +1214,15 @@ function getSeriesContextQueryOptions(documentUri: string) {
   });
 }
 
+/** The shelf changes only when the publication gains or edits an issue. */
+function getComicShelfQueryOptions(publicationUri: string) {
+  return queryOptions({
+    queryKey: ["comic", "shelf", publicationUri] as const,
+    queryFn: async () => getComicShelf({ data: { publicationUri } }),
+    staleTime: 300_000,
+  });
+}
+
 /** The comic spine changes only when the publication gains or edits an issue. */
 function getComicSpineQueryOptions(publicationUri: string) {
   return queryOptions({
@@ -1251,6 +1287,8 @@ export const publicationApi = {
   getSeriesContextQueryOptions,
   getComicSpine,
   getComicSpineQueryOptions,
+  getComicShelf,
+  getComicShelfQueryOptions,
   getComicPages,
   getComicPagesQueryOptions,
   getInlineMentions,

@@ -921,6 +921,14 @@ Backend/API exists; UI or copy is missing.
       environment. `pnpm backfill:serial`
       ([`backfill-serial-publications.ts`](scripts/backfill-serial-publications.ts)) warms every
       publication at once so no reader pays the first PDS read.
+      A comic publication's page shows a **shelf of covers** instead of its archive list
+      ([`comic-shelf.tsx`](src/components/comic/comic-shelf.tsx)): `selectComicShelf` parses the
+      issue number out of each post title ([`issue-title.ts`](src/lib/comic/issue-title.ts)),
+      collapses consecutive pages into issues, and fronts each with its cover art, so a reader
+      browses issues rather than scrolling `#1 Cover`, `#1, Pg. 1`, `#1, Pg. 2`. The convention is
+      treated as a guess — under 70% of titles parsing, or a single group, leaves `grouped: false`
+      and the ordinary list stands, as do the read/unread filters. Awaited in the route loader for
+      comics so the shelf is part of first paint.
 - [ ] **Reader preference for the comic reader** — comics currently always open in the theater (with
       "Read the notes" as the escape). The magazine has an `open_collections_in_magazine` toggle;
       the comic reader deserves the same opt-out, plus a per-publication override for a serial the

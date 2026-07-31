@@ -32,6 +32,11 @@ import type {
   Schema,
 } from "#/integrations/tanstack-query/api-shapes";
 import { toIsoTimestamp } from "#/integrations/tanstack-query/api-shapes";
+import {
+  isCoverPageLabel,
+  parseComicIssueTitle,
+  titlesLookLikeIssues,
+} from "#/lib/comic/issue-title";
 import { documentImages } from "#/lib/document/images";
 import { documentPublishedNotInFuture } from "#/server/reader/document-filters";
 
@@ -273,4 +278,162 @@ export async function countDocumentsMissingPageCount(
       ),
     );
   return row?.count ?? 0;
+}
+
+/** One issue on the shelf — a run of pages fronted by its cover. */
+export interface ComicShelfIssue {
+  /** Issue number from the titles, null for pages that named none. */
+  issueNumber: number | null;
+  /** What to print under the cover — `#2`, or the document title as a fallback. */
+  label: string;
+  /** The document whose art fronts the issue. */
+  uri: string;
+  did: string;
+  rkey: string;
+  coverImageUrl: string | null;
+  /** Absolute page this issue opens on, for the reader. */
+  pageOffset: number;
+  pageCount: number;
+  /** Documents (pages) collapsed into this issue. */
+  documentCount: number;
+  publishedAt: string;
+}
+
+export interface ComicShelf {
+  publicationUri: string;
+  issues: Array<ComicShelfIssue>;
+  totalPages: number;
+  /**
+   * False when the publication's titles don't follow the issue convention. The
+   * caller keeps its ordinary archive list rather than showing a shelf built on
+   * guesses — a comic that names its posts some other way is not broken, it just
+   * can't be grouped this way.
+   */
+  grouped: boolean;
+}
+
+/**
+ * A comic's issues as a shelf of covers.
+ *
+ * A comic posts one page per document, so its archive is dozens of near-identical
+ * rows — `FITV #1 Cover`, `FITV #1, Pg. 1`, `FITV #1, Pg. 2` — when the thing a
+ * reader browses is *issues*. The issue number lives only in those titles (the
+ * lexicon has no field for it), so it is parsed back out
+ * (`#/lib/comic/issue-title`) and consecutive pages sharing a number collapse
+ * into one shelf entry.
+ *
+ * Because it rests on a naming convention, it declines rather than guesses: a
+ * publication whose titles mostly don't parse comes back `grouped: false`.
+ *
+ * Only one body per issue is opened — the cover's, for its art — so the cost is
+ * a handful of rows however long the comic runs.
+ */
+export async function selectComicShelf(
+  db: Db,
+  schema: Schema,
+  publicationUri: string,
+): Promise<ComicShelf> {
+  const spine = await selectComicSpine(db, schema, publicationUri);
+  const empty: ComicShelf = {
+    publicationUri,
+    issues: [],
+    totalPages: spine.totalPages,
+    grouped: false,
+  };
+  if (spine.issues.length === 0) return empty;
+  if (!titlesLookLikeIssues(spine.issues.map((issue) => issue.title))) {
+    return empty;
+  }
+
+  // Walk the spine in reading order, starting a new shelf entry whenever the
+  // issue number changes. A page whose title doesn't parse joins the issue it
+  // sits inside rather than splitting it — an interstitial with an odd title is
+  // still part of that issue.
+  type Group = {
+    issueNumber: number | null;
+    pages: Array<{ issue: (typeof spine.issues)[number]; isCover: boolean }>;
+  };
+  const groups: Array<Group> = [];
+  for (const issue of spine.issues) {
+    const parsed = parseComicIssueTitle(issue.title);
+    const last = groups.at(-1);
+    const sameIssue =
+      last != null &&
+      (parsed == null || last.issueNumber === parsed.issueNumber);
+    const entry = {
+      issue,
+      isCover: parsed != null && isCoverPageLabel(parsed.pageLabel),
+    };
+    if (sameIssue) last.pages.push(entry);
+    else
+      groups.push({ issueNumber: parsed?.issueNumber ?? null, pages: [entry] });
+  }
+
+  // The cover is the page that says it is one; failing that, the issue's first
+  // page, which is what a reader sees when they open it anyway.
+  const fronts = groups.map(
+    (group) => group.pages.find((page) => page.isCover) ?? group.pages[0],
+  );
+  const frontUris = fronts
+    .map((front) => front?.issue.uri)
+    .filter((uri): uri is string => uri != null);
+
+  const d = schema.documents;
+  const rows =
+    frontUris.length === 0
+      ? []
+      : await db
+          .select({
+            uri: d.uri,
+            did: d.did,
+            contentJson: d.contentJson,
+            contentFormat: d.contentFormat,
+          })
+          .from(d)
+          .where(inArray(d.uri, frontUris));
+  const bodyByUri = new Map(rows.map((row) => [row.uri, row]));
+
+  const issues: Array<ComicShelfIssue> = [];
+  for (const [index, group] of groups.entries()) {
+    const front = fronts[index];
+    const first = group.pages[0];
+    if (!front || !first) continue;
+
+    const body = bodyByUri.get(front.issue.uri);
+    const coverImageUrl = body
+      ? (documentImages({
+          did: body.did,
+          contentJson: body.contentJson as JsonValue,
+          contentFormat: body.contentFormat,
+        })[0]?.url ?? null)
+      : null;
+
+    issues.push({
+      issueNumber: group.issueNumber,
+      label:
+        group.issueNumber == null ? front.issue.title : `#${group.issueNumber}`,
+      uri: front.issue.uri,
+      did: front.issue.did,
+      rkey: front.issue.rkey,
+      coverImageUrl,
+      // Open the issue at its first page, not at whichever page carries the
+      // cover art — they are usually the same, but not always.
+      pageOffset: first.issue.pageOffset,
+      pageCount: group.pages.reduce(
+        (sum, page) => sum + page.issue.pageCount,
+        0,
+      ),
+      documentCount: group.pages.length,
+      publishedAt: first.issue.publishedAt,
+    });
+  }
+
+  return {
+    publicationUri,
+    issues,
+    totalPages: spine.totalPages,
+    // One shelf entry holding everything means the grouping found no structure
+    // worth showing — the archive list says the same thing with more detail.
+    grouped: issues.length > 1,
+  };
 }

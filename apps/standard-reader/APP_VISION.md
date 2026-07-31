@@ -342,6 +342,15 @@ What changes for a serial:
   latest post) and offers "Start from issue one" / "Start from chapter one" in the hero. The
   ordering is resolved server-side inside `getPublicationDocuments`, so the client never has to
   know the reading order to ask for the right page.
+- **A comic's archive is a shelf of covers, not a list of pages.** A comic posts one page per
+  document, so its archive is dozens of near-identical rows — `FITV #1 Cover`, `FITV #1, Pg. 1`.
+  Titles almost always carry series, issue and page, so `selectComicShelf`
+  (`#/server/reader/comic`) parses the issue number out of them (`#/lib/comic/issue-title`),
+  collapses consecutive pages back into the issues they came from, and shows each issue's cover
+  art — the reader browses issues instead of scrolling pages. It is a naming convention, not a
+  lexicon field, so it is treated as a guess: fewer than 70% of titles parsing, or everything
+  landing in one group, leaves `grouped: false` and the ordinary archive list stands. The
+  read/unread filters keep the list too — a shelf can't say "half of issue 3".
 - **Comics open in the comic reader** (`/comic/$did/$rkey`) — a fixed dark theater that flips
   through the issue's pages one at a time. The pages _are_ the images the body renders, in
   reading order (`#/lib/document/images`), so nothing is authored specially for it. Arrow keys /
