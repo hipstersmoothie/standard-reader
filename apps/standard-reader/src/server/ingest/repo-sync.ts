@@ -2,7 +2,22 @@ import { and, asc, eq, inArray, isNull, lte, ne, or, sql } from "drizzle-orm";
 
 import { db } from "../../db/index.ts";
 import { documents, publications, trackedRepos } from "../../db/schema.ts";
-import { RepoGoneError, listRepoRecords } from "../atproto/fetch-record.ts";
+import { chunk, mapWithConcurrency } from "../../lib/concurrency.ts";
+import type { PrevNextDirection } from "../../lib/publication/serial.ts";
+import {
+  BLOG_DIRECTION,
+  SERIAL_DIRECTION,
+  parsePrevNextDirection,
+} from "../../lib/publication/serial.ts";
+import {
+  LEAFLET_HOST,
+  LEAFLET_NSID_PREFIX,
+} from "../../lib/publishing-platform.ts";
+import {
+  RepoGoneError,
+  fetchRepoRecordWithFallback,
+  listRepoRecords,
+} from "../atproto/fetch-record.ts";
 import { resolveIdentity } from "../atproto/identity.ts";
 import type { DocumentRecord, PublicationRecord } from "../atproto/types.ts";
 import { Collections } from "../atproto/uri.ts";
@@ -110,9 +125,8 @@ async function deleteInChunks(
   if (uris.length === 0) {
     return 0;
   }
-  for (let i = 0; i < uris.length; i += DELETE_CHUNK) {
-    const chunk = uris.slice(i, i + DELETE_CHUNK);
-    await db.delete(table).where(inArray(table.uri, chunk));
+  for (const batch of chunk(uris, DELETE_CHUNK)) {
+    await db.delete(table).where(inArray(table.uri, batch));
   }
   return uris.length;
 }
@@ -352,64 +366,146 @@ export async function reconcileRepoFromPds(
   };
 }
 
+/** Publication records read from Slingshot at once. */
+const SERIAL_BACKFILL_CONCURRENCY = 16;
+/** Leaflet's own host, and each publication's subdomain of it. */
+const LEAFLET_URL_PATTERN = String.raw`^https?://([^/]+\.)?${LEAFLET_HOST.replaceAll(".", String.raw`\.`)}(/|$)`;
+/** URIs per bulk `UPDATE` — one round trip covers this many publications. */
+const SERIAL_UPDATE_CHUNK = 500;
+
 /**
- * Re-read every indexed publisher's `site.standard.publication` records from
- * their PDS and re-upsert them, so a newly mirrored record field lands on
- * existing rows without waiting for each author to edit their publication.
+ * Publications that could carry `preferences.prevNextDirection`.
  *
- * The hourly reconcile round-robin (see below) eventually does the same thing,
- * but only 50 repos per sweep — too slow to bring a new column to life. This
- * walks every publisher once and touches nothing else: documents are left alone,
- * and a repo that fails is logged and skipped rather than aborting the pass.
+ * The field is Leaflet's — it's how a Leaflet publisher says "this reads
+ * forwards from post one" — so a whole-network sweep spends most of its time
+ * reading records that cannot possibly answer. Leaflet publications are
+ * identified the way {@link publishingPlatform} does it: the content format of
+ * their posts first (custom domains are common, so the host alone misses
+ * plenty), falling back to Leaflet's own host for publications whose documents
+ * we never resolved content for.
+ *
+ * Scoping this way trades completeness for speed, and can afford to: a
+ * publication outside the filter that *does* set the field still lights up on
+ * its first view, via `ensurePublicationSerial`. This pass only decides who
+ * gets warmed ahead of that.
  */
-export async function backfillPublicationRecords(): Promise<{
-  repos: number;
-  publications: number;
+function leafletPublication() {
+  return or(
+    sql`exists (
+      select 1 from ${documents}
+      where ${documents.publicationUri} = ${publications.uri}
+        and ${documents.deleted} = false
+        and ${documents.contentFormat} like ${`${LEAFLET_NSID_PREFIX}%`}
+    )`,
+    sql`${publications.url} ~* ${LEAFLET_URL_PATTERN}`,
+  );
+}
+
+/**
+ * Warm `prev_next_direction` on the publications that predate the column.
+ *
+ * The tap only writes the column on a record create or update, so a publication
+ * indexed before it existed keeps a NULL until its author happens to edit the
+ * record. `ensurePublicationSerial` fixes that one publication at a time on
+ * first view; this fills them in ahead of any reader.
+ *
+ * Three things keep it quick where the obvious shape — walk every publisher,
+ * `listRecords` their repo, re-upsert what comes back — is not:
+ *
+ * - **Only Leaflet publications, only NULL rows.** See {@link leafletPublication}.
+ * - **Records come from Slingshot**, the caching proxy, addressed by at-URI. No
+ *   DID document to resolve, no slow or unreachable PDS to wait on, and the
+ *   reads run {@link SERIAL_BACKFILL_CONCURRENCY} at a time.
+ * - **One `UPDATE` per direction per chunk**, rather than a full
+ *   `upsertPublication` per publication. This pass is about a single column;
+ *   rewriting every row's name, theme and stats to set it would cost several
+ *   round trips each and touch far more than it means to.
+ *
+ * `IS NULL` stays in the `UPDATE` predicate, so a value the tap wrote while this
+ * was running wins over the (older) record this read. Safe to re-run; a
+ * publication whose record can't be read is left NULL for the read path to
+ * retry.
+ */
+export async function backfillSerialPublicationRecords(): Promise<{
+  candidates: number;
+  read: number;
+  serials: number;
   failed: number;
 }> {
-  const repos = await db
-    .selectDistinct({ did: publications.did })
+  const candidates = await db
+    .select({ uri: publications.uri })
     .from(publications)
-    .where(eq(publications.deleted, false))
-    .orderBy(asc(publications.did));
+    .where(
+      and(
+        eq(publications.deleted, false),
+        isNull(publications.prevNextDirection),
+        leafletPublication(),
+      ),
+    )
+    .orderBy(asc(publications.uri));
 
-  let upserted = 0;
-  let failed = 0;
-
-  for (const repo of repos) {
-    try {
-      const identity = await resolveIdentity(repo.did);
-      if (!identity.pds) {
-        failed += 1;
-        continue;
-      }
-      const result = await listRepoRecords(
-        repo.did,
-        Collections.publication,
-        identity.pds,
-      );
-      for (const record of result.records) {
-        if (!record.value) continue;
-        await upsertPublication(
-          record.uri,
-          repo.did,
-          rkeyOf(record.uri),
-          record.cid,
-          record.value as unknown as PublicationRecord,
+  const directions = await mapWithConcurrency(
+    candidates,
+    SERIAL_BACKFILL_CONCURRENCY,
+    async ({ uri }): Promise<PrevNextDirection | null> => {
+      try {
+        const fetched = await fetchRepoRecordWithFallback(uri);
+        const value = fetched?.value;
+        if (!value || typeof value !== "object") return null;
+        const record = value as PublicationRecord;
+        // A record that states nothing stores the lexicon default, not NULL —
+        // the same rule `upsertPublication` follows, and what keeps NULL
+        // meaning "never mirrored" downstream.
+        return (
+          parsePrevNextDirection(record.preferences?.prevNextDirection) ??
+          BLOG_DIRECTION
         );
-        upserted += 1;
+      } catch (error) {
+        logEvent("ingest.serialBackfill", {
+          uri,
+          error: error instanceof Error ? error.message : String(error),
+          ok: false,
+        });
+        return null;
       }
-    } catch (error) {
+    },
+  );
+
+  const byDirection = new Map<PrevNextDirection, Array<string>>();
+  let failed = 0;
+  for (const [index, direction] of directions.entries()) {
+    const uri = candidates[index]?.uri;
+    if (!uri || !direction) {
       failed += 1;
-      logEvent("ingest.publicationBackfill", {
-        did: repo.did,
-        error: error instanceof Error ? error.message : String(error),
-        ok: false,
-      });
+      continue;
+    }
+    const bucket = byDirection.get(direction);
+    if (bucket) bucket.push(uri);
+    else byDirection.set(direction, [uri]);
+  }
+
+  let read = 0;
+  for (const [direction, uris] of byDirection) {
+    for (const part of chunk(uris, SERIAL_UPDATE_CHUNK)) {
+      await db
+        .update(publications)
+        .set({ prevNextDirection: direction, updatedAt: sql`now()` })
+        .where(
+          and(
+            inArray(publications.uri, part),
+            isNull(publications.prevNextDirection),
+          ),
+        );
+      read += part.length;
     }
   }
 
-  return { repos: repos.length, publications: upserted, failed };
+  return {
+    candidates: candidates.length,
+    read,
+    serials: byDirection.get(SERIAL_DIRECTION)?.length ?? 0,
+    failed,
+  };
 }
 
 /** Round-robin publisher repos (least recently reconciled first).

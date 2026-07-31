@@ -919,8 +919,13 @@ Backend/API exists; UI or copy is missing.
       indexed before the column existed stayed an ordinary blog until its author edited the record
       or the 50-repos-an-hour reconcile round-robin reached it, which never completes in a preview
       environment. `pnpm backfill:serial`
-      ([`backfill-serial-publications.ts`](scripts/backfill-serial-publications.ts)) warms every
-      publication at once so no reader pays the first PDS read.
+      ([`backfill-serial-publications.ts`](scripts/backfill-serial-publications.ts)) warms them all
+      up front so no reader pays the first record read. It only visits publications that could
+      answer — Leaflet ones (the field is Leaflet's) still holding a NULL, 2.4k rather than 9.3k —
+      reads their records from Slingshot 16 at a time instead of resolving and paging each of 6.2k
+      publisher repos' PDSes one by one, and writes the result as one bulk `UPDATE` per direction
+      rather than a full `upsertPublication` per row. ~40s where the per-repo shape measured
+      ~46 min of PDS reads alone.
       A comic publication's page shows a **shelf of covers** instead of its archive list
       ([`comic-shelf.tsx`](src/components/comic/comic-shelf.tsx)): `selectComicShelf` parses the
       issue number out of each post title ([`issue-title.ts`](src/lib/comic/issue-title.ts)),

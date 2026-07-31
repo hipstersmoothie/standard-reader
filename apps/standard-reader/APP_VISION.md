@@ -334,7 +334,11 @@ default `"rtl"` for a record that states nothing, which is what keeps the two ap
 `ensurePublicationSerial` (`#/server/reader/series`) reads the record from the PDS once, writes
 what it says, and derives the kind on the spot if it turns out to be a serial. Standard
 `backfillXFromRepo` behaviour: one PDS read per publication, ever, then the DB serves it.
-`pnpm backfill:serial` warms every publication at once so no reader pays that first read.
+`pnpm backfill:serial` warms them all up front so no reader pays that first read. It scopes itself
+to the publications that could answer — `prevNextDirection` is Leaflet's field, so only Leaflet
+publications still holding a NULL are visited — reads their records from Slingshot rather than
+resolving and paging each publisher's PDS, and writes back one bulk `UPDATE` per direction instead
+of re-upserting whole rows to set one column.
 
 What changes for a serial:
 

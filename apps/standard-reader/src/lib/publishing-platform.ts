@@ -13,8 +13,19 @@ import { OFFPRINT_CONTENT } from "./offprint/types";
  */
 export type PublishingPlatform = "leaflet" | "pckt" | "offprint";
 
+/** Every Leaflet content/document lexicon lives under this authority. */
+export const LEAFLET_NSID_PREFIX = "pub.leaflet.";
+
+/**
+ * Leaflet's own host. Publications on a custom domain are identified by their
+ * content format instead, so this is only the fallback — exported for callers
+ * that have to express "is this Leaflet?" somewhere the checks below can't run
+ * (a SQL predicate, say).
+ */
+export const LEAFLET_HOST = "leaflet.pub";
+
 /** `pub.leaflet.document` — a full Leaflet doc, distinct from `pub.leaflet.content`. */
-const LEAFLET_DOCUMENT = "pub.leaflet.document";
+const LEAFLET_DOCUMENT = `${LEAFLET_NSID_PREFIX}document`;
 
 /** Every pckt content/block/facet lexicon lives under this authority. */
 const PCKT_NSID_PREFIX = "blog.pckt.";
@@ -28,7 +39,7 @@ const PCKT_NSID_PREFIX = "blog.pckt.";
  * `offprint.cafe`, an unrelated product with its own branding.
  */
 const PLATFORM_HOSTS: ReadonlyArray<readonly [string, PublishingPlatform]> = [
-  ["leaflet.pub", "leaflet"],
+  [LEAFLET_HOST, "leaflet"],
   ["pckt.blog", "pckt"],
   ["offprint.app", "offprint"],
 ];

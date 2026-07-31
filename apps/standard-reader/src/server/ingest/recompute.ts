@@ -10,6 +10,7 @@ import {
   sql,
 } from "drizzle-orm";
 
+import { mapWithConcurrency } from "#/lib/concurrency";
 import { hasRenderableArticleBody } from "#/lib/document/renderable";
 import {
   documentExtractedText,
@@ -576,6 +577,8 @@ export async function recomputeTopics(): Promise<void> {
  * is large per row — and `serial_kind` is cleared on any publication that is no
  * longer a serial so a preference flipped back to `"rtl"` doesn't linger.
  */
+const SERIAL_KIND_CONCURRENCY = 6;
+
 export async function recomputeSerialKinds(): Promise<void> {
   // A publication that stopped being a serial keeps no derived kind.
   await db
@@ -601,9 +604,12 @@ export async function recomputeSerialKinds(): Promise<void> {
       ),
     );
 
-  for (const { uri } of serials) {
-    await deriveSerialKind(db, schema, uri);
-  }
+  // Each classification samples up to 40 bodies, so the rows are wide; a few in
+  // flight hides the round trips without pulling a lot of `content_json` into
+  // memory at once.
+  await mapWithConcurrency(serials, SERIAL_KIND_CONCURRENCY, ({ uri }) =>
+    deriveSerialKind(db, schema, uri),
+  );
 }
 
 /**
