@@ -19,7 +19,14 @@ import {
 } from "@standard-reader/design-system/theme/typography.stylex";
 import * as stylex from "@stylexjs/stylex";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, FileText, X } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  FileText,
+  Maximize,
+  Minimize,
+  X,
+} from "lucide-react";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -30,6 +37,7 @@ import { documentLinkParams, publicationLinkParams } from "../reader/format";
 import { applyMarkReadOptimisticUpdate } from "../reader/read-optimistic";
 import { ButtonLink, IconButtonLink } from "../router-links";
 import { issueAtPage, pageOfIssue, useComicPages } from "./use-comic-pages";
+import { useFullscreen } from "./use-fullscreen";
 import { usePagePreload } from "./use-page-preload";
 
 /**
@@ -508,6 +516,15 @@ export function ComicReader({
     markRead(issueUri);
   }, [issueUri, markRead, publicationUri, queryClient, signedIn, trackReading]);
 
+  // Full screen is asked for on the theater rather than the document, so the
+  // fixed backdrop is what fills the screen and every control goes with it.
+  const theaterRef = useRef<HTMLDivElement>(null);
+  const {
+    supported: fullscreenSupported,
+    active: fullscreenActive,
+    toggle: toggleFullscreen,
+  } = useFullscreen(theaterRef);
+
   // The chrome shows itself, then steps aside. A comic is read by looking at
   // it, and on a phone two permanent bars are the loudest thing on screen — so
   // they introduce the reader's controls once and then leave, and the middle of
@@ -619,6 +636,17 @@ export function ComicReader({
           goTo(0);
           break;
         }
+        // The shortcut every video player already taught readers. Escape is the
+        // way back out, and the browser owns that one — hence no case for it.
+        case "f":
+        case "F": {
+          event.preventDefault();
+          // The screen is about to change shape under them, so the bars come
+          // back to say what happened rather than leaving it to be guessed.
+          revealChrome();
+          toggleFullscreen();
+          break;
+        }
         default: {
           break;
         }
@@ -626,7 +654,7 @@ export function ComicReader({
     };
     globalThis.addEventListener("keydown", onKeyDown);
     return () => globalThis.removeEventListener("keydown", onKeyDown);
-  }, [goNext, goPrevious, goTo, lastIndex, revealChrome]);
+  }, [goNext, goPrevious, goTo, lastIndex, revealChrome, toggleFullscreen]);
 
   // A mouse has no equivalent of the middle-third tap, so moving it is what
   // brings the chrome back — the same bargain a video player makes. Touch moves
@@ -731,7 +759,11 @@ export function ComicReader({
   const chromeHidden = !chromeVisible;
 
   return (
-    <div {...stylex.props(styles.theater)} onPointerMove={onPointerMove}>
+    <div
+      ref={theaterRef}
+      {...stylex.props(styles.theater)}
+      onPointerMove={onPointerMove}
+    >
       <div
         {...stylex.props(styles.stage, zoomed && styles.stageZoomed)}
         onPointerCancel={onPointerCancel}
@@ -869,6 +901,35 @@ export function ComicReader({
                 strokeWidth={ICON_STROKE}
               />
             </IconButtonLink>
+          ) : null}
+
+          {/* Last in the bar, where a player puts it. Absent rather than
+              disabled where the browser won't do it (iOS Safari): a control
+              that can never work is one more thing between a reader and the
+              art. */}
+          {fullscreenSupported ? (
+            <IconButton
+              variant="tertiary"
+              aria-label={
+                fullscreenActive ? t`Exit full screen` : t`Enter full screen`
+              }
+              onPress={toggleFullscreen}
+              style={styles.chromeControl}
+            >
+              {fullscreenActive ? (
+                <Minimize
+                  aria-hidden
+                  size={ICON_SIZE}
+                  strokeWidth={ICON_STROKE}
+                />
+              ) : (
+                <Maximize
+                  aria-hidden
+                  size={ICON_SIZE}
+                  strokeWidth={ICON_STROKE}
+                />
+              )}
+            </IconButton>
           ) : null}
         </div>
 

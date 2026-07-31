@@ -3313,6 +3313,10 @@ msgstr "Drag the pieces into the order you want them read, and publish."
 #~ msgid "Publishing guide"
 #~ msgstr "Publishing guide"
 
+#: src/components/comic/comic-reader.tsx
+msgid "Exit full screen"
+msgstr "Exit full screen"
+
 #: src/components/labelers-settings-view.tsx
 msgid "Search by name, handle, or label"
 msgstr "Search by name, handle, or label"
@@ -5056,6 +5060,10 @@ msgstr "Labelers are an AT Protocol concept, not a Standard Reader one, so the p
 #: src/routes/_layout.index.tsx
 msgid "Your reading room"
 msgstr "Your reading room"
+
+#: src/components/comic/comic-reader.tsx
+msgid "Enter full screen"
+msgstr "Enter full screen"
 
 #: src/routes/_layout.index.tsx
 msgid "Fresh"

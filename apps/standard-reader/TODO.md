@@ -906,7 +906,12 @@ Backend/API exists; UI or copy is missing.
       the URL, each issue marked read as the reader enters it. The **chrome floats over the art and
       auto-hides**: the bars show themselves on entry, step aside after an idle beat, and come back
       on a middle-zone tap, a mouse move, or Tab — they stay put for the loading, empty and back-cover
-      states, and pin open under pointer or focus. The stage keeps `touch-action: pan-y pinch-zoom`
+      states, and pin open under pointer or focus. The top bar ends with a **full-screen toggle**
+      (`f`, or the button) that puts the theater element full screen so the browser's own chrome
+      leaves the art alone ([`use-fullscreen.ts`](src/components/comic/use-fullscreen.ts)) —
+      unprefixed API only (the app targets `baseline 2024`), absent rather than disabled where the
+      browser refuses element full screen (iOS Safari), and driven off `fullscreenchange` so
+      Escape, F11 and the OS keep the icon honest. The stage keeps `touch-action: pan-y pinch-zoom`
       so a dense page can be pinched into, and **flips to `manipulation` while zoomed** — reserving
       horizontal drags for the swipe is what makes paging work at rest, but it pins a zoomed reader
       to a single vertical track, and swipe stands down at that scale anyway (as it does while a

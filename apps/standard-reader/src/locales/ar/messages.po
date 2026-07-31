@@ -3313,6 +3313,10 @@ msgstr ""
 #~ msgid "Publishing guide"
 #~ msgstr "دليل النشر"
 
+#: src/components/comic/comic-reader.tsx
+msgid "Exit full screen"
+msgstr ""
+
 #: src/components/labelers-settings-view.tsx
 msgid "Search by name, handle, or label"
 msgstr ""
@@ -5056,6 +5060,10 @@ msgstr ""
 #: src/routes/_layout.index.tsx
 msgid "Your reading room"
 msgstr "غرفة القراءة الخاصة بك"
+
+#: src/components/comic/comic-reader.tsx
+msgid "Enter full screen"
+msgstr ""
 
 #: src/routes/_layout.index.tsx
 msgid "Fresh"

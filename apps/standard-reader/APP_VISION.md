@@ -377,6 +377,11 @@ What changes for a serial:
   an end card with the next issue. The article route redirects a comic issue here unless
   `?view=reader` — which is also the "Read the notes" escape, because a comic's prose commentary
   belongs to the reading view, not the theater.
+  The top bar carries a **full-screen toggle** (`f`, or the button at its end) that puts the
+  theater itself full screen, so the browser's own furniture leaves the art alone
+  (`#/components/comic/use-fullscreen`). The button is absent, not disabled, where the browser
+  won't do it — iOS Safari reserves full screen for `<video>` — and its state follows
+  `fullscreenchange`, since Escape, F11 and the OS all exit without asking the app.
 - **Books get "Up next"** under the article: the following chapter, or a note that the reader has
   caught up. Position ("3 of 12") and neighbours come from `getSeriesContext`
   (`#/server/reader/series`), loaded client-side after the article paints like the other
