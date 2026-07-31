@@ -335,8 +335,8 @@ msgid "Open on publication"
 msgstr "在刊物中打开"
 
 #: src/routes/_layout.p.$did.$rkey.tsx
-msgid "Issues"
-msgstr ""
+#~ msgid "Issues"
+#~ msgstr ""
 
 #: src/components/docs/renderers-docs-page.tsx
 msgid "(this is what Standard Reader itself uses)"
@@ -1014,8 +1014,8 @@ msgid "Copied"
 msgstr "已复制"
 
 #: src/routes/_layout.p.$did.$rkey.tsx
-msgid "The shelf"
-msgstr ""
+#~ msgid "The shelf"
+#~ msgstr ""
 
 #: src/components/reader/about-view.tsx
 msgid "See collections"
