@@ -53,6 +53,7 @@ import { documentPublishedNotInFuture } from "#/server/reader/document-filters";
 import {
   discoverEligibleArticleWhere,
   discoverEligiblePublicationWhere,
+  notWebBridgePublicationWhere,
 } from "#/server/reader/publication-filters";
 import {
   ROTATION_POOL_MULTIPLIER,
@@ -2415,6 +2416,12 @@ export interface PublicationRailOpts {
    * pool; defaults to a per-viewer daily seed.
    */
   seed?: string;
+  /**
+   * Drop Bridgy Fed's bulk web-bridge mirrors (`*.web.brid.gy`) from the rail —
+   * see {@link notWebBridgePublicationWhere}. Filtered in SQL (not after the
+   * fact) so the rail still fills to `limit`.
+   */
+  excludeWebBridge?: boolean;
 }
 
 function mergeExcludeUris(...groups: Array<Array<string>>): Array<string> {
@@ -2442,6 +2449,7 @@ async function publicationCardsByOrderedUris(
   db: Db,
   schema: Schema,
   uris: Array<string>,
+  { excludeWebBridge = false }: { excludeWebBridge?: boolean } = {},
 ): Promise<Array<PublicationCard>> {
   if (uris.length === 0) {
     return [];
@@ -2461,6 +2469,7 @@ async function publicationCardsByOrderedUris(
         eq(p.deleted, false),
         discoverEligiblePublicationWhere(p),
         hasIndexedDocuments(db, schema, p.uri),
+        ...(excludeWebBridge ? [notWebBridgePublicationWhere(pr)] : []),
       ),
     );
 
@@ -2609,6 +2618,7 @@ async function backfillPublicationRail(
   limit: number,
   excludeUris: Array<string>,
   seed?: string,
+  opts: { excludeWebBridge?: boolean } = {},
 ): Promise<Array<PublicationCard>> {
   if (primary.length >= limit) {
     return primary.slice(0, limit);
@@ -2624,6 +2634,7 @@ async function backfillPublicationRail(
     limit - primary.length,
     seen,
     seed,
+    opts,
   );
   return [...primary, ...backfill].slice(0, limit);
 }
@@ -2642,6 +2653,7 @@ export async function popularPublications(
   limit: number,
   excludeUris: Array<string> = [],
   seed?: string,
+  { excludeWebBridge = false }: { excludeWebBridge?: boolean } = {},
 ): Promise<Array<PublicationCard>> {
   const p = schema.publications;
   const st = schema.publicationStats;
@@ -2653,6 +2665,9 @@ export async function popularPublications(
   ];
   if (excludeUris.length > 0) {
     conds.push(notInArray(p.uri, excludeUris));
+  }
+  if (excludeWebBridge) {
+    conds.push(notWebBridgePublicationWhere(pr));
   }
 
   const poolSize = seed ? limit * ROTATION_POOL_MULTIPLIER : limit;
@@ -2686,10 +2701,11 @@ export async function recommendedPublications(
 ): Promise<Array<PublicationCard>> {
   const excludeUris = opts.excludeUris ?? [];
   const seed = opts.seed ?? rotationSeed("recommended", did);
+  const railOpts = { excludeWebBridge: opts.excludeWebBridge ?? false };
   const followUris =
     opts.followUris ?? (await selectFollowUris(db, schema, did));
   if (followUris.length === 0) {
-    return popularPublications(db, schema, limit, excludeUris, seed);
+    return popularPublications(db, schema, limit, excludeUris, seed, railOpts);
   }
 
   const mergedExclude = mergeExcludeUris(excludeUris, followUris);
@@ -2712,6 +2728,7 @@ export async function recommendedPublications(
     db,
     schema,
     ranked.slice(0, limit * ROTATION_POOL_MULTIPLIER).map((row) => row.uri),
+    railOpts,
   );
   const primary = rotateRail(pool, limit, seed);
 
@@ -2722,6 +2739,7 @@ export async function recommendedPublications(
     limit,
     mergedExclude,
     seed,
+    railOpts,
   );
 }
 
