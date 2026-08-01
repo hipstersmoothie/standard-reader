@@ -9,54 +9,24 @@ fills it in.
 
 ---
 
-## 0. Reconcile the migration ledger — **before merging**
+## 0. Reconcile the migration ledger — **done**
 
-Only needed because this feature's tables were created on prod by hand during
-development, under three migrations that were later consolidated into one
-(`0032_topics.sql`). Prod's `drizzle.__drizzle_migrations` still lists the three
-superseded ones, so `pnpm db:migrate` would try to `CREATE TABLE` over tables
-that already exist — the pre-deploy command fails and the deploy stops.
+Recorded here because it explains a one-time oddity, not because it is a step to
+run. The feature's tables were created on prod by hand during development, under
+three migrations later consolidated into `0032_topics.sql`. Prod's
+`drizzle.__drizzle_migrations` listed the three superseded entries, so
+`pnpm db:migrate` would have tried to `CREATE TABLE` over tables that already
+existed.
 
-This also unblocks CI, which branches the Neon database from prod and applies
-migrations to the branch.
+Applied 2026-08-01 to production and to the PR's Neon branch: renamed the
+`communities_pkey` index left behind by `ALTER TABLE ... RENAME`, added the
+`superseded_by` column and its self-referencing foreign key, swapped the three
+superseded ledger rows for the consolidated migration's hash and timestamp.
+`pnpm db:migrate` against production is now a clean no-op, which is what the
+web service's `preDeployCommand` runs.
 
-```sql
-BEGIN;
-
--- ALTER TABLE ... RENAME leaves the primary key index under the old name.
-ALTER INDEX IF EXISTS communities_pkey RENAME TO topics_pkey;
-
--- The one column the hand-built tables predate.
-ALTER TABLE topics ADD COLUMN IF NOT EXISTS superseded_by text;
-ALTER TABLE topics DROP CONSTRAINT IF EXISTS topics_superseded_by_topics_slug_fk;
-ALTER TABLE topics ADD CONSTRAINT topics_superseded_by_topics_slug_fk
-  FOREIGN KEY (superseded_by) REFERENCES topics(slug) ON DELETE SET NULL;
-
-DELETE FROM drizzle.__drizzle_migrations
- WHERE created_at IN (1785563248288, 1785571959144, 1785604772535);
-
-INSERT INTO drizzle.__drizzle_migrations (hash, created_at)
-VALUES ('e1a1de621169c8946dd72493ca28aebccc354a86a68f1afe0e4a550027060e87',
-        1785607674037);
-
-COMMIT;
-```
-
-The hash is `sha256(drizzle/0032_topics.sql)` and the timestamp is that entry's
-`when` in `drizzle/meta/_journal.json` — the same pair `drizzle-kit migrate`
-would have written. Verify with:
-
-```bash
-node -e "console.log(require('crypto').createHash('sha256')
-  .update(require('fs').readFileSync('apps/standard-reader/drizzle/0032_topics.sql','utf8'))
-  .digest('hex'))"
-```
-
-Then delete the PR's stale Neon branch so CI re-creates it from the fixed prod
-state, and confirm `pnpm db:migrate` against prod reports nothing to apply.
-
-**This step is one-time.** Nothing about the feature needs it again; a fresh
-database just runs `0032_topics.sql` normally.
+**Do not run this again**, and nothing about a fresh database needs it — that
+just applies `0032_topics.sql` normally.
 
 ---
 
@@ -64,6 +34,11 @@ database just runs `0032_topics.sql` normally.
 
 All server-only — no `VITE_` prefix. Set on the **service that runs the topics
 cron** (step 2). The web and ingest services do not need any of them.
+
+Alongside these, `topics-cron` needs the same infrastructure variables every
+other cron carries: `DATABASE_URL`, **`DB_DRIVER=pg`**, `HONEYCOMB_API_KEY`,
+`HONEYCOMB_DATASET`, and the `OTEL_*` set that the start command's
+`--require @opentelemetry/auto-instrumentations-node/register` expects.
 
 | Variable                | Required       | Default                   | What it does                                                                                                                                                                                                       |
 | ----------------------- | -------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -85,13 +60,23 @@ whole tag graph and calls the naming model, which is minutes of work whose
 output barely moves hour to hour. It gets its own Railway service, following the
 shape of `reconcile-cron`.
 
-| Setting       | Value                                                          |
-| ------------- | -------------------------------------------------------------- |
-| Service name  | `topics-cron`                                                  |
-| Start command | `pnpm topics:cron`                                             |
-| Schedule      | daily — `0 4 * * *` (off-peak; the exact hour does not matter) |
-| Region        | same as the others (`us-west2`)                                |
-| Needs         | `DATABASE_URL`, plus the variables in step 1                   |
+| Setting          | Value                                              |
+| ---------------- | -------------------------------------------------- |
+| Service name     | `topics-cron`                                      |
+| Config File Path | `railway.topics.json` — **must be set explicitly** |
+| Start command    | `pnpm topics:cron` (from `railway.topics.json`)    |
+| Schedule         | `0 4 * * *` (from `railway.topics.json`)           |
+| Region           | same as the others (`us-west2`)                    |
+| Needs            | the variables in step 1                            |
+
+Railway auto-detects only the root `railway.json`, so a service without an
+explicit Config File Path silently builds and runs the **web** service instead —
+the project's standing runbook gotcha, and the first thing to check if
+`topics-cron` looks like `web`. Set it under Settings → Config-as-code.
+
+`DB_DRIVER=pg` is not optional. The sweep writes its results in one transaction,
+and the Neon serverless HTTP driver has no transaction support (`db.transaction`
+throws), so the run dies at the point where it persists.
 
 It reads `discover_topic_counts`, which the hourly sweep rebuilds, so it only
 needs those counts to exist — not to have just been refreshed. There is no
