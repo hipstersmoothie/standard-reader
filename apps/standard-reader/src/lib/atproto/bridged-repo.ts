@@ -28,6 +28,16 @@ export const BRIDGE_HANDLE_SUFFIX = ".brid.gy";
 /** Handle suffix of Bridgy's web bridge — mirrored sites, the bulk of it. */
 export const WEB_BRIDGE_HANDLE_SUFFIX = ".web.brid.gy";
 
+/**
+ * SQL `ILIKE` pattern for {@link WEB_BRIDGE_HANDLE_SUFFIX}, for the read-model
+ * queries that exclude passively mirrored sites (see the topic derivation
+ * and its feed in `#/server/reader/topics`).
+ *
+ * Lives here so every such query spells the exclusion the same way — the
+ * derivation and the topic article feed drifted apart once already.
+ */
+export const WEB_BRIDGE_HANDLE_PATTERN = `%${WEB_BRIDGE_HANDLE_SUFFIX}`;
+
 function endsWithSuffix(
   handle: string | null | undefined,
   suffix: string,

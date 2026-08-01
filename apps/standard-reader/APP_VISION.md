@@ -95,13 +95,53 @@ Detail screens
 
 Sections, top to bottom:
 
-1. **Recommended for you** — tuned to your follows (horizontal scroll of pub cards).
-2. **Followed by people you follow** — social proof.
-3. **Trending publications** — most active this week (ranked rows).
-4. **All publications** — full directory with:
-   - topic chips (All + 8 topics),
+1. **Trending publications** — most active this week (ranked rows).
+2. **Topics** — a rail of topic areas the network clusters into, with a **See all**
+   link to the full index. See [Topics](#topics) below.
+3. **Recommended for you** — tuned to your follows (horizontal scroll of pub cards).
+4. **Followed by people you follow** — social proof.
+5. **All publications** — full directory with:
+   - tag chips (All + 8 tags),
    - sort (Readers / Active / A–Z),
    - grid ⇄ list toggle.
+
+### Topics
+
+A **topic** is a cluster of related tags presented as one browsable area — the answer
+to a granularity problem. The directory's tag chips rank a 450k-tag vocabulary by raw
+frequency,
+which puts the network's atproto-native topics (`atproto`, `bluesky`, `atmosphere`) on top
+of a page meant to represent the whole network. Clustering rebalances it: atproto becomes
+_one_ topic among ~45, next to Film and Festivals, Wildlife and Nature, Pacific
+Northwest Local News, Mental Health, and Brazilian Politics.
+
+Topics are **derived, never curated** — see
+[Topic derivation](#topic-derivation) for how.
+
+- `/topics` — every published topic, with search over names, descriptions, and
+  member tags (the whole set ships in one response, so filtering is instant).
+- `/topics/$slug` — one topic:
+  - **Masthead** with its model-written name and description, publication and writer counts.
+  - **Sub-areas** — its member tags, each linking to the existing `/tag/$tag` page, so a
+    topic is a way _down_ into a narrower view rather than a replacement for one.
+  - **Articles** tab — everything published across the topic's tags
+    (Newest / Trending / Most liked).
+  - **Publications** tab — its publications (Best fit / Readers / Active / A–Z), where
+    _best fit_ ranks by how much of the topic's tag vocabulary a publication covers.
+- Slugs are permanent. A topic that drifts, gets renamed, or drops below the quality
+  bar keeps its URL.
+- **No dead links.** A topic can stop existing honestly — its tags drift apart, or its
+  cluster merges into a neighbour — and its tags and memberships go with it. Rather
+  than 404, the sweep records the closest surviving topic by tag overlap in
+  `superseded_by` and `/topics/$slug` redirects there (301), following the pointer
+  transitively since merges chain. Nothing close enough redirects to the index. Only a
+  slug the table has never held is a genuine 404, so a typo still errors.
+- **Publication is sticky.** The quality bar is an _entry_ test; re-applying it
+  unchanged every run would make a topic sitting near a threshold flap in and out,
+  and a public URL that 404s on alternate days is worse than a topic that is a
+  little thin. Once published, a topic stays published while it still clears 70% of
+  each count threshold (and 0.6 top-author share), so only one that has genuinely
+  fallen apart is unlisted.
 
 ### Search
 
@@ -111,7 +151,7 @@ Sections, top to bottom:
 
 ### Tag directory
 
-- Route `/tag/$tag`; linked from topic chips on article cards, publication cards, and
+- Route `/tag/$tag`; linked from tag chips on article cards, publication cards, and
   article kickers.
 - **Articles** tab: indexed, published articles carrying the tag (case-insensitive) on
   discover-eligible publications, with a **Recent / Trending / Most popular** sort select
@@ -1121,7 +1161,7 @@ AT Proto network (standard.site publications, profiles, follows)
   schedule. It is a cache — never the source of truth.
   - **Network-wide aggregates never run on the request path.** A count over the whole corpus is
     an unbounded scan no index can serve, and at ~1.4M documents / 2.2GB it also evicts the
-    buffer cache the feed queries depend on. `discover_topic_counts` (Discover topic chips) and
+    buffer cache the feed queries depend on. `discover_topic_counts` (Discover tag chips) and
     `network_stats` (the Latest "All" badge) exist so those reads are single-row lookups; the
     sweep already walks these tables, so maintaining them is near-free marginal work. Add a
     scalar here rather than counting live.
@@ -1152,6 +1192,79 @@ hand-tuned lists:
   corpus — recommending them reads as noise. They stay fully reachable everywhere else: the
   directory, search, trending, follows, and their own pages. Filtered in SQL, so the rail still
   fills to its limit.
+
+### Topic derivation
+
+Topics (`topics`, `topic_tags`, `topic_publications`) are rebuilt by
+`recomputeTopics()` on its own **daily** cron (`scripts/topics-cron.ts`, the
+`topics-cron` Railway service — not the hourly sweep, which only rebuilds the tag
+counts it reads), from the tag co-occurrence graph. See
+[`DEPLOY_TOPICS.md`](./DEPLOY_TOPICS.md) for the services and environment it needs.
+
+Four decisions carry the quality, each settled by measuring against the live corpus
+rather than by taste:
+
+- **Edges are counted per publisher, not per article.** Two tags are related when they
+  appear on the same article — but the pair counts once per publisher. Counting articles
+  lets one author manufacture relatedness out of a tagging habit: a single
+  fediverse-hosted music blog tagging every post `fediverse` + `j-pop` produced 55
+  article-level co-occurrences, enough to make `fediverse` the Music cluster's
+  14th-strongest member. Per-publisher counting caps that blog at 1, and `fediverse`'s
+  neighbours become activitypub, mastodon, peertube, pixelfed, indieweb.
+- **Clustering is weighted label propagation** over cosine-weighted edges, sparsified to
+  each tag's 12 strongest neighbours (unsparsified, weak hub tags like `news` fuse
+  unrelated clusters). Visitation order is sorted and every tie breaks on label, because a
+  topic's identity is matched across sweeps by tag overlap — randomized order would
+  churn URLs hourly. Any cluster over 150 tags is re-split on a tightened subgraph: label
+  propagation has no size control and produced a 429-tag "topic" that had absorbed
+  musicians, actors and junk tags, which is not a topic but what is left when weak edges
+  chain everything together.
+- **Semantic edges fill in what behaviour cannot.** Co-occurrence is blind to a subject
+  whose publishers split: `typescript / javascript / npm` and `css / html / tailwind` are
+  two halves of web development that essentially never share a publisher, so counting alone
+  left one half too small to publish. Each tag is embedded (`tag_embeddings`, MiniLM) and
+  near-duplicate pairs become extra edges — additively, never replacing a behavioural edge,
+  and rescaled onto the co-occurrence weight range so they cannot dominate the neighbour cut.
+  Crucially the tag is embedded **by the titles of articles carrying it**, not by its own
+  name: on bare words the model compares spellings, and the ordering inverts exactly wrong
+  (`música`/`music` 0.723 against `typescript`/`css` 0.116 — no threshold works). In context,
+  `typescript`/`web development` scores 0.517 while `música`/`music` falls to 0.354, so the
+  0.45 floor joins the web-dev halves and leaves every language-specific topic intact.
+- **The quality bar is author concentration, not counts.** A cluster publishes at ≥14 tags,
+  ≥10 publications, ≥5 distinct authors, and **no more than 50% of its publications from a
+  single repo**. That last one is the load-bearing test: the network's three
+  highest-frequency tags (`chart`, `weekly`, `song` — 700+ publications each) are one bot
+  network publishing from one DID, and it clears every count-based threshold, including a
+  distinct-author floor (measured: 769 publications across 8 DIDs, one of them 99.5%).
+  Real topics measure 1–4% top-author share.
+- **Names are model-written, cached by cluster identity.** The deterministic alternative —
+  the cluster's most frequent tag — names a cluster of `ev / volkswagen / ford / bmw /
+toyota / porsche` **"Opinion"**. So a model reads the top tags and writes an English name
+  and one-line description; only new or materially-drifted clusters are sent, so a
+  steady-state sweep makes ~no requests. Every failure path (no API key, error, refusal)
+  falls back to the deterministic label rather than failing the sweep.
+
+Topic **publications** are precomputed; topic **documents** are resolved live
+through the tag GIN index, via a `MATERIALIZED` CTE that forces the tag predicate to be
+evaluated before the date sort — without it Postgres walks `documents_published_idx` and
+discards tens of thousands of rows per page (1.65s → 18ms).
+
+**Bridgy Fed's passive web bridge shapes the clusters but is never shown.** A
+`*.web.brid.gy` repo is a website Bridgy discovered and mirrored — nobody at that site asked
+to be here — so no bridged publication or article appears in a topic. But the bridge is
+**75% of the tagged corpus** (999k of 1.33M documents), and it is often the only evidence
+the network has that two tags belong together.
+
+So the split is: **the graph learns from everything; only opt-in publications and authors are
+shown.** Measured — excluding the bridge from the graph too collapses it from 4,498 tags to
+502 and leaves **5** publishable topics; keeping it as an unseen clustering signal gives
+**44**, with none of it visible. `*.ap.brid.gy` is never excluded: those authors chose to
+bridge.
+
+The exclusion is tested on **the document's author**, not its publication. Most bridged
+content arrives as _loose_ documents with no publication row at all — 82% of one topic's
+matches — so a publication-level test let nearly all of it through while the topic's own
+publication list looked clean.
 
 ---
 

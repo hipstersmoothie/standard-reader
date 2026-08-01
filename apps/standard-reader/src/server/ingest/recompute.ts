@@ -501,7 +501,7 @@ export async function recomputeCosubscriptions(): Promise<void> {
  * The Discover directory's topic chips can then be built from the top-N topics
  * by publication count.
  */
-export async function recomputeTopics(): Promise<void> {
+export async function recomputeTopicCounts(): Promise<void> {
   // Clear stale topics first so removed tags don't linger.
   await db.execute(
     sql`UPDATE publications SET topic = NULL WHERE topic IS NOT NULL`,
@@ -902,7 +902,11 @@ export async function recomputeDerived(): Promise<void> {
   await recomputePublicationStats();
   await recomputeCosubscriptions();
   await recomputeCorecommends();
-  await recomputeTopics();
+  await recomputeTopicCounts();
+  // Topic derivation is deliberately NOT here — it clusters the whole tag
+  // graph and calls the naming model, which is minutes of work whose output
+  // barely moves hour to hour. It runs on its own daily schedule instead;
+  // see `scripts/topics-cron.ts`.
   await recomputeSerialKinds();
   await recomputeDocumentTrending();
   // Last: dedup + the passes above are what change the eligible-document set,

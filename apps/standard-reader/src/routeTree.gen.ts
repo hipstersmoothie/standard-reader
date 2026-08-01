@@ -66,6 +66,8 @@ import { Route as LayoutLabelersDidRouteImport } from './routes/_layout.labelers
 import { Route as LayoutPrivacyExtensionRouteImport } from './routes/_layout.privacy.extension'
 import { Route as LayoutSettingsIndexRouteImport } from './routes/_layout.settings.index'
 import { Route as LayoutTagTagRouteImport } from './routes/_layout.tag.$tag'
+import { Route as LayoutTopicsIndexRouteImport } from './routes/_layout.topics.index'
+import { Route as LayoutTopicsSlugRouteImport } from './routes/_layout.topics.$slug'
 import { Route as LayoutUDidRouteImport } from './routes/_layout.u.$did'
 import { Route as ApiBskyPostRouteImport } from './routes/api/bsky/post'
 import { Route as ApiDevDigestPreviewRouteImport } from './routes/api/dev/digest-preview'
@@ -410,6 +412,16 @@ const LayoutTagTagRoute = LayoutTagTagRouteImport.update({
   path: '/tag/$tag',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutTopicsIndexRoute = LayoutTopicsIndexRouteImport.update({
+  id: '/topics/',
+  path: '/topics/',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutTopicsSlugRoute = LayoutTopicsSlugRouteImport.update({
+  id: '/topics/$slug',
+  path: '/topics/$slug',
+  getParentRoute: () => LayoutRoute,
+} as any)
 const LayoutUDidRoute = LayoutUDidRouteImport.update({
   id: '/u/$did',
   path: '/u/$did',
@@ -696,6 +708,7 @@ export interface FileRoutesByFullPath {
   '/labelers/$did': typeof LayoutLabelersDidRoute
   '/privacy/extension': typeof LayoutPrivacyExtensionRoute
   '/tag/$tag': typeof LayoutTagTagRoute
+  '/topics/$slug': typeof LayoutTopicsSlugRoute
   '/u/$did': typeof LayoutUDidRoute
   '/api/bsky/post': typeof ApiBskyPostRoute
   '/api/dev/digest-preview': typeof ApiDevDigestPreviewRoute
@@ -731,6 +744,7 @@ export interface FileRoutesByFullPath {
   '/feedback/': typeof LayoutFeedbackIndexRoute
   '/labelers/': typeof LayoutLabelersIndexRoute
   '/settings/': typeof LayoutSettingsIndexRoute
+  '/topics/': typeof LayoutTopicsIndexRoute
   '/a/$did/$rkey': typeof LayoutADidRkeyRoute
   '/collections/edit/$rkey': typeof LayoutCollectionsEditRkeyRoute
   '/l/$did/$rkey': typeof LayoutLDidRkeyRoute
@@ -797,6 +811,7 @@ export interface FileRoutesByTo {
   '/labelers/$did': typeof LayoutLabelersDidRoute
   '/privacy/extension': typeof LayoutPrivacyExtensionRoute
   '/tag/$tag': typeof LayoutTagTagRoute
+  '/topics/$slug': typeof LayoutTopicsSlugRoute
   '/u/$did': typeof LayoutUDidRoute
   '/api/bsky/post': typeof ApiBskyPostRoute
   '/api/dev/digest-preview': typeof ApiDevDigestPreviewRoute
@@ -832,6 +847,7 @@ export interface FileRoutesByTo {
   '/feedback': typeof LayoutFeedbackIndexRoute
   '/labelers': typeof LayoutLabelersIndexRoute
   '/settings': typeof LayoutSettingsIndexRoute
+  '/topics': typeof LayoutTopicsIndexRoute
   '/a/$did/$rkey': typeof LayoutADidRkeyRoute
   '/collections/edit/$rkey': typeof LayoutCollectionsEditRkeyRoute
   '/l/$did/$rkey': typeof LayoutLDidRkeyRoute
@@ -903,6 +919,7 @@ export interface FileRoutesById {
   '/_layout/labelers/$did': typeof LayoutLabelersDidRoute
   '/_layout/privacy/extension': typeof LayoutPrivacyExtensionRoute
   '/_layout/tag/$tag': typeof LayoutTagTagRoute
+  '/_layout/topics/$slug': typeof LayoutTopicsSlugRoute
   '/_layout/u/$did': typeof LayoutUDidRoute
   '/api/bsky/post': typeof ApiBskyPostRoute
   '/api/dev/digest-preview': typeof ApiDevDigestPreviewRoute
@@ -938,6 +955,7 @@ export interface FileRoutesById {
   '/_layout/feedback/': typeof LayoutFeedbackIndexRoute
   '/_layout/labelers/': typeof LayoutLabelersIndexRoute
   '/_layout/settings/': typeof LayoutSettingsIndexRoute
+  '/_layout/topics/': typeof LayoutTopicsIndexRoute
   '/_layout/a/$did/$rkey': typeof LayoutADidRkeyRoute
   '/_layout/collections/edit/$rkey': typeof LayoutCollectionsEditRkeyRoute
   '/_layout/l/$did/$rkey': typeof LayoutLDidRkeyRoute
@@ -1007,6 +1025,7 @@ export interface FileRouteTypes {
     | '/labelers/$did'
     | '/privacy/extension'
     | '/tag/$tag'
+    | '/topics/$slug'
     | '/u/$did'
     | '/api/bsky/post'
     | '/api/dev/digest-preview'
@@ -1042,6 +1061,7 @@ export interface FileRouteTypes {
     | '/feedback/'
     | '/labelers/'
     | '/settings/'
+    | '/topics/'
     | '/a/$did/$rkey'
     | '/collections/edit/$rkey'
     | '/l/$did/$rkey'
@@ -1108,6 +1128,7 @@ export interface FileRouteTypes {
     | '/labelers/$did'
     | '/privacy/extension'
     | '/tag/$tag'
+    | '/topics/$slug'
     | '/u/$did'
     | '/api/bsky/post'
     | '/api/dev/digest-preview'
@@ -1143,6 +1164,7 @@ export interface FileRouteTypes {
     | '/feedback'
     | '/labelers'
     | '/settings'
+    | '/topics'
     | '/a/$did/$rkey'
     | '/collections/edit/$rkey'
     | '/l/$did/$rkey'
@@ -1213,6 +1235,7 @@ export interface FileRouteTypes {
     | '/_layout/labelers/$did'
     | '/_layout/privacy/extension'
     | '/_layout/tag/$tag'
+    | '/_layout/topics/$slug'
     | '/_layout/u/$did'
     | '/api/bsky/post'
     | '/api/dev/digest-preview'
@@ -1248,6 +1271,7 @@ export interface FileRouteTypes {
     | '/_layout/feedback/'
     | '/_layout/labelers/'
     | '/_layout/settings/'
+    | '/_layout/topics/'
     | '/_layout/a/$did/$rkey'
     | '/_layout/collections/edit/$rkey'
     | '/_layout/l/$did/$rkey'
@@ -1728,6 +1752,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutTagTagRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/topics/': {
+      id: '/_layout/topics/'
+      path: '/topics'
+      fullPath: '/topics/'
+      preLoaderRoute: typeof LayoutTopicsIndexRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/topics/$slug': {
+      id: '/_layout/topics/$slug'
+      path: '/topics/$slug'
+      fullPath: '/topics/$slug'
+      preLoaderRoute: typeof LayoutTopicsSlugRouteImport
+      parentRoute: typeof LayoutRoute
+    }
     '/_layout/u/$did': {
       id: '/_layout/u/$did'
       path: '/u/$did'
@@ -2151,10 +2189,12 @@ interface LayoutRouteChildren {
   LayoutFeedbackReturnRoute: typeof LayoutFeedbackReturnRoute
   LayoutLabelersDidRoute: typeof LayoutLabelersDidRoute
   LayoutTagTagRoute: typeof LayoutTagTagRoute
+  LayoutTopicsSlugRoute: typeof LayoutTopicsSlugRoute
   LayoutUDidRoute: typeof LayoutUDidRoute
   LayoutFeedbackIndexRoute: typeof LayoutFeedbackIndexRoute
   LayoutLabelersIndexRoute: typeof LayoutLabelersIndexRoute
   LayoutSettingsIndexRoute: typeof LayoutSettingsIndexRoute
+  LayoutTopicsIndexRoute: typeof LayoutTopicsIndexRoute
   LayoutADidRkeyRoute: typeof LayoutADidRkeyRoute
   LayoutLDidRkeyRoute: typeof LayoutLDidRkeyRoute
   LayoutPDidRkeyRoute: typeof LayoutPDidRkeyRoute
@@ -2178,10 +2218,12 @@ const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutFeedbackReturnRoute: LayoutFeedbackReturnRoute,
   LayoutLabelersDidRoute: LayoutLabelersDidRoute,
   LayoutTagTagRoute: LayoutTagTagRoute,
+  LayoutTopicsSlugRoute: LayoutTopicsSlugRoute,
   LayoutUDidRoute: LayoutUDidRoute,
   LayoutFeedbackIndexRoute: LayoutFeedbackIndexRoute,
   LayoutLabelersIndexRoute: LayoutLabelersIndexRoute,
   LayoutSettingsIndexRoute: LayoutSettingsIndexRoute,
+  LayoutTopicsIndexRoute: LayoutTopicsIndexRoute,
   LayoutADidRkeyRoute: LayoutADidRkeyRoute,
   LayoutLDidRkeyRoute: LayoutLDidRkeyRoute,
   LayoutPDidRkeyRoute: LayoutPDidRkeyRoute,
