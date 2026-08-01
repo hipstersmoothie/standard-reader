@@ -14,8 +14,8 @@
     "perf:discover-fixtures": "pnpm exec tsx --env-file=.env scripts/perf-discover-fixtures.ts",
     "api-docs:examples": "pnpm exec tsx --env-file=.env scripts/run-api-docs-examples.ts",
     "perf:test": "playwright test",
-    "perf:test:guest": "playwright test --grep \"load regression \u2014 guest\"",
-    "perf:test:signed-in": "playwright test --grep \"load regression \u2014 signed in\"",
+    "perf:test:guest": "playwright test --grep \"load regression — guest\"",
+    "perf:test:signed-in": "playwright test --grep \"load regression — signed in\"",
     "perf:view": "node scripts/perf-view.mjs",
     "guide:shots": "playwright test --config=screenshots.config.ts",
     "perf:explain": "FEED_PERF_TEST=1 vitest run src/server/reader/queries.explain.test.ts",
@@ -36,6 +36,8 @@
     "backfill:lists": "pnpm exec tsx --env-file=.env scripts/backfill-lists.ts",
     "backfill:bot-flags": "pnpm exec tsx --env-file=.env scripts/backfill-bot-flags.ts",
     "backfill:serial": "pnpm exec tsx --env-file=.env scripts/backfill-serial-publications.ts",
+    "topics:derive": "pnpm exec tsx --env-file=.env scripts/derive-topics.ts",
+    "topics:recompute": "pnpm exec tsx --env-file=.env scripts/recompute-topics.ts",
     "scan:unsupported-blocks": "pnpm exec tsx --env-file=.env scripts/scan-unsupported-blocks.ts",
     "scan:discussion-sources": "pnpm exec tsx --env-file=.env scripts/scan-discussion-sources.ts",
     "scan:comics": "pnpm exec tsx --env-file=.env scripts/scan-comic-publications.ts",
@@ -75,6 +77,7 @@
     "fonts:generate": "node scripts/generate-font-fallbacks.mjs"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.115.0",
     "@atcute/atproto": "^4.0.3",
     "@atcute/client": "^5.1.1",
     "@atcute/identity-resolver": "^2.0.1",

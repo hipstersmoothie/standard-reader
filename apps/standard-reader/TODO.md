@@ -472,7 +472,11 @@ Build each on hip-ui components + StyleX tokens (no raw HTML/inline styles).
 - [x] App shell: desktop persistent left sidebar; mobile top bar + bottom tab nav; Following list.
 - [x] **Home** — masthead (date + unread count), featured lead, latest unread rows, right rail (Trending articles + You might follow).
 - [x] **Latest** — chronological list, segmented Unread / Subscriptions / All-network filter with counts (Unread = unread docs from subs, Subscriptions = all docs from subs, All = whole network).
-- [x] **Discover** — Recommended / Followed-by-people-you-follow / Trending / All (chips, sort, grid⇄list toggle).
+- [x] **Discover** — Trending / Topics / Recommended / Followed-by-people-you-follow / All (chips, sort, grid⇄list toggle).
+- [x] **Topics** — `/topics` index (client-side search over names, descriptions, and
+      member tags) and `/topics/$slug` (Articles + Publications tabs, sub-area chips into
+      `/tag/$tag`). `TopicCard` mirrors `PubCard`; `PubGridList` generalized into
+      `EntityGridList` so both share the keyboard/routing shell.
 - [x] **Search** — editorial field, live results split into Publications + Articles. Route `/search` with URL `?q=`; paginated search APIs with full counts; load more (publications) + infinite scroll (articles); reuses `PubDirectoryRow` + `ArticleRow`.
 - [x] **Search result snippets** — `ts_headline` excerpts in `searchArticles` /
       `searchPublications`; highlighted `<mark>` terms in `ArticleRow` and
@@ -827,7 +831,7 @@ Build each on hip-ui components + StyleX tokens (no raw HTML/inline styles).
       stays with the publisher's `.well-known`). `/collection/...` emits the same pair for the
       collection manifest document. Part of the site.standard spec and still the only thing many
       clients read — kept permanently, not a migration step.
-- [x] **`at:` record meta tags** — the community convention adopted across the network in 2026
+- [x] **`at:` record meta tags** — the topic convention adopted across the network in 2026
       (`at:canonical` / `at:alternate` / `at:author`), emitted _alongside_ the rels above.
       `/a/...`, `/p/...`, `/l/...`, `/u/...` and `/collection/...` declare their records via an
       `atMeta` key on loader data; `AtRecordMeta` renders them as raw tags in `RootDocument`'s
@@ -845,6 +849,39 @@ Build each on hip-ui components + StyleX tokens (no raw HTML/inline styles).
       recency gate; per-publication + per-author diversity caps on rail reads.
 - [x] **Cold start** — popularity fallback (`trending_score` incl. likes) excluding the trending set (rails stay distinct).
 - [x] **Readers also follow** — co-subscription + co-recommend affinity on publication profiles.
+- [x] **Topics** — auto-derived topic clusters, so Discover stops being ranked by raw tag
+      frequency (which put atproto-native topics on top of a page meant to represent the whole
+      network). `recomputeTopics()` clusters the tag co-occurrence graph each sweep via
+      weighted label propagation and names each cluster with Claude, cached by cluster identity;
+      slugs are permanent across drift and renames. Edges count **per publisher, not per article**
+      (one blogger's tagging habit had made `fediverse` a Music tag), and the quality bar turns on
+      **author concentration** rather than counts (the top-3 network tags are one bot network on a
+      single DID that clears every count threshold). Surfaces: a personalized rail on `/discover`,
+      the `/topics` index with search, and `/topics/$slug` with Articles + Publications
+      tabs and sub-area chips back into `/tag/$tag`.
+      Bridgy Fed's passive `*.web.brid.gy` mirrors are never _shown_ — no bridged publication or
+      article appears in a topic — but they do feed the co-occurrence graph, because they are
+      75% of the tagged corpus and excluding them there too leaves only 5 publishable topics
+      instead of 44. The test is on the document's **author**, not its publication: most bridged
+      content is loose documents with no publication row, so a publication-level test missed 82% of
+      it. (`*.ap.brid.gy` is never excluded — those authors opted in.)
+      Ops: `pnpm topics:derive` inspects read-only; `pnpm topics:recompute` runs the pass.
+- [x] **Topics — mega-cluster splitting + junk tags** — clusters over 150 tags are re-split on
+      a tightened subgraph (429 → 124 max), and placeholder tags (`uncategorized`, `read more`,
+      `@gmail.com`, bare numbers, single letters) never enter the vocabulary.
+- [x] **Topics — semantic tag edges** — `tag_embeddings` + MiniLM, embedding each tag by the
+      titles of articles carrying it, so subjects whose publishers split still cluster together
+      (`typescript`+`css` are now one Web Development topic). Off unless
+      `TOPIC_EMBEDDINGS=1`; ~4 min to build the cache, ~40s per sweep after.
+- [ ] **Topics — near-duplicate clusters** — some areas still split in two where a reader
+      sees one: "Decentralized Social Web" (431 pubs) sits next to "The Decentralized Social Web"
+      (79). Semantic edges reduced this a lot but did not remove it; the remaining fix is a merge
+      pass over cluster similarity, or the editorial overrides below.
+- [ ] **Topics — sidebar entry** — deliberately deferred: needs a new `SidebarNavId`, which is
+      persisted in readers' `sidebarPref` records and must stay stable, so it wants its own change.
+- [ ] **Topics — editorial overrides** — a `topic_overrides` table keyed by slug (rename,
+      re-describe, hide, pin) for when a model-written name needs correcting. The schema is already
+      shaped for it; not built because the generated names have held up.
 
 ---
 

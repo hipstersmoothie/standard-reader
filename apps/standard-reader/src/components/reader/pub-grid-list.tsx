@@ -14,18 +14,103 @@ import { PubCard, PubDirectoryRow } from "./cards";
 import { publicationLinkParams } from "./format";
 
 /**
- * A publication section rendered as a react-aria `GridList`: the whole section
- * is a single tab stop, arrow keys move between publications, and Tab within a
- * focused item reaches its Follow button. Each item is a real, client-routed
- * link (via the react-aria `RouterProvider` bridged to TanStack Router below),
- * so cmd/ctrl-click still opens in a new tab.
+ * A section of entities rendered as a react-aria `GridList`: the whole section
+ * is a single tab stop, arrow keys move between items, and Tab within a
+ * focused item reaches its own controls (e.g. a Follow button). Each item is a
+ * real, client-routed link (via the react-aria `RouterProvider` bridged to
+ * TanStack Router below), so cmd/ctrl-click still opens in a new tab.
+ *
+ * {@link EntityGridList} is the shell — keyboard behaviour, focus scrolling,
+ * routing, and the rail/grid/list layouts. {@link PubGridList} and
+ * {@link TopicGridList} supply what differs: how an item resolves to a
+ * link, and what to render inside.
  *
  * Deliberately local to the reader (not a design-system primitive) until the
  * pattern proves out across more surfaces.
  */
 
-type Layout = "rail" | "grid" | "list";
-type Variant = "card" | "row";
+export type GridListLayout = "rail" | "grid" | "list";
+export type GridListVariant = "card" | "row";
+
+type Layout = GridListLayout;
+type Variant = GridListVariant;
+
+/** How one item identifies and links itself. */
+export interface GridListEntity {
+  /** Stable key + react-aria item id. */
+  key: string;
+  /** Accessible label used for typeahead. */
+  label: string;
+  href?: string;
+  /** Opens in a new tab (an off-site publication URL). */
+  external?: boolean;
+}
+
+export function EntityGridList<T>({
+  items,
+  describe,
+  renderItem,
+  layout,
+  variant,
+  "aria-label": ariaLabel,
+}: {
+  items: Array<T>;
+  describe: (item: T) => GridListEntity;
+  renderItem: (item: T, index: number) => React.ReactNode;
+  layout: Layout;
+  variant: Variant;
+  "aria-label": string;
+}) {
+  const navigate = useNavigate();
+
+  const routerNavigate = useCallback(
+    (to: string, options?: { replace?: boolean }) => {
+      void navigate({ to, replace: options?.replace });
+    },
+    [navigate],
+  );
+
+  return (
+    <RouterProvider navigate={routerNavigate}>
+      <div
+        {...stylex.props(styles.focusScope)}
+        onFocusCapture={scrollFocusedIntoView}
+      >
+        <GridList
+          aria-label={ariaLabel}
+          layout={layout === "list" ? "stack" : "grid"}
+          selectionMode="none"
+          {...stylex.props(
+            layout === "rail" && styles.rail,
+            layout === "grid" && styles.grid,
+            layout === "list" && styles.list,
+          )}
+        >
+          {items.map((item, index) => {
+            const entity = describe(item);
+            return (
+              <GridListItem
+                key={entity.key}
+                id={entity.key}
+                textValue={entity.label}
+                href={entity.href}
+                target={entity.external ? "_blank" : undefined}
+                rel={entity.external ? "noreferrer" : undefined}
+                {...stylex.props(
+                  styles.item,
+                  variant === "card" ? styles.itemCard : styles.itemRow,
+                  layout === "rail" && styles.railItem,
+                )}
+              >
+                {renderItem(item, index)}
+              </GridListItem>
+            );
+          })}
+        </GridList>
+      </div>
+    </RouterProvider>
+  );
+}
 
 /**
  * Keep a keyboard-focused item within view. react-aria scrolls the item into
@@ -88,64 +173,36 @@ export function PubGridList({
   showRank?: boolean;
   "aria-label": string;
 }) {
-  const navigate = useNavigate();
   const target = usePubTarget();
 
-  const routerNavigate = useCallback(
-    (to: string, options?: { replace?: boolean }) => {
-      void navigate({ to, replace: options?.replace });
-    },
-    [navigate],
-  );
-
   return (
-    <RouterProvider navigate={routerNavigate}>
-      <div
-        {...stylex.props(styles.focusScope)}
-        onFocusCapture={scrollFocusedIntoView}
-      >
-        <GridList
-          aria-label={ariaLabel}
-          layout={layout === "list" ? "stack" : "grid"}
-          selectionMode="none"
-          {...stylex.props(
-            layout === "rail" && styles.rail,
-            layout === "grid" && styles.grid,
-            layout === "list" && styles.list,
-          )}
-        >
-          {pubs.map((pub, index) => {
-            const t = target(pub);
-            return (
-              <GridListItem
-                key={pub.uri}
-                id={pub.uri}
-                textValue={pub.name}
-                href={t?.href}
-                target={t?.external ? "_blank" : undefined}
-                rel={t?.external ? "noreferrer" : undefined}
-                {...stylex.props(
-                  styles.item,
-                  variant === "card" ? styles.itemCard : styles.itemRow,
-                  layout === "rail" && styles.railItem,
-                )}
-              >
-                {variant === "card" ? (
-                  <PubCard pub={pub} rail={layout === "rail"} noLink />
-                ) : (
-                  <PubDirectoryRow
-                    pub={pub}
-                    noLink
-                    rank={showRank ? index + 1 : undefined}
-                    isLast={index === pubs.length - 1}
-                  />
-                )}
-              </GridListItem>
-            );
-          })}
-        </GridList>
-      </div>
-    </RouterProvider>
+    <EntityGridList
+      items={pubs}
+      layout={layout}
+      variant={variant}
+      aria-label={ariaLabel}
+      describe={(pub) => {
+        const t = target(pub);
+        return {
+          key: pub.uri,
+          label: pub.name,
+          href: t?.href,
+          external: t?.external,
+        };
+      }}
+      renderItem={(pub, index) =>
+        variant === "card" ? (
+          <PubCard pub={pub} rail={layout === "rail"} noLink />
+        ) : (
+          <PubDirectoryRow
+            pub={pub}
+            noLink
+            rank={showRank ? index + 1 : undefined}
+            isLast={index === pubs.length - 1}
+          />
+        )
+      }
+    />
   );
 }
 

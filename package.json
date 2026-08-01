@@ -50,6 +50,8 @@
     "backfill:repo-documents": "pnpm --filter standard-reader backfill:repo-documents",
     "backfill:lists": "pnpm --filter standard-reader backfill:lists",
     "backfill:serial": "pnpm --filter standard-reader backfill:serial",
+    "topics:derive": "pnpm --filter standard-reader topics:derive",
+    "topics:recompute": "pnpm --filter standard-reader topics:recompute",
     "scan:unsupported-blocks": "pnpm --filter standard-reader scan:unsupported-blocks",
     "scan:discussion-sources": "pnpm --filter standard-reader scan:discussion-sources",
     "scan:comics": "pnpm --filter standard-reader scan:comics",

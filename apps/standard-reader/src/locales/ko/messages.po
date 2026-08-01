@@ -115,6 +115,11 @@ msgstr ""
 msgid "Add an article"
 msgstr "글 추가"
 
+#: src/routes/_layout.communities.index.tsx
+#: src/routes/_layout.discover.tsx
+#~ msgid "Communities"
+#~ msgstr ""
+
 #: src/components/guide/pages/finding-guide-page.tsx
 #: src/components/guide/pages/getting-started-guide-page.tsx
 #: src/components/reader/app-shell.tsx
@@ -157,6 +162,10 @@ msgstr "아이콘 제거"
 #: src/components/reader/extension-privacy-view.tsx
 msgid "The {SITE_NAME} browser extension helps you save articles and follow publications on the standard.site network from any tab. It connects to the same account as the web app at <0>{siteHost}</0>. This policy covers the extension only; the <1>site privacy policy</1> describes data handling on the website itself."
 msgstr "{SITE_NAME} 브라우저 확장 프로그램을 사용하면 어느 탭에서든 standard.site 네트워크의 글을 저장하고 발행물을 팔로우할 수 있습니다. <0>{siteHost}</0>의 웹 앱과 동일한 계정으로 연결됩니다. 이 정책은 확장 프로그램에만 적용되며, 웹사이트 자체의 데이터 처리는 <1>사이트 개인정보처리방침</1>을 참고하세요."
+
+#: src/routes/_layout.topics.index.tsx
+msgid "Topic areas the network's writing clusters into, rebuilt as it grows. Each one gathers related tags, the publications writing about them, and everything they've published."
+msgstr ""
 
 #: src/components/guide/pages/getting-started-guide-page.tsx
 msgid "find publications, people, topics, and headlines by name."
@@ -328,6 +337,10 @@ msgstr "컬렉션을 여는 중…"
 #: src/components/appearance-settings.tsx
 #: src/components/guide/pages/personalizing-guide-page.tsx
 msgid "Density"
+msgstr ""
+
+#: src/routes/_layout.topics.$slug.tsx
+msgid "Best fit"
 msgstr ""
 
 #: src/components/reader/article-view.tsx
@@ -641,6 +654,7 @@ msgstr "글의 하트를 탭해 추천하세요. 추천은 회원님의 repo에 
 #: src/routes/_layout.index.tsx
 #: src/routes/_layout.latest.tsx
 #: src/routes/_layout.tag.$tag.tsx
+#: src/routes/_layout.topics.$slug.tsx
 msgid "Trending"
 msgstr "인기"
 
@@ -654,6 +668,7 @@ msgstr "표시된 발행물"
 
 #: src/routes/_layout.l.$did.$rkey.tsx
 #: src/routes/_layout.tag.$tag.tsx
+#: src/routes/_layout.topics.$slug.tsx
 msgid "{publicationCount, plural, one {publication} other {publications}}"
 msgstr "{publicationCount, plural, one {발행물} other {발행물}}"
 
@@ -669,6 +684,10 @@ msgstr ""
 #: src/components/user-settings-view.tsx
 msgid "Permanently remove data stored in your account. These actions delete records from your account and cannot be undone."
 msgstr "계정에 저장된 데이터를 영구적으로 삭제합니다. 이 작업은 계정에서 레코드를 삭제하며 되돌릴 수 없습니다."
+
+#: src/routes/_layout.communities.$slug.tsx
+#~ msgid "Sub-areas"
+#~ msgstr ""
 
 #: src/routes/_layout.friends.tsx
 msgid "Loading people"
@@ -801,6 +820,7 @@ msgstr "로그인에 실패했습니다. 다시 시도하세요."
 
 #: src/routes/_layout.discover.tsx
 #: src/routes/_layout.tag.$tag.tsx
+#: src/routes/_layout.topics.$slug.tsx
 msgid "Loading publications"
 msgstr "발행물 불러오는 중"
 
@@ -825,6 +845,7 @@ msgstr "읽지 않음으로 표시"
 
 #: src/routes/_layout.discover.tsx
 #: src/routes/_layout.tag.$tag.tsx
+#: src/routes/_layout.topics.$slug.tsx
 msgid "Grid view"
 msgstr "그리드 보기"
 
@@ -871,6 +892,7 @@ msgstr ""
 
 #: src/routes/_layout.discover.tsx
 #: src/routes/_layout.tag.$tag.tsx
+#: src/routes/_layout.topics.$slug.tsx
 msgid "List view"
 msgstr "목록 보기"
 
@@ -946,6 +968,7 @@ msgid "{unfollowedCount, plural, one {Subscribe to {formattedUnfollowedCount} pu
 msgstr "{unfollowedCount, plural, one {발행물 {formattedUnfollowedCount}개를 구독할까요?} other {발행물 {formattedUnfollowedCount}개를 구독할까요?}}"
 
 #: src/routes/_layout.tag.$tag.tsx
+#: src/routes/_layout.topics.$slug.tsx
 msgid "Sort articles"
 msgstr ""
 
@@ -1801,6 +1824,10 @@ msgstr "이 목록에 발행물이 없습니다."
 msgid "{0}, dark"
 msgstr ""
 
+#: src/routes/_layout.discover.tsx
+msgid "Browse all topics"
+msgstr ""
+
 #: src/components/user-settings-view.tsx
 msgid "Can read and act on your behalf"
 msgstr ""
@@ -1837,6 +1864,7 @@ msgstr "목록 제거"
 #: src/routes/_layout.friends.tsx
 #: src/routes/_layout.latest.tsx
 #: src/routes/_layout.tag.$tag.tsx
+#: src/routes/_layout.topics.$slug.tsx
 msgid "Loading articles"
 msgstr "글 불러오는 중"
 
@@ -1901,6 +1929,10 @@ msgstr ""
 #: src/components/reader/article-below-fold.tsx
 msgid "More from <0>{0}</0>"
 msgstr "<0>{0}</0>의 다른 글"
+
+#: src/routes/_layout.communities.$slug.tsx
+#~ msgid "Community"
+#~ msgstr ""
 
 #: src/components/reader/extension-privacy-view.tsx
 msgid "We may update this policy as the extension changes. The “Last updated” date at the top will change when we do. Continued use of the extension after an update means you accept the revised policy."
@@ -1999,6 +2031,7 @@ msgstr ""
 #~ msgstr "발행물, 리스트, 컬렉션마다 리치 미리보기 카드가 달린 깔끔한 링크가 생깁니다. 발행물이 자체 사이트에 넣을 수 있는 구독 버튼도 함께 제공됩니다."
 
 #: src/components/reader/discover-topic-filters.tsx
+#: src/routes/_layout.topics.index.tsx
 msgid "Search topics"
 msgstr ""
 
@@ -2069,6 +2102,10 @@ msgstr ""
 #: src/components/reader/subscriptions-table.tsx
 msgid "Sort descending"
 msgstr ""
+
+#: src/routes/_layout.communities.$slug.tsx
+#~ msgid "No publications in this community yet."
+#~ msgstr ""
 
 #: src/routes/_layout.feedback.index.tsx
 msgid "Anonymous"
@@ -2181,6 +2218,11 @@ msgstr ""
 msgid "Something went wrong while submitting your feedback."
 msgstr "피드백을 보내는 중 문제가 발생했습니다."
 
+#. placeholder {0}: visible.length
+#: src/routes/_layout.topics.index.tsx
+msgid "{0, plural, one {# topic} other {# topics}}"
+msgstr ""
+
 #: src/components/reader/about-view.tsx
 msgid "Don’t want another app to check? Opt into a weekly email with the best of the publications you subscribe to, plus a couple worth discovering. One email, one click to leave — and you can preview exactly what it looks like before you ever turn it on."
 msgstr "앱을 또 확인하기 번거롭나요? 구독한 발행물의 가장 좋은 글과 발견할 만한 글 몇 편을 담은 주간 이메일을 신청하세요. 이메일 한 통, 해지는 클릭 한 번. 신청 전에 어떤 모습인지 미리 볼 수도 있습니다."
@@ -2227,6 +2269,10 @@ msgstr "pckt에서"
 #: src/components/onboarding/step-settings.tsx
 msgid "Marks what you've read for unread counts. Stored publicly on your account — turn off to read privately."
 msgstr "읽지 않음 개수를 위해 읽은 글을 표시합니다. 계정에 공개로 저장되며, 비공개로 읽으려면 끄세요."
+
+#: src/routes/_layout.topics.$slug.tsx
+msgid "Newest"
+msgstr ""
 
 #: src/routes/_layout.feedback.return.tsx
 msgid "Your upvote has been recorded on userinput.app. Thanks for helping surface what matters."
@@ -2428,6 +2474,7 @@ msgstr ""
 #: src/routes/_layout.discover.tsx
 #: src/routes/_layout.p.$did.$rkey.tsx
 #: src/routes/_layout.tag.$tag.tsx
+#: src/routes/_layout.topics.$slug.tsx
 #: src/routes/_layout.u.$did.tsx
 msgid "Readers"
 msgstr "독자"
@@ -2491,6 +2538,7 @@ msgstr ""
 
 #: src/routes/_layout.discover.tsx
 #: src/routes/_layout.tag.$tag.tsx
+#: src/routes/_layout.topics.$slug.tsx
 msgid "Active"
 msgstr "활성"
 
@@ -2708,6 +2756,10 @@ msgstr "지금은 네트워크에서 인기 있는 아티클이 없습니다. �
 msgid "Everything below is compatibility support for formats already out there in other apps' own repos — none of it is part of the site.standard spec, and none of it is something to model a new integration on."
 msgstr "아래 내용은 다른 앱의 저장소에 이미 존재하는 형식에 대한 호환성 지원입니다. site.standard 스펙의 일부가 아니며, 새로운 연동을 만들 때 본보기로 삼을 대상도 아닙니다."
 
+#: src/routes/_layout.topics.$slug.tsx
+msgid "No articles in this topic yet."
+msgstr ""
+
 #: src/components/reader/subscribe-card.tsx
 msgid "Subscribing"
 msgstr "구독 중"
@@ -2768,6 +2820,10 @@ msgstr ""
 msgid "A sentence of body copy, set in your chosen fonts and colors, so you can see how it all reads together before you save."
 msgstr "선택한 서체와 색으로 표시된 본문 예시 문장입니다. 저장하기 전에 전체적인 느낌을 확인해 보세요."
 
+#: src/routes/_layout.discover.tsx
+#~ msgid "Find your corner"
+#~ msgstr ""
+
 #: src/routes/_layout.index.tsx
 msgid "Open the directory"
 msgstr "디렉터리 열기"
@@ -2801,6 +2857,10 @@ msgstr "{itemTitle} 순서 변경"
 msgid "Back to feedback"
 msgstr "피드백으로 돌아가기"
 
+#: src/routes/_layout.communities.$slug.tsx
+#~ msgid "Community views"
+#~ msgstr ""
+
 #: src/components/reader/content/renderers/shared/bsky-client-embed.tsx
 msgid "View on {name}"
 msgstr ""
@@ -2824,6 +2884,10 @@ msgstr "배경"
 
 #: src/components/feedback/feedback-image-picker.tsx
 msgid "Drop another screenshot"
+msgstr ""
+
+#: src/routes/_layout.discover.tsx
+msgid "See all"
 msgstr ""
 
 #: src/components/comic/comic-reader.tsx
@@ -2962,6 +3026,7 @@ msgstr ""
 #: src/routes/_layout.latest.tsx
 #: src/routes/_layout.p.$did.$rkey.tsx
 #: src/routes/_layout.tag.$tag.tsx
+#: src/routes/_layout.topics.$slug.tsx
 #: src/routes/_layout.u.$did.tsx
 msgid "You've reached the end."
 msgstr "마지막까지 다 보셨습니다."
@@ -3437,6 +3502,10 @@ msgstr ""
 msgid "e.g. Dispatches from the Atmosphere"
 msgstr "예: Dispatches from the Atmosphere"
 
+#: src/routes/_layout.discover.tsx
+#~ msgid "Browse all communities"
+#~ msgstr ""
+
 #: src/components/reader/content/renderers/shared/bsky-client-embed.tsx
 msgid "{value, plural, one {# join} other {# joins}}"
 msgstr ""
@@ -3530,6 +3599,10 @@ msgstr "@{ownerHandle} 님"
 
 #: src/components/guide/pages/reading-guide-page.tsx
 msgid "A player appears just above the navigation and stays there while you move around the app, so you can keep listening while you browse. It has play and pause, a jump back fifteen seconds, a speed control, a bar you can drag to move through the article, and a close button. The word being spoken is highlighted in the text and kept on screen; if you scroll away yourself, that stops until you select <0>Follow along</0>."
+msgstr ""
+
+#: src/routes/_layout.topics.index.tsx
+msgid "No topics match your search."
 msgstr ""
 
 #. placeholder {0}: rows.length
@@ -3713,7 +3786,9 @@ msgstr "이 계정에서 발행물을 찾을 수 없습니다."
 
 #. placeholder {0}: following.length
 #. placeholder {0}: list.publications.length
+#. placeholder {0}: topic.publicationCount
 #: src/components/reader/subscriptions-sheet.tsx
+#: src/components/reader/topic-cards.tsx
 #: src/routes/_layout.u.$did.tsx
 msgid "{0, plural, one {# publication} other {# publications}}"
 msgstr "{0, plural, one {발행물 #개} other {발행물 #개}}"
@@ -3762,6 +3837,10 @@ msgstr "일치하는 사람이 없습니다."
 #: src/components/reader/subscriptions-tree.tsx
 msgid "Empty list."
 msgstr "빈 목록입니다."
+
+#: src/routes/_layout.communities.$slug.tsx
+#~ msgid "No articles in this community yet."
+#~ msgstr ""
 
 #: src/routes/_layout.feedback.index.tsx
 msgid "Show only mine"
@@ -4247,6 +4326,10 @@ msgstr "<0>{countLabel}</0>개의 발행물이 색인됨 — 그리고 계속 �
 #: src/routes/_layout.index.tsx
 msgid "{newCount} new"
 msgstr "새 글 {newCount}개"
+
+#: src/routes/_layout.communities.index.tsx
+#~ msgid "No communities match your search."
+#~ msgstr ""
 
 #: src/components/reader/language-hint-prompt.tsx
 msgid "Reading in {language}"
@@ -5057,6 +5140,10 @@ msgstr ""
 msgid "Collection"
 msgstr "컬렉션"
 
+#: src/routes/_layout.topics.$slug.tsx
+msgid "Most liked"
+msgstr ""
+
 #: src/components/reader/subscriptions-table.tsx
 msgid "Clear filter"
 msgstr ""
@@ -5127,6 +5214,7 @@ msgid "Everything by one author"
 msgstr "한 저자의 모든 글"
 
 #: src/components/reader/subscriptions-table.tsx
+#: src/routes/_layout.topics.$slug.tsx
 msgid "Topic"
 msgstr ""
 
@@ -5174,6 +5262,10 @@ msgstr "<0>ATStore</0>에 리뷰를 남겨 주시면 저희와 다른 사용자 
 #: src/components/reader/about-view.tsx
 msgid "Publish labels others can subscribe to, or consume the ones we do."
 msgstr ""
+
+#: src/routes/_layout.communities.index.tsx
+#~ msgid "Search communities"
+#~ msgstr ""
 
 #: src/components/guide/pages/extension-guide-page.tsx
 msgid "The full account is on the <0>extension privacy page</0>."
@@ -5472,6 +5564,11 @@ msgstr "서비스 DID는 <0>{appviewDid}</0>입니다. 이 서비스는 스코�
 msgid "The Slow Web, Revisited"
 msgstr "느린 웹, 다시 보기"
 
+#. placeholder {0}: visible.length
+#: src/routes/_layout.communities.index.tsx
+#~ msgid "{0, plural, one {# community} other {# communities}}"
+#~ msgstr ""
+
 #. placeholder {0}: labelTotal - names.length
 #: src/components/labelers-settings-view.tsx
 msgid "+{0} more"
@@ -5593,6 +5690,8 @@ msgstr ""
 
 #: src/components/guide/pages/finding-guide-page.tsx
 #: src/lib/guide/navigation.ts
+#: src/routes/_layout.discover.tsx
+#: src/routes/_layout.topics.index.tsx
 msgid "Topics"
 msgstr ""
 
@@ -5628,6 +5727,10 @@ msgstr "ATStore에 리뷰를 남겨 주세요."
 #: src/routes/_layout.feedback.index.tsx
 msgid "Search feedback"
 msgstr "피드백 검색"
+
+#: src/routes/_layout.topics.$slug.tsx
+msgid "No publications in this topic yet."
+msgstr ""
 
 #: src/components/reader/subscriptions-unsubscribe-dialog.tsx
 msgid "Unsubscribe"
@@ -5698,6 +5801,10 @@ msgstr "목록 저장"
 msgid "Some people would rather read on the publication's own site, with its own design. Turn on the open-on-the-original-site setting in your account menu and every article link opens there in a new tab instead of in the reader. Articles that have no site of their own still open here."
 msgstr ""
 
+#: src/routes/_layout.communities.index.tsx
+#~ msgid "Search by name or topic…"
+#~ msgstr ""
+
 #: src/magazine/Magazine.tsx
 msgid "Contents"
 msgstr "목차"
@@ -5748,6 +5855,11 @@ msgstr ""
 #: src/components/reader/subscriptions-unsubscribe-dialog.tsx
 msgid "Remove"
 msgstr "제거"
+
+#. placeholder {0}: topic.authorCount
+#: src/routes/_layout.topics.$slug.tsx
+msgid "{0, plural, one {writer} other {writers}}"
+msgstr ""
 
 #: src/components/docs/renderers-docs-page.tsx
 msgid "<0>Platform</0> components render the blocks unique to one publishing platform — a Leaflet poll or signup, a Pckt gallery or note embed, an Offprint component. These are the interactive, often data-backed embeds; the headless defaults render nothing, so you supply your own to make them live."
@@ -5910,6 +6022,7 @@ msgstr ""
 #: src/routes/_layout.l.$did.$rkey.tsx
 #: src/routes/_layout.search.tsx
 #: src/routes/_layout.tag.$tag.tsx
+#: src/routes/_layout.topics.$slug.tsx
 msgid "Articles"
 msgstr "글"
 
@@ -5990,6 +6103,7 @@ msgstr ""
 #: src/components/reader/subscriptions-sheet.tsx
 #: src/routes/_layout.discover.tsx
 #: src/routes/_layout.tag.$tag.tsx
+#: src/routes/_layout.topics.$slug.tsx
 msgid "A–Z"
 msgstr "A–Z"
 
@@ -6139,6 +6253,10 @@ msgstr ""
 #: src/components/feedback/feedback-dialog.tsx
 msgid "Details"
 msgstr "세부 정보"
+
+#: src/routes/_layout.topics.$slug.tsx
+msgid "Topic views"
+msgstr ""
 
 #: src/components/reader/extension-privacy-view.tsx
 msgid "When you save or follow from the extension, {SITE_NAME} writes AT Protocol records to <0>your</0> repository through the same server paths as the web app. Those records follow the network's visibility rules and your account settings."
@@ -6673,6 +6791,10 @@ msgstr "소리내어 읽기"
 msgid "Articles you've saved for later — in your repo, synced across devices."
 msgstr "나중에 읽으려고 저장한 글 — 내 저장소에 보관되어 기기 간에 동기화됩니다."
 
+#: src/routes/_layout.communities.index.tsx
+#~ msgid "Every corner"
+#~ msgstr ""
+
 #: src/components/reader/format-i18n.ts
 msgid "today"
 msgstr ""
@@ -6786,6 +6908,7 @@ msgstr "발행물 팔로우, 글 좋아요나 저장, 전용 구독 흐름을 �
 #: src/routes/_layout.l.$did.$rkey.tsx
 #: src/routes/_layout.search.tsx
 #: src/routes/_layout.tag.$tag.tsx
+#: src/routes/_layout.topics.$slug.tsx
 #: src/routes/_layout.u.$did.tsx
 msgid "Publications"
 msgstr "발행물"
@@ -7019,6 +7142,10 @@ msgstr "<0>Standard Reader</0> 제공"
 
 #: src/components/appearance-settings.tsx
 msgid "Your accent sits close to the paper in tone — it stays exactly as you picked it, but text and links set in it will be hard to read."
+msgstr ""
+
+#: src/routes/_layout.topics.index.tsx
+msgid "Search by name or topic — “vinyl”, “kubernetes”…"
 msgstr ""
 
 #: src/components/guide/pages/your-data-guide-page.tsx
@@ -7351,6 +7478,11 @@ msgstr ""
 
 #: src/components/reader/read-on-platform.tsx
 msgid "Read this on {name}"
+msgstr ""
+
+#. placeholder {0}: topic.authorCount
+#: src/components/reader/topic-cards.tsx
+msgid "{0, plural, one {# writer} other {# writers}}"
 msgstr ""
 
 #: src/components/reader/terms-view.tsx

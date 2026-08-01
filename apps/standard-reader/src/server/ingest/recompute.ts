@@ -46,6 +46,7 @@ import {
 } from "../atproto/identity.ts";
 import { replayDeadLetters } from "./consumer.ts";
 import { reconcileDocumentDup, reconcilePublicationGroup } from "./handlers.ts";
+import { recomputeTopics } from "./recompute-topics.ts";
 
 /**
  * Recompute the derived per-publication aggregates (subscriber/document/
@@ -501,7 +502,7 @@ export async function recomputeCosubscriptions(): Promise<void> {
  * The Discover directory's topic chips can then be built from the top-N topics
  * by publication count.
  */
-export async function recomputeTopics(): Promise<void> {
+export async function recomputeTopicCounts(): Promise<void> {
   // Clear stale topics first so removed tags don't linger.
   await db.execute(
     sql`UPDATE publications SET topic = NULL WHERE topic IS NOT NULL`,
@@ -902,7 +903,14 @@ export async function recomputeDerived(): Promise<void> {
   await recomputePublicationStats();
   await recomputeCosubscriptions();
   await recomputeCorecommends();
-  await recomputeTopics();
+  await recomputeTopicCounts();
+  // After the tag counts: the vocabulary they rebuild is this pass's input.
+  try {
+    await recomputeTopics();
+  } catch {
+    // Topics are a discovery surface, not core data — the prior snapshot
+    // stays published and the next sweep retries.
+  }
   await recomputeSerialKinds();
   await recomputeDocumentTrending();
   // Last: dedup + the passes above are what change the eligible-document set,
