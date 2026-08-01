@@ -19,6 +19,7 @@ import {
   isTopicNamingConfigured,
   nameTopics,
 } from "./topic-naming.ts";
+import { clearsRetentionBar, findSuccessors } from "./topic-succession.ts";
 
 /**
  * Derive topics from the tag co-occurrence graph.
@@ -151,6 +152,12 @@ const MAX_TOP_AUTHOR_SHARE = 0.5;
 const RETENTION_FACTOR = 0.7;
 /** Concentration is the anti-fleet rule, so it slackens far less than the counts. */
 const RETENTION_TOP_AUTHOR_SHARE = 0.6;
+const RETENTION_BAR = {
+  minTags: MIN_CLUSTER_TAGS * RETENTION_FACTOR,
+  minPublications: MIN_CLUSTER_PUBLICATIONS * RETENTION_FACTOR,
+  minAuthors: MIN_CLUSTER_AUTHORS * RETENTION_FACTOR,
+  maxTopAuthorShare: RETENTION_TOP_AUTHOR_SHARE,
+};
 
 /**
  * Weakest overlap that still counts as "this topic became that one".
@@ -640,78 +647,6 @@ export async function deriveTopics(): Promise<TopicDerivation> {
   };
 }
 
-/**
- * Where each unpublished topic's URL should now point.
- *
- * Two ways a topic ends up here, and they need different fingerprints:
- *
- * - **It dissolved.** No cluster matched it this sweep, so there is no fresh
- *   signature — compare its *stored* one, which is the last thing it was.
- * - **It fell below the bar.** It still has a cluster, so compare the fresh
- *   signature; that is what it looks like now.
- *
- * Either way the answer is the published topic sharing the most tags with it,
- * and {@link SUPERSEDE_SIMILARITY} is the floor below which "closest" stops
- * meaning "related". Returning null for those is deliberate: the route sends
- * them to the index, which is honest, rather than to an unrelated topic.
- */
-function findSuccessors(
-  resolved: Array<{ slug: string; published: boolean; candidate: Candidate }>,
-  existing: Array<{ slug: string; signatureTags: Array<string> }>,
-  publishedSlugs: Array<string>,
-): Map<string, string | null> {
-  const published = new Set(publishedSlugs);
-  const targets = resolved.filter((row) => row.published);
-  const successors = new Map<string, string | null>();
-  if (targets.length === 0) return successors;
-
-  const fingerprints = new Map<string, Array<string>>();
-  for (const row of existing) fingerprints.set(row.slug, row.signatureTags);
-  // A resolved row's fresh signature beats whatever it was last sweep.
-  for (const row of resolved) {
-    fingerprints.set(row.slug, row.candidate.signature);
-  }
-
-  for (const [slug, signature] of fingerprints) {
-    if (published.has(slug)) continue;
-
-    let best: string | null = null;
-    let bestScore = SUPERSEDE_SIMILARITY;
-    for (const target of targets) {
-      const score = tagSetSimilarity(signature, target.candidate.signature);
-      // Ties break on slug so a sweep that changes nothing rewrites nothing.
-      if (
-        score > bestScore ||
-        (score === bestScore && best && target.slug < best)
-      ) {
-        best = target.slug;
-        bestScore = score;
-      }
-    }
-    successors.set(slug, best);
-  }
-
-  return successors;
-}
-
-/**
- * Whether an already-published topic is still substantial enough to stay up.
- *
- * Deliberately measured against the same three signals as the entry bar rather
- * than a separate rule, so there is one definition of "a real topic" and only
- * its strictness changes. A topic that fails this has not dipped — it has
- * dissolved.
- */
-function clearsRetentionBar(candidate: Candidate): boolean {
-  return (
-    candidate.tags.length >= MIN_CLUSTER_TAGS * RETENTION_FACTOR &&
-    candidate.publications.length >=
-      MIN_CLUSTER_PUBLICATIONS * RETENTION_FACTOR &&
-    candidate.authorCount >= MIN_CLUSTER_AUTHORS * RETENTION_FACTOR &&
-    candidate.topAuthorShare <= RETENTION_TOP_AUTHOR_SHARE
-  );
-}
-
 export async function recomputeTopics(): Promise<TopicsRecomputeSummary> {
   const derivation = await deriveTopics();
   const { candidates } = derivation;
@@ -782,7 +717,16 @@ export async function recomputeTopics(): Promise<TopicsRecomputeSummary> {
     // take a live URL off the site. See RETENTION_FACTOR.
     const published =
       candidate.published ||
-      (prior?.published === true && clearsRetentionBar(candidate));
+      (prior?.published === true &&
+        clearsRetentionBar(
+          {
+            tagCount: candidate.tags.length,
+            publicationCount: candidate.publications.length,
+            authorCount: candidate.authorCount,
+            topAuthorShare: candidate.topAuthorShare,
+          },
+          RETENTION_BAR,
+        ));
 
     return {
       candidate,
@@ -798,7 +742,15 @@ export async function recomputeTopics(): Promise<TopicsRecomputeSummary> {
   const publishedSlugs = resolved
     .filter((row) => row.published)
     .map((row) => row.slug);
-  const successors = findSuccessors(resolved, existing, publishedSlugs);
+  const successors = findSuccessors(
+    resolved.map((row) => ({
+      slug: row.slug,
+      published: row.published,
+      signature: row.candidate.signature,
+    })),
+    existing,
+    SUPERSEDE_SIMILARITY,
+  );
 
   await db.transaction(async (tx) => {
     // One statement rather than a loop: the ingest worker and the database sit
