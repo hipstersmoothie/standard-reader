@@ -1,3 +1,4 @@
+import { bskyClientProfileIdent } from "#/lib/atproto/bsky-clients";
 import { STANDARD_NSID } from "#/lib/atproto/nsids";
 import { normalizeAuthorRef } from "#/lib/author-profile";
 import { getPublicUrlClient } from "#/lib/public-url";
@@ -28,8 +29,6 @@ export type InternalRoute =
 const ARTICLE_PATH = /^\/a\/([^/]+)\/([^/]+)\/?$/;
 const PUBLICATION_PATH = /^\/p\/([^/]+)\/([^/]+)\/?$/;
 const AUTHOR_PATH = /^\/u\/([^/]+)\/?$/;
-const BSKY_PROFILE_PATH = /^\/profile\/([^/]+)\/?$/;
-const BSKY_PROFILE_HOSTS = new Set(["bsky.app", "staging.bsky.app"]);
 
 function parseAtUri(href: string): InternalRoute | null {
   if (!href.startsWith("at://")) return null;
@@ -127,14 +126,11 @@ export function parseInternalRoute(
       return parsePathname(url.pathname);
     }
 
-    if (BSKY_PROFILE_HOSTS.has(url.hostname)) {
-      const match = BSKY_PROFILE_PATH.exec(url.pathname);
-      if (match?.[1]) {
-        return {
-          to: "/u/$did",
-          params: { did: normalizeAuthorRef(decodeURIComponent(match[1])) },
-        };
-      }
+    // A profile on any Bluesky web client — bsky.app or one of its forks
+    // (Witchsky, mu.social, …) — is the same person, so route it in-app.
+    const bskyIdent = bskyClientProfileIdent(trimmed);
+    if (bskyIdent) {
+      return { to: "/u/$did", params: { did: normalizeAuthorRef(bskyIdent) } };
     }
 
     return null;

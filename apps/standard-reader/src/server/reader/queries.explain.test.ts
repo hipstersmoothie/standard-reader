@@ -20,13 +20,17 @@
  * On failure the full plan is printed so the regression is diagnosable without
  * re-running the manual EXPLAIN — see `.claude/skills/investigate-feed-query-perf`.
  */
+import type { SQL } from "drizzle-orm";
 import { sql } from "drizzle-orm";
 import { describe, expect, test } from "vitest";
 
 import { db } from "#/db";
 import * as schema from "#/db/schema";
+import { NETWORK_DOCUMENT_COUNT_KEY } from "#/db/schema/network-stats";
 import {
   buildFollowFeedCandidateSql,
+  countNetworkDocuments,
+  countNetworkDocumentsLive,
   selectFollowUris,
   selectFollowedUserDids,
 } from "#/server/reader/queries";
@@ -65,6 +69,40 @@ describe.skipIf(!RUN)("follow-feed candidate query — EXPLAIN", () => {
   }, 30_000);
 });
 
+/**
+ * The Latest "All" tab badge. This was a ~1.08s parallel seq scan over every
+ * `documents` row on `/latest`'s blocking route loader before it moved to the
+ * `network_stats` scalar (`recomputeNetworkStats()`).
+ *
+ * Requires migration 0031 to have run against the target DB.
+ */
+describe.skipIf(!RUN)("network document count — EXPLAIN", () => {
+  test("badge count is a scalar lookup, not a documents scan", async () => {
+    const plan = await explainSql(
+      sql`select ${schema.networkStats.value} from ${schema.networkStats}
+          where ${schema.networkStats.key} = ${NETWORK_DOCUMENT_COUNT_KEY} limit 1`,
+    );
+
+    assertNoSeqScanOnDocuments(plan);
+    // A single-row PK lookup. If this ever climbs, the read path fell back to
+    // `countNetworkDocumentsLive` (an unseeded `network_stats`) or grew a join.
+    assertExecTimeUnder(plan, 50);
+  }, 30_000);
+
+  test("the precomputed scalar matches a live count", async () => {
+    const [cached, live] = await Promise.all([
+      countNetworkDocuments(db, schema),
+      countNetworkDocumentsLive(db, schema),
+    ]);
+
+    // The sweep refreshes every few minutes, so ingest lands rows in between.
+    // A badge total tolerates drift; an order-of-magnitude gap means the two
+    // predicates diverged and one of them is now wrong.
+    expect(cached).toBeGreaterThan(0);
+    expect(Math.abs(cached - live) / live).toBeLessThan(0.02);
+  }, 60_000);
+});
+
 async function explainCandidate({
   unreadForDid,
   countOldPostsAsUnread,
@@ -95,9 +133,12 @@ async function explainCandidate({
     offset: PAGE_OFFSET,
   });
 
-  const result = await db.execute(
-    sql`EXPLAIN (ANALYZE, BUFFERS) ${candidateSql}`,
-  );
+  return explainSql(candidateSql);
+}
+
+/** `EXPLAIN (ANALYZE, BUFFERS)` a query, flattened to one plan string. */
+async function explainSql(query: SQL): Promise<string> {
+  const result = await db.execute(sql`EXPLAIN (ANALYZE, BUFFERS) ${query}`);
   const rows = Array.isArray(result)
     ? (result as Array<{ "QUERY PLAN"?: string } | string>)
     : ((result as { rows?: Array<{ "QUERY PLAN"?: string } | string> }).rows ??

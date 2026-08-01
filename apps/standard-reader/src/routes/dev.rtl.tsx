@@ -38,22 +38,22 @@ export const Route = createFileRoute("/dev/rtl")({
 
 const styles = stylex.create({
   page: {
-    display: "flex",
-    flexDirection: "column",
     gap: gap["3xl"],
     paddingBlock: verticalSpace["5xl"],
     paddingInline: horizontalSpace["5xl"],
+    display: "flex",
+    flexDirection: "column",
   },
   pane: {
     borderColor: uiColor.border1,
     borderRadius: radius.md,
     borderStyle: "solid",
     borderWidth: 1,
-    display: "flex",
-    flexDirection: "column",
     gap: gap.xl,
     paddingBlock: verticalSpace["3xl"],
     paddingInline: horizontalSpace["3xl"],
+    display: "flex",
+    flexDirection: "column",
   },
   heading: {
     fontSize: fontSize.sm,
@@ -62,9 +62,9 @@ const styles = stylex.create({
     textTransform: "uppercase",
   },
   row: {
+    gap: gap.xl,
     alignItems: "center",
     display: "flex",
-    gap: gap.xl,
   },
 });
 

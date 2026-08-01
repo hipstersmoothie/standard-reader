@@ -12,7 +12,7 @@ Check items off as they land.
 - [x] Set up env management (`.env` for `DATABASE_URL`, AT Proto OAuth secrets, tap config) + `.env.example`.
 - [x] Confirm Neon project + connection (`src/db/index.ts`) and Drizzle migration flow (`drizzle.config.ts`, `drizzle/`).
 - [x] Decide deployment target (Node server output) and wire CI for lint/format/typecheck/build (`.github/workflows/ci.yml`).
-- [x] **Production deploy (Railway).** Four services in the `standard-reader` project (GitHub
+- [x] **Production deploy (Railway).** Services in the `standard-reader` project (GitHub
       auto-deploy on push to `main`), sharing the existing Neon read-model DB:
   - `web` — TanStack Start + Nitro (`pnpm build` → `pnpm start` = `node .output/server/index.mjs`);
     pre-deploy `pnpm db:migrate`; healthcheck `/api/auth/atproto/metadata.json`; custom domain
@@ -23,10 +23,17 @@ Check items off as they land.
     `[::]:3099`, consumes `tap.railway.internal:2480`. Config file `railway.ingest.json`.
   - `recompute-cron` — `node scripts/recompute-cron.mjs` on `0 * * * *`, POSTs the ingest worker's
     `/api/ingest/recompute` over private networking. Config file `railway.cron.json`.
+  - `reconcile-cron` — `pnpm reconcile:repos` on `20 * * * *`, the PDS repair round-robin. Unlike
+    `recompute-cron` it does the work in its own process rather than POSTing ingest: repair
+    enumerates and rewrites whole repos, and running that on the ingest worker made the backstop
+    compete with the live tap stream it backstops. Batch is derived from the fleet count so one
+    full lap stays ~24h as the fleet grows (`RECONCILE_LAP_HOURS` /
+    `RECONCILE_INTERVAL_HOURS`). Config file `railway.reconcile.json`.
   - **Runbook gotcha:** Railway auto-detects only the root `railway.json`, so every non-web service
     in this monorepo needs its **Config File Path** set explicitly (Dashboard → service → Settings →
     Config-as-code, or `serviceInstanceUpdate{ railwayConfigFile }` via the GraphQL API) to
-    `railway.ingest.json` / `railway.cron.json`; otherwise it silently falls back to the web build.
+    `railway.ingest.json` / `railway.cron.json` / `railway.reconcile.json`; otherwise it silently
+    falls back to the web build.
     Shared `INGEST_WEBHOOK_SECRET` = `TAP_ADMIN_PASSWORD`; `PUBLIC_URL=https://standard-reader.app`;
     `ATPROTO_PRIVATE_KEY_JWK` is the ES256 private JWK. Prod DB was reset to a clean schema (drop
     `public` + `drizzle`, then `pnpm db:migrate`) before first backfill.
@@ -65,6 +72,26 @@ Check items off as they land.
       path; started the bookmark count query in parallel with `effectiveFollowUris`
       in `loadSidebarData`. Remaining cold latency (~2–3s) is Neon compute wake-up
       (scale-to-zero); warm loads are ~0.4–0.7s across all routes.
+- [x] **`/latest` perf: whole-corpus count on the route loader.** Honeycomb showed
+      `feed.getLatestFeedCounts` at P50 919ms / P95 1.96s / P99 5.2s — flat across signed-in
+      (947ms) and signed-out (781ms), so every `/latest` load paid it, and
+      `_layout.latest.tsx`'s loader `await`s it alongside the feed. Root cause:
+      `countNetworkDocuments` (the "All" tab badge) is an unbounded `count(*)` over every
+      document left-joined to publications; the eligibility predicate
+      (`p.uri IS NULL OR … p.url NOT ILIKE …`) can't be index-served, so it planned as a
+      parallel seq scan — EXPLAIN on prod: 1080ms, `read=270120` buffers over 1.4M rows /
+      2.2GB, and re-read the heap from storage on each call (a second run went _further_
+      cold: `hit=2397 read=283455`), evicting pages the sibling tabs rely on. Fix:
+      precompute the scalar into a new `network_stats` key/value table via
+      `recomputeNetworkStats()` in the sweep; `countNetworkDocuments` is now a single
+      primary-key lookup (**1080ms → 0.027ms**, 2 buffers), with `countNetworkDocumentsLive`
+      as the pre-first-sweep fallback and migration `0031` seeding the row so that window
+      never opens. Guarded by two cases in the gated `queries.explain.test.ts`
+      (`pnpm perf:explain`): the badge read must not scan `documents`, and the cached scalar
+      must stay within 2% of a live count so the two predicates can't silently diverge.
+      Verified on a Neon branch off prod. Expect the `unread` / `subscriptions` P95 tails
+      (1.85s / 2.11s against ~107ms P50s) to fall too — unproven, but consistent with the
+      cache eviction.
 - [x] **Load perf regression suite.** Playwright budgets for guest + signed-in views
       (`pnpm perf:test`, `perf/load-regression.spec.ts`); JSON report in `perf/results/latest.json`;
       fixture discovery via `pnpm perf:discover-fixtures`; signed-in auth via
@@ -171,6 +198,44 @@ Check items off as they land.
 
 ## 1. Data ingestion — tap → Neon
 
+- [x] **Personal state no longer waits on the ingest queue** (2026-08-01). With the ingest worker
+      backlogged, a reader's own read/unread state — the one thing they watch change in the moment —
+      queued behind everyone else's backfill, so articles stayed unread for hours after being read.
+      The write path now mirrors its own records into Neon
+      (`#/server/reader/personal-state-mirror`), keyed by the same record AT-URI ingest uses, so the
+      tap's later replay overwrites identical values instead of being the only way the row appears.
+      Covers **reads** (`markRead` / `markUnread` / `markPublicationAllRead` /
+      `markFollowsAllUnreadRead`, plus the batched `markDocumentsRead` — which mirrors per committed
+      `applyWrites` batch, so a partial failure reflects exactly what's durable), **bookmarks**
+      (`bookmarkDocument` / `unbookmarkDocument`) and **likes** (`recommendDocument` /
+      `unrecommendDocument` — article like counts are a live count over `recommends`, so the number
+      moves with the heart), on both the server fns and the XRPC procedures behind MCP + the
+      extension. Removals delete by record AT-URI, not by `(owner, document)`, so another client's
+      record for the same document keeps its row. Best-effort: a mirror failure degrades to the old
+      wait-for-tap behavior, never fails the write.
+
+- [x] **Bridged repos on their own tap** (2026-07-31). Bridgy Fed began publishing
+      `site.standard.document` for every site it mirrors; ~969k documents landed in one day
+      (99.98% of that day's inserts) across 909 `*.brid.gy` repos, and the backfill saturated
+      tap's resyncer and the ingest channels (`inflight` pinned, ack timeouts, outbox retry
+      storm). Added a `tap-bridge` Railway service (own volume, own resync queue, **no signal
+      collection** — it only carries repos we add). `ensureTracked` /
+      `reconcilePendingTrackedRepos` route `*.brid.gy` there via `TAP_BRIDGE_API_URL`; with no
+      lane configured the bulk `*.web.brid.gy` bridge is turned away instead. See
+      `#/lib/atproto/bridged-repo`. Isolation is per-tap and per-channel only — the ingest
+      process and Neon pool are shared.
+  - [ ] Optional next step: a dedicated `ingest-bridge` worker for full process/pool isolation.
+        Needs a channel-selection guard — `service.ts` currently always starts the main channel.
+- [x] **Self-healing reconcile** (2026-07-31). tap can advance past a commit whose record never
+      reaches the read-model, silently and without dead-lettering (confirmed in prod: a live post
+      was missing while tap's cursor was already past it). `repairRepoIfAdvanced` compares each
+      repo's `getLatestCommit` against `tracked_repos.last_seen_rev` and re-applies what's
+      missing, gated by head-rev then CID so unchanged repos cost one request. Now covers **every**
+      tracked repo — readers previously had no safety net, which is why "mark all as read" could
+      revert.
+  - [ ] Remove the `IS NULL` latch in `backfillSerialPublicationRecords` — it writes
+        `prev_next_direction` without touching `cid`, so a bad read can never be re-derived and
+        the CID gate cannot detect it (this is what left a comic reading as a blog).
 - [x] Stand up the **tap instance** to backfill all `standard.site` data from the network
       (`tap/` — docker-compose for `bluesky-social/indigo` cmd/tap, signal collection
       `site.standard.publication`, filters `site.standard.*` + `app.bsky.actor.profile`, webhook
@@ -244,7 +309,8 @@ Check items off as they land.
 - [x] Replace `demo_users` placeholder with real tables (`src/db/schema/`, migration `0000`,
       applied to Neon).
 - [x] `publications` (`site.standard.publication`: uri/cid/did, name, url, description, icon blob,
-      flattened `basicTheme`, `showInDiscover`, app-derived `topic`, verification state).
+      flattened `basicTheme`, `showInDiscover`, `prevNextDirection`, app-derived `topic` +
+      `serialKind`, verification state).
 - [x] `documents` (`site.standard.document`: uri, publication ref + raw `site`, title, path,
       canonical URL, description, `content`/`textContent`, cover image blob, tags, app-derived
       `featured`, `bskyPostRef`, published/updated) + `document_contributors`.
@@ -406,7 +472,11 @@ Build each on hip-ui components + StyleX tokens (no raw HTML/inline styles).
 - [x] App shell: desktop persistent left sidebar; mobile top bar + bottom tab nav; Following list.
 - [x] **Home** — masthead (date + unread count), featured lead, latest unread rows, right rail (Trending articles + You might follow).
 - [x] **Latest** — chronological list, segmented Unread / Subscriptions / All-network filter with counts (Unread = unread docs from subs, Subscriptions = all docs from subs, All = whole network).
-- [x] **Discover** — Recommended / Followed-by-people-you-follow / Trending / All (chips, sort, grid⇄list toggle).
+- [x] **Discover** — Trending / Topics / Recommended / Followed-by-people-you-follow / All (chips, sort, grid⇄list toggle).
+- [x] **Topics** — `/topics` index (client-side search over names, descriptions, and
+      member tags) and `/topics/$slug` (Articles + Publications tabs, sub-area chips into
+      `/tag/$tag`). `TopicCard` mirrors `PubCard`; `PubGridList` generalized into
+      `EntityGridList` so both share the keyboard/routing shell.
 - [x] **Search** — editorial field, live results split into Publications + Articles. Route `/search` with URL `?q=`; paginated search APIs with full counts; load more (publications) + infinite scroll (articles); reuses `PubDirectoryRow` + `ArticleRow`.
 - [x] **Search result snippets** — `ts_headline` excerpts in `searchArticles` /
       `searchPublications`; highlighted `<mark>` terms in `ArticleRow` and
@@ -761,7 +831,7 @@ Build each on hip-ui components + StyleX tokens (no raw HTML/inline styles).
       stays with the publisher's `.well-known`). `/collection/...` emits the same pair for the
       collection manifest document. Part of the site.standard spec and still the only thing many
       clients read — kept permanently, not a migration step.
-- [x] **`at:` record meta tags** — the community convention adopted across the network in 2026
+- [x] **`at:` record meta tags** — the topic convention adopted across the network in 2026
       (`at:canonical` / `at:alternate` / `at:author`), emitted _alongside_ the rels above.
       `/a/...`, `/p/...`, `/l/...`, `/u/...` and `/collection/...` declare their records via an
       `atMeta` key on loader data; `AtRecordMeta` renders them as raw tags in `RootDocument`'s
@@ -779,6 +849,39 @@ Build each on hip-ui components + StyleX tokens (no raw HTML/inline styles).
       recency gate; per-publication + per-author diversity caps on rail reads.
 - [x] **Cold start** — popularity fallback (`trending_score` incl. likes) excluding the trending set (rails stay distinct).
 - [x] **Readers also follow** — co-subscription + co-recommend affinity on publication profiles.
+- [x] **Topics** — auto-derived topic clusters, so Discover stops being ranked by raw tag
+      frequency (which put atproto-native topics on top of a page meant to represent the whole
+      network). `recomputeTopics()` clusters the tag co-occurrence graph each sweep via
+      weighted label propagation and names each cluster with Claude, cached by cluster identity;
+      slugs are permanent across drift and renames. Edges count **per publisher, not per article**
+      (one blogger's tagging habit had made `fediverse` a Music tag), and the quality bar turns on
+      **author concentration** rather than counts (the top-3 network tags are one bot network on a
+      single DID that clears every count threshold). Surfaces: a personalized rail on `/discover`,
+      the `/topics` index with search, and `/topics/$slug` with Articles + Publications
+      tabs and sub-area chips back into `/tag/$tag`.
+      Bridgy Fed's passive `*.web.brid.gy` mirrors are never _shown_ — no bridged publication or
+      article appears in a topic — but they do feed the co-occurrence graph, because they are
+      75% of the tagged corpus and excluding them there too leaves only 5 publishable topics
+      instead of 44. The test is on the document's **author**, not its publication: most bridged
+      content is loose documents with no publication row, so a publication-level test missed 82% of
+      it. (`*.ap.brid.gy` is never excluded — those authors opted in.)
+      Ops: `pnpm topics:derive` inspects read-only; `pnpm topics:recompute` runs the pass.
+- [x] **Topics — mega-cluster splitting + junk tags** — clusters over 150 tags are re-split on
+      a tightened subgraph (429 → 124 max), and placeholder tags (`uncategorized`, `read more`,
+      `@gmail.com`, bare numbers, single letters) never enter the vocabulary.
+- [x] **Topics — semantic tag edges** — `tag_embeddings` + MiniLM, embedding each tag by the
+      titles of articles carrying it, so subjects whose publishers split still cluster together
+      (`typescript`+`css` are now one Web Development topic). Off unless
+      `TOPIC_EMBEDDINGS=1`; ~4 min to build the cache, ~40s per sweep after.
+- [ ] **Topics — near-duplicate clusters** — some areas still split in two where a reader
+      sees one: "Decentralized Social Web" (431 pubs) sits next to "The Decentralized Social Web"
+      (79). Semantic edges reduced this a lot but did not remove it; the remaining fix is a merge
+      pass over cluster similarity, or the editorial overrides below.
+- [ ] **Topics — sidebar entry** — deliberately deferred: needs a new `SidebarNavId`, which is
+      persisted in readers' `sidebarPref` records and must stay stable, so it wants its own change.
+- [ ] **Topics — editorial overrides** — a `topic_overrides` table keyed by slug (rename,
+      re-describe, hide, pin) for when a model-written name needs correcting. The schema is already
+      shaped for it; not built because the generated names have held up.
 
 ---
 
@@ -832,6 +935,27 @@ Backend/API exists; UI or copy is missing.
       `srcdoc` iframe sandboxed to `allow-scripts` only, sharing the sizing frame with
       `iframe-embed.tsx`. The converter carries it natively to Leaflet and as a sandboxed
       `<iframe srcdoc>` to Markpub; Offprint and pckt have no block for it and report it dropped.
+- [x] **Alternate Bluesky client embeds** — links to `social-app` forks (Witchsky, Mu,
+      deer.social, Blacksky) were only ever plain link cards, so an article citing
+      `witchsky.app/profile/…/feed/…` showed a bare "Witchsky" card. The client host list moved
+      into [`lib/atproto/bsky-clients.ts`](src/lib/atproto/bsky-clients.ts) — shared with the
+      extension's [`manifest-hosts.ts`](../extension/src/lib/manifest-hosts.ts), which used to
+      carry its own copy — behind `parseBskyClientUrl`, which maps a client URL onto the record
+      it addresses (profile / post / feed / list / starter pack). `actorLinkIdent` and
+      `parseInternalRoute` now accept every fork, so inline profile links become mention chips
+      routed to `/u/$did`; link-card blocks upgrade through
+      [`bsky-client-embed.tsx`](src/components/reader/content/renderers/shared/bsky-client-embed.tsx)
+      — posts reuse the existing Bluesky post embed (now handle-addressable, not DID-only),
+      everything else renders an entity card hydrated from the public AppView
+      ([`bsky-entities.ts`](src/server/atproto/bsky-entities.ts)). Unresolvable records fall back
+      to the original link card.
+- [x] **Brand client embeds** — `BSKY_WEB_CLIENTS` carries each client's name plus its published
+      `theme-color` / manifest `theme_color`, and the host list derives from that table so there
+      is one place to add a fork. Entity cards show the client name beside the record kind and
+      take an accent-tinted border; a post from a fork gets a "View on <client>" line, since
+      `bsky-react-post` owns the post card's markup and links it back to bsky.app. The raw brand
+      hex is never painted — it goes through `buildMagazinePalette`, the same Radix generator
+      behind publication cards, for contrast-safe light + dark values.
 - [x] **`at.markpub.markdown`** — full [Markpub.at](https://markpub.at/) support: dedicated
       renderer (`src/lib/markpub/*`, [`markpub-content.tsx`](src/components/reader/content/renderers/markpub-content.tsx)),
       flavor/extensions, facet/lens preprocessing, ingest-time `text.textBlob` fetch
@@ -861,6 +985,97 @@ Backend/API exists; UI or copy is missing.
       `--refresh`, or a list of DIDs) groups bodyless rows by repo and probes each repo once for
       `site.mochott.article`, so a repo with none costs a single `listRecords` call
       ([`backfill-mochott-articles.ts`](scripts/backfill-mochott-articles.ts)).
+- [x] **Serial publications — comic reader + "Up next"** — `preferences.prevNextDirection = "ltr"`
+      on a `site.standard.publication` is the publisher declaring that the publication reads
+      forwards from its first post. Mirrored as `publications.prev_next_direction`
+      (`drizzle/0026_pale_thanos.sql`, ingest handler) and paired with an app-derived
+      `publications.serial_kind` — comic vs book — from `recomputeSerialKinds` in the hourly sweep
+      ([`recompute.ts`](src/server/ingest/recompute.ts)): a publication whose recent posts each
+      render an image and carry only a short note of prose is a comic. Both travel to the UI as
+      `PublicationCard.serial` ([`serial.ts`](src/lib/publication/serial.ts)).
+      Serial publication pages list their archive **newest-first** like every other publication —
+      an archive answers "what's new here?" far more often than "where does this start?" — with a
+      per-publication cookie override for a reader who wants to start at the beginning, resolved
+      server-side in `getPublicationDocuments`
+      ([`archive-order.ts`](src/lib/publication/archive-order.ts)) so the client needn't know the
+      order to page it.
+      **Comics** open in a new page-flip reader at `/comic/$did/$rkey`
+      ([`comic-reader.tsx`](src/components/comic/comic-reader.tsx)) — a fixed dark theater over the
+      **whole publication**: every issue's images, in publication order, as one continuous run of
+      pages under a single absolute page number, so opening the cover walks the entire comic rather
+      than stopping at the end of each issue. Pages are the images each body renders
+      ([`images.ts`](src/lib/document/images.ts)); keyboard / tap-zone / swipe paging, the page in
+      the URL, each issue marked read as the reader enters it. The **chrome floats over the art and
+      auto-hides**: the bars show themselves on entry and stay until the reader turns their first
+      page — a comic nobody has paged through yet is still being introduced, and a countdown under
+      that introduction takes it from anyone reading at their own pace — then step aside after an
+      idle beat and come back on a middle-zone tap, a mouse move, or Tab. They also stay put for the
+      loading, empty and back-cover states, and pin open under pointer or focus. The top bar ends with a **full-screen toggle**
+      (`f`, or the button) that puts the theater element full screen so the browser's own chrome
+      leaves the art alone ([`use-fullscreen.ts`](src/components/comic/use-fullscreen.ts)) —
+      drawn only where the browser says it will do it (`fullscreenEnabled`, either spelling) — which
+      on iPhone is never, since iOS reserves full screen for `<video>` and WebKit bug 206854 has
+      been open since 2020, so an inert button there would read as a broken reader rather than a
+      platform limit (the iPhone answer is the home-screen install the app already supports). Falls
+      back to the WebKit-prefixed spelling (iPadOS below 16.4) and is driven off `fullscreenchange`
+      so Escape, F11 and the OS keep the icon honest. Beside it, a **note button** lays the writing a
+      page published with over the art
+      ([`comic-page-note.tsx`](src/components/comic/comic-page-note.tsx)) — a translucent scrim,
+      the prose in the theater's own type, and a "Read the full post" escape — so a caption no
+      longer costs a navigation to the reading view. The note rides on `ComicPage` from the chunk
+      query that already opens each body, and is the body plaintext minus the pages' own alt text
+      ([`page-note.ts`](src/lib/comic/page-note.ts)), since the extractors narrate images by their
+      alt. It is a React Aria modal portalled into the theater rather than `document.body`, which
+      is what keeps it on screen in full screen. The stage keeps `touch-action: pan-y pinch-zoom`
+      so a dense page can be pinched into, and **flips to `manipulation` while zoomed** — reserving
+      horizontal drags for the swipe is what makes paging work at rest, but it pins a zoomed reader
+      to a single vertical track, and swipe stands down at that scale anyway (as it does while a
+      second finger is down). Loaded in two tiers
+      ([`comic.ts`](src/server/reader/comic.ts)): a **spine** of every issue's title and length (no
+      bodies — this is what makes absolute page numbers possible and the counter honest immediately,
+      via `documents.body_image_count` derived at ingest and backfilled on demand), plus **chunks**
+      of image URLs for a window of issues, held one chunk either side of the reader
+      ([`use-comic-pages.ts`](src/components/comic/use-comic-pages.ts)). The article route redirects
+      a comic issue there unless `?view=reader`, which is also the reader's way back to the notes.
+      **Books** get an "Up next" section under the article
+      ([`series-up-next.tsx`](src/components/reader/series-up-next.tsx)) driven by
+      `getSeriesContext` ([`series.ts`](src/server/reader/series.ts)) — position, the following
+      issue, or a caught-up note.
+      Serial metadata fills in **on demand** as well as on the sweep: the tap only writes
+      `prev_next_direction` on a record create/update, so `ensurePublicationSerial` treats a NULL
+      as "never mirrored" (the ingest handler stores the lexicon default `"rtl"` for a record that
+      states nothing, keeping the two apart), reads the record from the PDS once, and derives the
+      kind on the spot for a serial — the `backfillXFromRepo` pattern. Without it a publication
+      indexed before the column existed stayed an ordinary blog until its author edited the record
+      or the 50-repos-an-hour reconcile round-robin reached it, which never completes in a preview
+      environment. `pnpm backfill:serial`
+      ([`backfill-serial-publications.ts`](scripts/backfill-serial-publications.ts)) warms them all
+      up front so no reader pays the first record read. It only visits publications that could
+      answer — Leaflet ones (the field is Leaflet's) still holding a NULL, 2.4k rather than 9.3k —
+      reads their records from Slingshot 16 at a time instead of resolving and paging each of 6.2k
+      publisher repos' PDSes one by one, and writes the result as one bulk `UPDATE` per direction
+      rather than a full `upsertPublication` per row. ~40s where the per-repo shape measured
+      ~46 min of PDS reads alone.
+      A comic publication's page shows a **shelf of covers** instead of its archive list
+      ([`comic-shelf.tsx`](src/components/comic/comic-shelf.tsx)): `selectComicShelf` parses the
+      issue number out of each post title ([`issue-title.ts`](src/lib/comic/issue-title.ts)),
+      collapses consecutive pages into issues, and fronts each with its cover art, so a reader
+      browses issues rather than scrolling `#1 Cover`, `#1, Pg. 1`, `#1, Pg. 2`. The convention is
+      treated as a guess — under 70% of titles parsing, or a single group, leaves `grouped: false`
+      and the ordinary list stands, as do the read/unread filters. Awaited in the route loader for
+      comics so the shelf is part of first paint.
+      **Unread works by the issue**: an issue is unread while any of its pages is, so the shelf is
+      reader-scoped — `selectComicShelf` hands each issue the reader's unread pages
+      (`selectUnreadDocumentUris`, the same query the archive filter and "mark all as read" use),
+      the cover wears the ordinary unread dot, and clicking it opens the reader on the first page
+      that reader hasn't seen rather than back at the cover
+      ([`shelf-progress.ts`](src/lib/comic/shelf-progress.ts)). `read` records mirror in through
+      the firehose, so the server's answer is corrected client-side from the same read caches the
+      feeds' unread dots use — walking a comic and stepping back out leaves no stale dots behind.
+- [ ] **Reader preference for the comic reader** — comics currently always open in the theater (with
+      "Read the notes" as the escape). The magazine has an `open_collections_in_magazine` toggle;
+      the comic reader deserves the same opt-out, plus a per-publication override for a serial the
+      derivation calls a comic and the reader would rather read as an article.
 - [ ] **Syntax highlighting for mochott (and Markpub) code blocks** — `codeBlocksFromContent` in
       [`article-detail-build.ts`](src/server/reader/article-detail-build.ts) only collects code for
       leaflet / pckt / offprint / standard-markdown, so third-party formats render code unhighlighted.
@@ -961,6 +1176,26 @@ cookies on `/xrpc`. Live developer docs at [`/docs/api`](/docs/api).
 - [x] **Tier 3–4** — personalized reads + write procedures with scope enforcement.
 - [x] **API docs page** — `/docs/api` catalog, in-process live examples, footer link.
 - [x] **Lexicon docs page** — `/docs/lexicons` reference for all `app.standard-reader.*` schemas.
+- [x] **Reader guide (`/guide`)** — the non-technical counterpart to `/docs/*`: eight
+      task-shaped pages (welcome, getting started, reading, finding, keeping track,
+      personalizing, beyond the app, your data) on their own route tree and topbar, structure
+      declared once in `src/lib/guide/navigation.ts`. Linked from the footer, the account menu,
+      About, and the developer docs topbar; every page ends at `/feedback`.
+- [x] **Automated guide screenshots** — `pnpm guide:shots` drives Playwright through the shot
+      manifest in `src/lib/guide/screenshots.ts` and writes `public/guide/*.png`, so refreshing
+      every picture after a UI change is one command. Signed-in shots reuse the perf suite's
+      session bootstrap; captures wait on the same `aria-busy` ready signal.
+- [ ] **Run the first capture pass** — `public/guide/` is empty until someone runs
+      `pnpm guide:shots` against a dev server with `PERF_TEST_*` credentials and fixtures set.
+      `<GuideFigure>` degrades to its caption until then, so the pages read fine meanwhile.
+      Two things have to be true, and neither held in the agent sandbox where the pages were
+      written: (1) the account's app password must be in the **dev server's** `.env` too, or
+      every auth-gated route bounces to `/login` (the capture now fails loudly instead of
+      saving the sign-in form); (2) the browser must reach the image CDN, or the shots come
+      out with broken-image icons where every avatar and cover image should be — see
+      `GUIDE_SHOTS_PROXY` in `screenshots/README.md`. Check one shot by eye after the run.
+- [ ] **Search across the guide** — Debbie's write-up calls for search once the content grows;
+      the guide currently relies on the sidebar and the per-page rails.
 - [x] **XRPC test suite** — unit tests for registry, params, dispatch, and handlers
       (`src/server/xrpc/*.test.ts`); optional DB integration via
       `XRPC_INTEGRATION_TEST=1 pnpm test`.
@@ -1046,19 +1281,276 @@ Standard AT Proto labels: subscribe to labelers, see/blur/hide their labels whil
       (publish V2 alongside legacy, dual-read, lazy migration) is landed; Phase 2 (deprecate legacy
       NSID + scope once no reader has old records) is pending. Requires the
       `_lexicon.labeler.standard-reader.app` DNS TXT record to publish the `labeler.*` group.
-- [x] **Discovery** — resolve a labeler by DID/handle (DID doc → `#atproto_labeler` →
-      descriptor); nothing hardcoded.
+- [x] **Discovery** — two registration paths into `labeler_services`, both read from the DB
+      afterwards. (a) Our labelers publish an `app.standard-reader.labeler.service` record, indexed
+      by tap. (b) Any AT Protocol labeler is resolved from its own declaration — DID doc
+      `#atproto_labeler` for the endpoint, `app.bsky.labeler.service` for the label-value
+      definitions — on first lookup, then backfilled (`source = 'atproto'`). Handle resolution goes
+      through the AppView resolver, so DNS-only handles work. Nothing hardcoded.
+- [x] **Account-scoped labels** — labels whose subject is a DID rather than a document. Network
+      labelers label accounts almost exclusively (pub-search's `bulk-generated`), so cards resolve
+      against both their URI and their author's DID, author/publication headers show account label
+      pills, and the labeler detail page has an Accounts tab beside Documents.
+- [x] **Directory lists every labeler** — no relevance filter. Readers bring their moderation setup
+      with them from Bluesky, so a labeler that has never touched a standard.site document is still
+      theirs to see and manage. (An earlier curation rule — list only labelers registered with us or
+      demonstrably labeling our corpus — was removed as a deviation.)
+      `KNOWN_STANDARD_SITE_LABELERS` survives as a **seed** list only: a network-declared labeler has
+      no row until something resolves it, so those DIDs are resolved eagerly when the directory
+      loads (`ensureKnownLabelersResolved`). Being absent from it hides nothing — it just means the
+      labeler has to reach us some other way (handle lookup, or a reader's ported subscriptions).
+- [x] **Discover every labeler on the network** — `discover.server.ts`. A labeler declares itself
+      with one `app.bsky.labeler.service` record, so the full set is every repo holding one, which
+      relays answer via `com.atproto.sync.listReposByCollection` (~537 repos; ~460 still resolve to
+      a live service, the rest are abandoned declarations). `startLabelerDiscovery` scans every 6h
+      in the ingest worker and resolves only DIDs we have no usable row for; `pnpm sync-labelers`
+      runs it by hand. **The relay index is not authoritative** — five labelers among one test
+      reader's real Bluesky subscriptions are absent from it — so discovery is additive and the
+      on-demand backfill still matters. Rows missing a handle are re-resolved (capped per run,
+      did:web excluded) so the directory heals itself rather than showing a bare DID forever.
+- [x] **Don't poll every labeler in the directory** — `syncAllLabels` now covers labelers with a live
+      subscription plus our own (`source: "record"`), not every row. The sync runs every 2 minutes,
+      so listing the network without this scoping would have meant hundreds of requests per minute to
+      other operators' label servers — and `document_labels` filling with labels nobody asked for.
+- [x] **Server-side search + pagination for the directory** — hundreds of labelers declare ~15k label
+      values between them (>3 MB of definition JSON), so the client can no longer hold the table.
+      `getKnownLabelers` takes `{query, limit, offset}`, orders subscribed-first in SQL (a
+      client-side sort would only reorder the page it holds), and sends each card just the couple of
+      label names it renders plus a total (`labelNames`/`labelCount`). Search matches name, handle,
+      description, DID and declared label identifiers; debounced 250ms client-side. ~13 kB/page.
+- [x] **Show handles, not DIDs** — `labeler_services.handle` (migration `0027`), resolved from the
+      DID document's `alsoKnownAs`. did:web labelers declare none, but for them the DID _is_ the
+      host, so it's derived at render (`labelerHandle`). DID remains the fallback.
+- [x] **Never block sign-in on the labeler port** — each ported labeler costs a DID-document fetch,
+      two repo reads and a PDS write, and running that inline in the OAuth callback added tens of
+      seconds to login. `scheduleBskyLabelerImport` is fire-and-forget with in-process guards and a
+      scope/stamp check, kicked off by the callback and re-triggered by the signed-in shell read (so
+      it covers readers whose session predates the preferences scope, without a second login).
+      Resolves are concurrent; the repo writes stay sequential since they all commit to one repo.
+- [x] **Port Bluesky labeler subscriptions** — on a reader's first sign-in we read
+      `app.bsky.actor.getPreferences` (scope `rpc:app.bsky.actor.getPreferences`), and for each
+      `labelersPref` entry create the matching subscription, carrying over `contentLabelPref`
+      visibility (Bluesky's `show` maps to our `ignore`; a labeler-scoped pref beats a global one).
+      Their moderation setup is in place with no action from them. **Read-only** — we never call
+      `putPreferences`, so nothing here can rewrite someone's Bluesky settings. One-shot, stamped by
+      `user.bskyLabelersImportedAt`: importing is additive, so re-running would resurrect labelers
+      the reader has since unsubscribed from here.
+- [x] **Subscribe / unsubscribe from the directory** — each card on `/labelers` carries the control,
+      and subscribed labelers sort to the top so a reader lands on their own setup.
+- [x] **Mute a labeler without unsubscribing** — `enabled` on
+      `app.standard-reader.labeler.subscription` (absent = enabled; only an explicit `false` mutes,
+      so existing records are unaffected). For a labeler a reader keeps on Bluesky but doesn't want
+      acting here. The subscription and its per-label prefs are untouched; only label _resolution_
+      skips it (`readerSubscriptionsImpl`), so muting stops badges, warnings, and hiding everywhere
+      at once, and unmuting restores exactly what they had. `setLabelerPref` carries `enabled`
+      through, since `putRecord` replaces the whole record and would otherwise un-mute on any pref
+      change. Rendered as a **switch** labelled "Muted" (state, not action) on both the directory
+      card and the labeler page — on means muted, the inverse of `enabled`.
+- [x] **Subscribing writes an explicit pref for every label**, defaulting to `warn`
+      (`subscriptionLabelPrefs`). Previously a new subscription stored no prefs and the toggles
+      showed a render-time fallback that was never written anywhere, so the UI disagreed with the
+      repo — and a labeler editing its own `defaultSetting` later would silently change how an
+      existing subscription behaved. `warn` rather than the labeler's declared default because
+      `hide` makes documents vanish unexplained and `ignore` makes the subscription look broken.
+      The Bluesky import follows the same rule, so a ported labeler and a hand-subscribed one are
+      indistinguishable apart from the choices Bluesky actually recorded.
+- [x] **Label toggles apply optimistically** — each change is a PDS write, and waiting on it before
+      moving the control (then refetching the labeler and every `["labels"]` query on top) froze the
+      page for about a second per click. The control moves immediately; the write returns the
+      authoritative prefs so nothing is refetched, and only `["labels"]` is invalidated since a
+      visibility pref changes document treatment, not the labeler or its directory placement.
+      Muting is optimistic the same way. Also fixed: `["reader", "labelers"]` is not a prefix of
+      `["reader", "knownLabelers"]`, so the card you just acted on kept its stale state.
+- [ ] **Give our labelers real did:plc accounts** — `claudeslop` and `botlabeler` are `did:web`, and
+      a `did:web` has no repo, so they cannot publish the standard `app.bsky.labeler.service`
+      record. That is the only reason the custom `app.standard-reader.labeler.{service,defs}` +
+      `getServices` descriptor path still exists. Migrating them to `did:plc` accounts with repos
+      lets us delete those lexicons entirely and leaves no deviation. Requires creating accounts and
+      re-signing under new DIDs; labels already emitted keep the old `src` until re-emitted.
+- [ ] **Retire `app.standard-reader.labeler.subscription`** — blocked on the above and on a local
+      write target. Bluesky preferences are read-only to us, so a reader's own subscribes /
+      unsubscribes need somewhere to live; today that is this record in their repo. Retiring it
+      means either moving that state into our DB (giving up repo ownership of it) or writing
+      Bluesky preferences (rejected: `putPreferences` is read-modify-write over the whole blob).
 - [x] **Settings → Labelers** — `/settings/labelers` (add by handle/DID, list subscriptions) +
       `/settings/labelers/$did` (info, subscribe, per-label hide/blur toggles, labeled documents).
 - [x] **Reader display** — badge + content warning on labeled documents per the reader's prefs.
 - [x] **claudeslop** — standalone reference labeler (`services/claudeslop/`): Jetstream → heuristic
       AI-writing detector → signed labels (SQLite) → `queryLabels` + `subscribeLabels`.
-- [ ] **Feed-level hiding** — filter `hide`-labeled documents out of feeds (currently surfaced
-      only on the article page).
+- [x] **Feed-level hiding** — `hide`-labeled rows are filtered out of the home and latest feeds,
+      by a label on the document or on its author's account.
 - [x] **Signature verification** — the label sync verifies every label's `sig` against the
       labeler's `#atproto_label` key (resolved from its DID document, cached, re-resolved once on
       mismatch to absorb key rotation) before mirroring it. Unsigned or unverifiable labels are
       dropped and counted in the sync log. See `src/server/labeler/verify.server.ts`.
+      **`neg` must be included whenever the labeler serialized it, `false` included.** Labelers
+      disagree on how to encode a non-negated label — some omit `neg`, others write `neg: false` —
+      and the signature covers whichever form that labeler produced. Dropping a present `neg: false`
+      invalidated every active label from the second group while their `neg: true` retractions still
+      verified. Measured across the labelers a real reader subscribes to, rejections went
+      **23,923 → 1**: stechlab 0 → 2000 labels, us-gov-funding 0 → 816, github-labeler 0 → 384.
+      An earlier note here blamed those labelers' signing; that was wrong, and the giveaway was that
+      _some_ of github-labeler's labels verified with the same key and the same code — which rules out
+      both a bad key and bad canonicalization. The test suite could not catch it because its own
+      `producerSigningBytes` helper reproduced the same assumption, so producer and verifier agreed on
+      the same mistake; tests now sign each convention explicitly. Note also that some label servers
+      add a non-lexicon `id` to responses, so signing over "everything except `sig`" is _not_ the fix —
+      the field allowlist is deliberate. Separately, seven of twenty polled endpoints refuse
+      connections; dropping those is correct, and it is no longer silent (below).
+- [x] **Surface a labeler that can't be verified or reached** — `label_sync_state` now records
+      `stored_count` / `rejected_count` / `last_error` per labeler (migration `0028`), and the Labels
+      tab says which of the three it is. A reader could otherwise subscribe, see a full list of
+      toggles, and receive nothing forever with only a server-side `console.warn`. Seven of twenty
+      polled labelers refuse connections; they now say so instead of looking empty.
+- [x] **Page a labeler's declared labels** — ATlas (a place labeler) declares **4,995** label values,
+      717 kB of JSON. The detail page read that row whole (~1s) and then rendered 4,995 segmented
+      controls. Definitions are now sliced in SQL (`jsonb_array_elements … with ordinality`) so the
+      blob never crosses the wire, 50 at a time, loading more on scroll via the same
+      `useInfiniteScrollSentinel` the Documents and Accounts tabs use. Paged queries measure
+      70–90ms. **Not** react-aria's `Virtualizer`: it wants a collection component (ListBox/GridList)
+      whose row semantics conflict with the interactive `SegmentedControl` each row owns.
+      Two consequences handled: the header stat shows the declared total rather than the loaded page,
+      and `getLabeler` additionally returns definitions for the values a labeler has actually
+      _emitted_ (`readLabelDefinitionsFor`) so a label pill anywhere in the app can still resolve its
+      display name when that value sits past the first page.
+- [x] **Label pills are neutral, and carry the labeler's avatar** — they were `warning`-yellow, which
+      implied a severity the labeler never claimed; most labels state something unalarming ("Bot", a
+      place, a GitHub repo). Severity is the reader's own per-label choice (off / warn / hide), not a
+      property of the label. The avatar names who is speaking instead.
+- [x] **Don't crash the sync on a real labeler's history** — inserts chunk at 1000 rows (Postgres
+      caps a bind at 65535 parameters and this binds four per row; Blacksky's ~22.5k labels overflowed
+      the int16 count, Skywatch's ~55k exhausted drizzle's stack), and negations delete 500 per
+      statement instead of one round trip each.
+- [x] **Shrink the page size when a label server fails mid-walk** — `queryLabels` was hard-coded to
+      `limit=250`, and the Account Activity Labeler answers HTTP 500 for that limit at one cursor
+      _every_ time while serving `limit=100` from the same cursor. Because the cursor is persisted,
+      every later run stalled on the identical page: that labeler was pinned at 2000 of its labels
+      forever. Page size now steps 250 → 100 → 25 on failure and the run reports
+      "sync is incomplete" instead of looking healthy (the old comment claimed a mid-walk break was
+      "a successful partial sync that the cursor resumes", which only holds for a _transient_
+      failure). Got that labeler from 2000 to 2175.
+      A version that grew the page size back after a few clean pages was **measurably worse** — 0 new
+      labels per run vs 175 — because the same server also answers some offsets with a bogus empty
+      page (HTTP 200, no labels, no cursor) at limits ≥ 5, which is indistinguishable from a real end
+      of stream; growing back walked into one and ended the run early. Kept monotonic, documented why.
+- [ ] **Account Activity Labeler (`did:plc:oubsyca6hhgqhmbbk27lvs7c`) cannot be fully synced.** Its
+      `queryLabels` is broken three ways: deterministic 500s at large limits, bogus empty pages at
+      limits ≥ 5 for some offsets, and `uriPatterns` filtering that returns 0 labels even for accounts
+      it demonstrably labeled (verified against a known-labeled subject). Only `limit=1` advances past
+      cursor 7286515, and 1 request per label is not a viable steady state — so we hold 2175 of its
+      labels and stop, with the incomplete state surfaced on its page. Nothing to fix on our side
+      short of a crawler that would hammer them; revisit if they fix pagination.
+- [x] **Fix unsubscribe, which silently did nothing** — it deleted the **V2** record from the PDS but
+      built the read-model delete URI with the **legacy** NSID. Since every subscription written today
+      is V2 (including every labeler ported from Bluesky), the mirror row survived — and the DB is the
+      read path, so the labeler stayed subscribed and its labels kept applying. It now deletes both
+      NSIDs on both sides; a reader can also hold a legacy record with no V2 twin, and
+      `subscribedLabelerDids` reads both, so leaving either behind resurrects the subscription.
+      Note this is _not_ a Bluesky limitation: unsubscribing here is local by design (we never write
+      Bluesky preferences) and the one-shot import means it is never resurrected on the next login, so
+      there is nothing to redirect a reader to Bluesky for.
+- [x] **Directory cards are links only** — subscribe and mute are gone from `/labelers`. The whole card
+      opens the labeler's page, which is the only place that shows what a labeler declares and what it
+      has labeled; deciding to trust a moderation service from a two-line card was the wrong shape.
+      State is still shown passively (a Subscribed/Muted mark, and muted cards dimmed), and each card
+      no longer carries three mutations plus its own cache invalidation.
+- [x] **Directory no longer front-loads the caller's own labelers** — it ranks by subscriber count then
+      alphabetically, the same for everyone. Subscribed-first made the page a mirror of the reader's
+      existing setup rather than somewhere to find something new. (This also removes the conditional
+      ORDER BY term that caused the `non-integer constant in ORDER BY` failure.)
+- [x] **Remove our own labelers entirely** — `services/claudeslop`, `services/botlabeler`,
+      `scripts/register-labelers.ts`, the `known-labelers` seed, the
+      `app.standard-reader.labeler.service` lexicon, `upsertLabelerService` + its consumer/delete
+      cases, the `TAP_LABELER_API_URL` channel, and `labeler_services.source` (migration `0029`).
+      Any labeler can label any content, so a first-party one bought nothing the network doesn't
+      provide, and the custom descriptor record was a deviation that existed _only_ because a
+      `did:web` has no repo to publish the standard declaration from. `syncAllLabels` is now purely
+      subscription-driven — the exception that polled our own labelers whether or not anyone
+      subscribed is gone. `labeler.defs` is kept: it holds `labelerView`/`labelerPolicies` for the
+      `getLabeler`/`getLabelers` public API, which still describes the directory.
+      Data: dropped the two `did:web` rows and their 1,645 labels; Skywatch re-resolved through the
+      standard path (it is in the relay's index, so registering it by record was never necessary).
+      460 labelers remain, all handle-resolved. Document labels are now 0 — nothing on the network
+      labels `site.standard.document` URIs.
+- [x] **Bot mark from the profile's own self-label** — `profiles.is_bot` (migration `0029`), set in the
+      profile ingest from `declaresBot()` (`src/lib/self-labels.ts`, a `bot` entry in the record's
+      `com.atproto.label.defs#selfLabels`). Rendered next to the name on `/u/$did` and, via
+      `ArticleCard.authorIsBot`, on every feed row for that account — a publication owned by a bot
+      counts as a bot, and `documents.did` is the publication owner for publication-bound documents,
+      so one field covers both. Replaces the entire bot labeler: the signal was the account's own
+      statement in a record we already index, so no labeler, no signature check, no round trip.
+      Also read from the AppView (`viewDeclaresBot`, matching `labels` entries whose `src` is the
+      account's own DID) so accounts whose profile record hasn't come past on the firehose still get
+      it, plus `pnpm backfill:bot-flags` to reconcile every already-indexed profile in both
+      directions (an account can retract the self-label). Backfill found 61 bots across 14,173
+      profiles, covering 2,981 documents.
+      Shown on all three surfaces a bot's work appears: the profile (`/u/$did`), feed rows
+      (`ArticleCard.authorIsBot`), and the article-page byline
+      (`ArticleDetail.publicationOwnerIsBot` / `ArticleContributor.isBot`, following the same
+      lead-contributor-else-publication-owner fallback as the rest of that byline — a publication
+      owned by a bot marks its articles even with no contributor listed, which is the common case).
+- [x] **Labeler docs point at the protocol** — the "declare your label values" step now describes the
+      standard `app.bsky.labeler.service` + `#atproto_labeler` declaration and links
+      atproto.com/specs/label and /specs/moderation, and the reference-implementation section (which
+      pointed at `services/claudeslop`) is now "Further reading". Nothing Standard Reader specific is
+      required to be a labeler here.
+- [x] **Surface labelers aimed at standard.site** — the directory leads with them and each card says
+      "Labels articles here". Almost every labeler on the network targets Bluesky posts and accounts;
+      one aimed here is worth finding, and would otherwise sit behind hundreds of them.
+      **Not derivable from `document_labels`**: that only holds labels for labelers somebody already
+      subscribes to, and a directory exists to surface the ones you haven't. So each labeler is asked
+      directly — `probeStandardSiteLabelers` samples one page of its labels on the discovery timer,
+      60 per run with a 7-day TTL, and stores the verdict on `labeler_services.labels_standard_site`
+      (migration `0027`).
+      **The subject is usually an account, not a document.** pub-search labels _publisher accounts_
+      (`bulk-mirror` on the DIDs behind drivepatents.com, crownnote.com, …) and never a document URI,
+      so a document-only test missed it entirely — which is what the first attempt did.
+      **It has to be a share, not an any-match.** With 250 subjects sampled, nearly every
+      general-purpose labeler eventually tags somebody who also publishes here: any-match flagged 21,
+      including Pride Labeller, Warhammer Labeler and NFLair. The measured distribution separates
+      cleanly — pub-search 94% ours, GitHub Contributor Labeler 32% (labels GitHub users, some of whom
+      publish here; correctly excluded), everything else 0–6% — so the bar is a 50% share over at
+      least 10 sampled subjects. The 10-subject floor matters too: at 5, two incidental matches
+      cleared 50% and flagged two five-label labelers. Final result: 2 of 460, pub-search among them.
+- [x] **Account labels on the article page** — the reading view showed none, so a label on the byline
+      account was visible on the profile and in feeds but vanished on the article itself. Rendered
+      under the byline via the viewer-scoped `AccountLabelsForDid`, same placement rule as the profile
+      and publication headers.
+- [x] **Hide unreachable labelers from the directory** — **272 of 460 declared labelers are dead**:
+      domains that no longer resolve, hosts refusing connections, 502/530s, certificates that stopped
+      matching their own name. Spot-checked six at random and all six were genuinely broken, so this
+      is the real shape of the network, not a probe artifact. They can never label anything, so
+      listing them is worse than useless.
+      The probe already contacted every labeler and _discarded_ the outcome — it now records
+      `labeler_services.reachable` (migration `0028`). The directory filters on it, **except for
+      labelers the caller subscribes to**, which stay visible with a "Not responding" warning: quietly
+      dropping something out of someone's own list is the more confusing failure, and it is the only
+      place they can unsubscribe from it. Guest sees 188; a reader with six dead subscriptions sees 194.
+      Recovery is built in: verdicts carry a TTL, so a labeler that comes back is re-enabled
+      automatically. The TTLs are **split** — a healthy labeler's classification barely changes so it
+      is left a week, while an unreachable one is _hidden_, making staleness costlier, so it is
+      re-checked every other day (~136 requests/day). Verified end to end by marking pub-search dead
+      and watching one probe restore it.
+      Also fixed: the stale query had **no `ORDER BY`**, so with 460 labelers and a batch of 60 the
+      planner could return the same rows every run and starve the rest indefinitely. Now oldest-first.
+      No cron needed — the ingest worker's discovery timer already owns this; a second scheduler would
+      duplicate it and need its own service and auth.
+- [x] **Mirror every _active_ labeler, hourly** — the sync covered only labelers somebody subscribed
+      to (17 of 460). It now covers every labeler whose server answers (`reachable = true`), plus
+      subscribed ones regardless in case that verdict is stale.
+      **The interval was the cost, not the count.** At the old 2-minute cadence that is 720 runs/day,
+      so ~190 labelers would have meant **135k requests/day** to other operators. Hourly is ~4.5k for
+      the same coverage, and labels are not time-critical the way a feed is.
+      **62% of what we stored was never read.** Every read path resolves exactly two subject kinds —
+      a `site.standard.document` URI and an account DID — but the sync mirrored everything a labeler
+      emitted, and most of them spend themselves on Bluesky posts. 207k of 331k rows were dead
+      weight. `isRenderableLabelSubject` filters at sync time; purging the existing rows took
+      `document_labels` from 156 MB to 35 MB. Mirroring the whole active directory then landed at
+      **221k rows / 70 MB** — against the 1–3 GB it would have been unfiltered.
+      The per-labeler loop was sequential, which at a 4s timeout each is >12 minutes of mostly
+      waiting; it runs 8 at a time via `mapWithConcurrency`, with errors swallowed per labeler so one
+      bad endpoint can't abort the run. A catch-up run measured 194 labelers in 379s; steady-state
+      runs are incremental and far shorter, so hourly leaves the worker idle ~90% of the time.
 - [ ] **subscribeLabels ingestion** — consume the labeler firehose into the read-model instead of
       live `queryLabels` per page, for lower latency.
 - [ ] **Deploy claudeslop** — Railway service + persistent SQLite volume; publish its did:web.

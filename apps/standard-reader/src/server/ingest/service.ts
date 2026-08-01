@@ -7,6 +7,7 @@ import { and, eq, or, sql } from "drizzle-orm";
 import { db } from "../../db/index.ts";
 import { ingestState, subscriptions, trackedRepos } from "../../db/schema.ts";
 import type { TapEvent } from "../atproto/types.ts";
+import { startLabelerDiscovery } from "../labeler/discover.server.ts";
 import { startLabelSync } from "../labeler/sync.server.ts";
 import { logEvent } from "../observability/log.ts";
 import { verifyIngestAuth } from "./auth.ts";
@@ -19,7 +20,6 @@ import {
   markRepoGone,
   reconcilePublisherReposBatch,
   reconcileRepoFromPds,
-  startPublisherRepoReconcile,
 } from "./repo-sync.ts";
 import {
   reconcilePendingTrackedRepos,
@@ -599,36 +599,43 @@ server.listen(port(), "::", () => {
   }
 });
 
-// Primary signal (publishers) + an optional second tap instance signaled on
-// `app.standard-reader.labeler.service`, so any repo that registers a labeler is
-// tracked and its record indexed — no manual repo tracking needed.
+// Primary signal (publishers).
 const tapChannel = startTapChannel(
   ingestConfig.tapApiUrl ?? "http://127.0.0.1:2480",
 );
-const labelerTapChannel = ingestConfig.tapLabelerApiUrl
-  ? startTapChannel(ingestConfig.tapLabelerApiUrl)
-  : null;
 // Optional third tap instance signaled on `site.standard.document`, so repos
 // that publish documents without a publication record ("loose documents") get
 // tracked + backfilled.
 const docsTapChannel = ingestConfig.tapDocsApiUrl
   ? startTapChannel(ingestConfig.tapDocsApiUrl)
   : null;
+// Bridged repos (Bridgy Fed's `*.brid.gy` mirrors) stream on their own tap
+// instance. Each channel carries its own in-flight budget, so bridge traffic
+// can't occupy the slots publisher and reader events need — and because the
+// instance is separate, a bulk bridge backfill queues behind its own resyncer
+// instead of everyone else's.
+const bridgeTapChannel = ingestConfig.tapBridgeApiUrl
+  ? startTapChannel(ingestConfig.tapBridgeApiUrl)
+  : null;
 const pendingTrackedReconcile = startPendingTrackedReconcile(
   reconcileTrackedWithBackfill,
 );
-const publisherRepoReconcile = startPublisherRepoReconcile();
+// The PDS repair round-robin deliberately does *not* run here — it is its own
+// cron service (`scripts/reconcile-repos-cron.ts`). Repair enumerates and
+// rewrites whole repos, and running that beside the live tap channels made the
+// backstop compete with the stream it backstops.
 const labelSync = startLabelSync();
+const labelerDiscovery = startLabelerDiscovery();
 
 for (const signal of ["SIGINT", "SIGTERM"] as const) {
   process.on(signal, () => {
     server.close(async () => {
       pendingTrackedReconcile.stop();
-      publisherRepoReconcile.stop();
       labelSync.stop();
+      labelerDiscovery.stop();
       await tapChannel.destroy();
-      await labelerTapChannel?.destroy();
       await docsTapChannel?.destroy();
+      await bridgeTapChannel?.destroy();
       const { flushTelemetry } = await import("../observability/log.ts");
       await flushTelemetry();
       process.exit(0);

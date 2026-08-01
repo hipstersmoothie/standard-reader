@@ -70,6 +70,16 @@ export const articleBodyStyles = stylex.create({
     lineHeight: READING_LINE_HEIGHT,
     marginTop: spacing["9"],
     minWidth: 0,
+    // The article scroller deliberately carries no outer `overflow-x` clip
+    // (see the comment on `article-view.tsx`'s `root` style) because every
+    // wide block — code, tables, math, carousels — already scrolls inside its
+    // own `overflow-x: auto` box. A plain link's visible text isn't boxed
+    // like that, so a long unbroken URL rendered as link text (a bare-URL
+    // autolink, or link text that mirrors its href) had no wrap opportunity
+    // and overflowed the reading column, widening the whole page and the
+    // viewport a reader can pinch-zoom into. Same fix, same reasoning, as
+    // `commentaryParagraph` in comments-styles.ts.
+    overflowWrap: "anywhere",
   },
   bodyAfterHero: {
     marginTop: spacing["0"],
@@ -103,9 +113,9 @@ export const articleBodyStyles = stylex.create({
     fontStyle: "italic",
     fontWeight: fontWeight.semibold,
     lineHeight: 0.78,
-    paddingBottom: spacing["0"],
-    paddingInlineStart: spacing["0"],
     paddingInlineEnd: spacing["3"],
+    paddingInlineStart: spacing["0"],
+    paddingBottom: spacing["0"],
     paddingTop: spacing["1.5"],
   },
   callout: {
@@ -114,11 +124,11 @@ export const articleBodyStyles = stylex.create({
     alignItems: "flex-start",
     backgroundColor: uiColor.component1,
     display: "flex",
+    paddingInlineEnd: spacing["4"],
+    paddingInlineStart: spacing["4"],
     marginBottom: spacing["6"],
     marginTop: spacing["0"],
     paddingBottom: spacing["4"],
-    paddingInlineStart: spacing["4"],
-    paddingInlineEnd: spacing["4"],
     paddingTop: spacing["4"],
   },
   calloutEmoji: {
@@ -136,22 +146,22 @@ export const articleBodyStyles = stylex.create({
     minWidth: 0,
   },
   pullquote: {
+    borderInlineStartColor: primaryColor.solid1,
+    borderInlineStartStyle: "solid",
+    borderInlineStartWidth: 3,
     color: uiColor.text2,
     fontFamily: fontFamily.serif,
     fontSize: READING_SIZE_PULLQUOTE,
     fontStyle: "italic",
     fontWeight: fontWeight.medium,
     lineHeight: 1.32,
+    paddingInlineEnd: spacing["0"],
+    paddingInlineStart: spacing["6"],
     // eslint-disable-next-line @stylexjs/valid-styles
     textWrap: "pretty",
-    borderInlineStartColor: primaryColor.solid1,
-    borderInlineStartStyle: "solid",
-    borderInlineStartWidth: 3,
     marginBottom: spacing["9"],
     marginTop: spacing["9"],
     paddingBottom: spacing["1"],
-    paddingInlineStart: spacing["6"],
-    paddingInlineEnd: spacing["0"],
     paddingTop: spacing["1"],
   },
   facetBold: {
@@ -166,13 +176,13 @@ export const articleBodyStyles = stylex.create({
     textUnderlineOffset: spacing["1.5"],
   },
   publicationBylineLink: {
-    cornerShape: "squircle",
     borderRadius: radius.xs,
+    cornerShape: "squircle",
     textDecoration: { default: "underline", ":hover": "none" },
     color: linkColor.text,
+    fontWeight: fontWeight.semibold,
     textDecorationColor: "currentColor",
     textUnderlineOffset: spacing["1.5"],
-    fontWeight: fontWeight.semibold,
   },
   /**
    * Inline mention chip — an entity's avatar + name rendered as a pill inside
@@ -182,44 +192,44 @@ export const articleBodyStyles = stylex.create({
    * mobile.
    */
   facetMentionLink: {
-    cornerShape: "squircle",
     borderRadius: radius.xs,
+    cornerShape: "squircle",
+    paddingBlock: spacing["1.5"],
+    paddingInline: spacing["2"],
     textDecoration: "none",
-    whiteSpace: "normal",
-    // Labels that are one unbroken run (long handles, URL-ish names) have no
-    // wrap opportunity of their own; break inside them rather than overflow.
-    overflowWrap: "break-word",
-    // Give each line fragment of a wrapped chip its own padding and rounded
-    // corners, so it still reads as a pill and not a sliced rectangle.
-    // eslint-disable-next-line @stylexjs/valid-styles
-    boxDecorationBreak: "clone",
     backgroundColor: {
       default: primaryColor.component1,
       ":is([data-hovered=true])": primaryColor.component2,
     },
-    fontWeight: fontWeight.medium,
+    // Give each line fragment of a wrapped chip its own padding and rounded
+    // corners, so it still reads as a pill and not a sliced rectangle.
+    // eslint-disable-next-line @stylexjs/valid-styles
+    boxDecorationBreak: "clone",
     color: primaryColor.text2,
+    fontWeight: fontWeight.medium,
+    // Labels that are one unbroken run (long handles, URL-ish names) have no
+    // wrap opportunity of their own; break inside them rather than overflow.
+    overflowWrap: "break-word",
     textDecorationColor: "currentColor",
     textUnderlineOffset: spacing["1.5"],
-    paddingBlock: spacing["1.5"],
-    paddingInline: spacing["2"],
+    whiteSpace: "normal",
   },
   /** Shrinks the design-system Avatar to sit inline with body text. */
   facetMentionAvatar: {
     display: "inline-flex",
-    width: "1.05em",
-    height: "1.05em",
     marginInlineEnd: "0.25em",
     verticalAlign: "-0.2em",
+    height: "1.05em",
+    width: "1.05em",
   },
   facetCode: {
     borderRadius: radius.sm,
     backgroundColor: uiColor.component1,
     fontFamily: fontFamily.mono,
     fontSize: "0.88em",
-    paddingBottom: spacing["0.5"],
-    paddingInlineStart: spacing["1.5"],
     paddingInlineEnd: spacing["1.5"],
+    paddingInlineStart: spacing["1.5"],
+    paddingBottom: spacing["0.5"],
     paddingTop: spacing["0.5"],
   },
   /** Inline footnote reference marker (superscript number). `lineHeight: 0`
@@ -230,12 +240,12 @@ export const articleBodyStyles = stylex.create({
     verticalAlign: "super",
   },
   footnoteRefLink: {
-    cornerShape: "squircle",
     borderRadius: radius.xs,
+    cornerShape: "squircle",
+    paddingInline: spacing["0.5"],
     textDecoration: "none",
     color: linkColor.text,
     fontWeight: fontWeight.medium,
-    paddingInline: spacing["0.5"],
   },
   /** Endnotes list at the foot of the article body. */
   footnotes: {
@@ -254,9 +264,9 @@ export const articleBodyStyles = stylex.create({
     fontFamily: fontFamily.sans,
     fontSize: fontSize.sm,
     lineHeight: 1.6,
+    paddingInlineStart: spacing["6"],
     marginBottom: spacing["0"],
     marginTop: spacing["0"],
-    paddingInlineStart: spacing["6"],
   },
   footnotesItem: {
     marginBottom: gap.sm,
@@ -278,13 +288,13 @@ export const articleBodyStyles = stylex.create({
     fontFamily: fontFamily.mono,
     fontSize: fontSize.sm,
     lineHeight: 1.5,
+    paddingInlineEnd: spacing["4"],
+    paddingInlineStart: spacing["4"],
     whiteSpace: "pre",
     marginBottom: spacing["6"],
     marginTop: spacing["0"],
     overflowX: "auto",
     paddingBottom: spacing["4"],
-    paddingInlineStart: spacing["4"],
-    paddingInlineEnd: spacing["4"],
     paddingTop: spacing["4"],
   },
   /** Highlighted blocks: shell only — padding lives on the inner Shiki `<pre>`. */
@@ -302,9 +312,9 @@ export const articleBodyStyles = stylex.create({
     overflowX: "auto",
   },
   iframeFigure: {
-    marginBottom: spacing["6"],
-    marginInlineStart: spacing["0"],
     marginInlineEnd: spacing["0"],
+    marginInlineStart: spacing["0"],
+    marginBottom: spacing["6"],
     marginTop: spacing["0"],
     maxWidth: "100%",
     minWidth: 0,
@@ -327,9 +337,9 @@ export const articleBodyStyles = stylex.create({
   iframeEmbed: {
     borderStyle: "none",
     display: "block",
+    insetInlineStart: spacing["0"],
     position: "absolute",
     height: "100%",
-    insetInlineStart: spacing["0"],
     top: spacing["0"],
     width: "100%",
   },
@@ -356,9 +366,9 @@ export const articleBodyStyles = stylex.create({
     marginTop: spacing["8"],
   },
   list: {
+    paddingInlineStart: spacing["6"],
     marginBottom: spacing["6"],
     marginTop: spacing["0"],
-    paddingInlineStart: spacing["6"],
   },
   listItem: {
     marginBottom: gap.sm,
@@ -434,10 +444,10 @@ export const articleBodyStyles = stylex.create({
   },
   imageDiffBeforeClip: {
     overflow: "hidden",
+    insetInlineEnd: spacing["0"],
+    insetInlineStart: spacing["0"],
     position: "absolute",
     bottom: spacing["0"],
-    insetInlineStart: spacing["0"],
-    insetInlineEnd: spacing["0"],
     top: spacing["0"],
   },
   imageDiffHandle: {
@@ -465,12 +475,12 @@ export const articleBodyStyles = stylex.create({
     color: uiColor.text1,
     fontFamily: fontFamily.sans,
     fontSize: fontSize.xs,
+    insetInlineStart: gap.sm,
+    paddingInlineEnd: spacing["2"],
+    paddingInlineStart: spacing["2"],
     pointerEvents: "none",
     position: "absolute",
-    insetInlineStart: gap.sm,
     paddingBottom: spacing["1"],
-    paddingInlineStart: spacing["2"],
-    paddingInlineEnd: spacing["2"],
     paddingTop: spacing["1"],
     top: gap.sm,
   },
@@ -480,13 +490,13 @@ export const articleBodyStyles = stylex.create({
     color: uiColor.text1,
     fontFamily: fontFamily.sans,
     fontSize: fontSize.xs,
+    insetInlineEnd: gap.sm,
+    paddingInlineEnd: spacing["2"],
+    paddingInlineStart: spacing["2"],
     pointerEvents: "none",
     position: "absolute",
     paddingBottom: spacing["1"],
-    paddingInlineStart: spacing["2"],
-    paddingInlineEnd: spacing["2"],
     paddingTop: spacing["1"],
-    insetInlineEnd: gap.sm,
     top: gap.sm,
   },
   pollCard: {
@@ -495,11 +505,11 @@ export const articleBodyStyles = stylex.create({
     borderStyle: "solid",
     borderWidth: 1,
     backgroundColor: uiColor.component1,
+    paddingInlineEnd: spacing["4"],
+    paddingInlineStart: spacing["4"],
     marginBottom: spacing["6"],
     marginTop: spacing["0"],
     paddingBottom: spacing["4"],
-    paddingInlineStart: spacing["4"],
-    paddingInlineEnd: spacing["4"],
     paddingTop: spacing["4"],
   },
   pollTitle: {
@@ -512,9 +522,9 @@ export const articleBodyStyles = stylex.create({
   },
   pollOptions: {
     listStyle: "none",
+    paddingInlineStart: spacing["0"],
     marginBottom: spacing["0"],
     marginTop: spacing["0"],
-    paddingInlineStart: spacing["0"],
   },
   pollOption: {
     borderColor: uiColor.border1,
@@ -524,27 +534,27 @@ export const articleBodyStyles = stylex.create({
     color: uiColor.text1,
     fontFamily: fontFamily.sans,
     fontSize: fontSize.sm,
+    paddingInlineEnd: spacing["3"],
+    paddingInlineStart: spacing["3"],
     marginBottom: gap.sm,
     marginTop: spacing["0"],
     paddingBottom: spacing["2"],
-    paddingInlineStart: spacing["3"],
-    paddingInlineEnd: spacing["3"],
     paddingTop: spacing["2"],
   },
   imageFigure: {
     overflow: "hidden",
     boxSizing: "border-box",
-    marginBottom: spacing["6"],
-    marginInlineStart: spacing["0"],
     marginInlineEnd: spacing["0"],
+    marginInlineStart: spacing["0"],
+    marginBottom: spacing["6"],
     marginTop: spacing["0"],
     maxWidth: "100%",
     minWidth: 0,
     width: "100%",
   },
   imageFullBleed: {
-    marginInlineStart: `calc(-1 * ${spacing["6"]})`,
     marginInlineEnd: `calc(-1 * ${spacing["6"]})`,
+    marginInlineStart: `calc(-1 * ${spacing["6"]})`,
     maxWidth: "none",
     width: `calc(100% + 2 * ${spacing["6"]})`,
   },
@@ -553,14 +563,14 @@ export const articleBodyStyles = stylex.create({
     fontFamily: fontFamily.sans,
     fontSize: fontSize.base,
     lineHeight: 1.2,
+    textAlign: "center",
     marginBottom: spacing["0"],
     marginTop: gap.md,
-    textAlign: "center",
   },
   gallery: {
-    marginBottom: spacing["6"],
-    marginInlineStart: spacing["0"],
     marginInlineEnd: spacing["0"],
+    marginInlineStart: spacing["0"],
+    marginBottom: spacing["6"],
     marginTop: spacing["0"],
     maxWidth: "100%",
     minWidth: 0,
@@ -648,10 +658,10 @@ export const articleBodyStyles = stylex.create({
     borderColor: uiColor.border1,
     borderStyle: "solid",
     borderWidth: 1,
+    paddingInlineEnd: spacing["3"],
+    paddingInlineStart: spacing["3"],
     verticalAlign: "top",
     paddingBottom: spacing["2"],
-    paddingInlineStart: spacing["3"],
-    paddingInlineEnd: spacing["3"],
     paddingTop: spacing["2"],
   },
   tableHeaderCell: {
@@ -674,9 +684,9 @@ export const articleBodyStyles = stylex.create({
     gap: gap.md,
     alignItems: "center",
     display: "flex",
-    paddingBottom: spacing["4"],
-    paddingInlineStart: spacing["4"],
     paddingInlineEnd: spacing["6"],
+    paddingInlineStart: spacing["4"],
+    paddingBottom: spacing["4"],
     paddingTop: spacing["4"],
   },
   websiteCardText: {
@@ -712,9 +722,9 @@ export const articleBodyStyles = stylex.create({
       "@media (min-width: 40rem)": READING_SIZE_DEFAULT_WIDE,
     },
     lineHeight: READING_LINE_HEIGHT,
-    paddingBottom: spacing["4"],
-    paddingInlineStart: spacing["4"],
     paddingInlineEnd: spacing["4"],
+    paddingInlineStart: spacing["4"],
+    paddingBottom: spacing["4"],
     paddingTop: gap.sm,
   },
   pageEmbedBlockSpacing: {
@@ -773,9 +783,9 @@ export const articleBodyStyles = stylex.create({
   },
   taskList: {
     listStyle: "none",
+    paddingInlineStart: spacing["0"],
     marginBottom: spacing["6"],
     marginTop: spacing["0"],
-    paddingInlineStart: spacing["0"],
   },
   taskItem: {
     gap: gap.md,
@@ -802,11 +812,11 @@ export const articleBodyStyles = stylex.create({
    */
   taskCheckbox: {
     accentColor: primaryColor.solid1,
+    blockSize: TASK_CHECKBOX_SIZE,
     flexShrink: 0,
     fontSize: "inherit",
-    lineHeight: "inherit",
-    blockSize: TASK_CHECKBOX_SIZE,
     inlineSize: TASK_CHECKBOX_SIZE,
+    lineHeight: "inherit",
     marginTop: stylex.firstThatWorks(
       `calc((1lh - ${TASK_CHECKBOX_SIZE}) / 2)`,
       `calc((${READING_LINE_HEIGHT}em - ${TASK_CHECKBOX_SIZE}) / 2)`,
@@ -822,11 +832,11 @@ export const articleBodyStyles = stylex.create({
     fontFamily: fontFamily.sans,
     fontSize: fontSize.sm,
     fontStyle: "italic",
+    paddingInlineEnd: spacing["4"],
+    paddingInlineStart: spacing["4"],
     marginBottom: spacing["6"],
     marginTop: spacing["0"],
     paddingBottom: spacing["3"],
-    paddingInlineStart: spacing["4"],
-    paddingInlineEnd: spacing["4"],
     paddingTop: spacing["3"],
   },
   /** Wade Minter–style playlist cards embedded as HTML in Standard markdown. */

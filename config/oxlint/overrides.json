@@ -253,6 +253,14 @@
       }
     },
     {
+      "files": [
+        "apps/standard-reader/src/components/guide/guide-page.stylex.tsx"
+      ],
+      "rules": {
+        "@stylexjs/enforce-extension": "off"
+      }
+    },
+    {
       "files": ["**/wxt.config.ts", "**/scripts/publish-packages.mjs"],
       "rules": {
         "unicorn/no-process-exit": "off"

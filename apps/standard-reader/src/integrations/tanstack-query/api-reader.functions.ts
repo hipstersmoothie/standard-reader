@@ -34,6 +34,14 @@ import { ensureTracked } from "#/server/ingest/tap-client";
 import { observe } from "#/server/observability/log";
 import { syncFollowedPublications } from "#/server/reader/followed-publications-sync.server";
 import { markDocumentsRead } from "#/server/reader/mark-documents-read";
+import {
+  mirrorBookmarkRemoved,
+  mirrorBookmarkSaved,
+  mirrorReadRemoved,
+  mirrorReadsMarked,
+  mirrorRecommendAdded,
+  mirrorRecommendRemoved,
+} from "#/server/reader/personal-state-mirror";
 import { selectUnreadDocumentUris } from "#/server/reader/queries";
 import { attachViewerRecommendedToArticles } from "#/server/reader/recommended-by";
 import { effectiveFollowSets } from "#/server/reader/saved-lists";
@@ -724,7 +732,7 @@ const recommendDocument = createServerFn({ method: "POST" })
   .middleware([dbMiddleware])
   .validator(documentInput)
   .handler(
-    observe("reader.recommendDocument", async ({ data }, span) => {
+    observe("reader.recommendDocument", async ({ context, data }, span) => {
       span.set("documentUri", data.documentUri);
       const session = await getAtprotoSessionForRequest(getRequest());
       if (!session) {
@@ -732,12 +740,19 @@ const recommendDocument = createServerFn({ method: "POST" })
       }
       span.set("did", session.did);
 
-      await putRecommendRecord(
+      const createdAt = new Date().toISOString();
+      const { cid } = await putRecommendRecord(
         session.client,
         session.did,
         data.documentUri,
-        new Date().toISOString(),
+        createdAt,
       );
+      await mirrorRecommendAdded(context.db, context.schema, {
+        cid,
+        createdAt,
+        documentUri: data.documentUri,
+        recommenderDid: session.did,
+      });
       await trackReaderRepo(session.did);
       return { ok: true as const };
     }),
@@ -747,7 +762,7 @@ const unrecommendDocument = createServerFn({ method: "POST" })
   .middleware([dbMiddleware])
   .validator(documentInput)
   .handler(
-    observe("reader.unrecommendDocument", async ({ data }, span) => {
+    observe("reader.unrecommendDocument", async ({ context, data }, span) => {
       span.set("documentUri", data.documentUri);
       const session = await getAtprotoSessionForRequest(getRequest());
       if (!session) {
@@ -760,6 +775,10 @@ const unrecommendDocument = createServerFn({ method: "POST" })
         session.did,
         data.documentUri,
       );
+      await mirrorRecommendRemoved(context.db, context.schema, {
+        documentUri: data.documentUri,
+        recommenderDid: session.did,
+      });
       return { ok: true as const };
     }),
   );
@@ -852,12 +871,20 @@ const markRead = createServerFn({ method: "POST" })
         return { ok: true as const };
       }
 
-      await putReadRecord(
+      const createdAt = new Date().toISOString();
+      const { cid } = await putReadRecord(
         session.client,
         session.did,
         data.documentUri,
-        new Date().toISOString(),
+        createdAt,
       );
+      // Reflect the read in our own read-model now — the tap replay of this
+      // same record is idempotent, and waiting on it can take hours.
+      await mirrorReadsMarked(context.db, context.schema, {
+        createdAt,
+        ownerDid: session.did,
+        reads: [{ cid, documentUri: data.documentUri }],
+      });
       await trackReaderRepo(session.did);
       return { ok: true as const };
     }),
@@ -881,6 +908,10 @@ const markUnread = createServerFn({ method: "POST" })
       }
 
       await deleteReadRecord(session.client, session.did, data.documentUri);
+      await mirrorReadRemoved(context.db, context.schema, {
+        documentUri: data.documentUri,
+        ownerDid: session.did,
+      });
       return { ok: true as const };
     }),
   );
@@ -1094,7 +1125,7 @@ const bookmarkDocument = createServerFn({ method: "POST" })
   .middleware([dbMiddleware])
   .validator(documentInput)
   .handler(
-    observe("reader.bookmarkDocument", async ({ data }, span) => {
+    observe("reader.bookmarkDocument", async ({ context, data }, span) => {
       span.set("documentUri", data.documentUri);
       const session = await getAtprotoSessionForRequest(getRequest());
       if (!session) {
@@ -1102,12 +1133,19 @@ const bookmarkDocument = createServerFn({ method: "POST" })
       }
       span.set("did", session.did);
 
-      await putBookmarkRecord(
+      const createdAt = new Date().toISOString();
+      const { cid } = await putBookmarkRecord(
         session.client,
         session.did,
         data.documentUri,
-        new Date().toISOString(),
+        createdAt,
       );
+      await mirrorBookmarkSaved(context.db, context.schema, {
+        cid,
+        createdAt,
+        documentUri: data.documentUri,
+        ownerDid: session.did,
+      });
       await trackReaderRepo(session.did);
       return { ok: true as const };
     }),
@@ -1117,7 +1155,7 @@ const unbookmarkDocument = createServerFn({ method: "POST" })
   .middleware([dbMiddleware])
   .validator(documentInput)
   .handler(
-    observe("reader.unbookmarkDocument", async ({ data }, span) => {
+    observe("reader.unbookmarkDocument", async ({ context, data }, span) => {
       span.set("documentUri", data.documentUri);
       const session = await getAtprotoSessionForRequest(getRequest());
       if (!session) {
@@ -1126,6 +1164,10 @@ const unbookmarkDocument = createServerFn({ method: "POST" })
       span.set("did", session.did);
 
       await deleteBookmarkRecord(session.client, session.did, data.documentUri);
+      await mirrorBookmarkRemoved(context.db, context.schema, {
+        documentUri: data.documentUri,
+        ownerDid: session.did,
+      });
       return { ok: true as const };
     }),
   );
@@ -1225,8 +1267,10 @@ const markPublicationAllRead = createServerFn({ method: "POST" })
         span.set("count", documentUris.length);
         return markDocumentsRead({
           client: session.client,
+          db: context.db,
           did: session.did,
           documentUris,
+          schema: context.schema,
           trackReading,
         });
       },
@@ -1263,8 +1307,10 @@ const markFollowsAllUnreadRead = createServerFn({ method: "POST" })
       span.set("count", documentUris.length);
       return markDocumentsRead({
         client: session.client,
+        db: context.db,
         did: session.did,
         documentUris,
+        schema: context.schema,
         trackReading,
       });
     }),

@@ -25,6 +25,7 @@ import * as stylex from "@stylexjs/stylex";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import {
+  BookOpen,
   Globe,
   Heart,
   History,
@@ -72,6 +73,8 @@ const styles = stylex.create({
     flexShrink: 0,
     fontFamily: fontFamily.sans,
     justifyContent: "flex-start",
+    paddingInlineEnd: horizontalSpace.lg,
+    paddingInlineStart: horizontalSpace.lg,
     rowGap: gapSpace.md,
     textAlign: "start",
     transitionDuration: animationDuration.fast,
@@ -79,8 +82,6 @@ const styles = stylex.create({
     transitionTimingFunction: "ease-in-out",
     userSelect: "none",
     paddingBottom: verticalSpace.sm,
-    paddingInlineStart: horizontalSpace.lg,
-    paddingInlineEnd: horizontalSpace.lg,
     paddingTop: verticalSpace.sm,
     width: "100%",
   },
@@ -243,6 +244,9 @@ export function NavbarAuth({
           textValue={t`Recommended articles`}
         >
           <Trans>Recommended articles</Trans>
+        </MenuItemLink>
+        <MenuItemLink to="/guide" suffix={<BookOpen />} textValue={t`Guide`}>
+          <Trans>Guide</Trans>
         </MenuItemLink>
         <MenuItemLink
           to="/feedback"

@@ -117,14 +117,14 @@ function DevDigestPreview() {
 
 const styles = stylex.create({
   container: {
+    marginInline: "auto",
+    paddingInline: horizontalSpace.lg,
     display: "flex",
     flexDirection: "column",
-    marginInline: "auto",
+    rowGap: gap.lg,
     maxWidth: "48rem",
     paddingBottom: verticalSpace["3xl"],
-    paddingInline: horizontalSpace.lg,
     paddingTop: verticalSpace["3xl"],
-    rowGap: gap.lg,
     width: "100%",
   },
   error: {
@@ -132,11 +132,11 @@ const styles = stylex.create({
     fontSize: fontSize.sm,
   },
   frame: {
-    backgroundColor: uiColor.bg,
     borderColor: uiColor.border1,
     borderRadius: radius.md,
     borderStyle: "solid",
     borderWidth: 1,
+    backgroundColor: uiColor.bg,
     height: "80vh",
     width: "100%",
   },

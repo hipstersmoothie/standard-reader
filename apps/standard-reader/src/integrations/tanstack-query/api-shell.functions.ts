@@ -31,6 +31,19 @@ const getShellSnapshot = createServerFn({ method: "GET" }).handler(
         session.session.user.countOldPostsAsUnread ?? null,
       );
 
+      // Port the reader's Bluesky labelers if that hasn't happened yet. Here
+      // rather than on `/labelers` because labels apply everywhere they read, so
+      // waiting for them to visit the settings page would leave their moderation
+      // setup un-ported on every other surface. Fire-and-forget and internally
+      // guarded — it adds nothing to this request.
+      const { scheduleBskyLabelerImport } =
+        await import("#/server/labeler/import-bsky.server");
+      scheduleBskyLabelerImport(
+        session.client,
+        session.session.user.id,
+        session.did,
+      );
+
       return loadShellSnapshot(db, schema, {
         did: session.did,
         client: session.client,

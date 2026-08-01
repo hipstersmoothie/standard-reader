@@ -84,6 +84,20 @@ export const SEMBLE_FULL_SCOPE = "include:network.cosmik.authFull";
 export const EMAIL_SCOPE = "transition:email";
 
 /**
+ * Read access to the reader's Bluesky preferences, which is where Bluesky keeps
+ * subscribed labelers (`app.bsky.actor.defs#labelersPref`) and per-label
+ * visibility. Requested on basic sign-in so a reader's existing moderation
+ * setup can be ported over on first login with no action from them.
+ *
+ * Read-only on purpose: there is deliberately no `putPreferences` counterpart,
+ * so nothing we do can rewrite someone's Bluesky moderation settings.
+ */
+export const BSKY_PREFERENCES_READ_SCOPE = atprotoScope.rpc({
+  lxm: ["app.bsky.actor.getPreferences"],
+  aud: "*",
+});
+
+/**
  * Basic sign-in scope — what 95% of readers need. Covers app-owned reader-state
  * (`authBasicFeatures`) plus standard.site follows & likes (`authSocial`).
  */
@@ -92,6 +106,7 @@ export const basicScope = [
   BLOB_SCOPE,
   AUTH_BASIC_FEATURES,
   SITE_AUTH_SOCIAL,
+  BSKY_PREFERENCES_READ_SCOPE,
 ];
 
 /**
@@ -436,6 +451,28 @@ export function hasEmailScope(
 ): boolean {
   if (!grantedScope) return false;
   return grantedScope.split(/\s+/).includes(EMAIL_SCOPE);
+}
+
+/**
+ * Detect whether the granted scope includes Bluesky preferences read access.
+ *
+ * Matches the exact scope we request, plus the `lxm=*` wildcard a PDS may
+ * grant instead. Sessions established before this scope existed simply don't
+ * have it, so their labeler import is skipped until they next re-authorize —
+ * which is why the import is scope-gated rather than assumed.
+ */
+export function hasBskyPreferencesScope(
+  grantedScope: string | null | undefined,
+): boolean {
+  if (!grantedScope) return false;
+  const tokens = grantedScope.split(/\s+/);
+  return tokens.some(
+    (token) =>
+      token === BSKY_PREFERENCES_READ_SCOPE ||
+      (token.startsWith("rpc") &&
+        (token.includes("lxm=app.bsky.actor.getPreferences") ||
+          token.includes("lxm=*"))),
+  );
 }
 
 /**

@@ -77,6 +77,66 @@ export const PAGE_OG_CARDS = {
     tagline:
       "New writing from the standard.site publications you subscribe to — calm, chronological, and yours to take anywhere.",
   },
+  guide: {
+    path: "/guide",
+    title: "Reader guide",
+    tagline:
+      "How to use Standard Reader — following, reading, listening, and making it yours. No technical knowledge needed.",
+  },
+  guideGettingStarted: {
+    path: "/guide/getting-started",
+    title: "Getting started",
+    tagline:
+      "Sign in, follow your first publications, and learn where everything lives.",
+  },
+  guideReading: {
+    path: "/guide/reading",
+    title: "Reading an article",
+    tagline:
+      "Every control on an article — including having it read aloud, and making the text comfortable.",
+  },
+  guideFinding: {
+    path: "/guide/finding",
+    title: "Finding things to read",
+    tagline:
+      "Home, Latest, Discover, search, and topics — five ways to find your next read.",
+  },
+  guideKeepingTrack: {
+    path: "/guide/keeping-track",
+    title: "Keeping track",
+    tagline:
+      "Saving, recommending, reading history, lists, and managing everything you follow.",
+  },
+  guidePersonalizing: {
+    path: "/guide/personalizing",
+    title: "Making it yours",
+    tagline:
+      "Colors, type, density, feed behavior, moderation, and the weekly digest.",
+  },
+  guideLists: {
+    path: "/guide/lists",
+    title: "Lists and your sidebar",
+    tagline:
+      "Group what you subscribe to, and arrange the sidebar around how you read.",
+  },
+  guideCollections: {
+    path: "/guide/collections",
+    title: "Collections",
+    tagline:
+      "Assemble articles into a magazine edition other people can read and follow.",
+  },
+  guideExtension: {
+    path: "/guide/extension",
+    title: "The browser extension",
+    tagline:
+      "Save and subscribe from anywhere on the web, without breaking your stride.",
+  },
+  guideYourData: {
+    path: "/guide/your-data",
+    title: "Your account and data",
+    tagline:
+      "Where your reading lives, what Standard Reader stores, and how to take it with you.",
+  },
   docsIntroduction: {
     path: "/docs/introduction",
     title: "Introduction",
@@ -101,9 +161,9 @@ export const PAGE_OG_CARDS = {
     tagline:
       "Published app.standard-reader.* record schemas for reader repo state.",
   },
-  docsPublishing: {
-    path: "/docs/publishing",
-    title: "Publishing",
+  guidePublishing: {
+    path: "/guide/publishing",
+    title: "Publishing your site",
     tagline: "Wire a personal site's own site.standard.* records by hand.",
   },
   docsRenderers: {

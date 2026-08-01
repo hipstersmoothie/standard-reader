@@ -58,7 +58,15 @@ export interface PublicationRecord {
    * (`#/lib/publication-theme-source`) narrows it per `$type`.
    */
   theme?: unknown;
-  preferences?: { showInDiscover?: boolean };
+  preferences?: {
+    showInDiscover?: boolean;
+    /**
+     * `"ltr"` | `"rtl"` (lexicon default `"rtl"`). The publisher's prev/next
+     * reading direction — `"ltr"` marks a serial that reads forwards from its
+     * first post. See `#/lib/publication/serial`.
+     */
+    prevNextDirection?: string;
+  };
 }
 
 /** `site.standard.document#contributor`. */
@@ -189,21 +197,6 @@ export interface LabelPrefRecord {
   visibility: "ignore" | "warn" | "hide";
 }
 
-/** `app.standard-reader.labeler.service` — registers a labeler (owner = author). */
-export interface LabelerServiceRecord {
-  $type?: string;
-  did: string;
-  serviceEndpoint: string;
-  displayName?: string;
-  description?: string;
-  avatar?: BlobRef;
-  policies?: {
-    labelValues?: Array<string>;
-    labelValueDefinitions?: Array<Record<string, unknown>>;
-  };
-  createdAt?: string;
-}
-
 /**
  * `app.standard-reader.labeler.subscription` (V2) / legacy
  * `app.standard-reader.labelerSubscription` — a labeler the reader subscribes
@@ -213,6 +206,8 @@ export interface LabelerSubscriptionRecord {
   $type?: string;
   labeler: string;
   labels?: Array<LabelPrefRecord>;
+  /** Absent means enabled; `false` mutes the labeler without unsubscribing. */
+  enabled?: boolean;
   createdAt?: string;
 }
 

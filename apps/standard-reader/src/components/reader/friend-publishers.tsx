@@ -16,9 +16,9 @@ const styles = stylex.create({
     fontFamily: fontFamily.sans,
     fontSize: fontSize.sm,
     lineHeight: lineHeight.sm,
+    overflowWrap: "anywhere",
     marginBottom: spacing["0"],
     marginTop: spacing["0"],
-    overflowWrap: "anywhere",
   },
 });
 

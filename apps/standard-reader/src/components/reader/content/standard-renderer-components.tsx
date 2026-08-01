@@ -65,13 +65,13 @@ import type { ContentBlobContext } from "./types";
 
 const styles = stylex.create({
   galleryGrid: {
-    display: "grid",
     gap: "0.75rem",
+    display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 18rem), 1fr))",
   },
   diffPair: {
-    display: "grid",
     gap: "0.75rem",
+    display: "grid",
     gridTemplateColumns: "1fr 1fr",
   },
 });

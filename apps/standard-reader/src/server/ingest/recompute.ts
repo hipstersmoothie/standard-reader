@@ -10,6 +10,7 @@ import {
   sql,
 } from "drizzle-orm";
 
+import { mapWithConcurrency } from "#/lib/concurrency";
 import { hasRenderableArticleBody } from "#/lib/document/renderable";
 import {
   documentExtractedText,
@@ -17,6 +18,8 @@ import {
   repairCompoundedSearchText,
 } from "#/lib/document/search-text";
 import { EXCLUDED_PUBLICATION_URL_PATTERN } from "#/lib/publication/exclusions";
+import { SERIAL_DIRECTION } from "#/lib/publication/serial";
+import { deriveSerialKind } from "#/server/reader/series";
 import {
   ARTICLE_BLEND,
   BACKLINK_SYNC_CONCURRENCY,
@@ -28,7 +31,13 @@ import {
 } from "#/server/reader/trending-scoring";
 
 import { db } from "../../db/index.ts";
-import { documents, profiles, publications } from "../../db/schema.ts";
+import * as schema from "../../db/schema.ts";
+import {
+  documents,
+  NETWORK_DOCUMENT_COUNT_KEY,
+  profiles,
+  publications,
+} from "../../db/schema.ts";
 import { getBacklinkCountForTarget } from "../atproto/constellation.ts";
 import {
   INVALID_HANDLE,
@@ -37,7 +46,6 @@ import {
 } from "../atproto/identity.ts";
 import { replayDeadLetters } from "./consumer.ts";
 import { reconcileDocumentDup, reconcilePublicationGroup } from "./handlers.ts";
-import { reconcilePublisherReposBatch } from "./repo-sync.ts";
 
 /**
  * Recompute the derived per-publication aggregates (subscriber/document/
@@ -493,7 +501,7 @@ export async function recomputeCosubscriptions(): Promise<void> {
  * The Discover directory's topic chips can then be built from the top-N topics
  * by publication count.
  */
-export async function recomputeTopics(): Promise<void> {
+export async function recomputeTopicCounts(): Promise<void> {
   // Clear stale topics first so removed tags don't linger.
   await db.execute(
     sql`UPDATE publications SET topic = NULL WHERE topic IS NOT NULL`,
@@ -555,6 +563,92 @@ export async function recomputeTopics(): Promise<void> {
       GROUP BY topic
     `);
   });
+}
+
+/**
+ * Rebuild the network-wide scalars in `network_stats`.
+ *
+ * Currently just the Latest "All" tab badge. Computing it on the request path
+ * is an unbounded `count(*)` over every document joined to publications — no
+ * index can serve it, so it lands as a parallel seq scan (~1.08s over ~1.4M
+ * rows / 2.2GB at time of writing) on `/latest`'s blocking loader, and re-reads
+ * the whole heap from storage on each call. Here it is one more sweep-time
+ * scan; readers get a single-row primary-key lookup.
+ *
+ * The predicate must stay in lockstep with `discoverEligibleArticleWhere` +
+ * `documentPublishedNotInFuture` in `#/server/reader/queries` — those still
+ * define what the "All" tab actually lists, and this is only its cardinality.
+ */
+export async function recomputeNetworkStats(): Promise<void> {
+  await db.execute(sql`
+    INSERT INTO network_stats (key, value, recomputed_at)
+    SELECT ${NETWORK_DOCUMENT_COUNT_KEY}, count(*), now()
+    FROM documents d
+    LEFT JOIN publications p ON p.uri = d.publication_uri
+    WHERE d.deleted = false
+      AND (d.published_at IS NULL OR d.published_at <= now())
+      AND (
+        p.uri IS NULL
+        OR (
+          p.deleted = false
+          AND p.show_in_discover = true
+          AND p.url NOT ILIKE ${EXCLUDED_PUBLICATION_URL_PATTERN}
+        )
+      )
+    ON CONFLICT (key) DO UPDATE
+      SET value = excluded.value, recomputed_at = excluded.recomputed_at
+  `);
+}
+
+/**
+ * Derive `publications.serial_kind` for serial publications — the ones whose
+ * publisher set `preferences.prevNextDirection = "ltr"`, declaring that the
+ * publication reads forwards from its first post (see
+ * `#/lib/publication/serial`).
+ *
+ * The classification itself lives in `deriveSerialKind`
+ * (`#/server/reader/series`), shared with the on-demand read path so a
+ * publication can't be judged one way by the sweep and another way on a page
+ * load. This pass is the safety net that keeps every serial current as its posts
+ * change; the read path only ever classifies one that has never been judged.
+ *
+ * Only serial publications are sampled — there are few of them, and `content_json`
+ * is large per row — and `serial_kind` is cleared on any publication that is no
+ * longer a serial so a preference flipped back to `"rtl"` doesn't linger.
+ */
+const SERIAL_KIND_CONCURRENCY = 6;
+
+export async function recomputeSerialKinds(): Promise<void> {
+  // A publication that stopped being a serial keeps no derived kind.
+  await db
+    .update(publications)
+    .set({ serialKind: null })
+    .where(
+      and(
+        isNotNull(publications.serialKind),
+        or(
+          isNull(publications.prevNextDirection),
+          sql`${publications.prevNextDirection} <> ${SERIAL_DIRECTION}`,
+        ),
+      ),
+    );
+
+  const serials = await db
+    .select({ uri: publications.uri })
+    .from(publications)
+    .where(
+      and(
+        eq(publications.prevNextDirection, SERIAL_DIRECTION),
+        eq(publications.deleted, false),
+      ),
+    );
+
+  // Each classification samples up to 40 bodies, so the rows are wide; a few in
+  // flight hides the round trips without pulling a lot of `content_json` into
+  // memory at once.
+  await mapWithConcurrency(serials, SERIAL_KIND_CONCURRENCY, ({ uri }) =>
+    deriveSerialKind(db, schema, uri),
+  );
 }
 
 /**
@@ -784,13 +878,13 @@ export async function recomputeDerived(): Promise<void> {
   } catch {
     // Replay is best-effort; the rows persist and the next sweep retries.
   }
-  // PDS is the source of truth for deletes tap missed (dead-letter cap, stream
-  // gaps, out-of-order backfill). Round-robin a batch each sweep.
-  try {
-    await reconcilePublisherReposBatch();
-  } catch {
-    // Best-effort; the background timer retries between sweeps.
-  }
+  // The PDS round-robin used to run here too, a batch per sweep. It moved to
+  // its own cron service (`scripts/reconcile-repos-cron.ts`): repairing a repo
+  // means enumerating it and rewriting every changed record, and doing that
+  // inside the ingest worker put the repair in direct competition with the live
+  // tap stream it exists to backstop — the worker sits pinned at its in-flight
+  // cap as it is. Nothing schedules repair from this process any more.
+
   // Re-resolve any actor stranded at `null`/`handle.invalid` so a handle change
   // that never arrived as a usable identity event still self-heals (issue #4).
   try {
@@ -808,6 +902,14 @@ export async function recomputeDerived(): Promise<void> {
   await recomputePublicationStats();
   await recomputeCosubscriptions();
   await recomputeCorecommends();
-  await recomputeTopics();
+  await recomputeTopicCounts();
+  // Topic derivation is deliberately NOT here — it clusters the whole tag
+  // graph and calls the naming model, which is minutes of work whose output
+  // barely moves hour to hour. It runs on its own daily schedule instead;
+  // see `scripts/topics-cron.ts`.
+  await recomputeSerialKinds();
   await recomputeDocumentTrending();
+  // Last: dedup + the passes above are what change the eligible-document set,
+  // so counting here records the sweep's final state rather than a mid-sweep one.
+  await recomputeNetworkStats();
 }

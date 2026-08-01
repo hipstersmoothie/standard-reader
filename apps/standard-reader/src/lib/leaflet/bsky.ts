@@ -36,8 +36,13 @@ export function bskyPostUrl(
   return `https://${host}/profile/${ref.did}/post/${ref.id}`;
 }
 
-/** Local API route used by `bsky-react-post` (returns `{ data: thread }`). */
-export function bskyPostApiUrl(did: string, id: string): string {
-  const params = new URLSearchParams({ did, id });
+/**
+ * Local API route used by `bsky-react-post` (returns `{ data: thread }`).
+ * `ident` is a DID or a handle — a client URL can carry either.
+ */
+export function bskyPostApiUrl(ident: string, id: string): string {
+  const params = new URLSearchParams(
+    ident.startsWith("did:") ? { did: ident, id } : { handle: ident, id },
+  );
   return `/api/bsky/post?${params}`;
 }

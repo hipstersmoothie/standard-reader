@@ -31,6 +31,13 @@ import {
   upsertUserFollow,
 } from "#/server/ingest/handlers";
 import { markDocumentsRead } from "#/server/reader/mark-documents-read";
+import {
+  mirrorBookmarkRemoved,
+  mirrorBookmarkSaved,
+  mirrorReadRemoved,
+  mirrorRecommendAdded,
+  mirrorRecommendRemoved,
+} from "#/server/reader/personal-state-mirror";
 import { selectUnreadDocumentUris } from "#/server/reader/queries";
 import {
   effectiveFollowUris,
@@ -244,12 +251,19 @@ export async function handleRecommendDocument(ctx: XrpcRequestContext) {
   const auth = requireAuthClient(ctx);
   requireScopes(auth, [XRPC_WRITE_SCOPES.recommend]);
   const documentUri = requireBodyField(ctx.body, "document");
-  await putRecommendRecord(
+  const createdAt = new Date().toISOString();
+  const { cid } = await putRecommendRecord(
     auth.client,
     auth.did,
     documentUri,
-    new Date().toISOString(),
+    createdAt,
   );
+  await mirrorRecommendAdded(ctx.db, ctx.schema, {
+    cid,
+    createdAt,
+    documentUri,
+    recommenderDid: auth.did,
+  });
   return {};
 }
 
@@ -258,6 +272,10 @@ export async function handleUnrecommendDocument(ctx: XrpcRequestContext) {
   requireScopes(auth, [XRPC_WRITE_SCOPES.recommend]);
   const documentUri = requireBodyField(ctx.body, "document");
   await deleteRecommendRecord(auth.client, auth.did, documentUri);
+  await mirrorRecommendRemoved(ctx.db, ctx.schema, {
+    documentUri,
+    recommenderDid: auth.did,
+  });
   return {};
 }
 
@@ -268,8 +286,10 @@ export async function handleMarkRead(ctx: XrpcRequestContext) {
   if (!ctx.trackReadingEnabled) return {};
   await markDocumentsRead({
     client: auth.client,
+    db: ctx.db,
     did: auth.did,
     documentUris: [documentUri],
+    schema: ctx.schema,
     trackReading: true,
   });
   return {};
@@ -281,6 +301,10 @@ export async function handleMarkUnread(ctx: XrpcRequestContext) {
   const documentUri = requireBodyField(ctx.body, "document");
   if (!ctx.trackReadingEnabled) return {};
   await deleteReadRecord(auth.client, auth.did, documentUri);
+  await mirrorReadRemoved(ctx.db, ctx.schema, {
+    documentUri,
+    ownerDid: auth.did,
+  });
   return {};
 }
 
@@ -297,8 +321,10 @@ export async function handleMarkAllRead(ctx: XrpcRequestContext) {
     : [];
   return markDocumentsRead({
     client: auth.client,
+    db: ctx.db,
     did: auth.did,
     documentUris,
+    schema: ctx.schema,
     trackReading: ctx.trackReadingEnabled,
   });
 }
@@ -316,8 +342,10 @@ export async function handleMarkPublicationAllRead(ctx: XrpcRequestContext) {
     : [];
   return markDocumentsRead({
     client: auth.client,
+    db: ctx.db,
     did: auth.did,
     documentUris,
+    schema: ctx.schema,
     trackReading: ctx.trackReadingEnabled,
   });
 }
@@ -326,12 +354,19 @@ export async function handleBookmarkDocument(ctx: XrpcRequestContext) {
   const auth = requireAuthClient(ctx);
   requireScopes(auth, [XRPC_WRITE_SCOPES.bookmark]);
   const documentUri = requireBodyField(ctx.body, "document");
-  await putBookmarkRecord(
+  const createdAt = new Date().toISOString();
+  const { cid } = await putBookmarkRecord(
     auth.client,
     auth.did,
     documentUri,
-    new Date().toISOString(),
+    createdAt,
   );
+  await mirrorBookmarkSaved(ctx.db, ctx.schema, {
+    cid,
+    createdAt,
+    documentUri,
+    ownerDid: auth.did,
+  });
   return {};
 }
 
@@ -340,6 +375,10 @@ export async function handleUnbookmarkDocument(ctx: XrpcRequestContext) {
   requireScopes(auth, [XRPC_WRITE_SCOPES.bookmark]);
   const documentUri = requireBodyField(ctx.body, "document");
   await deleteBookmarkRecord(auth.client, auth.did, documentUri);
+  await mirrorBookmarkRemoved(ctx.db, ctx.schema, {
+    documentUri,
+    ownerDid: auth.did,
+  });
   return {};
 }
 

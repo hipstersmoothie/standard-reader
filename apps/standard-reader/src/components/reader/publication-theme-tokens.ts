@@ -117,15 +117,15 @@ export const publicationLink = stylex.createTheme(linkColor, {
  */
 export const publicationPageCard = stylex.create({
   card: {
-    backgroundColor: "var(--pub-page-surface, transparent)",
-    // Squircle corners, matching the app's other rounded surfaces.
-    cornerShape: "squircle",
-    borderRadius: "var(--pub-page-radius, 0)",
     // Border width is variable too, so the card adds no box in the default
     // no-canvas case — a transparent 1px border would still eat inner width.
     borderColor: "var(--pub-page-border, transparent)",
+    borderRadius: "var(--pub-page-radius, 0)",
     borderStyle: "solid",
     borderWidth: "var(--pub-page-border-width, 0)",
+    // Squircle corners, matching the app's other rounded surfaces.
+    cornerShape: "squircle",
+    backgroundColor: "var(--pub-page-surface, transparent)",
     boxSizing: "border-box",
     marginBlockEnd: "var(--pub-page-inset, 0)",
     marginBlockStart: "var(--pub-page-inset, 0)",

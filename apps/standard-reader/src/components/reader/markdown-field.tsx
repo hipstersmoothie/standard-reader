@@ -49,32 +49,32 @@ const styles = stylex.create({
   sizeSm: {
     fontSize: fontSize.xs,
     lineHeight: lineHeight.sm,
-    paddingBottom: verticalSpace.xxs,
-    paddingInlineStart: horizontalSpace.md,
     paddingInlineEnd: horizontalSpace.md,
+    paddingInlineStart: horizontalSpace.md,
+    paddingBottom: verticalSpace.xxs,
     paddingTop: verticalSpace.xxs,
   },
   sizeMd: {
     fontSize: fontSize.sm,
     lineHeight: lineHeight.base,
-    paddingBottom: verticalSpace.sm,
-    paddingInlineStart: horizontalSpace.md,
     paddingInlineEnd: horizontalSpace.md,
+    paddingInlineStart: horizontalSpace.md,
+    paddingBottom: verticalSpace.sm,
     paddingTop: verticalSpace.sm,
   },
   sizeLg: {
     fontSize: fontSize.base,
     lineHeight: lineHeight.lg,
-    paddingBottom: verticalSpace.xs,
-    paddingInlineStart: horizontalSpace.xl,
     paddingInlineEnd: horizontalSpace.xl,
+    paddingInlineStart: horizontalSpace.xl,
+    paddingBottom: verticalSpace.xs,
     paddingTop: verticalSpace.xs,
   },
   // Flush the box padding so a borderless (tertiary) field's text lines up with
   // its label instead of indenting past it.
   flush: {
-    paddingInlineStart: 0,
     paddingInlineEnd: 0,
+    paddingInlineStart: 0,
   },
   // A borderless textarea still reserves a 1px border; match it on the preview
   // so toggling Edit/Preview doesn't nudge the text by a pixel.
@@ -91,9 +91,9 @@ const styles = stylex.create({
     marginTop: 0,
   },
   list: {
+    paddingInlineStart: "1.4em",
     marginBottom: { default: "1.4em", ":last-child": 0 },
     marginTop: 0,
-    paddingInlineStart: "1.4em",
   },
   bold: {
     fontWeight: fontWeight.semibold,

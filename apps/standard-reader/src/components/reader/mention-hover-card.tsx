@@ -532,12 +532,12 @@ const styles = stylex.create({
   },
   shell: {
     boxSizing: "border-box",
-    width: "20rem",
+    paddingInlineEnd: horizontalSpace.md,
+    paddingInlineStart: horizontalSpace.md,
     maxWidth: `calc(100vw - ${spacing["6"]})`,
     paddingBottom: verticalSpace.md,
-    paddingInlineStart: horizontalSpace.md,
-    paddingInlineEnd: horizontalSpace.md,
     paddingTop: verticalSpace.md,
+    width: "20rem",
   },
   body: {
     display: "flex",
@@ -570,6 +570,7 @@ const styles = stylex.create({
     minWidth: 0,
   },
   name: {
+    overflow: "hidden",
     color: uiColor.text2,
     display: "block",
     fontFamily: fontFamily.serif,
@@ -577,7 +578,6 @@ const styles = stylex.create({
     fontWeight: fontWeight.medium,
     letterSpacing: tracking.tight,
     lineHeight: lineHeight.sm,
-    overflow: "hidden",
     textOverflow: "ellipsis",
     whiteSpace: "nowrap",
   },
@@ -592,10 +592,15 @@ const styles = stylex.create({
     fontSize: fontSize.xs,
     letterSpacing: tracking.tight,
     textOverflow: "ellipsis",
-    whiteSpace: "nowrap",
     unicodeBidi: "isolate",
+    whiteSpace: "nowrap",
   },
   title: {
+    overflow: "hidden",
+    // eslint-disable-next-line @stylexjs/valid-styles
+    WebkitBoxOrient: "vertical",
+    // eslint-disable-next-line @stylexjs/valid-styles
+    WebkitLineClamp: 2,
     color: uiColor.text2,
     display: "-webkit-box",
     fontFamily: fontFamily.serif,
@@ -603,13 +608,13 @@ const styles = stylex.create({
     fontWeight: fontWeight.medium,
     letterSpacing: tracking.tight,
     lineHeight: lineHeight.sm,
+  },
+  desc: {
     overflow: "hidden",
     // eslint-disable-next-line @stylexjs/valid-styles
     WebkitBoxOrient: "vertical",
     // eslint-disable-next-line @stylexjs/valid-styles
-    WebkitLineClamp: 2,
-  },
-  desc: {
+    WebkitLineClamp: 3,
     color: uiColor.text1,
     display: "-webkit-box",
     fontFamily: fontFamily.sans,
@@ -617,11 +622,6 @@ const styles = stylex.create({
     lineHeight: lineHeight.base,
     marginBottom: 0,
     marginTop: 0,
-    overflow: "hidden",
-    // eslint-disable-next-line @stylexjs/valid-styles
-    WebkitBoxOrient: "vertical",
-    // eslint-disable-next-line @stylexjs/valid-styles
-    WebkitLineClamp: 3,
   },
   stats: {
     color: uiColor.text1,
@@ -640,47 +640,47 @@ const styles = stylex.create({
   },
   // A favicon-sized publication mark that sits inline with the byline meta.
   metaAvatar: {
-    width: "1.1rem",
-    height: "1.1rem",
     flexShrink: 0,
+    height: "1.1rem",
+    width: "1.1rem",
   },
   coverWrap: {
+    overflow: "hidden",
+    marginInlineEnd: `calc(-1 * ${horizontalSpace.md})`,
+    marginInlineStart: `calc(-1 * ${horizontalSpace.md})`,
     height: "7rem",
     marginBottom: verticalSpace.xs,
-    marginInlineStart: `calc(-1 * ${horizontalSpace.md})`,
-    marginInlineEnd: `calc(-1 * ${horizontalSpace.md})`,
     marginTop: `calc(-1 * ${verticalSpace.md})`,
-    overflow: "hidden",
   },
   coverImg: {
     display: "block",
-    height: "100%",
     objectFit: "cover",
+    height: "100%",
     width: "100%",
   },
   footer: {
     alignItems: "center",
     display: "flex",
     justifyContent: "flex-end",
+    marginInlineEnd: `calc(-1 * ${horizontalSpace.md})`,
+    marginInlineStart: `calc(-1 * ${horizontalSpace.md})`,
+    paddingInlineEnd: horizontalSpace.md,
+    paddingInlineStart: horizontalSpace.md,
     borderTopColor: uiColor.border1,
     borderTopStyle: "solid",
     borderTopWidth: 1,
-    marginInlineStart: `calc(-1 * ${horizontalSpace.md})`,
-    marginInlineEnd: `calc(-1 * ${horizontalSpace.md})`,
-    paddingInlineStart: horizontalSpace.md,
-    paddingInlineEnd: horizontalSpace.md,
     paddingTop: verticalSpace.sm,
   },
   actionLink: {
-    alignItems: "center",
     borderRadius: radius.sm,
+    textDecoration: "none",
+    alignItems: "center",
     color: primaryColor.text2,
     columnGap: gap.xs,
     display: "inline-flex",
     fontFamily: fontFamily.sans,
     fontSize: fontSize.sm,
     fontWeight: fontWeight.semibold,
-    textDecoration: "none",
   },
   actionArrow: {
     color: primaryColor.text2,
@@ -701,6 +701,7 @@ const styles = stylex.create({
     paddingTop: verticalSpace.xxs,
   },
   skeletonBar: {
+    borderRadius: radius.xs,
     animationDuration: "1.4s",
     animationIterationCount: "infinite",
     animationName: {
@@ -708,7 +709,6 @@ const styles = stylex.create({
       [mediaQueries.reducedMotion]: "none",
     },
     backgroundColor: uiColor.component1,
-    borderRadius: radius.xs,
     height: "0.7rem",
   },
   skeletonWide: {

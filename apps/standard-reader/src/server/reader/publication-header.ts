@@ -12,8 +12,10 @@ import {
   publicationCardColumns,
   toPublicationCard,
 } from "#/integrations/tanstack-query/api-shapes";
+import { needsSerialResolution } from "#/lib/publication/serial";
 import { publicationFontsFromThemeJson } from "#/server/fonts/publication-fonts.server";
 import { publicationBackgroundImage } from "#/server/reader/publication-background";
+import { ensurePublicationSerial } from "#/server/reader/series";
 
 export interface PublicationHeader {
   publication: PublicationCard;
@@ -44,6 +46,7 @@ export async function selectPublicationHeader(
       ownerDisplayName: pr.displayName,
       ownerDescription: pr.description,
       ownerBannerUrl: pr.bannerUrl,
+      ownerIsBot: pr.isBot,
       themeBackground: p.themeBackground,
       themeForeground: p.themeForeground,
       themeAccent: p.themeAccent,
@@ -58,8 +61,22 @@ export async function selectPublicationHeader(
 
   if (!row) return null;
 
+  // Everything a comic gets — the shelf of covers instead of an archive list,
+  // the redirect into the page-flip reader — hangs off `serial.kind`, and this
+  // is the query the publication page reads it from. So this is where a
+  // publication whose serial columns aren't resolved yet gets resolved: a NULL
+  // direction (indexed before the column existed), or a serial the hourly sweep
+  // hasn't classified, which `resolveSerialPublication` renders as a book and
+  // would otherwise stay one for as long as the sweep took to reach it. A no-op
+  // (one indexed read) once the columns are populated, and never entered at all
+  // for an ordinary blog.
+  const publication = toPublicationCard(row);
+  if (needsSerialResolution(row.prevNextDirection, row.serialKind)) {
+    publication.serial = await ensurePublicationSerial(db, schema, row.uri);
+  }
+
   return {
-    publication: toPublicationCard(row),
+    publication,
     owner: {
       did: row.did,
       handle: row.ownerHandle,
@@ -67,6 +84,7 @@ export async function selectPublicationHeader(
       description: row.ownerDescription,
       avatarUrl: row.ownerAvatarUrl,
       bannerUrl: row.ownerBannerUrl,
+      isBot: row.ownerIsBot ?? false,
     },
     theme: {
       ...publicationThemeFromRow(row),

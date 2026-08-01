@@ -21,20 +21,20 @@ const MOBILE = "@media (max-width: 47.5rem)";
 export const legalPageStyles = stylex.create({
   root: {
     boxSizing: "border-box",
-    marginInlineStart: "auto",
     marginInlineEnd: "auto",
-    maxWidth: "40rem",
-    paddingBottom: {
-      [MOBILE]: spacing["20"],
-      default: spacing["20"],
+    marginInlineStart: "auto",
+    paddingInlineEnd: {
+      [MOBILE]: horizontalSpace["3xl"],
+      default: horizontalSpace["3xl"],
     },
     paddingInlineStart: {
       [MOBILE]: horizontalSpace["3xl"],
       default: horizontalSpace["3xl"],
     },
-    paddingInlineEnd: {
-      [MOBILE]: horizontalSpace["3xl"],
-      default: horizontalSpace["3xl"],
+    maxWidth: "40rem",
+    paddingBottom: {
+      [MOBILE]: spacing["20"],
+      default: spacing["20"],
     },
     paddingTop: {
       [MOBILE]: verticalSpace["7xl"],
@@ -85,9 +85,9 @@ export const legalPageStyles = stylex.create({
     marginTop: verticalSpace.none,
   },
   list: {
+    paddingInlineStart: horizontalSpace["4xl"],
     marginBottom: spacing["5"],
     marginTop: verticalSpace.none,
-    paddingInlineStart: horizontalSpace["4xl"],
   },
   listItem: {
     marginBottom: verticalSpace.lg,
@@ -117,13 +117,13 @@ export const legalPageStyles = stylex.create({
     backgroundColor: "transparent",
     color: primaryColor.text2,
     cursor: "pointer",
+    paddingInlineEnd: horizontalSpace.none,
+    paddingInlineStart: horizontalSpace.none,
     textDecorationColor: primaryColor.component3,
     textDecorationLine: "underline",
     textDecorationThickness: "2px",
     textUnderlineOffset: spacing["1"],
     paddingBottom: verticalSpace.none,
-    paddingInlineStart: horizontalSpace.none,
-    paddingInlineEnd: horizontalSpace.none,
     paddingTop: verticalSpace.none,
   },
 });

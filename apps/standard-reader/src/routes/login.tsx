@@ -134,14 +134,14 @@ const styles = stylex.create({
     paddingBottom: verticalSpace["lg"],
   },
   backButton: {
-    position: "absolute",
     insetInlineStart: horizontalSpace["3xl"],
+    position: "absolute",
     top: verticalSpace["3xl"],
   },
   legalLinks: {
-    paddingBottom: verticalSpace["4xl"],
-    paddingInlineStart: horizontalSpace["3xl"],
     paddingInlineEnd: horizontalSpace["3xl"],
+    paddingInlineStart: horizontalSpace["3xl"],
+    paddingBottom: verticalSpace["4xl"],
     paddingTop: verticalSpace["3xl"],
   },
 });

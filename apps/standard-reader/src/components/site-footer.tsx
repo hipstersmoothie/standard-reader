@@ -22,6 +22,14 @@ const dockClearance = `calc(max(env(safe-area-inset-bottom, 0px), ${verticalSpac
 
 const styles = stylex.create({
   footer: {
+    paddingInlineEnd: {
+      default: horizontalSpace["3xl"],
+      [containerBreakpoints.sm]: horizontalSpace["6xl"],
+    },
+    paddingInlineStart: {
+      default: horizontalSpace["3xl"],
+      [containerBreakpoints.sm]: horizontalSpace["6xl"],
+    },
     borderTopColor: uiColor.border1,
     borderTopStyle: "solid",
     borderTopWidth: 1,
@@ -30,14 +38,6 @@ const styles = stylex.create({
       default: `calc(${dockClearance} + ${verticalSpace["7xl"]})`,
       [containerBreakpoints.sm]: `calc(${dockClearance} + ${verticalSpace["8xl"]})`,
       [DESKTOP]: verticalSpace["8xl"],
-    },
-    paddingInlineStart: {
-      default: horizontalSpace["3xl"],
-      [containerBreakpoints.sm]: horizontalSpace["6xl"],
-    },
-    paddingInlineEnd: {
-      default: horizontalSpace["3xl"],
-      [containerBreakpoints.sm]: horizontalSpace["6xl"],
     },
     paddingTop: verticalSpace["5xl"],
   },

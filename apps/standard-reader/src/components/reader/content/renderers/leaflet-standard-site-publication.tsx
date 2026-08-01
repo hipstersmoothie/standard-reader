@@ -182,22 +182,22 @@ function PublicationCardSkeleton() {
 
 const styles = stylex.create({
   card: {
-    alignItems: "flex-start",
-    backgroundColor: `var(--pub-card-bg, ${uiColor.component1})`,
+    padding: spacing["4"],
     borderColor: `var(--pub-card-border, ${uiColor.border1})`,
     borderRadius: radius.md,
     borderStyle: "solid",
     borderWidth: 1,
-    columnGap: gap.md,
     cornerShape: "squircle",
-    display: "flex",
-    marginBottom: spacing["6"],
-    marginTop: spacing["0"],
-    padding: spacing["4"],
     textDecoration: "none",
+    alignItems: "flex-start",
+    backgroundColor: `var(--pub-card-bg, ${uiColor.component1})`,
+    columnGap: gap.md,
+    display: "flex",
     transitionDuration: animationDuration.default,
     transitionProperty: "background-color",
     transitionTimingFunction: "ease",
+    marginBottom: spacing["6"],
+    marginTop: spacing["0"],
   },
   cardHovered: {
     backgroundColor: `var(--pub-card-bg-hover, ${uiColor.component2})`,
@@ -209,8 +209,8 @@ const styles = stylex.create({
     display: "flex",
     flexDirection: "column",
     flexGrow: 1,
-    minWidth: 0,
     rowGap: spacing["1"],
+    minWidth: 0,
   },
   name: {
     color: `var(--pub-card-title, ${primaryColor.text2})`,
@@ -222,6 +222,11 @@ const styles = stylex.create({
     marginTop: spacing["0"],
   },
   description: {
+    overflow: "hidden",
+    // eslint-disable-next-line @stylexjs/valid-styles
+    WebkitBoxOrient: "vertical",
+    // eslint-disable-next-line @stylexjs/valid-styles
+    WebkitLineClamp: 3,
     color: `var(--pub-card-text, ${uiColor.text1})`,
     display: "-webkit-box",
     fontFamily: fontFamily.sans,
@@ -229,11 +234,6 @@ const styles = stylex.create({
     lineHeight: lineHeight.base,
     marginBottom: spacing["0"],
     marginTop: spacing["0"],
-    overflow: "hidden",
-    // eslint-disable-next-line @stylexjs/valid-styles
-    WebkitBoxOrient: "vertical",
-    // eslint-disable-next-line @stylexjs/valid-styles
-    WebkitLineClamp: 3,
   },
   byline: {
     color: `var(--pub-card-muted, ${uiColor.text1})`,

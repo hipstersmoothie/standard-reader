@@ -32,17 +32,18 @@ import { articleMeasureStyle } from "./content/body-styles";
 import { articleCardReadingText } from "./content/extract-text";
 import { documentLinkParams, readingMinutes } from "./format";
 import { SectionHead } from "./primitives";
+import { SeriesUpNext } from "./series-up-next";
 import { useArticleExtras } from "./use-article-extras";
 
 const styles = stylex.create({
   moreFrom: {
     boxSizing: "border-box",
-    marginInlineStart: "auto",
     marginInlineEnd: "auto",
+    marginInlineStart: "auto",
+    paddingInlineEnd: spacing["6"],
+    paddingInlineStart: spacing["6"],
     // Trimmed inside a publication page card, which supplies its own margin.
     paddingBottom: `var(--pub-page-content-bottom, ${spacing["20"]})`,
-    paddingInlineStart: spacing["6"],
-    paddingInlineEnd: spacing["6"],
     width: "100%",
   },
   moreRow: {
@@ -59,15 +60,15 @@ const styles = stylex.create({
     paddingTop: spacing["3"],
   },
   moreTitle: {
-    // Single-line NAME/TITLE in a UI row: isolate for correct character
-    // ordering, but let alignment follow the surrounding UI (right under
-    // RTL). `dir="auto"` here would left-align it and break the column.
-    unicodeBidi: "isolate",
     color: uiColor.text2,
     fontFamily: fontFamily.serif,
     fontSize: fontSize.lg,
     fontWeight: fontWeight.medium,
     lineHeight: lineHeight.sm,
+    // Single-line NAME/TITLE in a UI row: isolate for correct character
+    // ordering, but let alignment follow the surrounding UI (right under
+    // RTL). `dir="auto"` here would left-align it and break the column.
+    unicodeBidi: "isolate",
   },
   bylineMeta: {
     color: uiColor.text2,
@@ -372,6 +373,11 @@ export function ArticleBelowFold({
 
   return (
     <>
+      {/* A serial's next issue comes before the generic rails: on a publication
+          that reads front-to-back, continuing the story is the only thing the
+          reader is likely to want next. */}
+      {pub?.serial ? <SeriesUpNext documentUri={article.uri} /> : null}
+
       {pub && extras ? (
         <MoreFromSection pub={pub} moreFrom={extras.moreFrom} />
       ) : null}

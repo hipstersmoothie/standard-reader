@@ -337,4 +337,16 @@ describe("actorLinkIdent", () => {
     expect(actorLinkIdent("/u/did:plc:abc123")).toBe("did:plc:abc123");
     expect(actorLinkIdent("/u/alice.bsky.social")).toBe("alice.bsky.social");
   });
+
+  it("treats alternate Bluesky clients the same as bsky.app", () => {
+    expect(
+      actorLinkIdent("https://witchsky.app/profile/did:plc:d4t4psds4x5z"),
+    ).toBe("did:plc:d4t4psds4x5z");
+    expect(actorLinkIdent("https://mu.social/profile/alice.bsky.social")).toBe(
+      "alice.bsky.social",
+    );
+    expect(
+      actorLinkIdent("https://witchsky.app/profile/did:plc:vpk/feed/infreq"),
+    ).toBeNull();
+  });
 });

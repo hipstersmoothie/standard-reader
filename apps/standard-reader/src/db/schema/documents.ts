@@ -63,6 +63,14 @@ export const documents = pgTable(
      * so un-backfilled rows keep the prior in-app routing until recomputed. */
     hasRenderableBody: boolean("has_renderable_body").notNull().default(true),
 
+    /** App-derived: how many images this document's body renders, in reading
+     * order (see `#/lib/document/images`). The comic reader flattens a serial
+     * publication's documents into one continuous page list, and absolute page
+     * numbering needs each document's length *without* loading every body — this
+     * is that number. NULL means "not derived yet"; the comic spine fills it on
+     * demand and persists it. */
+    bodyImageCount: integer("body_image_count"),
+
     /** `coverImage` blob (the hero/thumbnail). Raw ref (CID); the browser URL
      *  is derived at read time via `cdnImageUrl(did, cid)` — see api-shapes.ts. */
     coverImageCid: text("cover_image_cid"),

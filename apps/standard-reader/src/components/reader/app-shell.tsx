@@ -111,29 +111,29 @@ const DESKTOP = "@media (min-width: 60rem)";
 
 const styles = stylex.create({
   shell: {
-    display: "flex",
-    flexDirection: "row",
     // Fill the viewport when content is short, grow past it when tall — the
     // document is the scroll container now. `flex-start` keeps children pinned
     // to the top so the sticky sidebar stays viewport-tall in a taller shell
     // instead of stretching to the full document height.
     alignItems: "flex-start",
+    display: "flex",
+    flexDirection: "row",
     minHeight: stylex.firstThatWorks("100dvh", "100vh"),
   },
   sidebar: {
+    // The sidebar itself doesn't scroll; its inner region does, so the foot
+    // stays pinned outside the scrollport and content never hides behind it.
+    overflow: "hidden",
     backgroundColor: uiColor.bgSubtle,
+    borderInlineEndColor: uiColor.border1,
+    borderInlineEndStyle: "solid",
+    borderInlineEndWidth: 1,
     boxSizing: "border-box",
     display: { [DESKTOP]: "flex", default: "none" },
     flexDirection: "column",
     flexShrink: 0,
     position: "sticky",
-    borderInlineEndColor: uiColor.border1,
-    borderInlineEndStyle: "solid",
-    borderInlineEndWidth: 1,
     height: stylex.firstThatWorks("100dvh", "100vh"),
-    // The sidebar itself doesn't scroll; its inner region does, so the foot
-    // stays pinned outside the scrollport and content never hides behind it.
-    overflow: "hidden",
     top: 0,
     // rem, not px: the appearance text-size dial scales the root font size, and
     // a sidebar pinned in px would keep its width while the labels inside it
@@ -146,29 +146,29 @@ const styles = stylex.create({
     flexDirection: "column",
     flexGrow: 1,
     flexShrink: 1,
+    paddingInlineEnd: horizontalSpace["3xl"],
+    paddingInlineStart: horizontalSpace["3xl"],
     minHeight: 0,
     overflowY: "auto",
-    paddingInlineStart: horizontalSpace["3xl"],
-    paddingInlineEnd: horizontalSpace["3xl"],
     paddingTop: verticalSpace["8xl"],
   },
   brandLink: {
+    borderRadius: radius.sm,
+    outline: {
+      default: "none",
+      ":is([data-focus-visible])": `2px solid ${focusColor.ring}`,
+    },
     textDecoration: "none",
     // Hug the wordmark so the focus ring is tight to it, not a full-width box
     // wrapping empty space.
     alignItems: "center",
     display: "inline-flex",
-    width: "fit-content",
-    borderRadius: radius.sm,
-    paddingTop: verticalSpace.xxs,
-    paddingBottom: verticalSpace.xxs,
-    paddingInlineStart: horizontalSpace.xs,
-    paddingInlineEnd: horizontalSpace.xs,
-    outline: {
-      default: "none",
-      ":is([data-focus-visible])": `2px solid ${focusColor.ring}`,
-    },
     outlineOffset: "2px",
+    paddingInlineEnd: horizontalSpace.xs,
+    paddingInlineStart: horizontalSpace.xs,
+    paddingBottom: verticalSpace.xxs,
+    paddingTop: verticalSpace.xxs,
+    width: "fit-content",
   },
   brandSidebar: {
     // Left-align in the sidebar's column flow; only relevant here — in the
@@ -187,29 +187,29 @@ const styles = stylex.create({
   },
   navItem: {
     borderRadius: radius.sm,
-    textDecoration: "none",
-    alignItems: "center",
-    backgroundColor: {
-      default: "transparent",
-      ":hover": uiColor.component2,
-    },
     // Inset ring: the sidebar scroll container clips an outset outline at its
     // content edge, so draw the ring inside the row where it can't be cut off.
     outline: {
       default: "none",
       ":is([data-focus-visible])": `2px solid ${focusColor.ring}`,
     },
-    outlineOffset: "-2px",
+    textDecoration: "none",
+    alignItems: "center",
+    backgroundColor: {
+      default: "transparent",
+      ":hover": uiColor.component2,
+    },
     color: uiColor.text2,
     columnGap: gap.xl,
     display: "flex",
     fontFamily: fontFamily.sans,
     fontSize: fontSize.sm,
     fontWeight: fontWeight.medium,
+    outlineOffset: "-2px",
+    paddingInlineEnd: horizontalSpace.lg,
+    paddingInlineStart: horizontalSpace.lg,
     rowGap: gap.xl,
     paddingBottom: verticalSpace.lg,
-    paddingInlineStart: horizontalSpace.lg,
-    paddingInlineEnd: horizontalSpace.lg,
     paddingTop: verticalSpace.lg,
   },
   navItemActive: {
@@ -228,9 +228,9 @@ const styles = stylex.create({
     color: primaryColor.text2,
     fontFamily: fontFamily.mono,
     fontSize: "0.7rem",
-    paddingBottom: verticalSpace.none,
-    paddingInlineStart: horizontalSpace.md,
     paddingInlineEnd: horizontalSpace.md,
+    paddingInlineStart: horizontalSpace.md,
+    paddingBottom: verticalSpace.none,
     paddingTop: verticalSpace.none,
   },
   sideLabel: {
@@ -240,10 +240,10 @@ const styles = stylex.create({
     fontSize: "0.65rem",
     fontWeight: fontWeight.semibold,
     letterSpacing: tracking.widest,
+    paddingInlineEnd: horizontalSpace.lg,
+    paddingInlineStart: horizontalSpace.lg,
     textTransform: "uppercase",
     paddingBottom: verticalSpace.md,
-    paddingInlineStart: horizontalSpace.lg,
-    paddingInlineEnd: horizontalSpace.lg,
     paddingTop: verticalSpace["3xl"],
   },
   /** Inherits the label's type; only the hover/current affordance is its own. */
@@ -285,16 +285,16 @@ const styles = stylex.create({
     fontFamily: fontFamily.serif,
     fontSize: fontSize.sm,
     fontStyle: "italic",
-    paddingInlineStart: horizontalSpace.lg,
     paddingInlineEnd: horizontalSpace.lg,
+    paddingInlineStart: horizontalSpace.lg,
   },
   subscriptionsLoading: {
     gap: gap.sm,
     display: "flex",
     flexDirection: "column",
-    minHeight: spacing["24"],
-    paddingInlineStart: horizontalSpace.lg,
     paddingInlineEnd: horizontalSpace.lg,
+    paddingInlineStart: horizontalSpace.lg,
+    minHeight: spacing["24"],
   },
   foot: {
     backgroundColor: uiColor.bgSubtle,
@@ -304,9 +304,9 @@ const styles = stylex.create({
     display: "flex",
     flexDirection: "column",
     flexShrink: 0,
-    rowGap: gap.xl,
-    paddingInlineStart: horizontalSpace["3xl"],
     paddingInlineEnd: horizontalSpace["3xl"],
+    paddingInlineStart: horizontalSpace["3xl"],
+    rowGap: gap.xl,
     paddingBottom: verticalSpace["3xl"],
     paddingTop: verticalSpace["3xl"],
   },
@@ -316,6 +316,10 @@ const styles = stylex.create({
     columnGap: gap.lg,
     display: { [DESKTOP]: "none", default: "grid" },
     flexShrink: 0,
+    gridTemplateColumns: `${size.lg} 1fr ${size.lg}`,
+    justifyContent: "space-between",
+    paddingInlineEnd: horizontalSpace["3xl"],
+    paddingInlineStart: horizontalSpace["3xl"],
     // Only bites once `useAnimatedNavbar` makes the bar sticky: it then has to
     // clear positioned page content (cards, topic chips) but stay under the
     // floating dock — and under a view's own sticky header (article-view's
@@ -324,14 +328,10 @@ const styles = stylex.create({
     // round either way; losing the tie means a stray half-pixel of this bar
     // hides behind that header instead of clipping its top edge.
     zIndex: 15,
-    gridTemplateColumns: `${size.lg} 1fr ${size.lg}`,
-    justifyContent: "space-between",
     borderBottomColor: uiColor.border1,
     borderBottomStyle: "solid",
     borderBottomWidth: 1,
     paddingBottom: verticalSpace.xl,
-    paddingInlineStart: horizontalSpace["3xl"],
-    paddingInlineEnd: horizontalSpace["3xl"],
     paddingTop: `calc(env(safe-area-inset-top, 0px) + ${verticalSpace.xl})`,
   },
   mobileDetailTitle: {
@@ -348,14 +348,14 @@ const styles = stylex.create({
     display: "flex",
     flexDirection: "column",
     flexGrow: 1,
-    position: "relative",
-    minWidth: 0,
-    // Keep the content column at least viewport-tall so the footer sits at the
-    // bottom of the screen on short pages instead of floating mid-viewport.
-    minHeight: stylex.firstThatWorks("100dvh", "100vh"),
     // Focused only as the skip-link landing target (tabIndex={-1}); a ring
     // around the whole content region would be noise, not a wayfinding cue.
     outlineStyle: "none",
+    position: "relative",
+    // Keep the content column at least viewport-tall so the footer sits at the
+    // bottom of the screen on short pages instead of floating mid-viewport.
+    minHeight: stylex.firstThatWorks("100dvh", "100vh"),
+    minWidth: 0,
   },
   scroller: {
     // Content column — no longer a scroll container (the document scrolls).
@@ -381,15 +381,15 @@ const styles = stylex.create({
     backgroundColor: uiColor.bg,
     display: { [DESKTOP]: "none", default: "flex" },
     flexShrink: 0,
+    justifyContent: "space-between",
+    paddingInlineEnd: horizontalSpace["3xl"],
+    paddingInlineStart: horizontalSpace["3xl"],
     // See `mobileDetailBar` — matters only while the bar is stuck to the top.
     zIndex: 15,
-    justifyContent: "space-between",
     borderBottomColor: uiColor.border1,
     borderBottomStyle: "solid",
     borderBottomWidth: 1,
     paddingBottom: verticalSpace.xl,
-    paddingInlineStart: horizontalSpace["3xl"],
-    paddingInlineEnd: horizontalSpace["3xl"],
     paddingTop: `calc(env(safe-area-inset-top, 0px) + ${verticalSpace.xl})`,
   },
   mobileBarActions: {
@@ -407,6 +407,10 @@ const styles = stylex.create({
     alignItems: "center",
     display: "flex",
     flexDirection: "column",
+    insetInlineEnd: 0,
+    insetInlineStart: { [DESKTOP]: "264px", default: 0 },
+    paddingInlineEnd: horizontalSpace["3xl"],
+    paddingInlineStart: horizontalSpace["3xl"],
     pointerEvents: "none",
     // Pinned to the viewport (the document is the scroll container now, so an
     // absolute dock would ride to the bottom of the whole article instead of
@@ -422,10 +426,6 @@ const styles = stylex.create({
     // floor keeps the pill off the very bottom edge. `max()` — not env()'s
     // second arg, which only applies when env() is entirely unsupported.
     bottom: `max(env(safe-area-inset-bottom, 0px), ${verticalSpace["3xl"]})`,
-    insetInlineStart: { [DESKTOP]: "264px", default: 0 },
-    paddingInlineStart: horizontalSpace["3xl"],
-    paddingInlineEnd: horizontalSpace["3xl"],
-    insetInlineEnd: 0,
   },
   bottomNav: {
     display: { [DESKTOP]: "none", default: "flex" },
@@ -491,14 +491,14 @@ const styles = stylex.create({
     flexGrow: 0,
     flexShrink: 0,
     justifyContent: "center",
+    paddingInlineEnd: horizontalSpace.xl,
+    paddingInlineStart: horizontalSpace.xl,
     position: "relative",
     transitionDuration: animationDuration.verySlow,
     transitionProperty: "color",
     transitionTimingFunction: "ease",
     zIndex: 1,
     height: spacing["12"],
-    paddingInlineStart: horizontalSpace.xl,
-    paddingInlineEnd: horizontalSpace.xl,
   },
   bottomItemActive: { color: primaryColor.textContrast },
   bottomIconWrap: {
@@ -514,26 +514,26 @@ const styles = stylex.create({
     fontSize: fontSize.sm,
     fontWeight: fontWeight.semibold,
     letterSpacing: tracking.wide,
+    marginInlineStart: 0,
     opacity: 0,
     transitionDuration: animationDuration.slow,
     transitionProperty: "opacity",
     transitionTimingFunction: "ease",
     whiteSpace: "nowrap",
-    marginInlineStart: 0,
     maxWidth: 0,
   },
   bottomLabelActive: {
-    opacity: 1,
     marginInlineStart: horizontalSpace.md,
+    opacity: 1,
     maxWidth: spacing["24"],
   },
   unreadDot: {
     borderRadius: radius.full,
     backgroundColor: primaryColor.solid1,
     boxShadow: `0 0 0 2px ${uiColor.bg}`,
+    insetInlineEnd: `calc(-1 * ${spacing["1"]})`,
     position: "absolute",
     height: spacing["2"],
-    insetInlineEnd: `calc(-1 * ${spacing["1"]})`,
     top: `calc(-1 * ${spacing["1"]})`,
     width: spacing["2"],
   },

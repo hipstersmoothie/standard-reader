@@ -26,18 +26,18 @@ const styles = stylex.create({
   },
   nav: {
     boxSizing: "border-box",
-    marginInlineStart: "auto",
     marginInlineEnd: "auto",
-    maxWidth: "var(--page-content-max-width)",
-    paddingBottom: verticalSpace["2xl"],
-    paddingInlineStart: {
-      default: horizontalSpace["3xl"],
-      [containerBreakpoints.sm]: horizontalSpace["6xl"],
-    },
+    marginInlineStart: "auto",
     paddingInlineEnd: {
       default: horizontalSpace["3xl"],
       [containerBreakpoints.sm]: horizontalSpace["6xl"],
     },
+    paddingInlineStart: {
+      default: horizontalSpace["3xl"],
+      [containerBreakpoints.sm]: horizontalSpace["6xl"],
+    },
+    maxWidth: "var(--page-content-max-width)",
+    paddingBottom: verticalSpace["2xl"],
     paddingTop: verticalSpace["2xl"],
     width: "100%",
   },

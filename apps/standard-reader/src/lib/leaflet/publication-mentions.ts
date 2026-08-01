@@ -1,3 +1,4 @@
+import { bskyClientProfileIdent } from "#/lib/atproto/bsky-clients";
 import { STANDARD_NSID } from "#/lib/atproto/nsids";
 import { normalizeAuthorRef } from "#/lib/author-profile";
 
@@ -109,56 +110,34 @@ export function mentionUrlKey(url: string): string {
   return `url:${normalizeMentionUrl(url)}`;
 }
 
-const BSKY_PROFILE_HOSTS = new Set(["bsky.app", "staging.bsky.app"]);
-
 /**
  * If a `#link` facet's target is a *user profile*, return the user's ident
  * (handle or DID) so the segment can render as an actor mention (avatar chip +
  * hovercard, linking in-app to `/u/$did`) instead of a bare off-site link.
  * Recognizes an in-app author path (`/u/<handle-or-did>`, relative) and a bare
- * Bluesky profile link (`bsky.app/profile/<handle-or-did>`). Returns null for
- * any other link.
+ * profile link on any Bluesky web client (`bsky.app/profile/<handle-or-did>`
+ * and its forks — see {@link parseBskyClientUrl}). Returns null for any other
+ * link.
+ *
+ * ONLY a bare profile counts as a person reference. A post
+ * (`/profile/<ident>/post/…`), list, or feed is about that object, not a
+ * mention of its owner — those render as embeds instead.
  */
 export function actorLinkIdent(uri: string): string | null {
   const trimmed = uri.trim();
   if (!trimmed) return null;
 
-  let host: string | null = null;
-  let pathname = trimmed;
   if (/^https?:\/\//i.test(trimmed)) {
-    try {
-      const url = new URL(trimmed);
-      host = url.hostname.toLowerCase();
-      pathname = url.pathname;
-    } catch {
-      return null;
-    }
-  } else {
-    // Relative path: drop any query/hash before matching.
-    pathname = trimmed.split(/[?#]/)[0] ?? trimmed;
-  }
-
-  if (host && BSKY_PROFILE_HOSTS.has(host)) {
-    // ONLY a bare profile counts as a person reference. A post
-    // (`/profile/<ident>/post/…`), list, or feed is about that object, not a
-    // mention of its owner — keep it a plain link to the original.
-    const match = /^\/profile\/([^/]+)\/?$/.exec(pathname);
-    if (match?.[1]) {
-      const ident = normalizeAuthorRef(decodeURIComponent(match[1]));
-      // A handle needs a dot; a DID is taken verbatim. Guards against
-      // `/profile/` junk resolving to a bogus mention.
-      if (ident.startsWith("did:") || ident.includes(".")) return ident;
-    }
-    return null;
+    const ident = bskyClientProfileIdent(trimmed);
+    return ident ? normalizeAuthorRef(ident) || null : null;
   }
 
   // Only trust a relative `/u/<ident>` path (single segment) — a full off-site
   // URL that happens to carry a `/u/` segment is not our profile route.
-  if (host === null) {
-    const match = /^\/u\/([^/]+)\/?$/.exec(pathname);
-    if (match?.[1])
-      return normalizeAuthorRef(decodeURIComponent(match[1])) || null;
-  }
+  const pathname = trimmed.split(/[?#]/)[0] ?? trimmed;
+  const match = /^\/u\/([^/]+)\/?$/.exec(pathname);
+  if (match?.[1])
+    return normalizeAuthorRef(decodeURIComponent(match[1])) || null;
   return null;
 }
 

@@ -7,7 +7,7 @@ import { index, integer, pgTable, text } from "drizzle-orm/pg-core";
  * — via an explicit `publications.topic` OR any of the publication's document
  * tags — which is exactly how many a reader reaches by selecting the chip.
  *
- * Rebuilt each sweep by `recomputeTopics()`. Reading from this table keeps the
+ * Rebuilt each sweep by `recomputeTopicCounts()`. Reading from this table keeps the
  * Discover request path off a ~2s network-wide `unnest(tags)` aggregation; the
  * cron already scans every tag to derive per-publication dominant topics, so
  * populating this is near-free marginal work.

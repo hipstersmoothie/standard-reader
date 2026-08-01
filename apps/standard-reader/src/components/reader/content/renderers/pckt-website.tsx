@@ -2,22 +2,25 @@
 
 import * as stylex from "@stylexjs/stylex";
 
+import { parseBskyClientUrl } from "#/lib/atproto/bsky-clients";
 import { normalizeImageAlt } from "#/lib/document/structured-content/image";
 import type { PcktWebsiteBlock } from "#/lib/pckt/types";
 
 import { articleBodyStyles } from "../body-styles";
+import { BskyClientEmbedView } from "./shared/bsky-client-embed";
 import { WebsiteCardBody } from "./structured-views";
 
 export function PcktWebsiteBlockView({ block }: { block: PcktWebsiteBlock }) {
-  if (!block.src) return null;
+  const src = block.src;
+  if (!src) return null;
 
   const title = block.title?.trim();
   const description = block.description?.trim();
   const previewImage = block.previewImage?.trim();
 
-  return (
+  const card = (
     <a
-      href={block.src}
+      href={src}
       target="_blank"
       rel="noreferrer"
       {...stylex.props(articleBodyStyles.websiteCard)}
@@ -34,4 +37,13 @@ export function PcktWebsiteBlockView({ block }: { block: PcktWebsiteBlock }) {
       <WebsiteCardBody title={title} description={description} />
     </a>
   );
+
+  const clientRef = parseBskyClientUrl(src);
+  if (clientRef) {
+    return (
+      <BskyClientEmbedView url={src} clientRef={clientRef} fallback={card} />
+    );
+  }
+
+  return card;
 }

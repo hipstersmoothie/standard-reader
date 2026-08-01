@@ -22,15 +22,6 @@ export const ingestConfig = {
   },
 
   /**
-   * Optional second tap instance signaled on `app.standard-reader.labeler.service`
-   * (`TAP_LABELER_API_URL`) so repos that register a labeler get tracked and
-   * their records indexed. Shares `TAP_ADMIN_PASSWORD`.
-   */
-  get tapLabelerApiUrl(): string | null {
-    return process.env.TAP_LABELER_API_URL ?? null;
-  },
-
-  /**
    * Optional third tap instance signaled on `site.standard.document`
    * (`TAP_DOCS_API_URL`) so repos that publish documents without a publication
    * record ("loose documents", e.g. Leaflet-hosted) get tracked + backfilled.
@@ -38,6 +29,28 @@ export const ingestConfig = {
    */
   get tapDocsApiUrl(): string | null {
     return process.env.TAP_DOCS_API_URL ?? null;
+  },
+
+  /**
+   * Optional tap instance dedicated to **bridged** repos — Bridgy Fed's
+   * `*.brid.gy` mirrors (`TAP_BRIDGE_API_URL`). Shares `TAP_ADMIN_PASSWORD`.
+   *
+   * Bridged repos are bulk by nature: one bridge can carry tens of thousands of
+   * sites with thousands of posts each, and adding them to the main tap put
+   * every publisher and reader behind that backlog *inside tap's resyncer* —
+   * repos sat weeks behind their PDS while tap still reported them healthy.
+   * That queue is per tap instance, which is exactly why the split has to be a
+   * separate instance rather than just separate handling on our side: a second
+   * tap gets its own resync queue and its own volume, so a bridge backfill can
+   * only ever delay other bridged repos.
+   *
+   * When this is set, bridged repos are welcome — they route here instead of
+   * being turned away (see `#/lib/atproto/bridged-repo`). When it is unset
+   * there is no isolated lane to put them in, so the bulk web bridge stays
+   * excluded. Configuring this env var is what turns Bridgy fully back on.
+   */
+  get tapBridgeApiUrl(): string | null {
+    return process.env.TAP_BRIDGE_API_URL ?? null;
   },
 
   /** Basic-auth admin password for tap (`TAP_ADMIN_PASSWORD`), if configured. */

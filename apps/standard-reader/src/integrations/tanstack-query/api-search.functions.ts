@@ -10,6 +10,7 @@ import { STANDARD_NSID } from "#/lib/atproto/nsids";
 import { parseInternalRoute } from "#/lib/internal-route";
 import { getPublicUrl } from "#/lib/public-url";
 import { withoutExcludedPublications } from "#/lib/publication/exclusions";
+import { resolveSerialPublication } from "#/lib/publication/serial";
 import { blobCid, cdnImageUrl } from "#/server/atproto/blob";
 import { listRepoRecords } from "#/server/atproto/fetch-record";
 import { resolveIdentity } from "#/server/atproto/identity";
@@ -677,6 +678,7 @@ async function listRepoPublications(
           topic: null,
           verified: false,
           hiddenFromDiscover: false,
+          serial: null,
           subscriberCount: 0,
           documentCount: 0,
           lastDocumentAt: null,
@@ -695,6 +697,13 @@ async function listRepoPublications(
         topic: null,
         verified: false,
         hiddenFromDiscover: record.preferences?.showInDiscover === false,
+        // Read straight off the record — this card is built from the repo (a
+        // publication not yet in the read model), so there is no derived
+        // `serial_kind` to pair with the publisher's declaration yet.
+        serial: resolveSerialPublication(
+          record.preferences?.prevNextDirection,
+          null,
+        ),
         subscriberCount: 0,
         documentCount: 0,
         lastDocumentAt: null,

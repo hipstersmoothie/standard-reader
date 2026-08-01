@@ -6,7 +6,10 @@ import { and, eq } from "drizzle-orm";
 import { db } from "#/db/index.server";
 import * as schema from "#/db/schema";
 import { AUTH_SESSION_TOKEN_COOKIE } from "#/integrations/auth/constants";
-import { hasEmailScope } from "#/integrations/auth/scope";
+import {
+  hasBskyPreferencesScope,
+  hasEmailScope,
+} from "#/integrations/auth/scope";
 import {
   fetchBlueskyPublicProfileFields,
   shouldApplyBlueskyAvatarFromPublicUrl,
@@ -193,6 +196,27 @@ export async function handleAtprotoOAuthCallback(args: {
         }
       } catch (error) {
         console.warn("Failed to send digest welcome email on callback:", error);
+      }
+    }
+
+    // Port the reader's Bluesky labeler subscriptions, so their moderation setup
+    // is already in place when they land. Kicked off here and deliberately **not
+    // awaited**: each labeler costs a DID-document fetch, two repo reads and a
+    // PDS write, which added tens of seconds to sign-in when it ran inline. The
+    // scheduler owns the scope check and the one-shot stamp, and the signed-in
+    // shell read re-triggers it, so a reader whose import hasn't finished (or
+    // never started) still gets it without another login.
+    if (hasBskyPreferencesScope(grantedScope)) {
+      try {
+        const { scheduleBskyLabelerImport } =
+          await import("#/server/labeler/import-bsky.server");
+        scheduleBskyLabelerImport(
+          new Client({ handler: oauthSession }),
+          userId,
+          did,
+        );
+      } catch (error) {
+        console.warn("Failed to schedule Bluesky labeler import:", error);
       }
     }
 

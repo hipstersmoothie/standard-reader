@@ -34,7 +34,7 @@ import {
   redirect,
   useNavigate,
 } from "@tanstack/react-router";
-import { ExternalLink, ListPlus, Settings } from "lucide-react";
+import { Bot, ExternalLink, ListPlus, Settings } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 import { Link as AriaLink } from "react-aria-components";
 import { z } from "zod";
@@ -64,6 +64,7 @@ import {
   siteSocialMeta,
 } from "#/lib/site-metadata";
 
+import { AccountLabels } from "../components/reader/account-labels";
 import { AddToListButton } from "../components/reader/add-to-list-button";
 import { AuthorProfileLink } from "../components/reader/author-profile-link";
 import { ArticleRow, PubDirectoryRow } from "../components/reader/cards";
@@ -184,19 +185,19 @@ const styles = stylex.create({
     boxSizing: "border-box",
     display: "flex",
     flexDirection: "column",
-    rowGap: spacing["4"],
-    marginInlineStart: "auto",
     marginInlineEnd: "auto",
+    marginInlineStart: "auto",
+    paddingInlineEnd: {
+      [HERO_DESKTOP]: spacing["10"],
+      default: spacing["5"],
+    },
+    paddingInlineStart: {
+      [HERO_DESKTOP]: spacing["10"],
+      default: spacing["5"],
+    },
+    rowGap: spacing["4"],
     maxWidth: "82.5rem",
     paddingBottom: spacing["4"],
-    paddingInlineStart: {
-      default: spacing["5"],
-      [HERO_DESKTOP]: spacing["10"],
-    },
-    paddingInlineEnd: {
-      default: spacing["5"],
-      [HERO_DESKTOP]: spacing["10"],
-    },
     paddingTop: spacing["6"],
     width: "100%",
   },
@@ -208,8 +209,8 @@ const styles = stylex.create({
     rowGap: spacing["3"],
   },
   avatarWrap: {
-    flexShrink: 0,
     alignSelf: "center",
+    flexShrink: 0,
   },
   avatar: {
     height: boxSize["6xl"],
@@ -223,18 +224,35 @@ const styles = stylex.create({
     paddingTop: spacing["0.5"],
   },
   heroName: {
-    // Isolate only: this is a single-line NAME, so it must keep the
-    // surrounding UI alignment while still ordering its own characters
-    // correctly. `dir="auto"` here would left-align it inside an RTL page.
-    unicodeBidi: "isolate",
     color: uiColor.text2,
     fontFamily: fontFamily.serif,
     fontSize: { default: "1.85rem", "@media (min-width: 48rem)": "2rem" },
     fontWeight: fontWeight.semibold,
     letterSpacing: tracking.tight,
     lineHeight: lineHeight.xs,
+    // Isolate only: this is a single-line NAME, so it must keep the
+    // surrounding UI alignment while still ordering its own characters
+    // correctly. `dir="auto"` here would left-align it inside an RTL page.
+    unicodeBidi: "isolate",
     marginBottom: spacing["0"],
     marginTop: spacing["2"],
+  },
+  botMark: {
+    gap: spacing["1"],
+    alignItems: "center",
+    color: uiColor.text1,
+    display: "inline-flex",
+    marginInlineStart: spacing["2"],
+    verticalAlign: "middle",
+  },
+  srOnly: {
+    borderWidth: 0,
+    clipPath: "inset(50%)",
+    height: spacing.px,
+    overflow: "hidden",
+    position: "absolute",
+    whiteSpace: "nowrap",
+    width: spacing.px,
   },
   heroHandle: {
     marginTop: spacing["1"],
@@ -250,14 +268,14 @@ const styles = stylex.create({
   },
   heroActsMobile: {
     columnGap: spacing["1.5"],
-    display: { default: "flex", [HERO_DESKTOP]: "none" },
+    display: { [HERO_DESKTOP]: "none", default: "flex" },
     flexWrap: "wrap",
     rowGap: spacing["1.5"],
   },
   heroActs: {
     alignItems: "center",
     columnGap: spacing["1.5"],
-    display: { default: "none", [HERO_DESKTOP]: "flex" },
+    display: { [HERO_DESKTOP]: "flex", default: "none" },
     flexShrink: 0,
     flexWrap: "wrap",
     justifyContent: "flex-end",
@@ -272,17 +290,17 @@ const styles = stylex.create({
   },
   tabBarInner: {
     boxSizing: "border-box",
-    marginInlineStart: "auto",
     marginInlineEnd: "auto",
-    maxWidth: "82.5rem",
-    paddingInlineStart: {
-      default: spacing["5"],
-      [HERO_DESKTOP]: spacing["10"],
-    },
+    marginInlineStart: "auto",
     paddingInlineEnd: {
-      default: spacing["5"],
       [HERO_DESKTOP]: spacing["10"],
+      default: spacing["5"],
     },
+    paddingInlineStart: {
+      [HERO_DESKTOP]: spacing["10"],
+      default: spacing["5"],
+    },
+    maxWidth: "82.5rem",
     paddingTop: spacing["2"],
     width: "100%",
   },
@@ -300,25 +318,25 @@ const styles = stylex.create({
     width: "100%",
   },
   tabPanel: {
-    paddingInlineStart: spacing["0"],
     paddingInlineEnd: spacing["0"],
+    paddingInlineStart: spacing["0"],
     paddingTop: spacing["6"],
   },
   listRow: {
     borderRadius: radius.md,
-    borderTopColor: uiColor.border1,
-    borderTopStyle: "solid",
-    borderTopWidth: 1,
+    textDecoration: "none",
     boxSizing: "border-box",
     display: "flex",
     flexDirection: "column",
+    paddingInlineEnd: spacing["3"],
+    paddingInlineStart: spacing["3"],
+    rowGap: spacing["1"],
+    borderTopColor: uiColor.border1,
+    borderTopStyle: "solid",
+    borderTopWidth: 1,
     marginTop: spacing["2"],
     paddingBottom: spacing["5"],
-    paddingInlineStart: spacing["3"],
-    paddingInlineEnd: spacing["3"],
     paddingTop: spacing["6"],
-    rowGap: spacing["1"],
-    textDecoration: "none",
     width: "100%",
   },
   listRowFirst: {
@@ -349,11 +367,11 @@ const styles = stylex.create({
   },
   readerRow: {
     alignItems: "center",
+    columnGap: spacing["3"],
+    display: "flex",
     borderTopColor: uiColor.border1,
     borderTopStyle: "solid",
     borderTopWidth: 1,
-    columnGap: spacing["3"],
-    display: "flex",
     paddingBottom: spacing["3"],
     paddingTop: spacing["3"],
   },
@@ -364,8 +382,8 @@ const styles = stylex.create({
     flexShrink: 0,
   },
   readerLink: {
-    color: "inherit",
     textDecoration: { default: "none", ":hover": "underline" },
+    color: "inherit",
   },
   readerName: {
     color: uiColor.text2,
@@ -399,19 +417,19 @@ const styles = stylex.create({
     boxSizing: "border-box",
     display: "flex",
     flexDirection: "column",
+    paddingInlineEnd: {
+      [HERO_DESKTOP]: spacing["8"],
+      default: spacing["6"],
+    },
+    paddingInlineStart: {
+      [HERO_DESKTOP]: spacing["8"],
+      default: spacing["6"],
+    },
+    rowGap: spacing["4"],
     marginTop: spacing["8"],
     maxWidth: "100%",
     paddingBottom: spacing["10"],
-    paddingInlineStart: {
-      default: spacing["6"],
-      [HERO_DESKTOP]: spacing["8"],
-    },
-    paddingInlineEnd: {
-      default: spacing["6"],
-      [HERO_DESKTOP]: spacing["8"],
-    },
     paddingTop: spacing["10"],
-    rowGap: spacing["4"],
     width: "100%",
   },
   profileEmptyTitle: {
@@ -434,9 +452,9 @@ const styles = stylex.create({
     maxWidth: "52ch",
   },
   profileEmptyActions: {
+    gap: spacing["2"],
     display: "flex",
     flexWrap: "wrap",
-    gap: spacing["2"],
     marginTop: spacing["2"],
   },
   endNote: {
@@ -616,7 +634,7 @@ function AuthorProfileContent({
     );
   }
 
-  const { profile, stats } = initialPage;
+  const { profile, stats, labels: accountLabels } = initialPage;
   const name = authorDisplayName(profile) ?? t`Author`;
   const pageUrl = `${getPublicUrlClient()}/u/${did}`;
   // Three profile kinds drive the hero label and empty state:
@@ -683,7 +701,23 @@ function AuthorProfileContent({
                   )}
                 </Kicker>
               )}
-              <h1 {...stylex.props(styles.heroName)}>{name}</h1>
+              <h1 {...stylex.props(styles.heroName)}>
+                {name}
+                {/* The account's own `bot` self-label, read off its profile
+                    record. Not a labeler's verdict — its own statement — so it
+                    sits with the name rather than among the labels below. */}
+                {profile.isBot ? (
+                  <span
+                    {...stylex.props(styles.botMark)}
+                    title={t`This account self-identifies as a bot`}
+                  >
+                    <Bot size={16} aria-hidden />
+                    <span {...stylex.props(styles.srOnly)}>
+                      <Trans>Bot</Trans>
+                    </span>
+                  </span>
+                ) : null}
+              </h1>
               {profile.handle ? (
                 <Handle style={styles.heroHandle}>@{profile.handle}</Handle>
               ) : null}
@@ -750,6 +784,11 @@ function AuthorProfileContent({
               <LinkifiedText text={profile.description} />
             </p>
           ) : null}
+
+          {/* Below the bio rather than beside the handle: a label is something a
+              third party says about this account, so it reads after the account's
+              own words instead of interrupting its identity line. */}
+          <AccountLabels labels={accountLabels} />
 
           <div {...stylex.props(styles.heroActsMobile)}>
             <ShareMenu variant="icon" size="md" pageUrl={pageUrl} />

@@ -117,9 +117,9 @@ const DENSITY_LABELS: Record<AppearanceDensity, MessageDescriptor> = {
 
 const styles = stylex.create({
   block: {
-    paddingBottom: verticalSpace["3xl"],
-    paddingInlineStart: horizontalSpace["3xl"],
     paddingInlineEnd: horizontalSpace["3xl"],
+    paddingInlineStart: horizontalSpace["3xl"],
+    paddingBottom: verticalSpace["3xl"],
     paddingTop: verticalSpace["3xl"],
   },
   groupLabel: {
@@ -132,24 +132,24 @@ const styles = stylex.create({
     marginTop: verticalSpace.none,
   },
   tileGrid: {
-    display: "grid",
     gap: gap.xl,
+    display: "grid",
     gridTemplateColumns: {
-      default: "repeat(auto-fill, minmax(7.5rem, 1fr))",
       [MOBILE]: "repeat(auto-fill, minmax(6.5rem, 1fr))",
+      default: "repeat(auto-fill, minmax(7.5rem, 1fr))",
     },
   },
   radioGroup: {
+    gap: gap["4xl"],
     display: "flex",
     flexDirection: "column",
-    gap: gap["4xl"],
     marginTop: verticalSpace["3xl"],
   },
   tile: {
+    gap: gap.sm,
     cursor: "pointer",
     display: "flex",
     flexDirection: "column",
-    gap: gap.sm,
   },
   /**
    * The miniature wears the palette's own StyleX theme, so what a reader sees
@@ -157,15 +157,15 @@ const styles = stylex.create({
    * approximating them.
    */
   tileSurface: {
-    backgroundColor: uiColor.bg,
     borderColor: uiColor.border1,
     borderRadius: radius.md,
     borderStyle: "solid",
     borderWidth: 1,
     cornerShape: "squircle",
+    gap: gap.sm,
+    backgroundColor: uiColor.bg,
     display: "flex",
     flexDirection: "column",
-    gap: gap.sm,
     justifyContent: "center",
     outlineColor: {
       default: "transparent",
@@ -174,10 +174,8 @@ const styles = stylex.create({
     outlineOffset: 2,
     outlineStyle: "solid",
     outlineWidth: 2,
-    paddingBottom: verticalSpace.xl,
-    paddingInlineStart: horizontalSpace.xl,
     paddingInlineEnd: horizontalSpace.xl,
-    paddingTop: verticalSpace.xl,
+    paddingInlineStart: horizontalSpace.xl,
     transform: {
       default: "none",
       ":is([data-hovered]):not([data-selected])": "translateY(-2px)",
@@ -188,6 +186,8 @@ const styles = stylex.create({
       [mediaQueries.reducedMotion]: "none",
     },
     transitionTimingFunction: "ease-out",
+    paddingBottom: verticalSpace.xl,
+    paddingTop: verticalSpace.xl,
   },
   tileSurfaceFocused: {
     outlineColor: focusColor.ring,
@@ -199,30 +199,30 @@ const styles = stylex.create({
     lineHeight: lineHeight.none,
   },
   tileLine: {
-    backgroundColor: uiColor.text1,
     borderRadius: radius.full,
-    height: 2,
+    backgroundColor: uiColor.text1,
     opacity: 0.5,
+    height: 2,
     width: "100%",
   },
   tileLineShort: {
     width: "60%",
   },
   tileAccent: {
-    backgroundColor: primaryColor.solid1,
     borderRadius: radius.full,
+    backgroundColor: primaryColor.solid1,
     height: spacing["2"],
     marginTop: verticalSpace.xs,
     width: spacing["6"],
   },
   tileMeta: {
+    gap: gap.xs,
     alignItems: "center",
     color: uiColor.text2,
     display: "flex",
     fontFamily: fontFamily.sans,
     fontSize: fontSize.xs,
     fontWeight: fontWeight.medium,
-    gap: gap.xs,
     justifyContent: "space-between",
   },
   tileCheck: {
@@ -230,28 +230,28 @@ const styles = stylex.create({
     flexShrink: 0,
   },
   editor: {
+    gap: gap["4xl"],
     display: "flex",
     flexDirection: {
-      default: "row",
       [MOBILE]: "column",
+      default: "row",
     },
-    gap: gap["4xl"],
     marginTop: verticalSpace["3xl"],
   },
   editorColumn: {
+    gap: gap.xl,
     display: "flex",
     flexBasis: "0",
     flexDirection: "column",
     flexGrow: 1,
-    gap: gap.xl,
     minWidth: 0,
   },
   checkRow: {
+    gap: gap.sm,
     alignItems: "center",
     display: "flex",
     fontFamily: fontFamily.sans,
     fontSize: fontSize.xs,
-    gap: gap.sm,
     lineHeight: lineHeight.sm,
   },
   checkOk: {

@@ -54,9 +54,9 @@ const styles = stylex.create({
     letterSpacing: tracking.tight,
   },
   body: {
-    paddingBottom: verticalSpace["3xl"],
-    paddingInlineStart: horizontalSpace["3xl"],
     paddingInlineEnd: horizontalSpace["3xl"],
+    paddingInlineStart: horizontalSpace["3xl"],
+    paddingBottom: verticalSpace["3xl"],
     paddingTop: verticalSpace["3xl"],
   },
   list: {
@@ -75,9 +75,9 @@ const styles = stylex.create({
     fontFamily: fontFamily.serif,
     fontSize: fontSize.sm,
     fontStyle: "italic",
-    paddingBottom: verticalSpace.lg,
-    paddingInlineStart: horizontalSpace.xl,
     paddingInlineEnd: horizontalSpace.xl,
+    paddingInlineStart: horizontalSpace.xl,
+    paddingBottom: verticalSpace.lg,
     paddingTop: verticalSpace.lg,
   },
   grip: {

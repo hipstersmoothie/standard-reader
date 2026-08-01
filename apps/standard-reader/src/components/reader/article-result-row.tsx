@@ -34,10 +34,6 @@ const styles = stylex.create({
     minWidth: 0,
   },
   title: {
-    // Single-line NAME/TITLE in a UI row: isolate for correct character
-    // ordering, but let alignment follow the surrounding UI (right under
-    // RTL). `dir="auto"` here would left-align it and break the column.
-    unicodeBidi: "isolate",
     overflow: "hidden",
     color: uiColor.text2,
     fontFamily: fontFamily.serif,
@@ -45,6 +41,10 @@ const styles = stylex.create({
     fontWeight: fontWeight.semibold,
     lineHeight: lineHeight.sm,
     textOverflow: "ellipsis",
+    // Single-line NAME/TITLE in a UI row: isolate for correct character
+    // ordering, but let alignment follow the surrounding UI (right under
+    // RTL). `dir="auto"` here would left-align it and break the column.
+    unicodeBidi: "isolate",
     whiteSpace: "nowrap",
   },
   bylineText: {
@@ -61,12 +61,12 @@ const styles = stylex.create({
     unicodeBidi: "isolate",
   },
   byName: {
+    color: uiColor.text2,
+    fontWeight: fontWeight.semibold,
     // Single-line NAME/TITLE in a UI row: isolate for correct character
     // ordering, but let alignment follow the surrounding UI (right under
     // RTL). `dir="auto"` here would left-align it and break the column.
     unicodeBidi: "isolate",
-    color: uiColor.text2,
-    fontWeight: fontWeight.semibold,
   },
   feedByline: {
     marginBottom: "0.15rem",
@@ -85,25 +85,25 @@ const styles = stylex.create({
     minWidth: 0,
   },
   feedTitle: {
-    // Single-line NAME/TITLE in a UI row: isolate for correct character
-    // ordering, but let alignment follow the surrounding UI (right under
-    // RTL). `dir="auto"` here would left-align it and break the column.
-    unicodeBidi: "isolate",
     color: uiColor.text2,
     fontFamily: fontFamily.serif,
     fontSize: fontSize.xl,
     fontWeight: fontWeight.semibold,
     lineHeight: lineHeight.xs,
-  },
-  feedDek: {
     // Single-line NAME/TITLE in a UI row: isolate for correct character
     // ordering, but let alignment follow the surrounding UI (right under
     // RTL). `dir="auto"` here would left-align it and break the column.
     unicodeBidi: "isolate",
+  },
+  feedDek: {
     color: uiColor.text1,
     fontFamily: fontFamily.serif,
     fontSize: fontSize.base,
     lineHeight: lineHeight.sm,
+    // Single-line NAME/TITLE in a UI row: isolate for correct character
+    // ordering, but let alignment follow the surrounding UI (right under
+    // RTL). `dir="auto"` here would left-align it and break the column.
+    unicodeBidi: "isolate",
   },
   feedCover: {
     borderRadius: radius.md,

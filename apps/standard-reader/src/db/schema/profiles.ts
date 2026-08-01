@@ -26,6 +26,19 @@ export const profiles = pgTable(
     /** Account active flag from the latest identity event (`status`). */
     isActive: boolean("is_active").notNull().default(true),
 
+    /**
+     * Whether the account self-declares as a bot — a `bot` entry in its
+     * `app.bsky.actor.profile` record's `labels`
+     * (`com.atproto.label.defs#selfLabels`).
+     *
+     * Read straight off the profile record rather than from a labeler. We used to
+     * run a first-party labeler whose entire job was to re-publish this same
+     * self-declaration as a label; the signal was already in the record we
+     * already index, so the labeler was a network round trip to learn something
+     * we had in hand.
+     */
+    isBot: boolean("is_bot").notNull().default(false),
+
     /** `app.bsky.actor.profile` display fields. */
     displayName: text("display_name"),
     description: text("description"),

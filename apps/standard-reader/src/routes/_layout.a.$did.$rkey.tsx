@@ -8,6 +8,7 @@ import { publicationApi } from "#/integrations/tanstack-query/api-publication.fu
 import { quoteShareApi } from "#/integrations/tanstack-query/api-quote-share.functions";
 import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
+import { documentImages } from "#/lib/document/images";
 import { getPublicUrlClient } from "#/lib/public-url";
 import {
   buildQuoteOgImageUrl,
@@ -98,6 +99,23 @@ export const Route = createFileRoute("/_layout/a/$did/$rkey")({
           params: { did: params.did, rkey: params.rkey },
         });
       }
+    }
+
+    // A comic issue is pages of art, so it opens in the page-flip reader rather
+    // than as a column of stacked images. `view=reader` is the way back to the
+    // article (the author's notes live there), and a shared quote always wants
+    // the reading view — that's where the highlight is.
+    if (
+      article?.publication?.serial?.kind === "comic" &&
+      !openLinks.openExternally &&
+      !deps.q &&
+      deps.view !== "reader" &&
+      documentImages(article).length > 0
+    ) {
+      throw redirect({
+        to: "/comic/$did/$rkey",
+        params: { did: params.did, rkey: params.rkey },
+      });
     }
 
     const sharedQuote = deps.q ? await resolveSharedQuote(uri, deps.q) : null;

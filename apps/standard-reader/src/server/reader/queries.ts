@@ -30,6 +30,7 @@ import {
 } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 
+import { NETWORK_DOCUMENT_COUNT_KEY } from "#/db/schema/network-stats";
 import type {
   ArticleCard,
   Db,
@@ -52,6 +53,7 @@ import { documentPublishedNotInFuture } from "#/server/reader/document-filters";
 import {
   discoverEligibleArticleWhere,
   discoverEligiblePublicationWhere,
+  notWebBridgePublicationWhere,
 } from "#/server/reader/publication-filters";
 import {
   ROTATION_POOL_MULTIPLIER,
@@ -807,6 +809,13 @@ export async function selectPublicationArticleCards(
     /** The requesting reader, for `filter`. Usually the same as `readForDid`,
      * but set even when reading history is off (recommends don't need it). */
     readerDid?: string;
+    /**
+     * Archive ordering. Defaults to newest-first; `"oldest"` is a reader asking
+     * to start at the beginning (see `#/lib/publication/archive-order`).
+     * Callers must keep this stable across a paginated run — the offsets are
+     * computed against one ordering.
+     */
+    order?: "newest" | "oldest";
   },
 ): Promise<Array<ArticleCard>> {
   const d = schema.documents;
@@ -858,7 +867,11 @@ export async function selectPublicationArticleCards(
         }),
       ),
     )
-    .orderBy(...documentsNewestFirst(d))
+    .orderBy(
+      ...(opts.order === "oldest"
+        ? documentsOldestFirst(d)
+        : documentsNewestFirst(d)),
+    )
     .limit(opts.limit)
     .offset(opts.offset ?? 0);
 
@@ -1252,8 +1265,41 @@ export async function countFollowedDocuments(
   return { all: row?.all ?? 0, unread: row?.unread ?? 0 };
 }
 
-/** Count of discover-eligible documents across the whole network (Latest "All" tab). */
+/**
+ * Count of discover-eligible documents across the whole network (Latest "All"
+ * tab badge).
+ *
+ * Served from the `network_stats` scalar maintained by `recomputeNetworkStats()`
+ * — a single primary-key lookup. Counting it live is an unbounded `count(*)`
+ * over every document row joined to publications, which no index can serve;
+ * it measured ~1.08s as a parallel seq scan and sat on `/latest`'s blocking
+ * route loader. A badge total that the sweep refreshes every few minutes does
+ * not justify that, nor the buffer-cache churn it inflicted on the sibling feed
+ * queries.
+ *
+ * {@link countNetworkDocumentsLive} is the fallback for the window before the
+ * first sweep populates the row.
+ */
 export async function countNetworkDocuments(
+  db: Db,
+  schema: Schema,
+): Promise<number> {
+  const [row] = await db
+    .select({ value: schema.networkStats.value })
+    .from(schema.networkStats)
+    .where(eq(schema.networkStats.key, NETWORK_DOCUMENT_COUNT_KEY))
+    .limit(1);
+  // Only missing before the first sweep after deploy (or on a fresh DB), so the
+  // expensive path runs for minutes, not indefinitely.
+  return row?.value ?? (await countNetworkDocumentsLive(db, schema));
+}
+
+/**
+ * The live scan behind {@link countNetworkDocuments}. This is the definition of
+ * record for what the "All" tab counts — `recomputeNetworkStats()` mirrors this
+ * predicate, so the two must change together.
+ */
+export async function countNetworkDocumentsLive(
   db: Db,
   schema: Schema,
 ): Promise<number> {
@@ -1936,7 +1982,7 @@ export async function countKnownPublications(db: Db): Promise<number> {
  * its document tags — so every chip is guaranteed to return results.
  *
  * Reads the precomputed `discover_topic_counts` table (rebuilt each sweep by
- * `recomputeTopics()`); aggregating the vocabulary live is a ~2s network-wide
+ * `recomputeTopicCounts()`); aggregating the vocabulary live is a ~2s network-wide
  * `unnest(tags)` scan, far too slow for this request-path, Suspense-gated
  * query. `query`, when set, filters the vocabulary by a case-insensitive
  * substring (trigram-indexed) so the popover search can reach tags past the
@@ -2115,8 +2161,23 @@ function documentCarriesTagWhere(d: Schema["documents"], tag: string): SQL {
  * documents plus a top-N heapsort (726ms) where the index gives an ordered scan
  * that stops after ~37 rows (0.3ms).
  */
-function documentsNewestFirst(d: Schema["documents"]): Array<SQL> {
+export function documentsNewestFirst(d: Schema["documents"]): Array<SQL> {
   return [sql`${d.publishedAt} desc nulls last`, desc(d.uri)];
+}
+
+/**
+ * Oldest-first document ordering — publication order rather than
+ * reverse-chronological, for a reader who has asked to read an archive from its
+ * beginning (see `#/lib/publication/archive-order`), and for the comic spine,
+ * whose absolute page numbers only mean anything front-to-back.
+ *
+ * Spelled as the exact reverse of {@link documentsNewestFirst}, down to the NULLS
+ * placement, so the two are mirror images and Postgres can serve either by
+ * walking the same `(publication_uri, published_at)` index in the matching
+ * direction rather than sorting.
+ */
+export function documentsOldestFirst(d: Schema["documents"]): Array<SQL> {
+  return [sql`${d.publishedAt} asc nulls first`, asc(d.uri)];
 }
 
 /**
@@ -2355,6 +2416,12 @@ export interface PublicationRailOpts {
    * pool; defaults to a per-viewer daily seed.
    */
   seed?: string;
+  /**
+   * Drop Bridgy Fed's bulk web-bridge mirrors (`*.web.brid.gy`) from the rail —
+   * see {@link notWebBridgePublicationWhere}. Filtered in SQL (not after the
+   * fact) so the rail still fills to `limit`.
+   */
+  excludeWebBridge?: boolean;
 }
 
 function mergeExcludeUris(...groups: Array<Array<string>>): Array<string> {
@@ -2382,6 +2449,7 @@ async function publicationCardsByOrderedUris(
   db: Db,
   schema: Schema,
   uris: Array<string>,
+  { excludeWebBridge = false }: { excludeWebBridge?: boolean } = {},
 ): Promise<Array<PublicationCard>> {
   if (uris.length === 0) {
     return [];
@@ -2401,6 +2469,7 @@ async function publicationCardsByOrderedUris(
         eq(p.deleted, false),
         discoverEligiblePublicationWhere(p),
         hasIndexedDocuments(db, schema, p.uri),
+        ...(excludeWebBridge ? [notWebBridgePublicationWhere(pr)] : []),
       ),
     );
 
@@ -2549,6 +2618,7 @@ async function backfillPublicationRail(
   limit: number,
   excludeUris: Array<string>,
   seed?: string,
+  opts: { excludeWebBridge?: boolean } = {},
 ): Promise<Array<PublicationCard>> {
   if (primary.length >= limit) {
     return primary.slice(0, limit);
@@ -2564,6 +2634,7 @@ async function backfillPublicationRail(
     limit - primary.length,
     seen,
     seed,
+    opts,
   );
   return [...primary, ...backfill].slice(0, limit);
 }
@@ -2582,6 +2653,7 @@ export async function popularPublications(
   limit: number,
   excludeUris: Array<string> = [],
   seed?: string,
+  { excludeWebBridge = false }: { excludeWebBridge?: boolean } = {},
 ): Promise<Array<PublicationCard>> {
   const p = schema.publications;
   const st = schema.publicationStats;
@@ -2593,6 +2665,9 @@ export async function popularPublications(
   ];
   if (excludeUris.length > 0) {
     conds.push(notInArray(p.uri, excludeUris));
+  }
+  if (excludeWebBridge) {
+    conds.push(notWebBridgePublicationWhere(pr));
   }
 
   const poolSize = seed ? limit * ROTATION_POOL_MULTIPLIER : limit;
@@ -2626,10 +2701,11 @@ export async function recommendedPublications(
 ): Promise<Array<PublicationCard>> {
   const excludeUris = opts.excludeUris ?? [];
   const seed = opts.seed ?? rotationSeed("recommended", did);
+  const railOpts = { excludeWebBridge: opts.excludeWebBridge ?? false };
   const followUris =
     opts.followUris ?? (await selectFollowUris(db, schema, did));
   if (followUris.length === 0) {
-    return popularPublications(db, schema, limit, excludeUris, seed);
+    return popularPublications(db, schema, limit, excludeUris, seed, railOpts);
   }
 
   const mergedExclude = mergeExcludeUris(excludeUris, followUris);
@@ -2652,6 +2728,7 @@ export async function recommendedPublications(
     db,
     schema,
     ranked.slice(0, limit * ROTATION_POOL_MULTIPLIER).map((row) => row.uri),
+    railOpts,
   );
   const primary = rotateRail(pool, limit, seed);
 
@@ -2662,6 +2739,7 @@ export async function recommendedPublications(
     limit,
     mergedExclude,
     seed,
+    railOpts,
   );
 }
 
@@ -3495,6 +3573,7 @@ export async function publicationSubscribers(
       description: pr.description,
       avatarUrl: pr.avatarUrl,
       bannerUrl: pr.bannerUrl,
+      isBot: pr.isBot,
     })
     .from(pr)
     .where(inArray(pr.did, dids));
@@ -3511,6 +3590,7 @@ export async function publicationSubscribers(
         description: null,
         avatarUrl: null,
         bannerUrl: null,
+        isBot: false,
       },
   );
 

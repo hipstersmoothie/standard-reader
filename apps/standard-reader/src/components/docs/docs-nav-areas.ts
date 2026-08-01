@@ -6,8 +6,7 @@ export type DocsArea =
   | "api"
   | "labelers"
   | "renderers"
-  | "lexicons"
-  | "publishing";
+  | "lexicons";
 
 /**
  * The pages reachable from the shared docs sidebar. Each is a real route with
@@ -20,8 +19,7 @@ export const DOCS_AREAS: ReadonlyArray<{
     | "/docs/api"
     | "/docs/labelers"
     | "/docs/renderers"
-    | "/docs/lexicons"
-    | "/docs/publishing";
+    | "/docs/lexicons";
   label: MessageDescriptor;
 }> = [
   { area: "introduction", to: "/docs/introduction", label: msg`Introduction` },
@@ -29,5 +27,4 @@ export const DOCS_AREAS: ReadonlyArray<{
   { area: "labelers", to: "/docs/labelers", label: msg`Labelers` },
   { area: "renderers", to: "/docs/renderers", label: msg`Renderers` },
   { area: "lexicons", to: "/docs/lexicons", label: msg`Lexicons` },
-  { area: "publishing", to: "/docs/publishing", label: msg`Publishing` },
 ] as const;

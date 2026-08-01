@@ -10,7 +10,7 @@ import { buildAuthRedirectPath } from "#/utils/auth-redirect";
 import { LabelerDetailView } from "../components/labeler-detail-view";
 
 const labelerSearchSchema = z.object({
-  view: z.enum(["labels", "documents"]).default("labels"),
+  view: z.enum(["labels", "documents", "accounts"]).default("labels"),
 });
 
 export const Route = createFileRoute("/_layout/labelers/$did")({

@@ -37,12 +37,12 @@ const styles = stylex.create({
     fontFamily: fontFamily.sans,
     fontSize: fontSize.sm,
     fontWeight: fontWeight.medium,
+    paddingInlineEnd: horizontalSpace.xs,
+    paddingInlineStart: horizontalSpace.xs,
     transitionDuration: animationDuration.fast,
     transitionProperty: "color",
     transitionTimingFunction: "ease-in-out",
     paddingBottom: verticalSpace.xxs,
-    paddingInlineStart: horizontalSpace.xs,
-    paddingInlineEnd: horizontalSpace.xs,
     paddingTop: verticalSpace.xxs,
   },
   linkActive: {
@@ -66,6 +66,16 @@ export function SiteLegalLinks({ style }: { style?: stylex.StyleXStyles }) {
         activeProps={stylex.props(styles.link, styles.linkActive)}
       >
         <Trans>About</Trans>
+      </Link>
+      <span {...stylex.props(styles.separator)} aria-hidden>
+        ·
+      </span>
+      <Link
+        to="/guide"
+        {...stylex.props(styles.link)}
+        activeProps={stylex.props(styles.link, styles.linkActive)}
+      >
+        <Trans>Guide</Trans>
       </Link>
       <span {...stylex.props(styles.separator)} aria-hidden>
         ·

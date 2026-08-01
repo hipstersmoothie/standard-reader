@@ -22,25 +22,38 @@ import {
   lineHeight,
   tracking,
 } from "@standard-reader/design-system/theme/typography.stylex";
+import {
+  GUTENBERG_CONTENT,
+  LEAFLET_CONTENT,
+  LEAFLET_DOCUMENT_FORMAT,
+  MARKPUB_FORMATS,
+  MOCHOTT_FORMATS,
+  OFFPRINT_CONTENT,
+  PCKT_CONTENT,
+  STRUCTURED_BLOCK_FORMATS,
+} from "@standard-reader/renderer-core";
 import * as stylex from "@stylexjs/stylex";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import {
   AppWindow,
   ArrowRight,
-  Bookmark,
+  BookOpen,
   Check,
+  Compass,
   Flame,
   Globe,
   Headphones,
-  Heart,
-  Info,
+  Highlighter,
+  Link2,
   Mail,
+  MessageSquare,
+  PenLine,
   Rss,
   Search,
-  Share2,
   SlidersHorizontal,
   Sparkles,
+  Terminal,
   Users,
 } from "lucide-react";
 
@@ -51,7 +64,8 @@ import { usePageReader } from "#/lib/page-reader/page-reader-context";
 
 import { PubCard } from "./cards";
 import { publicationLinkParams } from "./format";
-import { Kicker, PublicationAvatar } from "./primitives";
+import { PlatformMark } from "./platform-logo";
+import { PublicationAvatar } from "./primitives";
 
 /** Grid-collapse breakpoint (two-up layouts stack below this). */
 const TABLET = "@media (max-width: 57.5rem)";
@@ -81,26 +95,137 @@ const INLINE_FEATS = [
   { icon: Search, label: msg`Fast full-text search` },
 ] as const;
 
+/**
+ * Every content `$type` the shared renderer can turn into a reading view. Derived
+ * from the renderer's own parser tables (plus the four block formats it handles
+ * ahead of the structured dispatch) so the number on the page cannot drift from
+ * what the app actually reads.
+ */
+const SUPPORTED_CONTENT_FORMATS = new Set([
+  ...STRUCTURED_BLOCK_FORMATS,
+  LEAFLET_CONTENT,
+  LEAFLET_DOCUMENT_FORMAT,
+  OFFPRINT_CONTENT,
+  PCKT_CONTENT,
+]);
+
+/**
+ * The three platforms an article can be attributed back to by name — the ones
+ * whose marks we ship (see {@link PlatformMark}) and whose articles carry a
+ * "read it there instead" affordance.
+ */
+const NAMED_PLATFORMS = [
+  {
+    href: "https://leaflet.pub",
+    name: "Leaflet",
+    platform: "leaflet",
+    what: msg`Blocks, pages, and footnotes`,
+  },
+  {
+    href: "https://pckt.blog",
+    name: "pckt",
+    platform: "pckt",
+    what: msg`Short-form posts and long reads`,
+  },
+  {
+    href: "https://offprint.app",
+    name: "Offprint",
+    platform: "offprint",
+    what: msg`Essays and serialized writing`,
+  },
+] as const;
+
+/**
+ * The other tools we call out by name, each with the content `$type`s it owns.
+ * The `$type`s are what make the "+ N more" count exact: whatever is listed
+ * here is subtracted from {@link SUPPORTED_CONTENT_FORMATS}, so adding or
+ * dropping a name here can never leave the remainder wrong.
+ *
+ * BlockNote's and Afterword's constants are not re-exported from
+ * `renderer-core`, so they are spelled out; the rest come from the package.
+ */
+const OTHER_TOOLS = [
+  { formats: MARKPUB_FORMATS, name: "Markpub" },
+  { formats: MOCHOTT_FORMATS, name: "Mochott" },
+  { formats: ["org.blocknote.document#content"], name: "BlockNote" },
+  { formats: ["blog.afterword.content"], name: "Afterword" },
+  { formats: [GUTENBERG_CONTENT], name: "SkyPress" },
+] as const;
+
+/** Formats accounted for by a named tile or chip above the "+ N more" chip. */
+const NAMED_FORMATS = new Set<string>([
+  LEAFLET_CONTENT,
+  LEAFLET_DOCUMENT_FORMAT,
+  OFFPRINT_CONTENT,
+  PCKT_CONTENT,
+  ...OTHER_TOOLS.flatMap((tool) => tool.formats),
+]);
+
+/** Everything the renderer reads that no chip on this page names. */
+const UNNAMED_FORMAT_COUNT = [...SUPPORTED_CONTENT_FORMATS].filter(
+  (format) => !NAMED_FORMATS.has(format),
+).length;
+
+/** The four surfaces the developer docs cover, in sidebar order. */
+const DOCS_SURFACES = [
+  {
+    label: msg`API`,
+    to: "/docs/api",
+    what: msg`Every feed, directory, and search query the app itself runs.`,
+  },
+  {
+    label: msg`Lexicons`,
+    to: "/docs/lexicons",
+    what: msg`The record schemas a publication, document, or follow is made of.`,
+  },
+  {
+    label: msg`Renderers`,
+    to: "/docs/renderers",
+    what: msg`Drop a Standard document into your own app, in your own framework.`,
+  },
+  {
+    label: msg`Labelers`,
+    to: "/docs/labelers",
+    what: msg`Publish labels others can subscribe to, or consume the ones we do.`,
+  },
+] as const;
+
+/**
+ * Published renderer packages, by the framework each one targets. The shared
+ * `@standard-reader/renderer-` prefix lives in the label so the chips stay
+ * scannable instead of eight near-identical strings.
+ */
+const RENDERER_PACKAGES = [
+  "core",
+  "react",
+  "vue",
+  "svelte",
+  "solid",
+  "lit",
+  "angular",
+  "email",
+] as const;
+
 /* ── styles ─────────────────────────────────────────────────────────────── */
 
 const styles = stylex.create({
   root: {
     boxSizing: "border-box",
-    marginInlineStart: "auto",
     marginInlineEnd: "auto",
+    marginInlineStart: "auto",
+    paddingInlineEnd: {
+      [MOBILE]: spacing["5"],
+      default: spacing["10"],
+    },
+    paddingInlineStart: {
+      [MOBILE]: spacing["5"],
+      default: spacing["10"],
+    },
     maxWidth: "65rem",
     paddingBottom: spacing["24"],
-    paddingInlineStart: {
-      default: spacing["10"],
-      [MOBILE]: spacing["5"],
-    },
-    paddingInlineEnd: {
-      default: spacing["10"],
-      [MOBILE]: spacing["5"],
-    },
     paddingTop: {
-      default: spacing["16"],
       [MOBILE]: spacing["10"],
+      default: spacing["16"],
     },
     width: "100%",
   },
@@ -110,16 +235,12 @@ const styles = stylex.create({
     borderTopColor: uiColor.border1,
     borderTopStyle: "solid",
     borderTopWidth: 1,
-    paddingBottom: { default: spacing["16"], [TABLET]: spacing["12"] },
-    paddingTop: { default: spacing["16"], [TABLET]: spacing["12"] },
+    paddingBottom: { [TABLET]: spacing["12"], default: spacing["16"] },
+    paddingTop: { [TABLET]: spacing["12"], default: spacing["16"] },
   },
   sHead: {
     marginBottom: verticalSpace["8xl"],
     maxWidth: "40rem",
-  },
-  sHeadKicker: {
-    display: "inline-block",
-    marginBottom: verticalSpace["3xl"],
   },
   h2: {
     color: uiColor.text2,
@@ -128,11 +249,13 @@ const styles = stylex.create({
     fontWeight: fontWeight.medium,
     letterSpacing: tracking.tight,
     lineHeight: 1.08,
+    textWrap: "balance",
     marginBottom: verticalSpace.none,
     marginTop: verticalSpace.none,
-    textWrap: "balance",
   },
+  /** Panel headings sit a step below the section `h2` so hierarchy survives. */
   h2Panel: {
+    fontSize: "clamp(1.5rem, 2.4vw, 1.875rem)",
     marginBottom: verticalSpace["4xl"],
   },
   dek: {
@@ -140,10 +263,10 @@ const styles = stylex.create({
     fontFamily: fontFamily.serif,
     fontSize: fontSize.lg,
     lineHeight: lineHeight.sm,
+    textWrap: "pretty",
     marginBottom: verticalSpace.none,
     marginTop: verticalSpace["3xl"],
     maxWidth: "54ch",
-    textWrap: "pretty",
   },
 
   /* buttons */
@@ -155,42 +278,43 @@ const styles = stylex.create({
     rowGap: gap.xl,
   },
   btn: {
-    alignItems: "center",
     borderRadius: radius.md,
     borderStyle: "solid",
     borderWidth: 1,
+    cornerShape: "squircle",
+    textDecoration: "none",
+    alignItems: "center",
     columnGap: gap.md,
     cursor: "pointer",
     display: "inline-flex",
     fontFamily: fontFamily.sans,
     fontSize: fontSize.base,
     fontWeight: fontWeight.semibold,
-    paddingBottom: spacing["3"],
-    paddingInlineStart: spacing["5"],
     paddingInlineEnd: spacing["5"],
-    paddingTop: spacing["3"],
-    textDecoration: "none",
+    paddingInlineStart: spacing["5"],
     whiteSpace: "nowrap",
+    paddingBottom: spacing["3"],
+    paddingTop: spacing["3"],
   },
   btnPrimary: {
-    backgroundColor: {
+    borderColor: {
       default: primaryColor.solid1,
       ":hover": primaryColor.solid2,
     },
-    borderColor: {
+    backgroundColor: {
       default: primaryColor.solid1,
       ":hover": primaryColor.solid2,
     },
     color: uiColor.textContrast,
   },
   btnInk: {
-    backgroundColor: { default: uiColor.solid1, ":hover": primaryColor.solid1 },
     borderColor: { default: uiColor.solid1, ":hover": primaryColor.solid1 },
+    backgroundColor: { default: uiColor.solid1, ":hover": primaryColor.solid1 },
     color: uiColor.bg,
   },
   btnGhost: {
-    backgroundColor: uiColor.bg,
     borderColor: { default: uiColor.border2, ":hover": primaryColor.border3 },
+    backgroundColor: uiColor.bg,
     color: { default: uiColor.text2, ":hover": primaryColor.text2 },
   },
   inlineLink: {
@@ -201,9 +325,10 @@ const styles = stylex.create({
     textUnderlineOffset: "0.15em",
   },
   tlink: {
+    borderWidth: 0,
+    textDecoration: "none",
     alignItems: "center",
     backgroundColor: "transparent",
-    borderWidth: 0,
     color: primaryColor.text2,
     columnGap: gap.sm,
     cursor: "pointer",
@@ -211,28 +336,19 @@ const styles = stylex.create({
     fontFamily: fontFamily.sans,
     fontSize: fontSize.sm,
     fontWeight: fontWeight.semibold,
+    paddingInlineEnd: 0,
+    paddingInlineStart: 0,
     marginTop: verticalSpace["3xl"],
     paddingBottom: 0,
-    paddingInlineStart: 0,
-    paddingInlineEnd: 0,
     paddingTop: 0,
-    textDecoration: "none",
     width: "fit-content",
   },
 
   /* hero */
   hero: {
+    textAlign: "center",
     paddingBottom: spacing["6"],
     paddingTop: spacing["5"],
-    textAlign: "center",
-  },
-  eyebrow: {
-    color: primaryColor.text1,
-    fontFamily: fontFamily.sans,
-    fontSize: "0.72rem",
-    fontWeight: fontWeight.bold,
-    letterSpacing: tracking.widest,
-    textTransform: "uppercase",
   },
   heroTitle: {
     color: uiColor.text2,
@@ -241,24 +357,24 @@ const styles = stylex.create({
     fontWeight: fontWeight.medium,
     letterSpacing: tracking.tight,
     lineHeight: 1.02,
-    marginBottom: verticalSpace.none,
-    marginInlineStart: "auto",
     marginInlineEnd: "auto",
-    marginTop: verticalSpace["4xl"],
-    maxWidth: "15ch",
+    marginInlineStart: "auto",
     textWrap: "balance",
+    marginBottom: verticalSpace.none,
+    marginTop: verticalSpace.none,
+    maxWidth: "15ch",
   },
   lede: {
     color: uiColor.text1,
     fontFamily: fontFamily.serif,
     fontSize: "clamp(1.125rem, 2vw, 1.3125rem)",
     lineHeight: lineHeight.sm,
-    marginBottom: verticalSpace.none,
-    marginInlineStart: "auto",
     marginInlineEnd: "auto",
+    marginInlineStart: "auto",
+    textWrap: "pretty",
+    marginBottom: verticalSpace.none,
     marginTop: verticalSpace["5xl"],
     maxWidth: "58ch",
-    textWrap: "pretty",
   },
   heroCtaRow: {
     justifyContent: "center",
@@ -276,26 +392,26 @@ const styles = stylex.create({
   },
   shelfLink: {
     borderRadius: radius.lg,
+    textDecoration: "none",
     display: "inline-flex",
     opacity: { default: 1, ":hover": 0.82 },
-    textDecoration: "none",
     transitionDuration: animationDuration.fast,
     transitionProperty: "opacity",
   },
   shelf: {
+    // eslint-disable-next-line @stylexjs/valid-styles
+    WebkitMaskImage: "linear-gradient(to bottom, #000 82%, transparent)",
     columnGap: spacing["2.5"],
     display: "flex",
     flexWrap: "wrap",
     justifyContent: "center",
-    marginInlineStart: "auto",
     marginInlineEnd: "auto",
-    marginTop: spacing["11"],
-    maxWidth: "47.5rem",
+    marginInlineStart: "auto",
     // eslint-disable-next-line @stylexjs/valid-styles
     maskImage: "linear-gradient(to bottom, #000 82%, transparent)",
     rowGap: spacing["2.5"],
-    // eslint-disable-next-line @stylexjs/valid-styles
-    WebkitMaskImage: "linear-gradient(to bottom, #000 82%, transparent)",
+    marginTop: spacing["11"],
+    maxWidth: "47.5rem",
   },
 
   /* split standout */
@@ -303,13 +419,8 @@ const styles = stylex.create({
     alignItems: "center",
     columnGap: spacing["14"],
     display: "grid",
-    gridTemplateColumns: { default: "1fr 1fr", [TABLET]: "1fr" },
+    gridTemplateColumns: { [TABLET]: "1fr", default: "1fr 1fr" },
     rowGap: spacing["9"],
-  },
-  splitText: {},
-  kickerBlock: {
-    display: "inline-block",
-    marginBottom: verticalSpace["3xl"],
   },
   splitTitle: {
     color: uiColor.text2,
@@ -318,18 +429,18 @@ const styles = stylex.create({
     fontWeight: fontWeight.medium,
     letterSpacing: tracking.tight,
     lineHeight: 1.08,
+    textWrap: "balance",
     marginBottom: verticalSpace["4xl"],
     marginTop: verticalSpace.none,
-    textWrap: "balance",
   },
   splitPara: {
     color: uiColor.text1,
     fontFamily: fontFamily.serif,
     fontSize: fontSize.lg,
     lineHeight: 1.62,
+    textWrap: "pretty",
     marginBottom: verticalSpace["3xl"],
     marginTop: verticalSpace.none,
-    textWrap: "pretty",
   },
   splitParaLast: {
     marginBottom: verticalSpace.none,
@@ -337,25 +448,26 @@ const styles = stylex.create({
 
   /* mock reading surface */
   read: {
-    backgroundColor: uiColor.bg,
     borderColor: uiColor.border1,
     borderRadius: radius.lg,
     borderStyle: "solid",
     borderWidth: 1,
+    cornerShape: "squircle",
+    backgroundColor: uiColor.bg,
     boxShadow: shadow.lg,
-    paddingBottom: spacing["8"],
-    paddingInlineStart: spacing["8"],
     paddingInlineEnd: spacing["8"],
-    paddingTop: spacing["8"],
+    paddingInlineStart: spacing["8"],
     position: "relative",
+    paddingBottom: spacing["8"],
+    paddingTop: spacing["8"],
   },
   readByline: {
     alignItems: "center",
+    columnGap: spacing["2.5"],
+    display: "flex",
     borderBottomColor: uiColor.border1,
     borderBottomStyle: "solid",
     borderBottomWidth: 1,
-    columnGap: spacing["2.5"],
-    display: "flex",
     marginBottom: spacing["4"],
     paddingBottom: spacing["4"],
   },
@@ -410,17 +522,16 @@ const styles = stylex.create({
     fontSize: fontSize.lg,
     fontStyle: "italic",
     lineHeight: 1.34,
+    paddingInlineStart: spacing["4"],
     marginBottom: spacing["4"],
     marginTop: spacing["4"],
-    paddingInlineStart: spacing["4"],
   },
   readListen: {
-    alignItems: "center",
-    backgroundColor: { default: uiColor.solid1, ":hover": primaryColor.solid1 },
     borderRadius: radius.full,
     borderStyle: "none",
     borderWidth: 0,
-    bottom: spacing["5"],
+    alignItems: "center",
+    backgroundColor: { default: uiColor.solid1, ":hover": primaryColor.solid1 },
     color: uiColor.bg,
     columnGap: gap.sm,
     cursor: "pointer",
@@ -428,35 +539,37 @@ const styles = stylex.create({
     fontFamily: fontFamily.sans,
     fontSize: fontSize.xs,
     fontWeight: fontWeight.semibold,
-    paddingBottom: spacing["2"],
-    paddingInlineStart: spacing["3.5"],
-    paddingInlineEnd: spacing["3.5"],
-    paddingTop: spacing["2"],
-    position: "absolute",
     insetInlineEnd: spacing["5"],
+    paddingInlineEnd: spacing["3.5"],
+    paddingInlineStart: spacing["3.5"],
+    position: "absolute",
+    bottom: spacing["5"],
+    paddingBottom: spacing["2"],
+    paddingTop: spacing["2"],
   },
 
   /* mini feature triplet */
   miniGrid: {
+    columnGap: spacing["8"],
+    display: "grid",
+    gridTemplateColumns: { [TABLET]: "1fr", default: "repeat(3, 1fr)" },
+    rowGap: spacing["7"],
     borderTopColor: uiColor.border1,
     borderTopStyle: "solid",
     borderTopWidth: 1,
-    columnGap: spacing["8"],
-    display: "grid",
-    gridTemplateColumns: { default: "repeat(3, 1fr)", [TABLET]: "1fr" },
     marginTop: spacing["11"],
     paddingTop: spacing["10"],
-    rowGap: spacing["7"],
   },
   iconChip: {
+    borderRadius: radius.md,
+    cornerShape: "squircle",
     alignItems: "center",
     backgroundColor: primaryColor.component2,
-    borderRadius: radius.md,
     color: primaryColor.text2,
     display: "grid",
     flexShrink: 0,
-    height: spacing["10"],
     justifyItems: "center",
+    height: spacing["10"],
     marginBottom: spacing["3.5"],
     width: spacing["10"],
   },
@@ -474,26 +587,26 @@ const styles = stylex.create({
     fontFamily: fontFamily.serif,
     fontSize: fontSize.sm,
     lineHeight: 1.58,
+    textWrap: "pretty",
     marginBottom: verticalSpace.none,
     marginTop: verticalSpace.none,
-    textWrap: "pretty",
   },
 
   /* discover */
   pubPreview: {
     columnGap: spacing["4"],
     display: "grid",
-    gridTemplateColumns: { default: "repeat(3, 1fr)", [TABLET]: "1fr" },
-    marginTop: spacing["2"],
+    gridTemplateColumns: { [TABLET]: "1fr", default: "repeat(3, 1fr)" },
     rowGap: spacing["4"],
+    marginTop: spacing["2"],
   },
   inlineFeats: {
     columnGap: spacing["6"],
     display: "flex",
     flexWrap: "wrap",
+    rowGap: spacing["2.5"],
     marginBottom: spacing["1"],
     marginTop: spacing["7"],
-    rowGap: spacing["2.5"],
   },
   inlineFeat: {
     alignItems: "center",
@@ -511,33 +624,246 @@ const styles = stylex.create({
     columnGap: spacing["6"],
     display: "flex",
     flexWrap: "wrap",
-    marginTop: verticalSpace["3xl"],
     rowGap: spacing["2"],
+    marginTop: verticalSpace["3xl"],
   },
   storeLink: {
     marginTop: verticalSpace.none,
+  },
+  afterPara: {
+    color: uiColor.text1,
+    fontFamily: fontFamily.serif,
+    fontSize: fontSize.base,
+    lineHeight: 1.62,
+    textWrap: "pretty",
+    marginBottom: verticalSpace.none,
+    marginTop: spacing["8"],
+    maxWidth: "58ch",
   },
   discoverCta: {
     marginTop: spacing["7"],
   },
 
-  /* panels (rss + digest) */
-  panel: {
-    backgroundColor: uiColor.bgSubtle,
+  /* the gathered conversation */
+  atmo: {
     borderColor: uiColor.border1,
     borderRadius: radius.lg,
     borderStyle: "solid",
     borderWidth: 1,
-    paddingBottom: { default: spacing["11"], [MOBILE]: spacing["7"] },
-    paddingInlineStart: { default: spacing["11"], [MOBILE]: spacing["7"] },
-    paddingInlineEnd: { default: spacing["11"], [MOBILE]: spacing["7"] },
-    paddingTop: { default: spacing["11"], [MOBILE]: spacing["7"] },
+    cornerShape: "squircle",
+    overflow: "hidden",
+    backgroundColor: uiColor.bg,
+    boxShadow: shadow.lg,
+  },
+  atmoBar: {
+    alignItems: "baseline",
+    backgroundColor: uiColor.component1,
+    columnGap: gap.md,
+    display: "flex",
+    flexWrap: "wrap",
+    paddingInlineEnd: spacing["6"],
+    paddingInlineStart: spacing["6"],
+    rowGap: spacing["1"],
+    borderBottomColor: uiColor.border1,
+    borderBottomStyle: "solid",
+    borderBottomWidth: 1,
+    paddingBottom: spacing["3"],
+    paddingTop: spacing["3"],
+  },
+  atmoBarLabel: {
+    color: uiColor.text1,
+    fontFamily: fontFamily.sans,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.semibold,
+  },
+  atmoBarTitle: {
+    color: uiColor.text2,
+    fontFamily: fontFamily.serif,
+    fontSize: fontSize.sm,
+    fontStyle: "italic",
+  },
+  atmoList: {
+    listStyle: "none",
+    paddingInlineEnd: 0,
+    paddingInlineStart: 0,
+    marginBottom: verticalSpace.none,
+    marginTop: verticalSpace.none,
+    paddingBottom: 0,
+    paddingTop: 0,
+  },
+  atmoItem: {
+    columnGap: spacing["3.5"],
+    display: "flex",
+    paddingInlineEnd: spacing["6"],
+    paddingInlineStart: spacing["6"],
+    borderTopColor: uiColor.border1,
+    borderTopStyle: "solid",
+    borderTopWidth: 1,
+    paddingBottom: spacing["4"],
+    paddingTop: spacing["4"],
+  },
+  atmoItemFirst: {
+    borderTopWidth: 0,
+  },
+  atmoMark: {
+    borderRadius: radius.full,
+    alignItems: "center",
+    backgroundColor: uiColor.component1,
+    color: primaryColor.text2,
+    display: "grid",
+    flexShrink: 0,
+    justifyItems: "center",
+    height: spacing["8"],
+    width: spacing["8"],
+  },
+  atmoBody: {
+    minWidth: 0,
+  },
+  atmoMeta: {
+    alignItems: "baseline",
+    columnGap: gap.md,
+    display: "flex",
+    flexWrap: "wrap",
+    rowGap: spacing["0.5"],
+    marginBottom: spacing["1"],
+  },
+  atmoWho: {
+    color: uiColor.text2,
+    fontFamily: fontFamily.sans,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
+  },
+  atmoSrc: {
+    color: uiColor.text1,
+    fontFamily: fontFamily.mono,
+    fontSize: fontSize.xs,
+  },
+  atmoText: {
+    color: uiColor.text2,
+    fontFamily: fontFamily.serif,
+    fontSize: fontSize.sm,
+    lineHeight: 1.6,
+    textWrap: "pretty",
+    marginBottom: verticalSpace.none,
+    marginTop: verticalSpace.none,
+  },
+  atmoQuote: {
+    borderRadius: radius.sm,
+    cornerShape: "squircle",
+    backgroundColor: uiColor.bgSubtle,
+    color: uiColor.text1,
+    display: "block",
+    fontFamily: fontFamily.serif,
+    fontSize: fontSize.xs,
+    fontStyle: "italic",
+    lineHeight: 1.5,
+    paddingInlineEnd: spacing["2.5"],
+    paddingInlineStart: spacing["2.5"],
+    marginBottom: spacing["2"],
+    paddingBottom: spacing["1.5"],
+    paddingTop: spacing["1.5"],
+  },
+
+  /* supported formats */
+  fmtRow: {
+    columnGap: spacing["4"],
+    display: "grid",
+    gridTemplateColumns: {
+      [TABLET]: "1fr",
+      default: "repeat(3, 1fr)",
+    },
+    rowGap: spacing["4"],
+  },
+  fmtTile: {
+    borderColor: { default: uiColor.border1, ":hover": primaryColor.border3 },
+    borderRadius: radius.lg,
+    borderStyle: "solid",
+    borderWidth: 1,
+    cornerShape: "squircle",
+    textDecoration: "none",
+    alignItems: "center",
+    backgroundColor: { default: uiColor.bg, ":hover": uiColor.bgSubtle },
+    columnGap: spacing["4"],
+    display: "flex",
+    paddingInlineEnd: spacing["5"],
+    paddingInlineStart: spacing["5"],
+    transitionDuration: animationDuration.fast,
+    transitionProperty: "background-color, border-color",
+    paddingBottom: spacing["5"],
+    paddingTop: spacing["5"],
+  },
+  fmtName: {
+    color: uiColor.text2,
+    display: "block",
+    fontFamily: fontFamily.sans,
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.bold,
+    letterSpacing: tracking.tight,
+  },
+  fmtWhat: {
+    color: uiColor.text1,
+    display: "block",
+    fontFamily: fontFamily.serif,
+    fontSize: fontSize.sm,
+    lineHeight: 1.45,
+    marginTop: spacing["0.5"],
+  },
+  fmtMore: {
+    alignItems: "baseline",
+    columnGap: spacing["2"],
+    display: "flex",
+    flexWrap: "wrap",
+    rowGap: spacing["2"],
+    marginTop: spacing["8"],
+  },
+  fmtMoreLabel: {
+    color: uiColor.text1,
+    fontFamily: fontFamily.serif,
+    fontSize: fontSize.sm,
+    marginInlineEnd: spacing["1"],
+  },
+  fmtChip: {
+    borderColor: uiColor.border1,
+    borderRadius: radius.full,
+    borderStyle: "solid",
+    borderWidth: 1,
+    backgroundColor: uiColor.bgSubtle,
+    color: uiColor.text1,
+    fontFamily: fontFamily.sans,
+    fontSize: fontSize.xs,
+    paddingInlineEnd: spacing["2.5"],
+    paddingInlineStart: spacing["2.5"],
+    whiteSpace: "nowrap",
+    paddingBottom: spacing["1"],
+    paddingTop: spacing["1"],
+  },
+  fmtChipMore: {
+    borderStyle: "dashed",
+    backgroundColor: "transparent",
+    fontFamily: fontFamily.mono,
+  },
+
+  /* panels (rss + digest) */
+  panel: {
+    borderColor: uiColor.border1,
+    borderRadius: radius.lg,
+    borderStyle: "solid",
+    borderWidth: 1,
+    cornerShape: "squircle",
+    backgroundColor: uiColor.bgSubtle,
+    paddingInlineEnd: { [MOBILE]: spacing["7"], default: spacing["11"] },
+    paddingInlineStart: { [MOBILE]: spacing["7"], default: spacing["11"] },
+    paddingBottom: { [MOBILE]: spacing["7"], default: spacing["11"] },
+    paddingTop: { [MOBILE]: spacing["7"], default: spacing["11"] },
+  },
+  panelStacked: {
+    marginTop: spacing["4"],
   },
   panelSplit: {
     alignItems: "center",
     columnGap: spacing["12"],
     display: "grid",
-    gridTemplateColumns: { default: "1fr 1fr", [TABLET]: "1fr" },
+    gridTemplateColumns: { [TABLET]: "1fr", default: "1fr 1fr" },
     rowGap: spacing["9"],
   },
   panelPara: {
@@ -545,9 +871,9 @@ const styles = stylex.create({
     fontFamily: fontFamily.serif,
     fontSize: fontSize.lg,
     lineHeight: 1.62,
+    textWrap: "pretty",
     marginBottom: verticalSpace.none,
     marginTop: verticalSpace.none,
-    textWrap: "pretty",
   },
   panelParaSpaced: {
     marginBottom: spacing["6"],
@@ -560,11 +886,11 @@ const styles = stylex.create({
   },
   feed: {
     alignItems: "center",
+    columnGap: spacing["3.5"],
+    display: "flex",
     borderBottomColor: uiColor.border1,
     borderBottomStyle: "solid",
     borderBottomWidth: 1,
-    columnGap: spacing["3.5"],
-    display: "flex",
     paddingBottom: spacing["3.5"],
     paddingTop: spacing["3.5"],
   },
@@ -587,37 +913,39 @@ const styles = stylex.create({
     borderRadius: radius.xs,
     borderStyle: "solid",
     borderWidth: 1,
+    cornerShape: "squircle",
     color: uiColor.text1,
     flexShrink: 0,
     fontFamily: fontFamily.mono,
     fontSize: fontSize.xs,
-    paddingBottom: spacing["0.5"],
-    paddingInlineStart: spacing["2"],
     paddingInlineEnd: spacing["2"],
+    paddingInlineStart: spacing["2"],
+    paddingBottom: spacing["0.5"],
     paddingTop: spacing["0.5"],
   },
 
   /* digest mock email */
   mail: {
-    backgroundColor: uiColor.bg,
     borderColor: uiColor.border1,
     borderRadius: radius.lg,
     borderStyle: "solid",
     borderWidth: 1,
-    boxShadow: shadow.lg,
+    cornerShape: "squircle",
     overflow: "hidden",
+    backgroundColor: uiColor.bg,
+    boxShadow: shadow.lg,
   },
   mailBar: {
     alignItems: "center",
     backgroundColor: uiColor.component1,
+    columnGap: spacing["2.5"],
+    display: "flex",
+    paddingInlineEnd: spacing["4"],
+    paddingInlineStart: spacing["4"],
     borderBottomColor: uiColor.border1,
     borderBottomStyle: "solid",
     borderBottomWidth: 1,
-    columnGap: spacing["2.5"],
-    display: "flex",
     paddingBottom: spacing["3"],
-    paddingInlineStart: spacing["4"],
-    paddingInlineEnd: spacing["4"],
     paddingTop: spacing["3"],
   },
   mailBarIcon: {
@@ -637,9 +965,9 @@ const styles = stylex.create({
     marginInlineStart: "auto",
   },
   mailBody: {
-    paddingBottom: spacing["6"],
-    paddingInlineStart: spacing["6"],
     paddingInlineEnd: spacing["6"],
+    paddingInlineStart: spacing["6"],
+    paddingBottom: spacing["6"],
     paddingTop: spacing["5"],
   },
   mailKicker: {
@@ -648,8 +976,8 @@ const styles = stylex.create({
     fontSize: "0.66rem",
     fontWeight: fontWeight.bold,
     letterSpacing: tracking.widest,
-    marginBottom: spacing["1.5"],
     textTransform: "uppercase",
+    marginBottom: spacing["1.5"],
   },
   mailTitle: {
     color: uiColor.text2,
@@ -688,73 +1016,63 @@ const styles = stylex.create({
   },
   mailFoot: {
     alignItems: "center",
-    borderTopColor: uiColor.border1,
-    borderTopStyle: "solid",
-    borderTopWidth: 1,
     color: uiColor.text1,
     columnGap: gap.md,
     display: "flex",
     fontFamily: fontFamily.sans,
     fontSize: fontSize.xs,
+    borderTopColor: uiColor.border1,
+    borderTopStyle: "solid",
+    borderTopWidth: 1,
     marginTop: spacing["1.5"],
     paddingTop: spacing["3.5"],
   },
 
-  /* integrations */
-  intGrid: {
-    columnGap: spacing["4"],
-    display: "grid",
-    gridTemplateColumns: { default: "1fr 1fr", [TABLET]: "1fr" },
-    rowGap: spacing["4"],
-  },
-  intCard: {
-    backgroundColor: uiColor.bg,
+  /* the featured band (browser extension) */
+  band: {
     borderColor: uiColor.border1,
     borderRadius: radius.lg,
     borderStyle: "solid",
     borderWidth: 1,
-    display: "flex",
-    flexDirection: "column",
-    paddingBottom: spacing["7"],
-    paddingInlineStart: spacing["7"],
-    paddingInlineEnd: spacing["7"],
-    paddingTop: spacing["7"],
-  },
-  intFeature: {
-    alignItems: { default: "center", [TABLET]: "flex-start" },
+    cornerShape: "squircle",
+    alignItems: { [TABLET]: "flex-start", default: "center" },
     backgroundColor: uiColor.bgSubtle,
     columnGap: spacing["8"],
-    flexDirection: { default: "row", [TABLET]: "column" },
-    gridColumnEnd: "-1",
-    gridColumnStart: "1",
+    display: "flex",
+    flexDirection: { [TABLET]: "column", default: "row" },
+    paddingInlineEnd: spacing["7"],
+    paddingInlineStart: spacing["7"],
     rowGap: spacing["5"],
+    paddingBottom: spacing["7"],
+    paddingTop: spacing["7"],
   },
-  intFigure: {
+  bandFigure: {
     alignItems: "center",
-    alignSelf: { default: "stretch", [TABLET]: "auto" },
-    borderInlineEndColor: { default: uiColor.border1, [TABLET]: "transparent" },
+    alignSelf: { [TABLET]: "auto", default: "stretch" },
+    borderInlineEndColor: { [TABLET]: "transparent", default: uiColor.border1 },
     borderInlineEndStyle: "solid",
-    borderInlineEndWidth: { default: 1, [TABLET]: 0 },
+    borderInlineEndWidth: { [TABLET]: 0, default: 1 },
     display: "flex",
     flexShrink: 0,
     justifyContent: "center",
-    paddingInlineEnd: { default: spacing["8"], [TABLET]: 0 },
-    width: { default: "180px", [TABLET]: "auto" },
+    paddingInlineEnd: { [TABLET]: 0, default: spacing["8"] },
+    width: { [TABLET]: "auto", default: "11.25rem" },
   },
-  intFigureChip: {
+  bandFigureChip: {
+    borderRadius: radius.lg,
+    cornerShape: "squircle",
     alignItems: "center",
     backgroundColor: primaryColor.component2,
-    borderRadius: radius.lg,
     color: primaryColor.text2,
     display: "grid",
-    height: spacing["16"],
     justifyItems: "center",
+    height: spacing["16"],
     width: spacing["16"],
   },
-  intBody: {
+  bandBody: {
     minWidth: 0,
   },
-  intTitle: {
+  bandTitle: {
     color: uiColor.text2,
     fontFamily: fontFamily.sans,
     fontSize: fontSize.base,
@@ -763,53 +1081,182 @@ const styles = stylex.create({
     marginBottom: spacing["2"],
     marginTop: verticalSpace.none,
   },
-  intDesc: {
+  bandDesc: {
     color: uiColor.text1,
     fontFamily: fontFamily.serif,
     fontSize: fontSize.sm,
     lineHeight: 1.58,
+    textWrap: "pretty",
     marginBottom: verticalSpace.none,
     marginTop: verticalSpace.none,
-    textWrap: "pretty",
   },
-  builder: {
-    alignItems: "center",
-    borderColor: uiColor.border2,
+
+  /* closing note under a section */
+  note: {
+    borderColor: uiColor.border1,
     borderRadius: radius.md,
-    borderStyle: "dashed",
+    borderStyle: "solid",
     borderWidth: 1,
+    cornerShape: "squircle",
+    alignItems: "center",
     columnGap: spacing["3.5"],
     display: "flex",
     flexWrap: "wrap",
+    paddingInlineEnd: spacing["5"],
+    paddingInlineStart: spacing["5"],
+    rowGap: spacing["2"],
     marginTop: spacing["6"],
     paddingBottom: spacing["4"],
-    paddingInlineStart: spacing["5"],
-    paddingInlineEnd: spacing["5"],
     paddingTop: spacing["4"],
-    rowGap: spacing["2"],
   },
-  builderIcon: {
-    color: uiColor.text1,
+  noteIcon: {
+    color: primaryColor.text2,
     flexShrink: 0,
   },
-  builderText: {
+  noteText: {
     color: uiColor.text1,
     flexGrow: 1,
     fontFamily: fontFamily.serif,
     fontSize: fontSize.sm,
+    lineHeight: 1.55,
+    textWrap: "pretty",
     marginBottom: verticalSpace.none,
     marginTop: verticalSpace.none,
     minWidth: "13.75rem",
   },
-  builderLink: {
+
+  /* developer platform */
+  code: {
+    borderColor: uiColor.border1,
+    borderRadius: radius.lg,
+    borderStyle: "solid",
+    borderWidth: 1,
+    cornerShape: "squircle",
+    overflow: "hidden",
+    backgroundColor: uiColor.bg,
+    boxShadow: shadow.lg,
+  },
+  codeBar: {
+    alignItems: "center",
+    backgroundColor: uiColor.component1,
+    color: uiColor.text1,
+    columnGap: spacing["2.5"],
+    display: "flex",
+    fontFamily: fontFamily.mono,
+    fontSize: fontSize.xs,
+    paddingInlineEnd: spacing["4"],
+    paddingInlineStart: spacing["4"],
+    borderBottomColor: uiColor.border1,
+    borderBottomStyle: "solid",
+    borderBottomWidth: 1,
+    paddingBottom: spacing["3"],
+    paddingTop: spacing["3"],
+  },
+  codePre: {
+    color: uiColor.text1,
+    fontFamily: fontFamily.mono,
+    fontSize: fontSize.xs,
+    lineHeight: 1.7,
+    // Long at-uris would otherwise clip off the right edge with no affordance.
+    overflowWrap: "anywhere",
+    paddingInlineEnd: spacing["5"],
+    paddingInlineStart: spacing["5"],
+    whiteSpace: "pre-wrap",
+    marginBottom: verticalSpace.none,
     marginTop: verticalSpace.none,
+    paddingBottom: spacing["5"],
+    paddingTop: spacing["5"],
+  },
+  codeCmd: {
+    color: uiColor.text2,
+    fontWeight: fontWeight.semibold,
+  },
+  codeUrl: {
+    color: primaryColor.text2,
+  },
+  codeKey: {
+    color: uiColor.text2,
+    fontWeight: fontWeight.semibold,
+  },
+  codeStr: {
+    color: primaryColor.text2,
+  },
+  codeNum: {
+    color: uiColor.text2,
+  },
+  devList: {
+    columnGap: spacing["8"],
+    display: "grid",
+    gridTemplateColumns: { [MOBILE]: "1fr", default: "repeat(2, 1fr)" },
+    rowGap: spacing["7"],
+    borderTopColor: uiColor.border1,
+    borderTopStyle: "solid",
+    borderTopWidth: 1,
+    marginTop: spacing["11"],
+    paddingTop: spacing["9"],
+  },
+  devItem: {
+    minWidth: 0,
+  },
+  devLink: {
+    textDecoration: "none",
+    color: { default: uiColor.text2, ":hover": primaryColor.text2 },
+    fontFamily: fontFamily.sans,
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.bold,
+    letterSpacing: tracking.tight,
+    transitionDuration: animationDuration.fast,
+    transitionProperty: "color",
+  },
+  devWhat: {
+    color: uiColor.text1,
+    fontFamily: fontFamily.serif,
+    fontSize: fontSize.sm,
+    lineHeight: 1.55,
+    textWrap: "pretty",
+    marginBottom: verticalSpace.none,
+    marginTop: spacing["1.5"],
+  },
+  pkgRow: {
+    alignItems: "baseline",
+    columnGap: spacing["2"],
+    display: "flex",
+    flexWrap: "wrap",
+    rowGap: spacing["2"],
+    marginTop: spacing["9"],
+  },
+  pkgLabel: {
+    color: uiColor.text1,
+    fontFamily: fontFamily.serif,
+    fontSize: fontSize.sm,
+    marginInlineEnd: spacing["1"],
+  },
+  pkgPrefix: {
+    color: uiColor.text2,
+    fontFamily: fontFamily.mono,
+    fontSize: fontSize.xs,
+  },
+  pkgChip: {
+    borderColor: uiColor.border1,
+    borderRadius: radius.xs,
+    borderStyle: "solid",
+    borderWidth: 1,
+    cornerShape: "squircle",
+    backgroundColor: uiColor.bgSubtle,
+    color: uiColor.text1,
+    fontFamily: fontFamily.mono,
+    fontSize: fontSize.xs,
+    paddingInlineEnd: spacing["2"],
+    paddingInlineStart: spacing["2"],
+    whiteSpace: "nowrap",
+    paddingBottom: spacing["0.5"],
+    paddingTop: spacing["0.5"],
   },
 
-  /* tenets */
   /* closing */
   close: {
-    paddingTop: spacing["16"],
     textAlign: "center",
+    paddingTop: spacing["16"],
   },
   closeTitle: {
     color: uiColor.text2,
@@ -818,24 +1265,24 @@ const styles = stylex.create({
     fontWeight: fontWeight.medium,
     letterSpacing: tracking.tight,
     lineHeight: 1.08,
-    marginBottom: verticalSpace.none,
-    marginInlineStart: "auto",
     marginInlineEnd: "auto",
+    marginInlineStart: "auto",
+    textWrap: "balance",
+    marginBottom: verticalSpace.none,
     marginTop: verticalSpace.none,
     maxWidth: "16ch",
-    textWrap: "balance",
   },
   closeDek: {
     color: uiColor.text1,
     fontFamily: fontFamily.serif,
     fontSize: fontSize.lg,
     lineHeight: lineHeight.sm,
-    marginBottom: verticalSpace.none,
-    marginInlineStart: "auto",
     marginInlineEnd: "auto",
+    marginInlineStart: "auto",
+    textWrap: "pretty",
+    marginBottom: verticalSpace.none,
     marginTop: verticalSpace["5xl"],
     maxWidth: "52ch",
-    textWrap: "pretty",
   },
 });
 
@@ -890,23 +1337,6 @@ function CtaButton({
     >
       {inner}
     </a>
-  );
-}
-
-/** Inline "text link with arrow" used inside cards. */
-function TextLink({
-  to,
-  children,
-  style,
-}: {
-  to: string;
-  children: React.ReactNode;
-  style?: stylex.StyleXStyles;
-}) {
-  return (
-    <Link to={to} {...stylex.props(styles.tlink, style)}>
-      {children} <DirectionalIcon as={ArrowRight} size={15} />
-    </Link>
   );
 }
 
@@ -1006,20 +1436,9 @@ function ListenChip({
   );
 }
 
-function SectionHead({
-  kicker,
-  title,
-  dek,
-}: {
-  kicker: string;
-  title: string;
-  dek?: string;
-}) {
+function SectionHead({ title, dek }: { title: string; dek?: string }) {
   return (
     <div {...stylex.props(styles.sHead)}>
-      <div {...stylex.props(styles.sHeadKicker)}>
-        <Kicker>{kicker}</Kicker>
-      </div>
       <h2 {...stylex.props(styles.h2)}>{title}</h2>
       {dek ? <p {...stylex.props(styles.dek)}>{dek}</p> : null}
     </div>
@@ -1046,28 +1465,42 @@ function MiniFeature({
   );
 }
 
-function IntegrationCard({
+/**
+ * One row of the mock "under this article" stack. `who` is illustrative — the
+ * whole figure is `aria-hidden`, and the real thing is assembled from records
+ * on the network at read time.
+ */
+function AtmoItem({
   icon: Icon,
-  title,
+  first = false,
+  who,
+  source,
+  quote,
   children,
-  link,
 }: {
   icon: IconType;
-  title: string;
+  first?: boolean;
+  who: string;
+  source: string;
+  quote?: string;
   children: React.ReactNode;
-  link?: { to: string; label: string };
 }) {
   return (
-    <div {...stylex.props(styles.intCard)}>
-      <span {...stylex.props(styles.iconChip)}>
-        <Icon size={20} aria-hidden />
+    <li {...stylex.props(styles.atmoItem, first && styles.atmoItemFirst)}>
+      <span {...stylex.props(styles.atmoMark)}>
+        <Icon size={15} strokeWidth={2} aria-hidden />
       </span>
-      <div {...stylex.props(styles.intBody)}>
-        <h4 {...stylex.props(styles.intTitle)}>{title}</h4>
-        <p {...stylex.props(styles.intDesc)}>{children}</p>
-        {link ? <TextLink to={link.to}>{link.label}</TextLink> : null}
+      <div {...stylex.props(styles.atmoBody)}>
+        <div {...stylex.props(styles.atmoMeta)}>
+          <span {...stylex.props(styles.atmoWho)}>{who}</span>
+          <span {...stylex.props(styles.atmoSrc)}>{source}</span>
+        </div>
+        {quote ? (
+          <span {...stylex.props(styles.atmoQuote)}>{quote}</span>
+        ) : null}
+        <p {...stylex.props(styles.atmoText)}>{children}</p>
       </div>
-    </div>
+    </li>
   );
 }
 
@@ -1095,14 +1528,17 @@ export function AboutView() {
   const firstPub = pubs[0];
   const secondPub = pubs[1];
   const discoverDek = countLabel
-    ? t`Most readers stop at what you already subscribe to. Standard Reader treats finding your next favourite as part of the job. Browse all ${countLabel} publications on the network — not just the handful you've heard of.`
-    : t`Most readers stop at what you already subscribe to. Standard Reader treats finding your next favourite as part of the job. Browse every publications on the network — not just the handful you've heard of.`;
+    ? t`Most readers stop at what they already subscribe to. Standard Reader treats the next voice as part of the job: the piece you just finished points at who cited it, what it’s related to, and who else is worth following — across all ${countLabel} publications on the network, not just the handful you’ve heard of.`
+    : t`Most readers stop at what they already subscribe to. Standard Reader treats the next voice as part of the job: the piece you just finished points at who cited it, what it’s related to, and who else is worth following — across every publication on the network, not just the handful you’ve heard of.`;
+
+  // A real response from the public API, using a publication that is actually
+  // trending right now — the snippet is the endpoint anyone can call.
+  const samplePub = previewPubs[0] ?? firstPub;
 
   return (
     <article {...stylex.props(styles.root)} data-screen-label="About">
       {/* ── Hero ── */}
       <header {...stylex.props(styles.hero)}>
-        <span {...stylex.props(styles.eyebrow)}>Standard Reader</span>
         <h1 {...stylex.props(styles.heroTitle)}>
           <Trans>A home for the writing you love</Trans>
         </h1>
@@ -1149,15 +1585,10 @@ export function AboutView() {
         ) : null}
       </header>
 
-      {/* ── Calm reading ── */}
+      {/* ── 1. The reading surface ── */}
       <section {...stylex.props(styles.section)}>
         <div {...stylex.props(styles.split)}>
-          <div {...stylex.props(styles.splitText)}>
-            <div {...stylex.props(styles.kickerBlock)}>
-              <Kicker>
-                <Trans>The reading experience</Trans>
-              </Kicker>
-            </div>
+          <div>
             <h2 {...stylex.props(styles.splitTitle)}>
               <Trans>A quiet place to read</Trans>
             </h2>
@@ -1171,11 +1602,9 @@ export function AboutView() {
             </p>
             <p {...stylex.props(styles.splitPara, styles.splitParaLast)}>
               <Trans>
-                And it never feels sealed off. We connect each article to the
-                conversation happening across the Atmosphere — the open network
-                beyond this app — gathering the Bluesky posts and replies about
-                a piece, the notes left in its margins, and the other writing
-                that cites it, quietly beneath what you&rsquo;re reading.
+                Nothing about it is fixed. Set the measure, the type size, and
+                the typeface to whatever your eyes want, in light or dark, and
+                the setting follows you to every article you open after it.
               </Trans>
             </p>
           </div>
@@ -1239,20 +1668,20 @@ export function AboutView() {
               pick a voice.
             </Trans>
           </MiniFeature>
-          <MiniFeature icon={Globe} title={t`Prefer the original?`}>
+          <MiniFeature icon={Highlighter} title={t`Keep the good sentence`}>
             <Trans>
-              Flip one setting and article links open on the publication’s own
-              site instead. Read wherever feels right to you.
+              Select a passage and share it as a typeset card that links back to
+              the article — or keep reading and pick up exactly where you left
+              off next time.
             </Trans>
           </MiniFeature>
         </div>
       </section>
 
-      {/* ── Discover ── */}
+      {/* ── 2. Reading starts a journey ── */}
       <section {...stylex.props(styles.section)}>
         <SectionHead
-          kicker={t`Discovery`}
-          title={t`Find the ones you didn't know you wanted`}
+          title={t`Every piece is a door to the next one`}
           dek={discoverDek}
         />
 
@@ -1277,108 +1706,192 @@ export function AboutView() {
           ))}
         </div>
 
-        <div {...stylex.props(styles.discoverCta)}>
+        <p {...stylex.props(styles.afterPara)}>
+          <Trans>
+            And when a run of them turns out to be good together, collect them
+            into a named list — a playlist for reading. Anyone can add the whole
+            thing to their own reader in a single tap.
+          </Trans>
+        </p>
+
+        <div {...stylex.props(styles.ctaRow, styles.discoverCta)}>
+          <CtaButton to="/collections" variant="ghost" icon={BookOpen}>
+            <Trans>See collections</Trans>
+          </CtaButton>
           <CtaButton to="/discover" variant="ink" trailingArrow>
             <Trans>Browse publications</Trans>
           </CtaButton>
         </div>
       </section>
 
-      {/* ── Integrations ── */}
+      {/* ── 3. The social piece blogging never had ── */}
       <section {...stylex.props(styles.section)}>
-        <SectionHead
-          kicker={t`Integrations`}
-          title={t`Standard Reader meets you where you read`}
-          dek={t`It doesn't ask you to leave the rest of the web behind. It reaches out to it — and stays a good citizen of the wider network.`}
-        />
-
-        <div {...stylex.props(styles.intGrid)}>
-          {/* featured: browser extension */}
-          <div {...stylex.props(styles.intCard, styles.intFeature)}>
-            <div {...stylex.props(styles.intFigure)}>
-              <span {...stylex.props(styles.intFigureChip)}>
-                <AppWindow size={30} aria-hidden />
-              </span>
-            </div>
-            <div {...stylex.props(styles.intBody)}>
-              <h4 {...stylex.props(styles.intTitle)}>
-                <Trans>Save from anywhere you browse</Trans>
-              </h4>
-              <p {...stylex.props(styles.intDesc)}>
-                <Trans>
-                  A lightweight browser extension lets you save and subscribe to
-                  publications while you’re out on the web — with subtle badges
-                  on bsky.app and a one-click overlay on any page you land on.
-                  Your reading list fills itself.
-                </Trans>
-              </p>
-              <div {...stylex.props(styles.storeLinks)}>
-                <ExtLink href={CHROME_STORE_URL} style={styles.storeLink}>
-                  <Trans>Add to Chrome</Trans>
-                </ExtLink>
-                <ExtLink href={FIREFOX_STORE_URL} style={styles.storeLink}>
-                  <Trans>Add to Firefox</Trans>
-                </ExtLink>
-              </div>
-            </div>
+        <div {...stylex.props(styles.split)}>
+          <div>
+            <h2 {...stylex.props(styles.splitTitle)}>
+              <Trans>The part blogging always missed</Trans>
+            </h2>
+            <p {...stylex.props(styles.splitPara)}>
+              <Trans>
+                Blogs never really solved the conversation. Comment boxes
+                belonged to the blog, went unread, filled with spam, and
+                vanished when the site did. So the talking moved somewhere else
+                — and stopped being attached to the writing at all.
+              </Trans>
+            </p>
+            <p {...stylex.props(styles.splitPara, styles.splitParaLast)}>
+              <Trans>
+                None of this is ours. We gather it from the Atmosphere — the
+                open network these apps all share — and show it under the piece
+                it’s about. Every line links back to where it was actually
+                written, no account or comment box required, and it works
+                whether or not the author ever opted in.
+              </Trans>
+            </p>
           </div>
 
-          <IntegrationCard
-            icon={Heart}
-            title={t`Save, like, subscribe — everywhere`}
-          >
-            <Trans>
-              One tap from the reading view, on any device, instantly in sync.
-              Your library is always where you left it.
-            </Trans>
-          </IntegrationCard>
-
-          <IntegrationCard icon={Users} title={t`The conversation, gathered`}>
-            <Trans>
-              Under each article you see the discussion from across the open
-              network — Bluesky posts and replies, margin notes, links from
-              other pieces that cite it, and related reading. All read-only, all
-              linking back to the source.
-            </Trans>
-          </IntegrationCard>
-
-          <IntegrationCard icon={Share2} title={t`Shareable everywhere`}>
-            <Trans>
-              Publications, lists, and collections each get a clean link with a
-              rich preview card — plus a subscribe button a publication can drop
-              on its own site.
-            </Trans>
-          </IntegrationCard>
-
-          <IntegrationCard
-            icon={Bookmark}
-            title={t`Curated lists & collections`}
-            link={{ to: "/collections", label: t`See collections` }}
-          >
-            <Trans>
-              Build named, shareable lists of publications — a playlist for
-              reading. Anyone can add your list to their own reader in a single
-              tap.
-            </Trans>
-          </IntegrationCard>
-        </div>
-
-        <div {...stylex.props(styles.builder)}>
-          <Info size={18} aria-hidden {...stylex.props(styles.builderIcon)} />
-          <p {...stylex.props(styles.builderText)}>
-            <Trans>
-              Building something on the same index? There’s a public API.
-            </Trans>
-          </p>
-          <TextLink to="/docs/api" style={styles.builderLink}>
-            <Trans>Read the API docs</Trans>
-          </TextLink>
+          <div {...stylex.props(styles.atmo)} aria-hidden>
+            <div {...stylex.props(styles.atmoBar)}>
+              <span {...stylex.props(styles.atmoBarLabel)}>
+                <Trans>Under this article</Trans>
+              </span>
+              <span {...stylex.props(styles.atmoBarTitle)}>
+                <Trans>The Slow Web, Revisited</Trans>
+              </span>
+            </div>
+            <ul {...stylex.props(styles.atmoList)}>
+              <AtmoItem
+                first
+                icon={MessageSquare}
+                who={t`A reply`}
+                source={t`on Bluesky`}
+              >
+                <Trans>
+                  “Been thinking about this all week. The measurement is the
+                  part that ruins it — not the writing.”
+                </Trans>
+              </AtmoItem>
+              <AtmoItem
+                icon={PenLine}
+                who={t`A note in the margin`}
+                source={t`on Margin`}
+                quote={t`“…made to be read, and not to be measured.”`}
+              >
+                <Trans>
+                  “This is the whole argument in one clause. Worth sitting
+                  with.”
+                </Trans>
+              </AtmoItem>
+              <AtmoItem icon={Link2} who={t`Cited by`} source={t`Semble`}>
+                <Trans>
+                  Two other pieces link to this one — you can read them from
+                  here.
+                </Trans>
+              </AtmoItem>
+              <AtmoItem
+                icon={Compass}
+                who={t`Related reading`}
+                source={t`Semble`}
+              >
+                <Trans>
+                  Four essays covering the same ground, from publications you
+                  don’t follow yet.
+                </Trans>
+              </AtmoItem>
+            </ul>
+          </div>
         </div>
       </section>
 
-      {/* ── Weekly digest ── */}
+      {/* ── 4. Supported formats ── */}
       <section {...stylex.props(styles.section)}>
-        <div {...stylex.props(styles.panel)}>
+        <SectionHead
+          title={t`Written wherever they write`}
+          dek={t`An article is a record in its author’s own repository, and every publishing tool on the network writes that record a little differently. Standard Reader reads ${SUPPORTED_CONTENT_FORMATS.size} of those content formats and renders them all into the same calm page — so a reader never has to care which tool a writer chose.`}
+        />
+
+        <div {...stylex.props(styles.fmtRow)}>
+          {NAMED_PLATFORMS.map((p) => (
+            <a
+              key={p.name}
+              href={p.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              {...stylex.props(styles.fmtTile)}
+            >
+              <PlatformMark platform={p.platform} size={30} />
+              <span>
+                <span {...stylex.props(styles.fmtName)}>{p.name}</span>
+                <span {...stylex.props(styles.fmtWhat)}>{i18n._(p.what)}</span>
+              </span>
+            </a>
+          ))}
+        </div>
+
+        <div {...stylex.props(styles.fmtMore)}>
+          <span {...stylex.props(styles.fmtMoreLabel)}>
+            <Trans>Also read natively:</Trans>
+          </span>
+          {OTHER_TOOLS.map((tool) => (
+            <span key={tool.name} {...stylex.props(styles.fmtChip)}>
+              {tool.name}
+            </span>
+          ))}
+          <span {...stylex.props(styles.fmtChip, styles.fmtChipMore)}>
+            <Trans>+{UNNAMED_FORMAT_COUNT} more</Trans>
+          </span>
+        </div>
+
+        <div {...stylex.props(styles.note)}>
+          <Globe size={18} aria-hidden {...stylex.props(styles.noteIcon)} />
+          <p {...stylex.props(styles.noteText)}>
+            <Trans>
+              Prefer the original? Flip one setting and article links open on
+              the publication’s own site instead — Standard Reader will still
+              keep your place.
+            </Trans>
+          </p>
+        </div>
+      </section>
+
+      {/* ── 5. However you like to read it ── */}
+      <section {...stylex.props(styles.section)}>
+        <SectionHead
+          title={t`However you like to read it`}
+          dek={t`Standard Reader doesn’t ask you to move in. It goes out to the web you already use, and hands your reading back in whatever shape suits you.`}
+        />
+
+        <div {...stylex.props(styles.band)}>
+          <div {...stylex.props(styles.bandFigure)}>
+            <span {...stylex.props(styles.bandFigureChip)}>
+              <AppWindow size={30} aria-hidden />
+            </span>
+          </div>
+          <div {...stylex.props(styles.bandBody)}>
+            <h3 {...stylex.props(styles.bandTitle)}>
+              <Trans>Save from anywhere you browse</Trans>
+            </h3>
+            <p {...stylex.props(styles.bandDesc)}>
+              <Trans>
+                A lightweight browser extension lets you save and subscribe to
+                publications while you’re out on the web — with subtle badges on
+                bsky.app and a one-click overlay on any page you land on. Your
+                reading list fills itself, and every save, like, and subscribe
+                is instantly in sync with whatever device you read on next.
+              </Trans>
+            </p>
+            <div {...stylex.props(styles.storeLinks)}>
+              <ExtLink href={CHROME_STORE_URL} style={styles.storeLink}>
+                <Trans>Add to Chrome</Trans>
+              </ExtLink>
+              <ExtLink href={FIREFOX_STORE_URL} style={styles.storeLink}>
+                <Trans>Add to Firefox</Trans>
+              </ExtLink>
+            </div>
+          </div>
+        </div>
+
+        <div {...stylex.props(styles.panel, styles.panelStacked)}>
           <div {...stylex.props(styles.panelSplit)}>
             {/* mock email */}
             <div {...stylex.props(styles.mail)} aria-hidden>
@@ -1434,14 +1947,9 @@ export function AboutView() {
             </div>
 
             <div>
-              <div {...stylex.props(styles.kickerBlock)}>
-                <Kicker>
-                  <Trans>In your inbox</Trans>
-                </Kicker>
-              </div>
-              <h2 {...stylex.props(styles.splitTitle, styles.h2Panel)}>
+              <h3 {...stylex.props(styles.splitTitle, styles.h2Panel)}>
                 <Trans>One tasteful email a week</Trans>
-              </h2>
+              </h3>
               <p {...stylex.props(styles.panelPara, styles.panelParaSpaced)}>
                 <Trans>
                   Don’t want another app to check? Opt into a weekly email with
@@ -1456,26 +1964,26 @@ export function AboutView() {
             </div>
           </div>
         </div>
-      </section>
 
-      {/* ── RSS ── */}
-      <section {...stylex.props(styles.section)}>
-        <div {...stylex.props(styles.panel)}>
+        <div {...stylex.props(styles.panel, styles.panelStacked)}>
           <div {...stylex.props(styles.panelSplit)}>
             <div>
-              <div {...stylex.props(styles.kickerBlock)}>
-                <Kicker>
-                  <Trans>Plays nice with the open web</Trans>
-                </Kicker>
-              </div>
-              <h2 {...stylex.props(styles.splitTitle, styles.h2Panel)}>
+              <h3 {...stylex.props(styles.splitTitle, styles.h2Panel)}>
                 <Trans>Take any of it as RSS</Trans>
-              </h2>
+              </h3>
+              <p {...stylex.props(styles.panelPara, styles.panelParaSpaced)}>
+                <Trans>
+                  And if your reader of choice is one you already have, any
+                  slice of the network comes with its own feed — pipe it
+                  straight in and never open this app at all.
+                </Trans>
+              </p>
               <p {...stylex.props(styles.panelPara)}>
                 <Trans>
-                  Standard Reader doesn’t trap your reading inside one app. Any
-                  slice of the network comes with its own RSS feed — pipe it
-                  straight into whatever reader you already use.
+                  Everything here is linkable, too. Publications, lists, and
+                  collections each get a clean URL with a rich preview card —
+                  plus a subscribe button a publication can drop straight onto
+                  its own site.
                 </Trans>
               </p>
             </div>
@@ -1499,6 +2007,111 @@ export function AboutView() {
               ))}
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* ── 6. Developer platform ── */}
+      <section {...stylex.props(styles.section)}>
+        <SectionHead
+          title={t`Build on the same index`}
+          dek={t`Everything this app runs on is public. The schemas are open, the read-model is queryable, and the renderer that draws these pages is published for you to use — so a reading app, a search tool, or a better client than this one is a weekend, not a platform deal.`}
+        />
+
+        <div {...stylex.props(styles.split)}>
+          <div {...stylex.props(styles.code)}>
+            <div {...stylex.props(styles.codeBar)}>
+              <Terminal size={14} aria-hidden />
+              <span>
+                <Trans>Public API — no key required</Trans>
+              </span>
+            </div>
+            <pre {...stylex.props(styles.codePre)}>
+              <span {...stylex.props(styles.codeCmd)}>GET</span>{" "}
+              <span {...stylex.props(styles.codeUrl)}>
+                /xrpc/app.standard-reader.getTrendingPublications?limit=1
+              </span>
+              {"\n\n{\n  "}
+              <span {...stylex.props(styles.codeKey)}>&quot;items&quot;</span>
+              {": [\n    {\n      "}
+              <span {...stylex.props(styles.codeKey)}>&quot;name&quot;</span>
+              {": "}
+              <span {...stylex.props(styles.codeStr)}>
+                {JSON.stringify(samplePub?.name ?? "The Almanac")}
+              </span>
+              {",\n      "}
+              {/* `did`, not the full `uri` — an at-uri wraps and shatters the
+                  JSON indentation at this column width, and the repo owner is
+                  the interesting half of it either way. */}
+              <span {...stylex.props(styles.codeKey)}>&quot;did&quot;</span>
+              {": "}
+              <span {...stylex.props(styles.codeStr)}>
+                {JSON.stringify(samplePub?.did ?? "did:plc:example")}
+              </span>
+              {",\n      "}
+              <span {...stylex.props(styles.codeKey)}>
+                &quot;documentCount&quot;
+              </span>
+              {": "}
+              <span {...stylex.props(styles.codeNum)}>
+                {samplePub?.documentCount ?? 0}
+              </span>
+              {",\n      "}
+              <span {...stylex.props(styles.codeKey)}>
+                &quot;subscriberCount&quot;
+              </span>
+              {": "}
+              <span {...stylex.props(styles.codeNum)}>
+                {samplePub?.subscriberCount ?? 0}
+              </span>
+              {"\n    }\n  ]\n}"}
+            </pre>
+          </div>
+
+          <div>
+            <p {...stylex.props(styles.splitPara)}>
+              <Trans>
+                That is a real response from the endpoint this page just called
+                — no key, no sign-up, no rate-limit form. The same is true of
+                every feed, directory, and search query the reader itself runs.
+              </Trans>
+            </p>
+            <p {...stylex.props(styles.splitPara, styles.splitParaLast)}>
+              <Trans>
+                There’s an MCP server on the same host, so you can point an
+                agent at the network too.
+              </Trans>
+            </p>
+            <div {...stylex.props(styles.ctaRow, styles.discoverCta)}>
+              <CtaButton to="/docs/introduction" variant="ink" trailingArrow>
+                <Trans>Read the docs</Trans>
+              </CtaButton>
+            </div>
+          </div>
+        </div>
+
+        <div {...stylex.props(styles.devList)}>
+          {DOCS_SURFACES.map((s) => (
+            <div key={s.to} {...stylex.props(styles.devItem)}>
+              <Link to={s.to} {...stylex.props(styles.devLink)}>
+                {i18n._(s.label)}
+              </Link>
+              <p {...stylex.props(styles.devWhat)}>{i18n._(s.what)}</p>
+            </div>
+          ))}
+        </div>
+
+        <div {...stylex.props(styles.pkgRow)}>
+          <span {...stylex.props(styles.pkgLabel)}>
+            <Trans>Render a document in your own app —</Trans>{" "}
+            <span {...stylex.props(styles.pkgPrefix)}>
+              @standard-reader/renderer-
+            </span>
+          </span>
+          {RENDERER_PACKAGES.map((name) => (
+            <span key={name} {...stylex.props(styles.pkgChip)}>
+              {name}
+            </span>
+          ))}
         </div>
       </section>
 

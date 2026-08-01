@@ -37,6 +37,7 @@ import type {
 import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
 import { getPublicUrlClient } from "#/lib/public-url";
+import type { ArchiveOrder } from "#/lib/publication/archive-order";
 import {
   publicationFeedUrl,
   publicationOgImageUrl,
@@ -44,6 +45,11 @@ import {
 } from "#/lib/site-metadata";
 import { useTrackReadingHistory } from "#/lib/use-track-reading-history";
 
+import {
+  ComicShelf,
+  ComicShelfSkeleton,
+} from "../components/comic/comic-shelf";
+import { AccountLabelsForDid } from "../components/reader/account-labels";
 import { ArticleRow, FeatureArticle } from "../components/reader/cards";
 import { FeedLoadMore } from "../components/reader/feed-load-more";
 import {
@@ -141,10 +147,24 @@ export const Route = createFileRoute("/_layout/p/$did/$rkey")({
     }
     const results = await Promise.all(awaitables);
     const header = results[0] as {
-      publication: { name: string; description: string };
+      publication: {
+        name: string;
+        description: string;
+        serial?: { kind: string } | null;
+      };
       owner: { did: string; handle: string };
       theme: PublicationThemeColors;
     } | null;
+
+    // A comic's archive is replaced by a shelf of covers, so the shelf is part
+    // of the page's first paint rather than something that pops in after it.
+    if (header?.publication.serial?.kind === "comic" && deps.filter === "all") {
+      await context.queryClient
+        .ensureQueryData(
+          publicationApi.getComicShelfQueryOptions(uri, { readerScope }),
+        )
+        .catch(() => null);
+    }
 
     if (header) {
       void context.queryClient.prefetchQuery(
@@ -219,19 +239,19 @@ const styles = stylex.create({
     boxSizing: "border-box",
     display: "flex",
     flexDirection: "column",
-    rowGap: spacing["4"],
-    marginInlineStart: "auto",
     marginInlineEnd: "auto",
+    marginInlineStart: "auto",
+    paddingInlineEnd: {
+      [HERO_DESKTOP]: spacing["10"],
+      default: spacing["5"],
+    },
+    paddingInlineStart: {
+      [HERO_DESKTOP]: spacing["10"],
+      default: spacing["5"],
+    },
+    rowGap: spacing["4"],
     maxWidth: "82.5rem",
     paddingBottom: spacing["6"],
-    paddingInlineStart: {
-      default: spacing["5"],
-      [HERO_DESKTOP]: spacing["10"],
-    },
-    paddingInlineEnd: {
-      default: spacing["5"],
-      [HERO_DESKTOP]: spacing["10"],
-    },
     paddingTop: spacing["6"],
     width: "100%",
   },
@@ -257,16 +277,16 @@ const styles = stylex.create({
     paddingTop: spacing["0.5"],
   },
   heroName: {
-    // Isolate only: this is a single-line NAME, so it must keep the
-    // surrounding UI alignment while still ordering its own characters
-    // correctly. `dir="auto"` here would left-align it inside an RTL page.
-    unicodeBidi: "isolate",
     color: uiColor.text2,
     fontFamily: fontFamily.serif,
     fontSize: { default: "1.85rem", "@media (min-width: 48rem)": "2rem" },
     fontWeight: fontWeight.semibold,
     letterSpacing: tracking.tight,
     lineHeight: lineHeight.xs,
+    // Isolate only: this is a single-line NAME, so it must keep the
+    // surrounding UI alignment while still ordering its own characters
+    // correctly. `dir="auto"` here would left-align it inside an RTL page.
+    unicodeBidi: "isolate",
     marginBottom: spacing["0"],
     marginTop: spacing["2"],
   },
@@ -644,12 +664,48 @@ function PublicationProfileContent({
           unreadDocumentUris.includes(doc.uri) ? { ...doc, isRead: true } : doc,
         ),
       );
+      // The server marks the whole publication read, not just the rows this page
+      // has loaded, so the shelf's dots all go out — clearing them here rather
+      // than refetching, because the `read` records reach the read model through
+      // the firehose and a refetch this soon would paint them straight back on.
+      queryClient.setQueryData(
+        publicationApi.getComicShelfQueryOptions(uri, { readerScope }).queryKey,
+        (shelf) =>
+          shelf
+            ? {
+                ...shelf,
+                issues: shelf.issues.map((issue) =>
+                  issue.unreadPages.length > 0
+                    ? { ...issue, unreadPages: [] }
+                    : issue,
+                ),
+              }
+            : shelf,
+      );
     },
     onSuccess: () => {
       setMarkAllReadCloseSignal((count) => count + 1);
     },
     onError: () => {
       invalidateReadQueries(queryClient);
+    },
+  });
+
+  // The archive's order lives in a cookie, so the server owns it — there's no
+  // client state to keep in step. Setting it invalidates this publication's
+  // document queries; the refetch comes back the other way round and carries the
+  // new `order`, which is also what re-shelves a comic's covers (the shelf's own
+  // query is untouched — the spine is always in publication order, and the shelf
+  // reverses it for display).
+  const { mutate: setArchiveOrder } = useMutation({
+    mutationFn: (next: ArchiveOrder) =>
+      publicationApi.setPublicationArchiveOrder({
+        data: { publicationUri: uri, order: next },
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: ["publication", "documents", uri],
+      });
     },
   });
 
@@ -686,6 +742,21 @@ function PublicationProfileContent({
     }
   }, [filter, nextOffset, uri]);
 
+  // A comic posts one page per document, so its full archive is a long list of
+  // near-identical rows. When the titles carry issue numbers, those pages are
+  // collapsed back into issues and shown as covers instead. Only over the full
+  // archive: the read/unread filters are per-page, and a shelf can't express
+  // "half of issue 3".
+  const shelfEnabled = pub.serial?.kind === "comic" && filter === "all";
+  const { data: shelf, isPending: shelfPending } = useQuery({
+    ...publicationApi.getComicShelfQueryOptions(uri, { readerScope }),
+    enabled: shelfEnabled,
+  });
+  // Until it resolves we don't know whether the titles group at all, and
+  // painting the page list only to swap it for a shelf is the worse flicker.
+  // The loader awaits this for comics, so it is normally already settled.
+  const showShelf = shelfEnabled && (shelfPending || Boolean(shelf?.grouped));
+
   const lead = documents[0];
   const rest = documents.slice(1);
 
@@ -721,6 +792,8 @@ function PublicationProfileContent({
               embed={embedMeta}
               markAllRead={markAllReadAction}
               filter={filter}
+              order={initialPage.order}
+              onOrderChange={(next) => setArchiveOrder(next)}
               trackReading={trackReading}
               onFilterChange={(next) => {
                 void navigate({ search: { filter: next }, resetScroll: false });
@@ -733,6 +806,11 @@ function PublicationProfileContent({
               {pub.description}
             </p>
           ) : null}
+
+          {/* Below the description, matching the author profile: a label is a
+              third party's statement about this account, so it reads after the
+              publication's own words rather than interrupting its identity line. */}
+          <AccountLabelsForDid did={pub.did} readerScope={readerScope} />
 
           <div {...stylex.props(styles.statStrip)}>
             <Stat
@@ -756,7 +834,20 @@ function PublicationProfileContent({
       <ReaderContent>
         <Flex direction="column" gap="6xl" style={styles.writing}>
           <PublicationLatestNote publicationUri={uri} />
-          {documents.length === 0 ? (
+          {showShelf ? (
+            <Flex direction="column" gap="5xl">
+              {shelf?.grouped ? (
+                <ComicShelf
+                  issues={shelf.issues}
+                  order={initialPage.order}
+                  trackReading={trackReading}
+                  signedIn={signedIn}
+                />
+              ) : (
+                <ComicShelfSkeleton />
+              )}
+            </Flex>
+          ) : documents.length === 0 ? (
             <div {...stylex.props(styles.emptyNote)}>
               {filter === "unread" ? (
                 <Trans>You’ve read everything from this publication.</Trans>
@@ -788,7 +879,8 @@ function PublicationProfileContent({
               ))}
             </div>
           )}
-          {documents.length > 0 ? (
+          {/* The shelf is complete on arrival — every issue, no paging. */}
+          {!showShelf && documents.length > 0 ? (
             <div>
               <FeedLoadMore
                 hasMore={nextOffset != null}
@@ -802,7 +894,11 @@ function PublicationProfileContent({
                 </div>
               ) : nextOffset == null ? (
                 <div {...stylex.props(styles.endNote)}>
-                  <Trans>You&apos;ve reached the end.</Trans>
+                  {pub.serial ? (
+                    <Trans>That&apos;s every issue published so far.</Trans>
+                  ) : (
+                    <Trans>You&apos;ve reached the end.</Trans>
+                  )}
                 </div>
               ) : null}
             </div>

@@ -56,20 +56,19 @@ const styles = stylex.create({
   // Landscape, because screenshots are: a square crop of a window shot is a
   // meaningless slice of chrome, where 3:2 shows enough to recognize.
   thumbWrap: {
-    backgroundColor: uiColor.bgSubtle,
     borderColor: uiColor.border1,
     borderRadius: radius.md,
     borderStyle: "solid",
     borderWidth: 1,
     cornerShape: "squircle",
-    flexShrink: 0,
-    height: spacing["12"],
     overflow: "hidden",
+    backgroundColor: uiColor.bgSubtle,
+    flexShrink: 0,
     position: "relative",
+    height: spacing["12"],
     width: spacing["20"],
   },
   thumb: {
-    height: "100%",
     objectFit: "cover",
     transitionDuration: {
       default: animationDuration.default,
@@ -77,6 +76,7 @@ const styles = stylex.create({
     },
     transitionProperty: "opacity",
     transitionTimingFunction: animationTimingFunction.easeInOut,
+    height: "100%",
     width: "100%",
   },
   thumbBusy: {
@@ -118,7 +118,10 @@ const styles = stylex.create({
       ":is([data-drop-target])": primaryColor.solid1,
       ":is([data-focus-visible])": focusColor.ring,
     },
+    borderRadius: radius.md,
     borderStyle: "solid",
+    borderWidth: 1,
+    gap: gap.lg,
     // Idle fill matches the inputs (`uiColor.bg`) rather than the design
     // system's `bgSubtle`, so at rest the zone reads as another field in the
     // form instead of a tinted panel. The drop-target tint is kept.
@@ -126,17 +129,14 @@ const styles = stylex.create({
       default: uiColor.bg,
       ":is([data-drop-target])": primaryColor.component1,
     },
-    borderRadius: radius.md,
-    borderWidth: 1,
     // Fixed, not padding-derived: the zone is the drop target, so it should
     // stay a stable, generous surface as rows are added above it rather than
     // shrinking to fit its own label.
     boxSizing: "border-box",
-    gap: gap.lg,
-    height: spacing["28"],
-    paddingBottom: verticalSpace["3xl"],
     paddingInlineEnd: horizontalSpace["3xl"],
     paddingInlineStart: horizontalSpace["3xl"],
+    height: spacing["28"],
+    paddingBottom: verticalSpace["3xl"],
     paddingTop: verticalSpace["3xl"],
     width: "100%",
 

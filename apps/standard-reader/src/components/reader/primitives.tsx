@@ -114,18 +114,18 @@ const styles = stylex.create({
   },
   content: {
     boxSizing: "border-box",
-    marginInlineStart: "auto",
     marginInlineEnd: "auto",
-    maxWidth: "82.5rem",
-    paddingBottom: `var(--pub-page-content-bottom, ${spacing["20"]})`,
-    paddingInlineStart: {
-      default: spacing["5"],
-      "@media (min-width: 40rem)": spacing["10"],
-    },
+    marginInlineStart: "auto",
     paddingInlineEnd: {
       default: spacing["5"],
       "@media (min-width: 40rem)": spacing["10"],
     },
+    paddingInlineStart: {
+      default: spacing["5"],
+      "@media (min-width: 40rem)": spacing["10"],
+    },
+    maxWidth: "82.5rem",
+    paddingBottom: `var(--pub-page-content-bottom, ${spacing["20"]})`,
     width: "100%",
   },
   masthead: {
@@ -236,9 +236,9 @@ const styles = stylex.create({
     whiteSpace: "nowrap",
   },
   divider: {
-    borderBottomWidth: 0,
-    borderInlineStartWidth: 0,
     borderInlineEndWidth: 0,
+    borderInlineStartWidth: 0,
+    borderBottomWidth: 0,
     height: 0,
     marginBottom: spacing["11"],
     marginTop: spacing["11"],

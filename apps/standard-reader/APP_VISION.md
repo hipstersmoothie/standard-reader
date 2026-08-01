@@ -95,13 +95,53 @@ Detail screens
 
 Sections, top to bottom:
 
-1. **Recommended for you** — tuned to your follows (horizontal scroll of pub cards).
-2. **Followed by people you follow** — social proof.
-3. **Trending publications** — most active this week (ranked rows).
-4. **All publications** — full directory with:
-   - topic chips (All + 8 topics),
+1. **Trending publications** — most active this week (ranked rows).
+2. **Topics** — a rail of topic areas the network clusters into, with a **See all**
+   link to the full index. See [Topics](#topics) below.
+3. **Recommended for you** — tuned to your follows (horizontal scroll of pub cards).
+4. **Followed by people you follow** — social proof.
+5. **All publications** — full directory with:
+   - tag chips (All + 8 tags),
    - sort (Readers / Active / A–Z),
    - grid ⇄ list toggle.
+
+### Topics
+
+A **topic** is a cluster of related tags presented as one browsable area — the answer
+to a granularity problem. The directory's tag chips rank a 450k-tag vocabulary by raw
+frequency,
+which puts the network's atproto-native topics (`atproto`, `bluesky`, `atmosphere`) on top
+of a page meant to represent the whole network. Clustering rebalances it: atproto becomes
+_one_ topic among ~45, next to Film and Festivals, Wildlife and Nature, Pacific
+Northwest Local News, Mental Health, and Brazilian Politics.
+
+Topics are **derived, never curated** — see
+[Topic derivation](#topic-derivation) for how.
+
+- `/topics` — every published topic, with search over names, descriptions, and
+  member tags (the whole set ships in one response, so filtering is instant).
+- `/topics/$slug` — one topic:
+  - **Masthead** with its model-written name and description, publication and writer counts.
+  - **Sub-areas** — its member tags, each linking to the existing `/tag/$tag` page, so a
+    topic is a way _down_ into a narrower view rather than a replacement for one.
+  - **Articles** tab — everything published across the topic's tags
+    (Newest / Trending / Most liked).
+  - **Publications** tab — its publications (Best fit / Readers / Active / A–Z), where
+    _best fit_ ranks by how much of the topic's tag vocabulary a publication covers.
+- Slugs are permanent. A topic that drifts, gets renamed, or drops below the quality
+  bar keeps its URL.
+- **No dead links.** A topic can stop existing honestly — its tags drift apart, or its
+  cluster merges into a neighbour — and its tags and memberships go with it. Rather
+  than 404, the sweep records the closest surviving topic by tag overlap in
+  `superseded_by` and `/topics/$slug` redirects there (301), following the pointer
+  transitively since merges chain. Nothing close enough redirects to the index. Only a
+  slug the table has never held is a genuine 404, so a typo still errors.
+- **Publication is sticky.** The quality bar is an _entry_ test; re-applying it
+  unchanged every run would make a topic sitting near a threshold flap in and out,
+  and a public URL that 404s on alternate days is worse than a topic that is a
+  little thin. Once published, a topic stays published while it still clears 70% of
+  each count threshold (and 0.6 top-author share), so only one that has genuinely
+  fallen apart is unlisted.
 
 ### Search
 
@@ -111,7 +151,7 @@ Sections, top to bottom:
 
 ### Tag directory
 
-- Route `/tag/$tag`; linked from topic chips on article cards, publication cards, and
+- Route `/tag/$tag`; linked from tag chips on article cards, publication cards, and
   article kickers.
 - **Articles** tab: indexed, published articles carrying the tag (case-insensitive) on
   discover-eligible publications, with a **Recent / Trending / Most popular** sort select
@@ -149,6 +189,21 @@ Sections, top to bottom:
   image alt text surfaced inside the lightbox and prev/next navigation across a gallery's images.
   Magazine editions are the one exception: they bind their own lightbox to the rendered `<img>`
   elements.
+- **Bluesky web-client links resolve to their records.** `bsky.app` and the clients forked from
+  its `social-app` codebase — Witchsky, Mu, deer.social, Blacksky — share one URL grammar and
+  address the same AT Protocol records, so a link to any of them is a link to the _record_, not
+  to a third-party page. **Embeds are branded with the client the link came from** — its name beside
+  the record kind, and its own `theme-color` run through the same Radix scale generator the
+  magazine palette uses, so the border tint and brand text stay contrast-safe in light and dark
+  (never the raw hex). A client with no published brand color is branded by name only. The
+  client table lives in
+  [`lib/atproto/bsky-clients.ts`](src/lib/atproto/bsky-clients.ts) and is shared with the
+  extension's manifest generation; adding a fork there lights it up everywhere at once. Inline
+  profile links become mention chips routed to `/u/$did`; a link-card block (Leaflet
+  `website`, PCKT `website`, ProseMirror `embed`) whose target is a post becomes a native post
+  embed, and a profile / feed / list / starter-pack link becomes an entity card hydrated from
+  the public AppView. When a record can't be resolved — deleted, blocked, AppView down — the
+  ordinary link card stands in, so a dead reference never leaves a hole in the article.
 - Sticky top bar: back, byline, follow, like, share; reading-progress bar. On mobile it
   pins below the shell's top bar whenever that one is revealed, so the two stack instead
   of overlapping.
@@ -299,6 +354,114 @@ Sections, top to bottom:
   menus, dialogs) are re-pointed into the themed container with react-aria's
   `UNSAFE_PortalProvider` so they inherit the palette instead of portalling to
   `document.body` and reverting to app tokens.
+
+### Serial publications (books & comics)
+
+A publisher who sets `preferences.prevNextDirection = "ltr"` on their
+`site.standard.publication` is saying the publication **reads forwards from its first post**
+rather than newest-first — a serial. That one flag is the whole signal; the lexicon has no
+field for what _kind_ of serial it is, so the kind is app-derived (`recomputeSerialKinds`, in
+the hourly sweep): a publication whose recent posts each render at least one image and carry
+only a short note of prose is a **comic**, anything else a **book**. Both are mirrored on the
+read-model row (`publications.prev_next_direction`, `publications.serial_kind`) and travel to
+the UI as `PublicationCard.serial` (see `#/lib/publication/serial`).
+
+Both are filled **on demand** as well as by the sweep. The tap only writes
+`prev_next_direction` when a publication record is created or updated, so a publication indexed
+before the column existed would stay dark until its author happened to edit it. A NULL there
+therefore means "never mirrored", not "ordinary blog" — `upsertPublication` stores the lexicon
+default `"rtl"` for a record that states nothing, which is what keeps the two apart — and
+`ensurePublicationSerial` (`#/server/reader/series`) reads the record from the PDS once, writes
+what it says, and derives the kind on the spot if it turns out to be a serial. Standard
+`backfillXFromRepo` behaviour: one PDS read per publication, ever, then the DB serves it.
+
+**Both columns count as unresolved, not just the direction** (`needsSerialResolution`,
+`#/lib/publication/serial`). A row reading `"ltr"` with no `serial_kind` is a serial the sweep
+hasn't judged yet, and `resolveSerialPublication` renders it as a **book** — the right thing to
+draw, and the wrong thing to stop asking about, because everything a comic gets hangs off
+`serial.kind`: the shelf of covers, the redirect into the page-flip reader. The two read paths
+that surface those (`selectPublicationHeader` and `getArticle`) resolve on demand whenever either
+column is missing, so a comic can't sit reading as a book until the next hourly sweep. An ordinary
+blog (`"rtl"`) is resolved whatever its kind says, which keeps this off the common path.
+`pnpm backfill:serial` warms them all up front so no reader pays that first read. It scopes itself
+to the publications that could answer — `prevNextDirection` is Leaflet's field, so only Leaflet
+publications still holding a NULL are visited — reads their records from Slingshot rather than
+resolving and paging each publisher's PDS, and writes back one bulk `UPDATE` per direction instead
+of re-upserting whole rows to set one column.
+
+What changes for a serial:
+
+- **The archive still leads with the latest post.** A serial reads forwards, but its archive is
+  read far more often to see what is new than to find where the work begins, so every
+  publication — serial or not — lists newest-first (`defaultArchiveOrder`,
+  `#/lib/publication/archive-order`). A reader who does want to start at the beginning flips it
+  from the publication menu; the override is a per-publication cookie, resolved server-side
+  inside `getPublicationDocuments`, so the client never has to know the order to ask for the
+  right page and the SSR'd HTML is already in it.
+- **A comic's archive is a shelf of covers, not a list of pages.** A comic posts one page per
+  document, so its archive is dozens of near-identical rows — `FITV #1 Cover`, `FITV #1, Pg. 1`.
+  Titles almost always carry series, issue and page, so `selectComicShelf`
+  (`#/server/reader/comic`) parses the issue number out of them (`#/lib/comic/issue-title`),
+  collapses consecutive pages back into the issues they came from, and shows each issue's cover
+  art — the reader browses issues instead of scrolling pages. It is a naming convention, not a
+  lexicon field, so it is treated as a guess: fewer than 70% of titles parsing, or everything
+  landing in one group, leaves `grouped: false` and the ordinary archive list stands. The
+  read/unread filters keep the list too — those are per-page views, and a shelf shows whole
+  issues.
+- **An issue is unread while any of its pages is**, and its cover opens on the first page the
+  reader hasn't seen. Read state is per document, and a comic's documents are its pages, so the
+  shelf asks for the reader's unread URIs across the whole publication (`selectUnreadDocumentUris`
+  — the same query the archive's unread filter and "mark all as read" run) and hands each issue
+  the pages it still owes them. The cover wears the ordinary unread dot and links to
+  `?page=<first unread>`, so picking a comic back up is one click from the shelf rather than a
+  hunt through the page counter. `read` records reach the read model through the firehose, so a
+  reader who has just walked those pages is ahead of the server: the shelf's answer is corrected
+  in the client from the same read caches every other unread dot uses
+  (`#/lib/comic/shelf-progress`).
+- **Comics open in the comic reader** (`/comic/$did/$rkey`) — a fixed dark theater that flips
+  through the issue's pages one at a time. The pages _are_ the images the body renders, in
+  reading order (`#/lib/document/images`), so nothing is authored specially for it. Arrow keys /
+  space / Page keys, `Home` / `End`, tap-zones and swipe all page; the current page lives in the
+  URL (page turns replace the history entry, so Back leaves the reader). Past the last page is
+  an end card with the next issue. The floating chrome **stays until the reader turns their first
+  page** — on arrival the bars are the introduction, and a countdown running under it takes that
+  away from anyone reading at their own pace — and only then starts stepping aside on an idle beat. The article route redirects a comic issue here unless
+  `?view=reader` — which is also the "Read the notes" escape, because a comic's prose commentary
+  belongs to the reading view, not the theater.
+  The top bar carries a **full-screen toggle** (`f`, or the button at its end) that puts the
+  theater itself full screen, so the browser's own furniture leaves the art alone
+  (`#/components/comic/use-fullscreen`). The button appears only where the browser says it will
+  actually do it (`fullscreenEnabled`, either spelling), which on **iPhone is never**: iOS reserves
+  full screen for `<video>`, WebKit's bug for element full screen (206854) has been open since
+  2020, the prefixed request was closed `WONTFIX` in favour of it, and the Safari 27 beta still
+  doesn't have it. An inert button there reads as a broken reader rather than as a platform limit,
+  so it is dropped — the iPhone answer to full screen is the home-screen install the app already
+  supports (`display: standalone`, `apple-mobile-web-app-capable`, `viewport-fit=cover`, which is
+  why the theater's bars pad with `env(safe-area-inset-*)`). None of this is iPhone-specific in the
+  code: the flag also covers an iframe without `allowfullscreen`, and when Safari ships the API the
+  control appears with no release from us. The WebKit-prefixed spelling is tried when the standard
+  one is absent (iPadOS below 16.4), and the icon's state follows `fullscreenchange`, since Escape,
+  F11 and the OS all exit without asking the app.
+- **A page's note reads over the page.** Comic posts often publish a line or two beside the art —
+  a caption, a process note, a word about next week — and in the theater that writing had nowhere
+  to go but the reading view, a navigation away from the page it was written about. The top bar's
+  note button lays it over the art instead (`#/components/comic/comic-page-note`): a translucent
+  dark scrim, the prose in the theater's own type, and a "Read the full post" escape to the
+  reading view. The note travels on the page (`ComicPage.note`), extracted in the chunk query that
+  already opens the body, and is the body's plaintext **minus the pages' own alt text** — the
+  extractors narrate image blocks by their alt, which describes the page the reader is already
+  looking at (`#/lib/comic/page-note`). Most pages carry none, so the control is disabled rather
+  than absent: a bar that reshuffled on every page turn is worse than a quiet button. The overlay
+  is a React Aria modal portalled **into the theater**, not `document.body`, so it survives full
+  screen.
+- **Books get "Up next"** under the article: the following chapter, or a note that the reader has
+  caught up. Position ("3 of 12") and neighbours come from `getSeriesContext`
+  (`#/server/reader/series`), loaded client-side after the article paints like the other
+  below-the-fold rails. "Next" here means the chronologically _later_ post — the opposite of an
+  ordinary blog's prev/next, which walks backwards into the archive.
+
+Misclassification is never a trap: the comic reader always links to the reading view, and a
+comic issue with no pages falls back to it outright.
 
 ### Publication profile
 
@@ -459,6 +622,33 @@ Single search field with two modes (detected from input):
   both the flag and `hasUserinputFeedbackScope(account.scope)`). Readers only
   grant once.
 
+### Reader guide (`/guide`)
+
+The **non-technical** documentation, deliberately separate from the developer docs at
+`/docs/*`. Eight task-shaped pages under `/guide` — Welcome, Getting started, Reading an
+article, Finding things to read, Keeping track, Making it yours, Beyond the app, Your account
+and data — written for someone who only wants to read, with no AT Protocol vocabulary and
+every feature named the way the UI names it.
+
+- **Own route tree.** `src/routes/_guide-layout.tsx` + `_guide-layout.guide.*.tsx`, with its
+  own topbar (`GuideTopbar`) tagged "Reader guide". It reuses the docs shell's layout and
+  prose styles (`docsStyles`) and scroll-spy so both doc sets share one rhythm, but it never
+  renders `DOCS_AREAS` — the developer docs are a sibling, reachable from a cross-link in
+  each topbar, not a section of the guide.
+- **One source of truth for structure.** `src/lib/guide/navigation.ts` declares the pages
+  (`GUIDE_AREAS`) and every heading on them (`GUIDE_SECTIONS`). The sidebar, the "On this
+  page" rail, the mobile jump select, the scroll-spy, and the prev/next footer all read it,
+  so a page cannot drift from its own table of contents.
+- **Screenshots are generated, not pasted.** `src/lib/guide/screenshots.ts` declares every
+  picture (route, auth mode, viewport, light/dark, optional pre-capture interactions);
+  `pnpm guide:shots` (`screenshots.config.ts` + `screenshots/capture.spec.ts`) drives a real
+  browser through the list and writes `public/guide/*.png`. Captures wait on the same
+  `aria-busy` ready signal the perf suite measures against, and signed-in shots reuse the perf
+  suite's session bootstrap. `<GuideFigure>` reads the same manifest for the image's intrinsic
+  size, requires alt text, and degrades to its caption when a shot has not been captured yet.
+- **Discoverable.** Linked from the site footer, the signed-in account menu, the About page,
+  and the developer docs topbar. Every guide page ends with a link to `/feedback`.
+
 ---
 
 ## 5. State model & data ownership
@@ -477,6 +667,22 @@ source of truth; Neon holds a derived view for speed and cross-network querying.
   `/saved`, distinct from likes.
 - **Read / unread:** an `app.standard-reader.read` record per article; opening an article
   marks it read. **Reading history** at `/history` lists these newest-first.
+- **The write path mirrors personal state into Neon itself**
+  (`src/server/reader/personal-state-mirror.ts`) — reads, bookmarks, and likes — rather than
+  waiting for the tap to replay them. These are the toggles a reader watches change in the moment
+  (unread dots, feed counts, the history list, the saved queue, the heart and its count), and
+  routing them through a shared, back-pressured ingest queue meant that during a tap backlog an
+  article stayed unread for hours after it was read. Every write path (server fns, XRPC — and so
+  MCP + the extension) upserts the same row ingest would, keyed by the same record AT-URI,
+  immediately after the PDS commits. The tap's later replay overwrites it with identical values, so
+  the mirror converges on the repo rather than competing with it, and a mirror failure just degrades
+  to waiting for the tap. Two details carry the correctness: removals delete **by record AT-URI**,
+  not by `(owner, document)`, because the write path only deletes the record at its own
+  deterministic rkey — another client's record for the same document has to keep its row; and reads
+  mirror **per committed `applyWrites` batch**, so a "mark all read" that fails partway reflects
+  exactly what is durable. Follows and subscriptions already did this by calling ingest's `upsertX`
+  helpers from the write handler; these three get their own module because reads are written in bulk
+  and because a request should use the pooled `context.db`, not ingest's singleton.
 - **Public by default:** reads, bookmarks, likes, follows, and lists are all public AT Proto
   records in the user's repo (like Bluesky likes or follows). `/history` and `/saved` are
   signed-in convenience views — not privacy boundaries.
@@ -639,7 +845,11 @@ re-auth because `prompt: consent` re-consent isn't reliable across PDS providers
 
 - **From `standard.site` lexicons** (reuse everything we can):
   - `site.standard.publication` — a publication (`url`, `name`, `description`, `icon` blob,
-    `basicTheme`, `preferences.showInDiscover`). _In the UI we call these "publications"._
+    `basicTheme`, `preferences.showInDiscover`, `preferences.prevNextDirection`). _In the UI we
+    call these "publications"._ `prevNextDirection` is the publisher's prev/next reading
+    direction: the lexicon default `"rtl"` is an ordinary reverse-chronological blog, while
+    `"ltr"` declares that the publication **reads forwards from its first post** — a serial.
+    See "Serial publications (books & comics)" below.
   - `site.standard.document` — an **article** (`site` → publication at-uri **or** an `https://`
     URL for a "loose document" with no publication record, `title`, `path`, `content`/`textContent`,
     `coverImage` blob = hero, `tags`, `contributors`, `publishedAt`). When `site` is an `https://`
@@ -655,7 +865,9 @@ re-auth because `prompt: consent` re-consent isn't reliable across PDS providers
     repo DID. We backfill identity/profile data (handle, display name, avatar, banner, bio) from
     the AT Proto identity layer + Bluesky `app.bsky.actor.profile`.
   - Note: there's **no** "featured" flag or "topic" in the lexicons — both are app-derived
-    (`topic` = a publication's most frequent document tag; Discover chips = top-N topics).
+    (`topic` = a publication's most frequent document tag; Discover chips = top-N topics). A
+    serial's **kind** (comic vs book) is app-derived the same way — the lexicon says a
+    publication reads forwards, not what it is.
 - **App-owned lexicons** under the `app.standard-reader` namespace (JSON in `lexicons/`):
   - `app.standard-reader.read` — an article marked read (`subject` = document at-uri).
   - `app.standard-reader.bookmark` — an article saved for later (`subject` = document at-uri +
@@ -794,9 +1006,82 @@ which is fine for abuse control and avoids putting a shared counter on every req
 Standard Reader speaks the standard AT Proto label protocol, so readers can subscribe to
 **labelers** (moderation services) exactly as they would in Bluesky:
 
-- **A labeler is just a DID.** We discover it the standard way — resolve the DID document, find
-  its `#atproto_labeler` service, and read its descriptor + label-value definitions. Nothing is
-  hardcoded; the first-party `claudeslop` labeler (below) is discovered like any third party.
+- **A labeler is just a DID, and there is one way in.** A labeler advertises
+  `#atproto_labeler` in its DID document and publishes an `app.bsky.labeler.service`
+  record describing its label values. That is the standard AT Protocol declaration; we resolve it on
+  first sight and backfill it, after which reads are pure DB.
+- **We don't run labelers.** We used to ship two (`claudeslop`, scoring AI-ish prose, and a bot
+  labeler), plus an `app.standard-reader.labeler.service` descriptor record that existed only because
+  a `did:web` has no repo and so cannot publish the standard declaration. All of it is gone. A
+  labeler can already label any content on the network, so running our own bought nothing the
+  network doesn't provide, and the custom descriptor was a deviation other clients would have had to
+  learn. The one signal we actually used — an account declaring itself a bot — was already in the
+  profile record we index (`labels`, a `com.atproto.label.defs#selfLabels` entry), so we read it
+  there and show a small bot mark on the profile and on that account's feed rows. A labeler that
+  re-published the account's own statement as a signed label was a network round trip to learn
+  something we had in hand.
+- **Every labeler on the network, not just ours.** The directory lists the whole network with no
+  relevance filter — readers bring their moderation setup with them, so a labeler that has never
+  touched a standard.site document is still theirs to see and manage. A labeler declares itself by
+  publishing one `app.bsky.labeler.service` record, so the complete set is "every repo holding a
+  record in that collection", which relays answer via `com.atproto.sync.listReposByCollection`
+  (~537 repos, ~460 of which still resolve to a live service). A timer in the ingest worker scans
+  for those, resolves the ones we don't hold, and upserts them, so the directory read stays a plain
+  DB query. That index is **not** authoritative — it only covers repos its relay carries, and real
+  labelers are missing from it — so discovery is additive: it seeds the directory in bulk while
+  subscribing or looking a labeler up still backfills on demand. Subscribe and unsubscribe live on
+  the directory cards, and a reader's own labelers sort to the top.
+- **Listing the network is not polling the network.** Being in the directory does not mean we ask a
+  labeler for labels; that is driven by subscriptions. The label sync runs every two minutes, so
+  scoping it to the whole table would mean hundreds of requests per minute to other operators'
+  label servers for labels nobody here asked to see. It covers labelers with at least one live
+  subscription, plus our own.
+- **Hundreds of rows means server-side search.** Those labelers declare ~15k label values between
+  them — over 3 MB of definition JSON — so the directory pages in SQL and a card is sent only the
+  couple of label names it renders plus a total. Search (name, handle, description, DID, and
+  declared label identifiers) runs in Postgres, debounced from the client; one page is ~13 kB.
+- **Handles, not DIDs.** A card shows `@handle`, resolved from the DID document's `alsoKnownAs` and
+  stored alongside the row. did:web labelers — ours — declare no `alsoKnownAs`, but for them the
+  DID _is_ the host, so it's derived at render. The DID remains the fallback so the identifier is
+  never lost.
+- **Your Bluesky moderation comes with you.** Bluesky keeps subscribed labelers in account
+  preferences rather than repo records, so we read `app.bsky.actor.getPreferences` and recreate
+  their setup here — labelers plus each label's visibility. They do nothing; they log in and it's
+  already there. The read is **one-way**: we never call `putPreferences`, because it replaces the
+  whole preferences blob and a partial-scope read-modify-write would silently drop settings we
+  couldn't see. So unsubscribing in Standard Reader is local and never edits anyone's Bluesky
+  moderation, and the port runs exactly once so those local choices are never overwritten.
+- **Porting never blocks a login.** Each ported labeler costs a DID-document fetch, two repo reads
+  and a PDS write, which put tens of seconds on the sign-in path when it ran inline in the OAuth
+  callback. The import is scheduled fire-and-forget instead — kicked off by the callback and
+  re-triggered by the signed-in shell read, so a reader whose import hasn't finished (or whose
+  session predates the preferences scope) still gets it without another login. Nothing a reader
+  waits on ever awaits a labeler backfill.
+- **Muting is per-app.** Porting someone's Bluesky setup wholesale means importing labelers they
+  may want _there_ but not _here_ — a vanity or novelty labeler is fun on a feed and noise in a
+  reader. So a subscription can be muted (`enabled: false`) rather than dropped: the subscription
+  and its per-label preferences stay exactly as they are, and only label resolution skips it, so
+  unmuting restores what they had instead of starting from defaults. Absent means enabled, so no
+  existing subscription is affected. It reads as a **switch** labelled "Muted" — a switch names the
+  state it shows, where a button would name an action.
+- **Subscribing writes real preferences.** A new subscription stores an explicit visibility for every
+  label the labeler declares, defaulting to `warn`. Storing nothing and falling back at render time
+  meant the UI showed preferences that existed nowhere in the reader's repo, and let a labeler
+  change how an existing subscription behaved just by editing its own `defaultSetting`. `warn` is
+  the reversible middle: `hide` would make documents vanish with no explanation, and `ignore` would
+  make a fresh subscription look broken. The Bluesky import obeys the same rule, so a ported labeler
+  and a hand-subscribed one differ only where Bluesky actually recorded a choice.
+- **Preference changes are optimistic.** Each one is a PDS write, so the control moves immediately
+  and the write's response is the authoritative state — nothing is refetched. Only document label
+  treatment is invalidated, because a visibility preference changes neither the labeler nor its place
+  in the directory. Waiting on the round trip and refetching around it made the page feel frozen for
+  about a second per click.
+- **Labels apply to documents _or_ to accounts.** Ours score prose, so they label documents;
+  labelers on the wider network label accounts (pub-search's `bulk-generated` marks a publisher
+  whose documents are generated from a data source, not composed by an author). Both subject kinds
+  are stored in `document_labels` and resolved together: a card is matched against its own URI
+  _and_ its author's DID, so an account label badges every one of that account's rows, shows on the
+  author and publication headers, and honors a reader's `hide` pref across the feeds.
 - **Subscriptions are repo records** (`app.standard-reader.labeler.subscription`, V2; legacy
   `app.standard-reader.labelerSubscription` — nested under the `labeler` NSID group so a single
   `_lexicon.labeler.standard-reader.app` DNS record covers `labeler.defs`, `labeler.service`, and
@@ -840,17 +1125,48 @@ AT Proto network (standard.site publications, profiles, follows)
   `site.standard.publication` to discover publishers; a second `tap-labeler` instance signals on
   `app.standard-reader.labeler.service`; and a third `tap-docs` instance signals on
   `site.standard.document` so repos that publish "loose documents" (no publication record — e.g.
-  Leaflet-hosted) get tracked + backfilled. A separate ingest worker (`pnpm ingest:dev`) connects
-  to each tap's acknowledged WebSocket channel, maps records to rows idempotently, and expands
-  tap's tracked-repo set along the graph via `/repos/add`. tap + the worker are the single
-  ingestion path for both backfill and live sync (locally and in prod); the product app server
-  does not process the firehose.
+  Leaflet-hosted) get tracked + backfilled. A fourth **`tap-bridge`** instance carries bridged
+  repos and signals on nothing — see "Bridged repos" below. A separate ingest worker
+  (`pnpm ingest:dev`) connects to each tap's acknowledged WebSocket channel, maps records to rows
+  idempotently, and expands tap's tracked-repo set along the graph via `/repos/add`. tap + the
+  worker are the single ingestion path for both backfill and live sync (locally and in prod); the
+  product app server does not process the firehose.
+- **Bridged repos have their own lane.** [Bridgy Fed](https://fed.brid.gy) mirrors the wider web
+  into AT Proto: `*.web.brid.gy` is a site Bridgy discovered (tens of thousands of them, thousands
+  of posts each, no publisher intent), and `*.ap.brid.gy` is an ActivityPub blog whose author chose
+  to bridge. Both are welcome, but pointing that bulk at the primary tap put every publisher and
+  reader behind bridge backfills _inside tap's resyncer queue_ — and that queue is per tap
+  instance. So `ensureTracked` routes any `*.brid.gy` repo to `TAP_BRIDGE_API_URL`
+  (`#/lib/atproto/bridged-repo`, `#/server/ingest/tap-client`); a bridge backfill can then only
+  delay other bridged repos. With no bridge lane configured the bulk web bridge is turned away
+  instead — configuring the isolated tap is what turns Bridgy fully on, rather than a second
+  switch. Isolation is per-tap and per-channel (each channel has its own in-flight budget); the
+  ingest **process and Neon pool are still shared**, so a dedicated bridge worker is the next step
+  if write pressure matters.
+- **The read-model repairs itself against the PDS.** tap can advance its cursor past a commit whose
+  record never reaches us — no error, no dead letter, and "no events" is indistinguishable from "no
+  changes" from the read-model's side. So the reconcile sweep no longer trusts the stream: for
+  every tracked repo it compares `com.atproto.sync.getLatestCommit` against
+  `tracked_repos.last_seen_rev` and re-applies anything missing (`repairRepoIfAdvanced` in
+  `#/server/ingest/repo-sync`). Two gates keep it affordable — an unchanged head costs one request
+  and stops, and only records whose CID differs from the mirrored row are written. Repaired records
+  replay through `handleRecord`, the same dispatcher tap feeds, so a repaired row and a live one
+  are written by identical code. The sweep covers **every** tracked repo, not just publishers:
+  restricting it to `publication`/`document` is what once left readers' reads and subscriptions
+  with no safety net at all.
 - **Read-model:** **Neon Postgres** in dev/prod (a local Postgres for testing — the DB client in
   `src/db/index.ts` picks the driver from the connection string), managed with **Drizzle**
   (`src/db/schema/`), powers feeds, the
   directory, search (GIN `tsvector`), recommendations, and trending. Derived aggregates
-  (`publication_stats`, `publication_cosubscriptions`) are recomputed on a schedule. It is a
-  cache — never the source of truth.
+  (`publication_stats`, `publication_cosubscriptions`, `publications.topic`,
+  `publications.serial_kind`, `discover_topic_counts`, `network_stats`) are recomputed on a
+  schedule. It is a cache — never the source of truth.
+  - **Network-wide aggregates never run on the request path.** A count over the whole corpus is
+    an unbounded scan no index can serve, and at ~1.4M documents / 2.2GB it also evicts the
+    buffer cache the feed queries depend on. `discover_topic_counts` (Discover tag chips) and
+    `network_stats` (the Latest "All" badge) exist so those reads are single-row lookups; the
+    sweep already walks these tables, so maintaining them is near-free marginal work. Add a
+    scalar here rather than counting live.
 - **Writes:** user actions (follow, like, read state) are written as records to the user's repo
   and reflected back into the cache.
 
@@ -872,6 +1188,85 @@ hand-tuned lists:
   only — no scoring per request.
 - **Cold start (no follows yet)** — fall back to high-readership publications
   _outside_ the current trending set so Recommended stays distinct from Trending.
+- **No bulk web-bridge mirrors in Recommended** — Discover's Recommended rail (signed-in _and_
+  cold start) excludes `*.web.brid.gy` publications. Those sites were discovered and mirrored by
+  Bridgy Fed, not published here on purpose, and they are a quarter of the discover-eligible
+  corpus — recommending them reads as noise. They stay fully reachable everywhere else: the
+  directory, search, trending, follows, and their own pages. Filtered in SQL, so the rail still
+  fills to its limit.
+
+### Topic derivation
+
+Topics (`topics`, `topic_tags`, `topic_publications`) are rebuilt by
+`recomputeTopics()` on its own **daily** cron (`scripts/topics-cron.ts`, the
+`topics-cron` Railway service — not the hourly sweep, which only rebuilds the tag
+counts it reads), from the tag co-occurrence graph. See
+[`DEPLOY_TOPICS.md`](./DEPLOY_TOPICS.md) for the services and environment it needs.
+
+Four decisions carry the quality, each settled by measuring against the live corpus
+rather than by taste:
+
+- **Edges are counted per publisher, not per article.** Two tags are related when they
+  appear on the same article — but the pair counts once per publisher. Counting articles
+  lets one author manufacture relatedness out of a tagging habit: a single
+  fediverse-hosted music blog tagging every post `fediverse` + `j-pop` produced 55
+  article-level co-occurrences, enough to make `fediverse` the Music cluster's
+  14th-strongest member. Per-publisher counting caps that blog at 1, and `fediverse`'s
+  neighbours become activitypub, mastodon, peertube, pixelfed, indieweb.
+- **Clustering is weighted label propagation** over cosine-weighted edges, sparsified to
+  each tag's 12 strongest neighbours (unsparsified, weak hub tags like `news` fuse
+  unrelated clusters). Visitation order is sorted and every tie breaks on label, because a
+  topic's identity is matched across sweeps by tag overlap — randomized order would
+  churn URLs hourly. Any cluster over 150 tags is re-split on a tightened subgraph: label
+  propagation has no size control and produced a 429-tag "topic" that had absorbed
+  musicians, actors and junk tags, which is not a topic but what is left when weak edges
+  chain everything together.
+- **Semantic edges fill in what behaviour cannot.** Co-occurrence is blind to a subject
+  whose publishers split: `typescript / javascript / npm` and `css / html / tailwind` are
+  two halves of web development that essentially never share a publisher, so counting alone
+  left one half too small to publish. Each tag is embedded (`tag_embeddings`, MiniLM) and
+  near-duplicate pairs become extra edges — additively, never replacing a behavioural edge,
+  and rescaled onto the co-occurrence weight range so they cannot dominate the neighbour cut.
+  Crucially the tag is embedded **by the titles of articles carrying it**, not by its own
+  name: on bare words the model compares spellings, and the ordering inverts exactly wrong
+  (`música`/`music` 0.723 against `typescript`/`css` 0.116 — no threshold works). In context,
+  `typescript`/`web development` scores 0.517 while `música`/`music` falls to 0.354, so the
+  0.45 floor joins the web-dev halves and leaves every language-specific topic intact.
+- **The quality bar is author concentration, not counts.** A cluster publishes at ≥14 tags,
+  ≥10 publications, ≥5 distinct authors, and **no more than 50% of its publications from a
+  single repo**. That last one is the load-bearing test: the network's three
+  highest-frequency tags (`chart`, `weekly`, `song` — 700+ publications each) are one bot
+  network publishing from one DID, and it clears every count-based threshold, including a
+  distinct-author floor (measured: 769 publications across 8 DIDs, one of them 99.5%).
+  Real topics measure 1–4% top-author share.
+- **Names are model-written, cached by cluster identity.** The deterministic alternative —
+  the cluster's most frequent tag — names a cluster of `ev / volkswagen / ford / bmw /
+toyota / porsche` **"Opinion"**. So a model reads the top tags and writes an English name
+  and one-line description; only new or materially-drifted clusters are sent, so a
+  steady-state sweep makes ~no requests. Every failure path (no API key, error, refusal)
+  falls back to the deterministic label rather than failing the sweep.
+
+Topic **publications** are precomputed; topic **documents** are resolved live
+through the tag GIN index, via a `MATERIALIZED` CTE that forces the tag predicate to be
+evaluated before the date sort — without it Postgres walks `documents_published_idx` and
+discards tens of thousands of rows per page (1.65s → 18ms).
+
+**Bridgy Fed's passive web bridge shapes the clusters but is never shown.** A
+`*.web.brid.gy` repo is a website Bridgy discovered and mirrored — nobody at that site asked
+to be here — so no bridged publication or article appears in a topic. But the bridge is
+**75% of the tagged corpus** (999k of 1.33M documents), and it is often the only evidence
+the network has that two tags belong together.
+
+So the split is: **the graph learns from everything; only opt-in publications and authors are
+shown.** Measured — excluding the bridge from the graph too collapses it from 4,498 tags to
+502 and leaves **5** publishable topics; keeping it as an unseen clustering signal gives
+**44**, with none of it visible. `*.ap.brid.gy` is never excluded: those authors chose to
+bridge.
+
+The exclusion is tested on **the document's author**, not its publication. Most bridged
+content arrives as _loose_ documents with no publication row at all — 82% of one topic's
+matches — so a publication-level test let nearly all of it through while the topic's own
+publication list looked clean.
 
 ---
 

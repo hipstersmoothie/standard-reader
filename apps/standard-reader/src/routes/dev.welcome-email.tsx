@@ -115,14 +115,14 @@ function DevWelcomeEmailPreview() {
 
 const styles = stylex.create({
   container: {
+    marginInline: "auto",
+    paddingInline: horizontalSpace.lg,
     display: "flex",
     flexDirection: "column",
-    marginInline: "auto",
+    rowGap: gap.lg,
     maxWidth: "48rem",
     paddingBottom: verticalSpace["3xl"],
-    paddingInline: horizontalSpace.lg,
     paddingTop: verticalSpace["3xl"],
-    rowGap: gap.lg,
     width: "100%",
   },
   error: {
@@ -140,11 +140,11 @@ const styles = stylex.create({
     fontWeight: fontWeight.medium,
   },
   frame: {
-    backgroundColor: uiColor.bg,
     borderColor: uiColor.border1,
     borderRadius: radius.md,
     borderStyle: "solid",
     borderWidth: 1,
+    backgroundColor: uiColor.bg,
     height: "80vh",
     width: "100%",
   },
@@ -154,15 +154,15 @@ const styles = stylex.create({
     rowGap: gap.xs,
   },
   input: {
-    backgroundColor: uiColor.bg,
     borderColor: uiColor.border1,
     borderRadius: radius.sm,
     borderStyle: "solid",
     borderWidth: 1,
-    color: uiColor.text2,
-    fontSize: fontSize.base,
     paddingBlock: verticalSpace.xs,
     paddingInline: horizontalSpace.sm,
+    backgroundColor: uiColor.bg,
+    color: uiColor.text2,
+    fontSize: fontSize.base,
   },
   meta: {
     color: uiColor.text1,

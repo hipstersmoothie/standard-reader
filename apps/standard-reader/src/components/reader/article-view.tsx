@@ -48,7 +48,9 @@ import { Link, useRouter } from "@tanstack/react-router";
 import {
   ArrowLeft,
   BookOpen,
+  Images,
   Bookmark,
+  Bot,
   Circle,
   CircleCheck,
   ExternalLink,
@@ -66,6 +68,7 @@ import { labelerApi } from "#/integrations/tanstack-query/api-labelers.functions
 import type { ArticleDetail } from "#/integrations/tanstack-query/api-publication.functions";
 import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
+import { documentImages } from "#/lib/document/images";
 import { resolveArticleHeroImage } from "#/lib/document/lead-image";
 import { usePageReader } from "#/lib/page-reader/page-reader-context";
 import { publishingPlatform } from "#/lib/publishing-platform";
@@ -75,6 +78,7 @@ import { useReadingTypography } from "#/lib/use-reading-typography";
 import { useTrackReadingHistory } from "#/lib/use-track-reading-history";
 import { prefetchCollectionMagazine } from "#/magazine/load-magazine-data";
 
+import { AccountLabelsForDid } from "./account-labels";
 import { ArticleBelowFold } from "./article-below-fold";
 import { FollowButton } from "./cards";
 import { ArticleContent } from "./content/article-content";
@@ -195,19 +199,19 @@ const styles = stylex.create({
     display: "flex",
     flexShrink: 0,
     justifyContent: "space-between",
+    paddingInlineEnd: {
+      default: spacing["4"],
+      "@media (min-width: 40rem)": spacing["5"],
+    },
+    paddingInlineStart: {
+      default: spacing["4"],
+      "@media (min-width: 40rem)": spacing["5"],
+    },
     rowGap: gap.lg,
     borderBottomColor: uiColor.border1,
     borderBottomStyle: "solid",
     borderBottomWidth: 1,
     paddingBottom: spacing["3"],
-    paddingInlineStart: {
-      default: spacing["4"],
-      "@media (min-width: 40rem)": spacing["5"],
-    },
-    paddingInlineEnd: {
-      default: spacing["4"],
-      "@media (min-width: 40rem)": spacing["5"],
-    },
     paddingTop: spacing["3"],
   },
   progressTrack: {
@@ -266,45 +270,45 @@ const styles = stylex.create({
     fontFamily: fontFamily.sans,
     fontSize: fontSize.sm,
     fontWeight: fontWeight.medium,
+    paddingInlineEnd: spacing["0"],
+    paddingInlineStart: spacing["0"],
     rowGap: gap.md,
     textUnderlineOffset: "2px",
     minWidth: 0,
     paddingBottom: spacing["0"],
-    paddingInlineStart: spacing["0"],
-    paddingInlineEnd: spacing["0"],
     paddingTop: spacing["0"],
   },
   pubBylineName: {
-    // Single-line NAME/TITLE in a UI row: isolate for correct character
-    // ordering, but let alignment follow the surrounding UI (right under
-    // RTL). `dir="auto"` here would left-align it and break the column.
-    unicodeBidi: "isolate",
     overflow: "hidden",
     color: uiColor.text2,
     flexShrink: 1,
     textOverflow: "ellipsis",
+    // Single-line NAME/TITLE in a UI row: isolate for correct character
+    // ordering, but let alignment follow the surrounding UI (right under
+    // RTL). `dir="auto"` here would left-align it and break the column.
+    unicodeBidi: "isolate",
     whiteSpace: "nowrap",
     minWidth: 0,
   },
   progress: {
     backgroundColor: primaryColor.solid1,
+    insetInlineStart: 0,
     position: "absolute",
     transitionDuration: animationDuration.fast,
     transitionProperty: "width",
     transitionTimingFunction: "linear",
     height: "100%",
-    insetInlineStart: 0,
     top: 0,
   },
   article: {
     boxSizing: "border-box",
-    marginInlineStart: "auto",
     marginInlineEnd: "auto",
+    marginInlineStart: "auto",
+    paddingInlineEnd: spacing["6"],
+    paddingInlineStart: spacing["6"],
     maxWidth: "100%",
     minWidth: 0,
     paddingBottom: `var(--pub-page-content-bottom, ${spacing["24"]})`,
-    paddingInlineStart: spacing["6"],
-    paddingInlineEnd: spacing["6"],
     // The page card already floats the content off the chrome above it, so the
     // article needs less of its own lead-in there; unchanged without a canvas.
     paddingTop: `var(--pub-page-content-top, ${spacing["14"]})`,
@@ -346,12 +350,12 @@ const styles = stylex.create({
     fontSize: fontSize.xl,
     fontStyle: "italic",
     lineHeight: lineHeight.sm,
+    marginInlineEnd: "auto",
+    marginInlineStart: "auto",
     textAlign: "center",
     // eslint-disable-next-line @stylexjs/valid-styles
     textWrap: "balance",
     marginBottom: spacing["7"],
-    marginInlineStart: "auto",
-    marginInlineEnd: "auto",
     marginTop: spacing["0"],
     maxWidth: "48ch",
   },
@@ -389,22 +393,22 @@ const styles = stylex.create({
     minWidth: 0,
   },
   bylineName: {
-    // On mobile the name + @handle rarely fit on one line, so stack them as a
-    // tight two-line byline instead of letting the handle wrap with the wide
-    // inline gap. From `sm` up they sit inline again.
-    columnGap: gap.lg,
-    rowGap: spacing["1"],
     alignItems: {
       default: "flex-start",
       "@media (min-width: 40rem)": "center",
     },
     color: uiColor.text2,
+    // On mobile the name + @handle rarely fit on one line, so stack them as a
+    // tight two-line byline instead of letting the handle wrap with the wide
+    // inline gap. From `sm` up they sit inline again.
+    columnGap: gap.lg,
     display: "flex",
     flexDirection: { default: "column", "@media (min-width: 40rem)": "row" },
     flexWrap: "wrap",
     fontFamily: fontFamily.serif,
     fontSize: fontSize.base,
     fontWeight: fontWeight.semibold,
+    rowGap: spacing["1"],
     maxWidth: "100%",
     minWidth: 0,
   },
@@ -414,6 +418,22 @@ const styles = stylex.create({
     textDecorationColor: "currentColor",
     textUnderlineOffset: "2px",
     minWidth: 0,
+  },
+  bylineBot: {
+    alignItems: "center",
+    color: uiColor.text1,
+    columnGap: spacing["1"],
+    display: "inline-flex",
+    flexShrink: 0,
+  },
+  srOnly: {
+    borderWidth: 0,
+    clipPath: "inset(50%)",
+    height: spacing.px,
+    overflow: "hidden",
+    position: "absolute",
+    whiteSpace: "nowrap",
+    width: spacing.px,
   },
   bylineHandleLink: {
     overflow: "hidden",
@@ -434,15 +454,15 @@ const styles = stylex.create({
     unicodeBidi: "isolate",
   },
   hero: {
+    padding: spacing["0"],
     borderRadius: radius.lg,
+    borderWidth: 0,
     overflow: "hidden",
     aspectRatio: "16 / 9",
-    marginBottom: spacing["8"],
-    padding: spacing["0"],
-    borderWidth: 0,
     backgroundColor: "transparent",
     cursor: "zoom-in",
     display: "block",
+    marginBottom: spacing["8"],
     width: "100%",
   },
   heroImg: {
@@ -488,8 +508,8 @@ const styles = stylex.create({
     fontSize: fontSize.lg,
     fontStyle: "italic",
     lineHeight: lineHeight.base,
-    marginInlineStart: "auto",
     marginInlineEnd: "auto",
+    marginInlineStart: "auto",
     maxWidth: "46ch",
   },
   emptyNote: {
@@ -543,12 +563,12 @@ const styles = stylex.create({
     alignItems: "center",
     backgroundColor: uiColor.bg,
     display: "inline-flex",
+    paddingInlineEnd: horizontalSpace["2xl"],
+    paddingInlineStart: horizontalSpace["2xl"],
     transitionDuration: animationDuration.fast,
     transitionProperty: "background-color, border-color, color",
     transitionTimingFunction: "ease-in-out",
     paddingBottom: verticalSpace.md,
-    paddingInlineStart: horizontalSpace["2xl"],
-    paddingInlineEnd: horizontalSpace["2xl"],
     paddingTop: verticalSpace.md,
   },
   likeButtonActive: {
@@ -556,10 +576,10 @@ const styles = stylex.create({
     backgroundColor: criticalColor.bgSubtle,
   },
   likeButtonHeart: {
-    color: criticalColor.solid1,
-    flexShrink: 0,
-    display: "flex",
     alignItems: "center",
+    color: criticalColor.solid1,
+    display: "flex",
+    flexShrink: 0,
     justifyContent: "center",
   },
   likeButtonLabel: {
@@ -603,6 +623,16 @@ function authorAvatarUrl(article: ArticleDetail): string | null {
     article.publication?.ownerAvatarUrl ??
     null
   );
+}
+
+/**
+ * Whether the byline account self-declares as a bot — same lead-contributor,
+ * else publication-owner fallback as the rest of the byline. A publication owned
+ * by a bot counts as a bot.
+ */
+function authorIsBot(article: ArticleDetail): boolean {
+  const lead = article.contributors[0];
+  return lead ? lead.isBot : article.publicationOwnerIsBot;
 }
 
 /** DID for the byline author (lead contributor, else publication owner). */
@@ -669,6 +699,7 @@ function ReadToggleButton({
  */
 function ReaderSecondaryActionsMenu({
   onOpenMagazine,
+  onOpenComic,
   onOpenPublication,
   publicationName,
   showReadToggle,
@@ -678,6 +709,7 @@ function ReaderSecondaryActionsMenu({
   onToggleBookmark,
 }: {
   onOpenMagazine: (() => void) | null;
+  onOpenComic: (() => void) | null;
   onOpenPublication: (() => void) | null;
   publicationName?: string | null;
   showReadToggle: boolean;
@@ -702,6 +734,15 @@ function ReaderSecondaryActionsMenu({
           textValue={t`Open magazine edition`}
         >
           <Trans>Open magazine edition</Trans>
+        </MenuItem>
+      ) : null}
+      {onOpenComic ? (
+        <MenuItem
+          prefix={<Images size={16} />}
+          onPress={onOpenComic}
+          textValue={t`Read as comic`}
+        >
+          <Trans>Read as comic</Trans>
         </MenuItem>
       ) : null}
       {onOpenPublication ? (
@@ -936,6 +977,24 @@ function ArticleViewBody({
           });
         }
       : null;
+  // A comic issue opened as an article (via "Read the notes", or `?view=reader`)
+  // had no way back to the pages — the redirect that brought a reader here only
+  // runs without that flag. `replace` so the two views don't stack in history.
+  const handleOpenComic =
+    article.publication?.serial?.kind === "comic" &&
+    linkParams &&
+    // A text-only post inside a comic (an announcement, a hiatus note) has no
+    // pages, and the comic route would bounce straight back here — so it gets
+    // no button offering the trip.
+    documentImages(article).length > 0
+      ? () => {
+          void router.navigate({
+            to: "/comic/$did/$rkey",
+            params: linkParams,
+            replace: true,
+          });
+        }
+      : null;
   const handleOpenPublication = publicationArticleUrl
     ? () => {
         globalThis.open(publicationArticleUrl, "_blank", "noopener,noreferrer");
@@ -953,6 +1012,9 @@ function ArticleViewBody({
 
   const { data: session } = useSuspenseQuery(user.getSessionQueryOptions);
   const signedIn = Boolean(session?.user);
+  // Account labels are viewer-specific (which labelers you subscribe to, and
+  // the visibility you chose), so they key off the reader, not the article.
+  const readerScope = user.readerQueryScope(session);
 
   const {
     recommended,
@@ -1123,6 +1185,16 @@ function ArticleViewBody({
                   <BookOpen size={18} />
                 </IconButton>
               ) : null}
+              {handleOpenComic ? (
+                <IconButton
+                  variant="secondary"
+                  size="md"
+                  label={t`Read as comic`}
+                  onPress={handleOpenComic}
+                >
+                  <Images size={18} />
+                </IconButton>
+              ) : null}
               {/* A recognized platform gets its branded mark pulled out to the
                   end of the row instead (see below) — it reads as the
                   destination, not as one more grey utility glyph. */}
@@ -1156,6 +1228,7 @@ function ArticleViewBody({
             <div {...stylex.props(styles.topActsOverflow)}>
               <ReaderSecondaryActionsMenu
                 onOpenMagazine={handleOpenMagazine}
+                onOpenComic={handleOpenComic}
                 // A recognized platform keeps its own branded button visible on
                 // mobile (below), so it must not also appear in here.
                 onOpenPublication={platform ? null : handleOpenPublication}
@@ -1338,6 +1411,18 @@ function ArticleViewBody({
                   authorName
                 )}
 
+                {authorIsBot(article) ? (
+                  <span
+                    {...stylex.props(styles.bylineBot)}
+                    title={t`This account self-identifies as a bot`}
+                  >
+                    <Bot size={14} aria-hidden />
+                    <span {...stylex.props(styles.srOnly)}>
+                      <Trans>Bot</Trans>
+                    </span>
+                  </span>
+                ) : null}
+
                 {showHandle && bylineDid ? (
                   <Link
                     to="/u/$did"
@@ -1385,6 +1470,16 @@ function ArticleViewBody({
                   </>
                 ) : null}
               </Flex>
+              {/* What a subscribed labeler says about the byline account. Same
+                  placement rule as the profile and publication headers: a third
+                  party's statement reads after the account's own identity line,
+                  not inside it. */}
+              {bylineDid ? (
+                <AccountLabelsForDid
+                  did={bylineDid}
+                  readerScope={readerScope}
+                />
+              ) : null}
             </div>
           </div>
 
