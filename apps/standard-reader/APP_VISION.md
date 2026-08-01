@@ -625,6 +625,22 @@ source of truth; Neon holds a derived view for speed and cross-network querying.
   `/saved`, distinct from likes.
 - **Read / unread:** an `app.standard-reader.read` record per article; opening an article
   marks it read. **Reading history** at `/history` lists these newest-first.
+- **The write path mirrors personal state into Neon itself**
+  (`src/server/reader/personal-state-mirror.ts`) — reads, bookmarks, and likes — rather than
+  waiting for the tap to replay them. These are the toggles a reader watches change in the moment
+  (unread dots, feed counts, the history list, the saved queue, the heart and its count), and
+  routing them through a shared, back-pressured ingest queue meant that during a tap backlog an
+  article stayed unread for hours after it was read. Every write path (server fns, XRPC — and so
+  MCP + the extension) upserts the same row ingest would, keyed by the same record AT-URI,
+  immediately after the PDS commits. The tap's later replay overwrites it with identical values, so
+  the mirror converges on the repo rather than competing with it, and a mirror failure just degrades
+  to waiting for the tap. Two details carry the correctness: removals delete **by record AT-URI**,
+  not by `(owner, document)`, because the write path only deletes the record at its own
+  deterministic rkey — another client's record for the same document has to keep its row; and reads
+  mirror **per committed `applyWrites` batch**, so a "mark all read" that fails partway reflects
+  exactly what is durable. Follows and subscriptions already did this by calling ingest's `upsertX`
+  helpers from the write handler; these three get their own module because reads are written in bulk
+  and because a request should use the pooled `context.db`, not ingest's singleton.
 - **Public by default:** reads, bookmarks, likes, follows, and lists are all public AT Proto
   records in the user's repo (like Bluesky likes or follows). `/history` and `/saved` are
   signed-in convenience views — not privacy boundaries.

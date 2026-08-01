@@ -1,6 +1,8 @@
 import type { Client } from "@atcute/client";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import * as schema from "#/db/schema";
+import type { Db, Schema } from "#/integrations/tanstack-query/api-shapes";
 import { APPLY_WRITES_MAX_BATCH } from "#/server/atproto/repo-records";
 import { markDocumentsRead } from "#/server/reader/mark-documents-read";
 
@@ -12,6 +14,27 @@ interface RecordedWrite {
   collection: string;
   rkey: string;
   value: { subject: string; createdAt: string };
+}
+
+interface MirroredRow {
+  documentUri: string;
+  ownerDid: string;
+  uri: string;
+}
+
+/** Minimal stand-in for the read-model handles the mirror writes through. */
+function fakeDb(): { db: Db; mirrored: Array<Array<MirroredRow>> } {
+  const mirrored: Array<Array<MirroredRow>> = [];
+  const db = {
+    insert: () => ({
+      values: (rows: Array<MirroredRow>) => ({
+        onConflictDoUpdate: async () => {
+          mirrored.push(rows);
+        },
+      }),
+    }),
+  };
+  return { db: db as unknown as Db, mirrored };
 }
 
 function fakeClient(): {
@@ -43,12 +66,15 @@ describe("markDocumentsRead", () => {
 
   it("splits a backlog into batches within the applyWrites cap", async () => {
     const { client, batches } = fakeClient();
+    const { db } = fakeDb();
     const documentUris = uris(450);
 
     const result = await markDocumentsRead({
       client,
+      db,
       did: "did:plc:reader",
       documentUris,
+      schema: schema as Schema,
       trackReading: true,
     });
 
@@ -57,14 +83,44 @@ describe("markDocumentsRead", () => {
     expect(result.documentUris).toEqual(documentUris);
   });
 
-  it("writes every document exactly once across batches", async () => {
-    const { client, batches } = fakeClient();
+  it("mirrors each committed batch into the read-model", async () => {
+    const { client } = fakeClient();
+    const { db, mirrored } = fakeDb();
     const documentUris = uris(450);
 
     await markDocumentsRead({
       client,
+      db,
       did: "did:plc:reader",
       documentUris,
+      schema: schema as Schema,
+      trackReading: true,
+    });
+
+    // One mirror write per applyWrites batch, covering every document once.
+    expect(mirrored.map((rows) => rows.length)).toEqual([200, 200, 50]);
+    expect(mirrored.flat().map((row) => row.documentUri)).toEqual(documentUris);
+    // Rows are keyed by the record AT-URI ingest will replay, so the tap's
+    // later upsert collides with ours instead of duplicating it.
+    expect(new Set(mirrored.flat().map((row) => row.uri)).size).toBe(
+      documentUris.length,
+    );
+    expect(
+      mirrored.flat().every((row) => row.ownerDid === "did:plc:reader"),
+    ).toBe(true);
+  });
+
+  it("writes every document exactly once across batches", async () => {
+    const { client, batches } = fakeClient();
+    const { db } = fakeDb();
+    const documentUris = uris(450);
+
+    await markDocumentsRead({
+      client,
+      db,
+      did: "did:plc:reader",
+      documentUris,
+      schema: schema as Schema,
       trackReading: true,
     });
 
@@ -79,11 +135,14 @@ describe("markDocumentsRead", () => {
 
   it("sends a single batch when the backlog fits the cap", async () => {
     const { client, batches } = fakeClient();
+    const { db } = fakeDb();
 
     await markDocumentsRead({
       client,
+      db,
       did: "did:plc:reader",
       documentUris: uris(APPLY_WRITES_MAX_BATCH),
+      schema: schema as Schema,
       trackReading: true,
     });
 
@@ -112,30 +171,40 @@ describe("markDocumentsRead", () => {
       },
     };
 
+    const { db, mirrored } = fakeDb();
+
     await expect(
       markDocumentsRead({
         client: client as unknown as Client,
+        db,
         did: "did:plc:reader",
         documentUris: uris(450),
+        schema: schema as Schema,
         trackReading: true,
       }),
     ).rejects.toThrow(/RateLimitExceeded/);
 
     // Stopped at the failing batch rather than pressing on into the rate limit.
     expect(batches).toEqual([200, 200]);
+    // The one batch that did commit is mirrored; the failed one is not.
+    expect(mirrored.map((rows) => rows.length)).toEqual([200]);
   });
 
   it("writes nothing when read tracking is disabled", async () => {
     const { client, batches } = fakeClient();
+    const { db, mirrored } = fakeDb();
 
     const result = await markDocumentsRead({
       client,
+      db,
       did: "did:plc:reader",
       documentUris: uris(10),
+      schema: schema as Schema,
       trackReading: false,
     });
 
     expect(batches).toHaveLength(0);
+    expect(mirrored).toHaveLength(0);
     expect(result.markedCount).toBe(0);
   });
 });

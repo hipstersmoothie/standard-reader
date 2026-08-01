@@ -1,5 +1,6 @@
 import type { Client } from "@atcute/client";
 
+import type { Db, Schema } from "#/integrations/tanstack-query/api-shapes";
 import { COLLECTION } from "#/lib/atproto/nsids";
 import {
   APPLY_WRITES_MAX_BATCH,
@@ -7,6 +8,7 @@ import {
   subjectRkey,
 } from "#/server/atproto/repo-records";
 import { ensureTracked } from "#/server/ingest/tap-client";
+import { mirrorReadsMarked } from "#/server/reader/personal-state-mirror";
 
 export interface MarkDocumentsReadResult {
   markedCount: number;
@@ -27,8 +29,11 @@ export async function markDocumentsRead(options: {
   did: string;
   documentUris: Array<string>;
   trackReading: boolean;
+  /** Read-model handles, so each committed batch is mirrored immediately. */
+  db: Db;
+  schema: Schema;
 }): Promise<MarkDocumentsReadResult> {
-  const { client, did, documentUris, trackReading } = options;
+  const { client, db, did, documentUris, schema, trackReading } = options;
   if (documentUris.length === 0 || !trackReading) {
     return { markedCount: 0, documentUris: [] };
   }
@@ -46,7 +51,7 @@ export async function markDocumentsRead(options: {
     // A failure here propagates, but earlier batches are already durable on the
     // PDS — read records are additive and keyed by subject, so a retry re-marks
     // only what's still unread rather than duplicating work.
-    await repoApplyWrites(client, {
+    const results = await repoApplyWrites(client, {
       repo: did,
       writes: batch.map((documentUri) => ({
         $type: "com.atproto.repo.applyWrites#create",
@@ -57,6 +62,18 @@ export async function markDocumentsRead(options: {
           subject: documentUri,
           createdAt,
         },
+      })),
+    });
+
+    // Mirror per batch rather than once at the end: a later batch that throws
+    // leaves the reader with the earlier ones already reflected in the UI,
+    // matching what is durable on the PDS.
+    await mirrorReadsMarked(db, schema, {
+      createdAt,
+      ownerDid: did,
+      reads: batch.map((documentUri, index) => ({
+        cid: results[index]?.cid ?? null,
+        documentUri,
       })),
     });
     marked.push(...batch);
