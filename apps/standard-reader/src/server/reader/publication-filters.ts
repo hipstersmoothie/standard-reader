@@ -2,6 +2,7 @@ import type { SQL } from "drizzle-orm";
 import { and, eq, ilike, isNull, not, or } from "drizzle-orm";
 
 import type { Schema } from "#/integrations/tanstack-query/api-shapes";
+import { WEB_BRIDGE_HANDLE_SUFFIX } from "#/lib/atproto/bridged-repo";
 import { EXCLUDED_PUBLICATION_URL_PATTERN } from "#/lib/publication/exclusions";
 
 /** Read-model filter for directory / search / discovery publication queries. */
@@ -34,6 +35,22 @@ export function discoverEligibleArticleWhere(p: Schema["publications"]): SQL {
       eq(p.showInDiscover, true),
       not(ilike(p.url, EXCLUDED_PUBLICATION_URL_PATTERN)),
     ),
+  ) as SQL;
+}
+
+/**
+ * Keep publications whose owner is *not* one of Bridgy Fed's bulk web-bridge
+ * mirrors (`*.web.brid.gy`). Those sites never asked to be here — they were
+ * discovered and mirrored — so recommending them reads as noise even though
+ * they are perfectly fine to browse, subscribe to, or find by search.
+ *
+ * An unresolved handle is kept, matching `isBridgedHandle`: a briefly
+ * unreachable DID document should not silently drop a real publisher.
+ */
+export function notWebBridgePublicationWhere(pr: Schema["profiles"]): SQL {
+  return or(
+    isNull(pr.handle),
+    not(ilike(pr.handle, `%${WEB_BRIDGE_HANDLE_SUFFIX}`)),
   ) as SQL;
 }
 

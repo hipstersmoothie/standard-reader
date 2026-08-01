@@ -101,6 +101,12 @@ const discoverExtrasInput = z.object({
   socialProofLimit: z.number().int().min(1).max(100).default(12),
 });
 
+/**
+ * Discover's "Recommended" rail. Bridgy Fed's bulk web-bridge mirrors
+ * (`*.web.brid.gy`) are excluded here: nobody at those sites asked to be
+ * published, so they read as noise in a rail that is meant to be a suggestion.
+ * They stay reachable everywhere else — directory, search, trending, follows.
+ */
 async function loadRecommendedRail(
   db: Db,
   schema: Schema,
@@ -117,9 +123,11 @@ async function loadRecommendedRail(
           limit,
           trendingExclude,
           rotationSeed("discover", "anon"),
+          { excludeWebBridge: true },
         )
       : await recommendedPublications(db, schema, did, limit, {
           excludeUris: trendingExclude,
+          excludeWebBridge: true,
           followUris,
           seed: rotationSeed("discover", did),
         });
@@ -405,6 +413,7 @@ const getRecommendedPublications = createServerFn({ method: "GET" })
             data.limit,
             trendingExclude,
             rotationSeed("discover", "anon"),
+            { excludeWebBridge: true },
           );
           span.set("count", items.length);
           return items.filter((pub) => pub.documentCount > 0);
@@ -418,6 +427,7 @@ const getRecommendedPublications = createServerFn({ method: "GET" })
           data.limit,
           {
             excludeUris: trendingExclude,
+            excludeWebBridge: true,
             followUris: await effectiveFollowUris(db, schema, session.did),
             seed: rotationSeed("discover", session.did),
           },

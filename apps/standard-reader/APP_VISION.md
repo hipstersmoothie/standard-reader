@@ -1130,6 +1130,12 @@ hand-tuned lists:
   only — no scoring per request.
 - **Cold start (no follows yet)** — fall back to high-readership publications
   _outside_ the current trending set so Recommended stays distinct from Trending.
+- **No bulk web-bridge mirrors in Recommended** — Discover's Recommended rail (signed-in _and_
+  cold start) excludes `*.web.brid.gy` publications. Those sites were discovered and mirrored by
+  Bridgy Fed, not published here on purpose, and they are a quarter of the discover-eligible
+  corpus — recommending them reads as noise. They stay fully reachable everywhere else: the
+  directory, search, trending, follows, and their own pages. Filtered in SQL, so the rail still
+  fills to its limit.
 
 ---
 
