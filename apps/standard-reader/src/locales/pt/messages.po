@@ -343,6 +343,10 @@ msgstr ""
 msgid "Best fit"
 msgstr ""
 
+#: src/routes/_layout.saved.tsx
+msgid "Date saved"
+msgstr ""
+
 #: src/components/reader/article-view.tsx
 msgid "Open on publication"
 msgstr "Abrir na publicação"
@@ -921,6 +925,10 @@ msgstr ""
 #: src/components/reading-settings-preview.tsx
 msgid "Loading voice sample"
 msgstr "Carregando amostra de voz"
+
+#: src/routes/_layout.saved.tsx
+msgid "Sort saved articles"
+msgstr ""
 
 #: src/components/docs/api-docs-intro.tsx
 #: src/components/docs/docs-api-nav.tsx
@@ -3736,6 +3744,7 @@ msgstr ""
 
 #: src/components/reader/article-below-fold.tsx
 #: src/components/reader/subscriptions-table.tsx
+#: src/routes/_layout.saved.tsx
 msgid "Publication"
 msgstr "Publicação"
 
@@ -4219,6 +4228,10 @@ msgstr "Desfazer seleção"
 msgid "Done reordering"
 msgstr ""
 
+#: src/routes/_layout.saved.tsx
+msgid "Published date"
+msgstr ""
+
 #: src/components/user-settings-view.tsx
 msgid "Infinite scroll"
 msgstr ""
@@ -4249,6 +4262,7 @@ msgstr ""
 
 #: src/components/feedback/feedback-dialog.tsx
 #: src/components/reader/collection-builder.tsx
+#: src/routes/_layout.saved.tsx
 msgid "Title"
 msgstr "Título"
 

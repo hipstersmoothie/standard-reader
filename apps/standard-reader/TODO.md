@@ -1102,6 +1102,10 @@ not offline body cache). Route slug **`/saved`**.
 - [x] **UI** — `/saved` queue (separate from `/likes`); distinct save toggle on article
       bar + feed cards; user-menu link; empty state copy; infinite scroll (20 per page). Update [`APP_VISION.md`](APP_VISION.md) §5
       when landing.
+- [x] **Saved queue sort** — `?sort=` on `/saved` (date saved / published date / publication /
+      title), mirroring `/tag`'s article-sort Menu+Select control; `savedOrderBy` in
+      [`api-reader.functions.ts`](src/integrations/tanstack-query/api-reader.functions.ts), sort
+      included in the infinite-query key so paging never mixes sort orders.
 - [x] **Reading history** — `/history` queue backed by existing
       `app.standard-reader.read` / `reads` table (no new lexicon); `readerApi.getReadingHistory` + user-menu link + empty state; infinite scroll (20 per page). Update [`APP_VISION.md`](APP_VISION.md) when landing.
 - [x] **Track reading history setting** — user-menu toggle (cookie + `user.track_reading_history`);
