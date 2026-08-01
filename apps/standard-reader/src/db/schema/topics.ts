@@ -12,7 +12,7 @@ import {
 import { publications } from "./publications.ts";
 
 /**
- * Auto-derived topic topics (`APP_VISION.md` §5): a cluster of related tags
+ * Auto-derived topics (`APP_VISION.md` §5): a cluster of related tags
  * presented as one browsable area, with its own trending publications and
  * documents, and its member tags exposed as sub-areas.
  *

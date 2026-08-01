@@ -34,7 +34,7 @@ export const Route = createFileRoute("/_layout/topics/")({
       meta: siteSocialMeta({
         title: `Topics · ${SITE_NAME}`,
         description:
-          "Browse the topic topics the network's writing clusters into.",
+          "Browse the topic areas the network's writing clusters into.",
         url: `${baseUrl.replace(/\/$/, "")}/topics`,
       }),
     };

@@ -46,7 +46,6 @@ import {
 } from "../atproto/identity.ts";
 import { replayDeadLetters } from "./consumer.ts";
 import { reconcileDocumentDup, reconcilePublicationGroup } from "./handlers.ts";
-import { recomputeTopics } from "./recompute-topics.ts";
 
 /**
  * Recompute the derived per-publication aggregates (subscriber/document/
@@ -904,13 +903,10 @@ export async function recomputeDerived(): Promise<void> {
   await recomputeCosubscriptions();
   await recomputeCorecommends();
   await recomputeTopicCounts();
-  // After the tag counts: the vocabulary they rebuild is this pass's input.
-  try {
-    await recomputeTopics();
-  } catch {
-    // Topics are a discovery surface, not core data — the prior snapshot
-    // stays published and the next sweep retries.
-  }
+  // Topic derivation is deliberately NOT here — it clusters the whole tag
+  // graph and calls the naming model, which is minutes of work whose output
+  // barely moves hour to hour. It runs on its own daily schedule instead;
+  // see `scripts/topics-cron.ts`.
   await recomputeSerialKinds();
   await recomputeDocumentTrending();
   // Last: dedup + the passes above are what change the eligible-document set,

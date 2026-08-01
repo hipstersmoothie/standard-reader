@@ -21,7 +21,7 @@ import {
 } from "./topic-naming.ts";
 
 /**
- * Derive topic topics from the tag co-occurrence graph.
+ * Derive topics from the tag co-occurrence graph.
  *
  * See `src/db/schema/topics.ts` for what a topic is and
  * `./tag-clustering.ts` for the clustering itself. This module owns the SQL
@@ -136,6 +136,21 @@ const MIN_CLUSTER_AUTHORS = 5;
  * one DID is 99.5%). Concentration catches it where counting does not.
  */
 const MAX_TOP_AUTHOR_SHARE = 0.5;
+
+/**
+ * How far a topic already published may slip before it is unlisted.
+ *
+ * The bars above are an *entry* test, and applying them unchanged every sweep
+ * makes a topic sitting near one of them flap: published today, gone tomorrow,
+ * back the day after. A URL that 404s on alternate days is worse than a topic
+ * that is a little thin, and these are public links people share. So a topic
+ * that has cleared the bar once keeps its place while it still clears this
+ * fraction of it — real growth and decay move slowly, so only a topic that has
+ * genuinely fallen apart drops out.
+ */
+const RETENTION_FACTOR = 0.7;
+/** Concentration is the anti-fleet rule, so it slackens far less than the counts. */
+const RETENTION_TOP_AUTHOR_SHARE = 0.6;
 
 /** Tag-set overlap at which a re-derived cluster is judged the same topic. */
 const IDENTITY_MATCH_SIMILARITY = 0.5;
@@ -499,12 +514,17 @@ export async function deriveTopics(): Promise<TopicDerivation> {
 
   const clusters = clusterTags(edges);
 
-  // Only clusters that could clear the tag bar are worth resolving memberships
-  // for — that query is the expensive one.
+  // Only clusters that could clear a tag bar are worth resolving memberships
+  // for — that query is the expensive one. The cut is at the *retention*
+  // floor, not the entry floor, so a published topic that has shrunk a little
+  // still reaches the hysteresis test below instead of vanishing here.
+  const resolveMinTags = Math.floor(MIN_CLUSTER_TAGS * RETENTION_FACTOR);
   const sized = clusters
-    .filter((cluster) => cluster.length >= MIN_CLUSTER_TAGS)
+    .filter((cluster) => cluster.length >= resolveMinTags)
     .map((cluster, index) => ({ key: String(index), tags: cluster }));
-  const droppedByTags = clusters.length - sized.length;
+  const droppedByTags = clusters.filter(
+    (cluster) => cluster.length < MIN_CLUSTER_TAGS,
+  ).length;
   const belowTagBar = clusters
     .filter((cluster) => cluster.length < MIN_CLUSTER_TAGS)
     .map((cluster) => cluster.map((member) => member.tag));
@@ -565,10 +585,15 @@ export async function deriveTopics(): Promise<TopicDerivation> {
         (left.uri < right.uri ? -1 : left.uri > right.uri ? 1 : 0),
     );
 
+    const enoughTags = cluster.tags.length >= MIN_CLUSTER_TAGS;
     const enoughPublications = publications.length >= MIN_CLUSTER_PUBLICATIONS;
     const enoughAuthors = authorCount >= MIN_CLUSTER_AUTHORS;
     const spreadAcrossAuthors = topAuthorShare <= MAX_TOP_AUTHOR_SHARE;
-    if (!enoughPublications) droppedByPublications++;
+    // Below the tag bar is already counted in `droppedByTags`; counting it
+    // again here would make the reasons sum to more than the rejections.
+    if (!enoughTags) {
+      // counted above
+    } else if (!enoughPublications) droppedByPublications++;
     else if (!enoughAuthors) droppedByAuthors++;
     else if (!spreadAcrossAuthors) droppedByConcentration++;
 
@@ -582,7 +607,11 @@ export async function deriveTopics(): Promise<TopicDerivation> {
       authorCount,
       topAuthorShare,
       documentCount: entry?.documentCount ?? 0,
-      published: enoughPublications && enoughAuthors && spreadAcrossAuthors,
+      published:
+        enoughTags &&
+        enoughPublications &&
+        enoughAuthors &&
+        spreadAcrossAuthors,
     } satisfies Candidate;
   });
 
@@ -600,6 +629,24 @@ export async function deriveTopics(): Promise<TopicDerivation> {
   };
 }
 
+/**
+ * Whether an already-published topic is still substantial enough to stay up.
+ *
+ * Deliberately measured against the same three signals as the entry bar rather
+ * than a separate rule, so there is one definition of "a real topic" and only
+ * its strictness changes. A topic that fails this has not dipped — it has
+ * dissolved.
+ */
+function clearsRetentionBar(candidate: Candidate): boolean {
+  return (
+    candidate.tags.length >= MIN_CLUSTER_TAGS * RETENTION_FACTOR &&
+    candidate.publications.length >=
+      MIN_CLUSTER_PUBLICATIONS * RETENTION_FACTOR &&
+    candidate.authorCount >= MIN_CLUSTER_AUTHORS * RETENTION_FACTOR &&
+    candidate.topAuthorShare <= RETENTION_TOP_AUTHOR_SHARE
+  );
+}
+
 export async function recomputeTopics(): Promise<TopicsRecomputeSummary> {
   const derivation = await deriveTopics();
   const { candidates } = derivation;
@@ -612,6 +659,7 @@ export async function recomputeTopics(): Promise<TopicsRecomputeSummary> {
       signatureTags: topics.signatureTags,
       nameModel: topics.nameModel,
       namedAt: topics.namedAt,
+      published: topics.published,
     })
     .from(topics);
   const existingBySlug = new Map(existing.map((row) => [row.slug, row]));
@@ -664,11 +712,26 @@ export async function recomputeTopics(): Promise<TopicsRecomputeSummary> {
       matchedSlug ?? topicSlug(name, candidate.signature.join(" "), takenSlugs);
     takenSlugs.add(slug);
 
-    return { candidate, slug, name, description, nameModel, namedAt };
+    // Hysteresis: a topic that has already been published keeps its place
+    // while it still clears the retention bar, so a marginal sweep does not
+    // take a live URL off the site. See RETENTION_FACTOR.
+    const published =
+      candidate.published ||
+      (prior?.published === true && clearsRetentionBar(candidate));
+
+    return {
+      candidate,
+      published,
+      slug,
+      name,
+      description,
+      nameModel,
+      namedAt,
+    };
   });
 
   const publishedSlugs = resolved
-    .filter((row) => row.candidate.published)
+    .filter((row) => row.published)
     .map((row) => row.slug);
 
   await db.transaction(async (tx) => {
@@ -693,7 +756,7 @@ export async function recomputeTopics(): Promise<TopicsRecomputeSummary> {
             // over a wider pool on top of this, so a fixed ranking here does
             // not mean a fixed rail.
             score: row.candidate.authorCount,
-            published: row.candidate.published,
+            published: row.published,
             nameModel: row.nameModel,
             namedAt: row.namedAt,
           })),
@@ -738,7 +801,7 @@ export async function recomputeTopics(): Promise<TopicsRecomputeSummary> {
     await tx.execute(sql`DELETE FROM topic_publications`);
 
     const tagValues = resolved
-      .filter((row) => row.candidate.published)
+      .filter((row) => row.published)
       .flatMap((row) =>
         row.candidate.tags.map((member) => ({
           topicSlug: row.slug,
@@ -751,7 +814,7 @@ export async function recomputeTopics(): Promise<TopicsRecomputeSummary> {
     }
 
     const publicationValues = resolved
-      .filter((row) => row.candidate.published)
+      .filter((row) => row.published)
       .flatMap((row) =>
         row.candidate.publications.map((publication) => ({
           topicSlug: row.slug,

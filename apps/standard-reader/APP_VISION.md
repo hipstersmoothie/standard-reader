@@ -130,6 +130,12 @@ Topics are **derived, never curated** — see
     _best fit_ ranks by how much of the topic's tag vocabulary a publication covers.
 - Slugs are permanent. A topic that drifts, gets renamed, or drops below the quality
   bar keeps its URL.
+- **Publication is sticky.** The quality bar is an _entry_ test; re-applying it
+  unchanged every run would make a topic sitting near a threshold flap in and out,
+  and a public URL that 404s on alternate days is worse than a topic that is a
+  little thin. Once published, a topic stays published while it still clears 70% of
+  each count threshold (and 0.6 top-author share), so only one that has genuinely
+  fallen apart is unlisted.
 
 ### Search
 
@@ -1184,8 +1190,13 @@ hand-tuned lists:
 ### Topic derivation
 
 Topics (`topics`, `topic_tags`, `topic_publications`) are rebuilt by
-`recomputeTopics()` each sweep, from the tag co-occurrence graph. Four decisions carry
-the quality, each settled by measuring against the live corpus rather than by taste:
+`recomputeTopics()` on its own **daily** cron (`scripts/topics-cron.ts`, the
+`topics-cron` Railway service — not the hourly sweep, which only rebuilds the tag
+counts it reads), from the tag co-occurrence graph. See
+[`DEPLOY_TOPICS.md`](./DEPLOY_TOPICS.md) for the services and environment it needs.
+
+Four decisions carry the quality, each settled by measuring against the live corpus
+rather than by taste:
 
 - **Edges are counted per publisher, not per article.** Two tags are related when they
   appear on the same article — but the pair counts once per publisher. Counting articles
