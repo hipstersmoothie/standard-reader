@@ -1,5 +1,5 @@
 {
-  "id": "97b01f54-0272-4b30-9b59-c849a02d9bdd",
+  "id": "3d5ba137-4765-4e0a-957b-d9246c30d8d2",
   "prevId": "7e046621-a7f4-4488-9114-3297daffa82b",
   "version": "7",
   "dialect": "postgresql",
@@ -3271,6 +3271,12 @@
           "notNull": true,
           "default": false
         },
+        "superseded_by": {
+          "name": "superseded_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "name_model": {
           "name": "name_model",
           "type": "text",
@@ -3321,7 +3327,21 @@
           "with": {}
         }
       },
-      "foreignKeys": {},
+      "foreignKeys": {
+        "topics_superseded_by_topics_slug_fk": {
+          "name": "topics_superseded_by_topics_slug_fk",
+          "tableFrom": "topics",
+          "tableTo": "topics",
+          "columnsFrom": [
+            "superseded_by"
+          ],
+          "columnsTo": [
+            "slug"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},

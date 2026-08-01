@@ -26,12 +26,18 @@ BEGIN;
 -- ALTER TABLE ... RENAME leaves the primary key index under the old name.
 ALTER INDEX IF EXISTS communities_pkey RENAME TO topics_pkey;
 
+-- The one column the hand-built tables predate.
+ALTER TABLE topics ADD COLUMN IF NOT EXISTS superseded_by text;
+ALTER TABLE topics DROP CONSTRAINT IF EXISTS topics_superseded_by_topics_slug_fk;
+ALTER TABLE topics ADD CONSTRAINT topics_superseded_by_topics_slug_fk
+  FOREIGN KEY (superseded_by) REFERENCES topics(slug) ON DELETE SET NULL;
+
 DELETE FROM drizzle.__drizzle_migrations
  WHERE created_at IN (1785563248288, 1785571959144, 1785604772535);
 
 INSERT INTO drizzle.__drizzle_migrations (hash, created_at)
-VALUES ('5cf42a71e8ef7ad4336cf7ab86292020af9da9cb56c7c66d9df938a2dd78fdb9',
-        1785605558412);
+VALUES ('e1a1de621169c8946dd72493ca28aebccc354a86a68f1afe0e4a550027060e87',
+        1785607674037);
 
 COMMIT;
 ```

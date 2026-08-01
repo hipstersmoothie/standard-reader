@@ -17,7 +17,11 @@ import {
   effectiveFollowSets,
   effectiveFollowUris,
 } from "#/server/reader/saved-lists";
-import type { TopicCard, TopicDirectorySort } from "#/server/reader/topics";
+import type {
+  TopicCard,
+  TopicDirectorySort,
+  TopicRedirect,
+} from "#/server/reader/topics";
 import {
   topicBySlug,
   topicPublicationCards,
@@ -26,6 +30,7 @@ import {
   discoverTopics,
   listTopics,
   selectTopicDocumentUris,
+  topicRedirectTarget,
 } from "#/server/reader/topics";
 
 import type { ArticleCard, PublicationCard } from "./api-shapes";
@@ -102,6 +107,12 @@ export interface TopicArticlePage {
 
 export interface TopicPageData {
   topic: TopicCard | null;
+  /**
+   * Set only when `topic` is null. `known: false` is a real 404; otherwise the
+   * slug once existed and the route redirects — to `slug` if a topic absorbed
+   * it, or to the index when nothing did. See `topicRedirectTarget`.
+   */
+  redirect?: TopicRedirect;
   publicationCount: number;
   articles?: TopicArticlePage;
   publications?: TopicPublicationPage;
@@ -258,8 +269,14 @@ const getTopicPage = createServerFn({ method: "GET" })
       });
       if (!topic) {
         span.set("found", false);
+        // Unpublished or unknown. Resolving costs one more query, but only on
+        // a path that was going to be an error page anyway.
+        const redirect = await topicRedirectTarget(db, data.slug);
+        span.set("redirect.known", redirect.known);
+        span.set("redirect.slug", redirect.slug ?? "");
         return {
           topic: null,
+          redirect,
           publicationCount: 0,
         } satisfies TopicPageData;
       }

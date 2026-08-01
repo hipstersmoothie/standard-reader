@@ -36,6 +36,7 @@ import {
   createFileRoute,
   Link,
   notFound,
+  redirect,
   useNavigate,
   useRouterState,
 } from "@tanstack/react-router";
@@ -132,9 +133,22 @@ export const Route = createFileRoute("/_layout/topics/$slug")({
         offset: 0,
       },
     });
-    // Topics are derived, so an unknown slug is a genuine 404 rather than
-    // an empty page — including a topic that dropped below the quality bar.
-    if (!page.topic) throw notFound();
+    if (!page.topic) {
+      // A slug the table has never held is a real 404. One it has — a topic
+      // that dissolved into another, or fell below the quality bar — was a
+      // public link once, so it redirects instead: to whichever topic absorbed
+      // it, or to the index when nothing did.
+      if (!page.redirect?.known) throw notFound();
+      throw redirect(
+        page.redirect.slug
+          ? {
+              to: "/topics/$slug",
+              params: { slug: page.redirect.slug },
+              statusCode: 301,
+            }
+          : { to: "/topics", statusCode: 301 },
+      );
+    }
 
     topicsApi.seedTopicPageCaches(context.queryClient, page, {
       slug: params.slug,

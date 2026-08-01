@@ -1,3 +1,4 @@
+import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import {
   boolean,
   doublePrecision,
@@ -71,6 +72,27 @@ export const topics = pgTable(
      * recovers keeps its slug and name rather than minting a new URL.
      */
     published: boolean("published").notNull().default(false),
+
+    /**
+     * Where this topic's URL should send readers now that it is unpublished.
+     *
+     * A topic can stop existing honestly: its tags drift apart, or the cluster
+     * merges into a neighbour, and the next derivation simply has nothing that
+     * matches it. Its row stays (so the slug is never reused) but its tags and
+     * memberships are gone, which would make the page a 404 — and these are
+     * public links people share. So when a published topic loses its cluster,
+     * the sweep records the closest surviving topic by tag-set overlap and the
+     * route redirects there. Null means nothing resembled it closely enough,
+     * and the route falls back to the index rather than dead-ending.
+     *
+     * Self-referential, and chains are possible (A merges into B, B later
+     * merges into C), so the read path follows it transitively with a depth
+     * cap — see `topicRedirectTarget`.
+     */
+    supersededBy: text("superseded_by").references(
+      (): AnyPgColumn => topics.slug,
+      { onDelete: "set null" },
+    ),
 
     /** Model that produced `name`/`description`; null when the fallback (the
      * cluster's dominant tag) was used because naming was unavailable. */

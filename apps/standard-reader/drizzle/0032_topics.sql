@@ -31,6 +31,7 @@ CREATE TABLE "topics" (
 	"document_count" integer DEFAULT 0 NOT NULL,
 	"score" double precision DEFAULT 0 NOT NULL,
 	"published" boolean DEFAULT false NOT NULL,
+	"superseded_by" text,
 	"name_model" text,
 	"named_at" timestamp with time zone,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
@@ -40,6 +41,7 @@ CREATE TABLE "topics" (
 ALTER TABLE "topic_publications" ADD CONSTRAINT "topic_publications_topic_slug_topics_slug_fk" FOREIGN KEY ("topic_slug") REFERENCES "public"."topics"("slug") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "topic_publications" ADD CONSTRAINT "topic_publications_publication_uri_publications_uri_fk" FOREIGN KEY ("publication_uri") REFERENCES "public"."publications"("uri") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "topic_tags" ADD CONSTRAINT "topic_tags_topic_slug_topics_slug_fk" FOREIGN KEY ("topic_slug") REFERENCES "public"."topics"("slug") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "topics" ADD CONSTRAINT "topics_superseded_by_topics_slug_fk" FOREIGN KEY ("superseded_by") REFERENCES "public"."topics"("slug") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "topic_publications_rank_idx" ON "topic_publications" USING btree ("topic_slug","score" DESC NULLS LAST);--> statement-breakpoint
 CREATE INDEX "topic_publications_pub_idx" ON "topic_publications" USING btree ("publication_uri");--> statement-breakpoint
 CREATE INDEX "topic_tags_tag_idx" ON "topic_tags" USING btree ("tag");--> statement-breakpoint

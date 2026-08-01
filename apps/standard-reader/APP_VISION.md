@@ -130,6 +130,12 @@ Topics are **derived, never curated** — see
     _best fit_ ranks by how much of the topic's tag vocabulary a publication covers.
 - Slugs are permanent. A topic that drifts, gets renamed, or drops below the quality
   bar keeps its URL.
+- **No dead links.** A topic can stop existing honestly — its tags drift apart, or its
+  cluster merges into a neighbour — and its tags and memberships go with it. Rather
+  than 404, the sweep records the closest surviving topic by tag overlap in
+  `superseded_by` and `/topics/$slug` redirects there (301), following the pointer
+  transitively since merges chain. Nothing close enough redirects to the index. Only a
+  slug the table has never held is a genuine 404, so a typo still errors.
 - **Publication is sticky.** The quality bar is an _entry_ test; re-applying it
   unchanged every run would make a topic sitting near a threshold flap in and out,
   and a public URL that 404s on alternate days is worse than a topic that is a

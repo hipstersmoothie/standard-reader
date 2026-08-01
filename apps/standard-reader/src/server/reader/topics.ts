@@ -307,6 +307,53 @@ export async function topicBySlug(
   return card ?? null;
 }
 
+/** Longest succession chain the redirect will follow. Also the cycle guard. */
+const MAX_SUCCESSION_HOPS = 5;
+
+export interface TopicRedirect {
+  /** False when no such topic has ever existed — a genuine 404. */
+  known: boolean;
+  /** Published topic to redirect to; null means fall back to the index. */
+  slug: string | null;
+}
+
+/**
+ * Resolve an unpublished topic's slug to wherever its readers should land.
+ *
+ * A slug the table has never seen is a 404 — a typo or a guessed URL should
+ * not be answered with a redirect. A slug it *has* seen always resolves to
+ * something, because it was once a public link: either the topic that absorbed
+ * it (following `superseded_by` transitively, since merges can chain) or the
+ * index.
+ *
+ * Recursive rather than a loop of round trips: the region gap makes each query
+ * expensive enough that a three-hop chain would be felt, and this is already
+ * the slow path.
+ */
+export async function topicRedirectTarget(
+  db: Db,
+  slug: string,
+): Promise<TopicRedirect> {
+  const result = await db.execute(sql`
+    WITH RECURSIVE chain(slug, superseded_by, published, depth) AS (
+      SELECT t.slug, t.superseded_by, t.published, 0
+      FROM topics t WHERE t.slug = ${slug}
+      UNION ALL
+      SELECT t.slug, t.superseded_by, t.published, c.depth + 1
+      FROM chain c
+      JOIN topics t ON t.slug = c.superseded_by
+      WHERE c.published = false AND c.depth < ${MAX_SUCCESSION_HOPS}
+    )
+    SELECT
+      (SELECT count(*)::int FROM chain) AS seen,
+      (SELECT slug FROM chain WHERE published = true LIMIT 1) AS target
+  `);
+
+  const row = executeRows<{ seen: number; target: string | null }>(result)[0];
+  if (!row || row.seen === 0) return { known: false, slug: null };
+  return { known: true, slug: row.target };
+}
+
 /**
  * A topic's member tags, most central first — the sub-area chips, and the
  * tag set {@link topicDocumentTags} hands to the document query.

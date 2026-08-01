@@ -152,6 +152,17 @@ const RETENTION_FACTOR = 0.7;
 /** Concentration is the anti-fleet rule, so it slackens far less than the counts. */
 const RETENTION_TOP_AUTHOR_SHARE = 0.6;
 
+/**
+ * Weakest overlap that still counts as "this topic became that one".
+ *
+ * Far below {@link IDENTITY_MATCH_SIMILARITY} by definition: anything at or
+ * above that would have been matched as the *same* topic rather than a
+ * successor. This is the looser question of where a reader who followed a link
+ * to a dissolved topic should land, and a quarter of its tags surviving in one
+ * place is a better answer than the index.
+ */
+const SUPERSEDE_SIMILARITY = 0.25;
+
 /** Tag-set overlap at which a re-derived cluster is judged the same topic. */
 const IDENTITY_MATCH_SIMILARITY = 0.5;
 /** Below this overlap with its stored fingerprint, a topic is re-named. */
@@ -630,6 +641,60 @@ export async function deriveTopics(): Promise<TopicDerivation> {
 }
 
 /**
+ * Where each unpublished topic's URL should now point.
+ *
+ * Two ways a topic ends up here, and they need different fingerprints:
+ *
+ * - **It dissolved.** No cluster matched it this sweep, so there is no fresh
+ *   signature — compare its *stored* one, which is the last thing it was.
+ * - **It fell below the bar.** It still has a cluster, so compare the fresh
+ *   signature; that is what it looks like now.
+ *
+ * Either way the answer is the published topic sharing the most tags with it,
+ * and {@link SUPERSEDE_SIMILARITY} is the floor below which "closest" stops
+ * meaning "related". Returning null for those is deliberate: the route sends
+ * them to the index, which is honest, rather than to an unrelated topic.
+ */
+function findSuccessors(
+  resolved: Array<{ slug: string; published: boolean; candidate: Candidate }>,
+  existing: Array<{ slug: string; signatureTags: Array<string> }>,
+  publishedSlugs: Array<string>,
+): Map<string, string | null> {
+  const published = new Set(publishedSlugs);
+  const targets = resolved.filter((row) => row.published);
+  const successors = new Map<string, string | null>();
+  if (targets.length === 0) return successors;
+
+  const fingerprints = new Map<string, Array<string>>();
+  for (const row of existing) fingerprints.set(row.slug, row.signatureTags);
+  // A resolved row's fresh signature beats whatever it was last sweep.
+  for (const row of resolved) {
+    fingerprints.set(row.slug, row.candidate.signature);
+  }
+
+  for (const [slug, signature] of fingerprints) {
+    if (published.has(slug)) continue;
+
+    let best: string | null = null;
+    let bestScore = SUPERSEDE_SIMILARITY;
+    for (const target of targets) {
+      const score = tagSetSimilarity(signature, target.candidate.signature);
+      // Ties break on slug so a sweep that changes nothing rewrites nothing.
+      if (
+        score > bestScore ||
+        (score === bestScore && best && target.slug < best)
+      ) {
+        best = target.slug;
+        bestScore = score;
+      }
+    }
+    successors.set(slug, best);
+  }
+
+  return successors;
+}
+
+/**
  * Whether an already-published topic is still substantial enough to stay up.
  *
  * Deliberately measured against the same three signals as the entry bar rather
@@ -733,6 +798,7 @@ export async function recomputeTopics(): Promise<TopicsRecomputeSummary> {
   const publishedSlugs = resolved
     .filter((row) => row.published)
     .map((row) => row.slug);
+  const successors = findSuccessors(resolved, existing, publishedSlugs);
 
   await db.transaction(async (tx) => {
     // One statement rather than a loop: the ingest worker and the database sit
@@ -793,6 +859,17 @@ export async function recomputeTopics(): Promise<TopicsRecomputeSummary> {
               notInArray(topics.slug, publishedSlugs),
             ),
       );
+
+    // Point every unpublished topic at its closest surviving neighbour, so its
+    // URL redirects instead of 404ing. Recomputed each sweep rather than
+    // written once: the successor may itself be unpublished later, and pointing
+    // at whatever is closest *today* keeps the chain short.
+    for (const [slug, target] of successors) {
+      await tx
+        .update(topics)
+        .set({ supersededBy: target, updatedAt: new Date() })
+        .where(eq(topics.slug, slug));
+    }
 
     // Tags and memberships are stored for published topics only — the
     // read path never asks for them otherwise, and the below-bar tail is a few
