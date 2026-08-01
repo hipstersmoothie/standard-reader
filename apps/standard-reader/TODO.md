@@ -65,6 +65,26 @@ Check items off as they land.
       path; started the bookmark count query in parallel with `effectiveFollowUris`
       in `loadSidebarData`. Remaining cold latency (~2–3s) is Neon compute wake-up
       (scale-to-zero); warm loads are ~0.4–0.7s across all routes.
+- [x] **`/latest` perf: whole-corpus count on the route loader.** Honeycomb showed
+      `feed.getLatestFeedCounts` at P50 919ms / P95 1.96s / P99 5.2s — flat across signed-in
+      (947ms) and signed-out (781ms), so every `/latest` load paid it, and
+      `_layout.latest.tsx`'s loader `await`s it alongside the feed. Root cause:
+      `countNetworkDocuments` (the "All" tab badge) is an unbounded `count(*)` over every
+      document left-joined to publications; the eligibility predicate
+      (`p.uri IS NULL OR … p.url NOT ILIKE …`) can't be index-served, so it planned as a
+      parallel seq scan — EXPLAIN on prod: 1080ms, `read=270120` buffers over 1.4M rows /
+      2.2GB, and re-read the heap from storage on each call (a second run went _further_
+      cold: `hit=2397 read=283455`), evicting pages the sibling tabs rely on. Fix:
+      precompute the scalar into a new `network_stats` key/value table via
+      `recomputeNetworkStats()` in the sweep; `countNetworkDocuments` is now a single
+      primary-key lookup (**1080ms → 0.027ms**, 2 buffers), with `countNetworkDocumentsLive`
+      as the pre-first-sweep fallback and migration `0031` seeding the row so that window
+      never opens. Guarded by two cases in the gated `queries.explain.test.ts`
+      (`pnpm perf:explain`): the badge read must not scan `documents`, and the cached scalar
+      must stay within 2% of a live count so the two predicates can't silently diverge.
+      Verified on a Neon branch off prod. Expect the `unread` / `subscriptions` P95 tails
+      (1.85s / 2.11s against ~107ms P50s) to fall too — unproven, but consistent with the
+      cache eviction.
 - [x] **Load perf regression suite.** Playwright budgets for guest + signed-in views
       (`pnpm perf:test`, `perf/load-regression.spec.ts`); JSON report in `perf/results/latest.json`;
       fixture discovery via `pnpm perf:discover-fixtures`; signed-in auth via

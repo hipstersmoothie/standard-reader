@@ -1101,8 +1101,14 @@ AT Proto network (standard.site publications, profiles, follows)
   (`src/db/schema/`), powers feeds, the
   directory, search (GIN `tsvector`), recommendations, and trending. Derived aggregates
   (`publication_stats`, `publication_cosubscriptions`, `publications.topic`,
-  `publications.serial_kind`) are recomputed on a schedule. It is a
-  cache — never the source of truth.
+  `publications.serial_kind`, `discover_topic_counts`, `network_stats`) are recomputed on a
+  schedule. It is a cache — never the source of truth.
+  - **Network-wide aggregates never run on the request path.** A count over the whole corpus is
+    an unbounded scan no index can serve, and at ~1.4M documents / 2.2GB it also evicts the
+    buffer cache the feed queries depend on. `discover_topic_counts` (Discover topic chips) and
+    `network_stats` (the Latest "All" badge) exist so those reads are single-row lookups; the
+    sweep already walks these tables, so maintaining them is near-free marginal work. Add a
+    scalar here rather than counting live.
 - **Writes:** user actions (follow, like, read state) are written as records to the user's repo
   and reflected back into the cache.
 

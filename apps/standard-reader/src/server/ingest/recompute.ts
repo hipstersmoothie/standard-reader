@@ -32,7 +32,12 @@ import {
 
 import { db } from "../../db/index.ts";
 import * as schema from "../../db/schema.ts";
-import { documents, profiles, publications } from "../../db/schema.ts";
+import {
+  documents,
+  NETWORK_DOCUMENT_COUNT_KEY,
+  profiles,
+  publications,
+} from "../../db/schema.ts";
 import { getBacklinkCountForTarget } from "../atproto/constellation.ts";
 import {
   INVALID_HANDLE,
@@ -562,6 +567,41 @@ export async function recomputeTopics(): Promise<void> {
 }
 
 /**
+ * Rebuild the network-wide scalars in `network_stats`.
+ *
+ * Currently just the Latest "All" tab badge. Computing it on the request path
+ * is an unbounded `count(*)` over every document joined to publications — no
+ * index can serve it, so it lands as a parallel seq scan (~1.08s over ~1.4M
+ * rows / 2.2GB at time of writing) on `/latest`'s blocking loader, and re-reads
+ * the whole heap from storage on each call. Here it is one more sweep-time
+ * scan; readers get a single-row primary-key lookup.
+ *
+ * The predicate must stay in lockstep with `discoverEligibleArticleWhere` +
+ * `documentPublishedNotInFuture` in `#/server/reader/queries` — those still
+ * define what the "All" tab actually lists, and this is only its cardinality.
+ */
+export async function recomputeNetworkStats(): Promise<void> {
+  await db.execute(sql`
+    INSERT INTO network_stats (key, value, recomputed_at)
+    SELECT ${NETWORK_DOCUMENT_COUNT_KEY}, count(*), now()
+    FROM documents d
+    LEFT JOIN publications p ON p.uri = d.publication_uri
+    WHERE d.deleted = false
+      AND (d.published_at IS NULL OR d.published_at <= now())
+      AND (
+        p.uri IS NULL
+        OR (
+          p.deleted = false
+          AND p.show_in_discover = true
+          AND p.url NOT ILIKE ${EXCLUDED_PUBLICATION_URL_PATTERN}
+        )
+      )
+    ON CONFLICT (key) DO UPDATE
+      SET value = excluded.value, recomputed_at = excluded.recomputed_at
+  `);
+}
+
+/**
  * Derive `publications.serial_kind` for serial publications — the ones whose
  * publisher set `preferences.prevNextDirection = "ltr"`, declaring that the
  * publication reads forwards from its first post (see
@@ -866,4 +906,7 @@ export async function recomputeDerived(): Promise<void> {
   await recomputeTopics();
   await recomputeSerialKinds();
   await recomputeDocumentTrending();
+  // Last: dedup + the passes above are what change the eligible-document set,
+  // so counting here records the sweep's final state rather than a mid-sweep one.
+  await recomputeNetworkStats();
 }

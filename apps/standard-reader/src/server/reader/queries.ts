@@ -30,6 +30,7 @@ import {
 } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 
+import { NETWORK_DOCUMENT_COUNT_KEY } from "#/db/schema/network-stats";
 import type {
   ArticleCard,
   Db,
@@ -1263,8 +1264,41 @@ export async function countFollowedDocuments(
   return { all: row?.all ?? 0, unread: row?.unread ?? 0 };
 }
 
-/** Count of discover-eligible documents across the whole network (Latest "All" tab). */
+/**
+ * Count of discover-eligible documents across the whole network (Latest "All"
+ * tab badge).
+ *
+ * Served from the `network_stats` scalar maintained by `recomputeNetworkStats()`
+ * — a single primary-key lookup. Counting it live is an unbounded `count(*)`
+ * over every document row joined to publications, which no index can serve;
+ * it measured ~1.08s as a parallel seq scan and sat on `/latest`'s blocking
+ * route loader. A badge total that the sweep refreshes every few minutes does
+ * not justify that, nor the buffer-cache churn it inflicted on the sibling feed
+ * queries.
+ *
+ * {@link countNetworkDocumentsLive} is the fallback for the window before the
+ * first sweep populates the row.
+ */
 export async function countNetworkDocuments(
+  db: Db,
+  schema: Schema,
+): Promise<number> {
+  const [row] = await db
+    .select({ value: schema.networkStats.value })
+    .from(schema.networkStats)
+    .where(eq(schema.networkStats.key, NETWORK_DOCUMENT_COUNT_KEY))
+    .limit(1);
+  // Only missing before the first sweep after deploy (or on a fresh DB), so the
+  // expensive path runs for minutes, not indefinitely.
+  return row?.value ?? (await countNetworkDocumentsLive(db, schema));
+}
+
+/**
+ * The live scan behind {@link countNetworkDocuments}. This is the definition of
+ * record for what the "All" tab counts — `recomputeNetworkStats()` mirrors this
+ * predicate, so the two must change together.
+ */
+export async function countNetworkDocumentsLive(
   db: Db,
   schema: Schema,
 ): Promise<number> {
