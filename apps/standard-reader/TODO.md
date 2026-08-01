@@ -198,6 +198,22 @@ Check items off as they land.
 
 ## 1. Data ingestion — tap → Neon
 
+- [x] **Personal state no longer waits on the ingest queue** (2026-08-01). With the ingest worker
+      backlogged, a reader's own read/unread state — the one thing they watch change in the moment —
+      queued behind everyone else's backfill, so articles stayed unread for hours after being read.
+      The write path now mirrors its own records into Neon
+      (`#/server/reader/personal-state-mirror`), keyed by the same record AT-URI ingest uses, so the
+      tap's later replay overwrites identical values instead of being the only way the row appears.
+      Covers **reads** (`markRead` / `markUnread` / `markPublicationAllRead` /
+      `markFollowsAllUnreadRead`, plus the batched `markDocumentsRead` — which mirrors per committed
+      `applyWrites` batch, so a partial failure reflects exactly what's durable), **bookmarks**
+      (`bookmarkDocument` / `unbookmarkDocument`) and **likes** (`recommendDocument` /
+      `unrecommendDocument` — article like counts are a live count over `recommends`, so the number
+      moves with the heart), on both the server fns and the XRPC procedures behind MCP + the
+      extension. Removals delete by record AT-URI, not by `(owner, document)`, so another client's
+      record for the same document keeps its row. Best-effort: a mirror failure degrades to the old
+      wait-for-tap behavior, never fails the write.
+
 - [x] **Bridged repos on their own tap** (2026-07-31). Bridgy Fed began publishing
       `site.standard.document` for every site it mirrors; ~969k documents landed in one day
       (99.98% of that day's inserts) across 909 `*.brid.gy` repos, and the backfill saturated
