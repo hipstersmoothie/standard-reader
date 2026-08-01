@@ -46,7 +46,6 @@ import {
 } from "../atproto/identity.ts";
 import { replayDeadLetters } from "./consumer.ts";
 import { reconcileDocumentDup, reconcilePublicationGroup } from "./handlers.ts";
-import { reconcilePublisherReposBatch } from "./repo-sync.ts";
 
 /**
  * Recompute the derived per-publication aggregates (subscriber/document/
@@ -879,13 +878,13 @@ export async function recomputeDerived(): Promise<void> {
   } catch {
     // Replay is best-effort; the rows persist and the next sweep retries.
   }
-  // PDS is the source of truth for deletes tap missed (dead-letter cap, stream
-  // gaps, out-of-order backfill). Round-robin a batch each sweep.
-  try {
-    await reconcilePublisherReposBatch();
-  } catch {
-    // Best-effort; the background timer retries between sweeps.
-  }
+  // The PDS round-robin used to run here too, a batch per sweep. It moved to
+  // its own cron service (`scripts/reconcile-repos-cron.ts`): repairing a repo
+  // means enumerating it and rewriting every changed record, and doing that
+  // inside the ingest worker put the repair in direct competition with the live
+  // tap stream it exists to backstop — the worker sits pinned at its in-flight
+  // cap as it is. Nothing schedules repair from this process any more.
+
   // Re-resolve any actor stranded at `null`/`handle.invalid` so a handle change
   // that never arrived as a usable identity event still self-heals (issue #4).
   try {

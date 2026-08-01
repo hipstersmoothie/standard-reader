@@ -18,9 +18,14 @@ alone (they describe intent; the CLI shows reality).
 
 ## Standard Reader Railway topology
 
-The `standard-reader` Railway project runs four long-lived services plus an
-hourly cron, sharing a single Neon Postgres read-model. GitHub auto-deploys on
+The `standard-reader` Railway project runs four long-lived services plus two
+hourly crons, sharing a single Neon Postgres read-model. GitHub auto-deploys on
 push to `main`. Every service uses the `RAILPACK` builder.
+
+Note the split between the two crons: `recompute-cron` is only a *trigger* — it
+POSTs the ingest worker and the work runs there. `reconcile-cron` does its work
+in its own process, on purpose, so repo repair never competes with the live tap
+stream it exists to backstop.
 
 | Service          | Start command                                      | Config file            | Healthcheck / notes                                                   |
 | ---------------- | -------------------------------------------------- | ---------------------- | --------------------------------------------------------------------- |
@@ -28,6 +33,7 @@ push to `main`. Every service uses the `RAILPACK` builder.
 | `tap`            | `ghcr.io/.../tap` Docker image on a `/data` volume | (Docker, no railpack)  | Long-running firehose consumer; admin API on `:2480` (private)         |
 | `ingest`         | `pnpm ingest:start` (= `tsx src/server/ingest/service.ts`) | `railway.ingest.json`  | Binds `[::]:3099`; consumes `tap.railway.internal:2480`               |
 | `recompute-cron` | `node scripts/recompute-cron.mjs`                 | `railway.cron.json`    | `0 * * * *`; POSTs the ingest worker's `/api/ingest/recompute`; `restartPolicyType: NEVER` |
+| `reconcile-cron` | `pnpm reconcile:repos`                            | `railway.reconcile.json` | `20 * * * *`; PDS repair round-robin, runs in its own process (does **not** call ingest); `restartPolicyType: NEVER` |
 
 **Runbook gotcha:** Railway auto-detects only the root `railway.json`. Every
 non-web service needs its **Config File Path** set explicitly (Dashboard →
@@ -177,6 +183,12 @@ If a deploy is misbehaving, check that these are present and correct:
   `TAP_SIGNAL_COLLECTION`, `TAP_COLLECTION_FILTERS`, `TAP_DATABASE_URL`
 - `recompute-cron`: `INGEST_WEBHOOK_SECRET`, `INGEST_PORT` / service URL for
   the POST target
+- `reconcile-cron`: `DATABASE_URL`, `TAP_API_URL`, `TAP_ADMIN_PASSWORD`,
+  `HONEYCOMB_API_KEY`. It reaches the DB and PDSes directly rather than going
+  through ingest, so it needs the DB URL itself — plus tap's admin credentials,
+  because repairing a record can newly track its author's repo. Optional:
+  `RECONCILE_LAP_HOURS` (default 24), `RECONCILE_INTERVAL_HOURS` (default 1),
+  `RECONCILE_BATCH` (explicit override; skips the fleet-size derivation)
 
 ### 5. Drilling into a running service
 

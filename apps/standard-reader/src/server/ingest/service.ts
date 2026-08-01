@@ -20,7 +20,6 @@ import {
   markRepoGone,
   reconcilePublisherReposBatch,
   reconcileRepoFromPds,
-  startPublisherRepoReconcile,
 } from "./repo-sync.ts";
 import {
   reconcilePendingTrackedRepos,
@@ -621,7 +620,10 @@ const bridgeTapChannel = ingestConfig.tapBridgeApiUrl
 const pendingTrackedReconcile = startPendingTrackedReconcile(
   reconcileTrackedWithBackfill,
 );
-const publisherRepoReconcile = startPublisherRepoReconcile();
+// The PDS repair round-robin deliberately does *not* run here — it is its own
+// cron service (`scripts/reconcile-repos-cron.ts`). Repair enumerates and
+// rewrites whole repos, and running that beside the live tap channels made the
+// backstop compete with the stream it backstops.
 const labelSync = startLabelSync();
 const labelerDiscovery = startLabelerDiscovery();
 
@@ -629,7 +631,6 @@ for (const signal of ["SIGINT", "SIGTERM"] as const) {
   process.on(signal, () => {
     server.close(async () => {
       pendingTrackedReconcile.stop();
-      publisherRepoReconcile.stop();
       labelSync.stop();
       labelerDiscovery.stop();
       await tapChannel.destroy();
