@@ -59,6 +59,7 @@ async function worker(): Promise<void> {
 
 await Promise.all(Array.from({ length: CONCURRENCY }, () => worker()));
 console.log(
-  `\nDONE in ${Math.round((Date.now() - started) / 60000)}m — repaired=${repaired} documents=${docs} readerRecords=${readerRecords} failed=${failed}`,
+  `\nDONE in ${Math.round((Date.now() - started) / 60_000)}m — repaired=${repaired} documents=${docs} readerRecords=${readerRecords} failed=${failed}`,
 );
+// eslint-disable-next-line unicorn/no-process-exit
 process.exit(0);

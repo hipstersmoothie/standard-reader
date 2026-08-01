@@ -48,6 +48,31 @@ import {
 const STREAM_ID = "tap";
 
 /**
+ * Collections already reported by {@link handleRecord}'s default branch.
+ *
+ * tap's own subscription filter is what makes that branch unreachable, so a hit
+ * means the filter and this dispatcher disagree — worth knowing. But the
+ * disagreement arrives at firehose volume: if a chatty collection ever slips
+ * through, a per-event log would bury every other line in the service (and the
+ * telemetry bill) under it. One line per collection per process names the leak,
+ * which is the part we can't get anywhere else; tap already knows the rate.
+ */
+const reportedUnmodeledCollections = new Set<string>();
+
+function noteUnmodeledCollection(collection: string, uri: string): void {
+  if (reportedUnmodeledCollections.has(collection)) {
+    return;
+  }
+  reportedUnmodeledCollections.add(collection);
+  logEvent("ingest.recordDropped", {
+    collection,
+    ok: false,
+    reason: "unmodeled-collection",
+    uri,
+  });
+}
+
+/**
  * Apply one record event to the read-model.
  *
  * Exported because the PDS reconcile sweep replays records through this very
@@ -75,7 +100,22 @@ export async function handleRecord(payload: TapRecordPayload): Promise<void> {
   }
 
   if (!record) {
-    // create/update with no body — nothing to map.
+    // A create/update with no body — nothing to map, and nothing downstream
+    // will ever notice on its own: the caller treats "returned without
+    // throwing" as applied and acks the event, so the record is gone for good
+    // until the PDS reconcile round-robin happens past this repo (days, at the
+    // current sweep rate). Every other way a record fails to land leaves a
+    // trace — a dead-letter row, a withheld ack — this one leaves none, so it
+    // has to announce itself.
+    logEvent("ingest.recordDropped", {
+      action,
+      collection,
+      did,
+      ok: false,
+      reason: "no-record-body",
+      rkey,
+      uri,
+    });
     return;
   }
 
@@ -222,6 +262,7 @@ export async function handleRecord(payload: TapRecordPayload): Promise<void> {
     }
     default: {
       // A collection we don't model (tap filtering should prevent this).
+      noteUnmodeledCollection(collection, uri);
       return;
     }
   }

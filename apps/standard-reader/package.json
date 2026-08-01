@@ -21,6 +21,8 @@
     "perf:explain": "FEED_PERF_TEST=1 vitest run src/server/reader/queries.explain.test.ts",
     "ingest:dev": "tsx --env-file=.env --require @opentelemetry/auto-instrumentations-node/register src/server/ingest/service.ts",
     "ingest:start": "tsx --require @opentelemetry/auto-instrumentations-node/register src/server/ingest/service.ts",
+    "reconcile:repos": "tsx --require @opentelemetry/auto-instrumentations-node/register scripts/reconcile-repos-cron.ts",
+    "reconcile:repos:dev": "tsx --env-file=.env scripts/reconcile-repos-cron.ts",
     "digest:send": "tsx scripts/send-weekly-digest.ts",
     "digest:send:dev": "tsx --env-file=.env scripts/send-weekly-digest.ts",
     "thread:post": "tsx scripts/post-weekly-thread.ts",

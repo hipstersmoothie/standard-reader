@@ -12,7 +12,7 @@ Check items off as they land.
 - [x] Set up env management (`.env` for `DATABASE_URL`, AT Proto OAuth secrets, tap config) + `.env.example`.
 - [x] Confirm Neon project + connection (`src/db/index.ts`) and Drizzle migration flow (`drizzle.config.ts`, `drizzle/`).
 - [x] Decide deployment target (Node server output) and wire CI for lint/format/typecheck/build (`.github/workflows/ci.yml`).
-- [x] **Production deploy (Railway).** Four services in the `standard-reader` project (GitHub
+- [x] **Production deploy (Railway).** Services in the `standard-reader` project (GitHub
       auto-deploy on push to `main`), sharing the existing Neon read-model DB:
   - `web` — TanStack Start + Nitro (`pnpm build` → `pnpm start` = `node .output/server/index.mjs`);
     pre-deploy `pnpm db:migrate`; healthcheck `/api/auth/atproto/metadata.json`; custom domain
@@ -23,10 +23,17 @@ Check items off as they land.
     `[::]:3099`, consumes `tap.railway.internal:2480`. Config file `railway.ingest.json`.
   - `recompute-cron` — `node scripts/recompute-cron.mjs` on `0 * * * *`, POSTs the ingest worker's
     `/api/ingest/recompute` over private networking. Config file `railway.cron.json`.
+  - `reconcile-cron` — `pnpm reconcile:repos` on `20 * * * *`, the PDS repair round-robin. Unlike
+    `recompute-cron` it does the work in its own process rather than POSTing ingest: repair
+    enumerates and rewrites whole repos, and running that on the ingest worker made the backstop
+    compete with the live tap stream it backstops. Batch is derived from the fleet count so one
+    full lap stays ~24h as the fleet grows (`RECONCILE_LAP_HOURS` /
+    `RECONCILE_INTERVAL_HOURS`). Config file `railway.reconcile.json`.
   - **Runbook gotcha:** Railway auto-detects only the root `railway.json`, so every non-web service
     in this monorepo needs its **Config File Path** set explicitly (Dashboard → service → Settings →
     Config-as-code, or `serviceInstanceUpdate{ railwayConfigFile }` via the GraphQL API) to
-    `railway.ingest.json` / `railway.cron.json`; otherwise it silently falls back to the web build.
+    `railway.ingest.json` / `railway.cron.json` / `railway.reconcile.json`; otherwise it silently
+    falls back to the web build.
     Shared `INGEST_WEBHOOK_SECRET` = `TAP_ADMIN_PASSWORD`; `PUBLIC_URL=https://standard-reader.app`;
     `ATPROTO_PRIVATE_KEY_JWK` is the ES256 private JWK. Prod DB was reset to a clean schema (drop
     `public` + `drizzle`, then `pnpm db:migrate`) before first backfill.

@@ -36,6 +36,8 @@
     "perf:explain": "pnpm --filter standard-reader perf:explain",
     "ingest:dev": "pnpm --filter standard-reader ingest:dev",
     "ingest:start": "pnpm --filter standard-reader ingest:start",
+    "reconcile:repos": "pnpm --filter standard-reader reconcile:repos",
+    "reconcile:repos:dev": "pnpm --filter standard-reader reconcile:repos:dev",
     "digest:send": "pnpm --filter standard-reader digest:send",
     "digest:send:dev": "pnpm --filter standard-reader digest:send:dev",
     "thread:post": "pnpm --filter standard-reader thread:post",
