@@ -124,20 +124,17 @@ const styles = stylex.create({
     textAlign: "center",
     marginTop: spacing["6"],
   },
-  sortRow: {
-    display: "flex",
-    justifyContent: "flex-end",
-    marginBottom: spacing["4"],
-    width: "100%",
+  // Two controls occupy the masthead's action slot — a compact icon menu and
+  // the full select — swapped by media query rather than a JS viewport check,
+  // so SSR emits both and neither can hydrate to the wrong one (mirrors
+  // `/tag`'s article sort). The swap is at `md` to match where the masthead
+  // drops its meta figure: below that the trailing edge is tight, so the
+  // control shrinks to the icon.
+  sortSlotCompact: {
+    display: { default: "flex", [breakpoints.md]: "none" },
   },
-  // Two controls occupy this slot — a compact icon menu and the full select —
-  // swapped by media query rather than a JS viewport check, so SSR emits both
-  // and neither can hydrate to the wrong one (mirrors `/tag`'s article sort).
-  sortRowCompact: {
-    display: { default: "flex", [breakpoints.sm]: "none" },
-  },
-  sortRowFull: {
-    display: { default: "none", [breakpoints.sm]: "flex" },
+  sortSlotFull: {
+    display: { default: "none", [breakpoints.md]: "flex" },
   },
   sortSelect: {
     minWidth: spacing["40"],
@@ -184,6 +181,57 @@ function ReaderSaved() {
     onSortChange([...keys][0] ?? null);
   };
 
+  const sortControl =
+    total === 0 ? undefined : (
+      <>
+        <div {...stylex.props(styles.sortSlotCompact)}>
+          <Menu
+            placement="bottom end"
+            selectionMode="single"
+            selectedKeys={new Set([sort])}
+            onSelectionChange={onSortSelection}
+            trigger={
+              <IconButton
+                aria-label={t`Sort saved articles`}
+                size="md"
+                variant="secondary"
+              >
+                <ArrowDownWideNarrow size={16} />
+              </IconButton>
+            }
+          >
+            {SAVED_SORT_OPTIONS.map((option) => (
+              <MenuItem key={option.id} id={option.id}>
+                {i18n._(option.label)}
+              </MenuItem>
+            ))}
+          </Menu>
+        </div>
+
+        <div {...stylex.props(styles.sortSlotFull)}>
+          <Select
+            aria-label={t`Sort saved articles`}
+            size="md"
+            variant="secondary"
+            prefix={<ArrowDownWideNarrow size={14} aria-hidden />}
+            selectedKey={sort}
+            style={styles.sortSelect}
+            onSelectionChange={onSortChange}
+          >
+            {SAVED_SORT_OPTIONS.map((option) => (
+              <SelectItem
+                key={option.id}
+                id={option.id}
+                textValue={i18n._(option.label)}
+              >
+                {i18n._(option.label)}
+              </SelectItem>
+            ))}
+          </Select>
+        </div>
+      </>
+    );
+
   return (
     <ReaderContent>
       <Masthead
@@ -192,6 +240,7 @@ function ReaderSaved() {
         dek={t`Articles you've saved for later — in your repo, synced across devices.`}
         metaLabel={t`Saved`}
         metaValue={String(total)}
+        metaAction={sortControl}
       />
 
       {total === 0 ? (
@@ -222,54 +271,6 @@ function ReaderSaved() {
         </div>
       ) : (
         <>
-          <div {...stylex.props(styles.sortRow)}>
-            <div {...stylex.props(styles.sortRowCompact)}>
-              <Menu
-                placement="bottom end"
-                selectionMode="single"
-                selectedKeys={new Set([sort])}
-                onSelectionChange={onSortSelection}
-                trigger={
-                  <IconButton
-                    aria-label={t`Sort saved articles`}
-                    size="md"
-                    variant="secondary"
-                  >
-                    <ArrowDownWideNarrow size={16} />
-                  </IconButton>
-                }
-              >
-                {SAVED_SORT_OPTIONS.map((option) => (
-                  <MenuItem key={option.id} id={option.id}>
-                    {i18n._(option.label)}
-                  </MenuItem>
-                ))}
-              </Menu>
-            </div>
-
-            <div {...stylex.props(styles.sortRowFull)}>
-              <Select
-                aria-label={t`Sort saved articles`}
-                size="md"
-                variant="secondary"
-                prefix={<ArrowDownWideNarrow size={14} aria-hidden />}
-                selectedKey={sort}
-                style={styles.sortSelect}
-                onSelectionChange={onSortChange}
-              >
-                {SAVED_SORT_OPTIONS.map((option) => (
-                  <SelectItem
-                    key={option.id}
-                    id={option.id}
-                    textValue={i18n._(option.label)}
-                  >
-                    {i18n._(option.label)}
-                  </SelectItem>
-                ))}
-              </Select>
-            </div>
-          </div>
-
           <ReaderQueueRows
             items={queueRows}
             saveButtonPlacement="besideMedia"
