@@ -294,6 +294,7 @@ async function handleRequest(
         ok: true,
         prunedDocuments: result.prunedDocuments,
         prunedPublications: result.prunedPublications,
+        webBridgeAttempted: result.webBridgeAttempted,
       });
       sendJson(res, 200, { durationMs: ms, ok: true, ...result });
     } catch (error: unknown) {

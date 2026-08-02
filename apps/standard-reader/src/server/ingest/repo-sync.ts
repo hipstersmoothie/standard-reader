@@ -1,4 +1,17 @@
-import { and, asc, eq, inArray, isNull, lte, ne, or, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  eq,
+  exists,
+  ilike,
+  inArray,
+  isNull,
+  lte,
+  ne,
+  not,
+  or,
+  sql,
+} from "drizzle-orm";
 import type { PgColumn, PgTable } from "drizzle-orm/pg-core";
 
 import { db } from "../../db/index.ts";
@@ -8,6 +21,7 @@ import {
   labelerSubscriptions,
   listSaves,
   lists,
+  profiles,
   publications,
   reads,
   recommends,
@@ -16,6 +30,7 @@ import {
   trackedRepos,
   userFollows,
 } from "../../db/schema.ts";
+import { WEB_BRIDGE_HANDLE_PATTERN } from "../../lib/atproto/bridged-repo.ts";
 import { chunk, mapWithConcurrency } from "../../lib/concurrency.ts";
 import {
   SERIAL_DIRECTION,
@@ -72,6 +87,43 @@ const RECONCILE_BATCH_DEFAULT = 50;
  */
 const RECONCILE_FAIL_BACKOFF_MS = 30 * 60_000;
 const RECONCILE_FAIL_BACKOFF_MAX_MS = 24 * 60 * 60_000;
+
+/**
+ * Share of a batch given to bulk web-bridge mirrors, on top of the batch.
+ *
+ * The round-robin's affordability rests on the rev gate: "a quiet repo costs
+ * one request". Bulk `*.web.brid.gy` mirrors are never quiet — Bridgy Fed
+ * rewrites them continuously — so the gate opens on essentially every visit and
+ * each one re-lists and re-applies a whole repo, up to a couple of thousand
+ * documents. At a third of the fleet they were a third of every batch, and
+ * measured at ~72k document rows an hour: more rows than the ingest worker's
+ * three tap channels deliver events, and all of it against the same Neon pool
+ * that live publisher and reader edits go through.
+ *
+ * So they get their own, much slower lap. At the default daily lap this is a
+ * handful of mirrors an hour — a week and a half to walk them all, against 24
+ * hours for everyone else. They still self-heal, just slowly.
+ *
+ * That is the right trade for what these are: passive mirrors of sites that
+ * never asked to be here, already excluded from Discover's Recommended rail and
+ * topic derivation. `*.ap.brid.gy` is deliberately *not* included — those
+ * authors chose to bridge, their repos are small, and the volume was never
+ * them.
+ */
+const WEB_BRIDGE_BATCH_SHARE = 0.05;
+
+/** Whether a tracked repo is a bulk web-bridge mirror, by mirrored handle. */
+const isWebBridgeRepo = exists(
+  db
+    .select({ one: sql`1` })
+    .from(profiles)
+    .where(
+      and(
+        eq(profiles.did, trackedRepos.did),
+        ilike(profiles.handle, WEB_BRIDGE_HANDLE_PATTERN),
+      ),
+    ),
+);
 
 function nextRetryAfter(failCount: number): Date {
   const backoffMs = Math.min(
@@ -799,6 +851,9 @@ export async function reconcilePublisherReposBatch(
   prunedDocuments: number;
   prunedPublications: number;
   results: Array<RepoReconcileResult>;
+  /** How many of `attempted` came from the web-bridge quota, so the split is
+   * visible in the cron's telemetry rather than inferred from the constant. */
+  webBridgeAttempted: number;
 }> {
   // Every tracked repo, not just publishers. Restricting this to
   // `publication`/`document` is what left readers with no safety net: a
@@ -806,20 +861,38 @@ export async function reconcilePublisherReposBatch(
   // anything, so their reads and subscriptions silently stopped arriving and
   // "mark all as read" sprang back. The rev gate in `repairRepoIfAdvanced`
   // makes the wider set affordable — a quiet repo costs one request.
-  const repos = await db
-    .select({ did: trackedRepos.did })
-    .from(trackedRepos)
-    .where(
-      and(
-        ne(trackedRepos.backfillState, BACKFILL_STATE.gone),
-        or(
-          isNull(trackedRepos.reconcileRetryAfter),
-          lte(trackedRepos.reconcileRetryAfter, new Date()),
+  //
+  // Two selects rather than one, because the rev gate does *not* make bulk
+  // web-bridge mirrors affordable (see {@link WEB_BRIDGE_BATCH_SHARE}). They
+  // get a small quota beside the batch instead of competing for it, so a fleet
+  // that is a third Bridgy mirrors doesn't spend a third of every lap on them.
+  const dueForReconcile = and(
+    ne(trackedRepos.backfillState, BACKFILL_STATE.gone),
+    or(
+      isNull(trackedRepos.reconcileRetryAfter),
+      lte(trackedRepos.reconcileRetryAfter, new Date()),
+    ),
+  );
+
+  const selectLane = (lane: "bridge" | "main", take: number) =>
+    db
+      .select({ did: trackedRepos.did })
+      .from(trackedRepos)
+      .where(
+        and(
+          dueForReconcile,
+          lane === "bridge" ? isWebBridgeRepo : not(isWebBridgeRepo),
         ),
-      ),
-    )
-    .orderBy(asc(trackedRepos.updatedAt))
-    .limit(limit);
+      )
+      .orderBy(asc(trackedRepos.updatedAt))
+      .limit(take);
+
+  const webBridgeQuota = Math.max(1, Math.ceil(limit * WEB_BRIDGE_BATCH_SHARE));
+  const [mainRepos, webBridgeRepos] = await Promise.all([
+    selectLane("main", limit),
+    selectLane("bridge", webBridgeQuota),
+  ]);
+  const repos = [...mainRepos, ...webBridgeRepos];
 
   const results: Array<RepoReconcileResult> = [];
   let prunedDocuments = 0;
@@ -925,14 +998,28 @@ export async function reconcilePublisherReposBatch(
     prunedDocuments,
     prunedPublications,
     results,
+    webBridgeAttempted: webBridgeRepos.length,
   };
 }
 
-/** Repos eligible for the round-robin — the denominator of one full lap. */
+/**
+ * Repos eligible for the round-robin — the denominator of one full lap.
+ *
+ * Web-bridge mirrors are excluded because they are not on this lap: they run
+ * their own, far slower one (see {@link WEB_BRIDGE_BATCH_SHARE}). Counting them
+ * here would inflate the derived batch on their behalf and then hand those
+ * extra slots to everyone else, quietly shortening the lap the sizing is
+ * supposed to hold fixed.
+ */
 export async function countReconcilableRepos(): Promise<number> {
   const [row] = await db
     .select({ count: sql<number>`count(*)::int`.mapWith(Number) })
     .from(trackedRepos)
-    .where(ne(trackedRepos.backfillState, BACKFILL_STATE.gone));
+    .where(
+      and(
+        ne(trackedRepos.backfillState, BACKFILL_STATE.gone),
+        not(isWebBridgeRepo),
+      ),
+    );
   return row?.count ?? 0;
 }

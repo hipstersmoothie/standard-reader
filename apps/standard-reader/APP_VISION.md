@@ -1160,7 +1160,15 @@ AT Proto network (standard.site publications, profiles, follows)
   replay through `handleRecord`, the same dispatcher tap feeds, so a repaired row and a live one
   are written by identical code. The sweep covers **every** tracked repo, not just publishers:
   restricting it to `publication`/`document` is what once left readers' reads and subscriptions
-  with no safety net at all.
+  with no safety net at all. **Bulk web-bridge mirrors are the exception**, and they get their own
+  far slower lap: the sweep's affordability rests on the rev gate ("a quiet repo costs one
+  request"), and `*.web.brid.gy` repos are never quiet — Bridgy rewrites them continuously, so the
+  gate opens on nearly every visit and each one re-applies a whole repo. At a third of the fleet
+  that was ~72k document rows an hour, more than all three tap channels deliver combined, against
+  the same Neon pool live edits use. `reconcilePublisherReposBatch` now selects them as a small
+  quota beside the batch rather than a share of it (`WEB_BRIDGE_BATCH_SHARE`), and
+  `countReconcilableRepos` excludes them so the derived batch sizes the lap for repos someone
+  actually asked for. `*.ap.brid.gy` stays in the main lane — those authors chose to bridge.
 - **Read-model:** **Neon Postgres** in dev/prod (a local Postgres for testing — the DB client in
   `src/db/index.ts` picks the driver from the connection string), managed with **Drizzle**
   (`src/db/schema/`), powers feeds, the

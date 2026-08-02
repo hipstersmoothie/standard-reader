@@ -2,11 +2,18 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { trackedRepos } from "../../db/schema.ts";
 
-const { updateCalls, fakeRepos, trackedRow } = vi.hoisted(() => ({
-  updateCalls: [] as Array<{ table: unknown; values: Record<string, unknown> }>,
-  fakeRepos: [] as Array<{ did: string }>,
-  trackedRow: [{ lastSeenRev: null as string | null }],
-}));
+const { updateCalls, fakeRepos, fakeWebBridgeRepos, batchLimits, trackedRow } =
+  vi.hoisted(() => ({
+    updateCalls: [] as Array<{
+      table: unknown;
+      values: Record<string, unknown>;
+    }>,
+    fakeRepos: [] as Array<{ did: string }>,
+    fakeWebBridgeRepos: [] as Array<{ did: string }>,
+    /** `limit` of each batch select, in order — how the lane split is asserted. */
+    batchLimits: [] as Array<number>,
+    trackedRow: [{ lastSeenRev: null as string | null }],
+  }));
 
 vi.mock("../../db/index.ts", () => {
   return {
@@ -16,9 +23,19 @@ vi.mock("../../db/index.ts", () => {
           if (table === trackedRepos) {
             return {
               where: () => ({
-                // The round-robin batch query...
+                // The round-robin batch queries. There are two, and they run
+                // in lane order: the main batch first, then the smaller
+                // web-bridge quota (see `reconcilePublisherReposBatch`). This
+                // stub can't read the lane predicate, so it serves them by
+                // arrival — which is also what lets a test assert that the
+                // bridge lane asked for far fewer repos than the main one.
                 orderBy: () => ({
-                  limit: async () => fakeRepos,
+                  limit: async (take: number) => {
+                    batchLimits.push(take);
+                    return batchLimits.length === 1
+                      ? fakeRepos
+                      : fakeWebBridgeRepos;
+                  },
                 }),
                 // ...and the single-row `last_seen_rev` lookup.
                 limit: async () => trackedRow,
@@ -76,6 +93,8 @@ describe("reconcilePublisherReposBatch backoff", () => {
   beforeEach(() => {
     updateCalls.length = 0;
     fakeRepos.length = 0;
+    fakeWebBridgeRepos.length = 0;
+    batchLimits.length = 0;
     trackedRow[0].lastSeenRev = null;
     vi.mocked(resolveIdentity).mockReset();
     vi.mocked(listRepoRecords).mockReset();
@@ -142,10 +161,63 @@ describe("reconcilePublisherReposBatch backoff", () => {
   });
 });
 
+describe("web-bridge lane split", () => {
+  beforeEach(() => {
+    updateCalls.length = 0;
+    fakeRepos.length = 0;
+    fakeWebBridgeRepos.length = 0;
+    batchLimits.length = 0;
+    trackedRow[0].lastSeenRev = null;
+    vi.mocked(resolveIdentity).mockReset();
+    vi.mocked(listRepoRecords).mockReset();
+    vi.mocked(fetchRepoHeadRev).mockReset();
+    vi.mocked(fetchRepoHeadRev).mockResolvedValue(null);
+    vi.mocked(resolveIdentity).mockResolvedValue({
+      did: "did:plc:any",
+      pds: "https://pds.example.com",
+      handle: null,
+    });
+    vi.mocked(listRepoRecords).mockResolvedValue({
+      records: [],
+      servedBy: "https://pds.example.com",
+    });
+  });
+
+  it("gives bulk web-bridge mirrors a small quota beside the batch, not a share of it", async () => {
+    await reconcilePublisherReposBatch(100);
+
+    // The main lane gets the whole batch — bridged mirrors no longer displace
+    // publishers and readers from it, which is the point of the split.
+    expect(batchLimits[0]).toBe(100);
+    // The bridge lane rides alongside on a far smaller quota, so a fleet that
+    // is a third Bridgy mirrors doesn't spend a third of every lap on them.
+    expect(batchLimits[1]).toBe(5);
+    expect(batchLimits[1]).toBeLessThan(batchLimits[0]);
+  });
+
+  it("always reconciles at least one mirror, so their lap never stalls entirely", async () => {
+    await reconcilePublisherReposBatch(1);
+
+    expect(batchLimits[1]).toBe(1);
+  });
+
+  it("reports how much of the batch went to the bridge lane", async () => {
+    fakeRepos.push({ did: "did:plc:publisher" });
+    fakeWebBridgeRepos.push({ did: "did:plc:mirror" });
+
+    const result = await reconcilePublisherReposBatch(20);
+
+    expect(result.attempted).toBe(2);
+    expect(result.webBridgeAttempted).toBe(1);
+  });
+});
+
 describe("repair gating on the repo head rev", () => {
   beforeEach(() => {
     updateCalls.length = 0;
     fakeRepos.length = 0;
+    fakeWebBridgeRepos.length = 0;
+    batchLimits.length = 0;
     trackedRow[0].lastSeenRev = null;
     vi.mocked(resolveIdentity).mockReset();
     vi.mocked(listRepoRecords).mockReset();

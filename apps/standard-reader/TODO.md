@@ -235,10 +235,26 @@ Check items off as they land.
         `INGEST_CONCURRENCY`). Channel logs gained `lane` + `maxInflight` — the heartbeat
         previously reported a bare `inflight` with no channel identity, so "which lane is pinned"
         was only answerable by counting rows in Postgres.
+  - [x] **Web-bridge mirrors get their own reconcile lap** (2026-08-01). The per-lane in-flight
+        budget above did *not* explain the write volume — the lane heartbeat counters it added
+        disproved it. All three tap channels combined process ~730 record events/min while
+        `*.web.brid.gy` document rows were being written at ~1,200–2,500/min; a 10-minute sample
+        was 12,055 rows across only **128 repos**, 96.5% of it content older than 7 days. That is
+        the hourly PDS reconcile sweep walking repo by repo, not ingest. The rev gate that makes
+        the wide sweep affordable doesn't hold for mirrors Bridgy rewrites continuously, and they
+        were a third of the fleet. `reconcilePublisherReposBatch` now gives them a quota beside
+        the batch (`WEB_BRIDGE_BATCH_SHARE`, 5%) and `countReconcilableRepos` excludes them:
+        7,877 main-lane repos keep the 24h lap (batch 329/hr), 3,530 mirrors lap in ~8.7 days at
+        17/hr — down from ~147/hr.
   - [ ] Optional next step: a dedicated `ingest-bridge` worker for full process/pool isolation.
         Needs a channel-selection guard — `service.ts` currently always starts the main channel.
         Note this isolates the event loop but **not** the database — same Neon compute either
         way — so the per-lane budget above is the load-bearing part.
+  - [ ] Bridgy writes `site.standard.document` records with tags over `maxGraphemes 128`, so
+        `listRecords` fails validation for those repos outright (`400 InvalidRequest`) and the
+        repo can never be enumerated. The existing `reconcileFailCount` backoff caps them at a
+        24h retry so they aren't free-running, but the work can never succeed — worth skipping
+        outright rather than paying for it once a day forever.
   - [ ] `reconcileTrackedWithBackfill` (`service.ts`) issues one COUNT per reader/subscriber repo
         — 1,482 sequential round trips — every 60s, unconditionally and with no limit;
         `setInterval` doesn't wait for the previous pass, so passes overlap and each holds a pool

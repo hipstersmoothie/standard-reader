@@ -77,9 +77,11 @@ try {
     prunedDocuments: result.prunedDocuments,
     prunedPublications: result.prunedPublications,
     tracked,
+    webBridgeAttempted: result.webBridgeAttempted,
   });
   console.info(
-    `[reconcile-cron] attempted=${result.attempted} changed=${result.results.length} ` +
+    `[reconcile-cron] attempted=${result.attempted} (webBridge=${result.webBridgeAttempted}) ` +
+      `changed=${result.results.length} ` +
       `gone=${result.goneMarked} migrated=${result.migrated} ` +
       `pruned=${result.prunedPublications}p/${result.prunedDocuments}d in ${ms}ms`,
   );
