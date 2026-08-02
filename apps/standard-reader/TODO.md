@@ -224,8 +224,25 @@ Check items off as they land.
       lane configured the bulk `*.web.brid.gy` bridge is turned away instead. See
       `#/lib/atproto/bridged-repo`. Isolation is per-tap and per-channel only — the ingest
       process and Neon pool are shared.
+  - [x] **Per-lane in-flight budget** (2026-08-01). Bridgy came back at scale — ~68k
+        `*.web.brid.gy` document writes/hour against ~100–1,400 for everyone else (98.5% of all
+        document writes), 909 → 3,626 bridged repos — and non-bridge edits went slow to apply.
+        The tap split did its job; the clog was past it. All three channels shared one
+        `INGEST_CONCURRENCY` (12 each, 36 potential concurrent applies) against one 16-connection
+        pg pool, and each `upsertDocument` holds its connection across ~6–8 sequential
+        cross-region round trips. `laneConcurrency` in `service.ts` now gives the bridge its own
+        `INGEST_BRIDGE_CONCURRENCY` (default 2, deliberately **not** falling back to
+        `INGEST_CONCURRENCY`). Channel logs gained `lane` + `maxInflight` — the heartbeat
+        previously reported a bare `inflight` with no channel identity, so "which lane is pinned"
+        was only answerable by counting rows in Postgres.
   - [ ] Optional next step: a dedicated `ingest-bridge` worker for full process/pool isolation.
         Needs a channel-selection guard — `service.ts` currently always starts the main channel.
+        Note this isolates the event loop but **not** the database — same Neon compute either
+        way — so the per-lane budget above is the load-bearing part.
+  - [ ] `reconcileTrackedWithBackfill` (`service.ts`) issues one COUNT per reader/subscriber repo
+        — 1,482 sequential round trips — every 60s, unconditionally and with no limit;
+        `setInterval` doesn't wait for the previous pass, so passes overlap and each holds a pool
+        connection. Independent of Bridgy but eating the same pool. Collapse to one `GROUP BY`.
 - [x] **Self-healing reconcile** (2026-07-31). tap can advance past a commit whose record never
       reaches the read-model, silently and without dead-lettering (confirmed in prod: a live post
       was missing while tap's cursor was already past it). `repairRepoIfAdvanced` compares each

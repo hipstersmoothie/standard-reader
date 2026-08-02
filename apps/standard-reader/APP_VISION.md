@@ -1140,9 +1140,16 @@ AT Proto network (standard.site publications, profiles, follows)
   (`#/lib/atproto/bridged-repo`, `#/server/ingest/tap-client`); a bridge backfill can then only
   delay other bridged repos. With no bridge lane configured the bulk web bridge is turned away
   instead — configuring the isolated tap is what turns Bridgy fully on, rather than a second
-  switch. Isolation is per-tap and per-channel (each channel has its own in-flight budget); the
-  ingest **process and Neon pool are still shared**, so a dedicated bridge worker is the next step
-  if write pressure matters.
+  switch. The ingest **process and Neon pool are still shared**, so the split is also enforced on
+  our side by an **in-flight budget per channel** (`laneConcurrency` in `#/server/ingest/service`):
+  the bridge lane gets `INGEST_BRIDGE_CONCURRENCY` (default **2**) against the main/docs lanes'
+  `INGEST_CONCURRENCY` (default 12). That is a throttle rather than a buffer — a channel awaits a
+  slot before returning from `onEvent`, so a lane out of slots stalls its own WS read loop and the
+  events stay on tap. It has to be its own variable: one `upsertDocument` is half a dozen
+  sequential round trips to Neon, so twelve bridge events in flight is most of a 16-connection
+  pool, and raising the shared budget to push publisher throughput must not raise the bridge with
+  it. Every channel log line carries `lane` + `maxInflight` so a pinned lane is attributable from
+  telemetry instead of by counting rows in Postgres.
 - **The read-model repairs itself against the PDS.** tap can advance its cursor past a commit whose
   record never reaches us — no error, no dead letter, and "no events" is indistinguishable from "no
   changes" from the read-model's side. So the reconcile sweep no longer trusts the stream: for

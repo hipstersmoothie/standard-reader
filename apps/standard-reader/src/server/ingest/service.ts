@@ -33,6 +33,56 @@ function port(): number {
   return Number.isFinite(value) && value > 0 ? value : DEFAULT_PORT;
 }
 
+/**
+ * The tap channels this worker consumes. Carried on every channel log line so a
+ * saturated lane is attributable: the heartbeat used to report `inflight`
+ * with no channel identity, and "which one is pinned at its ceiling" then had
+ * to be inferred from row counts in Postgres.
+ */
+type Lane = "bridge" | "docs" | "main";
+
+/** Default in-flight budget for the lanes carrying publisher/reader work. */
+const DEFAULT_CONCURRENCY = 12;
+
+/**
+ * Default in-flight budget for the bridge lane, deliberately far below the
+ * others.
+ *
+ * The tap split gave bridged repos their own resyncer, which is what stopped
+ * publishers queueing behind a bridge backfill *inside tap*. It does nothing
+ * past that point: all three channels apply through one process and one Neon
+ * pool (`DB_POOL_MAX`, 16 by default), and one `upsertDocument` is half a dozen
+ * sequential round trips to a database a continent away — so a single event
+ * holds its pooled connection for a good fraction of a second. Twelve bridge
+ * events in flight is therefore most of the pool, and Bridgy Fed can sustain
+ * ~68k document writes an hour against everyone else's few hundred.
+ *
+ * Two is enough to keep the bridge draining and small enough that the pool is
+ * never mostly bridge. The cost is real and intended: a bridge backfill takes
+ * proportionally longer to catch up. That is the trade — bridged repos are
+ * mirrors of sites that did not ask to be here, and nobody is waiting on one to
+ * land the way an author is waiting on their own post.
+ */
+const DEFAULT_BRIDGE_CONCURRENCY = 2;
+
+function envConcurrency(name: string, fallback: number): number {
+  const value = Number(process.env[name]);
+  return Number.isFinite(value) && value > 0 ? Math.floor(value) : fallback;
+}
+
+/**
+ * How many events a lane may apply at once.
+ *
+ * The bridge lane reads its own variable rather than falling back to
+ * `INGEST_CONCURRENCY`: raising the shared budget to push publisher throughput
+ * would otherwise raise the bridge in lockstep and undo the point of the split.
+ */
+function laneConcurrency(lane: Lane): number {
+  return lane === "bridge"
+    ? envConcurrency("INGEST_BRIDGE_CONCURRENCY", DEFAULT_BRIDGE_CONCURRENCY)
+    : envConcurrency("INGEST_CONCURRENCY", DEFAULT_CONCURRENCY);
+}
+
 function authRequest(req: IncomingMessage): Request {
   const headers = new Headers();
   for (const [key, value] of Object.entries(req.headers)) {
@@ -361,7 +411,10 @@ function fromIdentityEvent(evt: {
   };
 }
 
-function startTapChannel(tapUrl: string): { destroy: () => Promise<void> } {
+function startTapChannel(
+  tapUrl: string,
+  lane: Lane,
+): { destroy: () => Promise<void> } {
   const tap = new Tap(tapUrl, {
     adminPassword: ingestConfig.tapAdminPassword ?? undefined,
   });
@@ -382,16 +435,19 @@ function startTapChannel(tapUrl: string): { destroy: () => Promise<void> } {
 
   // Bounded concurrency: the per-event DB work is a chain of round-trips to
   // Neon, so processing events strictly one-at-a-time leaves the connection
-  // idle waiting on latency. We let up to INGEST_CONCURRENCY events apply in
-  // parallel (each on its own pooled pg connection) and backpressure tap when
-  // the pool is full, so the read loop stays fed without unbounded buffering.
-  // Upserts are idempotent and keyed by URI, so out-of-order application across
+  // idle waiting on latency. We let up to the lane's budget apply in parallel
+  // (each on its own pooled pg connection) and backpressure tap when the pool
+  // is full, so the read loop stays fed without unbounded buffering. Upserts
+  // are idempotent and keyed by URI, so out-of-order application across
   // distinct records is safe; same-URI reordering is a non-issue during a
   // create-only backfill.
-  const MAX_INFLIGHT = (() => {
-    const v = Number(process.env.INGEST_CONCURRENCY);
-    return Number.isFinite(v) && v > 0 ? Math.floor(v) : 12;
-  })();
+  //
+  // The budget is per lane, and that is what makes it a throttle rather than a
+  // buffer: `onEvent` awaits a slot *before* it returns, so a lane that is out
+  // of slots stalls its own WS read loop and the events stay on tap. A smaller
+  // bridge budget therefore slows Bridgy at the source instead of queueing it
+  // in memory here (see {@link DEFAULT_BRIDGE_CONCURRENCY}).
+  const MAX_INFLIGHT = laneConcurrency(lane);
   const waiters: Array<() => void> = [];
   function acquireSlot(): Promise<void> {
     if (stats.inflight < MAX_INFLIGHT) {
@@ -432,14 +488,16 @@ function startTapChannel(tapUrl: string): { destroy: () => Promise<void> } {
       .then((result) => {
         if (result === "timeout") {
           stats.ackTimeouts += 1;
-          console.warn(`[ingest] ack slow/stuck for event #${id} (>5s)`);
+          console.warn(
+            `[ingest:${lane}] ack slow/stuck for event #${id} (>5s)`,
+          );
         } else {
           stats.acked += 1;
         }
       })
       .catch((error: unknown) => {
         stats.errors += 1;
-        console.warn(`[ingest] ack failed for event #${id}`, error);
+        console.warn(`[ingest:${lane}] ack failed for event #${id}`, error);
       })
       .finally(() => {
         if (timer) clearTimeout(timer);
@@ -450,7 +508,7 @@ function startTapChannel(tapUrl: string): { destroy: () => Promise<void> } {
   const indexer = {
     onError(error: unknown) {
       stats.errors += 1;
-      console.error("[ingest] tap channel error", error);
+      console.error(`[ingest:${lane}] tap channel error`, error);
     },
     async onEvent(
       evt: Record<string, unknown> & { id: number; type: string },
@@ -484,38 +542,44 @@ function startTapChannel(tapUrl: string): { destroy: () => Promise<void> } {
           result = await processTapEvent(mapped);
           if (result === "dead-lettered") {
             stats.failed += 1;
-            console.warn(`[ingest] dead-lettered event ${evt.id}`);
+            console.warn(`[ingest:${lane}] dead-lettered event ${evt.id}`);
             logEvent("ingest.tapEvent", {
               collection:
                 typeof evt.collection === "string" ? evt.collection : undefined,
               eventId: evt.id,
               eventType: evt.type,
+              lane,
               ok: false,
               result: "dead-lettered",
             });
           } else if (result === "unhandled") {
             stats.errors += 1;
             console.warn(
-              `[ingest] event ${evt.id} unhandled (DB down/full) — not acking, tap will redeliver`,
+              `[ingest:${lane}] event ${evt.id} unhandled (DB down/full) — not acking, tap will redeliver`,
             );
             logEvent("ingest.tapEvent", {
               collection:
                 typeof evt.collection === "string" ? evt.collection : undefined,
               eventId: evt.id,
               eventType: evt.type,
+              lane,
               ok: false,
               result: "unhandled",
             });
           }
         } catch (error: unknown) {
           stats.errors += 1;
-          console.error(`[ingest] failed to process event ${evt.id}`, error);
+          console.error(
+            `[ingest:${lane}] failed to process event ${evt.id}`,
+            error,
+          );
           logEvent("ingest.tapEvent", {
             collection:
               typeof evt.collection === "string" ? evt.collection : undefined,
             error: error instanceof Error ? error.message : String(error),
             eventId: evt.id,
             eventType: evt.type,
+            lane,
             ok: false,
             result: "error",
           });
@@ -534,11 +598,16 @@ function startTapChannel(tapUrl: string): { destroy: () => Promise<void> } {
 
   // Heartbeat: surface cumulative counts + idle time so a stalled stream is
   // obvious in logs (vs. having to diff the DB). Logs every 10s.
+  //
+  // `lane` and `maxInflight` ride along so saturation reads as a ratio. Without
+  // them `inflight` is a bare number: it takes the lane's configured ceiling to
+  // know whether 2 means "idle" or "pinned", and it takes the lane to know
+  // which channel is doing the pinning.
   const heartbeat = setInterval(() => {
     const idleMs =
       stats.lastEventAt === 0 ? -1 : Date.now() - stats.lastEventAt;
     console.info(
-      `[ingest] channel heartbeat: identity=${stats.identity} record=${stats.record} acked=${stats.acked} ackTimeouts=${stats.ackTimeouts} failed=${stats.failed} errors=${stats.errors} inflight=${stats.inflight} lastEventId=${stats.lastEventId} idleMs=${idleMs}`,
+      `[ingest:${lane}] channel heartbeat: identity=${stats.identity} record=${stats.record} acked=${stats.acked} ackTimeouts=${stats.ackTimeouts} failed=${stats.failed} errors=${stats.errors} inflight=${stats.inflight}/${MAX_INFLIGHT} lastEventId=${stats.lastEventId} idleMs=${idleMs}`,
     );
     logEvent("ingest.heartbeat", {
       ackTimeouts: stats.ackTimeouts,
@@ -548,7 +617,9 @@ function startTapChannel(tapUrl: string): { destroy: () => Promise<void> } {
       identity: stats.identity,
       idleMs,
       inflight: stats.inflight,
+      lane,
       lastEventId: stats.lastEventId,
+      maxInflight: MAX_INFLIGHT,
       ok: true,
       record: stats.record,
     });
@@ -557,10 +628,12 @@ function startTapChannel(tapUrl: string): { destroy: () => Promise<void> } {
 
   const channel = tap.channel(indexer);
   void channel.start().catch((error: unknown) => {
-    console.error("[ingest] tap channel stopped", error);
+    console.error(`[ingest:${lane}] tap channel stopped`, error);
     process.exitCode = 1;
   });
-  console.info(`[ingest] connected to tap channel at ${tapUrl}`);
+  console.info(
+    `[ingest:${lane}] connected to tap channel at ${tapUrl} (maxInflight=${MAX_INFLIGHT})`,
+  );
   return {
     destroy: async () => {
       clearInterval(heartbeat);
@@ -602,20 +675,21 @@ server.listen(port(), "::", () => {
 // Primary signal (publishers).
 const tapChannel = startTapChannel(
   ingestConfig.tapApiUrl ?? "http://127.0.0.1:2480",
+  "main",
 );
 // Optional third tap instance signaled on `site.standard.document`, so repos
 // that publish documents without a publication record ("loose documents") get
 // tracked + backfilled.
 const docsTapChannel = ingestConfig.tapDocsApiUrl
-  ? startTapChannel(ingestConfig.tapDocsApiUrl)
+  ? startTapChannel(ingestConfig.tapDocsApiUrl, "docs")
   : null;
 // Bridged repos (Bridgy Fed's `*.brid.gy` mirrors) stream on their own tap
-// instance. Each channel carries its own in-flight budget, so bridge traffic
-// can't occupy the slots publisher and reader events need — and because the
-// instance is separate, a bulk bridge backfill queues behind its own resyncer
-// instead of everyone else's.
+// instance, and on a deliberately smaller in-flight budget than the other two
+// (see {@link DEFAULT_BRIDGE_CONCURRENCY}). The separate instance keeps a bulk
+// bridge backfill in its own resyncer; the smaller budget keeps it from owning
+// the shared Neon pool once those events reach us.
 const bridgeTapChannel = ingestConfig.tapBridgeApiUrl
-  ? startTapChannel(ingestConfig.tapBridgeApiUrl)
+  ? startTapChannel(ingestConfig.tapBridgeApiUrl, "bridge")
   : null;
 const pendingTrackedReconcile = startPendingTrackedReconcile(
   reconcileTrackedWithBackfill,
