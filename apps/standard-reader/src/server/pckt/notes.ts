@@ -19,6 +19,7 @@ import type { ConstellationBacklinkRecord } from "#/server/atproto/constellation
 import {
   getNoteBacklinksForDocument,
   getNoteBacklinksForPublication,
+  getNoteReplyCountForNote,
 } from "#/server/atproto/constellation";
 import { fetchRepoRecordWithFallback } from "#/server/atproto/fetch-record";
 import { resolveIdentity } from "#/server/atproto/identity";
@@ -83,6 +84,7 @@ function toComment(
   note: MiniPost,
   author: DocumentCommentAuthor,
   documentUri: string,
+  replyCount: number,
 ): DocumentComment {
   const isQuote = note.quotedRecordUri === documentUri;
   return {
@@ -94,7 +96,7 @@ function toComment(
     commentary: note.text,
     commentaryFacets: note.facets,
     quote: null,
-    replyCount: 0,
+    replyCount,
     indexedAt: note.createdAt,
   };
 }
@@ -133,13 +135,16 @@ export async function fetchNotesForDocument(
       return [];
     }
 
-    const authorByDid = await resolveNoteAuthors(notes.map((note) => note.did));
+    const [authorByDid, replyCounts] = await Promise.all([
+      resolveNoteAuthors(notes.map((note) => note.did)),
+      Promise.all(notes.map((note) => getNoteReplyCountForNote(note.uri))),
+    ]);
 
     const comments: Array<DocumentComment> = [];
-    for (const note of notes) {
+    for (const [index, note] of notes.entries()) {
       const author = authorByDid.get(note.did);
       if (!author) continue;
-      comments.push(toComment(note, author, documentUri));
+      comments.push(toComment(note, author, documentUri, replyCounts[index]));
     }
 
     noteCommentsCache.set(documentUri, {
