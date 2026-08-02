@@ -95,6 +95,10 @@ msgstr "Danke, dass Sie sich die Zeit nehmen, Standard Reader zu verbessern."
 msgid "Articles and publications carry topic tags. Select one anywhere you see it — under a headline, on a publication card, in Discover — and you get everything filed under it: an <0>Articles</0> tab you can sort by recent, trending, or most popular, and a <1>Publications</1> tab of everyone who writes about it."
 msgstr ""
 
+#: src/components/reader/comments/comment-card.tsx
+msgid "Open this note on Margin"
+msgstr ""
+
 #: src/components/reader/list-edit-modal.tsx
 msgid "Search people you follow"
 msgstr "Personen suchen, denen Sie folgen"
@@ -2332,6 +2336,10 @@ msgstr ""
 msgid "{durationMs}ms · fetched {fetchedAt}"
 msgstr "{durationMs} ms · abgerufen {fetchedAt}"
 
+#: src/components/reader/comments/comment-card.tsx
+msgid "Open this note on pckt"
+msgstr ""
+
 #: src/routes/_layout.feedback.index.tsx
 msgid "Loading feedback"
 msgstr "Feedback wird geladen"
@@ -2549,6 +2557,10 @@ msgstr ""
 #: src/routes/_layout.topics.$slug.tsx
 msgid "Active"
 msgstr "Aktiv"
+
+#: src/components/reader/comments/comment-card.tsx
+msgid "Open this comment on Leaflet"
+msgstr ""
 
 #: src/components/reader/subscribe-card.tsx
 msgid "Powered by Standard Reader"
@@ -3908,6 +3920,10 @@ msgstr "Optional: Notiz, warum Sie dies speichern"
 
 #: src/components/guide/guide-topbar.tsx
 msgid "Open the app"
+msgstr ""
+
+#: src/components/reader/comments/comment-card.tsx
+msgid "Open this note on Semble"
 msgstr ""
 
 #: src/components/reader/subscriptions-tree.tsx

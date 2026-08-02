@@ -9,11 +9,7 @@
 
 import type { JsonValue } from "#/integrations/tanstack-query/api-shapes";
 import { fetchBlueskyPublicProfileFields } from "#/lib/bluesky-public-profile";
-import {
-  MINI_POST_COLLECTION,
-  normalizeMiniPost,
-  pcktNoteUrl,
-} from "#/lib/pckt/mini";
+import { normalizeMiniPost, pcktNoteUrl } from "#/lib/pckt/mini";
 import type { MiniPost } from "#/lib/pckt/mini";
 import type { ConstellationBacklinkRecord } from "#/server/atproto/constellation";
 import {
@@ -213,22 +209,5 @@ export async function fetchLatestPublicationNote(
     return note;
   } catch {
     return cached?.note ?? null;
-  }
-}
-
-/** Count of pckt notes referencing `documentUri` (deduped). Best-effort. */
-export async function countNotesForDocument(
-  documentUri: string,
-): Promise<number> {
-  if (!documentUri.startsWith("at://")) return 0;
-  const cached = noteCommentsCache.get(documentUri);
-  if (cached && cached.expiresAt > Date.now()) return cached.comments.length;
-  try {
-    const records = await getNoteBacklinksForDocument(documentUri);
-    return records.filter(
-      (record) => record.collection === MINI_POST_COLLECTION,
-    ).length;
-  } catch {
-    return cached?.comments.length ?? 0;
   }
 }
