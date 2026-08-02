@@ -161,6 +161,59 @@ describe("reconcilePublisherReposBatch backoff", () => {
   });
 });
 
+describe("backoff for repos that can never be read", () => {
+  beforeEach(() => {
+    updateCalls.length = 0;
+    fakeRepos.length = 0;
+    fakeWebBridgeRepos.length = 0;
+    batchLimits.length = 0;
+    trackedRow[0].lastSeenRev = null;
+    vi.mocked(resolveIdentity).mockReset();
+    vi.mocked(listRepoRecords).mockReset();
+    vi.mocked(fetchRepoHeadRev).mockReset();
+    vi.mocked(fetchRepoHeadRev).mockResolvedValue(null);
+    vi.mocked(resolveIdentity).mockResolvedValue({
+      did: "did:plc:unreadable",
+      pds: "https://pds.example.com",
+      handle: null,
+    });
+  });
+
+  /** Days until the next retry, from the scheduled `reconcileRetryAfter`. */
+  function scheduledDelayDays(): number {
+    const at = updateCalls.at(-1)?.values.reconcileRetryAfter as Date;
+    return (at.getTime() - Date.now()) / 86_400_000;
+  }
+
+  it("parks a repo whose collection fails lexicon validation at the ceiling", async () => {
+    fakeRepos.push({ did: "did:plc:unreadable" });
+    // What a PDS returns when one record in the collection is over
+    // maxGraphemes — the whole collection becomes unservable.
+    vi.mocked(listRepoRecords).mockRejectedValue(
+      new Error(
+        "listRecords site.standard.document failed: 400: InvalidRequest " +
+          "(in site.standard.document, string tags with value `x`: is longer than maxGraphemes 128)",
+      ),
+    );
+
+    await reconcilePublisherReposBatch(1);
+
+    // Straight to the week-long ceiling on the *first* failure, rather than
+    // climbing there over a week of daily retries.
+    expect(scheduledDelayDays()).toBeCloseTo(7, 1);
+  });
+
+  it("still climbs gradually for an ordinary transient failure", async () => {
+    fakeRepos.push({ did: "did:plc:flaky" });
+    vi.mocked(listRepoRecords).mockRejectedValue(new Error("fetch failed"));
+
+    await reconcilePublisherReposBatch(1);
+
+    // A network blip must not cost a repo a week of staleness.
+    expect(scheduledDelayDays()).toBeLessThan(1);
+  });
+});
+
 describe("web-bridge lane split", () => {
   beforeEach(() => {
     updateCalls.length = 0;

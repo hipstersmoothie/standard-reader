@@ -86,7 +86,40 @@ const RECONCILE_BATCH_DEFAULT = 50;
  * starving healthy repos out of the round-robin.
  */
 const RECONCILE_FAIL_BACKOFF_MS = 30 * 60_000;
-const RECONCILE_FAIL_BACKOFF_MAX_MS = 24 * 60 * 60_000;
+/**
+ * Ceiling on that backoff.
+ *
+ * Was 24 hours, which still meant a repo that can never succeed was retried
+ * every single lap forever — 169 of them were, one having failed 33 consecutive
+ * times. A week keeps a hopeless repo in the rotation (repos do get fixed, and
+ * we want to notice when they are) at a seventh of the cost.
+ */
+const RECONCILE_FAIL_BACKOFF_MAX_MS = 7 * 24 * 60 * 60_000;
+
+/**
+ * Does this error mean the repo cannot be read until its *contents* change?
+ *
+ * A PDS refuses to serve an entire collection when a single record in it fails
+ * lexicon validation — Bridgy Fed writes `site.standard.document` tags past
+ * `maxGraphemes 128`, and `listRecords` then 400s for that repo's whole
+ * document collection. No amount of retrying fixes that; only the author
+ * rewriting the offending record does, and we cannot observe that happening
+ * except through the very call that is failing.
+ *
+ * So these jump straight to the ceiling instead of climbing to it over a week
+ * of daily failures. Classified by the error and never by the handle: this is
+ * emphatically not a Bridgy-only problem — of the repos stuck in backoff, a
+ * quarter are `ap.brid.gy` or ordinary repos.
+ */
+function isPermanentlyUnreadable(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+  return (
+    error.message.includes("400: InvalidRequest") &&
+    error.message.includes("listRecords")
+  );
+}
 
 /**
  * Share of a batch given to bulk web-bridge mirrors, on top of the batch.
@@ -125,17 +158,25 @@ const isWebBridgeRepo = exists(
     ),
 );
 
-function nextRetryAfter(failCount: number): Date {
-  const backoffMs = Math.min(
-    RECONCILE_FAIL_BACKOFF_MS * 2 ** (failCount - 1),
-    RECONCILE_FAIL_BACKOFF_MAX_MS,
-  );
+function nextRetryAfter(failCount: number, permanent: boolean): Date {
+  const backoffMs = permanent
+    ? RECONCILE_FAIL_BACKOFF_MAX_MS
+    : Math.min(
+        RECONCILE_FAIL_BACKOFF_MS * 2 ** (failCount - 1),
+        RECONCILE_FAIL_BACKOFF_MAX_MS,
+      );
   return new Date(Date.now() + backoffMs);
 }
 
 /** Record a reconcile failure for `did` and schedule its next retry with
- * exponential backoff. Returns the new consecutive-failure count. */
-async function bumpReconcileFailure(did: string): Promise<number> {
+ * exponential backoff. Returns the new consecutive-failure count.
+ *
+ * `permanent` skips the climb and parks the repo at the ceiling — see
+ * {@link isPermanentlyUnreadable}. */
+async function bumpReconcileFailure(
+  did: string,
+  { permanent = false }: { permanent?: boolean } = {},
+): Promise<number> {
   const [row] = await db
     .update(trackedRepos)
     .set({ reconcileFailCount: sql`${trackedRepos.reconcileFailCount} + 1` })
@@ -144,7 +185,7 @@ async function bumpReconcileFailure(did: string): Promise<number> {
   const failCount = row?.reconcileFailCount ?? 1;
   await db
     .update(trackedRepos)
-    .set({ reconcileRetryAfter: nextRetryAfter(failCount) })
+    .set({ reconcileRetryAfter: nextRetryAfter(failCount, permanent) })
     .where(eq(trackedRepos.did, did));
   return failCount;
 }
@@ -982,12 +1023,14 @@ export async function reconcilePublisherReposBatch(
       prunedDocuments += result.prunedDocuments;
       prunedPublications += result.prunedPublications;
     } catch (error: unknown) {
-      const failCount = await bumpReconcileFailure(repo.did);
+      const permanent = isPermanentlyUnreadable(error);
+      const failCount = await bumpReconcileFailure(repo.did, { permanent });
       logEvent("ingest.repoReconcile", {
         did: repo.did,
         error: error instanceof Error ? error.message : String(error),
         failCount,
         ok: false,
+        permanent,
       });
     }
   });

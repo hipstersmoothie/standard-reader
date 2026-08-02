@@ -250,8 +250,7 @@ Check items off as they land.
         flood, after the lane budget and the reconcile lap both failed to explain it. `cmd/tap`
         starts a per-event timer when it *sends*, and re-sends anything unacked after
         `TAP_RETRY_TIMEOUT` (default **60s**) — so our own in-flight backpressure was being read as
-        failure and the same records came back and were re-applied (`ingest_state`:
-        4,874,322 processed against a 2,064,827 high-water id, ~2.4× per event; the main lane
+        failure and the same records came back and were re-applied (the main lane
         replayed a ~500k id range every 5 minutes for 90+ minutes). All three tap services now run
         `TAP_RETRY_TIMEOUT=10m`. Separately, frames `lexParse` rejects never yield an event id, so
         they can never be acked — re-sent forever, and `blockedOnLive` means one malformed Bridgy
@@ -265,11 +264,21 @@ Check items off as they land.
         Needs a channel-selection guard — `service.ts` currently always starts the main channel.
         Note this isolates the event loop but **not** the database — same Neon compute either
         way — so the per-lane budget above is the load-bearing part.
-  - [ ] Bridgy writes `site.standard.document` records with tags over `maxGraphemes 128`, so
-        `listRecords` fails validation for those repos outright (`400 InvalidRequest`) and the
-        repo can never be enumerated. The existing `reconcileFailCount` backoff caps them at a
-        24h retry so they aren't free-running, but the work can never succeed — worth skipping
-        outright rather than paying for it once a day forever.
+  - [x] **Park repos that can never be read** (2026-08-01). A PDS refuses to serve a whole
+        collection when one record in it fails lexicon validation — Bridgy writes
+        `site.standard.document` tags over `maxGraphemes 128` and `listRecords` then 400s for that
+        repo's entire document collection. The 24h backoff cap meant 169 such repos were retried
+        every single lap forever, one having failed **33** consecutive times. The ceiling is now a
+        week, and `isPermanentlyUnreadable` sends a validation failure straight to it instead of
+        climbing over a week of daily retries. Classified by the error, never the handle — only
+        124 of the 169 were `*.web.brid.gy`; 24 were `ap.brid.gy` and 21 ordinary repos. Existing
+        rows self-correct on their next failure, so no migration. Transient failures still climb
+        gradually, so a network blip never costs a repo a week of staleness.
+    - [ ] Better still: `listRecords` fails per *collection*, so a repo with one bad document
+          could have its publications/reads/subscriptions reconciled normally instead of the whole
+          repo failing. Needs care — advancing `last_seen_rev` while a collection was unreadable
+          would mark the repo fully mirrored when it isn't, which is the exact silence this sweep
+          exists to break.
   - [ ] `reconcileTrackedWithBackfill` (`service.ts`) issues one COUNT per reader/subscriber repo
         — 1,482 sequential round trips — every 60s, unconditionally and with no limit;
         `setInterval` doesn't wait for the previous pass, so passes overlap and each holds a pool
