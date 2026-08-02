@@ -95,6 +95,10 @@ msgstr "시간을 내어 Standard Reader 개선에 도움을 주셔서 감사합
 msgid "Articles and publications carry topic tags. Select one anywhere you see it — under a headline, on a publication card, in Discover — and you get everything filed under it: an <0>Articles</0> tab you can sort by recent, trending, or most popular, and a <1>Publications</1> tab of everyone who writes about it."
 msgstr ""
 
+#: src/components/reader/comments/comment-card.tsx
+msgid "Open this note on Margin"
+msgstr ""
+
 #: src/components/reader/list-edit-modal.tsx
 msgid "Search people you follow"
 msgstr "팔로우하는 사람 검색"
@@ -2332,6 +2336,10 @@ msgstr ""
 msgid "{durationMs}ms · fetched {fetchedAt}"
 msgstr "{durationMs}ms · {fetchedAt}에 가져옴"
 
+#: src/components/reader/comments/comment-card.tsx
+msgid "Open this note on pckt"
+msgstr ""
+
 #: src/routes/_layout.feedback.index.tsx
 msgid "Loading feedback"
 msgstr "피드백 불러오는 중"
@@ -2549,6 +2557,10 @@ msgstr ""
 #: src/routes/_layout.topics.$slug.tsx
 msgid "Active"
 msgstr "활성"
+
+#: src/components/reader/comments/comment-card.tsx
+msgid "Open this comment on Leaflet"
+msgstr ""
 
 #: src/components/reader/subscribe-card.tsx
 msgid "Powered by Standard Reader"
@@ -3908,6 +3920,10 @@ msgstr "선택 사항: 저장하는 이유를 메모로 남겨보세요"
 
 #: src/components/guide/guide-topbar.tsx
 msgid "Open the app"
+msgstr ""
+
+#: src/components/reader/comments/comment-card.tsx
+msgid "Open this note on Semble"
 msgstr ""
 
 #: src/components/reader/subscriptions-tree.tsx

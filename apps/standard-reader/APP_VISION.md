@@ -1151,7 +1151,7 @@ AT Proto network (standard.site publications, profiles, follows)
   it. Every channel log line carries `lane` + `maxInflight` so a pinned lane is attributable from
   telemetry instead of by counting rows in Postgres.
 - **tap redelivers on a timeout, so slow is indistinguishable from failed.** `cmd/tap/outbox.go`
-  runs a worker per DID and puts an event in `inFlightSentAt` the moment it *sends* it; anything
+  runs a worker per DID and puts an event in `inFlightSentAt` the moment it _sends_ it; anything
   still unacked after `TAP_RETRY_TIMEOUT` is re-sent, forever, until acked. Two consequences bit us
   at once. First, our channels deliberately stop reading at their in-flight cap — but events tap
   already sent are still on tap's clock, so **backpressure itself manufactures redeliveries**: past

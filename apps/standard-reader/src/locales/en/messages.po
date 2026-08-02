@@ -95,6 +95,10 @@ msgstr "Thanks for taking the time to help us improve Standard Reader."
 msgid "Articles and publications carry topic tags. Select one anywhere you see it — under a headline, on a publication card, in Discover — and you get everything filed under it: an <0>Articles</0> tab you can sort by recent, trending, or most popular, and a <1>Publications</1> tab of everyone who writes about it."
 msgstr "Articles and publications carry topic tags. Select one anywhere you see it — under a headline, on a publication card, in Discover — and you get everything filed under it: an <0>Articles</0> tab you can sort by recent, trending, or most popular, and a <1>Publications</1> tab of everyone who writes about it."
 
+#: src/components/reader/comments/comment-card.tsx
+msgid "Open this note on Margin"
+msgstr "Open this note on Margin"
+
 #: src/components/reader/list-edit-modal.tsx
 msgid "Search people you follow"
 msgstr "Search people you follow"
@@ -2332,6 +2336,10 @@ msgstr "everything you subscribe to, read or not. This is the default."
 msgid "{durationMs}ms · fetched {fetchedAt}"
 msgstr "{durationMs}ms · fetched {fetchedAt}"
 
+#: src/components/reader/comments/comment-card.tsx
+msgid "Open this note on pckt"
+msgstr "Open this note on pckt"
+
 #: src/routes/_layout.feedback.index.tsx
 msgid "Loading feedback"
 msgstr "Loading feedback"
@@ -2549,6 +2557,10 @@ msgstr "Sort"
 #: src/routes/_layout.topics.$slug.tsx
 msgid "Active"
 msgstr "Active"
+
+#: src/components/reader/comments/comment-card.tsx
+msgid "Open this comment on Leaflet"
+msgstr "Open this comment on Leaflet"
 
 #: src/components/reader/subscribe-card.tsx
 msgid "Powered by Standard Reader"
@@ -3909,6 +3921,10 @@ msgstr "Optional: add a note about why you're saving this"
 #: src/components/guide/guide-topbar.tsx
 msgid "Open the app"
 msgstr "Open the app"
+
+#: src/components/reader/comments/comment-card.tsx
+msgid "Open this note on Semble"
+msgstr "Open this note on Semble"
 
 #: src/components/reader/subscriptions-tree.tsx
 msgid "{count} unread"

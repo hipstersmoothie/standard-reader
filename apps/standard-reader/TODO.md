@@ -236,7 +236,7 @@ Check items off as they land.
         previously reported a bare `inflight` with no channel identity, so "which lane is pinned"
         was only answerable by counting rows in Postgres.
   - [x] **Web-bridge mirrors get their own reconcile lap** (2026-08-01). The per-lane in-flight
-        budget above did *not* explain the write volume — the lane heartbeat counters it added
+        budget above did _not_ explain the write volume — the lane heartbeat counters it added
         disproved it. All three tap channels combined process ~730 record events/min while
         `*.web.brid.gy` document rows were being written at ~1,200–2,500/min; a 10-minute sample
         was 12,055 rows across only **128 repos**, 96.5% of it content older than 7 days. That is
@@ -248,7 +248,7 @@ Check items off as they land.
         17/hr — down from ~147/hr.
   - [x] **tap retry timeout + unparseable-frame ack** (2026-08-01). The real source of the write
         flood, after the lane budget and the reconcile lap both failed to explain it. `cmd/tap`
-        starts a per-event timer when it *sends*, and re-sends anything unacked after
+        starts a per-event timer when it _sends_, and re-sends anything unacked after
         `TAP_RETRY_TIMEOUT` (default **60s**) — so our own in-flight backpressure was being read as
         failure and the same records came back and were re-applied (the main lane
         replayed a ~500k id range every 5 minutes for 90+ minutes). All three tap services now run
@@ -258,7 +258,7 @@ Check items off as they land.
         id from the raw frame and acks it. Latest tap (0.3.12) has the identical code, so upgrading
         is not a fix. Worth reporting upstream.
     - [ ] Re-measure `INGEST_BRIDGE_CONCURRENCY=2` against the 10m timeout. Under the 60s timeout a
-          smaller budget meant longer slot waits and *more* redelivery, so the lane budget may have
+          smaller budget meant longer slot waits and _more_ redelivery, so the lane budget may have
           been working against itself; it should be sound now, but it was tuned blind.
   - [ ] Optional next step: a dedicated `ingest-bridge` worker for full process/pool isolation.
         Needs a channel-selection guard — `service.ts` currently always starts the main channel.
@@ -274,7 +274,7 @@ Check items off as they land.
         124 of the 169 were `*.web.brid.gy`; 24 were `ap.brid.gy` and 21 ordinary repos. Existing
         rows self-correct on their next failure, so no migration. Transient failures still climb
         gradually, so a network blip never costs a repo a week of staleness.
-    - [ ] Better still: `listRecords` fails per *collection*, so a repo with one bad document
+    - [ ] Better still: `listRecords` fails per _collection_, so a repo with one bad document
           could have its publications/reads/subscriptions reconciled normally instead of the whole
           repo failing. Needs care — advancing `last_seen_rev` while a collection was unreadable
           would mark the repo fully mirrored when it isn't, which is the exact silence this sweep
@@ -560,10 +560,10 @@ Build each on hip-ui components + StyleX tokens (no raw HTML/inline styles).
       integer-only parser had been silently returning 0 since ~2026-06-09 — which zeroed the
       Bluesky share of every comment count and `documents.backlink_count` too (a trending input;
       45,357 of 45,363 synced rows were 0). Regression test in `constellation.test.ts`.
-    - [ ] After deploy, the first `recomputeDocumentBacklinks` lap restores real counts against a
-          stored `backlink_count_prev` of 0, so `bl_vel` spikes for one cycle. Flatten it with
-          `UPDATE documents SET backlink_count_prev = backlink_count WHERE backlink_synced_at > now() - interval '1 hour'`
-          after that lap, or accept one skewed trending cycle.
+  - [ ] After deploy, the first `recomputeDocumentBacklinks` lap restores real counts against a
+        stored `backlink_count_prev` of 0, so `bl_vel` spikes for one cycle. Flatten it with
+        `UPDATE documents SET backlink_count_prev = backlink_count WHERE backlink_synced_at > now() - interval '1 hour'`
+        after that lap, or accept one skewed trending cycle.
 - [x] **Page reader (Listen)** — on-device TTS for the reading view via `kokoro-js` (lazy-loaded on first use; `src/lib/page-reader/*`). Top-bar "Listen" button reads the whole article; selection toolbar adds "Read from here". The transport is a floating action bar (`PageReaderBar`) docked above the bottom nav on every route — same position on desktop and mobile — with status/time, title, back-15s, accent play/pause, speed menu, close, and a thin draggable seek track; the article keeps its own scroll-progress bar (`PageReaderProvider` + `PageReaderBar`).
 - [x] **Publication profile** — banner + inline header (avatar/topic/name/desc/stats/Copy DID/Follow),
       recent writing (infinite scroll via `publicationApi.getPublicationDocuments` offset
