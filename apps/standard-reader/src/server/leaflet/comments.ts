@@ -12,7 +12,6 @@
 
 import { fetchBlueskyPublicProfileFields } from "#/lib/bluesky-public-profile";
 import {
-  LEAFLET_COMMENT_COLLECTION,
   extractLeafletQuoteText,
   leafletCommentDrawerUrl,
   normalizeLeafletComment,
@@ -193,25 +192,5 @@ export async function fetchLeafletCommentsForDocument(
     return comments;
   } catch {
     return cached?.comments ?? [];
-  }
-}
-
-/**
- * Count of Leaflet comments on `documentUri`. Counts every backlink, including
- * replies, since filtering to top-level would require hydrating each record.
- */
-export async function countLeafletCommentsForDocument(
-  documentUri: string,
-): Promise<number> {
-  if (!documentUri.startsWith("at://")) return 0;
-  const cached = leafletCommentsCache.get(documentUri);
-  if (cached && cached.expiresAt > Date.now()) return cached.comments.length;
-  try {
-    const records = await getLeafletCommentBacklinksForDocument(documentUri);
-    return records.filter(
-      (record) => record.collection === LEAFLET_COMMENT_COLLECTION,
-    ).length;
-  } catch {
-    return cached?.comments.length ?? 0;
   }
 }

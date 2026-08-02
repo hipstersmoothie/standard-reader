@@ -190,6 +190,16 @@ export function CommentCard({ comment }: { comment: DocumentComment }) {
           : comment.source === "leaflet"
             ? t`on Leaflet`
             : t`on Bluesky`;
+  const openLabel =
+    comment.source === "margin"
+      ? t`Open this note on Margin`
+      : comment.source === "semble"
+        ? t`Open this note on Semble`
+        : comment.source === "note"
+          ? t`Open this note on pckt`
+          : comment.source === "leaflet"
+            ? t`Open this comment on Leaflet`
+            : t`Open this reply on Bluesky`;
   const hasLink = comment.postUrl.trim().length > 0;
 
   const body = (
@@ -235,7 +245,7 @@ export function CommentCard({ comment }: { comment: DocumentComment }) {
           href={comment.postUrl}
           target="_blank"
           rel="noreferrer"
-          aria-label={t`Open this reply on Bluesky`}
+          aria-label={openLabel}
           {...stylex.props(commentStyles.cardBodyOverlay)}
         />
       ) : null}

@@ -234,9 +234,25 @@ function parseBacklinksCountPayload(payload: unknown): number {
   return typeof payload.total === "number" ? payload.total : 0;
 }
 
+/**
+ * Parse a `/links/count` body. The endpoint used to answer with a bare integer
+ * and now answers with `{"total":N}`; accept both so a future flip back (or a
+ * differently-configured Constellation instance) keeps working. Silently
+ * returning 0 here zeroes every Bluesky backlink total, so the two shapes must
+ * both be handled explicitly rather than parsed loosely.
+ */
 function parseLegacyCountBody(body: string): number {
   const trimmed = body.trim();
   if (!trimmed) return 0;
+
+  if (trimmed.startsWith("{")) {
+    try {
+      return parseBacklinksCountPayload(JSON.parse(trimmed));
+    } catch {
+      return 0;
+    }
+  }
+
   const parsed = Number.parseInt(trimmed, 10);
   return Number.isFinite(parsed) ? parsed : 0;
 }
