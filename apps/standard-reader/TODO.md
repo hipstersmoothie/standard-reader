@@ -246,6 +246,21 @@ Check items off as they land.
         the batch (`WEB_BRIDGE_BATCH_SHARE`, 5%) and `countReconcilableRepos` excludes them:
         7,877 main-lane repos keep the 24h lap (batch 329/hr), 3,530 mirrors lap in ~8.7 days at
         17/hr — down from ~147/hr.
+  - [x] **tap retry timeout + unparseable-frame ack** (2026-08-01). The real source of the write
+        flood, after the lane budget and the reconcile lap both failed to explain it. `cmd/tap`
+        starts a per-event timer when it *sends*, and re-sends anything unacked after
+        `TAP_RETRY_TIMEOUT` (default **60s**) — so our own in-flight backpressure was being read as
+        failure and the same records came back and were re-applied (`ingest_state`:
+        4,874,322 processed against a 2,064,827 high-water id, ~2.4× per event; the main lane
+        replayed a ~500k id range every 5 minutes for 90+ minutes). All three tap services now run
+        `TAP_RETRY_TIMEOUT=10m`. Separately, frames `lexParse` rejects never yield an event id, so
+        they can never be acked — re-sent forever, and `blockedOnLive` means one malformed Bridgy
+        blob kills that repo's whole live stream. `patches/@atproto__tap@0.3.0.patch` recovers the
+        id from the raw frame and acks it. Latest tap (0.3.12) has the identical code, so upgrading
+        is not a fix. Worth reporting upstream.
+    - [ ] Re-measure `INGEST_BRIDGE_CONCURRENCY=2` against the 10m timeout. Under the 60s timeout a
+          smaller budget meant longer slot waits and *more* redelivery, so the lane budget may have
+          been working against itself; it should be sound now, but it was tuned blind.
   - [ ] Optional next step: a dedicated `ingest-bridge` worker for full process/pool isolation.
         Needs a channel-selection guard — `service.ts` currently always starts the main channel.
         Note this isolates the event loop but **not** the database — same Neon compute either

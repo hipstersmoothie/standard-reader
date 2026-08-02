@@ -426,6 +426,17 @@ function startTapChannel(
     record: 0,
     failed: 0,
     errors: 0,
+    /**
+     * Frames tap sent that never became events — `lexParse` rejected them.
+     *
+     * Counted apart from `errors` because it is the one failure here that
+     * costs a record: the frame never reaches `onEvent`, so there is no
+     * dead-letter row and no URI to go looking for. Our patched channel now
+     * acks these so they stop being redelivered forever (see
+     * `patches/@atproto__tap@0.3.0.patch`), which fixes the replay but makes
+     * the loss quiet — this counter is the only thing that says it happened.
+     */
+    parseErrors: 0,
     acked: 0,
     ackTimeouts: 0,
     inflight: 0,
@@ -509,6 +520,22 @@ function startTapChannel(
   const indexer = {
     onError(error: unknown) {
       stats.errors += 1;
+      // A parse failure is a lost record, not just a noisy error — surface it
+      // as its own event so it can be alerted on and attributed to a lane.
+      if (
+        error instanceof Error &&
+        error.message === "Failed to parse message"
+      ) {
+        stats.parseErrors += 1;
+        logEvent("ingest.frameUnparseable", {
+          cause:
+            error.cause instanceof Error
+              ? error.cause.message
+              : String(error.cause),
+          lane,
+          ok: false,
+        });
+      }
       console.error(`[ingest:${lane}] tap channel error`, error);
     },
     async onEvent(
@@ -608,7 +635,7 @@ function startTapChannel(
     const idleMs =
       stats.lastEventAt === 0 ? -1 : Date.now() - stats.lastEventAt;
     console.info(
-      `[ingest:${lane}] channel heartbeat: identity=${stats.identity} record=${stats.record} acked=${stats.acked} ackTimeouts=${stats.ackTimeouts} failed=${stats.failed} errors=${stats.errors} inflight=${stats.inflight}/${MAX_INFLIGHT} lastEventId=${stats.lastEventId} idleMs=${idleMs}`,
+      `[ingest:${lane}] channel heartbeat: identity=${stats.identity} record=${stats.record} acked=${stats.acked} ackTimeouts=${stats.ackTimeouts} failed=${stats.failed} errors=${stats.errors} parseErrors=${stats.parseErrors} inflight=${stats.inflight}/${MAX_INFLIGHT} lastEventId=${stats.lastEventId} idleMs=${idleMs}`,
     );
     logEvent("ingest.heartbeat", {
       ackTimeouts: stats.ackTimeouts,
@@ -622,6 +649,7 @@ function startTapChannel(
       lastEventId: stats.lastEventId,
       maxInflight: MAX_INFLIGHT,
       ok: true,
+      parseErrors: stats.parseErrors,
       record: stats.record,
     });
   }, 10_000);

@@ -1150,6 +1150,23 @@ AT Proto network (standard.site publications, profiles, follows)
   pool, and raising the shared budget to push publisher throughput must not raise the bridge with
   it. Every channel log line carries `lane` + `maxInflight` so a pinned lane is attributable from
   telemetry instead of by counting rows in Postgres.
+- **tap redelivers on a timeout, so slow is indistinguishable from failed.** `cmd/tap/outbox.go`
+  runs a worker per DID and puts an event in `inFlightSentAt` the moment it *sends* it; anything
+  still unacked after `TAP_RETRY_TIMEOUT` is re-sent, forever, until acked. Two consequences bit us
+  at once. First, our channels deliberately stop reading at their in-flight cap — but events tap
+  already sent are still on tap's clock, so **backpressure itself manufactures redeliveries**: past
+  the timeout the same records come back and are re-applied. That, not the ingest lanes and not the
+  reconcile sweep, is where a 2.4× apply ratio and hours of rewriting week-old rows came from. The
+  default 60s is far too tight for a consumer that backpressures against a database a continent
+  away, so all three tap services run `TAP_RETRY_TIMEOUT=10m`. Second, a frame `lexParse` rejects
+  (Bridgy Fed writes malformed blobs) never yields an event id, so it can never be acked — it is
+  re-sent every timeout forever, and because a live event waits for in-flight to clear
+  (`blockedOnLive`), **one malformed record costs that repo its entire live stream**, not one
+  record. `patches/@atproto__tap@0.3.0.patch` recovers the id from the raw frame and acks it, which
+  is what clears `inFlightSentAt` and unblocks the worker; the record itself is left to the PDS
+  reconcile sweep, since `last_seen_rev` never advanced past it. Dropped frames are counted as
+  `parseErrors` on the heartbeat and logged as `ingest.frameUnparseable` — the patch fixes the
+  replay but makes the loss quiet, and that counter is the only thing that says it happened.
 - **The read-model repairs itself against the PDS.** tap can advance its cursor past a commit whose
   record never reaches us — no error, no dead letter, and "no events" is indistinguishable from "no
   changes" from the read-model's side. So the reconcile sweep no longer trusts the stream: for
