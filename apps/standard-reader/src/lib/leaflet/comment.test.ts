@@ -30,6 +30,42 @@ function content(...paragraphs: Array<string>) {
   };
 }
 
+/**
+ * A document with a single list block (`pub.leaflet.blocks.unorderedList` or
+ * `orderedList`) whose items are plain text, matching how Leaflet's editor
+ * nests list-item plaintext under `children[].content` rather than directly
+ * on the block.
+ */
+function listContent(
+  kind: "unorderedList" | "orderedList",
+  items: Array<string>,
+) {
+  const itemType =
+    kind === "unorderedList"
+      ? LEAFLET_BLOCK.unorderedListItem
+      : LEAFLET_BLOCK.orderedListItem;
+  return {
+    $type: LEAFLET_CONTENT,
+    pages: [
+      {
+        $type: LEAFLET_PAGE.linearDocument,
+        blocks: [
+          {
+            $type: LEAFLET_PAGE.linearDocumentBlock,
+            block: {
+              $type: LEAFLET_BLOCK[kind],
+              children: items.map((plaintext) => ({
+                $type: itemType,
+                content: { $type: LEAFLET_BLOCK.text, plaintext },
+              })),
+            },
+          },
+        ],
+      },
+    ],
+  };
+}
+
 function quote(
   startBlock: Array<number>,
   startOffset: number,
@@ -149,6 +185,62 @@ describe("extractLeafletQuoteText", () => {
     const text = extractLeafletQuoteText(long, anchor([0], 0, [0], 900));
     expect(text).toHaveLength(601);
     expect(text?.endsWith("…")).toBe(true);
+  });
+
+  it("slices a range inside an unordered list item", () => {
+    const listDoc = listContent("unorderedList", [
+      "first item text",
+      "second item, this is the one we quote",
+      "third item",
+    ]);
+    expect(
+      extractLeafletQuoteText(listDoc, anchor([0, 1], 0, [0, 1], 12)),
+    ).toBe("second item,");
+  });
+
+  it("slices a range inside an ordered list item", () => {
+    const listDoc = listContent("orderedList", ["only item here"]);
+    expect(extractLeafletQuoteText(listDoc, anchor([0, 0], 5, [0, 0], 9))).toBe(
+      "item",
+    );
+  });
+
+  it("matches a live pub.leaflet.comment quote anchored inside a list item", () => {
+    // Regression fixture for at://did:plc:fip3nyk6tjo3senpq4ei2cxw/pub.leaflet.comment/3mruv73dqlk22,
+    // whose attachment anchors quote.start/end at block [29, 2] — block 29 is
+    // an unorderedList, and 2 indexes its third `children` entry.
+    const items = [
+      "@-mention and rich text links for link notes",
+      "let me map a domain to my link blog",
+      "for regular Skyreader, when sharing to Semble I want to add a comment / create a note in Semble. I think you can probably combine your link blog share with share to semble?",
+    ];
+    const listDoc = {
+      $type: LEAFLET_CONTENT,
+      pages: [
+        {
+          $type: LEAFLET_PAGE.linearDocument,
+          blocks: [
+            ...Array.from({ length: 29 }, () => ({
+              $type: LEAFLET_PAGE.linearDocumentBlock,
+              block: { $type: LEAFLET_BLOCK.text, plaintext: "filler" },
+            })),
+            {
+              $type: LEAFLET_PAGE.linearDocumentBlock,
+              block: {
+                $type: LEAFLET_BLOCK.unorderedList,
+                children: items.map((plaintext) => ({
+                  $type: LEAFLET_BLOCK.unorderedListItem,
+                  content: { $type: LEAFLET_BLOCK.text, plaintext },
+                })),
+              },
+            },
+          ],
+        },
+      ],
+    };
+    expect(
+      extractLeafletQuoteText(listDoc, anchor([29, 2], 0, [29, 2], 172)),
+    ).toBe(items[2]);
   });
 
   it("returns null when the anchor cannot be resolved", () => {

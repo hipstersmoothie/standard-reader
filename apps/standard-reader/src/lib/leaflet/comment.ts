@@ -164,13 +164,21 @@ function blockAtPath(
   if (!block) return null;
   if (rest.length === 0) return block;
 
-  // Nested paths address blocks inside an embedded page.
-  return blockAtPath(block.blocks, rest);
+  // Nested paths address blocks inside an embedded page, or list items
+  // inside a `pub.leaflet.blocks.unorderedList` / `orderedList` container —
+  // those keep their items under `children`, not `blocks`.
+  const nested = Array.isArray(block.blocks) ? block.blocks : block.children;
+  return blockAtPath(nested, rest);
 }
 
 function blockPlaintext(block: Record<string, unknown> | null): string | null {
   if (!block) return null;
-  return typeof block.plaintext === "string" ? block.plaintext : null;
+  if (typeof block.plaintext === "string") return block.plaintext;
+  // List items carry their text on `content` rather than directly on the item.
+  if (isRecord(block.content) && typeof block.content.plaintext === "string") {
+    return block.content.plaintext;
+  }
+  return null;
 }
 
 function rootBlocks(content: unknown): unknown {
