@@ -82,6 +82,13 @@ export function UserHandleAutocomplete({
   // i.e. the handle) can resolve the DID without re-scanning the actors array.
   const didByHandle = new Map(actors.map((a) => [a.handle, a.did]));
 
+  const select = (handle: string) => {
+    const trimmed = handle.trim().replace(/^@/, "");
+    if (trimmed === "") return;
+    onValueChange(trimmed);
+    onSelect?.(trimmed, didByHandle.get(trimmed));
+  };
+
   return (
     <AutocompleteInput
       size={size}
@@ -98,9 +105,14 @@ export function UserHandleAutocomplete({
       inputValue={value}
       onInputChange={onValueChange}
       items={actors}
-      onAction={(selectedHandle) => {
-        onValueChange(selectedHandle);
-        onSelect?.(selectedHandle, didByHandle.get(selectedHandle));
+      onAction={select}
+      onEnter={(rawValue) => {
+        const typed = rawValue.trim().replace(/^@/, "");
+        // Every atproto handle has at least one dot, so a dotted value is what
+        // the user meant to sign in as — never override it with a suggestion.
+        // Otherwise take the top suggestion, which is the option they're
+        // looking at while a partial handle is typed.
+        select(typed.includes(".") ? typed : (actors[0]?.handle ?? typed));
       }}
     >
       {(actor) => (

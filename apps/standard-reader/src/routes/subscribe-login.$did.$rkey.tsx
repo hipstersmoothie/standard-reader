@@ -185,6 +185,12 @@ function SubscribeLoginPage() {
     },
   });
 
+  const submitLogin = (candidate: string) => {
+    const trimmed = candidate.trim().replace(/^@/, "");
+    if (trimmed === "" || loginMutation.isPending) return;
+    loginMutation.mutate(trimmed);
+  };
+
   const avatarUrl = meta.iconUrl ?? meta.ownerAvatarUrl ?? undefined;
   const publicationName = meta.name;
 
@@ -193,7 +199,15 @@ function SubscribeLoginPage() {
       {...stylex.props(styles.shell, publicationUi, publicationPrimary)}
       style={scaleVars}
     >
-      <Form style={styles.card}>
+      <Form
+        style={styles.card}
+        onSubmit={(event) => {
+          // Never let the browser navigate — signing in is a client-side OAuth
+          // redirect, and a native submit would drop the search params.
+          event.preventDefault();
+          submitLogin(handle);
+        }}
+      >
         <Flex direction="column" align="center" gap="xl" style={styles.header}>
           <Avatar
             src={avatarUrl}
@@ -221,23 +235,16 @@ function SubscribeLoginPage() {
               setHandle(value);
             }}
             onSelect={(selectedHandle) => {
-              const trimmed = selectedHandle.trim().replace(/^@/, "");
-              if (trimmed === "") return;
-              setInputValue(trimmed);
-              setHandle(trimmed);
-              loginMutation.mutate(trimmed);
+              setInputValue(selectedHandle);
+              setHandle(selectedHandle);
+              submitLogin(selectedHandle);
             }}
           />
           <Button
             size="lg"
-            type="button"
+            type="submit"
             isDisabled={!handle.trim() || loginMutation.isPending}
             isPending={loginMutation.isPending}
-            onPress={() => {
-              const trimmed = handle.trim().replace(/^@/, "");
-              if (trimmed === "") return;
-              loginMutation.mutate(trimmed);
-            }}
           >
             <Trans>Subscribe</Trans>
           </Button>

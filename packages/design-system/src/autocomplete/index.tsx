@@ -90,6 +90,14 @@ export interface AutocompleteInputProps<T extends object>
   suffix?: React.ReactNode;
   /** Callback when an item is selected. */
   onAction?: (item: string) => void;
+  /**
+   * Called when Enter is pressed in the input while no suggestion is focused,
+   * with the current input value. When the user has arrowed into the
+   * suggestion list this does not fire — `onAction` runs for the focused item
+   * instead. Providing this also stops the browser's implicit form submission,
+   * which would otherwise reload the page.
+   */
+  onEnter?: (inputValue: string) => void;
 }
 
 export function AutocompleteInput<T extends object>({
@@ -108,6 +116,7 @@ export function AutocompleteInput<T extends object>({
   prefix,
   suffix,
   onAction,
+  onEnter,
   renderEmptyState,
   // Don't auto-focus the first suggestion after each keystroke — that gives it
   // a keyboard focus ring while the user is only typing. The ring should
@@ -170,6 +179,28 @@ export function AutocompleteInput<T extends object>({
     onAction?.(String(key));
   };
 
+  // Enter in the input means "act on what's typed". react-aria only handles
+  // Enter when a suggestion has virtual focus (tracked on the input via
+  // `aria-activedescendant`) — otherwise the key falls through to the
+  // browser's implicit form submission, which reloads the page and looks like
+  // nothing happened. Capture runs before react-aria's own keydown handler so
+  // we can claim the key before it is forwarded to the list.
+  const handleKeyDownCapture = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (!onEnter || event.key !== "Enter" || event.nativeEvent.isComposing) {
+      return;
+    }
+
+    const input = event.target;
+    if (!(input instanceof HTMLInputElement)) return;
+    // A suggestion is focused — let react-aria trigger it via `onAction`.
+    if (input.getAttribute("aria-activedescendant")) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    setIsOpenState(false);
+    onEnter(input.value);
+  };
+
   return (
     <SizeContext value={size}>
       <AriaAutocomplete
@@ -182,6 +213,7 @@ export function AutocompleteInput<T extends object>({
           {...stylex.props(styles.wrapper)}
           onBlurCapture={handleBlurCapture}
           onFocusCapture={handleFocusCapture}
+          onKeyDownCapture={handleKeyDownCapture}
         >
           <TextField
             label={label}

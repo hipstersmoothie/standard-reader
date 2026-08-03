@@ -244,6 +244,12 @@ function AuthPage() {
     savedHandles.length > 0 ? "saved-handles" : "login",
   );
 
+  const submitLogin = (candidate: string) => {
+    const trimmed = candidate.trim().replace(/^@/, "");
+    if (trimmed === "" || loginMutation.isPending) return;
+    loginMutation.mutate(trimmed);
+  };
+
   const handleBack = () => {
     if (canGoBack) {
       router.history.back();
@@ -265,7 +271,15 @@ function AuthPage() {
         <DirectionalIcon as={ArrowLeft} size={18} />
       </IconButton>
       <div {...stylex.props(styles.container)}>
-        <Form style={styles.content}>
+        <Form
+          style={styles.content}
+          onSubmit={(event) => {
+            // Never let the browser navigate — signing in is a client-side
+            // OAuth redirect, and a native submit would drop the search params.
+            event.preventDefault();
+            submitLogin(handle);
+          }}
+        >
           <Flex direction="column" gap="5xl" style={styles.form}>
             <Flex
               direction="column"
@@ -354,11 +368,9 @@ function AuthPage() {
                     setHandle(value);
                   }}
                   onSelect={(selectedHandle) => {
-                    const trimmed = selectedHandle.trim().replace(/^@/, "");
-                    if (trimmed === "") return;
-                    setInputValue(trimmed);
-                    setHandle(trimmed);
-                    loginMutation.mutate(trimmed);
+                    setInputValue(selectedHandle);
+                    setHandle(selectedHandle);
+                    submitLogin(selectedHandle);
                   }}
                 />
               </Flex>
@@ -381,14 +393,9 @@ function AuthPage() {
               {view === "login" && (
                 <Button
                   size="lg"
-                  type="button"
+                  type="submit"
                   isDisabled={!handle.trim() || loginMutation.isPending}
                   isPending={loginMutation.isPending}
-                  onPress={() => {
-                    const trimmed = handle.trim().replace(/^@/, "");
-                    if (trimmed === "") return;
-                    loginMutation.mutate(trimmed);
-                  }}
                   style={styles.loginButton}
                 >
                   <Trans>Log in</Trans>
