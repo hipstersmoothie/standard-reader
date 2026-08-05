@@ -124,8 +124,12 @@ Topics are **derived, never curated** — see
   - **Masthead** with its model-written name and description, publication and writer counts.
   - **Sub-areas** — its member tags, each linking to the existing `/tag/$tag` page, so a
     topic is a way _down_ into a narrower view rather than a replacement for one.
-  - **Articles** tab — everything published across the topic's tags
-    (Newest / Trending / Most liked).
+  - **Articles** tab — everything the topic's member publications published under
+    _any_ of its tags (Newest / Trending / Most liked). Every tag in the cluster
+    counts, not just the central ones: capping the match at the ten highest-weight
+    tags left 8 of 148 topics with an empty Articles tab and hid a TV blog from the TV
+    topic because `tv` ranked 11th in a 14-tag cluster. Scoping to member publications
+    is what keeps the tab honest; tag rank was never doing that job.
   - **Publications** tab — its publications (Best fit / Readers / Active / A–Z), where
     _best fit_ ranks by how much of the topic's tag vocabulary a publication covers.
 - Slugs are permanent. A topic that drifts, gets renamed, or drops below the quality
@@ -142,6 +146,29 @@ Topics are **derived, never curated** — see
   little thin. Once published, a topic stays published while it still clears 70% of
   each count threshold (and 0.6 top-author share), so only one that has genuinely
   fallen apart is unlisted.
+- **Reach can stand in for vocabulary.** The quality bar's tag floor measures how
+  _broad_ a cluster's vocabulary is and treats that as a proxy for substance. The proxy
+  breaks for subjects the network writes about with one dominant tag: `photography` is
+  used by 186 publishers, but its strongest co-occurrence partner appears alongside it on
+  13 of them, so the cluster comes out at 12 tags and missed a floor of 14 — while
+  carrying 65 publications and 64 authors, more reach than 116 of the 148 topics that
+  _were_ published. So a short cluster still qualifies when enough separate writers stand
+  behind it (currently 30, just above the median live topic), down to a hard floor of 8
+  tags — below that a topic page has no sub-areas to browse however many people are in it.
+  Concentration still applies, which is what stops "lots of authors" becoming a loophole
+  for a publication fleet.
+- **Losing your cluster is not dying.** Clustering is not stable between sweeps —
+  label propagation reshuffles as the corpus moves — so a published topic can fail to
+  re-derive while every tag in it is still live. That used to unlist it: a 24-tag TV
+  topic with 84 publications and 81 authors went off the site because a 14-tag
+  Daredevil cluster formed in its place. Now a published topic no cluster claimed is
+  re-measured on **its own stored tags** (minus any that left the vocabulary) and kept
+  if it still clears the retention bar. Only a topic that fails on its own terms is
+  unlisted — that is what "truly dead" means. The one exception is absorption: if a
+  cluster that published this sweep already contains three quarters of the topic, the
+  cluster _is_ the topic re-derived, and carrying the old row forward would put two
+  versions of one area on the site. A narrower cluster carved out of a broad topic is
+  not absorption — both are real, at different altitudes, and both stay.
 
 ### Search
 

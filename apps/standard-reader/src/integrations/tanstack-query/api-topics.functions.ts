@@ -55,12 +55,6 @@ export type TopicArticleSort = z.infer<typeof articleSortEnum>;
  * just to render the masthead.
  */
 const TOPIC_PAGE_TAGS = 24;
-/**
- * Tags handed to the document query. Capped well below the chip list: the
- * array-overlap predicate widens with every tag, and the tail of a cluster
- * contributes almost no documents the head does not already match.
- */
-const TOPIC_FEED_TAGS = 30;
 
 const slugInput = z.object({
   slug: z
@@ -215,7 +209,7 @@ const getArticles = createServerFn({ method: "GET" })
       span.set("slug", data.slug);
       span.set("offset", data.offset);
 
-      const tags = await topicTagList(db, schema, data.slug, TOPIC_FEED_TAGS);
+      const tags = await topicTagList(db, schema, data.slug);
       const page = await loadTopicArticles(context, did, tags, data);
       span.set("count", page.items.length);
       return page;
@@ -284,7 +278,7 @@ const getTopicPage = createServerFn({ method: "GET" })
       const [publicationCount, content] = await Promise.all([
         countTopicPublications(db, schema, data.slug),
         data.view === "feed"
-          ? topicTagList(db, schema, data.slug, TOPIC_FEED_TAGS).then((tags) =>
+          ? topicTagList(db, schema, data.slug).then((tags) =>
               loadTopicArticles(context, did, tags, {
                 slug: data.slug,
                 articleSort: data.articleSort,

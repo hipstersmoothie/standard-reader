@@ -1,7 +1,14 @@
 import { describe, expect, it } from "vitest";
 
-import { clearsRetentionBar, findSuccessors } from "./topic-succession";
+import {
+  clearsEntryBar,
+  clearsRetentionBar,
+  findSuccessors,
+  shouldCarryForward,
+  tagSetCoverage,
+} from "./topic-succession";
 import type {
+  EntryThresholds,
   ResolvedTopic,
   RetentionThresholds,
   StoredTopic,
@@ -206,5 +213,196 @@ describe("findSuccessors", () => {
         0.25,
       ).size,
     ).toBe(0);
+  });
+});
+
+describe("tagSetCoverage", () => {
+  it("measures how much of the topic the cluster contains, not the reverse", () => {
+    // The asymmetry is the point: a 2-tag cluster fully inside a 4-tag topic
+    // covers half of it, while the topic covers all of the cluster.
+    expect(tagSetCoverage(["a", "b", "c", "d"], ["a", "b"])).toBe(0.5);
+    expect(tagSetCoverage(["a", "b"], ["a", "b", "c", "d"])).toBe(1);
+  });
+
+  it("is zero for an empty topic rather than dividing by nothing", () => {
+    expect(tagSetCoverage([], ["a"])).toBe(0);
+  });
+});
+
+describe("shouldCarryForward", () => {
+  /** The production threshold at the time of writing. */
+  const MAX_COVERAGE = 0.75;
+
+  it("keeps a broad topic when only a narrow slice of it re-derived", () => {
+    // The regression this exists for: a 24-tag TV topic lost its cluster to a
+    // 5-tag Daredevil cluster carved out of it, and was taken off the site
+    // even though it had 84 publications and 81 authors behind it.
+    const tvTopic = [
+      "netflix",
+      "bbc",
+      "tv",
+      "television",
+      "film",
+      "movies",
+      "radio",
+      "entertainment",
+      "bridgerton",
+      "stranger things",
+      "baywatch",
+      "heartstopper",
+    ];
+    const daredevilCluster = ["daredevil", "charlie cox", "tv", "disney+"];
+
+    expect(shouldCarryForward(tvTopic, [daredevilCluster], MAX_COVERAGE)).toBe(
+      true,
+    );
+  });
+
+  it("drops a topic a published cluster has already absorbed", () => {
+    // Same area, re-derived with its tail shed. Carrying the old row forward
+    // would put two versions of one topic on the site.
+    const topic = ["javascript", "react", "css", "frontend"];
+    const reDerived = ["javascript", "react", "css", "webpack"];
+
+    expect(shouldCarryForward(topic, [reDerived], MAX_COVERAGE)).toBe(false);
+  });
+
+  it("only counts clusters that published", () => {
+    // The caller passes published clusters only; a below-bar cluster cannot
+    // absorb anything, because nothing of it reaches the site.
+    expect(shouldCarryForward(WEB, [], MAX_COVERAGE)).toBe(true);
+  });
+
+  it("drops a topic whose tags have all left the vocabulary", () => {
+    // The caller filters dead tags out before this runs, so an empty set means
+    // nothing of the topic survives — the one way a topic truly dies.
+    expect(shouldCarryForward([], [MUSIC], MAX_COVERAGE)).toBe(false);
+  });
+
+  it("checks every published cluster, not just the closest", () => {
+    const topic = ["javascript", "react", "css", "frontend"];
+
+    expect(
+      shouldCarryForward(
+        topic,
+        [MUSIC, ["javascript", "react", "css", "typescript"]],
+        MAX_COVERAGE,
+      ),
+    ).toBe(false);
+  });
+});
+
+/** The production entry bar at the time of writing. */
+const ENTRY: EntryThresholds = {
+  minTags: 14,
+  minPublications: 10,
+  minAuthors: 5,
+  maxTopAuthorShare: 0.5,
+  absoluteMinTags: 8,
+  reachWaiverAuthors: 30,
+};
+
+describe("clearsEntryBar", () => {
+  it("admits a broad cluster on the tag floor alone", () => {
+    expect(
+      clearsEntryBar(
+        {
+          tagCount: 14,
+          publicationCount: 10,
+          authorCount: 5,
+          topAuthorShare: 0.1,
+        },
+        ENTRY,
+      ),
+    ).toBe(true);
+  });
+
+  it("admits a short cluster that enough writers stand behind", () => {
+    // The photography case: 12 tags is under the floor of 14, but 64 authors
+    // is more reach than most topics already published.
+    expect(
+      clearsEntryBar(
+        {
+          tagCount: 12,
+          publicationCount: 65,
+          authorCount: 64,
+          topAuthorShare: 0.03,
+        },
+        ENTRY,
+      ),
+    ).toBe(true);
+  });
+
+  it("rejects a short cluster without the reach to justify it", () => {
+    expect(
+      clearsEntryBar(
+        {
+          tagCount: 12,
+          publicationCount: 25,
+          authorCount: 25,
+          topAuthorShare: 0.1,
+        },
+        ENTRY,
+      ),
+    ).toBe(false);
+  });
+
+  it("never waives below the absolute tag floor", () => {
+    // No amount of reach makes a 7-tag cluster a browsable topic.
+    expect(
+      clearsEntryBar(
+        {
+          tagCount: 7,
+          publicationCount: 900,
+          authorCount: 800,
+          topAuthorShare: 0.01,
+        },
+        ENTRY,
+      ),
+    ).toBe(false);
+  });
+
+  it("still rejects a one-operator fleet however many tags it has", () => {
+    // Concentration is what stops "lots of authors" becoming a loophole.
+    expect(
+      clearsEntryBar(
+        {
+          tagCount: 40,
+          publicationCount: 769,
+          authorCount: 80,
+          topAuthorShare: 0.99,
+        },
+        ENTRY,
+      ),
+    ).toBe(false);
+  });
+
+  it("applies publications and authors to waived clusters too", () => {
+    // Reach substitutes for tag breadth, not for the other conditions.
+    expect(
+      clearsEntryBar(
+        {
+          tagCount: 8,
+          publicationCount: 9,
+          authorCount: 40,
+          topAuthorShare: 0.1,
+        },
+        ENTRY,
+      ),
+    ).toBe(false);
+  });
+
+  it("treats both tag rules as inclusive", () => {
+    expect(
+      clearsEntryBar(
+        {
+          tagCount: 8,
+          publicationCount: 10,
+          authorCount: 30,
+          topAuthorShare: 0.5,
+        },
+        ENTRY,
+      ),
+    ).toBe(true);
   });
 });

@@ -1,3 +1,4 @@
+import type { SQL } from "drizzle-orm";
 import { and, eq, notInArray, sql } from "drizzle-orm";
 
 import { WEB_BRIDGE_HANDLE_PATTERN } from "#/lib/atproto/bridged-repo";
@@ -19,7 +20,12 @@ import {
   isTopicNamingConfigured,
   nameTopics,
 } from "./topic-naming.ts";
-import { clearsRetentionBar, findSuccessors } from "./topic-succession.ts";
+import {
+  clearsEntryBar,
+  clearsRetentionBar,
+  findSuccessors,
+  shouldCarryForward,
+} from "./topic-succession.ts";
 
 /**
  * Derive topics from the tag co-occurrence graph.
@@ -47,8 +53,10 @@ const MIN_TAG_PUBLICATIONS = 5;
  * is caught by pattern in {@link selectEdges} instead of listed here.
  *
  * Deliberately conservative: ambiguous words that could be a real subject stay
- * in. `notes` is a section on plenty of blogs, and the core-tag rule in the
- * feed already handles merely-generic tags.
+ * in — `notes` is a section on plenty of blogs. This list is now the only
+ * filter standing between a meaningless tag and a topic's article feed: the
+ * feed used to match a cluster's ten most central tags and so ignored a
+ * generic one sitting in the tail, but it matches every member tag now.
  */
 const JUNK_TAGS = [
   "uncategorized",
@@ -106,7 +114,7 @@ const MIN_EDGE_PUBLISHERS = 3;
  */
 
 /** Tags stored as a topic's identity fingerprint and shown to the namer. */
-const SIGNATURE_SIZE = 24;
+export const SIGNATURE_SIZE = 24;
 
 /**
  * Quality bar for publishing a topic. Clusters below it keep their row
@@ -121,9 +129,45 @@ const SIGNATURE_SIZE = 24;
  * scale, on the corpus at time of writing it yields ~82; raising it to 16 would
  * give 69, to 22 would give 57 — the knob is here if the tail ever thins out.)
  */
-const MIN_CLUSTER_TAGS = 14;
-const MIN_CLUSTER_PUBLICATIONS = 10;
-const MIN_CLUSTER_AUTHORS = 5;
+export const MIN_CLUSTER_TAGS = 14;
+export const MIN_CLUSTER_PUBLICATIONS = 10;
+export const MIN_CLUSTER_AUTHORS = 5;
+
+/**
+ * Tag floor for a cluster that clears {@link REACH_WAIVER_AUTHORS}.
+ *
+ * {@link MIN_CLUSTER_TAGS} measures vocabulary breadth, and takes it as a proxy
+ * for substance. That proxy fails for a subject the network writes about with
+ * one dominant tag: `photography` has 186 publishers, but its strongest
+ * co-occurrence partner appears alongside it on 13 of them and its satellites
+ * (`photojournalism`, `photographer`, `street photography`) are 8–17 publishers
+ * wide, so the cluster comes out at 12 tags and misses the floor by two — while
+ * carrying 65 publications and 64 authors, more reach than 116 of the 148
+ * topics that *were* published. Measured across the corpus, 52 clusters fail on
+ * tag count alone, with 1,461 publications behind them.
+ *
+ * So reach can stand in for breadth, down to a hard floor. Below this many tags
+ * there are no sub-areas to browse and the topic page has nothing to show,
+ * however many people are in it — that is why the waiver has a floor rather
+ * than scaling all the way down.
+ */
+export const ABSOLUTE_MIN_CLUSTER_TAGS = 8;
+/**
+ * Authors a short cluster needs before {@link ABSOLUTE_MIN_CLUSTER_TAGS}
+ * applies instead of the full tag floor.
+ *
+ * Set just above the median author count of the topics already published (26),
+ * so the rule reads: a cluster with more reach than a typical live topic is not
+ * disqualified for having a compact vocabulary. Swept over real clusters with
+ * `pnpm topics:analyze-tag-floor` — at this setting it admits 13, every one a
+ * real subject (Books and the Writing Life at 151 authors, Security and
+ * Privacy at 99, Web Development at 82, Street Photography at 64, WordPress,
+ * Firefox, SQL, terminal tooling, fitness, linguistics). Dropping to 20 admits
+ * 22 and starts pulling in thinner clusters; the knob is there if the site ever
+ * wants them.
+ */
+export const REACH_WAIVER_AUTHORS = 30;
+
 /**
  * Largest share of a topic's publications one repo may account for.
  *
@@ -136,7 +180,16 @@ const MIN_CLUSTER_AUTHORS = 5;
  * author-*count* bar too (measured: 769 publications across 8 DIDs, of which
  * one DID is 99.5%). Concentration catches it where counting does not.
  */
-const MAX_TOP_AUTHOR_SHARE = 0.5;
+export const MAX_TOP_AUTHOR_SHARE = 0.5;
+/** The entry bar as one value, so the repair pass cannot drift from the sweep. */
+export const ENTRY_BAR = {
+  absoluteMinTags: ABSOLUTE_MIN_CLUSTER_TAGS,
+  maxTopAuthorShare: MAX_TOP_AUTHOR_SHARE,
+  minAuthors: MIN_CLUSTER_AUTHORS,
+  minPublications: MIN_CLUSTER_PUBLICATIONS,
+  minTags: MIN_CLUSTER_TAGS,
+  reachWaiverAuthors: REACH_WAIVER_AUTHORS,
+};
 
 /**
  * How far a topic already published may slip before it is unlisted.
@@ -172,11 +225,25 @@ const SUPERSEDE_SIMILARITY = 0.25;
 
 /** Tag-set overlap at which a re-derived cluster is judged the same topic. */
 const IDENTITY_MATCH_SIMILARITY = 0.5;
+
+/**
+ * How much of a published topic a new cluster must contain before the topic is
+ * treated as absorbed rather than carried forward on its own tags.
+ *
+ * Sits above {@link IDENTITY_MATCH_SIMILARITY} on purpose, because it is
+ * measured with containment rather than Jaccard (see `tagSetCoverage`) and the
+ * two scales are not comparable: a cluster covering three quarters of a topic
+ * while failing the Jaccard identity test is a cluster that kept the topic's
+ * substance and shed its tail — publishing both would put two versions of the
+ * same area on the site. Below that, whatever formed is a different, narrower
+ * subject and the broad topic stands on its own.
+ */
+export const CARRY_FORWARD_MAX_COVERAGE = 0.75;
 /** Below this overlap with its stored fingerprint, a topic is re-named. */
 const RENAME_SIMILARITY = 0.8;
 
 /** Rows per insert statement when writing tags and memberships. */
-const INSERT_CHUNK = 500;
+export const INSERT_CHUNK = 500;
 
 export interface TopicsRecomputeSummary {
   /** Tags that entered the graph. */
@@ -193,6 +260,13 @@ export interface TopicsRecomputeSummary {
   droppedByConcentration: number;
   /** Clusters sent to the naming model this sweep. */
   named: number;
+  /**
+   * Published topics no cluster re-derived that were kept on their own tags.
+   * Watch this: a steadily rising number means the clustering has stopped
+   * agreeing with itself between sweeps, which is worth knowing even though
+   * readers no longer feel it.
+   */
+  carriedForward: number;
 }
 
 /** Read rows off a drizzle `db.execute` result (array or `{ rows }`). */
@@ -256,24 +330,59 @@ interface Candidate {
  * decided downstream, at membership and in the feed. Narrowing the graph to
  * what is displayable was tried and is much worse: see the bridge note above.
  */
+/**
+ * What counts as a real tag, against a `discover_topic_counts` row.
+ *
+ * Shared by the graph and by the carry-forward re-measurement
+ * ({@link selectCarryForwardTags}) so the two cannot disagree about which tags
+ * are alive — a topic must not be retained on tags the graph would refuse.
+ */
+function vocabularyWhere(alias: SQL): SQL {
+  return sql`
+    ${alias}.publication_count >= ${MIN_TAG_PUBLICATIONS}
+    AND ${alias}.topic <> ALL (array[${sql.join(
+      JUNK_TAGS.map((tag) => sql`${tag}`),
+      sql`, `,
+    )}])
+    -- Structural junk: scraped emails and URLs, bare numbers or
+    -- punctuation, and single ASCII letters. The character-class tests are
+    -- written so they never catch a non-Latin tag — a one-character CJK
+    -- topic is a real topic.
+    AND ${alias}.topic NOT LIKE '%@%'
+    AND ${alias}.topic !~* '^https?://'
+    AND ${alias}.topic !~ '^[[:digit:][:punct:][:space:]]+$'
+    AND ${alias}.topic !~* '^[a-z]$'
+  `;
+}
+
+/**
+ * Which of `tags` are still real subjects on the network.
+ *
+ * The repair pass ({@link import("./repair-topics.ts")}) rebuilds topics from
+ * their stored signature, and a signature can be months old — so it has to ask
+ * the same liveness question the graph asks, through the same predicate. A tag
+ * the graph would refuse must never prop up a republished topic.
+ */
+export async function liveVocabularyTags(
+  tags: ReadonlyArray<string>,
+): Promise<Set<string>> {
+  if (tags.length === 0) return new Set();
+  const result = await db.execute(sql`
+    SELECT dtc.topic
+    FROM discover_topic_counts dtc
+    JOIN jsonb_array_elements_text(${JSON.stringify([...new Set(tags)])}::jsonb)
+      AS w(tag) ON w.tag = dtc.topic
+    WHERE ${vocabularyWhere(sql`dtc`)}
+  `);
+  return new Set(executeRows<{ topic: string }>(result).map((r) => r.topic));
+}
+
 async function selectEdges(): Promise<Array<EdgeRow>> {
   const result = await db.execute(sql`
     WITH vocab AS (
-      SELECT topic
-      FROM discover_topic_counts
-      WHERE publication_count >= ${MIN_TAG_PUBLICATIONS}
-        AND topic <> ALL (array[${sql.join(
-          JUNK_TAGS.map((tag) => sql`${tag}`),
-          sql`, `,
-        )}])
-        -- Structural junk: scraped emails and URLs, bare numbers or
-        -- punctuation, and single ASCII letters. The character-class tests are
-        -- written so they never catch a non-Latin tag — a one-character CJK
-        -- topic is a real topic.
-        AND topic NOT LIKE '%@%'
-        AND topic !~* '^https?://'
-        AND topic !~ '^[[:digit:][:punct:][:space:]]+$'
-        AND topic !~* '^[a-z]$'
+      SELECT dtc.topic
+      FROM discover_topic_counts dtc
+      WHERE ${vocabularyWhere(sql`dtc`)}
     ),
     doc_tag AS (
       -- Publishers, not documents: a loose document is its own publisher, so a
@@ -323,7 +432,7 @@ async function selectEdges(): Promise<Array<EdgeRow>> {
  * rather than a bound array: a JS array in a `sql` template binds as one scalar
  * value, which silently breaks array operators.
  */
-async function selectMemberships(
+export async function selectMemberships(
   clusters: ReadonlyArray<{
     key: string;
     tags: Array<{ tag: string; weight: number }>;
@@ -391,6 +500,108 @@ async function selectMemberships(
   return executeRows<MembershipRow>(result);
 }
 
+/** One cluster's resolved membership, before the quality bar is applied. */
+export interface MembershipGroup {
+  publications: Array<{ uri: string; score: number; matchedTagCount: number }>;
+  publicationsByDid: Map<string, number>;
+  documentCount: number;
+}
+
+export function groupMemberships(
+  rows: ReadonlyArray<MembershipRow>,
+): Map<string, MembershipGroup> {
+  const byCluster = new Map<string, MembershipGroup>();
+  for (const row of rows) {
+    let entry = byCluster.get(row.cluster_key);
+    if (!entry) {
+      entry = {
+        publications: [],
+        publicationsByDid: new Map(),
+        documentCount: row.document_count,
+      };
+      byCluster.set(row.cluster_key, entry);
+    }
+    entry.publications.push({
+      uri: row.publication_uri,
+      score: Number(row.score),
+      matchedTagCount: row.matched_tag_count,
+    });
+    entry.publicationsByDid.set(
+      row.did,
+      (entry.publicationsByDid.get(row.did) ?? 0) + 1,
+    );
+  }
+  return byCluster;
+}
+
+/** Publications best first, author spread, and reach — the quality bar's inputs. */
+export function membershipShape(entry: MembershipGroup | undefined) {
+  const publications = entry?.publications ?? [];
+  const publicationsByDid =
+    entry?.publicationsByDid ?? new Map<string, number>();
+  const topAuthorPublications = Math.max(0, ...publicationsByDid.values());
+  publications.sort(
+    (left, right) =>
+      right.score - left.score ||
+      (left.uri < right.uri ? -1 : left.uri > right.uri ? 1 : 0),
+  );
+  return {
+    authorCount: publicationsByDid.size,
+    documentCount: entry?.documentCount ?? 0,
+    publications,
+    topAuthorShare:
+      publications.length === 0
+        ? 1
+        : topAuthorPublications / publications.length,
+  };
+}
+
+interface CarriedTagRow {
+  topic_slug: string;
+  tag: string;
+  weight: number;
+}
+
+/**
+ * A published topic's stored tags, filtered to those still in the vocabulary.
+ *
+ * The input to re-measuring a topic that no cluster re-derived. `topic_tags`
+ * holds the full member list (not the 24-tag signature), and it is still
+ * intact at this point in the sweep — the table is only rewritten inside the
+ * final transaction.
+ *
+ * Tags that have fallen out of the vocabulary are dropped rather than counted,
+ * so a topic assembled from tags the network has abandoned shrinks toward the
+ * retention bar and eventually fails it. That is the path by which a topic
+ * genuinely dies.
+ */
+async function selectCarryForwardTags(
+  slugs: ReadonlyArray<string>,
+): Promise<Map<string, Array<{ tag: string; weight: number }>>> {
+  const byTopic = new Map<string, Array<{ tag: string; weight: number }>>();
+  if (slugs.length === 0) return byTopic;
+
+  // Slugs go over as one jsonb parameter: a JS array bound into a `sql`
+  // template arrives as a single scalar and silently breaks array operators.
+  const result = await db.execute(sql`
+    SELECT tt.topic_slug, tt.tag, tt.weight::float8 AS weight
+    FROM topic_tags tt
+    JOIN jsonb_array_elements_text(${JSON.stringify(slugs)}::jsonb) AS w(slug)
+      ON w.slug = tt.topic_slug
+    JOIN discover_topic_counts dtc ON dtc.topic = tt.tag
+    WHERE ${vocabularyWhere(sql`dtc`)}
+    ORDER BY tt.weight DESC, tt.tag
+  `);
+
+  for (const row of executeRows<CarriedTagRow>(result)) {
+    const entry = byTopic.get(row.topic_slug);
+    const member = { tag: row.tag, weight: Number(row.weight) };
+    if (entry) entry.push(member);
+    else byTopic.set(row.topic_slug, [member]);
+  }
+  return byTopic;
+}
+
 /**
  * Match re-derived clusters onto existing topics so slugs (and therefore
  * URLs) survive the cluster shifting between sweeps.
@@ -400,7 +611,7 @@ async function selectMemberships(
  * clears {@link IDENTITY_MATCH_SIMILARITY}. Everything else is a new topic.
  */
 function matchIdentities(
-  candidates: ReadonlyArray<Candidate>,
+  candidates: ReadonlyArray<{ key: string; signature: Array<string> }>,
   existing: ReadonlyArray<{ slug: string; signatureTags: Array<string> }>,
 ): Map<string, string> {
   const claimed = new Set<string>();
@@ -494,14 +705,28 @@ export interface TopicDerivation {
   belowTagBar: Array<Array<string>>;
 }
 
+/** The graph and its clusters, before any membership is resolved. */
+interface ClusterDerivation {
+  /** Clusters big enough to be worth a membership query, most tags first. */
+  sized: Array<{ key: string; tags: Array<{ tag: string; weight: number }> }>;
+  tags: number;
+  edges: number;
+  semanticEdges: number;
+  clusters: number;
+  /** Clusters too short for any rule to admit, so never measured. */
+  belowTagBar: Array<Array<string>>;
+}
+
 /**
- * Everything up to (but not including) naming and persistence: build the graph,
- * cluster it, resolve memberships, apply the quality bar.
+ * Build the co-occurrence graph and cluster it.
  *
- * Split out so it can be run read-only — `scripts/derive-topics.mjs` uses
- * it to check cluster quality and the bar against real data without writing.
+ * Stops short of resolving memberships, because that query costs ~32s
+ * regardless of how many clusters are in the mapping — the price is the
+ * whole-corpus scan, not the cluster count — so the sweep must run it exactly
+ * once, with everything it will ever need in the same call. See
+ * {@link resolveCandidates}.
  */
-export async function deriveTopics(): Promise<TopicDerivation> {
+async function deriveClusters(): Promise<ClusterDerivation> {
   const edgeRows = await selectEdges();
   const edges: Array<{ a: string; b: string; weight: number }> = edgeRows.map(
     (row) => ({
@@ -533,87 +758,108 @@ export async function deriveTopics(): Promise<TopicDerivation> {
   const clusters = clusterTags(edges);
 
   // Only clusters that could clear a tag bar are worth resolving memberships
-  // for — that query is the expensive one. The cut is at the *retention*
-  // floor, not the entry floor, so a published topic that has shrunk a little
-  // still reaches the hysteresis test below instead of vanishing here.
-  const resolveMinTags = Math.floor(MIN_CLUSTER_TAGS * RETENTION_FACTOR);
+  // for — that query is the expensive one. The cut is at the lowest floor any
+  // rule below could apply: the *retention* floor, so a published topic that
+  // has shrunk still reaches the hysteresis test rather than vanishing here,
+  // or the reach waiver's absolute floor when that is lower still.
+  const resolveMinTags = Math.min(
+    Math.floor(MIN_CLUSTER_TAGS * RETENTION_FACTOR),
+    ABSOLUTE_MIN_CLUSTER_TAGS,
+  );
   const sized = clusters
     .filter((cluster) => cluster.length >= resolveMinTags)
     .map((cluster, index) => ({ key: String(index), tags: cluster }));
-  const droppedByTags = clusters.filter(
-    (cluster) => cluster.length < MIN_CLUSTER_TAGS,
-  ).length;
+  // Too short for any rule to admit, so never measured. Clusters between this
+  // and MIN_CLUSTER_TAGS are still live candidates via the reach waiver, and
+  // are counted as tag rejections in `resolveCandidates` only if it declines
+  // them — otherwise the dropped-by reasons would exceed the rejections.
   const belowTagBar = clusters
-    .filter((cluster) => cluster.length < MIN_CLUSTER_TAGS)
+    .filter((cluster) => cluster.length < resolveMinTags)
     .map((cluster) => cluster.map((member) => member.tag));
 
-  const memberships = await selectMemberships(sized);
+  return {
+    belowTagBar,
+    clusters: clusters.length,
+    edges: edges.length,
+    semanticEdges,
+    sized,
+    tags: tagCount,
+  };
+}
 
-  const byCluster = new Map<
-    string,
-    {
-      publications: Array<{
-        uri: string;
-        score: number;
-        matchedTagCount: number;
-      }>;
-      publicationsByDid: Map<string, number>;
-      documentCount: number;
-    }
-  >();
-  for (const row of memberships) {
-    let entry = byCluster.get(row.cluster_key);
-    if (!entry) {
-      entry = {
+/** What {@link resolveCandidates} found once memberships were known. */
+interface ResolvedCandidates {
+  candidates: Array<Candidate>;
+  /** Memberships for the carried-forward clusters passed alongside. */
+  carriedGroups: Map<string, MembershipGroup>;
+  droppedByTags: number;
+  droppedByPublications: number;
+  droppedByAuthors: number;
+  droppedByConcentration: number;
+}
+
+/**
+ * Resolve memberships and apply the entry bar.
+ *
+ * `carried` rides along in the same query rather than getting its own. The
+ * membership query's cost is the corpus scan, so a second call to re-measure a
+ * handful of carried topics would double the sweep's database time for work
+ * that fits in the first call's mapping for free.
+ */
+async function resolveCandidates(
+  sized: ReadonlyArray<{
+    key: string;
+    tags: Array<{ tag: string; weight: number }>;
+  }>,
+  carried: ReadonlyArray<{
+    key: string;
+    tags: Array<{ tag: string; weight: number }>;
+  }>,
+): Promise<ResolvedCandidates> {
+  const groups = groupMemberships(
+    await selectMemberships([...sized, ...carried]),
+  );
+  const carriedGroups = new Map(
+    carried.map((cluster) => [
+      cluster.key,
+      groups.get(cluster.key) ?? {
+        documentCount: 0,
         publications: [],
-        publicationsByDid: new Map(),
-        documentCount: row.document_count,
-      };
-      byCluster.set(row.cluster_key, entry);
-    }
-    entry.publications.push({
-      uri: row.publication_uri,
-      score: Number(row.score),
-      matchedTagCount: row.matched_tag_count,
-    });
-    entry.publicationsByDid.set(
-      row.did,
-      (entry.publicationsByDid.get(row.did) ?? 0) + 1,
-    );
-  }
+        publicationsByDid: new Map<string, number>(),
+      },
+    ]),
+  );
 
+  let droppedByTags = 0;
   let droppedByPublications = 0;
   let droppedByAuthors = 0;
   let droppedByConcentration = 0;
 
   const candidates: Array<Candidate> = sized.map((cluster) => {
-    const entry = byCluster.get(cluster.key);
-    const publications = entry?.publications ?? [];
-    const publicationsByDid =
-      entry?.publicationsByDid ?? new Map<string, number>();
-    const authorCount = publicationsByDid.size;
-    const topAuthorPublications = Math.max(0, ...publicationsByDid.values());
-    const topAuthorShare =
-      publications.length === 0
-        ? 1
-        : topAuthorPublications / publications.length;
-    publications.sort(
-      (left, right) =>
-        right.score - left.score ||
-        (left.uri < right.uri ? -1 : left.uri > right.uri ? 1 : 0),
-    );
+    const { authorCount, documentCount, publications, topAuthorShare } =
+      membershipShape(groups.get(cluster.key));
 
-    const enoughTags = cluster.tags.length >= MIN_CLUSTER_TAGS;
-    const enoughPublications = publications.length >= MIN_CLUSTER_PUBLICATIONS;
-    const enoughAuthors = authorCount >= MIN_CLUSTER_AUTHORS;
-    const spreadAcrossAuthors = topAuthorShare <= MAX_TOP_AUTHOR_SHARE;
-    // Below the tag bar is already counted in `droppedByTags`; counting it
-    // again here would make the reasons sum to more than the rejections.
-    if (!enoughTags) {
-      // counted above
-    } else if (!enoughPublications) droppedByPublications++;
-    else if (!enoughAuthors) droppedByAuthors++;
-    else if (!spreadAcrossAuthors) droppedByConcentration++;
+    const shape = {
+      authorCount,
+      publicationCount: publications.length,
+      tagCount: cluster.tags.length,
+      topAuthorShare,
+    };
+    const published = clearsEntryBar(shape, ENTRY_BAR);
+
+    // Attribute each rejection to its first failing condition, so the reasons
+    // sum to the rejections rather than double-counting.
+    if (!published) {
+      const enoughTags =
+        shape.tagCount >= MIN_CLUSTER_TAGS ||
+        (shape.tagCount >= ABSOLUTE_MIN_CLUSTER_TAGS &&
+          authorCount >= REACH_WAIVER_AUTHORS);
+      if (!enoughTags) droppedByTags++;
+      else if (publications.length < MIN_CLUSTER_PUBLICATIONS) {
+        droppedByPublications++;
+      } else if (authorCount < MIN_CLUSTER_AUTHORS) droppedByAuthors++;
+      else droppedByConcentration++;
+    }
 
     return {
       key: cluster.key,
@@ -624,32 +870,161 @@ export async function deriveTopics(): Promise<TopicDerivation> {
       publications,
       authorCount,
       topAuthorShare,
-      documentCount: entry?.documentCount ?? 0,
-      published:
-        enoughTags &&
-        enoughPublications &&
-        enoughAuthors &&
-        spreadAcrossAuthors,
+      documentCount,
+      published,
     } satisfies Candidate;
   });
 
   return {
     candidates,
-    tags: tagCount,
-    edges: edges.length,
-    semanticEdges,
-    clusters: clusters.length,
-    droppedByTags,
-    droppedByPublications,
+    carriedGroups,
     droppedByAuthors,
     droppedByConcentration,
-    belowTagBar,
+    droppedByPublications,
+    droppedByTags,
   };
 }
 
+/**
+ * Everything up to (but not including) naming and persistence: build the graph,
+ * cluster it, resolve memberships, apply the quality bar.
+ *
+ * Split out so it can be run read-only — `scripts/derive-topics.ts` uses it to
+ * check cluster quality and the bar against real data without writing. Carries
+ * nothing forward: that is a property of what is already published, which a
+ * read-only inspection of the derivation has no business asserting.
+ */
+export async function deriveTopics(): Promise<TopicDerivation> {
+  const derivation = await deriveClusters();
+  const resolved = await resolveCandidates(derivation.sized, []);
+  return {
+    belowTagBar: derivation.belowTagBar,
+    candidates: resolved.candidates,
+    clusters: derivation.clusters,
+    droppedByAuthors: resolved.droppedByAuthors,
+    droppedByConcentration: resolved.droppedByConcentration,
+    droppedByPublications: resolved.droppedByPublications,
+    droppedByTags: resolved.droppedByTags + derivation.belowTagBar.length,
+    edges: derivation.edges,
+    semanticEdges: derivation.semanticEdges,
+    tags: derivation.tags,
+  };
+}
+
+/** A published topic re-measured on its own tags after losing its cluster. */
+interface CarriedTopic {
+  slug: string;
+  candidate: Candidate;
+}
+
+/**
+ * The published topics no cluster claimed, with the tags they still have.
+ *
+ * These go into the membership query alongside the fresh clusters so both are
+ * measured in one pass; {@link keepCarriedTopics} decides afterwards which of
+ * them survive. Splitting the decision in two is what keeps the sweep to a
+ * single membership query — the absorption test needs to know which fresh
+ * clusters published, and that is not known until memberships come back.
+ *
+ * Before any of this existed, losing your cluster *was* dying: a topic survived
+ * only if some newly derived cluster resembled it at
+ * {@link IDENTITY_MATCH_SIMILARITY}. But clustering is not stable — label
+ * propagation reshuffles as the corpus moves — so a topic could be taken off
+ * the site while every one of its tags was still live and its membership
+ * intact. See `shouldCarryForward` for the case that prompted this.
+ */
+async function carryForwardCandidates(
+  existing: ReadonlyArray<{ slug: string; published: boolean }>,
+  matches: ReadonlyMap<string, string>,
+): Promise<
+  Array<{ key: string; tags: Array<{ tag: string; weight: number }> }>
+> {
+  const claimed = new Set(matches.values());
+  const unclaimed = existing
+    .filter((topic) => topic.published && !claimed.has(topic.slug))
+    .map((topic) => topic.slug);
+  if (unclaimed.length === 0) return [];
+
+  // Keyed by slug rather than index, so these cannot collide with the fresh
+  // clusters' keys in the shared membership query.
+  const tagsBySlug = await selectCarryForwardTags(unclaimed);
+  return unclaimed
+    .filter((slug) => (tagsBySlug.get(slug) ?? []).length > 0)
+    .map((slug) => ({ key: slug, tags: tagsBySlug.get(slug) ?? [] }));
+}
+
+/**
+ * Of the topics measured alongside the sweep, the ones still standing.
+ *
+ * A carried topic is judged on exactly the same four measurements as anything
+ * else, at the retention bar it has already earned by being published. It
+ * keeps its name: it did not re-derive, so there is no new fingerprint for the
+ * namer to react to, and renaming a topic merely because it aged would churn
+ * the one thing readers recognise it by.
+ */
+function keepCarriedTopics(
+  carriedClusters: ReadonlyArray<{
+    key: string;
+    tags: Array<{ tag: string; weight: number }>;
+  }>,
+  carriedGroups: ReadonlyMap<string, MembershipGroup>,
+  candidates: ReadonlyArray<Candidate>,
+): Array<CarriedTopic> {
+  const publishedClusters = candidates
+    .filter((candidate) => candidate.published)
+    .map((candidate) => candidate.tags.map((member) => member.tag));
+
+  const carried: Array<CarriedTopic> = [];
+  for (const cluster of carriedClusters) {
+    const tags = cluster.tags;
+    if (
+      !shouldCarryForward(
+        tags.map((member) => member.tag),
+        publishedClusters,
+        CARRY_FORWARD_MAX_COVERAGE,
+      )
+    ) {
+      continue;
+    }
+
+    const { authorCount, documentCount, publications, topAuthorShare } =
+      membershipShape(carriedGroups.get(cluster.key));
+
+    // Failing here is the topic genuinely dying. It is left out of `resolved`
+    // entirely, so it takes the ordinary unpublish-and-supersede path below.
+    if (
+      !clearsRetentionBar(
+        {
+          authorCount,
+          publicationCount: publications.length,
+          tagCount: tags.length,
+          topAuthorShare,
+        },
+        RETENTION_BAR,
+      )
+    ) {
+      continue;
+    }
+
+    carried.push({
+      slug: cluster.key,
+      candidate: {
+        authorCount,
+        documentCount,
+        key: `carry:${cluster.key}`,
+        published: true,
+        publications,
+        signature: tags.slice(0, SIGNATURE_SIZE).map((member) => member.tag),
+        tags,
+        topAuthorShare,
+      },
+    });
+  }
+  return carried;
+}
+
 export async function recomputeTopics(): Promise<TopicsRecomputeSummary> {
-  const derivation = await deriveTopics();
-  const { candidates } = derivation;
+  const derivation = await deriveClusters();
 
   const existing = await db
     .select({
@@ -664,7 +1039,30 @@ export async function recomputeTopics(): Promise<TopicsRecomputeSummary> {
     .from(topics);
   const existingBySlug = new Map(existing.map((row) => [row.slug, row]));
 
-  const matches = matchIdentities(candidates, existing);
+  // Identity is matched on signatures alone, so it can run before the
+  // membership query — which is what lets the topics that lost their cluster
+  // ride along in that one query instead of paying for a second.
+  const matches = matchIdentities(
+    derivation.sized.map((cluster) => ({
+      key: cluster.key,
+      signature: cluster.tags
+        .slice(0, SIGNATURE_SIZE)
+        .map((member) => member.tag),
+    })),
+    existing,
+  );
+  const carriedClusters = await carryForwardCandidates(existing, matches);
+
+  const resolvedCandidates = await resolveCandidates(
+    derivation.sized,
+    carriedClusters,
+  );
+  const { candidates } = resolvedCandidates;
+  const carried = keepCarriedTopics(
+    carriedClusters,
+    resolvedCandidates.carriedGroups,
+    candidates,
+  );
 
   // Name only what needs it: a brand-new cluster, one whose fingerprint drifted
   // far enough that its old name may no longer fit, or one still carrying the
@@ -738,6 +1136,21 @@ export async function recomputeTopics(): Promise<TopicsRecomputeSummary> {
       namedAt,
     };
   });
+
+  // Carried topics keep everything the sweep did not re-derive — name,
+  // description, and the namer that wrote them.
+  for (const { slug, candidate } of carried) {
+    const prior = existingBySlug.get(slug);
+    resolved.push({
+      candidate,
+      published: true,
+      slug,
+      name: prior?.name ?? fallbackTopicName(candidate.signature).name,
+      description: prior?.description ?? null,
+      nameModel: prior?.nameModel ?? null,
+      namedAt: prior?.namedAt ?? null,
+    });
+  }
 
   const publishedSlugs = resolved
     .filter((row) => row.published)
@@ -863,11 +1276,13 @@ export async function recomputeTopics(): Promise<TopicsRecomputeSummary> {
     semanticEdges: derivation.semanticEdges,
     clusters: derivation.clusters,
     published: publishedSlugs.length,
-    droppedByTags: derivation.droppedByTags,
-    droppedByPublications: derivation.droppedByPublications,
-    droppedByAuthors: derivation.droppedByAuthors,
-    droppedByConcentration: derivation.droppedByConcentration,
+    droppedByTags:
+      resolvedCandidates.droppedByTags + derivation.belowTagBar.length,
+    droppedByPublications: resolvedCandidates.droppedByPublications,
+    droppedByAuthors: resolvedCandidates.droppedByAuthors,
+    droppedByConcentration: resolvedCandidates.droppedByConcentration,
     named: needsNaming.length,
+    carriedForward: carried.length,
   };
   logEvent("ingest.recomputeTopics", { ...summary });
   return summary;

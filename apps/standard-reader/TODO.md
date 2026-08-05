@@ -943,6 +943,63 @@ Build each on hip-ui components + StyleX tokens (no raw HTML/inline styles).
       titles of articles carrying it, so subjects whose publishers split still cluster together
       (`typescript`+`css` are now one Web Development topic). Off unless
       `TOPIC_EMBEDDINGS=1`; ~4 min to build the cache, ~40s per sweep after.
+- [x] **Topics — a topic's feed is all its tags** — the Articles tab matched only the ten
+      highest-weight tags of a cluster, a fixed cut applied to clusters ranging from 10 to 242
+      tags. Measured on the corpus that left **8 of 148 published topics with a completely
+      empty Articles tab** and 34 under five articles, matching 16,037 articles where the full
+      tag set matches 40,886. Reported by a TV blogger whose posts never reached the TV topic
+      because `tv` ranked 11th in a 14-tag cluster. Scoping to member publications is what keeps
+      the tab from drifting off-subject; tag rank was never carrying that. Warm cost on the
+      heaviest topics: 80–170ms → 170–400ms.
+- [x] **Topics — losing a cluster is not dying** — a published topic was unlisted whenever no
+      new cluster matched it at 0.5 Jaccard, which conflated "the clustering reshuffled" with
+      "this topic is over". A 24-tag TV topic with 84 publications and 81 authors was dropped
+      because a 14-tag Daredevil cluster formed in its place, and its URL now dead-ends at the
+      index. Unclaimed published topics are now re-measured on their own stored tags (filtered to
+      the live vocabulary) and kept if they clear the retention bar; only failing _that_ unlists
+      them. Absorption is the exception — a cluster containing ≥75% of the topic **is** the topic
+      re-derived, measured by containment rather than Jaccard so a narrow fragment of a broad
+      topic does not count. Sweep summary gains `carriedForward`; watch it for clustering
+      instability.
+- [x] **Topics — resurrect wrongly-dissolved topics** — the carry-forward fix above is
+      forward-only (it considers topics currently `published`), so the topics already lost needed
+      a one-off pass: `pnpm topics:repair` (dry run) / `--apply`. Rebuilds each unlisted topic
+      from its `signature_tags`, filtered to the live vocabulary through the same predicate the
+      graph uses, measures membership against today's corpus, and republishes what clears the
+      strict **entry** bar — a topic returning from the dead qualifies on the same terms as a new
+      one. Dry-run on a Neon branch: 603 considered → **83 restored**, including
+      `tv-and-streaming` (84 pubs, 81 authors) and The Open Social Web (403/361); 474 below the
+      bar, 46 dropped as duplicates. Restoring also healed 77 redirect chains that had been
+      pointing at unpublished rows.
+      Three dedupe passes, all needed: tag containment vs live topics (23), vs each other (1),
+      and **display name** vs both (22) — six same-named pairs overlapped just under the 0.75
+      containment threshold (two "Books and Reading", three "Live Music and Festivals", two "TV
+      and Streaming"), so the namer's own judgement is the tiebreak containment is too blunt to
+      make. Verified after apply: zero duplicate names within the restored set or against live.
+      Lossy by nature and deliberately so: only the 24-tag signature survives an unpublish, so a
+      topic that had 65 members returns with 24, and `topic_tags.weight` is synthesised from
+      signature rank. Both heal the next time the topic genuinely re-derives.
+- [x] **Topics — reach can substitute for vocabulary breadth** — `MIN_CLUSTER_TAGS = 14`
+      measures how broad a cluster's vocabulary is, which fails for subjects written about
+      with one dominant tag. `photography` has 186 publishers but its strongest partner
+      co-occurs on 13 of them, so its cluster is 12 tags and was rejected — despite 65
+      publications and 64 authors, more reach than 116 of the 148 published topics. A
+      photography blog with 649 tagged posts was therefore in Middle East Conflict (via
+      `opinion`) but in no photography topic. Short clusters now qualify at
+      `ABSOLUTE_MIN_CLUSTER_TAGS = 8` when they clear `REACH_WAIVER_AUTHORS = 30` — just
+      above the median live topic's 26 authors. Concentration still applies, so "lots of
+      authors" is not a loophole for a publication fleet.
+      Swept over real clusters with `pnpm topics:analyze-tag-floor` (read-only). Verified
+      on a Neon branch: published 148 → **164** from the sweep alone, +13 from the waiver,
+      all real subjects (Books and the Writing Life 151 authors, Security and Privacy 99,
+      Web Development 82, Street Photography 64, WordPress, Firefox, SQL, terminal
+      tooling, fitness, linguistics). Street Photography now carries `photography`, and
+      the reporting publication went from 0 to **650** articles in a topic feed. With the
+      repair pass on top: **254** published, zero duplicate names.
+- [ ] **Topics — keep `topic_tags` for unpublished rows** — would make the repair above
+      unnecessary next time and let carry-forward reach back more than one sweep. Costs a few
+      hundred thousand rows the read path never touches; the sweep currently truncates both
+      membership tables every run, so this needs the delete to become per-slug.
 - [ ] **Topics — near-duplicate clusters** — some areas still split in two where a reader
       sees one: "Decentralized Social Web" (431 pubs) sits next to "The Decentralized Social Web"
       (79). Semantic edges reduced this a lot but did not remove it; the remaining fix is a merge

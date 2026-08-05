@@ -355,22 +355,27 @@ export async function topicRedirectTarget(
 }
 
 /**
- * A topic's member tags, most central first — the sub-area chips, and the
- * tag set {@link topicDocumentTags} hands to the document query.
+ * A topic's member tags, most central first — the tag set
+ * {@link topicDocumentWhere} matches documents against.
+ *
+ * Unbounded by default: the feed matches on every tag the cluster contains
+ * (see {@link topicDocumentWhere}), so truncating here would silently
+ * reintroduce the cut it removed. The widest topic on the network carries 242
+ * tags. `limit` exists for callers that only want the head of the list.
  */
 export async function topicTagList(
   db: Db,
   schema: Schema,
   slug: string,
-  limit = 60,
+  limit?: number,
 ): Promise<Array<string>> {
   const ct = schema.topicTags;
-  const rows = await db
+  const query = db
     .select({ tag: ct.tag })
     .from(ct)
     .where(eq(ct.topicSlug, slug))
-    .orderBy(desc(ct.weight), ct.tag)
-    .limit(limit);
+    .orderBy(desc(ct.weight), ct.tag);
+  const rows = await (limit === undefined ? query : query.limit(limit));
   return rows.map((row) => row.tag);
 }
 
@@ -393,15 +398,29 @@ export async function topicTagList(
  * rule the Publications tab already implies, and `/tag/$tag` remains the
  * un-scoped view for anyone who wants the whole corpus on a subject.
  *
- * **Within those publications, belonging is the core tags.** A member
- * publication still writes about more than the topic's subject, so the tag
- * test stays: only the {@link TOPIC_CORE_TAGS} most central tags count, not
- * the broad tail (Middle East Geopolitics legitimately contains `china`, and an
- * article about downloadable AI models is not Middle East geopolitics).
+ * **Within those publications, belonging is any member tag.** Every tag the
+ * cluster contains counts, not just the most central ones.
  *
- * Also considered: *core tag OR any two member tags*, which recovers ~4% more.
- * Rejected — the two-tag branch needs a per-row array intersection the GIN index
- * cannot serve, and it took the slowest feed from ~250ms to 4.2s.
+ * This used to cut to the ten highest-weight tags, on the theory that the tail
+ * of a cluster admits articles that are not really on the subject. Measured
+ * against the corpus, the cut cost far more than it bought: **8 of 148
+ * published topics had a completely empty Articles tab**, 34 had fewer than
+ * five articles, and the matched set across all topics was 16,037 articles
+ * instead of 40,886. A blog whose whole subject is TV was excluded from the TV
+ * topic's feed because `tv` ranked 11th in a 14-tag cluster — the cut is a
+ * fixed number applied to clusters ranging from 10 to 242 tags, so what it
+ * discards has nothing to do with how broad the topic actually is.
+ *
+ * Scoping to member publications is what keeps the feed honest; the tag rank
+ * was never carrying that weight. A member publication does write about more
+ * than the topic's subject, so some drift is the accepted cost — `/tag/$tag`
+ * remains the precise view for a single subject.
+ *
+ * Widening the array does slow the overlap predicate, but not much: on the
+ * heaviest topics warm execution went from 80–170ms to 170–400ms. Also
+ * considered: *core tag OR any two member tags*. Rejected — the two-tag branch
+ * needs a per-row array intersection the GIN index cannot serve, and it took
+ * the slowest feed from ~250ms to 4.2s.
  *
  * The bridge test that remains is on the document's **author**: membership is
  * already built with bridged publications excluded, but a bridged author can
@@ -420,19 +439,11 @@ function topicDocumentFrom(slug: string): SQL {
   `;
 }
 
-/**
- * How many of a topic's most central tags count as *core* — a tag specific
- * enough that an article in a member publication carrying it belongs.
- */
-const TOPIC_CORE_TAGS = 10;
-
 function topicDocumentWhere(tags: Array<string>): SQL {
-  const coreTags = normalizedTagList(tags.slice(0, TOPIC_CORE_TAGS));
-
   return sql`
     d.deleted = false
     AND (d.published_at IS NULL OR d.published_at <= now())
-    AND immutable_normalized_tags(d.tags) && array[${coreTags}]
+    AND immutable_normalized_tags(d.tags) && array[${normalizedTagList(tags)}]
     AND (apr.handle IS NULL OR apr.handle NOT ILIKE ${WEB_BRIDGE_HANDLE_PATTERN})
     AND p.deleted = false
     AND p.show_in_discover = true
