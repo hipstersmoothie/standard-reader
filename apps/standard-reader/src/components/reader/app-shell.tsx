@@ -8,6 +8,7 @@ import { DirectionalIcon } from "@standard-reader/design-system/directional-icon
 import { Flex } from "@standard-reader/design-system/flex";
 import { IconButton } from "@standard-reader/design-system/icon-button";
 import { Menu, MenuItem, SubMenu } from "@standard-reader/design-system/menu";
+import { useAnimatedBottomNav } from "@standard-reader/design-system/navbar/useAnimatedBottomNav";
 import { useAnimatedNavbar } from "@standard-reader/design-system/navbar/useAnimatedNavbar";
 import { Skeleton } from "@standard-reader/design-system/skeleton";
 import { SkipLink } from "@standard-reader/design-system/skip-link";
@@ -412,12 +413,16 @@ const styles = stylex.create({
     paddingInlineEnd: horizontalSpace["3xl"],
     paddingInlineStart: horizontalSpace["3xl"],
     pointerEvents: "none",
+    // Nothing writes to this element. The bottom nav's hide-on-scroll animation
+    // shifts `dockStack` inside it instead: a transform here would promote the
+    // viewport-pinned dock to a composited layer, and iOS Safari answers that by
+    // holding its toolbars open and shortening the dynamic viewport — the page
+    // then stops short of the bottom edge with a dead strip below the content.
     // Pinned to the viewport (the document is the scroll container now, so an
     // absolute dock would ride to the bottom of the whole article instead of
     // floating above the fold). Offset by the sidebar width on desktop so the
     // floating card stays centered over the content column.
     position: "fixed",
-    rowGap: gap.lg,
     zIndex: 30,
     // Sit a floor of 16px above the bottom, or hug the home-indicator safe area
     // where that's larger. On iOS (standalone PWA) the ~34px safe-area inset
@@ -426,6 +431,17 @@ const styles = stylex.create({
     // floor keeps the pill off the very bottom edge. `max()` — not env()'s
     // second arg, which only applies when env() is entirely unsupported.
     bottom: `max(env(safe-area-inset-bottom, 0px), ${verticalSpace["3xl"]})`,
+  },
+  // The dock's contents, in normal flow. This is what the hide-on-scroll
+  // animation transforms — see the note on `dock`. It owns the row gap because
+  // the animation measures the bar's footprint from it.
+  dockStack: {
+    alignItems: "center",
+    display: "flex",
+    flexDirection: "column",
+    pointerEvents: "none",
+    rowGap: gap.lg,
+    width: "100%",
   },
   bottomNav: {
     display: { [DESKTOP]: "none", default: "flex" },
@@ -714,10 +730,22 @@ function navItemActive(pathname: string, to: string): boolean {
 function BottomNav({
   items,
   hasUnread,
+  stackRef,
 }: {
   items: Array<NavLink>;
   hasUnread: boolean;
+  stackRef: React.RefObject<HTMLDivElement | null>;
 }) {
+  // Mirror of the mobile top bar: scrolling down slides the pill out through the
+  // bottom edge, scrolling up brings it back, so an article gets the full height
+  // of the screen while the reader is moving through it. The hook only runs on
+  // the compact layout, where this nav is the one that exists — at desktop
+  // widths the sidebar replaces it and the pill is `display: none`.
+  const compactNav = useCompactNav();
+  const { navBarProps } = useAnimatedBottomNav({
+    enabled: compactNav,
+    stackTarget: stackRef,
+  });
   const pathname = useRouterState({
     select: (s: { location: { pathname: string } }) => s.location.pathname,
   });
@@ -761,7 +789,7 @@ function BottomNav({
   );
 
   return (
-    <nav {...stylex.props(styles.bottomNav)}>
+    <nav {...navBarProps} {...stylex.props(styles.bottomNav)}>
       <div {...stylex.props(styles.fabBar)}>
         {indicator ? (
           <span
@@ -798,17 +826,22 @@ function BottomNav({
 function BottomNavSlot({
   items,
   hasUnread,
+  stackRef,
 }: {
   items: Array<NavLink>;
   hasUnread: boolean;
+  stackRef: React.RefObject<HTMLDivElement | null>;
 }) {
   const dock = useSelectionDock();
 
+  // The selection toolbar is a response to something the reader just did, so it
+  // never hides on scroll. Unmounting `BottomNav` also tears down the hook,
+  // which drops the stack back to its resting offset for the toolbar.
   if (dock?.isActive) {
     return <div {...stylex.props(styles.selectionSlot)} ref={dock.setSlot} />;
   }
 
-  return <BottomNav items={items} hasUnread={hasUnread} />;
+  return <BottomNav items={items} hasUnread={hasUnread} stackRef={stackRef} />;
 }
 
 function Brand({
@@ -920,6 +953,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const mainRef = useRef<HTMLElement>(null);
   const { navBarProps: mobileBarProps, sentinel: mobileBarSentinel } =
     useAnimatedNavbar({ enabled: compactNav, offsetTarget: mainRef });
+  // The bottom nav slides down out of the dock as you scroll; the dock's inner
+  // stack follows it partway so the page-reader transport above drops into the
+  // vacated slot rather than hovering over a gap. The stack, never the dock —
+  // the dock is pinned to the viewport and must stay untransformed.
+  const dockStackRef = useRef<HTMLDivElement>(null);
 
   const { data: listsData, isPending: listsPending } = useQuery({
     ...listsQueryOptions(),
@@ -1416,8 +1454,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </div>
 
             <div {...stylex.props(styles.dock)}>
-              <PageReaderBar />
-              <BottomNavSlot items={visibleNav} hasUnread={hasUnread} />
+              <div ref={dockStackRef} {...stylex.props(styles.dockStack)}>
+                <PageReaderBar />
+                <BottomNavSlot
+                  items={visibleNav}
+                  hasUnread={hasUnread}
+                  stackRef={dockStackRef}
+                />
+              </div>
             </div>
           </main>
 
