@@ -47,6 +47,7 @@ import { articleBodyStyles, readingDropCapStyleProps } from "../../body-styles";
 import type { FacetFeature } from "./facets";
 import { findFacetFeature, hasFacetKind } from "./facets";
 import { useFootnoteNumber } from "./footnote-context";
+import { withLineBreaks } from "./line-breaks";
 import { useInlineMentions } from "./publication-mention-context";
 
 /**
@@ -333,8 +334,9 @@ function FacetSegment({
   features: Array<FacetFeature>;
 }) {
   const { publications, documents, actors, actorLinks } = useInlineMentions();
+  const content = withLineBreaks(text);
 
-  if (features.length === 0) return <>{text}</>;
+  if (features.length === 0) return <>{content}</>;
 
   const isBold =
     hasFacetKind(features, "bold") || hasFacetKind(features, "strong");
@@ -356,7 +358,7 @@ function FacetSegment({
   const documentMention = lookupDocumentMention(features, documents);
   const actorLink = lookupActorLinkMention(features, actorLinks);
 
-  let node: React.ReactNode = text;
+  let node: React.ReactNode = content;
 
   // A rendered link already carries its own underline (`facetLink`). Track that
   // so a co-located `underline` facet doesn't wrap it in a second `<u>` — two
@@ -364,19 +366,21 @@ function FacetSegment({
   let nodeIsUnderlinedLink = false;
 
   if (isCode) {
-    node = <code {...stylex.props(articleBodyStyles.facetCode)}>{text}</code>;
+    node = (
+      <code {...stylex.props(articleBodyStyles.facetCode)}>{content}</code>
+    );
   }
 
   if (publicationMention) {
     node = (
       <PublicationMentionChip mention={publicationMention}>
-        {text}
+        {content}
       </PublicationMentionChip>
     );
   } else if (documentMention) {
     node = (
       <DocumentMentionChip mention={documentMention}>
-        {text}
+        {content}
       </DocumentMentionChip>
     );
   } else if (actorLink) {
@@ -390,7 +394,7 @@ function FacetSegment({
   } else if (link?.uri) {
     node = (
       <SmartArticleLink href={link.uri} linkStyle={articleBodyStyles.facetLink}>
-        {text}
+        {content}
       </SmartArticleLink>
     );
     nodeIsUnderlinedLink = true;

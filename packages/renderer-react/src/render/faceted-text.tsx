@@ -37,6 +37,9 @@ function RenderInline({ node }: { node: InlineNode }) {
     case "text": {
       return <>{node.value}</>;
     }
+    case "lineBreak": {
+      return <br />;
+    }
     case "mark": {
       const Mark = markComponent(shared, node.mark);
       return (

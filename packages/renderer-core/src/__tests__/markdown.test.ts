@@ -350,3 +350,75 @@ describe("buildRenderTree — markdown", () => {
     expect(buildRenderTree(markdownDoc("   \n\n  "))).toBeNull();
   });
 });
+
+describe("markdown — hard line breaks", () => {
+  /** The single paragraph of a one-paragraph markdown document. */
+  function paragraph(text: string) {
+    const tree = build(markdownDoc(text));
+    return tree.children[0] as Extract<BlockNode, { type: "paragraph" }>;
+  }
+
+  it.each([
+    ["two trailing spaces", "Line one  \nLine two"],
+    ["a trailing backslash", "Line one\\\nLine two"],
+    ["an HTML <br>", "Line one<br>\nLine two"],
+    ["an HTML <br />", "Line one<br />\nLine two"],
+  ])("keeps a break written with %s", (_label, source) => {
+    // All three spellings are one paragraph with a break in the middle — the
+    // newline lives in the plaintext so facet byte offsets stay aligned.
+    expect(paragraph(source).text.plaintext).toBe("Line one\nLine two");
+  });
+
+  it("lifts the break out as an inline node, not collapsible whitespace", () => {
+    // A bare `\n` renders as a space in HTML, so the break has to reach the
+    // renderer as its own node or the two lines run together on the page.
+    const inline = segmentInline(paragraph("Line one  \nLine two").text);
+    expect(inline).toEqual([
+      { type: "text", value: "Line one" },
+      { type: "lineBreak" },
+      { type: "text", value: "Line two" },
+    ]);
+  });
+
+  it("breaks inside a styled run without losing the mark", () => {
+    // Each run carries its own facet, so the emphasis wraps each piece rather
+    // than one span — what matters is that both lines stay bold and the break
+    // survives between them.
+    const inline = segmentInline(paragraph("**bold one  \nbold two**").text);
+    expect(inline.every((node) => node.type === "mark")).toBe(true);
+    expect(
+      inline.flatMap((node) => (node.type === "mark" ? node.children : [])),
+    ).toEqual([
+      { type: "text", value: "bold one" },
+      { type: "lineBreak" },
+      { type: "text", value: "bold two" },
+    ]);
+  });
+
+  it("flattens a soft wrap to a space, per CommonMark", () => {
+    // Prose hard-wrapped at 80 columns is one line to the reader. If the
+    // newline survived into the plaintext it would render as a `<br>`.
+    expect(paragraph("Line one\nLine two").text.plaintext).toBe(
+      "Line one Line two",
+    );
+    expect(
+      segmentInline(paragraph("Line one\nLine two").text).some(
+        (node) => node.type === "lineBreak",
+      ),
+    ).toBe(false);
+  });
+
+  it("does not open a callout with the marker line's own break", () => {
+    // `> [!NOTE]  ` — trailing spaces after the marker are a hard break in
+    // markdown, but the marker line is chrome, so the body must not start with
+    // a blank line. Seen in the wild on GreenGale's kitchen-sink post.
+    const tree = build(markdownDoc("> [!DANGER]  \n> Mind the gap."));
+    const callout = tree.children[0] as Extract<BlockNode, { type: "callout" }>;
+    expect(callout.text.plaintext).toBe("Mind the gap.");
+  });
+
+  it("still drops inline HTML that is not a break", () => {
+    const inline = segmentInline(paragraph("Before <span>x</span> after").text);
+    expect(inline.some((node) => node.type === "lineBreak")).toBe(false);
+  });
+});

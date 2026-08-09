@@ -1,4 +1,5 @@
 import type { InlineNode, MarkKind } from "@standard-reader/renderer-core";
+import h from "solid-js/h";
 
 import type { Renderable, RenderContext, SolidSharedComponents } from "./types";
 
@@ -41,6 +42,11 @@ function renderInline(node: InlineNode, ctx: RenderContext): Renderable {
   switch (node.type) {
     case "text": {
       return node.value;
+    }
+    case "lineBreak": {
+      // `solid-js/h` returns a thunk that Solid renders fine but which its
+      // `JSX.Element` type doesn't cover — the same cast `defaults.ts` makes.
+      return h("br") as unknown as Renderable;
     }
     case "mark": {
       return markRenderer(

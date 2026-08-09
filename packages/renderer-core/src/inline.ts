@@ -2,8 +2,23 @@ import { findFacetFeature, hasFacetKind } from "./facets.js";
 import { segmentFacetedText } from "./leaflet/facets.js";
 import type { InlineNode, MarkKind, RichText } from "./nodes.js";
 
-function wrapMark(node: InlineNode, mark: MarkKind): InlineNode {
-  return { type: "mark", mark, children: [node] };
+function wrapMark(children: Array<InlineNode>, mark: MarkKind): InlineNode {
+  return { type: "mark", mark, children };
+}
+
+/**
+ * One segment's text as inline nodes, with its newlines lifted into explicit
+ * {@link InlineNode} line breaks — a bare `\n` is collapsed to a space by HTML,
+ * so a hard break authored in the source would otherwise vanish on the page.
+ */
+function textNodes(value: string): Array<InlineNode> {
+  if (!value.includes("\n")) return [{ type: "text", value }];
+  const out: Array<InlineNode> = [];
+  for (const [index, line] of value.split("\n").entries()) {
+    if (index > 0) out.push({ type: "lineBreak" });
+    if (line) out.push({ type: "text", value: line });
+  }
+  return out;
 }
 
 /**
@@ -25,7 +40,7 @@ export function segmentInline(
   for (const segment of segments) {
     const { text: value, features } = segment;
     if (features.length === 0) {
-      out.push({ type: "text", value });
+      out.push(...textNodes(value));
       continue;
     }
 
@@ -48,28 +63,30 @@ export function segmentInline(
       findFacetFeature(features, "mention");
     const footnote = findFacetFeature(features, "footnote");
 
-    let node: InlineNode = { type: "text", value };
+    let nodes: Array<InlineNode> = textNodes(value);
 
-    if (isCode) node = wrapMark(node, "code");
+    if (isCode) nodes = [wrapMark(nodes, "code")];
 
     if (mention && (mention.atURI || mention.did)) {
-      node = {
-        type: "mention",
-        atUri: mention.atURI,
-        did: mention.did,
-        children: [node],
-      };
+      nodes = [
+        {
+          type: "mention",
+          atUri: mention.atURI,
+          did: mention.did,
+          children: nodes,
+        },
+      ];
     } else if (link?.uri) {
-      node = { type: "link", href: link.uri, children: [node] };
+      nodes = [{ type: "link", href: link.uri, children: nodes }];
     }
 
-    if (isHighlight) node = wrapMark(node, "highlight");
-    if (isStrikethrough) node = wrapMark(node, "strikethrough");
-    if (isUnderline) node = wrapMark(node, "underline");
-    if (isItalic) node = wrapMark(node, "emphasis");
-    if (isBold) node = wrapMark(node, "strong");
+    if (isHighlight) nodes = [wrapMark(nodes, "highlight")];
+    if (isStrikethrough) nodes = [wrapMark(nodes, "strikethrough")];
+    if (isUnderline) nodes = [wrapMark(nodes, "underline")];
+    if (isItalic) nodes = [wrapMark(nodes, "emphasis")];
+    if (isBold) nodes = [wrapMark(nodes, "strong")];
 
-    out.push(node);
+    out.push(...nodes);
 
     if (footnote?.footnoteId) {
       out.push({

@@ -8,6 +8,8 @@ import type { InlineNode } from "@standard-reader/renderer-core";
   template: `@for (node of nodes; track $index) {
     @if (node.type === "text") {
       {{ node.value }}
+    } @else if (node.type === "lineBreak") {
+      <br />
     } @else if (node.type === "mark") {
       @if (node.mark === "strong") {
         <strong><sr-inline [nodes]="node.children" /></strong>

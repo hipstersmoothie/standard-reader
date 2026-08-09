@@ -1,4 +1,5 @@
 import type { InlineNode, MarkKind } from "@standard-reader/renderer-core";
+import { h } from "vue";
 
 import type { Renderable, RenderContext, VueSharedComponents } from "./types";
 
@@ -41,6 +42,9 @@ function renderInline(node: InlineNode, ctx: RenderContext): Renderable {
   switch (node.type) {
     case "text": {
       return node.value;
+    }
+    case "lineBreak": {
+      return h("br");
     }
     case "mark": {
       return markRenderer(
