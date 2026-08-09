@@ -8,6 +8,8 @@
  * to a character range inside the document's `pub.leaflet.content`.
  */
 
+import { publishingPlatform } from "#/lib/publishing-platform";
+
 import { LEAFLET_CONTENT, LEAFLET_PAGE } from "./types";
 
 export const LEAFLET_COMMENT_COLLECTION = "pub.leaflet.comment";
@@ -17,26 +19,32 @@ export const LEAFLET_COMMENT_SUBJECT_PATH = ".subject";
 
 /**
  * Leaflet's comment drawer for a document, which is the closest thing to a
- * permalink — individual comments have no addressable URL. Only meaningful for
- * Leaflet-hosted publications, so callers pass the document's canonical URL and
- * we return null for anything not on leaflet.pub.
+ * permalink — individual comments have no addressable URL.
+ *
+ * Only meaningful for Leaflet-hosted publications, but "is this Leaflet?" is
+ * decided by `publishingPlatform` (content format first, host as the fallback)
+ * rather than by sniffing for `leaflet.pub`: Leaflet supports custom domains, so
+ * a host-only check left every custom-domain publication's comments with no link
+ * at all. Returns null when the document is not Leaflet's or has no URL to open.
  */
-export function leafletCommentDrawerUrl(
-  canonicalUrl: string | null,
-): string | null {
+export function leafletCommentDrawerUrl(document: {
+  canonicalUrl: string | null;
+  contentFormat: string | null;
+}): string | null {
+  const { canonicalUrl, contentFormat } = document;
   if (!canonicalUrl) return null;
+  if (publishingPlatform({ contentFormat, canonicalUrl }) !== "leaflet") {
+    return null;
+  }
+
   let parsed: URL;
   try {
     parsed = new URL(canonicalUrl);
   } catch {
     return null;
   }
-  if (
-    parsed.hostname !== "leaflet.pub" &&
-    !parsed.hostname.endsWith(".leaflet.pub")
-  ) {
-    return null;
-  }
+  if (parsed.protocol !== "https:" && parsed.protocol !== "http:") return null;
+
   parsed.searchParams.set("interactionDrawer", "comments");
   return parsed.toString();
 }

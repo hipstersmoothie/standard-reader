@@ -5281,6 +5281,10 @@ msgstr ""
 msgid "Most readers stop at what they already subscribe to. Standard Reader treats the next voice as part of the job: the piece you just finished points at who cited it, what it’s related to, and who else is worth following — across all {countLabel} publications on the network, not just the handful you’ve heard of."
 msgstr ""
 
+#: src/components/reader/comments/comment-card.tsx
+msgid "Open this comment record"
+msgstr ""
+
 #: src/components/reader/atstore-review-prompt.tsx
 msgid "Sharing a review on the <0>ATStore</0> will help both us and other users see what you think about Standard Reader."
 msgstr "在 <0>ATStore</0> 上分享评价，能帮助我们和其他用户了解你对 Standard Reader 的看法。"

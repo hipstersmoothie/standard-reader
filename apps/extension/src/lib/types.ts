@@ -78,7 +78,7 @@ export type ExtensionNarrationResponse = {
 };
 
 export type ExtensionDiscussionComment = {
-  source: "bluesky" | "margin" | "semble";
+  source: "bluesky" | "margin" | "semble" | "note" | "leaflet";
   kind: "link" | "quote";
   postUri: string;
   postUrl: string;

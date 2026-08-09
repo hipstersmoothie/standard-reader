@@ -278,16 +278,54 @@ describe("extractLeafletQuoteText", () => {
 describe("leafletCommentDrawerUrl", () => {
   it("builds a drawer link for leaflet.pub-hosted publications", () => {
     expect(
-      leafletCommentDrawerUrl("https://foo.leaflet.pub/3mqsc4nqyj22u"),
+      leafletCommentDrawerUrl({
+        canonicalUrl: "https://foo.leaflet.pub/3mqsc4nqyj22u",
+        contentFormat: null,
+      }),
     ).toBe("https://foo.leaflet.pub/3mqsc4nqyj22u?interactionDrawer=comments");
   });
 
-  it("returns null for publications hosted elsewhere", () => {
-    expect(leafletCommentDrawerUrl("https://example.com/post")).toBeNull();
+  it("builds a drawer link for a Leaflet publication on a custom domain", () => {
     expect(
-      leafletCommentDrawerUrl("https://notleaflet.pub.evil.com/x"),
+      leafletCommentDrawerUrl({
+        canonicalUrl: "https://blog.example/some-post",
+        contentFormat: "pub.leaflet.content",
+      }),
+    ).toBe("https://blog.example/some-post?interactionDrawer=comments");
+  });
+
+  it("returns null for publications hosted elsewhere", () => {
+    expect(
+      leafletCommentDrawerUrl({
+        canonicalUrl: "https://example.com/post",
+        contentFormat: null,
+      }),
     ).toBeNull();
-    expect(leafletCommentDrawerUrl(null)).toBeNull();
-    expect(leafletCommentDrawerUrl("not a url")).toBeNull();
+    expect(
+      leafletCommentDrawerUrl({
+        canonicalUrl: "https://notleaflet.pub.evil.com/x",
+        contentFormat: null,
+      }),
+    ).toBeNull();
+    expect(
+      leafletCommentDrawerUrl({ canonicalUrl: null, contentFormat: null }),
+    ).toBeNull();
+    expect(
+      leafletCommentDrawerUrl({
+        canonicalUrl: "not a url",
+        contentFormat: "pub.leaflet.content",
+      }),
+    ).toBeNull();
+  });
+
+  it("does not claim a Skyreader linkblog for Leaflet", () => {
+    // Linkblogs reuse `pub.leaflet.content` but never render on Leaflet, so
+    // opening Leaflet's comment drawer for one would go nowhere useful.
+    expect(
+      leafletCommentDrawerUrl({
+        canonicalUrl: "https://linkblogs.skyreader.app/post",
+        contentFormat: "pub.leaflet.content",
+      }),
+    ).toBeNull();
   });
 });

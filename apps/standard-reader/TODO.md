@@ -564,6 +564,17 @@ Build each on hip-ui components + StyleX tokens (no raw HTML/inline styles).
         stored `backlink_count_prev` of 0, so `bl_vel` spikes for one cycle. Flatten it with
         `UPDATE documents SET backlink_count_prev = backlink_count WHERE backlink_synced_at > now() - interval '1 hour'`
         after that lap, or accept one skewed trending cycle.
+- [x] **Article discussion — every card links to its comment** (2026-08-09). Bluesky cards had
+      always linked out to the post; Leaflet cards often rendered unlinked because
+      `leafletCommentDrawerUrl` decided "is this Leaflet?" by sniffing for a `leaflet.pub` host —
+      the exact custom-domain miss `publishing-platform.ts` documents — so every Leaflet
+      publication on its own domain lost its link. The check now runs through
+      `publishingPlatform` (content format first, host as fallback, Skyreader linkblogs still
+      vetoed), and `commentLink` (`src/lib/comment-permalink.ts`) gives any source that still
+      can't build a platform permalink a PDSLS record link, so no card renders unlinked. The
+      card's accessible name only names a platform when the link actually goes there. Same helper
+      in the extension popup, whose copy of `ExtensionDiscussionComment` had also drifted — it was
+      missing `note` / `leaflet`, labelling pckt and Leaflet comments "on Bluesky".
 - [x] **Page reader (Listen)** — on-device TTS for the reading view via `kokoro-js` (lazy-loaded on first use; `src/lib/page-reader/*`). Top-bar "Listen" button reads the whole article; selection toolbar adds "Read from here". The transport is a floating action bar (`PageReaderBar`) docked above the bottom nav on every route — same position on desktop and mobile — with status/time, title, back-15s, accent play/pause, speed menu, close, and a thin draggable seek track; the article keeps its own scroll-progress bar (`PageReaderProvider` + `PageReaderBar`).
 - [x] **Publication profile** — banner + inline header (avatar/topic/name/desc/stats/Copy DID/Follow),
       recent writing (infinite scroll via `publicationApi.getPublicationDocuments` offset
