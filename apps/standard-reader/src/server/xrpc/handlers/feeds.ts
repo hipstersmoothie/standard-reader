@@ -32,6 +32,8 @@ export async function handleGetLatestFeed(ctx: XrpcRequestContext) {
   const trackReading = subjectDid == null ? false : ctx.trackReadingEnabled;
   const countOldPostsAsUnread =
     subjectDid == null ? true : ctx.countOldPostsAsUnreadEnabled;
+  const excludeWebBridge =
+    subjectDid == null ? false : ctx.excludeWebBridgeEnabled;
   const followUris = subjectDid
     ? await effectiveFollowUris(ctx.db, ctx.schema, subjectDid)
     : [];
@@ -48,11 +50,12 @@ export async function handleGetLatestFeed(ctx: XrpcRequestContext) {
             offset,
             readForDid: trackReading && subjectDid ? subjectDid : undefined,
             scope: "page",
+            excludeWebBridge,
           })
         : []
       : await selectArticleCards(ctx.db, ctx.schema, {
           ...(!subjectDid || filter === "all"
-            ? { discoverOnly: true }
+            ? { discoverOnly: true, excludeWebBridge }
             : {
                 publicationUris: followUris,
                 unreadForDid:
@@ -85,7 +88,9 @@ export async function handleGetLatestFeed(ctx: XrpcRequestContext) {
 
 export async function handleGetTrendingPublications(ctx: XrpcRequestContext) {
   const limit = intParam(ctx.params, "limit", 12, { min: 1, max: 100 });
-  const items = await trendingPublications(ctx.db, ctx.schema, limit);
+  const items = await trendingPublications(ctx.db, ctx.schema, limit, {
+    excludeWebBridge: ctx.excludeWebBridgeEnabled,
+  });
   return { items: items.map((item) => toPublicationView(item)) };
 }
 
@@ -97,6 +102,7 @@ export async function handleGetTrendingDocuments(ctx: XrpcRequestContext) {
   const items = await trendingArticles(ctx.db, ctx.schema, limit, {
     scope,
     readForDid,
+    excludeWebBridge: ctx.excludeWebBridgeEnabled,
   });
   const enriched = await enrichDocuments(ctx, items, readForDid);
   return { items: enriched.map((item) => toDocumentView(item)) };
@@ -114,6 +120,7 @@ export async function handleGetTagFeed(ctx: XrpcRequestContext) {
       sort,
       limit,
       offset,
+      excludeWebBridge: ctx.excludeWebBridgeEnabled,
     });
     return {
       view: "publications" as const,
@@ -130,6 +137,7 @@ export async function handleGetTagFeed(ctx: XrpcRequestContext) {
   const rows = await selectArticleCards(ctx.db, ctx.schema, {
     tag,
     discoverOnly: true,
+    excludeWebBridge: ctx.excludeWebBridgeEnabled,
     limit,
     offset,
     readForDid,

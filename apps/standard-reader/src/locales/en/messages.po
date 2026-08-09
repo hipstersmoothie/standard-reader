@@ -3734,6 +3734,10 @@ msgstr "Some labels skipped"
 msgid "Once you subscribe to more than a handful of publications, one long list stops helping. Lists group them, and the sidebar can be arranged around how you actually read."
 msgstr "Once you subscribe to more than a handful of publications, one long list stops helping. Lists group them, and the sidebar can be arranged around how you actually read."
 
+#: src/components/user-settings-view.tsx
+msgid "Bridgy Fed mirrors tens of thousands of websites into the network without anyone there asking. When on, they are hidden from Latest, Discover, search, and tag pages. Publications you already subscribe to are never hidden, and blogs whose authors chose to bridge (ap.brid.gy) always stay."
+msgstr "Bridgy Fed mirrors tens of thousands of websites into the network without anyone there asking. When on, they are hidden from Latest, Discover, search, and tag pages. Publications you already subscribe to are never hidden, and blogs whose authors chose to bridge (ap.brid.gy) always stay."
+
 #: src/components/reader/comments/add-comment-dialog.tsx
 #~ msgid "Discussion here is assembled from posts that live in your own repo, so comments are written wherever you already post. Pick where to write yours — it joins this article's discussion once the network indexes it."
 #~ msgstr "Discussion here is assembled from posts that live in your own repo, so comments are written wherever you already post. Pick where to write yours — it joins this article's discussion once the network indexes it."
@@ -6538,6 +6542,10 @@ msgstr "editorial, plain sans-serif, or any family from Google Fonts."
 #: src/components/guide/pages/keeping-track-guide-page.tsx
 msgid "Selecting the <0>Subscriptions</0> heading in the sidebar opens one table of everything you follow — publications and people together. Each row shows unread count, when it last published, how many articles and readers it has, its topic, and which of your lists it belongs to."
 msgstr "Selecting the <0>Subscriptions</0> heading in the sidebar opens one table of everything you follow — publications and people together. Each row shows unread count, when it last published, how many articles and readers it has, its topic, and which of your lists it belongs to."
+
+#: src/components/user-settings-view.tsx
+msgid "Hide mirrored websites"
+msgstr "Hide mirrored websites"
 
 #: src/routes/_layout.p.$did.$rkey.tsx
 #~ msgid "Open publication"

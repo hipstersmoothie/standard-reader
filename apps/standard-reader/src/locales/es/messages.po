@@ -3734,6 +3734,10 @@ msgstr ""
 msgid "Once you subscribe to more than a handful of publications, one long list stops helping. Lists group them, and the sidebar can be arranged around how you actually read."
 msgstr ""
 
+#: src/components/user-settings-view.tsx
+msgid "Bridgy Fed mirrors tens of thousands of websites into the network without anyone there asking. When on, they are hidden from Latest, Discover, search, and tag pages. Publications you already subscribe to are never hidden, and blogs whose authors chose to bridge (ap.brid.gy) always stay."
+msgstr ""
+
 #: src/components/reader/comments/add-comment-dialog.tsx
 #~ msgid "Discussion here is assembled from posts that live in your own repo, so comments are written wherever you already post. Pick where to write yours — it joins this article's discussion once the network indexes it."
 #~ msgstr ""
@@ -6537,6 +6541,10 @@ msgstr ""
 
 #: src/components/guide/pages/keeping-track-guide-page.tsx
 msgid "Selecting the <0>Subscriptions</0> heading in the sidebar opens one table of everything you follow — publications and people together. Each row shows unread count, when it last published, how many articles and readers it has, its topic, and which of your lists it belongs to."
+msgstr ""
+
+#: src/components/user-settings-view.tsx
+msgid "Hide mirrored websites"
 msgstr ""
 
 #: src/routes/_layout.p.$did.$rkey.tsx

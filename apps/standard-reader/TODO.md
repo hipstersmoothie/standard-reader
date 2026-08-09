@@ -1053,6 +1053,19 @@ Backend/API exists; UI or copy is missing.
 
 ## 9. Post-v1 — reader polish (Tier 2)
 
+- [x] **"Hide mirrored websites" setting** — an account-level toggle
+      (`user.exclude_web_bridge`, default off; [`exclude-web-bridge.ts`](src/lib/exclude-web-bridge.ts),
+      `drizzle/0033_*`) that drops Bridgy Fed's bulk `*.web.brid.gy` mirrors from every
+      network-wide surface: Latest "All" + badge counts, home network/trending, Discover
+      directory + rails + known-publication count, search, tag pages (feed, directory, counts,
+      "follow all"), related articles, and the digest's network section. Never applied to the
+      reader's own subscriptions, to a publication/article page they opened, or to a handle/URL
+      they searched by name; never to `*.ap.brid.gy`. Two perf shapes were load-bearing, both
+      measured against a prod-scale copy: the filtered Latest badge is a second precomputed
+      `network_stats` scalar (a live filtered count is 26.5s), and the tag feed switches to a
+      tag-first `MATERIALIZED` query (`selectTagArticleUris`) because the ordinary
+      date-index walk discards ~200k rows to fill a page on mirror-dominated tags — 3.2s–19.2s
+      before, 225ms–2.6s after. Everything else lands within ~35ms of unfiltered.
 - [x] **Reading typography preferences** — font size / measure (and optional sans body) on the
       article wrapper; cookie + optional `user` column (same pattern as [`open-links.ts`](src/lib/open-links.ts));
       menu item alongside [`OpenLinksMenuItem`](src/components/OpenLinksMenuItem.tsx)

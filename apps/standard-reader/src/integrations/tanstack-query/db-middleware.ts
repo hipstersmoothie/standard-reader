@@ -9,8 +9,11 @@ export const dbMiddleware = createMiddleware({ type: "function" }).server(
         import("#/server/reader/session-preferences.server"),
       ]);
 
-    const { trackReadingEnabled, countOldPostsAsUnreadEnabled } =
-      await resolveReaderSessionPreferences(db, schema);
+    const {
+      trackReadingEnabled,
+      countOldPostsAsUnreadEnabled,
+      excludeWebBridgeEnabled,
+    } = await resolveReaderSessionPreferences(db, schema);
 
     return next({
       context: {
@@ -18,6 +21,7 @@ export const dbMiddleware = createMiddleware({ type: "function" }).server(
         schema,
         trackReadingEnabled,
         countOldPostsAsUnreadEnabled,
+        excludeWebBridgeEnabled,
       },
     });
   },

@@ -94,6 +94,7 @@ import { CUSTOMIZABLE_SIDEBAR_NAV } from "#/lib/sidebar-nav";
 import type { ThemeMode } from "#/lib/theme";
 import { isThemeMode } from "#/lib/theme";
 import { useCountOldPostsAsUnread } from "#/lib/use-count-old-posts-as-unread";
+import { useExcludeWebBridge } from "#/lib/use-exclude-web-bridge";
 import {
   useFeedPagination,
   useHideFeedMetrics,
@@ -461,6 +462,8 @@ export function UserSettingsView() {
     useTrackReadingHistory();
   const { enabled: countOldAsUnread, setEnabled: setCountOldAsUnread } =
     useCountOldPostsAsUnread();
+  const { enabled: excludeWebBridge, setEnabled: setExcludeWebBridge } =
+    useExcludeWebBridge();
   const { enabled: usePublicationTheme, setEnabled: setUsePublicationTheme } =
     usePublicationThemePreference();
   const { hidden: hideFeedMetrics, setHidden: setHideFeedMetrics } =
@@ -764,6 +767,17 @@ export function UserSettingsView() {
               isSelected={hideFeedMetrics}
               onChange={setHideFeedMetrics}
               aria-label={t`Hide recommend and comment counts`}
+            />
+          </SettingRow>
+          <Separator />
+          <SettingRow
+            label={t`Hide mirrored websites`}
+            description={t`Bridgy Fed mirrors tens of thousands of websites into the network without anyone there asking. When on, they are hidden from Latest, Discover, search, and tag pages. Publications you already subscribe to are never hidden, and blogs whose authors chose to bridge (ap.brid.gy) always stay.`}
+          >
+            <Switch
+              isSelected={excludeWebBridge}
+              onChange={setExcludeWebBridge}
+              aria-label={t`Hide mirrored websites`}
             />
           </SettingRow>
           <Separator />
