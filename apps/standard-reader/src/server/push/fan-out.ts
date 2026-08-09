@@ -1,4 +1,4 @@
-import { and, eq, inArray, notInArray, or } from "drizzle-orm";
+import { and, eq, inArray, or } from "drizzle-orm";
 
 import { articleReaderUrl } from "#/components/reader/format";
 
@@ -21,8 +21,8 @@ import {
  *
  * Everything here goes through the Drizzle query builder rather than raw `sql`
  * templates on purpose: a JS array interpolated into a `sql` template binds as a
- * single scalar, so `= any(${array})` silently matches nothing. `inArray` /
- * `notInArray` expand properly.
+ * single scalar, so `= any(${array})` silently matches nothing. `inArray`
+ * expands properly.
  */
 
 /** A browser to deliver to. */
@@ -111,7 +111,7 @@ async function loadDocument(documentUri: string) {
 }
 
 /** Author plus every credited contributor — the people an "author" opt-in can
- * match, and the people who must not be notified about their own post. */
+ * match. */
 export async function documentSubjectDids(
   documentUri: string,
   authorDid: string,
@@ -128,12 +128,18 @@ export async function documentSubjectDids(
  * Which browsers should hear about this document.
  *
  * `push_topics` is the permission — a row there is the only reason anyone gets
- * a notification. Two things in here are easy to get wrong and are load-bearing:
+ * a notification, and it is honoured as written.
  *
- *   1. `selectDistinct`. A reader with two devices should get two sends, but the
- *      join must not multiply rows for any other reason.
- *   2. The author and contributors are excluded. Being told about your own post
- *      is noise.
+ * `selectDistinct` matters: a reader with two devices should get two sends, but
+ * the join must not multiply rows for any other reason.
+ *
+ * **The author is deliberately NOT excluded.** An earlier version dropped the
+ * author and every credited contributor, reasoning that being told about your
+ * own post is noise. That is wrong for an opt-in this explicit: someone who
+ * turned the bell on for a source asked to hear about it, and silently
+ * discarding what they asked for is worse than one redundant notification. It
+ * also made the feature impossible to test on your own publication — which is
+ * exactly how the first person to try it tested, and they got nothing.
  *
  * Note this does NOT consult `subscriptions` / `user_follows`: notifications are
  * deliberately independent of following, so the opt-in row stands on its own.
@@ -168,12 +174,7 @@ export async function resolveTargets(
       ownerDid: pushDevices.ownerDid,
     })
     .from(pushDevices)
-    .where(
-      and(
-        inArray(pushDevices.ownerDid, optedIn),
-        notInArray(pushDevices.ownerDid, subjectDids),
-      ),
-    );
+    .where(inArray(pushDevices.ownerDid, optedIn));
 }
 
 /**
