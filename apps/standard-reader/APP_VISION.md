@@ -425,16 +425,18 @@ What changes for a serial:
   from the publication menu; the override is a per-publication cookie, resolved server-side
   inside `getPublicationDocuments`, so the client never has to know the order to ask for the
   right page and the SSR'd HTML is already in it.
-- **A comic's archive is a shelf of covers, not a list of pages.** A comic posts one page per
+- **A comic's archive is a shelf of covers, not a list of titles.** A comic posts one page per
   document, so its archive is dozens of near-identical rows — `FITV #1 Cover`, `FITV #1, Pg. 1`.
-  Titles almost always carry series, issue and page, so `selectComicShelf`
-  (`#/server/reader/comic`) parses the issue number out of them (`#/lib/comic/issue-title`),
-  collapses consecutive pages back into the issues they came from, and shows each issue's cover
-  art — the reader browses issues instead of scrolling pages. It is a naming convention, not a
-  lexicon field, so it is treated as a guess: fewer than 70% of titles parsing, or everything
-  landing in one group, leaves `grouped: false` and the ordinary archive list stands. The
-  read/unread filters keep the list too — those are per-page views, and a shelf shows whole
-  issues.
+  What a reader browses there is art, so `selectComicShelf` (`#/server/reader/comic`) always shows
+  it. How much art fits on one cover is `ComicShelf.mode`, decided by `planComicShelf`. Titles
+  usually carry series, issue and page, so when at least 70% of them parse
+  (`#/lib/comic/issue-title`) consecutive pages collapse back into the issues they came from and
+  each issue is fronted by its cover — the reader browses `#1`, `#2` instead of scrolling their
+  pages. When they don't parse — a webcomic naming its posts `Pg01`, `Pg02` — there are no issues
+  to collapse and every post keeps its own cover, a grid of page thumbnails. Grouping is the guess;
+  showing the art is not, and the fallback for a failed guess is a plainer shelf rather than a list
+  of titles that shows nothing. The read/unread filters do keep the list — those are per-page
+  views, and a shelf shows whole issues.
 - **An issue is unread while any of its pages is**, and its cover opens on the first page the
   reader hasn't seen. Read state is per document, and a comic's documents are its pages, so the
   shelf asks for the reader's unread URIs across the whole publication (`selectUnreadDocumentUris`

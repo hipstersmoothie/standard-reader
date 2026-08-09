@@ -1059,9 +1059,9 @@ const setPublicationArchiveOrder = createServerFn({ method: "POST" })
   });
 
 /**
- * A comic's issues as a shelf of covers, for the publication page. Comes back
- * `grouped: false` when the titles don't follow the issue convention, and the
- * page keeps its ordinary archive list.
+ * A comic as a shelf of covers, for the publication page. One card per issue
+ * when the titles carry issue numbers (`mode: "issues"`), otherwise one per post
+ * (`mode: "pages"`); either way the page shows art rather than its archive list.
  *
  * Reader-scoped: each issue carries the pages this reader hasn't opened, which
  * is what puts the unread dot on a cover and what decides the page a cover opens
@@ -1089,7 +1089,7 @@ const getComicShelf = createServerFn({ method: "GET" })
           readForDid,
           countOldPostsAsUnread: countOldPostsAsUnreadEnabled,
         });
-        span.set("grouped", shelf.grouped);
+        span.set("shelfMode", shelf.mode);
         span.set("issues", shelf.issues.length);
         span.set(
           "unreadIssues",

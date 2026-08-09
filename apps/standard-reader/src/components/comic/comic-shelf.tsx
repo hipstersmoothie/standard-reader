@@ -156,9 +156,14 @@ function ComicShelfCard({
           ) : null}
           <span {...stylex.props(styles.label)}>{issue.label}</span>
         </Flex>
-        <span {...stylex.props(styles.meta)}>
-          <Plural value={issue.pageCount} one="# page" other="# pages" />
-        </span>
+        {/* How much reading a cover stands for. A one-page card is its own
+            answer — on a shelf of pages every card would say "1 page", which
+            tells the reader nothing they can't see. */}
+        {issue.pageCount > 1 ? (
+          <span {...stylex.props(styles.meta)}>
+            <Plural value={issue.pageCount} one="# page" other="# pages" />
+          </span>
+        ) : null}
       </Flex>
     </Link>
   );
@@ -186,15 +191,13 @@ export function ComicShelfSkeleton() {
 }
 
 /**
- * A comic publication's issues, as covers on a shelf.
+ * A comic publication's covers, on a shelf.
  *
  * A comic posts one page per document, so its archive is a long list of
  * near-identical rows — `#1 Cover`, `#1, Pg. 1`, `#1, Pg. 2` — when what a
- * reader wants to browse is issues. This collapses those pages back into the
- * issues they came from and shows the art instead of the titles.
- *
- * The caller decides whether a shelf is warranted (`ComicShelf.grouped`); this
- * only draws it.
+ * reader wants to browse is art. The server decides what one cover stands for:
+ * an issue when the titles number them, otherwise a single post
+ * (`ComicShelf.mode`). This only draws whatever it was handed.
  *
  * `issues` always arrive in publication order (#1 first) — the spine reads that
  * way so absolute page numbers mean something. `order` is the reader's view of
