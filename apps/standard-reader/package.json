@@ -7,7 +7,7 @@
   },
   "scripts": {
     "dev": "vite dev --port 3000",
-    "build": "vite build",
+    "build": "vite build && node scripts/verify-service-worker.mjs",
     "start": "node --require @opentelemetry/auto-instrumentations-node/register .output/server/index.mjs",
     "preview": "vite preview",
     "test": "vitest run",
