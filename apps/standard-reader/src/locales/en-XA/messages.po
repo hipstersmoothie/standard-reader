@@ -5516,6 +5516,10 @@ msgstr ""
 msgid "Couldn't resolve that handle."
 msgstr ""
 
+#: src/components/reader/notify-button.tsx
+msgid "That took too long"
+msgstr ""
+
 #: src/components/guide/pages/reading-guide-page.tsx
 msgid "Good to know"
 msgstr ""
@@ -7350,6 +7354,10 @@ msgstr ""
 #: src/components/reader/document-share-menu.tsx
 #: src/components/reader/text-selection-toolbar.tsx
 msgid "Save to Margin…"
+msgstr ""
+
+#: src/components/reader/notify-button.tsx
+msgid "Your browser didn’t finish setting up notifications. Reloading the page usually fixes it."
 msgstr ""
 
 #: src/components/reader/article-below-fold.tsx

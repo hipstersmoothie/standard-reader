@@ -5516,6 +5516,10 @@ msgstr ""
 msgid "Couldn't resolve that handle."
 msgstr "无法解析该 handle。"
 
+#: src/components/reader/notify-button.tsx
+msgid "That took too long"
+msgstr ""
+
 #: src/components/guide/pages/reading-guide-page.tsx
 msgid "Good to know"
 msgstr ""
@@ -7351,6 +7355,10 @@ msgstr ""
 #: src/components/reader/text-selection-toolbar.tsx
 msgid "Save to Margin…"
 msgstr "保存到 Margin…"
+
+#: src/components/reader/notify-button.tsx
+msgid "Your browser didn’t finish setting up notifications. Reloading the page usually fixes it."
+msgstr ""
 
 #: src/components/reader/article-below-fold.tsx
 msgid "{minutes} min"

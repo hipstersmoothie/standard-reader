@@ -120,6 +120,13 @@ export function NotifyButton({
         });
         return;
       }
+      if (result.status === "timed-out") {
+        toasts.add({
+          description: t`Your browser didn’t finish setting up notifications. Reloading the page usually fixes it.`,
+          title: t`That took too long`,
+        });
+        return;
+      }
       if (result.status !== "ready") {
         toasts.add({
           description: t`We couldn’t set up notifications on this device. Try again?`,

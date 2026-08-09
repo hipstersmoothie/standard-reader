@@ -33,6 +33,8 @@ export type EnsurePushResult =
   | { status: "denied" }
   | { status: "needs-ios-install" }
   | { status: "not-configured" }
+  /** A browser API never settled — see {@link activeRegistration}. */
+  | { status: "timed-out" }
   | { status: "unsupported" }
   | { status: "error"; error: unknown };
 
@@ -119,6 +121,41 @@ export async function currentPushSubscription(): Promise<PushSubscription | null
   return (await registration?.pushManager.getSubscription()) ?? null;
 }
 
+const READY_TIMEOUT_MS = 10_000;
+const SUBSCRIBE_TIMEOUT_MS = 20_000;
+
+/** Resolve to `null` rather than hanging forever. */
+async function withTimeout<T>(
+  promise: Promise<T>,
+  ms: number,
+): Promise<T | null> {
+  return Promise.race([
+    promise,
+    new Promise<null>((resolve) => setTimeout(() => resolve(null), ms)),
+  ]);
+}
+
+/**
+ * The active service worker registration, or `null` if none activates in time.
+ *
+ * `navigator.serviceWorker.ready` **never settles** when no worker ever becomes
+ * active — a failed install, a browser blocking service workers, a scope
+ * mismatch. Awaiting it unbounded is what left the bell stuck in a disabled
+ * state with no error: the promise simply never resolved, so neither the
+ * `catch` nor the `finally` that re-enables the button ever ran. A hung browser
+ * API has to be treated as a failure mode, not an impossibility.
+ *
+ * Checks for an already-active registration first, since the common case
+ * doesn't need to wait at all.
+ */
+async function activeRegistration(): Promise<ServiceWorkerRegistration | null> {
+  const existing = await navigator.serviceWorker.getRegistration();
+  if (existing?.active) return existing;
+  // Otherwise wait for one to activate — a first visit installs before it
+  // activates — but bounded.
+  return withTimeout(navigator.serviceWorker.ready, READY_TIMEOUT_MS);
+}
+
 /**
  * Subscribe this browser and record the endpoint server-side. Requests
  * permission if it hasn't been decided yet, so this MUST be called from a user
@@ -146,17 +183,28 @@ export async function ensurePushDevice(): Promise<EnsurePushResult> {
       return { status: "not-configured" };
     }
 
-    // `ready` — not `getRegistration` — because the SW registers with
-    // `skipWaiting: false`, so a first-time visitor has an installed but not yet
-    // *active* worker for a while, and subscribing against one fails.
-    const registration = await navigator.serviceWorker.ready;
+    const registration = await activeRegistration();
+    if (!registration) {
+      console.error(
+        "[push] no service worker ever became active — check the SW registered and installed cleanly",
+      );
+      return { status: "timed-out" };
+    }
 
+    const existing = await registration.pushManager.getSubscription();
     const subscription =
-      (await registration.pushManager.getSubscription()) ??
-      (await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: decodeVapidKey(publicKey),
-      }));
+      existing ??
+      (await withTimeout(
+        registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: decodeVapidKey(publicKey),
+        }),
+        SUBSCRIBE_TIMEOUT_MS,
+      ));
+    if (!subscription) {
+      console.error("[push] pushManager.subscribe() never settled");
+      return { status: "timed-out" };
+    }
 
     const keys = readKeys(subscription);
     if (!keys)

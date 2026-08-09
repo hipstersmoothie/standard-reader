@@ -53,9 +53,9 @@ const MENU_ICON = 14;
 
 const styles = stylex.create({
   /**
-   * The bell sits beside the Subscribe split button rather than inside it: the
-   * chevron is Subscribe's own dropdown, so a third segment wedged between them
-   * would break that pairing and read as one three-part control.
+   * The bell trails the Subscribe split button rather than sitting inside it:
+   * the chevron is Subscribe's own dropdown, so a third segment wedged between
+   * them would break that pairing and read as one three-part control.
    *
    * On desktop this row sits at the end of the hero's top row; on mobile it
    * wraps onto its own full-width line under the publication name.
@@ -70,7 +70,7 @@ const styles = stylex.create({
     paddingTop: { default: null, [breakpoints.sm]: spacing["1"] },
   },
   /** The split button itself. Takes the row's slack on mobile so it fills the
-   * line; the bell stays square at its start. */
+   * line; the bell stays square at its end. */
   group: {
     flexGrow: { default: 1, [breakpoints.sm]: 0 },
     flexShrink: 0,
@@ -204,9 +204,9 @@ function OrderSubMenu({
 }
 
 /**
- * The publication hero's action cluster: a notification bell, then a split
- * button whose primary segment subscribes and whose chevron opens every other
- * action for the publication.
+ * The publication hero's action cluster: a split button whose primary segment
+ * subscribes and whose chevron opens every other action for the publication,
+ * then a notification bell.
  *
  * Two controls instead of seven keeps the hero calm and reads the same on
  * mobile, where the split button goes full-width instead of collapsing into an
@@ -268,16 +268,6 @@ export function PublicationActions({
   return (
     <>
       <div {...stylex.props(styles.row)}>
-        <NotifyButton
-          subjectType="publication"
-          subject={pub.uri}
-          signedIn={signedIn}
-          size="lg"
-          // Takes the same variant as the split button beside it, so a
-          // publication painting the page in its own theme colors gets a bell
-          // that belongs to that palette instead of the app's neutral one.
-          variant={variant}
-        />
         <ButtonGroup style={styles.group}>
           <FollowButton
             publicationUri={pub.uri}
@@ -365,6 +355,16 @@ export function PublicationActions({
             ) : null}
           </Menu>
         </ButtonGroup>
+        <NotifyButton
+          subjectType="publication"
+          subject={pub.uri}
+          signedIn={signedIn}
+          size="lg"
+          // Takes the same variant as the split button beside it, so a
+          // publication painting the page in its own theme colors gets a bell
+          // that belongs to that palette instead of the app's neutral one.
+          variant={variant}
+        />
       </div>
 
       {share.embedDialog}
