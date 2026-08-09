@@ -2028,8 +2028,8 @@ export async function countKnownPublications(db: Db): Promise<number> {
  * `topicMatch: "document"` — matching a publication's effective topic OR any of
  * its document tags — so every chip is guaranteed to return results.
  *
- * Reads the precomputed `discover_topic_counts` table (rebuilt each sweep by
- * `recomputeTopicCounts()`); aggregating the vocabulary live is a ~2s network-wide
+ * Reads the precomputed `discover_topic_counts` table (refreshed daily by
+ * `recomputeDiscoverTopicCounts()`); aggregating the vocabulary live is a ~2s network-wide
  * `unnest(tags)` scan, far too slow for this request-path, Suspense-gated
  * query. `query`, when set, filters the vocabulary by a case-insensitive
  * substring (trigram-indexed) so the popover search can reach tags past the

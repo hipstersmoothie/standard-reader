@@ -7,10 +7,12 @@ import { index, integer, pgTable, text } from "drizzle-orm/pg-core";
  * — via an explicit `publications.topic` OR any of the publication's document
  * tags — which is exactly how many a reader reaches by selecting the chip.
  *
- * Rebuilt each sweep by `recomputeTopicCounts()`. Reading from this table keeps the
- * Discover request path off a ~2s network-wide `unnest(tags)` aggregation; the
- * cron already scans every tag to derive per-publication dominant topics, so
- * populating this is near-free marginal work.
+ * Refreshed daily by `recomputeDiscoverTopicCounts()` on the topic cron, which
+ * diffs against the live table rather than rebuilding it — an hour of ingest
+ * moves ~85 of these 1.05M rows, so a full `DELETE` + `INSERT` was rewriting
+ * the heap and all three indexes below to persist almost nothing. Reading from
+ * this table keeps the Discover request path off a ~2s network-wide
+ * `unnest(tags)` aggregation.
  */
 export const discoverTopicCounts = pgTable(
   "discover_topic_counts",

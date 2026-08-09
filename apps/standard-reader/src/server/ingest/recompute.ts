@@ -269,6 +269,22 @@ export async function recomputeDocumentBacklinks(): Promise<number> {
 /**
  * Precompute per-document trending scores for the recency-gated candidate set.
  * Articles below the distinct-recommender floor get score 0.
+ *
+ * **Only rows whose score actually moved are written.** This used to open with
+ * a blanket `UPDATE ... SET trending_score = 0` over every eligible document,
+ * then immediately overwrite all of them with their real score. Measured, the
+ * two passes targeted *the same 24,602 rows* — symmetric difference zero in
+ * both directions — so every eligible document was written twice an hour, and
+ * the zeroing pass alone cost 62.9s mean / 10,063s total over 6.7 days, ~3x the
+ * scoring pass it was priming.
+ *
+ * That is expensive out of proportion to the row count because `trending_score`
+ * is indexed (`documents_trending_idx`), so each write is a non-HOT update: a
+ * new tuple version in *every* index on a 12GB table, including the tags GIN.
+ * And of the 24,602 eligible documents only ~13 carry a non-zero score — the
+ * rest were rewriting 0 over 0. The `IS DISTINCT FROM` guard on the scoring
+ * update skips those; `trending_recomputed_at` stops advancing for skipped
+ * rows, which is free because nothing reads that column.
  */
 export async function recomputeDocumentTrending(): Promise<void> {
   const maxAge = TRENDING_MAX_AGE_DAYS;
@@ -279,24 +295,6 @@ export async function recomputeDocumentTrending(): Promise<void> {
   const wBl = ARTICLE_BLEND.backlinks;
   const wBlVel = ARTICLE_BLEND.backlinkVelocity;
   const wPub = ARTICLE_BLEND.parentPublication;
-
-  await db.execute(sql`
-    UPDATE documents d
-    SET trending_score = 0,
-        distinct_recommender_count = 0,
-        trending_recomputed_at = now()
-    WHERE d.deleted = false
-      AND d.publication_uri IS NOT NULL
-      AND EXISTS (
-        SELECT 1 FROM publications p
-        WHERE p.uri = d.publication_uri
-          AND p.deleted = false
-          AND p.show_in_discover = true
-          AND p.url NOT ILIKE ${EXCLUDED_PUBLICATION_URL_PATTERN}
-          AND d.published_at > now() - (${maxAge}::text || ' days')::interval
-          AND d.published_at <= now()
-      )
-  `);
 
   await db.execute(sql`
     WITH eligible AS (
@@ -391,6 +389,38 @@ export async function recomputeDocumentTrending(): Promise<void> {
         trending_recomputed_at = now()
     FROM scored sc
     WHERE d.uri = sc.uri
+      AND (d.trending_score IS DISTINCT FROM sc.score
+           OR d.distinct_recommender_count IS DISTINCT FROM sc.distinct_cnt)
+  `);
+
+  // Clear scores left on documents that have since fallen out of the candidate
+  // set — aged past the window, unpublished, deleted, or on a publication that
+  // left Discover. The old zeroing pass never did this: its predicate selected
+  // *eligible* rows, so anything that aged out kept its last score forever (276
+  // such rows at the time of writing, against 13 legitimately current ones).
+  // Readers are unaffected either way — every trending query re-applies the
+  // same recency gate — but leaving the column lying is a trap for the next
+  // caller who trusts it without the gate.
+  //
+  // Cheap despite naming no candidate set: `documents_trending_idx` makes
+  // `trending_score <> 0` an index scan over the handful of scored rows, and
+  // the NOT EXISTS is a primary-key probe per row.
+  await db.execute(sql`
+    UPDATE documents d
+    SET trending_score = 0,
+        distinct_recommender_count = 0,
+        trending_recomputed_at = now()
+    WHERE d.trending_score <> 0
+      AND NOT EXISTS (
+        SELECT 1 FROM publications p
+        WHERE p.uri = d.publication_uri
+          AND p.deleted = false
+          AND p.show_in_discover = true
+          AND p.url NOT ILIKE ${EXCLUDED_PUBLICATION_URL_PATTERN}
+          AND d.deleted = false
+          AND d.published_at > now() - (${maxAge}::text || ' days')::interval
+          AND d.published_at <= now()
+      )
   `);
 }
 
@@ -498,14 +528,22 @@ export async function recomputeCosubscriptions(): Promise<void> {
  * non-deleted documents, normalized (trimmed + lowercased), ties broken
  * alphabetically. Publications with no tagged documents are reset to null.
  *
- * The Discover directory's topic chips can then be built from the top-N topics
- * by publication count.
+ * The Discover directory's topic chips are built from these by
+ * {@link recomputeDiscoverTopicCounts}, which runs on a slower cadence — this
+ * pass stays in the hourly sweep because it is ~15s and a new publication
+ * should get a topic promptly.
  */
-export async function recomputeTopicCounts(): Promise<void> {
-  // Clear stale topics first so removed tags don't linger.
-  await db.execute(
-    sql`UPDATE publications SET topic = NULL WHERE topic IS NOT NULL`,
-  );
+export async function recomputePublicationTopics(): Promise<void> {
+  // One pass, and it writes only the publications whose dominant tag actually
+  // moved. The previous shape was `UPDATE ... SET topic = NULL` (every row with
+  // a topic) followed by a re-set of every ranked row — two full rewrites of
+  // `publications` per sweep, plus the `updated_at` index churn behind them,
+  // to change a handful of topics.
+  //
+  // The `LEFT JOIN top` is what lets one statement do both jobs: publications
+  // that still have a dominant tag get it, and publications whose last tagged
+  // document went away land on `t.tag IS NULL` and are reset. `IS DISTINCT
+  // FROM` skips the rest.
   await db.execute(sql`
     WITH tag_counts AS (
       SELECT d.publication_uri AS uri,
@@ -521,24 +559,53 @@ export async function recomputeTopicCounts(): Promise<void> {
       SELECT uri, tag,
              row_number() OVER (PARTITION BY uri ORDER BY n DESC, tag ASC) AS rk
       FROM tag_counts
+    ),
+    top AS (
+      SELECT uri, tag FROM ranked WHERE rk = 1
+    ),
+    changed AS (
+      SELECT p.uri, t.tag
+      FROM publications p
+      LEFT JOIN top t ON t.uri = p.uri
+      WHERE p.topic IS DISTINCT FROM t.tag
     )
     UPDATE publications p
-    SET topic = r.tag, updated_at = now()
-    FROM ranked r
-    WHERE r.uri = p.uri AND r.rk = 1
+    SET topic = c.tag, updated_at = now()
+    FROM changed c
+    WHERE c.uri = p.uri
   `);
+}
 
-  // Rebuild the network-wide topic counts that power the Discover topic filter.
-  // The chip list and its search read this table instead of running a ~2s
-  // `unnest(tags)` aggregation on the request path. A transaction keeps
-  // concurrent readers on the prior snapshot until commit, so the chips never
-  // briefly empty mid-sweep. `publication_count` is a distinct-publication count
-  // per tag (the UNION dedupes each publication's repeated tags), matching the
-  // chip click path (`topicMatch: "document"`).
+/**
+ * Rebuild the network-wide topic counts behind the Discover topic filter.
+ *
+ * The chip list and its search read this table instead of running a ~2s
+ * `unnest(tags)` aggregation on the request path. `publication_count` is a
+ * distinct-publication count per tag (the UNION dedupes each publication's
+ * repeated tags), matching the chip click path (`topicMatch: "document"`).
+ *
+ * **Diffed, not rebuilt.** This used to `DELETE FROM discover_topic_counts`
+ * and re-`INSERT` the whole table inside a transaction — 1,056,381 rows, and
+ * with them the primary key, the count btree, and the trigram GIN index, every
+ * hour. Measured against a live snapshot, an hour of ingest moves **85 rows out
+ * of 1,056,446: 20 changed, 65 new, 0 removed** (0.008%). So the sweep was
+ * rewriting a million rows and three indexes to persist eighty-five.
+ *
+ * Now the aggregation lands in a transaction-scoped temp table and only the
+ * difference is applied: `DO UPDATE ... WHERE ... IS DISTINCT FROM` skips rows
+ * whose count is unchanged, so an unchanged row costs no heap write and no
+ * index maintenance. Still one transaction, so concurrent readers see the prior
+ * snapshot until commit and the chips never briefly empty.
+ *
+ * The aggregation itself is an unavoidable full scan of `documents` × their
+ * tags — it is a global count, so no index can narrow it (unlike
+ * `documentCarriesTagWhere`, which can). That read is why this runs on the
+ * daily topic cron rather than in the hourly sweep; see `scripts/topics-cron.ts`.
+ */
+export async function recomputeDiscoverTopicCounts(): Promise<void> {
   await db.transaction(async (tx) => {
-    await tx.execute(sql`DELETE FROM discover_topic_counts`);
     await tx.execute(sql`
-      INSERT INTO discover_topic_counts (topic, publication_count)
+      CREATE TEMP TABLE fresh_topic_counts ON COMMIT DROP AS
       WITH eligible AS (
         SELECT p.uri, p.topic
         FROM publications p
@@ -561,6 +628,25 @@ export async function recomputeTopicCounts(): Promise<void> {
       FROM pub_topic
       WHERE char_length(topic) BETWEEN 1 AND 128
       GROUP BY topic
+    `);
+    // Both statements below probe this table per row across ~1M rows; without
+    // the index (and stats for it) they plan as nested-loop scans.
+    await tx.execute(sql`CREATE UNIQUE INDEX ON fresh_topic_counts (topic)`);
+    await tx.execute(sql`ANALYZE fresh_topic_counts`);
+
+    await tx.execute(sql`
+      DELETE FROM discover_topic_counts d
+      WHERE NOT EXISTS (
+        SELECT 1 FROM fresh_topic_counts f WHERE f.topic = d.topic
+      )
+    `);
+    await tx.execute(sql`
+      INSERT INTO discover_topic_counts (topic, publication_count)
+      SELECT topic, publication_count FROM fresh_topic_counts
+      ON CONFLICT (topic) DO UPDATE
+        SET publication_count = excluded.publication_count
+        WHERE discover_topic_counts.publication_count
+              IS DISTINCT FROM excluded.publication_count
     `);
   });
 }
@@ -902,11 +988,17 @@ export async function recomputeDerived(): Promise<void> {
   await recomputePublicationStats();
   await recomputeCosubscriptions();
   await recomputeCorecommends();
-  await recomputeTopicCounts();
+  await recomputePublicationTopics();
   // Topic derivation is deliberately NOT here — it clusters the whole tag
   // graph and calls the naming model, which is minutes of work whose output
   // barely moves hour to hour. It runs on its own daily schedule instead;
   // see `scripts/topics-cron.ts`.
+  //
+  // `recomputeDiscoverTopicCounts()` moved there too, for the same reason: its
+  // aggregation is a full `documents` × tags scan (~119s, the single most
+  // expensive statement in this sweep) and an hour of ingest moves 85 of its
+  // 1.05M rows. Hourly bought nothing and put two minutes of scan in front of
+  // live traffic every hour.
   await recomputeSerialKinds();
   await recomputeDocumentTrending();
   // Last: dedup + the passes above are what change the eligible-document set,
