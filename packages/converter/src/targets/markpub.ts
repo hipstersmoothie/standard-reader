@@ -82,6 +82,12 @@ function inlineToMarkdown(nodes: Array<InlineNode>, ctx: Ctx): string {
         out += escapeInline(node.value);
         break;
       }
+      case "lineBreak": {
+        // The backslash spelling, not two trailing spaces — invisible
+        // whitespace is the one hard break an editor or diff tool eats.
+        out += "\\\n";
+        break;
+      }
       case "mark": {
         const inner = inlineToMarkdown(node.children, ctx);
         switch (node.mark) {
@@ -143,6 +149,12 @@ function plainOf(nodes: Array<InlineNode>): string {
     switch (node.type) {
       case "text": {
         out += node.value;
+        break;
+      }
+      case "lineBreak": {
+        // The only caller is an inline code span, which cannot hold a newline —
+        // CommonMark reads one as a space, so write what it would read.
+        out += " ";
         break;
       }
       case "mark":

@@ -208,7 +208,8 @@ describe("gutenberg — inline HTML", () => {
         href: "https://example.com",
         type: "link",
       },
-      { type: "text", value: "\nnext" },
+      { type: "lineBreak" },
+      { type: "text", value: "next" },
     ]);
   });
 

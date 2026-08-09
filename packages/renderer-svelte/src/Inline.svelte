@@ -9,7 +9,8 @@
 </script>
 
 {#each nodes as node}
-  {#if node.type === "text"}{node.value}{:else if node.type === "mark"}
+  {#if node.type === "text"}{node.value}{:else if node.type === "lineBreak"}<br
+    />{:else if node.type === "mark"}
     {#snippet markInner()}<Inline nodes={node.children} />{/snippet}
     {#if node.mark === "strong"}
       {#if s.strong}{@render s.strong({ children: markInner })}{:else}<strong

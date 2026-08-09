@@ -158,6 +158,22 @@ describe("markdown through the React renderer", () => {
     expect(container.querySelector("h2")?.textContent).toBe("From Markpub");
   });
 
+  it("renders a hard break as a <br>, and a soft wrap as a space", () => {
+    // Markpub / Mochott / GreenGale authors write breaks all three ways; each
+    // one has to survive into the DOM, while prose wrapped in the source must
+    // not sprout breaks it never asked for.
+    const { container } = renderMarkdown(
+      ["one  ", "two\\", "three<br>", "four", "", "wrapped", "prose"].join(
+        "\n",
+      ),
+    );
+    const [broken, wrapped] = [...container.querySelectorAll("p")];
+    expect(broken?.querySelectorAll("br")).toHaveLength(3);
+    expect(broken?.textContent).toBe("onetwothreefour");
+    expect(wrapped?.querySelectorAll("br")).toHaveLength(0);
+    expect(wrapped?.textContent).toBe("wrapped prose");
+  });
+
   it("renders a markdown-in-record third-party lexicon", () => {
     const { container } = render(
       <StandardDocumentRenderer
