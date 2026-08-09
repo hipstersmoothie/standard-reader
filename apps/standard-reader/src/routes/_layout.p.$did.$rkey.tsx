@@ -39,6 +39,7 @@ import { user } from "#/integrations/tanstack-query/api-user.functions";
 import { getPublicUrlClient } from "#/lib/public-url";
 import type { ArchiveOrder } from "#/lib/publication/archive-order";
 import {
+  canonicalLink,
   publicationFeedUrl,
   publicationOgImageUrl,
   siteSocialMeta,
@@ -203,9 +204,12 @@ export const Route = createFileRoute("/_layout/p/$did/$rkey")({
           match.params.rkey,
         ),
       }),
-      // standard.site discovery hint — the AT-URI of the rendered publication.
-      // See https://standard.site/docs/verification/#discovery-hint
       links: [
+        // Self-canonical: this is our directory of the publication, not a copy
+        // of its home page. Folds the `?filter=` / `?sort=` views onto one URL.
+        canonicalLink(`${baseUrl}${match.pathname}`),
+        // standard.site discovery hint — the AT-URI of the rendered publication.
+        // See https://standard.site/docs/verification/#discovery-hint
         {
           rel: "site.standard.publication",
           href: publicationUriFromParams(match.params.did, match.params.rkey),

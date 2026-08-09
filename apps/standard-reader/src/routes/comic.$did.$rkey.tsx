@@ -8,11 +8,18 @@ import { publicationApi } from "#/integrations/tanstack-query/api-publication.fu
 import { user } from "#/integrations/tanstack-query/api-user.functions";
 import { documentImages } from "#/lib/document/images";
 import { getPublicUrlClient } from "#/lib/public-url";
-import { articleOgImageUrl, siteSocialMeta } from "#/lib/site-metadata";
+import {
+  articleOgImageUrl,
+  canonicalLink,
+  siteSocialMeta,
+} from "#/lib/site-metadata";
 
 import { ComicNotFound } from "../components/comic/comic-not-found";
 import { ComicReader } from "../components/comic/comic-reader";
-import { documentUriFromParams } from "../components/reader/format";
+import {
+  articleSourceUrl,
+  documentUriFromParams,
+} from "../components/reader/format";
 
 const comicSearchSchema = z.object({
   /** 1-based page; one past the last page is the end-of-issue card. */
@@ -29,14 +36,24 @@ export const Route = createFileRoute("/comic/$did/$rkey")({
       void queryClient.prefetchQuery(
         publicationApi.getArticleQueryOptions(uri),
       );
-      return { title: null, publicationName: null, description: null };
+      return {
+        title: null,
+        publicationName: null,
+        description: null,
+        sourceUrl: null,
+      };
     }
 
     const article = await queryClient.ensureQueryData(
       publicationApi.getArticleQueryOptions(uri),
     );
     if (!article) {
-      return { title: null, publicationName: null, description: null };
+      return {
+        title: null,
+        publicationName: null,
+        description: null,
+        sourceUrl: null,
+      };
     }
 
     // Nothing to flip through — the reading view is the honest fallback, and
@@ -90,6 +107,7 @@ export const Route = createFileRoute("/comic/$did/$rkey")({
       publicationName: article.publication?.name ?? null,
       publicationUri: article.publicationUri,
       description: article.description,
+      sourceUrl: articleSourceUrl(article),
       // The records this page is built from — rendered by `AtRecordMeta`.
       atMeta: {
         canonical: [uri],
@@ -120,8 +138,12 @@ export const Route = createFileRoute("/comic/$did/$rkey")({
         ),
         ogType: "article",
       }),
-      // standard.site discovery hint — the AT-URI of the rendered document.
       links: [
+        // The issue's page on the publication's own site, when it has one —
+        // the page-flip reader is our presentation of their comic, not a
+        // separate work. Also collapses the `?page=` deep links onto one URL.
+        canonicalLink(`${baseUrl}${match.pathname}`, loaderData?.sourceUrl),
+        // standard.site discovery hint — the AT-URI of the rendered document.
         {
           rel: "site.standard.document",
           href: documentUriFromParams(match.params.did, match.params.rkey),

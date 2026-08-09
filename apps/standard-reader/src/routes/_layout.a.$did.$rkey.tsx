@@ -15,7 +15,11 @@ import {
   decodeQuoteParam,
   truncateQuoteForDisplay,
 } from "#/lib/quote-share";
-import { articleOgImageUrl, siteSocialMeta } from "#/lib/site-metadata";
+import {
+  articleOgImageUrl,
+  canonicalLink,
+  siteSocialMeta,
+} from "#/lib/site-metadata";
 import { useOpenLinks } from "#/lib/use-open-links";
 
 import {
@@ -26,6 +30,7 @@ import { ArticleViewSkeleton } from "../components/reader/article-view-skeleton"
 import { hasRenderableArticleBody } from "../components/reader/content/extract-text";
 import {
   articlePublicationUrl,
+  articleSourceUrl,
   documentUriFromParams,
 } from "../components/reader/format";
 import type { PublicationThemeColors } from "../components/reader/publication-theme-scale";
@@ -178,9 +183,14 @@ export const Route = createFileRoute("/_layout/a/$did/$rkey")({
       };
     }
 
-    // standard.site discovery hints — the AT-URIs of the records this page
-    // renders. See https://standard.site/docs/verification/#discovery-hint
+    const baseUrl = getPublicUrlClient();
     const links = [
+      // The publication's own page for this article, when it has one — we
+      // render their writing natively, so the ranking signals belong to them
+      // and not to us. Shared-quote links (`?q=`) fold into the bare article.
+      canonicalLink(`${baseUrl}${match.pathname}`, articleSourceUrl(article)),
+      // standard.site discovery hints — the AT-URIs of the records this page
+      // renders. See https://standard.site/docs/verification/#discovery-hint
       { rel: "site.standard.document", href: article.uri },
       ...(article.publicationUri
         ? [{ rel: "site.standard.publication", href: article.publicationUri }]
@@ -188,7 +198,6 @@ export const Route = createFileRoute("/_layout/a/$did/$rkey")({
     ];
 
     if (!quote || !match.search.q) {
-      const baseUrl = getPublicUrlClient();
       return {
         meta: siteSocialMeta({
           title: pageTitle,
@@ -205,7 +214,6 @@ export const Route = createFileRoute("/_layout/a/$did/$rkey")({
       };
     }
 
-    const baseUrl = getPublicUrlClient();
     const search = `?q=${encodeURIComponent(match.search.q)}`;
     const shareUrl = `${baseUrl}${match.pathname}${search}`;
     const ogImage = buildQuoteOgImageUrl(
