@@ -30,6 +30,7 @@ import { MessageCircle, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { initials } from "#/components/reader/format";
+import { commentLink } from "#/lib/comment-permalink";
 // The extension is not localized yet (its strings are a separate i18n
 // surface), so it pins the default locale to preserve prior behaviour —
 // `formatRelativeTime` used to be hardcoded to English in `format.ts`.
@@ -300,7 +301,12 @@ function DiscussionCommentCard({
       ? "on Margin"
       : comment.source === "semble"
         ? "on Semble"
-        : "on Bluesky";
+        : comment.source === "note"
+          ? "on pckt"
+          : comment.source === "leaflet"
+            ? "on Leaflet"
+            : "on Bluesky";
+  const link = commentLink(comment);
 
   return (
     <article {...stylex.props(styles.commentCard)}>
@@ -326,7 +332,7 @@ function DiscussionCommentCard({
       </Flex>
 
       <a
-        href={comment.postUrl}
+        href={link.href}
         target="_blank"
         rel="noreferrer"
         {...stylex.props(styles.commentLink)}

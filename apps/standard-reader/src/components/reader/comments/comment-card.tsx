@@ -12,6 +12,7 @@ import { AuthorProfileLink } from "#/components/reader/author-profile-link";
 import type { DocumentComment } from "#/integrations/tanstack-query/api-comments.functions";
 import type { JsonValue } from "#/integrations/tanstack-query/api-shapes";
 import { authorProfilePath } from "#/lib/author-profile";
+import { commentLink } from "#/lib/comment-permalink";
 import { segmentFacetedText, shiftFacets } from "#/lib/leaflet/facets";
 import { utf8ByteLength } from "#/lib/leaflet/utf8";
 import { useFormatters } from "#/lib/use-formatters";
@@ -190,8 +191,12 @@ export function CommentCard({ comment }: { comment: DocumentComment }) {
           : comment.source === "leaflet"
             ? t`on Leaflet`
             : t`on Bluesky`;
-  const openLabel =
-    comment.source === "margin"
+  const link = commentLink(comment);
+  // Only name the platform when the link actually goes there — the record-viewer
+  // fallback does not, and a link whose accessible name lies about its
+  // destination is worse than a plainly-labelled one.
+  const openLabel = link.native
+    ? comment.source === "margin"
       ? t`Open this note on Margin`
       : comment.source === "semble"
         ? t`Open this note on Semble`
@@ -199,8 +204,8 @@ export function CommentCard({ comment }: { comment: DocumentComment }) {
           ? t`Open this note on pckt`
           : comment.source === "leaflet"
             ? t`Open this comment on Leaflet`
-            : t`Open this reply on Bluesky`;
-  const hasLink = comment.postUrl.trim().length > 0;
+            : t`Open this reply on Bluesky`
+    : t`Open this comment record`;
 
   const body = (
     <>
@@ -234,21 +239,19 @@ export function CommentCard({ comment }: { comment: DocumentComment }) {
   );
 
   return (
-    <div
-      {...stylex.props(commentStyles.card, hasLink && commentStyles.cardLinked)}
-    >
-      {hasLink ? (
-        // Stretched overlay link — a sibling of the header and facet links,
-        // not their ancestor, so no nested <a>. Covers the whole card so the
-        // hover highlight (`cardLinked`, above) matches the click target.
-        <a
-          href={comment.postUrl}
-          target="_blank"
-          rel="noreferrer"
-          aria-label={openLabel}
-          {...stylex.props(commentStyles.cardBodyOverlay)}
-        />
-      ) : null}
+    <div {...stylex.props(commentStyles.card, commentStyles.cardLinked)}>
+      {/*
+        Stretched overlay link — a sibling of the header and facet links, not
+        their ancestor, so no nested <a>. Covers the whole card so the hover
+        highlight (`cardLinked`, above) matches the click target.
+      */}
+      <a
+        href={link.href}
+        target="_blank"
+        rel="noreferrer"
+        aria-label={openLabel}
+        {...stylex.props(commentStyles.cardBodyOverlay)}
+      />
       <div {...stylex.props(commentStyles.cardHeader)}>
         <AuthorProfileLink
           authorRef={comment.author.did}

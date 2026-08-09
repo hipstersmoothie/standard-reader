@@ -76,6 +76,11 @@ export interface LeafletCommentContext {
   content: unknown;
   /** Canonical URL, used to build the Leaflet comment-drawer link. */
   canonicalUrl: string | null;
+  /**
+   * `$type` of the document's content union, which is what identifies the
+   * document as Leaflet's when its publication sits on a custom domain.
+   */
+  contentFormat: string | null;
 }
 
 /**
@@ -124,7 +129,7 @@ function toComment(
     source: "leaflet",
     kind: quoteText ? "quote" : "link",
     postUri: comment.uri,
-    postUrl: leafletCommentDrawerUrl(context.canonicalUrl) ?? "",
+    postUrl: leafletCommentDrawerUrl(context) ?? "",
     author,
     commentary: comment.plaintext,
     commentaryFacets: comment.facets as DocumentComment["commentaryFacets"],

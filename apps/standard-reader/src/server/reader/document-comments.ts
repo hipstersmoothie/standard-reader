@@ -455,6 +455,7 @@ async function loadDocumentCommentTargets(
       bskyPostUri: d.bskyPostUri,
       publishedAt: d.publishedAt,
       contentJson: d.contentJson,
+      contentFormat: d.contentFormat,
     })
     .from(d)
     .leftJoin(p, eq(d.publicationUri, p.uri))
@@ -493,7 +494,11 @@ async function loadDocumentCommentTargets(
     targets,
     stripUrls: linkTargets,
     bskyPostUri,
-    leaflet: { content: doc.contentJson, canonicalUrl },
+    leaflet: {
+      content: doc.contentJson,
+      canonicalUrl,
+      contentFormat: doc.contentFormat,
+    },
   };
 }
 
