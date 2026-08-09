@@ -1,36 +1,49 @@
 /**
- * Post-build check that the emitted service worker is actually usable.
+ * Post-build repair + check for the emitted service worker.
  *
- * This exists because a truncated `sw.js` shipped to production undetected. The
- * served file was a strict prefix of a valid build, cut off mid-token:
+ * ## The bug this exists for
  *
- *     production  1745 bytes, ends `…ugin({statuses:[0,200]})]}),"G`
- *     preview     1774 bytes, ends `…maxEntries:300,maxAgeSeconds:2`
- *     good build  2351 bytes, ends `…{statuses:[0,200]})]}),"GET")});`
+ * `/sw.js` was served truncated and unparseable in production for months. The
+ * browser's only symptom is `SyntaxError: Unexpected end of script` at
+ * registration, so the service worker silently never registered: offline
+ * support and the update prompt were dead, and web push was simply the first
+ * feature to notice.
  *
- * The browser's only symptom was `SyntaxError: Unexpected end of script` at
- * registration — which nothing surfaced, so the service worker silently never
- * registered at all. Offline support and the update prompt had been dead for as
- * long as it had been broken, and push was simply the first feature to notice.
+ * The file on disk is fine. **Nitro serves it truncated**, because it bakes a
+ * static-asset manifest into `.output/server/index.mjs` at build time:
  *
- * Two tools write `.output/public`: `vite-plugin-pwa` (via its `outDir`) and
- * Nitro, which owns that directory as its static root. The PWA plugin's hooks
- * additionally run once per build pass — three times for a
- * client + SSR + Nitro build — so `sw.js` is written repeatedly while another
- * tool is assembling the same directory. That is the shape of a partial write.
+ *     "/sw.js": { "size": 1774, "etag": "\"6ee-…\"", "path": "../public/sw.js" }
  *
- * Rather than guess at the exact interleaving, this fails the build loudly if
- * the artifact isn't valid. A broken deploy is worth catching here; it is not
- * worth discovering months later from a push timeout on someone's phone.
+ * while the finished worker is 2351 bytes. `vite-plugin-pwa`'s hooks run once
+ * per build pass — three times for client + SSR + Nitro, emitting `0 entries`,
+ * `0 entries`, then the real `8 entries` — and Nitro snapshots the directory
+ * partway through that sequence. It then reads the *current* file at request
+ * time but caps the response at the *recorded* size, so clients get a prefix cut
+ * mid-token. That is why the truncation is deterministic, why `content-length`
+ * and the etag agree with it, and why a build-time check of the file alone
+ * passes while the served bytes are garbage.
+ *
+ * ## What this does
+ *
+ * Rewrites any manifest entry whose recorded size disagrees with the file on
+ * disk, then asserts the worker is actually usable. Etags are opaque cache
+ * validators, so a recomputed one need not match Nitro's own scheme — it only
+ * has to change with the content, which this does.
+ *
+ * Runs from `pnpm build`, so a deploy fails loudly rather than shipping a worker
+ * that cannot register.
  */
 
-import { existsSync, readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import vm from "node:vm";
 
 const appDir = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
-const swPath = path.join(appDir, ".output/public/sw.js");
+const publicDir = path.join(appDir, ".output/public");
+const serverEntry = path.join(appDir, ".output/server/index.mjs");
+const swPath = path.join(publicDir, "sw.js");
 
 function fail(message) {
   console.error(`\n[verify-sw] ${message}\n`);
@@ -40,31 +53,75 @@ function fail(message) {
   process.exit(1);
 }
 
+/** Nitro's shape: `"<size-in-hex>-<hash>"`, quoted. */
+function etagFor(buffer) {
+  const hash = createHash("sha1")
+    .update(buffer)
+    .digest("base64")
+    .replaceAll("=", "");
+  return `"${buffer.length.toString(16)}-${hash}"`;
+}
+
+// ── 1. Re-sync the baked manifest with what is actually on disk ──────────────
+let repaired = 0;
+if (existsSync(serverEntry)) {
+  let bundle = readFileSync(serverEntry, "utf8");
+
+  // Entries look like:
+  //   "/sw.js": {\n "type": …,\n "etag": "…",\n "mtime": …,\n "size": 1774,\n "path": "../public/sw.js"\n }
+  const entry =
+    /"(\/[^"]+)":\s*\{\s*"type":\s*"[^"]*",\s*"etag":\s*"((?:[^"\\]|\\.)*)",\s*"mtime":\s*"[^"]*",\s*"size":\s*(\d+),\s*"path":\s*"([^"]+)"\s*\}/g;
+
+  bundle = bundle.replaceAll(entry, (match, url, _etag, size, relPath) => {
+    const filePath = path.resolve(path.dirname(serverEntry), relPath);
+    if (!existsSync(filePath)) return match;
+
+    const actual = statSync(filePath).size;
+    if (actual === Number(size)) return match;
+
+    const fresh = etagFor(readFileSync(filePath));
+    repaired += 1;
+    console.log(
+      `[verify-sw] repaired ${url}: recorded ${size} bytes, actually ${actual} — Nitro would have served a truncated body`,
+    );
+    return match
+      .replace(`"size": ${size}`, `"size": ${actual}`)
+      .replace(
+        /"etag":\s*"(?:[^"\\]|\\.)*"/,
+        `"etag": ${JSON.stringify(fresh)}`,
+      );
+  });
+
+  if (repaired > 0) writeFileSync(serverEntry, bundle);
+}
+
+// ── 2. The worker itself has to be usable ───────────────────────────────────
 if (!existsSync(swPath)) {
   fail(
     `no service worker at ${path.relative(appDir, swPath)} — the PWA plugin did not emit one`,
   );
 }
 
-const source = readFileSync(swPath, "utf8");
+const bytes = readFileSync(swPath);
+// Byte length, not string length: the worker contains multi-byte characters, so
+// `source.length` disagrees with what the server records and serves.
+const byteLength = bytes.length;
+const source = bytes.toString("utf8");
 
-// 1. It has to parse. A truncated file is the failure this exists to catch, and
-//    it is invisible to any check that only looks at size or existence.
 try {
   new vm.Script(source, { filename: swPath });
 } catch (error) {
   fail(
     `service worker is not valid JavaScript (${error.message}).\n` +
-      `  ${source.length} bytes, ends with: ${JSON.stringify(source.slice(-60))}\n` +
-      `  This is the truncated-sw.js failure: the browser rejects it with\n` +
-      `  "SyntaxError: Unexpected end of script", registration fails, and the\n` +
-      `  app silently loses offline support, the update prompt, and web push.`,
+      `  ${byteLength} bytes, ends with: ${JSON.stringify(source.slice(-60))}\n` +
+      `  The browser rejects this with "SyntaxError: Unexpected end of script",\n` +
+      `  registration fails, and the app silently loses offline support, the\n` +
+      `  update prompt, and web push.`,
   );
 }
 
-// 2. It has to carry a precache manifest. Some build passes emit a structurally
-//    valid worker with zero entries; shipping one of those is a different, quieter
-//    way to lose the offline fallback.
+// Some build passes emit a structurally valid worker with nothing in it;
+// shipping one of those is a quieter way to lose the offline fallback.
 const manifest = source.match(/precacheAndRoute\(\[(.*?)\]/s);
 const entries = manifest
   ? [...manifest[1].matchAll(/url:\s*"([^"]+)"/g)].map((m) => m[1])
@@ -81,6 +138,21 @@ if (!entries.includes("offline.html")) {
   );
 }
 
+// ── 3. And the server must be prepared to serve all of it ───────────────────
+if (existsSync(serverEntry)) {
+  const bundle = readFileSync(serverEntry, "utf8");
+  const recorded = bundle.match(/"\/sw\.js":\s*\{[^}]*"size":\s*(\d+)/);
+  if (recorded && Number(recorded[1]) !== byteLength) {
+    fail(
+      `Nitro would serve ${recorded[1]} of ${byteLength} bytes of sw.js — the manifest repair did not take`,
+    );
+  }
+}
+
 console.log(
-  `[verify-sw] ok — ${source.length} bytes, precaches ${entries.length}: ${entries.join(", ")}`,
+  `[verify-sw] ok — ${byteLength} bytes, precaches ${entries.length}: ${entries.join(", ")}${
+    repaired > 0
+      ? ` (repaired ${repaired} stale manifest entr${repaired === 1 ? "y" : "ies"})`
+      : ""
+  }`,
 );
