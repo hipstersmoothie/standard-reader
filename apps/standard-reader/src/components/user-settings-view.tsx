@@ -114,6 +114,7 @@ import {
   AppearanceAdvancedRows,
   AppearancePalettePanel,
 } from "./appearance-settings";
+import { PushDiagnosticsPanel } from "./push-diagnostics";
 import { IosInstallPrompt } from "./reader/ios-install-prompt";
 import { Masthead, ReaderContent } from "./reader/primitives";
 import { ReadingCustomFontPicker } from "./reading-custom-font-picker";
@@ -1049,6 +1050,15 @@ export function UserSettingsView() {
               </SettingRow>
             </>
           ) : null}
+          <Separator />
+          <Disclosure>
+            <DisclosureTitle style={styles.advancedTitle}>
+              <Trans>Troubleshooting</Trans>
+            </DisclosureTitle>
+            <DisclosurePanel>
+              <PushDiagnosticsPanel diagnostics={push.diagnostics} />
+            </DisclosurePanel>
+          </Disclosure>
         </div>
         <IosInstallPrompt
           isOpen={iosPromptOpen}

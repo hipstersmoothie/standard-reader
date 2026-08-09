@@ -7,9 +7,10 @@ import {
   ensurePushDevice,
   notificationsBlocked,
   pushCapability,
+  pushDiagnostics,
   removePushDevice,
 } from "#/pwa/push";
-import type { PushCapability } from "#/pwa/push";
+import type { PushCapability, PushDiagnostics } from "#/pwa/push";
 
 /**
  * State for the Notifications section of settings: whether *this* browser is
@@ -33,6 +34,9 @@ export interface PushSettings {
   /** Registered browsers across all of the reader's devices. */
   deviceCount: number;
   isPending: boolean;
+  /** Browser-side state, for the settings troubleshooting readout. `null`
+   * until resolved on the client. */
+  diagnostics: PushDiagnostics | null;
   /** Subscribe this browser. Must be called from a user gesture. */
   enableOnThisDevice: () => Promise<void>;
   /** Unsubscribe this browser, leaving the opt-ins alone. */
@@ -47,6 +51,11 @@ export function usePushSettings(): PushSettings {
   const [blocked, setBlocked] = useState(false);
   const [endpoint, setEndpoint] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
+  const [diagnostics, setDiagnostics] = useState<PushDiagnostics | null>(null);
+
+  const refreshDiagnostics = useCallback(async () => {
+    setDiagnostics(await pushDiagnostics());
+  }, []);
 
   useEffect(() => {
     setCapability(pushCapability());
@@ -54,7 +63,8 @@ export function usePushSettings(): PushSettings {
     void currentPushSubscription().then((subscription) => {
       setEndpoint(subscription?.endpoint ?? null);
     });
-  }, []);
+    void refreshDiagnostics();
+  }, [refreshDiagnostics]);
 
   const { data: status } = useQuery({
     ...pushApi.getPushStatusQueryOptions(endpoint),
@@ -67,7 +77,10 @@ export function usePushSettings(): PushSettings {
 
   const refresh = useCallback(async () => {
     await queryClient.invalidateQueries({ queryKey: ["push", "status"] });
-  }, [queryClient]);
+    // Re-read browser state too — an attempt that just failed is exactly when
+    // the troubleshooting readout needs to be current.
+    await refreshDiagnostics();
+  }, [queryClient, refreshDiagnostics]);
 
   const enableOnThisDevice = useCallback(async () => {
     setIsPending(true);
@@ -105,16 +118,18 @@ export function usePushSettings(): PushSettings {
       setEndpoint(null);
       // Every bell in the app is now off.
       await queryClient.invalidateQueries({ queryKey: ["push"] });
+      await refreshDiagnostics();
     } finally {
       setIsPending(false);
     }
-  }, [disableAll, queryClient]);
+  }, [disableAll, queryClient, refreshDiagnostics]);
 
   return {
     blocked,
     capability,
     deviceCount: status?.deviceCount ?? 0,
     deviceRegistered: status?.deviceRegistered ?? false,
+    diagnostics,
     disableEverywhere,
     disableOnThisDevice,
     enableOnThisDevice,

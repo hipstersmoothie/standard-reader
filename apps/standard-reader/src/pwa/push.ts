@@ -1,5 +1,7 @@
 import { pushApi } from "#/integrations/tanstack-query/api-push.functions";
 
+import { serviceWorkerReport } from "./register";
+
 /**
  * Client-side web push: capability detection, subscribing this browser, and
  * keeping the stored endpoint in step with the one the browser actually has.
@@ -121,7 +123,13 @@ export async function currentPushSubscription(): Promise<PushSubscription | null
   return (await registration?.pushManager.getSubscription()) ?? null;
 }
 
-const READY_TIMEOUT_MS = 10_000;
+/**
+ * A cold install on a phone has to fetch the worker, its Workbox runtime chunk,
+ * and `push-sw.js` before it can activate. 10s was too tight for that over
+ * cellular; this is generous because the alternative is telling someone their
+ * browser failed when it was only slow.
+ */
+const ACTIVATION_TIMEOUT_MS = 45_000;
 const SUBSCRIBE_TIMEOUT_MS = 20_000;
 
 /** Resolve to `null` rather than hanging forever. */
@@ -135,25 +143,95 @@ async function withTimeout<T>(
   ]);
 }
 
+/** Where a registration is in its lifecycle, for diagnostics and for waiting. */
+export type ServiceWorkerState =
+  | "none"
+  | "installing"
+  | "waiting"
+  | "active"
+  | "unsupported";
+
+export function registrationState(
+  registration: ServiceWorkerRegistration | null | undefined,
+): ServiceWorkerState {
+  if (!registration) return "none";
+  if (registration.active) return "active";
+  if (registration.waiting) return "waiting";
+  if (registration.installing) return "installing";
+  return "none";
+}
+
+/** Resolve once this registration has an active worker, or `null` on timeout. */
+async function whenActive(
+  registration: ServiceWorkerRegistration,
+): Promise<ServiceWorkerRegistration | null> {
+  if (registration.active) return registration;
+
+  const worker = registration.installing ?? registration.waiting;
+  if (!worker) return null;
+
+  // Watch the worker's own state machine rather than racing a blind timer, so
+  // this resolves the instant it activates instead of on a fixed delay — and so
+  // a worker that dies during install (`redundant`) reports immediately instead
+  // of burning the full timeout.
+  const settled = await withTimeout(
+    new Promise<"activated" | "redundant">((resolve) => {
+      const onChange = () => {
+        if (worker.state === "activated") {
+          worker.removeEventListener("statechange", onChange);
+          resolve("activated");
+        } else if (worker.state === "redundant") {
+          worker.removeEventListener("statechange", onChange);
+          resolve("redundant");
+        }
+      };
+      worker.addEventListener("statechange", onChange);
+      onChange();
+    }),
+    ACTIVATION_TIMEOUT_MS,
+  );
+
+  if (settled === "redundant") {
+    console.error(
+      "[push] the service worker became redundant during install — it failed to install",
+    );
+    return null;
+  }
+  return settled === "activated" ? registration : null;
+}
+
 /**
  * The active service worker registration, or `null` if none activates in time.
  *
- * `navigator.serviceWorker.ready` **never settles** when no worker ever becomes
- * active — a failed install, a browser blocking service workers, a scope
- * mismatch. Awaiting it unbounded is what left the bell stuck in a disabled
- * state with no error: the promise simply never resolved, so neither the
- * `catch` nor the `finally` that re-enables the button ever ran. A hung browser
- * API has to be treated as a failure mode, not an impossibility.
+ * Two things this must not do, both learned the hard way:
  *
- * Checks for an already-active registration first, since the common case
- * doesn't need to wait at all.
+ *   1. **Never await `navigator.serviceWorker.ready` unbounded.** It never
+ *      settles when no worker becomes active — a failed install, a browser
+ *      blocking service workers, a scope mismatch. That left the bell stuck
+ *      disabled with no error, because neither the `catch` nor the `finally`
+ *      that re-enables it ever ran.
+ *   2. **Never assume something else already registered.** This used to depend
+ *      on `<ReloadPrompt />`'s effect having run and succeeded first. If that
+ *      registration failed — silently, until `onRegisterError` was wired up —
+ *      there was no worker to wait for and no way to find out. Registering here
+ *      when none exists removes the ordering dependency entirely.
  */
 async function activeRegistration(): Promise<ServiceWorkerRegistration | null> {
   const existing = await navigator.serviceWorker.getRegistration();
   if (existing?.active) return existing;
-  // Otherwise wait for one to activate — a first visit installs before it
-  // activates — but bounded.
-  return withTimeout(navigator.serviceWorker.ready, READY_TIMEOUT_MS);
+  if (existing) return whenActive(existing);
+
+  // Nothing registered yet. Do it here rather than waiting on a worker that may
+  // never have been requested.
+  try {
+    const registration = await navigator.serviceWorker.register("/sw.js", {
+      scope: "/",
+    });
+    return await whenActive(registration);
+  } catch (error) {
+    console.error("[push] service worker registration failed", error);
+    return null;
+  }
 }
 
 /**
@@ -237,6 +315,63 @@ export async function removePushDevice(): Promise<void> {
     await subscription.unsubscribe();
   } finally {
     await pushApi.unregisterPushDevice({ data: { endpoint } });
+  }
+}
+
+/**
+ * Everything needed to tell why the bell isn't working, in one object.
+ *
+ * This exists because the failure surfaced on an installed iPhone PWA, where
+ * "open devtools and read the console" is not a usable loop. Rendering this in
+ * settings turns a diagnosis round-trip into a screenshot.
+ */
+export interface PushDiagnostics {
+  capability: PushCapability;
+  standalone: boolean;
+  permission: NotificationPermission | "unavailable";
+  serviceWorker: ServiceWorkerState;
+  /** Script URL of the registered worker, when there is one. */
+  serviceWorkerScript: string | null;
+  subscribed: boolean;
+  /** Message from the last failed registration, if any. */
+  lastError: string | null;
+}
+
+export async function pushDiagnostics(): Promise<PushDiagnostics> {
+  const capability = pushCapability();
+  const swReport = serviceWorkerReport();
+
+  const base: PushDiagnostics = {
+    capability,
+    lastError: swReport.error,
+    permission:
+      isBrowser() && "Notification" in globalThis
+        ? Notification.permission
+        : "unavailable",
+    serviceWorker: "unsupported",
+    serviceWorkerScript: swReport.scriptUrl,
+    standalone: isStandalone(),
+    subscribed: false,
+  };
+
+  if (!isBrowser() || !("serviceWorker" in navigator)) return base;
+
+  try {
+    const registration = await navigator.serviceWorker.getRegistration();
+    const subscription = await registration?.pushManager.getSubscription();
+    return {
+      ...base,
+      serviceWorker: registrationState(registration),
+      subscribed: subscription != null,
+    };
+  } catch (error) {
+    return {
+      ...base,
+      lastError:
+        base.lastError ??
+        (error instanceof Error ? error.message : String(error)),
+      serviceWorker: "none",
+    };
   }
 }
 

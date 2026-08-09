@@ -2043,6 +2043,10 @@ msgstr "Podemos actualizar esta política a medida que cambie la extensión. La 
 msgid "Your choices"
 msgstr "Sus opciones"
 
+#: src/components/push-diagnostics.tsx
+msgid "Installed to Home Screen"
+msgstr ""
+
 #: src/components/docs/renderers-docs-page.tsx
 #~ msgid "Pick the package for your framework; all sit on the same core."
 #~ msgstr ""
@@ -3440,6 +3444,10 @@ msgstr ""
 msgid "Reset filters"
 msgstr ""
 
+#: src/components/push-diagnostics.tsx
+msgid "Service worker"
+msgstr ""
+
 #: src/routes/_layout.feedback.index.tsx
 msgid "Hide implemented"
 msgstr "Ocultar implementadas"
@@ -4118,6 +4126,10 @@ msgstr ""
 
 #: src/components/guide/pages/finding-guide-page.tsx
 msgid "Pasting a handle works even for publications the network has not indexed yet — it goes and asks that author's account directly. Subscribe and it starts appearing in your feeds like any other."
+msgstr ""
+
+#: src/components/push-diagnostics.tsx
+msgid "If notifications aren’t working, this is what your browser reports. Sharing a screenshot of it is the fastest way to get it fixed."
 msgstr ""
 
 #: src/routes/_layout.p.$did.$rkey.tsx
@@ -5507,6 +5519,10 @@ msgstr "Seguir la lectura"
 msgid "Show all feedback"
 msgstr ""
 
+#: src/components/user-settings-view.tsx
+msgid "Troubleshooting"
+msgstr ""
+
 #. placeholder {0}: issue.label
 #: src/components/comic/comic-shelf.tsx
 msgid "Read {0}"
@@ -5778,6 +5794,10 @@ msgstr ""
 
 #: src/components/docs/labelers-docs-page.tsx
 msgid "Labels may apply to a document's <0>at://</0> URI or to an account DID. Account labels are shown on that account's author and publication pages and on every document it published, so a label about a publisher does not need to be re-emitted per post."
+msgstr ""
+
+#: src/components/push-diagnostics.tsx
+msgid "Checking…"
 msgstr ""
 
 #: src/components/guide/pages/lists-guide-page.tsx
@@ -6243,6 +6263,10 @@ msgstr ""
 #: src/components/reader/reader-queue-rows.tsx
 msgid "Article unavailable"
 msgstr "Artículo no disponible"
+
+#: src/components/push-diagnostics.tsx
+msgid "Permission"
+msgstr ""
 
 #: src/components/reader/atstore-review-prompt.tsx
 msgid "Create will publish your review to ATStore."
@@ -7132,8 +7156,13 @@ msgstr "Buscar en sus suscripciones"
 msgid "Standard Reader works the other way round. You sign in with a Bluesky account, and the things you do here — what you subscribe to, follow, save, recommend, and read — are written into your own account's storage, the same place your Bluesky posts live. We keep a copy so the app is fast, but the original is yours. Another app built on the same network can read it, and if you stop using Standard Reader, none of it disappears."
 msgstr ""
 
+#: src/components/push-diagnostics.tsx
 #: src/components/reader/use-subscriptions-tree.tsx
 msgid "Subscription"
+msgstr ""
+
+#: src/components/push-diagnostics.tsx
+msgid "Last error"
 msgstr ""
 
 #: src/components/reader/collection-publication-editor.tsx
@@ -7387,6 +7416,10 @@ msgstr ""
 #: src/components/guide/pages/getting-started-guide-page.tsx
 #~ msgid "After that, following is one button. Anywhere you see a publication — a card in a feed, the top of an article, a publication's own page — there is a <0>Follow</0> button next to its name. Select it again to stop following. Nothing else changes: the button just decides whether new writing from that publication reaches your Home and Latest."
 #~ msgstr ""
+
+#: src/components/push-diagnostics.tsx
+msgid "Support"
+msgstr ""
 
 #: src/components/reader/rss-feed-button.tsx
 msgid "Subscribe to {name} in any RSS reader — new articles show up there as soon as they publish."
