@@ -13,8 +13,13 @@
  * than that, and the sweep's own caching means a run that finds no drift makes
  * no naming calls at all.
  *
- * Reads `discover_topic_counts` for its vocabulary, which the hourly sweep
- * rebuilds — so this only needs the counts to exist, not to have just run.
+ * Refreshes `discover_topic_counts` first, then derives from it. Those counts
+ * used to be rebuilt by the hourly sweep, but their aggregation is a full
+ * `documents` × tags scan (~119s) and an hour of ingest moves 85 of their 1.05M
+ * rows — so hourly cost two minutes of contention against live traffic for
+ * 0.008% drift. Daily is the right cadence, and running it here means the
+ * vocabulary this script clusters is the freshest available rather than up to
+ * an hour stale.
  *
  * Env:
  *   ANTHROPIC_API_KEY       enables naming; without it clusters fall back to a
@@ -25,15 +30,19 @@
  */
 
 import { recomputeTopics } from "../src/server/ingest/recompute-topics.ts";
+import { recomputeDiscoverTopicCounts } from "../src/server/ingest/recompute.ts";
 import { logEvent } from "../src/server/observability/log.ts";
 
 const startedAt = Date.now();
 
 try {
+  await recomputeDiscoverTopicCounts();
+  const countsMs = Date.now() - startedAt;
+
   const summary = await recomputeTopics();
   const durationMs = Date.now() - startedAt;
 
-  logEvent("topics.cron", { durationMs, ...summary });
+  logEvent("topics.cron", { countsMs, durationMs, ...summary });
   console.info(
     `[topics-cron] ${summary.published} published from ${summary.clusters} clusters ` +
       `(${summary.tags} tags, ${summary.edges} edges, ${summary.semanticEdges} semantic), ` +
