@@ -60,6 +60,7 @@ import {
 } from "lucide-react";
 import {
   Fragment,
+  useCallback,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -140,6 +141,46 @@ function articleReadingProgress(content: HTMLElement): number {
   return Math.min(1, Math.max(0, (scrollY - contentTop) / range));
 }
 
+/**
+ * How tall the article's own top bar is, measured rather than assumed — it wraps
+ * differently by title length and grows with the reader's text-size dial, so the
+ * distance it has to travel to clear the screen is never a constant. Published
+ * on the sticky chrome by {@link useTopBarHeight} and read back by
+ * `styles.stickyChrome`.
+ */
+const READER_TOP_BAR_HEIGHT = "--reader-top-bar-height";
+
+/**
+ * Keeps {@link READER_TOP_BAR_HEIGHT} on `host` in sync with the measured height
+ * of the returned ref's element. Written straight to the DOM: the height changes
+ * on resize and on the text-size dial, neither of which anything needs to
+ * re-render for.
+ */
+function useTopBarHeight(host: React.RefObject<HTMLElement | null>) {
+  return useCallback(
+    (node: HTMLElement | null) => {
+      if (!node) return;
+
+      const publish = () => {
+        host.current?.style.setProperty(
+          READER_TOP_BAR_HEIGHT,
+          `${node.getBoundingClientRect().height}px`,
+        );
+      };
+
+      publish();
+      const resizeObserver = new ResizeObserver(publish);
+      resizeObserver.observe(node);
+
+      return () => {
+        resizeObserver.disconnect();
+        host.current?.style.removeProperty(READER_TOP_BAR_HEIGHT);
+      };
+    },
+    [host],
+  );
+}
+
 const styles = stylex.create({
   root: {
     "--current-word-highlight-background-color": primaryColor.solid1,
@@ -186,6 +227,15 @@ const styles = stylex.create({
     // between the two as they move. Offsetting `top` rather than transforming
     // also keeps it out of the way near the top of the page, where this header
     // rides along in normal flow instead of sticking.
+    //
+    // The second term is what a reader moving forward through an article is left
+    // with. Once the app bar has scrolled away it also publishes
+    // `--app-chrome-hidden: 1`, and this pulls itself up by exactly the height of
+    // its own top bar — so the back button, byline and actions clear the top of
+    // the screen and the progress track underneath them lands flush against it.
+    // The whole of the screen is then the article, with a hairline of progress
+    // above it. Scrolling up hands both back at once: one `top`, one transition,
+    // so the bar and this header never separate mid-flight.
     transitionDuration: animationDuration.slow,
     transitionProperty: {
       default: "top",
@@ -193,7 +243,7 @@ const styles = stylex.create({
     },
     transitionTimingFunction: animationTimingFunction.easeInOut,
     zIndex: 20,
-    top: "var(--app-navbar-offset, 0px)",
+    top: `calc(var(--app-navbar-offset, 0px) - var(--app-chrome-hidden, 0) * var(${READER_TOP_BAR_HEIGHT}, 0px))`,
   },
   topBar: {
     alignItems: "center",
@@ -957,6 +1007,10 @@ function ArticleViewBody({
   const { rememberOpenInMagazine } = useOpenCollectionsInMagazine();
   const { preference: readingTypography } = useReadingTypography();
   const articleRef = useRef<HTMLElement>(null);
+  // The sticky header lifts itself by the height of its own top bar once the
+  // reader is moving forward, leaving only the progress track on screen.
+  const stickyChromeRef = useRef<HTMLDivElement>(null);
+  const setTopBarNode = useTopBarHeight(stickyChromeRef);
   const [progress, setProgress] = useState(0);
   const [showMagazineIntro, setShowMagazineIntro] = useState(
     () => Boolean(article.collection) && !hasSeenCollectionMagazineIntro(),
@@ -1149,8 +1203,8 @@ function ArticleViewBody({
       data-unclipped-sticky
       {...stylex.props(styles.root, readerActive && styles.rootReader)}
     >
-      <div {...stylex.props(styles.stickyChrome)}>
-        <div {...stylex.props(styles.topBar)}>
+      <div ref={stickyChromeRef} {...stylex.props(styles.stickyChrome)}>
+        <div ref={setTopBarNode} {...stylex.props(styles.topBar)}>
           <div {...stylex.props(styles.topLeft)}>
             <IconButton
               variant="secondary"

@@ -23,6 +23,17 @@ const SCROLL_THRESHOLD = 16;
 const NAVBAR_OFFSET_PROPERTY = "--app-navbar-offset";
 
 /**
+ * `1` while the bar is scrolled away, `0` any time it is on screen — including
+ * near the top of the page, where it rides along in normal flow and `revealed`
+ * is still false. Published next to {@link NAVBAR_OFFSET_PROPERTY} so chrome
+ * further down can take the same cue and get out of the way with it, rather
+ * than running a second scroll listener that would drift out of step. The
+ * article view's sticky header uses it to lift everything but its progress bar
+ * off the top of the screen.
+ */
+const CHROME_HIDDEN_PROPERTY = "--app-chrome-hidden";
+
+/**
  * Coalesce scroll callbacks down to one per frame. hip-ui reaches for
  * `raf-throttle` here; this copy inlines the handful of lines it uses so the
  * design system doesn't pull in a dependency for them.
@@ -107,6 +118,7 @@ export const useAnimatedNavbar = ({
       nav.style.removeProperty("box-shadow");
       nav.style.removeProperty("transition");
       offsetHost?.style.setProperty(NAVBAR_OFFSET_PROPERTY, "0px");
+      offsetHost?.style.setProperty(CHROME_HIDDEN_PROPERTY, "0");
       return;
     }
 
@@ -120,6 +132,10 @@ export const useAnimatedNavbar = ({
     offsetHost?.style.setProperty(
       NAVBAR_OFFSET_PROPERTY,
       revealed.current ? `${height.current}px` : "0px",
+    );
+    offsetHost?.style.setProperty(
+      CHROME_HIDDEN_PROPERTY,
+      revealed.current ? "0" : "1",
     );
   }, [offsetTarget]);
 

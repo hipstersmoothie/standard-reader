@@ -527,6 +527,19 @@ in structured o11y (`observe`) and reads from the Neon read-model.
 Build each on hip-ui components + StyleX tokens (no raw HTML/inline styles).
 
 - [x] App shell: desktop persistent left sidebar; mobile top bar + bottom tab nav; Following list.
+- [x] **Mobile chrome gets out of the way while reading** — the top bar already scrolled
+      away and slid back on scroll up (`useAnimatedNavbar`); the bottom tab nav now mirrors
+      it downward (`useAnimatedBottomNav`), sliding out through the bottom edge as you read
+      forward and coming back on a small scroll up. The dock follows it partway so the page
+      reader transport drops into the vacated slot instead of floating over a gap. On iOS
+      the bar fades in and out where it stands instead — Safari's own bottom toolbar resizes
+      the dynamic viewport with the same scroll, so the travel distance is re-decided
+      mid-slide and the bar lands short. Platform check is react-aria's `isIOS()`.
+      Above the fold the same gesture clears the top: `useAnimatedNavbar` now publishes
+      `--app-chrome-hidden` next to `--app-navbar-offset`, and the article's sticky header
+      reads it to pull itself up by its own measured height — so back/byline/actions leave
+      with the app bar and the only thing left against the top of the screen is the reading
+      progress track. ([Mobile Screen Real-Estate](https://userinput.app/d/did:plc:3x5npw4cb2twifyqcox7jmqj/3mrwcpbgousq2))
 - [x] **Home** — masthead (date + unread count), featured lead, latest unread rows, right rail (Trending articles + You might follow).
 - [x] **Latest** — chronological list, segmented Unread / Subscriptions / All-network filter with counts (Unread = unread docs from subs, Subscriptions = all docs from subs, All = whole network).
 - [x] **Discover** — Trending / Topics / Recommended / Followed-by-people-you-follow / All (chips, sort, grid⇄list toggle).
