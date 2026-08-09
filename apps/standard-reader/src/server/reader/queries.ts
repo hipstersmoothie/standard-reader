@@ -483,16 +483,11 @@ export function buildFollowFeedCandidateSql(
     base.push(documentNotReadWhere(schema, opts.unreadForDid));
   const baseWhere = and(...base) ?? sql`true`;
 
-  const directParts: Array<SQL> = [inArray(d.did, followedUserDids)];
-  if (publicationUris.length > 0) {
-    directParts.push(inArray(d.publicationUri, publicationUris));
-  }
-  const directOr = or(...directParts) ?? sql`false`;
-
   // Cutoff strategy: apply the cutoff AFTER the union, on a small bounded
   // candidate pool — NOT inside each union branch. The union branches rely on an
-  // indexed `ORDER BY published_at DESC LIMIT k` scan (`documents_published_idx`)
-  // to stay cheap; joining the four cutoff CTEs *inside* each branch (the
+  // indexed `ORDER BY published_at DESC LIMIT k` scan (per-source composite
+  // indexes for the two direct branches below, `documents_published_idx` for the
+  // rest) to stay cheap; joining the four cutoff CTEs *inside* each branch (the
   // `countFollowedDocuments` shape) blocks that index pushdown and regresses to
   // walking ~364K documents + joining the cutoffs per row (~1.8s, verified via
   // EXPLAIN). `countFollowedDocuments` can use the in-branch join shape because
@@ -506,6 +501,66 @@ export function buildFollowFeedCandidateSql(
   // through only one followed source still gets that source's cutoff — matching
   // `readerSourceCutoffSql`'s `min` over the union.
   const poolK = suppressOld ? k * CUTOFF_POOL_MULT : k;
+
+  /**
+   * Newest-`poolK` documents for one class of followed source (publications, or
+   * authors), as a top-k-per-source lateral merged back down to `poolK`.
+   *
+   * The obvious form — a single branch with `where did in (...) or
+   * publication_uri in (...) order by published_at desc limit k` — is a trap.
+   * Neither IN-list is index-served under the `OR`, so Postgres walks
+   * `documents_published_idx` newest-first and filters: measured **257,677 rows
+   * discarded to return 214**, 1651ms of a 1672ms query, for a reader following
+   * ~177 publications + 9 authors. That cost scales with the whole corpus, so it
+   * degrades for every reader as `documents` grows.
+   *
+   * Splitting the `OR` into two branches is necessary but not sufficient — the
+   * planner still prefers the date index for a bare `in (...)`, and the unread
+   * `NOT EXISTS` pushes it back there even on the `did` branch (4603ms, 459,153
+   * rows discarded). Driving each branch from `unnest(...) cross join lateral`
+   * forces the per-source composite index
+   * (`documents_publication_published_idx` / `documents_did_published_idx`) —
+   * one bounded top-k scan per followed source. Measured: **40.5ms** for both
+   * branches together, now scaling with the reader's follow count instead of the
+   * corpus.
+   *
+   * `order by` must stay `desc nulls last` to match those indexes (see memory
+   * `drizzle-nulls-last-index-mismatch`).
+   */
+  const followedSourceBranch = (column: SQL, values: Array<string>): SQL => {
+    const list = sql.join(
+      values.map((value) => sql`${value}`),
+      sql`, `,
+    );
+    return sql`
+        (
+          select src_doc.uri as uri, src_doc.published_at as feed_at,
+                 src_doc.published_at as published_at, 0 as src,
+                 src_doc.publication_uri as publication_uri, src_doc.did as did
+          from unnest(array[${list}]::text[]) as src_key(value)
+          cross join lateral (
+            select ${d.uri} as uri, ${d.publishedAt} as published_at,
+                   ${d.publicationUri} as publication_uri, ${d.did} as did
+            from ${d}
+            where ${column} = src_key.value and ${baseWhere}
+            order by ${d.publishedAt} desc nulls last, ${d.uri} desc
+            limit ${poolK}
+          ) src_doc
+          order by src_doc.published_at desc nulls last, src_doc.uri desc
+          limit ${poolK}
+        )`;
+  };
+
+  // Followed authors is always non-empty in union mode (`selectArticleCards`
+  // short-circuits otherwise); publications can legitimately be empty.
+  const directBranches: Array<SQL> = [
+    followedSourceBranch(sql`${d.did}`, followedUserDids),
+  ];
+  if (publicationUris.length > 0) {
+    directBranches.push(
+      followedSourceBranch(sql`${d.publicationUri}`, publicationUris),
+    );
+  }
 
   const cutoffCtes = suppressOld
     ? sql`with
@@ -562,15 +617,7 @@ export function buildFollowFeedCandidateSql(
         u.uri as uri, u.feed_at as feed_at, u.published_at as published_at,
         u.publication_uri as publication_uri, u.did as did
       from (
-        (
-          select ${d.uri} as uri, ${d.publishedAt} as feed_at,
-                 ${d.publishedAt} as published_at, 0 as src,
-                 ${d.publicationUri} as publication_uri, ${d.did} as did
-          from ${d}
-          where ${baseWhere} and (${directOr})
-          order by ${d.publishedAt} desc nulls last, ${d.uri} desc
-          limit ${poolK}
-        )
+        ${sql.join(directBranches, sql` union all `)}
         union all
         (
           select ${d.uri} as uri, ${d.publishedAt} as feed_at,
@@ -3116,39 +3163,65 @@ async function coReadScoresForDocument(
   return result.rows as Array<ScoredUri>;
 }
 
-async function tagOverlapScoresForDocument(
-  db: Db,
+/**
+ * Cross-publication tag-overlap scores for one document.
+ *
+ * The candidate scan is gated by `immutable_normalized_tags(tags) && <anchor>`
+ * so `documents_tags_norm_idx` serves it — the same lesson as
+ * `documentCarriesTagWhere` / migration 0014, which this query predated. The
+ * `unnest(d.tags) ... WHERE lower(btrim(doc_tag)) IN (...)` form it replaces
+ * wrapped the column in functions the GIN index couldn't match, so the planner
+ * seq-scanned all ~3M `documents` rows into an ~11.8M-row nested loop and a
+ * disk-spilling HashAggregate: 16.9s mean, and **27% of all database time**
+ * across the fleet, since this fires on every article page view.
+ *
+ * The anchor stays a `MATERIALIZED` CTE rather than a second query — one round
+ * trip matters more than the SQL here (see memory `railway-neon-region-mismatch`).
+ * Scoring still unnests per candidate, but only over rows the index matched.
+ * Measured on the heaviest anchor (11 tags, ~18.9K matching docs): **254ms**.
+ */
+export function buildTagOverlapScoresSql(
   documentUri: string,
   publicationUri: string | null,
-): Promise<Array<ScoredUri>> {
+): SQL {
   const samePubFilter = publicationUri
     ? sql`AND d.publication_uri IS DISTINCT FROM ${publicationUri}`
     : sql``;
 
-  const result = await db.execute(sql`
-    WITH anchor_tags AS (
-      SELECT lower(btrim(tag)) AS tag
-      FROM documents d, unnest(d.tags) AS tag
-      WHERE d.uri = ${documentUri}
-        AND btrim(tag) <> ''
+  return sql`
+    WITH anchor AS MATERIALIZED (
+      SELECT immutable_normalized_tags(tags) AS tags
+      FROM documents
+      WHERE uri = ${documentUri}
     ),
     shared AS (
       SELECT d.uri,
              count(*)::float AS score
       FROM documents d,
-           unnest(d.tags) AS doc_tag
+           unnest(immutable_normalized_tags(d.tags)) AS doc_tag
       WHERE d.deleted = false
         AND d.uri != ${documentUri}
         AND d.published_at <= now()
         ${samePubFilter}
-        AND lower(btrim(doc_tag)) IN (SELECT tag FROM anchor_tags)
+        AND immutable_normalized_tags(d.tags) && (SELECT tags FROM anchor)
+        AND doc_tag = ANY((SELECT tags FROM anchor)::text[])
       GROUP BY d.uri
     )
     SELECT uri, score
     FROM shared
     ORDER BY score DESC
     LIMIT 30
-  `);
+  `;
+}
+
+async function tagOverlapScoresForDocument(
+  db: Db,
+  documentUri: string,
+  publicationUri: string | null,
+): Promise<Array<ScoredUri>> {
+  const result = await db.execute(
+    buildTagOverlapScoresSql(documentUri, publicationUri),
+  );
 
   return result.rows as Array<ScoredUri>;
 }
