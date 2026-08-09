@@ -150,6 +150,9 @@ importers:
       '@atproto/xrpc-server':
         specifier: ^0.11.1
         version: 0.11.1
+      '@aturi.to/waypoints':
+        specifier: ^0.1.1
+        version: 0.1.1
       '@fontsource-variable/atkinson-hyperlegible-next':
         specifier: ^5.2.6
         version: 5.2.6
@@ -1096,6 +1099,10 @@ packages:
   '@atproto/xrpc@0.8.0':
     resolution: {integrity: sha512-NJy02bIKrWlE2NQkRV1kT0Cj0ixbuxlF/MejBdo4cPWAa9v3oZexvAcjjb0zaOYeABkaU14iyIhvn2G4e/oLpw==}
     engines: {node: '>=22'}
+
+  '@aturi.to/waypoints@0.1.1':
+    resolution: {integrity: sha512-cVLylDn5OJNc7z8fNlLWCTv6EznXuzQOsiG0aXl1vBk9doxtvsjb0E34kU+8FLXQ6Yrb5wOftHc81JEtkab/aQ==}
+    engines: {node: '>=18'}
 
   '@babel/code-frame@7.27.1':
     resolution: {integrity: sha512-cjQ7ZlQ0Mv3b47hABuTevyTuYN4i+loJKGeV9flcCgIK37cCXRh+L1bd3iBHlynerhQ7BhCkn2BPbQUL+rGqFg==}
@@ -10477,6 +10484,8 @@ snapshots:
     dependencies:
       '@atproto/lexicon': 0.7.1
       zod: 3.25.76
+
+  '@aturi.to/waypoints@0.1.1': {}
 
   '@babel/code-frame@7.27.1':
     dependencies:

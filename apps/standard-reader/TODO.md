@@ -551,6 +551,16 @@ Build each on hip-ui components + StyleX tokens (no raw HTML/inline styles).
 - [x] **Article discussion** — Bluesky comment section on documents: Constellation backlink discovery for external + app quote-share URLs, direct replies to the author's `bskyPostRef` (excluded from the list itself), hydrated via public AppView, facet-rendered commentary, reply counts linking to bsky threads (`commentsApi.getDocumentComments`).
 - [x] **Article discussion — margin.at** — merge `at.margin.note` / `at.margin.annotation` / `at.margin.highlight` and `network.cosmik.card` NOTE cards on the document's canonical URL into the same Discussion feed via Constellation (`at.margin.*` at `.target.source`, cosmik at `.url` / `.content.url`); hydrate from author PDS + Bluesky/margin profile; quote-style cards for `TextQuoteSelector` passages; reply counts via `at.margin.reply`; margin notes link to margin.at; cosmik NOTE cards link to Semble (`semble.so/url?id=…`); cosmik URL bookmarks excluded from counts.
 - [x] **Article discussion — Constellation expansion** — widen Bluesky link paths (`embed.media.external`, alternate facet shape); below-fold **Cited in** rail plus **Related reading** merged with bidirectional `network.cosmik.connection` graph edges (`.target` + `.source`); `pnpm scan:discussion-sources` for ongoing `/links/all` discovery. (Skyreader shares evaluated and excluded from Discussion — full-article HTML reshare does not fit the comment-card model.)
+- [x] **Article discussion — "Add comment"** (2026-08-08). Button in the Discussion section head
+      (and its empty state) opening a dialog of places to write one, since the reader stores no
+      comments itself. Reply mode when the document has a `bskyPostRef` — every Bluesky client that
+      can render the post, sourced from the `@aturi.to/waypoints` catalog
+      (`blueskyClients`/`blueskyForks`) so new clients need no code change; post mode otherwise —
+      a compose intent pre-filled with `@author` and the article's Standard Reader URL, limited to
+      the official app and its forks (the only ones with `/intent/compose`). Plus a per-platform
+      row for Leaflet (comment drawer) and pckt. Client labels/icons and off-catalog clients
+      (mu.social) live in `#/lib/bsky-clients`; app icons vendored under `public/brand/clients/`.
+      The compose-capable list also now backs the share menu's "Share to Alternate Client".
 - [x] **Article discussion — badge count derives from the rendered list** (2026-08-02). Two bug
       reports: badges that showed fewer comments than the section rendered (19 items behind a "3"),
       and badges no reader could reconcile against the items. Both came from the count being a
