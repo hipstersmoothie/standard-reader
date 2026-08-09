@@ -269,6 +269,22 @@ export async function recomputeDocumentBacklinks(): Promise<number> {
 /**
  * Precompute per-document trending scores for the recency-gated candidate set.
  * Articles below the distinct-recommender floor get score 0.
+ *
+ * **Only rows whose score actually moved are written.** This used to open with
+ * a blanket `UPDATE ... SET trending_score = 0` over every eligible document,
+ * then immediately overwrite all of them with their real score. Measured, the
+ * two passes targeted *the same 24,602 rows* — symmetric difference zero in
+ * both directions — so every eligible document was written twice an hour, and
+ * the zeroing pass alone cost 62.9s mean / 10,063s total over 6.7 days, ~3x the
+ * scoring pass it was priming.
+ *
+ * That is expensive out of proportion to the row count because `trending_score`
+ * is indexed (`documents_trending_idx`), so each write is a non-HOT update: a
+ * new tuple version in *every* index on a 12GB table, including the tags GIN.
+ * And of the 24,602 eligible documents only ~13 carry a non-zero score — the
+ * rest were rewriting 0 over 0. The `IS DISTINCT FROM` guard on the scoring
+ * update skips those; `trending_recomputed_at` stops advancing for skipped
+ * rows, which is free because nothing reads that column.
  */
 export async function recomputeDocumentTrending(): Promise<void> {
   const maxAge = TRENDING_MAX_AGE_DAYS;
@@ -279,24 +295,6 @@ export async function recomputeDocumentTrending(): Promise<void> {
   const wBl = ARTICLE_BLEND.backlinks;
   const wBlVel = ARTICLE_BLEND.backlinkVelocity;
   const wPub = ARTICLE_BLEND.parentPublication;
-
-  await db.execute(sql`
-    UPDATE documents d
-    SET trending_score = 0,
-        distinct_recommender_count = 0,
-        trending_recomputed_at = now()
-    WHERE d.deleted = false
-      AND d.publication_uri IS NOT NULL
-      AND EXISTS (
-        SELECT 1 FROM publications p
-        WHERE p.uri = d.publication_uri
-          AND p.deleted = false
-          AND p.show_in_discover = true
-          AND p.url NOT ILIKE ${EXCLUDED_PUBLICATION_URL_PATTERN}
-          AND d.published_at > now() - (${maxAge}::text || ' days')::interval
-          AND d.published_at <= now()
-      )
-  `);
 
   await db.execute(sql`
     WITH eligible AS (
@@ -391,6 +389,38 @@ export async function recomputeDocumentTrending(): Promise<void> {
         trending_recomputed_at = now()
     FROM scored sc
     WHERE d.uri = sc.uri
+      AND (d.trending_score IS DISTINCT FROM sc.score
+           OR d.distinct_recommender_count IS DISTINCT FROM sc.distinct_cnt)
+  `);
+
+  // Clear scores left on documents that have since fallen out of the candidate
+  // set — aged past the window, unpublished, deleted, or on a publication that
+  // left Discover. The old zeroing pass never did this: its predicate selected
+  // *eligible* rows, so anything that aged out kept its last score forever (276
+  // such rows at the time of writing, against 13 legitimately current ones).
+  // Readers are unaffected either way — every trending query re-applies the
+  // same recency gate — but leaving the column lying is a trap for the next
+  // caller who trusts it without the gate.
+  //
+  // Cheap despite naming no candidate set: `documents_trending_idx` makes
+  // `trending_score <> 0` an index scan over the handful of scored rows, and
+  // the NOT EXISTS is a primary-key probe per row.
+  await db.execute(sql`
+    UPDATE documents d
+    SET trending_score = 0,
+        distinct_recommender_count = 0,
+        trending_recomputed_at = now()
+    WHERE d.trending_score <> 0
+      AND NOT EXISTS (
+        SELECT 1 FROM publications p
+        WHERE p.uri = d.publication_uri
+          AND p.deleted = false
+          AND p.show_in_discover = true
+          AND p.url NOT ILIKE ${EXCLUDED_PUBLICATION_URL_PATTERN}
+          AND d.deleted = false
+          AND d.published_at > now() - (${maxAge}::text || ' days')::interval
+          AND d.published_at <= now()
+      )
   `);
 }
 
