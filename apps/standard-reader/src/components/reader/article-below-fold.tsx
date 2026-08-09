@@ -382,7 +382,7 @@ export function ArticleBelowFold({
         <MoreFromSection pub={pub} moreFrom={extras.moreFrom} />
       ) : null}
 
-      {showComments ? <CommentsSection documentUri={article.uri} /> : null}
+      {showComments ? <CommentsSection article={article} /> : null}
 
       {extras ? <CitedInSection citedIn={extras.citedIn} /> : null}
 

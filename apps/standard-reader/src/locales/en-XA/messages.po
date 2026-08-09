@@ -1235,6 +1235,10 @@ msgstr ""
 msgid "<0>Reading activity.</0> When reading history is enabled, articles you open are recorded as public AT Protocol records in <1>your</1> repository — not as private app-only data. You can turn this off in Settings; existing records remain in your repo until you delete them from the Personal data section."
 msgstr ""
 
+#: src/components/reader/comments/add-comment-dialog.tsx
+msgid "Opens a new post linking to this article."
+msgstr ""
+
 #: src/routes/_layout.friends.tsx
 msgid "Browse the directory"
 msgstr ""
@@ -1462,6 +1466,10 @@ msgstr ""
 
 #: src/components/guide/pages/lists-guide-page.tsx
 msgid "To move several at once, open <0>Subscriptions</0>, select the rows you want, and add them all to a list in one action. That is much faster than doing it publication by publication."
+msgstr ""
+
+#: src/components/reader/comments/add-comment-dialog.tsx
+msgid "Comment on {platformName}"
 msgstr ""
 
 #: src/components/reader/about-view.tsx
@@ -2017,6 +2025,10 @@ msgstr ""
 #: src/routes/_layout.history.tsx
 msgid "Read"
 msgstr ""
+
+#: src/components/reader/comments/add-comment-dialog.tsx
+#~ msgid "Discussion here is gathered from posts across the network, so you comment wherever you already post. Yours joins this article once the network indexes it."
+#~ msgstr ""
 
 #: src/components/reader/privacy-view.tsx
 msgid "An HttpOnly session cookie that keeps you signed in."
@@ -3722,6 +3734,10 @@ msgstr ""
 msgid "Once you subscribe to more than a handful of publications, one long list stops helping. Lists group them, and the sidebar can be arranged around how you actually read."
 msgstr ""
 
+#: src/components/reader/comments/add-comment-dialog.tsx
+#~ msgid "Discussion here is assembled from posts that live in your own repo, so comments are written wherever you already post. Pick where to write yours — it joins this article's discussion once the network indexes it."
+#~ msgstr ""
+
 #: src/components/reader/about-view.tsx
 msgid "Trending this week"
 msgstr ""
@@ -4739,6 +4755,10 @@ msgstr ""
 #~ msgid "Lexicon reference"
 #~ msgstr ""
 
+#: src/components/reader/comments/add-comment-dialog.tsx
+msgid "Add comment"
+msgstr ""
+
 #: src/components/guide/pages/publishing-guide-page.tsx
 msgid "Use the <0>at:</0> meta tags — the convention the Atmosphere settled on in 2026. <1>at:canonical</1> names the records the page is made of, the ones it would have no reason to exist without. <2>at:alternate</2> names records the page merely shows — the publication a document belongs to, a companion Bluesky post. <3>at:author</3> names the identity that wrote it. Every name repeats, so a page with two alternates emits two tags."
 msgstr ""
@@ -5091,6 +5111,10 @@ msgstr ""
 #: src/components/docs/docs-renderers-nav.tsx
 #: src/components/docs/renderers-docs-page.tsx
 msgid "Resolving platform data"
+msgstr ""
+
+#: src/components/reader/comments/add-comment-dialog.tsx
+msgid "Reply on Bluesky"
 msgstr ""
 
 #: src/components/labeler-detail-view.tsx
@@ -5782,6 +5806,14 @@ msgstr ""
 msgid "Load more ({remainingPublications} remaining)"
 msgstr ""
 
+#: src/components/reader/comments/add-comment-dialog.tsx
+msgid "{platformName} hosts comments on the original article, and they show up here too."
+msgstr ""
+
+#: src/components/reader/comments/add-comment-dialog.tsx
+msgid "This article has a post of its own. Your reply to it shows up here."
+msgstr ""
+
 #: src/routes/mcp/authorize.tsx
 msgid "You can disconnect it at any time from Settings. Standard Reader never shares your password — only the access you grant here."
 msgstr ""
@@ -6350,6 +6382,10 @@ msgstr ""
 msgid "Resume"
 msgstr ""
 
+#: src/components/reader/comments/add-comment-dialog.tsx
+msgid "Post on Bluesky"
+msgstr ""
+
 #: src/routes/_layout.u.$did.tsx
 msgid "No publications indexed yet."
 msgstr ""
@@ -6574,6 +6610,10 @@ msgstr ""
 msgid "Supported content formats"
 msgstr ""
 
+#: src/components/reader/comments/add-comment-dialog.tsx
+msgid "Add a comment"
+msgstr ""
+
 #: src/components/reader/about-view.tsx
 #~ msgid "Plays nice with the open web"
 #~ msgstr ""
@@ -6645,6 +6685,10 @@ msgstr ""
 
 #: src/components/reader/add-publication-modal.tsx
 msgid "Search publications or paste a handle"
+msgstr ""
+
+#: src/components/reader/comments/add-comment-dialog.tsx
+msgid "Opens a new post linking to this article and tagging <0>@{authorHandle}</0>."
 msgstr ""
 
 #: src/components/site-legal-links.tsx
@@ -6875,6 +6919,10 @@ msgstr ""
 #: src/components/guide/pages/personalizing-guide-page.tsx
 #: src/lib/guide/navigation.ts
 msgid "The weekly digest"
+msgstr ""
+
+#: src/components/reader/comments/add-comment-dialog.tsx
+msgid "Discussion here is gathered from posts across the network, so you comment wherever you already post."
 msgstr ""
 
 #: src/routes/_layout.tag.$tag.tsx

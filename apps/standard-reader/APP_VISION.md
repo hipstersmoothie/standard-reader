@@ -265,6 +265,21 @@ Topics are **derived, never curated** — see
 - Footer: publication card + follow; "More from {publication}"; **Related reading** (cross-publication
   articles by shared tags and co-read, plus Margin graph connections — one "Across the network" rail via `getArticleExtras`).
 - **Discussion:** Bluesky posts linking the article (external URL, embed media links, and app quote shares), plus direct replies to the author's linked announcement post (`bskyPostRef`), read-only — reply counts link out to bsky threads. The announcement post itself is not listed as a comment. **margin.at** notes (`at.margin.note` / `at.margin.annotation` / `at.margin.highlight`) on the article's canonical URL are merged into the same feed via Constellation backlink discovery; passage-anchored notes render like Bluesky quote posts (blockquote + commentary) and link out to margin.at. **`network.cosmik.card` NOTE cards** (Semble) are merged the same way but link out to the Semble activity page for the bookmarked URL (`semble.so/url?id=…`); cosmik URL bookmarks are excluded from counts. **pckt notes** (`blog.pckt.mini.post`) that reply to or quote the article are discovered the same way and link out to pckt; their reply counts come from other notes whose own `.reply.parent.uri` points back at them (Constellation on `blog.pckt.mini.post:.reply.parent.uri`), not from the document backlink itself. Below Discussion, **Cited in** lists other indexed articles whose body links to this URL (`site.standard.document` / `pub.leaflet.document` facet paths via Constellation). **Across the network → Related reading** merges co-read/tag-related articles with bidirectional `network.cosmik.connection` graph edges (`.target` and `.source` via Constellation; Semble-linked peers appear first with a connection label). Article-card `commentCount` badges are **`items.length` of that same merged Discussion list** — one cached build per document feeds both the badge and the rendered section, so a badge is always reconcilable against the items below it. The Discussion section itself **rebuilds on every request** so an open thread never lags behind new replies, and that build refreshes the badge; badges alone are **stale-while-revalidate** — they return the cached count (0 before the first build) immediately and rebuild in the background only once the 5-minute entry expires, so a number stays put while a reader scrolls instead of shifting under them. Counting per-source Constellation totals separately (the pre-2026-08 approach) drifted from the list in both directions — it summed every link path and every link target without deduping, counted the author's own announcement post and records that failed hydration, and counted records the list filters out. `pnpm scan:discussion-sources` probes Constellation `/links/all` across indexed URLs to surface unhandled `collection:path` pairs.
+- **Add a comment:** the Discussion section head (and its empty state) carries an **Add comment**
+  button opening a dialog of places to write one — Standard Reader still stores no comments of its
+  own, so every row is a link out to a surface whose records the Discussion list already reads back.
+  When the document carries a `bskyPostRef`, that post _is_ the thread and every Bluesky client
+  links straight to it, ready to reply; the list of clients comes from the
+  [`@aturi.to/waypoints`](https://www.npmjs.com/package/@aturi.to/waypoints) catalog (`blueskyClients`
+  - `blueskyForks` categories) so a newly catalogued client appears without a code change, with
+    `#/lib/bsky-clients` adding the app icons, hostname labels, and clients the catalog hasn't picked
+    up yet (mu.social). Without a post ref there is nothing to reply to, so the destination is a fresh
+    post pre-filled with `@author` and the article's Standard Reader URL — one of the exact link
+    targets Discussion resolves backlinks against, so the post returns to this page once Constellation
+    indexes it; only clients that implement `/intent/compose` (the official app and forks of it) can
+    take a pre-filled draft, so that list is narrower than the one that can open a post. Leaflet and
+    pckt get a second row straight to the article on their own site (Leaflet with
+    `?interactionDrawer=comments`); Offprint has no comment surface and is absent.
 - Opening an article marks it read.
 - **Open on original site (preference):** a user-menu toggle (cookie for
   everyone; `user.open_links_externally` when signed in). When on, document
@@ -1350,7 +1365,7 @@ publication list looked clean.
 
 ### Non-goals (for now)
 
-- A **read-first client**: no in-app posting or authoring publications. Discussion is surfaced read-only from Bluesky (link shares + quote shares) and margin.at (web annotations); threads open on bsky or margin.at.
+- A **read-first client**: no in-app posting or authoring publications. Discussion is surfaced read-only from Bluesky (link shares + quote shares) and margin.at (web annotations); threads open on bsky or margin.at. **Add a comment** does not change that — it hands the reader off to a client that does the writing, and the comment comes back through the same read-only backlink discovery as every other item in the list.
   - The `standard-reader` **CLI** (see §8) does write to an author's repo, but it is a separate
     binary an author runs against their own account — not an in-app authoring surface. The reading
     client stays read-first.
