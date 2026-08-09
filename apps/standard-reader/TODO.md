@@ -1184,13 +1184,16 @@ Backend/API exists; UI or copy is missing.
       rather than a full `upsertPublication` per row. ~40s where the per-repo shape measured
       ~46 min of PDS reads alone.
       A comic publication's page shows a **shelf of covers** instead of its archive list
-      ([`comic-shelf.tsx`](src/components/comic/comic-shelf.tsx)): `selectComicShelf` parses the
-      issue number out of each post title ([`issue-title.ts`](src/lib/comic/issue-title.ts)),
-      collapses consecutive pages into issues, and fronts each with its cover art, so a reader
-      browses issues rather than scrolling `#1 Cover`, `#1, Pg. 1`, `#1, Pg. 2`. The convention is
-      treated as a guess — under 70% of titles parsing, or a single group, leaves `grouped: false`
-      and the ordinary list stands, as do the read/unread filters. Awaited in the route loader for
-      comics so the shelf is part of first paint.
+      ([`comic-shelf.tsx`](src/components/comic/comic-shelf.tsx)) — always, because a comic's
+      archive is art and a list of `Pg01`, `Pg02` shows none of it. What one cover stands for is
+      `ComicShelf.mode`, decided by `planComicShelf`: when at least 70% of the titles carry an
+      issue number ([`issue-title.ts`](src/lib/comic/issue-title.ts)) consecutive pages collapse
+      into one cover per issue (`"issues"`, so a reader browses `#1` / `#2` rather than scrolling
+      `#1 Cover`, `#1, Pg. 1`, `#1, Pg. 2`); when they don't there is no structure to collapse and
+      every post keeps its own cover (`"pages"`, a grid of page thumbnails). One body is opened per
+      shelf entry for its art, so a page-per-card comic costs a row per post. Only over the full
+      archive — the read/unread filters stay a list, since a shelf can't express "half of issue 3".
+      Awaited in the route loader for comics so the shelf is part of first paint.
       **Unread works by the issue**: an issue is unread while any of its pages is, so the shelf is
       reader-scoped — `selectComicShelf` hands each issue the reader's unread pages
       (`selectUnreadDocumentUris`, the same query the archive filter and "mark all as read" use),

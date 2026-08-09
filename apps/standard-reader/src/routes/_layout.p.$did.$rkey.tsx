@@ -743,19 +743,21 @@ function PublicationProfileContent({
   }, [filter, nextOffset, uri]);
 
   // A comic posts one page per document, so its full archive is a long list of
-  // near-identical rows. When the titles carry issue numbers, those pages are
-  // collapsed back into issues and shown as covers instead. Only over the full
-  // archive: the read/unread filters are per-page, and a shelf can't express
-  // "half of issue 3".
+  // near-identical rows. The shelf shows that art instead — collapsed into
+  // issues when the titles carry issue numbers, one card per post when they
+  // don't. Only over the full archive: the read/unread filters are per-page, and
+  // a shelf can't express "half of issue 3".
   const shelfEnabled = pub.serial?.kind === "comic" && filter === "all";
   const { data: shelf, isPending: shelfPending } = useQuery({
     ...publicationApi.getComicShelfQueryOptions(uri, { readerScope }),
     enabled: shelfEnabled,
   });
-  // Until it resolves we don't know whether the titles group at all, and
+  // Until it resolves we don't know whether there is any art to shelve, and
   // painting the page list only to swap it for a shelf is the worse flicker.
-  // The loader awaits this for comics, so it is normally already settled.
-  const showShelf = shelfEnabled && (shelfPending || Boolean(shelf?.grouped));
+  // The loader awaits this for comics, so it is normally already settled. An
+  // empty shelf means the posts carry no images at all, and the list is right.
+  const shelfIssues = shelf?.issues ?? [];
+  const showShelf = shelfEnabled && (shelfPending || shelfIssues.length > 0);
 
   const lead = documents[0];
   const rest = documents.slice(1);
@@ -836,9 +838,9 @@ function PublicationProfileContent({
           <PublicationLatestNote publicationUri={uri} />
           {showShelf ? (
             <Flex direction="column" gap="5xl">
-              {shelf?.grouped ? (
+              {shelfIssues.length > 0 ? (
                 <ComicShelf
-                  issues={shelf.issues}
+                  issues={shelfIssues}
                   order={initialPage.order}
                   trackReading={trackReading}
                   signedIn={signedIn}

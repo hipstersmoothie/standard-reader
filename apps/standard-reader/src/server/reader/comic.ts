@@ -358,36 +358,104 @@ export interface ComicShelfIssue {
   unreadPages: Array<ComicUnreadPage>;
 }
 
+/**
+ * How a shelf's entries were formed.
+ *
+ * `"issues"` — the titles carry issue numbers, so consecutive pages sharing one
+ * collapsed into a single cover. `"pages"` — they don't, so every post is its
+ * own cover. Both are shelves; the mode only says what one card stands for.
+ */
+export type ComicShelfMode = "issues" | "pages";
+
 export interface ComicShelf {
   publicationUri: string;
   issues: Array<ComicShelfIssue>;
   totalPages: number;
-  /**
-   * False when the publication's titles don't follow the issue convention. The
-   * caller keeps its ordinary archive list rather than showing a shelf built on
-   * guesses — a comic that names its posts some other way is not broken, it just
-   * can't be grouped this way.
-   */
-  grouped: boolean;
+  /** See {@link ComicShelfMode} — what one entry on this shelf stands for. */
+  mode: ComicShelfMode;
+}
+
+/** One shelf entry under construction, before its cover art is looked up. */
+export type ComicShelfGroup = {
+  issueNumber: number | null;
+  pages: Array<{ issue: ComicIssue; isCover: boolean }>;
+};
+
+/**
+ * Collapse a spine into shelf entries, one per issue number.
+ *
+ * A page whose title doesn't parse joins the issue it sits inside rather than
+ * splitting it — an interstitial with an odd title is still part of that issue.
+ */
+function groupSpineByIssue(issues: Array<ComicIssue>): Array<ComicShelfGroup> {
+  const groups: Array<ComicShelfGroup> = [];
+  for (const issue of issues) {
+    const parsed = parseComicIssueTitle(issue.title);
+    const last = groups.at(-1);
+    const sameIssue =
+      last != null &&
+      (parsed == null || last.issueNumber === parsed.issueNumber);
+    const entry = {
+      issue,
+      isCover: parsed != null && isCoverPageLabel(parsed.pageLabel),
+    };
+    if (sameIssue) last.pages.push(entry);
+    else
+      groups.push({ issueNumber: parsed?.issueNumber ?? null, pages: [entry] });
+  }
+  return groups;
 }
 
 /**
- * A comic's issues as a shelf of covers.
+ * Decide what one cover on this shelf stands for, and lay the entries out.
+ *
+ * Issue-numbered titles collapse into one entry per issue; anything else keeps
+ * a card per post, since there is no structure to collapse and grouping on a bad
+ * parse would invent one.
+ *
+ * Pure and separate from {@link selectComicShelf} so the decision can be checked
+ * without a database — it is the whole difference between a shelf of issues and
+ * a grid of pages.
+ */
+export function planComicShelf(issues: Array<ComicIssue>): {
+  mode: ComicShelfMode;
+  groups: Array<ComicShelfGroup>;
+} {
+  if (titlesLookLikeIssues(issues.map((issue) => issue.title))) {
+    return { mode: "issues", groups: groupSpineByIssue(issues) };
+  }
+  return {
+    mode: "pages",
+    groups: issues.map((issue) => ({
+      issueNumber: null,
+      pages: [{ issue, isCover: false }],
+    })),
+  };
+}
+
+/**
+ * A comic as a shelf of covers.
  *
  * A comic posts one page per document, so its archive is dozens of near-identical
  * rows — `FITV #1 Cover`, `FITV #1, Pg. 1`, `FITV #1, Pg. 2` — when the thing a
- * reader browses is *issues*. The issue number lives only in those titles (the
- * lexicon has no field for it), so it is parsed back out
- * (`#/lib/comic/issue-title`) and consecutive pages sharing a number collapse
- * into one shelf entry.
+ * reader browses is art. The shelf shows the art instead of the titles.
  *
- * Because it rests on a naming convention, it declines rather than guesses: a
- * publication whose titles mostly don't parse comes back `grouped: false`.
+ * How much art fits on one card depends on the titles. When they carry issue
+ * numbers — which lives only in the title, since the lexicon has no field for it
+ * — they are parsed back out (`#/lib/comic/issue-title`) and consecutive pages
+ * sharing a number collapse into one cover per issue (`mode: "issues"`). When
+ * they don't, the pages can't be collapsed and each post keeps its own cover
+ * (`mode: "pages"`): a comic that names its posts `Pg01`, `Pg02` is not broken,
+ * and a grid of its pages still reads as a comic where a list of those titles
+ * does not.
  *
- * Only one body per issue is opened — the cover's, for its art — so the cost is
- * a handful of rows however long the comic runs.
+ * Cost follows the mode, because one body is opened per shelf entry to get its
+ * art: a handful of rows for an issue-numbered comic however long it runs, and
+ * one row per post for a page-per-card one. The spine already reads every
+ * document row for both, and a comic page's body is an image ref and a short
+ * note, so this stays a single query either way.
  *
- * With `readForDid`, each issue also carries the pages that reader hasn't opened
+ * With `readForDid`, each entry also carries the pages that reader hasn't opened
  * (`unreadPages`) — the shelf is where a reader picks up a comic, and picking it
  * up means going to the next page they haven't seen, not back to the cover.
  */
@@ -420,39 +488,9 @@ export async function selectComicShelf(
       : Promise.resolve<Array<string>>([]),
   ]);
   const unread = new Set(unreadUris);
-  const empty: ComicShelf = {
-    publicationUri,
-    issues: [],
-    totalPages: spine.totalPages,
-    grouped: false,
-  };
-  if (spine.issues.length === 0) return empty;
-  if (!titlesLookLikeIssues(spine.issues.map((issue) => issue.title))) {
-    return empty;
-  }
-
-  // Walk the spine in reading order, starting a new shelf entry whenever the
-  // issue number changes. A page whose title doesn't parse joins the issue it
-  // sits inside rather than splitting it — an interstitial with an odd title is
-  // still part of that issue.
-  type Group = {
-    issueNumber: number | null;
-    pages: Array<{ issue: (typeof spine.issues)[number]; isCover: boolean }>;
-  };
-  const groups: Array<Group> = [];
-  for (const issue of spine.issues) {
-    const parsed = parseComicIssueTitle(issue.title);
-    const last = groups.at(-1);
-    const sameIssue =
-      last != null &&
-      (parsed == null || last.issueNumber === parsed.issueNumber);
-    const entry = {
-      issue,
-      isCover: parsed != null && isCoverPageLabel(parsed.pageLabel),
-    };
-    if (sameIssue) last.pages.push(entry);
-    else
-      groups.push({ issueNumber: parsed?.issueNumber ?? null, pages: [entry] });
+  const { mode, groups } = planComicShelf(spine.issues);
+  if (groups.length === 0) {
+    return { publicationUri, issues: [], totalPages: spine.totalPages, mode };
   }
 
   // The cover is the page that says it is one; failing that, the issue's first
@@ -523,12 +561,5 @@ export async function selectComicShelf(
     });
   }
 
-  return {
-    publicationUri,
-    issues,
-    totalPages: spine.totalPages,
-    // One shelf entry holding everything means the grouping found no structure
-    // worth showing — the archive list says the same thing with more detail.
-    grouped: issues.length > 1,
-  };
+  return { publicationUri, issues, totalPages: spine.totalPages, mode };
 }
