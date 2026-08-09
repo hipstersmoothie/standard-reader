@@ -50,7 +50,7 @@ const deviceInput = z.object({
 const getPushConfig = createServerFn({ method: "GET" }).handler(
   async (): Promise<{ publicKey: string | null }> => {
     const { pushConfig } = await import("#/server/push/config");
-    return { publicKey: pushConfig.configured ? pushConfig.publicKey : null };
+    return { publicKey: pushConfig.canRegister ? pushConfig.publicKey : null };
   },
 );
 

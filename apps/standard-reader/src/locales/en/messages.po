@@ -1765,6 +1765,10 @@ msgstr "Fast full-text search"
 #~ msgid "Saving, recommending, reading history, and managing what you follow."
 #~ msgstr "Saving, recommending, reading history, and managing what you follow."
 
+#: src/components/reader/notify-button.tsx
+msgid "Notifications aren’t available"
+msgstr "Notifications aren’t available"
+
 #: src/components/reader/save-to-collection-dialog.tsx
 msgid "Collection name"
 msgstr "Collection name"
@@ -6502,6 +6506,10 @@ msgstr "Listen aloud voice"
 #: src/routes/_layout.index.tsx
 msgid "Nothing left unread from the publications you follow. There's more on the network than you're following yet."
 msgstr "Nothing left unread from the publications you follow. There's more on the network than you're following yet."
+
+#: src/components/reader/notify-button.tsx
+msgid "Notifications aren’t switched on for this site yet."
+msgstr "Notifications aren’t switched on for this site yet."
 
 #: src/routes/_layout.feedback.index.tsx
 msgid "Filter and sort — {activeFilters, plural, one {# filter active} other {# filters active}}"

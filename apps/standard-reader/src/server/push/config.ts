@@ -33,12 +33,23 @@ export const pushConfig = {
   },
 
   /**
-   * Whether push is configured at all. The cron exits cleanly when this is
-   * false rather than throwing, which is what keeps a Railway PR preview
-   * pointed at a shared database from sending real notifications carrying
-   * preview-domain links.
+   * Whether a browser can subscribe. Only the **public** key is needed to hand
+   * a browser an `applicationServerKey`, and the web service deliberately holds
+   * nothing else — so this must NOT also require the private key. Gating
+   * registration on both is what made the bell report "we couldn't set up
+   * notifications on this device" while everything was configured correctly.
    */
-  get configured(): boolean {
+  get canRegister(): boolean {
+    return Boolean(process.env.VAPID_PUBLIC_KEY);
+  },
+
+  /**
+   * Whether we can actually deliver. Signing a push requires the private key,
+   * which lives only in the send cron. It exits cleanly when this is false
+   * rather than throwing — that's what stops a Railway PR preview pointed at a
+   * shared database from sending real notifications with preview-domain links.
+   */
+  get canSend(): boolean {
     return Boolean(
       process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY,
     );

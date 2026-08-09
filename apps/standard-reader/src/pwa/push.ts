@@ -20,11 +20,19 @@ import { pushApi } from "#/integrations/tanstack-query/api-push.functions";
  */
 export type PushCapability = "ready" | "needs-ios-install" | "unsupported";
 
-/** Outcome of trying to subscribe this browser. */
+/**
+ * Outcome of trying to subscribe this browser.
+ *
+ * `not-configured` is deliberately distinct from `unsupported`: one is the
+ * server missing a VAPID key, the other is the browser lacking the API, and
+ * collapsing them into one "something went wrong" makes a deployment mistake
+ * look identical to an old browser.
+ */
 export type EnsurePushResult =
   | { status: "ready"; endpoint: string }
   | { status: "denied" }
   | { status: "needs-ios-install" }
+  | { status: "not-configured" }
   | { status: "unsupported" }
   | { status: "error"; error: unknown };
 
@@ -131,7 +139,12 @@ export async function ensurePushDevice(): Promise<EnsurePushResult> {
     }
 
     const { publicKey } = await pushApi.getPushConfig();
-    if (!publicKey) return { status: "unsupported" };
+    if (!publicKey) {
+      console.error(
+        "[push] the server returned no VAPID public key — VAPID_PUBLIC_KEY is not set on the web service",
+      );
+      return { status: "not-configured" };
+    }
 
     // `ready` — not `getRegistration` — because the SW registers with
     // `skipWaiting: false`, so a first-time visitor has an installed but not yet
@@ -160,6 +173,9 @@ export async function ensurePushDevice(): Promise<EnsurePushResult> {
 
     return { status: "ready", endpoint: subscription.endpoint };
   } catch (error) {
+    // The UI can only show generic copy here, so make sure the real cause is
+    // reachable from devtools rather than swallowed.
+    console.error("[push] could not subscribe this browser", error);
     return { status: "error", error };
   }
 }

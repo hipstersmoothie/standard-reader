@@ -215,7 +215,7 @@ export async function runPushSend(): Promise<PushRunSummary> {
     pruned: 0,
   };
 
-  if (!pushConfig.configured) {
+  if (!pushConfig.canSend) {
     // No VAPID keys. Exit quietly rather than throwing — this is the state a
     // Railway PR preview is in, and it must not send real notifications
     // carrying preview-domain links.

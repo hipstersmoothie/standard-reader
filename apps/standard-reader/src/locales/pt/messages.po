@@ -1765,6 +1765,10 @@ msgstr "Pesquisa rápida em texto integral"
 #~ msgid "Saving, recommending, reading history, and managing what you follow."
 #~ msgstr ""
 
+#: src/components/reader/notify-button.tsx
+msgid "Notifications aren’t available"
+msgstr ""
+
 #: src/components/reader/save-to-collection-dialog.tsx
 msgid "Collection name"
 msgstr "Nome da coleção"
@@ -6502,6 +6506,10 @@ msgstr "Voz da leitura em voz alta"
 #: src/routes/_layout.index.tsx
 msgid "Nothing left unread from the publications you follow. There's more on the network than you're following yet."
 msgstr "Não há nada não lido das publicações que você é inscrito. Existe mais conteúdo na rede além das suas inscrições atuais."
+
+#: src/components/reader/notify-button.tsx
+msgid "Notifications aren’t switched on for this site yet."
+msgstr ""
 
 #: src/routes/_layout.feedback.index.tsx
 msgid "Filter and sort — {activeFilters, plural, one {# filter active} other {# filters active}}"

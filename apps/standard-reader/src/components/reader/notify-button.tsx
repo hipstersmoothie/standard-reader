@@ -33,12 +33,17 @@ export function NotifyButton({
   subject,
   signedIn,
   size = "md",
+  variant = "secondary",
 }: {
   subjectType: PushSubjectTypeInput;
   /** Publication AT-URI, or an author DID. */
   subject: string;
   signedIn: boolean;
   size?: "sm" | "md" | "lg";
+  /** Match the surrounding control group. On a publication page the group takes
+   * the publication's own accent when the reader hasn't subscribed, so leaving
+   * this at the default made the bell the one button that ignored the theme. */
+  variant?: "primary" | "secondary";
 }) {
   const { t } = useLingui();
   const queryClient = useQueryClient();
@@ -108,6 +113,13 @@ export function NotifyButton({
         });
         return;
       }
+      if (result.status === "not-configured") {
+        toasts.add({
+          description: t`Notifications aren’t switched on for this site yet.`,
+          title: t`Notifications aren’t available`,
+        });
+        return;
+      }
       if (result.status !== "ready") {
         toasts.add({
           description: t`We couldn’t set up notifications on this device. Try again?`,
@@ -126,7 +138,7 @@ export function NotifyButton({
       <IconButtonLink
         to="/login"
         search={loginSearch}
-        variant="secondary"
+        variant={variant}
         size={size}
         label={t`Notify me about new posts`}
       >
@@ -138,7 +150,7 @@ export function NotifyButton({
   return (
     <>
       <IconButton
-        variant="secondary"
+        variant={variant}
         size={size}
         label={
           enabled ? t`Turn off notifications` : t`Notify me about new posts`
