@@ -7042,6 +7042,10 @@ msgstr "주제로 필터"
 msgid "Uploading {0}"
 msgstr ""
 
+#: src/routes/_layout.saved.tsx
+msgid "Reordering saved articles"
+msgstr ""
+
 #: src/routes/_layout.latest.tsx
 msgid "No unread articles from your follows right now."
 msgstr "지금은 팔로우한 곳에 읽지 않은 글이 없습니다."

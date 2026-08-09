@@ -7042,6 +7042,10 @@ msgstr "Filter by topic"
 msgid "Uploading {0}"
 msgstr "Uploading {0}"
 
+#: src/routes/_layout.saved.tsx
+msgid "Reordering saved articles"
+msgstr "Reordering saved articles"
+
 #: src/routes/_layout.latest.tsx
 msgid "No unread articles from your follows right now."
 msgstr "No unread articles from your follows right now."

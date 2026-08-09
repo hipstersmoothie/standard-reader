@@ -7042,6 +7042,10 @@ msgstr "تصفية حسب الموضوع"
 msgid "Uploading {0}"
 msgstr ""
 
+#: src/routes/_layout.saved.tsx
+msgid "Reordering saved articles"
+msgstr ""
+
 #: src/routes/_layout.latest.tsx
 msgid "No unread articles from your follows right now."
 msgstr "لا مقالات غير مقروءة من متابَعاتك حاليًا."

@@ -11,6 +11,7 @@ import {
   MenuSectionHeader,
   MenuSeparator,
 } from "@standard-reader/design-system/menu";
+import { ProgressCircle } from "@standard-reader/design-system/progress-circle";
 import { Select, SelectItem } from "@standard-reader/design-system/select";
 import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
 import { breakpoints } from "@standard-reader/design-system/theme/media-queries.stylex";
@@ -30,7 +31,7 @@ import {
   ArrowUpDown,
   ArrowUpNarrowWide,
 } from "lucide-react";
-import { useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { Selection } from "react-aria-components";
 import { z } from "zod";
 
@@ -48,6 +49,7 @@ import {
 import { user } from "#/integrations/tanstack-query/api-user.functions";
 import { getPublicUrlClient } from "#/lib/public-url";
 import { pageSocialMeta } from "#/lib/site-metadata";
+import { useDelayedLoading } from "#/lib/use-delayed-loading";
 import { buildAuthRedirectPath } from "#/utils/auth-redirect";
 
 import { FeedLoadMore } from "../components/reader/feed-load-more";
@@ -84,6 +86,16 @@ const SAVED_DIRECTION_LABELS = {
   date: { asc: msg`Oldest first`, desc: msg`Newest first` },
   text: { asc: msg`A–Z`, desc: msg`Z–A` },
 } as const;
+
+/** Everything the compact menu offers, for freezing it while a reorder runs. */
+const SAVED_MENU_KEYS: Array<string> = [
+  ...SAVED_SORT_VALUES,
+  ...SAVED_SORT_DIRECTIONS,
+];
+
+/** Matches the tab-skeleton grace period on `/tag` and `/topics`: a reorder
+ * that lands inside it never flashes a loading state at all. */
+const ORDER_PENDING_DELAY_MS = 150;
 
 export const Route = createFileRoute("/_layout/saved")({
   validateSearch: savedSearchSchema,
@@ -184,6 +196,20 @@ function ReaderSaved() {
   const { sort, dir } = Route.useSearch();
   const direction = dir ?? defaultSavedSortDirection(sort);
   const navigate = useNavigate({ from: Route.fullPath });
+  /**
+   * What the reader just asked for, until the router commits it. The route
+   * loader resolves before the search params change, so the old rows stay on
+   * screen with nothing to say a new order is on the way — this drives the
+   * controls to the new choice immediately and marks the wait.
+   *
+   * Scoped to this page's own navigations rather than the router's global
+   * `isLoading`, which would also fire when the reader clicks through to an
+   * article and spin a sort control on the page they are leaving.
+   */
+  const [requested, setRequested] = useState<{
+    sort: SavedSort;
+    dir: SavedSortDirection;
+  } | null>(null);
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useSuspenseInfiniteQuery(
       readerApi.getSavedInfiniteQueryOptions({ sort, dir: direction }),
@@ -206,9 +232,25 @@ function ReaderSaved() {
     actionLabel: t`Saved`,
   }));
 
+  // Committing the requested order is what ends the wait: the loader has
+  // already resolved by the time the router hands back the new search params.
+  useEffect(() => {
+    if (requested?.sort === sort && requested.dir === direction) {
+      setRequested(null);
+    }
+  }, [direction, requested, sort]);
+
+  const shownSort = requested?.sort ?? sort;
+  const shownDirection = requested?.dir ?? direction;
+  const changingOrder = useDelayedLoading(
+    requested !== null,
+    ORDER_PENDING_DELAY_MS,
+  );
+
   const onSortChange = (key: React.Key | null) => {
     if (key == null) return;
     const next = String(key) as SavedSort;
+    setRequested({ sort: next, dir: direction });
     void navigate({
       replace: true,
       resetScroll: false,
@@ -223,6 +265,7 @@ function ReaderSaved() {
   };
 
   const setDirection = (next: SavedSortDirection) => {
+    setRequested({ sort, dir: next });
     void navigate({
       replace: true,
       resetScroll: false,
@@ -236,18 +279,32 @@ function ReaderSaved() {
     if (next === "asc" || next === "desc") setDirection(next);
   };
 
-  const directionLabels = SAVED_DIRECTION_LABELS[SAVED_SORT_RANKS[sort]];
+  const directionLabels = SAVED_DIRECTION_LABELS[SAVED_SORT_RANKS[shownSort]];
   /** The button names what it will do, and shows what is true now. */
   const flipLabel = i18n._(
-    direction === "asc" ? directionLabels.desc : directionLabels.asc,
+    shownDirection === "asc" ? directionLabels.desc : directionLabels.asc,
   );
 
   const sortControl =
     total === 0 ? undefined : (
-      <>
+      <Flex direction="row" gap="sm" align="center">
+        {/* Leading the row, so it grows leftward off the masthead's trailing
+            edge and the controls themselves never shift. */}
+        {changingOrder ? (
+          <ProgressCircle
+            isIndeterminate
+            size="sm"
+            aria-label={t`Reordering saved articles`}
+          />
+        ) : null}
+
         <div {...stylex.props(styles.sortSlotCompact)}>
           <Menu
             placement="bottom end"
+            // The trigger stays live — it only opens the sheet. What's frozen
+            // is the choices inside it, which is also the half the reader is
+            // looking at: the menu stays open across a pick.
+            disabledKeys={changingOrder ? SAVED_MENU_KEYS : undefined}
             trigger={
               <IconButton
                 aria-label={t`Sort saved articles`}
@@ -265,7 +322,7 @@ function ReaderSaved() {
               selectionMode="single"
               disallowEmptySelection
               shouldCloseOnSelect={false}
-              selectedKeys={new Set([sort])}
+              selectedKeys={new Set([shownSort])}
               onSelectionChange={onSortSelection}
             >
               <MenuSectionHeader>
@@ -282,7 +339,7 @@ function ReaderSaved() {
               selectionMode="single"
               disallowEmptySelection
               shouldCloseOnSelect={false}
-              selectedKeys={new Set([direction])}
+              selectedKeys={new Set([shownDirection])}
               onSelectionChange={onDirectionSelection}
             >
               <MenuSectionHeader>
@@ -300,7 +357,8 @@ function ReaderSaved() {
               aria-label={t`Sort saved articles`}
               size="md"
               variant="secondary"
-              selectedKey={sort}
+              isDisabled={changingOrder}
+              selectedKey={shownSort}
               style={styles.sortSelect}
               onSelectionChange={onSortChange}
             >
@@ -319,9 +377,12 @@ function ReaderSaved() {
               variant="secondary"
               label={flipLabel}
               aria-label={flipLabel}
-              onPress={() => setDirection(direction === "asc" ? "desc" : "asc")}
+              isDisabled={changingOrder}
+              onPress={() =>
+                setDirection(shownDirection === "asc" ? "desc" : "asc")
+              }
             >
-              {direction === "asc" ? (
+              {shownDirection === "asc" ? (
                 <ArrowUpNarrowWide size={16} />
               ) : (
                 <ArrowDownWideNarrow size={16} />
@@ -329,7 +390,7 @@ function ReaderSaved() {
             </IconButton>
           </Flex>
         </div>
-      </>
+      </Flex>
     );
 
   return (
