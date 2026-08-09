@@ -73,6 +73,7 @@ msgstr "Ir para a secção"
 
 #: src/components/reader/subscriptions-table.tsx
 #: src/routes/_layout.feedback.index.tsx
+#: src/routes/_layout.saved.tsx
 msgid "Sort by"
 msgstr "Ordenar por"
 
@@ -2047,6 +2048,7 @@ msgid "{total, plural, one {# match} other {# matches}}"
 msgstr "{total, plural, one {# resultado} other {# resultados}}"
 
 #: src/components/reader/publication-actions.tsx
+#: src/routes/_layout.saved.tsx
 msgid "Newest first"
 msgstr ""
 
@@ -4320,6 +4322,10 @@ msgstr ""
 msgid "{0, plural, one {# feature} other {# features}}"
 msgstr "{0, plural, one {# funcionalidade} other {# funcionalidades}}"
 
+#: src/routes/_layout.saved.tsx
+msgid "Z–A"
+msgstr ""
+
 #: src/routes/_layout.p.$did.$rkey.tsx
 msgid "Last active"
 msgstr "Última atividade"
@@ -4467,6 +4473,7 @@ msgstr ""
 #~ msgstr ""
 
 #: src/components/reader/publication-actions.tsx
+#: src/routes/_layout.saved.tsx
 msgid "Oldest first"
 msgstr ""
 
@@ -6172,6 +6179,7 @@ msgstr "Introdução"
 #: src/components/reader/app-shell.tsx
 #: src/components/reader/subscriptions-sheet.tsx
 #: src/routes/_layout.discover.tsx
+#: src/routes/_layout.saved.tsx
 #: src/routes/_layout.tag.$tag.tsx
 #: src/routes/_layout.topics.$slug.tsx
 msgid "A–Z"
@@ -6355,6 +6363,7 @@ msgid "About"
 msgstr "Sobre"
 
 #: src/components/reader/publication-actions.tsx
+#: src/routes/_layout.saved.tsx
 msgid "Order"
 msgstr ""
 
@@ -7031,6 +7040,10 @@ msgstr "Filtrar por tópico"
 #. placeholder {0}: image.file.name
 #: src/components/feedback/feedback-image-picker.tsx
 msgid "Uploading {0}"
+msgstr ""
+
+#: src/routes/_layout.saved.tsx
+msgid "Reordering saved articles"
 msgstr ""
 
 #: src/routes/_layout.latest.tsx
