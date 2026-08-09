@@ -62,6 +62,11 @@ msgstr "Mark old posts as unread"
 msgid "Something went wrong. Nothing was connected — try again."
 msgstr "Something went wrong. Nothing was connected — try again."
 
+#: src/components/reader/notify-button.tsx
+#: src/components/user-settings-view.tsx
+msgid "Notifications are blocked for this site. You can turn them back on in your browser settings."
+msgstr "Notifications are blocked for this site. You can turn them back on in your browser settings."
+
 #: src/routes/_layout.u.$did.tsx
 msgid "{name} hasn't started reading or publishing here."
 msgstr "{name} hasn't started reading or publishing here."
@@ -583,6 +588,10 @@ msgstr "The settings page, showing sections for Appearance, Behavior, Feed, Side
 msgid "Text on accent"
 msgstr "Text on accent"
 
+#: src/components/user-settings-view.tsx
+msgid "Turn off"
+msgstr "Turn off"
+
 #: src/components/reader/app-shell.tsx
 #: src/components/reader/subscriptions-sheet.tsx
 msgid "Finish reordering"
@@ -720,6 +729,10 @@ msgstr "Read the piece →"
 msgid "Playback speed: {0}"
 msgstr "Playback speed: {0}"
 
+#: src/components/user-settings-view.tsx
+msgid "How to enable"
+msgstr "How to enable"
+
 #: src/components/reader/subscriptions-table.tsx
 msgid "No posts yet"
 msgstr "No posts yet"
@@ -810,6 +823,10 @@ msgstr "This list is empty."
 #: src/components/reading-settings-preview.tsx
 msgid "Play voice sample"
 msgstr "Play voice sample"
+
+#: src/components/user-settings-view.tsx
+msgid "Turn off everywhere"
+msgstr "Turn off everywhere"
 
 #: src/components/reader/subscribe-card.tsx
 msgid "You're subscribed"
@@ -1093,6 +1110,10 @@ msgstr "The Latest screen showing a row of filter tabs — Unread, Subscriptions
 msgid "Take any of it as RSS"
 msgstr "Take any of it as RSS"
 
+#: src/components/reader/ios-install-prompt.tsx
+msgid "Got it"
+msgstr "Got it"
+
 #: src/components/reader/subscriptions-sheet.tsx
 #~ msgid "Reorder lists"
 #~ msgstr "Reorder lists"
@@ -1247,6 +1268,11 @@ msgstr "Browse the directory"
 #: src/components/reader/reorder-subscriptions-modal.tsx
 #~ msgid "You don't have any subscriptions to reorder yet."
 #~ msgstr "You don't have any subscriptions to reorder yet."
+
+#: src/components/reader/notify-button.tsx
+#: src/components/user-settings-view.tsx
+msgid "This browser doesn’t support web notifications."
+msgstr "This browser doesn’t support web notifications."
 
 #: src/components/guide/pages/welcome-guide-page.tsx
 #: src/lib/guide/navigation.ts
@@ -1510,6 +1536,11 @@ msgstr "Roundness"
 msgid "No account yet?"
 msgstr "No account yet?"
 
+#. placeholder {0}: push.topicCount
+#: src/components/user-settings-view.tsx
+#~ msgid "Stop notifications on every device and clear all {0} of the publications and authors you've turned the bell on for."
+#~ msgstr "Stop notifications on every device and clear all {0} of the publications and authors you've turned the bell on for."
+
 #: src/components/docs/introduction-docs-page.tsx
 msgid "public XRPC queries and procedures for the Standard Reader read-model, with live examples."
 msgstr "public XRPC queries and procedures for the Standard Reader read-model, with live examples."
@@ -1556,6 +1587,10 @@ msgstr "For a single article, the top bar's menu has <0>Open on publication</0> 
 #: src/components/guide/pages/collections-guide-page.tsx
 msgid "A collection is a record in your own account, the same as a follow or a save. If you stop using Standard Reader it does not disappear, and another app built on the same network can read it."
 msgstr "A collection is a record in your own account, the same as a follow or a save. If you stop using Standard Reader it does not disappear, and another app built on the same network can read it."
+
+#: src/components/reader/notify-button.tsx
+msgid "Your notification setting didn’t save. Try again?"
+msgstr "Your notification setting didn’t save. Try again?"
 
 #: src/components/guide/pages/finding-guide-page.tsx
 #~ msgid "Home is the catch-up screen. It opens with the date and how much you have not read, leads with one featured article, and then lists what is new from the publications you follow."
@@ -1656,6 +1691,10 @@ msgstr "Run example"
 msgid "Your paper is dark, so the app reads as a dark theme. Text, borders and every other step are derived from these two colors."
 msgstr "Your paper is dark, so the app reads as a dark theme. Text, borders and every other step are derived from these two colors."
 
+#: src/components/reader/ios-install-prompt.tsx
+msgid "Tap Share in the Safari toolbar."
+msgstr "Tap Share in the Safari toolbar."
+
 #: src/lib/guide/navigation.ts
 msgid "The reading view, listening to an article, and joining the conversation."
 msgstr "The reading view, listening to an article, and joining the conversation."
@@ -1681,6 +1720,10 @@ msgstr "Body font"
 #: src/components/guide/pages/getting-started-guide-page.tsx
 msgid "On a computer, a sidebar runs down the left of every screen. From the top:"
 msgstr "On a computer, a sidebar runs down the left of every screen. From the top:"
+
+#: src/components/user-settings-view.tsx
+#~ msgid "This browser doesn't support web notifications."
+#~ msgstr "This browser doesn't support web notifications."
 
 #: src/components/docs/renderers-docs-page.tsx
 #~ msgid "Svelte 5."
@@ -1901,6 +1944,10 @@ msgstr "Connect {0} to your account?"
 #: src/components/guide/pages/reading-guide-page.tsx
 msgid "What every control on an article does — including having it read aloud to you, and making the text comfortable for your eyes."
 msgstr "What every control on an article does — including having it read aloud to you, and making the text comfortable for your eyes."
+
+#: src/components/reader/notify-button.tsx
+msgid "Notifications aren’t available here"
+msgstr "Notifications aren’t available here"
 
 #: src/components/reader/about-view.tsx
 #~ msgid "The reading experience"
@@ -2489,6 +2536,10 @@ msgstr "Public XRPC queries and procedures for the Standard Reader indexed read-
 msgid "Save theme"
 msgstr "Save theme"
 
+#: src/components/reader/notify-button.tsx
+msgid "Notifications are blocked"
+msgstr "Notifications are blocked"
+
 #: src/components/reader/about-view.tsx
 msgid "A reply"
 msgstr "A reply"
@@ -2952,6 +3003,10 @@ msgstr "Paper"
 #~ msgid "Flip one setting and article links open on the publication’s own site instead. Read wherever feels right to you."
 #~ msgstr "Flip one setting and article links open on the publication’s own site instead. Read wherever feels right to you."
 
+#: src/components/reader/ios-install-prompt.tsx
+msgid "Add to your Home Screen"
+msgstr "Add to your Home Screen"
+
 #: src/components/guide/pages/finding-guide-page.tsx
 msgid "Discover is the directory of every publication the network knows about — not a curated shelf. It runs top to bottom from most personal to most complete:"
 msgstr "Discover is the directory of every publication the network knows about — not a curated shelf. It runs top to bottom from most personal to most complete:"
@@ -3274,6 +3329,10 @@ msgstr "Act on your behalf"
 msgid "See all trending"
 msgstr "See all trending"
 
+#: src/components/reader/notify-button.tsx
+msgid "Notify me about new posts"
+msgstr "Notify me about new posts"
+
 #: src/components/onboarding/step-friends.tsx
 #~ msgid "All selected"
 #~ msgstr "All selected"
@@ -3365,6 +3424,10 @@ msgstr "Saved"
 #: src/components/onboarding/step-intro.tsx
 msgid "{count, plural, one {{formattedCount} publication across the Atmosphere} other {{formattedCount} publications across the Atmosphere}}"
 msgstr "{count, plural, one {{formattedCount} publication across the Atmosphere} other {{formattedCount} publications across the Atmosphere}}"
+
+#: src/components/user-settings-view.tsx
+msgid "Notifications"
+msgstr "Notifications"
 
 #: src/components/guide/pages/finding-guide-page.tsx
 msgid "the whole network as it publishes."
@@ -3557,6 +3620,11 @@ msgstr "the AT Protocol schemas that define Standard records and the shared defi
 #: src/components/docs/renderers-docs-page.tsx
 msgid "You usually depend on a framework renderer, not the core directly. But <0/> is public: reach for it to inspect or transform a document without rendering it, or to build a renderer for a framework not listed above. A renderer is just a walk over its normalized tree — map each block type to your framework's primitive, and run text through the core's inline segmenter to render marks, links, mentions and footnote references. The existing renderers are the reference implementations; the API is documented in the <1/> README on npm."
 msgstr "You usually depend on a framework renderer, not the core directly. But <0/> is public: reach for it to inspect or transform a document without rendering it, or to build a renderer for a framework not listed above. A renderer is just a walk over its normalized tree — map each block type to your framework's primitive, and run text through the core's inline segmenter to render marks, links, mentions and footnote references. The existing renderers are the reference implementations; the API is documented in the <1/> README on npm."
+
+#. placeholder {0}: push.topicCount
+#: src/components/user-settings-view.tsx
+#~ msgid "On for this browser. You'll hear about new posts from the {0} publications and authors you've turned the bell on for."
+#~ msgstr "On for this browser. You'll hear about new posts from the {0} publications and authors you've turned the bell on for."
 
 #: src/components/onboarding/welcome-wizard.tsx
 msgid "{selectedCount} selected — {remainingFollows} more to fill your feed"
@@ -3801,6 +3869,10 @@ msgstr "Browse everything"
 #: src/components/appearance-settings.tsx
 msgid "Large"
 msgstr "Large"
+
+#: src/components/reader/ios-install-prompt.tsx
+msgid "Then open Standard Reader from your Home Screen and turn the bell on there."
+msgstr "Then open Standard Reader from your Home Screen and turn the bell on there."
 
 #: src/components/reader/about-view.tsx
 msgid "A Listen button reads any article aloud, right on your device, and highlights each word as it goes. The player follows you around the app — it’ll even read an embedded Bluesky post. Signed in, you can pick a voice."
@@ -4434,6 +4506,10 @@ msgstr "Lists in the sidebar"
 msgid "The extension checks the address of the page you are on to work out whether there is anything to offer, and it acts on your account only when you click something. It does not read your browsing history or the contents of pages."
 msgstr "The extension checks the address of the page you are on to work out whether there is anything to offer, and it acts on your account only when you click something. It does not read your browsing history or the contents of pages."
 
+#: src/components/reader/ios-install-prompt.tsx
+msgid "On iPhone and iPad, notifications only work once Standard Reader is installed. It takes two taps."
+msgstr "On iPhone and iPad, notifications only work once Standard Reader is installed. It takes two taps."
+
 #: src/components/reader/privacy-view.tsx
 msgid "You can sign out at any time, which clears your app session cookie. You can clear site cookies in your browser to remove theme and saved-handle preferences. You can change reading-history tracking and delete personal data from Settings. To remove other AT Protocol records you created through the app, use a compatible client or your repository tools."
 msgstr "You can sign out at any time, which clears your app session cookie. You can clear site cookies in your browser to remove theme and saved-handle preferences. You can change reading-history tracking and delete personal data from Settings. To remove other AT Protocol records you created through the app, use a compatible client or your repository tools."
@@ -4636,6 +4712,11 @@ msgstr "Assemble articles into a magazine edition others can read and follow."
 msgid "Loading page…"
 msgstr "Loading page…"
 
+#. placeholder {0}: push.topicCount
+#: src/components/user-settings-view.tsx
+msgid "On for this browser. You’ll hear about new posts from the {0} publications and authors you’ve turned the bell on for."
+msgstr "On for this browser. You’ll hear about new posts from the {0} publications and authors you’ve turned the bell on for."
+
 #: src/routes/mcp/authorize.tsx
 msgid "This request can't be completed here, so we're returning you to the app that sent you."
 msgstr "This request can't be completed here, so we're returning you to the app that sent you."
@@ -4661,6 +4742,7 @@ msgstr "{totalPeople, plural, one {# person you follow writes here} other {# peo
 msgid "Not in the directory yet?"
 msgstr "Not in the directory yet?"
 
+#: src/components/reader/notify-button.tsx
 #: src/components/reader/page-reader-bar.tsx
 msgid "Something went wrong"
 msgstr "Something went wrong"
@@ -4778,6 +4860,11 @@ msgstr "Use the <0>at:</0> meta tags — the convention the Atmosphere settled o
 #: src/routes/_layout.u.$did.tsx
 msgid "Profile settings"
 msgstr "Profile settings"
+
+#. placeholder {0}: push.topicCount
+#: src/components/user-settings-view.tsx
+msgid "Stop notifications on every device and clear all {0} of the publications and authors you’ve turned the bell on for."
+msgstr "Stop notifications on every device and clear all {0} of the publications and authors you’ve turned the bell on for."
 
 #: src/components/guide/pages/getting-started-guide-page.tsx
 #~ msgid "The first time you sign in, a short setup walks you through it: pick a few topics you care about, see which of the people you already follow on Bluesky write here, follow anything that appeals, and choose how you like your text. You can skip any step, and skip the whole thing."
@@ -5066,6 +5153,10 @@ msgstr "Every read record in your repository will be removed. Articles will appe
 msgid "You’ve read everything from this publication."
 msgstr "You’ve read everything from this publication."
 
+#: src/components/reader/notify-button.tsx
+msgid "We couldn’t set up notifications on this device. Try again?"
+msgstr "We couldn’t set up notifications on this device. Try again?"
+
 #: src/components/appearance-settings.tsx
 msgid "Text, borders and every other step are derived from these two colors."
 msgstr "Text, borders and every other step are derived from these two colors."
@@ -5352,6 +5443,10 @@ msgstr "Listen from here"
 #: src/components/user-settings-view.tsx
 msgid "Weekly digest email"
 msgstr "Weekly digest email"
+
+#: src/components/reader/ios-install-prompt.tsx
+msgid "Choose “Add to Home Screen”."
+msgstr "Choose “Add to Home Screen”."
 
 #: src/components/guide/pages/extension-guide-page.tsx
 #: src/lib/guide/navigation.ts
@@ -6640,6 +6735,10 @@ msgid "What we collect"
 msgstr "What we collect"
 
 #: src/components/user-settings-view.tsx
+msgid "On iPhone and iPad, notifications need Standard Reader installed on your Home Screen."
+msgstr "On iPhone and iPad, notifications need Standard Reader installed on your Home Screen."
+
+#: src/components/user-settings-view.tsx
 msgid "When on, a publication's page and its posts are shown in that publication's own colors. Publications that haven't set any colors keep the Standard Reader theme."
 msgstr "When on, a publication's page and its posts are shown in that publication's own colors. Publications that haven't set any colors keep the Standard Reader theme."
 
@@ -7042,6 +7141,10 @@ msgstr "Filter by topic"
 msgid "Uploading {0}"
 msgstr "Uploading {0}"
 
+#: src/components/user-settings-view.tsx
+msgid "Notifications on this device"
+msgstr "Notifications on this device"
+
 #: src/routes/_layout.saved.tsx
 msgid "Reordering saved articles"
 msgstr "Reordering saved articles"
@@ -7068,6 +7171,10 @@ msgstr "Create list"
 #: src/components/reader/subscriptions-sheet.tsx
 msgid "Expand all lists"
 msgstr "Expand all lists"
+
+#: src/components/user-settings-view.tsx
+msgid "Get notified the moment a publication or author publishes something new. Turn it on here, then choose who from their page."
+msgstr "Get notified the moment a publication or author publishes something new. Turn it on here, then choose who from their page."
 
 #: src/components/reader/document-share-menu.tsx
 #: src/components/reader/text-selection-toolbar.tsx
@@ -7200,6 +7307,10 @@ msgstr "Feedback"
 #: src/lib/guide/navigation.ts
 msgid "Letting publications use their own colors"
 msgstr "Letting publications use their own colors"
+
+#: src/components/reader/notify-button.tsx
+msgid "Turn off notifications"
+msgstr "Turn off notifications"
 
 #: src/routes/_layout.l.$did.$rkey.tsx
 msgid "List views"

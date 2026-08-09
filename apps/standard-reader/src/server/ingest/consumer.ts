@@ -25,6 +25,10 @@ import type {
 import { Collections, buildAtUri } from "../atproto/uri.ts";
 import { logEvent } from "../observability/log.ts";
 import {
+  enqueuePostNotification,
+  recordClaimsPublishDate,
+} from "../push/enqueue.ts";
+import {
   applyIdentity,
   deleteRecord,
   upsertBookmark,
@@ -70,6 +74,44 @@ function noteUnmodeledCollection(collection: string, uri: string): void {
     reason: "unmodeled-collection",
     uri,
   });
+}
+
+/**
+ * Queue a web push notification for a document we just indexed.
+ *
+ * Gated on `live` because this dispatcher is shared with the PDS reconcile
+ * replay (`repo-sync.ts` sets `live: false`) — without it, repairing a repo
+ * would notify about its whole history. The claim inside
+ * {@link enqueuePostNotification} is what covers the rest: tap redelivery,
+ * dead-letter replay, and later `update` events for the same document.
+ *
+ * Deliberately NOT restricted to `action === "create"`. `upsertDocument`
+ * resolves external bodies (Leaflet, pckt, fetched formats), and a transient
+ * failure there leaves `hasRenderableBody = false` — a create-only gate would
+ * find nothing and the post would never notify, because the later `update` that
+ * fixes the body wouldn't try again. "The first event where it became
+ * renderable" is the trigger we actually want.
+ *
+ * Failures are swallowed: a missed notification must never dead-letter an event
+ * that was applied to the read-model successfully.
+ */
+async function maybeQueuePushNotification(
+  uri: string,
+  payload: TapRecordPayload,
+  record: Record<string, unknown>,
+): Promise<void> {
+  if (!payload.live || !recordClaimsPublishDate(record)) {
+    return;
+  }
+  try {
+    await enqueuePostNotification(uri);
+  } catch (error) {
+    logEvent("push.enqueueFailed", {
+      ok: false,
+      reason: error instanceof Error ? error.message : String(error),
+      uri,
+    });
+  }
 }
 
 /**
@@ -138,6 +180,7 @@ export async function handleRecord(payload: TapRecordPayload): Promise<void> {
         cid,
         record as unknown as DocumentRecord,
       );
+      await maybeQueuePushNotification(uri, payload, record);
       return;
     }
     case Collections.subscription: {

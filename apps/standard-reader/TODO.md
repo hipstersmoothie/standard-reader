@@ -32,8 +32,8 @@ Check items off as they land.
   - **Runbook gotcha:** Railway auto-detects only the root `railway.json`, so every non-web service
     in this monorepo needs its **Config File Path** set explicitly (Dashboard → service → Settings →
     Config-as-code, or `serviceInstanceUpdate{ railwayConfigFile }` via the GraphQL API) to
-    `railway.ingest.json` / `railway.cron.json` / `railway.reconcile.json`; otherwise it silently
-    falls back to the web build.
+    `railway.ingest.json` / `railway.cron.json` / `railway.reconcile.json` / `railway.push.json`;
+    otherwise it silently falls back to the web build.
     Shared `INGEST_WEBHOOK_SECRET` = `TAP_ADMIN_PASSWORD`; `PUBLIC_URL=https://standard-reader.app`;
     `ATPROTO_PRIVATE_KEY_JWK` is the ES256 private JWK. Prod DB was reset to a clean schema (drop
     `public` + `drizzle`, then `pnpm db:migrate`) before first backfill.
@@ -1075,6 +1075,28 @@ Backend/API exists; UI or copy is missing.
       on layout pages and legal links on [`/login`](src/routes/login.tsx).
 
 ## 9. Post-v1 — reader polish (Tier 2)
+
+- [x] **Web push notifications (v1)** — a bell on a publication page
+      ([`publication-actions.tsx`](src/components/reader/publication-actions.tsx)) and an author
+      page ([`_layout.u.$did.tsx`](src/routes/_layout.u.$did.tsx)) that notifies you when that
+      source publishes. Deliberately independent of subscribing: the bell doesn't touch your feed.
+      Three tables ([`push.ts`](src/db/schema/push.ts), `drizzle/0034_*`), push listeners imported
+      into the existing Workbox SW ([`push-sw.js`](public/push-sw.js) via `workbox.importScripts`),
+      the tap worker's whole involvement is one `INSERT`
+      ([`enqueue.ts`](src/server/push/enqueue.ts)), and a new `push-cron` service sends
+      ([`run.ts`](src/server/push/run.ts)). Settings gets one section: enable on this device +
+      turn off everywhere. On iOS the bell stays live and opens add-to-Home-Screen instructions
+      ([`ios-install-prompt.tsx`](src/components/reader/ios-install-prompt.tsx)), since that's the
+      one unsupported case a reader can fix.
+      **Before deploy:** create the `push-cron` Railway service with its Config File Path set to
+      `railway.push.json` (see the note in §0), generate a VAPID pair
+      (`pnpm --filter standard-reader exec web-push generate-vapid-keys`), and set
+      `VAPID_PUBLIC_KEY` on `web` plus all three VAPID vars and `PUBLIC_URL` on `push-cron`.
+      Without the keys the cron exits cleanly having done nothing.
+
+  - [ ] **Push follow-ups** — only if v1 gets used: a notifications inbox, per-source management
+        in settings, digest-style batching for readers who follow many sources, and pruning
+        `sent`/`failed` queue rows by age from the hourly recompute sweep.
 
 - [x] **"Hide mirrored websites" setting** — an account-level toggle
       (`user.exclude_web_bridge`, default off; [`exclude-web-bridge.ts`](src/lib/exclude-web-bridge.ts),

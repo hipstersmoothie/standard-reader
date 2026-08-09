@@ -44,6 +44,7 @@ import { useLoginSearch } from "#/utils/use-login-search";
 import type { PublicationCard } from "../../integrations/tanstack-query/api-shapes";
 import { AddToListModal } from "./add-to-list-modal";
 import { FollowButton } from "./cards";
+import { NotifyButton } from "./notify-button";
 import { RssFeedDialog } from "./rss-feed-button";
 import { ShareMenuItems, useShareActions } from "./share-menu";
 
@@ -259,6 +260,12 @@ export function PublicationActions({
           style={
             variant === "primary" ? styles.subscribeAccent : styles.subscribe
           }
+        />
+        <NotifyButton
+          subjectType="publication"
+          subject={pub.uri}
+          signedIn={signedIn}
+          size="lg"
         />
         <Menu
           placement="bottom end"
