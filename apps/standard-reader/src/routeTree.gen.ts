@@ -48,6 +48,7 @@ import { Route as DocsHeaderLayoutDocsPublishingRouteImport } from './routes/_do
 import { Route as DocsHeaderLayoutDocsRenderersRouteImport } from './routes/_docs-header-layout.docs.renderers'
 import { Route as GuideLayoutGuideIndexRouteImport } from './routes/_guide-layout.guide.index'
 import { Route as GuideLayoutGuideCollectionsRouteImport } from './routes/_guide-layout.guide.collections'
+import { Route as GuideLayoutGuideComicsRouteImport } from './routes/_guide-layout.guide.comics'
 import { Route as GuideLayoutGuideExtensionRouteImport } from './routes/_guide-layout.guide.extension'
 import { Route as GuideLayoutGuideFindingRouteImport } from './routes/_guide-layout.guide.finding'
 import { Route as GuideLayoutGuideGettingStartedRouteImport } from './routes/_guide-layout.guide.getting-started'
@@ -316,6 +317,11 @@ const GuideLayoutGuideCollectionsRoute =
     path: '/guide/collections',
     getParentRoute: () => GuideLayoutRoute,
   } as any)
+const GuideLayoutGuideComicsRoute = GuideLayoutGuideComicsRouteImport.update({
+  id: '/guide/comics',
+  path: '/guide/comics',
+  getParentRoute: () => GuideLayoutRoute,
+} as any)
 const GuideLayoutGuideExtensionRoute =
   GuideLayoutGuideExtensionRouteImport.update({
     id: '/guide/extension',
@@ -694,6 +700,7 @@ export interface FileRoutesByFullPath {
   '/docs/publishing': typeof DocsHeaderLayoutDocsPublishingRoute
   '/docs/renderers': typeof DocsHeaderLayoutDocsRenderersRoute
   '/guide/collections': typeof GuideLayoutGuideCollectionsRoute
+  '/guide/comics': typeof GuideLayoutGuideComicsRoute
   '/guide/extension': typeof GuideLayoutGuideExtensionRoute
   '/guide/finding': typeof GuideLayoutGuideFindingRoute
   '/guide/getting-started': typeof GuideLayoutGuideGettingStartedRoute
@@ -797,6 +804,7 @@ export interface FileRoutesByTo {
   '/docs/publishing': typeof DocsHeaderLayoutDocsPublishingRoute
   '/docs/renderers': typeof DocsHeaderLayoutDocsRenderersRoute
   '/guide/collections': typeof GuideLayoutGuideCollectionsRoute
+  '/guide/comics': typeof GuideLayoutGuideComicsRoute
   '/guide/extension': typeof GuideLayoutGuideExtensionRoute
   '/guide/finding': typeof GuideLayoutGuideFindingRoute
   '/guide/getting-started': typeof GuideLayoutGuideGettingStartedRoute
@@ -905,6 +913,7 @@ export interface FileRoutesById {
   '/_docs-header-layout/docs/publishing': typeof DocsHeaderLayoutDocsPublishingRoute
   '/_docs-header-layout/docs/renderers': typeof DocsHeaderLayoutDocsRenderersRoute
   '/_guide-layout/guide/collections': typeof GuideLayoutGuideCollectionsRoute
+  '/_guide-layout/guide/comics': typeof GuideLayoutGuideComicsRoute
   '/_guide-layout/guide/extension': typeof GuideLayoutGuideExtensionRoute
   '/_guide-layout/guide/finding': typeof GuideLayoutGuideFindingRoute
   '/_guide-layout/guide/getting-started': typeof GuideLayoutGuideGettingStartedRoute
@@ -1011,6 +1020,7 @@ export interface FileRouteTypes {
     | '/docs/publishing'
     | '/docs/renderers'
     | '/guide/collections'
+    | '/guide/comics'
     | '/guide/extension'
     | '/guide/finding'
     | '/guide/getting-started'
@@ -1114,6 +1124,7 @@ export interface FileRouteTypes {
     | '/docs/publishing'
     | '/docs/renderers'
     | '/guide/collections'
+    | '/guide/comics'
     | '/guide/extension'
     | '/guide/finding'
     | '/guide/getting-started'
@@ -1221,6 +1232,7 @@ export interface FileRouteTypes {
     | '/_docs-header-layout/docs/publishing'
     | '/_docs-header-layout/docs/renderers'
     | '/_guide-layout/guide/collections'
+    | '/_guide-layout/guide/comics'
     | '/_guide-layout/guide/extension'
     | '/_guide-layout/guide/finding'
     | '/_guide-layout/guide/getting-started'
@@ -1624,6 +1636,13 @@ declare module '@tanstack/react-router' {
       path: '/guide/collections'
       fullPath: '/guide/collections'
       preLoaderRoute: typeof GuideLayoutGuideCollectionsRouteImport
+      parentRoute: typeof GuideLayoutRoute
+    }
+    '/_guide-layout/guide/comics': {
+      id: '/_guide-layout/guide/comics'
+      path: '/guide/comics'
+      fullPath: '/guide/comics'
+      preLoaderRoute: typeof GuideLayoutGuideComicsRouteImport
       parentRoute: typeof GuideLayoutRoute
     }
     '/_guide-layout/guide/extension': {
@@ -2114,6 +2133,7 @@ const DocsHeaderLayoutRouteWithChildren =
 
 interface GuideLayoutRouteChildren {
   GuideLayoutGuideCollectionsRoute: typeof GuideLayoutGuideCollectionsRoute
+  GuideLayoutGuideComicsRoute: typeof GuideLayoutGuideComicsRoute
   GuideLayoutGuideExtensionRoute: typeof GuideLayoutGuideExtensionRoute
   GuideLayoutGuideFindingRoute: typeof GuideLayoutGuideFindingRoute
   GuideLayoutGuideGettingStartedRoute: typeof GuideLayoutGuideGettingStartedRoute
@@ -2128,6 +2148,7 @@ interface GuideLayoutRouteChildren {
 
 const GuideLayoutRouteChildren: GuideLayoutRouteChildren = {
   GuideLayoutGuideCollectionsRoute: GuideLayoutGuideCollectionsRoute,
+  GuideLayoutGuideComicsRoute: GuideLayoutGuideComicsRoute,
   GuideLayoutGuideExtensionRoute: GuideLayoutGuideExtensionRoute,
   GuideLayoutGuideFindingRoute: GuideLayoutGuideFindingRoute,
   GuideLayoutGuideGettingStartedRoute: GuideLayoutGuideGettingStartedRoute,

@@ -672,10 +672,16 @@ Single search field with two modes (detected from input):
 ### Reader guide (`/guide`)
 
 The **non-technical** documentation, deliberately separate from the developer docs at
-`/docs/*`. Eight task-shaped pages under `/guide` — Welcome, Getting started, Reading an
-article, Finding things to read, Keeping track, Making it yours, Beyond the app, Your account
-and data — written for someone who only wants to read, with no AT Protocol vocabulary and
-every feature named the way the UI names it.
+`/docs/*`. Task-shaped pages under `/guide` — Welcome, Getting started, Reading an article,
+Finding things to read, Keeping track, Lists and your sidebar, Collections, Making it yours,
+The browser extension, Publishing your site, Publishing a comic, Your account and data —
+written for someone who only wants to read, with no AT Protocol vocabulary and every feature
+named the way the UI names it. The last three are the exception the guide earns rather than
+assumes: they are for someone on the other side of the page, and they name record fields where
+naming them is the only honest answer (`/guide/comics` documents the comic view from the
+cartoonist's side — the one publisher setting, the classifier's two thresholds, and the title
+convention `#/lib/comic/issue-title` parses, since none of that has a lexicon field to point
+at).
 
 - **Own route tree.** `src/routes/_guide-layout.tsx` + `_guide-layout.guide.*.tsx`, with its
   own topbar (`GuideTopbar`) tagged "Reader guide". It reuses the docs shell's layout and
