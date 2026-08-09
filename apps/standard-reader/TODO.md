@@ -930,6 +930,16 @@ Build each on hip-ui components + StyleX tokens (no raw HTML/inline styles).
       do not emit `at:me` — every record we render belongs to someone else. Discovery-hint
       parsing reads the meta tags first and falls back to the rels, so peers that drop the old
       tags still resolve. See `src/lib/at-meta-tags.ts`.
+- [x] **HTML `rel=canonical`** — the reader renders other people's writing natively, so an
+      article page here is a near-duplicate of the same article on the publication's own site.
+      `/a/...` and `/comic/...` canonicalize to the publication's own page for that article when
+      one is known (`articleSourceUrl`, strict — never the publication root); `/collection/...`
+      self-canonicalizes because an edition is our own curation, and `/p/...`, `/l/...`,
+      `/u/...` self-canonicalize to fold their `?filter=` / sort / tab variants onto one URL.
+      No `noindex` anywhere: canonical hands the ranking signal back to the publisher while
+      keeping us crawlable, and the reader page can still win when the original is unstable.
+      Helper: `canonicalLink` in `src/lib/site-metadata.ts`. Requested in
+      https://userinput.app/d/did:plc:bpotnohnlgcj3fbmp7ugx4en/3ms3oynnzff2l.
 
 ## 7. Discovery engine (network-powered)
 

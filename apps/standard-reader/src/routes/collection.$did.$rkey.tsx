@@ -20,6 +20,7 @@ import { collectionReaderViewSearch } from "#/lib/open-collections-in-magazine";
 import { getPublicUrlClient } from "#/lib/public-url";
 import {
   SITE_NAME,
+  canonicalLink,
   collectionFeedUrl,
   collectionOgImageUrl,
   siteSocialMeta,
@@ -148,6 +149,10 @@ export const Route = createFileRoute("/collection/$did/$rkey")({
           : undefined,
       }),
       links: [
+        // Self-canonical, deliberately: an edition is curation we assembled,
+        // not a mirror of anyone's page, so it's the original. It also folds
+        // the `?ids=` pinned variants back onto the edition's own URL.
+        canonicalLink(`${baseUrl}${match.pathname}`),
         ...magazineThemeFontHeadLinks(theme),
         // standard.site discovery hints — a collection edition renders a
         // `site.standard.document` like any article view does, so it carries the

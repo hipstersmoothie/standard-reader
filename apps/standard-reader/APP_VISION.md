@@ -1511,6 +1511,34 @@ Where they come from and why they're not route `head.meta`:
   record we render belongs to someone else; it's the right tag for a platform serving an
   author's own site, not for a reader.
 
+### HTML `rel=canonical` — the reader gives the ranking back
+
+Not to be confused with `at:canonical` above: that one names a **record**, this one names a
+**URL for search engines**. They answer different questions and a page carries both.
+
+We render other people's writing natively, which makes an article page on the reader a
+near-duplicate of the same article on the publication's own site. Left alone, a search engine
+picks a winner between the two by itself, and it sometimes picks us. So we choose instead:
+
+| Route                  | Canonicalizes to                                | Why                                                            |
+| ---------------------- | ----------------------------------------------- | -------------------------------------------------------------- |
+| `/a/$did/$rkey`        | the article on the publication's site, if known | their writing, their ranking — we're a mirror                  |
+| `/comic/$did/$rkey`    | same, plus folds the `?page=` deep links        | the page-flip reader is our presentation of their comic        |
+| `/collection/…`        | itself (folds `?ids=`)                          | an edition is curation we assembled — we _are_ the original    |
+| `/p/…`, `/l/…`, `/u/…` | themselves (fold `?filter=` / sort / tab views) | directories over the network, with no single off-site original |
+
+- The helpers are `canonicalLink` (`src/lib/site-metadata.ts`) and `articleSourceUrl`
+  (`src/components/reader/format.ts`). A source URL that is unparseable, non-`http(s)`, or on
+  our own host is discarded and the page self-canonicalizes.
+- `articleSourceUrl` is deliberately **stricter** than `articlePublicationUrl`: it refuses to
+  fall back to the publication root. That fallback is right for "open this on the author's
+  site", but as a canonical it would claim the article duplicates a home page.
+- We do **not** use `noindex`. Canonical keeps us crawlable — so internal discovery of
+  publications and topics still works — and a search engine may still surface the reader page
+  when the original is unstable or has weaker signal, which is a win rather than a loss.
+- Everything that isn't a mirror (home, `/discover`, `/topics/…`, `/tag/…`, `/search`, docs,
+  guide) is unaffected and indexes normally. That's where "Standard Reader" gets found.
+
 ### Browser extension architecture
 
 ```

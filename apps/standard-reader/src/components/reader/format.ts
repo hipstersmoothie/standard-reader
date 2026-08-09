@@ -137,6 +137,26 @@ export function articlePublicationUrl(article: {
   return `${trimmed}${withSlash}`;
 }
 
+/**
+ * The article's own page on the publication's site — strict enough to hand a
+ * search engine as `rel=canonical`.
+ *
+ * Unlike {@link articlePublicationUrl}, this never falls back to the
+ * publication's root. That fallback is right for "open this on the author's
+ * site" (a homepage is somewhere to land), but as a canonical it would claim
+ * the article duplicates the publication's front page, which is worse than
+ * claiming nothing.
+ */
+export function articleSourceUrl(article: {
+  canonicalUrl: string | null;
+  path: string | null;
+  publication: { url: string } | null;
+}): string | null {
+  if (article.canonicalUrl) return article.canonicalUrl;
+  if (!article.path || !article.publication?.url) return null;
+  return articlePublicationUrl(article);
+}
+
 /** On-site article path (`/a/$did/$rkey`) when the URI is a document record. */
 export function articleReaderPath(documentUri: string): string | null {
   const params = documentLinkParams(documentUri);

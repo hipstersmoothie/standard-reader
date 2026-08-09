@@ -60,6 +60,7 @@ import type { HideableTabId, ProfileTabId } from "#/lib/profile-tabs";
 import { getPublicUrlClient } from "#/lib/public-url";
 import {
   authorFeedUrl,
+  canonicalLink,
   profileOgImageUrl,
   siteSocialMeta,
 } from "#/lib/site-metadata";
@@ -162,6 +163,9 @@ export const Route = createFileRoute("/_layout/u/$did")({
         ogImage: profileOgImageUrl(baseUrl, match.params.did),
       }),
       links: [
+        // Self-canonical: the profile is assembled from the network, so it has
+        // no single off-site original. Folds the tab views onto one URL.
+        canonicalLink(`${baseUrl}${match.pathname}`),
         {
           rel: "alternate",
           type: "application/rss+xml",

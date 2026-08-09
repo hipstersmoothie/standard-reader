@@ -64,6 +64,7 @@ import { shareLinkUrl, useNativeShareAvailable } from "#/lib/native-share";
 import { getPublicUrlClient } from "#/lib/public-url";
 import { buildBlueskyComposeUrl } from "#/lib/quote-share";
 import {
+  canonicalLink,
   listFeedUrl,
   listOgImageUrl,
   siteSocialMeta,
@@ -148,6 +149,9 @@ export const Route = createFileRoute("/_layout/l/$did/$rkey")({
         ogImage: listOgImageUrl(baseUrl, params.did, params.rkey),
       }),
       links: [
+        // Self-canonical: a reader's list is their own grouping, and the sort
+        // and layout views are the same page seen differently.
+        canonicalLink(`${baseUrl}${match.pathname}`),
         {
           rel: "alternate",
           type: "application/rss+xml",
