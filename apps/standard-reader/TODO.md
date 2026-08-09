@@ -535,6 +535,11 @@ Build each on hip-ui components + StyleX tokens (no raw HTML/inline styles).
       the bar fades in and out where it stands instead — Safari's own bottom toolbar resizes
       the dynamic viewport with the same scroll, so the travel distance is re-decided
       mid-slide and the bar lands short. Platform check is react-aria's `isIOS()`.
+      Above the fold the same gesture clears the top: `useAnimatedNavbar` now publishes
+      `--app-chrome-hidden` next to `--app-navbar-offset`, and the article's sticky header
+      reads it to pull itself up by its own measured height — so back/byline/actions leave
+      with the app bar and the only thing left against the top of the screen is the reading
+      progress track. ([Mobile Screen Real-Estate](https://userinput.app/d/did:plc:3x5npw4cb2twifyqcox7jmqj/3mrwcpbgousq2))
 - [x] **Home** — masthead (date + unread count), featured lead, latest unread rows, right rail (Trending articles + You might follow).
 - [x] **Latest** — chronological list, segmented Unread / Subscriptions / All-network filter with counts (Unread = unread docs from subs, Subscriptions = all docs from subs, All = whole network).
 - [x] **Discover** — Trending / Topics / Recommended / Followed-by-people-you-follow / All (chips, sort, grid⇄list toggle).
