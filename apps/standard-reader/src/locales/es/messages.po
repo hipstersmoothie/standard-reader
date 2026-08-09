@@ -73,6 +73,7 @@ msgstr "Ir a la sección"
 
 #: src/components/reader/subscriptions-table.tsx
 #: src/routes/_layout.feedback.index.tsx
+#: src/routes/_layout.saved.tsx
 msgid "Sort by"
 msgstr "Ordenar por"
 
@@ -6362,6 +6363,7 @@ msgid "About"
 msgstr "Acerca de"
 
 #: src/components/reader/publication-actions.tsx
+#: src/routes/_layout.saved.tsx
 msgid "Order"
 msgstr ""
 

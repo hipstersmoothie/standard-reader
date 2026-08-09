@@ -73,6 +73,7 @@ msgstr "섹션으로 이동"
 
 #: src/components/reader/subscriptions-table.tsx
 #: src/routes/_layout.feedback.index.tsx
+#: src/routes/_layout.saved.tsx
 msgid "Sort by"
 msgstr "정렬 기준"
 
@@ -6362,6 +6363,7 @@ msgid "About"
 msgstr "소개"
 
 #: src/components/reader/publication-actions.tsx
+#: src/routes/_layout.saved.tsx
 msgid "Order"
 msgstr ""
 

@@ -73,6 +73,7 @@ msgstr "セクションへ移動"
 
 #: src/components/reader/subscriptions-table.tsx
 #: src/routes/_layout.feedback.index.tsx
+#: src/routes/_layout.saved.tsx
 msgid "Sort by"
 msgstr "並び替え"
 
@@ -6362,6 +6363,7 @@ msgid "About"
 msgstr "概要"
 
 #: src/components/reader/publication-actions.tsx
+#: src/routes/_layout.saved.tsx
 msgid "Order"
 msgstr ""
 

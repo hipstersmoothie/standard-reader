@@ -4,7 +4,13 @@ import { msg } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
 import { Flex } from "@standard-reader/design-system/flex";
 import { IconButton } from "@standard-reader/design-system/icon-button";
-import { Menu, MenuItem } from "@standard-reader/design-system/menu";
+import {
+  Menu,
+  MenuItem,
+  MenuSection,
+  MenuSectionHeader,
+  MenuSeparator,
+} from "@standard-reader/design-system/menu";
 import { Select, SelectItem } from "@standard-reader/design-system/select";
 import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
 import { breakpoints } from "@standard-reader/design-system/theme/media-queries.stylex";
@@ -155,11 +161,13 @@ const styles = stylex.create({
     marginTop: spacing["6"],
   },
   // Two controls occupy the masthead's action slot — a compact icon menu and
-  // the full select — swapped by media query rather than a JS viewport check,
-  // so SSR emits both and neither can hydrate to the wrong one (mirrors
-  // `/tag`'s article sort). The swap is at `md` to match where the masthead
-  // drops its meta figure: below that the trailing edge is tight, so the
-  // control shrinks to the icon.
+  // the full select-plus-direction pair — swapped by media query rather than a
+  // JS viewport check, so SSR emits both and neither can hydrate to the wrong
+  // one (mirrors `/tag`'s article sort). The swap is at `md` to match where the
+  // masthead drops its meta figure: below that the trailing edge is tight, so
+  // the pair collapses into the single icon menu, which carries the order as a
+  // second section rather than a second button — two arrow glyphs side by side
+  // read as one repeated idea, not as field and direction.
   sortSlotCompact: {
     display: { default: "flex", [breakpoints.md]: "none" },
   },
@@ -214,13 +222,18 @@ function ReaderSaved() {
     onSortChange([...keys][0] ?? null);
   };
 
-  const flipDirection = () => {
-    const next: SavedSortDirection = direction === "asc" ? "desc" : "asc";
+  const setDirection = (next: SavedSortDirection) => {
     void navigate({
       replace: true,
       resetScroll: false,
       search: (prev: SavedSearch) => ({ ...prev, dir: next }),
     });
+  };
+
+  const onDirectionSelection = (keys: Selection) => {
+    if (keys === "all") return;
+    const next = [...keys][0];
+    if (next === "asc" || next === "desc") setDirection(next);
   };
 
   const directionLabels = SAVED_DIRECTION_LABELS[SAVED_SORT_RANKS[sort]];
@@ -231,69 +244,92 @@ function ReaderSaved() {
 
   const sortControl =
     total === 0 ? undefined : (
-      <Flex direction="row" gap="sm" align="center">
+      <>
         <div {...stylex.props(styles.sortSlotCompact)}>
           <Menu
             placement="bottom end"
-            selectionMode="single"
-            selectedKeys={new Set([sort])}
-            onSelectionChange={onSortSelection}
             trigger={
               <IconButton
                 aria-label={t`Sort saved articles`}
                 size="md"
                 variant="secondary"
               >
-                {/* Neutral both-ways glyph: the field control picks what to
-                    rank by, the button next to it picks which way. */}
                 <ArrowUpDown size={16} />
               </IconButton>
             }
           >
-            {SAVED_SORT_OPTIONS.map((option) => (
-              <MenuItem key={option.id} id={option.id}>
-                {i18n._(option.label)}
-              </MenuItem>
-            ))}
+            {/* Selection lives on each section (see `/feedback`'s filter menu),
+                so field and order read as one sheet and the menu stays open
+                between the two choices. */}
+            <MenuSection
+              selectionMode="single"
+              disallowEmptySelection
+              shouldCloseOnSelect={false}
+              selectedKeys={new Set([sort])}
+              onSelectionChange={onSortSelection}
+            >
+              <MenuSectionHeader>
+                <Trans>Sort by</Trans>
+              </MenuSectionHeader>
+              {SAVED_SORT_OPTIONS.map((option) => (
+                <MenuItem key={option.id} id={option.id}>
+                  {i18n._(option.label)}
+                </MenuItem>
+              ))}
+            </MenuSection>
+            <MenuSeparator />
+            <MenuSection
+              selectionMode="single"
+              disallowEmptySelection
+              shouldCloseOnSelect={false}
+              selectedKeys={new Set([direction])}
+              onSelectionChange={onDirectionSelection}
+            >
+              <MenuSectionHeader>
+                <Trans>Order</Trans>
+              </MenuSectionHeader>
+              <MenuItem id="desc">{i18n._(directionLabels.desc)}</MenuItem>
+              <MenuItem id="asc">{i18n._(directionLabels.asc)}</MenuItem>
+            </MenuSection>
           </Menu>
         </div>
 
         <div {...stylex.props(styles.sortSlotFull)}>
-          <Select
-            aria-label={t`Sort saved articles`}
-            size="md"
-            variant="secondary"
-            selectedKey={sort}
-            style={styles.sortSelect}
-            onSelectionChange={onSortChange}
-          >
-            {SAVED_SORT_OPTIONS.map((option) => (
-              <SelectItem
-                key={option.id}
-                id={option.id}
-                textValue={i18n._(option.label)}
-              >
-                {i18n._(option.label)}
-              </SelectItem>
-            ))}
-          </Select>
+          <Flex direction="row" gap="sm" align="center">
+            <Select
+              aria-label={t`Sort saved articles`}
+              size="md"
+              variant="secondary"
+              selectedKey={sort}
+              style={styles.sortSelect}
+              onSelectionChange={onSortChange}
+            >
+              {SAVED_SORT_OPTIONS.map((option) => (
+                <SelectItem
+                  key={option.id}
+                  id={option.id}
+                  textValue={i18n._(option.label)}
+                >
+                  {i18n._(option.label)}
+                </SelectItem>
+              ))}
+            </Select>
+            <IconButton
+              size="md"
+              variant="secondary"
+              label={flipLabel}
+              aria-label={flipLabel}
+              onPress={() => setDirection(direction === "asc" ? "desc" : "asc")}
+            >
+              {direction === "asc" ? (
+                <ArrowUpNarrowWide size={16} />
+              ) : (
+                <ArrowDownWideNarrow size={16} />
+              )}
+            </IconButton>
+          </Flex>
         </div>
-
-        {/* Sits outside the breakpoint slots: an icon button is already as
-            compact as it gets, so it rides along with either control. */}
-        <IconButton
-          size="md"
-          variant="secondary"
-          label={flipLabel}
-          onPress={flipDirection}
-        >
-          {direction === "asc" ? (
-            <ArrowUpNarrowWide size={16} />
-          ) : (
-            <ArrowDownWideNarrow size={16} />
-          )}
-        </IconButton>
-      </Flex>
+      </>
     );
 
   return (
