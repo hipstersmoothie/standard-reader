@@ -1153,6 +1153,18 @@ Standard Reader speaks the standard AT Proto label protocol, so readers can subs
 - **claudeslop** is our example labeler: a standalone service (`services/claudeslop/`) that
   consumes Jetstream, scores documents for AI-written prose, signs labels, and serves
   `queryLabels` + `subscribeLabels` — a minimal reference implementation of the labeler API.
+- **Web push notifications** are the one piece of personal state that is **app-owned, not
+  repo-owned** — a deliberate exception to the rule at the top of this section. A reader turns on
+  a bell from a publication or author page and gets a notification when that source publishes.
+  Three tables carry it (`src/db/schema/push.ts`), none of them mirroring a record:
+  `push_devices` holds a browser's push endpoint and encryption keys, which are per-browser
+  secrets — anyone holding them can push to that browser — and so must never land in a public
+  repo. `push_topics` (the per-source opt-in) _could_ have been a record like `sidebarPref`, but a
+  new record collection means an expanded OAuth write scope, which would put every existing
+  session through the "reconnect your account" flow before the bell worked at all; if the opt-in
+  ever needs to be portable, a record + mirror can be layered on the same table.
+  `document_push_queue` is the send outbox. **Notifications are independent of subscribing** —
+  the bell doesn't change your feed and doesn't require a subscription.
 
 ---
 
@@ -1289,6 +1301,32 @@ hand-tuned lists:
   publications, so the filtered Latest "All" badge gets its own precomputed `network_stats` scalar
   (`network_document_count_no_web_bridge`) rather than a live count, and the tag feed switches to a
   tag-first query shape (`selectTagArticleUris`) that the survival rate can't blow up.
+
+### Web push delivery
+
+Split across two processes, and the split is the whole design:
+
+- **The tap worker only enqueues.** `handleRecord`'s document branch runs one
+  `INSERT … SELECT` into `document_push_queue` (`src/server/push/enqueue.ts`) that inserts
+  nothing for anything that doesn't qualify. No timer, no `web-push` import, no outbound HTTP —
+  the worker's job is keeping up with the firehose, and it has been knocked over before by a
+  slow handler causing tap to redeliver.
+- **A `push-cron` Railway service sends** (`railway.push.json` → `pnpm push:send` →
+  `src/server/push/run.ts`), every five minutes, in its own short-lived process — the same shape
+  as the weekly digest, for the same reason.
+
+The queue table is also the **exactly-once claim**: its primary key is what makes tap
+redelivery, dead-letter replay, and later `update` events for one document all collapse to
+`DO NOTHING`. It is deliberately _not_ a column on `documents`, because document deletes are
+hard deletes — a delete→recreate at the same rkey is a normal republish, and a claim living on
+that row would die with it and re-notify everyone.
+
+Four guards decide whether a document is genuinely new, and each covers a different failure:
+`live` (so a PDS reconcile can't replay a repo's whole history), a date on the **record itself**
+(`documents.published_at` falls back to `now()` for an undated record, so an archive import
+would otherwise pass any freshness window), `indexed_at` (set once on first insert and never
+updated — this is what survives a tap cursor rewind or a fresh tap instance re-streaming known
+repos), and a per-author hourly cap in the sender as the backstop.
 
 ### Topic derivation
 

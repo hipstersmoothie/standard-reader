@@ -72,6 +72,7 @@ import { ArticleRow, PubDirectoryRow } from "../components/reader/cards";
 import { FeedLoadMore } from "../components/reader/feed-load-more";
 import { FollowUserButton } from "../components/reader/follow-user-button";
 import { LinkifiedText } from "../components/reader/linkified-text";
+import { NotifyButton } from "../components/reader/notify-button";
 import {
   Handle,
   Kicker,
@@ -767,6 +768,11 @@ function AuthorProfileContent({
               ) : (
                 <>
                   {session?.user?.did ? <AddToListButton did={did} /> : null}
+                  <NotifyButton
+                    subjectType="author"
+                    subject={did}
+                    signedIn={session?.user?.did != null}
+                  />
                   <FollowUserButton
                     did={did}
                     signedIn={session?.user?.did != null}
@@ -834,6 +840,11 @@ function AuthorProfileContent({
             ) : (
               <>
                 {session?.user?.did ? <AddToListButton did={did} /> : null}
+                <NotifyButton
+                  subjectType="author"
+                  subject={did}
+                  signedIn={session?.user?.did != null}
+                />
                 <FollowUserButton
                   did={did}
                   signedIn={session?.user?.did != null}

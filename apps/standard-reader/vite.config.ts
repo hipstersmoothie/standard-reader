@@ -150,6 +150,17 @@ const config = defineConfig({
       devOptions: { enabled: false },
       workbox: {
         globDirectory: ".output/public",
+        // Web push listeners (`public/push-sw.js`). Kept as a separate classic
+        // script rather than moving the whole SW to `injectManifest`, which
+        // would mean hand-porting all of the runtime caching below.
+        //
+        // NOTE: `push-sw.js` is ALSO listed in `globPatterns` on purpose.
+        // `importScripts` bakes a bare URL into `sw.js`, so editing the imported
+        // file changes zero bytes of `sw.js` and browsers keep running the old
+        // push handler indefinitely. Precaching it puts its revision hash in the
+        // manifest inside `sw.js`, so the SW byte-diffs and the update actually
+        // reaches people.
+        importScripts: ["/push-sw.js"],
         // Precache ONLY the small, always-needed shell: the offline fallback,
         // the manifest, and the app icons. Deliberately do NOT precache the
         // hashed JS/CSS chunks — this app ships heavy, lazily-loaded features
@@ -160,6 +171,8 @@ const config = defineConfig({
         globPatterns: [
           "offline.html",
           "manifest.json",
+          // Not for offline use — see the `importScripts` note above.
+          "push-sw.js",
           "favicon.svg",
           "apple-touch-icon.png",
           "icon-*.png",

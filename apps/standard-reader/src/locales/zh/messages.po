@@ -62,6 +62,11 @@ msgstr "将旧文章标记为未读"
 msgid "Something went wrong. Nothing was connected — try again."
 msgstr ""
 
+#: src/components/reader/notify-button.tsx
+#: src/components/user-settings-view.tsx
+msgid "Notifications are blocked for this site. You can turn them back on in your browser settings."
+msgstr ""
+
 #: src/routes/_layout.u.$did.tsx
 msgid "{name} hasn't started reading or publishing here."
 msgstr "{name} 还没有在这里阅读或发布过内容。"
@@ -599,6 +604,10 @@ msgstr ""
 msgid "Text on accent"
 msgstr "强调色上的文字"
 
+#: src/components/user-settings-view.tsx
+msgid "Turn off"
+msgstr ""
+
 #: src/components/reader/app-shell.tsx
 #: src/components/reader/subscriptions-sheet.tsx
 msgid "Finish reordering"
@@ -736,6 +745,10 @@ msgstr "阅读全文 →"
 msgid "Playback speed: {0}"
 msgstr "播放速度：{0}"
 
+#: src/components/user-settings-view.tsx
+msgid "How to enable"
+msgstr ""
+
 #: src/components/reader/subscriptions-table.tsx
 msgid "No posts yet"
 msgstr ""
@@ -829,6 +842,10 @@ msgstr "播放语音样本"
 
 #: src/components/guide/pages/comics-guide-page.tsx
 msgid "<0>Is the forwards-reading setting saved?</0> This is the one that is almost always the answer. Check it in your publishing tool, and note that it lives on the publication, not on individual posts."
+msgstr ""
+
+#: src/components/user-settings-view.tsx
+msgid "Turn off everywhere"
 msgstr ""
 
 #: src/components/reader/subscribe-card.tsx
@@ -1117,6 +1134,10 @@ msgstr ""
 msgid "Take any of it as RSS"
 msgstr "全部内容都可作为 RSS 获取"
 
+#: src/components/reader/ios-install-prompt.tsx
+msgid "Got it"
+msgstr ""
+
 #: src/components/reader/subscriptions-sheet.tsx
 #~ msgid "Reorder lists"
 #~ msgstr "重新排序列表"
@@ -1276,6 +1297,11 @@ msgstr ""
 #: src/components/reader/reorder-subscriptions-modal.tsx
 #~ msgid "You don't have any subscriptions to reorder yet."
 #~ msgstr ""
+
+#: src/components/reader/notify-button.tsx
+#: src/components/user-settings-view.tsx
+msgid "This browser doesn’t support web notifications."
+msgstr ""
 
 #: src/components/guide/pages/welcome-guide-page.tsx
 #: src/lib/guide/navigation.ts
@@ -1594,6 +1620,10 @@ msgstr ""
 msgid "A collection is a record in your own account, the same as a follow or a save. If you stop using Standard Reader it does not disappear, and another app built on the same network can read it."
 msgstr ""
 
+#: src/components/reader/notify-button.tsx
+msgid "Your notification setting didn’t save. Try again?"
+msgstr ""
+
 #: src/components/guide/pages/finding-guide-page.tsx
 #~ msgid "Home is the catch-up screen. It opens with the date and how much you have not read, leads with one featured article, and then lists what is new from the publications you follow."
 #~ msgstr ""
@@ -1691,6 +1721,10 @@ msgstr "运行示例"
 
 #: src/components/appearance-settings.tsx
 msgid "Your paper is dark, so the app reads as a dark theme. Text, borders and every other step are derived from these two colors."
+msgstr ""
+
+#: src/components/reader/ios-install-prompt.tsx
+msgid "Tap Share in the Safari toolbar."
 msgstr ""
 
 #: src/lib/guide/navigation.ts
@@ -1937,6 +1971,10 @@ msgstr ""
 
 #: src/components/guide/pages/reading-guide-page.tsx
 msgid "What every control on an article does — including having it read aloud to you, and making the text comfortable for your eyes."
+msgstr ""
+
+#: src/components/reader/notify-button.tsx
+msgid "Notifications aren’t available here"
 msgstr ""
 
 #: src/components/reader/about-view.tsx
@@ -2543,6 +2581,10 @@ msgstr "面向 Standard Reader 索引读模型的公开 XRPC 查询与操作。"
 msgid "Save theme"
 msgstr "保存主题"
 
+#: src/components/reader/notify-button.tsx
+msgid "Notifications are blocked"
+msgstr ""
+
 #: src/components/reader/about-view.tsx
 msgid "A reply"
 msgstr ""
@@ -3015,6 +3057,10 @@ msgstr ""
 #~ msgid "Flip one setting and article links open on the publication’s own site instead. Read wherever feels right to you."
 #~ msgstr "改一个设置，文章链接就会改为在刊物自己的网站打开。想在哪读就在哪读。"
 
+#: src/components/reader/ios-install-prompt.tsx
+msgid "Add to your Home Screen"
+msgstr ""
+
 #: src/components/guide/pages/finding-guide-page.tsx
 msgid "Discover is the directory of every publication the network knows about — not a curated shelf. It runs top to bottom from most personal to most complete:"
 msgstr ""
@@ -3337,6 +3383,10 @@ msgstr ""
 msgid "See all trending"
 msgstr "查看全部热门"
 
+#: src/components/reader/notify-button.tsx
+msgid "Notify me about new posts"
+msgstr ""
+
 #: src/components/onboarding/step-friends.tsx
 #~ msgid "All selected"
 #~ msgstr ""
@@ -3428,6 +3478,10 @@ msgstr "已保存"
 #: src/components/onboarding/step-intro.tsx
 msgid "{count, plural, one {{formattedCount} publication across the Atmosphere} other {{formattedCount} publications across the Atmosphere}}"
 msgstr "{count, plural, one {Atmosphere 上的 {formattedCount} 个刊物} other {Atmosphere 上的 {formattedCount} 个刊物}}"
+
+#: src/components/user-settings-view.tsx
+msgid "Notifications"
+msgstr ""
 
 #: src/components/guide/pages/finding-guide-page.tsx
 msgid "the whole network as it publishes."
@@ -3886,6 +3940,10 @@ msgstr "浏览全部"
 
 #: src/components/appearance-settings.tsx
 msgid "Large"
+msgstr ""
+
+#: src/components/reader/ios-install-prompt.tsx
+msgid "Then open Standard Reader from your Home Screen and turn the bell on there."
 msgstr ""
 
 #: src/components/reader/about-view.tsx
@@ -4544,6 +4602,10 @@ msgstr ""
 msgid "The extension checks the address of the page you are on to work out whether there is anything to offer, and it acts on your account only when you click something. It does not read your browsing history or the contents of pages."
 msgstr ""
 
+#: src/components/reader/ios-install-prompt.tsx
+msgid "On iPhone and iPad, notifications only work once Standard Reader is installed. It takes two taps."
+msgstr ""
+
 #: src/components/reader/privacy-view.tsx
 msgid "You can sign out at any time, which clears your app session cookie. You can clear site cookies in your browser to remove theme and saved-handle preferences. You can change reading-history tracking and delete personal data from Settings. To remove other AT Protocol records you created through the app, use a compatible client or your repository tools."
 msgstr "你可以随时退出登录，这会清除应用的会话 Cookie。在浏览器中清除站点 Cookie 可移除主题和已保存的账号偏好。你可以在设置中更改阅读历史记录并删除个人数据。若要移除你通过本应用创建的其他 AT Protocol 记录，请使用兼容的客户端或你的仓库工具。"
@@ -4750,6 +4812,11 @@ msgstr ""
 msgid "Loading page…"
 msgstr ""
 
+#. placeholder {0}: push.topicCount
+#: src/components/user-settings-view.tsx
+msgid "On for this browser. You’ll hear about new posts from the {0} publications and authors you’ve turned the bell on for."
+msgstr ""
+
 #: src/routes/mcp/authorize.tsx
 msgid "This request can't be completed here, so we're returning you to the app that sent you."
 msgstr ""
@@ -4775,6 +4842,7 @@ msgstr ""
 msgid "Not in the directory yet?"
 msgstr ""
 
+#: src/components/reader/notify-button.tsx
 #: src/components/reader/page-reader-bar.tsx
 msgid "Something went wrong"
 msgstr "出错了"
@@ -4896,6 +4964,11 @@ msgstr ""
 #: src/routes/_layout.u.$did.tsx
 msgid "Profile settings"
 msgstr "个人资料设置"
+
+#. placeholder {0}: push.topicCount
+#: src/components/user-settings-view.tsx
+msgid "Stop notifications on every device and clear all {0} of the publications and authors you’ve turned the bell on for."
+msgstr ""
 
 #: src/components/guide/pages/comics-guide-page.tsx
 #: src/lib/guide/navigation.ts
@@ -5189,6 +5262,10 @@ msgstr "你仓库中的所有已读记录都将被移除。文章会在整个应
 msgid "You’ve read everything from this publication."
 msgstr ""
 
+#: src/components/reader/notify-button.tsx
+msgid "We couldn’t set up notifications on this device. Try again?"
+msgstr ""
+
 #: src/components/appearance-settings.tsx
 msgid "Text, borders and every other step are derived from these two colors."
 msgstr ""
@@ -5479,6 +5556,10 @@ msgstr ""
 #: src/components/user-settings-view.tsx
 msgid "Weekly digest email"
 msgstr "每周摘要邮件"
+
+#: src/components/reader/ios-install-prompt.tsx
+msgid "Choose “Add to Home Screen”."
+msgstr ""
 
 #: src/components/guide/pages/extension-guide-page.tsx
 #: src/lib/guide/navigation.ts
@@ -6793,6 +6874,10 @@ msgid "What we collect"
 msgstr "我们收集哪些信息"
 
 #: src/components/user-settings-view.tsx
+msgid "On iPhone and iPad, notifications need Standard Reader installed on your Home Screen."
+msgstr ""
+
+#: src/components/user-settings-view.tsx
 msgid "When on, a publication's page and its posts are shown in that publication's own colors. Publications that haven't set any colors keep the Standard Reader theme."
 msgstr ""
 
@@ -7219,6 +7304,10 @@ msgstr "按话题筛选"
 msgid "Uploading {0}"
 msgstr ""
 
+#: src/components/user-settings-view.tsx
+msgid "Notifications on this device"
+msgstr ""
+
 #: src/routes/_layout.saved.tsx
 msgid "Reordering saved articles"
 msgstr ""
@@ -7245,6 +7334,10 @@ msgstr "创建列表"
 #: src/components/reader/subscriptions-sheet.tsx
 msgid "Expand all lists"
 msgstr "展开全部列表"
+
+#: src/components/user-settings-view.tsx
+msgid "Get notified the moment a publication or author publishes something new. Turn it on here, then choose who from their page."
+msgstr ""
 
 #: src/components/reader/document-share-menu.tsx
 #: src/components/reader/text-selection-toolbar.tsx
@@ -7380,6 +7473,10 @@ msgstr "反馈"
 #: src/components/guide/pages/personalizing-guide-page.tsx
 #: src/lib/guide/navigation.ts
 msgid "Letting publications use their own colors"
+msgstr ""
+
+#: src/components/reader/notify-button.tsx
+msgid "Turn off notifications"
 msgstr ""
 
 #: src/routes/_layout.l.$did.$rkey.tsx

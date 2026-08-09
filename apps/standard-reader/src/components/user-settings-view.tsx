@@ -104,6 +104,7 @@ import { useLocale } from "#/lib/use-locale";
 import { useOpenCollectionsInMagazine } from "#/lib/use-open-collections-in-magazine";
 import { useOpenLinks } from "#/lib/use-open-links";
 import { usePublicationThemePreference } from "#/lib/use-publication-theme-preference";
+import { usePushSettings } from "#/lib/use-push-settings";
 import { useReaderVoice } from "#/lib/use-reader-voice";
 import { useReadingTypography } from "#/lib/use-reading-typography";
 import { useTheme } from "#/lib/use-theme";
@@ -113,6 +114,7 @@ import {
   AppearanceAdvancedRows,
   AppearancePalettePanel,
 } from "./appearance-settings";
+import { IosInstallPrompt } from "./reader/ios-install-prompt";
 import { Masthead, ReaderContent } from "./reader/primitives";
 import { ReadingCustomFontPicker } from "./reading-custom-font-picker";
 import { ReadingSettingsPreview } from "./reading-settings-preview";
@@ -569,6 +571,21 @@ export function UserSettingsView() {
   const [digestPreviewOpen, setDigestPreviewOpen] = useState(false);
   const [digestPreviewLoading, setDigestPreviewLoading] = useState(true);
 
+  const push = usePushSettings();
+  const [iosPromptOpen, setIosPromptOpen] = useState(false);
+
+  // One row, five possible states. Ordered most-actionable first so the reader
+  // is told what to do about it rather than just what's wrong.
+  const pushDescription = push.blocked
+    ? t`Notifications are blocked for this site. You can turn them back on in your browser settings.`
+    : push.capability === "needs-ios-install"
+      ? t`On iPhone and iPad, notifications need Standard Reader installed on your Home Screen.`
+      : push.capability === "unsupported"
+        ? t`This browser doesn’t support web notifications.`
+        : push.deviceRegistered
+          ? t`On for this browser. You’ll hear about new posts from the ${push.topicCount} publications and authors you’ve turned the bell on for.`
+          : t`Get notified the moment a publication or author publishes something new. Turn it on here, then choose who from their page.`;
+
   const onToggleDigest = (next: boolean) => {
     // Turning on requests the `transition:email` scope (a full PDS re-auth), so
     // confirm first and explain why. Turning off just clears the flag — no
@@ -977,6 +994,66 @@ export function UserSettingsView() {
             </AlertDialogFooter>
           </AlertDialog>
         </div>
+      </section>
+
+      <section {...stylex.props(styles.section)}>
+        <h2 {...stylex.props(styles.sectionHeading)}>
+          <Trans>Notifications</Trans>
+        </h2>
+        <div {...stylex.props(styles.settingGroup)}>
+          <SettingRow
+            label={t`Notifications on this device`}
+            description={pushDescription}
+          >
+            {push.capability === "needs-ios-install" ? (
+              <Button
+                variant="secondary"
+                onPress={() => setIosPromptOpen(true)}
+              >
+                <Trans>How to enable</Trans>
+              </Button>
+            ) : (
+              <Switch
+                isSelected={push.deviceRegistered}
+                onChange={(next) => {
+                  void (next
+                    ? push.enableOnThisDevice()
+                    : push.disableOnThisDevice());
+                }}
+                isDisabled={
+                  push.isPending ||
+                  push.blocked ||
+                  push.capability === null ||
+                  push.capability === "unsupported"
+                }
+                aria-label={t`Notifications on this device`}
+              />
+            )}
+          </SettingRow>
+          {push.topicCount > 0 || push.deviceCount > 0 ? (
+            <>
+              <Separator />
+              <SettingRow
+                label={t`Turn off everywhere`}
+                description={t`Stop notifications on every device and clear all ${push.topicCount} of the publications and authors you’ve turned the bell on for.`}
+              >
+                <Button
+                  variant="secondary"
+                  isDisabled={push.isPending}
+                  onPress={() => {
+                    void push.disableEverywhere();
+                  }}
+                >
+                  <Trans>Turn off</Trans>
+                </Button>
+              </SettingRow>
+            </>
+          ) : null}
+        </div>
+        <IosInstallPrompt
+          isOpen={iosPromptOpen}
+          onOpenChange={setIosPromptOpen}
+        />
       </section>
 
       <section {...stylex.props(styles.section)}>

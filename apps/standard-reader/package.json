@@ -27,6 +27,8 @@
     "topics:cron:dev": "tsx --env-file=.env scripts/topics-cron.ts",
     "digest:send": "tsx scripts/send-weekly-digest.ts",
     "digest:send:dev": "tsx --env-file=.env scripts/send-weekly-digest.ts",
+    "push:send": "tsx scripts/send-push.ts",
+    "push:send:dev": "tsx --env-file=.env scripts/send-push.ts",
     "thread:post": "tsx scripts/post-weekly-thread.ts",
     "thread:post:dev": "tsx --env-file=.env scripts/post-weekly-thread.ts",
     "backfill:actor-handles": "pnpm exec tsx --env-file=.env scripts/backfill-actor-handles.ts",
@@ -161,6 +163,7 @@
     "unist-util-visit": "^5.1.0",
     "universal-cookie": "^8.1.2",
     "web-haptics": "^0.0.6",
+    "web-push": "^3.6.7",
     "zod": "^4.4.3"
   },
   "devDependencies": {
@@ -185,6 +188,7 @@
     "@types/pg": "^8.20.0",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
+    "@types/web-push": "^3.6.4",
     "@typescript-eslint/parser": "^8.60.1",
     "@vitejs/plugin-react": "^6.0.1",
     "browserslist": "^4.28.2",
