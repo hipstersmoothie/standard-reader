@@ -43,6 +43,8 @@
     "reconcile:repos:dev": "pnpm --filter standard-reader reconcile:repos:dev",
     "digest:send": "pnpm --filter standard-reader digest:send",
     "digest:send:dev": "pnpm --filter standard-reader digest:send:dev",
+    "push:send": "pnpm --filter standard-reader push:send",
+    "push:send:dev": "pnpm --filter standard-reader push:send:dev",
     "thread:post": "pnpm --filter standard-reader thread:post",
     "thread:post:dev": "pnpm --filter standard-reader thread:post:dev",
     "backfill:actor-handles": "pnpm --filter standard-reader backfill:actor-handles",

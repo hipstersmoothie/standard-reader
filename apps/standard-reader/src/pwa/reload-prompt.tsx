@@ -8,6 +8,7 @@ import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
 import * as stylex from "@stylexjs/stylex";
 import { useEffect, useRef, useState } from "react";
 
+import { syncPushDevice } from "./push";
 import type { UpdateServiceWorker } from "./register";
 import { registerServiceWorker } from "./register";
 
@@ -46,6 +47,12 @@ export function ReloadPrompt() {
     updateRef.current = registerServiceWorker({
       onNeedRefresh: () => setNeedRefresh(true),
     });
+    // Repair a rotated push endpoint. Chrome announces rotation via
+    // `pushsubscriptionchange` (handled in `public/push-sw.js`), but Safari
+    // never fires that event, so without a check on load a rotated subscription
+    // silently stops receiving anything. No-ops when the reader hasn't enabled
+    // notifications.
+    void syncPushDevice();
   }, []);
 
   if (!needRefresh) return null;

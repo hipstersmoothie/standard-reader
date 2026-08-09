@@ -19,6 +19,7 @@ import {
 } from "@standard-reader/design-system/menu";
 import { primaryColor } from "@standard-reader/design-system/theme/color.stylex";
 import { breakpoints } from "@standard-reader/design-system/theme/media-queries.stylex";
+import { gap } from "@standard-reader/design-system/theme/semantic-spacing.stylex";
 import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
 import * as stylex from "@stylexjs/stylex";
 import { useQuery } from "@tanstack/react-query";
@@ -44,6 +45,7 @@ import { useLoginSearch } from "#/utils/use-login-search";
 import type { PublicationCard } from "../../integrations/tanstack-query/api-shapes";
 import { AddToListModal } from "./add-to-list-modal";
 import { FollowButton } from "./cards";
+import { NotifyButton } from "./notify-button";
 import { RssFeedDialog } from "./rss-feed-button";
 import { ShareMenuItems, useShareActions } from "./share-menu";
 
@@ -51,14 +53,27 @@ const MENU_ICON = 14;
 
 const styles = stylex.create({
   /**
-   * On desktop the group sits at the end of the hero's top row; on mobile it
+   * The bell trails the Subscribe split button rather than sitting inside it:
+   * the chevron is Subscribe's own dropdown, so a third segment wedged between
+   * them would break that pairing and read as one three-part control.
+   *
+   * On desktop this row sits at the end of the hero's top row; on mobile it
    * wraps onto its own full-width line under the publication name.
    */
-  group: {
+  row: {
+    alignItems: "center",
+    columnGap: gap.sm,
+    display: "flex",
     flexBasis: { default: "100%", [breakpoints.sm]: "auto" },
     flexShrink: 0,
     marginInlineStart: { default: null, [breakpoints.sm]: "auto" },
     paddingTop: { default: null, [breakpoints.sm]: spacing["1"] },
+  },
+  /** The split button itself. Takes the row's slack on mobile so it fills the
+   * line; the bell stays square at its end. */
+  group: {
+    flexGrow: { default: 1, [breakpoints.sm]: 0 },
+    flexShrink: 0,
   },
   /**
    * The label segment takes the slack, so on mobile it fills the row and the
@@ -190,12 +205,15 @@ function OrderSubMenu({
 
 /**
  * The publication hero's action cluster: a split button whose primary segment
- * subscribes and whose chevron opens every other action for the publication.
+ * subscribes and whose chevron opens every other action for the publication,
+ * then a notification bell.
  *
- * One control instead of six keeps the hero calm and reads the same on mobile,
- * where the split button goes full-width instead of collapsing into an icon row.
- * Dialogs are rendered as siblings of the menu (not menu children) so they
- * survive the menu closing on selection.
+ * Two controls instead of seven keeps the hero calm and reads the same on
+ * mobile, where the split button goes full-width instead of collapsing into an
+ * icon row. The bell stays outside the group on purpose — the chevron is
+ * Subscribe's own dropdown, and a third segment between them would read as one
+ * three-part control. Dialogs are rendered as siblings of the menu (not menu
+ * children) so they survive the menu closing on selection.
  */
 export function PublicationActions({
   pub,
@@ -249,89 +267,105 @@ export function PublicationActions({
 
   return (
     <>
-      <ButtonGroup style={styles.group}>
-        <FollowButton
-          publicationUri={pub.uri}
+      <div {...stylex.props(styles.row)}>
+        <ButtonGroup style={styles.group}>
+          <FollowButton
+            publicationUri={pub.uri}
+            signedIn={signedIn}
+            size="lg"
+            pub={pub}
+            responsive={false}
+            style={
+              variant === "primary" ? styles.subscribeAccent : styles.subscribe
+            }
+          />
+          <Menu
+            placement="bottom end"
+            trigger={
+              <IconButton variant={variant} label={t`More actions`} size="lg">
+                <ChevronDown size={16} />
+              </IconButton>
+            }
+          >
+            {signedIn ? (
+              <MenuItem
+                onPress={() => setListOpen(true)}
+                suffix={<ListPlus size={MENU_ICON} />}
+                textValue={t`Add to list`}
+              >
+                <Trans>Add to list</Trans>
+              </MenuItem>
+            ) : (
+              <MenuItemLink
+                to="/login"
+                search={loginSearch}
+                suffix={<ListPlus size={MENU_ICON} />}
+                textValue={t`Add to list`}
+              >
+                <Trans>Add to list</Trans>
+              </MenuItemLink>
+            )}
+            {markAllRead ? (
+              <MenuItem
+                onPress={() => setMarkAllReadOpen(true)}
+                suffix={<CheckCheck size={MENU_ICON} />}
+                textValue={t`Mark all as read`}
+              >
+                <Trans>Mark all as read</Trans>
+              </MenuItem>
+            ) : null}
+            {signedIn ? (
+              <FilterSubMenu
+                filter={filter}
+                trackReading={trackReading}
+                onFilterChange={onFilterChange}
+              />
+            ) : null}
+            {/* Not gated on sign-in: the override rides in a cookie, so it works
+              for a guest exactly as well as for a reader with an account. */}
+            <OrderSubMenu order={order} onOrderChange={onOrderChange} />
+
+            <MenuSeparator />
+
+            <ShareMenuItems share={share} />
+
+            <MenuSeparator />
+
+            <MenuItem
+              onPress={() => setRssOpen(true)}
+              suffix={<Rss size={MENU_ICON} />}
+              textValue={t`RSS feed`}
+            >
+              <Trans>RSS feed</Trans>
+            </MenuItem>
+            {pub.url ? (
+              <MenuItem
+                onPress={() => {
+                  globalThis.open(
+                    pub.url ?? "",
+                    "_blank",
+                    "noopener,noreferrer",
+                  );
+                }}
+                suffix={<ExternalLink size={MENU_ICON} />}
+                textValue={t`Visit publication site`}
+              >
+                <Trans>Visit publication site</Trans>
+              </MenuItem>
+            ) : null}
+          </Menu>
+        </ButtonGroup>
+        <NotifyButton
+          subjectType="publication"
+          subject={pub.uri}
           signedIn={signedIn}
           size="lg"
-          pub={pub}
-          responsive={false}
-          style={
-            variant === "primary" ? styles.subscribeAccent : styles.subscribe
-          }
+          // Takes the same variant as the split button beside it, so a
+          // publication painting the page in its own theme colors gets a bell
+          // that belongs to that palette instead of the app's neutral one.
+          variant={variant}
         />
-        <Menu
-          placement="bottom end"
-          trigger={
-            <IconButton variant={variant} label={t`More actions`} size="lg">
-              <ChevronDown size={16} />
-            </IconButton>
-          }
-        >
-          {signedIn ? (
-            <MenuItem
-              onPress={() => setListOpen(true)}
-              suffix={<ListPlus size={MENU_ICON} />}
-              textValue={t`Add to list`}
-            >
-              <Trans>Add to list</Trans>
-            </MenuItem>
-          ) : (
-            <MenuItemLink
-              to="/login"
-              search={loginSearch}
-              suffix={<ListPlus size={MENU_ICON} />}
-              textValue={t`Add to list`}
-            >
-              <Trans>Add to list</Trans>
-            </MenuItemLink>
-          )}
-          {markAllRead ? (
-            <MenuItem
-              onPress={() => setMarkAllReadOpen(true)}
-              suffix={<CheckCheck size={MENU_ICON} />}
-              textValue={t`Mark all as read`}
-            >
-              <Trans>Mark all as read</Trans>
-            </MenuItem>
-          ) : null}
-          {signedIn ? (
-            <FilterSubMenu
-              filter={filter}
-              trackReading={trackReading}
-              onFilterChange={onFilterChange}
-            />
-          ) : null}
-          {/* Not gated on sign-in: the override rides in a cookie, so it works
-              for a guest exactly as well as for a reader with an account. */}
-          <OrderSubMenu order={order} onOrderChange={onOrderChange} />
-
-          <MenuSeparator />
-
-          <ShareMenuItems share={share} />
-
-          <MenuSeparator />
-
-          <MenuItem
-            onPress={() => setRssOpen(true)}
-            suffix={<Rss size={MENU_ICON} />}
-            textValue={t`RSS feed`}
-          >
-            <Trans>RSS feed</Trans>
-          </MenuItem>
-          {pub.url ? (
-            <MenuItem
-              onPress={() => {
-                globalThis.open(pub.url ?? "", "_blank", "noopener,noreferrer");
-              }}
-              suffix={<ExternalLink size={MENU_ICON} />}
-              textValue={t`Visit publication site`}
-            >
-              <Trans>Visit publication site</Trans>
-            </MenuItem>
-          ) : null}
-        </Menu>
-      </ButtonGroup>
+      </div>
 
       {share.embedDialog}
 

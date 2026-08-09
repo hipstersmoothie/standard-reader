@@ -92,6 +92,7 @@ import { Route as ApiOgProfileRouteImport } from './routes/api/og/profile'
 import { Route as ApiOgPublicationRouteImport } from './routes/api/og/publication'
 import { Route as ApiOgQuoteRouteImport } from './routes/api/og/quote'
 import { Route as ApiOgSiteRouteImport } from './routes/api/og/site'
+import { Route as ApiPushResubscribeRouteImport } from './routes/api/push/resubscribe'
 import { Route as CollectionDidRkeyRouteImport } from './routes/collection.$did.$rkey'
 import { Route as ComicDidRkeyRouteImport } from './routes/comic.$did.$rkey'
 import { Route as FeedLatestDidRouteImport } from './routes/feed.latest.$did'
@@ -543,6 +544,11 @@ const ApiOgSiteRoute = ApiOgSiteRouteImport.update({
   path: '/api/og/site',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPushResubscribeRoute = ApiPushResubscribeRouteImport.update({
+  id: '/api/push/resubscribe',
+  path: '/api/push/resubscribe',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CollectionDidRkeyRoute = CollectionDidRkeyRouteImport.update({
   id: '/collection/$did/$rkey',
   path: '/collection/$did/$rkey',
@@ -739,6 +745,7 @@ export interface FileRoutesByFullPath {
   '/api/og/publication': typeof ApiOgPublicationRoute
   '/api/og/quote': typeof ApiOgQuoteRoute
   '/api/og/site': typeof ApiOgSiteRoute
+  '/api/push/resubscribe': typeof ApiPushResubscribeRoute
   '/collection/$did/$rkey': typeof CollectionDidRkeyRoute
   '/comic/$did/$rkey': typeof ComicDidRkeyRoute
   '/feed/latest/$did': typeof FeedLatestDidRoute
@@ -843,6 +850,7 @@ export interface FileRoutesByTo {
   '/api/og/publication': typeof ApiOgPublicationRoute
   '/api/og/quote': typeof ApiOgQuoteRoute
   '/api/og/site': typeof ApiOgSiteRoute
+  '/api/push/resubscribe': typeof ApiPushResubscribeRoute
   '/collection/$did/$rkey': typeof CollectionDidRkeyRoute
   '/comic/$did/$rkey': typeof ComicDidRkeyRoute
   '/feed/latest/$did': typeof FeedLatestDidRoute
@@ -952,6 +960,7 @@ export interface FileRoutesById {
   '/api/og/publication': typeof ApiOgPublicationRoute
   '/api/og/quote': typeof ApiOgQuoteRoute
   '/api/og/site': typeof ApiOgSiteRoute
+  '/api/push/resubscribe': typeof ApiPushResubscribeRoute
   '/collection/$did/$rkey': typeof CollectionDidRkeyRoute
   '/comic/$did/$rkey': typeof ComicDidRkeyRoute
   '/feed/latest/$did': typeof FeedLatestDidRoute
@@ -1059,6 +1068,7 @@ export interface FileRouteTypes {
     | '/api/og/publication'
     | '/api/og/quote'
     | '/api/og/site'
+    | '/api/push/resubscribe'
     | '/collection/$did/$rkey'
     | '/comic/$did/$rkey'
     | '/feed/latest/$did'
@@ -1163,6 +1173,7 @@ export interface FileRouteTypes {
     | '/api/og/publication'
     | '/api/og/quote'
     | '/api/og/site'
+    | '/api/push/resubscribe'
     | '/collection/$did/$rkey'
     | '/comic/$did/$rkey'
     | '/feed/latest/$did'
@@ -1271,6 +1282,7 @@ export interface FileRouteTypes {
     | '/api/og/publication'
     | '/api/og/quote'
     | '/api/og/site'
+    | '/api/push/resubscribe'
     | '/collection/$did/$rkey'
     | '/comic/$did/$rkey'
     | '/feed/latest/$did'
@@ -1342,6 +1354,7 @@ export interface RootRouteChildren {
   ApiOgPublicationRoute: typeof ApiOgPublicationRoute
   ApiOgQuoteRoute: typeof ApiOgQuoteRoute
   ApiOgSiteRoute: typeof ApiOgSiteRoute
+  ApiPushResubscribeRoute: typeof ApiPushResubscribeRoute
   CollectionDidRkeyRoute: typeof CollectionDidRkeyRoute
   ComicDidRkeyRoute: typeof ComicDidRkeyRoute
   FeedLatestDidRoute: typeof FeedLatestDidRoute
@@ -1946,6 +1959,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiOgSiteRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/push/resubscribe': {
+      id: '/api/push/resubscribe'
+      path: '/api/push/resubscribe'
+      fullPath: '/api/push/resubscribe'
+      preLoaderRoute: typeof ApiPushResubscribeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/collection/$did/$rkey': {
       id: '/collection/$did/$rkey'
       path: '/collection/$did/$rkey'
@@ -2296,6 +2316,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiOgPublicationRoute: ApiOgPublicationRoute,
   ApiOgQuoteRoute: ApiOgQuoteRoute,
   ApiOgSiteRoute: ApiOgSiteRoute,
+  ApiPushResubscribeRoute: ApiPushResubscribeRoute,
   CollectionDidRkeyRoute: CollectionDidRkeyRoute,
   ComicDidRkeyRoute: ComicDidRkeyRoute,
   FeedLatestDidRoute: FeedLatestDidRoute,

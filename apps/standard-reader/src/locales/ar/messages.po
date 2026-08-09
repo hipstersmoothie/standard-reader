@@ -62,6 +62,11 @@ msgstr "تعليم المنشورات القديمة كغير مقروءة"
 msgid "Something went wrong. Nothing was connected — try again."
 msgstr ""
 
+#: src/components/reader/notify-button.tsx
+#: src/components/user-settings-view.tsx
+msgid "Notifications are blocked for this site. You can turn them back on in your browser settings."
+msgstr ""
+
 #: src/routes/_layout.u.$did.tsx
 msgid "{name} hasn't started reading or publishing here."
 msgstr "لم يبدأ {name} القراءة أو النشر هنا."
@@ -599,6 +604,10 @@ msgstr ""
 msgid "Text on accent"
 msgstr "النص على لون التمييز"
 
+#: src/components/user-settings-view.tsx
+msgid "Turn off"
+msgstr ""
+
 #: src/components/reader/app-shell.tsx
 #: src/components/reader/subscriptions-sheet.tsx
 msgid "Finish reordering"
@@ -736,6 +745,10 @@ msgstr "اقرأ المقال ←"
 msgid "Playback speed: {0}"
 msgstr "سرعة التشغيل: {0}"
 
+#: src/components/user-settings-view.tsx
+msgid "How to enable"
+msgstr ""
+
 #: src/components/reader/subscriptions-table.tsx
 msgid "No posts yet"
 msgstr ""
@@ -829,6 +842,10 @@ msgstr "تشغيل عيّنة صوتية"
 
 #: src/components/guide/pages/comics-guide-page.tsx
 msgid "<0>Is the forwards-reading setting saved?</0> This is the one that is almost always the answer. Check it in your publishing tool, and note that it lives on the publication, not on individual posts."
+msgstr ""
+
+#: src/components/user-settings-view.tsx
+msgid "Turn off everywhere"
 msgstr ""
 
 #: src/components/reader/subscribe-card.tsx
@@ -1117,6 +1134,10 @@ msgstr ""
 msgid "Take any of it as RSS"
 msgstr "احصل على أي منها عبر RSS"
 
+#: src/components/reader/ios-install-prompt.tsx
+msgid "Got it"
+msgstr ""
+
 #: src/components/reader/subscriptions-sheet.tsx
 #~ msgid "Reorder lists"
 #~ msgstr "إعادة ترتيب القوائم"
@@ -1276,6 +1297,11 @@ msgstr ""
 #: src/components/reader/reorder-subscriptions-modal.tsx
 #~ msgid "You don't have any subscriptions to reorder yet."
 #~ msgstr ""
+
+#: src/components/reader/notify-button.tsx
+#: src/components/user-settings-view.tsx
+msgid "This browser doesn’t support web notifications."
+msgstr ""
 
 #: src/components/guide/pages/welcome-guide-page.tsx
 #: src/lib/guide/navigation.ts
@@ -1594,6 +1620,10 @@ msgstr ""
 msgid "A collection is a record in your own account, the same as a follow or a save. If you stop using Standard Reader it does not disappear, and another app built on the same network can read it."
 msgstr ""
 
+#: src/components/reader/notify-button.tsx
+msgid "Your notification setting didn’t save. Try again?"
+msgstr ""
+
 #: src/components/guide/pages/finding-guide-page.tsx
 #~ msgid "Home is the catch-up screen. It opens with the date and how much you have not read, leads with one featured article, and then lists what is new from the publications you follow."
 #~ msgstr ""
@@ -1693,6 +1723,10 @@ msgstr "تشغيل المثال"
 msgid "Your paper is dark, so the app reads as a dark theme. Text, borders and every other step are derived from these two colors."
 msgstr ""
 
+#: src/components/reader/ios-install-prompt.tsx
+msgid "Tap Share in the Safari toolbar."
+msgstr ""
+
 #: src/lib/guide/navigation.ts
 msgid "The reading view, listening to an article, and joining the conversation."
 msgstr ""
@@ -1730,6 +1764,10 @@ msgstr "بحث سريع في النص الكامل"
 #: src/lib/guide/navigation.ts
 #~ msgid "Saving, recommending, reading history, and managing what you follow."
 #~ msgstr ""
+
+#: src/components/reader/notify-button.tsx
+msgid "Notifications aren’t available"
+msgstr ""
 
 #: src/components/reader/save-to-collection-dialog.tsx
 msgid "Collection name"
@@ -1939,6 +1977,10 @@ msgstr ""
 msgid "What every control on an article does — including having it read aloud to you, and making the text comfortable for your eyes."
 msgstr ""
 
+#: src/components/reader/notify-button.tsx
+msgid "Notifications aren’t available here"
+msgstr ""
+
 #: src/components/reader/about-view.tsx
 #~ msgid "The reading experience"
 #~ msgstr "تجربة القراءة"
@@ -2000,6 +2042,10 @@ msgstr "قد نحدّث هذه السياسة مع تطوّر الإضافة. و
 #: src/components/reader/privacy-view.tsx
 msgid "Your choices"
 msgstr "خياراتك"
+
+#: src/components/push-diagnostics.tsx
+msgid "Installed to Home Screen"
+msgstr ""
 
 #: src/components/docs/renderers-docs-page.tsx
 #~ msgid "Pick the package for your framework; all sit on the same core."
@@ -2543,6 +2589,10 @@ msgstr "استعلامات وإجراءات XRPC العامة لنموذج ال�
 msgid "Save theme"
 msgstr "حفظ السمة"
 
+#: src/components/reader/notify-button.tsx
+msgid "Notifications are blocked"
+msgstr ""
+
 #: src/components/reader/about-view.tsx
 msgid "A reply"
 msgstr ""
@@ -3015,6 +3065,10 @@ msgstr ""
 #~ msgid "Flip one setting and article links open on the publication’s own site instead. Read wherever feels right to you."
 #~ msgstr "بدّل إعدادًا واحدًا لتُفتح روابط المقالات على موقع المنشورة نفسها. اقرأ حيثما يناسبك."
 
+#: src/components/reader/ios-install-prompt.tsx
+msgid "Add to your Home Screen"
+msgstr ""
+
 #: src/components/guide/pages/finding-guide-page.tsx
 msgid "Discover is the directory of every publication the network knows about — not a curated shelf. It runs top to bottom from most personal to most complete:"
 msgstr ""
@@ -3337,6 +3391,10 @@ msgstr ""
 msgid "See all trending"
 msgstr "عرض كل الرائج"
 
+#: src/components/reader/notify-button.tsx
+msgid "Notify me about new posts"
+msgstr ""
+
 #: src/components/onboarding/step-friends.tsx
 #~ msgid "All selected"
 #~ msgstr ""
@@ -3386,6 +3444,10 @@ msgstr ""
 msgid "Reset filters"
 msgstr ""
 
+#: src/components/push-diagnostics.tsx
+msgid "Service worker"
+msgstr ""
+
 #: src/routes/_layout.feedback.index.tsx
 msgid "Hide implemented"
 msgstr "إخفاء المنفَّذ"
@@ -3428,6 +3490,10 @@ msgstr "محفوظ"
 #: src/components/onboarding/step-intro.tsx
 msgid "{count, plural, one {{formattedCount} publication across the Atmosphere} other {{formattedCount} publications across the Atmosphere}}"
 msgstr "{count, plural, zero {لا توجد منشورات في Atmosphere} one {منشورة واحدة في Atmosphere} two {منشورتان في Atmosphere} few {{formattedCount} منشورات في Atmosphere} many {{formattedCount} منشورة في Atmosphere} other {{formattedCount} منشورة في Atmosphere}}"
+
+#: src/components/user-settings-view.tsx
+msgid "Notifications"
+msgstr ""
 
 #: src/components/guide/pages/finding-guide-page.tsx
 msgid "the whole network as it publishes."
@@ -3888,6 +3954,10 @@ msgstr "تصفّح كل شيء"
 msgid "Large"
 msgstr ""
 
+#: src/components/reader/ios-install-prompt.tsx
+msgid "Then open Standard Reader from your Home Screen and turn the bell on there."
+msgstr ""
+
 #: src/components/reader/about-view.tsx
 msgid "A Listen button reads any article aloud, right on your device, and highlights each word as it goes. The player follows you around the app — it’ll even read an embedded Bluesky post. Signed in, you can pick a voice."
 msgstr "زر الاستماع يقرأ أي مقال بصوت مسموع على جهازك مباشرةً، ويبرز كل كلمة أثناء القراءة. يرافقك المشغّل في أنحاء التطبيق — بل يقرأ حتى منشور Bluesky المضمّن. وبتسجيل الدخول يمكنك اختيار الصوت."
@@ -4056,6 +4126,10 @@ msgstr ""
 
 #: src/components/guide/pages/finding-guide-page.tsx
 msgid "Pasting a handle works even for publications the network has not indexed yet — it goes and asks that author's account directly. Subscribe and it starts appearing in your feeds like any other."
+msgstr ""
+
+#: src/components/push-diagnostics.tsx
+msgid "If notifications aren’t working, this is what your browser reports. Sharing a screenshot of it is the fastest way to get it fixed."
 msgstr ""
 
 #: src/routes/_layout.p.$did.$rkey.tsx
@@ -4544,6 +4618,10 @@ msgstr ""
 msgid "The extension checks the address of the page you are on to work out whether there is anything to offer, and it acts on your account only when you click something. It does not read your browsing history or the contents of pages."
 msgstr ""
 
+#: src/components/reader/ios-install-prompt.tsx
+msgid "On iPhone and iPad, notifications only work once Standard Reader is installed. It takes two taps."
+msgstr ""
+
 #: src/components/reader/privacy-view.tsx
 msgid "You can sign out at any time, which clears your app session cookie. You can clear site cookies in your browser to remove theme and saved-handle preferences. You can change reading-history tracking and delete personal data from Settings. To remove other AT Protocol records you created through the app, use a compatible client or your repository tools."
 msgstr "يمكنك تسجيل الخروج في أي وقت، ما يمسح ملف تعريف ارتباط جلسة التطبيق. ويمكنك مسح ملفات تعريف الارتباط للموقع من متصفحك لإزالة تفضيلات السمة والمعرّف المحفوظ. كما يمكنك تغيير تتبع سجل القراءة وحذف بياناتك الشخصية من الإعدادات. ولإزالة سجلات AT Protocol الأخرى التي أنشأتها عبر التطبيق، استخدم عميلًا متوافقًا أو أدوات المستودع لديك."
@@ -4750,6 +4828,11 @@ msgstr ""
 msgid "Loading page…"
 msgstr ""
 
+#. placeholder {0}: push.topicCount
+#: src/components/user-settings-view.tsx
+msgid "On for this browser. You’ll hear about new posts from the {0} publications and authors you’ve turned the bell on for."
+msgstr ""
+
 #: src/routes/mcp/authorize.tsx
 msgid "This request can't be completed here, so we're returning you to the app that sent you."
 msgstr ""
@@ -4775,6 +4858,7 @@ msgstr ""
 msgid "Not in the directory yet?"
 msgstr ""
 
+#: src/components/reader/notify-button.tsx
 #: src/components/reader/page-reader-bar.tsx
 msgid "Something went wrong"
 msgstr "حدث خطأ ما"
@@ -4896,6 +4980,11 @@ msgstr ""
 #: src/routes/_layout.u.$did.tsx
 msgid "Profile settings"
 msgstr "إعدادات الملف الشخصي"
+
+#. placeholder {0}: push.topicCount
+#: src/components/user-settings-view.tsx
+msgid "Stop notifications on every device and clear all {0} of the publications and authors you’ve turned the bell on for."
+msgstr ""
 
 #: src/components/guide/pages/comics-guide-page.tsx
 #: src/lib/guide/navigation.ts
@@ -5189,6 +5278,10 @@ msgstr "ستُحذف كل سجلات القراءة من مستودعك، وست
 msgid "You’ve read everything from this publication."
 msgstr ""
 
+#: src/components/reader/notify-button.tsx
+msgid "We couldn’t set up notifications on this device. Try again?"
+msgstr ""
+
 #: src/components/appearance-settings.tsx
 msgid "Text, borders and every other step are derived from these two colors."
 msgstr ""
@@ -5426,6 +5519,10 @@ msgstr "تابِع الجديد"
 msgid "Show all feedback"
 msgstr ""
 
+#: src/components/user-settings-view.tsx
+msgid "Troubleshooting"
+msgstr ""
+
 #. placeholder {0}: issue.label
 #: src/components/comic/comic-shelf.tsx
 msgid "Read {0}"
@@ -5434,6 +5531,10 @@ msgstr ""
 #: src/components/reader/add-publication-modal.tsx
 msgid "Couldn't resolve that handle."
 msgstr "تعذّر حل هذا المُعرِّف."
+
+#: src/components/reader/notify-button.tsx
+msgid "That took too long"
+msgstr ""
 
 #: src/components/guide/pages/reading-guide-page.tsx
 msgid "Good to know"
@@ -5479,6 +5580,10 @@ msgstr ""
 #: src/components/user-settings-view.tsx
 msgid "Weekly digest email"
 msgstr "بريد الملخص الأسبوعي"
+
+#: src/components/reader/ios-install-prompt.tsx
+msgid "Choose “Add to Home Screen”."
+msgstr ""
 
 #: src/components/guide/pages/extension-guide-page.tsx
 #: src/lib/guide/navigation.ts
@@ -5689,6 +5794,10 @@ msgstr ""
 
 #: src/components/docs/labelers-docs-page.tsx
 msgid "Labels may apply to a document's <0>at://</0> URI or to an account DID. Account labels are shown on that account's author and publication pages and on every document it published, so a label about a publisher does not need to be re-emitted per post."
+msgstr ""
+
+#: src/components/push-diagnostics.tsx
+msgid "Checking…"
 msgstr ""
 
 #: src/components/guide/pages/lists-guide-page.tsx
@@ -6155,6 +6264,10 @@ msgstr ""
 msgid "Article unavailable"
 msgstr "المقالة غير متاحة"
 
+#: src/components/push-diagnostics.tsx
+msgid "Permission"
+msgstr ""
+
 #: src/components/reader/atstore-review-prompt.tsx
 msgid "Create will publish your review to ATStore."
 msgstr "سيؤدي الإنشاء إلى نشر مراجعتك على ATStore."
@@ -6420,6 +6533,10 @@ msgstr "صوت القراءة الجهرية"
 
 #: src/routes/_layout.index.tsx
 msgid "Nothing left unread from the publications you follow. There's more on the network than you're following yet."
+msgstr ""
+
+#: src/components/reader/notify-button.tsx
+msgid "Notifications aren’t switched on for this site yet."
 msgstr ""
 
 #: src/routes/_layout.feedback.index.tsx
@@ -6793,6 +6910,10 @@ msgid "What we collect"
 msgstr "ما نجمعه"
 
 #: src/components/user-settings-view.tsx
+msgid "On iPhone and iPad, notifications need Standard Reader installed on your Home Screen."
+msgstr ""
+
+#: src/components/user-settings-view.tsx
 msgid "When on, a publication's page and its posts are shown in that publication's own colors. Publications that haven't set any colors keep the Standard Reader theme."
 msgstr ""
 
@@ -7035,8 +7156,13 @@ msgstr "ابحث في اشتراكاتك"
 msgid "Standard Reader works the other way round. You sign in with a Bluesky account, and the things you do here — what you subscribe to, follow, save, recommend, and read — are written into your own account's storage, the same place your Bluesky posts live. We keep a copy so the app is fast, but the original is yours. Another app built on the same network can read it, and if you stop using Standard Reader, none of it disappears."
 msgstr ""
 
+#: src/components/push-diagnostics.tsx
 #: src/components/reader/use-subscriptions-tree.tsx
 msgid "Subscription"
+msgstr ""
+
+#: src/components/push-diagnostics.tsx
+msgid "Last error"
 msgstr ""
 
 #: src/components/reader/collection-publication-editor.tsx
@@ -7219,6 +7345,10 @@ msgstr "تصفية حسب الموضوع"
 msgid "Uploading {0}"
 msgstr ""
 
+#: src/components/user-settings-view.tsx
+msgid "Notifications on this device"
+msgstr ""
+
 #: src/routes/_layout.saved.tsx
 msgid "Reordering saved articles"
 msgstr ""
@@ -7246,10 +7376,18 @@ msgstr "إنشاء قائمة"
 msgid "Expand all lists"
 msgstr "توسيع كل القوائم"
 
+#: src/components/user-settings-view.tsx
+msgid "Get notified the moment a publication or author publishes something new. Turn it on here, then choose who from their page."
+msgstr ""
+
 #: src/components/reader/document-share-menu.tsx
 #: src/components/reader/text-selection-toolbar.tsx
 msgid "Save to Margin…"
 msgstr "الحفظ في Margin…"
+
+#: src/components/reader/notify-button.tsx
+msgid "Your browser didn’t finish setting up notifications. Reloading the page usually fixes it."
+msgstr ""
 
 #: src/components/reader/article-below-fold.tsx
 msgid "{minutes} min"
@@ -7278,6 +7416,10 @@ msgstr ""
 #: src/components/guide/pages/getting-started-guide-page.tsx
 #~ msgid "After that, following is one button. Anywhere you see a publication — a card in a feed, the top of an article, a publication's own page — there is a <0>Follow</0> button next to its name. Select it again to stop following. Nothing else changes: the button just decides whether new writing from that publication reaches your Home and Latest."
 #~ msgstr ""
+
+#: src/components/push-diagnostics.tsx
+msgid "Support"
+msgstr ""
 
 #: src/components/reader/rss-feed-button.tsx
 msgid "Subscribe to {name} in any RSS reader — new articles show up there as soon as they publish."
@@ -7380,6 +7522,10 @@ msgstr "ملاحظات"
 #: src/components/guide/pages/personalizing-guide-page.tsx
 #: src/lib/guide/navigation.ts
 msgid "Letting publications use their own colors"
+msgstr ""
+
+#: src/components/reader/notify-button.tsx
+msgid "Turn off notifications"
 msgstr ""
 
 #: src/routes/_layout.l.$did.$rkey.tsx
