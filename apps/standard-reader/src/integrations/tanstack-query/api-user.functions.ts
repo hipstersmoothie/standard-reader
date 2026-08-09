@@ -33,6 +33,11 @@ import {
   dbValueToCountOldPostsAsUnread,
   parseCountOldPostsAsUnreadCookie,
 } from "#/lib/count-old-posts-as-unread";
+import {
+  DEFAULT_EXCLUDE_WEB_BRIDGE,
+  dbValueToExcludeWebBridge,
+  excludeWebBridgeToDbValue,
+} from "#/lib/exclude-web-bridge";
 import type { FeedPagination } from "#/lib/feed-preferences";
 import {
   DEFAULT_FEED_PAGINATION,
@@ -1213,6 +1218,43 @@ const setUsePublicationThemePreference = createServerFn({ method: "POST" })
     return { enabled: data.enabled };
   });
 
+// Signed-in only, like the publication theme above. Guests get the default,
+// which is also what every network-wide query falls back to.
+const getExcludeWebBridgePreference = createServerFn({ method: "GET" })
+  .middleware([dbMiddleware, maybeAuthMiddleware])
+  .handler(async ({ context }): Promise<{ enabled: boolean }> => {
+    const session = context?.session;
+    if (!session?.user) return { enabled: DEFAULT_EXCLUDE_WEB_BRIDGE };
+
+    const row = await context.db.query.user.findFirst({
+      where: eq(context.schema.user.id, session.user.id),
+      columns: { excludeWebBridge: true },
+    });
+    return {
+      enabled: dbValueToExcludeWebBridge(row?.excludeWebBridge ?? null),
+    };
+  });
+
+const getExcludeWebBridgePreferenceQueryOptions = queryOptions({
+  queryKey: ["excludeWebBridgePreference"] as const,
+  queryFn: () => getExcludeWebBridgePreference(),
+  staleTime: Number.POSITIVE_INFINITY,
+});
+
+const setExcludeWebBridgePreference = createServerFn({ method: "POST" })
+  .middleware([dbMiddleware, maybeAuthMiddleware])
+  .validator(z.object({ enabled: z.boolean() }))
+  .handler(async ({ data, context }): Promise<{ enabled: boolean }> => {
+    if (!context?.session?.user) return { enabled: DEFAULT_EXCLUDE_WEB_BRIDGE };
+
+    await context.db
+      .update(context.schema.user)
+      .set({ excludeWebBridge: excludeWebBridgeToDbValue(data.enabled) })
+      .where(eq(context.schema.user.id, context.session.user.id));
+
+    return { enabled: data.enabled };
+  });
+
 // Feed presentation preferences — signed-in only, like the publication theme
 // above (the settings page is behind auth), so no cookie mirror for guests.
 const getHideFeedMetricsPreference = createServerFn({ method: "GET" })
@@ -1586,6 +1628,9 @@ export const user = {
   getUsePublicationThemePreference,
   getUsePublicationThemePreferenceQueryOptions,
   setUsePublicationThemePreference,
+  getExcludeWebBridgePreference,
+  getExcludeWebBridgePreferenceQueryOptions,
+  setExcludeWebBridgePreference,
   getHideFeedMetricsPreference,
   getHideFeedMetricsPreferenceQueryOptions,
   setHideFeedMetricsPreference,

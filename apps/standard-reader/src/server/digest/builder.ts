@@ -104,7 +104,17 @@ export async function buildDigestForUser(
   {
     did,
     sections = ALL_DIGEST_SECTIONS,
-  }: { did: string; sections?: DigestSections },
+    excludeWebBridge = false,
+  }: {
+    did: string;
+    sections?: DigestSections;
+    /**
+     * The reader's "Hide mirrored websites" setting (`#/lib/exclude-web-bridge`).
+     * Only the network section is network-wide, so only it is filtered — the
+     * subscriptions and saved sections are made of sources the reader chose.
+     */
+    excludeWebBridge?: boolean;
+  },
 ): Promise<DigestData> {
   // Needed by the subscriptions section directly, and by the recommendations
   // section to exclude publications the reader already follows.
@@ -132,6 +142,7 @@ export async function buildDigestForUser(
           limit: DIGEST_NETWORK_ARTICLE_LIMIT,
           excludeUris: articleUris,
           excludeReadForDid: did,
+          excludeWebBridge,
         })
       : Promise.resolve([]),
     sections.saved
@@ -143,6 +154,7 @@ export async function buildDigestForUser(
       : Promise.resolve([]),
     sections.recommendations
       ? recommendedPublications(db, schema, did, DIGEST_RECOMMENDATION_LIMIT, {
+          excludeWebBridge,
           followUris,
           seed: rotationSeed("digest", did),
         })

@@ -264,10 +264,12 @@ async function resolveHomeFeedContext(
     trackReading: trackReadingOverride,
     trackReadingEnabled,
     countOldPostsAsUnreadEnabled,
+    excludeWebBridgeEnabled,
   }: {
     trackReading?: boolean;
     trackReadingEnabled?: boolean;
     countOldPostsAsUnreadEnabled?: boolean;
+    excludeWebBridgeEnabled?: boolean;
   } = {},
 ) {
   const trackReading =
@@ -275,6 +277,7 @@ async function resolveHomeFeedContext(
   const countOldPostsAsUnread = did
     ? (countOldPostsAsUnreadEnabled ?? true)
     : true;
+  const excludeWebBridge = did ? (excludeWebBridgeEnabled ?? false) : false;
 
   const { publicationUris: followUris, userDids: followedUserDids } = did
     ? await effectiveFollowSets(db, schema, did)
@@ -294,7 +297,7 @@ async function resolveHomeFeedContext(
         countOldPostsAsUnread,
         ...(trackReading && did ? { readForDid: did, unreadForDid: did } : {}),
       }
-    : { discoverOnly: true };
+    : { discoverOnly: true, excludeWebBridge };
 
   return {
     did,
@@ -304,6 +307,7 @@ async function resolveHomeFeedContext(
     hasFollows,
     isTrending,
     personalized,
+    excludeWebBridge,
     rowQuery,
   };
 }
@@ -324,9 +328,12 @@ async function buildHomeFeedCritical(
   // critical payload.
   if (isTrending) {
     const [trendingPubs, trendingRaw] = await Promise.all([
-      trendingPublications(db, schema, HOME_RAIL_LIMIT),
+      trendingPublications(db, schema, HOME_RAIL_LIMIT, {
+        excludeWebBridge: ctx.excludeWebBridge,
+      }),
       trendingArticles(db, schema, HOME_TRENDING_ROW_LIMIT + 1, {
         readForDid: trackReading && ctx.did ? ctx.did : undefined,
+        excludeWebBridge: ctx.excludeWebBridge,
       }),
     ]);
     span.set("trendingPublications", trendingPubs.length);
@@ -374,7 +381,9 @@ async function buildHomeFeedCritical(
   // Trending publications rail (sidebar). Cheap indexed top-N, fetched
   // alongside the main rows so it's part of the critical payload.
   const [trendingPubs, featuredLead, rows] = await Promise.all([
-    trendingPublications(db, schema, HOME_RAIL_LIMIT),
+    trendingPublications(db, schema, HOME_RAIL_LIMIT, {
+      excludeWebBridge: ctx.excludeWebBridge,
+    }),
     selectArticleCards(db, schema, {
       ...rowQuery,
       featuredOnly: true,
@@ -470,18 +479,20 @@ async function buildHomeFeedExtras(
   ctx: HomeFeedContext,
   span: Span,
 ): Promise<HomeFeedExtras> {
-  const { personalized, did, followUris } = ctx;
+  const { personalized, did, followUris, excludeWebBridge } = ctx;
 
   const trendingPubUris = await trendingPublicationUris(
     db,
     schema,
     HOME_RAIL_LIMIT,
+    { excludeWebBridge },
   );
 
   const youMightFollow =
     personalized && did
       ? await recommendedPublications(db, schema, did, HOME_RAIL_LIMIT, {
           excludeUris: trendingPubUris,
+          excludeWebBridge,
           followUris,
           seed: rotationSeed("home", did),
         })
@@ -491,6 +502,7 @@ async function buildHomeFeedExtras(
           HOME_RAIL_LIMIT,
           trendingPubUris,
           rotationSeed("home", did ?? "anon"),
+          { excludeWebBridge },
         );
 
   span.set("youMightFollow", youMightFollow.length);
@@ -511,6 +523,7 @@ async function loadHomeFeedCritical(
     trackReading?: boolean;
     trackReadingEnabled?: boolean;
     countOldPostsAsUnreadEnabled?: boolean;
+    excludeWebBridgeEnabled?: boolean;
   } = {},
 ): Promise<HomeFeed> {
   const ctx = await resolveHomeFeedContext(
@@ -534,6 +547,7 @@ async function loadHomeFeedExtras(
     trackReading?: boolean;
     trackReadingEnabled?: boolean;
     countOldPostsAsUnreadEnabled?: boolean;
+    excludeWebBridgeEnabled?: boolean;
   } = {},
 ): Promise<HomeFeedExtras> {
   const ctx = await resolveHomeFeedContext(
@@ -552,12 +566,18 @@ const getHomeFeed = createServerFn({ method: "GET" })
   .validator(homeInput)
   .handler(
     observe("feed.getHomeFeed", async ({ data, context }, span) => {
-      const { db, schema, trackReadingEnabled, countOldPostsAsUnreadEnabled } =
-        context;
+      const {
+        db,
+        schema,
+        trackReadingEnabled,
+        countOldPostsAsUnreadEnabled,
+        excludeWebBridgeEnabled,
+      } = context;
       const did = await attachReaderSpanContext(span, getRequest());
       return loadHomeFeedCritical(db, schema, did, data.scope, span, {
         trackReadingEnabled,
         countOldPostsAsUnreadEnabled,
+        excludeWebBridgeEnabled,
       });
     }),
   );
@@ -573,7 +593,12 @@ const getHomePage = createServerFn({ method: "GET" })
   .validator(homePageInput)
   .handler(
     observe("feed.getHomePage", async ({ data, context }, span) => {
-      const { db, schema, countOldPostsAsUnreadEnabled } = context;
+      const {
+        db,
+        schema,
+        countOldPostsAsUnreadEnabled,
+        excludeWebBridgeEnabled,
+      } = context;
       const did = await attachReaderSpanContext(span, getRequest());
       const reader = did
         ? await getReaderContextForRequest(getRequest())
@@ -600,6 +625,7 @@ const getHomePage = createServerFn({ method: "GET" })
 
       const feed = await loadHomeFeedCritical(db, schema, did, scope, span, {
         countOldPostsAsUnreadEnabled,
+        excludeWebBridgeEnabled,
         ...(trackReading === undefined ? {} : { trackReading }),
       });
       return {
@@ -616,13 +642,19 @@ const getHomeExtras = createServerFn({ method: "GET" })
   .validator(homeExtrasInput)
   .handler(
     observe("feed.getHomeExtras", async ({ data, context }, span) => {
-      const { db, schema, trackReadingEnabled, countOldPostsAsUnreadEnabled } =
-        context;
+      const {
+        db,
+        schema,
+        trackReadingEnabled,
+        countOldPostsAsUnreadEnabled,
+        excludeWebBridgeEnabled,
+      } = context;
       const did = await attachReaderSpanContext(span, getRequest());
 
       return loadHomeFeedExtras(db, schema, did, data.scope, span, {
         trackReadingEnabled,
         countOldPostsAsUnreadEnabled,
+        excludeWebBridgeEnabled,
       });
     }),
   );
@@ -635,6 +667,7 @@ async function loadLatestFeedCritical(
   span: Span,
   trackReadingEnabled: boolean,
   countOldPostsAsUnreadEnabled = true,
+  excludeWebBridgeEnabled = false,
 ): Promise<LatestFeed> {
   span.set("filter", data.filter);
   span.set("offset", data.offset);
@@ -647,6 +680,7 @@ async function loadLatestFeedCritical(
   const trackReading = did == null ? false : trackReadingEnabled;
   const countOldPostsAsUnread =
     did == null ? true : countOldPostsAsUnreadEnabled;
+  const excludeWebBridge = did == null ? false : excludeWebBridgeEnabled;
 
   const trendingLimit =
     data.filter === "trending"
@@ -660,11 +694,12 @@ async function loadLatestFeedCritical(
             offset: data.offset,
             readForDid: trackReading && did ? did : undefined,
             scope: "page",
+            excludeWebBridge,
           })
         : []
       : await selectArticleCards(db, schema, {
           ...(!did || data.filter === "all"
-            ? { discoverOnly: true }
+            ? { discoverOnly: true, excludeWebBridge }
             : {
                 publicationUris: followUris,
                 followedUserDids,
@@ -734,6 +769,7 @@ async function loadLatestFeedCounts(
   span: Span,
   trackReadingEnabled: boolean,
   countOldPostsAsUnreadEnabled = true,
+  excludeWebBridgeEnabled = false,
 ): Promise<LatestFeedCounts> {
   const { publicationUris: followUris, userDids: followedUserDids } = did
     ? await effectiveFollowSets(db, schema, did)
@@ -743,6 +779,7 @@ async function loadLatestFeedCounts(
   const trackReading = did == null ? false : trackReadingEnabled;
   const countOldPostsAsUnread =
     did == null ? true : countOldPostsAsUnreadEnabled;
+  const excludeWebBridge = did == null ? false : excludeWebBridgeEnabled;
 
   const [followCounts, networkCount, trendingCount] = await Promise.all([
     did
@@ -750,8 +787,10 @@ async function loadLatestFeedCounts(
           countOldPostsAsUnread,
         })
       : Promise.resolve({ all: 0, unread: 0 }),
-    countNetworkDocuments(db, schema),
-    did ? countTrendingDocuments(db, schema, "page") : Promise.resolve(0),
+    countNetworkDocuments(db, schema, { excludeWebBridge }),
+    did
+      ? countTrendingDocuments(db, schema, "page", { excludeWebBridge })
+      : Promise.resolve(0),
   ]);
 
   return {
@@ -767,8 +806,13 @@ const getLatestFeed = createServerFn({ method: "GET" })
   .validator(latestInput)
   .handler(
     observe("feed.getLatestFeed", async ({ data, context }, span) => {
-      const { db, schema, trackReadingEnabled, countOldPostsAsUnreadEnabled } =
-        context;
+      const {
+        db,
+        schema,
+        trackReadingEnabled,
+        countOldPostsAsUnreadEnabled,
+        excludeWebBridgeEnabled,
+      } = context;
       const did = await attachReaderSpanContext(span, getRequest());
       return loadLatestFeedCritical(
         db,
@@ -778,6 +822,7 @@ const getLatestFeed = createServerFn({ method: "GET" })
         span,
         trackReadingEnabled,
         countOldPostsAsUnreadEnabled,
+        excludeWebBridgeEnabled,
       );
     }),
   );
@@ -787,8 +832,13 @@ const getLatestFeedCounts = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
   .handler(
     observe("feed.getLatestFeedCounts", async ({ context }, span) => {
-      const { db, schema, trackReadingEnabled, countOldPostsAsUnreadEnabled } =
-        context;
+      const {
+        db,
+        schema,
+        trackReadingEnabled,
+        countOldPostsAsUnreadEnabled,
+        excludeWebBridgeEnabled,
+      } = context;
       const did = await attachReaderSpanContext(span, getRequest());
       return loadLatestFeedCounts(
         db,
@@ -797,6 +847,7 @@ const getLatestFeedCounts = createServerFn({ method: "GET" })
         span,
         trackReadingEnabled,
         countOldPostsAsUnreadEnabled,
+        excludeWebBridgeEnabled,
       );
     }),
   );

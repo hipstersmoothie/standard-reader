@@ -13,12 +13,18 @@ export const Route = createFileRoute("/api/extension/discussion")({
           return badRequestResponse("documentUri query param required");
         }
 
-        const [{ db }, schema] = await Promise.all([
-          import("#/db/index.server"),
-          import("#/db/schema"),
-        ]);
+        const [{ db }, schema, { resolveReaderSessionPreferences }] =
+          await Promise.all([
+            import("#/db/index.server"),
+            import("#/db/schema"),
+            import("#/server/reader/session-preferences.server"),
+          ]);
 
-        const discussion = await resolveDiscussion(db, schema, documentUri);
+        const { excludeWebBridgeEnabled } =
+          await resolveReaderSessionPreferences(db, schema);
+        const discussion = await resolveDiscussion(db, schema, documentUri, {
+          excludeWebBridge: excludeWebBridgeEnabled,
+        });
         return Response.json(discussion);
       },
     },

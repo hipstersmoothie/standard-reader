@@ -22,6 +22,8 @@ import { attachCommentCountsToArticles } from "#/server/reader/document-comments
 import {
   discoverEligiblePublicationWhere,
   notExcludedPublicationArticleWhere,
+  notWebBridgeArticleWhere,
+  notWebBridgePublicationOwnerWhere,
 } from "#/server/reader/publication-filters";
 import { attachViewerRecommendedToArticles } from "#/server/reader/recommended-by";
 import {
@@ -95,17 +97,21 @@ const searchPublications = createServerFn({ method: "GET" })
   .validator(searchPageInput)
   .handler(
     observe("search.publications", async ({ data, context }, span) => {
-      const { db, schema } = context;
+      const { db, schema, excludeWebBridgeEnabled } = context;
       span.set("q", data.q);
       span.set("offset", data.offset);
       await attachReaderSpanContext(span, getRequest());
 
+      // Only the ranked search is filtered. The URL / handle fallbacks below are
+      // a reader naming one specific account — answering "not found" because it
+      // happens to be a mirror would be wrong.
       const page = await searchIndexedPublications(
         db,
         schema,
         data.q,
         data.limit,
         data.offset,
+        { excludeWebBridge: excludeWebBridgeEnabled },
       );
 
       let items = page.items;
@@ -148,7 +154,7 @@ const searchArticles = createServerFn({ method: "GET" })
   .validator(searchPageInput)
   .handler(
     observe("search.articles", async ({ data, context }, span) => {
-      const { db, schema } = context;
+      const { db, schema, excludeWebBridgeEnabled } = context;
       const d = schema.documents;
       const p = schema.publications;
       const pr = schema.profiles;
@@ -174,6 +180,7 @@ const searchArticles = createServerFn({ method: "GET" })
         eq(d.deleted, false),
         matchClause,
         notExcludedPublicationArticleWhere(p),
+        ...(excludeWebBridgeEnabled ? [notWebBridgeArticleWhere(schema)] : []),
       );
 
       // Page the bare document URIs (newest first) in an inner subquery, then
@@ -252,6 +259,7 @@ async function searchIndexedPublications(
   q: string,
   limit: number,
   offset: number,
+  { excludeWebBridge = false }: { excludeWebBridge?: boolean } = {},
 ): Promise<{ items: Array<PublicationCard>; total: number }> {
   const p = schema.publications;
   const st = schema.publicationStats;
@@ -261,6 +269,7 @@ async function searchIndexedPublications(
   const pubWhere = and(
     discoverEligiblePublicationWhere(p),
     publicationMatchSql(p, pr, tsq, hints),
+    ...(excludeWebBridge ? [notWebBridgePublicationOwnerWhere(schema)] : []),
   );
 
   const [countRow, publicationQueryRows] = await Promise.all([

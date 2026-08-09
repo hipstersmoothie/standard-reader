@@ -801,7 +801,7 @@ const getArticleExtras = createServerFn({ method: "GET" })
     observe(
       "publication.getArticleExtras",
       async ({ data, context }, span): Promise<ArticleExtras> => {
-        const { db, schema } = context;
+        const { db, schema, excludeWebBridgeEnabled } = context;
         const d = schema.documents;
         span.set("documentUri", data.documentUri);
         await attachReaderSpanContext(span, getRequest());
@@ -855,6 +855,7 @@ const getArticleExtras = createServerFn({ method: "GET" })
             documentUri: row.uri,
             publicationUri: row.publicationUri,
             limit: data.relatedLimit,
+            excludeWebBridge: excludeWebBridgeEnabled,
           }),
           articleRecommendedPublications(db, schema, {
             publicationUri: row.publicationUri,

@@ -1270,6 +1270,16 @@ hand-tuned lists:
   corpus — recommending them reads as noise. They stay fully reachable everywhere else: the
   directory, search, trending, follows, and their own pages. Filtered in SQL, so the rail still
   fills to its limit.
+- **"Hide mirrored websites" takes that further, per reader** — an account setting
+  (`user.exclude_web_bridge`, default off; `src/lib/exclude-web-bridge.ts`) that drops
+  `*.web.brid.gy` from _every_ network-wide surface: Latest "All" and its badge counts, the home
+  network/trending feeds, Discover's directory and rails, search, tag pages, related articles, and
+  the weekly digest's network section. It is deliberately **not** applied to anything the reader
+  chose — their subscriptions feed, a publication page they opened, a handle or URL they searched
+  for by name — and never to `*.ap.brid.gy`. The mirrors are ~86% of documents and ~35% of
+  publications, so the filtered Latest "All" badge gets its own precomputed `network_stats` scalar
+  (`network_document_count_no_web_bridge`) rather than a live count, and the tag feed switches to a
+  tag-first query shape (`selectTagArticleUris`) that the survival rate can't blow up.
 
 ### Topic derivation
 

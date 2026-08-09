@@ -103,9 +103,12 @@ const discoverExtrasInput = z.object({
 
 /**
  * Discover's "Recommended" rail. Bridgy Fed's bulk web-bridge mirrors
- * (`*.web.brid.gy`) are excluded here: nobody at those sites asked to be
- * published, so they read as noise in a rail that is meant to be a suggestion.
- * They stay reachable everywhere else — directory, search, trending, follows.
+ * (`*.web.brid.gy`) are excluded here unconditionally: nobody at those sites
+ * asked to be published, so they read as noise in a rail that is meant to be a
+ * suggestion. Everywhere else they stay reachable — directory, search,
+ * trending, follows — unless the reader turned on "Hide mirrored websites"
+ * (`#/lib/exclude-web-bridge`), which is the `excludeWebBridge` threaded
+ * through the rest of this file.
  */
 async function loadRecommendedRail(
   db: Db,
@@ -140,6 +143,7 @@ async function loadDiscoverExtras(
   did: string | null | undefined,
   { recommendedLimit, socialProofLimit }: z.infer<typeof discoverExtrasInput>,
   span: Span,
+  excludeWebBridge = false,
 ): Promise<DiscoverExtras> {
   const trendingLimit = Math.max(recommendedLimit, socialProofLimit);
   span.set("personalized", did != null);
@@ -149,8 +153,8 @@ async function loadDiscoverExtras(
 
   const [knownPublicationCount, trendingExclude, followUris] =
     await Promise.all([
-      countKnownPublications(db),
-      trendingPublicationUris(db, schema, trendingLimit),
+      countKnownPublications(db, { excludeWebBridge }),
+      trendingPublicationUris(db, schema, trendingLimit, { excludeWebBridge }),
       did ? effectiveFollowUris(db, schema, did) : Promise.resolve([]),
     ]);
 
@@ -168,6 +172,7 @@ async function loadDiscoverExtras(
     did
       ? followedByPeopleYouFollow(db, schema, did, socialProofLimit, {
           excludeUris: trendingExclude,
+          excludeWebBridge,
           followUris,
           seed: rotationSeed("discover-followed-by", did),
         })
@@ -206,7 +211,9 @@ const getKnownPublicationCount = createServerFn({ method: "GET" })
   .handler(
     observe("discover.getKnownPublicationCount", async ({ context }, span) => {
       await attachReaderSpanContext(span, getRequest());
-      const count = await countKnownPublications(context.db);
+      const count = await countKnownPublications(context.db, {
+        excludeWebBridge: context.excludeWebBridgeEnabled,
+      });
       span.set("count", count);
       return count;
     }),
@@ -337,7 +344,14 @@ const getDiscoverExtras = createServerFn({ method: "GET" })
     observe("discover.getDiscoverExtras", async ({ data, context }, span) => {
       const { db, schema } = context;
       const did = await attachReaderSpanContext(span, getRequest());
-      return loadDiscoverExtras(db, schema, did, data, span);
+      return loadDiscoverExtras(
+        db,
+        schema,
+        did,
+        data,
+        span,
+        context.excludeWebBridgeEnabled,
+      );
     }),
   );
 
@@ -363,6 +377,7 @@ const getPublications = createServerFn({ method: "GET" })
         limit: data.limit,
         offset: data.offset,
         query: data.q ?? null,
+        excludeWebBridge: context.excludeWebBridgeEnabled,
       });
 
       span.set("count", items.length);
@@ -382,7 +397,9 @@ const getTrendingPublications = createServerFn({ method: "GET" })
       "discover.getTrendingPublications",
       async ({ data, context }, span) => {
         const { db, schema } = context;
-        const items = await trendingPublications(db, schema, data.limit);
+        const items = await trendingPublications(db, schema, data.limit, {
+          excludeWebBridge: context.excludeWebBridgeEnabled,
+        });
         span.set("count", items.length);
         return items;
       },
@@ -396,11 +413,12 @@ const getRecommendedPublications = createServerFn({ method: "GET" })
     observe(
       "discover.getRecommendedPublications",
       async ({ data, context }, span) => {
-        const { db, schema } = context;
+        const { db, schema, excludeWebBridgeEnabled } = context;
         const trendingExclude = await trendingPublicationUris(
           db,
           schema,
           data.limit,
+          { excludeWebBridge: excludeWebBridgeEnabled },
         );
         span.set("trendingExclude", trendingExclude.length);
 
@@ -523,7 +541,11 @@ const getOnboardingSuggestions = createServerFn({ method: "GET" })
     observe(
       "discover.getOnboardingSuggestions",
       async ({ data, context }, span): Promise<OnboardingSuggestions> => {
-        const { db, schema } = context;
+        const {
+          db,
+          schema,
+          excludeWebBridgeEnabled: excludeWebBridge,
+        } = context;
         const session = await getAtprotoSessionForRequest(getRequest());
         const did = session?.did ?? null;
         if (did) span.set("did", did);
@@ -545,7 +567,7 @@ const getOnboardingSuggestions = createServerFn({ method: "GET" })
           : [];
 
         const [trending, topicGroups] = await Promise.all([
-          trendingPublications(db, schema, 6),
+          trendingPublications(db, schema, 6, { excludeWebBridge }),
           Promise.all(
             topics.map(async (topic) => ({
               topic,
@@ -554,6 +576,7 @@ const getOnboardingSuggestions = createServerFn({ method: "GET" })
                 sort: "readers",
                 limit: 8,
                 offset: 0,
+                excludeWebBridge,
               }),
             })),
           ),
@@ -566,6 +589,7 @@ const getOnboardingSuggestions = createServerFn({ method: "GET" })
           data.limit,
           [...new Set([...followUris, ...trendingUris])],
           rotationSeed("onboarding", did ?? "anon"),
+          { excludeWebBridge },
         );
 
         const sections = buildOnboardingSections({
@@ -614,7 +638,7 @@ const getFollowedByPeopleYouFollow = createServerFn({ method: "GET" })
     observe(
       "discover.getFollowedByPeopleYouFollow",
       async ({ data, context }, span) => {
-        const { db, schema } = context;
+        const { db, schema, excludeWebBridgeEnabled } = context;
         const session = await getAtprotoSessionForRequest(getRequest());
         if (!session) {
           span.set("count", 0);
@@ -625,6 +649,7 @@ const getFollowedByPeopleYouFollow = createServerFn({ method: "GET" })
           db,
           schema,
           data.limit,
+          { excludeWebBridge: excludeWebBridgeEnabled },
         );
         span.set("trendingExclude", trendingExclude.length);
         const items = await followedByPeopleYouFollow(
@@ -634,6 +659,7 @@ const getFollowedByPeopleYouFollow = createServerFn({ method: "GET" })
           data.limit,
           {
             excludeUris: trendingExclude,
+            excludeWebBridge: excludeWebBridgeEnabled,
             followUris: await effectiveFollowUris(db, schema, session.did),
             seed: rotationSeed("discover-followed-by", session.did),
           },

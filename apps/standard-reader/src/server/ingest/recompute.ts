@@ -10,6 +10,7 @@ import {
   sql,
 } from "drizzle-orm";
 
+import { WEB_BRIDGE_HANDLE_PATTERN } from "#/lib/atproto/bridged-repo";
 import { mapWithConcurrency } from "#/lib/concurrency";
 import { hasRenderableArticleBody } from "#/lib/document/renderable";
 import {
@@ -35,6 +36,7 @@ import * as schema from "../../db/schema.ts";
 import {
   documents,
   NETWORK_DOCUMENT_COUNT_KEY,
+  NETWORK_DOCUMENT_COUNT_NO_WEB_BRIDGE_KEY,
   profiles,
   publications,
 } from "../../db/schema.ts";
@@ -654,33 +656,79 @@ export async function recomputeDiscoverTopicCounts(): Promise<void> {
 /**
  * Rebuild the network-wide scalars in `network_stats`.
  *
- * Currently just the Latest "All" tab badge. Computing it on the request path
- * is an unbounded `count(*)` over every document joined to publications — no
- * index can serve it, so it lands as a parallel seq scan (~1.08s over ~1.4M
- * rows / 2.2GB at time of writing) on `/latest`'s blocking loader, and re-reads
- * the whole heap from storage on each call. Here it is one more sweep-time
- * scan; readers get a single-row primary-key lookup.
+ * Both entries are the Latest "All" tab badge: the plain corpus tally, and the
+ * same tally with Bridgy Fed's bulk web-bridge mirrors removed, which is what a
+ * reader with "Hide mirrored websites" on is looking at (see
+ * `#/lib/exclude-web-bridge`). Computing either on the request path is an
+ * unbounded `count(*)` over every document joined to publications — no index can
+ * serve it, so it lands as a seq scan (~1.08s over ~1.4M rows / 2.2GB at time of
+ * writing; **26.5s** for the filtered variant when its exclusions are written as
+ * per-row anti-joins) on `/latest`'s blocking loader, and re-reads the whole heap
+ * from storage on each call. Here it is sweep-time work; readers get a
+ * single-row primary-key lookup.
+ *
+ * Measured on a prod-scale copy (3.0M documents), this statement runs **~4.8s**
+ * against **~3.8s** for the single-count version it replaces — the second tally
+ * costs about a second per sweep. Two shapes that cost considerably more, both
+ * rejected:
+ *
+ * - **Aggregating after the `UNION ALL`** — a row-level CTE of eligibility flags
+ *   with a `count(*)` branch and a `count(*) FILTER` branch over it. It reads as
+ *   one pass and is not one: Postgres walks `documents` once per branch (5.7s).
+ *   Hence the aggregation below happens *first*, and the `UNION ALL` only
+ *   unpivots the resulting single row — which is also what guarantees the two
+ *   scalars describe the same instant.
+ * - **The `NOT EXISTS` spelling the read path uses**
+ *   ({@link notWebBridgeArticleWhere}). Equivalent, but the read path's sits in a
+ *   `WHERE`, where the planner turns it into an anti-join. As a projected boolean
+ *   there is no anti-join to reach for, so it becomes a SubPlan run once per row:
+ *   2.97M index searches, 8.9M buffer hits.
+ *
+ * The `LEFT JOIN` against an inline subquery below hashes the ~5.6k bridged repos
+ * once and probes. Note the inline subquery rather than a CTE: a CTE scan is
+ * parallel-restricted, which costs nothing *here* (`ON CONFLICT` already makes
+ * the insert parallel-unsafe) but doubles the runtime of the same aggregate run
+ * on its own — 4.9s against 2.6s — so the parallel-safe spelling is the one to
+ * keep. `profiles.did` is the primary key, so neither join can duplicate a row.
  *
  * The predicate must stay in lockstep with `discoverEligibleArticleWhere` +
- * `documentPublishedNotInFuture` in `#/server/reader/queries` — those still
- * define what the "All" tab actually lists, and this is only its cardinality.
+ * `documentPublishedNotInFuture` (and, for the filtered variant,
+ * `notWebBridgeArticleWhere`) in `#/server/reader/queries` — those still define
+ * what the "All" tab actually lists, and this is only its cardinality.
  */
 export async function recomputeNetworkStats(): Promise<void> {
   await db.execute(sql`
     INSERT INTO network_stats (key, value, recomputed_at)
-    SELECT ${NETWORK_DOCUMENT_COUNT_KEY}, count(*), now()
-    FROM documents d
-    LEFT JOIN publications p ON p.uri = d.publication_uri
-    WHERE d.deleted = false
-      AND (d.published_at IS NULL OR d.published_at <= now())
-      AND (
-        p.uri IS NULL
-        OR (
-          p.deleted = false
-          AND p.show_in_discover = true
-          AND p.url NOT ILIKE ${EXCLUDED_PUBLICATION_URL_PATTERN}
+    SELECT stat.key, stat.value, now()
+    FROM (
+      SELECT
+        count(*) AS all_documents,
+        count(*) FILTER (
+          WHERE wba.did IS NULL AND wbp.did IS NULL
+        ) AS documents_without_web_bridge
+      FROM documents d
+      LEFT JOIN publications p ON p.uri = d.publication_uri
+      LEFT JOIN (
+        SELECT did FROM profiles WHERE handle ILIKE ${WEB_BRIDGE_HANDLE_PATTERN}
+      ) wba ON wba.did = d.did
+      LEFT JOIN (
+        SELECT did FROM profiles WHERE handle ILIKE ${WEB_BRIDGE_HANDLE_PATTERN}
+      ) wbp ON wbp.did = p.did
+      WHERE d.deleted = false
+        AND (d.published_at IS NULL OR d.published_at <= now())
+        AND (
+          p.uri IS NULL
+          OR (
+            p.deleted = false
+            AND p.show_in_discover = true
+            AND p.url NOT ILIKE ${EXCLUDED_PUBLICATION_URL_PATTERN}
+          )
         )
-      )
+    ) totals
+    CROSS JOIN LATERAL (VALUES
+      (${NETWORK_DOCUMENT_COUNT_KEY}, totals.all_documents),
+      (${NETWORK_DOCUMENT_COUNT_NO_WEB_BRIDGE_KEY}, totals.documents_without_web_bridge)
+    ) AS stat(key, value)
     ON CONFLICT (key) DO UPDATE
       SET value = excluded.value, recomputed_at = excluded.recomputed_at
   `);

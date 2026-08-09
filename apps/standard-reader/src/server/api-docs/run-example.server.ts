@@ -153,8 +153,13 @@ async function runWithSessionAuth(
         });
 
   try {
-    const { db, schema, trackReadingEnabled, countOldPostsAsUnreadEnabled } =
-      await getXrpcDbContext();
+    const {
+      db,
+      schema,
+      trackReadingEnabled,
+      countOldPostsAsUnreadEnabled,
+      excludeWebBridgeEnabled,
+    } = await getXrpcDbContext();
     const auth: XrpcAuthContext = {
       did: session.did as Did,
       client: session.client,
@@ -168,6 +173,7 @@ async function runWithSessionAuth(
       schema,
       trackReadingEnabled,
       countOldPostsAsUnreadEnabled,
+      excludeWebBridgeEnabled,
       params,
       body: body ?? null,
     });

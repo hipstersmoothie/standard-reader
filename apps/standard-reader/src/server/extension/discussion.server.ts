@@ -88,6 +88,7 @@ export async function resolveDiscussion(
   dbClient: typeof db,
   schemaModule: typeof schema,
   documentUri: string,
+  { excludeWebBridge = false }: { excludeWebBridge?: boolean } = {},
 ): Promise<ExtensionDiscussionResponse> {
   const d = schemaModule.documents;
   const p = schemaModule.publications;
@@ -143,6 +144,7 @@ export async function resolveDiscussion(
       documentUri: row.uri,
       publicationUri: row.publicationUri,
       limit: 8,
+      excludeWebBridge,
     }),
     linkUrls.length > 0
       ? fetchCitedInArticles(dbClient, schemaModule, {

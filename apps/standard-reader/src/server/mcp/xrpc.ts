@@ -87,6 +87,7 @@ export async function invokeXrpc(
     schema: db.schema,
     trackReadingEnabled: db.trackReadingEnabled,
     countOldPostsAsUnreadEnabled: db.countOldPostsAsUnreadEnabled,
+    excludeWebBridgeEnabled: db.excludeWebBridgeEnabled,
     params,
     body: input.body ?? null,
   };

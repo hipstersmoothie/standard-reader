@@ -66,6 +66,13 @@ export const user = pgTable("user", {
    * users that existed before this preference shipped, to preserve their current
    * behaviour. */
   countOldPostsAsUnread: boolean("count_old_posts_as_unread"),
+  /** `true` hides Bridgy Fed's bulk web bridge (`*.web.brid.gy` — websites
+   * mirrored into AT Protocol without anyone there asking) from every
+   * network-wide surface: Latest "All", Discover, search, tag pages, related
+   * articles. `null`/`false` = shown (default). Never applied to the reader's
+   * own subscriptions, and never to `*.ap.brid.gy`. See
+   * `src/lib/exclude-web-bridge.ts`. */
+  excludeWebBridge: boolean("exclude_web_bridge"),
   /** `true` paints publication pages and their documents in the publication's
    * own `site.standard.theme.basic` colors; `null`/`false` = off (default), so
    * the app's editorial theme is used everywhere. Publications that carry no

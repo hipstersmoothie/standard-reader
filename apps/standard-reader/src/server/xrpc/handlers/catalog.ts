@@ -217,6 +217,7 @@ export async function handleGetPublications(ctx: XrpcRequestContext) {
     limit,
     offset,
     query: q ?? undefined,
+    excludeWebBridge: ctx.excludeWebBridgeEnabled,
   });
 
   const total =
@@ -431,6 +432,7 @@ export async function handleGetDocumentContext(ctx: XrpcRequestContext) {
       documentUri: row.uri,
       publicationUri: row.publicationUri,
       limit: 6,
+      excludeWebBridge: ctx.excludeWebBridgeEnabled,
     }),
     articleRecommendedPublications(ctx.db, ctx.schema, {
       publicationUri: row.publicationUri,

@@ -46,7 +46,10 @@ export async function handleGetHomeFeed(ctx: XrpcRequestContext) {
         countOldPostsAsUnread: ctx.countOldPostsAsUnreadEnabled,
         ...(trackReading ? { readForDid: did, unreadForDid: did } : {}),
       }
-    : { discoverOnly: true as const };
+    : {
+        discoverOnly: true as const,
+        excludeWebBridge: ctx.excludeWebBridgeEnabled,
+      };
 
   const [featuredLead, rows] = await Promise.all([
     selectArticleCards(ctx.db, ctx.schema, {
@@ -102,9 +105,11 @@ export async function handleGetRecommendedPublications(
     ctx.db,
     ctx.schema,
     limit,
+    { excludeWebBridge: ctx.excludeWebBridgeEnabled },
   );
   const items = await recommendedPublications(ctx.db, ctx.schema, did, limit, {
     excludeUris: trendingExclude,
+    excludeWebBridge: ctx.excludeWebBridgeEnabled,
     followUris,
   });
   return { items: items.map((item) => toPublicationView(item)) };
@@ -124,6 +129,7 @@ export async function handleGetFollowedByPeopleYouFollow(
     ctx.db,
     ctx.schema,
     limit,
+    { excludeWebBridge: ctx.excludeWebBridgeEnabled },
   );
   const items = await followedByPeopleYouFollow(
     ctx.db,
@@ -132,6 +138,7 @@ export async function handleGetFollowedByPeopleYouFollow(
     limit,
     {
       excludeUris: trendingExclude,
+      excludeWebBridge: ctx.excludeWebBridgeEnabled,
       followUris,
     },
   );

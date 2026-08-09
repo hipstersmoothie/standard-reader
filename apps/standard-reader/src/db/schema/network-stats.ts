@@ -29,5 +29,19 @@ export const networkStats = pgTable("network_stats", {
 /** Discover-eligible, published, non-deleted documents across the network. */
 export const NETWORK_DOCUMENT_COUNT_KEY = "network_document_count";
 
+/**
+ * {@link NETWORK_DOCUMENT_COUNT_KEY}, minus everything authored by — or
+ * published under — one of Bridgy Fed's bulk web-bridge mirrors: the tally the
+ * Latest "All" badge needs for a reader with "Hide mirrored websites" on (see
+ * `#/lib/exclude-web-bridge`).
+ *
+ * A second precomputed scalar rather than a live count, for the same reason as
+ * the first and then some: the mirrors are ~86% of the corpus, so the filtered
+ * count cannot short-circuit anywhere and measured **26.5s** against production
+ * — two orders of magnitude worse than the unfiltered scan it replaces.
+ */
+export const NETWORK_DOCUMENT_COUNT_NO_WEB_BRIDGE_KEY =
+  "network_document_count_no_web_bridge";
+
 export type NetworkStat = typeof networkStats.$inferSelect;
 export type NewNetworkStat = typeof networkStats.$inferInsert;
