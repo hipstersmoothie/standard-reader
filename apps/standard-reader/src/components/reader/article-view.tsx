@@ -58,7 +58,14 @@ import {
   Heart,
   MoreHorizontal,
 } from "lucide-react";
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import {
+  Fragment,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { flushSync } from "react-dom";
 
 import { AppLink } from "#/components/reader/app-link";
@@ -327,6 +334,18 @@ const styles = stylex.create({
     display: "flex",
     flexWrap: "wrap",
     justifyContent: "center",
+  },
+  topics: {
+    gap: gap.xs,
+    alignItems: "center",
+    display: "flex",
+    flexWrap: "wrap",
+    justifyContent: "center",
+  },
+  topicSeparator: {
+    color: uiColor.text1,
+    fontFamily: fontFamily.sans,
+    fontSize: fontSize.xs,
   },
   title: {
     color: uiColor.text2,
@@ -604,9 +623,15 @@ const styles = stylex.create({
   },
 });
 
-function articleTopic(article: ArticleDetail): string | null {
-  if (article.tags && article.tags.length > 0) return article.tags[0] ?? null;
-  return article.publication?.topic ?? null;
+/**
+ * Every tag the author filed the article under, else the owning publication's
+ * topic. All of them render in the kicker — a piece tagged several ways
+ * shouldn't hide the rest behind whichever tag happens to come first.
+ */
+function articleTopics(article: ArticleDetail): Array<string> {
+  const tags = (article.tags ?? []).filter((tag) => tag.trim().length > 0);
+  if (tags.length > 0) return tags;
+  return article.publication?.topic ? [article.publication.topic] : [];
 }
 
 /** The author's bare @handle (lead contributor, else publication owner). */
@@ -943,7 +968,7 @@ function ArticleViewBody({
   const handle = authorHandle(article);
   const bylineDid = authorDid(article);
   const showHandle = handle != null && authorName !== `@${handle}`;
-  const topic = articleTopic(article);
+  const topics = articleTopics(article);
   const { data: labelData } = useQuery(
     labelerApi.getDocumentLabelsQueryOptions(article.uri),
   );
@@ -1314,7 +1339,7 @@ function ArticleViewBody({
             </div>
           ) : null}
 
-          {topic || labelRefs.length > 0 ? (
+          {topics.length > 0 || labelRefs.length > 0 ? (
             <div {...stylex.props(styles.kicker)}>
               {labelRefs.length > 0 ? (
                 <div {...stylex.props(styles.labelBadges)}>
@@ -1327,10 +1352,24 @@ function ArticleViewBody({
                   ))}
                 </div>
               ) : null}
-              {topic ? (
-                <Kicker>
-                  <Topic name={topic} />
-                </Kicker>
+              {topics.length > 0 ? (
+                <div {...stylex.props(styles.topics)}>
+                  {topics.map((topic, index) => (
+                    <Fragment key={topic}>
+                      {index > 0 ? (
+                        <span
+                          aria-hidden
+                          {...stylex.props(styles.topicSeparator)}
+                        >
+                          ·
+                        </span>
+                      ) : null}
+                      <Kicker>
+                        <Topic name={topic} />
+                      </Kicker>
+                    </Fragment>
+                  ))}
+                </div>
               ) : null}
             </div>
           ) : null}
