@@ -19,7 +19,11 @@ import {
 import * as stylex from "@stylexjs/stylex";
 import { useSuspenseInfiniteQuery } from "@tanstack/react-query";
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
-import { ArrowDown, ArrowDownWideNarrow, ArrowUp } from "lucide-react";
+import {
+  ArrowDownWideNarrow,
+  ArrowUpDown,
+  ArrowUpNarrowWide,
+} from "lucide-react";
 import { useCallback } from "react";
 import type { Selection } from "react-aria-components";
 import { z } from "zod";
@@ -240,7 +244,9 @@ function ReaderSaved() {
                 size="md"
                 variant="secondary"
               >
-                <ArrowDownWideNarrow size={16} />
+                {/* Neutral both-ways glyph: the field control picks what to
+                    rank by, the button next to it picks which way. */}
+                <ArrowUpDown size={16} />
               </IconButton>
             }
           >
@@ -257,7 +263,6 @@ function ReaderSaved() {
             aria-label={t`Sort saved articles`}
             size="md"
             variant="secondary"
-            prefix={<ArrowDownWideNarrow size={14} aria-hidden />}
             selectedKey={sort}
             style={styles.sortSelect}
             onSelectionChange={onSortChange}
@@ -283,9 +288,9 @@ function ReaderSaved() {
           onPress={flipDirection}
         >
           {direction === "asc" ? (
-            <ArrowUp size={16} />
+            <ArrowUpNarrowWide size={16} />
           ) : (
-            <ArrowDown size={16} />
+            <ArrowDownWideNarrow size={16} />
           )}
         </IconButton>
       </Flex>
