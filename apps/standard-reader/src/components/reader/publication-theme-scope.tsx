@@ -5,9 +5,10 @@ import { radius } from "@standard-reader/design-system/theme/radius.stylex";
 import { verticalSpace } from "@standard-reader/design-system/theme/semantic-spacing.stylex";
 import * as stylex from "@stylexjs/stylex";
 import { useRouterState } from "@tanstack/react-router";
-import type { ReactNode } from "react";
-import { useCallback, useMemo, useRef } from "react";
+import type { CSSProperties, ReactNode, RefObject } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { UNSAFE_PortalProvider } from "react-aria";
+import { createPortal } from "react-dom";
 
 import { publicationFontsHref } from "#/lib/publication-fonts";
 import { usePublicationThemePreference } from "#/lib/use-publication-theme-preference";
@@ -61,9 +62,20 @@ function usePublicationThemeColors(): PublicationThemeColors | null {
  *
  * Overlays (hover cards, popovers, menus, tooltips, modals) portal to
  * `document.body` by default, which would drop them right back onto the app's
- * own tokens. `UNSAFE_PortalProvider` re-points that portal at this container
- * instead, so they inherit the publication's palette the same way inline content
- * does — no per-component theming.
+ * own tokens. `UNSAFE_PortalProvider` re-points that portal at a second copy of
+ * the same themed wrapper — `OverlayHost` below — so they inherit the
+ * publication's palette the same way inline content does, with no
+ * per-component theming.
+ *
+ * That host deliberately lives at the end of `document.body` rather than inside
+ * this container. React Aria positions an overlay against its *containing
+ * block*, and inside the page that would be the app shell's `<main>`
+ * (`position: relative`, offset by the sidebar and as tall as the whole
+ * document). Its fit-to-viewport math then mixes that block's document-space
+ * coordinates with the viewport-space body boundary, which pushes menus past
+ * the right edge of the window and collapses them to `max-height: 0` once the
+ * page is scrolled. Portaling to the body keeps the containing block the
+ * viewport, which is the geometry React Aria expects.
  */
 export function PublicationThemeScope({
   children,
@@ -79,8 +91,8 @@ export function PublicationThemeScope({
 }) {
   const { enabled } = usePublicationThemePreference();
   const colors = usePublicationThemeColors();
-  const scopeRef = useRef<HTMLDivElement | null>(null);
-  const getContainer = useCallback(() => scopeRef.current, []);
+  const overlayHostRef = useRef<HTMLDivElement | null>(null);
+  const getContainer = useCallback(() => overlayHostRef.current, []);
 
   const scaleVars = useMemo(
     () =>
@@ -131,9 +143,10 @@ export function PublicationThemeScope({
     );
   }
 
+  const themeVars = { ...scaleVars, ...fontVars };
+
   return (
     <div
-      ref={scopeRef}
       {...stylex.props(
         publicationUi,
         publicationPrimary,
@@ -142,11 +155,12 @@ export function PublicationThemeScope({
         styles.scope,
         image ? styles.scopeWithCanvasImage : styles.scopeFlat,
       )}
-      style={{ ...scaleVars, ...fontVars, ...imageVars }}
+      style={{ ...themeVars, ...imageVars }}
     >
       {fontsHref ? (
         <link rel="stylesheet" href={fontsHref} referrerPolicy="no-referrer" />
       ) : null}
+      <OverlayHost ref={overlayHostRef} themeVars={themeVars} />
       <UNSAFE_PortalProvider getContainer={getContainer}>
         {children}
         {footer && image ? (
@@ -156,6 +170,42 @@ export function PublicationThemeScope({
         )}
       </UNSAFE_PortalProvider>
     </div>
+  );
+}
+
+/**
+ * The themed container every React Aria overlay portals into. It carries the
+ * publication's tokens but none of the page's layout, and sits at the end of
+ * `document.body` so overlays resolve their containing block to the viewport —
+ * see the note on `PublicationThemeScope`.
+ *
+ * Rendered only after mount so the first client pass still matches the server
+ * HTML; nothing can open an overlay before then.
+ */
+function OverlayHost({
+  ref,
+  themeVars,
+}: {
+  ref: RefObject<HTMLDivElement | null>;
+  themeVars: CSSProperties;
+}) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  if (!mounted) return null;
+
+  return createPortal(
+    <div
+      ref={ref}
+      {...stylex.props(
+        publicationUi,
+        publicationPrimary,
+        publicationLink,
+        publicationFonts,
+        styles.overlayHost,
+      )}
+      style={themeVars}
+    />,
+    document.body,
   );
 }
 
@@ -202,5 +252,13 @@ const styles = stylex.create({
   /** Footer sits on the page colour, not the canvas image. */
   footerSurface: {
     backgroundColor: uiColor.bg,
+  },
+  /**
+   * Token carrier only — every overlay inside it is positioned, so the host
+   * itself must take no space and paint nothing at the end of `<body>`.
+   */
+  overlayHost: {
+    color: uiColor.text2,
+    display: "contents",
   },
 });
