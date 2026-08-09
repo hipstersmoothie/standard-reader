@@ -166,6 +166,12 @@ export const PAGE_OG_CARDS = {
     title: "Publishing your site",
     tagline: "Wire a personal site's own site.standard.* records by hand.",
   },
+  guideComics: {
+    path: "/guide/comics",
+    title: "Publishing a comic",
+    tagline:
+      "Get a shelf of covers and a page-flip reader out of the pages you already post.",
+  },
   docsRenderers: {
     path: "/docs/renderers",
     title: "Renderers",

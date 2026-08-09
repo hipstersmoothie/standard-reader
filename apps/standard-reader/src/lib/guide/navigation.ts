@@ -25,6 +25,7 @@ export type GuideArea =
   | "personalizing"
   | "extension"
   | "publishing"
+  | "comics"
   | "your-data";
 
 export type GuideRoute =
@@ -38,6 +39,7 @@ export type GuideRoute =
   | "/guide/personalizing"
   | "/guide/extension"
   | "/guide/publishing"
+  | "/guide/comics"
   | "/guide/your-data";
 
 /**
@@ -135,6 +137,13 @@ export const GUIDE_AREAS: ReadonlyArray<GuideAreaMeta> = [
     to: "/guide/publishing",
     label: msg`Publishing your site`,
     blurb: msg`Wire your own site's records so Standard Reader can find and read it.`,
+  },
+  {
+    area: "comics",
+    group: "further",
+    to: "/guide/comics",
+    label: msg`Publishing a comic`,
+    blurb: msg`Get a shelf of covers and a page-flip reader out of the pages you already post.`,
   },
   {
     area: "your-data",
@@ -242,6 +251,17 @@ export const GUIDE_SECTIONS: Record<GuideArea, ReadonlyArray<GuideSection>> = {
     },
     { id: "content-formats", label: msg`Supported content formats` },
     { id: "example", label: msg`Example record` },
+  ],
+  comics: [
+    { id: "what-readers-get", label: msg`What readers get` },
+    { id: "turning-it-on", label: msg`Turning the comic view on` },
+    { id: "pages", label: msg`What counts as a page` },
+    { id: "titles", label: msg`Naming issues and pages` },
+    { id: "covers", label: msg`Cover art` },
+    { id: "notes", label: msg`The words beside the art` },
+    { id: "alt-text", label: msg`Alt text` },
+    { id: "read-state", label: msg`How readers pick it back up` },
+    { id: "troubleshooting", label: msg`When it still reads as a blog` },
   ],
   "your-data": [
     { id: "where-it-lives", label: msg`Where your reading lives` },

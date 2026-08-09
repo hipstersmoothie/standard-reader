@@ -242,6 +242,10 @@ msgstr "Subscribe to a publication or follow a writer and they'll show up here, 
 msgid "Your series"
 msgstr "Your series"
 
+#: src/components/guide/pages/comics-guide-page.tsx
+msgid "Nothing in the format has a field for “issue 3” — the only place that number exists is your post titles, so that is where we read it back out of. Title your pages the way comics have always been titled and consecutive pages collapse back into the issue they came from, one cover per issue:"
+msgstr "Nothing in the format has a field for “issue 3” — the only place that number exists is your post titles, so that is where we read it back out of. Title your pages the way comics have always been titled and consecutive pages collapse back into the issue they came from, one cover per issue:"
+
 #: src/components/reader/article-view.tsx
 msgid "Mark as read"
 msgstr "Mark as read"
@@ -253,6 +257,10 @@ msgstr "This list is empty — add publications or people to it."
 #: src/components/docs/api-docs-intro.tsx
 #~ msgid "A labeler is any DID that publishes AT Proto labels. Readers add one by DID on the <0>Labelers</0> page, and Standard Reader then shows that labeler's labels — and can warn on or hide labeled posts — as they read. Labelers are discovered the standard way; nothing about them is specific to us. To run your own:"
 #~ msgstr "A labeler is any DID that publishes AT Proto labels. Readers add one by DID on the <0>Labelers</0> page, and Standard Reader then shows that labeler's labels — and can warn on or hide labeled posts — as they read. Labelers are discovered the standard way; nothing about them is specific to us. To run your own:"
+
+#: src/components/guide/pages/comics-guide-page.tsx
+msgid "If your publication page shows a list of titles instead of a shelf, walk these in order:"
+msgstr "If your publication page shows a list of titles instead of a shelf, walk these in order:"
 
 #: src/components/user-settings-view.tsx
 msgid "The most-read articles across Standard this week."
@@ -444,6 +452,10 @@ msgstr "Dismiss"
 msgid "If the site publishes in the open format but has not been indexed yet, the extension reads the page's own record hints and subscribes anyway."
 msgstr "If the site publishes in the open format but has not been indexed yet, the extension reads the page's own record hints and subscribes anyway."
 
+#: src/components/guide/pages/comics-guide-page.tsx
+msgid "A page is an image your post's body renders, and they are flipped through in the order they appear in the post. One image per post is the usual shape and the one everything here is tuned for, but a post carrying three images contributes three pages, in order — useful for posting a whole issue at once."
+msgstr "A page is an image your post's body renders, and they are flipped through in the order they appear in the post. One image per post is the usual shape and the one everything here is tuned for, but a post carrying three images contributes three pages, in order — useful for posting a whole issue at once."
+
 #: src/routes/_layout.feedback.index.tsx
 msgid "Open"
 msgstr "Open"
@@ -550,6 +562,10 @@ msgstr "Wire your own site's records so Standard Reader can find and read it."
 #: src/components/reader/save-to-collection-dialog.tsx
 msgid "New collection…"
 msgstr "New collection…"
+
+#: src/components/guide/pages/comics-guide-page.tsx
+msgid "<0>Fray In The Veil #2, Pg. 7</0> — series, issue, page."
+msgstr "<0>Fray In The Veil #2, Pg. 7</0> — series, issue, page."
 
 #: src/components/reader/privacy-view.tsx
 msgid "We may update this policy as the product changes. The “Last updated” date at the top will change when we do. Continued use of the site after an update means you accept the revised policy."
@@ -811,6 +827,10 @@ msgstr "This list is empty."
 msgid "Play voice sample"
 msgstr "Play voice sample"
 
+#: src/components/guide/pages/comics-guide-page.tsx
+msgid "<0>Is the forwards-reading setting saved?</0> This is the one that is almost always the answer. Check it in your publishing tool, and note that it lives on the publication, not on individual posts."
+msgstr "<0>Is the forwards-reading setting saved?</0> This is the one that is almost always the answer. Check it in your publishing tool, and note that it lives on the publication, not on individual posts."
+
 #: src/components/reader/subscribe-card.tsx
 msgid "You're subscribed"
 msgstr "You're subscribed"
@@ -841,6 +861,10 @@ msgstr "{0} min read"
 #: src/components/user-settings-view.tsx
 msgid "Infinite scroll keeps pulling the next page as you reach the end of a list. Load more waits for you to ask."
 msgstr "Infinite scroll keeps pulling the next page as you reach the end of a list. Load more waits for you to ask."
+
+#: src/components/guide/pages/comics-guide-page.tsx
+msgid "Alt text on a comic page is the page, for anyone who cannot see it — in the theater there is no surrounding article to fall back on, so whatever you wrote is the whole experience. It is also what your comic is found by in search."
+msgstr "Alt text on a comic page is the page, for anyone who cannot see it — in the theater there is no surrounding article to fall back on, so whatever you wrote is the whole experience. It is also what your comic is found by in search."
 
 #: src/components/guide/pages/getting-started-guide-page.tsx
 #: src/lib/guide/navigation.ts
@@ -1172,6 +1196,11 @@ msgstr "{SITE_NAME} is a web reader for standard.site publications on the AT Pro
 msgid "the directory of every publication the network knows about."
 msgstr "the directory of every publication the network knows about."
 
+#: src/components/guide/pages/comics-guide-page.tsx
+#: src/lib/guide/navigation.ts
+msgid "How readers pick it back up"
+msgstr "How readers pick it back up"
+
 #: src/components/guide/pages/keeping-track-guide-page.tsx
 #~ msgid "A list is a folder for publications — <0>Work</0>, <1>Fiction</1>, <2>Read on Sunday</2>, whatever is useful. Lists appear as their own groups in the sidebar, so you can read one part of your follows without the rest."
 #~ msgstr "A list is a folder for publications — <0>Work</0>, <1>Fiction</1>, <2>Read on Sunday</2>, whatever is useful. Lists appear as their own groups in the sidebar, so you can read one part of your follows without the rest."
@@ -1427,6 +1456,10 @@ msgstr "Trending publications"
 msgid "Replace cover image"
 msgstr "Replace cover image"
 
+#: src/components/guide/pages/comics-guide-page.tsx
+msgid "<0>Are your last 40 posts mostly art?</0> A run of text posts — Kickstarter updates, con reports — can tip a comic under the line until the art resumes."
+msgstr "<0>Are your last 40 posts mostly art?</0> A run of text posts — Kickstarter updates, con reports — can tip a comic under the line until the art resumes."
+
 #: src/lib/guide/navigation.ts
 #~ msgid "Sign in, follow your first publications, and find your way around."
 #~ msgstr "Sign in, follow your first publications, and find your way around."
@@ -1522,6 +1555,10 @@ msgstr "Embedded content"
 #: src/components/user-settings-view.tsx
 msgid "Account"
 msgstr "Account"
+
+#: src/components/guide/pages/comics-guide-page.tsx
+msgid "There is no “this is a comic” switch anywhere on the network, and nothing to set on Standard Reader — we do not host your publication. Two things have to be true instead."
+msgstr "There is no “this is a comic” switch anywhere on the network, and nothing to set on Standard Reader — we do not host your publication. Two things have to be true instead."
 
 #: src/components/reader/app-shell.tsx
 #: src/components/reader/subscriptions-sheet.tsx
@@ -2014,6 +2051,10 @@ msgstr "Why is this piece here? (markdown supported)"
 msgid "Sign in, subscribe to a few publications, and learn where everything lives. Ten minutes, once."
 msgstr "Sign in, subscribe to a few publications, and learn where everything lives. Ten minutes, once."
 
+#: src/components/guide/pages/comics-guide-page.tsx
+msgid "The theater treats the whole publication as one book. Page numbers run straight through from your first page to your latest, so a reader who holds down the arrow key walks the entire run without stopping at the end of every issue. Arrow keys, space, Page Up and Page Down all turn pages; Home and End jump to either end; on a phone the outer edges of the screen turn pages, a swipe does too, and pinch-to-zoom gets a reader into a dense panel. There is a full-screen toggle on the <0>f</0> key. Past the last page is a back cover telling them they are caught up and inviting them to subscribe."
+msgstr "The theater treats the whole publication as one book. Page numbers run straight through from your first page to your latest, so a reader who holds down the arrow key walks the entire run without stopping at the end of every issue. Arrow keys, space, Page Up and Page Down all turn pages; Home and End jump to either end; on a phone the outer edges of the screen turn pages, a swipe does too, and pinch-to-zoom gets a reader into a dense panel. There is a full-screen toggle on the <0>f</0> key. Past the last page is a back cover telling them they are caught up and inviting them to subscribe."
+
 #: src/routes/_layout.feedback.index.tsx
 msgid "{count, plural, one {# upvote} other {# upvotes}} — click to upvote"
 msgstr "{count, plural, one {# upvote} other {# upvotes}} — click to upvote"
@@ -2030,6 +2071,10 @@ msgstr "Read"
 #: src/components/reader/comments/add-comment-dialog.tsx
 #~ msgid "Discussion here is gathered from posts across the network, so you comment wherever you already post. Yours joins this article once the network indexes it."
 #~ msgstr "Discussion here is gathered from posts across the network, so you comment wherever you already post. Yours joins this article once the network indexes it."
+
+#: src/components/guide/pages/comics-guide-page.tsx
+msgid "A post with no images contributes nothing to flip through, so it does not get a cover on the shelf and cannot be paged to: an announcement, a hiatus note, or a con schedule lives in the archive's read and unread views rather than in the book. If a text post matters to the story, give it a piece of art and it becomes a page like any other."
+msgstr "A post with no images contributes nothing to flip through, so it does not get a cover on the shelf and cannot be paged to: an announcement, a hiatus note, or a con schedule lives in the archive's read and unread views rather than in the book. If a text post matters to the story, give it a piece of art and it becomes a page like any other."
 
 #: src/components/reader/privacy-view.tsx
 msgid "An HttpOnly session cookie that keeps you signed in."
@@ -2108,6 +2153,11 @@ msgstr "If you continue, it will be able to:"
 #: src/components/guide/pages/publishing-guide-page.tsx
 msgid "<0><1>Markpub</1> (recommended).</0> <2>at.markpub.markdown</2> — markdown with facets for rich text. It's not part of the site.standard spec either — no markdown format is — but it's the only one that's actually spec'd in a meaningful, reusable way, rather than one app's own ad hoc shape. Use this for a hand-rolled integration unless you already produce one of the platform formats below."
 msgstr "<0><1>Markpub</1> (recommended).</0> <2>at.markpub.markdown</2> — markdown with facets for rich text. It's not part of the site.standard spec either — no markdown format is — but it's the only one that's actually spec'd in a meaningful, reusable way, rather than one app's own ad hoc shape. Use this for a hand-rolled integration unless you already produce one of the platform formats below."
+
+#: src/components/guide/pages/comics-guide-page.tsx
+#: src/lib/guide/navigation.ts
+msgid "What counts as a page"
+msgstr "What counts as a page"
 
 #: src/routes/_layout.l.$did.$rkey.tsx
 msgid "Hide read articles"
@@ -2405,6 +2455,10 @@ msgstr "Setting the issue"
 msgid "Feed preferences"
 msgstr "Feed preferences"
 
+#: src/components/guide/pages/comics-guide-page.tsx
+msgid "A single post whose title breaks the pattern does not split an issue in two. An interstitial in the middle of issue 3 joins issue 3, and a one-off announcement will not start a phantom issue of its own."
+msgstr "A single post whose title breaks the pattern does not split an issue in two. An interstitial in the middle of issue 3 joins issue 3, and a one-off announcement will not start a phantom issue of its own."
+
 #: src/components/docs/api-docs-request-panel.tsx
 msgid "Set API_DOCS_FIXTURE_LIST_URI to run this example."
 msgstr "Set API_DOCS_FIXTURE_LIST_URI to run this example."
@@ -2598,6 +2652,11 @@ msgstr "Clear selection"
 msgid "RSS feed"
 msgstr "RSS feed"
 
+#: src/components/guide/pages/comics-guide-page.tsx
+#: src/lib/guide/navigation.ts
+msgid "Naming issues and pages"
+msgstr "Naming issues and pages"
+
 #: src/components/docs/api-docs-intro.tsx
 #: src/components/docs/docs-api-nav.tsx
 #~ msgid "Run a labeler"
@@ -2760,6 +2819,10 @@ msgstr "A few preferences"
 #: src/routes/_layout.friends.tsx
 msgid "We couldn't reach Bluesky to look up who you follow. Reload in a moment, or browse the directory in the meantime."
 msgstr "We couldn't reach Bluesky to look up who you follow. Reload in a moment, or browse the directory in the meantime."
+
+#: src/components/guide/pages/comics-guide-page.tsx
+msgid "Keep the essay for its own post"
+msgstr "Keep the essay for its own post"
 
 #: src/components/guide/pages/finding-guide-page.tsx
 msgid "Plenty of people you already follow on Bluesky write long-form somewhere. <0>People you follow</0> finds them and puts their publications, and their newest articles, in one place. It is usually the highest-yield screen in the app the first week you use it."
@@ -3436,6 +3499,11 @@ msgstr "Prefer the original? Flip one setting and article links open on the publ
 msgid "<0>Share</0> copies a link, or posts the article to Bluesky with a proper preview card. On a phone it can hand off to whatever you normally share with."
 msgstr "<0>Share</0> copies a link, or posts the article to Bluesky with a proper preview card. On a phone it can hand off to whatever you normally share with."
 
+#: src/components/guide/pages/comics-guide-page.tsx
+#: src/lib/guide/navigation.ts
+msgid "Turning the comic view on"
+msgstr "Turning the comic view on"
+
 #: src/components/reader/article-below-fold.tsx
 msgid "Worth subscribing to"
 msgstr "Worth subscribing to"
@@ -3506,6 +3574,11 @@ msgstr "All the format-specific work happens once, in a framework-agnostic core 
 msgid "A publication on Standard is a <0>site.standard.document</0> record in the author's AT Protocol repository — not a row in a database we own. Standard Reader indexes those records into a public read-model and renders them, but nothing about the format is proprietary: the schemas are open, the content is portable across publishing platforms, and the same renderer we ship is available to you."
 msgstr "A publication on Standard is a <0>site.standard.document</0> record in the author's AT Protocol repository — not a row in a database we own. Standard Reader indexes those records into a public read-model and renders them, but nothing about the format is proprietary: the schemas are open, the content is portable across publishing platforms, and the same renderer we ship is available to you."
 
+#: src/components/guide/pages/comics-guide-page.tsx
+#: src/lib/guide/navigation.ts
+msgid "The words beside the art"
+msgstr "The words beside the art"
+
 #: src/components/labelers-settings-view.tsx
 #: src/routes/_layout.latest.tsx
 msgid "On the network"
@@ -3526,6 +3599,11 @@ msgstr "A quiet place to read"
 #: src/components/guide/pages/lists-guide-page.tsx
 msgid "Add publications or people, then <0>Create list</0>."
 msgstr "Add publications or people, then <0>Create list</0>."
+
+#: src/components/guide/pages/comics-guide-page.tsx
+#: src/lib/guide/navigation.ts
+msgid "When it still reads as a blog"
+msgstr "When it still reads as a blog"
 
 #: src/components/reader/terms-view.tsx
 msgid "You agree not to use {SITE_NAME} to:"
@@ -3622,6 +3700,10 @@ msgstr "More actions"
 #: src/components/guide/pages/collections-guide-page.tsx
 msgid "Readers who would rather not get the magazine treatment can turn <0>Open collections in magazine</0> off in <1>settings</1>, and collection articles open in the ordinary reader instead."
 msgstr "Readers who would rather not get the magazine treatment can turn <0>Open collections in magazine</0> off in <1>settings</1>, and collection articles open in the ordinary reader instead."
+
+#: src/components/guide/pages/comics-guide-page.tsx
+msgid "Covers are drawn in a 2:3 frame — the standard trade-paperback shape — and art is scaled to fill it, so anything much wider or squarer gets cropped at the edges. If your logo or your title lettering sits near the very edge of a landscape cover, expect it to be trimmed on the shelf. The full page is untouched in the reader; this only affects the thumbnail."
+msgstr "Covers are drawn in a 2:3 frame — the standard trade-paperback shape — and art is scaled to fill it, so anything much wider or squarer gets cropped at the edges. If your logo or your title lettering sits near the very edge of a landscape cover, expect it to be trimmed on the shelf. The full page is untouched in the reader; this only affects the thumbnail."
 
 #: src/routes/_layout.l.$did.$rkey.tsx
 msgid "by @{ownerHandle}"
@@ -3751,6 +3833,10 @@ msgstr "Trending this week"
 #: src/components/guide/pages/getting-started-guide-page.tsx
 msgid "The login screen links out to create one. Any account on the network works — you do not have to use Bluesky itself, and you do not have to post anything."
 msgstr "The login screen links out to create one. Any account on the network works — you do not have to use Bluesky itself, and you do not have to post anything."
+
+#: src/components/guide/pages/comics-guide-page.tsx
+msgid "If all of that is true and your comic still reads as a blog, tell us on the feedback board with a link to the publication — that is a bug on our side, and worth hearing about."
+msgstr "If all of that is true and your comic still reads as a blog, tell us on the feedback board with a link to the publication — that is a bug on our side, and worth hearing about."
 
 #: src/routes/_layout.u.$did.tsx
 msgid "Subscriptions aren't indexed yet."
@@ -3976,6 +4062,10 @@ msgstr "Pasting a handle works even for publications the network has not indexed
 msgid "We couldn’t find that publication."
 msgstr "We couldn’t find that publication."
 
+#: src/components/guide/pages/comics-guide-page.tsx
+msgid "<0>Your posts have to read as pages.</0> We look at your 40 newest posts and count the ones that render at least one image and carry no more than about 700 words of prose. If at least 60% of them do, the publication is a comic. If they do not, it is treated as a serialized book — still read front-to-back, but as articles with an <1>Up next</1> link rather than as pages of art."
+msgstr "<0>Your posts have to read as pages.</0> We look at your 40 newest posts and count the ones that render at least one image and carry no more than about 700 words of prose. If at least 60% of them do, the publication is a comic. If they do not, it is treated as a serialized book — still read front-to-back, but as articles with an <1>Up next</1> link rather than as pages of art."
+
 #: src/components/reader/page-reader-bar.tsx
 msgid "Generating audio… {percent}%"
 msgstr "Generating audio… {percent}%"
@@ -4001,6 +4091,10 @@ msgstr "Unread"
 #: src/lib/guide/navigation.ts
 msgid "How readers see it"
 msgstr "How readers see it"
+
+#: src/components/guide/pages/comics-guide-page.tsx
+msgid "Standard Reader has a reading mode built for comics — a shelf of covers instead of a list of post titles, and a full-screen theater that flips through your pages. You do not author anything specially for it. This page is how to make sure your comic gets it."
+msgstr "Standard Reader has a reading mode built for comics — a shelf of covers instead of a list of post titles, and a full-screen theater that flips through your pages. You do not author anything specially for it. This page is how to make sure your comic gets it."
 
 #. placeholder {0}: filter.trim()
 #: src/components/reader/subscriptions-table.tsx
@@ -4185,6 +4279,10 @@ msgstr "Collections you have made, grouped into a series."
 msgid "On any page you visit"
 msgstr "On any page you visit"
 
+#: src/components/guide/pages/comics-guide-page.tsx
+msgid "The current page lives in the address bar, so a reader can link someone straight to a page, and reopening the comic puts them back where they stopped."
+msgstr "The current page lives in the address bar, so a reader can link someone straight to a page, and reopening the comic puts them back where they stopped."
+
 #: src/components/reader/subscriptions-table.tsx
 msgid "Partly removed"
 msgstr "Partly removed"
@@ -4193,6 +4291,10 @@ msgstr "Partly removed"
 #: src/routes/_layout.l.$did.$rkey.tsx
 msgid "Delete list"
 msgstr "Delete list"
+
+#: src/components/guide/pages/comics-guide-page.tsx
+msgid "The one part that is required is the hash before the issue number — a bare number in a title is never read as an issue, because too many ordinary titles start with one. After the number you can use a comma, a colon, a dash, or nothing at all; everything following it is treated as the page label and is not otherwise parsed, so write it however you like."
+msgstr "The one part that is required is the hash before the issue number — a bare number in a title is never read as an issue, because too many ordinary titles start with one. After the number you can use a comma, a colon, a dash, or nothing at all; everything following it is treated as the page label and is not otherwise parsed, so write it however you like."
 
 #: src/components/guide/pages/everywhere-guide-page.tsx
 #~ msgid "What the extension can see and what it does with it is written out in full on the <0>extension privacy page</0>."
@@ -4223,6 +4325,10 @@ msgstr "Recommended articles"
 #: src/components/user-settings-view.tsx
 msgid "Light, dark, match your system — or Custom, to choose a palette of your own."
 msgstr "Light, dark, match your system — or Custom, to choose a palette of your own."
+
+#: src/components/guide/pages/comics-guide-page.tsx
+msgid "<0>Getting a shelf but not issues?</0> Then the setting is right and it is the titles: check that at least 7 in 10 carry a hash and an issue number."
+msgstr "<0>Getting a shelf but not issues?</0> Then the setting is right and it is the titles: check that at least 7 in 10 carry a hash and an issue number."
 
 #: src/components/labeler-detail-view.tsx
 msgid "Labeler views"
@@ -4359,6 +4465,10 @@ msgstr "Reader voice"
 msgid "Sharp"
 msgstr "Sharp"
 
+#: src/components/guide/pages/comics-guide-page.tsx
+msgid "An issue is fronted by the page whose title says it is the cover — anything with the word <0>cover</0> in the page label. <1>Inner cover</1> is deliberately not treated as one, since it is the leaf behind the cover rather than the cover itself. When no page claims it, the issue's first page fronts it, which is what the reader sees on opening anyway."
+msgstr "An issue is fronted by the page whose title says it is the cover — anything with the word <0>cover</0> in the page label. <1>Inner cover</1> is deliberately not treated as one, since it is the leaf behind the cover rather than the cover itself. When no page claims it, the issue's first page fronts it, which is what the reader sees on opening anyway."
+
 #: src/components/reader/about-view.tsx
 msgid "What you get is a reading view made for long-form: a centered column, drop caps and pull quotes, full-bleed images you can open into a gallery. The page gets out of the way so the writing can do its work."
 msgstr "What you get is a reading view made for long-form: a centered column, drop caps and pull quotes, full-bleed images you can open into a gallery. The page gets out of the way so the writing can do its work."
@@ -4445,6 +4555,10 @@ msgstr "XS"
 #: src/components/guide/pages/keeping-track-guide-page.tsx
 #~ msgid "Make one with <0>New list</0> in the sidebar, or add a publication to a list from its <1>Add to list</1> menu. A publication can be in as many lists as you like, and being in a list does not change your feeds — it only changes how they are grouped."
 #~ msgstr "Make one with <0>New list</0> in the sidebar, or add a publication to a list from its <1>Add to list</1> menu. A publication can be in as many lists as you like, and being in a list does not change your feeds — it only changes how they are grouped."
+
+#: src/components/guide/pages/comics-guide-page.tsx
+msgid "In practice this means a reader who subscribes mid-run can come back after a month and land exactly where they stopped, which is the single biggest thing that keeps people reading a serial. Readers who have turned reading history off see no dots — nothing is tracked for them — and readers who are not signed in see the shelf as a stranger would."
+msgstr "In practice this means a reader who subscribes mid-run can come back after a month and land exactly where they stopped, which is the single biggest thing that keeps people reading a serial. Readers who have turned reading history off see no dots — nothing is tracked for them — and readers who are not signed in see the shelf as a stranger would."
 
 #: src/components/reader/article-below-fold.tsx
 msgid "Keep reading"
@@ -4724,6 +4838,10 @@ msgstr "Introduce the collection… (markdown supported)"
 msgid "Filter"
 msgstr "Filter"
 
+#: src/components/guide/pages/comics-guide-page.tsx
+msgid "A comic publication gets two things an ordinary blog does not. Its page shows a <0>shelf of covers</0> — your art, at trade-paperback proportions — rather than dozens of near-identical rows reading <1>Pg. 1</1>, <2>Pg. 2</2>, <3>Pg. 3</3>. And opening one drops the reader into the <4>comic reader</4>: a dark, chrome-free theater holding one page at a time."
+msgstr "A comic publication gets two things an ordinary blog does not. Its page shows a <0>shelf of covers</0> — your art, at trade-paperback proportions — rather than dozens of near-identical rows reading <1>Pg. 1</1>, <2>Pg. 2</2>, <3>Pg. 3</3>. And opening one drops the reader into the <4>comic reader</4>: a dark, chrome-free theater holding one page at a time."
+
 #: src/components/reader/friend-publishers.tsx
 msgid "Bluesky didn't answer in time, so this list may be incomplete. Reload to try again."
 msgstr "Bluesky didn't answer in time, so this list may be incomplete. Reload to try again."
@@ -4778,6 +4896,11 @@ msgstr "Use the <0>at:</0> meta tags — the convention the Atmosphere settled o
 #: src/routes/_layout.u.$did.tsx
 msgid "Profile settings"
 msgstr "Profile settings"
+
+#: src/components/guide/pages/comics-guide-page.tsx
+#: src/lib/guide/navigation.ts
+msgid "Publishing a comic"
+msgstr "Publishing a comic"
 
 #: src/components/guide/pages/getting-started-guide-page.tsx
 #~ msgid "The first time you sign in, a short setup walks you through it: pick a few topics you care about, see which of the people you already follow on Bluesky write here, follow anything that appeals, and choose how you like your text. You can skip any step, and skip the whole thing."
@@ -5123,6 +5246,10 @@ msgstr "Where your reading lives"
 #: src/components/docs/renderers-docs-page.tsx
 msgid "Resolving platform data"
 msgstr "Resolving platform data"
+
+#: src/components/guide/pages/comics-guide-page.tsx
+msgid "<0>Your publication has to say it reads forwards.</0> That is a setting on the publication itself, in whatever tool you publish with — the one that says the work is read from its first post rather than newest-first. In the underlying record it is <1>preferences.prevNextDirection</1> set to <2>ltr</2>. Leaflet writes this field; if you roll your own records, see <3>Publishing your site</3>. Without it a comic is just a blog that happens to post drawings."
+msgstr "<0>Your publication has to say it reads forwards.</0> That is a setting on the publication itself, in whatever tool you publish with — the one that says the work is read from its first post rather than newest-first. In the underlying record it is <1>preferences.prevNextDirection</1> set to <2>ltr</2>. Leaflet writes this field; if you roll your own records, see <3>Publishing your site</3>. Without it a comic is just a blog that happens to post drawings."
 
 #: src/components/reader/comments/add-comment-dialog.tsx
 msgid "Reply on Bluesky"
@@ -5669,6 +5796,10 @@ msgstr "the queue of articles you put aside. A badge shows how many are waiting.
 msgid "Articles you've recommended across the network."
 msgstr "Articles you've recommended across the network."
 
+#: src/components/guide/pages/comics-guide-page.tsx
+msgid "One thing worth knowing: if a paragraph of your post body repeats a page's alt text word for word, we drop it from the note rather than showing the reader a description of the picture they are looking at. So transcribing your dialogue into the alt and again into the body does not double up."
+msgstr "One thing worth knowing: if a paragraph of your post body repeats a page's alt text word for word, we drop it from the note rather than showing the reader a description of the picture they are looking at. So transcribing your dialogue into the alt and again into the body does not double up."
+
 #: src/routes/_layout.feedback.return.tsx
 msgid "View feedback"
 msgstr "View feedback"
@@ -5991,6 +6122,10 @@ msgstr "Docs"
 msgid "The core / new frameworks"
 msgstr "The core / new frameworks"
 
+#: src/components/guide/pages/comics-guide-page.tsx
+msgid "Both are re-checked as your archive grows, and the setting is picked up the first time anyone opens your publication after you change it — you do not have to tell us. Being read as a book rather than a comic is never a dead end for a reader: every route into the comic reader also links to the ordinary reading view, and an issue with no art falls back to it outright."
+msgstr "Both are re-checked as your archive grows, and the setting is picked up the first time anyone opens your publication after you change it — you do not have to tell us. Being read as a book rather than a comic is never a dead end for a reader: every route into the comic reader also links to the ordinary reading view, and an issue with no art falls back to it outright."
+
 #. placeholder {0}: index + 1
 #: src/components/comic/comic-reader.tsx
 msgid "Page {0}"
@@ -6171,6 +6306,11 @@ msgstr "If something is confusing, broken, or missing, the <0>feedback board</0>
 #: src/components/reader/about-view.tsx
 #~ msgid "A lightweight browser extension lets you save and subscribe to publications while you’re out on the web — with subtle badges on bsky.app and a one-click overlay on any page you land on. Your reading list fills itself."
 #~ msgstr "A lightweight browser extension lets you save and subscribe to publications while you’re out on the web — with subtle badges on bsky.app and a one-click overlay on any page you land on. Your reading list fills itself."
+
+#: src/components/guide/pages/comics-guide-page.tsx
+#: src/lib/guide/navigation.ts
+msgid "Alt text"
+msgstr "Alt text"
 
 #: src/components/docs/docs-nav-areas.ts
 msgid "Introduction"
@@ -6356,6 +6496,10 @@ msgstr "Sidebar"
 msgid "Reading & privacy"
 msgstr "Reading & privacy"
 
+#: src/components/guide/pages/comics-guide-page.tsx
+msgid "Grouping is all-or-nothing per publication: at least 70% of your titles have to parse before we trust the numbers enough to group by them. If they do not — a webcomic naming its posts <0>Pg01</0>, <1>Pg02</1> has no issues to speak of — you still get a shelf, just one cover per post instead of one per issue. That is a fine way to run a comic; it is not a failure state."
+msgstr "Grouping is all-or-nothing per publication: at least 70% of your titles have to parse before we trust the numbers enough to group by them. If they do not — a webcomic naming its posts <0>Pg01</0>, <1>Pg02</1> has no issues to speak of — you still get a shelf, just one cover per post instead of one per issue. That is a fine way to run a comic; it is not a failure state."
+
 #: src/components/Header.tsx
 #: src/components/reader/app-shell.tsx
 #: src/components/site-legal-links.tsx
@@ -6471,6 +6615,11 @@ msgstr "Editorial"
 msgid "Click Run example to fetch a live response with your session."
 msgstr "Click Run example to fetch a live response with your session."
 
+#: src/components/guide/pages/comics-guide-page.tsx
+#: src/lib/guide/navigation.ts
+msgid "What readers get"
+msgstr "What readers get"
+
 #: src/components/guide/pages/your-data-guide-page.tsx
 msgid "At the bottom of settings, <0>Personal data</0> deletes categories of records outright: your reading history, your saved articles, or the publication lists you made. Each asks for confirmation and explains what will change."
 msgstr "At the bottom of settings, <0>Personal data</0> deletes categories of records outright: your reading history, your saved articles, or the publication lists you made. Each asks for confirmation and explains what will change."
@@ -6559,6 +6708,10 @@ msgstr "Hide mirrored websites"
 #: src/routes/_layout.p.$did.$rkey.tsx
 #~ msgid "Open publication"
 #~ msgstr "Open publication"
+
+#: src/components/guide/pages/comics-guide-page.tsx
+msgid "<0>Do your recent posts render their art in the body?</0> A post that only links to the page on your site, or that carries the drawing as a cover image with an empty body, has no pages to flip."
+msgstr "<0>Do your recent posts render their art in the body?</0> A post that only links to the page on your site, or that carries the drawing as a cover image with an empty body, has no pages to flip."
 
 #: src/components/reader/link-share-menu.tsx
 msgid "Send to Disperse"
@@ -6680,6 +6833,10 @@ msgstr "{articleCount, plural, one {article} other {articles}}"
 msgid "{publicationName} is in your feed. You'll see new writing as it publishes."
 msgstr "{publicationName} is in your feed. You'll see new writing as it publishes."
 
+#: src/components/guide/pages/comics-guide-page.tsx
+msgid "Read state is per post, and your posts are pages, so an issue counts as unread while any page in it is — a comic read halfway through is not read. Its cover wears the same unread dot an unread article does, and clicking it opens on the first page that reader has not seen, not back at the cover. Walking pages in the theater marks them off behind them."
+msgstr "Read state is per post, and your posts are pages, so an issue counts as unread while any page in it is — a comic read halfway through is not read. Its cover wears the same unread dot an unread article does, and clicking it opens on the first page that reader has not seen, not back at the cover. Walking pages in the theater marks them off behind them."
+
 #: src/components/reader/collections-upgrade-gate.tsx
 msgid "Upgrade permissions"
 msgstr "Upgrade permissions"
@@ -6740,6 +6897,10 @@ msgstr "This publication opted out of discovery, so it's hidden everywhere excep
 msgid "{count, plural, one {# upvote} other {# upvotes}} — sign in to upvote"
 msgstr "{count, plural, one {# upvote} other {# upvotes}} — sign in to upvote"
 
+#: src/lib/guide/navigation.ts
+msgid "Get a shelf of covers and a page-flip reader out of the pages you already post."
+msgstr "Get a shelf of covers and a page-flip reader out of the pages you already post."
+
 #: src/components/onboarding/step-friends.tsx
 #~ msgid "Select all"
 #~ msgstr "Select all"
@@ -6748,10 +6909,18 @@ msgstr "{count, plural, one {# upvote} other {# upvotes}} — sign in to upvote"
 msgid "For how {SITE_NAME} works overall, see <0>About</0>. For site-wide privacy, see the <1>site privacy policy</1>. For questions about this deployment, contact the operator of {siteHost}."
 msgstr "For how {SITE_NAME} works overall, see <0>About</0>. For site-wide privacy, see the <1>site privacy policy</1>. For questions about this deployment, contact the operator of {siteHost}."
 
+#: src/components/guide/pages/comics-guide-page.tsx
+msgid "The counter reads <0>Page 12 of 340</0> across the whole publication, not within one issue. That means inserting or removing a page in an early issue renumbers everything after it — worth knowing before you go back and edit an old post that readers may have linked to."
+msgstr "The counter reads <0>Page 12 of 340</0> across the whole publication, not within one issue. That means inserting or removing a page in an early issue renumbers everything after it — worth knowing before you go back and edit an old post that readers may have linked to."
+
 #: src/components/guide/pages/your-data-guide-page.tsx
 #: src/lib/guide/navigation.ts
 msgid "Your account and data"
 msgstr "Your account and data"
+
+#: src/components/guide/pages/comics-guide-page.tsx
+msgid "The prose length is also what separates a comic from an illustrated blog: a post carrying more than about 700 words stops counting as a page of comic, and if most of your posts are like that the publication reads as a book instead. A long process essay is better as its own post — which readers will find in the archive — than appended to a page."
+msgstr "The prose length is also what separates a comic from an illustrated blog: a post carrying more than about 700 words stops counting as a page of comic, and if most of your posts are like that the publication reads as a book instead. A long process essay is better as its own post — which readers will find in the archive — than appended to a page."
 
 #: src/routes/review.thanks.tsx
 msgid "Your review has been posted to <0>ATStore</0>. Thanks for helping more readers discover Standard Reader."
@@ -6878,6 +7047,10 @@ msgstr "Icon"
 msgid "Top"
 msgstr "Top"
 
+#: src/components/guide/pages/comics-guide-page.tsx
+msgid "Most cartoonists write a line or two under the page — a caption, a process note, a word about next week. That writing is not lost in the theater. If a page's post carries prose, the note button in the top bar lights up and lays it over the art, in the theater's own type, with a way through to the full post. It closes when the reader turns the page, because it belongs to the page it was written about."
+msgstr "Most cartoonists write a line or two under the page — a caption, a process note, a word about next week. That writing is not lost in the theater. If a page's post carries prose, the note button in the top bar lights up and lays it over the art, in the theater's own type, with a way through to the full post. It closes when the reader turns the page, because it belongs to the page it was written about."
+
 #: src/components/reader/page-reader-bar.tsx
 msgid "Read aloud"
 msgstr "Read aloud"
@@ -6912,6 +7085,10 @@ msgstr "get this publication's new writing in your feeds."
 #: src/components/guide/pages/extension-guide-page.tsx
 msgid "Subscribe to the publication it came from, in the same click."
 msgstr "Subscribe to the publication it came from, in the same click."
+
+#: src/components/guide/pages/comics-guide-page.tsx
+msgid "<0>FITV #1 Cover</0> — the same, with a page label instead of a number."
+msgstr "<0>FITV #1 Cover</0> — the same, with a page label instead of a number."
 
 #: src/components/reader/subscriptions-table.tsx
 msgid "Followers"
@@ -7145,6 +7322,10 @@ msgstr "Following"
 msgid "Opening the issue…"
 msgstr "Opening the issue…"
 
+#: src/components/guide/pages/comics-guide-page.tsx
+msgid "Pages with nothing written under them leave the button disabled rather than making it appear and vanish as the reader flips, so there is no penalty for a silent page."
+msgstr "Pages with nothing written under them leave the button disabled rather than making it appear and vanish as the reader flips, so there is no penalty for a silent page."
+
 #: src/components/reader/about-view.tsx
 msgid "However you like to read it"
 msgstr "However you like to read it"
@@ -7318,6 +7499,11 @@ msgstr "When on, a publication's whole back catalogue counts as unread when you 
 #: src/components/reader/comments/comment-card.tsx
 msgid "Open this reply on Bluesky"
 msgstr "Open this reply on Bluesky"
+
+#: src/components/guide/pages/comics-guide-page.tsx
+#: src/lib/guide/navigation.ts
+msgid "Cover art"
+msgstr "Cover art"
 
 #: src/components/guide/pages/finding-guide-page.tsx
 msgid "what your corner of Bluesky reads."
@@ -7556,6 +7742,10 @@ msgstr "Cited by"
 #: src/routes/mcp/authorize.tsx
 msgid "Signed in as"
 msgstr "Signed in as"
+
+#: src/components/guide/pages/comics-guide-page.tsx
+msgid "Page numbers are absolute"
+msgstr "Page numbers are absolute"
 
 #: src/components/guide/pages/collections-guide-page.tsx
 msgid "Opening a collection shows the magazine edition — cover first, then the pieces in order. Individual articles inside it can still be opened, saved, and recommended exactly as they can anywhere else."

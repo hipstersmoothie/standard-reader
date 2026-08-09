@@ -1373,6 +1373,11 @@ cookies on `/xrpc`. Live developer docs at [`/docs/api`](/docs/api).
       personalizing, beyond the app, your data) on their own route tree and topbar, structure
       declared once in `src/lib/guide/navigation.ts`. Linked from the footer, the account menu,
       About, and the developer docs topbar; every page ends at `/feedback`.
+- [x] **Comic authoring guide (`/guide/comics`)** — the comic view from the cartoonist's side:
+      the `prevNextDirection` setting, the comic/book classifier's thresholds (60% of the 40
+      newest posts, ~700 words of prose), the `Series #2, Pg. 7` title convention and its 70%
+      match share, cover selection and the 2:3 crop, page notes, alt text, per-page read state,
+      and a troubleshooting list for a comic still reading as a blog.
 - [x] **Automated guide screenshots** — `pnpm guide:shots` drives Playwright through the shot
       manifest in `src/lib/guide/screenshots.ts` and writes `public/guide/*.png`, so refreshing
       every picture after a UI change is one command. Signed-in shots reuse the perf suite's
