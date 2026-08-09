@@ -319,9 +319,16 @@ Implementation notes:
 - Critical feed returns `counts: null`. Pagination (`offset > 0`) never re-fetches counts.
 - One shared counts query serves every tab — prefetch it once on idle alongside inactive tab feeds.
 - **Stable chrome:** tab labels and masthead `metaValue` use skeleton placeholders while counts
-  pending; do not show `Mark all as read` until counts are loaded. When the active filter’s rows are
-  empty but empty-state copy depends on `subscriptions === 0` vs “all caught up”, show a row
-  skeleton until counts resolve.
+  pending. When the active filter’s rows are empty but empty-state copy depends on
+  `subscriptions === 0` vs “all caught up”, show a row skeleton until counts resolve.
+- **The controls row never unmounts a button.** The RSS feed and `Mark all as read` buttons are
+  driven by `latestControlsVisibility` (`src/lib/latest-feed-controls.ts`): both show on the
+  reader’s own filters (`unread`, `subscriptions`) and hide only on the network-wide ones, and
+  `Mark all as read` is **disabled** — never removed — while counts are pending or once nothing is
+  unread. Do not re-gate either button on `filter === "unread"`: `/latest` normalises to
+  `?filter=unread` and a reader with reading history off is redirected to `?filter=subscriptions`
+  on the next commit, so that gate makes the buttons appear for one paint and then vanish (with the
+  URL keeping them gone across reloads).
 - Optimistic read updates must touch both latest feed item caches and the counts cache key (see
   `read-optimistic.ts`).
 - **Loader cache priming:** on navigation, `await ensureQueryData` for the critical feed and

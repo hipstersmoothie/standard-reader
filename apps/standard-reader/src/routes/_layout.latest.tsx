@@ -54,6 +54,7 @@ import {
 } from "#/integrations/tanstack-query/api-feed.functions";
 import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
+import { latestControlsVisibility } from "#/lib/latest-feed-controls";
 import { getPublicUrlClient } from "#/lib/public-url";
 import { latestFeedUrl, pageSocialMeta } from "#/lib/site-metadata";
 import { useFormatters } from "#/lib/use-formatters";
@@ -503,9 +504,12 @@ function Latest() {
   const signedIn = Boolean(session?.user);
   const loginSearch = useLoginSearch();
 
+  // With reading history off there is no Unread tab, so `?filter=unread` is a
+  // URL to normalise away, not a page the reader chose. `replace` keeps it out
+  // of history — a pushed entry makes Back bounce off this effect forever.
   useEffect(() => {
     if (trackReading || filter !== "unread") return;
-    void navigate({ search: { filter: "subscriptions" } });
+    void navigate({ replace: true, search: { filter: "subscriptions" } });
   }, [filter, navigate, trackReading]);
 
   useEffect(() => {
@@ -604,6 +608,15 @@ function Latest() {
   const isTrending = filter === "trending";
   const isNetwork = !signedIn || filter === "all" || isTrending;
 
+  const { showRssFeed, showMarkAllRead, markAllReadDisabled } =
+    latestControlsVisibility({
+      countsPending,
+      filter,
+      signedIn,
+      trackReading,
+      unreadCount: counts.unread,
+    });
+
   const trendingCount = Math.min(counts.trending, TRENDING_PAGE_LIMIT);
   const metaCount = isTrending
     ? trendingCount
@@ -686,18 +699,14 @@ function Latest() {
           </Flex>
         )}
         <Flex align="center" gap="md">
-          {signedIn && filter === "unread" ? (
+          {showRssFeed ? (
             <RssFeedButton
               name={t`Your Latest`}
               feedUrl={latestFeedUrl(getPublicUrlClient(), readerScope)}
               size="lg"
             />
           ) : null}
-          {trackReading &&
-          signedIn &&
-          filter === "unread" &&
-          !countsPending &&
-          counts.unread > 0 ? (
+          {showMarkAllRead ? (
             <AlertDialog
               isOpen={markAllReadOpen}
               onOpenChange={setMarkAllReadOpen}
@@ -705,6 +714,7 @@ function Latest() {
                 <IconButton
                   variant="secondary"
                   size="lg"
+                  isDisabled={markAllReadDisabled}
                   label={t`Mark all as read`}
                 >
                   <CheckCheck size={18} />
