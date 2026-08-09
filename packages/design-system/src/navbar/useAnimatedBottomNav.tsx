@@ -1,5 +1,6 @@
 "use client";
 
+import { isIOS } from "@react-aria/utils";
 import { useCallback, useEffect, useRef } from "react";
 
 import {
@@ -54,6 +55,18 @@ function prefersReducedMotion() {
  * lays out on the main thread), this one is free to animate `transform`: nothing
  * pins itself to a bottom bar, so the composited property is the better pick.
  *
+ * **Except on iOS**, where sliding the bar out through the bottom edge never
+ * worked. Safari's bottom toolbar collapses and expands with the same scrolling
+ * that drives this animation, and the dynamic viewport it resizes is measured
+ * from underneath the dock the bar lives in — so the distance the bar has to
+ * travel is re-decided mid-flight and the bar lands short, or over-shoots and
+ * strands a gap where it used to be. There is no offset that is right for both
+ * toolbar states. So on iOS the bar **fades** in and out where it stands
+ * instead: no travel to get wrong, no geometry to re-measure, and the reader
+ * still gets the chrome out of their way while they read forward. The trade is
+ * that the page-reader transport above it keeps its slot rather than dropping
+ * into the vacated one.
+ *
  * Two rules this hook keeps, both learned from iOS Safari deciding how tall the
  * page is based on what the page pins to the viewport:
  *
@@ -63,9 +76,9 @@ function prefersReducedMotion() {
  *    Safari reads that as a reason to hold its toolbars open and shorten the
  *    dynamic viewport — the page then stops short of the bottom edge.
  * 2. **A resting bar carries no inline styles at all**, not even a
- *    `translateY(0)`. An identity transform still makes a layer and a stacking
- *    context, so it still counts against rule 1; the reveal clears itself once
- *    it lands.
+ *    `translateY(0)` or an `opacity: 1`. An identity transform still makes a
+ *    layer and a stacking context, so it still counts against rule 1; the reveal
+ *    clears itself once it lands.
  *
  * Like the top bar's hook, everything it drives is written straight to the DOM.
  * Scroll direction flips constantly and re-rendering the shell on each flip
@@ -88,7 +101,8 @@ export const useAnimatedBottomNav = ({
    * whatever floats above it (the page-reader transport) drops into the vacated
    * slot instead of hovering over a gap. Both moves are transforms on the same
    * duration and easing, so they stay locked together. Omit it and only the bar
-   * itself moves.
+   * itself moves. Unused on iOS, where the bar fades in place and nothing
+   * around it moves at all.
    */
   stackTarget?: React.RefObject<HTMLElement | null>;
   /**
@@ -124,12 +138,19 @@ export const useAnimatedBottomNav = ({
 
     const clear = () => {
       nav.style.removeProperty("transform");
+      nav.style.removeProperty("opacity");
+      nav.style.removeProperty("visibility");
       nav.style.removeProperty("transition");
       stack?.style.removeProperty("transform");
       stack?.style.removeProperty("transition");
     };
 
     const reducedMotion = prefersReducedMotion();
+    // Cheap enough to re-read on a direction flip, and reading it here rather
+    // than at render keeps it off the server, where there is no platform to
+    // detect and no DOM to write to anyway.
+    const fade = isIOS();
+    const move = `${animationDuration.slow} ${animationTimingFunction.easeInOut}`;
 
     if (!enabledRef.current || !hidden.current) {
       // Back at rest with nothing to undo, or with no motion to animate: drop
@@ -140,20 +161,41 @@ export const useAnimatedBottomNav = ({
         return;
       }
       // Otherwise animate home and let `transitionend` do the clearing.
-      const transition = `transform ${animationDuration.slow} ${animationTimingFunction.easeInOut}`;
-      nav.style.transition = transition;
+      if (fade) {
+        // Visibility comes back first and undelayed, so the bar is on screen for
+        // the whole fade rather than popping in at the end of it.
+        nav.style.transition = `opacity ${move}`;
+        nav.style.removeProperty("visibility");
+        nav.style.opacity = "1";
+        return;
+      }
+      nav.style.transition = `transform ${move}`;
       nav.style.transform = "translateY(0px)";
       if (stack) {
-        stack.style.transition = transition;
+        stack.style.transition = `transform ${move}`;
         stack.style.transform = "translateY(0px)";
       }
       return;
     }
 
-    const transition =
-      animated.current && !reducedMotion
-        ? `transform ${animationDuration.slow} ${animationTimingFunction.easeInOut}`
+    const animate = animated.current && !reducedMotion;
+
+    if (fade) {
+      // A transparent bar is still a bar: the pill inside it sets
+      // `pointer-events: auto`, which a `none` out here would not override, so
+      // taps would keep landing on a nav the reader cannot see. `visibility`
+      // does cascade — held until the fade finishes so it doesn't cut the
+      // animation off at frame one, and it takes the bar out of the tab order
+      // on arrival for free.
+      nav.style.transition = animate
+        ? `opacity ${move}, visibility 0s linear ${animationDuration.slow}`
         : "none";
+      nav.style.opacity = "0";
+      nav.style.visibility = "hidden";
+      return;
+    }
+
+    const transition = animate ? `transform ${move}` : "none";
     // The stack carries part of the travel, so the bar only owes the remainder —
     // nested transforms compose, and the two together still add up to `distance`.
     nav.style.transition = transition;
@@ -187,8 +229,10 @@ export const useAnimatedBottomNav = ({
         viewportHeight.current = globalThis.innerHeight;
         scrollHeight.current = document.documentElement.scrollHeight;
         // The rest is only truthful while the bar is at rest; hidden geometry is
-        // the transformed geometry, and re-deriving from it would compound.
-        if (hidden.current) return;
+        // the transformed geometry, and re-deriving from it would compound. A
+        // fading bar never moves, so it has no travel to measure in the first
+        // place — and measuring it is exactly the thing iOS gets wrong.
+        if (hidden.current || isIOS()) return;
         const rect = node.getBoundingClientRect();
         const stack = stackTarget?.current;
         // The bar is the stack's last child, so its footprint is its own height
@@ -215,18 +259,26 @@ export const useAnimatedBottomNav = ({
       resizeObserver.observe(document.documentElement);
 
       // Clearing on `transitionend` is what keeps rule 2 — the reveal is the
-      // only write that leaves an identity transform behind, and it undoes it
-      // as soon as it lands.
+      // only write that leaves an identity transform (or an `opacity: 1`)
+      // behind, and it undoes it as soon as it lands.
       const onTransitionEnd = (event: TransitionEvent) => {
-        if (event.target !== node || event.propertyName !== "transform") return;
+        if (event.target !== node) return;
+        if (
+          event.propertyName !== "transform" &&
+          event.propertyName !== "opacity"
+        ) {
+          return;
+        }
         if (hidden.current) return;
         animated.current = false;
         apply();
       };
       node.addEventListener("transitionend", onTransitionEnd);
 
-      // A hidden bar is off-screen but still in the tab order. Bring it back
+      // A slid-away bar is off-screen but still in the tab order. Bring it back
       // rather than let keyboard focus wander somewhere the reader can't see.
+      // (A faded one is `visibility: hidden`, so it is already unreachable and
+      // this never fires for it.)
       const onFocusIn = () => setHidden(false);
       node.addEventListener("focusin", onFocusIn);
 

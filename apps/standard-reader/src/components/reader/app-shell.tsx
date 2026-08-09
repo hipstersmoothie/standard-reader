@@ -434,7 +434,8 @@ const styles = stylex.create({
   },
   // The dock's contents, in normal flow. This is what the hide-on-scroll
   // animation transforms — see the note on `dock`. It owns the row gap because
-  // the animation measures the bar's footprint from it.
+  // the animation measures the bar's footprint from it. Untouched on iOS, where
+  // the bar fades out where it stands instead of sliding away.
   dockStack: {
     alignItems: "center",
     display: "flex",

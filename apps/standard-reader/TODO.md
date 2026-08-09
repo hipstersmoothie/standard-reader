@@ -531,7 +531,10 @@ Build each on hip-ui components + StyleX tokens (no raw HTML/inline styles).
       away and slid back on scroll up (`useAnimatedNavbar`); the bottom tab nav now mirrors
       it downward (`useAnimatedBottomNav`), sliding out through the bottom edge as you read
       forward and coming back on a small scroll up. The dock follows it partway so the page
-      reader transport drops into the vacated slot instead of floating over a gap.
+      reader transport drops into the vacated slot instead of floating over a gap. On iOS
+      the bar fades in and out where it stands instead — Safari's own bottom toolbar resizes
+      the dynamic viewport with the same scroll, so the travel distance is re-decided
+      mid-slide and the bar lands short. Platform check is react-aria's `isIOS()`.
 - [x] **Home** — masthead (date + unread count), featured lead, latest unread rows, right rail (Trending articles + You might follow).
 - [x] **Latest** — chronological list, segmented Unread / Subscriptions / All-network filter with counts (Unread = unread docs from subs, Subscriptions = all docs from subs, All = whole network).
 - [x] **Discover** — Trending / Topics / Recommended / Followed-by-people-you-follow / All (chips, sort, grid⇄list toggle).
