@@ -19,15 +19,20 @@ import {
 import * as stylex from "@stylexjs/stylex";
 import { useSuspenseInfiniteQuery } from "@tanstack/react-query";
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
-import { ArrowDownWideNarrow } from "lucide-react";
+import { ArrowDown, ArrowDownWideNarrow, ArrowUp } from "lucide-react";
 import { useCallback } from "react";
 import type { Selection } from "react-aria-components";
 import { z } from "zod";
 
 import { ButtonLink } from "#/components/router-links";
-import type { SavedSort } from "#/integrations/tanstack-query/api-reader.functions";
+import type {
+  SavedSort,
+  SavedSortDirection,
+} from "#/integrations/tanstack-query/api-reader.functions";
 import {
+  defaultSavedSortDirection,
   readerApi,
+  SAVED_SORT_DIRECTIONS,
   SAVED_SORT_VALUES,
 } from "#/integrations/tanstack-query/api-reader.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
@@ -41,6 +46,10 @@ import { ReaderQueueRows } from "../components/reader/reader-queue-rows";
 
 const savedSearchSchema = z.object({
   sort: z.enum(SAVED_SORT_VALUES).default("added"),
+  /** Left out of the URL until the reader flips a field off its natural
+   * direction, so a chosen direction carries across a change of field but an
+   * untouched one still follows the field (dates newest-first, names A–Z). */
+  dir: z.enum(SAVED_SORT_DIRECTIONS).optional(),
 });
 
 type SavedSearch = z.infer<typeof savedSearchSchema>;
@@ -52,9 +61,23 @@ const SAVED_SORT_OPTIONS = [
   { id: "title", label: msg`Title` },
 ] as const;
 
+/** What a direction is called depends on what the field ranks — "newest first"
+ * for a date, "A–Z" for a name. */
+const SAVED_SORT_RANKS: Record<SavedSort, "date" | "text"> = {
+  added: "date",
+  published: "date",
+  publication: "text",
+  title: "text",
+};
+
+const SAVED_DIRECTION_LABELS = {
+  date: { asc: msg`Oldest first`, desc: msg`Newest first` },
+  text: { asc: msg`A–Z`, desc: msg`Z–A` },
+} as const;
+
 export const Route = createFileRoute("/_layout/saved")({
   validateSearch: savedSearchSchema,
-  loaderDeps: ({ search }) => ({ sort: search.sort }),
+  loaderDeps: ({ search }) => ({ sort: search.sort, dir: search.dir }),
   beforeLoad: async ({ context }) => {
     const session = await context.queryClient.ensureQueryData(
       user.getSessionQueryOptions,
@@ -68,7 +91,10 @@ export const Route = createFileRoute("/_layout/saved")({
   },
   loader: async ({ context, deps }) => {
     await context.queryClient.ensureInfiniteQueryData(
-      readerApi.getSavedInfiniteQueryOptions({ sort: deps.sort }),
+      readerApi.getSavedInfiniteQueryOptions({
+        sort: deps.sort,
+        dir: deps.dir,
+      }),
     );
   },
   head: () => ({
@@ -143,10 +169,13 @@ const styles = stylex.create({
 
 function ReaderSaved() {
   const { t, i18n } = useLingui();
-  const { sort } = Route.useSearch();
+  const { sort, dir } = Route.useSearch();
+  const direction = dir ?? defaultSavedSortDirection(sort);
   const navigate = useNavigate({ from: Route.fullPath });
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =
-    useSuspenseInfiniteQuery(readerApi.getSavedInfiniteQueryOptions({ sort }));
+    useSuspenseInfiniteQuery(
+      readerApi.getSavedInfiniteQueryOptions({ sort, dir: direction }),
+    );
 
   const saved = data.pages.flatMap((page) => page.items);
   const total = data.pages[0]?.total ?? 0;
@@ -181,9 +210,24 @@ function ReaderSaved() {
     onSortChange([...keys][0] ?? null);
   };
 
+  const flipDirection = () => {
+    const next: SavedSortDirection = direction === "asc" ? "desc" : "asc";
+    void navigate({
+      replace: true,
+      resetScroll: false,
+      search: (prev: SavedSearch) => ({ ...prev, dir: next }),
+    });
+  };
+
+  const directionLabels = SAVED_DIRECTION_LABELS[SAVED_SORT_RANKS[sort]];
+  /** The button names what it will do, and shows what is true now. */
+  const flipLabel = i18n._(
+    direction === "asc" ? directionLabels.desc : directionLabels.asc,
+  );
+
   const sortControl =
     total === 0 ? undefined : (
-      <>
+      <Flex direction="row" gap="sm" align="center">
         <div {...stylex.props(styles.sortSlotCompact)}>
           <Menu
             placement="bottom end"
@@ -229,7 +273,22 @@ function ReaderSaved() {
             ))}
           </Select>
         </div>
-      </>
+
+        {/* Sits outside the breakpoint slots: an icon button is already as
+            compact as it gets, so it rides along with either control. */}
+        <IconButton
+          size="md"
+          variant="secondary"
+          label={flipLabel}
+          onPress={flipDirection}
+        >
+          {direction === "asc" ? (
+            <ArrowUp size={16} />
+          ) : (
+            <ArrowDown size={16} />
+          )}
+        </IconButton>
+      </Flex>
     );
 
   return (

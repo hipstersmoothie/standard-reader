@@ -2047,6 +2047,7 @@ msgid "{total, plural, one {# match} other {# matches}}"
 msgstr "{total, plural, one {# résultat} other {# résultats}}"
 
 #: src/components/reader/publication-actions.tsx
+#: src/routes/_layout.saved.tsx
 msgid "Newest first"
 msgstr ""
 
@@ -4320,6 +4321,10 @@ msgstr ""
 msgid "{0, plural, one {# feature} other {# features}}"
 msgstr "{0, plural, one {# fonctionnalité} other {# fonctionnalités}}"
 
+#: src/routes/_layout.saved.tsx
+msgid "Z–A"
+msgstr ""
+
 #: src/routes/_layout.p.$did.$rkey.tsx
 msgid "Last active"
 msgstr "Dernière activité"
@@ -4467,6 +4472,7 @@ msgstr ""
 #~ msgstr ""
 
 #: src/components/reader/publication-actions.tsx
+#: src/routes/_layout.saved.tsx
 msgid "Oldest first"
 msgstr ""
 
@@ -6172,6 +6178,7 @@ msgstr ""
 #: src/components/reader/app-shell.tsx
 #: src/components/reader/subscriptions-sheet.tsx
 #: src/routes/_layout.discover.tsx
+#: src/routes/_layout.saved.tsx
 #: src/routes/_layout.tag.$tag.tsx
 #: src/routes/_layout.topics.$slug.tsx
 msgid "A–Z"

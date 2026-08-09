@@ -581,6 +581,9 @@ comic issue with no pages falls back to it outright.
 - Signed-in reader's **save queue** (`app.standard-reader.bookmark`), newest-saved first by default.
 - Sortable via `?sort=` — date saved (default), published date, publication (alphabetical), or
   title (alphabetical); Menu (compact) / Select (full) control, mirroring `/tag`'s article sort.
+- Reversible via `?dir=` — an icon button beside the sort control flips the order. Each field runs
+  its natural way until flipped (dates newest-first, names A–Z), and the direction is named for
+  what it ranks: "Newest first" / "Oldest first" for dates, "A–Z" / "Z–A" for names.
 - Route `/saved`; linked from the sidebar (with saved count badge). Requires auth (redirects to login).
 
 ### Reader profile (liked articles)

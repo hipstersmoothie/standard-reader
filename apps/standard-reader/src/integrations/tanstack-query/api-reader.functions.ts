@@ -100,8 +100,23 @@ export const SAVED_SORT_VALUES = [
 ] as const;
 export type SavedSort = (typeof SAVED_SORT_VALUES)[number];
 
+/** Which way a {@link SavedSort} runs. */
+export const SAVED_SORT_DIRECTIONS = ["desc", "asc"] as const;
+export type SavedSortDirection = (typeof SAVED_SORT_DIRECTIONS)[number];
+
+/**
+ * The direction a field runs in until the reader flips it: dates read
+ * newest-first, names read A–Z. Callers resolve the direction through this so
+ * an implicit and an explicit "newest first" are the same query.
+ */
+export function defaultSavedSortDirection(sort: SavedSort): SavedSortDirection {
+  return sort === "publication" || sort === "title" ? "asc" : "desc";
+}
+
 const savedListInput = readerListInput.extend({
   sort: z.enum(SAVED_SORT_VALUES).default("added"),
+  /** Absent means "whatever this field's natural direction is". */
+  dir: z.enum(SAVED_SORT_DIRECTIONS).optional(),
 });
 
 /** One offset page of a personal reader queue (likes, saved, history). */
@@ -1017,8 +1032,9 @@ const getBookmarkStatus = createServerFn({ method: "GET" })
   );
 
 /**
- * `ORDER BY` for a {@link SavedSort}. Every ranking carries a stable tiebreak
- * (`bookmarks.uri`) so pagination never mixes or drops rows across pages.
+ * `ORDER BY` for a {@link SavedSort} run in `direction`. Every ranking carries
+ * a stable tiebreak (`bookmarks.uri`) so pagination never mixes or drops rows
+ * across pages.
  *
  * Bookmark lists are scoped to one reader (small, per-user data — not a
  * network-wide feed), so unlike the feed-scale orderings in
@@ -1027,27 +1043,37 @@ const getBookmarkStatus = createServerFn({ method: "GET" })
  * composite indexes.
  * NULLS LAST is spelled out (not Drizzle's bare `desc()`, which emits NULLS
  * FIRST) so left-joined rows for a deleted/missing document sort to the end
- * instead of the top.
+ * instead of the top. It stays LAST in *both* directions: a bookmark whose
+ * document is gone has no title or published date to rank by, so flipping the
+ * order must not float it to the top.
  */
-function savedOrderBy(schema: Schema, sort: SavedSort): Array<SQL> {
+function savedOrderBy(
+  schema: Schema,
+  sort: SavedSort,
+  direction: SavedSortDirection,
+): Array<SQL> {
   const b = schema.bookmarks;
   const d = schema.documents;
   const p = schema.publications;
+  const dir = direction === "asc" ? sql`asc` : sql`desc`;
+  const tiebreak = direction === "asc" ? asc(b.uri) : desc(b.uri);
 
   if (sort === "published") {
-    return [sql`${d.publishedAt} desc nulls last`, desc(b.uri)];
+    return [sql`${d.publishedAt} ${dir} nulls last`, tiebreak];
   }
   if (sort === "publication") {
+    // Only the grouping flips — articles stay newest-first inside each
+    // publication either way, which is what the group is read for.
     return [
-      asc(publicationSortNameSql(p.name, p.url)),
+      sql`${publicationSortNameSql(p.name, p.url)} ${dir} nulls last`,
       sql`${d.publishedAt} desc nulls last`,
-      desc(b.uri),
+      tiebreak,
     ];
   }
   if (sort === "title") {
-    return [sql`lower(${d.title}) asc nulls last`, desc(b.uri)];
+    return [sql`lower(${d.title}) ${dir} nulls last`, tiebreak];
   }
-  return [sql`${b.createdAt} desc nulls last`, desc(b.uri)];
+  return [sql`${b.createdAt} ${dir} nulls last`, tiebreak];
 }
 
 const getSaved = createServerFn({ method: "GET" })
@@ -1059,10 +1085,12 @@ const getSaved = createServerFn({ method: "GET" })
       if (!did) {
         return buildReaderListPage<SavedArticleItem>([], data.offset, 0);
       }
+      const direction = data.dir ?? defaultSavedSortDirection(data.sort);
       span.set("did", did);
       span.set("limit", data.limit);
       span.set("offset", data.offset);
       span.set("sort", data.sort);
+      span.set("dir", direction);
 
       const b = context.schema.bookmarks;
       const d = context.schema.documents;
@@ -1090,11 +1118,12 @@ const getSaved = createServerFn({ method: "GET" })
           .leftJoin(pr, eq(pr.did, p.did))
           .leftJoin(pa, eq(pa.did, d.did))
           .where(where)
-          // The "added" (default) sort matches `bookmarks_owner_idx` (owner_did,
-          // created_at DESC NULLS LAST); see getReadingHistory for why bare
-          // `desc()` is slow. Other sorts filter via that same index, then sort
-          // in memory — see savedOrderBy.
-          .orderBy(...savedOrderBy(context.schema, data.sort))
+          // The "added" sort in its default direction matches
+          // `bookmarks_owner_idx` (owner_did, created_at DESC NULLS LAST); see
+          // getReadingHistory for why bare `desc()` is slow. Every other
+          // sort/direction pair filters via that same index, then sorts in
+          // memory — see savedOrderBy.
+          .orderBy(...savedOrderBy(context.schema, data.sort, direction))
           .limit(data.limit)
           .offset(data.offset),
       ]);
@@ -1367,12 +1396,20 @@ function getLikesInfiniteQueryOptions({
 
 function getSavedInfiniteQueryOptions({
   sort = "added",
+  dir,
   limit = READER_QUEUE_PAGE_SIZE,
-}: { sort?: SavedSort; limit?: number } = {}) {
+}: {
+  sort?: SavedSort;
+  dir?: SavedSortDirection;
+  limit?: number;
+} = {}) {
+  // Resolved here, not in the key builder's caller, so `/saved?sort=added` and
+  // `/saved?sort=added&dir=desc` share one cache entry instead of refetching.
+  const direction = dir ?? defaultSavedSortDirection(sort);
   return infiniteQueryOptions({
-    queryKey: ["reader", "saved", sort, limit] as const,
+    queryKey: ["reader", "saved", sort, direction, limit] as const,
     queryFn: async ({ pageParam }) =>
-      getSaved({ data: { sort, limit, offset: pageParam } }),
+      getSaved({ data: { sort, dir: direction, limit, offset: pageParam } }),
     initialPageParam: 0,
     getNextPageParam: (lastPage) => lastPage.nextOffset ?? undefined,
   });

@@ -1280,6 +1280,11 @@ not offline body cache). Route slug **`/saved`**.
       title), mirroring `/tag`'s article-sort Menu+Select control; `savedOrderBy` in
       [`api-reader.functions.ts`](src/integrations/tanstack-query/api-reader.functions.ts), sort
       included in the infinite-query key so paging never mixes sort orders.
+- [x] **Saved queue sort direction** — `?dir=asc|desc` beside `?sort=`, flipped by an icon button
+      next to the sort control. Absent from the URL until the reader flips it, so each field keeps
+      its natural direction (dates newest-first, names A–Z) via `defaultSavedSortDirection`; an
+      explicit choice carries across a change of field. NULLS stay LAST in both directions so a
+      bookmark whose document is gone never floats to the top.
 - [x] **Reading history** — `/history` queue backed by existing
       `app.standard-reader.read` / `reads` table (no new lexicon); `readerApi.getReadingHistory` + user-menu link + empty state; infinite scroll (20 per page). Update [`APP_VISION.md`](APP_VISION.md) when landing.
 - [x] **Track reading history setting** — user-menu toggle (cookie + `user.track_reading_history`);
