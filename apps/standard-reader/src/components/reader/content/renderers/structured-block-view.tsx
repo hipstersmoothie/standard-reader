@@ -71,11 +71,14 @@ export function StructuredBlockView({
   blobContext,
   codeHighlights,
   dropCap = false,
+  nested = false,
 }: {
   block: StructuredRenderableBlock;
   blobContext?: ContentBlobContext;
   codeHighlights?: CodeHighlightsByScheme;
   dropCap?: boolean;
+  /** Set when this block sits inside a list item rather than the article flow. */
+  nested?: boolean;
 }) {
   /** Lists nest; their children are ordinary blocks, rendered right back here. */
   const renderNested = (child: StructuredRenderableBlock, index: number) => (
@@ -84,6 +87,7 @@ export function StructuredBlockView({
       block={child}
       blobContext={blobContext}
       codeHighlights={codeHighlights}
+      nested
     />
   );
 
@@ -128,6 +132,7 @@ export function StructuredBlockView({
       return (
         <StructuredBulletListView
           items={block.items}
+          nested={nested}
           renderChildBlock={renderNested}
         />
       );
@@ -136,6 +141,7 @@ export function StructuredBlockView({
       return (
         <StructuredOrderedListView
           items={block.items}
+          nested={nested}
           renderChildBlock={renderNested}
           start={block.start}
         />
