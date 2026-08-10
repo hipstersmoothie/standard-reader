@@ -19,6 +19,7 @@
 import { parseDidKey, verifySignature } from "@atproto/crypto";
 import * as dagCbor from "@ipld/dag-cbor";
 
+import { didWebDocumentUrl } from "#/lib/atproto/did-web";
 import { assertSafeFetchUrl } from "#/server/security/ssrf-guard";
 
 import type { DisplayLabel } from "./labels.server.ts";
@@ -67,8 +68,9 @@ async function fetchDidDoc(did: string): Promise<DidDocument | null> {
   if (did.startsWith("did:plc:")) {
     url = `${PLC_URL}/${encodeURIComponent(did)}`;
   } else if (did.startsWith("did:web:")) {
-    const host = did.slice("did:web:".length).replaceAll(":", "/");
-    url = `https://${host}/.well-known/did.json`;
+    const docUrl = didWebDocumentUrl(did);
+    if (!docUrl) return null;
+    url = docUrl;
     // did:web host comes from a record we indexed — validate before fetching so
     // a hostile registration can't point us at internal infrastructure.
     try {

@@ -192,8 +192,13 @@ async function resolveDid(
   if (did.startsWith("did:plc:")) {
     document = await fetchJson(`${PLC_DIRECTORY}/${did}`);
   } else if (did.startsWith("did:web:")) {
-    const host = did.slice("did:web:".length).replaceAll(":", "/");
-    document = await fetchJson(`https://${host}/.well-known/did.json`);
+    // Colons encode path segments, and a path-bearing did:web puts `did.json`
+    // directly under that path rather than in `/.well-known/`.
+    const [host, ...path] = did.slice("did:web:".length).split(":");
+    if (!host) throw new CliError(`Malformed did:web: ${did}`);
+    const suffix =
+      path.length > 0 ? `/${path.join("/")}/did.json` : "/.well-known/did.json";
+    document = await fetchJson(`https://${decodeURIComponent(host)}${suffix}`);
   } else {
     throw new CliError(`Unsupported DID method: ${did}`);
   }

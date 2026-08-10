@@ -1482,6 +1482,26 @@ cookies on `/xrpc`. Live developer docs at [`/docs/api`](/docs/api).
       field (app-password sessions, which grant unrestricted repo access) was coerced to `[]`,
       403-ing every scoped write. `scopes` is now `Array<string> | null`, where `null` means "no
       scope restriction to enforce". Covered by `src/server/xrpc/auth.test.ts`.
+- [x] **The PDS-proxy path was unusable for everyone** — reported by `mihaizaurus.at` on
+      [userinput.app](https://userinput.app/d/did:plc:7qubw2z53qzfturlblaozz4a/3msqg3okp3kc7),
+      two independent bugs on the same path. (1) `appviewDid()` percent-swapped the host's dots
+      for colons, publishing `did:web:standard-reader:app` — which per the did:web spec names the
+      host `standard-reader` with a path segment `app`. A spec-compliant PDS either failed to
+      fetch that location or, given the corrected dot-form, fetched the real document and
+      rejected it on the self-consistency check, since its `id` still said the colon form. Both
+      show up as a 500 from the caller's own PDS, before the request ever reaches us. (2) With
+      the DID fixed, `verifyServiceJwt` would still have rejected every proxied call with
+      `BadJwtAudience`: it required `did#fragment` as the JWT audience, but `pipethrough` signs
+      with the **bare DID** and keeps the fragment form only for matching OAuth `rpc:` scopes.
+      Both forms are now accepted, and nothing else. Covered by `config.test.ts` +
+      `auth.test.ts`; the docs page now also states the proxy path serves reads, not writes.
+- [x] **did:web path segments resolved to the wrong URL everywhere** — the same class of bug in
+      all four DID-document resolvers: colons were mapped to `.` (`xrpc/auth.ts`) or to `/` but
+      with `/.well-known/` still appended (`atproto/identity.ts`, `labeler/verify.server.ts`,
+      `packages/cli`). A path-bearing `did:web:example.com:user:alice` resolves to
+      `https://example.com/user/alice/did.json` — no `/.well-known/`. Extracted to
+      `src/lib/atproto/did-web.ts` (`didWebDocumentUrl`) with tests; the CLI keeps its own copy
+      since it cannot import `#/`.
 
 ### Remote MCP server (`/mcp`)
 
