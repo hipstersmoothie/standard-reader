@@ -2696,6 +2696,7 @@ msgstr ""
 msgid "Clear selection"
 msgstr ""
 
+#: src/components/reader/author-actions.tsx
 #: src/components/reader/publication-actions.tsx
 #: src/components/reader/rss-feed-button.tsx
 #: src/routes/_layout.l.$did.$rkey.tsx
@@ -3239,6 +3240,7 @@ msgstr ""
 
 #: src/components/reader/add-to-list-button.tsx
 #: src/components/reader/add-to-list-modal.tsx
+#: src/components/reader/author-actions.tsx
 #: src/components/reader/publication-actions.tsx
 #: src/components/reader/subscriptions-table.tsx
 msgid "Add to list"
@@ -3758,6 +3760,7 @@ msgid "The <0>Connected apps</0> section of settings lists anything signed in to
 msgstr ""
 
 #: src/components/reader/article-view.tsx
+#: src/components/reader/author-actions.tsx
 #: src/components/reader/publication-actions.tsx
 #: src/routes/_layout.l.$did.$rkey.tsx
 msgid "More actions"
@@ -3939,6 +3942,7 @@ msgid "Standard Reader emits these on its own article, publication, collection, 
 msgstr ""
 
 #: src/components/reader/add-to-list-button.tsx
+#: src/components/reader/author-actions.tsx
 msgid "No lists yet"
 msgstr ""
 
@@ -4976,8 +4980,8 @@ msgstr ""
 msgid "Use the <0>at:</0> meta tags — the convention the Atmosphere settled on in 2026. <1>at:canonical</1> names the records the page is made of, the ones it would have no reason to exist without. <2>at:alternate</2> names records the page merely shows — the publication a document belongs to, a companion Bluesky post. <3>at:author</3> names the identity that wrote it. Every name repeats, so a page with two alternates emits two tags."
 msgstr ""
 
+#: src/components/reader/author-actions.tsx
 #: src/components/reader/profile-tabs-settings-modal.tsx
-#: src/routes/_layout.u.$did.tsx
 msgid "Profile settings"
 msgstr ""
 
@@ -6572,6 +6576,7 @@ msgstr ""
 msgid "Wander the directory"
 msgstr ""
 
+#: src/components/reader/author-actions.tsx
 #: src/routes/_layout.u.$did.tsx
 msgid "View on Bluesky"
 msgstr ""
@@ -6652,6 +6657,7 @@ msgstr ""
 msgid "Tap the bookmark on any article to save it here. Your queue lives in your repo as <0>app.standard-reader.bookmark</0> records in your repo."
 msgstr ""
 
+#: src/components/reader/author-actions.tsx
 #: src/components/reader/sifa-resume-chip.tsx
 msgid "Resume"
 msgstr ""
