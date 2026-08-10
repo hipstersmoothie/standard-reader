@@ -1,6 +1,6 @@
 "use client";
 
-import { Trans, useLingui } from "@lingui/react/macro";
+import { Plural, Trans, useLingui } from "@lingui/react/macro";
 import { Avatar } from "@standard-reader/design-system/avatar";
 import { Badge } from "@standard-reader/design-system/badge";
 import { Button } from "@standard-reader/design-system/button";
@@ -120,7 +120,11 @@ function BlockListItem({
             {row.name ?? t`Moderation list`}
           </span>
           <span {...stylex.props(styles.rowMeta)}>
-            <Trans>{row.memberCount} accounts</Trans>
+            <Plural
+              value={row.memberCount}
+              one="# account"
+              other="# accounts"
+            />
           </span>
         </span>
       </span>
