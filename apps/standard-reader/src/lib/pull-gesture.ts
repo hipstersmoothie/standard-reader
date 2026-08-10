@@ -13,8 +13,12 @@ export const MAX_PULL = 120;
 /** Damped distance at which letting go commits to a refresh. */
 export const PULL_THRESHOLD = 64;
 
-/** Where the indicator parks while the refresh runs. */
-export const PULL_REST = 56;
+/**
+ * How far the page stays held open while the refresh runs. Wide enough to clear
+ * the 44px chip centred in it with room on either side, so the spinner reads as
+ * sitting in a gap the page opened rather than wedged into it.
+ */
+export const PULL_REST = 68;
 
 /**
  * Movement shorter than this is still ambiguous — it could become a scroll, a

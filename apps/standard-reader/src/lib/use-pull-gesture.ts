@@ -27,18 +27,28 @@ const MIN_SPIN_MS = 550;
 const MAX_SPIN_MS = 10_000;
 
 /**
- * How long the indicator takes to travel back out of frame. Must match the
- * duration token in {@link SETTLE_TRANSITION} — the timer exists only to strip
- * the inline styles once the transition it describes has finished.
+ * How long the page takes to travel back to rest. Must match the duration token
+ * in {@link SETTLE_TRANSITION} — the timer exists only to strip the inline
+ * styles once the transition it describes has finished.
  */
-const SETTLE_MS = 200;
+const SETTLE_MS = 150;
 
-const PARK_TRANSITION = `transform ${animationDuration.slow} ${animationTimingFunction.easeSpring}, opacity ${animationDuration.fast} linear`;
-// The park has a spring because the chip is arriving somewhere and staying;
-// the settle is an exit and just gets out of the way.
-const SETTLE_TRANSITION = `transform ${animationDuration.slow} ${animationTimingFunction.easeOut}, opacity ${animationDuration.slow} linear`;
+// Both decelerate; neither overshoots. A spring on the park was fine when this
+// moved a 44px chip, but it now carries the whole content column — a bounce at
+// that size reads as the page wobbling, not as a flourish. Arrival and exit are
+// told apart by duration instead: the park settles into place, the settle is
+// just getting out of the way.
+const PARK_TRANSITION = `transform ${animationDuration.slow} ${animationTimingFunction.easeOut}, opacity ${animationDuration.fast} linear`;
+const SETTLE_TRANSITION = `transform ${animationDuration.default} ${animationTimingFunction.easeOut}, opacity ${animationDuration.default} linear`;
 
 export type PullPhase = "idle" | "pulling" | "armed" | "refreshing";
+
+/**
+ * The chip's rendered size, for centring it in the gap the pull opens. Read off
+ * the element where possible — this is only the fallback for the first frame and
+ * for environments that don't lay anything out.
+ */
+const CHIP_SIZE = 44;
 
 /** Surfaces that own their own touch handling and must never be pulled from. */
 const IGNORED_ANCESTORS =
@@ -64,6 +74,11 @@ function scrollIsLocked(): boolean {
  * The pull-to-refresh gesture, for a page whose scroll container is the
  * document.
  *
+ * The page comes with the finger: `contentRef`'s element is translated down by
+ * the damped pull distance, and the indicator rides the gap that opens above it
+ * — the same direct manipulation the gesture has on any phone, rather than a
+ * chip floating over a page that never moves.
+ *
  * Only the *phase* lives in React state — it changes a handful of times per
  * gesture. The pull distance is written straight to the DOM every frame the
  * finger moves, the way the shell's other scroll-driven chrome does it: routing
@@ -75,9 +90,15 @@ function scrollIsLocked(): boolean {
  * carries a scroll-blocking listener it isn't using.
  */
 export function usePullGesture({
+  contentRef,
   enabled,
   onRefresh,
 }: {
+  /**
+   * The page content to pull. Everything below the gesture's indicator that
+   * should travel with the finger — on the reader shell, the content column.
+   */
+  contentRef: React.RefObject<HTMLElement | null>;
   /** Off on desktop, and off while no page has registered a refresh. */
   enabled: boolean;
   /** Resolves when the page's data has been refetched. */
@@ -99,34 +120,64 @@ export function usePullGesture({
     setPhase(next);
   }, []);
 
-  /** Position the indicator. `transition` is a CSS value, or `null` for none. */
-  const write = useCallback((distance: number, transition: string | null) => {
-    const chip = chipRef.current;
-    if (!chip) return;
-    const progress = pullProgress(distance);
-    chip.style.transition =
-      transition === null || prefersReducedMotion() ? "none" : transition;
-    // Scale and fade in together so the chip grows into the gap the pull opens
-    // rather than sliding out from under the top bar it would otherwise overlap.
-    chip.style.transform = `translate3d(0, ${distance.toFixed(1)}px, 0) scale(${(
-      0.72 +
-      0.28 * progress
-    ).toFixed(3)})`;
-    chip.style.opacity = Math.min(1, progress * 1.4).toFixed(3);
+  /**
+   * Move the page and the indicator to `distance`. `transition` is a CSS value,
+   * or `null` for none — while the finger is down every frame is a fresh
+   * position and a transition would only lag behind it.
+   */
+  const write = useCallback(
+    (distance: number, transition: string | null) => {
+      const motion =
+        transition === null || prefersReducedMotion() ? "none" : transition;
 
-    // While the finger is down the icon tracks the pull. Once the refresh starts
-    // a keyframe animation owns the rotation and an inline transform fights it.
-    const icon = iconRef.current;
-    if (icon)
-      icon.style.transform = `rotate(${(progress * 260).toFixed(1)}deg)`;
-  }, []);
+      // The page itself. This is the gesture — the chip below is only a read-out
+      // of how far it has come.
+      const content = contentRef.current;
+      if (content) {
+        content.style.transition = motion;
+        content.style.transform = `translate3d(0, ${distance.toFixed(1)}px, 0)`;
+      }
+
+      const chip = chipRef.current;
+      if (!chip) return;
+      const progress = pullProgress(distance);
+      chip.style.transition = motion;
+      // Centred in the gap: the chip travels at half the page's speed, so it
+      // stays in the middle of the opening rather than riding its bottom edge.
+      // Below ~half its own height it is still tucked behind the top bar, which
+      // paints over this lane.
+      const chipY = distance / 2 - (chip.offsetHeight || CHIP_SIZE) / 2;
+      // Scale and fade in together so the chip grows into the gap rather than
+      // arriving at full size the moment it clears the bar.
+      chip.style.transform = `translate3d(0, ${chipY.toFixed(1)}px, 0) scale(${(
+        0.72 +
+        0.28 * progress
+      ).toFixed(3)})`;
+      chip.style.opacity = Math.min(1, progress * 1.4).toFixed(3);
+
+      // While the finger is down the icon tracks the pull. A full turn, not a
+      // partial one: at the threshold the icon is back where it started, so
+      // when the keyframe spinner takes over — and this inline transform is
+      // dropped, since the two would fight — nothing visibly snaps back.
+      const icon = iconRef.current;
+      if (icon)
+        icon.style.transform = `rotate(${(progress * 360).toFixed(1)}deg)`;
+    },
+    [contentRef],
+  );
 
   /**
-   * Drop every inline style the gesture wrote. A resting chip carries none — an
-   * identity transform is still a compositing layer, and this one would sit
-   * there for the whole session on a surface used a second at a time.
+   * Drop every inline style the gesture wrote. A page at rest carries none — an
+   * identity transform is still a compositing layer, and leaving one on the
+   * whole content column would cost that for the rest of the session over a
+   * gesture used a second at a time.
    */
   const clear = useCallback(() => {
+    const content = contentRef.current;
+    if (content) {
+      content.style.removeProperty("transform");
+      content.style.removeProperty("transition");
+    }
     const chip = chipRef.current;
     if (chip) {
       chip.style.removeProperty("transform");
@@ -134,7 +185,7 @@ export function usePullGesture({
       chip.style.removeProperty("transition");
     }
     iconRef.current?.style.removeProperty("transform");
-  }, []);
+  }, [contentRef]);
 
   useEffect(() => {
     if (!enabled) return;

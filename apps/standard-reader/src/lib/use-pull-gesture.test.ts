@@ -36,16 +36,20 @@ const PAST_THRESHOLD = 140;
 
 function setup({ enabled = true }: { enabled?: boolean } = {}) {
   const onRefresh = vi.fn(async () => "refreshed");
-  const rendered = renderHook(() => usePullGesture({ enabled, onRefresh }));
-  // The hook writes to whatever the caller rendered; stand in for the indicator.
+  // The page the gesture drags. The hook writes to whatever the caller
+  // rendered; these stand in for the shell's content column and indicator.
+  const contentRef = { current: document.createElement("div") };
+  const rendered = renderHook(() =>
+    usePullGesture({ contentRef, enabled, onRefresh }),
+  );
   rendered.result.current.chipRef.current = document.createElement("div");
   rendered.result.current.iconRef.current = document.createElement("span");
-  return { ...rendered, onRefresh };
+  return { ...rendered, content: contentRef.current, onRefresh };
 }
 
 /** The `translate3d(0, Npx, 0)` the gesture wrote, or null while at rest. */
-function writtenOffset(chip: HTMLElement | null): number | null {
-  const match = chip?.style.transform.match(/translate3d\(0, ([\d.]+)px/);
+function writtenOffset(element: HTMLElement | null): number | null {
+  const match = element?.style.transform.match(/translate3d\(0, ([\d.]+)px/);
   return match?.[1] === undefined ? null : Number(match[1]);
 }
 
@@ -83,7 +87,7 @@ describe("usePullGesture", () => {
   });
 
   it("arms once the pull crosses the threshold and refreshes on release", async () => {
-    const { onRefresh, result } = setup();
+    const { content, onRefresh, result } = setup();
 
     dispatch("touchstart", [{ y: 100 }]);
     dispatch("touchmove", [{ y: 120 }]);
@@ -92,12 +96,18 @@ describe("usePullGesture", () => {
 
     dispatch("touchmove", [{ y: 100 + PAST_THRESHOLD }]);
     expect(result.current.phase).toBe("armed");
-    // The indicator has been moved, and by less than the finger travelled —
-    // that difference is the rubber-banding.
-    const offset = writtenOffset(result.current.chipRef.current);
+    // The page has come with the finger, and by less than the finger travelled
+    // — that difference is the rubber-banding.
+    const offset = writtenOffset(content);
     expect(offset).not.toBeNull();
     expect(offset).toBeGreaterThan(64);
     expect(offset).toBeLessThan(PAST_THRESHOLD);
+    // The chip rides the gap that opened, so it sits inside it — never past the
+    // content's new top edge.
+    const chipOffset = writtenOffset(result.current.chipRef.current);
+    expect(chipOffset).not.toBeNull();
+    expect(chipOffset).toBeGreaterThan(0);
+    expect(chipOffset).toBeLessThan(offset as number);
 
     dispatch("touchend", [{ y: 100 + PAST_THRESHOLD }]);
     expect(onRefresh).toHaveBeenCalledTimes(1);
@@ -120,10 +130,14 @@ describe("usePullGesture", () => {
     });
     expect(result.current.chipRef.current?.style.transform).toBe("");
     expect(result.current.chipRef.current?.style.opacity).toBe("");
+    // Nothing left on the page either — a leftover identity transform would
+    // hold the whole content column on its own compositing layer.
+    expect(content.style.transform).toBe("");
+    expect(content.style.transition).toBe("");
   });
 
   it("snaps back without refreshing when the pull is too short", () => {
-    const { onRefresh, result } = setup();
+    const { content, onRefresh, result } = setup();
 
     dispatch("touchstart", [{ y: 100 }]);
     dispatch("touchmove", [{ y: 130 }]);
@@ -131,7 +145,7 @@ describe("usePullGesture", () => {
 
     expect(onRefresh).not.toHaveBeenCalled();
     expect(result.current.phase).toBe("idle");
-    expect(writtenOffset(result.current.chipRef.current)).toBe(0);
+    expect(writtenOffset(content)).toBe(0);
   });
 
   it("leaves horizontal swipes to the page", () => {

@@ -1,18 +1,21 @@
 "use client";
 
 import { useLingui } from "@lingui/react/macro";
-import { animationDuration } from "@standard-reader/design-system/theme/animations.stylex";
+import {
+  animationDuration,
+  animationTimingFunction,
+} from "@standard-reader/design-system/theme/animations.stylex";
 import {
   primaryColor,
   uiColor,
 } from "@standard-reader/design-system/theme/color.stylex";
+import { mediaQueries } from "@standard-reader/design-system/theme/media-queries.stylex";
 import { radius } from "@standard-reader/design-system/theme/radius.stylex";
 import { size } from "@standard-reader/design-system/theme/semantic-spacing.stylex";
-import { shadow } from "@standard-reader/design-system/theme/shadow.stylex";
 import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
 import * as stylex from "@stylexjs/stylex";
 import { useQueryClient } from "@tanstack/react-query";
-import { useRouter } from "@tanstack/react-router";
+import { rootRouteId, useRouter } from "@tanstack/react-router";
 import { RefreshCw } from "lucide-react";
 import {
   createContext,
@@ -24,6 +27,7 @@ import {
   useSyncExternalStore,
 } from "react";
 
+import { isShellQuery } from "#/integrations/tanstack-query/shell-queries";
 import { useCompactNav } from "#/lib/use-media-query";
 import { usePullGesture } from "#/lib/use-pull-gesture";
 
@@ -90,10 +94,15 @@ export function PullToRefreshProvider({
 }
 
 /**
- * Refetch whatever the page is currently showing: the route's loaders plus every
- * query mounted under it, which on this app also covers the shell's own unread
- * counts and subscription list. Scroll position and local UI state survive,
- * which a document reload would not.
+ * Refetch what the page is showing, and only that: the route's own loaders plus
+ * the queries it mounted. Scroll position and local UI state survive, which a
+ * document reload would not.
+ *
+ * The shell is deliberately left alone. Its loaders re-fetch the session and
+ * every saved preference, and its queries back the sidebar — none of which is
+ * what a reader is asking for when they pull down on a feed, and all of which
+ * costs a round trip they wait on. `isShellQuery` and the two shell route ids
+ * below are the whole boundary.
  */
 function useDefaultRefresh(): RefreshHandler {
   const router = useRouter();
@@ -101,12 +110,20 @@ function useDefaultRefresh(): RefreshHandler {
   return useCallback(
     async () =>
       Promise.all([
-        router.invalidate(),
-        queryClient.refetchQueries({ type: "active" }),
+        router.invalidate({
+          filter: (match) => !SHELL_ROUTE_IDS.has(match.routeId),
+        }),
+        queryClient.refetchQueries({
+          type: "active",
+          predicate: (query) => !isShellQuery(query.queryKey),
+        }),
       ]),
     [queryClient, router],
   );
 }
+
+/** The matches that render the shell around every page, not the page itself. */
+const SHELL_ROUTE_IDS = new Set<string>([rootRouteId, "/_layout"]);
 
 /**
  * Opt a page into pull-to-refresh. Call it from the route component; the
@@ -136,6 +153,17 @@ const spin = stylex.keyframes({
   to: { transform: "rotate(360deg)" },
 });
 
+/**
+ * The reduced-motion stand-in for the spinner. The reader still needs to see
+ * that the refresh is running, so the signal stays — it just stops rotating,
+ * which is the part the preference is actually about.
+ */
+const breathe = stylex.keyframes({
+  "0%": { opacity: 1 },
+  "50%": { opacity: 0.4 },
+  "100%": { opacity: 1 },
+});
+
 const styles = stylex.create({
   // Zero-height and in normal flow, directly under the mobile top bar: the
   // gesture only runs at a scroll offset of 0, so the chip is pinned to the
@@ -151,15 +179,20 @@ const styles = stylex.create({
     position: "relative",
     zIndex: 14,
   },
+  // Flat and bordered, not floating: the page opens a gap and the chip is what
+  // is behind it, so a drop shadow would claim an elevation it doesn't have.
+  // A raised fill plus the warm tonal border does the separating instead — the
+  // system's resting vocabulary.
   chip: {
     alignItems: "center",
-    backgroundColor: uiColor.bg,
+    backgroundColor: uiColor.bgSubtle,
     borderColor: uiColor.border1,
     borderRadius: radius.full,
     borderStyle: "solid",
     borderWidth: 1,
-    boxShadow: shadow.lg,
-    color: uiColor.text1,
+    // The icon is the whole content of the indicator, so it takes the ink step
+    // rather than the muted one reserved for secondary text.
+    color: uiColor.text2,
     display: "flex",
     height: size["4xl"],
     // Centred by its own insets rather than the lane's `justify-content`: the
@@ -178,22 +211,44 @@ const styles = stylex.create({
     top: 0,
     width: size["4xl"],
   },
-  // Far enough to let go: the chip picks up the accent so the change of state is
-  // visible without looking away from the page.
-  chipArmed: {
+  // Far enough to let go, and then for as long as the refresh runs. This is the
+  // one moment the reader has to perceive, at 44px, under their own thumb — so
+  // it takes the accent the way a selected filter chip does (subtle fill, not
+  // just an outline), legible in peripheral vision without shouting.
+  //
+  // It has to hold through `refreshing` as well as `armed`: a quick pull crosses
+  // the threshold and commits within a few frames, and dropping the accent at
+  // the hand-off turns the whole thing into a flash of colour that's gone before
+  // it means anything. The accent says "committed" — it leaves when the work
+  // does.
+  chipEngaged: {
+    backgroundColor: primaryColor.component1,
     borderColor: primaryColor.border2,
-    color: primaryColor.text2,
+    // `text1`, not `text2`: in this theme the accent's `text2` step is a warm
+    // near-black — the same ink the resting chip already uses, so arming would
+    // have changed nothing. `text1` is the camel the palette calls accent text.
+    color: primaryColor.text1,
   },
   icon: {
     alignItems: "center",
     display: "flex",
     justifyContent: "center",
   },
+  // The pull itself keeps moving under `prefers-reduced-motion` — it is the
+  // reader's own finger, and a gesture that doesn't follow the hand is broken,
+  // not calm. This spin is the part that runs on its own, so it is the part
+  // that gives way: the icon fades in place instead of rotating.
   iconSpinning: {
     animationDuration: animationDuration.indeterminateCycle,
     animationIterationCount: "infinite",
-    animationName: spin,
-    animationTimingFunction: "linear",
+    animationName: {
+      default: spin,
+      [mediaQueries.reducedMotion]: breathe,
+    },
+    animationTimingFunction: {
+      default: "linear",
+      [mediaQueries.reducedMotion]: animationTimingFunction.easeInOut,
+    },
   },
   srOnly: {
     borderWidth: 0,
@@ -214,11 +269,18 @@ const noopHandler = () => null;
  * The pull indicator. Mounted once by the shell, just below the mobile top bar;
  * it does nothing at all until a page registers a refresh handler.
  *
+ * `contentRef` is the page the gesture drags: the shell's content column, which
+ * travels down with the finger and reveals this lane's chip in the gap it opens.
+ *
  * Deliberately not marked `aria-busy` — the perf suite treats a cleared
  * `aria-busy` as "the page is ready" (`perf/lib/measure.ts`), and a refresh the
  * reader asked for is not part of that first-paint contract.
  */
-export function PullToRefreshLane() {
+export function PullToRefreshLane({
+  contentRef,
+}: {
+  contentRef: React.RefObject<HTMLElement | null>;
+}) {
   const { t } = useLingui();
   const store = useContext(PullToRefreshContext);
   const handler = useSyncExternalStore(
@@ -228,9 +290,14 @@ export function PullToRefreshLane() {
   );
   const compactNav = useCompactNav();
   const { chipRef, iconRef, phase } = usePullGesture({
+    contentRef,
     enabled: compactNav && handler !== null,
     onRefresh: handler,
   });
+
+  // Armed and refreshing are one continuous state to the eye: the reader
+  // committed, and the app is doing it.
+  const engaged = phase === "armed" || phase === "refreshing";
 
   return (
     <div {...stylex.props(styles.lane)}>
@@ -238,7 +305,7 @@ export function PullToRefreshLane() {
         ref={chipRef}
         aria-hidden
         data-phase={phase}
-        {...stylex.props(styles.chip, phase === "armed" && styles.chipArmed)}
+        {...stylex.props(styles.chip, engaged && styles.chipEngaged)}
       >
         <span
           ref={iconRef}
