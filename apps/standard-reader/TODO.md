@@ -540,6 +540,33 @@ Build each on hip-ui components + StyleX tokens (no raw HTML/inline styles).
       reads it to pull itself up by its own measured height — so back/byline/actions leave
       with the app bar and the only thing left against the top of the screen is the reading
       progress track. ([Mobile Screen Real-Estate](https://userinput.app/d/did:plc:3x5npw4cb2twifyqcox7jmqj/3mrwcpbgousq2))
+- [x] **Pull to refresh** — every feed and directory refreshes with the gesture a phone
+      already taught the reader: Home, Latest, Discover, Saved, History, Search, Tag,
+      Topics (index + slug), Subscriptions, Friends, Recommended, Collections, and the
+      list / publication / profile pages. Routes opt in with `usePullToRefresh()`
+      (`components/reader/pull-to-refresh.tsx`), which registers into a store the shell's
+      `PullToRefreshLane` subscribes to — a store, not context state, so a navigation
+      doesn't re-render the whole shell to swap handlers. The default handler refetches the
+      page and nothing else: `router.invalidate()` filtered to the matches below `_layout`,
+      alongside `refetchQueries({ type: "active" })` filtered by `isShellQuery`
+      (`integrations/tanstack-query/shell-queries.ts`) — so the session, every saved
+      preference and the sidebar are left where they are, and the page refetches in place
+      keeping scroll position and local UI state. A route can pass its own handler.
+      Reading views, settings and the static pages are deliberately left out.
+      Mechanics live in `lib/use-pull-gesture.ts` + `lib/pull-gesture.ts`: the content
+      column itself travels with the finger — the top bar and dock hold still, and the
+      indicator rides the gap that opens, centred in it — so the gesture is direct
+      manipulation rather than an overlay. Pull distance is
+      rubber-banded toward a 120px asymptote and written straight to the DOM per frame
+      (only the phase goes through React), a flick commits short of the 64px threshold,
+      and the gesture is handed back on a horizontal drag, a second finger, a scrolled page,
+      or a touch inside a dialog. `touchstart` is passive and bails in two comparisons; the
+      non-passive `touchmove` only goes on once a touch qualifies, so the rest of the app
+      never carries a scroll-blocking listener. `overscroll-behavior: none` (already set in
+      `styles.css`) means the browser's own pull-to-refresh isn't competing for the gesture.
+      The lane and the surface it drags both sit inside `PublicationThemeScope` (`above` +
+      `contentRef`), so on a themed publication page the chip wears that publication's
+      colors and the gap the pull opens shows its background, not the app's.
 - [x] **Home** — masthead (date + unread count), featured lead, latest unread rows, right rail (Trending articles + You might follow).
 - [x] **Latest** — chronological list, segmented Unread / Subscriptions / All-network filter with counts (Unread = unread docs from subs, Subscriptions = all docs from subs, All = whole network).
 - [x] **Discover** — Trending / Topics / Recommended / Followed-by-people-you-follow / All (chips, sort, grid⇄list toggle).

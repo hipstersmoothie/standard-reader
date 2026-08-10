@@ -82,6 +82,7 @@ import {
   ReaderContent,
   SectionHead,
 } from "#/components/reader/primitives";
+import { usePullToRefresh } from "#/components/reader/pull-to-refresh";
 import { isArticleUnreadForReader } from "#/components/reader/read-optimistic";
 import { RssFeedButton } from "#/components/reader/rss-feed-button";
 import { ButtonLink } from "#/components/router-links";
@@ -984,6 +985,7 @@ function TagFollowAllButton({
 }
 
 function TagPage() {
+  usePullToRefresh();
   const { t, i18n } = useLingui();
   const fmt = useFormatters();
   const { tag: rawTag } = Route.useParams();

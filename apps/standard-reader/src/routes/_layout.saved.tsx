@@ -35,6 +35,7 @@ import { useCallback, useEffect, useState } from "react";
 import type { Selection } from "react-aria-components";
 import { z } from "zod";
 
+import { usePullToRefresh } from "#/components/reader/pull-to-refresh";
 import { ButtonLink } from "#/components/router-links";
 import type {
   SavedSort,
@@ -192,6 +193,7 @@ const styles = stylex.create({
 });
 
 function ReaderSaved() {
+  usePullToRefresh();
   const { t, i18n } = useLingui();
   const { sort, dir } = Route.useSearch();
   const direction = dir ?? defaultSavedSortDirection(sort);

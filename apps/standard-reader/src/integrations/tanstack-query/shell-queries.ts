@@ -27,6 +27,47 @@ export function sidebarPrefQueryOptions() {
   return sidebarPrefApi.getSidebarPrefQueryOptions();
 }
 
+let shellDataKeys: Array<ReadonlyArray<unknown>> | null = null;
+
+/** The queries the shell's own chrome renders from, built once on first ask. */
+function getShellDataKeys(): Array<ReadonlyArray<unknown>> {
+  shellDataKeys ??= [
+    sidebarQueryOptions().queryKey,
+    listsQueryOptions().queryKey,
+    savedListsQueryOptions().queryKey,
+    sidebarPrefQueryOptions().queryKey,
+  ];
+  return shellDataKeys;
+}
+
+/**
+ * Is this query the app's, rather than the page's?
+ *
+ * The shell mounts the same handful of queries on every route — who you are
+ * signed in as, every saved preference, the sidebar and its lists — and they
+ * are chrome, not content. A refresh aimed at a page has to leave them alone:
+ * pulling down on a feed should fetch that feed, not re-read the session and
+ * every setting behind it.
+ *
+ * Preferences are recognised by their key rather than listed: they all sit at
+ * the root of the cache as `<name>Preference` (see `api-user.functions.ts`), so
+ * a new one is covered the day it is added.
+ */
+export function isShellQuery(queryKey: ReadonlyArray<unknown>): boolean {
+  const [head] = queryKey;
+  if (typeof head !== "string") return false;
+  // The session and the identity bits the root loader bootstraps alongside it.
+  if (head === "session" || head === "localeHint" || head === "savedHandles") {
+    return true;
+  }
+  if (head.endsWith("Preference")) return true;
+  return getShellDataKeys().some(
+    (key) =>
+      key.length === queryKey.length &&
+      key.every((segment, index) => segment === queryKey[index]),
+  );
+}
+
 /** Seed sidebar + list queries from a single snapshot when bootstrap did not. */
 async function ensureShellSnapshot(queryClient: QueryClient): Promise<void> {
   const sidebarOpts = sidebarQueryOptions();

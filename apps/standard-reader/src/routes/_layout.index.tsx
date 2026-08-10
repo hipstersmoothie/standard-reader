@@ -33,6 +33,7 @@ import { ArrowRight, Flame, Sparkles } from "lucide-react";
 import { Suspense, useEffect } from "react";
 import { z } from "zod";
 
+import { usePullToRefresh } from "#/components/reader/pull-to-refresh";
 import { ButtonLink } from "#/components/router-links";
 import type { Formatters } from "#/lib/formatters";
 import { DEFAULT_TRACK_READING_HISTORY } from "#/lib/track-reading-history";
@@ -457,6 +458,7 @@ function useHomeReaderScope(): string {
 }
 
 function Home() {
+  usePullToRefresh();
   const scope = useEffectiveHomeScope();
   const readerScope = useHomeReaderScope();
 

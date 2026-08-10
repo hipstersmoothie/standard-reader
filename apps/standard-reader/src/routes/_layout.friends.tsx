@@ -27,6 +27,7 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo } from "react";
 import { z } from "zod";
 
+import { usePullToRefresh } from "#/components/reader/pull-to-refresh";
 import { isArticleUnreadForReader } from "#/components/reader/read-optimistic";
 import { ButtonLink } from "#/components/router-links";
 import { discoverApi } from "#/integrations/tanstack-query/api-discover.functions";
@@ -195,6 +196,7 @@ function useSeededUserFollowStatus(people: Array<FriendPerson>) {
 }
 
 function FriendsPage() {
+  usePullToRefresh();
   const { t } = useLingui();
   const { view } = Route.useSearch();
   const navigate = Route.useNavigate();

@@ -90,6 +90,7 @@ import { LanguageHintPrompt } from "./language-hint-prompt";
 import { ListEditModal } from "./list-edit-modal";
 import { PageReaderBar } from "./page-reader-bar";
 import { PublicationThemeScope } from "./publication-theme-scope";
+import { PullToRefreshLane } from "./pull-to-refresh";
 import {
   SelectionDockProvider,
   useSelectionDock,
@@ -959,6 +960,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // vacated slot rather than hovering over a gap. The stack, never the dock —
   // the dock is pinned to the viewport and must stay untransformed.
   const dockStackRef = useRef<HTMLDivElement>(null);
+  // The content column, which pull-to-refresh drags down with the finger. The
+  // top bar and the dock stay put — only the page the gesture is refreshing
+  // moves, the way it does on a phone.
+  const contentRef = useRef<HTMLDivElement>(null);
 
   const { data: listsData, isPending: listsPending } = useQuery({
     ...listsQueryOptions(),
@@ -1448,8 +1453,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
             <div {...stylex.props(styles.scroller)}>
               {/* The footer sits inside the themed region so a publication's
-                  colors run to the bottom of the content column. */}
-              <PublicationThemeScope footer={<SiteFooter />}>
+                  colors run to the bottom of the content column — and so does
+                  the pull indicator, which is why the gap the gesture opens
+                  shows the publication's own background rather than the app's.
+                  The scope holds still; `contentRef` is what the pull drags. */}
+              <PublicationThemeScope
+                above={<PullToRefreshLane contentRef={contentRef} />}
+                contentRef={contentRef}
+                footer={<SiteFooter />}
+              >
                 {children}
               </PublicationThemeScope>
             </div>

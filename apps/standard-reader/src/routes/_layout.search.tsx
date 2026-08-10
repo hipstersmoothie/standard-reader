@@ -22,6 +22,7 @@ import { Search as SearchIcon, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { z } from "zod";
 
+import { usePullToRefresh } from "#/components/reader/pull-to-refresh";
 import { searchApi } from "#/integrations/tanstack-query/api-search.functions";
 import { getPublicUrlClient } from "#/lib/public-url";
 import { pageSocialMeta } from "#/lib/site-metadata";
@@ -364,6 +365,7 @@ function formatShownCount(i18n: I18n, shown: number, hasMore: boolean): string {
 }
 
 function Search() {
+  usePullToRefresh();
   const { t, i18n } = useLingui();
   const { q: urlQ = "" } = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });

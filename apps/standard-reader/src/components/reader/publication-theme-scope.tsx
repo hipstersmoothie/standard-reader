@@ -58,7 +58,8 @@ function usePublicationThemeColors(): PublicationThemeColors | null {
  *
  * Only the content column is themed; the sidebar and mobile bar stay Standard
  * Reader chrome. When the preference is off, or the route published no colors,
- * this renders its children untouched so the DOM matches the unthemed page.
+ * the themed wrapper is dropped and what's left is the same page structure —
+ * the inner surface stays either way, so nothing shifts as themes go on and off.
  *
  * Overlays (hover cards, popovers, menus, tooltips, modals) portal to
  * `document.body` by default, which would drop them right back onto the app's
@@ -78,10 +79,25 @@ function usePublicationThemeColors(): PublicationThemeColors | null {
  * viewport, which is the geometry React Aria expects.
  */
 export function PublicationThemeScope({
+  above,
   children,
+  contentRef,
   footer,
 }: {
+  /**
+   * Chrome that belongs inside the themed region but must not move with the
+   * page: the pull-to-refresh indicator, which the content is dragged away
+   * from. Being in here is what makes it wear the publication's colors, and
+   * what puts the publication's own background — not the app's — in the gap the
+   * pull opens.
+   */
+  above?: ReactNode;
   children: ReactNode;
+  /**
+   * The page surface, everything the pull gesture drags. Wrapped in its own
+   * element so the themed background it slides over stays where it is.
+   */
+  contentRef?: RefObject<HTMLDivElement | null>;
   /**
    * Site chrome that must sit *outside* the page card but still inside the
    * themed region — it gets its own opaque surface so the canvas image never
@@ -134,13 +150,27 @@ export function PublicationThemeScope({
     return vars;
   }, [image, colors?.canvas]);
 
-  if (!enabled || !scaleVars) {
-    return (
-      <>
+  const themed = enabled && scaleVars !== null;
+
+  // The page and its footer travel together under `contentRef`; `above` stays
+  // behind. Themed or not, the DOM shape is the same, so a page can't shift
+  // when the reader turns publication themes on.
+  const content = (
+    <>
+      {above}
+      <div ref={contentRef} {...stylex.props(styles.content)}>
         {children}
-        {footer}
-      </>
-    );
+        {footer && themed && image ? (
+          <div {...stylex.props(styles.footerSurface)}>{footer}</div>
+        ) : (
+          footer
+        )}
+      </div>
+    </>
+  );
+
+  if (!themed || !scaleVars) {
+    return content;
   }
 
   const themeVars = { ...scaleVars, ...fontVars };
@@ -162,12 +192,7 @@ export function PublicationThemeScope({
       ) : null}
       <OverlayHost ref={overlayHostRef} themeVars={themeVars} />
       <UNSAFE_PortalProvider getContainer={getContainer}>
-        {children}
-        {footer && image ? (
-          <div {...stylex.props(styles.footerSurface)}>{footer}</div>
-        ) : (
-          footer
-        )}
+        {content}
       </UNSAFE_PortalProvider>
     </div>
   );
@@ -214,6 +239,17 @@ const styles = stylex.create({
     color: uiColor.text2,
     // Stand in for the content column this replaces as a flex child of the app
     // shell's scroller, so wrapping doesn't shift the page's layout.
+    display: "flex",
+    flexDirection: "column",
+    flexGrow: 1,
+    minWidth: 0,
+  },
+  /**
+   * The page surface: the same flex stand-in the scope itself uses, so wrapping
+   * the column costs the layout nothing. Its own element because pull-to-refresh
+   * slides it down over the background behind it.
+   */
+  content: {
     display: "flex",
     flexDirection: "column",
     flexGrow: 1,
