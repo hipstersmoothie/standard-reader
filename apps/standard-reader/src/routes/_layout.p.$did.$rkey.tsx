@@ -26,6 +26,7 @@ import { Link, createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
 
+import { usePullToRefresh } from "#/components/reader/pull-to-refresh";
 import { authorApi } from "#/integrations/tanstack-query/api-author.functions";
 import { notesApi } from "#/integrations/tanstack-query/api-notes.functions";
 import { publicationApi } from "#/integrations/tanstack-query/api-publication.functions";
@@ -546,6 +547,7 @@ function PublicationPending() {
 }
 
 function PublicationProfilePage() {
+  usePullToRefresh();
   return <PublicationProfile />;
 }
 

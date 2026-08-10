@@ -1977,6 +1977,10 @@ msgstr ""
 msgid "What every control on an article does — including having it read aloud to you, and making the text comfortable for your eyes."
 msgstr ""
 
+#: src/components/reader/pull-to-refresh.tsx
+msgid "Refreshing"
+msgstr ""
+
 #: src/components/reader/notify-button.tsx
 msgid "Notifications aren’t available here"
 msgstr ""

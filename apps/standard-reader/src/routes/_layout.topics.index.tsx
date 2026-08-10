@@ -13,6 +13,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useDeferredValue, useMemo, useState } from "react";
 
+import { usePullToRefresh } from "#/components/reader/pull-to-refresh";
 import { topicsApi } from "#/integrations/tanstack-query/api-topics.functions";
 import { getPublicUrlClient } from "#/lib/public-url";
 import { SITE_NAME, siteSocialMeta } from "#/lib/site-metadata";
@@ -64,6 +65,7 @@ function matchesQuery(
 }
 
 function TopicsIndex() {
+  usePullToRefresh();
   const { t } = useLingui();
   const fmt = useFormatters();
   const [search, setSearch] = useState("");

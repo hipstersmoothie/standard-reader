@@ -90,6 +90,7 @@ import { LanguageHintPrompt } from "./language-hint-prompt";
 import { ListEditModal } from "./list-edit-modal";
 import { PageReaderBar } from "./page-reader-bar";
 import { PublicationThemeScope } from "./publication-theme-scope";
+import { PullToRefreshLane } from "./pull-to-refresh";
 import {
   SelectionDockProvider,
   useSelectionDock,
@@ -1445,6 +1446,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 </div>
               </Flex>
             )}
+
+            {/* Sits between the bar and the content it refreshes, which is
+                where the gesture opens a gap. Zero-height, so it costs the
+                layout nothing while the page is at rest. */}
+            <PullToRefreshLane />
 
             <div {...stylex.props(styles.scroller)}>
               {/* The footer sits inside the themed region so a publication's

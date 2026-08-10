@@ -51,6 +51,7 @@ import {
 } from "react";
 import { z } from "zod";
 
+import { usePullToRefresh } from "#/components/reader/pull-to-refresh";
 import { topicsApi } from "#/integrations/tanstack-query/api-topics.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
 import { getPublicUrlClient } from "#/lib/public-url";
@@ -513,6 +514,7 @@ function TopicPublicationsPanel({
 /* ── Page ─────────────────────────────────────────────────────────────────── */
 
 function TopicPage() {
+  usePullToRefresh();
   const { t, i18n } = useLingui();
   const fmt = useFormatters();
   const { slug } = Route.useParams();

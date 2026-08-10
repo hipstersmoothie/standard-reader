@@ -39,7 +39,9 @@ things you already subscribe to.
   way to keep discovering new voices.
 - **Platform:** responsive web — desktop (persistent left sidebar) and mobile (top bar +
   bottom tab nav). The mobile top bar scrolls away with the page and slides back in on any
-  scroll up, so reading gets the full screen without losing the way out. Same codebase,
+  scroll up, so reading gets the full screen without losing the way out. Every feed and
+  directory pulls to refresh from the top of the page — the gesture readers already expect
+  from a phone, refetching in place rather than reloading the document. Same codebase,
   same components. **Browser extension** (WXT, MV3) as a capture + bridge client for
   save/follow while browsing.
 
