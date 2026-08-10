@@ -1,6 +1,7 @@
 import { pushApi } from "#/integrations/tanstack-query/api-push.functions";
 
 import { serviceWorkerReport } from "./register";
+import { isStandalone } from "./standalone";
 
 /**
  * Client-side web push: capability detection, subscribing this browser, and
@@ -42,18 +43,6 @@ export type EnsurePushResult =
 
 function isBrowser(): boolean {
   return globalThis.window !== undefined;
-}
-
-/** True when the page is running as an installed PWA rather than in a tab. */
-export function isStandalone(): boolean {
-  if (!isBrowser()) return false;
-  if (globalThis.matchMedia?.("(display-mode: standalone)").matches) {
-    return true;
-  }
-  // iOS predates `display-mode` and still reports via this non-standard flag.
-  return (
-    (navigator as Navigator & { standalone?: boolean }).standalone === true
-  );
 }
 
 function isIos(): boolean {
