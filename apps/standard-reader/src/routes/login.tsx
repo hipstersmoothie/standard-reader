@@ -253,6 +253,14 @@ function AuthPage() {
     void navigate({ to: "/" });
   };
 
+  /** Log in with whatever is typed. Shared by the button and Enter-to-submit. */
+  const submitTypedHandle = () => {
+    if (loginMutation.isPending) return;
+    const trimmed = handle.trim().replace(/^@/, "");
+    if (trimmed === "") return;
+    loginMutation.mutate(trimmed);
+  };
+
   return (
     <main {...stylex.props(styles.main)}>
       <IconButton
@@ -265,7 +273,18 @@ function AuthPage() {
         <DirectionalIcon as={ArrowLeft} size={18} />
       </IconButton>
       <div {...stylex.props(styles.container)}>
-        <Form style={styles.content}>
+        <Form
+          style={styles.content}
+          // The handle field is the form's only input, so the browser submits
+          // implicitly on Enter. Without this, that native GET submit reloads
+          // /login (dropping the search params) and wipes the typed handle
+          // instead of signing in.
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (view !== "login") return;
+            submitTypedHandle();
+          }}
+        >
           <Flex direction="column" gap="5xl" style={styles.form}>
             <Flex
               direction="column"
@@ -384,11 +403,7 @@ function AuthPage() {
                   type="button"
                   isDisabled={!handle.trim() || loginMutation.isPending}
                   isPending={loginMutation.isPending}
-                  onPress={() => {
-                    const trimmed = handle.trim().replace(/^@/, "");
-                    if (trimmed === "") return;
-                    loginMutation.mutate(trimmed);
-                  }}
+                  onPress={submitTypedHandle}
                   style={styles.loginButton}
                 >
                   <Trans>Log in</Trans>
