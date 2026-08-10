@@ -6,6 +6,8 @@ import { alias } from "drizzle-orm/pg-core";
 import { z } from "zod";
 
 import { publicationLinkParams } from "#/components/reader/format";
+import type { BlockEdge } from "#/lib/blocks";
+import { uriAuthorityDid } from "#/lib/blocks";
 import type { CollectionManifest } from "#/lib/collections/manifest";
 import type { CollectionTheme } from "#/lib/collections/theme";
 import type { InlineMentionRefs } from "#/lib/leaflet/publication-mentions";
@@ -24,6 +26,13 @@ import {
   getReaderDidForRequest,
 } from "#/middleware/auth-session.server";
 import { cdnImageUrl } from "#/server/atproto/blob";
+import {
+  blockEdgeFor,
+  blockFilterDid,
+  filterBlockedCards,
+  firstBlockAmong,
+  readerHasBlocks,
+} from "#/server/blocks/blocks";
 import { buildCanonicalUrl } from "#/server/ingest/mappers";
 import { readAccountLabels } from "#/server/labeler/labels.server";
 import { observe } from "#/server/observability/log";
@@ -198,6 +207,12 @@ export type { PublicationDocumentFilter } from "#/server/reader/queries";
 export interface PublicationProfile {
   publication: PublicationCard;
   owner: ProfileSummary;
+  /**
+   * Set when the viewer and this publication's owner are blocked from each
+   * other. The header still resolves so the page can explain itself, but
+   * `recentDocuments` comes back empty — see the note on `AuthorProfile.block`.
+   */
+  block: BlockEdge | null;
   recentDocuments: Array<ArticleCard>;
   /**
    * Labels on the **account** that owns this publication, from the viewer's
@@ -318,22 +333,49 @@ export interface ArticleExtras {
   marginConnections: Array<MarginConnectionItem>;
 }
 
+/**
+ * The publication header, plus whether the viewer is blocked from its owner.
+ *
+ * `block` rides on the header rather than being a second client query on
+ * purpose. Every surface that renders a publication — the profile route, mention
+ * hovercards, inline publication chips — reads this one query, so a block
+ * resolved anywhere else would have to be resolved *after* first paint, and the
+ * blocked account's name and avatar would render for a frame before being
+ * withheld. Here the caller never has an unblocked version to paint.
+ */
+export type PublicationHeaderView = PublicationHeader & {
+  block: BlockEdge | null;
+};
+
 const getPublicationHeader = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
   .validator(headerInput)
   .handler(
     observe(
       "publication.getHeader",
-      async ({ data, context }, span): Promise<PublicationHeader | null> => {
+      async (
+        { data, context },
+        span,
+      ): Promise<PublicationHeaderView | null> => {
         const { db, schema } = context;
         span.set("publicationUri", data.publicationUri);
-        const header = await selectPublicationHeader(
-          db,
-          schema,
-          data.publicationUri,
-        );
+        // The publication URI's authority *is* its owner's DID, so the block
+        // check needs no lookup of its own and runs alongside the header rather
+        // than ahead of it — a reader who blocks nobody pays one cached
+        // `EXISTS` here, concurrent with the read they were making anyway.
+        const ownerDid = uriAuthorityDid(data.publicationUri);
+        const resolveBlock = async () => {
+          if (!ownerDid) return null;
+          const viewerDid = await getReaderDidForRequest(getRequest());
+          return blockEdgeFor(db, schema, viewerDid, ownerDid);
+        };
+        const [header, block] = await Promise.all([
+          selectPublicationHeader(db, schema, data.publicationUri),
+          resolveBlock(),
+        ]);
         span.set("found", header != null);
-        return header;
+        if (block) span.set("blocked", block.direction);
+        return header ? { ...header, block } : null;
       },
     ),
   );
@@ -358,14 +400,29 @@ const getPublicationProfile = createServerFn({ method: "GET" })
         const countOldPostsAsUnread =
           did == null ? true : countOldPostsAsUnreadEnabled;
 
-        const [header, recentDocuments] = await Promise.all([
+        // The publication URI's authority *is* its owner's DID, so the block
+        // check needs no lookup of its own. It runs *alongside* the header and
+        // archive reads rather than gating them: a blocked owner is the rare
+        // case, and serializing a round trip ahead of every load to catch it
+        // would put the cost on everyone. The archive is discarded below when
+        // the block resolves, which is cheaper than the extra hop.
+        // Resolved first because everything below reuses its cached answer: for
+        // the reader who blocks nobody this is one indexed `EXISTS` per minute,
+        // and it makes `blockEdgeFor` free rather than a second round trip.
+        const ownerDid = uriAuthorityDid(data.publicationUri);
+        const blockDid = await blockFilterDid(db, schema, did);
+        const [header, recentDocuments, block] = await Promise.all([
           selectPublicationHeader(db, schema, data.publicationUri),
           selectPublicationArticleCards(db, schema, {
             publicationUri: data.publicationUri,
             limit: data.recentLimit,
             readForDid,
             countOldPostsAsUnread,
+            viewerDid: blockDid,
           }),
+          ownerDid && blockDid
+            ? blockEdgeFor(db, schema, did, ownerDid)
+            : Promise.resolve(null),
         ]);
 
         if (!header) {
@@ -373,6 +430,10 @@ const getPublicationProfile = createServerFn({ method: "GET" })
           return null;
         }
         span.set("found", true);
+        if (block) {
+          span.set("blocked", block.direction);
+          return { ...header, block, recentDocuments: [], labels: [] };
+        }
 
         const [recentWithComments, accountLabels] = await Promise.all([
           attachCommentCountsToArticles(db, schema, recentDocuments),
@@ -386,6 +447,7 @@ const getPublicationProfile = createServerFn({ method: "GET" })
         // viewer-scoped `getAccountLabels` query instead.
         return {
           ...header,
+          block: null,
           recentDocuments: recentWithComments,
           labels: accountLabels.get(header.publication.did) ?? [],
         };
@@ -441,6 +503,25 @@ const getPublicationDocuments = createServerFn({ method: "GET" })
         span.set("order", order);
         span.set("orderOverridden", orderOverride != null);
 
+        // See `getPublicationProfile`: one cached `EXISTS` gates both the
+        // owner-level check and the guest-post filter, so a reader with no
+        // blocks adds no round trip to the archive.
+        const archiveOwnerDid = uriAuthorityDid(data.publicationUri);
+        const blockDid = await blockFilterDid(db, schema, did);
+        if (
+          archiveOwnerDid &&
+          blockDid &&
+          (await blockEdgeFor(db, schema, did, archiveOwnerDid))
+        ) {
+          span.set("blocked", true);
+          return {
+            items: [],
+            nextOffset: null,
+            order,
+            orderOverridden: orderOverride != null,
+          };
+        }
+
         const documents = await selectPublicationArticleCards(db, schema, {
           publicationUri: data.publicationUri,
           limit: data.limit,
@@ -450,6 +531,7 @@ const getPublicationDocuments = createServerFn({ method: "GET" })
           filter,
           readerDid: did ?? undefined,
           order,
+          viewerDid: blockDid,
         });
 
         // "Recommended by @follow" attribution — same signal, same batched query
@@ -605,7 +687,15 @@ const getArticle = createServerFn({ method: "GET" })
             // `manager.resume()` network round trip on every article view.
             // The full PDS client is restored below only in the rare case
             // where the signed-in reader owns this collection document.
-            getReaderContextForRequest(getRequest()),
+            //
+            // The block check below needs `row.did`, so it can't join this
+            // wave — but its guard doesn't, so warm it here. That turns
+            // "does this reader block anyone" from a round trip on the article
+            // critical path into one that overlaps the document read.
+            getReaderContextForRequest(getRequest()).then(async (viewer) => {
+              if (viewer?.did) await readerHasBlocks(db, schema, viewer.did);
+              return viewer;
+            }),
           ]);
 
         const row = docRows[0];
@@ -614,6 +704,20 @@ const getArticle = createServerFn({ method: "GET" })
           return null;
         }
         span.set("found", true);
+
+        // A blocked article is withheld outright rather than returned with its
+        // body stripped: nothing about it — title, excerpt, cover, byline —
+        // should reach the viewer. The page explains itself through
+        // `getArticleBlock`, which the not-found state asks for, so the common
+        // path pays nothing for the rare one.
+        const articleBlock = await firstBlockAmong(db, schema, reader?.did, [
+          row.did,
+          row.pubDid,
+        ]);
+        if (articleBlock) {
+          span.set("blocked", articleBlock.direction);
+          return null;
+        }
 
         const sourceRow = row as ArticleDetailSourceRow;
         const contributors: Array<ArticleContributor> = contributorRows.map(
@@ -837,6 +941,7 @@ const getArticleExtras = createServerFn({ method: "GET" })
         const linkUrls = canonicalUrl ? [canonicalUrl] : [];
 
         const readerDid = await getReaderDidForRequest(getRequest());
+        const blockDid = await blockFilterDid(db, schema, readerDid);
 
         const [
           moreFromRaw,
@@ -849,6 +954,7 @@ const getArticleExtras = createServerFn({ method: "GET" })
             ? selectArticleCards(db, schema, {
                 publicationUris: [row.publicationUri],
                 limit: 4,
+                viewerDid: blockDid,
               })
             : Promise.resolve([]),
           relatedArticles(db, schema, {
@@ -856,18 +962,18 @@ const getArticleExtras = createServerFn({ method: "GET" })
             publicationUri: row.publicationUri,
             limit: data.relatedLimit,
             excludeWebBridge: excludeWebBridgeEnabled,
-          }),
+          }).then((rows) => filterBlockedCards(db, schema, readerDid, rows)),
           articleRecommendedPublications(db, schema, {
             publicationUri: row.publicationUri,
             readerDid,
             limit: data.alsoFollowLimit,
-          }),
+          }).then((rows) => filterBlockedCards(db, schema, readerDid, rows)),
           linkUrls.length > 0
             ? fetchCitedInArticles(db, schema, {
                 urls: linkUrls,
                 excludeDocumentUri: row.uri,
                 limit: 3,
-              })
+              }).then((rows) => filterBlockedCards(db, schema, readerDid, rows))
             : Promise.resolve([]),
           linkUrls.length > 0
             ? fetchMarginConnections(db, schema, {
@@ -933,11 +1039,15 @@ const getArticleCard = createServerFn({ method: "GET" })
       async ({ data, context }, span): Promise<ArticleCard | null> => {
         const { db, schema } = context;
         span.set("documentUri", data.documentUri);
+        const viewerDid = await getReaderDidForRequest(getRequest());
         const [card] = await selectArticleCardsByUris(
           db,
           schema,
           [data.documentUri],
-          { lite: true },
+          {
+            lite: true,
+            viewerDid: await blockFilterDid(db, schema, viewerDid),
+          },
         );
         span.set("found", card != null);
         return card ?? null;
@@ -1255,6 +1365,94 @@ function getPublicationDocumentsQueryOptions(
   });
 }
 
+/** Why an article isn't rendering, when the reason is a block. */
+export interface ArticleBlockState {
+  block: BlockEdge;
+  /** The blocked account, so the notice can name somebody rather than a DID. */
+  account: Pick<ProfileSummary, "did" | "handle" | "displayName" | "avatarUrl">;
+}
+
+/**
+ * The block withholding an article, if that is why it didn't render.
+ *
+ * Asked for only by the article page's empty state, so a page that resolves
+ * normally never pays for it. `getArticle` deliberately returns `null` for a
+ * blocked document rather than a stripped-down one — nothing about it should
+ * cross the wire — which is why the explanation is a second, opt-in read.
+ */
+const getArticleBlock = createServerFn({ method: "GET" })
+  .middleware([dbMiddleware])
+  .validator(articleInput)
+  .handler(
+    observe(
+      "publication.getArticleBlock",
+      async ({ data, context }, span): Promise<ArticleBlockState | null> => {
+        const { db, schema } = context;
+        const d = schema.documents;
+        const p = schema.publications;
+        const pr = schema.profiles;
+        span.set("documentUri", data.documentUri);
+
+        const viewerDid = await getReaderDidForRequest(getRequest());
+        if (!viewerDid) return null;
+
+        const [row] = await db
+          .select({ did: d.did, pubDid: p.did })
+          .from(d)
+          .leftJoin(p, eq(p.uri, d.publicationUri))
+          .where(eq(d.uri, data.documentUri))
+          .limit(1);
+        if (!row) return null;
+
+        const block = await firstBlockAmong(db, schema, viewerDid, [
+          row.did,
+          row.pubDid,
+        ]);
+        if (!block) return null;
+        span.set("blocked", block.direction);
+
+        const [profile] = await db
+          .select({
+            did: pr.did,
+            handle: pr.handle,
+            displayName: pr.displayName,
+            avatarUrl: pr.avatarUrl,
+          })
+          .from(pr)
+          .where(eq(pr.did, block.did))
+          .limit(1);
+
+        if (profile?.handle || profile?.displayName || profile?.avatarUrl) {
+          return { block, account: profile };
+        }
+
+        // Same reason as `readerBlockedAccounts`: the blocked account is
+        // usually not one we index, so the notice would name a `did:plc:…`.
+        const { fetchBlueskyPublicProfileFields } =
+          await import("#/lib/bluesky-public-profile");
+        const publicProfile = await fetchBlueskyPublicProfileFields(block.did);
+        return {
+          block,
+          account: {
+            did: block.did,
+            handle: profile?.handle ?? publicProfile?.handle ?? null,
+            displayName:
+              profile?.displayName ?? publicProfile?.displayName ?? null,
+            avatarUrl: profile?.avatarUrl ?? publicProfile?.avatarUrl ?? null,
+          },
+        };
+      },
+    ),
+  );
+
+function getArticleBlockQueryOptions(documentUri: string) {
+  return queryOptions({
+    queryKey: ["article", "block", documentUri] as const,
+    queryFn: async () => getArticleBlock({ data: { documentUri } }),
+    staleTime: 60_000,
+  });
+}
+
 function getArticleQueryOptions(documentUri: string) {
   return queryOptions({
     queryKey: ["article", documentUri] as const,
@@ -1384,6 +1582,8 @@ export const publicationApi = {
   getPublicationSocialProofQueryOptions,
   getArticle,
   getArticleQueryOptions,
+  getArticleBlock,
+  getArticleBlockQueryOptions,
   getArticleCard,
   getArticleCardQueryOptions,
   getCollection,

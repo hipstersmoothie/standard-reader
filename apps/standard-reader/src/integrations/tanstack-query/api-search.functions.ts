@@ -15,6 +15,12 @@ import { blobCid, cdnImageUrl } from "#/server/atproto/blob";
 import { listRepoRecords } from "#/server/atproto/fetch-record";
 import { resolveIdentity } from "#/server/atproto/identity";
 import type { PublicationRecord } from "#/server/atproto/types";
+import {
+  atUriAuthoritySql,
+  blockFilterDid,
+  filterBlockedCards,
+  notBlockedByViewer,
+} from "#/server/blocks/blocks";
 import { ensureTracked } from "#/server/ingest/tap-client";
 import { observe } from "#/server/observability/log";
 import { attachReaderSpanContext } from "#/server/observability/span-context.ts";
@@ -100,7 +106,7 @@ const searchPublications = createServerFn({ method: "GET" })
       const { db, schema, excludeWebBridgeEnabled } = context;
       span.set("q", data.q);
       span.set("offset", data.offset);
-      await attachReaderSpanContext(span, getRequest());
+      const did = await attachReaderSpanContext(span, getRequest());
 
       // Only the ranked search is filtered. The URL / handle fallbacks below are
       // a reader naming one specific account — answering "not found" because it
@@ -131,6 +137,12 @@ const searchPublications = createServerFn({ method: "GET" })
           items = await resolvePublicationCards(db, schema, hints.handleLookup);
         }
         total = items.length;
+      }
+
+      const visible = await filterBlockedCards(db, schema, did, items);
+      if (visible.length !== items.length) {
+        total = Math.max(0, total - (items.length - visible.length));
+        items = visible;
       }
 
       span.set("total", total);
@@ -176,11 +188,24 @@ const searchArticles = createServerFn({ method: "GET" })
         hints,
       );
       const matchClause = documentMatchSql(d, tsq, hints, authorMatch);
+      const blockDid = await blockFilterDid(db, schema, did);
       const articleWhere = and(
         eq(d.deleted, false),
         matchClause,
         notExcludedPublicationArticleWhere(p),
         ...(excludeWebBridgeEnabled ? [notWebBridgeArticleWhere(schema)] : []),
+        // Search is paginated, so blocked authors are excluded in SQL rather
+        // than dropped from the page — see `notBlockedByViewer`.
+        ...(blockDid
+          ? [
+              notBlockedByViewer(
+                schema,
+                blockDid,
+                sql`${d.did}`,
+                atUriAuthoritySql(sql`${d.publicationUri}`),
+              ),
+            ]
+          : []),
       );
 
       // Page the bare document URIs (newest first) in an inner subquery, then

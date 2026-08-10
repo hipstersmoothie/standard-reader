@@ -4,6 +4,9 @@ import { articleReaderUrl } from "#/components/reader/format";
 
 import { db } from "../../db/index.ts";
 import {
+  blockListItems,
+  blockLists,
+  blocks,
   documentContributors,
   documents,
   profiles,
@@ -176,7 +179,7 @@ export async function resolveTargets(
     .from(pushTopics)
     .where(publicationMatch ? or(authorMatch, publicationMatch) : authorMatch);
 
-  return db
+  const targets = await db
     .selectDistinct({
       endpoint: pushDevices.endpoint,
       p256dh: pushDevices.p256dh,
@@ -185,6 +188,89 @@ export async function resolveTargets(
     })
     .from(pushDevices)
     .where(inArray(pushDevices.ownerDid, optedIn));
+
+  // A block outranks the bell. The opt-in is honoured as written everywhere
+  // else in this file, but "notify me about this source" was said before the
+  // block, and a push notification is the loudest thing this app does — it
+  // arrives on a lock screen whether or not the reader opened the app. Someone
+  // who blocked an account should not learn what they published from a buzz.
+  //
+  // Filtered per recipient rather than per document: the same post is blocked
+  // for one subscriber and fine for another.
+  const blocked = await blockedRecipients(targets, subjectDids);
+  return blocked.size === 0
+    ? targets
+    : targets.filter((target) => !blocked.has(target.ownerDid));
+}
+
+/**
+ * Which recipients are blocked from any of a document's accounts.
+ *
+ * Four queries for the whole fan-out rather than four per recipient — a widely
+ * followed publication can have thousands of opted-in devices, and this runs
+ * once per published document. Each is an index probe over two bounded `IN`
+ * lists (the recipients, and the document's author + contributors + owner).
+ *
+ * Mirrors the four directions in `server/blocks/blocks.ts`; a block hides
+ * content whichever way it runs.
+ */
+async function blockedRecipients(
+  targets: Array<PushTarget>,
+  subjectDids: Array<string>,
+): Promise<Set<string>> {
+  const owners = [...new Set(targets.map((target) => target.ownerDid))];
+  if (owners.length === 0 || subjectDids.length === 0) return new Set();
+
+  const [blocking, blockedBy, listBlocking, listBlockedBy] = await Promise.all([
+    db
+      .selectDistinct({ did: blocks.blockerDid })
+      .from(blocks)
+      .where(
+        and(
+          eq(blocks.deleted, false),
+          inArray(blocks.blockerDid, owners),
+          inArray(blocks.subjectDid, subjectDids),
+        ),
+      ),
+    db
+      .selectDistinct({ did: blocks.subjectDid })
+      .from(blocks)
+      .where(
+        and(
+          eq(blocks.deleted, false),
+          inArray(blocks.subjectDid, owners),
+          inArray(blocks.blockerDid, subjectDids),
+        ),
+      ),
+    db
+      .selectDistinct({ did: blockLists.blockerDid })
+      .from(blockLists)
+      .innerJoin(blockListItems, eq(blockListItems.listUri, blockLists.listUri))
+      .where(
+        and(
+          eq(blockLists.deleted, false),
+          inArray(blockLists.blockerDid, owners),
+          inArray(blockListItems.subjectDid, subjectDids),
+        ),
+      ),
+    db
+      .selectDistinct({ did: blockListItems.subjectDid })
+      .from(blockLists)
+      .innerJoin(blockListItems, eq(blockListItems.listUri, blockLists.listUri))
+      .where(
+        and(
+          eq(blockLists.deleted, false),
+          inArray(blockListItems.subjectDid, owners),
+          inArray(blockLists.blockerDid, subjectDids),
+        ),
+      ),
+  ]);
+
+  const blocked = new Set<string>();
+  for (const rows of [blocking, blockedBy, listBlocking, listBlockedBy]) {
+    for (const row of rows) blocked.add(row.did);
+  }
+  return blocked;
 }
 
 /**

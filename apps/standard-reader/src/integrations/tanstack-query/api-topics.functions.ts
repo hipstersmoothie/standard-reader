@@ -4,6 +4,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
 
+import { blockFilterDid } from "#/server/blocks/blocks";
 import { observe } from "#/server/observability/log";
 import { attachReaderSpanContext } from "#/server/observability/span-context.ts";
 import { attachCommentCountsToArticles } from "#/server/reader/document-comments";
@@ -180,6 +181,7 @@ async function loadTopicArticles(
   const rows = await selectArticleCardsByUris(db, schema, uris, {
     readForDid: trackReading && did ? did : undefined,
     countOldPostsAsUnread,
+    viewerDid: await blockFilterDid(db, schema, did),
   });
 
   const withComments = await attachCommentCountsToArticles(db, schema, rows);

@@ -9,6 +9,7 @@ import {
   putSubscriptionRecord,
   subjectRkey,
 } from "#/server/atproto/repo-records";
+import { blockFilterDid } from "#/server/blocks/blocks";
 import { upsertSubscription } from "#/server/ingest/handlers";
 import { ensureTracked } from "#/server/ingest/tap-client";
 import { attachSubscribedLabels } from "#/server/labeler/labels.server";
@@ -129,6 +130,7 @@ const getArticles = createServerFn({ method: "GET" })
 
       // The tag rows and the reader's follow set are independent reads (the
       // follow set only needs `did`), so resolve them in one wave.
+      const blockDid = await blockFilterDid(db, schema, did);
       const [rows, followSets] = await Promise.all([
         selectArticleCards(db, schema, {
           tag: data.tag,
@@ -139,6 +141,7 @@ const getArticles = createServerFn({ method: "GET" })
           offset: data.offset,
           readForDid: trackReading && did ? did : undefined,
           countOldPostsAsUnread,
+          viewerDid: blockDid,
         }),
         did ? effectiveFollowSets(db, schema, did) : Promise.resolve(null),
       ]);
@@ -179,7 +182,7 @@ const getPublications = createServerFn({ method: "GET" })
   .handler(
     observe("tag.getPublications", async ({ data, context }, span) => {
       const { db, schema, excludeWebBridgeEnabled } = context;
-      await attachReaderSpanContext(span, getRequest());
+      const did = await attachReaderSpanContext(span, getRequest());
       span.set("tag", data.tag);
       span.set("sort", data.sort);
       span.set("offset", data.offset);
@@ -190,6 +193,7 @@ const getPublications = createServerFn({ method: "GET" })
         limit: data.limit,
         offset: data.offset,
         excludeWebBridge: excludeWebBridgeEnabled,
+        viewerDid: await blockFilterDid(db, schema, did),
       });
 
       span.set("count", items.length);
@@ -255,6 +259,7 @@ const getTagPage = createServerFn({ method: "GET" })
         did == null ? true : countOldPostsAsUnreadEnabled;
       const excludeWebBridge = did == null ? false : excludeWebBridgeEnabled;
 
+      const blockDid = await blockFilterDid(db, schema, did);
       const [articleCount, publicationCount, content, followSets] =
         await Promise.all([
           countTagArticles(db, schema, data.tag, { excludeWebBridge }),
@@ -269,6 +274,7 @@ const getTagPage = createServerFn({ method: "GET" })
                 offset: data.offset,
                 readForDid: trackReading && did ? did : undefined,
                 countOldPostsAsUnread,
+                viewerDid: blockDid,
               }).then((rows) => attachCommentCountsToArticles(db, schema, rows))
             : tagDirectoryPublications(db, schema, {
                 tag: data.tag,
@@ -276,6 +282,7 @@ const getTagPage = createServerFn({ method: "GET" })
                 limit: data.limit,
                 offset: data.offset,
                 excludeWebBridge,
+                viewerDid: blockDid,
               }),
           data.view === "feed" && did
             ? effectiveFollowSets(db, schema, did)

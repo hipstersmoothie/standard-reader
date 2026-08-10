@@ -1,6 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { badRequestResponse } from "#/server/extension/auth.server";
+import {
+  badRequestResponse,
+  getExtensionSession,
+} from "#/server/extension/auth.server";
 import { resolveDiscussion } from "#/server/extension/discussion.server";
 
 export const Route = createFileRoute("/api/extension/discussion")({
@@ -20,10 +23,13 @@ export const Route = createFileRoute("/api/extension/discussion")({
             import("#/server/reader/session-preferences.server"),
           ]);
 
-        const { excludeWebBridgeEnabled } =
-          await resolveReaderSessionPreferences(db, schema);
+        const [{ excludeWebBridgeEnabled }, session] = await Promise.all([
+          resolveReaderSessionPreferences(db, schema),
+          getExtensionSession(request),
+        ]);
         const discussion = await resolveDiscussion(db, schema, documentUri, {
           excludeWebBridge: excludeWebBridgeEnabled,
+          viewerDid: session?.did,
         });
         return Response.json(discussion);
       },

@@ -6,6 +6,12 @@ const DEFAULT_SLINGSHOT_URL = "https://slingshot.microcosm.blue";
 const DEFAULT_FETCH_TIMEOUT_MS = 8000;
 /** Page size for `com.atproto.repo.listRecords`. */
 const LIST_PAGE = 100;
+/**
+ * Backstop on `listRecords` paging. A repo with more records than this is
+ * pathological for the collections we read; the cap exists so a server that
+ * keeps handing back fresh cursors can't spin this loop forever.
+ */
+const MAX_LIST_PAGES = 200;
 /** Per-request timeout for paginated `listRecords` reconcile calls. */
 const LIST_FETCH_TIMEOUT_MS = 15_000;
 
@@ -254,6 +260,7 @@ async function listRecordsFromHost(
 ): Promise<Array<ListedRecord>> {
   const records: Array<ListedRecord> = [];
   let cursor: string | undefined;
+  let pages = 0;
   do {
     const url = new URL("/xrpc/com.atproto.repo.listRecords", host);
     url.searchParams.set("repo", did);
@@ -289,7 +296,28 @@ async function listRecordsFromHost(
     if (limit && records.length >= limit) {
       return records.slice(0, limit);
     }
-    cursor = page.length === pageSize ? body.cursor : undefined;
+    // Follow the cursor the server gave us, rather than guessing from the page
+    // size that there is nothing left.
+    //
+    // A short page is NOT the end of a collection. `bsky.network` PDSes answer
+    // a `limit=100` request with 50 records *and* a cursor as a matter of
+    // course, so the old `page.length === pageSize` test stopped after one page
+    // and silently returned a prefix of the collection — for blocks that means
+    // the reader's later blocks were never mirrored, and never enforced.
+    //
+    // The guards below are what that test was really reaching for: stop on an
+    // empty page, on a cursor the server didn't advance (either would spin
+    // forever), and at a page cap as a last resort.
+    const nextCursor = body.cursor;
+    const advanced =
+      typeof nextCursor === "string" &&
+      nextCursor.length > 0 &&
+      nextCursor !== cursor;
+    pages += 1;
+    cursor =
+      advanced && page.length > 0 && pages < MAX_LIST_PAGES
+        ? nextCursor
+        : undefined;
   } while (cursor);
   return records;
 }

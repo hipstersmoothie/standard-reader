@@ -28,6 +28,7 @@ import { z } from "zod";
 
 import { usePullToRefresh } from "#/components/reader/pull-to-refresh";
 import { authorApi } from "#/integrations/tanstack-query/api-author.functions";
+import { blocksApi } from "#/integrations/tanstack-query/api-blocks.functions";
 import { notesApi } from "#/integrations/tanstack-query/api-notes.functions";
 import { publicationApi } from "#/integrations/tanstack-query/api-publication.functions";
 import type {
@@ -52,6 +53,7 @@ import {
   ComicShelfSkeleton,
 } from "../components/comic/comic-shelf";
 import { AccountLabelsForDid } from "../components/reader/account-labels";
+import { BlockedNotice } from "../components/reader/blocked-notice";
 import { ArticleRow, FeatureArticle } from "../components/reader/cards";
 import { FeedLoadMore } from "../components/reader/feed-load-more";
 import {
@@ -564,6 +566,15 @@ function PublicationProfile() {
   );
   const signedIn = Boolean(session?.user);
 
+  // The block rides on the header itself, not a second query: resolving it
+  // after first paint would mean painting the blocked owner's hero — name,
+  // avatar, description — and then taking it away.
+  const block = header?.block ?? null;
+  const { data: canWrite } = useQuery({
+    ...blocksApi.getBlockCapabilityQueryOptions(),
+    enabled: Boolean(block),
+  });
+
   const { data: socialProof } = useQuery({
     ...publicationApi.getPublicationSocialProofQueryOptions(uri),
     enabled: signedIn,
@@ -575,6 +586,20 @@ function PublicationProfile() {
         <div {...stylex.props(styles.emptyNote)}>
           <Trans>We couldn’t find that publication.</Trans>
         </div>
+      </ReaderContent>
+    );
+  }
+
+  if (block) {
+    return (
+      <ReaderContent>
+        <BlockedNotice
+          block={block}
+          name={header.owner.displayName ?? header.owner.handle}
+          handle={header.owner.handle}
+          avatarUrl={header.owner.avatarUrl}
+          canWrite={canWrite?.canWrite ?? false}
+        />
       </ReaderContent>
     );
   }

@@ -1,8 +1,10 @@
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useLingui } from "@lingui/react/macro";
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useLayoutEffect } from "react";
 import { z } from "zod";
 
+import { blocksApi } from "#/integrations/tanstack-query/api-blocks.functions";
 import type { ArticleDetail } from "#/integrations/tanstack-query/api-publication.functions";
 import { publicationApi } from "#/integrations/tanstack-query/api-publication.functions";
 import { quoteShareApi } from "#/integrations/tanstack-query/api-quote-share.functions";
@@ -27,6 +29,7 @@ import {
   ArticleView,
 } from "../components/reader/article-view";
 import { ArticleViewSkeleton } from "../components/reader/article-view-skeleton";
+import { BlockedNotice } from "../components/reader/blocked-notice";
 import { hasRenderableArticleBody } from "../components/reader/content/extract-text";
 import {
   articlePublicationUrl,
@@ -250,6 +253,58 @@ export const Route = createFileRoute("/_layout/a/$did/$rkey")({
   component: ArticleRoute,
 });
 
+/**
+ * The article didn't resolve. Usually that means it isn't indexed — but it also
+ * means "withheld because of a block", and those two deserve different words.
+ *
+ * The reason is fetched here rather than returned by `getArticle`, which sends
+ * `null` for a blocked document on purpose: nothing about it, not even its
+ * title, should cross the wire. So the explanation costs one extra read, and
+ * only on the page that already found nothing.
+ */
+function ArticleMissing({ uri }: { uri: string }) {
+  const { t } = useLingui();
+  const { data: session } = useSuspenseQuery(user.getSessionQueryOptions);
+  const signedIn = Boolean(session?.user);
+
+  // Only a signed-in reader can be on either side of a block, so a signed-out
+  // reader — most of this page's traffic, since it is also what a stale link or
+  // a crawler hits — gets the answer with no extra request at all.
+  const { data: blockState, isPending } = useQuery({
+    ...publicationApi.getArticleBlockQueryOptions(uri),
+    enabled: signedIn,
+  });
+  const capability = useQuery({
+    ...blocksApi.getBlockCapabilityQueryOptions(),
+    enabled: Boolean(blockState),
+  });
+
+  if (!signedIn) return <ArticleNotFound />;
+
+  // A skeleton, not a blank page and not the wrong words: flashing "we couldn't
+  // find that article" and then replacing it with "you blocked this account"
+  // reads as the app changing its mind, but rendering nothing at all reads as
+  // the page having failed.
+  if (isPending) {
+    return (
+      <div aria-busy="true" aria-label={t`Loading article`}>
+        <ArticleViewSkeleton />
+      </div>
+    );
+  }
+  if (!blockState) return <ArticleNotFound />;
+
+  return (
+    <BlockedNotice
+      block={blockState.block}
+      name={blockState.account.displayName ?? blockState.account.handle}
+      handle={blockState.account.handle}
+      avatarUrl={blockState.account.avatarUrl}
+      canWrite={capability.data?.canWrite ?? false}
+    />
+  );
+}
+
 function ArticleRoute() {
   const { did, rkey } = Route.useParams();
   const uri = documentUriFromParams(did, rkey);
@@ -269,7 +324,7 @@ function ArticleRoute() {
   }, [article, openExternally]);
 
   if (!article) {
-    return <ArticleNotFound />;
+    return <ArticleMissing uri={uri} />;
   }
 
   return (

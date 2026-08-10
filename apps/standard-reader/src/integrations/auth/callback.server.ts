@@ -220,6 +220,18 @@ export async function handleAtprotoOAuthCallback(args: {
       }
     }
 
+    // Mirror the reader's Bluesky blocks, so someone they blocked years ago is
+    // already gone from the first page they see. Needs no OAuth scope — blocks
+    // are public repo records — which is why it sits outside the scope check
+    // above. Not awaited, for the same reason as the labeler import.
+    try {
+      const { scheduleReaderBlockSync } =
+        await import("#/server/blocks/sync.server");
+      scheduleReaderBlockSync(did);
+    } catch (error) {
+      console.warn("Failed to schedule Bluesky block sync:", error);
+    }
+
     const sessionToken = crypto.randomUUID();
     const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 

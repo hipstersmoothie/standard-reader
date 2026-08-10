@@ -19,6 +19,7 @@ import {
   subjectRkey,
 } from "#/server/atproto/repo-records";
 import { Collections, buildAtUri } from "#/server/atproto/uri";
+import { blockFilterDid } from "#/server/blocks/blocks";
 import {
   deleteRecord,
   upsertList,
@@ -578,6 +579,7 @@ const getListFeed = createServerFn({ method: "GET" })
         readForDid: trackReading ? session?.did : undefined,
         unreadForDid,
         countOldPostsAsUnread,
+        viewerDid: await blockFilterDid(db, schema, session?.did),
         limit: data.limit,
         offset: data.offset,
       });

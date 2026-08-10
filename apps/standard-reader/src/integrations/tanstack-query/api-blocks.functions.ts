@@ -1,0 +1,453 @@
+import { queryOptions } from "@tanstack/react-query";
+import { createServerFn } from "@tanstack/react-start";
+import { getRequest } from "@tanstack/react-start/server";
+import { and, eq } from "drizzle-orm";
+import { z } from "zod";
+
+import { hasBskyBlockWriteScope } from "#/integrations/auth/scope";
+import type { BlockEdge } from "#/lib/blocks";
+import {
+  getAtprotoSessionForRequest,
+  getReaderContextForRequest,
+} from "#/middleware/auth-session.server";
+import {
+  deleteBskyBlockRecords,
+  deleteBskyListBlockRecords,
+  putBskyBlockRecord,
+  putBskyListBlockRecord,
+} from "#/server/atproto/repo-records";
+import type { BlockListRow, BlockedAccountRow } from "#/server/blocks/blocks";
+import {
+  blockEdgeFor,
+  countReaderBlockedAccounts,
+  readerBlockLists,
+  readerBlockedAccounts,
+} from "#/server/blocks/blocks";
+import {
+  refreshOutgoingBlocks,
+  refreshOutgoingListBlocks,
+  scheduleReaderBlockSync,
+  syncBlockedList,
+} from "#/server/blocks/sync.server";
+import { observe } from "#/server/observability/log";
+
+import { dbMiddleware } from "./db-middleware";
+
+export type { BlockListRow, BlockedAccountRow };
+export type { BlockDirection, BlockEdge } from "#/lib/blocks";
+
+/**
+ * Blocks — reading and writing the reader's `app.bsky.graph.block` records.
+ *
+ * Writes go to the reader's repo, never to our tables: the record is the block,
+ * and the read-model is a mirror the ingest refreshes afterwards. Every write
+ * here re-syncs the mirror inline (see `refreshOutgoingBlocks`) so the block
+ * takes effect on the very next page rather than at the end of the sweep
+ * cadence — blocking someone and still seeing them would read as a failure.
+ */
+
+const blockInput = z.object({
+  did: z.string().min(1),
+});
+
+const blockListInput = z.object({
+  listUri: z.string().min(1),
+});
+
+const blockedAccountsInput = z.object({
+  limit: z.number().int().min(1).max(100).default(50),
+  offset: z.number().int().min(0).default(0),
+});
+
+/** The reader's moderation state, as the settings page renders it. */
+export interface BlocksSettings {
+  /** Accounts the reader blocks directly, newest first. */
+  accounts: Array<BlockedAccountRow>;
+  accountsNextOffset: number | null;
+  /** Total direct blocks, so the page can head the list with a count. */
+  accountCount: number;
+  /** Moderation lists the reader blocks, with mirror state for each. */
+  lists: Array<BlockListRow>;
+  /**
+   * Whether the reader has granted write access to their block records. When
+   * false the page is read-only: their blocks are still enforced, they just
+   * can't add or remove one without re-authorizing.
+   */
+  canWrite: boolean;
+  /** When their blocks were last mirrored, and what went wrong if anything. */
+  syncedAt: string | null;
+  syncError: string | null;
+}
+
+const getBlocksSettings = createServerFn({ method: "GET" })
+  .middleware([dbMiddleware])
+  .validator(blockedAccountsInput)
+  .handler(
+    observe(
+      "blocks.getSettings",
+      async ({ data, context }, span): Promise<BlocksSettings | null> => {
+        const { db, schema } = context;
+        const reader = await getReaderContextForRequest(getRequest());
+        if (!reader) return null;
+        span.set("did", reader.did);
+
+        const [accounts, accountCount, lists, account, syncRow] =
+          await Promise.all([
+            readerBlockedAccounts(db, schema, reader.did, {
+              limit: data.limit,
+              offset: data.offset,
+            }),
+            countReaderBlockedAccounts(db, schema, reader.did),
+            readerBlockLists(db, schema, reader.did),
+            db.query.account.findFirst({
+              where: and(
+                eq(schema.account.userId, reader.userId),
+                eq(schema.account.providerId, "atproto"),
+              ),
+              columns: { scope: true },
+            }),
+            db.query.blockSyncState.findFirst({
+              where: eq(schema.blockSyncState.did, reader.did),
+            }),
+          ]);
+
+        span.set("accounts", accountCount);
+        span.set("lists", lists.length);
+
+        return {
+          accounts,
+          // Against the real total, not `length === limit`. A reader with
+          // exactly 50 blocks fills the page precisely, and the naive test
+          // offers a "Load more" that fetches nothing.
+          accountsNextOffset:
+            data.offset + accounts.length < accountCount
+              ? data.offset + accounts.length
+              : null,
+          accountCount,
+          lists,
+          canWrite: hasBskyBlockWriteScope(account?.scope),
+          syncedAt: syncRow?.syncedAt?.toISOString() ?? null,
+          syncError: syncRow?.lastError ?? null,
+        };
+      },
+    ),
+  );
+
+/**
+ * A further page of the reader's blocked accounts.
+ *
+ * The settings page loads its first page with everything else, then pages
+ * through this. It exists because the list is genuinely unbounded — a reader who
+ * has used Bluesky's moderation tools for years can have hundreds of blocks —
+ * and a first page with no way past it silently disagrees with the count in the
+ * masthead right above it.
+ */
+const getBlockedAccountsPage = createServerFn({ method: "GET" })
+  .middleware([dbMiddleware])
+  .validator(blockedAccountsInput)
+  .handler(
+    observe("blocks.getAccountsPage", async ({ data, context }, span) => {
+      const { db, schema } = context;
+      const reader = await getReaderContextForRequest(getRequest());
+      if (!reader) return { accounts: [], nextOffset: null };
+
+      const [accounts, total] = await Promise.all([
+        readerBlockedAccounts(db, schema, reader.did, {
+          limit: data.limit,
+          offset: data.offset,
+        }),
+        countReaderBlockedAccounts(db, schema, reader.did),
+      ]);
+      span.set("count", accounts.length);
+      return {
+        accounts,
+        // See `getBlocksSettings` — paged against the real total.
+        nextOffset:
+          data.offset + accounts.length < total
+            ? data.offset + accounts.length
+            : null,
+      };
+    }),
+  );
+
+/**
+ * The two facts every surface outside `/settings/blocks` actually wants.
+ *
+ * Separate from {@link BlocksSettings} because the notices only need to know
+ * whether an Unblock button would work, and the settings row only needs a
+ * headline number — asking the full settings query for that ran five reads
+ * (including a page of blocked accounts nobody rendered) under a cache key that
+ * never shared with the settings page's own.
+ */
+export interface BlockCapability {
+  /** Whether the reader has granted write access to their block records. */
+  canWrite: boolean;
+  /** How many accounts they block directly. */
+  accountCount: number;
+}
+
+const getBlockCapability = createServerFn({ method: "GET" })
+  .middleware([dbMiddleware])
+  .handler(
+    observe(
+      "blocks.getCapability",
+      async ({ context }, span): Promise<BlockCapability | null> => {
+        const { db, schema } = context;
+        const reader = await getReaderContextForRequest(getRequest());
+        if (!reader) return null;
+
+        const [account, accountCount] = await Promise.all([
+          db.query.account.findFirst({
+            where: and(
+              eq(schema.account.userId, reader.userId),
+              eq(schema.account.providerId, "atproto"),
+            ),
+            columns: { scope: true },
+          }),
+          countReaderBlockedAccounts(db, schema, reader.did),
+        ]);
+        span.set("accounts", accountCount);
+        return {
+          canWrite: hasBskyBlockWriteScope(account?.scope),
+          accountCount,
+        };
+      },
+    ),
+  );
+
+/** The block between the reader and one account, for the profile block button. */
+const getBlockState = createServerFn({ method: "GET" })
+  .middleware([dbMiddleware])
+  .validator(blockInput)
+  .handler(
+    observe(
+      "blocks.getBlockState",
+      async ({ data, context }, span): Promise<BlockEdge | null> => {
+        const reader = await getReaderContextForRequest(getRequest());
+        if (!reader) return null;
+        const edge = await blockEdgeFor(
+          context.db,
+          context.schema,
+          reader.did,
+          data.did,
+        );
+        span.set("blocked", edge?.direction ?? "none");
+        return edge;
+      },
+    ),
+  );
+
+/**
+ * Thrown when the reader hasn't granted block-write access yet, so the UI can
+ * offer the re-authorize flow instead of surfacing a raw PDS rejection.
+ */
+const NEEDS_BLOCK_SCOPE = "needs-block-scope";
+
+/**
+ * The reader's authenticated PDS client, once we know they can write blocks.
+ *
+ * Resolves the full ATProto session (a `manager.resume()` round trip) rather
+ * than the cheap DB-only reader context — a write needs the client, and this
+ * only ever runs on a write.
+ */
+async function requireBlockWriter() {
+  const session = await getAtprotoSessionForRequest(getRequest());
+  if (!session) {
+    throw new Error("Unauthorized");
+  }
+  const [{ db }, schema] = await Promise.all([
+    import("#/db/index.server"),
+    import("#/db/schema"),
+  ]);
+  const account = await db.query.account.findFirst({
+    where: and(
+      eq(schema.account.userId, session.session.user.id),
+      eq(schema.account.providerId, "atproto"),
+    ),
+    columns: { scope: true },
+  });
+  if (!hasBskyBlockWriteScope(account?.scope)) {
+    throw new Error(NEEDS_BLOCK_SCOPE);
+  }
+  return session;
+}
+
+const blockAccount = createServerFn({ method: "POST" })
+  .validator(blockInput)
+  .handler(async ({ data }) => {
+    const session = await requireBlockWriter();
+    if (data.did === session.did) {
+      throw new Error("You can't block yourself");
+    }
+
+    await putBskyBlockRecord(
+      session.client,
+      session.did,
+      data.did,
+      new Date().toISOString(),
+    );
+    // Re-read the reader's own records rather than inserting the row we just
+    // wrote: the PDS is the source of truth, and this also picks up blocks made
+    // elsewhere since the last sweep.
+    await refreshOutgoingBlocks(session.did);
+    return { blocked: true };
+  });
+
+const unblockAccount = createServerFn({ method: "POST" })
+  .validator(blockInput)
+  .handler(async ({ data }) => {
+    const session = await requireBlockWriter();
+
+    // The reader's existing blocks were almost certainly written by Bluesky
+    // under TID rkeys, which the deterministic rkey can't derive — so the
+    // mirror's rkeys are what make unblocking work on a block made anywhere.
+    const [{ db }, schema] = await Promise.all([
+      import("#/db/index.server"),
+      import("#/db/schema"),
+    ]);
+    const rows = await db
+      .select({ rkey: schema.blocks.rkey })
+      .from(schema.blocks)
+      .where(
+        and(
+          eq(schema.blocks.blockerDid, session.did),
+          eq(schema.blocks.subjectDid, data.did),
+          eq(schema.blocks.deleted, false),
+        ),
+      );
+
+    await deleteBskyBlockRecords(
+      session.client,
+      session.did,
+      data.did,
+      rows.map((row) => row.rkey),
+    );
+    await refreshOutgoingBlocks(session.did);
+    return { blocked: false };
+  });
+
+const blockList = createServerFn({ method: "POST" })
+  .validator(blockListInput)
+  .handler(async ({ data }) => {
+    const session = await requireBlockWriter();
+    await putBskyListBlockRecord(
+      session.client,
+      session.did,
+      data.listUri,
+      new Date().toISOString(),
+    );
+
+    // Only the two things the reader is waiting on: their own listblock records
+    // (so the list appears in settings) and this list's membership (so the
+    // block is actually in force). Both are bounded.
+    //
+    // Not a full sweep. That walks the reader's repo, two Constellation
+    // indexes and every list they are on — hundreds of round trips with an 8s
+    // timeout each, held open on an HTTP request the reader is staring at, and
+    // it would re-walk *this* list a second time on top. It runs in the
+    // background instead, where its length costs nobody a spinner.
+    await refreshOutgoingListBlocks(session.did);
+    const mirrored = await syncBlockedList(data.listUri);
+    scheduleReaderBlockSync(session.did, true);
+    return { blocked: true, mirrored };
+  });
+
+const unblockList = createServerFn({ method: "POST" })
+  .validator(blockListInput)
+  .handler(async ({ data }) => {
+    const session = await requireBlockWriter();
+
+    const [{ db }, schema] = await Promise.all([
+      import("#/db/index.server"),
+      import("#/db/schema"),
+    ]);
+    const rows = await db
+      .select({ rkey: schema.blockLists.rkey })
+      .from(schema.blockLists)
+      .where(
+        and(
+          eq(schema.blockLists.blockerDid, session.did),
+          eq(schema.blockLists.listUri, data.listUri),
+          eq(schema.blockLists.deleted, false),
+        ),
+      );
+
+    await deleteBskyListBlockRecords(
+      session.client,
+      session.did,
+      data.listUri,
+      rows.map((row) => row.rkey),
+    );
+    // Same shape as blocking: re-read the reader's own records so the list is
+    // gone from settings on the next paint, and leave the rest to the sweep.
+    await refreshOutgoingListBlocks(session.did);
+    scheduleReaderBlockSync(session.did, true);
+    return { blocked: false };
+  });
+
+/**
+ * Force a block sweep now — the settings page's "Refresh" affordance.
+ *
+ * Starts the sweep and returns; it does not wait for it. A sweep is dozens to
+ * hundreds of network round trips against Constellation and the AppView, with
+ * no bound that a reader would recognise as "a moment" — awaiting it would hang
+ * the request, and since nothing rate-limits a button, awaiting it would also
+ * let one reader hold open as many concurrent sweeps as they can click.
+ * `scheduleReaderBlockSync` dedupes per reader, so the second press joins the
+ * first run rather than starting another.
+ *
+ * The page reflects progress through `syncedAt` on the settings query, which is
+ * the honest signal: it changes when the sweep has actually finished.
+ */
+const refreshBlocks = createServerFn({ method: "POST" }).handler(async () => {
+  const reader = await getReaderContextForRequest(getRequest());
+  if (!reader) {
+    throw new Error("Unauthorized");
+  }
+  scheduleReaderBlockSync(reader.did, true);
+  return { started: true };
+});
+
+function getBlocksSettingsQueryOptions({
+  limit = 50,
+  offset = 0,
+}: { limit?: number; offset?: number } = {}) {
+  return queryOptions({
+    queryKey: ["blocks", "settings", limit, offset] as const,
+    queryFn: async () => getBlocksSettings({ data: { limit, offset } }),
+    staleTime: 30_000,
+  });
+}
+
+function getBlockCapabilityQueryOptions() {
+  return queryOptions({
+    queryKey: ["blocks", "capability"] as const,
+    queryFn: async () => getBlockCapability(),
+    staleTime: 30_000,
+  });
+}
+
+function getBlockStateQueryOptions(did: string) {
+  return queryOptions({
+    queryKey: ["blocks", "state", did] as const,
+    queryFn: async () => getBlockState({ data: { did } }),
+    staleTime: 30_000,
+  });
+}
+
+export { NEEDS_BLOCK_SCOPE };
+
+export const blocksApi = {
+  getBlocksSettings,
+  getBlocksSettingsQueryOptions,
+  getBlockedAccountsPage,
+  getBlockCapability,
+  getBlockCapabilityQueryOptions,
+  getBlockState,
+  getBlockStateQueryOptions,
+  blockAccount,
+  unblockAccount,
+  blockList,
+  unblockList,
+  refreshBlocks,
+};

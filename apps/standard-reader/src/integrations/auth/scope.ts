@@ -98,6 +98,27 @@ export const BSKY_PREFERENCES_READ_SCOPE = atprotoScope.rpc({
 });
 
 /**
+ * Write access to the reader's Bluesky block records — `app.bsky.graph.block`
+ * for an account and `app.bsky.graph.listblock` for a moderation list.
+ *
+ * Deliberately Bluesky's lexicon rather than one of ours. A block is already a
+ * portable repo record that every AT Protocol app honours, so blocking from
+ * here writes the record the rest of the network already reads: block someone
+ * in Standard Reader and they are blocked on Bluesky too, and wherever the
+ * reader goes next. A `app.standard-reader.block` would have been a block that
+ * only worked in one app, which is not what a block means.
+ *
+ * *Reading* blocks needs no scope at all — `com.atproto.repo.listRecords` is
+ * public — so honouring a reader's existing blocks costs them no extra consent.
+ * This is requested only when they choose to block from inside the app,
+ * persisted via `user.blockingEnabled` so it is silently re-requested on every
+ * later login (mirroring {@link MARGIN_FULL_SCOPE}).
+ */
+export const BSKY_BLOCK_WRITE_SCOPE = atprotoScope.repo({
+  collection: ["app.bsky.graph.block", "app.bsky.graph.listblock"],
+});
+
+/**
  * Basic sign-in scope — what 95% of readers need. Covers app-owned reader-state
  * (`authBasicFeatures`) plus standard.site follows & likes (`authSocial`).
  */
@@ -147,6 +168,7 @@ export const clientMetadataScope = [
     MARGIN_FULL_SCOPE,
     SEMBLE_FULL_SCOPE,
     EMAIL_SCOPE,
+    BSKY_BLOCK_WRITE_SCOPE,
   ]),
 ];
 
@@ -185,6 +207,7 @@ export interface ScopeUserLookup {
   marginSaveEnabled?: boolean | null;
   sembleSaveEnabled?: boolean | null;
   weeklyDigestEnabled?: boolean | null;
+  blockingEnabled?: boolean | null;
 }
 
 /** Addenda scopes that can be requested alongside the base tier, keyed by the
@@ -195,6 +218,7 @@ export interface ScopeAddenda {
   margin?: boolean;
   semble?: boolean;
   email?: boolean;
+  blocking?: boolean;
 }
 
 /**
@@ -235,6 +259,9 @@ export function resolveAuthScopeForUser(
   }
   if (addenda.email || user?.weeklyDigestEnabled === true) {
     extra.add(EMAIL_SCOPE);
+  }
+  if (addenda.blocking || user?.blockingEnabled === true) {
+    extra.add(BSKY_BLOCK_WRITE_SCOPE);
   }
   return formatOAuthScope([...extra]);
 }
@@ -472,6 +499,30 @@ export function hasBskyPreferencesScope(
       (token.startsWith("rpc") &&
         (token.includes("lxm=app.bsky.actor.getPreferences") ||
           token.includes("lxm=*"))),
+  );
+}
+
+/**
+ * Detect whether the granted scope includes write access to the reader's
+ * Bluesky block records.
+ *
+ * Accepts the exact scope we request, or (in either serialization) a `repo`
+ * token covering `app.bsky.graph.block`. The source of truth for "the reader
+ * can actually block from here" — as opposed to `user.blockingEnabled`, which
+ * is set optimistically before the re-auth completes.
+ *
+ * A reader without it still has every block they made elsewhere enforced; they
+ * just can't create new ones without re-authorizing, which is what the block
+ * button checks before it offers.
+ */
+export function hasBskyBlockWriteScope(
+  grantedScope: string | null | undefined,
+): boolean {
+  if (!grantedScope) return false;
+  const tokens = grantedScope.split(/\s+/);
+  if (tokens.includes(BSKY_BLOCK_WRITE_SCOPE)) return true;
+  return tokens.some((token) =>
+    repoScopeAllowsCreateForCollection(token, "app.bsky.graph.block"),
   );
 }
 

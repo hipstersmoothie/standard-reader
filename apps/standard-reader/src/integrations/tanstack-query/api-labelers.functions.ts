@@ -18,6 +18,7 @@ import {
   subjectRkey,
 } from "#/server/atproto/repo-records";
 import { Collections, buildAtUri } from "#/server/atproto/uri";
+import { blockFilterDid } from "#/server/blocks/blocks";
 import {
   deleteRecord,
   upsertLabelerSubscription,
@@ -758,11 +759,19 @@ const getLabeledDocuments = createServerFn({ method: "GET" })
         labelsByUri[row.uri] = vals;
       }
 
+      const viewerSession = await getAtprotoSessionForRequest(getRequest());
       const documents = await selectArticleCardsByUris(
         context.db,
         context.schema,
         uris,
-        { lite: true },
+        {
+          lite: true,
+          viewerDid: await blockFilterDid(
+            context.db,
+            context.schema,
+            viewerSession?.did,
+          ),
+        },
       );
       span.set("count", documents.length);
       span.set("total", total);

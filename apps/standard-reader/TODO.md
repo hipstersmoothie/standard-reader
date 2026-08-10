@@ -1837,6 +1837,87 @@ Standard AT Proto labels: subscribe to labelers, see/blur/hide their labels whil
       live `queryLabels` per page, for lower latency.
 - [ ] **Deploy claudeslop** — Railway service + persistent SQLite volume; publish its did:web.
 
+### Blocks & block lists
+
+A reader's Bluesky blocks apply here, in both directions, with no setup. See
+[`APP_VISION.md` §"Blocks & block lists"](./APP_VISION.md#blocks--block-lists).
+
+- [x] **Honour `app.bsky.graph.block` rather than inventing our own lexicon** — a block is already a
+      portable repo record every AT Protocol app reads, so blocking here writes that record and
+      blocking elsewhere is honoured here. An `app.standard-reader.block` would have been a block
+      that only worked in one app.
+- [x] **Read-model mirror** (migration `0031`) — `blocks`, `block_lists`, `block_list_items`,
+      `block_list_sync_state`, `block_sync_state`. One `blocks` row per record covers both
+      directions (`blocker_did` / `subject_did`), so the four block sources collapse to a four-branch
+      union.
+- [x] **Per-reader sync, not the firehose tap** — a block against one of our readers can be written
+      by any repo on the network, and the tap only tracks repos we index. `syncReaderBlocks` pulls
+      the reader's own records from their PDS (unauthenticated `listRecords`), incoming blocks from
+      Constellation backlinks (`app.bsky.graph.block:.subject`), and mod-list membership from the
+      public AppView. Scheduled from the OAuth callback and the signed-in shell read, TTL-guarded
+      (15 min), forced inline after a block/unblock write.
+- [x] **Outgoing replaces; incoming replaces only on a complete sweep** — the reader's own records
+      are authoritative so a sweep can soft-delete what's gone. Incoming rows come from a
+      best-effort index, so their delete is gated on `BacklinkSweep.complete`: a truncated or failed
+      sweep adds but never removes, and must never read as "nobody blocks you any more".
+- [x] **Blocked-by-list** — Bluesky's `blockedByList`: lists the reader is _on_ (Constellation on
+      `app.bsky.graph.listitem:.subject`) crossed with who blocks those lists. Bounded to
+      `MAX_INCOMING_LISTS`, since being on a list is common and each one costs a record fetch plus a
+      Constellation query.
+- [x] **Enforcement** — SQL `NOT EXISTS` (`notBlockedByViewer`) on everything paginated (home,
+      latest, trending, tag, search, discover directory, publication archives, list feeds, XRPC
+      feeds); JS post-filter on rails, profile tabs, friend surfaces and third-party discussion
+      (Bluesky / Margin / Semble / pckt / Leaflet). Always bounded by the DIDs a page renders, never
+      by the reader's block set — a 40k-member blocklist has to stay an index probe.
+- [x] **Author _and_ publication owner** — `ArticleCard.publicationOwnerDid` carries the owner, and
+      both the SQL predicate and the JS filter check it. A guest post in a blocked owner's
+      publication puts that owner in the byline; before this the field existed and was unit-tested
+      but no production card actually carried it, so the whole owner branch was dead.
+- [x] **`blockFilterDid` gates the SQL predicate** — three correlated `NOT EXISTS` per candidate row
+      inside the follow feed's per-source laterals is the exact shape of the 1651ms corpus-walk
+      regression. The predicate is now added only for readers who actually block somebody, answered
+      from an in-process cache (60s TTL, invalidated on every write). `queries.explain.test.ts`
+      covers the filtered plan.
+- [x] **Detail routes don't serialize a block hop** — `getArticle`, `getPublicationProfile`,
+      `getAuthorProfile` and the per-tab loaders warm the guard concurrently with the read they were
+      making anyway, instead of awaiting a block probe ahead of it.
+- [x] **Digest, push and per-reader RSS** — all filtered. These arrive uninvited (inbox, lock
+      screen, RSS client), so an opt-in made before the block does not survive it.
+- [x] **Friend surfaces filter before ranking** — `resolveFriendPublications` applies blocks up
+      front so the headline counts, the Discover avatar stack (`previewAuthors`) and `nextOffset`
+      all describe the same set as the rendered rows.
+- [x] **Blocked pages explain themselves** — profile, publication and article render the block and
+      which direction it runs, with Unblock only when it's the reader's own. The article body is
+      withheld outright and the reason is a separate opt-in read, so nothing about a blocked
+      document crosses the wire.
+- [x] **No frame of the blocked page first** — block state rides on the query that fetches the
+      content it withholds (`getPublicationHeader`, `getAuthorSummary`), not a second client query
+      that resolves after paint. Mention hovercards read the same queries, so an inline chip can't
+      summarise an account the profile page withholds.
+- [x] **Blocking is confirmed and failure is reported** — the overflow-menu item opens an
+      `AlertDialog` before writing a public record, and every block mutation has an `onError` toast.
+- [x] **Hidden replies are explained** — the Discussion badge stays the cached unfiltered count, so
+      the section says how many replies the reader's blocks removed rather than showing "No
+      discussion yet" under a non-zero badge.
+- [x] **Writing needs consent, reading doesn't** — `listRecords` is public, so existing blocks are
+      enforced whatever scope was granted. `upgradeToBlocking` requests the write scope on the first
+      Block press, persisted via `user.blockingEnabled` (migration `0032`).
+- [x] **Settings → Blocked accounts** (`/settings/blocks`) — the reader's own blocks, paged, plus
+      their subscribed block lists with each list's mirrored size, a Partial badge past the cap and
+      a sentence saying what Partial means. Refresh starts a background sweep and says so rather
+      than holding the request open for hundreds of round trips.
+- [ ] **Mutes** — `app.bsky.graph.muteActor` / mute lists are a separate, softer signal (hide from
+      feeds but keep the profile reachable) and are not mirrored yet.
+- [ ] **Full mirror for large blocklists** — lists past `MAX_LIST_PAGES` are stored truncated and
+      flagged. Fine for the common case; a list with six-figure membership is under-enforced until
+      the mirror is paged in the background rather than inline in a reader's sweep.
+- [ ] **Translate the blocks UI** — the strings are extracted into all ten catalogs
+      (`pnpm i18n:extract`) but ship untranslated; they render in English outside `en` until a
+      translation pass runs.
+- [ ] **Rate-limit the sweep beyond the in-process guard** — `syncReaderBlocks` dedupes per reader
+      within one process, which is enough for the single web service today. A second instance can
+      still sweep the same reader concurrently; an advisory lock would make the guard cluster-wide.
+
 ---
 
 ## 15. Format conversion (`@standard-reader/converter` + CLI)

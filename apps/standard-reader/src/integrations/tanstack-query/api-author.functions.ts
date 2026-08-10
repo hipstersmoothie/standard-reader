@@ -4,6 +4,7 @@ import { getRequest } from "@tanstack/react-start/server";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 
+import type { BlockEdge } from "#/lib/blocks";
 import { fetchBlueskyPublicProfileFields } from "#/lib/bluesky-public-profile";
 import type { HideableTabId } from "#/lib/profile-tabs";
 import { parseHiddenTabs } from "#/lib/profile-tabs";
@@ -11,6 +12,11 @@ import { getReaderDidForRequest } from "#/middleware/auth-session.server";
 import { resolveIdentity } from "#/server/atproto/identity";
 import { resolveAuthorDid } from "#/server/atproto/resolve-author-ref";
 import { resolveSifaProfileUrl } from "#/server/atproto/sifa-profile";
+import {
+  blockEdgeFor,
+  blockFilterDid,
+  filterBlockedCards,
+} from "#/server/blocks/blocks";
 import { readAccountLabels } from "#/server/labeler/labels.server";
 import { observe } from "#/server/observability/log";
 import {
@@ -89,10 +95,26 @@ const authorSummaryInput = z.object({
 export interface AuthorSummary {
   profile: ProfileSummary;
   stats: AuthorProfileStats;
+  /**
+   * Set when the viewer and this account are blocked from each other. Hovercards
+   * render it instead of the bio and counts: the profile page withholds a
+   * blocked account, and a hovercard that still summarised them would be the
+   * same content through a smaller window.
+   */
+  block: BlockEdge | null;
 }
 
 export interface AuthorProfile {
   profile: ProfileSummary;
+  /**
+   * Set when the viewer and this account are blocked from each other. The
+   * profile still resolves — identity, and *which* way the block runs, are what
+   * the page needs to explain itself — but every content list comes back empty
+   * and the stats read zero, so nothing they wrote reaches the viewer.
+   *
+   * Null for signed-out viewers and for everyone not blocked.
+   */
+  block: BlockEdge | null;
   stats: {
     publicationCount: number;
     documentCount: number;
@@ -205,6 +227,25 @@ async function resolveAuthorProfile(
   };
 }
 
+/**
+ * Whether this profile is withheld from the viewer, for the per-tab loaders.
+ *
+ * Two-step so the common case costs nothing: `blockFilterDid` answers "does this
+ * reader block anybody" from an in-process cache, and only a reader who does
+ * pays for the edge probe. Every tab loader calls this on every page, so a
+ * single unconditional round trip here would be a round trip on every
+ * load-more.
+ */
+async function blockedFromAuthor(
+  db: Db,
+  schema: Schema,
+  viewerDid: string | null | undefined,
+  did: string,
+): Promise<boolean> {
+  if (!(await blockFilterDid(db, schema, viewerDid))) return false;
+  return (await blockEdgeFor(db, schema, viewerDid, did)) != null;
+}
+
 function nextOffsetForPage(
   offset: number,
   limit: number,
@@ -262,6 +303,46 @@ const getAuthorProfile = createServerFn({ method: "GET" })
         }
         const includeHidden = viewerDid != null && viewerDid === did;
         span.set("ownProfile", includeHidden);
+
+        // A blocked profile renders as the block, not as a profile with the
+        // rows filtered out — loading the tabs first and emptying them
+        // afterwards would pay for content the viewer must not see, and would
+        // leak counts through the stats. So this one *does* gate the reads.
+        //
+        // What keeps that honest is `blockFilterDid`: for the overwhelming
+        // majority of readers — everyone who blocks nobody — it answers from an
+        // in-process cache and no query runs at all, so the profile fan-out
+        // below starts without waiting on a round trip.
+        const block = (await blockFilterDid(db, schema, viewerDid))
+          ? await blockEdgeFor(db, schema, viewerDid, did)
+          : null;
+        if (block) {
+          span.set("blocked", block.direction);
+          return {
+            profile: await resolveAuthorProfile(db, schema, did),
+            block,
+            stats: {
+              publicationCount: 0,
+              documentCount: 0,
+              subscriberCount: 0,
+              subscriptionCount: 0,
+              recommendationCount: 0,
+            },
+            publications: [],
+            publicationsNextOffset: null,
+            subscriptions: [],
+            subscriptionsNextOffset: null,
+            readers: [],
+            readersNextOffset: null,
+            recommendations: [],
+            recommendationsNextOffset: null,
+            documents: [],
+            documentsNextOffset: null,
+            hiddenTabs: [],
+            showLikes: false,
+            labels: [],
+          };
+        }
 
         const [
           profile,
@@ -371,6 +452,7 @@ const getAuthorProfile = createServerFn({ method: "GET" })
 
         return {
           profile,
+          block: null,
           stats,
           publications,
           publicationsNextOffset:
@@ -430,10 +512,18 @@ const getAuthorSummary = createServerFn({ method: "GET" })
         const did = await resolveAuthorDid(db, schema, data.did);
         span.set("did", did);
 
-        const [profile, stats] = await Promise.all([
+        const [profile, stats, viewerDid] = await Promise.all([
           resolveAuthorProfile(db, schema, did),
           authorProfileStats(db, schema, did),
+          getReaderDidForRequest(getRequest()).then(async (viewer) => {
+            if (viewer) await blockFilterDid(db, schema, viewer);
+            return viewer;
+          }),
         ]);
+        const block = (await blockFilterDid(db, schema, viewerDid))
+          ? await blockEdgeFor(db, schema, viewerDid, did)
+          : null;
+        if (block) span.set("blocked", block.direction);
 
         const hasIdentity =
           profile.handle != null ||
@@ -451,7 +541,22 @@ const getAuthorSummary = createServerFn({ method: "GET" })
         }
 
         span.set("found", true);
-        return { profile, stats };
+        // Identity survives the block — the hovercard still has to name
+        // somebody — but the counts do not: they would leak how much a blocked
+        // account has written straight past the block.
+        return block
+          ? {
+              profile,
+              block,
+              stats: {
+                publicationCount: 0,
+                documentCount: 0,
+                subscriberCount: 0,
+                subscriptionCount: 0,
+                recommendationCount: 0,
+              },
+            }
+          : { profile, stats, block: null };
       },
     ),
   );
@@ -493,6 +598,11 @@ const getAuthorPublications = createServerFn({ method: "GET" })
         const includeHidden = viewerDid != null && viewerDid === did;
         span.set("ownProfile", includeHidden);
 
+        if (await blockedFromAuthor(db, schema, viewerDid, did)) {
+          span.set("blocked", true);
+          return { items: [], nextOffset: null };
+        }
+
         const items = await authorPublications(db, schema, {
           ...data,
           did,
@@ -521,11 +631,17 @@ const getAuthorSubscriptions = createServerFn({ method: "GET" })
         span.set("did", did);
         span.set("offset", data.offset);
 
+        const viewerDid = await getReaderDidForRequest(getRequest());
+        if (await blockedFromAuthor(db, schema, viewerDid, did)) {
+          span.set("blocked", true);
+          return { items: [], nextOffset: null };
+        }
+
         const page = await authorSubscriptions(db, schema, { ...data, did });
         span.set("count", page.items.length);
 
         return {
-          items: page.items,
+          items: await filterBlockedCards(db, schema, viewerDid, page.items),
           nextOffset: nextOffsetForPage(
             data.offset,
             data.limit,
@@ -549,11 +665,17 @@ const getAuthorReaders = createServerFn({ method: "GET" })
         span.set("did", did);
         span.set("offset", data.offset);
 
+        const viewerDid = await getReaderDidForRequest(getRequest());
+        if (await blockedFromAuthor(db, schema, viewerDid, did)) {
+          span.set("blocked", true);
+          return { items: [], nextOffset: null };
+        }
+
         const page = await authorReaders(db, schema, { ...data, did });
         span.set("count", page.items.length);
 
         return {
-          items: page.items,
+          items: await filterBlockedCards(db, schema, viewerDid, page.items),
           nextOffset: nextOffsetForPage(
             data.offset,
             data.limit,
@@ -577,12 +699,20 @@ const getAuthorRecommendations = createServerFn({ method: "GET" })
         span.set("did", did);
         span.set("offset", data.offset);
 
-        // Resolve the page and the viewer identity together — the follow-set
-        // lookup only needs the viewer's DID, not the page rows.
+        // Resolve the page, the viewer identity and the block check together —
+        // none of them needs the others' rows, and the block check is the one
+        // that decides whether the page is returned at all.
         const [page, viewerDid] = await Promise.all([
           authorRecommendations(db, schema, { ...data, did }),
-          getReaderDidForRequest(getRequest()),
+          getReaderDidForRequest(getRequest()).then(async (viewer) => {
+            if (viewer) await blockFilterDid(db, schema, viewer);
+            return viewer;
+          }),
         ]);
+        if (await blockedFromAuthor(db, schema, viewerDid, did)) {
+          span.set("blocked", true);
+          return { items: [], nextOffset: null };
+        }
         span.set("count", page.items.length);
 
         // Likes tab: exclude the profile owner from the attribution (see
@@ -626,12 +756,20 @@ const getAuthorDocuments = createServerFn({ method: "GET" })
         span.set("did", did);
         span.set("offset", data.offset);
 
-        // Resolve the page and the viewer identity together — the follow-set
-        // lookup only needs the viewer's DID, not the page rows.
+        // Resolve the page, the viewer identity and the block check together —
+        // none of them needs the others' rows, and the block check is the one
+        // that decides whether the page is returned at all.
         const [page, viewerDid] = await Promise.all([
           authorDocuments(db, schema, { ...data, did }),
-          getReaderDidForRequest(getRequest()),
+          getReaderDidForRequest(getRequest()).then(async (viewer) => {
+            if (viewer) await blockFilterDid(db, schema, viewer);
+            return viewer;
+          }),
         ]);
+        if (await blockedFromAuthor(db, schema, viewerDid, did)) {
+          span.set("blocked", true);
+          return { items: [], nextOffset: null };
+        }
         span.set("count", page.items.length);
 
         // Writing tab: this author's own posts — the helper already drops

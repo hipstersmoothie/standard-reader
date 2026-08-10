@@ -41,6 +41,7 @@ function makeCard(uri: string, isRead: boolean): ArticleCard {
     publicationIconUrl: null,
     publicationOwnerAvatarUrl: null,
     publicationOwnerHandle: null,
+    publicationOwnerDid: null,
     publicationBannerUrl: null,
     publicationTopic: null,
     authorHandle: null,

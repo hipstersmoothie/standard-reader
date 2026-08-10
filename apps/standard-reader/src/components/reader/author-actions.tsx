@@ -34,6 +34,7 @@ import { listApi } from "#/integrations/tanstack-query/api-lists.functions";
 import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
 import { useLoginSearch } from "#/utils/use-login-search";
 
+import { BlockUserDialog, BlockUserMenuItem } from "./block-user-menu-item";
 import { FollowUserButton } from "./follow-user-button";
 import { NotifyButton } from "./notify-button";
 import { RssFeedDialog } from "./rss-feed-button";
@@ -186,6 +187,7 @@ export function AuthorActions({
   const queryClient = useQueryClient();
   const share = useShareActions({ pageUrl });
   const [rssOpen, setRssOpen] = useState(false);
+  const [blockOpen, setBlockOpen] = useState(false);
 
   const { data: followStatus } = useQuery({
     ...readerApi.getUserFollowStatusQueryOptions(did),
@@ -315,6 +317,18 @@ export function AuthorActions({
                 <Trans>Resume</Trans>
               </MenuItem>
             ) : null}
+            {/* Last, and behind its own separator: blocking is the one item
+                here that hides things rather than opening them. */}
+            {isOwnProfile || !signedIn ? null : (
+              <>
+                <MenuSeparator />
+                <BlockUserMenuItem
+                  name={user.displayName ?? handle}
+                  iconSize={MENU_ICON}
+                  onPress={() => setBlockOpen(true)}
+                />
+              </>
+            )}
           </Menu>
         </ButtonGroup>
         {isOwnProfile ? null : (
@@ -336,6 +350,17 @@ export function AuthorActions({
         isOpen={rssOpen}
         onOpenChange={setRssOpen}
       />
+
+      {/* Outside `<Menu>`, like the RSS dialog above: a dialog rendered inside
+          the menu unmounts with the popover the moment the item is pressed. */}
+      {isOwnProfile || !signedIn ? null : (
+        <BlockUserDialog
+          did={did}
+          name={user.displayName ?? handle}
+          isOpen={blockOpen}
+          onOpenChange={setBlockOpen}
+        />
+      )}
     </>
   );
 }
