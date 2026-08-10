@@ -46,6 +46,7 @@ import {
 } from "react";
 import { z } from "zod";
 
+import { usePullToRefresh } from "#/components/reader/pull-to-refresh";
 import { ButtonLink } from "#/components/router-links";
 import {
   TRENDING_PAGE_LIMIT,
@@ -471,6 +472,7 @@ function LatestFeedPanel({
 }
 
 function Latest() {
+  usePullToRefresh();
   const { t } = useLingui();
   const fmt = useFormatters();
   const { filter } = Route.useSearch();

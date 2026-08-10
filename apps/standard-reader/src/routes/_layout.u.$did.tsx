@@ -40,6 +40,7 @@ import { Link as AriaLink } from "react-aria-components";
 import { z } from "zod";
 
 import { formatReaders, initials } from "#/components/reader/format";
+import { usePullToRefresh } from "#/components/reader/pull-to-refresh";
 import { ButtonLink } from "#/components/router-links";
 import type {
   AuthorProfile,
@@ -538,6 +539,7 @@ function LoadMoreFooter({
 }
 
 function AuthorProfilePage() {
+  usePullToRefresh();
   const { did } = Route.useParams();
   const { data: initialPage } = useSuspenseQuery(
     authorApi.getAuthorProfileQueryOptions(did, {

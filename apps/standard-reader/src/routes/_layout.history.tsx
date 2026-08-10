@@ -16,6 +16,7 @@ import { useSuspenseInfiniteQuery } from "@tanstack/react-query";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useCallback } from "react";
 
+import { usePullToRefresh } from "#/components/reader/pull-to-refresh";
 import { ButtonLink } from "#/components/router-links";
 import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
@@ -100,6 +101,7 @@ const styles = stylex.create({
 });
 
 function ReaderHistory() {
+  usePullToRefresh();
   const { t } = useLingui();
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useSuspenseInfiniteQuery(readerApi.getReadingHistoryInfiniteQueryOptions());

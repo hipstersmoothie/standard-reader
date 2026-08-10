@@ -39,6 +39,7 @@ import {
 } from "react";
 import { z } from "zod";
 
+import { usePullToRefresh } from "#/components/reader/pull-to-refresh";
 import { ButtonLink } from "#/components/router-links";
 import {
   DISCOVER_TOPICS_LIMIT,
@@ -1022,6 +1023,7 @@ function DiscoverMastheadDek({
 }
 
 function Discover() {
+  usePullToRefresh();
   const { t } = useLingui();
   const fmt = useFormatters();
   const { data: session } = useQuery(user.getSessionQueryOptions);

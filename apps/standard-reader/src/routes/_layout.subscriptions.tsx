@@ -15,6 +15,7 @@ import * as stylex from "@stylexjs/stylex";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 
+import { usePullToRefresh } from "#/components/reader/pull-to-refresh";
 import { ButtonLink } from "#/components/router-links";
 import { subscriptionsApi } from "#/integrations/tanstack-query/api-subscriptions.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
@@ -114,6 +115,7 @@ const styles = stylex.create({
 });
 
 function ReaderSubscriptions() {
+  usePullToRefresh();
   const { t } = useLingui();
   const { data: sidebar } = useSuspenseQuery(sidebarQueryOptions());
   const { data: lists } = useQuery(listsQueryOptions());

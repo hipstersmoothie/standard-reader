@@ -37,6 +37,7 @@ import { Eye, Layers, Palette, Pencil, Plus, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { CollectionsUpgradeOverlay } from "#/components/reader/collections-upgrade-gate";
+import { usePullToRefresh } from "#/components/reader/pull-to-refresh";
 import { IconButtonLink } from "#/components/router-links";
 import { hasCollectionsScope } from "#/integrations/auth/scope";
 import type {
@@ -737,6 +738,7 @@ function CollectionsEmptyState({
 }
 
 function CollectionsPage() {
+  usePullToRefresh();
   const { t } = useLingui();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
