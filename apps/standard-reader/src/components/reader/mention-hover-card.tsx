@@ -36,6 +36,8 @@ import { Popover as AriaPopover } from "react-aria-components";
 
 import { authorApi } from "#/integrations/tanstack-query/api-author.functions";
 import { publicationApi } from "#/integrations/tanstack-query/api-publication.functions";
+import type { BlockDirection } from "#/lib/blocks";
+import { blockIsOutgoing } from "#/lib/blocks";
 import { useFormatters } from "#/lib/use-formatters";
 
 import { useEngagementCountsVisible } from "./engagement-visibility";
@@ -322,6 +324,8 @@ export function UserHoverCardBody({
       </div>
       {isLoading && !data ? (
         <SkeletonLines />
+      ) : data?.block ? (
+        <BlockedHoverNote direction={data.block.direction} />
       ) : (
         <>
           {profile?.description ? (
@@ -331,6 +335,27 @@ export function UserHoverCardBody({
         </>
       )}
     </HoverCardFrame>
+  );
+}
+
+/**
+ * What a hovercard says about an account the viewer is blocked from.
+ *
+ * A card, not an omission: the chip in the prose still has to lead somewhere, so
+ * the card keeps the name and says why there is nothing under it. Which
+ * direction the block runs decides the wording — "you blocked them" and "they
+ * blocked you" are not the same fact, and only one of them is the viewer's to
+ * change.
+ */
+function BlockedHoverNote({ direction }: { direction: BlockDirection }) {
+  return (
+    <p {...stylex.props(styles.desc)}>
+      {blockIsOutgoing(direction) ? (
+        <Trans>You blocked this account, so their writing is hidden.</Trans>
+      ) : (
+        <Trans>This account blocks you, so you can't see their writing.</Trans>
+      )}
+    </p>
   );
 }
 
@@ -358,7 +383,7 @@ export function PublicationHoverCardBody({
   const iconUrl = pub?.iconUrl ?? fallbackIconUrl ?? null;
 
   const statParts: Array<string> = [];
-  if (pub) {
+  if (pub && !data?.block) {
     if (pub.documentCount > 0) {
       statParts.push(articleCount(i18n, pub.documentCount));
     }
@@ -404,6 +429,8 @@ export function PublicationHoverCardBody({
       </div>
       {isLoading && !data ? (
         <SkeletonLines />
+      ) : data?.block ? (
+        <BlockedHoverNote direction={data.block.direction} />
       ) : (
         <>
           {pub?.description ? (

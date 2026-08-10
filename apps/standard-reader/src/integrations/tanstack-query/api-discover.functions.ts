@@ -4,7 +4,7 @@ import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
 
 import { getAtprotoSessionForRequest } from "#/middleware/auth-session.server";
-import { filterBlockedCards } from "#/server/blocks/blocks";
+import { blockFilterDid, filterBlockedCards } from "#/server/blocks/blocks";
 import type { Span } from "#/server/observability/log";
 import { observe } from "#/server/observability/log";
 import { attachReaderSpanContext } from "#/server/observability/span-context.ts";
@@ -255,21 +255,12 @@ const getFriendPublishers = createServerFn({ method: "GET" })
       span.set("signedIn", true);
       span.set("offset", data.offset);
 
-      const raw = await friendPublishers(db, schema, did, {
+      // Blocks are applied inside `friendPublishers` so the counts and the
+      // avatar stack agree with the rows — see `resolveFriendPublications`.
+      const result = await friendPublishers(db, schema, did, {
         limit: data.limit,
         offset: data.offset,
       });
-      // Following someone on Bluesky and being blocked by them is not a
-      // contradiction — a block is one-sided, and the follow can predate it.
-      const result = {
-        ...raw,
-        publications: await filterBlockedCards(
-          db,
-          schema,
-          did,
-          raw.publications,
-        ),
-      };
       span.set("people", result.totalPeople);
       span.set("publications", result.publicationCount);
       span.set("degraded", result.degraded);
@@ -310,11 +301,13 @@ const getFriendArticles = createServerFn({ method: "GET" })
         followSets.userDids,
         result.items,
       );
-      const items = await filterBlockedCards(
+      // `friendArticles` draws from the same block-filtered publication set, so
+      // the rows are already clear of blocked owners.
+      const items = await attachViewerRecommendedToArticles(
         db,
         schema,
         did,
-        await attachViewerRecommendedToArticles(db, schema, did, withRecs),
+        withRecs,
       );
       span.set("count", items.length);
       span.set("degraded", result.degraded);
@@ -337,14 +330,10 @@ const getFriendPeople = createServerFn({ method: "GET" })
       span.set("signedIn", true);
       span.set("offset", data.offset);
 
-      const raw = await friendPeople(db, schema, did, {
+      const result = await friendPeople(db, schema, did, {
         limit: data.limit,
         offset: data.offset,
       });
-      const result = {
-        ...raw,
-        people: await filterBlockedCards(db, schema, did, raw.people),
-      };
       span.set("people", result.personCount);
       span.set("publications", result.publicationCount);
       span.set("degraded", result.degraded);
@@ -387,7 +376,7 @@ const getPublications = createServerFn({ method: "GET" })
       const session = await getAtprotoSessionForRequest(getRequest());
       const items = await discoverDirectoryPublications(db, schema, {
         topic: data.topic ?? null,
-        viewerDid: session?.did,
+        viewerDid: await blockFilterDid(db, schema, session?.did),
         // The topic chips now surface the full document-tag vocabulary, so a
         // selected chip must match any document tag — not only a publication's
         // single effective topic — or tags past the dominant one return empty.
@@ -610,7 +599,7 @@ const getOnboardingSuggestions = createServerFn({ method: "GET" })
                 limit: 8,
                 offset: 0,
                 excludeWebBridge,
-                viewerDid: did ?? undefined,
+                viewerDid: await blockFilterDid(db, schema, did),
               }),
             })),
           ),

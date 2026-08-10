@@ -1,6 +1,6 @@
 "use client";
 
-import { Trans } from "@lingui/react/macro";
+import { Trans, useLingui } from "@lingui/react/macro";
 import { Button } from "@standard-reader/design-system/button";
 import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
 import { radius } from "@standard-reader/design-system/theme/radius.stylex";
@@ -14,6 +14,7 @@ import {
   fontSize,
   fontWeight,
 } from "@standard-reader/design-system/theme/typography.stylex";
+import { toasts } from "@standard-reader/design-system/toast";
 import * as stylex from "@stylexjs/stylex";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Ban } from "lucide-react";
@@ -43,6 +44,7 @@ export function BlockedNotice({
   /** Whether the reader has granted block-write access (enables Unblock). */
   canWrite?: boolean;
 }) {
+  const { t } = useLingui();
   const queryClient = useQueryClient();
   const unblock = useMutation({
     mutationFn: async () =>
@@ -52,17 +54,35 @@ export function BlockedNotice({
       // narrower key to invalidate than everything.
       void queryClient.invalidateQueries();
     },
+    // A failed unblock leaves this panel exactly as it was, which reads as the
+    // button doing nothing rather than as an error.
+    onError: () => {
+      toasts.add({
+        description: t`We couldn't remove the block from your account. Try again?`,
+        title: t`Something went wrong`,
+      });
+    },
   });
 
   const direct =
     blockIsOutgoing(block.direction) && !blockIsFromList(block.direction);
+  // Translated rather than an inline English literal: a `??` fallback inside
+  // `<Trans>` is an expression to Lingui, so the default would ship untranslated
+  // into every locale.
+  const who = name ?? t`this account`;
+  const Who = name ?? t`This account`;
 
   return (
     <div {...stylex.props(styles.panel)}>
       <Ban size={24} aria-hidden="true" {...stylex.props(styles.icon)} />
       <p {...stylex.props(styles.heading)}>
-        {blockIsOutgoing(block.direction) ? (
+        {block.direction === "blocking" ? (
           <Trans>You blocked this account</Trans>
+        ) : block.direction === "list-blocking" ? (
+          // Not "you blocked this account": the reader blocked a list, and may
+          // never have heard of the person on it. Claiming the decision as
+          // theirs sends them looking for an unblock button that isn't here.
+          <Trans>Blocked by a list you use</Trans>
         ) : (
           <Trans>You're blocked</Trans>
         )}
@@ -70,24 +90,23 @@ export function BlockedNotice({
       <p {...stylex.props(styles.body)}>
         {block.direction === "blocking" ? (
           <Trans>
-            You blocked {name ?? "this account"}, so their writing is hidden
-            everywhere you read.
+            You blocked {who}, so their writing is hidden everywhere you read.
           </Trans>
         ) : block.direction === "list-blocking" ? (
           <Trans>
-            {name ?? "This account"} is on a moderation list you block. To see
-            them again, leave that list.
+            {Who} is on a moderation list you block. To see them again, leave
+            that list.
           </Trans>
         ) : block.direction === "blocked-by" ? (
           <Trans>
-            {name ?? "This account"} has blocked you, so you can't see their
-            writing. Blocks are records in their repo — this isn't a Standard
-            Reader decision, and it applies wherever you read them.
+            {Who} has blocked you, so you can't see their writing. Blocks are
+            records in their repo — this isn't a Standard Reader decision, and
+            it applies wherever you read them.
           </Trans>
         ) : (
           <Trans>
-            {name ?? "This account"} blocks a moderation list you're on, so you
-            can't see their writing.
+            {Who} blocks a moderation list you're on, so you can't see their
+            writing.
           </Trans>
         )}
       </p>

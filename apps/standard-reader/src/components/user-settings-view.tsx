@@ -414,9 +414,7 @@ export function UserSettingsView() {
   const queryClient = useQueryClient();
   const labelers = useQuery(labelerApi.getLabelersQueryOptions());
   // Just the headline count — the list itself lives on `/settings/blocks`.
-  const blocks = useQuery(
-    blocksApi.getBlocksSettingsQueryOptions({ limit: 1 }),
-  );
+  const blocks = useQuery(blocksApi.getBlockCapabilityQueryOptions());
   const blockCount = blocks.data?.accountCount ?? null;
   const connections = useQuery(mcpApi.listConnectionsQueryOptions());
   const fmt = useFormatters();

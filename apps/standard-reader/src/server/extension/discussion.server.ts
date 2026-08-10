@@ -5,7 +5,7 @@ import type { db } from "#/db/index.server";
 import type * as schema from "#/db/schema";
 import type { ArticleCard } from "#/integrations/tanstack-query/api-shapes";
 import { getPublicUrl } from "#/lib/public-url";
-import { filterBlockedCards } from "#/server/blocks/blocks";
+import { blockFilterDid, filterBlockedCards } from "#/server/blocks/blocks";
 import { buildCanonicalUrl } from "#/server/ingest/mappers";
 import {
   fetchCitedInArticles,
@@ -122,10 +122,10 @@ export async function resolveDiscussion(
   );
 
   if (!row) {
-    const discussions = await commentsPromise;
+    const { comments } = await commentsPromise;
     return {
       keepReading: [],
-      discussions: discussions.map((comment) => toDiscussionComment(comment)),
+      discussions: comments.map((comment) => toDiscussionComment(comment)),
       relatedReading: [],
       citedIn: [],
     };
@@ -134,6 +134,8 @@ export async function resolveDiscussion(
   const canonicalUrl =
     row.canonicalUrl ?? buildCanonicalUrl(row.publicationUrl, row.path);
   const linkUrls = canonicalUrl ? [canonicalUrl] : [];
+
+  const blockDid = await blockFilterDid(dbClient, schemaModule, viewerDid);
 
   const [
     discussions,
@@ -147,7 +149,7 @@ export async function resolveDiscussion(
       ? selectArticleCards(dbClient, schemaModule, {
           publicationUris: [row.publicationUri],
           limit: 4,
-          viewerDid: viewerDid ?? undefined,
+          viewerDid: blockDid,
         })
       : Promise.resolve([]),
     relatedArticles(dbClient, schemaModule, {
@@ -208,7 +210,9 @@ export async function resolveDiscussion(
     keepReading: moreFromWithComments.map((article) =>
       toDiscussionArticle(article),
     ),
-    discussions: discussions.map((comment) => toDiscussionComment(comment)),
+    discussions: discussions.comments.map((comment) =>
+      toDiscussionComment(comment),
+    ),
     relatedReading: mergeRelatedReading(marginConnections, relatedWithComments),
     citedIn: citedInWithComments.map((article) => toDiscussionArticle(article)),
   };

@@ -15,7 +15,12 @@ import { blobCid, cdnImageUrl } from "#/server/atproto/blob";
 import { listRepoRecords } from "#/server/atproto/fetch-record";
 import { resolveIdentity } from "#/server/atproto/identity";
 import type { PublicationRecord } from "#/server/atproto/types";
-import { filterBlockedCards, notBlockedByViewer } from "#/server/blocks/blocks";
+import {
+  atUriAuthoritySql,
+  blockFilterDid,
+  filterBlockedCards,
+  notBlockedByViewer,
+} from "#/server/blocks/blocks";
 import { ensureTracked } from "#/server/ingest/tap-client";
 import { observe } from "#/server/observability/log";
 import { attachReaderSpanContext } from "#/server/observability/span-context.ts";
@@ -183,6 +188,7 @@ const searchArticles = createServerFn({ method: "GET" })
         hints,
       );
       const matchClause = documentMatchSql(d, tsq, hints, authorMatch);
+      const blockDid = await blockFilterDid(db, schema, did);
       const articleWhere = and(
         eq(d.deleted, false),
         matchClause,
@@ -190,7 +196,16 @@ const searchArticles = createServerFn({ method: "GET" })
         ...(excludeWebBridgeEnabled ? [notWebBridgeArticleWhere(schema)] : []),
         // Search is paginated, so blocked authors are excluded in SQL rather
         // than dropped from the page — see `notBlockedByViewer`.
-        ...(did ? [notBlockedByViewer(schema, did, sql`${d.did}`)] : []),
+        ...(blockDid
+          ? [
+              notBlockedByViewer(
+                schema,
+                blockDid,
+                sql`${d.did}`,
+                atUriAuthoritySql(sql`${d.publicationUri}`),
+              ),
+            ]
+          : []),
       );
 
       // Page the bare document URIs (newest first) in an inner subquery, then

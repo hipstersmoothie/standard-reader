@@ -14,7 +14,7 @@ import {
   dbValueToTrackReadingHistory,
 } from "#/lib/track-reading-history";
 import { getReaderContextForRequest } from "#/middleware/auth-session.server";
-import { filterBlockedCards } from "#/server/blocks/blocks";
+import { blockFilterDid, filterBlockedCards } from "#/server/blocks/blocks";
 import {
   attachLabelsFromMap,
   attachSubscribedLabels,
@@ -280,9 +280,15 @@ async function resolveHomeFeedContext(
     : true;
   const excludeWebBridge = did ? (excludeWebBridgeEnabled ?? false) : false;
 
-  const { publicationUris: followUris, userDids: followedUserDids } = did
-    ? await effectiveFollowSets(db, schema, did)
-    : { publicationUris: [], userDids: [] };
+  const [
+    { publicationUris: followUris, userDids: followedUserDids },
+    blockDid,
+  ] = await Promise.all([
+    did
+      ? effectiveFollowSets(db, schema, did)
+      : Promise.resolve({ publicationUris: [], userDids: [] }),
+    blockFilterDid(db, schema, did),
+  ]);
   const hasFollows = followUris.length > 0 || followedUserDids.length > 0;
   const isTrending = scope === "trending";
   const personalized = hasFollows && scope === "follows";
@@ -296,17 +302,18 @@ async function resolveHomeFeedContext(
         publicationUris: followUris,
         followedUserDids,
         countOldPostsAsUnread,
-        ...(did ? { viewerDid: did } : {}),
+        ...(blockDid ? { viewerDid: blockDid } : {}),
         ...(trackReading && did ? { readForDid: did, unreadForDid: did } : {}),
       }
     : {
         discoverOnly: true,
         excludeWebBridge,
-        ...(did ? { viewerDid: did } : {}),
+        ...(blockDid ? { viewerDid: blockDid } : {}),
       };
 
   return {
     did,
+    blockDid,
     followUris,
     followedUserDids,
     trackReading,
@@ -340,7 +347,7 @@ async function buildHomeFeedCritical(
       trendingArticles(db, schema, HOME_TRENDING_ROW_LIMIT + 1, {
         readForDid: trackReading && ctx.did ? ctx.did : undefined,
         excludeWebBridge: ctx.excludeWebBridge,
-        viewerDid: ctx.did ?? undefined,
+        viewerDid: ctx.blockDid,
       }),
     ]);
     // Publication rails aren't paginated, so blocked owners are dropped from
@@ -702,9 +709,15 @@ async function loadLatestFeedCritical(
   span.set("filter", data.filter);
   span.set("offset", data.offset);
 
-  const { publicationUris: followUris, userDids: followedUserDids } = did
-    ? await effectiveFollowSets(db, schema, did)
-    : { publicationUris: [], userDids: [] };
+  const [
+    { publicationUris: followUris, userDids: followedUserDids },
+    blockDid,
+  ] = await Promise.all([
+    did
+      ? effectiveFollowSets(db, schema, did)
+      : Promise.resolve({ publicationUris: [], userDids: [] }),
+    blockFilterDid(db, schema, did),
+  ]);
   span.set("follows", followUris.length);
   span.set("followedUsers", followedUserDids.length);
   const trackReading = did == null ? false : trackReadingEnabled;
@@ -725,7 +738,7 @@ async function loadLatestFeedCritical(
             readForDid: trackReading && did ? did : undefined,
             scope: "page",
             excludeWebBridge,
-            viewerDid: did ?? undefined,
+            viewerDid: blockDid,
           })
         : []
       : await selectArticleCards(db, schema, {
@@ -739,7 +752,7 @@ async function loadLatestFeedCritical(
               }),
           readForDid: trackReading && did ? did : undefined,
           countOldPostsAsUnread,
-          viewerDid: did ?? undefined,
+          viewerDid: blockDid,
           limit: data.limit,
           offset: data.offset,
         });

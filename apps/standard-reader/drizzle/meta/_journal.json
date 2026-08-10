@@ -253,6 +253,13 @@
       "when": 1786340940231,
       "tag": "0035_lush_living_mummy",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1786344772815,
+      "tag": "0036_acoustic_zemo",
+      "breakpoints": true
     }
   ]
 }

@@ -1206,27 +1206,64 @@ A reader's blocks follow them here, in both directions, with no setup and no imp
   sweep is scheduled from the OAuth callback and the signed-in shell read, TTL-guarded so a page
   load between sweeps costs nothing, and forced inline right after a block/unblock write so the
   change takes effect on the very next page.
-- **Outgoing replaces, incoming only adds.** The reader's own records are the authoritative set, so
-  a sweep can soft-delete the ones that are gone. Blocks _against_ them come from a best-effort
-  index, and a sweep that came back short must never read as "nobody blocks you any more" — that
-  would un-hide content the moment Constellation hiccuped.
+- **Outgoing replaces; incoming replaces only when the sweep was complete.** The reader's own
+  records are authoritative, so a sweep soft-deletes the ones that are gone. Blocks _against_ them
+  come from a best-effort index, so the delete is gated on the sweep having read every page: a
+  truncated or failed sweep adds but never removes, because it must not read as "nobody blocks you
+  any more". It does have to remove eventually, though — the blocker is usually not a reader here,
+  so nothing else would ever retire the row, and an unblock they made on Bluesky would otherwise
+  hide that account from the reader permanently.
 - **Enforced in SQL where a page paginates, in JS where it doesn't.** Feeds, search, directories and
   archives filter with a `NOT EXISTS` predicate (`notBlockedByViewer`) so a block never shortens a
   page or strands results behind an offset; rails, profile tabs and third-party discussion
-  (Bluesky, Margin, Semble, pckt, Leaflet) post-filter, where a shorter list is fine. Every helper
-  is bounded by the DIDs a page is about to render, never by the reader's block set — a reader on a
-  40k-member blocklist has to stay an index probe.
-- **Blocked pages explain themselves.** A blocked profile, publication or article renders the block
-  rather than an empty page or a bare "not found": which direction it runs, and an Unblock control
-  only when the block is the reader's own to undo. The article body is withheld outright — the
-  reason is a separate, opt-in read, so nothing about a blocked document (not even its title)
-  crosses the wire.
+  (Bluesky, Margin, Semble, pckt, Leaflet) post-filter, where a shorter list is fine. Both check the
+  **author and the publication owner** — a guest post in a blocked owner's publication carries that
+  owner in its byline. Every helper is bounded by the DIDs a page is about to render, never by the
+  reader's block set — a reader on a 40k-member blocklist has to stay an index probe.
+- **The SQL predicate is opt-in per reader, not per request.** `notBlockedByViewer` is three
+  correlated `NOT EXISTS` per candidate row, and on the follow feed it lands inside the per-source
+  laterals whose whole job is an indexed top-k scan — the exact shape that caused the 1651ms
+  corpus-walk regression documented in `reader/queries.ts`. So the only supported way to reach it is
+  `blockFilterDid`, which answers "does this reader block anybody" from an in-process cache and
+  returns `undefined` for the overwhelming majority who don't, keeping the predicate out of the
+  query entirely. `queries.explain.test.ts` (`pnpm perf:explain`) asserts the filtered plan still
+  rides the per-source composite indexes.
+- **A sweep never happens on a request anyone waits for.** A full sweep is dozens to hundreds of
+  round trips against Constellation and the AppView. Blocking a list awaits only the two bounded
+  reads the reader is actually waiting on (their own `listblock` records, and that list's
+  membership) and schedules the rest; Settings → Refresh starts a sweep and says so rather than
+  holding the request open. Sweeps are deduped per reader process-wide, so a doubled press joins the
+  run already in flight.
+- **Blocked pages explain themselves, without a frame of the blocked page first.** A blocked
+  profile, publication or article renders the block rather than an empty page or a bare "not found":
+  which direction it runs, and an Unblock control only when the block is the reader's own to undo.
+  The block state rides on the same query as the content it withholds (`getPublicationHeader`,
+  `getAuthorProfile`, `getAuthorSummary`) — resolving it in a second client query would paint the
+  blocked account's name and avatar and then take them away. Mention hovercards read the same
+  queries, so an inline chip can't summarise someone the profile page withholds. The article body is
+  withheld outright: the reason is a separate, opt-in read that only the not-found state asks for,
+  so nothing about a blocked document (not even its title) crosses the wire, and a signed-out
+  reader — most of that page's traffic — pays nothing for it.
+- **A block outranks an opt-in the reader made earlier.** The weekly digest and push notifications
+  are filtered too. Both arrive uninvited: an emailed article stays in the inbox and a notification
+  lands on a lock screen, so "I asked for this source" made before the block does not survive it.
+  Per-reader RSS (`/feed/latest/$did`, `/feed/l/$did/$rkey`) is filtered for the same reason — a
+  reader who subscribed in an RSS client can't just not look.
 - **Big blocklists are mirrored partially, and say so.** The largest public lists run to six
   figures; past the mirror cap a list is stored truncated and flagged, because silently
   under-enforcing a blocklist is worse than admitting the limit.
-- **Settings → Blocked accounts** lists the reader's own blocks and their subscribed block lists,
-  with how much of each list is mirrored. It only offers Unblock for blocks they made: someone
-  else's decision is not theirs to undo, and a button that pretended otherwise would be a lie.
+- **Settings → Blocked accounts** pages through the reader's own blocks and lists their subscribed
+  block lists, saying in words when a list is larger than we mirror. It only offers Unblock for
+  blocks they made: someone else's decision is not theirs to undo, and a button that pretended
+  otherwise would be a lie.
+- **Blocking is confirmed; failing to block is said out loud.** The overflow-menu item opens a
+  confirmation first — it writes a public record to the reader's repo that the whole network
+  honours, and the menu offers no way back because the profile it sits on becomes a notice. Every
+  block mutation reports failure with a toast; silently doing nothing is indistinguishable from
+  having worked.
+- **A hidden reply is explained, not just missing.** The Discussion badge is the cached, unfiltered
+  count (a per-reader count would need a per-reader cache), so the section reports how many replies
+  the reader's blocks removed instead of showing "No discussion yet" under a badge reading 6.
 
 ---
 

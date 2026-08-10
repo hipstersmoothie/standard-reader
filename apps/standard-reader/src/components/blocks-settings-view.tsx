@@ -19,20 +19,27 @@ import {
   fontSize,
   fontWeight,
 } from "@standard-reader/design-system/theme/typography.stylex";
+import { toasts } from "@standard-reader/design-system/toast";
 import * as stylex from "@stylexjs/stylex";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { TriangleAlert } from "lucide-react";
+import { useEffect, useState } from "react";
 
 import type {
   BlockListRow,
   BlockedAccountRow,
 } from "#/integrations/tanstack-query/api-blocks.functions";
 import { blocksApi } from "#/integrations/tanstack-query/api-blocks.functions";
+import { useFormatters } from "#/lib/use-formatters";
 
+import { FeedLoadMore } from "./reader/feed-load-more";
 import { Masthead, ReaderContent } from "./reader/primitives";
 
 const MOBILE = "@media (max-width: 47.5rem)";
+
+/** Matches the server default in `blockedAccountsInput`. */
+const ACCOUNTS_PAGE_SIZE = 50;
 
 function accountLabel(row: BlockedAccountRow): string {
   return row.displayName ?? row.handle ?? row.did;
@@ -125,6 +132,19 @@ function BlockListItem({
               one="# account"
               other="# accounts"
             />
+            {row.truncated ? (
+              <>
+                {" · "}
+                {/* The cap is stated, not hidden: a reader who thinks a list
+                    covers 40,000 accounts should know we enforce the first
+                    10,000 of them rather than discover the gap in their feed.
+                    The "Partial" badge alone doesn't say what's partial. */}
+                <Trans>
+                  this list is larger than we mirror, so some members aren't
+                  blocked here
+                </Trans>
+              </>
+            ) : null}
           </span>
         </span>
       </span>
@@ -158,30 +178,76 @@ function BlockListItem({
  */
 export function BlocksSettingsView() {
   const { t } = useLingui();
+  const fmt = useFormatters();
   const queryClient = useQueryClient();
   const settings = useQuery(blocksApi.getBlocksSettingsQueryOptions());
 
+  // Pages past the first, appended. Reset whenever the first page is refetched
+  // so an unblock can't leave a stale tail behind the row it removed.
+  const [extraPages, setExtraPages] = useState<Array<BlockedAccountRow>>([]);
+  const [nextOffset, setNextOffset] = useState<number | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
+
+  const firstPageOffset = settings.data?.accountsNextOffset ?? null;
+  useEffect(() => {
+    setExtraPages([]);
+    setNextOffset(firstPageOffset);
+  }, [firstPageOffset, settings.dataUpdatedAt]);
+
   const invalidate = () => {
     void queryClient.invalidateQueries({ queryKey: ["blocks"] });
+  };
+  const onMutationError = () => {
+    toasts.add({
+      description: t`We couldn't reach your account to change that. Try again?`,
+      title: t`Something went wrong`,
+    });
   };
 
   const unblockAccount = useMutation({
     mutationFn: async (did: string) =>
       blocksApi.unblockAccount({ data: { did } }),
     onSuccess: invalidate,
+    onError: onMutationError,
   });
   const unblockList = useMutation({
     mutationFn: async (listUri: string) =>
       blocksApi.unblockList({ data: { listUri } }),
     onSuccess: invalidate,
+    onError: onMutationError,
   });
   const refresh = useMutation({
     mutationFn: async () => blocksApi.refreshBlocks(),
-    onSuccess: invalidate,
+    // The sweep runs in the background, so "done" here means "started". Say
+    // that rather than implying the list on screen is now up to date.
+    onSuccess: () => {
+      toasts.add({
+        description: t`We're re-reading your blocks from your account. This page updates when it finishes.`,
+        title: t`Refreshing`,
+      });
+      invalidate();
+    },
+    onError: onMutationError,
   });
 
+  const loadMore = async () => {
+    if (nextOffset == null || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const page = await blocksApi.getBlockedAccountsPage({
+        data: { limit: ACCOUNTS_PAGE_SIZE, offset: nextOffset },
+      });
+      setExtraPages((rows) => [...rows, ...page.accounts]);
+      setNextOffset(page.nextOffset);
+    } catch {
+      onMutationError();
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
   const data = settings.data ?? null;
-  const accounts = data?.accounts ?? [];
+  const accounts = [...(data?.accounts ?? []), ...extraPages];
   const lists = data?.lists ?? [];
 
   return (
@@ -206,6 +272,15 @@ export function BlocksSettingsView() {
             Your blocks are enforced here already. To add or remove one from
             Standard Reader, you'll be asked to authorize block access the first
             time you try.
+          </Trans>
+        </p>
+      ) : null}
+
+      {data?.syncedAt && !data.syncError ? (
+        <p {...stylex.props(styles.note)}>
+          <Trans>
+            Last checked {fmt.relativeTime(data.syncedAt)}. Blocks you make
+            elsewhere show up here within about fifteen minutes.
           </Trans>
         </p>
       ) : null}
@@ -259,6 +334,12 @@ export function BlocksSettingsView() {
             ))}
           </ul>
         )}
+        <FeedLoadMore
+          hasMore={nextOffset != null}
+          isLoading={loadingMore}
+          onLoadMore={() => void loadMore()}
+          itemCount={accounts.length}
+        />
       </section>
 
       <section {...stylex.props(styles.section)}>

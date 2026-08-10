@@ -6,6 +6,7 @@ import {
   articleQueueCardColumns,
   toArticleCard,
 } from "#/integrations/tanstack-query/api-shapes";
+import { blockFilterDid } from "#/server/blocks/blocks";
 import {
   followedByPeopleYouFollow,
   recommendedPublications,
@@ -40,17 +41,18 @@ export async function handleGetHomeFeed(ctx: XrpcRequestContext) {
   const hasFollows = followUris.length > 0;
   const personalized = hasFollows && scope === "follows";
 
+  const blockDid = await blockFilterDid(ctx.db, ctx.schema, did);
   const rowQuery = personalized
     ? {
         publicationUris: followUris,
         countOldPostsAsUnread: ctx.countOldPostsAsUnreadEnabled,
-        viewerDid: did,
+        viewerDid: blockDid,
         ...(trackReading ? { readForDid: did, unreadForDid: did } : {}),
       }
     : {
         discoverOnly: true as const,
         excludeWebBridge: ctx.excludeWebBridgeEnabled,
-        viewerDid: did,
+        viewerDid: blockDid,
       };
 
   const [featuredLead, rows] = await Promise.all([

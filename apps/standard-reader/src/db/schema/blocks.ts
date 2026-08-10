@@ -55,12 +55,14 @@ export const blocks = pgTable(
       .defaultNow(),
   },
   (table) => [
-    // "who does this reader block" — the outgoing half of their block set.
-    index("blocks_blocker_idx").on(table.blockerDid),
-    // "who blocks this reader" — the incoming half. Both halves are read on
-    // every block-filtered query, so both need to be an index-only lookup.
+    // "who blocks this reader" — the incoming half. Read on every
+    // block-filtered query alongside the outgoing half below.
     index("blocks_subject_idx").on(table.subjectDid),
-    // Probe a single edge (does A block B?) for the profile block button.
+    // Probe a single edge (does A block B?) for the profile block button, and
+    // — on its `blocker_did` prefix — "who does this reader block" for the
+    // outgoing half. One index serves both; a separate `blocker_did` index
+    // would be a strict prefix of this one, costing writes to answer nothing
+    // new.
     index("blocks_edge_idx").on(table.blockerDid, table.subjectDid),
   ],
 );

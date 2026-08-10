@@ -56,7 +56,7 @@ import {
   WEB_BRIDGE_HANDLE_PATTERN,
 } from "#/lib/atproto/bridged-repo";
 import { EXCLUDED_PUBLICATION_URL_PATTERN } from "#/lib/publication/exclusions";
-import { notBlockedByViewer } from "#/server/blocks/blocks";
+import { atUriAuthoritySql, notBlockedByViewer } from "#/server/blocks/blocks";
 import { documentPublishedNotInFuture } from "#/server/reader/document-filters";
 import {
   discoverEligibleArticleWhere,
@@ -516,9 +516,21 @@ export function buildFollowFeedCandidateSql(
     base.push(documentNotReadWhere(schema, opts.unreadForDid));
   // Applied to every union branch, not just the direct one: a followed
   // publication can carry a guest post by an account the reader blocks, and a
-  // followed user can recommend one.
+  // followed user can recommend one. Both the author and the publication's
+  // owner are checked — a guest post carries the owner in its byline.
+  //
+  // Reached only through `blockFilterDid`, so this never enters the lateral for
+  // a reader who blocks nobody. That gate is what makes it safe to add a
+  // correlated predicate to `baseWhere` at all: see the strategy note below.
   if (opts.viewerDid) {
-    base.push(notBlockedByViewer(schema, opts.viewerDid, sql`${d.did}`));
+    base.push(
+      notBlockedByViewer(
+        schema,
+        opts.viewerDid,
+        sql`${d.did}`,
+        atUriAuthoritySql(sql`${d.publicationUri}`),
+      ),
+    );
   }
   const baseWhere = and(...base) ?? sql`true`;
 
@@ -803,7 +815,14 @@ export async function selectArticleCards(
     conds.push(documentCarriesTagWhere(d, opts.tag));
   }
   if (opts.viewerDid) {
-    conds.push(notBlockedByViewer(schema, opts.viewerDid, sql`${d.did}`));
+    conds.push(
+      notBlockedByViewer(
+        schema,
+        opts.viewerDid,
+        sql`${d.did}`,
+        atUriAuthoritySql(sql`${d.publicationUri}`),
+      ),
+    );
   }
 
   const columns = articleCardColumns(schema);
@@ -980,7 +999,14 @@ export async function selectPublicationArticleCards(
         // A publication the reader can still open (they are not blocked from
         // its owner) can carry guest posts by accounts they are blocked from.
         ...(opts.viewerDid
-          ? [notBlockedByViewer(schema, opts.viewerDid, sql`${d.did}`)]
+          ? [
+              notBlockedByViewer(
+                schema,
+                opts.viewerDid,
+                sql`${d.did}`,
+                atUriAuthoritySql(sql`${d.publicationUri}`),
+              ),
+            ]
           : []),
       ),
     )
@@ -1638,7 +1664,14 @@ function trendingArticleWhere(
   }
 
   if (viewerDid) {
-    conds.push(notBlockedByViewer(schema, viewerDid, sql`${d.did}`));
+    conds.push(
+      notBlockedByViewer(
+        schema,
+        viewerDid,
+        sql`${d.did}`,
+        atUriAuthoritySql(sql`${d.publicationUri}`),
+      ),
+    );
   }
 
   return conds;
@@ -3400,7 +3433,14 @@ export async function selectArticleCardsByUris(
         eq(d.deleted, false),
         documentPublishedNotInFuture(d),
         ...(opts?.viewerDid
-          ? [notBlockedByViewer(schema, opts.viewerDid, sql`${d.did}`)]
+          ? [
+              notBlockedByViewer(
+                schema,
+                opts.viewerDid,
+                sql`${d.did}`,
+                atUriAuthoritySql(sql`${d.publicationUri}`),
+              ),
+            ]
           : []),
       ),
     );

@@ -60,6 +60,15 @@ const TAG_OVERLAP_BUDGET_MS = Number(
   process.env.FEED_PERF_TAG_BUDGET_MS ?? 6000,
 );
 
+/**
+ * Looser than {@link EXEC_TIME_BUDGET_MS} because the block branches add real
+ * per-row probes, but still far below the corpus-walk this must never become.
+ * A blown budget here means the block predicate stopped being index-served.
+ */
+const BLOCK_FILTER_BUDGET_MS = Number(
+  process.env.FEED_PERF_BLOCK_BUDGET_MS ?? 900,
+);
+
 describe.skipIf(!RUN)("follow-feed candidate query — EXPLAIN", () => {
   // EXPLAIN ANALYZE runs the query for real over the prod Neon RTT (~230ms),
   // after two follow-fetch round trips — generous timeout to avoid flake.
@@ -82,6 +91,52 @@ describe.skipIf(!RUN)("follow-feed candidate query — EXPLAIN", () => {
 
     assertNoSeqScanOnDocuments(plan);
     assertPerSourceIndexScans(plan);
+  }, 30_000);
+});
+
+/**
+ * The block filter on the follow feed.
+ *
+ * `notBlockedByViewer` is three correlated `NOT EXISTS` evaluated per candidate
+ * row, and it lands inside `baseWhere` — the same predicate the strategy note in
+ * `queries.ts` warns against adding to, because the per-source laterals depend
+ * on an indexed `ORDER BY published_at DESC LIMIT k` scan that a correlated
+ * subquery can push off its index. That is exactly the shape of the original
+ * 1651ms regression.
+ *
+ * Two things are asserted, because either alone would pass a broken build:
+ *  - With the filter on, the plan still rides the per-source composite indexes
+ *    and does not seq-scan `documents`.
+ *  - The filter costs little enough that the page budget still holds.
+ *
+ * Note this is the *worst* case by construction — the reader passed here is
+ * treated as having blocks. In production `blockFilterDid` keeps the predicate
+ * out of the query entirely for readers who block nobody, which is nearly all
+ * of them.
+ */
+describe.skipIf(!RUN)("follow-feed block filter — EXPLAIN", () => {
+  test("block filter does not defeat the per-source index scans", async () => {
+    const plan = await explainCandidate({
+      unreadForDid: READER_DID,
+      countOldPostsAsUnread: true,
+      viewerDid: READER_DID,
+    });
+
+    assertNoSeqScanOnDocuments(plan);
+    assertPerSourceIndexScans(plan);
+    assertExecTimeUnder(plan, BLOCK_FILTER_BUDGET_MS);
+  }, 30_000);
+
+  test("block filter does not defeat the suppressed-old path either", async () => {
+    const plan = await explainCandidate({
+      unreadForDid: READER_DID,
+      countOldPostsAsUnread: false,
+      viewerDid: READER_DID,
+    });
+
+    assertNoSeqScanOnDocuments(plan);
+    assertPerSourceIndexScans(plan);
+    assertExecTimeUnder(plan, BLOCK_FILTER_BUDGET_MS);
   }, 30_000);
 });
 
@@ -182,9 +237,12 @@ async function selectTagAnchorDocument(): Promise<{
 async function explainCandidate({
   unreadForDid,
   countOldPostsAsUnread,
+  viewerDid,
 }: {
   unreadForDid: string;
   countOldPostsAsUnread: boolean | undefined;
+  /** Set to force the block predicate on — see the block-filter describe. */
+  viewerDid?: string;
 }): Promise<string> {
   const [publicationUris, followedUserDids] = await Promise.all([
     selectFollowUris(db, schema, READER_DID),
@@ -205,6 +263,7 @@ async function explainCandidate({
     followedUserDids,
     unreadForDid,
     countOldPostsAsUnread,
+    viewerDid,
     limit: PAGE_LIMIT,
     offset: PAGE_OFFSET,
   });

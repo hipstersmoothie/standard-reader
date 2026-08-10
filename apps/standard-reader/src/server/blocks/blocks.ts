@@ -46,6 +46,24 @@ import {
 
 export type { BlockDirection, BlockEdge };
 
+/**
+ * The DID authority of an AT-URI column, in SQL — the string half of
+ * {@link uriAuthorityDid}.
+ *
+ * A publication's owner DID *is* the authority of its record URI, so a document
+ * row can name its publication's owner without joining `publications` at all.
+ * That matters where the owner check has to live inside a per-source lateral
+ * that only has `documents` in scope, and it keeps the second block branch to a
+ * string split rather than an extra join per candidate row.
+ *
+ * Yields NULL for a loose document (no publication), which then matches nothing.
+ */
+export function atUriAuthoritySql(
+  uriExpr: ReturnType<typeof sql>,
+): ReturnType<typeof sql> {
+  return sql`nullif(split_part(${uriExpr}, '/', 3), '')`;
+}
+
 /** Read rows off a drizzle `db.execute` result (array or `{ rows }`). */
 function executeRows<T>(result: unknown): Array<T> {
   if (Array.isArray(result)) return result as Array<T>;
@@ -99,22 +117,50 @@ function blockEdgeSql(
 }
 
 /**
+ * How long "does this reader block anybody?" is trusted in-process.
+ *
+ * Short, because the answer flipping false→true is a reader who just blocked
+ * someone and expects them gone. Every write path calls
+ * {@link invalidateBlockCache} anyway, so the TTL only covers blocks made
+ * elsewhere and picked up by the sweep.
+ */
+const HAS_BLOCKS_TTL_MS = 60_000;
+
+/**
+ * Bound on the cache. Blocks are checked for every signed-in reader on every
+ * request, so an unbounded map is a slow leak on a long-lived server; past this
+ * the whole map is dropped rather than evicted one by one — the entries are a
+ * single boolean each and re-earning them costs one indexed `EXISTS`.
+ */
+const HAS_BLOCKS_CACHE_MAX = 10_000;
+
+const hasBlocksCache = new Map<string, { value: boolean; expires: number }>();
+
+/** Drop a reader's cached answer, after they block or unblock anything. */
+export function invalidateBlockCache(did: string): void {
+  hasBlocksCache.delete(did);
+}
+
+/**
  * Whether this viewer has any blocks at all, in either direction.
  *
- * Memoized per request ({@link reactCache}) because it is the guard in front of
- * every other helper here, and the overwhelmingly common answer is "no". A
- * single page load filters several card sets (critical rows, then rails, then
- * comments); without this each one would issue a block query for a reader who
- * has never blocked anybody. `db`/`schema` are stable singletons and `viewerDid`
- * is stable within a request, so all of them share one query.
+ * The guard in front of every other helper here, and in front of every SQL
+ * predicate {@link notBlockedByViewer} would otherwise add — and the
+ * overwhelmingly common answer is "no". Cached two ways for that reason:
+ * per-request via {@link reactCache} (one page filters several card sets), and
+ * across requests in-process for {@link HAS_BLOCKS_TTL_MS}, so a signed-in
+ * reader who has never blocked anybody costs nothing at all on the steady path.
  */
-const viewerHasBlocks = reactCache(viewerHasBlocksImpl);
+export const readerHasBlocks = reactCache(readerHasBlocksImpl);
 
-async function viewerHasBlocksImpl(
+async function readerHasBlocksImpl(
   db: Db,
   schema: Schema,
   viewerDid: string,
 ): Promise<boolean> {
+  const cached = hasBlocksCache.get(viewerDid);
+  if (cached && cached.expires > Date.now()) return cached.value;
+
   const b = schema.blocks;
   const bl = schema.blockLists;
   const bli = schema.blockListItems;
@@ -136,7 +182,36 @@ async function viewerHasBlocksImpl(
       )
     ) as has
   `);
-  return executeRows<{ has: boolean }>(result)[0]?.has ?? false;
+  const value = executeRows<{ has: boolean }>(result)[0]?.has ?? false;
+
+  if (hasBlocksCache.size >= HAS_BLOCKS_CACHE_MAX) hasBlocksCache.clear();
+  hasBlocksCache.set(viewerDid, {
+    value,
+    expires: Date.now() + HAS_BLOCKS_TTL_MS,
+  });
+  return value;
+}
+
+/**
+ * The DID to hand a query builder's `viewerDid`, or `undefined` to leave the
+ * query alone.
+ *
+ * **The only supported way to reach {@link notBlockedByViewer} from a feed.**
+ * That predicate is three correlated `NOT EXISTS` evaluated per candidate row,
+ * and on the follow feed it lands inside a per-source lateral whose whole job is
+ * an indexed top-k scan (see the strategy note in `reader/queries.ts`). Paying
+ * that for every signed-in reader — the vast majority of whom block nobody —
+ * would regress the feed for everyone to serve a minority. So the predicate is
+ * added only once we know it can actually match, which the cached
+ * {@link readerHasBlocks} answers without a round trip on the steady path.
+ */
+export async function blockFilterDid(
+  db: Db,
+  schema: Schema,
+  viewerDid: string | null | undefined,
+): Promise<string | undefined> {
+  if (!viewerDid) return undefined;
+  return (await readerHasBlocks(db, schema, viewerDid)) ? viewerDid : undefined;
 }
 
 /**
@@ -157,7 +232,7 @@ export async function blockEdgesAmong(
     (did) => did.startsWith("did:") && did !== viewerDid,
   );
   if (candidates.length === 0) return new Map();
-  if (!(await viewerHasBlocks(db, schema, viewerDid))) return new Map();
+  if (!(await readerHasBlocks(db, schema, viewerDid))) return new Map();
 
   const result = await db.execute(blockEdgeSql(schema, viewerDid, candidates));
   const rows = executeRows<{
@@ -279,12 +354,30 @@ export async function filterBlockedDids(
  *
  * The list branches use `EXISTS` over the join rather than an `IN` expansion so
  * a 40k-member blocklist stays an index probe per candidate row.
+ *
+ * **Never pass a raw session DID here.** Resolve it through
+ * {@link blockFilterDid} first: this is three correlated subqueries per
+ * candidate row, and adding them for a reader who blocks nobody costs the whole
+ * feed to serve an empty result set.
  */
 export function notBlockedByViewer(
   schema: Schema,
   viewerDid: string,
   didExpr: ReturnType<typeof sql>,
+  /**
+   * A second account the row renders, checked the same way — for documents,
+   * the owner of the publication they were published into. A guest post by an
+   * account the reader is fine with, in a publication whose owner they block,
+   * carries that owner in the byline and must not survive the filter.
+   *
+   * `null` at runtime (a loose document with no publication) simply never
+   * matches, so the branch costs an index probe that finds nothing.
+   */
+  ownerDidExpr?: ReturnType<typeof sql>,
 ): ReturnType<typeof sql> {
+  if (ownerDidExpr) {
+    return sql`(${notBlockedByViewer(schema, viewerDid, didExpr)} and ${notBlockedByViewer(schema, viewerDid, ownerDidExpr)})`;
+  }
   const b = schema.blocks;
   const bl = schema.blockLists;
   const bli = schema.blockListItems;

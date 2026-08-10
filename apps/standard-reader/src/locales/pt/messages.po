@@ -622,6 +622,7 @@ msgid "Please choose a rating."
 msgstr "Escolha uma nota."
 
 #: src/components/blocks-settings-view.tsx
+#: src/components/reader/block-user-menu-item.tsx
 msgid "Blocked"
 msgstr ""
 
@@ -788,6 +789,10 @@ msgstr "Apagar lista?"
 #: src/routes/_layout.latest.tsx
 msgid "Everything published recently across the publications you subscribe to."
 msgstr "Tudo o que foi publicado recentemente nas suas inscrições."
+
+#: src/components/reader/comments/comments-section.tsx
+msgid "{hiddenByBlocks, plural, one {# more reply is hidden by your blocks.} other {# more replies are hidden by your blocks.}}"
+msgstr ""
 
 #: src/components/guide/pages/finding-guide-page.tsx
 #: src/lib/guide/navigation.ts
@@ -1488,6 +1493,10 @@ msgstr "Para saber mais sobre como o {SITE_NAME} funciona, consulte a página <0
 msgid "Compact"
 msgstr ""
 
+#: src/components/reader/blocked-notice.tsx
+msgid "This account"
+msgstr ""
+
 #: src/components/reader/share-menu.tsx
 msgid "Portrait stacks the card vertically. Height adjusts automatically once the embed loads. Change the iframe width as needed."
 msgstr "O formato vertical empilha o cartão. A altura ajusta-se automaticamente assim que o elemento carrega. Altere a largura do iframe conforme necessário."
@@ -1927,6 +1936,10 @@ msgstr "Incorporar inscrição"
 msgid "That GIF is over 1 MB. Try a shorter clip, or attach a still image."
 msgstr ""
 
+#: src/components/reader/blocked-notice.tsx
+msgid "{Who} has blocked you, so you can't see their writing. Blocks are records in their repo — this isn't a Standard Reader decision, and it applies wherever you read them."
+msgstr ""
+
 #: src/components/feedback/feedback-image-picker.tsx
 #~ msgid "Add another screenshot"
 #~ msgstr ""
@@ -1946,6 +1959,10 @@ msgstr "Apagar coleção"
 #: src/components/appearance-settings.tsx
 #: src/components/guide/pages/personalizing-guide-page.tsx
 msgid "Interface font"
+msgstr ""
+
+#: src/components/blocks-settings-view.tsx
+msgid "We're re-reading your blocks from your account. This page updates when it finishes."
 msgstr ""
 
 #: src/routes/_layout.l.$did.$rkey.tsx
@@ -2014,6 +2031,7 @@ msgstr ""
 msgid "What every control on an article does — including having it read aloud to you, and making the text comfortable for your eyes."
 msgstr ""
 
+#: src/components/blocks-settings-view.tsx
 #: src/components/reader/pull-to-refresh.tsx
 msgid "Refreshing"
 msgstr ""
@@ -2305,6 +2323,7 @@ msgstr "Rotulador"
 msgid "Articles you've opened — public records in your repo, synced across devices."
 msgstr "Artigos que abriu — registos públicos no seu repositório, sincronizados entre dispositivos."
 
+#: src/components/reader/block-user-menu-item.tsx
 #: src/components/reader/collection-builder.tsx
 #: src/components/reader/collection-publication-editor.tsx
 #: src/components/reader/collection-theme-editor.tsx
@@ -2581,6 +2600,10 @@ msgstr "<0>Leaflet, Pckt, Offprint.</0> <1>pub.leaflet.content</1>, <2>blog.pckt
 
 #: src/components/appearance-settings.tsx
 msgid "XL"
+msgstr ""
+
+#: src/components/reader/block-user-menu-item.tsx
+msgid "We couldn't write the block to your account. Try again?"
 msgstr ""
 
 #: src/components/reader/about-view.tsx
@@ -3272,6 +3295,10 @@ msgstr "Imagem"
 #~ msgid "<0>Follow</0> is the only subscription there is. New writing from anything you follow appears on Home and in Latest, and the publication is listed in your sidebar. There is no email sign-up and no separate account with the publisher."
 #~ msgstr ""
 
+#: src/components/reader/blocked-notice.tsx
+msgid "We couldn't remove the block from your account. Try again?"
+msgstr ""
+
 #: src/components/guide/pages/finding-guide-page.tsx
 msgid "Selecting anyone's name opens their author page: everything they publish, what they follow, and what they have recommended."
 msgstr ""
@@ -3321,6 +3348,10 @@ msgstr ""
 #~ msgid "Prefer a typed client? The whole API ships as codegen'd AT Protocol lexicon schemas in <0>@standard-reader/lexicons</0>. Pair it with <1>@atproto/lex-client</1> for fully-typed <2>client.call()</2> queries and procedures. Its <3>getDocument</3> also returns a document's renderable body, ready to hand to the <4>renderers</4>."
 #~ msgstr "Prefere um cliente tipificado? Toda a API é fornecida na forma de esquemas de léxico do AT Protocol gerados automaticamente no pacote <0>@standard-reader/lexicons</0>. Combine-o com <1>@atproto/lex-client</1> para realizar consultas e procedimentos via <2>client.call()</2> tipificado. O método <3>getDocument</3> também retorna o corpo renderizável do documento, pronto para ser passado aos <4>renderizadores</4>."
 
+#: src/components/reader/comments/comments-section.tsx
+msgid "{hiddenByBlocks, plural, one {The only reply here is from someone you're blocked from.} other {The replies here are all from accounts you're blocked from.}}"
+msgstr ""
+
 #: src/components/onboarding/welcome-wizard.tsx
 msgid "Couldn't save your follows"
 msgstr "Não foi possível salvar quem você segue"
@@ -3357,6 +3388,10 @@ msgstr ""
 msgid "Publications to explore"
 msgstr "Publicações para explorar"
 
+#: src/components/blocks-settings-view.tsx
+msgid "We couldn't reach your account to change that. Try again?"
+msgstr ""
+
 #: src/components/reader/article-view.tsx
 msgid "Read as comic"
 msgstr ""
@@ -3378,6 +3413,10 @@ msgstr "Prefere um cliente tipificado? Toda a API é fornecida na forma de esque
 #: src/components/guide/pages/reading-guide-page.tsx
 #: src/lib/guide/navigation.ts
 msgid "Read and unread"
+msgstr ""
+
+#: src/components/reader/block-user-menu-item.tsx
+msgid "This writes a block to your Bluesky account, so it applies here and anywhere else you use it. Their writing disappears from your feeds, search and discussion, and they can't see yours. You can undo it in Settings → Blocked accounts."
 msgstr ""
 
 #: src/routes/_layout.p.$did.$rkey.tsx
@@ -3502,8 +3541,8 @@ msgstr ""
 
 #. placeholder {0}: name ?? "This account"
 #: src/components/reader/blocked-notice.tsx
-msgid "{0} has blocked you, so you can't see their writing. Blocks are records in their repo — this isn't a Standard Reader decision, and it applies wherever you read them."
-msgstr ""
+#~ msgid "{0} has blocked you, so you can't see their writing. Blocks are records in their repo — this isn't a Standard Reader decision, and it applies wherever you read them."
+#~ msgstr ""
 
 #: src/routes/_layout.feedback.index.tsx
 msgid "Reset filters"
@@ -3643,6 +3682,10 @@ msgstr ""
 msgid "Worth subscribing to"
 msgstr "Vale a pena se inscrever"
 
+#: src/components/blocks-settings-view.tsx
+msgid "this list is larger than we mirror, so some members aren't blocked here"
+msgstr ""
+
 #: src/components/docs/renderers-docs-page.tsx
 #~ msgid "Angular."
 #~ msgstr "Angular."
@@ -3667,6 +3710,10 @@ msgstr ""
 #: src/routes/_layout.subscriptions.tsx
 msgid "Nothing to manage yet"
 msgstr "Nada a gerenciar ainda"
+
+#: src/components/reader/block-user-menu-item.tsx
+msgid "They're hidden everywhere you read, and on Bluesky. You can undo this in Settings → Blocked accounts."
+msgstr ""
 
 #: src/routes/_layout.subscriptions.tsx
 msgid "Your library"
@@ -4017,6 +4064,10 @@ msgstr ""
 msgid "No lists yet"
 msgstr "Ainda não há listas"
 
+#: src/components/reader/blocked-notice.tsx
+msgid "{Who} blocks a moderation list you're on, so you can't see their writing."
+msgstr ""
+
 #: src/components/guide/pages/everywhere-guide-page.tsx
 #~ msgid "Saving things while you browse the rest of the web, keeping Standard Reader on your home screen, and passing an article on."
 #~ msgstr ""
@@ -4036,6 +4087,10 @@ msgstr ""
 #: src/components/reader/about-view.tsx
 msgid "A Listen button reads any article aloud, right on your device, and highlights each word as it goes. The player follows you around the app — it’ll even read an embedded Bluesky post. Signed in, you can pick a voice."
 msgstr "Um botão Ouvir lê qualquer artigo em voz alta, no seu próprio dispositivo, destacando cada palavra à medida que avança. O leitor acompanha-o por toda a aplicação — até lê um artigo do Bluesky incorporado. Com sessão iniciada, pode escolher uma voz."
+
+#: src/components/reader/blocked-notice.tsx
+msgid "this account"
+msgstr ""
 
 #. placeholder {0}: next.title
 #: src/components/reader/series-up-next.tsx
@@ -4175,6 +4230,15 @@ msgstr "Opcional: acrescente uma nota sobre o porquê está salvando isto"
 msgid "Open the app"
 msgstr ""
 
+#. placeholder {0}: fmt.relativeTime(data.syncedAt)
+#: src/components/blocks-settings-view.tsx
+msgid "Last checked {0}. Blocks you make elsewhere show up here within about fifteen minutes."
+msgstr ""
+
+#: src/components/reader/block-user-menu-item.tsx
+msgid "Block account?"
+msgstr ""
+
 #: src/components/reader/comments/comment-card.tsx
 msgid "Open this note on Semble"
 msgstr ""
@@ -4252,8 +4316,8 @@ msgstr ""
 
 #. placeholder {0}: name ?? "this account"
 #: src/components/reader/blocked-notice.tsx
-msgid "You blocked {0}, so their writing is hidden everywhere you read."
-msgstr ""
+#~ msgid "You blocked {0}, so their writing is hidden everywhere you read."
+#~ msgstr ""
 
 #. placeholder {0}: filter.trim()
 #: src/components/reader/subscriptions-table.tsx
@@ -4485,6 +4549,10 @@ msgstr ""
 msgid "Recommended articles"
 msgstr "Artigos recomendados"
 
+#: src/components/reader/mention-hover-card.tsx
+msgid "You blocked this account, so their writing is hidden."
+msgstr ""
+
 #: src/components/user-settings-view.tsx
 msgid "Light, dark, match your system — or Custom, to choose a palette of your own."
 msgstr ""
@@ -4690,6 +4758,10 @@ msgstr ""
 msgid "{0}+ articles"
 msgstr "{0}+ artigos"
 
+#: src/components/reader/block-user-menu-item.tsx
+msgid "{name} is hidden everywhere you read, and on Bluesky. You can undo this in Settings → Blocked accounts."
+msgstr ""
+
 #: src/components/reader/content/renderers/shared/bsky-client-embed.tsx
 msgid "Starter pack"
 msgstr ""
@@ -4701,6 +4773,10 @@ msgstr "Esse link expirou."
 #: src/components/guide/pages/lists-guide-page.tsx
 #: src/lib/guide/navigation.ts
 msgid "Lists in the sidebar"
+msgstr ""
+
+#: src/components/reader/blocked-notice.tsx
+msgid "You blocked {who}, so their writing is hidden everywhere you read."
 msgstr ""
 
 #: src/components/guide/pages/extension-guide-page.tsx
@@ -4952,6 +5028,9 @@ msgstr "{totalPeople, plural, one {# pessoa que você segue escreve aqui} other 
 msgid "Not in the directory yet?"
 msgstr ""
 
+#: src/components/blocks-settings-view.tsx
+#: src/components/reader/block-user-menu-item.tsx
+#: src/components/reader/blocked-notice.tsx
 #: src/components/reader/notify-button.tsx
 #: src/components/reader/page-reader-bar.tsx
 msgid "Something went wrong"
@@ -5001,8 +5080,8 @@ msgstr ""
 
 #. placeholder {0}: name ?? "This account"
 #: src/components/reader/blocked-notice.tsx
-msgid "{0} is on a moderation list you block. To see them again, leave that list."
-msgstr ""
+#~ msgid "{0} is on a moderation list you block. To see them again, leave that list."
+#~ msgstr ""
 
 #: src/routes/_layout.collections.index.tsx
 msgid "Curated, magazine-rendered editions grouped into series you can subscribe to — your special collections on the network."
@@ -6025,6 +6104,10 @@ msgstr "Ver feedback"
 #~ msgid "Pages you have already visited stay available when your connection drops, and Standard Reader shows a plain offline page rather than a browser error when you reach for something it does not have. When a new version of the app is ready, it offers to reload rather than changing under you mid-article."
 #~ msgstr ""
 
+#: src/components/reader/mention-hover-card.tsx
+msgid "This account blocks you, so you can't see their writing."
+msgstr ""
+
 #: src/components/guide/pages/lists-guide-page.tsx
 msgid "Being in a list does not change your feeds. Everything you subscribe to still arrives on Home and in Latest exactly as before; a list only changes how the sidebar is organised, and gives you a page you can read — or share — on its own."
 msgstr ""
@@ -6233,6 +6316,10 @@ msgstr ""
 #: src/magazine/Magazine.tsx
 msgid "Contents"
 msgstr "Índice"
+
+#: src/components/reader/blocked-notice.tsx
+msgid "{Who} is on a moderation list you block. To see them again, leave that list."
+msgstr ""
 
 #: src/components/reader/share-menu.tsx
 msgid "Copy embed code"
@@ -6642,8 +6729,8 @@ msgstr "Apagar todo o histórico de leitura?"
 
 #. placeholder {0}: name ?? "This account"
 #: src/components/reader/blocked-notice.tsx
-msgid "{0} blocks a moderation list you're on, so you can't see their writing."
-msgstr ""
+#~ msgid "{0} blocks a moderation list you're on, so you can't see their writing."
+#~ msgstr ""
 
 #: src/components/guide/pages/publishing-guide-page.tsx
 #: src/lib/guide/navigation.ts
@@ -6971,6 +7058,10 @@ msgstr "Não foram encontradas publicações para {handleLabel}."
 msgid "Already subscribed"
 msgstr "Já é inscrito"
 
+#: src/components/reader/block-user-menu-item.tsx
+msgid "Block {name}?"
+msgstr ""
+
 #: src/components/guide/pages/publishing-guide-page.tsx
 msgid "How to wire a personal site's own <0>site.standard.*</0> records so Standard Reader can find it and read articles inline, without going through Leaflet, Pckt, Offprint, or another publishing tool."
 msgstr "Como configurar os registos <0>site.standard.*</0> do seu próprio site pessoal para que o Standard Reader o encontre e leia os artigos na aplicação, sem passar pelo Leaflet, Pckt, Offprint ou outra ferramenta de publicação."
@@ -6986,6 +7077,10 @@ msgstr "Outras coleções"
 #: src/components/reader/about-view.tsx
 msgid "One tasteful email a week"
 msgstr "Um e-mail bem selecionado por semana"
+
+#: src/components/reader/blocked-notice.tsx
+msgid "Blocked by a list you use"
+msgstr ""
 
 #: src/components/reader/subscriptions-sheet.tsx
 msgid "{unreadCount} unread"
@@ -7274,6 +7369,7 @@ msgid "Pages"
 msgstr "Páginas"
 
 #: src/components/reader/article-view-skeleton.tsx
+#: src/routes/_layout.a.$did.$rkey.tsx
 msgid "Loading article"
 msgstr "Carregando artigo"
 

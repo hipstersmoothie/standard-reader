@@ -1,3 +1,4 @@
+import { useLingui } from "@lingui/react/macro";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useLayoutEffect } from "react";
@@ -262,24 +263,42 @@ export const Route = createFileRoute("/_layout/a/$did/$rkey")({
  * only on the page that already found nothing.
  */
 function ArticleMissing({ uri }: { uri: string }) {
-  const { data: blockState, isPending } = useQuery(
-    publicationApi.getArticleBlockQueryOptions(uri),
-  );
-  const blocks = useQuery(
-    blocksApi.getBlocksSettingsQueryOptions({ limit: 1 }),
-  );
+  const { t } = useLingui();
+  const { data: session } = useSuspenseQuery(user.getSessionQueryOptions);
+  const signedIn = Boolean(session?.user);
 
-  // Nothing while the reason is still unknown: flashing "we couldn't find that
-  // article" and then replacing it with "you blocked this account" reads as the
-  // app changing its mind.
-  if (isPending) return null;
+  // Only a signed-in reader can be on either side of a block, so a signed-out
+  // reader — most of this page's traffic, since it is also what a stale link or
+  // a crawler hits — gets the answer with no extra request at all.
+  const { data: blockState, isPending } = useQuery({
+    ...publicationApi.getArticleBlockQueryOptions(uri),
+    enabled: signedIn,
+  });
+  const capability = useQuery({
+    ...blocksApi.getBlockCapabilityQueryOptions(),
+    enabled: Boolean(blockState),
+  });
+
+  if (!signedIn) return <ArticleNotFound />;
+
+  // A skeleton, not a blank page and not the wrong words: flashing "we couldn't
+  // find that article" and then replacing it with "you blocked this account"
+  // reads as the app changing its mind, but rendering nothing at all reads as
+  // the page having failed.
+  if (isPending) {
+    return (
+      <div aria-busy="true" aria-label={t`Loading article`}>
+        <ArticleViewSkeleton />
+      </div>
+    );
+  }
   if (!blockState) return <ArticleNotFound />;
 
   return (
     <BlockedNotice
       block={blockState.block}
       name={blockState.account.displayName ?? blockState.account.handle}
-      canWrite={blocks.data?.canWrite ?? false}
+      canWrite={capability.data?.canWrite ?? false}
     />
   );
 }

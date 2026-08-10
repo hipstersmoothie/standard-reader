@@ -557,15 +557,13 @@ function BlockedProfile({
   block: BlockEdge;
   profile: ProfileSummary;
 }) {
-  const blocks = useQuery(
-    blocksApi.getBlocksSettingsQueryOptions({ limit: 1 }),
-  );
+  const capability = useQuery(blocksApi.getBlockCapabilityQueryOptions());
   return (
     <ReaderContent>
       <BlockedNotice
         block={block}
         name={profile.displayName ?? profile.handle}
-        canWrite={blocks.data?.canWrite ?? false}
+        canWrite={capability.data?.canWrite ?? false}
       />
     </ReaderContent>
   );

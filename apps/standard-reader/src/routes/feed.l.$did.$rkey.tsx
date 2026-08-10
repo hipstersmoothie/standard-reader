@@ -5,6 +5,7 @@ import * as schema from "#/db/schema";
 import { renderRssFeed } from "#/lib/feeds/rss";
 import { getPublicUrl } from "#/lib/public-url";
 import { listFeedUrl, SITE_DESCRIPTION } from "#/lib/site-metadata";
+import { blockFilterDid } from "#/server/blocks/blocks";
 import { feedItemsFromCards, loadFeedItemBodies } from "#/server/feeds/build";
 import { selectArticleCards } from "#/server/reader/queries";
 import { readList } from "#/server/reader/saved-lists";
@@ -23,8 +24,11 @@ export const Route = createFileRoute("/feed/l/$did/$rkey")({
         }
 
         const baseUrl = getPublicUrl();
+        // The list's owner is the reader this feed is for — see
+        // `feed.latest.$did`.
         const cards = await selectArticleCards(db, schema, {
           publicationUris: list.publications,
+          viewerDid: await blockFilterDid(db, schema, did),
           limit: FEED_LIMIT,
         });
         const bodies = await loadFeedItemBodies(

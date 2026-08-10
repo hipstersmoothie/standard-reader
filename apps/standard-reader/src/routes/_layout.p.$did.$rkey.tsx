@@ -566,15 +566,12 @@ function PublicationProfile() {
   );
   const signedIn = Boolean(session?.user);
 
-  // The route's `did` param is the publication owner (an AT-URI's authority),
-  // so the block check needs no extra lookup. The archive query already returns
-  // nothing for a blocked owner; this is what says why.
-  const { data: block } = useQuery({
-    ...blocksApi.getBlockStateQueryOptions(did),
-    enabled: signedIn,
-  });
-  const { data: blocksSettings } = useQuery({
-    ...blocksApi.getBlocksSettingsQueryOptions({ limit: 1 }),
+  // The block rides on the header itself, not a second query: resolving it
+  // after first paint would mean painting the blocked owner's hero — name,
+  // avatar, description — and then taking it away.
+  const block = header?.block ?? null;
+  const { data: canWrite } = useQuery({
+    ...blocksApi.getBlockCapabilityQueryOptions(),
     enabled: Boolean(block),
   });
 
@@ -599,7 +596,7 @@ function PublicationProfile() {
         <BlockedNotice
           block={block}
           name={header.owner.displayName ?? header.owner.handle}
-          canWrite={blocksSettings?.canWrite ?? false}
+          canWrite={canWrite?.canWrite ?? false}
         />
       </ReaderContent>
     );

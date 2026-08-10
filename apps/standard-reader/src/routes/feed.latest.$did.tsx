@@ -5,6 +5,7 @@ import * as schema from "#/db/schema";
 import { renderRssFeed } from "#/lib/feeds/rss";
 import { getPublicUrl } from "#/lib/public-url";
 import { latestFeedUrl, SITE_NAME } from "#/lib/site-metadata";
+import { blockFilterDid } from "#/server/blocks/blocks";
 import { feedItemsFromCards, loadFeedItemBodies } from "#/server/feeds/build";
 import { selectArticleCards } from "#/server/reader/queries";
 import { effectiveFollowUris } from "#/server/reader/saved-lists";
@@ -22,9 +23,16 @@ export const Route = createFileRoute("/feed/latest/$did")({
         }
 
         const baseUrl = getPublicUrl();
-        const followUris = await effectiveFollowUris(db, schema, did);
+        // `$did` is the reader this feed belongs to, so their blocks apply here
+        // as they do on `/latest` itself. The feed URL is the only way in — a
+        // reader who subscribed in an RSS client can't "just not look".
+        const [followUris, blockDid] = await Promise.all([
+          effectiveFollowUris(db, schema, did),
+          blockFilterDid(db, schema, did),
+        ]);
         const cards = await selectArticleCards(db, schema, {
           publicationUris: followUris,
+          viewerDid: blockDid,
           limit: FEED_LIMIT,
         });
         const bodies = await loadFeedItemBodies(

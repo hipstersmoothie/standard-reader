@@ -162,3 +162,36 @@ describe("uriAuthorityDid", () => {
     expect(uriAuthorityDid("https://example.com/post")).toBeNull();
   });
 });
+
+describe("BlockableCard against real card shapes", () => {
+  // Regression guard: `publicationOwnerDid` was defined and tested here while no
+  // production card actually carried the field, so the whole publication-owner
+  // half of the filter was dead. These fixtures mirror `ArticleCard` /
+  // `PublicationCard` field names so a rename breaks the test rather than
+  // silently reopening that hole.
+  it("reads the owner off an article card's publicationOwnerDid", () => {
+    const articleCard = {
+      uri: "at://did:plc:guest/site.standard.document/1",
+      did: "did:plc:guest",
+      publicationOwnerDid: "did:plc:owner",
+    };
+    expect(blockSubjectDids([articleCard]).toSorted()).toEqual([
+      "did:plc:guest",
+      "did:plc:owner",
+    ]);
+    expect(isCardBlocked(articleCard, new Set(["did:plc:owner"]))).toBe(true);
+  });
+
+  it("treats a loose document (no publication) as author-only", () => {
+    const looseCard = { did: "did:plc:author", publicationOwnerDid: null };
+    expect(blockSubjectDids([looseCard])).toEqual(["did:plc:author"]);
+    expect(isCardBlocked(looseCard, new Set(["did:plc:other"]))).toBe(false);
+  });
+
+  it("reads a publication card's owner off `did`", () => {
+    const publicationCard = { did: "did:plc:owner" };
+    expect(isCardBlocked(publicationCard, new Set(["did:plc:owner"]))).toBe(
+      true,
+    );
+  });
+});

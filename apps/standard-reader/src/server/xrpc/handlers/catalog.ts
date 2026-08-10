@@ -5,7 +5,7 @@ import { fetchBlueskyPublicProfileFields } from "#/lib/bluesky-public-profile";
 import { isUsableHandle, resolveIdentity } from "#/server/atproto/identity";
 import { ipldToLexJson } from "#/server/atproto/ipld-json";
 import { resolveAuthorDid } from "#/server/atproto/resolve-author-ref";
-import { filterBlockedCards } from "#/server/blocks/blocks";
+import { blockFilterDid, filterBlockedCards } from "#/server/blocks/blocks";
 import {
   resolvePageUrl,
   resolvePageUrls,
@@ -162,7 +162,7 @@ export async function handleGetDocument(ctx: XrpcRequestContext) {
     ctx.db,
     ctx.schema,
     [documentUri],
-    { viewerDid: ctx.auth?.did },
+    { viewerDid: await blockFilterDid(ctx.db, ctx.schema, ctx.auth?.did) },
   );
   let card = cards[0];
   if (!card) {
@@ -222,6 +222,7 @@ export async function handleGetPublications(ctx: XrpcRequestContext) {
     offset,
     query: q ?? undefined,
     excludeWebBridge: ctx.excludeWebBridgeEnabled,
+    viewerDid: await blockFilterDid(ctx.db, ctx.schema, ctx.auth?.did),
   });
 
   const total =
@@ -329,7 +330,7 @@ export async function handleGetPublicationDocuments(ctx: XrpcRequestContext) {
     offset,
     readForDid,
     countOldPostsAsUnread: ctx.auth ? ctx.countOldPostsAsUnreadEnabled : true,
-    viewerDid: ctx.auth?.did,
+    viewerDid: await blockFilterDid(ctx.db, ctx.schema, ctx.auth?.did),
   });
   const items = await enrichDocuments(ctx, rows, readForDid);
   return {
@@ -426,12 +427,13 @@ export async function handleGetDocumentContext(ctx: XrpcRequestContext) {
   } = await import("#/server/reader/queries");
 
   const readerDid = ctx.auth?.did;
+  const blockDid = await blockFilterDid(ctx.db, ctx.schema, readerDid);
   const [moreFromRaw, relatedRaw, readersAlsoFollowRaw] = await Promise.all([
     row.publicationUri
       ? selectCards(ctx.db, ctx.schema, {
           publicationUris: [row.publicationUri],
           limit: 4,
-          viewerDid: readerDid,
+          viewerDid: blockDid,
         })
       : Promise.resolve([]),
     relatedArticles(ctx.db, ctx.schema, {

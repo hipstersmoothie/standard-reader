@@ -27,14 +27,15 @@ const getDocumentComments = createServerFn({ method: "GET" })
       span.set("documentUri", data.documentUri);
       await attachReaderSpanContext(span, getRequest());
       const viewerDid = await getReaderDidForRequest(getRequest());
-      const comments = await fetchDocumentComments(
+      const result = await fetchDocumentComments(
         context.db,
         context.schema,
         data.documentUri,
         viewerDid,
       );
-      span.set("count", comments.length);
-      return comments;
+      span.set("count", result.comments.length);
+      span.set("hiddenByBlocks", result.hiddenByBlocks);
+      return result;
     }),
   );
 

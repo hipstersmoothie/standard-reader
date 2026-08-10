@@ -25,8 +25,9 @@ import {
 } from "#/server/blocks/blocks";
 import {
   refreshOutgoingBlocks,
+  refreshOutgoingListBlocks,
+  scheduleReaderBlockSync,
   syncBlockedList,
-  syncReaderBlocks,
 } from "#/server/blocks/sync.server";
 import { observe } from "#/server/observability/log";
 
@@ -122,6 +123,82 @@ const getBlocksSettings = createServerFn({ method: "GET" })
           canWrite: hasBskyBlockWriteScope(account?.scope),
           syncedAt: syncRow?.syncedAt?.toISOString() ?? null,
           syncError: syncRow?.lastError ?? null,
+        };
+      },
+    ),
+  );
+
+/**
+ * A further page of the reader's blocked accounts.
+ *
+ * The settings page loads its first page with everything else, then pages
+ * through this. It exists because the list is genuinely unbounded — a reader who
+ * has used Bluesky's moderation tools for years can have hundreds of blocks —
+ * and a first page with no way past it silently disagrees with the count in the
+ * masthead right above it.
+ */
+const getBlockedAccountsPage = createServerFn({ method: "GET" })
+  .middleware([dbMiddleware])
+  .validator(blockedAccountsInput)
+  .handler(
+    observe("blocks.getAccountsPage", async ({ data, context }, span) => {
+      const { db, schema } = context;
+      const reader = await getReaderContextForRequest(getRequest());
+      if (!reader) return { accounts: [], nextOffset: null };
+
+      const accounts = await readerBlockedAccounts(db, schema, reader.did, {
+        limit: data.limit,
+        offset: data.offset,
+      });
+      span.set("count", accounts.length);
+      return {
+        accounts,
+        nextOffset:
+          accounts.length === data.limit ? data.offset + data.limit : null,
+      };
+    }),
+  );
+
+/**
+ * The two facts every surface outside `/settings/blocks` actually wants.
+ *
+ * Separate from {@link BlocksSettings} because the notices only need to know
+ * whether an Unblock button would work, and the settings row only needs a
+ * headline number — asking the full settings query for that ran five reads
+ * (including a page of blocked accounts nobody rendered) under a cache key that
+ * never shared with the settings page's own.
+ */
+export interface BlockCapability {
+  /** Whether the reader has granted write access to their block records. */
+  canWrite: boolean;
+  /** How many accounts they block directly. */
+  accountCount: number;
+}
+
+const getBlockCapability = createServerFn({ method: "GET" })
+  .middleware([dbMiddleware])
+  .handler(
+    observe(
+      "blocks.getCapability",
+      async ({ context }, span): Promise<BlockCapability | null> => {
+        const { db, schema } = context;
+        const reader = await getReaderContextForRequest(getRequest());
+        if (!reader) return null;
+
+        const [account, accountCount] = await Promise.all([
+          db.query.account.findFirst({
+            where: and(
+              eq(schema.account.userId, reader.userId),
+              eq(schema.account.providerId, "atproto"),
+            ),
+            columns: { scope: true },
+          }),
+          countReaderBlockedAccounts(db, schema, reader.did),
+        ]);
+        span.set("accounts", accountCount);
+        return {
+          canWrite: hasBskyBlockWriteScope(account?.scope),
+          accountCount,
         };
       },
     ),
@@ -248,12 +325,20 @@ const blockList = createServerFn({ method: "POST" })
       data.listUri,
       new Date().toISOString(),
     );
-    // Full sweep rather than the outgoing-blocks refresh: subscribing to a list
-    // is only meaningful once its membership is mirrored, and that is what the
-    // sweep does. Awaited so the block is in force when this returns.
-    await syncReaderBlocks(session.did);
-    await syncBlockedList(data.listUri);
-    return { blocked: true };
+
+    // Only the two things the reader is waiting on: their own listblock records
+    // (so the list appears in settings) and this list's membership (so the
+    // block is actually in force). Both are bounded.
+    //
+    // Not a full sweep. That walks the reader's repo, two Constellation
+    // indexes and every list they are on — hundreds of round trips with an 8s
+    // timeout each, held open on an HTTP request the reader is staring at, and
+    // it would re-walk *this* list a second time on top. It runs in the
+    // background instead, where its length costs nobody a spinner.
+    await refreshOutgoingListBlocks(session.did);
+    const mirrored = await syncBlockedList(data.listUri);
+    scheduleReaderBlockSync(session.did, true);
+    return { blocked: true, mirrored };
   });
 
 const unblockList = createServerFn({ method: "POST" })
@@ -282,17 +367,34 @@ const unblockList = createServerFn({ method: "POST" })
       data.listUri,
       rows.map((row) => row.rkey),
     );
-    await syncReaderBlocks(session.did);
+    // Same shape as blocking: re-read the reader's own records so the list is
+    // gone from settings on the next paint, and leave the rest to the sweep.
+    await refreshOutgoingListBlocks(session.did);
+    scheduleReaderBlockSync(session.did, true);
     return { blocked: false };
   });
 
-/** Force a block sweep now — the settings page's "refresh" affordance. */
+/**
+ * Force a block sweep now — the settings page's "Refresh" affordance.
+ *
+ * Starts the sweep and returns; it does not wait for it. A sweep is dozens to
+ * hundreds of network round trips against Constellation and the AppView, with
+ * no bound that a reader would recognise as "a moment" — awaiting it would hang
+ * the request, and since nothing rate-limits a button, awaiting it would also
+ * let one reader hold open as many concurrent sweeps as they can click.
+ * `scheduleReaderBlockSync` dedupes per reader, so the second press joins the
+ * first run rather than starting another.
+ *
+ * The page reflects progress through `syncedAt` on the settings query, which is
+ * the honest signal: it changes when the sweep has actually finished.
+ */
 const refreshBlocks = createServerFn({ method: "POST" }).handler(async () => {
   const reader = await getReaderContextForRequest(getRequest());
   if (!reader) {
     throw new Error("Unauthorized");
   }
-  return syncReaderBlocks(reader.did);
+  scheduleReaderBlockSync(reader.did, true);
+  return { started: true };
 });
 
 function getBlocksSettingsQueryOptions({
@@ -302,6 +404,14 @@ function getBlocksSettingsQueryOptions({
   return queryOptions({
     queryKey: ["blocks", "settings", limit, offset] as const,
     queryFn: async () => getBlocksSettings({ data: { limit, offset } }),
+    staleTime: 30_000,
+  });
+}
+
+function getBlockCapabilityQueryOptions() {
+  return queryOptions({
+    queryKey: ["blocks", "capability"] as const,
+    queryFn: async () => getBlockCapability(),
     staleTime: 30_000,
   });
 }
@@ -319,6 +429,9 @@ export { NEEDS_BLOCK_SCOPE };
 export const blocksApi = {
   getBlocksSettings,
   getBlocksSettingsQueryOptions,
+  getBlockedAccountsPage,
+  getBlockCapability,
+  getBlockCapabilityQueryOptions,
   getBlockState,
   getBlockStateQueryOptions,
   blockAccount,

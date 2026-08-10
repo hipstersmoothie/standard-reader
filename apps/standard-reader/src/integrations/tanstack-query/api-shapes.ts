@@ -91,6 +91,14 @@ export interface ArticleCard {
   publicationOwnerAvatarUrl: string | null;
   /** Owning profile's handle (e.g. `alice.bsky.social`). */
   publicationOwnerHandle: string | null;
+  /**
+   * DID of the account that owns the publication, when the document is bound to
+   * one. Usually the same as `did` — but not for a guest post, where a
+   * contributor writes into someone else's publication and it is the *owner*
+   * whose name and avatar carry the byline. Blocks are per account, so both have
+   * to be checked: see `BlockableCard` in `#/lib/blocks`.
+   */
+  publicationOwnerDid: string | null;
   /** Owning publication's banner (from the owner profile), for cover fallback. */
   publicationBannerUrl: string | null;
   /** Owning publication's derived topic (e.g. "Design"), for meta labels. */
@@ -506,6 +514,7 @@ export function toArticleCard(row: ArticleCardRow): ArticleCard {
     publicationOwnerAvatarUrl:
       row.publicationOwnerAvatarUrl ?? row.authorAvatarUrl,
     publicationOwnerHandle: row.publicationOwnerHandle ?? row.authorHandle,
+    publicationOwnerDid: row.publicationDid ?? null,
     publicationBannerUrl: row.publicationBannerUrl,
     publicationTopic: row.publicationTopic,
     authorHandle: row.authorHandle,

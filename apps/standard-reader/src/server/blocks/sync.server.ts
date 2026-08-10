@@ -27,7 +27,7 @@
  * lets the work land in the DB for the reader's next load.
  */
 
-import { and, eq, inArray, notInArray, sql } from "drizzle-orm";
+import { and, eq, inArray, ne, notInArray, sql } from "drizzle-orm";
 
 import { db } from "#/db/index.server";
 import * as schema from "#/db/schema";
@@ -37,6 +37,7 @@ import {
   listRepoRecords,
 } from "#/server/atproto/fetch-record";
 import { resolveIdentity } from "#/server/atproto/identity";
+import { invalidateBlockCache } from "#/server/blocks/blocks";
 
 /** Collections we mirror. Third-party (Bluesky) namespace — not ours. */
 export const BSKY_BLOCK_NSID = "app.bsky.graph.block";
@@ -90,6 +91,29 @@ export interface BlockSyncResult {
   error?: string;
 }
 
+/**
+ * Rows per `INSERT` statement.
+ *
+ * Postgres caps a statement at 65535 bind parameters, and a `blocks` row binds
+ * eight columns — so a single `insert().values(rows)` breaks at about 8,000
+ * blocks. That is not a hypothetical size for anyone who has used Bluesky's
+ * moderation tools for a while, and the failure mode is the whole sweep
+ * throwing rather than degrading. Chunking ties the ceiling to this constant
+ * instead of to the widest table.
+ *
+ * The tidy-up `NOT IN`s bind one parameter per URI and are bounded by the same
+ * sets, so they stay well inside the limit at every reachable size.
+ */
+const WRITE_CHUNK = 500;
+
+function chunked<T>(rows: ReadonlyArray<T>): Array<Array<T>> {
+  const out: Array<Array<T>> = [];
+  for (let i = 0; i < rows.length; i += WRITE_CHUNK) {
+    out.push(rows.slice(i, i + WRITE_CHUNK));
+  }
+  return out;
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -121,21 +145,33 @@ function parseDate(value: unknown): Date | null {
  * it looks complete. The cap is stated rather than silent: past it, the reader
  * is enforcing the blocks we know about, not every block that exists.
  */
+interface BacklinkSweep {
+  records: Array<{ did: string; collection: string; rkey: string }>;
+  /**
+   * Every page was read — no cursor left when we stopped.
+   *
+   * The difference between "these are the blocks" and "these are *some* of the
+   * blocks", and the only thing that makes it safe to delete rows the sweep
+   * didn't return. A truncated sweep must never be read as a removal.
+   */
+  complete: boolean;
+}
+
 async function allBacklinks(
   target: string,
   source: string,
   maxPages: number,
-): Promise<Array<{ did: string; collection: string; rkey: string }>> {
-  const merged: Array<{ did: string; collection: string; rkey: string }> = [];
+): Promise<BacklinkSweep> {
+  const records: Array<{ did: string; collection: string; rkey: string }> = [];
   let cursor: string | undefined;
   let pages = 0;
   do {
     const page = await getBacklinks({ target, source, cursor, limit: 100 });
-    merged.push(...page.records);
+    records.push(...page.records);
     cursor = page.cursor ?? undefined;
     pages++;
   } while (cursor && pages < maxPages);
-  return merged;
+  return { records, complete: !cursor };
 }
 
 /** Cap on Constellation pages per backlink sweep (100 records per page). */
@@ -176,19 +212,21 @@ async function replaceOutgoingBlocks(
       deleted: false,
       updatedAt: sql`now()`,
     }));
-    await db
-      .insert(b)
-      .values(values)
-      .onConflictDoUpdate({
-        target: b.uri,
-        set: {
-          cid: sql`excluded.cid`,
-          subjectDid: sql`excluded.subject_did`,
-          createdAt: sql`excluded.created_at`,
-          deleted: false,
-          updatedAt: sql`now()`,
-        },
-      });
+    for (const chunk of chunked(values)) {
+      await db
+        .insert(b)
+        .values(chunk)
+        .onConflictDoUpdate({
+          target: b.uri,
+          set: {
+            cid: sql`excluded.cid`,
+            subjectDid: sql`excluded.subject_did`,
+            createdAt: sql`excluded.created_at`,
+            deleted: false,
+            updatedAt: sql`now()`,
+          },
+        });
+    }
   }
 
   const keep = rows.map((row) => row.uri);
@@ -220,30 +258,31 @@ async function replaceOutgoingListBlocks(
 ): Promise<void> {
   const bl = schema.blockLists;
   if (rows.length > 0) {
-    await db
-      .insert(bl)
-      .values(
-        rows.map((row) => ({
-          uri: row.uri,
-          cid: row.cid,
-          blockerDid: row.blockerDid,
-          rkey: row.rkey,
-          listUri: row.listUri,
-          createdAt: row.createdAt,
-          deleted: false,
-          updatedAt: sql`now()`,
-        })),
-      )
-      .onConflictDoUpdate({
-        target: bl.uri,
-        set: {
-          cid: sql`excluded.cid`,
-          listUri: sql`excluded.list_uri`,
-          createdAt: sql`excluded.created_at`,
-          deleted: false,
-          updatedAt: sql`now()`,
-        },
-      });
+    const values = rows.map((row) => ({
+      uri: row.uri,
+      cid: row.cid,
+      blockerDid: row.blockerDid,
+      rkey: row.rkey,
+      listUri: row.listUri,
+      createdAt: row.createdAt,
+      deleted: false,
+      updatedAt: sql`now()`,
+    }));
+    for (const chunk of chunked(values)) {
+      await db
+        .insert(bl)
+        .values(chunk)
+        .onConflictDoUpdate({
+          target: bl.uri,
+          set: {
+            cid: sql`excluded.cid`,
+            listUri: sql`excluded.list_uri`,
+            createdAt: sql`excluded.created_at`,
+            deleted: false,
+            updatedAt: sql`now()`,
+          },
+        });
+    }
   }
 
   const keep = rows.map((row) => row.uri);
@@ -429,23 +468,24 @@ async function syncListMembership(
 
   const bli = schema.blockListItems;
   if (list.items.length > 0) {
-    await db
-      .insert(bli)
-      .values(
-        list.items.map((item) => ({
-          uri: item.uri,
-          listUri,
-          subjectDid: item.subjectDid,
-        })),
-      )
-      .onConflictDoUpdate({
-        target: bli.uri,
-        set: {
-          listUri: sql`excluded.list_uri`,
-          subjectDid: sql`excluded.subject_did`,
-          indexedAt: sql`now()`,
-        },
-      });
+    const values = list.items.map((item) => ({
+      uri: item.uri,
+      listUri,
+      subjectDid: item.subjectDid,
+    }));
+    for (const chunk of chunked(values)) {
+      await db
+        .insert(bli)
+        .values(chunk)
+        .onConflictDoUpdate({
+          target: bli.uri,
+          set: {
+            listUri: sql`excluded.list_uri`,
+            subjectDid: sql`excluded.subject_did`,
+            indexedAt: sql`now()`,
+          },
+        });
+    }
   }
 
   // Drop members removed from the list upstream. Rows are deleted rather than
@@ -497,19 +537,26 @@ async function syncListMembership(
  * blocker DID and rkey directly, so the block row can be built without fetching
  * a single record.
  *
- * Additive, not a replace: these rows describe other people's repos, and this
- * index is best-effort. A sweep that came back short (Constellation down, a
- * partial page) must not be read as "nobody blocks you any more" — that would
- * un-hide content the moment the index hiccuped. Rows do go away, just on the
- * slower path: the blocker's own record read, if they are also a reader here.
+ * **Replaces when the sweep was complete, adds when it wasn't.** A block record
+ * that is gone from the index is an unblock, and it has to take effect: the
+ * blocker is usually not a reader here, so their own record read — the only
+ * other way a row could disappear — never runs, and the block would be
+ * permanent. Nobody can undo a block they never made, so leaving these rows to
+ * accumulate meant an account could be hidden from a reader forever because of
+ * something that stopped being true.
+ *
+ * The safety condition is {@link BacklinkSweep.complete}. A sweep that stopped
+ * at the page cap, or threw partway (the caller's `catch`), never reaches the
+ * delete — under-enforcing a block for one cycle is recoverable, silently
+ * un-hiding someone the reader is blocked by is not.
  */
 async function syncIncomingBlocks(did: string): Promise<number> {
-  const records = await allBacklinks(
+  const sweep = await allBacklinks(
     did,
     BLOCK_SUBJECT_SOURCE,
     MAX_BACKLINK_PAGES,
   );
-  const rows = records
+  const rows = sweep.records
     .filter((record) => record.collection === BSKY_BLOCK_NSID)
     .filter((record) => record.did !== did)
     .map((record) => ({
@@ -522,16 +569,37 @@ async function syncIncomingBlocks(did: string): Promise<number> {
       deleted: false,
       updatedAt: sql`now()`,
     }));
-  if (rows.length === 0) return 0;
 
   const b = schema.blocks;
-  await db
-    .insert(b)
-    .values(rows)
-    .onConflictDoUpdate({
-      target: b.uri,
-      set: { deleted: false, updatedAt: sql`now()` },
-    });
+  if (rows.length > 0) {
+    for (const chunk of chunked(rows)) {
+      await db
+        .insert(b)
+        .values(chunk)
+        .onConflictDoUpdate({
+          target: b.uri,
+          set: { deleted: false, updatedAt: sql`now()` },
+        });
+    }
+  }
+
+  if (sweep.complete) {
+    // Scoped to rows *this* sweep owns: incoming blocks against this reader.
+    // The reader's own outgoing blocks live in the same table and are replaced
+    // by `replaceOutgoingBlocks`, which is the authority for those.
+    const keep = rows.map((row) => row.uri);
+    await db
+      .update(b)
+      .set({ deleted: true, updatedAt: sql`now()` })
+      .where(
+        and(
+          eq(b.subjectDid, did),
+          eq(b.deleted, false),
+          ne(b.blockerDid, did),
+          ...(keep.length > 0 ? [notInArray(b.uri, keep)] : []),
+        ),
+      );
+  }
   return rows.length;
 }
 
@@ -548,13 +616,18 @@ async function syncIncomingListBlocks(
   did: string,
   pds: string | null,
 ): Promise<number> {
-  const records = await allBacklinks(did, LISTITEM_SUBJECT_SOURCE, 1);
-  const listItems = records
-    .filter((record) => record.collection === BSKY_LISTITEM_NSID)
-    .slice(0, MAX_INCOMING_LISTS);
-  if (listItems.length === 0) return 0;
+  const sweep = await allBacklinks(did, LISTITEM_SUBJECT_SOURCE, 1);
+  const allListItems = sweep.records.filter(
+    (record) => record.collection === BSKY_LISTITEM_NSID,
+  );
+  const listItems = allListItems.slice(0, MAX_INCOMING_LISTS);
+
+  // The reader may have been removed from every list they were on, so an empty
+  // sweep is a result, not a no-op — but only a *complete, untruncated* one.
+  const capped = !sweep.complete || listItems.length < allListItems.length;
 
   let blockers = 0;
+  const seenMemberships: Array<string> = [];
   for (const item of listItems) {
     const itemUri = `at://${item.did}/${BSKY_LISTITEM_NSID}/${item.rkey}`;
     const record = await fetchRepoRecordWithFallback(itemUri, pds);
@@ -562,12 +635,12 @@ async function syncIncomingListBlocks(
     const listUri = isRecord(value) ? value.list : null;
     if (typeof listUri !== "string" || !listUri.startsWith("at://")) continue;
 
-    const listBlocks = await allBacklinks(
+    const listBlockSweep = await allBacklinks(
       listUri,
       LISTBLOCK_SUBJECT_SOURCE,
       MAX_BACKLINK_PAGES,
     );
-    const blockRows = listBlocks
+    const blockRows = listBlockSweep.records
       .filter((row) => row.collection === BSKY_LISTBLOCK_NSID)
       .filter((row) => row.did !== did)
       .map((row) => ({
@@ -580,10 +653,10 @@ async function syncIncomingListBlocks(
         deleted: false,
         updatedAt: sql`now()`,
       }));
-    if (blockRows.length === 0) continue;
 
     // Store the reader's membership so the `list-blocked-by` branch can join
     // through it. The rest of the list is deliberately not mirrored.
+    seenMemberships.push(itemUri);
     await db
       .insert(schema.blockListItems)
       .values({ uri: itemUri, listUri, subjectDid: did })
@@ -593,14 +666,64 @@ async function syncIncomingListBlocks(
       });
 
     const bl = schema.blockLists;
-    await db
-      .insert(bl)
-      .values(blockRows)
-      .onConflictDoUpdate({
-        target: bl.uri,
-        set: { deleted: false, updatedAt: sql`now()` },
-      });
+    if (blockRows.length > 0) {
+      for (const chunk of chunked(blockRows)) {
+        await db
+          .insert(bl)
+          .values(chunk)
+          .onConflictDoUpdate({
+            target: bl.uri,
+            set: { deleted: false, updatedAt: sql`now()` },
+          });
+      }
+    }
+
+    // Same reasoning as `syncIncomingBlocks`: an unsubscribed listblock has to
+    // stop applying, and its author is almost never a reader here, so nothing
+    // else would ever retire the row. Scoped to this list and to blockers other
+    // than the reader, so their own listblocks stay `replaceOutgoingListBlocks`'
+    // business.
+    if (listBlockSweep.complete) {
+      const keep = blockRows.map((row) => row.uri);
+      await db
+        .update(bl)
+        .set({ deleted: true, updatedAt: sql`now()` })
+        .where(
+          and(
+            eq(bl.listUri, listUri),
+            eq(bl.deleted, false),
+            ne(bl.blockerDid, did),
+            ...(keep.length > 0 ? [notInArray(bl.uri, keep)] : []),
+          ),
+        );
+    }
     blockers += blockRows.length;
+  }
+
+  // Memberships the reader has left, so a list they were removed from stops
+  // blocking them.
+  //
+  // Restricted to lists this function is the *only* writer of. A list somebody
+  // here blocks is mirrored in full by `syncListMembership` and has a
+  // `block_list_sync_state` row; deleting the reader's membership out of one of
+  // those on a Constellation hiccup would quietly weaken that list's block for
+  // whoever subscribed to it, and it would stay weakened until the 12h refresh.
+  // Lists reached only through this sweep have no such row, and only ever hold
+  // the reader's own membership.
+  if (!capped) {
+    const bli = schema.blockListItems;
+    const ls = schema.blockListSyncState;
+    await db
+      .delete(bli)
+      .where(
+        and(
+          eq(bli.subjectDid, did),
+          sql`not exists (select 1 from ${ls} where ${ls.listUri} = ${bli.listUri})`,
+          ...(seenMemberships.length > 0
+            ? [notInArray(bli.uri, seenMemberships)]
+            : []),
+        ),
+      );
   }
   return blockers;
 }
@@ -611,12 +734,31 @@ async function syncIncomingListBlocks(
  * Mirror everything blocking-related for one reader.
  *
  * Best-effort per source: a Constellation outage or an unreachable list must
- * not throw away the sources that did answer, and must never leave the reader
- * with *fewer* blocks enforced than before. The outgoing halves — the reader's
- * own decisions, read from their own repo — are the ones that replace state;
- * the incoming halves only ever add.
+ * not throw away the sources that did answer. The outgoing halves — the
+ * reader's own decisions, read from their own repo — replace state
+ * unconditionally; the incoming halves replace only when their sweep came back
+ * complete (see {@link syncIncomingBlocks}).
+ *
+ * **One sweep per reader at a time, process-wide.** A full sweep is dozens to
+ * hundreds of round trips against Constellation and the AppView; two of them
+ * racing for the same reader would double that load to write the same rows, and
+ * their interleaved replace-then-delete passes could each treat the other's
+ * half-written state as authority. Concurrent callers await the run already in
+ * flight instead of starting a second one.
  */
 export async function syncReaderBlocks(did: string): Promise<BlockSyncResult> {
+  const running = inFlight.get(did);
+  if (running) return running;
+  const run = syncReaderBlocksUncoordinated(did).finally(() => {
+    inFlight.delete(did);
+  });
+  inFlight.set(did, run);
+  return run;
+}
+
+async function syncReaderBlocksUncoordinated(
+  did: string,
+): Promise<BlockSyncResult> {
   const result: BlockSyncResult = { outgoing: 0, incoming: 0, lists: 0 };
   const errors: Array<string> = [];
 
@@ -635,7 +777,13 @@ export async function syncReaderBlocks(did: string): Promise<BlockSyncResult> {
     await replaceOutgoingListBlocks(did, listBlocks);
     result.lists = listBlocks.length;
     for (const listBlock of listBlocks) {
-      await syncListMembership(listBlock.listUri);
+      // Per-list `try`: one unreachable moderation list must not cost the
+      // reader the membership of the others they subscribe to.
+      try {
+        await syncListMembership(listBlock.listUri);
+      } catch (error) {
+        errors.push(`list ${listBlock.listUri}: ${errorMessage(error)}`);
+      }
     }
   } catch (error) {
     errors.push(`block lists: ${errorMessage(error)}`);
@@ -696,6 +844,28 @@ export async function refreshOutgoingBlocks(did: string): Promise<void> {
   const { pds } = await resolveIdentity(did);
   const outgoing = await readOutgoingBlocks(did, pds);
   await replaceOutgoingBlocks(did, outgoing);
+  // The read path caches "does this reader block anybody" for a minute; a block
+  // they just made has to beat that cache or the next page still shows the
+  // account they blocked.
+  invalidateBlockCache(did);
+  checkedUntil.delete(did);
+}
+
+/**
+ * {@link refreshOutgoingBlocks} for the reader's `listblock` records.
+ *
+ * Deliberately does *not* expand the lists it finds — that is what
+ * {@link syncBlockedList} and the background sweep are for. This is the part a
+ * caller can await on a request: one `listRecords` read, so the settings page
+ * shows the list the reader just subscribed to (or stops showing the one they
+ * left) on the very next paint.
+ */
+export async function refreshOutgoingListBlocks(did: string): Promise<void> {
+  const { pds } = await resolveIdentity(did);
+  const listBlocks = await readOutgoingListBlocks(did, pds);
+  await replaceOutgoingListBlocks(did, listBlocks);
+  invalidateBlockCache(did);
+  checkedUntil.delete(did);
 }
 
 /**
@@ -707,8 +877,15 @@ export async function refreshOutgoingBlocks(did: string): Promise<void> {
  */
 const SYNC_TTL_MS = 15 * 60 * 1000;
 
-/** Readers whose sync is running in this process, so requests can't stampede. */
-const inFlight = new Set<string>();
+/**
+ * Sweeps running in this process, keyed by reader.
+ *
+ * Holds the promise rather than a marker so a second caller can await the run
+ * already in flight — {@link syncReaderBlocks} is reachable from a request
+ * handler (blocking a list) as well as from the background scheduler, and those
+ * two must never sweep the same reader at once.
+ */
+const inFlight = new Map<string, Promise<BlockSyncResult>>();
 
 /**
  * Readers checked recently, so the common case ("synced eight minutes ago")
@@ -718,34 +895,55 @@ const inFlight = new Set<string>();
 const checkedUntil = new Map<string, number>();
 
 /**
+ * Cap on {@link checkedUntil}. It is written for every signed-in reader who
+ * makes a request and nothing ever removes an entry, so on a long-lived server
+ * it is otherwise a slow leak — one that grows with the user base rather than
+ * with traffic, which is exactly the kind that survives every load test.
+ * Clearing wholesale is safe: a dropped entry costs one indexed lookup.
+ */
+const CHECKED_CACHE_MAX = 10_000;
+
+function markChecked(did: string, until: number): void {
+  if (checkedUntil.size >= CHECKED_CACHE_MAX) checkedUntil.clear();
+  checkedUntil.set(did, until);
+}
+
+/**
  * Start this reader's block sync in the background, if it's due.
  *
  * Returns immediately — **nothing awaits the sync**. It is called from request
  * paths (the OAuth callback and the signed-in shell read), and a reader should
  * never wait on a block sweep to see a page. Safe to call on every request: the
  * in-process guards and the DB stamp make the common case free.
+ *
+ * `force` skips the TTL but not the in-flight guard: it is what the settings
+ * page's Refresh button uses, and pressing it twice must not start two sweeps.
  */
-export function scheduleReaderBlockSync(did: string): void {
-  const checked = checkedUntil.get(did);
-  if (checked !== undefined && checked > Date.now()) return;
+export function scheduleReaderBlockSync(did: string, force = false): void {
+  if (!force) {
+    const checked = checkedUntil.get(did);
+    if (checked !== undefined && checked > Date.now()) return;
+  }
   if (inFlight.has(did)) return;
-  inFlight.add(did);
 
   void (async () => {
     try {
-      const rows = await db
-        .select({ syncedAt: schema.blockSyncState.syncedAt })
-        .from(schema.blockSyncState)
-        .where(eq(schema.blockSyncState.did, did))
-        .limit(1);
-      const syncedAt = rows[0]?.syncedAt;
-      if (syncedAt && Date.now() - syncedAt.getTime() < SYNC_TTL_MS) {
-        checkedUntil.set(did, syncedAt.getTime() + SYNC_TTL_MS);
-        return;
+      if (!force) {
+        const rows = await db
+          .select({ syncedAt: schema.blockSyncState.syncedAt })
+          .from(schema.blockSyncState)
+          .where(eq(schema.blockSyncState.did, did))
+          .limit(1);
+        const syncedAt = rows[0]?.syncedAt;
+        if (syncedAt && Date.now() - syncedAt.getTime() < SYNC_TTL_MS) {
+          markChecked(did, syncedAt.getTime() + SYNC_TTL_MS);
+          return;
+        }
       }
 
       const result = await syncReaderBlocks(did);
-      checkedUntil.set(did, Date.now() + SYNC_TTL_MS);
+      markChecked(did, Date.now() + SYNC_TTL_MS);
+      invalidateBlockCache(did);
       if (result.error) {
         console.warn(`Block sync for ${did} partially failed:`, result.error);
       }
@@ -753,9 +951,7 @@ export function scheduleReaderBlockSync(did: string): void {
       console.warn("Background block sync failed:", error);
       // Back off on failure too, so a persistently failing sweep doesn't retry
       // on every request the reader makes.
-      checkedUntil.set(did, Date.now() + SYNC_TTL_MS);
-    } finally {
-      inFlight.delete(did);
+      markChecked(did, Date.now() + SYNC_TTL_MS);
     }
   })();
 }
@@ -763,9 +959,25 @@ export function scheduleReaderBlockSync(did: string): void {
 /**
  * Mirror the membership of a list the reader just blocked, without waiting for
  * the next sweep. Forced past the TTL: they blocked it *now*.
+ *
+ * Returns how many members were mirrored and whether the list ran past the
+ * cap, so the UI can say "blocking 4,200 accounts" — or admit the block is
+ * partial — instead of implying a list of any size was taken in whole.
  */
-export async function syncBlockedList(listUri: string): Promise<void> {
+export async function syncBlockedList(
+  listUri: string,
+): Promise<{ memberCount: number; truncated: boolean }> {
   await syncListMembership(listUri, true);
+  const ls = schema.blockListSyncState;
+  const [row] = await db
+    .select({ itemCount: ls.itemCount, truncated: ls.truncated })
+    .from(ls)
+    .where(eq(ls.listUri, listUri))
+    .limit(1);
+  return {
+    memberCount: row?.itemCount ?? 0,
+    truncated: row?.truncated ?? false,
+  };
 }
 
 /** DIDs on a mirrored list, for surfaces that explain a list block. */

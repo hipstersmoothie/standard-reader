@@ -31,6 +31,7 @@ import {
   toPublicationCard,
 } from "#/integrations/tanstack-query/api-shapes";
 import { followedDidsForActor } from "#/server/atproto/bsky-relationships";
+import { filterBlockedCards } from "#/server/blocks/blocks";
 import { documentPublishedNotInFuture } from "#/server/reader/document-filters";
 import { discoverEligiblePublicationWhere } from "#/server/reader/publication-filters";
 
@@ -448,13 +449,19 @@ async function resolveFriendPublications(
   ]);
   const subscribed = new Set(subscribedRows.map((row) => row.uri));
 
-  // Blocked owners are dropped by `blockedFriendPublicationUris`, applied by the
-  // callers rather than here: this module is reachable from the client bundle,
-  // so it must not import the server-only block reader. Following someone on
-  // Bluesky and being blocked by them is not a contradiction — a block is
-  // one-sided, and the follow can predate it.
+  // Filtered here rather than by the callers, and *before* ranking, because
+  // everything the callers derive comes off this one list: the headline
+  // publication and people counts, the avatar stack in the Discover prompt, the
+  // page slice and its `nextOffset`. Filtering a page afterwards left the counts
+  // describing a set that included blocked accounts, and put their avatars and
+  // handles in the prompt — the block visibly not applying, on the surface that
+  // exists to introduce people.
+  //
+  // Following someone on Bluesky and being blocked by them is not a
+  // contradiction: a block is one-sided, and the follow can predate it.
+  const ranked = rankFriendPublications(followedDids, byAuthor, subscribed);
   return {
-    publications: rankFriendPublications(followedDids, byAuthor, subscribed),
+    publications: await filterBlockedCards(db, schema, readerDid, ranked),
     degraded,
     truncated,
   };

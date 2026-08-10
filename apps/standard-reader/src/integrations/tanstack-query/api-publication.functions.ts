@@ -28,8 +28,10 @@ import {
 import { cdnImageUrl } from "#/server/atproto/blob";
 import {
   blockEdgeFor,
+  blockFilterDid,
   filterBlockedCards,
   firstBlockAmong,
+  readerHasBlocks,
 } from "#/server/blocks/blocks";
 import { buildCanonicalUrl } from "#/server/ingest/mappers";
 import { readAccountLabels } from "#/server/labeler/labels.server";
@@ -331,22 +333,49 @@ export interface ArticleExtras {
   marginConnections: Array<MarginConnectionItem>;
 }
 
+/**
+ * The publication header, plus whether the viewer is blocked from its owner.
+ *
+ * `block` rides on the header rather than being a second client query on
+ * purpose. Every surface that renders a publication — the profile route, mention
+ * hovercards, inline publication chips — reads this one query, so a block
+ * resolved anywhere else would have to be resolved *after* first paint, and the
+ * blocked account's name and avatar would render for a frame before being
+ * withheld. Here the caller never has an unblocked version to paint.
+ */
+export type PublicationHeaderView = PublicationHeader & {
+  block: BlockEdge | null;
+};
+
 const getPublicationHeader = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
   .validator(headerInput)
   .handler(
     observe(
       "publication.getHeader",
-      async ({ data, context }, span): Promise<PublicationHeader | null> => {
+      async (
+        { data, context },
+        span,
+      ): Promise<PublicationHeaderView | null> => {
         const { db, schema } = context;
         span.set("publicationUri", data.publicationUri);
-        const header = await selectPublicationHeader(
-          db,
-          schema,
-          data.publicationUri,
-        );
+        // The publication URI's authority *is* its owner's DID, so the block
+        // check needs no lookup of its own and runs alongside the header rather
+        // than ahead of it — a reader who blocks nobody pays one cached
+        // `EXISTS` here, concurrent with the read they were making anyway.
+        const ownerDid = uriAuthorityDid(data.publicationUri);
+        const resolveBlock = async () => {
+          if (!ownerDid) return null;
+          const viewerDid = await getReaderDidForRequest(getRequest());
+          return blockEdgeFor(db, schema, viewerDid, ownerDid);
+        };
+        const [header, block] = await Promise.all([
+          selectPublicationHeader(db, schema, data.publicationUri),
+          resolveBlock(),
+        ]);
         span.set("found", header != null);
-        return header;
+        if (block) span.set("blocked", block.direction);
+        return header ? { ...header, block } : null;
       },
     ),
   );
@@ -372,23 +401,28 @@ const getPublicationProfile = createServerFn({ method: "GET" })
           did == null ? true : countOldPostsAsUnreadEnabled;
 
         // The publication URI's authority *is* its owner's DID, so the block
-        // check needs no extra lookup and can run before the archive read.
+        // check needs no lookup of its own. It runs *alongside* the header and
+        // archive reads rather than gating them: a blocked owner is the rare
+        // case, and serializing a round trip ahead of every load to catch it
+        // would put the cost on everyone. The archive is discarded below when
+        // the block resolves, which is cheaper than the extra hop.
+        // Resolved first because everything below reuses its cached answer: for
+        // the reader who blocks nobody this is one indexed `EXISTS` per minute,
+        // and it makes `blockEdgeFor` free rather than a second round trip.
         const ownerDid = uriAuthorityDid(data.publicationUri);
-        const block = ownerDid
-          ? await blockEdgeFor(db, schema, did, ownerDid)
-          : null;
-
-        const [header, recentDocuments] = await Promise.all([
+        const blockDid = await blockFilterDid(db, schema, did);
+        const [header, recentDocuments, block] = await Promise.all([
           selectPublicationHeader(db, schema, data.publicationUri),
-          block
-            ? Promise.resolve([])
-            : selectPublicationArticleCards(db, schema, {
-                publicationUri: data.publicationUri,
-                limit: data.recentLimit,
-                readForDid,
-                countOldPostsAsUnread,
-                viewerDid: did ?? undefined,
-              }),
+          selectPublicationArticleCards(db, schema, {
+            publicationUri: data.publicationUri,
+            limit: data.recentLimit,
+            readForDid,
+            countOldPostsAsUnread,
+            viewerDid: blockDid,
+          }),
+          ownerDid && blockDid
+            ? blockEdgeFor(db, schema, did, ownerDid)
+            : Promise.resolve(null),
         ]);
 
         if (!header) {
@@ -469,9 +503,14 @@ const getPublicationDocuments = createServerFn({ method: "GET" })
         span.set("order", order);
         span.set("orderOverridden", orderOverride != null);
 
+        // See `getPublicationProfile`: one cached `EXISTS` gates both the
+        // owner-level check and the guest-post filter, so a reader with no
+        // blocks adds no round trip to the archive.
         const archiveOwnerDid = uriAuthorityDid(data.publicationUri);
+        const blockDid = await blockFilterDid(db, schema, did);
         if (
           archiveOwnerDid &&
+          blockDid &&
           (await blockEdgeFor(db, schema, did, archiveOwnerDid))
         ) {
           span.set("blocked", true);
@@ -492,7 +531,7 @@ const getPublicationDocuments = createServerFn({ method: "GET" })
           filter,
           readerDid: did ?? undefined,
           order,
-          viewerDid: did ?? undefined,
+          viewerDid: blockDid,
         });
 
         // "Recommended by @follow" attribution — same signal, same batched query
@@ -648,7 +687,15 @@ const getArticle = createServerFn({ method: "GET" })
             // `manager.resume()` network round trip on every article view.
             // The full PDS client is restored below only in the rare case
             // where the signed-in reader owns this collection document.
-            getReaderContextForRequest(getRequest()),
+            //
+            // The block check below needs `row.did`, so it can't join this
+            // wave — but its guard doesn't, so warm it here. That turns
+            // "does this reader block anyone" from a round trip on the article
+            // critical path into one that overlaps the document read.
+            getReaderContextForRequest(getRequest()).then(async (viewer) => {
+              if (viewer?.did) await readerHasBlocks(db, schema, viewer.did);
+              return viewer;
+            }),
           ]);
 
         const row = docRows[0];
@@ -894,6 +941,7 @@ const getArticleExtras = createServerFn({ method: "GET" })
         const linkUrls = canonicalUrl ? [canonicalUrl] : [];
 
         const readerDid = await getReaderDidForRequest(getRequest());
+        const blockDid = await blockFilterDid(db, schema, readerDid);
 
         const [
           moreFromRaw,
@@ -906,7 +954,7 @@ const getArticleExtras = createServerFn({ method: "GET" })
             ? selectArticleCards(db, schema, {
                 publicationUris: [row.publicationUri],
                 limit: 4,
-                viewerDid: readerDid ?? undefined,
+                viewerDid: blockDid,
               })
             : Promise.resolve([]),
           relatedArticles(db, schema, {
@@ -996,7 +1044,10 @@ const getArticleCard = createServerFn({ method: "GET" })
           db,
           schema,
           [data.documentUri],
-          { lite: true, viewerDid: viewerDid ?? undefined },
+          {
+            lite: true,
+            viewerDid: await blockFilterDid(db, schema, viewerDid),
+          },
         );
         span.set("found", card != null);
         return card ?? null;

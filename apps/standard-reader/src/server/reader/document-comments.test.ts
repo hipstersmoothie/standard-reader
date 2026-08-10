@@ -170,8 +170,11 @@ describe("document comment counts", () => {
       DOCUMENT_URI,
     );
 
-    expect(comments.map((comment) => comment.postUri)).toEqual([sharedUri]);
-    expect(count).toBe(comments.length);
+    expect(comments.comments.map((comment) => comment.postUri)).toEqual([
+      sharedUri,
+    ]);
+    expect(count).toBe(comments.comments.length);
+    expect(comments.hiddenByBlocks).toBe(0);
   });
 
   it("counts merged non-Bluesky sources as rendered items", async () => {
@@ -214,7 +217,7 @@ describe("document comment counts", () => {
       DOCUMENT_URI,
     );
 
-    expect(comments).toHaveLength(1);
+    expect(comments.comments).toHaveLength(1);
     expect(count).toBe(1);
   });
 
@@ -251,7 +254,7 @@ describe("document comment counts", () => {
       DOCUMENT_URI,
     );
 
-    expect(reloaded).toHaveLength(2);
+    expect(reloaded.comments).toHaveLength(2);
     await expect(
       countDocumentComments(dbClient, fakeSchema, DOCUMENT_URI),
     ).resolves.toBe(2);
