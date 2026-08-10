@@ -1,6 +1,7 @@
 "use client";
 
 import { Trans, useLingui } from "@lingui/react/macro";
+import { Avatar } from "@standard-reader/design-system/avatar";
 import { Button } from "@standard-reader/design-system/button";
 import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
 import { radius } from "@standard-reader/design-system/theme/radius.stylex";
@@ -19,6 +20,7 @@ import * as stylex from "@stylexjs/stylex";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Ban } from "lucide-react";
 
+import { initials } from "#/components/reader/format";
 import { ButtonLink } from "#/components/router-links";
 import { blocksApi } from "#/integrations/tanstack-query/api-blocks.functions";
 import type { BlockEdge } from "#/lib/blocks";
@@ -36,11 +38,17 @@ import { blockIsFromList, blockIsOutgoing } from "#/lib/blocks";
 export function BlockedNotice({
   block,
   name,
+  handle,
+  avatarUrl,
   canWrite = false,
 }: {
   block: BlockEdge;
   /** Display name or handle, when we have one. Falls back to "this account". */
   name?: string | null;
+  /** Handle, shown under the name so the account is identifiable at a glance. */
+  handle?: string | null;
+  /** Avatar, so the notice names a person rather than a policy. */
+  avatarUrl?: string | null;
   /** Whether the reader has granted block-write access (enables Unblock). */
   canWrite?: boolean;
 }) {
@@ -74,7 +82,27 @@ export function BlockedNotice({
 
   return (
     <div {...stylex.props(styles.panel)}>
-      <Ban size={24} aria-hidden="true" {...stylex.props(styles.icon)} />
+      {/* Identity first. A block notice with no face and no handle asks the
+          reader to take the app's word for who this is — and on a shared or
+          quoted link they may not have known whose page they were opening. The
+          Ban badge rides on the avatar so the state is still legible at a
+          glance. */}
+      {avatarUrl || name ? (
+        <span {...stylex.props(styles.avatarWrap)}>
+          <Avatar
+            size="lg"
+            src={avatarUrl ?? undefined}
+            alt={name ?? handle ?? ""}
+            fallback={initials(name ?? handle ?? "?")}
+          />
+          <span {...stylex.props(styles.avatarBadge)}>
+            <Ban size={14} aria-hidden="true" />
+          </span>
+        </span>
+      ) : (
+        <Ban size={24} aria-hidden="true" {...stylex.props(styles.icon)} />
+      )}
+      {handle ? <p {...stylex.props(styles.handle)}>@{handle}</p> : null}
       <p {...stylex.props(styles.heading)}>
         {block.direction === "blocking" ? (
           <Trans>You blocked this account</Trans>
@@ -144,6 +172,26 @@ const styles = stylex.create({
   },
   icon: {
     color: uiColor.text2,
+  },
+  avatarWrap: {
+    display: "inline-flex",
+    position: "relative",
+  },
+  avatarBadge: {
+    alignItems: "center",
+    backgroundColor: uiColor.bgSubtle,
+    borderRadius: radius.full,
+    bottom: spacing["0"],
+    color: uiColor.text2,
+    display: "flex",
+    insetInlineEnd: spacing["0"],
+    padding: verticalSpace.xxs,
+    position: "absolute",
+  },
+  handle: {
+    color: uiColor.text2,
+    fontSize: fontSize.sm,
+    marginBlock: spacing["0"],
   },
   heading: {
     fontSize: fontSize.lg,

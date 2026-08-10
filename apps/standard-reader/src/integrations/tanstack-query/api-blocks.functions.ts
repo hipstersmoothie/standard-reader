@@ -116,8 +116,13 @@ const getBlocksSettings = createServerFn({ method: "GET" })
 
         return {
           accounts,
+          // Against the real total, not `length === limit`. A reader with
+          // exactly 50 blocks fills the page precisely, and the naive test
+          // offers a "Load more" that fetches nothing.
           accountsNextOffset:
-            accounts.length === data.limit ? data.offset + data.limit : null,
+            data.offset + accounts.length < accountCount
+              ? data.offset + accounts.length
+              : null,
           accountCount,
           lists,
           canWrite: hasBskyBlockWriteScope(account?.scope),
@@ -146,15 +151,21 @@ const getBlockedAccountsPage = createServerFn({ method: "GET" })
       const reader = await getReaderContextForRequest(getRequest());
       if (!reader) return { accounts: [], nextOffset: null };
 
-      const accounts = await readerBlockedAccounts(db, schema, reader.did, {
-        limit: data.limit,
-        offset: data.offset,
-      });
+      const [accounts, total] = await Promise.all([
+        readerBlockedAccounts(db, schema, reader.did, {
+          limit: data.limit,
+          offset: data.offset,
+        }),
+        countReaderBlockedAccounts(db, schema, reader.did),
+      ]);
       span.set("count", accounts.length);
       return {
         accounts,
+        // See `getBlocksSettings` — paged against the real total.
         nextOffset:
-          accounts.length === data.limit ? data.offset + data.limit : null,
+          data.offset + accounts.length < total
+            ? data.offset + accounts.length
+            : null,
       };
     }),
   );

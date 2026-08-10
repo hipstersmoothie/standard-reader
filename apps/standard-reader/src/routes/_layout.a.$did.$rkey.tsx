@@ -298,6 +298,8 @@ function ArticleMissing({ uri }: { uri: string }) {
     <BlockedNotice
       block={blockState.block}
       name={blockState.account.displayName ?? blockState.account.handle}
+      handle={blockState.account.handle}
+      avatarUrl={blockState.account.avatarUrl}
       canWrite={capability.data?.canWrite ?? false}
     />
   );

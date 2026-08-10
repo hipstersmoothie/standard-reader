@@ -563,6 +563,8 @@ function BlockedProfile({
       <BlockedNotice
         block={block}
         name={profile.displayName ?? profile.handle}
+        handle={profile.handle}
+        avatarUrl={profile.avatarUrl}
         canWrite={capability.data?.canWrite ?? false}
       />
     </ReaderContent>

@@ -596,6 +596,8 @@ function PublicationProfile() {
         <BlockedNotice
           block={block}
           name={header.owner.displayName ?? header.owner.handle}
+          handle={header.owner.handle}
+          avatarUrl={header.owner.avatarUrl}
           canWrite={canWrite?.canWrite ?? false}
         />
       </ReaderContent>

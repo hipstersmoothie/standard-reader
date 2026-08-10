@@ -455,7 +455,7 @@ export async function readerBlockedAccounts(
     order by ${b.createdAt} desc nulls last, ${b.uri} desc
     limit ${opts.limit} offset ${opts.offset ?? 0}
   `);
-  return executeRows<{
+  const rows = executeRows<{
     did: string;
     uri: string;
     created_at: Date | string | null;
@@ -472,6 +472,51 @@ export async function readerBlockedAccounts(
     listUri: null,
     createdAt: toIso(row.created_at),
   }));
+
+  return hydrateBlockedAccounts(rows);
+}
+
+/**
+ * Fill in identity for blocked accounts the read-model has never seen.
+ *
+ * `profiles` only holds accounts this app indexes — publishers, and readers who
+ * signed in. A reader's blocks are mostly neither, so the left join above comes
+ * back empty for them and the row has nothing to render but a `did:plc:…`
+ * string. A moderation list of raw DIDs is unusable: the reader can't tell who
+ * they blocked, let alone decide whether to undo it.
+ *
+ * So anything the mirror can't name is resolved from the public AppView, in one
+ * batched call for the whole page. Best-effort by construction — a DID that
+ * can't be resolved (deactivated, deleted, AppView down) still renders, just as
+ * bare as before. Merged at read time rather than written back into `profiles`,
+ * matching `resolveAuthorProfile`: these are accounts we deliberately don't
+ * index, and a block shouldn't quietly enrol one into the read-model.
+ */
+async function hydrateBlockedAccounts(
+  rows: Array<BlockedAccountRow>,
+): Promise<Array<BlockedAccountRow>> {
+  const missing = rows.filter(
+    (row) => !row.handle && !row.displayName && !row.avatarUrl,
+  );
+  if (missing.length === 0) return rows;
+
+  const { fetchBlueskyPublicProfiles } =
+    await import("#/lib/bluesky-public-profile");
+  const fetched = await fetchBlueskyPublicProfiles(
+    missing.map((row) => row.did),
+  );
+  if (fetched.size === 0) return rows;
+
+  return rows.map((row) => {
+    const profile = fetched.get(row.did);
+    if (!profile) return row;
+    return {
+      ...row,
+      handle: row.handle ?? profile.handle,
+      displayName: row.displayName ?? profile.displayName,
+      avatarUrl: row.avatarUrl ?? profile.avatarUrl,
+    };
+  });
 }
 
 /** How many accounts the reader blocks directly. */

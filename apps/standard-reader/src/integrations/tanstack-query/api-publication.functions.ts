@@ -1422,13 +1422,23 @@ const getArticleBlock = createServerFn({ method: "GET" })
           .where(eq(pr.did, block.did))
           .limit(1);
 
+        if (profile?.handle || profile?.displayName || profile?.avatarUrl) {
+          return { block, account: profile };
+        }
+
+        // Same reason as `readerBlockedAccounts`: the blocked account is
+        // usually not one we index, so the notice would name a `did:plc:…`.
+        const { fetchBlueskyPublicProfileFields } =
+          await import("#/lib/bluesky-public-profile");
+        const publicProfile = await fetchBlueskyPublicProfileFields(block.did);
         return {
           block,
-          account: profile ?? {
+          account: {
             did: block.did,
-            handle: null,
-            displayName: null,
-            avatarUrl: null,
+            handle: profile?.handle ?? publicProfile?.handle ?? null,
+            displayName:
+              profile?.displayName ?? publicProfile?.displayName ?? null,
+            avatarUrl: profile?.avatarUrl ?? publicProfile?.avatarUrl ?? null,
           },
         };
       },
