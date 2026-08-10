@@ -13,7 +13,6 @@ import { MenuItem } from "@standard-reader/design-system/menu";
 import { toasts } from "@standard-reader/design-system/toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Ban } from "lucide-react";
-import { useState } from "react";
 
 import { auth } from "#/integrations/tanstack-query/api-auth.functions";
 import {
@@ -22,7 +21,7 @@ import {
 } from "#/integrations/tanstack-query/api-blocks.functions";
 
 /**
- * "Block" in the author overflow menu.
+ * "Block" in the author overflow menu, and the confirmation it opens.
  *
  * Writes an `app.bsky.graph.block` record to the reader's own repo — the same
  * record Bluesky writes — so the block travels with them rather than being a
@@ -34,19 +33,58 @@ import {
  * than gate the item on it — which would hide the feature from everyone who
  * signed in before it existed — the first press runs the progressive upgrade
  * and returns here. Their *existing* blocks are enforced either way.
+ *
+ * **The item and the dialog are two components on purpose.** `Menu` renders its
+ * children inside the trigger's `Popover`, so a dialog returned alongside the
+ * `MenuItem` mounts *inside* the menu — and pressing the item closes the menu,
+ * which unmounts the dialog in the same frame. It opens and vanishes. The dialog
+ * has to be a sibling of `<Menu>`, not a descendant, which is the shape
+ * `RssFeedDialog` already uses from this same menu.
  */
 export function BlockUserMenuItem({
-  did,
   name,
   iconSize = 14,
+  onPress,
+}: {
+  name?: string | null;
+  iconSize?: number;
+  /** Opens {@link BlockUserDialog}, which the menu's parent renders. */
+  onPress: () => void;
+}) {
+  const { t } = useLingui();
+  return (
+    <MenuItem
+      onPress={onPress}
+      suffix={<Ban size={iconSize} />}
+      textValue={name ? t`Block ${name}` : t`Block account`}
+    >
+      <Trans>Block</Trans>
+    </MenuItem>
+  );
+}
+
+/**
+ * The confirmation for {@link BlockUserMenuItem}. Render outside `<Menu>`.
+ *
+ * Confirmed, not immediate: blocking sits one press away from Share and Copy
+ * link in the same menu, but unlike them it writes a public record to the
+ * reader's repo that every AT Protocol app honours — and this menu offers no way
+ * back, because the profile it lives on turns into a block notice. A mis-tap
+ * should not be able to do that silently.
+ */
+export function BlockUserDialog({
+  did,
+  name,
+  isOpen,
+  onOpenChange,
 }: {
   did: string;
   name?: string | null;
-  iconSize?: number;
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
 }) {
   const { t } = useLingui();
   const queryClient = useQueryClient();
-  const [confirming, setConfirming] = useState(false);
 
   const block = useMutation({
     mutationFn: async () => {
@@ -74,7 +112,7 @@ export function BlockUserMenuItem({
         globalThis.location.href = result.authorizationUrl;
         return;
       }
-      setConfirming(false);
+      onOpenChange(false);
       // The write went to the reader's repo, not to a setting here — say so, and
       // point at where it can be undone, because this menu has no unblock and
       // the profile they are standing on is about to become a notice.
@@ -89,9 +127,9 @@ export function BlockUserMenuItem({
       void queryClient.invalidateQueries();
     },
     // Without this a failed write is indistinguishable from a successful one:
-    // the menu closes, the spinner stops, and the account is still there.
+    // the dialog closes, the spinner stops, and the account is still there.
     onError: () => {
-      setConfirming(false);
+      onOpenChange(false);
       toasts.add({
         description: t`We couldn't write the block to your account. Try again?`,
         title: t`Something went wrong`,
@@ -100,52 +138,38 @@ export function BlockUserMenuItem({
   });
 
   return (
-    <>
-      <MenuItem
-        onPress={() => setConfirming(true)}
-        suffix={<Ban size={iconSize} />}
-        textValue={name ? t`Block ${name}` : t`Block account`}
-      >
-        <Trans>Block</Trans>
-      </MenuItem>
-      {/*
-        Confirmed, not immediate. Blocking is one press away from Share and Copy
-        link in the same menu, but unlike them it writes a public record to the
-        reader's repo that every AT Protocol app honours — and this menu offers
-        no way back, because the profile it lives on turns into a block notice.
-        A mis-tap should not be able to do that silently.
-      */}
-      <AlertDialog
-        trigger={null}
-        isOpen={confirming}
-        onOpenChange={(open) => {
-          if (!open && !block.isPending) setConfirming(false);
-        }}
-      >
-        <AlertDialogHeader>
-          {name ? <Trans>Block {name}?</Trans> : <Trans>Block account?</Trans>}
-        </AlertDialogHeader>
-        <AlertDialogDescription>
-          <Trans>
-            This writes a block to your Bluesky account, so it applies here and
-            anywhere else you use it. Their writing disappears from your feeds,
-            search and discussion, and they can't see yours. You can undo it in
-            Settings → Blocked accounts.
-          </Trans>
-        </AlertDialogDescription>
-        <AlertDialogFooter>
-          <AlertDialogCancelButton>
-            <Trans>Cancel</Trans>
-          </AlertDialogCancelButton>
-          <AlertDialogActionButton
-            closeOnPress={false}
-            isPending={block.isPending}
-            onPress={() => block.mutate()}
-          >
-            <Trans>Block</Trans>
-          </AlertDialogActionButton>
-        </AlertDialogFooter>
-      </AlertDialog>
-    </>
+    <AlertDialog
+      trigger={null}
+      isOpen={isOpen}
+      onOpenChange={(open) => {
+        // Never yank the dialog out from under a write already in flight.
+        if (!open && block.isPending) return;
+        onOpenChange(open);
+      }}
+    >
+      <AlertDialogHeader>
+        {name ? <Trans>Block {name}?</Trans> : <Trans>Block account?</Trans>}
+      </AlertDialogHeader>
+      <AlertDialogDescription>
+        <Trans>
+          This writes a block to your Bluesky account, so it applies here and
+          anywhere else you use it. Their writing disappears from your feeds,
+          search and discussion, and they can't see yours. You can undo it in
+          Settings → Blocked accounts.
+        </Trans>
+      </AlertDialogDescription>
+      <AlertDialogFooter>
+        <AlertDialogCancelButton>
+          <Trans>Cancel</Trans>
+        </AlertDialogCancelButton>
+        <AlertDialogActionButton
+          closeOnPress={false}
+          isPending={block.isPending}
+          onPress={() => block.mutate()}
+        >
+          <Trans>Block</Trans>
+        </AlertDialogActionButton>
+      </AlertDialogFooter>
+    </AlertDialog>
   );
 }
