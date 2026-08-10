@@ -53,6 +53,15 @@ export function useArticleBookmark(
         // Missing-scope errors are handled globally (a reconnect toast) by the
         // mutation cache in query-client.ts.
       },
+      onSettled: () => {
+        // `/saved`'s filter facets are per-publication / per-author / per-tag
+        // counts over exactly this set, so saving or unsaving moves them.
+        // Invalidated after the write lands rather than optimistically — a
+        // refetch racing the mutation would just re-read the old counts.
+        void queryClient.invalidateQueries({
+          queryKey: ["reader", "savedFacets"],
+        });
+      },
     });
   };
 

@@ -3,8 +3,7 @@ import type { InfiniteData, QueryClient } from "@tanstack/react-query";
 import type { SidebarData } from "../../integrations/tanstack-query/api-feed.functions";
 import type {
   BookmarkStatus,
-  ReaderListPage,
-  SavedArticleItem,
+  SavedListPage,
 } from "../../integrations/tanstack-query/api-reader.functions";
 
 export interface BookmarkOptimisticContext {
@@ -12,7 +11,7 @@ export interface BookmarkOptimisticContext {
   prevSavedEntries: Array<[readonly unknown[], unknown]>;
 }
 
-type SavedInfiniteData = InfiniteData<ReaderListPage<SavedArticleItem>>;
+type SavedInfiniteData = InfiniteData<SavedListPage>;
 
 function isSavedInfiniteData(data: unknown): data is SavedInfiniteData {
   return (
@@ -47,7 +46,11 @@ function removeFromSavedInfinite(
     ...data,
     pages: pages.map((page) => ({
       ...page,
+      // Both counts move: `total` is what the filtered list paginates on, and
+      // `totalSaved` is the masthead's headline figure. Dropping one leaves
+      // `/saved` reading "148 saved" over 147 rows until the next fetch.
       total: Math.max(0, page.total - 1),
+      totalSaved: Math.max(0, page.totalSaved - 1),
     })),
   };
 }

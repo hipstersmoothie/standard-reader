@@ -6,7 +6,7 @@ import {
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import type { SQL } from "drizzle-orm";
-import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { z } from "zod";
 
@@ -42,7 +42,11 @@ import {
   mirrorRecommendAdded,
   mirrorRecommendRemoved,
 } from "#/server/reader/personal-state-mirror";
-import { selectUnreadDocumentUris } from "#/server/reader/queries";
+import type { SavedFacets } from "#/server/reader/queries";
+import {
+  selectSavedFacets,
+  selectUnreadDocumentUris,
+} from "#/server/reader/queries";
 import { attachViewerRecommendedToArticles } from "#/server/reader/recommended-by";
 import { effectiveFollowSets } from "#/server/reader/saved-lists";
 import {
@@ -66,6 +70,10 @@ import { dbMiddleware } from "./db-middleware";
  * `~/Documents/at-store` server-fn + query-options layout, with structured
  * observability around every call (`src/server/observability/log.ts`).
  */
+
+/** Re-exported so the UI takes its filter-option shapes off the API layer
+ * rather than reaching into a server-only query module. */
+export type { SavedFacetOption, SavedFacets } from "#/server/reader/queries";
 
 const publicationInput = z.object({
   publicationUri: z.string().min(1),
@@ -113,11 +121,144 @@ export function defaultSavedSortDirection(sort: SavedSort): SavedSortDirection {
   return sort === "publication" || sort === "title" ? "asc" : "desc";
 }
 
+/**
+ * Ceiling on how many values one facet can carry in the URL. Far above what a
+ * reader will ever tick by hand; it exists so a hand-edited or stale link
+ * can't turn into an unbounded `IN (...)`.
+ */
+export const SAVED_FILTER_MAX_VALUES = 100;
+
+/** Longest search string we'll send to the server. */
+export const SAVED_SEARCH_MAX_LENGTH = 200;
+
+/**
+ * The filter half of `/saved`'s state, shared by the route's search params and
+ * the server fn's validator so the two can't drift. Every field is optional:
+ * absent, empty, and all-blank all mean "not filtering on this".
+ */
+export const savedFiltersSchema = z.object({
+  /** Free text, matched against title, description, publication name, and the
+   * author's handle / display name. */
+  q: z.string().max(SAVED_SEARCH_MAX_LENGTH).optional(),
+  /** Publication AT-URIs. */
+  pubs: z.array(z.string().min(1)).max(SAVED_FILTER_MAX_VALUES).optional(),
+  /** Author DIDs. */
+  authors: z.array(z.string().min(1)).max(SAVED_FILTER_MAX_VALUES).optional(),
+  /** Normalized (lowercased, trimmed) tags. */
+  tags: z.array(z.string().min(1)).max(SAVED_FILTER_MAX_VALUES).optional(),
+});
+
+export type SavedFilters = z.infer<typeof savedFiltersSchema>;
+
 const savedListInput = readerListInput.extend({
   sort: z.enum(SAVED_SORT_VALUES).default("added"),
   /** Absent means "whatever this field's natural direction is". */
   dir: z.enum(SAVED_SORT_DIRECTIONS).optional(),
+  ...savedFiltersSchema.shape,
 });
+
+/**
+ * Drop the noise from a filter set: trim the query, sort and de-duplicate each
+ * facet, and omit anything empty.
+ *
+ * Both halves of this matter. Omitting empties keeps `?pubs=[]` out of the URL
+ * and off the query key, and sorting makes ticking A-then-B and B-then-A the
+ * same cache entry — otherwise every click order is its own server round trip.
+ */
+export function normalizeSavedFilters(filters: SavedFilters): SavedFilters {
+  const q = filters.q?.trim();
+  return {
+    authors: normalizeFacetValues(filters.authors),
+    pubs: normalizeFacetValues(filters.pubs),
+    q: q ? q.slice(0, SAVED_SEARCH_MAX_LENGTH) : undefined,
+    tags: normalizeFacetValues(filters.tags),
+  };
+}
+
+function normalizeFacetValues(
+  values: Array<string> | undefined,
+): Array<string> | undefined {
+  if (!values?.length) return;
+  const unique = [...new Set(values.map((value) => value.trim()))].filter(
+    Boolean,
+  );
+  return unique.length > 0 ? unique.toSorted() : undefined;
+}
+
+/** Whether anything in this filter set would narrow the list. */
+export function hasSavedFilters(filters: SavedFilters): boolean {
+  return Boolean(
+    filters.q?.trim() ||
+    filters.pubs?.length ||
+    filters.authors?.length ||
+    filters.tags?.length,
+  );
+}
+
+/** Escape LIKE metacharacters so a literal `%` or `_` a reader types stays
+ * literal instead of becoming a wildcard. Postgres' default LIKE escape is
+ * `\`, so no `ESCAPE` clause is needed. */
+function escapeLikePattern(input: string): string {
+  return input
+    .replaceAll("\\", String.raw`\\`)
+    .replaceAll("%", String.raw`\%`)
+    .replaceAll("_", String.raw`\_`);
+}
+
+/**
+ * `WHERE` fragments for a saved-list filter set — AND-ed together, with the
+ * values inside one facet OR-ed. Ticking two publications widens; adding a tag
+ * on top narrows.
+ *
+ * Every fragment reads off the joins the saved query already carries
+ * (`documents`, `publications`, and the `pa` author-profile alias), so callers
+ * only have to make sure those joins are present.
+ */
+function savedFilterConditions(
+  schema: Schema,
+  filters: SavedFilters,
+): Array<SQL> {
+  const d = schema.documents;
+  const p = schema.publications;
+  const pa = alias(schema.profiles, "pa");
+  const conditions: Array<SQL> = [];
+
+  if (filters.pubs?.length) {
+    conditions.push(inArray(d.publicationUri, filters.pubs));
+  }
+  if (filters.authors?.length) {
+    conditions.push(inArray(d.did, filters.authors));
+  }
+  if (filters.tags?.length) {
+    // Matched through `immutable_normalized_tags` for the same reason the tag
+    // pages do (see `documentCarriesTagWhere`): case and whitespace variants of
+    // one tag are one tag, and the expression is the indexed one.
+    conditions.push(
+      sql`immutable_normalized_tags(${d.tags}) && array[${sql.join(
+        filters.tags.map((tag) => sql`lower(btrim(${tag}))`),
+        sql`, `,
+      )}]::text[]`,
+    );
+  }
+
+  const q = filters.q?.trim();
+  if (q) {
+    const pattern = `%${escapeLikePattern(q)}%`;
+    // Deliberately not the document body: `/saved` omits `text_content` from
+    // its projection, and a hit the row can't visibly explain reads as a bug.
+    conditions.push(
+      or(
+        ilike(d.title, pattern),
+        ilike(d.description, pattern),
+        ilike(p.name, pattern),
+        ilike(pa.handle, pattern),
+        ilike(pa.displayName, pattern),
+      ) as SQL,
+    );
+  }
+
+  return conditions;
+}
 
 /** One offset page of a personal reader queue (likes, saved, history). */
 export interface ReaderListPage<T> {
@@ -284,6 +425,16 @@ export interface SavedArticleItem {
   documentUri: string;
   /** Null when the document is no longer in the read-model. */
   article: ArticleCard | null;
+}
+
+/**
+ * One page of `/saved`. `total` is how many rows the *current* filters match
+ * (what pagination runs on); `totalSaved` is the reader's whole queue, which
+ * the masthead keeps showing so its headline figure doesn't move as filters
+ * come and go.
+ */
+export interface SavedListPage extends ReaderListPage<SavedArticleItem> {
+  totalSaved: number;
 }
 
 /** A read article (`app.standard-reader.read`) with hydrated card data. */
@@ -1083,7 +1234,10 @@ const getSaved = createServerFn({ method: "GET" })
     observe("reader.getSaved", async ({ data, context }, span) => {
       const did = await getReaderDidForRequest(getRequest());
       if (!did) {
-        return buildReaderListPage<SavedArticleItem>([], data.offset, 0);
+        return {
+          ...buildReaderListPage<SavedArticleItem>([], data.offset, 0),
+          totalSaved: 0,
+        } satisfies SavedListPage;
       }
       const direction = data.dir ?? defaultSavedSortDirection(data.sort);
       span.set("did", did);
@@ -1100,11 +1254,36 @@ const getSaved = createServerFn({ method: "GET" })
       const cols = articleQueueCardColumns(context.schema);
       const where = and(eq(b.ownerDid, did), eq(b.deleted, false));
 
+      const conditions = savedFilterConditions(context.schema, data);
+      const filterWhere =
+        conditions.length > 0 ? (and(...conditions) as SQL) : null;
+      span.set("filtered", filterWhere != null);
+
+      // Both totals come off one aggregate: `total` is the headline figure the
+      // masthead keeps showing regardless of filters, `matching` is what drives
+      // pagination. Unfiltered, the two are the same count and the query stays
+      // the lean `bookmarks`-only scan it has always been — the joins are only
+      // paid for when a filter actually references them.
+      const countBase = context.db
+        .select({
+          matching: filterWhere
+            ? sql<number>`count(*) filter (where ${filterWhere})::int`.mapWith(
+                Number,
+              )
+            : sql<number>`count(*)::int`.mapWith(Number),
+          total: sql<number>`count(*)::int`.mapWith(Number),
+        })
+        .from(b)
+        .$dynamic();
+
       const [countRow, rows] = await Promise.all([
-        context.db
-          .select({ count: sql<number>`count(*)::int` })
-          .from(b)
-          .where(where),
+        filterWhere
+          ? countBase
+              .leftJoin(d, eq(d.uri, b.documentUri))
+              .leftJoin(p, eq(p.uri, d.publicationUri))
+              .leftJoin(pa, eq(pa.did, d.did))
+              .where(where)
+          : countBase.where(where),
         context.db
           .select({
             bookmarkUri: b.uri,
@@ -1117,7 +1296,7 @@ const getSaved = createServerFn({ method: "GET" })
           .leftJoin(p, eq(p.uri, d.publicationUri))
           .leftJoin(pr, eq(pr.did, p.did))
           .leftJoin(pa, eq(pa.did, d.did))
-          .where(where)
+          .where(filterWhere ? and(where, filterWhere) : where)
           // The "added" sort in its default direction matches
           // `bookmarks_owner_idx` (owner_did, created_at DESC NULLS LAST); see
           // getReadingHistory for why bare `desc()` is slow. Every other
@@ -1128,9 +1307,11 @@ const getSaved = createServerFn({ method: "GET" })
           .offset(data.offset),
       ]);
 
-      const total = countRow[0]?.count ?? 0;
+      const totalSaved = countRow[0]?.total ?? 0;
+      const total = countRow[0]?.matching ?? 0;
       span.set("count", rows.length);
       span.set("total", total);
+      span.set("totalSaved", totalSaved);
 
       const items = rows.map((row) => ({
         bookmarkUri: row.bookmarkUri,
@@ -1146,7 +1327,40 @@ const getSaved = createServerFn({ method: "GET" })
         items,
       );
 
-      return buildReaderListPage(withViewerRecs, data.offset, total);
+      return {
+        ...buildReaderListPage(withViewerRecs, data.offset, total),
+        totalSaved,
+      };
+    }),
+  );
+
+/**
+ * The reader's own publications / authors / tags, for `/saved`'s filter
+ * popover. Separate from the list itself so the rows paint first — the options
+ * are only needed once the popover opens, and this page's cost is dominated by
+ * round trips (see the `railway-neon-region-mismatch` note).
+ */
+const getSavedFacets = createServerFn({ method: "GET" })
+  .middleware([dbMiddleware])
+  .handler(
+    observe("reader.getSavedFacets", async ({ context }, span) => {
+      const did = await getReaderDidForRequest(getRequest());
+      if (!did) {
+        return {
+          authors: [],
+          publications: [],
+          tags: [],
+          truncated: false,
+        } satisfies SavedFacets;
+      }
+      span.set("did", did);
+
+      const facets = await selectSavedFacets(context.db, context.schema, did);
+      span.set("publications", facets.publications.length);
+      span.set("authors", facets.authors.length);
+      span.set("tags", facets.tags.length);
+      span.set("truncated", facets.truncated);
+      return facets;
     }),
   );
 
@@ -1398,20 +1612,41 @@ function getSavedInfiniteQueryOptions({
   sort = "added",
   dir,
   limit = READER_QUEUE_PAGE_SIZE,
+  ...filters
 }: {
   sort?: SavedSort;
   dir?: SavedSortDirection;
   limit?: number;
-} = {}) {
-  // Resolved here, not in the key builder's caller, so `/saved?sort=added` and
-  // `/saved?sort=added&dir=desc` share one cache entry instead of refetching.
+} & SavedFilters = {}) {
+  // Both resolved here, not in the key builder's caller, so `/saved?sort=added`
+  // and `/saved?sort=added&dir=desc` share one cache entry instead of
+  // refetching — and so does ticking two filters in either order.
   const direction = dir ?? defaultSavedSortDirection(sort);
+  const normalized = normalizeSavedFilters(filters);
   return infiniteQueryOptions({
-    queryKey: ["reader", "saved", sort, direction, limit] as const,
+    queryKey: ["reader", "saved", sort, direction, limit, normalized] as const,
     queryFn: async ({ pageParam }) =>
-      getSaved({ data: { sort, dir: direction, limit, offset: pageParam } }),
+      getSaved({
+        data: {
+          ...normalized,
+          sort,
+          dir: direction,
+          limit,
+          offset: pageParam,
+        },
+      }),
     initialPageParam: 0,
     getNextPageParam: (lastPage) => lastPage.nextOffset ?? undefined,
+  });
+}
+
+function getSavedFacetsQueryOptions() {
+  return queryOptions({
+    // Deliberately outside the `["reader", "saved"]` prefix that the bookmark
+    // optimistic update rewrites — facets are counts, not list pages, and
+    // shouldn't be walked by a helper looking for infinite data.
+    queryKey: ["reader", "savedFacets"] as const,
+    queryFn: async () => getSavedFacets(),
   });
 }
 
@@ -1610,6 +1845,8 @@ export const readerApi = {
   getBookmarkStatusQueryOptions,
   getSaved,
   getSavedInfiniteQueryOptions,
+  getSavedFacets,
+  getSavedFacetsQueryOptions,
   bookmarkDocument,
   bookmarkDocumentMutationOptions,
   unbookmarkDocument,

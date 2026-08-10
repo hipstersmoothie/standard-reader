@@ -4119,3 +4119,149 @@ export async function authorDocuments(
     total: (ownCount[0]?.count ?? 0) + (creditCount[0]?.count ?? 0),
   };
 }
+
+// ── Saved-page facets ───────────────────────────────────────────────────────
+
+/** One selectable value in a `/saved` filter facet, and how many of the
+ * reader's saved articles carry it. */
+export interface SavedFacetOption {
+  /** What the URL carries back: a publication AT-URI, an author DID, or a
+   * normalized tag. */
+  id: string;
+  label: string;
+  /** Second line under the label — an author's handle. Null where the label is
+   * already the whole identity (publications, tags). */
+  detail: string | null;
+  count: number;
+}
+
+export interface SavedFacets {
+  publications: Array<SavedFacetOption>;
+  authors: Array<SavedFacetOption>;
+  tags: Array<SavedFacetOption>;
+  /** A facet hit {@link SAVED_FACET_LIMIT} and was cut. The popover says so
+   * rather than presenting a partial list as the whole set. */
+  truncated: boolean;
+}
+
+/**
+ * Payload guard, not a design decision: the popover is type-ahead filtered and
+ * scrolls, so it can hold every publication, author, and tag a reader has saved
+ * — and cutting the list would quietly hide the rare value a reader is most
+ * likely to be searching for. This only stops a pathological repo from shipping
+ * tens of thousands of rows to the client. `truncated` says when it bit.
+ */
+const SAVED_FACET_LIMIT = 500;
+
+/**
+ * Every publication, author, and tag present in one reader's saved articles,
+ * with counts — the option list behind `/saved`'s filter popover.
+ *
+ * One round trip for all three facets (a `UNION ALL` over a shared CTE) rather
+ * than three queries: the Railway↔Neon hop dominates this page's latency, so
+ * what costs is the number of statements, not the size of the SQL.
+ *
+ * Tags group by their normalized form (`lower(btrim(...))`, matching
+ * `immutable_normalized_tags`) so "AT Proto" and "atproto" are one option, and
+ * the id sent back through the URL is that same normalized value.
+ */
+export async function selectSavedFacets(
+  db: Db,
+  schema: Schema,
+  did: string,
+): Promise<SavedFacets> {
+  const b = schema.bookmarks;
+  const d = schema.documents;
+  const p = schema.publications;
+  const pr = schema.profiles;
+
+  // `rank` is applied per facet (`partition by kind`) and one row past the cap
+  // is kept, so the caller can tell "exactly at the cap" from "cut" without a
+  // second count.
+  const result = await db.execute(sql`
+    with saved as (
+      select ${d.did} as author_did,
+             ${d.publicationUri} as publication_uri,
+             ${d.tags} as tags
+      from ${b}
+      join ${d} on ${d.uri} = ${b.documentUri}
+      where ${b.ownerDid} = ${did}
+        and ${b.deleted} = false
+        and ${d.deleted} = false
+    ),
+    facets as (
+      select 'publication' as kind,
+             s.publication_uri as id,
+             coalesce(${p.name}, s.publication_uri) as label,
+             null::text as detail,
+             count(*)::int as hits
+      from saved s
+      join ${p} on ${p.uri} = s.publication_uri
+      group by s.publication_uri, ${p.name}
+      union all
+      select 'author' as kind,
+             s.author_did as id,
+             coalesce(nullif(btrim(${pr.displayName}), ''), ${pr.handle}, s.author_did) as label,
+             ${pr.handle} as detail,
+             count(*)::int as hits
+      from saved s
+      left join ${pr} on ${pr.did} = s.author_did
+      group by s.author_did, ${pr.displayName}, ${pr.handle}
+      union all
+      select 'tag' as kind,
+             lower(btrim(t.tag)) as id,
+             lower(btrim(t.tag)) as label,
+             null::text as detail,
+             count(*)::int as hits
+      from saved s
+      cross join lateral unnest(s.tags) as t(tag)
+      where btrim(t.tag) <> ''
+      group by lower(btrim(t.tag))
+    )
+    select kind, id, label, detail, hits
+    from (
+      select f.*,
+             row_number() over (
+               partition by f.kind order by f.hits desc, f.label asc
+             ) as rank
+      from facets f
+    ) ranked
+    where rank <= ${SAVED_FACET_LIMIT + 1}
+    order by kind asc, hits desc, label asc
+  `);
+
+  const facets: SavedFacets = {
+    authors: [],
+    publications: [],
+    tags: [],
+    truncated: false,
+  };
+  const buckets: Record<string, Array<SavedFacetOption>> = {
+    author: facets.authors,
+    publication: facets.publications,
+    tag: facets.tags,
+  };
+
+  for (const row of executeRows<{
+    kind: string;
+    id: string | null;
+    label: string | null;
+    detail: string | null;
+    hits: number | string;
+  }>(result)) {
+    const bucket = buckets[row.kind];
+    if (!bucket || row.id == null) continue;
+    if (bucket.length >= SAVED_FACET_LIMIT) {
+      facets.truncated = true;
+      continue;
+    }
+    bucket.push({
+      count: Number(row.hits) || 0,
+      detail: row.detail,
+      id: row.id,
+      label: row.label ?? row.id,
+    });
+  }
+
+  return facets;
+}

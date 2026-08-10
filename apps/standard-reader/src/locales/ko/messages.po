@@ -288,6 +288,10 @@ msgstr ""
 msgid "Type"
 msgstr ""
 
+#: src/components/reader/saved-filters.tsx
+msgid "Nothing to filter by yet."
+msgstr ""
+
 #: src/components/reader/about-view.tsx
 msgid "Recommendations from real reading patterns"
 msgstr "실제 읽기 패턴에서 나온 추천"
@@ -802,6 +806,10 @@ msgstr "발행물 검색"
 msgid "Small"
 msgstr ""
 
+#: src/components/reader/saved-filters.tsx
+msgid "Loading filter options"
+msgstr ""
+
 #: src/routes/_layout.feedback.index.tsx
 msgid "Only mine"
 msgstr ""
@@ -907,6 +915,10 @@ msgstr "구독하면 새 글이 피드에 표시됩니다."
 msgid "A minimal loose document — no publication, Markpub markdown body:"
 msgstr "최소한의 느슨한 문서 — 발행물 없음, Markpub 마크다운 본문:"
 
+#: src/routes/_layout.saved.tsx
+msgid "Updating saved articles"
+msgstr ""
+
 #: src/components/docs/labelers-docs-page.tsx
 msgid "<0>4. Let readers subscribe.</0> When a reader subscribes we write an <1>app.standard-reader.labeler.subscription</1> record to their repo, carrying their per-label warn/hide preferences."
 msgstr "<0>4. 독자가 구독할 수 있게 합니다.</0> 독자가 구독하면 저희는 해당 독자의 repo에 <1>app.standard-reader.labeler.subscription</1> 레코드를 기록하며, 여기에 레이블별 경고/숨김 설정이 담깁니다."
@@ -973,8 +985,8 @@ msgid "Loading voice sample"
 msgstr "음성 샘플 불러오는 중"
 
 #: src/routes/_layout.saved.tsx
-msgid "Sort saved articles"
-msgstr ""
+#~ msgid "Sort saved articles"
+#~ msgstr ""
 
 #: src/components/docs/api-docs-intro.tsx
 #: src/components/docs/docs-api-nav.tsx
@@ -1397,6 +1409,10 @@ msgstr ""
 #: src/components/appearance-settings.tsx
 #: src/components/user-settings-view.tsx
 msgid "Custom"
+msgstr ""
+
+#: src/routes/_layout.saved.tsx
+msgid "No saved articles match"
 msgstr ""
 
 #: src/components/reader/about-view.tsx
@@ -2151,6 +2167,10 @@ msgstr ""
 #~ msgid "Publications, lists, and collections each get a clean link with a rich preview card — plus a subscribe button a publication can drop on its own site."
 #~ msgstr "발행물, 리스트, 컬렉션마다 리치 미리보기 카드가 달린 깔끔한 링크가 생깁니다. 발행물이 자체 사이트에 넣을 수 있는 구독 버튼도 함께 제공됩니다."
 
+#: src/components/reader/saved-filters.tsx
+msgid "Filter saved articles — {activeCount, plural, one {# filter active} other {# filters active}}"
+msgstr ""
+
 #: src/components/reader/discover-topic-filters.tsx
 #: src/routes/_layout.topics.index.tsx
 msgid "Search topics"
@@ -2183,6 +2203,10 @@ msgstr ""
 #: src/components/user-settings-view.tsx
 msgid "System"
 msgstr "시스템"
+
+#: src/components/reader/saved-filters.tsx
+msgid "Filter by…"
+msgstr ""
 
 #: src/components/reader/about-view.tsx
 msgid "Every feed, directory, and search query the app itself runs."
@@ -2369,6 +2393,10 @@ msgstr "컬렉션"
 msgid "Done"
 msgstr "완료"
 
+#: src/components/reader/saved-filters.tsx
+msgid "Authors"
+msgstr ""
+
 #: src/components/guide/pages/finding-guide-page.tsx
 #: src/routes/_layout.discover.tsx
 #: src/routes/_layout.tag.$tag.tsx
@@ -2411,6 +2439,10 @@ msgstr "팔로우할 만한 계정"
 #: src/components/reader/labeler-pill.tsx
 msgid "View labeler"
 msgstr "라벨러 보기"
+
+#: src/routes/_layout.saved.tsx
+msgid "Search saved articles"
+msgstr ""
 
 #: src/magazine/magazine-feature-end.tsx
 msgid "Read more from the author"
@@ -3936,6 +3968,7 @@ msgid "No labeled accounts"
 msgstr ""
 
 #: src/components/reader/article-below-fold.tsx
+#: src/components/reader/saved-filters.tsx
 #: src/components/reader/subscriptions-table.tsx
 #: src/routes/_layout.saved.tsx
 msgid "Publication"
@@ -4071,6 +4104,12 @@ msgstr ""
 #: src/routes/_layout.collections.new.tsx
 msgid "On your first collection we create one series to hold them — a special collection you can subscribe to, rename, and theme later."
 msgstr "첫 컬렉션을 만들면 이를 담을 시리즈가 하나 생성됩니다. 구독하고, 이름을 바꾸고, 나중에 테마를 지정할 수 있는 특별한 컬렉션입니다."
+
+#. placeholder {0}: i18n._( SAVED_SORT_OPTIONS.find((option) => option.id === shownSort)?.label ?? SAVED_SORT_OPTIONS[0].label, )
+#. placeholder {1}: i18n._( shownDirection === "asc" ? directionLabels.asc : directionLabels.desc, )
+#: src/routes/_layout.saved.tsx
+msgid "Sort — {0}, {1}"
+msgstr ""
 
 #: src/components/reader/collection-builder.tsx
 #: src/components/reader/collection-theme-editor.tsx
@@ -4732,6 +4771,10 @@ msgstr ""
 msgid "The voice used when you listen to an article with read aloud."
 msgstr "읽어주기로 아티클을 들을 때 사용하는 음성입니다."
 
+#: src/components/reader/saved-filters.tsx
+msgid "{activeCount, plural, one {# filter} other {# filters}}"
+msgstr ""
+
 #: src/components/feedback/feedback-image-picker.tsx
 msgid "Remove image {position}"
 msgstr ""
@@ -5134,6 +5177,10 @@ msgstr ""
 #: src/routes/mcp/authorize.tsx
 #~ msgid "Connect {0}?"
 #~ msgstr ""
+
+#: src/components/reader/saved-filters.tsx
+msgid "Tags"
+msgstr ""
 
 #: src/components/reader/subscriptions-table.tsx
 msgid "Person"
@@ -5887,6 +5934,10 @@ msgstr "느린 웹, 다시 보기"
 msgid "+{0} more"
 msgstr ""
 
+#: src/routes/_layout.saved.tsx
+msgid "Nothing in your queue matches the current search and filters. Try removing one."
+msgstr ""
+
 #: src/components/guide/pages/personalizing-guide-page.tsx
 #~ msgid "Eight presets, or your own paper and accent. The rest of the interface is derived from them."
 #~ msgstr ""
@@ -5900,6 +5951,10 @@ msgstr "Google Font"
 #: src/components/reader/collection-builder.tsx
 msgid "Create collection"
 msgstr "컬렉션 만들기"
+
+#: src/components/reader/saved-filters.tsx
+msgid "Find a publication, author, or tag"
+msgstr ""
 
 #: src/components/labelers-settings-view.tsx
 msgid "Labels articles here"
@@ -6649,6 +6704,10 @@ msgstr "로그인과 레코드 접근은 사용자의 Personal Data Server와 �
 msgid "An included article"
 msgstr "포함된 글"
 
+#: src/components/reader/saved-filters.tsx
+msgid "Nothing saved matches “{query}”."
+msgstr ""
+
 #: src/components/appearance-settings.tsx
 msgid "Puts the palette, font, size, roundness and density back to their defaults."
 msgstr ""
@@ -6707,6 +6766,7 @@ msgstr "로그인한 상태로 글을 열면 여기에 표시됩니다. 기록�
 #~ msgid "Build named, shareable lists of publications — a playlist for reading. Anyone can add your list to their own reader in a single tap."
 #~ msgstr "이름을 붙여 공유할 수 있는 발행물 목록을 만드세요. 읽기용 플레이리스트입니다. 누구나 한 번의 탭으로 자기 리더에 추가할 수 있습니다."
 
+#: src/components/reader/saved-filters.tsx
 #: src/routes/_layout.u.$did.tsx
 msgid "Author"
 msgstr "작성자"
@@ -7125,6 +7185,10 @@ msgstr "Standard Reader 확장 프로그램으로 돌아가세요 — 이 탭은
 msgid "To start from a particular paragraph instead of the beginning, select the text and choose <0>Read from here</0>."
 msgstr ""
 
+#: src/routes/_layout.saved.tsx
+msgid "Search saved articles…"
+msgstr ""
+
 #: src/components/reader/collection-publication-editor.tsx
 #: src/routes/_layout.collections.index.tsx
 msgid "Edit series"
@@ -7315,6 +7379,7 @@ msgstr "보안 및 세션 관리를 위해 사용하는 IP 주소, 브라우저 
 msgid "We do not post to your account except when you take an explicit action that requires it (for example following a publication, liking or saving an article, or subscribing with the dedicated subscribe flow). We do not sell your personal information."
 msgstr "발행물 팔로우, 글 좋아요나 저장, 전용 구독 흐름을 통한 구독처럼 이용자가 직접 수행한 동작에 필요한 경우를 제외하고는 계정에 게시하지 않습니다. 개인정보를 판매하지 않습니다."
 
+#: src/components/reader/saved-filters.tsx
 #: src/routes/_layout.discover.tsx
 #: src/routes/_layout.friends.tsx
 #: src/routes/_layout.l.$did.$rkey.tsx
@@ -7360,8 +7425,8 @@ msgid "Notifications on this device"
 msgstr ""
 
 #: src/routes/_layout.saved.tsx
-msgid "Reordering saved articles"
-msgstr ""
+#~ msgid "Reordering saved articles"
+#~ msgstr ""
 
 #: src/routes/_layout.latest.tsx
 msgid "No unread articles from your follows right now."
@@ -7669,6 +7734,14 @@ msgstr ""
 msgid "Discover, from recommendations at the top to the full directory at the bottom."
 msgstr ""
 
+#: src/components/reader/saved-filters.tsx
+msgid "Active filters"
+msgstr ""
+
+#: src/components/reader/saved-filters.tsx
+msgid "Clear all"
+msgstr ""
+
 #: src/components/reader/discover-topic-filters.tsx
 #: src/components/reader/rss-feed-button.tsx
 #: src/components/reader/share-menu.tsx
@@ -7837,6 +7910,10 @@ msgstr "리더"
 msgid "Your day: a featured lead and the latest from your subscriptions."
 msgstr ""
 
+#: src/components/reader/saved-filters.tsx
+msgid "Filter saved articles"
+msgstr ""
+
 #: src/components/reader/series-up-next.tsx
 msgid "You’ve read every issue published so far."
 msgstr ""
@@ -7859,6 +7936,10 @@ msgstr "{minutes}분"
 
 #: src/components/docs/labelers-docs-page.tsx
 msgid "That record also carries an <0>enabled</0> flag. A reader can mute your labeler here — keeping the subscription and their per-label settings, but not applying your labels while they read — without unsubscribing, which is useful when they follow a labeler on another app that they don’t want acting on long-form reading. Its absence means enabled."
+msgstr ""
+
+#: src/routes/_layout.saved.tsx
+msgid "Showing {total} of {totalSaved} saved"
 msgstr ""
 
 #. placeholder {0}: account.handle

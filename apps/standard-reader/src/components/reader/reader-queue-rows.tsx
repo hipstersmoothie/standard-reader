@@ -59,6 +59,7 @@ export function ReaderQueueRows({
   saveButtonPlacement = "header",
   showMarkUnreadButton = false,
   assumeBookmarked,
+  flushFirstRow = true,
 }: {
   items: Array<ReaderQueueRowItem>;
   showSaveButton?: boolean;
@@ -67,6 +68,14 @@ export function ReaderQueueRows({
   showMarkUnreadButton?: boolean;
   /** Skip per-row bookmark status fetches when rendering the save queue. */
   assumeBookmarked?: boolean;
+  /**
+   * Whether the first row hugs the top, with no padding above it. True for a
+   * list that sits directly under a section head. Pass `false` when the list
+   * carries its own rule above the first row (`/saved`, under its toolbar), so
+   * the row breathes under that rule the same way every other row breathes
+   * under the one above it.
+   */
+  flushFirstRow?: boolean;
 }) {
   const fmt = useFormatters();
 
@@ -76,7 +85,7 @@ export function ReaderQueueRows({
         <ArticleRow
           key={item.id}
           article={item.article}
-          isFirstInSection={index === 0}
+          isFirstInSection={flushFirstRow && index === 0}
           showSaveButton={showSaveButton}
           saveButtonPlacement={saveButtonPlacement}
           showMarkUnreadButton={showMarkUnreadButton}

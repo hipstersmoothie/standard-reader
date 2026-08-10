@@ -288,6 +288,10 @@ msgstr ""
 msgid "Type"
 msgstr ""
 
+#: src/components/reader/saved-filters.tsx
+msgid "Nothing to filter by yet."
+msgstr ""
+
 #: src/components/reader/about-view.tsx
 msgid "Recommendations from real reading patterns"
 msgstr "Recomendaciones a partir de hábitos de lectura reales"
@@ -802,6 +806,10 @@ msgstr "Buscar publicaciones"
 msgid "Small"
 msgstr ""
 
+#: src/components/reader/saved-filters.tsx
+msgid "Loading filter options"
+msgstr ""
+
 #: src/routes/_layout.feedback.index.tsx
 msgid "Only mine"
 msgstr ""
@@ -907,6 +915,10 @@ msgstr "Suscríbase para recibir nuevos textos en su feed."
 msgid "A minimal loose document — no publication, Markpub markdown body:"
 msgstr "Un documento suelto mínimo, sin publicación y con cuerpo en markdown de Markpub:"
 
+#: src/routes/_layout.saved.tsx
+msgid "Updating saved articles"
+msgstr ""
+
 #: src/components/docs/labelers-docs-page.tsx
 msgid "<0>4. Let readers subscribe.</0> When a reader subscribes we write an <1>app.standard-reader.labeler.subscription</1> record to their repo, carrying their per-label warn/hide preferences."
 msgstr "<0>4. Permita que los lectores se suscriban.</0> Cuando un lector se suscribe, escribimos un registro <1>app.standard-reader.labeler.subscription</1> en su repo con sus preferencias de advertir/ocultar por etiqueta."
@@ -973,8 +985,8 @@ msgid "Loading voice sample"
 msgstr "Cargando muestra de voz"
 
 #: src/routes/_layout.saved.tsx
-msgid "Sort saved articles"
-msgstr ""
+#~ msgid "Sort saved articles"
+#~ msgstr ""
 
 #: src/components/docs/api-docs-intro.tsx
 #: src/components/docs/docs-api-nav.tsx
@@ -1397,6 +1409,10 @@ msgstr ""
 #: src/components/appearance-settings.tsx
 #: src/components/user-settings-view.tsx
 msgid "Custom"
+msgstr ""
+
+#: src/routes/_layout.saved.tsx
+msgid "No saved articles match"
 msgstr ""
 
 #: src/components/reader/about-view.tsx
@@ -2151,6 +2167,10 @@ msgstr ""
 #~ msgid "Publications, lists, and collections each get a clean link with a rich preview card — plus a subscribe button a publication can drop on its own site."
 #~ msgstr "Las publicaciones, las listas y las colecciones tienen cada una un enlace limpio con una tarjeta de vista previa enriquecida, además de un botón de suscripción que una publicación puede colocar en su propio sitio."
 
+#: src/components/reader/saved-filters.tsx
+msgid "Filter saved articles — {activeCount, plural, one {# filter active} other {# filters active}}"
+msgstr ""
+
 #: src/components/reader/discover-topic-filters.tsx
 #: src/routes/_layout.topics.index.tsx
 msgid "Search topics"
@@ -2183,6 +2203,10 @@ msgstr ""
 #: src/components/user-settings-view.tsx
 msgid "System"
 msgstr "Sistema"
+
+#: src/components/reader/saved-filters.tsx
+msgid "Filter by…"
+msgstr ""
 
 #: src/components/reader/about-view.tsx
 msgid "Every feed, directory, and search query the app itself runs."
@@ -2369,6 +2393,10 @@ msgstr "Colecciones"
 msgid "Done"
 msgstr "Listo"
 
+#: src/components/reader/saved-filters.tsx
+msgid "Authors"
+msgstr ""
+
 #: src/components/guide/pages/finding-guide-page.tsx
 #: src/routes/_layout.discover.tsx
 #: src/routes/_layout.tag.$tag.tsx
@@ -2411,6 +2439,10 @@ msgstr "Podría seguir a"
 #: src/components/reader/labeler-pill.tsx
 msgid "View labeler"
 msgstr "Ver etiquetador"
+
+#: src/routes/_layout.saved.tsx
+msgid "Search saved articles"
+msgstr ""
 
 #: src/magazine/magazine-feature-end.tsx
 msgid "Read more from the author"
@@ -3936,6 +3968,7 @@ msgid "No labeled accounts"
 msgstr ""
 
 #: src/components/reader/article-below-fold.tsx
+#: src/components/reader/saved-filters.tsx
 #: src/components/reader/subscriptions-table.tsx
 #: src/routes/_layout.saved.tsx
 msgid "Publication"
@@ -4071,6 +4104,12 @@ msgstr ""
 #: src/routes/_layout.collections.new.tsx
 msgid "On your first collection we create one series to hold them — a special collection you can subscribe to, rename, and theme later."
 msgstr "Con su primera colección creamos una serie que las agrupa: una colección especial a la que puede suscribirse, cambiar de nombre y personalizar más adelante."
+
+#. placeholder {0}: i18n._( SAVED_SORT_OPTIONS.find((option) => option.id === shownSort)?.label ?? SAVED_SORT_OPTIONS[0].label, )
+#. placeholder {1}: i18n._( shownDirection === "asc" ? directionLabels.asc : directionLabels.desc, )
+#: src/routes/_layout.saved.tsx
+msgid "Sort — {0}, {1}"
+msgstr ""
 
 #: src/components/reader/collection-builder.tsx
 #: src/components/reader/collection-theme-editor.tsx
@@ -4732,6 +4771,10 @@ msgstr ""
 msgid "The voice used when you listen to an article with read aloud."
 msgstr "La voz que se usa al escuchar un artículo con la lectura en voz alta."
 
+#: src/components/reader/saved-filters.tsx
+msgid "{activeCount, plural, one {# filter} other {# filters}}"
+msgstr ""
+
 #: src/components/feedback/feedback-image-picker.tsx
 msgid "Remove image {position}"
 msgstr ""
@@ -5134,6 +5177,10 @@ msgstr ""
 #: src/routes/mcp/authorize.tsx
 #~ msgid "Connect {0}?"
 #~ msgstr ""
+
+#: src/components/reader/saved-filters.tsx
+msgid "Tags"
+msgstr ""
 
 #: src/components/reader/subscriptions-table.tsx
 msgid "Person"
@@ -5887,6 +5934,10 @@ msgstr "La web lenta, revisitada"
 msgid "+{0} more"
 msgstr ""
 
+#: src/routes/_layout.saved.tsx
+msgid "Nothing in your queue matches the current search and filters. Try removing one."
+msgstr ""
+
 #: src/components/guide/pages/personalizing-guide-page.tsx
 #~ msgid "Eight presets, or your own paper and accent. The rest of the interface is derived from them."
 #~ msgstr ""
@@ -5900,6 +5951,10 @@ msgstr "Google Font"
 #: src/components/reader/collection-builder.tsx
 msgid "Create collection"
 msgstr "Crear colección"
+
+#: src/components/reader/saved-filters.tsx
+msgid "Find a publication, author, or tag"
+msgstr ""
 
 #: src/components/labelers-settings-view.tsx
 msgid "Labels articles here"
@@ -6649,6 +6704,10 @@ msgstr "El inicio de sesión y el acceso a los registros pasan por su Personal D
 msgid "An included article"
 msgstr "Un artículo incluido"
 
+#: src/components/reader/saved-filters.tsx
+msgid "Nothing saved matches “{query}”."
+msgstr ""
+
 #: src/components/appearance-settings.tsx
 msgid "Puts the palette, font, size, roundness and density back to their defaults."
 msgstr ""
@@ -6707,6 +6766,7 @@ msgstr "Abra cualquier artículo con la sesión iniciada y aparecerá aquí. Su 
 #~ msgid "Build named, shareable lists of publications — a playlist for reading. Anyone can add your list to their own reader in a single tap."
 #~ msgstr "Cree listas de publicaciones con nombre y fáciles de compartir: una playlist para leer. Cualquiera puede añadir su lista a su propio lector con un solo toque."
 
+#: src/components/reader/saved-filters.tsx
 #: src/routes/_layout.u.$did.tsx
 msgid "Author"
 msgstr "Autor"
@@ -7125,6 +7185,10 @@ msgstr "Vuelva a la extensión de Standard Reader: esta pestaña se cerrará aut
 msgid "To start from a particular paragraph instead of the beginning, select the text and choose <0>Read from here</0>."
 msgstr ""
 
+#: src/routes/_layout.saved.tsx
+msgid "Search saved articles…"
+msgstr ""
+
 #: src/components/reader/collection-publication-editor.tsx
 #: src/routes/_layout.collections.index.tsx
 msgid "Edit series"
@@ -7315,6 +7379,7 @@ msgstr "Metadatos de la sesión, como la dirección IP y la cadena de user-agent
 msgid "We do not post to your account except when you take an explicit action that requires it (for example following a publication, liking or saving an article, or subscribing with the dedicated subscribe flow). We do not sell your personal information."
 msgstr "No publicamos nada en su cuenta salvo cuando realiza una acción explícita que lo requiere (por ejemplo, seguir una publicación, dar me gusta o guardar un artículo, o suscribirse mediante el flujo de suscripción específico). No vendemos su información personal."
 
+#: src/components/reader/saved-filters.tsx
 #: src/routes/_layout.discover.tsx
 #: src/routes/_layout.friends.tsx
 #: src/routes/_layout.l.$did.$rkey.tsx
@@ -7360,8 +7425,8 @@ msgid "Notifications on this device"
 msgstr ""
 
 #: src/routes/_layout.saved.tsx
-msgid "Reordering saved articles"
-msgstr ""
+#~ msgid "Reordering saved articles"
+#~ msgstr ""
 
 #: src/routes/_layout.latest.tsx
 msgid "No unread articles from your follows right now."
@@ -7669,6 +7734,14 @@ msgstr ""
 msgid "Discover, from recommendations at the top to the full directory at the bottom."
 msgstr ""
 
+#: src/components/reader/saved-filters.tsx
+msgid "Active filters"
+msgstr ""
+
+#: src/components/reader/saved-filters.tsx
+msgid "Clear all"
+msgstr ""
+
 #: src/components/reader/discover-topic-filters.tsx
 #: src/components/reader/rss-feed-button.tsx
 #: src/components/reader/share-menu.tsx
@@ -7837,6 +7910,10 @@ msgstr "Lector"
 msgid "Your day: a featured lead and the latest from your subscriptions."
 msgstr ""
 
+#: src/components/reader/saved-filters.tsx
+msgid "Filter saved articles"
+msgstr ""
+
 #: src/components/reader/series-up-next.tsx
 msgid "You’ve read every issue published so far."
 msgstr ""
@@ -7859,6 +7936,10 @@ msgstr "{minutes}m"
 
 #: src/components/docs/labelers-docs-page.tsx
 msgid "That record also carries an <0>enabled</0> flag. A reader can mute your labeler here — keeping the subscription and their per-label settings, but not applying your labels while they read — without unsubscribing, which is useful when they follow a labeler on another app that they don’t want acting on long-form reading. Its absence means enabled."
+msgstr ""
+
+#: src/routes/_layout.saved.tsx
+msgid "Showing {total} of {totalSaved} saved"
 msgstr ""
 
 #. placeholder {0}: account.handle
