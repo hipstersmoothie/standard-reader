@@ -147,6 +147,14 @@ export function ApiDocsIntro() {
         </p>
         <p {...stylex.props(docsStyles.prose)}>
           <Trans>
+            The proxy header is best for reads. It cannot serve writes: the
+            service JWT your PDS mints tells us who you are but carries no
+            credential to write to your repo with, so write procedures reject
+            it. Call the AppView directly with your own token for those.
+          </Trans>
+        </p>
+        <p {...stylex.props(docsStyles.prose)}>
+          <Trans>
             Reader state endpoints also accept an optional{" "}
             <code {...stylex.props(docsStyles.codeInline)}>did</code> query
             param to read a reader&apos;s public indexed state without auth.

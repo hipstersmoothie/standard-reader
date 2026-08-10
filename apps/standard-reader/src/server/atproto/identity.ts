@@ -1,3 +1,4 @@
+import { didWebDocumentUrl } from "#/lib/atproto/did-web";
 import { assertSafeFetchUrl } from "#/server/security/ssrf-guard";
 
 /**
@@ -136,11 +137,11 @@ async function fetchDidDoc(did: string): Promise<DidDocument | null> {
     if (did.startsWith("did:plc:")) {
       url = `${PLC_URL}/${encodeURIComponent(did)}`;
     } else if (did.startsWith("did:web:")) {
-      const host = did.slice("did:web:".length).replaceAll(":", "/");
-      url = `https://${host}/.well-known/did.json`;
+      url = didWebDocumentUrl(did);
       // did:web host is attacker-controlled — validate before fetching to
       // prevent SSRF (security audit C1/C2).
       try {
+        if (!url) return null;
         assertSafeFetchUrl(url);
       } catch {
         return null;

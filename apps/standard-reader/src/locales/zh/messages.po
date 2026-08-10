@@ -5679,6 +5679,10 @@ msgstr ""
 msgid "Feedback submitted"
 msgstr "反馈已提交"
 
+#: src/components/docs/api-docs-intro.tsx
+msgid "The proxy header is best for reads. It cannot serve writes: the service JWT your PDS mints tells us who you are but carries no credential to write to your repo with, so write procedures reject it. Call the AppView directly with your own token for those."
+msgstr ""
+
 #: src/components/reader/collection-builder.tsx
 msgid "Move up"
 msgstr "上移"

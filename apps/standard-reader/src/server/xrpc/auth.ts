@@ -3,10 +3,11 @@ import { Client as AtpClient } from "@atcute/client";
 import type { Did } from "@atcute/lexicons";
 import { verifyJwt } from "@atproto/xrpc-server";
 
+import { didWebDocumentUrl } from "#/lib/atproto/did-web";
 import { resolveIdentity } from "#/server/atproto/identity";
 import { assertSafeFetchUrl } from "#/server/security/ssrf-guard";
 
-import { appviewAudience } from "./config";
+import { appviewAudience, appviewDid } from "./config";
 import { AuthRequiredError, ForbiddenError } from "./errors";
 
 export type XrpcAuthContext = {
@@ -62,11 +63,11 @@ async function getSigningKey(
     const plcUrl = process.env.TAP_PLC_URL || "https://plc.directory";
     docUrl = `${plcUrl}/${encodeURIComponent(did)}`;
   } else if (did.startsWith("did:web:")) {
-    const host = did.slice("did:web:".length).replaceAll(":", ".");
-    docUrl = `https://${host}/.well-known/did.json`;
+    docUrl = didWebDocumentUrl(did);
     // did:web host is attacker-controlled (from the unverified JWT iss) —
     // validate before fetching to prevent SSRF (security audit C1).
     try {
+      if (!docUrl) throw new Error("malformed did:web");
       assertSafeFetchUrl(docUrl);
     } catch {
       throw new AuthRequiredError("Unable to resolve signing key for issuer");
@@ -98,11 +99,31 @@ async function getSigningKey(
   return verificationMethod.publicKeyMultibase;
 }
 
+/**
+ * Audiences we accept on a PDS-minted service JWT.
+ *
+ * `pipethrough` splits the `atproto-proxy` header and signs the token with the
+ * **bare DID** as `aud`, keeping the `did#fragment` form only for matching
+ * OAuth `rpc:` scopes. Requiring the fragment form rejected every proxied call
+ * with `BadJwtAudience`; accepting only the bare form would break any
+ * implementation that echoes the whole header back. Take either — but nothing
+ * else, so a token minted for a different service still cannot be replayed at
+ * us.
+ */
+export function acceptedServiceJwtAudiences(): ReadonlySet<string> {
+  return new Set([appviewDid(), appviewAudience()]);
+}
+
 async function verifyServiceJwt(
   jwt: string,
   lxm: string,
 ): Promise<XrpcAuthContext> {
-  const payload = await verifyJwt(jwt, appviewAudience(), lxm, getSigningKey);
+  // `null` skips xrpc-server's built-in single-value audience check so we can
+  // accept both spellings below; every other claim is still verified there.
+  const payload = await verifyJwt(jwt, null, lxm, getSigningKey);
+  if (!acceptedServiceJwtAudiences().has(payload.aud)) {
+    throw new AuthRequiredError("jwt audience does not match service did");
+  }
   const iss = payload.iss.split("#")[0] as Did;
   return {
     did: iss,
