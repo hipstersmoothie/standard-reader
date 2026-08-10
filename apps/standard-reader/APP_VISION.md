@@ -582,10 +582,30 @@ comic issue with no pages falls back to it outright.
 
 - Signed-in reader's **save queue** (`app.standard-reader.bookmark`), newest-saved first by default.
 - Sortable via `?sort=` — date saved (default), published date, publication (alphabetical), or
-  title (alphabetical); Menu (compact) / Select (full) control, mirroring `/tag`'s article sort.
-- Reversible via `?dir=` — an icon button beside the sort control flips the order. Each field runs
-  its natural way until flipped (dates newest-first, names A–Z), and the direction is named for
-  what it ranks: "Newest first" / "Oldest first" for dates, "A–Z" / "Z–A" for names.
+  title (alphabetical).
+- Reversible via `?dir=`. Each field runs its natural way until flipped (dates newest-first, names
+  A–Z), and the direction is named for what it ranks: "Newest first" / "Oldest first" for dates,
+  "A–Z" / "Z–A" for names.
+- Both live in **one icon menu** at every viewport — two sections ("Sort by" / "Order") in a single
+  sheet that stays open between the two picks. With the order behind a menu, the trigger's tooltip
+  and accessible name state the current order ("Sort — Date saved, Newest first") rather than only
+  naming the action.
+- **Search and filter**, in a toolbar above the list (search field · filter · sort). Both are
+  server-side and live in the URL, so paging, the result count, and a reloaded or bookmarked link
+  all agree:
+  - `?q=` matches title, description, publication name, and the author's handle / display name.
+    Deliberately not the article body — `/saved` omits `text_content` from its projection, and a
+    hit the row can't visibly explain reads as a bug.
+  - `?pubs=` / `?authors=` / `?tags=` are multi-select facets. Values within a facet are OR-ed,
+    facets are AND-ed. Tags match through `immutable_normalized_tags`, so case and whitespace
+    variants are one tag.
+  - The options come from `reader.getSavedFacets` — every publication, author, and tag present in
+    that reader's own queue, with counts, in one `UNION ALL` round trip. Fetched on idle or on the
+    popover's first open, never on the critical path. A real queue runs to ~90 publications and
+    ~185 tags, so the popover is type-ahead filtered across all three facets at once rather than a
+    plain menu.
+  - Applied filters show as removable chips under the toolbar; the masthead count stays the whole
+    queue and a "Showing N of M saved" line carries what matched.
 - Route `/saved`; linked from the sidebar (with saved count badge). Requires auth (redirects to login).
 
 ### Reader profile (liked articles)

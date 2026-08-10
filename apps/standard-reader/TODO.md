@@ -1341,14 +1341,28 @@ not offline body cache). Route slug **`/saved`**.
       bar + feed cards; user-menu link; empty state copy; infinite scroll (20 per page). Update [`APP_VISION.md`](APP_VISION.md) §5
       when landing.
 - [x] **Saved queue sort** — `?sort=` on `/saved` (date saved / published date / publication /
-      title), mirroring `/tag`'s article-sort Menu+Select control; `savedOrderBy` in
+      title); `savedOrderBy` in
       [`api-reader.functions.ts`](src/integrations/tanstack-query/api-reader.functions.ts), sort
       included in the infinite-query key so paging never mixes sort orders.
-- [x] **Saved queue sort direction** — `?dir=asc|desc` beside `?sort=`, flipped by an icon button
-      next to the sort control. Absent from the URL until the reader flips it, so each field keeps
-      its natural direction (dates newest-first, names A–Z) via `defaultSavedSortDirection`; an
-      explicit choice carries across a change of field. NULLS stay LAST in both directions so a
-      bookmark whose document is gone never floats to the top.
+- [x] **Saved queue sort direction** — `?dir=asc|desc` beside `?sort=`. Absent from the URL until
+      the reader flips it, so each field keeps its natural direction (dates newest-first, names
+      A–Z) via `defaultSavedSortDirection`; an explicit choice carries across a change of field.
+      NULLS stay LAST in both directions so a bookmark whose document is gone never floats to the
+      top. Field and order share **one icon menu at every viewport** (two sections in a sheet that
+      stays open between picks) — the desktop Select + flip-button pair was dropped, so the
+      trigger's tooltip / accessible name now states the current order.
+- [x] **Saved queue search + filters** ([userinput.app feature request](https://userinput.app/d/did:plc:fip3nyk6tjo3senpq4ei2cxw/3mrqbtf4pk22o))
+      — search and multi-select publication / author / tag filters on `/saved`, in a toolbar above
+      the list (the sort control moved out of the masthead's trailing slot to join it, and
+      `Masthead`'s now-unused `metaAction` prop was removed). All state lives in the URL
+      (`?q=` `?pubs=` `?authors=` `?tags=`) and all filtering is server-side in `getSaved`, so
+      paging and counts stay correct across pages. Values within a facet OR, facets AND; tags match
+      through `immutable_normalized_tags`. Options come from `reader.getSavedFacets` →
+      `selectSavedFacets` (one `UNION ALL` round trip, fetched on idle or first popover open).
+      Real queues run to ~90 publications / ~185 tags, so the popover is a react-aria
+      `Autocomplete` type-ahead over all three facets at once rather than a plain menu; applied
+      filters render as removable chips, and over-filtering gets its own empty state distinct from
+      an empty queue.
 - [x] **Reading history** — `/history` queue backed by existing
       `app.standard-reader.read` / `reads` table (no new lexicon); `readerApi.getReadingHistory` + user-menu link + empty state; infinite scroll (20 per page). Update [`APP_VISION.md`](APP_VISION.md) when landing.
 - [x] **Track reading history setting** — user-menu toggle (cookie + `user.track_reading_history`);

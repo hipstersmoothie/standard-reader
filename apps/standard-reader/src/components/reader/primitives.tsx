@@ -509,7 +509,6 @@ export function Masthead({
   metaLabel,
   metaValue,
   metaAccessory,
-  metaAction,
   style,
 }: {
   kicker?: React.ReactNode;
@@ -519,14 +518,6 @@ export function Masthead({
   metaLabel?: React.ReactNode;
   metaValue?: React.ReactNode;
   metaAccessory?: React.ReactNode;
-  /**
-   * A control docked to the trailing edge, under the meta figure — for page
-   * chrome that would otherwise float in its own row between the masthead rule
-   * and the content (e.g. `/saved`'s sort). Unlike the label/value above it,
-   * this stays visible on narrow screens, so pass a control that is compact
-   * there (see `/saved`'s icon-menu ⇄ select swap).
-   */
-  metaAction?: React.ReactNode;
   style?: StyleXComponentProps<React.ComponentProps<"div">>["style"];
 }) {
   return (
@@ -539,18 +530,17 @@ export function Masthead({
         </Flex>
         {dek != null && <p {...stylex.props(styles.mastheadDek)}>{dek}</p>}
       </Flex>
-      {metaValue != null || metaAccessory != null || metaAction != null ? (
+      {metaValue != null || metaAccessory != null ? (
         <Flex
           direction="column"
           gap="lg"
           align="end"
           style={[
             styles.mastheadMeta,
-            (metaAccessory != null || metaAction != null) &&
-              styles.mastheadMetaWithAccessory,
+            metaAccessory != null && styles.mastheadMetaWithAccessory,
           ]}
         >
-          {/* The figure keeps its own ≥48rem visibility so a `metaAction`
+          {/* The figure keeps its own ≥48rem visibility so a `metaAccessory`
               forcing the column open does not surface it on narrow screens. */}
           {metaLabel != null || metaValue != null ? (
             <Flex direction="column" gap="lg" style={styles.mastheadMetaFigure}>
@@ -562,7 +552,6 @@ export function Masthead({
               )}
             </Flex>
           ) : null}
-          {metaAction}
         </Flex>
       ) : null}
     </div>
