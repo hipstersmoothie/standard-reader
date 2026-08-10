@@ -9,14 +9,17 @@ import {
   prosemirrorBlocks,
 } from "../document/structured-content/prosemirror.js";
 import type { StructuredRenderableBlock } from "../document/structured-content/types.js";
+import { offprintBlocks } from "../offprint/blocks.js";
+import { OFFPRINT_BLOCK, OFFPRINT_CONTENT } from "../offprint/types.js";
 
 /**
  * Nested lists across the block formats.
  *
  * `StructuredListItem` grew `children` when the markdown parser stopped
- * dropping nested branches; these two parsers kept flattening afterwards, each
- * for its own reason — ProseMirror nests a sub-list *inside* the parent item,
- * BlockNote hangs it off the parent block's `children`.
+ * dropping nested branches; these three parsers kept flattening afterwards,
+ * each for its own reason — ProseMirror nests a sub-list *inside* the parent
+ * item, BlockNote hangs it off the parent block's `children`, and Offprint
+ * hangs bare items off the parent *item's* `children`.
  */
 
 function asList(
@@ -49,6 +52,17 @@ const item = (
 const blocknoteDoc = (...blocks: Array<unknown>) => ({
   $type: BLOCKNOTE_CONTENT,
   blocks,
+});
+
+/** An Offprint list item: one text run, plus the items nested beneath it. */
+const offprintItem = (plaintext: string, children: Array<unknown> = []) => ({
+  children,
+  content: { $type: OFFPRINT_BLOCK.text, plaintext },
+});
+
+const offprintDoc = (...items: Array<unknown>) => ({
+  $type: OFFPRINT_CONTENT,
+  items,
 });
 
 describe("prosemirror — nested lists", () => {
@@ -179,5 +193,100 @@ describe("blocknote — nested blocks", () => {
       }),
     );
     expect(asList(blocks[0]).items[0]?.text.plaintext).toBe("orphaned");
+  });
+});
+
+describe("offprint — nested list items", () => {
+  it("keeps the items nested under a bullet item", () => {
+    const blocks = offprintBlocks(
+      offprintDoc({
+        $type: OFFPRINT_BLOCK.bulletList,
+        children: [
+          offprintItem("outer", [
+            offprintItem("inner"),
+            offprintItem("inner sibling"),
+          ]),
+          offprintItem("sibling"),
+        ],
+      }),
+    );
+
+    const list = asList(blocks[0]);
+    expect(list.items.map((entry) => entry.text.plaintext)).toEqual([
+      "outer",
+      "sibling",
+    ]);
+    const nested = asList(list.items[0]?.children?.[0]);
+    expect(nested.kind).toBe("bulletList");
+    expect(nested.items.map((entry) => entry.text.plaintext)).toEqual([
+      "inner",
+      "inner sibling",
+    ]);
+    expect(list.items[1]?.children).toBeUndefined();
+  });
+
+  it("nests an ordered sub-list under an ordered item", () => {
+    const blocks = offprintBlocks(
+      offprintDoc({
+        $type: OFFPRINT_BLOCK.orderedList,
+        children: [offprintItem("first", [offprintItem("first.a")])],
+        start: 3,
+      }),
+    );
+
+    const list = asList(blocks[0]);
+    expect(list.kind).toBe("orderedList");
+    expect(asList(list.items[0]?.children?.[0]).kind).toBe("orderedList");
+  });
+
+  it("keeps arbitrarily deep branches", () => {
+    const blocks = offprintBlocks(
+      offprintDoc({
+        $type: OFFPRINT_BLOCK.bulletList,
+        children: [
+          offprintItem("one", [offprintItem("two", [offprintItem("three")])]),
+        ],
+      }),
+    );
+
+    const list = asList(blocks[0]);
+    const second = asList(list.items[0]?.children?.[0]);
+    const third = asList(second.items[0]?.children?.[0]);
+    expect(third.items[0]?.text.plaintext).toBe("three");
+  });
+
+  it("keeps an item that is only a sub-list", () => {
+    const blocks = offprintBlocks(
+      offprintDoc({
+        $type: OFFPRINT_BLOCK.bulletList,
+        children: [
+          { children: [offprintItem("only child")] },
+          offprintItem("sibling"),
+        ],
+      }),
+    );
+
+    const list = asList(blocks[0]);
+    expect(list.items[0]?.text.plaintext).toBe("");
+    expect(asList(list.items[0]?.children?.[0]).items[0]?.text.plaintext).toBe(
+      "only child",
+    );
+    expect(list.items[1]?.text.plaintext).toBe("sibling");
+  });
+
+  it("still drops an item with neither text nor a subtree", () => {
+    const blocks = offprintBlocks(
+      offprintDoc({
+        $type: OFFPRINT_BLOCK.bulletList,
+        children: [
+          offprintItem("  "),
+          { content: { $type: "app.offprint.block.image" } },
+          offprintItem("kept"),
+        ],
+      }),
+    );
+
+    const list = asList(blocks[0]);
+    expect(list.items.map((entry) => entry.text.plaintext)).toEqual(["kept"]);
   });
 });

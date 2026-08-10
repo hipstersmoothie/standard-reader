@@ -370,6 +370,17 @@ export const articleBodyStyles = stylex.create({
     marginBottom: spacing["6"],
     marginTop: spacing["0"],
   },
+  /**
+   * A list nested inside a list item.
+   *
+   * The block-level bottom margin separates a list from the prose after it;
+   * inside an item it lands mid-list, stacking with the parent item's own
+   * margin and opening a paragraph-sized hole between siblings. A sub-list
+   * closes on the item gap instead.
+   */
+  nestedList: {
+    marginBottom: gap.sm,
+  },
   listItem: {
     marginBottom: gap.sm,
     marginTop: spacing["0"],

@@ -73,6 +73,8 @@ export function WebsiteCardBody({
  */
 interface StructuredListViewProps {
   items: Array<StructuredListItem>;
+  /** Set when this list is itself nested inside a list item. */
+  nested?: boolean;
   renderChildBlock?: (
     block: StructuredRenderableBlock,
     index: number,
@@ -89,13 +91,19 @@ function renderNestedBlocks(
 
 export function StructuredBulletListView({
   items,
+  nested = false,
   renderChildBlock,
 }: StructuredListViewProps) {
   const tracker = useQuoteHighlightTracker();
   if (items.length === 0) return null;
 
   return (
-    <ul {...stylex.props(articleBodyStyles.list)}>
+    <ul
+      {...stylex.props(
+        articleBodyStyles.list,
+        nested && articleBodyStyles.nestedList,
+      )}
+    >
       {items.map((item, index) => {
         const highlightRange =
           tracker?.consume(item.text.plaintext.length) ?? null;
@@ -116,6 +124,7 @@ export function StructuredBulletListView({
 
 export function StructuredOrderedListView({
   items,
+  nested = false,
   renderChildBlock,
   start,
 }: StructuredListViewProps & { start?: number }) {
@@ -123,7 +132,13 @@ export function StructuredOrderedListView({
   if (items.length === 0) return null;
 
   return (
-    <ol {...stylex.props(articleBodyStyles.list)} start={start ?? 1}>
+    <ol
+      {...stylex.props(
+        articleBodyStyles.list,
+        nested && articleBodyStyles.nestedList,
+      )}
+      start={start ?? 1}
+    >
       {items.map((item, index) => {
         const highlightRange =
           tracker?.consume(item.text.plaintext.length) ?? null;
