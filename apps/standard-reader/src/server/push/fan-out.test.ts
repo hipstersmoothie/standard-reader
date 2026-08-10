@@ -66,9 +66,9 @@ describe("notificationTag", () => {
 describe("buildPayload", () => {
   const url = "https://standard-reader.app/a/did%3Aplc%3Aauthor/xyz";
 
-  it("titles with the publication and bodies with the post", () => {
+  it("labels the source in the title and bodies with the post", () => {
     const payload = buildPayload(BASE, url);
-    expect(payload.title).toBe("The Standard Review");
+    expect(payload.title).toBe("New Post: The Standard Review");
     expect(payload.body).toBe("The quiet part of the network");
     expect(payload.url).toBe(url);
   });
@@ -78,7 +78,7 @@ describe("buildPayload", () => {
       { ...BASE, publicationName: null, publicationUri: null },
       url,
     );
-    expect(payload.title).toBe("Alice Example");
+    expect(payload.title).toBe("New Post: Alice Example");
   });
 
   it("falls back to the handle when there is no display name", () => {
@@ -91,7 +91,7 @@ describe("buildPayload", () => {
       },
       url,
     );
-    expect(payload.title).toBe("@alice.example.com");
+    expect(payload.title).toBe("New Post: @alice.example.com");
   });
 
   it("still produces something showable with no names at all", () => {
@@ -107,7 +107,7 @@ describe("buildPayload", () => {
       },
       url,
     );
-    expect(payload.title).toBe("Standard Reader");
+    expect(payload.title).toBe("New Post: Standard Reader");
   });
 
   it("uses the description when a document has no title", () => {
@@ -116,6 +116,28 @@ describe("buildPayload", () => {
       url,
     );
     expect(payload.body).toBe("A short note about nothing");
+  });
+
+  it("leaves the body to the service worker when the post has no text", () => {
+    // An empty body is deliberate: the service worker fills it with generic
+    // copy, which is what keeps every push showing something.
+    const payload = buildPayload(
+      { ...BASE, description: null, title: "" },
+      url,
+    );
+    expect(payload.title).toBe("New Post: The Standard Review");
+    expect(payload.body).toBe("");
+  });
+
+  it("keeps the prefixed title inside the title budget", () => {
+    // The prefix shares the cap with the source, so a very long publication
+    // name must not push the whole line past it.
+    const payload = buildPayload(
+      { ...BASE, publicationName: "p".repeat(200) },
+      url,
+    );
+    expect(payload.title.startsWith("New Post: ")).toBe(true);
+    expect(payload.title.length).toBeLessThanOrEqual(80);
   });
 
   it("keeps the payload small enough to encrypt under the 4KB cap", () => {

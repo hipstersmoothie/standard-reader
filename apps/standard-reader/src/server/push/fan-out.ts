@@ -54,6 +54,16 @@ export interface DocumentNotification {
 const MAX_TITLE = 80;
 const MAX_BODY = 160;
 
+/**
+ * Safari renders a web push as title / "from <app name>" / body, and that middle
+ * line is its own — no payload field suppresses or rewords it. A bare source
+ * name on the title line therefore lands directly above "from Standard Reader",
+ * and the two org names read as one garbled phrase. Labelling the line fixes the
+ * collision: "New Post: The Standard Review" parses as a labelled value rather
+ * than a competing attribution.
+ */
+const TITLE_PREFIX = "New Post: ";
+
 export function truncate(value: string, max: number): string {
   const trimmed = value.trim();
   if (trimmed.length <= max) return trimmed;
@@ -223,8 +233,16 @@ export function buildPayload(
     (document.authorHandle ? `@${document.authorHandle}` : null) ??
     "Standard Reader";
 
+  // The prefix eats into the same budget, so the source is truncated to what is
+  // left rather than to the full cap.
+  const label = truncate(source, MAX_TITLE - TITLE_PREFIX.length);
+
+  // A post with neither title nor description sends an empty body on purpose —
+  // the service worker fills it with generic copy, which is what keeps every
+  // push showing something. (iOS revokes the subscription if one displays
+  // nothing at all.)
   return {
-    title: truncate(source, MAX_TITLE),
+    title: `${TITLE_PREFIX}${label}`,
     body: truncate(document.title || document.description || "", MAX_BODY),
     url,
     tag: notificationTag(document.publicationUri, document.did),
