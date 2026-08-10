@@ -1532,12 +1532,15 @@ publication list looked clean.
 - **Follows, likes, save-for-later, and read-state** written back as records (and cached).
 - **URL-backed routing** for every view.
 - Network-powered recommendations & trending (initial heuristics, tunable).
+- **Offline reading in the installed app** — the service worker caches read server functions
+  (`/_serverFn` GETs), and `src/pwa/offline-sync.ts` pre-downloads every unread body and its
+  images so the backlog opens with no connection. Reaching for something never downloaded shows
+  an offline state rather than an error.
 
 ### Later
 
 - Recommendation / trending tuning and quality work.
 - Higher-quality full-text search.
-- Offline / save-for-later body cache (save queue via `app.standard-reader.bookmark` is shipped).
 
 ### Non-goals (for now)
 

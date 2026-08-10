@@ -115,6 +115,7 @@ import {
   AppearanceAdvancedRows,
   AppearancePalettePanel,
 } from "./appearance-settings";
+import { OfflineReadingSettings } from "./offline-settings";
 import { PushDiagnosticsPanel } from "./push-diagnostics";
 import { IosInstallPrompt } from "./reader/ios-install-prompt";
 import { Masthead, ReaderContent } from "./reader/primitives";
@@ -1155,6 +1156,7 @@ export function UserSettingsView() {
               ))}
             </Select>
           </SettingRow>
+          <OfflineReadingSettings />
         </div>
       </section>
 

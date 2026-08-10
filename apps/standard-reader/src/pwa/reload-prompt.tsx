@@ -10,8 +10,10 @@ import {
   lineHeight,
 } from "@standard-reader/design-system/theme/typography.stylex";
 import * as stylex from "@stylexjs/stylex";
+import { useRouter } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 
+import { startOfflineSync } from "./offline-sync";
 import { syncPushDevice } from "./push";
 import type { UpdateServiceWorker } from "./register";
 import { registerServiceWorker } from "./register";
@@ -57,6 +59,12 @@ export function ReloadPrompt() {
   const [needRefresh, setNeedRefresh] = useState(false);
   const [installed, setInstalled] = useState(false);
   const updateRef = useRef<UpdateServiceWorker | null>(null);
+  const router = useRouter();
+
+  // Keep the reader's unread backlog on the device. Gated on the installed app
+  // and on the reader's setting inside `startOfflineSync`, and started here
+  // because this is already the one place the app talks to its service worker.
+  useEffect(() => startOfflineSync(router), [router]);
 
   useEffect(() => {
     // Client-only: reading display mode during SSR would be a hydration

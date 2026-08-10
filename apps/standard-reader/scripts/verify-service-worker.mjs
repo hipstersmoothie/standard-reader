@@ -32,6 +32,22 @@
  * call, Safari does not. So on iOS no `push` listener ever registered, and every
  * notification was dropped on arrival with nothing anywhere reporting a failure.
  *
+ * ## And a third: the worker's own dependency 404s
+ *
+ * Same snapshot, different casualty. `sw.js` opens with
+ * `define(["./workbox-<hash>"])` and loads that chunk via `importScripts`, so
+ * every route and the entire precache live behind it. The plugin's repeated
+ * passes emit *differently hashed* chunks, and Nitro's snapshot recorded an
+ * earlier pass's name — leaving the manifest with `/workbox-4cce69c4.js` while
+ * the shipped `sw.js` asks for `/workbox-d95f8ea8.js`. Both files sit on disk;
+ * only the stale one is served, and the other 404s.
+ *
+ * The failure is completely silent, and worse than the truncation: the worker
+ * parses, registers, installs, activates, and reports itself healthy — its AMD
+ * factory just never runs. No caches are created, no `fetch` handler is
+ * installed, and `navigator.serviceWorker.controller` is set, so every
+ * diagnostic short of "does it actually cache anything" says yes.
+ *
  * ## What this does
  *
  * 1. Inlines `public/push-sw.js` into `sw.js` at top level, so the listeners
@@ -40,11 +56,14 @@
  *    disk — necessarily after (1), which changes that size. Etags are opaque
  *    cache validators, so a recomputed one need not match Nitro's own scheme; it
  *    only has to change with the content.
- * 3. Asserts the result is usable: parses, precaches the offline fallback, and
- *    carries both the `push` and `notificationclick` listeners.
+ * 3. Adds a manifest entry for the workbox chunk `sw.js` actually imports, when
+ *    the snapshot missed it.
+ * 4. Asserts the result is usable: parses, precaches the offline fallback,
+ *    carries both the `push` and `notificationclick` listeners, and can reach
+ *    its own runtime chunk.
  *
  * Runs from `pnpm build`, so a deploy fails loudly rather than shipping a worker
- * that cannot register — or one that registers and silently ignores every push.
+ * that cannot register — or one that registers and silently does nothing.
  */
 
 import { createHash } from "node:crypto";
@@ -147,6 +166,55 @@ if (existsSync(serverEntry)) {
   if (repaired > 0) writeFileSync(serverEntry, bundle);
 }
 
+// ── 2b. Make sure the worker's runtime chunk is servable ────────────────────
+// `sw.js` starts with `define(["./workbox-<hash>"])`; that chunk carries every
+// strategy, route, and the precache itself. A manifest that names a *different*
+// hash serves a 404 for it, and the worker becomes an inert no-op that still
+// reports as activated. Add the entry rather than fail: the file is on disk and
+// correct, only the snapshot is stale.
+let addedChunk = null;
+if (existsSync(swPath) && existsSync(serverEntry)) {
+  const swSource = readFileSync(swPath, "utf8");
+  const referenced = swSource.match(/define\(\[\s*"\.\/(workbox-[^"]+)"/);
+  if (referenced) {
+    const chunkFile = `${referenced[1]}.js`;
+    const chunkUrl = `/${chunkFile}`;
+    const chunkPath = path.join(publicDir, chunkFile);
+    let bundle = readFileSync(serverEntry, "utf8");
+
+    if (!existsSync(chunkPath)) {
+      fail(
+        `sw.js imports ${chunkUrl}, which the build never emitted — the worker would register and then do nothing`,
+      );
+    }
+
+    if (!bundle.includes(`"${chunkUrl}"`)) {
+      const buffer = readFileSync(chunkPath);
+      const entry =
+        `\t"${chunkUrl}": {\n` +
+        `\t\t"type": "text/javascript; charset=utf-8",\n` +
+        `\t\t"etag": ${JSON.stringify(etagFor(buffer))},\n` +
+        `\t\t"mtime": ${JSON.stringify(statSync(chunkPath).mtime.toISOString())},\n` +
+        `\t\t"size": ${buffer.length},\n` +
+        `\t\t"path": "../public/${chunkFile}"\n` +
+        `\t},\n`;
+      // Anchor on `/sw.js`, which is always present in the same object.
+      const anchor = bundle.indexOf('\t"/sw.js": {');
+      if (anchor === -1) {
+        fail(
+          `cannot add a manifest entry for ${chunkUrl}: no "/sw.js" entry to anchor to`,
+        );
+      }
+      bundle = bundle.slice(0, anchor) + entry + bundle.slice(anchor);
+      writeFileSync(serverEntry, bundle);
+      addedChunk = chunkUrl;
+      console.log(
+        `[verify-sw] added missing manifest entry for ${chunkUrl} — Nitro recorded a stale chunk hash and would have 404'd the worker's runtime`,
+      );
+    }
+  }
+}
+
 // ── 3. The worker itself has to be usable ───────────────────────────────────
 if (!existsSync(swPath)) {
   fail(
@@ -214,12 +282,43 @@ if (existsSync(serverEntry)) {
       `Nitro would serve ${recorded[1]} of ${byteLength} bytes of sw.js — the manifest repair did not take`,
     );
   }
+
+  // Every chunk the worker imports has to be reachable, at the right size. A
+  // missing entry 404s and a stale size truncates; either way the AMD factory
+  // never runs and the worker silently caches nothing.
+  const referenced = source.match(/define\(\[\s*"\.\/(workbox-[^"]+)"/);
+  if (referenced) {
+    const chunkUrl = `/${referenced[1]}.js`;
+    const chunkEntry = bundle.match(
+      new RegExp(
+        `"${chunkUrl.replaceAll(".", String.raw`\.`)}":\\s*\\{[^}]*"size":\\s*(\\d+)`,
+      ),
+    );
+    if (!chunkEntry) {
+      fail(
+        `sw.js imports ${chunkUrl} but Nitro has no manifest entry for it — it would 404, and the worker would activate and then do nothing`,
+      );
+    }
+    const chunkBytes = statSync(
+      path.join(publicDir, `${referenced[1]}.js`),
+    ).size;
+    if (Number(chunkEntry[1]) !== chunkBytes) {
+      fail(
+        `Nitro would serve ${chunkEntry[1]} of ${chunkBytes} bytes of ${chunkUrl} — the worker's runtime would be truncated`,
+      );
+    }
+  }
 }
+
+const repairs = [
+  repaired > 0
+    ? `repaired ${repaired} stale manifest entr${repaired === 1 ? "y" : "ies"}`
+    : null,
+  addedChunk ? `added ${addedChunk}` : null,
+].filter(Boolean);
 
 console.log(
   `[verify-sw] ok — ${byteLength} bytes, precaches ${entries.length}: ${entries.join(", ")}${
-    repaired > 0
-      ? ` (repaired ${repaired} stale manifest entr${repaired === 1 ? "y" : "ies"})`
-      : ""
+    repairs.length > 0 ? ` (${repairs.join("; ")})` : ""
   }`,
 );

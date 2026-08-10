@@ -1048,9 +1048,31 @@ export async function selectPublicationArticleCards(
  */
 const DEFAULT_UNREAD_URI_LIMIT = 200;
 
-/** Unread document AT-URIs for a reader, optionally scoped to publications
- * and/or followed users (union — matches the follow feed). */
-export async function selectUnreadDocumentUris(
+/**
+ * Position in the unread walk, matching the `published_at desc, uri desc`
+ * ordering both branches below use. `documents.published_at` is `notNull`, so
+ * a plain row-wise `<` is a complete keyset — no NULL tiebreak needed.
+ */
+export interface UnreadDocumentCursor {
+  /** ISO-8601; cast to `timestamptz` at the comparison. */
+  publishedAt: string;
+  uri: string;
+}
+
+export interface UnreadDocumentRow {
+  uri: string;
+  publishedAt: Date;
+}
+
+/**
+ * One page of a reader's unread documents, newest first.
+ *
+ * Offline sync walks the reader's *entire* unread set, which has no ceiling —
+ * so this pages by keyset rather than accepting a single `limit` the way
+ * "mark all as read" does. Offset would drift as new documents arrive at the
+ * head mid-walk and degrade on deep backlogs; the keyset does neither.
+ */
+export async function selectUnreadDocumentPage(
   db: Db,
   schema: Schema,
   opts: {
@@ -1059,14 +1081,16 @@ export async function selectUnreadDocumentUris(
     followedUserDids?: Array<string>;
     countOldPostsAsUnread?: boolean;
     limit?: number;
+    cursor?: UnreadDocumentCursor;
   },
-): Promise<Array<string>> {
+): Promise<Array<UnreadDocumentRow>> {
   const {
     readerDid,
     publicationUris,
     followedUserDids,
     countOldPostsAsUnread,
     limit = DEFAULT_UNREAD_URI_LIMIT,
+    cursor,
   } = opts;
   const hasFollowedUsers = (followedUserDids?.length ?? 0) > 0;
   if (publicationUris && publicationUris.length === 0 && !hasFollowedUsers) {
@@ -1084,17 +1108,23 @@ export async function selectUnreadDocumentUris(
         ? sql`and (${readerSourceCutoffSql(schema, readerDid, sql`cand.publication_uri`, sql`cand.did`, sql`cand.uri`)} is null
             or cand.published_at >= ${readerSourceCutoffSql(schema, readerDid, sql`cand.publication_uri`, sql`cand.did`, sql`cand.uri`)})`
         : sql``;
+    const cursorFilter = cursor
+      ? sql`and (cand.published_at, cand.uri) < (${cursor.publishedAt}::timestamptz, ${cursor.uri})`
+      : sql``;
     const rows = await db.execute(sql`
       with cand as ${followFeedUnionSql(schema, publicationUris ?? [], followedUserDids ?? [])}
-      select cand.uri
+      select cand.uri, cand.published_at as "publishedAt"
       from cand
       left join ${r} on ${r.documentUri} = cand.uri
         and ${r.ownerDid} = ${readerDid} and ${r.deleted} = false
-      where ${r.uri} is null ${cutoffFilter}
+      where ${r.uri} is null ${cutoffFilter} ${cursorFilter}
       order by cand.published_at desc nulls last, cand.uri desc
       limit ${limit}
     `);
-    return executeRows<{ uri: string }>(rows).map((row) => row.uri);
+    return executeRows<UnreadDocumentRow>(rows).map((row) => ({
+      publishedAt: new Date(row.publishedAt),
+      uri: row.uri,
+    }));
   }
 
   const conds = [eq(d.deleted, false), documentPublishedNotInFuture(d)];
@@ -1111,9 +1141,14 @@ export async function selectUnreadDocumentUris(
     );
     conds.push(sql`(${cutoff} is null or ${d.publishedAt} >= ${cutoff})`);
   }
+  if (cursor) {
+    conds.push(
+      sql`(${d.publishedAt}, ${d.uri}) < (${cursor.publishedAt}::timestamptz, ${cursor.uri})`,
+    );
+  }
 
   const rows = await db
-    .select({ uri: d.uri })
+    .select({ publishedAt: d.publishedAt, uri: d.uri })
     .from(d)
     .leftJoin(
       r,
@@ -1127,6 +1162,23 @@ export async function selectUnreadDocumentUris(
     .orderBy(...documentsNewestFirst(d))
     .limit(limit);
 
+  return rows;
+}
+
+/** Unread document AT-URIs for a reader, optionally scoped to publications
+ * and/or followed users (union — matches the follow feed). */
+export async function selectUnreadDocumentUris(
+  db: Db,
+  schema: Schema,
+  opts: {
+    readerDid: string;
+    publicationUris?: Array<string>;
+    followedUserDids?: Array<string>;
+    countOldPostsAsUnread?: boolean;
+    limit?: number;
+  },
+): Promise<Array<string>> {
+  const rows = await selectUnreadDocumentPage(db, schema, opts);
   return rows.map((row) => row.uri);
 }
 

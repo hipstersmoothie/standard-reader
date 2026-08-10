@@ -21,6 +21,10 @@ msgstr ""
 msgid "Every publication the network knows about — subscribe to the ones worth your mornings."
 msgstr "Jede Publikation, die das Netzwerk kennt – abonnieren Sie die, die Ihre Morgen wert sind."
 
+#: src/components/guide/pages/getting-started-guide-page.tsx
+msgid "The installed app downloads the articles you have not read yet, with their images, while you are online. Open it on a plane or a tunnel and your unread queue is already there — no planning ahead, and nothing to tap beforehand."
+msgstr ""
+
 #: src/components/reader/collections-upgrade-gate.tsx
 msgid "Authoring Collections needs additional permissions to publish collections and documents on your behalf. You can revoke this any time from your account settings."
 msgstr "Zum Erstellen von Sammlungen sind zusätzliche Berechtigungen nötig, um Sammlungen und Dokumente in Ihrem Namen zu veröffentlichen. Sie können das jederzeit in den Kontoeinstellungen widerrufen."
@@ -81,6 +85,10 @@ msgstr "Zum Abschnitt springen"
 #: src/routes/_layout.saved.tsx
 msgid "Sort by"
 msgstr "Sortieren nach"
+
+#: src/components/offline-settings.tsx
+msgid "Downloads the articles you haven't read yet, with their images, so they open with no connection. Pauses automatically when your system asks apps to save data."
+msgstr ""
 
 #: src/components/guide/pages/reading-guide-page.tsx
 #: src/components/reader/about-view.tsx
@@ -936,6 +944,10 @@ msgstr "Als ungelesen markieren"
 msgid "Grid view"
 msgstr "Rasteransicht"
 
+#: src/components/route-error.tsx
+msgid "You’re offline"
+msgstr ""
+
 #: src/magazine/flow.tsx
 msgid "Subscribe to get new writing in your feed."
 msgstr "Abonnieren Sie, um neue Texte in Ihrem Feed zu erhalten."
@@ -1248,6 +1260,10 @@ msgstr "Beiträge auf der Originalseite öffnen"
 
 #: src/components/guide/pages/lists-guide-page.tsx
 msgid "Which destinations appear at all is a separate setting — <0>Customize sidebar</0> under <1>Making it yours</1> hides the ones you never use. Subscriptions and your lists always stay."
+msgstr ""
+
+#: src/components/offline-settings.tsx
+msgid "Downloaded articles"
 msgstr ""
 
 #: src/components/reader/terms-view.tsx
@@ -4156,6 +4172,7 @@ msgid "{0, plural, one {# publication} other {# publications}}"
 msgstr "{0, plural, one {# Publikation} other {# Publikationen}}"
 
 #: src/components/feedback/feedback-image-picker.tsx
+#: src/components/route-error.tsx
 msgid "Try again"
 msgstr ""
 
@@ -4674,6 +4691,10 @@ msgstr ""
 msgid "Select <0>Log in</0>, at the bottom of the sidebar on a computer or in the top bar on a phone."
 msgstr ""
 
+#: src/components/route-error.tsx
+msgid "That page didn’t load. Try again — if it keeps happening, it’s on our side."
+msgstr ""
+
 #: src/components/feedback/feedback-dialog.tsx
 #: src/components/reader/collection-builder.tsx
 #: src/routes/_layout.saved.tsx
@@ -5076,6 +5097,7 @@ msgstr ""
 #: src/components/reader/blocked-notice.tsx
 #: src/components/reader/notify-button.tsx
 #: src/components/reader/page-reader-bar.tsx
+#: src/components/route-error.tsx
 msgid "Something went wrong"
 msgstr "Etwas ist schiefgelaufen"
 
@@ -5511,6 +5533,10 @@ msgstr ""
 msgid "Text, borders and every other step are derived from these two colors."
 msgstr ""
 
+#: src/components/route-error.tsx
+msgid "This page hasn’t been saved to your device, so it needs a connection. Articles you haven’t read yet are downloaded automatically and stay available offline."
+msgstr ""
+
 #: src/components/reader/privacy-view.tsx
 msgid "If you install the {SITE_NAME} browser extension, it uses the same account and session cookie as this site. The extension sends page URLs to our <0>/api/extension/*</0> endpoints for index matching and keeps overlay settings in your browser's extension storage. See the <1>extension privacy policy</1> for details that apply only to the extension."
 msgstr "Wenn Sie die Browser-Erweiterung von {SITE_NAME} installieren, nutzt sie dasselbe Konto und Sitzungs-Cookie wie diese Seite. Die Erweiterung sendet Seiten-URLs zum Index-Abgleich an unsere <0>/api/extension/*</0>-Endpunkte und speichert Overlay-Einstellungen im Erweiterungsspeicher Ihres Browsers. Details, die nur für die Erweiterung gelten, finden Sie in der <1>Datenschutzerklärung der Erweiterung</1>."
@@ -5810,6 +5836,10 @@ msgstr ""
 #: src/components/user-settings-view.tsx
 msgid "Weekly digest email"
 msgstr "Wöchentliche Digest-E-Mail"
+
+#: src/components/offline-settings.tsx
+msgid "Keep unread articles on this device"
+msgstr ""
 
 #: src/components/reader/ios-install-prompt.tsx
 msgid "Choose “Add to Home Screen”."
@@ -6423,6 +6453,7 @@ msgid "Top on the network"
 msgstr ""
 
 #: src/components/blocks-settings-view.tsx
+#: src/components/offline-settings.tsx
 #: src/components/reader/collection-builder.tsx
 #: src/components/reader/subscriptions-unsubscribe-dialog.tsx
 msgid "Remove"
@@ -6568,6 +6599,10 @@ msgstr ""
 msgid "On your phone"
 msgstr ""
 
+#: src/components/offline-settings.tsx
+msgid "Storage use isn't available in this browser."
+msgstr ""
+
 #: src/components/docs/labelers-docs-page.tsx
 msgid "<0>2. Serve labels.</0> Sign and emit <1>com.atproto.label.defs#label</1> objects, and expose the standard <2>com.atproto.label.queryLabels</2> (HTTP) and <3>com.atproto.label.subscribeLabels</3> (WebSocket) endpoints."
 msgstr "<0>2. Label ausliefern.</0> Signieren und senden Sie <1>com.atproto.label.defs#label</1>-Objekte und stellen Sie die Standard-Endpunkte <2>com.atproto.label.queryLabels</2> (HTTP) und <3>com.atproto.label.subscribeLabels</3> (WebSocket) bereit."
@@ -6597,8 +6632,8 @@ msgid "Your Home feed is empty for now — head to Discover whenever you're read
 msgstr "Ihr Home-Feed ist noch leer – schauen Sie bei „Entdecken“ vorbei, wann immer Sie mögen, und alles, was Sie abonnieren, sammelt sich hier."
 
 #: src/components/guide/pages/getting-started-guide-page.tsx
-msgid "Pages you have already visited stay available when your connection drops, and you get a plain offline page rather than a browser error when you reach for something that was never loaded. When a new version of the app is ready it offers to reload, rather than changing under you mid-article."
-msgstr ""
+#~ msgid "Pages you have already visited stay available when your connection drops, and you get a plain offline page rather than a browser error when you reach for something that was never loaded. When a new version of the app is ready it offers to reload, rather than changing under you mid-article."
+#~ msgstr ""
 
 #: src/components/reader/collection-builder.tsx
 #: src/components/reader/subscriptions-table.tsx
@@ -6772,6 +6807,11 @@ msgstr "Kontoaktionen"
 #: src/components/reader/mention-hover-card.tsx
 msgid "Read article"
 msgstr "Artikel lesen"
+
+#. placeholder {0}: formatBytes(usage.usage)
+#: src/components/offline-settings.tsx
+msgid "Standard Reader is using {0} on this device."
+msgstr ""
 
 #: src/components/reader/terms-view.tsx
 msgid "Terms of service"
@@ -7507,6 +7547,10 @@ msgstr ""
 
 #: src/components/guide/pages/extension-guide-page.tsx
 msgid "Subscribe to the publication it came from, in the same click."
+msgstr ""
+
+#: src/components/guide/pages/getting-started-guide-page.tsx
+msgid "Reach for something that was never downloaded and the app says so, rather than showing you an error. You can turn downloading off, and see how much space it is using, under Settings → Reading. It pauses on its own when your phone asks apps to save data. When a new version of the app is ready it offers to reload, rather than changing under you mid-article."
 msgstr ""
 
 #: src/components/guide/pages/comics-guide-page.tsx
