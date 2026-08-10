@@ -23,15 +23,28 @@
  * and the etag agree with it, and why a build-time check of the file alone
  * passes while the served bytes are garbage.
  *
+ * ## And a second one, on iOS
+ *
+ * Once the worker could register, pushes were accepted by Apple and still never
+ * appeared. Workbox emits `importScripts("/push-sw.js")` *inside* the AMD
+ * factory, which runs in a `.then()` — after initial evaluation. The spec only
+ * permits `importScripts()` during initial evaluation; Chrome tolerates the late
+ * call, Safari does not. So on iOS no `push` listener ever registered, and every
+ * notification was dropped on arrival with nothing anywhere reporting a failure.
+ *
  * ## What this does
  *
- * Rewrites any manifest entry whose recorded size disagrees with the file on
- * disk, then asserts the worker is actually usable. Etags are opaque cache
- * validators, so a recomputed one need not match Nitro's own scheme — it only
- * has to change with the content, which this does.
+ * 1. Inlines `public/push-sw.js` into `sw.js` at top level, so the listeners
+ *    register during initial evaluation, and strips the `importScripts` call.
+ * 2. Rewrites any manifest entry whose recorded size disagrees with the file on
+ *    disk — necessarily after (1), which changes that size. Etags are opaque
+ *    cache validators, so a recomputed one need not match Nitro's own scheme; it
+ *    only has to change with the content.
+ * 3. Asserts the result is usable: parses, precaches the offline fallback, and
+ *    carries both the `push` and `notificationclick` listeners.
  *
  * Runs from `pnpm build`, so a deploy fails loudly rather than shipping a worker
- * that cannot register.
+ * that cannot register — or one that registers and silently ignores every push.
  */
 
 import { createHash } from "node:crypto";
@@ -62,7 +75,46 @@ function etagFor(buffer) {
   return `"${buffer.length.toString(16)}-${hash}"`;
 }
 
-// ── 1. Re-sync the baked manifest with what is actually on disk ──────────────
+// ── 1. Inline the push listeners instead of importing them ──────────────────
+//
+// Workbox emits `importScripts("/push-sw.js")` *inside* the AMD factory, which
+// runs in a `.then()` — after the worker's initial evaluation has finished. The
+// spec only permits `importScripts()` during initial evaluation. Chrome
+// tolerates the late call; **Safari does not**, so on iOS the push listeners
+// were never registered.
+//
+// The symptom is maddening precisely because nothing looks broken: the worker
+// installs and activates, the subscription is valid, Apple accepts the push and
+// reports success — and the device shows nothing, because there is no `push`
+// handler to show it.
+//
+// So the handlers are concatenated into `sw.js` here, at top level, where they
+// register during initial evaluation. No second fetch, no timing dependency.
+const pushSource = path.join(appDir, "public/push-sw.js");
+let inlined = false;
+if (existsSync(swPath) && existsSync(pushSource)) {
+  const sw = readFileSync(swPath, "utf8");
+  if (sw.includes('addEventListener("push"')) {
+    inlined = true; // already inlined by an earlier run
+  } else {
+    const handlers = readFileSync(pushSource, "utf8");
+    // Drop the now-redundant import; leaving it would refetch the same code and
+    // reintroduce the late-`importScripts` throw on Safari.
+    const withoutImport = sw.replaceAll(
+      /importScripts\(\s*["']\/push-sw\.js["']\s*\)\s*[,;]?/g,
+      "",
+    );
+    writeFileSync(swPath, `${withoutImport}\n${handlers}`);
+    inlined = true;
+    console.log(
+      "[verify-sw] inlined push-sw.js into sw.js (importScripts runs too late for Safari)",
+    );
+  }
+}
+
+// ── 2. Re-sync the baked manifest with what is actually on disk ──────────────
+// Must run after the inline above: appending changed the file's size, and Nitro
+// serves exactly the number of bytes it recorded.
 let repaired = 0;
 if (existsSync(serverEntry)) {
   let bundle = readFileSync(serverEntry, "utf8");
@@ -95,7 +147,7 @@ if (existsSync(serverEntry)) {
   if (repaired > 0) writeFileSync(serverEntry, bundle);
 }
 
-// ── 2. The worker itself has to be usable ───────────────────────────────────
+// ── 3. The worker itself has to be usable ───────────────────────────────────
 if (!existsSync(swPath)) {
   fail(
     `no service worker at ${path.relative(appDir, swPath)} — the PWA plugin did not emit one`,
@@ -132,13 +184,28 @@ if (entries.length === 0) {
     "service worker precaches nothing — a zero-entry build pass overwrote the real one",
   );
 }
+if (!inlined || !source.includes('addEventListener("push"')) {
+  fail(
+    "the service worker has no `push` listener — notifications would be accepted by the push service and then silently dropped on the device",
+  );
+}
+if (!source.includes("notificationclick")) {
+  fail(
+    "the service worker has no `notificationclick` listener — tapping a notification would do nothing",
+  );
+}
+if (/importScripts\(\s*["']\/push-sw\.js["']/.test(source)) {
+  fail(
+    "sw.js still calls importScripts('/push-sw.js') — Safari rejects that call after initial evaluation",
+  );
+}
 if (!entries.includes("offline.html")) {
   fail(
     `service worker does not precache offline.html (has: ${entries.join(", ")}) — the offline fallback would 404`,
   );
 }
 
-// ── 3. And the server must be prepared to serve all of it ───────────────────
+// ── 4. And the server must be prepared to serve all of it ───────────────────
 if (existsSync(serverEntry)) {
   const bundle = readFileSync(serverEntry, "utf8");
   const recorded = bundle.match(/"\/sw\.js":\s*\{[^}]*"size":\s*(\d+)/);
