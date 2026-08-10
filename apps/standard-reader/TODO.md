@@ -1078,8 +1078,10 @@ Backend/API exists; UI or copy is missing.
 
 - [x] **Web push notifications (v1)** — a bell on a publication page
       ([`publication-actions.tsx`](src/components/reader/publication-actions.tsx)) and an author
-      page ([`_layout.u.$did.tsx`](src/routes/_layout.u.$did.tsx)) that notifies you when that
-      source publishes. Deliberately independent of subscribing: the bell doesn't touch your feed.
+      page ([`author-actions.tsx`](src/components/reader/author-actions.tsx)) that notifies you when
+      that source publishes. Both heroes share one shape: a Follow/Subscribe split button whose
+      chevron holds every other action, with the bell trailing it.
+      Deliberately independent of subscribing: the bell doesn't touch your feed.
       Three tables ([`push.ts`](src/db/schema/push.ts), `drizzle/0034_*`), push listeners imported
       into the existing Workbox SW ([`push-sw.js`](public/push-sw.js) via `workbox.importScripts`),
       the tap worker's whole involvement is one `INSERT`

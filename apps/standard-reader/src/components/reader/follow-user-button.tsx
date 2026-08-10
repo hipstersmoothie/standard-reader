@@ -1,5 +1,6 @@
 import { Trans } from "@lingui/react/macro";
 import { Button } from "@standard-reader/design-system/button";
+import type * as stylex from "@stylexjs/stylex";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, Plus } from "lucide-react";
 
@@ -25,12 +26,16 @@ export function FollowUserButton({
   signedIn,
   user,
   size = "md",
+  style,
 }: {
   did: string;
   signedIn: boolean;
   /** Byline for the optimistic sidebar "People" row (handle / name / avatar). */
   user?: FollowingUser;
-  size?: "sm" | "md";
+  size?: "sm" | "md" | "lg";
+  /** Layout hook for the author hero, where this is a split button's label
+   * segment and has to take the row's slack. */
+  style?: stylex.StyleXStyles;
 }) {
   const queryClient = useQueryClient();
   const loginSearch = useLoginSearch();
@@ -42,7 +47,7 @@ export function FollowUserButton({
   const followMutation = useMutation(readerApi.followUserMutationOptions());
   const unfollowMutation = useMutation(readerApi.unfollowUserMutationOptions());
 
-  const iconSize = size === "md" ? 18 : 15;
+  const iconSize = size === "sm" ? 15 : 18;
   const icon = following ? (
     <Check size={iconSize} aria-hidden />
   ) : (
@@ -56,8 +61,9 @@ export function FollowUserButton({
         search={loginSearch}
         variant="secondary"
         size={size}
+        style={style}
       >
-        {icon} Follow
+        {icon} <Trans>Follow</Trans>
       </ButtonLink>
     );
   }
@@ -86,6 +92,7 @@ export function FollowUserButton({
       variant={following ? "secondary" : "primary"}
       size={size}
       onPress={onPress}
+      style={style}
     >
       {icon}
       {following ? <Trans>Following</Trans> : <Trans>Follow</Trans>}

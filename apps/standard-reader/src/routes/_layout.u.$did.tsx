@@ -2,7 +2,6 @@ import { Plural, Trans, useLingui } from "@lingui/react/macro";
 import { Avatar } from "@standard-reader/design-system/avatar";
 import { Badge } from "@standard-reader/design-system/badge";
 import { Button } from "@standard-reader/design-system/button";
-import { IconButton } from "@standard-reader/design-system/icon-button";
 import {
   Tab,
   TabList,
@@ -34,7 +33,7 @@ import {
   redirect,
   useNavigate,
 } from "@tanstack/react-router";
-import { Bot, ExternalLink, ListPlus, Settings } from "lucide-react";
+import { Bot, ExternalLink, ListPlus } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 import { Link as AriaLink } from "react-aria-components";
 import { z } from "zod";
@@ -66,13 +65,11 @@ import {
 } from "#/lib/site-metadata";
 
 import { AccountLabels } from "../components/reader/account-labels";
-import { AddToListButton } from "../components/reader/add-to-list-button";
+import { AuthorActions } from "../components/reader/author-actions";
 import { AuthorProfileLink } from "../components/reader/author-profile-link";
 import { ArticleRow, PubDirectoryRow } from "../components/reader/cards";
 import { FeedLoadMore } from "../components/reader/feed-load-more";
-import { FollowUserButton } from "../components/reader/follow-user-button";
 import { LinkifiedText } from "../components/reader/linkified-text";
-import { NotifyButton } from "../components/reader/notify-button";
 import {
   Handle,
   Kicker,
@@ -80,9 +77,6 @@ import {
   SectionHead,
 } from "../components/reader/primitives";
 import { ProfileTabsSettingsModal } from "../components/reader/profile-tabs-settings-modal";
-import { RssFeedButton } from "../components/reader/rss-feed-button";
-import { ShareMenu } from "../components/reader/share-menu";
-import { AuthorSifaResumeChip } from "../components/reader/sifa-resume-chip";
 
 const AUTHOR_PAGE_SIZE = 24;
 
@@ -270,22 +264,6 @@ const styles = stylex.create({
     marginBottom: spacing["0"],
     marginTop: spacing["0"],
     maxWidth: "60ch",
-  },
-  heroActsMobile: {
-    columnGap: spacing["1.5"],
-    display: { [HERO_DESKTOP]: "none", default: "flex" },
-    flexWrap: "wrap",
-    rowGap: spacing["1.5"],
-  },
-  heroActs: {
-    alignItems: "center",
-    columnGap: spacing["1.5"],
-    display: { [HERO_DESKTOP]: "flex", default: "none" },
-    flexShrink: 0,
-    flexWrap: "wrap",
-    justifyContent: "flex-end",
-    rowGap: spacing["2.5"],
-    paddingTop: spacing["1"],
   },
   tabs: {
     paddingBottom: spacing["10"],
@@ -728,65 +706,23 @@ function AuthorProfileContent({
               ) : null}
             </div>
 
-            <div {...stylex.props(styles.heroActs)}>
-              <ShareMenu variant="icon" pageUrl={pageUrl} />
-              <RssFeedButton
-                name={name}
-                feedUrl={authorFeedUrl(getPublicUrlClient(), did)}
-                size="md"
-              />
-              {profile.handle ? (
-                <IconButton
-                  variant="secondary"
-                  size="md"
-                  label={t`View on Bluesky`}
-                  onPress={() => {
-                    window.open(
-                      `https://bsky.app/profile/${profile.handle}`,
-                      "_blank",
-                      "noopener,noreferrer",
-                    );
-                  }}
-                >
-                  <ExternalLink size={15} />
-                </IconButton>
-              ) : null}
-              <AuthorSifaResumeChip
-                did={did}
-                handle={profile.handle}
-                variant="icon"
-              />
-              {isOwnProfile ? (
-                <IconButton
-                  variant="secondary"
-                  size="md"
-                  label={t`Profile settings`}
-                  onPress={() => setSettingsOpen(true)}
-                >
-                  <Settings size={15} />
-                </IconButton>
-              ) : (
-                <>
-                  {session?.user?.did ? <AddToListButton did={did} /> : null}
-                  <NotifyButton
-                    subjectType="author"
-                    subject={did}
-                    signedIn={session?.user?.did != null}
-                  />
-                  <FollowUserButton
-                    did={did}
-                    signedIn={session?.user?.did != null}
-                    user={{
-                      did,
-                      handle: profile.handle,
-                      displayName: profile.displayName ?? null,
-                      avatarUrl: profile.avatarUrl ?? null,
-                      followedAt: new Date().toISOString(),
-                    }}
-                  />
-                </>
-              )}
-            </div>
+            <AuthorActions
+              did={did}
+              handle={profile.handle}
+              name={name}
+              pageUrl={pageUrl}
+              feedUrl={authorFeedUrl(getPublicUrlClient(), did)}
+              signedIn={session?.user?.did != null}
+              isOwnProfile={isOwnProfile}
+              user={{
+                did,
+                handle: profile.handle,
+                displayName: profile.displayName ?? null,
+                avatarUrl: profile.avatarUrl ?? null,
+                followedAt: new Date().toISOString(),
+              }}
+              onOpenSettings={() => setSettingsOpen(true)}
+            />
           </div>
 
           {profile.description ? (
@@ -799,66 +735,6 @@ function AuthorProfileContent({
               third party says about this account, so it reads after the account's
               own words instead of interrupting its identity line. */}
           <AccountLabels labels={accountLabels} />
-
-          <div {...stylex.props(styles.heroActsMobile)}>
-            <ShareMenu variant="icon" size="md" pageUrl={pageUrl} />
-            <RssFeedButton
-              name={name}
-              feedUrl={authorFeedUrl(getPublicUrlClient(), did)}
-              size="md"
-            />
-            {profile.handle ? (
-              <IconButton
-                variant="secondary"
-                size="md"
-                label={t`View on Bluesky`}
-                onPress={() => {
-                  window.open(
-                    `https://bsky.app/profile/${profile.handle}`,
-                    "_blank",
-                    "noopener,noreferrer",
-                  );
-                }}
-              >
-                <ExternalLink size={15} />
-              </IconButton>
-            ) : null}
-            <AuthorSifaResumeChip
-              did={did}
-              handle={profile.handle}
-              variant="icon"
-            />
-            {isOwnProfile ? (
-              <IconButton
-                variant="secondary"
-                size="md"
-                label={t`Profile settings`}
-                onPress={() => setSettingsOpen(true)}
-              >
-                <Settings size={15} />
-              </IconButton>
-            ) : (
-              <>
-                {session?.user?.did ? <AddToListButton did={did} /> : null}
-                <NotifyButton
-                  subjectType="author"
-                  subject={did}
-                  signedIn={session?.user?.did != null}
-                />
-                <FollowUserButton
-                  did={did}
-                  signedIn={session?.user?.did != null}
-                  user={{
-                    did,
-                    handle: profile.handle,
-                    displayName: profile.displayName ?? null,
-                    avatarUrl: profile.avatarUrl ?? null,
-                    followedAt: new Date().toISOString(),
-                  }}
-                />
-              </>
-            )}
-          </div>
         </div>
       </div>
 
