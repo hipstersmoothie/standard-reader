@@ -75,6 +75,7 @@ import { PageReaderProvider } from "#/lib/page-reader/page-reader-provider";
 import type { SidebarNavId } from "#/lib/sidebar-nav";
 import { useFormatters } from "#/lib/use-formatters";
 import { useCompactNav } from "#/lib/use-media-query";
+import { useOnlineStatus } from "#/lib/use-online-status";
 
 import type {
   FollowingPublication,
@@ -170,7 +171,32 @@ const styles = stylex.create({
     paddingInlineStart: horizontalSpace.xs,
     paddingBottom: verticalSpace.xxs,
     paddingTop: verticalSpace.xxs,
+    // Anchors the offline badge to the wordmark.
+    position: "relative",
     width: "fit-content",
+  },
+  offlineBadge: {
+    borderRadius: radius.full,
+    backgroundColor: uiColor.text1,
+    color: uiColor.bg,
+    fontFamily: fontFamily.sans,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.semibold,
+    letterSpacing: tracking.wide,
+    lineHeight: 1,
+    // Superscripted off the wordmark's top-right corner: absolute so it never
+    // reflows the brand, and clear of the letterforms so it annotates the logo
+    // instead of covering it. Tucked back over the corner by a hair, which is
+    // empty space above the cap height.
+    insetBlockStart: `calc(-1 * ${verticalSpace.xs})`,
+    insetInlineStart: "100%",
+    marginInlineStart: `calc(-1 * ${horizontalSpace.xxs})`,
+    paddingBlock: verticalSpace.xxs,
+    paddingInline: horizontalSpace.xs,
+    pointerEvents: "none",
+    position: "absolute",
+    textTransform: "lowercase",
+    whiteSpace: "nowrap",
   },
   brandSidebar: {
     // Left-align in the sidebar's column flow; only relevant here — in the
@@ -612,14 +638,33 @@ const COLLECTIONS_NAV: NavLink = {
 };
 
 /**
+ * Nav items that need the network, and are hidden while offline.
+ *
+ * Offline sync stores the reader's own reading — unread, their backlog, Saved,
+ * Subscriptions — so Home, Latest and Saved keep working. These three are
+ * different in kind: Discover and Search query the whole network for things the
+ * reader has by definition not read, and Collections is editable. Leaving them
+ * in the nav offers three taps that can only end in an error page, so they come
+ * out until the connection is back.
+ */
+const NETWORK_ONLY_NAV: ReadonlySet<SidebarNavId> = new Set([
+  "discover",
+  "search",
+  "collections",
+]);
+
+/**
  * Primary nav links; inserts Saved + Collections after Latest when the reader is
  * signed in (both are personal, repo-backed surfaces).
  */
-function navWithSaved(signedIn: boolean): Array<NavLink> {
-  return NAV.flatMap((item) => {
+function navWithSaved(signedIn: boolean, online: boolean): Array<NavLink> {
+  const items = NAV.flatMap((item) => {
     if (item.to !== "/latest" || !signedIn) return [item];
     return [item, SAVED_NAV, COLLECTIONS_NAV];
   });
+  return online
+    ? items
+    : items.filter((item) => !NETWORK_ONLY_NAV.has(item.id));
 }
 
 /**
@@ -853,7 +898,9 @@ function Brand({
   style?: stylex.StyleXStyles;
   to?: "/" | "/about";
 }) {
+  const { t } = useLingui();
   const focusRingProps = useFocusRingProps();
+  const online = useOnlineStatus();
   return (
     <Link
       to={to}
@@ -861,6 +908,18 @@ function Brand({
       {...stylex.props(styles.brandLink, style)}
     >
       <BrandWordmark />
+      {/* Pinned to the wordmark rather than shown as a banner: the state is
+          persistent, not an event, and a dismissible bar would either nag or
+          disappear while still being true. */}
+      {online ? null : (
+        <span
+          role="status"
+          aria-label={t`You are offline`}
+          {...stylex.props(styles.offlineBadge)}
+        >
+          <Trans>offline</Trans>
+        </span>
+      )}
     </Link>
   );
 }
@@ -941,7 +1000,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const followingUsers = sidebar?.followingUsers ?? [];
   const unreadCount = sidebar?.unreadCount ?? null;
   const hasUnread = unreadCount != null && unreadCount > 0;
-  const primaryNav = navWithSaved(signedIn);
+  const online = useOnlineStatus();
+  const primaryNav = navWithSaved(signedIn, online);
   const [subsSheetOpen, setSubsSheetOpen] = useState(false);
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);

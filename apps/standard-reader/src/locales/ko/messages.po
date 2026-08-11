@@ -3053,6 +3053,10 @@ msgstr "이 발행물의 읽지 않은 아티클이 모두 읽음으로 표시�
 msgid "Your own colors"
 msgstr ""
 
+#: src/components/reader/app-shell.tsx
+msgid "You are offline"
+msgstr ""
+
 #: src/magazine/Magazine.tsx
 msgid "Setting the issue…"
 msgstr "호 설정 중…"
@@ -3619,6 +3623,10 @@ msgstr ""
 #: src/components/reader/mention-hover-card.tsx
 msgid "{n, plural, one {# publication} other {{value} publications}}"
 msgstr "{n, plural, one {발행물 #개} other {발행물 {value}개}}"
+
+#: src/components/reader/app-shell.tsx
+msgid "offline"
+msgstr ""
 
 #: src/components/reader/profile-tabs-settings-modal.tsx
 msgid "Choose which tabs appear on your public profile."

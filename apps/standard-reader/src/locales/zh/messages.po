@@ -3053,6 +3053,10 @@ msgstr "该刊物的所有未读文章都将标记为已读。此操作无法撤
 msgid "Your own colors"
 msgstr ""
 
+#: src/components/reader/app-shell.tsx
+msgid "You are offline"
+msgstr ""
+
 #: src/magazine/Magazine.tsx
 msgid "Setting the issue…"
 msgstr "正在设置该期…"
@@ -3619,6 +3623,10 @@ msgstr ""
 #: src/components/reader/mention-hover-card.tsx
 msgid "{n, plural, one {# publication} other {{value} publications}}"
 msgstr "{n, plural, one {# 个刊物} other {{value} 个刊物}}"
+
+#: src/components/reader/app-shell.tsx
+msgid "offline"
+msgstr ""
 
 #: src/components/reader/profile-tabs-settings-modal.tsx
 msgid "Choose which tabs appear on your public profile."

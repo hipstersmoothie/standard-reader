@@ -3053,6 +3053,10 @@ msgstr "Todos os artigos não lidos desta publicação serão marcados como lido
 msgid "Your own colors"
 msgstr ""
 
+#: src/components/reader/app-shell.tsx
+msgid "You are offline"
+msgstr ""
+
 #: src/magazine/Magazine.tsx
 msgid "Setting the issue…"
 msgstr "Preparando a edição…"
@@ -3619,6 +3623,10 @@ msgstr "Filtrar inscrições"
 #: src/components/reader/mention-hover-card.tsx
 msgid "{n, plural, one {# publication} other {{value} publications}}"
 msgstr "{n, plural, one {# publicação} other {{value} publicações}}"
+
+#: src/components/reader/app-shell.tsx
+msgid "offline"
+msgstr ""
 
 #: src/components/reader/profile-tabs-settings-modal.tsx
 msgid "Choose which tabs appear on your public profile."

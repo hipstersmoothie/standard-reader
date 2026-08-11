@@ -12,31 +12,9 @@ import {
 import { size } from "@standard-reader/design-system/theme/semantic-spacing.stylex";
 import { useRouter } from "@tanstack/react-router";
 import { CloudOff, RotateCw } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
-/**
- * Whether the browser currently reports a connection.
- *
- * Deliberately starts `true` and corrects after mount: reading `navigator` while
- * rendering on the server would be a hydration mismatch, and an error boundary
- * claiming "you're offline" on a server-rendered page would be wrong anyway.
- */
-function useIsOnline(): boolean {
-  const [online, setOnline] = useState(true);
-
-  useEffect(() => {
-    const sync = () => setOnline(globalThis.navigator?.onLine !== false);
-    sync();
-    globalThis.addEventListener?.("online", sync);
-    globalThis.addEventListener?.("offline", sync);
-    return () => {
-      globalThis.removeEventListener?.("online", sync);
-      globalThis.removeEventListener?.("offline", sync);
-    };
-  }, []);
-
-  return online;
-}
+import { useOnlineStatus } from "#/lib/use-online-status";
 
 /**
  * What every route renders when its loader throws.
@@ -53,7 +31,7 @@ function useIsOnline(): boolean {
  * all, which is strictly worse than staying where you are.
  */
 export function RouteError({ error }: { error: unknown }) {
-  const online = useIsOnline();
+  const online = useOnlineStatus();
   const router = useRouter();
   const [retrying, setRetrying] = useState(false);
 

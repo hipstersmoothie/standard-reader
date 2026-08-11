@@ -26,6 +26,7 @@
 
 import type { AnyRouter } from "@tanstack/react-router";
 
+import { feedApi } from "#/integrations/tanstack-query/api-feed.functions";
 import { publicationApi } from "#/integrations/tanstack-query/api-publication.functions";
 import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
 import { documentImages } from "#/lib/document/images";
@@ -69,6 +70,19 @@ const STORAGE_PRESSURE_LIMIT = 0.8;
 
 /** Re-check the storage estimate every N documents rather than per document. */
 const STORAGE_CHECK_INTERVAL = 25;
+
+/** Page size for the already-read backlog walk. */
+const BACKLOG_PAGE_SIZE = 50;
+
+/**
+ * How far back to keep reading history available offline.
+ *
+ * Unlike the unread set, this has no natural end — a reader with 200
+ * subscriptions has an effectively infinite history, and "everything ever
+ * published" is not what "keep my articles on this device" means. 50 pages is
+ * roughly a couple of thousand posts; the storage guard usually stops it first.
+ */
+const BACKLOG_MAX_PAGES = 50;
 
 let running = false;
 let controller: AbortController | null = null;
@@ -259,6 +273,39 @@ async function warmArticleRoute(
   }
 }
 
+/**
+ * The routes that must work with no connection, warmed by running their real
+ * loaders.
+ *
+ * This is the fix for pages that flashed their content and then dropped to the
+ * offline state. A route loader `await`s `ensureQueryData`, which **rejects**
+ * when a query has no cached data and the fetch fails — and one rejection in a
+ * `Promise.all` throws the whole loader into the error component, even when the
+ * article or feed it was really after is sitting in the cache. Caching bodies
+ * alone was never enough; what a loader awaits includes preferences, shell
+ * bootstrap, tab counts, and rail data.
+ *
+ * Preloading runs exactly those loaders, so whatever each one awaits is cached
+ * under exactly the URL it will ask for. Guessing that list by hand would go
+ * stale the first time a loader changed.
+ */
+const OFFLINE_ROUTES = ["/", "/latest", "/saved", "/subscriptions"] as const;
+
+async function warmRoutes(
+  router: AnyRouter,
+  signal: AbortSignal,
+): Promise<void> {
+  for (const to of OFFLINE_ROUTES) {
+    if (signal.aborted || isOffline()) return;
+    try {
+      await router.preloadRoute({ to });
+    } catch {
+      // Signed-out readers have no /saved or /subscriptions, and a redirect
+      // throws here. Neither is a reason to stop warming the rest.
+    }
+  }
+}
+
 export function stopOfflineSync(): void {
   controller?.abort();
   controller = null;
@@ -291,6 +338,9 @@ export async function runOfflineSync(router: AnyRouter): Promise<void> {
     void globalThis.navigator?.storage?.persist?.();
 
     await warmShell(signal);
+    // Before any bodies: these are what the offline routes' loaders await, and
+    // an unwarmed one drops a fully-cached page into the offline state.
+    await warmRoutes(router, signal);
 
     const fresh = ledgerFreshUris(Date.now());
     const seen = new Set<string>();
@@ -298,6 +348,23 @@ export async function runOfflineSync(router: AnyRouter): Promise<void> {
     let routeWarmed = false;
     let stoppedEarly = false;
 
+    /** Cache a batch of bodies; returns false when storage says stop. */
+    const cacheBodies = async (uris: Array<string>): Promise<boolean> => {
+      for (let i = 0; i < uris.length; i += STORAGE_CHECK_INTERVAL) {
+        if (signal.aborted || isOffline()) return false;
+        if (await underStoragePressure()) return false;
+        await pool(
+          uris.slice(i, i + STORAGE_CHECK_INTERVAL),
+          BODY_CONCURRENCY,
+          signal,
+          (uri) => syncDocument(uri, signal),
+        );
+        await whenIdle(signal);
+      }
+      return true;
+    };
+
+    // ── Unread first. Uncapped: this is the backlog the reader came for. ──
     do {
       if (signal.aborted || isOffline()) break;
 
@@ -315,27 +382,46 @@ export async function runOfflineSync(router: AnyRouter): Promise<void> {
         await warmArticleRoute(router, pending[0]);
       }
 
-      for (let i = 0; i < pending.length; i += STORAGE_CHECK_INTERVAL) {
-        if (signal.aborted || isOffline()) break;
-        if (await underStoragePressure()) {
-          stoppedEarly = true;
-          break;
-        }
-        await pool(
-          pending.slice(i, i + STORAGE_CHECK_INTERVAL),
-          BODY_CONCURRENCY,
-          signal,
-          (uri) => syncDocument(uri, signal),
-        );
-        await whenIdle(signal);
+      if (!(await cacheBodies(pending))) {
+        stoppedEarly = true;
+        break;
       }
-
-      if (stoppedEarly) break;
     } while (cursor && !signal.aborted);
 
-    // Only prune once the whole set is known — a partial walk would drop ledger
-    // entries for documents that are still unread further down the list, and
-    // they would all be re-downloaded next pass.
+    // ── Then older, already-read posts from the reader's subscriptions. ──
+    // Unread alone leaves the app usable but oddly hollow offline: scrolling
+    // back through Latest or opening a publication hits articles that were
+    // read once and never stored. This walks the same feed `/latest` shows
+    // (`subscriptions` — read and unread alike), oldest work last, and stops on
+    // the storage guard rather than a size the reader never chose.
+    let backlogPage = 0;
+    let offset = 0;
+    while (
+      !stoppedEarly &&
+      backlogPage < BACKLOG_MAX_PAGES &&
+      !signal.aborted &&
+      !isOffline()
+    ) {
+      const feed = await feedApi.getLatestFeed({
+        data: { filter: "subscriptions", limit: BACKLOG_PAGE_SIZE, offset },
+      });
+      const uris = feed.items.map((item) => item.uri);
+      for (const uri of uris) seen.add(uri);
+
+      if (!(await cacheBodies(uris.filter((uri) => !fresh.has(uri))))) {
+        stoppedEarly = true;
+        break;
+      }
+
+      if (feed.nextOffset == null) break;
+      offset = feed.nextOffset;
+      backlogPage += 1;
+    }
+
+    // Prune only after a complete pass. A partial walk would drop entries for
+    // documents still further down the list, and re-download all of them next
+    // time. `seen` deliberately spans unread *and* backlog, so finishing an
+    // article does not evict the copy we just stored.
     if (!stoppedEarly && !cursor && !signal.aborted) {
       ledgerRetainOnly(seen);
     }

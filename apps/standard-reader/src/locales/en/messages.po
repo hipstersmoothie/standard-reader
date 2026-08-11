@@ -3053,6 +3053,10 @@ msgstr "Every unread article from this publication will be marked read. This can
 msgid "Your own colors"
 msgstr "Your own colors"
 
+#: src/components/reader/app-shell.tsx
+msgid "You are offline"
+msgstr "You are offline"
+
 #: src/magazine/Magazine.tsx
 msgid "Setting the issue…"
 msgstr "Setting the issue…"
@@ -3619,6 +3623,10 @@ msgstr "Filter subscriptions"
 #: src/components/reader/mention-hover-card.tsx
 msgid "{n, plural, one {# publication} other {{value} publications}}"
 msgstr "{n, plural, one {# publication} other {{value} publications}}"
+
+#: src/components/reader/app-shell.tsx
+msgid "offline"
+msgstr "offline"
 
 #: src/components/reader/profile-tabs-settings-modal.tsx
 msgid "Choose which tabs appear on your public profile."

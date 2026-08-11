@@ -3053,6 +3053,10 @@ msgstr "ستُحدَّد كل مقالة غير مقروءة من هذه الم�
 msgid "Your own colors"
 msgstr ""
 
+#: src/components/reader/app-shell.tsx
+msgid "You are offline"
+msgstr ""
+
 #: src/magazine/Magazine.tsx
 msgid "Setting the issue…"
 msgstr "جارٍ تعيين العدد…"
@@ -3619,6 +3623,10 @@ msgstr ""
 #: src/components/reader/mention-hover-card.tsx
 msgid "{n, plural, one {# publication} other {{value} publications}}"
 msgstr "{n, plural, zero {لا توجد منشورات} one {منشورة واحدة} two {منشورتان} few {{value} منشورات} many {{value} منشورة} other {{value} منشورة}}"
+
+#: src/components/reader/app-shell.tsx
+msgid "offline"
+msgstr ""
 
 #: src/components/reader/profile-tabs-settings-modal.tsx
 msgid "Choose which tabs appear on your public profile."
