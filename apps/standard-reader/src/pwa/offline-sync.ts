@@ -404,13 +404,34 @@ async function warmLatestPages(
  * for it, so there was nothing to serve. Subscriptions are a bounded set the
  * reader chose, which makes them worth fetching up front.
  */
-async function warmPublications(signal: AbortSignal): Promise<void> {
+async function warmPublications(
+  router: AnyRouter,
+  signal: AbortSignal,
+): Promise<void> {
   let following: Array<{ uri: string }>;
   try {
     const sidebar = await feedApi.getSidebar();
     following = sidebar.following;
   } catch {
     return;
+  }
+
+  // The route's own JS chunk, which is code-split
+  // (`_layout.p._did._rkey-*.js`) and cached only on demand. Warming the data
+  // without it left every publication in the sidebar listed but unopenable:
+  // the loader had everything it needed and the chunk that renders it 404'd.
+  // One preload pulls it in; the rest of this function is data for the others.
+  const first = following[0] ? parseAtUri(following[0].uri) : null;
+  if (first) {
+    try {
+      await router.preloadRoute({
+        params: { did: first.did, rkey: first.rkey },
+        to: "/p/$did/$rkey",
+      });
+    } catch {
+      // Preload runs the loader's prefetch branch and may reject; the chunk
+      // load is what matters and has already happened.
+    }
   }
 
   await pool(
@@ -480,7 +501,7 @@ export async function runOfflineSync(router: AnyRouter): Promise<void> {
     // offline state, so the surfaces come first and the articles follow.
     await warmRouteChunks(router, signal);
     await warmFeedData(signal);
-    await warmPublications(signal);
+    await warmPublications(router, signal);
 
     const fresh = ledgerFreshUris(Date.now());
     const seen = new Set<string>();

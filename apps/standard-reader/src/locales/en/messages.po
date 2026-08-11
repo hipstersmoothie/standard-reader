@@ -3847,6 +3847,10 @@ msgstr "When it still reads as a blog"
 msgid "You agree not to use {SITE_NAME} to:"
 msgstr "You agree not to use {SITE_NAME} to:"
 
+#: src/components/route-error.tsx
+msgid "Go home"
+msgstr "Go home"
+
 #: src/components/reader/collection-publication-editor.tsx
 #: src/routes/_layout.collections.new.tsx
 msgid "e.g. Dispatches from the Atmosphere"

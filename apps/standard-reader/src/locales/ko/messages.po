@@ -3847,6 +3847,10 @@ msgstr ""
 msgid "You agree not to use {SITE_NAME} to:"
 msgstr ""
 
+#: src/components/route-error.tsx
+msgid "Go home"
+msgstr ""
+
 #: src/components/reader/collection-publication-editor.tsx
 #: src/routes/_layout.collections.new.tsx
 msgid "e.g. Dispatches from the Atmosphere"

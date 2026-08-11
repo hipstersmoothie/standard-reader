@@ -13,7 +13,7 @@ import { size } from "@standard-reader/design-system/theme/semantic-spacing.styl
 import * as stylex from "@stylexjs/stylex";
 import type { ErrorComponentProps } from "@tanstack/react-router";
 import { useRouter } from "@tanstack/react-router";
-import { CloudOff, RotateCw } from "lucide-react";
+import { CloudOff, Home, RotateCw } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useOnlineStatus } from "#/lib/use-online-status";
@@ -48,8 +48,10 @@ const styles = stylex.create({
  * retry is scoped, and offline it is not offered at all: there is nothing to
  * retry until the connection is back, and the page reloads itself when it is.
  *
- * A full document reload is never used: inside an installed app that risks a
- * cold start with no network, which is strictly worse than staying put.
+ * There is always a way out, though — offline this rendered no actions at all,
+ * which is defensible per-button and a dead end taken together. "Go home" is
+ * unconditional, and reaches for a document load in the one case a client-side
+ * navigation cannot help (see {@link RouteError} body).
  */
 export function RouteError({ error, reset }: ErrorComponentProps) {
   const online = useOnlineStatus();
@@ -72,6 +74,21 @@ export function RouteError({ error, reset }: ErrorComponentProps) {
         reset();
       });
   }, [reset, router]);
+
+  const goHome = useCallback(() => {
+    // A client-side navigation to `/` is a no-op when `/` is *itself* the route
+    // that failed, which is exactly the dead end this button exists for. A
+    // document load isn't a fallback there, it's the better path: the `pages`
+    // cache holds `/` with its data dehydrated into the HTML, so it renders
+    // offline without needing anything from the data cache.
+    if (router.state.location.pathname === "/") {
+      globalThis.location.assign("/");
+      return;
+    }
+    void router.navigate({ to: "/" }).catch(() => {
+      globalThis.location.assign("/");
+    });
+  }, [router]);
 
   // Recover when the connection comes back. Only on the offline → online
   // transition, never on mount: an error that reproduces would otherwise retry,
@@ -114,11 +131,19 @@ export function RouteError({ error, reset }: ErrorComponentProps) {
             </Trans>
           )}
         </EmptyStateDescription>
-        {/* No retry offered offline: there is nothing to retry until the
-          connection returns, and the effect above loads the page the moment it
-          does. */}
-        {online ? (
-          <EmptyStateActions>
+        <EmptyStateActions>
+          {/* Always a way out. Offline this used to render no actions at all —
+              correct in the narrow sense that retrying a page with no
+              connection is pointless, and a dead end in practice: a reader who
+              landed here had nothing to press and no route back to the
+              articles that *are* on the device. */}
+          <Button variant="primary" size="sm" onPress={goHome}>
+            <Home size={14} strokeWidth={2} aria-hidden />{" "}
+            <Trans>Go home</Trans>
+          </Button>
+          {/* No retry offline: nothing changes until the connection returns,
+              and the effect above loads the page the moment it does. */}
+          {online ? (
             <Button
               variant="secondary"
               size="sm"
@@ -128,8 +153,8 @@ export function RouteError({ error, reset }: ErrorComponentProps) {
               <RotateCw size={14} strokeWidth={2} aria-hidden />{" "}
               <Trans>Try again</Trans>
             </Button>
-          </EmptyStateActions>
-        ) : null}
+          ) : null}
+        </EmptyStateActions>
         {/* The message is for us, not the reader — but hiding it entirely makes
           a bug report a guessing game, so keep it out of the way. */}
         {online && error instanceof Error && error.message ? (
