@@ -1408,8 +1408,14 @@ function ArticleLink({
   // site, or its body was never stored. A feed offline is mostly rows that
   // work, so the few that don't need to look different — otherwise the only
   // way to find out is to tap and hit an error.
+  //
+  // `cachedOffline == null` is "not known yet", never "nothing is stored": the
+  // scan is async, and dimming the whole feed while it resolves is worse than
+  // dimming nothing. Off-site rows don't need it — that's known synchronously.
   const unavailableOffline =
-    !online && (opensExternally || !cachedOffline.has(article.uri));
+    !online &&
+    (opensExternally ||
+      (cachedOffline !== null && !cachedOffline.has(article.uri)));
   const merged = stylex.props(
     styles.cardLink,
     ...extraStyles,

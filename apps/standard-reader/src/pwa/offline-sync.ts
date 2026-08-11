@@ -75,8 +75,17 @@ const STORAGE_PRESSURE_LIMIT = 0.8;
 /** Re-check the storage estimate every N documents rather than per document. */
 const STORAGE_CHECK_INTERVAL = 25;
 
-/** Page size for the already-read backlog walk. */
-const BACKLOG_PAGE_SIZE = 50;
+/**
+ * How deep to walk each `/latest` tab.
+ *
+ * Pages use the route's own size, so every page fetched is one the list asks
+ * for verbatim when the reader scrolls. Unlike the unread set this has no
+ * natural end — a reader with 200 subscriptions has an effectively infinite
+ * history, and "everything ever published" is not what keeping articles on the
+ * device means. 50 pages is ~1,000 rows per tab; the storage guard on bodies
+ * usually stops the pass before this does.
+ */
+const LATEST_WARM_MAX_PAGES = 50;
 
 /**
  * How many subscribed publications to store pages for.
@@ -93,16 +102,6 @@ const MAX_WARMED_PUBLICATIONS = 60;
  */
 const PUBLICATION_RECENT_LIMIT = 12;
 const PUBLICATION_RECENT_FILTER = "all";
-
-/**
- * How far back to keep reading history available offline.
- *
- * Unlike the unread set, this has no natural end — a reader with 200
- * subscriptions has an effectively infinite history, and "everything ever
- * published" is not what "keep my articles on this device" means. 50 pages is
- * roughly a couple of thousand posts; the storage guard usually stops it first.
- */
-const BACKLOG_MAX_PAGES = 50;
 
 let running = false;
 let controller: AbortController | null = null;
@@ -345,15 +344,6 @@ async function warmFeedData(signal: AbortSignal): Promise<void> {
     // with `deps.scope` undefined for a plain `/`.
     () => feedApi.getHomePage({ data: { scope: undefined } }),
     () => feedApi.getSidebar(),
-    // `getLatestFeedQueryOptions`' queryFn always sends all three keys.
-    // Only the filters that survive offline: `all` and `trending` are
-    // network-wide, and their tabs are hidden.
-    ...(["unread", "subscriptions"] as const).map(
-      (filter) => () =>
-        feedApi.getLatestFeed({
-          data: { filter, limit: latestFeedPageSize(filter), offset: 0 },
-        }),
-    ),
     () => feedApi.getLatestFeedCounts(),
   ];
 
@@ -365,6 +355,45 @@ async function warmFeedData(signal: AbortSignal): Promise<void> {
       // Signed out, or a surface this reader does not have. Keep going.
     }
   }
+}
+
+/**
+ * Page through `/latest` so scrolling works offline, not just the first screen.
+ *
+ * Warming offset 0 alone cached one screenful: the list looked short offline
+ * and "load more" had nothing behind it. Each page is a separate cache entry
+ * under its own `offset`, so they have to be walked the way the reader would
+ * walk them.
+ *
+ * Returns the article URIs seen, which is the same set the body pass wants —
+ * these pages *are* the subscriptions backlog, so walking them twice at two
+ * different page sizes would double the requests and cache a second copy of
+ * every row under URLs the UI never asks for.
+ */
+async function warmLatestPages(
+  filter: "unread" | "subscriptions",
+  signal: AbortSignal,
+): Promise<Array<string>> {
+  const limit = latestFeedPageSize(filter);
+  const uris: Array<string> = [];
+  let offset = 0;
+
+  for (let page = 0; page < LATEST_WARM_MAX_PAGES; page += 1) {
+    if (signal.aborted || isOffline()) break;
+    let feed: Awaited<ReturnType<typeof feedApi.getLatestFeed>>;
+    try {
+      // Mirrors both the loader and the route's own load-more call.
+      feed = await feedApi.getLatestFeed({ data: { filter, limit, offset } });
+    } catch {
+      break;
+    }
+    for (const item of feed.items) uris.push(item.uri);
+    if (feed.nextOffset == null) break;
+    offset = feed.nextOffset;
+    await whenIdle(signal);
+  }
+
+  return uris;
 }
 
 /**
@@ -499,34 +528,18 @@ export async function runOfflineSync(router: AnyRouter): Promise<void> {
       }
     } while (cursor && !signal.aborted);
 
-    // ── Then older, already-read posts from the reader's subscriptions. ──
-    // Unread alone leaves the app usable but oddly hollow offline: scrolling
-    // back through Latest or opening a publication hits articles that were
-    // read once and never stored. This walks the same feed `/latest` shows
-    // (`subscriptions` — read and unread alike), oldest work last, and stops on
-    // the storage guard rather than a size the reader never chose.
-    let backlogPage = 0;
-    let offset = 0;
-    while (
-      !stoppedEarly &&
-      backlogPage < BACKLOG_MAX_PAGES &&
-      !signal.aborted &&
-      !isOffline()
-    ) {
-      const feed = await feedApi.getLatestFeed({
-        data: { filter: "subscriptions", limit: BACKLOG_PAGE_SIZE, offset },
-      });
-      const uris = feed.items.map((item) => item.uri);
+    // ── Then the /latest tabs, deep enough to scroll. ──
+    // Warming offset 0 alone cached one screenful, so the lists looked short
+    // offline and "load more" had nothing behind it. Walking the pages also
+    // yields the subscriptions backlog — already-read posts that unread alone
+    // misses — so the same requests serve both the list and its bodies.
+    for (const filter of ["unread", "subscriptions"] as const) {
+      if (stoppedEarly || signal.aborted || isOffline()) break;
+      const uris = await warmLatestPages(filter, signal);
       for (const uri of uris) seen.add(uri);
-
       if (!(await cacheBodies(uris.filter((uri) => !fresh.has(uri))))) {
         stoppedEarly = true;
-        break;
       }
-
-      if (feed.nextOffset == null) break;
-      offset = feed.nextOffset;
-      backlogPage += 1;
     }
 
     // Prune only after a complete pass. A partial walk would drop entries for

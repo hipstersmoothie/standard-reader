@@ -59,33 +59,65 @@ function writeLedger(ledger: Ledger): void {
   }
 }
 
-/**
- * Memoised view of {@link ledgerFreshUris} for render paths.
- *
- * Feed rows ask "is this one stored?" per row, and parsing the ledger for each
- * of fifty rows on every render is not worth it. The window is short enough
- * that a sync finishing mid-scroll shows up promptly.
- */
-const LEDGER_MEMO_MS = 5000;
-let memo: { at: number; uris: ReadonlySet<string> } | null = null;
+/** How long one scan of the `data` cache is reused across rows and renders. */
+const AVAILABILITY_MEMO_MS = 5000;
+let availability: { at: number; uris: Promise<ReadonlySet<string>> } | null =
+  null;
 
 /**
- * Which documents offline sync has actually stored.
+ * AT-URIs as they appear inside a decoded request payload, where they are
+ * ordinary JSON strings (`"s":"at://did:plc:…/site.standard.document/…"`) and
+ * so run to the closing quote.
  *
- * Note what this is *not*: proof that a given article is in the service
- * worker's cache, and not a complete list of what is. An article opened by hand
- * while online is very likely cached without appearing here — deliberately, as
- * the alternative is worse. Marking those "available" would mean recording
- * documents that were rendered from SSR dehydration and never issued a
- * `/_serverFn` request at all, so nothing was cached; the row would look
- * available and then fail. Under-reporting dims a row that might have worked;
- * over-reporting promises one that cannot.
+ * Matches *any* AT-URI rather than trying to recognise document collections:
+ * callers only ever ask whether one specific article's URI is present, so a
+ * publication URI in the set is inert, while a document collection this pattern
+ * failed to anticipate — `pub.leaflet.document`, a future renderer's NSID —
+ * would wrongly dim a row that works.
  */
-export function offlineCachedUris(): ReadonlySet<string> {
+const AT_URI_PATTERN = /at:\/\/[^"\\]+/g;
+
+/**
+ * Which documents can actually be opened with no connection.
+ *
+ * Read from the `data` cache itself, not from the sync ledger. The ledger
+ * records what *sync* stored, which is a much smaller set than what is cached —
+ * an article opened by hand, or one seeded by browsing, is in the cache and not
+ * in the ledger. Trusting the ledger meant a reader whose sync had not run
+ * (signed out, toggle off, or simply not finished) saw every row dimmed while
+ * every one of them opened fine.
+ *
+ * A GET server function serialises its arguments into its URL, so an article
+ * whose body is cached has its AT-URI sitting in plain text in that request's
+ * query string. Scanning the cache keys for document URIs therefore answers the
+ * real question — "is this one stored?" — rather than a proxy for it.
+ *
+ * Includes the ledger as well, for the window where sync has recorded a
+ * document whose response has not been written back yet.
+ */
+export async function offlineAvailableUris(): Promise<ReadonlySet<string>> {
   const now = Date.now();
-  if (memo && now - memo.at < LEDGER_MEMO_MS) return memo.uris;
-  memo = { at: now, uris: ledgerFreshUris(now) };
-  return memo.uris;
+  if (!availability || now - availability.at > AVAILABILITY_MEMO_MS) {
+    availability = { at: now, uris: scanAvailableUris(now) };
+  }
+  return availability.uris;
+}
+
+async function scanAvailableUris(now: number): Promise<ReadonlySet<string>> {
+  const uris = ledgerFreshUris(now);
+  if (globalThis.caches === undefined) return uris;
+  try {
+    const cache = await globalThis.caches.open("data");
+    for (const request of await cache.keys()) {
+      const query = decodeURIComponent(new URL(request.url).search);
+      for (const match of query.matchAll(AT_URI_PATTERN)) {
+        uris.add(match[0]);
+      }
+    }
+  } catch {
+    // Cache Storage unavailable (private browsing). Fall back to the ledger.
+  }
+  return uris;
 }
 
 /** Document URIs pulled through recently enough to skip this pass. */
