@@ -3965,6 +3965,10 @@ msgstr "No topics match your search."
 msgid "{0} total"
 msgstr "{0} total"
 
+#: src/components/route-error.tsx
+msgid "This page wasn’t saved to your device, so it needs a connection. It’ll load on its own when you’re back online — your unread articles are already here."
+msgstr "This page wasn’t saved to your device, so it needs a connection. It’ll load on its own when you’re back online — your unread articles are already here."
+
 #: src/components/blocks-settings-view.tsx
 msgid "Blocks live in your own repo as portable records, so the ones you made on Bluesky already apply here — and the ones you make here apply there. Blocked accounts disappear from your feeds, search, discussion, and their pages, and they can't see yours."
 msgstr "Blocks live in your own repo as portable records, so the ones you made on Bluesky already apply here — and the ones you make here apply there. Blocked accounts disappear from your feeds, search, discussion, and their pages, and they can't see yours."
@@ -5542,8 +5546,8 @@ msgid "Text, borders and every other step are derived from these two colors."
 msgstr "Text, borders and every other step are derived from these two colors."
 
 #: src/components/route-error.tsx
-msgid "This page hasn’t been saved to your device, so it needs a connection. Articles you haven’t read yet are downloaded automatically and stay available offline."
-msgstr "This page hasn’t been saved to your device, so it needs a connection. Articles you haven’t read yet are downloaded automatically and stay available offline."
+#~ msgid "This page hasn’t been saved to your device, so it needs a connection. Articles you haven’t read yet are downloaded automatically and stay available offline."
+#~ msgstr "This page hasn’t been saved to your device, so it needs a connection. Articles you haven’t read yet are downloaded automatically and stay available offline."
 
 #: src/components/reader/privacy-view.tsx
 msgid "If you install the {SITE_NAME} browser extension, it uses the same account and session cookie as this site. The extension sends page URLs to our <0>/api/extension/*</0> endpoints for index matching and keeps overlay settings in your browser's extension storage. See the <1>extension privacy policy</1> for details that apply only to the extension."

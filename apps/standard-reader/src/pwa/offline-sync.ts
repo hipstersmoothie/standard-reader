@@ -26,7 +26,11 @@
 
 import type { AnyRouter } from "@tanstack/react-router";
 
-import { feedApi } from "#/integrations/tanstack-query/api-feed.functions";
+import {
+  feedApi,
+  latestFeedPageSize,
+} from "#/integrations/tanstack-query/api-feed.functions";
+import { notesApi } from "#/integrations/tanstack-query/api-notes.functions";
 import { publicationApi } from "#/integrations/tanstack-query/api-publication.functions";
 import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
 import { documentImages } from "#/lib/document/images";
@@ -73,6 +77,22 @@ const STORAGE_CHECK_INTERVAL = 25;
 
 /** Page size for the already-read backlog walk. */
 const BACKLOG_PAGE_SIZE = 50;
+
+/**
+ * How many subscribed publications to store pages for.
+ *
+ * Each costs four requests, so this is a latency bound rather than a storage
+ * one — the pages themselves are small next to article bodies.
+ */
+const MAX_WARMED_PUBLICATIONS = 60;
+
+/**
+ * Must match `/p/$did/$rkey`'s loader. These values reach the server, so a
+ * drift here is not a type error — it is a cache entry stored under a URL the
+ * publication page never requests, and an offline page that silently fails.
+ */
+const PUBLICATION_RECENT_LIMIT = 12;
+const PUBLICATION_RECENT_FILTER = "all";
 
 /**
  * How far back to keep reading history available offline.
@@ -291,7 +311,7 @@ async function warmArticleRoute(
  */
 const OFFLINE_ROUTES = ["/", "/latest", "/saved", "/subscriptions"] as const;
 
-async function warmRoutes(
+async function warmRouteChunks(
   router: AnyRouter,
   signal: AbortSignal,
 ): Promise<void> {
@@ -304,6 +324,95 @@ async function warmRoutes(
       // throws here. Neither is a reason to stop warming the rest.
     }
   }
+}
+
+/**
+ * Fetch the server functions the offline routes' loaders await, by calling them
+ * exactly as those loaders do.
+ *
+ * Explicit rather than inferred. `preloadRoute` cannot be trusted to cache
+ * anything (see {@link warmRouteChunks}), so the surfaces that must survive
+ * offline are named here; each call's response lands in the `data` cache under
+ * the URL its loader will later ask for.
+ */
+async function warmFeedData(signal: AbortSignal): Promise<void> {
+  // These argument objects are cache keys, not just arguments: a GET server
+  // function serialises them into its URL, so an extra or missing property
+  // caches under a URL nothing ever requests. Each call below mirrors the
+  // shape its loader/queryFn sends, key for key.
+  const warmers: Array<() => Promise<unknown>> = [
+    // `_layout.index.tsx`: `getHomePage({ data: { scope: deps.scope } })`,
+    // with `deps.scope` undefined for a plain `/`.
+    () => feedApi.getHomePage({ data: { scope: undefined } }),
+    () => feedApi.getSidebar(),
+    // `getLatestFeedQueryOptions`' queryFn always sends all three keys.
+    // Only the filters that survive offline: `all` and `trending` are
+    // network-wide, and their tabs are hidden.
+    ...(["unread", "subscriptions"] as const).map(
+      (filter) => () =>
+        feedApi.getLatestFeed({
+          data: { filter, limit: latestFeedPageSize(filter), offset: 0 },
+        }),
+    ),
+    () => feedApi.getLatestFeedCounts(),
+  ];
+
+  for (const warm of warmers) {
+    if (signal.aborted || isOffline()) return;
+    try {
+      await warm();
+    } catch {
+      // Signed out, or a surface this reader does not have. Keep going.
+    }
+  }
+}
+
+/**
+ * Cache the reader's subscribed publications.
+ *
+ * Opening a publication from the sidebar or a byline is an obvious thing to do
+ * offline and it failed outright — nothing had ever requested `getPublication`
+ * for it, so there was nothing to serve. Subscriptions are a bounded set the
+ * reader chose, which makes them worth fetching up front.
+ */
+async function warmPublications(signal: AbortSignal): Promise<void> {
+  let following: Array<{ uri: string }>;
+  try {
+    const sidebar = await feedApi.getSidebar();
+    following = sidebar.following;
+  } catch {
+    return;
+  }
+
+  await pool(
+    following.slice(0, MAX_WARMED_PUBLICATIONS).map((pub) => pub.uri),
+    BODY_CONCURRENCY,
+    signal,
+    async (publicationUri) => {
+      // Exactly what `/p/$did/$rkey`'s loader awaits, with the argument values
+      // its query options default to. `readerScope` is not passed: it varies
+      // the React Query key only, never the request the server sees.
+      await Promise.all([
+        publicationApi.getPublicationHeader({ data: { publicationUri } }),
+        publicationApi.getPublicationDocuments({
+          // Key order matters as much as the values: the payload is serialised
+          // into the URL in insertion order, so this must mirror
+          // `getPublicationDocumentsQueryOptions`' queryFn exactly.
+          data: {
+            publicationUri,
+            limit: PUBLICATION_RECENT_LIMIT,
+            offset: 0,
+            filter: PUBLICATION_RECENT_FILTER,
+          },
+        }),
+        notesApi.getPublicationLatestNote({ data: { publicationUri } }),
+        publicationApi
+          .getPublicationSocialProof({ data: { publicationUri } })
+          // Signed-out readers never request this, so a failure is expected.
+          .catch(() => null),
+      ]);
+    },
+  );
 }
 
 export function stopOfflineSync(): void {
@@ -338,9 +447,11 @@ export async function runOfflineSync(router: AnyRouter): Promise<void> {
     void globalThis.navigator?.storage?.persist?.();
 
     await warmShell(signal);
-    // Before any bodies: these are what the offline routes' loaders await, and
-    // an unwarmed one drops a fully-cached page into the offline state.
-    await warmRoutes(router, signal);
+    // Before any bodies. An unwarmed feed drops a fully-cached page into the
+    // offline state, so the surfaces come first and the articles follow.
+    await warmRouteChunks(router, signal);
+    await warmFeedData(signal);
+    await warmPublications(signal);
 
     const fresh = ledgerFreshUris(Date.now());
     const seen = new Set<string>();

@@ -10,9 +10,10 @@ import {
   EmptyStateTitle,
 } from "@standard-reader/design-system/empty-state";
 import { size } from "@standard-reader/design-system/theme/semantic-spacing.stylex";
+import type { ErrorComponentProps } from "@tanstack/react-router";
 import { useRouter } from "@tanstack/react-router";
 import { CloudOff, RotateCw } from "lucide-react";
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useOnlineStatus } from "#/lib/use-online-status";
 
@@ -26,19 +27,52 @@ import { useOnlineStatus } from "#/lib/use-online-status";
  * the page was never downloaded is the difference between "the app is broken"
  * and "this one wasn't saved".
  *
- * The button re-runs the failed loader rather than reloading the document: a
- * full reload inside an installed app risks a cold start with no network at
- * all, which is strictly worse than staying where you are.
+ * Retrying re-runs **only the failed route's loader**, and only when there is a
+ * connection to retry with. A bare `router.invalidate()` re-runs every match
+ * including the root and layout; offline those reject too, the error escapes
+ * past this boundary to the root, and the whole app — navbar and all — is
+ * replaced by an error screen that only quitting the app recovers from. So the
+ * retry is scoped, and offline it is not offered at all: there is nothing to
+ * retry until the connection is back, and the page reloads itself when it is.
+ *
+ * A full document reload is never used: inside an installed app that risks a
+ * cold start with no network, which is strictly worse than staying put.
  */
-export function RouteError({ error }: { error: unknown }) {
+export function RouteError({ error, reset }: ErrorComponentProps) {
   const online = useOnlineStatus();
   const router = useRouter();
   const [retrying, setRetrying] = useState(false);
 
-  const retry = () => {
+  const retry = useCallback(() => {
     setRetrying(true);
-    void router.invalidate().finally(() => setRetrying(false));
-  };
+    // The deepest match is the one that threw. Its parents — root and layout —
+    // are what render the navbar, and re-running them offline is what replaced
+    // the entire app with an error screen.
+    const leafMatchId = router.state.matches.at(-1)?.id;
+    void router
+      .invalidate({
+        filter: (match) => match.id === leafMatchId,
+      })
+      .catch(() => {})
+      .finally(() => {
+        setRetrying(false);
+        reset();
+      });
+  }, [reset, router]);
+
+  // Recover when the connection comes back. Only on the offline → online
+  // transition, never on mount: an error that reproduces would otherwise retry,
+  // re-throw, remount this component and retry again, forever.
+  const wasOffline = useRef(false);
+  useEffect(() => {
+    if (!online) {
+      wasOffline.current = true;
+      return;
+    }
+    if (!wasOffline.current) return;
+    wasOffline.current = false;
+    retry();
+  }, [online, retry]);
 
   return (
     <EmptyState>
@@ -60,23 +94,28 @@ export function RouteError({ error }: { error: unknown }) {
           </Trans>
         ) : (
           <Trans>
-            This page hasn’t been saved to your device, so it needs a
-            connection. Articles you haven’t read yet are downloaded
-            automatically and stay available offline.
+            This page wasn’t saved to your device, so it needs a connection.
+            It’ll load on its own when you’re back online — your unread articles
+            are already here.
           </Trans>
         )}
       </EmptyStateDescription>
-      <EmptyStateActions>
-        <Button
-          variant="secondary"
-          size="sm"
-          isDisabled={retrying}
-          onPress={retry}
-        >
-          <RotateCw size={14} strokeWidth={2} aria-hidden />{" "}
-          <Trans>Try again</Trans>
-        </Button>
-      </EmptyStateActions>
+      {/* No retry offered offline: there is nothing to retry until the
+          connection returns, and the effect above loads the page the moment it
+          does. */}
+      {online ? (
+        <EmptyStateActions>
+          <Button
+            variant="secondary"
+            size="sm"
+            isDisabled={retrying}
+            onPress={retry}
+          >
+            <RotateCw size={14} strokeWidth={2} aria-hidden />{" "}
+            <Trans>Try again</Trans>
+          </Button>
+        </EmptyStateActions>
+      ) : null}
       {/* The message is for us, not the reader — but hiding it entirely makes
           a bug report a guessing game, so keep it out of the way. */}
       {online && error instanceof Error && error.message ? (

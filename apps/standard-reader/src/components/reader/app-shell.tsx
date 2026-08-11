@@ -184,13 +184,12 @@ const styles = stylex.create({
     fontWeight: fontWeight.semibold,
     letterSpacing: tracking.wide,
     lineHeight: 1,
-    // Superscripted off the wordmark's top-right corner: absolute so it never
-    // reflows the brand, and clear of the letterforms so it annotates the logo
-    // instead of covering it. Tucked back over the corner by a hair, which is
-    // empty space above the cap height.
-    insetBlockStart: `calc(-1 * ${verticalSpace.xs})`,
-    insetInlineStart: "100%",
-    marginInlineStart: `calc(-1 * ${horizontalSpace.xxs})`,
+    // Sits *on* the wordmark's top-right corner rather than beside it. Hanging
+    // it off the end pushed the brand's effective width past the viewport on
+    // small screens; overlapping the ascender line keeps the whole thing inside
+    // the bar at any width, and the badge is short enough to stay legible.
+    insetBlockStart: `calc(-1 * ${verticalSpace.xxs})`,
+    insetInlineEnd: `calc(-1 * ${horizontalSpace.xxs})`,
     paddingBlock: verticalSpace.xxs,
     paddingInline: horizontalSpace.xs,
     pointerEvents: "none",

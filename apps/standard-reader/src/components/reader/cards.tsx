@@ -55,6 +55,7 @@ import { user } from "#/integrations/tanstack-query/api-user.functions";
 import { parseInternalRoute } from "#/lib/internal-route";
 import { tsHeadlineHasMatch } from "#/lib/search-headline";
 import { useFormatters } from "#/lib/use-formatters";
+import { useOnlineStatus } from "#/lib/use-online-status";
 import { useOpenCollectionsInMagazine } from "#/lib/use-open-collections-in-magazine";
 import { useOpenLinks } from "#/lib/use-open-links";
 import { useTrackReadingHistory } from "#/lib/use-track-reading-history";
@@ -95,6 +96,12 @@ import {
 import { useArticleBookmark } from "./use-article-bookmark";
 
 const styles = stylex.create({
+  opensOffsiteOffline: {
+    // Enough to read as unavailable next to a full-strength row, not so faint
+    // the title stops being legible — the reader still needs to recognise it
+    // later. Applied to the link, so it dims the whole card together.
+    opacity: 0.45,
+  },
   cardLink: {
     textDecoration: "none",
     color: "inherit",
@@ -1381,8 +1388,27 @@ function ArticleLink({
   const markReadExternal = useMarkReadExternal();
   const { openExternally } = useOpenLinks();
   const { openInMagazine } = useOpenCollectionsInMagazine();
+  const online = useOnlineStatus();
   const params = documentLinkParams(article.uri);
-  const merged = stylex.props(styles.cardLink, ...extraStyles);
+  // Mirrors the branches below: which of them ends at an `<a target="_blank">`
+  // rather than an in-app route. Those leave the app for the publication's own
+  // site, which offline sync never stored and cannot store, so offline they are
+  // rows that lead to a browser error page.
+  const opensExternally =
+    openExternally && article.canonicalUrl
+      ? true
+      : params && article.hasRenderableBody
+        ? false
+        : article.canonicalUrl
+          ? parseInternalRoute(article.canonicalUrl) === null
+          : false;
+  const merged = stylex.props(
+    styles.cardLink,
+    ...extraStyles,
+    // Dimmed, not hidden or disabled: the article is still real and still worth
+    // seeing in the feed, and the link works the moment the connection is back.
+    !online && opensExternally && styles.opensOffsiteOffline,
+  );
   // "Open on original site" preference: bypass the in-app reader whenever the
   // document has a canonical URL on its publication site.
   if (openExternally && article.canonicalUrl) {
