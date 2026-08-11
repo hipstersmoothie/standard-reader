@@ -184,12 +184,13 @@ const styles = stylex.create({
     fontWeight: fontWeight.semibold,
     letterSpacing: tracking.wide,
     lineHeight: 1,
-    // Sits *on* the wordmark's top-right corner rather than beside it. Hanging
-    // it off the end pushed the brand's effective width past the viewport on
-    // small screens; overlapping the ascender line keeps the whole thing inside
-    // the bar at any width, and the badge is short enough to stay legible.
+    // Anchored by its *start* at the wordmark's end, then pulled back a little
+    // so it clips the corner. Anchoring by the end instead puts the badge's
+    // whole width on top of the word — the offset only decides how much of
+    // "Reader" it covers, never whether it does.
     insetBlockStart: `calc(-1 * ${verticalSpace.xxs})`,
-    insetInlineEnd: `calc(-1 * ${horizontalSpace.xxs})`,
+    insetInlineStart: "100%",
+    marginInlineStart: `calc(-1 * ${horizontalSpace.xl})`,
     paddingBlock: verticalSpace.xxs,
     paddingInline: horizontalSpace.xs,
     pointerEvents: "none",

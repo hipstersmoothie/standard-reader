@@ -515,7 +515,9 @@ function HomeFeed({
 
   const { data: extras, isPending: extrasPending } = useQuery({
     ...feedApi.getHomeExtrasQueryOptions({ scope, readerScope }),
-    enabled: hasMainContent,
+    // Everything this feeds is hidden offline, so the request is pure cost —
+    // and it would fail anyway, since the rails scan the network.
+    enabled: hasMainContent && online,
     refetchOnMount: false,
     refetchOnWindowFocus: false,
   });
@@ -546,8 +548,14 @@ function HomeFeed({
   // publications (sidebar) ship in the critical feed payload (above the fold,
   // no loader); only the "You might follow" rail is deferred to `extras`.
   const mainArticles = isTrending ? feed.trending : feed.latestUnread;
-  const trendingPubs = feed.trendingPublications;
-  const youMightFollow = extras?.youMightFollow ?? feed.youMightFollow;
+  // Both rails recommend publications the reader does *not* follow, so nothing
+  // behind them was ever synced — offline they are a column of links to pages
+  // that cannot load. Emptied rather than gated at each render site, so the
+  // rails and the skeleton that stands in for them drop out together.
+  const trendingPubs = online ? feed.trendingPublications : [];
+  const youMightFollow = online
+    ? (extras?.youMightFollow ?? feed.youMightFollow)
+    : [];
   const unreadCount =
     trackReading && feed.personalized
       ? (sidebar?.unreadCount ?? extras?.unreadCount ?? feed.unreadCount)
@@ -779,7 +787,7 @@ function HomeFeed({
             </div>
           ) : null}
 
-          {extrasPending ? (
+          {extrasPending && online ? (
             <HomeYouMightFollowRailSkeleton />
           ) : youMightFollow.length > 0 ? (
             <div {...stylex.props(styles.railCard)}>

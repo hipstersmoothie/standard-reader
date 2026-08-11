@@ -55,6 +55,7 @@ import { user } from "#/integrations/tanstack-query/api-user.functions";
 import { parseInternalRoute } from "#/lib/internal-route";
 import { tsHeadlineHasMatch } from "#/lib/search-headline";
 import { useFormatters } from "#/lib/use-formatters";
+import { useOfflineCachedUris } from "#/lib/use-offline-cached-uris";
 import { useOnlineStatus } from "#/lib/use-online-status";
 import { useOpenCollectionsInMagazine } from "#/lib/use-open-collections-in-magazine";
 import { useOpenLinks } from "#/lib/use-open-links";
@@ -96,7 +97,7 @@ import {
 import { useArticleBookmark } from "./use-article-bookmark";
 
 const styles = stylex.create({
-  opensOffsiteOffline: {
+  unavailableOffline: {
     // Enough to read as unavailable next to a full-strength row, not so faint
     // the title stops being legible — the reader still needs to recognise it
     // later. Applied to the link, so it dims the whole card together.
@@ -1389,6 +1390,7 @@ function ArticleLink({
   const { openExternally } = useOpenLinks();
   const { openInMagazine } = useOpenCollectionsInMagazine();
   const online = useOnlineStatus();
+  const cachedOffline = useOfflineCachedUris(online);
   const params = documentLinkParams(article.uri);
   // Mirrors the branches below: which of them ends at an `<a target="_blank">`
   // rather than an in-app route. Those leave the app for the publication's own
@@ -1402,12 +1404,18 @@ function ArticleLink({
         : article.canonicalUrl
           ? parseInternalRoute(article.canonicalUrl) === null
           : false;
+  // Two ways a row can't be opened offline: it leaves for the publication's
+  // site, or its body was never stored. A feed offline is mostly rows that
+  // work, so the few that don't need to look different — otherwise the only
+  // way to find out is to tap and hit an error.
+  const unavailableOffline =
+    !online && (opensExternally || !cachedOffline.has(article.uri));
   const merged = stylex.props(
     styles.cardLink,
     ...extraStyles,
     // Dimmed, not hidden or disabled: the article is still real and still worth
     // seeing in the feed, and the link works the moment the connection is back.
-    !online && opensExternally && styles.opensOffsiteOffline,
+    unavailableOffline && styles.unavailableOffline,
   );
   // "Open on original site" preference: bypass the in-app reader whenever the
   // document has a canonical URL on its publication site.

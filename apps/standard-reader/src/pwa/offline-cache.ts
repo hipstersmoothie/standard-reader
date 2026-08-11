@@ -59,6 +59,35 @@ function writeLedger(ledger: Ledger): void {
   }
 }
 
+/**
+ * Memoised view of {@link ledgerFreshUris} for render paths.
+ *
+ * Feed rows ask "is this one stored?" per row, and parsing the ledger for each
+ * of fifty rows on every render is not worth it. The window is short enough
+ * that a sync finishing mid-scroll shows up promptly.
+ */
+const LEDGER_MEMO_MS = 5000;
+let memo: { at: number; uris: ReadonlySet<string> } | null = null;
+
+/**
+ * Which documents offline sync has actually stored.
+ *
+ * Note what this is *not*: proof that a given article is in the service
+ * worker's cache, and not a complete list of what is. An article opened by hand
+ * while online is very likely cached without appearing here — deliberately, as
+ * the alternative is worse. Marking those "available" would mean recording
+ * documents that were rendered from SSR dehydration and never issued a
+ * `/_serverFn` request at all, so nothing was cached; the row would look
+ * available and then fail. Under-reporting dims a row that might have worked;
+ * over-reporting promises one that cannot.
+ */
+export function offlineCachedUris(): ReadonlySet<string> {
+  const now = Date.now();
+  if (memo && now - memo.at < LEDGER_MEMO_MS) return memo.uris;
+  memo = { at: now, uris: ledgerFreshUris(now) };
+  return memo.uris;
+}
+
 /** Document URIs pulled through recently enough to skip this pass. */
 export function ledgerFreshUris(now: number): Set<string> {
   const ledger = readLedger();

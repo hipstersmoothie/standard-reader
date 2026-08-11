@@ -10,12 +10,25 @@ import {
   EmptyStateTitle,
 } from "@standard-reader/design-system/empty-state";
 import { size } from "@standard-reader/design-system/theme/semantic-spacing.stylex";
+import * as stylex from "@stylexjs/stylex";
 import type { ErrorComponentProps } from "@tanstack/react-router";
 import { useRouter } from "@tanstack/react-router";
 import { CloudOff, RotateCw } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useOnlineStatus } from "#/lib/use-online-status";
+
+const styles = stylex.create({
+  viewportCenter: {
+    // The error replaces a whole page, so it reads as the page — pinned to the
+    // top of the content column it looked like a banner above missing content.
+    // Short of the full viewport so the top bar doesn't push it into a scroll.
+    alignItems: "center",
+    display: "flex",
+    justifyContent: "center",
+    minBlockSize: stylex.firstThatWorks("80dvh", "80vh"),
+  },
+});
 
 /**
  * What every route renders when its loader throws.
@@ -75,54 +88,56 @@ export function RouteError({ error, reset }: ErrorComponentProps) {
   }, [online, retry]);
 
   return (
-    <EmptyState>
-      <EmptyStateImage>
-        <CloudOff size={size["lg"]} strokeWidth={1.5} aria-hidden />
-      </EmptyStateImage>
-      <EmptyStateTitle>
-        {online ? (
-          <Trans>Something went wrong</Trans>
-        ) : (
-          <Trans>You’re offline</Trans>
-        )}
-      </EmptyStateTitle>
-      <EmptyStateDescription>
-        {online ? (
-          <Trans>
-            That page didn’t load. Try again — if it keeps happening, it’s on
-            our side.
-          </Trans>
-        ) : (
-          <Trans>
-            This page wasn’t saved to your device, so it needs a connection.
-            It’ll load on its own when you’re back online — your unread articles
-            are already here.
-          </Trans>
-        )}
-      </EmptyStateDescription>
-      {/* No retry offered offline: there is nothing to retry until the
+    <div {...stylex.props(styles.viewportCenter)}>
+      <EmptyState>
+        <EmptyStateImage>
+          <CloudOff size={size["lg"]} strokeWidth={1.5} aria-hidden />
+        </EmptyStateImage>
+        <EmptyStateTitle>
+          {online ? (
+            <Trans>Something went wrong</Trans>
+          ) : (
+            <Trans>You’re offline</Trans>
+          )}
+        </EmptyStateTitle>
+        <EmptyStateDescription>
+          {online ? (
+            <Trans>
+              That page didn’t load. Try again — if it keeps happening, it’s on
+              our side.
+            </Trans>
+          ) : (
+            <Trans>
+              This page wasn’t saved to your device, so it needs a connection.
+              It’ll load on its own when you’re back online — your unread
+              articles are already here.
+            </Trans>
+          )}
+        </EmptyStateDescription>
+        {/* No retry offered offline: there is nothing to retry until the
           connection returns, and the effect above loads the page the moment it
           does. */}
-      {online ? (
-        <EmptyStateActions>
-          <Button
-            variant="secondary"
-            size="sm"
-            isDisabled={retrying}
-            onPress={retry}
-          >
-            <RotateCw size={14} strokeWidth={2} aria-hidden />{" "}
-            <Trans>Try again</Trans>
-          </Button>
-        </EmptyStateActions>
-      ) : null}
-      {/* The message is for us, not the reader — but hiding it entirely makes
+        {online ? (
+          <EmptyStateActions>
+            <Button
+              variant="secondary"
+              size="sm"
+              isDisabled={retrying}
+              onPress={retry}
+            >
+              <RotateCw size={14} strokeWidth={2} aria-hidden />{" "}
+              <Trans>Try again</Trans>
+            </Button>
+          </EmptyStateActions>
+        ) : null}
+        {/* The message is for us, not the reader — but hiding it entirely makes
           a bug report a guessing game, so keep it out of the way. */}
-      {online && error instanceof Error && error.message ? (
-        <EmptyStateDescription>
-          <small>{error.message}</small>
-        </EmptyStateDescription>
-      ) : null}
-    </EmptyState>
+        {online && error instanceof Error && error.message ? (
+          <EmptyStateDescription>
+            <small>{error.message}</small>
+          </EmptyStateDescription>
+        ) : null}
+      </EmptyState>
+    </div>
   );
 }
