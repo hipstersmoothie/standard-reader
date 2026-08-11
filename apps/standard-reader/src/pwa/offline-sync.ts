@@ -27,14 +27,20 @@
 import type { AnyRouter } from "@tanstack/react-router";
 
 import {
+  AUTHOR_ACTIVITY_PAGE_SIZE,
+  authorApi,
+} from "#/integrations/tanstack-query/api-author.functions";
+import {
   feedApi,
   latestFeedPageSize,
 } from "#/integrations/tanstack-query/api-feed.functions";
+import { listApi } from "#/integrations/tanstack-query/api-lists.functions";
 import { notesApi } from "#/integrations/tanstack-query/api-notes.functions";
 import { publicationApi } from "#/integrations/tanstack-query/api-publication.functions";
 import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
 import { documentImages } from "#/lib/document/images";
 import { parseAtUri } from "#/server/atproto/uri";
+import { listRefFromUri } from "#/server/reader/saved-lists";
 
 import {
   ledgerFreshUris,
@@ -102,6 +108,12 @@ const MAX_WARMED_PUBLICATIONS = 60;
  */
 const PUBLICATION_RECENT_LIMIT = 12;
 const PUBLICATION_RECENT_FILTER = "all";
+
+/** Must match `/u/$did`'s loader (`AUTHOR_PAGE_SIZE`), same caveat as above. */
+const AUTHOR_PAGE_SIZE = 24;
+
+/** Must match `/l/$did/$rkey`'s loader (`PAGE_SIZE`), same caveat as above. */
+const LIST_PAGE_SIZE = 20;
 
 let running = false;
 let controller: AbortController | null = null;
@@ -278,18 +290,14 @@ async function syncDocument(
 async function warmArticleRoute(
   router: AnyRouter,
   documentUri: string,
+  to: "/a/$did/$rkey" | "/collection/$did/$rkey" = "/a/$did/$rkey",
 ): Promise<void> {
   const parsed = parseAtUri(documentUri);
   if (!parsed) return;
-  try {
-    await router.preloadRoute({
-      params: { did: parsed.did, rkey: parsed.rkey },
-      to: "/a/$did/$rkey",
-    });
-  } catch {
-    // A document that redirects (comic, collection) or 404s is not a reason to
-    // abandon the pass — the chunk load is the point, and it already happened.
-  }
+  await preloadRouteChunk(router, to, {
+    did: parsed.did,
+    rkey: parsed.rkey,
+  });
 }
 
 /**
@@ -322,6 +330,32 @@ async function warmRouteChunks(
       // Signed-out readers have no /saved or /subscriptions, and a redirect
       // throws here. Neither is a reason to stop warming the rest.
     }
+  }
+}
+
+/**
+ * Pull one parameterised route's JS into the `assets` cache.
+ *
+ * Every route is code-split, and a chunk is fetched only when someone visits
+ * that route — measuring the cache after a visit to `/` finds exactly one
+ * route chunk in it. Caching a page's *data* without its code produces the
+ * worst kind of failure: the loader has everything it needs and the thing that
+ * renders it 404s. Any surface reachable offline needs both, so it goes through
+ * here.
+ *
+ * One representative page per route is enough; the chunk is shared by all of
+ * them.
+ */
+async function preloadRouteChunk(
+  router: AnyRouter,
+  to: string,
+  params: Record<string, string>,
+): Promise<void> {
+  try {
+    await router.preloadRoute({ params, to });
+  } catch {
+    // Preload runs the loader's prefetch branch and can reject or redirect.
+    // The chunk load is the point and has already happened.
   }
 }
 
@@ -373,6 +407,7 @@ async function warmFeedData(signal: AbortSignal): Promise<void> {
 async function warmLatestPages(
   filter: "unread" | "subscriptions",
   signal: AbortSignal,
+  onCollection?: (documentUri: string) => void,
 ): Promise<Array<string>> {
   const limit = latestFeedPageSize(filter);
   const uris: Array<string> = [];
@@ -387,7 +422,13 @@ async function warmLatestPages(
     } catch {
       break;
     }
-    for (const item of feed.items) uris.push(item.uri);
+    for (const item of feed.items) {
+      uris.push(item.uri);
+      // A collection article redirects `/a/…` → `/collection/…` for readers who
+      // open collections as magazines, so that route is reachable offline even
+      // though its nav entry is hidden — and it needs its own chunk.
+      if (item.isCollection) onCollection?.(item.uri);
+    }
     if (feed.nextOffset == null) break;
     offset = feed.nextOffset;
     await whenIdle(signal);
@@ -416,22 +457,12 @@ async function warmPublications(
     return;
   }
 
-  // The route's own JS chunk, which is code-split
-  // (`_layout.p._did._rkey-*.js`) and cached only on demand. Warming the data
-  // without it left every publication in the sidebar listed but unopenable:
-  // the loader had everything it needed and the chunk that renders it 404'd.
-  // One preload pulls it in; the rest of this function is data for the others.
   const first = following[0] ? parseAtUri(following[0].uri) : null;
   if (first) {
-    try {
-      await router.preloadRoute({
-        params: { did: first.did, rkey: first.rkey },
-        to: "/p/$did/$rkey",
-      });
-    } catch {
-      // Preload runs the loader's prefetch branch and may reject; the chunk
-      // load is what matters and has already happened.
-    }
+    await preloadRouteChunk(router, "/p/$did/$rkey", {
+      did: first.did,
+      rkey: first.rkey,
+    });
   }
 
   await pool(
@@ -463,6 +494,88 @@ async function warmPublications(
       ]);
     },
   );
+}
+
+/**
+ * Followed authors, which sit in the same sidebar section as subscriptions and
+ * failed the same way: listed, and unopenable.
+ */
+async function warmFollowedUsers(
+  router: AnyRouter,
+  signal: AbortSignal,
+): Promise<void> {
+  let dids: Array<string>;
+  try {
+    const sidebar = await feedApi.getSidebar();
+    dids = sidebar.followingUsers.map((followed) => followed.did);
+  } catch {
+    return;
+  }
+  if (dids.length === 0) return;
+
+  await preloadRouteChunk(router, "/u/$did", { did: dids[0] ?? "" });
+
+  await pool(
+    dids.slice(0, MAX_WARMED_PUBLICATIONS),
+    BODY_CONCURRENCY,
+    signal,
+    async (did) => {
+      // `getAuthorProfileQueryOptions(did, { limit: AUTHOR_PAGE_SIZE })` —
+      // offset and activityLimit come from its own defaults.
+      await authorApi.getAuthorProfile({
+        data: {
+          did,
+          limit: AUTHOR_PAGE_SIZE,
+          offset: 0,
+          activityLimit: AUTHOR_ACTIVITY_PAGE_SIZE,
+        },
+      });
+    },
+  );
+}
+
+/**
+ * The reader's own lists and the ones they've saved — the rest of that sidebar.
+ */
+async function warmLists(
+  router: AnyRouter,
+  signal: AbortSignal,
+): Promise<void> {
+  let refs: Array<{ did: string; rkey: string }> = [];
+  try {
+    const [own, saved] = await Promise.all([
+      listApi.getLists(),
+      listApi.getSavedLists().catch(() => []),
+    ]);
+    // A saved list wraps the list it points at; an owned one is the list.
+    refs = [...own, ...saved.map((entry) => entry.list)]
+      .map((list) => listRefFromUri(list.uri))
+      .filter((ref): ref is { did: string; rkey: string } => ref !== null);
+  } catch {
+    return;
+  }
+  if (refs.length === 0) return;
+
+  const first = refs[0];
+  if (first) await preloadRouteChunk(router, "/l/$did/$rkey", first);
+
+  await pool(refs, BODY_CONCURRENCY, signal, async ({ did, rkey }) => {
+    await Promise.all([
+      listApi.getList({ data: { did, rkey } }),
+      // `getListFeedQueryOptions(did, rkey, { limit: PAGE_SIZE, offset: 0,
+      // readerScope })` — `hideRead` defaults false, and `readerScope` scopes
+      // the React Query key only.
+      listApi.getListFeed({
+        data: {
+          did,
+          rkey,
+          limit: LIST_PAGE_SIZE,
+          offset: 0,
+          hideRead: false,
+        },
+      }),
+    ]);
+  });
 }
 
 export function stopOfflineSync(): void {
@@ -502,6 +615,8 @@ export async function runOfflineSync(router: AnyRouter): Promise<void> {
     await warmRouteChunks(router, signal);
     await warmFeedData(signal);
     await warmPublications(router, signal);
+    await warmFollowedUsers(router, signal);
+    await warmLists(router, signal);
 
     const fresh = ledgerFreshUris(Date.now());
     const seen = new Set<string>();
@@ -554,9 +669,14 @@ export async function runOfflineSync(router: AnyRouter): Promise<void> {
     // offline and "load more" had nothing behind it. Walking the pages also
     // yields the subscriptions backlog — already-read posts that unread alone
     // misses — so the same requests serve both the list and its bodies.
+    let collectionWarmed = false;
     for (const filter of ["unread", "subscriptions"] as const) {
       if (stoppedEarly || signal.aborted || isOffline()) break;
-      const uris = await warmLatestPages(filter, signal);
+      const uris = await warmLatestPages(filter, signal, (documentUri) => {
+        if (collectionWarmed) return;
+        collectionWarmed = true;
+        void warmArticleRoute(router, documentUri, "/collection/$did/$rkey");
+      });
       for (const uri of uris) seen.add(uri);
       if (!(await cacheBodies(uris.filter((uri) => !fresh.has(uri))))) {
         stoppedEarly = true;
