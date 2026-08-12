@@ -30,6 +30,16 @@ import {
  */
 const RESTORE_SETTLE_MS = 3000;
 
+/**
+ * How far the page may drift from the target before the settle window pulls it
+ * back.
+ *
+ * Wide enough that `scrollTo` landing a pixel or two off (or bottoming out
+ * against the end of the document) doesn't bounce, narrow enough that a
+ * scroll-to-top is always corrected.
+ */
+const RESTORE_TOLERANCE_PX = 8;
+
 /** Debounce on writes. Long enough that a flick through doesn't write a row. */
 const SAVE_DEBOUNCE_MS = 1000;
 
@@ -258,12 +268,15 @@ export function useReadingProgress({
       }, SAVE_DEBOUNCE_MS);
     };
 
+    // Whether the landing position is ours to choose. A shared quote owns it,
+    // and so does a `#hash` — an anchor in the URL is a destination the reader
+    // asked for out loud, which outranks one we remembered for them.
+    const ownsLanding = !skipRestore && !globalThis.location.hash;
+
     // Measure the <article> only — progress should hit 100% at the end of the
     // article body, not after the "More from" / comments sections below it.
     const stored =
-      enabledRef.current && !skipRestore
-        ? readLocalProgress(documentUri)
-        : null;
+      enabledRef.current && ownsLanding ? readLocalProgress(documentUri) : null;
 
     if (stored && isResumableProgress(stored.progress)) {
       savedRef.current = stored.progress;
@@ -276,14 +289,35 @@ export function useReadingProgress({
         });
       }
       settleTimer = globalThis.setTimeout(endRestore, RESTORE_SETTLE_MS);
-    } else if (!skipRestore) {
+    } else if (ownsLanding) {
       globalThis.scrollTo(0, 0);
     }
 
     sync();
 
     // The page (document) is the scroller, so its scroll event fires on window.
+    //
+    // While the settle window is live, *we* are the one steering — so a scroll
+    // we didn't ask for is something else's, and gets corrected rather than
+    // recorded. The router is the one that always does this: its
+    // `scrollRestoration` handler runs on `onRendered`, from a layout effect
+    // mounted as a sibling *after* the route's own tree, so on every in-app
+    // navigation it scrolls a freshly-restored article back to the top a beat
+    // after the restore. Saving that would be worse than losing the landing:
+    // a measured 0 is written straight through to both stores, and writes
+    // outside the 2–95% band delete — one clobbered restore and the position
+    // is gone from this device, the server, and the shelf. Hence: correct, and
+    // never save from inside the window. Real input ends it (`endRestore`)
+    // before any scroll it causes is dispatched.
     const onScroll = () => {
+      if (restoreTarget !== null) {
+        const target = offsetForProgress(articleEl, restoreTarget);
+        if (Math.abs(globalThis.scrollY - target) > RESTORE_TOLERANCE_PX) {
+          globalThis.scrollTo(0, target);
+        }
+        sync();
+        return;
+      }
       sync();
       scheduleSave();
     };

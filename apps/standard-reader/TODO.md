@@ -1115,6 +1115,15 @@ Backend/API exists; UI or copy is missing.
       reader hasn't already scrolled. Rows live only between 2% and 95%, so the table _is_ the
       shelf. All of it in [`use-reading-progress.ts`](src/components/reader/use-reading-progress.ts),
       which also owns the sticky-chrome progress bar it replaced.
+      The settle window **corrects** scrolls it didn't ask for and never saves one, because the
+      router's own `scrollRestoration` runs on `onRendered` from a layout effect mounted after
+      the route's tree — so every in-app navigation scrolled a freshly-restored article back to
+      the top a beat later, and the 0 that measured was written a second after that. Writes
+      outside the band delete, so one clobbered restore erased the position from the device, the
+      server and the shelf: the feature appeared to work exactly once. Covered by
+      [`use-reading-progress.test.ts`](src/components/reader/use-reading-progress.test.ts).
+      A `#hash` in the URL now opts out of the restore entirely — an anchor the reader asked for
+      out loud outranks a position we remembered for them.
       Gated on "Track reading history"; clearing history clears positions too.
       **Before deploy:** run `pnpm db:migrate` (migration `0037`) — the shelf query 500s without
       the table.
