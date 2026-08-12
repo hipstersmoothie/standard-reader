@@ -1070,6 +1070,10 @@ msgstr ""
 msgid "These are separate from the app-wide appearance settings, which is deliberate: you can have compact, small interface text and large, wide-set article text at the same time. <0>Making it yours</0> covers the rest."
 msgstr ""
 
+#: src/components/offline-sync-debug.tsx
+msgid "Liked pages"
+msgstr ""
+
 #: src/routes/_layout.saved.tsx
 msgid "Nothing saved yet"
 msgstr "아직 저장한 항목이 없습니다"
@@ -5370,6 +5374,7 @@ msgstr "읽기 기록 추적"
 msgid "{readCount, plural, one {# read} other {{value} reads}}"
 msgstr "{readCount, plural, one {# 읽음} other {{value} 읽음}}"
 
+#: src/components/offline-sync-debug.tsx
 #: src/routes/_layout.collections.index.tsx
 #: src/routes/_layout.history.tsx
 #: src/routes/_layout.recommended.tsx

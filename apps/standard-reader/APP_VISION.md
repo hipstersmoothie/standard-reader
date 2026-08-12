@@ -1553,9 +1553,10 @@ publication list looked clean.
 - **Offline reading in the installed app** — the service worker caches read server functions
   (`/_serverFn` GETs), and `src/pwa/offline-sync.ts` pre-downloads every unread body and its
   images so the backlog opens with no connection. The surfaces that must survive a dead
-  connection are warmed by name — home, `/latest`, `/saved`, `/subscriptions`, and `/history`
-  (its list and its **Continue reading** shelf, whose part-read bodies no unread walk would
-  reach). Reaching for something never downloaded shows an offline state rather than an error.
+  connection are warmed by name — home, `/latest`, `/saved`, `/subscriptions`, and everything
+  behind the avatar menu: `/history` (its list and its **Continue reading** shelf, whose
+  part-read bodies no unread walk would reach), `/recommended`, and the reader's own profile.
+  Reaching for something never downloaded shows an offline state rather than an error.
 
 ### Later
 

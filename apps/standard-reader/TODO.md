@@ -1183,13 +1183,17 @@ Backend/API exists; UI or copy is missing.
       real `Image` elements (a `fetch` sets no `destination: "image"`, so the Workbox rule would
       miss it). Gated on the installed app + a device-scoped toggle; stops at 80% of storage
       quota; personal caches are dropped on sign-out.
-      `/history` is warmed like the feeds: five pages of the reading list (100 rows, re-walked
-      every pass because the head changes every time an article is opened) plus the
-      **Continue reading** shelf, whose six bodies are queued _ahead_ of the unread backlog —
-      a half-read article is already marked read, so no unread walk would ever reach it, and it
-      is the likeliest thing the reader opens next. Read history rows are not queued: those
-      bodies are unbounded and the storage budget belongs to the backlog, so a row without a
-      body dims instead.
+      Every surface behind the avatar menu is warmed like the feeds rather than left to
+      `preloadRoute`: `/history` (five pages, 100 rows) plus the **Continue reading** shelf,
+      `/recommended` (five pages of likes), and the reader's own `/u/$did` — the one profile
+      `warmFollowedUsers` misses, because nobody follows themselves. All re-walked every pass:
+      their heads move whenever the reader opens or likes something, so they can't hide behind
+      the daily surface timestamp.
+      Only the shelf's six bodies are queued, and they go _ahead_ of the unread backlog — a
+      half-read article is already marked read, so no unread walk would ever reach it, and it is
+      the likeliest thing the reader opens next. History and likes rows are not queued: those
+      bodies are already-read and unbounded, and the storage budget belongs to the backlog, so a
+      row without a body dims instead.
       [`RouteError`](src/components/route-error.tsx) is the app-wide `defaultErrorComponent`.
 - [x] **Content rendering gaps** — PCKT gallery renderer (`blog.pckt.block.gallery`); prod scan
       found 54 documents — implemented grid/list/carousel/masonry layouts via
