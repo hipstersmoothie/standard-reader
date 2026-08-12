@@ -200,11 +200,20 @@ export function GettingStartedGuidePage() {
       </h2>
       <p {...stylex.props(docsStyles.prose)}>
         <Trans>
-          Pages you have already visited stay available when your connection
-          drops, and you get a plain offline page rather than a browser error
-          when you reach for something that was never loaded. When a new version
-          of the app is ready it offers to reload, rather than changing under
-          you mid-article.
+          The installed app downloads the articles you have not read yet, with
+          their images, while you are online. Open it on a plane or a tunnel and
+          your unread queue is already there — no planning ahead, and nothing to
+          tap beforehand.
+        </Trans>
+      </p>
+      <p {...stylex.props(docsStyles.prose)}>
+        <Trans>
+          Reach for something that was never downloaded and the app says so,
+          rather than showing you an error. You can turn downloading off, and
+          see how much space it is using, under Settings → Reading. It pauses on
+          its own when your phone asks apps to save data. When a new version of
+          the app is ready it offers to reload, rather than changing under you
+          mid-article.
         </Trans>
       </p>
 

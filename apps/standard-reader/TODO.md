@@ -1146,8 +1146,23 @@ Backend/API exists; UI or copy is missing.
       (`ReadingTypographySubMenu`, `useReadingTypography`, `drizzle/0012_*`).
 - [x] **PWA install readiness** — Phase A: PNG icons (192/512), `apple-touch-icon`, expanded
       [`manifest.json`](public/manifest.json) + head tags in [`__root.tsx`](src/routes/__root.tsx).
-      Regenerate via `pnpm icons:generate`. _Open decision:_ Phase B service worker for asset
-      caching only (not offline articles).
+      Regenerate via `pnpm icons:generate`. Phase B shipped as asset caching only; the
+      "not offline articles" limit was lifted by **Offline reading** below.
+- [x] **Offline reading (installed app)** — the open decision above resolved in favour of full
+      offline support. A `data` runtime-cache rule in [`vite.config.ts`](vite.config.ts) caches
+      `/_serverFn` **GET**s (reads serialise their args into the query string, so each call has a
+      stable URL; Workbox routes are GET-only so mutations are excluded), and
+      `networkMode: "offlineFirst"` in
+      [`query-client.ts`](src/integrations/tanstack-query/query-client.ts) is what lets those
+      requests reach the service worker at all — the default `"online"` parked them at
+      `fetchStatus: "paused"`, so an offline loader `ensureQueryData` hung forever instead of
+      failing. [`offline-sync.ts`](src/pwa/offline-sync.ts) then walks the reader's whole unread
+      set (`getUnreadDocumentUris`, keyset-paginated over `selectUnreadDocumentPage`) and pulls
+      each body through the _same_ `getArticle` call the article loader makes, warming images via
+      real `Image` elements (a `fetch` sets no `destination: "image"`, so the Workbox rule would
+      miss it). Gated on the installed app + a device-scoped toggle; stops at 80% of storage
+      quota; personal caches are dropped on sign-out.
+      [`RouteError`](src/components/route-error.tsx) is the app-wide `defaultErrorComponent`.
 - [x] **Content rendering gaps** — PCKT gallery renderer (`blog.pckt.block.gallery`); prod scan
       found 54 documents — implemented grid/list/carousel/masonry layouts via
       [`pckt-gallery.tsx`](src/components/reader/content/renderers/pckt-gallery.tsx).

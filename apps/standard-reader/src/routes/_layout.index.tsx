@@ -38,6 +38,7 @@ import { ButtonLink } from "#/components/router-links";
 import type { Formatters } from "#/lib/formatters";
 import { DEFAULT_TRACK_READING_HISTORY } from "#/lib/track-reading-history";
 import { useFormatters } from "#/lib/use-formatters";
+import { useOnlineStatus } from "#/lib/use-online-status";
 
 import {
   ArticleRow,
@@ -497,6 +498,7 @@ function HomeFeed({
     refetchOnWindowFocus: false,
   });
   const signedIn = Boolean(session?.user);
+  const online = useOnlineStatus();
   const isTrending = scope === "trending";
   const showNetworkFeed = isTrending || !feed.personalized;
   const trackReading =
@@ -513,7 +515,9 @@ function HomeFeed({
 
   const { data: extras, isPending: extrasPending } = useQuery({
     ...feedApi.getHomeExtrasQueryOptions({ scope, readerScope }),
-    enabled: hasMainContent,
+    // Everything this feeds is hidden offline, so the request is pure cost —
+    // and it would fail anyway, since the rails scan the network.
+    enabled: hasMainContent && online,
     refetchOnMount: false,
     refetchOnWindowFocus: false,
   });
@@ -524,19 +528,34 @@ function HomeFeed({
   const canToggleScope = signedIn && (sidebar?.hasFollows ?? feed.hasFollows);
   const otherScope: HomeScope = isTrending ? "follows" : "trending";
   useEffect(() => {
-    if (!canToggleScope) return;
+    // Pointless offline: the other scope is Trending, which is network-wide.
+    if (!canToggleScope || !online) return;
     void router.preloadRoute({
       to: Route.fullPath,
       search: { scope: otherScope },
     });
-  }, [router, canToggleScope, otherScope]);
+  }, [router, canToggleScope, otherScope, online]);
+
+  // Losing the connection on the Trending scope takes its toggle away with it,
+  // which would strand the reader on a feed they can't leave. Send them to the
+  // subscriptions feed, which is the one that's stored.
+  useEffect(() => {
+    if (online || !isTrending) return;
+    void navigate({ replace: true, search: {} });
+  }, [isTrending, navigate, online]);
 
   // Trending articles (main column on the Trending tab) and trending
   // publications (sidebar) ship in the critical feed payload (above the fold,
   // no loader); only the "You might follow" rail is deferred to `extras`.
   const mainArticles = isTrending ? feed.trending : feed.latestUnread;
-  const trendingPubs = feed.trendingPublications;
-  const youMightFollow = extras?.youMightFollow ?? feed.youMightFollow;
+  // Both rails recommend publications the reader does *not* follow, so nothing
+  // behind them was ever synced — offline they are a column of links to pages
+  // that cannot load. Emptied rather than gated at each render site, so the
+  // rails and the skeleton that stands in for them drop out together.
+  const trendingPubs = online ? feed.trendingPublications : [];
+  const youMightFollow = online
+    ? (extras?.youMightFollow ?? feed.youMightFollow)
+    : [];
   const unreadCount =
     trackReading && feed.personalized
       ? (sidebar?.unreadCount ?? extras?.unreadCount ?? feed.unreadCount)
@@ -615,7 +634,10 @@ function HomeFeed({
     );
   }
 
-  const showScopeToggle = canToggleScope;
+  // Trending is a network-wide scope, so offline the toggle can only switch to
+  // a feed that isn't there. Only the subscriptions feed is stored, so the
+  // control comes out and Home renders it directly.
+  const showScopeToggle = canToggleScope && online;
 
   return (
     <ReaderContent>
@@ -765,7 +787,7 @@ function HomeFeed({
             </div>
           ) : null}
 
-          {extrasPending ? (
+          {extrasPending && online ? (
             <HomeYouMightFollowRailSkeleton />
           ) : youMightFollow.length > 0 ? (
             <div {...stylex.props(styles.railCard)}>

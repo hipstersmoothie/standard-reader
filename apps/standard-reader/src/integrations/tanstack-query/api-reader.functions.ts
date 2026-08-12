@@ -45,6 +45,7 @@ import {
 import type { SavedFacets } from "#/server/reader/queries";
 import {
   selectSavedFacets,
+  selectUnreadDocumentPage,
   selectUnreadDocumentUris,
 } from "#/server/reader/queries";
 import { attachViewerRecommendedToArticles } from "#/server/reader/recommended-by";
@@ -1520,6 +1521,79 @@ const markPublicationAllRead = createServerFn({ method: "POST" })
     ),
   );
 
+/**
+ * One page of the offline-sync walk. 500 keeps a single response comfortably
+ * small (a URI is ~80 bytes) while letting a several-thousand-item backlog
+ * enumerate in a handful of round trips — which matters given the ~230ms
+ * Railway↔Neon round trip.
+ */
+const OFFLINE_SYNC_PAGE_SIZE = 500;
+
+const unreadDocumentUrisInput = z.object({
+  cursor: z
+    .object({ publishedAt: z.string(), uri: z.string() })
+    .nullish()
+    .transform((value) => value ?? undefined),
+  limit: z
+    .number()
+    .int()
+    .min(1)
+    .max(OFFLINE_SYNC_PAGE_SIZE)
+    .default(OFFLINE_SYNC_PAGE_SIZE),
+});
+
+/**
+ * The reader's unread documents, newest first, for offline pre-caching.
+ *
+ * Deliberately returns URIs only — the bodies come from `getArticle` one at a
+ * time so they land in the service worker's `data` cache under the exact URL
+ * the article route will later ask for.
+ *
+ * Returns an empty page when reading history is off: with no `reads` rows
+ * there is no "unread" to speak of, and syncing the entire follow feed is not
+ * what the reader asked for by turning tracking off.
+ */
+const getUnreadDocumentUris = createServerFn({ method: "GET" })
+  .middleware([dbMiddleware])
+  .validator(unreadDocumentUrisInput)
+  .handler(
+    observe("reader.getUnreadDocumentUris", async ({ data, context }, span) => {
+      const did = await getReaderDidForRequest(getRequest());
+      if (!did || !context.trackReadingEnabled) {
+        return { nextCursor: null, uris: [] as Array<string> };
+      }
+      span.set("did", did);
+
+      const { publicationUris, userDids } = await effectiveFollowSets(
+        context.db,
+        context.schema,
+        did,
+      );
+      const rows = await selectUnreadDocumentPage(context.db, context.schema, {
+        countOldPostsAsUnread: context.countOldPostsAsUnreadEnabled,
+        cursor: data.cursor,
+        followedUserDids: userDids,
+        limit: data.limit,
+        publicationUris,
+        readerDid: did,
+      });
+      span.set("count", rows.length);
+
+      const last = rows.at(-1);
+      // A short page means the walk is done. A full page hands back the last
+      // row as the next keyset position.
+      const nextCursor =
+        rows.length === data.limit && last
+          ? {
+              publishedAt: last.publishedAt.toISOString(),
+              uri: last.uri,
+            }
+          : null;
+
+      return { nextCursor, uris: rows.map((row) => row.uri) };
+    }),
+  );
+
 const markFollowsAllUnreadRead = createServerFn({ method: "POST" })
   .middleware([dbMiddleware])
   .handler(
@@ -1836,6 +1910,8 @@ export const readerApi = {
   markPublicationAllReadMutationOptions,
   markFollowsAllUnreadRead,
   markFollowsAllUnreadReadMutationOptions,
+  // offline pre-caching (`#/pwa/offline-sync`)
+  getUnreadDocumentUris,
   markUnread,
   markUnreadMutationOptions,
   getReadingHistory,

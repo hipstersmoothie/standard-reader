@@ -55,6 +55,8 @@ import { user } from "#/integrations/tanstack-query/api-user.functions";
 import { parseInternalRoute } from "#/lib/internal-route";
 import { tsHeadlineHasMatch } from "#/lib/search-headline";
 import { useFormatters } from "#/lib/use-formatters";
+import { useOfflineCachedUris } from "#/lib/use-offline-cached-uris";
+import { useOnlineStatus } from "#/lib/use-online-status";
 import { useOpenCollectionsInMagazine } from "#/lib/use-open-collections-in-magazine";
 import { useOpenLinks } from "#/lib/use-open-links";
 import { useTrackReadingHistory } from "#/lib/use-track-reading-history";
@@ -95,6 +97,12 @@ import {
 import { useArticleBookmark } from "./use-article-bookmark";
 
 const styles = stylex.create({
+  unavailableOffline: {
+    // Enough to read as unavailable next to a full-strength row, not so faint
+    // the title stops being legible — the reader still needs to recognise it
+    // later. Applied to the link, so it dims the whole card together.
+    opacity: 0.45,
+  },
   cardLink: {
     textDecoration: "none",
     color: "inherit",
@@ -1381,8 +1389,40 @@ function ArticleLink({
   const markReadExternal = useMarkReadExternal();
   const { openExternally } = useOpenLinks();
   const { openInMagazine } = useOpenCollectionsInMagazine();
+  const online = useOnlineStatus();
+  const cachedOffline = useOfflineCachedUris(online);
   const params = documentLinkParams(article.uri);
-  const merged = stylex.props(styles.cardLink, ...extraStyles);
+  // Mirrors the branches below: which of them ends at an `<a target="_blank">`
+  // rather than an in-app route. Those leave the app for the publication's own
+  // site, which offline sync never stored and cannot store, so offline they are
+  // rows that lead to a browser error page.
+  const opensExternally =
+    openExternally && article.canonicalUrl
+      ? true
+      : params && article.hasRenderableBody
+        ? false
+        : article.canonicalUrl
+          ? parseInternalRoute(article.canonicalUrl) === null
+          : false;
+  // Two ways a row can't be opened offline: it leaves for the publication's
+  // site, or its body was never stored. A feed offline is mostly rows that
+  // work, so the few that don't need to look different — otherwise the only
+  // way to find out is to tap and hit an error.
+  //
+  // `cachedOffline == null` is "not known yet", never "nothing is stored": the
+  // scan is async, and dimming the whole feed while it resolves is worse than
+  // dimming nothing. Off-site rows don't need it — that's known synchronously.
+  const unavailableOffline =
+    !online &&
+    (opensExternally ||
+      (cachedOffline !== null && !cachedOffline.has(article.uri)));
+  const merged = stylex.props(
+    styles.cardLink,
+    ...extraStyles,
+    // Dimmed, not hidden or disabled: the article is still real and still worth
+    // seeing in the feed, and the link works the moment the connection is back.
+    unavailableOffline && styles.unavailableOffline,
+  );
   // "Open on original site" preference: bypass the in-app reader whenever the
   // document has a canonical URL on its publication site.
   if (openExternally && article.canonicalUrl) {

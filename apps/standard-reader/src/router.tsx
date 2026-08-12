@@ -1,6 +1,7 @@
 import { createRouter as createTanStackRouter } from "@tanstack/react-router";
 import { setupRouterSsrQueryIntegration } from "@tanstack/react-router-ssr-query";
 
+import { RouteError } from "./components/route-error";
 import { getContext } from "./integrations/tanstack-query/root-provider";
 import { routeTree } from "./routeTree.gen";
 
@@ -19,6 +20,12 @@ export function getRouter() {
     defaultPreloadStaleTime: 30_000,
     // Keep the `:` in `did:plc:…` literal in `/p/$did/$rkey` (don't %-encode it).
     pathParamsAllowedCharacters: [":"],
+    // A loader that throws is usually a loader that couldn't reach the network.
+    // Since queries run in `offlineFirst` mode (see `query-client.ts`), an
+    // offline navigation to something the service worker never cached rejects
+    // here — this is what tells the reader that, instead of showing raw error
+    // text. Routes with their own `errorComponent` still win.
+    defaultErrorComponent: RouteError,
   });
 
   setupRouterSsrQueryIntegration({ router, queryClient: context.queryClient });

@@ -59,6 +59,7 @@ import { latestControlsVisibility } from "#/lib/latest-feed-controls";
 import { getPublicUrlClient } from "#/lib/public-url";
 import { latestFeedUrl, pageSocialMeta } from "#/lib/site-metadata";
 import { useFormatters } from "#/lib/use-formatters";
+import { useOnlineStatus } from "#/lib/use-online-status";
 import { useTrackReadingHistory } from "#/lib/use-track-reading-history";
 import { useLoginSearch } from "#/utils/use-login-search";
 
@@ -505,6 +506,7 @@ function Latest() {
   const { enabled: trackReading } = useTrackReadingHistory();
   const signedIn = Boolean(session?.user);
   const loginSearch = useLoginSearch();
+  const online = useOnlineStatus();
 
   // With reading history off there is no Unread tab, so `?filter=unread` is a
   // URL to normalise away, not a page the reader chose. `replace` keeps it out
@@ -513,6 +515,14 @@ function Latest() {
     if (trackReading || filter !== "unread") return;
     void navigate({ replace: true, search: { filter: "subscriptions" } });
   }, [filter, navigate, trackReading]);
+
+  // Same normalisation for losing the connection while on a network-wide tab:
+  // its tab is about to disappear, and leaving the reader on a filter with no
+  // control to leave it by is worse than moving them to one that has data.
+  useEffect(() => {
+    if (online || (filter !== "all" && filter !== "trending")) return;
+    void navigate({ replace: true, search: { filter: "subscriptions" } });
+  }, [filter, navigate, online]);
 
   useEffect(() => {
     // Signed-out readers only see the active feed (no tab switcher) — prefetching
@@ -688,10 +698,17 @@ function Latest() {
             <SegmentedControlItem id="subscriptions">
               {subscriptionsLabel}
             </SegmentedControlItem>
-            <SegmentedControlItem id="all">{allLabel}</SegmentedControlItem>
-            <SegmentedControlItem id="trending">
-              {trendingLabel}
-            </SegmentedControlItem>
+            {/* Network-wide tabs: everything in them is by definition outside
+                what offline sync stored, so offline they are two taps that can
+                only reach an error. */}
+            {online ? (
+              <SegmentedControlItem id="all">{allLabel}</SegmentedControlItem>
+            ) : null}
+            {online ? (
+              <SegmentedControlItem id="trending">
+                {trendingLabel}
+              </SegmentedControlItem>
+            ) : null}
           </SegmentedControl>
         ) : (
           <Flex>

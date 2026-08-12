@@ -21,6 +21,10 @@ msgstr ""
 msgid "Every publication the network knows about — subscribe to the ones worth your mornings."
 msgstr "网络中已知的全部刊物——订阅那些值得你清晨时光的刊物。"
 
+#: src/components/guide/pages/getting-started-guide-page.tsx
+msgid "The installed app downloads the articles you have not read yet, with their images, while you are online. Open it on a plane or a tunnel and your unread queue is already there — no planning ahead, and nothing to tap beforehand."
+msgstr ""
+
 #: src/components/reader/collections-upgrade-gate.tsx
 msgid "Authoring Collections needs additional permissions to publish collections and documents on your behalf. You can revoke this any time from your account settings."
 msgstr "创作合集需要额外权限，以便代表你发布合集和文档。你可以随时在账户设置中撤销。"
@@ -82,6 +86,10 @@ msgstr "跳转到章节"
 msgid "Sort by"
 msgstr "排序方式"
 
+#: src/components/offline-settings.tsx
+msgid "Downloads the articles you haven't read yet, with their images, so they open with no connection. Pauses automatically when your system asks apps to save data."
+msgstr ""
+
 #: src/components/guide/pages/reading-guide-page.tsx
 #: src/components/reader/about-view.tsx
 #: src/components/reader/article-view.tsx
@@ -129,6 +137,10 @@ msgstr "添加文章"
 #: src/routes/_layout.discover.tsx
 #~ msgid "Communities"
 #~ msgstr ""
+
+#: src/components/offline-sync-debug.tsx
+msgid "Feed pages"
+msgstr ""
 
 #: src/components/guide/pages/finding-guide-page.tsx
 #: src/components/guide/pages/getting-started-guide-page.tsx
@@ -936,6 +948,10 @@ msgstr "标记为未读"
 msgid "Grid view"
 msgstr "网格视图"
 
+#: src/components/route-error.tsx
+msgid "You’re offline"
+msgstr ""
+
 #: src/magazine/flow.tsx
 msgid "Subscribe to get new writing in your feed."
 msgstr "订阅后即可在信息流中获取新作品。"
@@ -1056,6 +1072,10 @@ msgstr ""
 
 #: src/components/user-settings-view.tsx
 msgid "Turn on to choose which items appear in the sidebar. Subscriptions and your lists always stay."
+msgstr ""
+
+#: src/components/user-settings-view.tsx
+msgid "Offline"
 msgstr ""
 
 #: src/routes/_layout.tag.$tag.tsx
@@ -1250,6 +1270,14 @@ msgstr "在文章原站点打开"
 msgid "Which destinations appear at all is a separate setting — <0>Customize sidebar</0> under <1>Making it yours</1> hides the ones you never use. Subscriptions and your lists always stay."
 msgstr ""
 
+#: src/components/offline-settings.tsx
+msgid "Downloaded articles"
+msgstr ""
+
+#: src/components/offline-sync-debug.tsx
+msgid "Back-catalog pages"
+msgstr ""
+
 #: src/components/reader/terms-view.tsx
 msgid "{SITE_NAME} is a web reader for standard.site publications on the AT Protocol. These terms govern your use of this site. By accessing or using the Standard Reader deployment at <0>{siteHost}</0>, you agree to these terms. If you do not agree, please do not use the site."
 msgstr ""
@@ -1285,6 +1313,10 @@ msgstr "文字大小"
 #: src/components/onboarding/step-intro.tsx
 msgid "A calm reading room for the open web. Let's take two minutes to make it yours."
 msgstr "一间为开放网络而设的安静阅读室。花两分钟把它变成你的。"
+
+#: src/components/offline-sync-debug.tsx
+msgid "Run sync now"
+msgstr ""
 
 #: src/components/reader/collection-publication-editor.tsx
 #: src/routes/_layout.collections.index.tsx
@@ -1698,6 +1730,10 @@ msgstr ""
 msgid "If you already know what you want, <0>Discover</0> lists everything on the network, and <1>Finding things to read</1> covers every way to get there."
 msgstr ""
 
+#: src/components/offline-sync-debug.tsx
+msgid "Images"
+msgstr ""
+
 #: src/components/docs/publishing-docs-page.tsx
 #~ msgid "Include the <0>site.standard.publication</0> hint only if the document belongs to a publication record. Add both regardless of which reader you care about — they're how any client on the network resolves your page to its record, not just our extension."
 #~ msgstr "仅当该文档属于某个刊物记录时，才加入 <0>site.standard.publication</0> 提示。无论你在意哪个阅读器，两者都请加上——网络上任何客户端都靠它们把你的页面解析到对应记录，不只是我们的扩展。"
@@ -1950,6 +1986,10 @@ msgstr "嵌入订阅按钮"
 
 #: src/components/feedback/feedback-image-picker.tsx
 msgid "That GIF is over 1 MB. Try a shorter clip, or attach a still image."
+msgstr ""
+
+#: src/components/offline-sync-debug.tsx
+msgid "Storage"
 msgstr ""
 
 #: src/components/reader/blocked-notice.tsx
@@ -2243,6 +2283,10 @@ msgstr "此系列中还没有合集。"
 msgid "None of this labeler’s labels could be verified against the signing key it publishes, so none are applied. That’s a problem on the labeler’s end."
 msgstr ""
 
+#: src/components/offline-sync-debug.tsx
+msgid "Still to fetch"
+msgstr ""
+
 #: src/routes/_layout.feedback.index.tsx
 msgid "No feedback yet."
 msgstr "暂无反馈。"
@@ -2453,6 +2497,7 @@ msgstr "合集"
 msgid "Done"
 msgstr "完成"
 
+#: src/components/offline-sync-debug.tsx
 #: src/components/reader/saved-filters.tsx
 msgid "Authors"
 msgstr ""
@@ -3037,6 +3082,14 @@ msgstr "该刊物的所有未读文章都将标记为已读。此操作无法撤
 msgid "Your own colors"
 msgstr ""
 
+#: src/components/offline-sync-debug.tsx
+msgid "Initial fill"
+msgstr ""
+
+#: src/components/reader/app-shell.tsx
+#~ msgid "You are offline"
+#~ msgstr ""
+
 #: src/magazine/Magazine.tsx
 msgid "Setting the issue…"
 msgstr "正在设置该期…"
@@ -3231,6 +3284,7 @@ msgstr "无需账号即可阅读。想订阅、点赞和保存时，用 Bluesky 
 msgid "Remove {itemTitle}"
 msgstr "移除 {itemTitle}"
 
+#: src/components/offline-sync-debug.tsx
 #: src/components/reader/subscriptions-table.tsx
 #: src/routes/_layout.u.$did.tsx
 msgid "Lists"
@@ -3604,6 +3658,10 @@ msgstr ""
 msgid "{n, plural, one {# publication} other {{value} publications}}"
 msgstr "{n, plural, one {# 个刊物} other {{value} 个刊物}}"
 
+#: src/components/reader/app-shell.tsx
+#~ msgid "offline"
+#~ msgstr ""
+
 #: src/components/reader/profile-tabs-settings-modal.tsx
 msgid "Choose which tabs appear on your public profile."
 msgstr "选择在你的公开资料页上显示哪些标签页。"
@@ -3823,6 +3881,10 @@ msgstr ""
 msgid "You agree not to use {SITE_NAME} to:"
 msgstr ""
 
+#: src/components/route-error.tsx
+msgid "Go home"
+msgstr ""
+
 #: src/components/reader/collection-publication-editor.tsx
 #: src/routes/_layout.collections.new.tsx
 msgid "e.g. Dispatches from the Atmosphere"
@@ -3939,6 +4001,10 @@ msgstr ""
 #. placeholder {0}: rows.length
 #: src/components/reader/subscriptions-table.tsx
 msgid "{0} total"
+msgstr ""
+
+#: src/components/route-error.tsx
+msgid "This page wasn’t saved to your device, so it needs a connection. It’ll load on its own when you’re back online — your unread articles are already here."
 msgstr ""
 
 #: src/components/blocks-settings-view.tsx
@@ -4156,6 +4222,7 @@ msgid "{0, plural, one {# publication} other {# publications}}"
 msgstr "{0, plural, one {# 个刊物} other {# 个刊物}}"
 
 #: src/components/feedback/feedback-image-picker.tsx
+#: src/components/route-error.tsx
 msgid "Try again"
 msgstr ""
 
@@ -4272,6 +4339,10 @@ msgstr ""
 #. placeholder {0}: fmt.relativeTime(data.syncedAt)
 #: src/components/blocks-settings-view.tsx
 msgid "Last checked {0}. Blocks you make elsewhere show up here within about fifteen minutes."
+msgstr ""
+
+#: src/components/offline-sync-debug.tsx
+msgid "If articles aren’t available offline, this is what the last sync did. Sharing a screenshot of it is the fastest way to get it fixed."
 msgstr ""
 
 #: src/components/reader/block-user-menu-item.tsx
@@ -4674,6 +4745,10 @@ msgstr ""
 msgid "Select <0>Log in</0>, at the bottom of the sidebar on a computer or in the top bar on a phone."
 msgstr ""
 
+#: src/components/route-error.tsx
+msgid "That page didn’t load. Try again — if it keeps happening, it’s on our side."
+msgstr ""
+
 #: src/components/feedback/feedback-dialog.tsx
 #: src/components/reader/collection-builder.tsx
 #: src/routes/_layout.saved.tsx
@@ -4782,6 +4857,10 @@ msgstr ""
 #: src/components/reader/about-view.tsx
 msgid "Stop reading this example aloud"
 msgstr "停止朗读此示例"
+
+#: src/components/offline-sync-debug.tsx
+msgid "Unread listed"
+msgstr ""
 
 #. placeholder {0}: issue.ownerHandle
 #: src/magazine/flow.tsx
@@ -5076,6 +5155,7 @@ msgstr ""
 #: src/components/reader/blocked-notice.tsx
 #: src/components/reader/notify-button.tsx
 #: src/components/reader/page-reader-bar.tsx
+#: src/components/route-error.tsx
 msgid "Something went wrong"
 msgstr "出错了"
 
@@ -5511,6 +5591,10 @@ msgstr ""
 msgid "Text, borders and every other step are derived from these two colors."
 msgstr ""
 
+#: src/components/route-error.tsx
+#~ msgid "This page hasn’t been saved to your device, so it needs a connection. Articles you haven’t read yet are downloaded automatically and stay available offline."
+#~ msgstr ""
+
 #: src/components/reader/privacy-view.tsx
 msgid "If you install the {SITE_NAME} browser extension, it uses the same account and session cookie as this site. The extension sends page URLs to our <0>/api/extension/*</0> endpoints for index matching and keeps overlay settings in your browser's extension storage. See the <1>extension privacy policy</1> for details that apply only to the extension."
 msgstr "如果你安装了 {SITE_NAME} 浏览器扩展，它会使用与本站相同的账号和会话 cookie。扩展会将页面 URL 发送到我们的 <0>/api/extension/*</0> 端点用于索引匹配，并将浮层设置保存在浏览器的扩展存储中。详情请参阅仅适用于扩展的<1>扩展隐私政策</1>。"
@@ -5810,6 +5894,10 @@ msgstr ""
 #: src/components/user-settings-view.tsx
 msgid "Weekly digest email"
 msgstr "每周摘要邮件"
+
+#: src/components/offline-settings.tsx
+msgid "Keep unread articles on this device"
+msgstr ""
 
 #: src/components/reader/ios-install-prompt.tsx
 msgid "Choose “Add to Home Screen”."
@@ -6423,6 +6511,7 @@ msgid "Top on the network"
 msgstr ""
 
 #: src/components/blocks-settings-view.tsx
+#: src/components/offline-settings.tsx
 #: src/components/reader/collection-builder.tsx
 #: src/components/reader/subscriptions-unsubscribe-dialog.tsx
 msgid "Remove"
@@ -6568,6 +6657,10 @@ msgstr ""
 msgid "On your phone"
 msgstr ""
 
+#: src/components/offline-settings.tsx
+msgid "Storage use isn't available in this browser."
+msgstr ""
+
 #: src/components/docs/labelers-docs-page.tsx
 msgid "<0>2. Serve labels.</0> Sign and emit <1>com.atproto.label.defs#label</1> objects, and expose the standard <2>com.atproto.label.queryLabels</2> (HTTP) and <3>com.atproto.label.subscribeLabels</3> (WebSocket) endpoints."
 msgstr "<0>2. 提供标签。</0>签发并输出 <1>com.atproto.label.defs#label</1> 对象，并暴露标准的 <2>com.atproto.label.queryLabels</2>（HTTP）和 <3>com.atproto.label.subscribeLabels</3>（WebSocket）端点。"
@@ -6597,9 +6690,10 @@ msgid "Your Home feed is empty for now — head to Discover whenever you're read
 msgstr "你的首页信息流暂时是空的——随时可以去「发现」看看，你订阅的一切都会在这里汇集起来。"
 
 #: src/components/guide/pages/getting-started-guide-page.tsx
-msgid "Pages you have already visited stay available when your connection drops, and you get a plain offline page rather than a browser error when you reach for something that was never loaded. When a new version of the app is ready it offers to reload, rather than changing under you mid-article."
-msgstr ""
+#~ msgid "Pages you have already visited stay available when your connection drops, and you get a plain offline page rather than a browser error when you reach for something that was never loaded. When a new version of the app is ready it offers to reload, rather than changing under you mid-article."
+#~ msgstr ""
 
+#: src/components/offline-sync-debug.tsx
 #: src/components/reader/collection-builder.tsx
 #: src/components/reader/subscriptions-table.tsx
 #: src/routes/_layout.friends.tsx
@@ -6765,6 +6859,10 @@ msgstr "暂无热门刊物。"
 msgid "Sign in again to refresh your permissions — your session doesn't include save-for-later yet."
 msgstr "请重新登录以刷新权限——你当前的会话还不包含稍后阅读。"
 
+#: src/components/offline-sync-debug.tsx
+msgid "Status"
+msgstr ""
+
 #: src/components/reader/extension-privacy-view.tsx
 msgid "Account actions"
 msgstr "账户操作"
@@ -6772,6 +6870,11 @@ msgstr "账户操作"
 #: src/components/reader/mention-hover-card.tsx
 msgid "Read article"
 msgstr "阅读文章"
+
+#. placeholder {0}: formatBytes(usage.usage)
+#: src/components/offline-settings.tsx
+msgid "Standard Reader is using {0} on this device."
+msgstr ""
 
 #: src/components/reader/terms-view.tsx
 msgid "Terms of service"
@@ -7154,6 +7257,10 @@ msgstr "{unreadCount} 篇未读"
 #~ msgid "Below those, the publications you follow are listed for quick access. The <0>Subscriptions</0> heading above them opens the full management view. At the very bottom, your avatar opens a menu with your profile, reading history, recommended articles, feedback, settings, and log out."
 #~ msgstr ""
 
+#: src/components/offline-sync-debug.tsx
+msgid "Downloaded"
+msgstr ""
+
 #: src/components/reader/add-publication-modal.tsx
 #: src/components/reader/app-shell.tsx
 #: src/components/reader/subscriptions-sheet.tsx
@@ -7509,6 +7616,10 @@ msgstr ""
 msgid "Subscribe to the publication it came from, in the same click."
 msgstr ""
 
+#: src/components/guide/pages/getting-started-guide-page.tsx
+msgid "Reach for something that was never downloaded and the app says so, rather than showing you an error. You can turn downloading off, and see how much space it is using, under Settings → Reading. It pauses on its own when your phone asks apps to save data. When a new version of the app is ready it offers to reload, rather than changing under you mid-article."
+msgstr ""
+
 #: src/components/guide/pages/comics-guide-page.tsx
 msgid "<0>FITV #1 Cover</0> — the same, with a page label instead of a number."
 msgstr ""
@@ -7602,6 +7713,7 @@ msgstr "会话元数据，例如 IP 地址和浏览器 user-agent 字符串，�
 msgid "We do not post to your account except when you take an explicit action that requires it (for example following a publication, liking or saving an article, or subscribing with the dedicated subscribe flow). We do not sell your personal information."
 msgstr "除非你主动执行需要写入的操作（例如关注刊物、点赞或保存文章，或通过专门的订阅流程订阅），我们不会以你的账户发帖。我们不会出售你的个人信息。"
 
+#: src/components/offline-sync-debug.tsx
 #: src/components/reader/saved-filters.tsx
 #: src/routes/_layout.discover.tsx
 #: src/routes/_layout.friends.tsx
@@ -7794,6 +7906,7 @@ msgstr ""
 msgid "Recommend this article"
 msgstr "推荐这篇文章"
 
+#: src/components/offline-sync-debug.tsx
 #: src/components/reader/about-view.tsx
 msgid "Stop"
 msgstr "停止"
@@ -8073,6 +8186,10 @@ msgstr "开始使用"
 #: src/components/reader/profile-tabs-settings-modal.tsx
 msgid "You don't have any content tabs to show yet."
 msgstr "你还没有可显示的内容标签页。"
+
+#: src/components/offline-sync-debug.tsx
+msgid "Started / finished"
+msgstr ""
 
 #: src/components/appearance-settings.tsx
 msgid "Body text on paper"

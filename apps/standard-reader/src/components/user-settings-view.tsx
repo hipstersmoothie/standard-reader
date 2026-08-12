@@ -102,6 +102,7 @@ import {
 } from "#/lib/use-feed-preferences";
 import { useFormatters } from "#/lib/use-formatters";
 import { useLocale } from "#/lib/use-locale";
+import { useOfflineSyncDebugVisible } from "#/lib/use-offline-sync-debug-visible";
 import { useOpenCollectionsInMagazine } from "#/lib/use-open-collections-in-magazine";
 import { useOpenLinks } from "#/lib/use-open-links";
 import { usePublicationThemePreference } from "#/lib/use-publication-theme-preference";
@@ -115,6 +116,8 @@ import {
   AppearanceAdvancedRows,
   AppearancePalettePanel,
 } from "./appearance-settings";
+import { OfflineReadingSettings } from "./offline-settings";
+import { OfflineSyncDebugPanel } from "./offline-sync-debug";
 import { PushDiagnosticsPanel } from "./push-diagnostics";
 import { IosInstallPrompt } from "./reader/ios-install-prompt";
 import { Masthead, ReaderContent } from "./reader/primitives";
@@ -577,6 +580,7 @@ export function UserSettingsView() {
   const [digestPreviewLoading, setDigestPreviewLoading] = useState(true);
 
   const push = usePushSettings();
+  const offlineSyncDebugVisible = useOfflineSyncDebugVisible();
   const [iosPromptOpen, setIosPromptOpen] = useState(false);
 
   // One row, five possible states. Ordered most-actionable first so the reader
@@ -1157,6 +1161,35 @@ export function UserSettingsView() {
           </SettingRow>
         </div>
       </section>
+
+      {/* Its own section rather than a tail on Reading: this is about what the
+          device stores and how much space that takes, which is a different
+          question from how articles look. Rendered only where it can do
+          anything — the installed app, or a browser tab with `?debug` — so it
+          never appears as an empty group. */}
+      {offlineSyncDebugVisible ? (
+        <section {...stylex.props(styles.section)}>
+          <h2 {...stylex.props(styles.sectionHeading)}>
+            <Trans>Offline</Trans>
+          </h2>
+          <div {...stylex.props(styles.settingGroup)}>
+            {/* Contributes its own trailing separator, so the disclosure sits
+                flush whether or not these rows render. */}
+            <OfflineReadingSettings />
+            {/* Same chrome as the notifications section's Troubleshooting, so
+                the two read as one convention rather than two panels that
+                happen to share a name. */}
+            <Disclosure>
+              <DisclosureTitle style={styles.advancedTitle}>
+                <Trans>Troubleshooting</Trans>
+              </DisclosureTitle>
+              <DisclosurePanel>
+                <OfflineSyncDebugPanel />
+              </DisclosurePanel>
+            </Disclosure>
+          </div>
+        </section>
+      ) : null}
 
       <section {...stylex.props(styles.section)}>
         <h2 {...stylex.props(styles.sectionHeading)}>

@@ -1,3 +1,5 @@
+"use client";
+
 import {
   primaryColor,
   uiColor,
@@ -10,6 +12,8 @@ import {
   tracking,
 } from "@standard-reader/design-system/theme/typography.stylex";
 import * as stylex from "@stylexjs/stylex";
+
+import { useOnlineStatus } from "#/lib/use-online-status";
 
 const styles = stylex.create({
   root: {
@@ -34,9 +38,18 @@ export type BrandWordmarkProps = StyleXComponentProps<
 >;
 
 export function BrandWordmark({ style, ...props }: BrandWordmarkProps) {
+  const online = useOnlineStatus();
   return (
     <span {...props} {...stylex.props(styles.root, style)}>
-      Standard <span {...stylex.props(styles.accent)}>Reader</span>
+      {/* Offline the wordmark reads "Offline Reader". It replaces a badge
+          pinned to the corner of the logo, which had no good resting place —
+          clear of the letterforms it pushed the brand past a narrow viewport,
+          and inside them it covered the word. The state belongs in the brand
+          rather than beside it: same footprint at any width, nothing to
+          collide with, and it still reads as the app's own name. Untranslated,
+          like the wordmark it replaces a word of. */}
+      {online ? "Standard" : "Offline"}{" "}
+      <span {...stylex.props(styles.accent)}>Reader</span>
     </span>
   );
 }
