@@ -2,11 +2,6 @@
 
 import { Trans } from "@lingui/react/macro";
 import { Button } from "@standard-reader/design-system/button";
-import {
-  Disclosure,
-  DisclosurePanel,
-  DisclosureTitle,
-} from "@standard-reader/design-system/disclosure";
 import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
 import {
   gap,
@@ -16,7 +11,6 @@ import {
 import {
   fontFamily,
   fontSize,
-  fontWeight,
   lineHeight,
 } from "@standard-reader/design-system/theme/typography.stylex";
 import * as stylex from "@stylexjs/stylex";
@@ -31,7 +25,6 @@ import {
   getOfflineSyncProgressServer,
   subscribeOfflineSyncProgress,
 } from "#/pwa/offline-sync-progress";
-import { isStandalone } from "#/pwa/standalone";
 
 const styles = stylex.create({
   panel: {
@@ -42,14 +35,14 @@ const styles = stylex.create({
     paddingInlineStart: horizontalSpace["3xl"],
     rowGap: gap.xs,
   },
-  heading: {
+  intro: {
     color: uiColor.text1,
     fontFamily: fontFamily.sans,
     fontSize: fontSize.xs,
-    fontWeight: fontWeight.semibold,
     lineHeight: lineHeight.sm,
-    marginBottom: verticalSpace.xs,
+    marginBottom: verticalSpace.md,
     marginTop: verticalSpace.none,
+    maxWidth: "42ch",
   },
   row: {
     columnGap: gap.md,
@@ -79,12 +72,6 @@ const styles = stylex.create({
   },
 });
 
-/** `/settings?debug` — the flag that shows this panel. */
-function debugRequested(): boolean {
-  if (globalThis.location === undefined) return false;
-  return new URLSearchParams(globalThis.location.search).has("debug");
-}
-
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   const units = ["KB", "MB", "GB"];
@@ -102,7 +89,7 @@ function stamp(at: number | null): string {
   return at === null ? "—" : new Date(at).toLocaleTimeString();
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+function Row({ label, value }: { label: React.ReactNode; value: string }) {
   return (
     <div {...stylex.props(styles.row)}>
       <span {...stylex.props(styles.key)}>{label}</span>
@@ -112,19 +99,15 @@ function Row({ label, value }: { label: string; value: string }) {
 }
 
 /**
- * Live view of the offline sync pass, inside a collapsed Troubleshooting
- * disclosure. Always available in the installed app — sync only matters
- * there, and a PWA has no address bar to type a flag into — and behind
- * `?debug` in a browser tab, where it exists for development. The values are
- * untranslated on purpose, like the push diagnostics: this is a surface whose
- * strings get read back verbatim.
+ * Live view of the offline sync pass. The values are untranslated on purpose,
+ * like the push diagnostics: this is a surface whose strings get read back
+ * verbatim.
  *
  * "Run sync now" bypasses the installed-app gate, which is what makes offline
  * sync exercisable in a browser tab at all — on a device it also answers "is
  * sync broken or merely not running".
  */
 export function OfflineSyncDebugPanel() {
-  const [visible, setVisible] = useState(false);
   const router = useRouter();
   const progress = useSyncExternalStore(
     subscribeOfflineSyncProgress,
@@ -132,13 +115,6 @@ export function OfflineSyncDebugPanel() {
     getOfflineSyncProgressServer,
   );
   const [usage, setUsage] = useState<OfflineStorageUsage | null>(null);
-
-  // Client-only: display mode and the URL's search string are both things the
-  // server render must not depend on (and the settings route doesn't validate
-  // the flag).
-  useEffect(() => {
-    setVisible(isStandalone() || debugRequested());
-  }, []);
 
   // Refresh the storage line while a pass runs; it is the pass's output.
   useEffect(() => {
@@ -150,8 +126,6 @@ export function OfflineSyncDebugPanel() {
     return () => globalThis.clearInterval(interval);
   }, [progress.running]);
 
-  if (!visible) return null;
-
   const { counts } = progress;
   const status = progress.running
     ? `running (${progress.pass}) — ${progress.step ?? "…"}`
@@ -160,60 +134,64 @@ export function OfflineSyncDebugPanel() {
       : "not started";
 
   return (
-    <Disclosure>
-      <DisclosureTitle>
-        <Trans>Troubleshooting</Trans>
-      </DisclosureTitle>
-      <DisclosurePanel>
-        <div {...stylex.props(styles.panel)}>
-          <p {...stylex.props(styles.heading)}>Offline sync</p>
-          <Row label="status" value={status} />
-          <Row
-            label="started / finished"
-            value={`${stamp(progress.startedAt)} / ${stamp(progress.finishedAt)}`}
-          />
-          <Row label="feed pages" value={String(counts.feedPages)} />
-          <Row label="unread listed" value={String(counts.unreadListed)} />
-          <Row label="publications" value={String(counts.publications)} />
-          <Row
-            label="back-catalog pages"
-            value={String(counts.backCatalogPages)}
-          />
-          <Row label="authors" value={String(counts.authors)} />
-          <Row label="lists" value={String(counts.lists)} />
-          <Row
-            label="bodies"
-            value={`${counts.bodiesCached} of ${counts.bodiesQueued} queued`}
-          />
-          <Row label="images" value={String(counts.imagesWarmed)} />
-          <Row
-            label="storage"
-            value={
-              usage
-                ? `${formatBytes(usage.usage)}${usage.quota ? ` of ${formatBytes(usage.quota)}` : ""}${usage.persisted ? " (persisted)" : ""}`
-                : "unavailable"
-            }
-          />
-          <div {...stylex.props(styles.actions)}>
-            <Button
-              variant="secondary"
-              size="sm"
-              isDisabled={progress.running}
-              onPress={() => void runOfflineSync(router, { force: true })}
-            >
-              Run sync now
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              isDisabled={!progress.running}
-              onPress={stopOfflineSync}
-            >
-              Stop
-            </Button>
-          </div>
-        </div>
-      </DisclosurePanel>
-    </Disclosure>
+    <div {...stylex.props(styles.panel)}>
+      <p {...stylex.props(styles.intro)}>
+        <Trans>
+          If articles aren’t available offline, this is what the last sync did.
+          Sharing a screenshot of it is the fastest way to get it fixed.
+        </Trans>
+      </p>
+      <Row label={<Trans>Status</Trans>} value={status} />
+      <Row
+        label={<Trans>Started / finished</Trans>}
+        value={`${stamp(progress.startedAt)} / ${stamp(progress.finishedAt)}`}
+      />
+      <Row label={<Trans>Feed pages</Trans>} value={String(counts.feedPages)} />
+      <Row
+        label={<Trans>Unread listed</Trans>}
+        value={String(counts.unreadListed)}
+      />
+      <Row
+        label={<Trans>Publications</Trans>}
+        value={String(counts.publications)}
+      />
+      <Row
+        label={<Trans>Back-catalog pages</Trans>}
+        value={String(counts.backCatalogPages)}
+      />
+      <Row label={<Trans>Authors</Trans>} value={String(counts.authors)} />
+      <Row label={<Trans>Lists</Trans>} value={String(counts.lists)} />
+      <Row
+        label={<Trans>Articles</Trans>}
+        value={`${counts.bodiesCached} of ${counts.bodiesQueued} queued`}
+      />
+      <Row label={<Trans>Images</Trans>} value={String(counts.imagesWarmed)} />
+      <Row
+        label={<Trans>Storage</Trans>}
+        value={
+          usage
+            ? `${formatBytes(usage.usage)}${usage.quota ? ` of ${formatBytes(usage.quota)}` : ""}${usage.persisted ? " (persisted)" : ""}`
+            : "unavailable"
+        }
+      />
+      <div {...stylex.props(styles.actions)}>
+        <Button
+          variant="secondary"
+          size="sm"
+          isDisabled={progress.running}
+          onPress={() => void runOfflineSync(router, { force: true })}
+        >
+          <Trans>Run sync now</Trans>
+        </Button>
+        <Button
+          variant="secondary"
+          size="sm"
+          isDisabled={!progress.running}
+          onPress={stopOfflineSync}
+        >
+          <Trans>Stop</Trans>
+        </Button>
+      </div>
+    </div>
   );
 }

@@ -73,7 +73,10 @@ export function OfflineReadingSettings() {
 
   return (
     <>
-      <Separator />
+      {/* Separators trail rather than lead. These rows open the Offline
+          section's group, and they render nothing outside the installed app —
+          a leading separator would be left stranded at the top of the group in
+          a `?debug` browser tab, where only the disclosure below survives. */}
       <SettingRow
         label={t`Keep unread articles on this device`}
         description={t`Downloads the articles you haven't read yet, with their images, so they open with no connection. Pauses automatically when your system asks apps to save data.`}
@@ -106,6 +109,7 @@ export function OfflineReadingSettings() {
           <Trans>Remove</Trans>
         </Button>
       </SettingRow>
+      <Separator />
     </>
   );
 }

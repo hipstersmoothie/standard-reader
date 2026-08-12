@@ -138,6 +138,10 @@ msgstr "Add an article"
 #~ msgid "Communities"
 #~ msgstr "Communities"
 
+#: src/components/offline-sync-debug.tsx
+msgid "Feed pages"
+msgstr "Feed pages"
+
 #: src/components/guide/pages/finding-guide-page.tsx
 #: src/components/guide/pages/getting-started-guide-page.tsx
 #: src/components/reader/app-shell.tsx
@@ -1070,6 +1074,10 @@ msgstr "Read the full post"
 msgid "Turn on to choose which items appear in the sidebar. Subscriptions and your lists always stay."
 msgstr "Turn on to choose which items appear in the sidebar. Subscriptions and your lists always stay."
 
+#: src/components/user-settings-view.tsx
+msgid "Offline"
+msgstr "Offline"
+
 #: src/routes/_layout.tag.$tag.tsx
 msgid "{unfollowedCount, plural, one {Subscribe to {formattedUnfollowedCount} publication?} other {Subscribe to {formattedUnfollowedCount} publications?}}"
 msgstr "{unfollowedCount, plural, one {Subscribe to {formattedUnfollowedCount} publication?} other {Subscribe to {formattedUnfollowedCount} publications?}}"
@@ -1266,6 +1274,10 @@ msgstr "Which destinations appear at all is a separate setting — <0>Customize 
 msgid "Downloaded articles"
 msgstr "Downloaded articles"
 
+#: src/components/offline-sync-debug.tsx
+msgid "Back-catalog pages"
+msgstr "Back-catalog pages"
+
 #: src/components/reader/terms-view.tsx
 msgid "{SITE_NAME} is a web reader for standard.site publications on the AT Protocol. These terms govern your use of this site. By accessing or using the Standard Reader deployment at <0>{siteHost}</0>, you agree to these terms. If you do not agree, please do not use the site."
 msgstr "{SITE_NAME} is a web reader for standard.site publications on the AT Protocol. These terms govern your use of this site. By accessing or using the Standard Reader deployment at <0>{siteHost}</0>, you agree to these terms. If you do not agree, please do not use the site."
@@ -1301,6 +1313,10 @@ msgstr "Text size"
 #: src/components/onboarding/step-intro.tsx
 msgid "A calm reading room for the open web. Let's take two minutes to make it yours."
 msgstr "A calm reading room for the open web. Let's take two minutes to make it yours."
+
+#: src/components/offline-sync-debug.tsx
+msgid "Run sync now"
+msgstr "Run sync now"
 
 #: src/components/reader/collection-publication-editor.tsx
 #: src/routes/_layout.collections.index.tsx
@@ -1714,6 +1730,10 @@ msgstr "“…made to be read, and not to be measured.”"
 msgid "If you already know what you want, <0>Discover</0> lists everything on the network, and <1>Finding things to read</1> covers every way to get there."
 msgstr "If you already know what you want, <0>Discover</0> lists everything on the network, and <1>Finding things to read</1> covers every way to get there."
 
+#: src/components/offline-sync-debug.tsx
+msgid "Images"
+msgstr "Images"
+
 #: src/components/docs/publishing-docs-page.tsx
 #~ msgid "Include the <0>site.standard.publication</0> hint only if the document belongs to a publication record. Add both regardless of which reader you care about — they're how any client on the network resolves your page to its record, not just our extension."
 #~ msgstr "Include the <0>site.standard.publication</0> hint only if the document belongs to a publication record. Add both regardless of which reader you care about — they're how any client on the network resolves your page to its record, not just our extension."
@@ -1967,6 +1987,10 @@ msgstr "Embed subscribe"
 #: src/components/feedback/feedback-image-picker.tsx
 msgid "That GIF is over 1 MB. Try a shorter clip, or attach a still image."
 msgstr "That GIF is over 1 MB. Try a shorter clip, or attach a still image."
+
+#: src/components/offline-sync-debug.tsx
+msgid "Storage"
+msgstr "Storage"
 
 #: src/components/reader/blocked-notice.tsx
 msgid "{Who} has blocked you, so you can't see their writing. Blocks are records in their repo — this isn't a Standard Reader decision, and it applies wherever you read them."
@@ -2469,6 +2493,7 @@ msgstr "Collections"
 msgid "Done"
 msgstr "Done"
 
+#: src/components/offline-sync-debug.tsx
 #: src/components/reader/saved-filters.tsx
 msgid "Authors"
 msgstr "Authors"
@@ -3251,6 +3276,7 @@ msgstr "Read without an account. Sign in with Bluesky when you want to subscribe
 msgid "Remove {itemTitle}"
 msgstr "Remove {itemTitle}"
 
+#: src/components/offline-sync-debug.tsx
 #: src/components/reader/subscriptions-table.tsx
 #: src/routes/_layout.u.$did.tsx
 msgid "Lists"
@@ -4307,6 +4333,10 @@ msgstr "Open the app"
 msgid "Last checked {0}. Blocks you make elsewhere show up here within about fifteen minutes."
 msgstr "Last checked {0}. Blocks you make elsewhere show up here within about fifteen minutes."
 
+#: src/components/offline-sync-debug.tsx
+msgid "If articles aren’t available offline, this is what the last sync did. Sharing a screenshot of it is the fastest way to get it fixed."
+msgstr "If articles aren’t available offline, this is what the last sync did. Sharing a screenshot of it is the fastest way to get it fixed."
+
 #: src/components/reader/block-user-menu-item.tsx
 msgid "Block account?"
 msgstr "Block account?"
@@ -4819,6 +4849,10 @@ msgstr "If you write software and want to build on the same network, the <0>deve
 #: src/components/reader/about-view.tsx
 msgid "Stop reading this example aloud"
 msgstr "Stop reading this example aloud"
+
+#: src/components/offline-sync-debug.tsx
+msgid "Unread listed"
+msgstr "Unread listed"
 
 #. placeholder {0}: issue.ownerHandle
 #: src/magazine/flow.tsx
@@ -5791,7 +5825,6 @@ msgstr "Follow along"
 msgid "Show all feedback"
 msgstr "Show all feedback"
 
-#: src/components/offline-sync-debug.tsx
 #: src/components/user-settings-view.tsx
 msgid "Troubleshooting"
 msgstr "Troubleshooting"
@@ -6652,6 +6685,7 @@ msgstr "Your Home feed is empty for now — head to Discover whenever you're rea
 #~ msgid "Pages you have already visited stay available when your connection drops, and you get a plain offline page rather than a browser error when you reach for something that was never loaded. When a new version of the app is ready it offers to reload, rather than changing under you mid-article."
 #~ msgstr "Pages you have already visited stay available when your connection drops, and you get a plain offline page rather than a browser error when you reach for something that was never loaded. When a new version of the app is ready it offers to reload, rather than changing under you mid-article."
 
+#: src/components/offline-sync-debug.tsx
 #: src/components/reader/collection-builder.tsx
 #: src/components/reader/subscriptions-table.tsx
 #: src/routes/_layout.friends.tsx
@@ -6816,6 +6850,10 @@ msgstr "No trending publications yet."
 #: src/routes/login.tsx
 msgid "Sign in again to refresh your permissions — your session doesn't include save-for-later yet."
 msgstr "Sign in again to refresh your permissions — your session doesn't include save-for-later yet."
+
+#: src/components/offline-sync-debug.tsx
+msgid "Status"
+msgstr "Status"
 
 #: src/components/reader/extension-privacy-view.tsx
 msgid "Account actions"
@@ -7663,6 +7701,7 @@ msgstr "Session metadata such as IP address and browser user-agent string, used 
 msgid "We do not post to your account except when you take an explicit action that requires it (for example following a publication, liking or saving an article, or subscribing with the dedicated subscribe flow). We do not sell your personal information."
 msgstr "We do not post to your account except when you take an explicit action that requires it (for example following a publication, liking or saving an article, or subscribing with the dedicated subscribe flow). We do not sell your personal information."
 
+#: src/components/offline-sync-debug.tsx
 #: src/components/reader/saved-filters.tsx
 #: src/routes/_layout.discover.tsx
 #: src/routes/_layout.friends.tsx
@@ -7855,6 +7894,7 @@ msgstr "A few things ask for more, at the moment you first use them rather than 
 msgid "Recommend this article"
 msgstr "Recommend this article"
 
+#: src/components/offline-sync-debug.tsx
 #: src/components/reader/about-view.tsx
 msgid "Stop"
 msgstr "Stop"
@@ -8134,6 +8174,10 @@ msgstr "Get started"
 #: src/components/reader/profile-tabs-settings-modal.tsx
 msgid "You don't have any content tabs to show yet."
 msgstr "You don't have any content tabs to show yet."
+
+#: src/components/offline-sync-debug.tsx
+msgid "Started / finished"
+msgstr "Started / finished"
 
 #: src/components/appearance-settings.tsx
 msgid "Body text on paper"
