@@ -16,14 +16,18 @@ import {
 import {
   fontFamily,
   fontSize,
+  fontWeight,
   lineHeight,
 } from "@standard-reader/design-system/theme/typography.stylex";
 import * as stylex from "@stylexjs/stylex";
 import { useRouter } from "@tanstack/react-router";
 import { useEffect, useState, useSyncExternalStore } from "react";
 
-import type { OfflineStorageUsage } from "#/pwa/offline-cache";
-import { offlineStorageUsage } from "#/pwa/offline-cache";
+import type {
+  OfflineCacheCounts,
+  OfflineStorageUsage,
+} from "#/pwa/offline-cache";
+import { offlineCacheCounts, offlineStorageUsage } from "#/pwa/offline-cache";
 import {
   publishOfflineSyncTotals,
   runOfflineSync,
@@ -34,6 +38,8 @@ import {
   getOfflineSyncProgressServer,
   subscribeOfflineSyncProgress,
 } from "#/pwa/offline-sync-progress";
+import type { OfflineSyncState } from "#/pwa/offline-sync-state";
+import { readOfflineSyncState } from "#/pwa/offline-sync-state";
 
 const styles = stylex.create({
   panel: {
@@ -79,6 +85,17 @@ const styles = stylex.create({
     display: "flex",
     marginTop: verticalSpace.md,
   },
+  // Separates "what I have" from "what the last run did" — the distinction the
+  // panel exists to make once a reader is fully synced.
+  groupLabel: {
+    color: uiColor.text1,
+    fontFamily: fontFamily.sans,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.semibold,
+    lineHeight: lineHeight.sm,
+    marginBottom: verticalSpace.none,
+    marginTop: verticalSpace.md,
+  },
   // A bar rather than another number: the one thing worth seeing at a glance is
   // how much of the backlog is already on the device.
   track: {
@@ -118,6 +135,23 @@ function stamp(at: number | null): string {
   return at === null ? "—" : new Date(at).toLocaleTimeString();
 }
 
+/**
+ * `null` means the bucket does not exist yet, which is a different fact from
+ * an empty one — the first says the service worker has never handled that kind
+ * of request, the second that it handled some and kept nothing.
+ */
+function countValue(count: number | null | undefined): string {
+  return count == null ? "—" : String(count);
+}
+
+function ago(at: number): string {
+  const minutes = Math.round((Date.now() - at) / 60_000);
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.round(minutes / 60);
+  return hours < 48 ? `${hours}h ago` : `${Math.round(hours / 24)}d ago`;
+}
+
 function Row({ label, value }: { label: React.ReactNode; value: string }) {
   return (
     <div {...stylex.props(styles.row)}>
@@ -144,6 +178,8 @@ export function OfflineSyncDebugPanel() {
     getOfflineSyncProgressServer,
   );
   const [usage, setUsage] = useState<OfflineStorageUsage | null>(null);
+  const [cached, setCached] = useState<OfflineCacheCounts | null>(null);
+  const [plan, setPlan] = useState<OfflineSyncState | null>(null);
 
   // Totals describe the device, so they must be readable before any pass has
   // run this session — otherwise opening the panel on a cold start shows
@@ -152,13 +188,16 @@ export function OfflineSyncDebugPanel() {
     publishOfflineSyncTotals();
   }, []);
 
-  // Refresh the storage line while a pass runs; it is the pass's output.
+  // Device state, refreshed while a pass runs because a pass changes it.
   useEffect(() => {
-    void offlineStorageUsage().then(setUsage);
-    if (!progress.running) return;
-    const interval = globalThis.setInterval(() => {
+    const read = () => {
       void offlineStorageUsage().then(setUsage);
-    }, 3000);
+      void offlineCacheCounts().then(setCached);
+      setPlan(readOfflineSyncState());
+    };
+    read();
+    if (!progress.running) return;
+    const interval = globalThis.setInterval(read, 3000);
     return () => globalThis.clearInterval(interval);
   }, [progress.running]);
 
@@ -207,8 +246,51 @@ export function OfflineSyncDebugPanel() {
       />
       <Row
         label={<Trans>Initial fill</Trans>}
-        value={progress.initialComplete ? "complete" : "in progress"}
+        value={
+          progress.initialComplete
+            ? "complete"
+            : plan
+              ? `in progress (unread ${plan.feedDone.unread ? "done" : `@${plan.feedOffsets.unread}`}, subs ${plan.feedDone.subscriptions ? "done" : `@${plan.feedOffsets.subscriptions}`})`
+              : "in progress"
+        }
       />
+      <Row
+        label={<Trans>Followed pages warmed</Trans>}
+        value={
+          plan?.surfacesWarmedAt == null ? "never" : ago(plan.surfacesWarmedAt)
+        }
+      />
+
+      {/* What is on the device, counted from Cache Storage. Separate from the
+          rows below because those describe one pass: once a reader is fully
+          synced every one of them is legitimately zero, and a screenshot of
+          nine zeroes reads as "sync is broken" rather than "nothing left to
+          do". These stay true when there is no work. */}
+      <p {...stylex.props(styles.groupLabel)}>
+        <Trans>On this device</Trans>
+      </p>
+      <Row
+        label={<Trans>Cached responses</Trans>}
+        value={countValue(cached?.data)}
+      />
+      <Row
+        label={<Trans>Cached images</Trans>}
+        value={countValue(cached?.images)}
+      />
+      <Row
+        label={<Trans>Cached pages</Trans>}
+        value={countValue(cached?.pages)}
+      />
+      <Row
+        label={<Trans>Cached app files</Trans>}
+        value={countValue(cached?.assets)}
+      />
+
+      {/* Everything below counts one pass, so zeroes here are the expected
+          reading for a reader who is already caught up. */}
+      <p {...stylex.props(styles.groupLabel)}>
+        <Trans>Fetched in the last pass</Trans>
+      </p>
       <Row label={<Trans>Status</Trans>} value={status} />
       <Row
         label={<Trans>Started / finished</Trans>}

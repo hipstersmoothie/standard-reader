@@ -129,6 +129,10 @@ msgstr "此刻正在全网获得关注的文章。"
 msgid "{value, plural, one {# member} other {# members}}"
 msgstr ""
 
+#: src/components/offline-sync-debug.tsx
+msgid "Cached responses"
+msgstr ""
+
 #: src/components/reader/collection-builder.tsx
 msgid "Add an article"
 msgstr "添加文章"
@@ -1282,6 +1286,10 @@ msgstr ""
 msgid "{SITE_NAME} is a web reader for standard.site publications on the AT Protocol. These terms govern your use of this site. By accessing or using the Standard Reader deployment at <0>{siteHost}</0>, you agree to these terms. If you do not agree, please do not use the site."
 msgstr ""
 
+#: src/components/offline-sync-debug.tsx
+msgid "Followed pages warmed"
+msgstr ""
+
 #: src/components/guide/pages/getting-started-guide-page.tsx
 msgid "the directory of every publication the network knows about."
 msgstr ""
@@ -2149,6 +2157,10 @@ msgstr "更多来自 <0>{0}</0>"
 #~ msgid "Community"
 #~ msgstr ""
 
+#: src/components/offline-sync-debug.tsx
+msgid "On this device"
+msgstr ""
+
 #: src/components/reader/extension-privacy-view.tsx
 msgid "We may update this policy as the extension changes. The “Last updated” date at the top will change when we do. Continued use of the extension after an update means you accept the revised policy."
 msgstr "我们可能会随着扩展的变化更新本政策。更新时，顶部的「最后更新」日期也会随之改变。更新后继续使用本扩展即表示你接受修订后的政策。"
@@ -2248,6 +2260,10 @@ msgstr "一个 HttpOnly 会话 cookie，用于保持你的登录状态。"
 #: src/components/guide/pages/everywhere-guide-page.tsx
 #~ msgid "Everything you save shows up in the app straight away — it is the same account."
 #~ msgstr ""
+
+#: src/components/offline-sync-debug.tsx
+msgid "Cached app files"
+msgstr ""
 
 #: src/components/guide/pages/reading-guide-page.tsx
 msgid "Standard Reader has no comment box of its own. Instead, below each article it gathers the conversation that already happened elsewhere: Bluesky posts linking to the piece, replies to the author's own announcement, and notes people made on it in annotation tools. Select any of them to reply where the conversation actually is."
@@ -2426,6 +2442,10 @@ msgstr "谢谢。"
 #: src/magazine/Magazine.tsx
 msgid "Previous"
 msgstr "上一篇"
+
+#: src/components/offline-sync-debug.tsx
+msgid "Fetched in the last pass"
+msgstr ""
 
 #: src/components/reader/content/renderers/shared/footnotes-section.tsx
 msgid "Back to content"
@@ -3133,6 +3153,10 @@ msgstr ""
 #: src/components/reader/collection-theme-editor.tsx
 msgid "A sentence of body copy, set in your chosen fonts and colors, so you can see how it all reads together before you save."
 msgstr "一句正文示例，使用你选定的字体与颜色排版，让你在保存前先看看整体阅读效果。"
+
+#: src/components/offline-sync-debug.tsx
+msgid "Cached images"
+msgstr ""
 
 #: src/routes/_layout.discover.tsx
 #~ msgid "Find your corner"
@@ -5073,6 +5097,10 @@ msgstr "打开第 {position} 张图片"
 
 #: src/components/labeler-detail-view.tsx
 msgid "Not responding"
+msgstr ""
+
+#: src/components/offline-sync-debug.tsx
+msgid "Cached pages"
 msgstr ""
 
 #: src/components/docs/api-docs-intro.tsx

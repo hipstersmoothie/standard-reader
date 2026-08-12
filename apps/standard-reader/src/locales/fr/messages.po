@@ -129,6 +129,10 @@ msgstr "Les articles qui font parler d’eux sur le réseau en ce moment."
 msgid "{value, plural, one {# member} other {# members}}"
 msgstr ""
 
+#: src/components/offline-sync-debug.tsx
+msgid "Cached responses"
+msgstr ""
+
 #: src/components/reader/collection-builder.tsx
 msgid "Add an article"
 msgstr "Ajouter un article"
@@ -1282,6 +1286,10 @@ msgstr ""
 msgid "{SITE_NAME} is a web reader for standard.site publications on the AT Protocol. These terms govern your use of this site. By accessing or using the Standard Reader deployment at <0>{siteHost}</0>, you agree to these terms. If you do not agree, please do not use the site."
 msgstr ""
 
+#: src/components/offline-sync-debug.tsx
+msgid "Followed pages warmed"
+msgstr ""
+
 #: src/components/guide/pages/getting-started-guide-page.tsx
 msgid "the directory of every publication the network knows about."
 msgstr ""
@@ -2149,6 +2157,10 @@ msgstr "Plus de <0>{0}</0>"
 #~ msgid "Community"
 #~ msgstr ""
 
+#: src/components/offline-sync-debug.tsx
+msgid "On this device"
+msgstr ""
+
 #: src/components/reader/extension-privacy-view.tsx
 msgid "We may update this policy as the extension changes. The “Last updated” date at the top will change when we do. Continued use of the extension after an update means you accept the revised policy."
 msgstr "Nous pouvons faire évoluer cette politique à mesure que l'extension change. La date de « dernière mise à jour » en haut de page sera modifiée en conséquence. Continuer à utiliser l'extension après une mise à jour vaut acceptation de la politique révisée."
@@ -2248,6 +2260,10 @@ msgstr "Un cookie de session HttpOnly qui vous maintient connecté."
 #: src/components/guide/pages/everywhere-guide-page.tsx
 #~ msgid "Everything you save shows up in the app straight away — it is the same account."
 #~ msgstr ""
+
+#: src/components/offline-sync-debug.tsx
+msgid "Cached app files"
+msgstr ""
 
 #: src/components/guide/pages/reading-guide-page.tsx
 msgid "Standard Reader has no comment box of its own. Instead, below each article it gathers the conversation that already happened elsewhere: Bluesky posts linking to the piece, replies to the author's own announcement, and notes people made on it in annotation tools. Select any of them to reply where the conversation actually is."
@@ -2426,6 +2442,10 @@ msgstr "Merci."
 #: src/magazine/Magazine.tsx
 msgid "Previous"
 msgstr "Précédent"
+
+#: src/components/offline-sync-debug.tsx
+msgid "Fetched in the last pass"
+msgstr ""
 
 #: src/components/reader/content/renderers/shared/footnotes-section.tsx
 msgid "Back to content"
@@ -3133,6 +3153,10 @@ msgstr ""
 #: src/components/reader/collection-theme-editor.tsx
 msgid "A sentence of body copy, set in your chosen fonts and colors, so you can see how it all reads together before you save."
 msgstr "Une phrase de texte courant, composée avec les polices et les couleurs que vous avez choisies, pour voir le rendu d'ensemble avant d'enregistrer."
+
+#: src/components/offline-sync-debug.tsx
+msgid "Cached images"
+msgstr ""
 
 #: src/routes/_layout.discover.tsx
 #~ msgid "Find your corner"
@@ -5073,6 +5097,10 @@ msgstr "Ouvrir l’image {position}"
 
 #: src/components/labeler-detail-view.tsx
 msgid "Not responding"
+msgstr ""
+
+#: src/components/offline-sync-debug.tsx
+msgid "Cached pages"
 msgstr ""
 
 #: src/components/docs/api-docs-intro.tsx
