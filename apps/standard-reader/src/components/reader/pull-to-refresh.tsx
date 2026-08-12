@@ -29,6 +29,7 @@ import {
 
 import { isShellQuery } from "#/integrations/tanstack-query/shell-queries";
 import { useCompactNav } from "#/lib/use-media-query";
+import { useOnlineStatus } from "#/lib/use-online-status";
 import { usePullGesture } from "#/lib/use-pull-gesture";
 
 /** Mirrors the `DESKTOP` breakpoint in `app-shell.tsx`. */
@@ -289,9 +290,14 @@ export function PullToRefreshLane({
     noopHandler,
   );
   const compactNav = useCompactNav();
+  const online = useOnlineStatus();
   const { chipRef, iconRef, phase } = usePullGesture({
     contentRef,
-    enabled: compactNav && handler !== null,
+    // Refreshing offline can only refetch what is already on the device, and
+    // the refetch fails — so the gesture's whole reward is an error. Disabled
+    // rather than silently no-op'd, so the chip never appears and the reader
+    // isn't told the pull did something.
+    enabled: compactNav && handler !== null && online,
     onRefresh: handler,
   });
 

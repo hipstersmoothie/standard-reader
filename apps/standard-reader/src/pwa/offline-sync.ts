@@ -497,6 +497,52 @@ async function warmPublications(
 }
 
 /**
+ * Every family/weight the interface can ask for, as `document.fonts.load`
+ * shorthand. Mirrors the Google Fonts request in `__root.tsx`.
+ */
+const UI_FONT_FACES = [
+  ...[300, 400, 500, 600].flatMap((weight) => [
+    `${weight} 1rem 'Newsreader'`,
+    `italic ${weight} 1rem 'Newsreader'`,
+  ]),
+  ...[400, 500, 600, 700, 800, 900].map(
+    (weight) => `${weight} 1rem 'Atkinson Hyperlegible Next'`,
+  ),
+  ...[400, 500, 600].map((weight) => `${weight} 1rem 'Spline Sans Mono'`),
+];
+
+/**
+ * Pull down every weight of the interface fonts, not just the ones already on
+ * screen.
+ *
+ * A browser downloads only the faces it actually uses, so a weight that first
+ * appears in a surface the reader hasn't opened — a sheet, a dialog — is never
+ * fetched and never cached. Offline it then has nothing to load, and because
+ * the stylesheet is requested with `display=optional`, the browser silently
+ * keeps the fallback for the rest of the page rather than swapping when it
+ * eventually arrives. The result is one panel in the wrong typeface while
+ * everything around it looks right.
+ *
+ * `document.fonts.load` forces each face to be fetched, which puts it in the
+ * `google-fonts` cache alongside the rest.
+ */
+async function warmFonts(signal: AbortSignal): Promise<void> {
+  const fonts = (globalThis.document as Document & { fonts?: FontFaceSet })
+    ?.fonts;
+  if (!fonts?.load) return;
+  await Promise.all(
+    UI_FONT_FACES.map(async (face) => {
+      if (signal.aborted) return;
+      try {
+        await fonts.load(face);
+      } catch {
+        // A face the reader's chosen interface font doesn't define.
+      }
+    }),
+  );
+}
+
+/**
  * Followed authors, which sit in the same sidebar section as subscriptions and
  * failed the same way: listed, and unopenable.
  */
@@ -613,6 +659,7 @@ export async function runOfflineSync(router: AnyRouter): Promise<void> {
     // Before any bodies. An unwarmed feed drops a fully-cached page into the
     // offline state, so the surfaces come first and the articles follow.
     await warmRouteChunks(router, signal);
+    await warmFonts(signal);
     await warmFeedData(signal);
     await warmPublications(router, signal);
     await warmFollowedUsers(router, signal);

@@ -171,32 +171,7 @@ const styles = stylex.create({
     paddingInlineStart: horizontalSpace.xs,
     paddingBottom: verticalSpace.xxs,
     paddingTop: verticalSpace.xxs,
-    // Anchors the offline badge to the wordmark.
-    position: "relative",
     width: "fit-content",
-  },
-  offlineBadge: {
-    borderRadius: radius.full,
-    backgroundColor: uiColor.text1,
-    color: uiColor.bg,
-    fontFamily: fontFamily.sans,
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.semibold,
-    letterSpacing: tracking.wide,
-    lineHeight: 1,
-    // Anchored by its *start* at the wordmark's end, then pulled back a little
-    // so it clips the corner. Anchoring by the end instead puts the badge's
-    // whole width on top of the word — the offset only decides how much of
-    // "Reader" it covers, never whether it does.
-    insetBlockStart: `calc(-1 * ${verticalSpace.xxs})`,
-    insetInlineStart: "100%",
-    marginInlineStart: `calc(-1 * ${horizontalSpace.xl})`,
-    paddingBlock: verticalSpace.xxs,
-    paddingInline: horizontalSpace.xs,
-    pointerEvents: "none",
-    position: "absolute",
-    textTransform: "lowercase",
-    whiteSpace: "nowrap",
   },
   brandSidebar: {
     // Left-align in the sidebar's column flow; only relevant here — in the
@@ -898,28 +873,15 @@ function Brand({
   style?: stylex.StyleXStyles;
   to?: "/" | "/about";
 }) {
-  const { t } = useLingui();
   const focusRingProps = useFocusRingProps();
-  const online = useOnlineStatus();
   return (
     <Link
       to={to}
       {...focusRingProps}
       {...stylex.props(styles.brandLink, style)}
     >
+      {/* `BrandWordmark` says "Offline Reader" when there is no connection. */}
       <BrandWordmark />
-      {/* Pinned to the wordmark rather than shown as a banner: the state is
-          persistent, not an event, and a dismissible bar would either nag or
-          disappear while still being true. */}
-      {online ? null : (
-        <span
-          role="status"
-          aria-label={t`You are offline`}
-          {...stylex.props(styles.offlineBadge)}
-        >
-          <Trans>offline</Trans>
-        </span>
-      )}
     </Link>
   );
 }
