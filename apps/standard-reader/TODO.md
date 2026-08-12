@@ -352,7 +352,13 @@ Check items off as they land.
       `reconcileRepoFromPds`) before touching it — only a row the PDS no longer serves is a
       superseded duplicate; a row still live in the repo is left alone. An unresolved identity or a
       failed repo list bails out and leaves the group untouched for the next sweep, rather than
-      treating "couldn't check" as "confirmed gone".
+      treating "couldn't check" as "confirmed gone". The repo check turned this loop from pure DB
+      work into one network round trip per duplicate group, so it also runs with bounded concurrency
+      (`PUBLICATION_DEDUP_CONCURRENCY = 8`) and each group's failure is caught rather than aborting
+      the whole sweep — and, after `recompute-cron`'s trigger crashed intermittently against a PR
+      preview environment with enough duplicate groups to blow past the trigger's default fetch
+      timeout, the sweep also caps how many groups it checks per pass
+      (`PUBLICATION_DEDUP_BATCH = 100`), leaving the rest for the next hourly run.
 - [x] **Retire gone repos.** When a PDS responds with a permanent "repo not found" (400/404
       `InvalidRequest` — the repo was deleted or migrated away from the PDS PLC points at),
       `reconcileRepoFromPds` returns `gone: true`, `markRepoGone` prunes all read-model rows for

@@ -978,6 +978,23 @@ export async function backfillActorHandles(): Promise<number> {
 const PUBLICATION_DEDUP_CONCURRENCY = 8;
 
 /**
+ * Duplicate-publication groups verified against the repo per sweep.
+ *
+ * `recompute-cron` triggers this over plain `fetch` with no client timeout
+ * (`scripts/recompute-cron.mjs`), and the sweep runs synchronously inside
+ * `recomputeDerived()` ahead of every other step — so an unbounded number of
+ * per-group PDS checks can push the whole request past whatever timeout sits
+ * between the trigger and the ingest worker (undici's ~5-minute default,
+ * observed as the cron "crashing" a few minutes after its container reported
+ * healthy). Capping the batch bounds worst-case latency the same way
+ * `RECONCILE_BATCH_DEFAULT` bounds the repo round-robin; leftover groups are
+ * simply picked up on the next hourly pass — this function is a safety net,
+ * not the hot-path dedup, so a group sitting un-collapsed for one more hour
+ * is not user-visible.
+ */
+const PUBLICATION_DEDUP_BATCH = 100;
+
+/**
  * Collapse duplicate publications (`did, url`) and documents (`did, cid`) to a
  * single canonical row each. Repairs existing data and acts as a safety net for
  * the hot-path dedup. Returns how many duplicate groups were reconciled.
@@ -990,12 +1007,20 @@ export async function dedupeRecords(): Promise<{
   // arrive as slash variants of the same site (`https://x.com/` vs
   // `https://x.com`) and must collapse into one group.
   const normalizedUrl = sql<string>`rtrim(${publications.url}, '/')`;
-  const pubGroups = await db
+  const allPubGroups = await db
     .select({ did: publications.did, url: normalizedUrl })
     .from(publications)
     .where(eq(publications.deleted, false))
     .groupBy(publications.did, normalizedUrl)
     .having(sql`count(*) > 1`);
+  const pubGroups = allPubGroups.slice(0, PUBLICATION_DEDUP_BATCH);
+  if (allPubGroups.length > pubGroups.length) {
+    logEvent("ingest.publicationDedupBatchCapped", {
+      checked: pubGroups.length,
+      ok: true,
+      total: allPubGroups.length,
+    });
+  }
   // Best-effort per group: reconcilePublicationGroup now checks the repo
   // before collapsing anything, so a single unreachable PDS or slow lookup
   // must not abort the rest of the sweep (or the recompute run it's part
