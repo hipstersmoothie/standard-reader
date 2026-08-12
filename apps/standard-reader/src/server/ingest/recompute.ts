@@ -46,6 +46,7 @@ import {
   isUsableHandle,
   refreshIdentity,
 } from "../atproto/identity.ts";
+import { logEvent } from "../observability/log.ts";
 import { replayDeadLetters } from "./consumer.ts";
 import { reconcileDocumentDup, reconcilePublicationGroup } from "./handlers.ts";
 
@@ -968,6 +969,15 @@ export async function backfillActorHandles(): Promise<number> {
 }
 
 /**
+ * Publication dedup groups checked at once. `reconcilePublicationGroup` now
+ * verifies candidates against the repo (a network round trip per group), so
+ * unlike the rest of this sweep it's no longer pure DB work — a handful in
+ * flight bounds sweep latency without hammering PDSes, mirroring the
+ * `RECONCILE_CONCURRENCY` used for the same kind of repo check elsewhere.
+ */
+const PUBLICATION_DEDUP_CONCURRENCY = 8;
+
+/**
  * Collapse duplicate publications (`did, url`) and documents (`did, cid`) to a
  * single canonical row each. Repairs existing data and acts as a safety net for
  * the hot-path dedup. Returns how many duplicate groups were reconciled.
@@ -986,9 +996,26 @@ export async function dedupeRecords(): Promise<{
     .where(eq(publications.deleted, false))
     .groupBy(publications.did, normalizedUrl)
     .having(sql`count(*) > 1`);
-  for (const group of pubGroups) {
-    await reconcilePublicationGroup(group.did, group.url);
-  }
+  // Best-effort per group: reconcilePublicationGroup now checks the repo
+  // before collapsing anything, so a single unreachable PDS or slow lookup
+  // must not abort the rest of the sweep (or the recompute run it's part
+  // of) — a failed group is simply retried on the next hourly pass.
+  await mapWithConcurrency(
+    pubGroups,
+    PUBLICATION_DEDUP_CONCURRENCY,
+    async (group) => {
+      try {
+        await reconcilePublicationGroup(group.did, group.url);
+      } catch (error: unknown) {
+        logEvent("ingest.publicationDedup", {
+          did: group.did,
+          error: error instanceof Error ? error.message : String(error),
+          ok: false,
+          url: group.url,
+        });
+      }
+    },
+  );
 
   const docGroups = await db
     .select({ did: documents.did, cid: documents.cid })
