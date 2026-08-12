@@ -90,16 +90,29 @@ import {
 import { ensureTracked } from "./tap-client.ts";
 
 /**
- * Enforce one canonical publication per `(did, url)`: the record with the
- * greatest rkey (newest TID) survives; older same-site records are hidden
- * (`deleted = true`) and their documents and subscriptions repointed to the
+ * Enforce one canonical publication per `(did, url)` *among records the repo
+ * has actually stopped serving*: the record with the greatest rkey (newest
+ * TID) survives, and same-site siblings the PDS confirms are gone are hidden
+ * (`deleted = true`) with their documents and subscriptions repointed to the
  * survivor so they stay visible. Publishers sometimes re-create their
- * publication record (new rkey, same url) and *both* records persist in the
- * repo, so tap re-delivers both and a DB unique constraint would just wedge
- * ingest — we keep the read-model deduped instead. URL matching is
+ * publication record (new rkey, same url) and *both* rows persist in the
+ * read-model because tap re-delivered both before the delete for the old one
+ * arrived (or never did) — a DB unique constraint would just wedge ingest, so
+ * we keep the read-model deduped instead. URL matching is
  * trailing-slash-insensitive: re-created records show up as `https://x.com/`
  * vs `https://x.com`, and exact matching left both live with documents split
- * between them. Idempotent; safe to call from the hot path and the recompute
+ * between them.
+ *
+ * A same-`(did, url)` group is not on its own proof of a re-create: two
+ * genuinely distinct publications can share a base url, e.g. a second one
+ * left on a publishing platform's un-customized default URL. Collapsing on
+ * the group alone once did exactly that — creating a second publication
+ * silently hid an unrelated first one, PDS record and all, because both
+ * happened to share a url. So every candidate loser is checked against the
+ * repo before it's touched: only a row the PDS no longer serves is a
+ * "superseded duplicate"; a row still live in the repo is a distinct
+ * publication and is left alone even though it shares a url with the group's
+ * survivor. Idempotent; safe to call from the hot path and the recompute
  * sweep. (Repo deletes hard-delete publication rows, so `deleted` is free to
  * mean "superseded duplicate" here.)
  */
@@ -126,8 +139,34 @@ export async function reconcilePublicationGroup(
       canonical = row;
     }
   }
-  const losers = rows
-    .filter((row) => row.uri !== canonical.uri)
+  const candidates = rows.filter((row) => row.uri !== canonical.uri);
+  if (candidates.length === 0) {
+    return;
+  }
+
+  // The repo is the source of truth for which candidates are actually gone.
+  // A `listRepoRecords` failure (unreachable PDS, transient error) must not
+  // read as "confirmed gone" — that would reproduce the exact bug this check
+  // exists to prevent, so an unresolved identity or a failed list bails out
+  // and leaves every row in the group untouched for the next sweep.
+  const identity = await resolveIdentity(did);
+  if (!identity.pds) {
+    return;
+  }
+  let liveUris: Set<string>;
+  try {
+    const { records } = await listRepoRecords(
+      did,
+      Collections.publication,
+      identity.pds,
+    );
+    liveUris = new Set(records.map((record) => record.uri));
+  } catch {
+    return;
+  }
+
+  const losers = candidates
+    .filter((row) => !liveUris.has(row.uri))
     .map((row) => row.uri);
   if (losers.length === 0) {
     return;
