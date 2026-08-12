@@ -57,9 +57,9 @@ import { isStandalone } from "./standalone";
  */
 export const OFFLINE_READING_STORAGE_KEY = "sr:offline-reading";
 
-/** Bodies in flight at once. Enough to hide latency, few enough to stay out of
- * the way of anything the reader is actually doing. */
-const BODY_CONCURRENCY = 3;
+/** Bodies in flight at once. Enough to hide the round trip, few enough to stay
+ * out of the way of whatever the reader is actually doing. */
+const BODY_CONCURRENCY = 5;
 
 /** Images in flight at once, across all articles. */
 const IMAGE_CONCURRENCY = 4;
@@ -87,19 +87,37 @@ const STORAGE_CHECK_INTERVAL = 25;
  * Pages use the route's own size, so every page fetched is one the list asks
  * for verbatim when the reader scrolls. Unlike the unread set this has no
  * natural end — a reader with 200 subscriptions has an effectively infinite
- * history, and "everything ever published" is not what keeping articles on the
- * device means. 50 pages is ~1,000 rows per tab; the storage guard on bodies
- * usually stops the pass before this does.
+ * history — but the real limit is meant to be the storage guard on bodies, not
+ * this. 150 pages is ~3,000 rows per tab; deep enough that scrolling back
+ * rarely runs out, and bounded so a bug can't walk forever.
  */
-const LATEST_WARM_MAX_PAGES = 50;
+const LATEST_WARM_MAX_PAGES = 150;
 
 /**
- * How many subscribed publications to store pages for.
- *
- * Each costs four requests, so this is a latency bound rather than a storage
- * one — the pages themselves are small next to article bodies.
+ * Always re-walk at least this many pages, even when nothing on them is new.
+ * The head of the list is what a reader sees first, so it stays fresh.
  */
-const MAX_WARMED_PUBLICATIONS = 60;
+const MIN_LATEST_WARM_PAGES = 2;
+
+/** Wait for the first paint and its data before competing for bandwidth. */
+const INITIAL_SYNC_DELAY_MS = 5000;
+
+/**
+ * How often to top up while the app stays open. Frequent enough to pick up new
+ * posts during a session, and affordable because a caught-up pass is a couple
+ * of feed requests (see `warmLatestPages`).
+ */
+const RESYNC_INTERVAL_MS = 5 * 60_000;
+
+/**
+ * How many subscribed publications and followed authors to store pages for.
+ *
+ * A bound on request count, not storage — these pages are small next to article
+ * bodies. Set well past what most readers follow so the cap is a backstop
+ * rather than something people actually hit; the pass runs once per session
+ * (see {@link runOfflineSync}), so it isn't paid repeatedly.
+ */
+const MAX_WARMED_PUBLICATIONS = 250;
 
 /**
  * Must match `/p/$did/$rkey`'s loader. These values reach the server, so a
@@ -117,6 +135,8 @@ const LIST_PAGE_SIZE = 20;
 
 let running = false;
 let controller: AbortController | null = null;
+/** Whether the session-scoped, run-once work has been done (see the pass). */
+let didFullPass = false;
 
 export function isOfflineReadingEnabled(): boolean {
   if (globalThis.localStorage === undefined) return true;
@@ -407,11 +427,13 @@ async function warmFeedData(signal: AbortSignal): Promise<void> {
 async function warmLatestPages(
   filter: "unread" | "subscriptions",
   signal: AbortSignal,
+  known: ReadonlySet<string>,
   onCollection?: (documentUri: string) => void,
 ): Promise<Array<string>> {
   const limit = latestFeedPageSize(filter);
   const uris: Array<string> = [];
   let offset = 0;
+  let settledPages = 0;
 
   for (let page = 0; page < LATEST_WARM_MAX_PAGES; page += 1) {
     if (signal.aborted || isOffline()) break;
@@ -422,13 +444,25 @@ async function warmLatestPages(
     } catch {
       break;
     }
+
+    let fresh = 0;
     for (const item of feed.items) {
       uris.push(item.uri);
+      if (!known.has(item.uri)) fresh += 1;
       // A collection article redirects `/a/…` → `/collection/…` for readers who
       // open collections as magazines, so that route is reachable offline even
       // though its nav entry is hidden — and it needs its own chunk.
       if (item.isCollection) onCollection?.(item.uri);
     }
+
+    // Stop once the walk reaches depth it already has. This is what makes
+    // running every few minutes affordable: the first pass goes as deep as the
+    // cap allows, and each pass after it costs a couple of pages unless
+    // something new arrived. Two consecutive settled pages rather than one, so
+    // a single page of re-reads doesn't end the walk early.
+    settledPages = fresh === 0 ? settledPages + 1 : 0;
+    if (page >= MIN_LATEST_WARM_PAGES && settledPages >= 2) break;
+
     if (feed.nextOffset == null) break;
     offset = feed.nextOffset;
     await whenIdle(signal);
@@ -649,6 +683,8 @@ export async function runOfflineSync(router: AnyRouter): Promise<void> {
   running = true;
   controller = new AbortController();
   const { signal } = controller;
+  // The first pass of a session goes wide and deep; the ones after it top up.
+  const fullPass = !didFullPass;
 
   try {
     // Ask once per install. Without this the browser treats the whole origin as
@@ -658,12 +694,24 @@ export async function runOfflineSync(router: AnyRouter): Promise<void> {
     await warmShell(signal);
     // Before any bodies. An unwarmed feed drops a fully-cached page into the
     // offline state, so the surfaces come first and the articles follow.
-    await warmRouteChunks(router, signal);
-    await warmFonts(signal);
     await warmFeedData(signal);
-    await warmPublications(router, signal);
-    await warmFollowedUsers(router, signal);
-    await warmLists(router, signal);
+
+    // Route chunks, fonts, and every publication / author / list the reader
+    // follows: a large, fixed set that does not change during a session. Doing
+    // it once is what lets the pass repeat every few minutes — re-fetching a
+    // few hundred sidebar pages on a timer would be a lot of traffic for
+    // nothing. A new session redoes it, which is when it can have changed.
+    if (fullPass) {
+      await warmRouteChunks(router, signal);
+      await warmFonts(signal);
+      await warmPublications(router, signal);
+      await warmFollowedUsers(router, signal);
+      await warmLists(router, signal);
+      // Only once it has actually finished. A pass that lost the connection
+      // two seconds in must not convince the rest of the session that the
+      // sidebar is cached.
+      if (!signal.aborted && !isOffline()) didFullPass = true;
+    }
 
     const fresh = ledgerFreshUris(Date.now());
     const seen = new Set<string>();
@@ -719,22 +767,29 @@ export async function runOfflineSync(router: AnyRouter): Promise<void> {
     let collectionWarmed = false;
     for (const filter of ["unread", "subscriptions"] as const) {
       if (stoppedEarly || signal.aborted || isOffline()) break;
-      const uris = await warmLatestPages(filter, signal, (documentUri) => {
-        if (collectionWarmed) return;
-        collectionWarmed = true;
-        void warmArticleRoute(router, documentUri, "/collection/$did/$rkey");
-      });
+      const uris = await warmLatestPages(
+        filter,
+        signal,
+        // What the walk already has, so it can stop once it reaches it.
+        fresh,
+        (documentUri) => {
+          if (collectionWarmed) return;
+          collectionWarmed = true;
+          void warmArticleRoute(router, documentUri, "/collection/$did/$rkey");
+        },
+      );
       for (const uri of uris) seen.add(uri);
       if (!(await cacheBodies(uris.filter((uri) => !fresh.has(uri))))) {
         stoppedEarly = true;
       }
     }
 
-    // Prune only after a complete pass. A partial walk would drop entries for
-    // documents still further down the list, and re-download all of them next
-    // time. `seen` deliberately spans unread *and* backlog, so finishing an
-    // article does not evict the copy we just stored.
-    if (!stoppedEarly && !cursor && !signal.aborted) {
+    // Prune only after a pass that actually saw everything — the deep first
+    // one. Later passes stop as soon as the feed walk reaches familiar ground,
+    // so `seen` covers the head of the list and nothing below it; pruning to
+    // that would evict the whole backlog and re-download it next time. Entries
+    // the reader has worked through age out of the ledger on their own.
+    if (fullPass && !stoppedEarly && !cursor && !signal.aborted) {
       ledgerRetainOnly(seen);
     }
   } catch {
@@ -756,15 +811,30 @@ export function startOfflineSync(router: AnyRouter): () => void {
     void runOfflineSync(router);
   };
 
-  // Let the first paint and its data finish before competing for bandwidth.
-  const timer = globalThis.setTimeout(start, 5000);
+  // Keep going for as long as the app is open, rather than filling once and
+  // stopping: new posts arrive, and a pass that hit the storage guard or lost
+  // the connection has more to do. Repeat passes are cheap by construction —
+  // the ledger skips bodies already stored, and the feed walk stops as soon as
+  // it reaches pages it has already seen (see `warmLatestPages`).
+  const timer = globalThis.setTimeout(start, INITIAL_SYNC_DELAY_MS);
+  const interval = globalThis.setInterval(start, RESYNC_INTERVAL_MS);
+
+  // Coming back to a backgrounded app is the other natural moment to top up:
+  // timers are throttled or suspended while hidden, so the interval alone can
+  // leave a long gap.
+  const onVisible = () => {
+    if (globalThis.document?.visibilityState === "visible") start();
+  };
   globalThis.addEventListener?.("online", start);
   globalThis.addEventListener?.("offline", stopOfflineSync);
+  globalThis.document?.addEventListener("visibilitychange", onVisible);
 
   return () => {
     globalThis.clearTimeout(timer);
+    globalThis.clearInterval(interval);
     globalThis.removeEventListener?.("online", start);
     globalThis.removeEventListener?.("offline", stopOfflineSync);
+    globalThis.document?.removeEventListener("visibilitychange", onVisible);
     stopOfflineSync();
   };
 }
