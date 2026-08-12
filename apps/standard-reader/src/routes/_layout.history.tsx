@@ -12,7 +12,7 @@ import {
   lineHeight,
 } from "@standard-reader/design-system/theme/typography.stylex";
 import * as stylex from "@stylexjs/stylex";
-import { useSuspenseInfiniteQuery } from "@tanstack/react-query";
+import { useQuery, useSuspenseInfiniteQuery } from "@tanstack/react-query";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useCallback } from "react";
 
@@ -24,8 +24,13 @@ import { getPublicUrlClient } from "#/lib/public-url";
 import { pageSocialMeta } from "#/lib/site-metadata";
 import { buildAuthRedirectPath } from "#/utils/auth-redirect";
 
+import { ContinueReading } from "../components/reader/continue-reading";
 import { FeedLoadMore } from "../components/reader/feed-load-more";
-import { Masthead, ReaderContent } from "../components/reader/primitives";
+import {
+  Masthead,
+  ReaderContent,
+  SectionHead,
+} from "../components/reader/primitives";
 import { ReaderQueueRows } from "../components/reader/reader-queue-rows";
 
 export const Route = createFileRoute("/_layout/history")({
@@ -41,9 +46,19 @@ export const Route = createFileRoute("/_layout/history")({
     }
   },
   loader: async ({ context }) => {
-    await context.queryClient.ensureInfiniteQueryData(
-      readerApi.getReadingHistoryInfiniteQueryOptions(),
-    );
+    await Promise.all([
+      context.queryClient.ensureInfiniteQueryData(
+        readerApi.getReadingHistoryInfiniteQueryOptions(),
+      ),
+      // The shelf rides along so it paints with the list, but it must never be
+      // what fails the page: offline (or on any server hiccup) a rejection here
+      // would throw the whole route to the error component and cost the reader
+      // their cached history over a six-row extra. The component treats a
+      // missing result as an empty shelf.
+      context.queryClient
+        .ensureQueryData(readerApi.getUnfinishedReadingQueryOptions())
+        .catch(() => null),
+    ]);
   },
   head: () => ({
     meta: pageSocialMeta("history", getPublicUrlClient()),
@@ -105,9 +120,17 @@ function ReaderHistory() {
   const { t } = useLingui();
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useSuspenseInfiniteQuery(readerApi.getReadingHistoryInfiniteQueryOptions());
+  // `useQuery`, not `useSuspenseQuery`: the shelf is an extra on this page, and
+  // suspending (or throwing) on it would take the reading history down with it
+  // when the reader is offline.
+  const { data: unfinished } = useQuery(
+    readerApi.getUnfinishedReadingQueryOptions(),
+  );
 
   const history = data.pages.flatMap((page) => page.items);
   const total = data.pages[0]?.total ?? 0;
+  const unfinishedItems = unfinished ?? [];
+  const hasUnfinished = unfinishedItems.some((item) => item.article != null);
 
   const loadMore = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) {
@@ -161,6 +184,12 @@ function ReaderHistory() {
         </div>
       ) : (
         <>
+          <ContinueReading items={unfinishedItems} />
+          {/* Only once the shelf is above it does the list below need naming —
+              on its own it is the page, and the masthead already said so. */}
+          {hasUnfinished ? (
+            <SectionHead title={t`Everything you've read`} size="md" />
+          ) : null}
           <ReaderQueueRows
             items={queueRows}
             showSaveButton={false}

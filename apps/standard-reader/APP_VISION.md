@@ -576,6 +576,10 @@ comic issue with no pages falls back to it outright.
 
 - Signed-in reader's **reading history** (`app.standard-reader.read`), newest first — every
   article opened while signed in.
+- Opens with a **Continue reading** shelf: up to six articles the reader is partway through,
+  most recently touched first, each with a percentage-read meter. Short on purpose — it is a
+  prompt to pick something back up, not another backlog. It is an extra on this page, never
+  fatal: offline (or on any error) it simply doesn't render and the cached history still does.
 - Route `/history`; linked from the user menu. Requires auth (redirects to login).
 
 ### Reader profile (saved for later)
@@ -742,6 +746,20 @@ source of truth; Neon holds a derived view for speed and cross-network querying.
   `/saved`, distinct from likes.
 - **Read / unread:** an `app.standard-reader.read` record per article; opening an article
   marks it read. **Reading history** at `/history` lists these newest-first.
+- **Reading position (deliberately not a record):** reopening an article puts the reader back
+  where they stopped, and `/history` opens with a **Continue reading** shelf of the articles they
+  are partway through. This is the one piece of personal state that is **not** written to the
+  repo. Reads and bookmarks being public is a fair trade — they say what you read. A position
+  says how far you got and where you gave up, which is a running commentary on attention that
+  nobody opts into by opening an article. So it lives in a private, app-local Neon table
+  (`reading_progress`, keyed by `(owner_did, document_uri)`) that the tap never writes, mirrored
+  into `localStorage` per device. The local copy is what restores the scroll — it is readable
+  before first paint, where a Neon round trip is an order of magnitude too slow — and it is what
+  keeps position working offline in the installed PWA; the server copy is what carries the
+  position from phone to laptop, and only wins when it is newer and the reader has not already
+  started scrolling. Rows exist only between 2% and 95%, so the table *is* the shelf and never
+  needs sweeping, and clearing reading history clears positions with it. Gated on the same
+  "Track reading history" setting: position is reading history at a finer grain.
 - **The write path mirrors personal state into Neon itself**
   (`src/server/reader/personal-state-mirror.ts`) — reads, bookmarks, and likes — rather than
   waiting for the tap to replay them. These are the toggles a reader watches change in the moment

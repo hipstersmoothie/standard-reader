@@ -82,6 +82,7 @@ import type { Locale } from "#/lib/locale";
 import { LOCALE_LABELS, LOCALES, PSEUDO_LOCALE, isLocale } from "#/lib/locale";
 import { AMERICAN_ENGLISH_VOICES } from "#/lib/page-reader/voice-catalog";
 import { isReaderVoicePreference } from "#/lib/reader-voice";
+import { clearAllLocalProgress } from "#/lib/reading-progress";
 import type { ReadingTypographyPreference } from "#/lib/reading-typography";
 import {
   READING_BODY_FONTS,
@@ -485,9 +486,17 @@ export function UserSettingsView() {
   const signedIn = Boolean(session?.user);
   const sidebarPref = useSidebarPref(signedIn);
 
-  const deleteHistoryMutation = useMutation(
-    readerApi.deleteAllReadHistoryMutationOptions(),
-  );
+  const deleteHistoryMutation = useMutation({
+    ...readerApi.deleteAllReadHistoryMutationOptions(),
+    onSuccess: () => {
+      // The server rows are gone; drop this device's copy too, or the next
+      // article the reader opens resumes from a position they just erased.
+      clearAllLocalProgress();
+      void queryClient.invalidateQueries({
+        queryKey: ["reader", "unfinished"],
+      });
+    },
+  });
   const deleteBookmarksMutation = useMutation(
     readerApi.deleteAllBookmarksMutationOptions(),
   );

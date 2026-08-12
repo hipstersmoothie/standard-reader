@@ -1103,6 +1103,26 @@ Backend/API exists; UI or copy is missing.
 
 ## 9. Post-v1 — reader polish (Tier 2)
 
+- [x] **Resume where you left off** — reopening an article restores the reader's position, and
+      `/history` opens with a **Continue reading** shelf (six most-recent in-progress articles,
+      each with a percent-read meter). Position is the one bit of personal state kept **off**
+      the protocol: reads are public records, and how far you got is a different kind of fact.
+      A private app-local table ([`reading-progress.ts`](src/db/schema/reading-progress.ts),
+      `drizzle/0037_*`, keyed `(owner_did, document_uri)`, never touched by the tap) plus a
+      per-device `localStorage` mirror ([`reading-progress.ts`](src/lib/reading-progress.ts)).
+      Local drives the restore because it can be read before first paint and works offline;
+      the server copy carries position across devices and only wins when it is newer and the
+      reader hasn't already scrolled. Rows live only between 2% and 95%, so the table *is* the
+      shelf. All of it in [`use-reading-progress.ts`](src/components/reader/use-reading-progress.ts),
+      which also owns the sticky-chrome progress bar it replaced.
+      Gated on "Track reading history"; clearing history clears positions too.
+      **Before deploy:** run `pnpm db:migrate` (migration `0037`) — the shelf query 500s without
+      the table.
+      Known gaps, deliberately deferred: `/history` is still not in `OFFLINE_ROUTES`, so the shelf
+      is unavailable offline (it degrades to absent, never to an error); and an offline
+      "Start from top" is a paused mutation, so killing the PWA before reconnect leaves the server
+      row and the position comes back. Both want the durable write outbox the app doesn't have yet.
+
 - [x] **Web push notifications (v1)** — a bell on a publication page
       ([`publication-actions.tsx`](src/components/reader/publication-actions.tsx)) and an author
       page ([`author-actions.tsx`](src/components/reader/author-actions.tsx)) that notifies you when
