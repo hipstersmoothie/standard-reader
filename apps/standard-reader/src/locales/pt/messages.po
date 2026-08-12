@@ -368,6 +368,10 @@ msgstr "Pesquise por título ou autor, ou cole um URL ou URI at://"
 msgid "Show {itemLabel} in the sidebar"
 msgstr ""
 
+#: src/components/reader/continue-reading.tsx
+msgid "Still open"
+msgstr ""
+
 #: src/components/guide/pages/finding-guide-page.tsx
 msgid "Each tab carries a count, and <0>Mark all as read</0> clears the backlog when a week gets away from you."
 msgstr ""
@@ -1290,6 +1294,10 @@ msgstr "O {SITE_NAME} é um leitor web para publicações do standard.site no AT
 msgid "Followed pages warmed"
 msgstr ""
 
+#: src/routes/_layout.history.tsx
+msgid "Everything you've read"
+msgstr ""
+
 #: src/components/guide/pages/getting-started-guide-page.tsx
 msgid "the directory of every publication the network knows about."
 msgstr ""
@@ -1782,6 +1790,10 @@ msgstr ""
 msgid "No topics match “{debouncedQuery}”."
 msgstr "Nenhum tema corresponde a “{debouncedQuery}”"
 
+#: src/components/reader/continue-reading.tsx
+msgid "Reading progress"
+msgstr ""
+
 #: src/components/guide/pages/keeping-track-guide-page.tsx
 msgid "So subscribe to the publication when you want that particular thing, and follow the person when you want the writer — and their reading. In the sidebar and in Subscriptions the two are listed together, with a <0>Type</0> column telling them apart."
 msgstr ""
@@ -1875,6 +1887,10 @@ msgstr ""
 msgid "Notifications aren’t available"
 msgstr ""
 
+#: src/components/offline-sync-debug.tsx
+msgid "History pages"
+msgstr ""
+
 #: src/components/reader/save-to-collection-dialog.tsx
 msgid "Collection name"
 msgstr "Nome da coleção"
@@ -1904,6 +1920,10 @@ msgstr ""
 #: src/components/guide/pages/publishing-guide-page.tsx
 #: src/lib/guide/navigation.ts
 msgid "Publishing your site"
+msgstr ""
+
+#: src/components/reader/continue-reading.tsx
+msgid "Continue reading"
 msgstr ""
 
 #: src/components/reader/list-edit-modal.tsx
@@ -3754,6 +3774,10 @@ msgstr "Nenhuma destas publicações publicou algo. Inscreva-se através da aba 
 #: src/routes/_layout.l.$did.$rkey.tsx
 msgid "Share elsewhere"
 msgstr "Compartilhar em outro lugar"
+
+#: src/components/offline-sync-debug.tsx
+msgid "Unfinished listed"
+msgstr ""
 
 #: src/components/guide/pages/your-data-guide-page.tsx
 msgid "Signing in asks for permission to write only the kinds of records the app actually needs — follows, saves, recommendations, read records, and lists. It cannot post to Bluesky as you."
@@ -6304,6 +6328,10 @@ msgstr ""
 #~ msgid "Reorder subscriptions"
 #~ msgstr ""
 
+#: src/components/reader/article-view.tsx
+msgid "Picked up where you left off"
+msgstr ""
+
 #: src/components/guide/pages/personalizing-guide-page.tsx
 #: src/lib/guide/navigation.ts
 msgid "Light, dark, and custom colors"
@@ -6840,6 +6868,10 @@ msgstr "Não vendemos nem compartilhamos os dados da extensão com terceiros."
 #: src/routes/_layout.latest.tsx
 msgid "Explore the directory"
 msgstr "Explorar o diretório"
+
+#: src/components/reader/article-view.tsx
+msgid "Start from top"
+msgstr ""
 
 #: src/components/reader/extension-privacy-view.tsx
 msgid "How requests are handled"
@@ -8152,6 +8184,10 @@ msgstr ""
 #: src/components/TrackReadingHistoryMenuItem.tsx
 msgid "On"
 msgstr "Ligado"
+
+#: src/components/reader/continue-reading.tsx
+msgid "{label} read"
+msgstr ""
 
 #: src/components/guide/pages/your-data-guide-page.tsx
 msgid "We keep a copy of the public network — publications, articles, and who follows what — so the app can search, rank, and load quickly. That copy includes the records described above. It is a cache of things that are already public, not a second private profile of you."

@@ -302,6 +302,14 @@ export function OfflineSyncDebugPanel() {
         value={String(counts.unreadListed)}
       />
       <Row
+        label={<Trans>History pages</Trans>}
+        value={String(counts.historyPages)}
+      />
+      <Row
+        label={<Trans>Unfinished listed</Trans>}
+        value={String(counts.unfinishedListed)}
+      />
+      <Row
         label={<Trans>Publications</Trans>}
         value={String(counts.publications)}
       />

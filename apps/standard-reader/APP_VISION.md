@@ -757,7 +757,7 @@ source of truth; Neon holds a derived view for speed and cross-network querying.
   before first paint, where a Neon round trip is an order of magnitude too slow — and it is what
   keeps position working offline in the installed PWA; the server copy is what carries the
   position from phone to laptop, and only wins when it is newer and the reader has not already
-  started scrolling. Rows exist only between 2% and 95%, so the table *is* the shelf and never
+  started scrolling. Rows exist only between 2% and 95%, so the table _is_ the shelf and never
   needs sweeping, and clearing reading history clears positions with it. Gated on the same
   "Track reading history" setting: position is reading history at a finer grain.
 - **The write path mirrors personal state into Neon itself**
@@ -1552,8 +1552,10 @@ publication list looked clean.
 - Network-powered recommendations & trending (initial heuristics, tunable).
 - **Offline reading in the installed app** — the service worker caches read server functions
   (`/_serverFn` GETs), and `src/pwa/offline-sync.ts` pre-downloads every unread body and its
-  images so the backlog opens with no connection. Reaching for something never downloaded shows
-  an offline state rather than an error.
+  images so the backlog opens with no connection. The surfaces that must survive a dead
+  connection are warmed by name — home, `/latest`, `/saved`, `/subscriptions`, and `/history`
+  (its list and its **Continue reading** shelf, whose part-read bodies no unread walk would
+  reach). Reaching for something never downloaded shows an offline state rather than an error.
 
 ### Later
 
