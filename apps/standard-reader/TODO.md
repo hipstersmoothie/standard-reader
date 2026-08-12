@@ -625,6 +625,14 @@ Build each on hip-ui components + StyleX tokens (no raw HTML/inline styles).
       card's accessible name only names a platform when the link actually goes there. Same helper
       in the extension popup, whose copy of `ExtensionDiscussionComment` had also drifted — it was
       missing `note` / `leaflet`, labelling pckt and Leaflet comments "on Bluesky".
+- [x] **Collection Discussion pulling in unrelated posts** (2026-08-12). A collection assembled
+      in-app has no page of its own, so ingest resolves its `canonicalUrl` to the bare publication
+      root when `path` is empty. That bare root was still used as a Constellation backlink target,
+      and Constellation matches exact URLs — so the collection's Discussion section surfaced every
+      post that linked the publication's homepage at all, not just posts about the collection.
+      `loadDocumentCommentTargets` (`document-comments.ts`) now drops a canonical URL that equals
+      the publication's root, leaving the in-app share URL as the target. Regression test in
+      `document-comments.test.ts`.
 - [x] **Page reader (Listen)** — on-device TTS for the reading view via `kokoro-js` (lazy-loaded on first use; `src/lib/page-reader/*`). Top-bar "Listen" button reads the whole article; selection toolbar adds "Read from here". The transport is a floating action bar (`PageReaderBar`) docked above the bottom nav on every route — same position on desktop and mobile — with status/time, title, back-15s, accent play/pause, speed menu, close, and a thin draggable seek track; the article keeps its own scroll-progress bar (`PageReaderProvider` + `PageReaderBar`).
 - [x] **Publication profile** — banner + inline header (avatar/topic/name/desc/stats/Copy DID/Follow),
       recent writing (infinite scroll via `publicationApi.getPublicationDocuments` offset

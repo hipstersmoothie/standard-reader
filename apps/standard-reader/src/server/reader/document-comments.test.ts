@@ -282,6 +282,48 @@ describe("document comment counts", () => {
     expect(getPosts.mock.calls).toHaveLength(buildsAfterSection);
   });
 
+  /**
+   * Regression test: a collection assembled in-app has no page of its own, so
+   * ingest resolves `canonicalUrl` to the bare publication root (no `path`).
+   * That must not become a Constellation backlink target — an exact-URL
+   * lookup on the bare root would match every post that links to the
+   * publication's site at all, not just this document.
+   */
+  it("does not use a bare publication-root canonical URL as a comment target", async () => {
+    const collectionRow = {
+      ...documentRow,
+      path: null,
+      canonicalUrl: "https://blog.example",
+      publicationUrl: "https://blog.example",
+      bskyPostUri: null,
+    };
+
+    getPostBacklinksForTarget.mockImplementation((target: string) => {
+      // Some unrelated post links the publication's homepage in general.
+      if (target === "https://blog.example") {
+        return Promise.resolve([backlink("unrelated")]);
+      }
+      return Promise.resolve([]);
+    });
+    getPosts.mockResolvedValue([
+      postView({ uri: "at://did:plc:commenter/app.bsky.feed.post/unrelated" }),
+    ]);
+
+    const { fetchDocumentComments } = await importModule();
+    const dbClient = fakeDb(collectionRow);
+
+    const comments = await fetchDocumentComments(
+      dbClient,
+      fakeSchema,
+      DOCUMENT_URI,
+    );
+
+    expect(
+      getPostBacklinksForTarget.mock.calls.map(([target]) => target),
+    ).not.toContain("https://blog.example");
+    expect(comments.comments).toHaveLength(0);
+  });
+
   it("reports 0 for a document with no discussion", async () => {
     getPostBacklinksForTarget.mockResolvedValue([]);
     getPosts.mockResolvedValue([]);

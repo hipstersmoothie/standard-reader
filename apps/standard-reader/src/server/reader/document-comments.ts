@@ -466,8 +466,19 @@ async function loadDocumentCommentTargets(
   const doc = rows[0];
   if (!doc) return null;
 
-  const canonicalUrl =
+  const rawCanonicalUrl =
     doc.canonicalUrl ?? buildCanonicalUrl(doc.publicationUrl, doc.path);
+  // A canonical URL that's nothing more than the publication's bare root (no
+  // path — the case for a collection assembled in-app, which has no page of
+  // its own to point `path` at) isn't specific to this document. Constellation
+  // backlink lookups are exact-URL, so using it as a comment target would
+  // surface every post that links to the publication's site at all — e.g.
+  // every post about the publication itself — as this document's Discussion.
+  const publicationRoot = doc.publicationUrl?.replace(/\/+$/, "") || null;
+  const canonicalUrl =
+    rawCanonicalUrl && rawCanonicalUrl !== publicationRoot
+      ? rawCanonicalUrl
+      : null;
 
   // Canonical (not per-deployment) origin: posts in the wild embed the prod
   // `standard-reader.app/a/...` URL, so a preview must look that up, not its
