@@ -4,7 +4,10 @@ import { documents, publications, subscriptions } from "../../db/schema.ts";
 
 const { updateCalls, selectRows, listRepoRecordsImpl, resolveIdentityImpl } =
   vi.hoisted(() => ({
-    updateCalls: [] as Array<{ table: unknown; values: Record<string, unknown> }>,
+    updateCalls: [] as Array<{
+      table: unknown;
+      values: Record<string, unknown>;
+    }>,
     selectRows: [] as Array<{ uri: string; rkey: string }>,
     listRepoRecordsImpl: vi.fn(),
     resolveIdentityImpl: vi.fn(),
