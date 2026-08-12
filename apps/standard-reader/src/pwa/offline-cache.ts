@@ -206,6 +206,58 @@ export async function clearPersonalOfflineData(): Promise<void> {
   await deleteCaches(PERSONAL_CACHE_NAMES);
 }
 
+/** Entries held in each Workbox bucket, or `null` where the bucket is absent. */
+export interface OfflineCacheCounts {
+  /** `/_serverFn` responses — feeds, article bodies, publication pages. */
+  data: number | null;
+  /** Article and avatar images. */
+  images: number | null;
+  /** Rendered documents, which is what a cold offline launch boots from. */
+  pages: number | null;
+  /** Hashed JS/CSS, including the code-split route chunks. */
+  assets: number | null;
+}
+
+/**
+ * How much is on the device, counted from Cache Storage itself.
+ *
+ * The per-pass counters answer "what did the last run do", which is zero for
+ * every category once a reader is fully synced — a top-up that finds nothing
+ * new is a success that looks identical to sync never having worked. These
+ * numbers answer "what do I have", so they stay meaningful when there is
+ * nothing left to fetch.
+ */
+export async function offlineCacheCounts(): Promise<OfflineCacheCounts> {
+  const empty: OfflineCacheCounts = {
+    assets: null,
+    data: null,
+    images: null,
+    pages: null,
+  };
+  if (globalThis.caches === undefined) return empty;
+
+  const names = ["data", "images", "pages", "assets"] as const;
+  const counted = await Promise.all(
+    names.map(async (name) => {
+      try {
+        if (!(await globalThis.caches.has(name))) return null;
+        const cache = await globalThis.caches.open(name);
+        const keys = await cache.keys();
+        return keys.length;
+      } catch {
+        return null;
+      }
+    }),
+  );
+
+  return {
+    assets: counted[3] ?? null,
+    data: counted[0] ?? null,
+    images: counted[1] ?? null,
+    pages: counted[2] ?? null,
+  };
+}
+
 export interface OfflineStorageUsage {
   /** Bytes this origin is using, across all caches — not just ours. */
   usage: number;
