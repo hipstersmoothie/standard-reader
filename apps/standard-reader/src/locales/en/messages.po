@@ -5791,6 +5791,7 @@ msgstr "Follow along"
 msgid "Show all feedback"
 msgstr "Show all feedback"
 
+#: src/components/offline-sync-debug.tsx
 #: src/components/user-settings-view.tsx
 msgid "Troubleshooting"
 msgstr "Troubleshooting"

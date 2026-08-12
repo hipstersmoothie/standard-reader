@@ -1,6 +1,12 @@
 "use client";
 
+import { Trans } from "@lingui/react/macro";
 import { Button } from "@standard-reader/design-system/button";
+import {
+  Disclosure,
+  DisclosurePanel,
+  DisclosureTitle,
+} from "@standard-reader/design-system/disclosure";
 import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
 import {
   gap,
@@ -25,6 +31,7 @@ import {
   getOfflineSyncProgressServer,
   subscribeOfflineSyncProgress,
 } from "#/pwa/offline-sync-progress";
+import { isStandalone } from "#/pwa/standalone";
 
 const styles = stylex.create({
   panel: {
@@ -105,9 +112,12 @@ function Row({ label, value }: { label: string; value: string }) {
 }
 
 /**
- * Live view of the offline sync pass, shown only when the settings URL carries
- * `?debug`. Untranslated on purpose, like the push diagnostics values: this is
- * a troubleshooting surface whose strings get read back verbatim.
+ * Live view of the offline sync pass, inside a collapsed Troubleshooting
+ * disclosure. Always available in the installed app — sync only matters
+ * there, and a PWA has no address bar to type a flag into — and behind
+ * `?debug` in a browser tab, where it exists for development. The values are
+ * untranslated on purpose, like the push diagnostics: this is a surface whose
+ * strings get read back verbatim.
  *
  * "Run sync now" bypasses the installed-app gate, which is what makes offline
  * sync exercisable in a browser tab at all — on a device it also answers "is
@@ -123,10 +133,11 @@ export function OfflineSyncDebugPanel() {
   );
   const [usage, setUsage] = useState<OfflineStorageUsage | null>(null);
 
-  // Client-only: the flag lives in the URL's search string, which the server
-  // render must not depend on (and the settings route doesn't validate it).
+  // Client-only: display mode and the URL's search string are both things the
+  // server render must not depend on (and the settings route doesn't validate
+  // the flag).
   useEffect(() => {
-    setVisible(debugRequested());
+    setVisible(isStandalone() || debugRequested());
   }, []);
 
   // Refresh the storage line while a pass runs; it is the pass's output.
@@ -149,50 +160,60 @@ export function OfflineSyncDebugPanel() {
       : "not started";
 
   return (
-    <div {...stylex.props(styles.panel)}>
-      <p {...stylex.props(styles.heading)}>Offline sync (debug)</p>
-      <Row label="status" value={status} />
-      <Row
-        label="started / finished"
-        value={`${stamp(progress.startedAt)} / ${stamp(progress.finishedAt)}`}
-      />
-      <Row label="feed pages" value={String(counts.feedPages)} />
-      <Row label="unread listed" value={String(counts.unreadListed)} />
-      <Row label="publications" value={String(counts.publications)} />
-      <Row label="back-catalog pages" value={String(counts.backCatalogPages)} />
-      <Row label="authors" value={String(counts.authors)} />
-      <Row label="lists" value={String(counts.lists)} />
-      <Row
-        label="bodies"
-        value={`${counts.bodiesCached} of ${counts.bodiesQueued} queued`}
-      />
-      <Row label="images" value={String(counts.imagesWarmed)} />
-      <Row
-        label="storage"
-        value={
-          usage
-            ? `${formatBytes(usage.usage)}${usage.quota ? ` of ${formatBytes(usage.quota)}` : ""}${usage.persisted ? " (persisted)" : ""}`
-            : "unavailable"
-        }
-      />
-      <div {...stylex.props(styles.actions)}>
-        <Button
-          variant="secondary"
-          size="sm"
-          isDisabled={progress.running}
-          onPress={() => void runOfflineSync(router, { force: true })}
-        >
-          Run sync now
-        </Button>
-        <Button
-          variant="secondary"
-          size="sm"
-          isDisabled={!progress.running}
-          onPress={stopOfflineSync}
-        >
-          Stop
-        </Button>
-      </div>
-    </div>
+    <Disclosure>
+      <DisclosureTitle>
+        <Trans>Troubleshooting</Trans>
+      </DisclosureTitle>
+      <DisclosurePanel>
+        <div {...stylex.props(styles.panel)}>
+          <p {...stylex.props(styles.heading)}>Offline sync</p>
+          <Row label="status" value={status} />
+          <Row
+            label="started / finished"
+            value={`${stamp(progress.startedAt)} / ${stamp(progress.finishedAt)}`}
+          />
+          <Row label="feed pages" value={String(counts.feedPages)} />
+          <Row label="unread listed" value={String(counts.unreadListed)} />
+          <Row label="publications" value={String(counts.publications)} />
+          <Row
+            label="back-catalog pages"
+            value={String(counts.backCatalogPages)}
+          />
+          <Row label="authors" value={String(counts.authors)} />
+          <Row label="lists" value={String(counts.lists)} />
+          <Row
+            label="bodies"
+            value={`${counts.bodiesCached} of ${counts.bodiesQueued} queued`}
+          />
+          <Row label="images" value={String(counts.imagesWarmed)} />
+          <Row
+            label="storage"
+            value={
+              usage
+                ? `${formatBytes(usage.usage)}${usage.quota ? ` of ${formatBytes(usage.quota)}` : ""}${usage.persisted ? " (persisted)" : ""}`
+                : "unavailable"
+            }
+          />
+          <div {...stylex.props(styles.actions)}>
+            <Button
+              variant="secondary"
+              size="sm"
+              isDisabled={progress.running}
+              onPress={() => void runOfflineSync(router, { force: true })}
+            >
+              Run sync now
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              isDisabled={!progress.running}
+              onPress={stopOfflineSync}
+            >
+              Stop
+            </Button>
+          </div>
+        </div>
+      </DisclosurePanel>
+    </Disclosure>
   );
 }
