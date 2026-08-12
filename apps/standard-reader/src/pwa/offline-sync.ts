@@ -48,6 +48,13 @@ import {
   ledgerRetainOnly,
   offlineStorageUsage,
 } from "./offline-cache";
+import {
+  progressBegin,
+  progressCount,
+  progressEnd,
+  progressIneligible,
+  progressStep,
+} from "./offline-sync-progress";
 import { isStandalone } from "./standalone";
 
 /**
@@ -126,6 +133,17 @@ const MAX_WARMED_PUBLICATIONS = 250;
  */
 const PUBLICATION_RECENT_LIMIT = 12;
 const PUBLICATION_RECENT_FILTER = "all";
+
+/** Must match the publication page's "load more" (`PUBLICATION_PAGE_SIZE`). */
+const PUBLICATION_PAGE_SIZE = 20;
+
+/**
+ * Back-catalog pages fetched per followed publication, beyond its first.
+ * Three pages of 20 plus the first 12 keeps ~72 posts per publication
+ * scrollable offline; bodies beyond the feed walk queue behind everything
+ * newer, so the storage guard — not this — decides how many actually land.
+ */
+const PUBLICATION_BACK_CATALOG_PAGES = 3;
 
 /** Must match `/u/$did`'s loader (`AUTHOR_PAGE_SIZE`), same caveat as above. */
 const AUTHOR_PAGE_SIZE = 24;
@@ -293,9 +311,11 @@ async function syncDocument(
       signal,
       (url) => warmImage(url, signal),
     );
+    progressCount("imagesWarmed", images.length);
   }
 
   ledgerRecord(documentUri, Date.now());
+  progressCount("bodiesCached");
 }
 
 /**
@@ -444,6 +464,7 @@ async function warmLatestPages(
     } catch {
       break;
     }
+    progressCount("feedPages");
 
     let fresh = 0;
     for (const item of feed.items) {
@@ -482,6 +503,7 @@ async function warmLatestPages(
 async function warmPublications(
   router: AnyRouter,
   signal: AbortSignal,
+  enqueueBody: (documentUri: string) => void,
 ): Promise<void> {
   let following: Array<{ uri: string }>;
   try {
@@ -507,7 +529,7 @@ async function warmPublications(
       // Exactly what `/p/$did/$rkey`'s loader awaits, with the argument values
       // its query options default to. `readerScope` is not passed: it varies
       // the React Query key only, never the request the server sees.
-      await Promise.all([
+      const [, firstDocs] = await Promise.all([
         publicationApi.getPublicationHeader({ data: { publicationUri } }),
         publicationApi.getPublicationDocuments({
           // Key order matters as much as the values: the payload is serialised
@@ -526,6 +548,34 @@ async function warmPublications(
           // Signed-out readers never request this, so a failure is expected.
           .catch(() => null),
       ]);
+      progressCount("publications");
+
+      // The back catalog: the pages behind the publication's "load more",
+      // requested in the exact shape that button sends (`PUBLICATION_PAGE_SIZE`
+      // from the first page's `nextOffset`, not another 12-row page). The
+      // bodies are queued rather than fetched here — a back-catalog article is
+      // the lowest-priority body there is, and the queue keeps it behind
+      // everything the reader is more likely to open.
+      for (const item of firstDocs.items) enqueueBody(item.uri);
+      let nextOffset = firstDocs.nextOffset;
+      for (
+        let page = 0;
+        page < PUBLICATION_BACK_CATALOG_PAGES && nextOffset != null;
+        page += 1
+      ) {
+        if (signal.aborted || isOffline()) return;
+        const docs = await publicationApi.getPublicationDocuments({
+          data: {
+            publicationUri,
+            limit: PUBLICATION_PAGE_SIZE,
+            offset: nextOffset,
+            filter: PUBLICATION_RECENT_FILTER,
+          },
+        });
+        progressCount("backCatalogPages");
+        for (const item of docs.items) enqueueBody(item.uri);
+        nextOffset = docs.nextOffset;
+      }
     },
   );
 }
@@ -610,6 +660,7 @@ async function warmFollowedUsers(
           activityLimit: AUTHOR_ACTIVITY_PAGE_SIZE,
         },
       });
+      progressCount("authors");
     },
   );
 }
@@ -655,6 +706,7 @@ async function warmLists(
         },
       }),
     ]);
+    progressCount("lists");
   });
 }
 
@@ -672,40 +724,119 @@ export function stopOfflineSync(): void {
  * backlog because they opened the website in a tab is not a trade a website
  * visitor agreed to.
  */
-export async function runOfflineSync(router: AnyRouter): Promise<void> {
-  if (running) return;
-  if (globalThis.window === undefined) return;
-  if (!isStandalone()) return;
-  if (!isOfflineReadingEnabled()) return;
-  if (isOffline()) return;
-  if (saveDataRequested()) return;
+export async function runOfflineSync(
+  router: AnyRouter,
+  opts: {
+    /**
+     * Skip the installed-app / toggle / Save-Data gates. Only the settings
+     * debug panel passes this — pressing "Run sync now" *is* the consent those
+     * gates exist to establish, and it lets sync be exercised in a plain
+     * browser tab where `display-mode: standalone` never matches.
+     */
+    force?: boolean;
+  } = {},
+): Promise<void> {
+  if (running || globalThis.window === undefined) return;
+  if (isOffline()) {
+    progressIneligible("offline");
+    return;
+  }
+  if (!opts.force) {
+    // Each gate names itself so the debug panel can say why nothing has run —
+    // "not-eligible: not installed" beats a counter stuck at zero.
+    if (!isStandalone()) {
+      progressIneligible("not installed (browser tab, not the app)");
+      return;
+    }
+    if (!isOfflineReadingEnabled()) {
+      progressIneligible("offline reading is turned off in settings");
+      return;
+    }
+    if (saveDataRequested()) {
+      progressIneligible("the system asked apps to save data");
+      return;
+    }
+  }
 
   running = true;
   controller = new AbortController();
   const { signal } = controller;
   // The first pass of a session goes wide and deep; the ones after it top up.
   const fullPass = !didFullPass;
+  const passToken = progressBegin(fullPass ? "full" : "top-up");
 
   try {
     // Ask once per install. Without this the browser treats the whole origin as
     // discardable and can drop a synced backlog under storage pressure.
     void globalThis.navigator?.storage?.persist?.();
 
+    // ── Phase 1: every *list* surface, breadth-first. ──
+    // These are cheap (one request per page) and they are what makes the app
+    // feel present offline: feeds that scroll, publications that open. They
+    // all run before a single body downloads, because the body walk takes
+    // minutes and phones kill backgrounded PWAs without warning — an
+    // interrupted pass should leave every surface warm and some bodies
+    // missing (dimmed), not deep bodies behind surfaces that 404.
+    const fresh = ledgerFreshUris(Date.now());
+    // Body order = discovery order: unread first, then the feed walk, then
+    // publication back catalogs. Newest and most-likely-to-be-opened first,
+    // so whatever ends the walk early cuts from the bottom.
+    const queued = new Set<string>();
+    const bodyQueue: Array<string> = [];
+    const enqueueBody = (uri: string) => {
+      if (queued.has(uri)) return;
+      queued.add(uri);
+      bodyQueue.push(uri);
+    };
+
+    progressStep("app shell");
     await warmShell(signal);
-    // Before any bodies. An unwarmed feed drops a fully-cached page into the
-    // offline state, so the surfaces come first and the articles follow.
+    progressStep("feeds");
     await warmFeedData(signal);
 
+    // The unread list — URIs only; their bodies queue for phase 2.
+    progressStep("unread list");
+    let cursor: { publishedAt: string; uri: string } | null = null;
+    do {
+      if (signal.aborted || isOffline()) break;
+      const page: Awaited<ReturnType<typeof readerApi.getUnreadDocumentUris>> =
+        await readerApi.getUnreadDocumentUris({
+          data: cursor ? { cursor } : {},
+        });
+      for (const uri of page.uris) enqueueBody(uri);
+      progressCount("unreadListed", page.uris.length);
+      cursor = page.nextCursor;
+    } while (cursor && !signal.aborted);
+
+    // The /latest tabs, deep enough to scroll. Every pass, because this is
+    // where new posts appear — but it stops as soon as it reaches pages it
+    // already knows, so a caught-up pass costs a couple of requests.
+    progressStep("latest pages");
+    let collectionWarmed = false;
+    for (const filter of ["unread", "subscriptions"] as const) {
+      if (signal.aborted || isOffline()) break;
+      const uris = await warmLatestPages(filter, signal, fresh, (uri) => {
+        if (collectionWarmed) return;
+        collectionWarmed = true;
+        void warmArticleRoute(router, uri, "/collection/$did/$rkey");
+      });
+      for (const uri of uris) enqueueBody(uri);
+    }
+
     // Route chunks, fonts, and every publication / author / list the reader
-    // follows: a large, fixed set that does not change during a session. Doing
-    // it once is what lets the pass repeat every few minutes — re-fetching a
-    // few hundred sidebar pages on a timer would be a lot of traffic for
-    // nothing. A new session redoes it, which is when it can have changed.
+    // follows: a large, fixed set that does not change during a session. Once
+    // per session is what lets the pass repeat every few minutes — re-fetching
+    // a few hundred sidebar pages on a timer would be traffic for nothing.
     if (fullPass) {
+      progressStep("app code");
       await warmRouteChunks(router, signal);
+      progressStep("fonts");
       await warmFonts(signal);
-      await warmPublications(router, signal);
+      progressStep("publications");
+      await warmPublications(router, signal, enqueueBody);
+      progressStep("authors");
       await warmFollowedUsers(router, signal);
+      progressStep("lists");
       await warmLists(router, signal);
       // Only once it has actually finished. A pass that lost the connection
       // two seconds in must not convince the rest of the session that the
@@ -713,75 +844,29 @@ export async function runOfflineSync(router: AnyRouter): Promise<void> {
       if (!signal.aborted && !isOffline()) didFullPass = true;
     }
 
-    const fresh = ledgerFreshUris(Date.now());
-    const seen = new Set<string>();
-    let cursor: { publishedAt: string; uri: string } | null = null;
-    let routeWarmed = false;
-    let stoppedEarly = false;
+    // ── Phase 2: article bodies and their images, in queue order. ──
+    progressStep("articles");
+    const pending = bodyQueue.filter((uri) => !fresh.has(uri));
+    progressCount("bodiesQueued", pending.length);
+    if (pending[0]) await warmArticleRoute(router, pending[0]);
 
-    /** Cache a batch of bodies; returns false when storage says stop. */
-    const cacheBodies = async (uris: Array<string>): Promise<boolean> => {
-      for (let i = 0; i < uris.length; i += STORAGE_CHECK_INTERVAL) {
-        if (signal.aborted || isOffline()) return false;
-        if (await underStoragePressure()) return false;
-        await pool(
-          uris.slice(i, i + STORAGE_CHECK_INTERVAL),
-          BODY_CONCURRENCY,
-          signal,
-          (uri) => syncDocument(uri, signal),
-        );
-        await whenIdle(signal);
-      }
-      return true;
-    };
-
-    // ── Unread first. Uncapped: this is the backlog the reader came for. ──
-    do {
-      if (signal.aborted || isOffline()) break;
-
-      const page: Awaited<ReturnType<typeof readerApi.getUnreadDocumentUris>> =
-        await readerApi.getUnreadDocumentUris({
-          data: cursor ? { cursor } : {},
-        });
-      for (const uri of page.uris) seen.add(uri);
-      cursor = page.nextCursor;
-
-      const pending = page.uris.filter((uri) => !fresh.has(uri));
-
-      if (!routeWarmed && pending[0]) {
-        routeWarmed = true;
-        await warmArticleRoute(router, pending[0]);
-      }
-
-      if (!(await cacheBodies(pending))) {
-        stoppedEarly = true;
+    let stopReason: "completed" | "offline" | "storage" = "completed";
+    for (let i = 0; i < pending.length; i += STORAGE_CHECK_INTERVAL) {
+      if (signal.aborted || isOffline()) {
+        stopReason = "offline";
         break;
       }
-    } while (cursor && !signal.aborted);
-
-    // ── Then the /latest tabs, deep enough to scroll. ──
-    // Warming offset 0 alone cached one screenful, so the lists looked short
-    // offline and "load more" had nothing behind it. Walking the pages also
-    // yields the subscriptions backlog — already-read posts that unread alone
-    // misses — so the same requests serve both the list and its bodies.
-    let collectionWarmed = false;
-    for (const filter of ["unread", "subscriptions"] as const) {
-      if (stoppedEarly || signal.aborted || isOffline()) break;
-      const uris = await warmLatestPages(
-        filter,
-        signal,
-        // What the walk already has, so it can stop once it reaches it.
-        fresh,
-        (documentUri) => {
-          if (collectionWarmed) return;
-          collectionWarmed = true;
-          void warmArticleRoute(router, documentUri, "/collection/$did/$rkey");
-        },
-      );
-      for (const uri of uris) seen.add(uri);
-      if (!(await cacheBodies(uris.filter((uri) => !fresh.has(uri))))) {
-        stoppedEarly = true;
+      if (await underStoragePressure()) {
+        stopReason = "storage";
+        break;
       }
+      await pool(
+        pending.slice(i, i + STORAGE_CHECK_INTERVAL),
+        BODY_CONCURRENCY,
+        signal,
+        (uri) => syncDocument(uri, signal),
+      );
+      await whenIdle(signal);
     }
 
     // Prune only after a pass that actually saw everything — the deep first
@@ -789,13 +874,19 @@ export async function runOfflineSync(router: AnyRouter): Promise<void> {
     // so `seen` covers the head of the list and nothing below it; pruning to
     // that would evict the whole backlog and re-download it next time. Entries
     // the reader has worked through age out of the ledger on their own.
-    if (fullPass && !stoppedEarly && !cursor && !signal.aborted) {
-      ledgerRetainOnly(seen);
+    if (fullPass && stopReason === "completed" && !cursor && !signal.aborted) {
+      ledgerRetainOnly(queued);
     }
-  } catch {
+    progressEnd(passToken, signal.aborted ? "stopped" : stopReason);
+  } catch (error) {
     // Sync is best-effort by construction. A failure means the reader has
     // whatever was stored before, which is the same position they were in
     // without this feature.
+    progressEnd(
+      passToken,
+      "error",
+      error instanceof Error ? error.message : String(error),
+    );
   } finally {
     running = false;
     controller = null;

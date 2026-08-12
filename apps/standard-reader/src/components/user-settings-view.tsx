@@ -116,6 +116,7 @@ import {
   AppearancePalettePanel,
 } from "./appearance-settings";
 import { OfflineReadingSettings } from "./offline-settings";
+import { OfflineSyncDebugPanel } from "./offline-sync-debug";
 import { PushDiagnosticsPanel } from "./push-diagnostics";
 import { IosInstallPrompt } from "./reader/ios-install-prompt";
 import { Masthead, ReaderContent } from "./reader/primitives";
@@ -1157,6 +1158,8 @@ export function UserSettingsView() {
             </Select>
           </SettingRow>
           <OfflineReadingSettings />
+          {/* Renders only when the URL carries `?debug` (see the component). */}
+          <OfflineSyncDebugPanel />
         </div>
       </section>
 
