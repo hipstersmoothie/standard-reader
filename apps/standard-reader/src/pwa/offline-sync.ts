@@ -54,7 +54,14 @@ import {
   progressEnd,
   progressIneligible,
   progressStep,
+  progressTotals,
 } from "./offline-sync-progress";
+import type { LatestFilterKey, OfflineSyncState } from "./offline-sync-state";
+import {
+  readOfflineSyncState,
+  surfacesAreStale,
+  writeOfflineSyncState,
+} from "./offline-sync-state";
 import { isStandalone } from "./standalone";
 
 /**
@@ -121,8 +128,8 @@ const RESYNC_INTERVAL_MS = 5 * 60_000;
  *
  * A bound on request count, not storage — these pages are small next to article
  * bodies. Set well past what most readers follow so the cap is a backstop
- * rather than something people actually hit; the pass runs once per session
- * (see {@link runOfflineSync}), so it isn't paid repeatedly.
+ * rather than something people actually hit; the fan-out is timestamped on disk
+ * and repeats about daily, so it isn't paid on every launch.
  */
 const MAX_WARMED_PUBLICATIONS = 250;
 
@@ -153,8 +160,6 @@ const LIST_PAGE_SIZE = 20;
 
 let running = false;
 let controller: AbortController | null = null;
-/** Whether the session-scoped, run-once work has been done (see the pass). */
-let didFullPass = false;
 
 export function isOfflineReadingEnabled(): boolean {
   if (globalThis.localStorage === undefined) return true;
@@ -445,15 +450,21 @@ async function warmFeedData(signal: AbortSignal): Promise<void> {
  * every row under URLs the UI never asks for.
  */
 async function warmLatestPages(
-  filter: "unread" | "subscriptions",
+  filter: LatestFilterKey,
   signal: AbortSignal,
   known: ReadonlySet<string>,
+  state: OfflineSyncState,
   onCollection?: (documentUri: string) => void,
 ): Promise<Array<string>> {
   const limit = latestFeedPageSize(filter);
   const uris: Array<string> = [];
-  let offset = 0;
+  const filling = state.initialCompletedAt === null;
+  // The initial fill resumes where the last launch was interrupted; a top-up
+  // always re-reads the head, which is where new posts appear.
+  let offset = filling ? state.feedOffsets[filter] : 0;
   let settledPages = 0;
+
+  if (filling && state.feedDone[filter]) return uris;
 
   for (let page = 0; page < LATEST_WARM_MAX_PAGES; page += 1) {
     if (signal.aborted || isOffline()) break;
@@ -476,16 +487,40 @@ async function warmLatestPages(
       if (item.isCollection) onCollection?.(item.uri);
     }
 
-    // Stop once the walk reaches depth it already has. This is what makes
-    // running every few minutes affordable: the first pass goes as deep as the
-    // cap allows, and each pass after it costs a couple of pages unless
-    // something new arrived. Two consecutive settled pages rather than one, so
-    // a single page of re-reads doesn't end the walk early.
-    settledPages = fresh === 0 ? settledPages + 1 : 0;
-    if (page >= MIN_LATEST_WARM_PAGES && settledPages >= 2) break;
-
-    if (feed.nextOffset == null) break;
+    if (feed.nextOffset == null) {
+      if (filling) {
+        state.feedDone[filter] = true;
+        writeOfflineSyncState(state);
+      }
+      break;
+    }
     offset = feed.nextOffset;
+
+    if (filling) {
+      // Record the resume point *before* the next request, so a kill mid-flight
+      // costs one page rather than the whole walk.
+      state.feedOffsets[filter] = offset;
+      writeOfflineSyncState(state);
+    } else {
+      // Top-up only: stop once the walk reaches depth it already has, which is
+      // what makes running every few minutes affordable. Two consecutive
+      // settled pages rather than one, so a single page of re-reads doesn't end
+      // it early. This exit must never apply during the initial fill — after a
+      // restart the head is always familiar, so it would stop the walk two
+      // pages in and the backlog could never get deeper than one uninterrupted
+      // session managed.
+      settledPages = fresh === 0 ? settledPages + 1 : 0;
+      if (page >= MIN_LATEST_WARM_PAGES && settledPages >= 2) break;
+    }
+
+    // Reaching the page cap counts as done, not as interrupted: the cap *is*
+    // the intended depth, and without this a reader whose history outruns it
+    // would never see the initial fill complete.
+    if (filling && page === LATEST_WARM_MAX_PAGES - 1) {
+      state.feedDone[filter] = true;
+      writeOfflineSyncState(state);
+    }
+
     await whenIdle(signal);
   }
 
@@ -710,6 +745,20 @@ async function warmLists(
   });
 }
 
+/**
+ * Publish the device totals without running a pass, so the troubleshooting
+ * panel can answer "what do I already have?" the moment it opens.
+ */
+export function publishOfflineSyncTotals(): void {
+  const state = readOfflineSyncState();
+  const fresh = ledgerFreshUris(Date.now());
+  progressTotals({
+    initialComplete: state.initialCompletedAt !== null,
+    pending: state.pending.filter((uri) => !fresh.has(uri)).length,
+    stored: fresh.size,
+  });
+}
+
 export function stopOfflineSync(): void {
   controller?.abort();
   controller = null;
@@ -761,9 +810,11 @@ export async function runOfflineSync(
   running = true;
   controller = new AbortController();
   const { signal } = controller;
-  // The first pass of a session goes wide and deep; the ones after it top up.
-  const fullPass = !didFullPass;
-  const passToken = progressBegin(fullPass ? "full" : "top-up");
+  // Resumed from disk, not from this session: the plan has to survive the app
+  // being killed, which is the normal way an installed PWA ends.
+  const state = readOfflineSyncState();
+  const filling = state.initialCompletedAt === null;
+  const passToken = progressBegin(filling ? "initial" : "top-up");
 
   try {
     // Ask once per install. Without this the browser treats the whole origin as
@@ -778,16 +829,31 @@ export async function runOfflineSync(
     // interrupted pass should leave every surface warm and some bodies
     // missing (dimmed), not deep bodies behind surfaces that 404.
     const fresh = ledgerFreshUris(Date.now());
-    // Body order = discovery order: unread first, then the feed walk, then
-    // publication back catalogs. Newest and most-likely-to-be-opened first,
-    // so whatever ends the walk early cuts from the bottom.
-    const queued = new Set<string>();
-    const bodyQueue: Array<string> = [];
+    // Body order = discovery order: whatever the last launch had left over
+    // first, then unread, the feed walk, and publication back catalogs. Newest
+    // and most-likely-to-be-opened first, so whatever ends the walk early cuts
+    // from the bottom.
+    //
+    // The queue is seeded from disk. Documents discovered but not yet stored
+    // used to live only in memory, so a kill between discovering and fetching
+    // them forgot them until some later walk happened past them again.
+    const bodyQueue: Array<string> = state.pending.filter(
+      (uri) => !fresh.has(uri),
+    );
+    const queued = new Set(bodyQueue);
     const enqueueBody = (uri: string) => {
-      if (queued.has(uri)) return;
+      if (queued.has(uri) || fresh.has(uri)) return;
       queued.add(uri);
       bodyQueue.push(uri);
     };
+    const publishTotals = () => {
+      progressTotals({
+        initialComplete: state.initialCompletedAt !== null,
+        pending: bodyQueue.length,
+        stored: fresh.size,
+      });
+    };
+    publishTotals();
 
     progressStep("app shell");
     await warmShell(signal);
@@ -815,19 +881,29 @@ export async function runOfflineSync(
     let collectionWarmed = false;
     for (const filter of ["unread", "subscriptions"] as const) {
       if (signal.aborted || isOffline()) break;
-      const uris = await warmLatestPages(filter, signal, fresh, (uri) => {
-        if (collectionWarmed) return;
-        collectionWarmed = true;
-        void warmArticleRoute(router, uri, "/collection/$did/$rkey");
-      });
+      const uris = await warmLatestPages(
+        filter,
+        signal,
+        fresh,
+        state,
+        (uri) => {
+          if (collectionWarmed) return;
+          collectionWarmed = true;
+          void warmArticleRoute(router, uri, "/collection/$did/$rkey");
+        },
+      );
       for (const uri of uris) enqueueBody(uri);
+      state.pending = bodyQueue;
+      writeOfflineSyncState(state);
+      publishTotals();
     }
 
     // Route chunks, fonts, and every publication / author / list the reader
-    // follows: a large, fixed set that does not change during a session. Once
-    // per session is what lets the pass repeat every few minutes — re-fetching
-    // a few hundred sidebar pages on a timer would be traffic for nothing.
-    if (fullPass) {
+    // follows. Timestamped on disk rather than flagged per session: this is a
+    // few hundred requests, the set changes about as often as the reader
+    // subscribes to something, and redoing it on every launch was pure waste
+    // for an app that gets killed and relaunched all day.
+    if (surfacesAreStale(state, Date.now())) {
       progressStep("app code");
       await warmRouteChunks(router, signal);
       progressStep("fonts");
@@ -839,19 +915,25 @@ export async function runOfflineSync(
       progressStep("lists");
       await warmLists(router, signal);
       // Only once it has actually finished. A pass that lost the connection
-      // two seconds in must not convince the rest of the session that the
-      // sidebar is cached.
-      if (!signal.aborted && !isOffline()) didFullPass = true;
+      // two seconds in must not claim the sidebar is cached for a day.
+      if (!signal.aborted && !isOffline()) {
+        state.surfacesWarmedAt = Date.now();
+      }
+      state.pending = bodyQueue;
+      writeOfflineSyncState(state);
+      publishTotals();
     }
 
     // ── Phase 2: article bodies and their images, in queue order. ──
     progressStep("articles");
-    const pending = bodyQueue.filter((uri) => !fresh.has(uri));
-    progressCount("bodiesQueued", pending.length);
-    if (pending[0]) await warmArticleRoute(router, pending[0]);
+    progressCount("bodiesQueued", bodyQueue.length);
+    if (bodyQueue[0]) await warmArticleRoute(router, bodyQueue[0]);
 
     let stopReason: "completed" | "offline" | "storage" = "completed";
-    for (let i = 0; i < pending.length; i += STORAGE_CHECK_INTERVAL) {
+    // Drains from the front, and the remainder is written back after each
+    // batch — so being killed here costs at most one batch of re-fetching
+    // rather than the whole walk that discovered these.
+    while (bodyQueue.length > 0) {
       if (signal.aborted || isOffline()) {
         stopReason = "offline";
         break;
@@ -860,23 +942,38 @@ export async function runOfflineSync(
         stopReason = "storage";
         break;
       }
-      await pool(
-        pending.slice(i, i + STORAGE_CHECK_INTERVAL),
-        BODY_CONCURRENCY,
-        signal,
-        (uri) => syncDocument(uri, signal),
+      const batch = bodyQueue.splice(0, STORAGE_CHECK_INTERVAL);
+      await pool(batch, BODY_CONCURRENCY, signal, (uri) =>
+        syncDocument(uri, signal),
       );
+      for (const uri of batch) fresh.add(uri);
+      state.pending = bodyQueue;
+      writeOfflineSyncState(state);
+      publishTotals();
       await whenIdle(signal);
     }
 
-    // Prune only after a pass that actually saw everything — the deep first
-    // one. Later passes stop as soon as the feed walk reaches familiar ground,
-    // so `seen` covers the head of the list and nothing below it; pruning to
-    // that would evict the whole backlog and re-download it next time. Entries
-    // the reader has worked through age out of the ledger on their own.
-    if (fullPass && stopReason === "completed" && !cursor && !signal.aborted) {
+    // The initial fill is finished only when both feed tabs have been walked to
+    // the end *and* nothing is left queued. Recorded on disk, so the cheap
+    // top-up behaviour starts from the next launch onwards rather than being
+    // re-derived — and so an interrupted fill resumes as a fill.
+    if (
+      filling &&
+      stopReason === "completed" &&
+      !signal.aborted &&
+      state.feedDone.unread &&
+      state.feedDone.subscriptions &&
+      bodyQueue.length === 0
+    ) {
+      state.initialCompletedAt = Date.now();
+      // Safe to prune only here: this is the one moment the queue is known to
+      // span everything the walk found. A top-up sees only the head of the
+      // feed, so pruning to what it saw would evict the whole backlog.
       ledgerRetainOnly(queued);
     }
+    state.pending = bodyQueue;
+    writeOfflineSyncState(state);
+    publishTotals();
     progressEnd(passToken, signal.aborted ? "stopped" : stopReason);
   } catch (error) {
     // Sync is best-effort by construction. A failure means the reader has

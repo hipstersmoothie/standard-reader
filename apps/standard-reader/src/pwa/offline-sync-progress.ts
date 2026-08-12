@@ -51,8 +51,17 @@ export type OfflineSyncStopReason =
 
 export interface OfflineSyncProgress {
   running: boolean;
-  /** Full passes fan out to every followed surface; top-ups only re-walk feeds. */
-  pass: "full" | "top-up" | null;
+  /**
+   * `initial` is the first deep fill, which resumes across launches until it
+   * finishes; `top-up` is the cheap pass that follows it forever after.
+   */
+  pass: "initial" | "top-up" | null;
+  /** Whether the initial deep fill has ever finished. */
+  initialComplete: boolean;
+  /** Articles stored on the device right now. */
+  stored: number;
+  /** Articles discovered and still waiting to be stored. */
+  pending: number;
   /** Human-readable name of the stage currently running. */
   step: string | null;
   startedAt: number | null;
@@ -79,10 +88,13 @@ const INITIAL: OfflineSyncProgress = {
   counts: INITIAL_COUNTS,
   error: null,
   finishedAt: null,
+  initialComplete: false,
   pass: null,
+  pending: 0,
   running: false,
   startedAt: null,
   step: null,
+  stored: 0,
   stopReason: null,
 };
 
@@ -118,16 +130,33 @@ export function getOfflineSyncProgressServer(): OfflineSyncProgress {
  */
 let currentPass = 0;
 
-export function progressBegin(pass: "full" | "top-up"): number {
+export function progressBegin(pass: "initial" | "top-up"): number {
   currentPass += 1;
   emit({
     ...INITIAL,
     counts: { ...INITIAL_COUNTS },
+    // Totals carry across passes: they describe the device, not this run, and
+    // blanking them would flash "0 stored" every time a pass starts.
+    initialComplete: snapshot.initialComplete,
     pass,
+    pending: snapshot.pending,
     running: true,
     startedAt: Date.now(),
+    stored: snapshot.stored,
   });
   return currentPass;
+}
+
+/**
+ * The device totals. Published outside a running pass too, so the panel can
+ * answer "what do I have?" on a cold open before anything has started.
+ */
+export function progressTotals(totals: {
+  stored: number;
+  pending: number;
+  initialComplete: boolean;
+}): void {
+  emit({ ...snapshot, ...totals });
 }
 
 export function progressStep(step: string): void {

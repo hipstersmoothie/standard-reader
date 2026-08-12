@@ -2283,6 +2283,10 @@ msgstr "此系列中还没有合集。"
 msgid "None of this labeler’s labels could be verified against the signing key it publishes, so none are applied. That’s a problem on the labeler’s end."
 msgstr ""
 
+#: src/components/offline-sync-debug.tsx
+msgid "Still to fetch"
+msgstr ""
+
 #: src/routes/_layout.feedback.index.tsx
 msgid "No feedback yet."
 msgstr "暂无反馈。"
@@ -3076,6 +3080,10 @@ msgstr "该刊物的所有未读文章都将标记为已读。此操作无法撤
 
 #: src/components/appearance-settings.tsx
 msgid "Your own colors"
+msgstr ""
+
+#: src/components/offline-sync-debug.tsx
+msgid "Initial fill"
 msgstr ""
 
 #: src/components/reader/app-shell.tsx
@@ -7248,6 +7256,10 @@ msgstr "{unreadCount} 篇未读"
 #: src/components/guide/pages/getting-started-guide-page.tsx
 #~ msgid "Below those, the publications you follow are listed for quick access. The <0>Subscriptions</0> heading above them opens the full management view. At the very bottom, your avatar opens a menu with your profile, reading history, recommended articles, feedback, settings, and log out."
 #~ msgstr ""
+
+#: src/components/offline-sync-debug.tsx
+msgid "Downloaded"
+msgstr ""
 
 #: src/components/reader/add-publication-modal.tsx
 #: src/components/reader/app-shell.tsx

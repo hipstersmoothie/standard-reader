@@ -17,6 +17,8 @@
  * ({@link LEDGER_ENTRY_MAX_AGE_MS}) and get re-fetched.
  */
 
+import { clearOfflineSyncState } from "./offline-sync-state";
+
 /** Cache Storage buckets holding reader-specific bytes (see `vite.config.ts`). */
 const PERSONAL_CACHE_NAMES = ["data", "pages"] as const;
 
@@ -178,6 +180,9 @@ async function deleteCaches(names: ReadonlyArray<string>): Promise<void> {
  */
 export async function clearOfflineData(): Promise<void> {
   ledgerClear();
+  // The plan too, or the next pass would resume a walk whose results have just
+  // been deleted — and report the initial fill as long since complete.
+  clearOfflineSyncState();
   await deleteCaches([...PERSONAL_CACHE_NAMES, ...IMPERSONAL_CACHE_NAMES]);
 }
 
@@ -195,6 +200,9 @@ export async function clearOfflineData(): Promise<void> {
  */
 export async function clearPersonalOfflineData(): Promise<void> {
   ledgerClear();
+  // The plan describes the signed-out reader's backlog; the next account must
+  // start its own fill rather than resume theirs.
+  clearOfflineSyncState();
   await deleteCaches(PERSONAL_CACHE_NAMES);
 }
 

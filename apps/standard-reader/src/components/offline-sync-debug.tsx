@@ -2,7 +2,12 @@
 
 import { Trans } from "@lingui/react/macro";
 import { Button } from "@standard-reader/design-system/button";
-import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
+import { animationDuration } from "@standard-reader/design-system/theme/animations.stylex";
+import {
+  primaryColor,
+  uiColor,
+} from "@standard-reader/design-system/theme/color.stylex";
+import { radius } from "@standard-reader/design-system/theme/radius.stylex";
 import {
   gap,
   horizontalSpace,
@@ -19,7 +24,11 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 
 import type { OfflineStorageUsage } from "#/pwa/offline-cache";
 import { offlineStorageUsage } from "#/pwa/offline-cache";
-import { runOfflineSync, stopOfflineSync } from "#/pwa/offline-sync";
+import {
+  publishOfflineSyncTotals,
+  runOfflineSync,
+  stopOfflineSync,
+} from "#/pwa/offline-sync";
 import {
   getOfflineSyncProgress,
   getOfflineSyncProgressServer,
@@ -70,6 +79,26 @@ const styles = stylex.create({
     display: "flex",
     marginTop: verticalSpace.md,
   },
+  // A bar rather than another number: the one thing worth seeing at a glance is
+  // how much of the backlog is already on the device.
+  track: {
+    backgroundColor: uiColor.bgSubtle,
+    borderRadius: radius.full,
+    blockSize: verticalSpace.sm,
+    marginBottom: verticalSpace.xs,
+    marginTop: verticalSpace.xs,
+    overflow: "hidden",
+    inlineSize: "100%",
+  },
+  // Dynamic rather than an inline `style`: the width is data, and StyleX is
+  // the only styling layer here.
+  fill: (percent: number) => ({
+    backgroundColor: primaryColor.solid1,
+    blockSize: "100%",
+    inlineSize: `${percent}%`,
+    transitionDuration: animationDuration.default,
+    transitionProperty: "inline-size",
+  }),
 });
 
 function formatBytes(bytes: number): string {
@@ -116,6 +145,13 @@ export function OfflineSyncDebugPanel() {
   );
   const [usage, setUsage] = useState<OfflineStorageUsage | null>(null);
 
+  // Totals describe the device, so they must be readable before any pass has
+  // run this session — otherwise opening the panel on a cold start shows
+  // zeroes for a backlog that is already there.
+  useEffect(() => {
+    publishOfflineSyncTotals();
+  }, []);
+
   // Refresh the storage line while a pass runs; it is the pass's output.
   useEffect(() => {
     void offlineStorageUsage().then(setUsage);
@@ -133,6 +169,12 @@ export function OfflineSyncDebugPanel() {
       ? `${progress.stopReason}${progress.error ? `: ${progress.error}` : ""}`
       : "not started";
 
+  // The plan's shape, not this pass's: what is on the device and what is still
+  // owed. A pass being interrupted no longer resets either, so this is the
+  // number that actually answers "is it getting there?".
+  const total = progress.stored + progress.pending;
+  const percent = total === 0 ? 0 : Math.round((progress.stored / total) * 100);
+
   return (
     <div {...stylex.props(styles.panel)}>
       <p {...stylex.props(styles.intro)}>
@@ -141,6 +183,32 @@ export function OfflineSyncDebugPanel() {
           Sharing a screenshot of it is the fastest way to get it fixed.
         </Trans>
       </p>
+      <div
+        {...stylex.props(styles.track)}
+        role="progressbar"
+        aria-valuenow={percent}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-label="Articles stored"
+      >
+        <div {...stylex.props(styles.fill(percent))} />
+      </div>
+      <Row
+        label={<Trans>Downloaded</Trans>}
+        value={
+          total === 0
+            ? "nothing yet"
+            : `${progress.stored} of ${total} (${percent}%)`
+        }
+      />
+      <Row
+        label={<Trans>Still to fetch</Trans>}
+        value={String(progress.pending)}
+      />
+      <Row
+        label={<Trans>Initial fill</Trans>}
+        value={progress.initialComplete ? "complete" : "in progress"}
+      />
       <Row label={<Trans>Status</Trans>} value={status} />
       <Row
         label={<Trans>Started / finished</Trans>}
