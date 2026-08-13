@@ -28,7 +28,7 @@ import {
  * screens early. Any real input ends it immediately — nothing yanks the page out
  * from under someone who has started reading.
  */
-const RESTORE_SETTLE_MS = 3000;
+export const RESTORE_SETTLE_MS = 3000;
 
 /**
  * How far the page may drift from the target before the settle window pulls it
@@ -151,6 +151,14 @@ export function useReadingProgress({
       ) {
         return;
       }
+      // Nothing known this session and nothing worth keeping: there is no row
+      // to delete, so this would be a POST per article open that does nothing.
+      // (`previous` is only null when neither a local nor a remote position was
+      // adopted, so this can't swallow a real clear.)
+      if (previous === null && !isResumableProgress(next)) {
+        savedRef.current = next;
+        return;
+      }
       savedRef.current = next;
 
       writeLocalProgress(documentUri, next);
@@ -237,6 +245,19 @@ export function useReadingProgress({
     let restoreTarget: number | null = null;
     let settleTimer: ReturnType<typeof globalThis.setTimeout> | undefined;
     let saveTimer: ReturnType<typeof globalThis.setTimeout> | undefined;
+    /**
+     * Whether the reader has touched the input devices since we landed. On its
+     * own this does not mean they are steering — inertial scrolling does not
+     * stop because the page changed, so momentum from the feed keeps arriving
+     * here for a while after the navigation. It takes a *scroll* that a hand
+     * could plausibly have produced to hand the page over.
+     */
+    let sawUserIntent = false;
+    let lastScrollY = globalThis.scrollY;
+
+    const noteUserIntent = () => {
+      sawUserIntent = true;
+    };
 
     const endRestore = () => {
       userDroveRef.current = true;
@@ -244,15 +265,32 @@ export function useReadingProgress({
       applyRestoreRef.current = null;
       if (settleTimer !== undefined) globalThis.clearTimeout(settleTimer);
       for (const event of USER_INTENT_EVENTS) {
-        globalThis.removeEventListener(event, endRestore);
+        globalThis.removeEventListener(event, noteUserIntent);
       }
     };
 
     const applyRestore = (target: number) => {
       restoreTarget = target;
+      // A restore landing now invalidates anything queued from before it — in
+      // particular the router's reset, which would otherwise save a 0 over the
+      // position we just adopted and delete it.
+      if (saveTimer !== undefined) globalThis.clearTimeout(saveTimer);
+      if (settleTimer !== undefined) globalThis.clearTimeout(settleTimer);
+      settleTimer = globalThis.setTimeout(endRestore, RESTORE_SETTLE_MS);
       globalThis.scrollTo(0, offsetForProgress(articleEl, target));
+      lastScrollY = globalThis.scrollY;
       setResumed(true);
     };
+
+    /**
+     * Whether a scroll is one no hand produced: a single discrete jump to the
+     * very top, from somewhere more than a screen away. That is the shape of
+     * the router's `onRendered` reset. A reader arrives at the top the long
+     * way, through a run of small deltas, and is handed the page at the first
+     * of them.
+     */
+    const isProgrammaticReset = (from: number, to: number) =>
+      to <= RESTORE_TOLERANCE_PX && from - to > globalThis.innerHeight;
 
     const sync = () => {
       const next = measureProgress(articleEl);
@@ -278,19 +316,27 @@ export function useReadingProgress({
     const stored =
       enabledRef.current && ownsLanding ? readLocalProgress(documentUri) : null;
 
-    if (stored && isResumableProgress(stored.progress)) {
-      savedRef.current = stored.progress;
-      applyRestore(stored.progress);
+    if (ownsLanding) {
+      // Armed whether or not this device remembers anything: the server copy
+      // exists precisely for the device that has never seen this article, and
+      // gating the machinery on a local copy meant the only case cross-device
+      // sync is *for* was the one case it could never serve.
       applyRestoreRef.current = applyRestore;
       for (const event of USER_INTENT_EVENTS) {
-        globalThis.addEventListener(event, endRestore, {
+        globalThis.addEventListener(event, noteUserIntent, {
           passive: true,
           once: true,
         });
       }
       settleTimer = globalThis.setTimeout(endRestore, RESTORE_SETTLE_MS);
-    } else if (ownsLanding) {
-      globalThis.scrollTo(0, 0);
+
+      if (stored && isResumableProgress(stored.progress)) {
+        savedRef.current = stored.progress;
+        applyRestore(stored.progress);
+      } else {
+        globalThis.scrollTo(0, 0);
+        lastScrollY = globalThis.scrollY;
+      }
     }
 
     sync();
@@ -306,14 +352,29 @@ export function useReadingProgress({
     // after the restore. Saving that would be worse than losing the landing:
     // a measured 0 is written straight through to both stores, and writes
     // outside the 2–95% band delete — one clobbered restore and the position
-    // is gone from this device, the server, and the shelf. Hence: correct, and
-    // never save from inside the window. Real input ends it (`endRestore`)
-    // before any scroll it causes is dispatched.
+    // is gone from this device, the server, and the shelf.
+    //
+    // So the window is given up to a scroll the reader plausibly made, and
+    // never to the router's reset — input alone is not enough to end it,
+    // because momentum from the previous page is input the reader is no longer
+    // making.
     const onScroll = () => {
+      const from = lastScrollY;
+      const to = globalThis.scrollY;
+      lastScrollY = to;
+
       if (restoreTarget !== null) {
+        if (sawUserIntent && !isProgrammaticReset(from, to)) {
+          endRestore();
+          sync();
+          scheduleSave();
+          return;
+        }
+
         const target = offsetForProgress(articleEl, restoreTarget);
-        if (Math.abs(globalThis.scrollY - target) > RESTORE_TOLERANCE_PX) {
+        if (Math.abs(to - target) > RESTORE_TOLERANCE_PX) {
           globalThis.scrollTo(0, target);
+          lastScrollY = globalThis.scrollY;
         }
         sync();
         return;
@@ -337,6 +398,11 @@ export function useReadingProgress({
     // iOS back-forward cache, where `beforeunload` never fires.
     const flush = () => {
       if (saveTimer !== undefined) globalThis.clearTimeout(saveTimer);
+      // Inside the settle window the position on screen is one we chose, or one
+      // we are about to correct — never the reader's. Leaving fast (a glance,
+      // then straight back) would otherwise write the router's reset on the way
+      // out, which is the one write that deletes.
+      if (restoreTarget !== null) return;
       saveRef.current(progressRef.current);
     };
     const onPageHide = () => flush();

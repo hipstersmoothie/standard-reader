@@ -7,10 +7,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { readLocalProgress, writeLocalProgress } from "#/lib/reading-progress";
 
-import { useReadingProgress } from "./use-reading-progress";
+import { RESTORE_SETTLE_MS, useReadingProgress } from "./use-reading-progress";
 
 const setReadingProgress = vi.fn(async () => ({ ok: true as const }));
 const clearReadingProgress = vi.fn(async () => ({ ok: true as const }));
+
+/** What the server says this reader's position is. Null in most tests. */
+let remotePosition: { progress: number; updatedAt: string } | null = null;
 
 vi.mock("#/integrations/tanstack-query/api-reader.functions", () => ({
   readerApi: {
@@ -18,9 +21,9 @@ vi.mock("#/integrations/tanstack-query/api-reader.functions", () => ({
       clearReadingProgress(...(args as [])),
     getReadingProgressQueryOptions: (documentUri: string) => ({
       queryKey: ["reader", "readingProgress", documentUri] as const,
-      // The other-device correction. Absent in these tests: what is under test
-      // is what the *local* copy does on landing.
-      queryFn: async () => null,
+      // The other-device correction. Null in most tests: what is under test
+      // there is what the *local* copy does on landing.
+      queryFn: async () => remotePosition,
     }),
     setReadingProgress: (...args: Array<unknown>) =>
       setReadingProgress(...(args as [])),
@@ -110,6 +113,7 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+  remotePosition = null;
   localStorage.clear();
   setReadingProgress.mockClear();
   clearReadingProgress.mockClear();
@@ -183,6 +187,10 @@ describe("useReadingProgress", () => {
 
     setup();
 
+    // Past the landing window, so this is unambiguously the reader's doing.
+    act(() => {
+      vi.advanceTimersByTime(RESTORE_SETTLE_MS);
+    });
     act(() => {
       globalThis.dispatchEvent(new Event("wheel"));
     });
@@ -192,6 +200,65 @@ describe("useReadingProgress", () => {
     });
 
     expect(readLocalProgress(DOCUMENT_URI)).toBeNull();
+  });
+
+  /**
+   * The reported failure, and the reason it was permanent.
+   *
+   * Inertial scrolling does not stop because the page changed: flick the feed,
+   * open an article, and the momentum `wheel` events keep arriving for a while
+   * on the article. That ended the settle window, so the router's reset — which
+   * lands a beat later on every in-app navigation — was no longer corrected.
+   * The reader saw the restore undone, which is the visible half.
+   *
+   * The invisible half is what made it permanent: with the window closed, that
+   * reset measured 0 and was saved as the reader's own position a second later,
+   * and a write outside the 2–95% band deletes. One stray wheel event and the
+   * position was gone from the device, the server, and the shelf — so it worked
+   * once and never again.
+   */
+  it("survives momentum still arriving from the page we came from", () => {
+    writeLocalProgress(DOCUMENT_URI, 0.5);
+
+    setup();
+    expect(globalThis.scrollY).toBe(offsetFor(0.5));
+
+    // Momentum from the feed, still in flight after the navigation.
+    act(() => {
+      globalThis.dispatchEvent(new Event("wheel"));
+    });
+    // The router's scroll reset, arriving on `onRendered` as it always does.
+    scrollTo(0);
+
+    act(() => {
+      vi.advanceTimersByTime(2000);
+    });
+
+    expect(globalThis.scrollY).toBe(offsetFor(0.5));
+    expect(readLocalProgress(DOCUMENT_URI)?.progress).toBe(0.5);
+    expect(setReadingProgress).not.toHaveBeenCalled();
+  });
+
+  /**
+   * Cross-device restore. The server copy exists precisely for the device that
+   * has never seen this article, so gating it on a local copy already being
+   * there defeats the only thing it is for.
+   */
+  it("adopts a position from another device when this one has none", async () => {
+    remotePosition = { progress: 0.5, updatedAt: new Date().toISOString() };
+
+    const { result } = setup();
+
+    // Nothing stored locally, so the landing is the top — until the server answers.
+    expect(globalThis.scrollY).toBe(0);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+
+    expect(globalThis.scrollY).toBe(offsetFor(0.5));
+    expect(result.current.resumed).toBe(true);
+    expect(readLocalProgress(DOCUMENT_URI)?.progress).toBe(0.5);
   });
 
   it("leaves the landing position alone when the URL names an anchor", () => {

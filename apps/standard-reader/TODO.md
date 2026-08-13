@@ -1112,7 +1112,9 @@ Backend/API exists; UI or copy is missing.
       per-device `localStorage` mirror ([`reading-progress.ts`](src/lib/reading-progress.ts)).
       Local drives the restore because it can be read before first paint and works offline;
       the server copy carries position across devices and only wins when it is newer and the
-      reader hasn't already scrolled. Rows live only between 2% and 95%, so the table _is_ the
+      reader hasn't already scrolled. That correction is armed whether or not this device
+      remembers anything — gating it on a local copy meant a device that had never seen the
+      article, the one case cross-device sync exists for, was the one case it couldn't serve. Rows live only between 2% and 95%, so the table _is_ the
       shelf. All of it in [`use-reading-progress.ts`](src/components/reader/use-reading-progress.ts),
       which also owns the sticky-chrome progress bar it replaced.
       The settle window **corrects** scrolls it didn't ask for and never saves one, because the
@@ -1122,6 +1124,14 @@ Backend/API exists; UI or copy is missing.
       outside the band delete, so one clobbered restore erased the position from the device, the
       server and the shelf: the feature appeared to work exactly once. Covered by
       [`use-reading-progress.test.ts`](src/components/reader/use-reading-progress.test.ts).
+      **Input alone does not end that window** — inertial scrolling doesn't stop because the page
+      changed, so momentum from the feed kept arriving on the article, ended the window early, and
+      handed the router's reset the same clobber by another door (reported as "restores, then
+      jumps back to the top", and permanent for the same reason). The window is given up to a
+      scroll a hand could plausibly have made; a single discrete jump to the top from more than a
+      screen away is the router's and gets corrected. The unmount flush is guarded the same way,
+      so leaving fast can't write the reset on the way out. The rule throughout: losing the
+      landing is a nuisance, losing the position is data loss, so ambiguity keeps the stored value.
       A `#hash` in the URL now opts out of the restore entirely — an anchor the reader asked for
       out loud outranks a position we remembered for them.
       Gated on "Track reading history"; clearing history clears positions too.
