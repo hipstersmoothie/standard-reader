@@ -130,7 +130,16 @@ function ReaderHistory() {
   const history = data.pages.flatMap((page) => page.items);
   const total = data.pages[0]?.total ?? 0;
   const unfinishedItems = unfinished ?? [];
-  const hasUnfinished = unfinishedItems.some((item) => item.article != null);
+  // An in-progress article is claimed by the shelf and drops out of the list
+  // below, so no article appears twice on the page. Only the ones the shelf
+  // actually renders are claimed: an item whose document has fallen out of the
+  // read-model isn't shown up there, so it stays down here.
+  const shelved = new Set(
+    unfinishedItems
+      .filter((item) => item.article != null)
+      .map((item) => item.documentUri),
+  );
+  const hasUnfinished = shelved.size > 0;
 
   const loadMore = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) {
@@ -138,13 +147,15 @@ function ReaderHistory() {
     }
   }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
-  const queueRows = history.map((item) => ({
-    id: item.readUri,
-    documentUri: item.documentUri,
-    article: item.article,
-    timestamp: item.readAt,
-    actionLabel: t`Read`,
-  }));
+  const queueRows = history
+    .filter((item) => !shelved.has(item.documentUri))
+    .map((item) => ({
+      id: item.readUri,
+      documentUri: item.documentUri,
+      article: item.article,
+      timestamp: item.readAt,
+      actionLabel: t`Read`,
+    }));
 
   return (
     <ReaderContent>
@@ -186,9 +197,12 @@ function ReaderHistory() {
         <>
           <ContinueReading items={unfinishedItems} />
           {/* Only once the shelf is above it does the list below need naming —
-              on its own it is the page, and the masthead already said so. */}
-          {hasUnfinished ? (
-            <SectionHead title={t`Everything you've read`} size="md" />
+              on its own it is the page, and the masthead already said so.
+              "Everything else" rather than "Everything you've read": the
+              in-progress ones are up on the shelf and deliberately not repeated
+              here, so the older title would name a list this isn't. */}
+          {hasUnfinished && queueRows.length > 0 ? (
+            <SectionHead title={t`Everything else`} size="md" followsSection />
           ) : null}
           <ReaderQueueRows
             items={queueRows}
@@ -204,7 +218,9 @@ function ReaderHistory() {
             hasMore={hasNextPage}
             isLoading={isFetchingNextPage}
             onLoadMore={loadMore}
-            itemCount={history.length}
+            // The rows actually on screen, not the rows fetched: the shelf has
+            // claimed some, and this drives the "showing N" affordance.
+            itemCount={queueRows.length}
           />
         </>
       )}

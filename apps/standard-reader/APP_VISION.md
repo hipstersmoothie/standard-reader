@@ -580,6 +580,12 @@ comic issue with no pages falls back to it outright.
   most recently touched first. Short on purpose — it is a prompt to pick something back up,
   not another backlog. It is an extra on this page, never fatal: offline (or on any error) it
   simply doesn't render and the cached history still does.
+- **No article appears twice on the page.** An in-progress article is claimed by the shelf and
+  filtered out of the list beneath, which is why that list is titled "Everything else" rather
+  than "Everything you've read". (Only the ones the shelf actually renders are claimed — an
+  item whose document has dropped out of the read-model isn't shown up there, so it stays in
+  the list.) The masthead's `Read` count is unaffected: it counts read records for all time,
+  and an article you're partway through is still one you opened.
 - The shelf's rows are the **same rows as the list below it**; what separates the two sections
   is the heading plus the one fact these rows carry and those don't. That fact — how far in the
   reader got — leads each row's existing meta line, as a 56px camel meter and a percentage, so
