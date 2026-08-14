@@ -226,7 +226,15 @@ Check items off as they land.
       trails real time and a too-small `--since` errors rather than silently skipping the gap.
       Rehearsed on a Neon branch forked from prod: resumed from the seq, caught up, and applied
       ~4,300 events with zero dead letters and zero errors. - Migration `0038` drops `tracked_repos.added_to_tap_at`; the table survives as an inventory
-      for the profile sweep and PDS reconcile, not as a gate on what gets indexed.
+      for the profile sweep and PDS reconcile, not as a gate on what gets indexed. - **Repo repair and read-path backfills fold the archive too** — no PDS reads left
+      in the ingest tier. `reconcileRepoFromArchive` / `repairRepoFromArchive` replace
+      the per-collection PDS sweep (killing the 20k `listRecords` cap and the
+      lexicon-invalid "park it for a week" class), and `backfillRepoFromArchive`
+      replaces the four `backfillXFromRepo` functions: one DID-scoped fold covers
+      every collection, coalesces concurrent calls, advances `last_seen_seq` so the
+      sweep skips the repo, and replays archived delete markers — which the
+      upsert-only backfills never did (that is what left ghost sidebar-list rows
+      behind when a delete event was dropped).
 - [ ] **Measure a from-scratch Jetstream backfill.** The cutover only replays a few hours, which is
       what was rehearsed. A full replay from seq 0 is attractive because it would heal the records
       tap lost to `lexParse`, but its cost is **not measured**: a partial dry run reached 1.25M

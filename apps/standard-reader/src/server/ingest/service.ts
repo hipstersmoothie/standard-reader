@@ -5,12 +5,13 @@ import { and, eq, or, sql } from "drizzle-orm";
 
 import { db } from "../../db/index.ts";
 import { ingestState, subscriptions, trackedRepos } from "../../db/schema.ts";
+import { Collections } from "../atproto/uri.ts";
 import { startLabelerDiscovery } from "../labeler/discover.server.ts";
 import { startLabelSync } from "../labeler/sync.server.ts";
 import { logEvent } from "../observability/log.ts";
+import { backfillRepoFromArchive } from "./archive-replay.ts";
 import { verifyIngestAuth } from "./auth.ts";
 import { ingestConfig } from "./config.ts";
-import { backfillSubscriptionsFromRepo } from "./handlers.ts";
 import { startJetstreamChannel } from "./jetstream-channel.ts";
 import { startProfileRefresh } from "./profile-refresh.ts";
 import { recomputeDerived } from "./recompute.ts";
@@ -121,7 +122,8 @@ async function backfillReaderSubscriptions(): Promise<{
     if ((countRow?.count ?? 0) > 0) {
       continue;
     }
-    const synced = await backfillSubscriptionsFromRepo(row.did);
+    const fold = await backfillRepoFromArchive(row.did);
+    const synced = fold.live.get(Collections.subscription)?.size ?? 0;
     if (synced > 0) {
       backfilled.push({ did: row.did, subscriptions: synced });
     }

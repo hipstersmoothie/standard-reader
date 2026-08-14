@@ -59,10 +59,10 @@ export async function loadSidebarPref(did: string): Promise<SidebarPref> {
 
   let row = await readRow();
   if (!row) {
-    // No row yet — backfill the singleton from the PDS and retry once.
-    const { backfillSidebarPrefFromRepo } =
-      await import("#/server/ingest/handlers");
-    await backfillSidebarPrefFromRepo(did);
+    // No row yet — backfill the repo from the archive and retry once.
+    const { backfillRepoFromArchive } =
+      await import("#/server/ingest/archive-replay");
+    await backfillRepoFromArchive(did);
     row = await readRow();
   }
 
@@ -217,9 +217,10 @@ export async function loadOwnSubscriptionLists(
     );
   }
 
-  // No rows yet — backfill from the PDS and retry the DB read.
-  const { backfillListsFromRepo } = await import("#/server/ingest/handlers");
-  await backfillListsFromRepo(did);
+  // No rows yet — backfill from the archive and retry the DB read.
+  const { backfillRepoFromArchive } =
+    await import("#/server/ingest/archive-replay");
+  await backfillRepoFromArchive(did);
 
   const refreshed = await db
     .select()

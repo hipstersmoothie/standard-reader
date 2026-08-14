@@ -1,5 +1,8 @@
 import { Jetstream } from "@bsky/jetstream";
+import { eq } from "drizzle-orm";
 
+import { db } from "../../db/index.ts";
+import { trackedRepos } from "../../db/schema.ts";
 import { buildAtUri } from "../atproto/uri.ts";
 import { logEvent } from "../observability/log.ts";
 import { ingestConfig } from "./config.ts";
@@ -250,4 +253,79 @@ export async function foldRepoFromArchive(
 ): Promise<RepoFold> {
   const folds = await foldReposFromArchive([did], opts);
   return folds.get(did) ?? emptyFold(did);
+}
+
+/**
+ * How long a completed read-path backfill suppresses another for the same DID.
+ *
+ * The old per-collection PDS backfills were narrow, so a first shell load
+ * firing three of them (sidebar prefs, lists, saved-list sidebar) cost three
+ * small reads. The fold is one *broad* read — every collection at once — so
+ * without a guard the same first visit would run the identical fold three
+ * times. Sixty seconds is enough to collapse a page load's burst while staying
+ * irrelevant next visit.
+ */
+const BACKFILL_TTL_MS = 60_000;
+
+const backfillInflight = new Map<string, Promise<RepoFold>>();
+const backfillDone = new Map<string, { at: number; fold: RepoFold }>();
+
+/**
+ * Hydrate a repo the read path just found missing from the read-model.
+ *
+ * This replaces the `backfillXFromRepo` family — four near-identical
+ * functions, each listing one collection off the author's PDS for one caller
+ * (subscriptions for the reconcile endpoint, lists + sidebar prefs for the
+ * shell snapshot, recommends/documents/sidecars for a fresh follow). One fold
+ * covers every collection in a single pass and applies through
+ * {@link handleRecord}, so all four callers now share the exact code path the
+ * live stream and the reconcile sweep use.
+ *
+ * It is also *more* correct than what it replaces: the old backfills were
+ * upsert-only, so a record whose delete event we missed lived on as a ghost
+ * row forever (the "second sidebar list" bug). The archive retains delete
+ * markers durably, and the fold replays them as events — a missed delete gets
+ * applied here instead of surviving the backfill.
+ *
+ * Seal lag is not a gap for this use: everything newer than the sealed tip
+ * arrived through the live channel and is already in the read-model. What the
+ * fold supplies is exactly the history that predates our watching.
+ *
+ * On success the repo's `last_seen_seq` watermark advances so the reconcile
+ * sweep resumes from here instead of re-folding the same history on its next
+ * lap. Concurrent and recent calls for the same DID coalesce — see
+ * {@link BACKFILL_TTL_MS}.
+ */
+export function backfillRepoFromArchive(did: string): Promise<RepoFold> {
+  // Lazy eviction keeps the cache proportional to *recent* backfills rather
+  // than every DID a long-lived worker has ever hydrated — folds hold their
+  // full live-URI sets, so an append-only map would be a slow leak.
+  const now = Date.now();
+  for (const [key, entry] of backfillDone) {
+    if (now - entry.at >= BACKFILL_TTL_MS) backfillDone.delete(key);
+  }
+  const done = backfillDone.get(did);
+  if (done) {
+    return Promise.resolve(done.fold);
+  }
+  const inflight = backfillInflight.get(did);
+  if (inflight) {
+    return inflight;
+  }
+
+  const run = (async () => {
+    const fold = await foldRepoFromArchive(did, { afterSeq: 0 });
+    if (!fold.empty && !fold.gone) {
+      // No-op for an untracked DID; callers that track do so themselves.
+      await db
+        .update(trackedRepos)
+        .set({ lastSeenSeq: fold.lastSeq, updatedAt: new Date() })
+        .where(eq(trackedRepos.did, did));
+    }
+    backfillDone.set(did, { at: Date.now(), fold });
+    return fold;
+  })().finally(() => backfillInflight.delete(did));
+
+  backfillInflight.set(did, run);
+  return run;
 }
