@@ -29,10 +29,17 @@ Check items off as they land.
     compete with the live tap stream it backstops. Batch is derived from the fleet count so one
     full lap stays ~24h as the fleet grows (`RECONCILE_LAP_HOURS` /
     `RECONCILE_INTERVAL_HOURS`). Config file `railway.reconcile.json`.
+  - `thread-cron` — `pnpm thread:post` on `0 16 * * 5`, the weekly "hottest articles" Bluesky
+    thread. Config file `railway.thread.json`. **A cron service's start command also runs on every
+    redeploy and restart**, which is how this job posted the same thread several times a week; it
+    is now idempotent at both layers — an ISO-week claim in `weekly_thread_runs` before it
+    composes, and `putRecord` at week-derived rkeys so a run that gets past the claim overwrites
+    that week's thread instead of publishing another. `THREAD_FORCE=1` re-posts deliberately.
   - **Runbook gotcha:** Railway auto-detects only the root `railway.json`, so every non-web service
     in this monorepo needs its **Config File Path** set explicitly (Dashboard → service → Settings →
     Config-as-code, or `serviceInstanceUpdate{ railwayConfigFile }` via the GraphQL API) to
-    `railway.ingest.json` / `railway.cron.json` / `railway.reconcile.json` / `railway.push.json`;
+    `railway.ingest.json` / `railway.cron.json` / `railway.reconcile.json` / `railway.push.json` /
+    `railway.thread.json`;
     otherwise it silently falls back to the web build.
     Shared `INGEST_WEBHOOK_SECRET` = `TAP_ADMIN_PASSWORD`; `PUBLIC_URL=https://standard-reader.app`;
     `ATPROTO_PRIVATE_KEY_JWK` is the ES256 private JWK. Prod DB was reset to a clean schema (drop

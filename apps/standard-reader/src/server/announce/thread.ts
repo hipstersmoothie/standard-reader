@@ -7,10 +7,13 @@
  * Posts are created SEQUENTIALLY: every reply references the previous post's
  * `cid`, which is only known after that post is written — so `applyWrites`
  * (which needs all refs up front) can't be used here.
+ *
+ * Every post is a `putRecord` at a record key derived from the week (see
+ * `./week.ts`), which is what stops the weekly job from ever publishing the same
+ * thread twice.
  */
 import type { Client } from "@atcute/client";
 import { ok } from "@atcute/client";
-import { now as tidNow } from "@atcute/tid";
 
 import { utf8ByteLength } from "#/lib/leaflet/utf8";
 import { uploadBlob } from "#/server/atproto/repo-records";
@@ -110,15 +113,22 @@ export async function fetchThumbBlob(
   }
 }
 
-/** Assemble one `app.bsky.feed.post` record (optionally as a reply). */
+/**
+ * Assemble one `app.bsky.feed.post` record (optionally as a reply).
+ *
+ * `createdAt` is passed in rather than read from the clock so the record is a
+ * pure function of the week's content — re-running the job then rewrites an
+ * identical record instead of shifting the thread's timestamp.
+ */
 export function buildPostRecord(
   spec: PostSpec,
+  createdAt: string,
   reply?: { root: StrongRef; parent: StrongRef },
 ): Record<string, unknown> {
   const record: Record<string, unknown> = {
     $type: BSKY_FEED_POST,
     text: spec.text,
-    createdAt: new Date().toISOString(),
+    createdAt,
   };
   if (spec.facets && spec.facets.length > 0) {
     record.facets = spec.facets;
@@ -143,46 +153,81 @@ export function buildPostRecord(
   return record;
 }
 
-/** Create a single post record and return its strongRef. */
-export async function createPost(
+/**
+ * Write a single post record at a fixed rkey and return its strongRef.
+ *
+ * `putRecord`, not `createRecord`: paired with the week-derived rkeys from
+ * `./week.ts` it makes posting the thread an upsert. Re-running the job
+ * overwrites the week's posts in place instead of publishing a second thread —
+ * the fresh-TID `createRecord` this replaced is exactly how the job used to
+ * duplicate itself.
+ */
+export async function putPost(
   client: Client,
   repo: string,
+  rkey: string,
   record: Record<string, unknown>,
 ): Promise<StrongRef> {
   const res = await ok(
-    client.post("com.atproto.repo.createRecord", {
+    client.post("com.atproto.repo.putRecord", {
       input: {
-        repo,
         collection: BSKY_FEED_POST,
-        rkey: tidNow(),
         record,
+        repo,
+        rkey,
       } as never,
     }),
   );
   return { uri: res.uri, cid: res.cid };
 }
 
+export interface PostThreadOptions {
+  /** Record key per spec, in thread order — see `threadRkeys()`. */
+  rkeys: Array<string>;
+  /** `createdAt` stamped on every post in the thread. */
+  createdAt: string;
+  /**
+   * Awaited right after the root post lands, before any reply goes out. The
+   * caller uses it to record that this week's thread now exists — from that
+   * moment the thread is public, so a crash partway through leaves a partial
+   * thread rather than letting a later run publish a second one.
+   */
+  onRoot?: (ref: StrongRef) => Promise<void>;
+}
+
 /**
- * Post `specs` as a single reply-chained thread. Returns each created post's
- * strongRef in order (first is the thread root). Sequential by necessity.
+ * Post `specs` as a single reply-chained thread. Returns each post's strongRef
+ * in order (first is the thread root). Sequential by necessity: each reply
+ * references the previous post's `cid`.
  */
 export async function postThread(
   client: Client,
   repo: string,
   specs: Array<PostSpec>,
+  options: PostThreadOptions,
 ): Promise<Array<StrongRef>> {
+  if (options.rkeys.length < specs.length) {
+    throw new Error(
+      `postThread needs one rkey per post (${specs.length} specs, ${options.rkeys.length} rkeys)`,
+    );
+  }
+
   const created: Array<StrongRef> = [];
   let root: StrongRef | null = null;
   let parent: StrongRef | null = null;
 
-  for (const spec of specs) {
+  for (const [i, spec] of specs.entries()) {
     const record = buildPostRecord(
       spec,
+      options.createdAt,
       root && parent ? { root, parent } : undefined,
     );
-    const ref = await createPost(client, repo, record);
+    const ref = await putPost(client, repo, options.rkeys[i], record);
     created.push(ref);
-    if (!root) root = ref;
+    if (!root) {
+      root = ref;
+      await options.onRoot?.(ref);
+    }
     parent = ref;
   }
   return created;

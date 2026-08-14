@@ -1487,6 +1487,36 @@ would otherwise pass any freshness window), `indexed_at` (set once on first inse
 updated — this is what survives a tap cursor rewind or a fresh tap instance re-streaming known
 repos), and a per-author hourly cap in the sender as the backstop.
 
+### Weekly network thread
+
+A `thread-cron` Railway service (`railway.thread.json` → `pnpm thread:post` →
+`src/server/announce/`) posts the week's five hottest network articles as a
+reply-chained Bluesky thread from the reader bot, Fridays 16:00 UTC.
+
+It must post **exactly once a week**, and the scheduled tick is not the only
+thing that starts it: Railway runs a cron service's start command on every
+redeploy and restart, and `pnpm thread:post` is a hand-run away. So the job is
+guarded twice, at both layers that can fail:
+
+- **It claims the week before it composes.** `weekly_thread_runs` is keyed by ISO
+  week (`2026-W33`); the claim is one atomic `insert … on conflict do update …
+where`, so concurrent runs can never both win (the same shape as the push
+  queue's claim, and equally transaction-free — the Neon HTTP driver has none).
+  A run that loses the claim exits without posting. The row is handed back
+  (`skipped` / `failed`) when a run posts nothing, so a genuine retry still
+  works, and a claim left stale by a killed process is reaped after 30 minutes.
+- **The write itself is idempotent.** Posts go to record keys derived from the
+  week — TIDs seeded from that week's Friday with a pinned clock id — via
+  `putRecord`, with `createdAt` anchored to the same instant. A run that gets
+  past the claim anyway (DB unreachable, `THREAD_FORCE=1`, a bug) therefore
+  _overwrites_ that week's thread instead of publishing a second one. The
+  original `createRecord`-at-a-fresh-TID is precisely how the job duplicated
+  itself.
+
+The ledger is stamped with the root URI the moment the root post lands, before
+the replies go out: past that point the thread is public, so a mid-thread crash
+must leave a partial thread rather than license a second one.
+
 ### Topic derivation
 
 Topics (`topics`, `topic_tags`, `topic_publications`) are rebuilt by

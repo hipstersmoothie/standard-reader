@@ -11,7 +11,20 @@ import {
  * (`scripts/post-weekly-thread.ts`), deliberately in its own scheduled process
  * (not the `web` app or the long-lived `ingest` worker), mirroring `digest-cron`.
  *
- * Set `THREAD_DRY_RUN=1` to compose + log the thread without writing any records.
+ * Posts at most once per ISO week, guarded twice over. Plenty of things besides
+ * the Friday tick start this job — a redeploy or restart of the cron service
+ * runs its start command immediately, and `pnpm thread:post` is a hand-run away
+ * — so:
+ *
+ *  1. the run claims the week in `weekly_thread_runs` before composing anything
+ *     (`./ledger.ts`), and stands down if the week is already spoken for;
+ *  2. the posts themselves are `putRecord`ed at rkeys derived from the week
+ *     (`./week.ts`), so a run that gets past the claim regardless overwrites the
+ *     week's thread rather than publishing a second one.
+ *
+ * Set `THREAD_DRY_RUN=1` to compose + log the thread without writing any records
+ * (and without claiming the week). `THREAD_FORCE=1` posts anyway when this
+ * week's thread already went out.
  */
 import type { ArticleCard } from "#/integrations/tanstack-query/api-shapes";
 import { getPublicUrl } from "#/lib/public-url";
@@ -27,7 +40,14 @@ import {
   HOT_ARTICLE_LIMIT,
   HOT_WINDOW_DAYS,
   isDryRun,
+  isForcedRun,
 } from "./config.ts";
+import {
+  claimWeek,
+  markRootPosted,
+  markThreadComplete,
+  releaseWeek,
+} from "./ledger.ts";
 import {
   fetchThumbBlob,
   linkFacets,
@@ -35,6 +55,7 @@ import {
   postThread,
 } from "./thread.ts";
 import type { Facet, PostSpec } from "./thread.ts";
+import { isoWeekKey, threadRkeys, weekAnchor } from "./week.ts";
 
 export interface WeeklyThreadSummary {
   /** Hottest articles selected for the thread. */
@@ -44,6 +65,10 @@ export interface WeeklyThreadSummary {
   /** AT-URI of the thread root, when posted. */
   rootUri: string | null;
   dryRun: boolean;
+  /** ISO week this run was for (`null` on a dry run, which claims nothing). */
+  periodKey: string | null;
+  /** Set when the run stood down because this week's thread already exists. */
+  skipped?: "already-posted" | "in-progress";
 }
 
 const CTA_APP_LABEL = "standard-reader.app";
@@ -126,6 +151,64 @@ export async function runWeeklyThread(): Promise<WeeklyThreadSummary> {
   const baseUrl = getPublicUrl();
   const dryRun = isDryRun();
 
+  // A dry run writes nothing, so it must not consume the week's slot either.
+  if (dryRun) return runDryThread(baseUrl);
+
+  // Claim the week before doing anything else. Everything past this point can
+  // write to the PDS, and only one run per week is allowed to.
+  const periodKey = isoWeekKey(new Date());
+  const forced = isForcedRun();
+  if (forced) {
+    console.warn(
+      `[thread] THREAD_FORCE set — posting for ${periodKey} even if it already went out`,
+    );
+  }
+
+  const claim = await claimWeek(periodKey, { force: forced });
+  if (!claim.claimed) {
+    console.info(
+      `[thread] ${periodKey} already handled (${claim.reason}${claim.rootUri ? `, root=${claim.rootUri}` : ""}) — nothing to post`,
+    );
+    return {
+      articles: 0,
+      dryRun: false,
+      periodKey,
+      posted: 0,
+      rootUri: claim.rootUri,
+      skipped: claim.reason,
+    };
+  }
+  if (claim.attempts > 1 && !forced) {
+    console.warn(
+      `[thread] re-claimed ${periodKey} after a previous run left it unfinished (attempt ${claim.attempts})`,
+    );
+  }
+
+  try {
+    return await postWeeklyThread(baseUrl, periodKey);
+  } catch (error) {
+    // Hand the week back so a later run can retry. Safe because this is only
+    // reached when nothing was posted — once the root exists the ledger already
+    // says `posted`, and `releaseWeek` only touches a row still `running`.
+    //
+    // Best-effort: when the DB is what broke, releasing fails too, and the
+    // original failure is the one worth reporting. The stale-claim reaper picks
+    // the row up either way.
+    try {
+      await releaseWeek(
+        periodKey,
+        "failed",
+        error instanceof Error ? error.message : String(error),
+      );
+    } catch (releaseError) {
+      console.error("[thread] could not release the week:", releaseError);
+    }
+    throw error;
+  }
+}
+
+/** Compose + log the thread without claiming the week or writing records. */
+async function runDryThread(baseUrl: string): Promise<WeeklyThreadSummary> {
   const cards = await weekInReviewArticles(db, schema, {
     sinceDays: HOT_WINDOW_DAYS,
     limit: HOT_ARTICLE_LIMIT,
@@ -133,39 +216,76 @@ export async function runWeeklyThread(): Promise<WeeklyThreadSummary> {
 
   if (cards.length === 0) {
     console.info("[thread] no eligible articles this week — nothing to post");
-    return { articles: 0, posted: 0, rootUri: null, dryRun };
+    return {
+      articles: 0,
+      dryRun: true,
+      periodKey: null,
+      posted: 0,
+      rootUri: null,
+    };
   }
 
-  if (dryRun) {
-    const specs = cards.map((card, i) =>
-      articleSpec(card, i, cards.length, baseUrl),
+  const specs = cards.map((card, i) =>
+    articleSpec(card, i, cards.length, baseUrl),
+  );
+  specs.push(ctaSpec(baseUrl));
+  console.info(`[thread] DRY RUN — ${specs.length} posts composed:`);
+  for (const [i, spec] of specs.entries()) {
+    console.info(`\n--- post ${i + 1} ---\n${spec.text}`);
+    if (spec.external) {
+      console.info(`  [card] ${spec.external.title} → ${spec.external.uri}`);
+    }
+    for (const facet of spec.facets ?? []) {
+      const feature = facet.features[0];
+      const detail =
+        feature.$type === "app.bsky.richtext.facet#mention"
+          ? `mention ${feature.did}`
+          : `link ${feature.uri}`;
+      console.info(`  [facet] ${detail}`);
+    }
+  }
+  for (const [i, card] of cards.entries()) {
+    const ageDays = (
+      (Date.now() - new Date(card.publishedAt).getTime()) /
+      86_400_000
+    ).toFixed(1);
+    console.info(
+      `  post ${i + 1} published ${card.publishedAt} (${ageDays}d ago) · cover image: ${card.coverImageUrl ?? "none"}`,
     );
-    specs.push(ctaSpec(baseUrl));
-    console.info(`[thread] DRY RUN — ${specs.length} posts composed:`);
-    for (const [i, spec] of specs.entries()) {
-      console.info(`\n--- post ${i + 1} ---\n${spec.text}`);
-      if (spec.external) {
-        console.info(`  [card] ${spec.external.title} → ${spec.external.uri}`);
-      }
-      for (const facet of spec.facets ?? []) {
-        const feature = facet.features[0];
-        const detail =
-          feature.$type === "app.bsky.richtext.facet#mention"
-            ? `mention ${feature.did}`
-            : `link ${feature.uri}`;
-        console.info(`  [facet] ${detail}`);
-      }
-    }
-    for (const [i, card] of cards.entries()) {
-      const ageDays = (
-        (Date.now() - new Date(card.publishedAt).getTime()) /
-        86_400_000
-      ).toFixed(1);
-      console.info(
-        `  post ${i + 1} published ${card.publishedAt} (${ageDays}d ago) · cover image: ${card.coverImageUrl ?? "none"}`,
-      );
-    }
-    return { articles: cards.length, posted: 0, rootUri: null, dryRun: true };
+  }
+  return {
+    articles: cards.length,
+    dryRun: true,
+    periodKey: null,
+    posted: 0,
+    rootUri: null,
+  };
+}
+
+/**
+ * Select, compose and post the week's thread. Only ever reached holding this
+ * week's claim.
+ */
+async function postWeeklyThread(
+  baseUrl: string,
+  periodKey: string,
+): Promise<WeeklyThreadSummary> {
+  const cards = await weekInReviewArticles(db, schema, {
+    sinceDays: HOT_WINDOW_DAYS,
+    limit: HOT_ARTICLE_LIMIT,
+  });
+
+  if (cards.length === 0) {
+    console.info("[thread] no eligible articles this week — nothing to post");
+    // Hand the week back: a later run that does find articles should post.
+    await releaseWeek(periodKey, "skipped");
+    return {
+      articles: 0,
+      dryRun: false,
+      periodKey,
+      posted: 0,
+      rootUri: null,
+    };
   }
 
   const { client, repo, handle } = await loginAsReaderBot();
@@ -178,13 +298,31 @@ export async function runWeeklyThread(): Promise<WeeklyThreadSummary> {
   }
   specs.push(ctaSpec(baseUrl));
 
-  const refs = await postThread(client, repo, specs);
+  // Week-derived rkeys + `putRecord`: if a second run ever gets this far, it
+  // rewrites these same records rather than publishing a second thread.
+  const refs = await postThread(client, repo, specs, {
+    createdAt: weekAnchor(periodKey).toISOString(),
+    // Stamp the ledger the moment the root post lands — after that the thread
+    // is public and no later run may post another, however this process ends.
+    onRoot: async (root) => {
+      await markRootPosted(periodKey, root.uri);
+    },
+    rkeys: threadRkeys(periodKey, specs.length),
+  });
   const rootUri = refs[0]?.uri ?? null;
+  // Bookkeeping only — the week was already marked `posted` with the root URI
+  // above, so a failure here must not fail a run that did post.
+  try {
+    await markThreadComplete(periodKey, refs.length);
+  } catch (error) {
+    console.error("[thread] could not record the post count:", error);
+  }
   console.info(`[thread] posted ${refs.length} posts; root=${rootUri}`);
   return {
     articles: cards.length,
+    dryRun: false,
+    periodKey,
     posted: refs.length,
     rootUri,
-    dryRun: false,
   };
 }

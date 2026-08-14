@@ -267,6 +267,13 @@
       "when": 1786555171840,
       "tag": "0037_burly_magus",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1786724326958,
+      "tag": "0038_weekly_thread_runs",
+      "breakpoints": true
     }
   ]
 }
