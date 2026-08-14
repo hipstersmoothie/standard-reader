@@ -8,15 +8,13 @@
  *
  * Env:
  *   RECOMPUTE_URL          full URL to POST (defaults to the internal ingest svc)
- *   INGEST_WEBHOOK_SECRET  shared secret (Basic auth, user `admin`); falls back
- *                          to TAP_ADMIN_PASSWORD to mirror the worker's auth.
+ *   INGEST_WEBHOOK_SECRET  shared secret (Basic auth, user `admin`)
  */
 
 const url =
   process.env.RECOMPUTE_URL ??
   "http://ingest.railway.internal:3099/api/ingest/recompute";
-const secret =
-  process.env.INGEST_WEBHOOK_SECRET ?? process.env.TAP_ADMIN_PASSWORD;
+const secret = process.env.INGEST_WEBHOOK_SECRET;
 
 if (!secret) {
   throw new Error("[recompute-cron] INGEST_WEBHOOK_SECRET is not set");

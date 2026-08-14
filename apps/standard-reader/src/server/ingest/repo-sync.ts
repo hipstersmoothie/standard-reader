@@ -927,7 +927,24 @@ export async function reconcilePublisherReposBatch(
           lane === "bridge" ? isWebBridgeRepo : not(isWebBridgeRepo),
         ),
       )
-      .orderBy(asc(trackedRepos.updatedAt))
+      // Never-reconciled repos first, then least-recently-reconciled.
+      //
+      // The `last_seen_rev is null` term is what replaces tap's `/repos/add`.
+      // Under tap, discovering a repo (a document's contributor, a
+      // subscription's target) registered it and tap backfilled its history
+      // within minutes. Jetstream needs no registration and already delivers
+      // that repo's *new* records, but records it wrote before we were watching
+      // still have to come off its PDS — and this sweep is now the only thing
+      // that fetches them. Ordering by `updated_at` alone put a brand-new row
+      // (stamped `now()` on insert) at the *back* of the lap, so that history
+      // would sit unfetched for a full lap. A repo we have never reconciled has
+      // no `last_seen_rev`, which is exactly the set to visit first.
+      //
+      // Written as raw SQL rather than `asc(...)`: Drizzle appends the
+      // direction after the expression, which would emit `... is null asc desc`.
+      .orderBy(
+        sql`${trackedRepos.lastSeenRev} is null desc, ${trackedRepos.updatedAt} asc`,
+      )
       .limit(take);
 
   const webBridgeQuota = Math.max(1, Math.ceil(limit * WEB_BRIDGE_BATCH_SHARE));

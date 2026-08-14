@@ -35,7 +35,7 @@ import {
   upsertSubscription,
   upsertUserFollow,
 } from "#/server/ingest/handlers";
-import { ensureTracked } from "#/server/ingest/tap-client";
+import { ensureTracked } from "#/server/ingest/tracked-repos";
 import { observe } from "#/server/observability/log";
 import { syncFollowedPublications } from "#/server/reader/followed-publications-sync.server";
 import { markDocumentsRead } from "#/server/reader/mark-documents-read";

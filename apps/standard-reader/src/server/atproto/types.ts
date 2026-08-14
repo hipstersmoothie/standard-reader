@@ -274,41 +274,47 @@ export interface BskyProfileRecord {
   banner?: BlobRef;
 }
 
-// ── tap event envelope (see cmd/tap README "Event Format") ──────────────────
+// ── ingest event envelope ───────────────────────────────────────────────────
+//
+// The read-model's own event shape, deliberately not any upstream's. Jetstream
+// commits are adapted into it (`#/server/ingest/jetstream-event`) and so is the
+// PDS reconcile sweep's replay, which is what lets one dispatcher — and one set
+// of handlers — serve both without a second, drifting mapping.
 
-export type TapAction = "create" | "update" | "delete";
+export type IngestAction = "create" | "update" | "delete";
 
-export interface TapRecordPayload {
+export interface IngestRecordPayload {
   /** True if delivered live (firehose) vs historical backfill/resync. */
   live: boolean;
   rev: string;
   did: string;
   collection: string;
   rkey: string;
-  action: TapAction;
+  action: IngestAction;
   /** Present for create/update; absent for delete. */
   cid?: string;
   /** The record body; absent for delete. */
   record?: Record<string, unknown>;
 }
 
-export interface TapIdentityPayload {
+export interface IngestIdentityPayload {
   did: string;
   handle?: string;
   isActive?: boolean;
   status?: string;
 }
 
-export interface TapRecordEvent {
+export interface IngestRecordEvent {
+  /** The stream cursor this event arrived at (Jetstream's `seq`). */
   id: number;
   type: "record";
-  record: TapRecordPayload;
+  record: IngestRecordPayload;
 }
 
-export interface TapIdentityEvent {
+export interface IngestIdentityEvent {
   id: number;
   type: "identity";
-  identity: TapIdentityPayload;
+  identity: IngestIdentityPayload;
 }
 
-export type TapEvent = TapRecordEvent | TapIdentityEvent;
+export type IngestEvent = IngestRecordEvent | IngestIdentityEvent;

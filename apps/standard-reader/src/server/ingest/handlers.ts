@@ -72,7 +72,7 @@ import type {
   RecommendRecord,
   SidebarPrefRecord,
   SubscriptionRecord,
-  TapIdentityPayload,
+  IngestIdentityPayload,
   UserFollowRecord,
 } from "../atproto/types.ts";
 import {
@@ -91,7 +91,7 @@ import {
   sanitizeJson,
   stripNullBytes,
 } from "./mappers.ts";
-import { ensureTracked } from "./tap-client.ts";
+import { ensureTracked } from "./tracked-repos.ts";
 
 /**
  * Enforce one canonical publication per `(did, url)`: the record with the
@@ -1010,7 +1010,7 @@ export async function upsertBskyProfile(
 }
 
 export async function applyIdentity(
-  payload: TapIdentityPayload,
+  payload: IngestIdentityPayload,
 ): Promise<void> {
   let handle: string | null = null;
   if (isUsableHandle(payload.handle)) {

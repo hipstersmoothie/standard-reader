@@ -9,7 +9,7 @@ Check items off as they land.
 ## 0. Foundation & infra
 
 - [x] Confirm TanStack Start + hip-ui + StyleX baseline runs (`pnpm dev`, `pnpm build`, `pnpm lint`, `pnpm typecheck`).
-- [x] Set up env management (`.env` for `DATABASE_URL`, AT Proto OAuth secrets, tap config) + `.env.example`.
+- [x] Set up env management (`.env` for `DATABASE_URL`, AT Proto OAuth secrets, ingest config) + `.env.example`.
 - [x] Confirm Neon project + connection (`src/db/index.ts`) and Drizzle migration flow (`drizzle.config.ts`, `drizzle/`).
 - [x] Decide deployment target (Node server output) and wire CI for lint/format/typecheck/build (`.github/workflows/ci.yml`).
 - [x] **Production deploy (Railway).** Services in the `standard-reader` project (GitHub
@@ -17,16 +17,16 @@ Check items off as they land.
   - `web` — TanStack Start + Nitro (`pnpm build` → `pnpm start` = `node .output/server/index.mjs`);
     pre-deploy `pnpm db:migrate`; healthcheck `/api/auth/atproto/metadata.json`; custom domain
     `standard-reader.app` (OAuth `client_id`/`jwks` authority). Root `railway.json`.
-  - `tap` — `ghcr.io/.../tap` Docker image on a `/data` volume (SQLite state); signal collection
-    `site.standard.publication` + dynamic `/repos/add` graph expansion.
   - `ingest` — standalone worker (`pnpm ingest:start` = `tsx src/server/ingest/service.ts`), binds
-    `[::]:3099`, consumes `tap.railway.internal:2480`. Config file `railway.ingest.json`.
+    `[::]:3099`, subscribes to Jetstream v2 directly. Config file `railway.ingest.json`. (The
+    `tap`, `tap-docs` and `tap-bridge` services it used to consume were retired with the Jetstream
+    cutover — see §1.)
   - `recompute-cron` — `node scripts/recompute-cron.mjs` on `0 * * * *`, POSTs the ingest worker's
     `/api/ingest/recompute` over private networking. Config file `railway.cron.json`.
   - `reconcile-cron` — `pnpm reconcile:repos` on `20 * * * *`, the PDS repair round-robin. Unlike
     `recompute-cron` it does the work in its own process rather than POSTing ingest: repair
     enumerates and rewrites whole repos, and running that on the ingest worker made the backstop
-    compete with the live tap stream it backstops. Batch is derived from the fleet count so one
+    compete with the live stream it backstops. Batch is derived from the fleet count so one
     full lap stays ~24h as the fleet grows (`RECONCILE_LAP_HOURS` /
     `RECONCILE_INTERVAL_HOURS`). Config file `railway.reconcile.json`.
   - `thread-cron` — `pnpm thread:post` on `0 16 * * 5`, the weekly "hottest articles" Bluesky
@@ -41,7 +41,8 @@ Check items off as they land.
     `railway.ingest.json` / `railway.cron.json` / `railway.reconcile.json` / `railway.push.json` /
     `railway.thread.json`;
     otherwise it silently falls back to the web build.
-    Shared `INGEST_WEBHOOK_SECRET` = `TAP_ADMIN_PASSWORD`; `PUBLIC_URL=https://standard-reader.app`;
+    Shared `INGEST_WEBHOOK_SECRET`; `JETSTREAM_API_KEY` on `ingest`;
+    `PUBLIC_URL=https://standard-reader.app`;
     `ATPROTO_PRIVATE_KEY_JWK` is the ES256 private JWK. Prod DB was reset to a clean schema (drop
     `public` + `drizzle`, then `pnpm db:migrate`) before first backfill.
   - **Build gotcha (StyleX + Vite 8 / Rolldown):** `nitro()` must run **before** `tanstackStart()`
@@ -203,7 +204,34 @@ Check items off as they land.
       has a pre-existing gap (the document row doesn't exist in the DB until the
       firehose lands), but the removed PDS read never solved that either.
 
-## 1. Data ingestion — tap → Neon
+## 1. Data ingestion — Jetstream v2 → Neon
+
+- [x] **Replaced tap with Jetstream v2** (2026-08-14). One collection-filtered Jetstream v2
+      subscription replaces the whole tap tier. The point is not throughput, it is that a
+      collection filter has **no repo-tracking boundary**: every repo on the network that writes
+      one of our records arrives, including ones the graph would never have reached. So the signal
+      collections, the three tap instances, `/repos/add` registration, the 24 `ensureTracked` call
+      sites, the per-event ack path (and its deadlock, its timeout, and
+      `patches/@atproto__tap@0.3.0.patch`), the per-lane in-flight budgets, and the
+      `TAP_RETRY_TIMEOUT` redelivery storms are all gone rather than reimplemented. `tracked_repos`
+      survives as an inventory, not a gate. Live volume for our collections is ~9 events per 45s. - **Kept a class of record tap was losing.** The SDK's typed decode skips any record that is
+      not a `$type`'d map; ~0.05% of `standard.site` records are, and they include live
+      publications and documents already in the read-model. The channel consumes `raw: true` and
+      decodes DAG-CBOR itself (`#/server/ingest/jetstream-event`). tap dropped the same records
+      via `lexParse` — counted as `parseErrors`, recovered only by the PDS reconcile sweep. - **Profiles and handles moved from push to pull** (`#/server/ingest/profile-refresh`):
+      network-wide `app.bsky.actor.profile` is tens of millions of records for the ~15k we
+      display, and Jetstream's DID filter caps at 10,000 — below the 14.6k we track. - **Cutover:** `pnpm jetstream:cutover --since=3h --write` maps a wall-clock instant to a
+      resume seq via `listSegments`' witnessed-at windows and stores it in `ingest_state`. The
+      margin has to clear the seal lag — segments seal on a ~256MB boundary, so the sealed tip
+      trails real time and a too-small `--since` errors rather than silently skipping the gap.
+      Rehearsed on a Neon branch forked from prod: resumed from the seq, caught up, and applied
+      ~4,300 events with zero dead letters and zero errors. - Migration `0038` drops `tracked_repos.added_to_tap_at`; the table survives as an inventory
+      for the profile sweep and PDS reconcile, not as a gate on what gets indexed.
+- [ ] **Measure a from-scratch Jetstream backfill.** The cutover only replays a few hours, which is
+      what was rehearsed. A full replay from seq 0 is attractive because it would heal the records
+      tap lost to `lexParse`, but its cost is **not measured**: a partial dry run reached 1.25M
+      events at ~1,000/s before being stopped, and `planSnapshot` reports blocks rather than
+      matching events, so the total is unknown. Measure before planning a window around it.
 
 - [x] **Personal state no longer waits on the ingest queue** (2026-08-01). With the ingest worker
       backlogged, a reader's own read/unread state — the one thing they watch change in the moment —
@@ -1115,7 +1143,7 @@ Backend/API exists; UI or copy is missing.
       each with a percent-read meter). Position is the one bit of personal state kept **off**
       the protocol: reads are public records, and how far you got is a different kind of fact.
       A private app-local table ([`reading-progress.ts`](src/db/schema/reading-progress.ts),
-      `drizzle/0037_*`, keyed `(owner_did, document_uri)`, never touched by the tap) plus a
+      `drizzle/0037_*`, keyed `(owner_did, document_uri)`, never touched by the ingester) plus a
       per-device `localStorage` mirror ([`reading-progress.ts`](src/lib/reading-progress.ts)).
       Local drives the restore because it can be read before first paint and works offline;
       the server copy carries position across devices and only wins when it is newer and the

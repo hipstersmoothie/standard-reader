@@ -7,7 +7,7 @@ import {
   repoApplyWrites,
   subjectRkey,
 } from "#/server/atproto/repo-records";
-import { ensureTracked } from "#/server/ingest/tap-client";
+import { ensureTracked } from "#/server/ingest/tracked-repos";
 import { mirrorReadsMarked } from "#/server/reader/personal-state-mirror";
 
 export interface MarkDocumentsReadResult {

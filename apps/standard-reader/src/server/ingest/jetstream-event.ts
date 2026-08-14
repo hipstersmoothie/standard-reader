@@ -1,0 +1,71 @@
+import type { RawEvent } from "@bsky/jetstream";
+import { decode as cborDecode } from "@ipld/dag-cbor";
+
+import type { IngestRecordPayload } from "../atproto/types.ts";
+
+/**
+ * Adapt a Jetstream v2 raw event into the {@link IngestRecordPayload} the
+ * read-model dispatcher already speaks, so `handleRecord` stays the single
+ * place a record becomes a row.
+ *
+ * **Raw, not typed, on purpose.** The SDK's typed decode (`snapshot()` /
+ * `live()` without `raw: true`) runs every record through `parseRawRecord`,
+ * which throws on anything that isn't a `$type`'d map — and reports the throw
+ * through `onError` while *skipping the event*. Roughly 0.05% of standard.site
+ * records on the network carry no `$type` field, and they are not junk: they
+ * include live publications and documents that tap ingests today and that are
+ * already rows in the read-model. Our handlers dispatch on the commit's
+ * `collection`, never the record's `$type`, so the field is decoration to us.
+ * Decoding the archived DAG-CBOR ourselves keeps those records instead of
+ * losing a slice of the network to a validator we don't need.
+ *
+ * Both wire shapes arrive here: the live tail yields already-parsed JSON, the
+ * archive yields byte-exact DAG-CBOR. `cborDecode` handles the latter, and
+ * `blobCid()` downstream already normalizes every blob-ref representation
+ * either produces (`{$link}`, `{"/"}`, bare string, or a CID instance).
+ */
+export function toIngestRecordPayload(
+  event: RawEvent,
+  options: { live: boolean },
+): IngestRecordPayload | null {
+  if (event.kind !== "commit") {
+    return null;
+  }
+  const commit = event.commit;
+  const base = {
+    action: commit.operation,
+    collection: commit.collection,
+    did: event.did,
+    live: options.live,
+    rev: commit.rev,
+    rkey: commit.rkey,
+  } satisfies Omit<IngestRecordPayload, "cid" | "record">;
+
+  if (commit.operation === "delete") {
+    return base;
+  }
+
+  return {
+    ...base,
+    cid: commit.cid,
+    record: decodeRecord(commit.record),
+  };
+}
+
+/**
+ * A put commit's record as a plain object for the mappers.
+ *
+ * The archive arm is `Uint8Array` (DAG-CBOR exactly as stored); the live arm is
+ * already-parsed wire JSON. Anything that decodes to a non-object is returned
+ * as an empty record rather than thrown away — `handleRecord` logs and drops a
+ * bodyless put itself, which keeps that decision in one place.
+ */
+function decodeRecord(record: unknown): Record<string, unknown> {
+  const value =
+    record instanceof Uint8Array
+      ? (cborDecode(record) as unknown)
+      : (record as unknown);
+  return typeof value === "object" && value !== null
+    ? (value as Record<string, unknown>)
+    : {};
+}

@@ -14,7 +14,7 @@ import {
 } from "#/server/atproto/repo-records";
 import { Collections, buildAtUri } from "#/server/atproto/uri";
 import { deleteRecord, upsertSubscription } from "#/server/ingest/handlers";
-import { ensureTracked } from "#/server/ingest/tap-client";
+import { ensureTracked } from "#/server/ingest/tracked-repos";
 
 async function trackReaderRepo(did: string): Promise<void> {
   try {
