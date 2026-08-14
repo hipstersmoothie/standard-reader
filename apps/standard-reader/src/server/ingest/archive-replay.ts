@@ -1,0 +1,253 @@
+import { Jetstream } from "@bsky/jetstream";
+
+import { buildAtUri } from "../atproto/uri.ts";
+import { logEvent } from "../observability/log.ts";
+import { ingestConfig } from "./config.ts";
+import { handleRecord } from "./consumer.ts";
+import {
+  INGESTED_COLLECTIONS,
+  toIngestRecordPayload,
+} from "./jetstream-event.ts";
+
+/**
+ * Rebuild a repo's records from Jetstream's sealed archive instead of its PDS.
+ *
+ * The read-model used to repair itself by listing each collection off the
+ * author's PDS. That worked, but it made the backstop depend on ~15k third-party
+ * servers being reachable and correct: a repo behind a slow host, a PDS that
+ * 4xxs one collection, a `RepoGoneError` mid-sweep, all showed up as repair
+ * failures on data that was perfectly intact. Jetstream already holds every one
+ * of those records, indexed per block by DID *and* collection, so the same
+ * question — "what does this repo actually have?" — can be asked of one service
+ * we already depend on.
+ *
+ * It is also dramatically cheaper. The segment-level DID bloom rejects almost
+ * the whole archive without touching disk: a plan scoped to one DID examines
+ * ~7,000 segments and matches 1–6 of them, which is 1–67 blocks (~67 KB–4.4 MB)
+ * against the 66,795 blocks a network-wide plan selects. And `dids` accepts up
+ * to 10,000 per plan, so a whole sweep batch can be planned in one request
+ * rather than one PDS round trip per repo.
+ *
+ * **`kinds` is deliberately not set.** A collection filter constrains commits
+ * only, and omitting `kinds` is what keeps the DID-level markers — `#account`,
+ * `#sync` — in the plan via the archive's sentinel index. Those are how a
+ * deleted account and a diverged repo announce themselves; asking for
+ * `kinds: ["commit"]` here would filter out exactly the events that tell us to
+ * purge a repo.
+ */
+
+/**
+ * The SDK brands `dids` as `DidString[]`. Ours are plain strings that came out
+ * of the read-model, so this is derived from the SDK's own signature rather
+ * than by taking a dependency on `@atproto/lex` just for the brand.
+ */
+type ArchiveDids = NonNullable<
+  Parameters<Jetstream["snapshotRawBatches"]>[0]["dids"]
+>;
+
+/** What folding one repo's archive history produced. */
+export interface RepoFold {
+  did: string;
+  /** Records re-applied through the dispatcher (creates/updates). */
+  applied: number;
+  /** Delete events applied. */
+  deleted: number;
+  /** The account was deleted upstream — every mirrored row is an orphan. */
+  gone: boolean;
+  /**
+   * Live record URIs per collection once creates/updates/deletes are folded in
+   * seq order. This is the archive's answer to "what does this repo have now",
+   * and it is what the caller diffs against the read-model to find stale rows.
+   */
+  live: Map<string, Set<string>>;
+  /** Highest Jetstream seq seen for this repo. */
+  lastSeq: number;
+  /**
+   * True when the plan selected nothing at all for this DID.
+   *
+   * Load-bearing for safety: an empty result is *not* proof the repo is empty.
+   * A repo the relay never saw (firewalled, or newer than the archive's
+   * bootstrap) plans to zero blocks exactly like a repo that genuinely has no
+   * records, and pruning on that would delete a live publisher's whole
+   * catalogue. Callers must refuse to prune when this is set.
+   */
+  empty: boolean;
+}
+
+function emptyFold(did: string): RepoFold {
+  return {
+    applied: 0,
+    deleted: 0,
+    did,
+    empty: true,
+    gone: false,
+    lastSeq: 0,
+    live: new Map(),
+  };
+}
+
+function noteLive(fold: RepoFold, collection: string, uri: string): void {
+  let set = fold.live.get(collection);
+  if (!set) {
+    set = new Set();
+    fold.live.set(collection, set);
+  }
+  set.add(uri);
+}
+
+function dropLive(fold: RepoFold, collection: string, uri: string): void {
+  fold.live.get(collection)?.delete(uri);
+}
+
+let client: Jetstream | undefined;
+
+function jetstream(): Jetstream {
+  client ??= new Jetstream({
+    ...(ingestConfig.jetstreamApiKey
+      ? { apiKey: ingestConfig.jetstreamApiKey }
+      : {}),
+    blockConcurrency: ingestConfig.jetstreamBlockConcurrency,
+    service: ingestConfig.jetstreamService,
+  });
+  return client;
+}
+
+/**
+ * Fold the archive for `dids` and re-apply what it holds.
+ *
+ * Every surviving record is replayed through {@link handleRecord} — the same
+ * dispatcher the live channel feeds — so a repaired row and a live one are
+ * written by identical code. `live: false` keeps the replay from queueing a
+ * push notification per document.
+ *
+ * Keep batches modest. The `dids` filter allows 10,000, but this accumulates a
+ * live-URI set per repo, and bulk web-bridge mirrors carry thousands of
+ * documents each — the planning call is what scales to 10,000, not the fold.
+ */
+export async function foldReposFromArchive(
+  dids: ReadonlyArray<string>,
+  opts: {
+    afterSeq?: number;
+    signal?: AbortSignal;
+    /**
+     * Compute the live set without writing anything. This is what makes a
+     * `--dry-run` reconcile honest: the same fold, the same diff, no upserts.
+     */
+    skipApply?: boolean;
+  } = {},
+): Promise<Map<string, RepoFold>> {
+  const folds = new Map<string, RepoFold>();
+  for (const did of dids) {
+    folds.set(did, emptyFold(did));
+  }
+  if (dids.length === 0) {
+    return folds;
+  }
+
+  const started = performance.now();
+  let events = 0;
+
+  for await (const event of jetstream().snapshot({
+    afterSeq: opts.afterSeq ?? 0,
+    collections: INGESTED_COLLECTIONS,
+    dids: dids as ArchiveDids,
+    onError: (error) =>
+      logEvent("ingest.archiveReplayError", {
+        ok: false,
+        reason: error.message,
+      }),
+    // Raw, not typed: typed decode drops every record without a `$type`, and on
+    // this network that is ~0.05% of standard.site records — live publications
+    // and documents included. See `toIngestRecordPayload`.
+    raw: true,
+    ...(opts.signal ? { signal: opts.signal } : {}),
+  })) {
+    // The planner is one-sided (no false negatives, possible false positives),
+    // so a block selected for one DID can carry another's events.
+    const fold = folds.get(event.did);
+    if (!fold) continue;
+
+    events += 1;
+    fold.empty = false;
+    fold.lastSeq = Math.max(fold.lastSeq, event.seq);
+
+    if (event.kind === "account") {
+      // The one marker that means "this repo is gone": everything mirrored for
+      // the DID is an orphan. Deactivations and suspensions are not deletions —
+      // the records still exist and come back when the account does.
+      if (
+        event.account.active === false &&
+        event.account.status === "deleted"
+      ) {
+        fold.gone = true;
+      }
+      continue;
+    }
+
+    if (event.kind === "sync") {
+      // Sync 1.1 divergence: the archive discarded this repo's pre-divergence
+      // rows and follows with the authoritative replacement records. Anything
+      // folded so far is exactly what was discarded, so start the live set over
+      // rather than unioning stale URIs into it.
+      fold.live.clear();
+      continue;
+    }
+
+    if (event.kind !== "commit") continue;
+
+    const { collection, operation, rkey } = event.commit;
+    const uri = buildAtUri(event.did, collection, rkey);
+
+    if (operation === "delete") {
+      dropLive(fold, collection, uri);
+    } else {
+      noteLive(fold, collection, uri);
+    }
+
+    if (opts.skipApply) continue;
+
+    const payload = toIngestRecordPayload(event, { live: false });
+    if (!payload) continue;
+    try {
+      await handleRecord(payload);
+      if (operation === "delete") fold.deleted += 1;
+      else fold.applied += 1;
+    } catch (error: unknown) {
+      logEvent("ingest.archiveReplayApplyFailed", {
+        collection,
+        did: event.did,
+        ok: false,
+        reason: error instanceof Error ? error.message : String(error),
+        uri,
+      });
+    }
+  }
+
+  logEvent("ingest.archiveReplay", {
+    dids: dids.length,
+    events,
+    empty: [...folds.values()].filter((f) => f.empty).length,
+    gone: [...folds.values()].filter((f) => f.gone).length,
+    ms: Math.round(performance.now() - started),
+    ok: true,
+  });
+
+  return folds;
+}
+
+/**
+ * Fold a single repo, from `afterSeq` onwards.
+ *
+ * `afterSeq` is the gate that replaces `com.atproto.sync.getLatestCommit`: the
+ * planner drops every block below the watermark before anything is downloaded,
+ * so a repo that has not moved since we last swept it costs one planning
+ * request and yields no events. Pass 0 for a full rebuild — that is the only
+ * mode whose `live` set is complete enough to prune against.
+ */
+export async function foldRepoFromArchive(
+  did: string,
+  opts: { afterSeq?: number; signal?: AbortSignal; skipApply?: boolean } = {},
+): Promise<RepoFold> {
+  const folds = await foldReposFromArchive([did], opts);
+  return folds.get(did) ?? emptyFold(did);
+}

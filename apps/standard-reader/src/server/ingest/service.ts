@@ -17,7 +17,7 @@ import { recomputeDerived } from "./recompute.ts";
 import {
   markRepoGone,
   reconcilePublisherReposBatch,
-  reconcileRepoFromPds,
+  reconcileRepoFromArchive,
 } from "./repo-sync.ts";
 
 const DEFAULT_PORT = 3099;
@@ -272,7 +272,7 @@ async function handleRequest(
     }
     const startedAt = performance.now();
     try {
-      const result = await reconcileRepoFromPds(body.did, { upsert: true });
+      const result = await reconcileRepoFromArchive(body.did, { upsert: true });
       // If the PDS reports the repo is permanently gone, prune its read-model
       // rows + retire the tracked repo (same as the batch path). Manual
       // reconcile otherwise returns gone=true without cleaning up.

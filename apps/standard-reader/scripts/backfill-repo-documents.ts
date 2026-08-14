@@ -11,7 +11,7 @@ import { recomputePublicationStats } from "../src/server/ingest/recompute.ts";
  */
 import {
   markRepoGone,
-  reconcileRepoFromPds,
+  reconcileRepoFromArchive,
 } from "../src/server/ingest/repo-sync.ts";
 
 const args = process.argv.slice(2);
@@ -27,7 +27,7 @@ if (dids.length === 0) {
 }
 
 for (const did of dids) {
-  const result = await reconcileRepoFromPds(did, {
+  const result = await reconcileRepoFromArchive(did, {
     dryRun,
     upsert: !pruneOnly,
   });

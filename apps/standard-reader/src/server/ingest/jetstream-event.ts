@@ -1,7 +1,29 @@
-import type { RawEvent } from "@bsky/jetstream";
+import type { CollectionFilter, RawEvent } from "@bsky/jetstream";
 import { decode as cborDecode } from "@ipld/dag-cbor";
 
 import type { IngestRecordPayload } from "../atproto/types.ts";
+
+/**
+ * The collections we ingest, as Jetstream filters — shared by the live channel
+ * and the archive replay so the two can never disagree about what "our data"
+ * means. A repo repaired from the archive has to cover exactly what the stream
+ * covers, or repair would quietly reintroduce the gaps it exists to close.
+ *
+ * Namespace wildcards rather than an exhaustive NSID list: the dispatcher's
+ * `default` branch already reports anything it does not model, and a wildcard
+ * means a new `app.standard-reader.*` record type starts flowing the moment its
+ * handler lands instead of needing a filter edit deployed first.
+ *
+ * `app.bsky.actor.profile` is deliberately absent. Network-wide it is tens of
+ * millions of records for the ~15k we mirror, and Jetstream's DID filter caps
+ * at 10,000 — fewer than we track. Profiles are fetched directly instead (see
+ * `profile-refresh.ts`).
+ */
+export const INGESTED_COLLECTIONS = [
+  "site.standard.*",
+  "app.standard-reader.*",
+  "site.mochott.article",
+] as const satisfies ReadonlyArray<CollectionFilter>;
 
 /**
  * Adapt a Jetstream v2 raw event into the {@link IngestRecordPayload} the

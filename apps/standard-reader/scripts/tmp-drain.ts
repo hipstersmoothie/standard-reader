@@ -7,7 +7,7 @@
 import { sql } from "drizzle-orm";
 
 import { db } from "../src/db/index.ts";
-import { repairRepoIfAdvanced } from "../src/server/ingest/repo-sync.ts";
+import { repairRepoFromArchive } from "../src/server/ingest/repo-sync.ts";
 
 const CONCURRENCY = Number(process.env.DRAIN_CONCURRENCY ?? 12);
 
@@ -38,7 +38,7 @@ async function worker(): Promise<void> {
     const did = dids[cursor++];
     if (!did) return;
     try {
-      const r = await repairRepoIfAdvanced(did);
+      const r = await repairRepoFromArchive(did);
       if (!r.unchanged) {
         repaired += 1;
         docs += r.upsertedDocuments ?? 0;

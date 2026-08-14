@@ -1,5 +1,5 @@
 import { Jetstream } from "@bsky/jetstream";
-import type { CollectionFilter, CursorStore, RawEvent } from "@bsky/jetstream";
+import type { CursorStore, RawEvent } from "@bsky/jetstream";
 import { eq, sql } from "drizzle-orm";
 
 import { db } from "../../db/index.ts";
@@ -9,7 +9,10 @@ import { logEvent } from "../observability/log.ts";
 import { ingestConfig } from "./config.ts";
 import type { ProcessResult } from "./consumer.ts";
 import { processIngestEvent } from "./consumer.ts";
-import { toIngestRecordPayload } from "./jetstream-event.ts";
+import {
+  INGESTED_COLLECTIONS,
+  toIngestRecordPayload,
+} from "./jetstream-event.ts";
 
 /**
  * `ingest_state` row holding the Jetstream cursor. Deliberately its own row
@@ -35,33 +38,20 @@ const STREAM_ID = "jetstream";
  */
 const LIVE_WINDOW_MS = 5 * 60 * 1000;
 
-/** Collections `handleRecord` dispatches on, as Jetstream filters.
- *
- * Namespace wildcards rather than an exhaustive NSID list: the dispatcher's
- * `default` branch already reports anything it does not model, and a wildcard
- * means a new `app.standard-reader.*` record type starts flowing the moment its
- * handler lands instead of needing a filter edit deployed first.
- *
- * `app.bsky.actor.profile` is deliberately absent. Network-wide it is tens of
- * millions of records for the ~15k we mirror, and Jetstream's DID filter caps
- * at 10,000 — fewer than we track. Profiles are fetched and refreshed directly
- * instead (see `profile-refresh.ts`).
- */
-const COLLECTIONS = [
-  "site.standard.*",
-  "app.standard-reader.*",
-  "site.mochott.article",
-] as const satisfies ReadonlyArray<CollectionFilter>;
+/** Events applied in parallel. */
+const DEFAULT_APPLY_CONCURRENCY = 16;
 
 /**
- * Concurrent block downloads during the archive phase. The SDK defaults to 4;
- * measured against the public instance throughput plateaus around 16–32 and 64
- * gets nearly every request 429'd, so 16 is the safe shoulder.
+ * Depth of the queue between the read loop and the appliers.
+ *
+ * This is the backpressure budget Jetstream's guidance asks for: the read loop
+ * only blocks when the queue is full, so a slow database costs memory here
+ * rather than stalling the websocket (which the server answers by disconnecting
+ * a `ConsumerTooSlow` consumer). Deep enough to absorb an archive burst, small
+ * enough that a wedged applier surfaces as a full queue on the heartbeat
+ * instead of an unbounded heap.
  */
-const DEFAULT_BLOCK_CONCURRENCY = 16;
-
-/** Events applied in parallel within one batch. */
-const DEFAULT_APPLY_CONCURRENCY = 16;
+const QUEUE_LIMIT = 2048;
 
 function envInt(name: string, fallback: number): number {
   const value = Number(process.env[name]);
@@ -132,10 +122,7 @@ function toIngestEvent(event: RawEvent, now: number): IngestEvent | null {
 export function startJetstreamChannel(): { destroy: () => Promise<void> } {
   const service = ingestConfig.jetstreamService;
   const apiKey = ingestConfig.jetstreamApiKey;
-  const blockConcurrency = envInt(
-    "JETSTREAM_BLOCK_CONCURRENCY",
-    DEFAULT_BLOCK_CONCURRENCY,
-  );
+  const blockConcurrency = ingestConfig.jetstreamBlockConcurrency;
   const applyConcurrency = envInt(
     "JETSTREAM_APPLY_CONCURRENCY",
     DEFAULT_APPLY_CONCURRENCY,
@@ -163,90 +150,197 @@ export function startJetstreamChannel(): { destroy: () => Promise<void> } {
   const controller = new AbortController();
   const cursor = cursorStore();
 
+  // --- Bounded queue between the read loop and the appliers ---------------
+  //
+  // Jetstream's guidance is explicit: do not await downstream work inside the
+  // message-receive loop. A stalled read loop backpressures the socket, and the
+  // server's answer to a slow consumer is to disconnect it (`ConsumerTooSlow`
+  // is a terminal frame) — so blocking here to "slow down" actually costs the
+  // connection and forces a replay. Applying one document is half a dozen
+  // sequential round trips to Neon plus, sometimes, an external body fetch, so
+  // awaiting it per event would stall the socket on database latency.
+  //
+  // Instead the loop only enqueues, and workers drain. The queue is bounded, so
+  // a genuinely slower-than-the-firehose consumer still exerts backpressure —
+  // but against a memory budget we chose rather than one round trip at a time,
+  // and `queueDepth` on the heartbeat is the pressure gauge the docs ask for.
+  interface PendingBatch {
+    lastCursor: number;
+    remaining: number;
+    unhandled: boolean;
+  }
+  const queue: Array<{ batch: PendingBatch; event: IngestEvent }> = [];
+  // In arrival (seq) order. The cursor may only advance past the head once the
+  // head is fully applied — see `drainCommitted`.
+  const inflight: Array<PendingBatch> = [];
+  // Arrays, not single slots: every worker can be parked at once, and a lone
+  // slot would drop all but the last waiter and deadlock the rest.
+  const idleWorkers: Array<() => void> = [];
+  const readerWaiters: Array<() => void> = [];
+  let closed = false;
+
+  function wakeWorker(): void {
+    idleWorkers.shift()?.();
+  }
+  function wakeAllWorkers(): void {
+    while (idleWorkers.length > 0) idleWorkers.shift()?.();
+  }
+  function wakeReader(): void {
+    while (readerWaiters.length > 0) readerWaiters.shift()?.();
+  }
+
+  /**
+   * Commit the cursor across every fully-applied batch at the head of the
+   * queue.
+   *
+   * Batches complete out of order — workers run concurrently — so the cursor
+   * tracks the *contiguous applied prefix*, never the highest finished batch. A
+   * crash then resumes at the last seq for which everything before it is
+   * durably in the read-model; at-least-once redelivery covers the rest.
+   */
+  async function drainCommitted(): Promise<void> {
+    let commit: number | undefined;
+    while (inflight.length > 0 && inflight[0].remaining === 0) {
+      const head = inflight[0];
+      // An `unhandled` event means the apply *and* its dead-letter write both
+      // failed — the DB is down or full. Holding the cursor here is the whole
+      // recovery mechanism: the batch replays once the DB is back.
+      if (head.unhandled) break;
+      inflight.shift();
+      commit = head.lastCursor;
+    }
+    if (commit !== undefined) {
+      await cursor.save(commit);
+    }
+  }
+
+  async function worker(): Promise<void> {
+    for (;;) {
+      const item = queue.shift();
+      if (!item) {
+        if (closed) return;
+        await new Promise<void>((resolve) => idleWorkers.push(resolve));
+        continue;
+      }
+      wakeReader();
+
+      const { batch, event } = item;
+      stats.lastSeq = Math.max(stats.lastSeq, event.id);
+      stats.lastEventAt = Date.now();
+      let result: ProcessResult = "unhandled";
+      try {
+        result = await processIngestEvent(event);
+      } catch (error: unknown) {
+        stats.errors += 1;
+        console.error(
+          `[ingest:jetstream] failed to process seq ${event.id}`,
+          error,
+        );
+      }
+      if (result === "applied") stats.applied += 1;
+      else if (result === "dead-lettered") stats.deadLettered += 1;
+      else {
+        stats.unhandled += 1;
+        batch.unhandled = true;
+      }
+
+      batch.remaining -= 1;
+      if (batch.remaining === 0) {
+        await drainCommitted().catch((error: unknown) => {
+          stats.errors += 1;
+          console.error("[ingest:jetstream] cursor commit failed", error);
+        });
+      }
+    }
+  }
+
+  const workers = Array.from({ length: applyConcurrency }, () => worker());
+
   const heartbeat = setInterval(() => {
     const idleMs =
       stats.lastEventAt === 0 ? -1 : Date.now() - stats.lastEventAt;
     console.info(
-      `[ingest:jetstream] heartbeat: applied=${stats.applied} deadLettered=${stats.deadLettered} unhandled=${stats.unhandled} errors=${stats.errors} lastSeq=${stats.lastSeq} idleMs=${idleMs}`,
+      `[ingest:jetstream] heartbeat: applied=${stats.applied} deadLettered=${stats.deadLettered} unhandled=${stats.unhandled} errors=${stats.errors} queue=${queue.length}/${QUEUE_LIMIT} inflightBatches=${inflight.length} lastSeq=${stats.lastSeq} idleMs=${idleMs}`,
     );
     logEvent("ingest.heartbeat", {
       applied: stats.applied,
       deadLettered: stats.deadLettered,
       errors: stats.errors,
       idleMs,
+      inflightBatches: inflight.length,
       lane: "jetstream",
       lastEventId: stats.lastSeq,
       ok: true,
+      // The pressure gauge: a queue pinned at its limit means the appliers
+      // cannot keep up and the read loop is being throttled on purpose.
+      queueDepth: queue.length,
+      queueLimit: QUEUE_LIMIT,
       unhandled: stats.unhandled,
     });
   }, 10_000);
   heartbeat.unref?.();
 
   const running = (async () => {
-    for await (const batch of jetstream.replayRawBatches({
-      collections: COLLECTIONS,
-      cursor,
-      kinds: ["commit"],
-      onError: (error) => {
-        stats.errors += 1;
-        console.warn("[ingest:jetstream]", error.message);
-        logEvent("ingest.jetstreamError", {
-          ok: false,
-          reason: error.message,
-        });
-      },
-      onInfo: (info) =>
-        console.info(`[ingest:jetstream] ${info.name}: ${info.message ?? ""}`),
-      // Raw, not typed: typed decode drops every record without a `$type`, and
-      // on this network that is ~0.05% of standard.site records — live
-      // publications and documents included. See `toIngestRecordPayload`.
-      raw: true,
-      signal: controller.signal,
-    })) {
-      const now = Date.now();
-      let unhandled = false;
+    try {
+      for await (const raw of jetstream.replayRawBatches({
+        collections: INGESTED_COLLECTIONS,
+        cursor,
+        kinds: ["commit"],
+        onError: (error) => {
+          stats.errors += 1;
+          console.warn("[ingest:jetstream]", error.message);
+          logEvent("ingest.jetstreamError", {
+            ok: false,
+            reason: error.message,
+          });
+        },
+        onInfo: (info) =>
+          console.info(
+            `[ingest:jetstream] ${info.name}: ${info.message ?? ""}`,
+          ),
+        // Raw, not typed: typed decode drops every record without a `$type`, and
+        // on this network that is ~0.05% of standard.site records — live
+        // publications and documents included. See `toIngestRecordPayload`.
+        raw: true,
+        signal: controller.signal,
+      })) {
+        const now = Date.now();
+        const events = raw.events
+          .map((event) => toIngestEvent(event, now))
+          .filter((event): event is IngestEvent => event !== null);
 
-      let index = 0;
-      await Promise.all(
-        Array.from(
-          { length: Math.min(applyConcurrency, batch.events.length) },
-          async () => {
-            for (;;) {
-              const mine = index++;
-              if (mine >= batch.events.length) return;
-              const event = toIngestEvent(batch.events[mine], now);
-              if (!event) continue;
-              stats.lastSeq = Math.max(stats.lastSeq, event.id);
-              stats.lastEventAt = Date.now();
-              let result: ProcessResult = "unhandled";
-              try {
-                result = await processIngestEvent(event);
-              } catch (error: unknown) {
-                stats.errors += 1;
-                console.error(
-                  `[ingest:jetstream] failed to process seq ${event.id}`,
-                  error,
-                );
-              }
-              if (result === "applied") stats.applied += 1;
-              else if (result === "dead-lettered") stats.deadLettered += 1;
-              else {
-                stats.unhandled += 1;
-                unhandled = true;
-              }
-            }
-          },
-        ),
-      );
+        const batch: PendingBatch = {
+          lastCursor: raw.lastCursor,
+          remaining: events.length,
+          unhandled: false,
+        };
+        inflight.push(batch);
 
-      // An `unhandled` event means the apply *and* its dead-letter write both
-      // failed — the DB is down or full. Holding the cursor is the whole
-      // recovery mechanism: the batch replays from disk once the DB is back,
-      // instead of being acked into oblivion the way a per-event ack would.
-      if (!unhandled) {
-        await cursor.save(batch.lastCursor);
+        // A batch whose events were all filtered out still carries the cursor
+        // forward, or a stream of non-matching kinds would pin it forever.
+        if (events.length === 0) {
+          await drainCommitted();
+          continue;
+        }
+
+        for (const event of events) {
+          queue.push({ batch, event });
+          wakeWorker();
+        }
+
+        // The only place the read loop waits: the queue is full. Bounded by
+        // memory, not by per-event database latency.
+        while (queue.length >= QUEUE_LIMIT && !controller.signal.aborted) {
+          await new Promise<void>((resolve) => readerWaiters.push(resolve));
+        }
       }
+    } finally {
+      closed = true;
+      wakeAllWorkers();
     }
+    await Promise.all(workers);
+    // Anything that finished after the last worker's own drain.
+    await drainCommitted();
   })().catch((error: unknown) => {
     if (controller.signal.aborted) return;
     console.error("[ingest:jetstream] channel stopped", error);

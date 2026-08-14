@@ -12,7 +12,7 @@ const { updateCalls, fakeRepos, fakeWebBridgeRepos, batchLimits, trackedRow } =
     fakeWebBridgeRepos: [] as Array<{ did: string }>,
     /** `limit` of each batch select, in order — how the lane split is asserted. */
     batchLimits: [] as Array<number>,
-    trackedRow: [{ lastSeenRev: null as string | null }],
+    trackedRow: [{ lastSeenSeq: null as number | null }],
   }));
 
 vi.mock("../../db/index.ts", () => {
@@ -37,7 +37,7 @@ vi.mock("../../db/index.ts", () => {
                       : fakeWebBridgeRepos;
                   },
                 }),
-                // ...and the single-row `last_seen_rev` lookup.
+                // ...and the single-row `last_seen_seq` lookup.
                 limit: async () => trackedRow,
               }),
             };
@@ -62,32 +62,35 @@ vi.mock("../../db/index.ts", () => {
   };
 });
 
-vi.mock("../atproto/identity.ts", () => ({
-  resolveIdentity: vi.fn(),
-}));
-
-class MockRepoGoneError extends Error {
-  constructor(
-    public readonly did: string,
-    public readonly pds: string,
-    message: string,
-    public readonly triedFreshIdentity = false,
-  ) {
-    super(message);
-    this.name = "RepoGoneError";
-  }
-}
-
 vi.mock("../atproto/fetch-record.ts", () => ({
-  RepoGoneError: MockRepoGoneError,
-  fetchRepoHeadRev: vi.fn(),
-  listRepoRecords: vi.fn(),
+  fetchRepoRecordWithFallback: vi.fn(),
 }));
 
-const { resolveIdentity } = await import("../atproto/identity.ts");
-const { fetchRepoHeadRev, listRepoRecords } =
-  await import("../atproto/fetch-record.ts");
+vi.mock("./archive-replay.ts", () => ({ foldRepoFromArchive: vi.fn() }));
+
+const { foldRepoFromArchive } = await import("./archive-replay.ts");
 const { reconcilePublisherReposBatch } = await import("./repo-sync.ts");
+
+/** A fold result: by default a repo the archive holds records for. */
+function fold(
+  overrides: Partial<{
+    applied: number;
+    empty: boolean;
+    gone: boolean;
+    lastSeq: number;
+    live: Map<string, Set<string>>;
+  }> = {},
+) {
+  return {
+    applied: overrides.applied ?? 0,
+    deleted: 0,
+    did: "did:plc:any",
+    empty: overrides.empty ?? false,
+    gone: overrides.gone ?? false,
+    lastSeq: overrides.lastSeq ?? 1000,
+    live: overrides.live ?? new Map(),
+  };
+}
 
 describe("reconcilePublisherReposBatch backoff", () => {
   beforeEach(() => {
@@ -95,20 +98,14 @@ describe("reconcilePublisherReposBatch backoff", () => {
     fakeRepos.length = 0;
     fakeWebBridgeRepos.length = 0;
     batchLimits.length = 0;
-    trackedRow[0].lastSeenRev = null;
-    vi.mocked(resolveIdentity).mockReset();
-    vi.mocked(listRepoRecords).mockReset();
-    vi.mocked(fetchRepoHeadRev).mockReset();
-    vi.mocked(fetchRepoHeadRev).mockResolvedValue(null);
+    trackedRow[0].lastSeenSeq = null;
+    vi.mocked(foldRepoFromArchive).mockReset();
+    vi.mocked(foldRepoFromArchive).mockResolvedValue(fold());
   });
 
-  it("backs off a DID with no resolvable PDS instead of retrying every tick", async () => {
-    fakeRepos.push({ did: "did:plc:no-pds" });
-    vi.mocked(resolveIdentity).mockResolvedValue({
-      did: "did:plc:no-pds",
-      pds: null,
-      handle: null,
-    });
+  it("backs off a repo whose archive fold throws, instead of retrying every tick", async () => {
+    fakeRepos.push({ did: "did:plc:transient-error" });
+    vi.mocked(foldRepoFromArchive).mockRejectedValue(new Error("fetch failed"));
 
     const result = await reconcilePublisherReposBatch(1);
 
@@ -121,33 +118,24 @@ describe("reconcilePublisherReposBatch backoff", () => {
     ).toBeGreaterThan(Date.now());
   });
 
-  it("backs off a DID whose PDS fetch throws a transient error", async () => {
-    fakeRepos.push({ did: "did:plc:transient-error" });
-    vi.mocked(resolveIdentity).mockResolvedValue({
-      did: "did:plc:transient-error",
-      pds: "https://pds.example.com",
-      handle: null,
-    });
-    vi.mocked(listRepoRecords).mockRejectedValue(new Error("fetch failed"));
+  it("leaves a repo alone when the archive plan matched nothing", async () => {
+    // An empty plan is not proof of an empty repo — a repo the relay never saw
+    // plans to zero blocks exactly like one that has no records. Pruning on
+    // that would delete a live publisher's whole catalogue.
+    fakeRepos.push({ did: "did:plc:unseen" });
+    vi.mocked(foldRepoFromArchive).mockResolvedValue(fold({ empty: true }));
 
     const result = await reconcilePublisherReposBatch(1);
 
     expect(result.attempted).toBe(1);
-    expect(updateCalls).toHaveLength(2);
-    expect(updateCalls[1].values.reconcileRetryAfter).toBeInstanceOf(Date);
+    expect(result.results[0]?.skipped).toBe(true);
+    expect(result.prunedDocuments).toBe(0);
+    expect(result.prunedPublications).toBe(0);
   });
 
   it("clears backoff state on a successful reconcile", async () => {
     fakeRepos.push({ did: "did:plc:healthy" });
-    vi.mocked(resolveIdentity).mockResolvedValue({
-      did: "did:plc:healthy",
-      pds: "https://pds.example.com",
-      handle: null,
-    });
-    vi.mocked(listRepoRecords).mockResolvedValue({
-      records: [],
-      servedBy: "https://pds.example.com",
-    });
+    vi.mocked(foldRepoFromArchive).mockResolvedValue(fold({ lastSeq: 4242 }));
 
     const result = await reconcilePublisherReposBatch(1);
 
@@ -155,28 +143,22 @@ describe("reconcilePublisherReposBatch backoff", () => {
     expect(result.results).toHaveLength(1);
     expect(updateCalls).toHaveLength(1);
     expect(updateCalls[0].values).toMatchObject({
+      lastSeenSeq: 4242,
       reconcileFailCount: 0,
       reconcileRetryAfter: null,
     });
   });
 });
 
-describe("backoff for repos that can never be read", () => {
+describe("reconcile backoff climbs gradually", () => {
   beforeEach(() => {
     updateCalls.length = 0;
     fakeRepos.length = 0;
     fakeWebBridgeRepos.length = 0;
     batchLimits.length = 0;
-    trackedRow[0].lastSeenRev = null;
-    vi.mocked(resolveIdentity).mockReset();
-    vi.mocked(listRepoRecords).mockReset();
-    vi.mocked(fetchRepoHeadRev).mockReset();
-    vi.mocked(fetchRepoHeadRev).mockResolvedValue(null);
-    vi.mocked(resolveIdentity).mockResolvedValue({
-      did: "did:plc:unreadable",
-      pds: "https://pds.example.com",
-      handle: null,
-    });
+    trackedRow[0].lastSeenSeq = null;
+    vi.mocked(foldRepoFromArchive).mockReset();
+    vi.mocked(foldRepoFromArchive).mockResolvedValue(fold());
   });
 
   /** Days until the next retry, from the scheduled `reconcileRetryAfter`. */
@@ -185,31 +167,16 @@ describe("backoff for repos that can never be read", () => {
     return (at.getTime() - Date.now()) / 86_400_000;
   }
 
-  it("parks a repo whose collection fails lexicon validation at the ceiling", async () => {
-    fakeRepos.push({ did: "did:plc:unreadable" });
-    // What a PDS returns when one record in the collection is over
-    // maxGraphemes — the whole collection becomes unservable.
-    vi.mocked(listRepoRecords).mockRejectedValue(
-      new Error(
-        "listRecords site.standard.document failed: 400: InvalidRequest " +
-          "(in site.standard.document, string tags with value `x`: is longer than maxGraphemes 128)",
-      ),
-    );
-
-    await reconcilePublisherReposBatch(1);
-
-    // Straight to the week-long ceiling on the *first* failure, rather than
-    // climbing there over a week of daily retries.
-    expect(scheduledDelayDays()).toBeCloseTo(7, 1);
-  });
-
-  it("still climbs gradually for an ordinary transient failure", async () => {
+  it("keeps a transient failure's first retry well under a day", async () => {
+    // There is no "permanent" class any more. That existed for a host that
+    // 400s a whole collection over one lexicon-invalid record; the archive
+    // serves raw CBOR and validates nothing on read, so those repos are
+    // readable again and a network blip must not cost a week of staleness.
     fakeRepos.push({ did: "did:plc:flaky" });
-    vi.mocked(listRepoRecords).mockRejectedValue(new Error("fetch failed"));
+    vi.mocked(foldRepoFromArchive).mockRejectedValue(new Error("fetch failed"));
 
     await reconcilePublisherReposBatch(1);
 
-    // A network blip must not cost a repo a week of staleness.
     expect(scheduledDelayDays()).toBeLessThan(1);
   });
 });
@@ -220,20 +187,9 @@ describe("web-bridge lane split", () => {
     fakeRepos.length = 0;
     fakeWebBridgeRepos.length = 0;
     batchLimits.length = 0;
-    trackedRow[0].lastSeenRev = null;
-    vi.mocked(resolveIdentity).mockReset();
-    vi.mocked(listRepoRecords).mockReset();
-    vi.mocked(fetchRepoHeadRev).mockReset();
-    vi.mocked(fetchRepoHeadRev).mockResolvedValue(null);
-    vi.mocked(resolveIdentity).mockResolvedValue({
-      did: "did:plc:any",
-      pds: "https://pds.example.com",
-      handle: null,
-    });
-    vi.mocked(listRepoRecords).mockResolvedValue({
-      records: [],
-      servedBy: "https://pds.example.com",
-    });
+    trackedRow[0].lastSeenSeq = null;
+    vi.mocked(foldRepoFromArchive).mockReset();
+    vi.mocked(foldRepoFromArchive).mockResolvedValue(fold());
   });
 
   it("gives bulk web-bridge mirrors a small quota beside the batch, not a share of it", async () => {
@@ -265,68 +221,71 @@ describe("web-bridge lane split", () => {
   });
 });
 
-describe("repair gating on the repo head rev", () => {
+describe("repair gating on the archive seq watermark", () => {
   beforeEach(() => {
     updateCalls.length = 0;
     fakeRepos.length = 0;
     fakeWebBridgeRepos.length = 0;
     batchLimits.length = 0;
-    trackedRow[0].lastSeenRev = null;
-    vi.mocked(resolveIdentity).mockReset();
-    vi.mocked(listRepoRecords).mockReset();
-    vi.mocked(fetchRepoHeadRev).mockReset();
-    vi.mocked(resolveIdentity).mockResolvedValue({
-      did: "did:plc:gated",
-      pds: "https://pds.example.com",
-      handle: null,
-    });
-    vi.mocked(listRepoRecords).mockResolvedValue({
-      records: [],
-      servedBy: "https://pds.example.com",
-    });
+    trackedRow[0].lastSeenSeq = null;
+    vi.mocked(foldRepoFromArchive).mockReset();
   });
 
-  it("skips a repo whose head still matches the last mirrored rev", async () => {
+  it("folds only above the watermark for a repo we have swept before", async () => {
     fakeRepos.push({ did: "did:plc:gated" });
-    trackedRow[0].lastSeenRev = "3mrxucaa6v32m";
-    vi.mocked(fetchRepoHeadRev).mockResolvedValue("3mrxucaa6v32m");
+    trackedRow[0].lastSeenSeq = 24_710_000_000;
+    vi.mocked(foldRepoFromArchive).mockResolvedValue(fold({ empty: true }));
 
     const result = await reconcilePublisherReposBatch(1);
 
-    expect(result.attempted).toBe(1);
-    // Nothing has been committed since we mirrored it — no enumeration at all.
-    expect(listRepoRecords).not.toHaveBeenCalled();
+    // `afterSeq` is the gate: the planner drops every block at or below it
+    // before anything is downloaded, so a quiet repo costs one plan.
+    expect(foldRepoFromArchive).toHaveBeenCalledWith("did:plc:gated", {
+      afterSeq: 24_710_000_000,
+    });
     expect(result.results).toHaveLength(0);
   });
 
-  it("reconciles a repo whose head has moved past the mirrored rev", async () => {
-    fakeRepos.push({ did: "did:plc:gated" });
-    trackedRow[0].lastSeenRev = "3mpx46g3rfk2v";
-    vi.mocked(fetchRepoHeadRev).mockResolvedValue("3mrxucaa6v32m");
+  it("rebuilds from zero for a repo it has never folded", async () => {
+    // This is what replaces tap's "register the repo and let it backfill":
+    // a newly discovered DID has no watermark, so it gets full history.
+    fakeRepos.push({ did: "did:plc:fresh" });
+    trackedRow[0].lastSeenSeq = null;
+    vi.mocked(foldRepoFromArchive).mockResolvedValue(fold({ lastSeq: 99 }));
 
     const result = await reconcilePublisherReposBatch(1);
 
-    expect(listRepoRecords).toHaveBeenCalled();
+    expect(foldRepoFromArchive).toHaveBeenCalledWith(
+      "did:plc:fresh",
+      expect.objectContaining({ afterSeq: 0 }),
+    );
     expect(result.results).toHaveLength(1);
-    // The new head is recorded only after the repair completes.
-    expect(
-      updateCalls.some((call) => call.values.lastSeenRev === "3mrxucaa6v32m"),
-    ).toBe(true);
   });
 
-  it("reconciles when the head can't be read, rather than assuming unchanged", async () => {
-    // An unreadable head is exactly the situation this sweep exists to catch;
-    // treating it as "nothing changed" would reproduce the silence.
+  it("advances the watermark only after the records are in", async () => {
     fakeRepos.push({ did: "did:plc:gated" });
-    trackedRow[0].lastSeenRev = "3mpx46g3rfk2v";
-    vi.mocked(fetchRepoHeadRev).mockResolvedValue(null);
+    trackedRow[0].lastSeenSeq = 100;
+    vi.mocked(foldRepoFromArchive).mockResolvedValue(
+      fold({ applied: 3, lastSeq: 500 }),
+    );
 
-    const result = await reconcilePublisherReposBatch(1);
+    await reconcilePublisherReposBatch(1);
 
-    expect(listRepoRecords).toHaveBeenCalled();
-    expect(result.results).toHaveLength(1);
-    // Nothing to record — a null head must not be stored as a clean sync.
-    expect(updateCalls.some((call) => "lastSeenRev" in call.values)).toBe(
+    expect(updateCalls.some((call) => call.values.lastSeenSeq === 500)).toBe(
+      true,
+    );
+  });
+
+  it("does not advance the watermark when the fold failed", async () => {
+    // Recording it first would let a mid-way failure be remembered as a clean
+    // sync, and the gate would then skip the repo forever.
+    fakeRepos.push({ did: "did:plc:gated" });
+    trackedRow[0].lastSeenSeq = 100;
+    vi.mocked(foldRepoFromArchive).mockRejectedValue(new Error("boom"));
+
+    await reconcilePublisherReposBatch(1);
+
+    expect(updateCalls.some((call) => "lastSeenSeq" in call.values)).toBe(
       false,
     );
   });

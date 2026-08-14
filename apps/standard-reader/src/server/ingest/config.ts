@@ -36,6 +36,16 @@ export const ingestConfig = {
   get jetstreamApiKey(): string | null {
     return process.env.JETSTREAM_API_KEY ?? null;
   },
+
+  /**
+   * Concurrent archive block downloads (`JETSTREAM_BLOCK_CONCURRENCY`).
+   * Throughput plateaus around 16–32 against the public instance and 64 gets
+   * nearly every request 429'd, so 16 is the safe shoulder.
+   */
+  get jetstreamBlockConcurrency(): number {
+    const value = Number(process.env.JETSTREAM_BLOCK_CONCURRENCY);
+    return Number.isFinite(value) && value > 0 ? Math.floor(value) : 16;
+  },
 } as const;
 
 export { required as requiredEnv };

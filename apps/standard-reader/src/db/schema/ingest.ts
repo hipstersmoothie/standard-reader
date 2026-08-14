@@ -58,8 +58,18 @@ export const trackedRepos = pgTable(
     reason: text("reason"),
     /** Reconcile lifecycle: `pending`, `ok`, or `gone` (see `repo-sync.ts`). */
     backfillState: text("backfill_state").notNull().default("pending"),
-    /** Last repo rev we've seen for this DID. */
-    lastSeenRev: text("last_seen_rev"),
+    /**
+     * Highest Jetstream seq the reconcile sweep has folded for this DID; null
+     * means never reconciled, which is what puts a freshly discovered repo at
+     * the front of the sweep.
+     *
+     * Replaces the repo's `rev`, which only meant anything to the PDS: the
+     * sweep used to ask each host for its latest commit and compare. Repair now
+     * reads the archive, so the watermark has to be in the archive's units —
+     * and a seq doubles as the `afterSeq` that makes the planner skip every
+     * block we have already folded.
+     */
+    lastSeenSeq: bigint("last_seen_seq", { mode: "number" }),
     /** Consecutive reconcile failures (transient fetch errors, or a PDS that
      * can't be resolved) since the last success. Drives `reconcileRetryAfter`
      * backoff; reset to 0 on the next successful reconcile. */
