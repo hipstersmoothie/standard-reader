@@ -369,8 +369,8 @@ msgid "Show {itemLabel} in the sidebar"
 msgstr "Show {itemLabel} in the sidebar"
 
 #: src/components/reader/continue-reading.tsx
-msgid "Still open"
-msgstr "Still open"
+#~ msgid "Still open"
+#~ msgstr "Still open"
 
 #: src/components/guide/pages/finding-guide-page.tsx
 msgid "Each tab carries a count, and <0>Mark all as read</0> clears the backlog when a week gets away from you."
@@ -1299,8 +1299,8 @@ msgid "Followed pages warmed"
 msgstr "Followed pages warmed"
 
 #: src/routes/_layout.history.tsx
-msgid "Everything you've read"
-msgstr "Everything you've read"
+#~ msgid "Everything you've read"
+#~ msgstr "Everything you've read"
 
 #: src/components/guide/pages/getting-started-guide-page.tsx
 msgid "the directory of every publication the network knows about."
@@ -1795,8 +1795,8 @@ msgid "No topics match “{debouncedQuery}”."
 msgstr "No topics match “{debouncedQuery}”."
 
 #: src/components/reader/continue-reading.tsx
-msgid "Reading progress"
-msgstr "Reading progress"
+#~ msgid "Reading progress"
+#~ msgstr "Reading progress"
 
 #: src/components/guide/pages/keeping-track-guide-page.tsx
 msgid "So subscribe to the publication when you want that particular thing, and follow the person when you want the writer — and their reading. In the sidebar and in Subscriptions the two are listed together, with a <0>Type</0> column telling them apart."
@@ -4945,6 +4945,10 @@ msgstr "That link expired."
 msgid "Lists in the sidebar"
 msgstr "Lists in the sidebar"
 
+#: src/routes/_layout.history.tsx
+msgid "Everything else"
+msgstr "Everything else"
+
 #: src/components/reader/blocked-notice.tsx
 msgid "You blocked {who}, so their writing is hidden everywhere you read."
 msgstr "You blocked {who}, so their writing is hidden everywhere you read."
@@ -5563,6 +5567,10 @@ msgstr "Making it yours"
 #: src/routes/_layout.p.$did.$rkey.tsx
 msgid "You haven’t read anything here yet."
 msgstr "You haven’t read anything here yet."
+
+#: src/components/reader/cards.tsx
+msgid "Mark as finished"
+msgstr "Mark as finished"
 
 #: src/components/guide/pages/reading-guide-page.tsx
 msgid "At the end of the article you can <0>Recommend</0> it, see more from the same publication, and find related reading from elsewhere on the network."
@@ -6984,6 +6992,10 @@ msgstr "Notifications aren’t switched on for this site yet."
 msgid "Filter and sort — {activeFilters, plural, one {# filter active} other {# filters active}}"
 msgstr "Filter and sort — {activeFilters, plural, one {# filter active} other {# filters active}}"
 
+#: src/components/reader/cards.tsx
+msgid "{formatted} read"
+msgstr "{formatted} read"
+
 #: src/components/guide/pages/lists-guide-page.tsx
 msgid "It follows you"
 msgstr "It follows you"
@@ -8191,8 +8203,8 @@ msgid "On"
 msgstr "On"
 
 #: src/components/reader/continue-reading.tsx
-msgid "{label} read"
-msgstr "{label} read"
+#~ msgid "{label} read"
+#~ msgstr "{label} read"
 
 #: src/components/guide/pages/your-data-guide-page.tsx
 msgid "We keep a copy of the public network — publications, articles, and who follows what — so the app can search, rank, and load quickly. That copy includes the records described above. It is a cache of things that are already public, not a second private profile of you."
