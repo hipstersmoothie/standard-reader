@@ -44,6 +44,7 @@ export function ContinueReading({
           article={item.article}
           isFirstInSection={index === 0}
           showSaveButton={false}
+          showFinishButton
           progress={item.progress}
         />
       ))}

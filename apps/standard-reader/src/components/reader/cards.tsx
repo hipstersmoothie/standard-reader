@@ -34,6 +34,7 @@ import { Link } from "@tanstack/react-router";
 import {
   ArrowRight,
   BookOpen,
+  BookOpenCheck,
   Bookmark,
   Bot,
   Check,
@@ -49,10 +50,14 @@ import { FollowUserButton } from "#/components/reader/follow-user-button";
 import { PublicationNameLink } from "#/components/reader/publication-name-link";
 import { SearchHeadline } from "#/components/reader/search-headline";
 import { ButtonLink } from "#/components/router-links";
-import type { FollowStatus } from "#/integrations/tanstack-query/api-reader.functions";
+import type {
+  FollowStatus,
+  UnfinishedReadingItem,
+} from "#/integrations/tanstack-query/api-reader.functions";
 import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
 import { parseInternalRoute } from "#/lib/internal-route";
+import { clearLocalProgress } from "#/lib/reading-progress";
 import { tsHeadlineHasMatch } from "#/lib/search-headline";
 import { useFormatters } from "#/lib/use-formatters";
 import { useOfflineCachedUris } from "#/lib/use-offline-cached-uris";
@@ -1903,6 +1908,68 @@ export function MarkUnreadButton({
   );
 }
 
+/**
+ * "I'm done with this" for a row on the Continue reading shelf.
+ *
+ * It forgets the saved position, which is the whole of what puts an article on
+ * the shelf — so the row leaves and settles into the list below, where it was
+ * always going to end up.
+ *
+ * It also re-stamps the read record, which is what lands the article at the top
+ * of history rather than back at whatever date it was first opened. That isn't
+ * a special case: `markRead` re-stamps on every open too, so history is already
+ * ordered by when you last read something, and finishing is reading.
+ *
+ * No confirmation and no undo. The row visibly leaving is the feedback, and
+ * what's lost is a scroll position on an article the reader just said they're
+ * finished with — the recovery is to open it and scroll.
+ */
+export function FinishReadingButton({ documentUri }: { documentUri: string }) {
+  const { t } = useLingui();
+  const queryClient = useQueryClient();
+  const { mutate: finish, isPending } = useMutation({
+    mutationKey: ["reader", "finishReading"] as const,
+    mutationFn: async () => {
+      await readerApi.clearReadingProgress({ data: { documentUri } });
+      await readerApi.markRead({ data: { documentUri } });
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({
+        queryKey: ["reader", "unfinished"],
+      });
+      // The read record moved, so the list's order did too.
+      void queryClient.invalidateQueries({ queryKey: ["reader", "history"] });
+    },
+  });
+
+  const onPress = () => {
+    // Drop it from the shelf now rather than after the round trip; the refetch
+    // in `onSettled` is what makes it stick, or puts it back if the write lost.
+    queryClient.setQueriesData<Array<UnfinishedReadingItem>>(
+      { queryKey: ["reader", "unfinished"] },
+      (current) =>
+        current?.filter((item) => item.documentUri !== documentUri) ?? current,
+    );
+    // The device-local mirror is the copy that restores scroll, so it has to go
+    // too — otherwise the next visit resumes a position we just cleared.
+    clearLocalProgress(documentUri);
+    finish();
+  };
+
+  return (
+    <IconButton
+      variant="secondary"
+      size="sm"
+      label={t`Mark as finished`}
+      isDisabled={isPending}
+      onPress={onPress}
+      onClick={stopSaveClick}
+    >
+      <BookOpenCheck size={16} aria-hidden />
+    </IconButton>
+  );
+}
+
 /* ── Article row (list) ─────────────────────────────────────────────────── */
 
 /**
@@ -1931,6 +1998,7 @@ export function ArticleRow({
   showSaveButton = true,
   saveButtonPlacement = "header",
   showMarkUnreadButton = false,
+  showFinishButton = false,
   isFirstInSection = false,
   assumeBookmarked,
   metaLabels,
@@ -1944,6 +2012,9 @@ export function ArticleRow({
   saveButtonPlacement?: "header" | "besideMedia";
   /** Show a "mark as unread" control in the row header (reading-history list). */
   showMarkUnreadButton?: boolean;
+  /** Show a "mark as finished" control (Continue reading shelf). Shares the
+   * unread toggle's slot; set one or the other, never both. */
+  showFinishButton?: boolean;
   /** Drop top padding when the section head already provides spacing above. */
   isFirstInSection?: boolean;
   /** Skip per-row bookmark status fetches when the list is already the save queue. */
@@ -1972,12 +2043,18 @@ export function ArticleRow({
       publicationUri={article.publicationUri}
     />
   ) : null;
+  const finishButton = showFinishButton ? (
+    <FinishReadingButton documentUri={article.uri} />
+  ) : null;
   // The save toggle sits in the header by default; `besideMedia` pins it to the
   // row's right edge instead. The unread toggle always pins to the right edge so
-  // it lines up across rows regardless of whether a cover image is present.
+  // it lines up across rows regardless of whether a cover image is present. The
+  // finish toggle rides in that same slot — the two never appear together, since
+  // one belongs to the history list and the other to the shelf above it.
   const asideSaveButton = saveBesideMedia ? saveButton : null;
   const headerSaveButton = saveBesideMedia ? null : saveButton;
-  const hasAside = Boolean(markUnreadButton || asideSaveButton);
+  const asideAction = markUnreadButton ?? finishButton;
+  const hasAside = Boolean(asideAction || asideSaveButton);
 
   const gridStyles: Array<stylex.StyleXStyles | false | undefined> = [
     showByline ? styles.rowGrid : styles.row,
@@ -2033,7 +2110,7 @@ export function ArticleRow({
       {hasAside ? (
         <div {...stylex.props(styles.rowSaveAside)}>
           <Flex align="center" gap="sm">
-            {markUnreadButton}
+            {asideAction}
             {asideSaveButton}
           </Flex>
         </div>

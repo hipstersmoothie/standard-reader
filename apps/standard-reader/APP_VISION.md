@@ -580,6 +580,14 @@ comic issue with no pages falls back to it outright.
   most recently touched first. Short on purpose — it is a prompt to pick something back up,
   not another backlog. It is an extra on this page, never fatal: offline (or on any error) it
   simply doesn't render and the cached history still does.
+- Each shelf row carries a **Mark as finished** control, in the same slot the history rows use
+  for their unread toggle (the two never appear together). It forgets the saved position —
+  which is the whole of what puts an article on the shelf — and re-stamps the read record, so
+  the article leaves the shelf and arrives at the _top_ of the list below rather than back at
+  the date it was first opened. Re-stamping is not a special case: `markRead` re-stamps on
+  every open, so history is already ordered by when a reader last read something, and finishing
+  is reading. No confirmation and no undo — the row leaving is the feedback, and what's lost is
+  a scroll position on an article the reader just declared themselves done with.
 - **No article appears twice on the page.** An in-progress article is claimed by the shelf and
   filtered out of the list beneath, which is why that list is titled "Everything else" rather
   than "Everything you've read". (Only the ones the shelf actually renders are claimed — an
