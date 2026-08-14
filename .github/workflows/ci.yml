@@ -235,6 +235,12 @@ jobs:
           PR_NUMBER: ${{ github.event.number }}
           # Every service in the PR environment that reads DATABASE_URL. The
           # ingest worker *writes* to the read-model, so leaving it on the
-          # cloned production URL would have previews writing to prod. `tap`
-          # uses its own TAP_DATABASE_URL and is not in scope here.
-          SERVICES: web,ingest
+          # cloned production URL would have previews writing to prod. The
+          # direct-DB crons are in the list for the same reason: Railway runs
+          # cron schedules in PR environments too, and an audit of the pr-158
+          # environment found reconcile-cron, topics-cron, digest-cron, and
+          # thread-cron all still aimed at the production database. (Their
+          # non-DB side effects — digest email, the weekly Bluesky thread —
+          # still fire from previews; that is a separate problem this list
+          # cannot solve.)
+          SERVICES: web,ingest,reconcile-cron,topics-cron,digest-cron,thread-cron,push-cron
