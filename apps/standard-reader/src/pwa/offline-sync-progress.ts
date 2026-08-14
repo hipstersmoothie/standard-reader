@@ -19,6 +19,14 @@ export interface OfflineSyncCounts {
   feedPages: number;
   /** Unread document URIs enumerated (the list, not the bodies). */
   unreadListed: number;
+  /** `/history` pages fetched. */
+  historyPages: number;
+  /** Partly-read articles found for the "Continue reading" shelf. */
+  unfinishedListed: number;
+  /** `/recommended` (liked articles) pages fetched. */
+  likesPages: number;
+  /** The reader's own profile page — 1 once warmed, 0 if it never was. */
+  ownProfile: number;
   /** Publications whose pages were warmed. */
   publications: number;
   /** Publication back-catalog pages fetched beyond each one's first. */
@@ -78,9 +86,13 @@ const INITIAL_COUNTS: OfflineSyncCounts = {
   bodiesCached: 0,
   bodiesQueued: 0,
   feedPages: 0,
+  historyPages: 0,
   imagesWarmed: 0,
+  likesPages: 0,
   lists: 0,
+  ownProfile: 0,
   publications: 0,
+  unfinishedListed: 0,
   unreadListed: 0,
 };
 

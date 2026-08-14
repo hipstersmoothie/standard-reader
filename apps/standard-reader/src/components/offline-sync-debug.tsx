@@ -302,6 +302,22 @@ export function OfflineSyncDebugPanel() {
         value={String(counts.unreadListed)}
       />
       <Row
+        label={<Trans>History pages</Trans>}
+        value={String(counts.historyPages)}
+      />
+      <Row
+        label={<Trans>Unfinished listed</Trans>}
+        value={String(counts.unfinishedListed)}
+      />
+      <Row
+        label={<Trans>Liked pages</Trans>}
+        value={String(counts.likesPages)}
+      />
+      <Row
+        label={<Trans>Your profile</Trans>}
+        value={counts.ownProfile > 0 ? "cached" : "not this pass"}
+      />
+      <Row
         label={<Trans>Publications</Trans>}
         value={String(counts.publications)}
       />

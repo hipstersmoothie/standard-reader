@@ -3,6 +3,7 @@ import { setupRouterSsrQueryIntegration } from "@tanstack/react-router-ssr-query
 
 import { RouteError } from "./components/route-error";
 import { getContext } from "./integrations/tanstack-query/root-provider";
+import { routerOwnsScroll } from "./lib/router-scroll";
 import { routeTree } from "./routeTree.gen";
 
 export function getRouter() {
@@ -11,9 +12,13 @@ export function getRouter() {
   const router = createTanStackRouter({
     routeTree,
     context,
-    // The document is the scroll container, so the router's default window
-    // scroll restoration + scroll-to-top applies (no custom selector needed).
-    scrollRestoration: true,
+    // The document is the scroll container, so the router's window scroll
+    // restoration + scroll-to-top applies (no custom selector needed) —
+    // everywhere except the article reader, which restores the reader's own
+    // saved position and would otherwise spend its life racing this. See
+    // `routerOwnsScroll`.
+    scrollRestoration: ({ location }) =>
+      routerOwnsScroll({ hash: location.hash, pathname: location.pathname }),
     defaultPreload: "intent",
     // Preloaded data stays fresh for 30s — long enough to hover→click without a
     // refetch, short enough to not serve stale data on a real navigation later.

@@ -29,6 +29,7 @@ import {
   horizontalSpace,
   verticalSpace,
 } from "@standard-reader/design-system/theme/semantic-spacing.stylex";
+import { shadow } from "@standard-reader/design-system/theme/shadow.stylex";
 import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
 import {
   fontFamily,
@@ -62,7 +63,6 @@ import {
   Fragment,
   useCallback,
   useEffect,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -126,20 +126,7 @@ import { SaveDraftConsumer } from "./save-draft-consumer";
 import { useArticleBookmark } from "./use-article-bookmark";
 import { useArticleReadToggle } from "./use-article-read-toggle";
 import { useArticleRecommend } from "./use-article-recommend";
-
-/** Reading progress of the article content within the document scroll. */
-function articleReadingProgress(content: HTMLElement): number {
-  const viewport = globalThis.innerHeight;
-  const scrollY = globalThis.scrollY;
-  const contentTop = content.getBoundingClientRect().top + scrollY;
-  const contentBottom = contentTop + content.offsetHeight;
-  const endScroll = Math.max(contentBottom - viewport, contentTop);
-  const range = endScroll - contentTop;
-  if (range <= 0) {
-    return scrollY >= contentTop ? 1 : 0;
-  }
-  return Math.min(1, Math.max(0, (scrollY - contentTop) / range));
-}
+import { useReadingProgress } from "./use-reading-progress";
 
 /**
  * How tall the article's own top bar is, measured rather than assumed — it wraps
@@ -277,6 +264,39 @@ const styles = stylex.create({
     position: "relative",
     height: spacing["1"],
     width: "100%",
+  },
+  resumedNotice: {
+    alignItems: "center",
+    backgroundColor: uiColor.bg,
+    borderColor: uiColor.border1,
+    borderRadius: radius.full,
+    borderStyle: "solid",
+    borderWidth: 1,
+    boxShadow: shadow.lg,
+    columnGap: gap.md,
+    display: "flex",
+    // Clears the floating page-reader bar and the home indicator, so the two
+    // never stack on top of each other on a phone.
+    bottom: `calc(env(safe-area-inset-bottom, 0px) + ${spacing["6"]})`,
+    // Centred with auto margins rather than a 50% inset + translate: the
+    // translate would push the pill off-centre the moment the locale is RTL.
+    insetInline: 0,
+    marginInline: "auto",
+    maxWidth: `calc(100% - ${spacing["8"]})`,
+    paddingBottom: verticalSpace.xs,
+    paddingInlineEnd: horizontalSpace.xs,
+    paddingInlineStart: horizontalSpace.md,
+    paddingTop: verticalSpace.xs,
+    position: "fixed",
+    width: "fit-content",
+    zIndex: 30,
+  },
+  resumedText: {
+    color: uiColor.text1,
+    fontFamily: fontFamily.sans,
+    fontSize: fontSize.sm,
+    lineHeight: lineHeight.sm,
+    whiteSpace: "nowrap",
   },
   topLeft: {
     alignItems: "center",
@@ -964,6 +984,50 @@ function ReaderProgress({ progress }: { progress: number }) {
   );
 }
 
+/** How long the resume notice stays up before it gets out of the way. */
+const RESUMED_NOTICE_MS = 6000;
+
+/**
+ * Says what just happened, and offers the way back.
+ *
+ * Landing mid-article is ambiguous on its own — a reader can't tell whether we
+ * resumed them or whether the piece simply opens that way, and the doubt is
+ * enough to make them scroll up to check. One line removes the doubt, and the
+ * button makes the jump reversible for the case where they did want the top.
+ */
+function ResumedNotice({ onStartFromTop }: { onStartFromTop: () => void }) {
+  const [visible, setVisible] = useState(true);
+
+  useEffect(() => {
+    const timer = globalThis.setTimeout(
+      () => setVisible(false),
+      RESUMED_NOTICE_MS,
+    );
+    return () => globalThis.clearTimeout(timer);
+  }, []);
+
+  if (!visible) return null;
+
+  return (
+    // `status` rather than `alert`: worth mentioning, never worth interrupting.
+    <div {...stylex.props(styles.resumedNotice)} role="status">
+      <span {...stylex.props(styles.resumedText)}>
+        <Trans>Picked up where you left off</Trans>
+      </span>
+      <Button
+        variant="tertiary"
+        size="sm"
+        onPress={() => {
+          onStartFromTop();
+          setVisible(false);
+        }}
+      >
+        <Trans>Start from top</Trans>
+      </Button>
+    </div>
+  );
+}
+
 const COLLECTION_MAGAZINE_INTRO_KEY = "collection-magazine-intro:v1";
 
 function CollectionColophon({ body }: { body: string }) {
@@ -1011,7 +1075,6 @@ function ArticleViewBody({
   // reader is moving forward, leaving only the progress track on screen.
   const stickyChromeRef = useRef<HTMLDivElement>(null);
   const setTopBarNode = useTopBarHeight(stickyChromeRef);
-  const [progress, setProgress] = useState(0);
   const [showMagazineIntro, setShowMagazineIntro] = useState(
     () => Boolean(article.collection) && !hasSeenCollectionMagazineIntro(),
   );
@@ -1172,37 +1235,19 @@ function ArticleViewBody({
     return () => globalThis.clearTimeout(timeout);
   }, [article.collection, article.uri, linkParams, queryClient, router]);
 
-  useLayoutEffect(() => {
-    // Measure the <article> only — progress should hit 100% at the end of the
-    // article body, not after the "More from" / comments sections below it.
-    const articleEl = articleRef.current;
-    if (!articleEl) return;
-
-    const sync = () => {
-      setProgress(articleReadingProgress(articleEl));
-    };
-
-    if (!sharedQuote?.trim()) {
-      globalThis.scrollTo(0, 0);
-    }
-    sync();
-
-    // The page (document) is the scroller, so its scroll event fires on window.
-    globalThis.addEventListener("scroll", sync, { passive: true });
-    const resizeObserver = new ResizeObserver(() => sync());
-    resizeObserver.observe(articleEl);
-
-    return () => {
-      globalThis.removeEventListener("scroll", sync);
-      resizeObserver.disconnect();
-    };
-  }, [article.uri, sharedQuote]);
+  const { progress, resumed, startFromTop } = useReadingProgress({
+    articleRef,
+    documentUri: article.uri,
+    enabled: trackReading,
+    skipRestore: Boolean(sharedQuote?.trim()),
+  });
 
   return (
     <div
       data-unclipped-sticky
       {...stylex.props(styles.root, readerActive && styles.rootReader)}
     >
+      {resumed ? <ResumedNotice onStartFromTop={startFromTop} /> : null}
       <div ref={stickyChromeRef} {...stylex.props(styles.stickyChrome)}>
         <div ref={setTopBarNode} {...stylex.props(styles.topBar)}>
           <div {...stylex.props(styles.topLeft)}>

@@ -576,6 +576,32 @@ comic issue with no pages falls back to it outright.
 
 - Signed-in reader's **reading history** (`app.standard-reader.read`), newest first — every
   article opened while signed in.
+- Opens with a **Continue reading** shelf: up to six articles the reader is partway through,
+  most recently touched first. Short on purpose — it is a prompt to pick something back up,
+  not another backlog. It is an extra on this page, never fatal: offline (or on any error) it
+  simply doesn't render and the cached history still does.
+- Each shelf row carries a **Mark as finished** control, in the same slot the history rows use
+  for their unread toggle (the two never appear together). It forgets the saved position —
+  which is the whole of what puts an article on the shelf — and re-stamps the read record, so
+  the article leaves the shelf and arrives at the _top_ of the list below rather than back at
+  the date it was first opened. Re-stamping is not a special case: `markRead` re-stamps on
+  every open, so history is already ordered by when a reader last read something, and finishing
+  is reading. No confirmation and no undo — the row leaving is the feedback, and what's lost is
+  a scroll position on an article the reader just declared themselves done with.
+- **No article appears twice on the page.** An in-progress article is claimed by the shelf and
+  filtered out of the list beneath, which is why that list is titled "Everything else" rather
+  than "Everything you've read". (Only the ones the shelf actually renders are claimed — an
+  item whose document has dropped out of the read-model isn't shown up there, so it stays in
+  the list.) The masthead's `Read` count is unaffected: it counts read records for all time,
+  and an article you're partway through is still one you opened.
+- The shelf's rows are the **same rows as the list below it**; what separates the two sections
+  is the heading plus the one fact these rows carry and those don't. That fact — how far in the
+  reader got — leads each row's existing meta line, as a 56px camel meter and a percentage, so
+  the number sits beside the title it describes. It is deliberately not a full-width bar under
+  the row: at page width it outweighed the headline it annotated, and below the row's closing
+  rule it read as a divider belonging to the next section. Camel because the accent is this
+  app's state-indicator colour and progress is a state; near-ink made it the heaviest element
+  on the page, which inverts "the reading leads; the UI recedes".
 - Route `/history`; linked from the user menu. Requires auth (redirects to login).
 
 ### Reader profile (saved for later)
@@ -742,6 +768,20 @@ source of truth; Neon holds a derived view for speed and cross-network querying.
   `/saved`, distinct from likes.
 - **Read / unread:** an `app.standard-reader.read` record per article; opening an article
   marks it read. **Reading history** at `/history` lists these newest-first.
+- **Reading position (deliberately not a record):** reopening an article puts the reader back
+  where they stopped, and `/history` opens with a **Continue reading** shelf of the articles they
+  are partway through. This is the one piece of personal state that is **not** written to the
+  repo. Reads and bookmarks being public is a fair trade — they say what you read. A position
+  says how far you got and where you gave up, which is a running commentary on attention that
+  nobody opts into by opening an article. So it lives in a private, app-local Neon table
+  (`reading_progress`, keyed by `(owner_did, document_uri)`) that the tap never writes, mirrored
+  into `localStorage` per device. The local copy is what restores the scroll — it is readable
+  before first paint, where a Neon round trip is an order of magnitude too slow — and it is what
+  keeps position working offline in the installed PWA; the server copy is what carries the
+  position from phone to laptop, and only wins when it is newer and the reader has not already
+  started scrolling. Rows exist only between 2% and 95%, so the table _is_ the shelf and never
+  needs sweeping, and clearing reading history clears positions with it. Gated on the same
+  "Track reading history" setting: position is reading history at a finer grain.
 - **The write path mirrors personal state into Neon itself**
   (`src/server/reader/personal-state-mirror.ts`) — reads, bookmarks, and likes — rather than
   waiting for the tap to replay them. These are the toggles a reader watches change in the moment
@@ -1534,8 +1574,11 @@ publication list looked clean.
 - Network-powered recommendations & trending (initial heuristics, tunable).
 - **Offline reading in the installed app** — the service worker caches read server functions
   (`/_serverFn` GETs), and `src/pwa/offline-sync.ts` pre-downloads every unread body and its
-  images so the backlog opens with no connection. Reaching for something never downloaded shows
-  an offline state rather than an error.
+  images so the backlog opens with no connection. The surfaces that must survive a dead
+  connection are warmed by name — home, `/latest`, `/saved`, `/subscriptions`, and everything
+  behind the avatar menu: `/history` (its list and its **Continue reading** shelf, whose
+  part-read bodies no unread walk would reach), `/recommended`, and the reader's own profile.
+  Reaching for something never downloaded shows an offline state rather than an error.
 
 ### Later
 

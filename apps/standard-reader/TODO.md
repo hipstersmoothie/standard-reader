@@ -1103,6 +1103,58 @@ Backend/API exists; UI or copy is missing.
 
 ## 9. Post-v1 — reader polish (Tier 2)
 
+- [x] **Resume where you left off** — reopening an article restores the reader's position, and
+      `/history` opens with a **Continue reading** shelf (six most-recent in-progress articles,
+      each with a percent-read meter). Position is the one bit of personal state kept **off**
+      the protocol: reads are public records, and how far you got is a different kind of fact.
+      A private app-local table ([`reading-progress.ts`](src/db/schema/reading-progress.ts),
+      `drizzle/0037_*`, keyed `(owner_did, document_uri)`, never touched by the tap) plus a
+      per-device `localStorage` mirror ([`reading-progress.ts`](src/lib/reading-progress.ts)).
+      Local drives the restore because it can be read before first paint and works offline;
+      the server copy carries position across devices and only wins when it is newer and the
+      reader hasn't already scrolled. That correction is armed whether or not this device
+      remembers anything — gating it on a local copy meant a device that had never seen the
+      article, the one case cross-device sync exists for, was the one case it couldn't serve. Rows live only between 2% and 95%, so the table _is_ the
+      shelf. All of it in [`use-reading-progress.ts`](src/components/reader/use-reading-progress.ts),
+      which also owns the sticky-chrome progress bar it replaced.
+      The settle window **corrects** scrolls it didn't ask for and never saves one, because the
+      router's own `scrollRestoration` runs on `onRendered` from a layout effect mounted after
+      the route's tree — so every in-app navigation scrolled a freshly-restored article back to
+      the top a beat later, and the 0 that measured was written a second after that. Writes
+      outside the band delete, so one clobbered restore erased the position from the device, the
+      server and the shelf: the feature appeared to work exactly once. Covered by
+      [`use-reading-progress.test.ts`](src/components/reader/use-reading-progress.test.ts).
+      **The router is switched off for this route rather than raced** —
+      [`routerOwnsScroll`](src/lib/router-scroll.ts), passed to `scrollRestoration` as a function.
+      Correcting after the fact meant racing three separate actors (the `onRendered` handler, the
+      inline `<script>` Start injects into the SSR'd HTML, and the `sessionStorage` cache they
+      share), and the race was lost often enough to look random. The function form guards all
+      three — including whether the inline script is emitted at all. A `#hash` keeps the router,
+      since on a hard load that script is what scrolls the anchor into view and the article view
+      declines to restore over one. Verified in a browser both ways: with restoration on, the
+      router's `scrollTo({top:0})` lands right after ours and the position is deleted; with the
+      opt-out, the only scroll calls on the page come from this hook.
+      The in-hook settle window stays as a **backstop** for anything else that scrolls unasked.
+      Input alone does not end it — inertial scrolling doesn't stop because the page changed, so
+      momentum from the feed keeps arriving here. What ends it is a scroll a hand could plausibly
+      have made; landing at the very top _without having passed through anywhere else_ is a
+      teleport and gets corrected. Deliberately not a distance test: measured in the running app,
+      a 1498px article on a 664px viewport restores to ~417px, so "was the jump taller than a
+      screen" is dead code at the size articles actually are. The unmount flush is guarded the
+      same way, so leaving fast can't write a reset on the way out. The rule throughout: losing
+      the landing is a nuisance, losing the position is data loss, so ambiguity keeps the stored
+      value.
+      A `#hash` in the URL now opts out of the restore entirely — an anchor the reader asked for
+      out loud outranks a position we remembered for them.
+      Gated on "Track reading history"; clearing history clears positions too.
+      **Before deploy:** run `pnpm db:migrate` (migration `0037`) — the shelf query 500s without
+      the table.
+      `/history` is in `OFFLINE_ROUTES` (see **Offline reading** below), so the list and the shelf
+      both survive a dead connection.
+      Known gap, deliberately deferred: an offline "Start from top" is a paused mutation, so killing
+      the PWA before reconnect leaves the server row and the position comes back. It wants the
+      durable write outbox the app doesn't have yet.
+
 - [x] **Web push notifications (v1)** — a bell on a publication page
       ([`publication-actions.tsx`](src/components/reader/publication-actions.tsx)) and an author
       page ([`author-actions.tsx`](src/components/reader/author-actions.tsx)) that notifies you when
@@ -1162,6 +1214,17 @@ Backend/API exists; UI or copy is missing.
       real `Image` elements (a `fetch` sets no `destination: "image"`, so the Workbox rule would
       miss it). Gated on the installed app + a device-scoped toggle; stops at 80% of storage
       quota; personal caches are dropped on sign-out.
+      Every surface behind the avatar menu is warmed like the feeds rather than left to
+      `preloadRoute`: `/history` (five pages, 100 rows) plus the **Continue reading** shelf,
+      `/recommended` (five pages of likes), and the reader's own `/u/$did` — the one profile
+      `warmFollowedUsers` misses, because nobody follows themselves. All re-walked every pass:
+      their heads move whenever the reader opens or likes something, so they can't hide behind
+      the daily surface timestamp.
+      Only the shelf's six bodies are queued, and they go _ahead_ of the unread backlog — a
+      half-read article is already marked read, so no unread walk would ever reach it, and it is
+      the likeliest thing the reader opens next. History and likes rows are not queued: those
+      bodies are already-read and unbounded, and the storage budget belongs to the backlog, so a
+      row without a body dims instead.
       [`RouteError`](src/components/route-error.tsx) is the app-wide `defaultErrorComponent`.
 - [x] **Content rendering gaps** — PCKT gallery renderer (`blog.pckt.block.gallery`); prod scan
       found 54 documents — implemented grid/list/carousel/masonry layouts via

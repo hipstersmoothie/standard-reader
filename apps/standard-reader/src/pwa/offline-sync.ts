@@ -37,7 +37,12 @@ import {
 import { listApi } from "#/integrations/tanstack-query/api-lists.functions";
 import { notesApi } from "#/integrations/tanstack-query/api-notes.functions";
 import { publicationApi } from "#/integrations/tanstack-query/api-publication.functions";
-import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
+import {
+  READER_QUEUE_PAGE_SIZE,
+  readerApi,
+  UNFINISHED_SHELF_SIZE,
+} from "#/integrations/tanstack-query/api-reader.functions";
+import { user } from "#/integrations/tanstack-query/api-user.functions";
 import { documentImages } from "#/lib/document/images";
 import { parseAtUri } from "#/server/atproto/uri";
 import { listRefFromUri } from "#/server/reader/saved-lists";
@@ -157,6 +162,18 @@ const AUTHOR_PAGE_SIZE = 24;
 
 /** Must match `/l/$did/$rkey`'s loader (`PAGE_SIZE`), same caveat as above. */
 const LIST_PAGE_SIZE = 20;
+
+/**
+ * How deep to walk the reader's own queues (`/history`, `/recommended`).
+ *
+ * Five pages is 100 rows — far enough back that the offline list scrolls like
+ * the online one for anything recent, and cheap enough (five requests) to redo
+ * on every pass. It has to be every pass: the head of these lists moves every
+ * time the reader opens or recommends an article, so unlike the
+ * followed-publication fan-out they can't hide behind the daily surface
+ * timestamp.
+ */
+const READER_QUEUE_WARM_MAX_PAGES = 5;
 
 let running = false;
 let controller: AbortController | null = null;
@@ -361,7 +378,14 @@ async function warmArticleRoute(
  * under exactly the URL it will ask for. Guessing that list by hand would go
  * stale the first time a loader changed.
  */
-const OFFLINE_ROUTES = ["/", "/latest", "/saved", "/subscriptions"] as const;
+const OFFLINE_ROUTES = [
+  "/",
+  "/latest",
+  "/saved",
+  "/subscriptions",
+  "/history",
+  "/recommended",
+] as const;
 
 async function warmRouteChunks(
   router: AnyRouter,
@@ -372,8 +396,8 @@ async function warmRouteChunks(
     try {
       await router.preloadRoute({ to });
     } catch {
-      // Signed-out readers have no /saved or /subscriptions, and a redirect
-      // throws here. Neither is a reason to stop warming the rest.
+      // Signed-out readers have no /saved, /subscriptions or /history, and the
+      // redirect to /login throws here. Not a reason to stop warming the rest.
     }
   }
 }
@@ -433,6 +457,142 @@ async function warmFeedData(signal: AbortSignal): Promise<void> {
     } catch {
       // Signed out, or a surface this reader does not have. Keep going.
     }
+  }
+}
+
+/**
+ * Cache `/history` — the reading list and the "Continue reading" shelf above
+ * it.
+ *
+ * Both halves are warmed by calling the same server functions the route's
+ * loader calls, in the exact argument shape its query options send, so each
+ * response lands in the `data` cache under the URL that loader will ask for.
+ *
+ * The shelf gets special treatment on bodies. Everything else offline sync
+ * stores is *unread* — but a half-read article is by definition already marked
+ * read, so it appears in no unread walk and its body would be the one thing
+ * missing from the surface built to send readers back to it. Six URIs is a
+ * rounding error against the backlog, and they are queued here, ahead of it,
+ * because "what I was in the middle of" outranks "what I have not started".
+ *
+ * The history rows themselves are deliberately **not** queued: those bodies
+ * are already-read articles, they are unbounded, and the storage budget is
+ * meant for the backlog. A row whose body isn't on device dims itself, which
+ * is the honest answer.
+ */
+async function warmReadingHistory(
+  signal: AbortSignal,
+  enqueueBody: (documentUri: string) => void,
+): Promise<void> {
+  try {
+    // `getUnfinishedReadingQueryOptions()` with its default limit.
+    const unfinished = await readerApi.getUnfinishedReading({
+      data: { limit: UNFINISHED_SHELF_SIZE },
+    });
+    for (const item of unfinished) enqueueBody(item.documentUri);
+    progressCount("unfinishedListed", unfinished.length);
+  } catch {
+    // Signed out, or the reader has reading history turned off. The list walk
+    // below is worth attempting either way.
+  }
+
+  // Mirrors `getReadingHistoryInfiniteQueryOptions()`' queryFn: the first page
+  // is `offset: 0` and every "load more" after it uses the previous page's
+  // `nextOffset` at the same limit.
+  await warmQueuePages(signal, "historyPages", (offset) =>
+    readerApi.getReadingHistory({
+      data: { limit: READER_QUEUE_PAGE_SIZE, offset },
+    }),
+  );
+}
+
+/**
+ * Cache `/recommended` — the articles the reader has liked.
+ *
+ * A liked article is one the reader already thought worth keeping hold of, and
+ * this page is how they find it again; it is a bad one to lose on a plane.
+ * Bodies are left alone for the same reason as reading history: a like almost
+ * always follows a read, so these are already-read articles competing with a
+ * backlog that isn't read yet. Rows without a stored body dim.
+ */
+async function warmLikes(signal: AbortSignal): Promise<void> {
+  // `getLikesInfiniteQueryOptions()`' queryFn, page for page.
+  await warmQueuePages(signal, "likesPages", (offset) =>
+    readerApi.getLikes({ data: { limit: READER_QUEUE_PAGE_SIZE, offset } }),
+  );
+}
+
+/**
+ * Walk one of the reader's own paginated queues, stopping at the end of the
+ * list or {@link READER_QUEUE_WARM_MAX_PAGES}, whichever comes first.
+ *
+ * The pages are the cache entries: each `offset` is its own URL, so the only
+ * way "load more" works offline is to have requested that exact page online
+ * first.
+ */
+async function warmQueuePages(
+  signal: AbortSignal,
+  counter: "historyPages" | "likesPages",
+  fetchPage: (offset: number) => Promise<{ nextOffset: number | null }>,
+): Promise<void> {
+  let offset = 0;
+  for (let page = 0; page < READER_QUEUE_WARM_MAX_PAGES; page += 1) {
+    if (signal.aborted || isOffline()) return;
+    let result: { nextOffset: number | null };
+    try {
+      result = await fetchPage(offset);
+    } catch {
+      // Signed out, or the surface is empty for this reader.
+      return;
+    }
+    progressCount(counter);
+    if (result.nextOffset == null) return;
+    offset = result.nextOffset;
+    await whenIdle(signal);
+  }
+}
+
+/**
+ * Cache the reader's own profile page.
+ *
+ * {@link warmFollowedUsers} covers everyone the reader follows and misses the
+ * one profile reachable from every screen — the avatar menu's "View profile"
+ * — because nobody follows themselves. It also warms the `/u/$did` chunk for a
+ * reader who follows no one at all, which that pass skips.
+ *
+ * The `$did` used here is the one the menu links to (`did ?? handle`), because
+ * a profile requested by handle is a different cache entry from the same
+ * profile requested by DID.
+ */
+async function warmOwnProfile(
+  router: AnyRouter,
+  signal: AbortSignal,
+): Promise<void> {
+  let profileRef: string | null = null;
+  try {
+    const session = await user.getSession();
+    profileRef = session?.user.did ?? session?.user.handle ?? null;
+  } catch {
+    return;
+  }
+  if (!profileRef || signal.aborted || isOffline()) return;
+
+  await preloadRouteChunk(router, "/u/$did", { did: profileRef });
+  try {
+    // Same call `warmFollowedUsers` makes, and the same one
+    // `getAuthorProfileQueryOptions(did, { limit: AUTHOR_PAGE_SIZE })` sends
+    // from `/u/$did`'s loader.
+    await authorApi.getAuthorProfile({
+      data: {
+        did: profileRef,
+        limit: AUTHOR_PAGE_SIZE,
+        offset: 0,
+        activityLimit: AUTHOR_ACTIVITY_PAGE_SIZE,
+      },
+    });
+    progressCount("ownProfile");
+  } catch {
+    // Signed out, or a profile the appview can't resolve right now.
   }
 }
 
@@ -859,6 +1019,25 @@ export async function runOfflineSync(
     await warmShell(signal);
     progressStep("feeds");
     await warmFeedData(signal);
+
+    // Before the unread walk on purpose — the shelf's bodies are few and are
+    // the ones the reader is most likely to open next (see
+    // `warmReadingHistory`), and the queue is drained in the order it is
+    // filled.
+    progressStep("history");
+    await warmReadingHistory(signal, enqueueBody);
+    state.pending = bodyQueue;
+    writeOfflineSyncState(state);
+    publishTotals();
+
+    // The rest of "your stuff": what you liked, and the profile the avatar
+    // menu points at. Both are a handful of requests and neither can wait for
+    // the daily surface pass — a like made this morning should be there
+    // tonight.
+    progressStep("likes");
+    await warmLikes(signal);
+    progressStep("your profile");
+    await warmOwnProfile(router, signal);
 
     // The unread list — URIs only; their bodies queue for phase 2.
     progressStep("unread list");

@@ -260,6 +260,13 @@
       "when": 1786344772815,
       "tag": "0036_acoustic_zemo",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1786555171840,
+      "tag": "0037_burly_magus",
+      "breakpoints": true
     }
   ]
 }

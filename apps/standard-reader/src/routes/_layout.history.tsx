@@ -12,7 +12,7 @@ import {
   lineHeight,
 } from "@standard-reader/design-system/theme/typography.stylex";
 import * as stylex from "@stylexjs/stylex";
-import { useSuspenseInfiniteQuery } from "@tanstack/react-query";
+import { useQuery, useSuspenseInfiniteQuery } from "@tanstack/react-query";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useCallback } from "react";
 
@@ -24,8 +24,13 @@ import { getPublicUrlClient } from "#/lib/public-url";
 import { pageSocialMeta } from "#/lib/site-metadata";
 import { buildAuthRedirectPath } from "#/utils/auth-redirect";
 
+import { ContinueReading } from "../components/reader/continue-reading";
 import { FeedLoadMore } from "../components/reader/feed-load-more";
-import { Masthead, ReaderContent } from "../components/reader/primitives";
+import {
+  Masthead,
+  ReaderContent,
+  SectionHead,
+} from "../components/reader/primitives";
 import { ReaderQueueRows } from "../components/reader/reader-queue-rows";
 
 export const Route = createFileRoute("/_layout/history")({
@@ -41,9 +46,19 @@ export const Route = createFileRoute("/_layout/history")({
     }
   },
   loader: async ({ context }) => {
-    await context.queryClient.ensureInfiniteQueryData(
-      readerApi.getReadingHistoryInfiniteQueryOptions(),
-    );
+    await Promise.all([
+      context.queryClient.ensureInfiniteQueryData(
+        readerApi.getReadingHistoryInfiniteQueryOptions(),
+      ),
+      // The shelf rides along so it paints with the list, but it must never be
+      // what fails the page: offline (or on any server hiccup) a rejection here
+      // would throw the whole route to the error component and cost the reader
+      // their cached history over a six-row extra. The component treats a
+      // missing result as an empty shelf.
+      context.queryClient
+        .ensureQueryData(readerApi.getUnfinishedReadingQueryOptions())
+        .catch(() => null),
+    ]);
   },
   head: () => ({
     meta: pageSocialMeta("history", getPublicUrlClient()),
@@ -105,9 +120,26 @@ function ReaderHistory() {
   const { t } = useLingui();
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useSuspenseInfiniteQuery(readerApi.getReadingHistoryInfiniteQueryOptions());
+  // `useQuery`, not `useSuspenseQuery`: the shelf is an extra on this page, and
+  // suspending (or throwing) on it would take the reading history down with it
+  // when the reader is offline.
+  const { data: unfinished } = useQuery(
+    readerApi.getUnfinishedReadingQueryOptions(),
+  );
 
   const history = data.pages.flatMap((page) => page.items);
   const total = data.pages[0]?.total ?? 0;
+  const unfinishedItems = unfinished ?? [];
+  // An in-progress article is claimed by the shelf and drops out of the list
+  // below, so no article appears twice on the page. Only the ones the shelf
+  // actually renders are claimed: an item whose document has fallen out of the
+  // read-model isn't shown up there, so it stays down here.
+  const shelved = new Set(
+    unfinishedItems
+      .filter((item) => item.article != null)
+      .map((item) => item.documentUri),
+  );
+  const hasUnfinished = shelved.size > 0;
 
   const loadMore = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) {
@@ -115,13 +147,15 @@ function ReaderHistory() {
     }
   }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
-  const queueRows = history.map((item) => ({
-    id: item.readUri,
-    documentUri: item.documentUri,
-    article: item.article,
-    timestamp: item.readAt,
-    actionLabel: t`Read`,
-  }));
+  const queueRows = history
+    .filter((item) => !shelved.has(item.documentUri))
+    .map((item) => ({
+      id: item.readUri,
+      documentUri: item.documentUri,
+      article: item.article,
+      timestamp: item.readAt,
+      actionLabel: t`Read`,
+    }));
 
   return (
     <ReaderContent>
@@ -161,6 +195,15 @@ function ReaderHistory() {
         </div>
       ) : (
         <>
+          <ContinueReading items={unfinishedItems} />
+          {/* Only once the shelf is above it does the list below need naming —
+              on its own it is the page, and the masthead already said so.
+              "Everything else" rather than "Everything you've read": the
+              in-progress ones are up on the shelf and deliberately not repeated
+              here, so the older title would name a list this isn't. */}
+          {hasUnfinished && queueRows.length > 0 ? (
+            <SectionHead title={t`Everything else`} size="md" followsSection />
+          ) : null}
           <ReaderQueueRows
             items={queueRows}
             showSaveButton={false}
@@ -175,7 +218,9 @@ function ReaderHistory() {
             hasMore={hasNextPage}
             isLoading={isFetchingNextPage}
             onLoadMore={loadMore}
-            itemCount={history.length}
+            // The rows actually on screen, not the rows fetched: the shelf has
+            // claimed some, and this drives the "showing N" affordance.
+            itemCount={queueRows.length}
           />
         </>
       )}

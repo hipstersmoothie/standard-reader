@@ -368,6 +368,10 @@ msgstr "Search by title or author, or paste a URL or at:// URI"
 msgid "Show {itemLabel} in the sidebar"
 msgstr "Show {itemLabel} in the sidebar"
 
+#: src/components/reader/continue-reading.tsx
+#~ msgid "Still open"
+#~ msgstr "Still open"
+
 #: src/components/guide/pages/finding-guide-page.tsx
 msgid "Each tab carries a count, and <0>Mark all as read</0> clears the backlog when a week gets away from you."
 msgstr "Each tab carries a count, and <0>Mark all as read</0> clears the backlog when a week gets away from you."
@@ -1066,6 +1070,10 @@ msgstr "Reading preferences"
 msgid "These are separate from the app-wide appearance settings, which is deliberate: you can have compact, small interface text and large, wide-set article text at the same time. <0>Making it yours</0> covers the rest."
 msgstr "These are separate from the app-wide appearance settings, which is deliberate: you can have compact, small interface text and large, wide-set article text at the same time. <0>Making it yours</0> covers the rest."
 
+#: src/components/offline-sync-debug.tsx
+msgid "Liked pages"
+msgstr "Liked pages"
+
 #: src/routes/_layout.saved.tsx
 msgid "Nothing saved yet"
 msgstr "Nothing saved yet"
@@ -1289,6 +1297,10 @@ msgstr "{SITE_NAME} is a web reader for standard.site publications on the AT Pro
 #: src/components/offline-sync-debug.tsx
 msgid "Followed pages warmed"
 msgstr "Followed pages warmed"
+
+#: src/routes/_layout.history.tsx
+#~ msgid "Everything you've read"
+#~ msgstr "Everything you've read"
 
 #: src/components/guide/pages/getting-started-guide-page.tsx
 msgid "the directory of every publication the network knows about."
@@ -1782,6 +1794,10 @@ msgstr "Your own curated sets of articles."
 msgid "No topics match “{debouncedQuery}”."
 msgstr "No topics match “{debouncedQuery}”."
 
+#: src/components/reader/continue-reading.tsx
+#~ msgid "Reading progress"
+#~ msgstr "Reading progress"
+
 #: src/components/guide/pages/keeping-track-guide-page.tsx
 msgid "So subscribe to the publication when you want that particular thing, and follow the person when you want the writer — and their reading. In the sidebar and in Subscriptions the two are listed together, with a <0>Type</0> column telling them apart."
 msgstr "So subscribe to the publication when you want that particular thing, and follow the person when you want the writer — and their reading. In the sidebar and in Subscriptions the two are listed together, with a <0>Type</0> column telling them apart."
@@ -1875,6 +1891,10 @@ msgstr "You blocked this account"
 msgid "Notifications aren’t available"
 msgstr "Notifications aren’t available"
 
+#: src/components/offline-sync-debug.tsx
+msgid "History pages"
+msgstr "History pages"
+
 #: src/components/reader/save-to-collection-dialog.tsx
 msgid "Collection name"
 msgstr "Collection name"
@@ -1905,6 +1925,10 @@ msgstr "History can be turned off in settings, and the menu entry disappears wit
 #: src/lib/guide/navigation.ts
 msgid "Publishing your site"
 msgstr "Publishing your site"
+
+#: src/components/reader/continue-reading.tsx
+msgid "Continue reading"
+msgstr "Continue reading"
 
 #: src/components/reader/list-edit-modal.tsx
 msgid "Choose an item to add to the list"
@@ -3755,6 +3779,10 @@ msgstr "None of these publications have posted anything yet. Subscribe from the 
 msgid "Share elsewhere"
 msgstr "Share elsewhere"
 
+#: src/components/offline-sync-debug.tsx
+msgid "Unfinished listed"
+msgstr "Unfinished listed"
+
 #: src/components/guide/pages/your-data-guide-page.tsx
 msgid "Signing in asks for permission to write only the kinds of records the app actually needs — follows, saves, recommendations, read records, and lists. It cannot post to Bluesky as you."
 msgstr "Signing in asks for permission to write only the kinds of records the app actually needs — follows, saves, recommendations, read records, and lists. It cannot post to Bluesky as you."
@@ -4917,6 +4945,10 @@ msgstr "That link expired."
 msgid "Lists in the sidebar"
 msgstr "Lists in the sidebar"
 
+#: src/routes/_layout.history.tsx
+msgid "Everything else"
+msgstr "Everything else"
+
 #: src/components/reader/blocked-notice.tsx
 msgid "You blocked {who}, so their writing is hidden everywhere you read."
 msgstr "You blocked {who}, so their writing is hidden everywhere you read."
@@ -5346,6 +5378,7 @@ msgstr "Track reading history"
 msgid "{readCount, plural, one {# read} other {{value} reads}}"
 msgstr "{readCount, plural, one {# read} other {{value} reads}}"
 
+#: src/components/offline-sync-debug.tsx
 #: src/routes/_layout.collections.index.tsx
 #: src/routes/_layout.history.tsx
 #: src/routes/_layout.recommended.tsx
@@ -5534,6 +5567,10 @@ msgstr "Making it yours"
 #: src/routes/_layout.p.$did.$rkey.tsx
 msgid "You haven’t read anything here yet."
 msgstr "You haven’t read anything here yet."
+
+#: src/components/reader/cards.tsx
+msgid "Mark as finished"
+msgstr "Mark as finished"
 
 #: src/components/guide/pages/reading-guide-page.tsx
 msgid "At the end of the article you can <0>Recommend</0> it, see more from the same publication, and find related reading from elsewhere on the network."
@@ -6304,6 +6341,10 @@ msgstr "Everything here is linkable, too. Publications, lists, and collections e
 #~ msgid "Reorder subscriptions"
 #~ msgstr "Reorder subscriptions"
 
+#: src/components/reader/article-view.tsx
+msgid "Picked up where you left off"
+msgstr "Picked up where you left off"
+
 #: src/components/guide/pages/personalizing-guide-page.tsx
 #: src/lib/guide/navigation.ts
 msgid "Light, dark, and custom colors"
@@ -6841,6 +6882,10 @@ msgstr "We do not sell or share extension data with third parties."
 msgid "Explore the directory"
 msgstr "Explore the directory"
 
+#: src/components/reader/article-view.tsx
+msgid "Start from top"
+msgstr "Start from top"
+
 #: src/components/reader/extension-privacy-view.tsx
 msgid "How requests are handled"
 msgstr "How requests are handled"
@@ -6946,6 +6991,10 @@ msgstr "Notifications aren’t switched on for this site yet."
 #: src/routes/_layout.feedback.index.tsx
 msgid "Filter and sort — {activeFilters, plural, one {# filter active} other {# filters active}}"
 msgstr "Filter and sort — {activeFilters, plural, one {# filter active} other {# filters active}}"
+
+#: src/components/reader/cards.tsx
+msgid "{formatted} read"
+msgstr "{formatted} read"
 
 #: src/components/guide/pages/lists-guide-page.tsx
 msgid "It follows you"
@@ -8152,6 +8201,10 @@ msgstr "What Standard Reader is, and what you can do here."
 #: src/components/TrackReadingHistoryMenuItem.tsx
 msgid "On"
 msgstr "On"
+
+#: src/components/reader/continue-reading.tsx
+#~ msgid "{label} read"
+#~ msgstr "{label} read"
 
 #: src/components/guide/pages/your-data-guide-page.tsx
 msgid "We keep a copy of the public network — publications, articles, and who follows what — so the app can search, rank, and load quickly. That copy includes the records described above. It is a cache of things that are already public, not a second private profile of you."

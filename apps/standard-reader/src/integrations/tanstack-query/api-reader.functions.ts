@@ -11,6 +11,11 @@ import { alias } from "drizzle-orm/pg-core";
 import { z } from "zod";
 
 import {
+  isResumableProgress,
+  READING_PROGRESS_DONE,
+  READING_PROGRESS_MIN,
+} from "#/lib/reading-progress";
+import {
   getAtprotoSessionForRequest,
   getReaderDidForRequest,
 } from "#/middleware/auth-session.server";
@@ -94,6 +99,13 @@ const documentsInput = z.object({
 
 /** Default page size for likes / saved / history infinite scroll. */
 export const READER_QUEUE_PAGE_SIZE = 20;
+
+/**
+ * How many in-progress articles the "Continue reading" shelf holds. Short on
+ * purpose: it is a prompt to pick something back up, and a long one reads as
+ * another backlog to feel behind on.
+ */
+export const UNFINISHED_SHELF_SIZE = 6;
 
 const readerListInput = z.object({
   limit: z.number().int().min(1).max(100).default(READER_QUEUE_PAGE_SIZE),
@@ -442,6 +454,20 @@ export interface SavedListPage extends ReaderListPage<SavedArticleItem> {
 export interface ReadHistoryItem {
   readUri: string;
   readAt: string | null;
+  documentUri: string;
+  /** Null when the document is no longer in the read-model. */
+  article: ArticleCard | null;
+}
+
+/** Where a reader stopped in one article, as the server knows it. */
+export interface ReadingPosition {
+  /** Fraction of the article body scrolled past, 0–1. */
+  progress: number;
+  updatedAt: string;
+}
+
+/** An article the reader is partway through, with hydrated card data. */
+export interface UnfinishedReadingItem extends ReadingPosition {
   documentUri: string;
   /** Null when the document is no longer in the read-model. */
   article: ArticleCard | null;
@@ -1152,6 +1178,174 @@ const getReadingHistory = createServerFn({ method: "GET" })
     }),
   );
 
+// ── Reading position (app-local; deliberately not a repo record) ────────────
+
+const readingProgressInput = z.object({
+  documentUri: z.string().min(1),
+  /** Fraction of the article body scrolled past. */
+  progress: z.number().min(0).max(1),
+});
+
+const unfinishedInput = z.object({
+  limit: z.number().int().min(1).max(50).default(UNFINISHED_SHELF_SIZE),
+});
+
+/**
+ * Remember where the reader stopped — or forget it, once they finish. Rows are
+ * only kept while {@link isResumableProgress} holds, so `reading_progress` is
+ * exactly the set of articles "Continue reading" should show and never needs a
+ * sweep to stay that way.
+ */
+const setReadingProgress = createServerFn({ method: "POST" })
+  .middleware([dbMiddleware])
+  .validator(readingProgressInput)
+  .handler(
+    observe("reader.setReadingProgress", async ({ data, context }, span) => {
+      span.set("documentUri", data.documentUri);
+      span.set("progress", data.progress);
+      const did = await getReaderDidForRequest(getRequest());
+      if (!did) return { ok: true as const };
+      span.set("did", did);
+
+      // Position is reading history by another name — a reader who turned that
+      // off did not ask us to keep a finer-grained version of it.
+      if (!context.trackReadingEnabled) return { ok: true as const };
+
+      const rp = context.schema.readingProgress;
+      const where = and(
+        eq(rp.ownerDid, did),
+        eq(rp.documentUri, data.documentUri),
+      );
+
+      if (!isResumableProgress(data.progress)) {
+        await context.db.delete(rp).where(where);
+        span.set("cleared", true);
+        return { ok: true as const };
+      }
+
+      await context.db
+        .insert(rp)
+        .values({
+          documentUri: data.documentUri,
+          ownerDid: did,
+          progress: data.progress,
+          updatedAt: new Date(),
+        })
+        .onConflictDoUpdate({
+          target: [rp.ownerDid, rp.documentUri],
+          set: { progress: data.progress, updatedAt: new Date() },
+        });
+
+      return { ok: true as const };
+    }),
+  );
+
+/** Drop a remembered position (the reader chose to start from the top). */
+const clearReadingProgress = createServerFn({ method: "POST" })
+  .middleware([dbMiddleware])
+  .validator(documentInput)
+  .handler(
+    observe("reader.clearReadingProgress", async ({ data, context }, span) => {
+      span.set("documentUri", data.documentUri);
+      const did = await getReaderDidForRequest(getRequest());
+      if (!did) return { ok: true as const };
+      span.set("did", did);
+
+      const rp = context.schema.readingProgress;
+      await context.db
+        .delete(rp)
+        .where(and(eq(rp.ownerDid, did), eq(rp.documentUri, data.documentUri)));
+      return { ok: true as const };
+    }),
+  );
+
+/**
+ * The position this reader's *other* devices know about. The local copy drives
+ * the initial scroll (it is available before first paint); this is what corrects
+ * it when the reader got further on their phone.
+ */
+const getReadingProgress = createServerFn({ method: "GET" })
+  .middleware([dbMiddleware])
+  .validator(documentInput)
+  .handler(
+    observe("reader.getReadingProgress", async ({ data, context }, span) => {
+      span.set("documentUri", data.documentUri);
+      const did = await getReaderDidForRequest(getRequest());
+      if (!did) return null satisfies ReadingPosition | null;
+      span.set("did", did);
+
+      const rp = context.schema.readingProgress;
+      const rows = await context.db
+        .select({ progress: rp.progress, updatedAt: rp.updatedAt })
+        .from(rp)
+        .where(and(eq(rp.ownerDid, did), eq(rp.documentUri, data.documentUri)))
+        .limit(1);
+
+      const row = rows[0];
+      if (!row) return null;
+      return {
+        progress: row.progress,
+        updatedAt: row.updatedAt.toISOString(),
+      } satisfies ReadingPosition;
+    }),
+  );
+
+/** Articles the reader is partway through, most recently touched first. */
+const getUnfinishedReading = createServerFn({ method: "GET" })
+  .middleware([dbMiddleware])
+  .validator(unfinishedInput)
+  .handler(
+    observe("reader.getUnfinishedReading", async ({ data, context }, span) => {
+      const did = await getReaderDidForRequest(getRequest());
+      if (!did) return [] satisfies Array<UnfinishedReadingItem>;
+      span.set("did", did);
+      span.set("limit", data.limit);
+
+      const rp = context.schema.readingProgress;
+      const d = context.schema.documents;
+      const p = context.schema.publications;
+      const pr = context.schema.profiles;
+      const pa = alias(context.schema.profiles, "pa");
+      const cols = articleQueueCardColumns(context.schema);
+
+      const rows = await context.db
+        .select({
+          documentUri: rp.documentUri,
+          progress: rp.progress,
+          updatedAt: rp.updatedAt,
+          ...cols,
+        })
+        .from(rp)
+        .leftJoin(d, eq(d.uri, rp.documentUri))
+        .leftJoin(p, eq(p.uri, d.publicationUri))
+        .leftJoin(pr, eq(pr.did, p.did))
+        .leftJoin(pa, eq(pa.did, d.did))
+        .where(
+          and(
+            eq(rp.ownerDid, did),
+            // Writes already hold this invariant; the filter keeps a stale row
+            // from an older threshold out of the shelf.
+            sql`${rp.progress} >= ${READING_PROGRESS_MIN}`,
+            sql`${rp.progress} < ${READING_PROGRESS_DONE}`,
+          ),
+        )
+        // Matches `reading_progress_owner_idx` (owner_did, updated_at DESC).
+        .orderBy(desc(rp.updatedAt))
+        .limit(data.limit);
+
+      span.set("count", rows.length);
+
+      const items = rows.map((row) => ({
+        documentUri: row.documentUri,
+        progress: row.progress,
+        updatedAt: row.updatedAt.toISOString(),
+        article: hydrateArticleFromRow(row, { isRead: true }),
+      })) satisfies Array<UnfinishedReadingItem>;
+
+      return flagViewerRecommendedItems(context.db, context.schema, did, items);
+    }),
+  );
+
 // ── Save for later (app.standard-reader.bookmark) ───────────────────────────
 
 const getBookmarkStatus = createServerFn({ method: "GET" })
@@ -1445,6 +1639,12 @@ const deleteAllReadHistory = createServerFn({ method: "POST" })
         .delete(context.schema.reads)
         .where(eq(context.schema.reads.ownerDid, session.did));
 
+      // Positions are reading history at a finer grain. Someone clearing the
+      // one and being left with the other would reasonably call that a bug.
+      await context.db
+        .delete(context.schema.readingProgress)
+        .where(eq(context.schema.readingProgress.ownerDid, session.did));
+
       await trackReaderRepo(session.did);
       span.set("deleted", readRows.length);
       return { ok: true as const, deleted: readRows.length };
@@ -1732,7 +1932,31 @@ function getReadingHistoryInfiniteQueryOptions({
     queryFn: async ({ pageParam }) =>
       getReadingHistory({ data: { limit, offset: pageParam } }),
     initialPageParam: 0,
-    getNextPageParam: (lastPage) => lastPage.nextOffset ?? undefined,
+    // `lastPage?` rather than `lastPage.`: a page can be missing when a fetch
+    // resolved without one (seen against a database that was erroring), and an
+    // unguarded read throws out of render — taking down a `/history` whose own
+    // rows loaded fine. The same unguarded shape is on every other infinite
+    // query in the app; this is the one observed to crash.
+    getNextPageParam: (lastPage) => lastPage?.nextOffset ?? undefined,
+  });
+}
+
+function getReadingProgressQueryOptions(documentUri: string) {
+  return queryOptions({
+    queryKey: ["reader", "readingProgress", documentUri] as const,
+    queryFn: async () => getReadingProgress({ data: { documentUri } }),
+    // The reader is looking at the article right now; their own scrolling is
+    // the authority here, not a refetch.
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+function getUnfinishedReadingQueryOptions({
+  limit = UNFINISHED_SHELF_SIZE,
+}: { limit?: number } = {}) {
+  return queryOptions({
+    queryKey: ["reader", "unfinished", limit] as const,
+    queryFn: async () => getUnfinishedReading({ data: { limit } }),
   });
 }
 
@@ -1916,6 +2140,13 @@ export const readerApi = {
   markUnreadMutationOptions,
   getReadingHistory,
   getReadingHistoryInfiniteQueryOptions,
+  // reading position (app-local, not a repo record)
+  getReadingProgress,
+  getReadingProgressQueryOptions,
+  setReadingProgress,
+  clearReadingProgress,
+  getUnfinishedReading,
+  getUnfinishedReadingQueryOptions,
   // save for later (app.standard-reader.bookmark)
   getBookmarkStatus,
   getBookmarkStatusQueryOptions,
