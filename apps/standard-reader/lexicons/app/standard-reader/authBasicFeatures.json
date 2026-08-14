@@ -13,6 +13,7 @@
           "collection": [
             "app.standard-reader.bookmark",
             "app.standard-reader.graph.follow",
+            "app.standard-reader.graph.mute",
             "app.standard-reader.labelerSubscription",
             "app.standard-reader.labeler.subscription",
             "app.standard-reader.list",

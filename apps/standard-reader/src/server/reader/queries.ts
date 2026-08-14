@@ -57,6 +57,7 @@ import {
 } from "#/lib/atproto/bridged-repo";
 import { EXCLUDED_PUBLICATION_URL_PATTERN } from "#/lib/publication/exclusions";
 import { atUriAuthoritySql, notBlockedByViewer } from "#/server/blocks/blocks";
+import { notMutedByViewer } from "#/server/mutes/mutes";
 import { documentPublishedNotInFuture } from "#/server/reader/document-filters";
 import {
   discoverEligibleArticleWhere,
@@ -175,6 +176,17 @@ export interface ArticleCardQuery {
    * readers on discover surfaces where the other two are unset.
    */
   viewerDid?: string;
+  /**
+   * The reader this page is being rendered for, for mute filtering. Documents
+   * by a muted user, from a publication a muted user owns, or in a muted
+   * publication are excluded in SQL for the same reason as `viewerDid`.
+   *
+   * **Resolve through `muteFilterDid`, never a raw session DID** — the
+   * predicate is correlated subqueries per candidate row, and the gate is what
+   * keeps readers who mute nothing from paying for it. See
+   * {@link notMutedByViewer}.
+   */
+  muterDid?: string;
   limit: number;
   offset?: number;
 }
@@ -461,6 +473,8 @@ async function selectFollowFeedCandidateUris(
     countOldPostsAsUnread?: boolean;
     /** See {@link ArticleCardQuery.viewerDid}. */
     viewerDid?: string;
+    /** See {@link ArticleCardQuery.muterDid}. */
+    muterDid?: string;
     limit: number;
     offset: number;
   },
@@ -487,6 +501,8 @@ export function buildFollowFeedCandidateSql(
     countOldPostsAsUnread?: boolean;
     /** See {@link ArticleCardQuery.viewerDid}. */
     viewerDid?: string;
+    /** See {@link ArticleCardQuery.muterDid}. */
+    muterDid?: string;
     limit: number;
     offset: number;
   },
@@ -530,6 +546,18 @@ export function buildFollowFeedCandidateSql(
         sql`${d.did}`,
         atUriAuthoritySql(sql`${d.publicationUri}`),
       ),
+    );
+  }
+  // Same union-branch reasoning as blocks: a followed publication can carry a
+  // guest post by a muted author, and a followed user can recommend into a
+  // muted publication. Reached only through `muteFilterDid`.
+  if (opts.muterDid) {
+    base.push(
+      notMutedByViewer(schema, opts.muterDid, {
+        authorDidExpr: sql`${d.did}`,
+        ownerDidExpr: atUriAuthoritySql(sql`${d.publicationUri}`),
+        pubUriExpr: sql`${d.publicationUri}`,
+      }),
     );
   }
   const baseWhere = and(...base) ?? sql`true`;
@@ -760,6 +788,7 @@ export async function selectArticleCards(
       unreadForDid: opts.unreadForDid,
       countOldPostsAsUnread: opts.countOldPostsAsUnread,
       viewerDid: opts.viewerDid,
+      muterDid: opts.muterDid,
       limit: opts.limit,
       offset: opts.offset ?? 0,
     });
@@ -768,6 +797,7 @@ export async function selectArticleCards(
       readForDid: opts.readForDid,
       countOldPostsAsUnread: opts.countOldPostsAsUnread,
       viewerDid: opts.viewerDid,
+      muterDid: opts.muterDid,
     });
   }
 
@@ -822,6 +852,15 @@ export async function selectArticleCards(
         sql`${d.did}`,
         atUriAuthoritySql(sql`${d.publicationUri}`),
       ),
+    );
+  }
+  if (opts.muterDid) {
+    conds.push(
+      notMutedByViewer(schema, opts.muterDid, {
+        authorDidExpr: sql`${d.did}`,
+        ownerDidExpr: atUriAuthoritySql(sql`${d.publicationUri}`),
+        pubUriExpr: sql`${d.publicationUri}`,
+      }),
     );
   }
 
@@ -1678,6 +1717,8 @@ export interface TrendingArticlesQuery {
   excludeWebBridge?: boolean;
   /** See {@link ArticleCardQuery.viewerDid}. */
   viewerDid?: string;
+  /** See {@link ArticleCardQuery.muterDid}. */
+  muterDid?: string;
 }
 
 function trendingArticleWhere(
@@ -1686,6 +1727,7 @@ function trendingArticleWhere(
   excludeUris: Array<string> = [],
   excludeWebBridge = false,
   viewerDid?: string,
+  muterDid?: string,
 ) {
   const d = schema.documents;
   const p = schema.publications;
@@ -1726,6 +1768,16 @@ function trendingArticleWhere(
     );
   }
 
+  if (muterDid) {
+    conds.push(
+      notMutedByViewer(schema, muterDid, {
+        authorDidExpr: sql`${d.did}`,
+        ownerDidExpr: atUriAuthoritySql(sql`${d.publicationUri}`),
+        pubUriExpr: sql`${d.publicationUri}`,
+      }),
+    );
+  }
+
   return conds;
 }
 
@@ -1751,6 +1803,7 @@ export async function trendingArticles(
     readForDid,
     scope = "rail",
     viewerDid,
+    muterDid,
   }: TrendingArticlesQuery = {},
 ): Promise<Array<ArticleCard>> {
   const d = schema.documents;
@@ -1773,6 +1826,7 @@ export async function trendingArticles(
             excludeUris,
             excludeWebBridge,
             viewerDid,
+            muterDid,
           ),
         ),
       )
@@ -1800,6 +1854,7 @@ export async function trendingArticles(
           excludeUris,
           excludeWebBridge,
           viewerDid,
+          muterDid,
         ),
       ),
     )
@@ -2313,6 +2368,7 @@ export async function discoverDirectoryPublications(
     query = null,
     excludeWebBridge = false,
     viewerDid,
+    muterDid,
   }: {
     topic?: string | null;
     /** `effective` = publication topic only; `document` = topic or any document tag. */
@@ -2325,6 +2381,8 @@ export async function discoverDirectoryPublications(
     excludeWebBridge?: boolean;
     /** See {@link ArticleCardQuery.viewerDid}. */
     viewerDid?: string;
+    /** See {@link ArticleCardQuery.muterDid}. */
+    muterDid?: string;
   },
 ): Promise<Array<PublicationCard>> {
   const p = schema.publications;
@@ -2339,6 +2397,14 @@ export async function discoverDirectoryPublications(
   }
   if (viewerDid) {
     conds.push(notBlockedByViewer(schema, viewerDid, sql`${p.did}`));
+  }
+  if (muterDid) {
+    conds.push(
+      notMutedByViewer(schema, muterDid, {
+        authorDidExpr: sql`${p.did}`,
+        pubUriExpr: sql`${p.uri}`,
+      }),
+    );
   }
   if (topic) {
     conds.push(
@@ -2668,6 +2734,7 @@ export async function tagDirectoryPublications(
     offset,
     excludeWebBridge = false,
     viewerDid,
+    muterDid,
   }: {
     tag: string;
     sort: TagDirectorySort;
@@ -2677,6 +2744,8 @@ export async function tagDirectoryPublications(
     excludeWebBridge?: boolean;
     /** See {@link ArticleCardQuery.viewerDid}. */
     viewerDid?: string;
+    /** See {@link ArticleCardQuery.muterDid}. */
+    muterDid?: string;
   },
 ): Promise<Array<TagPublicationCard>> {
   const p = schema.publications;
@@ -2694,6 +2763,14 @@ export async function tagDirectoryPublications(
   ];
   if (viewerDid) {
     conds.push(notBlockedByViewer(schema, viewerDid, sql`${p.did}`));
+  }
+  if (muterDid) {
+    conds.push(
+      notMutedByViewer(schema, muterDid, {
+        authorDidExpr: sql`${p.did}`,
+        pubUriExpr: sql`${p.uri}`,
+      }),
+    );
   }
 
   const sortName = publicationSortNameSql(p.name, p.url);
@@ -3452,6 +3529,8 @@ export async function selectArticleCardsByUris(
     countOldPostsAsUnread?: boolean;
     /** See {@link ArticleCardQuery.viewerDid}. */
     viewerDid?: string;
+    /** See {@link ArticleCardQuery.muterDid}. */
+    muterDid?: string;
   },
 ): Promise<Array<ArticleCard>> {
   if (uris.length === 0) {
@@ -3492,6 +3571,15 @@ export async function selectArticleCardsByUris(
                 sql`${d.did}`,
                 atUriAuthoritySql(sql`${d.publicationUri}`),
               ),
+            ]
+          : []),
+        ...(opts?.muterDid
+          ? [
+              notMutedByViewer(schema, opts.muterDid, {
+                authorDidExpr: sql`${d.did}`,
+                ownerDidExpr: atUriAuthoritySql(sql`${d.publicationUri}`),
+                pubUriExpr: sql`${d.publicationUri}`,
+              }),
             ]
           : []),
       ),

@@ -10,6 +10,7 @@ import { hasRenderableArticleBody } from "#/lib/document/renderable";
 import { documentSearchText } from "#/lib/document/search-text";
 import { labelerSubscriptionEnabled } from "#/lib/labeler-subscription";
 import { MOCHOTT_ARTICLE, mochottArticleContent } from "#/lib/mochott/types";
+import { classifyMuteSubject } from "#/lib/mutes";
 import { isExcludedPublicationUrl } from "#/lib/publication/exclusions";
 import {
   BLOG_DIRECTION,
@@ -22,6 +23,7 @@ import {
 } from "#/server/content/resolve";
 import { resolveLeafletContent } from "#/server/leaflet/resolve";
 import { fetchMochottArticleContent } from "#/server/mochott/resolve";
+import { invalidateMuteCache } from "#/server/mutes/mutes";
 import { resolvePcktContent } from "#/server/pckt/resolve";
 
 import { db } from "../../db/index.ts";
@@ -32,6 +34,7 @@ import {
   labelerSubscriptions,
   listSaves,
   lists,
+  mutes,
   profiles,
   publicationStats,
   publications,
@@ -62,6 +65,7 @@ import type {
   ListRecord,
   ListSaveRecord,
   MochottArticleRecord,
+  MuteRecord,
   PublicationRecord,
   PublicationThemeRecord,
   ReadRecord,
@@ -642,6 +646,52 @@ export async function upsertUserFollow(
   await ensureTracked(record.subject, "followed");
 }
 
+/**
+ * Mirror an `app.standard-reader.graph.mute` record — the muter (`did`) hides
+ * a user (DID subject) or a publication (AT-URI subject) from their own feeds
+ * and discovery. The subject is classified into exactly one of `subjectDid` /
+ * `subjectUri` so feed SQL correlates on an indexed column; malformed subjects
+ * are skipped. Unlike a follow, a mute must not enrol the subject into the
+ * read-model, so only the muter's repo is tracked.
+ */
+export async function upsertMute(
+  uri: string,
+  did: string,
+  rkey: string,
+  cid: string | undefined,
+  record: MuteRecord,
+): Promise<void> {
+  const subject = classifyMuteSubject(record.subject);
+  // Skip malformed records and defensive self-mutes.
+  if (!subject || (subject.kind === "user" && subject.did === did)) {
+    return;
+  }
+
+  const values = {
+    uri,
+    cid: cid ?? null,
+    muterDid: did,
+    rkey,
+    subject: record.subject,
+    subjectDid: subject.kind === "user" ? subject.did : null,
+    subjectUri: subject.kind === "publication" ? subject.uri : null,
+    createdAt: parseDate(record.createdAt),
+    deleted: false,
+    updatedAt: sql`now()`,
+  };
+
+  await db
+    .insert(mutes)
+    .values(values)
+    .onConflictDoUpdate({ target: mutes.uri, set: values });
+
+  // A mute made in another client must take effect here without waiting out
+  // the has-mutes TTL (no-op across processes, where the TTL covers it).
+  invalidateMuteCache(did);
+
+  await ensureTracked(did, "reader");
+}
+
 export async function upsertLabelerSubscription(
   uri: string,
   did: string,
@@ -1155,6 +1205,12 @@ export async function deleteRecord(
     }
     case Collections.userFollow: {
       await db.delete(userFollows).where(eq(userFollows.uri, uri));
+      return;
+    }
+    case Collections.mute: {
+      const parsed = parseAtUri(uri);
+      if (parsed) invalidateMuteCache(parsed.did);
+      await db.delete(mutes).where(eq(mutes.uri, uri));
       return;
     }
     case Collections.labelerSubscription:

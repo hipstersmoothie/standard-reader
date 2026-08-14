@@ -177,6 +177,19 @@ export interface UserFollowRecord {
   createdAt?: string;
 }
 
+/**
+ * `app.standard-reader.graph.mute` — mutes a subject for this reader: either a
+ * user (a DID) or a publication (the AT-URI of its `site.standard.publication`
+ * record). Presence means muted; deleting unmutes. Hidden from the reader's
+ * feeds and discovery only — direct navigation and subscriptions are untouched.
+ */
+export interface MuteRecord {
+  $type?: string;
+  /** A user DID (`did:...`) or a publication AT-URI (`at://...`). */
+  subject: string;
+  createdAt?: string;
+}
+
 /** `app.standard-reader.read` — an article the reader has read. */
 export interface ReadRecord {
   $type?: string;

@@ -21,6 +21,7 @@ import {
   labelerSubscriptions,
   listSaves,
   lists,
+  mutes,
   profiles,
   publications,
   reads,
@@ -283,6 +284,7 @@ const REPAIRABLE_COLLECTIONS: ReadonlyArray<{
   },
   { collection: Collections.sidebarPref, table: sidebarPrefs },
   { collection: Collections.userFollow, table: userFollows },
+  { collection: Collections.mute, table: mutes },
 ];
 
 /**

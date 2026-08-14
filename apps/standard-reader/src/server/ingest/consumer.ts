@@ -12,6 +12,7 @@ import type {
   ListRecord,
   ListSaveRecord,
   MochottArticleRecord,
+  MuteRecord,
   PublicationRecord,
   PublicationThemeRecord,
   ReadRecord,
@@ -40,6 +41,7 @@ import {
   upsertList,
   upsertListSave,
   upsertMochottArticle,
+  upsertMute,
   upsertPublication,
   upsertPublicationTheme,
   upsertRead,
@@ -211,6 +213,10 @@ export async function handleRecord(payload: TapRecordPayload): Promise<void> {
         cid,
         record as unknown as UserFollowRecord,
       );
+      return;
+    }
+    case Collections.mute: {
+      await upsertMute(uri, did, rkey, cid, record as unknown as MuteRecord);
       return;
     }
     case Collections.labelerSubscription:

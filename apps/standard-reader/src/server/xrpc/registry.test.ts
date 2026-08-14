@@ -18,6 +18,7 @@ const NON_XRPC_LEXICON_STEMS = new Set([
   "collectionsPublication",
   "defs",
   "graph.follow",
+  "graph.mute",
   "labeler.defs",
   "labeler.subscription",
   "labelerSubscription",

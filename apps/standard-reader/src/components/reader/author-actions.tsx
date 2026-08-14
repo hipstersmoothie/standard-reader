@@ -36,6 +36,7 @@ import { useLoginSearch } from "#/utils/use-login-search";
 
 import { BlockUserDialog, BlockUserMenuItem } from "./block-user-menu-item";
 import { FollowUserButton } from "./follow-user-button";
+import { MuteDialog, MuteMenuItem } from "./mute-menu-item";
 import { NotifyButton } from "./notify-button";
 import { RssFeedDialog } from "./rss-feed-button";
 import { ShareMenuItems, useShareActions } from "./share-menu";
@@ -188,6 +189,7 @@ export function AuthorActions({
   const share = useShareActions({ pageUrl });
   const [rssOpen, setRssOpen] = useState(false);
   const [blockOpen, setBlockOpen] = useState(false);
+  const [muteOpen, setMuteOpen] = useState(false);
 
   const { data: followStatus } = useQuery({
     ...readerApi.getUserFollowStatusQueryOptions(did),
@@ -317,11 +319,18 @@ export function AuthorActions({
                 <Trans>Resume</Trans>
               </MenuItem>
             ) : null}
-            {/* Last, and behind its own separator: blocking is the one item
-                here that hides things rather than opening them. */}
+            {/* Last, and behind their own separator: muting and blocking are
+                the items here that hide things rather than opening them. Mute
+                first — it's the reversible, lighter-weight of the two. */}
             {isOwnProfile || !signedIn ? null : (
               <>
                 <MenuSeparator />
+                <MuteMenuItem
+                  subject={did}
+                  name={user.displayName ?? handle}
+                  iconSize={MENU_ICON}
+                  onOpenDialog={() => setMuteOpen(true)}
+                />
                 <BlockUserMenuItem
                   name={user.displayName ?? handle}
                   iconSize={MENU_ICON}
@@ -354,12 +363,21 @@ export function AuthorActions({
       {/* Outside `<Menu>`, like the RSS dialog above: a dialog rendered inside
           the menu unmounts with the popover the moment the item is pressed. */}
       {isOwnProfile || !signedIn ? null : (
-        <BlockUserDialog
-          did={did}
-          name={user.displayName ?? handle}
-          isOpen={blockOpen}
-          onOpenChange={setBlockOpen}
-        />
+        <>
+          <MuteDialog
+            subject={did}
+            kind="user"
+            name={user.displayName ?? handle}
+            isOpen={muteOpen}
+            onOpenChange={setMuteOpen}
+          />
+          <BlockUserDialog
+            did={did}
+            name={user.displayName ?? handle}
+            isOpen={blockOpen}
+            onOpenChange={setBlockOpen}
+          />
+        </>
       )}
     </>
   );

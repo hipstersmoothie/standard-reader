@@ -2016,6 +2016,43 @@ A reader's Bluesky blocks apply here, in both directions, with no setup. See
       within one process, which is enough for the single web service today. A second instance can
       still sweep the same reader concurrently; an advisory lock would make the guard cluster-wide.
 
+### Muting
+
+The lighter-weight moderation control: hide a publication or user from feeds + discovery without
+unfollowing, blocking, or telling anyone. See [`APP_VISION.md` §"Muting"](./APP_VISION.md#muting).
+
+- [x] **`app.standard-reader.graph.mute` lexicon** — one record for both subject kinds (user DID or
+      `site.standard.publication` at-uri in a format-less `subject`), deterministic `subjectRkey`,
+      added to the `authBasicFeatures` permission set. ⚠️ Publish the new lexicon **and** the
+      updated permission set (`pnpm atproto:publish-lexicons`) before deploying.
+- [x] **Read-model mirror** (migration `0039`) — `mutes` table with discriminated
+      `subject_did`/`subject_uri` columns + muter/edge indexes; firehose ingest (`upsertMute` +
+      delete case), repo-sync repair registration, tap collection filters (a no-op once the
+      Jetstream `app.standard-reader.*` wildcard lands). ⚠️ Pre-Jetstream deploys must also update
+      the live `TAP_COLLECTION_FILTERS` env override on Railway.
+- [x] **Write path** — `putMuteRecord`/`deleteMuteRecords` + `mutesApi`
+      (`api-mutes.functions.ts`): eager DB mirror on write, `needs-mute-scope` → `upgradeToMuting`
+      re-auth for pre-republish sessions (PDS 401/403 on the write is the fallback detector).
+- [x] **Enforcement** — SQL `notMutedByViewer` (author + publication-owner + publication-URI
+      branches) behind the `muteFilterDid` has-any gate on home, latest, trending, tag, search,
+      topics, discover directory + XRPC feeds; JS `filterMutedCards` on rails; muted DIDs/URIs
+      dropped from follow-feed source sets (kills recommend-sourced entries + keeps counts honest).
+      Deliberately **not** applied to direct navigation (publication/author/article pages), lists,
+      or subscriptions. Gated EXPLAIN coverage in `queries.explain.test.ts`.
+- [x] **UI** — Mute/Unmute in author + publication overflow menus (sibling-dialog pattern; mute
+      confirms, unmute is immediate), Settings → Muted management page (`/settings/muted`), Muted
+      row in settings index.
+- [x] **Muted pill on profile headers** — labeler-label-style "Muted" badge (`MutedPill`) on the
+      author and publication heroes next to `AccountLabels`, with a hover card explaining scope +
+      Unmute action; the only visible trace of a mute on pages muting leaves readable.
+- [ ] **Scrub "Recommended by X" bylines** — a card that survives via a non-muted source can still
+      credit a muted recommender in its byline; the entries themselves are filtered, the
+      attribution string is not.
+- [ ] **Translate the mutes UI** — strings need `pnpm i18n:extract` + a translation pass; they
+      render in English outside `en` until then.
+- [ ] **Digest / push / RSS parity** — blocks filter the weekly digest, push notifications and
+      per-reader RSS; mutes should too (same "arrives uninvited" argument).
+
 ---
 
 ## 15. Format conversion (`@standard-reader/converter` + CLI)

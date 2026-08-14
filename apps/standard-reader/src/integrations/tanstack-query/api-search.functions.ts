@@ -22,6 +22,11 @@ import {
   notBlockedByViewer,
 } from "#/server/blocks/blocks";
 import { ensureTracked } from "#/server/ingest/tap-client";
+import {
+  filterMutedCards,
+  muteFilterDid,
+  notMutedByViewer,
+} from "#/server/mutes/mutes";
 import { observe } from "#/server/observability/log";
 import { attachReaderSpanContext } from "#/server/observability/span-context.ts";
 import { attachCommentCountsToArticles } from "#/server/reader/document-comments";
@@ -139,7 +144,12 @@ const searchPublications = createServerFn({ method: "GET" })
         total = items.length;
       }
 
-      const visible = await filterBlockedCards(db, schema, did, items);
+      const visible = await filterMutedCards(
+        db,
+        schema,
+        did,
+        await filterBlockedCards(db, schema, did, items),
+      );
       if (visible.length !== items.length) {
         total = Math.max(0, total - (items.length - visible.length));
         items = visible;
@@ -188,7 +198,10 @@ const searchArticles = createServerFn({ method: "GET" })
         hints,
       );
       const matchClause = documentMatchSql(d, tsq, hints, authorMatch);
-      const blockDid = await blockFilterDid(db, schema, did);
+      const [blockDid, muteDid] = await Promise.all([
+        blockFilterDid(db, schema, did),
+        muteFilterDid(db, schema, did),
+      ]);
       const articleWhere = and(
         eq(d.deleted, false),
         matchClause,
@@ -204,6 +217,15 @@ const searchArticles = createServerFn({ method: "GET" })
                 sql`${d.did}`,
                 atUriAuthoritySql(sql`${d.publicationUri}`),
               ),
+            ]
+          : []),
+        ...(muteDid
+          ? [
+              notMutedByViewer(schema, muteDid, {
+                authorDidExpr: sql`${d.did}`,
+                ownerDidExpr: atUriAuthoritySql(sql`${d.publicationUri}`),
+                pubUriExpr: sql`${d.publicationUri}`,
+              }),
             ]
           : []),
       );

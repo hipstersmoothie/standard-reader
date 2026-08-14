@@ -24,6 +24,11 @@ import {
   labelSubjects,
   readLabelsForSubjects,
 } from "#/server/labeler/labels.server";
+import {
+  filterMutedCards,
+  muteFilterDid,
+  mutedSubjectsAmong,
+} from "#/server/mutes/mutes";
 import type { Span } from "#/server/observability/log";
 import { observe } from "#/server/observability/log";
 import { attachReaderSpanContext } from "#/server/observability/span-context.ts";
@@ -281,14 +286,35 @@ async function resolveHomeFeedContext(
   const excludeWebBridge = did ? (excludeWebBridgeEnabled ?? false) : false;
 
   const [
-    { publicationUris: followUris, userDids: followedUserDids },
+    { publicationUris: rawFollowUris, userDids: rawFollowedUserDids },
     blockDid,
+    muteDid,
   ] = await Promise.all([
     did
       ? effectiveFollowSets(db, schema, did)
       : Promise.resolve({ publicationUris: [], userDids: [] }),
     blockFilterDid(db, schema, did),
+    muteFilterDid(db, schema, did),
   ]);
+  // Pre-filter the follow sets rather than relying on the SQL predicate alone:
+  // removing a muted user here is what removes their *recommend*-sourced
+  // entries (the recommend union branch keys off `followedUserDids`), and
+  // removing a muted publication keeps its whole branch out of the union. The
+  // `muterDid` predicate below still catches what pre-filtering can't see —
+  // e.g. a guest post by a muted author inside a followed publication.
+  const muted =
+    muteDid && (rawFollowedUserDids.length > 0 || rawFollowUris.length > 0)
+      ? await mutedSubjectsAmong(db, schema, muteDid, {
+          dids: rawFollowedUserDids,
+          uris: rawFollowUris,
+        })
+      : null;
+  const followUris = muted
+    ? rawFollowUris.filter((uri) => !muted.uris.has(uri))
+    : rawFollowUris;
+  const followedUserDids = muted
+    ? rawFollowedUserDids.filter((mutedDid) => !muted.dids.has(mutedDid))
+    : rawFollowedUserDids;
   const hasFollows = followUris.length > 0 || followedUserDids.length > 0;
   const isTrending = scope === "trending";
   const personalized = hasFollows && scope === "follows";
@@ -303,17 +329,20 @@ async function resolveHomeFeedContext(
         followedUserDids,
         countOldPostsAsUnread,
         ...(blockDid ? { viewerDid: blockDid } : {}),
+        ...(muteDid ? { muterDid: muteDid } : {}),
         ...(trackReading && did ? { readForDid: did, unreadForDid: did } : {}),
       }
     : {
         discoverOnly: true,
         excludeWebBridge,
         ...(blockDid ? { viewerDid: blockDid } : {}),
+        ...(muteDid ? { muterDid: muteDid } : {}),
       };
 
   return {
     did,
     blockDid,
+    muteDid,
     followUris,
     followedUserDids,
     trackReading,
@@ -348,16 +377,17 @@ async function buildHomeFeedCritical(
         readForDid: trackReading && ctx.did ? ctx.did : undefined,
         excludeWebBridge: ctx.excludeWebBridge,
         viewerDid: ctx.blockDid,
+        muterDid: ctx.muteDid,
       }),
     ]);
-    // Publication rails aren't paginated, so blocked owners are dropped from
-    // the page rather than excluded in SQL — a shorter rail is fine where a
-    // shorter *feed* page would strand results behind the offset.
-    const trendingPubs = await filterBlockedCards(
+    // Publication rails aren't paginated, so blocked/muted owners are dropped
+    // from the page rather than excluded in SQL — a shorter rail is fine where
+    // a shorter *feed* page would strand results behind the offset.
+    const trendingPubs = await filterMutedCards(
       db,
       schema,
       ctx.did,
-      trendingPubsRaw,
+      await filterBlockedCards(db, schema, ctx.did, trendingPubsRaw),
     );
     span.set("trendingPublications", trendingPubs.length);
 
@@ -417,11 +447,11 @@ async function buildHomeFeedCritical(
       limit: HOME_ROW_LIMIT + 1,
     }),
   ]);
-  const trendingPubs = await filterBlockedCards(
+  const trendingPubs = await filterMutedCards(
     db,
     schema,
     ctx.did,
-    trendingPubsRaw,
+    await filterBlockedCards(db, schema, ctx.did, trendingPubsRaw),
   );
   span.set("trendingPublications", trendingPubs.length);
 
@@ -533,13 +563,14 @@ async function buildHomeFeedExtras(
           rotationSeed("home", did ?? "anon"),
           { excludeWebBridge },
         );
-  // Never recommend a publication whose owner the reader is blocked from —
-  // "you might follow" is the one rail where that would read as an endorsement.
-  const youMightFollow = await filterBlockedCards(
+  // Never recommend a publication whose owner the reader is blocked from or
+  // has muted — "you might follow" is the one rail where that would read as an
+  // endorsement.
+  const youMightFollow = await filterMutedCards(
     db,
     schema,
     did,
-    youMightFollowRaw,
+    await filterBlockedCards(db, schema, did, youMightFollowRaw),
   );
 
   span.set("youMightFollow", youMightFollow.length);
@@ -710,14 +741,32 @@ async function loadLatestFeedCritical(
   span.set("offset", data.offset);
 
   const [
-    { publicationUris: followUris, userDids: followedUserDids },
+    { publicationUris: rawFollowUris, userDids: rawFollowedUserDids },
     blockDid,
+    muteDid,
   ] = await Promise.all([
     did
       ? effectiveFollowSets(db, schema, did)
       : Promise.resolve({ publicationUris: [], userDids: [] }),
     blockFilterDid(db, schema, did),
+    muteFilterDid(db, schema, did),
   ]);
+  // Same pre-filter as the home feed: dropping muted sources from the input
+  // sets removes their recommend-sourced entries; the `muterDid` predicate
+  // catches guest posts by muted authors inside followed publications.
+  const muted =
+    muteDid && (rawFollowedUserDids.length > 0 || rawFollowUris.length > 0)
+      ? await mutedSubjectsAmong(db, schema, muteDid, {
+          dids: rawFollowedUserDids,
+          uris: rawFollowUris,
+        })
+      : null;
+  const followUris = muted
+    ? rawFollowUris.filter((uri) => !muted.uris.has(uri))
+    : rawFollowUris;
+  const followedUserDids = muted
+    ? rawFollowedUserDids.filter((mutedDid) => !muted.dids.has(mutedDid))
+    : rawFollowedUserDids;
   span.set("follows", followUris.length);
   span.set("followedUsers", followedUserDids.length);
   const trackReading = did == null ? false : trackReadingEnabled;
@@ -739,6 +788,7 @@ async function loadLatestFeedCritical(
             scope: "page",
             excludeWebBridge,
             viewerDid: blockDid,
+            muterDid: muteDid,
           })
         : []
       : await selectArticleCards(db, schema, {
@@ -753,6 +803,7 @@ async function loadLatestFeedCritical(
           readForDid: trackReading && did ? did : undefined,
           countOldPostsAsUnread,
           viewerDid: blockDid,
+          muterDid: muteDid,
           limit: data.limit,
           offset: data.offset,
         });
@@ -816,9 +867,32 @@ async function loadLatestFeedCounts(
   countOldPostsAsUnreadEnabled = true,
   excludeWebBridgeEnabled = false,
 ): Promise<LatestFeedCounts> {
-  const { publicationUris: followUris, userDids: followedUserDids } = did
-    ? await effectiveFollowSets(db, schema, did)
-    : { publicationUris: [], userDids: [] };
+  const [
+    { publicationUris: rawFollowUris, userDids: rawFollowedUserDids },
+    muteDid,
+  ] = await Promise.all([
+    did
+      ? effectiveFollowSets(db, schema, did)
+      : Promise.resolve({ publicationUris: [], userDids: [] }),
+    muteFilterDid(db, schema, did),
+  ]);
+  // Counts must agree with the rows: the feed pre-filters muted sources out of
+  // its input sets, so the badge totals drop them the same way. (Blocks skip
+  // counts entirely — the correlated predicate is too expensive for a badge —
+  // and the same goes for muted guest posts inside followed publications.)
+  const muted =
+    muteDid && (rawFollowedUserDids.length > 0 || rawFollowUris.length > 0)
+      ? await mutedSubjectsAmong(db, schema, muteDid, {
+          dids: rawFollowedUserDids,
+          uris: rawFollowUris,
+        })
+      : null;
+  const followUris = muted
+    ? rawFollowUris.filter((uri) => !muted.uris.has(uri))
+    : rawFollowUris;
+  const followedUserDids = muted
+    ? rawFollowedUserDids.filter((mutedDid) => !muted.dids.has(mutedDid))
+    : rawFollowedUserDids;
   span.set("follows", followUris.length);
   span.set("followedUsers", followedUserDids.length);
   const trackReading = did == null ? false : trackReadingEnabled;

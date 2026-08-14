@@ -37,6 +37,7 @@ export const Collections = {
   listSave: APP_NSID.listSave,
   sidebarPref: APP_NSID.sidebarPref,
   userFollow: APP_NSID.graphFollow,
+  mute: APP_NSID.graphMute,
 } as const;
 
 export type KnownCollection = (typeof Collections)[keyof typeof Collections];
