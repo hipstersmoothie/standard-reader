@@ -35,21 +35,21 @@ const DOCUMENT_URI = "at://did:plc:reader/site.standard.document/abc";
 /** Tall enough that a fraction maps to a distinctive offset. */
 const ARTICLE_HEIGHT = 5000;
 
-/** `progressGeometry`'s range for the article below: height − viewport. */
-const RANGE = ARTICLE_HEIGHT - 768;
+const VIEWPORT = 768;
 
-function offsetFor(progress: number): number {
-  return Math.round(progress * RANGE);
+/** `progressGeometry`'s range is height − viewport, so a fraction maps onto it. */
+function offsetFor(progress: number, height = ARTICLE_HEIGHT): number {
+  return Math.round(progress * (height - VIEWPORT));
 }
 
 /**
  * An `<article>` with real geometry. jsdom lays nothing out, so the two
  * measurements the hook takes are supplied by hand: the element starts at the
- * top of the document and is `ARTICLE_HEIGHT` tall.
+ * top of the document and is `height` tall.
  */
-function articleElement(): HTMLElement {
+function articleElement(height = ARTICLE_HEIGHT): HTMLElement {
   const element = document.createElement("article");
-  Object.defineProperty(element, "offsetHeight", { value: ARTICLE_HEIGHT });
+  Object.defineProperty(element, "offsetHeight", { value: height });
   element.getBoundingClientRect = () =>
     ({ top: -globalThis.scrollY }) as DOMRect;
   document.body.append(element);
@@ -78,8 +78,11 @@ function scrollTo(y: number) {
   });
 }
 
-function setup({ enabled = true }: { enabled?: boolean } = {}) {
-  const articleRef = { current: articleElement() };
+function setup({
+  enabled = true,
+  height = ARTICLE_HEIGHT,
+}: { enabled?: boolean; height?: number } = {}) {
+  const articleRef = { current: articleElement(height) };
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
@@ -235,6 +238,39 @@ describe("useReadingProgress", () => {
     });
 
     expect(globalThis.scrollY).toBe(offsetFor(0.5));
+    expect(readLocalProgress(DOCUMENT_URI)?.progress).toBe(0.5);
+    expect(setReadingProgress).not.toHaveBeenCalled();
+  });
+
+  /**
+   * The same defence, at the size articles actually are.
+   *
+   * Measured in the running app: a 1498px article on a 664px viewport restores
+   * to ~417px — the whole offset is smaller than one screen. Any "was this jump
+   * bigger than a viewport" test is dead code at that size, which is why the
+   * first attempt at this guard passed its own test and changed nothing in the
+   * browser. Landing at the top without having passed through anywhere else is
+   * the tell, and it doesn't care how tall the article is.
+   */
+  it("survives momentum on an ordinary-length article", () => {
+    writeLocalProgress(DOCUMENT_URI, 0.5);
+
+    const height = 1498;
+    setup({ height });
+    expect(globalThis.scrollY).toBe(offsetFor(0.5, height));
+    // The restore offset really is under one screen — the premise of the test.
+    expect(offsetFor(0.5, height)).toBeLessThan(VIEWPORT);
+
+    act(() => {
+      globalThis.dispatchEvent(new Event("wheel"));
+    });
+    scrollTo(0);
+
+    act(() => {
+      vi.advanceTimersByTime(2000);
+    });
+
+    expect(globalThis.scrollY).toBe(offsetFor(0.5, height));
     expect(readLocalProgress(DOCUMENT_URI)?.progress).toBe(0.5);
     expect(setReadingProgress).not.toHaveBeenCalled();
   });

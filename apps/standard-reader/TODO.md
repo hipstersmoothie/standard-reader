@@ -1124,14 +1124,26 @@ Backend/API exists; UI or copy is missing.
       outside the band delete, so one clobbered restore erased the position from the device, the
       server and the shelf: the feature appeared to work exactly once. Covered by
       [`use-reading-progress.test.ts`](src/components/reader/use-reading-progress.test.ts).
-      **Input alone does not end that window** — inertial scrolling doesn't stop because the page
-      changed, so momentum from the feed kept arriving on the article, ended the window early, and
-      handed the router's reset the same clobber by another door (reported as "restores, then
-      jumps back to the top", and permanent for the same reason). The window is given up to a
-      scroll a hand could plausibly have made; a single discrete jump to the top from more than a
-      screen away is the router's and gets corrected. The unmount flush is guarded the same way,
-      so leaving fast can't write the reset on the way out. The rule throughout: losing the
-      landing is a nuisance, losing the position is data loss, so ambiguity keeps the stored value.
+      **The router is switched off for this route rather than raced** —
+      [`routerOwnsScroll`](src/lib/router-scroll.ts), passed to `scrollRestoration` as a function.
+      Correcting after the fact meant racing three separate actors (the `onRendered` handler, the
+      inline `<script>` Start injects into the SSR'd HTML, and the `sessionStorage` cache they
+      share), and the race was lost often enough to look random. The function form guards all
+      three — including whether the inline script is emitted at all. A `#hash` keeps the router,
+      since on a hard load that script is what scrolls the anchor into view and the article view
+      declines to restore over one. Verified in a browser both ways: with restoration on, the
+      router's `scrollTo({top:0})` lands right after ours and the position is deleted; with the
+      opt-out, the only scroll calls on the page come from this hook.
+      The in-hook settle window stays as a **backstop** for anything else that scrolls unasked.
+      Input alone does not end it — inertial scrolling doesn't stop because the page changed, so
+      momentum from the feed keeps arriving here. What ends it is a scroll a hand could plausibly
+      have made; landing at the very top _without having passed through anywhere else_ is a
+      teleport and gets corrected. Deliberately not a distance test: measured in the running app,
+      a 1498px article on a 664px viewport restores to ~417px, so "was the jump taller than a
+      screen" is dead code at the size articles actually are. The unmount flush is guarded the
+      same way, so leaving fast can't write a reset on the way out. The rule throughout: losing
+      the landing is a nuisance, losing the position is data loss, so ambiguity keeps the stored
+      value.
       A `#hash` in the URL now opts out of the restore entirely — an anchor the reader asked for
       out loud outranks a position we remembered for them.
       Gated on "Track reading history"; clearing history clears positions too.

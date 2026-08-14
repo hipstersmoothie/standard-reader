@@ -253,7 +253,6 @@ export function useReadingProgress({
      * could plausibly have produced to hand the page over.
      */
     let sawUserIntent = false;
-    let lastScrollY = globalThis.scrollY;
 
     const noteUserIntent = () => {
       sawUserIntent = true;
@@ -278,19 +277,26 @@ export function useReadingProgress({
       if (settleTimer !== undefined) globalThis.clearTimeout(settleTimer);
       settleTimer = globalThis.setTimeout(endRestore, RESTORE_SETTLE_MS);
       globalThis.scrollTo(0, offsetForProgress(articleEl, target));
-      lastScrollY = globalThis.scrollY;
       setResumed(true);
     };
 
+    /** Set once a scroll lands somewhere that isn't the very top. */
+    let sawIncrementalScroll = false;
+
     /**
-     * Whether a scroll is one no hand produced: a single discrete jump to the
-     * very top, from somewhere more than a screen away. That is the shape of
-     * the router's `onRendered` reset. A reader arrives at the top the long
-     * way, through a run of small deltas, and is handed the page at the first
-     * of them.
+     * Whether a scroll is one no hand produced: it arrives at the very top,
+     * and it is the first scroll since we landed. A reader cannot get from
+     * mid-article to the top without passing through it — wheel and touch both
+     * emit a run of intermediate events, and the first of those hands the page
+     * over. Only a programmatic `scrollTo` teleports.
+     *
+     * Deliberately not a distance test. The obvious version — "a jump of more
+     * than a screen" — silently does nothing on ordinary articles, where the
+     * whole restore offset is smaller than the viewport (a 1500px article on a
+     * 660px screen restores to ~420px, so the jump is never a screen tall).
      */
-    const isProgrammaticReset = (from: number, to: number) =>
-      to <= RESTORE_TOLERANCE_PX && from - to > globalThis.innerHeight;
+    const isProgrammaticReset = (to: number) =>
+      to <= RESTORE_TOLERANCE_PX && !sawIncrementalScroll;
 
     const sync = () => {
       const next = measureProgress(articleEl);
@@ -335,7 +341,6 @@ export function useReadingProgress({
         applyRestore(stored.progress);
       } else {
         globalThis.scrollTo(0, 0);
-        lastScrollY = globalThis.scrollY;
       }
     }
 
@@ -345,26 +350,26 @@ export function useReadingProgress({
     //
     // While the settle window is live, *we* are the one steering — so a scroll
     // we didn't ask for is something else's, and gets corrected rather than
-    // recorded. The router is the one that always does this: its
-    // `scrollRestoration` handler runs on `onRendered`, from a layout effect
-    // mounted as a sibling *after* the route's own tree, so on every in-app
-    // navigation it scrolls a freshly-restored article back to the top a beat
-    // after the restore. Saving that would be worse than losing the landing:
-    // a measured 0 is written straight through to both stores, and writes
-    // outside the 2–95% band delete — one clobbered restore and the position
-    // is gone from this device, the server, and the shelf.
+    // recorded. This is now a backstop rather than the mechanism: the router
+    // used to be the reliable offender — its handler runs on `onRendered`, from
+    // a layout effect mounted as a sibling *after* the route's own tree, so on
+    // every in-app navigation it scrolled a freshly-restored article back to the
+    // top a beat later — and it is switched off for this route outright (see
+    // `routerOwnsScroll`). What remains is defence against anything else that
+    // scrolls without asking, because the cost is asymmetric: a measured 0 is
+    // written straight through to both stores, and writes outside the 2–95%
+    // band delete, so one clobbered restore takes the position off this device,
+    // off the server, and off the shelf.
     //
     // So the window is given up to a scroll the reader plausibly made, and
-    // never to the router's reset — input alone is not enough to end it,
-    // because momentum from the previous page is input the reader is no longer
-    // making.
+    // never to a teleport — input alone is not enough to end it, because
+    // momentum from the previous page is input the reader is no longer making.
     const onScroll = () => {
-      const from = lastScrollY;
       const to = globalThis.scrollY;
-      lastScrollY = to;
+      if (to > RESTORE_TOLERANCE_PX) sawIncrementalScroll = true;
 
       if (restoreTarget !== null) {
-        if (sawUserIntent && !isProgrammaticReset(from, to)) {
+        if (sawUserIntent && !isProgrammaticReset(to)) {
           endRestore();
           sync();
           scheduleSave();
@@ -374,7 +379,6 @@ export function useReadingProgress({
         const target = offsetForProgress(articleEl, restoreTarget);
         if (Math.abs(to - target) > RESTORE_TOLERANCE_PX) {
           globalThis.scrollTo(0, target);
-          lastScrollY = globalThis.scrollY;
         }
         sync();
         return;
