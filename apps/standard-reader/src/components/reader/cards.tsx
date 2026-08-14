@@ -452,6 +452,29 @@ const styles = stylex.create({
   metaDot: {
     color: uiColor.text1,
   },
+  progressMeta: {
+    alignItems: "center",
+    columnGap: gap.sm,
+    display: "inline-flex",
+    // Digits change width as the number climbs; without this the bar beside
+    // them twitches left and right between 9% and 10%.
+    fontVariantNumeric: "tabular-nums",
+  },
+  progressTrack: {
+    backgroundColor: uiColor.component2,
+    borderRadius: radius.full,
+    display: "block",
+    flexShrink: 0,
+    height: spacing["1"],
+    overflow: "hidden",
+    width: spacing["14"],
+  },
+  progressFill: {
+    backgroundColor: primaryColor.solid1,
+    borderRadius: radius.full,
+    display: "block",
+    height: "100%",
+  },
   botByline: {
     alignItems: "center",
     color: uiColor.text1,
@@ -1284,13 +1307,52 @@ function CollectionMagazineMeta() {
   );
 }
 
+/**
+ * How far into an article the reader got — the Continue reading shelf's one
+ * extra fact.
+ *
+ * It leads the meta line rather than sitting under the row, so the number lands
+ * beside the title it describes; a full-width bar below the row's closing rule
+ * read as a page divider belonging to whatever came next. Camel rather than
+ * ink, because the accent is this app's state-indicator colour and progress is
+ * a state — an ink bar outweighed the headline it was annotating.
+ */
+function ReadingProgressMeta({ progress }: { progress: number }) {
+  const { t, i18n } = useLingui();
+  // Round toward the middle: never 0% on something started, never 100% on
+  // something unfinished.
+  const percent = Math.min(99, Math.max(1, Math.round(progress * 100)));
+  const formatted = i18n.number(progress, { style: "percent" });
+
+  return (
+    // One `img` with a full label: sighted readers get the compact "37%" beside
+    // the bar, screen readers get "37% read" instead of a bare number.
+    <span
+      {...stylex.props(styles.progressMeta)}
+      role="img"
+      aria-label={t`${formatted} read`}
+    >
+      <span aria-hidden {...stylex.props(styles.progressTrack)}>
+        <span
+          {...stylex.props(styles.progressFill)}
+          style={{ width: `${percent}%` }}
+        />
+      </span>
+      <span aria-hidden>{formatted}</span>
+    </span>
+  );
+}
+
 function ArticleMetaLine({
   article,
   metaLabels,
+  progress,
 }: {
   article: ArticleCard;
   /** When set, replaces article tags in the meta line (e.g. labeler label values). */
   metaLabels?: Array<{ src: string; val: string }>;
+  /** 0–1 reading position; leads the line on the Continue reading shelf. */
+  progress?: number | null;
 }) {
   const metricsVisible = useEngagementCountsVisible();
   const hasEngagement =
@@ -1317,10 +1379,19 @@ function ArticleMetaLine({
   const hasCardLabels = cardLabelVals.length > 0;
   const hasMetaLabels = metaLabels != null && metaLabels.length > 0;
   const hasTrailing = hasTopics || hasCardLabels || hasMetaLabels;
-  if (!showCollection && !hasEngagement && !hasTrailing) return null;
+  const hasProgress = progress != null;
+  if (!hasProgress && !showCollection && !hasEngagement && !hasTrailing) {
+    return null;
+  }
 
   return (
     <MetaLine>
+      {hasProgress ? <ReadingProgressMeta progress={progress} /> : null}
+      {hasProgress && (showCollection || hasEngagement || hasTrailing) ? (
+        <span aria-hidden {...stylex.props(styles.metaDot)}>
+          ·
+        </span>
+      ) : null}
       {showCollection ? <CollectionMagazineMeta /> : null}
       {showCollection && (hasEngagement || hasTrailing) ? (
         <span aria-hidden {...stylex.props(styles.metaDot)}>
@@ -1863,6 +1934,7 @@ export function ArticleRow({
   isFirstInSection = false,
   assumeBookmarked,
   metaLabels,
+  progress,
 }: {
   article: ArticleCard;
   unread?: boolean;
@@ -1876,6 +1948,8 @@ export function ArticleRow({
   isFirstInSection?: boolean;
   /** Skip per-row bookmark status fetches when the list is already the save queue. */
   assumeBookmarked?: boolean;
+  /** 0–1 reading position, shown leading the meta line (Continue reading). */
+  progress?: number | null;
   /** When set, replaces article tags in the meta line (e.g. labeler label values). */
   metaLabels?: Array<{ src: string; val: string }>;
 }) {
@@ -1941,7 +2015,11 @@ export function ArticleRow({
           unreadDotStyle={styles.unreadDotRow}
         />
         <ArticleSearchDek article={article} style={styles.rowDek} />
-        <ArticleMetaLine article={article} metaLabels={metaLabels} />
+        <ArticleMetaLine
+          article={article}
+          metaLabels={metaLabels}
+          progress={progress}
+        />
       </Flex>
       {cover ? (
         <AspectRatio

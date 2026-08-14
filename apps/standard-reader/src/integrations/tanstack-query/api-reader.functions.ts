@@ -1932,7 +1932,12 @@ function getReadingHistoryInfiniteQueryOptions({
     queryFn: async ({ pageParam }) =>
       getReadingHistory({ data: { limit, offset: pageParam } }),
     initialPageParam: 0,
-    getNextPageParam: (lastPage) => lastPage.nextOffset ?? undefined,
+    // `lastPage?` rather than `lastPage.`: a page can be missing when a fetch
+    // resolved without one (seen against a database that was erroring), and an
+    // unguarded read throws out of render — taking down a `/history` whose own
+    // rows loaded fine. The same unguarded shape is on every other infinite
+    // query in the app; this is the one observed to crash.
+    getNextPageParam: (lastPage) => lastPage?.nextOffset ?? undefined,
   });
 }
 

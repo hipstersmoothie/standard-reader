@@ -577,9 +577,17 @@ comic issue with no pages falls back to it outright.
 - Signed-in reader's **reading history** (`app.standard-reader.read`), newest first — every
   article opened while signed in.
 - Opens with a **Continue reading** shelf: up to six articles the reader is partway through,
-  most recently touched first, each with a percentage-read meter. Short on purpose — it is a
-  prompt to pick something back up, not another backlog. It is an extra on this page, never
-  fatal: offline (or on any error) it simply doesn't render and the cached history still does.
+  most recently touched first. Short on purpose — it is a prompt to pick something back up,
+  not another backlog. It is an extra on this page, never fatal: offline (or on any error) it
+  simply doesn't render and the cached history still does.
+- The shelf's rows are the **same rows as the list below it**; what separates the two sections
+  is the heading plus the one fact these rows carry and those don't. That fact — how far in the
+  reader got — leads each row's existing meta line, as a 56px camel meter and a percentage, so
+  the number sits beside the title it describes. It is deliberately not a full-width bar under
+  the row: at page width it outweighed the headline it annotated, and below the row's closing
+  rule it read as a divider belonging to the next section. Camel because the accent is this
+  app's state-indicator colour and progress is a state; near-ink made it the heaviest element
+  on the page, which inverts "the reading leads; the UI recedes".
 - Route `/history`; linked from the user menu. Requires auth (redirects to login).
 
 ### Reader profile (saved for later)
