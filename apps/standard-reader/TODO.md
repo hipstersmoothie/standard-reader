@@ -1226,6 +1226,19 @@ Backend/API exists; UI or copy is missing.
       bodies are already-read and unbounded, and the storage budget belongs to the backlog, so a
       row without a body dims instead.
       [`RouteError`](src/components/route-error.tsx) is the app-wide `defaultErrorComponent`.
+- [x] **"Offline" is probed, never asserted** — a reader on a WebView browser (Via, Android 14)
+      got the whole offline treatment on a working connection: wordmark reading "Offline Reader",
+      Discover/Search/Collections gone from the nav, `/latest` bounced off its network-wide
+      filters, pull-to-refresh disabled. Chromium's Android WebView returns
+      `navigator.onLine === false` for the life of the page unless the embedding app holds
+      `ACCESS_NETWORK_STATE`, and fires no `online` event to correct it.
+      [`online-status.ts`](src/lib/online-status.ts) is now the single verdict and treats the flag
+      as a hint: a claimed connection is believed immediately, a claimed _disconnection_ is
+      checked with one uncached same-origin request (`/robots.txt`, which no service-worker route
+      matches, so a cached answer can't fake reachability). Only a network-level failure counts as
+      offline; while offline it re-probes on an interval, on foreground, and whenever a query
+      fails. `useOnlineStatus`, `offlineAwareRetry` and `offline-sync` all read it — the last of
+      those was refusing to sync at all on those browsers.
 - [x] **Content rendering gaps** — PCKT gallery renderer (`blog.pckt.block.gallery`); prod scan
       found 54 documents — implemented grid/list/carousel/masonry layouts via
       [`pckt-gallery.tsx`](src/components/reader/content/renderers/pckt-gallery.tsx).

@@ -1,32 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
+
+import { isOnline, subscribeToOnlineStatus } from "#/lib/online-status";
 
 /**
- * Whether the browser currently reports a connection.
+ * Whether the app can currently reach the network.
  *
- * Starts `true` and corrects after mount on purpose: `navigator` does not exist
- * during SSR, and rendering an "offline" state into server markup that the
- * client then has to undo is a hydration mismatch on every request.
+ * Thin subscription over {@link isOnline} — see `online-status.ts` for why the
+ * verdict is a probed one rather than `navigator.onLine`, which some Android
+ * WebView browsers report as `false` forever on a working connection.
  *
- * `navigator.onLine` only knows whether there is *a* network interface, not
- * whether anything is reachable — so treat `false` as reliable ("definitely
- * offline") and `true` as optimistic. Everything here keys off the reliable
- * direction: hiding what cannot work, and explaining a failure after it happens.
+ * The server snapshot is `true` and the client's first snapshot matches it on
+ * purpose: `navigator` does not exist during SSR, and rendering an "offline"
+ * state into server markup that the client then has to undo is a hydration
+ * mismatch on every request. `false` still means "definitely offline"; it just
+ * arrives after a failed request rather than on a flag's say-so.
  */
 export function useOnlineStatus(): boolean {
-  const [online, setOnline] = useState(true);
-
-  useEffect(() => {
-    const sync = () => setOnline(globalThis.navigator?.onLine !== false);
-    sync();
-    globalThis.addEventListener?.("online", sync);
-    globalThis.addEventListener?.("offline", sync);
-    return () => {
-      globalThis.removeEventListener?.("online", sync);
-      globalThis.removeEventListener?.("offline", sync);
-    };
-  }, []);
-
-  return online;
+  return useSyncExternalStore(subscribeToOnlineStatus, isOnline, () => true);
 }

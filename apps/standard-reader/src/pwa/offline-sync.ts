@@ -44,6 +44,11 @@ import {
 } from "#/integrations/tanstack-query/api-reader.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
 import { documentImages } from "#/lib/document/images";
+// Never `navigator.onLine` directly: browsers that misreport the flag (Android
+// WebView without `ACCESS_NETWORK_STATE`) would otherwise refuse to sync
+// forever on a perfectly good connection — the one place that lie costs a
+// reader their whole offline library rather than a bit of chrome.
+import { isOffline, subscribeToOnlineStatus } from "#/lib/online-status";
 import { parseAtUri } from "#/server/atproto/uri";
 import { listRefFromUri } from "#/server/reader/saved-lists";
 
@@ -186,16 +191,6 @@ export function isOfflineReadingEnabled(): boolean {
   } catch {
     return true;
   }
-}
-
-/**
- * Read through a function rather than inline: an early
- * `if (navigator.onLine === false) return` narrows the global to `true` for the
- * rest of the enclosing function, and the loops below re-check it after
- * awaiting.
- */
-function isOffline(): boolean {
-  return globalThis.navigator?.onLine === false;
 }
 
 /** True when the reader has asked the OS to conserve data. */
@@ -1192,15 +1187,20 @@ export function startOfflineSync(router: AnyRouter): () => void {
   const onVisible = () => {
     if (globalThis.document?.visibilityState === "visible") start();
   };
-  globalThis.addEventListener?.("online", start);
-  globalThis.addEventListener?.("offline", stopOfflineSync);
+  // The shared verdict rather than the raw `online`/`offline` events: on a
+  // browser that misreports `navigator.onLine` those events never fire at all,
+  // so the connection coming back would otherwise go unnoticed until the next
+  // interval tick.
+  const unsubscribe = subscribeToOnlineStatus((online) => {
+    if (online) start();
+    else stopOfflineSync();
+  });
   globalThis.document?.addEventListener("visibilitychange", onVisible);
 
   return () => {
     globalThis.clearTimeout(timer);
     globalThis.clearInterval(interval);
-    globalThis.removeEventListener?.("online", start);
-    globalThis.removeEventListener?.("offline", stopOfflineSync);
+    unsubscribe();
     globalThis.document?.removeEventListener("visibilitychange", onVisible);
     stopOfflineSync();
   };

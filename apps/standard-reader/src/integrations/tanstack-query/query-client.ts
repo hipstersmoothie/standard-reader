@@ -1,6 +1,7 @@
 import { MutationCache, QueryClient, isServer } from "@tanstack/react-query";
 
 import { isAtprotoScopeMissingError } from "#/lib/atproto/scope-error";
+import { isOffline, recheckOnlineStatus } from "#/lib/online-status";
 
 const DEFAULT_QUERY_STALE_TIME_MS = 60 * 1000;
 
@@ -16,9 +17,15 @@ const DEFAULT_QUERY_RETRY_COUNT = 3;
  * reach the same answer, because nothing about being offline changes between
  * attempts. Fail on the first miss so the offline state renders immediately;
  * React Query refetches on `online` anyway.
+ *
+ * A failed request is also the best evidence there is that the connection has
+ * gone, so it re-opens the question — on a browser that misreports
+ * `navigator.onLine` (see `#/lib/online-status`) no `offline` event ever
+ * arrives, and this is the only moment anything notices.
  */
 function offlineAwareRetry(failureCount: number): boolean {
-  if (globalThis.navigator?.onLine === false) return false;
+  if (isOffline()) return false;
+  recheckOnlineStatus();
   return failureCount < DEFAULT_QUERY_RETRY_COUNT;
 }
 
