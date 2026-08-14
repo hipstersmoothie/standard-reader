@@ -61,6 +61,7 @@ import {
   publicationUriFromParams,
 } from "../components/reader/format";
 import { formatLastActive } from "../components/reader/format-i18n";
+import { MutedPill } from "../components/reader/muted-pill";
 import {
   Handle,
   PublicationAvatar,
@@ -842,7 +843,10 @@ function PublicationProfileContent({
 
           {/* Below the description, matching the author profile: a label is a
               third party's statement about this account, so it reads after the
-              publication's own words rather than interrupting its identity line. */}
+              publication's own words rather than interrupting its identity line.
+              The muted pill sits with them — the reader's own label, and the
+              only visible trace of a mute on a page muting leaves readable. */}
+          <MutedPill subject={pub.uri} kind="publication" signedIn={signedIn} />
           <AccountLabelsForDid did={pub.did} readerScope={readerScope} />
 
           <div {...stylex.props(styles.statStrip)}>

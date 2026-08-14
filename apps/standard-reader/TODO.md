@@ -2042,6 +2042,9 @@ unfollowing, blocking, or telling anyone. See [`APP_VISION.md` §"Muting"](./APP
 - [x] **UI** — Mute/Unmute in author + publication overflow menus (sibling-dialog pattern; mute
       confirms, unmute is immediate), Settings → Muted management page (`/settings/muted`), Muted
       row in settings index.
+- [x] **Muted pill on profile headers** — labeler-label-style "Muted" badge (`MutedPill`) on the
+      author and publication heroes next to `AccountLabels`, with a hover card explaining scope +
+      Unmute action; the only visible trace of a mute on pages muting leaves readable.
 - [ ] **Scrub "Recommended by X" bylines** — a card that survives via a non-muted source can still
       credit a muted recommender in its byline; the entries themselves are filtered, the
       attribution string is not.

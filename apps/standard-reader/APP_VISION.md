@@ -1366,6 +1366,11 @@ reversibly.
 - **UI**: Mute/Unmute in the author and publication overflow menus (next to Block; mute confirms,
   unmute is immediate), and **Settings → Muted** lists both kinds with unmute — every row still
   links to the page it hides, because muting never takes those pages away.
+- **A muted page says so.** Because muting leaves the profile readable, a muted author or
+  publication page would otherwise look identical to an unmuted one. A "Muted" pill renders on the
+  header in the same visual register as a labeler label (`MutedPill`, next to `AccountLabels`) —
+  it's the reader's own statement about the account — with a hover card explaining the scope and
+  carrying the Unmute action and a link to Settings → Muted.
 
 ---
 

@@ -222,6 +222,7 @@ msgstr "That means you can build in whichever direction you need — read the in
 #: src/components/labelers-settings-view.tsx
 #: src/components/muted-settings-view.tsx
 #: src/components/reader/mute-menu-item.tsx
+#: src/components/reader/muted-pill.tsx
 #: src/components/user-settings-view.tsx
 msgid "Muted"
 msgstr "Muted"
@@ -3083,6 +3084,10 @@ msgstr "Warn"
 msgid "What it does"
 msgstr "What it does"
 
+#: src/components/reader/muted-pill.tsx
+msgid "Muted by you"
+msgstr "Muted by you"
+
 #: src/components/feedback/feedback-dialog.tsx
 #: src/components/reader/save-to-collection-dialog.tsx
 #: src/components/reader/subscriptions-table.tsx
@@ -3395,6 +3400,10 @@ msgstr "Select any image in an article to open it full size. If the article has 
 #: src/routes/_layout.collections.index.tsx
 msgid "{0, plural, one {follower} other {followers}}"
 msgstr "{0, plural, one {follower} other {followers}}"
+
+#: src/components/reader/muted-pill.tsx
+msgid "This publication is muted"
+msgstr "This publication is muted"
 
 #: src/components/reader/about-view.tsx
 #~ msgid "Most readers stop at what you already subscribe to. Standard Reader treats finding your next favourite as part of the job. Browse all {countLabel} publications on the network — not just the handful you've heard of."
@@ -4369,6 +4378,7 @@ msgstr "Compare before and after images"
 msgid "No matching people."
 msgstr "No matching people."
 
+#: src/components/reader/muted-pill.tsx
 #: src/components/user-settings-view.tsx
 msgid "Manage mutes"
 msgstr "Manage mutes"
@@ -4676,6 +4686,7 @@ msgid "{days}d ago"
 msgstr "{days}d ago"
 
 #: src/components/reader/mute-menu-item.tsx
+#: src/components/reader/muted-pill.tsx
 msgid "Unmuted"
 msgstr "Unmuted"
 
@@ -5281,6 +5292,7 @@ msgstr "Not in the directory yet?"
 #: src/components/reader/block-user-menu-item.tsx
 #: src/components/reader/blocked-notice.tsx
 #: src/components/reader/mute-menu-item.tsx
+#: src/components/reader/muted-pill.tsx
 #: src/components/reader/notify-button.tsx
 #: src/components/reader/page-reader-bar.tsx
 #: src/components/route-error.tsx
@@ -6050,6 +6062,7 @@ msgid "No lists yet — switch to New list to create one."
 msgstr "No lists yet — switch to New list to create one."
 
 #: src/components/reader/mute-menu-item.tsx
+#: src/components/reader/muted-pill.tsx
 msgid "We couldn't remove the mute from your account. Try again?"
 msgstr "We couldn't remove the mute from your account. Try again?"
 
@@ -6293,6 +6306,7 @@ msgstr "Unfollow?"
 
 #: src/components/muted-settings-view.tsx
 #: src/components/reader/mute-menu-item.tsx
+#: src/components/reader/muted-pill.tsx
 msgid "Unmute"
 msgstr "Unmute"
 
@@ -6384,6 +6398,10 @@ msgstr "Labels articles here"
 #: src/components/guide/pages/getting-started-guide-page.tsx
 msgid "the queue of articles you put aside. A badge shows how many are waiting."
 msgstr "the queue of articles you put aside. A badge shows how many are waiting."
+
+#: src/components/reader/muted-pill.tsx
+msgid "This publication will show up in your feeds again."
+msgstr "This publication will show up in your feeds again."
 
 #: src/routes/_layout.recommended.tsx
 msgid "Articles you've recommended across the network."
@@ -7093,9 +7111,17 @@ msgstr "It follows you"
 #~ msgid "Every renderer takes one input for the document — the content payload of a <0>site.standard.document</0>. The format is detected from the payload's <1>$type</1>."
 #~ msgstr "Every renderer takes one input for the document — the content payload of a <0>site.standard.document</0>. The format is detected from the payload's <1>$type</1>."
 
+#: src/components/reader/muted-pill.tsx
+msgid "Its articles are hidden from your feeds, search and discovery. Your subscription is untouched, and this page still works."
+msgstr "Its articles are hidden from your feeds, search and discovery. Your subscription is untouched, and this page still works."
+
 #: src/routes/_layout.tag.$tag.tsx
 msgid "Tag"
 msgstr "Tag"
+
+#: src/components/reader/muted-pill.tsx
+msgid "Their articles, publications and recommendations are hidden from your feeds, search and discovery. Your subscriptions are untouched, and this page still works."
+msgstr "Their articles, publications and recommendations are hidden from your feeds, search and discovery. Your subscriptions are untouched, and this page still works."
 
 #: src/components/docs/renderers-docs-page.tsx
 #~ msgid "The React package, for example. With no <0>components</0> prop, a document renders as unstyled semantic HTML."
@@ -7180,6 +7206,7 @@ msgid "Muted here"
 msgstr "Muted here"
 
 #: src/components/reader/mute-menu-item.tsx
+#: src/components/reader/muted-pill.tsx
 msgid "They'll show up in your feeds again."
 msgstr "They'll show up in your feeds again."
 
@@ -8154,6 +8181,10 @@ msgstr "Semble"
 #: src/components/user-settings-view.tsx
 msgid "Last used {0}"
 msgstr "Last used {0}"
+
+#: src/components/reader/muted-pill.tsx
+msgid "This person is muted"
+msgstr "This person is muted"
 
 #: src/routes/_layout.feedback.index.tsx
 msgid "No feedback matches your filters."

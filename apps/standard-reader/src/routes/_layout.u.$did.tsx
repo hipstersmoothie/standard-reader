@@ -75,6 +75,7 @@ import { BlockedNotice } from "../components/reader/blocked-notice";
 import { ArticleRow, PubDirectoryRow } from "../components/reader/cards";
 import { FeedLoadMore } from "../components/reader/feed-load-more";
 import { LinkifiedText } from "../components/reader/linkified-text";
+import { MutedPill } from "../components/reader/muted-pill";
 import {
   Handle,
   Kicker,
@@ -773,7 +774,17 @@ function AuthorProfileContent({
 
           {/* Below the bio rather than beside the handle: a label is something a
               third party says about this account, so it reads after the account's
-              own words instead of interrupting its identity line. */}
+              own words instead of interrupting its identity line. The muted
+              pill sits with them — it's the reader's own label on this account,
+              and without it a muted profile would look identical to an unmuted
+              one (muting deliberately leaves this page readable). */}
+          {isOwnProfile ? null : (
+            <MutedPill
+              subject={did}
+              kind="user"
+              signedIn={session?.user?.did != null}
+            />
+          )}
           <AccountLabels labels={accountLabels} />
         </div>
       </div>
