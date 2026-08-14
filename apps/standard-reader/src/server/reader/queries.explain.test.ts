@@ -141,6 +141,41 @@ describe.skipIf(!RUN)("follow-feed block filter — EXPLAIN", () => {
 });
 
 /**
+ * The mute filter on the follow feed — same shape and same hazard as the block
+ * filter above: `notMutedByViewer` is up to three correlated `NOT EXISTS`
+ * inside `baseWhere`, and it must not push the per-source laterals off their
+ * `ORDER BY published_at DESC LIMIT k` index scans. As with blocks this is the
+ * worst case by construction — `muteFilterDid` keeps the predicate out of the
+ * query for readers who mute nothing.
+ */
+describe.skipIf(!RUN)("follow-feed mute filter — EXPLAIN", () => {
+  test("mute filter does not defeat the per-source index scans", async () => {
+    const plan = await explainCandidate({
+      unreadForDid: READER_DID,
+      countOldPostsAsUnread: true,
+      muterDid: READER_DID,
+    });
+
+    assertNoSeqScanOnDocuments(plan);
+    assertPerSourceIndexScans(plan);
+    assertExecTimeUnder(plan, BLOCK_FILTER_BUDGET_MS);
+  }, 30_000);
+
+  test("block + mute filters together stay on the index scans", async () => {
+    const plan = await explainCandidate({
+      unreadForDid: READER_DID,
+      countOldPostsAsUnread: true,
+      viewerDid: READER_DID,
+      muterDid: READER_DID,
+    });
+
+    assertNoSeqScanOnDocuments(plan);
+    assertPerSourceIndexScans(plan);
+    assertExecTimeUnder(plan, BLOCK_FILTER_BUDGET_MS);
+  }, 30_000);
+});
+
+/**
  * The Latest "All" tab badge. This was a ~1.08s parallel seq scan over every
  * `documents` row on `/latest`'s blocking route loader before it moved to the
  * `network_stats` scalar (`recomputeNetworkStats()`).
@@ -238,11 +273,14 @@ async function explainCandidate({
   unreadForDid,
   countOldPostsAsUnread,
   viewerDid,
+  muterDid,
 }: {
   unreadForDid: string;
   countOldPostsAsUnread: boolean | undefined;
   /** Set to force the block predicate on — see the block-filter describe. */
   viewerDid?: string;
+  /** Set to force the mute predicate on — see the mute-filter describe. */
+  muterDid?: string;
 }): Promise<string> {
   const [publicationUris, followedUserDids] = await Promise.all([
     selectFollowUris(db, schema, READER_DID),
@@ -264,6 +302,7 @@ async function explainCandidate({
     unreadForDid,
     countOldPostsAsUnread,
     viewerDid,
+    muterDid,
     limit: PAGE_LIMIT,
     offset: PAGE_OFFSET,
   });

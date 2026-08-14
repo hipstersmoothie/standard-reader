@@ -427,6 +427,32 @@ export function hasUserinputUpvoteScope(
 }
 
 /**
+ * Detect whether the granted scope includes the mute writer tier
+ * (`app.standard-reader.graph.mute`, part of the `authBasicFeatures` set).
+ * Accepts the `include:app.standard-reader.authBasicFeatures` set token
+ * verbatim, or (if the PDS expanded the set) a granular
+ * `repo?collection=app.standard-reader.graph.mute` token — with or without
+ * `action=create` — or the action-less `repo:` form.
+ *
+ * The verbatim `include:` check is optimistic for sessions granted *before*
+ * the set was republished with the mute collection: whether such a grant
+ * covers the new NSID depends on whether the PDS resolves sets at token-use
+ * time or froze the expansion at grant. The mute write path treats a PDS
+ * scope rejection as the truth and maps it to a re-auth prompt, so this
+ * helper only needs to be right for the common case.
+ */
+export function hasMuteWriteScope(
+  grantedScope: string | null | undefined,
+): boolean {
+  if (!grantedScope) return false;
+  const tokens = grantedScope.split(/\s+/);
+  if (tokens.includes(AUTH_BASIC_FEATURES)) return true;
+  return tokens.some((token) =>
+    repoScopeAllowsCreateForCollection(token, APP_NSID.graphMute),
+  );
+}
+
+/**
  * Detect whether the granted scope includes the Margin save writer tier.
  * Accepts the `include:at.margin.authFull` set token verbatim, or (if the PDS
  * expanded the set) a granular `repo?collection=at.margin.note` token — with

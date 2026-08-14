@@ -10,6 +10,7 @@ import {
   resolvePageUrl,
   resolvePageUrls,
 } from "#/server/extension/resolve-page-url.server";
+import { muteFilterDid } from "#/server/mutes/mutes";
 import { selectPublicationHeader } from "#/server/reader/publication-header";
 import {
   discoverDirectoryPublications,
@@ -223,6 +224,7 @@ export async function handleGetPublications(ctx: XrpcRequestContext) {
     query: q ?? undefined,
     excludeWebBridge: ctx.excludeWebBridgeEnabled,
     viewerDid: await blockFilterDid(ctx.db, ctx.schema, ctx.auth?.did),
+    muterDid: await muteFilterDid(ctx.db, ctx.schema, ctx.auth?.did),
   });
 
   const total =
@@ -330,6 +332,8 @@ export async function handleGetPublicationDocuments(ctx: XrpcRequestContext) {
     offset,
     readForDid,
     countOldPostsAsUnread: ctx.auth ? ctx.countOldPostsAsUnreadEnabled : true,
+    // No mute filter: this is the publication's own document list, and muting
+    // only hides content from feeds + discovery — direct navigation still works.
     viewerDid: await blockFilterDid(ctx.db, ctx.schema, ctx.auth?.did),
   });
   const items = await enrichDocuments(ctx, rows, readForDid);

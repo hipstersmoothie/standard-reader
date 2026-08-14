@@ -780,6 +780,59 @@ const upgradeToBlocking = createServerFn({ method: "POST" })
   });
 
 /**
+ * Scope refresh for mute writes: re-authorize the signed-in reader so their
+ * session picks up the republished `authBasicFeatures` set, whose collection
+ * list now includes `app.standard-reader.graph.mute`.
+ *
+ * Unlike {@link upgradeToBlocking} there is no opt-in flag to persist and no
+ * extra scope to request — mute lives inside the basic set every login already
+ * asks for, so the plain resolved scope is the right request. This exists only
+ * for sessions granted before the set was republished, whose tokens may not
+ * cover the new collection (the write path detects that and routes here).
+ */
+const upgradeToMuting = createServerFn({ method: "POST" })
+  .validator(upgradeToCollectionsInputSchema)
+  .handler(async ({ data }) => {
+    const request = getRequest();
+    const { getReaderContextForRequest } =
+      await import("#/middleware/auth-session.server");
+
+    const reader = await getReaderContextForRequest(request);
+    if (!reader) {
+      throw new Error("Unauthorized");
+    }
+
+    try {
+      await revokeAtprotoSession(
+        reader.did as Parameters<typeof revokeAtprotoSession>[0],
+      );
+    } catch (error) {
+      console.warn(
+        "Failed to revoke Atproto session during muting upgrade:",
+        error,
+      );
+    }
+
+    const redirectTarget = sanitizeAuthRedirectTarget(
+      data.redirect,
+      request.url,
+    );
+
+    const { url } = await atprotoOAuth.authorize({
+      target: {
+        type: "account",
+        identifier: reader.did as ActorIdentifier,
+      },
+      scope: await resolveUpgradeScope(reader.userId, {}),
+      state: {
+        redirect: redirectTarget,
+      },
+    });
+
+    return { authorizationUrl: url.toString() };
+  });
+
+/**
  * Progressive scope upgrade: opt the signed-in reader into saving articles to
  * their Semble collections. Mirrors {@link upgradeToMargin} for
  * `SEMBLE_FULL_SCOPE` / `user.sembleSaveEnabled`.
@@ -936,6 +989,7 @@ export const auth = {
   upgradeToMargin,
   upgradeToSemble,
   upgradeToBlocking,
+  upgradeToMuting,
   upgradeToWeeklyDigest,
   disableWeeklyDigest,
   getSavedHandles: getSavedHandlesServer,

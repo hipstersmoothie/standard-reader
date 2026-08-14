@@ -892,7 +892,7 @@ upstream `site.standard.auth*` sets (published by standard.site — see
 
 | Tier                                | App-owned set (we publish)                      | site.standard set (we reference)         | Covers                                                                               |
 | ----------------------------------- | ----------------------------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------ |
-| **Basic** (default sign-in)         | `include:app.standard-reader.authBasicFeatures` | `include:site.standard.authSocial`       | bookmark, read, list, listSave, labelerSubscription + follows + likes                |
+| **Basic** (default sign-in)         | `include:app.standard-reader.authBasicFeatures` | `include:site.standard.authSocial`       | bookmark, read, list, listSave, labelerSubscription, graph.mute + follows + likes    |
 | **Collections authoring** (upgrade) | `+ include:app.standard-reader.authCollections` | swap to `include:site.standard.authFull` | collection, collectionsPublication, publicationTheme + publication + document writes |
 | **Subscribe embed**                 | —                                               | `include:site.standard.authSocial`       | subscription write (also covers recommend)                                           |
 
@@ -1000,6 +1000,10 @@ re-auth because `prompt: consent` re-consent isn't reliable across PDS providers
     `publications` at-uris of `site.standard.publication` records + `createdAt`; tid rkey).
   - `app.standard-reader.listSave` — another reader's list saved into this app (`list` at-uri +
     `createdAt`; deterministic rkey so save/unsave/status address one record).
+  - `app.standard-reader.graph.mute` — a muted subject: a user DID **or** a
+    `site.standard.publication` at-uri in one format-less `subject` string (the lexicon has no
+    did-or-at-uri format; app code classifies). Presence means muted; deterministic rkey via
+    `subjectRkey`. One direction, feeds + discovery only — see "Muting" below.
   - `app.standard-reader.collection` — curated magazine manifest for a
     `site.standard.document` (same rkey sidecar: editorial, colophon, ordered items).
     Editorial body, colophon, and per-item notes are stored as `at.markpub.markdown`.
@@ -1324,6 +1328,44 @@ A reader's blocks follow them here, in both directions, with no setup and no imp
 - **A hidden reply is explained, not just missing.** The Discussion badge is the cached, unfiltered
   count (a per-reader count would need a per-reader cache), so the section reports how many replies
   the reader's blocks removed instead of showing "No discussion yet" under a badge reading 6.
+
+### Muting
+
+The lighter-weight "stop showing me this": a reader mutes a **publication** or a **user**, and the
+muted subject disappears from their feeds and discovery — quietly, one-directionally, and
+reversibly.
+
+- **Muting vs blocking.** A block is a portable Bluesky record, bidirectional, and absolute — it
+  hides pages, discussion, everything, in both directions. A mute is an **app-local visibility
+  record** (`app.standard-reader.graph.mute` in the muter's repo), one direction only, and scoped:
+  muted content vanishes from home, latest, discover, trending, tag, search and the recommendation
+  rails, but **direct navigation still works and subscriptions stay intact**. Nobody is notified,
+  nothing is hidden from the muted side. (Note the record itself is public in the reader's repo,
+  unlike Bluesky's server-side private mutes — the _effect_ is private, the record is not.)
+- **One record, two subject kinds.** `subject` is a format-less string holding either a user DID or
+  a publication at-uri (the lexicon has no did-or-at-uri format; ingest classifies into
+  discriminated `subject_did` / `subject_uri` columns). Muting a **user** hides everything they
+  touch: documents they authored, documents from publications they own, and their recommends
+  (removed by dropping the muted DID from the follow-feed's source sets, which also keeps badge
+  counts honest). Muting a **publication** hides its documents and the publication card itself from
+  discovery.
+- **Rides the firehose, unlike blocks.** The record lives in the reader's own repo — a repo we
+  already track — so the tap/Jetstream stream mirrors it into the `mutes` table (migration `0039`)
+  with no per-reader sweep. Writes eagerly mirror the row (`subjectRkey` addressing) so the mute
+  takes effect on the next page; repo-sync repairs cover the cold-start/backfill path.
+- **Enforced like blocks, gated like blocks.** SQL `NOT (EXISTS …)` (`notMutedByViewer` in
+  `server/mutes/mutes.ts`) on paginated feeds — author DID, publication-owner DID, and a
+  publication-URI branch blocks don't have — and JS post-filters (`filterMutedCards`) on rails.
+  Reached only through `muteFilterDid`, the same has-any gate + in-process cache pattern as
+  `blockFilterDid`, so readers who mute nothing pay nothing. `queries.explain.test.ts` asserts the
+  filtered plan keeps its index scans.
+- **Scope rides the basic tier.** The collection is in the republished `authBasicFeatures`
+  permission set, so fresh logins can write mutes with no upgrade. Sessions from before the
+  republish may hold a frozen expansion; the write path maps a PDS scope rejection to a
+  `needs-mute-scope` re-auth (`upgradeToMuting` — plain basic scope, no flag, no new consent tier).
+- **UI**: Mute/Unmute in the author and publication overflow menus (next to Block; mute confirms,
+  unmute is immediate), and **Settings → Muted** lists both kinds with unmute — every row still
+  links to the page it hides, because muting never takes those pages away.
 
 ---
 

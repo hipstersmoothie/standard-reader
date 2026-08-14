@@ -73,6 +73,7 @@ import { feedApi } from "#/integrations/tanstack-query/api-feed.functions";
 import { labelerApi } from "#/integrations/tanstack-query/api-labelers.functions";
 import { listApi } from "#/integrations/tanstack-query/api-lists.functions";
 import { mcpApi } from "#/integrations/tanstack-query/api-mcp.functions";
+import { mutesApi } from "#/integrations/tanstack-query/api-mutes.functions";
 import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
 import type { DigestSectionKey } from "#/integrations/tanstack-query/api-user.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
@@ -420,6 +421,8 @@ export function UserSettingsView() {
   // Just the headline count — the list itself lives on `/settings/blocks`.
   const blocks = useQuery(blocksApi.getBlockCapabilityQueryOptions());
   const blockCount = blocks.data?.accountCount ?? null;
+  const mutes = useQuery(mutesApi.getMuteCapabilityQueryOptions());
+  const muteCount = mutes.data?.count ?? null;
   const connections = useQuery(mcpApi.listConnectionsQueryOptions());
   const fmt = useFormatters();
   const revokeConnectionMutation = useMutation({
@@ -1214,6 +1217,19 @@ export function UserSettingsView() {
                 <Trans>Manage blocks</Trans>
               ) : (
                 <Trans>Manage {blockCount} blocks</Trans>
+              )}
+            </ButtonLink>
+          </SettingRow>
+          <Separator />
+          <SettingRow
+            label={t`Muted`}
+            description={t`Muted people and publications stay subscribed but disappear from your feeds, search, and discovery. Only you can see your mutes' effect — nobody is notified.`}
+          >
+            <ButtonLink to="/settings/muted" variant="secondary" size="sm">
+              {muteCount == null ? (
+                <Trans>Manage mutes</Trans>
+              ) : (
+                <Trans>Manage {muteCount} mutes</Trans>
               )}
             </ButtonLink>
           </SettingRow>

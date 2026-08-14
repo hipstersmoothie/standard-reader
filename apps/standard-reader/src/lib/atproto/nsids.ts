@@ -33,6 +33,7 @@ export const APP_NSID = {
   labelerSubscription: "app.standard-reader.labelerSubscription",
   labelerSubscriptionV2: "app.standard-reader.labeler.subscription",
   graphFollow: "app.standard-reader.graph.follow",
+  graphMute: "app.standard-reader.graph.mute",
 } as const;
 
 /**

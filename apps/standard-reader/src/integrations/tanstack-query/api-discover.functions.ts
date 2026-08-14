@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import { getAtprotoSessionForRequest } from "#/middleware/auth-session.server";
 import { blockFilterDid, filterBlockedCards } from "#/server/blocks/blocks";
+import { filterMutedCards, muteFilterDid } from "#/server/mutes/mutes";
 import type { Span } from "#/server/observability/log";
 import { observe } from "#/server/observability/log";
 import { attachReaderSpanContext } from "#/server/observability/span-context.ts";
@@ -135,7 +136,12 @@ async function loadRecommendedRail(
           followUris,
           seed: rotationSeed("discover", did),
         });
-  const visible = await filterBlockedCards(db, schema, did, items);
+  const visible = await filterMutedCards(
+    db,
+    schema,
+    did,
+    await filterBlockedCards(db, schema, did, items),
+  );
   return visible.filter((pub) => pub.documentCount > 0);
 }
 
@@ -177,7 +183,9 @@ async function loadDiscoverExtras(
           excludeWebBridge,
           followUris,
           seed: rotationSeed("discover-followed-by", did),
-        }).then((rows) => filterBlockedCards(db, schema, did, rows))
+        })
+          .then((rows) => filterBlockedCards(db, schema, did, rows))
+          .then((rows) => filterMutedCards(db, schema, did, rows))
       : Promise.resolve([]),
   ]);
 
@@ -377,6 +385,7 @@ const getPublications = createServerFn({ method: "GET" })
       const items = await discoverDirectoryPublications(db, schema, {
         topic: data.topic ?? null,
         viewerDid: await blockFilterDid(db, schema, session?.did),
+        muterDid: await muteFilterDid(db, schema, session?.did),
         // The topic chips now surface the full document-tag vocabulary, so a
         // selected chip must match any document tag — not only a publication's
         // single effective topic — or tags past the dominant one return empty.
@@ -406,13 +415,18 @@ const getTrendingPublications = createServerFn({ method: "GET" })
       async ({ data, context }, span) => {
         const { db, schema } = context;
         const session = await getAtprotoSessionForRequest(getRequest());
-        const items = await filterBlockedCards(
+        const items = await filterMutedCards(
           db,
           schema,
           session?.did,
-          await trendingPublications(db, schema, data.limit, {
-            excludeWebBridge: context.excludeWebBridgeEnabled,
-          }),
+          await filterBlockedCards(
+            db,
+            schema,
+            session?.did,
+            await trendingPublications(db, schema, data.limit, {
+              excludeWebBridge: context.excludeWebBridgeEnabled,
+            }),
+          ),
         );
         span.set("count", items.length);
         return items;
@@ -587,9 +601,9 @@ const getOnboardingSuggestions = createServerFn({ method: "GET" })
           : [];
 
         const [trending, topicGroups] = await Promise.all([
-          trendingPublications(db, schema, 6, { excludeWebBridge }).then(
-            (rows) => filterBlockedCards(db, schema, did, rows),
-          ),
+          trendingPublications(db, schema, 6, { excludeWebBridge })
+            .then((rows) => filterBlockedCards(db, schema, did, rows))
+            .then((rows) => filterMutedCards(db, schema, did, rows)),
           Promise.all(
             topics.map(async (topic) => ({
               topic,
@@ -600,23 +614,29 @@ const getOnboardingSuggestions = createServerFn({ method: "GET" })
                 offset: 0,
                 excludeWebBridge,
                 viewerDid: await blockFilterDid(db, schema, did),
+                muterDid: await muteFilterDid(db, schema, did),
               }),
             })),
           ),
         ]);
 
         const trendingUris = trending.map((pub) => pub.uri);
-        const popular = await filterBlockedCards(
+        const popular = await filterMutedCards(
           db,
           schema,
           did,
-          await popularPublications(
+          await filterBlockedCards(
             db,
             schema,
-            data.limit,
-            [...new Set([...followUris, ...trendingUris])],
-            rotationSeed("onboarding", did ?? "anon"),
-            { excludeWebBridge },
+            did,
+            await popularPublications(
+              db,
+              schema,
+              data.limit,
+              [...new Set([...followUris, ...trendingUris])],
+              rotationSeed("onboarding", did ?? "anon"),
+              { excludeWebBridge },
+            ),
           ),
         );
 
@@ -692,11 +712,11 @@ const getFollowedByPeopleYouFollow = createServerFn({ method: "GET" })
             seed: rotationSeed("discover-followed-by", session.did),
           },
         );
-        const visible = await filterBlockedCards(
+        const visible = await filterMutedCards(
           db,
           schema,
           session.did,
-          items,
+          await filterBlockedCards(db, schema, session.did, items),
         );
         span.set("count", visible.length);
         return visible;

@@ -105,6 +105,10 @@ msgstr "Try \"climate\", a #tag like #essay, or a handle like stdout.dev"
 msgid "Thanks for taking the time to help us improve Standard Reader."
 msgstr "Thanks for taking the time to help us improve Standard Reader."
 
+#: src/components/user-settings-view.tsx
+msgid "Manage {muteCount} mutes"
+msgstr "Manage {muteCount} mutes"
+
 #: src/components/guide/pages/finding-guide-page.tsx
 msgid "Articles and publications carry topic tags. Select one anywhere you see it — under a headline, on a publication card, in Discover — and you get everything filed under it: an <0>Articles</0> tab you can sort by recent, trending, or most popular, and a <1>Publications</1> tab of everyone who writes about it."
 msgstr "Articles and publications carry topic tags. Select one anywhere you see it — under a headline, on a publication card, in Discover — and you get everything filed under it: an <0>Articles</0> tab you can sort by recent, trending, or most popular, and a <1>Publications</1> tab of everyone who writes about it."
@@ -216,12 +220,19 @@ msgstr "That means you can build in whichever direction you need — read the in
 #~ msgstr "Standard Reader works the other way round. You sign in with a Bluesky account, and the things you do here — what you follow, save, recommend, and read — are written into your own account's storage, the same place your Bluesky posts live. We keep a copy so the app is fast, but the original is yours. Another app built on the same network can read it, and if you stop using Standard Reader, none of it disappears."
 
 #: src/components/labelers-settings-view.tsx
+#: src/components/muted-settings-view.tsx
+#: src/components/reader/mute-menu-item.tsx
+#: src/components/user-settings-view.tsx
 msgid "Muted"
 msgstr "Muted"
 
 #: src/components/reader/terms-view.tsx
 msgid "Content and intellectual property"
 msgstr "Content and intellectual property"
+
+#: src/components/reader/mute-menu-item.tsx
+msgid "Mute {name}?"
+msgstr "Mute {name}?"
 
 #: src/components/user-settings-view.tsx
 msgid "Disconnect"
@@ -340,6 +351,10 @@ msgstr "Please add a title."
 msgid "There’s an MCP server on the same host, so you can point an agent at the network too."
 msgstr "There’s an MCP server on the same host, so you can point an agent at the network too."
 
+#: src/components/reader/mute-menu-item.tsx
+msgid "This publication's articles disappear from your feeds, search and discovery. Your subscription is untouched, and you can still visit the publication directly. You can undo this in Settings → Muted."
+msgstr "This publication's articles disappear from your feeds, search and discovery. Your subscription is untouched, and you can still visit the publication directly. You can undo this in Settings → Muted."
+
 #: src/components/reader/subscriptions-table.tsx
 msgid "Filter by name, handle, or topic"
 msgstr "Filter by name, handle, or topic"
@@ -367,6 +382,10 @@ msgstr "Search by title or author, or paste a URL or at:// URI"
 #: src/components/user-settings-view.tsx
 msgid "Show {itemLabel} in the sidebar"
 msgstr "Show {itemLabel} in the sidebar"
+
+#: src/components/reader/mute-menu-item.tsx
+msgid "We couldn't write the mute to your account. Try again?"
+msgstr "We couldn't write the mute to your account. Try again?"
 
 #: src/components/reader/continue-reading.tsx
 #~ msgid "Still open"
@@ -1024,6 +1043,10 @@ msgstr "Clicking Create will first request permissions to create a review."
 msgid "Extension privacy"
 msgstr "Extension privacy"
 
+#: src/components/reader/mute-menu-item.tsx
+msgid "It's hidden from your feeds and discovery. Subscriptions and direct links still work. Undo in Settings → Muted."
+msgstr "It's hidden from your feeds and discovery. Subscriptions and direct links still work. Undo in Settings → Muted."
+
 #: src/components/guide/pages/getting-started-guide-page.tsx
 #: src/lib/guide/navigation.ts
 msgid "Signing in"
@@ -1032,6 +1055,10 @@ msgstr "Signing in"
 #: src/components/reader/about-view.tsx
 msgid "Public API — no key required"
 msgstr "Public API — no key required"
+
+#: src/components/muted-settings-view.tsx
+msgid "Muted people"
+msgstr "Muted people"
 
 #: src/components/reading-settings-preview.tsx
 msgid "Loading voice sample"
@@ -1688,6 +1715,10 @@ msgstr "Embedded content"
 msgid "Account"
 msgstr "Account"
 
+#: src/components/muted-settings-view.tsx
+msgid "Loading muted publications"
+msgstr "Loading muted publications"
+
 #: src/components/guide/pages/comics-guide-page.tsx
 msgid "There is no “this is a comic” switch anywhere on the network, and nothing to set on Standard Reader — we do not host your publication. Two things have to be true instead."
 msgstr "There is no “this is a comic” switch anywhere on the network, and nothing to set on Standard Reader — we do not host your publication. Two things have to be true instead."
@@ -1777,6 +1808,10 @@ msgstr "Relaxed"
 #: src/routes/_layout.u.$did.tsx
 msgid "Browse your feed"
 msgstr "Browse your feed"
+
+#: src/components/muted-settings-view.tsx
+msgid "Your mutes are enforced here already. To add or remove one, you'll be asked to re-authorize the first time you try."
+msgstr "Your mutes are enforced here already. To add or remove one, you'll be asked to re-authorize the first time you try."
 
 #: src/components/appearance-settings.tsx
 msgid "Scales every size in the app, article text included — from 13px up to 22px of interface text."
@@ -2136,6 +2171,10 @@ msgstr "Notifications aren’t available here"
 msgid "Loading page"
 msgstr "Loading page"
 
+#: src/components/muted-settings-view.tsx
+msgid "You haven't muted any publications. Mute one from the menu on its page to hide its articles from your feeds while staying subscribed."
+msgstr "You haven't muted any publications. Mute one from the menu on its page to hide its articles from your feeds while staying subscribed."
+
 #: src/components/guide/pages/keeping-track-guide-page.tsx
 msgid "The button sits next to a publication's name wherever you meet it — a card in a feed, the top of an article, the publication's own page. Select it again to unsubscribe."
 msgstr "The button sits next to a publication's name wherever you meet it — a card in a feed, the top of an article, the publication's own page. Select it again to unsubscribe."
@@ -2435,6 +2474,7 @@ msgstr "Articles you've opened — public records in your repo, synced across de
 #: src/components/reader/collection-builder.tsx
 #: src/components/reader/collection-publication-editor.tsx
 #: src/components/reader/collection-theme-editor.tsx
+#: src/components/reader/mute-menu-item.tsx
 #: src/components/reader/subscriptions-unsubscribe-dialog.tsx
 #: src/components/user-settings-view.tsx
 #: src/routes/_layout.collections.new.tsx
@@ -2599,6 +2639,7 @@ msgstr "Read more from the author"
 
 #: src/components/blocks-settings-view.tsx
 #: src/components/labelers-settings-view.tsx
+#: src/components/muted-settings-view.tsx
 #: src/components/user-settings-view.tsx
 msgid "Moderation"
 msgstr "Moderation"
@@ -2690,6 +2731,10 @@ msgstr "Setting the issue"
 #: src/lib/guide/navigation.ts
 msgid "Feed preferences"
 msgstr "Feed preferences"
+
+#: src/components/reader/mute-menu-item.tsx
+msgid "{name} will show up in your feeds again."
+msgstr "{name} will show up in your feeds again."
 
 #: src/components/guide/pages/comics-guide-page.tsx
 msgid "A single post whose title breaks the pattern does not split an issue in two. An interstitial in the middle of issue 3 joins issue 3, and a one-off announcement will not start a phantom issue of its own."
@@ -3097,6 +3142,10 @@ msgstr "<0>Hide recommend and comment counts</0> removes the numbers from articl
 #: src/components/reader/collection-publication-editor.tsx
 msgid "Uploading…"
 msgstr "Uploading…"
+
+#: src/components/muted-settings-view.tsx
+msgid "Muted people and publications disappear from your feeds, search, and discovery — quietly. Your subscriptions stay intact, direct links still work, and nobody is told. Mutes live in your own repo as records, so they follow you across devices."
+msgstr "Muted people and publications disappear from your feeds, search, and discovery — quietly. Your subscriptions stay intact, direct links still work, and nobody is told. Mutes live in your own repo as records, so they follow you across devices."
 
 #: src/routes/_layout.latest.tsx
 msgid "No articles are trending across the network right now. Check back soon."
@@ -3523,6 +3572,7 @@ msgid "Publications to explore"
 msgstr "Publications to explore"
 
 #: src/components/blocks-settings-view.tsx
+#: src/components/muted-settings-view.tsx
 msgid "We couldn't reach your account to change that. Try again?"
 msgstr "We couldn't reach your account to change that. Try again?"
 
@@ -3681,6 +3731,10 @@ msgstr "This API is also served as a <0>Model Context Protocol</0> server at <1>
 #: src/routes/_layout.feedback.index.tsx
 msgid "Reset filters"
 msgstr "Reset filters"
+
+#: src/components/user-settings-view.tsx
+msgid "Muted people and publications stay subscribed but disappear from your feeds, search, and discovery. Only you can see your mutes' effect — nobody is notified."
+msgstr "Muted people and publications stay subscribed but disappear from your feeds, search, and discovery. Only you can see your mutes' effect — nobody is notified."
 
 #: src/components/push-diagnostics.tsx
 msgid "Service worker"
@@ -4315,6 +4369,10 @@ msgstr "Compare before and after images"
 msgid "No matching people."
 msgstr "No matching people."
 
+#: src/components/user-settings-view.tsx
+msgid "Manage mutes"
+msgstr "Manage mutes"
+
 #: src/components/reader/subscriptions-tree.tsx
 msgid "Empty list."
 msgstr "Empty list."
@@ -4432,6 +4490,10 @@ msgstr "Pasting a handle works even for publications the network has not indexed
 #: src/components/push-diagnostics.tsx
 msgid "If notifications aren’t working, this is what your browser reports. Sharing a screenshot of it is the fastest way to get it fixed."
 msgstr "If notifications aren’t working, this is what your browser reports. Sharing a screenshot of it is the fastest way to get it fixed."
+
+#: src/components/reader/mute-menu-item.tsx
+msgid "Their articles, publications and recommendations disappear from your feeds, search and discovery. Your subscriptions are untouched, and you can still visit their pages directly. You can undo this in Settings → Muted."
+msgstr "Their articles, publications and recommendations disappear from your feeds, search and discovery. Your subscriptions are untouched, and you can still visit their pages directly. You can undo this in Settings → Muted."
 
 #: src/routes/_layout.p.$did.$rkey.tsx
 msgid "We couldn’t find that publication."
@@ -4612,6 +4674,10 @@ msgstr "This labeler didn’t publish any label definitions."
 #: src/components/reader/format-i18n.ts
 msgid "{days}d ago"
 msgstr "{days}d ago"
+
+#: src/components/reader/mute-menu-item.tsx
+msgid "Unmuted"
+msgstr "Unmuted"
 
 #: src/components/user-settings-view.tsx
 msgid "Continue to approve"
@@ -5211,8 +5277,10 @@ msgid "Not in the directory yet?"
 msgstr "Not in the directory yet?"
 
 #: src/components/blocks-settings-view.tsx
+#: src/components/muted-settings-view.tsx
 #: src/components/reader/block-user-menu-item.tsx
 #: src/components/reader/blocked-notice.tsx
+#: src/components/reader/mute-menu-item.tsx
 #: src/components/reader/notify-button.tsx
 #: src/components/reader/page-reader-bar.tsx
 #: src/components/route-error.tsx
@@ -5692,6 +5760,10 @@ msgstr "No known labelers yet."
 msgid "You're all caught up"
 msgstr "You're all caught up"
 
+#: src/components/reader/mute-menu-item.tsx
+msgid "{name} is hidden from your feeds and discovery. Subscriptions and direct links still work. Undo in Settings → Muted."
+msgstr "{name} is hidden from your feeds and discovery. Subscriptions and direct links still work. Undo in Settings → Muted."
+
 #: src/components/user-settings-view.tsx
 msgid "All publication lists you created in this app."
 msgstr "All publication lists you created in this app."
@@ -5977,6 +6049,10 @@ msgstr "On Bluesky"
 msgid "No lists yet — switch to New list to create one."
 msgstr "No lists yet — switch to New list to create one."
 
+#: src/components/reader/mute-menu-item.tsx
+msgid "We couldn't remove the mute from your account. Try again?"
+msgstr "We couldn't remove the mute from your account. Try again?"
+
 #: src/components/reader/terms-view.tsx
 msgid "{SITE_NAME} is provided “as is” and “as available,” without warranties of any kind, whether express or implied. We do not guarantee that the service will be uninterrupted, error-free, or that the index will always be complete or current. To the fullest extent permitted by law, the operator of this deployment is not liable for any indirect, incidental, or consequential damages arising from your use of the site."
 msgstr "{SITE_NAME} is provided “as is” and “as available,” without warranties of any kind, whether express or implied. We do not guarantee that the service will be uninterrupted, error-free, or that the index will always be complete or current. To the fullest extent permitted by law, the operator of this deployment is not liable for any indirect, incidental, or consequential damages arising from your use of the site."
@@ -6060,6 +6136,10 @@ msgstr "Close tab"
 #: src/components/guide/pages/lists-guide-page.tsx
 msgid "Groups collapse and expand, so you can keep the sidebar short and open only what you are reading today. <0>Collapse all lists</0> and <1>Expand all lists</1> do it in one go."
 msgstr "Groups collapse and expand, so you can keep the sidebar short and open only what you are reading today. <0>Collapse all lists</0> and <1>Expand all lists</1> do it in one go."
+
+#: src/components/reader/mute-menu-item.tsx
+msgid "Mute"
+msgstr "Mute"
 
 #: src/components/guide/pages/your-data-guide-page.tsx
 #~ msgid "When you follow a publication, save an article, recommend one, or open one, that fact is written into <0>your own account's storage</0> — the same place your Bluesky profile and posts are kept, run by whoever hosts your account."
@@ -6211,6 +6291,11 @@ msgstr "<0>Loading more</0> chooses between infinite scroll and a <1>Load more</
 msgid "Unfollow?"
 msgstr "Unfollow?"
 
+#: src/components/muted-settings-view.tsx
+#: src/components/reader/mute-menu-item.tsx
+msgid "Unmute"
+msgstr "Unmute"
+
 #: src/components/reader/about-view.tsx
 msgid "Listen to anything"
 msgstr "Listen to anything"
@@ -6328,6 +6413,10 @@ msgstr "Being in a list does not change your feeds. Everything you subscribe to 
 #: src/lib/guide/navigation.ts
 msgid "Type size, shape, and density"
 msgstr "Type size, shape, and density"
+
+#: src/components/muted-settings-view.tsx
+msgid "Loading muted people"
+msgstr "Loading muted people"
 
 #: src/routes/_layout.latest.tsx
 msgid "All caught up"
@@ -7034,6 +7123,10 @@ msgstr "View on Bluesky"
 msgid "Paused"
 msgstr "Paused"
 
+#: src/components/reader/mute-menu-item.tsx
+msgid "Mute?"
+msgstr "Mute?"
+
 #: src/components/guide/pages/getting-started-guide-page.tsx
 #: src/lib/guide/navigation.ts
 msgid "Reading without an account"
@@ -7085,6 +7178,10 @@ msgstr "Order"
 #: src/components/labeler-detail-view.tsx
 msgid "Muted here"
 msgstr "Muted here"
+
+#: src/components/reader/mute-menu-item.tsx
+msgid "They'll show up in your feeds again."
+msgstr "They'll show up in your feeds again."
 
 #: src/components/reader/privacy-view.tsx
 msgid "Sign-in and record access go through your Personal Data Server and the wider AT Protocol network. Infrastructure providers (such as our database host) process data on our behalf under their own terms. Embedded media, fonts, or links on article pages may load resources from other sites when you open them."
@@ -7187,6 +7284,10 @@ msgstr "Publish & share the run"
 #: src/components/reader/collection-builder.tsx
 msgid "Editorial"
 msgstr "Editorial"
+
+#: src/components/muted-settings-view.tsx
+msgid "Muted publications"
+msgstr "Muted publications"
 
 #: src/components/docs/api-docs-request-panel.tsx
 msgid "Click Run example to fetch a live response with your session."
@@ -7662,6 +7763,10 @@ msgstr "Most cartoonists write a line or two under the page — a caption, a pro
 msgid "Read aloud"
 msgstr "Read aloud"
 
+#: src/components/muted-settings-view.tsx
+msgid "You haven't muted anyone. Mute someone from the menu on their page to hide everything they write — and everything they recommend — without unfollowing."
+msgstr "You haven't muted anyone. Mute someone from the menu on their page to hide everything they write — and everything they recommend — without unfollowing."
+
 #: src/routes/_layout.saved.tsx
 msgid "Articles you've saved for later — in your repo, synced across devices."
 msgstr "Articles you've saved for later — in your repo, synced across devices."
@@ -7826,6 +7931,10 @@ msgstr "This is the part that makes Standard Reader different from a normal app,
 #: src/components/reader/discover-topic-filters.tsx
 msgid "Filter by topic"
 msgstr "Filter by topic"
+
+#: src/components/reader/mute-menu-item.tsx
+msgid "Unmute {name}"
+msgstr "Unmute {name}"
 
 #. placeholder {0}: image.file.name
 #: src/components/feedback/feedback-image-picker.tsx
@@ -8338,6 +8447,10 @@ msgstr "Your day: a featured lead and the latest from your subscriptions."
 #: src/components/reader/saved-filters.tsx
 msgid "Filter saved articles"
 msgstr "Filter saved articles"
+
+#: src/components/reader/mute-menu-item.tsx
+msgid "Mute {name}"
+msgstr "Mute {name}"
 
 #: src/components/reader/series-up-next.tsx
 msgid "You’ve read every issue published so far."

@@ -27,6 +27,7 @@ export * from "./schema/topics.ts";
 export * from "./schema/ingest.ts";
 export * from "./schema/labels.ts";
 export * from "./schema/blocks.ts";
+export * from "./schema/mutes.ts";
 export * from "./schema/mcp.ts";
 export * from "./schema/quote-shares.ts";
 export * from "./schema/relations.ts";

@@ -45,6 +45,7 @@ import { useLoginSearch } from "#/utils/use-login-search";
 import type { PublicationCard } from "../../integrations/tanstack-query/api-shapes";
 import { AddToListModal } from "./add-to-list-modal";
 import { FollowButton } from "./cards";
+import { MuteDialog, MuteMenuItem } from "./mute-menu-item";
 import { NotifyButton } from "./notify-button";
 import { RssFeedDialog } from "./rss-feed-button";
 import { ShareMenuItems, useShareActions } from "./share-menu";
@@ -249,6 +250,7 @@ export function PublicationActions({
   const [listOpen, setListOpen] = useState(false);
   const [rssOpen, setRssOpen] = useState(false);
   const [markAllReadOpen, setMarkAllReadOpen] = useState(false);
+  const [muteOpen, setMuteOpen] = useState(false);
 
   const { data: followStatus } = useQuery({
     ...readerApi.getFollowStatusQueryOptions(pub.uri),
@@ -353,6 +355,19 @@ export function PublicationActions({
                 <Trans>Visit publication site</Trans>
               </MenuItem>
             ) : null}
+            {/* Last, behind its own separator: the one item here that hides
+                things rather than opening them. */}
+            {signedIn ? (
+              <>
+                <MenuSeparator />
+                <MuteMenuItem
+                  subject={pub.uri}
+                  name={pub.name}
+                  iconSize={MENU_ICON}
+                  onOpenDialog={() => setMuteOpen(true)}
+                />
+              </>
+            ) : null}
           </Menu>
         </ButtonGroup>
         <NotifyButton
@@ -375,6 +390,18 @@ export function PublicationActions({
         isOpen={rssOpen}
         onOpenChange={setRssOpen}
       />
+
+      {/* Outside `<Menu>`, like the RSS dialog above: a dialog rendered inside
+          the menu unmounts with the popover the moment the item is pressed. */}
+      {signedIn ? (
+        <MuteDialog
+          subject={pub.uri}
+          kind="publication"
+          name={pub.name}
+          isOpen={muteOpen}
+          onOpenChange={setMuteOpen}
+        />
+      ) : null}
 
       {signedIn ? (
         <AddToListModal

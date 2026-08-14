@@ -34,7 +34,7 @@ services:
       # our own app-owned reader records (read, bookmark, list, listSave, etc.)
       # written back by the app. Must stay in sync with the `Collections` enum in
       # src/server/atproto/uri.ts and the dispatch in src/server/ingest/consumer.ts.
-      TAP_COLLECTION_FILTERS: "${TAP_COLLECTION_FILTERS:-site.standard.publication,site.standard.document,site.standard.graph.subscription,site.standard.graph.recommend,app.standard-reader.graph.follow,app.bsky.actor.profile,app.standard-reader.read,app.standard-reader.bookmark,app.standard-reader.list,app.standard-reader.listSave,site.mochott.article,app.standard-reader.collection,app.standard-reader.collectionsPublication,app.standard-reader.publicationTheme,app.standard-reader.labelerSubscription,app.standard-reader.labeler.subscription}"
+      TAP_COLLECTION_FILTERS: "${TAP_COLLECTION_FILTERS:-site.standard.publication,site.standard.document,site.standard.graph.subscription,site.standard.graph.recommend,app.standard-reader.graph.follow,app.standard-reader.graph.mute,app.bsky.actor.profile,app.standard-reader.read,app.standard-reader.bookmark,app.standard-reader.list,app.standard-reader.listSave,site.mochott.article,app.standard-reader.collection,app.standard-reader.collectionsPublication,app.standard-reader.publicationTheme,app.standard-reader.labelerSubscription,app.standard-reader.labeler.subscription}"
 
       # Basic-auth credential for tap's admin API + WebSocket channel (user is
       # always `admin`). The ingest worker uses the same value to connect.
@@ -67,7 +67,7 @@ services:
       TAP_SIGNAL_COLLECTION: "site.standard.document"
       # Deliver the same collections as the primary tap (publishers often own
       # loose docs too, plus their profile/subscriptions/recommends/lists).
-      TAP_COLLECTION_FILTERS: "${TAP_COLLECTION_FILTERS:-site.standard.publication,site.standard.document,site.standard.graph.subscription,site.standard.graph.recommend,app.standard-reader.graph.follow,app.bsky.actor.profile,app.standard-reader.read,app.standard-reader.bookmark,app.standard-reader.list,app.standard-reader.listSave,site.mochott.article,app.standard-reader.collection,app.standard-reader.collectionsPublication,app.standard-reader.publicationTheme,app.standard-reader.labelerSubscription,app.standard-reader.labeler.subscription}"
+      TAP_COLLECTION_FILTERS: "${TAP_COLLECTION_FILTERS:-site.standard.publication,site.standard.document,site.standard.graph.subscription,site.standard.graph.recommend,app.standard-reader.graph.follow,app.standard-reader.graph.mute,app.bsky.actor.profile,app.standard-reader.read,app.standard-reader.bookmark,app.standard-reader.list,app.standard-reader.listSave,site.mochott.article,app.standard-reader.collection,app.standard-reader.collectionsPublication,app.standard-reader.publicationTheme,app.standard-reader.labelerSubscription,app.standard-reader.labeler.subscription}"
       TAP_ADMIN_PASSWORD: "${TAP_ADMIN_PASSWORD:?set TAP_ADMIN_PASSWORD in .env}"
       TAP_LOG_LEVEL: "${TAP_LOG_LEVEL:-info}"
     volumes:

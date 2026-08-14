@@ -356,6 +356,52 @@ export async function deleteUserFollowRecords(
   );
 }
 
+/**
+ * Write an `app.standard-reader.graph.mute` for `subject` — a user DID or the
+ * AT-URI of a `site.standard.publication`. Keyed by {@link subjectRkey} so
+ * muting twice is the same record.
+ */
+export async function putMuteRecord(
+  client: Client,
+  repo: string,
+  subject: string,
+  createdAt: string,
+): Promise<{ uri: string; cid: string }> {
+  return repoPutRecord(client, {
+    repo,
+    collection: COLLECTION.graphMute,
+    rkey: subjectRkey(subject),
+    record: {
+      $type: COLLECTION.graphMute,
+      subject,
+      createdAt,
+    },
+  });
+}
+
+/**
+ * Delete every mute record for `subject` — the deterministic `subjectRkey`
+ * plus any TID-rkey records other clients may have written for the same
+ * subject (mirrors {@link deleteUserFollowRecords}).
+ */
+export async function deleteMuteRecords(
+  client: Client,
+  repo: string,
+  subject: string,
+  knownRkeys: Array<string> = [],
+): Promise<void> {
+  const rkeys = new Set([subjectRkey(subject), ...knownRkeys]);
+  await Promise.all(
+    [...rkeys].map((rkey) =>
+      repoDeleteRecord(client, {
+        repo,
+        collection: COLLECTION.graphMute,
+        rkey,
+      }),
+    ),
+  );
+}
+
 // ── Bluesky blocks ──────────────────────────────────────────────────────────
 //
 // A block is a portable `app.bsky.graph.block` record in the reader's own repo,

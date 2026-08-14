@@ -105,6 +105,10 @@ msgstr "\"기후\", #에세이 같은 #태그, 또는 stdout.dev 같은 핸들�
 msgid "Thanks for taking the time to help us improve Standard Reader."
 msgstr "시간을 내어 Standard Reader 개선에 도움을 주셔서 감사합니다."
 
+#: src/components/user-settings-view.tsx
+msgid "Manage {muteCount} mutes"
+msgstr ""
+
 #: src/components/guide/pages/finding-guide-page.tsx
 msgid "Articles and publications carry topic tags. Select one anywhere you see it — under a headline, on a publication card, in Discover — and you get everything filed under it: an <0>Articles</0> tab you can sort by recent, trending, or most popular, and a <1>Publications</1> tab of everyone who writes about it."
 msgstr ""
@@ -216,11 +220,18 @@ msgstr ""
 #~ msgstr ""
 
 #: src/components/labelers-settings-view.tsx
+#: src/components/muted-settings-view.tsx
+#: src/components/reader/mute-menu-item.tsx
+#: src/components/user-settings-view.tsx
 msgid "Muted"
 msgstr ""
 
 #: src/components/reader/terms-view.tsx
 msgid "Content and intellectual property"
+msgstr ""
+
+#: src/components/reader/mute-menu-item.tsx
+msgid "Mute {name}?"
 msgstr ""
 
 #: src/components/user-settings-view.tsx
@@ -340,6 +351,10 @@ msgstr "제목을 입력하세요."
 msgid "There’s an MCP server on the same host, so you can point an agent at the network too."
 msgstr ""
 
+#: src/components/reader/mute-menu-item.tsx
+msgid "This publication's articles disappear from your feeds, search and discovery. Your subscription is untouched, and you can still visit the publication directly. You can undo this in Settings → Muted."
+msgstr ""
+
 #: src/components/reader/subscriptions-table.tsx
 msgid "Filter by name, handle, or topic"
 msgstr ""
@@ -366,6 +381,10 @@ msgstr "제목이나 저자로 검색하거나 URL 또는 at:// URI를 붙여넣
 
 #: src/components/user-settings-view.tsx
 msgid "Show {itemLabel} in the sidebar"
+msgstr ""
+
+#: src/components/reader/mute-menu-item.tsx
+msgid "We couldn't write the mute to your account. Try again?"
 msgstr ""
 
 #: src/components/reader/continue-reading.tsx
@@ -1024,6 +1043,10 @@ msgstr "만들기를 누르면 먼저 리뷰 작성 권한을 요청합니다."
 msgid "Extension privacy"
 msgstr "확장 프로그램 개인정보 보호"
 
+#: src/components/reader/mute-menu-item.tsx
+msgid "It's hidden from your feeds and discovery. Subscriptions and direct links still work. Undo in Settings → Muted."
+msgstr ""
+
 #: src/components/guide/pages/getting-started-guide-page.tsx
 #: src/lib/guide/navigation.ts
 msgid "Signing in"
@@ -1031,6 +1054,10 @@ msgstr ""
 
 #: src/components/reader/about-view.tsx
 msgid "Public API — no key required"
+msgstr ""
+
+#: src/components/muted-settings-view.tsx
+msgid "Muted people"
 msgstr ""
 
 #: src/components/reading-settings-preview.tsx
@@ -1688,6 +1715,10 @@ msgstr "임베드된 콘텐츠"
 msgid "Account"
 msgstr "계정"
 
+#: src/components/muted-settings-view.tsx
+msgid "Loading muted publications"
+msgstr ""
+
 #: src/components/guide/pages/comics-guide-page.tsx
 msgid "There is no “this is a comic” switch anywhere on the network, and nothing to set on Standard Reader — we do not host your publication. Two things have to be true instead."
 msgstr ""
@@ -1777,6 +1808,10 @@ msgstr ""
 #: src/routes/_layout.u.$did.tsx
 msgid "Browse your feed"
 msgstr "내 피드 둘러보기"
+
+#: src/components/muted-settings-view.tsx
+msgid "Your mutes are enforced here already. To add or remove one, you'll be asked to re-authorize the first time you try."
+msgstr ""
 
 #: src/components/appearance-settings.tsx
 msgid "Scales every size in the app, article text included — from 13px up to 22px of interface text."
@@ -2136,6 +2171,10 @@ msgstr ""
 msgid "Loading page"
 msgstr "페이지 불러오는 중"
 
+#: src/components/muted-settings-view.tsx
+msgid "You haven't muted any publications. Mute one from the menu on its page to hide its articles from your feeds while staying subscribed."
+msgstr ""
+
 #: src/components/guide/pages/keeping-track-guide-page.tsx
 msgid "The button sits next to a publication's name wherever you meet it — a card in a feed, the top of an article, the publication's own page. Select it again to unsubscribe."
 msgstr ""
@@ -2435,6 +2474,7 @@ msgstr "열어본 아티클입니다. 내 저장소의 공개 레코드로, 여�
 #: src/components/reader/collection-builder.tsx
 #: src/components/reader/collection-publication-editor.tsx
 #: src/components/reader/collection-theme-editor.tsx
+#: src/components/reader/mute-menu-item.tsx
 #: src/components/reader/subscriptions-unsubscribe-dialog.tsx
 #: src/components/user-settings-view.tsx
 #: src/routes/_layout.collections.new.tsx
@@ -2599,6 +2639,7 @@ msgstr "이 작가의 다른 글 보기"
 
 #: src/components/blocks-settings-view.tsx
 #: src/components/labelers-settings-view.tsx
+#: src/components/muted-settings-view.tsx
 #: src/components/user-settings-view.tsx
 msgid "Moderation"
 msgstr "모더레이션"
@@ -2689,6 +2730,10 @@ msgstr "호 설정 중"
 #: src/components/guide/pages/personalizing-guide-page.tsx
 #: src/lib/guide/navigation.ts
 msgid "Feed preferences"
+msgstr ""
+
+#: src/components/reader/mute-menu-item.tsx
+msgid "{name} will show up in your feeds again."
 msgstr ""
 
 #: src/components/guide/pages/comics-guide-page.tsx
@@ -3097,6 +3142,10 @@ msgstr ""
 #: src/components/reader/collection-publication-editor.tsx
 msgid "Uploading…"
 msgstr "업로드 중…"
+
+#: src/components/muted-settings-view.tsx
+msgid "Muted people and publications disappear from your feeds, search, and discovery — quietly. Your subscriptions stay intact, direct links still work, and nobody is told. Mutes live in your own repo as records, so they follow you across devices."
+msgstr ""
 
 #: src/routes/_layout.latest.tsx
 msgid "No articles are trending across the network right now. Check back soon."
@@ -3523,6 +3572,7 @@ msgid "Publications to explore"
 msgstr ""
 
 #: src/components/blocks-settings-view.tsx
+#: src/components/muted-settings-view.tsx
 msgid "We couldn't reach your account to change that. Try again?"
 msgstr ""
 
@@ -3680,6 +3730,10 @@ msgstr ""
 
 #: src/routes/_layout.feedback.index.tsx
 msgid "Reset filters"
+msgstr ""
+
+#: src/components/user-settings-view.tsx
+msgid "Muted people and publications stay subscribed but disappear from your feeds, search, and discovery. Only you can see your mutes' effect — nobody is notified."
 msgstr ""
 
 #: src/components/push-diagnostics.tsx
@@ -4315,6 +4369,10 @@ msgstr "이전과 이후 이미지 비교"
 msgid "No matching people."
 msgstr "일치하는 사람이 없습니다."
 
+#: src/components/user-settings-view.tsx
+msgid "Manage mutes"
+msgstr ""
+
 #: src/components/reader/subscriptions-tree.tsx
 msgid "Empty list."
 msgstr "빈 목록입니다."
@@ -4431,6 +4489,10 @@ msgstr ""
 
 #: src/components/push-diagnostics.tsx
 msgid "If notifications aren’t working, this is what your browser reports. Sharing a screenshot of it is the fastest way to get it fixed."
+msgstr ""
+
+#: src/components/reader/mute-menu-item.tsx
+msgid "Their articles, publications and recommendations disappear from your feeds, search and discovery. Your subscriptions are untouched, and you can still visit their pages directly. You can undo this in Settings → Muted."
 msgstr ""
 
 #: src/routes/_layout.p.$did.$rkey.tsx
@@ -4611,6 +4673,10 @@ msgstr "이 레이블러는 레이블 정의를 게시하지 않았습니다."
 
 #: src/components/reader/format-i18n.ts
 msgid "{days}d ago"
+msgstr ""
+
+#: src/components/reader/mute-menu-item.tsx
+msgid "Unmuted"
 msgstr ""
 
 #: src/components/user-settings-view.tsx
@@ -5211,8 +5277,10 @@ msgid "Not in the directory yet?"
 msgstr ""
 
 #: src/components/blocks-settings-view.tsx
+#: src/components/muted-settings-view.tsx
 #: src/components/reader/block-user-menu-item.tsx
 #: src/components/reader/blocked-notice.tsx
+#: src/components/reader/mute-menu-item.tsx
 #: src/components/reader/notify-button.tsx
 #: src/components/reader/page-reader-bar.tsx
 #: src/components/route-error.tsx
@@ -5692,6 +5760,10 @@ msgstr "아직 알려진 라벨러가 없습니다."
 msgid "You're all caught up"
 msgstr ""
 
+#: src/components/reader/mute-menu-item.tsx
+msgid "{name} is hidden from your feeds and discovery. Subscriptions and direct links still work. Undo in Settings → Muted."
+msgstr ""
+
 #: src/components/user-settings-view.tsx
 msgid "All publication lists you created in this app."
 msgstr "이 앱에서 만든 모든 발행물 목록입니다."
@@ -5977,6 +6049,10 @@ msgstr ""
 msgid "No lists yet — switch to New list to create one."
 msgstr "아직 목록이 없습니다. 새 목록으로 전환해 만들어 보세요."
 
+#: src/components/reader/mute-menu-item.tsx
+msgid "We couldn't remove the mute from your account. Try again?"
+msgstr ""
+
 #: src/components/reader/terms-view.tsx
 msgid "{SITE_NAME} is provided “as is” and “as available,” without warranties of any kind, whether express or implied. We do not guarantee that the service will be uninterrupted, error-free, or that the index will always be complete or current. To the fullest extent permitted by law, the operator of this deployment is not liable for any indirect, incidental, or consequential damages arising from your use of the site."
 msgstr ""
@@ -6059,6 +6135,10 @@ msgstr "탭 닫기"
 
 #: src/components/guide/pages/lists-guide-page.tsx
 msgid "Groups collapse and expand, so you can keep the sidebar short and open only what you are reading today. <0>Collapse all lists</0> and <1>Expand all lists</1> do it in one go."
+msgstr ""
+
+#: src/components/reader/mute-menu-item.tsx
+msgid "Mute"
 msgstr ""
 
 #: src/components/guide/pages/your-data-guide-page.tsx
@@ -6211,6 +6291,11 @@ msgstr ""
 msgid "Unfollow?"
 msgstr ""
 
+#: src/components/muted-settings-view.tsx
+#: src/components/reader/mute-menu-item.tsx
+msgid "Unmute"
+msgstr ""
+
 #: src/components/reader/about-view.tsx
 msgid "Listen to anything"
 msgstr "무엇이든 들어보세요"
@@ -6327,6 +6412,10 @@ msgstr ""
 #: src/components/guide/pages/personalizing-guide-page.tsx
 #: src/lib/guide/navigation.ts
 msgid "Type size, shape, and density"
+msgstr ""
+
+#: src/components/muted-settings-view.tsx
+msgid "Loading muted people"
 msgstr ""
 
 #: src/routes/_layout.latest.tsx
@@ -7034,6 +7123,10 @@ msgstr "Bluesky에서 보기"
 msgid "Paused"
 msgstr "일시정지됨"
 
+#: src/components/reader/mute-menu-item.tsx
+msgid "Mute?"
+msgstr ""
+
 #: src/components/guide/pages/getting-started-guide-page.tsx
 #: src/lib/guide/navigation.ts
 msgid "Reading without an account"
@@ -7084,6 +7177,10 @@ msgstr ""
 
 #: src/components/labeler-detail-view.tsx
 msgid "Muted here"
+msgstr ""
+
+#: src/components/reader/mute-menu-item.tsx
+msgid "They'll show up in your feeds again."
 msgstr ""
 
 #: src/components/reader/privacy-view.tsx
@@ -7187,6 +7284,10 @@ msgstr "실행 결과 게시 및 공유"
 #: src/components/reader/collection-builder.tsx
 msgid "Editorial"
 msgstr "에디토리얼"
+
+#: src/components/muted-settings-view.tsx
+msgid "Muted publications"
+msgstr ""
 
 #: src/components/docs/api-docs-request-panel.tsx
 msgid "Click Run example to fetch a live response with your session."
@@ -7662,6 +7763,10 @@ msgstr ""
 msgid "Read aloud"
 msgstr "소리내어 읽기"
 
+#: src/components/muted-settings-view.tsx
+msgid "You haven't muted anyone. Mute someone from the menu on their page to hide everything they write — and everything they recommend — without unfollowing."
+msgstr ""
+
 #: src/routes/_layout.saved.tsx
 msgid "Articles you've saved for later — in your repo, synced across devices."
 msgstr "나중에 읽으려고 저장한 글 — 내 저장소에 보관되어 기기 간에 동기화됩니다."
@@ -7826,6 +7931,10 @@ msgstr ""
 #: src/components/reader/discover-topic-filters.tsx
 msgid "Filter by topic"
 msgstr "주제로 필터"
+
+#: src/components/reader/mute-menu-item.tsx
+msgid "Unmute {name}"
+msgstr ""
 
 #. placeholder {0}: image.file.name
 #: src/components/feedback/feedback-image-picker.tsx
@@ -8337,6 +8446,10 @@ msgstr ""
 
 #: src/components/reader/saved-filters.tsx
 msgid "Filter saved articles"
+msgstr ""
+
+#: src/components/reader/mute-menu-item.tsx
+msgid "Mute {name}"
 msgstr ""
 
 #: src/components/reader/series-up-next.tsx
