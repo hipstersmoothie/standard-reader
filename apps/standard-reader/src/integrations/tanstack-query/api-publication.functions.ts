@@ -11,6 +11,7 @@ import { uriAuthorityDid } from "#/lib/blocks";
 import type { CollectionManifest } from "#/lib/collections/manifest";
 import type { CollectionTheme } from "#/lib/collections/theme";
 import type { InlineMentionRefs } from "#/lib/leaflet/publication-mentions";
+import { articleLinkTarget } from "#/lib/link-target-variants";
 import type { ArchiveOrder } from "#/lib/publication/archive-order";
 import {
   ARCHIVE_ORDER_COOKIE,
@@ -936,8 +937,9 @@ const getArticleExtras = createServerFn({ method: "GET" })
         }
         span.set("found", true);
 
-        const canonicalUrl =
-          row.canonicalUrl ?? buildCanonicalUrl(row.publicationUrl, row.path);
+        const canonicalUrl = articleLinkTarget(
+          row.canonicalUrl ?? buildCanonicalUrl(row.publicationUrl, row.path),
+        );
         const linkUrls = canonicalUrl ? [canonicalUrl] : [];
 
         const readerDid = await getReaderDidForRequest(getRequest());

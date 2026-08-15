@@ -282,6 +282,35 @@ describe("document comment counts", () => {
     expect(getPosts.mock.calls).toHaveLength(buildsAfterSection);
   });
 
+  /**
+   * Regression test: a collection document carries no `path`, so its stored
+   * canonicalUrl falls back to the publication root — which for collections is
+   * the app origin itself. Looking that root up on Constellation returned
+   * every post that links standard-reader.app as "discussion" of the
+   * collection.
+   */
+  it("never queries a bare site root as a discussion target", async () => {
+    getPostBacklinksForTarget.mockResolvedValue([]);
+    getPosts.mockResolvedValue([]);
+
+    const { fetchDocumentComments } = await importModule();
+    const dbClient = fakeDb({
+      ...documentRow,
+      path: null,
+      canonicalUrl: "https://standard-reader.app",
+      publicationUrl: "https://standard-reader.app",
+    });
+
+    await fetchDocumentComments(dbClient, fakeSchema, DOCUMENT_URI);
+
+    const targets = getPostBacklinksForTarget.mock.calls.map(
+      ([target]) => target as string,
+    );
+    expect(targets).toContain(APP_URL);
+    expect(targets).not.toContain("https://standard-reader.app");
+    expect(targets).not.toContain("https://standard-reader.app/");
+  });
+
   it("reports 0 for a document with no discussion", async () => {
     getPostBacklinksForTarget.mockResolvedValue([]);
     getPosts.mockResolvedValue([]);

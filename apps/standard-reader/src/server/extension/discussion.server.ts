@@ -4,6 +4,7 @@ import { documentLinkParams } from "#/components/reader/format";
 import type { db } from "#/db/index.server";
 import type * as schema from "#/db/schema";
 import type { ArticleCard } from "#/integrations/tanstack-query/api-shapes";
+import { articleLinkTarget } from "#/lib/link-target-variants";
 import { getPublicUrl } from "#/lib/public-url";
 import { blockFilterDid, filterBlockedCards } from "#/server/blocks/blocks";
 import { buildCanonicalUrl } from "#/server/ingest/mappers";
@@ -131,8 +132,9 @@ export async function resolveDiscussion(
     };
   }
 
-  const canonicalUrl =
-    row.canonicalUrl ?? buildCanonicalUrl(row.publicationUrl, row.path);
+  const canonicalUrl = articleLinkTarget(
+    row.canonicalUrl ?? buildCanonicalUrl(row.publicationUrl, row.path),
+  );
   const linkUrls = canonicalUrl ? [canonicalUrl] : [];
 
   const blockDid = await blockFilterDid(dbClient, schemaModule, viewerDid);
