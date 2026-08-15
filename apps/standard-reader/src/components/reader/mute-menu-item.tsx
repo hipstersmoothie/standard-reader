@@ -192,15 +192,19 @@ export function MuteDialog({
       <AlertDialogDescription>
         {kind === "publication" ? (
           <Trans>
-            This publication's articles disappear from your feeds, search and
-            discovery. Your subscription is untouched, and you can still visit
-            the publication directly. You can undo this in Settings → Muted.
+            This publication's articles are hidden from your feeds, search and
+            discovery — but only in Standard Reader. This writes a public record
+            to your atproto account, but unlike a block, Bluesky and other apps
+            don't enforce it. Your subscription is untouched and you can still
+            visit the publication directly. Undo in Settings → Muted.
           </Trans>
         ) : (
           <Trans>
-            Their articles, publications and recommendations disappear from your
-            feeds, search and discovery. Your subscriptions are untouched, and
-            you can still visit their pages directly. You can undo this in
+            Their articles, publications and recommendations are hidden from
+            your feeds, search and discovery — but only in Standard Reader. This
+            writes a public record to your atproto account, but unlike a block,
+            Bluesky and other apps don't enforce it. Your subscriptions are
+            untouched and you can still visit their pages directly. Undo in
             Settings → Muted.
           </Trans>
         )}

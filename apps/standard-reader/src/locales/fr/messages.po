@@ -352,10 +352,6 @@ msgstr "Veuillez ajouter un titre."
 msgid "There’s an MCP server on the same host, so you can point an agent at the network too."
 msgstr ""
 
-#: src/components/reader/mute-menu-item.tsx
-msgid "This publication's articles disappear from your feeds, search and discovery. Your subscription is untouched, and you can still visit the publication directly. You can undo this in Settings → Muted."
-msgstr ""
-
 #: src/components/reader/subscriptions-table.tsx
 msgid "Filter by name, handle, or topic"
 msgstr ""
@@ -1208,6 +1204,10 @@ msgstr "Copié"
 #~ msgid "The shelf"
 #~ msgstr ""
 
+#: src/components/reader/block-user-menu-item.tsx
+msgid "This writes a public block record to your atproto account, so it applies everywhere that respects blocks — Standard Reader, Bluesky, and other apps. Their writing and replies are hidden from your feeds and search, and they can't see your writing. Undo in Settings → Blocked accounts."
+msgstr ""
+
 #: src/components/reader/about-view.tsx
 msgid "See collections"
 msgstr "Voir les collections"
@@ -1536,6 +1536,10 @@ msgstr ""
 msgid "Select <0>Listen</0> in the top bar and the article is read aloud. The first time takes a few seconds to warm up; after that it starts straight away."
 msgstr ""
 
+#: src/components/reader/mute-menu-item.tsx
+msgid "This publication's articles are hidden from your feeds, search and discovery — but only in Standard Reader. This writes a public record to your atproto account, but unlike a block, Bluesky and other apps don't enforce it. Your subscription is untouched and you can still visit the publication directly. Undo in Settings → Muted."
+msgstr ""
+
 #: src/components/guide/pages/reading-guide-page.tsx
 msgid "Paste that link anywhere that unfurls a preview — Bluesky, a chat, a document — and the passage itself is the preview:"
 msgstr ""
@@ -1813,6 +1817,10 @@ msgstr ""
 #: src/routes/_layout.u.$did.tsx
 msgid "Browse your feed"
 msgstr "Parcourir votre flux"
+
+#: src/components/reader/muted-pill.tsx
+msgid "Its articles are hidden from your feeds, search and discovery in Standard Reader. Your subscription is untouched, and this page still works."
+msgstr ""
 
 #: src/components/muted-settings-view.tsx
 msgid "Your mutes are enforced here already. To add or remove one, you'll be asked to re-authorize the first time you try."
@@ -3156,10 +3164,6 @@ msgstr ""
 msgid "Uploading…"
 msgstr "Envoi en cours…"
 
-#: src/components/muted-settings-view.tsx
-msgid "Muted people and publications disappear from your feeds, search, and discovery — quietly. Your subscriptions stay intact, direct links still work, and nobody is told. Mutes live in your own repo as records, so they follow you across devices."
-msgstr ""
-
 #: src/routes/_layout.latest.tsx
 msgid "No articles are trending across the network right now. Check back soon."
 msgstr "Aucun article ne fait l'actualité sur le réseau en ce moment. Revenez bientôt."
@@ -3614,10 +3618,6 @@ msgstr ""
 #: src/components/guide/pages/reading-guide-page.tsx
 #: src/lib/guide/navigation.ts
 msgid "Read and unread"
-msgstr ""
-
-#: src/components/reader/block-user-menu-item.tsx
-msgid "This writes a block to your Bluesky account, so it applies here and anywhere else you use it. Their writing disappears from your feeds, search and discussion, and they can't see yours. You can undo it in Settings → Blocked accounts."
 msgstr ""
 
 #: src/routes/_layout.p.$did.$rkey.tsx
@@ -4509,10 +4509,6 @@ msgstr ""
 msgid "If notifications aren’t working, this is what your browser reports. Sharing a screenshot of it is the fastest way to get it fixed."
 msgstr ""
 
-#: src/components/reader/mute-menu-item.tsx
-msgid "Their articles, publications and recommendations disappear from your feeds, search and discovery. Your subscriptions are untouched, and you can still visit their pages directly. You can undo this in Settings → Muted."
-msgstr ""
-
 #: src/routes/_layout.p.$did.$rkey.tsx
 msgid "We couldn’t find that publication."
 msgstr "Publication introuvable."
@@ -4746,6 +4742,10 @@ msgstr ""
 
 #: src/components/guide/pages/collections-guide-page.tsx
 msgid "Collections you have made, grouped into a series."
+msgstr ""
+
+#: src/components/reader/mute-menu-item.tsx
+msgid "Their articles, publications and recommendations are hidden from your feeds, search and discovery — but only in Standard Reader. This writes a public record to your atproto account, but unlike a block, Bluesky and other apps don't enforce it. Your subscriptions are untouched and you can still visit their pages directly. Undo in Settings → Muted."
 msgstr ""
 
 #: src/components/guide/pages/extension-guide-page.tsx
@@ -6690,6 +6690,10 @@ msgstr "Lectures associées"
 msgid "operational"
 msgstr "opérationnel"
 
+#: src/components/reader/muted-pill.tsx
+msgid "Their articles, publications and recommendations are hidden from your feeds, search and discovery in Standard Reader. Your subscriptions are untouched, and this page still works."
+msgstr ""
+
 #: src/components/user-settings-view.tsx
 msgid "Top on the network"
 msgstr ""
@@ -6729,6 +6733,10 @@ msgstr "{0, plural, one {# lecteur} other {{subscriberLabel} lecteurs}}"
 
 #: src/components/reader/terms-view.tsx
 msgid "We may change, suspend, or discontinue any part of the service at any time. Because {SITE_NAME} indexes a decentralized network, the availability of specific publications is outside our control."
+msgstr ""
+
+#: src/components/muted-settings-view.tsx
+msgid "Muted people and publications disappear from your feeds, search, and discovery — but only in Standard Reader. Mutes are public records in your repo, but unlike a block, Bluesky and other apps don't enforce them. Your subscriptions stay intact and direct links still work."
 msgstr ""
 
 #: src/components/guide/pages/everywhere-guide-page.tsx
@@ -7119,17 +7127,9 @@ msgstr ""
 #~ msgid "Every renderer takes one input for the document — the content payload of a <0>site.standard.document</0>. The format is detected from the payload's <1>$type</1>."
 #~ msgstr ""
 
-#: src/components/reader/muted-pill.tsx
-msgid "Its articles are hidden from your feeds, search and discovery. Your subscription is untouched, and this page still works."
-msgstr ""
-
 #: src/routes/_layout.tag.$tag.tsx
 msgid "Tag"
 msgstr "Mot-clé"
-
-#: src/components/reader/muted-pill.tsx
-msgid "Their articles, publications and recommendations are hidden from your feeds, search and discovery. Your subscriptions are untouched, and this page still works."
-msgstr ""
 
 #: src/components/docs/renderers-docs-page.tsx
 #~ msgid "The React package, for example. With no <0>components</0> prop, a document renders as unstyled semantic HTML."
