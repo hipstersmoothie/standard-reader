@@ -9,6 +9,7 @@ import type {
 import { bskyPostUrl } from "#/lib/leaflet/bsky";
 import { shiftFacets } from "#/lib/leaflet/facets";
 import { utf8ByteLength } from "#/lib/leaflet/utf8";
+import { articleLinkTarget } from "#/lib/link-target-variants";
 import { getCanonicalPublicUrl } from "#/lib/public-url";
 import {
   articleSharePath,
@@ -477,7 +478,7 @@ async function loadDocumentCommentTargets(
   const targets = buildCommentTargets(
     doc.did,
     doc.rkey,
-    canonicalUrl,
+    articleLinkTarget(canonicalUrl),
     quoteShares,
     baseUrl,
   );
