@@ -353,7 +353,7 @@ msgid "There’s an MCP server on the same host, so you can point an agent at th
 msgstr ""
 
 #: src/components/reader/mute-menu-item.tsx
-msgid "This publication's articles disappear from your feeds, search and discovery. Your subscription is untouched, and you can still visit the publication directly. You can undo this in Settings → Muted."
+msgid "This publication's articles are hidden from your feeds, search and discovery — but only in Standard Reader. This writes a public record to your atproto account, but unlike a block, Bluesky and other apps don't enforce it. Your subscription is untouched and you can still visit the publication directly. Undo in Settings → Muted."
 msgstr ""
 
 #: src/components/reader/subscriptions-table.tsx
@@ -3157,7 +3157,7 @@ msgid "Uploading…"
 msgstr "Subiendo…"
 
 #: src/components/muted-settings-view.tsx
-msgid "Muted people and publications disappear from your feeds, search, and discovery — quietly. Your subscriptions stay intact, direct links still work, and nobody is told. Mutes live in your own repo as records, so they follow you across devices."
+msgid "Muted people and publications disappear from your feeds, search, and discovery — but only in Standard Reader. Mutes are public records in your repo, but unlike a block, Bluesky and other apps don't enforce them. Your subscriptions stay intact and direct links still work."
 msgstr ""
 
 #: src/routes/_layout.latest.tsx
@@ -3617,7 +3617,7 @@ msgid "Read and unread"
 msgstr ""
 
 #: src/components/reader/block-user-menu-item.tsx
-msgid "This writes a block to your Bluesky account, so it applies here and anywhere else you use it. Their writing disappears from your feeds, search and discussion, and they can't see yours. You can undo it in Settings → Blocked accounts."
+msgid "This writes a public block record to your atproto account, so it applies everywhere that respects blocks — Standard Reader, Bluesky, and other apps. Their writing and replies are hidden from your feeds and search, and they can't see your writing. Undo in Settings → Blocked accounts."
 msgstr ""
 
 #: src/routes/_layout.p.$did.$rkey.tsx
@@ -4510,7 +4510,7 @@ msgid "If notifications aren’t working, this is what your browser reports. Sha
 msgstr ""
 
 #: src/components/reader/mute-menu-item.tsx
-msgid "Their articles, publications and recommendations disappear from your feeds, search and discovery. Your subscriptions are untouched, and you can still visit their pages directly. You can undo this in Settings → Muted."
+msgid "Their articles, publications and recommendations are hidden from your feeds, search and discovery — but only in Standard Reader. This writes a public record to your atproto account, but unlike a block, Bluesky and other apps don't enforce it. Your subscriptions are untouched and you can still visit their pages directly. Undo in Settings → Muted."
 msgstr ""
 
 #: src/routes/_layout.p.$did.$rkey.tsx
@@ -7120,7 +7120,7 @@ msgstr ""
 #~ msgstr ""
 
 #: src/components/reader/muted-pill.tsx
-msgid "Its articles are hidden from your feeds, search and discovery. Your subscription is untouched, and this page still works."
+msgid "Its articles are hidden from your feeds, search and discovery in Standard Reader. Your subscription is untouched, and this page still works."
 msgstr ""
 
 #: src/routes/_layout.tag.$tag.tsx
@@ -7128,7 +7128,7 @@ msgid "Tag"
 msgstr "Etiqueta"
 
 #: src/components/reader/muted-pill.tsx
-msgid "Their articles, publications and recommendations are hidden from your feeds, search and discovery. Your subscriptions are untouched, and this page still works."
+msgid "Their articles, publications and recommendations are hidden from your feeds, search and discovery in Standard Reader. Your subscriptions are untouched, and this page still works."
 msgstr ""
 
 #: src/components/docs/renderers-docs-page.tsx
