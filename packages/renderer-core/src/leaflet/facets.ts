@@ -46,6 +46,33 @@ export function shiftFacets(
     .filter((facet) => facet.index.byteEnd > facet.index.byteStart);
 }
 
+/**
+ * Facets whose byte range falls entirely inside `[rangeByteStart, rangeByteEnd)`,
+ * reindexed to be relative to `rangeByteStart`. Facets that start before or end
+ * after the range are dropped rather than clipped, since a clipped facet (e.g.
+ * a mention cut in half) would point at the wrong text.
+ */
+export function facetsInByteRange(
+  facets: Array<LeafletFacet> | undefined,
+  rangeByteStart: number,
+  rangeByteEnd: number,
+): Array<LeafletFacet> {
+  if (!facets?.length) return [];
+  return facets
+    .filter(
+      (facet) =>
+        facet.index.byteStart >= rangeByteStart &&
+        facet.index.byteEnd <= rangeByteEnd,
+    )
+    .map((facet) => ({
+      ...facet,
+      index: {
+        byteStart: facet.index.byteStart - rangeByteStart,
+        byteEnd: facet.index.byteEnd - rangeByteStart,
+      },
+    }));
+}
+
 /** Split plaintext into styled segments using Leaflet/AT Proto UTF-8 byte facets. */
 export function segmentFacetedText(
   plaintext: string,

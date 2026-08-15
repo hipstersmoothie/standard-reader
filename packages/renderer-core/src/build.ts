@@ -20,6 +20,7 @@ import {
 } from "./leaflet/blocks.js";
 import { collectLeafletFootnotes } from "./leaflet/footnotes.js";
 import { leafletImageAspectRatio } from "./leaflet/image.js";
+import { splitMarkdownishPlaintext } from "./leaflet/plaintext-paragraphs.js";
 import type {
   LeafletImageGalleryBlock,
   LeafletListItem,
@@ -136,7 +137,8 @@ export function buildRenderTree(
     }));
     children = blocks.flatMap((block) => {
       const node = leafletToNode(block, ctx);
-      return node ? [node] : [];
+      if (!node) return [];
+      return Array.isArray(node) ? node : [node];
     });
   } else if (format === PCKT_CONTENT_FORMAT) {
     children = pcktBlocks(content).flatMap((block) => {
@@ -267,19 +269,31 @@ function leafletListNode(
 function leafletToNode(
   block: LeafletRenderableBlock,
   ctx: BuildContext,
-): BlockNode | null {
+): BlockNode | Array<BlockNode> | null {
   switch (block.kind) {
     case "text": {
-      return block.block.plaintext
-        ? {
-            type: "paragraph",
-            dropCap: false,
-            text: {
-              plaintext: block.block.plaintext,
-              facets: block.block.facets,
-            },
-          }
-        : null;
+      if (!block.block.plaintext) return null;
+      return splitMarkdownishPlaintext(
+        block.block.plaintext,
+        block.block.facets,
+      ).map(
+        (paragraph): BlockNode =>
+          paragraph.kind === "blockquote"
+            ? {
+                type: "blockquote",
+                paragraphs: [
+                  { plaintext: paragraph.plaintext, facets: paragraph.facets },
+                ],
+              }
+            : {
+                type: "paragraph",
+                dropCap: false,
+                text: {
+                  plaintext: paragraph.plaintext,
+                  facets: paragraph.facets,
+                },
+              },
+      );
     }
     case "header": {
       return block.block.plaintext
@@ -296,9 +310,13 @@ function leafletToNode(
     case "blockquote": {
       return {
         type: "blockquote",
-        paragraphs: [
-          { plaintext: block.block.plaintext, facets: block.block.facets },
-        ],
+        paragraphs: splitMarkdownishPlaintext(
+          block.block.plaintext,
+          block.block.facets,
+        ).map((paragraph) => ({
+          plaintext: paragraph.plaintext,
+          facets: paragraph.facets,
+        })),
       };
     }
     case "horizontalRule": {
@@ -422,7 +440,8 @@ function leafletToNode(
         pageType: block.pageType,
         children: block.blocks.flatMap((nested) => {
           const node = leafletToNode(nested, ctx);
-          return node ? [node] : [];
+          if (!node) return [];
+          return Array.isArray(node) ? node : [node];
         }),
       };
     }
