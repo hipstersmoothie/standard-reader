@@ -113,14 +113,15 @@ export function MutedPill({
           <p {...stylex.props(styles.desc)}>
             {kind === "publication" ? (
               <Trans>
-                Its articles are hidden from your feeds, search and discovery.
-                Your subscription is untouched, and this page still works.
+                Its articles are hidden from your feeds, search and discovery in
+                Standard Reader. Your subscription is untouched, and this page
+                still works.
               </Trans>
             ) : (
               <Trans>
                 Their articles, publications and recommendations are hidden from
-                your feeds, search and discovery. Your subscriptions are
-                untouched, and this page still works.
+                your feeds, search and discovery in Standard Reader. Your
+                subscriptions are untouched, and this page still works.
               </Trans>
             )}
           </p>

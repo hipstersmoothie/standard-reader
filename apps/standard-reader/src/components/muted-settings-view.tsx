@@ -181,7 +181,7 @@ export function MutedSettingsView() {
       <Masthead
         kicker={t`Moderation`}
         title={t`Muted`}
-        dek={t`Muted people and publications disappear from your feeds, search, and discovery — quietly. Your subscriptions stay intact, direct links still work, and nobody is told. Mutes live in your own repo as records, so they follow you across devices.`}
+        dek={t`Muted people and publications disappear from your feeds, search, and discovery — but only in Standard Reader. Mutes are public records in your repo, but unlike a block, Bluesky and other apps don't enforce them. Your subscriptions stay intact and direct links still work.`}
         metaLabel={t`Muted`}
         metaValue={
           settings.isLoading ? (

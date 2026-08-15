@@ -152,10 +152,11 @@ export function BlockUserDialog({
       </AlertDialogHeader>
       <AlertDialogDescription>
         <Trans>
-          This writes a block to your Bluesky account, so it applies here and
-          anywhere else you use it. Their writing disappears from your feeds,
-          search and discussion, and they can't see yours. You can undo it in
-          Settings → Blocked accounts.
+          This writes a public block record to your atproto account, so it
+          applies everywhere that respects blocks — Standard Reader, Bluesky,
+          and other apps. Their writing and replies are hidden from your feeds
+          and search, and they can't see your writing. Undo in Settings →
+          Blocked accounts.
         </Trans>
       </AlertDialogDescription>
       <AlertDialogFooter>
