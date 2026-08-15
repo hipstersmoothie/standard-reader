@@ -53,6 +53,15 @@ const DEFAULT_APPLY_CONCURRENCY = 16;
  */
 const QUEUE_LIMIT = 2048;
 
+/**
+ * Attempts before an event is declared `unhandled`.
+ *
+ * Every `unhandled` observed in the soak was a dropped Neon connection that the
+ * very next attempt would have survived, and the cost of conceding is a process
+ * restart — so a couple of cheap retries here are worth far more than they cost.
+ */
+const UNHANDLED_RETRIES = 3;
+
 function envInt(name: string, fallback: number): number {
   const value = Number(process.env[name]);
   return Number.isFinite(value) && value > 0 ? Math.floor(value) : fallback;
@@ -149,6 +158,8 @@ export function startJetstreamChannel(): { destroy: () => Promise<void> } {
 
   const controller = new AbortController();
   const cursor = cursorStore();
+  /** Set when a worker halts the channel; re-thrown so the process exits. */
+  let fatal: Error | undefined;
 
   // --- Bounded queue between the read loop and the appliers ---------------
   //
@@ -202,10 +213,26 @@ export function startJetstreamChannel(): { destroy: () => Promise<void> } {
     let commit: number | undefined;
     while (inflight.length > 0 && inflight[0].remaining === 0) {
       const head = inflight[0];
-      // An `unhandled` event means the apply *and* its dead-letter write both
-      // failed — the DB is down or full. Holding the cursor here is the whole
-      // recovery mechanism: the batch replays once the DB is back.
-      if (head.unhandled) break;
+      // An `unhandled` event survived its retries: the apply *and* its
+      // dead-letter write both failed, so the read-model has no record of it
+      // anywhere. The cursor must not advance past it.
+      //
+      // Holding the cursor is necessary but *not* sufficient, and getting that
+      // wrong wedged this channel in the soak. The batch is already consumed
+      // from the stream, so nothing re-delivers it while the process lives:
+      // the cursor stayed frozen at the failure while workers kept applying
+      // later events, `inflight` grew without bound, and every event after the
+      // failure would have been replayed on the eventual restart anyway.
+      //
+      // Restarting is the recovery. The stored cursor still points at the last
+      // fully-applied batch, so a fresh process resumes exactly there and
+      // at-least-once redelivery covers everything after it.
+      if (head.unhandled) {
+        throw new Error(
+          `unhandled event at seq ${head.lastCursor}: apply and dead-letter both failed — ` +
+            `restarting to resume from the last committed cursor`,
+        );
+      }
       inflight.shift();
       commit = head.lastCursor;
     }
@@ -227,16 +254,29 @@ export function startJetstreamChannel(): { destroy: () => Promise<void> } {
       const { batch, event } = item;
       stats.lastSeq = Math.max(stats.lastSeq, event.id);
       stats.lastEventAt = Date.now();
+
+      // `unhandled` means the apply *and* its dead-letter write both failed —
+      // in practice a dropped connection, which the next attempt usually
+      // survives. Retry before conceding: conceding is expensive (see
+      // `drainCommitted`), so it is worth a few hundred milliseconds first.
       let result: ProcessResult = "unhandled";
-      try {
-        result = await processIngestEvent(event);
-      } catch (error: unknown) {
-        stats.errors += 1;
-        console.error(
-          `[ingest:jetstream] failed to process seq ${event.id}`,
-          error,
-        );
+      for (let attempt = 1; attempt <= UNHANDLED_RETRIES; attempt++) {
+        try {
+          result = await processIngestEvent(event);
+        } catch (error: unknown) {
+          stats.errors += 1;
+          console.error(
+            `[ingest:jetstream] failed to process seq ${event.id}`,
+            error,
+          );
+          result = "unhandled";
+        }
+        if (result !== "unhandled") break;
+        if (attempt < UNHANDLED_RETRIES) {
+          await new Promise((resolve) => setTimeout(resolve, 250 * attempt));
+        }
       }
+
       if (result === "applied") stats.applied += 1;
       else if (result === "dead-lettered") stats.deadLettered += 1;
       else {
@@ -246,10 +286,19 @@ export function startJetstreamChannel(): { destroy: () => Promise<void> } {
 
       batch.remaining -= 1;
       if (batch.remaining === 0) {
-        await drainCommitted().catch((error: unknown) => {
+        try {
+          await drainCommitted();
+        } catch (error: unknown) {
+          // An unhandled batch reached the head — the channel cannot make
+          // durable progress, so stop it rather than keep consuming events the
+          // cursor can never account for.
           stats.errors += 1;
-          console.error("[ingest:jetstream] cursor commit failed", error);
-        });
+          console.error("[ingest:jetstream] halting channel", error);
+          fatal = error instanceof Error ? error : new Error(String(error));
+          controller.abort();
+          wakeReader();
+          return;
+        }
       }
     }
   }
@@ -339,10 +388,12 @@ export function startJetstreamChannel(): { destroy: () => Promise<void> } {
       wakeAllWorkers();
     }
     await Promise.all(workers);
+    if (fatal) throw fatal;
     // Anything that finished after the last worker's own drain.
     await drainCommitted();
   })().catch((error: unknown) => {
-    if (controller.signal.aborted) return;
+    // A deliberate halt aborts the signal itself, so it must still surface.
+    if (controller.signal.aborted && !fatal) return;
     console.error("[ingest:jetstream] channel stopped", error);
     process.exitCode = 1;
   });
