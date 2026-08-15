@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import {
   APPVIEW_SERVICE_ID,
   appviewDid,
-  xrpcBaseUrl,
+  appviewServiceEndpoint,
 } from "#/server/xrpc/config";
 
 export const Route = createFileRoute("/.well-known/did.json")({
@@ -18,7 +18,7 @@ export const Route = createFileRoute("/.well-known/did.json")({
             {
               id: `#${APPVIEW_SERVICE_ID}`,
               type: "StandardReaderAppView",
-              serviceEndpoint: xrpcBaseUrl(),
+              serviceEndpoint: appviewServiceEndpoint(),
             },
           ],
         };

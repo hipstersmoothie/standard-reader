@@ -38,3 +38,18 @@ export function appviewAudience(): string {
 export function xrpcBaseUrl(): string {
   return `${getPublicUrl()}/xrpc`;
 }
+
+/**
+ * The `serviceEndpoint` we publish in the DID document — the bare origin,
+ * **never** a URL with a path.
+ *
+ * A proxying PDS uses this value verbatim as the undici dispatch origin and
+ * appends `/xrpc/<nsid>` itself; undici's `Pool` rejects any origin whose
+ * pathname isn't `/` with `invalid url`, which the PDS surfaces as
+ * `502 UpstreamFailure "Upstream service unreachable"` on **every** proxied
+ * call. Publishing `…/xrpc` here is what kept `atproto-proxy` broken after the
+ * DID spelling fix. Compare Bluesky's own appview document: `https://api.bsky.app`.
+ */
+export function appviewServiceEndpoint(): string {
+  return getPublicUrl();
+}

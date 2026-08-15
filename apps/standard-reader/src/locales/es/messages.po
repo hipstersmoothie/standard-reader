@@ -587,6 +587,10 @@ msgstr ""
 msgid "Name your series & pick a theme"
 msgstr "Ponga nombre a su serie y elija un tema"
 
+#: src/components/docs/api-docs-intro.tsx
+msgid "The proxy header is best for reads. It cannot serve writes: the service JWT your PDS mints tells us who you are but carries no credential to write to your repo with, so write procedures reject it. The same is true of a DPoP-bound token presented directly — we cannot replay it at your PDS. For writes, either call the AppView directly with an app-password session, or skip the AppView and write the <0>app.standard-reader.*</0> record to your own repo — the firehose mirrors it here within seconds."
+msgstr ""
+
 #: src/components/guide/pages/keeping-track-guide-page.tsx
 msgid "If you would rather not"
 msgstr ""
@@ -2998,6 +3002,10 @@ msgstr ""
 #: src/routes/review.thanks.tsx
 msgid "Return to the app"
 msgstr "Volver a la aplicación"
+
+#: src/components/docs/api-docs-intro.tsx
+msgid "Public reads need no token. Authenticated reads and writes accept standard AT Proto credentials: call your PDS with <0>atproto-proxy: {appviewDid}#{APPVIEW_SERVICE_ID}</0> (recommended), or call the AppView directly with <1>Authorization: DPoP</1> plus a DPoP proof. Token validity is checked via <2>com.atproto.server.getSession</2> on the issuer PDS; a token that cannot call <3>getSession</3> — an OAuth grant scoped only to <4>rpc:<method>?aud={appviewDid}#{APPVIEW_SERVICE_ID}</4> — is instead verified against the issuer's published keys, including its DPoP binding, and accepted for the methods that scope names."
+msgstr ""
 
 #: src/components/blocks-settings-view.tsx
 msgid "Moderation list"
@@ -6097,8 +6105,8 @@ msgid "Feedback submitted"
 msgstr "Comentario enviado"
 
 #: src/components/docs/api-docs-intro.tsx
-msgid "The proxy header is best for reads. It cannot serve writes: the service JWT your PDS mints tells us who you are but carries no credential to write to your repo with, so write procedures reject it. Call the AppView directly with your own token for those."
-msgstr ""
+#~ msgid "The proxy header is best for reads. It cannot serve writes: the service JWT your PDS mints tells us who you are but carries no credential to write to your repo with, so write procedures reject it. Call the AppView directly with your own token for those."
+#~ msgstr ""
 
 #: src/components/reader/collection-builder.tsx
 msgid "Move up"
@@ -7729,8 +7737,8 @@ msgid "Edit series"
 msgstr "Editar serie"
 
 #: src/components/docs/api-docs-intro.tsx
-msgid "Public reads need no token. Authenticated reads and writes accept standard AT Proto credentials: call your PDS with <0>atproto-proxy: {appviewDid}#{APPVIEW_SERVICE_ID}</0> (recommended), or call the AppView directly with <1>Authorization: DPoP</1> plus a DPoP proof. Token validity is checked via <2>com.atproto.server.getSession</2> on the issuer PDS."
-msgstr "Las lecturas públicas no necesitan token. Las lecturas y escrituras autenticadas aceptan credenciales estándar de AT Proto: llame a su PDS con <0>atproto-proxy: {appviewDid}#{APPVIEW_SERVICE_ID}</0> (recomendado), o llame directamente al AppView con <1>Authorization: DPoP</1> más una prueba DPoP. La validez del token se comprueba con <2>com.atproto.server.getSession</2> en el PDS emisor."
+#~ msgid "Public reads need no token. Authenticated reads and writes accept standard AT Proto credentials: call your PDS with <0>atproto-proxy: {appviewDid}#{APPVIEW_SERVICE_ID}</0> (recommended), or call the AppView directly with <1>Authorization: DPoP</1> plus a DPoP proof. Token validity is checked via <2>com.atproto.server.getSession</2> on the issuer PDS."
+#~ msgstr "Las lecturas públicas no necesitan token. Las lecturas y escrituras autenticadas aceptan credenciales estándar de AT Proto: llame a su PDS con <0>atproto-proxy: {appviewDid}#{APPVIEW_SERVICE_ID}</0> (recomendado), o llame directamente al AppView con <1>Authorization: DPoP</1> más una prueba DPoP. La validez del token se comprueba con <2>com.atproto.server.getSession</2> en el PDS emisor."
 
 #: src/components/guide/pages/getting-started-guide-page.tsx
 msgid "After that it is one button. Anywhere you see a publication — a card in a feed, the top of an article, a publication's own page — there is a <0>Subscribe</0> button next to its name. Select it again to unsubscribe. Nothing else changes: the button just decides whether new writing from that publication reaches your Home and Latest."
