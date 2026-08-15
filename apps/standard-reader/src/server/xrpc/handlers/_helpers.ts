@@ -20,6 +20,25 @@ export function requireAuthClient(
   ctx: XrpcRequestContext,
 ): XrpcAuthContext & { client: Client; did: Did } {
   if (!ctx.auth?.client) {
+    // A PDS-proxied caller authenticates fine but arrives with no PDS client:
+    // the service JWT proves who they are, yet carries no credential we could
+    // write to their repo with. A bare 401 here read as "your token is
+    // invalid" to external developers — say what is actually unsupported.
+    if (ctx.auth?.via === "serviceJwt") {
+      throw new InvalidRequestError(
+        "This procedure writes to your repo, which a proxied service JWT cannot authorize. " +
+          "Call the AppView directly with your own access token instead of via atproto-proxy.",
+      );
+    }
+    // Same shape for a self-verified OAuth JWT: DPoP binds the token to the
+    // caller's key, so the AppView cannot replay it against their PDS.
+    if (ctx.auth?.via === "oauthJwt") {
+      throw new InvalidRequestError(
+        "This procedure writes to your repo, and your DPoP-bound token cannot be replayed there by the AppView. " +
+          "Write the app.standard-reader.* record to your own repo instead (it is mirrored within seconds), " +
+          "or authenticate with an app password.",
+      );
+    }
     throw new AuthRequiredError("Authentication required");
   }
   return ctx.auth as XrpcAuthContext & { client: Client; did: Did };

@@ -1,6 +1,12 @@
+import { Pool } from "undici";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { APPVIEW_SERVICE_ID, appviewAudience, appviewDid } from "./config";
+import {
+  APPVIEW_SERVICE_ID,
+  appviewAudience,
+  appviewDid,
+  appviewServiceEndpoint,
+} from "./config";
 
 const originalPublicUrl = process.env.PUBLIC_URL;
 
@@ -36,6 +42,28 @@ describe("appviewDid", () => {
   it("tracks a non-production public URL", () => {
     process.env.PUBLIC_URL = "https://pr-42.up.railway.app";
     expect(appviewDid()).toBe("did:web:pr-42.up.railway.app");
+  });
+});
+
+describe("appviewServiceEndpoint", () => {
+  it("is a bare origin with no path", () => {
+    // Regression: publishing `…/xrpc` here made every PDS-proxied call fail
+    // with 502 UpstreamFailure — the PDS hands this value verbatim to undici
+    // as the dispatch origin (appending /xrpc/<nsid> itself), and undici
+    // rejects an origin whose pathname isn't `/`.
+    expect(appviewServiceEndpoint()).toBe("https://standard-reader.app");
+    expect(new URL(appviewServiceEndpoint()).pathname).toBe("/");
+  });
+
+  it("is accepted by undici as a dispatch origin, exactly as a PDS uses it", () => {
+    // @atproto/pds `pipethrough` passes the DID document's serviceEndpoint
+    // verbatim to its undici agent as the request origin. Run the same
+    // constructor a PDS runs so this can never silently regress.
+    const pool = new Pool(appviewServiceEndpoint());
+    void pool.close();
+    expect(() => new Pool("https://standard-reader.app/xrpc")).toThrow(
+      "invalid url",
+    );
   });
 });
 
