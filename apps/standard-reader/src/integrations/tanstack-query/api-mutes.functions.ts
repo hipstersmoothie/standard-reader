@@ -18,7 +18,7 @@ import {
   subjectRkey,
 } from "#/server/atproto/repo-records";
 import { upsertMute } from "#/server/ingest/handlers";
-import { ensureTracked } from "#/server/ingest/tap-client";
+import { ensureTracked } from "#/server/ingest/tracked-repos";
 import type { MutedPublicationRow, MutedUserRow } from "#/server/mutes/mutes";
 import {
   countReaderMutes,

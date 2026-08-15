@@ -26,7 +26,7 @@ import {
   filterMutedCards,
   muteFilterDid,
   notMutedByViewer,
-} from "#/server/mutes/mutes"
+} from "#/server/mutes/mutes";
 import { observe } from "#/server/observability/log";
 import { attachReaderSpanContext } from "#/server/observability/span-context.ts";
 import { attachCommentCountsToArticles } from "#/server/reader/document-comments";
