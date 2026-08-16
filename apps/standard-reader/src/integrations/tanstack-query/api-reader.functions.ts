@@ -30,12 +30,9 @@ import {
   putUserFollowRecord,
   subjectRkey,
 } from "#/server/atproto/repo-records";
-import {
-  backfillFollowedUserContent,
-  upsertSubscription,
-  upsertUserFollow,
-} from "#/server/ingest/handlers";
-import { ensureTracked } from "#/server/ingest/tap-client";
+import { backfillRepoFromArchive } from "#/server/ingest/archive-replay";
+import { upsertSubscription, upsertUserFollow } from "#/server/ingest/handlers";
+import { ensureTracked } from "#/server/ingest/tracked-repos";
 import { observe } from "#/server/observability/log";
 import { syncFollowedPublications } from "#/server/reader/followed-publications-sync.server";
 import { markDocumentsRead } from "#/server/reader/mark-documents-read";
@@ -644,7 +641,7 @@ function scheduleFollowedUserBackfill(subjectDid: string): void {
   followBackfillAttempted.add(subjectDid);
   void (async () => {
     try {
-      await backfillFollowedUserContent(subjectDid);
+      await backfillRepoFromArchive(subjectDid);
     } catch (error) {
       followBackfillAttempted.delete(subjectDid);
       console.warn(

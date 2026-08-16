@@ -40,9 +40,15 @@ export const ingestState = pgTable("ingest_state", {
 });
 
 /**
- * Repos we have asked `tap` to track. Lets the consumer add newly-discovered
- * DIDs (publication owners, contributors, subscribers, recommenders) exactly
- * once and mirror their backfill state for observability.
+ * Repos we care about: publication owners, contributors, subscribers,
+ * recommenders, and readers.
+ *
+ * This used to decide what got *indexed* — tap only streamed repos we had
+ * registered with it, so a DID missing from this table was a DID whose records
+ * never arrived. Jetstream subscribes by collection across the whole network,
+ * so coverage no longer depends on it. What it still answers is "whose profile
+ * should the refresh sweep keep fresh, and whose repo should the PDS reconcile
+ * check" — an inventory, not a gate.
  */
 export const trackedRepos = pgTable(
   "tracked_repos",
@@ -50,12 +56,20 @@ export const trackedRepos = pgTable(
     did: text("did").primaryKey(),
     /** Why we started tracking this repo. */
     reason: text("reason"),
-    /** When we POSTed it to `tap`'s `/repos/add` (null = discovered, not yet added). */
-    addedToTapAt: timestamp("added_to_tap_at", { withTimezone: true }),
-    /** Best-effort mirror of tap's backfill state. */
+    /** Reconcile lifecycle: `pending`, `ok`, or `gone` (see `repo-sync.ts`). */
     backfillState: text("backfill_state").notNull().default("pending"),
-    /** Last repo rev we've seen for this DID. */
-    lastSeenRev: text("last_seen_rev"),
+    /**
+     * Highest Jetstream seq the reconcile sweep has folded for this DID; null
+     * means never reconciled, which is what puts a freshly discovered repo at
+     * the front of the sweep.
+     *
+     * Replaces the repo's `rev`, which only meant anything to the PDS: the
+     * sweep used to ask each host for its latest commit and compare. Repair now
+     * reads the archive, so the watermark has to be in the archive's units —
+     * and a seq doubles as the `afterSeq` that makes the planner skip every
+     * block we have already folded.
+     */
+    lastSeenSeq: bigint("last_seen_seq", { mode: "number" }),
     /** Consecutive reconcile failures (transient fetch errors, or a PDS that
      * can't be resolved) since the last success. Drives `reconcileRetryAfter`
      * backoff; reset to 0 on the next successful reconcile. */

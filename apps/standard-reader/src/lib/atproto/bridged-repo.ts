@@ -1,25 +1,30 @@
 /**
- * Bridgy Fed repos, and the lane they belong in.
+ * Bridgy Fed repos, and how the read-model treats them.
  *
  * [Bridgy Fed](https://fed.brid.gy) mirrors the wider web into AT Protocol, and
  * its two bridges behave very differently:
  *
  * - **`*.web.brid.gy`** — a website Bridgy discovered and mirrored. Tens of
  *   thousands of them, thousands of posts each, and nobody at that site asked
- *   for a publication or verified one. This is the bulk.
+ *   for a publication or verified one. This is the bulk: it is the overwhelming
+ *   majority of indexed documents.
  * - **`*.ap.brid.gy`** — an ActivityPub blog whose author *chose* to bridge.
  *   Small in number, and squarely the sort of writing this reader is for.
  *
- * Both are welcome; what they cannot do is share a queue with everyone else.
- * Pointing the bulk bridge at the main tap put publishers and readers behind
- * its backfill *inside tap's resyncer*, and repos silently sat weeks behind
- * their PDS while tap still reported them `active`. So bridged repos get their
- * own tap instance — their own resync queue, their own volume — and a bridge
- * backfill can then only ever delay other bridged repos.
+ * Both are indexed; what the web bridge does not get is a place in the curated
+ * surfaces, which is what {@link WEB_BRIDGE_HANDLE_PATTERN} is for — every feed,
+ * directory, and topic derivation excludes it by handle.
  *
  * The distinction is drawn on the handle because that is the only place the two
  * bridges differ: both are served by the same PDS (`https://atproto.brid.gy`),
  * so the service endpoint cannot tell them apart.
+ *
+ * Ingestion used to care too: tap only streamed repos we registered with it, so
+ * bulk-bridge volume had to be routed to a dedicated tap instance or turned away
+ * outright, and this module owned that routing. Jetstream subscribes by
+ * collection across the whole network, so there is no queue to protect and no
+ * lane to assign — the routing helpers are gone and only the display-side
+ * distinction remains.
  */
 
 /** Handle suffix shared by every Bridgy Fed bridge. */
@@ -47,37 +52,12 @@ function endsWithSuffix(
 }
 
 /**
- * True for any Bridgy Fed repo — the repos that belong in the bridge lane.
+ * True for Bridgy's high-volume web bridge specifically.
  *
- * A null/unknown handle is never bridged. Identity resolution fails for plenty
- * of ordinary reasons, and misrouting a real publisher because their DID
- * document was briefly unreachable is worse than either alternative, so an
- * unresolved handle takes the main lane.
+ * A null/unknown handle is never treated as bridged. Identity resolution fails
+ * for plenty of ordinary reasons, and hiding a real publisher because their DID
+ * document was briefly unreachable is the worse mistake.
  */
-export function isBridgedHandle(handle: string | null | undefined): boolean {
-  return endsWithSuffix(handle, BRIDGE_HANDLE_SUFFIX);
-}
-
-/** True for Bridgy's high-volume web bridge specifically. */
 export function isWebBridgeHandle(handle: string | null | undefined): boolean {
   return endsWithSuffix(handle, WEB_BRIDGE_HANDLE_SUFFIX);
-}
-
-/**
- * Whether to turn this repo away entirely.
- *
- * Only the bulk web bridge, and only while there is no bridge lane to put it
- * in: with `TAP_BRIDGE_API_URL` configured the repo is routed there instead and
- * nothing is excluded. This is what makes the isolated lane the thing that
- * turns Bridgy fully back on, rather than a second switch to remember.
- *
- * `ap.brid.gy` is never excluded — those authors opted in, and the volume was
- * never the problem.
- */
-export function isExcludedBridgeHandle(
-  handle: string | null | undefined,
-  { hasBridgeLane }: { hasBridgeLane: boolean },
-): boolean {
-  if (hasBridgeLane) return false;
-  return isWebBridgeHandle(handle);
 }

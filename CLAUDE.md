@@ -25,7 +25,7 @@ was scaffolded with npm and later switched to pnpm: `package-lock.json` was remo
 
 ```
 apps/standard-reader/   # the reader app (TanStack Start) — src/, scripts/, perf/,
-                        #   drizzle/, lexicons/, public/, tap/, and its own configs
+                        #   drizzle/, lexicons/, public/, and its own configs
 apps/extension/         # the browser extension (WXT); shares app source via #/ and @/
 packages/               # workspace packages: design-system (shared UI) + the
                         #   publishable @standard-reader/renderer-* family + lexicons
@@ -175,15 +175,17 @@ wired up too (see "Linting & formatting"). `pnpm lint`, `pnpm format:check`, `pn
 ## AT Protocol data model — never hit the PDS for reads
 
 All AT Protocol record collections we care about are **mirrored into the Neon
-read-model** (Postgres tables in `src/db/schema/`) by the tap ingester
+read-model** (Postgres tables in `src/db/schema/`) by the Jetstream ingester
 (`src/server/ingest/`). The canonical records always live in each author's / reader's
 repo on their PDS, but the DB mirror is the read path. **Never hit the PDS for a
 read when data exists in the DB.**
 
 ### How it works
 
-- **Tap ingester** (`src/server/ingest/consumer.ts` → `handlers.ts`): every
-  `create`/`update`/`delete` event from the firehose upserts or deletes a DB row.
+- **Jetstream ingester** (`src/server/ingest/jetstream-channel.ts` →
+  `consumer.ts` → `handlers.ts`): one collection-filtered Jetstream v2
+  subscription — archive replay, then live tail — where every
+  `create`/`update`/`delete` upserts or deletes a DB row.
   Each collection has an `upsertX` handler and a `deleteRecord` case.
 - **DB tables**: `publications`, `documents`, `subscriptions`, `recommends`,
   `reads`, `bookmarks`, `lists`, `list_saves`, `labeler_subscriptions`,
@@ -193,7 +195,7 @@ read when data exists in the DB.**
   upserts into the DB, and then serves from the DB on subsequent reads.
 - **Writes** (`putRecord` / `deleteRecord` / `applyWrites` in
   `src/server/atproto/repo-records.ts`): these **always** hit the PDS — the repo is
-  the source of truth. After a successful write, the tap event mirrors the change
+  the source of truth. After a successful write, the stream event mirrors the change
   into the DB. The DB row is never the write target.
 
 ### Rules
@@ -212,7 +214,7 @@ read when data exists in the DB.**
    that have no DB mirror and never will.
 4. **Delete operations read from the DB, then delete on the PDS.** The read step
    (enumerating what to delete) uses the DB; the actual `deleteRecord` call goes
-   to the PDS. The DB row is cleaned up by the tap delete handler afterward.
+   to the PDS. The DB row is cleaned up by the stream's delete handler afterward.
 
 ## Scripts
 

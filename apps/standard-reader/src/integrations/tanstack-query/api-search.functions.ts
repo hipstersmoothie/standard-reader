@@ -21,7 +21,7 @@ import {
   filterBlockedCards,
   notBlockedByViewer,
 } from "#/server/blocks/blocks";
-import { ensureTracked } from "#/server/ingest/tap-client";
+import { ensureTracked } from "#/server/ingest/tracked-repos";
 import {
   filterMutedCards,
   muteFilterDid,

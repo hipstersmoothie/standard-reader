@@ -11,11 +11,6 @@ overrides:
   unplugin: ^3.0.0
   '@tanstack/router-core': 1.171.15
 
-patchedDependencies:
-  '@atproto/tap@0.3.0':
-    hash: 94151c1c9c601aaec7451b7a6a9f61eccb9d4be53de284172e1897ad2d201a79
-    path: patches/@atproto__tap@0.3.0.patch
-
 importers:
 
   .:
@@ -147,15 +142,15 @@ importers:
       '@atproto/oauth-scopes':
         specifier: ^0.5.9
         version: 0.5.9
-      '@atproto/tap':
-        specifier: ^0.3.0
-        version: 0.3.0(patch_hash=94151c1c9c601aaec7451b7a6a9f61eccb9d4be53de284172e1897ad2d201a79)
       '@atproto/xrpc-server':
         specifier: ^0.11.1
         version: 0.11.1
       '@aturi.to/waypoints':
         specifier: ^0.1.1
         version: 0.1.1
+      '@bsky/jetstream':
+        specifier: ^1.0.0
+        version: 1.0.0(@atproto/lex@0.3.0)
       '@fontsource-variable/atkinson-hyperlegible-next':
         specifier: ^5.2.6
         version: 5.2.6
@@ -1034,6 +1029,10 @@ packages:
     resolution: {integrity: sha512-1reaooZfNFunJn2Fz21Up7iFQBPZlifQKlBsRvQoLG67mv43nmH4dZWgnGLD54ShCu8dyZ8Y6Wgh7BCg+2gRSw==}
     engines: {node: '>=22'}
 
+  '@atproto/lex-cbor@0.1.6':
+    resolution: {integrity: sha512-PxLQy7jzV8u9zTGURNF8ZczLPk+ZH+WNx/2z/z7RacJbu7sWNpx26U2pC7cIkWtt4jyDaruaLhssw3w3atLotA==}
+    engines: {node: '>=22'}
+
   '@atproto/lex-client@0.1.3':
     resolution: {integrity: sha512-uvijUgULTW3aLg0akJWg35yKWfUz7eqLtXw2azpVQtaJ9f0qycoiaQ1LRHetiLrS34KT7i1O/vVd5kryHHW4CA==}
     engines: {node: '>=22'}
@@ -1044,6 +1043,10 @@ packages:
 
   '@atproto/lex-data@0.1.5':
     resolution: {integrity: sha512-TEM6GHuYpNm4O90LjNgbYq1Gmcr875S+BHrDxkg4PB5w/nlsz4HlbkGQG/WP/xbIV5O8TF5nNHDpCZ5ezTRrFA==}
+    engines: {node: '>=22'}
+
+  '@atproto/lex-data@0.1.7':
+    resolution: {integrity: sha512-kW/dPLqo/WgCLV+XESR4JKwV6c1rZWJGOfuPupZGTjEDAKoBbKXdaEzX9/1vKQYbZ9U3j0DS/n7OFFK7wBugyQ==}
     engines: {node: '>=22'}
 
   '@atproto/lex-document@0.1.6':
@@ -1069,11 +1072,6 @@ packages:
   '@atproto/lex-schema@0.2.2':
     resolution: {integrity: sha512-UFK0EH8pw31dvL27aoZ5K78z+UMiD3ybIgkCyd7Idm267KM1IpycerTDeABqo4CYP3/IAnzjGpQaUaVc12bELA==}
     engines: {node: '>=22'}
-
-  '@atproto/lex@0.1.3':
-    resolution: {integrity: sha512-sT2EvdB+I3Kml1z5oirIBgTQjTOJp3DRD5P391ll40Q5X6ghjCEvC449vwRbpk+f2f6svI7KGSONWg/TDj3Zjg==}
-    engines: {node: '>=22'}
-    hasBin: true
 
   '@atproto/lex@0.3.0':
     resolution: {integrity: sha512-Ir5f60NrCScDMZ2JGoxUHOQm+h6XlsDSykk0HzET8/qEeHTLwnI+MJIlBwB64eBoqGQ72qAEoMc8L+bJil+huA==}
@@ -1104,12 +1102,12 @@ packages:
     resolution: {integrity: sha512-EHsEHtasH/DGPljBYecVDjweGMQ5eTu6Ns0GZ5z0qdqpOI8ipBvldWnMIxWkA+5HfZ9Dsu4V1MX0WP7wgL8cuA==}
     engines: {node: '>=22'}
 
-  '@atproto/tap@0.3.0':
-    resolution: {integrity: sha512-jDGFt3wGU4xPaQHQwoGpRxMqGKGKNUeq7G/XI1d/5t4+esTEzVO6vmWqLasGLPZdoVhjcjKJECZxHoedDFHErA==}
-    engines: {node: '>=22'}
-
   '@atproto/ws-client@0.1.0':
     resolution: {integrity: sha512-8qG+A+htxEHpDJRgtYNUExUOejDwU4nE2SEJCFLiTc1G+s0GbFaeg7Fk5drQA9tLMHQWoU9uqIr1YQpJyvJs8w==}
+    engines: {node: '>=22'}
+
+  '@atproto/ws-client@0.2.1':
+    resolution: {integrity: sha512-HCGkqH/Ksxpgg/xCyIvH5hK6o8Lg2PxcEA790GCEV9MspCZB/xIesHZVgJN0cEvklGe+6pNCOZE1B5kj9q1ONA==}
     engines: {node: '>=22'}
 
   '@atproto/xrpc-server@0.11.1':
@@ -1665,6 +1663,12 @@ packages:
   '@bramus/specificity@2.4.2':
     resolution: {integrity: sha512-ctxtJ/eA+t+6q2++vj5j7FYX3nRu311q1wfYH3xjlLOsczhlhxAg2FWNUXhpGvAw3BWo1xBcvOV6/YLc2r5FJw==}
     hasBin: true
+
+  '@bsky/jetstream@1.0.0':
+    resolution: {integrity: sha512-YtQYhG6NEo7GevmVhRAUp8koyjoj+zf7u+Mo5/Of8xmHFVGLhHyQ57jck8JTPjizFW59G3fqM1fifMCuHFzL0w==}
+    engines: {node: '>=22.15.0'}
+    peerDependencies:
+      '@atproto/lex': ^0.3.0
 
   '@capsizecss/core@4.1.3':
     resolution: {integrity: sha512-d2sTTBwKuVioYxpwpU4URMp8VkFK+GI1VNGNawQcF8HBMHzCDa1FLcbeXJSzb5AJik7ZGv3aFVCTs7IS9MhvHg==}
@@ -4777,10 +4781,15 @@ packages:
       tmcp: ^1.17.0
       valibot: ^1.1.0
 
-  '@tmcp/transport-stdio@0.4.3':
-    resolution: {integrity: sha512-chdmSwk7PSXjkaQId2OAY8ZMFrTFWwckfCyXJuw6b6WFK9IMK95EoU2VDFioybcmawuQox0MNPM5R2DVxlptoA==}
+  '@tmcp/session-manager@0.3.0':
+    resolution: {integrity: sha512-L16r8qlzXUoS0ec7kuap1P1nQorCcZHHUFe7UGijwwrfBRXB0hFnfC+/BM1PVdGlM7Ade8YxomecybQN5imYXA==}
     peerDependencies:
-      tmcp: ^1.16.3
+      tmcp: ^1.20.0-next.0 || ^1.20.0
+
+  '@tmcp/transport-stdio@0.5.0':
+    resolution: {integrity: sha512-1NZsGDveDraa/KWsOOn8VybPn5PbYJi5hRWuIRUKIX7joa3Lx7tSf+0EeXwzG1OyPlsEeTNagBWpBpvpfh5lpw==}
+    peerDependencies:
+      tmcp: ^1.20.0-next.0 || ^1.20.0
 
   '@trickfilm400/rollup-plugin-off-main-thread@3.0.0-pre1':
     resolution: {integrity: sha512-/67zpWDBLV+oYAEL682s1ktXL0HgqX76f6gaVGkGnVZlBbm1zd0v4Bz8MFF2GGhoX9rvfq3KSQHubFHwa6w6/Q==}
@@ -9255,8 +9264,8 @@ packages:
     resolution: {integrity: sha512-kCwffuaH8ntKtygnWe1b4BJKWiCUH30n5KfoTr6IchcXOwR7chAOFJxFrH3vjANafUYrIA4a7SDL+nn7SiR4Sw==}
     hasBin: true
 
-  tmcp@1.19.4:
-    resolution: {integrity: sha512-fMoUJ3Gef9iA0yKZNeW2SQCCKTluCwghUyOz/qxPS8XxrQk6Jlw4lgql3S+s6L//FteLeSJ7erKxMWl727mZoQ==}
+  tmcp@1.20.0:
+    resolution: {integrity: sha512-dcDximKQBGqLP/aEAVA26HcWRHhKipstg1w0fbDDJ0HcFZ6lolLU1YYmStYEn/73f534i7WrDNcjRfRYdV9CoA==}
 
   tmp@0.2.5:
     resolution: {integrity: sha512-voyz6MApa1rQGUxT3E+BK7/ROe8itEx7vD8/HEvt4xwXucvQ5G5oeEiHkmHZJuBO21RpOf+YYm9MOivj709jow==}
@@ -10366,6 +10375,12 @@ snapshots:
       cborg: 4.5.8
       tslib: 2.8.1
 
+  '@atproto/lex-cbor@0.1.6':
+    dependencies:
+      '@atproto/lex-data': 0.1.7
+      cborg: 4.5.8
+      tslib: 2.8.1
+
   '@atproto/lex-client@0.1.3':
     dependencies:
       '@atproto/lex-data': 0.1.5
@@ -10381,6 +10396,12 @@ snapshots:
       tslib: 2.8.1
 
   '@atproto/lex-data@0.1.5':
+    dependencies:
+      multiformats: 13.4.2
+      tslib: 2.8.1
+      unicode-segmenter: 0.14.5
+
+  '@atproto/lex-data@0.1.7':
     dependencies:
       multiformats: 13.4.2
       tslib: 2.8.1
@@ -10434,17 +10455,6 @@ snapshots:
       '@standard-schema/spec': 1.1.0
       tslib: 2.8.1
 
-  '@atproto/lex@0.1.3':
-    dependencies:
-      '@atproto/lex-builder': 0.1.8
-      '@atproto/lex-client': 0.1.3
-      '@atproto/lex-data': 0.1.5
-      '@atproto/lex-installer': 0.1.9
-      '@atproto/lex-json': 0.1.4
-      '@atproto/lex-schema': 0.1.3
-      tslib: 2.8.1
-      yargs: 18.0.0
-
   '@atproto/lex@0.3.0':
     dependencies:
       '@atproto/lex-builder': 0.1.8
@@ -10494,20 +10504,16 @@ snapshots:
       iso-datestring-validator: 2.2.2
       tslib: 2.8.1
 
-  '@atproto/tap@0.3.0(patch_hash=94151c1c9c601aaec7451b7a6a9f61eccb9d4be53de284172e1897ad2d201a79)':
+  '@atproto/ws-client@0.1.0':
     dependencies:
       '@atproto/common': 0.6.1
-      '@atproto/lex': 0.1.3
-      '@atproto/syntax': 0.6.1
-      '@atproto/ws-client': 0.1.0
       ws: 8.21.0
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
 
-  '@atproto/ws-client@0.1.0':
+  '@atproto/ws-client@0.2.1':
     dependencies:
-      '@atproto/common': 0.6.1
       ws: 8.21.0
     transitivePeerDependencies:
       - bufferutil
@@ -11268,6 +11274,15 @@ snapshots:
   '@bramus/specificity@2.4.2':
     dependencies:
       css-tree: 3.2.1
+
+  '@bsky/jetstream@1.0.0(@atproto/lex@0.3.0)':
+    dependencies:
+      '@atproto/lex': 0.3.0
+      '@atproto/lex-cbor': 0.1.6
+      '@atproto/ws-client': 0.2.1
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
 
   '@capsizecss/core@4.1.3':
     dependencies:
@@ -13999,16 +14014,22 @@ snapshots:
       '@types/react': 19.2.17
       '@types/react-dom': 19.2.3(@types/react@19.2.17)
 
-  '@tmcp/adapter-valibot@0.1.6(tmcp@1.19.4(typescript@6.0.3))(valibot@1.4.1(typescript@6.0.3))':
+  '@tmcp/adapter-valibot@0.1.6(tmcp@1.20.0(typescript@6.0.3))(valibot@1.4.1(typescript@6.0.3))':
     dependencies:
       '@standard-schema/spec': 1.1.0
       '@valibot/to-json-schema': 1.7.0(valibot@1.4.1(typescript@6.0.3))
-      tmcp: 1.19.4(typescript@6.0.3)
+      tmcp: 1.20.0(typescript@6.0.3)
       valibot: 1.4.1(typescript@6.0.3)
 
-  '@tmcp/transport-stdio@0.4.3(tmcp@1.19.4(typescript@6.0.3))':
+  '@tmcp/session-manager@0.3.0(tmcp@1.20.0(typescript@6.0.3))':
     dependencies:
-      tmcp: 1.19.4(typescript@6.0.3)
+      json-rpc-2.0: 1.7.1
+      tmcp: 1.20.0(typescript@6.0.3)
+
+  '@tmcp/transport-stdio@0.5.0(tmcp@1.20.0(typescript@6.0.3))':
+    dependencies:
+      '@tmcp/session-manager': 0.3.0(tmcp@1.20.0(typescript@6.0.3))
+      tmcp: 1.20.0(typescript@6.0.3)
 
   '@trickfilm400/rollup-plugin-off-main-thread@3.0.0-pre1':
     dependencies:
@@ -16256,13 +16277,13 @@ snapshots:
   hip-ui@0.3.0(@types/react@19.2.17)(react@19.3.0-canary-ad78e251-20260616)(typescript@6.0.3):
     dependencies:
       '@inkjs/ui': 2.0.0(ink@6.8.0(@types/react@19.2.17)(react@19.3.0-canary-ad78e251-20260616))
-      '@tmcp/adapter-valibot': 0.1.6(tmcp@1.19.4(typescript@6.0.3))(valibot@1.4.1(typescript@6.0.3))
-      '@tmcp/transport-stdio': 0.4.3(tmcp@1.19.4(typescript@6.0.3))
+      '@tmcp/adapter-valibot': 0.1.6(tmcp@1.20.0(typescript@6.0.3))(valibot@1.4.1(typescript@6.0.3))
+      '@tmcp/transport-stdio': 0.5.0(tmcp@1.20.0(typescript@6.0.3))
       command-line-application: 0.10.1
       ink: 6.8.0(@types/react@19.2.17)(react@19.3.0-canary-ad78e251-20260616)
       lilconfig: 3.1.3
       media-chrome: 4.19.1(react@19.3.0-canary-ad78e251-20260616)
-      tmcp: 1.19.4(typescript@6.0.3)
+      tmcp: 1.20.0(typescript@6.0.3)
       valibot: 1.4.1(typescript@6.0.3)
     transitivePeerDependencies:
       - '@types/react'
@@ -19352,7 +19373,7 @@ snapshots:
     dependencies:
       tldts-core: 7.4.2
 
-  tmcp@1.19.4(typescript@6.0.3):
+  tmcp@1.20.0(typescript@6.0.3):
     dependencies:
       '@standard-schema/spec': 1.1.0
       json-rpc-2.0: 1.7.1

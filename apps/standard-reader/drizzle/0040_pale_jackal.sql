@@ -1,0 +1,1 @@
+ALTER TABLE "tracked_repos" DROP COLUMN "added_to_tap_at";

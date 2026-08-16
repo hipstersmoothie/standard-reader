@@ -6,7 +6,7 @@ import type { Db, Schema } from "#/integrations/tanstack-query/api-shapes";
 import { APPLY_WRITES_MAX_BATCH } from "#/server/atproto/repo-records";
 import { markDocumentsRead } from "#/server/reader/mark-documents-read";
 
-vi.mock("#/server/ingest/tap-client", () => ({
+vi.mock("#/server/ingest/tracked-repos", () => ({
   ensureTracked: vi.fn(async () => null),
 }));
 

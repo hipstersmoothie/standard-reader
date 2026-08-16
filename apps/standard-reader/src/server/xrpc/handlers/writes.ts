@@ -23,8 +23,8 @@ import {
   subjectRkey,
 } from "#/server/atproto/repo-records";
 import { Collections, buildAtUri } from "#/server/atproto/uri";
+import { backfillRepoFromArchive } from "#/server/ingest/archive-replay";
 import {
-  backfillFollowedUserContent,
   deleteRecord,
   upsertLabelerSubscription,
   upsertSubscription,
@@ -207,8 +207,9 @@ export async function handleFollowUser(ctx: XrpcRequestContext) {
     subject: subjectDid,
     createdAt,
   });
-  // Best-effort direct backfill so the feed isn't empty until tap catches up.
-  void backfillFollowedUserContent(subjectDid).catch(() => {});
+  // Best-effort archive backfill so the feed isn't empty until the sweep
+  // reaches the subject.
+  void backfillRepoFromArchive(subjectDid).catch(() => {});
   return {};
 }
 

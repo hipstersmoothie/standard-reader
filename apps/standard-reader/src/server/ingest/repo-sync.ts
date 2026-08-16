@@ -12,24 +12,13 @@ import {
   or,
   sql,
 } from "drizzle-orm";
-import type { PgColumn, PgTable } from "drizzle-orm/pg-core";
 
 import { db } from "../../db/index.ts";
 import {
-  bookmarks,
   documents,
-  labelerSubscriptions,
-  listSaves,
-  lists,
-  mutes,
   profiles,
   publications,
-  reads,
-  recommends,
-  sidebarPrefs,
-  subscriptions,
   trackedRepos,
-  userFollows,
 } from "../../db/schema.ts";
 import { WEB_BRIDGE_HANDLE_PATTERN } from "../../lib/atproto/bridged-repo.ts";
 import { chunk, mapWithConcurrency } from "../../lib/concurrency.ts";
@@ -41,18 +30,13 @@ import {
   LEAFLET_HOST,
   LEAFLET_NSID_PREFIX,
 } from "../../lib/publishing-platform.ts";
-import {
-  RepoGoneError,
-  fetchRepoHeadRev,
-  fetchRepoRecordWithFallback,
-  listRepoRecords,
-} from "../atproto/fetch-record.ts";
+import { fetchRepoRecordWithFallback } from "../atproto/fetch-record.ts";
 import { resolveIdentity } from "../atproto/identity.ts";
-import type { DocumentRecord, PublicationRecord } from "../atproto/types.ts";
+import type { PublicationRecord } from "../atproto/types.ts";
 import { Collections } from "../atproto/uri.ts";
 import { logEvent } from "../observability/log.ts";
-import { handleRecord } from "./consumer.ts";
-import { upsertDocument, upsertPublication } from "./handlers.ts";
+import { foldRepoFromArchive } from "./archive-replay.ts";
+import { upsertPublication } from "./handlers.ts";
 
 const DELETE_CHUNK = 500;
 
@@ -98,40 +82,14 @@ const RECONCILE_FAIL_BACKOFF_MS = 30 * 60_000;
 const RECONCILE_FAIL_BACKOFF_MAX_MS = 7 * 24 * 60 * 60_000;
 
 /**
- * Does this error mean the repo cannot be read until its *contents* change?
- *
- * A PDS refuses to serve an entire collection when a single record in it fails
- * lexicon validation — Bridgy Fed writes `site.standard.document` tags past
- * `maxGraphemes 128`, and `listRecords` then 400s for that repo's whole
- * document collection. No amount of retrying fixes that; only the author
- * rewriting the offending record does, and we cannot observe that happening
- * except through the very call that is failing.
- *
- * So these jump straight to the ceiling instead of climbing to it over a week
- * of daily failures. Classified by the error and never by the handle: this is
- * emphatically not a Bridgy-only problem — of the repos stuck in backoff, a
- * quarter are `ap.brid.gy` or ordinary repos.
- */
-function isPermanentlyUnreadable(error: unknown): boolean {
-  if (!(error instanceof Error)) {
-    return false;
-  }
-  return (
-    error.message.includes("400: InvalidRequest") &&
-    error.message.includes("listRecords")
-  );
-}
-
-/**
  * Share of a batch given to bulk web-bridge mirrors, on top of the batch.
  *
- * The round-robin's affordability rests on the rev gate: "a quiet repo costs
- * one request". Bulk `*.web.brid.gy` mirrors are never quiet — Bridgy Fed
- * rewrites them continuously — so the gate opens on essentially every visit and
- * each one re-lists and re-applies a whole repo, up to a couple of thousand
+ * The round-robin's affordability rests on the seq watermark: "a quiet repo
+ * costs one planning request". Bulk `*.web.brid.gy` mirrors are never quiet —
+ * Bridgy Fed rewrites them continuously — so the gate opens on essentially
+ * every visit and each one re-applies a whole repo, up to a couple of thousand
  * documents. At a third of the fleet they were a third of every batch, and
- * measured at ~72k document rows an hour: more rows than the ingest worker's
- * three tap channels deliver events, and all of it against the same Neon pool
+ * measured at ~72k document rows an hour, all of it against the same Neon pool
  * that live publisher and reader edits go through.
  *
  * So they get their own, much slower lap. At the default daily lap this is a
@@ -159,25 +117,26 @@ const isWebBridgeRepo = exists(
     ),
 );
 
-function nextRetryAfter(failCount: number, permanent: boolean): Date {
-  const backoffMs = permanent
-    ? RECONCILE_FAIL_BACKOFF_MAX_MS
-    : Math.min(
-        RECONCILE_FAIL_BACKOFF_MS * 2 ** (failCount - 1),
-        RECONCILE_FAIL_BACKOFF_MAX_MS,
-      );
+function nextRetryAfter(failCount: number): Date {
+  const backoffMs = Math.min(
+    RECONCILE_FAIL_BACKOFF_MS * 2 ** (failCount - 1),
+    RECONCILE_FAIL_BACKOFF_MAX_MS,
+  );
   return new Date(Date.now() + backoffMs);
 }
 
-/** Record a reconcile failure for `did` and schedule its next retry with
+/**
+ * Record a reconcile failure for `did` and schedule its next retry with
  * exponential backoff. Returns the new consecutive-failure count.
  *
- * `permanent` skips the climb and parks the repo at the ceiling — see
- * {@link isPermanentlyUnreadable}. */
-async function bumpReconcileFailure(
-  did: string,
-  { permanent = false }: { permanent?: boolean } = {},
-): Promise<number> {
+ * There is no longer a "permanent" class. That existed for one PDS-shaped
+ * failure — a host that 400s a whole collection because one record trips
+ * lexicon validation — which parked the repo at the week-long ceiling because
+ * retrying could never help. The archive serves raw CBOR and validates nothing
+ * on read, so those repos are readable again and every remaining failure is
+ * transient by construction.
+ */
+async function bumpReconcileFailure(did: string): Promise<number> {
   const [row] = await db
     .update(trackedRepos)
     .set({ reconcileFailCount: sql`${trackedRepos.reconcileFailCount} + 1` })
@@ -186,7 +145,7 @@ async function bumpReconcileFailure(
   const failCount = row?.reconcileFailCount ?? 1;
   await db
     .update(trackedRepos)
-    .set({ reconcileRetryAfter: nextRetryAfter(failCount, permanent) })
+    .set({ reconcileRetryAfter: nextRetryAfter(failCount) })
     .where(eq(trackedRepos.did, did));
   return failCount;
 }
@@ -245,168 +204,6 @@ export interface RepoReconcileResult {
 
 function rkeyOf(uri: string): string {
   return uri.slice(uri.lastIndexOf("/") + 1);
-}
-
-/** URIs per `uri in (...)` lookup when reading mirrored CIDs. */
-const CID_LOOKUP_CHUNK = 500;
-
-/** Any mirrored record table — every one of ours is keyed `(uri, cid)`. */
-type MirroredTable = PgTable & { uri: PgColumn; cid: PgColumn };
-
-/**
- * Tables carrying a mirrored record's `cid`, keyed by collection.
- *
- * Every one of these has `(uri, cid)`, which is all the repair needs: the
- * record's CID *is* the content hash, so a listed record whose CID already
- * matches the mirrored row is byte-identical and can be skipped without
- * looking at it. That is what keeps a repair proportional to what actually
- * changed rather than to repo size — a 10,000-post repo with three new posts
- * costs three writes.
- *
- * `publication` and `document` are absent on purpose: {@link
- * reconcileRepoFromPds} already walks those two (it also prunes them), and
- * gates them with {@link mirroredCids} itself.
- */
-const REPAIRABLE_COLLECTIONS: ReadonlyArray<{
-  collection: string;
-  table: MirroredTable;
-}> = [
-  { collection: Collections.read, table: reads },
-  { collection: Collections.subscription, table: subscriptions },
-  { collection: Collections.bookmark, table: bookmarks },
-  { collection: Collections.recommend, table: recommends },
-  { collection: Collections.list, table: lists },
-  { collection: Collections.listSave, table: listSaves },
-  { collection: Collections.labelerSubscription, table: labelerSubscriptions },
-  {
-    collection: Collections.labelerSubscriptionV2,
-    table: labelerSubscriptions,
-  },
-  { collection: Collections.sidebarPref, table: sidebarPrefs },
-  { collection: Collections.userFollow, table: userFollows },
-  { collection: Collections.mute, table: mutes },
-];
-
-/**
- * The CIDs we already hold for `uris`, as a `uri -> cid` map. A URI absent from
- * the map (or mapped to null) has never been mirrored, so it always repairs.
- */
-async function mirroredCids(
-  table: MirroredTable,
-  uris: Array<string>,
-): Promise<Map<string, string | null>> {
-  const known = new Map<string, string | null>();
-  for (const batch of chunk(uris, CID_LOOKUP_CHUNK)) {
-    const rows = await db
-      .select({ uri: table.uri, cid: table.cid })
-      .from(table)
-      .where(inArray(table.uri, batch));
-    for (const row of rows) {
-      known.set(String(row.uri), (row.cid as string | null) ?? null);
-    }
-  }
-  return known;
-}
-
-/**
- * Records from `listed` that our read-model doesn't already hold verbatim.
- *
- * A record with no CID from the host can't be compared, so it repairs — an
- * unnecessary idempotent write is the safe side of that coin.
- */
-function changedRecords(
-  listed: Array<{ uri: string; cid?: string; value?: Record<string, unknown> }>,
-  known: Map<string, string | null>,
-): Array<{ uri: string; cid?: string; value?: Record<string, unknown> }> {
-  return listed.filter((record) => {
-    if (!record.value) return false;
-    if (!record.cid) return true;
-    return known.get(record.uri) !== record.cid;
-  });
-}
-
-/**
- * How many of `listed` the read-model has never held under any CID.
- *
- * This is the repair measuring the live stream's loss rate. A record here is
- * one tap never delivered — not one it delivered and we then reconsidered, so
- * `has` rather than a CID comparison: {@link dedupeRecords} soft-deletes
- * identical-content duplicates, and those rows stay in the map and stay
- * uncounted. Otherwise every repair of a repo that once published a duplicate
- * would report a permanent phantom gap.
- */
-function unmirroredCount(
-  listed: Array<{ uri: string; value?: Record<string, unknown> }>,
-  known: Map<string, string | null>,
-): number {
-  return listed.filter((record) => record.value && !known.has(record.uri))
-    .length;
-}
-
-/**
- * Re-apply a repo's reader-side records (reads, subscriptions, bookmarks,
- * lists, …) from its PDS.
- *
- * These collections had no safety net at all: the reconcile round-robin only
- * ever selected `publication`/`document` repos, and even for those it only
- * walked those two collections. So when tap silently stopped streaming a
- * reader's repo, their reads simply stopped arriving and nothing on any
- * schedule would ever notice — which is what makes "mark all as read" spring
- * back to unread.
- *
- * Records are replayed through {@link handleRecord}, the same dispatcher tap
- * feeds, so a repaired row is written by exactly the code that writes a live
- * one. Deletes are *not* inferred here — a record missing from the PDS is left
- * alone rather than pruned. Enumerating a collection is not proof it was ever
- * populated (a host that 4xxs a collection returns the same empty list as a
- * reader who has never bookmarked anything), and treating that as "delete
- * everything" would erase a reader's history on a transient error. Prune stays
- * where the record set is corroborated: publications and documents.
- */
-async function repairReaderCollections(
-  did: string,
-  pds: string | null,
-  headRev: string | null,
-): Promise<{ scanned: number; repaired: number }> {
-  let scanned = 0;
-  let repaired = 0;
-
-  for (const { collection, table } of REPAIRABLE_COLLECTIONS) {
-    const listed = await listRepoRecords(did, collection, pds).catch(
-      (error: unknown) => {
-        // A repo that has never used a collection is the common case and reads
-        // as an error on some hosts; one unreadable collection must not abort
-        // the rest of the repair.
-        if (error instanceof RepoGoneError) throw error;
-        return null;
-      },
-    );
-    const records = listed?.records ?? [];
-    if (records.length === 0) continue;
-    scanned += records.length;
-
-    const known = await mirroredCids(
-      table,
-      records.map((record) => record.uri),
-    );
-    for (const record of changedRecords(records, known)) {
-      await handleRecord({
-        action: "create",
-        cid: record.cid,
-        collection,
-        did,
-        // Not a firehose delivery — this record is being replayed from the
-        // repo precisely because the live stream didn't bring it.
-        live: false,
-        record: record.value,
-        rev: headRev ?? "",
-        rkey: rkeyOf(record.uri),
-      });
-      repaired += 1;
-    }
-  }
-
-  return { repaired, scanned };
 }
 
 async function deleteInChunks(
@@ -515,15 +312,61 @@ export async function markRepoGone(
  * prune + retire the tracked repo. Transient failures (502, fetch failed,
  * timeout) still propagate as thrown errors so the round-robin retries them.
  */
-export async function reconcileRepoFromPds(
+export async function reconcileRepoFromArchive(
   did: string,
   opts: { dryRun?: boolean; upsert?: boolean } = {},
 ): Promise<RepoReconcileResult> {
   const dryRun = opts.dryRun ?? false;
   const upsert = opts.upsert ?? false;
 
-  const identity = await resolveIdentity(did);
-  if (!identity.pds) {
+  // A full rebuild: `afterSeq` 0 is the only mode whose live set is complete
+  // enough to prune against. An incremental fold sees only what changed, and
+  // "not in the last hour's events" is not "deleted".
+  const fold = await foldRepoFromArchive(did, {
+    afterSeq: 0,
+    // A dry run must not write; the fold applies as it goes, so the caller gets
+    // the diff from a fold it never runs.
+    skipApply: !upsert || dryRun,
+  });
+
+  if (fold.gone) {
+    return {
+      did,
+      gone: true,
+      pdsDocuments: 0,
+      pdsPublications: 0,
+      prunedDocuments: 0,
+      prunedPublications: 0,
+      unmirroredDocuments: 0,
+      unmirroredPublications: 0,
+      upsertedDocuments: 0,
+    };
+  }
+
+  const livePubUris = fold.live.get(Collections.publication) ?? new Set();
+  const liveDocUris = fold.live.get(Collections.document) ?? new Set();
+
+  // An empty plan is not proof of an empty repo — a repo the relay never saw
+  // plans to zero blocks exactly like one that has no records. Pruning on that
+  // would delete a live publisher's whole catalogue, so an empty fold reports
+  // "skipped" and changes nothing.
+  if (fold.empty) {
+    logEvent("ingest.reconcileSkippedEmpty", {
+      did,
+      ok: true,
+      reason: "archive-plan-matched-nothing",
+    });
+    if (!dryRun) {
+      // Advance the round-robin past it; nothing here is a failure.
+      await db
+        .update(trackedRepos)
+        .set({
+          reconcileFailCount: 0,
+          reconcileRetryAfter: null,
+          updatedAt: new Date(),
+        })
+        .where(eq(trackedRepos.did, did));
+    }
     return {
       did,
       pdsDocuments: 0,
@@ -537,94 +380,6 @@ export async function reconcileRepoFromPds(
     };
   }
 
-  const pubResult = await listRepoRecords(
-    did,
-    Collections.publication,
-    identity.pds,
-  ).catch((error: unknown) => {
-    if (error instanceof RepoGoneError) {
-      return { gone: true as const };
-    }
-    throw error;
-  });
-  if ("gone" in pubResult) {
-    return {
-      did,
-      gone: true,
-      pdsDocuments: 0,
-      pdsPublications: 0,
-      prunedDocuments: 0,
-      prunedPublications: 0,
-      unmirroredDocuments: 0,
-      unmirroredPublications: 0,
-      upsertedDocuments: 0,
-    };
-  }
-  const pubs = pubResult.records;
-  const livePubUris = new Set(pubs.map((record) => record.uri));
-  let unmirroredPublications = 0;
-  if (upsert && !dryRun) {
-    const known = await mirroredCids(
-      publications,
-      pubs.map((record) => record.uri),
-    );
-    unmirroredPublications = unmirroredCount(pubs, known);
-    for (const record of changedRecords(pubs, known)) {
-      await upsertPublication(
-        record.uri,
-        did,
-        rkeyOf(record.uri),
-        record.cid,
-        record.value as unknown as PublicationRecord,
-      );
-    }
-  }
-
-  const docResult = await listRepoRecords(
-    did,
-    Collections.document,
-    identity.pds,
-  ).catch((error: unknown) => {
-    if (error instanceof RepoGoneError) {
-      return { gone: true as const };
-    }
-    throw error;
-  });
-  if ("gone" in docResult) {
-    return {
-      did,
-      gone: true,
-      pdsDocuments: 0,
-      pdsPublications: pubs.length,
-      prunedDocuments: 0,
-      prunedPublications: 0,
-      unmirroredDocuments: 0,
-      unmirroredPublications,
-      upsertedDocuments: 0,
-    };
-  }
-  const docs = docResult.records;
-  const liveDocUris = new Set(docs.map((record) => record.uri));
-  let upsertedDocuments = 0;
-  let unmirroredDocuments = 0;
-  if (upsert && !dryRun) {
-    const known = await mirroredCids(
-      documents,
-      docs.map((record) => record.uri),
-    );
-    unmirroredDocuments = unmirroredCount(docs, known);
-    for (const record of changedRecords(docs, known)) {
-      await upsertDocument(
-        record.uri,
-        did,
-        rkeyOf(record.uri),
-        record.cid,
-        record.value as unknown as DocumentRecord,
-      );
-      upsertedDocuments += 1;
-    }
-  }
-
   const pruned = await pruneStaleRepoRecords(
     did,
     { documents: liveDocUris, publications: livePubUris },
@@ -635,6 +390,7 @@ export async function reconcileRepoFromPds(
     await db
       .update(trackedRepos)
       .set({
+        lastSeenSeq: fold.lastSeq,
         reconcileFailCount: 0,
         reconcileRetryAfter: null,
         updatedAt: new Date(),
@@ -642,32 +398,15 @@ export async function reconcileRepoFromPds(
       .where(eq(trackedRepos.did, did));
   }
 
-  // Surface migration if either fetch recovered records from a new PDS.
-  const migrated = pubResult.migrated || docResult.migrated;
-  const migratedFrom = pubResult.migratedFrom ?? docResult.migratedFrom;
-  // `servedBy` is the host that actually served the records. When a migration
-  // happened, that host is the new PDS — pick whichever result differs from
-  // the cached identity's PDS (prefer the publications fetch, then docs).
-  const migratedTo = migrated
-    ? pubResult.servedBy === identity.pds
-      ? docResult.servedBy === identity.pds
-        ? identity.pds
-        : docResult.servedBy
-      : pubResult.servedBy
-    : undefined;
-
   return {
     did,
-    pdsDocuments: docs.length,
-    pdsPublications: pubs.length,
+    pdsDocuments: liveDocUris.size,
+    pdsPublications: livePubUris.size,
     prunedDocuments: pruned.documents,
     prunedPublications: pruned.publications,
-    unmirroredDocuments,
-    unmirroredPublications,
-    upsertedDocuments,
-    migrated: migrated || undefined,
-    migratedFrom,
-    migratedTo: migrated ? migratedTo : undefined,
+    unmirroredDocuments: 0,
+    unmirroredPublications: 0,
+    upsertedDocuments: fold.applied,
   };
 }
 
@@ -822,21 +561,49 @@ export interface RepoRepairResult extends RepoReconcileResult {
  * reconciled anyway. Skipping repair on a failed lookup would reproduce the
  * exact silence this exists to break.
  */
-export async function repairRepoIfAdvanced(
+export async function repairRepoFromArchive(
   did: string,
 ): Promise<RepoRepairResult> {
-  const identity = await resolveIdentity(did);
-  const headRev = await fetchRepoHeadRev(did, identity.pds);
-
   const [tracked] = await db
-    .select({ lastSeenRev: trackedRepos.lastSeenRev })
+    .select({ lastSeenSeq: trackedRepos.lastSeenSeq })
     .from(trackedRepos)
     .where(eq(trackedRepos.did, did))
     .limit(1);
+  const lastSeenSeq = tracked?.lastSeenSeq ?? null;
 
-  if (headRev != null && tracked?.lastSeenRev === headRev) {
-    // Nothing has been committed since we last mirrored this repo. Touch
-    // `updated_at` so the round-robin still advances past it.
+  // A repo we have never folded gets a full rebuild — that is the case where
+  // pruning is both safe and needed, and it is the one that replaces tap's
+  // "register the repo and let it backfill".
+  if (lastSeenSeq == null) {
+    const result = await reconcileRepoFromArchive(did, { upsert: true });
+    return { ...result, headRev: null, unchanged: false };
+  }
+
+  // Incremental: fold only what the archive has gained since we last swept
+  // this repo. The planner drops every block at or below the watermark before
+  // anything is downloaded, so a quiet repo costs one planning request and
+  // yields nothing — the same "cheap when unchanged" property the PDS rev gate
+  // had, without asking a third-party host for it.
+  const fold = await foldRepoFromArchive(did, { afterSeq: lastSeenSeq });
+
+  if (fold.gone) {
+    return {
+      did,
+      gone: true,
+      headRev: null,
+      pdsDocuments: 0,
+      pdsPublications: 0,
+      prunedDocuments: 0,
+      prunedPublications: 0,
+      unchanged: false,
+      unmirroredDocuments: 0,
+      unmirroredPublications: 0,
+      upsertedDocuments: 0,
+    };
+  }
+
+  // Nothing new. Touch `updated_at` so the round-robin advances past it.
+  if (fold.empty) {
     await db
       .update(trackedRepos)
       .set({
@@ -847,7 +614,7 @@ export async function repairRepoIfAdvanced(
       .where(eq(trackedRepos.did, did));
     return {
       did,
-      headRev,
+      headRev: null,
       pdsDocuments: 0,
       pdsPublications: 0,
       prunedDocuments: 0,
@@ -859,25 +626,36 @@ export async function repairRepoIfAdvanced(
     };
   }
 
-  const result = await reconcileRepoFromPds(did, { upsert: true });
+  // Deletes in the folded window were applied as events, so there is nothing to
+  // prune: an incremental fold cannot distinguish "deleted" from "unchanged and
+  // therefore absent". Pruning stays with the full rebuild above.
+  //
+  // Advance the watermark only now, after the records are in. Recording it
+  // first would let a mid-way failure be remembered as a clean sync, and the
+  // gate would then skip the repo forever.
+  await db
+    .update(trackedRepos)
+    .set({
+      lastSeenSeq: fold.lastSeq,
+      reconcileFailCount: 0,
+      reconcileRetryAfter: null,
+      updatedAt: new Date(),
+    })
+    .where(eq(trackedRepos.did, did));
 
-  if (result.gone || result.skipped) {
-    return { ...result, headRev };
-  }
-
-  const reader = await repairReaderCollections(did, identity.pds, headRev);
-
-  // Only now is the head the mark of a *completed* mirror. Recording it before
-  // the repair would let a mid-way failure be remembered as a clean sync, and
-  // the gate above would then skip the repo forever.
-  if (headRev != null) {
-    await db
-      .update(trackedRepos)
-      .set({ lastSeenRev: headRev, updatedAt: new Date() })
-      .where(eq(trackedRepos.did, did));
-  }
-
-  return { ...result, headRev, repairedReaderRecords: reader.repaired };
+  return {
+    did,
+    headRev: null,
+    pdsDocuments: 0,
+    pdsPublications: 0,
+    prunedDocuments: 0,
+    prunedPublications: 0,
+    repairedReaderRecords: fold.applied,
+    unchanged: false,
+    unmirroredDocuments: 0,
+    unmirroredPublications: 0,
+    upsertedDocuments: fold.applied,
+  };
 }
 
 /** Round-robin publisher repos (least recently reconciled first).
@@ -902,7 +680,7 @@ export async function reconcilePublisherReposBatch(
   // `publication`/`document` is what left readers with no safety net: a
   // `subscriber`/`reader` repo that tap stopped streaming was never visited by
   // anything, so their reads and subscriptions silently stopped arriving and
-  // "mark all as read" sprang back. The rev gate in `repairRepoIfAdvanced`
+  // "mark all as read" sprang back. The seq watermark in `repairRepoFromArchive`
   // makes the wider set affordable — a quiet repo costs one request.
   //
   // Two selects rather than one, because the rev gate does *not* make bulk
@@ -927,7 +705,24 @@ export async function reconcilePublisherReposBatch(
           lane === "bridge" ? isWebBridgeRepo : not(isWebBridgeRepo),
         ),
       )
-      .orderBy(asc(trackedRepos.updatedAt))
+      // Never-reconciled repos first, then least-recently-reconciled.
+      //
+      // The `last_seen_rev is null` term is what replaces tap's `/repos/add`.
+      // Under tap, discovering a repo (a document's contributor, a
+      // subscription's target) registered it and tap backfilled its history
+      // within minutes. Jetstream needs no registration and already delivers
+      // that repo's *new* records, but records it wrote before we were watching
+      // still have to come off its PDS — and this sweep is now the only thing
+      // that fetches them. Ordering by `updated_at` alone put a brand-new row
+      // (stamped `now()` on insert) at the *back* of the lap, so that history
+      // would sit unfetched for a full lap. A repo we have never reconciled has
+      // no `last_seen_seq`, which is exactly the set to visit first.
+      //
+      // Written as raw SQL rather than `asc(...)`: Drizzle appends the
+      // direction after the expression, which would emit `... is null asc desc`.
+      .orderBy(
+        sql`${trackedRepos.lastSeenSeq} is null desc, ${trackedRepos.updatedAt} asc`,
+      )
       .limit(take);
 
   const webBridgeQuota = Math.max(1, Math.ceil(limit * WEB_BRIDGE_BATCH_SHARE));
@@ -945,7 +740,7 @@ export async function reconcilePublisherReposBatch(
 
   await mapWithConcurrency(repos, RECONCILE_CONCURRENCY, async (repo) => {
     try {
-      const result = await repairRepoIfAdvanced(repo.did);
+      const result = await repairRepoFromArchive(repo.did);
       if (result.unchanged) {
         // Head matched `last_seen_rev` — one request, nothing to do.
         return;
@@ -969,16 +764,13 @@ export async function reconcilePublisherReposBatch(
         return;
       }
       if (result.skipped) {
-        // Identity couldn't be resolved to a usable PDS (unreachable DID doc,
-        // or a malformed/missing service endpoint) — back off like a
-        // transient failure instead of retrying every tick.
-        const failCount = await bumpReconcileFailure(repo.did);
-        logEvent("ingest.repoReconcile", {
-          did: repo.did,
-          failCount,
-          ok: false,
-          reason: "unresolved-pds",
-        });
+        // The archive plan matched nothing for this DID. Under the PDS sweep
+        // the equivalent — an unresolvable host — was a failure worth backing
+        // off. Here it is the ordinary state of a tracked repo that has never
+        // written one of our records (a followed account, a contributor whose
+        // own repo is empty), so it advances the round-robin without inflating
+        // a failure count that would eventually park a perfectly healthy row.
+        results.push(result);
         return;
       }
       // What the repair had to insert from scratch is the only measurement we
@@ -1025,14 +817,12 @@ export async function reconcilePublisherReposBatch(
       prunedDocuments += result.prunedDocuments;
       prunedPublications += result.prunedPublications;
     } catch (error: unknown) {
-      const permanent = isPermanentlyUnreadable(error);
-      const failCount = await bumpReconcileFailure(repo.did, { permanent });
+      const failCount = await bumpReconcileFailure(repo.did);
       logEvent("ingest.repoReconcile", {
         did: repo.did,
         error: error instanceof Error ? error.message : String(error),
         failCount,
         ok: false,
-        permanent,
       });
     }
   });

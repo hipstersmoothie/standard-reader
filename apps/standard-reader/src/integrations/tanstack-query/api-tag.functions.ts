@@ -11,7 +11,7 @@ import {
 } from "#/server/atproto/repo-records";
 import { blockFilterDid } from "#/server/blocks/blocks";
 import { upsertSubscription } from "#/server/ingest/handlers";
-import { ensureTracked } from "#/server/ingest/tap-client";
+import { ensureTracked } from "#/server/ingest/tracked-repos";
 import { attachSubscribedLabels } from "#/server/labeler/labels.server";
 import { muteFilterDid } from "#/server/mutes/mutes";
 import { observe } from "#/server/observability/log";

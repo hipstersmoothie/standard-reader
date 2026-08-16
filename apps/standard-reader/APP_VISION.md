@@ -20,7 +20,7 @@ That property is the whole product thesis:
 - **Discovery is a public good.** Because every publication speaks the same protocol, the
   app can show _every_ publication the network knows about and help you find new ones.
 
-We make the "directory is just a query" idea literal: a **tap instance backfills all
+We make the "directory is just a query" idea literal: a **Jetstream v2 subscription backfills all
 `standard.site` data off the network into a Neon Postgres read-model**, so the app can browse,
 rank, and recommend across the _entire_ known network instantly — while the canonical records
 still live in each author's (and each reader's) repo.
@@ -204,7 +204,7 @@ Topics are **derived, never curated** — see
   `baseBlocks` front matter and horizontal rules). **`site.mochott.article`**
   ([mochott](https://mochott.site)) is fully supported: mochott's `site.standard.document` carries no
   body at all — it lives in a `site.mochott.article` at the same rkey — so that collection is
-  delivered by the tap and indexed onto the document row as its content (sidecar-style, like
+  delivered by the ingester and indexed onto the document row as its content (sidecar-style, like
   `app.standard-reader.collection`, with a repo fetch as the catch-up path), then rendered from its
   TipTap tree by `renderer-core`.
   Leaflet's `pub.leaflet.blocks.html` — the author's own HTML — renders in a
@@ -410,7 +410,7 @@ only a short note of prose is a **comic**, anything else a **book**. Both are mi
 read-model row (`publications.prev_next_direction`, `publications.serial_kind`) and travel to
 the UI as `PublicationCard.serial` (see `#/lib/publication/serial`).
 
-Both are filled **on demand** as well as by the sweep. The tap only writes
+Both are filled **on demand** as well as by the sweep. The ingester only writes
 `prev_next_direction` when a publication record is created or updated, so a publication indexed
 before the column existed would stay dark until its author happened to edit it. A NULL there
 therefore means "never mirrored", not "ordinary blog" — `upsertPublication` stores the lexicon
@@ -784,14 +784,14 @@ source of truth; Neon holds a derived view for speed and cross-network querying.
   "Track reading history" setting: position is reading history at a finer grain.
 - **The write path mirrors personal state into Neon itself**
   (`src/server/reader/personal-state-mirror.ts`) — reads, bookmarks, and likes — rather than
-  waiting for the tap to replay them. These are the toggles a reader watches change in the moment
+  waiting for the ingester to replay them. These are the toggles a reader watches change in the moment
   (unread dots, feed counts, the history list, the saved queue, the heart and its count), and
-  routing them through a shared, back-pressured ingest queue meant that during a tap backlog an
+  routing them through a shared, back-pressured ingest queue meant that during an ingest backlog an
   article stayed unread for hours after it was read. Every write path (server fns, XRPC — and so
   MCP + the extension) upserts the same row ingest would, keyed by the same record AT-URI,
-  immediately after the PDS commits. The tap's later replay overwrites it with identical values, so
+  immediately after the PDS commits. The ingester's later replay overwrites it with identical values, so
   the mirror converges on the repo rather than competing with it, and a mirror failure just degrades
-  to waiting for the tap. Two details carry the correctness: removals delete **by record AT-URI**,
+  to waiting for the ingester. Two details carry the correctness: removals delete **by record AT-URI**,
   not by `(owner, document)`, because the write path only deletes the record at its own
   deterministic rkey — another client's record for the same document has to keep its row; and reads
   mirror **per committed `applyWrites` batch**, so a "mark all read" that fails partway reflects
@@ -818,7 +818,7 @@ source of truth; Neon holds a derived view for speed and cross-network querying.
   the reader's _effective_ follow set (subscriptions ∪ saved-list publications, computed in
   `src/server/reader/saved-lists.ts` with a short-TTL per-reader cache) — no individual
   `site.standard.graph.subscription` records are written. Both `list` and `listSave` records are
-  **mirrored into Neon** (`lists` + `list_saves` tables) by the tap ingester so the shell snapshot
+  **mirrored into Neon** (`lists` + `list_saves` tables) by the ingester so the shell snapshot
   never blocks on PDS I/O. A backfill from the PDS runs on first access when no rows exist yet.
 - **Sidebar personalization:** `app.standard-reader.sidebarPref` — a per-reader singleton (rkey
   `self`, mirrored into `sidebar_prefs`) holding collapsed groups (`collapsed`), the sort mode
@@ -1013,7 +1013,7 @@ re-auth because `prompt: consent` re-consent isn't reliable across PDS providers
   - `app.standard-reader.collectionsPublication` — marks a
     `site.standard.publication` as a collections series (same rkey sidecar).
     Mirrored into the read-model as `publications.collections_publication`
-    (bool) so the `/collections` read path stays DB-only (the tap ingester
+    (bool) so the `/collections` read path stays DB-only (the ingester
     upserts/clears it; write fns eagerly set it for read-after-write
     consistency, with a PDS backfill on cold start).
   - `app.standard-reader.publicationTheme` — Google Font names for a collections
@@ -1021,7 +1021,7 @@ re-auth because `prompt: consent` re-consent isn't reliable across PDS providers
 
 ### AppView XRPC (public API)
 
-Third-party AT clients can query the indexed read-model without running tap. Standard Reader
+Third-party AT clients can query the indexed read-model without running an ingester of their own. Standard Reader
 serves **`app.standard-reader.*` query and procedure lexicons** at `/xrpc/...` on
 `standard-reader.app`:
 
@@ -1263,7 +1263,7 @@ A reader's blocks follow them here, in both directions, with no setup and no imp
   reader; the account is on a moderation list the reader blocks (`app.bsky.graph.listblock` +
   `listitem`); or the account blocks a list the reader is _on_ (Bluesky's `blockedByList`). All
   four hide content, which is what makes a block feel like a block rather than a mute.
-- **Blocks can't ride the tap.** The firehose ingester tracks the repos we index; a block against
+- **Blocks can't ride the stream.** We index by collection, and the block collections are not ours to subscribe to; a block against
   one of our readers can be written by any repo on the network. So blocks are pulled **per reader,
   on a cadence** (`server/blocks/sync.server.ts`): their own records from their PDS, incoming
   blocks from Constellation's backlink index, and list membership from the public AppView. The
@@ -1380,7 +1380,7 @@ reversibly.
 AT Proto network (standard.site publications, profiles, follows)
         │
         ▼
-   tap instance  ──WebSocket + acks──▶ ingest worker ──backfill / keep-in-sync──▶  Neon Postgres (read-model / cache)
+   Jetstream v2  ──archive replay ▸ live tail──▶ ingest worker ──▶  Neon Postgres (read-model / cache)
                                                       │  Drizzle ORM
                                                       ▼
                               TanStack Start server functions
@@ -1391,68 +1391,64 @@ AT Proto network (standard.site publications, profiles, follows)
                                                       └─▶ cache updated optimistically
 ```
 
-- **Ingestion:** **tap instances** (`bluesky-social/indigo` cmd/tap; see `tap/`) backfill all
-  `standard.site` data from the network and keep it current. The primary tap signals on
-  `site.standard.publication` to discover publishers; a second `tap-labeler` instance signals on
-  `app.standard-reader.labeler.service`; and a third `tap-docs` instance signals on
-  `site.standard.document` so repos that publish "loose documents" (no publication record — e.g.
-  Leaflet-hosted) get tracked + backfilled. A fourth **`tap-bridge`** instance carries bridged
-  repos and signals on nothing — see "Bridged repos" below. A separate ingest worker
-  (`pnpm ingest:dev`) connects to each tap's acknowledged WebSocket channel, maps records to rows
-  idempotently, and expands tap's tracked-repo set along the graph via `/repos/add`. tap + the
-  worker are the single ingestion path for both backfill and live sync (locally and in prod); the
-  product app server does not process the firehose.
-- **Bridged repos have their own lane.** [Bridgy Fed](https://fed.brid.gy) mirrors the wider web
-  into AT Proto: `*.web.brid.gy` is a site Bridgy discovered (tens of thousands of them, thousands
-  of posts each, no publisher intent), and `*.ap.brid.gy` is an ActivityPub blog whose author chose
-  to bridge. Both are welcome, but pointing that bulk at the primary tap put every publisher and
-  reader behind bridge backfills _inside tap's resyncer queue_ — and that queue is per tap
-  instance. So `ensureTracked` routes any `*.brid.gy` repo to `TAP_BRIDGE_API_URL`
-  (`#/lib/atproto/bridged-repo`, `#/server/ingest/tap-client`); a bridge backfill can then only
-  delay other bridged repos. With no bridge lane configured the bulk web bridge is turned away
-  instead — configuring the isolated tap is what turns Bridgy fully on, rather than a second
-  switch. The ingest **process and Neon pool are still shared**, so the split is also enforced on
-  our side by an **in-flight budget per channel** (`laneConcurrency` in `#/server/ingest/service`):
-  the bridge lane gets `INGEST_BRIDGE_CONCURRENCY` (default **2**) against the main/docs lanes'
-  `INGEST_CONCURRENCY` (default 12). That is a throttle rather than a buffer — a channel awaits a
-  slot before returning from `onEvent`, so a lane out of slots stalls its own WS read loop and the
-  events stay on tap. It has to be its own variable: one `upsertDocument` is half a dozen
-  sequential round trips to Neon, so twelve bridge events in flight is most of a 16-connection
-  pool, and raising the shared budget to push publisher throughput must not raise the bridge with
-  it. Every channel log line carries `lane` + `maxInflight` so a pinned lane is attributable from
-  telemetry instead of by counting rows in Postgres.
-- **tap redelivers on a timeout, so slow is indistinguishable from failed.** `cmd/tap/outbox.go`
-  runs a worker per DID and puts an event in `inFlightSentAt` the moment it _sends_ it; anything
-  still unacked after `TAP_RETRY_TIMEOUT` is re-sent, forever, until acked. Two consequences bit us
-  at once. First, our channels deliberately stop reading at their in-flight cap — but events tap
-  already sent are still on tap's clock, so **backpressure itself manufactures redeliveries**: past
-  the timeout the same records come back and are re-applied. That, not the ingest lanes and not the
-  reconcile sweep, is where a 2.4× apply ratio and hours of rewriting week-old rows came from. The
-  default 60s is far too tight for a consumer that backpressures against a database a continent
-  away, so all three tap services run `TAP_RETRY_TIMEOUT=10m`. Second, a frame `lexParse` rejects
-  (Bridgy Fed writes malformed blobs) never yields an event id, so it can never be acked — it is
-  re-sent every timeout forever, and because a live event waits for in-flight to clear
-  (`blockedOnLive`), **one malformed record costs that repo its entire live stream**, not one
-  record. `patches/@atproto__tap@0.3.0.patch` recovers the id from the raw frame and acks it, which
-  is what clears `inFlightSentAt` and unblocks the worker; the record itself is left to the PDS
-  reconcile sweep, since `last_seen_rev` never advanced past it. Dropped frames are counted as
-  `parseErrors` on the heartbeat and logged as `ingest.frameUnparseable` — the patch fixes the
-  replay but makes the loss quiet, and that counter is the only thing that says it happened.
-- **The read-model repairs itself against the PDS.** tap can advance its cursor past a commit whose
+- **Ingestion:** one **Jetstream v2** subscription (`@bsky/jetstream`; see
+  `#/server/ingest/jetstream-channel`) is the single ingestion path for both backfill and live
+  sync. It subscribes by **collection across the whole network** —
+  `site.standard.*`, `app.standard-reader.*`, `site.mochott.article` — replays Jetstream's sealed
+  archive from the cursor in `ingest_state`, then cuts over to the live tail through one iterator.
+  The product app server does not process the firehose.
+- **There is no repo-tracking boundary any more.** This is the load-bearing difference from the
+  `tap` era it replaced. tap only streamed repos we had registered with it, so coverage was
+  something we had to _construct_: a signal collection to discover publishers, a second instance
+  signalled on `site.standard.document` for "loose documents", a third for bridged repos, and
+  `ensureTracked` threaded through two dozen call sites to expand the set along the graph as
+  contributors, subscribers and readers were discovered. A collection filter has no such edge — a
+  repo's records arrive whether or not we have ever heard of it, including repos the graph would
+  never have reached. `tracked_repos` survives as an _inventory_ (whose profile to refresh, whose
+  repo to reconcile), not as a gate.
+- **What the swap deleted.** The tap admin API and `/repos/add` registration; the per-event ack
+  path (and with it the ack deadlock that once froze delivery at 223 events, the ack timeout, and
+  `patches/@atproto__tap@0.3.0.patch`); the three lanes and their per-lane in-flight budgets; the
+  `TAP_RETRY_TIMEOUT` redelivery storms that made backpressure indistinguishable from failure; and
+  the bridge-lane routing. Jetstream's cursor is a plain seq the consumer stores itself, so
+  backpressure is just… reading slower.
+- **Records without a `$type` are kept.** The SDK's typed decode runs every record through
+  `parseRawRecord`, which throws on anything that is not a `$type`'d map, and skips the event.
+  About **0.05%** of `standard.site` records on the network are shaped like that, and they are not
+  junk — live publications and documents among them. Our handlers dispatch on the commit's
+  `collection` and never read `$type`, so the channel consumes `raw: true` and decodes the archived
+  DAG-CBOR itself (`#/server/ingest/jetstream-event`). tap lost the same records for the same
+  reason, via `lexParse`; this is a repair, not just a port.
+- **Profiles and handles are pulled, not streamed.** `app.bsky.actor.profile` network-wide is tens
+  of millions of records for the ~15k actors we display, and Jetstream's DID filter caps at 10,000
+  — fewer than we track, so we cannot ask for exactly our set. `#/server/ingest/profile-refresh`
+  fetches each actor's profile record and re-resolves their handle on a round-robin ordered by
+  `profiles.profile_fetched_at`. The trade is freshness for volume: a display-name edit lands on
+  the next sweep, while everything that decides _what_ a reader sees still streams live.
+- **Bridged repos.** [Bridgy Fed](https://fed.brid.gy) mirrors the wider web into AT Proto:
+  `*.web.brid.gy` is a site Bridgy discovered (tens of thousands of them, thousands of posts each,
+  no publisher intent), and `*.ap.brid.gy` is an ActivityPub blog whose author chose to bridge.
+  The web bridge is the overwhelming majority of what we index — **~93% of document rows** — which
+  is why it needed its own tap instance and its own in-flight budget before. Under a collection
+  subscription there is no queue to protect and no lane to assign, so that machinery is gone; what
+  remains is the display-side exclusion, `WEB_BRIDGE_HANDLE_PATTERN`
+  (`#/lib/atproto/bridged-repo`), which keeps the bulk bridge out of every feed, directory and
+  topic derivation while still indexing it.
+- **The read-model repairs itself against the PDS.** A stream cursor can advance past a commit whose
   record never reaches us — no error, no dead letter, and "no events" is indistinguishable from "no
   changes" from the read-model's side. So the reconcile sweep no longer trusts the stream: for
   every tracked repo it compares `com.atproto.sync.getLatestCommit` against
   `tracked_repos.last_seen_rev` and re-applies anything missing (`repairRepoIfAdvanced` in
   `#/server/ingest/repo-sync`). Two gates keep it affordable — an unchanged head costs one request
   and stops, and only records whose CID differs from the mirrored row are written. Repaired records
-  replay through `handleRecord`, the same dispatcher tap feeds, so a repaired row and a live one
+  replay through `handleRecord`, the same dispatcher the live stream feeds, so a repaired row and a live one
   are written by identical code. The sweep covers **every** tracked repo, not just publishers:
   restricting it to `publication`/`document` is what once left readers' reads and subscriptions
   with no safety net at all. **Bulk web-bridge mirrors are the exception**, and they get their own
   far slower lap: the sweep's affordability rests on the rev gate ("a quiet repo costs one
   request"), and `*.web.brid.gy` repos are never quiet — Bridgy rewrites them continuously, so the
   gate opens on nearly every visit and each one re-applies a whole repo. At a third of the fleet
-  that was ~72k document rows an hour, more than all three tap channels deliver combined, against
+  that was ~72k document rows an hour, more than everything else combined, against
   the same Neon pool live edits use. `reconcilePublisherReposBatch` now selects them as a small
   quota beside the batch rather than a share of it (`WEB_BRIDGE_BATCH_SHARE`), and
   `countReconcilableRepos` excludes them so the derived batch sizes the lap for repos someone
@@ -1512,16 +1508,16 @@ hand-tuned lists:
 
 Split across two processes, and the split is the whole design:
 
-- **The tap worker only enqueues.** `handleRecord`'s document branch runs one
+- **The ingest worker only enqueues.** `handleRecord`'s document branch runs one
   `INSERT … SELECT` into `document_push_queue` (`src/server/push/enqueue.ts`) that inserts
   nothing for anything that doesn't qualify. No timer, no `web-push` import, no outbound HTTP —
   the worker's job is keeping up with the firehose, and it has been knocked over before by a
-  slow handler causing tap to redeliver.
+  slow handler causing a redelivery.
 - **A `push-cron` Railway service sends** (`railway.push.json` → `pnpm push:send` →
   `src/server/push/run.ts`), every five minutes, in its own short-lived process — the same shape
   as the weekly digest, for the same reason.
 
-The queue table is also the **exactly-once claim**: its primary key is what makes tap
+The queue table is also the **exactly-once claim**: its primary key is what makes stream
 redelivery, dead-letter replay, and later `update` events for one document all collapse to
 `DO NOTHING`. It is deliberately _not_ a column on `documents`, because document deletes are
 hard deletes — a delete→recreate at the same rkey is a normal republish, and a claim living on
@@ -1531,7 +1527,7 @@ Four guards decide whether a document is genuinely new, and each covers a differ
 `live` (so a PDS reconcile can't replay a repo's whole history), a date on the **record itself**
 (`documents.published_at` falls back to `now()` for an undated record, so an archive import
 would otherwise pass any freshness window), `indexed_at` (set once on first insert and never
-updated — this is what survives a tap cursor rewind or a fresh tap instance re-streaming known
+updated — this is what survives a cursor rewind or a fresh instance re-streaming known
 repos), and a per-author hourly cap in the sender as the backstop.
 
 ### Weekly network thread
@@ -1644,7 +1640,7 @@ publication list looked clean.
 ### v1 (first milestone)
 
 - AT Proto / Bluesky **OAuth login**.
-- Real publications & articles served from the **Neon read-model** (tap backfill).
+- Real publications & articles served from the **Neon read-model** (Jetstream backfill).
 - **Home, Latest, Discover, Search, Article, Publication** screens ported to TanStack Start + hip-ui.
 - **Follows, likes, save-for-later, and read-state** written back as records (and cached).
 - **URL-backed routing** for every view.
@@ -1680,7 +1676,7 @@ Standard Reader is a **port of an earlier no-build prototype** into this TanStac
 - **Framework:** TanStack Start + TanStack Router (file-based routing), React 19, Vite.
 - **Design system:** hip-ui (copy-and-own, react-aria) in `src/design-system/`.
 - **Styling:** StyleX (`@stylexjs/stylex`) with design-system tokens; no Tailwind.
-- **Data:** Neon Postgres + Drizzle (`src/db/`), fed by a tap instance; access via server functions
+- **Data:** Neon Postgres + Drizzle (`src/db/`), fed by the Jetstream ingester; access via server functions
   and the public AppView XRPC surface at `/xrpc/app.standard-reader.*` (see [`/docs/api`](/docs/api) and [`/docs/lexicons`](/docs/lexicons)).
 - **Auth:** AT Proto / Bluesky OAuth.
 - **Observability:** Server functions emit `observe()` events to Honeycomb; client route transitions
