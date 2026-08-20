@@ -118,6 +118,7 @@ import {
   AppearanceAdvancedRows,
   AppearancePalettePanel,
 } from "./appearance-settings";
+import { EreaderSettings } from "./ereader-settings";
 import { OfflineReadingSettings } from "./offline-settings";
 import { OfflineSyncDebugPanel } from "./offline-sync-debug";
 import { PushDiagnosticsPanel } from "./push-diagnostics";
@@ -1202,6 +1203,17 @@ export function UserSettingsView() {
           </div>
         </section>
       ) : null}
+
+      {/* After Offline, before Moderation: both sections are about reading
+          somewhere other than this tab. */}
+      <section {...stylex.props(styles.section)}>
+        <h2 {...stylex.props(styles.sectionHeading)}>
+          <Trans>E-readers</Trans>
+        </h2>
+        <div {...stylex.props(styles.settingGroup)}>
+          <EreaderSettings />
+        </div>
+      </section>
 
       <section {...stylex.props(styles.section)}>
         <h2 {...stylex.props(styles.sectionHeading)}>

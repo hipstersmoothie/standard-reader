@@ -20,6 +20,7 @@ import {
 import * as stylex from "@stylexjs/stylex";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
+  BookDown,
   ChevronLeft,
   ChevronRight,
   FileText,
@@ -32,10 +33,13 @@ import type { PointerEvent as ReactPointerEvent } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
+import { comicIssueCbzUrl } from "#/lib/opds/urls";
+import { getPublicUrlClient } from "#/lib/public-url";
 import { useTrackReadingHistory } from "#/lib/use-track-reading-history";
 
 import { documentLinkParams, publicationLinkParams } from "../reader/format";
 import { applyMarkReadOptimisticUpdate } from "../reader/read-optimistic";
+import { startDownload } from "../reader/start-download";
 import { ButtonLink, IconButtonLink } from "../router-links";
 import { ComicPageNote } from "./comic-page-note";
 import { ICON_SIZE, ICON_STROKE } from "./theater-palette";
@@ -789,6 +793,17 @@ export function ComicReader({
     ? publicationLinkParams(publicationUri)
     : null;
   const notesParams = issueUri ? documentLinkParams(issueUri) : null;
+  // The theater flattens the whole publication into one run of pages, so
+  // "download" has to mean something narrower than what is on screen. Not this
+  // *document* though — a comic posts one page per document, so that would be a
+  // one-page file. `/book/i/…` resolves the page to the issue it sits in.
+  const issueCbzUrl = currentIssue
+    ? comicIssueCbzUrl(
+        getPublicUrlClient(),
+        currentIssue.did,
+        currentIssue.rkey,
+      )
+    : null;
 
   const chromeHidden = !chromeVisible;
 
@@ -954,6 +969,25 @@ export function ComicReader({
                 strokeWidth={ICON_STROKE}
               />
             </IconButtonLink>
+          ) : null}
+
+          {/* Next to the article link, for the same reason the note sits beside
+              it: these are the three things to do with the issue you are in,
+              and taking it with you should not cost a trip out to the
+              publication's overflow menu. */}
+          {issueCbzUrl ? (
+            <IconButton
+              variant="tertiary"
+              aria-label={t`Download this issue (CBZ)`}
+              onPress={() => startDownload(issueCbzUrl)}
+              style={styles.chromeControl}
+            >
+              <BookDown
+                aria-hidden
+                size={ICON_SIZE}
+                strokeWidth={ICON_STROKE}
+              />
+            </IconButton>
           ) : null}
 
           {/* Last in the bar, where a player puts it, and only where the

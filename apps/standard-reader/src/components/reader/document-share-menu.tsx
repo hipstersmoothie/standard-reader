@@ -11,6 +11,7 @@ import { buildPdslsRecordUrl } from "#/lib/quote-share";
 
 import { LinkShareMenu } from "./link-share-menu";
 import { SaveToCollectionDialog } from "./save-to-collection-dialog";
+import { startDownload } from "./start-download";
 
 function openExternal(url: string) {
   globalThis.open(url, "_blank", "noopener,noreferrer");
@@ -30,6 +31,7 @@ export function DocumentShareMenu({
   author,
   siteName,
   imageUrl,
+  downloads = [],
   size = "md",
 }: {
   /** Document AT-URI for PDSLS. */
@@ -47,6 +49,12 @@ export function DocumentShareMenu({
   siteName?: string | null;
   /** Article hero image, used as the saved Semble card's image. */
   imageUrl?: string | null;
+  /**
+   * File renditions of this article, when it has a body worth packaging. Empty
+   * for a bridged link post — there would be nothing in the file but the title
+   * and the link the reader already has.
+   */
+  downloads?: Array<{ label: string; url: string }>;
   size?: Size;
 }) {
   const { t } = useLingui();
@@ -78,6 +86,20 @@ export function DocumentShareMenu({
         >
           <Trans>Save to Semble…</Trans>
         </MenuItem>
+        {downloads.length > 0 ? (
+          <>
+            <MenuSeparator />
+            {downloads.map((download) => (
+              <MenuItem
+                key={download.url}
+                onPress={() => startDownload(download.url)}
+                textValue={download.label}
+              >
+                {download.label}
+              </MenuItem>
+            ))}
+          </>
+        ) : null}
         <MenuSeparator />
         <MenuItem
           onPress={() => {

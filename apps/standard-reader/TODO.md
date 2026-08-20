@@ -2201,3 +2201,62 @@ Re-emit a document's content into another format by running the renderer's norma
 - [ ] **Convert a single record from the app** — the reading client stays read-first, but an
       author viewing their own document could be offered the same conversion inline. Depends on
       write scopes for `site.standard.document`.
+
+## 16. E-readers — OPDS catalog, EPUB/CBZ downloads, KOReader sync
+
+Standard Reader as a library an e-reading app can browse. See
+[`APP_VISION.md` §5](./APP_VISION.md#opds-catalog-downloads--koreader-sync).
+
+- [x] **Deterministic ZIP writer** (`src/server/books/zip.ts`) — hand-rolled, like the RSS
+      serializer, because EPUB needs `mimetype` first and STORED, and because byte-stable output
+      is what makes `ETag`s work across replicas and kosync hashes precomputable. Fixed DOS-epoch
+      timestamps; nothing reads the clock.
+- [x] **EPUB 3.2 packager** (`epub.ts`) — nav document _and_ NCX, `cover-image` property _and_
+      the legacy `<meta name="cover">`, endnote `epub:type` semantics, one small stylesheet that
+      leaves typography to the device.
+- [x] **Bodies through `renderer-react`** (`render.tsx`) — server-rendered with
+      `renderToStaticMarkup`, so every block vocabulary the app displays a book can carry. Raw
+      HTML blocks are sanitized against the article schema and re-serialized as XHTML;
+      HTML-family formats the block renderer does not know (WordPress/Gutenberg, micro.blog) fall
+      back to `documentContentHtml`.
+- [x] **Image embedding** (`assets.ts`) — two-pass render (discover → fetch → rewrite) with
+      per-image, whole-book and concurrency caps; a failed fetch keeps its remote URL.
+- [x] **CBZ for comics** (`cbz.ts`) — page images in filename order plus a `ComicInfo.xml`
+      sidecar, from the same page list the comic reader flips through.
+- [x] **Download routes** — `/book/a/:did/:rkey.epub` and `.cbz`, plus publication, collection,
+      list, tag, saved and unread anthologies. Strong `ETag` + `304`.
+- [x] **OPDS 1.2 + 2.0** (`src/lib/opds/`) — one neutral feed model, two serializers, content
+      negotiation on `Accept` with a sticky `?format=json`.
+- [x] **Catalog routes** — public (`/opds`, latest, trending, publications with sort facets,
+      topics, tags, collections, OpenSearch search) and personal (`/opds/u/:did` + unread, saved,
+      subscriptions, publications, and each list), paged, block-filtered.
+- [x] **Only what can be downloaded** — `renderableOnly` on `selectArticleCards` /
+      `selectPublicationArticleCards`, so a catalog never shows an entry whose download button
+      would 404.
+- [x] **kosync** (`/kosync/*`) — `users/auth`, `syncs/progress` GET/PUT, healthcheck, and a
+      `users/create` that refuses with a message pointing at Settings. Credentials are derived
+      (`HMAC(KOSYNC_SECRET, did)`), so there is no credential table to keep.
+- [x] **Device hash → AT-URI** — `koreaderPartialMd5` reproduces KOReader's twelve-sample walk
+      (including the LuaJIT shift overflow that puts the first sample at offset 0); every
+      single-article download records both digests in `kosync_documents`.
+- [x] **Position mirrors into the app** — a device's percentage lands in `reading_progress`, so
+      an article read half-way on a Kobo shows half-read here.
+- [x] **In-app surfacing** — `Download EPUB` / `Download CBZ` in an article's share menu,
+      `Send to e-reader…` on a publication, and a Settings → E-readers section with the catalog
+      URL, sync server, username and key.
+- [x] **Reader docs** — [`/guide/e-readers`](/guide/e-readers).
+- [ ] **Rotate a single reader's sync key** — the key is derived, so today the only revocation is
+      rotating `KOSYNC_SECRET` for everyone. A per-reader salt column would make it individual;
+      worth doing the first time someone loses a device.
+- [ ] **Anthology progress** — a shelf of forty pieces is one file to a device, so its position
+      syncs between devices but cannot mirror onto any single article. Splitting a kosync position
+      back onto a chapter would need the spine offsets, which we do not keep.
+- [ ] **`hasRenderableBody` for `blog.micro.content`** — those records carry `html` the catalog
+      could package, but the app rates them non-renderable and links out instead. Changing that is
+      an app-wide call, not an e-reader one.
+- [ ] **Cache generated books** — every download re-renders and re-fetches images. The `ETag` saves
+      the transfer, not the work. An object-store cache keyed by the deterministic bytes would, and
+      the determinism is already there for it.
+- [ ] **Kindle** — Amazon dropped personal-document EPUB conversion into Send-to-Kindle, which
+      takes EPUB directly now; a "send to Kindle" button would need an email path and their
+      allow-list, so it is its own piece of work.

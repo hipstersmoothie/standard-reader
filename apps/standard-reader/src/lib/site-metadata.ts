@@ -166,6 +166,12 @@ export const PAGE_OG_CARDS = {
     title: "Publishing your site",
     tagline: "Wire a personal site's own site.standard.* records by hand.",
   },
+  guideEreaders: {
+    path: "/guide/e-readers",
+    title: "Reading on an e-reader",
+    tagline:
+      "Put your unread queue on a Kobo, Kindle or phone as real EPUB files.",
+  },
   guideComics: {
     path: "/guide/comics",
     title: "Publishing a comic",
