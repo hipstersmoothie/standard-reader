@@ -722,7 +722,8 @@ Single search field with two modes (detected from input):
 The **non-technical** documentation, deliberately separate from the developer docs at
 `/docs/*`. Task-shaped pages under `/guide` — Welcome, Getting started, Reading an article,
 Finding things to read, Keeping track, Lists and your sidebar, Collections, Making it yours,
-The browser extension, Publishing your site, Publishing a comic, Your account and data —
+The browser extension, Reading on an e-reader, Publishing your site, Publishing a comic,
+Your account and data —
 written for someone who only wants to read, with no AT Protocol vocabulary and every feature
 named the way the UI names it. The last three are the exception the guide earns rather than
 assumes: they are for someone on the other side of the page, and they name record fields where
@@ -1057,6 +1058,43 @@ that presents no credential to itself at all:
 
 So a third-party CLI or agent that needs writes authenticates with an app password; a browser
 app that holds its own DPoP key uses OAuth and talks to the PDS directly.
+
+### OPDS catalog, downloads & KOReader sync
+
+Standard Reader is also a **library** an e-reading app can browse. Three pieces, all read-only
+against the same read-model the web app uses:
+
+- **OPDS catalog (`/opds`)** — served in both dialects from one model
+  (`src/lib/opds/`): OPDS 1.2 Atom by default (KOReader, Foliate, Marvin, Panels) and OPDS 2.0
+  JSON on `?format=json` or an `application/opds+json` `Accept` header. The format is sticky:
+  a client that entered in JSON gets JSON hrefs all the way down. Public sections are Latest,
+  Trending, Publications, Topics, Collections and OpenSearch. A reader's own shelves hang off
+  **`/opds/u/:did`** — Unread, Saved, Subscriptions, their publications and each of their lists —
+  keyed by DID with no token, exactly like the personalised RSS feeds (`/feed/latest/:did`), and
+  carrying the same block filtering.
+- **Books (`/book/...`)** — EPUB 3.2 (with EPUB 2 NCX and cover fallbacks) generated on demand
+  for one article, a publication, a collection, a list, a tag, or a reader's saved/unread shelf;
+  CBZ with a `ComicInfo.xml` sidecar for comic issues. Bodies render through
+  `@standard-reader/renderer-react` server-side, so **every** block vocabulary the app can display
+  a book can carry — not just the formats with a markdown/HTML path. Images are fetched and
+  embedded under per-image, per-book and concurrency caps; an image that fails keeps its remote
+  URL rather than failing the book. Generation is deterministic (`src/server/books/zip.ts`), which
+  is what makes `ETag`s stable and kosync hashes precomputable.
+- **KOReader progress sync (`/kosync`)** — the kosync protocol (`/users/auth`,
+  `/syncs/progress`), authenticated with a **derived** key: `HMAC(KOSYNC_SECRET, did)`, shown in
+  Settings → E-readers. No credential table, and the key grants nothing but position sync.
+  Because KOReader identifies a book by a hash of the _file_, every single-article download
+  records the digests that file will have (`kosync_documents`), which is how a position reported
+  by a device resolves back to an AT-URI.
+
+**Two deliberate limits.** Only documents with a renderable body appear in the catalog
+(`hasRenderableBody`): a catalog client renders a download button for every entry it sees, and a
+bridged link post has nothing to put behind one. And position sync is **one-way into the app** —
+`reading_progress` is updated from a device's percentage, but the app never sends a position
+_out_, because KOReader's `progress` is an xpointer into that device's own rendering and there is
+no honest way to synthesise one from a fraction.
+
+Reader-facing docs live at [`/guide/e-readers`](/guide/e-readers).
 
 ### Remote MCP server (`/mcp`)
 

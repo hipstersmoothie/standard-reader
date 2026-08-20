@@ -18,6 +18,7 @@ export * from "./schema/documents.ts";
 export * from "./schema/graph.ts";
 export * from "./schema/personal.ts";
 export * from "./schema/reading-progress.ts";
+export * from "./schema/kosync.ts";
 export * from "./schema/push.ts";
 export * from "./schema/lists.ts";
 export * from "./schema/stats.ts";

@@ -24,6 +24,7 @@ export type GuideArea =
   | "collections"
   | "personalizing"
   | "extension"
+  | "e-readers"
   | "publishing"
   | "comics"
   | "your-data";
@@ -38,6 +39,7 @@ export type GuideRoute =
   | "/guide/collections"
   | "/guide/personalizing"
   | "/guide/extension"
+  | "/guide/e-readers"
   | "/guide/publishing"
   | "/guide/comics"
   | "/guide/your-data";
@@ -130,6 +132,13 @@ export const GUIDE_AREAS: ReadonlyArray<GuideAreaMeta> = [
     to: "/guide/extension",
     label: msg`The browser extension`,
     blurb: msg`Save and subscribe from anywhere on the web, without breaking your stride.`,
+  },
+  {
+    area: "e-readers",
+    group: "further",
+    to: "/guide/e-readers",
+    label: msg`Reading on an e-reader`,
+    blurb: msg`Put your unread queue on a Kobo, Kindle or phone as real EPUB files.`,
   },
   {
     area: "publishing",
@@ -251,6 +260,13 @@ export const GUIDE_SECTIONS: Record<GuideArea, ReadonlyArray<GuideSection>> = {
     },
     { id: "content-formats", label: msg`Supported content formats` },
     { id: "example", label: msg`Example record` },
+  ],
+  "e-readers": [
+    { id: "what-you-get", label: msg`What you get` },
+    { id: "setting-it-up", label: msg`Setting it up` },
+    { id: "one-article", label: msg`Sending one article` },
+    { id: "progress-sync", label: msg`Keeping your place` },
+    { id: "whats-missing", label: msg`What will not be there` },
   ],
   comics: [
     { id: "what-readers-get", label: msg`What readers get` },

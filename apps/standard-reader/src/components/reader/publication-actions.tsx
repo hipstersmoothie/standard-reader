@@ -24,6 +24,7 @@ import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
 import * as stylex from "@stylexjs/stylex";
 import { useQuery } from "@tanstack/react-query";
 import {
+  BookDown,
   CheckCheck,
   ChevronDown,
   ExternalLink,
@@ -39,6 +40,8 @@ import type {
   PublicationEmbedMeta,
 } from "#/integrations/tanstack-query/api-publication.functions";
 import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
+import { opdsPublicationUrl, publicationEpubUrl } from "#/lib/opds/urls";
+import { getPublicUrlClient } from "#/lib/public-url";
 import type { ArchiveOrder } from "#/lib/publication/archive-order";
 import { useLoginSearch } from "#/utils/use-login-search";
 
@@ -48,6 +51,7 @@ import { FollowButton } from "./cards";
 import { MuteDialog, MuteMenuItem } from "./mute-menu-item";
 import { NotifyButton } from "./notify-button";
 import { RssFeedDialog } from "./rss-feed-button";
+import { SendToEreaderDialog } from "./send-to-ereader-dialog";
 import { ShareMenuItems, useShareActions } from "./share-menu";
 
 const MENU_ICON = 14;
@@ -220,6 +224,7 @@ export function PublicationActions({
   pub,
   pageUrl,
   feedUrl,
+  hasDownloadableArticles,
   signedIn,
   embed,
   markAllRead,
@@ -232,6 +237,12 @@ export function PublicationActions({
   pub: PublicationCard;
   pageUrl: string;
   feedUrl: string;
+  /**
+   * Whether any of this publication's posts has a body a book could carry.
+   * False for a bridged mirror, whose archive is all link posts — offering a
+   * download there would hand the reader a button that 404s.
+   */
+  hasDownloadableArticles: boolean;
   signedIn: boolean;
   embed: PublicationEmbedMeta | null | undefined;
   /** Present only when the reader has unread articles here. */
@@ -249,6 +260,19 @@ export function PublicationActions({
   const share = useShareActions({ pageUrl, embed: embed ?? undefined });
   const [listOpen, setListOpen] = useState(false);
   const [rssOpen, setRssOpen] = useState(false);
+  const [ereaderOpen, setEreaderOpen] = useState(false);
+
+  // The publication's own rkey, for the catalog and download URLs. A card
+  // always carries a well-formed AT-URI, so this is the last path segment.
+  const publicationRkey = pub.uri.split("/").pop() ?? "";
+  const baseUrl = getPublicUrlClient();
+  const catalogUrl = publicationRkey
+    ? opdsPublicationUrl(baseUrl, pub.did, publicationRkey)
+    : null;
+  const epubUrl =
+    publicationRkey && hasDownloadableArticles
+      ? publicationEpubUrl(baseUrl, pub.did, publicationRkey)
+      : null;
   const [markAllReadOpen, setMarkAllReadOpen] = useState(false);
   const [muteOpen, setMuteOpen] = useState(false);
 
@@ -340,6 +364,15 @@ export function PublicationActions({
             >
               <Trans>RSS feed</Trans>
             </MenuItem>
+            {/* Next to RSS because it answers the same question — "how do I
+                read this somewhere that isn't here?" */}
+            <MenuItem
+              onPress={() => setEreaderOpen(true)}
+              suffix={<BookDown size={MENU_ICON} />}
+              textValue={t`Send to e-reader…`}
+            >
+              <Trans>Send to e-reader…</Trans>
+            </MenuItem>
             {pub.url ? (
               <MenuItem
                 onPress={() => {
@@ -389,6 +422,14 @@ export function PublicationActions({
         feedUrl={feedUrl}
         isOpen={rssOpen}
         onOpenChange={setRssOpen}
+      />
+
+      <SendToEreaderDialog
+        catalogUrl={catalogUrl}
+        downloads={epubUrl ? [{ label: "EPUB", url: epubUrl }] : []}
+        isOpen={ereaderOpen}
+        name={pub.name}
+        onOpenChange={setEreaderOpen}
       />
 
       {/* Outside `<Menu>`, like the RSS dialog above: a dialog rendered inside

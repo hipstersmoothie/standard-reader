@@ -17,6 +17,10 @@ msgstr ""
 msgid "This is the difference between making one anthology and running something with a rhythm to it — a weekly roundup, a themed quarterly, a reading list you keep adding to."
 msgstr ""
 
+#: src/components/ereader-settings.tsx
+msgid "Add your catalog to KOReader, Foliate, Marvin, Panels or any other OPDS app and your unread queue, saved articles, subscriptions and lists show up on the device — each one downloadable as an EPUB."
+msgstr ""
+
 #: src/routes/_layout.discover.tsx
 msgid "Every publication the network knows about — subscribe to the ones worth your mornings."
 msgstr "네트워크가 알고 있는 모든 발행물 — 아침 시간을 내줄 만한 곳을 구독하세요."
@@ -201,6 +205,10 @@ msgstr ""
 msgid "find publications, people, topics, and headlines by name."
 msgstr ""
 
+#: src/components/ereader-settings.tsx
+msgid "Every device syncing with the old key stops until you enter the new one. Nothing you have already read is lost — reading positions are kept against the books themselves, not the key."
+msgstr ""
+
 #: src/components/NavbarAuth.tsx
 #: src/components/reader/language-hint-prompt.tsx
 msgid "Change language"
@@ -287,6 +295,10 @@ msgstr ""
 msgid "Mark as read"
 msgstr "읽음으로 표시"
 
+#: src/components/reader/send-to-ereader-dialog.tsx
+msgid "Send to your e-reader"
+msgstr ""
+
 #: src/routes/_layout.l.$did.$rkey.tsx
 msgid "This list is empty — add publications or people to it."
 msgstr "이 목록은 비어 있습니다 — 발행물이나 사람을 추가하세요."
@@ -347,6 +359,11 @@ msgstr "제목을 입력하세요."
 #: src/components/guide/pages/finding-guide-page.tsx
 #~ msgid "Pasting a handle works even for publications the network has not indexed yet — it goes and asks that author's account directly. Follow it and it starts appearing in your feeds like any other."
 #~ msgstr ""
+
+#: src/components/guide/pages/e-readers-guide-page.tsx
+#: src/components/user-settings-view.tsx
+msgid "E-readers"
+msgstr ""
 
 #: src/components/reader/about-view.tsx
 msgid "There’s an MCP server on the same host, so you can point an agent at the network too."
@@ -530,8 +547,16 @@ msgstr ""
 msgid "We couldn’t find that issue."
 msgstr ""
 
+#: src/components/guide/pages/e-readers-guide-page.tsx
+msgid "Comics come down as <0>CBZ</0> as well, so comic apps get their page turns and their scrubber instead of a reflowable book that fights them."
+msgstr ""
+
 #: src/routes/_layout.friends.tsx
 msgid "Publications written by the people you follow on Bluesky, minus the ones you already subscribe to."
+msgstr ""
+
+#: src/components/ereader-settings.tsx
+msgid "Sync username"
 msgstr ""
 
 #: src/components/reader/format-i18n.ts
@@ -541,6 +566,10 @@ msgstr ""
 #: src/components/reader/content/renderers/shared/bsky-client-embed.tsx
 msgid "List"
 msgstr "목록"
+
+#: src/components/reader/publication-actions.tsx
+msgid "Send to e-reader…"
+msgstr ""
 
 #: src/components/appearance-settings.tsx
 msgid "The spacing between things — tighter for more on screen, looser for more room to read."
@@ -733,6 +762,10 @@ msgstr ""
 msgid "Partial"
 msgstr ""
 
+#: src/components/ereader-settings.tsx
+msgid "Sync key"
+msgstr ""
+
 #: src/components/reader/share-menu.tsx
 msgid "Landscape fits a compact row. Height adjusts automatically once the embed loads. Change the iframe width as needed."
 msgstr "가로형은 좁은 행에 알맞습니다. 임베드가 로드되면 높이는 자동으로 조정됩니다. iframe 너비는 필요에 따라 변경하세요."
@@ -867,6 +900,11 @@ msgstr ""
 msgid "Log in to follow publications"
 msgstr "발행물을 팔로우하려면 로그인하세요"
 
+#: src/components/guide/pages/e-readers-guide-page.tsx
+#: src/lib/guide/navigation.ts
+msgid "What will not be there"
+msgstr ""
+
 #: src/routes/_layout.discover.tsx
 msgid "Search publications"
 msgstr "발행물 검색"
@@ -946,6 +984,10 @@ msgstr "로그인에 실패했습니다. 다시 시도하세요."
 #: src/routes/_layout.topics.$slug.tsx
 msgid "Loading publications"
 msgstr "발행물 불러오는 중"
+
+#: src/components/reader/send-to-ereader-dialog.tsx
+msgid "OPDS catalog URL"
+msgstr ""
 
 #. placeholder {0}: meta.minutes
 #: src/magazine/flow.tsx
@@ -1218,6 +1260,11 @@ msgstr "컬렉션 보기"
 msgid "Name"
 msgstr "이름"
 
+#: src/components/guide/pages/e-readers-guide-page.tsx
+#: src/lib/guide/navigation.ts
+msgid "Setting it up"
+msgstr ""
+
 #: src/components/reader/privacy-view.tsx
 msgid "Where data lives"
 msgstr "데이터가 저장되는 곳"
@@ -1305,6 +1352,10 @@ msgstr "{appLabel}의 {savedName}에 저장했습니다."
 #: src/lib/guide/navigation.ts
 msgid "Getting started"
 msgstr "시작하기"
+
+#: src/components/reader/send-to-ereader-dialog.tsx
+msgid "Download {name} as a file — images and all, ready to read offline."
+msgstr ""
 
 #: src/components/onboarding/step-settings.tsx
 msgid "Open posts on their original site"
@@ -1423,6 +1474,10 @@ msgstr ""
 #~ msgid "You don't have any subscriptions to reorder yet."
 #~ msgstr ""
 
+#: src/components/guide/pages/e-readers-guide-page.tsx
+msgid "What the sync key can do"
+msgstr ""
+
 #: src/components/reader/notify-button.tsx
 #: src/components/user-settings-view.tsx
 msgid "This browser doesn’t support web notifications."
@@ -1444,6 +1499,10 @@ msgstr "피드백 유형"
 #: src/components/guide/pages/welcome-guide-page.tsx
 #~ msgid "Home leads with one article worth your attention, then everything new from the publications you follow."
 #~ msgstr ""
+
+#: src/components/guide/pages/e-readers-guide-page.tsx
+msgid "Downloading does not mark anything read, and reading on a device does not remove it from your unread shelf until KOReader syncs a position back. Polls, signup forms and other live embeds become links — a book cannot run them."
+msgstr ""
 
 #: src/components/user-settings-view.tsx
 msgid "Enable the weekly digest"
@@ -1493,6 +1552,11 @@ msgstr "모두 팔로우"
 
 #: src/routes/_layout.p.$did.$rkey.tsx
 msgid "That's every issue published so far."
+msgstr ""
+
+#: src/components/guide/pages/e-readers-guide-page.tsx
+#: src/lib/guide/navigation.ts
+msgid "Sending one article"
 msgstr ""
 
 #. placeholder {0}: view.clientName
@@ -1794,6 +1858,10 @@ msgstr ""
 msgid "Images"
 msgstr ""
 
+#: src/components/guide/pages/e-readers-guide-page.tsx
+msgid "Turn on <0>Sync every N pages</0> if you want it to happen without asking."
+msgstr ""
+
 #: src/components/docs/publishing-docs-page.tsx
 #~ msgid "Include the <0>site.standard.publication</0> hint only if the document belongs to a publication record. Add both regardless of which reader you care about — they're how any client on the network resolves your page to its record, not just our extension."
 #~ msgstr "문서가 발행물 레코드에 속한 경우에만 <0>site.standard.publication</0> 힌트를 포함하세요. 어떤 리더를 염두에 두든 둘 다 추가하세요. 이는 우리 확장 프로그램뿐 아니라 네트워크의 모든 클라이언트가 페이지를 해당 레코드로 연결하는 방식입니다."
@@ -1842,6 +1910,10 @@ msgstr ""
 msgid "No topics match “{debouncedQuery}”."
 msgstr ""
 
+#: src/components/guide/pages/e-readers-guide-page.tsx
+#~ msgid "Who can use your catalog URL"
+#~ msgstr ""
+
 #: src/components/reader/continue-reading.tsx
 #~ msgid "Reading progress"
 #~ msgstr ""
@@ -1870,6 +1942,10 @@ msgstr ""
 #: src/components/reader/save-to-collection-dialog.tsx
 msgid "e.g. To Read"
 msgstr "예: 읽을거리"
+
+#: src/lib/guide/navigation.ts
+msgid "Reading on an e-reader"
+msgstr ""
 
 #: src/components/labeler-detail-view.tsx
 #: src/components/OpenLinksMenuItem.tsx
@@ -1956,6 +2032,10 @@ msgstr ""
 msgid "Making the text comfortable"
 msgstr ""
 
+#: src/components/guide/pages/e-readers-guide-page.tsx
+msgid "The files are built when you ask for them, from the same article bodies the reader shows — images pulled in, footnotes as real endnotes, a link back to the original at the end of every piece. Nothing is trimmed to an excerpt. A whole publication, a list or a collection can also come down as one book, with a table of contents."
+msgstr ""
+
 #: src/components/guide/pages/getting-started-guide-page.tsx
 msgid "What signing in adds is memory: following publications, saving articles, tracking what you have read, recommending, lists, and settings that follow you between devices. All of that needs somewhere to store it — which is your account."
 msgstr ""
@@ -1989,6 +2069,10 @@ msgstr ""
 #: src/magazine/magazine-end-subscribe.tsx
 msgid "Subscribed to list"
 msgstr "목록 구독 완료"
+
+#: src/components/ereader-settings.tsx
+msgid "Rotate your sync key?"
+msgstr ""
 
 #: src/components/guide/pages/extension-guide-page.tsx
 msgid "See which of the people you pass on Bluesky write long-form."
@@ -2095,6 +2179,10 @@ msgstr "컬렉션 삭제"
 #: src/components/appearance-settings.tsx
 #: src/components/guide/pages/personalizing-guide-page.tsx
 msgid "Interface font"
+msgstr ""
+
+#: src/components/ereader-settings.tsx
+msgid "Rotate"
 msgstr ""
 
 #: src/components/blocks-settings-view.tsx
@@ -2237,6 +2325,10 @@ msgstr "<0>{0}</0>의 다른 글"
 msgid "On this device"
 msgstr ""
 
+#: src/components/guide/pages/e-readers-guide-page.tsx
+msgid "<0>Add it to your reading app.</0> In KOReader that is <1>Search → OPDS catalog → +</1>. Foliate, Marvin, Aldiko, Thorium, Panels and Chunky all have a similar “add catalog” screen. Paste the URL and leave the username and password blank."
+msgstr ""
+
 #: src/components/reader/extension-privacy-view.tsx
 msgid "We may update this policy as the extension changes. The “Last updated” date at the top will change when we do. Continued use of the extension after an update means you accept the revised policy."
 msgstr "확장 프로그램이 변경되면 본 정책을 업데이트할 수 있습니다. 업데이트 시 상단의 “최종 수정일”이 변경됩니다. 업데이트 후에도 확장 프로그램을 계속 사용하면 개정된 정책에 동의한 것으로 간주됩니다."
@@ -2253,6 +2345,10 @@ msgstr ""
 #: src/components/docs/renderers-docs-page.tsx
 #~ msgid "Pick the package for your framework; all sit on the same core."
 #~ msgstr ""
+
+#: src/lib/guide/navigation.ts
+msgid "Put your unread queue on a Kobo, Kindle or phone as real EPUB files."
+msgstr ""
 
 #: src/components/reader/block-user-menu-item.tsx
 msgid "Block"
@@ -3147,6 +3243,10 @@ msgstr ""
 msgid "Plenty of people you already follow on Bluesky write long-form somewhere. <0>People you follow</0> finds them and puts their publications, and their newest articles, in one place. It is usually the highest-yield screen in the app the first week you use it."
 msgstr ""
 
+#: src/components/ereader-settings.tsx
+msgid "Use this as the password. It only carries your reading position between devices — it cannot read or change anything else."
+msgstr ""
+
 #: src/components/guide/pages/keeping-track-guide-page.tsx
 msgid "Second, it brings you <0>what they recommend</0>. Articles they have recommended start appearing in your feed, marked with who recommended them. That is the quiet engine behind finding new writing here: you are not only subscribing to what someone writes, you are borrowing their taste in what to read."
 msgstr ""
@@ -3337,6 +3437,10 @@ msgstr "구독 중인 곳에서"
 #: src/components/reader/privacy-view.tsx
 msgid "<0>When you browse without signing in,</0> we serve public writing from our read-model index. We may store a theme preference cookie and, if you have signed in before on this device, a short list of recently used account handles (and optional avatar URLs) to speed up sign-in. We do not require an account to read."
 msgstr "<0>로그인하지 않고 둘러볼 때는</0> 읽기 모델 색인에 있는 공개 글을 제공합니다. 테마 설정 쿠키를 저장할 수 있으며, 이 기기에서 이전에 로그인한 적이 있다면 로그인을 빠르게 하기 위해 최근 사용한 계정 핸들 목록(및 선택적으로 아바타 URL)을 저장할 수 있습니다. 읽는 데 계정은 필요하지 않습니다."
+
+#: src/components/ereader-settings.tsx
+msgid "Sync server"
+msgstr ""
 
 #: src/components/appearance-settings.tsx
 msgid "Paper"
@@ -3720,6 +3824,10 @@ msgstr ""
 msgid "Subscribe to this list to read new articles from its publications."
 msgstr "이 리스트를 구독하면 소속 발행물의 새 글을 받아볼 수 있습니다."
 
+#: src/components/ereader-settings.tsx
+msgid "In KOReader: Tools → Progress sync → Custom sync server."
+msgstr ""
+
 #: src/components/reader/collection-builder.tsx
 msgid "{itemCount} of {MAX_ITEMS}"
 msgstr "{MAX_ITEMS}개 중 {itemCount}개"
@@ -3771,6 +3879,10 @@ msgstr ""
 
 #: src/components/reader/subscriptions-table.tsx
 msgid "Filter subscriptions"
+msgstr ""
+
+#: src/components/guide/pages/e-readers-guide-page.tsx
+msgid "Standard Reader publishes an <0>OPDS catalog</0> — the same thing a library or a bookstore hands an e-reading app. Point an app at it once and your shelves appear on the device: <1>Unread</1>, <2>Saved for later</2>, <3>Subscriptions</3>, each of your lists, and every publication you follow. Open any of them and each article has a download button."
 msgstr ""
 
 #: src/components/reader/mention-hover-card.tsx
@@ -3856,6 +3968,10 @@ msgstr ""
 
 #: src/components/guide/pages/your-data-guide-page.tsx
 msgid "Signing in asks for permission to write only the kinds of records the app actually needs — follows, saves, recommendations, read records, and lists. It cannot post to Bluesky as you."
+msgstr ""
+
+#: src/components/guide/pages/e-readers-guide-page.tsx
+msgid "In KOReader, open <0>Tools → Progress sync</0> and choose <1>Custom sync server</1>."
 msgstr ""
 
 #: src/components/comic/comic-reader.tsx
@@ -4601,6 +4717,10 @@ msgstr "버그, 아이디어, 질문을 가장 먼저 남겨보세요."
 msgid "Browse the publication directory to find new writers."
 msgstr ""
 
+#: src/components/guide/pages/e-readers-guide-page.tsx
+msgid "Your unread queue, your saved articles and every publication you subscribe to, on a Kobo, a Kindle, a reMarkable or a phone — as real EPUB files, with the images, ready to read on a plane."
+msgstr ""
+
 #: src/routes/_layout.index.tsx
 msgid "The most-read writing across the network right now."
 msgstr "지금 네트워크에서 가장 많이 읽히는 글입니다."
@@ -5165,6 +5285,10 @@ msgstr ""
 msgid "Subscribe to list"
 msgstr "목록 구독"
 
+#: src/components/ereader-settings.tsx
+msgid "Rotate key"
+msgstr ""
+
 #: src/components/guide/pages/keeping-track-guide-page.tsx
 #: src/lib/guide/navigation.ts
 #~ msgid "Following a publication"
@@ -5182,6 +5306,10 @@ msgstr ""
 #: src/routes/_layout.tag.$tag.tsx
 msgid "Most posts"
 msgstr "게시물 많은 순"
+
+#: src/components/guide/pages/e-readers-guide-page.tsx
+msgid "You do not need a catalog for a single piece. Every article's share menu has <0>Download EPUB</0> — and <1>Download CBZ</1> on a comic. A publication's <2>…</2> menu has <3>Send to e-reader…</3>, which offers its recent articles as one book and shows the catalog URL for that publication on its own."
+msgstr ""
 
 #: src/components/docs/labelers-docs-page.tsx
 msgid "<0>1. Identity & signing key.</0> Give it a DID (a <1>did:web</1> is simplest) whose DID document advertises an <2>#atproto_labeler</2> service endpoint and an <3>#atproto_label</3> public signing key."
@@ -5465,6 +5593,10 @@ msgstr "읽기 기록 추적"
 #: src/components/reader/format-i18n.ts
 msgid "{readCount, plural, one {# read} other {{value} reads}}"
 msgstr "{readCount, plural, one {# 읽음} other {{value} 읽음}}"
+
+#: src/components/guide/pages/e-readers-guide-page.tsx
+msgid "A few articles on the network are really link posts — a headline and a URL, bridged in from somewhere else, with no body to package. Those are left out of the catalog rather than offered as a file that would open to nothing. You will still find them in the app, where they link out to the site that has the writing."
+msgstr ""
 
 #: src/components/offline-sync-debug.tsx
 #: src/routes/_layout.collections.index.tsx
@@ -5896,6 +6028,10 @@ msgstr ""
 msgid "Collection"
 msgstr "컬렉션"
 
+#: src/components/reader/send-to-ereader-dialog.tsx
+msgid "Or add this catalog URL to KOReader, Foliate, Marvin or any other OPDS app, and browse {name} from the device itself."
+msgstr ""
+
 #: src/routes/_layout.topics.$slug.tsx
 msgid "Most liked"
 msgstr ""
@@ -5951,6 +6087,10 @@ msgstr "<0>{appLabel}</0> 컬렉션에 링크를 저장합니다."
 #: src/components/reader/reorder-subscriptions-modal.tsx
 #~ msgid "Drag to change the order your subscriptions appear in the sidebar."
 #~ msgstr ""
+
+#: src/components/guide/pages/e-readers-guide-page.tsx
+msgid "Paste the sync server URL, then log in with your handle and the sync key. There is no separate account to register."
+msgstr ""
 
 #: src/components/user-settings-view.tsx
 msgid "Appearance, reading preferences, and personal data."
@@ -6367,6 +6507,11 @@ msgstr "서비스 DID는 <0>{appviewDid}</0>입니다. 이 서비스는 스코�
 msgid "The Slow Web, Revisited"
 msgstr "느린 웹, 다시 보기"
 
+#: src/components/guide/pages/e-readers-guide-page.tsx
+#: src/lib/guide/navigation.ts
+msgid "What you get"
+msgstr ""
+
 #. placeholder {0}: visible.length
 #: src/routes/_layout.communities.index.tsx
 #~ msgid "{0, plural, one {# community} other {# communities}}"
@@ -6384,6 +6529,10 @@ msgstr ""
 #: src/components/guide/pages/personalizing-guide-page.tsx
 #~ msgid "Eight presets, or your own paper and accent. The rest of the interface is derived from them."
 #~ msgstr ""
+
+#: src/components/guide/pages/e-readers-guide-page.tsx
+msgid "The sync key only carries your reading position. It cannot read your account, post anything, or change what you subscribe to — and it is not your Bluesky password. Lost a device? <0>Rotate</0> in Settings issues a new key and stops the old one working."
+msgstr ""
 
 #: src/components/appearance-settings.tsx
 #: src/components/reading-custom-font-picker.tsx
@@ -7067,6 +7216,10 @@ msgstr "계정 작업"
 msgid "Read article"
 msgstr "글 읽기"
 
+#: src/components/ereader-settings.tsx
+msgid "Your shelves, as an OPDS catalog. Anyone with this URL can see the same public records your profile already shows."
+msgstr ""
+
 #. placeholder {0}: formatBytes(usage.usage)
 #: src/components/offline-settings.tsx
 msgid "Standard Reader is using {0} on this device."
@@ -7169,6 +7322,10 @@ msgstr ""
 #: src/components/feedback/feedback-dialog.tsx
 msgid "Details"
 msgstr "세부 정보"
+
+#: src/components/guide/pages/e-readers-guide-page.tsx
+#~ msgid "Your catalog URL is not a secret, but it is not a password either — anyone who has it can see the same things your public profile already shows: what you subscribe to and what you have saved. Treat it like a share link rather than a login."
+#~ msgstr ""
 
 #: src/routes/_layout.topics.$slug.tsx
 msgid "Topic views"
@@ -7465,6 +7622,10 @@ msgstr ""
 #: src/components/reader/subscriptions-sheet.tsx
 msgid "{unreadCount} unread"
 msgstr "안 읽음 {unreadCount}"
+
+#: src/components/ereader-settings.tsx
+msgid "Log in with this as your username — there is no separate sync account."
+msgstr ""
 
 #: src/components/guide/pages/getting-started-guide-page.tsx
 #~ msgid "Below those, the publications you follow are listed for quick access. The <0>Subscriptions</0> heading above them opens the full management view. At the very bottom, your avatar opens a menu with your profile, reading history, recommended articles, feedback, settings, and log out."
@@ -7765,6 +7926,10 @@ msgstr "글 불러오는 중"
 msgid "Upvoted."
 msgstr "추천했습니다."
 
+#: src/components/guide/pages/e-readers-guide-page.tsx
+msgid "<0>Browse and download.</0> Your shelves are the top level. Tap an article to pull the EPUB onto the device."
+msgstr ""
+
 #: src/components/reader/list-edit-modal.tsx
 msgid "Search your subscriptions"
 msgstr "구독 검색"
@@ -7870,6 +8035,10 @@ msgstr ""
 msgid "Discussion here is gathered from posts across the network, so you comment wherever you already post."
 msgstr ""
 
+#: src/components/comic/comic-reader.tsx
+msgid "Download this issue (CBZ)"
+msgstr ""
+
 #: src/routes/_layout.tag.$tag.tsx
 msgid "Subscribe all"
 msgstr "전체 구독"
@@ -7895,6 +8064,11 @@ msgstr "<0>구조화된 블록.</0> 리치 블록 에디터 문서로, 각각 �
 #: src/components/docs/publishing-docs-page.tsx
 #~ msgid "Standard Reader emits these on its own article, publication, list and profile pages, and reads them from yours."
 #~ msgstr ""
+
+#: src/components/guide/pages/e-readers-guide-page.tsx
+#: src/lib/guide/navigation.ts
+msgid "Keeping your place"
+msgstr ""
 
 #: src/components/reader/collection-theme-editor.tsx
 msgid "Text"
@@ -7969,6 +8143,10 @@ msgstr "주제로 필터"
 
 #: src/components/reader/mute-menu-item.tsx
 msgid "Unmute {name}"
+msgstr ""
+
+#: src/components/guide/pages/e-readers-guide-page.tsx
+msgid "<0>Copy your catalog URL.</0> It is in <1>Settings</1> under <2>E-readers</2>. It is yours — it carries your subscriptions and your saved articles."
 msgstr ""
 
 #. placeholder {0}: image.file.name
@@ -8176,6 +8354,10 @@ msgstr ""
 msgid "Standard Reader indexes <0>site.standard.document</0> and <1>site.standard.publication</1> records out of AT Proto repos. Platforms like Leaflet, Pckt, and Offprint write these records for you as part of publishing, so their authors get the full reader treatment automatically. If you run your own site and hand-roll your own <2>site.standard</2> integration instead, you write those records yourself — this page covers what to add, including Markpub, the markdown format we recommend for a hand-rolled body."
 msgstr "Standard Reader는 AT Proto 저장소에서 <0>site.standard.document</0>와 <1>site.standard.publication</1> 레코드를 색인합니다. Leaflet, Pckt, Offprint 같은 플랫폼은 발행 과정에서 이 레코드를 대신 작성해 주므로, 해당 저자들은 자동으로 완전한 리더 경험을 얻습니다. 직접 사이트를 운영하며 <2>site.standard</2> 연동을 직접 구현한다면 이 레코드를 스스로 작성해야 합니다 — 이 페이지에서는 무엇을 추가해야 하는지, 그리고 직접 작성하는 본문에 권장하는 마크다운 형식인 Markpub까지 다룹니다."
 
+#: src/components/ereader-settings.tsx
+msgid "Catalog URL"
+msgstr ""
+
 #: src/components/reader/add-to-list-modal.tsx
 #: src/components/reader/list-edit-modal.tsx
 msgid "e.g. Tech, Friends, Cooking"
@@ -8282,6 +8464,10 @@ msgstr "켜면 구독할 때 해당 발행물의 지난 글 전체가 읽지 않
 #~ msgid "tuned to what you already follow."
 #~ msgstr ""
 
+#: src/components/guide/pages/e-readers-guide-page.tsx
+msgid "Your position also flows back here: read half of something on the Kobo and the article shows as half-read in the app, and in <0>Continue reading</0>. That direction is one-way. A position on a device is a place in <1>that device's</1> rendering of the file, and there is no honest way to turn a percentage back into one, so the app never sends a position out to a device that did not record it."
+msgstr ""
+
 #: src/components/reader/comments/comment-card.tsx
 msgid "Open this reply on Bluesky"
 msgstr "이 답글을 Bluesky에서 열기"
@@ -8309,6 +8495,7 @@ msgstr ""
 
 #: src/components/reader/discover-topic-filters.tsx
 #: src/components/reader/rss-feed-button.tsx
+#: src/components/reader/send-to-ereader-dialog.tsx
 #: src/components/reader/share-menu.tsx
 msgid "Close"
 msgstr "닫기"
@@ -8553,6 +8740,10 @@ msgstr ""
 msgid "Cited by"
 msgstr ""
 
+#: src/components/guide/pages/e-readers-guide-page.tsx
+msgid "KOReader can sync your reading position through Standard Reader, so picking up a book on a second device puts you where you stopped. Settings → <0>E-readers</0> has the three values it wants: the sync server URL, your username, and a sync key."
+msgstr ""
+
 #: src/routes/mcp/authorize.tsx
 msgid "Signed in as"
 msgstr ""
@@ -8607,3 +8798,7 @@ msgstr ""
 #: src/components/feedback/feedback-image-picker.tsx
 msgid "Describe this image"
 msgstr ""
+
+#: src/components/guide/pages/e-readers-guide-page.tsx
+#~ msgid "The sync key only carries your reading position. It cannot read your account, post anything, or change what you subscribe to — and it is not your Bluesky password. If you lose a device, ask us to rotate it."
+#~ msgstr ""

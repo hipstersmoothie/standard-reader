@@ -78,7 +78,9 @@ import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
 import { documentImages } from "#/lib/document/images";
 import { resolveArticleHeroImage } from "#/lib/document/lead-image";
+import { articleCbzUrl, articleEpubUrl } from "#/lib/opds/urls";
 import { usePageReader } from "#/lib/page-reader/page-reader-context";
+import { getPublicUrlClient } from "#/lib/public-url";
 import { publishingPlatform } from "#/lib/publishing-platform";
 import { useFormatters } from "#/lib/use-formatters";
 import { useOpenCollectionsInMagazine } from "#/lib/use-open-collections-in-magazine";
@@ -1080,6 +1082,28 @@ function ArticleViewBody({
   );
   const pub = article.publication;
   const publicationName = pub?.name;
+  // File renditions of this article. Offered whenever there is a body to
+  // package — the reader is looking at it, so there is. A comic issue gets a
+  // CBZ too: comic apps have page turns and a scrubber that a reflowable EPUB
+  // cannot give them.
+  const articleDownloads = (() => {
+    const params = documentLinkParams(article.uri);
+    if (!params || article.contentJson == null) return [];
+    const baseUrl = getPublicUrlClient();
+    const files = [
+      {
+        label: "Download EPUB",
+        url: articleEpubUrl(baseUrl, params.did, params.rkey),
+      },
+    ];
+    if (pub?.serial?.kind === "comic") {
+      files.push({
+        label: "Download CBZ",
+        url: articleCbzUrl(baseUrl, params.did, params.rkey),
+      });
+    }
+    return files;
+  })();
   const pubParams = pub ? publicationLinkParams(pub.uri) : null;
   const authorName = primaryAuthor(article);
   const handle = authorHandle(article);
@@ -1373,6 +1397,7 @@ function ArticleViewBody({
               author={primaryAuthor(article)}
               siteName={pub?.name}
               imageUrl={article.coverImageUrl}
+              downloads={articleDownloads}
             />
 
             {/* Last in the row: the one action that leaves the app, and the

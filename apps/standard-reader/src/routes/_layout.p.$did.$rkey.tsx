@@ -666,6 +666,14 @@ function PublicationProfileContent({
     setNextOffset(initialPage.nextOffset);
   }, [initialPage]);
 
+  // Whether a book of this publication would have anything in it. A bridged
+  // mirror's archive is all link posts, and offering a download there would be
+  // a button that 404s — so the first page of the archive decides, which is the
+  // same set the book is built from.
+  const hasDownloadableArticles = documents.some(
+    (document) => document.hasRenderableBody,
+  );
+
   const { enabled: trackReading } = useTrackReadingHistory();
   const isUnread = (article: ArticleCard) =>
     isArticleUnreadForReader(queryClient, article, {
@@ -822,6 +830,7 @@ function PublicationProfileContent({
               pub={pub}
               pageUrl={`${getPublicUrlClient()}/p/${did}/${rkey}`}
               feedUrl={publicationFeedUrl(getPublicUrlClient(), did, rkey)}
+              hasDownloadableArticles={hasDownloadableArticles}
               signedIn={signedIn}
               embed={embedMeta}
               markAllRead={markAllReadAction}

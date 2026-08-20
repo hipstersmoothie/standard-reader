@@ -146,6 +146,16 @@ export interface ArticleCardQuery {
   /** Match documents whose `tags` array includes this label (case-insensitive). */
   tag?: string;
   /**
+   * Only documents with a body the app can render (`has_renderable_body`).
+   *
+   * For the OPDS catalog and the EPUB/CBZ downloads, where an entry the reader
+   * cannot take offline is dead weight: catalog clients show a download button
+   * for every entry, and a bridged link post has nothing to put behind it. Off
+   * everywhere else — a feed row for an external post is useful, it just links
+   * out.
+   */
+  renderableOnly?: boolean;
+  /**
    * Followed-user DIDs. When present (even alongside `publicationUris`), the
    * query switches to "follow-feed union" mode: it returns documents authored
    * by these users OR recommended by them OR belonging to `publicationUris`,
@@ -471,6 +481,8 @@ async function selectFollowFeedCandidateUris(
     featuredOnly?: boolean;
     unreadForDid?: string;
     countOldPostsAsUnread?: boolean;
+    /** See {@link ArticleCardQuery.renderableOnly}. */
+    renderableOnly?: boolean;
     /** See {@link ArticleCardQuery.viewerDid}. */
     viewerDid?: string;
     /** See {@link ArticleCardQuery.muterDid}. */
@@ -499,6 +511,8 @@ export function buildFollowFeedCandidateSql(
     featuredOnly?: boolean;
     unreadForDid?: string;
     countOldPostsAsUnread?: boolean;
+    /** See {@link ArticleCardQuery.renderableOnly}. */
+    renderableOnly?: boolean;
     /** See {@link ArticleCardQuery.viewerDid}. */
     viewerDid?: string;
     /** See {@link ArticleCardQuery.muterDid}. */
@@ -528,6 +542,7 @@ export function buildFollowFeedCandidateSql(
     documentPublishedNotInFuture(d),
   ];
   if (opts.featuredOnly) base.push(eq(d.featured, true));
+  if (opts.renderableOnly) base.push(eq(d.hasRenderableBody, true));
   if (opts.unreadForDid)
     base.push(documentNotReadWhere(schema, opts.unreadForDid));
   // Applied to every union branch, not just the direct one: a followed
@@ -787,6 +802,7 @@ export async function selectArticleCards(
       featuredOnly: opts.featuredOnly,
       unreadForDid: opts.unreadForDid,
       countOldPostsAsUnread: opts.countOldPostsAsUnread,
+      renderableOnly: opts.renderableOnly,
       viewerDid: opts.viewerDid,
       muterDid: opts.muterDid,
       limit: opts.limit,
@@ -804,7 +820,18 @@ export async function selectArticleCards(
   // Tag feed with the mirrors hidden: resolve the page's URIs through the
   // tag-first query below, which is the only shape that survives a tag whose
   // matches are almost all `*.web.brid.gy`. See `selectTagArticleUris`.
-  if (opts.tag && opts.excludeWebBridge && !opts.unreadForDid) {
+  //
+  // `renderableOnly` opts out of this shape rather than being threaded through
+  // it: that predicate already removes almost every mirror (they are exactly
+  // the documents with no renderable body), so the two would be doing the same
+  // work twice — and silently dropping the option here would hand a catalog
+  // client entries it cannot download.
+  if (
+    opts.tag &&
+    opts.excludeWebBridge &&
+    !opts.unreadForDid &&
+    !opts.renderableOnly
+  ) {
     const pageUris = await selectTagArticleUris(db, schema, {
       tag: opts.tag,
       sort: opts.sort,
@@ -843,6 +870,9 @@ export async function selectArticleCards(
   }
   if (opts.tag) {
     conds.push(documentCarriesTagWhere(d, opts.tag));
+  }
+  if (opts.renderableOnly) {
+    conds.push(eq(d.hasRenderableBody, true));
   }
   if (opts.viewerDid) {
     conds.push(
@@ -984,6 +1014,8 @@ export async function selectPublicationArticleCards(
      * computed against one ordering.
      */
     order?: "newest" | "oldest";
+    /** See {@link ArticleCardQuery.renderableOnly}. */
+    renderableOnly?: boolean;
     /** See {@link ArticleCardQuery.viewerDid}. */
     viewerDid?: string;
   },
@@ -1032,6 +1064,7 @@ export async function selectPublicationArticleCards(
         eq(d.deleted, false),
         documentPublishedNotInFuture(d),
         eq(d.publicationUri, opts.publicationUri),
+        ...(opts.renderableOnly ? [eq(d.hasRenderableBody, true)] : []),
         publicationFilterWhere(schema, opts.filter, opts.readerDid, {
           countOldPostsAsUnread: opts.countOldPostsAsUnread,
         }),
