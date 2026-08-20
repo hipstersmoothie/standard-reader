@@ -159,7 +159,7 @@ export function EreaderSettings() {
               isReadOnly
               aria-label={field.label}
               disablePasswordManagers
-              size="lg"
+              size="md"
               style={styles.value}
               suffix={<CopyToClipboardButton size="sm" text={field.value} />}
               type={field.secret ? "password" : "text"}
