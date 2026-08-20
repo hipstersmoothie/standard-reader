@@ -11,8 +11,23 @@ function trim(baseUrl: string): string {
   return baseUrl.replace(/\/$/, "");
 }
 
-const did = encodeURIComponent;
-const rkey = encodeURIComponent;
+/**
+ * Encode a path segment, but leave `:` alone.
+ *
+ * RFC 3986 allows a colon in a path segment, so `/opds/u/did:plc:abc` is a
+ * perfectly good URL — and a far safer one to hand to a third-party client than
+ * `/opds/u/did%3Aplc%3Aabc`. A client that re-encodes a URL string it was given
+ * turns `%3A` into `%253A`, and the DID that arrives no longer starts with
+ * `did:`. Giving it nothing to re-encode removes the whole failure mode.
+ *
+ * Everything else is still encoded, so a hostile rkey cannot escape its segment.
+ */
+function segment(value: string): string {
+  return encodeURIComponent(value).replaceAll("%3A", ":");
+}
+
+const did = segment;
+const rkey = segment;
 
 // ── Catalog ────────────────────────────────────────────────────────────────
 

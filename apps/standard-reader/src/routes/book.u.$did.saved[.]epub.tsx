@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 
 import { db } from "#/db/index.server";
 import * as schema from "#/db/schema";
+import { didFromParam } from "#/lib/opds/did-param";
 import { getPublicUrl } from "#/lib/public-url";
 import { SITE_NAME } from "#/lib/site-metadata";
 import { buildEpub } from "#/server/books/epub";
@@ -22,8 +23,8 @@ export const Route = createFileRoute("/book/u/$did/saved.epub")({
   server: {
     handlers: {
       GET: async ({ params, request }) => {
-        const did = params.did;
-        if (!did.startsWith("did:")) {
+        const did = didFromParam(params.did);
+        if (!did) {
           return new Response("Bad Request", { status: 400 });
         }
 

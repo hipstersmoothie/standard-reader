@@ -6,6 +6,7 @@ import { db } from "#/db/index.server";
 import * as schema from "#/db/schema";
 import { parseComicIssueTitle } from "#/lib/comic/issue-title";
 import { documentImages } from "#/lib/document/images";
+import { didFromParam } from "#/lib/opds/did-param";
 import { getPublicUrl } from "#/lib/public-url";
 import { buildCbz } from "#/server/books/cbz";
 import { bookResponse } from "#/server/books/respond";
@@ -16,8 +17,9 @@ export const Route = createFileRoute("/book/a/$did/{$rkey}.cbz")({
   server: {
     handlers: {
       GET: async ({ params, request }) => {
-        const { did, rkey } = params;
-        if (!did.startsWith("did:")) {
+        const { rkey } = params;
+        const did = didFromParam(params.did);
+        if (!did) {
           return new Response("Bad Request", { status: 400 });
         }
 
