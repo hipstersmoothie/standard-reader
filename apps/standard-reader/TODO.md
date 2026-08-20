@@ -503,9 +503,9 @@ stores in `src/integrations/auth/`, session/user server fns in
       transaction to claim, release the connection, refresh, short transaction to
       release) with a TTL so a crashed process can't strand the lease — replacing
       `pg_advisory_xact_lock`. Needs a migration.
-- [ ] **Readers get stuck in a zombie signed-in state when their OAuth session vanishes.** Nothing
-      reconciles our app `session` row with atcute's stored OAuth session: the only place a session
-      row is deleted is the explicit `user.signOut`
+- [x] **Readers got stuck in a zombie signed-in state when their OAuth session vanished.** Nothing
+      reconciled our app `session` row with atcute's stored OAuth session: the only place a session
+      row was deleted was the explicit `user.signOut`
       ([`api-user.functions.ts:1568`](src/integrations/tanstack-query/api-user.functions.ts)). So
       once the OAuth blob is gone, the reader's session cookie stays valid, the app keeps believing
       they're signed in, and every request silently degrades to guest data forever.
@@ -526,10 +526,14 @@ stores in `src/integrations/auth/`, session/user server fns in
       anywhere and the lock never times out. Low `refresh_lock_contended` volume (1,002/7d) is
       expected when only a handful of DIDs are involved; it is not evidence of a bypass.
 
-      Fix carefully: `"session was deleted by another process"` can also occur on a benign race, so
-      tearing down the app session straight from the global `deleted` listener risks logging people
-      out on a transient blip. Better to handle it where a restore fails during a request (with the
-      session token in hand) than in the by-DID listener.
+      Fixed request-scoped rather than from the global listener, because
+      `"session was deleted by another process"` can also occur on a benign race and tearing down
+      sessions by DID would risk logging people out on a transient blip. The OAuth client now
+      records deletions in
+      [`session-deletions.ts`](src/integrations/auth/session-deletions.ts) and
+      `endSessionIfOauthSessionDeleted` in
+      [`auth-session.server.ts`](src/middleware/auth-session.server.ts) consumes that signal when a
+      restore fails, ending only the session row for the token on that request.
 - [ ] **Re-check `JETSTREAM_APPLY_CONCURRENCY` against `DB_POOL_MAX`.** Both
       default to 16, so ingest apply can by itself own every connection in a
       process that also serves requests (519 `ingest.*` spans were observed on
