@@ -33,6 +33,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 import { documentContentHtml } from "#/lib/document/content-html";
 import { bskyPostUrl } from "#/lib/leaflet/bsky";
+import type { BskyPostView } from "#/server/atproto/bsky-posts";
 
 import { sanitizeToXhtml } from "./xhtml";
 
@@ -62,6 +63,12 @@ export interface RenderBodyInput {
    * image failed to fetch, and a live URL degrades better than a dead one).
    */
   localImages?: Map<string, string>;
+  /**
+   * Embedded Bluesky posts, already hydrated (`bsky-embeds.ts`). A URI missing
+   * from the map falls back to a link — the post was deleted, or the AppView
+   * was unreachable when the book was built.
+   */
+  posts?: Map<string, BskyPostView>;
 }
 
 export interface RenderedBody {
@@ -69,6 +76,18 @@ export interface RenderedBody {
   markup: string;
   /** Every remote image URL the body referenced, first appearance first. */
   imageUrls: Array<string>;
+}
+
+/** The date under an embedded post, or null when it has no usable one. */
+function formatPostDate(iso: string): string | null {
+  const time = Date.parse(iso);
+  if (Number.isNaN(time)) return null;
+  return new Date(time).toLocaleDateString("en-US", {
+    day: "numeric",
+    month: "long",
+    timeZone: "UTC",
+    year: "numeric",
+  });
 }
 
 /**
@@ -104,6 +123,12 @@ function absoluteHref(href: string, base: string | null): string {
 function bookComponents(
   documentUrl: string | null,
   resolveImage: (url: string) => string,
+  /**
+   * Record an image the renderer's own resolver never sees — a post's avatar or
+   * attachment — and hand back the path it will have in the book.
+   */
+  collectAndResolve: (url: string) => string,
+  posts: Map<string, BskyPostView> | undefined,
 ): RendererComponentsInput {
   const link = (href: string) => absoluteHref(href, documentUrl);
 
@@ -136,11 +161,57 @@ function bookComponents(
         </p>
       ),
       BlueskyEmbed: ({ postUri }) => {
-        const url = bskyPostUrl(postUri);
+        const url = bskyPostUrl(postUri) ?? postUri;
+        const post = posts?.get(postUri);
+
+        // No post: the link, as before. Better than an empty box where the
+        // writer put a quotation.
+        if (!post) {
+          return (
+            <p>
+              <a href={url}>{url}</a>
+            </p>
+          );
+        }
+
+        const name = post.author.displayName || post.author.handle || "";
+        const handle = post.author.handle ? `@${post.author.handle}` : null;
+
         return (
-          <p>
-            <a href={url ?? postUri}>{url ?? postUri}</a>
-          </p>
+          <aside className="sr-post">
+            <p className="sr-post-byline">
+              {post.author.avatar ? (
+                <img
+                  alt=""
+                  className="sr-post-avatar"
+                  src={collectAndResolve(post.author.avatar)}
+                />
+              ) : null}
+              <strong>{name}</strong>
+              {handle ? (
+                <span className="sr-post-handle"> {handle}</span>
+              ) : null}
+            </p>
+            {/* The record's own line breaks are the author's paragraphing —
+                a post is written in short lines and reads as noise without
+                them. */}
+            {post.text
+              .split("\n")
+              .map((line, index) => (line ? <p key={index}>{line}</p> : null))}
+            {post.images.map((image) => (
+              <img
+                alt={image.alt}
+                className="sr-post-image"
+                key={image.url}
+                src={collectAndResolve(image.url)}
+              />
+            ))}
+            <p className="sr-post-source">
+              <a href={url}>
+                {formatPostDate(post.indexedAt) ?? "View on Bluesky"}
+              </a>
+            </p>
+          </aside>
         );
       },
 
@@ -262,6 +333,11 @@ export function renderDocumentBody(input: RenderBodyInput): RenderedBody {
   const resolveImage = (url: string): string =>
     input.localImages?.get(url) ?? url;
 
+  const collectAndResolve = (url: string): string => {
+    collect(url);
+    return resolveImage(url);
+  };
+
   const document: StandardSiteDocument = {
     authorDid: input.authorDid,
     content: input.content,
@@ -282,7 +358,12 @@ export function renderDocumentBody(input: RenderBodyInput): RenderedBody {
 
   const markup = renderToStaticMarkup(
     <StandardDocumentRenderer
-      components={bookComponents(input.documentUrl ?? null, resolveImage)}
+      components={bookComponents(
+        input.documentUrl ?? null,
+        resolveImage,
+        collectAndResolve,
+        input.posts,
+      )}
       document={document}
       options={{ resolveImageUrl }}
     />,
