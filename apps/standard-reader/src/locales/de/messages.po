@@ -1907,8 +1907,8 @@ msgid "No topics match “{debouncedQuery}”."
 msgstr ""
 
 #: src/components/guide/pages/e-readers-guide-page.tsx
-msgid "Who can use your catalog URL"
-msgstr ""
+#~ msgid "Who can use your catalog URL"
+#~ msgstr ""
 
 #: src/components/reader/continue-reading.tsx
 #~ msgid "Reading progress"
@@ -7304,8 +7304,8 @@ msgid "Details"
 msgstr "Details"
 
 #: src/components/guide/pages/e-readers-guide-page.tsx
-msgid "Your catalog URL is not a secret, but it is not a password either — anyone who has it can see the same things your public profile already shows: what you subscribe to and what you have saved. Treat it like a share link rather than a login."
-msgstr ""
+#~ msgid "Your catalog URL is not a secret, but it is not a password either — anyone who has it can see the same things your public profile already shows: what you subscribe to and what you have saved. Treat it like a share link rather than a login."
+#~ msgstr ""
 
 #: src/routes/_layout.topics.$slug.tsx
 msgid "Topic views"

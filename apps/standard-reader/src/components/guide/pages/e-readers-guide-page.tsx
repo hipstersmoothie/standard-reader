@@ -89,14 +89,6 @@ export function EreadersGuidePage() {
           article to pull the EPUB onto the device.
         </Trans>
       </GuideSteps>
-      <GuideCallout title={<Trans>Who can use your catalog URL</Trans>}>
-        <Trans>
-          Your catalog URL is not a secret, but it is not a password either —
-          anyone who has it can see the same things your public profile already
-          shows: what you subscribe to and what you have saved. Treat it like a
-          share link rather than a login.
-        </Trans>
-      </GuideCallout>
 
       <h2 {...stylex.props(docsStyles.h2)} id="one-article">
         <Trans>Sending one article</Trans>
