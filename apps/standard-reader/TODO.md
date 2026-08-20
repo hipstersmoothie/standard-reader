@@ -503,16 +503,33 @@ stores in `src/integrations/auth/`, session/user server fns in
       transaction to claim, release the connection, refresh, short transaction to
       release) with a TTL so a crashed process can't strand the lease — replacing
       `pg_advisory_xact_lock`. Needs a migration.
-- [ ] **The refresh lock is not actually preventing logouts.** `attachSessionEventLogging` calls
-      `auth.oauth.session_deleted` "the primary breadcrumb for the logout-on-deploy bug" and says a
-      recurring stream means refresh rotation is still racing. Over 7d there are **25,331** of them,
-      and **25,286 (99.8%) carry `cause: "session was deleted by another process"`** — the exact
-      racing-refresh signature, not genuine PDS revocation (that accounts for ~40). Meanwhile
-      `auth.oauth.refresh_lock_contended` fires only 186×/24h, so the lock is rarely even engaging:
-      something is bypassing `dbRequestLock` rather than the lock failing to hold. Worth checking
-      whether every process that restores a session goes through it (ingest/cron included) and
-      whether `isNeonHttpDriver` is silently true anywhere — that branch degrades to in-process-only
-      serialization and logs `refresh_lock_unavailable` just once per process.
+- [ ] **Readers get stuck in a zombie signed-in state when their OAuth session vanishes.** Nothing
+      reconciles our app `session` row with atcute's stored OAuth session: the only place a session
+      row is deleted is the explicit `user.signOut`
+      ([`api-user.functions.ts:1568`](src/integrations/tanstack-query/api-user.functions.ts)). So
+      once the OAuth blob is gone, the reader's session cookie stays valid, the app keeps believing
+      they're signed in, and every request silently degrades to guest data forever.
+      `attachSessionEventLogging` only *logs* the `deleted` event — it doesn't invalidate anything.
+
+      The telemetry signature: `auth.oauth.session_deleted` fires **every 60 seconds on the dot**
+      for an affected DID, inside a `GET` span, indefinitely (one account has been looping since at
+      least 2026-08-13). Each attempt also takes the advisory lock and a lock-pool connection.
+
+      Scale, measured rather than assumed: 25,331 events over 7d sounds like mass logouts but is
+      **21 distinct DIDs**, with 4 accounting for 99.8% (16,800 / 5,060 / 2,178 / 1,216). The raw
+      count is also ~2× inflated — each restore attempt emits one event per OAuth client kind
+      (`default` **and** `review`, same trace, ~20ms apart), so both listeners report one underlying
+      deletion.
+
+      **The lock itself is fine** — over 7d `auth.oauth.refresh_lock_unavailable` and
+      `auth.oauth.refresh_lock_timeout` are both **0**, so `isNeonHttpDriver` is not silently true
+      anywhere and the lock never times out. Low `refresh_lock_contended` volume (1,002/7d) is
+      expected when only a handful of DIDs are involved; it is not evidence of a bypass.
+
+      Fix carefully: `"session was deleted by another process"` can also occur on a benign race, so
+      tearing down the app session straight from the global `deleted` listener risks logging people
+      out on a transient blip. Better to handle it where a restore fails during a request (with the
+      session token in hand) than in the by-DID listener.
 - [ ] **Re-check `JETSTREAM_APPLY_CONCURRENCY` against `DB_POOL_MAX`.** Both
       default to 16, so ingest apply can by itself own every connection in a
       process that also serves requests (519 `ingest.*` spans were observed on
