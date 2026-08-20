@@ -241,6 +241,19 @@ Check items off as they land.
       events at ~1,000/s before being stopped, and `planSnapshot` reports blocks rather than
       matching events, so the total is unknown. Measure before planning a window around it.
 
+- [ ] **`reconcile-cron` is running a stale build — the sweep is 100% dead.** `ingest.repoReconcile`
+      fails ~99.9% of the time (43,495 failures over 7d, flat at ~350–440/hr for the whole window;
+      96.5% of failures are one query). It selects `tracked_repos.last_seen_rev` — the column
+      migration [`0041_tidy_last_seen_seq`](drizzle/0041_tidy_last_seen_seq.sql) **dropped** in favor
+      of `last_seen_seq`. No current source generates that query, so the deployed reconcile service
+      predates 0041. Only the web service runs `preDeployCommand` migrations, so the shared DB moved
+      on without it. **Redeploy `reconcile-cron`/ingest**, then confirm the failures stop — no repo
+      has been reconciled (i.e. no drift repaired) for at least a week.
+- [ ] **Clean up the dropped column's leftovers.** [`scripts/tmp-drain.ts`](scripts/tmp-drain.ts)
+      still filters on `t.last_seen_rev is null` (raw SQL, so it fails at runtime rather than
+      typecheck), and several `repo-sync.ts` comments still describe `last_seen_rev` as the
+      watermark. Delete the temp script if it has outlived its purpose; refresh the comments.
+
 - [x] **Personal state no longer waits on the ingest queue** (2026-08-01). With the ingest worker
       backlogged, a reader's own read/unread state — the one thing they watch change in the moment —
       queued behind everyone else's backfill, so articles stayed unread for hours after being read.
@@ -475,6 +488,50 @@ stores in `src/integrations/auth/`, session/user server fns in
       for `app.standard-reader.authBasicFeatures` +
       `app.standard-reader.authCollections` when `_lexicon.*` DNS ready (manual,
       requires `LEXICON_PUBLISH_*` creds).
+- [x] **Stop the refresh lock starving the request pool.** `withAdvisoryLock`
+      holds its connection across the PDS refresh round trip, so slow
+      third-party PDSes drained the shared `pg` pool (`max: 16`); with no
+      `connectionTimeoutMillis`, node-postgres queued acquires forever and every
+      signed-in read parked behind them — `user.getShellBootstrap` P95 hit ~9.7
+      min (max 50 min) while still returning 200, so it never showed up as an
+      error. The lock now borrows from an isolated pool (`getLockDb`), and both
+      pools have acquire timeouts so exhaustion fails loudly. See
+      [`src/db/index.ts`](src/db/index.ts).
+- [ ] **Don't hold a pool connection across PDS I/O at all.** The isolated pool
+      contains the blast radius but the refresh still pins a connection for a
+      whole network round trip. The real fix is a lease/claim row (short
+      transaction to claim, release the connection, refresh, short transaction to
+      release) with a TTL so a crashed process can't strand the lease — replacing
+      `pg_advisory_xact_lock`. Needs a migration.
+- [x] **Readers got stuck in a zombie signed-in state when their OAuth session vanished.** Nothing
+      reconciled our app `session` row with atcute's stored OAuth session — the only place a session
+      row was deleted was the explicit `user.signOut`
+      ([`api-user.functions.ts:1568`](src/integrations/tanstack-query/api-user.functions.ts)) — so
+      once the OAuth blob was gone the session cookie stayed valid, the app kept believing the
+      reader was signed in, and every request silently degraded to guest data forever;
+      `attachSessionEventLogging` only logged the `deleted` event. The signature was
+      `auth.oauth.session_deleted` firing **every 60 seconds on the dot** for an affected DID,
+      inside a `GET` span, indefinitely (one account looping since at least 2026-08-13), each
+      attempt also taking the advisory lock and a lock-pool connection. Fixed request-scoped rather
+      than from the global listener, because `"session was deleted by another process"` can also
+      occur on a benign race and tearing down sessions by DID would risk logging people out on a
+      transient blip: the OAuth client records deletions in
+      [`session-deletions.ts`](src/integrations/auth/session-deletions.ts), and
+      `endSessionIfOauthSessionDeleted` in
+      [`auth-session.server.ts`](src/middleware/auth-session.server.ts) consumes that signal when a
+      restore fails, ending only the session row for the token on that request.
+- [ ] **Read `auth.oauth.session_deleted` counts as ~half what they say.** Both OAuth client kinds
+      get a listener and `restoreAtprotoSession` tries both, so one failed restore emits the event
+      twice (`default` **and** `review`, same trace, ~20ms apart). Worth collapsing to one event per
+      restore so the number means what it looks like. For reference, the 25,331 events over 7d that
+      looked like mass logouts were **21 distinct DIDs**, 4 of them 99.8% (16,800 / 5,060 / 2,178 /
+      1,216) — and the refresh lock itself was fine: `auth.oauth.refresh_lock_unavailable` and
+      `auth.oauth.refresh_lock_timeout` were both **0** over the same window.
+- [ ] **Re-check `JETSTREAM_APPLY_CONCURRENCY` against `DB_POOL_MAX`.** Both
+      default to 16, so ingest apply can by itself own every connection in a
+      process that also serves requests (519 `ingest.*` spans were observed on
+      the `web` component). Either lower the apply ceiling or give ingest its own
+      pool the way the refresh lock now has one.
 
 ## 4. Lexicons & writes (records = source of truth)
 

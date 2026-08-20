@@ -28,7 +28,7 @@
  */
 import { sql } from "drizzle-orm";
 
-import { db, isNeonHttpDriver } from "#/db/index.server";
+import { getLockDb, isNeonHttpDriver } from "#/db/index.server";
 import { logEvent } from "#/server/observability/log";
 
 /**
@@ -69,7 +69,11 @@ async function withAdvisoryLock<T>(
     return await fn();
   }
 
-  return await db.transaction(async (tx) => {
+  // Deliberately NOT the shared request pool. This transaction stays open
+  // across `fn()` — the PDS refresh round trip — so it must borrow from the
+  // isolated lock pool, or slow third-party PDSes drain the pool every
+  // signed-in read depends on. See `getLockDb` in `src/db/index.ts`.
+  return await getLockDb().transaction(async (tx) => {
     // LOCAL so the setting reverts when the transaction ends. LOCK_TIMEOUT is a
     // hardcoded constant, so interpolating it is safe (SET rejects bind params
     // for its value anyway).
