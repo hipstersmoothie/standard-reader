@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { db } from "#/db/index.server";
 import * as schema from "#/db/schema";
+import { didFromParam } from "#/lib/opds/did-param";
 import { getPublicUrl } from "#/lib/public-url";
 import { buildEpub } from "#/server/books/epub";
 import {
@@ -24,8 +25,8 @@ export const Route = createFileRoute("/book/u/$did/unread.epub")({
   server: {
     handlers: {
       GET: async ({ params, request }) => {
-        const did = params.did;
-        if (!did.startsWith("did:")) {
+        const did = didFromParam(params.did);
+        if (!did) {
           return new Response("Bad Request", { status: 400 });
         }
 

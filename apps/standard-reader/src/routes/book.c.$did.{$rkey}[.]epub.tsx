@@ -5,6 +5,7 @@ import { db } from "#/db/index.server";
 import * as schema from "#/db/schema";
 import { collectionDocumentUri } from "#/lib/atproto/collection-uris";
 import { parseCollectionManifest } from "#/lib/collections/manifest";
+import { didFromParam } from "#/lib/opds/did-param";
 import { getPublicUrl } from "#/lib/public-url";
 import { cdnImageUrl } from "#/server/atproto/blob";
 import { buildEpub } from "#/server/books/epub";
@@ -20,8 +21,9 @@ export const Route = createFileRoute("/book/c/$did/{$rkey}.epub")({
   server: {
     handlers: {
       GET: async ({ params, request }) => {
-        const { did, rkey } = params;
-        if (!did.startsWith("did:")) {
+        const { rkey } = params;
+        const did = didFromParam(params.did);
+        if (!did) {
           return new Response("Bad Request", { status: 400 });
         }
 

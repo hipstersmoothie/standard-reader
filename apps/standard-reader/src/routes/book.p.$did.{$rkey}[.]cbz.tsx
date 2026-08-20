@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { publicationUriFromParams } from "#/components/reader/format";
 import { db } from "#/db/index.server";
 import * as schema from "#/db/schema";
+import { didFromParam } from "#/lib/opds/did-param";
 import { getPublicUrl } from "#/lib/public-url";
 import { buildCbz } from "#/server/books/cbz";
 import { comicRunFile } from "#/server/books/comic-issue";
@@ -20,8 +21,9 @@ export const Route = createFileRoute("/book/p/$did/{$rkey}.cbz")({
   server: {
     handlers: {
       GET: async ({ params, request }) => {
-        const { did, rkey } = params;
-        if (!did.startsWith("did:")) {
+        const { rkey } = params;
+        const did = didFromParam(params.did);
+        if (!did) {
           return new Response("Bad Request", { status: 400 });
         }
 

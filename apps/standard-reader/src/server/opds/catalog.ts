@@ -311,6 +311,11 @@ export function shelfNavigation({
 }): OpdsFeed {
   const self = opdsShelfUrl(baseUrl, did);
   const updated = new Date(0).toISOString();
+  // `subsection` rather than `http://opds-spec.org/shelf`: the shelf relation
+  // describes a *link to* the reader's shelf, which is what the feed-level link
+  // below is for. On a navigation entry, clients look for `subsection` — a
+  // stricter one skips an entry whose rel it does not recognise, which is a
+  // shelf the reader can see in a browser and not in their reading app.
   const shelf = (
     title: string,
     path: string,
@@ -319,7 +324,6 @@ export function shelfNavigation({
     href: `${self}/${path}`,
     id: `${self}/${path}`,
     kind: "acquisition",
-    rel: OPDS_REL.shelf,
     summary,
     title,
     updated,
@@ -344,7 +348,6 @@ export function shelfNavigation({
     href: `${self}/publications`,
     id: `${self}/publications`,
     kind: "navigation",
-    rel: OPDS_REL.shelf,
     summary: "Browse each publication you subscribe to on its own.",
     title: "Your publications",
     updated,
@@ -355,7 +358,6 @@ export function shelfNavigation({
       href: opdsListUrl(baseUrl, did, list.rkey),
       id: `at://${did}/app.standard-reader.list/${list.rkey}`,
       kind: "acquisition",
-      rel: OPDS_REL.shelf,
       summary: list.description,
       title: list.name,
       updated,
@@ -401,11 +403,20 @@ export function shelfNavigation({
   return {
     id: self,
     kind: "navigation",
-    links: baseLinks(baseUrl),
+    links: [
+      ...baseLinks(baseUrl),
+      {
+        href: `${self}/saved`,
+        rel: OPDS_REL.shelf,
+        title: "Saved for later",
+        type: feedTypeFor("acquisition"),
+      },
+    ],
     navigation: entries,
     selfHref: self,
     subtitle: `Shelves for ${readerName}, plus everything on ${SITE_NAME}.`,
-    title: `${readerName} · ${SITE_NAME}`,
+    title:
+      readerName === SITE_NAME ? SITE_NAME : `${readerName} · ${SITE_NAME}`,
     updated,
   };
 }

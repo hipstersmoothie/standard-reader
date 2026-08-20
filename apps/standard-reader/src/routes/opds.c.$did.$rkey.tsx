@@ -5,6 +5,7 @@ import { db } from "#/db/index.server";
 import * as schema from "#/db/schema";
 import { collectionDocumentUri } from "#/lib/atproto/collection-uris";
 import { parseCollectionManifest } from "#/lib/collections/manifest";
+import { didFromParam } from "#/lib/opds/did-param";
 import { EPUB_TYPE, OPDS_REL } from "#/lib/opds/model";
 import { opdsFormatFromRequest, opdsResponse } from "#/lib/opds/respond";
 import {
@@ -22,8 +23,9 @@ export const Route = createFileRoute("/opds/c/$did/$rkey")({
   server: {
     handlers: {
       GET: async ({ params, request }) => {
-        const { did, rkey } = params;
-        if (!did.startsWith("did:")) {
+        const { rkey } = params;
+        const did = didFromParam(params.did);
+        if (!did) {
           return new Response("Bad Request", { status: 400 });
         }
 

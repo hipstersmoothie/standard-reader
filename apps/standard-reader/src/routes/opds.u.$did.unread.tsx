@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { db } from "#/db/index.server";
 import * as schema from "#/db/schema";
+import { didFromParam } from "#/lib/opds/did-param";
 import { EPUB_TYPE, OPDS_REL } from "#/lib/opds/model";
 import {
   OPDS_PRIVATE_CACHE_CONTROL,
@@ -22,8 +23,8 @@ export const Route = createFileRoute("/opds/u/$did/unread")({
   server: {
     handlers: {
       GET: async ({ params, request }) => {
-        const did = params.did;
-        if (!did.startsWith("did:")) {
+        const did = didFromParam(params.did);
+        if (!did) {
           return new Response("Bad Request", { status: 400 });
         }
 
