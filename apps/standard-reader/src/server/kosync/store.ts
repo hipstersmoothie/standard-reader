@@ -6,6 +6,7 @@
 import { and, eq, sql } from "drizzle-orm";
 
 import type { Db, Schema } from "#/integrations/tanstack-query/api-shapes";
+import type { KosyncReader } from "#/server/kosync/credentials";
 
 export interface KosyncPosition {
   document: string;
@@ -16,22 +17,39 @@ export interface KosyncPosition {
   timestamp: number;
 }
 
-/** Resolve a username (handle or DID) to a DID. */
-export async function didForKosyncUsername(
+/**
+ * Resolve a kosync username (handle or DID) to the reader and the salt their
+ * key is derived from.
+ *
+ * The salt lookup is a second read rather than a join because the username may
+ * already be a DID, in which case there is no profile row to join through.
+ */
+export async function kosyncReaderForUsername(
   db: Db,
   schema: Schema,
   username: string,
-): Promise<string | null> {
+): Promise<KosyncReader | null> {
   const trimmed = username.trim();
-  if (trimmed.startsWith("did:")) return trimmed;
+  let did: string | null = trimmed.startsWith("did:") ? trimmed : null;
 
-  const handle = trimmed.replace(/^@/, "").toLowerCase();
-  const [row] = await db
-    .select({ did: schema.profiles.did })
-    .from(schema.profiles)
-    .where(eq(schema.profiles.handle, handle))
+  if (!did) {
+    const handle = trimmed.replace(/^@/, "").toLowerCase();
+    const [profile] = await db
+      .select({ did: schema.profiles.did })
+      .from(schema.profiles)
+      .where(eq(schema.profiles.handle, handle))
+      .limit(1);
+    did = profile?.did ?? null;
+  }
+  if (!did) return null;
+
+  const [account] = await db
+    .select({ salt: schema.user.kosyncKeySalt })
+    .from(schema.user)
+    .where(eq(schema.user.did, did))
     .limit(1);
-  return row?.did ?? null;
+
+  return { did, salt: account?.salt ?? null };
 }
 
 /** Record the digests a freshly generated book will have on a device. */

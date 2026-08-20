@@ -1,6 +1,15 @@
 "use client";
 
 import { Trans, useLingui } from "@lingui/react/macro";
+import {
+  AlertDialog,
+  AlertDialogActionButton,
+  AlertDialogCancelButton,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+} from "@standard-reader/design-system/alert-dialog";
+import { Button } from "@standard-reader/design-system/button";
 import { CopyToClipboardButton } from "@standard-reader/design-system/copy-to-clipboard-button";
 import { Separator } from "@standard-reader/design-system/separator";
 import { TextField } from "@standard-reader/design-system/text-field";
@@ -16,8 +25,8 @@ import {
   lineHeight,
 } from "@standard-reader/design-system/theme/typography.stylex";
 import * as stylex from "@stylexjs/stylex";
-import { useQuery } from "@tanstack/react-query";
-import { Fragment } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Fragment, useState } from "react";
 
 import { ereaderApi } from "#/integrations/tanstack-query/api-ereader.functions";
 
@@ -73,12 +82,18 @@ const styles = stylex.create({
     minWidth: 0,
   },
   value: {
-    flexGrow: 0,
+    flexGrow: 1,
     flexShrink: 1,
+    minWidth: 0,
+  },
+  valueGroup: {
+    alignItems: "center",
+    display: "flex",
+    gap: gap.sm,
     // Off the spacing scale on purpose: a text column is sized so its content
     // reads, not to a spacing step. Wide enough for a handle or a host; a long
     // URL scrolls inside the field rather than stretching the row to fit it.
-    width: { [MOBILE]: "100%", default: "20rem" },
+    width: { [MOBILE]: "100%", default: "22rem" },
   },
 });
 
@@ -100,9 +115,22 @@ interface ConnectionField {
  */
 export function EreaderSettings() {
   const { t } = useLingui();
+  const queryClient = useQueryClient();
+  const [rotateOpen, setRotateOpen] = useState(false);
   const { data: connection } = useQuery(
     ereaderApi.getEreaderConnectionQueryOptions(),
   );
+  const rotate = useMutation({
+    ...ereaderApi.rotateKosyncKeyMutationOptions(),
+    onSuccess: async () => {
+      setRotateOpen(false);
+      // The key on screen is now the old one — refetch before the reader
+      // copies it onto a device that would then fail to sync.
+      await queryClient.invalidateQueries({
+        queryKey: ["reader", "ereaderConnection"],
+      });
+    },
+  });
 
   if (!connection) return null;
 
@@ -155,19 +183,58 @@ export function EreaderSettings() {
             {/* The row already carries the label and description, so the field
                 takes neither — printing them twice is what a `label` prop here
                 would do. */}
-            <TextField
-              isReadOnly
-              aria-label={field.label}
-              disablePasswordManagers
-              size="md"
-              style={styles.value}
-              suffix={<CopyToClipboardButton size="sm" text={field.value} />}
-              type={field.secret ? "password" : "text"}
-              value={field.value}
-            />
+            <div {...stylex.props(styles.valueGroup)}>
+              <TextField
+                isReadOnly
+                aria-label={field.label}
+                disablePasswordManagers
+                size="md"
+                style={styles.value}
+                suffix={<CopyToClipboardButton size="sm" text={field.value} />}
+                type={field.secret ? "password" : "text"}
+                value={field.value}
+              />
+              {field.secret ? (
+                <Button
+                  isPending={rotate.isPending}
+                  onPress={() => setRotateOpen(true)}
+                  size="sm"
+                  variant="secondary"
+                >
+                  <Trans>Rotate</Trans>
+                </Button>
+              ) : null}
+            </div>
           </div>
         </Fragment>
       ))}
+
+      <AlertDialog
+        isOpen={rotateOpen}
+        onOpenChange={setRotateOpen}
+        trigger={<span hidden aria-hidden />}
+      >
+        <AlertDialogHeader>
+          <Trans>Rotate your sync key?</Trans>
+        </AlertDialogHeader>
+        <AlertDialogDescription>
+          <Trans>
+            Every device syncing with the old key stops until you enter the new
+            one. Nothing you have already read is lost — reading positions are
+            kept against the books themselves, not the key.
+          </Trans>
+        </AlertDialogDescription>
+        <AlertDialogFooter>
+          <AlertDialogCancelButton isDisabled={rotate.isPending} />
+          <AlertDialogActionButton
+            closeOnPress={false}
+            isPending={rotate.isPending}
+            onPress={() => rotate.mutate()}
+          >
+            <Trans>Rotate key</Trans>
+          </AlertDialogActionButton>
+        </AlertDialogFooter>
+      </AlertDialog>
     </>
   );
 }

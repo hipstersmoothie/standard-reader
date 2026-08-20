@@ -373,6 +373,14 @@ export function shelfNavigation({
       updated,
     },
     {
+      href: opdsTrendingUrl(baseUrl),
+      id: opdsTrendingUrl(baseUrl),
+      kind: "acquisition",
+      summary: "What the network is reading and recommending right now.",
+      title: "Trending",
+      updated,
+    },
+    {
       href: opdsPublicationsUrl(baseUrl),
       id: opdsPublicationsUrl(baseUrl),
       kind: "navigation",

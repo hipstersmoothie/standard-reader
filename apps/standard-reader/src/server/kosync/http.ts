@@ -11,7 +11,7 @@ import { db } from "#/db/index.server";
 import * as schema from "#/db/schema";
 
 import { authenticateKosync } from "./credentials";
-import { didForKosyncUsername } from "./store";
+import { kosyncReaderForUsername } from "./store";
 
 export function kosyncJson(
   body: Record<string, unknown>,
@@ -38,7 +38,7 @@ export async function kosyncReader(
   request: Request,
 ): Promise<{ did: string } | { response: Response }> {
   const did = await authenticateKosync(request, (username) =>
-    didForKosyncUsername(db, schema, username),
+    kosyncReaderForUsername(db, schema, username),
   );
   if (!did) {
     return {

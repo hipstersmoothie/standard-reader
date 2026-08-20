@@ -8,20 +8,24 @@
  *
  * So this does not reuse the reader's AT Proto identity in any form that could
  * be replayed elsewhere. The sync key is *derived* — an HMAC of the reader's
- * DID under a server secret — which means:
+ * DID and a per-reader salt, under a server secret — which means:
  *
- *  - nothing new is stored: no credentials table, no rotation bookkeeping;
- *  - the key grants exactly one capability, reading and writing that reader's
+ *  - the key itself is never stored, so there is nothing to leak from the DB;
+ *  - it grants exactly one capability, reading and writing that reader's
  *    KOReader positions, and nothing else in the app;
- *  - a leaked key is contained, and every key can be invalidated at once by
- *    rotating `KOSYNC_SECRET`.
+ *  - rotating is a single column write (`user.kosync_key_salt`), and the old
+ *    key stops working the moment it lands.
  *
- * The trade is that a single key cannot be revoked on its own. For a
- * position-sync credential that is the right trade — but it is a trade, and it
- * is why the key must never become a general-purpose token.
+ * A `null` salt derives the pre-rotation key, so readers already syncing when
+ * rotation shipped keep working without touching anything.
  */
 
-import { createHash, createHmac, timingSafeEqual } from "node:crypto";
+import {
+  createHash,
+  createHmac,
+  randomBytes,
+  timingSafeEqual,
+} from "node:crypto";
 
 function secret(): string {
   const value = process.env.KOSYNC_SECRET;
@@ -33,6 +37,11 @@ function secret(): string {
   throw new Error("KOSYNC_SECRET is not set");
 }
 
+/** A fresh salt. Random rather than a counter, so rotating is unguessable. */
+export function newKosyncSalt(): string {
+  return randomBytes(16).toString("base64url");
+}
+
 /**
  * The sync key a reader types into KOReader's "Password" field.
  *
@@ -40,9 +49,9 @@ function secret(): string {
  * unguessable, short enough to be typed on an e-reader's on-screen keyboard,
  * and free of the characters that look alike on an e-ink screen.
  */
-export function kosyncKeyForDid(did: string): string {
+export function kosyncKeyForDid(did: string, salt: string | null): string {
   const digest = createHmac("sha256", secret())
-    .update(`kosync:${did}`)
+    .update(salt ? `kosync:${did}:${salt}` : `kosync:${did}`)
     .digest();
   const alphabet = "abcdefghjkmnpqrstuvwxyz23456789";
   let key = "";
@@ -53,8 +62,8 @@ export function kosyncKeyForDid(did: string): string {
 }
 
 /** What KOReader sends as `x-auth-key`: the MD5 of the typed password. */
-export function kosyncAuthKeyForDid(did: string): string {
-  return createHash("md5").update(kosyncKeyForDid(did)).digest("hex");
+export function kosyncAuthKeyForDid(did: string, salt: string | null): string {
+  return createHash("md5").update(kosyncKeyForDid(did, salt)).digest("hex");
 }
 
 function constantTimeEquals(a: string, b: string): boolean {
@@ -64,22 +73,31 @@ function constantTimeEquals(a: string, b: string): boolean {
   return timingSafeEqual(left, right);
 }
 
+/** The reader a kosync username resolves to, with the salt their key uses. */
+export interface KosyncReader {
+  did: string;
+  salt: string | null;
+}
+
 /**
  * Verify a request's kosync headers and return the reader's DID.
  *
  * `resolveUsername` turns whatever the reader typed as their username into a
- * DID — they may have typed a handle, which is what the settings page shows.
+ * DID and salt — they may have typed a handle, which is what the settings page
+ * shows.
  */
 export async function authenticateKosync(
   request: Request,
-  resolveUsername: (username: string) => Promise<string | null>,
+  resolveUsername: (username: string) => Promise<KosyncReader | null>,
 ): Promise<string | null> {
   const username = request.headers.get("x-auth-user")?.trim();
   const key = request.headers.get("x-auth-key")?.trim().toLowerCase();
   if (!username || !key) return null;
 
-  const did = await resolveUsername(username);
-  if (!did) return null;
+  const reader = await resolveUsername(username);
+  if (!reader) return null;
 
-  return constantTimeEquals(key, kosyncAuthKeyForDid(did)) ? did : null;
+  return constantTimeEquals(key, kosyncAuthKeyForDid(reader.did, reader.salt))
+    ? reader.did
+    : null;
 }

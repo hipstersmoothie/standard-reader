@@ -1,4 +1,4 @@
-import { queryOptions } from "@tanstack/react-query";
+import { mutationOptions, queryOptions } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { eq } from "drizzle-orm";
@@ -7,8 +7,11 @@ import { db } from "#/db/index.server";
 import * as schema from "#/db/schema";
 import { kosyncBaseUrl, opdsShelfUrl } from "#/lib/opds/urls";
 import { getPublicUrl } from "#/lib/public-url";
-import { getReaderDidForRequest } from "#/middleware/auth-session.server";
-import { kosyncKeyForDid } from "#/server/kosync/credentials";
+import {
+  getAtprotoSessionForRequest,
+  getReaderDidForRequest,
+} from "#/middleware/auth-session.server";
+import { kosyncKeyForDid, newKosyncSalt } from "#/server/kosync/credentials";
 import { observe } from "#/server/observability/log";
 
 /**
@@ -35,17 +38,24 @@ const getEreaderConnection = createServerFn({ method: "GET" }).handler(
     if (!did) return null;
     span.set("did", did);
 
-    const [profile] = await db
-      .select({ handle: schema.profiles.handle })
-      .from(schema.profiles)
-      .where(eq(schema.profiles.did, did))
-      .limit(1);
+    const [[profile], [account]] = await Promise.all([
+      db
+        .select({ handle: schema.profiles.handle })
+        .from(schema.profiles)
+        .where(eq(schema.profiles.did, did))
+        .limit(1),
+      db
+        .select({ salt: schema.user.kosyncKeySalt })
+        .from(schema.user)
+        .where(eq(schema.user.did, did))
+        .limit(1),
+    ]);
 
     const baseUrl = getPublicUrl();
     return {
       catalogUrl: opdsShelfUrl(baseUrl, did),
       kosyncUrl: kosyncBaseUrl(baseUrl),
-      syncKey: kosyncKeyForDid(did),
+      syncKey: kosyncKeyForDid(did, account?.salt ?? null),
       // The handle is friendlier to type on a device keyboard, but a reader
       // whose profile has not been backfilled yet still needs something that
       // works — and the DID always resolves.
@@ -65,7 +75,42 @@ function getEreaderConnectionQueryOptions() {
   });
 }
 
+/**
+ * Retire this reader's sync key and issue a new one.
+ *
+ * Writing a fresh salt is the whole rotation: the key is derived from it and
+ * never stored, so the old one stops authenticating the moment this lands.
+ * Reading positions are keyed by document hash rather than by credential, so
+ * nothing a device already synced is lost — those devices just have to be given
+ * the new key before they sync again.
+ */
+const rotateKosyncKey = createServerFn({ method: "POST" }).handler(
+  observe("ereader.rotateKosyncKey", async (_, span) => {
+    const session = await getAtprotoSessionForRequest(getRequest());
+    if (!session) {
+      throw new Error("Sign in to rotate your sync key.");
+    }
+    span.set("did", session.did);
+
+    await db
+      .update(schema.user)
+      .set({ kosyncKeySalt: newKosyncSalt() })
+      .where(eq(schema.user.did, session.did));
+
+    return { ok: true as const };
+  }),
+);
+
+function rotateKosyncKeyMutationOptions() {
+  return mutationOptions({
+    mutationFn: async () => rotateKosyncKey(),
+    mutationKey: ["reader", "rotateKosyncKey"] as const,
+  });
+}
+
 export const ereaderApi = {
   getEreaderConnection,
   getEreaderConnectionQueryOptions,
+  rotateKosyncKey,
+  rotateKosyncKeyMutationOptions,
 };

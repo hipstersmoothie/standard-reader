@@ -144,7 +144,8 @@ export function EreadersGuidePage() {
         <Trans>
           The sync key only carries your reading position. It cannot read your
           account, post anything, or change what you subscribe to — and it is
-          not your Bluesky password. If you lose a device, ask us to rotate it.
+          not your Bluesky password. Lost a device? <UiLabel>Rotate</UiLabel> in
+          Settings issues a new key and stops the old one working.
         </Trans>
       </GuideCallout>
 

@@ -302,6 +302,13 @@
       "when": 1787200014683,
       "tag": "0042_clear_chat",
       "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1787207677749,
+      "tag": "0043_slimy_tusk",
+      "breakpoints": true
     }
   ]
 }

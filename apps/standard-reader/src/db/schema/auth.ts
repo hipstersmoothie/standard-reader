@@ -59,6 +59,17 @@ export const user = pgTable("user", {
   readingTypography: text("reading_typography"),
   /** `false` disables read tracking and unread UI; `null` = on (default). */
   trackReadingHistory: boolean("track_reading_history"),
+  /**
+   * Salt behind this reader's KOReader sync key, so the key can be rotated for
+   * one reader instead of everyone.
+   *
+   * The key itself is never stored — it is `HMAC(KOSYNC_SECRET, did + salt)`
+   * (see `server/kosync/credentials.ts`). `null` means "never rotated" and
+   * derives the original key, so a reader whose device is already syncing keeps
+   * working without doing anything. Rotating writes a fresh random salt, which
+   * is what makes the old key stop working immediately.
+   */
+  kosyncKeySalt: text("kosync_key_salt"),
   /** `true` counts everything a source ever posted as unread on subscribe (dots
    * + counts); `null`/`false` = off (default for new users) — posts published
    * before you subscribed are suppressed from unread dots/counts (dots return if

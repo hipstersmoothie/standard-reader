@@ -205,6 +205,10 @@ msgstr "Topic areas the network's writing clusters into, rebuilt as it grows. Ea
 msgid "find publications, people, topics, and headlines by name."
 msgstr "find publications, people, topics, and headlines by name."
 
+#: src/components/ereader-settings.tsx
+msgid "Every device syncing with the old key stops until you enter the new one. Nothing you have already read is lost — reading positions are kept against the books themselves, not the key."
+msgstr "Every device syncing with the old key stops until you enter the new one. Nothing you have already read is lost — reading positions are kept against the books themselves, not the key."
+
 #: src/components/NavbarAuth.tsx
 #: src/components/reader/language-hint-prompt.tsx
 msgid "Change language"
@@ -2066,6 +2070,10 @@ msgstr "Soft"
 msgid "Subscribed to list"
 msgstr "Subscribed to list"
 
+#: src/components/ereader-settings.tsx
+msgid "Rotate your sync key?"
+msgstr "Rotate your sync key?"
+
 #: src/components/guide/pages/extension-guide-page.tsx
 msgid "See which of the people you pass on Bluesky write long-form."
 msgstr "See which of the people you pass on Bluesky write long-form."
@@ -2172,6 +2180,10 @@ msgstr "Delete collection"
 #: src/components/guide/pages/personalizing-guide-page.tsx
 msgid "Interface font"
 msgstr "Interface font"
+
+#: src/components/ereader-settings.tsx
+msgid "Rotate"
+msgstr "Rotate"
 
 #: src/components/blocks-settings-view.tsx
 msgid "We're re-reading your blocks from your account. This page updates when it finishes."
@@ -5273,6 +5285,10 @@ msgstr "Your five most recently saved-for-later articles."
 msgid "Subscribe to list"
 msgstr "Subscribe to list"
 
+#: src/components/ereader-settings.tsx
+msgid "Rotate key"
+msgstr "Rotate key"
+
 #: src/components/guide/pages/keeping-track-guide-page.tsx
 #: src/lib/guide/navigation.ts
 #~ msgid "Following a publication"
@@ -6513,6 +6529,10 @@ msgstr "Nothing in your queue matches the current search and filters. Try removi
 #: src/components/guide/pages/personalizing-guide-page.tsx
 #~ msgid "Eight presets, or your own paper and accent. The rest of the interface is derived from them."
 #~ msgstr "Eight presets, or your own paper and accent. The rest of the interface is derived from them."
+
+#: src/components/guide/pages/e-readers-guide-page.tsx
+msgid "The sync key only carries your reading position. It cannot read your account, post anything, or change what you subscribe to — and it is not your Bluesky password. Lost a device? <0>Rotate</0> in Settings issues a new key and stops the old one working."
+msgstr "The sync key only carries your reading position. It cannot read your account, post anything, or change what you subscribe to — and it is not your Bluesky password. Lost a device? <0>Rotate</0> in Settings issues a new key and stops the old one working."
 
 #: src/components/appearance-settings.tsx
 #: src/components/reading-custom-font-picker.tsx
@@ -8780,5 +8800,5 @@ msgid "Describe this image"
 msgstr "Describe this image"
 
 #: src/components/guide/pages/e-readers-guide-page.tsx
-msgid "The sync key only carries your reading position. It cannot read your account, post anything, or change what you subscribe to — and it is not your Bluesky password. If you lose a device, ask us to rotate it."
-msgstr "The sync key only carries your reading position. It cannot read your account, post anything, or change what you subscribe to — and it is not your Bluesky password. If you lose a device, ask us to rotate it."
+#~ msgid "The sync key only carries your reading position. It cannot read your account, post anything, or change what you subscribe to — and it is not your Bluesky password. If you lose a device, ask us to rotate it."
+#~ msgstr "The sync key only carries your reading position. It cannot read your account, post anything, or change what you subscribe to — and it is not your Bluesky password. If you lose a device, ask us to rotate it."
