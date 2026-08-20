@@ -14,8 +14,10 @@ import type {
   JsonValue,
   Schema,
 } from "#/integrations/tanstack-query/api-shapes";
+import type { BskyPostView } from "#/server/atproto/bsky-posts";
 import { loadFeedItemBodies } from "#/server/feeds/build";
 
+import { bskyPostUrisInDocument, hydrateBskyPosts } from "./bsky-embeds";
 import type { EpubChapterSource, EpubSpec } from "./epub";
 import { renderDocumentBody } from "./render";
 
@@ -102,6 +104,7 @@ function chapterFromCard(
   body: FeedItemBody | undefined,
   index: number,
   baseUrl: string,
+  posts: Map<string, BskyPostView>,
 ): EpubChapterSource {
   const sourceUrl = cardSourceUrl(card, baseUrl);
   return {
@@ -120,6 +123,7 @@ function chapterFromCard(
         description: card.description,
         documentUrl: sourceUrl,
         localImages,
+        posts,
       }),
     title: card.title,
   };
@@ -152,11 +156,32 @@ export async function bookFromCards(
     cards.map((card) => card.uri),
   );
 
+  // One round trip for every post the whole book embeds: the AppView takes 25
+  // URIs at a time, and a forty-article anthology would otherwise be forty
+  // requests to hydrate what is often the same handful of posts.
+  const posts = await hydrateBskyPosts(
+    cards.flatMap((card) => {
+      const body = bodies.get(card.uri);
+      return bskyPostUrisInDocument({
+        authorDid: card.did,
+        content: body?.contentJson ?? null,
+        contentFormat: body?.contentFormat ?? null,
+        description: card.description,
+      });
+    }),
+  );
+
   const first = cards[0];
   return {
     authors: options.authors ?? collectAuthors(cards),
     chapters: cards.map((card, index) =>
-      chapterFromCard(card, bodies.get(card.uri), index, options.baseUrl),
+      chapterFromCard(
+        card,
+        bodies.get(card.uri),
+        index,
+        options.baseUrl,
+        posts,
+      ),
     ),
     coverImageUrl: options.coverImageUrl ?? first?.coverImageUrl ?? null,
     description: options.description ?? null,

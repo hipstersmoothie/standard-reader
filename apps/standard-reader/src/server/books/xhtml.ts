@@ -142,6 +142,17 @@ aside[role="note"] { border-left: 3px solid currentColor; padding-left: 0.8em; m
 /* Endnotes read better small and tight. */
 section[epub|type="footnotes"] { font-size: 0.85em; }
 
+/* An embedded Bluesky post. Bordered rather than tinted: an e-ink screen has
+   no colour to spend, and a border survives every reader theme. */
+.sr-post { border: 1px solid currentColor; border-radius: 0.4em; padding: 0.8em 1em; margin: 1.5em 0; font-size: 0.9em; }
+.sr-post p { margin: 0.4em 0; }
+.sr-post-byline { font-weight: bold; }
+.sr-post-handle { font-weight: normal; opacity: 0.7; }
+.sr-post-avatar { width: 1.4em; height: 1.4em; border-radius: 50%; vertical-align: middle; margin-right: 0.4em; }
+.sr-post-image { display: block; max-width: 100%; height: auto; margin: 0.6em auto; }
+.sr-post-source { font-size: 0.85em; opacity: 0.7; }
+.sr-post-source a { text-decoration: none; }
+
 /* Title page of a multi-article book. */
 .sr-title-page { text-align: center; margin-top: 20%; }
 .sr-title-page h1 { font-size: 1.8em; margin-bottom: 0.2em; }
