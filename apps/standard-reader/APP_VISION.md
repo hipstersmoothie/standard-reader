@@ -1690,6 +1690,16 @@ publication list looked clean.
   behind the avatar menu: `/history` (its list and its **Continue reading** shelf, whose
   part-read bodies no unread walk would reach), `/recommended`, and the reader's own profile.
   Reaching for something never downloaded shows an offline state rather than an error.
+- **The installed app wears the reader's theme.** `/manifest.json` is a server route
+  (`src/routes/manifest[.]json.tsx`), not a static file, so `theme_color` and
+  `background_color` match the theme the reader actually chose. This is not a nicety:
+  Firefox on Android paints an installed PWA's status bar and navigation bar from the
+  manifest's `theme_color` and never consults the live `<meta name="theme-color">`, so a
+  single hardcoded color means every dark-mode reader gets a pale band above and below the
+  page. The manifest is fetched out-of-band with no page context, so the colors reach it on
+  a cookie the shell writes pre-paint (`PWA_THEME_COOKIE`), alongside the value it hands the
+  meta tag — the client is the only side that can resolve `system` mode, since no
+  `prefers-color-scheme` client hint is negotiated and Firefox does not send them at all.
 
 ### Later
 

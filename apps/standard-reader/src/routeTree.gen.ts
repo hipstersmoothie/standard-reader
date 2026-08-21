@@ -13,6 +13,7 @@ import { Route as DocsHeaderLayoutRouteImport } from './routes/_docs-header-layo
 import { Route as GuideLayoutRouteImport } from './routes/_guide-layout'
 import { Route as LayoutRouteImport } from './routes/_layout'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as ManifestDotjsonRouteImport } from './routes/manifest[.]json'
 import { Route as WelcomeRouteImport } from './routes/welcome'
 import { Route as DotwellKnownDidDotjsonRouteImport } from './routes/[.]well-known/did[.]json'
 import { Route as DotwellKnownOauthAuthorizationServerRouteImport } from './routes/[.]well-known/oauth-authorization-server'
@@ -168,6 +169,11 @@ const LayoutRoute = LayoutRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ManifestDotjsonRoute = ManifestDotjsonRouteImport.update({
+  id: '/manifest.json',
+  path: '/manifest.json',
   getParentRoute: () => rootRouteImport,
 } as any)
 const WelcomeRoute = WelcomeRouteImport.update({
@@ -900,6 +906,7 @@ const ApiAuthAtprotoReviewMetadataDotjsonRoute =
 export interface FileRoutesByFullPath {
   '/': typeof LayoutIndexRoute
   '/login': typeof LoginRoute
+  '/manifest.json': typeof ManifestDotjsonRoute
   '/welcome': typeof WelcomeRoute
   '/.well-known/did.json': typeof DotwellKnownDidDotjsonRoute
   '/.well-known/oauth-authorization-server': typeof DotwellKnownOauthAuthorizationServerRoute
@@ -1042,6 +1049,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof LayoutIndexRoute
   '/login': typeof LoginRoute
+  '/manifest.json': typeof ManifestDotjsonRoute
   '/welcome': typeof WelcomeRoute
   '/.well-known/did.json': typeof DotwellKnownDidDotjsonRoute
   '/.well-known/oauth-authorization-server': typeof DotwellKnownOauthAuthorizationServerRoute
@@ -1186,6 +1194,7 @@ export interface FileRoutesById {
   '/_guide-layout': typeof GuideLayoutRouteWithChildren
   '/_layout': typeof LayoutRouteWithChildren
   '/login': typeof LoginRoute
+  '/manifest.json': typeof ManifestDotjsonRoute
   '/welcome': typeof WelcomeRoute
   '/.well-known/did.json': typeof DotwellKnownDidDotjsonRoute
   '/.well-known/oauth-authorization-server': typeof DotwellKnownOauthAuthorizationServerRoute
@@ -1331,6 +1340,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
+    | '/manifest.json'
     | '/welcome'
     | '/.well-known/did.json'
     | '/.well-known/oauth-authorization-server'
@@ -1473,6 +1483,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/login'
+    | '/manifest.json'
     | '/welcome'
     | '/.well-known/did.json'
     | '/.well-known/oauth-authorization-server'
@@ -1616,6 +1627,7 @@ export interface FileRouteTypes {
     | '/_guide-layout'
     | '/_layout'
     | '/login'
+    | '/manifest.json'
     | '/welcome'
     | '/.well-known/did.json'
     | '/.well-known/oauth-authorization-server'
@@ -1762,6 +1774,7 @@ export interface RootRouteChildren {
   GuideLayoutRoute: typeof GuideLayoutRouteWithChildren
   LayoutRoute: typeof LayoutRouteWithChildren
   LoginRoute: typeof LoginRoute
+  ManifestDotjsonRoute: typeof ManifestDotjsonRoute
   WelcomeRoute: typeof WelcomeRoute
   DotwellKnownDidDotjsonRoute: typeof DotwellKnownDidDotjsonRoute
   DotwellKnownOauthAuthorizationServerRoute: typeof DotwellKnownOauthAuthorizationServerRoute
@@ -1880,6 +1893,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/manifest.json': {
+      id: '/manifest.json'
+      path: '/manifest.json'
+      fullPath: '/manifest.json'
+      preLoaderRoute: typeof ManifestDotjsonRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/welcome': {
@@ -3012,6 +3032,7 @@ const rootRouteChildren: RootRouteChildren = {
   GuideLayoutRoute: GuideLayoutRouteWithChildren,
   LayoutRoute: LayoutRouteWithChildren,
   LoginRoute: LoginRoute,
+  ManifestDotjsonRoute: ManifestDotjsonRoute,
   WelcomeRoute: WelcomeRoute,
   DotwellKnownDidDotjsonRoute: DotwellKnownDidDotjsonRoute,
   DotwellKnownOauthAuthorizationServerRoute:
