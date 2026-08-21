@@ -56,6 +56,10 @@ describe("buildWebAppManifest", () => {
     expect(manifest.background_color).toBe("#110c08");
   });
 
+  // Not just tidiness: Firefox on Android only adopts a re-fetched manifest
+  // when its `start_url` matches the stored one (`ManifestUpdateFeature`), so
+  // varying `start_url` per theme would make every themed manifest a silent
+  // no-op for exactly the readers this exists for.
   it("keeps the app identity stable across themes so installs are not forked", () => {
     const light = buildWebAppManifest(DEFAULT_PWA_THEME_COLORS);
     const dark = buildWebAppManifest({

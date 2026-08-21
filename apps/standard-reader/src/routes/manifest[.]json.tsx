@@ -14,7 +14,15 @@ import { PWA_THEME_COOKIE, parsePwaThemeCookie } from "#/lib/theme";
  *
  * `<link rel="manifest">` carries `crossorigin="use-credentials"` (see
  * `__root.tsx`); without it the manifest is fetched with credentials omitted
- * and this handler would only ever see the default light pair.
+ * and this handler would only ever see the default light pair. That is not a
+ * guess about Firefox — Gecko's `ManifestObtainer` hardcodes
+ * `credentials: "omit"` and upgrades to `"include"` only for that attribute.
+ *
+ * Firefox re-parses the manifest on page load inside the installed app and
+ * persists what changed (`ManifestUpdateFeature` in android-components), so a
+ * reader who switches theme sees the bars follow without reinstalling — but it
+ * only adopts a manifest whose `start_url` matches the stored one, which is why
+ * every field except the two colors is identical across themes.
  */
 export const Route = createFileRoute("/manifest.json")({
   server: {
