@@ -1297,9 +1297,19 @@ Backend/API exists; UI or copy is missing.
       menu item alongside [`OpenLinksMenuItem`](src/components/OpenLinksMenuItem.tsx)
       (`ReadingTypographySubMenu`, `useReadingTypography`, `drizzle/0012_*`).
 - [x] **PWA install readiness** — Phase A: PNG icons (192/512), `apple-touch-icon`, expanded
-      [`manifest.json`](public/manifest.json) + head tags in [`__root.tsx`](src/routes/__root.tsx).
+      manifest + head tags in [`__root.tsx`](src/routes/__root.tsx).
       Regenerate via `pnpm icons:generate`. Phase B shipped as asset caching only; the
       "not offline articles" limit was lifted by **Offline reading** below.
+- [x] **Themed PWA system bars** — the manifest is a server route
+      ([`manifest[.]json.tsx`](src/routes/manifest[.]json.tsx) +
+      [`pwa-manifest.ts`](src/lib/pwa-manifest.ts)), not a static file, so `theme_color` /
+      `background_color` follow the reader's theme. Firefox on Android paints an installed
+      PWA's status bar and navigation bar from `theme_color` and never reads the live
+      `<meta name="theme-color">`, so the hardcoded light color framed a dark-mode reader's
+      page in pale bands ([report](https://bsky.app/profile/chevindu.com/post/3mtl45ibur222)).
+      The colors ride on `PWA_THEME_COOKIE`, written pre-paint by `RESOLVED_SCHEME_SCRIPT`
+      (the client is the only side that can resolve `system` mode), and the `<link rel="manifest">`
+      carries `crossorigin="use-credentials"` so the cookie is actually sent.
 - [x] **Offline reading (installed app)** — the open decision above resolved in favour of full
       offline support. A `data` runtime-cache rule in [`vite.config.ts`](vite.config.ts) caches
       `/_serverFn` **GET**s (reads serialise their args into the query string, so each call has a
