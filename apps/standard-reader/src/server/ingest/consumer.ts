@@ -18,6 +18,7 @@ import type {
   ReadRecord,
   RecommendRecord,
   SidebarPrefRecord,
+  SiteRecord,
   SubscriptionRecord,
   IngestEvent,
   IngestRecordPayload,
@@ -47,6 +48,7 @@ import {
   upsertRead,
   upsertRecommend,
   upsertSidebarPref,
+  upsertSite,
   upsertSubscription,
   upsertUserFollow,
 } from "./handlers.ts";
@@ -310,6 +312,10 @@ export async function handleRecord(
         cid,
         record as unknown as SidebarPrefRecord,
       );
+      return;
+    }
+    case Collections.site: {
+      await upsertSite(uri, did, rkey, cid, record as unknown as SiteRecord);
       return;
     }
     default: {

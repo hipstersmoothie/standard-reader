@@ -36,6 +36,7 @@ export const Collections = {
   list: APP_NSID.list,
   listSave: APP_NSID.listSave,
   sidebarPref: APP_NSID.sidebarPref,
+  site: APP_NSID.site,
   userFollow: APP_NSID.graphFollow,
   mute: APP_NSID.graphMute,
 } as const;

@@ -19,7 +19,8 @@
             "app.standard-reader.list",
             "app.standard-reader.listSave",
             "app.standard-reader.read",
-            "app.standard-reader.sidebarPref"
+            "app.standard-reader.sidebarPref",
+            "app.standard-reader.site"
           ]
         }
       ]

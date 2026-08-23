@@ -1204,6 +1204,24 @@ export function UserSettingsView() {
         </section>
       ) : null}
 
+      {/* Publishing, not reading: the one section about how other people see
+          your work rather than how you see theirs. */}
+      <section {...stylex.props(styles.section)}>
+        <h2 {...stylex.props(styles.sectionHeading)}>
+          <Trans>Your site</Trans>
+        </h2>
+        <div {...stylex.props(styles.settingGroup)}>
+          <SettingRow
+            label={t`Standalone site`}
+            description={t`A page for your work with none of Standard Reader's chrome — pick a style, set your colors, and share the link. Your publications each get one too.`}
+          >
+            <ButtonLink to="/settings/site" variant="secondary" size="sm">
+              <Trans>Customize sites</Trans>
+            </ButtonLink>
+          </SettingRow>
+        </div>
+      </section>
+
       {/* After Offline, before Moderation: both sections are about reading
           somewhere other than this tab. */}
       <section {...stylex.props(styles.section)}>

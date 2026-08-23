@@ -554,6 +554,51 @@ comic issue with no pages falls back to it outright.
   (avatar + "Follow NAME", no Standard Reader chrome, no saved handles). An account
   has no theme record, so the card paints in the default editorial palette.
 
+### Standalone sites (`/site/u/$did`, `/site/p/$did/$rkey`)
+
+An author's or a publication's own page, with **none of Standard Reader's chrome** —
+no sidebar, no header, no reading controls. The routes sit outside `_layout` (the
+same trick the magazine route uses), so what the visitor gets is a masthead, an
+archive, and a colophon.
+
+- **What each covers.** `/site/u/$did` is everything one account publishes, across
+  every publication they write for — rows carry a kicker naming the publication they
+  came from. `/site/p/$did/$rkey` is one publication's archive, and carries no kicker
+  because every row would repeat the same word.
+- **Four presentations**, chosen by the owner and stored on the record
+  (`#/lib/site/styles`): **Broadsheet** (masthead, lead story, multi-column index),
+  **Journal** (one quiet column of dated entries, separated by space rather than
+  rules), **Gallery** (a portrait cover grid; posts with no cover become typographic
+  tiles in the accent rather than holes), and **Marquee** (a full-screen opening
+  title, then selected work, then a compact index). `?style=` previews one without
+  saving, which is what the settings editor's "Preview this style" opens.
+- **Colors.** A publication site inherits the publication's own theme; an author site
+  has none to inherit, so it takes the colors the author set or the default editorial
+  palette. Either way the record's `theme` wins when stated. The palette runs through
+  the same generator the in-app publication theming uses
+  (`publicationThemeScaleVars`), so a dark mode is derived and unreadable colors are
+  nudged rather than shipped. Unlike `PublicationThemeScope`, a site ignores the
+  reader's "use publication themes" preference — that preference is about how much of
+  someone else's design to allow into the reader's own app, and a site is not their
+  app.
+- **Always live.** Every account and every publication has a site whether or not it
+  has been configured; the record only customizes one. Nothing in the editor creates
+  or destroys a page.
+- **One round trip.** `getSitePage` returns masthead, config, theme, the first page of
+  the archive, and the owner's publications together. Deliberately the _public_
+  queries — no read/unread flags, no recommend attribution, no comment counts — since
+  a site is written for people who are not signed in here.
+- **Editing** lives at `/settings/site`: one card per site the signed-in account owns
+  (their own, plus every publication in their repo), each opening a dialog with the
+  style picker, tagline, masthead links, colors, and the colophon toggle. Writes go to
+  the PDS and write through to the `sites` mirror. Entry points: the settings page's
+  "Your site" section, and **Standalone site** in a publication's ⌄ menu, next to RSS
+  and Send to e-reader — the same question ("how do I read this somewhere that isn't
+  here?"), answered with a page rather than a file.
+- **Reading a post** from a site still lands on `/a/$did/$rkey`, the app's article
+  view. A chrome-free article reader inside a site is the natural next step and is
+  tracked in `TODO.md`.
+
 ### Subscriptions (manage view)
 
 - Route `/subscriptions`, reached from the sidebar's "Subscriptions" heading. Requires auth
@@ -905,11 +950,11 @@ splits each capability tier across a set we publish (`app.standard-reader.auth*`
 upstream `site.standard.auth*` sets (published by standard.site — see
 [standard.site/docs/permissions](https://standard.site/docs/permissions/)):
 
-| Tier                                | App-owned set (we publish)                      | site.standard set (we reference)         | Covers                                                                               |
-| ----------------------------------- | ----------------------------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------ |
-| **Basic** (default sign-in)         | `include:app.standard-reader.authBasicFeatures` | `include:site.standard.authSocial`       | bookmark, read, list, listSave, labelerSubscription, graph.mute + follows + likes    |
-| **Collections authoring** (upgrade) | `+ include:app.standard-reader.authCollections` | swap to `include:site.standard.authFull` | collection, collectionsPublication, publicationTheme + publication + document writes |
-| **Subscribe embed**                 | —                                               | `include:site.standard.authSocial`       | subscription write (also covers recommend)                                           |
+| Tier                                | App-owned set (we publish)                      | site.standard set (we reference)         | Covers                                                                                  |
+| ----------------------------------- | ----------------------------------------------- | ---------------------------------------- | --------------------------------------------------------------------------------------- |
+| **Basic** (default sign-in)         | `include:app.standard-reader.authBasicFeatures` | `include:site.standard.authSocial`       | bookmark, read, list, listSave, site, labelerSubscription, graph.mute + follows + likes |
+| **Collections authoring** (upgrade) | `+ include:app.standard-reader.authCollections` | swap to `include:site.standard.authFull` | collection, collectionsPublication, publicationTheme + publication + document writes    |
+| **Subscribe embed**                 | —                                               | `include:site.standard.authSocial`       | subscription write (also covers recommend)                                              |
 
 `blob:*/*` (image upload) is requested as a granular scope alongside the basic tier — it
 cannot live inside a permission set. The OAuth client metadata `scope` field declares the
@@ -1033,6 +1078,13 @@ re-auth because `prompt: consent` re-consent isn't reliable across PDS providers
     consistency, with a PDS backfill on cold start).
   - `app.standard-reader.publicationTheme` — Google Font names for a collections
     publication (same rkey sidecar; colors stay on `basicTheme`).
+  - `app.standard-reader.site` — how an author or one of their publications presents
+    itself as a **standalone site** (`style`, optional `tagline`, `theme`, masthead
+    `links`, `showStandardReaderLink`). Deterministic rkey per subject: `self` for the
+    author's own site, `subjectRkey(publicationUri)` for a publication's, so one repo
+    holds at most one record per subject. Mirrored to `sites`. Absent means the site
+    still renders, in the default style — the record only decides how it looks. See
+    "Standalone sites" below.
 
 ### AppView XRPC (public API)
 

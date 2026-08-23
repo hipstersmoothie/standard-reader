@@ -17,6 +17,8 @@ import {
   parsePrevNextDirection,
 } from "#/lib/publication/serial";
 import { declaresBot } from "#/lib/self-labels";
+import { normalizeSiteLinks, normalizeSiteTheme } from "#/lib/site/config";
+import { toSiteStyle } from "#/lib/site/styles";
 import {
   FETCHED_CONTENT_FORMATS,
   resolveFetchedContent,
@@ -41,6 +43,7 @@ import {
   reads,
   recommends,
   sidebarPrefs,
+  sites,
   subscriptions,
   userFollows,
 } from "../../db/schema.ts";
@@ -69,6 +72,7 @@ import type {
   ReadRecord,
   RecommendRecord,
   SidebarPrefRecord,
+  SiteRecord,
   SubscriptionRecord,
   IngestIdentityPayload,
   UserFollowRecord,
@@ -978,6 +982,55 @@ export async function upsertSidebarPref(
   await ensureTracked(did, "reader");
 }
 
+/**
+ * `app.standard-reader.site` — how an author or one of their publications
+ * presents itself as a standalone site. Mirrored to `sites` keyed by the record
+ * AT-URI; the record key is deterministic per subject, so one repo holds at most
+ * one row per subject.
+ *
+ * Normalization is deliberately the same code the read path uses
+ * (`#/lib/site/config`), so a hostile or simply old record can't put a colour,
+ * a link scheme, or a style the renderer doesn't understand into a row.
+ */
+export async function upsertSite(
+  uri: string,
+  did: string,
+  rkey: string,
+  cid: string | undefined,
+  record: SiteRecord,
+): Promise<void> {
+  const theme = normalizeSiteTheme(record.theme);
+  const publicationUri =
+    typeof record.publication === "string" && isAtUri(record.publication)
+      ? record.publication
+      : null;
+
+  const values = {
+    uri,
+    cid: cid ?? null,
+    ownerDid: did,
+    rkey,
+    publicationUri,
+    style: toSiteStyle(record.style),
+    tagline: cleanOptional(record.tagline) ?? null,
+    themeBackground: theme?.background ?? null,
+    themeForeground: theme?.foreground ?? null,
+    themeAccent: theme?.accent ?? null,
+    themeAccentForeground: theme?.accentForeground ?? null,
+    links: normalizeSiteLinks(record.links),
+    showStandardReaderLink: record.showStandardReaderLink !== false,
+    updatedAt: parseDate(record.updatedAt),
+    deleted: false,
+  };
+
+  await db
+    .insert(sites)
+    .values(values)
+    .onConflictDoUpdate({ target: sites.uri, set: values });
+
+  await ensureTracked(did, "reader");
+}
+
 export async function upsertBskyProfile(
   uri: string,
   did: string,
@@ -1310,6 +1363,10 @@ export async function deleteRecord(
     }
     case Collections.sidebarPref: {
       await db.delete(sidebarPrefs).where(eq(sidebarPrefs.uri, uri));
+      return;
+    }
+    case Collections.site: {
+      await db.delete(sites).where(eq(sites.uri, uri));
       return;
     }
     default: {

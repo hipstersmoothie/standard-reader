@@ -2327,3 +2327,47 @@ Standard Reader as a library an e-reading app can browse. See
 - [ ] **Kindle** — Amazon dropped personal-document EPUB conversion into Send-to-Kindle, which
       takes EPUB directly now; a "send to Kindle" button would need an email path and their
       allow-list, so it is its own piece of work.
+
+## 17. Standalone sites (`/site/u/$did`, `/site/p/$did/$rkey`)
+
+An author's or a publication's own page, with none of Standard Reader's chrome. See
+"Standalone sites" in [`APP_VISION.md`](./APP_VISION.md).
+
+- [x] **`app.standard-reader.site` lexicon** — `style`, `tagline`, `theme`, masthead `links`,
+      `showStandardReaderLink`, plus `publication` (absent = the author's own site). Deterministic
+      rkey per subject (`self` / `subjectRkey(publicationUri)`), so a repo holds at most one record
+      per subject and the write is an idempotent upsert.
+- [x] **Scope rides the basic tier** — the collection is in the republished `authBasicFeatures`
+      set, so fresh logins can write a site with no upgrade. Sessions from before the republish may
+      hold a frozen expansion; the write path surfaces a PDS scope rejection through the existing
+      re-auth toast, the same way mutes do.
+- [x] **`sites` read-model table + ingest** — `upsertSite` / delete case keyed by record AT-URI,
+      normalized through the same `#/lib/site/config` helpers the read path uses, so a hostile or
+      simply old record cannot put an unrenderable colour, link scheme, or style into a row.
+- [x] **`getSitePage`** — masthead, config, theme, first archive page and the owner's publications
+      in one round trip, over the public queries (no read/unread, no recommend attribution, no
+      comment counts). Blocks answer "not found" rather than an empty site that still names them.
+- [x] **Four presentations** — Broadsheet, Journal, Gallery, Marquee, over one `SiteViewProps`
+      shape, with paging owned by `SiteView` so a style is only ever a layout.
+- [x] **Site theming** — the publication's own theme for a publication site, the owner's stated
+      colors for either, through the same `publicationThemeScaleVars` generator (derived dark mode,
+      contrast-nudged accents). Ignores the reader's publication-theme preference on purpose.
+- [x] **Chrome-free routes** outside `_layout`, with `?style=` preview, canonical links, RSS
+      alternates, handle→DID canonicalization, and a plain not-found page.
+- [x] **`/settings/site` editor** — one card per site the account owns; style picker, tagline,
+      masthead links, colors, colophon toggle, save and reset. Entry points from Settings and a
+      publication's ⌄ menu.
+- [ ] **Chrome-free article reading** — a post opened from a site still lands on `/a/$did/$rkey`
+      with the app's chrome around it, which breaks the illusion at exactly the moment someone
+      starts reading. `ArticleView` is tangled with the shell's providers (page reader, selection
+      dock, comments), so a `/site/a/...` route is its own piece of work rather than a wrapper.
+- [ ] **Custom domains** — the natural end state (`atlas.example.com` serving the site directly)
+      needs host routing and cert provisioning, and would pair with the `standard.site` DNS
+      verification an author may already have.
+- [ ] **OG cards per style** — a site currently reuses the publication / profile OG image. A card
+      that looked like the chosen style would make a shared link read as the site it opens.
+- [ ] **Fonts** — publication sites inherit `publicationTheme` fonts through the token themes, but
+      an author site has no font record of its own to state. A `fonts` slot on
+      `app.standard-reader.site` would close that gap.
+- [ ] **Pinned / selected work** — Marquee leads with the three most recent posts. Letting an owner
+      pin which three is the obvious next control, and the record has room for it.

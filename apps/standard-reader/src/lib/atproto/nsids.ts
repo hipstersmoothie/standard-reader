@@ -27,6 +27,7 @@ export const APP_NSID = {
   list: "app.standard-reader.list",
   listSave: "app.standard-reader.listSave",
   sidebarPref: "app.standard-reader.sidebarPref",
+  site: "app.standard-reader.site",
   collection: "app.standard-reader.collection",
   collectionsPublication: "app.standard-reader.collectionsPublication",
   publicationTheme: "app.standard-reader.publicationTheme",

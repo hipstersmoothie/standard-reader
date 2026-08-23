@@ -28,6 +28,7 @@ import {
   CheckCheck,
   ChevronDown,
   ExternalLink,
+  LayoutTemplate,
   ListPlus,
   Rss,
 } from "lucide-react";
@@ -273,6 +274,11 @@ export function PublicationActions({
     publicationRkey && hasDownloadableArticles
       ? publicationEpubUrl(baseUrl, pub.did, publicationRkey)
       : null;
+  // The publication's standalone site — the same archive with none of the
+  // reader's chrome. Always available; the record only decides how it looks.
+  const siteParams = publicationRkey
+    ? { did: pub.did, rkey: publicationRkey }
+    : null;
   const [markAllReadOpen, setMarkAllReadOpen] = useState(false);
   const [muteOpen, setMuteOpen] = useState(false);
 
@@ -373,6 +379,18 @@ export function PublicationActions({
             >
               <Trans>Send to e-reader…</Trans>
             </MenuItem>
+            {/* Same question again, answered with a page rather than a file:
+                this publication with none of the reader's chrome around it. */}
+            {siteParams ? (
+              <MenuItemLink
+                to="/site/p/$did/$rkey"
+                params={siteParams}
+                suffix={<LayoutTemplate size={MENU_ICON} />}
+                textValue={t`Standalone site`}
+              >
+                <Trans>Standalone site</Trans>
+              </MenuItemLink>
+            ) : null}
             {pub.url ? (
               <MenuItem
                 onPress={() => {

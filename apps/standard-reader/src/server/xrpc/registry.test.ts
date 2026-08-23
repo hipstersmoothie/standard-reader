@@ -27,6 +27,7 @@ const NON_XRPC_LEXICON_STEMS = new Set([
   "publicationTheme",
   "read",
   "sidebarPref",
+  "site",
 ]);
 
 function loadAppviewLexiconNsids(): Array<string> {
