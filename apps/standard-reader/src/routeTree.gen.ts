@@ -62,6 +62,7 @@ import { Route as GuideLayoutGuideIndexRouteImport } from './routes/_guide-layou
 import { Route as GuideLayoutGuideCollectionsRouteImport } from './routes/_guide-layout.guide.collections'
 import { Route as GuideLayoutGuideComicsRouteImport } from './routes/_guide-layout.guide.comics'
 import { Route as GuideLayoutGuideEReadersRouteImport } from './routes/_guide-layout.guide.e-readers'
+import { Route as GuideLayoutGuideEmbedsRouteImport } from './routes/_guide-layout.guide.embeds'
 import { Route as GuideLayoutGuideExtensionRouteImport } from './routes/_guide-layout.guide.extension'
 import { Route as GuideLayoutGuideFindingRouteImport } from './routes/_guide-layout.guide.finding'
 import { Route as GuideLayoutGuideGettingStartedRouteImport } from './routes/_guide-layout.guide.getting-started'
@@ -428,6 +429,11 @@ const GuideLayoutGuideEReadersRoute =
     path: '/guide/e-readers',
     getParentRoute: () => GuideLayoutRoute,
   } as any)
+const GuideLayoutGuideEmbedsRoute = GuideLayoutGuideEmbedsRouteImport.update({
+  id: '/guide/embeds',
+  path: '/guide/embeds',
+  getParentRoute: () => GuideLayoutRoute,
+} as any)
 const GuideLayoutGuideExtensionRoute =
   GuideLayoutGuideExtensionRouteImport.update({
     id: '/guide/extension',
@@ -965,6 +971,7 @@ export interface FileRoutesByFullPath {
   '/guide/collections': typeof GuideLayoutGuideCollectionsRoute
   '/guide/comics': typeof GuideLayoutGuideComicsRoute
   '/guide/e-readers': typeof GuideLayoutGuideEReadersRoute
+  '/guide/embeds': typeof GuideLayoutGuideEmbedsRoute
   '/guide/extension': typeof GuideLayoutGuideExtensionRoute
   '/guide/finding': typeof GuideLayoutGuideFindingRoute
   '/guide/getting-started': typeof GuideLayoutGuideGettingStartedRoute
@@ -1109,6 +1116,7 @@ export interface FileRoutesByTo {
   '/guide/collections': typeof GuideLayoutGuideCollectionsRoute
   '/guide/comics': typeof GuideLayoutGuideComicsRoute
   '/guide/e-readers': typeof GuideLayoutGuideEReadersRoute
+  '/guide/embeds': typeof GuideLayoutGuideEmbedsRoute
   '/guide/extension': typeof GuideLayoutGuideExtensionRoute
   '/guide/finding': typeof GuideLayoutGuideFindingRoute
   '/guide/getting-started': typeof GuideLayoutGuideGettingStartedRoute
@@ -1258,6 +1266,7 @@ export interface FileRoutesById {
   '/_guide-layout/guide/collections': typeof GuideLayoutGuideCollectionsRoute
   '/_guide-layout/guide/comics': typeof GuideLayoutGuideComicsRoute
   '/_guide-layout/guide/e-readers': typeof GuideLayoutGuideEReadersRoute
+  '/_guide-layout/guide/embeds': typeof GuideLayoutGuideEmbedsRoute
   '/_guide-layout/guide/extension': typeof GuideLayoutGuideExtensionRoute
   '/_guide-layout/guide/finding': typeof GuideLayoutGuideFindingRoute
   '/_guide-layout/guide/getting-started': typeof GuideLayoutGuideGettingStartedRoute
@@ -1405,6 +1414,7 @@ export interface FileRouteTypes {
     | '/guide/collections'
     | '/guide/comics'
     | '/guide/e-readers'
+    | '/guide/embeds'
     | '/guide/extension'
     | '/guide/finding'
     | '/guide/getting-started'
@@ -1549,6 +1559,7 @@ export interface FileRouteTypes {
     | '/guide/collections'
     | '/guide/comics'
     | '/guide/e-readers'
+    | '/guide/embeds'
     | '/guide/extension'
     | '/guide/finding'
     | '/guide/getting-started'
@@ -1697,6 +1708,7 @@ export interface FileRouteTypes {
     | '/_guide-layout/guide/collections'
     | '/_guide-layout/guide/comics'
     | '/_guide-layout/guide/e-readers'
+    | '/_guide-layout/guide/embeds'
     | '/_guide-layout/guide/extension'
     | '/_guide-layout/guide/finding'
     | '/_guide-layout/guide/getting-started'
@@ -2262,6 +2274,13 @@ declare module '@tanstack/react-router' {
       path: '/guide/e-readers'
       fullPath: '/guide/e-readers'
       preLoaderRoute: typeof GuideLayoutGuideEReadersRouteImport
+      parentRoute: typeof GuideLayoutRoute
+    }
+    '/_guide-layout/guide/embeds': {
+      id: '/_guide-layout/guide/embeds'
+      path: '/guide/embeds'
+      fullPath: '/guide/embeds'
+      preLoaderRoute: typeof GuideLayoutGuideEmbedsRouteImport
       parentRoute: typeof GuideLayoutRoute
     }
     '/_guide-layout/guide/extension': {
@@ -2943,6 +2962,7 @@ interface GuideLayoutRouteChildren {
   GuideLayoutGuideCollectionsRoute: typeof GuideLayoutGuideCollectionsRoute
   GuideLayoutGuideComicsRoute: typeof GuideLayoutGuideComicsRoute
   GuideLayoutGuideEReadersRoute: typeof GuideLayoutGuideEReadersRoute
+  GuideLayoutGuideEmbedsRoute: typeof GuideLayoutGuideEmbedsRoute
   GuideLayoutGuideExtensionRoute: typeof GuideLayoutGuideExtensionRoute
   GuideLayoutGuideFindingRoute: typeof GuideLayoutGuideFindingRoute
   GuideLayoutGuideGettingStartedRoute: typeof GuideLayoutGuideGettingStartedRoute
@@ -2959,6 +2979,7 @@ const GuideLayoutRouteChildren: GuideLayoutRouteChildren = {
   GuideLayoutGuideCollectionsRoute: GuideLayoutGuideCollectionsRoute,
   GuideLayoutGuideComicsRoute: GuideLayoutGuideComicsRoute,
   GuideLayoutGuideEReadersRoute: GuideLayoutGuideEReadersRoute,
+  GuideLayoutGuideEmbedsRoute: GuideLayoutGuideEmbedsRoute,
   GuideLayoutGuideExtensionRoute: GuideLayoutGuideExtensionRoute,
   GuideLayoutGuideFindingRoute: GuideLayoutGuideFindingRoute,
   GuideLayoutGuideGettingStartedRoute: GuideLayoutGuideGettingStartedRoute,

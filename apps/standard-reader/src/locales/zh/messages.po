@@ -251,8 +251,8 @@ msgstr ""
 
 #: src/components/guide/pages/publishing-guide-page.tsx
 #: src/lib/guide/navigation.ts
-msgid "Follow embed"
-msgstr ""
+#~ msgid "Follow embed"
+#~ msgstr ""
 
 #: src/components/reader/mute-menu-item.tsx
 msgid "Mute {name}?"
@@ -510,6 +510,11 @@ msgstr "提交反馈"
 #: src/components/reader/extension-privacy-view.tsx
 msgid "<0>Session cookie.</0> After you sign in through the web app, the extension background worker reads your HttpOnly session cookie on {siteHost} to authenticate API requests. Content scripts do not read this cookie directly."
 msgstr "<0>会话 Cookie。</0>你通过网页应用登录后，扩展的后台工作线程会读取 {siteHost} 上的 HttpOnly 会话 Cookie 来验证 API 请求。内容脚本不会直接读取该 Cookie。"
+
+#: src/components/guide/pages/embeds-guide-page.tsx
+#: src/lib/guide/navigation.ts
+msgid "What the card takes from your brand"
+msgstr ""
 
 #: src/components/appearance-settings.tsx
 #: src/components/reader/collection-theme-editor.tsx
@@ -890,6 +895,10 @@ msgstr "你订阅的刊物近期发布的全部内容。"
 msgid "{hiddenByBlocks, plural, one {# more reply is hidden by your blocks.} other {# more replies are hidden by your blocks.}}"
 msgstr ""
 
+#: src/components/guide/pages/embeds-guide-page.tsx
+msgid "The same card exists for a person. Open your own profile and use the menu beside <0>Follow</0> → <1>Embed follow</1>."
+msgstr ""
+
 #: src/components/guide/pages/finding-guide-page.tsx
 #: src/lib/guide/navigation.ts
 msgid "Adding a publication by name"
@@ -1127,8 +1136,8 @@ msgid "Muted people"
 msgstr ""
 
 #: src/components/guide/pages/publishing-guide-page.tsx
-msgid "The same widget exists for <0>you</0>, not just your publications. Open your own profile on Standard Reader and use <1>the ⌄ menu → Embed follow</1> to get a card that follows your account — useful when your writing is spread across several publications, or when you post as yourself rather than under a masthead. Same three tabs (landscape, portrait, link), same auto- resizing iframe."
-msgstr ""
+#~ msgid "The same widget exists for <0>you</0>, not just your publications. Open your own profile on Standard Reader and use <1>the ⌄ menu → Embed follow</1> to get a card that follows your account — useful when your writing is spread across several publications, or when you post as yourself rather than under a masthead. Same three tabs (landscape, portrait, link), same auto- resizing iframe."
+#~ msgstr ""
 
 #: src/components/reading-settings-preview.tsx
 msgid "Loading voice sample"
@@ -1248,6 +1257,10 @@ msgstr ""
 #: src/components/guide/pages/your-data-guide-page.tsx
 #~ msgid "Your follows and saves are yours. If you stop using Standard Reader, they stay where they are."
 #~ msgstr ""
+
+#: src/components/guide/pages/embeds-guide-page.tsx
+msgid "A subscribe card reads the publication's own <0>basicTheme</0> colors, so it matches whatever you set on the publication with no extra parameters. An account has no theme record anywhere on the network — there is nowhere to put one — so a follow card always paints in Standard Reader's default palette."
+msgstr ""
 
 #: src/components/guide/pages/personalizing-guide-page.tsx
 #~ msgid "Under <0>Behavior</0>: whether articles open on their original website instead of in the reader, whether collections open as magazine editions, whether your reading history is recorded, and whether a publication's whole back catalogue counts as unread the moment you follow it."
@@ -1668,6 +1681,10 @@ msgstr ""
 msgid "Member type to add"
 msgstr "要添加的成员类型"
 
+#: src/components/guide/pages/embeds-guide-page.tsx
+msgid "<0>Portrait</0> stacks everything and keeps the description. Better as a standalone call to action, or in a narrow column."
+msgstr ""
+
 #: src/components/docs/labelers-docs-page.tsx
 msgid "A labeler is any DID that publishes AT Proto labels. Readers add one by DID on the <0>Labelers</0> page, and Standard Reader then shows that labeler's labels — and can warn on or hide labeled posts — as they read. Labelers are discovered the standard way; nothing about them is specific to us."
 msgstr ""
@@ -1704,6 +1721,11 @@ msgstr ""
 msgid "Portrait stacks the card vertically. Height adjusts automatically once the embed loads. Change the iframe width as needed."
 msgstr "竖版将卡片纵向排列。嵌入内容加载后高度会自动调整。可按需修改 iframe 宽度。"
 
+#: src/components/guide/pages/embeds-guide-page.tsx
+#: src/lib/guide/navigation.ts
+msgid "When the card does not show up"
+msgstr ""
+
 #: src/components/reader/add-to-list-modal.tsx
 msgid "Your lists"
 msgstr "你的列表"
@@ -1739,8 +1761,8 @@ msgid "Nothing trending yet"
 msgstr "暂无热门内容"
 
 #: src/components/guide/pages/publishing-guide-page.tsx
-msgid "It reads the publication's <0>basicTheme</0> colors automatically, so the card matches your brand with no extra params — fonts aren't picked up though; the card always uses Standard Reader's own type. Here's a live one:"
-msgstr "它会自动读取刊物的 <0>basicTheme</0> 配色，因此无需额外参数卡片就能匹配你的品牌——但字体不会被沿用；卡片始终使用 Standard Reader 自己的字体。这是一个实时示例："
+#~ msgid "It reads the publication's <0>basicTheme</0> colors automatically, so the card matches your brand with no extra params — fonts aren't picked up though; the card always uses Standard Reader's own type. Here's a live one:"
+#~ msgstr "它会自动读取刊物的 <0>basicTheme</0> 配色，因此无需额外参数卡片就能匹配你的品牌——但字体不会被沿用；卡片始终使用 Standard Reader 自己的字体。这是一个实时示例："
 
 #: src/components/reader/extension-privacy-view.tsx
 #: src/components/reader/privacy-view.tsx
@@ -1800,6 +1822,10 @@ msgstr "{documentCount, plural, one {文档} other {文档}}"
 #: src/components/docs/introduction-docs-page.tsx
 msgid "Publishing"
 msgstr "发布"
+
+#: src/components/guide/pages/embeds-guide-page.tsx
+msgid "Wiring your own site's records so its posts show up here at all is a different job — <0>Publishing your site</0> covers that, and you do not need any of it to use a button on this page."
+msgstr ""
 
 #: src/components/appearance-settings.tsx
 #: src/components/guide/pages/personalizing-guide-page.tsx
@@ -2002,6 +2028,11 @@ msgstr ""
 
 #: src/lib/guide/navigation.ts
 msgid "The reading view, listening to an article, and joining the conversation."
+msgstr ""
+
+#: src/components/guide/pages/embeds-guide-page.tsx
+#: src/lib/guide/navigation.ts
+msgid "Landscape, portrait, or a plain link"
 msgstr ""
 
 #: src/components/user-settings-view.tsx
@@ -2233,6 +2264,10 @@ msgstr "此列表中没有刊物。"
 msgid "{0}, dark"
 msgstr ""
 
+#: src/components/guide/pages/embeds-guide-page.tsx
+msgid "The height in the pasted markup is only a first guess, corrected the moment the card loads. Keep the <0>script</0> tag and you never think about it. Remove it — some site builders will not let you paste one — and you should set a height yourself with room to spare, because nothing will resize the frame afterwards."
+msgstr ""
+
 #: src/routes/_layout.discover.tsx
 msgid "Browse all topics"
 msgstr ""
@@ -2402,8 +2437,8 @@ msgid "Known publications"
 msgstr "已知刊物"
 
 #: src/components/guide/pages/publishing-guide-page.tsx
-msgid "Clicking Subscribe opens Standard Reader itself, not your page — subscribing writes a <0>site.standard.graph.subscription</0> record to the reader's own PDS via their own OAuth session, so it has to happen on our domain. If you'd rather skip the iframe, link straight to <1>/subscribe/{did}/{rkey}</1> and style your own button."
-msgstr "点击订阅会打开 Standard Reader，而不是你的页面——订阅需要通过读者自己的 OAuth 会话，向其 PDS 写入一条 <0>site.standard.graph.subscription</0> 记录，因此必须在我们的域名下完成。如果你不想用 iframe，可以直接链接到 <1>/subscribe/{did}/{rkey}</1>，自行设计按钮样式。"
+#~ msgid "Clicking Subscribe opens Standard Reader itself, not your page — subscribing writes a <0>site.standard.graph.subscription</0> record to the reader's own PDS via their own OAuth session, so it has to happen on our domain. If you'd rather skip the iframe, link straight to <1>/subscribe/{did}/{rkey}</1> and style your own button."
+#~ msgstr "点击订阅会打开 Standard Reader，而不是你的页面——订阅需要通过读者自己的 OAuth 会话，向其 PDS 写入一条 <0>site.standard.graph.subscription</0> 记录，因此必须在我们的域名下完成。如果你不想用 iframe，可以直接链接到 <1>/subscribe/{did}/{rkey}</1>，自行设计按钮样式。"
 
 #: src/routes/collection.$did.$rkey.tsx
 msgid "Go back"
@@ -2509,6 +2544,11 @@ msgstr ""
 #: src/routes/_layout.collections.index.tsx
 msgid "No collections in this series yet."
 msgstr "此系列中还没有合集。"
+
+#: src/components/guide/pages/embeds-guide-page.tsx
+#: src/lib/guide/navigation.ts
+msgid "A follow button for you"
+msgstr ""
 
 #: src/components/labeler-detail-view.tsx
 msgid "None of this labeler’s labels could be verified against the signing key it publishes, so none are applied. That’s a problem on the labeler’s end."
@@ -2738,6 +2778,10 @@ msgstr "完成"
 msgid "Authors"
 msgstr ""
 
+#: src/components/guide/pages/embeds-guide-page.tsx
+msgid "If you drop the script"
+msgstr ""
+
 #: src/components/guide/pages/finding-guide-page.tsx
 #: src/routes/_layout.discover.tsx
 #: src/routes/_layout.tag.$tag.tsx
@@ -2884,6 +2928,11 @@ msgstr "正在设置该期"
 msgid "Feed preferences"
 msgstr ""
 
+#: src/components/guide/pages/publishing-guide-page.tsx
+#: src/lib/guide/navigation.ts
+msgid "Subscribe and follow buttons"
+msgstr ""
+
 #: src/components/reader/mute-menu-item.tsx
 msgid "{name} will show up in your feeds again."
 msgstr ""
@@ -2895,6 +2944,10 @@ msgstr ""
 #: src/components/docs/api-docs-request-panel.tsx
 msgid "Set API_DOCS_FIXTURE_LIST_URI to run this example."
 msgstr "设置 API_DOCS_FIXTURE_LIST_URI 后即可运行此示例。"
+
+#: src/components/guide/pages/embeds-guide-page.tsx
+msgid "The snippet fixes the card at 400px wide, which is the width the preview shows. Change the <0>width</0> on the wrapper and the frame follows; the height keeps managing itself."
+msgstr ""
 
 #: src/components/docs/renderers-docs-page.tsx
 #~ msgid "React (this is what Standard Reader itself uses)."
@@ -4071,6 +4124,11 @@ msgstr "值得订阅"
 msgid "this list is larger than we mirror, so some members aren't blocked here"
 msgstr ""
 
+#: src/components/guide/pages/embeds-guide-page.tsx
+#: src/lib/guide/navigation.ts
+msgid "A subscribe button for a publication"
+msgstr ""
+
 #: src/components/docs/renderers-docs-page.tsx
 #~ msgid "Angular."
 #~ msgstr ""
@@ -4258,6 +4316,10 @@ msgstr ""
 msgid "When you subscribe to a publication, save an article, recommend one, or open one, that fact is written into <0>your own account's storage</0> — the same place your Bluesky profile and posts are kept, run by whoever hosts your account."
 msgstr ""
 
+#: src/components/guide/pages/embeds-guide-page.tsx
+msgid "Neither card picks up fonts. Both use Standard Reader's own type, on purpose: a card that half-matches your site reads worse than one that plainly does not, and web fonts inside an iframe are a load cost your visitors pay for a button. If the type matters more than the card, take the <0>Link</0> tab and style it yourself."
+msgstr ""
+
 #: src/routes/_layout.u.$did.tsx
 msgid "Author sections"
 msgstr "作者栏目"
@@ -4390,6 +4452,10 @@ msgstr "你已订阅 {publicationName}。新内容会出现在你的信息流中
 msgid "The directory"
 msgstr "目录"
 
+#: src/lib/guide/navigation.ts
+msgid "Put a subscribe or follow button for your work on your own site."
+msgstr ""
+
 #: src/components/labeler-detail-view.tsx
 msgid "Some labels skipped"
 msgstr ""
@@ -4520,6 +4586,10 @@ msgstr "未找到该账户下的刊物。"
 msgid "{0, plural, one {# publication} other {# publications}}"
 msgstr "{0, plural, one {# 个刊物} other {# 个刊物}}"
 
+#: src/components/guide/pages/embeds-guide-page.tsx
+msgid "The card is an <0>iframe</0> plus a few lines of script. The script listens for the card's own height and resizes the frame to match, so a long publication name or a two-line bio does not end up scrolling inside a box. Paste both parts."
+msgstr ""
+
 #: src/components/feedback/feedback-image-picker.tsx
 #: src/components/route-error.tsx
 msgid "Try again"
@@ -4549,6 +4619,10 @@ msgstr ""
 #: src/components/reader/save-to-collection-dialog.tsx
 msgid "Note"
 msgstr "备注"
+
+#: src/components/guide/pages/embeds-guide-page.tsx
+msgid "Both dialogs offer the same three, and you can switch between them before copying — the preview above the snippet is the real card, not a mockup."
+msgstr ""
 
 #: src/routes/_layout.collections.new.tsx
 msgid "Name your series"
@@ -4681,6 +4755,10 @@ msgstr ""
 msgid "Pasting a handle works even for publications the network has not indexed yet — it goes and asks that author's account directly. Subscribe and it starts appearing in your feeds like any other."
 msgstr ""
 
+#: src/components/guide/pages/embeds-guide-page.tsx
+msgid "A subscribe button for a publication, or a follow button for you — dropped onto your own site as a small card, so a reader who found you there can start following you without going looking for you somewhere else."
+msgstr ""
+
 #: src/components/push-diagnostics.tsx
 msgid "If notifications aren’t working, this is what your browser reports. Sharing a screenshot of it is the fastest way to get it fixed."
 msgstr ""
@@ -4756,6 +4834,15 @@ msgstr ""
 #~ msgid "Prefer the original?"
 #~ msgstr "更喜欢原文？"
 
+#: src/components/guide/pages/embeds-guide-page.tsx
+msgid "If you want to skip the card entirely, link straight to <0>/subscribe/{did}/{rkey}</0> or <1>/follow/{did}</1> and style your own button — that is all the <2>Link</2> tab hands you. The follow link takes your handle in place of the DID, though the DID is the one that survives a handle change."
+msgstr ""
+
+#: src/components/guide/pages/embeds-guide-page.tsx
+#: src/lib/guide/navigation.ts
+msgid "What happens when someone clicks it"
+msgstr ""
+
 #: src/components/reader/subscriptions-table.tsx
 msgid "Could not add to list"
 msgstr ""
@@ -4791,6 +4878,11 @@ msgstr ""
 
 #: src/components/blocks-settings-view.tsx
 msgid "Refresh"
+msgstr ""
+
+#: src/components/guide/pages/embeds-guide-page.tsx
+#: src/lib/guide/navigation.ts
+msgid "Embed buttons"
 msgstr ""
 
 #: src/magazine/magazine-end-like.tsx
@@ -4845,6 +4937,10 @@ msgstr "查看合集"
 msgid "Up to four screenshots. Large ones are resized before they upload."
 msgstr ""
 
+#: src/components/guide/pages/embeds-guide-page.tsx
+msgid "A subscribe writes a <0>site.standard.graph.subscription</0>. A follow writes an <1>app.standard-reader.graph.follow</1> and, behind it, subscriptions to the publications you own — so the people who followed you from your own site stay yours if you ever leave Standard Reader. Both live in the reader's repo, not in a list we keep."
+msgstr ""
+
 #: src/routes/comic.$did.$rkey.tsx
 msgid "Comic reader"
 msgstr ""
@@ -4856,6 +4952,10 @@ msgstr ""
 #: src/components/reader/about-view.tsx
 msgid "Turn on in Settings"
 msgstr "在设置中开启"
+
+#: src/components/guide/pages/embeds-guide-page.tsx
+msgid "Open the publication's page on Standard Reader and use <0>Share → Embed subscribe</0>. Pick a layout, copy the snippet, paste it where you want the card."
+msgstr ""
 
 #: src/routes/_layout.feedback.index.tsx
 msgid "Share a bug, idea, or question to see it here."
@@ -5190,7 +5290,7 @@ msgstr ""
 msgid " · edited by @{0}"
 msgstr " · 编辑 @{0}"
 
-#: src/components/guide/pages/publishing-guide-page.tsx
+#: src/components/guide/pages/embeds-guide-page.tsx
 msgid "Follow the author of {publicationName}"
 msgstr ""
 
@@ -5434,6 +5534,10 @@ msgstr ""
 #: src/components/reader/article-view.tsx
 msgid "There’s a magazine edition of this collection."
 msgstr "本合集有杂志版。"
+
+#: src/components/guide/pages/embeds-guide-page.tsx
+msgid "<0>Link</0> is not a card at all — just an anchor to the same destination, unstyled, for when you would rather it match your own buttons. No iframe and no script."
+msgstr ""
 
 #: src/components/reader/blocked-notice.tsx
 #: src/components/user-settings-view.tsx
@@ -5987,6 +6091,10 @@ msgstr "暂无已知的标注服务。"
 msgid "You're all caught up"
 msgstr ""
 
+#: src/components/guide/pages/embeds-guide-page.tsx
+msgid "<0>Signed in already?</0> The follow is written immediately and they land on a short confirmation. Two clicks total."
+msgstr ""
+
 #: src/components/reader/mute-menu-item.tsx
 msgid "{name} is hidden from your feeds and discovery. Subscriptions and direct links still work. Undo in Settings → Muted."
 msgstr ""
@@ -6196,6 +6304,10 @@ msgstr "无法创建分享链接"
 #: src/routes/_layout.feedback.index.tsx
 msgid "Search feedback..."
 msgstr "搜索反馈……"
+
+#: src/components/guide/pages/embeds-guide-page.tsx
+msgid "<0>A blank space where the card should be.</0> Almost always the host page's own content security policy refusing to frame another origin. Your site needs to allow <1>{origin}</1> as a frame source; the browser console will say so outright."
+msgstr ""
 
 #: src/components/reader/page-reader-bar.tsx
 msgid "Follow along"
@@ -6583,6 +6695,7 @@ msgid "The Slow Web, Revisited"
 msgstr "重访慢速网络"
 
 #: src/components/guide/pages/e-readers-guide-page.tsx
+#: src/components/guide/pages/embeds-guide-page.tsx
 #: src/lib/guide/navigation.ts
 msgid "What you get"
 msgstr ""
@@ -6963,6 +7076,10 @@ msgstr ""
 msgid "Muted people and publications disappear from your feeds, search, and discovery — but only in Standard Reader. Mutes are public records in your repo, but unlike a block, Bluesky and other apps don't enforce them. Your subscriptions stay intact and direct links still work."
 msgstr ""
 
+#: src/components/guide/pages/embeds-guide-page.tsx
+msgid "<0>The name or avatar is out of date.</0> The card reads your profile when it loads, so it catches up on its own — but a browser that already has the frame cached may need a reload to notice."
+msgstr ""
+
 #: src/components/guide/pages/everywhere-guide-page.tsx
 #~ msgid "Standard Reader is a reader, not a publishing tool — you write wherever you already write. If your site publishes in the same open format, it turns up in the directory on its own, and readers can follow it here."
 #~ msgstr ""
@@ -7217,6 +7334,10 @@ msgstr ""
 msgid "A–Z"
 msgstr "A–Z"
 
+#: src/components/guide/pages/publishing-guide-page.tsx
+msgid "Once your records are discoverable, you can put a Standard Reader subscribe button for the publication — or a follow button for yourself — back on your own site, as a small themed card or a plain link. It needs none of the wiring on this page to work, so it has its own: <0>Embed buttons</0>."
+msgstr ""
+
 #: src/components/guide/pages/keeping-track-guide-page.tsx
 msgid "People work differently. You <0>subscribe</0> to a publication; you <1>Follow</1> a person, from their author page. The distinction matters, because following a person does two things a subscription does not."
 msgstr ""
@@ -7321,8 +7442,8 @@ msgstr "删除全部阅读记录？"
 
 #: src/components/guide/pages/publishing-guide-page.tsx
 #: src/lib/guide/navigation.ts
-msgid "Subscribe embed"
-msgstr "订阅嵌入代码"
+#~ msgid "Subscribe embed"
+#~ msgstr "订阅嵌入代码"
 
 #: src/components/user-settings-view.tsx
 msgid "Weekly digest preview"
@@ -7363,6 +7484,10 @@ msgstr "标签"
 #: src/components/docs/renderers-docs-page.tsx
 #~ msgid "The React package, for example. With no <0>components</0> prop, a document renders as unstyled semantic HTML."
 #~ msgstr ""
+
+#: src/components/guide/pages/embeds-guide-page.tsx
+msgid "<0>Signed out?</0> They get a stripped-down sign-in naming what they are about to follow — your avatar, your name, nothing else of ours. It asks for the narrowest permission that covers the follow, not a full account sign-in, so someone who only wants to follow you is not handing over the rest."
+msgstr ""
 
 #: src/routes/_layout.friends.tsx
 #~ msgid "Publications written by the people you follow on Bluesky. Follow someone here and every publication they write lands on your Home feed."
@@ -7750,6 +7875,10 @@ msgstr ""
 #~ msgid "Plays nice with the open web"
 #~ msgstr "与开放网络友好共处"
 
+#: src/components/guide/pages/embeds-guide-page.tsx
+msgid "<0>The card is there but clipped, or has its own scrollbar.</0> The resize script did not make it into the page — some editors strip <1>script</1> tags silently. Either paste it somewhere that keeps it, or set a generous fixed height."
+msgstr ""
+
 #: src/components/reader/privacy-view.tsx
 msgid "What we collect"
 msgstr "我们收集哪些信息"
@@ -7788,8 +7917,8 @@ msgid "Everything this app runs on is public. The schemas are open, the read-mod
 msgstr ""
 
 #: src/components/guide/pages/publishing-guide-page.tsx
-msgid "Every publication page also serves a themed, embeddable subscribe widget — an iframe you can drop on your own site so visitors can subscribe without leaving your page. The easiest way to get it: open your publication's page on Standard Reader, use <0>Share → Embed subscribe</0>, pick landscape or portrait, and copy the snippet — no account or ownership check required to generate it."
-msgstr "每个刊物页面还提供一个随主题变化、可嵌入的订阅组件——一个 iframe，你可以放在自己的站点上，让访客无需离开页面即可订阅。最简单的获取方式：在 Standard Reader 上打开你的刊物页面，使用<0>分享 → 嵌入订阅</0>，选择横版或竖版，然后复制代码——生成它无需账户或所有权验证。"
+#~ msgid "Every publication page also serves a themed, embeddable subscribe widget — an iframe you can drop on your own site so visitors can subscribe without leaving your page. The easiest way to get it: open your publication's page on Standard Reader, use <0>Share → Embed subscribe</0>, pick landscape or portrait, and copy the snippet — no account or ownership check required to generate it."
+#~ msgstr "每个刊物页面还提供一个随主题变化、可嵌入的订阅组件——一个 iframe，你可以放在自己的站点上，让访客无需离开页面即可订阅。最简单的获取方式：在 Standard Reader 上打开你的刊物页面，使用<0>分享 → 嵌入订阅</0>，选择横版或竖版，然后复制代码——生成它无需账户或所有权验证。"
 
 #: src/routes/_layout.tag.$tag.tsx
 msgid "{articleCount, plural, one {article} other {articles}}"
@@ -7953,8 +8082,8 @@ msgid "A single publication"
 msgstr "单个刊物"
 
 #: src/components/guide/pages/publishing-guide-page.tsx
-msgid "An account has no theme record of its own, so the follow card always paints in Standard Reader's default palette rather than your brand colors. Clicking Follow writes an <0>app.standard-reader.graph.follow</0> record to the reader's own PDS — and, as with any follow, materializes subscriptions to your publications so those readers stay yours if you leave. To skip the iframe, link straight to <1>/follow/{did}</1> and style your own button; a handle works there in place of the DID."
-msgstr ""
+#~ msgid "An account has no theme record of its own, so the follow card always paints in Standard Reader's default palette rather than your brand colors. Clicking Follow writes an <0>app.standard-reader.graph.follow</0> record to the reader's own PDS — and, as with any follow, materializes subscriptions to your publications so those readers stay yours if you leave. To skip the iframe, link straight to <1>/follow/{did}</1> and style your own button; a handle works there in place of the DID."
+#~ msgstr ""
 
 #: src/components/reader/about-view.tsx
 msgid "Build on the same index"
@@ -8131,7 +8260,7 @@ msgstr "{SITE_NAME} 是一个用于阅读 AT Protocol 上 standard.site 刊物�
 msgid "You've read every article here. Show read articles to see them again."
 msgstr "这里的文章你都读完了。开启「显示已读文章」可再次查看。"
 
-#: src/components/guide/pages/publishing-guide-page.tsx
+#: src/components/guide/pages/embeds-guide-page.tsx
 #: src/routes/subscribe-login.$did.$rkey.tsx
 msgid "Subscribe to {publicationName}"
 msgstr "订阅 {publicationName}"
@@ -8258,6 +8387,10 @@ msgstr "在 Google Fonts 目录中搜索并选择任意字体。"
 #: src/components/reader/list-edit-modal.tsx
 msgid "Create list"
 msgstr "创建列表"
+
+#: src/components/guide/pages/embeds-guide-page.tsx
+msgid "<0>Already following, or looking at their own card?</0> They are told so and nothing is written twice."
+msgstr ""
 
 #: src/components/reader/app-shell.tsx
 #: src/components/reader/subscriptions-sheet.tsx
@@ -8422,6 +8555,10 @@ msgstr ""
 msgid "List views"
 msgstr "列表视图"
 
+#: src/components/guide/pages/embeds-guide-page.tsx
+msgid "Two cards, and a plain link if you would rather style your own button. Both are generated from a page you can already see — there is no account to make, no key to get, and no ownership check. Anyone can build the snippet for any publication; it is a link with a nice picture on it."
+msgstr ""
+
 #: src/components/reader/reorder-lists-modal.tsx
 #~ msgid "Drag to change the order your lists appear in the sidebar."
 #~ msgstr "拖动以调整列表在侧边栏中的顺序。"
@@ -8468,6 +8605,10 @@ msgstr "<0>当你使用 Atmosphere 账户登录时</0>（例如通过 Bluesky OA
 #: src/routes/subscribe-login.$did.$rkey.tsx
 msgid "Powered by <0>Standard Reader</0>"
 msgstr "由 <0>Standard Reader</0> 提供支持"
+
+#: src/components/guide/pages/embeds-guide-page.tsx
+msgid "The button opens Standard Reader in a new tab rather than doing something in place, and that is not a shortcut we took. Subscribing writes a record to <0>the visitor's</0> own repo, signed by their own account — so it has to happen somewhere they are signed in, which is our domain, not yours. Your page never sees who they are."
+msgstr ""
 
 #: src/components/blocks-settings-view.tsx
 msgid "Your blocks are enforced here already. To add or remove one from Standard Reader, you'll be asked to authorize block access the first time you try."
@@ -8608,6 +8749,10 @@ msgstr ""
 #: src/components/reader/atstore-review-prompt.tsx
 msgid "Rating"
 msgstr "评分"
+
+#: src/components/guide/pages/embeds-guide-page.tsx
+msgid "Reach for this one when a publication is the wrong unit: your writing is spread across several of them, you post under your own name rather than a masthead, or the site you are putting the card on is a personal homepage rather than one publication's. Following you also picks up everything you publish, so a reader who follows the person does not have to keep track of which masthead a piece landed under."
+msgstr ""
 
 #: src/components/reader/collection-theme-editor.tsx
 msgid "The Issue Title"
@@ -8835,6 +8980,10 @@ msgstr ""
 
 #: src/components/guide/pages/e-readers-guide-page.tsx
 msgid "KOReader can sync your reading position through Standard Reader, so picking up a book on a second device puts you where you stopped. Settings → <0>E-readers</0> has the three values it wants: the sync server URL, your username, and a sync key."
+msgstr ""
+
+#: src/components/guide/pages/embeds-guide-page.tsx
+msgid "<0>Landscape</0> is a compact row: avatar, name, button. It suits a sidebar, a footer, or the end of a post — anywhere you want a line rather than a block. The description is dropped at this size."
 msgstr ""
 
 #: src/routes/mcp/authorize.tsx

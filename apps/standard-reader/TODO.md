@@ -1589,6 +1589,10 @@ After Tier 1–3, as appetite allows:
       login. Snippet builders in `author-embed.ts`; the iframe wrapper and resize protocol are
       shared with the subscribe embed in `embed-snippet.ts`, and the card itself in
       `components/reader/embed-card.tsx`.
+- [x] **Embed buttons guide page** — `/guide/embeds`, its own page rather than a section under
+      Publishing: both cards, the three layouts, what the card takes from a brand, what the click
+      actually writes, and why it has to leave your page to write it. `/guide/publishing` keeps a
+      pointer under its original `#subscribe-embed` anchor so shared links still land.
 
 ## 12. Browser extension (WXT)
 

@@ -26,6 +26,7 @@ export type GuideArea =
   | "extension"
   | "e-readers"
   | "publishing"
+  | "embeds"
   | "comics"
   | "your-data";
 
@@ -41,6 +42,7 @@ export type GuideRoute =
   | "/guide/extension"
   | "/guide/e-readers"
   | "/guide/publishing"
+  | "/guide/embeds"
   | "/guide/comics"
   | "/guide/your-data";
 
@@ -148,6 +150,13 @@ export const GUIDE_AREAS: ReadonlyArray<GuideAreaMeta> = [
     blurb: msg`Wire your own site's records so Standard Reader can find and read it.`,
   },
   {
+    area: "embeds",
+    group: "further",
+    to: "/guide/embeds",
+    label: msg`Embed buttons`,
+    blurb: msg`Put a subscribe or follow button for your work on your own site.`,
+  },
+  {
     area: "comics",
     group: "further",
     to: "/guide/comics",
@@ -253,8 +262,7 @@ export const GUIDE_SECTIONS: Record<GuideArea, ReadonlyArray<GuideSection>> = {
   publishing: [
     { id: "overview", label: msg`Overview` },
     { id: "discovery", label: msg`Discovery` },
-    { id: "subscribe-embed", label: msg`Subscribe embed` },
-    { id: "follow-embed", label: msg`Follow embed` },
+    { id: "subscribe-embed", label: msg`Subscribe and follow buttons` },
     {
       id: "inline-reading",
       label: msg`Rendering content in Standard Reader`,
@@ -268,6 +276,15 @@ export const GUIDE_SECTIONS: Record<GuideArea, ReadonlyArray<GuideSection>> = {
     { id: "one-article", label: msg`Sending one article` },
     { id: "progress-sync", label: msg`Keeping your place` },
     { id: "whats-missing", label: msg`What will not be there` },
+  ],
+  embeds: [
+    { id: "what-you-get", label: msg`What you get` },
+    { id: "subscribe-embed", label: msg`A subscribe button for a publication` },
+    { id: "follow-embed", label: msg`A follow button for you` },
+    { id: "layouts", label: msg`Landscape, portrait, or a plain link` },
+    { id: "styling", label: msg`What the card takes from your brand` },
+    { id: "what-happens", label: msg`What happens when someone clicks it` },
+    { id: "troubleshooting", label: msg`When the card does not show up` },
   ],
   comics: [
     { id: "what-readers-get", label: msg`What readers get` },

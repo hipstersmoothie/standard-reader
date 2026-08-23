@@ -518,7 +518,9 @@ comic issue with no pages falls back to it outright.
   The author profile offers the same thing for an account: **Embed follow** (see
   "Author profile" below). Both cards are the same component
   (`components/reader/embed-card.tsx`) over different subjects, and both speak the
-  same iframe resize protocol (`lib/embed-snippet.ts`).
+  same iframe resize protocol (`lib/embed-snippet.ts`). Documented together in the
+  reader guide at `/guide/embeds` — its own page, since pasting a button needs none
+  of the record wiring `/guide/publishing` covers.
   Unsigned-out readers hit `/login/subscribe/$did/$rkey` — a publication-themed
   login page (no Standard Reader chrome, no saved handles) that drives the
   subscription-only OAuth scope and returns to the auto-follow success screen.

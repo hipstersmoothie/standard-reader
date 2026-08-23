@@ -1,11 +1,8 @@
 "use client";
 
-import { Trans, useLingui } from "@lingui/react/macro";
+import { Trans } from "@lingui/react/macro";
 import * as stylex from "@stylexjs/stylex";
-import { useEffect, useRef, useState } from "react";
-
-import { EMBED_RESIZE_MESSAGE } from "#/lib/embed-snippet";
-import { getPublicUrlClient } from "#/lib/public-url";
+import { Link } from "@tanstack/react-router";
 
 import {
   HighlightedHtml,
@@ -72,114 +69,7 @@ function CodePanel({ tag, code }: { tag: string; code: string }) {
 const HTML_PAYLOAD_EXAMPLE = '{ html: "..." }';
 
 // A real, live publication — placeholder ids wouldn't render anything.
-const SAMPLE_PUBLICATION = {
-  did: "did:plc:s2rczyxit2v5vzedxqs326ri",
-  rkey: "3lz3s33asuc2l",
-  name: "Annotated",
-};
-
-/**
- * Annotated's owner — the same repo DID, shown as an author rather than as a
- * masthead. No name here: the card reads the live profile, and the iframe title
- * names the publication we already know instead of guessing at a person.
- */
-const SAMPLE_AUTHOR = {
-  did: SAMPLE_PUBLICATION.did,
-};
-
-/**
- * A live embed card, wired to the same `postMessage` resize handshake the
- * copied snippet uses — so the sample on this page behaves exactly like the one
- * a publisher pastes on their own site.
- */
-function EmbedSample({
-  src,
-  title,
-  initialHeight,
-}: {
-  src: string;
-  title: string;
-  initialHeight: number;
-}) {
-  const iframeRef = useRef<HTMLIFrameElement | null>(null);
-  const [height, setHeight] = useState(initialHeight);
-
-  useEffect(() => {
-    function onMessage(event: MessageEvent) {
-      if (
-        event.data?.type !== EMBED_RESIZE_MESSAGE ||
-        typeof event.data.height !== "number"
-      ) {
-        return;
-      }
-      if (event.source === iframeRef.current?.contentWindow) {
-        setHeight(Math.ceil(event.data.height));
-      }
-    }
-    globalThis.addEventListener("message", onMessage);
-    return () => globalThis.removeEventListener("message", onMessage);
-  }, []);
-
-  return (
-    <div
-      style={{
-        backgroundColor: "#f9f7f2",
-        borderRadius: "1.55rem",
-        maxWidth: "100%",
-        overflow: "hidden",
-        width: "25rem",
-      }}
-    >
-      {/* oxlint-disable-next-line iframe-has-title --
-          the title IS set below; the rule can't statically resolve a
-          tagged-template expression. */}
-      <iframe
-        ref={iframeRef}
-        src={src}
-        width={400}
-        height={height}
-        style={{
-          border: 0,
-          colorScheme: "normal",
-          display: "block",
-          width: "100%",
-        }}
-        title={title}
-        loading="lazy"
-      />
-    </div>
-  );
-}
-
-function SubscribeEmbedSample({ origin }: { origin: string }) {
-  const { t } = useLingui();
-  const publicationName = SAMPLE_PUBLICATION.name;
-
-  return (
-    <EmbedSample
-      src={`${origin}/embed/subscribe/${SAMPLE_PUBLICATION.did}/${SAMPLE_PUBLICATION.rkey}?layout=portrait`}
-      title={t`Subscribe to ${publicationName}`}
-      initialHeight={322}
-    />
-  );
-}
-
-function FollowEmbedSample({ origin }: { origin: string }) {
-  const { t } = useLingui();
-  const publicationName = SAMPLE_PUBLICATION.name;
-
-  return (
-    <EmbedSample
-      src={`${origin}/embed/follow/${SAMPLE_AUTHOR.did}?layout=portrait`}
-      title={t`Follow the author of ${publicationName}`}
-      initialHeight={304}
-    />
-  );
-}
-
 export function PublishingGuidePage() {
-  const origin = getPublicUrlClient();
-
   return (
     <GuideShell
       area="publishing"
@@ -283,78 +173,20 @@ export function PublishingGuidePage() {
       <CodePanel tag="head" code={DISCOVERY_LEGACY_SNIPPET} />
 
       <h2 {...stylex.props(docsStyles.h2)} id="subscribe-embed">
-        <Trans>Subscribe embed</Trans>
+        <Trans>Subscribe and follow buttons</Trans>
       </h2>
       <p {...stylex.props(docsStyles.prose)}>
         <Trans>
-          Every publication page also serves a themed, embeddable subscribe
-          widget — an iframe you can drop on your own site so visitors can
-          subscribe without leaving your page. The easiest way to get it: open
-          your publication&apos;s page on Standard Reader, use{" "}
-          <strong>Share → Embed subscribe</strong>, pick landscape or portrait,
-          and copy the snippet — no account or ownership check required to
-          generate it.
+          Once your records are discoverable, you can put a Standard Reader
+          subscribe button for the publication — or a follow button for yourself
+          — back on your own site, as a small themed card or a plain link. It
+          needs none of the wiring on this page to work, so it has its own:{" "}
+          <Link to="/guide/embeds" {...stylex.props(docsStyles.proseLink)}>
+            Embed buttons
+          </Link>
+          .
         </Trans>
       </p>
-      <p {...stylex.props(docsStyles.prose)}>
-        <Trans>
-          It reads the publication&apos;s{" "}
-          <code {...stylex.props(docsStyles.codeInline)}>basicTheme</code>{" "}
-          colors automatically, so the card matches your brand with no extra
-          params — fonts aren&apos;t picked up though; the card always uses
-          Standard Reader&apos;s own type. Here&apos;s a live one:
-        </Trans>
-      </p>
-      <SubscribeEmbedSample origin={origin} />
-      <p {...stylex.props(docsStyles.prose)}>
-        <Trans>
-          Clicking Subscribe opens Standard Reader itself, not your page —
-          subscribing writes a{" "}
-          <code {...stylex.props(docsStyles.codeInline)}>
-            site.standard.graph.subscription
-          </code>{" "}
-          record to the reader&apos;s own PDS via their own OAuth session, so it
-          has to happen on our domain. If you&apos;d rather skip the iframe,
-          link straight to{" "}
-          <code {...stylex.props(docsStyles.codeInline)}>
-            /subscribe/{"{did}"}/{"{rkey}"}
-          </code>{" "}
-          and style your own button.
-        </Trans>
-      </p>
-
-      <h2 {...stylex.props(docsStyles.h2)} id="follow-embed">
-        <Trans>Follow embed</Trans>
-      </h2>
-      <p {...stylex.props(docsStyles.prose)}>
-        <Trans>
-          The same widget exists for <em>you</em>, not just your publications.
-          Open your own profile on Standard Reader and use{" "}
-          <strong>the ⌄ menu → Embed follow</strong> to get a card that follows
-          your account — useful when your writing is spread across several
-          publications, or when you post as yourself rather than under a
-          masthead. Same three tabs (landscape, portrait, link), same auto-
-          resizing iframe.
-        </Trans>
-      </p>
-      <p {...stylex.props(docsStyles.prose)}>
-        <Trans>
-          An account has no theme record of its own, so the follow card always
-          paints in Standard Reader&apos;s default palette rather than your
-          brand colors. Clicking Follow writes an{" "}
-          <code {...stylex.props(docsStyles.codeInline)}>
-            app.standard-reader.graph.follow
-          </code>{" "}
-          record to the reader&apos;s own PDS — and, as with any follow,
-          materializes subscriptions to your publications so those readers stay
-          yours if you leave. To skip the iframe, link straight to{" "}
-          <code {...stylex.props(docsStyles.codeInline)}>
-            /follow/{"{did}"}
-          </code>{" "}
-          and style your own button; a handle works there in place of the DID.
-        </Trans>
-      </p>
-      <FollowEmbedSample origin={origin} />
 
       <h2 {...stylex.props(docsStyles.h2)} id="inline-reading">
         <Trans>Rendering Content in Standard Reader</Trans>
