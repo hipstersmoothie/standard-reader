@@ -2345,8 +2345,9 @@ What remains the reader's:
 - [x] **Scope** — the collection is in the republished `authBasicFeatures` set. Writer requests it
       too (it is what authors the records now); the reader keeps it because the ingester and the
       permission set are ours.
-- [x] **Links out** — "Standalone site" on a publication and Settings → Publishing, both to
-      `VITE_WRITER_URL`.
+- [x] **One link out** — Settings → Publishing, to `VITE_WRITER_URL`. Not the publication ⌄
+      menu: that menu is read by everyone, and a site is the publisher's page, not a reader's
+      control.
 
 - [ ] **Extract the article renderer** — a post opened from a site lands here, with the app's
       chrome around it, which breaks the illusion at exactly the moment someone starts reading.

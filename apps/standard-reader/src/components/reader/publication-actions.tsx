@@ -28,7 +28,6 @@ import {
   CheckCheck,
   ChevronDown,
   ExternalLink,
-  LayoutTemplate,
   ListPlus,
   Rss,
 } from "lucide-react";
@@ -44,7 +43,6 @@ import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
 import { opdsPublicationUrl, publicationEpubUrl } from "#/lib/opds/urls";
 import { getPublicUrlClient } from "#/lib/public-url";
 import type { ArchiveOrder } from "#/lib/publication/archive-order";
-import { publicationSiteUrl } from "#/lib/writer-url";
 import { useLoginSearch } from "#/utils/use-login-search";
 
 import type { PublicationCard } from "../../integrations/tanstack-query/api-shapes";
@@ -375,25 +373,6 @@ export function PublicationActions({
             >
               <Trans>Send to e-reader…</Trans>
             </MenuItem>
-            {/* Same question again, answered with a page rather than a file:
-                this publication with none of the reader's chrome around it.
-                Served by Standard Writer, which owns sites — so an ordinary
-                link to another deploy, not a router navigation. */}
-            {publicationRkey ? (
-              <MenuItem
-                onPress={() => {
-                  globalThis.open(
-                    publicationSiteUrl(pub.did, publicationRkey),
-                    "_blank",
-                    "noopener,noreferrer",
-                  );
-                }}
-                suffix={<LayoutTemplate size={MENU_ICON} />}
-                textValue={t`Standalone site`}
-              >
-                <Trans>Standalone site</Trans>
-              </MenuItem>
-            ) : null}
             {pub.url ? (
               <MenuItem
                 onPress={() => {

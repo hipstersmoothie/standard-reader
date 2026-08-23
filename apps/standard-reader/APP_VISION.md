@@ -567,8 +567,10 @@ What stays here:
 - **The lexicon.** `app.standard-reader.site` is ours, and the Jetstream ingester mirrors it into
   `sites` like every other record (see "Data shapes" below). The normalizers both apps run it
   through live in `@standard-reader/site-config`.
-- **The links out.** A publication's ⌄ menu carries **Standalone site**, and Settings →
-  Publishing opens Writer. Both are ordinary links to `VITE_WRITER_URL`, not router navigations.
+- **One link out.** Settings → Publishing opens Writer — an ordinary link to `VITE_WRITER_URL`,
+  not a router navigation. Deliberately _only_ there: a publication's ⌄ menu is read by everyone,
+  and a site is the publisher's own page, so offering site management from the menu a reader uses
+  to subscribe was the wrong audience for the wrong feature.
 - **The article.** A headline on a site links back here — Writer serves the site, the reader
   renders the piece.
 
