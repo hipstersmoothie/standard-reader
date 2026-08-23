@@ -1,3 +1,8 @@
+import {
+  normalizeSiteLinks,
+  normalizeSiteTheme,
+  toSiteStyle,
+} from "@standard-reader/site-config";
 import { and, eq, inArray, isNull, or, sql } from "drizzle-orm";
 
 import type { JsonValue } from "#/integrations/tanstack-query/api-shapes";
@@ -17,8 +22,6 @@ import {
   parsePrevNextDirection,
 } from "#/lib/publication/serial";
 import { declaresBot } from "#/lib/self-labels";
-import { normalizeSiteLinks, normalizeSiteTheme } from "#/lib/site/config";
-import { toSiteStyle } from "#/lib/site/styles";
 import {
   FETCHED_CONTENT_FORMATS,
   resolveFetchedContent,

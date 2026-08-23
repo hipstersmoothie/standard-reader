@@ -26,13 +26,24 @@ was scaffolded with npm and later switched to pnpm: `package-lock.json` was remo
 ```
 apps/standard-reader/   # the reader app (TanStack Start) — src/, scripts/, perf/,
                         #   drizzle/, lexicons/, public/, and its own configs
+apps/standard-writer/   # the writer app: publication analytics, standalone sites,
+                        #   embeds, and the newsletter. Shares the reader's database.
 apps/extension/         # the browser extension (WXT); shares app source via #/ and @/
-packages/               # workspace packages: design-system (shared UI) + the
-                        #   publishable @standard-reader/renderer-* family + lexicons
+packages/               # workspace packages: db (shared schema), design-system (shared
+                        #   UI), publication-theme, site-config, lexicons + the
+                        #   publishable @standard-reader/renderer-* family
 services/               # standalone labeler services (claudeslop, botlabeler)
 scripts/                # workspace-level tooling (package publishing)
 config/oxlint/          # shared lint config — applies to the whole repo
 ```
+
+**Two apps, one database.** Standard Reader owns ingest and migrations; Standard Writer reads the
+same Neon database through `@standard-reader/db` and owns the newsletter tables in it. They also
+share `@standard-reader/design-system`, `@standard-reader/publication-theme` (palette derivation)
+and `@standard-reader/site-config` (the `app.standard-reader.site` normalizers). Run the writer
+with `pnpm writer:dev` (port 3100); it needs `VITE_READER_URL`, and the reader needs
+`VITE_WRITER_URL` to link back. See
+[`apps/standard-writer/APP_VISION.md`](./apps/standard-writer/APP_VISION.md).
 
 **Reading paths in this file:** bare `src/…`, `scripts/…`, `perf/…`, `drizzle/…`, and
 `lexicons/…` paths are relative to **`apps/standard-reader/`** unless written out in full.
@@ -50,6 +61,9 @@ This repo has two source-of-truth planning docs that **must be kept up to date a
   vision (concept, architecture, scope). When a decision changes the product direction, data
   model, lexicons, or architecture, **update `apps/standard-reader/APP_VISION.md` in the same
   change** so it never drifts from reality.
+- [`apps/standard-writer/APP_VISION.md`](./apps/standard-writer/APP_VISION.md) +
+  [`apps/standard-writer/TODO.md`](./apps/standard-writer/TODO.md) — the same pair for the writer
+  app. A change that spans both apps updates both sets.
 - [`apps/standard-reader/TODO.md`](./apps/standard-reader/TODO.md) — the actionable roadmap
   derived from the vision. As you complete work, **check off the relevant items**; when scope
   changes or new work is discovered, **add/adjust items**. Keep it in sync with
@@ -220,6 +234,8 @@ read when data exists in the DB.**
 
 - `pnpm install` — install dependencies.
 - `pnpm dev` — Vite dev server on port 3000 (falls back to the next free port if taken).
+- `pnpm writer:dev` / `writer:build` / `writer:start` — the Standard Writer app on port 3100.
+  `writer:send` / `writer:dispatch` / `writer:seed` drive its newsletter scripts.
 - `pnpm build` — production build (client + SSR bundles into `dist/`).
 - `pnpm preview` — preview the production build.
 - `pnpm test` — run Vitest once.
@@ -231,8 +247,10 @@ read when data exists in the DB.**
 - `pnpm fix-stylex-keys` — autofix StyleX `sort-keys` / `valid-shorthands` across `src` via
   `eslint.stylex-autofix.mjs` (oxlint reports these but can't autofix them). May need to be run a
   couple of times to converge on large objects.
-- `pnpm db:generate` / `db:migrate` / `db:push` / `db:studio` — Drizzle Kit (schema in
-  `src/db/schema.ts`, migrations in `drizzle/`).
+- `pnpm db:generate` / `db:migrate` / `db:push` / `db:studio` — Drizzle Kit. The schema lives in
+  `packages/db/` and is re-exported by `src/db/schema.ts`; migrations stay in the reader's
+  `drizzle/` because there is one database and one journal. A table added for the writer is
+  still migrated from here.
 - `pnpm lex:lint` / `pnpm atproto:publish-lexicons` — validate / publish the app-owned
   `app.standard-reader.*` lexicons in `./lexicons/` via the `goat` CLI
   (`scripts/goat-lex.mjs`; needs `LEXICON_PUBLISH_*` creds + `_lexicon.*` DNS).

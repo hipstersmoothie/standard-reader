@@ -113,6 +113,7 @@ import { useReaderVoice } from "#/lib/use-reader-voice";
 import { useReadingTypography } from "#/lib/use-reading-typography";
 import { useTheme } from "#/lib/use-theme";
 import { useTrackReadingHistory } from "#/lib/use-track-reading-history";
+import { writerSitesUrl } from "#/lib/writer-url";
 
 import {
   AppearanceAdvancedRows,
@@ -1205,19 +1206,31 @@ export function UserSettingsView() {
       ) : null}
 
       {/* Publishing, not reading: the one section about how other people see
-          your work rather than how you see theirs. */}
+          your work rather than how you see theirs. Everything in it lives in
+          Standard Writer, so the row links out rather than opening a page
+          here. */}
       <section {...stylex.props(styles.section)}>
         <h2 {...stylex.props(styles.sectionHeading)}>
-          <Trans>Your site</Trans>
+          <Trans>Publishing</Trans>
         </h2>
         <div {...stylex.props(styles.settingGroup)}>
           <SettingRow
-            label={t`Standalone site`}
-            description={t`A page for your work with none of Standard Reader's chrome — pick a style, set your colors, and share the link. Your publications each get one too.`}
+            label={t`Standard Writer`}
+            description={t`Your publications' home: readership analytics, a standalone site with none of this app's chrome, embeds, and a newsletter your posts are mailed to.`}
           >
-            <ButtonLink to="/settings/site" variant="secondary" size="sm">
-              <Trans>Customize sites</Trans>
-            </ButtonLink>
+            <Button
+              variant="secondary"
+              size="sm"
+              onPress={() => {
+                globalThis.open(
+                  writerSitesUrl(),
+                  "_blank",
+                  "noopener,noreferrer",
+                );
+              }}
+            >
+              <Trans>Open Writer</Trans>
+            </Button>
           </SettingRow>
         </div>
       </section>

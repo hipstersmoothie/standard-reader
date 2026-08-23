@@ -1,0 +1,33 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  /* The editorial theme's values are `light-dark()` pairs, so this declaration
+     is the whole light/dark switch. Naming both schemes is the "system" default:
+     the browser picks from the OS preference. An explicit choice is replayed
+     onto the inline style in <head> before first paint (`lib/theme.ts`), which
+     wins over this. */
+  color-scheme: light dark;
+}
+
+html,
+body,
+#app {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+}
+
+body {
+  /* Background, text color, and font family come from the editorial theme
+     applied on <body> in `routes/__root.tsx`. */
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+a {
+  color: inherit;
+}

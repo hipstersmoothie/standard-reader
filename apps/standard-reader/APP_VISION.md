@@ -554,50 +554,23 @@ comic issue with no pages falls back to it outright.
   (avatar + "Follow NAME", no Standard Reader chrome, no saved handles). An account
   has no theme record, so the card paints in the default editorial palette.
 
-### Standalone sites (`/site/u/$did`, `/site/p/$did/$rkey`)
+### Standalone sites — moved to Standard Writer
 
-An author's or a publication's own page, with **none of Standard Reader's chrome** —
-no sidebar, no header, no reading controls. The routes sit outside `_layout` (the
-same trick the magazine route uses), so what the visitor gets is a masthead, an
-archive, and a colophon.
+An author's or a publication's own page, with none of Standard Reader's chrome, now lives in
+[Standard Writer](../standard-writer/APP_VISION.md) at `/site/u/$did` and `/site/p/$did/$rkey`.
+Writer is where a publication's analytics, embeds and newsletter live, so the page's editor
+belongs beside them — and Writer is what will own custom domains, which are the natural end
+state for a site.
 
-- **What each covers.** `/site/u/$did` is everything one account publishes, across
-  every publication they write for — rows carry a kicker naming the publication they
-  came from. `/site/p/$did/$rkey` is one publication's archive, and carries no kicker
-  because every row would repeat the same word.
-- **Four presentations**, chosen by the owner and stored on the record
-  (`#/lib/site/styles`): **Broadsheet** (masthead, lead story, multi-column index),
-  **Journal** (one quiet column of dated entries, separated by space rather than
-  rules), **Gallery** (a portrait cover grid; posts with no cover become typographic
-  tiles in the accent rather than holes), and **Marquee** (a full-screen opening
-  title, then selected work, then a compact index). `?style=` previews one without
-  saving, which is what the settings editor's "Preview this style" opens.
-- **Colors.** A publication site inherits the publication's own theme; an author site
-  has none to inherit, so it takes the colors the author set or the default editorial
-  palette. Either way the record's `theme` wins when stated. The palette runs through
-  the same generator the in-app publication theming uses
-  (`publicationThemeScaleVars`), so a dark mode is derived and unreadable colors are
-  nudged rather than shipped. Unlike `PublicationThemeScope`, a site ignores the
-  reader's "use publication themes" preference — that preference is about how much of
-  someone else's design to allow into the reader's own app, and a site is not their
-  app.
-- **Always live.** Every account and every publication has a site whether or not it
-  has been configured; the record only customizes one. Nothing in the editor creates
-  or destroys a page.
-- **One round trip.** `getSitePage` returns masthead, config, theme, the first page of
-  the archive, and the owner's publications together. Deliberately the _public_
-  queries — no read/unread flags, no recommend attribution, no comment counts — since
-  a site is written for people who are not signed in here.
-- **Editing** lives at `/settings/site`: one card per site the signed-in account owns
-  (their own, plus every publication in their repo), each opening a dialog with the
-  style picker, tagline, masthead links, colors, and the colophon toggle. Writes go to
-  the PDS and write through to the `sites` mirror. Entry points: the settings page's
-  "Your site" section, and **Standalone site** in a publication's ⌄ menu, next to RSS
-  and Send to e-reader — the same question ("how do I read this somewhere that isn't
-  here?"), answered with a page rather than a file.
-- **Reading a post** from a site still lands on `/a/$did/$rkey`, the app's article
-  view. A chrome-free article reader inside a site is the natural next step and is
-  tracked in `TODO.md`.
+What stays here:
+
+- **The lexicon.** `app.standard-reader.site` is ours, and the Jetstream ingester mirrors it into
+  `sites` like every other record (see "Data shapes" below). The normalizers both apps run it
+  through live in `@standard-reader/site-config`.
+- **The links out.** A publication's ⌄ menu carries **Standalone site**, and Settings →
+  Publishing opens Writer. Both are ordinary links to `VITE_WRITER_URL`, not router navigations.
+- **The article.** A headline on a site links back here — Writer serves the site, the reader
+  renders the piece.
 
 ### Subscriptions (manage view)
 
@@ -1083,8 +1056,9 @@ re-auth because `prompt: consent` re-consent isn't reliable across PDS providers
     `links`, `showStandardReaderLink`). Deterministic rkey per subject: `self` for the
     author's own site, `subjectRkey(publicationUri)` for a publication's, so one repo
     holds at most one record per subject. Mirrored to `sites`. Absent means the site
-    still renders, in the default style — the record only decides how it looks. See
-    "Standalone sites" below.
+    still renders, in the default style — the record only decides how it looks.
+    **Authored and served by [Standard Writer](../standard-writer/APP_VISION.md);** the
+    reader owns the lexicon and the ingest handler.
 
 ### AppView XRPC (public API)
 

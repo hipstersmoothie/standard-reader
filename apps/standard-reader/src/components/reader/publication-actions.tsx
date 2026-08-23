@@ -44,6 +44,7 @@ import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
 import { opdsPublicationUrl, publicationEpubUrl } from "#/lib/opds/urls";
 import { getPublicUrlClient } from "#/lib/public-url";
 import type { ArchiveOrder } from "#/lib/publication/archive-order";
+import { publicationSiteUrl } from "#/lib/writer-url";
 import { useLoginSearch } from "#/utils/use-login-search";
 
 import type { PublicationCard } from "../../integrations/tanstack-query/api-shapes";
@@ -274,11 +275,6 @@ export function PublicationActions({
     publicationRkey && hasDownloadableArticles
       ? publicationEpubUrl(baseUrl, pub.did, publicationRkey)
       : null;
-  // The publication's standalone site — the same archive with none of the
-  // reader's chrome. Always available; the record only decides how it looks.
-  const siteParams = publicationRkey
-    ? { did: pub.did, rkey: publicationRkey }
-    : null;
   const [markAllReadOpen, setMarkAllReadOpen] = useState(false);
   const [muteOpen, setMuteOpen] = useState(false);
 
@@ -380,16 +376,23 @@ export function PublicationActions({
               <Trans>Send to e-reader…</Trans>
             </MenuItem>
             {/* Same question again, answered with a page rather than a file:
-                this publication with none of the reader's chrome around it. */}
-            {siteParams ? (
-              <MenuItemLink
-                to="/site/p/$did/$rkey"
-                params={siteParams}
+                this publication with none of the reader's chrome around it.
+                Served by Standard Writer, which owns sites — so an ordinary
+                link to another deploy, not a router navigation. */}
+            {publicationRkey ? (
+              <MenuItem
+                onPress={() => {
+                  globalThis.open(
+                    publicationSiteUrl(pub.did, publicationRkey),
+                    "_blank",
+                    "noopener,noreferrer",
+                  );
+                }}
                 suffix={<LayoutTemplate size={MENU_ICON} />}
                 textValue={t`Standalone site`}
               >
                 <Trans>Standalone site</Trans>
-              </MenuItemLink>
+              </MenuItem>
             ) : null}
             {pub.url ? (
               <MenuItem

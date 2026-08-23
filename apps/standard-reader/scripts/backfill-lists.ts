@@ -1,7 +1,7 @@
+import { listSaves, lists } from "@standard-reader/db/schema/lists.ts";
 import { and, eq } from "drizzle-orm";
 
 import { db } from "../src/db/index.ts";
-import { listSaves, lists } from "../src/db/schema/lists.ts";
 import {
   RepoGoneError,
   listRepoRecords,

@@ -82,7 +82,6 @@ import { Route as LayoutPrivacyExtensionRouteImport } from './routes/_layout.pri
 import { Route as LayoutSettingsIndexRouteImport } from './routes/_layout.settings.index'
 import { Route as LayoutSettingsBlocksRouteImport } from './routes/_layout.settings.blocks'
 import { Route as LayoutSettingsMutedRouteImport } from './routes/_layout.settings.muted'
-import { Route as LayoutSettingsSiteRouteImport } from './routes/_layout.settings.site'
 import { Route as LayoutTagTagRouteImport } from './routes/_layout.tag.$tag'
 import { Route as LayoutTopicsIndexRouteImport } from './routes/_layout.topics.index'
 import { Route as LayoutTopicsSlugRouteImport } from './routes/_layout.topics.$slug'
@@ -120,7 +119,6 @@ import { Route as FeedUDidRouteImport } from './routes/feed.u.$did'
 import { Route as KosyncUsersAuthRouteImport } from './routes/kosync.users.auth'
 import { Route as KosyncUsersCreateRouteImport } from './routes/kosync.users.create'
 import { Route as OpdsTagTagRouteImport } from './routes/opds.tag.$tag'
-import { Route as SiteUDidRouteImport } from './routes/site.u.$did'
 import { Route as SubscribeLoginDidRkeyRouteImport } from './routes/subscribe-login.$did.$rkey'
 import { Route as SubscribeDidRkeyRouteImport } from './routes/subscribe.$did.$rkey'
 import { Route as LayoutADidRkeyRouteImport } from './routes/_layout.a.$did.$rkey'
@@ -156,7 +154,6 @@ import { Route as OpdsUDidPublicationsRouteImport } from './routes/opds.u.$did.p
 import { Route as OpdsUDidSavedRouteImport } from './routes/opds.u.$did.saved'
 import { Route as OpdsUDidSubscriptionsRouteImport } from './routes/opds.u.$did.subscriptions'
 import { Route as OpdsUDidUnreadRouteImport } from './routes/opds.u.$did.unread'
-import { Route as SitePDidRkeyRouteImport } from './routes/site.p.$did.$rkey'
 import { Route as ApiAuthAtprotoReviewCallbackRouteImport } from './routes/api/auth/atproto/review/callback'
 import { Route as ApiAuthAtprotoReviewMetadataDotjsonRouteImport } from './routes/api/auth/atproto/review/metadata[.]json'
 
@@ -538,11 +535,6 @@ const LayoutSettingsMutedRoute = LayoutSettingsMutedRouteImport.update({
   path: '/settings/muted',
   getParentRoute: () => LayoutRoute,
 } as any)
-const LayoutSettingsSiteRoute = LayoutSettingsSiteRouteImport.update({
-  id: '/settings/site',
-  path: '/settings/site',
-  getParentRoute: () => LayoutRoute,
-} as any)
 const LayoutTagTagRoute = LayoutTagTagRouteImport.update({
   id: '/tag/$tag',
   path: '/tag/$tag',
@@ -727,11 +719,6 @@ const KosyncUsersCreateRoute = KosyncUsersCreateRouteImport.update({
 const OpdsTagTagRoute = OpdsTagTagRouteImport.update({
   id: '/opds/tag/$tag',
   path: '/opds/tag/$tag',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SiteUDidRoute = SiteUDidRouteImport.update({
-  id: '/site/u/$did',
-  path: '/site/u/$did',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SubscribeLoginDidRkeyRoute = SubscribeLoginDidRkeyRouteImport.update({
@@ -921,11 +908,6 @@ const OpdsUDidUnreadRoute = OpdsUDidUnreadRouteImport.update({
   path: '/opds/u/$did/unread',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SitePDidRkeyRoute = SitePDidRkeyRouteImport.update({
-  id: '/site/p/$did/$rkey',
-  path: '/site/p/$did/$rkey',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ApiAuthAtprotoReviewCallbackRoute =
   ApiAuthAtprotoReviewCallbackRouteImport.update({
     id: '/api/auth/atproto/review/callback',
@@ -1005,7 +987,6 @@ export interface FileRoutesByFullPath {
   '/privacy/extension': typeof LayoutPrivacyExtensionRoute
   '/settings/blocks': typeof LayoutSettingsBlocksRoute
   '/settings/muted': typeof LayoutSettingsMutedRoute
-  '/settings/site': typeof LayoutSettingsSiteRoute
   '/tag/$tag': typeof LayoutTagTagRoute
   '/topics/$slug': typeof LayoutTopicsSlugRoute
   '/u/$did': typeof LayoutUDidRoute
@@ -1042,7 +1023,6 @@ export interface FileRoutesByFullPath {
   '/kosync/users/auth': typeof KosyncUsersAuthRoute
   '/kosync/users/create': typeof KosyncUsersCreateRoute
   '/opds/tag/$tag': typeof OpdsTagTagRoute
-  '/site/u/$did': typeof SiteUDidRoute
   '/subscribe-login/$did/$rkey': typeof SubscribeLoginDidRkeyRoute
   '/subscribe/$did/$rkey': typeof SubscribeDidRkeyRoute
   '/guide/': typeof GuideLayoutGuideIndexRoute
@@ -1082,7 +1062,6 @@ export interface FileRoutesByFullPath {
   '/opds/u/$did/saved': typeof OpdsUDidSavedRoute
   '/opds/u/$did/subscriptions': typeof OpdsUDidSubscriptionsRoute
   '/opds/u/$did/unread': typeof OpdsUDidUnreadRoute
-  '/site/p/$did/$rkey': typeof SitePDidRkeyRoute
   '/kosync/syncs/progress/': typeof KosyncSyncsProgressIndexRoute
   '/opds/u/$did/': typeof OpdsUDidIndexRoute
   '/api/auth/atproto/review/callback': typeof ApiAuthAtprotoReviewCallbackRoute
@@ -1153,7 +1132,6 @@ export interface FileRoutesByTo {
   '/privacy/extension': typeof LayoutPrivacyExtensionRoute
   '/settings/blocks': typeof LayoutSettingsBlocksRoute
   '/settings/muted': typeof LayoutSettingsMutedRoute
-  '/settings/site': typeof LayoutSettingsSiteRoute
   '/tag/$tag': typeof LayoutTagTagRoute
   '/topics/$slug': typeof LayoutTopicsSlugRoute
   '/u/$did': typeof LayoutUDidRoute
@@ -1190,7 +1168,6 @@ export interface FileRoutesByTo {
   '/kosync/users/auth': typeof KosyncUsersAuthRoute
   '/kosync/users/create': typeof KosyncUsersCreateRoute
   '/opds/tag/$tag': typeof OpdsTagTagRoute
-  '/site/u/$did': typeof SiteUDidRoute
   '/subscribe-login/$did/$rkey': typeof SubscribeLoginDidRkeyRoute
   '/subscribe/$did/$rkey': typeof SubscribeDidRkeyRoute
   '/guide': typeof GuideLayoutGuideIndexRoute
@@ -1230,7 +1207,6 @@ export interface FileRoutesByTo {
   '/opds/u/$did/saved': typeof OpdsUDidSavedRoute
   '/opds/u/$did/subscriptions': typeof OpdsUDidSubscriptionsRoute
   '/opds/u/$did/unread': typeof OpdsUDidUnreadRoute
-  '/site/p/$did/$rkey': typeof SitePDidRkeyRoute
   '/kosync/syncs/progress': typeof KosyncSyncsProgressIndexRoute
   '/opds/u/$did': typeof OpdsUDidIndexRoute
   '/api/auth/atproto/review/callback': typeof ApiAuthAtprotoReviewCallbackRoute
@@ -1306,7 +1282,6 @@ export interface FileRoutesById {
   '/_layout/privacy/extension': typeof LayoutPrivacyExtensionRoute
   '/_layout/settings/blocks': typeof LayoutSettingsBlocksRoute
   '/_layout/settings/muted': typeof LayoutSettingsMutedRoute
-  '/_layout/settings/site': typeof LayoutSettingsSiteRoute
   '/_layout/tag/$tag': typeof LayoutTagTagRoute
   '/_layout/topics/$slug': typeof LayoutTopicsSlugRoute
   '/_layout/u/$did': typeof LayoutUDidRoute
@@ -1343,7 +1318,6 @@ export interface FileRoutesById {
   '/kosync/users/auth': typeof KosyncUsersAuthRoute
   '/kosync/users/create': typeof KosyncUsersCreateRoute
   '/opds/tag/$tag': typeof OpdsTagTagRoute
-  '/site/u/$did': typeof SiteUDidRoute
   '/subscribe-login/$did/$rkey': typeof SubscribeLoginDidRkeyRoute
   '/subscribe/$did/$rkey': typeof SubscribeDidRkeyRoute
   '/_guide-layout/guide/': typeof GuideLayoutGuideIndexRoute
@@ -1383,7 +1357,6 @@ export interface FileRoutesById {
   '/opds/u/$did/saved': typeof OpdsUDidSavedRoute
   '/opds/u/$did/subscriptions': typeof OpdsUDidSubscriptionsRoute
   '/opds/u/$did/unread': typeof OpdsUDidUnreadRoute
-  '/site/p/$did/$rkey': typeof SitePDidRkeyRoute
   '/kosync/syncs/progress/': typeof KosyncSyncsProgressIndexRoute
   '/opds/u/$did/': typeof OpdsUDidIndexRoute
   '/api/auth/atproto/review/callback': typeof ApiAuthAtprotoReviewCallbackRoute
@@ -1457,7 +1430,6 @@ export interface FileRouteTypes {
     | '/privacy/extension'
     | '/settings/blocks'
     | '/settings/muted'
-    | '/settings/site'
     | '/tag/$tag'
     | '/topics/$slug'
     | '/u/$did'
@@ -1494,7 +1466,6 @@ export interface FileRouteTypes {
     | '/kosync/users/auth'
     | '/kosync/users/create'
     | '/opds/tag/$tag'
-    | '/site/u/$did'
     | '/subscribe-login/$did/$rkey'
     | '/subscribe/$did/$rkey'
     | '/guide/'
@@ -1534,7 +1505,6 @@ export interface FileRouteTypes {
     | '/opds/u/$did/saved'
     | '/opds/u/$did/subscriptions'
     | '/opds/u/$did/unread'
-    | '/site/p/$did/$rkey'
     | '/kosync/syncs/progress/'
     | '/opds/u/$did/'
     | '/api/auth/atproto/review/callback'
@@ -1605,7 +1575,6 @@ export interface FileRouteTypes {
     | '/privacy/extension'
     | '/settings/blocks'
     | '/settings/muted'
-    | '/settings/site'
     | '/tag/$tag'
     | '/topics/$slug'
     | '/u/$did'
@@ -1642,7 +1611,6 @@ export interface FileRouteTypes {
     | '/kosync/users/auth'
     | '/kosync/users/create'
     | '/opds/tag/$tag'
-    | '/site/u/$did'
     | '/subscribe-login/$did/$rkey'
     | '/subscribe/$did/$rkey'
     | '/guide'
@@ -1682,7 +1650,6 @@ export interface FileRouteTypes {
     | '/opds/u/$did/saved'
     | '/opds/u/$did/subscriptions'
     | '/opds/u/$did/unread'
-    | '/site/p/$did/$rkey'
     | '/kosync/syncs/progress'
     | '/opds/u/$did'
     | '/api/auth/atproto/review/callback'
@@ -1757,7 +1724,6 @@ export interface FileRouteTypes {
     | '/_layout/privacy/extension'
     | '/_layout/settings/blocks'
     | '/_layout/settings/muted'
-    | '/_layout/settings/site'
     | '/_layout/tag/$tag'
     | '/_layout/topics/$slug'
     | '/_layout/u/$did'
@@ -1794,7 +1760,6 @@ export interface FileRouteTypes {
     | '/kosync/users/auth'
     | '/kosync/users/create'
     | '/opds/tag/$tag'
-    | '/site/u/$did'
     | '/subscribe-login/$did/$rkey'
     | '/subscribe/$did/$rkey'
     | '/_guide-layout/guide/'
@@ -1834,7 +1799,6 @@ export interface FileRouteTypes {
     | '/opds/u/$did/saved'
     | '/opds/u/$did/subscriptions'
     | '/opds/u/$did/unread'
-    | '/site/p/$did/$rkey'
     | '/kosync/syncs/progress/'
     | '/opds/u/$did/'
     | '/api/auth/atproto/review/callback'
@@ -1904,7 +1868,6 @@ export interface RootRouteChildren {
   KosyncUsersAuthRoute: typeof KosyncUsersAuthRoute
   KosyncUsersCreateRoute: typeof KosyncUsersCreateRoute
   OpdsTagTagRoute: typeof OpdsTagTagRoute
-  SiteUDidRoute: typeof SiteUDidRoute
   SubscribeLoginDidRkeyRoute: typeof SubscribeLoginDidRkeyRoute
   SubscribeDidRkeyRoute: typeof SubscribeDidRkeyRoute
   ApiAuthAtprotoAuthorizeRoute: typeof ApiAuthAtprotoAuthorizeRoute
@@ -1934,7 +1897,6 @@ export interface RootRouteChildren {
   OpdsUDidSavedRoute: typeof OpdsUDidSavedRoute
   OpdsUDidSubscriptionsRoute: typeof OpdsUDidSubscriptionsRoute
   OpdsUDidUnreadRoute: typeof OpdsUDidUnreadRoute
-  SitePDidRkeyRoute: typeof SitePDidRkeyRoute
   KosyncSyncsProgressIndexRoute: typeof KosyncSyncsProgressIndexRoute
   OpdsUDidIndexRoute: typeof OpdsUDidIndexRoute
   ApiAuthAtprotoReviewCallbackRoute: typeof ApiAuthAtprotoReviewCallbackRoute
@@ -2454,13 +2416,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutSettingsMutedRouteImport
       parentRoute: typeof LayoutRoute
     }
-    '/_layout/settings/site': {
-      id: '/_layout/settings/site'
-      path: '/settings/site'
-      fullPath: '/settings/site'
-      preLoaderRoute: typeof LayoutSettingsSiteRouteImport
-      parentRoute: typeof LayoutRoute
-    }
     '/_layout/tag/$tag': {
       id: '/_layout/tag/$tag'
       path: '/tag/$tag'
@@ -2720,13 +2675,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OpdsTagTagRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/site/u/$did': {
-      id: '/site/u/$did'
-      path: '/site/u/$did'
-      fullPath: '/site/u/$did'
-      preLoaderRoute: typeof SiteUDidRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/subscribe-login/$did/$rkey': {
       id: '/subscribe-login/$did/$rkey'
       path: '/subscribe-login/$did/$rkey'
@@ -2972,13 +2920,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OpdsUDidUnreadRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/site/p/$did/$rkey': {
-      id: '/site/p/$did/$rkey'
-      path: '/site/p/$did/$rkey'
-      fullPath: '/site/p/$did/$rkey'
-      preLoaderRoute: typeof SitePDidRkeyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/auth/atproto/review/callback': {
       id: '/api/auth/atproto/review/callback'
       path: '/api/auth/atproto/review/callback'
@@ -3101,7 +3042,6 @@ interface LayoutRouteChildren {
   LayoutLabelersDidRoute: typeof LayoutLabelersDidRoute
   LayoutSettingsBlocksRoute: typeof LayoutSettingsBlocksRoute
   LayoutSettingsMutedRoute: typeof LayoutSettingsMutedRoute
-  LayoutSettingsSiteRoute: typeof LayoutSettingsSiteRoute
   LayoutTagTagRoute: typeof LayoutTagTagRoute
   LayoutTopicsSlugRoute: typeof LayoutTopicsSlugRoute
   LayoutUDidRoute: typeof LayoutUDidRoute
@@ -3133,7 +3073,6 @@ const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutLabelersDidRoute: LayoutLabelersDidRoute,
   LayoutSettingsBlocksRoute: LayoutSettingsBlocksRoute,
   LayoutSettingsMutedRoute: LayoutSettingsMutedRoute,
-  LayoutSettingsSiteRoute: LayoutSettingsSiteRoute,
   LayoutTagTagRoute: LayoutTagTagRoute,
   LayoutTopicsSlugRoute: LayoutTopicsSlugRoute,
   LayoutUDidRoute: LayoutUDidRoute,
@@ -3215,7 +3154,6 @@ const rootRouteChildren: RootRouteChildren = {
   KosyncUsersAuthRoute: KosyncUsersAuthRoute,
   KosyncUsersCreateRoute: KosyncUsersCreateRoute,
   OpdsTagTagRoute: OpdsTagTagRoute,
-  SiteUDidRoute: SiteUDidRoute,
   SubscribeLoginDidRkeyRoute: SubscribeLoginDidRkeyRoute,
   SubscribeDidRkeyRoute: SubscribeDidRkeyRoute,
   ApiAuthAtprotoAuthorizeRoute: ApiAuthAtprotoAuthorizeRoute,
@@ -3249,7 +3187,6 @@ const rootRouteChildren: RootRouteChildren = {
   OpdsUDidSavedRoute: OpdsUDidSavedRoute,
   OpdsUDidSubscriptionsRoute: OpdsUDidSubscriptionsRoute,
   OpdsUDidUnreadRoute: OpdsUDidUnreadRoute,
-  SitePDidRkeyRoute: SitePDidRkeyRoute,
   KosyncSyncsProgressIndexRoute: KosyncSyncsProgressIndexRoute,
   OpdsUDidIndexRoute: OpdsUDidIndexRoute,
   ApiAuthAtprotoReviewCallbackRoute: ApiAuthAtprotoReviewCallbackRoute,

@@ -15,8 +15,8 @@
  */
 
 import type { Client } from "@atcute/client";
+import type { LabelVisibility } from "@standard-reader/db/schema/labels.ts";
 
-import type { LabelVisibility } from "#/db/schema/labels";
 import { subscriptionLabelPrefs } from "#/lib/labeler-subscription";
 
 /** A reader's labeler setup as declared in their Bluesky preferences. */

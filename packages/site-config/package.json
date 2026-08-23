@@ -1,0 +1,21 @@
+{
+  "name": "@standard-reader/site-config",
+  "version": "0.1.0",
+  "description": "The `app.standard-reader.site` record, normalized. Shared by the reader's ingester (record \u2192 row) and Standard Writer (row \u2192 rendered site).",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./config": "./src/config.ts",
+    "./styles": "./src/styles.ts",
+    "./url": "./src/url.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.2",
+    "vitest": "^4.1.5"
+  }
+}
