@@ -347,7 +347,22 @@ function attachSessionEventLogging(
   });
 }
 
-function getAtprotoOAuth(
+/**
+ * The OAuth client for `kind`, constructed on first use and cached forever.
+ *
+ * Construction is deliberately lazy: {@link createOAuthClient} resolves the
+ * client_id/redirect_uri from {@link getBaseUrl} (which throws without
+ * `PUBLIC_URL`) and, for the confidential client, reads
+ * `ATPROTO_PRIVATE_KEY_JWK`. Building at module scope would run all of that on
+ * any import of this module — tests, scripts, build-time route analysis — and
+ * would freeze the per-deployment preview domain at import time instead of
+ * request time. Call this inside a handler, never at module scope.
+ *
+ * The cache is not just an optimization: the client owns the session-deletion
+ * listener attached by {@link attachSessionEventLogging} plus in-memory lock
+ * and DPoP nonce state, so a second instance would double-log and re-handshake.
+ */
+export function getAtprotoOAuth(
   kind: AtprotoOAuthClientKind = "default",
 ): InstanceType<typeof OAuthClient> {
   if (kind === "review") {
@@ -364,23 +379,6 @@ function getAtprotoOAuth(
   }
   return _atprotoOAuth;
 }
-
-export const atprotoOAuth = new Proxy({} as InstanceType<typeof OAuthClient>, {
-  get(_target, prop) {
-    return getAtprotoOAuth()[prop as keyof InstanceType<typeof OAuthClient>];
-  },
-});
-
-export const atprotoReviewOAuth = new Proxy(
-  {} as InstanceType<typeof OAuthClient>,
-  {
-    get(_target, prop) {
-      return getAtprotoOAuth("review")[
-        prop as keyof InstanceType<typeof OAuthClient>
-      ];
-    },
-  },
-);
 
 export async function restoreAtprotoSession(
   did: Did,

@@ -6,8 +6,7 @@ import { eq } from "drizzle-orm";
 import { z } from "zod";
 
 import {
-  atprotoOAuth,
-  atprotoReviewOAuth,
+  getAtprotoOAuth,
   revokeAtprotoSession,
 } from "#/integrations/auth/atproto";
 import type { AuthScopeIntent } from "#/integrations/auth/scope";
@@ -410,7 +409,7 @@ const authorize = createServerFn({ method: "GET" })
       },
     );
 
-    const { url } = await atprotoOAuth.authorize({
+    const { url } = await getAtprotoOAuth().authorize({
       target: {
         type: "account",
         identifier: handle,
@@ -438,7 +437,7 @@ const signup = createServerFn({ method: "GET" })
       request.url,
     );
 
-    const { url } = await atprotoOAuth.authorize({
+    const { url } = await getAtprotoOAuth().authorize({
       prompt: "create",
       target: {
         type: "pds",
@@ -522,7 +521,7 @@ const upgradeToCollections = createServerFn({ method: "POST" })
       request.url,
     );
 
-    const { url } = await atprotoOAuth.authorize({
+    const { url } = await getAtprotoOAuth().authorize({
       target: {
         type: "account",
         identifier: reader.did as ActorIdentifier,
@@ -567,7 +566,7 @@ const upgradeToAtstoreReview = createServerFn({ method: "POST" })
       request.url,
     );
 
-    const { url } = await atprotoReviewOAuth.authorize({
+    const { url } = await getAtprotoOAuth("review").authorize({
       target: {
         type: "account",
         identifier: reader.did as ActorIdentifier,
@@ -644,7 +643,7 @@ const upgradeToUserinputFeedback = createServerFn({ method: "POST" })
       request.url,
     );
 
-    const { url } = await atprotoOAuth.authorize({
+    const { url } = await getAtprotoOAuth().authorize({
       target: {
         type: "account",
         identifier: reader.did as ActorIdentifier,
@@ -706,7 +705,7 @@ const upgradeToMargin = createServerFn({ method: "POST" })
       request.url,
     );
 
-    const { url } = await atprotoOAuth.authorize({
+    const { url } = await getAtprotoOAuth().authorize({
       target: {
         type: "account",
         identifier: reader.did as ActorIdentifier,
@@ -765,7 +764,7 @@ const upgradeToBlocking = createServerFn({ method: "POST" })
       request.url,
     );
 
-    const { url } = await atprotoOAuth.authorize({
+    const { url } = await getAtprotoOAuth().authorize({
       target: {
         type: "account",
         identifier: reader.did as ActorIdentifier,
@@ -818,7 +817,7 @@ const upgradeToMuting = createServerFn({ method: "POST" })
       request.url,
     );
 
-    const { url } = await atprotoOAuth.authorize({
+    const { url } = await getAtprotoOAuth().authorize({
       target: {
         type: "account",
         identifier: reader.did as ActorIdentifier,
@@ -873,7 +872,7 @@ const upgradeToSemble = createServerFn({ method: "POST" })
       request.url,
     );
 
-    const { url } = await atprotoOAuth.authorize({
+    const { url } = await getAtprotoOAuth().authorize({
       target: {
         type: "account",
         identifier: reader.did as ActorIdentifier,
@@ -936,7 +935,7 @@ const upgradeToWeeklyDigest = createServerFn({ method: "POST" })
       request.url,
     );
 
-    const { url } = await atprotoOAuth.authorize({
+    const { url } = await getAtprotoOAuth().authorize({
       target: {
         type: "account",
         identifier: reader.did as ActorIdentifier,
