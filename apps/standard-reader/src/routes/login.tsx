@@ -55,7 +55,7 @@ import { UserHandleAutocomplete } from "../components/user-handle-autocomplete";
 
 const searchSchema = z.object({
   redirect: z.string().optional(),
-  intent: z.enum(["subscribe"]).optional(),
+  intent: z.enum(["subscribe", "follow"]).optional(),
   loginSuccess: z.union([z.string(), z.boolean()]).optional(),
   handle: z.string().optional(),
   avatar: z.string().optional(),
@@ -165,6 +165,7 @@ export const Route = createFileRoute("/login")({
               redirect: (location.search as Record<string, string>)["redirect"],
               intent: (location.search as Record<string, string>)["intent"] as
                 | "subscribe"
+                | "follow"
                 | undefined,
             },
           }),
@@ -300,6 +301,11 @@ function AuthPage() {
                 {intent === "subscribe" ? (
                   <Trans>
                     Sign in with Bluesky to subscribe. We only ask permission to
+                    add this follow to your account.
+                  </Trans>
+                ) : intent === "follow" ? (
+                  <Trans>
+                    Sign in with Bluesky to follow. We only ask permission to
                     add this follow to your account.
                   </Trans>
                 ) : (

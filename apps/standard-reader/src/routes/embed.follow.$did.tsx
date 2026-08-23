@@ -4,17 +4,13 @@ import { createFileRoute, notFound } from "@tanstack/react-router";
 import { z } from "zod";
 
 import { EmbedResizeReporter } from "#/components/reader/embed-resize";
-import { publicationUriFromParams } from "#/components/reader/format";
-import { SubscribeCard } from "#/components/reader/subscribe-card";
-import { publicationThemeColors } from "#/components/reader/subscribe-card-theme";
-import { publicationApi } from "#/integrations/tanstack-query/api-publication.functions";
+import { FollowCard } from "#/components/reader/follow-card";
+import { authorApi } from "#/integrations/tanstack-query/api-author.functions";
+import { followEmbedColors, followPageUrl } from "#/lib/author-embed";
+import { embedPageBackgroundCss } from "#/lib/embed-snippet";
 import { getPublicUrlClient } from "#/lib/public-url";
-import {
-  subscribeEmbedPageBackgroundCss,
-  subscribePageUrl,
-} from "#/lib/publication-embed";
 
-const embedSubscribeSearchSchema = z.object({
+const embedFollowSearchSchema = z.object({
   layout: z.enum(["portrait"]).optional(),
 });
 
@@ -27,13 +23,12 @@ const styles = stylex.create({
   },
 });
 
-export const Route = createFileRoute("/embed/subscribe/$did/$rkey")({
+export const Route = createFileRoute("/embed/follow/$did")({
   ssr: false,
-  validateSearch: embedSubscribeSearchSchema,
+  validateSearch: embedFollowSearchSchema,
   loader: async ({ context, params }) => {
-    const uri = publicationUriFromParams(params.did, params.rkey);
     const meta = await context.queryClient.ensureQueryData(
-      publicationApi.getPublicationEmbedMetaQueryOptions(uri),
+      authorApi.getAuthorEmbedMetaQueryOptions(params.did),
     );
     if (!meta) {
       throw notFound();
@@ -42,42 +37,37 @@ export const Route = createFileRoute("/embed/subscribe/$did/$rkey")({
   },
   head: ({ loaderData }) => {
     const meta = loaderData?.meta;
-    const name = meta?.name;
-    const background = meta
-      ? publicationThemeColors(meta).background
-      : "#f9f7f2";
+    const name = meta?.displayName ?? meta?.handle ?? null;
     return {
       meta: [
-        { title: name ? `Subscribe to ${name}` : "Subscribe" },
+        { title: name ? `Follow ${name}` : "Follow" },
         { name: "robots", content: "noindex" },
       ],
       styles: [
         {
           type: "text/css",
-          children: subscribeEmbedPageBackgroundCss(background),
+          children: embedPageBackgroundCss(followEmbedColors().background),
         },
       ],
     };
   },
-  component: EmbedSubscribePage,
+  component: EmbedFollowPage,
 });
 
-function EmbedSubscribePage() {
-  const { did, rkey } = Route.useParams();
+function EmbedFollowPage() {
   const { layout: layoutSearch } = Route.useSearch();
   const { meta } = Route.useLoaderData();
   const layout = layoutSearch === "portrait" ? "portrait" : "landscape";
-  useSuspenseQuery(
-    publicationApi.getPublicationEmbedMetaQueryOptions(meta.uri),
-  );
+  useSuspenseQuery(authorApi.getAuthorEmbedMetaQueryOptions(meta.did));
 
-  const subscribeHref = subscribePageUrl({
-    did,
-    rkey,
+  // Keyed by the resolved DID, not the route param: the snippet may have been
+  // generated from a handle, and handles change.
+  const followHref = followPageUrl({
+    did: meta.did,
     baseUrl: getPublicUrlClient(),
   });
-  const colors = publicationThemeColors(meta);
-  const pageBackgroundCss = subscribeEmbedPageBackgroundCss(colors.background);
+  const colors = followEmbedColors();
+  const pageBackgroundCss = embedPageBackgroundCss(colors.background);
 
   return (
     <>
@@ -86,11 +76,11 @@ function EmbedSubscribePage() {
         data-embed-card
         style={{ backgroundColor: colors.background }}
       >
-        <EmbedResizeReporter kind="subscribe" />
-        <SubscribeCard
+        <EmbedResizeReporter kind="follow" />
+        <FollowCard
           meta={meta}
           phase="embed"
-          subscribeHref={subscribeHref}
+          followHref={followHref}
           layout={layout}
         />
       </main>

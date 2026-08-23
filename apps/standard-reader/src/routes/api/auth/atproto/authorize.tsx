@@ -7,7 +7,7 @@ const searchSchema = z.object({
   redirect: z.string().optional(),
   handle: z.string().optional(),
   did: z.string().optional(),
-  intent: z.enum(["subscribe", "collections"]).optional(),
+  intent: z.enum(["subscribe", "collections", "follow"]).optional(),
 });
 
 export const Route = createFileRoute("/api/auth/atproto/authorize")({

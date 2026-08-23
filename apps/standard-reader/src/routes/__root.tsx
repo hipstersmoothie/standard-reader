@@ -92,10 +92,13 @@ html[data-theme="custom"][data-palette-scheme="dark"] { color-scheme: dark; }
 `.trim();
 
 /** Tag embed routes before paint (themed background comes from the embed route head). */
-const EMBED_SUBSCRIBE_PATH_SCRIPT = `
+const EMBED_CARD_PATH_SCRIPT = `
 (function () {
-  if (location.pathname.startsWith("/embed/subscribe/")) {
+  var p = location.pathname;
+  if (p.startsWith("/embed/subscribe/")) {
     document.documentElement.dataset.embed = "subscribe";
+  } else if (p.startsWith("/embed/follow/")) {
+    document.documentElement.dataset.embed = "follow";
   }
 })();
 `.trim();
@@ -300,15 +303,30 @@ function isEmbedPath(pathname: string): boolean {
   return pathname.startsWith("/embed/");
 }
 
-function isSubscribeEmbedPath(pathname: string): boolean {
-  return pathname.startsWith("/embed/subscribe/");
+/**
+ * The embed *card* routes — the publication subscribe embed and the author
+ * follow embed. They shed the app chrome and the reader's own appearance
+ * settings: the card paints in its subject's palette inside someone else's page.
+ */
+function isEmbedCardPath(pathname: string): boolean {
+  return (
+    pathname.startsWith("/embed/subscribe/") ||
+    pathname.startsWith("/embed/follow/")
+  );
+}
+
+/** `<html data-embed>` value for an embed card route, matching the pre-paint script. */
+function embedCardKind(pathname: string): "subscribe" | "follow" | undefined {
+  if (pathname.startsWith("/embed/subscribe/")) return "subscribe";
+  if (pathname.startsWith("/embed/follow/")) return "follow";
+  return undefined;
 }
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   });
-  const isSubscribeEmbed = isSubscribeEmbedPath(pathname);
+  const isEmbedCard = isEmbedCardPath(pathname);
   const { data: themePreference } = useQuery({
     ...user.getThemePreferenceQueryOptions,
     refetchOnMount: false,
@@ -389,7 +407,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       data-theme={themeMode}
       data-palette-scheme={isCustomTheme ? paletteScheme : undefined}
       data-theme-color={isCustomTheme ? themeColor : undefined}
-      data-embed={isSubscribeEmbed ? "subscribe" : undefined}
+      data-embed={embedCardKind(pathname)}
       // The spacing / radius / control-size themes belong HERE, not on <body>.
       // The semantic scales are declared as `--gap-md: var(--spacing-2)` at
       // `:root`, and a custom property's value is resolved on the element that
@@ -398,8 +416,8 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       // `horizontalSpace` and `verticalSpace` keeps the value it already
       // computed at the root. Applied on the same element, the override lands
       // before those scales resolve and the whole spacing system moves with it.
-      {...stylex.props(isSubscribeEmbed ? undefined : APPEARANCE_SCALE_THEMES)}
-      style={isSubscribeEmbed ? undefined : appearanceVars}
+      {...stylex.props(isEmbedCard ? undefined : APPEARANCE_SCALE_THEMES)}
+      style={isEmbedCard ? undefined : appearanceVars}
       suppressHydrationWarning
     >
       <head>
@@ -422,15 +440,13 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         ) : null}
         <style dangerouslySetInnerHTML={{ __html: TEXT_SCALE_CSS }} />
         <style dangerouslySetInnerHTML={{ __html: COLOR_SCHEME_CSS }} />
-        <script
-          dangerouslySetInnerHTML={{ __html: EMBED_SUBSCRIBE_PATH_SCRIPT }}
-        />
+        <script dangerouslySetInnerHTML={{ __html: EMBED_CARD_PATH_SCRIPT }} />
         <script dangerouslySetInnerHTML={{ __html: RESOLVED_SCHEME_SCRIPT }} />
         <HeadContent />
       </head>
       <body
         {...stylex.props(
-          isSubscribeEmbed
+          isEmbedCard
             ? rootStyles.embedShellBody
             : [
                 // One theme per token group: the palette replaces the editorial

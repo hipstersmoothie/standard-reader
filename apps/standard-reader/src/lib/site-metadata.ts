@@ -172,6 +172,11 @@ export const PAGE_OG_CARDS = {
     tagline:
       "Put your unread queue on a Kobo, Kindle or phone as real EPUB files.",
   },
+  guideEmbeds: {
+    path: "/guide/embeds",
+    title: "Embed buttons",
+    tagline: "Put a subscribe or follow button for your work on your own site.",
+  },
   guideComics: {
     path: "/guide/comics",
     title: "Publishing a comic",
