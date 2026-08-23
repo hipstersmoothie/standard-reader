@@ -28,6 +28,7 @@ import {
 import { useState } from "react";
 
 import { MenuItemLink } from "#/components/router-links";
+import type { AuthorEmbedMeta } from "#/integrations/tanstack-query/api-author.functions";
 import { authorApi } from "#/integrations/tanstack-query/api-author.functions";
 import type { FollowingUser } from "#/integrations/tanstack-query/api-feed.functions";
 import { listApi } from "#/integrations/tanstack-query/api-lists.functions";
@@ -169,6 +170,7 @@ export function AuthorActions({
   signedIn,
   isOwnProfile,
   user,
+  embed,
   onOpenSettings,
 }: {
   did: string;
@@ -181,12 +183,18 @@ export function AuthorActions({
   isOwnProfile: boolean;
   /** Byline for the optimistic sidebar "People" row when following. */
   user: FollowingUser;
+  /**
+   * Identity for the "Embed follow" snippet — the author counterpart to the
+   * publication hero's subscribe embed. Built from the profile the page already
+   * loaded, so opening the menu costs no extra round trip.
+   */
+  embed: AuthorEmbedMeta;
   onOpenSettings: () => void;
 }) {
   const { t } = useLingui();
   const loginSearch = useLoginSearch();
   const queryClient = useQueryClient();
-  const share = useShareActions({ pageUrl });
+  const share = useShareActions({ pageUrl, authorEmbed: embed });
   const [rssOpen, setRssOpen] = useState(false);
   const [blockOpen, setBlockOpen] = useState(false);
   const [muteOpen, setMuteOpen] = useState(false);
@@ -359,6 +367,8 @@ export function AuthorActions({
         isOpen={rssOpen}
         onOpenChange={setRssOpen}
       />
+
+      {share.embedDialog}
 
       {/* Outside `<Menu>`, like the RSS dialog above: a dialog rendered inside
           the menu unmounts with the popover the moment the item is pressed. */}

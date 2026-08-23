@@ -254,6 +254,7 @@ export const GUIDE_SECTIONS: Record<GuideArea, ReadonlyArray<GuideSection>> = {
     { id: "overview", label: msg`Overview` },
     { id: "discovery", label: msg`Discovery` },
     { id: "subscribe-embed", label: msg`Subscribe embed` },
+    { id: "follow-embed", label: msg`Follow embed` },
     {
       id: "inline-reading",
       label: msg`Rendering content in Standard Reader`,

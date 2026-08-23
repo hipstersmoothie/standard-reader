@@ -762,6 +762,13 @@ function AuthorProfileContent({
                 avatarUrl: profile.avatarUrl ?? null,
                 followedAt: new Date().toISOString(),
               }}
+              embed={{
+                did,
+                handle: profile.handle,
+                displayName: profile.displayName ?? null,
+                description: profile.description ?? null,
+                avatarUrl: profile.avatarUrl ?? null,
+              }}
               onOpenSettings={() => setSettingsOpen(true)}
             />
           </div>

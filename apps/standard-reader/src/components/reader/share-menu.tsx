@@ -31,21 +31,36 @@ import {
 import { SmallBody } from "@standard-reader/design-system/typography";
 import * as stylex from "@stylexjs/stylex";
 import { Code, Link as LinkIcon, Share2 } from "lucide-react";
+import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 import type { Key } from "react-aria-components";
 
+import type { AuthorEmbedMeta } from "#/integrations/tanstack-query/api-author.functions";
 import type { PublicationEmbedMeta } from "#/integrations/tanstack-query/api-publication.functions";
+import {
+  buildFollowAnchorSnippet,
+  buildFollowEmbedSnippet,
+  estimateFollowEmbedHeight,
+  followEmbedBackgroundColor,
+  followEmbedIframeId,
+  followEmbedUrl,
+  followPageUrl,
+} from "#/lib/author-embed";
+import type { EmbedCardLayout, EmbedCardTab } from "#/lib/embed-snippet";
 import { shareLinkUrl, useNativeShareAvailable } from "#/lib/native-share";
 import { getPublicUrlClient } from "#/lib/public-url";
-import type { SubscribeEmbedTab } from "#/lib/publication-embed";
 import {
   buildSubscribeAnchorSnippet,
   buildSubscribeEmbedSnippet,
+  estimateSubscribeEmbedHeight,
+  subscribeEmbedBackgroundColor,
+  subscribeEmbedIframeId,
+  subscribeEmbedUrl,
   subscribePageUrl,
 } from "#/lib/publication-embed";
 import { buildBlueskyComposeUrl } from "#/lib/quote-share";
 
-import { SubscribeEmbedPreview } from "./subscribe-embed-preview";
+import { EmbedCardPreview } from "./embed-preview";
 
 const styles = stylex.create({
   dialogTitle: {
@@ -111,25 +126,145 @@ const styles = stylex.create({
 });
 
 /**
+ * Everything the embed dialog needs about its subject, so the dialog itself is
+ * the same control for a publication's subscribe card and an author's follow
+ * card. Built by {@link useShareActions} from whichever meta it was handed.
+ */
+interface EmbedDialogSubject {
+  kind: "subscribe" | "follow";
+  /** Anchor destination for the "Link" tab, and its rendered label. */
+  linkHref: string;
+  linkLabel: ReactNode;
+  iframeId: string;
+  iframeTitle: string;
+  backgroundColor: string;
+  previewUrl: (layout: EmbedCardLayout) => string;
+  estimateHeight: (layout: EmbedCardLayout) => number;
+  snippet: (tab: EmbedCardTab) => string;
+}
+
+function publicationEmbedSubject(
+  embed: PublicationEmbedMeta,
+  baseUrl: string,
+): EmbedDialogSubject {
+  const heightMeta = {
+    name: embed.name,
+    topic: embed.topic,
+    ownerDisplayName: embed.ownerDisplayName,
+    ownerHandle: embed.ownerHandle,
+    description: embed.description,
+  };
+  return {
+    kind: "subscribe",
+    linkHref: subscribePageUrl({ did: embed.did, rkey: embed.rkey, baseUrl }),
+    linkLabel: <Trans>Subscribe to {embed.name}</Trans>,
+    iframeId: subscribeEmbedIframeId(embed.rkey),
+    iframeTitle: `Subscribe to ${embed.name}`,
+    backgroundColor: subscribeEmbedBackgroundColor(embed),
+    previewUrl: (layout) =>
+      subscribeEmbedUrl({ did: embed.did, rkey: embed.rkey, layout, baseUrl }),
+    estimateHeight: (layout) =>
+      estimateSubscribeEmbedHeight(heightMeta, layout),
+    snippet: (tab) =>
+      tab === "link"
+        ? buildSubscribeAnchorSnippet({
+            did: embed.did,
+            rkey: embed.rkey,
+            name: embed.name,
+            baseUrl,
+          })
+        : buildSubscribeEmbedSnippet({
+            did: embed.did,
+            rkey: embed.rkey,
+            name: embed.name,
+            topic: embed.topic,
+            ownerDisplayName: embed.ownerDisplayName,
+            ownerHandle: embed.ownerHandle,
+            description: embed.description,
+            layout: tab,
+            themeBackground: embed.themeBackground,
+            themeForeground: embed.themeForeground,
+            themeAccent: embed.themeAccent,
+            themeAccentForeground: embed.themeAccentForeground,
+            baseUrl,
+          }),
+  };
+}
+
+function authorEmbedSubject(
+  embed: AuthorEmbedMeta,
+  baseUrl: string,
+  name: string,
+): EmbedDialogSubject {
+  const heightMeta = {
+    displayName: embed.displayName,
+    handle: embed.handle,
+    description: embed.description,
+  };
+  return {
+    kind: "follow",
+    linkHref: followPageUrl({ did: embed.did, baseUrl }),
+    linkLabel: <Trans>Follow {name}</Trans>,
+    iframeId: followEmbedIframeId(embed.did),
+    iframeTitle: `Follow ${name}`,
+    backgroundColor: followEmbedBackgroundColor(),
+    previewUrl: (layout) => followEmbedUrl({ did: embed.did, layout, baseUrl }),
+    estimateHeight: (layout) => estimateFollowEmbedHeight(heightMeta, layout),
+    snippet: (tab) =>
+      tab === "link"
+        ? buildFollowAnchorSnippet({
+            did: embed.did,
+            displayName: embed.displayName,
+            handle: embed.handle,
+            baseUrl,
+          })
+        : buildFollowEmbedSnippet({
+            did: embed.did,
+            displayName: embed.displayName,
+            handle: embed.handle,
+            description: embed.description,
+            layout: tab,
+            baseUrl,
+          }),
+  };
+}
+
+/**
  * The share actions behind both the standalone {@link ShareMenu} and any
- * overflow menu that folds sharing in with other actions (the publication
- * hero's "more actions" menu). Owns the copied-state feedback and the embed
- * dialog so callers only render {@link ShareMenuItems} plus `embedDialog`.
+ * overflow menu that folds sharing in with other actions (the publication and
+ * author heroes' "more actions" menus). Owns the copied-state feedback and the
+ * embed dialog so callers only render {@link ShareMenuItems} plus `embedDialog`.
  */
 // eslint-disable-next-line react-refresh/only-export-components -- shares the menu's own state with overflow-menu callers
 export function useShareActions({
   pageUrl,
   embed,
+  authorEmbed,
 }: {
   pageUrl: string;
-  /** When set, the actions include a subscribe-embed snippet dialog. */
+  /** When set, the actions include a publication subscribe-embed dialog. */
   embed?: PublicationEmbedMeta;
+  /** When set, the actions include an author follow-embed dialog. */
+  authorEmbed?: AuthorEmbedMeta;
 }) {
+  const { t } = useLingui();
   const [embedOpen, setEmbedOpen] = useState(false);
   const [copied, setCopied] = useState<"link" | "embed" | "anchor" | null>(
     null,
   );
   const nativeShareAvailable = useNativeShareAvailable();
+  const baseUrl = getPublicUrlClient();
+  const authorName =
+    authorEmbed?.displayName?.trim() ||
+    authorEmbed?.handle?.trim() ||
+    t`this author`;
+
+  const subject = useMemo((): EmbedDialogSubject | null => {
+    if (embed) return publicationEmbedSubject(embed, baseUrl);
+    if (authorEmbed)
+      return authorEmbedSubject(authorEmbed, baseUrl, authorName);
+    return null;
+  }, [embed, authorEmbed, baseUrl, authorName]);
 
   const onCopyLink = async () => {
     await navigator.clipboard.writeText(pageUrl);
@@ -157,11 +292,12 @@ export function useShareActions({
     onCopyLink,
     onShareBluesky,
     onShareElsewhere,
-    hasEmbed: Boolean(embed),
+    hasEmbed: subject !== null,
+    embedKind: subject?.kind ?? null,
     openEmbed: () => setEmbedOpen(true),
-    embedDialog: embed ? (
+    embedDialog: subject ? (
       <ShareEmbedDialog
-        embed={embed}
+        subject={subject}
         isOpen={embedOpen}
         onOpenChange={setEmbedOpen}
         copied={copied}
@@ -203,13 +339,22 @@ export function ShareMenuItems({ share }: { share: ShareActions }) {
           <Trans>Share elsewhere</Trans>
         </MenuItem>
       ) : null}
-      {share.hasEmbed ? (
+      {share.embedKind === "subscribe" ? (
         <MenuItem
           onPress={share.openEmbed}
           suffix={<Code size={14} />}
           textValue={t`Embed subscribe`}
         >
           <Trans>Embed subscribe</Trans>
+        </MenuItem>
+      ) : null}
+      {share.embedKind === "follow" ? (
+        <MenuItem
+          onPress={share.openEmbed}
+          suffix={<Code size={14} />}
+          textValue={t`Embed follow`}
+        >
+          <Trans>Embed follow</Trans>
         </MenuItem>
       ) : null}
     </>
@@ -219,17 +364,20 @@ export function ShareMenuItems({ share }: { share: ShareActions }) {
 export function ShareMenu({
   pageUrl,
   embed,
+  authorEmbed,
   variant = "button",
   size = "md",
 }: {
   pageUrl: string;
   /** When set, the menu offers a subscribe embed snippet for this publication. */
   embed?: PublicationEmbedMeta;
+  /** When set, the menu offers a follow embed snippet for this author. */
+  authorEmbed?: AuthorEmbedMeta;
   variant?: "button" | "icon";
   size?: Size;
 }) {
   const { t } = useLingui();
-  const share = useShareActions({ pageUrl, embed });
+  const share = useShareActions({ pageUrl, embed, authorEmbed });
 
   const iconSize = size === "sm" ? 14 : 18;
 
@@ -255,13 +403,13 @@ export function ShareMenu({
 }
 
 function ShareEmbedDialog({
-  embed,
+  subject,
   isOpen,
   onOpenChange,
   copied,
   setCopied,
 }: {
-  embed: PublicationEmbedMeta;
+  subject: EmbedDialogSubject;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   copied: "link" | "embed" | "anchor" | null;
@@ -270,43 +418,12 @@ function ShareEmbedDialog({
   >;
 }) {
   const { t } = useLingui();
-  const [embedTab, setEmbedTab] = useState<SubscribeEmbedTab>("landscape");
+  const [embedTab, setEmbedTab] = useState<EmbedCardTab>("landscape");
 
-  const baseUrl = getPublicUrlClient();
-
-  const publicationName = embed.name;
-
-  const subscribeHref = subscribePageUrl({
-    did: embed.did,
-    rkey: embed.rkey,
-    baseUrl,
-  });
-
-  const embedSnippet = useMemo(() => {
-    if (embedTab === "link") {
-      return buildSubscribeAnchorSnippet({
-        did: embed.did,
-        rkey: embed.rkey,
-        name: embed.name,
-        baseUrl,
-      });
-    }
-    return buildSubscribeEmbedSnippet({
-      did: embed.did,
-      rkey: embed.rkey,
-      name: embed.name,
-      topic: embed.topic,
-      ownerDisplayName: embed.ownerDisplayName,
-      ownerHandle: embed.ownerHandle,
-      description: embed.description,
-      layout: embedTab,
-      themeBackground: embed.themeBackground,
-      themeForeground: embed.themeForeground,
-      themeAccent: embed.themeAccent,
-      themeAccentForeground: embed.themeAccentForeground,
-      baseUrl,
-    });
-  }, [embed, embedTab, baseUrl]);
+  const embedSnippet = useMemo(
+    () => subject.snippet(embedTab),
+    [subject, embedTab],
+  );
 
   const onEmbedTabChange = (keys: Set<Key>) => {
     const next = [...keys][0];
@@ -335,7 +452,11 @@ function ShareEmbedDialog({
     >
       <DialogHeader>
         <span {...stylex.props(styles.dialogTitle)}>
-          <Trans>Embed subscribe</Trans>
+          {subject.kind === "follow" ? (
+            <Trans>Embed follow</Trans>
+          ) : (
+            <Trans>Embed subscribe</Trans>
+          )}
         </span>
       </DialogHeader>
       <DialogBody style={styles.body}>
@@ -359,29 +480,38 @@ function ShareEmbedDialog({
           {embedTab === "link" ? (
             <div {...stylex.props(styles.linkPreviewPanel)}>
               <a
-                href={subscribeHref}
+                href={subject.linkHref}
                 target="_blank"
                 rel="noopener noreferrer"
                 {...stylex.props(styles.linkPreview)}
               >
-                <Trans>Subscribe to {publicationName}</Trans>
+                {subject.linkLabel}
               </a>
             </div>
           ) : (
-            <SubscribeEmbedPreview
-              meta={embed}
-              layout={embedTab}
-              baseUrl={baseUrl}
+            <EmbedCardPreview
+              src={subject.previewUrl(embedTab)}
+              iframeId={subject.iframeId}
+              title={subject.iframeTitle}
+              estimatedHeight={subject.estimateHeight(embedTab)}
+              backgroundColor={subject.backgroundColor}
             />
           )}
         </div>
         <Flex direction="column" gap="2xl" style={styles.snippetSection}>
           <SmallBody variant="secondary">
             {embedTab === "link" ? (
-              <Trans>
-                Add this anchor anywhere on your site and style it however you
-                like. It opens the subscribe flow when clicked.
-              </Trans>
+              subject.kind === "follow" ? (
+                <Trans>
+                  Add this anchor anywhere on your site and style it however you
+                  like. It opens the follow flow when clicked.
+                </Trans>
+              ) : (
+                <Trans>
+                  Add this anchor anywhere on your site and style it however you
+                  like. It opens the subscribe flow when clicked.
+                </Trans>
+              )
             ) : embedTab === "portrait" ? (
               <Trans>
                 Portrait stacks the card vertically. Height adjusts
@@ -397,9 +527,7 @@ function ShareEmbedDialog({
           </SmallBody>
           <textarea
             readOnly
-            aria-label={
-              embedTab === "link" ? t`Subscribe link code` : t`Embed code`
-            }
+            aria-label={embedTab === "link" ? t`Link code` : t`Embed code`}
             value={embedSnippet}
             {...stylex.props(styles.snippet)}
           />

@@ -28,7 +28,7 @@ import { getSavedHandles } from "#/utils/saved-handles";
 const authorizeInputSchema = z.object({
   handle: z.string().min(1, "Handle is required"),
   redirect: z.string().optional(),
-  intent: z.enum(["subscribe", "collections"]).optional(),
+  intent: z.enum(["subscribe", "collections", "follow"]).optional(),
   /** DID of the selected actor (from the handle autocomplete). When present
    * and the user has signed in before, the upgrade flag is read from their
    * `user` row so an existing collections author gets the collections scope
@@ -369,9 +369,11 @@ const authorize = createServerFn({ method: "GET" })
     const scopeIntent: AuthScopeIntent =
       data.intent === "subscribe"
         ? "subscribe"
-        : data.intent === "collections"
-          ? "collections"
-          : "basic";
+        : data.intent === "follow"
+          ? "follow"
+          : data.intent === "collections"
+            ? "collections"
+            : "basic";
 
     // Best-effort upgrade: if the user signed in before and either opted into
     // collections authoring (flag set) or has already granted the collections

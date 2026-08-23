@@ -150,6 +150,19 @@ export const collectionsScope = [
 export const subscribeScope = [ATPROTO_BASE_SCOPE, SITE_AUTH_SOCIAL];
 
 /**
+ * Minimal scope for the author follow embed. Following an account writes
+ * `app.standard-reader.graph.follow` (covered only by `authBasicFeatures`, the
+ * smallest published set containing it) and then materializes subscriptions to
+ * that account's publications, which needs `authSocial` as well — so this is
+ * the subscribe scope plus the app-owned reader-state set, and no more.
+ */
+export const followScope = [
+  ATPROTO_BASE_SCOPE,
+  AUTH_BASIC_FEATURES,
+  SITE_AUTH_SOCIAL,
+];
+
+/**
  * Every scope string we may request at authorize time. ATProto OAuth requires
  * each requested scope to appear in client metadata (a single-collection `repo`
  * scope is not treated as a subset of a multi-collection one; the same applies
@@ -164,6 +177,7 @@ export const clientMetadataScope = [
     ...basicScope,
     ...collectionsScope,
     ...subscribeScope,
+    ...followScope,
     USERINPUT_BASIC_SCOPE,
     MARGIN_FULL_SCOPE,
     SEMBLE_FULL_SCOPE,
@@ -181,12 +195,13 @@ export const atstoreReviewClientMetadataScope = [
   ...new Set([...clientMetadataScope, ATSTORE_REVIEW_SCOPE]),
 ];
 
-export type AuthScopeIntent = "basic" | "collections" | "subscribe";
+export type AuthScopeIntent = "basic" | "collections" | "subscribe" | "follow";
 
 const SCOPE_BY_INTENT: Record<AuthScopeIntent, Array<string>> = {
   basic: basicScope,
   collections: collectionsScope,
   subscribe: subscribeScope,
+  follow: followScope,
 };
 
 /** Serialize OAuth scope entries for the authorize request. */
@@ -226,8 +241,8 @@ export interface ScopeAddenda {
  * opted into collections authoring (the flag is set on their `user` row),
  * automatically upgrade to the collections tier so subsequent logins silently
  * include the expanded scopes. Explicit `intent: "collections"` (the upgrade
- * flow itself) and `intent: "subscribe"` (the subscribe embed) override the
- * flag.
+ * flow itself), `intent: "subscribe"` (the subscribe embed) and
+ * `intent: "follow"` (the author follow embed) override the flag.
  *
  * Each addendum scope (userinput, Margin, Semble) is appended when its
  * `user.*Enabled` flag is set OR the corresponding `addenda` entry is
@@ -239,8 +254,8 @@ export function resolveAuthScopeForUser(
   intent: AuthScopeIntent | undefined,
   addenda: ScopeAddenda = {},
 ): string {
-  if (intent === "subscribe") {
-    return formatOAuthScope(SCOPE_BY_INTENT.subscribe);
+  if (intent === "subscribe" || intent === "follow") {
+    return formatOAuthScope(SCOPE_BY_INTENT[intent]);
   }
   const base =
     intent === "collections" || user?.collectionsAuthoringEnabled === true

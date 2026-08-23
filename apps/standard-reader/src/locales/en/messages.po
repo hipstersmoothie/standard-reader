@@ -137,6 +137,10 @@ msgstr "Articles gaining attention across the network right now."
 msgid "{value, plural, one {# member} other {# members}}"
 msgstr "{value, plural, one {# member} other {# members}}"
 
+#: src/components/reader/follow-card.tsx
+msgid "You already follow {authorName}. Their writing shows up in your feed."
+msgstr "You already follow {authorName}. Their writing shows up in your feed."
+
 #: src/components/offline-sync-debug.tsx
 msgid "Cached responses"
 msgstr "Cached responses"
@@ -201,6 +205,12 @@ msgstr "The {SITE_NAME} browser extension helps you save articles and follow pub
 msgid "Topic areas the network's writing clusters into, rebuilt as it grows. Each one gathers related tags, the publications writing about them, and everything they've published."
 msgstr "Topic areas the network's writing clusters into, rebuilt as it grows. Each one gathers related tags, the publications writing about them, and everything they've published."
 
+#: src/components/reader/follow-card.tsx
+#: src/components/reader/share-menu.tsx
+#: src/routes/follow-login.$did.tsx
+msgid "this author"
+msgstr "this author"
+
 #: src/components/guide/pages/getting-started-guide-page.tsx
 msgid "find publications, people, topics, and headlines by name."
 msgstr "find publications, people, topics, and headlines by name."
@@ -238,6 +248,11 @@ msgstr "Muted"
 #: src/components/reader/terms-view.tsx
 msgid "Content and intellectual property"
 msgstr "Content and intellectual property"
+
+#: src/components/guide/pages/publishing-guide-page.tsx
+#: src/lib/guide/navigation.ts
+msgid "Follow embed"
+msgstr "Follow embed"
 
 #: src/components/reader/mute-menu-item.tsx
 msgid "Mute {name}?"
@@ -474,6 +489,10 @@ msgstr "The same article on a phone. Chrome gets out of the way as you read."
 #: src/components/docs/labelers-docs-page.tsx
 msgid "Further reading"
 msgstr "Further reading"
+
+#: src/components/reader/share-menu.tsx
+msgid "Follow {name}"
+msgstr "Follow {name}"
 
 #: src/components/reader/page-reader-bar.tsx
 msgid "Loading voice…"
@@ -947,6 +966,10 @@ msgstr "Terms"
 msgid "{count, plural, one {# tagged post} other {{value} tagged posts}}"
 msgstr "{count, plural, one {# tagged post} other {{value} tagged posts}}"
 
+#: src/components/reader/follow-card.tsx
+msgid "Adding {authorName} to your feed."
+msgstr "Adding {authorName} to your feed."
+
 #: src/routes/_layout.l.$did.$rkey.tsx
 msgid "This list is empty."
 msgstr "This list is empty."
@@ -1102,6 +1125,10 @@ msgstr "Public API — no key required"
 #: src/components/muted-settings-view.tsx
 msgid "Muted people"
 msgstr "Muted people"
+
+#: src/components/guide/pages/publishing-guide-page.tsx
+msgid "The same widget exists for <0>you</0>, not just your publications. Open your own profile on Standard Reader and use <1>the ⌄ menu → Embed follow</1> to get a card that follows your account — useful when your writing is spread across several publications, or when you post as yourself rather than under a masthead. Same three tabs (landscape, portrait, link), same auto- resizing iframe."
+msgstr "The same widget exists for <0>you</0>, not just your publications. Open your own profile on Standard Reader and use <1>the ⌄ menu → Embed follow</1> to get a card that follows your account — useful when your writing is spread across several publications, or when you post as yourself rather than under a masthead. Same three tabs (landscape, portrait, link), same auto- resizing iframe."
 
 #: src/components/reading-settings-preview.tsx
 msgid "Loading voice sample"
@@ -1264,6 +1291,10 @@ msgstr "Name"
 #: src/lib/guide/navigation.ts
 msgid "Setting it up"
 msgstr "Setting it up"
+
+#: src/components/reader/follow-card.tsx
+msgid "You're following"
+msgstr "You're following"
 
 #: src/components/reader/privacy-view.tsx
 msgid "Where data lives"
@@ -1595,6 +1626,10 @@ msgstr "No saved articles match"
 #: src/components/reader/about-view.tsx
 #~ msgid "Read the API docs"
 #~ msgstr "Read the API docs"
+
+#: src/routes/login.tsx
+msgid "Sign in with Bluesky to follow. We only ask permission to add this follow to your account."
+msgstr "Sign in with Bluesky to follow. We only ask permission to add this follow to your account."
 
 #: src/components/guide/pages/reading-guide-page.tsx
 msgid "Select <0>Listen</0> in the top bar and the article is read aloud. The first time takes a few seconds to warm up; after that it starts straight away."
@@ -2272,6 +2307,10 @@ msgstr "Notifications aren’t available here"
 msgid "Loading page"
 msgstr "Loading page"
 
+#: src/components/reader/follow-card.tsx
+msgid "That's you"
+msgstr "That's you"
+
 #: src/components/muted-settings-view.tsx
 msgid "You haven't muted any publications. Mute one from the menu on its page to hide its articles from your feeds while staying subscribed."
 msgstr "You haven't muted any publications. Mute one from the menu on its page to hide its articles from your feeds while staying subscribed."
@@ -2311,6 +2350,10 @@ msgstr "The <0>Reading</0> section governs article bodies only, on top of whatev
 #: src/components/reader/about-view.tsx
 msgid "Also read natively:"
 msgstr "Also read natively:"
+
+#: src/components/reader/follow-card.tsx
+msgid "{authorName} is in your feed. You'll see their writing as it publishes."
+msgstr "{authorName} is in your feed. You'll see their writing as it publishes."
 
 #. placeholder {0}: pub.name
 #: src/components/reader/article-below-fold.tsx
@@ -2965,6 +3008,10 @@ msgstr "Loading more"
 msgid "Readers"
 msgstr "Readers"
 
+#: src/routes/follow-login.$did.tsx
+msgid "Follow {authorName}"
+msgstr "Follow {authorName}"
+
 #: src/components/docs/renderers-docs-page.tsx
 #~ msgid "Walk the blocks, map each block type to your framework's primitive, and run text through <0>segmentInline</0> to render marks, links, mentions and footnote references. The existing renderers are the reference implementations."
 #~ msgstr "Walk the blocks, map each block type to your framework's primitive, and run text through <0>segmentInline</0> to render marks, links, mentions and footnote references. The existing renderers are the reference implementations."
@@ -3032,7 +3079,7 @@ msgstr "Active"
 msgid "Open this comment on Leaflet"
 msgstr "Open this comment on Leaflet"
 
-#: src/components/reader/subscribe-card.tsx
+#: src/components/reader/embed-card.tsx
 msgid "Powered by Standard Reader"
 msgstr "Powered by Standard Reader"
 
@@ -3628,8 +3675,8 @@ msgid "Your social actions (follows, likes, saves, lists) are written to your AT
 msgstr "Your social actions (follows, likes, saves, lists) are written to your AT Protocol repository and are visible according to the network's rules and your account settings. Our Postgres database holds a network read-model, app session state, and cached public metadata — not the canonical copies of publications."
 
 #: src/components/reader/share-menu.tsx
-msgid "Subscribe link code"
-msgstr "Subscribe link code"
+#~ msgid "Subscribe link code"
+#~ msgstr "Subscribe link code"
 
 #: src/components/reader/add-to-list-button.tsx
 #: src/components/reader/add-to-list-modal.tsx
@@ -3675,6 +3722,10 @@ msgstr "Skip for now"
 #: src/components/reader/about-view.tsx
 msgid "The latest across everyone you subscribe to"
 msgstr "The latest across everyone you subscribe to"
+
+#: src/components/reader/follow-card.tsx
+msgid "Following…"
+msgstr "Following…"
 
 #: src/components/docs/renderers-docs-page.tsx
 #~ msgid "SolidJS."
@@ -3756,6 +3807,10 @@ msgstr "People you follow write here"
 #: src/components/guide/pages/extension-guide-page.tsx
 msgid "Good writing rarely turns up while you are already in a reading app. The extension puts saving and subscribing on every page you visit."
 msgstr "Good writing rarely turns up while you are already in a reading app. The extension puts saving and subscribing on every page you visit."
+
+#: src/components/reader/follow-card.tsx
+msgid "Already following"
+msgstr "Already following"
 
 #: src/components/reader/about-view.tsx
 msgid "Drop a Standard document into your own app, in your own framework."
@@ -3928,6 +3983,7 @@ msgstr "Notifications"
 msgid "the whole network as it publishes."
 msgstr "the whole network as it publishes."
 
+#: src/routes/follow-login.$did.tsx
 #: src/routes/login.tsx
 #: src/routes/subscribe-login.$did.$rkey.tsx
 msgid "Atmosphere account"
@@ -4115,6 +4171,10 @@ msgstr "Add publications or people, then <0>Create list</0>."
 #: src/lib/guide/navigation.ts
 msgid "When it still reads as a blog"
 msgstr "When it still reads as a blog"
+
+#: src/components/reader/follow-card.tsx
+msgid "Couldn't follow"
+msgstr "Couldn't follow"
 
 #: src/components/reader/terms-view.tsx
 msgid "You agree not to use {SITE_NAME} to:"
@@ -4924,6 +4984,10 @@ msgstr "You blocked this account, so their writing is hidden."
 msgid "Light, dark, match your system — or Custom, to choose a palette of your own."
 msgstr "Light, dark, match your system — or Custom, to choose a palette of your own."
 
+#: src/components/reader/share-menu.tsx
+msgid "Link code"
+msgstr "Link code"
+
 #: src/components/guide/pages/comics-guide-page.tsx
 msgid "<0>Getting a shelf but not issues?</0> Then the setting is right and it is the titles: check that at least 7 in 10 carry a hash and an issue number."
 msgstr "<0>Getting a shelf but not issues?</0> Then the setting is right and it is the titles: check that at least 7 in 10 carry a hash and an issue number."
@@ -5050,7 +5114,9 @@ msgstr "Footnotes"
 msgid "Every publication the network knows about — {publicationCount} and counting. Subscribe to the ones worth your mornings."
 msgstr "Every publication the network knows about — {publicationCount} and counting. Subscribe to the ones worth your mornings."
 
+#: src/components/reader/follow-card.tsx
 #: src/components/reader/follow-user-button.tsx
+#: src/routes/follow-login.$did.tsx
 msgid "Follow"
 msgstr "Follow"
 
@@ -5123,6 +5189,10 @@ msgstr "Unread listed"
 #: src/magazine/flow.tsx
 msgid " · edited by @{0}"
 msgstr " · edited by @{0}"
+
+#: src/components/guide/pages/publishing-guide-page.tsx
+msgid "Follow the author of {publicationName}"
+msgstr "Follow the author of {publicationName}"
 
 #: src/lib/guide/navigation.ts
 msgid "Home, Latest, Discover, search, and topics."
@@ -5351,6 +5421,11 @@ msgstr "Cached pages"
 #: src/components/docs/api-docs-intro.tsx
 msgid "AppView API"
 msgstr "AppView API"
+
+#. placeholder {0}: embed.name
+#: src/components/reader/share-menu.tsx
+msgid "Subscribe to {0}"
+msgstr "Subscribe to {0}"
 
 #: src/components/docs/labelers-docs-page.tsx
 msgid "We used to also accept a labeler registered by a Standard Reader‑specific descriptor record. That is gone. It existed only so a <0>did:web</0> labeler — which has no repo, and so cannot publish the standard declaration — could join the directory. If you already run a labeler for the wider network it works here unchanged, which was always the point: a labeler can label any content on the network, so there is no reason for this app to invent its own way of describing one."
@@ -7049,6 +7124,7 @@ msgstr "Articles"
 msgid "Leave a review"
 msgstr "Leave a review"
 
+#: src/routes/follow-login.$did.tsx
 #: src/routes/login.tsx
 #: src/routes/subscribe-login.$did.$rkey.tsx
 msgid "Sign in with your Atmosphere account."
@@ -7876,6 +7952,10 @@ msgstr "No discussion yet."
 msgid "A single publication"
 msgstr "A single publication"
 
+#: src/components/guide/pages/publishing-guide-page.tsx
+msgid "An account has no theme record of its own, so the follow card always paints in Standard Reader's default palette rather than your brand colors. Clicking Follow writes an <0>app.standard-reader.graph.follow</0> record to the reader's own PDS — and, as with any follow, materializes subscriptions to your publications so those readers stay yours if you leave. To skip the iframe, link straight to <1>/follow/{did}</1> and style your own button; a handle works there in place of the DID."
+msgstr "An account has no theme record of its own, so the follow card always paints in Standard Reader's default palette rather than your brand colors. Clicking Follow writes an <0>app.standard-reader.graph.follow</0> record to the reader's own PDS — and, as with any follow, materializes subscriptions to your publications so those readers stay yours if you leave. To skip the iframe, link straight to <1>/follow/{did}</1> and style your own button; a handle works there in place of the DID."
+
 #: src/components/reader/about-view.tsx
 msgid "Build on the same index"
 msgstr "Build on the same index"
@@ -8052,7 +8132,6 @@ msgid "You've read every article here. Show read articles to see them again."
 msgstr "You've read every article here. Show read articles to see them again."
 
 #: src/components/guide/pages/publishing-guide-page.tsx
-#: src/components/reader/share-menu.tsx
 #: src/routes/subscribe-login.$did.$rkey.tsx
 msgid "Subscribe to {publicationName}"
 msgstr "Subscribe to {publicationName}"
@@ -8264,6 +8343,7 @@ msgstr "Hidden from discovery"
 msgid "The Collections screen showing covers of magazine-style editions the reader has assembled, grouped into a series."
 msgstr "The Collections screen showing covers of magazine-style editions the reader has assembled, grouped into a series."
 
+#: src/components/reader/follow-card.tsx
 #: src/components/reader/follow-user-button.tsx
 #: src/routes/_layout.subscriptions.tsx
 msgid "Following"
@@ -8384,6 +8464,7 @@ msgstr "No feedback matches your filters."
 msgid "<0>When you sign in</0> with your Atmosphere account (for example via Bluesky OAuth), we create an app session tied to your AT Protocol DID. We store:"
 msgstr "<0>When you sign in</0> with your Atmosphere account (for example via Bluesky OAuth), we create an app session tied to your AT Protocol DID. We store:"
 
+#: src/routes/follow-login.$did.tsx
 #: src/routes/subscribe-login.$did.$rkey.tsx
 msgid "Powered by <0>Standard Reader</0>"
 msgstr "Powered by <0>Standard Reader</0>"
@@ -8391,6 +8472,10 @@ msgstr "Powered by <0>Standard Reader</0>"
 #: src/components/blocks-settings-view.tsx
 msgid "Your blocks are enforced here already. To add or remove one from Standard Reader, you'll be asked to authorize block access the first time you try."
 msgstr "Your blocks are enforced here already. To add or remove one from Standard Reader, you'll be asked to authorize block access the first time you try."
+
+#: src/components/reader/follow-card.tsx
+msgid "This is your own account — there's nothing to follow here."
+msgstr "This is your own account — there's nothing to follow here."
 
 #: src/components/appearance-settings.tsx
 msgid "Your accent sits close to the paper in tone — it stays exactly as you picked it, but text and links set in it will be hard to read."
@@ -8515,6 +8600,10 @@ msgstr "<0>Subscribe</0> is the whole mechanism. New writing from anything you s
 #: src/components/labelers-settings-view.tsx
 msgid "No labelers match “{searchTrim}”."
 msgstr "No labelers match “{searchTrim}”."
+
+#: src/components/reader/share-menu.tsx
+msgid "Add this anchor anywhere on your site and style it however you like. It opens the follow flow when clicked."
+msgstr "Add this anchor anywhere on your site and style it however you like. It opens the follow flow when clicked."
 
 #: src/components/reader/atstore-review-prompt.tsx
 msgid "Rating"
@@ -8735,6 +8824,10 @@ msgstr "They are public. Not advertised, not put in a feed — but readable by a
 #: src/lib/guide/navigation.ts
 msgid "Finding your way around"
 msgstr "Finding your way around"
+
+#: src/components/reader/share-menu.tsx
+msgid "Embed follow"
+msgstr "Embed follow"
 
 #: src/components/reader/about-view.tsx
 msgid "Cited by"

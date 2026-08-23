@@ -1583,6 +1583,12 @@ After Tier 1–3, as appetite allows:
       login card (publication theme colors + avatar + "Subscribe to NAME", no Standard Reader
       chrome, no saved handles). `subscribe.$did.$rkey` `beforeLoad` redirects signed-out
       readers here; `subscribeLoginPageUrl` in `publication-embed.ts` builds the URL.
+- [x] **Follow embed (authors)** — the author counterpart to the subscribe embed. `Embed follow`
+      in the `/u/$did` hero menu; `/embed/follow/$did` iframe card + `/follow/$did` flow
+      (follow-only OAuth scope, auto-follow, themed success) + `/follow-login/$did` author-branded
+      login. Snippet builders in `author-embed.ts`; the iframe wrapper and resize protocol are
+      shared with the subscribe embed in `embed-snippet.ts`, and the card itself in
+      `components/reader/embed-card.tsx`.
 
 ## 12. Browser extension (WXT)
 

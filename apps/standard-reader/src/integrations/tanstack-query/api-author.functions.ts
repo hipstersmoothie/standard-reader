@@ -104,6 +104,20 @@ export interface AuthorSummary {
   block: BlockEdge | null;
 }
 
+/**
+ * Author identity for the follow embed and the follow flow — the account
+ * counterpart to `PublicationEmbedMeta`. Deliberately public and unauthed: the
+ * embed renders in an iframe on the author's own site, where nobody is signed
+ * in yet.
+ */
+export interface AuthorEmbedMeta {
+  did: string;
+  handle: string | null;
+  displayName: string | null;
+  description: string | null;
+  avatarUrl: string | null;
+}
+
 export interface AuthorProfile {
   profile: ProfileSummary;
   /**
@@ -561,6 +575,41 @@ const getAuthorSummary = createServerFn({ method: "GET" })
     ),
   );
 
+const getAuthorEmbedMeta = createServerFn({ method: "GET" })
+  .middleware([dbMiddleware])
+  .validator(authorSummaryInput)
+  .handler(
+    observe(
+      "author.getEmbedMeta",
+      async ({ data, context }, span): Promise<AuthorEmbedMeta | null> => {
+        const { db, schema } = context;
+        // `$did` accepts a handle too, so an author can paste the snippet for
+        // `/embed/follow/alice.example` and still get a DID-keyed follow.
+        const did = await resolveAuthorDid(db, schema, data.did);
+        span.set("did", did);
+
+        const profile = await resolveAuthorProfile(db, schema, did);
+        const hasIdentity =
+          profile.handle != null ||
+          profile.displayName != null ||
+          profile.avatarUrl != null;
+        if (!hasIdentity) {
+          span.set("found", false);
+          return null;
+        }
+
+        span.set("found", true);
+        return {
+          did: profile.did,
+          handle: profile.handle,
+          displayName: profile.displayName,
+          description: profile.description,
+          avatarUrl: profile.avatarUrl,
+        };
+      },
+    ),
+  );
+
 const getAuthorSifaProfile = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
   .validator(authorSifaInput)
@@ -827,6 +876,14 @@ function getAuthorSummaryQueryOptions(did: string) {
   });
 }
 
+function getAuthorEmbedMetaQueryOptions(did: string) {
+  return queryOptions({
+    queryKey: ["author", "embedMeta", did] as const,
+    queryFn: async () => getAuthorEmbedMeta({ data: { did } }),
+    staleTime: 300_000,
+  });
+}
+
 function getAuthorSifaProfileQueryOptions(did: string, handle: string | null) {
   return queryOptions({
     queryKey: ["author", "sifa", did, handle] as const,
@@ -894,6 +951,8 @@ export const authorApi = {
   getAuthorProfileQueryOptions,
   getAuthorSummary,
   getAuthorSummaryQueryOptions,
+  getAuthorEmbedMeta,
+  getAuthorEmbedMetaQueryOptions,
   getAuthorSifaProfile,
   getAuthorSifaProfileQueryOptions,
   getAuthorPublications,

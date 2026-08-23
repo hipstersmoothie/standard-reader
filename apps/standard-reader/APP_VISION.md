@@ -515,6 +515,10 @@ comic issue with no pages falls back to it outright.
 - **Share** menu: copy `/p/$did/$rkey` link + compose-to-Bluesky (OG card on `/p/`) +
   **Embed subscribe** (iframe snippet for the publication site — themed button opens
   `/subscribe/$did/$rkey`, OAuth with subscription-only scope, auto-follow, themed success).
+  The author profile offers the same thing for an account: **Embed follow** (see
+  "Author profile" below). Both cards are the same component
+  (`components/reader/embed-card.tsx`) over different subjects, and both speak the
+  same iframe resize protocol (`lib/embed-snippet.ts`).
   Unsigned-out readers hit `/login/subscribe/$did/$rkey` — a publication-themed
   login page (no Standard Reader chrome, no saved handles) that drives the
   subscription-only OAuth scope and returns to the auto-follow success screen.
@@ -539,6 +543,14 @@ comic issue with no pages falls back to it outright.
 - **Subscriptions** — publications they follow (`site.standard.graph.subscription`).
 - **Liked articles** — their network likes (`site.standard.graph.recommend`).
 - Linked from publication profiles, list pages, and article bylines.
+- The hero's ⌄ menu carries the same share items as a publication's, plus
+  **Embed follow** — the author counterpart to Embed subscribe. An `/embed/follow/$did`
+  iframe card (landscape / portrait / plain link) that an author pastes on their own
+  site; its button opens `/follow/$did`, which OAuths with the follow-only scope,
+  writes `app.standard-reader.graph.follow`, and lands on a themed success screen.
+  Signed-out visitors hit `/follow-login/$did` first — an author-branded login card
+  (avatar + "Follow NAME", no Standard Reader chrome, no saved handles). An account
+  has no theme record, so the card paints in the default editorial palette.
 
 ### Subscriptions (manage view)
 

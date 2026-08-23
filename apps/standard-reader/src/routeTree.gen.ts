@@ -35,6 +35,8 @@ import { Route as DevDigestRouteImport } from './routes/dev.digest'
 import { Route as DevRtlRouteImport } from './routes/dev.rtl'
 import { Route as DevWelcomeEmailRouteImport } from './routes/dev.welcome-email'
 import { Route as ExtensionConnectedRouteImport } from './routes/extension.connected'
+import { Route as FollowLoginDidRouteImport } from './routes/follow-login.$did'
+import { Route as FollowDidRouteImport } from './routes/follow.$did'
 import { Route as KosyncHealthcheckRouteImport } from './routes/kosync.healthcheck'
 import { Route as McpIndexRouteImport } from './routes/mcp/index'
 import { Route as McpAuthorizeRouteImport } from './routes/mcp/authorize'
@@ -109,6 +111,7 @@ import { Route as ApiPushResubscribeRouteImport } from './routes/api/push/resubs
 import { Route as BookTagChar123tagChar125DotepubRouteImport } from './routes/book.tag.{$tag}[.]epub'
 import { Route as CollectionDidRkeyRouteImport } from './routes/collection.$did.$rkey'
 import { Route as ComicDidRkeyRouteImport } from './routes/comic.$did.$rkey'
+import { Route as EmbedFollowDidRouteImport } from './routes/embed.follow.$did'
 import { Route as FeedLatestDidRouteImport } from './routes/feed.latest.$did'
 import { Route as FeedTagTagRouteImport } from './routes/feed.tag.$tag'
 import { Route as FeedUDidRouteImport } from './routes/feed.u.$did'
@@ -280,6 +283,16 @@ const DevWelcomeEmailRoute = DevWelcomeEmailRouteImport.update({
 const ExtensionConnectedRoute = ExtensionConnectedRouteImport.update({
   id: '/extension/connected',
   path: '/extension/connected',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FollowLoginDidRoute = FollowLoginDidRouteImport.update({
+  id: '/follow-login/$did',
+  path: '/follow-login/$did',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FollowDidRoute = FollowDidRouteImport.update({
+  id: '/follow/$did',
+  path: '/follow/$did',
   getParentRoute: () => rootRouteImport,
 } as any)
 const KosyncHealthcheckRoute = KosyncHealthcheckRouteImport.update({
@@ -667,6 +680,11 @@ const ComicDidRkeyRoute = ComicDidRkeyRouteImport.update({
   path: '/comic/$did/$rkey',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EmbedFollowDidRoute = EmbedFollowDidRouteImport.update({
+  id: '/embed/follow/$did',
+  path: '/embed/follow/$did',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const FeedLatestDidRoute = FeedLatestDidRouteImport.update({
   id: '/feed/latest/$did',
   path: '/feed/latest/$did',
@@ -921,6 +939,8 @@ export interface FileRoutesByFullPath {
   '/dev/rtl': typeof DevRtlRoute
   '/dev/welcome-email': typeof DevWelcomeEmailRoute
   '/extension/connected': typeof ExtensionConnectedRoute
+  '/follow-login/$did': typeof FollowLoginDidRoute
+  '/follow/$did': typeof FollowDidRoute
   '/kosync/healthcheck': typeof KosyncHealthcheckRoute
   '/mcp/authorize': typeof McpAuthorizeRoute
   '/opds/collections': typeof OpdsCollectionsRoute
@@ -989,6 +1009,7 @@ export interface FileRoutesByFullPath {
   '/book/tag/{$tag}.epub': typeof BookTagChar123tagChar125DotepubRoute
   '/collection/$did/$rkey': typeof CollectionDidRkeyRoute
   '/comic/$did/$rkey': typeof ComicDidRkeyRoute
+  '/embed/follow/$did': typeof EmbedFollowDidRoute
   '/feed/latest/$did': typeof FeedLatestDidRoute
   '/feed/tag/$tag': typeof FeedTagTagRoute
   '/feed/u/$did': typeof FeedUDidRoute
@@ -1062,6 +1083,8 @@ export interface FileRoutesByTo {
   '/dev/rtl': typeof DevRtlRoute
   '/dev/welcome-email': typeof DevWelcomeEmailRoute
   '/extension/connected': typeof ExtensionConnectedRoute
+  '/follow-login/$did': typeof FollowLoginDidRoute
+  '/follow/$did': typeof FollowDidRoute
   '/kosync/healthcheck': typeof KosyncHealthcheckRoute
   '/mcp/authorize': typeof McpAuthorizeRoute
   '/opds/collections': typeof OpdsCollectionsRoute
@@ -1130,6 +1153,7 @@ export interface FileRoutesByTo {
   '/book/tag/{$tag}.epub': typeof BookTagChar123tagChar125DotepubRoute
   '/collection/$did/$rkey': typeof CollectionDidRkeyRoute
   '/comic/$did/$rkey': typeof ComicDidRkeyRoute
+  '/embed/follow/$did': typeof EmbedFollowDidRoute
   '/feed/latest/$did': typeof FeedLatestDidRoute
   '/feed/tag/$tag': typeof FeedTagTagRoute
   '/feed/u/$did': typeof FeedUDidRoute
@@ -1207,6 +1231,8 @@ export interface FileRoutesById {
   '/dev/rtl': typeof DevRtlRoute
   '/dev/welcome-email': typeof DevWelcomeEmailRoute
   '/extension/connected': typeof ExtensionConnectedRoute
+  '/follow-login/$did': typeof FollowLoginDidRoute
+  '/follow/$did': typeof FollowDidRoute
   '/kosync/healthcheck': typeof KosyncHealthcheckRoute
   '/mcp/authorize': typeof McpAuthorizeRoute
   '/opds/collections': typeof OpdsCollectionsRoute
@@ -1276,6 +1302,7 @@ export interface FileRoutesById {
   '/book/tag/{$tag}.epub': typeof BookTagChar123tagChar125DotepubRoute
   '/collection/$did/$rkey': typeof CollectionDidRkeyRoute
   '/comic/$did/$rkey': typeof ComicDidRkeyRoute
+  '/embed/follow/$did': typeof EmbedFollowDidRoute
   '/feed/latest/$did': typeof FeedLatestDidRoute
   '/feed/tag/$tag': typeof FeedTagTagRoute
   '/feed/u/$did': typeof FeedUDidRoute
@@ -1352,6 +1379,8 @@ export interface FileRouteTypes {
     | '/dev/rtl'
     | '/dev/welcome-email'
     | '/extension/connected'
+    | '/follow-login/$did'
+    | '/follow/$did'
     | '/kosync/healthcheck'
     | '/mcp/authorize'
     | '/opds/collections'
@@ -1420,6 +1449,7 @@ export interface FileRouteTypes {
     | '/book/tag/{$tag}.epub'
     | '/collection/$did/$rkey'
     | '/comic/$did/$rkey'
+    | '/embed/follow/$did'
     | '/feed/latest/$did'
     | '/feed/tag/$tag'
     | '/feed/u/$did'
@@ -1493,6 +1523,8 @@ export interface FileRouteTypes {
     | '/dev/rtl'
     | '/dev/welcome-email'
     | '/extension/connected'
+    | '/follow-login/$did'
+    | '/follow/$did'
     | '/kosync/healthcheck'
     | '/mcp/authorize'
     | '/opds/collections'
@@ -1561,6 +1593,7 @@ export interface FileRouteTypes {
     | '/book/tag/{$tag}.epub'
     | '/collection/$did/$rkey'
     | '/comic/$did/$rkey'
+    | '/embed/follow/$did'
     | '/feed/latest/$did'
     | '/feed/tag/$tag'
     | '/feed/u/$did'
@@ -1637,6 +1670,8 @@ export interface FileRouteTypes {
     | '/dev/rtl'
     | '/dev/welcome-email'
     | '/extension/connected'
+    | '/follow-login/$did'
+    | '/follow/$did'
     | '/kosync/healthcheck'
     | '/mcp/authorize'
     | '/opds/collections'
@@ -1706,6 +1741,7 @@ export interface FileRouteTypes {
     | '/book/tag/{$tag}.epub'
     | '/collection/$did/$rkey'
     | '/comic/$did/$rkey'
+    | '/embed/follow/$did'
     | '/feed/latest/$did'
     | '/feed/tag/$tag'
     | '/feed/u/$did'
@@ -1770,6 +1806,8 @@ export interface RootRouteChildren {
   DevRtlRoute: typeof DevRtlRoute
   DevWelcomeEmailRoute: typeof DevWelcomeEmailRoute
   ExtensionConnectedRoute: typeof ExtensionConnectedRoute
+  FollowLoginDidRoute: typeof FollowLoginDidRoute
+  FollowDidRoute: typeof FollowDidRoute
   KosyncHealthcheckRoute: typeof KosyncHealthcheckRoute
   McpAuthorizeRoute: typeof McpAuthorizeRoute
   OpdsCollectionsRoute: typeof OpdsCollectionsRoute
@@ -1811,6 +1849,7 @@ export interface RootRouteChildren {
   BookTagChar123tagChar125DotepubRoute: typeof BookTagChar123tagChar125DotepubRoute
   CollectionDidRkeyRoute: typeof CollectionDidRkeyRoute
   ComicDidRkeyRoute: typeof ComicDidRkeyRoute
+  EmbedFollowDidRoute: typeof EmbedFollowDidRoute
   FeedLatestDidRoute: typeof FeedLatestDidRoute
   FeedTagTagRoute: typeof FeedTagTagRoute
   FeedUDidRoute: typeof FeedUDidRoute
@@ -2034,6 +2073,20 @@ declare module '@tanstack/react-router' {
       path: '/extension/connected'
       fullPath: '/extension/connected'
       preLoaderRoute: typeof ExtensionConnectedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/follow-login/$did': {
+      id: '/follow-login/$did'
+      path: '/follow-login/$did'
+      fullPath: '/follow-login/$did'
+      preLoaderRoute: typeof FollowLoginDidRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/follow/$did': {
+      id: '/follow/$did'
+      path: '/follow/$did'
+      fullPath: '/follow/$did'
+      preLoaderRoute: typeof FollowDidRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/kosync/healthcheck': {
@@ -2554,6 +2607,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ComicDidRkeyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/embed/follow/$did': {
+      id: '/embed/follow/$did'
+      path: '/embed/follow/$did'
+      fullPath: '/embed/follow/$did'
+      preLoaderRoute: typeof EmbedFollowDidRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/feed/latest/$did': {
       id: '/feed/latest/$did'
       path: '/feed/latest/$did'
@@ -3022,6 +3082,8 @@ const rootRouteChildren: RootRouteChildren = {
   DevRtlRoute: DevRtlRoute,
   DevWelcomeEmailRoute: DevWelcomeEmailRoute,
   ExtensionConnectedRoute: ExtensionConnectedRoute,
+  FollowLoginDidRoute: FollowLoginDidRoute,
+  FollowDidRoute: FollowDidRoute,
   KosyncHealthcheckRoute: KosyncHealthcheckRoute,
   McpAuthorizeRoute: McpAuthorizeRoute,
   OpdsCollectionsRoute: OpdsCollectionsRoute,
@@ -3064,6 +3126,7 @@ const rootRouteChildren: RootRouteChildren = {
   BookTagChar123tagChar125DotepubRoute: BookTagChar123tagChar125DotepubRoute,
   CollectionDidRkeyRoute: CollectionDidRkeyRoute,
   ComicDidRkeyRoute: ComicDidRkeyRoute,
+  EmbedFollowDidRoute: EmbedFollowDidRoute,
   FeedLatestDidRoute: FeedLatestDidRoute,
   FeedTagTagRoute: FeedTagTagRoute,
   FeedUDidRoute: FeedUDidRoute,

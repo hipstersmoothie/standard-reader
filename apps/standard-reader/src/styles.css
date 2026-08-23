@@ -51,16 +51,17 @@ body,
   min-height: 100%;
 }
 
-/* Subscribe embed iframes shrink-wrap the card (background matches publication theme). */
-html[data-embed="subscribe"] {
+/* Embed card iframes (subscribe / follow) shrink-wrap the card; the background
+   comes from the card's own palette rather than the reader's theme. */
+html[data-embed] {
   color-scheme: normal;
 }
 
-html[data-embed="subscribe"],
-html[data-embed="subscribe"] body,
-html[data-embed="subscribe"] #app,
-html[data-embed="subscribe"] #app > *,
-html[data-embed="subscribe"] main {
+html[data-embed],
+html[data-embed] body,
+html[data-embed] #app,
+html[data-embed] #app > *,
+html[data-embed] main {
   min-height: 0;
   height: auto;
 }
