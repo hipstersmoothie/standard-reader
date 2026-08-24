@@ -1459,6 +1459,18 @@ AT Proto network (standard.site publications, profiles, follows)
   lists, so awaiting the raw fold re-planned ~97% of readers' repos on every shell load, and one
   503 from the planner rejected `loadShellSnapshot` and every signed-in surface with it. An
   unreachable archive degrades a sidebar; it must never sign a reader out of the product.
+- **Silence is a failure mode, and the channel treats it as one.** `@bsky/jetstream` defaults its
+  download retry policy to `maxAttempts: Infinity` with no `onRetry` hook, so an archive endpoint
+  that keeps failing is retried forever from inside the iterator: no batch, no event, no error —
+  just a heartbeat reporting `idleMs=-1`, which is exactly what an idle network looks like.
+  Production ingested nothing for 22 hours that way. Both Jetstream clients now pass a bounded
+  `retry` with an `onRetry` that logs (`ingest.jetstreamRetry`, `ingest.archiveDownloadRetry`), and
+  the channel runs a stall watchdog on the heartbeat: a **cold start** that yields no batch in five
+  minutes is unambiguously wedged (we always resume from a cursor behind the sealed tip, so the
+  archive phase has a backlog to page), while a **running** channel gets an hour, because on the
+  live tail a multi-minute lull is normal for a filter this narrow. Tripping it exits the process —
+  `process.exitCode` alone never lands, since the worker's HTTP listener keeps the event loop
+  alive — and Railway restarts at the stored cursor.
 - **There is no repo-tracking boundary any more.** This is the load-bearing difference from the
   `tap` era it replaced. tap only streamed repos we had registered with it, so coverage was
   something we had to _construct_: a signal collection to discover publishers, a second instance

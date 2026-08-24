@@ -104,12 +104,35 @@ function dropLive(fold: RepoFold, collection: string, uri: string): void {
 
 let client: Jetstream | undefined;
 
+/**
+ * Attempts per segment/block download before the fetch is allowed to fail.
+ *
+ * The SDK defaults to `maxAttempts: Infinity` with a 30s backoff ceiling and no
+ * error callback, which is the wrong shape for a fold: the reconcile sweep and
+ * the read path both *await* one, so an archive that keeps 503ing does not fail
+ * them — it hangs them, invisibly and forever. Six attempts is about a minute
+ * of the SDK's jittered backoff, after which the caller gets an error it can
+ * log, skip, or retry on its own schedule.
+ */
+const DOWNLOAD_MAX_ATTEMPTS = 6;
+
 function jetstream(): Jetstream {
   client ??= new Jetstream({
     ...(ingestConfig.jetstreamApiKey
       ? { apiKey: ingestConfig.jetstreamApiKey }
       : {}),
     blockConcurrency: ingestConfig.jetstreamBlockConcurrency,
+    retry: {
+      maxAttempts: DOWNLOAD_MAX_ATTEMPTS,
+      onRetry: (error, info) =>
+        logEvent("ingest.archiveDownloadRetry", {
+          attempt: info.attempt,
+          delayMs: info.delayMs,
+          ok: false,
+          reason: error.message,
+          target: info.target.kind,
+        }),
+    },
     service: ingestConfig.jetstreamService,
   });
   return client;

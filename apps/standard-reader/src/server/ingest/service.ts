@@ -152,6 +152,12 @@ function requireAuth(req: IncomingMessage, res: ServerResponse): boolean {
   return false;
 }
 
+/**
+ * One recompute at a time. The job runs for minutes and the trigger is hourly,
+ * so a slow run must not stack a second pass on top of the first.
+ */
+let recomputeInFlight = false;
+
 async function handleRequest(
   req: IncomingMessage,
   res: ServerResponse,
@@ -175,21 +181,36 @@ async function handleRequest(
     if (!requireAuth(req, res)) {
       return;
     }
-    const startedAt = performance.now();
-    try {
-      await recomputeDerived();
-      const ms = Math.round(performance.now() - startedAt);
-      logEvent("ingest.recompute", { ok: true, ms });
-      sendJson(res, 200, { durationMs: ms, ok: true });
-    } catch (error: unknown) {
-      const ms = Math.round(performance.now() - startedAt);
-      logEvent("ingest.recompute", {
-        error: error instanceof Error ? error.message : String(error),
-        ms,
-        ok: false,
-      });
-      throw error;
+    // Answered immediately, on purpose. The recompute takes ~318s in
+    // production and undici's default `headersTimeout` is 300s, so awaiting it
+    // here meant the hourly cron client aborted with `UND_ERR_HEADERS_TIMEOUT`
+    // and Railway marked the service CRASHED — every hour, on work that had in
+    // fact succeeded. The outcome lives in the `ingest.recompute` log event,
+    // which is where anything watching should read it from anyway.
+    if (recomputeInFlight) {
+      sendJson(res, 409, { ok: false, reason: "recompute already running" });
+      return;
     }
+    recomputeInFlight = true;
+    sendJson(res, 202, { ok: true, started: true });
+    const startedAt = performance.now();
+    void recomputeDerived()
+      .then(() => {
+        logEvent("ingest.recompute", {
+          ms: Math.round(performance.now() - startedAt),
+          ok: true,
+        });
+      })
+      .catch((error: unknown) => {
+        logEvent("ingest.recompute", {
+          error: error instanceof Error ? error.message : String(error),
+          ms: Math.round(performance.now() - startedAt),
+          ok: false,
+        });
+      })
+      .finally(() => {
+        recomputeInFlight = false;
+      });
     return;
   }
 

@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { IngestEvent } from "../atproto/types.ts";
 import type { ProcessResult } from "./consumer.ts";
+import { isStalled } from "./jetstream-channel.ts";
 
 /**
  * The cursor-commit rule, extracted from `startJetstreamChannel`.
@@ -136,5 +137,37 @@ describe("unhandled retries", () => {
 
     expect(await applyWithRetries(event, process_, 3)).toBe("dead-lettered");
     expect(process_).toHaveBeenCalledTimes(1);
+  });
+});
+
+/**
+ * The stall watchdog, which exists because a wedged iterator is otherwise
+ * indistinguishable from a quiet network: the SDK retries downloads forever
+ * with no error callback, so the channel yields nothing, logs nothing, and
+ * heartbeats `idleMs=-1` — for 22 hours, in the incident this came from.
+ */
+describe("isStalled", () => {
+  const COLD = 5 * 60_000;
+  const RUNNING = 60 * 60_000;
+
+  it("halts a cold start that has produced nothing", () => {
+    // Every restart resumes from a cursor behind the sealed tip, so the archive
+    // phase always has a backlog and yields its first batch in seconds.
+    expect(isStalled(0, COLD, COLD, RUNNING)).toBe(true);
+  });
+
+  it("gives a cold start time to plan and fetch its first page", () => {
+    expect(isStalled(0, 60_000, COLD, RUNNING)).toBe(false);
+  });
+
+  it("tolerates an overnight lull once batches are flowing", () => {
+    // A midday sample of our collection filter saw six commits in a minute
+    // with a 38s gap. Ten minutes of quiet is normal; restarting on it would
+    // bounce the worker all night.
+    expect(isStalled(1, 10 * 60_000, COLD, RUNNING)).toBe(false);
+  });
+
+  it("still halts a running channel that goes silent for an hour", () => {
+    expect(isStalled(4210, RUNNING, COLD, RUNNING)).toBe(true);
   });
 });
