@@ -37,7 +37,7 @@ export interface ShellSnapshot {
 }
 
 /** Reader sidebar preferences (list order + collapsed groups) from the DB
- * mirror, with a one-time PDS backfill when no row exists yet. */
+ * mirror, with a one-time archive hydration when no row exists yet. */
 export async function loadSidebarPref(did: string): Promise<SidebarPref> {
   const { db } = await import("#/db/index.server");
   const { sidebarPrefs } = await import("#/db/schema");
@@ -59,10 +59,12 @@ export async function loadSidebarPref(did: string): Promise<SidebarPref> {
 
   let row = await readRow();
   if (!row) {
-    // No row yet — backfill the repo from the archive and retry once.
-    const { backfillRepoFromArchive } =
+    // No row yet — hydrate the repo from the archive and retry once. Best
+    // effort: a reader with no stored preference gets the defaults below, and
+    // an unreachable archive must not take the whole shell down with it.
+    const { hydrateRepoForRead } =
       await import("#/server/ingest/archive-replay");
-    await backfillRepoFromArchive(did);
+    await hydrateRepoForRead(did);
     row = await readRow();
   }
 
@@ -191,8 +193,8 @@ export async function loadOwnSubscriptionLists(
   _client: unknown,
   did: string,
 ): Promise<Array<SubscriptionList>> {
-  // Read from the DB mirror (synced by the tap ingester). Falls back to a PDS
-  // fetch + backfill when no rows exist yet (first visit or pre-sync gap).
+  // Read from the DB mirror (synced by the Jetstream ingester). Falls back to
+  // an archive fold when no rows exist yet (first visit or pre-sync gap).
   const { db } = await import("#/db/index.server");
   const { lists } = await import("#/db/schema");
   const { eq: eqList } = await import("drizzle-orm");
@@ -217,10 +219,11 @@ export async function loadOwnSubscriptionLists(
     );
   }
 
-  // No rows yet — backfill from the archive and retry the DB read.
-  const { backfillRepoFromArchive } =
-    await import("#/server/ingest/archive-replay");
-  await backfillRepoFromArchive(did);
+  // No rows yet — hydrate from the archive and retry the DB read. Most readers
+  // own no lists at all, so this is the common path, not the rare one; see
+  // `hydrateRepoForRead` for why it neither re-folds nor propagates failures.
+  const { hydrateRepoForRead } = await import("#/server/ingest/archive-replay");
+  await hydrateRepoForRead(did);
 
   const refreshed = await db
     .select()

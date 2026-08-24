@@ -834,7 +834,9 @@ source of truth; Neon holds a derived view for speed and cross-network querying.
   `src/server/reader/saved-lists.ts` with a short-TTL per-reader cache) — no individual
   `site.standard.graph.subscription` records are written. Both `list` and `listSave` records are
   **mirrored into Neon** (`lists` + `list_saves` tables) by the ingester so the shell snapshot
-  never blocks on PDS I/O. A backfill from the PDS runs on first access when no rows exist yet.
+  never blocks on PDS I/O. A repo we have never reconciled is hydrated from the archive on first
+  access (`hydrateRepoForRead`); once it carries a `tracked_repos.last_seen_seq` the read-model is
+  authoritative and an empty read means "no lists", not "not hydrated yet".
 - **Sidebar personalization:** `app.standard-reader.sidebarPref` — a per-reader singleton (rkey
   `self`, mirrored into `sidebar_prefs`) holding collapsed groups (`collapsed`), the sort mode
   (`subscriptionSort`), the reader's manual top-level tree arrangement (`treeOrder` — list-group
@@ -1449,6 +1451,14 @@ AT Proto network (standard.site publications, profiles, follows)
   `site.standard.*`, `app.standard-reader.*`, `site.mochott.article` — replays Jetstream's sealed
   archive from the cursor in `ingest_state`, then cuts over to the live tail through one iterator.
   The product app server does not process the firehose.
+- **A read path never hard-depends on the archive.** When the read-model comes up empty for a
+  reader's own records the shell hydrates the repo through `hydrateRepoForRead`
+  (`#/server/ingest/archive-replay`), which is deliberately weaker than the raw fold in two ways:
+  it skips repos that already carry a `last_seen_seq` watermark, and it resolves rather than
+  throws when Jetstream is unreachable. Both come from an outage — most readers own no sidebar
+  lists, so awaiting the raw fold re-planned ~97% of readers' repos on every shell load, and one
+  503 from the planner rejected `loadShellSnapshot` and every signed-in surface with it. An
+  unreachable archive degrades a sidebar; it must never sign a reader out of the product.
 - **There is no repo-tracking boundary any more.** This is the load-bearing difference from the
   `tap` era it replaced. tap only streamed repos we had registered with it, so coverage was
   something we had to _construct_: a signal collection to discover publishers, a second instance

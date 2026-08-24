@@ -329,3 +329,66 @@ export function backfillRepoFromArchive(did: string): Promise<RepoFold> {
   backfillInflight.set(did, run);
   return run;
 }
+
+/**
+ * Repos this process has already settled for the read path — either folded
+ * here or found to carry a reconcile watermark, which says the same thing.
+ * DID strings only, one per signed-in reader the process has served, so it is
+ * bounded by the user base rather than by traffic.
+ */
+const readHydrationSettled = new Set<string>();
+const readHydrationInflight = new Map<string, Promise<void>>();
+
+/**
+ * Hydrate a repo for a *read path* that just found the read-model empty.
+ *
+ * Distinct from {@link backfillRepoFromArchive} in the two ways a read path
+ * needs, both learned from an outage:
+ *
+ * 1. **It never throws.** The shell snapshot awaited the raw backfill, so a
+ *    503 from Jetstream's planner did not degrade a sidebar — it rejected
+ *    `loadShellSnapshot`, and every signed-in surface with it. An archive we
+ *    cannot reach means "no extra rows to show", not "this reader cannot use
+ *    the app".
+ * 2. **It fires at most once per repo.** "No rows" is indistinguishable from
+ *    "no records exist", and most readers own no sidebar lists at all — so the
+ *    old call re-folded ~97% of readers' repos on every shell load, throttled
+ *    only by a 60s cache. A `tracked_repos` row with a `last_seen_seq` means we
+ *    have already folded this repo and the live channel has had it since; the
+ *    read-model is authoritative and the fold is pure waste. Only a repo we
+ *    have genuinely never reconciled is worth a planning request.
+ */
+export function hydrateRepoForRead(did: string): Promise<void> {
+  if (readHydrationSettled.has(did)) {
+    return Promise.resolve();
+  }
+  const inflight = readHydrationInflight.get(did);
+  if (inflight) {
+    return inflight;
+  }
+
+  const run = (async () => {
+    try {
+      const rows = await db
+        .select({ lastSeenSeq: trackedRepos.lastSeenSeq })
+        .from(trackedRepos)
+        .where(eq(trackedRepos.did, did))
+        .limit(1);
+      if (rows[0]?.lastSeenSeq == null) {
+        await backfillRepoFromArchive(did);
+      }
+      readHydrationSettled.add(did);
+    } catch (error: unknown) {
+      // Left unsettled on purpose: a later request retries, and until then the
+      // caller serves whatever the read-model already holds.
+      logEvent("ingest.readHydrationFailed", {
+        did,
+        ok: false,
+        reason: error instanceof Error ? error.message : String(error),
+      });
+    }
+  })().finally(() => readHydrationInflight.delete(did));
+
+  readHydrationInflight.set(did, run);
+  return run;
+}
