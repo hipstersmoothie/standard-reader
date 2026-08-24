@@ -116,6 +116,45 @@ let client: Jetstream | undefined;
  */
 const DOWNLOAD_MAX_ATTEMPTS = 6;
 
+/**
+ * Process-wide gate on concurrent folds.
+ *
+ * `blockConcurrency` bounds in-flight downloads inside *one* snapshot
+ * iterator, so it never saw the whole picture: the reconcile sweep repairs
+ * eight repos at once, which put 8 × 16 = 128 block requests in flight against
+ * a service that 429s nearly everything past 64. Jetstream duly rate-limited
+ * us, every 429 went onto the retry backoff above, single-repo folds that
+ * should take 200ms started taking two minutes, and the failures piled up as
+ * reconcile backoff on two thirds of the tracked fleet. Bounding the retries
+ * makes that visible; this is what stops us causing it.
+ *
+ * A semaphore here rather than a smaller `blockConcurrency`: fold latency is
+ * dominated by the planning round trip, so it is better to let a fold use the
+ * full block budget briefly than to give every fold a slice of it.
+ */
+const foldSlots = { free: ingestConfig.jetstreamFoldConcurrency };
+const foldWaiters: Array<() => void> = [];
+
+async function acquireFoldSlot(): Promise<void> {
+  if (foldSlots.free > 0) {
+    foldSlots.free -= 1;
+    return;
+  }
+  await new Promise<void>((resolve) => foldWaiters.push(resolve));
+}
+
+function releaseFoldSlot(): void {
+  const next = foldWaiters.shift();
+  if (next) {
+    // Hand the slot straight over rather than returning it to the pool: a
+    // waiter that has to re-check `free` can lose the slot to a fold arriving
+    // in the same tick, and under a saturated sweep that starves.
+    next();
+    return;
+  }
+  foldSlots.free += 1;
+}
+
 function jetstream(): Jetstream {
   client ??= new Jetstream({
     ...(ingestConfig.jetstreamApiKey
@@ -173,80 +212,88 @@ export async function foldReposFromArchive(
   const started = performance.now();
   let events = 0;
 
-  for await (const event of jetstream().snapshot({
-    afterSeq: opts.afterSeq ?? 0,
-    collections: INGESTED_COLLECTIONS,
-    dids: dids as ArchiveDids,
-    onError: (error) =>
-      logEvent("ingest.archiveReplayError", {
-        ok: false,
-        reason: error.message,
-      }),
-    // Raw, not typed: typed decode drops every record without a `$type`, and on
-    // this network that is ~0.05% of standard.site records — live publications
-    // and documents included. See `toIngestRecordPayload`.
-    raw: true,
-    ...(opts.signal ? { signal: opts.signal } : {}),
-  })) {
-    // The planner is one-sided (no false negatives, possible false positives),
-    // so a block selected for one DID can carry another's events.
-    const fold = folds.get(event.did);
-    if (!fold) continue;
+  await acquireFoldSlot();
+  // Separated from `ms` so a saturated sweep is legible: `ms` covers the whole
+  // call, `waitMs` says how much of it was spent queued behind other folds.
+  const waitMs = Math.round(performance.now() - started);
+  try {
+    for await (const event of jetstream().snapshot({
+      afterSeq: opts.afterSeq ?? 0,
+      collections: INGESTED_COLLECTIONS,
+      dids: dids as ArchiveDids,
+      onError: (error) =>
+        logEvent("ingest.archiveReplayError", {
+          ok: false,
+          reason: error.message,
+        }),
+      // Raw, not typed: typed decode drops every record without a `$type`, and on
+      // this network that is ~0.05% of standard.site records — live publications
+      // and documents included. See `toIngestRecordPayload`.
+      raw: true,
+      ...(opts.signal ? { signal: opts.signal } : {}),
+    })) {
+      // The planner is one-sided (no false negatives, possible false positives),
+      // so a block selected for one DID can carry another's events.
+      const fold = folds.get(event.did);
+      if (!fold) continue;
 
-    events += 1;
-    fold.empty = false;
-    fold.lastSeq = Math.max(fold.lastSeq, event.seq);
+      events += 1;
+      fold.empty = false;
+      fold.lastSeq = Math.max(fold.lastSeq, event.seq);
 
-    if (event.kind === "account") {
-      // The one marker that means "this repo is gone": everything mirrored for
-      // the DID is an orphan. Deactivations and suspensions are not deletions —
-      // the records still exist and come back when the account does.
-      if (
-        event.account.active === false &&
-        event.account.status === "deleted"
-      ) {
-        fold.gone = true;
+      if (event.kind === "account") {
+        // The one marker that means "this repo is gone": everything mirrored for
+        // the DID is an orphan. Deactivations and suspensions are not deletions —
+        // the records still exist and come back when the account does.
+        if (
+          event.account.active === false &&
+          event.account.status === "deleted"
+        ) {
+          fold.gone = true;
+        }
+        continue;
       }
-      continue;
+
+      if (event.kind === "sync") {
+        // Sync 1.1 divergence: the archive discarded this repo's pre-divergence
+        // rows and follows with the authoritative replacement records. Anything
+        // folded so far is exactly what was discarded, so start the live set over
+        // rather than unioning stale URIs into it.
+        fold.live.clear();
+        continue;
+      }
+
+      if (event.kind !== "commit") continue;
+
+      const { collection, operation, rkey } = event.commit;
+      const uri = buildAtUri(event.did, collection, rkey);
+
+      if (operation === "delete") {
+        dropLive(fold, collection, uri);
+      } else {
+        noteLive(fold, collection, uri);
+      }
+
+      if (opts.skipApply) continue;
+
+      const payload = toIngestRecordPayload(event, { live: false });
+      if (!payload) continue;
+      try {
+        await handleRecord(payload);
+        if (operation === "delete") fold.deleted += 1;
+        else fold.applied += 1;
+      } catch (error: unknown) {
+        logEvent("ingest.archiveReplayApplyFailed", {
+          collection,
+          did: event.did,
+          ok: false,
+          reason: error instanceof Error ? error.message : String(error),
+          uri,
+        });
+      }
     }
-
-    if (event.kind === "sync") {
-      // Sync 1.1 divergence: the archive discarded this repo's pre-divergence
-      // rows and follows with the authoritative replacement records. Anything
-      // folded so far is exactly what was discarded, so start the live set over
-      // rather than unioning stale URIs into it.
-      fold.live.clear();
-      continue;
-    }
-
-    if (event.kind !== "commit") continue;
-
-    const { collection, operation, rkey } = event.commit;
-    const uri = buildAtUri(event.did, collection, rkey);
-
-    if (operation === "delete") {
-      dropLive(fold, collection, uri);
-    } else {
-      noteLive(fold, collection, uri);
-    }
-
-    if (opts.skipApply) continue;
-
-    const payload = toIngestRecordPayload(event, { live: false });
-    if (!payload) continue;
-    try {
-      await handleRecord(payload);
-      if (operation === "delete") fold.deleted += 1;
-      else fold.applied += 1;
-    } catch (error: unknown) {
-      logEvent("ingest.archiveReplayApplyFailed", {
-        collection,
-        did: event.did,
-        ok: false,
-        reason: error instanceof Error ? error.message : String(error),
-        uri,
-      });
-    }
+  } finally {
+    releaseFoldSlot();
   }
 
   logEvent("ingest.archiveReplay", {
@@ -256,6 +303,7 @@ export async function foldReposFromArchive(
     gone: [...folds.values()].filter((f) => f.gone).length,
     ms: Math.round(performance.now() - started),
     ok: true,
+    waitMs,
   });
 
   return folds;
