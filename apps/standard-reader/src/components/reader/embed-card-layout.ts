@@ -178,6 +178,22 @@ export const embedCardStyles = stylex.create({
   nameStacked: {
     fontSize: fontSize.xl,
   },
+  /**
+   * Base for any link an embed card shows. Matches `PublicationNameLink` /
+   * `AuthorProfileLink`'s own resting look so swapping to a plain anchor inside
+   * an embed changes nothing visually.
+   */
+  externalLink: {
+    textDecoration: { default: "none", ":hover": "underline" },
+    color: "inherit",
+    textDecorationColor: "currentColor",
+    textUnderlineOffset: "2px",
+    unicodeBidi: "isolate",
+  },
+  /** Unlinkable user content still needs bidi isolation. */
+  isolate: {
+    unicodeBidi: "isolate",
+  },
   nameLink: {
     color: "inherit",
     textDecorationColor: "currentColor",

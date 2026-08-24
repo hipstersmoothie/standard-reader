@@ -55,6 +55,41 @@ export function EmbedCardShell({
   );
 }
 
+/**
+ * A link shown on an embed card.
+ *
+ * The card renders in an iframe on somebody else's page, so the in-app link
+ * components are the wrong thing here: both intercept the click and navigate
+ * client-side, which loads the whole of Standard Reader into the host page's
+ * 400px box instead of going anywhere. Every link an embed shows therefore
+ * opens a tab, exactly like the card's own Subscribe / Follow button.
+ */
+export function EmbedCardExternalLink({
+  href,
+  linkStyle,
+  children,
+}: {
+  /** Null when the subject has no in-app page; the content renders unlinked. */
+  href: string | null;
+  linkStyle?: stylex.StyleXStyles;
+  children: ReactNode;
+}) {
+  if (href == null) {
+    return <span {...stylex.props(embedCardStyles.isolate)}>{children}</span>;
+  }
+
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      {...stylex.props(embedCardStyles.externalLink, linkStyle)}
+    >
+      {children}
+    </a>
+  );
+}
+
 /** The card's own width constraint + container-query context. */
 export function EmbedCardContainer({ children }: { children: ReactNode }) {
   return <div {...stylex.props(embedCardStyles.container)}>{children}</div>;
