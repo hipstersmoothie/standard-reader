@@ -6,6 +6,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { AppLink } from "#/components/reader/app-link";
 import { publicationLinkParams } from "#/components/reader/format";
 import { parseInternalRoute } from "#/lib/internal-route";
+import { publicationPagePath } from "#/lib/publication-page";
 
 const styles = stylex.create({
   link: {
@@ -21,12 +22,6 @@ const styles = stylex.create({
     unicodeBidi: "isolate",
   },
 });
-
-function publicationPagePath(uri: string): string | null {
-  const params = publicationLinkParams(uri);
-  if (!params) return null;
-  return `/p/${encodeURIComponent(params.did)}/${encodeURIComponent(params.rkey)}`;
-}
 
 type PublicationNameLinkProps = {
   publicationUri?: string | null;

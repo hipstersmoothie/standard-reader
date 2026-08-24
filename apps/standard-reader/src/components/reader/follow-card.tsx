@@ -10,10 +10,12 @@ import { AuthorProfileLink } from "#/components/reader/author-profile-link";
 import { ButtonLink } from "#/components/router-links";
 import type { AuthorEmbedMeta } from "#/integrations/tanstack-query/api-author.functions";
 import { followEmbedColors } from "#/lib/author-embed";
+import { authorProfilePath } from "#/lib/author-profile";
 
 import {
   EmbedCardBody,
   EmbedCardContainer,
+  EmbedCardExternalLink,
   EmbedCardOutcomeBody,
   EmbedCardOutcomePage,
   EmbedCardShell,
@@ -45,6 +47,38 @@ export type FollowCardPhase =
   | "self";
 
 export type FollowCardLayout = EmbedCardLayoutInput;
+
+/**
+ * The account's name and handle. In an embed they have to escape the iframe
+ * (see {@link EmbedCardExternalLink}); elsewhere in-app navigation is right.
+ */
+function AuthorLink({
+  did,
+  isEmbed,
+  linkStyle,
+  children,
+}: {
+  did: string;
+  isEmbed: boolean;
+  linkStyle: stylex.StyleXStyles;
+  children: React.ReactNode;
+}) {
+  if (isEmbed) {
+    return (
+      <EmbedCardExternalLink
+        href={authorProfilePath(did)}
+        linkStyle={linkStyle}
+      >
+        {children}
+      </EmbedCardExternalLink>
+    );
+  }
+  return (
+    <AuthorProfileLink authorRef={did} linkStyle={linkStyle}>
+      {children}
+    </AuthorProfileLink>
+  );
+}
 
 function FollowCardActions({
   phase,
@@ -222,21 +256,23 @@ export function FollowCard({
           />
         }
         title={
-          <AuthorProfileLink
-            authorRef={meta.did}
+          <AuthorLink
+            did={meta.did}
+            isEmbed={isEmbed}
             linkStyle={embedCardStyles.nameLink}
           >
             {authorName}
-          </AuthorProfileLink>
+          </AuthorLink>
         }
         byline={
           displayName && handle ? (
-            <AuthorProfileLink
-              authorRef={meta.did}
+            <AuthorLink
+              did={meta.did}
+              isEmbed={isEmbed}
               linkStyle={embedCardStyles.bylineHandle}
             >
               @{handle}
-            </AuthorProfileLink>
+            </AuthorLink>
           ) : null
         }
         description={meta.description}
