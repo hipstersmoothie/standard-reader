@@ -38,13 +38,39 @@ export const ingestConfig = {
   },
 
   /**
-   * Concurrent archive block downloads (`JETSTREAM_BLOCK_CONCURRENCY`).
-   * Throughput plateaus around 16–32 against the public instance and 64 gets
-   * nearly every request 429'd, so 16 is the safe shoulder.
+   * Concurrent archive block downloads **per fold**
+   * (`JETSTREAM_BLOCK_CONCURRENCY`). Throughput plateaus around 16–32 against
+   * the public instance and 64 gets nearly every request 429'd, so 16 is the
+   * safe shoulder.
+   *
+   * Per fold, not per process — the SDK applies this inside one snapshot
+   * iterator (`block-source.ts`), so N folds running at once are N × this many
+   * requests in flight. {@link jetstreamFoldConcurrency} is what keeps that
+   * product on the right side of the shoulder.
    */
   get jetstreamBlockConcurrency(): number {
     const value = Number(process.env.JETSTREAM_BLOCK_CONCURRENCY);
     return Number.isFinite(value) && value > 0 ? Math.floor(value) : 16;
+  },
+
+  /**
+   * Archive folds allowed to run at once, process-wide
+   * (`JETSTREAM_FOLD_CONCURRENCY`).
+   *
+   * The number that was missing. The reconcile sweep repairs eight repos
+   * concurrently and each fold downloads up to
+   * {@link jetstreamBlockConcurrency} blocks at a time, so the sweep alone ran
+   * 128 requests deep against an endpoint documented right above as 429ing
+   * nearly everything at 64. It did — `ingest.repoReconcile` logged
+   * `Upstream server responded with a 429 error` across thousands of repos,
+   * which is how two thirds of the fleet ended up parked in reconcile backoff.
+   *
+   * Two folds × sixteen blocks lands on the 32 shoulder. Raise the block count
+   * and lower this together, never one alone.
+   */
+  get jetstreamFoldConcurrency(): number {
+    const value = Number(process.env.JETSTREAM_FOLD_CONCURRENCY);
+    return Number.isFinite(value) && value > 0 ? Math.floor(value) : 2;
   },
 } as const;
 

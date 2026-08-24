@@ -1471,6 +1471,17 @@ AT Proto network (standard.site publications, profiles, follows)
   live tail a multi-minute lull is normal for a filter this narrow. Tripping it exits the process —
   `process.exitCode` alone never lands, since the worker's HTTP listener keeps the event loop
   alive — and Railway restarts at the stored cursor.
+- **Archive fetch concurrency is a process-wide budget, not a per-fold one.** `blockConcurrency`
+  bounds in-flight downloads inside a single snapshot iterator, which is not the number that
+  matters when several folds run at once: the reconcile sweep repairs eight repos concurrently, so
+  it was 8 × 16 = 128 requests deep against an endpoint that 429s nearly everything past 64.
+  Jetstream rate-limited us accordingly — `ingest.repoReconcile` logged
+  `Upstream server responded with a 429 error` across thousands of repos, single-repo folds that
+  should cost 200ms took two minutes, and two thirds of the tracked fleet ended up parked in
+  reconcile backoff. `JETSTREAM_FOLD_CONCURRENCY` (default 2) gates concurrent folds in
+  `archive-replay.ts` so `folds × blockConcurrency` lands on the documented 32 shoulder; move the
+  two together, never one alone. `ingest.archiveReplay` reports `waitMs` alongside `ms` so a
+  saturated sweep is visible as queueing rather than as slowness.
 - **There is no repo-tracking boundary any more.** This is the load-bearing difference from the
   `tap` era it replaced. tap only streamed repos we had registered with it, so coverage was
   something we had to _construct_: a signal collection to discover publishers, a second instance
