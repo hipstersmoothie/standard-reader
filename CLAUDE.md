@@ -537,7 +537,8 @@ its preview needs three things set on the environment or it will not come up:
   This is the first thing to check when a Writer preview is stuck failing its healthcheck.
 - **The cross-app URLs**, as Railway service references so each preview points at the other
   preview rather than production:
-  - on Writer: `VITE_READER_URL=https://${{standard-reader.RAILWAY_PUBLIC_DOMAIN}}`
+  - on Writer: `VITE_READER_URL=https://${{web.RAILWAY_PUBLIC_DOMAIN}}` (the reader's service is
+    named `web`), plus `DATABASE_URL=${{web.DATABASE_URL}}` and `DB_DRIVER=${{web.DB_DRIVER}}`
   - on the reader: `VITE_WRITER_URL=https://${{standard-writer.RAILWAY_PUBLIC_DOMAIN}}`
 
   Both are `VITE_`-prefixed and therefore **baked at build time** — changing one needs a redeploy,
@@ -545,8 +546,45 @@ its preview needs three things set on the environment or it will not come up:
   runs on a branch of prod data, so the DIDs and rkeys resolve) but means you are clicking from a
   preview into production. Set them.
 
-`PUBLIC_URL` does _not_ need setting per preview: both apps fall back to `RAILWAY_PUBLIC_DOMAIN`,
-which is what makes the OAuth `client_id` and `redirect_uri` match the per-deploy domain.
+`PUBLIC_URL` does _not_ need setting per preview — and on Writer it must stay **unset**. Both apps
+fall back to `RAILWAY_PUBLIC_DOMAIN`, which is what makes the OAuth `client_id` and `redirect_uri`
+match the per-deploy domain. (The reader's `web` service does set `PUBLIC_URL` explicitly, and PR
+environments inherit that production value — so a reader preview's OAuth client still claims
+`standard-reader.app`. Don't copy that pattern onto Writer.)
+
+### Adding a service to this project (learned the hard way)
+
+`railway add --service <name> --repo hipstersmoothie/standard-reader --branch <branch>` is the
+right first command, but three things bite in order:
+
+1. **The first deploy races the config.** `railway add` deploys immediately, from the repo's
+   **default branch**, before `--branch` takes effect and before you can set the Config File Path.
+   On `main` there is no `railway.writer.json`, so Railway silently falls back to the root
+   `railway.json` and builds the _reader_ — the runbook gotcha, now with a second cause. Set
+   `railwayConfigFile` via `serviceInstanceUpdate` right away, then redeploy on the right branch
+   with `serviceInstanceDeploy(environmentId, serviceId, latestCommit: true)`. `serviceConnect`
+   answers `ServiceInstance not found`; the branch actually lives on the service's **repo
+   trigger** (`deploymentTriggerUpdate { branch }`), one per environment.
+2. **Existing PR environments do not pick the service up.** This project runs _focused_ PR
+   environments (`focusedPrEnvironments: true`). A service added to `production` appears in PR
+   environments created _afterwards_; environments that already exist get a repo trigger but no
+   service instance and no variables until their PR branch is pushed again. Back-fill their
+   variables with `variableUpsert{ skipDeploys: true }` per environment, and fix each trigger's
+   branch — Railway seeds them all from whichever branch created the service, so every PR env
+   initially points at the wrong one.
+3. **Variables must be references, not copies.** `${{web.DATABASE_URL}}` and
+   `https://${{web.RAILWAY_PUBLIC_DOMAIN}}` resolve per environment, so a preview reads the PR's
+   Neon branch and links at the PR's reader. Hyphenated service names work in a reference
+   (`${{standard-writer.RAILWAY_PUBLIC_DOMAIN}}`). Secrets go through the GraphQL API rather than
+   a shell argument.
+
+Writer holds its **own** `ATPROTO_PRIVATE_KEY_JWK`, not the reader's: two OAuth clients publishing
+two JWKS, so rotating one never invalidates the other's sessions.
+
+Until this branch merges, the production Writer service answers its healthcheck but 500s on any
+data route with Postgres `42P01` (undefined table) — migration `0045` adds the newsletter tables,
+`sites.custom_domain` and `user.pro_since`, and only the reader's `main` deploy applies it. PR
+previews are unaffected: CI applies migrations to each PR's Neon branch.
 
 - TanStack Start supports Cloudflare Workers, Netlify, Vercel, Node/Docker, Bun, and Railway. The
   default toolchain produces a Node server output; choose/configure a target before deploying. Load
