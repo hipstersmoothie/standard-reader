@@ -62,6 +62,62 @@ const QUEUE_LIMIT = 2048;
  */
 const UNHANDLED_RETRIES = 3;
 
+/**
+ * How long a *freshly started* channel may yield nothing before we treat it as
+ * wedged (`JETSTREAM_COLD_STALL_MS`).
+ *
+ * The SDK's download retry policy defaults to `maxAttempts: Infinity` with a
+ * 30s backoff ceiling and no error callback, so a segment or block endpoint
+ * that keeps failing is retried forever, silently, from inside the iterator.
+ * The channel then produces no batch, no event, and no error — the heartbeat
+ * reports `idleMs=-1` and nothing else, which is exactly what "quiet network"
+ * looks like. Production sat like that for 22 hours.
+ *
+ * A cold start is the one moment silence is unambiguous. We always resume from
+ * a stored cursor behind the sealed tip, so the archive phase has a backlog to
+ * page and yields its first batch in seconds. Nothing at all after five minutes
+ * is not a quiet network — it is a stuck iterator.
+ */
+const COLD_STALL_TIMEOUT_MS = envInt("JETSTREAM_COLD_STALL_MS", 5 * 60 * 1000);
+
+/**
+ * How long a *running* channel may yield nothing (`JETSTREAM_STALL_MS`).
+ *
+ * Far more generous than the cold-start bound, because on the live tail silence
+ * is genuinely ambiguous: our collection filter is narrow, and a midday sample
+ * saw six commits in a minute with a 38-second gap between two of them. An
+ * overnight lull of several minutes is normal and must not restart the worker.
+ * An hour of it is not.
+ */
+const STALL_TIMEOUT_MS = envInt("JETSTREAM_STALL_MS", 60 * 60 * 1000);
+
+/**
+ * Attempts per segment/block download before the fetch is allowed to fail.
+ *
+ * Bounded on purpose, against the SDK's infinite default: a download that has
+ * failed this many times is not a blip, and surfacing it as an error lets the
+ * channel's own re-plan (or, failing that, a restart) do something about it.
+ * Twelve attempts spans roughly five minutes of the SDK's jittered backoff.
+ */
+const DOWNLOAD_MAX_ATTEMPTS = 12;
+
+/**
+ * Whether a channel that has yielded `batches` batches and has been silent for
+ * `stalledMs` should be considered wedged.
+ *
+ * Exported for the test: the two bounds are the whole point, and getting the
+ * cold-start one wrong either misses the failure it exists for or restarts a
+ * healthy worker every quiet night.
+ */
+export function isStalled(
+  batches: number,
+  stalledMs: number,
+  coldMs = COLD_STALL_TIMEOUT_MS,
+  runningMs = STALL_TIMEOUT_MS,
+): boolean {
+  return stalledMs >= (batches === 0 ? coldMs : runningMs);
+}
+
 function envInt(name: string, fallback: number): number {
   const value = Number(process.env[name]);
   return Number.isFinite(value) && value > 0 ? Math.floor(value) : fallback;
@@ -143,6 +199,22 @@ export function startJetstreamChannel(): { destroy: () => Promise<void> } {
     // cannot replay history and will sit at the cursor's lookback floor.
     ...(apiKey ? { apiKey } : {}),
     blockConcurrency,
+    // Without this the SDK retries every download forever and tells no one
+    // (`maxAttempts: Infinity`, no `onRetry`). `onRetry` is the part that
+    // matters most: a retry storm against the archive is the single failure
+    // mode that looks identical to an idle network from out here.
+    retry: {
+      maxAttempts: DOWNLOAD_MAX_ATTEMPTS,
+      onRetry: (error, info) => {
+        logEvent("ingest.jetstreamRetry", {
+          attempt: info.attempt,
+          delayMs: info.delayMs,
+          ok: false,
+          reason: error.message,
+          target: info.target.kind,
+        });
+      },
+    },
     service,
   });
 
@@ -151,6 +223,13 @@ export function startJetstreamChannel(): { destroy: () => Promise<void> } {
     deadLettered: 0,
     errors: 0,
     lastEventAt: 0,
+    // Distinct from `lastEventAt`, which only moves when a worker dequeues an
+    // event. A batch whose events were all filtered out is still progress —
+    // the iterator is alive and the cursor advances — so the stall watchdog
+    // has to watch batches, not events.
+    lastProgressAt: Date.now(),
+    /** Batches yielded. Zero means we are still in the cold-start window. */
+    batches: 0,
     lastSeq: 0,
     startedAt: Date.now(),
     unhandled: 0,
@@ -293,10 +372,7 @@ export function startJetstreamChannel(): { destroy: () => Promise<void> } {
           // durable progress, so stop it rather than keep consuming events the
           // cursor can never account for.
           stats.errors += 1;
-          console.error("[ingest:jetstream] halting channel", error);
-          fatal = error instanceof Error ? error : new Error(String(error));
-          controller.abort();
-          wakeReader();
+          halt("unhandled event reached the head of the queue", error);
           return;
         }
       }
@@ -305,9 +381,51 @@ export function startJetstreamChannel(): { destroy: () => Promise<void> } {
 
   const workers = Array.from({ length: applyConcurrency }, () => worker());
 
+  /**
+   * Stop the channel and end the process.
+   *
+   * `process.exitCode` alone is not enough here: the ingest service's HTTP
+   * listener keeps the event loop alive forever, so a channel that gave up
+   * would leave a healthy-looking process that ingests nothing. Exiting is the
+   * documented recovery — the stored cursor points at the last fully-applied
+   * batch, and Railway's `ON_FAILURE` policy restarts us there.
+   */
+  let halting = false;
+  function halt(reason: string, error?: unknown): void {
+    if (halting) return;
+    halting = true;
+    console.error(`[ingest:jetstream] halting: ${reason}`, error ?? "");
+    logEvent("ingest.jetstreamHalt", {
+      ok: false,
+      reason,
+      ...(error ? { error: String(error) } : {}),
+    });
+    clearInterval(heartbeat);
+    fatal ??= error instanceof Error ? error : new Error(reason);
+    controller.abort();
+    wakeReader();
+    wakeAllWorkers();
+    void (async () => {
+      const { flushTelemetry } = await import("../observability/log.ts");
+      await flushTelemetry().catch(() => {});
+      // Throwing would only reject a promise nobody awaits, and the HTTP
+      // listener would keep a dead channel's process alive. Exiting IS the
+      // recovery: Railway restarts us at the stored cursor.
+      // oxlint-disable-next-line unicorn/no-process-exit
+      process.exit(1);
+    })();
+  }
+
   const heartbeat = setInterval(() => {
     const idleMs =
       stats.lastEventAt === 0 ? -1 : Date.now() - stats.lastEventAt;
+    const stalledMs = Date.now() - stats.lastProgressAt;
+    if (isStalled(stats.batches, stalledMs)) {
+      halt(
+        `no batch in ${Math.round(stalledMs / 1000)}s (batches=${stats.batches}) — the iterator is wedged`,
+      );
+      return;
+    }
     console.info(
       `[ingest:jetstream] heartbeat: applied=${stats.applied} deadLettered=${stats.deadLettered} unhandled=${stats.unhandled} errors=${stats.errors} queue=${queue.length}/${QUEUE_LIMIT} inflightBatches=${inflight.length} lastSeq=${stats.lastSeq} idleMs=${idleMs}`,
     );
@@ -324,6 +442,11 @@ export function startJetstreamChannel(): { destroy: () => Promise<void> } {
       // cannot keep up and the read loop is being throttled on purpose.
       queueDepth: queue.length,
       queueLimit: QUEUE_LIMIT,
+      batches: stats.batches,
+      // The gauge that would have caught the 22-hour wedge: `idleMs` stays at
+      // -1 when nothing has ever arrived, so it cannot distinguish "quiet" from
+      // "stuck". This one always counts up from the last batch.
+      stalledMs,
       unhandled: stats.unhandled,
     });
   }, 10_000);
@@ -354,6 +477,8 @@ export function startJetstreamChannel(): { destroy: () => Promise<void> } {
         signal: controller.signal,
       })) {
         const now = Date.now();
+        stats.lastProgressAt = now;
+        stats.batches += 1;
         const events = raw.events
           .map((event) => toIngestEvent(event, now))
           .filter((event): event is IngestEvent => event !== null);
@@ -394,8 +519,7 @@ export function startJetstreamChannel(): { destroy: () => Promise<void> } {
   })().catch((error: unknown) => {
     // A deliberate halt aborts the signal itself, so it must still surface.
     if (controller.signal.aborted && !fatal) return;
-    console.error("[ingest:jetstream] channel stopped", error);
-    process.exitCode = 1;
+    halt("channel stopped", error);
   });
 
   console.info(

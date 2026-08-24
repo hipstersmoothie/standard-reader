@@ -22,16 +22,25 @@ if (!secret) {
 
 const auth = `Basic ${Buffer.from(`admin:${secret}`).toString("base64")}`;
 
+// The endpoint answers 202 and runs the recompute in the background, so this
+// only has to prove the trigger landed. It used to await the whole job, which
+// takes ~318s in production — five seconds past undici's default 300s
+// `headersTimeout` — so the cron crashed with UND_ERR_HEADERS_TIMEOUT every
+// hour on a recompute that had actually succeeded. The job's own outcome is in
+// the ingest worker's `ingest.recompute` log event.
 const startedAt = Date.now();
 const res = await fetch(url, {
   method: "POST",
   headers: { authorization: auth },
+  signal: AbortSignal.timeout(30_000),
 });
 const body = await res.text();
 console.info(
   `[recompute-cron] POST ${url} -> ${res.status} in ${Date.now() - startedAt}ms: ${body}`,
 );
-if (!res.ok) {
+// 409 means a previous run is still going — expected when a recompute overruns
+// the hour, and not a failure of this trigger.
+if (!res.ok && res.status !== 409) {
   throw new Error(
     `[recompute-cron] recompute request failed with status ${res.status}`,
   );
