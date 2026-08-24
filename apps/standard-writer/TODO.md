@@ -78,8 +78,17 @@ Derived from [`APP_VISION.md`](./APP_VISION.md). Keep both in sync as work lands
 
 ## Housekeeping
 
-- [ ] **Deployment** — the writer has no Railway service yet (`railway.json` covers the reader's
-      web, ingest and cron services only). Needs its own service, `VITE_READER_URL`, and the
-      reader needs `VITE_WRITER_URL` pointing back.
+- [x] **Deployment** — `railway.writer.json` is the writer's own Railway service
+      (`pnpm writer:build` / `pnpm writer:start`, healthcheck `/api/auth/atproto/metadata.json`,
+      deliberately no `preDeployCommand` so it never races the reader on migrations). CI builds
+      it, so a broken writer build fails the PR rather than only its preview deploy. Preview
+      environments need `DATABASE_URL` (the PR's Neon branch), `ATPROTO_PRIVATE_KEY_JWK` (a
+      preview domain is https, so the OAuth client is confidential — without it the healthcheck
+      itself 500s), and the two cross-app URLs as Railway service references. See "Preview
+      deploys" in the root `CLAUDE.md`.
+- [ ] **Preview URL wiring is manual** — `VITE_READER_URL` / `VITE_WRITER_URL` are set per Railway
+      environment, and being `VITE_`-prefixed they bake at build time. Unset, each app falls back
+      to its production host, so a preview quietly links into prod. Resolving the sibling origin
+      at runtime instead would remove the footgun and the redeploy-to-change-it rule.
 - [ ] **Tests for the site path** — the four styles and the site queries have no tests of their
       own; `@standard-reader/site-config` covers the normalizers and nothing covers rendering.

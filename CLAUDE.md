@@ -514,9 +514,40 @@ pnpm-workspace.yaml   # apps/*, packages/*, services/*
 - Database migrations run automatically on deploy: the Railway web service's `preDeployCommand`
   (`railway.json`) runs `pnpm db:migrate` once after build and before traffic switches, so a merged
   PR's schema changes are applied before the new code serves. Only the web service migrates — the
-  ingest/cron services share the DB but must not race on migrations. CI runs `drizzle-kit check` on
+  ingest/cron services **and Standard Writer** share the DB but must not race on migrations, which
+  is why `railway.writer.json` has no `preDeployCommand`. CI runs `drizzle-kit check` on
   every PR to catch an inconsistent migration journal before it reaches deploy. `drizzle-kit` is a
   runtime dependency (not dev-only) so the deploy image can run it.
+- **One Railway service per `railway.*.json`.** The reader's web service uses the root
+  `railway.json`; Standard Writer uses `railway.writer.json` (`pnpm writer:build` /
+  `pnpm writer:start`, healthcheck `/api/auth/atproto/metadata.json`). CI builds both, so a broken
+  Writer build fails the PR rather than only its preview deploy.
+
+### Preview deploys
+
+Every PR gets a Railway PR environment per service plus a Neon branch (`pr-<number>`, created by
+CI and deleted by `neon-branch-cleanup.yml`). Standard Writer joins that as its own service, and
+its preview needs three things set on the environment or it will not come up:
+
+- **`DATABASE_URL`** — the PR's Neon branch, the same one the reader preview uses. Writer runs no
+  migrations of its own; it reads the schema the reader's pre-deploy already applied.
+- **`ATPROTO_PRIVATE_KEY_JWK`** — a preview domain is `https`, not loopback, so the OAuth client is
+  **confidential** and this is required. Without it the client throws while building its metadata
+  and the healthcheck (which serves exactly that metadata) fails, so the deploy never goes live.
+  This is the first thing to check when a Writer preview is stuck failing its healthcheck.
+- **The cross-app URLs**, as Railway service references so each preview points at the other
+  preview rather than production:
+  - on Writer: `VITE_READER_URL=https://${{standard-reader.RAILWAY_PUBLIC_DOMAIN}}`
+  - on the reader: `VITE_WRITER_URL=https://${{standard-writer.RAILWAY_PUBLIC_DOMAIN}}`
+
+  Both are `VITE_`-prefixed and therefore **baked at build time** — changing one needs a redeploy,
+  not a restart. Left unset, each falls back to its production host, which is survivable (a preview
+  runs on a branch of prod data, so the DIDs and rkeys resolve) but means you are clicking from a
+  preview into production. Set them.
+
+`PUBLIC_URL` does _not_ need setting per preview: both apps fall back to `RAILWAY_PUBLIC_DOMAIN`,
+which is what makes the OAuth `client_id` and `redirect_uri` match the per-deploy domain.
+
 - TanStack Start supports Cloudflare Workers, Netlify, Vercel, Node/Docker, Bun, and Railway. The
   default toolchain produces a Node server output; choose/configure a target before deploying. Load
   `@tanstack/start-client-core#start-core/deployment` for target-specific guidance.
