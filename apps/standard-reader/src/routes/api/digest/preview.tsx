@@ -43,12 +43,14 @@ export const Route = createFileRoute("/api/digest/preview")({
             weeklyDigestSectionNetwork: true,
             weeklyDigestSectionSaved: true,
             weeklyDigestSectionRecommendations: true,
+            excludeWebBridge: true,
           },
         });
 
         const digest = await buildDigestForUser(db, schema, {
           did: reader.did,
           sections: digestSectionsFromUser(prefsRow ?? {}),
+          excludeWebBridge: prefsRow?.excludeWebBridge === true,
         });
         const rendered = await renderDigestEmail(digest, {
           baseUrl: getPublicUrl(),

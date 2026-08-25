@@ -29,6 +29,7 @@ import {
   horizontalSpace,
   verticalSpace,
 } from "@standard-reader/design-system/theme/semantic-spacing.stylex";
+import { shadow } from "@standard-reader/design-system/theme/shadow.stylex";
 import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
 import {
   fontFamily,
@@ -48,7 +49,9 @@ import { Link, useRouter } from "@tanstack/react-router";
 import {
   ArrowLeft,
   BookOpen,
+  Images,
   Bookmark,
+  Bot,
   Circle,
   CircleCheck,
   ExternalLink,
@@ -56,7 +59,14 @@ import {
   Heart,
   MoreHorizontal,
 } from "lucide-react";
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import {
+  Fragment,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { flushSync } from "react-dom";
 
 import { AppLink } from "#/components/reader/app-link";
@@ -66,8 +76,11 @@ import { labelerApi } from "#/integrations/tanstack-query/api-labelers.functions
 import type { ArticleDetail } from "#/integrations/tanstack-query/api-publication.functions";
 import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
+import { documentImages } from "#/lib/document/images";
 import { resolveArticleHeroImage } from "#/lib/document/lead-image";
+import { articleCbzUrl, articleEpubUrl } from "#/lib/opds/urls";
 import { usePageReader } from "#/lib/page-reader/page-reader-context";
+import { getPublicUrlClient } from "#/lib/public-url";
 import { publishingPlatform } from "#/lib/publishing-platform";
 import { useFormatters } from "#/lib/use-formatters";
 import { useOpenCollectionsInMagazine } from "#/lib/use-open-collections-in-magazine";
@@ -75,6 +88,7 @@ import { useReadingTypography } from "#/lib/use-reading-typography";
 import { useTrackReadingHistory } from "#/lib/use-track-reading-history";
 import { prefetchCollectionMagazine } from "#/magazine/load-magazine-data";
 
+import { AccountLabelsForDid } from "./account-labels";
 import { ArticleBelowFold } from "./article-below-fold";
 import { FollowButton } from "./cards";
 import { ArticleContent } from "./content/article-content";
@@ -114,19 +128,46 @@ import { SaveDraftConsumer } from "./save-draft-consumer";
 import { useArticleBookmark } from "./use-article-bookmark";
 import { useArticleReadToggle } from "./use-article-read-toggle";
 import { useArticleRecommend } from "./use-article-recommend";
+import { useReadingProgress } from "./use-reading-progress";
 
-/** Reading progress of the article content within the document scroll. */
-function articleReadingProgress(content: HTMLElement): number {
-  const viewport = globalThis.innerHeight;
-  const scrollY = globalThis.scrollY;
-  const contentTop = content.getBoundingClientRect().top + scrollY;
-  const contentBottom = contentTop + content.offsetHeight;
-  const endScroll = Math.max(contentBottom - viewport, contentTop);
-  const range = endScroll - contentTop;
-  if (range <= 0) {
-    return scrollY >= contentTop ? 1 : 0;
-  }
-  return Math.min(1, Math.max(0, (scrollY - contentTop) / range));
+/**
+ * How tall the article's own top bar is, measured rather than assumed — it wraps
+ * differently by title length and grows with the reader's text-size dial, so the
+ * distance it has to travel to clear the screen is never a constant. Published
+ * on the sticky chrome by {@link useTopBarHeight} and read back by
+ * `styles.stickyChrome`.
+ */
+const READER_TOP_BAR_HEIGHT = "--reader-top-bar-height";
+
+/**
+ * Keeps {@link READER_TOP_BAR_HEIGHT} on `host` in sync with the measured height
+ * of the returned ref's element. Written straight to the DOM: the height changes
+ * on resize and on the text-size dial, neither of which anything needs to
+ * re-render for.
+ */
+function useTopBarHeight(host: React.RefObject<HTMLElement | null>) {
+  return useCallback(
+    (node: HTMLElement | null) => {
+      if (!node) return;
+
+      const publish = () => {
+        host.current?.style.setProperty(
+          READER_TOP_BAR_HEIGHT,
+          `${node.getBoundingClientRect().height}px`,
+        );
+      };
+
+      publish();
+      const resizeObserver = new ResizeObserver(publish);
+      resizeObserver.observe(node);
+
+      return () => {
+        resizeObserver.disconnect();
+        host.current?.style.removeProperty(READER_TOP_BAR_HEIGHT);
+      };
+    },
+    [host],
+  );
 }
 
 const styles = stylex.create({
@@ -175,6 +216,15 @@ const styles = stylex.create({
     // between the two as they move. Offsetting `top` rather than transforming
     // also keeps it out of the way near the top of the page, where this header
     // rides along in normal flow instead of sticking.
+    //
+    // The second term is what a reader moving forward through an article is left
+    // with. Once the app bar has scrolled away it also publishes
+    // `--app-chrome-hidden: 1`, and this pulls itself up by exactly the height of
+    // its own top bar — so the back button, byline and actions clear the top of
+    // the screen and the progress track underneath them lands flush against it.
+    // The whole of the screen is then the article, with a hairline of progress
+    // above it. Scrolling up hands both back at once: one `top`, one transition,
+    // so the bar and this header never separate mid-flight.
     transitionDuration: animationDuration.slow,
     transitionProperty: {
       default: "top",
@@ -182,7 +232,7 @@ const styles = stylex.create({
     },
     transitionTimingFunction: animationTimingFunction.easeInOut,
     zIndex: 20,
-    top: "var(--app-navbar-offset, 0px)",
+    top: `calc(var(--app-navbar-offset, 0px) - var(--app-chrome-hidden, 0) * var(${READER_TOP_BAR_HEIGHT}, 0px))`,
   },
   topBar: {
     alignItems: "center",
@@ -216,6 +266,39 @@ const styles = stylex.create({
     position: "relative",
     height: spacing["1"],
     width: "100%",
+  },
+  resumedNotice: {
+    alignItems: "center",
+    backgroundColor: uiColor.bg,
+    borderColor: uiColor.border1,
+    borderRadius: radius.full,
+    borderStyle: "solid",
+    borderWidth: 1,
+    boxShadow: shadow.lg,
+    columnGap: gap.md,
+    display: "flex",
+    // Clears the floating page-reader bar and the home indicator, so the two
+    // never stack on top of each other on a phone.
+    bottom: `calc(env(safe-area-inset-bottom, 0px) + ${spacing["6"]})`,
+    // Centred with auto margins rather than a 50% inset + translate: the
+    // translate would push the pill off-centre the moment the locale is RTL.
+    insetInline: 0,
+    marginInline: "auto",
+    maxWidth: `calc(100% - ${spacing["8"]})`,
+    paddingBottom: verticalSpace.xs,
+    paddingInlineEnd: horizontalSpace.xs,
+    paddingInlineStart: horizontalSpace.md,
+    paddingTop: verticalSpace.xs,
+    position: "fixed",
+    width: "fit-content",
+    zIndex: 30,
+  },
+  resumedText: {
+    color: uiColor.text1,
+    fontFamily: fontFamily.sans,
+    fontSize: fontSize.sm,
+    lineHeight: lineHeight.sm,
+    whiteSpace: "nowrap",
   },
   topLeft: {
     alignItems: "center",
@@ -324,6 +407,18 @@ const styles = stylex.create({
     flexWrap: "wrap",
     justifyContent: "center",
   },
+  topics: {
+    gap: gap.xs,
+    alignItems: "center",
+    display: "flex",
+    flexWrap: "wrap",
+    justifyContent: "center",
+  },
+  topicSeparator: {
+    color: uiColor.text1,
+    fontFamily: fontFamily.sans,
+    fontSize: fontSize.xs,
+  },
   title: {
     color: uiColor.text2,
     fontFamily: fontFamily.serif,
@@ -414,6 +509,22 @@ const styles = stylex.create({
     textDecorationColor: "currentColor",
     textUnderlineOffset: "2px",
     minWidth: 0,
+  },
+  bylineBot: {
+    alignItems: "center",
+    color: uiColor.text1,
+    columnGap: spacing["1"],
+    display: "inline-flex",
+    flexShrink: 0,
+  },
+  srOnly: {
+    borderWidth: 0,
+    clipPath: "inset(50%)",
+    height: spacing.px,
+    overflow: "hidden",
+    position: "absolute",
+    whiteSpace: "nowrap",
+    width: spacing.px,
   },
   bylineHandleLink: {
     overflow: "hidden",
@@ -584,9 +695,15 @@ const styles = stylex.create({
   },
 });
 
-function articleTopic(article: ArticleDetail): string | null {
-  if (article.tags && article.tags.length > 0) return article.tags[0] ?? null;
-  return article.publication?.topic ?? null;
+/**
+ * Every tag the author filed the article under, else the owning publication's
+ * topic. All of them render in the kicker — a piece tagged several ways
+ * shouldn't hide the rest behind whichever tag happens to come first.
+ */
+function articleTopics(article: ArticleDetail): Array<string> {
+  const tags = (article.tags ?? []).filter((tag) => tag.trim().length > 0);
+  if (tags.length > 0) return tags;
+  return article.publication?.topic ? [article.publication.topic] : [];
 }
 
 /** The author's bare @handle (lead contributor, else publication owner). */
@@ -603,6 +720,16 @@ function authorAvatarUrl(article: ArticleDetail): string | null {
     article.publication?.ownerAvatarUrl ??
     null
   );
+}
+
+/**
+ * Whether the byline account self-declares as a bot — same lead-contributor,
+ * else publication-owner fallback as the rest of the byline. A publication owned
+ * by a bot counts as a bot.
+ */
+function authorIsBot(article: ArticleDetail): boolean {
+  const lead = article.contributors[0];
+  return lead ? lead.isBot : article.publicationOwnerIsBot;
 }
 
 /** DID for the byline author (lead contributor, else publication owner). */
@@ -669,6 +796,7 @@ function ReadToggleButton({
  */
 function ReaderSecondaryActionsMenu({
   onOpenMagazine,
+  onOpenComic,
   onOpenPublication,
   publicationName,
   showReadToggle,
@@ -678,6 +806,7 @@ function ReaderSecondaryActionsMenu({
   onToggleBookmark,
 }: {
   onOpenMagazine: (() => void) | null;
+  onOpenComic: (() => void) | null;
   onOpenPublication: (() => void) | null;
   publicationName?: string | null;
   showReadToggle: boolean;
@@ -702,6 +831,15 @@ function ReaderSecondaryActionsMenu({
           textValue={t`Open magazine edition`}
         >
           <Trans>Open magazine edition</Trans>
+        </MenuItem>
+      ) : null}
+      {onOpenComic ? (
+        <MenuItem
+          prefix={<Images size={16} />}
+          onPress={onOpenComic}
+          textValue={t`Read as comic`}
+        >
+          <Trans>Read as comic</Trans>
         </MenuItem>
       ) : null}
       {onOpenPublication ? (
@@ -848,6 +986,50 @@ function ReaderProgress({ progress }: { progress: number }) {
   );
 }
 
+/** How long the resume notice stays up before it gets out of the way. */
+const RESUMED_NOTICE_MS = 6000;
+
+/**
+ * Says what just happened, and offers the way back.
+ *
+ * Landing mid-article is ambiguous on its own — a reader can't tell whether we
+ * resumed them or whether the piece simply opens that way, and the doubt is
+ * enough to make them scroll up to check. One line removes the doubt, and the
+ * button makes the jump reversible for the case where they did want the top.
+ */
+function ResumedNotice({ onStartFromTop }: { onStartFromTop: () => void }) {
+  const [visible, setVisible] = useState(true);
+
+  useEffect(() => {
+    const timer = globalThis.setTimeout(
+      () => setVisible(false),
+      RESUMED_NOTICE_MS,
+    );
+    return () => globalThis.clearTimeout(timer);
+  }, []);
+
+  if (!visible) return null;
+
+  return (
+    // `status` rather than `alert`: worth mentioning, never worth interrupting.
+    <div {...stylex.props(styles.resumedNotice)} role="status">
+      <span {...stylex.props(styles.resumedText)}>
+        <Trans>Picked up where you left off</Trans>
+      </span>
+      <Button
+        variant="tertiary"
+        size="sm"
+        onPress={() => {
+          onStartFromTop();
+          setVisible(false);
+        }}
+      >
+        <Trans>Start from top</Trans>
+      </Button>
+    </div>
+  );
+}
+
 const COLLECTION_MAGAZINE_INTRO_KEY = "collection-magazine-intro:v1";
 
 function CollectionColophon({ body }: { body: string }) {
@@ -891,18 +1073,43 @@ function ArticleViewBody({
   const { rememberOpenInMagazine } = useOpenCollectionsInMagazine();
   const { preference: readingTypography } = useReadingTypography();
   const articleRef = useRef<HTMLElement>(null);
-  const [progress, setProgress] = useState(0);
+  // The sticky header lifts itself by the height of its own top bar once the
+  // reader is moving forward, leaving only the progress track on screen.
+  const stickyChromeRef = useRef<HTMLDivElement>(null);
+  const setTopBarNode = useTopBarHeight(stickyChromeRef);
   const [showMagazineIntro, setShowMagazineIntro] = useState(
     () => Boolean(article.collection) && !hasSeenCollectionMagazineIntro(),
   );
   const pub = article.publication;
   const publicationName = pub?.name;
+  // File renditions of this article. Offered whenever there is a body to
+  // package — the reader is looking at it, so there is. A comic issue gets a
+  // CBZ too: comic apps have page turns and a scrubber that a reflowable EPUB
+  // cannot give them.
+  const articleDownloads = (() => {
+    const params = documentLinkParams(article.uri);
+    if (!params || article.contentJson == null) return [];
+    const baseUrl = getPublicUrlClient();
+    const files = [
+      {
+        label: "Download EPUB",
+        url: articleEpubUrl(baseUrl, params.did, params.rkey),
+      },
+    ];
+    if (pub?.serial?.kind === "comic") {
+      files.push({
+        label: "Download CBZ",
+        url: articleCbzUrl(baseUrl, params.did, params.rkey),
+      });
+    }
+    return files;
+  })();
   const pubParams = pub ? publicationLinkParams(pub.uri) : null;
   const authorName = primaryAuthor(article);
   const handle = authorHandle(article);
   const bylineDid = authorDid(article);
   const showHandle = handle != null && authorName !== `@${handle}`;
-  const topic = articleTopic(article);
+  const topics = articleTopics(article);
   const { data: labelData } = useQuery(
     labelerApi.getDocumentLabelsQueryOptions(article.uri),
   );
@@ -936,6 +1143,24 @@ function ArticleViewBody({
           });
         }
       : null;
+  // A comic issue opened as an article (via "Read the notes", or `?view=reader`)
+  // had no way back to the pages — the redirect that brought a reader here only
+  // runs without that flag. `replace` so the two views don't stack in history.
+  const handleOpenComic =
+    article.publication?.serial?.kind === "comic" &&
+    linkParams &&
+    // A text-only post inside a comic (an announcement, a hiatus note) has no
+    // pages, and the comic route would bounce straight back here — so it gets
+    // no button offering the trip.
+    documentImages(article).length > 0
+      ? () => {
+          void router.navigate({
+            to: "/comic/$did/$rkey",
+            params: linkParams,
+            replace: true,
+          });
+        }
+      : null;
   const handleOpenPublication = publicationArticleUrl
     ? () => {
         globalThis.open(publicationArticleUrl, "_blank", "noopener,noreferrer");
@@ -953,6 +1178,9 @@ function ArticleViewBody({
 
   const { data: session } = useSuspenseQuery(user.getSessionQueryOptions);
   const signedIn = Boolean(session?.user);
+  // Account labels are viewer-specific (which labelers you subscribe to, and
+  // the visibility you chose), so they key off the reader, not the article.
+  const readerScope = user.readerQueryScope(session);
 
   const {
     recommended,
@@ -1031,39 +1259,21 @@ function ArticleViewBody({
     return () => globalThis.clearTimeout(timeout);
   }, [article.collection, article.uri, linkParams, queryClient, router]);
 
-  useLayoutEffect(() => {
-    // Measure the <article> only — progress should hit 100% at the end of the
-    // article body, not after the "More from" / comments sections below it.
-    const articleEl = articleRef.current;
-    if (!articleEl) return;
-
-    const sync = () => {
-      setProgress(articleReadingProgress(articleEl));
-    };
-
-    if (!sharedQuote?.trim()) {
-      globalThis.scrollTo(0, 0);
-    }
-    sync();
-
-    // The page (document) is the scroller, so its scroll event fires on window.
-    globalThis.addEventListener("scroll", sync, { passive: true });
-    const resizeObserver = new ResizeObserver(() => sync());
-    resizeObserver.observe(articleEl);
-
-    return () => {
-      globalThis.removeEventListener("scroll", sync);
-      resizeObserver.disconnect();
-    };
-  }, [article.uri, sharedQuote]);
+  const { progress, resumed, startFromTop } = useReadingProgress({
+    articleRef,
+    documentUri: article.uri,
+    enabled: trackReading,
+    skipRestore: Boolean(sharedQuote?.trim()),
+  });
 
   return (
     <div
       data-unclipped-sticky
       {...stylex.props(styles.root, readerActive && styles.rootReader)}
     >
-      <div {...stylex.props(styles.stickyChrome)}>
-        <div {...stylex.props(styles.topBar)}>
+      {resumed ? <ResumedNotice onStartFromTop={startFromTop} /> : null}
+      <div ref={stickyChromeRef} {...stylex.props(styles.stickyChrome)}>
+        <div ref={setTopBarNode} {...stylex.props(styles.topBar)}>
           <div {...stylex.props(styles.topLeft)}>
             <IconButton
               variant="secondary"
@@ -1123,6 +1333,16 @@ function ArticleViewBody({
                   <BookOpen size={18} />
                 </IconButton>
               ) : null}
+              {handleOpenComic ? (
+                <IconButton
+                  variant="secondary"
+                  size="md"
+                  label={t`Read as comic`}
+                  onPress={handleOpenComic}
+                >
+                  <Images size={18} />
+                </IconButton>
+              ) : null}
               {/* A recognized platform gets its branded mark pulled out to the
                   end of the row instead (see below) — it reads as the
                   destination, not as one more grey utility glyph. */}
@@ -1156,6 +1376,7 @@ function ArticleViewBody({
             <div {...stylex.props(styles.topActsOverflow)}>
               <ReaderSecondaryActionsMenu
                 onOpenMagazine={handleOpenMagazine}
+                onOpenComic={handleOpenComic}
                 // A recognized platform keeps its own branded button visible on
                 // mobile (below), so it must not also appear in here.
                 onOpenPublication={platform ? null : handleOpenPublication}
@@ -1176,6 +1397,7 @@ function ArticleViewBody({
               author={primaryAuthor(article)}
               siteName={pub?.name}
               imageUrl={article.coverImageUrl}
+              downloads={articleDownloads}
             />
 
             {/* Last in the row: the one action that leaves the app, and the
@@ -1241,7 +1463,7 @@ function ArticleViewBody({
             </div>
           ) : null}
 
-          {topic || labelRefs.length > 0 ? (
+          {topics.length > 0 || labelRefs.length > 0 ? (
             <div {...stylex.props(styles.kicker)}>
               {labelRefs.length > 0 ? (
                 <div {...stylex.props(styles.labelBadges)}>
@@ -1254,10 +1476,24 @@ function ArticleViewBody({
                   ))}
                 </div>
               ) : null}
-              {topic ? (
-                <Kicker>
-                  <Topic name={topic} />
-                </Kicker>
+              {topics.length > 0 ? (
+                <div {...stylex.props(styles.topics)}>
+                  {topics.map((topic, index) => (
+                    <Fragment key={topic}>
+                      {index > 0 ? (
+                        <span
+                          aria-hidden
+                          {...stylex.props(styles.topicSeparator)}
+                        >
+                          ·
+                        </span>
+                      ) : null}
+                      <Kicker>
+                        <Topic name={topic} />
+                      </Kicker>
+                    </Fragment>
+                  ))}
+                </div>
               ) : null}
             </div>
           ) : null}
@@ -1338,6 +1574,18 @@ function ArticleViewBody({
                   authorName
                 )}
 
+                {authorIsBot(article) ? (
+                  <span
+                    {...stylex.props(styles.bylineBot)}
+                    title={t`This account self-identifies as a bot`}
+                  >
+                    <Bot size={14} aria-hidden />
+                    <span {...stylex.props(styles.srOnly)}>
+                      <Trans>Bot</Trans>
+                    </span>
+                  </span>
+                ) : null}
+
                 {showHandle && bylineDid ? (
                   <Link
                     to="/u/$did"
@@ -1385,6 +1633,16 @@ function ArticleViewBody({
                   </>
                 ) : null}
               </Flex>
+              {/* What a subscribed labeler says about the byline account. Same
+                  placement rule as the profile and publication headers: a third
+                  party's statement reads after the account's own identity line,
+                  not inside it. */}
+              {bylineDid ? (
+                <AccountLabelsForDid
+                  did={bylineDid}
+                  readerScope={readerScope}
+                />
+              ) : null}
             </div>
           </div>
 

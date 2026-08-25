@@ -166,6 +166,23 @@ export const PAGE_OG_CARDS = {
     title: "Publishing your site",
     tagline: "Wire a personal site's own site.standard.* records by hand.",
   },
+  guideEreaders: {
+    path: "/guide/e-readers",
+    title: "Reading on an e-reader",
+    tagline:
+      "Put your unread queue on a Kobo, Kindle or phone as real EPUB files.",
+  },
+  guideEmbeds: {
+    path: "/guide/embeds",
+    title: "Embed buttons",
+    tagline: "Put a subscribe or follow button for your work on your own site.",
+  },
+  guideComics: {
+    path: "/guide/comics",
+    title: "Publishing a comic",
+    tagline:
+      "Get a shelf of covers and a page-flip reader out of the pages you already post.",
+  },
   docsRenderers: {
     path: "/docs/renderers",
     title: "Renderers",
@@ -313,6 +330,41 @@ export function pageSocialMeta(
     url: `${baseUrl.replace(/\/$/, "")}${card.path === "/" ? "" : card.path}`,
     ogImage: pageOgImageUrl(baseUrl, slug),
   });
+}
+
+/**
+ * A `<link rel="canonical">` entry for a route `head()`.
+ *
+ * `sourceUrl` wins whenever it names this page's content somewhere off-site —
+ * the reader renders other people's publications natively, so pointing the
+ * canonical back at the publication's own domain folds the duplicate's ranking
+ * signals into the original instead of competing with it. Crawling is
+ * unaffected (that's the difference from `noindex`), and pages with no off-site
+ * original — collection editions, documents published only here — canonicalize
+ * to themselves, which still collapses query-string variants (`?q=`, `?ids=`)
+ * onto the bare URL.
+ */
+export function canonicalLink(
+  selfUrl: string,
+  sourceUrl?: string | null,
+): { rel: "canonical"; href: string } {
+  return { rel: "canonical", href: offSiteUrl(sourceUrl, selfUrl) ?? selfUrl };
+}
+
+/** `candidate` as an absolute web URL, unless it's unparseable or our own. */
+function offSiteUrl(
+  candidate: string | null | undefined,
+  selfUrl: string,
+): string | null {
+  if (!candidate?.trim()) return null;
+  try {
+    const url = new URL(candidate);
+    if (url.protocol !== "https:" && url.protocol !== "http:") return null;
+    if (url.host === new URL(selfUrl).host) return null;
+    return url.toString();
+  } catch {
+    return null;
+  }
 }
 
 type HeadMetaEntry =

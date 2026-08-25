@@ -6,6 +6,12 @@ const DEFAULT_SLINGSHOT_URL = "https://slingshot.microcosm.blue";
 const DEFAULT_FETCH_TIMEOUT_MS = 8000;
 /** Page size for `com.atproto.repo.listRecords`. */
 const LIST_PAGE = 100;
+/**
+ * Backstop on `listRecords` paging. A repo with more records than this is
+ * pathological for the collections we read; the cap exists so a server that
+ * keeps handing back fresh cursors can't spin this loop forever.
+ */
+const MAX_LIST_PAGES = 200;
 /** Per-request timeout for paginated `listRecords` reconcile calls. */
 const LIST_FETCH_TIMEOUT_MS = 15_000;
 
@@ -88,9 +94,21 @@ export async function fetchRepoRecordWithFallback(
   uri: string,
   pds?: string | null,
   timeoutMs?: number,
+  opts: { preferPds?: boolean } = {},
 ): Promise<RecordResponse | null> {
   const parsed = parseAtUri(uri);
   if (!parsed) return null;
+
+  // `preferPds` inverts the order for callers whose *decision* is derived from
+  // the record rather than merely displayed from it. Slingshot is a cache, and
+  // a cached copy that predates an edit reads as a confident, wrong answer —
+  // that is how a publication whose record says `prevNextDirection: "ltr"` got
+  // recorded as an ordinary blog. Where a stale read would be written down as
+  // fact, ask the authority.
+  if (opts.preferPds && pds) {
+    const fromPds = await getRecordFromBase(pds, parsed, timeoutMs);
+    if (fromPds) return fromPds;
+  }
 
   const fromSlingshot = await getRecordFromBase(
     slingshotBaseUrl(),
@@ -104,6 +122,46 @@ export async function fetchRepoRecordWithFallback(
     if (fromPds) return fromPds;
   }
   return null;
+}
+
+/**
+ * The repo's current commit rev, straight from its PDS.
+ *
+ * This is the cheapest possible "has anything happened here?" — one request,
+ * no record enumeration — and it is what lets the reconcile sweep skip a repo
+ * that has not moved since we last mirrored it (see `repairRepoIfAdvanced`).
+ *
+ * Deliberately **not** routed through Slingshot. Everywhere else a cached copy
+ * is a fine answer, but here a stale head reads as "nothing changed" and the
+ * sweep would skip the very repo it exists to repair — the cache would silence
+ * the alarm instead of tripping it. The PDS is the only authority on its own
+ * head, so this asks the PDS.
+ *
+ * Returns null when the rev can't be read (no PDS, unreachable host, malformed
+ * response). Callers treat null as "unknown, reconcile anyway" rather than as
+ * "unchanged" — an unreadable head must never be a reason to skip repair.
+ */
+export async function fetchRepoHeadRev(
+  did: string,
+  pds: string | null | undefined,
+  timeoutMs = DEFAULT_FETCH_TIMEOUT_MS,
+): Promise<string | null> {
+  if (!pds) return null;
+  const url = new URL("/xrpc/com.atproto.sync.getLatestCommit", pds);
+  url.searchParams.set("did", did);
+  try {
+    const response = await fetch(url, {
+      redirect: "follow",
+      signal: AbortSignal.timeout(timeoutMs),
+      headers: { Accept: "application/json" },
+    });
+    if (!response.ok) return null;
+    const payload: unknown = await response.json();
+    if (!isRecord(payload)) return null;
+    return typeof payload.rev === "string" ? payload.rev : null;
+  } catch {
+    return null;
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -202,6 +260,7 @@ async function listRecordsFromHost(
 ): Promise<Array<ListedRecord>> {
   const records: Array<ListedRecord> = [];
   let cursor: string | undefined;
+  let pages = 0;
   do {
     const url = new URL("/xrpc/com.atproto.repo.listRecords", host);
     url.searchParams.set("repo", did);
@@ -237,7 +296,28 @@ async function listRecordsFromHost(
     if (limit && records.length >= limit) {
       return records.slice(0, limit);
     }
-    cursor = page.length === pageSize ? body.cursor : undefined;
+    // Follow the cursor the server gave us, rather than guessing from the page
+    // size that there is nothing left.
+    //
+    // A short page is NOT the end of a collection. `bsky.network` PDSes answer
+    // a `limit=100` request with 50 records *and* a cursor as a matter of
+    // course, so the old `page.length === pageSize` test stopped after one page
+    // and silently returned a prefix of the collection — for blocks that means
+    // the reader's later blocks were never mirrored, and never enforced.
+    //
+    // The guards below are what that test was really reaching for: stop on an
+    // empty page, on a cursor the server didn't advance (either would spin
+    // forever), and at a page cap as a last resort.
+    const nextCursor = body.cursor;
+    const advanced =
+      typeof nextCursor === "string" &&
+      nextCursor.length > 0 &&
+      nextCursor !== cursor;
+    pages += 1;
+    cursor =
+      advanced && page.length > 0 && pages < MAX_LIST_PAGES
+        ? nextCursor
+        : undefined;
   } while (cursor);
   return records;
 }

@@ -51,6 +51,7 @@ import {
 import { useCallback, useEffect, useRef, useState } from "react";
 import { z } from "zod";
 
+import { usePullToRefresh } from "#/components/reader/pull-to-refresh";
 import { feedApi } from "#/integrations/tanstack-query/api-feed.functions";
 import type { ListOwner } from "#/integrations/tanstack-query/api-lists.functions";
 import { listApi } from "#/integrations/tanstack-query/api-lists.functions";
@@ -64,6 +65,7 @@ import { shareLinkUrl, useNativeShareAvailable } from "#/lib/native-share";
 import { getPublicUrlClient } from "#/lib/public-url";
 import { buildBlueskyComposeUrl } from "#/lib/quote-share";
 import {
+  canonicalLink,
   listFeedUrl,
   listOgImageUrl,
   siteSocialMeta,
@@ -148,6 +150,9 @@ export const Route = createFileRoute("/_layout/l/$did/$rkey")({
         ogImage: listOgImageUrl(baseUrl, params.did, params.rkey),
       }),
       links: [
+        // Self-canonical: a reader's list is their own grouping, and the sort
+        // and layout views are the same page seen differently.
+        canonicalLink(`${baseUrl}${match.pathname}`),
         {
           rel: "alternate",
           type: "application/rss+xml",
@@ -585,6 +590,7 @@ function ListPeoplePanel({
 }
 
 function ListPage() {
+  usePullToRefresh();
   const { t } = useLingui();
   const { did, rkey } = Route.useParams();
   const { view } = Route.useSearch();

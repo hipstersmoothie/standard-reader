@@ -4,4 +4,4 @@
  * when auth route modules statically import `db`. Re-exports the singleton from
  * `./index.ts` so there is still exactly one client instance.
  */
-export { db, isNeonHttpDriver } from "./index.ts";
+export { db, getLockDb, isNeonHttpDriver } from "./index.ts";

@@ -39,11 +39,13 @@ import {
 } from "react";
 import { z } from "zod";
 
+import { usePullToRefresh } from "#/components/reader/pull-to-refresh";
 import { ButtonLink } from "#/components/router-links";
 import {
   DISCOVER_TOPICS_LIMIT,
   discoverApi,
 } from "#/integrations/tanstack-query/api-discover.functions";
+import { topicsApi } from "#/integrations/tanstack-query/api-topics.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
 import { getPublicUrlClient } from "#/lib/public-url";
 import { pageSocialMeta } from "#/lib/site-metadata";
@@ -64,6 +66,10 @@ import {
   SectionHead,
 } from "../components/reader/primitives";
 import { PubGridList } from "../components/reader/pub-grid-list";
+import {
+  TopicCardSkeleton,
+  TopicGridList,
+} from "../components/reader/topic-cards";
 import type { PublicationCard } from "../integrations/tanstack-query/api-shapes";
 
 const DIRECTORY_PAGE_SIZE = 24;
@@ -72,6 +78,8 @@ const DIRECTORY_SKELETON_COUNT = 8;
 const DIRECTORY_LOAD_MORE_SKELETON_COUNT = 3;
 const DEFERRED_ROOT_MARGIN = "600px 0px";
 const RAIL_LIMIT = 10;
+const TOPIC_RAIL_LIMIT = 8;
+const TOPIC_RAIL_SKELETONS = 4;
 const TRENDING_LIMIT_OPTIONS = [5, 10, 20, 50, 100] as const;
 const DEFAULT_TRENDING_LIMIT = 5;
 const SOCIAL_PROOF_MAX = 60;
@@ -106,8 +114,11 @@ export const Route = createFileRoute("/_layout/discover")({
     const trendingOptions = discoverApi.getTrendingPublicationsQueryOptions({
       limit: DEFAULT_TRENDING_LIMIT,
     });
-    const topicsOptions = discoverApi.getTopicsQueryOptions({
+    const topicChipsOptions = discoverApi.getTopicsQueryOptions({
       limit: DISCOVER_TOPICS_LIMIT,
+    });
+    const topicsOptions = topicsApi.getDiscoverTopicsQueryOptions({
+      limit: TOPIC_RAIL_LIMIT,
     });
     const directoryOptions = discoverApi.getPublicationsQueryOptions({
       topic: deps.topic ?? null,
@@ -124,9 +135,10 @@ export const Route = createFileRoute("/_layout/discover")({
       void context.queryClient.prefetchQuery(knownCountOptions);
       void context.queryClient.prefetchQuery(extrasOptions);
       void context.queryClient.prefetchQuery(trendingOptions);
-      void context.queryClient.prefetchQuery(topicsOptions);
+      void context.queryClient.prefetchQuery(topicChipsOptions);
       void context.queryClient.prefetchQuery(directoryOptions);
       void context.queryClient.prefetchQuery(friendsOptions);
+      void context.queryClient.prefetchQuery(topicsOptions);
       return;
     }
 
@@ -138,9 +150,12 @@ export const Route = createFileRoute("/_layout/discover")({
     await Promise.all([
       context.queryClient.ensureQueryData(knownCountOptions),
       context.queryClient.ensureQueryData(trendingOptions),
+      // Above the fold, and cheap (precomputed tables) — awaiting it keeps the
+      // rail from popping in under Trending after first paint.
+      context.queryClient.ensureQueryData(topicsOptions),
     ]);
     void context.queryClient.prefetchQuery(extrasOptions);
-    void context.queryClient.prefetchQuery(topicsOptions);
+    void context.queryClient.prefetchQuery(topicChipsOptions);
     void context.queryClient.prefetchQuery(directoryOptions);
 
     // Block on the friends lookup only if it can be answered from the warm
@@ -223,6 +238,11 @@ const styles = stylex.create({
   },
   railWrap: {
     marginTop: spacing["5"],
+  },
+  topicRailSkeleton: {
+    columnGap: spacing["6"],
+    display: "flex",
+    overflow: "hidden",
   },
   directorySearch: {
     flexShrink: 0,
@@ -517,6 +537,68 @@ function DiscoverFriendsPrompt() {
         <Users size={16} aria-hidden />
         <Trans>Find your friends</Trans>
       </ButtonLink>
+    </div>
+  );
+}
+
+/**
+ * Topics — clusters of related tags, derived by the recompute sweep.
+ *
+ * Sits directly under Trending because it is the page's answer to breadth: the
+ * topic chips further down rank tags by raw frequency, which buries everything
+ * that is not an atproto-native topic. Personalized server-side from the
+ * reader's follows when there are any.
+ *
+ * Renders nothing until it has topics — an empty rail would just be a
+ * hole above Recommended (same rule the other rails follow).
+ */
+function DiscoverTopicsSection() {
+  const { t } = useLingui();
+  const title = t`Topics`;
+  const { data: topics, isPending } = useQuery(
+    topicsApi.getDiscoverTopicsQueryOptions({
+      limit: TOPIC_RAIL_LIMIT,
+    }),
+  );
+
+  if (isPending) {
+    return (
+      <div {...stylex.props(styles.section)}>
+        <SectionHead title={title} />
+        {/* No `aria-busy` here: this section streams in after the critical
+            path, and the perf harness clears on `aria-busy`. */}
+        <div {...stylex.props(styles.railWrap, styles.topicRailSkeleton)}>
+          {Array.from({ length: TOPIC_RAIL_SKELETONS }, (_, index) => (
+            <TopicCardSkeleton key={index} rail />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (!topics || topics.length === 0) return null;
+
+  return (
+    <div {...stylex.props(styles.section)}>
+      <SectionHead
+        title={title}
+        // The rail shows a personalized handful; browsing and searching the
+        // rest lives on its own page.
+        stackOnMobile={false}
+        action={
+          <ButtonLink
+            to="/topics"
+            variant="tertiary"
+            size="sm"
+            aria-label={t`Browse all topics`}
+          >
+            <Trans>See all</Trans>
+          </ButtonLink>
+        }
+      />
+      <div {...stylex.props(styles.railWrap)}>
+        <TopicGridList topics={topics} layout="rail" aria-label={title} />
+      </div>
     </div>
   );
 }
@@ -941,6 +1023,7 @@ function DiscoverMastheadDek({
 }
 
 function Discover() {
+  usePullToRefresh();
   const { t } = useLingui();
   const fmt = useFormatters();
   const { data: session } = useQuery(user.getSessionQueryOptions);
@@ -979,6 +1062,8 @@ function Discover() {
       {signedIn ? <DiscoverFriendsPrompt /> : null}
 
       <DiscoverTrendingSection />
+
+      <DiscoverTopicsSection />
 
       <DiscoverRecommendedSection
         signedIn={signedIn}

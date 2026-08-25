@@ -21,13 +21,33 @@ function asText(value: unknown): StructuredText | null {
   };
 }
 
-function listItemsFromChildren(children: unknown): Array<StructuredListItem> {
+/**
+ * List items, including the sub-lists Offprint hangs off an item's `children`.
+ *
+ * An Offprint item nests by carrying its own `children` array of items rather
+ * than a list block, so the sub-list is rebuilt here as a list of the parent's
+ * kind — dropping it loses whole branches of a document.
+ */
+function listItemsFromChildren(
+  children: unknown,
+  kind: "bulletList" | "orderedList",
+): Array<StructuredListItem> {
   if (!Array.isArray(children)) return [];
   const items: Array<StructuredListItem> = [];
   for (const child of children) {
     if (!isRecord(child)) continue;
     const text = asText(child.content);
-    if (text?.plaintext.trim()) items.push({ text });
+    const nested = listItemsFromChildren(child.children, kind);
+    const branch: Array<StructuredRenderableBlock> =
+      nested.length > 0 ? [{ items: nested, kind }] : [];
+
+    if (text?.plaintext.trim()) {
+      items.push(branch.length > 0 ? { children: branch, text } : { text });
+    } else if (branch.length > 0) {
+      // An item that is only a sub-list still has to keep the branch, so it
+      // becomes an empty parent rather than disappearing with its children.
+      items.push({ children: branch, text: { plaintext: "" } });
+    }
   }
   return items;
 }
@@ -89,12 +109,12 @@ function asRenderableBlock(value: unknown): StructuredRenderableBlock | null {
   }
 
   if (value.$type === OFFPRINT_BLOCK.bulletList) {
-    const items = listItemsFromChildren(value.children);
+    const items = listItemsFromChildren(value.children, "bulletList");
     return items.length > 0 ? { kind: "bulletList", items } : null;
   }
 
   if (value.$type === OFFPRINT_BLOCK.orderedList) {
-    const items = listItemsFromChildren(value.children);
+    const items = listItemsFromChildren(value.children, "orderedList");
     return items.length > 0
       ? {
           kind: "orderedList",

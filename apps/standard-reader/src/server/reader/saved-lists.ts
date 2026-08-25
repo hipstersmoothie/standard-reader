@@ -137,9 +137,10 @@ export async function readList(
   const fetched = await fetchPublicList(did, rkey);
   if (!fetched) return null;
 
-  // Backfill the owner's lists (catches both this list and any siblings).
-  const { backfillListsFromRepo } = await import("#/server/ingest/handlers");
-  void backfillListsFromRepo(did);
+  // Backfill the owner's repo (catches both this list and any siblings).
+  const { backfillRepoFromArchive } =
+    await import("#/server/ingest/archive-replay");
+  void backfillRepoFromArchive(did);
 
   return fetched;
 }
@@ -196,9 +197,12 @@ function scheduleListBackfill(did: string): void {
   backfillAttempted.add(did);
   void (async () => {
     try {
-      const { backfillListsFromRepo } =
-        await import("#/server/ingest/handlers");
-      const { listSaves: saved } = await backfillListsFromRepo(did);
+      const [{ backfillRepoFromArchive }, { Collections }] = await Promise.all([
+        import("#/server/ingest/archive-replay"),
+        import("#/server/atproto/uri"),
+      ]);
+      const fold = await backfillRepoFromArchive(did);
+      const saved = fold.live.get(Collections.listSave)?.size ?? 0;
       if (saved > 0) cache.delete(did);
     } catch (error) {
       // Allow a later read to retry rather than pinning the failure forever.

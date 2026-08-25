@@ -46,6 +46,7 @@ import {
 } from "react";
 import { z } from "zod";
 
+import { usePullToRefresh } from "#/components/reader/pull-to-refresh";
 import { ButtonLink } from "#/components/router-links";
 import {
   TRENDING_PAGE_LIMIT,
@@ -54,9 +55,11 @@ import {
 } from "#/integrations/tanstack-query/api-feed.functions";
 import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
+import { latestControlsVisibility } from "#/lib/latest-feed-controls";
 import { getPublicUrlClient } from "#/lib/public-url";
 import { latestFeedUrl, pageSocialMeta } from "#/lib/site-metadata";
 import { useFormatters } from "#/lib/use-formatters";
+import { useOnlineStatus } from "#/lib/use-online-status";
 import { useTrackReadingHistory } from "#/lib/use-track-reading-history";
 import { useLoginSearch } from "#/utils/use-login-search";
 
@@ -470,6 +473,7 @@ function LatestFeedPanel({
 }
 
 function Latest() {
+  usePullToRefresh();
   const { t } = useLingui();
   const fmt = useFormatters();
   const { filter } = Route.useSearch();
@@ -502,11 +506,23 @@ function Latest() {
   const { enabled: trackReading } = useTrackReadingHistory();
   const signedIn = Boolean(session?.user);
   const loginSearch = useLoginSearch();
+  const online = useOnlineStatus();
 
+  // With reading history off there is no Unread tab, so `?filter=unread` is a
+  // URL to normalise away, not a page the reader chose. `replace` keeps it out
+  // of history — a pushed entry makes Back bounce off this effect forever.
   useEffect(() => {
     if (trackReading || filter !== "unread") return;
-    void navigate({ search: { filter: "subscriptions" } });
+    void navigate({ replace: true, search: { filter: "subscriptions" } });
   }, [filter, navigate, trackReading]);
+
+  // Same normalisation for losing the connection while on a network-wide tab:
+  // its tab is about to disappear, and leaving the reader on a filter with no
+  // control to leave it by is worse than moving them to one that has data.
+  useEffect(() => {
+    if (online || (filter !== "all" && filter !== "trending")) return;
+    void navigate({ replace: true, search: { filter: "subscriptions" } });
+  }, [filter, navigate, online]);
 
   useEffect(() => {
     // Signed-out readers only see the active feed (no tab switcher) — prefetching
@@ -604,6 +620,15 @@ function Latest() {
   const isTrending = filter === "trending";
   const isNetwork = !signedIn || filter === "all" || isTrending;
 
+  const { showRssFeed, showMarkAllRead, markAllReadDisabled } =
+    latestControlsVisibility({
+      countsPending,
+      filter,
+      signedIn,
+      trackReading,
+      unreadCount: counts.unread,
+    });
+
   const trendingCount = Math.min(counts.trending, TRENDING_PAGE_LIMIT);
   const metaCount = isTrending
     ? trendingCount
@@ -673,10 +698,17 @@ function Latest() {
             <SegmentedControlItem id="subscriptions">
               {subscriptionsLabel}
             </SegmentedControlItem>
-            <SegmentedControlItem id="all">{allLabel}</SegmentedControlItem>
-            <SegmentedControlItem id="trending">
-              {trendingLabel}
-            </SegmentedControlItem>
+            {/* Network-wide tabs: everything in them is by definition outside
+                what offline sync stored, so offline they are two taps that can
+                only reach an error. */}
+            {online ? (
+              <SegmentedControlItem id="all">{allLabel}</SegmentedControlItem>
+            ) : null}
+            {online ? (
+              <SegmentedControlItem id="trending">
+                {trendingLabel}
+              </SegmentedControlItem>
+            ) : null}
           </SegmentedControl>
         ) : (
           <Flex>
@@ -686,18 +718,14 @@ function Latest() {
           </Flex>
         )}
         <Flex align="center" gap="md">
-          {signedIn && filter === "unread" ? (
+          {showRssFeed ? (
             <RssFeedButton
               name={t`Your Latest`}
               feedUrl={latestFeedUrl(getPublicUrlClient(), readerScope)}
               size="lg"
             />
           ) : null}
-          {trackReading &&
-          signedIn &&
-          filter === "unread" &&
-          !countsPending &&
-          counts.unread > 0 ? (
+          {showMarkAllRead ? (
             <AlertDialog
               isOpen={markAllReadOpen}
               onOpenChange={setMarkAllReadOpen}
@@ -705,6 +733,7 @@ function Latest() {
                 <IconButton
                   variant="secondary"
                   size="lg"
+                  isDisabled={markAllReadDisabled}
                   label={t`Mark all as read`}
                 >
                   <CheckCheck size={18} />

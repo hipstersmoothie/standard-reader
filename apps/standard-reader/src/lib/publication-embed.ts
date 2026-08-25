@@ -1,12 +1,20 @@
-import { subscribeCardBorderRadius } from "#/components/reader/subscribe-card.constants";
+import type { EmbedCardLayout, EmbedCardTab } from "#/lib/embed-snippet";
+import {
+  EMBED_RESIZE_MESSAGE,
+  buildEmbedAnchorSnippet,
+  buildEmbedIframeSnippet,
+  buildEmbedResizeScript,
+  embedFrameInlineStyle,
+  embedIframeId,
+  embedPageBackgroundCss,
+} from "#/lib/embed-snippet";
 import { getPublicUrlClient } from "#/lib/public-url";
 import type { PublicationThemeInput } from "#/lib/publication-theme";
 import { resolveQuoteOgColors } from "#/lib/publication-theme";
 import { buildAuthRedirectPath } from "#/utils/auth-redirect";
 
 /** `postMessage` type the embed page sends so the host page can resize its iframe. */
-export const SUBSCRIBE_EMBED_RESIZE_MESSAGE =
-  "standard-reader-subscribe-resize";
+export const SUBSCRIBE_EMBED_RESIZE_MESSAGE = EMBED_RESIZE_MESSAGE;
 
 /** Publication brand background — same value as the subscribe card fill. */
 export function subscribeEmbedBackgroundColor(
@@ -16,35 +24,16 @@ export function subscribeEmbedBackgroundColor(
 }
 
 /** Paints the embed document with the publication brand background. */
-export function subscribeEmbedPageBackgroundCss(
-  backgroundColor: string,
-): string {
-  return `
-html, body, #app, #app > *, main {
-  background-color: ${backgroundColor} !important;
-  min-height: 0 !important;
-  height: auto !important;
-}
-`.trim();
-}
+export const subscribeEmbedPageBackgroundCss = embedPageBackgroundCss;
 
-export type SubscribeEmbedLayout = "landscape" | "portrait";
+export type SubscribeEmbedLayout = EmbedCardLayout;
 
 /** Embed dialog tabs — iframe layouts or a plain anchor for custom styling. */
-export type SubscribeEmbedTab = SubscribeEmbedLayout | "link";
-
-function escapeHtmlText(text: string): string {
-  return text
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;");
-}
+export type SubscribeEmbedTab = EmbedCardTab;
 
 /** Stable iframe id for a publication embed (used in the snippet + resize script). */
 export function subscribeEmbedIframeId(rkey: string): string {
-  const safe = rkey.replaceAll(/[^a-zA-Z0-9_-]/g, "");
-  return `sr-subscribe-${safe || "embed"}`;
+  return embedIframeId("subscribe", rkey);
 }
 
 /**
@@ -117,16 +106,10 @@ export function subscribeEmbedUrl({
 }
 
 /** Inline style for the squircle clip wrapper around the iframe. */
-export function subscribeEmbedFrameInlineStyle(
-  backgroundColor: string,
-): string {
-  return `border-radius:${subscribeCardBorderRadius};corner-shape:squircle;overflow:hidden;max-width:100%;width:400px;background-color:${backgroundColor}`;
-}
+export const subscribeEmbedFrameInlineStyle = embedFrameInlineStyle;
 
 /** Host-page script that resizes the iframe from embed `postMessage` events. */
-export function buildSubscribeEmbedResizeScript(iframeId: string): string {
-  return `window.addEventListener("message",function(e){if(e.data?.type!=="${SUBSCRIBE_EMBED_RESIZE_MESSAGE}"||typeof e.data.height!=="number")return;var f=document.getElementById("${iframeId}");if(f&&e.source===f.contentWindow){f.style.height=Math.ceil(e.data.height)+"px";}});`;
-}
+export const buildSubscribeEmbedResizeScript = buildEmbedResizeScript;
 
 /** iframe snippet publishers can paste on their site. */
 export function buildSubscribeEmbedSnippet({
@@ -158,33 +141,27 @@ export function buildSubscribeEmbedSnippet({
   themeAccentForeground?: string | null;
   baseUrl?: string;
 }): string {
-  const src = subscribeEmbedUrl({ did, rkey, layout, baseUrl });
-  const title = `Subscribe to ${name}`;
-  const iframeId = subscribeEmbedIframeId(rkey);
-  const height = estimateSubscribeEmbedHeight(
-    {
-      name,
-      topic,
-      ownerDisplayName,
-      ownerHandle,
-      description,
-    },
-    layout,
-  );
-  const background = subscribeEmbedBackgroundColor({
-    themeBackground,
-    themeForeground,
-    themeAccent,
-    themeAccentForeground,
+  return buildEmbedIframeSnippet({
+    src: subscribeEmbedUrl({ did, rkey, layout, baseUrl }),
+    iframeId: subscribeEmbedIframeId(rkey),
+    title: `Subscribe to ${name}`,
+    height: estimateSubscribeEmbedHeight(
+      {
+        name,
+        topic,
+        ownerDisplayName,
+        ownerHandle,
+        description,
+      },
+      layout,
+    ),
+    backgroundColor: subscribeEmbedBackgroundColor({
+      themeBackground,
+      themeForeground,
+      themeAccent,
+      themeAccentForeground,
+    }),
   });
-
-  const frameStyle = subscribeEmbedFrameInlineStyle(background);
-  const iframeStyle = "border:0;color-scheme:normal;display:block;width:100%";
-
-  return `<div style="${frameStyle}"><iframe id="${iframeId}" src="${src}" width="400" height="${height}" style="${iframeStyle}" title="${title}" loading="lazy"></iframe></div>
-<script>
-${buildSubscribeEmbedResizeScript(iframeId)}
-</script>`;
 }
 
 /** Plain anchor snippet — publishers style the link to match their site. */
@@ -199,9 +176,10 @@ export function buildSubscribeAnchorSnippet({
   name: string;
   baseUrl?: string;
 }): string {
-  const href = subscribePageUrl({ did, rkey, baseUrl });
-  const label = escapeHtmlText(`Subscribe to ${name}`);
-  return `<a href="${href}">${label}</a>`;
+  return buildEmbedAnchorSnippet({
+    href: subscribePageUrl({ did, rkey, baseUrl }),
+    label: `Subscribe to ${name}`,
+  });
 }
 
 /** Post-login destination: auto-follow then success screen. */

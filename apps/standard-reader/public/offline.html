@@ -80,17 +80,33 @@
         margin: 0 0 1.5rem;
         color: var(--muted);
       }
-      button {
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        justify-content: center;
+      }
+      button,
+      .primary {
         font: inherit;
         font-weight: 600;
         cursor: pointer;
         border: 0;
         border-radius: 999px;
         padding: 0.65rem 1.4rem;
+        text-decoration: none;
         color: var(--bg);
         background: var(--fg);
       }
-      button:hover {
+      /* Secondary: the feed is the useful destination, retrying rarely is. */
+      button {
+        color: var(--fg);
+        background: transparent;
+        box-shadow: inset 0 0 0 1px
+          color-mix(in srgb, var(--fg) 25%, transparent);
+      }
+      button:hover,
+      .primary:hover {
         filter: brightness(1.05);
       }
     </style>
@@ -116,10 +132,13 @@
       </div>
       <h1>You're offline</h1>
       <p>
-        This page hasn't been saved for offline reading yet. Reconnect and try
-        again — pages you've already visited stay available.
+        This page wasn't saved to your device. Your unread articles were — open
+        the app and they're there.
       </p>
-      <button type="button" onclick="location.reload()">Try again</button>
+      <div class="actions">
+        <a class="primary" href="/">Go to your feed</a>
+        <button type="button" onclick="location.reload()">Try again</button>
+      </div>
     </main>
   </body>
 </html>

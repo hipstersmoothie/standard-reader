@@ -1,5 +1,3 @@
-import type { CSSProperties } from "react";
-
 import type { PublicationEmbedMeta } from "#/integrations/tanstack-query/api-publication.functions";
 import type { QuoteOgColors } from "#/lib/publication-theme";
 import { resolveQuoteOgColors } from "#/lib/publication-theme";
@@ -13,16 +11,4 @@ export function publicationThemeColors(
     themeAccent: meta.themeAccent,
     themeAccentForeground: meta.themeAccentForeground,
   });
-}
-
-/** Theme tokens for subscribe card CSS variables. */
-export function publicationThemeVars(colors: QuoteOgColors): CSSProperties {
-  return {
-    "--sub-bg": colors.background,
-    "--sub-fg": colors.foreground,
-    "--sub-muted": colors.muted,
-    "--sub-accent": colors.accent,
-    "--sub-accent-fg": colors.accentForeground,
-    "--sub-line": colors.line,
-  } as CSSProperties;
 }

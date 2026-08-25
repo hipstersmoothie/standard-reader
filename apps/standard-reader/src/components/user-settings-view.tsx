@@ -68,10 +68,12 @@ import { invalidateReadQueries } from "#/components/reader/read-optimistic";
 import { useSidebarPref } from "#/components/reader/use-sidebar-pref";
 import { ButtonLink } from "#/components/router-links";
 import { auth } from "#/integrations/tanstack-query/api-auth.functions";
+import { blocksApi } from "#/integrations/tanstack-query/api-blocks.functions";
 import { feedApi } from "#/integrations/tanstack-query/api-feed.functions";
 import { labelerApi } from "#/integrations/tanstack-query/api-labelers.functions";
 import { listApi } from "#/integrations/tanstack-query/api-lists.functions";
 import { mcpApi } from "#/integrations/tanstack-query/api-mcp.functions";
+import { mutesApi } from "#/integrations/tanstack-query/api-mutes.functions";
 import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
 import type { DigestSectionKey } from "#/integrations/tanstack-query/api-user.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
@@ -81,6 +83,7 @@ import type { Locale } from "#/lib/locale";
 import { LOCALE_LABELS, LOCALES, PSEUDO_LOCALE, isLocale } from "#/lib/locale";
 import { AMERICAN_ENGLISH_VOICES } from "#/lib/page-reader/voice-catalog";
 import { isReaderVoicePreference } from "#/lib/reader-voice";
+import { clearAllLocalProgress } from "#/lib/reading-progress";
 import type { ReadingTypographyPreference } from "#/lib/reading-typography";
 import {
   READING_BODY_FONTS,
@@ -94,15 +97,18 @@ import { CUSTOMIZABLE_SIDEBAR_NAV } from "#/lib/sidebar-nav";
 import type { ThemeMode } from "#/lib/theme";
 import { isThemeMode } from "#/lib/theme";
 import { useCountOldPostsAsUnread } from "#/lib/use-count-old-posts-as-unread";
+import { useExcludeWebBridge } from "#/lib/use-exclude-web-bridge";
 import {
   useFeedPagination,
   useHideFeedMetrics,
 } from "#/lib/use-feed-preferences";
 import { useFormatters } from "#/lib/use-formatters";
 import { useLocale } from "#/lib/use-locale";
+import { useOfflineSyncDebugVisible } from "#/lib/use-offline-sync-debug-visible";
 import { useOpenCollectionsInMagazine } from "#/lib/use-open-collections-in-magazine";
 import { useOpenLinks } from "#/lib/use-open-links";
 import { usePublicationThemePreference } from "#/lib/use-publication-theme-preference";
+import { usePushSettings } from "#/lib/use-push-settings";
 import { useReaderVoice } from "#/lib/use-reader-voice";
 import { useReadingTypography } from "#/lib/use-reading-typography";
 import { useTheme } from "#/lib/use-theme";
@@ -112,6 +118,11 @@ import {
   AppearanceAdvancedRows,
   AppearancePalettePanel,
 } from "./appearance-settings";
+import { EreaderSettings } from "./ereader-settings";
+import { OfflineReadingSettings } from "./offline-settings";
+import { OfflineSyncDebugPanel } from "./offline-sync-debug";
+import { PushDiagnosticsPanel } from "./push-diagnostics";
+import { IosInstallPrompt } from "./reader/ios-install-prompt";
 import { Masthead, ReaderContent } from "./reader/primitives";
 import { ReadingCustomFontPicker } from "./reading-custom-font-picker";
 import { ReadingSettingsPreview } from "./reading-settings-preview";
@@ -408,6 +419,11 @@ export function UserSettingsView() {
   const { t, i18n } = useLingui();
   const queryClient = useQueryClient();
   const labelers = useQuery(labelerApi.getLabelersQueryOptions());
+  // Just the headline count — the list itself lives on `/settings/blocks`.
+  const blocks = useQuery(blocksApi.getBlockCapabilityQueryOptions());
+  const blockCount = blocks.data?.accountCount ?? null;
+  const mutes = useQuery(mutesApi.getMuteCapabilityQueryOptions());
+  const muteCount = mutes.data?.count ?? null;
   const connections = useQuery(mcpApi.listConnectionsQueryOptions());
   const fmt = useFormatters();
   const revokeConnectionMutation = useMutation({
@@ -461,6 +477,8 @@ export function UserSettingsView() {
     useTrackReadingHistory();
   const { enabled: countOldAsUnread, setEnabled: setCountOldAsUnread } =
     useCountOldPostsAsUnread();
+  const { enabled: excludeWebBridge, setEnabled: setExcludeWebBridge } =
+    useExcludeWebBridge();
   const { enabled: usePublicationTheme, setEnabled: setUsePublicationTheme } =
     usePublicationThemePreference();
   const { hidden: hideFeedMetrics, setHidden: setHideFeedMetrics } =
@@ -472,9 +490,17 @@ export function UserSettingsView() {
   const signedIn = Boolean(session?.user);
   const sidebarPref = useSidebarPref(signedIn);
 
-  const deleteHistoryMutation = useMutation(
-    readerApi.deleteAllReadHistoryMutationOptions(),
-  );
+  const deleteHistoryMutation = useMutation({
+    ...readerApi.deleteAllReadHistoryMutationOptions(),
+    onSuccess: () => {
+      // The server rows are gone; drop this device's copy too, or the next
+      // article the reader opens resumes from a position they just erased.
+      clearAllLocalProgress();
+      void queryClient.invalidateQueries({
+        queryKey: ["reader", "unfinished"],
+      });
+    },
+  });
   const deleteBookmarksMutation = useMutation(
     readerApi.deleteAllBookmarksMutationOptions(),
   );
@@ -565,6 +591,22 @@ export function UserSettingsView() {
   const [digestDialogOpen, setDigestDialogOpen] = useState(false);
   const [digestPreviewOpen, setDigestPreviewOpen] = useState(false);
   const [digestPreviewLoading, setDigestPreviewLoading] = useState(true);
+
+  const push = usePushSettings();
+  const offlineSyncDebugVisible = useOfflineSyncDebugVisible();
+  const [iosPromptOpen, setIosPromptOpen] = useState(false);
+
+  // One row, five possible states. Ordered most-actionable first so the reader
+  // is told what to do about it rather than just what's wrong.
+  const pushDescription = push.blocked
+    ? t`Notifications are blocked for this site. You can turn them back on in your browser settings.`
+    : push.capability === "needs-ios-install"
+      ? t`On iPhone and iPad, notifications need Standard Reader installed on your Home Screen.`
+      : push.capability === "unsupported"
+        ? t`This browser doesn’t support web notifications.`
+        : push.deviceRegistered
+          ? t`On for this browser. You’ll hear about new posts from the ${push.topicCount} publications and authors you’ve turned the bell on for.`
+          : t`Get notified the moment a publication or author publishes something new. Turn it on here, then choose who from their page.`;
 
   const onToggleDigest = (next: boolean) => {
     // Turning on requests the `transition:email` scope (a full PDS re-auth), so
@@ -768,6 +810,17 @@ export function UserSettingsView() {
           </SettingRow>
           <Separator />
           <SettingRow
+            label={t`Hide mirrored websites`}
+            description={t`Bridgy Fed mirrors tens of thousands of websites into the network without anyone there asking. When on, they are hidden from Latest, Discover, search, and tag pages. Publications you already subscribe to are never hidden, and blogs whose authors chose to bridge (ap.brid.gy) always stay.`}
+          >
+            <Switch
+              isSelected={excludeWebBridge}
+              onChange={setExcludeWebBridge}
+              aria-label={t`Hide mirrored websites`}
+            />
+          </SettingRow>
+          <Separator />
+          <SettingRow
             label={t`Loading more`}
             description={t`Infinite scroll keeps pulling the next page as you reach the end of a list. Load more waits for you to ask.`}
           >
@@ -967,6 +1020,75 @@ export function UserSettingsView() {
 
       <section {...stylex.props(styles.section)}>
         <h2 {...stylex.props(styles.sectionHeading)}>
+          <Trans>Notifications</Trans>
+        </h2>
+        <div {...stylex.props(styles.settingGroup)}>
+          <SettingRow
+            label={t`Notifications on this device`}
+            description={pushDescription}
+          >
+            {push.capability === "needs-ios-install" ? (
+              <Button
+                variant="secondary"
+                onPress={() => setIosPromptOpen(true)}
+              >
+                <Trans>How to enable</Trans>
+              </Button>
+            ) : (
+              <Switch
+                isSelected={push.deviceRegistered}
+                onChange={(next) => {
+                  void (next
+                    ? push.enableOnThisDevice()
+                    : push.disableOnThisDevice());
+                }}
+                isDisabled={
+                  push.isPending ||
+                  push.blocked ||
+                  push.capability === null ||
+                  push.capability === "unsupported"
+                }
+                aria-label={t`Notifications on this device`}
+              />
+            )}
+          </SettingRow>
+          {push.topicCount > 0 || push.deviceCount > 0 ? (
+            <>
+              <Separator />
+              <SettingRow
+                label={t`Turn off everywhere`}
+                description={t`Stop notifications on every device and clear all ${push.topicCount} of the publications and authors you’ve turned the bell on for.`}
+              >
+                <Button
+                  variant="secondary"
+                  isDisabled={push.isPending}
+                  onPress={() => {
+                    void push.disableEverywhere();
+                  }}
+                >
+                  <Trans>Turn off</Trans>
+                </Button>
+              </SettingRow>
+            </>
+          ) : null}
+          <Separator />
+          <Disclosure>
+            <DisclosureTitle style={styles.advancedTitle}>
+              <Trans>Troubleshooting</Trans>
+            </DisclosureTitle>
+            <DisclosurePanel>
+              <PushDiagnosticsPanel diagnostics={push.diagnostics} />
+            </DisclosurePanel>
+          </Disclosure>
+        </div>
+        <IosInstallPrompt
+          isOpen={iosPromptOpen}
+          onOpenChange={setIosPromptOpen}
+        />
+      </section>
+
+      <section {...stylex.props(styles.section)}>
+        <h2 {...stylex.props(styles.sectionHeading)}>
           <Trans>Reading</Trans>
         </h2>
         <div {...stylex.props(styles.settingGroup)}>
@@ -1053,11 +1175,77 @@ export function UserSettingsView() {
         </div>
       </section>
 
+      {/* Its own section rather than a tail on Reading: this is about what the
+          device stores and how much space that takes, which is a different
+          question from how articles look. Rendered only where it can do
+          anything — the installed app, or a browser tab with `?debug` — so it
+          never appears as an empty group. */}
+      {offlineSyncDebugVisible ? (
+        <section {...stylex.props(styles.section)}>
+          <h2 {...stylex.props(styles.sectionHeading)}>
+            <Trans>Offline</Trans>
+          </h2>
+          <div {...stylex.props(styles.settingGroup)}>
+            {/* Contributes its own trailing separator, so the disclosure sits
+                flush whether or not these rows render. */}
+            <OfflineReadingSettings />
+            {/* Same chrome as the notifications section's Troubleshooting, so
+                the two read as one convention rather than two panels that
+                happen to share a name. */}
+            <Disclosure>
+              <DisclosureTitle style={styles.advancedTitle}>
+                <Trans>Troubleshooting</Trans>
+              </DisclosureTitle>
+              <DisclosurePanel>
+                <OfflineSyncDebugPanel />
+              </DisclosurePanel>
+            </Disclosure>
+          </div>
+        </section>
+      ) : null}
+
+      {/* After Offline, before Moderation: both sections are about reading
+          somewhere other than this tab. */}
+      <section {...stylex.props(styles.section)}>
+        <h2 {...stylex.props(styles.sectionHeading)}>
+          <Trans>E-readers</Trans>
+        </h2>
+        <div {...stylex.props(styles.settingGroup)}>
+          <EreaderSettings />
+        </div>
+      </section>
+
       <section {...stylex.props(styles.section)}>
         <h2 {...stylex.props(styles.sectionHeading)}>
           <Trans>Moderation</Trans>
         </h2>
         <div {...stylex.props(styles.settingGroup)}>
+          <SettingRow
+            label={t`Blocked accounts`}
+            description={t`Your Bluesky blocks apply here too — blocked accounts disappear from your feeds, search, and discussion, in both directions.`}
+          >
+            <ButtonLink to="/settings/blocks" variant="secondary" size="sm">
+              {blockCount == null ? (
+                <Trans>Manage blocks</Trans>
+              ) : (
+                <Trans>Manage {blockCount} blocks</Trans>
+              )}
+            </ButtonLink>
+          </SettingRow>
+          <Separator />
+          <SettingRow
+            label={t`Muted`}
+            description={t`Muted people and publications stay subscribed but disappear from your feeds, search, and discovery. Only you can see your mutes' effect — nobody is notified.`}
+          >
+            <ButtonLink to="/settings/muted" variant="secondary" size="sm">
+              {muteCount == null ? (
+                <Trans>Manage mutes</Trans>
+              ) : (
+                <Trans>Manage {muteCount} mutes</Trans>
+              )}
+            </ButtonLink>
+          </SettingRow>
+          <Separator />
           <SettingRow
             label={t`Labelers`}
             description={t`Subscribe to labelers to flag, blur, or hide content as you read.`}

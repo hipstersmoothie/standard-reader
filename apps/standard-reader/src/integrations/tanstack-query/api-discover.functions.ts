@@ -4,6 +4,8 @@ import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
 
 import { getAtprotoSessionForRequest } from "#/middleware/auth-session.server";
+import { blockFilterDid, filterBlockedCards } from "#/server/blocks/blocks";
+import { filterMutedCards, muteFilterDid } from "#/server/mutes/mutes";
 import type { Span } from "#/server/observability/log";
 import { observe } from "#/server/observability/log";
 import { attachReaderSpanContext } from "#/server/observability/span-context.ts";
@@ -101,6 +103,15 @@ const discoverExtrasInput = z.object({
   socialProofLimit: z.number().int().min(1).max(100).default(12),
 });
 
+/**
+ * Discover's "Recommended" rail. Bridgy Fed's bulk web-bridge mirrors
+ * (`*.web.brid.gy`) are excluded here unconditionally: nobody at those sites
+ * asked to be published, so they read as noise in a rail that is meant to be a
+ * suggestion. Everywhere else they stay reachable — directory, search,
+ * trending, follows — unless the reader turned on "Hide mirrored websites"
+ * (`#/lib/exclude-web-bridge`), which is the `excludeWebBridge` threaded
+ * through the rest of this file.
+ */
 async function loadRecommendedRail(
   db: Db,
   schema: Schema,
@@ -117,13 +128,21 @@ async function loadRecommendedRail(
           limit,
           trendingExclude,
           rotationSeed("discover", "anon"),
+          { excludeWebBridge: true },
         )
       : await recommendedPublications(db, schema, did, limit, {
           excludeUris: trendingExclude,
+          excludeWebBridge: true,
           followUris,
           seed: rotationSeed("discover", did),
         });
-  return items.filter((pub) => pub.documentCount > 0);
+  const visible = await filterMutedCards(
+    db,
+    schema,
+    did,
+    await filterBlockedCards(db, schema, did, items),
+  );
+  return visible.filter((pub) => pub.documentCount > 0);
 }
 
 async function loadDiscoverExtras(
@@ -132,6 +151,7 @@ async function loadDiscoverExtras(
   did: string | null | undefined,
   { recommendedLimit, socialProofLimit }: z.infer<typeof discoverExtrasInput>,
   span: Span,
+  excludeWebBridge = false,
 ): Promise<DiscoverExtras> {
   const trendingLimit = Math.max(recommendedLimit, socialProofLimit);
   span.set("personalized", did != null);
@@ -141,8 +161,8 @@ async function loadDiscoverExtras(
 
   const [knownPublicationCount, trendingExclude, followUris] =
     await Promise.all([
-      countKnownPublications(db),
-      trendingPublicationUris(db, schema, trendingLimit),
+      countKnownPublications(db, { excludeWebBridge }),
+      trendingPublicationUris(db, schema, trendingLimit, { excludeWebBridge }),
       did ? effectiveFollowUris(db, schema, did) : Promise.resolve([]),
     ]);
 
@@ -160,9 +180,12 @@ async function loadDiscoverExtras(
     did
       ? followedByPeopleYouFollow(db, schema, did, socialProofLimit, {
           excludeUris: trendingExclude,
+          excludeWebBridge,
           followUris,
           seed: rotationSeed("discover-followed-by", did),
         })
+          .then((rows) => filterBlockedCards(db, schema, did, rows))
+          .then((rows) => filterMutedCards(db, schema, did, rows))
       : Promise.resolve([]),
   ]);
 
@@ -198,7 +221,9 @@ const getKnownPublicationCount = createServerFn({ method: "GET" })
   .handler(
     observe("discover.getKnownPublicationCount", async ({ context }, span) => {
       await attachReaderSpanContext(span, getRequest());
-      const count = await countKnownPublications(context.db);
+      const count = await countKnownPublications(context.db, {
+        excludeWebBridge: context.excludeWebBridgeEnabled,
+      });
       span.set("count", count);
       return count;
     }),
@@ -238,6 +263,8 @@ const getFriendPublishers = createServerFn({ method: "GET" })
       span.set("signedIn", true);
       span.set("offset", data.offset);
 
+      // Blocks are applied inside `friendPublishers` so the counts and the
+      // avatar stack agree with the rows — see `resolveFriendPublications`.
       const result = await friendPublishers(db, schema, did, {
         limit: data.limit,
         offset: data.offset,
@@ -282,6 +309,8 @@ const getFriendArticles = createServerFn({ method: "GET" })
         followSets.userDids,
         result.items,
       );
+      // `friendArticles` draws from the same block-filtered publication set, so
+      // the rows are already clear of blocked owners.
       const items = await attachViewerRecommendedToArticles(
         db,
         schema,
@@ -329,7 +358,14 @@ const getDiscoverExtras = createServerFn({ method: "GET" })
     observe("discover.getDiscoverExtras", async ({ data, context }, span) => {
       const { db, schema } = context;
       const did = await attachReaderSpanContext(span, getRequest());
-      return loadDiscoverExtras(db, schema, did, data, span);
+      return loadDiscoverExtras(
+        db,
+        schema,
+        did,
+        data,
+        span,
+        context.excludeWebBridgeEnabled,
+      );
     }),
   );
 
@@ -345,8 +381,11 @@ const getPublications = createServerFn({ method: "GET" })
       span.set("offset", data.offset);
       span.set("q", data.q ?? null);
 
+      const session = await getAtprotoSessionForRequest(getRequest());
       const items = await discoverDirectoryPublications(db, schema, {
         topic: data.topic ?? null,
+        viewerDid: await blockFilterDid(db, schema, session?.did),
+        muterDid: await muteFilterDid(db, schema, session?.did),
         // The topic chips now surface the full document-tag vocabulary, so a
         // selected chip must match any document tag — not only a publication's
         // single effective topic — or tags past the dominant one return empty.
@@ -355,6 +394,7 @@ const getPublications = createServerFn({ method: "GET" })
         limit: data.limit,
         offset: data.offset,
         query: data.q ?? null,
+        excludeWebBridge: context.excludeWebBridgeEnabled,
       });
 
       span.set("count", items.length);
@@ -374,7 +414,20 @@ const getTrendingPublications = createServerFn({ method: "GET" })
       "discover.getTrendingPublications",
       async ({ data, context }, span) => {
         const { db, schema } = context;
-        const items = await trendingPublications(db, schema, data.limit);
+        const session = await getAtprotoSessionForRequest(getRequest());
+        const items = await filterMutedCards(
+          db,
+          schema,
+          session?.did,
+          await filterBlockedCards(
+            db,
+            schema,
+            session?.did,
+            await trendingPublications(db, schema, data.limit, {
+              excludeWebBridge: context.excludeWebBridgeEnabled,
+            }),
+          ),
+        );
         span.set("count", items.length);
         return items;
       },
@@ -388,11 +441,12 @@ const getRecommendedPublications = createServerFn({ method: "GET" })
     observe(
       "discover.getRecommendedPublications",
       async ({ data, context }, span) => {
-        const { db, schema } = context;
+        const { db, schema, excludeWebBridgeEnabled } = context;
         const trendingExclude = await trendingPublicationUris(
           db,
           schema,
           data.limit,
+          { excludeWebBridge: excludeWebBridgeEnabled },
         );
         span.set("trendingExclude", trendingExclude.length);
 
@@ -405,6 +459,7 @@ const getRecommendedPublications = createServerFn({ method: "GET" })
             data.limit,
             trendingExclude,
             rotationSeed("discover", "anon"),
+            { excludeWebBridge: true },
           );
           span.set("count", items.length);
           return items.filter((pub) => pub.documentCount > 0);
@@ -418,12 +473,19 @@ const getRecommendedPublications = createServerFn({ method: "GET" })
           data.limit,
           {
             excludeUris: trendingExclude,
+            excludeWebBridge: true,
             followUris: await effectiveFollowUris(db, schema, session.did),
             seed: rotationSeed("discover", session.did),
           },
         );
-        span.set("count", items.length);
-        return items.filter((pub) => pub.documentCount > 0);
+        const visible = await filterBlockedCards(
+          db,
+          schema,
+          session.did,
+          items,
+        );
+        span.set("count", visible.length);
+        return visible.filter((pub) => pub.documentCount > 0);
       },
     ),
   );
@@ -513,7 +575,11 @@ const getOnboardingSuggestions = createServerFn({ method: "GET" })
     observe(
       "discover.getOnboardingSuggestions",
       async ({ data, context }, span): Promise<OnboardingSuggestions> => {
-        const { db, schema } = context;
+        const {
+          db,
+          schema,
+          excludeWebBridgeEnabled: excludeWebBridge,
+        } = context;
         const session = await getAtprotoSessionForRequest(getRequest());
         const did = session?.did ?? null;
         if (did) span.set("did", did);
@@ -535,7 +601,9 @@ const getOnboardingSuggestions = createServerFn({ method: "GET" })
           : [];
 
         const [trending, topicGroups] = await Promise.all([
-          trendingPublications(db, schema, 6),
+          trendingPublications(db, schema, 6, { excludeWebBridge })
+            .then((rows) => filterBlockedCards(db, schema, did, rows))
+            .then((rows) => filterMutedCards(db, schema, did, rows)),
           Promise.all(
             topics.map(async (topic) => ({
               topic,
@@ -544,18 +612,32 @@ const getOnboardingSuggestions = createServerFn({ method: "GET" })
                 sort: "readers",
                 limit: 8,
                 offset: 0,
+                excludeWebBridge,
+                viewerDid: await blockFilterDid(db, schema, did),
+                muterDid: await muteFilterDid(db, schema, did),
               }),
             })),
           ),
         ]);
 
         const trendingUris = trending.map((pub) => pub.uri);
-        const popular = await popularPublications(
+        const popular = await filterMutedCards(
           db,
           schema,
-          data.limit,
-          [...new Set([...followUris, ...trendingUris])],
-          rotationSeed("onboarding", did ?? "anon"),
+          did,
+          await filterBlockedCards(
+            db,
+            schema,
+            did,
+            await popularPublications(
+              db,
+              schema,
+              data.limit,
+              [...new Set([...followUris, ...trendingUris])],
+              rotationSeed("onboarding", did ?? "anon"),
+              { excludeWebBridge },
+            ),
+          ),
         );
 
         const sections = buildOnboardingSections({
@@ -604,7 +686,7 @@ const getFollowedByPeopleYouFollow = createServerFn({ method: "GET" })
     observe(
       "discover.getFollowedByPeopleYouFollow",
       async ({ data, context }, span) => {
-        const { db, schema } = context;
+        const { db, schema, excludeWebBridgeEnabled } = context;
         const session = await getAtprotoSessionForRequest(getRequest());
         if (!session) {
           span.set("count", 0);
@@ -615,6 +697,7 @@ const getFollowedByPeopleYouFollow = createServerFn({ method: "GET" })
           db,
           schema,
           data.limit,
+          { excludeWebBridge: excludeWebBridgeEnabled },
         );
         span.set("trendingExclude", trendingExclude.length);
         const items = await followedByPeopleYouFollow(
@@ -624,12 +707,19 @@ const getFollowedByPeopleYouFollow = createServerFn({ method: "GET" })
           data.limit,
           {
             excludeUris: trendingExclude,
+            excludeWebBridge: excludeWebBridgeEnabled,
             followUris: await effectiveFollowUris(db, schema, session.did),
             seed: rotationSeed("discover-followed-by", session.did),
           },
         );
-        span.set("count", items.length);
-        return items;
+        const visible = await filterMutedCards(
+          db,
+          schema,
+          session.did,
+          await filterBlockedCards(db, schema, session.did, items),
+        );
+        span.set("count", visible.length);
+        return visible;
       },
     ),
   );

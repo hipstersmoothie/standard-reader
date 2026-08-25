@@ -185,6 +185,14 @@ function SubscribeLoginPage() {
     },
   });
 
+  /** Sign in with whatever is typed. Shared by the button and Enter-to-submit. */
+  const submitTypedHandle = () => {
+    if (loginMutation.isPending) return;
+    const trimmed = handle.trim().replace(/^@/, "");
+    if (trimmed === "") return;
+    loginMutation.mutate(trimmed);
+  };
+
   const avatarUrl = meta.iconUrl ?? meta.ownerAvatarUrl ?? undefined;
   const publicationName = meta.name;
 
@@ -193,7 +201,16 @@ function SubscribeLoginPage() {
       {...stylex.props(styles.shell, publicationUi, publicationPrimary)}
       style={scaleVars}
     >
-      <Form style={styles.card}>
+      <Form
+        style={styles.card}
+        // The handle field is the form's only input, so the browser submits
+        // implicitly on Enter. Without this, that native GET submit reloads the
+        // page and wipes the typed handle instead of signing in.
+        onSubmit={(event) => {
+          event.preventDefault();
+          submitTypedHandle();
+        }}
+      >
         <Flex direction="column" align="center" gap="xl" style={styles.header}>
           <Avatar
             src={avatarUrl}
@@ -233,11 +250,7 @@ function SubscribeLoginPage() {
             type="button"
             isDisabled={!handle.trim() || loginMutation.isPending}
             isPending={loginMutation.isPending}
-            onPress={() => {
-              const trimmed = handle.trim().replace(/^@/, "");
-              if (trimmed === "") return;
-              loginMutation.mutate(trimmed);
-            }}
+            onPress={submitTypedHandle}
           >
             <Trans>Subscribe</Trans>
           </Button>

@@ -9,9 +9,11 @@ import {
   putSubscriptionRecord,
   subjectRkey,
 } from "#/server/atproto/repo-records";
+import { blockFilterDid } from "#/server/blocks/blocks";
 import { upsertSubscription } from "#/server/ingest/handlers";
-import { ensureTracked } from "#/server/ingest/tap-client";
+import { ensureTracked } from "#/server/ingest/tracked-repos";
 import { attachSubscribedLabels } from "#/server/labeler/labels.server";
+import { muteFilterDid } from "#/server/mutes/mutes";
 import { observe } from "#/server/observability/log";
 import { attachReaderSpanContext } from "#/server/observability/span-context.ts";
 import { attachCommentCountsToArticles } from "#/server/reader/document-comments";
@@ -80,6 +82,7 @@ const getPublicationCount = createServerFn({ method: "GET" })
         context.db,
         context.schema,
         data.tag,
+        { excludeWebBridge: context.excludeWebBridgeEnabled },
       );
       span.set("count", count);
       return count;
@@ -97,6 +100,7 @@ const getArticleCount = createServerFn({ method: "GET" })
         context.db,
         context.schema,
         data.tag,
+        { excludeWebBridge: context.excludeWebBridgeEnabled },
       );
       span.set("count", count);
       return count;
@@ -108,8 +112,13 @@ const getArticles = createServerFn({ method: "GET" })
   .validator(articlesPageInput)
   .handler(
     observe("tag.getArticles", async ({ data, context }, span) => {
-      const { db, schema, trackReadingEnabled, countOldPostsAsUnreadEnabled } =
-        context;
+      const {
+        db,
+        schema,
+        trackReadingEnabled,
+        countOldPostsAsUnreadEnabled,
+        excludeWebBridgeEnabled,
+      } = context;
       const did = await attachReaderSpanContext(span, getRequest());
       span.set("tag", data.tag);
       span.set("articleSort", data.articleSort);
@@ -118,18 +127,26 @@ const getArticles = createServerFn({ method: "GET" })
       const trackReading = did == null ? false : trackReadingEnabled;
       const countOldPostsAsUnread =
         did == null ? true : countOldPostsAsUnreadEnabled;
+      const excludeWebBridge = did == null ? false : excludeWebBridgeEnabled;
 
       // The tag rows and the reader's follow set are independent reads (the
       // follow set only needs `did`), so resolve them in one wave.
+      const [blockDid, muteDid] = await Promise.all([
+        blockFilterDid(db, schema, did),
+        muteFilterDid(db, schema, did),
+      ]);
       const [rows, followSets] = await Promise.all([
         selectArticleCards(db, schema, {
           tag: data.tag,
           discoverOnly: true,
+          excludeWebBridge,
           sort: data.articleSort,
           limit: data.limit,
           offset: data.offset,
           readForDid: trackReading && did ? did : undefined,
           countOldPostsAsUnread,
+          viewerDid: blockDid,
+          muterDid: muteDid,
         }),
         did ? effectiveFollowSets(db, schema, did) : Promise.resolve(null),
       ]);
@@ -169,8 +186,8 @@ const getPublications = createServerFn({ method: "GET" })
   .validator(directoryInput)
   .handler(
     observe("tag.getPublications", async ({ data, context }, span) => {
-      const { db, schema } = context;
-      await attachReaderSpanContext(span, getRequest());
+      const { db, schema, excludeWebBridgeEnabled } = context;
+      const did = await attachReaderSpanContext(span, getRequest());
       span.set("tag", data.tag);
       span.set("sort", data.sort);
       span.set("offset", data.offset);
@@ -180,6 +197,9 @@ const getPublications = createServerFn({ method: "GET" })
         sort: data.sort,
         limit: data.limit,
         offset: data.offset,
+        excludeWebBridge: excludeWebBridgeEnabled,
+        viewerDid: await blockFilterDid(db, schema, did),
+        muterDid: await muteFilterDid(db, schema, did),
       });
 
       span.set("count", items.length);
@@ -223,8 +243,13 @@ const getTagPage = createServerFn({ method: "GET" })
   .validator(tagPageInput)
   .handler(
     observe("tag.getPage", async ({ data, context }, span) => {
-      const { db, schema, trackReadingEnabled, countOldPostsAsUnreadEnabled } =
-        context;
+      const {
+        db,
+        schema,
+        trackReadingEnabled,
+        countOldPostsAsUnreadEnabled,
+        excludeWebBridgeEnabled,
+      } = context;
       const did = await attachReaderSpanContext(span, getRequest());
       span.set("tag", data.tag);
       span.set("view", data.view);
@@ -238,26 +263,37 @@ const getTagPage = createServerFn({ method: "GET" })
       const trackReading = did == null ? false : trackReadingEnabled;
       const countOldPostsAsUnread =
         did == null ? true : countOldPostsAsUnreadEnabled;
+      const excludeWebBridge = did == null ? false : excludeWebBridgeEnabled;
 
+      const [blockDid, muteDid] = await Promise.all([
+        blockFilterDid(db, schema, did),
+        muteFilterDid(db, schema, did),
+      ]);
       const [articleCount, publicationCount, content, followSets] =
         await Promise.all([
-          countTagArticles(db, schema, data.tag),
-          countTagPublications(db, schema, data.tag),
+          countTagArticles(db, schema, data.tag, { excludeWebBridge }),
+          countTagPublications(db, schema, data.tag, { excludeWebBridge }),
           data.view === "feed"
             ? selectArticleCards(db, schema, {
                 tag: data.tag,
                 discoverOnly: true,
+                excludeWebBridge,
                 sort: data.articleSort,
                 limit: data.limit,
                 offset: data.offset,
                 readForDid: trackReading && did ? did : undefined,
                 countOldPostsAsUnread,
+                viewerDid: blockDid,
+                muterDid: muteDid,
               }).then((rows) => attachCommentCountsToArticles(db, schema, rows))
             : tagDirectoryPublications(db, schema, {
                 tag: data.tag,
                 sort: data.sort,
                 limit: data.limit,
                 offset: data.offset,
+                excludeWebBridge,
+                viewerDid: blockDid,
+                muterDid: muteDid,
               }),
           data.view === "feed" && did
             ? effectiveFollowSets(db, schema, did)
@@ -313,7 +349,7 @@ const getTagFollowSummary = createServerFn({ method: "GET" })
   .validator(tagInput)
   .handler(
     observe("tag.getFollowSummary", async ({ data, context }, span) => {
-      const { db, schema } = context;
+      const { db, schema, excludeWebBridgeEnabled } = context;
       const did = await attachReaderSpanContext(span, getRequest());
       span.set("tag", data.tag);
 
@@ -321,6 +357,7 @@ const getTagFollowSummary = createServerFn({ method: "GET" })
         db,
         schema,
         data.tag,
+        { excludeWebBridge: excludeWebBridgeEnabled },
       );
       span.set("publicationCount", publicationUris.length);
 
@@ -350,7 +387,7 @@ const followTagPublications = createServerFn({ method: "POST" })
   .validator(tagInput)
   .handler(
     observe("tag.followPublications", async ({ data, context }, span) => {
-      const { db, schema } = context;
+      const { db, schema, excludeWebBridgeEnabled } = context;
       span.set("tag", data.tag);
 
       const session = await getAtprotoSessionForRequest(getRequest());
@@ -359,10 +396,14 @@ const followTagPublications = createServerFn({ method: "POST" })
       }
       span.set("did", session.did);
 
+      // Subscribes to exactly what the tag page listed for this reader — a
+      // "follow all" that quietly signed them up to publications the page was
+      // hiding would be a nasty surprise.
       const publicationUris = await selectTagPublicationUris(
         db,
         schema,
         data.tag,
+        { excludeWebBridge: excludeWebBridgeEnabled },
       );
       const followUris = await selectFollowUris(db, schema, session.did);
       const followedSet = new Set(followUris);

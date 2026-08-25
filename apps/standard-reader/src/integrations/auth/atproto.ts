@@ -24,6 +24,7 @@ import { logEvent } from "#/server/observability/log";
 
 import { dbRequestLock } from "./db-lock.server";
 import { atstoreReviewClientMetadataScope, clientMetadataScope } from "./scope";
+import { recordSessionDeletion } from "./session-deletions";
 
 const OAUTH_STORE_PREFIX = "atproto-oauth";
 const OAUTH_STATE_TTL_MS = 15 * 60_000;
@@ -314,12 +315,18 @@ function createOAuthClient(
 }
 
 /**
- * Emit OAuth session lifecycle telemetry. A `deleted` event means atcute
- * dropped the stored session — which is exactly a user getting logged out.
- * After the `requestLock` fix this should only happen on a genuine PDS-side
- * revocation; a recurring stream of these in prod (especially correlated with a
- * deploy) is the signal that refresh rotation is still racing and warrants
- * investigation. This is the primary breadcrumb for the logout-on-deploy bug.
+ * Emit OAuth session lifecycle telemetry, and record the deletion so the
+ * request path can tear down the matching app session.
+ *
+ * A `deleted` event means atcute dropped the stored session — which is exactly
+ * a user getting logged out. A recurring stream of these in prod (especially
+ * correlated with a deploy) is the signal that refresh rotation is still racing
+ * and warrants investigation. This is the primary breadcrumb for the
+ * logout-on-deploy bug.
+ *
+ * Note both client kinds get a listener and {@link restoreAtprotoSession} tries
+ * both, so a single failed restore emits this event twice — halve the counts
+ * when reading them as "sessions lost".
  */
 function attachSessionEventLogging(
   client: InstanceType<typeof OAuthClient>,
@@ -327,6 +334,7 @@ function attachSessionEventLogging(
 ): void {
   client.addEventListener((event) => {
     if (event.type === "deleted") {
+      recordSessionDeletion(event.sub);
       logEvent("auth.oauth.session_deleted", {
         client: kind,
         did: event.sub,

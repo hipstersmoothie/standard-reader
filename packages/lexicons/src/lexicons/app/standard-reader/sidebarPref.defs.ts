@@ -8,14 +8,24 @@ const $nsid = 'app.standard-reader.sidebarPref'
 
 export { $nsid }
 
-/** A reader's personal sidebar preferences: the display order of their subscription list groups, which groups are collapsed, and which primary nav items are hidden. A singleton record (rkey `self`). */
+/** A reader's personal sidebar preferences: the top-level arrangement of list groups and ungrouped subscriptions (one level deep), which groups are collapsed, how automatic sort orders subscriptions, and which primary nav items are hidden. A singleton record (rkey `self`). */
 type Main = {
   $type: 'app.standard-reader.sidebarPref'
 
   /**
-   * Ordered AT URIs of the reader's list groups (own + saved) as shown top-to-bottom in the sidebar. Groups not present are appended in their default order.
+   * Legacy: ordered AT URIs of the reader's list groups (own + saved), used as a fallback top-level list order only while `treeOrder` is empty. Superseded by `treeOrder`, which also carries ungrouped subscriptions interleaved with lists; new writes should prefer `treeOrder`.
    */
   listOrder?: l.AtUriString[]
+
+  /**
+   * Manual top-level order of the sidebar's subscriptions tree: list-group AT URIs interleaved with ungrouped publication AT URIs / person DIDs, exactly as arranged via drag-and-drop. Applies only when `subscriptionSort` is 'default'. Entries not present are appended in their natural order. Takes precedence over the legacy `listOrder` once populated.
+   */
+  treeOrder?: string[]
+
+  /**
+   * How the sidebar's subscriptions are ordered: 'default' (the reader's manual arrangement per `treeOrder`, or natural/stored order — the default), 'recent' (most recent activity first, interleaving publications and people), 'alpha' (name), or 'unread' (highest unread count first). Absent means 'default'.
+   */
+  subscriptionSort?: 'default' | 'recent' | 'alpha' | 'unread' | l.UnknownString
 
   /**
    * AT URIs of the list groups the reader has collapsed in the sidebar.
@@ -40,7 +50,7 @@ type Main = {
 
 export type { Main }
 
-/** A reader's personal sidebar preferences: the display order of their subscription list groups and which groups are collapsed. A singleton record (rkey `self`). */
+/** A reader's personal sidebar preferences: the top-level arrangement of list groups and ungrouped subscriptions (one level deep), which groups are collapsed, how automatic sort orders subscriptions, and which primary nav items are hidden. A singleton record (rkey `self`). */
 const main = /*#__PURE__*/ l.record<'literal:self', Main>(
   'literal:self',
   $nsid,
@@ -49,6 +59,17 @@ const main = /*#__PURE__*/ l.record<'literal:self', Main>(
       /*#__PURE__*/ l.array(/*#__PURE__*/ l.string({ format: 'at-uri' }), {
         maxLength: 1000,
       }),
+    ),
+    treeOrder: /*#__PURE__*/ l.optional(
+      /*#__PURE__*/ l.array(/*#__PURE__*/ l.string({ maxLength: 512 }), {
+        maxLength: 2000,
+      }),
+    ),
+    subscriptionSort: /*#__PURE__*/ l.optional(
+      /*#__PURE__*/ l.string<{
+        maxLength: 16
+        knownValues: ['default', 'recent', 'alpha', 'unread']
+      }>({ maxLength: 16 }),
     ),
     collapsed: /*#__PURE__*/ l.optional(
       /*#__PURE__*/ l.array(/*#__PURE__*/ l.string({ format: 'at-uri' }), {

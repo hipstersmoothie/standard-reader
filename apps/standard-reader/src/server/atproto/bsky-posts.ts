@@ -13,6 +13,13 @@ export interface BskyPostAuthor {
   avatar: string | null;
 }
 
+/** An image attached to a post, as the AppView serves it. */
+export interface BskyPostImage {
+  /** Full-size CDN URL. */
+  url: string;
+  alt: string;
+}
+
 export interface BskyPostView {
   uri: string;
   cid: string;
@@ -24,6 +31,14 @@ export interface BskyPostView {
   indexedAt: string;
   /** True when the post is a reply to another post. */
   isReply: boolean;
+  /**
+   * Images attached to the post. Empty for a text-only post.
+   *
+   * Only populated for the in-app narration path's callers by accident — it
+   * exists for the EPUB writer, where an embedded post has to carry its own
+   * picture: a book cannot go and fetch one later.
+   */
+  images: Array<BskyPostImage>;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -41,6 +56,33 @@ function parseAuthor(value: unknown): BskyPostAuthor | null {
       typeof value.displayName === "string" ? value.displayName : null,
     avatar: typeof value.avatar === "string" ? value.avatar : null,
   };
+}
+
+/**
+ * Images out of a post's hydrated embed view.
+ *
+ * Two shapes carry them: `app.bsky.embed.images#view` on its own, and
+ * `app.bsky.embed.recordWithMedia#view`, where the images hang off `media`
+ * because the post also quotes something.
+ */
+function parsePostImages(embed: unknown): Array<BskyPostImage> {
+  if (!isRecord(embed)) return [];
+
+  const media = isRecord(embed.media) ? embed.media : embed;
+  const images = Array.isArray(media.images) ? media.images : [];
+
+  return images.flatMap((image) => {
+    if (!isRecord(image)) return [];
+    // `fullsize` is the readable one; `thumb` is a grid tile.
+    const url =
+      typeof image.fullsize === "string"
+        ? image.fullsize
+        : typeof image.thumb === "string"
+          ? image.thumb
+          : null;
+    if (!url) return [];
+    return [{ alt: typeof image.alt === "string" ? image.alt : "", url }];
+  });
 }
 
 function parsePostView(value: unknown): BskyPostView | null {
@@ -74,6 +116,7 @@ function parsePostView(value: unknown): BskyPostView | null {
     likeCount,
     indexedAt,
     isReply,
+    images: parsePostImages(value.embed),
   };
 }
 

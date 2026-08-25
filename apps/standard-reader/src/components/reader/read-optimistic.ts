@@ -611,4 +611,7 @@ export function invalidateReadQueries(queryClient: QueryClient): void {
   void queryClient.invalidateQueries({
     queryKey: ["publication", "documents"],
   });
+  // A comic issue's unread dot is built from its pages' read state, so the
+  // shelf goes stale with everything else here.
+  void queryClient.invalidateQueries({ queryKey: ["comic", "shelf"] });
 }

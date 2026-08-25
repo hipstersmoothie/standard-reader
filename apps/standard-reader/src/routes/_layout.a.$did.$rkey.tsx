@@ -1,20 +1,27 @@
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useLingui } from "@lingui/react/macro";
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useLayoutEffect } from "react";
 import { z } from "zod";
 
+import { blocksApi } from "#/integrations/tanstack-query/api-blocks.functions";
 import type { ArticleDetail } from "#/integrations/tanstack-query/api-publication.functions";
 import { publicationApi } from "#/integrations/tanstack-query/api-publication.functions";
 import { quoteShareApi } from "#/integrations/tanstack-query/api-quote-share.functions";
 import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
+import { documentImages } from "#/lib/document/images";
 import { getPublicUrlClient } from "#/lib/public-url";
 import {
   buildQuoteOgImageUrl,
   decodeQuoteParam,
   truncateQuoteForDisplay,
 } from "#/lib/quote-share";
-import { articleOgImageUrl, siteSocialMeta } from "#/lib/site-metadata";
+import {
+  articleOgImageUrl,
+  canonicalLink,
+  siteSocialMeta,
+} from "#/lib/site-metadata";
 import { useOpenLinks } from "#/lib/use-open-links";
 
 import {
@@ -22,9 +29,11 @@ import {
   ArticleView,
 } from "../components/reader/article-view";
 import { ArticleViewSkeleton } from "../components/reader/article-view-skeleton";
+import { BlockedNotice } from "../components/reader/blocked-notice";
 import { hasRenderableArticleBody } from "../components/reader/content/extract-text";
 import {
   articlePublicationUrl,
+  articleSourceUrl,
   documentUriFromParams,
 } from "../components/reader/format";
 import type { PublicationThemeColors } from "../components/reader/publication-theme-scale";
@@ -100,6 +109,23 @@ export const Route = createFileRoute("/_layout/a/$did/$rkey")({
       }
     }
 
+    // A comic issue is pages of art, so it opens in the page-flip reader rather
+    // than as a column of stacked images. `view=reader` is the way back to the
+    // article (the author's notes live there), and a shared quote always wants
+    // the reading view — that's where the highlight is.
+    if (
+      article?.publication?.serial?.kind === "comic" &&
+      !openLinks.openExternally &&
+      !deps.q &&
+      deps.view !== "reader" &&
+      documentImages(article).length > 0
+    ) {
+      throw redirect({
+        to: "/comic/$did/$rkey",
+        params: { did: params.did, rkey: params.rkey },
+      });
+    }
+
     const sharedQuote = deps.q ? await resolveSharedQuote(uri, deps.q) : null;
     // Bounce to the publication site when the body isn't renderable in-app, or
     // when the reader prefers links to open on the original site.
@@ -160,9 +186,14 @@ export const Route = createFileRoute("/_layout/a/$did/$rkey")({
       };
     }
 
-    // standard.site discovery hints — the AT-URIs of the records this page
-    // renders. See https://standard.site/docs/verification/#discovery-hint
+    const baseUrl = getPublicUrlClient();
     const links = [
+      // The publication's own page for this article, when it has one — we
+      // render their writing natively, so the ranking signals belong to them
+      // and not to us. Shared-quote links (`?q=`) fold into the bare article.
+      canonicalLink(`${baseUrl}${match.pathname}`, articleSourceUrl(article)),
+      // standard.site discovery hints — the AT-URIs of the records this page
+      // renders. See https://standard.site/docs/verification/#discovery-hint
       { rel: "site.standard.document", href: article.uri },
       ...(article.publicationUri
         ? [{ rel: "site.standard.publication", href: article.publicationUri }]
@@ -170,7 +201,6 @@ export const Route = createFileRoute("/_layout/a/$did/$rkey")({
     ];
 
     if (!quote || !match.search.q) {
-      const baseUrl = getPublicUrlClient();
       return {
         meta: siteSocialMeta({
           title: pageTitle,
@@ -187,7 +217,6 @@ export const Route = createFileRoute("/_layout/a/$did/$rkey")({
       };
     }
 
-    const baseUrl = getPublicUrlClient();
     const search = `?q=${encodeURIComponent(match.search.q)}`;
     const shareUrl = `${baseUrl}${match.pathname}${search}`;
     const ogImage = buildQuoteOgImageUrl(
@@ -224,6 +253,58 @@ export const Route = createFileRoute("/_layout/a/$did/$rkey")({
   component: ArticleRoute,
 });
 
+/**
+ * The article didn't resolve. Usually that means it isn't indexed — but it also
+ * means "withheld because of a block", and those two deserve different words.
+ *
+ * The reason is fetched here rather than returned by `getArticle`, which sends
+ * `null` for a blocked document on purpose: nothing about it, not even its
+ * title, should cross the wire. So the explanation costs one extra read, and
+ * only on the page that already found nothing.
+ */
+function ArticleMissing({ uri }: { uri: string }) {
+  const { t } = useLingui();
+  const { data: session } = useSuspenseQuery(user.getSessionQueryOptions);
+  const signedIn = Boolean(session?.user);
+
+  // Only a signed-in reader can be on either side of a block, so a signed-out
+  // reader — most of this page's traffic, since it is also what a stale link or
+  // a crawler hits — gets the answer with no extra request at all.
+  const { data: blockState, isPending } = useQuery({
+    ...publicationApi.getArticleBlockQueryOptions(uri),
+    enabled: signedIn,
+  });
+  const capability = useQuery({
+    ...blocksApi.getBlockCapabilityQueryOptions(),
+    enabled: Boolean(blockState),
+  });
+
+  if (!signedIn) return <ArticleNotFound />;
+
+  // A skeleton, not a blank page and not the wrong words: flashing "we couldn't
+  // find that article" and then replacing it with "you blocked this account"
+  // reads as the app changing its mind, but rendering nothing at all reads as
+  // the page having failed.
+  if (isPending) {
+    return (
+      <div aria-busy="true" aria-label={t`Loading article`}>
+        <ArticleViewSkeleton />
+      </div>
+    );
+  }
+  if (!blockState) return <ArticleNotFound />;
+
+  return (
+    <BlockedNotice
+      block={blockState.block}
+      name={blockState.account.displayName ?? blockState.account.handle}
+      handle={blockState.account.handle}
+      avatarUrl={blockState.account.avatarUrl}
+      canWrite={capability.data?.canWrite ?? false}
+    />
+  );
+}
+
 function ArticleRoute() {
   const { did, rkey } = Route.useParams();
   const uri = documentUriFromParams(did, rkey);
@@ -243,7 +324,7 @@ function ArticleRoute() {
   }, [article, openExternally]);
 
   if (!article) {
-    return <ArticleNotFound />;
+    return <ArticleMissing uri={uri} />;
   }
 
   return (

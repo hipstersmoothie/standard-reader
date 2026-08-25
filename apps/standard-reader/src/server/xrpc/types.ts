@@ -13,6 +13,8 @@ export type XrpcRequestContext = {
   schema: Schema;
   trackReadingEnabled: boolean;
   countOldPostsAsUnreadEnabled: boolean;
+  /** "Hide mirrored websites" — see `#/lib/exclude-web-bridge`. */
+  excludeWebBridgeEnabled: boolean;
   /** Parsed query-string parameters (queries only). */
   params: XrpcQueryParams;
   /** Parsed JSON body (procedures only). */

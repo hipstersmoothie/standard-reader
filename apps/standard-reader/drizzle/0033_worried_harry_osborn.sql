@@ -1,0 +1,1 @@
+ALTER TABLE "user" ADD COLUMN "exclude_web_bridge" boolean;

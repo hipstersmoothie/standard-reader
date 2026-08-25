@@ -1,13 +1,50 @@
 import { MutationCache, QueryClient, isServer } from "@tanstack/react-query";
 
 import { isAtprotoScopeMissingError } from "#/lib/atproto/scope-error";
+import { isOffline, recheckOnlineStatus } from "#/lib/online-status";
 
 const DEFAULT_QUERY_STALE_TIME_MS = 60 * 1000;
+
+/** React Query's own default, restated because {@link offlineAwareRetry} replaces it. */
+const DEFAULT_QUERY_RETRY_COUNT = 3;
+
+/**
+ * Don't retry while the browser reports no connection.
+ *
+ * With {@link https://tanstack.com/query/latest/docs/framework/react/guides/network-mode `networkMode: "offlineFirst"`}
+ * an offline query fetches, misses the service-worker cache, and rejects. The
+ * default policy then spends three backed-off retries — ~7s of skeleton — to
+ * reach the same answer, because nothing about being offline changes between
+ * attempts. Fail on the first miss so the offline state renders immediately;
+ * React Query refetches on `online` anyway.
+ *
+ * A failed request is also the best evidence there is that the connection has
+ * gone, so it re-opens the question — on a browser that misreports
+ * `navigator.onLine` (see `#/lib/online-status`) no `offline` event ever
+ * arrives, and this is the only moment anything notices.
+ */
+function offlineAwareRetry(failureCount: number): boolean {
+  if (isOffline()) return false;
+  recheckOnlineStatus();
+  return failureCount < DEFAULT_QUERY_RETRY_COUNT;
+}
 
 function makeQueryClient() {
   return new QueryClient({
     defaultOptions: {
       queries: {
+        /**
+         * The service worker caches `/_serverFn/*` GETs (see `vite.config.ts`),
+         * but the default `"online"` mode never issues the request while
+         * offline — it parks the query at `fetchStatus: "paused"`. A route
+         * loader's `ensureQueryData` then awaits a promise that never settles,
+         * so an offline navigation hung on a skeleton forever instead of
+         * failing. `"offlineFirst"` lets the request reach the service worker,
+         * which answers from cache when it has the page and rejects when it
+         * doesn't.
+         */
+        networkMode: "offlineFirst",
+        retry: offlineAwareRetry,
         staleTime: DEFAULT_QUERY_STALE_TIME_MS,
       },
     },

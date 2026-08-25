@@ -6,6 +6,7 @@ export type XrpcDbContext = {
   schema: Schema;
   trackReadingEnabled: boolean;
   countOldPostsAsUnreadEnabled: boolean;
+  excludeWebBridgeEnabled: boolean;
 };
 
 let cachedDb: Pick<XrpcDbContext, "db" | "schema"> | null = null;
@@ -18,9 +19,17 @@ export async function getXrpcDbContext(): Promise<XrpcDbContext> {
     ]);
     cachedDb = { db, schema };
   }
-  const { trackReadingEnabled, countOldPostsAsUnreadEnabled } =
-    await resolveReaderSessionPreferences(cachedDb.db, cachedDb.schema);
-  return { ...cachedDb, trackReadingEnabled, countOldPostsAsUnreadEnabled };
+  const {
+    trackReadingEnabled,
+    countOldPostsAsUnreadEnabled,
+    excludeWebBridgeEnabled,
+  } = await resolveReaderSessionPreferences(cachedDb.db, cachedDb.schema);
+  return {
+    ...cachedDb,
+    trackReadingEnabled,
+    countOldPostsAsUnreadEnabled,
+    excludeWebBridgeEnabled,
+  };
 }
 
 export function encodeCursor(offset: number): string {

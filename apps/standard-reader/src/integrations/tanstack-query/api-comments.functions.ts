@@ -3,6 +3,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
 
+import { getReaderDidForRequest } from "#/middleware/auth-session.server";
 import { observe } from "#/server/observability/log";
 import { attachReaderSpanContext } from "#/server/observability/span-context.ts";
 import { fetchDocumentComments } from "#/server/reader/document-comments";
@@ -25,13 +26,16 @@ const getDocumentComments = createServerFn({ method: "GET" })
     observe("comments.getDocumentComments", async ({ data, context }, span) => {
       span.set("documentUri", data.documentUri);
       await attachReaderSpanContext(span, getRequest());
-      const comments = await fetchDocumentComments(
+      const viewerDid = await getReaderDidForRequest(getRequest());
+      const result = await fetchDocumentComments(
         context.db,
         context.schema,
         data.documentUri,
+        viewerDid,
       );
-      span.set("count", comments.length);
-      return comments;
+      span.set("count", result.comments.length);
+      span.set("hiddenByBlocks", result.hiddenByBlocks);
+      return result;
     }),
   );
 

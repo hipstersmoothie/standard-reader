@@ -9,6 +9,7 @@ import type {
 import { bskyPostUrl } from "#/lib/leaflet/bsky";
 import { shiftFacets } from "#/lib/leaflet/facets";
 import { utf8ByteLength } from "#/lib/leaflet/utf8";
+import { articleLinkTarget } from "#/lib/link-target-variants";
 import { getCanonicalPublicUrl } from "#/lib/public-url";
 import {
   articleSharePath,
@@ -21,24 +22,13 @@ import {
   getPosts,
   inferAuthorAnnouncementPostUri,
 } from "#/server/atproto/bsky-posts";
-import {
-  getBacklinkCountForTarget,
-  getPostBacklinksForTarget,
-} from "#/server/atproto/constellation";
-import {
-  countMarginNotesForUrls,
-  fetchMarginNotesForUrls,
-} from "#/server/atproto/margin-notes";
+import { getPostBacklinksForTarget } from "#/server/atproto/constellation";
+import { fetchMarginNotesForUrls } from "#/server/atproto/margin-notes";
+import { blockedDidsAmong } from "#/server/blocks/blocks";
 import { buildCanonicalUrl } from "#/server/ingest/mappers";
 import type { LeafletCommentContext } from "#/server/leaflet/comments";
-import {
-  countLeafletCommentsForDocument,
-  fetchLeafletCommentsForDocument,
-} from "#/server/leaflet/comments";
-import {
-  countNotesForDocument,
-  fetchNotesForDocument,
-} from "#/server/pckt/notes";
+import { fetchLeafletCommentsForDocument } from "#/server/leaflet/comments";
+import { fetchNotesForDocument } from "#/server/pckt/notes";
 import { listQuoteSharesForDocument } from "#/server/reader/quote-shares";
 
 export interface DocumentCommentAuthor {
@@ -222,13 +212,24 @@ function buildCommentTargets(
   return targets;
 }
 
-interface CommentCountCacheEntry {
-  count: number;
-  updatedAt: number;
+const COMMENTS_CACHE_TTL_MS = 5 * 60 * 1000;
+const COMMENTS_CACHE_MAX_ENTRIES = 500;
+const COUNT_CACHE_MAX_ENTRIES = 5000;
+
+interface CommentsCacheEntry {
+  comments: Array<DocumentComment>;
+  expiresAt: number;
 }
 
-const commentCountCache = new Map<string, CommentCountCacheEntry>();
-const commentCountRevalidationInflight = new Set<string>();
+/** Built Discussion items, shared by the rendered list and the badge count. */
+const commentsCache = new Map<string, CommentsCacheEntry>();
+const commentsInflight = new Map<string, Promise<Array<DocumentComment>>>();
+/**
+ * Last known item count per document. Outlives {@link commentsCache} so a badge
+ * whose comment payload was evicted still shows its last real number instead of
+ * dropping back to 0.
+ */
+const commentCountCache = new Map<string, number>();
 
 interface InferredBskyPostCacheEntry {
   uri: string | null;
@@ -238,9 +239,84 @@ interface InferredBskyPostCacheEntry {
 const inferredBskyPostCache = new Map<string, InferredBskyPostCacheEntry>();
 const inferredBskyPostInflight = new Map<string, Promise<string | null>>();
 const INFERRED_BSKY_POST_CACHE_TTL_MS = 60 * 60 * 1000;
+const INFERRED_BSKY_POST_CACHE_MAX_ENTRIES = 5000;
+
+/** Insert into an insertion-ordered cache, evicting the oldest entries. */
+function setCapped<T>(
+  cache: Map<string, T>,
+  key: string,
+  value: T,
+  max: number,
+): void {
+  cache.delete(key);
+  cache.set(key, value);
+  for (const oldest of cache.keys()) {
+    if (cache.size <= max) break;
+    cache.delete(oldest);
+  }
+}
 
 function peekCommentCount(documentUri: string): number {
-  return commentCountCache.get(documentUri)?.count ?? 0;
+  return commentCountCache.get(documentUri) ?? 0;
+}
+
+/**
+ * Build (or reuse) the Discussion items for a document.
+ *
+ * The badge count is `items.length` from this same list — deriving it from
+ * separate per-source count endpoints let the two drift apart: the count summed
+ * every Constellation link path and every link target without deduping, counted
+ * the author's own announcement post and hydration failures, and counted
+ * records the list filters out (off-thread replies, non-discussion margin
+ * motivations, Leaflet replies folded into a parent's `replyCount`).
+ *
+ * `"fresh"` always rebuilds — a reader looking at the thread should see new
+ * replies now, not on the cache's schedule. `"cached"` reuses a build inside its
+ * TTL, which is what keeps a feed of badges from rebuilding every document on
+ * every request. Either way the result is written back, so the section a reader
+ * opens is also what refreshes that article's badge. An in-flight build is
+ * shared by both modes: joining a build that started microseconds ago is not
+ * staleness, and it stops a page that renders the section and the badge from
+ * building the same list twice.
+ */
+function loadDocumentComments(
+  dbClient: typeof db,
+  schemaModule: typeof schema,
+  documentUri: string,
+  mode: "cached" | "fresh",
+): Promise<Array<DocumentComment>> {
+  if (mode === "cached") {
+    const cached = commentsCache.get(documentUri);
+    if (cached && cached.expiresAt > Date.now()) {
+      return Promise.resolve(cached.comments);
+    }
+  }
+
+  const inflight = commentsInflight.get(documentUri);
+  if (inflight) return inflight;
+
+  const promise = buildDocumentComments(dbClient, schemaModule, documentUri)
+    .then((comments) => {
+      setCapped(
+        commentsCache,
+        documentUri,
+        { comments, expiresAt: Date.now() + COMMENTS_CACHE_TTL_MS },
+        COMMENTS_CACHE_MAX_ENTRIES,
+      );
+      setCapped(
+        commentCountCache,
+        documentUri,
+        comments.length,
+        COUNT_CACHE_MAX_ENTRIES,
+      );
+      return comments;
+    })
+    .finally(() => {
+      commentsInflight.delete(documentUri);
+    });
+
+  commentsInflight.set(documentUri, promise);
+  return promise;
 }
 
 function scheduleCommentCountRevalidation(
@@ -248,58 +324,14 @@ function scheduleCommentCountRevalidation(
   schemaModule: typeof schema,
   documentUri: string,
 ): void {
-  if (commentCountRevalidationInflight.has(documentUri)) return;
-  commentCountRevalidationInflight.add(documentUri);
-
-  void refreshCommentCount(dbClient, schemaModule, documentUri)
-    .catch(() => {
-      // Best-effort background refresh; keep serving the last cached value.
-    })
-    .finally(() => {
-      commentCountRevalidationInflight.delete(documentUri);
-    });
-}
-
-async function refreshCommentCount(
-  dbClient: typeof db,
-  schemaModule: typeof schema,
-  documentUri: string,
-): Promise<number> {
-  const stale = commentCountCache.get(documentUri);
-
-  try {
-    const context = await loadDocumentCommentTargets(
-      dbClient,
-      schemaModule,
-      documentUri,
-    );
-    if (!context) {
-      commentCountCache.set(documentUri, {
-        count: 0,
-        updatedAt: Date.now(),
-      });
-      return 0;
-    }
-
-    const linkUrls = context.targets.map((target) => target.url);
-    const [backlinkCount, replyCount, marginCount, noteCount, leafletCount] =
-      await Promise.all([
-        countConstellationBacklinksForTargets(context.targets),
-        countAuthorPostReplies(context.bskyPostUri),
-        countMarginNotesForUrls(linkUrls),
-        countNotesForDocument(documentUri),
-        countLeafletCommentsForDocument(documentUri),
-      ]);
-    const count =
-      backlinkCount + replyCount + marginCount + noteCount + leafletCount;
-    commentCountCache.set(documentUri, {
-      count,
-      updatedAt: Date.now(),
-    });
-    return count;
-  } catch {
-    return stale?.count ?? 0;
-  }
+  void loadDocumentComments(
+    dbClient,
+    schemaModule,
+    documentUri,
+    "cached",
+  ).catch(() => {
+    // Best-effort background refresh; keep serving the last cached count.
+  });
 }
 
 async function discoverCommentPostMeta(
@@ -364,25 +396,6 @@ async function discoverDocumentComments(
   return { postMeta, authorPostReplyUris, bskyPostUri };
 }
 
-async function countConstellationBacklinksForTargets(
-  targets: Array<CommentTarget>,
-): Promise<number> {
-  if (targets.length === 0) return 0;
-
-  const counts = await Promise.all(
-    targets.map((target) => getBacklinkCountForTarget(target.url)),
-  );
-  return counts.reduce((sum, count) => sum + count, 0);
-}
-
-async function countAuthorPostReplies(
-  bskyPostUri: string | null,
-): Promise<number> {
-  if (!bskyPostUri?.startsWith("at://")) return 0;
-  const replies = await getDirectRepliesToPost(bskyPostUri);
-  return replies.length;
-}
-
 async function resolveBskyPostUri(
   documentUri: string,
   storedBskyPostUri: string | null,
@@ -405,10 +418,12 @@ async function resolveBskyPostUri(
 
   const promise = inferAuthorAnnouncementPostUri(did, publishedAt, linkTargets)
     .then((uri) => {
-      inferredBskyPostCache.set(documentUri, {
-        uri,
-        updatedAt: Date.now(),
-      });
+      setCapped(
+        inferredBskyPostCache,
+        documentUri,
+        { uri, updatedAt: Date.now() },
+        INFERRED_BSKY_POST_CACHE_MAX_ENTRIES,
+      );
       return uri;
     })
     .finally(() => {
@@ -442,6 +457,7 @@ async function loadDocumentCommentTargets(
       bskyPostUri: d.bskyPostUri,
       publishedAt: d.publishedAt,
       contentJson: d.contentJson,
+      contentFormat: d.contentFormat,
     })
     .from(d)
     .leftJoin(p, eq(d.publicationUri, p.uri))
@@ -462,7 +478,7 @@ async function loadDocumentCommentTargets(
   const targets = buildCommentTargets(
     doc.did,
     doc.rkey,
-    canonicalUrl,
+    articleLinkTarget(canonicalUrl),
     quoteShares,
     baseUrl,
   );
@@ -480,13 +496,19 @@ async function loadDocumentCommentTargets(
     targets,
     stripUrls: linkTargets,
     bskyPostUri,
-    leaflet: { content: doc.contentJson, canonicalUrl },
+    leaflet: {
+      content: doc.contentJson,
+      canonicalUrl,
+      contentFormat: doc.contentFormat,
+    },
   };
 }
 
 /**
- * Stale-while-revalidate comment total for one document.
- * Returns the cached count (0 on first request) and refreshes in the background.
+ * Stale-while-revalidate comment total for one document — the item count from
+ * the last Discussion build, so the badge stays put between rebuilds instead of
+ * changing under the reader mid-scroll. Returns the cached count (0 before the
+ * first build) and refreshes in the background once the entry expires.
  */
 export async function countDocumentComments(
   dbClient: typeof db,
@@ -499,7 +521,7 @@ export async function countDocumentComments(
 
 /**
  * Attach cached `commentCount` to article cards without blocking on Constellation.
- * Revalidates counts in the background on every request (deduped per URI).
+ * Revalidates expired counts in the background (deduped per URI).
  */
 export async function attachCommentCountsToArticles<
   T extends Pick<ArticleCard, "uri">,
@@ -521,7 +543,57 @@ export async function attachCommentCountsToArticles<
   }));
 }
 
+/**
+ * The Discussion items for a document, rebuilt on every request so an open
+ * thread is never stale. The build also refreshes this document's badge count.
+ */
+export interface DocumentCommentsResult {
+  comments: Array<DocumentComment>;
+  /**
+   * How many comments this reader's blocks removed.
+   *
+   * Reported rather than swallowed because the badge count on the card is the
+   * cached, unfiltered length (see below), so a thread whose every reply is by a
+   * blocked account would otherwise read "6 comments" above the words "No
+   * discussion yet" — which looks like the page failing, not like the block
+   * working.
+   */
+  hiddenByBlocks: number;
+}
+
 export async function fetchDocumentComments(
+  dbClient: typeof db,
+  schemaModule: typeof schema,
+  documentUri: string,
+  /**
+   * The reader this discussion is being rendered for. Comments by an account
+   * they are blocked from are dropped — a block that hides someone's writing
+   * but leaves their replies under it hasn't hidden them.
+   */
+  viewerDid?: string | null,
+): Promise<DocumentCommentsResult> {
+  // Filtered *after* the cache, never inside it: the cache is keyed by document
+  // alone, so filtering during the build would let the first reader to open a
+  // thread decide what every later reader sees. The badge count is the cached
+  // (unfiltered) length for the same reason — a per-reader count would need a
+  // per-reader cache, and a badge one too high is a smaller wrong than a
+  // blocked reply showing up in somebody else's thread.
+  const all = await loadDocumentComments(
+    dbClient,
+    schemaModule,
+    documentUri,
+    "fresh",
+  );
+  const comments = await filterBlockedComments(
+    dbClient,
+    schemaModule,
+    viewerDid,
+    all,
+  );
+  return { comments, hiddenByBlocks: all.length - comments.length };
+}
+
+async function buildDocumentComments(
   dbClient: typeof db,
   schemaModule: typeof schema,
   documentUri: string,
@@ -587,4 +659,29 @@ export async function fetchDocumentComments(
   return comments.toSorted(
     (a, b) => new Date(a.indexedAt).getTime() - new Date(b.indexedAt).getTime(),
   );
+}
+
+/**
+ * Drop comments whose author the reader is blocked from.
+ *
+ * These come from Bluesky, Margin, Semble, pckt and Leaflet rather than our
+ * read-model, so there is no query to filter — the authors are resolved and
+ * checked after the fact.
+ */
+async function filterBlockedComments(
+  dbClient: typeof db,
+  schemaModule: typeof schema,
+  viewerDid: string | null | undefined,
+  comments: Array<DocumentComment>,
+): Promise<Array<DocumentComment>> {
+  if (!viewerDid || comments.length === 0) return comments;
+  const blocked = await blockedDidsAmong(
+    dbClient,
+    schemaModule,
+    viewerDid,
+    comments.map((comment) => comment.author.did),
+  );
+  return blocked.size === 0
+    ? comments
+    : comments.filter((comment) => !blocked.has(comment.author.did));
 }

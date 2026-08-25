@@ -14,6 +14,7 @@ import { Suspense } from "react";
 import { AppShell } from "../components/reader/app-shell";
 import { ArticleViewSkeleton } from "../components/reader/article-view-skeleton";
 import { ReaderContent } from "../components/reader/primitives";
+import { PullToRefreshProvider } from "../components/reader/pull-to-refresh";
 import { user } from "../integrations/tanstack-query/api-user.functions";
 import {
   LAYOUT_ROUTE_STALE_TIME_MS,
@@ -63,11 +64,16 @@ function RouteContentFallback() {
 
 function LayoutRoute() {
   return (
-    <AppShell>
-      <Suspense fallback={<RouteContentFallback />}>
-        <Outlet />
-      </Suspense>
-    </AppShell>
+    // Wraps the shell rather than sitting inside it: the indicator the shell
+    // mounts and the route that registers a refresh both have to be under the
+    // same provider, and this is the one place both are in scope.
+    <PullToRefreshProvider>
+      <AppShell>
+        <Suspense fallback={<RouteContentFallback />}>
+          <Outlet />
+        </Suspense>
+      </AppShell>
+    </PullToRefreshProvider>
   );
 }
 

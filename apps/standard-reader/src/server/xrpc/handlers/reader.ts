@@ -6,6 +6,8 @@ import {
   articleQueueCardColumns,
   toArticleCard,
 } from "#/integrations/tanstack-query/api-shapes";
+import { blockFilterDid } from "#/server/blocks/blocks";
+import { muteFilterDid, mutedSubjectsAmong } from "#/server/mutes/mutes";
 import {
   followedByPeopleYouFollow,
   recommendedPublications,
@@ -36,7 +38,21 @@ export async function handleGetHomeFeed(ctx: XrpcRequestContext) {
   const scope = homeScopeFromParam(optionalParam(ctx.params, "scope"));
   const did = ctx.auth.did;
   const trackReading = ctx.trackReadingEnabled;
-  const followUris = await effectiveFollowUris(ctx.db, ctx.schema, did);
+  const rawFollowUris = await effectiveFollowUris(ctx.db, ctx.schema, did);
+
+  const [blockDid, muteDid] = await Promise.all([
+    blockFilterDid(ctx.db, ctx.schema, did),
+    muteFilterDid(ctx.db, ctx.schema, did),
+  ]);
+  // Drop muted publications from the follow set (same pre-filter as the app's
+  // home feed); the `muterDid` predicate catches muted guest authors inside
+  // the remaining publications.
+  const followUris =
+    muteDid && rawFollowUris.length > 0
+      ? await mutedSubjectsAmong(ctx.db, ctx.schema, muteDid, {
+          uris: rawFollowUris,
+        }).then((muted) => rawFollowUris.filter((uri) => !muted.uris.has(uri)))
+      : rawFollowUris;
   const hasFollows = followUris.length > 0;
   const personalized = hasFollows && scope === "follows";
 
@@ -44,9 +60,16 @@ export async function handleGetHomeFeed(ctx: XrpcRequestContext) {
     ? {
         publicationUris: followUris,
         countOldPostsAsUnread: ctx.countOldPostsAsUnreadEnabled,
+        viewerDid: blockDid,
+        muterDid: muteDid,
         ...(trackReading ? { readForDid: did, unreadForDid: did } : {}),
       }
-    : { discoverOnly: true as const };
+    : {
+        discoverOnly: true as const,
+        excludeWebBridge: ctx.excludeWebBridgeEnabled,
+        viewerDid: blockDid,
+        muterDid: muteDid,
+      };
 
   const [featuredLead, rows] = await Promise.all([
     selectArticleCards(ctx.db, ctx.schema, {
@@ -102,9 +125,11 @@ export async function handleGetRecommendedPublications(
     ctx.db,
     ctx.schema,
     limit,
+    { excludeWebBridge: ctx.excludeWebBridgeEnabled },
   );
   const items = await recommendedPublications(ctx.db, ctx.schema, did, limit, {
     excludeUris: trendingExclude,
+    excludeWebBridge: ctx.excludeWebBridgeEnabled,
     followUris,
   });
   return { items: items.map((item) => toPublicationView(item)) };
@@ -124,6 +149,7 @@ export async function handleGetFollowedByPeopleYouFollow(
     ctx.db,
     ctx.schema,
     limit,
+    { excludeWebBridge: ctx.excludeWebBridgeEnabled },
   );
   const items = await followedByPeopleYouFollow(
     ctx.db,
@@ -132,6 +158,7 @@ export async function handleGetFollowedByPeopleYouFollow(
     limit,
     {
       excludeUris: trendingExclude,
+      excludeWebBridge: ctx.excludeWebBridgeEnabled,
       followUris,
     },
   );

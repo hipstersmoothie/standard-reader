@@ -22,6 +22,7 @@ import type {
   PublicationCard,
   Schema,
 } from "#/integrations/tanstack-query/api-shapes";
+import { filterBlockedCards } from "#/server/blocks/blocks";
 import {
   bestOfFollows,
   recommendedPublications,
@@ -104,7 +105,17 @@ export async function buildDigestForUser(
   {
     did,
     sections = ALL_DIGEST_SECTIONS,
-  }: { did: string; sections?: DigestSections },
+    excludeWebBridge = false,
+  }: {
+    did: string;
+    sections?: DigestSections;
+    /**
+     * The reader's "Hide mirrored websites" setting (`#/lib/exclude-web-bridge`).
+     * Only the network section is network-wide, so only it is filtered — the
+     * subscriptions and saved sections are made of sources the reader chose.
+     */
+    excludeWebBridge?: boolean;
+  },
 ): Promise<DigestData> {
   // Needed by the subscriptions section directly, and by the recommendations
   // section to exclude publications the reader already follows.
@@ -132,6 +143,7 @@ export async function buildDigestForUser(
           limit: DIGEST_NETWORK_ARTICLE_LIMIT,
           excludeUris: articleUris,
           excludeReadForDid: did,
+          excludeWebBridge,
         })
       : Promise.resolve([]),
     sections.saved
@@ -143,11 +155,36 @@ export async function buildDigestForUser(
       : Promise.resolve([]),
     sections.recommendations
       ? recommendedPublications(db, schema, did, DIGEST_RECOMMENDATION_LIMIT, {
+          excludeWebBridge,
           followUris,
           seed: rotationSeed("digest", did),
         })
       : Promise.resolve([]),
   ]);
 
-  return { articles, networkArticles, saved, recommendations };
+  // Blocks applied last, over every section at once.
+  //
+  // The digest is the one surface that arrives uninvited: a reader who blocked
+  // someone does not get to close the tab if their writing turns up in an
+  // email, and an inbox keeps it for as long as they keep the message. `saved`
+  // is filtered too — a bookmark made before the block is still the reader's,
+  // but mailing it to them is not the same as leaving it in their list.
+  const [
+    visibleArticles,
+    visibleNetwork,
+    visibleSaved,
+    visibleRecommendations,
+  ] = await Promise.all([
+    filterBlockedCards(db, schema, did, articles),
+    filterBlockedCards(db, schema, did, networkArticles),
+    filterBlockedCards(db, schema, did, saved),
+    filterBlockedCards(db, schema, did, recommendations),
+  ]);
+
+  return {
+    articles: visibleArticles,
+    networkArticles: visibleNetwork,
+    saved: visibleSaved,
+    recommendations: visibleRecommendations,
+  };
 }

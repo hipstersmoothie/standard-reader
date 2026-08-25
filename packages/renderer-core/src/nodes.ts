@@ -33,6 +33,16 @@ export type MarkKind =
 /** The inline tree produced by {@link segmentInline}. */
 export type InlineNode =
   | { type: "text"; value: string }
+  /**
+   * A hard line break inside a run of text — markdown's trailing-backslash,
+   * two-space and `<br>` breaks, ProseMirror/Mochott `hardBreak` nodes, and the
+   * newlines that join a multi-paragraph list item or callout.
+   *
+   * Parsers carry these as `\n` in the run's plaintext (so byte offsets stay
+   * aligned with the record's facets); {@link segmentInline} lifts them out into
+   * this node, because HTML collapses a bare newline into a space.
+   */
+  | { type: "lineBreak" }
   | { type: "mark"; mark: MarkKind; children: Array<InlineNode> }
   | { type: "link"; href: string; children: Array<InlineNode> }
   | {

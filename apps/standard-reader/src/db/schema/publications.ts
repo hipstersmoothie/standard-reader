@@ -57,6 +57,18 @@ export const publications = pgTable(
     /** `preferences.showInDiscover` — whether to surface in discovery feeds. */
     showInDiscover: boolean("show_in_discover").notNull().default(true),
 
+    /** `preferences.prevNextDirection` (`"ltr"` | `"rtl"`, null when the record
+     * carries no preference). `"ltr"` is the publisher declaring that the
+     * publication reads forwards from its first post — a serial. See
+     * `#/lib/publication/serial`. */
+    prevNextDirection: text("prev_next_direction"),
+
+    /** App-derived (`recomputeSerialKinds`): which flavour of serial this is —
+     * `"comic"` when its posts are mostly pages of art, else `"book"`. Null for
+     * publications that aren't serials. The lexicon has no such field, so it is
+     * inferred from the posts. */
+    serialKind: text("serial_kind"),
+
     /** Mirrors `app.standard-reader.collectionsPublication` — marks this
      * publication as a Standard Reader collections series. Set by the tap
      * ingester from the sidecar record (whose rkey matches this publication's
@@ -105,6 +117,12 @@ export const publications = pgTable(
     index("publications_topic_idx").on(table.topic),
     // Resolve documents whose `site` is an https URL to a publication by base URL.
     index("publications_url_idx").on(table.url),
+    // Serial publications: the kind-derivation sweep and the serial reading
+    // paths both select on the publisher's forwards-reading declaration. Only a
+    // handful of publications set it, so the partial index stays tiny.
+    index("publications_serial_idx")
+      .on(table.prevNextDirection)
+      .where(sql`deleted = false`),
     index("publications_search_idx").using("gin", table.searchVector),
   ],
 );

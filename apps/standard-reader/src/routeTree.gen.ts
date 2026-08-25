@@ -35,8 +35,20 @@ import { Route as DevDigestRouteImport } from './routes/dev.digest'
 import { Route as DevRtlRouteImport } from './routes/dev.rtl'
 import { Route as DevWelcomeEmailRouteImport } from './routes/dev.welcome-email'
 import { Route as ExtensionConnectedRouteImport } from './routes/extension.connected'
+import { Route as FollowLoginDidRouteImport } from './routes/follow-login.$did'
+import { Route as FollowDidRouteImport } from './routes/follow.$did'
+import { Route as KosyncHealthcheckRouteImport } from './routes/kosync.healthcheck'
 import { Route as McpIndexRouteImport } from './routes/mcp/index'
 import { Route as McpAuthorizeRouteImport } from './routes/mcp/authorize'
+import { Route as OpdsIndexRouteImport } from './routes/opds.index'
+import { Route as OpdsCollectionsRouteImport } from './routes/opds.collections'
+import { Route as OpdsComicsRouteImport } from './routes/opds.comics'
+import { Route as OpdsLatestRouteImport } from './routes/opds.latest'
+import { Route as OpdsOpensearchDotxmlRouteImport } from './routes/opds.opensearch[.]xml'
+import { Route as OpdsPublicationsRouteImport } from './routes/opds.publications'
+import { Route as OpdsSearchRouteImport } from './routes/opds.search'
+import { Route as OpdsTagsRouteImport } from './routes/opds.tags'
+import { Route as OpdsTrendingRouteImport } from './routes/opds.trending'
 import { Route as ReviewThanksRouteImport } from './routes/review.thanks'
 import { Route as XrpcSplatRouteImport } from './routes/xrpc/$'
 import { Route as DotwellKnownOauthProtectedResourceMcpRouteImport } from './routes/[.]well-known/oauth-protected-resource/mcp'
@@ -48,6 +60,9 @@ import { Route as DocsHeaderLayoutDocsPublishingRouteImport } from './routes/_do
 import { Route as DocsHeaderLayoutDocsRenderersRouteImport } from './routes/_docs-header-layout.docs.renderers'
 import { Route as GuideLayoutGuideIndexRouteImport } from './routes/_guide-layout.guide.index'
 import { Route as GuideLayoutGuideCollectionsRouteImport } from './routes/_guide-layout.guide.collections'
+import { Route as GuideLayoutGuideComicsRouteImport } from './routes/_guide-layout.guide.comics'
+import { Route as GuideLayoutGuideEReadersRouteImport } from './routes/_guide-layout.guide.e-readers'
+import { Route as GuideLayoutGuideEmbedsRouteImport } from './routes/_guide-layout.guide.embeds'
 import { Route as GuideLayoutGuideExtensionRouteImport } from './routes/_guide-layout.guide.extension'
 import { Route as GuideLayoutGuideFindingRouteImport } from './routes/_guide-layout.guide.finding'
 import { Route as GuideLayoutGuideGettingStartedRouteImport } from './routes/_guide-layout.guide.getting-started'
@@ -65,7 +80,11 @@ import { Route as LayoutLabelersIndexRouteImport } from './routes/_layout.labele
 import { Route as LayoutLabelersDidRouteImport } from './routes/_layout.labelers.$did'
 import { Route as LayoutPrivacyExtensionRouteImport } from './routes/_layout.privacy.extension'
 import { Route as LayoutSettingsIndexRouteImport } from './routes/_layout.settings.index'
+import { Route as LayoutSettingsBlocksRouteImport } from './routes/_layout.settings.blocks'
+import { Route as LayoutSettingsMutedRouteImport } from './routes/_layout.settings.muted'
 import { Route as LayoutTagTagRouteImport } from './routes/_layout.tag.$tag'
+import { Route as LayoutTopicsIndexRouteImport } from './routes/_layout.topics.index'
+import { Route as LayoutTopicsSlugRouteImport } from './routes/_layout.topics.$slug'
 import { Route as LayoutUDidRouteImport } from './routes/_layout.u.$did'
 import { Route as ApiBskyPostRouteImport } from './routes/api/bsky/post'
 import { Route as ApiDevDigestPreviewRouteImport } from './routes/api/dev/digest-preview'
@@ -89,10 +108,17 @@ import { Route as ApiOgProfileRouteImport } from './routes/api/og/profile'
 import { Route as ApiOgPublicationRouteImport } from './routes/api/og/publication'
 import { Route as ApiOgQuoteRouteImport } from './routes/api/og/quote'
 import { Route as ApiOgSiteRouteImport } from './routes/api/og/site'
+import { Route as ApiPushResubscribeRouteImport } from './routes/api/push/resubscribe'
+import { Route as BookTagChar123tagChar125DotepubRouteImport } from './routes/book.tag.{$tag}[.]epub'
 import { Route as CollectionDidRkeyRouteImport } from './routes/collection.$did.$rkey'
+import { Route as ComicDidRkeyRouteImport } from './routes/comic.$did.$rkey'
+import { Route as EmbedFollowDidRouteImport } from './routes/embed.follow.$did'
 import { Route as FeedLatestDidRouteImport } from './routes/feed.latest.$did'
 import { Route as FeedTagTagRouteImport } from './routes/feed.tag.$tag'
 import { Route as FeedUDidRouteImport } from './routes/feed.u.$did'
+import { Route as KosyncUsersAuthRouteImport } from './routes/kosync.users.auth'
+import { Route as KosyncUsersCreateRouteImport } from './routes/kosync.users.create'
+import { Route as OpdsTagTagRouteImport } from './routes/opds.tag.$tag'
 import { Route as SubscribeLoginDidRkeyRouteImport } from './routes/subscribe-login.$did.$rkey'
 import { Route as SubscribeDidRkeyRouteImport } from './routes/subscribe.$did.$rkey'
 import { Route as LayoutADidRkeyRouteImport } from './routes/_layout.a.$did.$rkey'
@@ -105,10 +131,29 @@ import { Route as ApiAuthAtprotoJwksDotjsonRouteImport } from './routes/api/auth
 import { Route as ApiAuthAtprotoMetadataDotjsonRouteImport } from './routes/api/auth/atproto/metadata[.]json'
 import { Route as ApiAuthAtprotoSignupRouteImport } from './routes/api/auth/atproto/signup'
 import { Route as ApiOgPageSlugRouteImport } from './routes/api/og/page.$slug'
+import { Route as BookADidChar123rkeyChar125DotcbzRouteImport } from './routes/book.a.$did.{$rkey}[.]cbz'
+import { Route as BookADidChar123rkeyChar125DotepubRouteImport } from './routes/book.a.$did.{$rkey}[.]epub'
+import { Route as BookCDidChar123rkeyChar125DotepubRouteImport } from './routes/book.c.$did.{$rkey}[.]epub'
+import { Route as BookIDidChar123rkeyChar125DotcbzRouteImport } from './routes/book.i.$did.{$rkey}[.]cbz'
+import { Route as BookLDidChar123rkeyChar125DotepubRouteImport } from './routes/book.l.$did.{$rkey}[.]epub'
+import { Route as BookPDidChar123rkeyChar125DotcbzRouteImport } from './routes/book.p.$did.{$rkey}[.]cbz'
+import { Route as BookPDidChar123rkeyChar125DotepubRouteImport } from './routes/book.p.$did.{$rkey}[.]epub'
+import { Route as BookUDidSavedDotepubRouteImport } from './routes/book.u.$did.saved[.]epub'
+import { Route as BookUDidUnreadDotepubRouteImport } from './routes/book.u.$did.unread[.]epub'
 import { Route as EmbedSubscribeDidRkeyRouteImport } from './routes/embed.subscribe.$did.$rkey'
 import { Route as FeedCollectionDidRkeyRouteImport } from './routes/feed.collection.$did.$rkey'
 import { Route as FeedLDidRkeyRouteImport } from './routes/feed.l.$did.$rkey'
 import { Route as FeedPDidRkeyRouteImport } from './routes/feed.p.$did.$rkey'
+import { Route as KosyncSyncsProgressIndexRouteImport } from './routes/kosync.syncs.progress.index'
+import { Route as KosyncSyncsProgressDocumentRouteImport } from './routes/kosync.syncs.progress.$document'
+import { Route as OpdsCDidRkeyRouteImport } from './routes/opds.c.$did.$rkey'
+import { Route as OpdsLDidRkeyRouteImport } from './routes/opds.l.$did.$rkey'
+import { Route as OpdsPDidRkeyRouteImport } from './routes/opds.p.$did.$rkey'
+import { Route as OpdsUDidIndexRouteImport } from './routes/opds.u.$did.index'
+import { Route as OpdsUDidPublicationsRouteImport } from './routes/opds.u.$did.publications'
+import { Route as OpdsUDidSavedRouteImport } from './routes/opds.u.$did.saved'
+import { Route as OpdsUDidSubscriptionsRouteImport } from './routes/opds.u.$did.subscriptions'
+import { Route as OpdsUDidUnreadRouteImport } from './routes/opds.u.$did.unread'
 import { Route as ApiAuthAtprotoReviewCallbackRouteImport } from './routes/api/auth/atproto/review/callback'
 import { Route as ApiAuthAtprotoReviewMetadataDotjsonRouteImport } from './routes/api/auth/atproto/review/metadata[.]json'
 
@@ -241,6 +286,21 @@ const ExtensionConnectedRoute = ExtensionConnectedRouteImport.update({
   path: '/extension/connected',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FollowLoginDidRoute = FollowLoginDidRouteImport.update({
+  id: '/follow-login/$did',
+  path: '/follow-login/$did',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FollowDidRoute = FollowDidRouteImport.update({
+  id: '/follow/$did',
+  path: '/follow/$did',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const KosyncHealthcheckRoute = KosyncHealthcheckRouteImport.update({
+  id: '/kosync/healthcheck',
+  path: '/kosync/healthcheck',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const McpIndexRoute = McpIndexRouteImport.update({
   id: '/mcp/',
   path: '/mcp/',
@@ -249,6 +309,51 @@ const McpIndexRoute = McpIndexRouteImport.update({
 const McpAuthorizeRoute = McpAuthorizeRouteImport.update({
   id: '/mcp/authorize',
   path: '/mcp/authorize',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OpdsIndexRoute = OpdsIndexRouteImport.update({
+  id: '/opds/',
+  path: '/opds/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OpdsCollectionsRoute = OpdsCollectionsRouteImport.update({
+  id: '/opds/collections',
+  path: '/opds/collections',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OpdsComicsRoute = OpdsComicsRouteImport.update({
+  id: '/opds/comics',
+  path: '/opds/comics',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OpdsLatestRoute = OpdsLatestRouteImport.update({
+  id: '/opds/latest',
+  path: '/opds/latest',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OpdsOpensearchDotxmlRoute = OpdsOpensearchDotxmlRouteImport.update({
+  id: '/opds/opensearch.xml',
+  path: '/opds/opensearch.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OpdsPublicationsRoute = OpdsPublicationsRouteImport.update({
+  id: '/opds/publications',
+  path: '/opds/publications',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OpdsSearchRoute = OpdsSearchRouteImport.update({
+  id: '/opds/search',
+  path: '/opds/search',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OpdsTagsRoute = OpdsTagsRouteImport.update({
+  id: '/opds/tags',
+  path: '/opds/tags',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OpdsTrendingRoute = OpdsTrendingRouteImport.update({
+  id: '/opds/trending',
+  path: '/opds/trending',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ReviewThanksRoute = ReviewThanksRouteImport.update({
@@ -313,6 +418,22 @@ const GuideLayoutGuideCollectionsRoute =
     path: '/guide/collections',
     getParentRoute: () => GuideLayoutRoute,
   } as any)
+const GuideLayoutGuideComicsRoute = GuideLayoutGuideComicsRouteImport.update({
+  id: '/guide/comics',
+  path: '/guide/comics',
+  getParentRoute: () => GuideLayoutRoute,
+} as any)
+const GuideLayoutGuideEReadersRoute =
+  GuideLayoutGuideEReadersRouteImport.update({
+    id: '/guide/e-readers',
+    path: '/guide/e-readers',
+    getParentRoute: () => GuideLayoutRoute,
+  } as any)
+const GuideLayoutGuideEmbedsRoute = GuideLayoutGuideEmbedsRouteImport.update({
+  id: '/guide/embeds',
+  path: '/guide/embeds',
+  getParentRoute: () => GuideLayoutRoute,
+} as any)
 const GuideLayoutGuideExtensionRoute =
   GuideLayoutGuideExtensionRouteImport.update({
     id: '/guide/extension',
@@ -404,9 +525,29 @@ const LayoutSettingsIndexRoute = LayoutSettingsIndexRouteImport.update({
   path: '/settings/',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutSettingsBlocksRoute = LayoutSettingsBlocksRouteImport.update({
+  id: '/settings/blocks',
+  path: '/settings/blocks',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutSettingsMutedRoute = LayoutSettingsMutedRouteImport.update({
+  id: '/settings/muted',
+  path: '/settings/muted',
+  getParentRoute: () => LayoutRoute,
+} as any)
 const LayoutTagTagRoute = LayoutTagTagRouteImport.update({
   id: '/tag/$tag',
   path: '/tag/$tag',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutTopicsIndexRoute = LayoutTopicsIndexRouteImport.update({
+  id: '/topics/',
+  path: '/topics/',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutTopicsSlugRoute = LayoutTopicsSlugRouteImport.update({
+  id: '/topics/$slug',
+  path: '/topics/$slug',
   getParentRoute: () => LayoutRoute,
 } as any)
 const LayoutUDidRoute = LayoutUDidRouteImport.update({
@@ -524,9 +665,30 @@ const ApiOgSiteRoute = ApiOgSiteRouteImport.update({
   path: '/api/og/site',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPushResubscribeRoute = ApiPushResubscribeRouteImport.update({
+  id: '/api/push/resubscribe',
+  path: '/api/push/resubscribe',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BookTagChar123tagChar125DotepubRoute =
+  BookTagChar123tagChar125DotepubRouteImport.update({
+    id: '/book/tag/{$tag}.epub',
+    path: '/book/tag/{$tag}.epub',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const CollectionDidRkeyRoute = CollectionDidRkeyRouteImport.update({
   id: '/collection/$did/$rkey',
   path: '/collection/$did/$rkey',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ComicDidRkeyRoute = ComicDidRkeyRouteImport.update({
+  id: '/comic/$did/$rkey',
+  path: '/comic/$did/$rkey',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EmbedFollowDidRoute = EmbedFollowDidRouteImport.update({
+  id: '/embed/follow/$did',
+  path: '/embed/follow/$did',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FeedLatestDidRoute = FeedLatestDidRouteImport.update({
@@ -542,6 +704,21 @@ const FeedTagTagRoute = FeedTagTagRouteImport.update({
 const FeedUDidRoute = FeedUDidRouteImport.update({
   id: '/feed/u/$did',
   path: '/feed/u/$did',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const KosyncUsersAuthRoute = KosyncUsersAuthRouteImport.update({
+  id: '/kosync/users/auth',
+  path: '/kosync/users/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const KosyncUsersCreateRoute = KosyncUsersCreateRouteImport.update({
+  id: '/kosync/users/create',
+  path: '/kosync/users/create',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OpdsTagTagRoute = OpdsTagTagRouteImport.update({
+  id: '/opds/tag/$tag',
+  path: '/opds/tag/$tag',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SubscribeLoginDidRkeyRoute = SubscribeLoginDidRkeyRouteImport.update({
@@ -607,6 +784,58 @@ const ApiOgPageSlugRoute = ApiOgPageSlugRouteImport.update({
   path: '/api/og/page/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BookADidChar123rkeyChar125DotcbzRoute =
+  BookADidChar123rkeyChar125DotcbzRouteImport.update({
+    id: '/book/a/$did/{$rkey}.cbz',
+    path: '/book/a/$did/{$rkey}.cbz',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const BookADidChar123rkeyChar125DotepubRoute =
+  BookADidChar123rkeyChar125DotepubRouteImport.update({
+    id: '/book/a/$did/{$rkey}.epub',
+    path: '/book/a/$did/{$rkey}.epub',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const BookCDidChar123rkeyChar125DotepubRoute =
+  BookCDidChar123rkeyChar125DotepubRouteImport.update({
+    id: '/book/c/$did/{$rkey}.epub',
+    path: '/book/c/$did/{$rkey}.epub',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const BookIDidChar123rkeyChar125DotcbzRoute =
+  BookIDidChar123rkeyChar125DotcbzRouteImport.update({
+    id: '/book/i/$did/{$rkey}.cbz',
+    path: '/book/i/$did/{$rkey}.cbz',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const BookLDidChar123rkeyChar125DotepubRoute =
+  BookLDidChar123rkeyChar125DotepubRouteImport.update({
+    id: '/book/l/$did/{$rkey}.epub',
+    path: '/book/l/$did/{$rkey}.epub',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const BookPDidChar123rkeyChar125DotcbzRoute =
+  BookPDidChar123rkeyChar125DotcbzRouteImport.update({
+    id: '/book/p/$did/{$rkey}.cbz',
+    path: '/book/p/$did/{$rkey}.cbz',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const BookPDidChar123rkeyChar125DotepubRoute =
+  BookPDidChar123rkeyChar125DotepubRouteImport.update({
+    id: '/book/p/$did/{$rkey}.epub',
+    path: '/book/p/$did/{$rkey}.epub',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const BookUDidSavedDotepubRoute = BookUDidSavedDotepubRouteImport.update({
+  id: '/book/u/$did/saved.epub',
+  path: '/book/u/$did/saved.epub',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BookUDidUnreadDotepubRoute = BookUDidUnreadDotepubRouteImport.update({
+  id: '/book/u/$did/unread.epub',
+  path: '/book/u/$did/unread.epub',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const EmbedSubscribeDidRkeyRoute = EmbedSubscribeDidRkeyRouteImport.update({
   id: '/embed/subscribe/$did/$rkey',
   path: '/embed/subscribe/$did/$rkey',
@@ -625,6 +854,58 @@ const FeedLDidRkeyRoute = FeedLDidRkeyRouteImport.update({
 const FeedPDidRkeyRoute = FeedPDidRkeyRouteImport.update({
   id: '/feed/p/$did/$rkey',
   path: '/feed/p/$did/$rkey',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const KosyncSyncsProgressIndexRoute =
+  KosyncSyncsProgressIndexRouteImport.update({
+    id: '/kosync/syncs/progress/',
+    path: '/kosync/syncs/progress/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const KosyncSyncsProgressDocumentRoute =
+  KosyncSyncsProgressDocumentRouteImport.update({
+    id: '/kosync/syncs/progress/$document',
+    path: '/kosync/syncs/progress/$document',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const OpdsCDidRkeyRoute = OpdsCDidRkeyRouteImport.update({
+  id: '/opds/c/$did/$rkey',
+  path: '/opds/c/$did/$rkey',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OpdsLDidRkeyRoute = OpdsLDidRkeyRouteImport.update({
+  id: '/opds/l/$did/$rkey',
+  path: '/opds/l/$did/$rkey',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OpdsPDidRkeyRoute = OpdsPDidRkeyRouteImport.update({
+  id: '/opds/p/$did/$rkey',
+  path: '/opds/p/$did/$rkey',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OpdsUDidIndexRoute = OpdsUDidIndexRouteImport.update({
+  id: '/opds/u/$did/',
+  path: '/opds/u/$did/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OpdsUDidPublicationsRoute = OpdsUDidPublicationsRouteImport.update({
+  id: '/opds/u/$did/publications',
+  path: '/opds/u/$did/publications',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OpdsUDidSavedRoute = OpdsUDidSavedRouteImport.update({
+  id: '/opds/u/$did/saved',
+  path: '/opds/u/$did/saved',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OpdsUDidSubscriptionsRoute = OpdsUDidSubscriptionsRouteImport.update({
+  id: '/opds/u/$did/subscriptions',
+  path: '/opds/u/$did/subscriptions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OpdsUDidUnreadRoute = OpdsUDidUnreadRouteImport.update({
+  id: '/opds/u/$did/unread',
+  path: '/opds/u/$did/unread',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAuthAtprotoReviewCallbackRoute =
@@ -664,10 +945,22 @@ export interface FileRoutesByFullPath {
   '/dev/rtl': typeof DevRtlRoute
   '/dev/welcome-email': typeof DevWelcomeEmailRoute
   '/extension/connected': typeof ExtensionConnectedRoute
+  '/follow-login/$did': typeof FollowLoginDidRoute
+  '/follow/$did': typeof FollowDidRoute
+  '/kosync/healthcheck': typeof KosyncHealthcheckRoute
   '/mcp/authorize': typeof McpAuthorizeRoute
+  '/opds/collections': typeof OpdsCollectionsRoute
+  '/opds/comics': typeof OpdsComicsRoute
+  '/opds/latest': typeof OpdsLatestRoute
+  '/opds/opensearch.xml': typeof OpdsOpensearchDotxmlRoute
+  '/opds/publications': typeof OpdsPublicationsRoute
+  '/opds/search': typeof OpdsSearchRoute
+  '/opds/tags': typeof OpdsTagsRoute
+  '/opds/trending': typeof OpdsTrendingRoute
   '/review/thanks': typeof ReviewThanksRoute
   '/xrpc/$': typeof XrpcSplatRoute
   '/mcp/': typeof McpIndexRoute
+  '/opds/': typeof OpdsIndexRoute
   '/.well-known/oauth-protected-resource/mcp': typeof DotwellKnownOauthProtectedResourceMcpRoute
   '/docs/api': typeof DocsHeaderLayoutDocsApiRoute
   '/docs/introduction': typeof DocsHeaderLayoutDocsIntroductionRoute
@@ -676,6 +969,9 @@ export interface FileRoutesByFullPath {
   '/docs/publishing': typeof DocsHeaderLayoutDocsPublishingRoute
   '/docs/renderers': typeof DocsHeaderLayoutDocsRenderersRoute
   '/guide/collections': typeof GuideLayoutGuideCollectionsRoute
+  '/guide/comics': typeof GuideLayoutGuideComicsRoute
+  '/guide/e-readers': typeof GuideLayoutGuideEReadersRoute
+  '/guide/embeds': typeof GuideLayoutGuideEmbedsRoute
   '/guide/extension': typeof GuideLayoutGuideExtensionRoute
   '/guide/finding': typeof GuideLayoutGuideFindingRoute
   '/guide/getting-started': typeof GuideLayoutGuideGettingStartedRoute
@@ -689,7 +985,10 @@ export interface FileRoutesByFullPath {
   '/feedback/return': typeof LayoutFeedbackReturnRoute
   '/labelers/$did': typeof LayoutLabelersDidRoute
   '/privacy/extension': typeof LayoutPrivacyExtensionRoute
+  '/settings/blocks': typeof LayoutSettingsBlocksRoute
+  '/settings/muted': typeof LayoutSettingsMutedRoute
   '/tag/$tag': typeof LayoutTagTagRoute
+  '/topics/$slug': typeof LayoutTopicsSlugRoute
   '/u/$did': typeof LayoutUDidRoute
   '/api/bsky/post': typeof ApiBskyPostRoute
   '/api/dev/digest-preview': typeof ApiDevDigestPreviewRoute
@@ -713,10 +1012,17 @@ export interface FileRoutesByFullPath {
   '/api/og/publication': typeof ApiOgPublicationRoute
   '/api/og/quote': typeof ApiOgQuoteRoute
   '/api/og/site': typeof ApiOgSiteRoute
+  '/api/push/resubscribe': typeof ApiPushResubscribeRoute
+  '/book/tag/{$tag}.epub': typeof BookTagChar123tagChar125DotepubRoute
   '/collection/$did/$rkey': typeof CollectionDidRkeyRoute
+  '/comic/$did/$rkey': typeof ComicDidRkeyRoute
+  '/embed/follow/$did': typeof EmbedFollowDidRoute
   '/feed/latest/$did': typeof FeedLatestDidRoute
   '/feed/tag/$tag': typeof FeedTagTagRoute
   '/feed/u/$did': typeof FeedUDidRoute
+  '/kosync/users/auth': typeof KosyncUsersAuthRoute
+  '/kosync/users/create': typeof KosyncUsersCreateRoute
+  '/opds/tag/$tag': typeof OpdsTagTagRoute
   '/subscribe-login/$did/$rkey': typeof SubscribeLoginDidRkeyRoute
   '/subscribe/$did/$rkey': typeof SubscribeDidRkeyRoute
   '/guide/': typeof GuideLayoutGuideIndexRoute
@@ -724,6 +1030,7 @@ export interface FileRoutesByFullPath {
   '/feedback/': typeof LayoutFeedbackIndexRoute
   '/labelers/': typeof LayoutLabelersIndexRoute
   '/settings/': typeof LayoutSettingsIndexRoute
+  '/topics/': typeof LayoutTopicsIndexRoute
   '/a/$did/$rkey': typeof LayoutADidRkeyRoute
   '/collections/edit/$rkey': typeof LayoutCollectionsEditRkeyRoute
   '/l/$did/$rkey': typeof LayoutLDidRkeyRoute
@@ -734,10 +1041,29 @@ export interface FileRoutesByFullPath {
   '/api/auth/atproto/metadata.json': typeof ApiAuthAtprotoMetadataDotjsonRoute
   '/api/auth/atproto/signup': typeof ApiAuthAtprotoSignupRoute
   '/api/og/page/$slug': typeof ApiOgPageSlugRoute
+  '/book/a/$did/{$rkey}.cbz': typeof BookADidChar123rkeyChar125DotcbzRoute
+  '/book/a/$did/{$rkey}.epub': typeof BookADidChar123rkeyChar125DotepubRoute
+  '/book/c/$did/{$rkey}.epub': typeof BookCDidChar123rkeyChar125DotepubRoute
+  '/book/i/$did/{$rkey}.cbz': typeof BookIDidChar123rkeyChar125DotcbzRoute
+  '/book/l/$did/{$rkey}.epub': typeof BookLDidChar123rkeyChar125DotepubRoute
+  '/book/p/$did/{$rkey}.cbz': typeof BookPDidChar123rkeyChar125DotcbzRoute
+  '/book/p/$did/{$rkey}.epub': typeof BookPDidChar123rkeyChar125DotepubRoute
+  '/book/u/$did/saved.epub': typeof BookUDidSavedDotepubRoute
+  '/book/u/$did/unread.epub': typeof BookUDidUnreadDotepubRoute
   '/embed/subscribe/$did/$rkey': typeof EmbedSubscribeDidRkeyRoute
   '/feed/collection/$did/$rkey': typeof FeedCollectionDidRkeyRoute
   '/feed/l/$did/$rkey': typeof FeedLDidRkeyRoute
   '/feed/p/$did/$rkey': typeof FeedPDidRkeyRoute
+  '/kosync/syncs/progress/$document': typeof KosyncSyncsProgressDocumentRoute
+  '/opds/c/$did/$rkey': typeof OpdsCDidRkeyRoute
+  '/opds/l/$did/$rkey': typeof OpdsLDidRkeyRoute
+  '/opds/p/$did/$rkey': typeof OpdsPDidRkeyRoute
+  '/opds/u/$did/publications': typeof OpdsUDidPublicationsRoute
+  '/opds/u/$did/saved': typeof OpdsUDidSavedRoute
+  '/opds/u/$did/subscriptions': typeof OpdsUDidSubscriptionsRoute
+  '/opds/u/$did/unread': typeof OpdsUDidUnreadRoute
+  '/kosync/syncs/progress/': typeof KosyncSyncsProgressIndexRoute
+  '/opds/u/$did/': typeof OpdsUDidIndexRoute
   '/api/auth/atproto/review/callback': typeof ApiAuthAtprotoReviewCallbackRoute
   '/api/auth/atproto/review/metadata.json': typeof ApiAuthAtprotoReviewMetadataDotjsonRoute
 }
@@ -764,10 +1090,22 @@ export interface FileRoutesByTo {
   '/dev/rtl': typeof DevRtlRoute
   '/dev/welcome-email': typeof DevWelcomeEmailRoute
   '/extension/connected': typeof ExtensionConnectedRoute
+  '/follow-login/$did': typeof FollowLoginDidRoute
+  '/follow/$did': typeof FollowDidRoute
+  '/kosync/healthcheck': typeof KosyncHealthcheckRoute
   '/mcp/authorize': typeof McpAuthorizeRoute
+  '/opds/collections': typeof OpdsCollectionsRoute
+  '/opds/comics': typeof OpdsComicsRoute
+  '/opds/latest': typeof OpdsLatestRoute
+  '/opds/opensearch.xml': typeof OpdsOpensearchDotxmlRoute
+  '/opds/publications': typeof OpdsPublicationsRoute
+  '/opds/search': typeof OpdsSearchRoute
+  '/opds/tags': typeof OpdsTagsRoute
+  '/opds/trending': typeof OpdsTrendingRoute
   '/review/thanks': typeof ReviewThanksRoute
   '/xrpc/$': typeof XrpcSplatRoute
   '/mcp': typeof McpIndexRoute
+  '/opds': typeof OpdsIndexRoute
   '/.well-known/oauth-protected-resource/mcp': typeof DotwellKnownOauthProtectedResourceMcpRoute
   '/docs/api': typeof DocsHeaderLayoutDocsApiRoute
   '/docs/introduction': typeof DocsHeaderLayoutDocsIntroductionRoute
@@ -776,6 +1114,9 @@ export interface FileRoutesByTo {
   '/docs/publishing': typeof DocsHeaderLayoutDocsPublishingRoute
   '/docs/renderers': typeof DocsHeaderLayoutDocsRenderersRoute
   '/guide/collections': typeof GuideLayoutGuideCollectionsRoute
+  '/guide/comics': typeof GuideLayoutGuideComicsRoute
+  '/guide/e-readers': typeof GuideLayoutGuideEReadersRoute
+  '/guide/embeds': typeof GuideLayoutGuideEmbedsRoute
   '/guide/extension': typeof GuideLayoutGuideExtensionRoute
   '/guide/finding': typeof GuideLayoutGuideFindingRoute
   '/guide/getting-started': typeof GuideLayoutGuideGettingStartedRoute
@@ -789,7 +1130,10 @@ export interface FileRoutesByTo {
   '/feedback/return': typeof LayoutFeedbackReturnRoute
   '/labelers/$did': typeof LayoutLabelersDidRoute
   '/privacy/extension': typeof LayoutPrivacyExtensionRoute
+  '/settings/blocks': typeof LayoutSettingsBlocksRoute
+  '/settings/muted': typeof LayoutSettingsMutedRoute
   '/tag/$tag': typeof LayoutTagTagRoute
+  '/topics/$slug': typeof LayoutTopicsSlugRoute
   '/u/$did': typeof LayoutUDidRoute
   '/api/bsky/post': typeof ApiBskyPostRoute
   '/api/dev/digest-preview': typeof ApiDevDigestPreviewRoute
@@ -813,10 +1157,17 @@ export interface FileRoutesByTo {
   '/api/og/publication': typeof ApiOgPublicationRoute
   '/api/og/quote': typeof ApiOgQuoteRoute
   '/api/og/site': typeof ApiOgSiteRoute
+  '/api/push/resubscribe': typeof ApiPushResubscribeRoute
+  '/book/tag/{$tag}.epub': typeof BookTagChar123tagChar125DotepubRoute
   '/collection/$did/$rkey': typeof CollectionDidRkeyRoute
+  '/comic/$did/$rkey': typeof ComicDidRkeyRoute
+  '/embed/follow/$did': typeof EmbedFollowDidRoute
   '/feed/latest/$did': typeof FeedLatestDidRoute
   '/feed/tag/$tag': typeof FeedTagTagRoute
   '/feed/u/$did': typeof FeedUDidRoute
+  '/kosync/users/auth': typeof KosyncUsersAuthRoute
+  '/kosync/users/create': typeof KosyncUsersCreateRoute
+  '/opds/tag/$tag': typeof OpdsTagTagRoute
   '/subscribe-login/$did/$rkey': typeof SubscribeLoginDidRkeyRoute
   '/subscribe/$did/$rkey': typeof SubscribeDidRkeyRoute
   '/guide': typeof GuideLayoutGuideIndexRoute
@@ -824,6 +1175,7 @@ export interface FileRoutesByTo {
   '/feedback': typeof LayoutFeedbackIndexRoute
   '/labelers': typeof LayoutLabelersIndexRoute
   '/settings': typeof LayoutSettingsIndexRoute
+  '/topics': typeof LayoutTopicsIndexRoute
   '/a/$did/$rkey': typeof LayoutADidRkeyRoute
   '/collections/edit/$rkey': typeof LayoutCollectionsEditRkeyRoute
   '/l/$did/$rkey': typeof LayoutLDidRkeyRoute
@@ -834,10 +1186,29 @@ export interface FileRoutesByTo {
   '/api/auth/atproto/metadata.json': typeof ApiAuthAtprotoMetadataDotjsonRoute
   '/api/auth/atproto/signup': typeof ApiAuthAtprotoSignupRoute
   '/api/og/page/$slug': typeof ApiOgPageSlugRoute
+  '/book/a/$did/{$rkey}.cbz': typeof BookADidChar123rkeyChar125DotcbzRoute
+  '/book/a/$did/{$rkey}.epub': typeof BookADidChar123rkeyChar125DotepubRoute
+  '/book/c/$did/{$rkey}.epub': typeof BookCDidChar123rkeyChar125DotepubRoute
+  '/book/i/$did/{$rkey}.cbz': typeof BookIDidChar123rkeyChar125DotcbzRoute
+  '/book/l/$did/{$rkey}.epub': typeof BookLDidChar123rkeyChar125DotepubRoute
+  '/book/p/$did/{$rkey}.cbz': typeof BookPDidChar123rkeyChar125DotcbzRoute
+  '/book/p/$did/{$rkey}.epub': typeof BookPDidChar123rkeyChar125DotepubRoute
+  '/book/u/$did/saved.epub': typeof BookUDidSavedDotepubRoute
+  '/book/u/$did/unread.epub': typeof BookUDidUnreadDotepubRoute
   '/embed/subscribe/$did/$rkey': typeof EmbedSubscribeDidRkeyRoute
   '/feed/collection/$did/$rkey': typeof FeedCollectionDidRkeyRoute
   '/feed/l/$did/$rkey': typeof FeedLDidRkeyRoute
   '/feed/p/$did/$rkey': typeof FeedPDidRkeyRoute
+  '/kosync/syncs/progress/$document': typeof KosyncSyncsProgressDocumentRoute
+  '/opds/c/$did/$rkey': typeof OpdsCDidRkeyRoute
+  '/opds/l/$did/$rkey': typeof OpdsLDidRkeyRoute
+  '/opds/p/$did/$rkey': typeof OpdsPDidRkeyRoute
+  '/opds/u/$did/publications': typeof OpdsUDidPublicationsRoute
+  '/opds/u/$did/saved': typeof OpdsUDidSavedRoute
+  '/opds/u/$did/subscriptions': typeof OpdsUDidSubscriptionsRoute
+  '/opds/u/$did/unread': typeof OpdsUDidUnreadRoute
+  '/kosync/syncs/progress': typeof KosyncSyncsProgressIndexRoute
+  '/opds/u/$did': typeof OpdsUDidIndexRoute
   '/api/auth/atproto/review/callback': typeof ApiAuthAtprotoReviewCallbackRoute
   '/api/auth/atproto/review/metadata.json': typeof ApiAuthAtprotoReviewMetadataDotjsonRoute
 }
@@ -868,11 +1239,23 @@ export interface FileRoutesById {
   '/dev/rtl': typeof DevRtlRoute
   '/dev/welcome-email': typeof DevWelcomeEmailRoute
   '/extension/connected': typeof ExtensionConnectedRoute
+  '/follow-login/$did': typeof FollowLoginDidRoute
+  '/follow/$did': typeof FollowDidRoute
+  '/kosync/healthcheck': typeof KosyncHealthcheckRoute
   '/mcp/authorize': typeof McpAuthorizeRoute
+  '/opds/collections': typeof OpdsCollectionsRoute
+  '/opds/comics': typeof OpdsComicsRoute
+  '/opds/latest': typeof OpdsLatestRoute
+  '/opds/opensearch.xml': typeof OpdsOpensearchDotxmlRoute
+  '/opds/publications': typeof OpdsPublicationsRoute
+  '/opds/search': typeof OpdsSearchRoute
+  '/opds/tags': typeof OpdsTagsRoute
+  '/opds/trending': typeof OpdsTrendingRoute
   '/review/thanks': typeof ReviewThanksRoute
   '/xrpc/$': typeof XrpcSplatRoute
   '/_layout/': typeof LayoutIndexRoute
   '/mcp/': typeof McpIndexRoute
+  '/opds/': typeof OpdsIndexRoute
   '/.well-known/oauth-protected-resource/mcp': typeof DotwellKnownOauthProtectedResourceMcpRoute
   '/_docs-header-layout/docs/api': typeof DocsHeaderLayoutDocsApiRoute
   '/_docs-header-layout/docs/introduction': typeof DocsHeaderLayoutDocsIntroductionRoute
@@ -881,6 +1264,9 @@ export interface FileRoutesById {
   '/_docs-header-layout/docs/publishing': typeof DocsHeaderLayoutDocsPublishingRoute
   '/_docs-header-layout/docs/renderers': typeof DocsHeaderLayoutDocsRenderersRoute
   '/_guide-layout/guide/collections': typeof GuideLayoutGuideCollectionsRoute
+  '/_guide-layout/guide/comics': typeof GuideLayoutGuideComicsRoute
+  '/_guide-layout/guide/e-readers': typeof GuideLayoutGuideEReadersRoute
+  '/_guide-layout/guide/embeds': typeof GuideLayoutGuideEmbedsRoute
   '/_guide-layout/guide/extension': typeof GuideLayoutGuideExtensionRoute
   '/_guide-layout/guide/finding': typeof GuideLayoutGuideFindingRoute
   '/_guide-layout/guide/getting-started': typeof GuideLayoutGuideGettingStartedRoute
@@ -894,7 +1280,10 @@ export interface FileRoutesById {
   '/_layout/feedback/return': typeof LayoutFeedbackReturnRoute
   '/_layout/labelers/$did': typeof LayoutLabelersDidRoute
   '/_layout/privacy/extension': typeof LayoutPrivacyExtensionRoute
+  '/_layout/settings/blocks': typeof LayoutSettingsBlocksRoute
+  '/_layout/settings/muted': typeof LayoutSettingsMutedRoute
   '/_layout/tag/$tag': typeof LayoutTagTagRoute
+  '/_layout/topics/$slug': typeof LayoutTopicsSlugRoute
   '/_layout/u/$did': typeof LayoutUDidRoute
   '/api/bsky/post': typeof ApiBskyPostRoute
   '/api/dev/digest-preview': typeof ApiDevDigestPreviewRoute
@@ -918,10 +1307,17 @@ export interface FileRoutesById {
   '/api/og/publication': typeof ApiOgPublicationRoute
   '/api/og/quote': typeof ApiOgQuoteRoute
   '/api/og/site': typeof ApiOgSiteRoute
+  '/api/push/resubscribe': typeof ApiPushResubscribeRoute
+  '/book/tag/{$tag}.epub': typeof BookTagChar123tagChar125DotepubRoute
   '/collection/$did/$rkey': typeof CollectionDidRkeyRoute
+  '/comic/$did/$rkey': typeof ComicDidRkeyRoute
+  '/embed/follow/$did': typeof EmbedFollowDidRoute
   '/feed/latest/$did': typeof FeedLatestDidRoute
   '/feed/tag/$tag': typeof FeedTagTagRoute
   '/feed/u/$did': typeof FeedUDidRoute
+  '/kosync/users/auth': typeof KosyncUsersAuthRoute
+  '/kosync/users/create': typeof KosyncUsersCreateRoute
+  '/opds/tag/$tag': typeof OpdsTagTagRoute
   '/subscribe-login/$did/$rkey': typeof SubscribeLoginDidRkeyRoute
   '/subscribe/$did/$rkey': typeof SubscribeDidRkeyRoute
   '/_guide-layout/guide/': typeof GuideLayoutGuideIndexRoute
@@ -929,6 +1325,7 @@ export interface FileRoutesById {
   '/_layout/feedback/': typeof LayoutFeedbackIndexRoute
   '/_layout/labelers/': typeof LayoutLabelersIndexRoute
   '/_layout/settings/': typeof LayoutSettingsIndexRoute
+  '/_layout/topics/': typeof LayoutTopicsIndexRoute
   '/_layout/a/$did/$rkey': typeof LayoutADidRkeyRoute
   '/_layout/collections/edit/$rkey': typeof LayoutCollectionsEditRkeyRoute
   '/_layout/l/$did/$rkey': typeof LayoutLDidRkeyRoute
@@ -939,10 +1336,29 @@ export interface FileRoutesById {
   '/api/auth/atproto/metadata.json': typeof ApiAuthAtprotoMetadataDotjsonRoute
   '/api/auth/atproto/signup': typeof ApiAuthAtprotoSignupRoute
   '/api/og/page/$slug': typeof ApiOgPageSlugRoute
+  '/book/a/$did/{$rkey}.cbz': typeof BookADidChar123rkeyChar125DotcbzRoute
+  '/book/a/$did/{$rkey}.epub': typeof BookADidChar123rkeyChar125DotepubRoute
+  '/book/c/$did/{$rkey}.epub': typeof BookCDidChar123rkeyChar125DotepubRoute
+  '/book/i/$did/{$rkey}.cbz': typeof BookIDidChar123rkeyChar125DotcbzRoute
+  '/book/l/$did/{$rkey}.epub': typeof BookLDidChar123rkeyChar125DotepubRoute
+  '/book/p/$did/{$rkey}.cbz': typeof BookPDidChar123rkeyChar125DotcbzRoute
+  '/book/p/$did/{$rkey}.epub': typeof BookPDidChar123rkeyChar125DotepubRoute
+  '/book/u/$did/saved.epub': typeof BookUDidSavedDotepubRoute
+  '/book/u/$did/unread.epub': typeof BookUDidUnreadDotepubRoute
   '/embed/subscribe/$did/$rkey': typeof EmbedSubscribeDidRkeyRoute
   '/feed/collection/$did/$rkey': typeof FeedCollectionDidRkeyRoute
   '/feed/l/$did/$rkey': typeof FeedLDidRkeyRoute
   '/feed/p/$did/$rkey': typeof FeedPDidRkeyRoute
+  '/kosync/syncs/progress/$document': typeof KosyncSyncsProgressDocumentRoute
+  '/opds/c/$did/$rkey': typeof OpdsCDidRkeyRoute
+  '/opds/l/$did/$rkey': typeof OpdsLDidRkeyRoute
+  '/opds/p/$did/$rkey': typeof OpdsPDidRkeyRoute
+  '/opds/u/$did/publications': typeof OpdsUDidPublicationsRoute
+  '/opds/u/$did/saved': typeof OpdsUDidSavedRoute
+  '/opds/u/$did/subscriptions': typeof OpdsUDidSubscriptionsRoute
+  '/opds/u/$did/unread': typeof OpdsUDidUnreadRoute
+  '/kosync/syncs/progress/': typeof KosyncSyncsProgressIndexRoute
+  '/opds/u/$did/': typeof OpdsUDidIndexRoute
   '/api/auth/atproto/review/callback': typeof ApiAuthAtprotoReviewCallbackRoute
   '/api/auth/atproto/review/metadata.json': typeof ApiAuthAtprotoReviewMetadataDotjsonRoute
 }
@@ -972,10 +1388,22 @@ export interface FileRouteTypes {
     | '/dev/rtl'
     | '/dev/welcome-email'
     | '/extension/connected'
+    | '/follow-login/$did'
+    | '/follow/$did'
+    | '/kosync/healthcheck'
     | '/mcp/authorize'
+    | '/opds/collections'
+    | '/opds/comics'
+    | '/opds/latest'
+    | '/opds/opensearch.xml'
+    | '/opds/publications'
+    | '/opds/search'
+    | '/opds/tags'
+    | '/opds/trending'
     | '/review/thanks'
     | '/xrpc/$'
     | '/mcp/'
+    | '/opds/'
     | '/.well-known/oauth-protected-resource/mcp'
     | '/docs/api'
     | '/docs/introduction'
@@ -984,6 +1412,9 @@ export interface FileRouteTypes {
     | '/docs/publishing'
     | '/docs/renderers'
     | '/guide/collections'
+    | '/guide/comics'
+    | '/guide/e-readers'
+    | '/guide/embeds'
     | '/guide/extension'
     | '/guide/finding'
     | '/guide/getting-started'
@@ -997,7 +1428,10 @@ export interface FileRouteTypes {
     | '/feedback/return'
     | '/labelers/$did'
     | '/privacy/extension'
+    | '/settings/blocks'
+    | '/settings/muted'
     | '/tag/$tag'
+    | '/topics/$slug'
     | '/u/$did'
     | '/api/bsky/post'
     | '/api/dev/digest-preview'
@@ -1021,10 +1455,17 @@ export interface FileRouteTypes {
     | '/api/og/publication'
     | '/api/og/quote'
     | '/api/og/site'
+    | '/api/push/resubscribe'
+    | '/book/tag/{$tag}.epub'
     | '/collection/$did/$rkey'
+    | '/comic/$did/$rkey'
+    | '/embed/follow/$did'
     | '/feed/latest/$did'
     | '/feed/tag/$tag'
     | '/feed/u/$did'
+    | '/kosync/users/auth'
+    | '/kosync/users/create'
+    | '/opds/tag/$tag'
     | '/subscribe-login/$did/$rkey'
     | '/subscribe/$did/$rkey'
     | '/guide/'
@@ -1032,6 +1473,7 @@ export interface FileRouteTypes {
     | '/feedback/'
     | '/labelers/'
     | '/settings/'
+    | '/topics/'
     | '/a/$did/$rkey'
     | '/collections/edit/$rkey'
     | '/l/$did/$rkey'
@@ -1042,10 +1484,29 @@ export interface FileRouteTypes {
     | '/api/auth/atproto/metadata.json'
     | '/api/auth/atproto/signup'
     | '/api/og/page/$slug'
+    | '/book/a/$did/{$rkey}.cbz'
+    | '/book/a/$did/{$rkey}.epub'
+    | '/book/c/$did/{$rkey}.epub'
+    | '/book/i/$did/{$rkey}.cbz'
+    | '/book/l/$did/{$rkey}.epub'
+    | '/book/p/$did/{$rkey}.cbz'
+    | '/book/p/$did/{$rkey}.epub'
+    | '/book/u/$did/saved.epub'
+    | '/book/u/$did/unread.epub'
     | '/embed/subscribe/$did/$rkey'
     | '/feed/collection/$did/$rkey'
     | '/feed/l/$did/$rkey'
     | '/feed/p/$did/$rkey'
+    | '/kosync/syncs/progress/$document'
+    | '/opds/c/$did/$rkey'
+    | '/opds/l/$did/$rkey'
+    | '/opds/p/$did/$rkey'
+    | '/opds/u/$did/publications'
+    | '/opds/u/$did/saved'
+    | '/opds/u/$did/subscriptions'
+    | '/opds/u/$did/unread'
+    | '/kosync/syncs/progress/'
+    | '/opds/u/$did/'
     | '/api/auth/atproto/review/callback'
     | '/api/auth/atproto/review/metadata.json'
   fileRoutesByTo: FileRoutesByTo
@@ -1072,10 +1533,22 @@ export interface FileRouteTypes {
     | '/dev/rtl'
     | '/dev/welcome-email'
     | '/extension/connected'
+    | '/follow-login/$did'
+    | '/follow/$did'
+    | '/kosync/healthcheck'
     | '/mcp/authorize'
+    | '/opds/collections'
+    | '/opds/comics'
+    | '/opds/latest'
+    | '/opds/opensearch.xml'
+    | '/opds/publications'
+    | '/opds/search'
+    | '/opds/tags'
+    | '/opds/trending'
     | '/review/thanks'
     | '/xrpc/$'
     | '/mcp'
+    | '/opds'
     | '/.well-known/oauth-protected-resource/mcp'
     | '/docs/api'
     | '/docs/introduction'
@@ -1084,6 +1557,9 @@ export interface FileRouteTypes {
     | '/docs/publishing'
     | '/docs/renderers'
     | '/guide/collections'
+    | '/guide/comics'
+    | '/guide/e-readers'
+    | '/guide/embeds'
     | '/guide/extension'
     | '/guide/finding'
     | '/guide/getting-started'
@@ -1097,7 +1573,10 @@ export interface FileRouteTypes {
     | '/feedback/return'
     | '/labelers/$did'
     | '/privacy/extension'
+    | '/settings/blocks'
+    | '/settings/muted'
     | '/tag/$tag'
+    | '/topics/$slug'
     | '/u/$did'
     | '/api/bsky/post'
     | '/api/dev/digest-preview'
@@ -1121,10 +1600,17 @@ export interface FileRouteTypes {
     | '/api/og/publication'
     | '/api/og/quote'
     | '/api/og/site'
+    | '/api/push/resubscribe'
+    | '/book/tag/{$tag}.epub'
     | '/collection/$did/$rkey'
+    | '/comic/$did/$rkey'
+    | '/embed/follow/$did'
     | '/feed/latest/$did'
     | '/feed/tag/$tag'
     | '/feed/u/$did'
+    | '/kosync/users/auth'
+    | '/kosync/users/create'
+    | '/opds/tag/$tag'
     | '/subscribe-login/$did/$rkey'
     | '/subscribe/$did/$rkey'
     | '/guide'
@@ -1132,6 +1618,7 @@ export interface FileRouteTypes {
     | '/feedback'
     | '/labelers'
     | '/settings'
+    | '/topics'
     | '/a/$did/$rkey'
     | '/collections/edit/$rkey'
     | '/l/$did/$rkey'
@@ -1142,10 +1629,29 @@ export interface FileRouteTypes {
     | '/api/auth/atproto/metadata.json'
     | '/api/auth/atproto/signup'
     | '/api/og/page/$slug'
+    | '/book/a/$did/{$rkey}.cbz'
+    | '/book/a/$did/{$rkey}.epub'
+    | '/book/c/$did/{$rkey}.epub'
+    | '/book/i/$did/{$rkey}.cbz'
+    | '/book/l/$did/{$rkey}.epub'
+    | '/book/p/$did/{$rkey}.cbz'
+    | '/book/p/$did/{$rkey}.epub'
+    | '/book/u/$did/saved.epub'
+    | '/book/u/$did/unread.epub'
     | '/embed/subscribe/$did/$rkey'
     | '/feed/collection/$did/$rkey'
     | '/feed/l/$did/$rkey'
     | '/feed/p/$did/$rkey'
+    | '/kosync/syncs/progress/$document'
+    | '/opds/c/$did/$rkey'
+    | '/opds/l/$did/$rkey'
+    | '/opds/p/$did/$rkey'
+    | '/opds/u/$did/publications'
+    | '/opds/u/$did/saved'
+    | '/opds/u/$did/subscriptions'
+    | '/opds/u/$did/unread'
+    | '/kosync/syncs/progress'
+    | '/opds/u/$did'
     | '/api/auth/atproto/review/callback'
     | '/api/auth/atproto/review/metadata.json'
   id:
@@ -1175,11 +1681,23 @@ export interface FileRouteTypes {
     | '/dev/rtl'
     | '/dev/welcome-email'
     | '/extension/connected'
+    | '/follow-login/$did'
+    | '/follow/$did'
+    | '/kosync/healthcheck'
     | '/mcp/authorize'
+    | '/opds/collections'
+    | '/opds/comics'
+    | '/opds/latest'
+    | '/opds/opensearch.xml'
+    | '/opds/publications'
+    | '/opds/search'
+    | '/opds/tags'
+    | '/opds/trending'
     | '/review/thanks'
     | '/xrpc/$'
     | '/_layout/'
     | '/mcp/'
+    | '/opds/'
     | '/.well-known/oauth-protected-resource/mcp'
     | '/_docs-header-layout/docs/api'
     | '/_docs-header-layout/docs/introduction'
@@ -1188,6 +1706,9 @@ export interface FileRouteTypes {
     | '/_docs-header-layout/docs/publishing'
     | '/_docs-header-layout/docs/renderers'
     | '/_guide-layout/guide/collections'
+    | '/_guide-layout/guide/comics'
+    | '/_guide-layout/guide/e-readers'
+    | '/_guide-layout/guide/embeds'
     | '/_guide-layout/guide/extension'
     | '/_guide-layout/guide/finding'
     | '/_guide-layout/guide/getting-started'
@@ -1201,7 +1722,10 @@ export interface FileRouteTypes {
     | '/_layout/feedback/return'
     | '/_layout/labelers/$did'
     | '/_layout/privacy/extension'
+    | '/_layout/settings/blocks'
+    | '/_layout/settings/muted'
     | '/_layout/tag/$tag'
+    | '/_layout/topics/$slug'
     | '/_layout/u/$did'
     | '/api/bsky/post'
     | '/api/dev/digest-preview'
@@ -1225,10 +1749,17 @@ export interface FileRouteTypes {
     | '/api/og/publication'
     | '/api/og/quote'
     | '/api/og/site'
+    | '/api/push/resubscribe'
+    | '/book/tag/{$tag}.epub'
     | '/collection/$did/$rkey'
+    | '/comic/$did/$rkey'
+    | '/embed/follow/$did'
     | '/feed/latest/$did'
     | '/feed/tag/$tag'
     | '/feed/u/$did'
+    | '/kosync/users/auth'
+    | '/kosync/users/create'
+    | '/opds/tag/$tag'
     | '/subscribe-login/$did/$rkey'
     | '/subscribe/$did/$rkey'
     | '/_guide-layout/guide/'
@@ -1236,6 +1767,7 @@ export interface FileRouteTypes {
     | '/_layout/feedback/'
     | '/_layout/labelers/'
     | '/_layout/settings/'
+    | '/_layout/topics/'
     | '/_layout/a/$did/$rkey'
     | '/_layout/collections/edit/$rkey'
     | '/_layout/l/$did/$rkey'
@@ -1246,10 +1778,29 @@ export interface FileRouteTypes {
     | '/api/auth/atproto/metadata.json'
     | '/api/auth/atproto/signup'
     | '/api/og/page/$slug'
+    | '/book/a/$did/{$rkey}.cbz'
+    | '/book/a/$did/{$rkey}.epub'
+    | '/book/c/$did/{$rkey}.epub'
+    | '/book/i/$did/{$rkey}.cbz'
+    | '/book/l/$did/{$rkey}.epub'
+    | '/book/p/$did/{$rkey}.cbz'
+    | '/book/p/$did/{$rkey}.epub'
+    | '/book/u/$did/saved.epub'
+    | '/book/u/$did/unread.epub'
     | '/embed/subscribe/$did/$rkey'
     | '/feed/collection/$did/$rkey'
     | '/feed/l/$did/$rkey'
     | '/feed/p/$did/$rkey'
+    | '/kosync/syncs/progress/$document'
+    | '/opds/c/$did/$rkey'
+    | '/opds/l/$did/$rkey'
+    | '/opds/p/$did/$rkey'
+    | '/opds/u/$did/publications'
+    | '/opds/u/$did/saved'
+    | '/opds/u/$did/subscriptions'
+    | '/opds/u/$did/unread'
+    | '/kosync/syncs/progress/'
+    | '/opds/u/$did/'
     | '/api/auth/atproto/review/callback'
     | '/api/auth/atproto/review/metadata.json'
   fileRoutesById: FileRoutesById
@@ -1267,10 +1818,22 @@ export interface RootRouteChildren {
   DevRtlRoute: typeof DevRtlRoute
   DevWelcomeEmailRoute: typeof DevWelcomeEmailRoute
   ExtensionConnectedRoute: typeof ExtensionConnectedRoute
+  FollowLoginDidRoute: typeof FollowLoginDidRoute
+  FollowDidRoute: typeof FollowDidRoute
+  KosyncHealthcheckRoute: typeof KosyncHealthcheckRoute
   McpAuthorizeRoute: typeof McpAuthorizeRoute
+  OpdsCollectionsRoute: typeof OpdsCollectionsRoute
+  OpdsComicsRoute: typeof OpdsComicsRoute
+  OpdsLatestRoute: typeof OpdsLatestRoute
+  OpdsOpensearchDotxmlRoute: typeof OpdsOpensearchDotxmlRoute
+  OpdsPublicationsRoute: typeof OpdsPublicationsRoute
+  OpdsSearchRoute: typeof OpdsSearchRoute
+  OpdsTagsRoute: typeof OpdsTagsRoute
+  OpdsTrendingRoute: typeof OpdsTrendingRoute
   ReviewThanksRoute: typeof ReviewThanksRoute
   XrpcSplatRoute: typeof XrpcSplatRoute
   McpIndexRoute: typeof McpIndexRoute
+  OpdsIndexRoute: typeof OpdsIndexRoute
   DotwellKnownOauthProtectedResourceMcpRoute: typeof DotwellKnownOauthProtectedResourceMcpRoute
   ApiBskyPostRoute: typeof ApiBskyPostRoute
   ApiDevDigestPreviewRoute: typeof ApiDevDigestPreviewRoute
@@ -1294,10 +1857,17 @@ export interface RootRouteChildren {
   ApiOgPublicationRoute: typeof ApiOgPublicationRoute
   ApiOgQuoteRoute: typeof ApiOgQuoteRoute
   ApiOgSiteRoute: typeof ApiOgSiteRoute
+  ApiPushResubscribeRoute: typeof ApiPushResubscribeRoute
+  BookTagChar123tagChar125DotepubRoute: typeof BookTagChar123tagChar125DotepubRoute
   CollectionDidRkeyRoute: typeof CollectionDidRkeyRoute
+  ComicDidRkeyRoute: typeof ComicDidRkeyRoute
+  EmbedFollowDidRoute: typeof EmbedFollowDidRoute
   FeedLatestDidRoute: typeof FeedLatestDidRoute
   FeedTagTagRoute: typeof FeedTagTagRoute
   FeedUDidRoute: typeof FeedUDidRoute
+  KosyncUsersAuthRoute: typeof KosyncUsersAuthRoute
+  KosyncUsersCreateRoute: typeof KosyncUsersCreateRoute
+  OpdsTagTagRoute: typeof OpdsTagTagRoute
   SubscribeLoginDidRkeyRoute: typeof SubscribeLoginDidRkeyRoute
   SubscribeDidRkeyRoute: typeof SubscribeDidRkeyRoute
   ApiAuthAtprotoAuthorizeRoute: typeof ApiAuthAtprotoAuthorizeRoute
@@ -1306,10 +1876,29 @@ export interface RootRouteChildren {
   ApiAuthAtprotoMetadataDotjsonRoute: typeof ApiAuthAtprotoMetadataDotjsonRoute
   ApiAuthAtprotoSignupRoute: typeof ApiAuthAtprotoSignupRoute
   ApiOgPageSlugRoute: typeof ApiOgPageSlugRoute
+  BookADidChar123rkeyChar125DotcbzRoute: typeof BookADidChar123rkeyChar125DotcbzRoute
+  BookADidChar123rkeyChar125DotepubRoute: typeof BookADidChar123rkeyChar125DotepubRoute
+  BookCDidChar123rkeyChar125DotepubRoute: typeof BookCDidChar123rkeyChar125DotepubRoute
+  BookIDidChar123rkeyChar125DotcbzRoute: typeof BookIDidChar123rkeyChar125DotcbzRoute
+  BookLDidChar123rkeyChar125DotepubRoute: typeof BookLDidChar123rkeyChar125DotepubRoute
+  BookPDidChar123rkeyChar125DotcbzRoute: typeof BookPDidChar123rkeyChar125DotcbzRoute
+  BookPDidChar123rkeyChar125DotepubRoute: typeof BookPDidChar123rkeyChar125DotepubRoute
+  BookUDidSavedDotepubRoute: typeof BookUDidSavedDotepubRoute
+  BookUDidUnreadDotepubRoute: typeof BookUDidUnreadDotepubRoute
   EmbedSubscribeDidRkeyRoute: typeof EmbedSubscribeDidRkeyRoute
   FeedCollectionDidRkeyRoute: typeof FeedCollectionDidRkeyRoute
   FeedLDidRkeyRoute: typeof FeedLDidRkeyRoute
   FeedPDidRkeyRoute: typeof FeedPDidRkeyRoute
+  KosyncSyncsProgressDocumentRoute: typeof KosyncSyncsProgressDocumentRoute
+  OpdsCDidRkeyRoute: typeof OpdsCDidRkeyRoute
+  OpdsLDidRkeyRoute: typeof OpdsLDidRkeyRoute
+  OpdsPDidRkeyRoute: typeof OpdsPDidRkeyRoute
+  OpdsUDidPublicationsRoute: typeof OpdsUDidPublicationsRoute
+  OpdsUDidSavedRoute: typeof OpdsUDidSavedRoute
+  OpdsUDidSubscriptionsRoute: typeof OpdsUDidSubscriptionsRoute
+  OpdsUDidUnreadRoute: typeof OpdsUDidUnreadRoute
+  KosyncSyncsProgressIndexRoute: typeof KosyncSyncsProgressIndexRoute
+  OpdsUDidIndexRoute: typeof OpdsUDidIndexRoute
   ApiAuthAtprotoReviewCallbackRoute: typeof ApiAuthAtprotoReviewCallbackRoute
   ApiAuthAtprotoReviewMetadataDotjsonRoute: typeof ApiAuthAtprotoReviewMetadataDotjsonRoute
 }
@@ -1498,6 +2087,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ExtensionConnectedRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/follow-login/$did': {
+      id: '/follow-login/$did'
+      path: '/follow-login/$did'
+      fullPath: '/follow-login/$did'
+      preLoaderRoute: typeof FollowLoginDidRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/follow/$did': {
+      id: '/follow/$did'
+      path: '/follow/$did'
+      fullPath: '/follow/$did'
+      preLoaderRoute: typeof FollowDidRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/kosync/healthcheck': {
+      id: '/kosync/healthcheck'
+      path: '/kosync/healthcheck'
+      fullPath: '/kosync/healthcheck'
+      preLoaderRoute: typeof KosyncHealthcheckRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/mcp/': {
       id: '/mcp/'
       path: '/mcp'
@@ -1510,6 +2120,69 @@ declare module '@tanstack/react-router' {
       path: '/mcp/authorize'
       fullPath: '/mcp/authorize'
       preLoaderRoute: typeof McpAuthorizeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/opds/': {
+      id: '/opds/'
+      path: '/opds'
+      fullPath: '/opds/'
+      preLoaderRoute: typeof OpdsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/opds/collections': {
+      id: '/opds/collections'
+      path: '/opds/collections'
+      fullPath: '/opds/collections'
+      preLoaderRoute: typeof OpdsCollectionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/opds/comics': {
+      id: '/opds/comics'
+      path: '/opds/comics'
+      fullPath: '/opds/comics'
+      preLoaderRoute: typeof OpdsComicsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/opds/latest': {
+      id: '/opds/latest'
+      path: '/opds/latest'
+      fullPath: '/opds/latest'
+      preLoaderRoute: typeof OpdsLatestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/opds/opensearch.xml': {
+      id: '/opds/opensearch.xml'
+      path: '/opds/opensearch.xml'
+      fullPath: '/opds/opensearch.xml'
+      preLoaderRoute: typeof OpdsOpensearchDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/opds/publications': {
+      id: '/opds/publications'
+      path: '/opds/publications'
+      fullPath: '/opds/publications'
+      preLoaderRoute: typeof OpdsPublicationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/opds/search': {
+      id: '/opds/search'
+      path: '/opds/search'
+      fullPath: '/opds/search'
+      preLoaderRoute: typeof OpdsSearchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/opds/tags': {
+      id: '/opds/tags'
+      path: '/opds/tags'
+      fullPath: '/opds/tags'
+      preLoaderRoute: typeof OpdsTagsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/opds/trending': {
+      id: '/opds/trending'
+      path: '/opds/trending'
+      fullPath: '/opds/trending'
+      preLoaderRoute: typeof OpdsTrendingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/review/thanks': {
@@ -1587,6 +2260,27 @@ declare module '@tanstack/react-router' {
       path: '/guide/collections'
       fullPath: '/guide/collections'
       preLoaderRoute: typeof GuideLayoutGuideCollectionsRouteImport
+      parentRoute: typeof GuideLayoutRoute
+    }
+    '/_guide-layout/guide/comics': {
+      id: '/_guide-layout/guide/comics'
+      path: '/guide/comics'
+      fullPath: '/guide/comics'
+      preLoaderRoute: typeof GuideLayoutGuideComicsRouteImport
+      parentRoute: typeof GuideLayoutRoute
+    }
+    '/_guide-layout/guide/e-readers': {
+      id: '/_guide-layout/guide/e-readers'
+      path: '/guide/e-readers'
+      fullPath: '/guide/e-readers'
+      preLoaderRoute: typeof GuideLayoutGuideEReadersRouteImport
+      parentRoute: typeof GuideLayoutRoute
+    }
+    '/_guide-layout/guide/embeds': {
+      id: '/_guide-layout/guide/embeds'
+      path: '/guide/embeds'
+      fullPath: '/guide/embeds'
+      preLoaderRoute: typeof GuideLayoutGuideEmbedsRouteImport
       parentRoute: typeof GuideLayoutRoute
     }
     '/_guide-layout/guide/extension': {
@@ -1708,11 +2402,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutSettingsIndexRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/settings/blocks': {
+      id: '/_layout/settings/blocks'
+      path: '/settings/blocks'
+      fullPath: '/settings/blocks'
+      preLoaderRoute: typeof LayoutSettingsBlocksRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/settings/muted': {
+      id: '/_layout/settings/muted'
+      path: '/settings/muted'
+      fullPath: '/settings/muted'
+      preLoaderRoute: typeof LayoutSettingsMutedRouteImport
+      parentRoute: typeof LayoutRoute
+    }
     '/_layout/tag/$tag': {
       id: '/_layout/tag/$tag'
       path: '/tag/$tag'
       fullPath: '/tag/$tag'
       preLoaderRoute: typeof LayoutTagTagRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/topics/': {
+      id: '/_layout/topics/'
+      path: '/topics'
+      fullPath: '/topics/'
+      preLoaderRoute: typeof LayoutTopicsIndexRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/topics/$slug': {
+      id: '/_layout/topics/$slug'
+      path: '/topics/$slug'
+      fullPath: '/topics/$slug'
+      preLoaderRoute: typeof LayoutTopicsSlugRouteImport
       parentRoute: typeof LayoutRoute
     }
     '/_layout/u/$did': {
@@ -1876,11 +2598,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiOgSiteRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/push/resubscribe': {
+      id: '/api/push/resubscribe'
+      path: '/api/push/resubscribe'
+      fullPath: '/api/push/resubscribe'
+      preLoaderRoute: typeof ApiPushResubscribeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/tag/{$tag}.epub': {
+      id: '/book/tag/{$tag}.epub'
+      path: '/book/tag/{$tag}.epub'
+      fullPath: '/book/tag/{$tag}.epub'
+      preLoaderRoute: typeof BookTagChar123tagChar125DotepubRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/collection/$did/$rkey': {
       id: '/collection/$did/$rkey'
       path: '/collection/$did/$rkey'
       fullPath: '/collection/$did/$rkey'
       preLoaderRoute: typeof CollectionDidRkeyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/comic/$did/$rkey': {
+      id: '/comic/$did/$rkey'
+      path: '/comic/$did/$rkey'
+      fullPath: '/comic/$did/$rkey'
+      preLoaderRoute: typeof ComicDidRkeyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/embed/follow/$did': {
+      id: '/embed/follow/$did'
+      path: '/embed/follow/$did'
+      fullPath: '/embed/follow/$did'
+      preLoaderRoute: typeof EmbedFollowDidRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/feed/latest/$did': {
@@ -1902,6 +2652,27 @@ declare module '@tanstack/react-router' {
       path: '/feed/u/$did'
       fullPath: '/feed/u/$did'
       preLoaderRoute: typeof FeedUDidRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/kosync/users/auth': {
+      id: '/kosync/users/auth'
+      path: '/kosync/users/auth'
+      fullPath: '/kosync/users/auth'
+      preLoaderRoute: typeof KosyncUsersAuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/kosync/users/create': {
+      id: '/kosync/users/create'
+      path: '/kosync/users/create'
+      fullPath: '/kosync/users/create'
+      preLoaderRoute: typeof KosyncUsersCreateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/opds/tag/$tag': {
+      id: '/opds/tag/$tag'
+      path: '/opds/tag/$tag'
+      fullPath: '/opds/tag/$tag'
+      preLoaderRoute: typeof OpdsTagTagRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/subscribe-login/$did/$rkey': {
@@ -1988,6 +2759,69 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiOgPageSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/book/a/$did/{$rkey}.cbz': {
+      id: '/book/a/$did/{$rkey}.cbz'
+      path: '/book/a/$did/{$rkey}.cbz'
+      fullPath: '/book/a/$did/{$rkey}.cbz'
+      preLoaderRoute: typeof BookADidChar123rkeyChar125DotcbzRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/a/$did/{$rkey}.epub': {
+      id: '/book/a/$did/{$rkey}.epub'
+      path: '/book/a/$did/{$rkey}.epub'
+      fullPath: '/book/a/$did/{$rkey}.epub'
+      preLoaderRoute: typeof BookADidChar123rkeyChar125DotepubRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/c/$did/{$rkey}.epub': {
+      id: '/book/c/$did/{$rkey}.epub'
+      path: '/book/c/$did/{$rkey}.epub'
+      fullPath: '/book/c/$did/{$rkey}.epub'
+      preLoaderRoute: typeof BookCDidChar123rkeyChar125DotepubRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/i/$did/{$rkey}.cbz': {
+      id: '/book/i/$did/{$rkey}.cbz'
+      path: '/book/i/$did/{$rkey}.cbz'
+      fullPath: '/book/i/$did/{$rkey}.cbz'
+      preLoaderRoute: typeof BookIDidChar123rkeyChar125DotcbzRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/l/$did/{$rkey}.epub': {
+      id: '/book/l/$did/{$rkey}.epub'
+      path: '/book/l/$did/{$rkey}.epub'
+      fullPath: '/book/l/$did/{$rkey}.epub'
+      preLoaderRoute: typeof BookLDidChar123rkeyChar125DotepubRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/p/$did/{$rkey}.cbz': {
+      id: '/book/p/$did/{$rkey}.cbz'
+      path: '/book/p/$did/{$rkey}.cbz'
+      fullPath: '/book/p/$did/{$rkey}.cbz'
+      preLoaderRoute: typeof BookPDidChar123rkeyChar125DotcbzRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/p/$did/{$rkey}.epub': {
+      id: '/book/p/$did/{$rkey}.epub'
+      path: '/book/p/$did/{$rkey}.epub'
+      fullPath: '/book/p/$did/{$rkey}.epub'
+      preLoaderRoute: typeof BookPDidChar123rkeyChar125DotepubRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/u/$did/saved.epub': {
+      id: '/book/u/$did/saved.epub'
+      path: '/book/u/$did/saved.epub'
+      fullPath: '/book/u/$did/saved.epub'
+      preLoaderRoute: typeof BookUDidSavedDotepubRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/u/$did/unread.epub': {
+      id: '/book/u/$did/unread.epub'
+      path: '/book/u/$did/unread.epub'
+      fullPath: '/book/u/$did/unread.epub'
+      preLoaderRoute: typeof BookUDidUnreadDotepubRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/embed/subscribe/$did/$rkey': {
       id: '/embed/subscribe/$did/$rkey'
       path: '/embed/subscribe/$did/$rkey'
@@ -2014,6 +2848,76 @@ declare module '@tanstack/react-router' {
       path: '/feed/p/$did/$rkey'
       fullPath: '/feed/p/$did/$rkey'
       preLoaderRoute: typeof FeedPDidRkeyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/kosync/syncs/progress/': {
+      id: '/kosync/syncs/progress/'
+      path: '/kosync/syncs/progress'
+      fullPath: '/kosync/syncs/progress/'
+      preLoaderRoute: typeof KosyncSyncsProgressIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/kosync/syncs/progress/$document': {
+      id: '/kosync/syncs/progress/$document'
+      path: '/kosync/syncs/progress/$document'
+      fullPath: '/kosync/syncs/progress/$document'
+      preLoaderRoute: typeof KosyncSyncsProgressDocumentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/opds/c/$did/$rkey': {
+      id: '/opds/c/$did/$rkey'
+      path: '/opds/c/$did/$rkey'
+      fullPath: '/opds/c/$did/$rkey'
+      preLoaderRoute: typeof OpdsCDidRkeyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/opds/l/$did/$rkey': {
+      id: '/opds/l/$did/$rkey'
+      path: '/opds/l/$did/$rkey'
+      fullPath: '/opds/l/$did/$rkey'
+      preLoaderRoute: typeof OpdsLDidRkeyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/opds/p/$did/$rkey': {
+      id: '/opds/p/$did/$rkey'
+      path: '/opds/p/$did/$rkey'
+      fullPath: '/opds/p/$did/$rkey'
+      preLoaderRoute: typeof OpdsPDidRkeyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/opds/u/$did/': {
+      id: '/opds/u/$did/'
+      path: '/opds/u/$did'
+      fullPath: '/opds/u/$did/'
+      preLoaderRoute: typeof OpdsUDidIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/opds/u/$did/publications': {
+      id: '/opds/u/$did/publications'
+      path: '/opds/u/$did/publications'
+      fullPath: '/opds/u/$did/publications'
+      preLoaderRoute: typeof OpdsUDidPublicationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/opds/u/$did/saved': {
+      id: '/opds/u/$did/saved'
+      path: '/opds/u/$did/saved'
+      fullPath: '/opds/u/$did/saved'
+      preLoaderRoute: typeof OpdsUDidSavedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/opds/u/$did/subscriptions': {
+      id: '/opds/u/$did/subscriptions'
+      path: '/opds/u/$did/subscriptions'
+      fullPath: '/opds/u/$did/subscriptions'
+      preLoaderRoute: typeof OpdsUDidSubscriptionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/opds/u/$did/unread': {
+      id: '/opds/u/$did/unread'
+      path: '/opds/u/$did/unread'
+      fullPath: '/opds/u/$did/unread'
+      preLoaderRoute: typeof OpdsUDidUnreadRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/auth/atproto/review/callback': {
@@ -2056,6 +2960,9 @@ const DocsHeaderLayoutRouteWithChildren =
 
 interface GuideLayoutRouteChildren {
   GuideLayoutGuideCollectionsRoute: typeof GuideLayoutGuideCollectionsRoute
+  GuideLayoutGuideComicsRoute: typeof GuideLayoutGuideComicsRoute
+  GuideLayoutGuideEReadersRoute: typeof GuideLayoutGuideEReadersRoute
+  GuideLayoutGuideEmbedsRoute: typeof GuideLayoutGuideEmbedsRoute
   GuideLayoutGuideExtensionRoute: typeof GuideLayoutGuideExtensionRoute
   GuideLayoutGuideFindingRoute: typeof GuideLayoutGuideFindingRoute
   GuideLayoutGuideGettingStartedRoute: typeof GuideLayoutGuideGettingStartedRoute
@@ -2070,6 +2977,9 @@ interface GuideLayoutRouteChildren {
 
 const GuideLayoutRouteChildren: GuideLayoutRouteChildren = {
   GuideLayoutGuideCollectionsRoute: GuideLayoutGuideCollectionsRoute,
+  GuideLayoutGuideComicsRoute: GuideLayoutGuideComicsRoute,
+  GuideLayoutGuideEReadersRoute: GuideLayoutGuideEReadersRoute,
+  GuideLayoutGuideEmbedsRoute: GuideLayoutGuideEmbedsRoute,
   GuideLayoutGuideExtensionRoute: GuideLayoutGuideExtensionRoute,
   GuideLayoutGuideFindingRoute: GuideLayoutGuideFindingRoute,
   GuideLayoutGuideGettingStartedRoute: GuideLayoutGuideGettingStartedRoute,
@@ -2130,11 +3040,15 @@ interface LayoutRouteChildren {
   LayoutIndexRoute: typeof LayoutIndexRoute
   LayoutFeedbackReturnRoute: typeof LayoutFeedbackReturnRoute
   LayoutLabelersDidRoute: typeof LayoutLabelersDidRoute
+  LayoutSettingsBlocksRoute: typeof LayoutSettingsBlocksRoute
+  LayoutSettingsMutedRoute: typeof LayoutSettingsMutedRoute
   LayoutTagTagRoute: typeof LayoutTagTagRoute
+  LayoutTopicsSlugRoute: typeof LayoutTopicsSlugRoute
   LayoutUDidRoute: typeof LayoutUDidRoute
   LayoutFeedbackIndexRoute: typeof LayoutFeedbackIndexRoute
   LayoutLabelersIndexRoute: typeof LayoutLabelersIndexRoute
   LayoutSettingsIndexRoute: typeof LayoutSettingsIndexRoute
+  LayoutTopicsIndexRoute: typeof LayoutTopicsIndexRoute
   LayoutADidRkeyRoute: typeof LayoutADidRkeyRoute
   LayoutLDidRkeyRoute: typeof LayoutLDidRkeyRoute
   LayoutPDidRkeyRoute: typeof LayoutPDidRkeyRoute
@@ -2157,11 +3071,15 @@ const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutIndexRoute: LayoutIndexRoute,
   LayoutFeedbackReturnRoute: LayoutFeedbackReturnRoute,
   LayoutLabelersDidRoute: LayoutLabelersDidRoute,
+  LayoutSettingsBlocksRoute: LayoutSettingsBlocksRoute,
+  LayoutSettingsMutedRoute: LayoutSettingsMutedRoute,
   LayoutTagTagRoute: LayoutTagTagRoute,
+  LayoutTopicsSlugRoute: LayoutTopicsSlugRoute,
   LayoutUDidRoute: LayoutUDidRoute,
   LayoutFeedbackIndexRoute: LayoutFeedbackIndexRoute,
   LayoutLabelersIndexRoute: LayoutLabelersIndexRoute,
   LayoutSettingsIndexRoute: LayoutSettingsIndexRoute,
+  LayoutTopicsIndexRoute: LayoutTopicsIndexRoute,
   LayoutADidRkeyRoute: LayoutADidRkeyRoute,
   LayoutLDidRkeyRoute: LayoutLDidRkeyRoute,
   LayoutPDidRkeyRoute: LayoutPDidRkeyRoute,
@@ -2185,10 +3103,22 @@ const rootRouteChildren: RootRouteChildren = {
   DevRtlRoute: DevRtlRoute,
   DevWelcomeEmailRoute: DevWelcomeEmailRoute,
   ExtensionConnectedRoute: ExtensionConnectedRoute,
+  FollowLoginDidRoute: FollowLoginDidRoute,
+  FollowDidRoute: FollowDidRoute,
+  KosyncHealthcheckRoute: KosyncHealthcheckRoute,
   McpAuthorizeRoute: McpAuthorizeRoute,
+  OpdsCollectionsRoute: OpdsCollectionsRoute,
+  OpdsComicsRoute: OpdsComicsRoute,
+  OpdsLatestRoute: OpdsLatestRoute,
+  OpdsOpensearchDotxmlRoute: OpdsOpensearchDotxmlRoute,
+  OpdsPublicationsRoute: OpdsPublicationsRoute,
+  OpdsSearchRoute: OpdsSearchRoute,
+  OpdsTagsRoute: OpdsTagsRoute,
+  OpdsTrendingRoute: OpdsTrendingRoute,
   ReviewThanksRoute: ReviewThanksRoute,
   XrpcSplatRoute: XrpcSplatRoute,
   McpIndexRoute: McpIndexRoute,
+  OpdsIndexRoute: OpdsIndexRoute,
   DotwellKnownOauthProtectedResourceMcpRoute:
     DotwellKnownOauthProtectedResourceMcpRoute,
   ApiBskyPostRoute: ApiBskyPostRoute,
@@ -2213,10 +3143,17 @@ const rootRouteChildren: RootRouteChildren = {
   ApiOgPublicationRoute: ApiOgPublicationRoute,
   ApiOgQuoteRoute: ApiOgQuoteRoute,
   ApiOgSiteRoute: ApiOgSiteRoute,
+  ApiPushResubscribeRoute: ApiPushResubscribeRoute,
+  BookTagChar123tagChar125DotepubRoute: BookTagChar123tagChar125DotepubRoute,
   CollectionDidRkeyRoute: CollectionDidRkeyRoute,
+  ComicDidRkeyRoute: ComicDidRkeyRoute,
+  EmbedFollowDidRoute: EmbedFollowDidRoute,
   FeedLatestDidRoute: FeedLatestDidRoute,
   FeedTagTagRoute: FeedTagTagRoute,
   FeedUDidRoute: FeedUDidRoute,
+  KosyncUsersAuthRoute: KosyncUsersAuthRoute,
+  KosyncUsersCreateRoute: KosyncUsersCreateRoute,
+  OpdsTagTagRoute: OpdsTagTagRoute,
   SubscribeLoginDidRkeyRoute: SubscribeLoginDidRkeyRoute,
   SubscribeDidRkeyRoute: SubscribeDidRkeyRoute,
   ApiAuthAtprotoAuthorizeRoute: ApiAuthAtprotoAuthorizeRoute,
@@ -2225,10 +3162,33 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAuthAtprotoMetadataDotjsonRoute: ApiAuthAtprotoMetadataDotjsonRoute,
   ApiAuthAtprotoSignupRoute: ApiAuthAtprotoSignupRoute,
   ApiOgPageSlugRoute: ApiOgPageSlugRoute,
+  BookADidChar123rkeyChar125DotcbzRoute: BookADidChar123rkeyChar125DotcbzRoute,
+  BookADidChar123rkeyChar125DotepubRoute:
+    BookADidChar123rkeyChar125DotepubRoute,
+  BookCDidChar123rkeyChar125DotepubRoute:
+    BookCDidChar123rkeyChar125DotepubRoute,
+  BookIDidChar123rkeyChar125DotcbzRoute: BookIDidChar123rkeyChar125DotcbzRoute,
+  BookLDidChar123rkeyChar125DotepubRoute:
+    BookLDidChar123rkeyChar125DotepubRoute,
+  BookPDidChar123rkeyChar125DotcbzRoute: BookPDidChar123rkeyChar125DotcbzRoute,
+  BookPDidChar123rkeyChar125DotepubRoute:
+    BookPDidChar123rkeyChar125DotepubRoute,
+  BookUDidSavedDotepubRoute: BookUDidSavedDotepubRoute,
+  BookUDidUnreadDotepubRoute: BookUDidUnreadDotepubRoute,
   EmbedSubscribeDidRkeyRoute: EmbedSubscribeDidRkeyRoute,
   FeedCollectionDidRkeyRoute: FeedCollectionDidRkeyRoute,
   FeedLDidRkeyRoute: FeedLDidRkeyRoute,
   FeedPDidRkeyRoute: FeedPDidRkeyRoute,
+  KosyncSyncsProgressDocumentRoute: KosyncSyncsProgressDocumentRoute,
+  OpdsCDidRkeyRoute: OpdsCDidRkeyRoute,
+  OpdsLDidRkeyRoute: OpdsLDidRkeyRoute,
+  OpdsPDidRkeyRoute: OpdsPDidRkeyRoute,
+  OpdsUDidPublicationsRoute: OpdsUDidPublicationsRoute,
+  OpdsUDidSavedRoute: OpdsUDidSavedRoute,
+  OpdsUDidSubscriptionsRoute: OpdsUDidSubscriptionsRoute,
+  OpdsUDidUnreadRoute: OpdsUDidUnreadRoute,
+  KosyncSyncsProgressIndexRoute: KosyncSyncsProgressIndexRoute,
+  OpdsUDidIndexRoute: OpdsUDidIndexRoute,
   ApiAuthAtprotoReviewCallbackRoute: ApiAuthAtprotoReviewCallbackRoute,
   ApiAuthAtprotoReviewMetadataDotjsonRoute:
     ApiAuthAtprotoReviewMetadataDotjsonRoute,

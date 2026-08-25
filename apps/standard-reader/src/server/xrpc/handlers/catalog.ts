@@ -5,10 +5,12 @@ import { fetchBlueskyPublicProfileFields } from "#/lib/bluesky-public-profile";
 import { isUsableHandle, resolveIdentity } from "#/server/atproto/identity";
 import { ipldToLexJson } from "#/server/atproto/ipld-json";
 import { resolveAuthorDid } from "#/server/atproto/resolve-author-ref";
+import { blockFilterDid, filterBlockedCards } from "#/server/blocks/blocks";
 import {
   resolvePageUrl,
   resolvePageUrls,
 } from "#/server/extension/resolve-page-url.server";
+import { muteFilterDid } from "#/server/mutes/mutes";
 import { selectPublicationHeader } from "#/server/reader/publication-header";
 import {
   discoverDirectoryPublications,
@@ -157,9 +159,12 @@ export async function handleGetDocument(ctx: XrpcRequestContext) {
   const documentUri = requireParam(ctx.params, "document");
   const readForDid =
     ctx.auth && ctx.trackReadingEnabled ? ctx.auth.did : undefined;
-  const cards = await selectArticleCardsByUris(ctx.db, ctx.schema, [
-    documentUri,
-  ]);
+  const cards = await selectArticleCardsByUris(
+    ctx.db,
+    ctx.schema,
+    [documentUri],
+    { viewerDid: await blockFilterDid(ctx.db, ctx.schema, ctx.auth?.did) },
+  );
   let card = cards[0];
   if (!card) {
     throw new InvalidRequestError("Document not found");
@@ -217,6 +222,9 @@ export async function handleGetPublications(ctx: XrpcRequestContext) {
     limit,
     offset,
     query: q ?? undefined,
+    excludeWebBridge: ctx.excludeWebBridgeEnabled,
+    viewerDid: await blockFilterDid(ctx.db, ctx.schema, ctx.auth?.did),
+    muterDid: await muteFilterDid(ctx.db, ctx.schema, ctx.auth?.did),
   });
 
   const total =
@@ -237,6 +245,7 @@ async function resolveAuthorProfileSummary(
       description: pr.description,
       avatarUrl: pr.avatarUrl,
       bannerUrl: pr.bannerUrl,
+      isBot: pr.isBot,
     })
     .from(pr)
     .where(eq(pr.did, did))
@@ -260,6 +269,7 @@ async function resolveAuthorProfileSummary(
       description: row.description,
       avatarUrl: row.avatarUrl ?? publicProfile?.avatarUrl ?? null,
       bannerUrl: row.bannerUrl,
+      isBot: row.isBot ?? false,
     };
   }
 
@@ -274,6 +284,7 @@ async function resolveAuthorProfileSummary(
     description: null,
     avatarUrl: publicProfile?.avatarUrl ?? null,
     bannerUrl: null,
+    isBot: false,
   };
 }
 
@@ -321,6 +332,9 @@ export async function handleGetPublicationDocuments(ctx: XrpcRequestContext) {
     offset,
     readForDid,
     countOldPostsAsUnread: ctx.auth ? ctx.countOldPostsAsUnreadEnabled : true,
+    // No mute filter: this is the publication's own document list, and muting
+    // only hides content from feeds + discovery — direct navigation still works.
+    viewerDid: await blockFilterDid(ctx.db, ctx.schema, ctx.auth?.did),
   });
   const items = await enrichDocuments(ctx, rows, readForDid);
   return {
@@ -417,23 +431,26 @@ export async function handleGetDocumentContext(ctx: XrpcRequestContext) {
   } = await import("#/server/reader/queries");
 
   const readerDid = ctx.auth?.did;
+  const blockDid = await blockFilterDid(ctx.db, ctx.schema, readerDid);
   const [moreFromRaw, relatedRaw, readersAlsoFollowRaw] = await Promise.all([
     row.publicationUri
       ? selectCards(ctx.db, ctx.schema, {
           publicationUris: [row.publicationUri],
           limit: 4,
+          viewerDid: blockDid,
         })
       : Promise.resolve([]),
     relatedArticles(ctx.db, ctx.schema, {
       documentUri: row.uri,
       publicationUri: row.publicationUri,
       limit: 6,
-    }),
+      excludeWebBridge: ctx.excludeWebBridgeEnabled,
+    }).then((rows) => filterBlockedCards(ctx.db, ctx.schema, readerDid, rows)),
     articleRecommendedPublications(ctx.db, ctx.schema, {
       publicationUri: row.publicationUri,
       readerDid,
       limit: 6,
-    }),
+    }).then((rows) => filterBlockedCards(ctx.db, ctx.schema, readerDid, rows)),
   ]);
 
   const moreFrom = moreFromRaw.filter((doc) => doc.uri !== row.uri).slice(0, 3);

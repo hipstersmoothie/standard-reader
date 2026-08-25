@@ -22,7 +22,23 @@ const styles = stylex.create({
       default: 1,
       ":is([data-exiting])": 0,
     },
-    position: "absolute",
+    /**
+     * Pinned to the viewport, not to the page.
+     *
+     * The stock hip-ui overlay is `position: absolute` sized to react-aria's
+     * `--page-height` (the whole document), which only covers the window while
+     * the overlay is portaled to `document.body`. An app that re-points that
+     * portal — as `PublicationThemeScope` does, so overlays inherit a
+     * publication's palette — hands it a containing block that starts partway
+     * across the window, and the scrim then stops at that column's edge,
+     * leaving the app's own chrome (sidebar) undimmed and clickable beside a
+     * modal that is supposed to be modal.
+     *
+     * `fixed` + the visual viewport resolves against the window wherever the
+     * overlay is mounted, and matches how the modal itself is already
+     * positioned below.
+     */
+    position: "fixed",
     transitionDuration: {
       ":is([data-exiting])": animationDuration.fast,
     },
@@ -32,7 +48,7 @@ const styles = stylex.create({
       ":is([data-exiting])": animationTimingFunction.easeIn,
     },
     zIndex: 100,
-    height: "var(--page-height)",
+    height: "var(--visual-viewport-height, 100%)",
     insetInlineStart: 0,
     top: 0,
     width: "100vw",

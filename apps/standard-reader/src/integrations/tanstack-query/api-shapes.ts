@@ -4,6 +4,8 @@ import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { alias } from "drizzle-orm/pg-core";
 
 import type * as DbSchema from "#/db/schema";
+import type { SerialPublication } from "#/lib/publication/serial";
+import { resolveSerialPublication } from "#/lib/publication/serial";
 import { cdnImageUrl } from "#/server/atproto/blob";
 
 /**
@@ -53,6 +55,15 @@ export interface PublicationCard {
    * excluded server-side, so the flag stays `false`.
    */
   hiddenFromDiscover: boolean;
+  /**
+   * Set when the publisher declared that this publication reads forwards from
+   * its first post (`preferences.prevNextDirection = "ltr"`) — a serial book or
+   * comic. `kind` is app-derived (`recomputeSerialKinds`) and decides the reading
+   * experience: a `"comic"` opens in the page-flip reader, a `"book"` reads as
+   * ordinary articles with an "Up next" link to the following issue. Null for
+   * ordinary reverse-chronological publications. See `#/lib/publication/serial`.
+   */
+  serial: SerialPublication | null;
   subscriberCount: number;
   documentCount: number;
   lastDocumentAt: string | null;
@@ -80,6 +91,14 @@ export interface ArticleCard {
   publicationOwnerAvatarUrl: string | null;
   /** Owning profile's handle (e.g. `alice.bsky.social`). */
   publicationOwnerHandle: string | null;
+  /**
+   * DID of the account that owns the publication, when the document is bound to
+   * one. Usually the same as `did` — but not for a guest post, where a
+   * contributor writes into someone else's publication and it is the *owner*
+   * whose name and avatar carry the byline. Blocks are per account, so both have
+   * to be checked: see `BlockableCard` in `#/lib/blocks`.
+   */
+  publicationOwnerDid: string | null;
   /** Owning publication's banner (from the owner profile), for cover fallback. */
   publicationBannerUrl: string | null;
   /** Owning publication's derived topic (e.g. "Design"), for meta labels. */
@@ -96,6 +115,16 @@ export interface ArticleCard {
   authorAvatarUrl: string | null;
   /** Document author's display name (fallback byline label for loose docs). */
   authorDisplayName: string | null;
+  /**
+   * The byline account self-declares as a bot (a `bot` entry in its profile
+   * record's `labels`). For a publication-bound document this is the same
+   * profile as the publication owner, so one field covers both cases.
+   *
+   * Read off the profile record we already index — this used to require a
+   * first-party labeler that did nothing but re-publish the same
+   * self-declaration as a label.
+   */
+  authorIsBot: boolean;
   /** Free-form tags from the document record. */
   tags: Array<string> | null;
   /**
@@ -178,6 +207,12 @@ export interface ProfileSummary {
   description: string | null;
   avatarUrl: string | null;
   bannerUrl: string | null;
+  /**
+   * The account self-declares as a bot (a `bot` entry in its profile record's
+   * `labels`). Its own statement, read off the record — not a label from a
+   * moderation service.
+   */
+  isBot: boolean;
 }
 
 // ── Drizzle column projections ──────────────────────────────────────────────
@@ -204,6 +239,8 @@ export function publicationCardColumns(schema: Schema) {
     topic: p.topic,
     verified: p.verified,
     showInDiscover: p.showInDiscover,
+    prevNextDirection: p.prevNextDirection,
+    serialKind: p.serialKind,
     subscriberCount: st.subscriberCount,
     documentCount: st.documentCount,
     lastDocumentAt: st.lastDocumentAt,
@@ -274,6 +311,7 @@ export function articleCardColumns(schema: Schema) {
     authorHandle: pa.handle,
     authorAvatarUrl: pa.avatarUrl,
     authorDisplayName: pa.displayName,
+    authorIsBot: pa.isBot,
     tags: d.tags,
     textContent: d.textContent,
     hasRenderableBody: d.hasRenderableBody,
@@ -332,6 +370,13 @@ type PublicationCardRow = {
    * "not hidden" — those surfaces never carry opted-out pubs.
    */
   showInDiscover?: boolean | null;
+  /**
+   * `preferences.prevNextDirection` and the derived serial kind. Both are
+   * optional so hand-assembled rows can omit them; absent reads as "ordinary
+   * publication", which is what every non-serial is.
+   */
+  prevNextDirection?: string | null;
+  serialKind?: string | null;
   subscriberCount: number | null;
   documentCount: number | null;
   lastDocumentAt: Date | string | null;
@@ -402,6 +447,7 @@ export function toPublicationCard(row: PublicationCardRow): PublicationCard {
     topic: row.topic,
     verified: row.verified,
     hiddenFromDiscover: row.showInDiscover === false,
+    serial: resolveSerialPublication(row.prevNextDirection, row.serialKind),
     subscriberCount: row.subscriberCount ?? 0,
     documentCount: row.documentCount ?? 0,
     lastDocumentAt: toIsoTimestamp(row.lastDocumentAt),
@@ -431,6 +477,7 @@ type ArticleCardRow = {
   authorHandle: string | null;
   authorAvatarUrl: string | null;
   authorDisplayName: string | null;
+  authorIsBot?: boolean | null;
   tags: Array<string> | null;
   matchedTags?: Array<string> | null;
   textContent?: string | null;
@@ -467,9 +514,11 @@ export function toArticleCard(row: ArticleCardRow): ArticleCard {
     publicationOwnerAvatarUrl:
       row.publicationOwnerAvatarUrl ?? row.authorAvatarUrl,
     publicationOwnerHandle: row.publicationOwnerHandle ?? row.authorHandle,
+    publicationOwnerDid: row.publicationDid ?? null,
     publicationBannerUrl: row.publicationBannerUrl,
     publicationTopic: row.publicationTopic,
     authorHandle: row.authorHandle,
+    authorIsBot: row.authorIsBot ?? false,
     authorAvatarUrl: row.authorAvatarUrl,
     authorDisplayName: row.authorDisplayName,
     tags: row.tags,

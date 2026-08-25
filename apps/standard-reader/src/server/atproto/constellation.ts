@@ -13,6 +13,7 @@ import {
   MINI_POST_COLLECTION,
   MINI_POST_PUBLICATION_PATH,
   MINI_POST_QUOTE_PATHS,
+  MINI_POST_REPLY_PARENT_PATH,
   MINI_POST_SUBJECT_PATH,
 } from "#/lib/pckt/mini";
 
@@ -233,9 +234,25 @@ function parseBacklinksCountPayload(payload: unknown): number {
   return typeof payload.total === "number" ? payload.total : 0;
 }
 
+/**
+ * Parse a `/links/count` body. The endpoint used to answer with a bare integer
+ * and now answers with `{"total":N}`; accept both so a future flip back (or a
+ * differently-configured Constellation instance) keeps working. Silently
+ * returning 0 here zeroes every Bluesky backlink total, so the two shapes must
+ * both be handled explicitly rather than parsed loosely.
+ */
 function parseLegacyCountBody(body: string): number {
   const trimmed = body.trim();
   if (!trimmed) return 0;
+
+  if (trimmed.startsWith("{")) {
+    try {
+      return parseBacklinksCountPayload(JSON.parse(trimmed));
+    } catch {
+      return 0;
+    }
+  }
+
   const parsed = Number.parseInt(trimmed, 10);
   return Number.isFinite(parsed) ? parsed : 0;
 }
@@ -247,9 +264,14 @@ function parseLegacyCountBody(body: string): number {
 async function fetchBacklinksCount({
   target,
   source,
+  forceLegacyLinks = false,
 }: {
   target: string;
   source: string;
+  /** Force the legacy `/links/count` endpoint even for AT-URI/DID subjects.
+   * Some sources (e.g. `blog.pckt.mini.post:.reply.parent.uri`) 400 on xrpc but
+   * resolve on legacy `/links`. */
+  forceLegacyLinks?: boolean;
 }): Promise<number> {
   if (!target.trim() || !source.trim()) return 0;
 
@@ -257,7 +279,7 @@ async function fetchBacklinksCount({
   if (!parsed) return 0;
 
   try {
-    const useLegacyLinks = isHttpUrl(target);
+    const useLegacyLinks = forceLegacyLinks || isHttpUrl(target);
     const url = useLegacyLinks
       ? new URL("/links/count", constellationBaseUrl())
       : new URL(
@@ -598,6 +620,10 @@ export const NOTE_DOCUMENT_LINK_SOURCES = [
 export const NOTE_PUBLICATION_LINK_SOURCE =
   `${MINI_POST_COLLECTION}:${MINI_POST_PUBLICATION_PATH}` as const;
 
+/** Constellation source for notes replying to another note (`.reply.parent.uri`). */
+export const NOTE_REPLY_LINK_SOURCE =
+  `${MINI_POST_COLLECTION}:${MINI_POST_REPLY_PARENT_PATH}` as const;
+
 /** Notes (mini.posts) that reply to or quote the given document AT-URI. */
 export async function getNoteBacklinksForDocument(
   documentUri: string,
@@ -630,6 +656,18 @@ export async function getLeafletCommentBacklinksForDocument(
     true,
   );
   return mergeBacklinkRecords([records], new Set([LEAFLET_COMMENT_COLLECTION]));
+}
+
+/** Reply count for a pckt note (mini.post) AT-URI via Constellation. */
+export async function getNoteReplyCountForNote(
+  noteUri: string,
+): Promise<number> {
+  if (!noteUri.startsWith("at://")) return 0;
+  return fetchBacklinksCount({
+    target: noteUri,
+    source: NOTE_REPLY_LINK_SOURCE,
+    forceLegacyLinks: true,
+  });
 }
 
 /** Notes (mini.posts) published under the given publication AT-URI. */

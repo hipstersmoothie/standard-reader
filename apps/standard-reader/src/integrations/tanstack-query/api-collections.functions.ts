@@ -30,7 +30,7 @@ import {
   getPublicationThemeRecord,
 } from "#/server/atproto/repo-get-records";
 import { parseAtUri } from "#/server/atproto/uri";
-import { ensureTracked } from "#/server/ingest/tap-client";
+import { ensureTracked } from "#/server/ingest/tracked-repos";
 import { observe } from "#/server/observability/log";
 import { selectArticleCardsByUris } from "#/server/reader/queries";
 

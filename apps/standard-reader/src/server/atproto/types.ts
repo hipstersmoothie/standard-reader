@@ -58,7 +58,15 @@ export interface PublicationRecord {
    * (`#/lib/publication-theme-source`) narrows it per `$type`.
    */
   theme?: unknown;
-  preferences?: { showInDiscover?: boolean };
+  preferences?: {
+    showInDiscover?: boolean;
+    /**
+     * `"ltr"` | `"rtl"` (lexicon default `"rtl"`). The publisher's prev/next
+     * reading direction — `"ltr"` marks a serial that reads forwards from its
+     * first post. See `#/lib/publication/serial`.
+     */
+    prevNextDirection?: string;
+  };
 }
 
 /** `site.standard.document#contributor`. */
@@ -169,6 +177,19 @@ export interface UserFollowRecord {
   createdAt?: string;
 }
 
+/**
+ * `app.standard-reader.graph.mute` — mutes a subject for this reader: either a
+ * user (a DID) or a publication (the AT-URI of its `site.standard.publication`
+ * record). Presence means muted; deleting unmutes. Hidden from the reader's
+ * feeds and discovery only — direct navigation and subscriptions are untouched.
+ */
+export interface MuteRecord {
+  $type?: string;
+  /** A user DID (`did:...`) or a publication AT-URI (`at://...`). */
+  subject: string;
+  createdAt?: string;
+}
+
 /** `app.standard-reader.read` — an article the reader has read. */
 export interface ReadRecord {
   $type?: string;
@@ -189,21 +210,6 @@ export interface LabelPrefRecord {
   visibility: "ignore" | "warn" | "hide";
 }
 
-/** `app.standard-reader.labeler.service` — registers a labeler (owner = author). */
-export interface LabelerServiceRecord {
-  $type?: string;
-  did: string;
-  serviceEndpoint: string;
-  displayName?: string;
-  description?: string;
-  avatar?: BlobRef;
-  policies?: {
-    labelValues?: Array<string>;
-    labelValueDefinitions?: Array<Record<string, unknown>>;
-  };
-  createdAt?: string;
-}
-
 /**
  * `app.standard-reader.labeler.subscription` (V2) / legacy
  * `app.standard-reader.labelerSubscription` — a labeler the reader subscribes
@@ -213,6 +219,8 @@ export interface LabelerSubscriptionRecord {
   $type?: string;
   labeler: string;
   labels?: Array<LabelPrefRecord>;
+  /** Absent means enabled; `false` mutes the labeler without unsubscribing. */
+  enabled?: boolean;
   createdAt?: string;
 }
 
@@ -266,41 +274,47 @@ export interface BskyProfileRecord {
   banner?: BlobRef;
 }
 
-// ── tap event envelope (see cmd/tap README "Event Format") ──────────────────
+// ── ingest event envelope ───────────────────────────────────────────────────
+//
+// The read-model's own event shape, deliberately not any upstream's. Jetstream
+// commits are adapted into it (`#/server/ingest/jetstream-event`) and so is the
+// PDS reconcile sweep's replay, which is what lets one dispatcher — and one set
+// of handlers — serve both without a second, drifting mapping.
 
-export type TapAction = "create" | "update" | "delete";
+export type IngestAction = "create" | "update" | "delete";
 
-export interface TapRecordPayload {
+export interface IngestRecordPayload {
   /** True if delivered live (firehose) vs historical backfill/resync. */
   live: boolean;
   rev: string;
   did: string;
   collection: string;
   rkey: string;
-  action: TapAction;
+  action: IngestAction;
   /** Present for create/update; absent for delete. */
   cid?: string;
   /** The record body; absent for delete. */
   record?: Record<string, unknown>;
 }
 
-export interface TapIdentityPayload {
+export interface IngestIdentityPayload {
   did: string;
   handle?: string;
   isActive?: boolean;
   status?: string;
 }
 
-export interface TapRecordEvent {
+export interface IngestRecordEvent {
+  /** The stream cursor this event arrived at (Jetstream's `seq`). */
   id: number;
   type: "record";
-  record: TapRecordPayload;
+  record: IngestRecordPayload;
 }
 
-export interface TapIdentityEvent {
+export interface IngestIdentityEvent {
   id: number;
   type: "identity";
-  identity: TapIdentityPayload;
+  identity: IngestIdentityPayload;
 }
 
-export type TapEvent = TapRecordEvent | TapIdentityEvent;
+export type IngestEvent = IngestRecordEvent | IngestIdentityEvent;

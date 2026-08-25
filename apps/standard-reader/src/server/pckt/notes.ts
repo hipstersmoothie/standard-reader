@@ -9,16 +9,13 @@
 
 import type { JsonValue } from "#/integrations/tanstack-query/api-shapes";
 import { fetchBlueskyPublicProfileFields } from "#/lib/bluesky-public-profile";
-import {
-  MINI_POST_COLLECTION,
-  normalizeMiniPost,
-  pcktNoteUrl,
-} from "#/lib/pckt/mini";
+import { normalizeMiniPost, pcktNoteUrl } from "#/lib/pckt/mini";
 import type { MiniPost } from "#/lib/pckt/mini";
 import type { ConstellationBacklinkRecord } from "#/server/atproto/constellation";
 import {
   getNoteBacklinksForDocument,
   getNoteBacklinksForPublication,
+  getNoteReplyCountForNote,
 } from "#/server/atproto/constellation";
 import { fetchRepoRecordWithFallback } from "#/server/atproto/fetch-record";
 import { resolveIdentity } from "#/server/atproto/identity";
@@ -83,6 +80,7 @@ function toComment(
   note: MiniPost,
   author: DocumentCommentAuthor,
   documentUri: string,
+  replyCount: number,
 ): DocumentComment {
   const isQuote = note.quotedRecordUri === documentUri;
   return {
@@ -94,7 +92,7 @@ function toComment(
     commentary: note.text,
     commentaryFacets: note.facets,
     quote: null,
-    replyCount: 0,
+    replyCount,
     indexedAt: note.createdAt,
   };
 }
@@ -133,13 +131,16 @@ export async function fetchNotesForDocument(
       return [];
     }
 
-    const authorByDid = await resolveNoteAuthors(notes.map((note) => note.did));
+    const [authorByDid, replyCounts] = await Promise.all([
+      resolveNoteAuthors(notes.map((note) => note.did)),
+      Promise.all(notes.map((note) => getNoteReplyCountForNote(note.uri))),
+    ]);
 
     const comments: Array<DocumentComment> = [];
-    for (const note of notes) {
+    for (const [index, note] of notes.entries()) {
       const author = authorByDid.get(note.did);
       if (!author) continue;
-      comments.push(toComment(note, author, documentUri));
+      comments.push(toComment(note, author, documentUri, replyCounts[index]));
     }
 
     noteCommentsCache.set(documentUri, {
@@ -208,22 +209,5 @@ export async function fetchLatestPublicationNote(
     return note;
   } catch {
     return cached?.note ?? null;
-  }
-}
-
-/** Count of pckt notes referencing `documentUri` (deduped). Best-effort. */
-export async function countNotesForDocument(
-  documentUri: string,
-): Promise<number> {
-  if (!documentUri.startsWith("at://")) return 0;
-  const cached = noteCommentsCache.get(documentUri);
-  if (cached && cached.expiresAt > Date.now()) return cached.comments.length;
-  try {
-    const records = await getNoteBacklinksForDocument(documentUri);
-    return records.filter(
-      (record) => record.collection === MINI_POST_COLLECTION,
-    ).length;
-  } catch {
-    return cached?.comments.length ?? 0;
   }
 }

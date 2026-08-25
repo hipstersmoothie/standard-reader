@@ -3,16 +3,25 @@ import { Client as AtpClient } from "@atcute/client";
 import type { Did } from "@atcute/lexicons";
 import { verifyJwt } from "@atproto/xrpc-server";
 
+import { didWebDocumentUrl } from "#/lib/atproto/did-web";
 import { resolveIdentity } from "#/server/atproto/identity";
 import { assertSafeFetchUrl } from "#/server/security/ssrf-guard";
 
-import { appviewAudience } from "./config";
+import { appviewAudience, appviewDid } from "./config";
 import { AuthRequiredError, ForbiddenError } from "./errors";
+import {
+  looksLikeOauthAccessToken,
+  verifyOauthJwtAccessToken,
+} from "./oauth-token";
 
 export type XrpcAuthContext = {
   /** Authenticated user DID (from access token or service JWT iss). */
   did: Did;
-  /** PDS client when authenticated via OAuth access token. */
+  /**
+   * PDS client when the credential can be replayed at the caller's PDS
+   * (`via: "accessToken"`). Null for service JWTs and self-verified OAuth
+   * JWTs — those prove identity but give us nothing to write with.
+   */
   client: Client | null;
   /**
    * Scopes granted to the presented credential.
@@ -34,8 +43,13 @@ export type XrpcAuthContext = {
    * one layer up (the MCP token's `mcp:write` scope) and one layer down (the
    * PDS rejects any repo write the reader's grant doesn't cover), so there is
    * no scope list to check in between.
+   *
+   * `oauthJwt` is a PDS-minted OAuth access token we verified ourselves
+   * (signature against the issuer's JWKS + DPoP binding + `rpc:` scope for
+   * this service) because the token cannot call `getSession` — the path an
+   * rpc-scope-only grant arrives on. Scopes are the verified `scope` claim.
    */
-  via: "accessToken" | "internal" | "serviceJwt";
+  via: "accessToken" | "internal" | "oauthJwt" | "serviceJwt";
 };
 
 const GET_SESSION_TIMEOUT_MS = 8000;
@@ -62,11 +76,11 @@ async function getSigningKey(
     const plcUrl = process.env.TAP_PLC_URL || "https://plc.directory";
     docUrl = `${plcUrl}/${encodeURIComponent(did)}`;
   } else if (did.startsWith("did:web:")) {
-    const host = did.slice("did:web:".length).replaceAll(":", ".");
-    docUrl = `https://${host}/.well-known/did.json`;
+    docUrl = didWebDocumentUrl(did);
     // did:web host is attacker-controlled (from the unverified JWT iss) —
     // validate before fetching to prevent SSRF (security audit C1).
     try {
+      if (!docUrl) throw new Error("malformed did:web");
       assertSafeFetchUrl(docUrl);
     } catch {
       throw new AuthRequiredError("Unable to resolve signing key for issuer");
@@ -98,11 +112,31 @@ async function getSigningKey(
   return verificationMethod.publicKeyMultibase;
 }
 
+/**
+ * Audiences we accept on a PDS-minted service JWT.
+ *
+ * `pipethrough` splits the `atproto-proxy` header and signs the token with the
+ * **bare DID** as `aud`, keeping the `did#fragment` form only for matching
+ * OAuth `rpc:` scopes. Requiring the fragment form rejected every proxied call
+ * with `BadJwtAudience`; accepting only the bare form would break any
+ * implementation that echoes the whole header back. Take either — but nothing
+ * else, so a token minted for a different service still cannot be replayed at
+ * us.
+ */
+export function acceptedServiceJwtAudiences(): ReadonlySet<string> {
+  return new Set([appviewDid(), appviewAudience()]);
+}
+
 async function verifyServiceJwt(
   jwt: string,
   lxm: string,
 ): Promise<XrpcAuthContext> {
-  const payload = await verifyJwt(jwt, appviewAudience(), lxm, getSigningKey);
+  // `null` skips xrpc-server's built-in single-value audience check so we can
+  // accept both spellings below; every other claim is still verified there.
+  const payload = await verifyJwt(jwt, null, lxm, getSigningKey);
+  if (!acceptedServiceJwtAudiences().has(payload.aud)) {
+    throw new AuthRequiredError("jwt audience does not match service did");
+  }
   const iss = payload.iss.split("#")[0] as Did;
   return {
     did: iss,
@@ -112,32 +146,32 @@ async function verifyServiceJwt(
   };
 }
 
-async function resolvePdsFromAccessToken(token: string): Promise<string> {
-  const { decodeJwt } = await import("jose");
-  const payload = decodeJwt(token);
+async function verifyAccessToken(
+  token: string,
+  scheme: "bearer" | "dpop",
+  request: Request,
+  lxm: string,
+): Promise<XrpcAuthContext> {
   // Never trust the unverified `iss` claim as a URL — it is attacker-controlled
   // and would allow SSRF (see security audit C2). Resolve the PDS exclusively
   // from `sub` (a DID) via proper identity resolution.
-  const sub = payload.sub;
-  if (typeof sub === "string" && sub.startsWith("did:")) {
-    const identity = await resolveIdentity(sub as Did);
-    if (identity.pds) return identity.pds.replace(/\/+$/, "");
+  const { decodeJwt } = await import("jose");
+  let decoded: { sub?: string; iss?: string; scope?: unknown };
+  try {
+    decoded = decodeJwt(token);
+  } catch {
+    throw new AuthRequiredError("Invalid or expired access token");
   }
-  throw new AuthRequiredError("Unable to resolve PDS for access token");
-}
-
-async function verifyAccessToken(
-  token: string,
-  scheme: string,
-): Promise<XrpcAuthContext> {
-  if (scheme === "dpop") {
-    // DPoP proof validation is required by the OAuth profile; bind check is
-    // deferred — token validity is established via getSession on the issuer PDS.
-  } else if (scheme !== "bearer") {
-    throw new AuthRequiredError(`Unsupported authorization scheme: ${scheme}`);
+  const sub = decoded.sub;
+  if (typeof sub !== "string" || !sub.startsWith("did:")) {
+    throw new AuthRequiredError("Unable to resolve PDS for access token");
+  }
+  const identity = await resolveIdentity(sub as Did);
+  const pds = identity.pds?.replace(/\/+$/, "");
+  if (!pds) {
+    throw new AuthRequiredError("Unable to resolve PDS for access token");
   }
 
-  const pds = await resolvePdsFromAccessToken(token);
   const url = new URL("/xrpc/com.atproto.server.getSession", pds);
   const response = await fetch(url, {
     signal: AbortSignal.timeout(GET_SESSION_TIMEOUT_MS),
@@ -147,6 +181,27 @@ async function verifyAccessToken(
     },
   });
   if (!response.ok) {
+    // An OAuth token granted only an `rpc:` scope cannot call `getSession` at
+    // all, so this rejection proves nothing about the token. Verify such a
+    // token cryptographically instead (issuer JWKS + DPoP binding + rpc scope
+    // for this method) — see oauth-token.ts. Errors from that path propagate
+    // as-is: their specificity is the point for external OAuth callers.
+    if (looksLikeOauthAccessToken(decoded)) {
+      const verified = await verifyOauthJwtAccessToken({
+        token,
+        scheme,
+        request,
+        lxm,
+        did: sub as Did,
+        pds,
+      });
+      return {
+        did: verified.did,
+        client: null,
+        scopes: verified.scopes,
+        via: "oauthJwt",
+      };
+    }
     throw new AuthRequiredError("Invalid or expired access token");
   }
   const session = (await response.json()) as {
@@ -194,7 +249,7 @@ export async function authenticateRequest(
   }
 
   if (parsed.scheme === "bearer" || parsed.scheme === "dpop") {
-    return verifyAccessToken(parsed.token, parsed.scheme);
+    return verifyAccessToken(parsed.token, parsed.scheme, request, lxm);
   }
 
   throw new AuthRequiredError("Authentication required");

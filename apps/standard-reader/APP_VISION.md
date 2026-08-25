@@ -20,7 +20,7 @@ That property is the whole product thesis:
 - **Discovery is a public good.** Because every publication speaks the same protocol, the
   app can show _every_ publication the network knows about and help you find new ones.
 
-We make the "directory is just a query" idea literal: a **tap instance backfills all
+We make the "directory is just a query" idea literal: a **Jetstream v2 subscription backfills all
 `standard.site` data off the network into a Neon Postgres read-model**, so the app can browse,
 rank, and recommend across the _entire_ known network instantly — while the canonical records
 still live in each author's (and each reader's) repo.
@@ -39,7 +39,9 @@ things you already subscribe to.
   way to keep discovering new voices.
 - **Platform:** responsive web — desktop (persistent left sidebar) and mobile (top bar +
   bottom tab nav). The mobile top bar scrolls away with the page and slides back in on any
-  scroll up, so reading gets the full screen without losing the way out. Same codebase,
+  scroll up, so reading gets the full screen without losing the way out. Every feed and
+  directory pulls to refresh from the top of the page — the gesture readers already expect
+  from a phone, refetching in place rather than reloading the document. Same codebase,
   same components. **Browser extension** (WXT, MV3) as a capture + bridge client for
   save/follow while browsing.
 
@@ -95,13 +97,80 @@ Detail screens
 
 Sections, top to bottom:
 
-1. **Recommended for you** — tuned to your follows (horizontal scroll of pub cards).
-2. **Followed by people you follow** — social proof.
-3. **Trending publications** — most active this week (ranked rows).
-4. **All publications** — full directory with:
-   - topic chips (All + 8 topics),
+1. **Trending publications** — most active this week (ranked rows).
+2. **Topics** — a rail of topic areas the network clusters into, with a **See all**
+   link to the full index. See [Topics](#topics) below.
+3. **Recommended for you** — tuned to your follows (horizontal scroll of pub cards).
+4. **Followed by people you follow** — social proof.
+5. **All publications** — full directory with:
+   - tag chips (All + 8 tags),
    - sort (Readers / Active / A–Z),
    - grid ⇄ list toggle.
+
+### Topics
+
+A **topic** is a cluster of related tags presented as one browsable area — the answer
+to a granularity problem. The directory's tag chips rank a 450k-tag vocabulary by raw
+frequency,
+which puts the network's atproto-native topics (`atproto`, `bluesky`, `atmosphere`) on top
+of a page meant to represent the whole network. Clustering rebalances it: atproto becomes
+_one_ topic among ~45, next to Film and Festivals, Wildlife and Nature, Pacific
+Northwest Local News, Mental Health, and Brazilian Politics.
+
+Topics are **derived, never curated** — see
+[Topic derivation](#topic-derivation) for how.
+
+- `/topics` — every published topic, with search over names, descriptions, and
+  member tags (the whole set ships in one response, so filtering is instant).
+- `/topics/$slug` — one topic:
+  - **Masthead** with its model-written name and description, publication and writer counts.
+  - **Sub-areas** — its member tags, each linking to the existing `/tag/$tag` page, so a
+    topic is a way _down_ into a narrower view rather than a replacement for one.
+  - **Articles** tab — everything the topic's member publications published under
+    _any_ of its tags (Newest / Trending / Most liked). Every tag in the cluster
+    counts, not just the central ones: capping the match at the ten highest-weight
+    tags left 8 of 148 topics with an empty Articles tab and hid a TV blog from the TV
+    topic because `tv` ranked 11th in a 14-tag cluster. Scoping to member publications
+    is what keeps the tab honest; tag rank was never doing that job.
+  - **Publications** tab — its publications (Best fit / Readers / Active / A–Z), where
+    _best fit_ ranks by how much of the topic's tag vocabulary a publication covers.
+- Slugs are permanent. A topic that drifts, gets renamed, or drops below the quality
+  bar keeps its URL.
+- **No dead links.** A topic can stop existing honestly — its tags drift apart, or its
+  cluster merges into a neighbour — and its tags and memberships go with it. Rather
+  than 404, the sweep records the closest surviving topic by tag overlap in
+  `superseded_by` and `/topics/$slug` redirects there (301), following the pointer
+  transitively since merges chain. Nothing close enough redirects to the index. Only a
+  slug the table has never held is a genuine 404, so a typo still errors.
+- **Publication is sticky.** The quality bar is an _entry_ test; re-applying it
+  unchanged every run would make a topic sitting near a threshold flap in and out,
+  and a public URL that 404s on alternate days is worse than a topic that is a
+  little thin. Once published, a topic stays published while it still clears 70% of
+  each count threshold (and 0.6 top-author share), so only one that has genuinely
+  fallen apart is unlisted.
+- **Reach can stand in for vocabulary.** The quality bar's tag floor measures how
+  _broad_ a cluster's vocabulary is and treats that as a proxy for substance. The proxy
+  breaks for subjects the network writes about with one dominant tag: `photography` is
+  used by 186 publishers, but its strongest co-occurrence partner appears alongside it on
+  13 of them, so the cluster comes out at 12 tags and missed a floor of 14 — while
+  carrying 65 publications and 64 authors, more reach than 116 of the 148 topics that
+  _were_ published. So a short cluster still qualifies when enough separate writers stand
+  behind it (currently 30, just above the median live topic), down to a hard floor of 8
+  tags — below that a topic page has no sub-areas to browse however many people are in it.
+  Concentration still applies, which is what stops "lots of authors" becoming a loophole
+  for a publication fleet.
+- **Losing your cluster is not dying.** Clustering is not stable between sweeps —
+  label propagation reshuffles as the corpus moves — so a published topic can fail to
+  re-derive while every tag in it is still live. That used to unlist it: a 24-tag TV
+  topic with 84 publications and 81 authors went off the site because a 14-tag
+  Daredevil cluster formed in its place. Now a published topic no cluster claimed is
+  re-measured on **its own stored tags** (minus any that left the vocabulary) and kept
+  if it still clears the retention bar. Only a topic that fails on its own terms is
+  unlisted — that is what "truly dead" means. The one exception is absorption: if a
+  cluster that published this sweep already contains three quarters of the topic, the
+  cluster _is_ the topic re-derived, and carrying the old row forward would put two
+  versions of one area on the site. A narrower cluster carved out of a broad topic is
+  not absorption — both are real, at different altitudes, and both stay.
 
 ### Search
 
@@ -111,7 +180,7 @@ Sections, top to bottom:
 
 ### Tag directory
 
-- Route `/tag/$tag`; linked from topic chips on article cards, publication cards, and
+- Route `/tag/$tag`; linked from tag chips on article cards, publication cards, and
   article kickers.
 - **Articles** tab: indexed, published articles carrying the tag (case-insensitive) on
   discover-eligible publications, with a **Recent / Trending / Most popular** sort select
@@ -135,7 +204,7 @@ Sections, top to bottom:
   `baseBlocks` front matter and horizontal rules). **`site.mochott.article`**
   ([mochott](https://mochott.site)) is fully supported: mochott's `site.standard.document` carries no
   body at all — it lives in a `site.mochott.article` at the same rkey — so that collection is
-  delivered by the tap and indexed onto the document row as its content (sidecar-style, like
+  delivered by the ingester and indexed onto the document row as its content (sidecar-style, like
   `app.standard-reader.collection`, with a repo fetch as the catch-up path), then rendered from its
   TipTap tree by `renderer-core`.
   Leaflet's `pub.leaflet.blocks.html` — the author's own HTML — renders in a
@@ -197,7 +266,22 @@ Sections, top to bottom:
   sentence).
 - Footer: publication card + follow; "More from {publication}"; **Related reading** (cross-publication
   articles by shared tags and co-read, plus Margin graph connections — one "Across the network" rail via `getArticleExtras`).
-- **Discussion:** Bluesky posts linking the article (external URL, embed media links, and app quote shares), plus direct replies to the author's linked announcement post (`bskyPostRef`), read-only — reply counts link out to bsky threads. The announcement post itself is not listed as a comment. **margin.at** notes (`at.margin.note` / `at.margin.annotation` / `at.margin.highlight`) on the article's canonical URL are merged into the same feed via Constellation backlink discovery; passage-anchored notes render like Bluesky quote posts (blockquote + commentary) and link out to margin.at. **`network.cosmik.card` NOTE cards** (Semble) are merged the same way but link out to the Semble activity page for the bookmarked URL (`semble.so/url?id=…`); cosmik URL bookmarks are excluded from counts. Below Discussion, **Cited in** lists other indexed articles whose body links to this URL (`site.standard.document` / `pub.leaflet.document` facet paths via Constellation). **Across the network → Related reading** merges co-read/tag-related articles with bidirectional `network.cosmik.connection` graph edges (`.target` and `.source` via Constellation; Semble-linked peers appear first with a connection label). Article-card `commentCount` badges use **stale-while-revalidate**: responses return the cached count (0 on first hit) immediately and refresh Constellation totals in the background. `pnpm scan:discussion-sources` probes Constellation `/links/all` across indexed URLs to surface unhandled `collection:path` pairs.
+- **Discussion:** Bluesky posts linking the article (external URL, embed media links, and app quote shares), plus direct replies to the author's linked announcement post (`bskyPostRef`), read-only — reply counts link out to bsky threads. The announcement post itself is not listed as a comment. **margin.at** notes (`at.margin.note` / `at.margin.annotation` / `at.margin.highlight`) on the article's canonical URL are merged into the same feed via Constellation backlink discovery; passage-anchored notes render like Bluesky quote posts (blockquote + commentary) and link out to margin.at. **`network.cosmik.card` NOTE cards** (Semble) are merged the same way but link out to the Semble activity page for the bookmarked URL (`semble.so/url?id=…`); cosmik URL bookmarks are excluded from counts. **pckt notes** (`blog.pckt.mini.post`) that reply to or quote the article are discovered the same way and link out to pckt; their reply counts come from other notes whose own `.reply.parent.uri` points back at them (Constellation on `blog.pckt.mini.post:.reply.parent.uri`), not from the document backlink itself. Below Discussion, **Cited in** lists other indexed articles whose body links to this URL (`site.standard.document` / `pub.leaflet.document` facet paths via Constellation). **Across the network → Related reading** merges co-read/tag-related articles with bidirectional `network.cosmik.connection` graph edges (`.target` and `.source` via Constellation; Semble-linked peers appear first with a connection label). Article-card `commentCount` badges are **`items.length` of that same merged Discussion list** — one cached build per document feeds both the badge and the rendered section, so a badge is always reconcilable against the items below it. The Discussion section itself **rebuilds on every request** so an open thread never lags behind new replies, and that build refreshes the badge; badges alone are **stale-while-revalidate** — they return the cached count (0 before the first build) immediately and rebuild in the background only once the 5-minute entry expires, so a number stays put while a reader scrolls instead of shifting under them. Counting per-source Constellation totals separately (the pre-2026-08 approach) drifted from the list in both directions — it summed every link path and every link target without deduping, counted the author's own announcement post and records that failed hydration, and counted records the list filters out. `pnpm scan:discussion-sources` probes Constellation `/links/all` across indexed URLs to surface unhandled `collection:path` pairs.
+- **Add a comment:** the Discussion section head (and its empty state) carries an **Add comment**
+  button opening a dialog of places to write one — Standard Reader still stores no comments of its
+  own, so every row is a link out to a surface whose records the Discussion list already reads back.
+  When the document carries a `bskyPostRef`, that post _is_ the thread and every Bluesky client
+  links straight to it, ready to reply; the list of clients comes from the
+  [`@aturi.to/waypoints`](https://www.npmjs.com/package/@aturi.to/waypoints) catalog (`blueskyClients`
+  - `blueskyForks` categories) so a newly catalogued client appears without a code change, with
+    `#/lib/bsky-clients` adding the app icons, hostname labels, and clients the catalog hasn't picked
+    up yet (mu.social). Without a post ref there is nothing to reply to, so the destination is a fresh
+    post pre-filled with `@author` and the article's Standard Reader URL — one of the exact link
+    targets Discussion resolves backlinks against, so the post returns to this page once Constellation
+    indexes it; only clients that implement `/intent/compose` (the official app and forks of it) can
+    take a pre-filled draft, so that list is narrower than the one that can open a post. Leaflet and
+    pckt get a second row straight to the article on their own site (Leaflet with
+    `?interactionDrawer=comments`); Offprint has no comment surface and is absent.
 - Opening an article marks it read.
 - **Open on original site (preference):** a user-menu toggle (cookie for
   everyone; `user.open_links_externally` when signed in). When on, document
@@ -315,12 +399,128 @@ Sections, top to bottom:
   `UNSAFE_PortalProvider` so they inherit the palette instead of portalling to
   `document.body` and reverting to app tokens.
 
+### Serial publications (books & comics)
+
+A publisher who sets `preferences.prevNextDirection = "ltr"` on their
+`site.standard.publication` is saying the publication **reads forwards from its first post**
+rather than newest-first — a serial. That one flag is the whole signal; the lexicon has no
+field for what _kind_ of serial it is, so the kind is app-derived (`recomputeSerialKinds`, in
+the hourly sweep): a publication whose recent posts each render at least one image and carry
+only a short note of prose is a **comic**, anything else a **book**. Both are mirrored on the
+read-model row (`publications.prev_next_direction`, `publications.serial_kind`) and travel to
+the UI as `PublicationCard.serial` (see `#/lib/publication/serial`).
+
+Both are filled **on demand** as well as by the sweep. The ingester only writes
+`prev_next_direction` when a publication record is created or updated, so a publication indexed
+before the column existed would stay dark until its author happened to edit it. A NULL there
+therefore means "never mirrored", not "ordinary blog" — `upsertPublication` stores the lexicon
+default `"rtl"` for a record that states nothing, which is what keeps the two apart — and
+`ensurePublicationSerial` (`#/server/reader/series`) reads the record from the PDS once, writes
+what it says, and derives the kind on the spot if it turns out to be a serial. Standard
+`backfillXFromRepo` behaviour: one PDS read per publication, ever, then the DB serves it.
+
+**Both columns count as unresolved, not just the direction** (`needsSerialResolution`,
+`#/lib/publication/serial`). A row reading `"ltr"` with no `serial_kind` is a serial the sweep
+hasn't judged yet, and `resolveSerialPublication` renders it as a **book** — the right thing to
+draw, and the wrong thing to stop asking about, because everything a comic gets hangs off
+`serial.kind`: the shelf of covers, the redirect into the page-flip reader. The two read paths
+that surface those (`selectPublicationHeader` and `getArticle`) resolve on demand whenever either
+column is missing, so a comic can't sit reading as a book until the next hourly sweep. An ordinary
+blog (`"rtl"`) is resolved whatever its kind says, which keeps this off the common path.
+`pnpm backfill:serial` warms them all up front so no reader pays that first read. It scopes itself
+to the publications that could answer — `prevNextDirection` is Leaflet's field, so only Leaflet
+publications still holding a NULL are visited — reads their records from Slingshot rather than
+resolving and paging each publisher's PDS, and writes back one bulk `UPDATE` per direction instead
+of re-upserting whole rows to set one column.
+
+What changes for a serial:
+
+- **The archive still leads with the latest post.** A serial reads forwards, but its archive is
+  read far more often to see what is new than to find where the work begins, so every
+  publication — serial or not — lists newest-first (`defaultArchiveOrder`,
+  `#/lib/publication/archive-order`). A reader who does want to start at the beginning flips it
+  from the publication menu; the override is a per-publication cookie, resolved server-side
+  inside `getPublicationDocuments`, so the client never has to know the order to ask for the
+  right page and the SSR'd HTML is already in it.
+- **A comic's archive is a shelf of covers, not a list of titles.** A comic posts one page per
+  document, so its archive is dozens of near-identical rows — `FITV #1 Cover`, `FITV #1, Pg. 1`.
+  What a reader browses there is art, so `selectComicShelf` (`#/server/reader/comic`) always shows
+  it. How much art fits on one cover is `ComicShelf.mode`, decided by `planComicShelf`. Titles
+  usually carry series, issue and page, so when at least 70% of them parse
+  (`#/lib/comic/issue-title`) consecutive pages collapse back into the issues they came from and
+  each issue is fronted by its cover — the reader browses `#1`, `#2` instead of scrolling their
+  pages. When they don't parse — a webcomic naming its posts `Pg01`, `Pg02` — there are no issues
+  to collapse and every post keeps its own cover, a grid of page thumbnails. Grouping is the guess;
+  showing the art is not, and the fallback for a failed guess is a plainer shelf rather than a list
+  of titles that shows nothing. The read/unread filters do keep the list — those are per-page
+  views, and a shelf shows whole issues.
+- **An issue is unread while any of its pages is**, and its cover opens on the first page the
+  reader hasn't seen. Read state is per document, and a comic's documents are its pages, so the
+  shelf asks for the reader's unread URIs across the whole publication (`selectUnreadDocumentUris`
+  — the same query the archive's unread filter and "mark all as read" run) and hands each issue
+  the pages it still owes them. The cover wears the ordinary unread dot and links to
+  `?page=<first unread>`, so picking a comic back up is one click from the shelf rather than a
+  hunt through the page counter. `read` records reach the read model through the firehose, so a
+  reader who has just walked those pages is ahead of the server: the shelf's answer is corrected
+  in the client from the same read caches every other unread dot uses
+  (`#/lib/comic/shelf-progress`).
+- **Comics open in the comic reader** (`/comic/$did/$rkey`) — a fixed dark theater that flips
+  through the issue's pages one at a time. The pages _are_ the images the body renders, in
+  reading order (`#/lib/document/images`), so nothing is authored specially for it. Arrow keys /
+  space / Page keys, `Home` / `End`, tap-zones and swipe all page; the current page lives in the
+  URL (page turns replace the history entry, so Back leaves the reader). Past the last page is
+  an end card with the next issue. The floating chrome **stays until the reader turns their first
+  page** — on arrival the bars are the introduction, and a countdown running under it takes that
+  away from anyone reading at their own pace — and only then starts stepping aside on an idle beat. The article route redirects a comic issue here unless
+  `?view=reader` — which is also the "Read the notes" escape, because a comic's prose commentary
+  belongs to the reading view, not the theater.
+  The top bar carries a **full-screen toggle** (`f`, or the button at its end) that puts the
+  theater itself full screen, so the browser's own furniture leaves the art alone
+  (`#/components/comic/use-fullscreen`). The button appears only where the browser says it will
+  actually do it (`fullscreenEnabled`, either spelling), which on **iPhone is never**: iOS reserves
+  full screen for `<video>`, WebKit's bug for element full screen (206854) has been open since
+  2020, the prefixed request was closed `WONTFIX` in favour of it, and the Safari 27 beta still
+  doesn't have it. An inert button there reads as a broken reader rather than as a platform limit,
+  so it is dropped — the iPhone answer to full screen is the home-screen install the app already
+  supports (`display: standalone`, `apple-mobile-web-app-capable`, `viewport-fit=cover`, which is
+  why the theater's bars pad with `env(safe-area-inset-*)`). None of this is iPhone-specific in the
+  code: the flag also covers an iframe without `allowfullscreen`, and when Safari ships the API the
+  control appears with no release from us. The WebKit-prefixed spelling is tried when the standard
+  one is absent (iPadOS below 16.4), and the icon's state follows `fullscreenchange`, since Escape,
+  F11 and the OS all exit without asking the app.
+- **A page's note reads over the page.** Comic posts often publish a line or two beside the art —
+  a caption, a process note, a word about next week — and in the theater that writing had nowhere
+  to go but the reading view, a navigation away from the page it was written about. The top bar's
+  note button lays it over the art instead (`#/components/comic/comic-page-note`): a translucent
+  dark scrim, the prose in the theater's own type, and a "Read the full post" escape to the
+  reading view. The note travels on the page (`ComicPage.note`), extracted in the chunk query that
+  already opens the body, and is the body's plaintext **minus the pages' own alt text** — the
+  extractors narrate image blocks by their alt, which describes the page the reader is already
+  looking at (`#/lib/comic/page-note`). Most pages carry none, so the control is disabled rather
+  than absent: a bar that reshuffled on every page turn is worse than a quiet button. The overlay
+  is a React Aria modal portalled **into the theater**, not `document.body`, so it survives full
+  screen.
+- **Books get "Up next"** under the article: the following chapter, or a note that the reader has
+  caught up. Position ("3 of 12") and neighbours come from `getSeriesContext`
+  (`#/server/reader/series`), loaded client-side after the article paints like the other
+  below-the-fold rails. "Next" here means the chronologically _later_ post — the opposite of an
+  ordinary blog's prev/next, which walks backwards into the archive.
+
+Misclassification is never a trap: the comic reader always links to the reading view, and a
+comic issue with no pages falls back to it outright.
+
 ### Publication profile
 
 - Banner + **inline header** (avatar, topic, name, description, stats, Share, Follow).
 - **Share** menu: copy `/p/$did/$rkey` link + compose-to-Bluesky (OG card on `/p/`) +
   **Embed subscribe** (iframe snippet for the publication site — themed button opens
   `/subscribe/$did/$rkey`, OAuth with subscription-only scope, auto-follow, themed success).
+  The author profile offers the same thing for an account: **Embed follow** (see
+  "Author profile" below). Both cards are the same component
+  (`components/reader/embed-card.tsx`) over different subjects, and both speak the
+  same iframe resize protocol (`lib/embed-snippet.ts`). Documented together in the
+  reader guide at `/guide/embeds` — its own page, since pasting a button needs none
+  of the record wiring `/guide/publishing` covers.
   Unsigned-out readers hit `/login/subscribe/$did/$rkey` — a publication-themed
   login page (no Standard Reader chrome, no saved handles) that drives the
   subscription-only OAuth scope and returns to the auto-follow success screen.
@@ -345,6 +545,14 @@ Sections, top to bottom:
 - **Subscriptions** — publications they follow (`site.standard.graph.subscription`).
 - **Liked articles** — their network likes (`site.standard.graph.recommend`).
 - Linked from publication profiles, list pages, and article bylines.
+- The hero's ⌄ menu carries the same share items as a publication's, plus
+  **Embed follow** — the author counterpart to Embed subscribe. An `/embed/follow/$did`
+  iframe card (landscape / portrait / plain link) that an author pastes on their own
+  site; its button opens `/follow/$did`, which OAuths with the follow-only scope,
+  writes `app.standard-reader.graph.follow`, and lands on a themed success screen.
+  Signed-out visitors hit `/follow-login/$did` first — an author-branded login card
+  (avatar + "Follow NAME", no Standard Reader chrome, no saved handles). An account
+  has no theme record, so the card paints in the default editorial palette.
 
 ### Subscriptions (manage view)
 
@@ -382,11 +590,62 @@ Sections, top to bottom:
 
 - Signed-in reader's **reading history** (`app.standard-reader.read`), newest first — every
   article opened while signed in.
+- Opens with a **Continue reading** shelf: up to six articles the reader is partway through,
+  most recently touched first. Short on purpose — it is a prompt to pick something back up,
+  not another backlog. It is an extra on this page, never fatal: offline (or on any error) it
+  simply doesn't render and the cached history still does.
+- Each shelf row carries a **Mark as finished** control, in the same slot the history rows use
+  for their unread toggle (the two never appear together). It forgets the saved position —
+  which is the whole of what puts an article on the shelf — and re-stamps the read record, so
+  the article leaves the shelf and arrives at the _top_ of the list below rather than back at
+  the date it was first opened. Re-stamping is not a special case: `markRead` re-stamps on
+  every open, so history is already ordered by when a reader last read something, and finishing
+  is reading. No confirmation and no undo — the row leaving is the feedback, and what's lost is
+  a scroll position on an article the reader just declared themselves done with.
+- **No article appears twice on the page.** An in-progress article is claimed by the shelf and
+  filtered out of the list beneath, which is why that list is titled "Everything else" rather
+  than "Everything you've read". (Only the ones the shelf actually renders are claimed — an
+  item whose document has dropped out of the read-model isn't shown up there, so it stays in
+  the list.) The masthead's `Read` count is unaffected: it counts read records for all time,
+  and an article you're partway through is still one you opened.
+- The shelf's rows are the **same rows as the list below it**; what separates the two sections
+  is the heading plus the one fact these rows carry and those don't. That fact — how far in the
+  reader got — leads each row's existing meta line, as a 56px camel meter and a percentage, so
+  the number sits beside the title it describes. It is deliberately not a full-width bar under
+  the row: at page width it outweighed the headline it annotated, and below the row's closing
+  rule it read as a divider belonging to the next section. Camel because the accent is this
+  app's state-indicator colour and progress is a state; near-ink made it the heaviest element
+  on the page, which inverts "the reading leads; the UI recedes".
 - Route `/history`; linked from the user menu. Requires auth (redirects to login).
 
 ### Reader profile (saved for later)
 
-- Signed-in reader's **save queue** (`app.standard-reader.bookmark`), newest first.
+- Signed-in reader's **save queue** (`app.standard-reader.bookmark`), newest-saved first by default.
+- Sortable via `?sort=` — date saved (default), published date, publication (alphabetical), or
+  title (alphabetical).
+- Reversible via `?dir=`. Each field runs its natural way until flipped (dates newest-first, names
+  A–Z), and the direction is named for what it ranks: "Newest first" / "Oldest first" for dates,
+  "A–Z" / "Z–A" for names.
+- Both live in **one icon menu** at every viewport — two sections ("Sort by" / "Order") in a single
+  sheet that stays open between the two picks. With the order behind a menu, the trigger's tooltip
+  and accessible name state the current order ("Sort — Date saved, Newest first") rather than only
+  naming the action.
+- **Search and filter**, in a toolbar above the list (search field · filter · sort). Both are
+  server-side and live in the URL, so paging, the result count, and a reloaded or bookmarked link
+  all agree:
+  - `?q=` matches title, description, publication name, and the author's handle / display name.
+    Deliberately not the article body — `/saved` omits `text_content` from its projection, and a
+    hit the row can't visibly explain reads as a bug.
+  - `?pubs=` / `?authors=` / `?tags=` are multi-select facets. Values within a facet are OR-ed,
+    facets are AND-ed. Tags match through `immutable_normalized_tags`, so case and whitespace
+    variants are one tag.
+  - The options come from `reader.getSavedFacets` — every publication, author, and tag present in
+    that reader's own queue, with counts, in one `UNION ALL` round trip. Fetched on idle or on the
+    popover's first open, never on the critical path. A real queue runs to ~90 publications and
+    ~185 tags, so the popover is type-ahead filtered across all three facets at once rather than a
+    plain menu.
+  - Applied filters show as removable chips under the toolbar; the masthead count stays the whole
+    queue and a "Showing N of M saved" line carries what matched.
 - Route `/saved`; linked from the sidebar (with saved count badge). Requires auth (redirects to login).
 
 ### Reader profile (liked articles)
@@ -475,10 +734,17 @@ Single search field with two modes (detected from input):
 ### Reader guide (`/guide`)
 
 The **non-technical** documentation, deliberately separate from the developer docs at
-`/docs/*`. Eight task-shaped pages under `/guide` — Welcome, Getting started, Reading an
-article, Finding things to read, Keeping track, Making it yours, Beyond the app, Your account
-and data — written for someone who only wants to read, with no AT Protocol vocabulary and
-every feature named the way the UI names it.
+`/docs/*`. Task-shaped pages under `/guide` — Welcome, Getting started, Reading an article,
+Finding things to read, Keeping track, Lists and your sidebar, Collections, Making it yours,
+The browser extension, Reading on an e-reader, Publishing your site, Publishing a comic,
+Your account and data —
+written for someone who only wants to read, with no AT Protocol vocabulary and every feature
+named the way the UI names it. The last three are the exception the guide earns rather than
+assumes: they are for someone on the other side of the page, and they name record fields where
+naming them is the only honest answer (`/guide/comics` documents the comic view from the
+cartoonist's side — the one publisher setting, the classifier's two thresholds, and the title
+convention `#/lib/comic/issue-title` parses, since none of that has a lexicon field to point
+at).
 
 - **Own route tree.** `src/routes/_guide-layout.tsx` + `_guide-layout.guide.*.tsx`, with its
   own topbar (`GuideTopbar`) tagged "Reader guide". It reuses the docs shell's layout and
@@ -517,6 +783,36 @@ source of truth; Neon holds a derived view for speed and cross-network querying.
   `/saved`, distinct from likes.
 - **Read / unread:** an `app.standard-reader.read` record per article; opening an article
   marks it read. **Reading history** at `/history` lists these newest-first.
+- **Reading position (deliberately not a record):** reopening an article puts the reader back
+  where they stopped, and `/history` opens with a **Continue reading** shelf of the articles they
+  are partway through. This is the one piece of personal state that is **not** written to the
+  repo. Reads and bookmarks being public is a fair trade — they say what you read. A position
+  says how far you got and where you gave up, which is a running commentary on attention that
+  nobody opts into by opening an article. So it lives in a private, app-local Neon table
+  (`reading_progress`, keyed by `(owner_did, document_uri)`) that the tap never writes, mirrored
+  into `localStorage` per device. The local copy is what restores the scroll — it is readable
+  before first paint, where a Neon round trip is an order of magnitude too slow — and it is what
+  keeps position working offline in the installed PWA; the server copy is what carries the
+  position from phone to laptop, and only wins when it is newer and the reader has not already
+  started scrolling. Rows exist only between 2% and 95%, so the table _is_ the shelf and never
+  needs sweeping, and clearing reading history clears positions with it. Gated on the same
+  "Track reading history" setting: position is reading history at a finer grain.
+- **The write path mirrors personal state into Neon itself**
+  (`src/server/reader/personal-state-mirror.ts`) — reads, bookmarks, and likes — rather than
+  waiting for the ingester to replay them. These are the toggles a reader watches change in the moment
+  (unread dots, feed counts, the history list, the saved queue, the heart and its count), and
+  routing them through a shared, back-pressured ingest queue meant that during an ingest backlog an
+  article stayed unread for hours after it was read. Every write path (server fns, XRPC — and so
+  MCP + the extension) upserts the same row ingest would, keyed by the same record AT-URI,
+  immediately after the PDS commits. The ingester's later replay overwrites it with identical values, so
+  the mirror converges on the repo rather than competing with it, and a mirror failure just degrades
+  to waiting for the ingester. Two details carry the correctness: removals delete **by record AT-URI**,
+  not by `(owner, document)`, because the write path only deletes the record at its own
+  deterministic rkey — another client's record for the same document has to keep its row; and reads
+  mirror **per committed `applyWrites` batch**, so a "mark all read" that fails partway reflects
+  exactly what is durable. Follows and subscriptions already did this by calling ingest's `upsertX`
+  helpers from the write handler; these three get their own module because reads are written in bulk
+  and because a request should use the pooled `context.db`, not ingest's singleton.
 - **Public by default:** reads, bookmarks, likes, follows, and lists are all public AT Proto
   records in the user's repo (like Bluesky likes or follows). `/history` and `/saved` are
   signed-in convenience views — not privacy boundaries.
@@ -537,8 +833,10 @@ source of truth; Neon holds a derived view for speed and cross-network querying.
   the reader's _effective_ follow set (subscriptions ∪ saved-list publications, computed in
   `src/server/reader/saved-lists.ts` with a short-TTL per-reader cache) — no individual
   `site.standard.graph.subscription` records are written. Both `list` and `listSave` records are
-  **mirrored into Neon** (`lists` + `list_saves` tables) by the tap ingester so the shell snapshot
-  never blocks on PDS I/O. A backfill from the PDS runs on first access when no rows exist yet.
+  **mirrored into Neon** (`lists` + `list_saves` tables) by the ingester so the shell snapshot
+  never blocks on PDS I/O. A repo we have never reconciled is hydrated from the archive on first
+  access (`hydrateRepoForRead`); once it carries a `tracked_repos.last_seen_seq` the read-model is
+  authoritative and an empty read means "no lists", not "not hydrated yet".
 - **Sidebar personalization:** `app.standard-reader.sidebarPref` — a per-reader singleton (rkey
   `self`, mirrored into `sidebar_prefs`) holding collapsed groups (`collapsed`), the sort mode
   (`subscriptionSort`), the reader's manual top-level tree arrangement (`treeOrder` — list-group
@@ -611,7 +909,7 @@ upstream `site.standard.auth*` sets (published by standard.site — see
 
 | Tier                                | App-owned set (we publish)                      | site.standard set (we reference)         | Covers                                                                               |
 | ----------------------------------- | ----------------------------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------ |
-| **Basic** (default sign-in)         | `include:app.standard-reader.authBasicFeatures` | `include:site.standard.authSocial`       | bookmark, read, list, listSave, labelerSubscription + follows + likes                |
+| **Basic** (default sign-in)         | `include:app.standard-reader.authBasicFeatures` | `include:site.standard.authSocial`       | bookmark, read, list, listSave, labelerSubscription, graph.mute + follows + likes    |
 | **Collections authoring** (upgrade) | `+ include:app.standard-reader.authCollections` | swap to `include:site.standard.authFull` | collection, collectionsPublication, publicationTheme + publication + document writes |
 | **Subscribe embed**                 | —                                               | `include:site.standard.authSocial`       | subscription write (also covers recommend)                                           |
 
@@ -625,6 +923,15 @@ never part of the app's default login UX. The upgrade runs through a dedicated
 review-only OAuth client metadata/callback path rather than widening the default
 client metadata scope. Granted scopes may come back either as `include:` sets or
 expanded `repo:` tokens, so permission checks must accept both formats.
+
+**Blocks** are granular too, and one-sided in an unusual way: _reading_ someone's blocks needs
+no scope at all (`com.atproto.repo.listRecords` is public), so a reader's existing blocks are
+enforced from their first page load whatever they granted. Only _writing_ one needs consent — a
+granular `repo?collection=app.bsky.graph.block&collection=app.bsky.graph.listblock` scope,
+requested by `upgradeToBlocking` the first time they press Block and persisted via
+`user.blockingEnabled` so later logins re-request it silently. It targets Bluesky's lexicon
+deliberately: a block is a portable record, and one that only worked in this app would not be a
+block. See "Blocks & block lists" below.
 
 **userinput.app feedback** takes a different approach: `app.userinput.discussion`
 and `app.userinput.upvote` have no permission-set lexicons, so the default OAuth
@@ -679,7 +986,11 @@ re-auth because `prompt: consent` re-consent isn't reliable across PDS providers
 
 - **From `standard.site` lexicons** (reuse everything we can):
   - `site.standard.publication` — a publication (`url`, `name`, `description`, `icon` blob,
-    `basicTheme`, `preferences.showInDiscover`). _In the UI we call these "publications"._
+    `basicTheme`, `preferences.showInDiscover`, `preferences.prevNextDirection`). _In the UI we
+    call these "publications"._ `prevNextDirection` is the publisher's prev/next reading
+    direction: the lexicon default `"rtl"` is an ordinary reverse-chronological blog, while
+    `"ltr"` declares that the publication **reads forwards from its first post** — a serial.
+    See "Serial publications (books & comics)" below.
   - `site.standard.document` — an **article** (`site` → publication at-uri **or** an `https://`
     URL for a "loose document" with no publication record, `title`, `path`, `content`/`textContent`,
     `coverImage` blob = hero, `tags`, `contributors`, `publishedAt`). When `site` is an `https://`
@@ -695,7 +1006,9 @@ re-auth because `prompt: consent` re-consent isn't reliable across PDS providers
     repo DID. We backfill identity/profile data (handle, display name, avatar, banner, bio) from
     the AT Proto identity layer + Bluesky `app.bsky.actor.profile`.
   - Note: there's **no** "featured" flag or "topic" in the lexicons — both are app-derived
-    (`topic` = a publication's most frequent document tag; Discover chips = top-N topics).
+    (`topic` = a publication's most frequent document tag; Discover chips = top-N topics). A
+    serial's **kind** (comic vs book) is app-derived the same way — the lexicon says a
+    publication reads forwards, not what it is.
 - **App-owned lexicons** under the `app.standard-reader` namespace (JSON in `lexicons/`):
   - `app.standard-reader.read` — an article marked read (`subject` = document at-uri).
   - `app.standard-reader.bookmark` — an article saved for later (`subject` = document at-uri +
@@ -704,6 +1017,10 @@ re-auth because `prompt: consent` re-consent isn't reliable across PDS providers
     `publications` at-uris of `site.standard.publication` records + `createdAt`; tid rkey).
   - `app.standard-reader.listSave` — another reader's list saved into this app (`list` at-uri +
     `createdAt`; deterministic rkey so save/unsave/status address one record).
+  - `app.standard-reader.graph.mute` — a muted subject: a user DID **or** a
+    `site.standard.publication` at-uri in one format-less `subject` string (the lexicon has no
+    did-or-at-uri format; app code classifies). Presence means muted; deterministic rkey via
+    `subjectRkey`. One direction, feeds + discovery only — see "Muting" below.
   - `app.standard-reader.collection` — curated magazine manifest for a
     `site.standard.document` (same rkey sidecar: editorial, colophon, ordered items).
     Editorial body, colophon, and per-item notes are stored as `at.markpub.markdown`.
@@ -713,7 +1030,7 @@ re-auth because `prompt: consent` re-consent isn't reliable across PDS providers
   - `app.standard-reader.collectionsPublication` — marks a
     `site.standard.publication` as a collections series (same rkey sidecar).
     Mirrored into the read-model as `publications.collections_publication`
-    (bool) so the `/collections` read path stays DB-only (the tap ingester
+    (bool) so the `/collections` read path stays DB-only (the ingester
     upserts/clears it; write fns eagerly set it for read-after-write
     consistency, with a PDS backfill on cold start).
   - `app.standard-reader.publicationTheme` — Google Font names for a collections
@@ -721,7 +1038,7 @@ re-auth because `prompt: consent` re-consent isn't reliable across PDS providers
 
 ### AppView XRPC (public API)
 
-Third-party AT clients can query the indexed read-model without running tap. Standard Reader
+Third-party AT clients can query the indexed read-model without running an ingester of their own. Standard Reader
 serves **`app.standard-reader.*` query and procedure lexicons** at `/xrpc/...` on
 `standard-reader.app`:
 
@@ -757,6 +1074,43 @@ that presents no credential to itself at all:
 
 So a third-party CLI or agent that needs writes authenticates with an app password; a browser
 app that holds its own DPoP key uses OAuth and talks to the PDS directly.
+
+### OPDS catalog, downloads & KOReader sync
+
+Standard Reader is also a **library** an e-reading app can browse. Three pieces, all read-only
+against the same read-model the web app uses:
+
+- **OPDS catalog (`/opds`)** — served in both dialects from one model
+  (`src/lib/opds/`): OPDS 1.2 Atom by default (KOReader, Foliate, Marvin, Panels) and OPDS 2.0
+  JSON on `?format=json` or an `application/opds+json` `Accept` header. The format is sticky:
+  a client that entered in JSON gets JSON hrefs all the way down. Public sections are Latest,
+  Trending, Publications, Topics, Collections and OpenSearch. A reader's own shelves hang off
+  **`/opds/u/:did`** — Unread, Saved, Subscriptions, their publications and each of their lists —
+  keyed by DID with no token, exactly like the personalised RSS feeds (`/feed/latest/:did`), and
+  carrying the same block filtering.
+- **Books (`/book/...`)** — EPUB 3.2 (with EPUB 2 NCX and cover fallbacks) generated on demand
+  for one article, a publication, a collection, a list, a tag, or a reader's saved/unread shelf;
+  CBZ with a `ComicInfo.xml` sidecar for comic issues. Bodies render through
+  `@standard-reader/renderer-react` server-side, so **every** block vocabulary the app can display
+  a book can carry — not just the formats with a markdown/HTML path. Images are fetched and
+  embedded under per-image, per-book and concurrency caps; an image that fails keeps its remote
+  URL rather than failing the book. Generation is deterministic (`src/server/books/zip.ts`), which
+  is what makes `ETag`s stable and kosync hashes precomputable.
+- **KOReader progress sync (`/kosync`)** — the kosync protocol (`/users/auth`,
+  `/syncs/progress`), authenticated with a **derived** key: `HMAC(KOSYNC_SECRET, did)`, shown in
+  Settings → E-readers. No credential table, and the key grants nothing but position sync.
+  Because KOReader identifies a book by a hash of the _file_, every single-article download
+  records the digests that file will have (`kosync_documents`), which is how a position reported
+  by a device resolves back to an AT-URI.
+
+**Two deliberate limits.** Only documents with a renderable body appear in the catalog
+(`hasRenderableBody`): a catalog client renders a download button for every entry it sees, and a
+bridged link post has nothing to put behind one. And position sync is **one-way into the app** —
+`reading_progress` is updated from a device's percentage, but the app never sends a position
+_out_, because KOReader's `progress` is an xpointer into that device's own rendering and there is
+no honest way to synthesise one from a fraction.
+
+Reader-facing docs live at [`/guide/e-readers`](/guide/e-readers).
 
 ### Remote MCP server (`/mcp`)
 
@@ -834,9 +1188,82 @@ which is fine for abuse control and avoids putting a shared counter on every req
 Standard Reader speaks the standard AT Proto label protocol, so readers can subscribe to
 **labelers** (moderation services) exactly as they would in Bluesky:
 
-- **A labeler is just a DID.** We discover it the standard way — resolve the DID document, find
-  its `#atproto_labeler` service, and read its descriptor + label-value definitions. Nothing is
-  hardcoded; the first-party `claudeslop` labeler (below) is discovered like any third party.
+- **A labeler is just a DID, and there is one way in.** A labeler advertises
+  `#atproto_labeler` in its DID document and publishes an `app.bsky.labeler.service`
+  record describing its label values. That is the standard AT Protocol declaration; we resolve it on
+  first sight and backfill it, after which reads are pure DB.
+- **We don't run labelers.** We used to ship two (`claudeslop`, scoring AI-ish prose, and a bot
+  labeler), plus an `app.standard-reader.labeler.service` descriptor record that existed only because
+  a `did:web` has no repo and so cannot publish the standard declaration. All of it is gone. A
+  labeler can already label any content on the network, so running our own bought nothing the
+  network doesn't provide, and the custom descriptor was a deviation other clients would have had to
+  learn. The one signal we actually used — an account declaring itself a bot — was already in the
+  profile record we index (`labels`, a `com.atproto.label.defs#selfLabels` entry), so we read it
+  there and show a small bot mark on the profile and on that account's feed rows. A labeler that
+  re-published the account's own statement as a signed label was a network round trip to learn
+  something we had in hand.
+- **Every labeler on the network, not just ours.** The directory lists the whole network with no
+  relevance filter — readers bring their moderation setup with them, so a labeler that has never
+  touched a standard.site document is still theirs to see and manage. A labeler declares itself by
+  publishing one `app.bsky.labeler.service` record, so the complete set is "every repo holding a
+  record in that collection", which relays answer via `com.atproto.sync.listReposByCollection`
+  (~537 repos, ~460 of which still resolve to a live service). A timer in the ingest worker scans
+  for those, resolves the ones we don't hold, and upserts them, so the directory read stays a plain
+  DB query. That index is **not** authoritative — it only covers repos its relay carries, and real
+  labelers are missing from it — so discovery is additive: it seeds the directory in bulk while
+  subscribing or looking a labeler up still backfills on demand. Subscribe and unsubscribe live on
+  the directory cards, and a reader's own labelers sort to the top.
+- **Listing the network is not polling the network.** Being in the directory does not mean we ask a
+  labeler for labels; that is driven by subscriptions. The label sync runs every two minutes, so
+  scoping it to the whole table would mean hundreds of requests per minute to other operators'
+  label servers for labels nobody here asked to see. It covers labelers with at least one live
+  subscription, plus our own.
+- **Hundreds of rows means server-side search.** Those labelers declare ~15k label values between
+  them — over 3 MB of definition JSON — so the directory pages in SQL and a card is sent only the
+  couple of label names it renders plus a total. Search (name, handle, description, DID, and
+  declared label identifiers) runs in Postgres, debounced from the client; one page is ~13 kB.
+- **Handles, not DIDs.** A card shows `@handle`, resolved from the DID document's `alsoKnownAs` and
+  stored alongside the row. did:web labelers — ours — declare no `alsoKnownAs`, but for them the
+  DID _is_ the host, so it's derived at render. The DID remains the fallback so the identifier is
+  never lost.
+- **Your Bluesky moderation comes with you.** Bluesky keeps subscribed labelers in account
+  preferences rather than repo records, so we read `app.bsky.actor.getPreferences` and recreate
+  their setup here — labelers plus each label's visibility. They do nothing; they log in and it's
+  already there. The read is **one-way**: we never call `putPreferences`, because it replaces the
+  whole preferences blob and a partial-scope read-modify-write would silently drop settings we
+  couldn't see. So unsubscribing in Standard Reader is local and never edits anyone's Bluesky
+  moderation, and the port runs exactly once so those local choices are never overwritten.
+- **Porting never blocks a login.** Each ported labeler costs a DID-document fetch, two repo reads
+  and a PDS write, which put tens of seconds on the sign-in path when it ran inline in the OAuth
+  callback. The import is scheduled fire-and-forget instead — kicked off by the callback and
+  re-triggered by the signed-in shell read, so a reader whose import hasn't finished (or whose
+  session predates the preferences scope) still gets it without another login. Nothing a reader
+  waits on ever awaits a labeler backfill.
+- **Muting is per-app.** Porting someone's Bluesky setup wholesale means importing labelers they
+  may want _there_ but not _here_ — a vanity or novelty labeler is fun on a feed and noise in a
+  reader. So a subscription can be muted (`enabled: false`) rather than dropped: the subscription
+  and its per-label preferences stay exactly as they are, and only label resolution skips it, so
+  unmuting restores what they had instead of starting from defaults. Absent means enabled, so no
+  existing subscription is affected. It reads as a **switch** labelled "Muted" — a switch names the
+  state it shows, where a button would name an action.
+- **Subscribing writes real preferences.** A new subscription stores an explicit visibility for every
+  label the labeler declares, defaulting to `warn`. Storing nothing and falling back at render time
+  meant the UI showed preferences that existed nowhere in the reader's repo, and let a labeler
+  change how an existing subscription behaved just by editing its own `defaultSetting`. `warn` is
+  the reversible middle: `hide` would make documents vanish with no explanation, and `ignore` would
+  make a fresh subscription look broken. The Bluesky import obeys the same rule, so a ported labeler
+  and a hand-subscribed one differ only where Bluesky actually recorded a choice.
+- **Preference changes are optimistic.** Each one is a PDS write, so the control moves immediately
+  and the write's response is the authoritative state — nothing is refetched. Only document label
+  treatment is invalidated, because a visibility preference changes neither the labeler nor its place
+  in the directory. Waiting on the round trip and refetching around it made the page feel frozen for
+  about a second per click.
+- **Labels apply to documents _or_ to accounts.** Ours score prose, so they label documents;
+  labelers on the wider network label accounts (pub-search's `bulk-generated` marks a publisher
+  whose documents are generated from a data source, not composed by an author). Both subject kinds
+  are stored in `document_labels` and resolved together: a card is matched against its own URI
+  _and_ its author's DID, so an account label badges every one of that account's rows, shows on the
+  author and publication headers, and honors a reader's `hide` pref across the feeds.
 - **Subscriptions are repo records** (`app.standard-reader.labeler.subscription`, V2; legacy
   `app.standard-reader.labelerSubscription` — nested under the `labeler` NSID group so a single
   `_lexicon.labeler.standard-reader.app` DNS record covers `labeler.defs`, `labeler.service`, and
@@ -855,6 +1282,149 @@ Standard Reader speaks the standard AT Proto label protocol, so readers can subs
 - **claudeslop** is our example labeler: a standalone service (`services/claudeslop/`) that
   consumes Jetstream, scores documents for AI-written prose, signs labels, and serves
   `queryLabels` + `subscribeLabels` — a minimal reference implementation of the labeler API.
+- **Web push notifications** are the one piece of personal state that is **app-owned, not
+  repo-owned** — a deliberate exception to the rule at the top of this section. A reader turns on
+  a bell from a publication or author page and gets a notification when that source publishes.
+  Three tables carry it (`src/db/schema/push.ts`), none of them mirroring a record:
+  `push_devices` holds a browser's push endpoint and encryption keys, which are per-browser
+  secrets — anyone holding them can push to that browser — and so must never land in a public
+  repo. `push_topics` (the per-source opt-in) _could_ have been a record like `sidebarPref`, but a
+  new record collection means an expanded OAuth write scope, which would put every existing
+  session through the "reconnect your account" flow before the bell worked at all; if the opt-in
+  ever needs to be portable, a record + mirror can be layered on the same table.
+  `document_push_queue` is the send outbox. **Notifications are independent of subscribing** —
+  the bell doesn't change your feed and doesn't require a subscription.
+
+### Blocks & block lists
+
+A reader's blocks follow them here, in both directions, with no setup and no import step.
+
+- **A block is a record, not a setting.** `app.bsky.graph.block` already lives in the blocker's
+  repo and every AT Protocol app that honours a block reads that same record. So there is no
+  `app.standard-reader.block` and there never should be: we mirror Bluesky's lexicon, and blocking
+  from here writes the record the rest of the network already reads. Block someone in Standard
+  Reader and they are blocked on Bluesky too, and wherever the reader goes next. This is the
+  opposite call from labeler subscriptions, and for a concrete reason — Bluesky keeps _those_ in a
+  preferences blob with no per-key write, which is why they had to be ported into records of our
+  own.
+- **Honouring a block costs no OAuth scope.** `com.atproto.repo.listRecords` is public, so the
+  reader's existing blocks are read straight from their PDS and enforced from their first page
+  load. Only _writing_ a block needs consent (`BSKY_BLOCK_WRITE_SCOPE`, persisted via
+  `user.blockingEnabled`), and it is requested the first time they press Block rather than on
+  sign-in — a reader who never blocks from here never sees the prompt, and one who signed in before
+  the feature existed still has every block they made elsewhere enforced.
+- **Four ways to be blocked, all equal in effect.** The reader blocks someone; someone blocks the
+  reader; the account is on a moderation list the reader blocks (`app.bsky.graph.listblock` +
+  `listitem`); or the account blocks a list the reader is _on_ (Bluesky's `blockedByList`). All
+  four hide content, which is what makes a block feel like a block rather than a mute.
+- **Blocks can't ride the stream.** We index by collection, and the block collections are not ours to subscribe to; a block against
+  one of our readers can be written by any repo on the network. So blocks are pulled **per reader,
+  on a cadence** (`server/blocks/sync.server.ts`): their own records from their PDS, incoming
+  blocks from Constellation's backlink index, and list membership from the public AppView. The
+  sweep is scheduled from the OAuth callback and the signed-in shell read, TTL-guarded so a page
+  load between sweeps costs nothing, and forced inline right after a block/unblock write so the
+  change takes effect on the very next page.
+- **Outgoing replaces; incoming replaces only when the sweep was complete.** The reader's own
+  records are authoritative, so a sweep soft-deletes the ones that are gone. Blocks _against_ them
+  come from a best-effort index, so the delete is gated on the sweep having read every page: a
+  truncated or failed sweep adds but never removes, because it must not read as "nobody blocks you
+  any more". It does have to remove eventually, though — the blocker is usually not a reader here,
+  so nothing else would ever retire the row, and an unblock they made on Bluesky would otherwise
+  hide that account from the reader permanently.
+- **Enforced in SQL where a page paginates, in JS where it doesn't.** Feeds, search, directories and
+  archives filter with a `NOT EXISTS` predicate (`notBlockedByViewer`) so a block never shortens a
+  page or strands results behind an offset; rails, profile tabs and third-party discussion
+  (Bluesky, Margin, Semble, pckt, Leaflet) post-filter, where a shorter list is fine. Both check the
+  **author and the publication owner** — a guest post in a blocked owner's publication carries that
+  owner in its byline. Every helper is bounded by the DIDs a page is about to render, never by the
+  reader's block set — a reader on a 40k-member blocklist has to stay an index probe.
+- **The SQL predicate is opt-in per reader, not per request.** `notBlockedByViewer` is three
+  correlated `NOT EXISTS` per candidate row, and on the follow feed it lands inside the per-source
+  laterals whose whole job is an indexed top-k scan — the exact shape that caused the 1651ms
+  corpus-walk regression documented in `reader/queries.ts`. So the only supported way to reach it is
+  `blockFilterDid`, which answers "does this reader block anybody" from an in-process cache and
+  returns `undefined` for the overwhelming majority who don't, keeping the predicate out of the
+  query entirely. `queries.explain.test.ts` (`pnpm perf:explain`) asserts the filtered plan still
+  rides the per-source composite indexes.
+- **A sweep never happens on a request anyone waits for.** A full sweep is dozens to hundreds of
+  round trips against Constellation and the AppView. Blocking a list awaits only the two bounded
+  reads the reader is actually waiting on (their own `listblock` records, and that list's
+  membership) and schedules the rest; Settings → Refresh starts a sweep and says so rather than
+  holding the request open. Sweeps are deduped per reader process-wide, so a doubled press joins the
+  run already in flight.
+- **Blocked pages explain themselves, without a frame of the blocked page first.** A blocked
+  profile, publication or article renders the block rather than an empty page or a bare "not found":
+  which direction it runs, and an Unblock control only when the block is the reader's own to undo.
+  The block state rides on the same query as the content it withholds (`getPublicationHeader`,
+  `getAuthorProfile`, `getAuthorSummary`) — resolving it in a second client query would paint the
+  blocked account's name and avatar and then take them away. Mention hovercards read the same
+  queries, so an inline chip can't summarise someone the profile page withholds. The article body is
+  withheld outright: the reason is a separate, opt-in read that only the not-found state asks for,
+  so nothing about a blocked document (not even its title) crosses the wire, and a signed-out
+  reader — most of that page's traffic — pays nothing for it.
+- **A block outranks an opt-in the reader made earlier.** The weekly digest and push notifications
+  are filtered too. Both arrive uninvited: an emailed article stays in the inbox and a notification
+  lands on a lock screen, so "I asked for this source" made before the block does not survive it.
+  Per-reader RSS (`/feed/latest/$did`, `/feed/l/$did/$rkey`) is filtered for the same reason — a
+  reader who subscribed in an RSS client can't just not look.
+- **Big blocklists are mirrored partially, and say so.** The largest public lists run to six
+  figures; past the mirror cap a list is stored truncated and flagged, because silently
+  under-enforcing a blocklist is worse than admitting the limit.
+- **Settings → Blocked accounts** pages through the reader's own blocks and lists their subscribed
+  block lists, saying in words when a list is larger than we mirror. It only offers Unblock for
+  blocks they made: someone else's decision is not theirs to undo, and a button that pretended
+  otherwise would be a lie.
+- **Blocking is confirmed; failing to block is said out loud.** The overflow-menu item opens a
+  confirmation first — it writes a public record to the reader's repo that the whole network
+  honours, and the menu offers no way back because the profile it sits on becomes a notice. Every
+  block mutation reports failure with a toast; silently doing nothing is indistinguishable from
+  having worked.
+- **A hidden reply is explained, not just missing.** The Discussion badge is the cached, unfiltered
+  count (a per-reader count would need a per-reader cache), so the section reports how many replies
+  the reader's blocks removed instead of showing "No discussion yet" under a badge reading 6.
+
+### Muting
+
+The lighter-weight "stop showing me this": a reader mutes a **publication** or a **user**, and the
+muted subject disappears from their feeds and discovery — quietly, one-directionally, and
+reversibly.
+
+- **Muting vs blocking.** A block is a portable Bluesky record, bidirectional, and absolute — it
+  hides pages, discussion, everything, in both directions. A mute is an **app-local visibility
+  record** (`app.standard-reader.graph.mute` in the muter's repo), one direction only, and scoped:
+  muted content vanishes from home, latest, discover, trending, tag, search and the recommendation
+  rails, but **direct navigation still works and subscriptions stay intact**. Nobody is notified,
+  nothing is hidden from the muted side. (Note the record itself is public in the reader's repo,
+  unlike Bluesky's server-side private mutes — the _effect_ is private, the record is not.)
+- **One record, two subject kinds.** `subject` is a format-less string holding either a user DID or
+  a publication at-uri (the lexicon has no did-or-at-uri format; ingest classifies into
+  discriminated `subject_did` / `subject_uri` columns). Muting a **user** hides everything they
+  touch: documents they authored, documents from publications they own, and their recommends
+  (removed by dropping the muted DID from the follow-feed's source sets, which also keeps badge
+  counts honest). Muting a **publication** hides its documents and the publication card itself from
+  discovery.
+- **Rides the firehose, unlike blocks.** The record lives in the reader's own repo — a repo we
+  already track — so the tap/Jetstream stream mirrors it into the `mutes` table (migration `0039`)
+  with no per-reader sweep. Writes eagerly mirror the row (`subjectRkey` addressing) so the mute
+  takes effect on the next page; repo-sync repairs cover the cold-start/backfill path.
+- **Enforced like blocks, gated like blocks.** SQL `NOT (EXISTS …)` (`notMutedByViewer` in
+  `server/mutes/mutes.ts`) on paginated feeds — author DID, publication-owner DID, and a
+  publication-URI branch blocks don't have — and JS post-filters (`filterMutedCards`) on rails.
+  Reached only through `muteFilterDid`, the same has-any gate + in-process cache pattern as
+  `blockFilterDid`, so readers who mute nothing pay nothing. `queries.explain.test.ts` asserts the
+  filtered plan keeps its index scans.
+- **Scope rides the basic tier.** The collection is in the republished `authBasicFeatures`
+  permission set, so fresh logins can write mutes with no upgrade. Sessions from before the
+  republish may hold a frozen expansion; the write path maps a PDS scope rejection to a
+  `needs-mute-scope` re-auth (`upgradeToMuting` — plain basic scope, no flag, no new consent tier).
+- **UI**: Mute/Unmute in the author and publication overflow menus (next to Block; mute confirms,
+  unmute is immediate), and **Settings → Muted** lists both kinds with unmute — every row still
+  links to the page it hides, because muting never takes those pages away.
+- **A muted page says so.** Because muting leaves the profile readable, a muted author or
+  publication page would otherwise look identical to an unmuted one. A "Muted" pill renders on the
+  header in the same visual register as a labeler label (`MutedPill`, next to `AccountLabels`) —
+  it's the reader's own statement about the account — with a hover card explaining the scope and
+  carrying the Unmute action and a link to Settings → Muted.
 
 ---
 
@@ -864,7 +1434,7 @@ Standard Reader speaks the standard AT Proto label protocol, so readers can subs
 AT Proto network (standard.site publications, profiles, follows)
         │
         ▼
-   tap instance  ──WebSocket + acks──▶ ingest worker ──backfill / keep-in-sync──▶  Neon Postgres (read-model / cache)
+   Jetstream v2  ──archive replay ▸ live tail──▶ ingest worker ──▶  Neon Postgres (read-model / cache)
                                                       │  Drizzle ORM
                                                       ▼
                               TanStack Start server functions
@@ -875,22 +1445,112 @@ AT Proto network (standard.site publications, profiles, follows)
                                                       └─▶ cache updated optimistically
 ```
 
-- **Ingestion:** **tap instances** (`bluesky-social/indigo` cmd/tap; see `tap/`) backfill all
-  `standard.site` data from the network and keep it current. The primary tap signals on
-  `site.standard.publication` to discover publishers; a second `tap-labeler` instance signals on
-  `app.standard-reader.labeler.service`; and a third `tap-docs` instance signals on
-  `site.standard.document` so repos that publish "loose documents" (no publication record — e.g.
-  Leaflet-hosted) get tracked + backfilled. A separate ingest worker (`pnpm ingest:dev`) connects
-  to each tap's acknowledged WebSocket channel, maps records to rows idempotently, and expands
-  tap's tracked-repo set along the graph via `/repos/add`. tap + the worker are the single
-  ingestion path for both backfill and live sync (locally and in prod); the product app server
-  does not process the firehose.
+- **Ingestion:** one **Jetstream v2** subscription (`@bsky/jetstream`; see
+  `#/server/ingest/jetstream-channel`) is the single ingestion path for both backfill and live
+  sync. It subscribes by **collection across the whole network** —
+  `site.standard.*`, `app.standard-reader.*`, `site.mochott.article` — replays Jetstream's sealed
+  archive from the cursor in `ingest_state`, then cuts over to the live tail through one iterator.
+  The product app server does not process the firehose.
+- **A read path never hard-depends on the archive.** When the read-model comes up empty for a
+  reader's own records the shell hydrates the repo through `hydrateRepoForRead`
+  (`#/server/ingest/archive-replay`), which is deliberately weaker than the raw fold in two ways:
+  it skips repos that already carry a `last_seen_seq` watermark, and it resolves rather than
+  throws when Jetstream is unreachable. Both come from an outage — most readers own no sidebar
+  lists, so awaiting the raw fold re-planned ~97% of readers' repos on every shell load, and one
+  503 from the planner rejected `loadShellSnapshot` and every signed-in surface with it. An
+  unreachable archive degrades a sidebar; it must never sign a reader out of the product.
+- **Silence is a failure mode, and the channel treats it as one.** `@bsky/jetstream` defaults its
+  download retry policy to `maxAttempts: Infinity` with no `onRetry` hook, so an archive endpoint
+  that keeps failing is retried forever from inside the iterator: no batch, no event, no error —
+  just a heartbeat reporting `idleMs=-1`, which is exactly what an idle network looks like.
+  Production ingested nothing for 22 hours that way. Both Jetstream clients now pass a bounded
+  `retry` with an `onRetry` that logs (`ingest.jetstreamRetry`, `ingest.archiveDownloadRetry`), and
+  the channel runs a stall watchdog on the heartbeat: a **cold start** that yields no batch in five
+  minutes is unambiguously wedged (we always resume from a cursor behind the sealed tip, so the
+  archive phase has a backlog to page), while a **running** channel gets an hour, because on the
+  live tail a multi-minute lull is normal for a filter this narrow. Tripping it exits the process —
+  `process.exitCode` alone never lands, since the worker's HTTP listener keeps the event loop
+  alive — and Railway restarts at the stored cursor.
+- **Archive fetch concurrency is a process-wide budget, not a per-fold one.** `blockConcurrency`
+  bounds in-flight downloads inside a single snapshot iterator, which is not the number that
+  matters when several folds run at once: the reconcile sweep repairs eight repos concurrently, so
+  it was 8 × 16 = 128 requests deep against an endpoint that 429s nearly everything past 64.
+  Jetstream rate-limited us accordingly — `ingest.repoReconcile` logged
+  `Upstream server responded with a 429 error` across thousands of repos, single-repo folds that
+  should cost 200ms took two minutes, and two thirds of the tracked fleet ended up parked in
+  reconcile backoff. `JETSTREAM_FOLD_CONCURRENCY` (default 2) gates concurrent folds in
+  `archive-replay.ts` so `folds × blockConcurrency` lands on the documented 32 shoulder; move the
+  two together, never one alone. `ingest.archiveReplay` reports `waitMs` alongside `ms` so a
+  saturated sweep is visible as queueing rather than as slowness.
+- **There is no repo-tracking boundary any more.** This is the load-bearing difference from the
+  `tap` era it replaced. tap only streamed repos we had registered with it, so coverage was
+  something we had to _construct_: a signal collection to discover publishers, a second instance
+  signalled on `site.standard.document` for "loose documents", a third for bridged repos, and
+  `ensureTracked` threaded through two dozen call sites to expand the set along the graph as
+  contributors, subscribers and readers were discovered. A collection filter has no such edge — a
+  repo's records arrive whether or not we have ever heard of it, including repos the graph would
+  never have reached. `tracked_repos` survives as an _inventory_ (whose profile to refresh, whose
+  repo to reconcile), not as a gate.
+- **What the swap deleted.** The tap admin API and `/repos/add` registration; the per-event ack
+  path (and with it the ack deadlock that once froze delivery at 223 events, the ack timeout, and
+  `patches/@atproto__tap@0.3.0.patch`); the three lanes and their per-lane in-flight budgets; the
+  `TAP_RETRY_TIMEOUT` redelivery storms that made backpressure indistinguishable from failure; and
+  the bridge-lane routing. Jetstream's cursor is a plain seq the consumer stores itself, so
+  backpressure is just… reading slower.
+- **Records without a `$type` are kept.** The SDK's typed decode runs every record through
+  `parseRawRecord`, which throws on anything that is not a `$type`'d map, and skips the event.
+  About **0.05%** of `standard.site` records on the network are shaped like that, and they are not
+  junk — live publications and documents among them. Our handlers dispatch on the commit's
+  `collection` and never read `$type`, so the channel consumes `raw: true` and decodes the archived
+  DAG-CBOR itself (`#/server/ingest/jetstream-event`). tap lost the same records for the same
+  reason, via `lexParse`; this is a repair, not just a port.
+- **Profiles and handles are pulled, not streamed.** `app.bsky.actor.profile` network-wide is tens
+  of millions of records for the ~15k actors we display, and Jetstream's DID filter caps at 10,000
+  — fewer than we track, so we cannot ask for exactly our set. `#/server/ingest/profile-refresh`
+  fetches each actor's profile record and re-resolves their handle on a round-robin ordered by
+  `profiles.profile_fetched_at`. The trade is freshness for volume: a display-name edit lands on
+  the next sweep, while everything that decides _what_ a reader sees still streams live.
+- **Bridged repos.** [Bridgy Fed](https://fed.brid.gy) mirrors the wider web into AT Proto:
+  `*.web.brid.gy` is a site Bridgy discovered (tens of thousands of them, thousands of posts each,
+  no publisher intent), and `*.ap.brid.gy` is an ActivityPub blog whose author chose to bridge.
+  The web bridge is the overwhelming majority of what we index — **~93% of document rows** — which
+  is why it needed its own tap instance and its own in-flight budget before. Under a collection
+  subscription there is no queue to protect and no lane to assign, so that machinery is gone; what
+  remains is the display-side exclusion, `WEB_BRIDGE_HANDLE_PATTERN`
+  (`#/lib/atproto/bridged-repo`), which keeps the bulk bridge out of every feed, directory and
+  topic derivation while still indexing it.
+- **The read-model repairs itself against the PDS.** A stream cursor can advance past a commit whose
+  record never reaches us — no error, no dead letter, and "no events" is indistinguishable from "no
+  changes" from the read-model's side. So the reconcile sweep no longer trusts the stream: for
+  every tracked repo it compares `com.atproto.sync.getLatestCommit` against
+  `tracked_repos.last_seen_rev` and re-applies anything missing (`repairRepoIfAdvanced` in
+  `#/server/ingest/repo-sync`). Two gates keep it affordable — an unchanged head costs one request
+  and stops, and only records whose CID differs from the mirrored row are written. Repaired records
+  replay through `handleRecord`, the same dispatcher the live stream feeds, so a repaired row and a live one
+  are written by identical code. The sweep covers **every** tracked repo, not just publishers:
+  restricting it to `publication`/`document` is what once left readers' reads and subscriptions
+  with no safety net at all. **Bulk web-bridge mirrors are the exception**, and they get their own
+  far slower lap: the sweep's affordability rests on the rev gate ("a quiet repo costs one
+  request"), and `*.web.brid.gy` repos are never quiet — Bridgy rewrites them continuously, so the
+  gate opens on nearly every visit and each one re-applies a whole repo. At a third of the fleet
+  that was ~72k document rows an hour, more than everything else combined, against
+  the same Neon pool live edits use. `reconcilePublisherReposBatch` now selects them as a small
+  quota beside the batch rather than a share of it (`WEB_BRIDGE_BATCH_SHARE`), and
+  `countReconcilableRepos` excludes them so the derived batch sizes the lap for repos someone
+  actually asked for. `*.ap.brid.gy` stays in the main lane — those authors chose to bridge.
 - **Read-model:** **Neon Postgres** in dev/prod (a local Postgres for testing — the DB client in
   `src/db/index.ts` picks the driver from the connection string), managed with **Drizzle**
   (`src/db/schema/`), powers feeds, the
   directory, search (GIN `tsvector`), recommendations, and trending. Derived aggregates
-  (`publication_stats`, `publication_cosubscriptions`) are recomputed on a schedule. It is a
-  cache — never the source of truth.
+  (`publication_stats`, `publication_cosubscriptions`, `publications.topic`,
+  `publications.serial_kind`, `discover_topic_counts`, `network_stats`) are recomputed on a
+  schedule. It is a cache — never the source of truth.
+  - **Network-wide aggregates never run on the request path.** A count over the whole corpus is
+    an unbounded scan no index can serve, and at ~1.4M documents / 2.2GB it also evicts the
+    buffer cache the feed queries depend on. `discover_topic_counts` (Discover tag chips) and
+    `network_stats` (the Latest "All" badge) exist so those reads are single-row lookups; the
+    sweep already walks these tables, so maintaining them is near-free marginal work. Add a
+    scalar here rather than counting live.
 - **Writes:** user actions (follow, like, read state) are written as records to the user's repo
   and reflected back into the cache.
 
@@ -912,6 +1572,151 @@ hand-tuned lists:
   only — no scoring per request.
 - **Cold start (no follows yet)** — fall back to high-readership publications
   _outside_ the current trending set so Recommended stays distinct from Trending.
+- **No bulk web-bridge mirrors in Recommended** — Discover's Recommended rail (signed-in _and_
+  cold start) excludes `*.web.brid.gy` publications. Those sites were discovered and mirrored by
+  Bridgy Fed, not published here on purpose, and they are a quarter of the discover-eligible
+  corpus — recommending them reads as noise. They stay fully reachable everywhere else: the
+  directory, search, trending, follows, and their own pages. Filtered in SQL, so the rail still
+  fills to its limit.
+- **"Hide mirrored websites" takes that further, per reader** — an account setting
+  (`user.exclude_web_bridge`, default off; `src/lib/exclude-web-bridge.ts`) that drops
+  `*.web.brid.gy` from _every_ network-wide surface: Latest "All" and its badge counts, the home
+  network/trending feeds, Discover's directory and rails, search, tag pages, related articles, and
+  the weekly digest's network section. It is deliberately **not** applied to anything the reader
+  chose — their subscriptions feed, a publication page they opened, a handle or URL they searched
+  for by name — and never to `*.ap.brid.gy`. The mirrors are ~86% of documents and ~35% of
+  publications, so the filtered Latest "All" badge gets its own precomputed `network_stats` scalar
+  (`network_document_count_no_web_bridge`) rather than a live count, and the tag feed switches to a
+  tag-first query shape (`selectTagArticleUris`) that the survival rate can't blow up.
+
+### Web push delivery
+
+Split across two processes, and the split is the whole design:
+
+- **The ingest worker only enqueues.** `handleRecord`'s document branch runs one
+  `INSERT … SELECT` into `document_push_queue` (`src/server/push/enqueue.ts`) that inserts
+  nothing for anything that doesn't qualify. No timer, no `web-push` import, no outbound HTTP —
+  the worker's job is keeping up with the firehose, and it has been knocked over before by a
+  slow handler causing a redelivery.
+- **A `push-cron` Railway service sends** (`railway.push.json` → `pnpm push:send` →
+  `src/server/push/run.ts`), every five minutes, in its own short-lived process — the same shape
+  as the weekly digest, for the same reason.
+
+The queue table is also the **exactly-once claim**: its primary key is what makes stream
+redelivery, dead-letter replay, and later `update` events for one document all collapse to
+`DO NOTHING`. It is deliberately _not_ a column on `documents`, because document deletes are
+hard deletes — a delete→recreate at the same rkey is a normal republish, and a claim living on
+that row would die with it and re-notify everyone.
+
+Four guards decide whether a document is genuinely new, and each covers a different failure:
+`live` (so a PDS reconcile can't replay a repo's whole history), a date on the **record itself**
+(`documents.published_at` falls back to `now()` for an undated record, so an archive import
+would otherwise pass any freshness window), `indexed_at` (set once on first insert and never
+updated — this is what survives a cursor rewind or a fresh instance re-streaming known
+repos), and a per-author hourly cap in the sender as the backstop.
+
+### Weekly network thread
+
+A `thread-cron` Railway service (`railway.thread.json` → `pnpm thread:post` →
+`src/server/announce/`) posts the week's five hottest network articles as a
+reply-chained Bluesky thread from the reader bot, Fridays 16:00 UTC.
+
+It must post **exactly once a week**, and the scheduled tick is not the only
+thing that starts it: Railway runs a cron service's start command on every
+redeploy and restart, and `pnpm thread:post` is a hand-run away. So the job is
+guarded twice, at both layers that can fail:
+
+- **It claims the week before it composes.** `weekly_thread_runs` is keyed by ISO
+  week (`2026-W33`); the claim is one atomic `insert … on conflict do update …
+where`, so concurrent runs can never both win (the same shape as the push
+  queue's claim, and equally transaction-free — the Neon HTTP driver has none).
+  A run that loses the claim exits without posting. The row is handed back
+  (`skipped` / `failed`) when a run posts nothing, so a genuine retry still
+  works, and a claim left stale by a killed process is reaped after 30 minutes.
+- **The write itself is idempotent.** Posts go to record keys derived from the
+  week — TIDs seeded from that week's Friday with a pinned clock id — via
+  `putRecord`, with `createdAt` anchored to the same instant. A run that gets
+  past the claim anyway (DB unreachable, `THREAD_FORCE=1`, a bug) therefore
+  _overwrites_ that week's thread instead of publishing a second one. The
+  original `createRecord`-at-a-fresh-TID is precisely how the job duplicated
+  itself.
+
+The ledger is stamped with the root URI the moment the root post lands, before
+the replies go out: past that point the thread is public, so a mid-thread crash
+must leave a partial thread rather than license a second one.
+
+### Topic derivation
+
+Topics (`topics`, `topic_tags`, `topic_publications`) are rebuilt by
+`recomputeTopics()` on its own **daily** cron (`scripts/topics-cron.ts`, the
+`topics-cron` Railway service — not the hourly sweep, which only rebuilds the tag
+counts it reads), from the tag co-occurrence graph. See
+[`DEPLOY_TOPICS.md`](./DEPLOY_TOPICS.md) for the services and environment it needs.
+
+Four decisions carry the quality, each settled by measuring against the live corpus
+rather than by taste:
+
+- **Edges are counted per publisher, not per article.** Two tags are related when they
+  appear on the same article — but the pair counts once per publisher. Counting articles
+  lets one author manufacture relatedness out of a tagging habit: a single
+  fediverse-hosted music blog tagging every post `fediverse` + `j-pop` produced 55
+  article-level co-occurrences, enough to make `fediverse` the Music cluster's
+  14th-strongest member. Per-publisher counting caps that blog at 1, and `fediverse`'s
+  neighbours become activitypub, mastodon, peertube, pixelfed, indieweb.
+- **Clustering is weighted label propagation** over cosine-weighted edges, sparsified to
+  each tag's 12 strongest neighbours (unsparsified, weak hub tags like `news` fuse
+  unrelated clusters). Visitation order is sorted and every tie breaks on label, because a
+  topic's identity is matched across sweeps by tag overlap — randomized order would
+  churn URLs hourly. Any cluster over 150 tags is re-split on a tightened subgraph: label
+  propagation has no size control and produced a 429-tag "topic" that had absorbed
+  musicians, actors and junk tags, which is not a topic but what is left when weak edges
+  chain everything together.
+- **Semantic edges fill in what behaviour cannot.** Co-occurrence is blind to a subject
+  whose publishers split: `typescript / javascript / npm` and `css / html / tailwind` are
+  two halves of web development that essentially never share a publisher, so counting alone
+  left one half too small to publish. Each tag is embedded (`tag_embeddings`, MiniLM) and
+  near-duplicate pairs become extra edges — additively, never replacing a behavioural edge,
+  and rescaled onto the co-occurrence weight range so they cannot dominate the neighbour cut.
+  Crucially the tag is embedded **by the titles of articles carrying it**, not by its own
+  name: on bare words the model compares spellings, and the ordering inverts exactly wrong
+  (`música`/`music` 0.723 against `typescript`/`css` 0.116 — no threshold works). In context,
+  `typescript`/`web development` scores 0.517 while `música`/`music` falls to 0.354, so the
+  0.45 floor joins the web-dev halves and leaves every language-specific topic intact.
+- **The quality bar is author concentration, not counts.** A cluster publishes at ≥14 tags,
+  ≥10 publications, ≥5 distinct authors, and **no more than 50% of its publications from a
+  single repo**. That last one is the load-bearing test: the network's three
+  highest-frequency tags (`chart`, `weekly`, `song` — 700+ publications each) are one bot
+  network publishing from one DID, and it clears every count-based threshold, including a
+  distinct-author floor (measured: 769 publications across 8 DIDs, one of them 99.5%).
+  Real topics measure 1–4% top-author share.
+- **Names are model-written, cached by cluster identity.** The deterministic alternative —
+  the cluster's most frequent tag — names a cluster of `ev / volkswagen / ford / bmw /
+toyota / porsche` **"Opinion"**. So a model reads the top tags and writes an English name
+  and one-line description; only new or materially-drifted clusters are sent, so a
+  steady-state sweep makes ~no requests. Every failure path (no API key, error, refusal)
+  falls back to the deterministic label rather than failing the sweep.
+
+Topic **publications** are precomputed; topic **documents** are resolved live
+through the tag GIN index, via a `MATERIALIZED` CTE that forces the tag predicate to be
+evaluated before the date sort — without it Postgres walks `documents_published_idx` and
+discards tens of thousands of rows per page (1.65s → 18ms).
+
+**Bridgy Fed's passive web bridge shapes the clusters but is never shown.** A
+`*.web.brid.gy` repo is a website Bridgy discovered and mirrored — nobody at that site asked
+to be here — so no bridged publication or article appears in a topic. But the bridge is
+**75% of the tagged corpus** (999k of 1.33M documents), and it is often the only evidence
+the network has that two tags belong together.
+
+So the split is: **the graph learns from everything; only opt-in publications and authors are
+shown.** Measured — excluding the bridge from the graph too collapses it from 4,498 tags to
+502 and leaves **5** publishable topics; keeping it as an unseen clustering signal gives
+**44**, with none of it visible. `*.ap.brid.gy` is never excluded: those authors chose to
+bridge.
+
+The exclusion is tested on **the document's author**, not its publication. Most bridged
+content arrives as _loose_ documents with no publication row at all — 82% of one topic's
+matches — so a publication-level test let nearly all of it through while the topic's own
+publication list looked clean.
 
 ---
 
@@ -920,21 +1725,27 @@ hand-tuned lists:
 ### v1 (first milestone)
 
 - AT Proto / Bluesky **OAuth login**.
-- Real publications & articles served from the **Neon read-model** (tap backfill).
+- Real publications & articles served from the **Neon read-model** (Jetstream backfill).
 - **Home, Latest, Discover, Search, Article, Publication** screens ported to TanStack Start + hip-ui.
 - **Follows, likes, save-for-later, and read-state** written back as records (and cached).
 - **URL-backed routing** for every view.
 - Network-powered recommendations & trending (initial heuristics, tunable).
+- **Offline reading in the installed app** — the service worker caches read server functions
+  (`/_serverFn` GETs), and `src/pwa/offline-sync.ts` pre-downloads every unread body and its
+  images so the backlog opens with no connection. The surfaces that must survive a dead
+  connection are warmed by name — home, `/latest`, `/saved`, `/subscriptions`, and everything
+  behind the avatar menu: `/history` (its list and its **Continue reading** shelf, whose
+  part-read bodies no unread walk would reach), `/recommended`, and the reader's own profile.
+  Reaching for something never downloaded shows an offline state rather than an error.
 
 ### Later
 
 - Recommendation / trending tuning and quality work.
 - Higher-quality full-text search.
-- Offline / save-for-later body cache (save queue via `app.standard-reader.bookmark` is shipped).
 
 ### Non-goals (for now)
 
-- A **read-first client**: no in-app posting or authoring publications. Discussion is surfaced read-only from Bluesky (link shares + quote shares) and margin.at (web annotations); threads open on bsky or margin.at.
+- A **read-first client**: no in-app posting or authoring publications. Discussion is surfaced read-only from Bluesky (link shares + quote shares) and margin.at (web annotations); threads open on bsky or margin.at. **Add a comment** does not change that — it hands the reader off to a client that does the writing, and the comment comes back through the same read-only backlink discovery as every other item in the list.
   - The `standard-reader` **CLI** (see §8) does write to an author's repo, but it is a separate
     binary an author runs against their own account — not an in-app authoring surface. The reading
     client stays read-first.
@@ -950,7 +1761,7 @@ Standard Reader is a **port of an earlier no-build prototype** into this TanStac
 - **Framework:** TanStack Start + TanStack Router (file-based routing), React 19, Vite.
 - **Design system:** hip-ui (copy-and-own, react-aria) in `src/design-system/`.
 - **Styling:** StyleX (`@stylexjs/stylex`) with design-system tokens; no Tailwind.
-- **Data:** Neon Postgres + Drizzle (`src/db/`), fed by a tap instance; access via server functions
+- **Data:** Neon Postgres + Drizzle (`src/db/`), fed by the Jetstream ingester; access via server functions
   and the public AppView XRPC surface at `/xrpc/app.standard-reader.*` (see [`/docs/api`](/docs/api) and [`/docs/lexicons`](/docs/lexicons)).
 - **Auth:** AT Proto / Bluesky OAuth.
 - **Observability:** Server functions emit `observe()` events to Honeycomb; client route transitions
@@ -1069,6 +1880,34 @@ Where they come from and why they're not route `head.meta`:
 - We do **not** emit `at:me`. That tag asserts the page belongs to the identity, and every
   record we render belongs to someone else; it's the right tag for a platform serving an
   author's own site, not for a reader.
+
+### HTML `rel=canonical` — the reader gives the ranking back
+
+Not to be confused with `at:canonical` above: that one names a **record**, this one names a
+**URL for search engines**. They answer different questions and a page carries both.
+
+We render other people's writing natively, which makes an article page on the reader a
+near-duplicate of the same article on the publication's own site. Left alone, a search engine
+picks a winner between the two by itself, and it sometimes picks us. So we choose instead:
+
+| Route                  | Canonicalizes to                                | Why                                                            |
+| ---------------------- | ----------------------------------------------- | -------------------------------------------------------------- |
+| `/a/$did/$rkey`        | the article on the publication's site, if known | their writing, their ranking — we're a mirror                  |
+| `/comic/$did/$rkey`    | same, plus folds the `?page=` deep links        | the page-flip reader is our presentation of their comic        |
+| `/collection/…`        | itself (folds `?ids=`)                          | an edition is curation we assembled — we _are_ the original    |
+| `/p/…`, `/l/…`, `/u/…` | themselves (fold `?filter=` / sort / tab views) | directories over the network, with no single off-site original |
+
+- The helpers are `canonicalLink` (`src/lib/site-metadata.ts`) and `articleSourceUrl`
+  (`src/components/reader/format.ts`). A source URL that is unparseable, non-`http(s)`, or on
+  our own host is discarded and the page self-canonicalizes.
+- `articleSourceUrl` is deliberately **stricter** than `articlePublicationUrl`: it refuses to
+  fall back to the publication root. That fallback is right for "open this on the author's
+  site", but as a canonical it would claim the article duplicates a home page.
+- We do **not** use `noindex`. Canonical keeps us crawlable — so internal discovery of
+  publications and topics still works — and a search engine may still surface the reader page
+  when the original is unstable or has weaker signal, which is a win rather than a loss.
+- Everything that isn't a mirror (home, `/discover`, `/topics/…`, `/tag/…`, `/search`, docs,
+  guide) is unaffected and indexes normally. That's where "Standard Reader" gets found.
 
 ### Browser extension architecture
 

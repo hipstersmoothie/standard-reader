@@ -30,6 +30,10 @@ import {
 } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 
+import {
+  NETWORK_DOCUMENT_COUNT_KEY,
+  NETWORK_DOCUMENT_COUNT_NO_WEB_BRIDGE_KEY,
+} from "#/db/schema/network-stats";
 import type {
   ArticleCard,
   Db,
@@ -47,11 +51,20 @@ import {
   toArticleCard,
   toPublicationCard,
 } from "#/integrations/tanstack-query/api-shapes";
+import {
+  isWebBridgeHandle,
+  WEB_BRIDGE_HANDLE_PATTERN,
+} from "#/lib/atproto/bridged-repo";
 import { EXCLUDED_PUBLICATION_URL_PATTERN } from "#/lib/publication/exclusions";
+import { atUriAuthoritySql, notBlockedByViewer } from "#/server/blocks/blocks";
+import { notMutedByViewer } from "#/server/mutes/mutes";
 import { documentPublishedNotInFuture } from "#/server/reader/document-filters";
 import {
   discoverEligibleArticleWhere,
   discoverEligiblePublicationWhere,
+  notWebBridgeArticleWhere,
+  notWebBridgePublicationOwnerWhere,
+  notWebBridgePublicationWhere,
 } from "#/server/reader/publication-filters";
 import {
   ROTATION_POOL_MULTIPLIER,
@@ -122,8 +135,26 @@ export interface ArticleCardQuery {
   featuredOnly?: boolean;
   /** Only documents that belong to a discover-eligible publication. */
   discoverOnly?: boolean;
+  /**
+   * Drop documents authored by — or published under — one of Bridgy Fed's bulk
+   * web-bridge mirrors (`*.web.brid.gy`), for a reader who turned "Hide
+   * mirrored websites" on (see `#/lib/exclude-web-bridge`). Network-wide
+   * surfaces only: callers pass it alongside `discoverOnly` / `tag`, never on
+   * the follow feed, where every source is one the reader chose.
+   */
+  excludeWebBridge?: boolean;
   /** Match documents whose `tags` array includes this label (case-insensitive). */
   tag?: string;
+  /**
+   * Only documents with a body the app can render (`has_renderable_body`).
+   *
+   * For the OPDS catalog and the EPUB/CBZ downloads, where an entry the reader
+   * cannot take offline is dead weight: catalog clients show a download button
+   * for every entry, and a bridged link post has nothing to put behind it. Off
+   * everywhere else — a feed row for an external post is useful, it just links
+   * out.
+   */
+  renderableOnly?: boolean;
   /**
    * Followed-user DIDs. When present (even alongside `publicationUris`), the
    * query switches to "follow-feed union" mode: it returns documents authored
@@ -144,6 +175,28 @@ export interface ArticleCardQuery {
    * `recent`.
    */
   sort?: ArticleCardSort;
+  /**
+   * The reader this page is being rendered for. Documents by an account they
+   * are blocked from — in either direction — are excluded in SQL rather than
+   * dropped afterwards, so a block never shortens a page or strands results
+   * behind an offset. See {@link notBlockedByViewer}.
+   *
+   * Distinct from `readForDid` / `unreadForDid`, which are about read state:
+   * blocks apply whether or not the reader tracks reading, and to signed-in
+   * readers on discover surfaces where the other two are unset.
+   */
+  viewerDid?: string;
+  /**
+   * The reader this page is being rendered for, for mute filtering. Documents
+   * by a muted user, from a publication a muted user owns, or in a muted
+   * publication are excluded in SQL for the same reason as `viewerDid`.
+   *
+   * **Resolve through `muteFilterDid`, never a raw session DID** — the
+   * predicate is correlated subqueries per candidate row, and the gate is what
+   * keeps readers who mute nothing from paying for it. See
+   * {@link notMutedByViewer}.
+   */
+  muterDid?: string;
   limit: number;
   offset?: number;
 }
@@ -428,6 +481,12 @@ async function selectFollowFeedCandidateUris(
     featuredOnly?: boolean;
     unreadForDid?: string;
     countOldPostsAsUnread?: boolean;
+    /** See {@link ArticleCardQuery.renderableOnly}. */
+    renderableOnly?: boolean;
+    /** See {@link ArticleCardQuery.viewerDid}. */
+    viewerDid?: string;
+    /** See {@link ArticleCardQuery.muterDid}. */
+    muterDid?: string;
     limit: number;
     offset: number;
   },
@@ -452,6 +511,12 @@ export function buildFollowFeedCandidateSql(
     featuredOnly?: boolean;
     unreadForDid?: string;
     countOldPostsAsUnread?: boolean;
+    /** See {@link ArticleCardQuery.renderableOnly}. */
+    renderableOnly?: boolean;
+    /** See {@link ArticleCardQuery.viewerDid}. */
+    viewerDid?: string;
+    /** See {@link ArticleCardQuery.muterDid}. */
+    muterDid?: string;
     limit: number;
     offset: number;
   },
@@ -477,20 +542,46 @@ export function buildFollowFeedCandidateSql(
     documentPublishedNotInFuture(d),
   ];
   if (opts.featuredOnly) base.push(eq(d.featured, true));
+  if (opts.renderableOnly) base.push(eq(d.hasRenderableBody, true));
   if (opts.unreadForDid)
     base.push(documentNotReadWhere(schema, opts.unreadForDid));
-  const baseWhere = and(...base) ?? sql`true`;
-
-  const directParts: Array<SQL> = [inArray(d.did, followedUserDids)];
-  if (publicationUris.length > 0) {
-    directParts.push(inArray(d.publicationUri, publicationUris));
+  // Applied to every union branch, not just the direct one: a followed
+  // publication can carry a guest post by an account the reader blocks, and a
+  // followed user can recommend one. Both the author and the publication's
+  // owner are checked — a guest post carries the owner in its byline.
+  //
+  // Reached only through `blockFilterDid`, so this never enters the lateral for
+  // a reader who blocks nobody. That gate is what makes it safe to add a
+  // correlated predicate to `baseWhere` at all: see the strategy note below.
+  if (opts.viewerDid) {
+    base.push(
+      notBlockedByViewer(
+        schema,
+        opts.viewerDid,
+        sql`${d.did}`,
+        atUriAuthoritySql(sql`${d.publicationUri}`),
+      ),
+    );
   }
-  const directOr = or(...directParts) ?? sql`false`;
+  // Same union-branch reasoning as blocks: a followed publication can carry a
+  // guest post by a muted author, and a followed user can recommend into a
+  // muted publication. Reached only through `muteFilterDid`.
+  if (opts.muterDid) {
+    base.push(
+      notMutedByViewer(schema, opts.muterDid, {
+        authorDidExpr: sql`${d.did}`,
+        ownerDidExpr: atUriAuthoritySql(sql`${d.publicationUri}`),
+        pubUriExpr: sql`${d.publicationUri}`,
+      }),
+    );
+  }
+  const baseWhere = and(...base) ?? sql`true`;
 
   // Cutoff strategy: apply the cutoff AFTER the union, on a small bounded
   // candidate pool — NOT inside each union branch. The union branches rely on an
-  // indexed `ORDER BY published_at DESC LIMIT k` scan (`documents_published_idx`)
-  // to stay cheap; joining the four cutoff CTEs *inside* each branch (the
+  // indexed `ORDER BY published_at DESC LIMIT k` scan (per-source composite
+  // indexes for the two direct branches below, `documents_published_idx` for the
+  // rest) to stay cheap; joining the four cutoff CTEs *inside* each branch (the
   // `countFollowedDocuments` shape) blocks that index pushdown and regresses to
   // walking ~364K documents + joining the cutoffs per row (~1.8s, verified via
   // EXPLAIN). `countFollowedDocuments` can use the in-branch join shape because
@@ -504,6 +595,66 @@ export function buildFollowFeedCandidateSql(
   // through only one followed source still gets that source's cutoff — matching
   // `readerSourceCutoffSql`'s `min` over the union.
   const poolK = suppressOld ? k * CUTOFF_POOL_MULT : k;
+
+  /**
+   * Newest-`poolK` documents for one class of followed source (publications, or
+   * authors), as a top-k-per-source lateral merged back down to `poolK`.
+   *
+   * The obvious form — a single branch with `where did in (...) or
+   * publication_uri in (...) order by published_at desc limit k` — is a trap.
+   * Neither IN-list is index-served under the `OR`, so Postgres walks
+   * `documents_published_idx` newest-first and filters: measured **257,677 rows
+   * discarded to return 214**, 1651ms of a 1672ms query, for a reader following
+   * ~177 publications + 9 authors. That cost scales with the whole corpus, so it
+   * degrades for every reader as `documents` grows.
+   *
+   * Splitting the `OR` into two branches is necessary but not sufficient — the
+   * planner still prefers the date index for a bare `in (...)`, and the unread
+   * `NOT EXISTS` pushes it back there even on the `did` branch (4603ms, 459,153
+   * rows discarded). Driving each branch from `unnest(...) cross join lateral`
+   * forces the per-source composite index
+   * (`documents_publication_published_idx` / `documents_did_published_idx`) —
+   * one bounded top-k scan per followed source. Measured: **40.5ms** for both
+   * branches together, now scaling with the reader's follow count instead of the
+   * corpus.
+   *
+   * `order by` must stay `desc nulls last` to match those indexes (see memory
+   * `drizzle-nulls-last-index-mismatch`).
+   */
+  const followedSourceBranch = (column: SQL, values: Array<string>): SQL => {
+    const list = sql.join(
+      values.map((value) => sql`${value}`),
+      sql`, `,
+    );
+    return sql`
+        (
+          select src_doc.uri as uri, src_doc.published_at as feed_at,
+                 src_doc.published_at as published_at, 0 as src,
+                 src_doc.publication_uri as publication_uri, src_doc.did as did
+          from unnest(array[${list}]::text[]) as src_key(value)
+          cross join lateral (
+            select ${d.uri} as uri, ${d.publishedAt} as published_at,
+                   ${d.publicationUri} as publication_uri, ${d.did} as did
+            from ${d}
+            where ${column} = src_key.value and ${baseWhere}
+            order by ${d.publishedAt} desc nulls last, ${d.uri} desc
+            limit ${poolK}
+          ) src_doc
+          order by src_doc.published_at desc nulls last, src_doc.uri desc
+          limit ${poolK}
+        )`;
+  };
+
+  // Followed authors is always non-empty in union mode (`selectArticleCards`
+  // short-circuits otherwise); publications can legitimately be empty.
+  const directBranches: Array<SQL> = [
+    followedSourceBranch(sql`${d.did}`, followedUserDids),
+  ];
+  if (publicationUris.length > 0) {
+    directBranches.push(
+      followedSourceBranch(sql`${d.publicationUri}`, publicationUris),
+    );
+  }
 
   const cutoffCtes = suppressOld
     ? sql`with
@@ -560,15 +711,7 @@ export function buildFollowFeedCandidateSql(
         u.uri as uri, u.feed_at as feed_at, u.published_at as published_at,
         u.publication_uri as publication_uri, u.did as did
       from (
-        (
-          select ${d.uri} as uri, ${d.publishedAt} as feed_at,
-                 ${d.publishedAt} as published_at, 0 as src,
-                 ${d.publicationUri} as publication_uri, ${d.did} as did
-          from ${d}
-          where ${baseWhere} and (${directOr})
-          order by ${d.publishedAt} desc nulls last, ${d.uri} desc
-          limit ${poolK}
-        )
+        ${sql.join(directBranches, sql` union all `)}
         union all
         (
           select ${d.uri} as uri, ${d.publishedAt} as feed_at,
@@ -659,10 +802,42 @@ export async function selectArticleCards(
       featuredOnly: opts.featuredOnly,
       unreadForDid: opts.unreadForDid,
       countOldPostsAsUnread: opts.countOldPostsAsUnread,
+      renderableOnly: opts.renderableOnly,
+      viewerDid: opts.viewerDid,
+      muterDid: opts.muterDid,
       limit: opts.limit,
       offset: opts.offset ?? 0,
     });
     const pageUris = [...new Set(candidateUris)]; // defensive: never render a doc twice
+    return selectArticleCardsByUris(db, schema, pageUris, {
+      readForDid: opts.readForDid,
+      countOldPostsAsUnread: opts.countOldPostsAsUnread,
+      viewerDid: opts.viewerDid,
+      muterDid: opts.muterDid,
+    });
+  }
+
+  // Tag feed with the mirrors hidden: resolve the page's URIs through the
+  // tag-first query below, which is the only shape that survives a tag whose
+  // matches are almost all `*.web.brid.gy`. See `selectTagArticleUris`.
+  //
+  // `renderableOnly` opts out of this shape rather than being threaded through
+  // it: that predicate already removes almost every mirror (they are exactly
+  // the documents with no renderable body), so the two would be doing the same
+  // work twice — and silently dropping the option here would hand a catalog
+  // client entries it cannot download.
+  if (
+    opts.tag &&
+    opts.excludeWebBridge &&
+    !opts.unreadForDid &&
+    !opts.renderableOnly
+  ) {
+    const pageUris = await selectTagArticleUris(db, schema, {
+      tag: opts.tag,
+      sort: opts.sort,
+      limit: opts.limit,
+      offset: opts.offset ?? 0,
+    });
     return selectArticleCardsByUris(db, schema, pageUris, {
       readForDid: opts.readForDid,
       countOldPostsAsUnread: opts.countOldPostsAsUnread,
@@ -690,8 +865,33 @@ export async function selectArticleCards(
     // `p.uri IS NULL` and pass the `or(isNull(p.uri), …)` clause.
     conds.push(discoverEligibleArticleWhere(p));
   }
+  if (opts.excludeWebBridge) {
+    conds.push(notWebBridgeArticleWhere(schema));
+  }
   if (opts.tag) {
     conds.push(documentCarriesTagWhere(d, opts.tag));
+  }
+  if (opts.renderableOnly) {
+    conds.push(eq(d.hasRenderableBody, true));
+  }
+  if (opts.viewerDid) {
+    conds.push(
+      notBlockedByViewer(
+        schema,
+        opts.viewerDid,
+        sql`${d.did}`,
+        atUriAuthoritySql(sql`${d.publicationUri}`),
+      ),
+    );
+  }
+  if (opts.muterDid) {
+    conds.push(
+      notMutedByViewer(schema, opts.muterDid, {
+        authorDidExpr: sql`${d.did}`,
+        ownerDidExpr: atUriAuthoritySql(sql`${d.publicationUri}`),
+        pubUriExpr: sql`${d.publicationUri}`,
+      }),
+    );
   }
 
   const columns = articleCardColumns(schema);
@@ -807,6 +1007,17 @@ export async function selectPublicationArticleCards(
     /** The requesting reader, for `filter`. Usually the same as `readForDid`,
      * but set even when reading history is off (recommends don't need it). */
     readerDid?: string;
+    /**
+     * Archive ordering. Defaults to newest-first; `"oldest"` is a reader asking
+     * to start at the beginning (see `#/lib/publication/archive-order`).
+     * Callers must keep this stable across a paginated run — the offsets are
+     * computed against one ordering.
+     */
+    order?: "newest" | "oldest";
+    /** See {@link ArticleCardQuery.renderableOnly}. */
+    renderableOnly?: boolean;
+    /** See {@link ArticleCardQuery.viewerDid}. */
+    viewerDid?: string;
   },
 ): Promise<Array<ArticleCard>> {
   const d = schema.documents;
@@ -853,12 +1064,29 @@ export async function selectPublicationArticleCards(
         eq(d.deleted, false),
         documentPublishedNotInFuture(d),
         eq(d.publicationUri, opts.publicationUri),
+        ...(opts.renderableOnly ? [eq(d.hasRenderableBody, true)] : []),
         publicationFilterWhere(schema, opts.filter, opts.readerDid, {
           countOldPostsAsUnread: opts.countOldPostsAsUnread,
         }),
+        // A publication the reader can still open (they are not blocked from
+        // its owner) can carry guest posts by accounts they are blocked from.
+        ...(opts.viewerDid
+          ? [
+              notBlockedByViewer(
+                schema,
+                opts.viewerDid,
+                sql`${d.did}`,
+                atUriAuthoritySql(sql`${d.publicationUri}`),
+              ),
+            ]
+          : []),
       ),
     )
-    .orderBy(...documentsNewestFirst(d))
+    .orderBy(
+      ...(opts.order === "oldest"
+        ? documentsOldestFirst(d)
+        : documentsNewestFirst(d)),
+    )
     .limit(opts.limit)
     .offset(opts.offset ?? 0);
 
@@ -892,9 +1120,31 @@ export async function selectPublicationArticleCards(
  */
 const DEFAULT_UNREAD_URI_LIMIT = 200;
 
-/** Unread document AT-URIs for a reader, optionally scoped to publications
- * and/or followed users (union — matches the follow feed). */
-export async function selectUnreadDocumentUris(
+/**
+ * Position in the unread walk, matching the `published_at desc, uri desc`
+ * ordering both branches below use. `documents.published_at` is `notNull`, so
+ * a plain row-wise `<` is a complete keyset — no NULL tiebreak needed.
+ */
+export interface UnreadDocumentCursor {
+  /** ISO-8601; cast to `timestamptz` at the comparison. */
+  publishedAt: string;
+  uri: string;
+}
+
+export interface UnreadDocumentRow {
+  uri: string;
+  publishedAt: Date;
+}
+
+/**
+ * One page of a reader's unread documents, newest first.
+ *
+ * Offline sync walks the reader's *entire* unread set, which has no ceiling —
+ * so this pages by keyset rather than accepting a single `limit` the way
+ * "mark all as read" does. Offset would drift as new documents arrive at the
+ * head mid-walk and degrade on deep backlogs; the keyset does neither.
+ */
+export async function selectUnreadDocumentPage(
   db: Db,
   schema: Schema,
   opts: {
@@ -903,14 +1153,16 @@ export async function selectUnreadDocumentUris(
     followedUserDids?: Array<string>;
     countOldPostsAsUnread?: boolean;
     limit?: number;
+    cursor?: UnreadDocumentCursor;
   },
-): Promise<Array<string>> {
+): Promise<Array<UnreadDocumentRow>> {
   const {
     readerDid,
     publicationUris,
     followedUserDids,
     countOldPostsAsUnread,
     limit = DEFAULT_UNREAD_URI_LIMIT,
+    cursor,
   } = opts;
   const hasFollowedUsers = (followedUserDids?.length ?? 0) > 0;
   if (publicationUris && publicationUris.length === 0 && !hasFollowedUsers) {
@@ -928,17 +1180,23 @@ export async function selectUnreadDocumentUris(
         ? sql`and (${readerSourceCutoffSql(schema, readerDid, sql`cand.publication_uri`, sql`cand.did`, sql`cand.uri`)} is null
             or cand.published_at >= ${readerSourceCutoffSql(schema, readerDid, sql`cand.publication_uri`, sql`cand.did`, sql`cand.uri`)})`
         : sql``;
+    const cursorFilter = cursor
+      ? sql`and (cand.published_at, cand.uri) < (${cursor.publishedAt}::timestamptz, ${cursor.uri})`
+      : sql``;
     const rows = await db.execute(sql`
       with cand as ${followFeedUnionSql(schema, publicationUris ?? [], followedUserDids ?? [])}
-      select cand.uri
+      select cand.uri, cand.published_at as "publishedAt"
       from cand
       left join ${r} on ${r.documentUri} = cand.uri
         and ${r.ownerDid} = ${readerDid} and ${r.deleted} = false
-      where ${r.uri} is null ${cutoffFilter}
+      where ${r.uri} is null ${cutoffFilter} ${cursorFilter}
       order by cand.published_at desc nulls last, cand.uri desc
       limit ${limit}
     `);
-    return executeRows<{ uri: string }>(rows).map((row) => row.uri);
+    return executeRows<UnreadDocumentRow>(rows).map((row) => ({
+      publishedAt: new Date(row.publishedAt),
+      uri: row.uri,
+    }));
   }
 
   const conds = [eq(d.deleted, false), documentPublishedNotInFuture(d)];
@@ -955,9 +1213,14 @@ export async function selectUnreadDocumentUris(
     );
     conds.push(sql`(${cutoff} is null or ${d.publishedAt} >= ${cutoff})`);
   }
+  if (cursor) {
+    conds.push(
+      sql`(${d.publishedAt}, ${d.uri}) < (${cursor.publishedAt}::timestamptz, ${cursor.uri})`,
+    );
+  }
 
   const rows = await db
-    .select({ uri: d.uri })
+    .select({ publishedAt: d.publishedAt, uri: d.uri })
     .from(d)
     .leftJoin(
       r,
@@ -971,6 +1234,23 @@ export async function selectUnreadDocumentUris(
     .orderBy(...documentsNewestFirst(d))
     .limit(limit);
 
+  return rows;
+}
+
+/** Unread document AT-URIs for a reader, optionally scoped to publications
+ * and/or followed users (union — matches the follow feed). */
+export async function selectUnreadDocumentUris(
+  db: Db,
+  schema: Schema,
+  opts: {
+    readerDid: string;
+    publicationUris?: Array<string>;
+    followedUserDids?: Array<string>;
+    countOldPostsAsUnread?: boolean;
+    limit?: number;
+  },
+): Promise<Array<string>> {
+  const rows = await selectUnreadDocumentPage(db, schema, opts);
   return rows.map((row) => row.uri);
 }
 
@@ -1252,10 +1532,56 @@ export async function countFollowedDocuments(
   return { all: row?.all ?? 0, unread: row?.unread ?? 0 };
 }
 
-/** Count of discover-eligible documents across the whole network (Latest "All" tab). */
+/**
+ * Count of discover-eligible documents across the whole network (Latest "All"
+ * tab badge).
+ *
+ * Served from the `network_stats` scalar maintained by `recomputeNetworkStats()`
+ * — a single primary-key lookup. Counting it live is an unbounded `count(*)`
+ * over every document row joined to publications, which no index can serve;
+ * it measured ~1.08s as a parallel seq scan and sat on `/latest`'s blocking
+ * route loader. A badge total that the sweep refreshes every few minutes does
+ * not justify that, nor the buffer-cache churn it inflicted on the sibling feed
+ * queries.
+ *
+ * {@link countNetworkDocumentsLive} is the fallback for the window before the
+ * first sweep populates the row.
+ *
+ * `excludeWebBridge` reads the parallel scalar the same sweep maintains for
+ * readers hiding the web-bridge mirrors — never a filtered live count, which
+ * measured **26.5s** against production because the anti-joins discard ~86% of
+ * the corpus row by row.
+ */
 export async function countNetworkDocuments(
   db: Db,
   schema: Schema,
+  { excludeWebBridge = false }: { excludeWebBridge?: boolean } = {},
+): Promise<number> {
+  const key = excludeWebBridge
+    ? NETWORK_DOCUMENT_COUNT_NO_WEB_BRIDGE_KEY
+    : NETWORK_DOCUMENT_COUNT_KEY;
+  const [row] = await db
+    .select({ value: schema.networkStats.value })
+    .from(schema.networkStats)
+    .where(eq(schema.networkStats.key, key))
+    .limit(1);
+  // Only missing before the first sweep after deploy (or on a fresh DB), so the
+  // expensive path runs for minutes, not indefinitely.
+  return (
+    row?.value ??
+    (await countNetworkDocumentsLive(db, schema, { excludeWebBridge }))
+  );
+}
+
+/**
+ * The live scan behind {@link countNetworkDocuments}. This is the definition of
+ * record for what the "All" tab counts — `recomputeNetworkStats()` mirrors this
+ * predicate, so the two must change together.
+ */
+export async function countNetworkDocumentsLive(
+  db: Db,
+  schema: Schema,
+  { excludeWebBridge = false }: { excludeWebBridge?: boolean } = {},
 ): Promise<number> {
   const d = schema.documents;
   const p = schema.publications;
@@ -1268,6 +1594,7 @@ export async function countNetworkDocuments(
         eq(d.deleted, false),
         documentPublishedNotInFuture(d),
         discoverEligibleArticleWhere(p),
+        ...(excludeWebBridge ? [notWebBridgeArticleWhere(schema)] : []),
       ),
     );
   return row?.count ?? 0;
@@ -1419,12 +1746,21 @@ export interface TrendingArticlesQuery {
   offset?: number;
   readForDid?: string;
   scope?: TrendingArticlesScope;
+  /** Hide web-bridge mirrors — see {@link ArticleCardQuery.excludeWebBridge}. */
+  excludeWebBridge?: boolean;
+  /** See {@link ArticleCardQuery.viewerDid}. */
+  viewerDid?: string;
+  /** See {@link ArticleCardQuery.muterDid}. */
+  muterDid?: string;
 }
 
 function trendingArticleWhere(
   schema: Schema,
   scope: TrendingArticlesScope,
   excludeUris: Array<string> = [],
+  excludeWebBridge = false,
+  viewerDid?: string,
+  muterDid?: string,
 ) {
   const d = schema.documents;
   const p = schema.publications;
@@ -1439,6 +1775,10 @@ function trendingArticleWhere(
     sql`${d.publishedAt} > now() - (${TRENDING_MAX_AGE_DAYS}::text || ' days')::interval`,
   ];
 
+  if (excludeWebBridge) {
+    conds.push(notWebBridgeArticleWhere(schema));
+  }
+
   if (scope === "rail") {
     conds.push(
       sql`${d.trendingScore} > 0`,
@@ -1448,6 +1788,27 @@ function trendingArticleWhere(
 
   if (excludeUris.length > 0) {
     conds.push(notInArray(d.uri, excludeUris));
+  }
+
+  if (viewerDid) {
+    conds.push(
+      notBlockedByViewer(
+        schema,
+        viewerDid,
+        sql`${d.did}`,
+        atUriAuthoritySql(sql`${d.publicationUri}`),
+      ),
+    );
+  }
+
+  if (muterDid) {
+    conds.push(
+      notMutedByViewer(schema, muterDid, {
+        authorDidExpr: sql`${d.did}`,
+        ownerDidExpr: atUriAuthoritySql(sql`${d.publicationUri}`),
+        pubUriExpr: sql`${d.publicationUri}`,
+      }),
+    );
   }
 
   return conds;
@@ -1470,9 +1831,12 @@ export async function trendingArticles(
   limit: number,
   {
     excludeUris = [],
+    excludeWebBridge = false,
     offset = 0,
     readForDid,
     scope = "rail",
+    viewerDid,
+    muterDid,
   }: TrendingArticlesQuery = {},
 ): Promise<Array<ArticleCard>> {
   const d = schema.documents;
@@ -1487,7 +1851,18 @@ export async function trendingArticles(
       .leftJoin(p, eq(p.uri, d.publicationUri))
       .leftJoin(pr, eq(pr.did, p.did))
       .leftJoin(pa, eq(pa.did, d.did))
-      .where(and(...trendingArticleWhere(schema, scope, excludeUris)))
+      .where(
+        and(
+          ...trendingArticleWhere(
+            schema,
+            scope,
+            excludeUris,
+            excludeWebBridge,
+            viewerDid,
+            muterDid,
+          ),
+        ),
+      )
       .orderBy(desc(d.trendingScore), desc(d.publishedAt))
       .limit(limit)
       .offset(offset);
@@ -1504,7 +1879,18 @@ export async function trendingArticles(
     .leftJoin(p, eq(p.uri, d.publicationUri))
     .leftJoin(pr, eq(pr.did, p.did))
     .leftJoin(pa, eq(pa.did, d.did))
-    .where(and(...trendingArticleWhere(schema, scope, excludeUris)))
+    .where(
+      and(
+        ...trendingArticleWhere(
+          schema,
+          scope,
+          excludeUris,
+          excludeWebBridge,
+          viewerDid,
+          muterDid,
+        ),
+      ),
+    )
     .orderBy(desc(d.trendingScore), desc(d.publishedAt))
     .limit(poolSize);
 
@@ -1589,12 +1975,15 @@ export async function topNetworkArticles(
     limit,
     excludeUris = [],
     excludeReadForDid,
+    excludeWebBridge = false,
   }: {
     sinceDays: number;
     limit: number;
     excludeUris?: Array<string>;
     /** Omit documents this reader has already read (weekly digest). */
     excludeReadForDid?: string;
+    /** Hide web-bridge mirrors — see {@link ArticleCardQuery.excludeWebBridge}. */
+    excludeWebBridge?: boolean;
   },
 ): Promise<Array<ArticleCard>> {
   const d = schema.documents;
@@ -1613,6 +2002,9 @@ export async function topNetworkArticles(
   }
   if (excludeReadForDid) {
     conds.push(documentUnreadWhere(schema, excludeReadForDid));
+  }
+  if (excludeWebBridge) {
+    conds.push(notWebBridgeArticleWhere(schema));
   }
 
   const rows = await db
@@ -1712,6 +2104,7 @@ export async function weekInReviewArticles(
     limit,
     excludeUris = [],
     excludeReadForDid,
+    excludeWebBridge = false,
   }: {
     sinceDays: number;
     limit: number;
@@ -1719,6 +2112,8 @@ export async function weekInReviewArticles(
     excludeUris?: Array<string>;
     /** Omit documents this reader has already read (weekly digest). */
     excludeReadForDid?: string;
+    /** Hide web-bridge mirrors — see {@link ArticleCardQuery.excludeWebBridge}. */
+    excludeWebBridge?: boolean;
   },
 ): Promise<Array<ArticleCard>> {
   const d = schema.documents;
@@ -1762,6 +2157,9 @@ export async function weekInReviewArticles(
   if (excludeReadForDid) {
     conds.push(documentUnreadWhere(schema, excludeReadForDid));
   }
+  if (excludeWebBridge) {
+    conds.push(notWebBridgeArticleWhere(schema));
+  }
 
   const rows = await db
     .select({
@@ -1786,6 +2184,7 @@ export async function countTrendingDocuments(
   db: Db,
   schema: Schema,
   scope: TrendingArticlesScope = "rail",
+  { excludeWebBridge = false }: { excludeWebBridge?: boolean } = {},
 ): Promise<number> {
   const d = schema.documents;
   const p = schema.publications;
@@ -1794,7 +2193,7 @@ export async function countTrendingDocuments(
     .select({ count: sql<number>`count(*)`.mapWith(Number) })
     .from(d)
     .leftJoin(p, eq(p.uri, d.publicationUri))
-    .where(and(...trendingArticleWhere(schema, scope)));
+    .where(and(...trendingArticleWhere(schema, scope, [], excludeWebBridge)));
   return row?.count ?? 0;
 }
 
@@ -1809,8 +2208,9 @@ export async function trendingPublications(
   db: Db,
   _schema: Schema,
   limit: number,
+  opts: { excludeWebBridge?: boolean } = {},
 ): Promise<Array<PublicationCard>> {
-  const rows = await selectTrendingPublicationRows(db, limit);
+  const rows = await selectTrendingPublicationRows(db, limit, opts);
   return rows.map((row) => toPublicationCard(row));
 }
 
@@ -1819,8 +2219,9 @@ export async function trendingPublicationUris(
   db: Db,
   _schema: Schema,
   limit: number,
+  opts: { excludeWebBridge?: boolean } = {},
 ): Promise<Array<string>> {
-  const rows = await selectTrendingPublicationRows(db, limit);
+  const rows = await selectTrendingPublicationRows(db, limit, opts);
   return rows.map((row) => row.uri);
 }
 
@@ -1829,7 +2230,13 @@ type TrendingPublicationRow = Parameters<typeof toPublicationCard>[0];
 async function selectTrendingPublicationRows(
   db: Db,
   limit: number,
+  { excludeWebBridge = false }: { excludeWebBridge?: boolean } = {},
 ): Promise<Array<TrendingPublicationRow>> {
+  // `pr` is LEFT JOINed, so the NULL branch is load-bearing: an unresolved
+  // handle keeps the publication (see `notWebBridgePublicationWhere`).
+  const webBridgeFilter = excludeWebBridge
+    ? sql`AND (pr.handle IS NULL OR pr.handle NOT ILIKE ${WEB_BRIDGE_HANDLE_PATTERN})`
+    : sql``;
   const result = await db.execute(sql`
     SELECT
       p.uri,
@@ -1853,6 +2260,7 @@ async function selectTrendingPublicationRows(
       AND p.url NOT ILIKE ${EXCLUDED_PUBLICATION_URL_PATTERN}
       AND coalesce(st.document_count, 0) > 0
       AND coalesce(st.subscriber_count, 0) > 0
+      ${webBridgeFilter}
     ORDER BY
       coalesce(st.trending_score, 0) DESC,
       coalesce(st.subscriber_count, 0) DESC,
@@ -1915,12 +2323,23 @@ function publicationTagMatchSql(
  * `show_in_discover` and topic/document gating — this is the headline "Known
  * publications" tally, a simple count of real publications.
  */
-export async function countKnownPublications(db: Db): Promise<number> {
+export async function countKnownPublications(
+  db: Db,
+  { excludeWebBridge = false }: { excludeWebBridge?: boolean } = {},
+): Promise<number> {
+  const webBridgeFilter = excludeWebBridge
+    ? sql`AND NOT EXISTS (
+        SELECT 1 FROM profiles wb
+        WHERE wb.did = publications.did
+          AND wb.handle ILIKE ${WEB_BRIDGE_HANDLE_PATTERN}
+      )`
+    : sql``;
   const result = await db.execute(sql`
     SELECT count(*)::int AS count
     FROM publications
     WHERE deleted = false
       AND url NOT ILIKE ${EXCLUDED_PUBLICATION_URL_PATTERN}
+      ${webBridgeFilter}
   `);
   const row = result.rows[0] as { count?: number } | undefined;
   return row?.count ?? 0;
@@ -1935,8 +2354,8 @@ export async function countKnownPublications(db: Db): Promise<number> {
  * `topicMatch: "document"` — matching a publication's effective topic OR any of
  * its document tags — so every chip is guaranteed to return results.
  *
- * Reads the precomputed `discover_topic_counts` table (rebuilt each sweep by
- * `recomputeTopics()`); aggregating the vocabulary live is a ~2s network-wide
+ * Reads the precomputed `discover_topic_counts` table (refreshed daily by
+ * `recomputeDiscoverTopicCounts()`); aggregating the vocabulary live is a ~2s network-wide
  * `unnest(tags)` scan, far too slow for this request-path, Suspense-gated
  * query. `query`, when set, filters the vocabulary by a case-insensitive
  * substring (trigram-indexed) so the popover search can reach tags past the
@@ -1980,6 +2399,9 @@ export async function discoverDirectoryPublications(
     limit,
     offset,
     query = null,
+    excludeWebBridge = false,
+    viewerDid,
+    muterDid,
   }: {
     topic?: string | null;
     /** `effective` = publication topic only; `document` = topic or any document tag. */
@@ -1988,6 +2410,12 @@ export async function discoverDirectoryPublications(
     limit: number;
     offset: number;
     query?: string | null;
+    /** Hide web-bridge mirrors — see {@link ArticleCardQuery.excludeWebBridge}. */
+    excludeWebBridge?: boolean;
+    /** See {@link ArticleCardQuery.viewerDid}. */
+    viewerDid?: string;
+    /** See {@link ArticleCardQuery.muterDid}. */
+    muterDid?: string;
   },
 ): Promise<Array<PublicationCard>> {
   const p = schema.publications;
@@ -1997,6 +2425,20 @@ export async function discoverDirectoryPublications(
   const effectiveTopic = publicationEffectiveTopicSql(p);
 
   const conds = [discoverEligiblePublicationWhere(p)];
+  if (excludeWebBridge) {
+    conds.push(notWebBridgePublicationOwnerWhere(schema));
+  }
+  if (viewerDid) {
+    conds.push(notBlockedByViewer(schema, viewerDid, sql`${p.did}`));
+  }
+  if (muterDid) {
+    conds.push(
+      notMutedByViewer(schema, muterDid, {
+        authorDidExpr: sql`${p.did}`,
+        pubUriExpr: sql`${p.uri}`,
+      }),
+    );
+  }
   if (topic) {
     conds.push(
       topicMatch === "document"
@@ -2104,6 +2546,91 @@ function documentCarriesTagWhere(d: Schema["documents"], tag: string): SQL {
 }
 
 /**
+ * A tag page's document URIs with the web-bridge mirrors excluded, tag-first.
+ *
+ * Only for readers hiding the mirrors — {@link selectArticleCards} keeps its
+ * ordinary shape otherwise, and this one must not replace it. The ordinary shape
+ * lets Postgres walk `documents_published_idx` in date order and apply the tag
+ * as a filter, stopping once it has a page. That is excellent when most matches
+ * survive (the "news" tag: 86ms) and catastrophic when almost none do: the
+ * mirrors are ~99.85% of that tag, so the same walk discards ~200k index rows to
+ * find 24, at **3.2s** — and on tags whose survivors sit further down, **19s**.
+ *
+ * So the tag predicate is forced first instead, in a `MATERIALIZED` CTE that
+ * carries its own ordering columns: the GIN index yields the tag's documents,
+ * the mirror and eligibility filters run over that bounded set, and the top-N
+ * sort never returns to `documents`. Cost then tracks the tag's size rather than
+ * the survival rate — 142ms to 3.0s across the corpus's largest tags, against
+ * 3.2s to 19.2s for the ordinary shape with the same filter.
+ *
+ * Do NOT "simplify" this by joining the CTE back to `documents` to reuse the
+ * existing predicates: that hands the planner a hash join over the whole table
+ * and measured 6.5s. The CTE must carry every column the outer query needs.
+ *
+ * Same lesson, same fix as `topicDocumentUris` in `#/server/reader/topics`.
+ */
+async function selectTagArticleUris(
+  db: Db,
+  schema: Schema,
+  {
+    tag,
+    sort = "recent",
+    limit,
+    offset,
+  }: {
+    tag: string;
+    sort?: ArticleCardSort;
+    limit: number;
+    offset: number;
+  },
+): Promise<Array<string>> {
+  const orderBy =
+    sort === "trending"
+      ? sql`t.trending_score desc, t.published_at desc nulls last, t.uri desc`
+      : sort === "popular"
+        ? sql`(
+              select count(*)::int from ${schema.recommends} rec
+              where rec.document_uri = t.uri and rec.deleted = false
+            ) desc,
+            coalesce(t.backlink_count, 0) desc,
+            t.published_at desc nulls last, t.uri desc`
+        : sql`t.published_at desc nulls last, t.uri desc`;
+
+  const result = await db.execute(sql`
+    with tagged as materialized (
+      select uri, published_at, did, publication_uri, trending_score, backlink_count
+      from ${schema.documents}
+      where deleted = false
+        and (published_at is null or published_at <= now())
+        and immutable_normalized_tags(tags) @> array[${normalizedTagSql(tag)}]
+    )
+    select t.uri
+    from tagged t
+    left join ${schema.publications} p on p.uri = t.publication_uri
+    where (
+        p.uri is null
+        or (
+          p.deleted = false
+          and p.show_in_discover = true
+          and p.url not ilike ${EXCLUDED_PUBLICATION_URL_PATTERN}
+        )
+      )
+      and not exists (
+        select 1 from ${schema.profiles} wba
+        where wba.did = t.did and wba.handle ilike ${WEB_BRIDGE_HANDLE_PATTERN}
+      )
+      and not exists (
+        select 1 from ${schema.profiles} wbp
+        where wbp.did = p.did and wbp.handle ilike ${WEB_BRIDGE_HANDLE_PATTERN}
+      )
+    order by ${orderBy}
+    limit ${limit} offset ${offset}
+  `);
+
+  return executeRows<{ uri: string }>(result).map((row) => row.uri);
+}
+
+/**
  * Newest-first document ordering, spelled to match the `published_at DESC NULLS
  * LAST` indexes (`documents_published_idx`,
  * `documents_publication_published_idx`).
@@ -2115,8 +2642,23 @@ function documentCarriesTagWhere(d: Schema["documents"], tag: string): SQL {
  * documents plus a top-N heapsort (726ms) where the index gives an ordered scan
  * that stops after ~37 rows (0.3ms).
  */
-function documentsNewestFirst(d: Schema["documents"]): Array<SQL> {
+export function documentsNewestFirst(d: Schema["documents"]): Array<SQL> {
   return [sql`${d.publishedAt} desc nulls last`, desc(d.uri)];
+}
+
+/**
+ * Oldest-first document ordering — publication order rather than
+ * reverse-chronological, for a reader who has asked to read an archive from its
+ * beginning (see `#/lib/publication/archive-order`), and for the comic spine,
+ * whose absolute page numbers only mean anything front-to-back.
+ *
+ * Spelled as the exact reverse of {@link documentsNewestFirst}, down to the NULLS
+ * placement, so the two are mirror images and Postgres can serve either by
+ * walking the same `(publication_uri, published_at)` index in the matching
+ * direction rather than sorting.
+ */
+export function documentsOldestFirst(d: Schema["documents"]): Array<SQL> {
+  return [sql`${d.publishedAt} asc nulls first`, asc(d.uri)];
 }
 
 /**
@@ -2150,6 +2692,7 @@ export async function countTagArticles(
   db: Db,
   schema: Schema,
   tag: string,
+  { excludeWebBridge = false }: { excludeWebBridge?: boolean } = {},
 ): Promise<number> {
   const d = schema.documents;
   const p = schema.publications;
@@ -2164,6 +2707,7 @@ export async function countTagArticles(
         documentPublishedNotInFuture(d),
         discoverEligibleArticleWhere(p),
         documentCarriesTagWhere(d, tag),
+        ...(excludeWebBridge ? [notWebBridgeArticleWhere(schema)] : []),
       ),
     );
 
@@ -2221,11 +2765,20 @@ export async function tagDirectoryPublications(
     sort,
     limit,
     offset,
+    excludeWebBridge = false,
+    viewerDid,
+    muterDid,
   }: {
     tag: string;
     sort: TagDirectorySort;
     limit: number;
     offset: number;
+    /** Hide web-bridge mirrors — see {@link ArticleCardQuery.excludeWebBridge}. */
+    excludeWebBridge?: boolean;
+    /** See {@link ArticleCardQuery.viewerDid}. */
+    viewerDid?: string;
+    /** See {@link ArticleCardQuery.muterDid}. */
+    muterDid?: string;
   },
 ): Promise<Array<TagPublicationCard>> {
   const p = schema.publications;
@@ -2239,7 +2792,19 @@ export async function tagDirectoryPublications(
   const conds = [
     discoverEligiblePublicationWhere(p),
     publicationHasTaggedDocumentSql(p, d, tag),
+    ...(excludeWebBridge ? [notWebBridgePublicationOwnerWhere(schema)] : []),
   ];
+  if (viewerDid) {
+    conds.push(notBlockedByViewer(schema, viewerDid, sql`${p.did}`));
+  }
+  if (muterDid) {
+    conds.push(
+      notMutedByViewer(schema, muterDid, {
+        authorDidExpr: sql`${p.did}`,
+        pubUriExpr: sql`${p.uri}`,
+      }),
+    );
+  }
 
   const sortName = publicationSortNameSql(p.name, p.url);
 
@@ -2300,6 +2865,7 @@ export async function countTagPublications(
   db: Db,
   schema: Schema,
   tag: string,
+  { excludeWebBridge = false }: { excludeWebBridge?: boolean } = {},
 ): Promise<number> {
   const p = schema.publications;
   const d = schema.documents;
@@ -2311,6 +2877,9 @@ export async function countTagPublications(
       and(
         discoverEligiblePublicationWhere(p),
         publicationHasTaggedDocumentSql(p, d, tag),
+        ...(excludeWebBridge
+          ? [notWebBridgePublicationOwnerWhere(schema)]
+          : []),
       ),
     );
 
@@ -2322,6 +2891,7 @@ export async function selectTagPublicationUris(
   db: Db,
   schema: Schema,
   tag: string,
+  { excludeWebBridge = false }: { excludeWebBridge?: boolean } = {},
 ): Promise<Array<string>> {
   const p = schema.publications;
   const d = schema.documents;
@@ -2333,6 +2903,9 @@ export async function selectTagPublicationUris(
       and(
         discoverEligiblePublicationWhere(p),
         publicationHasTaggedDocumentSql(p, d, tag),
+        ...(excludeWebBridge
+          ? [notWebBridgePublicationOwnerWhere(schema)]
+          : []),
       ),
     )
     .orderBy(asc(p.uri));
@@ -2355,6 +2928,12 @@ export interface PublicationRailOpts {
    * pool; defaults to a per-viewer daily seed.
    */
   seed?: string;
+  /**
+   * Drop Bridgy Fed's bulk web-bridge mirrors (`*.web.brid.gy`) from the rail —
+   * see {@link notWebBridgePublicationWhere}. Filtered in SQL (not after the
+   * fact) so the rail still fills to `limit`.
+   */
+  excludeWebBridge?: boolean;
 }
 
 function mergeExcludeUris(...groups: Array<Array<string>>): Array<string> {
@@ -2382,6 +2961,7 @@ async function publicationCardsByOrderedUris(
   db: Db,
   schema: Schema,
   uris: Array<string>,
+  { excludeWebBridge = false }: { excludeWebBridge?: boolean } = {},
 ): Promise<Array<PublicationCard>> {
   if (uris.length === 0) {
     return [];
@@ -2401,6 +2981,7 @@ async function publicationCardsByOrderedUris(
         eq(p.deleted, false),
         discoverEligiblePublicationWhere(p),
         hasIndexedDocuments(db, schema, p.uri),
+        ...(excludeWebBridge ? [notWebBridgePublicationWhere(pr)] : []),
       ),
     );
 
@@ -2549,6 +3130,7 @@ async function backfillPublicationRail(
   limit: number,
   excludeUris: Array<string>,
   seed?: string,
+  opts: { excludeWebBridge?: boolean } = {},
 ): Promise<Array<PublicationCard>> {
   if (primary.length >= limit) {
     return primary.slice(0, limit);
@@ -2564,6 +3146,7 @@ async function backfillPublicationRail(
     limit - primary.length,
     seen,
     seed,
+    opts,
   );
   return [...primary, ...backfill].slice(0, limit);
 }
@@ -2582,6 +3165,7 @@ export async function popularPublications(
   limit: number,
   excludeUris: Array<string> = [],
   seed?: string,
+  { excludeWebBridge = false }: { excludeWebBridge?: boolean } = {},
 ): Promise<Array<PublicationCard>> {
   const p = schema.publications;
   const st = schema.publicationStats;
@@ -2593,6 +3177,9 @@ export async function popularPublications(
   ];
   if (excludeUris.length > 0) {
     conds.push(notInArray(p.uri, excludeUris));
+  }
+  if (excludeWebBridge) {
+    conds.push(notWebBridgePublicationWhere(pr));
   }
 
   const poolSize = seed ? limit * ROTATION_POOL_MULTIPLIER : limit;
@@ -2626,10 +3213,11 @@ export async function recommendedPublications(
 ): Promise<Array<PublicationCard>> {
   const excludeUris = opts.excludeUris ?? [];
   const seed = opts.seed ?? rotationSeed("recommended", did);
+  const railOpts = { excludeWebBridge: opts.excludeWebBridge ?? false };
   const followUris =
     opts.followUris ?? (await selectFollowUris(db, schema, did));
   if (followUris.length === 0) {
-    return popularPublications(db, schema, limit, excludeUris, seed);
+    return popularPublications(db, schema, limit, excludeUris, seed, railOpts);
   }
 
   const mergedExclude = mergeExcludeUris(excludeUris, followUris);
@@ -2652,6 +3240,7 @@ export async function recommendedPublications(
     db,
     schema,
     ranked.slice(0, limit * ROTATION_POOL_MULTIPLIER).map((row) => row.uri),
+    railOpts,
   );
   const primary = rotateRail(pool, limit, seed);
 
@@ -2662,6 +3251,7 @@ export async function recommendedPublications(
     limit,
     mergedExclude,
     seed,
+    railOpts,
   );
 }
 
@@ -2731,6 +3321,7 @@ export async function followedByPeopleYouFollow(
     db,
     schema,
     ranked.slice(0, limit * ROTATION_POOL_MULTIPLIER).map((row) => row.uri),
+    { excludeWebBridge: opts.excludeWebBridge ?? false },
   );
   return rotateRail(pool, limit, seed);
 }
@@ -2969,6 +3560,10 @@ export async function selectArticleCardsByUris(
     lite?: boolean;
     readForDid?: string;
     countOldPostsAsUnread?: boolean;
+    /** See {@link ArticleCardQuery.viewerDid}. */
+    viewerDid?: string;
+    /** See {@link ArticleCardQuery.muterDid}. */
+    muterDid?: string;
   },
 ): Promise<Array<ArticleCard>> {
   if (uris.length === 0) {
@@ -3001,6 +3596,25 @@ export async function selectArticleCardsByUris(
         inArray(d.uri, uris),
         eq(d.deleted, false),
         documentPublishedNotInFuture(d),
+        ...(opts?.viewerDid
+          ? [
+              notBlockedByViewer(
+                schema,
+                opts.viewerDid,
+                sql`${d.did}`,
+                atUriAuthoritySql(sql`${d.publicationUri}`),
+              ),
+            ]
+          : []),
+        ...(opts?.muterDid
+          ? [
+              notMutedByViewer(schema, opts.muterDid, {
+                authorDidExpr: sql`${d.did}`,
+                ownerDidExpr: atUriAuthoritySql(sql`${d.publicationUri}`),
+                pubUriExpr: sql`${d.publicationUri}`,
+              }),
+            ]
+          : []),
       ),
     );
 
@@ -3038,39 +3652,65 @@ async function coReadScoresForDocument(
   return result.rows as Array<ScoredUri>;
 }
 
-async function tagOverlapScoresForDocument(
-  db: Db,
+/**
+ * Cross-publication tag-overlap scores for one document.
+ *
+ * The candidate scan is gated by `immutable_normalized_tags(tags) && <anchor>`
+ * so `documents_tags_norm_idx` serves it — the same lesson as
+ * `documentCarriesTagWhere` / migration 0014, which this query predated. The
+ * `unnest(d.tags) ... WHERE lower(btrim(doc_tag)) IN (...)` form it replaces
+ * wrapped the column in functions the GIN index couldn't match, so the planner
+ * seq-scanned all ~3M `documents` rows into an ~11.8M-row nested loop and a
+ * disk-spilling HashAggregate: 16.9s mean, and **27% of all database time**
+ * across the fleet, since this fires on every article page view.
+ *
+ * The anchor stays a `MATERIALIZED` CTE rather than a second query — one round
+ * trip matters more than the SQL here (see memory `railway-neon-region-mismatch`).
+ * Scoring still unnests per candidate, but only over rows the index matched.
+ * Measured on the heaviest anchor (11 tags, ~18.9K matching docs): **254ms**.
+ */
+export function buildTagOverlapScoresSql(
   documentUri: string,
   publicationUri: string | null,
-): Promise<Array<ScoredUri>> {
+): SQL {
   const samePubFilter = publicationUri
     ? sql`AND d.publication_uri IS DISTINCT FROM ${publicationUri}`
     : sql``;
 
-  const result = await db.execute(sql`
-    WITH anchor_tags AS (
-      SELECT lower(btrim(tag)) AS tag
-      FROM documents d, unnest(d.tags) AS tag
-      WHERE d.uri = ${documentUri}
-        AND btrim(tag) <> ''
+  return sql`
+    WITH anchor AS MATERIALIZED (
+      SELECT immutable_normalized_tags(tags) AS tags
+      FROM documents
+      WHERE uri = ${documentUri}
     ),
     shared AS (
       SELECT d.uri,
              count(*)::float AS score
       FROM documents d,
-           unnest(d.tags) AS doc_tag
+           unnest(immutable_normalized_tags(d.tags)) AS doc_tag
       WHERE d.deleted = false
         AND d.uri != ${documentUri}
         AND d.published_at <= now()
         ${samePubFilter}
-        AND lower(btrim(doc_tag)) IN (SELECT tag FROM anchor_tags)
+        AND immutable_normalized_tags(d.tags) && (SELECT tags FROM anchor)
+        AND doc_tag = ANY((SELECT tags FROM anchor)::text[])
       GROUP BY d.uri
     )
     SELECT uri, score
     FROM shared
     ORDER BY score DESC
     LIMIT 30
-  `);
+  `;
+}
+
+async function tagOverlapScoresForDocument(
+  db: Db,
+  documentUri: string,
+  publicationUri: string | null,
+): Promise<Array<ScoredUri>> {
+  const result = await db.execute(
+    buildTagOverlapScoresSql(documentUri, publicationUri),
+  );
 
   return result.rows as Array<ScoredUri>;
 }
@@ -3086,6 +3726,8 @@ export async function relatedArticles(
     documentUri: string;
     publicationUri: string | null;
     limit: number;
+    /** Hide web-bridge mirrors — see {@link ArticleCardQuery.excludeWebBridge}. */
+    excludeWebBridge?: boolean;
   },
 ): Promise<Array<ArticleCard>> {
   const [coRead, tagOverlap] = await Promise.all([
@@ -3102,8 +3744,25 @@ export async function relatedArticles(
     return [];
   }
 
-  const uris = ranked.slice(0, opts.limit).map((row) => row.uri);
-  return selectArticleCardsByUris(db, schema, uris);
+  // Web-bridge mirrors are dropped after hydration rather than inside the two
+  // scoring queries: the tag-overlap scan is the query that once accounted for
+  // 27% of all database time (see `buildTagOverlapScoresSql`), and it is not
+  // worth another predicate. Both scorers cap at 30 URIs, so hydrating the whole
+  // merged pool and taking the first `limit` survivors still fills the rail —
+  // and the cards already carry both handles.
+  const uris = ranked
+    .slice(0, opts.excludeWebBridge ? ranked.length : opts.limit)
+    .map((row) => row.uri);
+  const cards = await selectArticleCardsByUris(db, schema, uris);
+  if (!opts.excludeWebBridge) return cards;
+
+  return cards
+    .filter(
+      (card) =>
+        !isWebBridgeHandle(card.authorHandle) &&
+        !isWebBridgeHandle(card.publicationOwnerHandle),
+    )
+    .slice(0, opts.limit);
 }
 
 export interface AuthorProfileStats {
@@ -3495,6 +4154,7 @@ export async function publicationSubscribers(
       description: pr.description,
       avatarUrl: pr.avatarUrl,
       bannerUrl: pr.bannerUrl,
+      isBot: pr.isBot,
     })
     .from(pr)
     .where(inArray(pr.did, dids));
@@ -3511,6 +4171,7 @@ export async function publicationSubscribers(
         description: null,
         avatarUrl: null,
         bannerUrl: null,
+        isBot: false,
       },
   );
 
@@ -3741,4 +4402,150 @@ export async function authorDocuments(
       .map((row) => toArticleCard(row)),
     total: (ownCount[0]?.count ?? 0) + (creditCount[0]?.count ?? 0),
   };
+}
+
+// ── Saved-page facets ───────────────────────────────────────────────────────
+
+/** One selectable value in a `/saved` filter facet, and how many of the
+ * reader's saved articles carry it. */
+export interface SavedFacetOption {
+  /** What the URL carries back: a publication AT-URI, an author DID, or a
+   * normalized tag. */
+  id: string;
+  label: string;
+  /** Second line under the label — an author's handle. Null where the label is
+   * already the whole identity (publications, tags). */
+  detail: string | null;
+  count: number;
+}
+
+export interface SavedFacets {
+  publications: Array<SavedFacetOption>;
+  authors: Array<SavedFacetOption>;
+  tags: Array<SavedFacetOption>;
+  /** A facet hit {@link SAVED_FACET_LIMIT} and was cut. The popover says so
+   * rather than presenting a partial list as the whole set. */
+  truncated: boolean;
+}
+
+/**
+ * Payload guard, not a design decision: the popover is type-ahead filtered and
+ * scrolls, so it can hold every publication, author, and tag a reader has saved
+ * — and cutting the list would quietly hide the rare value a reader is most
+ * likely to be searching for. This only stops a pathological repo from shipping
+ * tens of thousands of rows to the client. `truncated` says when it bit.
+ */
+const SAVED_FACET_LIMIT = 500;
+
+/**
+ * Every publication, author, and tag present in one reader's saved articles,
+ * with counts — the option list behind `/saved`'s filter popover.
+ *
+ * One round trip for all three facets (a `UNION ALL` over a shared CTE) rather
+ * than three queries: the Railway↔Neon hop dominates this page's latency, so
+ * what costs is the number of statements, not the size of the SQL.
+ *
+ * Tags group by their normalized form (`lower(btrim(...))`, matching
+ * `immutable_normalized_tags`) so "AT Proto" and "atproto" are one option, and
+ * the id sent back through the URL is that same normalized value.
+ */
+export async function selectSavedFacets(
+  db: Db,
+  schema: Schema,
+  did: string,
+): Promise<SavedFacets> {
+  const b = schema.bookmarks;
+  const d = schema.documents;
+  const p = schema.publications;
+  const pr = schema.profiles;
+
+  // `rank` is applied per facet (`partition by kind`) and one row past the cap
+  // is kept, so the caller can tell "exactly at the cap" from "cut" without a
+  // second count.
+  const result = await db.execute(sql`
+    with saved as (
+      select ${d.did} as author_did,
+             ${d.publicationUri} as publication_uri,
+             ${d.tags} as tags
+      from ${b}
+      join ${d} on ${d.uri} = ${b.documentUri}
+      where ${b.ownerDid} = ${did}
+        and ${b.deleted} = false
+        and ${d.deleted} = false
+    ),
+    facets as (
+      select 'publication' as kind,
+             s.publication_uri as id,
+             coalesce(${p.name}, s.publication_uri) as label,
+             null::text as detail,
+             count(*)::int as hits
+      from saved s
+      join ${p} on ${p.uri} = s.publication_uri
+      group by s.publication_uri, ${p.name}
+      union all
+      select 'author' as kind,
+             s.author_did as id,
+             coalesce(nullif(btrim(${pr.displayName}), ''), ${pr.handle}, s.author_did) as label,
+             ${pr.handle} as detail,
+             count(*)::int as hits
+      from saved s
+      left join ${pr} on ${pr.did} = s.author_did
+      group by s.author_did, ${pr.displayName}, ${pr.handle}
+      union all
+      select 'tag' as kind,
+             lower(btrim(t.tag)) as id,
+             lower(btrim(t.tag)) as label,
+             null::text as detail,
+             count(*)::int as hits
+      from saved s
+      cross join lateral unnest(s.tags) as t(tag)
+      where btrim(t.tag) <> ''
+      group by lower(btrim(t.tag))
+    )
+    select kind, id, label, detail, hits
+    from (
+      select f.*,
+             row_number() over (
+               partition by f.kind order by f.hits desc, f.label asc
+             ) as rank
+      from facets f
+    ) ranked
+    where rank <= ${SAVED_FACET_LIMIT + 1}
+    order by kind asc, hits desc, label asc
+  `);
+
+  const facets: SavedFacets = {
+    authors: [],
+    publications: [],
+    tags: [],
+    truncated: false,
+  };
+  const buckets: Record<string, Array<SavedFacetOption>> = {
+    author: facets.authors,
+    publication: facets.publications,
+    tag: facets.tags,
+  };
+
+  for (const row of executeRows<{
+    kind: string;
+    id: string | null;
+    label: string | null;
+    detail: string | null;
+    hits: number | string;
+  }>(result)) {
+    const bucket = buckets[row.kind];
+    if (!bucket || row.id == null) continue;
+    if (bucket.length >= SAVED_FACET_LIMIT) {
+      facets.truncated = true;
+      continue;
+    }
+    bucket.push({
+      count: Number(row.hits) || 0,
+      detail: row.detail,
+      id: row.id,
+      label: row.label ?? row.id,
+    });
+  }
+
+  return facets;
 }

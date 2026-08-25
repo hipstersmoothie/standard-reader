@@ -26,7 +26,9 @@ import { Link, createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
 
+import { usePullToRefresh } from "#/components/reader/pull-to-refresh";
 import { authorApi } from "#/integrations/tanstack-query/api-author.functions";
+import { blocksApi } from "#/integrations/tanstack-query/api-blocks.functions";
 import { notesApi } from "#/integrations/tanstack-query/api-notes.functions";
 import { publicationApi } from "#/integrations/tanstack-query/api-publication.functions";
 import type {
@@ -37,13 +39,21 @@ import type {
 import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
 import { getPublicUrlClient } from "#/lib/public-url";
+import type { ArchiveOrder } from "#/lib/publication/archive-order";
 import {
+  canonicalLink,
   publicationFeedUrl,
   publicationOgImageUrl,
   siteSocialMeta,
 } from "#/lib/site-metadata";
 import { useTrackReadingHistory } from "#/lib/use-track-reading-history";
 
+import {
+  ComicShelf,
+  ComicShelfSkeleton,
+} from "../components/comic/comic-shelf";
+import { AccountLabelsForDid } from "../components/reader/account-labels";
+import { BlockedNotice } from "../components/reader/blocked-notice";
 import { ArticleRow, FeatureArticle } from "../components/reader/cards";
 import { FeedLoadMore } from "../components/reader/feed-load-more";
 import {
@@ -51,6 +61,7 @@ import {
   publicationUriFromParams,
 } from "../components/reader/format";
 import { formatLastActive } from "../components/reader/format-i18n";
+import { MutedPill } from "../components/reader/muted-pill";
 import {
   Handle,
   PublicationAvatar,
@@ -141,10 +152,24 @@ export const Route = createFileRoute("/_layout/p/$did/$rkey")({
     }
     const results = await Promise.all(awaitables);
     const header = results[0] as {
-      publication: { name: string; description: string };
+      publication: {
+        name: string;
+        description: string;
+        serial?: { kind: string } | null;
+      };
       owner: { did: string; handle: string };
       theme: PublicationThemeColors;
     } | null;
+
+    // A comic's archive is replaced by a shelf of covers, so the shelf is part
+    // of the page's first paint rather than something that pops in after it.
+    if (header?.publication.serial?.kind === "comic" && deps.filter === "all") {
+      await context.queryClient
+        .ensureQueryData(
+          publicationApi.getComicShelfQueryOptions(uri, { readerScope }),
+        )
+        .catch(() => null);
+    }
 
     if (header) {
       void context.queryClient.prefetchQuery(
@@ -183,9 +208,12 @@ export const Route = createFileRoute("/_layout/p/$did/$rkey")({
           match.params.rkey,
         ),
       }),
-      // standard.site discovery hint — the AT-URI of the rendered publication.
-      // See https://standard.site/docs/verification/#discovery-hint
       links: [
+        // Self-canonical: this is our directory of the publication, not a copy
+        // of its home page. Folds the `?filter=` / `?sort=` views onto one URL.
+        canonicalLink(`${baseUrl}${match.pathname}`),
+        // standard.site discovery hint — the AT-URI of the rendered publication.
+        // See https://standard.site/docs/verification/#discovery-hint
         {
           rel: "site.standard.publication",
           href: publicationUriFromParams(match.params.did, match.params.rkey),
@@ -522,6 +550,7 @@ function PublicationPending() {
 }
 
 function PublicationProfilePage() {
+  usePullToRefresh();
   return <PublicationProfile />;
 }
 
@@ -538,6 +567,15 @@ function PublicationProfile() {
   );
   const signedIn = Boolean(session?.user);
 
+  // The block rides on the header itself, not a second query: resolving it
+  // after first paint would mean painting the blocked owner's hero — name,
+  // avatar, description — and then taking it away.
+  const block = header?.block ?? null;
+  const { data: canWrite } = useQuery({
+    ...blocksApi.getBlockCapabilityQueryOptions(),
+    enabled: Boolean(block),
+  });
+
   const { data: socialProof } = useQuery({
     ...publicationApi.getPublicationSocialProofQueryOptions(uri),
     enabled: signedIn,
@@ -549,6 +587,20 @@ function PublicationProfile() {
         <div {...stylex.props(styles.emptyNote)}>
           <Trans>We couldn’t find that publication.</Trans>
         </div>
+      </ReaderContent>
+    );
+  }
+
+  if (block) {
+    return (
+      <ReaderContent>
+        <BlockedNotice
+          block={block}
+          name={header.owner.displayName ?? header.owner.handle}
+          handle={header.owner.handle}
+          avatarUrl={header.owner.avatarUrl}
+          canWrite={canWrite?.canWrite ?? false}
+        />
       </ReaderContent>
     );
   }
@@ -614,6 +666,14 @@ function PublicationProfileContent({
     setNextOffset(initialPage.nextOffset);
   }, [initialPage]);
 
+  // Whether a book of this publication would have anything in it. A bridged
+  // mirror's archive is all link posts, and offering a download there would be
+  // a button that 404s — so the first page of the archive decides, which is the
+  // same set the book is built from.
+  const hasDownloadableArticles = documents.some(
+    (document) => document.hasRenderableBody,
+  );
+
   const { enabled: trackReading } = useTrackReadingHistory();
   const isUnread = (article: ArticleCard) =>
     isArticleUnreadForReader(queryClient, article, {
@@ -644,12 +704,48 @@ function PublicationProfileContent({
           unreadDocumentUris.includes(doc.uri) ? { ...doc, isRead: true } : doc,
         ),
       );
+      // The server marks the whole publication read, not just the rows this page
+      // has loaded, so the shelf's dots all go out — clearing them here rather
+      // than refetching, because the `read` records reach the read model through
+      // the firehose and a refetch this soon would paint them straight back on.
+      queryClient.setQueryData(
+        publicationApi.getComicShelfQueryOptions(uri, { readerScope }).queryKey,
+        (shelf) =>
+          shelf
+            ? {
+                ...shelf,
+                issues: shelf.issues.map((issue) =>
+                  issue.unreadPages.length > 0
+                    ? { ...issue, unreadPages: [] }
+                    : issue,
+                ),
+              }
+            : shelf,
+      );
     },
     onSuccess: () => {
       setMarkAllReadCloseSignal((count) => count + 1);
     },
     onError: () => {
       invalidateReadQueries(queryClient);
+    },
+  });
+
+  // The archive's order lives in a cookie, so the server owns it — there's no
+  // client state to keep in step. Setting it invalidates this publication's
+  // document queries; the refetch comes back the other way round and carries the
+  // new `order`, which is also what re-shelves a comic's covers (the shelf's own
+  // query is untouched — the spine is always in publication order, and the shelf
+  // reverses it for display).
+  const { mutate: setArchiveOrder } = useMutation({
+    mutationFn: (next: ArchiveOrder) =>
+      publicationApi.setPublicationArchiveOrder({
+        data: { publicationUri: uri, order: next },
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: ["publication", "documents", uri],
+      });
     },
   });
 
@@ -686,6 +782,23 @@ function PublicationProfileContent({
     }
   }, [filter, nextOffset, uri]);
 
+  // A comic posts one page per document, so its full archive is a long list of
+  // near-identical rows. The shelf shows that art instead — collapsed into
+  // issues when the titles carry issue numbers, one card per post when they
+  // don't. Only over the full archive: the read/unread filters are per-page, and
+  // a shelf can't express "half of issue 3".
+  const shelfEnabled = pub.serial?.kind === "comic" && filter === "all";
+  const { data: shelf, isPending: shelfPending } = useQuery({
+    ...publicationApi.getComicShelfQueryOptions(uri, { readerScope }),
+    enabled: shelfEnabled,
+  });
+  // Until it resolves we don't know whether there is any art to shelve, and
+  // painting the page list only to swap it for a shelf is the worse flicker.
+  // The loader awaits this for comics, so it is normally already settled. An
+  // empty shelf means the posts carry no images at all, and the list is right.
+  const shelfIssues = shelf?.issues ?? [];
+  const showShelf = shelfEnabled && (shelfPending || shelfIssues.length > 0);
+
   const lead = documents[0];
   const rest = documents.slice(1);
 
@@ -717,10 +830,13 @@ function PublicationProfileContent({
               pub={pub}
               pageUrl={`${getPublicUrlClient()}/p/${did}/${rkey}`}
               feedUrl={publicationFeedUrl(getPublicUrlClient(), did, rkey)}
+              hasDownloadableArticles={hasDownloadableArticles}
               signedIn={signedIn}
               embed={embedMeta}
               markAllRead={markAllReadAction}
               filter={filter}
+              order={initialPage.order}
+              onOrderChange={(next) => setArchiveOrder(next)}
               trackReading={trackReading}
               onFilterChange={(next) => {
                 void navigate({ search: { filter: next }, resetScroll: false });
@@ -733,6 +849,14 @@ function PublicationProfileContent({
               {pub.description}
             </p>
           ) : null}
+
+          {/* Below the description, matching the author profile: a label is a
+              third party's statement about this account, so it reads after the
+              publication's own words rather than interrupting its identity line.
+              The muted pill sits with them — the reader's own label, and the
+              only visible trace of a mute on a page muting leaves readable. */}
+          <MutedPill subject={pub.uri} kind="publication" signedIn={signedIn} />
+          <AccountLabelsForDid did={pub.did} readerScope={readerScope} />
 
           <div {...stylex.props(styles.statStrip)}>
             <Stat
@@ -756,7 +880,20 @@ function PublicationProfileContent({
       <ReaderContent>
         <Flex direction="column" gap="6xl" style={styles.writing}>
           <PublicationLatestNote publicationUri={uri} />
-          {documents.length === 0 ? (
+          {showShelf ? (
+            <Flex direction="column" gap="5xl">
+              {shelfIssues.length > 0 ? (
+                <ComicShelf
+                  issues={shelfIssues}
+                  order={initialPage.order}
+                  trackReading={trackReading}
+                  signedIn={signedIn}
+                />
+              ) : (
+                <ComicShelfSkeleton />
+              )}
+            </Flex>
+          ) : documents.length === 0 ? (
             <div {...stylex.props(styles.emptyNote)}>
               {filter === "unread" ? (
                 <Trans>You’ve read everything from this publication.</Trans>
@@ -788,7 +925,8 @@ function PublicationProfileContent({
               ))}
             </div>
           )}
-          {documents.length > 0 ? (
+          {/* The shelf is complete on arrival — every issue, no paging. */}
+          {!showShelf && documents.length > 0 ? (
             <div>
               <FeedLoadMore
                 hasMore={nextOffset != null}
@@ -802,7 +940,11 @@ function PublicationProfileContent({
                 </div>
               ) : nextOffset == null ? (
                 <div {...stylex.props(styles.endNote)}>
-                  <Trans>You&apos;ve reached the end.</Trans>
+                  {pub.serial ? (
+                    <Trans>That&apos;s every issue published so far.</Trans>
+                  ) : (
+                    <Trans>You&apos;ve reached the end.</Trans>
+                  )}
                 </div>
               ) : null}
             </div>

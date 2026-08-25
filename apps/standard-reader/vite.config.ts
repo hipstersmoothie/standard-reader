@@ -150,6 +150,17 @@ const config = defineConfig({
       devOptions: { enabled: false },
       workbox: {
         globDirectory: ".output/public",
+        // Web push listeners (`public/push-sw.js`). Kept as a separate classic
+        // script rather than moving the whole SW to `injectManifest`, which
+        // would mean hand-porting all of the runtime caching below.
+        //
+        // NOTE: `push-sw.js` is ALSO listed in `globPatterns` on purpose.
+        // `importScripts` bakes a bare URL into `sw.js`, so editing the imported
+        // file changes zero bytes of `sw.js` and browsers keep running the old
+        // push handler indefinitely. Precaching it puts its revision hash in the
+        // manifest inside `sw.js`, so the SW byte-diffs and the update actually
+        // reaches people.
+        importScripts: ["/push-sw.js"],
         // Precache ONLY the small, always-needed shell: the offline fallback,
         // the manifest, and the app icons. Deliberately do NOT precache the
         // hashed JS/CSS chunks — this app ships heavy, lazily-loaded features
@@ -160,6 +171,8 @@ const config = defineConfig({
         globPatterns: [
           "offline.html",
           "manifest.json",
+          // Not for offline use — see the `importScripts` note above.
+          "push-sw.js",
           "favicon.svg",
           "apple-touch-icon.png",
           "icon-*.png",
@@ -181,7 +194,14 @@ const config = defineConfig({
             options: {
               cacheName: "pages",
               networkTimeoutSeconds: 3,
-              expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 },
+              // 30 days, not 24h: an installed app is launched by icon, and a
+              // cold start that lands here after a week away must still find a
+              // document to boot from. `offline-sync.ts` re-warms `/` on every
+              // successful pass, so entries stay fresh while the app is used.
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 60 * 24 * 30,
+              },
               precacheFallback: { fallbackURL: "/offline.html" },
             },
           },
@@ -216,8 +236,43 @@ const config = defineConfig({
             handler: "CacheFirst",
             options: {
               cacheName: "images",
-              expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 30 },
+              // 200 covered "images you happened to scroll past". Offline sync
+              // warms every image in every unread body, and a single
+              // image-heavy article can carry dozens, so 200 evicted the
+              // earliest articles before the pass had finished.
+              expiration: {
+                maxEntries: 1500,
+                maxAgeSeconds: 60 * 60 * 24 * 30,
+              },
               cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
+            // Read server functions. `createServerFn({ method: "GET" })`
+            // serialises its args into the query string, so
+            // `/_serverFn/<id>?payload=…` is a stable per-call URL — that is
+            // what makes offline reading possible at all. Workbox routes are
+            // GET-only, so mutations (POST) never land here.
+            //
+            // NetworkFirst, not StaleWhileRevalidate: this cache backs feeds,
+            // and serving yesterday's Latest for a beat on every navigation is
+            // worse than waiting. Responses may be framed/NDJSON streams —
+            // they are stored as opaque bytes and never parsed here.
+            //
+            // Entries are personal (the reader's DID comes from the session
+            // cookie, not the URL), so signing out drops this whole cache —
+            // see `clearOfflineData()` in `#/pwa/offline-cache`.
+            urlPattern: ({ url, sameOrigin }) =>
+              sameOrigin && url.pathname.startsWith("/_serverFn/"),
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "data",
+              networkTimeoutSeconds: 10,
+              expiration: {
+                maxEntries: 3000,
+                maxAgeSeconds: 60 * 60 * 24 * 30,
+              },
+              cacheableResponse: { statuses: [200] },
             },
           },
         ],

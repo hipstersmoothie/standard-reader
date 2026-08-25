@@ -10,17 +10,31 @@ import { STANDARD_NSID } from "#/lib/atproto/nsids";
 import { parseInternalRoute } from "#/lib/internal-route";
 import { getPublicUrl } from "#/lib/public-url";
 import { withoutExcludedPublications } from "#/lib/publication/exclusions";
+import { resolveSerialPublication } from "#/lib/publication/serial";
 import { blobCid, cdnImageUrl } from "#/server/atproto/blob";
 import { listRepoRecords } from "#/server/atproto/fetch-record";
 import { resolveIdentity } from "#/server/atproto/identity";
 import type { PublicationRecord } from "#/server/atproto/types";
-import { ensureTracked } from "#/server/ingest/tap-client";
+import {
+  atUriAuthoritySql,
+  blockFilterDid,
+  filterBlockedCards,
+  notBlockedByViewer,
+} from "#/server/blocks/blocks";
+import { ensureTracked } from "#/server/ingest/tracked-repos";
+import {
+  filterMutedCards,
+  muteFilterDid,
+  notMutedByViewer,
+} from "#/server/mutes/mutes";
 import { observe } from "#/server/observability/log";
 import { attachReaderSpanContext } from "#/server/observability/span-context.ts";
 import { attachCommentCountsToArticles } from "#/server/reader/document-comments";
 import {
   discoverEligiblePublicationWhere,
   notExcludedPublicationArticleWhere,
+  notWebBridgeArticleWhere,
+  notWebBridgePublicationOwnerWhere,
 } from "#/server/reader/publication-filters";
 import { attachViewerRecommendedToArticles } from "#/server/reader/recommended-by";
 import {
@@ -94,17 +108,21 @@ const searchPublications = createServerFn({ method: "GET" })
   .validator(searchPageInput)
   .handler(
     observe("search.publications", async ({ data, context }, span) => {
-      const { db, schema } = context;
+      const { db, schema, excludeWebBridgeEnabled } = context;
       span.set("q", data.q);
       span.set("offset", data.offset);
-      await attachReaderSpanContext(span, getRequest());
+      const did = await attachReaderSpanContext(span, getRequest());
 
+      // Only the ranked search is filtered. The URL / handle fallbacks below are
+      // a reader naming one specific account — answering "not found" because it
+      // happens to be a mirror would be wrong.
       const page = await searchIndexedPublications(
         db,
         schema,
         data.q,
         data.limit,
         data.offset,
+        { excludeWebBridge: excludeWebBridgeEnabled },
       );
 
       let items = page.items;
@@ -124,6 +142,17 @@ const searchPublications = createServerFn({ method: "GET" })
           items = await resolvePublicationCards(db, schema, hints.handleLookup);
         }
         total = items.length;
+      }
+
+      const visible = await filterMutedCards(
+        db,
+        schema,
+        did,
+        await filterBlockedCards(db, schema, did, items),
+      );
+      if (visible.length !== items.length) {
+        total = Math.max(0, total - (items.length - visible.length));
+        items = visible;
       }
 
       span.set("total", total);
@@ -147,7 +176,7 @@ const searchArticles = createServerFn({ method: "GET" })
   .validator(searchPageInput)
   .handler(
     observe("search.articles", async ({ data, context }, span) => {
-      const { db, schema } = context;
+      const { db, schema, excludeWebBridgeEnabled } = context;
       const d = schema.documents;
       const p = schema.publications;
       const pr = schema.profiles;
@@ -169,10 +198,36 @@ const searchArticles = createServerFn({ method: "GET" })
         hints,
       );
       const matchClause = documentMatchSql(d, tsq, hints, authorMatch);
+      const [blockDid, muteDid] = await Promise.all([
+        blockFilterDid(db, schema, did),
+        muteFilterDid(db, schema, did),
+      ]);
       const articleWhere = and(
         eq(d.deleted, false),
         matchClause,
         notExcludedPublicationArticleWhere(p),
+        ...(excludeWebBridgeEnabled ? [notWebBridgeArticleWhere(schema)] : []),
+        // Search is paginated, so blocked authors are excluded in SQL rather
+        // than dropped from the page — see `notBlockedByViewer`.
+        ...(blockDid
+          ? [
+              notBlockedByViewer(
+                schema,
+                blockDid,
+                sql`${d.did}`,
+                atUriAuthoritySql(sql`${d.publicationUri}`),
+              ),
+            ]
+          : []),
+        ...(muteDid
+          ? [
+              notMutedByViewer(schema, muteDid, {
+                authorDidExpr: sql`${d.did}`,
+                ownerDidExpr: atUriAuthoritySql(sql`${d.publicationUri}`),
+                pubUriExpr: sql`${d.publicationUri}`,
+              }),
+            ]
+          : []),
       );
 
       // Page the bare document URIs (newest first) in an inner subquery, then
@@ -251,6 +306,7 @@ async function searchIndexedPublications(
   q: string,
   limit: number,
   offset: number,
+  { excludeWebBridge = false }: { excludeWebBridge?: boolean } = {},
 ): Promise<{ items: Array<PublicationCard>; total: number }> {
   const p = schema.publications;
   const st = schema.publicationStats;
@@ -260,6 +316,7 @@ async function searchIndexedPublications(
   const pubWhere = and(
     discoverEligiblePublicationWhere(p),
     publicationMatchSql(p, pr, tsq, hints),
+    ...(excludeWebBridge ? [notWebBridgePublicationOwnerWhere(schema)] : []),
   );
 
   const [countRow, publicationQueryRows] = await Promise.all([
@@ -677,6 +734,7 @@ async function listRepoPublications(
           topic: null,
           verified: false,
           hiddenFromDiscover: false,
+          serial: null,
           subscriberCount: 0,
           documentCount: 0,
           lastDocumentAt: null,
@@ -695,6 +753,13 @@ async function listRepoPublications(
         topic: null,
         verified: false,
         hiddenFromDiscover: record.preferences?.showInDiscover === false,
+        // Read straight off the record — this card is built from the repo (a
+        // publication not yet in the read model), so there is no derived
+        // `serial_kind` to pair with the publisher's declaration yet.
+        serial: resolveSerialPublication(
+          record.preferences?.prevNextDirection,
+          null,
+        ),
         subscriberCount: 0,
         documentCount: 0,
         lastDocumentAt: null,

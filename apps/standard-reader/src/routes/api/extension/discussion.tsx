@@ -1,6 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { badRequestResponse } from "#/server/extension/auth.server";
+import {
+  badRequestResponse,
+  getExtensionSession,
+} from "#/server/extension/auth.server";
 import { resolveDiscussion } from "#/server/extension/discussion.server";
 
 export const Route = createFileRoute("/api/extension/discussion")({
@@ -13,12 +16,21 @@ export const Route = createFileRoute("/api/extension/discussion")({
           return badRequestResponse("documentUri query param required");
         }
 
-        const [{ db }, schema] = await Promise.all([
-          import("#/db/index.server"),
-          import("#/db/schema"),
-        ]);
+        const [{ db }, schema, { resolveReaderSessionPreferences }] =
+          await Promise.all([
+            import("#/db/index.server"),
+            import("#/db/schema"),
+            import("#/server/reader/session-preferences.server"),
+          ]);
 
-        const discussion = await resolveDiscussion(db, schema, documentUri);
+        const [{ excludeWebBridgeEnabled }, session] = await Promise.all([
+          resolveReaderSessionPreferences(db, schema),
+          getExtensionSession(request),
+        ]);
+        const discussion = await resolveDiscussion(db, schema, documentUri, {
+          excludeWebBridge: excludeWebBridgeEnabled,
+          viewerDid: session?.did,
+        });
         return Response.json(discussion);
       },
     },

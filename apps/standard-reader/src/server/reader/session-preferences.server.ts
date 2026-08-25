@@ -10,6 +10,10 @@ import {
   parseCountOldPostsAsUnreadCookie,
 } from "#/lib/count-old-posts-as-unread";
 import {
+  DEFAULT_EXCLUDE_WEB_BRIDGE,
+  dbValueToExcludeWebBridge,
+} from "#/lib/exclude-web-bridge";
+import {
   TRACK_READING_HISTORY_COOKIE,
   dbValueToTrackReadingHistory,
   parseTrackReadingHistoryCookie,
@@ -18,6 +22,11 @@ import {
 export interface ReaderSessionPreferences {
   trackReadingEnabled: boolean;
   countOldPostsAsUnreadEnabled: boolean;
+  /**
+   * "Hide mirrored websites" — see `#/lib/exclude-web-bridge`. Account-level
+   * only (no cookie mirror), so guests and expired sessions get the default.
+   */
+  excludeWebBridgeEnabled: boolean;
 }
 
 function readSessionTokenCookie(
@@ -44,6 +53,7 @@ function preferencesFromCookies(): ReaderSessionPreferences {
     countOldPostsAsUnreadEnabled: parseCountOldPostsAsUnreadCookie(
       getCookie(COUNT_OLD_POSTS_AS_UNREAD_COOKIE),
     ),
+    excludeWebBridgeEnabled: DEFAULT_EXCLUDE_WEB_BRIDGE,
   };
 }
 
@@ -70,6 +80,7 @@ export async function resolveReaderSessionPreferences(
     return {
       trackReadingEnabled: false,
       countOldPostsAsUnreadEnabled: DEFAULT_COUNT_OLD_POSTS_AS_UNREAD,
+      excludeWebBridgeEnabled: DEFAULT_EXCLUDE_WEB_BRIDGE,
     };
   }
 
@@ -82,6 +93,7 @@ export async function resolveReaderSessionPreferences(
           columns: {
             trackReadingHistory: true,
             countOldPostsAsUnread: true,
+            excludeWebBridge: true,
           },
         },
       },
@@ -98,6 +110,9 @@ export async function resolveReaderSessionPreferences(
         ),
         countOldPostsAsUnreadEnabled: dbValueToCountOldPostsAsUnread(
           sessionRow.user.countOldPostsAsUnread ?? null,
+        ),
+        excludeWebBridgeEnabled: dbValueToExcludeWebBridge(
+          sessionRow.user.excludeWebBridge ?? null,
         ),
       };
     }

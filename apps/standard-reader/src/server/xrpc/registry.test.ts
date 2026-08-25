@@ -8,9 +8,7 @@ import { API_DOCS_CATALOG } from "#/lib/api-docs/catalog";
 import { XRPC_REGISTRY, parseXrpcNsid } from "./registry";
 
 /**
- * Lexicons not served as AppView XRPC methods: repo records, shared defs, and
- * the labeler-service endpoints (served by labeler services like claudeslop, not
- * the AppView — see `services/claudeslop/`).
+ * Lexicons not served as AppView XRPC methods: repo records and shared defs.
  */
 const NON_XRPC_LEXICON_STEMS = new Set([
   "authBasicFeatures",
@@ -20,9 +18,8 @@ const NON_XRPC_LEXICON_STEMS = new Set([
   "collectionsPublication",
   "defs",
   "graph.follow",
+  "graph.mute",
   "labeler.defs",
-  "labeler.getServices",
-  "labeler.service",
   "labeler.subscription",
   "labelerSubscription",
   "list",

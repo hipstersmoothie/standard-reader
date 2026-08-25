@@ -8,23 +8,27 @@ import type {
   CollectionSidecarRecord,
   CollectionsPublicationRecord,
   DocumentRecord,
-  LabelerServiceRecord,
   LabelerSubscriptionRecord,
   ListRecord,
   ListSaveRecord,
   MochottArticleRecord,
+  MuteRecord,
   PublicationRecord,
   PublicationThemeRecord,
   ReadRecord,
   RecommendRecord,
   SidebarPrefRecord,
   SubscriptionRecord,
-  TapEvent,
-  TapRecordPayload,
+  IngestEvent,
+  IngestRecordPayload,
   UserFollowRecord,
 } from "../atproto/types.ts";
 import { Collections, buildAtUri } from "../atproto/uri.ts";
 import { logEvent } from "../observability/log.ts";
+import {
+  enqueuePostNotification,
+  recordClaimsPublishDate,
+} from "../push/enqueue.ts";
 import {
   applyIdentity,
   deleteRecord,
@@ -33,11 +37,11 @@ import {
   upsertCollectionSidecar,
   upsertCollectionsPublication,
   upsertDocument,
-  upsertLabelerService,
   upsertLabelerSubscription,
   upsertList,
   upsertListSave,
   upsertMochottArticle,
+  upsertMute,
   upsertPublication,
   upsertPublicationTheme,
   upsertRead,
@@ -47,9 +51,86 @@ import {
   upsertUserFollow,
 } from "./handlers.ts";
 
-const STREAM_ID = "tap";
+/** Must match `jetstream-channel`'s cursor row — same stream, one row. */
+const STREAM_ID = "jetstream";
 
-async function handleRecord(payload: TapRecordPayload): Promise<void> {
+/**
+ * Collections already reported by {@link handleRecord}'s default branch.
+ *
+ * tap's own subscription filter is what makes that branch unreachable, so a hit
+ * means the filter and this dispatcher disagree — worth knowing. But the
+ * disagreement arrives at firehose volume: if a chatty collection ever slips
+ * through, a per-event log would bury every other line in the service (and the
+ * telemetry bill) under it. One line per collection per process names the leak,
+ * which is the part we can't get anywhere else; tap already knows the rate.
+ */
+const reportedUnmodeledCollections = new Set<string>();
+
+function noteUnmodeledCollection(collection: string, uri: string): void {
+  if (reportedUnmodeledCollections.has(collection)) {
+    return;
+  }
+  reportedUnmodeledCollections.add(collection);
+  logEvent("ingest.recordDropped", {
+    collection,
+    ok: false,
+    reason: "unmodeled-collection",
+    uri,
+  });
+}
+
+/**
+ * Queue a web push notification for a document we just indexed.
+ *
+ * Gated on `live` because this dispatcher is shared with the PDS reconcile
+ * replay (`repo-sync.ts` sets `live: false`) — without it, repairing a repo
+ * would notify about its whole history. The claim inside
+ * {@link enqueuePostNotification} is what covers the rest: tap redelivery,
+ * dead-letter replay, and later `update` events for the same document.
+ *
+ * Deliberately NOT restricted to `action === "create"`. `upsertDocument`
+ * resolves external bodies (Leaflet, pckt, fetched formats), and a transient
+ * failure there leaves `hasRenderableBody = false` — a create-only gate would
+ * find nothing and the post would never notify, because the later `update` that
+ * fixes the body wouldn't try again. "The first event where it became
+ * renderable" is the trigger we actually want.
+ *
+ * Failures are swallowed: a missed notification must never dead-letter an event
+ * that was applied to the read-model successfully.
+ */
+async function maybeQueuePushNotification(
+  uri: string,
+  payload: IngestRecordPayload,
+  record: Record<string, unknown>,
+): Promise<void> {
+  if (!payload.live || !recordClaimsPublishDate(record)) {
+    return;
+  }
+  try {
+    await enqueuePostNotification(uri);
+  } catch (error) {
+    logEvent("push.enqueueFailed", {
+      ok: false,
+      reason: error instanceof Error ? error.message : String(error),
+      uri,
+    });
+  }
+}
+
+/**
+ * Apply one record event to the read-model.
+ *
+ * Exported because the PDS reconcile sweep replays records through this very
+ * function (`#/server/ingest/repo-sync`). A repo that tap stopped streaming has
+ * to be repaired from its PDS, and the repaired rows must be indistinguishable
+ * from live-ingested ones — routing both through one dispatcher is what
+ * guarantees that. A second, parallel "backfill" mapping would be free to drift
+ * from this one, and the drift would only ever show up as a subtly wrong row in
+ * whichever collection someone forgot to keep in step.
+ */
+export async function handleRecord(
+  payload: IngestRecordPayload,
+): Promise<void> {
   const { did, collection, rkey, action, cid, record } = payload;
   const uri = buildAtUri(did, collection, rkey);
 
@@ -66,7 +147,22 @@ async function handleRecord(payload: TapRecordPayload): Promise<void> {
   }
 
   if (!record) {
-    // create/update with no body — nothing to map.
+    // A create/update with no body — nothing to map, and nothing downstream
+    // will ever notice on its own: the caller treats "returned without
+    // throwing" as applied and acks the event, so the record is gone for good
+    // until the PDS reconcile round-robin happens past this repo (days, at the
+    // current sweep rate). Every other way a record fails to land leaves a
+    // trace — a dead-letter row, a withheld ack — this one leaves none, so it
+    // has to announce itself.
+    logEvent("ingest.recordDropped", {
+      action,
+      collection,
+      did,
+      ok: false,
+      reason: "no-record-body",
+      rkey,
+      uri,
+    });
     return;
   }
 
@@ -89,6 +185,7 @@ async function handleRecord(payload: TapRecordPayload): Promise<void> {
         cid,
         record as unknown as DocumentRecord,
       );
+      await maybeQueuePushNotification(uri, payload, record);
       return;
     }
     case Collections.subscription: {
@@ -121,6 +218,10 @@ async function handleRecord(payload: TapRecordPayload): Promise<void> {
       );
       return;
     }
+    case Collections.mute: {
+      await upsertMute(uri, did, rkey, cid, record as unknown as MuteRecord);
+      return;
+    }
     case Collections.labelerSubscription:
     case Collections.labelerSubscriptionV2: {
       await upsertLabelerSubscription(
@@ -129,16 +230,6 @@ async function handleRecord(payload: TapRecordPayload): Promise<void> {
         rkey,
         cid,
         record as unknown as LabelerSubscriptionRecord,
-      );
-      return;
-    }
-    case Collections.labelerService: {
-      await upsertLabelerService(
-        uri,
-        did,
-        rkey,
-        cid,
-        record as unknown as LabelerServiceRecord,
       );
       return;
     }
@@ -223,24 +314,32 @@ async function handleRecord(payload: TapRecordPayload): Promise<void> {
     }
     default: {
       // A collection we don't model (tap filtering should prevent this).
+      noteUnmodeledCollection(collection, uri);
       return;
     }
   }
 }
 
-async function recordProgress(eventId: number): Promise<void> {
+/**
+ * Bump the applied-event counter for observability.
+ *
+ * Deliberately does **not** touch `last_event_id`. That column is the resume
+ * cursor, and `jetstream-channel` only advances it once every event in a batch
+ * is durably handled — so writing it here, per event, would let the cursor run
+ * ahead of the batch and skip whatever had not been applied when a crash landed
+ * mid-batch. Counting is safe to do per event; committing is not.
+ */
+async function recordProgress(): Promise<void> {
   await db
     .insert(ingestState)
     .values({
       id: STREAM_ID,
-      lastEventId: eventId,
       lastEventAt: sql`now()`,
       eventsProcessed: 1,
     })
     .onConflictDoUpdate({
       target: ingestState.id,
       set: {
-        lastEventId: sql`greatest(coalesce(${ingestState.lastEventId}, 0), ${eventId})`,
         lastEventAt: sql`now()`,
         eventsProcessed: sql`${ingestState.eventsProcessed} + 1`,
         updatedAt: sql`now()`,
@@ -248,7 +347,7 @@ async function recordProgress(eventId: number): Promise<void> {
     });
 }
 
-async function deadLetter(event: TapEvent, error: unknown): Promise<void> {
+async function deadLetter(event: IngestEvent, error: unknown): Promise<void> {
   const message = error instanceof Error ? error.message : String(error);
   const collection =
     event.type === "record" ? event.record.collection : "identity";
@@ -286,14 +385,16 @@ export type ProcessResult = "applied" | "dead-lettered" | "unhandled";
  * if even that write fails we report `unhandled` so the caller withholds the ack
  * and tap redelivers later (this is what prevents data loss during an outage).
  */
-export async function processTapEvent(event: TapEvent): Promise<ProcessResult> {
+export async function processIngestEvent(
+  event: IngestEvent,
+): Promise<ProcessResult> {
   try {
     if (event.type === "identity") {
       await applyIdentity(event.identity);
     } else {
       await handleRecord(event.record);
     }
-    await recordProgress(event.id);
+    await recordProgress();
     return "applied";
   } catch (error) {
     try {
@@ -334,7 +435,7 @@ export async function replayDeadLetters(): Promise<{
   let failed = 0;
   for (const row of rows) {
     try {
-      const event = row.payload as unknown as TapEvent | null;
+      const event = row.payload as unknown as IngestEvent | null;
       if (event?.type === "identity") {
         await applyIdentity(event.identity);
       } else if (event?.type === "record") {
@@ -360,13 +461,13 @@ export async function replayDeadLetters(): Promise<{
 
 /** Process a batch (tap may deliver one event per webhook call, but the WS/SDK
  * path can hand us arrays). Returns counts for logging. */
-export async function processTapEvents(
-  events: Array<TapEvent>,
+export async function processIngestEvents(
+  events: Array<IngestEvent>,
 ): Promise<{ ok: number; failed: number }> {
   let ok = 0;
   let failed = 0;
   for (const event of events) {
-    const result = await processTapEvent(event);
+    const result = await processIngestEvent(event);
     if (result === "applied") {
       ok += 1;
     } else {

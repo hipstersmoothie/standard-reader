@@ -171,6 +171,9 @@ const styles = stylex.create({
   mastheadMetaWithAccessory: {
     display: "flex",
   },
+  mastheadMetaFigure: {
+    display: { default: "none", "@media (min-width: 48rem)": "flex" },
+  },
   metaDate: {
     color: uiColor.text1,
     fontFamily: fontFamily.mono,
@@ -208,6 +211,12 @@ const styles = stylex.create({
     rowGap: gap["2xl"],
     marginBottom: spacing["5"],
     marginTop: spacing["2"],
+  },
+  // Enough of a beat that the eye reads "different list", not "next row". The
+  // preceding row contributes its own bottom padding and rule, so this lands
+  // at roughly the same air the masthead leaves above the first section.
+  sectionHeadFollowing: {
+    marginTop: spacing["10"],
   },
   sectionHeadRow: {
     alignItems: "flex-end",
@@ -435,6 +444,7 @@ export function SectionHead({
   icon,
   stackOnMobile = true,
   size = "lg",
+  followsSection = false,
 }: {
   kicker?: React.ReactNode;
   title: React.ReactNode;
@@ -448,11 +458,19 @@ export function SectionHead({
    * ranks below that title instead of tying with it.
    */
   size?: "lg" | "md";
+  /**
+   * Set when this head opens a section that follows another section's rows.
+   * The default top margin assumes the head starts a page, where the space
+   * above it is already the masthead's; landing it straight after a row gives
+   * the reader no signal that one list ended and a different one began.
+   */
+  followsSection?: boolean;
 }) {
   return (
     <div
       {...stylex.props(
         styles.sectionHead,
+        followsSection && styles.sectionHeadFollowing,
         !stackOnMobile && styles.sectionHeadRow,
       )}
     >
@@ -531,17 +549,24 @@ export function Masthead({
         <Flex
           direction="column"
           gap="lg"
+          align="end"
           style={[
             styles.mastheadMeta,
             metaAccessory != null && styles.mastheadMetaWithAccessory,
           ]}
         >
-          {metaLabel == null ? null : (
-            <span {...stylex.props(styles.metaDate)}>{metaLabel}</span>
-          )}
-          {metaValue == null ? null : (
-            <span {...stylex.props(styles.metaBig)}>{metaValue}</span>
-          )}
+          {/* The figure keeps its own ≥48rem visibility so a `metaAccessory`
+              forcing the column open does not surface it on narrow screens. */}
+          {metaLabel != null || metaValue != null ? (
+            <Flex direction="column" gap="lg" style={styles.mastheadMetaFigure}>
+              {metaLabel == null ? null : (
+                <span {...stylex.props(styles.metaDate)}>{metaLabel}</span>
+              )}
+              {metaValue == null ? null : (
+                <span {...stylex.props(styles.metaBig)}>{metaValue}</span>
+              )}
+            </Flex>
+          ) : null}
         </Flex>
       ) : null}
     </div>

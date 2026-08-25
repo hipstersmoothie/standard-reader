@@ -41,17 +41,6 @@ function marginAvatarUrl(did: string): string {
 const MARGIN_DISCUSSION_COLLECTION_SET = new Set<string>(
   MARGIN_DISCUSSION_COLLECTIONS,
 );
-const MARGIN_COUNT_TTL_MS = 5 * 60 * 1000;
-const COSMIK_DISCUSSION_TTL_MS = 10 * 60 * 1000;
-
-const marginCountByUrlsCache = new Map<
-  string,
-  { count: number; expiresAt: number }
->();
-const cosmikDiscussionCache = new Map<
-  string,
-  { expiresAt: number; isDiscussion: boolean }
->();
 
 function marginLinkTargetVariants(url: string): Array<string> {
   const trimmed = url.trim();
@@ -210,12 +199,6 @@ function parseDiscussionMarginRecord(
   return null;
 }
 
-function marginUrlsCacheKey(urls: Array<string>): string {
-  return [...new Set(urls.flatMap((url) => marginLinkTargetVariants(url)))]
-    .toSorted()
-    .join("|");
-}
-
 async function discoverMarginBacklinkRecords(
   urls: Array<string>,
 ): Promise<Array<ConstellationBacklinkRecord>> {
@@ -239,35 +222,6 @@ async function fetchCosmikCardValue(
     identity.pds,
   );
   return result?.value ?? null;
-}
-
-async function isCosmikDiscussionCard(
-  record: ConstellationBacklinkRecord,
-): Promise<boolean> {
-  const uri = noteUriFromRecord(record);
-  const cached = cosmikDiscussionCache.get(uri);
-  if (cached && cached.expiresAt > Date.now()) {
-    return cached.isDiscussion;
-  }
-
-  const value = await fetchCosmikCardValue(record);
-  const isDiscussion = parseCosmikCardValue(record, value) != null;
-  cosmikDiscussionCache.set(uri, {
-    isDiscussion,
-    expiresAt: Date.now() + COSMIK_DISCUSSION_TTL_MS,
-  });
-  return isDiscussion;
-}
-
-async function countCosmikDiscussionCards(
-  records: Array<ConstellationBacklinkRecord>,
-): Promise<number> {
-  if (records.length === 0) return 0;
-
-  const flags = await Promise.all(
-    records.map((record) => isCosmikDiscussionCard(record)),
-  );
-  return flags.filter(Boolean).length;
 }
 
 async function loadMarginNote(
@@ -364,51 +318,4 @@ export async function fetchMarginNotesForUrls(
   }
 
   return comments;
-}
-
-/**
- * Fast margin note total for card badges — Constellation for `at.margin.*`
- * (no PDS hydration), PDS lookup only for `network.cosmik.card` NOTE cards.
- */
-export async function countMarginNotesForUrls(
-  urls: Array<string>,
-): Promise<number> {
-  const trimmed = urls.map((url) => url.trim()).filter(Boolean);
-  if (trimmed.length === 0) return 0;
-
-  const cacheKey = marginUrlsCacheKey(trimmed);
-  const cached = marginCountByUrlsCache.get(cacheKey);
-  if (cached && cached.expiresAt > Date.now()) {
-    return cached.count;
-  }
-
-  const records = await discoverMarginBacklinkRecords(trimmed);
-  if (records.length === 0) {
-    marginCountByUrlsCache.set(cacheKey, {
-      count: 0,
-      expiresAt: Date.now() + MARGIN_COUNT_TTL_MS,
-    });
-    return 0;
-  }
-
-  const cosmikRecords: Array<ConstellationBacklinkRecord> = [];
-  let count = 0;
-
-  for (const record of records) {
-    if (record.collection === COSMIK_CARD_COLLECTION) {
-      cosmikRecords.push(record);
-    } else {
-      count += 1;
-    }
-  }
-
-  if (cosmikRecords.length > 0) {
-    count += await countCosmikDiscussionCards(cosmikRecords);
-  }
-
-  marginCountByUrlsCache.set(cacheKey, {
-    count,
-    expiresAt: Date.now() + MARGIN_COUNT_TTL_MS,
-  });
-  return count;
 }

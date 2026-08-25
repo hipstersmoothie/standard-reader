@@ -1,30 +1,25 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { createServer } from "node:http";
 
-import { Tap } from "@atproto/tap";
 import { and, eq, or, sql } from "drizzle-orm";
 
 import { db } from "../../db/index.ts";
 import { ingestState, subscriptions, trackedRepos } from "../../db/schema.ts";
-import type { TapEvent } from "../atproto/types.ts";
+import { Collections } from "../atproto/uri.ts";
+import { startLabelerDiscovery } from "../labeler/discover.server.ts";
 import { startLabelSync } from "../labeler/sync.server.ts";
 import { logEvent } from "../observability/log.ts";
+import { backfillRepoFromArchive } from "./archive-replay.ts";
 import { verifyIngestAuth } from "./auth.ts";
 import { ingestConfig } from "./config.ts";
-import type { ProcessResult } from "./consumer.ts";
-import { processTapEvent } from "./consumer.ts";
-import { backfillSubscriptionsFromRepo } from "./handlers.ts";
+import { startJetstreamChannel } from "./jetstream-channel.ts";
+import { startProfileRefresh } from "./profile-refresh.ts";
 import { recomputeDerived } from "./recompute.ts";
 import {
   markRepoGone,
   reconcilePublisherReposBatch,
-  reconcileRepoFromPds,
-  startPublisherRepoReconcile,
+  reconcileRepoFromArchive,
 } from "./repo-sync.ts";
-import {
-  reconcilePendingTrackedRepos,
-  startPendingTrackedReconcile,
-} from "./tap-client.ts";
 
 const DEFAULT_PORT = 3099;
 
@@ -89,14 +84,18 @@ async function getStatus(): Promise<Record<string, unknown>> {
   };
 }
 
-async function reconcileTrackedWithBackfill(): Promise<{
-  added: number;
-  addedDids: Array<string>;
-  attempted: number;
+/**
+ * Backfill subscriptions for reader repos that have none indexed.
+ *
+ * This used to also push every unregistered repo to tap's `/repos/add` — the
+ * half that mattered for coverage, since an unregistered repo simply never
+ * streamed. Jetstream needs no registration, so only the repair half is left:
+ * a reader whose subscription records predate our first sight of them still
+ * needs one pull from their PDS to seed the graph.
+ */
+async function backfillReaderSubscriptions(): Promise<{
   backfilled: Array<{ did: string; subscriptions: number }>;
 }> {
-  const result = await reconcilePendingTrackedRepos();
-
   const readerRepos = await db
     .select({ did: trackedRepos.did })
     .from(trackedRepos)
@@ -123,7 +122,8 @@ async function reconcileTrackedWithBackfill(): Promise<{
     if ((countRow?.count ?? 0) > 0) {
       continue;
     }
-    const synced = await backfillSubscriptionsFromRepo(row.did);
+    const fold = await backfillRepoFromArchive(row.did);
+    const synced = fold.live.get(Collections.subscription)?.size ?? 0;
     if (synced > 0) {
       backfilled.push({ did: row.did, subscriptions: synced });
     }
@@ -140,7 +140,7 @@ async function reconcileTrackedWithBackfill(): Promise<{
     });
   }
 
-  return { ...result, backfilled };
+  return { backfilled };
 }
 
 function requireAuth(req: IncomingMessage, res: ServerResponse): boolean {
@@ -151,6 +151,12 @@ function requireAuth(req: IncomingMessage, res: ServerResponse): boolean {
   sendText(res, 401, "Unauthorized");
   return false;
 }
+
+/**
+ * One recompute at a time. The job runs for minutes and the trigger is hourly,
+ * so a slow run must not stack a second pass on top of the first.
+ */
+let recomputeInFlight = false;
 
 async function handleRequest(
   req: IncomingMessage,
@@ -175,21 +181,36 @@ async function handleRequest(
     if (!requireAuth(req, res)) {
       return;
     }
-    const startedAt = performance.now();
-    try {
-      await recomputeDerived();
-      const ms = Math.round(performance.now() - startedAt);
-      logEvent("ingest.recompute", { ok: true, ms });
-      sendJson(res, 200, { durationMs: ms, ok: true });
-    } catch (error: unknown) {
-      const ms = Math.round(performance.now() - startedAt);
-      logEvent("ingest.recompute", {
-        error: error instanceof Error ? error.message : String(error),
-        ms,
-        ok: false,
-      });
-      throw error;
+    // Answered immediately, on purpose. The recompute takes ~318s in
+    // production and undici's default `headersTimeout` is 300s, so awaiting it
+    // here meant the hourly cron client aborted with `UND_ERR_HEADERS_TIMEOUT`
+    // and Railway marked the service CRASHED — every hour, on work that had in
+    // fact succeeded. The outcome lives in the `ingest.recompute` log event,
+    // which is where anything watching should read it from anyway.
+    if (recomputeInFlight) {
+      sendJson(res, 409, { ok: false, reason: "recompute already running" });
+      return;
     }
+    recomputeInFlight = true;
+    sendJson(res, 202, { ok: true, started: true });
+    const startedAt = performance.now();
+    void recomputeDerived()
+      .then(() => {
+        logEvent("ingest.recompute", {
+          ms: Math.round(performance.now() - startedAt),
+          ok: true,
+        });
+      })
+      .catch((error: unknown) => {
+        logEvent("ingest.recompute", {
+          error: error instanceof Error ? error.message : String(error),
+          ms: Math.round(performance.now() - startedAt),
+          ok: false,
+        });
+      })
+      .finally(() => {
+        recomputeInFlight = false;
+      });
     return;
   }
 
@@ -202,11 +223,9 @@ async function handleRequest(
     }
     const startedAt = performance.now();
     try {
-      const result = await reconcileTrackedWithBackfill();
+      const result = await backfillReaderSubscriptions();
       const ms = Math.round(performance.now() - startedAt);
       logEvent("ingest.reconcileTracked", {
-        added: result.added,
-        attempted: result.attempted,
         backfilledRepos: result.backfilled.length,
         ms,
         ok: true,
@@ -244,6 +263,7 @@ async function handleRequest(
         ok: true,
         prunedDocuments: result.prunedDocuments,
         prunedPublications: result.prunedPublications,
+        webBridgeAttempted: result.webBridgeAttempted,
       });
       sendJson(res, 200, { durationMs: ms, ok: true, ...result });
     } catch (error: unknown) {
@@ -275,7 +295,7 @@ async function handleRequest(
     }
     const startedAt = performance.now();
     try {
-      const result = await reconcileRepoFromPds(body.did, { upsert: true });
+      const result = await reconcileRepoFromArchive(body.did, { upsert: true });
       // If the PDS reports the repo is permanently gone, prune its read-model
       // rows + retire the tracked repo (same as the batch path). Manual
       // reconcile otherwise returns gone=true without cleaning up.
@@ -315,260 +335,6 @@ async function handleRequest(
   sendText(res, 404, "Not Found");
 }
 
-function fromRecordEvent(evt: {
-  id: number;
-  live: boolean;
-  rev: string;
-  did: string;
-  collection: string;
-  rkey: string;
-  action: "create" | "update" | "delete";
-  cid?: string;
-  record?: Record<string, unknown>;
-}): TapEvent {
-  return {
-    id: evt.id,
-    record: {
-      action: evt.action,
-      cid: evt.cid,
-      collection: evt.collection,
-      did: evt.did,
-      live: evt.live,
-      record: evt.record,
-      rev: evt.rev,
-      rkey: evt.rkey,
-    },
-    type: "record",
-  };
-}
-
-function fromIdentityEvent(evt: {
-  id: number;
-  did: string;
-  handle?: string;
-  isActive?: boolean;
-  status?: string;
-}): TapEvent {
-  return {
-    id: evt.id,
-    identity: {
-      did: evt.did,
-      handle: evt.handle,
-      isActive: evt.isActive,
-      status: evt.status,
-    },
-    type: "identity",
-  };
-}
-
-function startTapChannel(tapUrl: string): { destroy: () => Promise<void> } {
-  const tap = new Tap(tapUrl, {
-    adminPassword: ingestConfig.tapAdminPassword ?? undefined,
-  });
-  // --- Diagnostics: track channel delivery so we can see exactly what tap
-  // sends, what we apply, and whether the stream stalls or the WS reconnects.
-  const stats = {
-    identity: 0,
-    record: 0,
-    failed: 0,
-    errors: 0,
-    acked: 0,
-    ackTimeouts: 0,
-    inflight: 0,
-    lastEventId: 0,
-    lastEventAt: 0,
-    startedAt: Date.now(),
-  };
-
-  // Bounded concurrency: the per-event DB work is a chain of round-trips to
-  // Neon, so processing events strictly one-at-a-time leaves the connection
-  // idle waiting on latency. We let up to INGEST_CONCURRENCY events apply in
-  // parallel (each on its own pooled pg connection) and backpressure tap when
-  // the pool is full, so the read loop stays fed without unbounded buffering.
-  // Upserts are idempotent and keyed by URI, so out-of-order application across
-  // distinct records is safe; same-URI reordering is a non-issue during a
-  // create-only backfill.
-  const MAX_INFLIGHT = (() => {
-    const v = Number(process.env.INGEST_CONCURRENCY);
-    return Number.isFinite(v) && v > 0 ? Math.floor(v) : 12;
-  })();
-  const waiters: Array<() => void> = [];
-  function acquireSlot(): Promise<void> {
-    if (stats.inflight < MAX_INFLIGHT) {
-      stats.inflight += 1;
-      return Promise.resolve();
-    }
-    return new Promise<void>((resolve) => waiters.push(resolve));
-  }
-  function releaseSlot(): void {
-    const next = waiters.shift();
-    if (next) {
-      next(); // hand the slot directly to a waiter (inflight unchanged)
-    } else {
-      stats.inflight -= 1;
-    }
-  }
-
-  // The tap channel awaits `onEvent` (handler + ack) sequentially inside its WS
-  // read loop, so awaiting the ack there is fatal: the SDK buffers an ack when
-  // the socket looks disconnected and only flushes on reconnect, so a single
-  // stuck `ws.send` deadlocks the loop and freezes all delivery (this was the
-  // 223-event stall). Worse, breaking the deadlock with a timeout makes tap
-  // reconnect and skip ahead, dropping the un-acked gap.
-  //
-  // Fix: never block the read loop on the ack. We upsert (idempotently) first,
-  // then fire the ack in the background and return immediately, keeping the
-  // socket drained so tap streams continuously without stalling or skipping. A
-  // hung ack just dangles harmlessly; tap tolerates the missing ack and we
-  // re-upsert safely on any redelivery. The timeout here is for diagnostics
-  // only — it never gates delivery.
-  const ACK_TIMEOUT_MS = 5000;
-  function ackInBackground(id: number, ack: () => Promise<void>): void {
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    const timeout = new Promise<"timeout">((resolve) => {
-      timer = setTimeout(() => resolve("timeout"), ACK_TIMEOUT_MS);
-    });
-    void Promise.race([ack().then(() => "acked" as const), timeout])
-      .then((result) => {
-        if (result === "timeout") {
-          stats.ackTimeouts += 1;
-          console.warn(`[ingest] ack slow/stuck for event #${id} (>5s)`);
-        } else {
-          stats.acked += 1;
-        }
-      })
-      .catch((error: unknown) => {
-        stats.errors += 1;
-        console.warn(`[ingest] ack failed for event #${id}`, error);
-      })
-      .finally(() => {
-        if (timer) clearTimeout(timer);
-      });
-  }
-
-  // Custom handler (replaces SimpleIndexer) so we control + log the ack path.
-  const indexer = {
-    onError(error: unknown) {
-      stats.errors += 1;
-      console.error("[ingest] tap channel error", error);
-    },
-    async onEvent(
-      evt: Record<string, unknown> & { id: number; type: string },
-      opts: { ack: () => Promise<void>; signal: AbortSignal },
-    ) {
-      stats.lastEventId = evt.id;
-      stats.lastEventAt = Date.now();
-      const isIdentity = evt.type === "identity";
-      if (isIdentity) {
-        stats.identity += 1;
-      } else {
-        stats.record += 1;
-      }
-
-      // Acquire a slot before returning so the SDK read loop pauses (and tap
-      // backpressures) once MAX_INFLIGHT events are in flight. The actual DB
-      // work + ack run detached so up to MAX_INFLIGHT apply concurrently.
-      await acquireSlot();
-      void (async () => {
-        // Default to "unhandled" so an unexpected throw withholds the ack and
-        // tap redelivers, rather than silently dropping the event.
-        let result: ProcessResult = "unhandled";
-        try {
-          const mapped = isIdentity
-            ? fromIdentityEvent(
-                evt as unknown as Parameters<typeof fromIdentityEvent>[0],
-              )
-            : fromRecordEvent(
-                evt as unknown as Parameters<typeof fromRecordEvent>[0],
-              );
-          result = await processTapEvent(mapped);
-          if (result === "dead-lettered") {
-            stats.failed += 1;
-            console.warn(`[ingest] dead-lettered event ${evt.id}`);
-            logEvent("ingest.tapEvent", {
-              collection:
-                typeof evt.collection === "string" ? evt.collection : undefined,
-              eventId: evt.id,
-              eventType: evt.type,
-              ok: false,
-              result: "dead-lettered",
-            });
-          } else if (result === "unhandled") {
-            stats.errors += 1;
-            console.warn(
-              `[ingest] event ${evt.id} unhandled (DB down/full) — not acking, tap will redeliver`,
-            );
-            logEvent("ingest.tapEvent", {
-              collection:
-                typeof evt.collection === "string" ? evt.collection : undefined,
-              eventId: evt.id,
-              eventType: evt.type,
-              ok: false,
-              result: "unhandled",
-            });
-          }
-        } catch (error: unknown) {
-          stats.errors += 1;
-          console.error(`[ingest] failed to process event ${evt.id}`, error);
-          logEvent("ingest.tapEvent", {
-            collection:
-              typeof evt.collection === "string" ? evt.collection : undefined,
-            error: error instanceof Error ? error.message : String(error),
-            eventId: evt.id,
-            eventType: evt.type,
-            ok: false,
-            result: "error",
-          });
-        } finally {
-          // Only ack once the event is durably handled (applied or
-          // dead-lettered). Withholding the ack on "unhandled" leaves it for
-          // tap to redeliver after the DB recovers. Always free the slot.
-          if (result !== "unhandled") {
-            ackInBackground(evt.id, opts.ack);
-          }
-          releaseSlot();
-        }
-      })();
-    },
-  };
-
-  // Heartbeat: surface cumulative counts + idle time so a stalled stream is
-  // obvious in logs (vs. having to diff the DB). Logs every 10s.
-  const heartbeat = setInterval(() => {
-    const idleMs =
-      stats.lastEventAt === 0 ? -1 : Date.now() - stats.lastEventAt;
-    console.info(
-      `[ingest] channel heartbeat: identity=${stats.identity} record=${stats.record} acked=${stats.acked} ackTimeouts=${stats.ackTimeouts} failed=${stats.failed} errors=${stats.errors} inflight=${stats.inflight} lastEventId=${stats.lastEventId} idleMs=${idleMs}`,
-    );
-    logEvent("ingest.heartbeat", {
-      ackTimeouts: stats.ackTimeouts,
-      acked: stats.acked,
-      errors: stats.errors,
-      failed: stats.failed,
-      identity: stats.identity,
-      idleMs,
-      inflight: stats.inflight,
-      lastEventId: stats.lastEventId,
-      ok: true,
-      record: stats.record,
-    });
-  }, 10_000);
-  heartbeat.unref?.();
-
-  const channel = tap.channel(indexer);
-  void channel.start().catch((error: unknown) => {
-    console.error("[ingest] tap channel stopped", error);
-    process.exitCode = 1;
-  });
-  console.info(`[ingest] connected to tap channel at ${tapUrl}`);
-  return {
-    destroy: async () => {
-      clearInterval(heartbeat);
-      await channel.destroy();
-    },
-  };
-}
-
 const server = createServer((req, res) => {
   handleRequest(req, res).catch((error: unknown) => {
     console.error("[ingest] request failed", error);
@@ -587,48 +353,41 @@ server.listen(port(), "::", () => {
   if (!ingestConfig.webhookSecret) {
     if (process.env.NODE_ENV === "production") {
       console.error(
-        "[ingest] FATAL: no INGEST_WEBHOOK_SECRET/TAP_ADMIN_PASSWORD set in production — " +
+        "[ingest] FATAL: no INGEST_WEBHOOK_SECRET set in production — " +
           "ingest auth is disabled and all requests are rejected.",
       );
     } else {
       console.warn(
-        "[ingest] WARNING: no INGEST_WEBHOOK_SECRET/TAP_ADMIN_PASSWORD set — " +
+        "[ingest] WARNING: no INGEST_WEBHOOK_SECRET set — " +
           "ingest auth is disabled (dev-only).",
       );
     }
   }
 });
 
-// Primary signal (publishers) + an optional second tap instance signaled on
-// `app.standard-reader.labeler.service`, so any repo that registers a labeler is
-// tracked and its record indexed — no manual repo tracking needed.
-const tapChannel = startTapChannel(
-  ingestConfig.tapApiUrl ?? "http://127.0.0.1:2480",
-);
-const labelerTapChannel = ingestConfig.tapLabelerApiUrl
-  ? startTapChannel(ingestConfig.tapLabelerApiUrl)
-  : null;
-// Optional third tap instance signaled on `site.standard.document`, so repos
-// that publish documents without a publication record ("loose documents") get
-// tracked + backfilled.
-const docsTapChannel = ingestConfig.tapDocsApiUrl
-  ? startTapChannel(ingestConfig.tapDocsApiUrl)
-  : null;
-const pendingTrackedReconcile = startPendingTrackedReconcile(
-  reconcileTrackedWithBackfill,
-);
-const publisherRepoReconcile = startPublisherRepoReconcile();
+// One Jetstream subscription, where there used to be three tap lanes plus the
+// admin API that fed them. Its collection filter already spans every repo on
+// the network that writes one of our records, so there is nothing to signal,
+// seed, register, or split.
+const jetstreamChannel = startJetstreamChannel();
+// Profiles and handles are pulled rather than streamed: Jetstream carries
+// neither `app.bsky.actor.profile` nor `#identity` for our actors at a volume
+// worth taking network-wide (see `profile-refresh.ts`).
+const profileRefresh = startProfileRefresh();
+// The PDS repair round-robin deliberately does *not* run here — it is its own
+// cron service (`scripts/reconcile-repos-cron.ts`). Repair enumerates and
+// rewrites whole repos, and running that beside the live channel made the
+// backstop compete with the stream it backstops.
 const labelSync = startLabelSync();
+const labelerDiscovery = startLabelerDiscovery();
 
 for (const signal of ["SIGINT", "SIGTERM"] as const) {
   process.on(signal, () => {
     server.close(async () => {
-      pendingTrackedReconcile.stop();
-      publisherRepoReconcile.stop();
+      profileRefresh.stop();
       labelSync.stop();
-      await tapChannel.destroy();
-      await labelerTapChannel?.destroy();
-      await docsTapChannel?.destroy();
+      labelerDiscovery.stop();
+      await jetstreamChannel.destroy();
       const { flushTelemetry } = await import("../observability/log.ts");
       await flushTelemetry();
       process.exit(0);

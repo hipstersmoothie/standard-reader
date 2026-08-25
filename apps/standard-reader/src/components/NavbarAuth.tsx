@@ -41,6 +41,8 @@ import { Button as AriaButton } from "react-aria-components";
 import { ButtonLink, MenuItemLink } from "#/components/router-links";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
 import { useTrackReadingHistory } from "#/lib/use-track-reading-history";
+import { clearPersonalOfflineData } from "#/pwa/offline-cache";
+import { stopOfflineSync } from "#/pwa/offline-sync";
 import { useLoginSearch } from "#/utils/use-login-search";
 
 import { LanguageDialog } from "./reader/language-dialog";
@@ -178,6 +180,15 @@ export function NavbarAuth({
   const logoutMutation = useMutation({
     mutationFn: async () => {
       await user.signOut();
+
+      // Stop mid-flight offline sync before clearing, or it writes the
+      // signed-out reader's articles back into the cache we just emptied.
+      stopOfflineSync();
+      // Cached `/_serverFn` responses and rendered documents carry no DID —
+      // the server reads it from the session cookie — so leaving them behind
+      // would serve this reader's feed and saved queue to whoever signs in
+      // next on this device.
+      await clearPersonalOfflineData();
 
       queryClient.setQueryData(user.getSessionQueryOptions.queryKey, null);
       await queryClient.resetQueries();

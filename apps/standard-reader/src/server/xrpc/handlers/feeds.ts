@@ -2,6 +2,8 @@ import { TRENDING_PAGE_LIMIT } from "#/integrations/tanstack-query/api-feed.func
 import { articleCardsAsAllRead } from "#/lib/track-reading-history";
 import { resolveAuthorDid } from "#/server/atproto/resolve-author-ref";
 import { parseAtUri } from "#/server/atproto/uri";
+import { blockFilterDid, filterBlockedCards } from "#/server/blocks/blocks";
+import { filterMutedCards, muteFilterDid } from "#/server/mutes/mutes";
 import {
   followedPublications,
   selectArticleCards,
@@ -32,6 +34,8 @@ export async function handleGetLatestFeed(ctx: XrpcRequestContext) {
   const trackReading = subjectDid == null ? false : ctx.trackReadingEnabled;
   const countOldPostsAsUnread =
     subjectDid == null ? true : ctx.countOldPostsAsUnreadEnabled;
+  const excludeWebBridge =
+    subjectDid == null ? false : ctx.excludeWebBridgeEnabled;
   const followUris = subjectDid
     ? await effectiveFollowUris(ctx.db, ctx.schema, subjectDid)
     : [];
@@ -48,11 +52,14 @@ export async function handleGetLatestFeed(ctx: XrpcRequestContext) {
             offset,
             readForDid: trackReading && subjectDid ? subjectDid : undefined,
             scope: "page",
+            excludeWebBridge,
+            viewerDid: await blockFilterDid(ctx.db, ctx.schema, ctx.auth?.did),
+            muterDid: await muteFilterDid(ctx.db, ctx.schema, ctx.auth?.did),
           })
         : []
       : await selectArticleCards(ctx.db, ctx.schema, {
           ...(!subjectDid || filter === "all"
-            ? { discoverOnly: true }
+            ? { discoverOnly: true, excludeWebBridge }
             : {
                 publicationUris: followUris,
                 unreadForDid:
@@ -60,6 +67,8 @@ export async function handleGetLatestFeed(ctx: XrpcRequestContext) {
               }),
           readForDid: trackReading && subjectDid ? subjectDid : undefined,
           countOldPostsAsUnread,
+          viewerDid: await blockFilterDid(ctx.db, ctx.schema, ctx.auth?.did),
+          muterDid: await muteFilterDid(ctx.db, ctx.schema, ctx.auth?.did),
           limit,
           offset,
         });
@@ -85,7 +94,19 @@ export async function handleGetLatestFeed(ctx: XrpcRequestContext) {
 
 export async function handleGetTrendingPublications(ctx: XrpcRequestContext) {
   const limit = intParam(ctx.params, "limit", 12, { min: 1, max: 100 });
-  const items = await trendingPublications(ctx.db, ctx.schema, limit);
+  const items = await filterMutedCards(
+    ctx.db,
+    ctx.schema,
+    ctx.auth?.did,
+    await filterBlockedCards(
+      ctx.db,
+      ctx.schema,
+      ctx.auth?.did,
+      await trendingPublications(ctx.db, ctx.schema, limit, {
+        excludeWebBridge: ctx.excludeWebBridgeEnabled,
+      }),
+    ),
+  );
   return { items: items.map((item) => toPublicationView(item)) };
 }
 
@@ -97,6 +118,9 @@ export async function handleGetTrendingDocuments(ctx: XrpcRequestContext) {
   const items = await trendingArticles(ctx.db, ctx.schema, limit, {
     scope,
     readForDid,
+    excludeWebBridge: ctx.excludeWebBridgeEnabled,
+    viewerDid: await blockFilterDid(ctx.db, ctx.schema, ctx.auth?.did),
+    muterDid: await muteFilterDid(ctx.db, ctx.schema, ctx.auth?.did),
   });
   const enriched = await enrichDocuments(ctx, items, readForDid);
   return { items: enriched.map((item) => toDocumentView(item)) };
@@ -114,6 +138,9 @@ export async function handleGetTagFeed(ctx: XrpcRequestContext) {
       sort,
       limit,
       offset,
+      excludeWebBridge: ctx.excludeWebBridgeEnabled,
+      viewerDid: await blockFilterDid(ctx.db, ctx.schema, ctx.auth?.did),
+      muterDid: await muteFilterDid(ctx.db, ctx.schema, ctx.auth?.did),
     });
     return {
       view: "publications" as const,
@@ -130,10 +157,13 @@ export async function handleGetTagFeed(ctx: XrpcRequestContext) {
   const rows = await selectArticleCards(ctx.db, ctx.schema, {
     tag,
     discoverOnly: true,
+    excludeWebBridge: ctx.excludeWebBridgeEnabled,
     limit,
     offset,
     readForDid,
     countOldPostsAsUnread: ctx.auth ? ctx.countOldPostsAsUnreadEnabled : true,
+    viewerDid: await blockFilterDid(ctx.db, ctx.schema, ctx.auth?.did),
+    muterDid: await muteFilterDid(ctx.db, ctx.schema, ctx.auth?.did),
   });
   const items = await enrichDocuments(ctx, rows, readForDid);
   return {
@@ -225,6 +255,9 @@ export async function handleGetListFeed(ctx: XrpcRequestContext) {
     publicationUris: list.publications,
     readForDid,
     countOldPostsAsUnread: ctx.auth ? ctx.countOldPostsAsUnreadEnabled : true,
+    // No mute filter: a curated list the reader opened deliberately is direct
+    // navigation, not a feed — its publications render even when muted.
+    viewerDid: await blockFilterDid(ctx.db, ctx.schema, ctx.auth?.did),
     limit,
     offset,
   });

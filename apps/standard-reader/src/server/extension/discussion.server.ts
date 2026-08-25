@@ -4,7 +4,9 @@ import { documentLinkParams } from "#/components/reader/format";
 import type { db } from "#/db/index.server";
 import type * as schema from "#/db/schema";
 import type { ArticleCard } from "#/integrations/tanstack-query/api-shapes";
+import { articleLinkTarget } from "#/lib/link-target-variants";
 import { getPublicUrl } from "#/lib/public-url";
+import { blockFilterDid, filterBlockedCards } from "#/server/blocks/blocks";
 import { buildCanonicalUrl } from "#/server/ingest/mappers";
 import {
   fetchCitedInArticles,
@@ -88,6 +90,14 @@ export async function resolveDiscussion(
   dbClient: typeof db,
   schemaModule: typeof schema,
   documentUri: string,
+  {
+    excludeWebBridge = false,
+    viewerDid,
+  }: {
+    excludeWebBridge?: boolean;
+    /** The reader this panel is for, so their blocks apply here too. */
+    viewerDid?: string | null;
+  } = {},
 ): Promise<ExtensionDiscussionResponse> {
   const d = schemaModule.documents;
   const p = schemaModule.publications;
@@ -109,21 +119,25 @@ export async function resolveDiscussion(
     dbClient,
     schemaModule,
     documentUri,
+    viewerDid,
   );
 
   if (!row) {
-    const discussions = await commentsPromise;
+    const { comments } = await commentsPromise;
     return {
       keepReading: [],
-      discussions: discussions.map((comment) => toDiscussionComment(comment)),
+      discussions: comments.map((comment) => toDiscussionComment(comment)),
       relatedReading: [],
       citedIn: [],
     };
   }
 
-  const canonicalUrl =
-    row.canonicalUrl ?? buildCanonicalUrl(row.publicationUrl, row.path);
+  const canonicalUrl = articleLinkTarget(
+    row.canonicalUrl ?? buildCanonicalUrl(row.publicationUrl, row.path),
+  );
   const linkUrls = canonicalUrl ? [canonicalUrl] : [];
+
+  const blockDid = await blockFilterDid(dbClient, schemaModule, viewerDid);
 
   const [
     discussions,
@@ -137,19 +151,25 @@ export async function resolveDiscussion(
       ? selectArticleCards(dbClient, schemaModule, {
           publicationUris: [row.publicationUri],
           limit: 4,
+          viewerDid: blockDid,
         })
       : Promise.resolve([]),
     relatedArticles(dbClient, schemaModule, {
       documentUri: row.uri,
       publicationUri: row.publicationUri,
       limit: 8,
-    }),
+      excludeWebBridge,
+    }).then((rows) =>
+      filterBlockedCards(dbClient, schemaModule, viewerDid, rows),
+    ),
     linkUrls.length > 0
       ? fetchCitedInArticles(dbClient, schemaModule, {
           urls: linkUrls,
           excludeDocumentUri: row.uri,
           limit: 8,
-        })
+        }).then((rows) =>
+          filterBlockedCards(dbClient, schemaModule, viewerDid, rows),
+        )
       : Promise.resolve([]),
     linkUrls.length > 0
       ? fetchMarginConnections(dbClient, schemaModule, {
@@ -192,7 +212,9 @@ export async function resolveDiscussion(
     keepReading: moreFromWithComments.map((article) =>
       toDiscussionArticle(article),
     ),
-    discussions: discussions.map((comment) => toDiscussionComment(comment)),
+    discussions: discussions.comments.map((comment) =>
+      toDiscussionComment(comment),
+    ),
     relatedReading: mergeRelatedReading(marginConnections, relatedWithComments),
     citedIn: citedInWithComments.map((article) => toDiscussionArticle(article)),
   };

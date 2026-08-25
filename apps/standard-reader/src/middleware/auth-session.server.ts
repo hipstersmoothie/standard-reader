@@ -7,6 +7,7 @@ import { cache } from "react";
 import type { db as DrizzleDb } from "#/db/index.server";
 import type * as DbSchema from "#/db/schema";
 import { AUTH_SESSION_TOKEN_COOKIE } from "#/integrations/auth/constants";
+import { consumeRecentSessionDeletion } from "#/integrations/auth/session-deletions";
 import { logEvent } from "#/server/observability/log";
 
 type Db = typeof DrizzleDb;
@@ -313,6 +314,77 @@ async function resolveReaderDid(request: Request): Promise<string | undefined> {
   return did;
 }
 
+/**
+ * End the app session when the reader's stored OAuth session is genuinely gone.
+ *
+ * Without this the two halves disagree forever. The `session` row stays valid,
+ * so the app keeps believing the reader is signed in, while every request
+ * quietly falls back to guest data and re-attempts a restore that can never
+ * succeed. Readers sat in that loop for weeks, re-reporting a deleted session
+ * once a minute; the only escape was clearing cookies. Ending the session turns
+ * a permanent zombie state into an ordinary signed-out one they can recover
+ * from by logging in again.
+ *
+ * Deliberately narrow, because the failure mode of over-firing is logging
+ * people out for no reason:
+ *  - It runs only when atcute actually reported the session deleted. A bare
+ *    restore failure is ambiguous — a transient PDS error looks identical — and
+ *    `"session was deleted by another process"` can itself be a benign race, so
+ *    the signal is consumed once rather than latched.
+ *  - It deletes only the row for the token on THIS request, not every session
+ *    for the DID, so one wedged device can't sign the reader out everywhere.
+ */
+async function endSessionIfOauthSessionDeleted({
+  did,
+  sessionToken,
+  sessionId,
+  db,
+  schema,
+}: {
+  did: string;
+  sessionToken: string;
+  sessionId: string;
+  db: Db;
+  schema: Schema;
+}): Promise<void> {
+  if (!consumeRecentSessionDeletion(did)) {
+    return;
+  }
+
+  try {
+    await db.delete(schema.session).where(eq(schema.session.id, sessionId));
+  } catch (error) {
+    // Leave the caches and cookie alone if the row survived — a half-cleared
+    // state would report signed-out while the session still works.
+    logEvent("auth.session.end_after_oauth_delete_failed", {
+      did,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return;
+  }
+
+  sessionTokenCache.delete(sessionToken);
+  readerContextCache.delete(sessionToken);
+  didTokenCache.delete(sessionToken);
+
+  // Best effort: drop the cookie too so the browser stops sending a token that
+  // no longer resolves. The DB row is already gone, so this is cosmetic.
+  try {
+    const isSecure = getRequest().url.startsWith("https://");
+    setCookie(AUTH_SESSION_TOKEN_COOKIE, "", {
+      path: "/",
+      httpOnly: true,
+      sameSite: "lax",
+      secure: isSecure,
+      maxAge: 0,
+    });
+  } catch {
+    // No active request context — the deleted row is authoritative.
+  }
+
+  logEvent("auth.session.ended_after_oauth_delete", { did });
+}
+
 async function resolveAtprotoSession(
   request: Request,
 ): Promise<AtprotoSessionContext | undefined> {
@@ -352,6 +424,13 @@ async function resolveAtprotoSession(
     await import("#/integrations/auth/restore-client.server");
   const client = await restoreAuthenticatedClient(did);
   if (!client) {
+    await endSessionIfOauthSessionDeleted({
+      did,
+      sessionToken,
+      sessionId: sessionRow.id,
+      db,
+      schema,
+    });
     return;
   }
 

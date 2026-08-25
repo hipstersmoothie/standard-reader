@@ -1,0 +1,27 @@
+{
+  "lexicon": 1,
+  "id": "app.standard-reader.graph.mute",
+  "defs": {
+    "main": {
+      "type": "record",
+      "description": "Mutes a subject for this reader: either a user (a DID) or a publication (the AT-URI of its site.standard.publication record). Presence of the record means muted; deleting it unmutes. The rkey is derived from the subject so each subject maps to a single record. Muted subjects are hidden from the reader's feeds and discovery surfaces, but direct navigation still works and subscriptions are untouched.",
+      "key": "any",
+      "record": {
+        "type": "object",
+        "required": ["subject", "createdAt"],
+        "properties": {
+          "subject": {
+            "type": "string",
+            "maxLength": 2048,
+            "description": "The muted subject: a user DID (did:...) or the AT-URI of a site.standard.publication record (at://...)."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "datetime",
+            "description": "When the reader muted the subject."
+          }
+        }
+      }
+    }
+  }
+}

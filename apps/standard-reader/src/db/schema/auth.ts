@@ -59,6 +59,17 @@ export const user = pgTable("user", {
   readingTypography: text("reading_typography"),
   /** `false` disables read tracking and unread UI; `null` = on (default). */
   trackReadingHistory: boolean("track_reading_history"),
+  /**
+   * Salt behind this reader's KOReader sync key, so the key can be rotated for
+   * one reader instead of everyone.
+   *
+   * The key itself is never stored — it is `HMAC(KOSYNC_SECRET, did + salt)`
+   * (see `server/kosync/credentials.ts`). `null` means "never rotated" and
+   * derives the original key, so a reader whose device is already syncing keeps
+   * working without doing anything. Rotating writes a fresh random salt, which
+   * is what makes the old key stop working immediately.
+   */
+  kosyncKeySalt: text("kosync_key_salt"),
   /** `true` counts everything a source ever posted as unread on subscribe (dots
    * + counts); `null`/`false` = off (default for new users) — posts published
    * before you subscribed are suppressed from unread dots/counts (dots return if
@@ -66,6 +77,13 @@ export const user = pgTable("user", {
    * users that existed before this preference shipped, to preserve their current
    * behaviour. */
   countOldPostsAsUnread: boolean("count_old_posts_as_unread"),
+  /** `true` hides Bridgy Fed's bulk web bridge (`*.web.brid.gy` — websites
+   * mirrored into AT Protocol without anyone there asking) from every
+   * network-wide surface: Latest "All", Discover, search, tag pages, related
+   * articles. `null`/`false` = shown (default). Never applied to the reader's
+   * own subscriptions, and never to `*.ap.brid.gy`. See
+   * `src/lib/exclude-web-bridge.ts`. */
+  excludeWebBridge: boolean("exclude_web_bridge"),
   /** `true` paints publication pages and their documents in the publication's
    * own `site.standard.theme.basic` colors; `null`/`false` = off (default), so
    * the app's editorial theme is used everywhere. Publications that carry no
@@ -110,6 +128,15 @@ export const user = pgTable("user", {
   /** `true` enables the Semble/Cosmik (network.cosmik.*) save scope tier on
    * the next sign-in, mirroring {@link marginSaveEnabled}. */
   sembleSaveEnabled: boolean("semble_save_enabled"),
+  /** `true` enables write access to the reader's Bluesky block records
+   * (`app.bsky.graph.block` / `.listblock`) on the next sign-in, mirroring
+   * {@link marginSaveEnabled}. Set when the reader goes through the "block from
+   * here" upgrade flow; the source of truth for "actually granted" is
+   * `account.scope` (see `hasBskyBlockWriteScope`).
+   *
+   * Only *writing* needs this. Blocks the reader already made are enforced for
+   * everyone, granted or not — they are public repo records. */
+  blockingEnabled: boolean("blocking_enabled"),
   /** `true` stops the one-time ATStore review prompt toast from showing again. */
   atstoreReviewPromptDismissed: boolean("atstore_review_prompt_dismissed"),
   /** `true` once the first-run onboarding wizard was finished or dismissed;
@@ -144,6 +171,14 @@ export const user = pgTable("user", {
    * callback sends the welcome once and stamps this so it never repeats on
    * subsequent logins. See `src/server/digest/welcome.server.ts`. */
   weeklyDigestWelcomeSentAt: timestamp("weekly_digest_welcome_sent_at", {
+    withTimezone: true,
+  }),
+  /** When this reader's Bluesky labeler subscriptions were ported over, so the
+   * import runs exactly once. It must not repeat: importing is additive, so a
+   * re-run would resurrect any labeler the reader has since unsubscribed from
+   * here. Bluesky preferences are read-only to us (see `bsky-prefs.server.ts`),
+   * which is why divergence after the port is expected and fine. */
+  bskyLabelersImportedAt: timestamp("bsky_labelers_imported_at", {
     withTimezone: true,
   }),
   createdAt: timestamp("created_at", { withTimezone: true })

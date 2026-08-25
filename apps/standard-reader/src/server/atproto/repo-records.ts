@@ -356,6 +356,152 @@ export async function deleteUserFollowRecords(
   );
 }
 
+/**
+ * Write an `app.standard-reader.graph.mute` for `subject` — a user DID or the
+ * AT-URI of a `site.standard.publication`. Keyed by {@link subjectRkey} so
+ * muting twice is the same record.
+ */
+export async function putMuteRecord(
+  client: Client,
+  repo: string,
+  subject: string,
+  createdAt: string,
+): Promise<{ uri: string; cid: string }> {
+  return repoPutRecord(client, {
+    repo,
+    collection: COLLECTION.graphMute,
+    rkey: subjectRkey(subject),
+    record: {
+      $type: COLLECTION.graphMute,
+      subject,
+      createdAt,
+    },
+  });
+}
+
+/**
+ * Delete every mute record for `subject` — the deterministic `subjectRkey`
+ * plus any TID-rkey records other clients may have written for the same
+ * subject (mirrors {@link deleteUserFollowRecords}).
+ */
+export async function deleteMuteRecords(
+  client: Client,
+  repo: string,
+  subject: string,
+  knownRkeys: Array<string> = [],
+): Promise<void> {
+  const rkeys = new Set([subjectRkey(subject), ...knownRkeys]);
+  await Promise.all(
+    [...rkeys].map((rkey) =>
+      repoDeleteRecord(client, {
+        repo,
+        collection: COLLECTION.graphMute,
+        rkey,
+      }),
+    ),
+  );
+}
+
+// ── Bluesky blocks ──────────────────────────────────────────────────────────
+//
+// A block is a portable `app.bsky.graph.block` record in the reader's own repo,
+// not something we model ourselves — blocking here blocks everywhere. See
+// `db/schema/blocks.ts` for why there is no Standard Reader block lexicon.
+
+export const BSKY_BLOCK_COLLECTION = "app.bsky.graph.block";
+export const BSKY_LISTBLOCK_COLLECTION = "app.bsky.graph.listblock";
+
+/**
+ * Block `subjectDid` for `repo`, or return the existing record if there is one.
+ *
+ * Keyed by {@link subjectRkey} rather than a TID so blocking twice is the same
+ * record: a reader who blocks from two tabs, or re-blocks after a failed sync,
+ * ends up with one block rather than a pile of equivalent ones. Bluesky itself
+ * writes TID rkeys, and those are honoured on read — we just don't add more.
+ */
+export async function putBskyBlockRecord(
+  client: Client,
+  repo: string,
+  subjectDid: string,
+  createdAt: string,
+): Promise<{ uri: string; cid: string }> {
+  return repoPutRecord(client, {
+    repo,
+    collection: BSKY_BLOCK_COLLECTION,
+    rkey: subjectRkey(subjectDid),
+    record: {
+      $type: BSKY_BLOCK_COLLECTION,
+      subject: subjectDid,
+      createdAt,
+    },
+  });
+}
+
+/**
+ * Delete the reader's block records for `subjectDid`.
+ *
+ * Takes `knownRkeys` because the reader's existing blocks were almost certainly
+ * written by Bluesky under TID rkeys, which {@link subjectRkey} can't derive —
+ * callers pass the rkeys from the read-model mirror so unblocking works on a
+ * block made anywhere, not just one made here. Mirrors
+ * {@link deleteUserFollowRecords}.
+ */
+export async function deleteBskyBlockRecords(
+  client: Client,
+  repo: string,
+  subjectDid: string,
+  knownRkeys: Array<string> = [],
+): Promise<void> {
+  const rkeys = new Set([subjectRkey(subjectDid), ...knownRkeys]);
+  await Promise.all(
+    [...rkeys].map((rkey) =>
+      repoDeleteRecord(client, {
+        repo,
+        collection: BSKY_BLOCK_COLLECTION,
+        rkey,
+      }),
+    ),
+  );
+}
+
+/** Subscribe `repo` to a moderation list (`app.bsky.graph.listblock`). */
+export async function putBskyListBlockRecord(
+  client: Client,
+  repo: string,
+  listUri: string,
+  createdAt: string,
+): Promise<{ uri: string; cid: string }> {
+  return repoPutRecord(client, {
+    repo,
+    collection: BSKY_LISTBLOCK_COLLECTION,
+    rkey: subjectRkey(listUri),
+    record: {
+      $type: BSKY_LISTBLOCK_COLLECTION,
+      subject: listUri,
+      createdAt,
+    },
+  });
+}
+
+/** Unsubscribe `repo` from a moderation list. See {@link deleteBskyBlockRecords}. */
+export async function deleteBskyListBlockRecords(
+  client: Client,
+  repo: string,
+  listUri: string,
+  knownRkeys: Array<string> = [],
+): Promise<void> {
+  const rkeys = new Set([subjectRkey(listUri), ...knownRkeys]);
+  await Promise.all(
+    [...rkeys].map((rkey) =>
+      repoDeleteRecord(client, {
+        repo,
+        collection: BSKY_LISTBLOCK_COLLECTION,
+        rkey,
+      }),
+    ),
+  );
+}
+
 /** Write an `app.standard-reader.labeler.subscription` (V2) for `labelerDid`.
  *  V2 is the nested-NSID successor to the flat `labelerSubscription`; new writes
  *  go here. Reads accept both until per-reader migration completes. */
@@ -365,6 +511,7 @@ export async function putLabelerSubscriptionRecord(
   labelerDid: string,
   createdAt: string,
   labels?: Array<{ val: string; visibility: "ignore" | "warn" | "hide" }>,
+  enabled?: boolean,
 ): Promise<{ uri: string; cid: string }> {
   return repoPutRecord(client, {
     repo,
@@ -374,6 +521,9 @@ export async function putLabelerSubscriptionRecord(
       $type: COLLECTION.labelerSubscriptionV2,
       labeler: labelerDid,
       ...(labels && labels.length > 0 ? { labels } : {}),
+      // Only written when disabled: absent means enabled, so an untouched
+      // subscription keeps the same record shape it has always had.
+      ...(enabled === false ? { enabled: false } : {}),
       createdAt,
     },
   });
@@ -406,21 +556,6 @@ export async function deleteLegacyLabelerSubscriptionRecord(
     repo,
     collection: COLLECTION.labelerSubscription,
     rkey: subjectRkey(labelerDid),
-  });
-}
-
-/** Write an `app.standard-reader.labeler.service` record (labeler registration). */
-export async function putLabelerServiceRecord(
-  client: Client,
-  repo: string,
-  rkey: string,
-  record: Record<string, unknown>,
-): Promise<{ uri: string; cid: string }> {
-  return repoPutRecord(client, {
-    repo,
-    collection: COLLECTION.labelerService,
-    rkey,
-    record: { $type: COLLECTION.labelerService, ...record },
   });
 }
 

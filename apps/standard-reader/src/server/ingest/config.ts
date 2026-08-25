@@ -13,54 +13,64 @@ function required(name: string): string {
 
 export const ingestConfig = {
   /**
-   * Base URL of the `tap` admin/HTTP API (e.g. `http://127.0.0.1:2480`). Used to
-   * dynamically track newly-discovered repos via `/repos/add`. Optional: when
-   * unset, dynamic tracking is skipped (tap can still be seeded statically).
-   */
-  get tapApiUrl(): string | null {
-    return process.env.TAP_API_URL ?? null;
-  },
-
-  /**
-   * Optional second tap instance signaled on `app.standard-reader.labeler.service`
-   * (`TAP_LABELER_API_URL`) so repos that register a labeler get tracked and
-   * their records indexed. Shares `TAP_ADMIN_PASSWORD`.
-   */
-  get tapLabelerApiUrl(): string | null {
-    return process.env.TAP_LABELER_API_URL ?? null;
-  },
-
-  /**
-   * Optional third tap instance signaled on `site.standard.document`
-   * (`TAP_DOCS_API_URL`) so repos that publish documents without a publication
-   * record ("loose documents", e.g. Leaflet-hosted) get tracked + backfilled.
-   * Shares `TAP_ADMIN_PASSWORD`.
-   */
-  get tapDocsApiUrl(): string | null {
-    return process.env.TAP_DOCS_API_URL ?? null;
-  },
-
-  /** Basic-auth admin password for tap (`TAP_ADMIN_PASSWORD`), if configured. */
-  get tapAdminPassword(): string | null {
-    return process.env.TAP_ADMIN_PASSWORD ?? null;
-  },
-
-  /**
-   * Shared secret tap presents when POSTing to our webhook. tap uses HTTP Basic
-   * auth with username `admin` and `TAP_ADMIN_PASSWORD`; we verify the same
-   * credential here. Falls back to `INGEST_WEBHOOK_SECRET` for non-tap callers.
+   * Shared secret for the ingest worker's admin endpoints
+   * (`INGEST_WEBHOOK_SECRET`).
    */
   get webhookSecret(): string | null {
+    return process.env.INGEST_WEBHOOK_SECRET ?? null;
+  },
+
+  /** Jetstream v2 instance to consume (`JETSTREAM_SERVICE`). */
+  get jetstreamService(): string {
     return (
-      process.env.INGEST_WEBHOOK_SECRET ??
-      process.env.TAP_ADMIN_PASSWORD ??
-      null
+      process.env.JETSTREAM_SERVICE ?? "https://jetstream.us-east.bsky.network"
     );
   },
 
-  /** Whether to attempt dynamic `/repos/add` calls to tap during ingestion. */
-  get dynamicTrackingEnabled(): boolean {
-    return Boolean(process.env.TAP_API_URL);
+  /**
+   * API key for Jetstream's archive endpoints (`JETSTREAM_API_KEY`, from
+   * https://bsky.network/account). The live tail needs no auth; only replaying
+   * history does, so an unset key degrades to "live tail only" rather than
+   * failing outright.
+   */
+  get jetstreamApiKey(): string | null {
+    return process.env.JETSTREAM_API_KEY ?? null;
+  },
+
+  /**
+   * Concurrent archive block downloads **per fold**
+   * (`JETSTREAM_BLOCK_CONCURRENCY`). Throughput plateaus around 16–32 against
+   * the public instance and 64 gets nearly every request 429'd, so 16 is the
+   * safe shoulder.
+   *
+   * Per fold, not per process — the SDK applies this inside one snapshot
+   * iterator (`block-source.ts`), so N folds running at once are N × this many
+   * requests in flight. {@link jetstreamFoldConcurrency} is what keeps that
+   * product on the right side of the shoulder.
+   */
+  get jetstreamBlockConcurrency(): number {
+    const value = Number(process.env.JETSTREAM_BLOCK_CONCURRENCY);
+    return Number.isFinite(value) && value > 0 ? Math.floor(value) : 16;
+  },
+
+  /**
+   * Archive folds allowed to run at once, process-wide
+   * (`JETSTREAM_FOLD_CONCURRENCY`).
+   *
+   * The number that was missing. The reconcile sweep repairs eight repos
+   * concurrently and each fold downloads up to
+   * {@link jetstreamBlockConcurrency} blocks at a time, so the sweep alone ran
+   * 128 requests deep against an endpoint documented right above as 429ing
+   * nearly everything at 64. It did — `ingest.repoReconcile` logged
+   * `Upstream server responded with a 429 error` across thousands of repos,
+   * which is how two thirds of the fleet ended up parked in reconcile backoff.
+   *
+   * Two folds × sixteen blocks lands on the 32 shoulder. Raise the block count
+   * and lower this together, never one alone.
+   */
+  get jetstreamFoldConcurrency(): number {
+    const value = Number(process.env.JETSTREAM_FOLD_CONCURRENCY);
+    return Number.isFinite(value) && value > 0 ? Math.floor(value) : 2;
   },
 } as const;
 

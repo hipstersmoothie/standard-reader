@@ -1,3 +1,4 @@
+import { didWebDocumentUrl } from "#/lib/atproto/did-web";
 import { assertSafeFetchUrl } from "#/server/security/ssrf-guard";
 
 /**
@@ -91,10 +92,12 @@ function isFresh(entry: CacheEntry): boolean {
  * previously reached `new URL(path, host)` in fetch-record.ts unguarded and
  * threw an uncaught `TypeError: Invalid URL` that crashed repo reconcile for
  * that DID on every round-robin tick, forever. */
-function pdsFromDoc(doc: DidDocument): string | null {
-  const service = doc.service?.find(
-    (s) => s.id === "#atproto_pds" || s.type === "AtprotoPersonalDataServer",
-  );
+function serviceFromDoc(
+  doc: DidDocument,
+  id: string,
+  type: string,
+): string | null {
+  const service = doc.service?.find((s) => s.id === id || s.type === type);
   const endpoint = service?.serviceEndpoint;
   if (!endpoint) return null;
   try {
@@ -104,6 +107,23 @@ function pdsFromDoc(doc: DidDocument): string | null {
     return null;
   }
   return endpoint;
+}
+
+function pdsFromDoc(doc: DidDocument): string | null {
+  return serviceFromDoc(doc, "#atproto_pds", "AtprotoPersonalDataServer");
+}
+
+/**
+ * The label server a DID advertises in its DID document (`#atproto_labeler`),
+ * as every AT Protocol labeler does. Not cached alongside
+ * {@link resolveIdentity}: it is read when a labeler is first resolved, not per
+ * request.
+ */
+export async function resolveLabelerServiceEndpoint(
+  did: string,
+): Promise<string | null> {
+  const doc = await fetchDidDoc(did);
+  return doc ? serviceFromDoc(doc, "#atproto_labeler", "AtprotoLabeler") : null;
 }
 
 function handleFromDoc(doc: DidDocument): string | null {
@@ -117,11 +137,11 @@ async function fetchDidDoc(did: string): Promise<DidDocument | null> {
     if (did.startsWith("did:plc:")) {
       url = `${PLC_URL}/${encodeURIComponent(did)}`;
     } else if (did.startsWith("did:web:")) {
-      const host = did.slice("did:web:".length).replaceAll(":", "/");
-      url = `https://${host}/.well-known/did.json`;
+      url = didWebDocumentUrl(did);
       // did:web host is attacker-controlled — validate before fetching to
       // prevent SSRF (security audit C1/C2).
       try {
+        if (!url) return null;
         assertSafeFetchUrl(url);
       } catch {
         return null;

@@ -14,13 +14,21 @@ import {
   dbValueToTrackReadingHistory,
 } from "#/lib/track-reading-history";
 import { getReaderContextForRequest } from "#/middleware/auth-session.server";
+import { blockFilterDid, filterBlockedCards } from "#/server/blocks/blocks";
 import {
   attachLabelsFromMap,
   attachSubscribedLabels,
   filterHiddenDocuments,
   hiddenUrisFromLabels,
-  readLabelsForUris,
+  isCardHidden,
+  labelSubjects,
+  readLabelsForSubjects,
 } from "#/server/labeler/labels.server";
+import {
+  filterMutedCards,
+  muteFilterDid,
+  mutedSubjectsAmong,
+} from "#/server/mutes/mutes";
 import type { Span } from "#/server/observability/log";
 import { observe } from "#/server/observability/log";
 import { attachReaderSpanContext } from "#/server/observability/span-context.ts";
@@ -262,10 +270,12 @@ async function resolveHomeFeedContext(
     trackReading: trackReadingOverride,
     trackReadingEnabled,
     countOldPostsAsUnreadEnabled,
+    excludeWebBridgeEnabled,
   }: {
     trackReading?: boolean;
     trackReadingEnabled?: boolean;
     countOldPostsAsUnreadEnabled?: boolean;
+    excludeWebBridgeEnabled?: boolean;
   } = {},
 ) {
   const trackReading =
@@ -273,10 +283,38 @@ async function resolveHomeFeedContext(
   const countOldPostsAsUnread = did
     ? (countOldPostsAsUnreadEnabled ?? true)
     : true;
+  const excludeWebBridge = did ? (excludeWebBridgeEnabled ?? false) : false;
 
-  const { publicationUris: followUris, userDids: followedUserDids } = did
-    ? await effectiveFollowSets(db, schema, did)
-    : { publicationUris: [], userDids: [] };
+  const [
+    { publicationUris: rawFollowUris, userDids: rawFollowedUserDids },
+    blockDid,
+    muteDid,
+  ] = await Promise.all([
+    did
+      ? effectiveFollowSets(db, schema, did)
+      : Promise.resolve({ publicationUris: [], userDids: [] }),
+    blockFilterDid(db, schema, did),
+    muteFilterDid(db, schema, did),
+  ]);
+  // Pre-filter the follow sets rather than relying on the SQL predicate alone:
+  // removing a muted user here is what removes their *recommend*-sourced
+  // entries (the recommend union branch keys off `followedUserDids`), and
+  // removing a muted publication keeps its whole branch out of the union. The
+  // `muterDid` predicate below still catches what pre-filtering can't see —
+  // e.g. a guest post by a muted author inside a followed publication.
+  const muted =
+    muteDid && (rawFollowedUserDids.length > 0 || rawFollowUris.length > 0)
+      ? await mutedSubjectsAmong(db, schema, muteDid, {
+          dids: rawFollowedUserDids,
+          uris: rawFollowUris,
+        })
+      : null;
+  const followUris = muted
+    ? rawFollowUris.filter((uri) => !muted.uris.has(uri))
+    : rawFollowUris;
+  const followedUserDids = muted
+    ? rawFollowedUserDids.filter((mutedDid) => !muted.dids.has(mutedDid))
+    : rawFollowedUserDids;
   const hasFollows = followUris.length > 0 || followedUserDids.length > 0;
   const isTrending = scope === "trending";
   const personalized = hasFollows && scope === "follows";
@@ -290,18 +328,28 @@ async function resolveHomeFeedContext(
         publicationUris: followUris,
         followedUserDids,
         countOldPostsAsUnread,
+        ...(blockDid ? { viewerDid: blockDid } : {}),
+        ...(muteDid ? { muterDid: muteDid } : {}),
         ...(trackReading && did ? { readForDid: did, unreadForDid: did } : {}),
       }
-    : { discoverOnly: true };
+    : {
+        discoverOnly: true,
+        excludeWebBridge,
+        ...(blockDid ? { viewerDid: blockDid } : {}),
+        ...(muteDid ? { muterDid: muteDid } : {}),
+      };
 
   return {
     did,
+    blockDid,
+    muteDid,
     followUris,
     followedUserDids,
     trackReading,
     hasFollows,
     isTrending,
     personalized,
+    excludeWebBridge,
     rowQuery,
   };
 }
@@ -321,12 +369,26 @@ async function buildHomeFeedCritical(
   // The publications rail (sidebar) is fetched alongside so both ship in the
   // critical payload.
   if (isTrending) {
-    const [trendingPubs, trendingRaw] = await Promise.all([
-      trendingPublications(db, schema, HOME_RAIL_LIMIT),
+    const [trendingPubsRaw, trendingRaw] = await Promise.all([
+      trendingPublications(db, schema, HOME_RAIL_LIMIT, {
+        excludeWebBridge: ctx.excludeWebBridge,
+      }),
       trendingArticles(db, schema, HOME_TRENDING_ROW_LIMIT + 1, {
         readForDid: trackReading && ctx.did ? ctx.did : undefined,
+        excludeWebBridge: ctx.excludeWebBridge,
+        viewerDid: ctx.blockDid,
+        muterDid: ctx.muteDid,
       }),
     ]);
+    // Publication rails aren't paginated, so blocked/muted owners are dropped
+    // from the page rather than excluded in SQL — a shorter rail is fine where
+    // a shorter *feed* page would strand results behind the offset.
+    const trendingPubs = await filterMutedCards(
+      db,
+      schema,
+      ctx.did,
+      await filterBlockedCards(db, schema, ctx.did, trendingPubsRaw),
+    );
     span.set("trendingPublications", trendingPubs.length);
 
     const trendingFiltered = await filterHiddenDocuments(
@@ -371,8 +433,10 @@ async function buildHomeFeedCritical(
 
   // Trending publications rail (sidebar). Cheap indexed top-N, fetched
   // alongside the main rows so it's part of the critical payload.
-  const [trendingPubs, featuredLead, rows] = await Promise.all([
-    trendingPublications(db, schema, HOME_RAIL_LIMIT),
+  const [trendingPubsRaw, featuredLead, rows] = await Promise.all([
+    trendingPublications(db, schema, HOME_RAIL_LIMIT, {
+      excludeWebBridge: ctx.excludeWebBridge,
+    }),
     selectArticleCards(db, schema, {
       ...rowQuery,
       featuredOnly: true,
@@ -383,6 +447,12 @@ async function buildHomeFeedCritical(
       limit: HOME_ROW_LIMIT + 1,
     }),
   ]);
+  const trendingPubs = await filterMutedCards(
+    db,
+    schema,
+    ctx.did,
+    await filterBlockedCards(db, schema, ctx.did, trendingPubsRaw),
+  );
   span.set("trendingPublications", trendingPubs.length);
 
   let featured: ArticleCard | null = featuredLead[0] ?? rows[0] ?? null;
@@ -403,10 +473,9 @@ async function buildHomeFeedCritical(
   // This replaced three serial round trips (hidden → labels → recommends, where
   // the first two issued the *same* `document_labels` query) with one wave.
   const cards = [...(featured ? [featured] : []), ...latestUnread];
-  const cardUris = cards.map((article) => article.uri);
   const [labelsByUri, withRecs] = await Promise.all([
     ctx.did
-      ? readLabelsForUris(db, schema, ctx.did, cardUris)
+      ? readLabelsForSubjects(db, schema, ctx.did, labelSubjects(cards))
       : Promise.resolve(new Map<string, Array<ArticleCardLabel>>()),
     ctx.followedUserDids.length > 0
       ? attachRecommendedByToArticles(db, schema, ctx.followedUserDids, cards)
@@ -423,8 +492,10 @@ async function buildHomeFeedCritical(
   // Drop anything the reader hid via a subscribed labeler's label.
   const hidden = hiddenUrisFromLabels(labelsByUri);
   if (hidden.size > 0) {
-    if (featured && hidden.has(featured.uri)) featured = null;
-    latestUnread = latestUnread.filter((article) => !hidden.has(article.uri));
+    if (featured && isCardHidden(featured, hidden)) featured = null;
+    latestUnread = latestUnread.filter(
+      (article) => !isCardHidden(article, hidden),
+    );
   }
 
   span.set("rows", latestUnread.length);
@@ -433,7 +504,7 @@ async function buildHomeFeedCritical(
   const withCounts = await attachCommentCountsToArticles(
     db,
     schema,
-    withViewerRecs.filter((article) => !hidden.has(article.uri)),
+    withViewerRecs.filter((article) => !isCardHidden(article, hidden)),
   );
   const enrichedWithRecs = attachLabelsFromMap(withCounts, labelsByUri);
   const byUri = new Map(
@@ -467,18 +538,20 @@ async function buildHomeFeedExtras(
   ctx: HomeFeedContext,
   span: Span,
 ): Promise<HomeFeedExtras> {
-  const { personalized, did, followUris } = ctx;
+  const { personalized, did, followUris, excludeWebBridge } = ctx;
 
   const trendingPubUris = await trendingPublicationUris(
     db,
     schema,
     HOME_RAIL_LIMIT,
+    { excludeWebBridge },
   );
 
-  const youMightFollow =
+  const youMightFollowRaw =
     personalized && did
       ? await recommendedPublications(db, schema, did, HOME_RAIL_LIMIT, {
           excludeUris: trendingPubUris,
+          excludeWebBridge,
           followUris,
           seed: rotationSeed("home", did),
         })
@@ -488,7 +561,17 @@ async function buildHomeFeedExtras(
           HOME_RAIL_LIMIT,
           trendingPubUris,
           rotationSeed("home", did ?? "anon"),
+          { excludeWebBridge },
         );
+  // Never recommend a publication whose owner the reader is blocked from or
+  // has muted — "you might follow" is the one rail where that would read as an
+  // endorsement.
+  const youMightFollow = await filterMutedCards(
+    db,
+    schema,
+    did,
+    await filterBlockedCards(db, schema, did, youMightFollowRaw),
+  );
 
   span.set("youMightFollow", youMightFollow.length);
 
@@ -508,6 +591,7 @@ async function loadHomeFeedCritical(
     trackReading?: boolean;
     trackReadingEnabled?: boolean;
     countOldPostsAsUnreadEnabled?: boolean;
+    excludeWebBridgeEnabled?: boolean;
   } = {},
 ): Promise<HomeFeed> {
   const ctx = await resolveHomeFeedContext(
@@ -531,6 +615,7 @@ async function loadHomeFeedExtras(
     trackReading?: boolean;
     trackReadingEnabled?: boolean;
     countOldPostsAsUnreadEnabled?: boolean;
+    excludeWebBridgeEnabled?: boolean;
   } = {},
 ): Promise<HomeFeedExtras> {
   const ctx = await resolveHomeFeedContext(
@@ -549,12 +634,18 @@ const getHomeFeed = createServerFn({ method: "GET" })
   .validator(homeInput)
   .handler(
     observe("feed.getHomeFeed", async ({ data, context }, span) => {
-      const { db, schema, trackReadingEnabled, countOldPostsAsUnreadEnabled } =
-        context;
+      const {
+        db,
+        schema,
+        trackReadingEnabled,
+        countOldPostsAsUnreadEnabled,
+        excludeWebBridgeEnabled,
+      } = context;
       const did = await attachReaderSpanContext(span, getRequest());
       return loadHomeFeedCritical(db, schema, did, data.scope, span, {
         trackReadingEnabled,
         countOldPostsAsUnreadEnabled,
+        excludeWebBridgeEnabled,
       });
     }),
   );
@@ -570,7 +661,12 @@ const getHomePage = createServerFn({ method: "GET" })
   .validator(homePageInput)
   .handler(
     observe("feed.getHomePage", async ({ data, context }, span) => {
-      const { db, schema, countOldPostsAsUnreadEnabled } = context;
+      const {
+        db,
+        schema,
+        countOldPostsAsUnreadEnabled,
+        excludeWebBridgeEnabled,
+      } = context;
       const did = await attachReaderSpanContext(span, getRequest());
       const reader = did
         ? await getReaderContextForRequest(getRequest())
@@ -597,6 +693,7 @@ const getHomePage = createServerFn({ method: "GET" })
 
       const feed = await loadHomeFeedCritical(db, schema, did, scope, span, {
         countOldPostsAsUnreadEnabled,
+        excludeWebBridgeEnabled,
         ...(trackReading === undefined ? {} : { trackReading }),
       });
       return {
@@ -613,13 +710,19 @@ const getHomeExtras = createServerFn({ method: "GET" })
   .validator(homeExtrasInput)
   .handler(
     observe("feed.getHomeExtras", async ({ data, context }, span) => {
-      const { db, schema, trackReadingEnabled, countOldPostsAsUnreadEnabled } =
-        context;
+      const {
+        db,
+        schema,
+        trackReadingEnabled,
+        countOldPostsAsUnreadEnabled,
+        excludeWebBridgeEnabled,
+      } = context;
       const did = await attachReaderSpanContext(span, getRequest());
 
       return loadHomeFeedExtras(db, schema, did, data.scope, span, {
         trackReadingEnabled,
         countOldPostsAsUnreadEnabled,
+        excludeWebBridgeEnabled,
       });
     }),
   );
@@ -632,18 +735,44 @@ async function loadLatestFeedCritical(
   span: Span,
   trackReadingEnabled: boolean,
   countOldPostsAsUnreadEnabled = true,
+  excludeWebBridgeEnabled = false,
 ): Promise<LatestFeed> {
   span.set("filter", data.filter);
   span.set("offset", data.offset);
 
-  const { publicationUris: followUris, userDids: followedUserDids } = did
-    ? await effectiveFollowSets(db, schema, did)
-    : { publicationUris: [], userDids: [] };
+  const [
+    { publicationUris: rawFollowUris, userDids: rawFollowedUserDids },
+    blockDid,
+    muteDid,
+  ] = await Promise.all([
+    did
+      ? effectiveFollowSets(db, schema, did)
+      : Promise.resolve({ publicationUris: [], userDids: [] }),
+    blockFilterDid(db, schema, did),
+    muteFilterDid(db, schema, did),
+  ]);
+  // Same pre-filter as the home feed: dropping muted sources from the input
+  // sets removes their recommend-sourced entries; the `muterDid` predicate
+  // catches guest posts by muted authors inside followed publications.
+  const muted =
+    muteDid && (rawFollowedUserDids.length > 0 || rawFollowUris.length > 0)
+      ? await mutedSubjectsAmong(db, schema, muteDid, {
+          dids: rawFollowedUserDids,
+          uris: rawFollowUris,
+        })
+      : null;
+  const followUris = muted
+    ? rawFollowUris.filter((uri) => !muted.uris.has(uri))
+    : rawFollowUris;
+  const followedUserDids = muted
+    ? rawFollowedUserDids.filter((mutedDid) => !muted.dids.has(mutedDid))
+    : rawFollowedUserDids;
   span.set("follows", followUris.length);
   span.set("followedUsers", followedUserDids.length);
   const trackReading = did == null ? false : trackReadingEnabled;
   const countOldPostsAsUnread =
     did == null ? true : countOldPostsAsUnreadEnabled;
+  const excludeWebBridge = did == null ? false : excludeWebBridgeEnabled;
 
   const trendingLimit =
     data.filter === "trending"
@@ -657,11 +786,14 @@ async function loadLatestFeedCritical(
             offset: data.offset,
             readForDid: trackReading && did ? did : undefined,
             scope: "page",
+            excludeWebBridge,
+            viewerDid: blockDid,
+            muterDid: muteDid,
           })
         : []
       : await selectArticleCards(db, schema, {
           ...(!did || data.filter === "all"
-            ? { discoverOnly: true }
+            ? { discoverOnly: true, excludeWebBridge }
             : {
                 publicationUris: followUris,
                 followedUserDids,
@@ -670,6 +802,8 @@ async function loadLatestFeedCritical(
               }),
           readForDid: trackReading && did ? did : undefined,
           countOldPostsAsUnread,
+          viewerDid: blockDid,
+          muterDid: muteDid,
           limit: data.limit,
           offset: data.offset,
         });
@@ -687,12 +821,7 @@ async function loadLatestFeedCritical(
   // "all" / signed-out / trending paths, which have no followed-user context).
   const [labelsByUri, withRecs] = await Promise.all([
     did
-      ? readLabelsForUris(
-          db,
-          schema,
-          did,
-          items.map((item) => item.uri),
-        )
+      ? readLabelsForSubjects(db, schema, did, labelSubjects(items))
       : Promise.resolve(new Map<string, Array<ArticleCardLabel>>()),
     did && data.filter !== "all" && followedUserDids.length > 0
       ? attachRecommendedByToArticles(db, schema, followedUserDids, items)
@@ -702,7 +831,7 @@ async function loadLatestFeedCritical(
   // Hide labeled posts for the reader, but page on the pre-filter count so
   // pagination still advances (a page may just show slightly fewer rows).
   const hidden = hiddenUrisFromLabels(labelsByUri);
-  const visibleItems = withRecs.filter((item) => !hidden.has(item.uri));
+  const visibleItems = withRecs.filter((item) => !isCardHidden(item, hidden));
   // No DB work: reads cached counts and schedules background revalidation.
   const enrichedItems = await attachCommentCountsToArticles(
     db,
@@ -736,15 +865,40 @@ async function loadLatestFeedCounts(
   span: Span,
   trackReadingEnabled: boolean,
   countOldPostsAsUnreadEnabled = true,
+  excludeWebBridgeEnabled = false,
 ): Promise<LatestFeedCounts> {
-  const { publicationUris: followUris, userDids: followedUserDids } = did
-    ? await effectiveFollowSets(db, schema, did)
-    : { publicationUris: [], userDids: [] };
+  const [
+    { publicationUris: rawFollowUris, userDids: rawFollowedUserDids },
+    muteDid,
+  ] = await Promise.all([
+    did
+      ? effectiveFollowSets(db, schema, did)
+      : Promise.resolve({ publicationUris: [], userDids: [] }),
+    muteFilterDid(db, schema, did),
+  ]);
+  // Counts must agree with the rows: the feed pre-filters muted sources out of
+  // its input sets, so the badge totals drop them the same way. (Blocks skip
+  // counts entirely — the correlated predicate is too expensive for a badge —
+  // and the same goes for muted guest posts inside followed publications.)
+  const muted =
+    muteDid && (rawFollowedUserDids.length > 0 || rawFollowUris.length > 0)
+      ? await mutedSubjectsAmong(db, schema, muteDid, {
+          dids: rawFollowedUserDids,
+          uris: rawFollowUris,
+        })
+      : null;
+  const followUris = muted
+    ? rawFollowUris.filter((uri) => !muted.uris.has(uri))
+    : rawFollowUris;
+  const followedUserDids = muted
+    ? rawFollowedUserDids.filter((mutedDid) => !muted.dids.has(mutedDid))
+    : rawFollowedUserDids;
   span.set("follows", followUris.length);
   span.set("followedUsers", followedUserDids.length);
   const trackReading = did == null ? false : trackReadingEnabled;
   const countOldPostsAsUnread =
     did == null ? true : countOldPostsAsUnreadEnabled;
+  const excludeWebBridge = did == null ? false : excludeWebBridgeEnabled;
 
   const [followCounts, networkCount, trendingCount] = await Promise.all([
     did
@@ -752,8 +906,10 @@ async function loadLatestFeedCounts(
           countOldPostsAsUnread,
         })
       : Promise.resolve({ all: 0, unread: 0 }),
-    countNetworkDocuments(db, schema),
-    did ? countTrendingDocuments(db, schema, "page") : Promise.resolve(0),
+    countNetworkDocuments(db, schema, { excludeWebBridge }),
+    did
+      ? countTrendingDocuments(db, schema, "page", { excludeWebBridge })
+      : Promise.resolve(0),
   ]);
 
   return {
@@ -769,8 +925,13 @@ const getLatestFeed = createServerFn({ method: "GET" })
   .validator(latestInput)
   .handler(
     observe("feed.getLatestFeed", async ({ data, context }, span) => {
-      const { db, schema, trackReadingEnabled, countOldPostsAsUnreadEnabled } =
-        context;
+      const {
+        db,
+        schema,
+        trackReadingEnabled,
+        countOldPostsAsUnreadEnabled,
+        excludeWebBridgeEnabled,
+      } = context;
       const did = await attachReaderSpanContext(span, getRequest());
       return loadLatestFeedCritical(
         db,
@@ -780,6 +941,7 @@ const getLatestFeed = createServerFn({ method: "GET" })
         span,
         trackReadingEnabled,
         countOldPostsAsUnreadEnabled,
+        excludeWebBridgeEnabled,
       );
     }),
   );
@@ -789,8 +951,13 @@ const getLatestFeedCounts = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
   .handler(
     observe("feed.getLatestFeedCounts", async ({ context }, span) => {
-      const { db, schema, trackReadingEnabled, countOldPostsAsUnreadEnabled } =
-        context;
+      const {
+        db,
+        schema,
+        trackReadingEnabled,
+        countOldPostsAsUnreadEnabled,
+        excludeWebBridgeEnabled,
+      } = context;
       const did = await attachReaderSpanContext(span, getRequest());
       return loadLatestFeedCounts(
         db,
@@ -799,6 +966,7 @@ const getLatestFeedCounts = createServerFn({ method: "GET" })
         span,
         trackReadingEnabled,
         countOldPostsAsUnreadEnabled,
+        excludeWebBridgeEnabled,
       );
     }),
   );

@@ -97,6 +97,21 @@ export function markdownText(
 // Inline: mdast phrasing content → StructuredText (plaintext + byte facets)
 // ---------------------------------------------------------------------------
 
+/** A standalone `<br>` tag, in any of the spellings authors actually write. */
+const INLINE_BREAK_HTML = /^<br\s*\/?>$/i;
+
+/**
+ * A newline inside a markdown text node is a *soft* wrap — an author hard-
+ * wrapping their prose at 80 columns — which CommonMark renders as a space.
+ *
+ * It has to be flattened here, because a `\n` reaching the plaintext means
+ * "hard break" to every renderer downstream (see {@link segmentInline}); a
+ * genuine break arrives as a `break` node or a literal `<br>` instead.
+ */
+function softWrapToSpace(value: string): string {
+  return value.includes("\n") ? value.replaceAll(/\r?\n/g, " ") : value;
+}
+
 interface InlineRun {
   text: string;
   /** Facet suffix kinds (`bold`, `italic`, `code`, `strikethrough`). */
@@ -116,7 +131,16 @@ function collectRuns(
   for (const node of nodes) {
     switch (node.type) {
       case "text": {
-        out.push({ text: node.value, kinds, link });
+        const text = softWrapToSpace(node.value);
+        // A literal `<br>` leaves the newline that ended its line inside *this*
+        // node, where the flattening above turns it into a leading space.
+        // Indentation at the start of a line is not content, so drop it.
+        const afterBreak = out.at(-1)?.text.endsWith("\n") ?? false;
+        out.push({
+          kinds,
+          link,
+          text: afterBreak ? text.replace(/^[\t ]+/, "") : text,
+        });
         break;
       }
       case "strong": {
@@ -132,7 +156,11 @@ function collectRuns(
         break;
       }
       case "inlineCode": {
-        out.push({ text: node.value, kinds: [...kinds, "code"], link });
+        out.push({
+          kinds: [...kinds, "code"],
+          link,
+          text: softWrapToSpace(node.value),
+        });
         break;
       }
       case "link": {
@@ -141,6 +169,15 @@ function collectRuns(
       }
       case "break": {
         out.push({ text: "\n", kinds, link });
+        break;
+      }
+      case "html": {
+        // Inline HTML carries no text we can faithfully render — except a
+        // literal `<br>`, which is how a lot of markdown authors write a hard
+        // break. Dropping it silently joined the two lines into one.
+        if (INLINE_BREAK_HTML.test(node.value)) {
+          out.push({ text: "\n", kinds, link });
+        }
         break;
       }
       case "inlineMath": {
@@ -165,8 +202,9 @@ function collectRuns(
         break;
       }
       default: {
-        // image (inline), html, footnoteReference, etc. carry no plain body
-        // we can faithfully inline — skip rather than emit noise.
+        // Anything left (footnote definitions in a paragraph, raw MDX-ish
+        // nodes, …) carries no plain body we can faithfully inline — skip it
+        // rather than emit noise.
         break;
       }
     }
@@ -307,10 +345,17 @@ function mapCallout(node: {
   const marker = parseCalloutMarker(lead.value);
   if (!marker) return null;
 
-  // Re-emit the first paragraph without its marker line.
+  // Re-emit the first paragraph without its marker line. A break sitting right
+  // after the marker ends *that* line — an author writing `> [!NOTE]  ` — so it
+  // is dropped rather than opening the callout with a blank line.
+  const afterMarker = lead.value.slice(marker.matchLength);
+  const trailing = first.children.slice(1);
+  const bodyStart = afterMarker.trim()
+    ? 0
+    : trailing.findIndex((child) => child.type !== "break");
   const body: Array<PhrasingContent> = [
-    { type: "text", value: lead.value.slice(marker.matchLength) },
-    ...first.children.slice(1),
+    { type: "text", value: afterMarker },
+    ...(bodyStart === -1 ? [] : trailing.slice(bodyStart)),
   ];
 
   const runs = [inlineText(body)].filter((run) => run.plaintext.trim());

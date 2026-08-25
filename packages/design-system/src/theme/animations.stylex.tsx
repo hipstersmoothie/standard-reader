@@ -133,6 +133,12 @@ export const animationDuration = stylex.defineConsts({
   slow: "200ms",
   verySlow: "300ms",
   extremelySlow: "500ms",
+  /**
+   * One turn of a looping "still working" indicator. Longer than any of the
+   * transition steps above on purpose — those describe a state change that ends,
+   * this one repeats until the work does.
+   */
+  indeterminateCycle: "900ms",
 });
 
 export const animationTimingFunction = stylex.defineConsts({

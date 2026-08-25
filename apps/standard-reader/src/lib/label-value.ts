@@ -1,7 +1,7 @@
 import type { LabelValueDef } from "#/server/labeler/resolve.server";
 
 /**
- * Label-value presentation helpers. A label `val` (e.g. `"claudeslop"`) is just
+ * Label-value presentation helpers. A label `val` (e.g. `"spam"`) is just
  * an identifier; its human-readable name + description live on the emitting
  * labeler's `labelValueDefinitions`. These resolve the display text from a set
  * of defs, falling back to the raw `val`/`identifier` so a pill is never empty

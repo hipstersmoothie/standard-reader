@@ -1,21 +1,41 @@
 import { queryOptions } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
-import { getRequest } from "@tanstack/react-start/server";
+import { getCookie, getRequest, setCookie } from "@tanstack/react-start/server";
 import { and, eq, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { z } from "zod";
 
 import { publicationLinkParams } from "#/components/reader/format";
+import type { BlockEdge } from "#/lib/blocks";
+import { uriAuthorityDid } from "#/lib/blocks";
 import type { CollectionManifest } from "#/lib/collections/manifest";
 import type { CollectionTheme } from "#/lib/collections/theme";
 import type { InlineMentionRefs } from "#/lib/leaflet/publication-mentions";
+import { articleLinkTarget } from "#/lib/link-target-variants";
+import type { ArchiveOrder } from "#/lib/publication/archive-order";
+import {
+  ARCHIVE_ORDER_COOKIE,
+  ARCHIVE_ORDER_COOKIE_MAX_AGE_SECONDS,
+  defaultArchiveOrder,
+  readArchiveOrderOverride,
+  withArchiveOrderOverride,
+} from "#/lib/publication/archive-order";
+import { needsSerialResolution } from "#/lib/publication/serial";
 import type { CodeHighlightsByScheme } from "#/lib/theme";
 import {
   getReaderContextForRequest,
   getReaderDidForRequest,
 } from "#/middleware/auth-session.server";
 import { cdnImageUrl } from "#/server/atproto/blob";
+import {
+  blockEdgeFor,
+  blockFilterDid,
+  filterBlockedCards,
+  firstBlockAmong,
+  readerHasBlocks,
+} from "#/server/blocks/blocks";
 import { buildCanonicalUrl } from "#/server/ingest/mappers";
+import { readAccountLabels } from "#/server/labeler/labels.server";
 import { observe } from "#/server/observability/log";
 import { attachReaderSpanContext } from "#/server/observability/span-context.ts";
 import type { MarginConnectionItem } from "#/server/reader/article-constellation-extras";
@@ -27,6 +47,13 @@ import type { ArticleDetailSourceRow } from "#/server/reader/article-detail-buil
 import { buildArticleDetail } from "#/server/reader/article-detail-build";
 import type { CollectionMagazineData } from "#/server/reader/collection-magazine";
 import { loadCollectionMagazine } from "#/server/reader/collection-magazine";
+import type { ComicPage, ComicShelf, ComicSpine } from "#/server/reader/comic";
+import {
+  COMIC_CHUNK_ISSUES,
+  selectComicPages,
+  selectComicShelf,
+  selectComicSpine,
+} from "#/server/reader/comic";
 import type { ContentLinkTargets } from "#/server/reader/content-links";
 import { resolveContentLinkTargets } from "#/server/reader/content-links";
 import { attachCommentCountsToArticles } from "#/server/reader/document-comments";
@@ -47,6 +74,12 @@ import {
   attachViewerRecommendedToArticles,
 } from "#/server/reader/recommended-by";
 import { effectiveFollowSets } from "#/server/reader/saved-lists";
+import type { SeriesContext } from "#/server/reader/series";
+import {
+  NO_SERIES_CONTEXT,
+  ensurePublicationSerial,
+  selectSeriesContext,
+} from "#/server/reader/series";
 import {
   themeModeForRequest,
   usePublicationThemeForRequest,
@@ -54,6 +87,7 @@ import {
 
 import type {
   ArticleCard,
+  ArticleCardLabel,
   JsonValue,
   ProfileSummary,
   PublicationCard,
@@ -81,6 +115,23 @@ const headerInput = z.object({
 const profileInput = z.object({
   publicationUri: z.string().min(1),
   recentLimit: z.number().int().min(1).max(30).default(10),
+});
+
+/**
+ * The archive-order cookie, or null outside a request scope (scripts, tests,
+ * in-process callers) where there is no reader to have a preference.
+ */
+function readArchiveOrderCookie(): string | null {
+  try {
+    return getCookie(ARCHIVE_ORDER_COOKIE) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+const archiveOrderInput = z.object({
+  publicationUri: z.string().min(1),
+  order: z.enum(["newest", "oldest"]),
 });
 
 const documentsInput = z.object({
@@ -122,6 +173,25 @@ const articleCardInput = z.object({
   documentUri: z.string().min(1),
 });
 
+const seriesContextInput = z.object({
+  documentUri: z.string().min(1),
+});
+
+const comicSpineInput = z.object({
+  publicationUri: z.string().min(1),
+});
+
+const comicShelfInput = z.object({
+  publicationUri: z.string().min(1),
+});
+
+const comicPagesInput = z.object({
+  publicationUri: z.string().min(1),
+  /** Index into the spine's issues, not a page number. */
+  issueOffset: z.number().int().min(0).default(0),
+  issueLimit: z.number().int().min(1).max(20).default(COMIC_CHUNK_ISSUES),
+});
+
 const contentLinksInput = z.object({
   hrefs: z.array(z.string()).default([]),
 });
@@ -138,7 +208,20 @@ export type { PublicationDocumentFilter } from "#/server/reader/queries";
 export interface PublicationProfile {
   publication: PublicationCard;
   owner: ProfileSummary;
+  /**
+   * Set when the viewer and this publication's owner are blocked from each
+   * other. The header still resolves so the page can explain itself, but
+   * `recentDocuments` comes back empty — see the note on `AuthorProfile.block`.
+   */
+  block: BlockEdge | null;
   recentDocuments: Array<ArticleCard>;
+  /**
+   * Labels on the **account** that owns this publication, from the viewer's
+   * subscribed labelers. Network labelers label accounts rather than documents
+   * (pub-search's `bulk-generated` marks a publisher whose documents are
+   * generated from a data source), so a publication inherits its owner's.
+   */
+  labels: Array<ArticleCardLabel>;
 }
 
 export interface PublicationSocialProof {
@@ -170,6 +253,14 @@ export interface PublicationEmbedMeta {
 export interface PublicationDocumentsPage {
   items: Array<ArticleCard>;
   nextOffset: number | null;
+  /**
+   * The order these rows are in. Reported rather than assumed by the caller:
+   * it depends on the publication's own serial flag *and* on the reader's
+   * cookie override, and the menu has to show which one actually won.
+   */
+  order: ArchiveOrder;
+  /** True when `order` is the reader's choice rather than the publication's. */
+  orderOverridden: boolean;
 }
 
 export interface ArticleContributor {
@@ -178,6 +269,8 @@ export interface ArticleContributor {
   displayName: string | null;
   handle: string | null;
   avatarUrl: string | null;
+  /** Contributor self-declares as a bot (a `bot` self-label on its profile). */
+  isBot: boolean;
 }
 
 export interface ArticleDetail {
@@ -208,6 +301,12 @@ export interface ArticleDetail {
   collectionTheme: CollectionTheme | null;
   /** Owning profile handle for the sticky byline (`@handle`). */
   publicationOwnerHandle: string | null;
+  /**
+   * The publication owner self-declares as a bot. A publication owned by a bot
+   * counts as a bot, so this drives the byline mark whenever the article has no
+   * distinct lead contributor.
+   */
+  publicationOwnerIsBot: boolean;
   /** Owning profile display name — the byline author when no contributor. */
   publicationOwnerDisplayName: string | null;
   contributors: Array<ArticleContributor>;
@@ -235,22 +334,49 @@ export interface ArticleExtras {
   marginConnections: Array<MarginConnectionItem>;
 }
 
+/**
+ * The publication header, plus whether the viewer is blocked from its owner.
+ *
+ * `block` rides on the header rather than being a second client query on
+ * purpose. Every surface that renders a publication — the profile route, mention
+ * hovercards, inline publication chips — reads this one query, so a block
+ * resolved anywhere else would have to be resolved *after* first paint, and the
+ * blocked account's name and avatar would render for a frame before being
+ * withheld. Here the caller never has an unblocked version to paint.
+ */
+export type PublicationHeaderView = PublicationHeader & {
+  block: BlockEdge | null;
+};
+
 const getPublicationHeader = createServerFn({ method: "GET" })
   .middleware([dbMiddleware])
   .validator(headerInput)
   .handler(
     observe(
       "publication.getHeader",
-      async ({ data, context }, span): Promise<PublicationHeader | null> => {
+      async (
+        { data, context },
+        span,
+      ): Promise<PublicationHeaderView | null> => {
         const { db, schema } = context;
         span.set("publicationUri", data.publicationUri);
-        const header = await selectPublicationHeader(
-          db,
-          schema,
-          data.publicationUri,
-        );
+        // The publication URI's authority *is* its owner's DID, so the block
+        // check needs no lookup of its own and runs alongside the header rather
+        // than ahead of it — a reader who blocks nobody pays one cached
+        // `EXISTS` here, concurrent with the read they were making anyway.
+        const ownerDid = uriAuthorityDid(data.publicationUri);
+        const resolveBlock = async () => {
+          if (!ownerDid) return null;
+          const viewerDid = await getReaderDidForRequest(getRequest());
+          return blockEdgeFor(db, schema, viewerDid, ownerDid);
+        };
+        const [header, block] = await Promise.all([
+          selectPublicationHeader(db, schema, data.publicationUri),
+          resolveBlock(),
+        ]);
         span.set("found", header != null);
-        return header;
+        if (block) span.set("blocked", block.direction);
+        return header ? { ...header, block } : null;
       },
     ),
   );
@@ -275,14 +401,29 @@ const getPublicationProfile = createServerFn({ method: "GET" })
         const countOldPostsAsUnread =
           did == null ? true : countOldPostsAsUnreadEnabled;
 
-        const [header, recentDocuments] = await Promise.all([
+        // The publication URI's authority *is* its owner's DID, so the block
+        // check needs no lookup of its own. It runs *alongside* the header and
+        // archive reads rather than gating them: a blocked owner is the rare
+        // case, and serializing a round trip ahead of every load to catch it
+        // would put the cost on everyone. The archive is discarded below when
+        // the block resolves, which is cheaper than the extra hop.
+        // Resolved first because everything below reuses its cached answer: for
+        // the reader who blocks nobody this is one indexed `EXISTS` per minute,
+        // and it makes `blockEdgeFor` free rather than a second round trip.
+        const ownerDid = uriAuthorityDid(data.publicationUri);
+        const blockDid = await blockFilterDid(db, schema, did);
+        const [header, recentDocuments, block] = await Promise.all([
           selectPublicationHeader(db, schema, data.publicationUri),
           selectPublicationArticleCards(db, schema, {
             publicationUri: data.publicationUri,
             limit: data.recentLimit,
             readForDid,
             countOldPostsAsUnread,
+            viewerDid: blockDid,
           }),
+          ownerDid && blockDid
+            ? blockEdgeFor(db, schema, did, ownerDid)
+            : Promise.resolve(null),
         ]);
 
         if (!header) {
@@ -290,16 +431,26 @@ const getPublicationProfile = createServerFn({ method: "GET" })
           return null;
         }
         span.set("found", true);
+        if (block) {
+          span.set("blocked", block.direction);
+          return { ...header, block, recentDocuments: [], labels: [] };
+        }
 
-        const recentWithComments = await attachCommentCountsToArticles(
-          db,
-          schema,
-          recentDocuments,
-        );
+        const [recentWithComments, accountLabels] = await Promise.all([
+          attachCommentCountsToArticles(db, schema, recentDocuments),
+          readAccountLabels(db, schema, did, [header.publication.did]),
+        ]);
 
+        // This fn is viewer-scoped (its query key carries `readerScope`), which
+        // is why labels can ride on it. `getPublicationHeader` is not — its key
+        // is `["publication", "header", uri]`, shared across readers — so the
+        // publication page reads account labels through the separate
+        // viewer-scoped `getAccountLabels` query instead.
         return {
           ...header,
+          block: null,
           recentDocuments: recentWithComments,
+          labels: accountLabels.get(header.publication.did) ?? [],
         };
       },
     ),
@@ -336,21 +487,53 @@ const getPublicationDocuments = createServerFn({ method: "GET" })
               : "all"
             : data.filter;
 
-        // The page rows and the reader's follow set are independent reads — the
-        // follow set only needs `did` — so resolve them in one wave instead of
-        // chaining. (`effectiveFollowSets` is request-memoized.)
-        const [documents, followSets] = await Promise.all([
-          selectPublicationArticleCards(db, schema, {
-            publicationUri: data.publicationUri,
-            limit: data.limit,
-            offset: data.offset,
-            readForDid,
-            countOldPostsAsUnread,
-            filter,
-            readerDid: did ?? undefined,
-          }),
-          did ? effectiveFollowSets(db, schema, did) : Promise.resolve(null),
-        ]);
+        const followSets = did
+          ? await effectiveFollowSets(db, schema, did)
+          : null;
+
+        // Every archive leads with the latest post, serials included — a reader
+        // who wants to start at the beginning says so, and that override is
+        // read here rather than passed in by the client so the order is right in
+        // the SSR'd HTML instead of flipping after hydration (see
+        // `#/lib/publication/archive-order`).
+        const orderOverride = readArchiveOrderOverride(
+          readArchiveOrderCookie(),
+          data.publicationUri,
+        );
+        const order = orderOverride ?? defaultArchiveOrder();
+        span.set("order", order);
+        span.set("orderOverridden", orderOverride != null);
+
+        // See `getPublicationProfile`: one cached `EXISTS` gates both the
+        // owner-level check and the guest-post filter, so a reader with no
+        // blocks adds no round trip to the archive.
+        const archiveOwnerDid = uriAuthorityDid(data.publicationUri);
+        const blockDid = await blockFilterDid(db, schema, did);
+        if (
+          archiveOwnerDid &&
+          blockDid &&
+          (await blockEdgeFor(db, schema, did, archiveOwnerDid))
+        ) {
+          span.set("blocked", true);
+          return {
+            items: [],
+            nextOffset: null,
+            order,
+            orderOverridden: orderOverride != null,
+          };
+        }
+
+        const documents = await selectPublicationArticleCards(db, schema, {
+          publicationUri: data.publicationUri,
+          limit: data.limit,
+          offset: data.offset,
+          readForDid,
+          countOldPostsAsUnread,
+          filter,
+          readerDid: did ?? undefined,
+          order,
+          viewerDid: blockDid,
+        });
 
         // "Recommended by @follow" attribution — same signal, same batched query
         // (one round trip over the page's rows, served by the partial
@@ -386,6 +569,8 @@ const getPublicationDocuments = createServerFn({ method: "GET" })
           items,
           nextOffset:
             documents.length === data.limit ? data.offset + data.limit : null,
+          order,
+          orderOverridden: orderOverride != null,
         };
       },
     ),
@@ -452,8 +637,11 @@ const getArticle = createServerFn({ method: "GET" })
                 pubOwnerDisplayName: sql<
                   string | null
                 >`coalesce(${pr.displayName}, ${pa.displayName})`,
+                pubOwnerIsBot: sql<boolean>`coalesce(${pr.isBot}, ${pa.isBot}, false)`,
                 pubTopic: p.topic,
                 pubVerified: p.verified,
+                pubPrevNextDirection: p.prevNextDirection,
+                pubSerialKind: p.serialKind,
                 pubSubscriberCount: st.subscriberCount,
                 pubDocumentCount: st.documentCount,
                 pubLastDocumentAt: st.lastDocumentAt,
@@ -473,6 +661,7 @@ const getArticle = createServerFn({ method: "GET" })
                 profileDisplayName: pr.displayName,
                 handle: pr.handle,
                 avatarUrl: pr.avatarUrl,
+                isBot: pr.isBot,
               })
               .from(dc)
               .leftJoin(pr, eq(pr.did, dc.did))
@@ -499,7 +688,15 @@ const getArticle = createServerFn({ method: "GET" })
             // `manager.resume()` network round trip on every article view.
             // The full PDS client is restored below only in the rare case
             // where the signed-in reader owns this collection document.
-            getReaderContextForRequest(getRequest()),
+            //
+            // The block check below needs `row.did`, so it can't join this
+            // wave — but its guard doesn't, so warm it here. That turns
+            // "does this reader block anyone" from a round trip on the article
+            // critical path into one that overlaps the document read.
+            getReaderContextForRequest(getRequest()).then(async (viewer) => {
+              if (viewer?.did) await readerHasBlocks(db, schema, viewer.did);
+              return viewer;
+            }),
           ]);
 
         const row = docRows[0];
@@ -509,6 +706,20 @@ const getArticle = createServerFn({ method: "GET" })
         }
         span.set("found", true);
 
+        // A blocked article is withheld outright rather than returned with its
+        // body stripped: nothing about it — title, excerpt, cover, byline —
+        // should reach the viewer. The page explains itself through
+        // `getArticleBlock`, which the not-found state asks for, so the common
+        // path pays nothing for the rare one.
+        const articleBlock = await firstBlockAmong(db, schema, reader?.did, [
+          row.did,
+          row.pubDid,
+        ]);
+        if (articleBlock) {
+          span.set("blocked", articleBlock.direction);
+          return null;
+        }
+
         const sourceRow = row as ArticleDetailSourceRow;
         const contributors: Array<ArticleContributor> = contributorRows.map(
           (c) => ({
@@ -517,6 +728,7 @@ const getArticle = createServerFn({ method: "GET" })
             displayName: c.displayName ?? c.profileDisplayName,
             handle: c.handle,
             avatarUrl: c.avatarUrl,
+            isBot: c.isBot ?? false,
           }),
         );
 
@@ -527,7 +739,7 @@ const getArticle = createServerFn({ method: "GET" })
           usePublicationThemeForRequest(db, schema, reader?.userId),
         ]);
 
-        return buildArticleDetail(
+        const detail = await buildArticleDetail(
           db,
           schema,
           sourceRow,
@@ -539,6 +751,32 @@ const getArticle = createServerFn({ method: "GET" })
             recommendCount: recommendRows[0]?.count ?? 0,
           },
         );
+
+        // A publication whose serial columns aren't resolved yet carries no
+        // serial metadata until something looks. Back it in here as well as on
+        // the publication page, so a reader who lands straight on a comic issue
+        // from a shared link still gets the comic reader rather than a column of
+        // stacked pages — this route's redirect into it reads `serial.kind`,
+        // which is `"book"` for a serial the sweep hasn't classified. One PDS
+        // read per publication, ever.
+        if (
+          detail?.publication &&
+          needsSerialResolution(
+            sourceRow.pubPrevNextDirection,
+            sourceRow.pubSerialKind,
+          )
+        ) {
+          detail.publication = {
+            ...detail.publication,
+            serial: await ensurePublicationSerial(
+              db,
+              schema,
+              detail.publication.uri,
+            ),
+          };
+        }
+
+        return detail;
       },
     ),
   );
@@ -668,7 +906,7 @@ const getArticleExtras = createServerFn({ method: "GET" })
     observe(
       "publication.getArticleExtras",
       async ({ data, context }, span): Promise<ArticleExtras> => {
-        const { db, schema } = context;
+        const { db, schema, excludeWebBridgeEnabled } = context;
         const d = schema.documents;
         span.set("documentUri", data.documentUri);
         await attachReaderSpanContext(span, getRequest());
@@ -699,11 +937,13 @@ const getArticleExtras = createServerFn({ method: "GET" })
         }
         span.set("found", true);
 
-        const canonicalUrl =
-          row.canonicalUrl ?? buildCanonicalUrl(row.publicationUrl, row.path);
+        const canonicalUrl = articleLinkTarget(
+          row.canonicalUrl ?? buildCanonicalUrl(row.publicationUrl, row.path),
+        );
         const linkUrls = canonicalUrl ? [canonicalUrl] : [];
 
         const readerDid = await getReaderDidForRequest(getRequest());
+        const blockDid = await blockFilterDid(db, schema, readerDid);
 
         const [
           moreFromRaw,
@@ -716,24 +956,26 @@ const getArticleExtras = createServerFn({ method: "GET" })
             ? selectArticleCards(db, schema, {
                 publicationUris: [row.publicationUri],
                 limit: 4,
+                viewerDid: blockDid,
               })
             : Promise.resolve([]),
           relatedArticles(db, schema, {
             documentUri: row.uri,
             publicationUri: row.publicationUri,
             limit: data.relatedLimit,
-          }),
+            excludeWebBridge: excludeWebBridgeEnabled,
+          }).then((rows) => filterBlockedCards(db, schema, readerDid, rows)),
           articleRecommendedPublications(db, schema, {
             publicationUri: row.publicationUri,
             readerDid,
             limit: data.alsoFollowLimit,
-          }),
+          }).then((rows) => filterBlockedCards(db, schema, readerDid, rows)),
           linkUrls.length > 0
             ? fetchCitedInArticles(db, schema, {
                 urls: linkUrls,
                 excludeDocumentUri: row.uri,
                 limit: 3,
-              })
+              }).then((rows) => filterBlockedCards(db, schema, readerDid, rows))
             : Promise.resolve([]),
           linkUrls.length > 0
             ? fetchMarginConnections(db, schema, {
@@ -799,14 +1041,202 @@ const getArticleCard = createServerFn({ method: "GET" })
       async ({ data, context }, span): Promise<ArticleCard | null> => {
         const { db, schema } = context;
         span.set("documentUri", data.documentUri);
+        const viewerDid = await getReaderDidForRequest(getRequest());
         const [card] = await selectArticleCardsByUris(
           db,
           schema,
           [data.documentUri],
-          { lite: true },
+          {
+            lite: true,
+            viewerDid: await blockFilterDid(db, schema, viewerDid),
+          },
         );
         span.set("found", card != null);
         return card ?? null;
+      },
+    ),
+  );
+
+/**
+ * Where a post sits in its publication and what comes next — the "Up next" link
+ * under a serial book's article and the comic reader's end-of-issue card.
+ *
+ * Returns {@link NO_SERIES_CONTEXT} for a loose document (no publication); the
+ * neighbours are still resolved for an ordinary blog, whose `serial` is null, so
+ * the caller decides whether a continuation makes sense rather than this query
+ * guessing.
+ */
+const getSeriesContext = createServerFn({ method: "GET" })
+  .middleware([dbMiddleware])
+  .validator(seriesContextInput)
+  .handler(
+    observe(
+      "publication.getSeriesContext",
+      async ({ data, context }, span): Promise<SeriesContext> => {
+        const { db, schema } = context;
+        const d = schema.documents;
+        const p = schema.publications;
+        span.set("documentUri", data.documentUri);
+
+        const [row] = await db
+          .select({
+            publicationUri: d.publicationUri,
+            publishedAt: d.publishedAt,
+            prevNextDirection: p.prevNextDirection,
+            serialKind: p.serialKind,
+          })
+          .from(d)
+          .leftJoin(p, eq(p.uri, d.publicationUri))
+          .where(eq(d.uri, data.documentUri))
+          .limit(1);
+
+        if (!row?.publicationUri) {
+          span.set("found", false);
+          return NO_SERIES_CONTEXT;
+        }
+        span.set("found", true);
+        span.set("serialKind", row.serialKind ?? "none");
+
+        // Unmirrored publication: resolve (and persist) its serial metadata
+        // before deciding whether this post has a series at all.
+        const serial =
+          row.prevNextDirection == null
+            ? await ensurePublicationSerial(db, schema, row.publicationUri)
+            : undefined;
+
+        const series = await selectSeriesContext(db, schema, {
+          documentUri: data.documentUri,
+          publicationUri: row.publicationUri,
+          publishedAt: row.publishedAt,
+          prevNextDirection: row.prevNextDirection,
+          serialKind: row.serialKind,
+        });
+        if (serial !== undefined) {
+          series.serial = serial;
+        }
+        span.set("position", series.position);
+        span.set("total", series.total);
+        span.set("hasNext", series.next != null);
+        return series;
+      },
+    ),
+  );
+
+/**
+ * A comic publication's spine: every issue's title and length, no bodies. The
+ * comic reader loads this once and derives absolute page numbers from it.
+ */
+const getComicSpine = createServerFn({ method: "GET" })
+  .middleware([dbMiddleware])
+  .validator(comicSpineInput)
+  .handler(
+    observe(
+      "publication.getComicSpine",
+      async ({ data, context }, span): Promise<ComicSpine> => {
+        const { db, schema } = context;
+        span.set("publicationUri", data.publicationUri);
+        const spine = await selectComicSpine(db, schema, data.publicationUri);
+        span.set("issues", spine.issues.length);
+        span.set("totalPages", spine.totalPages);
+        return spine;
+      },
+    ),
+  );
+
+/**
+ * Remember that this reader wants one publication's archive in a particular
+ * order, whatever the publisher's record says.
+ *
+ * Cookie only — no DB write and no migration to remember a display preference
+ * that a signed-out reader deserves just as much. The caller invalidates this
+ * publication's document queries afterwards; the next fetch (and every SSR from
+ * here on) reads the new value.
+ */
+const setPublicationArchiveOrder = createServerFn({ method: "POST" })
+  .validator(archiveOrderInput)
+  .handler(async ({ data }): Promise<{ order: ArchiveOrder }> => {
+    setCookie(
+      ARCHIVE_ORDER_COOKIE,
+      withArchiveOrderOverride(
+        readArchiveOrderCookie(),
+        data.publicationUri,
+        data.order,
+      ),
+      {
+        path: "/",
+        sameSite: "lax",
+        maxAge: ARCHIVE_ORDER_COOKIE_MAX_AGE_SECONDS,
+      },
+    );
+    return { order: data.order };
+  });
+
+/**
+ * A comic as a shelf of covers, for the publication page. One card per issue
+ * when the titles carry issue numbers (`mode: "issues"`), otherwise one per post
+ * (`mode: "pages"`); either way the page shows art rather than its archive list.
+ *
+ * Reader-scoped: each issue carries the pages this reader hasn't opened, which
+ * is what puts the unread dot on a cover and what decides the page a cover opens
+ * on. The query key carries the reader scope to match.
+ */
+const getComicShelf = createServerFn({ method: "GET" })
+  .middleware([dbMiddleware])
+  .validator(comicShelfInput)
+  .handler(
+    observe(
+      "publication.getComicShelf",
+      async ({ data, context }, span): Promise<ComicShelf> => {
+        const {
+          db,
+          schema,
+          trackReadingEnabled,
+          countOldPostsAsUnreadEnabled,
+        } = context;
+        span.set("publicationUri", data.publicationUri);
+        const did = await attachReaderSpanContext(span, getRequest());
+        // No reading history kept means no read state to report — every issue
+        // would come back unread and stay that way, which is worse than silence.
+        const readForDid = did && trackReadingEnabled ? did : undefined;
+        const shelf = await selectComicShelf(db, schema, data.publicationUri, {
+          readForDid,
+          countOldPostsAsUnread: countOldPostsAsUnreadEnabled,
+        });
+        span.set("shelfMode", shelf.mode);
+        span.set("issues", shelf.issues.length);
+        span.set(
+          "unreadIssues",
+          shelf.issues.filter((issue) => issue.unreadPages.length > 0).length,
+        );
+        return shelf;
+      },
+    ),
+  );
+
+/**
+ * One chunk of a comic's pages — the images for a window of issues, absolutely
+ * indexed. The reader asks for the chunk it is about to reach.
+ */
+const getComicPages = createServerFn({ method: "GET" })
+  .middleware([dbMiddleware])
+  .validator(comicPagesInput)
+  .handler(
+    observe(
+      "publication.getComicPages",
+      async (
+        { data, context },
+        span,
+      ): Promise<{ pages: Array<ComicPage>; totalPages: number }> => {
+        const { db, schema } = context;
+        span.set("publicationUri", data.publicationUri);
+        span.set("issueOffset", data.issueOffset);
+        const { pages, spine } = await selectComicPages(db, schema, {
+          publicationUri: data.publicationUri,
+          issueOffset: data.issueOffset,
+          issueLimit: data.issueLimit,
+        });
+        span.set("pages", pages.length);
+        return { pages, totalPages: spine.totalPages };
       },
     ),
   );
@@ -937,6 +1367,94 @@ function getPublicationDocumentsQueryOptions(
   });
 }
 
+/** Why an article isn't rendering, when the reason is a block. */
+export interface ArticleBlockState {
+  block: BlockEdge;
+  /** The blocked account, so the notice can name somebody rather than a DID. */
+  account: Pick<ProfileSummary, "did" | "handle" | "displayName" | "avatarUrl">;
+}
+
+/**
+ * The block withholding an article, if that is why it didn't render.
+ *
+ * Asked for only by the article page's empty state, so a page that resolves
+ * normally never pays for it. `getArticle` deliberately returns `null` for a
+ * blocked document rather than a stripped-down one — nothing about it should
+ * cross the wire — which is why the explanation is a second, opt-in read.
+ */
+const getArticleBlock = createServerFn({ method: "GET" })
+  .middleware([dbMiddleware])
+  .validator(articleInput)
+  .handler(
+    observe(
+      "publication.getArticleBlock",
+      async ({ data, context }, span): Promise<ArticleBlockState | null> => {
+        const { db, schema } = context;
+        const d = schema.documents;
+        const p = schema.publications;
+        const pr = schema.profiles;
+        span.set("documentUri", data.documentUri);
+
+        const viewerDid = await getReaderDidForRequest(getRequest());
+        if (!viewerDid) return null;
+
+        const [row] = await db
+          .select({ did: d.did, pubDid: p.did })
+          .from(d)
+          .leftJoin(p, eq(p.uri, d.publicationUri))
+          .where(eq(d.uri, data.documentUri))
+          .limit(1);
+        if (!row) return null;
+
+        const block = await firstBlockAmong(db, schema, viewerDid, [
+          row.did,
+          row.pubDid,
+        ]);
+        if (!block) return null;
+        span.set("blocked", block.direction);
+
+        const [profile] = await db
+          .select({
+            did: pr.did,
+            handle: pr.handle,
+            displayName: pr.displayName,
+            avatarUrl: pr.avatarUrl,
+          })
+          .from(pr)
+          .where(eq(pr.did, block.did))
+          .limit(1);
+
+        if (profile?.handle || profile?.displayName || profile?.avatarUrl) {
+          return { block, account: profile };
+        }
+
+        // Same reason as `readerBlockedAccounts`: the blocked account is
+        // usually not one we index, so the notice would name a `did:plc:…`.
+        const { fetchBlueskyPublicProfileFields } =
+          await import("#/lib/bluesky-public-profile");
+        const publicProfile = await fetchBlueskyPublicProfileFields(block.did);
+        return {
+          block,
+          account: {
+            did: block.did,
+            handle: profile?.handle ?? publicProfile?.handle ?? null,
+            displayName:
+              profile?.displayName ?? publicProfile?.displayName ?? null,
+            avatarUrl: profile?.avatarUrl ?? publicProfile?.avatarUrl ?? null,
+          },
+        };
+      },
+    ),
+  );
+
+function getArticleBlockQueryOptions(documentUri: string) {
+  return queryOptions({
+    queryKey: ["article", "block", documentUri] as const,
+    queryFn: async () => getArticleBlock({ data: { documentUri } }),
+    staleTime: 60_000,
+  });
+}
+
 function getArticleQueryOptions(documentUri: string) {
   return queryOptions({
     queryKey: ["article", documentUri] as const,
@@ -980,6 +1498,70 @@ function getPublicationSocialProofQueryOptions(
   });
 }
 
+/**
+ * Series position + neighbours. Cached for a minute: a serial gains issues
+ * slowly, and both readers of this (the article's "Up next" and the comic
+ * reader's end card) may mount for the same document in one session.
+ */
+function getSeriesContextQueryOptions(documentUri: string) {
+  return queryOptions({
+    queryKey: ["series", documentUri] as const,
+    queryFn: async () => getSeriesContext({ data: { documentUri } }),
+    staleTime: 60_000,
+  });
+}
+
+/**
+ * The shelf changes when the publication gains or edits an issue — and when the
+ * reader reads one, which is why the key carries the reader scope. Read state
+ * moves faster than the shelf does, so the cached copy is corrected as it
+ * renders from the read caches the reader fills walking the comic (see
+ * `#/lib/comic/shelf-progress`).
+ */
+function getComicShelfQueryOptions(
+  publicationUri: string,
+  { readerScope = "guest" }: { readerScope?: string } = {},
+) {
+  return queryOptions({
+    queryKey: ["comic", "shelf", publicationUri, readerScope] as const,
+    queryFn: async () => getComicShelf({ data: { publicationUri } }),
+    staleTime: 300_000,
+  });
+}
+
+/** The comic spine changes only when the publication gains or edits an issue. */
+function getComicSpineQueryOptions(publicationUri: string) {
+  return queryOptions({
+    queryKey: ["comic", "spine", publicationUri] as const,
+    queryFn: async () => getComicSpine({ data: { publicationUri } }),
+    staleTime: 300_000,
+  });
+}
+
+/**
+ * One chunk of comic pages. Keyed by its issue window so chunks accumulate in
+ * the cache instead of replacing each other — paging back through a comic
+ * re-reads what it already fetched.
+ */
+function getComicPagesQueryOptions(
+  publicationUri: string,
+  issueOffset: number,
+  issueLimit: number = COMIC_CHUNK_ISSUES,
+) {
+  return queryOptions({
+    queryKey: [
+      "comic",
+      "pages",
+      publicationUri,
+      issueOffset,
+      issueLimit,
+    ] as const,
+    queryFn: async () =>
+      getComicPages({ data: { publicationUri, issueOffset, issueLimit } }),
+    staleTime: 300_000,
+  });
+}
+
 function getPublicationEmbedMetaQueryOptions(publicationUri: string) {
   return queryOptions({
     queryKey: ["publication", "embedMeta", publicationUri] as const,
@@ -995,18 +1577,29 @@ export const publicationApi = {
   getPublicationProfileQueryOptions,
   getPublicationDocuments,
   getPublicationDocumentsQueryOptions,
+  setPublicationArchiveOrder,
   getPublicationEmbedMeta,
   getPublicationEmbedMetaQueryOptions,
   getPublicationSocialProof,
   getPublicationSocialProofQueryOptions,
   getArticle,
   getArticleQueryOptions,
+  getArticleBlock,
+  getArticleBlockQueryOptions,
   getArticleCard,
   getArticleCardQueryOptions,
   getCollection,
   getCollectionQueryOptions,
   getArticleExtras,
   getArticleExtrasQueryOptions,
+  getSeriesContext,
+  getSeriesContextQueryOptions,
+  getComicSpine,
+  getComicSpineQueryOptions,
+  getComicShelf,
+  getComicShelfQueryOptions,
+  getComicPages,
+  getComicPagesQueryOptions,
   getInlineMentions,
   getInlineMentionsQueryOptions,
   getContentLinkTargets,

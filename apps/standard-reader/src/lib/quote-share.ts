@@ -1,3 +1,4 @@
+import { BSKY_COMPOSE_CLIENTS } from "#/lib/bsky-clients";
 import { getPublicUrlClient } from "#/lib/public-url";
 
 /** Max quote length stored for share links / Bluesky compose. */
@@ -90,16 +91,18 @@ const DISPERSE_SHARE_ORIGIN = "https://disperse.social";
 const DISPERSE_SHARE_PATH = "/share";
 const PDSLS_ORIGIN = "https://pdsls.dev";
 
-/** Alternate AT Protocol clients that support the same compose intent as Bluesky. */
-export const AT_PROTO_COMPOSE_CLIENTS = [
-  {
-    id: "blacksky",
-    label: "blacksky.community",
-    origin: "https://blacksky.community",
-  },
-  { id: "deer", label: "deer.social", origin: "https://deer.social" },
-  { id: "witchsky", label: "witchsky.app", origin: "https://witchsky.app" },
-] as const;
+/**
+ * Alternate AT Protocol clients that support the same compose intent as
+ * Bluesky. Derived from the client catalog so the share menu and the article's
+ * "Add a comment" dialog offer the same destinations.
+ */
+export const AT_PROTO_COMPOSE_CLIENTS: ReadonlyArray<{
+  id: string;
+  label: string;
+  origin: string;
+}> = BSKY_COMPOSE_CLIENTS.filter((client) => client.id !== "bluesky").map(
+  ({ id, label, origin }) => ({ id, label, origin }),
+);
 
 function graphemeSegmenter(): Intl.Segmenter | null {
   if (globalThis.Intl?.Segmenter === undefined) return null;
@@ -134,6 +137,35 @@ export function buildAtprotoComposeUrl(
   const draft = truncateGraphemes(linkUrl.trim(), BSKY_COMPOSE_MAX_GRAPHEMES);
   const url = new URL(BSKY_COMPOSE_PATH, clientOrigin);
   url.searchParams.set("text", draft);
+  return url.toString();
+}
+
+/**
+ * AT Protocol compose intent URL for a draft that opens with `lead` — a
+ * mention, say — and ends with `linkUrl` on its own line. The link is never
+ * truncated: only the lead gives way when the draft would run past the post
+ * limit, because a cut URL takes the link card (and the backlink our Discussion
+ * section is discovered by) down with it.
+ */
+export function buildAtprotoComposeUrlWithLead(
+  clientOrigin: string,
+  lead: string,
+  linkUrl: string,
+): string {
+  const link = linkUrl.trim();
+  const trimmedLead = lead.trim();
+  if (!trimmedLead) return buildAtprotoComposeUrl(clientOrigin, link);
+
+  const suffix = `\n\n${link}`;
+  const maxLead = BSKY_COMPOSE_MAX_GRAPHEMES - graphemeCount(suffix);
+  const draft =
+    maxLead > 0 ? `${truncateGraphemes(trimmedLead, maxLead)}${suffix}` : link;
+
+  const url = new URL(BSKY_COMPOSE_PATH, clientOrigin);
+  url.searchParams.set(
+    "text",
+    truncateGraphemes(draft, BSKY_COMPOSE_MAX_GRAPHEMES),
+  );
   return url.toString();
 }
 

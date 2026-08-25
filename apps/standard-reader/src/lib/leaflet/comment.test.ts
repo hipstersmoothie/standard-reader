@@ -30,6 +30,42 @@ function content(...paragraphs: Array<string>) {
   };
 }
 
+/**
+ * A document with a single list block (`pub.leaflet.blocks.unorderedList` or
+ * `orderedList`) whose items are plain text, matching how Leaflet's editor
+ * nests list-item plaintext under `children[].content` rather than directly
+ * on the block.
+ */
+function listContent(
+  kind: "unorderedList" | "orderedList",
+  items: Array<string>,
+) {
+  const itemType =
+    kind === "unorderedList"
+      ? LEAFLET_BLOCK.unorderedListItem
+      : LEAFLET_BLOCK.orderedListItem;
+  return {
+    $type: LEAFLET_CONTENT,
+    pages: [
+      {
+        $type: LEAFLET_PAGE.linearDocument,
+        blocks: [
+          {
+            $type: LEAFLET_PAGE.linearDocumentBlock,
+            block: {
+              $type: LEAFLET_BLOCK[kind],
+              children: items.map((plaintext) => ({
+                $type: itemType,
+                content: { $type: LEAFLET_BLOCK.text, plaintext },
+              })),
+            },
+          },
+        ],
+      },
+    ],
+  };
+}
+
 function quote(
   startBlock: Array<number>,
   startOffset: number,
@@ -151,6 +187,62 @@ describe("extractLeafletQuoteText", () => {
     expect(text?.endsWith("…")).toBe(true);
   });
 
+  it("slices a range inside an unordered list item", () => {
+    const listDoc = listContent("unorderedList", [
+      "first item text",
+      "second item, this is the one we quote",
+      "third item",
+    ]);
+    expect(
+      extractLeafletQuoteText(listDoc, anchor([0, 1], 0, [0, 1], 12)),
+    ).toBe("second item,");
+  });
+
+  it("slices a range inside an ordered list item", () => {
+    const listDoc = listContent("orderedList", ["only item here"]);
+    expect(extractLeafletQuoteText(listDoc, anchor([0, 0], 5, [0, 0], 9))).toBe(
+      "item",
+    );
+  });
+
+  it("matches a live pub.leaflet.comment quote anchored inside a list item", () => {
+    // Regression fixture for at://did:plc:fip3nyk6tjo3senpq4ei2cxw/pub.leaflet.comment/3mruv73dqlk22,
+    // whose attachment anchors quote.start/end at block [29, 2] — block 29 is
+    // an unorderedList, and 2 indexes its third `children` entry.
+    const items = [
+      "@-mention and rich text links for link notes",
+      "let me map a domain to my link blog",
+      "for regular Skyreader, when sharing to Semble I want to add a comment / create a note in Semble. I think you can probably combine your link blog share with share to semble?",
+    ];
+    const listDoc = {
+      $type: LEAFLET_CONTENT,
+      pages: [
+        {
+          $type: LEAFLET_PAGE.linearDocument,
+          blocks: [
+            ...Array.from({ length: 29 }, () => ({
+              $type: LEAFLET_PAGE.linearDocumentBlock,
+              block: { $type: LEAFLET_BLOCK.text, plaintext: "filler" },
+            })),
+            {
+              $type: LEAFLET_PAGE.linearDocumentBlock,
+              block: {
+                $type: LEAFLET_BLOCK.unorderedList,
+                children: items.map((plaintext) => ({
+                  $type: LEAFLET_BLOCK.unorderedListItem,
+                  content: { $type: LEAFLET_BLOCK.text, plaintext },
+                })),
+              },
+            },
+          ],
+        },
+      ],
+    };
+    expect(
+      extractLeafletQuoteText(listDoc, anchor([29, 2], 0, [29, 2], 172)),
+    ).toBe(items[2]);
+  });
+
   it("returns null when the anchor cannot be resolved", () => {
     expect(extractLeafletQuoteText(doc, anchor([99], 0, [99], 5))).toBeNull();
     expect(extractLeafletQuoteText(doc, anchor([1], 10, [1], 2))).toBeNull();
@@ -186,16 +278,54 @@ describe("extractLeafletQuoteText", () => {
 describe("leafletCommentDrawerUrl", () => {
   it("builds a drawer link for leaflet.pub-hosted publications", () => {
     expect(
-      leafletCommentDrawerUrl("https://foo.leaflet.pub/3mqsc4nqyj22u"),
+      leafletCommentDrawerUrl({
+        canonicalUrl: "https://foo.leaflet.pub/3mqsc4nqyj22u",
+        contentFormat: null,
+      }),
     ).toBe("https://foo.leaflet.pub/3mqsc4nqyj22u?interactionDrawer=comments");
   });
 
-  it("returns null for publications hosted elsewhere", () => {
-    expect(leafletCommentDrawerUrl("https://example.com/post")).toBeNull();
+  it("builds a drawer link for a Leaflet publication on a custom domain", () => {
     expect(
-      leafletCommentDrawerUrl("https://notleaflet.pub.evil.com/x"),
+      leafletCommentDrawerUrl({
+        canonicalUrl: "https://blog.example/some-post",
+        contentFormat: "pub.leaflet.content",
+      }),
+    ).toBe("https://blog.example/some-post?interactionDrawer=comments");
+  });
+
+  it("returns null for publications hosted elsewhere", () => {
+    expect(
+      leafletCommentDrawerUrl({
+        canonicalUrl: "https://example.com/post",
+        contentFormat: null,
+      }),
     ).toBeNull();
-    expect(leafletCommentDrawerUrl(null)).toBeNull();
-    expect(leafletCommentDrawerUrl("not a url")).toBeNull();
+    expect(
+      leafletCommentDrawerUrl({
+        canonicalUrl: "https://notleaflet.pub.evil.com/x",
+        contentFormat: null,
+      }),
+    ).toBeNull();
+    expect(
+      leafletCommentDrawerUrl({ canonicalUrl: null, contentFormat: null }),
+    ).toBeNull();
+    expect(
+      leafletCommentDrawerUrl({
+        canonicalUrl: "not a url",
+        contentFormat: "pub.leaflet.content",
+      }),
+    ).toBeNull();
+  });
+
+  it("does not claim a Skyreader linkblog for Leaflet", () => {
+    // Linkblogs reuse `pub.leaflet.content` but never render on Leaflet, so
+    // opening Leaflet's comment drawer for one would go nowhere useful.
+    expect(
+      leafletCommentDrawerUrl({
+        canonicalUrl: "https://linkblogs.skyreader.app/post",
+        contentFormat: "pub.leaflet.content",
+      }),
+    ).toBeNull();
   });
 });

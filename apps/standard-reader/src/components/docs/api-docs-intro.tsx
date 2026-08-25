@@ -142,7 +142,31 @@ export function ApiDocsIntro() {
             <code {...stylex.props(docsStyles.codeInline)}>
               com.atproto.server.getSession
             </code>{" "}
-            on the issuer PDS.
+            on the issuer PDS; a token that cannot call{" "}
+            <code {...stylex.props(docsStyles.codeInline)}>getSession</code> —
+            an OAuth grant scoped only to{" "}
+            <code {...stylex.props(docsStyles.codeInline)}>
+              rpc:&lt;method&gt;?aud={appviewDid}#{APPVIEW_SERVICE_ID}
+            </code>{" "}
+            — is instead verified against the issuer&apos;s published keys,
+            including its DPoP binding, and accepted for the methods that scope
+            names.
+          </Trans>
+        </p>
+        <p {...stylex.props(docsStyles.prose)}>
+          <Trans>
+            The proxy header is best for reads. It cannot serve writes: the
+            service JWT your PDS mints tells us who you are but carries no
+            credential to write to your repo with, so write procedures reject
+            it. The same is true of a DPoP-bound token presented directly — we
+            cannot replay it at your PDS. For writes, either call the AppView
+            directly with an app-password session, or skip the AppView and write
+            the{" "}
+            <code {...stylex.props(docsStyles.codeInline)}>
+              app.standard-reader.*
+            </code>{" "}
+            record to your own repo — the firehose mirrors it here within
+            seconds.
           </Trans>
         </p>
         <p {...stylex.props(docsStyles.prose)}>

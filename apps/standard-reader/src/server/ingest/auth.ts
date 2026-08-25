@@ -12,9 +12,10 @@ function safeEqual(a: string, b: string): boolean {
 }
 
 /**
- * Verify an incoming ingestion request against the shared secret. Accepts the
- * HTTP Basic credential tap sends (`admin:<password>`) or a `Bearer <secret>`
- * token. When no secret is configured, requests are allowed only in non-prod
+ * Verify an incoming ingestion request against the shared secret. Accepts an
+ * HTTP Basic credential (`<anything>:<secret>`) or a `Bearer <secret>` token —
+ * Basic is retained because the operational tooling and cron callers already
+ * use it. When no secret is configured, requests are allowed only in non-prod
  * (local dev convenience); in production the gate fails closed.
  */
 export function verifyIngestAuth(request: Request): boolean {

@@ -10,6 +10,7 @@ import { radius } from "@standard-reader/design-system/theme/radius.stylex";
 import {
   gap,
   horizontalSpace,
+  size,
   verticalSpace,
 } from "@standard-reader/design-system/theme/semantic-spacing.stylex";
 import {
@@ -32,10 +33,19 @@ import {
 import { Kicker } from "./primitives";
 
 /**
- * A labeler label shown as a warning badge. Hovering (or focusing + Enter)
- * opens a card laid out like a content-label popover: a labeler avatar with
- * the label's display name, the label's description, and a footer that names
- * the source labeler and links to its page at `/labelers/$did`.
+ * A labeler label shown as a neutral badge carrying the labeler's avatar.
+ *
+ * Neutral, not `warning`: a label is a statement of fact from a moderation
+ * service, and most say something unalarming — "Bot", "ATlas User", a place, a
+ * GitHub repo. Painting them all yellow implied a severity the labeler never
+ * claimed. Severity is the reader's own per-label choice (off / warn / hide),
+ * not a property of the label, so the pill stays quiet and lets the avatar say
+ * who is speaking.
+ *
+ * Hovering (or focusing + Enter) opens a card laid out like a content-label
+ * popover: a labeler avatar with the label's display name, the label's
+ * description, and a footer that names the source labeler and links to its page
+ * at `/labelers/$did`.
  *
  * The labeler view is fetched via `labelerApi.getLabelerQueryOptions(src)`
  * (cached, prefetched on the labeler detail route). The pill renders
@@ -54,7 +64,17 @@ export function LabelerPill({ src, val }: { src: string; val: string }) {
     <HoverCard
       placement="top"
       trigger={
-        <Badge variant="warning" size="sm">
+        <Badge variant="default" size="sm" style={styles.pill}>
+          {/* Not the `Avatar` component: its smallest size is taller than a
+              `sm` badge, so this is a plain circular image sized to the text. */}
+          {card?.avatar ? (
+            <img
+              src={card.avatar}
+              alt=""
+              aria-hidden
+              {...stylex.props(styles.pillAvatar)}
+            />
+          ) : null}
           {name}
         </Badge>
       }
@@ -104,6 +124,17 @@ function initials(name: string): string {
 }
 
 const styles = stylex.create({
+  pill: {
+    // A leading avatar wants less space before it than a bare word does.
+    paddingInlineStart: horizontalSpace.sm,
+  },
+  pillAvatar: {
+    borderRadius: radius.full,
+    flexShrink: 0,
+    height: size.xs,
+    objectFit: "cover",
+    width: size.xs,
+  },
   card: {
     display: "flex",
     flexDirection: "column",

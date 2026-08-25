@@ -84,6 +84,41 @@ export const SEMBLE_FULL_SCOPE = "include:network.cosmik.authFull";
 export const EMAIL_SCOPE = "transition:email";
 
 /**
+ * Read access to the reader's Bluesky preferences, which is where Bluesky keeps
+ * subscribed labelers (`app.bsky.actor.defs#labelersPref`) and per-label
+ * visibility. Requested on basic sign-in so a reader's existing moderation
+ * setup can be ported over on first login with no action from them.
+ *
+ * Read-only on purpose: there is deliberately no `putPreferences` counterpart,
+ * so nothing we do can rewrite someone's Bluesky moderation settings.
+ */
+export const BSKY_PREFERENCES_READ_SCOPE = atprotoScope.rpc({
+  lxm: ["app.bsky.actor.getPreferences"],
+  aud: "*",
+});
+
+/**
+ * Write access to the reader's Bluesky block records — `app.bsky.graph.block`
+ * for an account and `app.bsky.graph.listblock` for a moderation list.
+ *
+ * Deliberately Bluesky's lexicon rather than one of ours. A block is already a
+ * portable repo record that every AT Protocol app honours, so blocking from
+ * here writes the record the rest of the network already reads: block someone
+ * in Standard Reader and they are blocked on Bluesky too, and wherever the
+ * reader goes next. A `app.standard-reader.block` would have been a block that
+ * only worked in one app, which is not what a block means.
+ *
+ * *Reading* blocks needs no scope at all — `com.atproto.repo.listRecords` is
+ * public — so honouring a reader's existing blocks costs them no extra consent.
+ * This is requested only when they choose to block from inside the app,
+ * persisted via `user.blockingEnabled` so it is silently re-requested on every
+ * later login (mirroring {@link MARGIN_FULL_SCOPE}).
+ */
+export const BSKY_BLOCK_WRITE_SCOPE = atprotoScope.repo({
+  collection: ["app.bsky.graph.block", "app.bsky.graph.listblock"],
+});
+
+/**
  * Basic sign-in scope — what 95% of readers need. Covers app-owned reader-state
  * (`authBasicFeatures`) plus standard.site follows & likes (`authSocial`).
  */
@@ -92,6 +127,7 @@ export const basicScope = [
   BLOB_SCOPE,
   AUTH_BASIC_FEATURES,
   SITE_AUTH_SOCIAL,
+  BSKY_PREFERENCES_READ_SCOPE,
 ];
 
 /**
@@ -114,6 +150,19 @@ export const collectionsScope = [
 export const subscribeScope = [ATPROTO_BASE_SCOPE, SITE_AUTH_SOCIAL];
 
 /**
+ * Minimal scope for the author follow embed. Following an account writes
+ * `app.standard-reader.graph.follow` (covered only by `authBasicFeatures`, the
+ * smallest published set containing it) and then materializes subscriptions to
+ * that account's publications, which needs `authSocial` as well — so this is
+ * the subscribe scope plus the app-owned reader-state set, and no more.
+ */
+export const followScope = [
+  ATPROTO_BASE_SCOPE,
+  AUTH_BASIC_FEATURES,
+  SITE_AUTH_SOCIAL,
+];
+
+/**
  * Every scope string we may request at authorize time. ATProto OAuth requires
  * each requested scope to appear in client metadata (a single-collection `repo`
  * scope is not treated as a subset of a multi-collection one; the same applies
@@ -128,10 +177,12 @@ export const clientMetadataScope = [
     ...basicScope,
     ...collectionsScope,
     ...subscribeScope,
+    ...followScope,
     USERINPUT_BASIC_SCOPE,
     MARGIN_FULL_SCOPE,
     SEMBLE_FULL_SCOPE,
     EMAIL_SCOPE,
+    BSKY_BLOCK_WRITE_SCOPE,
   ]),
 ];
 
@@ -144,12 +195,13 @@ export const atstoreReviewClientMetadataScope = [
   ...new Set([...clientMetadataScope, ATSTORE_REVIEW_SCOPE]),
 ];
 
-export type AuthScopeIntent = "basic" | "collections" | "subscribe";
+export type AuthScopeIntent = "basic" | "collections" | "subscribe" | "follow";
 
 const SCOPE_BY_INTENT: Record<AuthScopeIntent, Array<string>> = {
   basic: basicScope,
   collections: collectionsScope,
   subscribe: subscribeScope,
+  follow: followScope,
 };
 
 /** Serialize OAuth scope entries for the authorize request. */
@@ -170,6 +222,7 @@ export interface ScopeUserLookup {
   marginSaveEnabled?: boolean | null;
   sembleSaveEnabled?: boolean | null;
   weeklyDigestEnabled?: boolean | null;
+  blockingEnabled?: boolean | null;
 }
 
 /** Addenda scopes that can be requested alongside the base tier, keyed by the
@@ -180,6 +233,7 @@ export interface ScopeAddenda {
   margin?: boolean;
   semble?: boolean;
   email?: boolean;
+  blocking?: boolean;
 }
 
 /**
@@ -187,8 +241,8 @@ export interface ScopeAddenda {
  * opted into collections authoring (the flag is set on their `user` row),
  * automatically upgrade to the collections tier so subsequent logins silently
  * include the expanded scopes. Explicit `intent: "collections"` (the upgrade
- * flow itself) and `intent: "subscribe"` (the subscribe embed) override the
- * flag.
+ * flow itself), `intent: "subscribe"` (the subscribe embed) and
+ * `intent: "follow"` (the author follow embed) override the flag.
  *
  * Each addendum scope (userinput, Margin, Semble) is appended when its
  * `user.*Enabled` flag is set OR the corresponding `addenda` entry is
@@ -200,8 +254,8 @@ export function resolveAuthScopeForUser(
   intent: AuthScopeIntent | undefined,
   addenda: ScopeAddenda = {},
 ): string {
-  if (intent === "subscribe") {
-    return formatOAuthScope(SCOPE_BY_INTENT.subscribe);
+  if (intent === "subscribe" || intent === "follow") {
+    return formatOAuthScope(SCOPE_BY_INTENT[intent]);
   }
   const base =
     intent === "collections" || user?.collectionsAuthoringEnabled === true
@@ -220,6 +274,9 @@ export function resolveAuthScopeForUser(
   }
   if (addenda.email || user?.weeklyDigestEnabled === true) {
     extra.add(EMAIL_SCOPE);
+  }
+  if (addenda.blocking || user?.blockingEnabled === true) {
+    extra.add(BSKY_BLOCK_WRITE_SCOPE);
   }
   return formatOAuthScope([...extra]);
 }
@@ -385,6 +442,32 @@ export function hasUserinputUpvoteScope(
 }
 
 /**
+ * Detect whether the granted scope includes the mute writer tier
+ * (`app.standard-reader.graph.mute`, part of the `authBasicFeatures` set).
+ * Accepts the `include:app.standard-reader.authBasicFeatures` set token
+ * verbatim, or (if the PDS expanded the set) a granular
+ * `repo?collection=app.standard-reader.graph.mute` token — with or without
+ * `action=create` — or the action-less `repo:` form.
+ *
+ * The verbatim `include:` check is optimistic for sessions granted *before*
+ * the set was republished with the mute collection: whether such a grant
+ * covers the new NSID depends on whether the PDS resolves sets at token-use
+ * time or froze the expansion at grant. The mute write path treats a PDS
+ * scope rejection as the truth and maps it to a re-auth prompt, so this
+ * helper only needs to be right for the common case.
+ */
+export function hasMuteWriteScope(
+  grantedScope: string | null | undefined,
+): boolean {
+  if (!grantedScope) return false;
+  const tokens = grantedScope.split(/\s+/);
+  if (tokens.includes(AUTH_BASIC_FEATURES)) return true;
+  return tokens.some((token) =>
+    repoScopeAllowsCreateForCollection(token, APP_NSID.graphMute),
+  );
+}
+
+/**
  * Detect whether the granted scope includes the Margin save writer tier.
  * Accepts the `include:at.margin.authFull` set token verbatim, or (if the PDS
  * expanded the set) a granular `repo?collection=at.margin.note` token — with
@@ -436,6 +519,52 @@ export function hasEmailScope(
 ): boolean {
   if (!grantedScope) return false;
   return grantedScope.split(/\s+/).includes(EMAIL_SCOPE);
+}
+
+/**
+ * Detect whether the granted scope includes Bluesky preferences read access.
+ *
+ * Matches the exact scope we request, plus the `lxm=*` wildcard a PDS may
+ * grant instead. Sessions established before this scope existed simply don't
+ * have it, so their labeler import is skipped until they next re-authorize —
+ * which is why the import is scope-gated rather than assumed.
+ */
+export function hasBskyPreferencesScope(
+  grantedScope: string | null | undefined,
+): boolean {
+  if (!grantedScope) return false;
+  const tokens = grantedScope.split(/\s+/);
+  return tokens.some(
+    (token) =>
+      token === BSKY_PREFERENCES_READ_SCOPE ||
+      (token.startsWith("rpc") &&
+        (token.includes("lxm=app.bsky.actor.getPreferences") ||
+          token.includes("lxm=*"))),
+  );
+}
+
+/**
+ * Detect whether the granted scope includes write access to the reader's
+ * Bluesky block records.
+ *
+ * Accepts the exact scope we request, or (in either serialization) a `repo`
+ * token covering `app.bsky.graph.block`. The source of truth for "the reader
+ * can actually block from here" — as opposed to `user.blockingEnabled`, which
+ * is set optimistically before the re-auth completes.
+ *
+ * A reader without it still has every block they made elsewhere enforced; they
+ * just can't create new ones without re-authorizing, which is what the block
+ * button checks before it offers.
+ */
+export function hasBskyBlockWriteScope(
+  grantedScope: string | null | undefined,
+): boolean {
+  if (!grantedScope) return false;
+  const tokens = grantedScope.split(/\s+/);
+  if (tokens.includes(BSKY_BLOCK_WRITE_SCOPE)) return true;
+  return tokens.some((token) =>
+    repoScopeAllowsCreateForCollection(token, "app.bsky.graph.block"),
+  );
 }
 
 /**

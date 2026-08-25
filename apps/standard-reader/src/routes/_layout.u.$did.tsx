@@ -2,7 +2,6 @@ import { Plural, Trans, useLingui } from "@lingui/react/macro";
 import { Avatar } from "@standard-reader/design-system/avatar";
 import { Badge } from "@standard-reader/design-system/badge";
 import { Button } from "@standard-reader/design-system/button";
-import { IconButton } from "@standard-reader/design-system/icon-button";
 import {
   Tab,
   TabList,
@@ -34,12 +33,13 @@ import {
   redirect,
   useNavigate,
 } from "@tanstack/react-router";
-import { ExternalLink, ListPlus, Settings } from "lucide-react";
+import { Bot, ExternalLink, ListPlus } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 import { Link as AriaLink } from "react-aria-components";
 import { z } from "zod";
 
 import { formatReaders, initials } from "#/components/reader/format";
+import { usePullToRefresh } from "#/components/reader/pull-to-refresh";
 import { ButtonLink } from "#/components/router-links";
 import type {
   AuthorProfile,
@@ -49,27 +49,33 @@ import {
   AUTHOR_ACTIVITY_PAGE_SIZE,
   authorApi,
 } from "#/integrations/tanstack-query/api-author.functions";
+import { blocksApi } from "#/integrations/tanstack-query/api-blocks.functions";
 import { listApi } from "#/integrations/tanstack-query/api-lists.functions";
 import type { SubscriptionList } from "#/integrations/tanstack-query/api-lists.functions";
 import type {
   ArticleCard,
+  ProfileSummary,
   PublicationCard,
 } from "#/integrations/tanstack-query/api-shapes";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
+import type { BlockEdge } from "#/lib/blocks";
 import type { HideableTabId, ProfileTabId } from "#/lib/profile-tabs";
 import { getPublicUrlClient } from "#/lib/public-url";
 import {
   authorFeedUrl,
+  canonicalLink,
   profileOgImageUrl,
   siteSocialMeta,
 } from "#/lib/site-metadata";
 
-import { AddToListButton } from "../components/reader/add-to-list-button";
+import { AccountLabels } from "../components/reader/account-labels";
+import { AuthorActions } from "../components/reader/author-actions";
 import { AuthorProfileLink } from "../components/reader/author-profile-link";
+import { BlockedNotice } from "../components/reader/blocked-notice";
 import { ArticleRow, PubDirectoryRow } from "../components/reader/cards";
 import { FeedLoadMore } from "../components/reader/feed-load-more";
-import { FollowUserButton } from "../components/reader/follow-user-button";
 import { LinkifiedText } from "../components/reader/linkified-text";
+import { MutedPill } from "../components/reader/muted-pill";
 import {
   Handle,
   Kicker,
@@ -77,9 +83,6 @@ import {
   SectionHead,
 } from "../components/reader/primitives";
 import { ProfileTabsSettingsModal } from "../components/reader/profile-tabs-settings-modal";
-import { RssFeedButton } from "../components/reader/rss-feed-button";
-import { ShareMenu } from "../components/reader/share-menu";
-import { AuthorSifaResumeChip } from "../components/reader/sifa-resume-chip";
 
 const AUTHOR_PAGE_SIZE = 24;
 
@@ -161,6 +164,9 @@ export const Route = createFileRoute("/_layout/u/$did")({
         ogImage: profileOgImageUrl(baseUrl, match.params.did),
       }),
       links: [
+        // Self-canonical: the profile is assembled from the network, so it has
+        // no single off-site original. Folds the tab views onto one URL.
+        canonicalLink(`${baseUrl}${match.pathname}`),
         {
           rel: "alternate",
           type: "application/rss+xml",
@@ -236,6 +242,23 @@ const styles = stylex.create({
     marginBottom: spacing["0"],
     marginTop: spacing["2"],
   },
+  botMark: {
+    gap: spacing["1"],
+    alignItems: "center",
+    color: uiColor.text1,
+    display: "inline-flex",
+    marginInlineStart: spacing["2"],
+    verticalAlign: "middle",
+  },
+  srOnly: {
+    borderWidth: 0,
+    clipPath: "inset(50%)",
+    height: spacing.px,
+    overflow: "hidden",
+    position: "absolute",
+    whiteSpace: "nowrap",
+    width: spacing.px,
+  },
   heroHandle: {
     marginTop: spacing["1"],
   },
@@ -247,22 +270,6 @@ const styles = stylex.create({
     marginBottom: spacing["0"],
     marginTop: spacing["0"],
     maxWidth: "60ch",
-  },
-  heroActsMobile: {
-    columnGap: spacing["1.5"],
-    display: { [HERO_DESKTOP]: "none", default: "flex" },
-    flexWrap: "wrap",
-    rowGap: spacing["1.5"],
-  },
-  heroActs: {
-    alignItems: "center",
-    columnGap: spacing["1.5"],
-    display: { [HERO_DESKTOP]: "flex", default: "none" },
-    flexShrink: 0,
-    flexWrap: "wrap",
-    justifyContent: "flex-end",
-    rowGap: spacing["2.5"],
-    paddingTop: spacing["1"],
   },
   tabs: {
     paddingBottom: spacing["10"],
@@ -515,6 +522,7 @@ function LoadMoreFooter({
 }
 
 function AuthorProfilePage() {
+  usePullToRefresh();
   const { did } = Route.useParams();
   const { data: initialPage } = useSuspenseQuery(
     authorApi.getAuthorProfileQueryOptions(did, {
@@ -527,7 +535,41 @@ function AuthorProfilePage() {
     return null;
   }
 
+  // A blocked profile renders as the block, not as an empty profile: the
+  // server already withheld every tab, and a profile with six zeroed counts
+  // would read as "this person has written nothing" rather than the truth.
+  if (initialPage.block) {
+    return (
+      <BlockedProfile block={initialPage.block} profile={initialPage.profile} />
+    );
+  }
+
   return <AuthorProfileContent key={did} did={did} initialPage={initialPage} />;
+}
+
+/**
+ * A profile the viewer is blocked from, in either direction. Keeps the person's
+ * identity — a name is what makes the notice legible — and nothing else.
+ */
+function BlockedProfile({
+  block,
+  profile,
+}: {
+  block: BlockEdge;
+  profile: ProfileSummary;
+}) {
+  const capability = useQuery(blocksApi.getBlockCapabilityQueryOptions());
+  return (
+    <ReaderContent>
+      <BlockedNotice
+        block={block}
+        name={profile.displayName ?? profile.handle}
+        handle={profile.handle}
+        avatarUrl={profile.avatarUrl}
+        canWrite={capability.data?.canWrite ?? false}
+      />
+    </ReaderContent>
+  );
 }
 
 function AuthorProfileContent({
@@ -616,7 +658,7 @@ function AuthorProfileContent({
     );
   }
 
-  const { profile, stats } = initialPage;
+  const { profile, stats, labels: accountLabels } = initialPage;
   const name = authorDisplayName(profile) ?? t`Author`;
   const pageUrl = `${getPublicUrlClient()}/u/${did}`;
   // Three profile kinds drive the hero label and empty state:
@@ -683,66 +725,52 @@ function AuthorProfileContent({
                   )}
                 </Kicker>
               )}
-              <h1 {...stylex.props(styles.heroName)}>{name}</h1>
+              <h1 {...stylex.props(styles.heroName)}>
+                {name}
+                {/* The account's own `bot` self-label, read off its profile
+                    record. Not a labeler's verdict — its own statement — so it
+                    sits with the name rather than among the labels below. */}
+                {profile.isBot ? (
+                  <span
+                    {...stylex.props(styles.botMark)}
+                    title={t`This account self-identifies as a bot`}
+                  >
+                    <Bot size={16} aria-hidden />
+                    <span {...stylex.props(styles.srOnly)}>
+                      <Trans>Bot</Trans>
+                    </span>
+                  </span>
+                ) : null}
+              </h1>
               {profile.handle ? (
                 <Handle style={styles.heroHandle}>@{profile.handle}</Handle>
               ) : null}
             </div>
 
-            <div {...stylex.props(styles.heroActs)}>
-              <ShareMenu variant="icon" pageUrl={pageUrl} />
-              <RssFeedButton
-                name={name}
-                feedUrl={authorFeedUrl(getPublicUrlClient(), did)}
-                size="md"
-              />
-              {profile.handle ? (
-                <IconButton
-                  variant="secondary"
-                  size="md"
-                  label={t`View on Bluesky`}
-                  onPress={() => {
-                    window.open(
-                      `https://bsky.app/profile/${profile.handle}`,
-                      "_blank",
-                      "noopener,noreferrer",
-                    );
-                  }}
-                >
-                  <ExternalLink size={15} />
-                </IconButton>
-              ) : null}
-              <AuthorSifaResumeChip
-                did={did}
-                handle={profile.handle}
-                variant="icon"
-              />
-              {isOwnProfile ? (
-                <IconButton
-                  variant="secondary"
-                  size="md"
-                  label={t`Profile settings`}
-                  onPress={() => setSettingsOpen(true)}
-                >
-                  <Settings size={15} />
-                </IconButton>
-              ) : (
-                <>
-                  {session?.user?.did ? <AddToListButton did={did} /> : null}
-                  <FollowUserButton
-                    did={did}
-                    signedIn={session?.user?.did != null}
-                    user={{
-                      did,
-                      handle: profile.handle,
-                      displayName: profile.displayName ?? null,
-                      avatarUrl: profile.avatarUrl ?? null,
-                      followedAt: new Date().toISOString(),
-                    }}
-                  />
-                </>
-              )}
-            </div>
+            <AuthorActions
+              did={did}
+              handle={profile.handle}
+              name={name}
+              pageUrl={pageUrl}
+              feedUrl={authorFeedUrl(getPublicUrlClient(), did)}
+              signedIn={session?.user?.did != null}
+              isOwnProfile={isOwnProfile}
+              user={{
+                did,
+                handle: profile.handle,
+                displayName: profile.displayName ?? null,
+                avatarUrl: profile.avatarUrl ?? null,
+                followedAt: new Date().toISOString(),
+              }}
+              embed={{
+                did,
+                handle: profile.handle,
+                displayName: profile.displayName ?? null,
+                description: profile.description ?? null,
+                avatarUrl: profile.avatarUrl ?? null,
+              }}
+              onOpenSettings={() => setSettingsOpen(true)}
+            />
           </div>
 
           {profile.description ? (
@@ -751,60 +779,20 @@ function AuthorProfileContent({
             </p>
           ) : null}
 
-          <div {...stylex.props(styles.heroActsMobile)}>
-            <ShareMenu variant="icon" size="md" pageUrl={pageUrl} />
-            <RssFeedButton
-              name={name}
-              feedUrl={authorFeedUrl(getPublicUrlClient(), did)}
-              size="md"
+          {/* Below the bio rather than beside the handle: a label is something a
+              third party says about this account, so it reads after the account's
+              own words instead of interrupting its identity line. The muted
+              pill sits with them — it's the reader's own label on this account,
+              and without it a muted profile would look identical to an unmuted
+              one (muting deliberately leaves this page readable). */}
+          {isOwnProfile ? null : (
+            <MutedPill
+              subject={did}
+              kind="user"
+              signedIn={session?.user?.did != null}
             />
-            {profile.handle ? (
-              <IconButton
-                variant="secondary"
-                size="md"
-                label={t`View on Bluesky`}
-                onPress={() => {
-                  window.open(
-                    `https://bsky.app/profile/${profile.handle}`,
-                    "_blank",
-                    "noopener,noreferrer",
-                  );
-                }}
-              >
-                <ExternalLink size={15} />
-              </IconButton>
-            ) : null}
-            <AuthorSifaResumeChip
-              did={did}
-              handle={profile.handle}
-              variant="icon"
-            />
-            {isOwnProfile ? (
-              <IconButton
-                variant="secondary"
-                size="md"
-                label={t`Profile settings`}
-                onPress={() => setSettingsOpen(true)}
-              >
-                <Settings size={15} />
-              </IconButton>
-            ) : (
-              <>
-                {session?.user?.did ? <AddToListButton did={did} /> : null}
-                <FollowUserButton
-                  did={did}
-                  signedIn={session?.user?.did != null}
-                  user={{
-                    did,
-                    handle: profile.handle,
-                    displayName: profile.displayName ?? null,
-                    avatarUrl: profile.avatarUrl ?? null,
-                    followedAt: new Date().toISOString(),
-                  }}
-                />
-              </>
-            )}
-          </div>
+          )}
+          <AccountLabels labels={accountLabels} />
         </div>
       </div>
 

@@ -1,31 +1,40 @@
 import { and, eq, inArray, isNull, or, sql } from "drizzle-orm";
 
+import type { JsonValue } from "#/integrations/tanstack-query/api-shapes";
 import {
   collectionManifestFromSources,
   parseCollectionManifest,
 } from "#/lib/collections/manifest";
+import { documentImages } from "#/lib/document/images";
 import { hasRenderableArticleBody } from "#/lib/document/renderable";
 import { documentSearchText } from "#/lib/document/search-text";
+import { labelerSubscriptionEnabled } from "#/lib/labeler-subscription";
 import { MOCHOTT_ARTICLE, mochottArticleContent } from "#/lib/mochott/types";
+import { classifyMuteSubject } from "#/lib/mutes";
 import { isExcludedPublicationUrl } from "#/lib/publication/exclusions";
+import {
+  BLOG_DIRECTION,
+  parsePrevNextDirection,
+} from "#/lib/publication/serial";
+import { declaresBot } from "#/lib/self-labels";
 import {
   FETCHED_CONTENT_FORMATS,
   resolveFetchedContent,
 } from "#/server/content/resolve";
 import { resolveLeafletContent } from "#/server/leaflet/resolve";
 import { fetchMochottArticleContent } from "#/server/mochott/resolve";
+import { invalidateMuteCache } from "#/server/mutes/mutes";
 import { resolvePcktContent } from "#/server/pckt/resolve";
-import { assertSafeFetchUrl } from "#/server/security/ssrf-guard";
 
 import { db } from "../../db/index.ts";
 import {
   bookmarks,
   documentContributors,
   documents,
-  labelerServices,
   labelerSubscriptions,
   listSaves,
   lists,
+  mutes,
   profiles,
   publicationStats,
   publications,
@@ -35,8 +44,7 @@ import {
   subscriptions,
   userFollows,
 } from "../../db/schema.ts";
-import { blobCid, bskyImageUrl, getBlobUrl } from "../atproto/blob.ts";
-import { listRepoRecords } from "../atproto/fetch-record.ts";
+import { blobCid, bskyImageUrl } from "../atproto/blob.ts";
 import {
   authorPds,
   getCachedIdentity,
@@ -44,7 +52,6 @@ import {
   isUsableHandle,
   primeIdentityHandle,
   refreshIdentity,
-  resolveIdentity,
 } from "../atproto/identity.ts";
 import type {
   BookmarkRecord,
@@ -52,18 +59,18 @@ import type {
   CollectionSidecarRecord,
   CollectionsPublicationRecord,
   DocumentRecord,
-  LabelerServiceRecord,
   LabelerSubscriptionRecord,
   ListRecord,
   ListSaveRecord,
   MochottArticleRecord,
+  MuteRecord,
   PublicationRecord,
   PublicationThemeRecord,
   ReadRecord,
   RecommendRecord,
   SidebarPrefRecord,
   SubscriptionRecord,
-  TapIdentityPayload,
+  IngestIdentityPayload,
   UserFollowRecord,
 } from "../atproto/types.ts";
 import {
@@ -82,7 +89,7 @@ import {
   sanitizeJson,
   stripNullBytes,
 } from "./mappers.ts";
-import { ensureTracked } from "./tap-client.ts";
+import { ensureTracked } from "./tracked-repos.ts";
 
 /**
  * Enforce one canonical publication per `(did, url)`: the record with the
@@ -246,6 +253,19 @@ export async function upsertPublication(
     showInDiscover:
       (record.preferences?.showInDiscover ?? true) &&
       !isExcludedPublicationUrl(url),
+    // The publisher's prev/next direction; `"ltr"` marks a serial that reads
+    // forwards from its first post. A record we've seen that states nothing
+    // stores the lexicon default rather than null, so NULL keeps one unambiguous
+    // meaning downstream: *this publication has never been mirrored since the
+    // column existed*. That is what lets the read path tell "ordinary blog"
+    // apart from "not looked yet" and backfill exactly once per publication
+    // (`ensurePublicationSerial`) instead of re-asking the PDS forever.
+    //
+    // `serial_kind` is *not* set here — it's derived from the publication's
+    // posts, and this upsert must not blank it on every record edit.
+    prevNextDirection:
+      parsePrevNextDirection(record.preferences?.prevNextDirection) ??
+      BLOG_DIRECTION,
     deleted: false,
     updatedAt: sql`now()`,
   };
@@ -450,6 +470,14 @@ export async function upsertDocument(
     contentFormat,
     collectionJson: collectionManifest,
     hasRenderableBody: renderableBody,
+    // The comic reader's page length for this document. Derived here so the
+    // reader can compute absolute page numbers across a whole publication from
+    // the index alone, without opening every body.
+    bodyImageCount: documentImages({
+      did,
+      contentJson: contentJson as JsonValue,
+      contentFormat,
+    }).length,
     coverImageCid: coverCid,
     coverImageMime: record.coverImage?.mimeType ?? null,
     tags: Array.isArray(record.tags)
@@ -616,6 +644,52 @@ export async function upsertUserFollow(
   await ensureTracked(record.subject, "followed");
 }
 
+/**
+ * Mirror an `app.standard-reader.graph.mute` record — the muter (`did`) hides
+ * a user (DID subject) or a publication (AT-URI subject) from their own feeds
+ * and discovery. The subject is classified into exactly one of `subjectDid` /
+ * `subjectUri` so feed SQL correlates on an indexed column; malformed subjects
+ * are skipped. Unlike a follow, a mute must not enrol the subject into the
+ * read-model, so only the muter's repo is tracked.
+ */
+export async function upsertMute(
+  uri: string,
+  did: string,
+  rkey: string,
+  cid: string | undefined,
+  record: MuteRecord,
+): Promise<void> {
+  const subject = classifyMuteSubject(record.subject);
+  // Skip malformed records and defensive self-mutes.
+  if (!subject || (subject.kind === "user" && subject.did === did)) {
+    return;
+  }
+
+  const values = {
+    uri,
+    cid: cid ?? null,
+    muterDid: did,
+    rkey,
+    subject: record.subject,
+    subjectDid: subject.kind === "user" ? subject.did : null,
+    subjectUri: subject.kind === "publication" ? subject.uri : null,
+    createdAt: parseDate(record.createdAt),
+    deleted: false,
+    updatedAt: sql`now()`,
+  };
+
+  await db
+    .insert(mutes)
+    .values(values)
+    .onConflictDoUpdate({ target: mutes.uri, set: values });
+
+  // A mute made in another client must take effect here without waiting out
+  // the has-mutes TTL (no-op across processes, where the TTL covers it).
+  invalidateMuteCache(did);
+
+  await ensureTracked(did, "reader");
+}
+
 export async function upsertLabelerSubscription(
   uri: string,
   did: string,
@@ -643,6 +717,7 @@ export async function upsertLabelerSubscription(
     rkey,
     labelerDid: record.labeler,
     prefs,
+    enabled: labelerSubscriptionEnabled(record),
     createdAt: parseDate(record.createdAt),
     deleted: false,
     updatedAt: sql`now()`,
@@ -656,69 +731,6 @@ export async function upsertLabelerSubscription(
   // The labeler itself is an external (often did:web) service we don't track via
   // tap; only keep the subscribing reader's repo tracked.
   await ensureTracked(did, "reader");
-}
-
-/**
- * `app.standard-reader.labeler.service` — a labeler registered by its owner
- * (the record author). Drives the Labelers directory + where to query labels.
- * The avatar blob lives in the owner's repo, so resolve it via the owner's PDS.
- */
-export async function upsertLabelerService(
-  uri: string,
-  did: string,
-  rkey: string,
-  cid: string | undefined,
-  record: LabelerServiceRecord,
-): Promise<void> {
-  if (
-    typeof record.did !== "string" ||
-    typeof record.serviceEndpoint !== "string"
-  ) {
-    return;
-  }
-
-  // `serviceEndpoint` is attacker-controlled (from the firehose record) and is
-  // fetched automatically by the label sync worker. Reject unsafe URLs before
-  // storing to prevent SSRF (security audit C3).
-  try {
-    assertSafeFetchUrl(record.serviceEndpoint);
-  } catch {
-    return;
-  }
-
-  const owner = getCachedIdentity(did);
-  const ownerPds = await authorPds(did, owner?.pds ?? null);
-  const avatarBlobCid = blobCid(record.avatar);
-  const avatarUrl =
-    avatarBlobCid && ownerPds ? getBlobUrl(ownerPds, did, avatarBlobCid) : null;
-  const labelValueDefinitions = Array.isArray(
-    record.policies?.labelValueDefinitions,
-  )
-    ? record.policies.labelValueDefinitions
-    : null;
-
-  const values = {
-    uri,
-    cid: cid ?? null,
-    ownerDid: did,
-    rkey,
-    labelerDid: record.did,
-    serviceEndpoint: record.serviceEndpoint,
-    displayName: cleanOptional(record.displayName),
-    description: cleanOptional(record.description),
-    avatarUrl,
-    labelValueDefinitions,
-    createdAt: parseDate(record.createdAt),
-    deleted: false,
-    updatedAt: sql`now()`,
-  };
-
-  await db
-    .insert(labelerServices)
-    .values(values)
-    .onConflictDoUpdate({ target: labelerServices.uri, set: values });
-
-  await ensureTracked(did, "manual");
 }
 
 export async function upsertRecommend(
@@ -979,6 +991,8 @@ export async function upsertBskyProfile(
     did,
     displayName: cleanOptional(record.displayName),
     description: cleanOptional(record.description),
+    // The account's own `bot` self-label, straight off the record it lives in.
+    isBot: declaresBot(record),
     avatarUrl: avatarCid ? bskyImageUrl("avatar", did, avatarCid) : null,
     bannerUrl: bannerCid ? bskyImageUrl("banner", did, bannerCid) : null,
     bskyProfileUri: uri,
@@ -994,7 +1008,7 @@ export async function upsertBskyProfile(
 }
 
 export async function applyIdentity(
-  payload: TapIdentityPayload,
+  payload: IngestIdentityPayload,
 ): Promise<void> {
   let handle: string | null = null;
   if (isUsableHandle(payload.handle)) {
@@ -1191,15 +1205,17 @@ export async function deleteRecord(
       await db.delete(userFollows).where(eq(userFollows.uri, uri));
       return;
     }
+    case Collections.mute: {
+      const parsed = parseAtUri(uri);
+      if (parsed) invalidateMuteCache(parsed.did);
+      await db.delete(mutes).where(eq(mutes.uri, uri));
+      return;
+    }
     case Collections.labelerSubscription:
     case Collections.labelerSubscriptionV2: {
       await db
         .delete(labelerSubscriptions)
         .where(eq(labelerSubscriptions.uri, uri));
-      return;
-    }
-    case Collections.labelerService: {
-      await db.delete(labelerServices).where(eq(labelerServices.uri, uri));
       return;
     }
     case Collections.read: {
@@ -1301,227 +1317,4 @@ export async function deleteRecord(
       return;
     }
   }
-}
-
-/**
- * Pull a reader repo's subscription records straight from its PDS into Neon.
- * Used when tap backfill lags behind a follow, or to hydrate repos that were
- * tracked before tap registration succeeded.
- *
- * Routes through `listRepoRecords` (Slingshot first, PDS fallback, migration
- * retry) so a PDS migration doesn't silently drop the reader's subscriptions.
- */
-export async function backfillSubscriptionsFromRepo(
-  did: string,
-): Promise<number> {
-  const identity = await resolveIdentity(did);
-  if (!identity.pds) {
-    return 0;
-  }
-
-  try {
-    const { records } = await listRepoRecords(
-      did,
-      Collections.subscription,
-      identity.pds,
-    );
-    let count = 0;
-    for (const record of records) {
-      const rkey = record.uri.slice(record.uri.lastIndexOf("/") + 1);
-      if (!record.value) {
-        continue;
-      }
-      await upsertSubscription(
-        record.uri,
-        did,
-        rkey,
-        record.cid,
-        record.value as unknown as SubscriptionRecord,
-      );
-      count += 1;
-    }
-    return count;
-  } catch (error: unknown) {
-    console.warn(`[ingest] subscription backfill failed for ${did}`, error);
-    return 0;
-  }
-}
-
-/**
- * Backfill a reader's `app.standard-reader.list` and `app.standard-reader.listSave`
- * records from their PDS into the read-model. Called when the shell snapshot
- * finds no rows for a reader (first visit, or a gap from before the sync was
- * wired up).
- *
- * Routes through `listRepoRecords` (Slingshot first, PDS fallback, migration
- * retry) so a PDS migration doesn't silently drop the reader's lists.
- */
-export async function backfillListsFromRepo(
-  did: string,
-): Promise<{ lists: number; listSaves: number }> {
-  const identity = await resolveIdentity(did);
-  if (!identity.pds) {
-    return { lists: 0, listSaves: 0 };
-  }
-
-  async function backfillCollection<T>(
-    collection: string,
-    upsert: (
-      uri: string,
-      did: string,
-      rkey: string,
-      cid: string | undefined,
-      record: T,
-    ) => Promise<void>,
-  ): Promise<number> {
-    try {
-      const { records } = await listRepoRecords(did, collection, identity.pds);
-      let count = 0;
-      for (const record of records) {
-        const rkey = record.uri.slice(record.uri.lastIndexOf("/") + 1);
-        if (!record.value) continue;
-        await upsert(
-          record.uri,
-          did,
-          rkey,
-          record.cid,
-          record.value as unknown as T,
-        );
-        count += 1;
-      }
-      return count;
-    } catch (error: unknown) {
-      console.warn(`[ingest] ${collection} backfill failed for ${did}`, error);
-      return 0;
-    }
-  }
-
-  const [listCount, listSaveCount] = await Promise.all([
-    backfillCollection<ListRecord>(Collections.list, upsertList),
-    backfillCollection<ListSaveRecord>(Collections.listSave, upsertListSave),
-  ]);
-
-  return { lists: listCount, listSaves: listSaveCount };
-}
-
-/** Pull the reader's `app.standard-reader.sidebarPref` singleton from their PDS
- * into `sidebar_prefs` (first visit / pre-sync gap). Best-effort. */
-export async function backfillSidebarPrefFromRepo(did: string): Promise<void> {
-  const identity = await resolveIdentity(did);
-  if (!identity.pds) {
-    return;
-  }
-  try {
-    const { records } = await listRepoRecords(
-      did,
-      Collections.sidebarPref,
-      identity.pds,
-    );
-    for (const record of records) {
-      const rkey = record.uri.slice(record.uri.lastIndexOf("/") + 1);
-      if (!record.value) continue;
-      await upsertSidebarPref(
-        record.uri,
-        did,
-        rkey,
-        record.cid,
-        record.value as unknown as SidebarPrefRecord,
-      );
-    }
-  } catch (error: unknown) {
-    console.warn(`[ingest] sidebarPref backfill failed for ${did}`, error);
-  }
-}
-
-/**
- * Pull a followed user's feed-relevant records straight from their PDS into
- * Neon so the follower's home feed has content before tap backfill catches up.
- * Fetches their recommends (likes surfaced with attribution), documents (loose
- * docs + authored-anywhere posts), and collection sidecars (so curated
- * collections render as collections). Best-effort — a failure in one collection
- * doesn't block the others.
- */
-export async function backfillFollowedUserContent(
-  subjectDid: string,
-): Promise<{ recommends: number; documents: number; collections: number }> {
-  const identity = await resolveIdentity(subjectDid);
-  if (!identity.pds) {
-    return { recommends: 0, documents: 0, collections: 0 };
-  }
-  const pds = identity.pds;
-
-  async function backfillCollection<T>(
-    collection: string,
-    upsert: (
-      uri: string,
-      did: string,
-      rkey: string,
-      cid: string | undefined,
-      record: T,
-    ) => Promise<void>,
-  ): Promise<number> {
-    try {
-      const { records } = await listRepoRecords(subjectDid, collection, pds);
-      let count = 0;
-      for (const record of records) {
-        const rkey = record.uri.slice(record.uri.lastIndexOf("/") + 1);
-        if (!record.value) continue;
-        await upsert(
-          record.uri,
-          subjectDid,
-          rkey,
-          record.cid,
-          record.value as unknown as T,
-        );
-        count += 1;
-      }
-      return count;
-    } catch (error: unknown) {
-      console.warn(
-        `[ingest] followed-user ${collection} backfill failed for ${subjectDid}`,
-        error,
-      );
-      return 0;
-    }
-  }
-
-  async function backfillCollectionSidecars(): Promise<number> {
-    try {
-      const { records } = await listRepoRecords(
-        subjectDid,
-        Collections.collection,
-        pds,
-      );
-      let count = 0;
-      for (const record of records) {
-        const rkey = record.uri.slice(record.uri.lastIndexOf("/") + 1);
-        if (!record.value) continue;
-        await upsertCollectionSidecar(
-          subjectDid,
-          rkey,
-          record.value as unknown as CollectionSidecarRecord,
-        );
-        count += 1;
-      }
-      return count;
-    } catch (error: unknown) {
-      console.warn(
-        `[ingest] followed-user collection backfill failed for ${subjectDid}`,
-        error,
-      );
-      return 0;
-    }
-  }
-
-  const [recommendCount, documentCount, collectionCount] = await Promise.all([
-    backfillCollection<RecommendRecord>(Collections.recommend, upsertRecommend),
-    backfillCollection<DocumentRecord>(Collections.document, upsertDocument),
-    backfillCollectionSidecars(),
-  ]);
-
-  return {
-    recommends: recommendCount,
-    documents: documentCount,
-    collections: collectionCount,
-  };
 }

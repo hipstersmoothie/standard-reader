@@ -24,7 +24,10 @@ export type GuideArea =
   | "collections"
   | "personalizing"
   | "extension"
+  | "e-readers"
   | "publishing"
+  | "embeds"
+  | "comics"
   | "your-data";
 
 export type GuideRoute =
@@ -37,7 +40,10 @@ export type GuideRoute =
   | "/guide/collections"
   | "/guide/personalizing"
   | "/guide/extension"
+  | "/guide/e-readers"
   | "/guide/publishing"
+  | "/guide/embeds"
+  | "/guide/comics"
   | "/guide/your-data";
 
 /**
@@ -130,11 +136,32 @@ export const GUIDE_AREAS: ReadonlyArray<GuideAreaMeta> = [
     blurb: msg`Save and subscribe from anywhere on the web, without breaking your stride.`,
   },
   {
+    area: "e-readers",
+    group: "further",
+    to: "/guide/e-readers",
+    label: msg`Reading on an e-reader`,
+    blurb: msg`Put your unread queue on a Kobo, Kindle or phone as real EPUB files.`,
+  },
+  {
     area: "publishing",
     group: "further",
     to: "/guide/publishing",
     label: msg`Publishing your site`,
     blurb: msg`Wire your own site's records so Standard Reader can find and read it.`,
+  },
+  {
+    area: "embeds",
+    group: "further",
+    to: "/guide/embeds",
+    label: msg`Embed buttons`,
+    blurb: msg`Put a subscribe or follow button for your work on your own site.`,
+  },
+  {
+    area: "comics",
+    group: "further",
+    to: "/guide/comics",
+    label: msg`Publishing a comic`,
+    blurb: msg`Get a shelf of covers and a page-flip reader out of the pages you already post.`,
   },
   {
     area: "your-data",
@@ -235,13 +262,40 @@ export const GUIDE_SECTIONS: Record<GuideArea, ReadonlyArray<GuideSection>> = {
   publishing: [
     { id: "overview", label: msg`Overview` },
     { id: "discovery", label: msg`Discovery` },
-    { id: "subscribe-embed", label: msg`Subscribe embed` },
+    { id: "subscribe-embed", label: msg`Subscribe and follow buttons` },
     {
       id: "inline-reading",
       label: msg`Rendering content in Standard Reader`,
     },
     { id: "content-formats", label: msg`Supported content formats` },
     { id: "example", label: msg`Example record` },
+  ],
+  "e-readers": [
+    { id: "what-you-get", label: msg`What you get` },
+    { id: "setting-it-up", label: msg`Setting it up` },
+    { id: "one-article", label: msg`Sending one article` },
+    { id: "progress-sync", label: msg`Keeping your place` },
+    { id: "whats-missing", label: msg`What will not be there` },
+  ],
+  embeds: [
+    { id: "what-you-get", label: msg`What you get` },
+    { id: "subscribe-embed", label: msg`A subscribe button for a publication` },
+    { id: "follow-embed", label: msg`A follow button for you` },
+    { id: "layouts", label: msg`Landscape, portrait, or a plain link` },
+    { id: "styling", label: msg`What the card takes from your brand` },
+    { id: "what-happens", label: msg`What happens when someone clicks it` },
+    { id: "troubleshooting", label: msg`When the card does not show up` },
+  ],
+  comics: [
+    { id: "what-readers-get", label: msg`What readers get` },
+    { id: "turning-it-on", label: msg`Turning the comic view on` },
+    { id: "pages", label: msg`What counts as a page` },
+    { id: "titles", label: msg`Naming issues and pages` },
+    { id: "covers", label: msg`Cover art` },
+    { id: "notes", label: msg`The words beside the art` },
+    { id: "alt-text", label: msg`Alt text` },
+    { id: "read-state", label: msg`How readers pick it back up` },
+    { id: "troubleshooting", label: msg`When it still reads as a blog` },
   ],
   "your-data": [
     { id: "where-it-lives", label: msg`Where your reading lives` },

@@ -55,6 +55,16 @@ export function isDryRun(): boolean {
   return Boolean(process.env.THREAD_DRY_RUN?.trim());
 }
 
+/**
+ * When true, post even though this week's thread already went out — the manual
+ * escape hatch for "the thread was wrong, send it again". Off by default: the
+ * once-a-week guard exists precisely because everything else that starts this
+ * job (a redeploy, a restart, a stray `pnpm thread:post`) means to run it once.
+ */
+export function isForcedRun(): boolean {
+  return Boolean(process.env.THREAD_FORCE?.trim());
+}
+
 function graphemeSegmenter(): Intl.Segmenter | null {
   if (globalThis.Intl?.Segmenter === undefined) return null;
   return new Intl.Segmenter(undefined, { granularity: "grapheme" });

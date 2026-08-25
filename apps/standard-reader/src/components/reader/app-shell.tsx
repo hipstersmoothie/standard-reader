@@ -8,6 +8,7 @@ import { DirectionalIcon } from "@standard-reader/design-system/directional-icon
 import { Flex } from "@standard-reader/design-system/flex";
 import { IconButton } from "@standard-reader/design-system/icon-button";
 import { Menu, MenuItem, SubMenu } from "@standard-reader/design-system/menu";
+import { useAnimatedBottomNav } from "@standard-reader/design-system/navbar/useAnimatedBottomNav";
 import { useAnimatedNavbar } from "@standard-reader/design-system/navbar/useAnimatedNavbar";
 import { Skeleton } from "@standard-reader/design-system/skeleton";
 import { SkipLink } from "@standard-reader/design-system/skip-link";
@@ -74,6 +75,7 @@ import { PageReaderProvider } from "#/lib/page-reader/page-reader-provider";
 import type { SidebarNavId } from "#/lib/sidebar-nav";
 import { useFormatters } from "#/lib/use-formatters";
 import { useCompactNav } from "#/lib/use-media-query";
+import { useOnlineStatus } from "#/lib/use-online-status";
 
 import type {
   FollowingPublication,
@@ -89,6 +91,7 @@ import { LanguageHintPrompt } from "./language-hint-prompt";
 import { ListEditModal } from "./list-edit-modal";
 import { PageReaderBar } from "./page-reader-bar";
 import { PublicationThemeScope } from "./publication-theme-scope";
+import { PullToRefreshLane } from "./pull-to-refresh";
 import {
   SelectionDockProvider,
   useSelectionDock,
@@ -412,12 +415,16 @@ const styles = stylex.create({
     paddingInlineEnd: horizontalSpace["3xl"],
     paddingInlineStart: horizontalSpace["3xl"],
     pointerEvents: "none",
+    // Nothing writes to this element. The bottom nav's hide-on-scroll animation
+    // shifts `dockStack` inside it instead: a transform here would promote the
+    // viewport-pinned dock to a composited layer, and iOS Safari answers that by
+    // holding its toolbars open and shortening the dynamic viewport — the page
+    // then stops short of the bottom edge with a dead strip below the content.
     // Pinned to the viewport (the document is the scroll container now, so an
     // absolute dock would ride to the bottom of the whole article instead of
     // floating above the fold). Offset by the sidebar width on desktop so the
     // floating card stays centered over the content column.
     position: "fixed",
-    rowGap: gap.lg,
     zIndex: 30,
     // Sit a floor of 16px above the bottom, or hug the home-indicator safe area
     // where that's larger. On iOS (standalone PWA) the ~34px safe-area inset
@@ -426,6 +433,18 @@ const styles = stylex.create({
     // floor keeps the pill off the very bottom edge. `max()` — not env()'s
     // second arg, which only applies when env() is entirely unsupported.
     bottom: `max(env(safe-area-inset-bottom, 0px), ${verticalSpace["3xl"]})`,
+  },
+  // The dock's contents, in normal flow. This is what the hide-on-scroll
+  // animation transforms — see the note on `dock`. It owns the row gap because
+  // the animation measures the bar's footprint from it. Untouched on iOS, where
+  // the bar fades out where it stands instead of sliding away.
+  dockStack: {
+    alignItems: "center",
+    display: "flex",
+    flexDirection: "column",
+    pointerEvents: "none",
+    rowGap: gap.lg,
+    width: "100%",
   },
   bottomNav: {
     display: { [DESKTOP]: "none", default: "flex" },
@@ -594,14 +613,33 @@ const COLLECTIONS_NAV: NavLink = {
 };
 
 /**
+ * Nav items that need the network, and are hidden while offline.
+ *
+ * Offline sync stores the reader's own reading — unread, their backlog, Saved,
+ * Subscriptions — so Home, Latest and Saved keep working. These three are
+ * different in kind: Discover and Search query the whole network for things the
+ * reader has by definition not read, and Collections is editable. Leaving them
+ * in the nav offers three taps that can only end in an error page, so they come
+ * out until the connection is back.
+ */
+const NETWORK_ONLY_NAV: ReadonlySet<SidebarNavId> = new Set([
+  "discover",
+  "search",
+  "collections",
+]);
+
+/**
  * Primary nav links; inserts Saved + Collections after Latest when the reader is
  * signed in (both are personal, repo-backed surfaces).
  */
-function navWithSaved(signedIn: boolean): Array<NavLink> {
-  return NAV.flatMap((item) => {
+function navWithSaved(signedIn: boolean, online: boolean): Array<NavLink> {
+  const items = NAV.flatMap((item) => {
     if (item.to !== "/latest" || !signedIn) return [item];
     return [item, SAVED_NAV, COLLECTIONS_NAV];
   });
+  return online
+    ? items
+    : items.filter((item) => !NETWORK_ONLY_NAV.has(item.id));
 }
 
 /**
@@ -714,10 +752,22 @@ function navItemActive(pathname: string, to: string): boolean {
 function BottomNav({
   items,
   hasUnread,
+  stackRef,
 }: {
   items: Array<NavLink>;
   hasUnread: boolean;
+  stackRef: React.RefObject<HTMLDivElement | null>;
 }) {
+  // Mirror of the mobile top bar: scrolling down slides the pill out through the
+  // bottom edge, scrolling up brings it back, so an article gets the full height
+  // of the screen while the reader is moving through it. The hook only runs on
+  // the compact layout, where this nav is the one that exists — at desktop
+  // widths the sidebar replaces it and the pill is `display: none`.
+  const compactNav = useCompactNav();
+  const { navBarProps } = useAnimatedBottomNav({
+    enabled: compactNav,
+    stackTarget: stackRef,
+  });
   const pathname = useRouterState({
     select: (s: { location: { pathname: string } }) => s.location.pathname,
   });
@@ -761,7 +811,7 @@ function BottomNav({
   );
 
   return (
-    <nav {...stylex.props(styles.bottomNav)}>
+    <nav {...navBarProps} {...stylex.props(styles.bottomNav)}>
       <div {...stylex.props(styles.fabBar)}>
         {indicator ? (
           <span
@@ -798,17 +848,22 @@ function BottomNav({
 function BottomNavSlot({
   items,
   hasUnread,
+  stackRef,
 }: {
   items: Array<NavLink>;
   hasUnread: boolean;
+  stackRef: React.RefObject<HTMLDivElement | null>;
 }) {
   const dock = useSelectionDock();
 
+  // The selection toolbar is a response to something the reader just did, so it
+  // never hides on scroll. Unmounting `BottomNav` also tears down the hook,
+  // which drops the stack back to its resting offset for the toolbar.
   if (dock?.isActive) {
     return <div {...stylex.props(styles.selectionSlot)} ref={dock.setSlot} />;
   }
 
-  return <BottomNav items={items} hasUnread={hasUnread} />;
+  return <BottomNav items={items} hasUnread={hasUnread} stackRef={stackRef} />;
 }
 
 function Brand({
@@ -825,6 +880,7 @@ function Brand({
       {...focusRingProps}
       {...stylex.props(styles.brandLink, style)}
     >
+      {/* `BrandWordmark` says "Offline Reader" when there is no connection. */}
       <BrandWordmark />
     </Link>
   );
@@ -906,7 +962,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const followingUsers = sidebar?.followingUsers ?? [];
   const unreadCount = sidebar?.unreadCount ?? null;
   const hasUnread = unreadCount != null && unreadCount > 0;
-  const primaryNav = navWithSaved(signedIn);
+  const online = useOnlineStatus();
+  const primaryNav = navWithSaved(signedIn, online);
   const [subsSheetOpen, setSubsSheetOpen] = useState(false);
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
@@ -920,6 +977,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const mainRef = useRef<HTMLElement>(null);
   const { navBarProps: mobileBarProps, sentinel: mobileBarSentinel } =
     useAnimatedNavbar({ enabled: compactNav, offsetTarget: mainRef });
+  // The bottom nav slides down out of the dock as you scroll; the dock's inner
+  // stack follows it partway so the page-reader transport above drops into the
+  // vacated slot rather than hovering over a gap. The stack, never the dock —
+  // the dock is pinned to the viewport and must stay untransformed.
+  const dockStackRef = useRef<HTMLDivElement>(null);
+  // The content column, which pull-to-refresh drags down with the finger. The
+  // top bar and the dock stay put — only the page the gesture is refreshing
+  // moves, the way it does on a phone.
+  const contentRef = useRef<HTMLDivElement>(null);
 
   const { data: listsData, isPending: listsPending } = useQuery({
     ...listsQueryOptions(),
@@ -1409,15 +1475,28 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
             <div {...stylex.props(styles.scroller)}>
               {/* The footer sits inside the themed region so a publication's
-                  colors run to the bottom of the content column. */}
-              <PublicationThemeScope footer={<SiteFooter />}>
+                  colors run to the bottom of the content column — and so does
+                  the pull indicator, which is why the gap the gesture opens
+                  shows the publication's own background rather than the app's.
+                  The scope holds still; `contentRef` is what the pull drags. */}
+              <PublicationThemeScope
+                above={<PullToRefreshLane contentRef={contentRef} />}
+                contentRef={contentRef}
+                footer={<SiteFooter />}
+              >
                 {children}
               </PublicationThemeScope>
             </div>
 
             <div {...stylex.props(styles.dock)}>
-              <PageReaderBar />
-              <BottomNavSlot items={visibleNav} hasUnread={hasUnread} />
+              <div ref={dockStackRef} {...stylex.props(styles.dockStack)}>
+                <PageReaderBar />
+                <BottomNavSlot
+                  items={visibleNav}
+                  hasUnread={hasUnread}
+                  stackRef={dockStackRef}
+                />
+              </div>
             </div>
           </main>
 

@@ -1,0 +1,1 @@
+DROP INDEX "blocks_blocker_idx";

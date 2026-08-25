@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { db } from "#/db/index.server";
 import * as schema from "#/db/schema";
 import { renderRssFeed } from "#/lib/feeds/rss";
+import { didFromParam } from "#/lib/opds/did-param";
 import { getPublicUrl } from "#/lib/public-url";
 import { authorFeedUrl, SITE_NAME } from "#/lib/site-metadata";
 import { feedItemsFromCards, loadFeedItemBodies } from "#/server/feeds/build";
@@ -16,8 +17,8 @@ export const Route = createFileRoute("/feed/u/$did")({
   server: {
     handlers: {
       GET: async ({ params }) => {
-        const did = params.did;
-        if (!did.startsWith("did:")) {
+        const did = didFromParam(params.did);
+        if (!did) {
           return new Response("Bad Request", { status: 400 });
         }
 

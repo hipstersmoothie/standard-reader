@@ -3,6 +3,7 @@
 import type { MessageDescriptor } from "@lingui/core";
 import { msg } from "@lingui/core/macro";
 import { Plural, Trans, useLingui } from "@lingui/react/macro";
+import { Alert } from "@standard-reader/design-system/alert";
 import { Avatar } from "@standard-reader/design-system/avatar";
 import { Button } from "@standard-reader/design-system/button";
 import {
@@ -14,17 +15,20 @@ import {
   SegmentedControl,
   SegmentedControlItem,
 } from "@standard-reader/design-system/segmented-control";
+import { Switch } from "@standard-reader/design-system/switch";
 import {
   Tab,
   TabList,
   TabPanel,
   Tabs,
 } from "@standard-reader/design-system/tabs";
+import { animationDuration } from "@standard-reader/design-system/theme/animations.stylex";
 import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
 import { radius } from "@standard-reader/design-system/theme/radius.stylex";
 import {
   size as boxSize,
   gap,
+  verticalSpace,
 } from "@standard-reader/design-system/theme/semantic-spacing.stylex";
 import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
 import {
@@ -41,21 +45,75 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { Check } from "lucide-react";
 import type { Key } from "react";
 import { useCallback } from "react";
 
 import { ArticleRow } from "#/components/reader/cards";
 import { FeedLoadMore } from "#/components/reader/feed-load-more";
-import type { LabelValueDef } from "#/integrations/tanstack-query/api-labelers.functions";
+import { LabelerPill } from "#/components/reader/labeler-pill";
+import type {
+  LabelValueDef,
+  LabeledAccount,
+} from "#/integrations/tanstack-query/api-labelers.functions";
 import { labelerApi } from "#/integrations/tanstack-query/api-labelers.functions";
+import { labelerHandle, labelerHandleOrDid } from "#/lib/labeler-handle";
 import { useTrackReadingHistory } from "#/lib/use-track-reading-history";
 
 import { Kicker, ReaderContent } from "./reader/primitives";
 
 type Visibility = "ignore" | "warn" | "hide";
-export type LabelerView = "labels" | "documents";
+
+/**
+ * One account a labeler has labeled. Deliberately not an `ArticleRow`: the
+ * subject here is a publisher, not a document, so the row leads with identity
+ * and links to the profile. Falls back to the bare DID when we hold no profile
+ * for the account — a labeler can label someone we have never indexed.
+ */
+function LabeledAccountRow({
+  account,
+  src,
+  vals,
+}: {
+  account: LabeledAccount;
+  src: string;
+  vals: Array<string>;
+}) {
+  const name =
+    account.displayName?.trim() ||
+    (account.handle ? `@${account.handle}` : account.did);
+
+  return (
+    <Link
+      to="/u/$did"
+      params={{ did: account.did }}
+      {...stylex.props(styles.accountRow)}
+    >
+      <Avatar
+        size="md"
+        src={account.avatarUrl ?? undefined}
+        alt={name}
+        fallback={name.slice(0, 2).toUpperCase()}
+      />
+      <div {...stylex.props(styles.accountText)}>
+        <span {...stylex.props(styles.accountName)}>{name}</span>
+        {account.handle && account.displayName ? (
+          <span {...stylex.props(styles.accountHandle)}>@{account.handle}</span>
+        ) : null}
+      </div>
+      <div {...stylex.props(styles.accountLabels)}>
+        {vals.map((val) => (
+          <LabelerPill key={val} src={src} val={val} />
+        ))}
+      </div>
+    </Link>
+  );
+}
+export type LabelerView = "labels" | "documents" | "accounts";
+
+/** The cached payload of `getLabeler`, patched in place by the mutations below. */
+type LabelerQueryData = Awaited<ReturnType<typeof labelerApi.getLabeler>>;
 
 // Each label is a simple three-way toggle: off (ignore), warn (content warning /
 // blur), or hide (filter it out entirely).
@@ -99,13 +157,42 @@ export function LabelerDetailView({
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteQuery(labelerApi.getLabeledDocumentsInfiniteQueryOptions(did));
+  // A labeler's subjects are documents, accounts, or both — ours score prose,
+  // network labelers label publishers — so both listings are always fetched and
+  // each tab hides itself when its side is empty.
+  const {
+    data: accountPages,
+    isLoading: accountsIsLoading,
+    fetchNextPage: fetchNextAccounts,
+    hasNextPage: hasNextAccounts,
+    isFetchingNextPage: isFetchingNextAccounts,
+  } = useInfiniteQuery(labelerApi.getLabeledAccountsInfiniteQueryOptions(did));
+  // A labeler's declared labels are paged too: ATlas declares 4,995 of them, and
+  // rendering that many visibility controls at once is what made this page crawl.
+  const {
+    data: labelDefPages,
+    fetchNextPage: fetchNextLabelDefs,
+    hasNextPage: hasNextLabelDefs,
+    isFetchingNextPage: isFetchingNextLabelDefs,
+  } = useInfiniteQuery(labelerApi.getLabelerLabelsInfiniteQueryOptions(did));
   const { enabled: trackReading } = useTrackReadingHistory();
 
+  const labelerKey = ["labeler", did] as const;
+
   const invalidate = () => {
-    void queryClient.invalidateQueries({ queryKey: ["labeler", did] });
+    void queryClient.invalidateQueries({ queryKey: labelerKey });
     void queryClient.invalidateQueries({ queryKey: ["reader", "labelers"] });
+    void queryClient.invalidateQueries({
+      queryKey: ["reader", "knownLabelers"],
+    });
     void queryClient.invalidateQueries({ queryKey: ["labels"] });
   };
+
+  /** Patch this labeler's cached entry without refetching it. */
+  const patchLabeler = (patch: Partial<LabelerQueryData>) =>
+    queryClient.setQueryData(labelerKey, (old: LabelerQueryData | undefined) =>
+      old ? { ...old, ...patch } : old,
+    );
 
   const subscribe = useMutation({
     ...labelerApi.subscribeLabelerMutationOptions(),
@@ -115,28 +202,122 @@ export function LabelerDetailView({
     ...labelerApi.unsubscribeLabelerMutationOptions(),
     onSuccess: invalidate,
   });
+
+  /**
+   * Per-label visibility, applied optimistically.
+   *
+   * Every change is a PDS write, so waiting on the round trip before moving the
+   * control — and then refetching the labeler and every label query on top —
+   * made the page feel frozen for a second per click. The control moves
+   * immediately instead, and since the write returns the authoritative prefs
+   * there is nothing to refetch: only the *document* label treatment changed, so
+   * only `["labels"]` is invalidated. The labeler's own metadata and its place in
+   * the directory are untouched by a visibility pref.
+   */
   const setPref = useMutation({
     ...labelerApi.setLabelerPrefMutationOptions(),
-    onSuccess: invalidate,
+    onMutate: async (input) => {
+      await queryClient.cancelQueries({ queryKey: labelerKey });
+      const previous = queryClient.getQueryData<LabelerQueryData>(labelerKey);
+      patchLabeler({
+        prefs: [
+          ...(previous?.prefs ?? []).filter((p) => p.val !== input.val),
+          { val: input.val, visibility: input.visibility },
+        ],
+      });
+      return { previous };
+    },
+    onError: (_error, _input, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(labelerKey, context.previous);
+      }
+    },
+    onSuccess: (result) => {
+      patchLabeler({ prefs: result.prefs });
+      void queryClient.invalidateQueries({ queryKey: ["labels"] });
+    },
+  });
+
+  /** Muting, applied optimistically for the same reason as {@link setPref}. */
+  const setEnabled = useMutation({
+    ...labelerApi.setLabelerEnabledMutationOptions(),
+    onMutate: async (input) => {
+      await queryClient.cancelQueries({ queryKey: labelerKey });
+      const previous = queryClient.getQueryData<LabelerQueryData>(labelerKey);
+      patchLabeler({ enabled: input.enabled });
+      return { previous };
+    },
+    onError: (_error, _input, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(labelerKey, context.previous);
+      }
+    },
+    onSuccess: (result) => {
+      patchLabeler({ enabled: result.enabled });
+      // Muting changes how labels are treated everywhere, and the directory
+      // card's muted state — but not this labeler's own metadata.
+      void queryClient.invalidateQueries({ queryKey: ["labels"] });
+      void queryClient.invalidateQueries({
+        queryKey: ["reader", "knownLabelers"],
+      });
+    },
   });
 
   const card = labeler.data?.labeler ?? { did };
   const subscribed = labeler.data?.subscribed ?? false;
+  const enabled = labeler.data?.enabled ?? true;
+  const health = labeler.data?.health ?? null;
   const prefs = new Map<string, Visibility>(
     (labeler.data?.prefs ?? []).map((p) => [p.val, p.visibility]),
   );
-  const name = card.displayName ?? card.did;
-  const defs = card.labelValueDefinitions ?? [];
+  const name =
+    card.displayName ?? labelerHandle(card.did, card.handle) ?? card.did;
+  // The paged query owns the list once it has loaded; `getLabeler`'s first page
+  // is the fallback so the tab has content on the very first paint.
+  const pagedDefs =
+    labelDefPages?.pages.flatMap((page) => page.definitions) ?? [];
+  const defs =
+    pagedDefs.length > 0 ? pagedDefs : (card.labelValueDefinitions ?? []);
+  const declaredLabelCount =
+    labelDefPages?.pages[0]?.total ?? labeler.data?.labelCount ?? defs.length;
   const documents = labeledPages?.pages.flatMap((page) => page.documents) ?? [];
   const labelsByUri: Record<string, Array<string>> = Object.assign(
     {},
     ...(labeledPages?.pages.map((page) => page.labelsByUri) ?? []),
   );
   const documentCount = labeledPages?.pages[0]?.total ?? 0;
+  const accounts = accountPages?.pages.flatMap((page) => page.accounts) ?? [];
+  const labelsByDid: Record<string, Array<string>> = Object.assign(
+    {},
+    ...(accountPages?.pages.map((page) => page.labelsByDid) ?? []),
+  );
+  const accountCount = accountPages?.pages[0]?.total ?? 0;
 
   const loadMore = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) void fetchNextPage();
   }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
+  const loadMoreAccounts = useCallback(() => {
+    if (hasNextAccounts && !isFetchingNextAccounts) void fetchNextAccounts();
+  }, [fetchNextAccounts, hasNextAccounts, isFetchingNextAccounts]);
+  const loadMoreLabelDefs = useCallback(() => {
+    if (hasNextLabelDefs && !isFetchingNextLabelDefs) void fetchNextLabelDefs();
+  }, [fetchNextLabelDefs, hasNextLabelDefs, isFetchingNextLabelDefs]);
+  const loadedLabelDefs =
+    labelDefPages?.pages.reduce((n, p) => n + p.definitions.length, 0) ?? 0;
+
+  // Only offer a subject tab once we know it has content. A labeler deals in
+  // documents, accounts, or both — network labelers mostly label publishers —
+  // so an empty tab is the normal case, not an error. Gated on the loaded count
+  // rather than shown-then-hidden, so a labeler with nothing to list never
+  // flashes a tab that disappears.
+  const showDocuments = !labeledIsLoading && documentCount > 0;
+  const showAccounts = !accountsIsLoading && accountCount > 0;
+  // Fall back to Labels when the URL names a tab this labeler doesn't have.
+  const effectiveView: LabelerView =
+    (view === "documents" && !showDocuments) ||
+    (view === "accounts" && !showAccounts)
+      ? "labels"
+      : view;
 
   const onViewChange = (key: Key) => {
     const next = key as LabelerView;
@@ -169,11 +350,17 @@ export function LabelerDetailView({
             <p {...stylex.props(styles.heroDesc)}>{card.description}</p>
           ) : null}
           <div {...stylex.props(styles.stats)}>
-            <span {...stylex.props(styles.did)}>{card.did}</span>
-            {defs.length > 0 ? (
+            <span {...stylex.props(styles.did)}>
+              {labelerHandleOrDid(card.did, card.handle)}
+            </span>
+            {/* The total this labeler declares, not the page we happen to have
+                loaded — the Labels tab pages in on scroll. */}
+            {declaredLabelCount > 0 ? (
               <span>
-                <span {...stylex.props(styles.statValue)}>{defs.length}</span>
-                <Plural value={defs.length} one="label" other="labels" />
+                <span {...stylex.props(styles.statValue)}>
+                  {declaredLabelCount}
+                </span>
+                <Plural value={declaredLabelCount} one="label" other="labels" />
               </span>
             ) : null}
             {documentCount > 0 ? (
@@ -186,10 +373,35 @@ export function LabelerDetailView({
                 />
               </span>
             ) : null}
+            {accountCount > 0 ? (
+              <span>
+                <span {...stylex.props(styles.statValue)}>{accountCount}</span>
+                <Plural value={accountCount} one="account" other="accounts" />
+              </span>
+            ) : null}
           </div>
         </div>
 
         <div {...stylex.props(styles.heroActs)}>
+          {/* Muting is only meaningful once subscribed — for a labeler kept on
+              another app but not wanted here. It sits beside Subscribed rather
+              than replacing it, so the two states stay distinguishable. */}
+          {subscribed ? (
+            // A switch names the state it shows, so this reads "Muted here"
+            // rather than the "Mute"/"Unmute" action a button would. On means
+            // muted, which is the inverse of `enabled`.
+            <Switch
+              isSelected={!enabled}
+              isDisabled={setEnabled.isPending}
+              onChange={(muted) =>
+                setEnabled.mutate({ labeler: card.did, enabled: !muted })
+              }
+              labelVariant="left"
+              style={styles.muteSwitch}
+            >
+              <Trans>Muted here</Trans>
+            </Switch>
+          ) : null}
           <Button
             variant={subscribed ? "secondary" : "primary"}
             size="md"
@@ -207,7 +419,7 @@ export function LabelerDetailView({
       </div>
 
       <Tabs
-        selectedKey={view}
+        selectedKey={effectiveView}
         onSelectionChange={onViewChange}
         style={styles.tabs}
       >
@@ -217,9 +429,16 @@ export function LabelerDetailView({
               <Tab id="labels">
                 <Trans>Labels</Trans>
               </Tab>
-              <Tab id="documents">
-                <Trans>Documents</Trans>
-              </Tab>
+              {showDocuments ? (
+                <Tab id="documents">
+                  <Trans>Documents</Trans>
+                </Tab>
+              ) : null}
+              {showAccounts ? (
+                <Tab id="accounts">
+                  <Trans>Accounts</Trans>
+                </Tab>
+              ) : null}
             </TabList>
           </div>
           <div {...stylex.props(styles.tabRule)} aria-hidden />
@@ -227,6 +446,60 @@ export function LabelerDetailView({
 
         <ReaderContent>
           <TabPanel id="labels" style={styles.tabPanel}>
+            {/* A labeler can be listed, declare a full set of labels, and still
+                deliver nothing — because its server is down, or because what it
+                serves doesn't verify against the signing key it publishes. Say
+                so, rather than leaving an empty tab that looks like "no labels
+                yet". */}
+            {health?.error ? (
+              <Alert
+                variant="warning"
+                title={t`Not responding`}
+                style={styles.statusBanner}
+              >
+                <Trans>
+                  This labeler’s server couldn’t be reached, so its labels
+                  aren’t available right now. We’ll keep trying.
+                </Trans>
+              </Alert>
+            ) : health && health.rejected > 0 && health.stored === 0 ? (
+              <Alert
+                variant="critical"
+                title={t`Labels can’t be verified`}
+                style={styles.statusBanner}
+              >
+                <Trans>
+                  None of this labeler’s labels could be verified against the
+                  signing key it publishes, so none are applied. That’s a
+                  problem on the labeler’s end.
+                </Trans>
+              </Alert>
+            ) : health && health.rejected > 0 ? (
+              <Alert
+                variant="warning"
+                title={t`Some labels skipped`}
+                style={styles.statusBanner}
+              >
+                <Plural
+                  value={health.rejected}
+                  one="One of this labeler’s labels couldn’t be verified and was skipped."
+                  other="# of this labeler’s labels couldn’t be verified and were skipped."
+                />
+              </Alert>
+            ) : null}
+            {subscribed && !enabled ? (
+              <Alert
+                variant="info"
+                title={t`Muted here`}
+                style={styles.statusBanner}
+              >
+                <Trans>
+                  This labeler’s labels aren’t applied while you read on
+                  Standard Reader. Your subscription and the settings below are
+                  kept, and unmuting restores them.
+                </Trans>
+              </Alert>
+            ) : null}
             <div {...stylex.props(styles.settingGroup)}>
               {defs.length === 0 ? (
                 <p {...stylex.props(styles.note)}>
@@ -255,7 +528,7 @@ export function LabelerDetailView({
                       </div>
                       <SegmentedControl
                         selectedKeys={new Set([current])}
-                        isDisabled={!subscribed || setPref.isPending}
+                        isDisabled={!subscribed}
                         onSelectionChange={(keys) => {
                           const key = String([...keys][0] ?? "");
                           if (
@@ -289,6 +562,30 @@ export function LabelerDetailView({
                   </Trans>
                 </p>
               ) : null}
+              {/* Paged rather than virtualized: each row owns a
+                  SegmentedControl, and react-aria's Virtualizer wants a
+                  collection component (ListBox/GridList), whose row semantics
+                  fight interactive controls nested inside them. `FeedLoadMore`
+                  keeps this honouring the reader's pagination preference, same
+                  as every other list in the app. */}
+              {hasNextLabelDefs ? (
+                <p {...stylex.props(styles.note)}>
+                  {isFetchingNextLabelDefs ? (
+                    <Trans>Loading more labels…</Trans>
+                  ) : (
+                    <Trans>
+                      Showing {defs.length} of {declaredLabelCount} labels.
+                    </Trans>
+                  )}
+                </p>
+              ) : null}
+              <FeedLoadMore
+                hasMore={hasNextLabelDefs}
+                isLoading={isFetchingNextLabelDefs}
+                onLoadMore={loadMoreLabelDefs}
+                itemCount={loadedLabelDefs}
+                label={t`Show more labels`}
+              />
             </div>
           </TabPanel>
 
@@ -334,6 +631,48 @@ export function LabelerDetailView({
                   isLoading={isFetchingNextPage}
                   onLoadMore={loadMore}
                   itemCount={documents.length}
+                />
+              </div>
+            )}
+          </TabPanel>
+
+          <TabPanel id="accounts" style={styles.tabPanel}>
+            {accountsIsLoading ? (
+              <p {...stylex.props(styles.emptyNote)}>
+                <Trans>Loading…</Trans>
+              </p>
+            ) : accounts.length === 0 ? (
+              <EmptyState>
+                <EmptyStateTitle>
+                  <Trans>No labeled accounts</Trans>
+                </EmptyStateTitle>
+                <EmptyStateDescription>
+                  <Trans>
+                    This labeler hasn’t labeled any accounts in the read-model
+                    yet.
+                  </Trans>
+                </EmptyStateDescription>
+              </EmptyState>
+            ) : (
+              <div>
+                {accounts.map((account) => (
+                  <LabeledAccountRow
+                    key={account.did}
+                    account={account}
+                    src={did}
+                    vals={labelsByDid[account.did] ?? []}
+                  />
+                ))}
+                {isFetchingNextAccounts ? (
+                  <p {...stylex.props(styles.note)}>
+                    <Trans>Loading…</Trans>
+                  </p>
+                ) : null}
+                <FeedLoadMore
+                  hasMore={hasNextAccounts}
+                  isLoading={isFetchingNextAccounts}
+                  onLoadMore={loadMoreAccounts}
+                  itemCount={accounts.length}
                 />
               </div>
             )}
@@ -424,12 +763,15 @@ const styles = stylex.create({
   },
   heroActs: {
     alignItems: "center",
-    columnGap: spacing["1.5"],
+    columnGap: gap.md,
     display: "flex",
     flexWrap: "wrap",
     justifyContent: "flex-end",
     rowGap: spacing["2.5"],
     paddingTop: spacing["1"],
+  },
+  muteSwitch: {
+    flexShrink: 0,
   },
   tabs: {
     paddingBottom: spacing["10"],
@@ -498,6 +840,9 @@ const styles = stylex.create({
     lineHeight: lineHeight.base,
     marginTop: spacing["1.5"],
   },
+  statusBanner: {
+    marginBlockEnd: verticalSpace.xl,
+  },
   note: {
     color: uiColor.text1,
     fontSize: fontSize.sm,
@@ -510,5 +855,43 @@ const styles = stylex.create({
     textAlign: "center",
     paddingBottom: spacing["8"],
     paddingTop: spacing["8"],
+  },
+  accountRow: {
+    padding: spacing["3"],
+    gap: gap.md,
+    textDecoration: "none",
+    alignItems: "center",
+    backgroundColor: { default: "transparent", ":hover": uiColor.component1 },
+    color: "inherit",
+    display: "flex",
+    transitionDuration: animationDuration.fast,
+    transitionProperty: "background-color",
+    borderBottomColor: uiColor.border1,
+    borderBottomStyle: "solid",
+    borderBottomWidth: spacing.px,
+  },
+  accountText: {
+    gap: gap.xs,
+    display: "flex",
+    flexDirection: "column",
+    minWidth: 0,
+  },
+  accountName: {
+    overflow: "hidden",
+    color: uiColor.text2,
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.medium,
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  },
+  accountHandle: {
+    color: uiColor.text1,
+    fontSize: fontSize.sm,
+  },
+  accountLabels: {
+    gap: gap.xs,
+    display: "flex",
+    flexWrap: "wrap",
+    marginInlineStart: "auto",
   },
 });

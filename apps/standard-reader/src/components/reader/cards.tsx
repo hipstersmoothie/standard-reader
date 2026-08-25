@@ -34,7 +34,9 @@ import { Link } from "@tanstack/react-router";
 import {
   ArrowRight,
   BookOpen,
+  BookOpenCheck,
   Bookmark,
+  Bot,
   Check,
   CircleCheck,
   EyeOff,
@@ -48,12 +50,18 @@ import { FollowUserButton } from "#/components/reader/follow-user-button";
 import { PublicationNameLink } from "#/components/reader/publication-name-link";
 import { SearchHeadline } from "#/components/reader/search-headline";
 import { ButtonLink } from "#/components/router-links";
-import type { FollowStatus } from "#/integrations/tanstack-query/api-reader.functions";
+import type {
+  FollowStatus,
+  UnfinishedReadingItem,
+} from "#/integrations/tanstack-query/api-reader.functions";
 import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
 import { parseInternalRoute } from "#/lib/internal-route";
+import { clearLocalProgress } from "#/lib/reading-progress";
 import { tsHeadlineHasMatch } from "#/lib/search-headline";
 import { useFormatters } from "#/lib/use-formatters";
+import { useOfflineCachedUris } from "#/lib/use-offline-cached-uris";
+import { useOnlineStatus } from "#/lib/use-online-status";
 import { useOpenCollectionsInMagazine } from "#/lib/use-open-collections-in-magazine";
 import { useOpenLinks } from "#/lib/use-open-links";
 import { useTrackReadingHistory } from "#/lib/use-track-reading-history";
@@ -94,6 +102,12 @@ import {
 import { useArticleBookmark } from "./use-article-bookmark";
 
 const styles = stylex.create({
+  unavailableOffline: {
+    // Enough to read as unavailable next to a full-strength row, not so faint
+    // the title stops being legible — the reader still needs to recognise it
+    // later. Applied to the link, so it dims the whole card together.
+    opacity: 0.45,
+  },
   cardLink: {
     textDecoration: "none",
     color: "inherit",
@@ -442,6 +456,45 @@ const styles = stylex.create({
   },
   metaDot: {
     color: uiColor.text1,
+  },
+  progressMeta: {
+    alignItems: "center",
+    columnGap: gap.sm,
+    display: "inline-flex",
+    // Digits change width as the number climbs; without this the bar beside
+    // them twitches left and right between 9% and 10%.
+    fontVariantNumeric: "tabular-nums",
+  },
+  progressTrack: {
+    backgroundColor: uiColor.component2,
+    borderRadius: radius.full,
+    display: "block",
+    flexShrink: 0,
+    height: spacing["1"],
+    overflow: "hidden",
+    width: spacing["14"],
+  },
+  progressFill: {
+    backgroundColor: primaryColor.solid1,
+    borderRadius: radius.full,
+    display: "block",
+    height: "100%",
+  },
+  botByline: {
+    alignItems: "center",
+    color: uiColor.text1,
+    columnGap: gap.xs,
+    display: "inline-flex",
+    flexShrink: 0,
+  },
+  srOnly: {
+    borderWidth: 0,
+    clipPath: "inset(50%)",
+    height: spacing.px,
+    overflow: "hidden",
+    position: "absolute",
+    whiteSpace: "nowrap",
+    width: spacing.px,
   },
   collectionMagMeta: {
     alignItems: "center",
@@ -1128,6 +1181,7 @@ function Byline({
           </span>
         </PublicationNameLink>
       )}
+      <BotByline isBot={article.authorIsBot} />
       {includeDate && date ? (
         <>
           <span aria-hidden {...stylex.props(styles.metaDot)}>
@@ -1258,13 +1312,52 @@ function CollectionMagazineMeta() {
   );
 }
 
+/**
+ * How far into an article the reader got — the Continue reading shelf's one
+ * extra fact.
+ *
+ * It leads the meta line rather than sitting under the row, so the number lands
+ * beside the title it describes; a full-width bar below the row's closing rule
+ * read as a page divider belonging to whatever came next. Camel rather than
+ * ink, because the accent is this app's state-indicator colour and progress is
+ * a state — an ink bar outweighed the headline it was annotating.
+ */
+function ReadingProgressMeta({ progress }: { progress: number }) {
+  const { t, i18n } = useLingui();
+  // Round toward the middle: never 0% on something started, never 100% on
+  // something unfinished.
+  const percent = Math.min(99, Math.max(1, Math.round(progress * 100)));
+  const formatted = i18n.number(progress, { style: "percent" });
+
+  return (
+    // One `img` with a full label: sighted readers get the compact "37%" beside
+    // the bar, screen readers get "37% read" instead of a bare number.
+    <span
+      {...stylex.props(styles.progressMeta)}
+      role="img"
+      aria-label={t`${formatted} read`}
+    >
+      <span aria-hidden {...stylex.props(styles.progressTrack)}>
+        <span
+          {...stylex.props(styles.progressFill)}
+          style={{ width: `${percent}%` }}
+        />
+      </span>
+      <span aria-hidden>{formatted}</span>
+    </span>
+  );
+}
+
 function ArticleMetaLine({
   article,
   metaLabels,
+  progress,
 }: {
   article: ArticleCard;
   /** When set, replaces article tags in the meta line (e.g. labeler label values). */
   metaLabels?: Array<{ src: string; val: string }>;
+  /** 0–1 reading position; leads the line on the Continue reading shelf. */
+  progress?: number | null;
 }) {
   const metricsVisible = useEngagementCountsVisible();
   const hasEngagement =
@@ -1291,10 +1384,19 @@ function ArticleMetaLine({
   const hasCardLabels = cardLabelVals.length > 0;
   const hasMetaLabels = metaLabels != null && metaLabels.length > 0;
   const hasTrailing = hasTopics || hasCardLabels || hasMetaLabels;
-  if (!showCollection && !hasEngagement && !hasTrailing) return null;
+  const hasProgress = progress != null;
+  if (!hasProgress && !showCollection && !hasEngagement && !hasTrailing) {
+    return null;
+  }
 
   return (
     <MetaLine>
+      {hasProgress ? <ReadingProgressMeta progress={progress} /> : null}
+      {hasProgress && (showCollection || hasEngagement || hasTrailing) ? (
+        <span aria-hidden {...stylex.props(styles.metaDot)}>
+          ·
+        </span>
+      ) : null}
       {showCollection ? <CollectionMagazineMeta /> : null}
       {showCollection && (hasEngagement || hasTrailing) ? (
         <span aria-hidden {...stylex.props(styles.metaDot)}>
@@ -1363,8 +1465,40 @@ function ArticleLink({
   const markReadExternal = useMarkReadExternal();
   const { openExternally } = useOpenLinks();
   const { openInMagazine } = useOpenCollectionsInMagazine();
+  const online = useOnlineStatus();
+  const cachedOffline = useOfflineCachedUris(online);
   const params = documentLinkParams(article.uri);
-  const merged = stylex.props(styles.cardLink, ...extraStyles);
+  // Mirrors the branches below: which of them ends at an `<a target="_blank">`
+  // rather than an in-app route. Those leave the app for the publication's own
+  // site, which offline sync never stored and cannot store, so offline they are
+  // rows that lead to a browser error page.
+  const opensExternally =
+    openExternally && article.canonicalUrl
+      ? true
+      : params && article.hasRenderableBody
+        ? false
+        : article.canonicalUrl
+          ? parseInternalRoute(article.canonicalUrl) === null
+          : false;
+  // Two ways a row can't be opened offline: it leaves for the publication's
+  // site, or its body was never stored. A feed offline is mostly rows that
+  // work, so the few that don't need to look different — otherwise the only
+  // way to find out is to tap and hit an error.
+  //
+  // `cachedOffline == null` is "not known yet", never "nothing is stored": the
+  // scan is async, and dimming the whole feed while it resolves is worse than
+  // dimming nothing. Off-site rows don't need it — that's known synchronously.
+  const unavailableOffline =
+    !online &&
+    (opensExternally ||
+      (cachedOffline !== null && !cachedOffline.has(article.uri)));
+  const merged = stylex.props(
+    styles.cardLink,
+    ...extraStyles,
+    // Dimmed, not hidden or disabled: the article is still real and still worth
+    // seeing in the feed, and the link works the moment the connection is back.
+    unavailableOffline && styles.unavailableOffline,
+  );
   // "Open on original site" preference: bypass the in-app reader whenever the
   // document has a canonical URL on its publication site.
   if (openExternally && article.canonicalUrl) {
@@ -1774,7 +1908,88 @@ export function MarkUnreadButton({
   );
 }
 
+/**
+ * "I'm done with this" for a row on the Continue reading shelf.
+ *
+ * It forgets the saved position, which is the whole of what puts an article on
+ * the shelf — so the row leaves and settles into the list below, where it was
+ * always going to end up.
+ *
+ * It also re-stamps the read record, which is what lands the article at the top
+ * of history rather than back at whatever date it was first opened. That isn't
+ * a special case: `markRead` re-stamps on every open too, so history is already
+ * ordered by when you last read something, and finishing is reading.
+ *
+ * No confirmation and no undo. The row visibly leaving is the feedback, and
+ * what's lost is a scroll position on an article the reader just said they're
+ * finished with — the recovery is to open it and scroll.
+ */
+export function FinishReadingButton({ documentUri }: { documentUri: string }) {
+  const { t } = useLingui();
+  const queryClient = useQueryClient();
+  const { mutate: finish, isPending } = useMutation({
+    mutationKey: ["reader", "finishReading"] as const,
+    mutationFn: async () => {
+      await readerApi.clearReadingProgress({ data: { documentUri } });
+      await readerApi.markRead({ data: { documentUri } });
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({
+        queryKey: ["reader", "unfinished"],
+      });
+      // The read record moved, so the list's order did too.
+      void queryClient.invalidateQueries({ queryKey: ["reader", "history"] });
+    },
+  });
+
+  const onPress = () => {
+    // Drop it from the shelf now rather than after the round trip; the refetch
+    // in `onSettled` is what makes it stick, or puts it back if the write lost.
+    queryClient.setQueriesData<Array<UnfinishedReadingItem>>(
+      { queryKey: ["reader", "unfinished"] },
+      (current) =>
+        current?.filter((item) => item.documentUri !== documentUri) ?? current,
+    );
+    // The device-local mirror is the copy that restores scroll, so it has to go
+    // too — otherwise the next visit resumes a position we just cleared.
+    clearLocalProgress(documentUri);
+    finish();
+  };
+
+  return (
+    <IconButton
+      variant="secondary"
+      size="sm"
+      label={t`Mark as finished`}
+      isDisabled={isPending}
+      onPress={onPress}
+      onClick={stopSaveClick}
+    >
+      <BookOpenCheck size={16} aria-hidden />
+    </IconButton>
+  );
+}
+
 /* ── Article row (list) ─────────────────────────────────────────────────── */
+
+/**
+ * Marks a byline whose account self-declares as a bot (a `bot` self-label on its
+ * profile record). Its own statement, so it needs no labeler — this used to be
+ * published as a label by a first-party labeler that did nothing else.
+ *
+ * Sits outside the publication/author link so clicking it doesn't navigate.
+ */
+function BotByline({ isBot }: { isBot: boolean }) {
+  if (!isBot) return null;
+  return (
+    <span {...stylex.props(styles.botByline)}>
+      <Bot size={12} aria-hidden />
+      <span {...stylex.props(styles.srOnly)}>
+        <Trans>Bot</Trans>
+      </span>
+    </span>
+  );
+}
 
 export function ArticleRow({
   article,
@@ -1783,9 +1998,11 @@ export function ArticleRow({
   showSaveButton = true,
   saveButtonPlacement = "header",
   showMarkUnreadButton = false,
+  showFinishButton = false,
   isFirstInSection = false,
   assumeBookmarked,
   metaLabels,
+  progress,
 }: {
   article: ArticleCard;
   unread?: boolean;
@@ -1795,10 +2012,15 @@ export function ArticleRow({
   saveButtonPlacement?: "header" | "besideMedia";
   /** Show a "mark as unread" control in the row header (reading-history list). */
   showMarkUnreadButton?: boolean;
+  /** Show a "mark as finished" control (Continue reading shelf). Shares the
+   * unread toggle's slot; set one or the other, never both. */
+  showFinishButton?: boolean;
   /** Drop top padding when the section head already provides spacing above. */
   isFirstInSection?: boolean;
   /** Skip per-row bookmark status fetches when the list is already the save queue. */
   assumeBookmarked?: boolean;
+  /** 0–1 reading position, shown leading the meta line (Continue reading). */
+  progress?: number | null;
   /** When set, replaces article tags in the meta line (e.g. labeler label values). */
   metaLabels?: Array<{ src: string; val: string }>;
 }) {
@@ -1821,12 +2043,18 @@ export function ArticleRow({
       publicationUri={article.publicationUri}
     />
   ) : null;
+  const finishButton = showFinishButton ? (
+    <FinishReadingButton documentUri={article.uri} />
+  ) : null;
   // The save toggle sits in the header by default; `besideMedia` pins it to the
   // row's right edge instead. The unread toggle always pins to the right edge so
-  // it lines up across rows regardless of whether a cover image is present.
+  // it lines up across rows regardless of whether a cover image is present. The
+  // finish toggle rides in that same slot — the two never appear together, since
+  // one belongs to the history list and the other to the shelf above it.
   const asideSaveButton = saveBesideMedia ? saveButton : null;
   const headerSaveButton = saveBesideMedia ? null : saveButton;
-  const hasAside = Boolean(markUnreadButton || asideSaveButton);
+  const asideAction = markUnreadButton ?? finishButton;
+  const hasAside = Boolean(asideAction || asideSaveButton);
 
   const gridStyles: Array<stylex.StyleXStyles | false | undefined> = [
     showByline ? styles.rowGrid : styles.row,
@@ -1864,7 +2092,11 @@ export function ArticleRow({
           unreadDotStyle={styles.unreadDotRow}
         />
         <ArticleSearchDek article={article} style={styles.rowDek} />
-        <ArticleMetaLine article={article} metaLabels={metaLabels} />
+        <ArticleMetaLine
+          article={article}
+          metaLabels={metaLabels}
+          progress={progress}
+        />
       </Flex>
       {cover ? (
         <AspectRatio
@@ -1878,7 +2110,7 @@ export function ArticleRow({
       {hasAside ? (
         <div {...stylex.props(styles.rowSaveAside)}>
           <Flex align="center" gap="sm">
-            {markUnreadButton}
+            {asideAction}
             {asideSaveButton}
           </Flex>
         </div>
@@ -1946,6 +2178,7 @@ export function CompactRow({
           ) : (
             <span>Unknown</span>
           )}
+          <BotByline isBot={article.authorIsBot} />
           {hasEngagement ? (
             <>
               <span aria-hidden {...stylex.props(styles.metaDot)}>

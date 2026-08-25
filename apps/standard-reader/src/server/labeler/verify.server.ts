@@ -19,6 +19,7 @@
 import { parseDidKey, verifySignature } from "@atproto/crypto";
 import * as dagCbor from "@ipld/dag-cbor";
 
+import { didWebDocumentUrl } from "#/lib/atproto/did-web";
 import { assertSafeFetchUrl } from "#/server/security/ssrf-guard";
 
 import type { DisplayLabel } from "./labels.server.ts";
@@ -67,8 +68,9 @@ async function fetchDidDoc(did: string): Promise<DidDocument | null> {
   if (did.startsWith("did:plc:")) {
     url = `${PLC_URL}/${encodeURIComponent(did)}`;
   } else if (did.startsWith("did:web:")) {
-    const host = did.slice("did:web:".length).replaceAll(":", "/");
-    url = `https://${host}/.well-known/did.json`;
+    const docUrl = didWebDocumentUrl(did);
+    if (!docUrl) return null;
+    url = docUrl;
     // did:web host comes from a record we indexed — validate before fetching so
     // a hostile registration can't point us at internal infrastructure.
     try {
@@ -174,7 +176,17 @@ export function labelSigningBytes(label: DisplayLabel): Uint8Array {
   };
   if (label.cid) out.cid = label.cid;
   if (label.exp) out.exp = label.exp;
-  if (label.neg) out.neg = true;
+  // `neg` is included whenever the labeler serialized it — **including when it
+  // is `false`** — because the signature covers the object as that labeler
+  // encoded it. Dropping a present `neg: false` silently broke every label from
+  // labelers that write the field explicitly rather than omitting it: three of
+  // the labelers a real reader subscribes to went from 0% to 100% verified on
+  // this one line. Labelers that omit `neg` on active labels are unaffected,
+  // since it stays absent here too.
+  if (label.neg !== undefined) out.neg = label.neg;
+  // Deliberately an allowlist of the lexicon's fields. Label servers have been
+  // seen adding their own `id` to responses, which was never part of the signed
+  // object — signing over "everything except sig" would fail on those.
   return dagCbor.encode(out);
 }
 
