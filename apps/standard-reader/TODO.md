@@ -1125,6 +1125,22 @@ Build each on hip-ui components + StyleX tokens (no raw HTML/inline styles).
 - [x] **Trending publications / Trending articles** — cron-precomputed normalized scores (decay,
       velocity, z-score blend, Constellation backlinks, distinct recommenders excl. self); 4-day
       recency gate; per-publication + per-author diversity caps on rail reads.
+- [x] **Decay per document, not per engagement event** (2026-08-28). Recommends were decayed
+      like-by-like while Constellation backlinks went in raw, so the two signals were not
+      comparable: a week-old backlink counted 1.5 in the week score while a week-old like counted
+      0.15, and a couple of Bluesky link cards outranked a steady week of reader recommends. Both
+      the week-in-review ranking (weekly thread + digest) and `recomputeDocumentTrending()` now age
+      the assembled counts once by the article's own age — week score is
+      `(distinct likers + 1.5 × backlinks) × 2^(-age/84h)`; the recompute feeds
+      `recommends × freshness` and `backlinks × freshness` into the same z-score blend. Velocity
+      terms stay undecayed (already windowed deltas), as does the standalone freshness term.
+- [x] **Backlink sync covers the full week-in-review window** (2026-08-28).
+      `recomputeDocumentBacklinks` refreshed only the 4-day trending slice while the weekly thread
+      and digest rank over 7 days, so an article's `backlink_count` froze the day it aged out and
+      days 5-7 were ranked on stale totals while their likes kept accruing.
+      `BACKLINK_SYNC_MAX_AGE_DAYS` (7) now drives the sync, and `trending-scoring.test.ts` fails if
+      any consumer's window grows past it again. Costs proportionally more Constellation requests
+      per pass (bounded by `BACKLINK_SYNC_CONCURRENCY`).
 - [x] **Cold start** — popularity fallback (`trending_score` incl. likes) excluding the trending set (rails stay distinct).
 - [x] **Readers also follow** — co-subscription + co-recommend affinity on publication profiles.
 - [x] **Topics** — auto-derived topic clusters, so Discover stops being ranked by raw tag

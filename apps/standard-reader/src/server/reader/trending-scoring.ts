@@ -11,18 +11,34 @@ import type { ArticleCard } from "#/integrations/tanstack-query/api-shapes";
 export const HALF_LIFE_HOURS = 30;
 
 /**
- * Gentler half-life for the weekly "week in review" thread (~3.5 days). Unlike
- * the 30h trending half-life this lets a heavily-liked early-week article stay
- * competitive with a fresh one, so the Top 5 reflects the whole week rather than
- * just the last day or two. Used by {@link weekInReviewArticles}.
+ * Gentler half-life for the weekly "week in review" thread (~3.5 days). Applied
+ * to the ARTICLE's age, not to each like's: the whole week score fades together
+ * as the document ages. The gentler curve is what keeps a Monday article
+ * competitive on Friday, so the Top 5 reflects the whole week rather than just
+ * the last day or two. Used by {@link weekInReviewArticles}.
  */
 export const WEEK_HALF_LIFE_HOURS = 84;
 
-/** Weight on Bluesky backlinks relative to a decayed like in the week score. */
+/** Weight on Bluesky backlinks relative to a distinct liker in the week score. */
 export const WEEK_BACKLINK_WEIGHT = 1.5;
 
 /** Only articles published within this many days are trending-eligible. */
 export const TRENDING_MAX_AGE_DAYS = 4;
+
+/**
+ * How far back the Constellation backlink sync refreshes
+ * `documents.backlink_count`.
+ *
+ * Deliberately WIDER than {@link TRENDING_MAX_AGE_DAYS}: the week-in-review
+ * ranking (weekly Bluesky thread + weekly digest) scores over 7 days and reads
+ * `backlink_count` for every article in that window. When the sync only covered
+ * the 4-day discover slice, an article's backlink total froze the moment it aged
+ * out — so days 5-7 were scored on numbers that had stopped moving while their
+ * likes kept accruing, quietly favouring newer articles. Keep this >= the
+ * window any consumer passes as `sinceDays` (`HOT_WINDOW_DAYS`,
+ * `DIGEST_WINDOW_DAYS`); `trending-scoring.test.ts` locks that invariant.
+ */
+export const BACKLINK_SYNC_MAX_AGE_DAYS = 7;
 
 /** Publication-level velocity windows (days). */
 export const PUBLICATION_RECENT_WINDOW_DAYS = 7;

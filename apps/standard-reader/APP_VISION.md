@@ -1578,6 +1578,14 @@ hand-tuned lists:
   published within the last **4 days**, meet a minimum distinct-recommender floor, and pass
   per-publication + per-author diversity caps at read time. Rail reads are cheap indexed queries
   only — no scoring per request.
+
+  **Decay is applied per document, not per engagement event.** Both level signals are a count times
+  the article's own freshness weight (recommends × freshness, backlinks × freshness). Recommends
+  used to be decayed like-by-like while backlinks went in raw, so the two normalized terms measured
+  different things: an old backlink counted in full while an equally old like had nearly faded, and
+  a couple of Bluesky link cards outweighed a steady week of reader recommends. Velocity terms stay
+  undecayed — they are already deltas over a fixed recent window.
+
 - **Cold start (no follows yet)** — fall back to high-readership publications
   _outside_ the current trending set so Recommended stays distinct from Trending.
 - **No bulk web-bridge mirrors in Recommended** — Discover's Recommended rail (signed-in _and_
@@ -1628,6 +1636,17 @@ repos), and a per-author hourly cap in the sender as the backstop.
 A `thread-cron` Railway service (`railway.thread.json` → `pnpm thread:post` →
 `src/server/announce/`) posts the week's five hottest network articles as a
 reply-chained Bluesky thread from the reader bot, Fridays 16:00 UTC.
+
+"Hottest" is `weekInReviewArticles` — the same ranking behind the weekly
+digest's "Top on the network", scored live over 7 days rather than read off
+`trending_score` (which is only maintained for the 4-day discover slice):
+`(distinct likers in window + 1.5 × Bluesky backlinks) × 2^(-article_age /
+84h)`. One gentler half-life, applied to the article rather than to each like,
+so a Monday piece is still competitive on Friday and likes and backlinks age at
+the same rate. The Constellation backlink sync covers 7 days
+(`BACKLINK_SYNC_MAX_AGE_DAYS`) for this reason: while it stopped at the 4-day
+trending gate, days 5-7 of the thread's window ranked on backlink totals that
+had frozen days earlier.
 
 It must post **exactly once a week**, and the scheduled tick is not the only
 thing that starts it: Railway runs a cron service's start command on every

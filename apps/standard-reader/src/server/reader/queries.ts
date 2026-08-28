@@ -2081,20 +2081,32 @@ export async function savedForLater(
  * engagement ACCUMULATED across the window rather than by `trending_score`.
  *
  * Unlike {@link topNetworkArticles} (which orders by the precomputed
- * `trending_score` — a 30h half-life, freshness-weighted, 4-day-gated "hot right
- * now" signal that collapses toward the last day or two) this computes the score
- * live from `recommends` with a gentler {@link WEEK_HALF_LIFE_HOURS} (~3.5 day)
- * decay and no published-at freshness term, so a heavily-liked early-week article
- * can out-rank a barely-liked fresh one. The score blends decay-weighted distinct
- * likes with {@link WEEK_BACKLINK_WEIGHT}× Bluesky backlinks, and an article must
- * clear the {@link MIN_ARTICLE_RECOMMENDERS} distinct-liker floor to chart.
+ * `trending_score` — a 30h half-life, 4-day-gated "hot right now" signal that
+ * collapses toward the last day or two) this computes the score live from
+ * `recommends` with a gentler {@link WEEK_HALF_LIFE_HOURS} (~3.5 day) decay, so
+ * a heavily-liked early-week article can out-rank a barely-liked fresh one:
  *
- * Counts are computed live because `documents.trending_score`,
- * `distinct_recommender_count`, and `backlink_count` are only maintained for the
- * 4-day discover slice and are stale for days 5–7 (see `recompute.ts`). Backlinks
- * have no per-event timestamp so they're added undecayed off `backlink_count`,
- * which itself under-counts days 5–7 — a small, accepted asymmetry (likes are the
- * primary, fully-accurate signal).
+ * ```
+ * (distinct likers in window + WEEK_BACKLINK_WEIGHT × backlinks)
+ *   × 2^(-article_age_hours / WEEK_HALF_LIFE_HOURS)
+ * ```
+ *
+ * An article must clear the {@link MIN_ARTICLE_RECOMMENDERS} distinct-liker
+ * floor to chart.
+ *
+ * **Decay is per DOCUMENT, not per like.** An earlier version weighted every
+ * like by its own age and left backlinks undecayed, which made the two signals
+ * incomparable: a week-old backlink counted 1.5 while a week-old like counted
+ * 0.15, so a couple of Bluesky link cards outweighed a steady week of reader
+ * recommends. Ageing the assembled score once treats both the same and keeps the
+ * ranking readable — the score is "how much did this article get" times "how old
+ * is it".
+ *
+ * Counts are computed live because `documents.trending_score` and
+ * `distinct_recommender_count` are only maintained for the 4-day discover slice
+ * and are stale for days 5–7 (see `recompute.ts`). `backlink_count` IS current
+ * across this window — the backlink sync covers `BACKLINK_SYNC_MAX_AGE_DAYS`
+ * (7 days) precisely so this ranking is not reading frozen totals.
  */
 export async function weekInReviewArticles(
   db: Db,
@@ -2121,28 +2133,28 @@ export async function weekInReviewArticles(
   const pr = schema.profiles;
   const pa = alias(schema.profiles, "pa");
 
-  // Decay-weighted sum of the article's distinct-ish likes over the window. Each
-  // like is weighted by its own age at WEEK_HALF_LIFE_HOURS; mirrors the `rec`
-  // CTE in recompute.ts but with the gentler week half-life.
-  const likeAgeHours =
-    "extract(epoch from (now() - coalesce(r.created_at, r.indexed_at))) / 3600.0";
   const windowPredicate = sql`
       r.document_uri = ${d.uri}
       and r.deleted = false
       and r.recommender_did <> ${d.did}
       and coalesce(r.created_at, r.indexed_at) > now() - (${sinceDays}::text || ' days')::interval`;
 
-  const decayedLikes = sql`coalesce((
-    select sum(${sql.raw(halfLifeDecaySql(likeAgeHours, WEEK_HALF_LIFE_HOURS))})
-    from recommends r
-    where ${windowPredicate}
-  ), 0)`;
   const distinctLikers = sql`(
     select count(distinct r.recommender_did)::int
     from recommends r
     where ${windowPredicate}
   )`;
-  const weekScore = sql`${decayedLikes} + ${WEEK_BACKLINK_WEIGHT}::float8 * coalesce(${d.backlinkCount}, 0)`;
+
+  // Age the assembled score once, off the article's own published_at. Qualified
+  // literally for the same reason as `recommendCount` above: an unqualified
+  // `${d.publishedAt}` compiles to a bare `"published_at"` in a nested context.
+  const docAgeHours = `extract(epoch from (now() - "documents"."published_at")) / 3600.0`;
+  const docDecay = sql.raw(halfLifeDecaySql(docAgeHours, WEEK_HALF_LIFE_HOURS));
+
+  const weekScore = sql`(
+    ${distinctLikers}::float8
+      + ${WEEK_BACKLINK_WEIGHT}::float8 * coalesce(${d.backlinkCount}, 0)
+  ) * ${docDecay}`;
 
   const conds = [
     eq(d.deleted, false),

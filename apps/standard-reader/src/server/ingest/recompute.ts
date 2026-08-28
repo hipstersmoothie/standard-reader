@@ -24,6 +24,8 @@ import { deriveSerialKind } from "#/server/reader/series";
 import {
   ARTICLE_BLEND,
   BACKLINK_SYNC_CONCURRENCY,
+  BACKLINK_SYNC_MAX_AGE_DAYS,
+  freshnessFromPublishedAtSql,
   MIN_ARTICLE_RECOMMENDERS,
   PUBLICATION_BLEND,
   PUBLICATION_PRIOR_WINDOW_DAYS,
@@ -224,6 +226,14 @@ export async function recomputePublicationStats(): Promise<void> {
 /**
  * Sync Constellation backlink totals for recent discover-eligible documents.
  * Best-effort; failures are non-fatal.
+ *
+ * Covers {@link BACKLINK_SYNC_MAX_AGE_DAYS} (7 days), not the 4-day trending
+ * gate: the week-in-review ranking behind the weekly thread and digest scores
+ * over a 7-day window and reads `backlink_count` for every article in it. While
+ * this pass stopped at 4 days, an article's backlink total froze the day it left
+ * the discover slice and days 5-7 were ranked on stale numbers. The wider window
+ * costs proportionally more Constellation requests per pass, bounded by
+ * {@link BACKLINK_SYNC_CONCURRENCY}.
  */
 export async function recomputeDocumentBacklinks(): Promise<number> {
   const rows = await db.execute<{ uri: string; canonical_url: string }>(sql`
@@ -235,7 +245,7 @@ export async function recomputeDocumentBacklinks(): Promise<number> {
       AND p.show_in_discover = true
       AND p.url NOT ILIKE ${EXCLUDED_PUBLICATION_URL_PATTERN}
       AND d.canonical_url IS NOT NULL
-      AND d.published_at > now() - (${TRENDING_MAX_AGE_DAYS}::text || ' days')::interval
+      AND d.published_at > now() - (${BACKLINK_SYNC_MAX_AGE_DAYS}::text || ' days')::interval
       AND d.published_at <= now()
   `);
 
@@ -273,6 +283,17 @@ export async function recomputeDocumentBacklinks(): Promise<number> {
  * Precompute per-document trending scores for the recency-gated candidate set.
  * Articles below the distinct-recommender floor get score 0.
  *
+ * **Engagement is aged by the DOCUMENT's age, not each event's.** Both level
+ * signals are the count times the article's own freshness weight
+ * (`HALF_LIFE_HOURS`): `rec_heat` = distinct in-window recommenders × freshness,
+ * `bl_heat` = Bluesky backlinks × freshness. Recommends used to decay per like
+ * while backlinks were fed in raw, so the two normalized terms were measuring
+ * different things — an old backlink counted full while an equally old like had
+ * nearly faded. Velocity terms (`rec_vel`, `bl_vel`) stay undecayed: they are
+ * already deltas over a fixed recent window, so ageing them would double-count.
+ * The standalone `freshness` term is unchanged and still carries its own weight
+ * — it is what lets a brand-new article with thin engagement chart at all.
+ *
  * **Only rows whose score actually moved are written.** This used to open with
  * a blanket `UPDATE ... SET trending_score = 0` over every eligible document,
  * then immediately overwrite all of them with their real score. Measured, the
@@ -305,6 +326,7 @@ export async function recomputeDocumentTrending(): Promise<void> {
              d.published_at,
              d.backlink_count,
              d.backlink_count_prev,
+             ${sql.raw(freshnessFromPublishedAtSql("d.published_at"))}::float8 AS freshness,
              coalesce(st.trending_score, 0)::float8 AS pub_score
       FROM documents d
       JOIN publications p ON p.uri = d.publication_uri
@@ -319,13 +341,10 @@ export async function recomputeDocumentTrending(): Promise<void> {
     rec AS (
       SELECT rc.document_uri,
         count(DISTINCT rc.recommender_did) AS distinct_cnt,
-        coalesce(sum(
-          exp(-ln(2) * extract(epoch from (now() - coalesce(rc.created_at, rc.indexed_at)))
-              / 3600.0 / 30.0)
-        ) FILTER (
+        count(DISTINCT rc.recommender_did) FILTER (
           WHERE coalesce(rc.created_at, rc.indexed_at)
             > now() - (${maxAge}::text || ' days')::interval
-        ), 0)::float8 AS decay_sum,
+        )::float8 AS window_cnt,
         count(DISTINCT rc.recommender_did) FILTER (
           WHERE coalesce(rc.created_at, rc.indexed_at) > now() - interval '24 hours'
         ) AS recent24,
@@ -342,10 +361,10 @@ export async function recomputeDocumentTrending(): Promise<void> {
     raw AS (
       SELECT e.uri,
         coalesce(r.distinct_cnt, 0)::int AS distinct_cnt,
-        coalesce(r.decay_sum, 0)::float8 AS decay_sum,
+        (coalesce(r.window_cnt, 0) * e.freshness)::float8 AS rec_heat,
         (coalesce(r.recent24, 0) - coalesce(r.prev24, 0))::float8 AS rec_vel,
-        exp(-ln(2) * extract(epoch from (now() - e.published_at)) / 3600.0 / 30.0)::float8 AS freshness,
-        e.backlink_count::float8 AS bl,
+        e.freshness,
+        (e.backlink_count::float8 * e.freshness)::float8 AS bl_heat,
         greatest(e.backlink_count - e.backlink_count_prev, 0)::float8 AS bl_vel,
         e.pub_score
       FROM eligible e
@@ -353,14 +372,14 @@ export async function recomputeDocumentTrending(): Promise<void> {
     ),
     stats AS (
       SELECT
-        coalesce(avg(ln(1 + decay_sum)), 0) AS rec_avg,
-        coalesce(nullif(stddev_pop(ln(1 + decay_sum)), 0), 1) AS rec_std,
+        coalesce(avg(ln(1 + rec_heat)), 0) AS rec_avg,
+        coalesce(nullif(stddev_pop(ln(1 + rec_heat)), 0), 1) AS rec_std,
         coalesce(avg(rec_vel), 0) AS rec_vel_avg,
         coalesce(nullif(stddev_pop(rec_vel), 0), 1) AS rec_vel_std,
         coalesce(avg(freshness), 0) AS fresh_avg,
         coalesce(nullif(stddev_pop(freshness), 0), 1) AS fresh_std,
-        coalesce(avg(ln(1 + bl)), 0) AS bl_avg,
-        coalesce(nullif(stddev_pop(ln(1 + bl)), 0), 1) AS bl_std,
+        coalesce(avg(ln(1 + bl_heat)), 0) AS bl_avg,
+        coalesce(nullif(stddev_pop(ln(1 + bl_heat)), 0), 1) AS bl_std,
         coalesce(avg(ln(1 + bl_vel)), 0) AS bl_vel_avg,
         coalesce(nullif(stddev_pop(ln(1 + bl_vel)), 0), 1) AS bl_vel_std,
         coalesce(avg(pub_score), 0) AS pub_avg,
@@ -375,10 +394,10 @@ export async function recomputeDocumentTrending(): Promise<void> {
           WHEN r.distinct_cnt < ${minRecs} THEN 0
           WHEN s.qualifying = 0 THEN 0
           ELSE (
-            ((ln(1 + r.decay_sum) - s.rec_avg) / s.rec_std) * ${wRec}
+            ((ln(1 + r.rec_heat) - s.rec_avg) / s.rec_std) * ${wRec}
             + ((r.rec_vel - s.rec_vel_avg) / s.rec_vel_std) * ${wRecVel}
             + ((r.freshness - s.fresh_avg) / s.fresh_std) * ${wFresh}
-            + ((ln(1 + r.bl) - s.bl_avg) / s.bl_std) * ${wBl}
+            + ((ln(1 + r.bl_heat) - s.bl_avg) / s.bl_std) * ${wBl}
             + ((ln(1 + r.bl_vel) - s.bl_vel_avg) / s.bl_vel_std) * ${wBlVel}
             + ((r.pub_score - s.pub_avg) / s.pub_std) * ${wPub}
           )
