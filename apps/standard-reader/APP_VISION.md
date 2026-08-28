@@ -1510,6 +1510,14 @@ AT Proto network (standard.site publications, profiles, follows)
   fetches each actor's profile record and re-resolves their handle on a round-robin ordered by
   `profiles.profile_fetched_at`. The trade is freshness for volume: a display-name edit lands on
   the next sweep, while everything that decides _what_ a reader sees still streams live.
+  The sweep's window bounds staleness for the whole mirror (6 hours at ~16k profiles, well inside
+  its 200-per-minute batch), and `revalidateProfile` buys most of that back where it is noticed:
+  rendering a profile refreshes that one row out of band, and signing in forces the reader's own.
+  Both are fire-and-forget and deduped per DID — the render still serves the mirrored row, and the
+  next one is current. **The signed-in reader's name and avatar come from the same `profiles` row
+  as everyone else's**; `user.name` / `user.image` are a sign-in–time fallback, not a second
+  source of truth, which is what used to let the sidebar and a reader's own profile page disagree
+  about who they were.
 - **Bridged repos.** [Bridgy Fed](https://fed.brid.gy) mirrors the wider web into AT Proto:
   `*.web.brid.gy` is a site Bridgy discovered (tens of thousands of them, thousands of posts each,
   no publisher intent), and `*.ap.brid.gy` is an ActivityPub blog whose author chose to bridge.

@@ -210,7 +210,7 @@ async function loadSessionFromToken(sessionToken: string) {
     restoreAuthenticatedClient(userRow.did),
     db.query.profiles.findFirst({
       where: eq(schema.profiles.did, userRow.did),
-      columns: { handle: true },
+      columns: { handle: true, displayName: true, avatarUrl: true },
     }),
     resolveIdentity(userRow.did),
   ]);
@@ -223,6 +223,13 @@ async function loadSessionFromToken(sessionToken: string) {
   // redundant here — its display name/avatar are only needed at login — and an
   // uncached round-trip to public.api.bsky.app on every session restore.
   const handle = profileRow?.handle ?? identity.handle ?? null;
+  // Name and avatar come from the same indexed profile as everywhere else in
+  // the app. `user.name` / `user.image` are written at sign-up and refreshed
+  // only on a login that sees a changed avatar, so preferring them here is what
+  // let the sidebar and the reader's own profile page disagree about who they
+  // are. They stay as the fallback for a DID we hold no profile row for.
+  const displayName = profileRow?.displayName ?? userRow.name;
+  const image = profileRow?.avatarUrl ?? userRow.image;
 
   // Granted OAuth scope snapshotted on the callback (`account.scope`). The
   // UI gates collections authoring on this — it's the source of truth for
@@ -236,10 +243,10 @@ async function loadSessionFromToken(sessionToken: string) {
   return {
     user: {
       id: userRow.id,
-      name: userRow.name,
+      name: displayName,
       email: userRow.email,
       did: userRow.did,
-      image: userRow.image,
+      image,
       isAdmin: userRow.isAdmin,
       createdAt: userRow.createdAt,
       updatedAt: userRow.updatedAt,
@@ -411,7 +418,7 @@ const getShellBootstrap = createServerFn({ method: "GET" }).handler(
     const [profileRow, shell] = await Promise.all([
       db.query.profiles.findFirst({
         where: eq(schema.profiles.did, userRow.did),
-        columns: { handle: true },
+        columns: { handle: true, displayName: true, avatarUrl: true },
       }),
       loadShellSnapshot(db, schema, {
         did: userRow.did,
@@ -421,16 +428,19 @@ const getShellBootstrap = createServerFn({ method: "GET" }).handler(
     ]);
 
     const handle = profileRow?.handle ?? null;
+    // Same indexed profile the rest of the app renders — see `hydrateSession`.
+    const displayName = profileRow?.displayName ?? userRow.name;
+    const image = profileRow?.avatarUrl ?? userRow.image;
     span.set("result", "signedIn");
 
     return {
       session: {
         user: {
           id: userRow.id,
-          name: userRow.name,
+          name: displayName,
           email: userRow.email,
           did: userRow.did,
-          image: userRow.image,
+          image,
           isAdmin: userRow.isAdmin,
           createdAt: userRow.createdAt,
           updatedAt: userRow.updatedAt,

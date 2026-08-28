@@ -17,6 +17,7 @@ import {
   blockFilterDid,
   filterBlockedCards,
 } from "#/server/blocks/blocks";
+import { revalidateProfile } from "#/server/ingest/profile-refresh";
 import { readAccountLabels } from "#/server/labeler/labels.server";
 import { observe } from "#/server/observability/log";
 import {
@@ -199,12 +200,19 @@ async function resolveAuthorProfile(
       avatarUrl: pr.avatarUrl,
       bannerUrl: pr.bannerUrl,
       isBot: pr.isBot,
+      profileFetchedAt: pr.profileFetchedAt,
     })
     .from(pr)
     .where(eq(pr.did, did))
     .limit(1);
 
   if (row) {
+    // A profile page is exactly where a stale avatar or display name is
+    // noticed, and the ingest sweep only guarantees a bound measured in hours.
+    // Refresh this one row out of band so the next render is current; the
+    // helper dedupes, so a hovered list of authors costs one refresh per DID.
+    revalidateProfile(did, { fetchedAt: row.profileFetchedAt });
+
     const [identity, publicProfile] = await Promise.all([
       row.handle ? Promise.resolve(null) : resolveIdentity(did),
       !row.displayName || !row.avatarUrl

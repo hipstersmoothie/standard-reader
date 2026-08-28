@@ -45,6 +45,7 @@ import {
   userFollows,
 } from "../../db/schema.ts";
 import { blobCid, bskyImageUrl } from "../atproto/blob.ts";
+import { listRepoRecords } from "../atproto/fetch-record.ts";
 import {
   authorPds,
   getCachedIdentity,
@@ -52,6 +53,7 @@ import {
   isUsableHandle,
   primeIdentityHandle,
   refreshIdentity,
+  resolveIdentity,
 } from "../atproto/identity.ts";
 import type {
   BookmarkRecord,

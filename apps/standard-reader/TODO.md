@@ -434,6 +434,19 @@ Check items off as they land.
       the reconcile result carries `migrated: true` + `migratedFrom`/`migratedTo` for observability
       (logged as `ingest.repoReconcile { migrated: true }` and surfaced in the manual reconcile
       API + `pnpm backfill:repo-documents` output).
+- [x] **Profile edits land in hours, not a day** — the move from push to pull left a 24-hour
+      window in which a changed avatar, display name or bio was simply wrong everywhere it was
+      rendered (reported: a reader whose old icon was still standing in for three of their
+      publications). Three changes, none of which reintroduces a network-wide subscription:
+      the sweep window drops to **6 hours** (~44 refreshes/min against a 200-per-minute batch, so
+      ~4x headroom); `revalidateProfile` refreshes a single row **out of band when someone
+      actually looks at that profile**, deduped to once per DID per 15 minutes and capped at four
+      in flight; and **sign-in forces the reader's own row**, so signing out and back in — the
+      obvious thing to try — now fixes it. The reader's sidebar identity reads the `profiles`
+      mirror too, instead of the `user.name`/`user.image` copy that was written at sign-up and
+      then frozen (67 of 540 signed-in accounts were rendering an avatar their owner had already
+      replaced), and that copy now tracks a changed Bluesky avatar on each login rather than only
+      when it was empty.
 
 ## 2. Read-model schema (Drizzle)
 
