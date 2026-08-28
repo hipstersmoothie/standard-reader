@@ -7,17 +7,42 @@
 
 import type { ArticleCard } from "#/integrations/tanstack-query/api-shapes";
 
-/** Gravity-style half-life for time-decay (hours). */
+/**
+ * Gravity-style half-life for the standalone freshness TERM (hours).
+ *
+ * Sharp on purpose: this term's whole job is "posted just now", and it carries
+ * its own {@link ARTICLE_BLEND} weight so a brand-new article with thin
+ * engagement can still chart. It is NOT the curve engagement is aged by — see
+ * {@link ENGAGEMENT_HALF_LIFE_HOURS}.
+ */
 export const HALF_LIFE_HOURS = 30;
 
 /**
- * Gentler half-life for the weekly "week in review" thread (~3.5 days). Applied
- * to the ARTICLE's age, not to each like's: the whole week score fades together
- * as the document ages. The gentler curve is what keeps a Monday article
- * competitive on Friday, so the Top 5 reflects the whole week rather than just
- * the last day or two. Used by {@link weekInReviewArticles}.
+ * Half-life for ageing an article's accumulated engagement (recommends,
+ * backlinks) by the article's own age — one full window, so an article at the
+ * far edge of the {@link TRENDING_MAX_AGE_DAYS} gate keeps half its engagement
+ * rather than a tenth of it.
+ *
+ * Deliberately much gentler than {@link HALF_LIFE_HOURS}. Age already enters the
+ * blend through the standalone freshness term, so reusing the sharp 30h curve
+ * here applies it twice: at 30h a 4-day-old article's engagement is scaled to
+ * 0.11 and then penalised again for being old. Decay is meant to break ties
+ * between comparably-liked articles, not to overrule the engagement itself.
  */
-export const WEEK_HALF_LIFE_HOURS = 84;
+export const ENGAGEMENT_HALF_LIFE_HOURS = 96;
+
+/**
+ * Half-life for the weekly "week in review" ranking — one full 7-day window, so
+ * a Monday article reaches Friday's cut holding half its score.
+ *
+ * Applied to the ARTICLE's age, not to each like's: the whole week score fades
+ * together as the document ages. Gentler than
+ * {@link ENGAGEMENT_HALF_LIFE_HOURS} because it ranks over a longer window —
+ * both follow the same rule, half-life = the window being ranked, which keeps
+ * the spread across that window at 2× and leaves the ordering driven by what
+ * readers actually did. Used by {@link weekInReviewArticles}.
+ */
+export const WEEK_HALF_LIFE_HOURS = 168;
 
 /** Weight on Bluesky backlinks relative to a distinct liker in the week score. */
 export const WEEK_BACKLINK_WEIGHT = 1.5;
@@ -103,10 +128,27 @@ export function decayWeightSql(ageHoursExpr: string): string {
   return halfLifeDecaySql(ageHoursExpr, HALF_LIFE_HOURS);
 }
 
-/** Freshness score from published_at (newer = higher). */
+/** Age of an article in fractional hours, as SQL. */
+export function articleAgeHoursSql(publishedAtCol: string): string {
+  return `extract(epoch from (now() - ${publishedAtCol})) / 3600.0`;
+}
+
+/** Freshness score from published_at (newer = higher), at the sharp 30h curve. */
 export function freshnessFromPublishedAtSql(publishedAtCol: string): string {
-  const ageHours = `extract(epoch from (now() - ${publishedAtCol})) / 3600.0`;
-  return decayWeightSql(ageHours);
+  return decayWeightSql(articleAgeHoursSql(publishedAtCol));
+}
+
+/**
+ * Weight an article's accumulated engagement by its own age, at the gentle
+ * {@link ENGAGEMENT_HALF_LIFE_HOURS} curve.
+ */
+export function engagementDecayFromPublishedAtSql(
+  publishedAtCol: string,
+): string {
+  return halfLifeDecaySql(
+    articleAgeHoursSql(publishedAtCol),
+    ENGAGEMENT_HALF_LIFE_HOURS,
+  );
 }
 
 /**

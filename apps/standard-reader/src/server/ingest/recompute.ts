@@ -25,6 +25,7 @@ import {
   ARTICLE_BLEND,
   BACKLINK_SYNC_CONCURRENCY,
   BACKLINK_SYNC_MAX_AGE_DAYS,
+  engagementDecayFromPublishedAtSql,
   freshnessFromPublishedAtSql,
   MIN_ARTICLE_RECOMMENDERS,
   PUBLICATION_BLEND,
@@ -284,15 +285,23 @@ export async function recomputeDocumentBacklinks(): Promise<number> {
  * Articles below the distinct-recommender floor get score 0.
  *
  * **Engagement is aged by the DOCUMENT's age, not each event's.** Both level
- * signals are the count times the article's own freshness weight
- * (`HALF_LIFE_HOURS`): `rec_heat` = distinct in-window recommenders × freshness,
- * `bl_heat` = Bluesky backlinks × freshness. Recommends used to decay per like
- * while backlinks were fed in raw, so the two normalized terms were measuring
- * different things — an old backlink counted full while an equally old like had
- * nearly faded. Velocity terms (`rec_vel`, `bl_vel`) stay undecayed: they are
- * already deltas over a fixed recent window, so ageing them would double-count.
- * The standalone `freshness` term is unchanged and still carries its own weight
- * — it is what lets a brand-new article with thin engagement chart at all.
+ * signals are the count times the article's own age weight: `rec_heat` =
+ * distinct in-window recommenders × `engagement`, `bl_heat` = Bluesky backlinks
+ * × `engagement`. Recommends used to decay per like while backlinks were fed in
+ * raw, so the two normalized terms were measuring different things — an old
+ * backlink counted full while an equally old like had nearly faded.
+ *
+ * That weight is the gentle {@link ENGAGEMENT_HALF_LIFE_HOURS} (96h — one full
+ * gate width), NOT the sharp 30h `freshness` used by the standalone freshness
+ * term. Age already enters the blend through that term; ageing engagement on the
+ * same curve would apply it twice and leave a 4-day-old article's engagement
+ * scaled to a tenth before it is penalised again for being old. Decay breaks
+ * ties between comparably-liked articles; it does not overrule the engagement.
+ *
+ * Velocity terms (`rec_vel`, `bl_vel`) stay undecayed: they are already deltas
+ * over a fixed recent window, so ageing them would double-count. The standalone
+ * `freshness` term is unchanged and still carries its own weight — it is what
+ * lets a brand-new article with thin engagement chart at all.
  *
  * **Only rows whose score actually moved are written.** This used to open with
  * a blanket `UPDATE ... SET trending_score = 0` over every eligible document,
@@ -327,6 +336,7 @@ export async function recomputeDocumentTrending(): Promise<void> {
              d.backlink_count,
              d.backlink_count_prev,
              ${sql.raw(freshnessFromPublishedAtSql("d.published_at"))}::float8 AS freshness,
+             ${sql.raw(engagementDecayFromPublishedAtSql("d.published_at"))}::float8 AS engagement,
              coalesce(st.trending_score, 0)::float8 AS pub_score
       FROM documents d
       JOIN publications p ON p.uri = d.publication_uri
@@ -361,10 +371,10 @@ export async function recomputeDocumentTrending(): Promise<void> {
     raw AS (
       SELECT e.uri,
         coalesce(r.distinct_cnt, 0)::int AS distinct_cnt,
-        (coalesce(r.window_cnt, 0) * e.freshness)::float8 AS rec_heat,
+        (coalesce(r.window_cnt, 0) * e.engagement)::float8 AS rec_heat,
         (coalesce(r.recent24, 0) - coalesce(r.prev24, 0))::float8 AS rec_vel,
         e.freshness,
-        (e.backlink_count::float8 * e.freshness)::float8 AS bl_heat,
+        (e.backlink_count::float8 * e.engagement)::float8 AS bl_heat,
         greatest(e.backlink_count - e.backlink_count_prev, 0)::float8 AS bl_vel,
         e.pub_score
       FROM eligible e

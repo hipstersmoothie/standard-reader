@@ -77,6 +77,7 @@ import {
   WEEK_BACKLINK_WEIGHT,
   WEEK_HALF_LIFE_HOURS,
   applyTrendingDiversityCaps,
+  articleAgeHoursSql,
   halfLifeDecaySql,
   trendingFetchPoolSize,
 } from "#/server/reader/trending-scoring";
@@ -2083,8 +2084,9 @@ export async function savedForLater(
  * Unlike {@link topNetworkArticles} (which orders by the precomputed
  * `trending_score` — a 30h half-life, 4-day-gated "hot right now" signal that
  * collapses toward the last day or two) this computes the score live from
- * `recommends` with a gentler {@link WEEK_HALF_LIFE_HOURS} (~3.5 day) decay, so
- * a heavily-liked early-week article can out-rank a barely-liked fresh one:
+ * `recommends` with a gentle {@link WEEK_HALF_LIFE_HOURS} (one full 7-day
+ * window) decay, so a heavily-liked early-week article can out-rank a
+ * barely-liked fresh one:
  *
  * ```
  * (distinct likers in window + WEEK_BACKLINK_WEIGHT × backlinks)
@@ -2101,6 +2103,11 @@ export async function savedForLater(
  * recommends. Ageing the assembled score once treats both the same and keeps the
  * ranking readable — the score is "how much did this article get" times "how old
  * is it".
+ *
+ * **And the ageing is deliberately subtle.** Half-life = the window being
+ * ranked, so a 7-day-old article holds half its score and the spread across the
+ * whole window is 2×. Engagement decides the order; age breaks ties between
+ * articles readers treated comparably.
  *
  * Counts are computed live because `documents.trending_score` and
  * `distinct_recommender_count` are only maintained for the 4-day discover slice
@@ -2148,8 +2155,12 @@ export async function weekInReviewArticles(
   // Age the assembled score once, off the article's own published_at. Qualified
   // literally for the same reason as `recommendCount` above: an unqualified
   // `${d.publishedAt}` compiles to a bare `"published_at"` in a nested context.
-  const docAgeHours = `extract(epoch from (now() - "documents"."published_at")) / 3600.0`;
-  const docDecay = sql.raw(halfLifeDecaySql(docAgeHours, WEEK_HALF_LIFE_HOURS));
+  const docDecay = sql.raw(
+    halfLifeDecaySql(
+      articleAgeHoursSql(`"documents"."published_at"`),
+      WEEK_HALF_LIFE_HOURS,
+    ),
+  );
 
   const weekScore = sql`(
     ${distinctLikers}::float8

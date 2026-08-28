@@ -1131,9 +1131,13 @@ Build each on hip-ui components + StyleX tokens (no raw HTML/inline styles).
       0.15, and a couple of Bluesky link cards outranked a steady week of reader recommends. Both
       the week-in-review ranking (weekly thread + digest) and `recomputeDocumentTrending()` now age
       the assembled counts once by the article's own age — week score is
-      `(distinct likers + 1.5 × backlinks) × 2^(-age/84h)`; the recompute feeds
-      `recommends × freshness` and `backlinks × freshness` into the same z-score blend. Velocity
-      terms stay undecayed (already windowed deltas), as does the standalone freshness term.
+      `(distinct likers + 1.5 × backlinks) × 2^(-age/168h)`; the recompute multiplies recommends
+      and backlinks by `ENGAGEMENT_HALF_LIFE_HOURS` (96h) decay before the same z-score blend.
+      Velocity terms stay undecayed (already windowed deltas), as does the standalone freshness
+      term. Both curves follow "half-life = the window being ranked", so the far edge of a window
+      keeps half its score rather than a quarter (week, was 84h) or a tenth (trending, was the
+      sharp 30h freshness curve): decay breaks ties, engagement decides the order.
+      `trending-scoring.test.ts` fails if either half-life is sharpened past its window.
 - [x] **Backlink sync covers the full week-in-review window** (2026-08-28).
       `recomputeDocumentBacklinks` refreshed only the 4-day trending slice while the weekly thread
       and digest rank over 7 days, so an article's `backlink_count` froze the day it aged out and

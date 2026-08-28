@@ -1580,11 +1580,19 @@ hand-tuned lists:
   only — no scoring per request.
 
   **Decay is applied per document, not per engagement event.** Both level signals are a count times
-  the article's own freshness weight (recommends × freshness, backlinks × freshness). Recommends
-  used to be decayed like-by-like while backlinks went in raw, so the two normalized terms measured
-  different things: an old backlink counted in full while an equally old like had nearly faded, and
-  a couple of Bluesky link cards outweighed a steady week of reader recommends. Velocity terms stay
-  undecayed — they are already deltas over a fixed recent window.
+  the article's own age weight (recommends × engagement decay, backlinks × engagement decay).
+  Recommends used to be decayed like-by-like while backlinks went in raw, so the two normalized
+  terms measured different things: an old backlink counted in full while an equally old like had
+  nearly faded, and a couple of Bluesky link cards outweighed a steady week of reader recommends.
+  Velocity terms stay undecayed — they are already deltas over a fixed recent window.
+
+  **And decay is deliberately subtle: half-life = the window being ranked.** Engagement ages at
+  `ENGAGEMENT_HALF_LIFE_HOURS` (96h, one full 4-day gate), not at the sharp 30h `HALF_LIFE_HOURS`
+  used by the standalone freshness term — age already enters the blend through that term, so
+  reusing the sharp curve would apply it twice and scale a 4-day-old article's engagement to a
+  tenth before penalising it again for being old. At 96h the far edge of the window keeps half its
+  engagement. Decay breaks ties between comparably-liked articles; what readers did decides the
+  order.
 
 - **Cold start (no follows yet)** — fall back to high-readership publications
   _outside_ the current trending set so Recommended stays distinct from Trending.
@@ -1641,9 +1649,9 @@ reply-chained Bluesky thread from the reader bot, Fridays 16:00 UTC.
 digest's "Top on the network", scored live over 7 days rather than read off
 `trending_score` (which is only maintained for the 4-day discover slice):
 `(distinct likers in window + 1.5 × Bluesky backlinks) × 2^(-article_age /
-84h)`. One gentler half-life, applied to the article rather than to each like,
-so a Monday piece is still competitive on Friday and likes and backlinks age at
-the same rate. The Constellation backlink sync covers 7 days
+168h)`. One gentle half-life — a full 7-day window, so a Friday-morning article
+and the Monday piece it is ranked against are at most 2× apart — applied to the
+article rather than to each like, so likes and backlinks age at the same rate. The Constellation backlink sync covers 7 days
 (`BACKLINK_SYNC_MAX_AGE_DAYS`) for this reason: while it stopped at the 4-day
 trending gate, days 5-7 of the thread's window ranked on backlink totals that
 had frozen days earlier.
