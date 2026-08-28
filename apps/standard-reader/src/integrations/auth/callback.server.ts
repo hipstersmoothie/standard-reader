@@ -232,6 +232,19 @@ export async function handleAtprotoOAuthCallback(args: {
       console.warn("Failed to schedule Bluesky block sync:", error);
     }
 
+    // Re-mirror the reader's own identity. Profiles are pulled on a sweep whose
+    // window is measured in hours, so without this a reader who changed their
+    // avatar or display name sees the old one on their own profile page — and
+    // signing out and back in, the obvious thing to try, would not have fixed
+    // it. Forced past the dedupe window and not awaited, like the syncs above.
+    try {
+      const { revalidateProfile } =
+        await import("#/server/ingest/profile-refresh");
+      revalidateProfile(did, { force: true });
+    } catch (error) {
+      console.warn("Failed to schedule profile refresh:", error);
+    }
+
     const sessionToken = crypto.randomUUID();
     const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 

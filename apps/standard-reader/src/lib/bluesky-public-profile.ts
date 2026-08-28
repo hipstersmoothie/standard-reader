@@ -126,15 +126,22 @@ export async function fetchBlueskyPublicProfiles(
 
 /**
  * Whether to set `user.image` from Bluesky's public avatar URL.
+ *
+ * The stored value is otherwise written once and kept forever, which froze the
+ * signed-in reader's own avatar at whatever it was on the day they signed up.
+ * So a Bluesky avatar that has since changed replaces the stored one — but an
+ * inlined image the reader supplied themselves (`data:`) is never clobbered by
+ * an upstream URL.
  */
 export function shouldApplyBlueskyAvatarFromPublicUrl(
   currentImage: string | null | undefined,
   blueskyAvatarUrl: string | null | undefined,
 ): boolean {
-  if (!blueskyAvatarUrl || blueskyAvatarUrl.trim() === "") return false;
+  const next = blueskyAvatarUrl?.trim() ?? "";
+  if (next === "") return false;
   const cur = currentImage?.trim() ?? "";
   if (cur === "") return true;
   if (cur.startsWith("data:image/")) return false;
   if (cur.startsWith("blob:")) return true;
-  return false;
+  return cur !== next;
 }

@@ -25,6 +25,11 @@ import { applyIdentity, upsertBskyProfile } from "./handlers.ts";
  * sees — publications, documents, subscriptions — still streams live; only the
  * decoration of who wrote it is pulled.
  *
+ * {@link revalidateProfile} buys most of that freshness back where it is
+ * noticed: viewing a profile (or signing in) refreshes that one row out of
+ * band, so the sweep only has to be the backstop for the ~16k profiles nobody
+ * is looking at.
+ *
  * Handles ride along on the same sweep for the same reason: `kinds: ["commit"]`
  * means no `#identity` events either, and taking those network-wide would be
  * the same bad trade.
@@ -34,10 +39,29 @@ import { applyIdentity, upsertBskyProfile } from "./handlers.ts";
 const DEFAULT_BATCH = 200;
 /** Concurrent fetches. Slingshot fronts these, so this is polite, not slow. */
 const DEFAULT_CONCURRENCY = 8;
-/** How old a `profile_fetched_at` must be before the sweep revisits it. */
-const DEFAULT_STALE_AFTER_HOURS = 24;
+/**
+ * How old a `profile_fetched_at` must be before the sweep revisits it — the
+ * upper bound on how long an avatar or display-name edit can be wrong.
+ *
+ * A full cycle costs `rows / hours / 60` refreshes per minute against a
+ * {@link DEFAULT_BATCH} of 200: at ~16k mirrored profiles a 6-hour window is
+ * ~44/min, leaving the sweep about 4x headroom. Under tap this data streamed
+ * live and the window did not exist; six hours is the compromise the pull model
+ * can actually afford (see the header comment).
+ */
+const DEFAULT_STALE_AFTER_HOURS = 6;
 /** Gap between sweeps in the ingest worker. */
 const SWEEP_INTERVAL_MS = 60_000;
+
+/**
+ * How stale a mirrored profile may be before *looking at it* refreshes it, and
+ * the minimum gap between two such refreshes of the same DID.
+ */
+const REVALIDATE_AFTER_MS = 15 * 60 * 1000;
+/** Background revalidations allowed in flight at once, process-wide. */
+const REVALIDATE_CONCURRENCY = 4;
+/** Cap on the dedupe map before the expired half is dropped. */
+const REVALIDATE_MEMO_LIMIT = 5000;
 
 export interface ProfileRefreshResult {
   scanned: number;
@@ -116,6 +140,59 @@ export async function refreshProfiles(
     updated: result.updated,
   });
   return result;
+}
+
+/** Last revalidation attempt per DID, for the {@link revalidateProfile} memo. */
+const revalidatedAt = new Map<string, number>();
+let revalidationsInFlight = 0;
+
+/**
+ * Refresh one profile now, out of band, at most once per
+ * {@link REVALIDATE_AFTER_MS} per DID.
+ *
+ * The sweep bounds staleness across the whole mirror; this is the fast path for
+ * the handful of profiles someone is actually looking at (a profile page, a
+ * hovercard) or that we know just changed (a sign-in). Fire-and-forget by
+ * design: the render that triggers it still serves the mirrored row — awaiting
+ * a PDS round trip to decorate a byline is the wrong trade — and the next one
+ * is current.
+ *
+ * `fetchedAt` is the row's `profile_fetched_at`, so a caller that already read
+ * the profile spends nothing on a row the sweep has covered recently. Pass
+ * `force` when the profile is known to have changed regardless of when we last
+ * looked.
+ */
+export function revalidateProfile(
+  did: string,
+  {
+    fetchedAt = null,
+    force = false,
+  }: { fetchedAt?: Date | null; force?: boolean } = {},
+): void {
+  const now = Date.now();
+  if (!force && fetchedAt && now - fetchedAt.getTime() < REVALIDATE_AFTER_MS) {
+    return;
+  }
+  const last = revalidatedAt.get(did);
+  // The memo is kept even when the refresh fails, so an unreachable repo backs
+  // off for a window instead of re-fetching on every render.
+  if (last !== undefined && now - last < REVALIDATE_AFTER_MS) return;
+  if (revalidationsInFlight >= REVALIDATE_CONCURRENCY) return;
+
+  if (revalidatedAt.size >= REVALIDATE_MEMO_LIMIT) {
+    for (const [key, at] of revalidatedAt) {
+      if (now - at >= REVALIDATE_AFTER_MS) revalidatedAt.delete(key);
+    }
+  }
+  revalidatedAt.set(did, now);
+  revalidationsInFlight += 1;
+  void refreshOne(did)
+    .catch(() => {
+      // Best-effort decoration; the sweep is the guarantee.
+    })
+    .finally(() => {
+      revalidationsInFlight -= 1;
+    });
 }
 
 async function refreshOne(did: string): Promise<"updated" | "missing"> {
