@@ -1,0 +1,14 @@
+{
+  "lexicon": 1,
+  "id": "app.standard-newsletter.list",
+  "defs": {
+    "main": {
+      "type": "space",
+      "description": "The permissioned-space type for a publication's newsletter subscriber list (AT Protocol Proposal 0016). One space per publication, keyed by the publication rkey. `collections` enumerates the record types members may write into the space; a HappyView instance that can resolve this lexicon uses it to populate the space's `allowedCollections`. NOTE: `space` is an experimental Proposal-0016 def type, not a standard atproto lexicon primitive.",
+      "collections": [
+        "app.standard-newsletter.subscription",
+        "app.standard-newsletter.subscriberList"
+      ]
+    }
+  }
+}

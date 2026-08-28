@@ -1,0 +1,32 @@
+{
+  "name": "@standard-reader/publication-theme",
+  "version": "0.1.0",
+  "description": "A publication's four flat colors, turned into the full themed scale both Standard apps paint with. Ships source; the consuming app compiles StyleX.",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./scale": "./src/scale.ts",
+    "./tokens": "./src/tokens.ts",
+    "./fonts": "./src/fonts.ts",
+    "./theme-source": "./src/theme-source.ts",
+    "./quote-colors": "./src/quote-colors.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "colorjs.io": "^0.6.0"
+  },
+  "peerDependencies": {
+    "@standard-reader/design-system": "workspace:*",
+    "@stylexjs/stylex": "^0.19.0",
+    "react": ">=18"
+  },
+  "devDependencies": {
+    "@standard-reader/design-system": "workspace:*",
+    "@stylexjs/stylex": "^0.19.0",
+    "@types/react": "^19.2.0",
+    "typescript": "^6.0.2"
+  }
+}

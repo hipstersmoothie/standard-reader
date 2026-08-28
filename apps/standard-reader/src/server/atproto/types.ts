@@ -265,6 +265,32 @@ export interface SidebarPrefRecord {
   updatedAt?: string;
 }
 
+/** `app.standard-reader.site` — how an author or one of their publications
+ * presents itself as a standalone site (rkey `self`, or derived from the
+ * publication's AT-URI). */
+export interface SiteRecord {
+  $type?: string;
+  /** The publication this site presents; absent for the author's own site. */
+  publication?: string;
+  /** Which presentation the site is laid out in. */
+  style?: string;
+  /** Short line under the site's name. */
+  tagline?: string;
+  /** The site's own four flat colors, mirroring `site.standard.theme.basic`. */
+  theme?: {
+    background?: string;
+    foreground?: string;
+    accent?: string;
+    accentForeground?: string;
+  };
+  /** Outbound links shown in the masthead. */
+  links?: Array<{ label?: string; url?: string }>;
+  /** Whether the footer links back to the Standard Reader page. */
+  showStandardReaderLink?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 /** `app.bsky.actor.profile`. */
 export interface BskyProfileRecord {
   $type?: string;

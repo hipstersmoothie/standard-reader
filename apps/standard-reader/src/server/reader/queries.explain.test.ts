@@ -1,3 +1,4 @@
+import { NETWORK_DOCUMENT_COUNT_KEY } from "@standard-reader/db/schema/network-stats.ts";
 /**
  * Gated EXPLAIN benchmark for the follow-feed candidate query.
  *
@@ -26,7 +27,6 @@ import { describe, expect, test } from "vitest";
 
 import { db } from "#/db";
 import * as schema from "#/db/schema";
-import { NETWORK_DOCUMENT_COUNT_KEY } from "#/db/schema/network-stats";
 import {
   buildFollowFeedCandidateSql,
   buildTagOverlapScoresSql,

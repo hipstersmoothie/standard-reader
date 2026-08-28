@@ -79,6 +79,11 @@ const config = defineConfig({
         "@standard-reader/design-system/*": [
           path.join(__dirname, "../../packages/design-system/src/*"),
         ],
+        // The shared publication theme's `tokens` module is a
+        // `stylex.createTheme`, so StyleX has to compile it here too.
+        "@standard-reader/publication-theme/*": [
+          path.join(__dirname, "../../packages/publication-theme/src/*"),
+        ],
       },
       lightningcssOptions: {
         targets: browserslistToTargets(browserslist("baseline 2024")),

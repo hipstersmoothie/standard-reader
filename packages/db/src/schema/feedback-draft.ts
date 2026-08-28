@@ -1,8 +1,32 @@
 import { index, jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 
-import type { FeedbackImageAttachment } from "#/lib/userinput/space";
-
 import { user } from "./auth.ts";
+
+/**
+ * A JSON-serializable value, matching the reader's `JsonValue`. Restated here
+ * because the schema package sits *below* both apps and cannot reach up into
+ * one of them — and because the exact shape matters: a looser
+ * `Record<string, unknown>` would not unify with the reader's blob-ref type
+ * where a draft crosses a server-fn boundary.
+ */
+type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | Array<JsonValue>
+  | { [key: string]: JsonValue };
+
+/**
+ * An image attachment as stored on a draft: an already-uploaded blob ref plus
+ * optional alt text — the bytes never round-trip, only the ref does. The same
+ * shape as the reader's `FeedbackImageAttachment` (`#/lib/userinput/space`),
+ * which remains the type the feedback code itself speaks.
+ */
+type FeedbackImageAttachment = {
+  blob: { [key: string]: JsonValue };
+  alt?: string;
+};
 
 /**
  * Short-lived pending feedback drafts, stashed server-side before the OAuth

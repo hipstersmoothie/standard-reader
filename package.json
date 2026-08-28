@@ -17,7 +17,12 @@
       "react": "19.3.0-canary-ad78e251-20260616",
       "react-dom": "19.3.0-canary-ad78e251-20260616",
       "unplugin": "^3.0.0",
-      "@tanstack/router-core": "1.171.15"
+      "@tanstack/router-core": "1.171.15",
+      "@tanstack/react-router": "1.170.18",
+      "@tanstack/react-router-ssr-query": "1.167.1",
+      "@tanstack/react-start": "1.168.34",
+      "@tanstack/router-plugin": "1.168.23",
+      "@tanstack/start-plugin-core": "1.171.25"
     }
   },
   "scripts": {
@@ -25,6 +30,12 @@
     "build": "pnpm --filter standard-reader build",
     "start": "pnpm --filter standard-reader start",
     "preview": "pnpm --filter standard-reader preview",
+    "writer:dev": "pnpm --filter standard-writer dev",
+    "writer:build": "pnpm --filter standard-writer build",
+    "writer:start": "pnpm --filter standard-writer start",
+    "writer:send": "pnpm --filter standard-writer newsletter:send",
+    "writer:dispatch": "pnpm --filter standard-writer newsletter:dispatch",
+    "writer:seed": "pnpm --filter standard-writer newsletter:seed",
     "test": "pnpm -r --if-present test",
     "perf:discover-fixtures": "pnpm --filter standard-reader perf:discover-fixtures",
     "api-docs:examples": "pnpm --filter standard-reader api-docs:examples",

@@ -1,38 +1,14 @@
 /**
- * Standard Reader read-model schema (Neon Postgres, Drizzle).
+ * The reader's view of the shared read-model schema.
  *
- * This is a derived cache of the AT Protocol network, fed by the `tap` instance
- * (see `tap/` + `src/server/ingest/`). The canonical records always live in each
- * author's / reader's repo — never here.
+ * The tables themselves live in `@standard-reader/db` so Standard Reader and
+ * Standard Writer read one physical database from one definition. This barrel
+ * exists so the reader's own `#/db/schema` imports — several hundred of them,
+ * plus `drizzle.config.ts` — keep working unchanged, and so there is still one
+ * obvious place to look from inside this app.
  *
- * Tables mirror the standard.site lexicons (publications, documents, the
- * subscription + recommend graph), plus identity/profile data backfilled from
- * Bluesky, derived aggregates for trending/recommendations, and ingestion
- * bookkeeping. Split into modules under `./schema/` and re-exported here so the
- * Drizzle client (`./index.ts`) and `drizzle.config.ts` see every table.
+ * Migration generation stays here: `pnpm db:generate` reads this file, and
+ * `drizzle/` is the single journal for the single database. A table added in
+ * the package is migrated from the reader.
  */
-export * from "./schema/auth.ts";
-export * from "./schema/profiles.ts";
-export * from "./schema/publications.ts";
-export * from "./schema/documents.ts";
-export * from "./schema/graph.ts";
-export * from "./schema/personal.ts";
-export * from "./schema/reading-progress.ts";
-export * from "./schema/kosync.ts";
-export * from "./schema/push.ts";
-export * from "./schema/lists.ts";
-export * from "./schema/stats.ts";
-export * from "./schema/network-stats.ts";
-export * from "./schema/discover-topics.ts";
-export * from "./schema/topics.ts";
-export * from "./schema/ingest.ts";
-export * from "./schema/labels.ts";
-export * from "./schema/blocks.ts";
-export * from "./schema/mutes.ts";
-export * from "./schema/mcp.ts";
-export * from "./schema/quote-shares.ts";
-export * from "./schema/relations.ts";
-export * from "./schema/feedback-draft.ts";
-export * from "./schema/upvote-draft.ts";
-export * from "./schema/save-draft.ts";
-export * from "./schema/announce.ts";
+export * from "@standard-reader/db/schema";

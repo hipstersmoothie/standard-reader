@@ -2355,3 +2355,32 @@ Standard Reader as a library an e-reading app can browse. See
 - [ ] **Kindle** — Amazon dropped personal-document EPUB conversion into Send-to-Kindle, which
       takes EPUB directly now; a "send to Kindle" button would need an email path and their
       allow-list, so it is its own piece of work.
+
+## 17. Standalone sites — moved to Standard Writer
+
+Built here first, then moved: the public pages, the four styles and the editor now live in
+[`apps/standard-writer`](../standard-writer/TODO.md), which is where a publication's analytics,
+embeds and newsletter are — and which will own custom domains.
+
+What remains the reader's:
+
+- [x] **`app.standard-reader.site` lexicon** — `style`, `tagline`, `theme`, masthead `links`,
+      `showStandardReaderLink`, plus `publication` (absent = the author's own site).
+      Deterministic rkey per subject, so a repo holds at most one record per subject.
+- [x] **`sites` read-model table + ingest** — `upsertSite` / delete case keyed by record AT-URI,
+      normalized through `@standard-reader/site-config`, the same module Writer renders from, so a
+      hostile or simply old record cannot put an unrenderable colour or link scheme into a row.
+- [x] **Scope** — the collection is in the republished `authBasicFeatures` set. Writer requests it
+      too (it is what authors the records now); the reader keeps it because the ingester and the
+      permission set are ours.
+- [x] **One link out** — Settings → Publishing, to `VITE_WRITER_URL`. Not the publication ⌄
+      menu: that menu is read by everyone, and a site is the publisher's page, not a reader's
+      control.
+
+- [ ] **Extract the article renderer** — a post opened from a site lands here, with the app's
+      chrome around it, which breaks the illusion at exactly the moment someone starts reading.
+      Writer cannot render the article until `ArticleView` is separable from the shell's providers
+      (page reader, selection dock, comments). That extraction is the reader's to do.
+
+Custom domains, per-style OG cards, author-site fonts and pinned selected work moved with the
+feature — they are tracked in [Standard Writer's TODO](../standard-writer/TODO.md).

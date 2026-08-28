@@ -1,0 +1,107 @@
+{
+  "lexicon": 1,
+  "id": "app.standard-reader.site",
+  "defs": {
+    "main": {
+      "type": "record",
+      "description": "How an author or publication presents itself as a standalone site — a page with none of Standard Reader's own chrome. One record per site: the author's own site (record key `self`, covering everything they publish) or one publication's site (record key derived from the publication's AT-URI). Absent means the site still renders, in the default style, with no customization.",
+      "key": "any",
+      "record": {
+        "type": "object",
+        "required": ["style", "updatedAt"],
+        "properties": {
+          "publication": {
+            "type": "string",
+            "format": "at-uri",
+            "description": "AT-URI of the site.standard.publication this site presents. Absent for the author's own site, which covers every publication they write for."
+          },
+          "style": {
+            "type": "string",
+            "maxLength": 32,
+            "knownValues": ["broadsheet", "journal", "gallery", "marquee"],
+            "description": "Which presentation the site is laid out in: 'broadsheet' (newspaper front page), 'journal' (single quiet column), 'gallery' (cover-image grid), or 'marquee' (hero and selected work). An unknown value falls back to 'broadsheet'."
+          },
+          "tagline": {
+            "type": "string",
+            "maxLength": 300,
+            "maxGraphemes": 120,
+            "description": "A short line under the site's name. Absent falls back to the publication's description or the author's bio."
+          },
+          "theme": {
+            "type": "ref",
+            "ref": "app.standard-reader.site#theme",
+            "description": "Colors the site is painted in. Absent means the publication's own theme for a publication site, and the default editorial palette for an author site."
+          },
+          "links": {
+            "type": "array",
+            "maxLength": 8,
+            "items": {
+              "type": "ref",
+              "ref": "app.standard-reader.site#link"
+            },
+            "description": "Outbound links shown in the site's masthead — the author's other homes on the web."
+          },
+          "showStandardReaderLink": {
+            "type": "boolean",
+            "description": "Whether the footer links back to this account's Standard Reader page. Absent means true."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "datetime",
+            "description": "When the site was first configured."
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "datetime",
+            "description": "When the site was last edited."
+          }
+        }
+      }
+    },
+    "theme": {
+      "type": "object",
+      "description": "A site's four flat colors, mirroring site.standard.theme.basic so the same color science generates the full scale from them.",
+      "properties": {
+        "background": {
+          "type": "string",
+          "maxLength": 16,
+          "description": "Page background, as a hex color (`#rgb` or `#rrggbb`)."
+        },
+        "foreground": {
+          "type": "string",
+          "maxLength": 16,
+          "description": "Body text, as a hex color."
+        },
+        "accent": {
+          "type": "string",
+          "maxLength": 16,
+          "description": "Accent used for rules, links, and buttons, as a hex color."
+        },
+        "accentForeground": {
+          "type": "string",
+          "maxLength": 16,
+          "description": "Text drawn on top of the accent, as a hex color."
+        }
+      }
+    },
+    "link": {
+      "type": "object",
+      "description": "One outbound link in a site's masthead.",
+      "required": ["label", "url"],
+      "properties": {
+        "label": {
+          "type": "string",
+          "maxLength": 120,
+          "maxGraphemes": 40,
+          "description": "What the link is called."
+        },
+        "url": {
+          "type": "string",
+          "format": "uri",
+          "maxLength": 2048,
+          "description": "Where it points."
+        }
+      }
+    }
+  }
+}

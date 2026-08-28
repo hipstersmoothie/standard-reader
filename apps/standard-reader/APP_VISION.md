@@ -554,6 +554,26 @@ comic issue with no pages falls back to it outright.
   (avatar + "Follow NAME", no Standard Reader chrome, no saved handles). An account
   has no theme record, so the card paints in the default editorial palette.
 
+### Standalone sites — moved to Standard Writer
+
+An author's or a publication's own page, with none of Standard Reader's chrome, now lives in
+[Standard Writer](../standard-writer/APP_VISION.md) at `/site/u/$did` and `/site/p/$did/$rkey`.
+Writer is where a publication's analytics, embeds and newsletter live, so the page's editor
+belongs beside them — and Writer is what will own custom domains, which are the natural end
+state for a site.
+
+What stays here:
+
+- **The lexicon.** `app.standard-reader.site` is ours, and the Jetstream ingester mirrors it into
+  `sites` like every other record (see "Data shapes" below). The normalizers both apps run it
+  through live in `@standard-reader/site-config`.
+- **One link out.** Settings → Publishing opens Writer — an ordinary link to `VITE_WRITER_URL`,
+  not a router navigation. Deliberately _only_ there: a publication's ⌄ menu is read by everyone,
+  and a site is the publisher's own page, so offering site management from the menu a reader uses
+  to subscribe was the wrong audience for the wrong feature.
+- **The article.** A headline on a site links back here — Writer serves the site, the reader
+  renders the piece.
+
 ### Subscriptions (manage view)
 
 - Route `/subscriptions`, reached from the sidebar's "Subscriptions" heading. Requires auth
@@ -907,11 +927,11 @@ splits each capability tier across a set we publish (`app.standard-reader.auth*`
 upstream `site.standard.auth*` sets (published by standard.site — see
 [standard.site/docs/permissions](https://standard.site/docs/permissions/)):
 
-| Tier                                | App-owned set (we publish)                      | site.standard set (we reference)         | Covers                                                                               |
-| ----------------------------------- | ----------------------------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------ |
-| **Basic** (default sign-in)         | `include:app.standard-reader.authBasicFeatures` | `include:site.standard.authSocial`       | bookmark, read, list, listSave, labelerSubscription, graph.mute + follows + likes    |
-| **Collections authoring** (upgrade) | `+ include:app.standard-reader.authCollections` | swap to `include:site.standard.authFull` | collection, collectionsPublication, publicationTheme + publication + document writes |
-| **Subscribe embed**                 | —                                               | `include:site.standard.authSocial`       | subscription write (also covers recommend)                                           |
+| Tier                                | App-owned set (we publish)                      | site.standard set (we reference)         | Covers                                                                                  |
+| ----------------------------------- | ----------------------------------------------- | ---------------------------------------- | --------------------------------------------------------------------------------------- |
+| **Basic** (default sign-in)         | `include:app.standard-reader.authBasicFeatures` | `include:site.standard.authSocial`       | bookmark, read, list, listSave, site, labelerSubscription, graph.mute + follows + likes |
+| **Collections authoring** (upgrade) | `+ include:app.standard-reader.authCollections` | swap to `include:site.standard.authFull` | collection, collectionsPublication, publicationTheme + publication + document writes    |
+| **Subscribe embed**                 | —                                               | `include:site.standard.authSocial`       | subscription write (also covers recommend)                                              |
 
 `blob:*/*` (image upload) is requested as a granular scope alongside the basic tier — it
 cannot live inside a permission set. The OAuth client metadata `scope` field declares the
@@ -1035,6 +1055,14 @@ re-auth because `prompt: consent` re-consent isn't reliable across PDS providers
     consistency, with a PDS backfill on cold start).
   - `app.standard-reader.publicationTheme` — Google Font names for a collections
     publication (same rkey sidecar; colors stay on `basicTheme`).
+  - `app.standard-reader.site` — how an author or one of their publications presents
+    itself as a **standalone site** (`style`, optional `tagline`, `theme`, masthead
+    `links`, `showStandardReaderLink`). Deterministic rkey per subject: `self` for the
+    author's own site, `subjectRkey(publicationUri)` for a publication's, so one repo
+    holds at most one record per subject. Mirrored to `sites`. Absent means the site
+    still renders, in the default style — the record only decides how it looks.
+    **Authored and served by [Standard Writer](../standard-writer/APP_VISION.md);** the
+    reader owns the lexicon and the ingest handler.
 
 ### AppView XRPC (public API)
 

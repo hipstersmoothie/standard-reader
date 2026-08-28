@@ -31,6 +31,17 @@ export const user = pgTable("user", {
   did: text("did").unique(),
   image: text("image"),
   isAdmin: boolean("is_admin").default(false).notNull(),
+  /**
+   * Standard Writer Pro entitlement — what gates custom domains for a writer's
+   * sites and newsletters.
+   *
+   * Deliberately a plain flag rather than a billing record: no payment provider
+   * is wired up yet, so this is set by hand, and when one is, only the code that
+   * *sets* this changes. Everything that reads it goes through one helper
+   * (`isPro` in Standard Writer) so there is a single place to find every
+   * gated feature.
+   */
+  proSince: timestamp("pro_since", { withTimezone: true }),
   /** `light` | `dark` | `custom`; `null` follows system preference. `custom`
    * takes its colors — and its light/dark identity — from `appearance`. */
   themeMode: text("theme_mode"),

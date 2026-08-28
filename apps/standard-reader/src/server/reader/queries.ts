@@ -12,6 +12,10 @@
  * rails stay distinct.
  */
 
+import {
+  NETWORK_DOCUMENT_COUNT_KEY,
+  NETWORK_DOCUMENT_COUNT_NO_WEB_BRIDGE_KEY,
+} from "@standard-reader/db/schema/network-stats.ts";
 import type { SQL } from "drizzle-orm";
 import {
   and,
@@ -30,10 +34,6 @@ import {
 } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 
-import {
-  NETWORK_DOCUMENT_COUNT_KEY,
-  NETWORK_DOCUMENT_COUNT_NO_WEB_BRIDGE_KEY,
-} from "#/db/schema/network-stats";
 import type {
   ArticleCard,
   Db,

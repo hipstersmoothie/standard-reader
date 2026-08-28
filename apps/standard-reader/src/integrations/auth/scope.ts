@@ -18,7 +18,7 @@ const BLOB_SCOPE = atprotoScope.blob({ accept: ["image/*"] });
  *
  * App-owned sets (we publish these as lexicons in `lexicons/app/standard-reader/`):
  *  - `app.standard-reader.authBasicFeatures` — reader-state: bookmark, read, list,
- *    listSave, labelerSubscription (legacy) + labeler.subscription (V2).
+ *    listSave, site, labelerSubscription (legacy) + labeler.subscription (V2).
  *  - `app.standard-reader.authCollections` — collections-authoring state:
  *    collection, collectionsPublication, publicationTheme.
  *

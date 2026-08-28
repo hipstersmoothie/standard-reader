@@ -1,0 +1,22 @@
+{
+  "name": "@standard-reader/db",
+  "version": "0.1.0",
+  "description": "Shared read-model schema (Postgres + Drizzle) for the Standard apps. Ships source; each app supplies its own client.",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./schema": "./src/schema.ts",
+    "./schema/*": "./src/schema/*"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.45.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.20",
+    "typescript": "^6.0.2"
+  }
+}

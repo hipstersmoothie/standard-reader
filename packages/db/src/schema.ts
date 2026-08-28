@@ -1,0 +1,42 @@
+/**
+ * The shared Standard read-model schema (Neon Postgres, Drizzle).
+ *
+ * This is a derived cache of the AT Protocol network, fed by the `tap` instance
+ * (see `apps/standard-reader/src/server/ingest/`). The canonical records always
+ * live in each author's / reader's repo — never here.
+ *
+ * Tables mirror the standard.site lexicons (publications, documents, the
+ * subscription + recommend graph), plus identity/profile data backfilled from
+ * Bluesky, derived aggregates for trending/recommendations, ingestion
+ * bookkeeping, and Standard Writer's own newsletter tables. Split into modules
+ * under `./schema/` and re-exported here so every app's Drizzle client — and
+ * the reader's `drizzle.config.ts`, which owns migration generation for the one
+ * database — sees every table.
+ */
+export * from "./schema/auth.ts";
+export * from "./schema/profiles.ts";
+export * from "./schema/publications.ts";
+export * from "./schema/documents.ts";
+export * from "./schema/graph.ts";
+export * from "./schema/personal.ts";
+export * from "./schema/sites.ts";
+export * from "./schema/newsletter.ts";
+export * from "./schema/reading-progress.ts";
+export * from "./schema/kosync.ts";
+export * from "./schema/push.ts";
+export * from "./schema/lists.ts";
+export * from "./schema/stats.ts";
+export * from "./schema/network-stats.ts";
+export * from "./schema/discover-topics.ts";
+export * from "./schema/topics.ts";
+export * from "./schema/ingest.ts";
+export * from "./schema/labels.ts";
+export * from "./schema/blocks.ts";
+export * from "./schema/mutes.ts";
+export * from "./schema/mcp.ts";
+export * from "./schema/quote-shares.ts";
+export * from "./schema/relations.ts";
+export * from "./schema/feedback-draft.ts";
+export * from "./schema/upvote-draft.ts";
+export * from "./schema/save-draft.ts";
+export * from "./schema/announce.ts";

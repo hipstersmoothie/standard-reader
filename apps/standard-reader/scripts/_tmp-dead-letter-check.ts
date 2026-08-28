@@ -1,7 +1,7 @@
+import { ingestDeadLetter } from "@standard-reader/db/schema/ingest.ts";
 import { and, eq, like, sql } from "drizzle-orm";
 
 import { db } from "../src/db/index.ts";
-import { ingestDeadLetter } from "../src/db/schema/ingest.ts";
 
 const did = "did:plc:pzgvqg4ihnaihkrpmxqz5pu6";
 

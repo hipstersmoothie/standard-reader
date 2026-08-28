@@ -810,6 +810,101 @@ export async function putSidebarPrefRecord(
   });
 }
 
+// ── Standalone sites (app.standard-reader.site) ─────────────────────────────
+
+/** Record key for the author's own site — the one covering everything they publish. */
+export const AUTHOR_SITE_RKEY = "self";
+
+/**
+ * Record key for a publication's site. Derived from the publication's AT-URI so
+ * the record is an idempotent upsert at a known key: configuring the same
+ * publication twice replaces one record rather than accumulating them, and the
+ * read path can address it without listing the collection.
+ */
+export function publicationSiteRkey(publicationUri: string): string {
+  return subjectRkey(publicationUri);
+}
+
+/**
+ * Create or replace a standalone site's configuration. `publication` absent
+ * writes the author's own site; present writes that publication's.
+ */
+export async function putSiteRecord(
+  client: Client,
+  repo: string,
+  site: {
+    publication: string | null;
+    style: string;
+    tagline: string | null;
+    theme: {
+      background: string | null;
+      foreground: string | null;
+      accent: string | null;
+      accentForeground: string | null;
+    } | null;
+    links: Array<{ label: string; url: string }>;
+    showStandardReaderLink: boolean;
+    createdAt?: string;
+    updatedAt: string;
+  },
+): Promise<{ uri: string; cid: string; rkey: string }> {
+  const rkey = site.publication
+    ? publicationSiteRkey(site.publication)
+    : AUTHOR_SITE_RKEY;
+  const theme = site.theme;
+  const record: Record<string, unknown> = {
+    $type: COLLECTION.site,
+    style: site.style,
+    links: site.links,
+    showStandardReaderLink: site.showStandardReaderLink,
+    createdAt: site.createdAt ?? site.updatedAt,
+    updatedAt: site.updatedAt,
+  };
+  if (site.publication) record.publication = site.publication;
+  if (site.tagline) record.tagline = site.tagline;
+  // Omit rather than write nulls: an absent theme is what means "inherit", and
+  // a record full of null slots would not say that.
+  if (
+    theme &&
+    (theme.background ??
+      theme.foreground ??
+      theme.accent ??
+      theme.accentForeground)
+  ) {
+    record.theme = Object.fromEntries(
+      Object.entries({
+        background: theme.background,
+        foreground: theme.foreground,
+        accent: theme.accent,
+        accentForeground: theme.accentForeground,
+      }).filter(([, value]) => typeof value === "string"),
+    );
+  }
+
+  const { uri, cid } = await repoPutRecord(client, {
+    repo,
+    collection: COLLECTION.site,
+    rkey,
+    record,
+  });
+  return { uri, cid, rkey };
+}
+
+/** Remove a site's configuration, returning it to the default presentation. */
+export async function deleteSiteRecord(
+  client: Client,
+  repo: string,
+  publicationUri: string | null,
+): Promise<void> {
+  return repoDeleteRecord(client, {
+    repo,
+    collection: COLLECTION.site,
+    rkey: publicationUri
+      ? publicationSiteRkey(publicationUri)
+      : AUTHOR_SITE_RKEY,
+  });
+}
+
 // ── Collections (reuse site.standard.publication / .document) ───────────────
 
 /** New TID rkey for a collection's publication or document (creation-sortable). */

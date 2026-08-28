@@ -26,13 +26,24 @@ was scaffolded with npm and later switched to pnpm: `package-lock.json` was remo
 ```
 apps/standard-reader/   # the reader app (TanStack Start) — src/, scripts/, perf/,
                         #   drizzle/, lexicons/, public/, and its own configs
+apps/standard-writer/   # the writer app: publication analytics, standalone sites,
+                        #   embeds, and the newsletter. Shares the reader's database.
 apps/extension/         # the browser extension (WXT); shares app source via #/ and @/
-packages/               # workspace packages: design-system (shared UI) + the
-                        #   publishable @standard-reader/renderer-* family + lexicons
+packages/               # workspace packages: db (shared schema), design-system (shared
+                        #   UI), publication-theme, site-config, lexicons + the
+                        #   publishable @standard-reader/renderer-* family
 services/               # standalone labeler services (claudeslop, botlabeler)
 scripts/                # workspace-level tooling (package publishing)
 config/oxlint/          # shared lint config — applies to the whole repo
 ```
+
+**Two apps, one database.** Standard Reader owns ingest and migrations; Standard Writer reads the
+same Neon database through `@standard-reader/db` and owns the newsletter tables in it. They also
+share `@standard-reader/design-system`, `@standard-reader/publication-theme` (palette derivation)
+and `@standard-reader/site-config` (the `app.standard-reader.site` normalizers). Run the writer
+with `pnpm writer:dev` (port 3100); it needs `VITE_READER_URL`, and the reader needs
+`VITE_WRITER_URL` to link back. See
+[`apps/standard-writer/APP_VISION.md`](./apps/standard-writer/APP_VISION.md).
 
 **Reading paths in this file:** bare `src/…`, `scripts/…`, `perf/…`, `drizzle/…`, and
 `lexicons/…` paths are relative to **`apps/standard-reader/`** unless written out in full.
@@ -50,6 +61,9 @@ This repo has two source-of-truth planning docs that **must be kept up to date a
   vision (concept, architecture, scope). When a decision changes the product direction, data
   model, lexicons, or architecture, **update `apps/standard-reader/APP_VISION.md` in the same
   change** so it never drifts from reality.
+- [`apps/standard-writer/APP_VISION.md`](./apps/standard-writer/APP_VISION.md) +
+  [`apps/standard-writer/TODO.md`](./apps/standard-writer/TODO.md) — the same pair for the writer
+  app. A change that spans both apps updates both sets.
 - [`apps/standard-reader/TODO.md`](./apps/standard-reader/TODO.md) — the actionable roadmap
   derived from the vision. As you complete work, **check off the relevant items**; when scope
   changes or new work is discovered, **add/adjust items**. Keep it in sync with
@@ -220,6 +234,8 @@ read when data exists in the DB.**
 
 - `pnpm install` — install dependencies.
 - `pnpm dev` — Vite dev server on port 3000 (falls back to the next free port if taken).
+- `pnpm writer:dev` / `writer:build` / `writer:start` — the Standard Writer app on port 3100.
+  `writer:send` / `writer:dispatch` / `writer:seed` drive its newsletter scripts.
 - `pnpm build` — production build (client + SSR bundles into `dist/`).
 - `pnpm preview` — preview the production build.
 - `pnpm test` — run Vitest once.
@@ -231,8 +247,10 @@ read when data exists in the DB.**
 - `pnpm fix-stylex-keys` — autofix StyleX `sort-keys` / `valid-shorthands` across `src` via
   `eslint.stylex-autofix.mjs` (oxlint reports these but can't autofix them). May need to be run a
   couple of times to converge on large objects.
-- `pnpm db:generate` / `db:migrate` / `db:push` / `db:studio` — Drizzle Kit (schema in
-  `src/db/schema.ts`, migrations in `drizzle/`).
+- `pnpm db:generate` / `db:migrate` / `db:push` / `db:studio` — Drizzle Kit. The schema lives in
+  `packages/db/` and is re-exported by `src/db/schema.ts`; migrations stay in the reader's
+  `drizzle/` because there is one database and one journal. A table added for the writer is
+  still migrated from here.
 - `pnpm lex:lint` / `pnpm atproto:publish-lexicons` — validate / publish the app-owned
   `app.standard-reader.*` lexicons in `./lexicons/` via the `goat` CLI
   (`scripts/goat-lex.mjs`; needs `LEXICON_PUBLISH_*` creds + `_lexicon.*` DNS).
@@ -496,9 +514,78 @@ pnpm-workspace.yaml   # apps/*, packages/*, services/*
 - Database migrations run automatically on deploy: the Railway web service's `preDeployCommand`
   (`railway.json`) runs `pnpm db:migrate` once after build and before traffic switches, so a merged
   PR's schema changes are applied before the new code serves. Only the web service migrates — the
-  ingest/cron services share the DB but must not race on migrations. CI runs `drizzle-kit check` on
+  ingest/cron services **and Standard Writer** share the DB but must not race on migrations, which
+  is why `railway.writer.json` has no `preDeployCommand`. CI runs `drizzle-kit check` on
   every PR to catch an inconsistent migration journal before it reaches deploy. `drizzle-kit` is a
   runtime dependency (not dev-only) so the deploy image can run it.
+- **One Railway service per `railway.*.json`.** The reader's web service uses the root
+  `railway.json`; Standard Writer uses `railway.writer.json` (`pnpm writer:build` /
+  `pnpm writer:start`, healthcheck `/api/auth/atproto/metadata.json`). CI builds both, so a broken
+  Writer build fails the PR rather than only its preview deploy.
+
+### Preview deploys
+
+Every PR gets a Railway PR environment per service plus a Neon branch (`pr-<number>`, created by
+CI and deleted by `neon-branch-cleanup.yml`). Standard Writer joins that as its own service, and
+its preview needs three things set on the environment or it will not come up:
+
+- **`DATABASE_URL`** — the PR's Neon branch, the same one the reader preview uses. Writer runs no
+  migrations of its own; it reads the schema the reader's pre-deploy already applied.
+- **`ATPROTO_PRIVATE_KEY_JWK`** — a preview domain is `https`, not loopback, so the OAuth client is
+  **confidential** and this is required. Without it the client throws while building its metadata
+  and the healthcheck (which serves exactly that metadata) fails, so the deploy never goes live.
+  This is the first thing to check when a Writer preview is stuck failing its healthcheck.
+- **The cross-app URLs**, as Railway service references so each preview points at the other
+  preview rather than production:
+  - on Writer: `VITE_READER_URL=https://${{web.RAILWAY_PUBLIC_DOMAIN}}` (the reader's service is
+    named `web`), plus `DATABASE_URL=${{web.DATABASE_URL}}` and `DB_DRIVER=${{web.DB_DRIVER}}`
+  - on the reader: `VITE_WRITER_URL=https://${{standard-writer.RAILWAY_PUBLIC_DOMAIN}}`
+
+  Both are `VITE_`-prefixed and therefore **baked at build time** — changing one needs a redeploy,
+  not a restart. Left unset, each falls back to its production host, which is survivable (a preview
+  runs on a branch of prod data, so the DIDs and rkeys resolve) but means you are clicking from a
+  preview into production. Set them.
+
+`PUBLIC_URL` does _not_ need setting per preview — and on Writer it must stay **unset**. Both apps
+fall back to `RAILWAY_PUBLIC_DOMAIN`, which is what makes the OAuth `client_id` and `redirect_uri`
+match the per-deploy domain. (The reader's `web` service does set `PUBLIC_URL` explicitly, and PR
+environments inherit that production value — so a reader preview's OAuth client still claims
+`standard-reader.app`. Don't copy that pattern onto Writer.)
+
+### Adding a service to this project (learned the hard way)
+
+`railway add --service <name> --repo hipstersmoothie/standard-reader --branch <branch>` is the
+right first command, but three things bite in order:
+
+1. **The first deploy races the config.** `railway add` deploys immediately, from the repo's
+   **default branch**, before `--branch` takes effect and before you can set the Config File Path.
+   On `main` there is no `railway.writer.json`, so Railway silently falls back to the root
+   `railway.json` and builds the _reader_ — the runbook gotcha, now with a second cause. Set
+   `railwayConfigFile` via `serviceInstanceUpdate` right away, then redeploy on the right branch
+   with `serviceInstanceDeploy(environmentId, serviceId, latestCommit: true)`. `serviceConnect`
+   answers `ServiceInstance not found`; the branch actually lives on the service's **repo
+   trigger** (`deploymentTriggerUpdate { branch }`), one per environment.
+2. **Existing PR environments do not pick the service up.** This project runs _focused_ PR
+   environments (`focusedPrEnvironments: true`). A service added to `production` appears in PR
+   environments created _afterwards_; environments that already exist get a repo trigger but no
+   service instance and no variables until their PR branch is pushed again. Back-fill their
+   variables with `variableUpsert{ skipDeploys: true }` per environment, and fix each trigger's
+   branch — Railway seeds them all from whichever branch created the service, so every PR env
+   initially points at the wrong one.
+3. **Variables must be references, not copies.** `${{web.DATABASE_URL}}` and
+   `https://${{web.RAILWAY_PUBLIC_DOMAIN}}` resolve per environment, so a preview reads the PR's
+   Neon branch and links at the PR's reader. Hyphenated service names work in a reference
+   (`${{standard-writer.RAILWAY_PUBLIC_DOMAIN}}`). Secrets go through the GraphQL API rather than
+   a shell argument.
+
+Writer holds its **own** `ATPROTO_PRIVATE_KEY_JWK`, not the reader's: two OAuth clients publishing
+two JWKS, so rotating one never invalidates the other's sessions.
+
+Until this branch merges, the production Writer service answers its healthcheck but 500s on any
+data route with Postgres `42P01` (undefined table) — migration `0045` adds the newsletter tables,
+`sites.custom_domain` and `user.pro_since`, and only the reader's `main` deploy applies it. PR
+previews are unaffected: CI applies migrations to each PR's Neon branch.
+
 - TanStack Start supports Cloudflare Workers, Netlify, Vercel, Node/Docker, Bun, and Railway. The
   default toolchain produces a Node server output; choose/configure a target before deploying. Load
   `@tanstack/start-client-core#start-core/deployment` for target-specific guidance.

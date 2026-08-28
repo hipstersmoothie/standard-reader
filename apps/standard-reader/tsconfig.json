@@ -8,7 +8,22 @@
     "paths": {
       "#/*": ["./src/*"],
       "@/*": ["./src/*"],
-      "@standard-reader/design-system/*": ["../../packages/design-system/src/*"]
+      "@standard-reader/db": ["../../packages/db/src/index.ts"],
+      "@standard-reader/db/schema": ["../../packages/db/src/schema.ts"],
+      "@standard-reader/db/schema/*": ["../../packages/db/src/schema/*"],
+      "@standard-reader/design-system/*": [
+        "../../packages/design-system/src/*"
+      ],
+      "@standard-reader/publication-theme": [
+        "../../packages/publication-theme/src/index.ts"
+      ],
+      "@standard-reader/publication-theme/*": [
+        "../../packages/publication-theme/src/*.ts"
+      ],
+      "@standard-reader/site-config": [
+        "../../packages/site-config/src/index.ts"
+      ],
+      "@standard-reader/site-config/*": ["../../packages/site-config/src/*.ts"]
     },
     "lib": ["ES2024", "DOM", "DOM.Iterable"],
     "types": ["vite/client"],

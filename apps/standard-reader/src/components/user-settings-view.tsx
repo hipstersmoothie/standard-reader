@@ -113,6 +113,7 @@ import { useReaderVoice } from "#/lib/use-reader-voice";
 import { useReadingTypography } from "#/lib/use-reading-typography";
 import { useTheme } from "#/lib/use-theme";
 import { useTrackReadingHistory } from "#/lib/use-track-reading-history";
+import { writerSitesUrl } from "#/lib/writer-url";
 
 import {
   AppearanceAdvancedRows,
@@ -1203,6 +1204,36 @@ export function UserSettingsView() {
           </div>
         </section>
       ) : null}
+
+      {/* Publishing, not reading: the one section about how other people see
+          your work rather than how you see theirs. Everything in it lives in
+          Standard Writer, so the row links out rather than opening a page
+          here. */}
+      <section {...stylex.props(styles.section)}>
+        <h2 {...stylex.props(styles.sectionHeading)}>
+          <Trans>Publishing</Trans>
+        </h2>
+        <div {...stylex.props(styles.settingGroup)}>
+          <SettingRow
+            label={t`Standard Writer`}
+            description={t`Your publications' home: readership analytics, a standalone site with none of this app's chrome, embeds, and a newsletter your posts are mailed to.`}
+          >
+            <Button
+              variant="secondary"
+              size="sm"
+              onPress={() => {
+                globalThis.open(
+                  writerSitesUrl(),
+                  "_blank",
+                  "noopener,noreferrer",
+                );
+              }}
+            >
+              <Trans>Open Writer</Trans>
+            </Button>
+          </SettingRow>
+        </div>
+      </section>
 
       {/* After Offline, before Moderation: both sections are about reading
           somewhere other than this tab. */}

@@ -119,6 +119,12 @@ jobs:
       - name: Build
         run: pnpm build
 
+      # Railway builds each service from its own `railway.*.json`, so a broken
+      # Writer build would only surface when its preview deploy failed. Build it
+      # here instead, where it fails the PR.
+      - name: Build writer
+        run: pnpm writer:build
+
       - name: Build extension
         run: pnpm extension:build
 
