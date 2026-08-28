@@ -18,13 +18,21 @@ import {
  *
  *  1. the run claims the week in `weekly_thread_runs` before composing anything
  *     (`./ledger.ts`), and stands down if the week is already spoken for;
- *  2. the posts themselves are `putRecord`ed at rkeys derived from the week
- *     (`./week.ts`), so a run that gets past the claim regardless overwrites the
- *     week's thread rather than publishing a second one.
+ *  2. immediately before composing, it asks the bot's own repo whether a thread
+ *     root for this week is already there (`findWeekThreadRoot`) and stands
+ *     down if so — the backstop for when the claim cannot be trusted (a wiped
+ *     row, a different database, a hand-run against prod).
+ *
+ * What it deliberately does NOT do is write the posts at week-derived rkeys with
+ * `putRecord`. That made a re-run silently rewrite posts the network had already
+ * replied to, liked and indexed; the orphaned strongRefs and the resulting
+ * AppView disagreements were much worse than the duplicate thread they avoided.
+ * Posts are created at fresh TIDs and never touched again.
  *
  * Set `THREAD_DRY_RUN=1` to compose + log the thread without writing any records
  * (and without claiming the week). `THREAD_FORCE=1` posts anyway when this
- * week's thread already went out.
+ * week's thread already went out — which now means a genuinely second thread,
+ * not a rewrite of the first.
  */
 import type { ArticleCard } from "#/integrations/tanstack-query/api-shapes";
 import { getPublicUrl } from "#/lib/public-url";
@@ -41,6 +49,7 @@ import {
   HOT_WINDOW_DAYS,
   isDryRun,
   isForcedRun,
+  THREAD_ROOT_MARKER,
 } from "./config.ts";
 import {
   claimWeek,
@@ -50,12 +59,13 @@ import {
 } from "./ledger.ts";
 import {
   fetchThumbBlob,
+  findWeekThreadRoot,
   linkFacets,
   mentionFacet,
   postThread,
 } from "./thread.ts";
 import type { Facet, PostSpec } from "./thread.ts";
-import { isoWeekKey, threadRkeys, weekAnchor } from "./week.ts";
+import { isoWeekKey } from "./week.ts";
 
 export interface WeeklyThreadSummary {
   /** Hottest articles selected for the thread. */
@@ -114,9 +124,7 @@ function articleSpec(
   // Reserve budget for the numbering/intro prefix and the byline suffix so the
   // author @mention at the end is never truncated away by the 300-char cap.
   const prefix =
-    index === 0
-      ? `🔥 The ${total} hottest reads on Standard Reader this week\n\n${n}. `
-      : `${n}. `;
+    index === 0 ? `🔥 The ${total} ${THREAD_ROOT_MARKER}\n\n${n}. ` : `${n}. `;
   const suffix = by ? ` — ${by.text}` : "";
   const titleBudget =
     BSKY_POST_MAX_GRAPHEMES - graphemeCount(prefix) - graphemeCount(suffix);
@@ -291,6 +299,27 @@ async function postWeeklyThread(
   const { client, repo, handle } = await loginAsReaderBot();
   console.info(`[thread] posting as @${handle} (${repo})`);
 
+  // Second guard, and the only one that survives the ledger being wrong: the
+  // repo itself. Posts are immutable once out, so there is no way to take back
+  // a duplicate — check before writing rather than overwriting after.
+  if (!isForcedRun()) {
+    const existingRoot = await findWeekThreadRoot(client, repo, periodKey);
+    if (existingRoot) {
+      console.warn(
+        `[thread] ${periodKey} is already in the repo (root=${existingRoot}) but the ledger did not know — standing down and repairing the ledger`,
+      );
+      await markRootPosted(periodKey, existingRoot);
+      return {
+        articles: 0,
+        dryRun: false,
+        periodKey,
+        posted: 0,
+        rootUri: existingRoot,
+        skipped: "already-posted",
+      };
+    }
+  }
+
   const specs: Array<PostSpec> = [];
   for (let i = 0; i < cards.length; i++) {
     const thumb = await fetchThumbBlob(client, cards[i].coverImageUrl);
@@ -298,16 +327,17 @@ async function postWeeklyThread(
   }
   specs.push(ctaSpec(baseUrl));
 
-  // Week-derived rkeys + `putRecord`: if a second run ever gets this far, it
-  // rewrites these same records rather than publishing a second thread.
+  // Fresh TIDs, `createRecord`: these posts are new records that will never be
+  // written over. Both duplicate guards are behind us by this point.
   const refs = await postThread(client, repo, specs, {
-    createdAt: weekAnchor(periodKey).toISOString(),
+    // The real posting instant. A catch-up run says when it actually posted
+    // rather than backdating itself to the week's nominal Friday slot.
+    createdAt: new Date().toISOString(),
     // Stamp the ledger the moment the root post lands — after that the thread
     // is public and no later run may post another, however this process ends.
     onRoot: async (root) => {
       await markRootPosted(periodKey, root.uri);
     },
-    rkeys: threadRkeys(periodKey, specs.length),
   });
   const rootUri = refs[0]?.uri ?? null;
   // Bookkeeping only — the week was already marked `posted` with the root URI

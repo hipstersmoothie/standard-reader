@@ -5,9 +5,10 @@ import { integer, pgTable, text, timestamp } from "drizzle-orm/pg-core";
  * dedupe ledger that makes the Friday cron post exactly once per week.
  *
  * The job creates `app.bsky.feed.post` records at fresh TIDs, so re-running it
- * always writes a brand-new thread rather than overwriting the old one. Nothing
- * about the posting path is idempotent, and plenty of things fire it more than
- * once per week: a redeploy or manual restart of the `thread-cron` service runs
+ * always writes a brand-new thread rather than overwriting the old one — which
+ * it must, since rewriting a published post breaks every reply and like pinning
+ * its `cid`. Nothing about the posting path is idempotent, and plenty of things
+ * fire it more than once per week: a redeploy or manual restart of the `thread-cron` service runs
  * the start command immediately, an operator can run `pnpm thread:post` by
  * hand, and a Railway retry would tick it again. The guard therefore lives
  * here, ahead of the write.

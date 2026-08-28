@@ -13,8 +13,8 @@
  * Posts at most once per ISO week: the run claims the week in
  * `weekly_thread_runs` before composing, so a redeploy, a restart, a retry, or a
  * hand-run of this script on a week that already went out exits without posting
- * — and the posts go to week-derived rkeys via `putRecord`, so even a run that
- * bypasses the claim rewrites that week's thread instead of adding another.
+ * — and a run that bypasses the claim still checks the bot's repo for this
+ * week's thread root before it composes anything.
  *
  * Local: `pnpm thread:post:dev` (loads .env). Add `THREAD_DRY_RUN=1` to compose
  * + log the thread without writing any records or claiming the week; add

@@ -8,9 +8,13 @@
  * `cid`, which is only known after that post is written — so `applyWrites`
  * (which needs all refs up front) can't be used here.
  *
- * Every post is a `putRecord` at a record key derived from the week (see
- * `./week.ts`), which is what stops the weekly job from ever publishing the same
- * thread twice.
+ * Posts are CREATED, never rewritten: `createRecord` at a fresh TID. A published
+ * post is immutable as far as the rest of the network is concerned — replies,
+ * likes and quotes all pin its `cid` — so writing over one at a stable rkey
+ * orphans them onto content that did not exist when they were written and leaves
+ * AppViews disagreeing with the PDS about what the post says. Not publishing the
+ * thread twice is the ledger's job (`./ledger.ts`), backed by
+ * {@link findWeekThreadRoot} below; it is never the write path's.
  */
 import type { Client } from "@atcute/client";
 import { ok } from "@atcute/client";
@@ -18,7 +22,12 @@ import { ok } from "@atcute/client";
 import { utf8ByteLength } from "#/lib/leaflet/utf8";
 import { uploadBlob } from "#/server/atproto/repo-records";
 
-import { BSKY_FEED_POST, MAX_THUMB_BYTES } from "./config.ts";
+import {
+  BSKY_FEED_POST,
+  MAX_THUMB_BYTES,
+  THREAD_ROOT_MARKER,
+} from "./config.ts";
+import { isoWeekKey } from "./week.ts";
 
 /** A `com.atproto.repo.strongRef` target (uri + cid). */
 export interface StrongRef {
@@ -154,36 +163,107 @@ export function buildPostRecord(
 }
 
 /**
- * Write a single post record at a fixed rkey and return its strongRef.
+ * Create a single post record at a fresh TID and return its strongRef.
  *
- * `putRecord`, not `createRecord`: paired with the week-derived rkeys from
- * `./week.ts` it makes posting the thread an upsert. Re-running the job
- * overwrites the week's posts in place instead of publishing a second thread —
- * the fresh-TID `createRecord` this replaced is exactly how the job used to
- * duplicate itself.
+ * `createRecord`, never `putRecord` at a computed rkey: the PDS picks the rkey,
+ * so this can only ever add a post, never rewrite one somebody has already
+ * replied to. Stopping the job from posting twice happens before we get here.
  */
-export async function putPost(
+export async function createPost(
   client: Client,
   repo: string,
-  rkey: string,
   record: Record<string, unknown>,
 ): Promise<StrongRef> {
   const res = await ok(
-    client.post("com.atproto.repo.putRecord", {
+    client.post("com.atproto.repo.createRecord", {
       input: {
         collection: BSKY_FEED_POST,
         record,
         repo,
-        rkey,
       } as never,
     }),
   );
   return { uri: res.uri, cid: res.cid };
 }
 
+/** How many pages of the bot's own posts the duplicate scan will walk. */
+const ROOT_SCAN_PAGE = 100;
+const ROOT_SCAN_MAX_PAGES = 3;
+
+function isRecordValue(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/**
+ * The AT-URI of a thread root already posted for `periodKey`, or `null`.
+ *
+ * This is the guard that used to be "write to a week-derived rkey and let
+ * `putRecord` collapse the duplicate". That worked by mutating already-published
+ * posts, which is far worse than the duplicate it prevented, so the check moved
+ * here: ask the repo whether this week's thread exists instead of overwriting it
+ * on the assumption that it might.
+ *
+ * Reads the bot's own posts newest-first and looks for a non-reply carrying
+ * {@link THREAD_ROOT_MARKER} whose `createdAt` lands in the target week.
+ *
+ * The scan does not stop early on the first older-looking post: `createdAt` is
+ * whatever the writer put there, not a repo ordering, and this very repo holds
+ * posts the old job backdated to the week's nominal Friday. So it walks a fixed
+ * few pages instead — the week being looked for is always the most recent one,
+ * so its root is realistically on page one, and this runs once a week.
+ *
+ * Deliberately not fail-open: a transport error propagates, so a run that cannot
+ * establish whether the thread already went out does not post one anyway.
+ */
+export async function findWeekThreadRoot(
+  client: Client,
+  repo: string,
+  periodKey: string,
+): Promise<string | null> {
+  let cursor: string | undefined;
+
+  for (let page = 0; page < ROOT_SCAN_MAX_PAGES; page++) {
+    const res = await ok(
+      client.get("com.atproto.repo.listRecords", {
+        params: {
+          collection: BSKY_FEED_POST,
+          limit: ROOT_SCAN_PAGE,
+          repo,
+          ...(cursor ? { cursor } : {}),
+        } as never,
+      }),
+    );
+
+    for (const record of res.records) {
+      const value = record.value;
+      if (!isRecordValue(value)) continue;
+      // Replies are thread posts 2..n, and the CTA — only roots count.
+      if (value.reply) continue;
+
+      const createdAt =
+        typeof value.createdAt === "string"
+          ? Date.parse(value.createdAt)
+          : Number.NaN;
+      if (!Number.isFinite(createdAt)) continue;
+      const week = isoWeekKey(new Date(createdAt));
+
+      if (
+        week === periodKey &&
+        typeof value.text === "string" &&
+        value.text.includes(THREAD_ROOT_MARKER)
+      ) {
+        return record.uri;
+      }
+    }
+
+    if (!res.cursor) return null;
+    cursor = res.cursor;
+  }
+
+  return null;
+}
+
 export interface PostThreadOptions {
-  /** Record key per spec, in thread order — see `threadRkeys()`. */
-  rkeys: Array<string>;
   /** `createdAt` stamped on every post in the thread. */
   createdAt: string;
   /**
@@ -206,23 +286,17 @@ export async function postThread(
   specs: Array<PostSpec>,
   options: PostThreadOptions,
 ): Promise<Array<StrongRef>> {
-  if (options.rkeys.length < specs.length) {
-    throw new Error(
-      `postThread needs one rkey per post (${specs.length} specs, ${options.rkeys.length} rkeys)`,
-    );
-  }
-
   const created: Array<StrongRef> = [];
   let root: StrongRef | null = null;
   let parent: StrongRef | null = null;
 
-  for (const [i, spec] of specs.entries()) {
+  for (const spec of specs) {
     const record = buildPostRecord(
       spec,
       options.createdAt,
       root && parent ? { root, parent } : undefined,
     );
-    const ref = await putPost(client, repo, options.rkeys[i], record);
+    const ref = await createPost(client, repo, record);
     created.push(ref);
     if (!root) {
       root = ref;

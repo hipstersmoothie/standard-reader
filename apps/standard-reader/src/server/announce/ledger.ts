@@ -1,8 +1,10 @@
 /**
  * Once-per-week guard for the "hottest articles" Bluesky thread.
  *
- * The posting path is not idempotent — every run writes fresh `app.bsky.feed.post`
- * records at new TIDs — so the job has to decide *before* it posts whether this
+ * The posting path is not idempotent and cannot be made so: every run writes
+ * fresh `app.bsky.feed.post` records at new TIDs, and a published post must
+ * never be rewritten to collapse a duplicate (that orphans the replies and likes
+ * pinning its `cid`). So the job has to decide *before* it posts whether this
  * week is already spoken for. That decision is a row in `weekly_thread_runs`
  * keyed by ISO week: claiming the week is the same statement that records it, so
  * two processes racing on the same tick can never both post.
@@ -12,9 +14,9 @@
  * that died mid-flight, and a settle step afterwards.
  *
  * This is the first of two guards: it stops a duplicate run from doing the work.
- * The second lives in the write itself — posts go to week-derived rkeys via
- * `putRecord` (see `./week.ts`), so a run that gets past this one still can't
- * publish a second thread.
+ * The second is a read of the bot's own repo just before composing
+ * (`findWeekThreadRoot` in `./thread.ts`), which catches the cases this row
+ * cannot know about — a wiped table, a different database, a hand-run.
  */
 import { sql } from "drizzle-orm";
 
