@@ -129,8 +129,9 @@ const config = defineConfig({
     // SSR app, so there is no static `index.html` for the plugin to inject into:
     //   - `injectRegister: false` — we register the SW manually from client code
     //     (`src/pwa/register.ts`), mounted via `<ReloadPrompt />` in `__root.tsx`.
-    //   - `manifest: false` — the static `public/manifest.json` stays the source
-    //     of truth; it's already linked from the root route's `head()`.
+    //   - `manifest: false` — the manifest is served by its own server route
+    //     (`src/routes/manifest[.]json.tsx`) so its colors can follow the
+    //     reader's theme; it's already linked from the root route's `head()`.
     //   - `registerType: "prompt"` — updates surface a "Reload" toast instead of
     //     silently reloading mid-article.
     // The generated `sw.js` lands in the Vite client output that Nitro serves as
@@ -168,9 +169,12 @@ const config = defineConfig({
         // readers never touch. Those are runtime-cached on demand below, so an
         // install stays lightweight (~tens of KB) instead of eagerly pulling
         // ~4.5 MB. Hashed assets are immutable, so CacheFirst is safe for them.
+        // NOTE: `manifest.json` is deliberately absent — it is a server route
+        // now (`src/routes/manifest[.]json.tsx`), themed per reader from a
+        // cookie, so a precached copy would pin one reader's colors forever.
+        // It is only needed at install time, which is online by definition.
         globPatterns: [
           "offline.html",
-          "manifest.json",
           // Not for offline use — see the `importScripts` note above.
           "push-sw.js",
           "favicon.svg",

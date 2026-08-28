@@ -46,8 +46,10 @@ import { getPublicUrlClient } from "../lib/public-url";
 import { siteOgImageUrl, siteSocialMeta } from "../lib/site-metadata";
 import {
   DEFAULT_THEME_MODE,
+  PWA_BACKGROUND_COLOR_BY_SCHEME,
   RESOLVED_SCHEME_SCRIPT,
   THEME_COLOR_BY_SCHEME,
+  writePwaThemeCookie,
 } from "../lib/theme";
 import { useFeedMetricsVisible } from "../lib/use-feed-preferences";
 import { useLocale } from "../lib/use-locale";
@@ -278,7 +280,14 @@ export const Route = createRootRouteWithContext<RouterContext>()({
           href: "/apple-touch-icon.png",
           sizes: "180x180",
         },
-        { rel: "manifest", href: "/manifest.json" },
+        // `use-credentials` even though it's same-origin: a manifest is fetched
+        // with credentials omitted by default, and `/manifest.json` is a server
+        // route that reads the reader's theme colors off a cookie.
+        {
+          rel: "manifest",
+          href: "/manifest.json",
+          crossOrigin: "use-credentials" as const,
+        },
         { rel: "preconnect", href: "https://fonts.googleapis.com" },
         {
           rel: "preconnect",
@@ -382,6 +391,11 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       const meta = document.querySelector('meta[name="theme-color"]');
       if (themeMode === "custom") {
         meta?.setAttribute("content", themeColor);
+        // A custom palette's paper is both the title bar and the splash.
+        writePwaThemeCookie({
+          themeColor,
+          backgroundColor: themeColor,
+        });
         return;
       }
       const resolved =
@@ -393,6 +407,12 @@ function RootDocument({ children }: { children: React.ReactNode }) {
               ? "dark"
               : "light";
       meta?.setAttribute("content", THEME_COLOR_BY_SCHEME[resolved]);
+      // The manifest is fetched out-of-band and can't read the DOM, so the
+      // colors it reports for the PWA's system bars ride along on a cookie.
+      writePwaThemeCookie({
+        themeColor: THEME_COLOR_BY_SCHEME[resolved],
+        backgroundColor: PWA_BACKGROUND_COLOR_BY_SCHEME[resolved],
+      });
     };
     apply();
     if (themeMode !== "system") return;
@@ -442,6 +462,12 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <style dangerouslySetInnerHTML={{ __html: COLOR_SCHEME_CSS }} />
         <script dangerouslySetInnerHTML={{ __html: EMBED_CARD_PATH_SCRIPT }} />
         <script dangerouslySetInnerHTML={{ __html: RESOLVED_SCHEME_SCRIPT }} />
+        {/* Must stay AFTER the script above. `HeadContent` renders
+            `<link rel="manifest">`, and the browser fetches the manifest as it
+            parses that tag — the inline script runs synchronously before it and
+            is what leaves `PWA_THEME_COOKIE` in the jar for that fetch to send.
+            Move the script below this and even a first visit in dark mode
+            fetches a light manifest. */}
         <HeadContent />
       </head>
       <body
