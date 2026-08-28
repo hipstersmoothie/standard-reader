@@ -174,9 +174,25 @@ Topics are **derived, never curated** — see
 
 ### Search
 
-- Big editorial search field; live results split into **Publications** and **Articles**.
+- Big editorial search field; live results split into **Publications**, **People**, and
+  **Articles**.
 - Result cards show **query-aware excerpts** (`ts_headline` snippets with highlighted
-  matches in titles and descriptions/bodies).
+  matches in titles and descriptions/bodies). When the query is a phrase the source
+  actually contains, the excerpt highlights the whole phrase rather than scattered words.
+- **Articles are ranked by relevance, not recency.** An ordered tier ladder puts the
+  query-as-a-whole ahead of its parts, and titles ahead of body text: an exact title,
+  then a verbatim substring of the title, then the unstemmed phrase (so "Making" beats
+  "makes"), then the stemmed phrase, then all terms anywhere in title/description/tags,
+  then the author arm, and finally body-only matches — which keep the old
+  newest-first order among themselves.
+- Ranking runs over a **title/description/tags vector**, not `search_vector`: the latter
+  folds in body text, so it is TOASTed and ranking it costs a de-TOAST per row. Backed by
+  the `documents_meta_search_idx` expression index.
+- The candidate pool is **bounded per arm** (title / body / author). A common word matches
+  ~100k documents, and ordering that whole match set took 16s; selective queries never
+  reach a cap and are ranked in full. Broad queries trade completeness for latency.
+- **People** results surface writers directly, instead of the old behavior where a
+  name-shaped query silently folded that author's documents into the article results.
 
 ### Tag directory
 
@@ -1751,7 +1767,8 @@ publication list looked clean.
 ### Later
 
 - Recommendation / trending tuning and quality work.
-- Higher-quality full-text search.
+- Search: typo tolerance and non-English stemming (the ranking is English-only), and a
+  cheaper bound for broad queries than pool truncation.
 
 ### Non-goals (for now)
 

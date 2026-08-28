@@ -157,15 +157,18 @@ export function FindingGuidePage() {
       <p {...stylex.props(docsStyles.prose)}>
         <Trans>
           Search covers publication names, people&apos;s handles, topics, and
-          the text of articles. Results are split into publications and
+          the text of articles. Results are split into publications, people, and
           articles, and each result shows the passage that matched with your
           words highlighted, so you can tell a real match from a coincidence
-          without opening it.
+          without opening it. Articles come back in order of how well they
+          answer the query — a title that matches what you typed comes before an
+          article that merely mentions those words somewhere in its body — so
+          searching a headline you half-remember finds it.
         </Trans>
       </p>
       <GuideFigure
         shot="search"
-        alt={t`Search results for a query, split into a Publications section and an Articles section, with the matching words highlighted inside each result's excerpt.`}
+        alt={t`Search results for a query, split into Publications, People, and Articles sections, with the matching words highlighted inside each result's excerpt.`}
       />
 
       <h2 {...stylex.props(docsStyles.h2)} id="topics">

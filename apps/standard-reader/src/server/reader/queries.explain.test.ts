@@ -28,6 +28,12 @@ import { db } from "#/db";
 import * as schema from "#/db/schema";
 import { NETWORK_DOCUMENT_COUNT_KEY } from "#/db/schema/network-stats";
 import {
+  BODY_POOL_CAP,
+  documentMetaRankSql,
+  documentMetaVectorSql,
+  TITLE_POOL_CAP,
+} from "#/server/reader/document-search";
+import {
   buildFollowFeedCandidateSql,
   buildTagOverlapScoresSql,
   countNetworkDocuments,
@@ -268,6 +274,118 @@ async function selectTagAnchorDocument(): Promise<{
     publicationUri: (row["publication_uri"] as string | null) ?? null,
   };
 }
+
+/**
+ * Article search.
+ *
+ * Two regressions to guard, both measured on prod before the ranked path
+ * landed:
+ *  - The title arm must be served by `documents_meta_search_idx`. It matches an
+ *    *expression*, so the planner only uses the index when the query repeats
+ *    that expression verbatim — and when it stops matching, nothing fails, the
+ *    query just degrades to a sequential scan of every document.
+ *  - A broad single word matches ~100k documents. Ordering that whole match set
+ *    took 16s (`q=ai`); the per-arm pool caps are what bound it, so a plan whose
+ *    arms exceed their caps means a LIMIT stopped being an optimization barrier.
+ */
+const SEARCH_TITLE_QUERY =
+  process.env.FEED_PERF_SEARCH_TITLE_QUERY ??
+  "Making Feeds: Custom Logic Requests";
+const SEARCH_BROAD_QUERY = process.env.FEED_PERF_SEARCH_BROAD_QUERY ?? "ai";
+
+/** Selective queries rank their whole match set; 151 rows measured at ~10ms warm. */
+const SEARCH_BUDGET_MS = Number(process.env.FEED_PERF_SEARCH_BUDGET_MS ?? 400);
+
+/**
+ * Looser than {@link SEARCH_BUDGET_MS}: the capped arms still touch ~900 heap
+ * rows on a cold page store. The real guard is that this is nowhere near the
+ * 16s it replaced.
+ */
+const SEARCH_BROAD_BUDGET_MS = Number(
+  process.env.FEED_PERF_SEARCH_BROAD_BUDGET_MS ?? 1500,
+);
+
+const META_VECTOR = documentMetaVectorSql(
+  sql`d.title`,
+  sql`d.description`,
+  sql`d.tags`,
+);
+
+/** The candidate pool + ranking, mirroring `searchArticles`. */
+function buildSearchPoolSql(query: string): SQL {
+  const tsq = sql`websearch_to_tsquery('english', ${query})`;
+  const pooledMeta = documentMetaVectorSql(
+    sql`pool.title`,
+    sql`pool.description`,
+    sql`pool.tags`,
+  );
+  return sql`
+    select pool.uri
+    from (
+      (select d.uri, d.title, d.description, d.tags, d.published_at
+       from documents d
+       where d.deleted = false and (${META_VECTOR}) @@ ${tsq}
+       limit ${sql.raw(String(TITLE_POOL_CAP))})
+      union
+      (select d.uri, d.title, d.description, d.tags, d.published_at
+       from documents d
+       where d.deleted = false and d.search_vector @@ ${tsq}
+       limit ${sql.raw(String(BODY_POOL_CAP))})
+    ) pool
+    order by ${documentMetaRankSql(pooledMeta, tsq)} desc,
+             pool.published_at desc, pool.uri desc
+    limit 21
+  `;
+}
+
+describe.skipIf(!RUN)("article search — EXPLAIN", () => {
+  test("the title arm rides documents_meta_search_idx", async () => {
+    const plan = await explainSql(sql`
+      select d.uri from documents d
+      where d.deleted = false
+        and (${META_VECTOR}) @@ websearch_to_tsquery('english', ${SEARCH_TITLE_QUERY})
+      limit ${sql.raw(String(TITLE_POOL_CAP))}
+    `);
+
+    assertNoSeqScanOnDocuments(plan);
+    if (!plan.includes("documents_meta_search_idx")) {
+      expect.fail(
+        `The title arm is not using documents_meta_search_idx. Either the ` +
+          `index has not been built on this database (see ` +
+          `scripts/search-relevance-indexes.sql) or the query expression has ` +
+          `drifted from the indexed one. Full plan:\n\n${plan}`,
+      );
+    }
+  }, 30_000);
+
+  test("a selective query ranks its whole match set within budget", async () => {
+    const plan = await explainSql(buildSearchPoolSql(SEARCH_TITLE_QUERY));
+
+    assertNoSeqScanOnDocuments(plan);
+    assertExecTimeUnder(plan, SEARCH_BUDGET_MS);
+  }, 30_000);
+
+  test("a broad query stays bounded by the pool caps", async () => {
+    const plan = await explainSql(buildSearchPoolSql(SEARCH_BROAD_QUERY));
+
+    assertNoSeqScanOnDocuments(plan);
+    assertExecTimeUnder(plan, SEARCH_BROAD_BUDGET_MS);
+
+    // Every arm must stop at its cap. `actual rows=N` above the cap means a
+    // LIMIT stopped acting as an optimization barrier and the outer ORDER BY
+    // got pushed down into the arm — the 16s shape.
+    const cap = Math.max(TITLE_POOL_CAP, BODY_POOL_CAP);
+    const overCap = [...plan.matchAll(/rows=(\d+) loops=1/g)]
+      .map((match) => Number(match[1]))
+      .filter((rows) => rows > cap * 1.5);
+    if (overCap.length > 0) {
+      expect.fail(
+        `A pool arm returned ${overCap.join(", ")} rows against a ${cap} cap — ` +
+          `the LIMIT is no longer bounding the scan. Full plan:\n\n${plan}`,
+      );
+    }
+  }, 30_000);
+});
 
 async function explainCandidate({
   unreadForDid,

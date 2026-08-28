@@ -2,8 +2,18 @@ import { isDid } from "@atcute/lexicons/syntax";
 import { infiniteQueryOptions, queryOptions } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
-import { and, desc, eq, ilike, inArray, isNull, or, sql } from "drizzle-orm";
-import { alias } from "drizzle-orm/pg-core";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  ilike,
+  inArray,
+  isNull,
+  or,
+  sql,
+} from "drizzle-orm";
+import { alias, union } from "drizzle-orm/pg-core";
 import { z } from "zod";
 
 import { STANDARD_NSID } from "#/lib/atproto/nsids";
@@ -29,13 +39,37 @@ import {
 } from "#/server/mutes/mutes";
 import { observe } from "#/server/observability/log";
 import { attachReaderSpanContext } from "#/server/observability/span-context.ts";
+import type { FriendPerson } from "#/server/reader/bsky-friends";
 import { attachCommentCountsToArticles } from "#/server/reader/document-comments";
+import {
+  AUTHOR_POOL_CAP,
+  BODY_POOL_CAP,
+  documentMetaRankSql,
+  documentMetaVectorFor,
+  documentTierSql,
+  isSearchRankingEnabled,
+  SEARCH_POOL_CAP,
+  searchQueryShape,
+  shouldUseAuthorArm,
+  TITLE_POOL_CAP,
+} from "#/server/reader/document-search";
+import {
+  PEOPLE_RESULT_LIMIT,
+  profileNameMatchSql,
+  searchPeople as searchPeopleRows,
+} from "#/server/reader/people-search";
 import {
   discoverEligiblePublicationWhere,
   notExcludedPublicationArticleWhere,
   notWebBridgeArticleWhere,
   notWebBridgePublicationOwnerWhere,
 } from "#/server/reader/publication-filters";
+import {
+  PUBLICATION_COUNT_CAP,
+  publicationSearchMatchSql,
+  publicationSearchRankSql,
+  publicationSearchTerms,
+} from "#/server/reader/publication-search";
 import { attachViewerRecommendedToArticles } from "#/server/reader/recommended-by";
 import {
   documentSearchSnippetHeadline,
@@ -76,6 +110,11 @@ const resolveInput = z.object({
   handle: z.string().trim().min(1).max(253),
 });
 
+const searchPeopleInput = z.object({
+  q: z.string().trim().min(1).max(512),
+  limit: z.number().int().min(1).max(20).default(PEOPLE_RESULT_LIMIT),
+});
+
 export interface SearchPublicationsPage {
   query: string;
   items: Array<PublicationCard>;
@@ -87,6 +126,11 @@ export interface SearchArticlesPage {
   query: string;
   items: Array<ArticleCard>;
   nextOffset: number | null;
+}
+
+export interface SearchPeoplePage {
+  query: string;
+  items: Array<FriendPerson>;
 }
 
 export interface ResolvedPublicationPreview {
@@ -185,7 +229,29 @@ const searchArticles = createServerFn({ method: "GET" })
       span.set("offset", data.offset);
       const did = await attachReaderSpanContext(span, getRequest());
 
+      const rankingEnabled = isSearchRankingEnabled();
+      // Short-circuit past the pool: nothing beyond it was ever a candidate,
+      // and XRPC callers can hand us an arbitrary cursor.
+      if (rankingEnabled && data.offset >= SEARCH_POOL_CAP) {
+        span.set("count", 0);
+        return {
+          query: data.q,
+          items: [],
+          nextOffset: null,
+        } satisfies SearchArticlesPage;
+      }
+
+      const shape = searchQueryShape(data.q);
+      // `websearch_to_tsquery` stays the matcher — it carries the "quoted" and
+      // -negated operators. The phrase queries are scoring-only, so they can
+      // never drop a result that used to match.
       const tsq = sql`websearch_to_tsquery('english', ${data.q})`;
+      const phrase = shape.isMultiToken
+        ? sql`phraseto_tsquery('english', ${data.q})`
+        : null;
+      const simplePhrase = shape.isMultiToken
+        ? sql`phraseto_tsquery('simple', ${data.q})`
+        : null;
       const hints = documentQueryHints(data.q);
       // Resolve author/handle matches up front via a trigram-indexed profile
       // lookup, so the documents predicate stays single-table (index-served)
@@ -197,14 +263,25 @@ const searchArticles = createServerFn({ method: "GET" })
         data.q,
         hints,
       );
-      const matchClause = documentMatchSql(d, tsq, hints, authorMatch);
+      const handleHinted = Boolean(hints.authorHandle ?? hints.authorDid);
+      const useAuthorArm = shouldUseAuthorArm(
+        handleHinted,
+        authorMatch.dids.length,
+      );
+      const authorDids = [
+        ...new Set([
+          ...(useAuthorArm ? authorMatch.dids : []),
+          ...(hints.authorDid ? [hints.authorDid] : []),
+        ]),
+      ];
+      const authorPubUris = useAuthorArm ? authorMatch.pubUris : [];
       const [blockDid, muteDid] = await Promise.all([
         blockFilterDid(db, schema, did),
         muteFilterDid(db, schema, did),
       ]);
-      const articleWhere = and(
+      // Everything except the match itself, shared by every pool arm.
+      const baseWhere = and(
         eq(d.deleted, false),
-        matchClause,
         notExcludedPublicationArticleWhere(p),
         ...(excludeWebBridgeEnabled ? [notWebBridgeArticleWhere(schema)] : []),
         // Search is paginated, so blocked authors are excluded in SQL rather
@@ -230,21 +307,143 @@ const searchArticles = createServerFn({ method: "GET" })
           : []),
       );
 
-      // Page the bare document URIs (newest first) in an inner subquery, then
-      // join back to the real tables in the outer query for the card columns and
-      // the ts_headline snippets — so headline (and the recommend-count subquery)
+      // Columns every arm carries, so the tier and rank can be computed over
+      // the pooled rows without going back to the heap.
+      const poolColumns = {
+        description: d.description,
+        did: d.did,
+        publicationUri: d.publicationUri,
+        publishedAt: d.publishedAt,
+        tags: d.tags,
+        title: d.title,
+        uri: d.uri,
+      };
+      const poolArm = (where: ReturnType<typeof and>) =>
+        db
+          .select(poolColumns)
+          .from(d)
+          .leftJoin(p, eq(p.uri, d.publicationUri))
+          .where(where);
+
+      // The indexed meta-vector expression, repeated verbatim so the planner
+      // can serve the title arm from `documents_meta_search_idx`.
+      const indexedMetaVector = documentMetaVectorFor({
+        description: sql`${d.description}`,
+        tags: sql`${d.tags}`,
+        title: sql`${d.title}`,
+      });
+
+      const authorWhere =
+        authorDids.length > 0 || authorPubUris.length > 0
+          ? (or(
+              ...(authorDids.length > 0 ? [inArray(d.did, authorDids)] : []),
+              ...(authorPubUris.length > 0
+                ? [inArray(d.publicationUri, authorPubUris)]
+                : []),
+            ) ?? null)
+          : null;
+
+      // Each arm's LIMIT is an optimization barrier, so the outer ORDER BY can
+      // never be pushed down and the bound always holds. A selective query
+      // never reaches a cap and is therefore ranked over its whole match set.
+      const arms = [];
+      if (hints.uri) {
+        arms.push(poolArm(and(baseWhere, eq(d.uri, hints.uri))).limit(1));
+      } else if (hints.canonicalLike) {
+        arms.push(
+          poolArm(
+            and(baseWhere, ilike(d.canonicalUrl, hints.canonicalLike)),
+          ).limit(BODY_POOL_CAP),
+        );
+      } else if (rankingEnabled) {
+        arms.push(
+          poolArm(and(baseWhere, sql`(${indexedMetaVector}) @@ ${tsq}`)).limit(
+            TITLE_POOL_CAP,
+          ),
+          poolArm(and(baseWhere, sql`${d.searchVector} @@ ${tsq}`)).limit(
+            BODY_POOL_CAP,
+          ),
+        );
+        if (authorWhere) {
+          arms.push(
+            poolArm(and(baseWhere, authorWhere))
+              // Affordable to order here: `documents_did_published_idx` serves it.
+              .orderBy(desc(d.publishedAt), desc(d.uri))
+              .limit(AUTHOR_POOL_CAP),
+          );
+        }
+      } else {
+        // Legacy: one unbounded arm over the body vector, newest first.
+        arms.push(
+          poolArm(
+            and(
+              baseWhere,
+              or(
+                sql`${d.searchVector} @@ ${tsq}`,
+                ...(authorWhere ? [authorWhere] : []),
+              ) ?? sql`false`,
+            ),
+          ),
+        );
+      }
+
+      const [firstArm, secondArm, ...restArms] = arms;
+      if (!firstArm) throw new Error("search: no candidate pool arms");
+      const pool = (
+        secondArm ? union(firstArm, secondArm, ...restArms) : firstArm
+      ).as("pool");
+
+      const pooledMetaVector = documentMetaVectorFor({
+        description: sql`${pool.description}`,
+        tags: sql`${pool.tags}`,
+        title: sql`${pool.title}`,
+      });
+      // Constant scores under the legacy flag collapse the ordering below to
+      // exactly the previous `published_at DESC, uri DESC`.
+      const tier = rankingEnabled
+        ? documentTierSql({
+            authorDids,
+            authorPubUris,
+            did: sql`${pool.did}`,
+            exact: shape.query,
+            metaVector: pooledMetaVector,
+            phrase,
+            publicationUri: sql`${pool.publicationUri}`,
+            simplePhrase,
+            title: sql`${pool.title}`,
+            tsq,
+          })
+        : sql`0`;
+      const metaRank = rankingEnabled
+        ? documentMetaRankSql(pooledMetaVector, tsq)
+        : sql`0`;
+
+      // Rank and page the bare document URIs in an inner subquery, then join
+      // back to the real tables in the outer query for the card columns and the
+      // ts_headline snippets — so headline (and the recommend-count subquery)
       // run only for the `limit + 1` returned rows, not every matched document.
-      // The inner subquery projects only `uri` on purpose: `articleCardColumns`
-      // selects several columns that share an underlying name (`d.did`/`p.did`,
-      // owner vs. author `handle`/`avatar_url`), which would collide as subquery
-      // output columns. Fetching one extra row tells us whether a next page
-      // exists without an exact count(*) over the whole match set.
+      // The inner subquery projects narrow columns on purpose:
+      // `articleCardColumns` selects several columns that share an underlying
+      // name (`d.did`/`p.did`, owner vs. author `handle`/`avatar_url`), which
+      // would collide as subquery output columns. Fetching one extra row tells
+      // us whether a next page exists without an exact count(*) over the whole
+      // match set.
       const page = db
-        .select({ uri: d.uri })
-        .from(d)
-        .leftJoin(p, eq(p.uri, d.publicationUri))
-        .where(articleWhere)
-        .orderBy(desc(d.publishedAt), desc(d.uri))
+        .select({
+          metaRank: metaRank.as("meta_rank"),
+          publishedAt: pool.publishedAt,
+          tier: tier.as("tier"),
+          uri: pool.uri,
+        })
+        .from(pool)
+        // Ends in `uri` so this is a total order — otherwise OFFSET paging
+        // duplicates and drops rows across pages.
+        .orderBy(
+          desc(tier),
+          desc(metaRank),
+          desc(pool.publishedAt),
+          desc(pool.uri),
+        )
         .limit(data.limit + 1)
         .offset(data.offset)
         .as("page");
@@ -252,11 +451,12 @@ const searchArticles = createServerFn({ method: "GET" })
       const pageRows = await db
         .select({
           ...articleCardColumns(schema),
-          searchTitleHtml: documentSearchTitleHeadline(d.title, tsq),
+          searchTitleHtml: documentSearchTitleHeadline(d.title, tsq, phrase),
           searchSnippetHtml: documentSearchSnippetHeadline(
             d.description,
             d.textContent,
             tsq,
+            phrase,
           ),
           // Which of the document's tags the query actually hit — so the card can
           // show the matching tag (and mark it) even when it isn't a leading tag.
@@ -271,7 +471,19 @@ const searchArticles = createServerFn({ method: "GET" })
         .leftJoin(p, eq(p.uri, d.publicationUri))
         .leftJoin(pr, eq(pr.did, p.did))
         .leftJoin(pa, eq(pa.did, d.did))
-        .orderBy(desc(d.publishedAt), desc(d.uri));
+        // Re-stated from the page subquery's own projected columns so the two
+        // orderings physically cannot drift apart.
+        .orderBy(
+          desc(page.tier),
+          desc(page.metaRank),
+          desc(page.publishedAt),
+          desc(page.uri),
+        );
+
+      span.set("ranking", rankingEnabled ? "v2" : "legacy");
+      span.set("pool.arms", arms.length);
+      span.set("phrase", Boolean(phrase));
+      span.set("authorArm", Boolean(authorWhere));
 
       const hasMore = pageRows.length > data.limit;
       const articleRows = hasMore ? pageRows.slice(0, data.limit) : pageRows;
@@ -299,6 +511,32 @@ const searchArticles = createServerFn({ method: "GET" })
     }),
   );
 
+const searchPeople = createServerFn({ method: "GET" })
+  .middleware([dbMiddleware])
+  .validator(searchPeopleInput)
+  .handler(
+    observe("search.people", async ({ data, context }, span) => {
+      const { db, schema } = context;
+      span.set("q", data.q);
+      const did = await attachReaderSpanContext(span, getRequest());
+      const [blockDid, muteDid] = await Promise.all([
+        blockFilterDid(db, schema, did),
+        muteFilterDid(db, schema, did),
+      ]);
+
+      const items = await searchPeopleRows(db, schema, {
+        blockDid,
+        limit: data.limit,
+        muteDid,
+        q: data.q,
+        readerDid: did,
+      });
+      span.set("count", items.length);
+
+      return { query: data.q, items } satisfies SearchPeoplePage;
+    }),
+  );
+
 /** Indexed publication matches (FTS, URL, handle) with total count. */
 async function searchIndexedPublications(
   db: Db,
@@ -312,30 +550,50 @@ async function searchIndexedPublications(
   const st = schema.publicationStats;
   const pr = schema.profiles;
   const hints = publicationQueryHints(q);
-  const tsq = sql`websearch_to_tsquery('english', ${q})`;
+  const terms = publicationSearchTerms(q, {
+    like: hints.likePattern,
+    urlLike: hints.urlLike,
+  });
+  const armOptions = { matchDisplayName: true };
   const pubWhere = and(
     discoverEligiblePublicationWhere(p),
-    publicationMatchSql(p, pr, tsq, hints),
+    publicationSearchMatchSql(p, pr, terms, armOptions),
     ...(excludeWebBridge ? [notWebBridgePublicationOwnerWhere(schema)] : []),
   );
 
+  // Bound the count instead of counting the whole match set on every keystroke:
+  // walk at most `PUBLICATION_COUNT_CAP` matching rows and let the caller render
+  // a saturated total as "N+". Paging past the cap isn't worth a full count.
+  const countScan = db
+    .select({ one: sql<number>`1` })
+    .from(p)
+    .leftJoin(pr, eq(pr.did, p.did))
+    .where(pubWhere)
+    .limit(PUBLICATION_COUNT_CAP)
+    .as("pub_count_scan");
+
   const [countRow, publicationQueryRows] = await Promise.all([
-    db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(p)
-      .leftJoin(pr, eq(pr.did, p.did))
-      .where(pubWhere),
+    db.select({ count: sql<number>`count(*)::int` }).from(countScan),
     db
       .select({
         ...publicationCardColumns(schema),
-        searchNameHtml: publicationSearchNameHeadline(p.name, tsq),
-        searchSnippetHtml: publicationSearchSnippetHeadline(p.description, tsq),
+        searchNameHtml: publicationSearchNameHeadline(p.name, terms.tsq),
+        searchSnippetHtml: publicationSearchSnippetHeadline(
+          p.description,
+          terms.tsq,
+        ),
       })
       .from(p)
       .leftJoin(st, eq(st.publicationUri, p.uri))
       .leftJoin(pr, eq(pr.did, p.did))
       .where(pubWhere)
-      .orderBy(desc(publicationRankSql(p, pr, tsq, hints)))
+      // Rank alone is not a total order — publications tie constantly, and an
+      // unstable sort makes OFFSET paging duplicate and drop rows.
+      .orderBy(
+        desc(publicationSearchRankSql(p, pr, terms, armOptions)),
+        desc(sql`coalesce(${st.subscriberCount}, 0)`),
+        asc(p.uri),
+      )
       .limit(limit)
       .offset(offset),
   ]);
@@ -538,76 +796,6 @@ async function resolveAuthorMatches(
     ),
   ];
   return { dids, pubUris };
-}
-
-/**
- * Build the article match clause from {@link documentQueryHints} and the
- * pre-resolved {@link AuthorMatch}: an exact record/URL reference matches alone,
- * otherwise the FTS vector is OR-ed with the matched author DIDs / publications
- * (and an explicit author DID hint) so "alice.bsky.social" surfaces her
- * articles alongside ordinary title/body hits. Every arm is a `documents`
- * column, so the OR stays index-servable.
- */
-function documentMatchSql(
-  d: Schema["documents"],
-  tsq: ReturnType<typeof sql>,
-  hints: DocumentQueryHints,
-  authorMatch: AuthorMatch,
-) {
-  if (hints.uri) return eq(d.uri, hints.uri);
-  if (hints.canonicalLike) return ilike(d.canonicalUrl, hints.canonicalLike);
-
-  const parts = [sql`${d.searchVector} @@ ${tsq}`];
-  if (authorMatch.dids.length > 0) {
-    parts.push(inArray(d.did, authorMatch.dids));
-  }
-  if (authorMatch.pubUris.length > 0) {
-    parts.push(inArray(d.publicationUri, authorMatch.pubUris));
-  }
-  if (hints.authorDid) {
-    parts.push(eq(d.did, hints.authorDid));
-  }
-  return or(...parts) ?? sql`false`;
-}
-
-function publicationMatchSql(
-  p: Schema["publications"],
-  pr: Schema["profiles"],
-  tsq: ReturnType<typeof sql>,
-  hints: PublicationQueryHints,
-) {
-  const parts = [
-    sql`${p.searchVector} @@ ${tsq}`,
-    ilike(p.url, hints.likePattern),
-    ilike(pr.handle, hints.likePattern),
-    ilike(pr.displayName, hints.likePattern),
-  ];
-  if (hints.urlLike) {
-    parts.push(ilike(p.url, hints.urlLike));
-  }
-  if (parts.length === 0) return sql`false`;
-  return or(...parts) ?? sql`false`;
-}
-
-function publicationRankSql(
-  p: Schema["publications"],
-  pr: Schema["profiles"],
-  tsq: ReturnType<typeof sql>,
-  hints: PublicationQueryHints,
-) {
-  return sql`greatest(
-    case when ${p.searchVector} @@ ${tsq}
-      then ts_rank(${p.searchVector}, ${tsq})::real
-      else 0::real
-    end,
-    case when ${p.url} ilike ${hints.likePattern} then 0.2::real else 0::real end,
-    case when ${pr.handle} ilike ${hints.likePattern} then 0.15::real else 0::real end,
-    case when ${pr.displayName} ilike ${hints.likePattern} then 0.15::real else 0::real end${
-      hints.urlLike
-        ? sql`, case when ${p.url} ilike ${hints.urlLike} then 0.25::real else 0::real end`
-        : sql``
-    }
-  )`;
 }
 
 /** Resolve publications from the index, or live from the author's repo. */
@@ -885,7 +1073,7 @@ const searchLooseDocAccounts = createServerFn({ method: "GET" })
           and(
             eq(d.deleted, false),
             isNull(d.publicationUri),
-            or(ilike(pr.handle, like), ilike(pr.displayName, like)),
+            profileNameMatchSql(pr, like),
           ),
         )
         .groupBy(pr.did, pr.handle, pr.displayName, pr.avatarUrl)
@@ -950,7 +1138,21 @@ function searchLooseDocAccountsQueryOptions({
   });
 }
 
+function searchPeopleQueryOptions({
+  q = "",
+  limit = PEOPLE_RESULT_LIMIT,
+}: { q?: string; limit?: number } = {}) {
+  const trimmed = q.trim();
+  return queryOptions({
+    queryKey: ["search", "people", trimmed, limit] as const,
+    queryFn: async () => searchPeople({ data: { q: trimmed, limit } }),
+    enabled: trimmed.length > 0,
+  });
+}
+
 export const searchApi = {
+  searchPeople,
+  searchPeopleQueryOptions,
   searchPublications,
   searchArticles,
   searchPublicationsQueryOptions,

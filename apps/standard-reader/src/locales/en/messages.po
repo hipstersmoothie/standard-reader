@@ -560,6 +560,7 @@ msgid "Subscribing…"
 msgstr "Subscribing…"
 
 #: src/routes/_layout.friends.tsx
+#: src/routes/_layout.search.tsx
 msgid "People"
 msgstr "People"
 
@@ -1713,6 +1714,10 @@ msgstr "For more about how {SITE_NAME} works, see the <0>About</0> page. For que
 msgid "Compact"
 msgstr "Compact"
 
+#: src/components/guide/pages/finding-guide-page.tsx
+msgid "Search covers publication names, people's handles, topics, and the text of articles. Results are split into publications, people, and articles, and each result shows the passage that matched with your words highlighted, so you can tell a real match from a coincidence without opening it. Articles come back in order of how well they answer the query — a title that matches what you typed comes before an article that merely mentions those words somewhere in its body — so searching a headline you half-remember finds it."
+msgstr "Search covers publication names, people's handles, topics, and the text of articles. Results are split into publications, people, and articles, and each result shows the passage that matched with your words highlighted, so you can tell a real match from a coincidence without opening it. Articles come back in order of how well they answer the query — a title that matches what you typed comes before an article that merely mentions those words somewhere in its body — so searching a headline you half-remember finds it."
+
 #: src/components/reader/blocked-notice.tsx
 msgid "This account"
 msgstr "This account"
@@ -1904,8 +1909,8 @@ msgid "your collection"
 msgstr "your collection"
 
 #: src/components/guide/pages/finding-guide-page.tsx
-msgid "Search covers publication names, people's handles, topics, and the text of articles. Results are split into publications and articles, and each result shows the passage that matched with your words highlighted, so you can tell a real match from a coincidence without opening it."
-msgstr "Search covers publication names, people's handles, topics, and the text of articles. Results are split into publications and articles, and each result shows the passage that matched with your words highlighted, so you can tell a real match from a coincidence without opening it."
+#~ msgid "Search covers publication names, people's handles, topics, and the text of articles. Results are split into publications and articles, and each result shows the passage that matched with your words highlighted, so you can tell a real match from a coincidence without opening it."
+#~ msgstr "Search covers publication names, people's handles, topics, and the text of articles. Results are split into publications and articles, and each result shows the passage that matched with your words highlighted, so you can tell a real match from a coincidence without opening it."
 
 #: src/components/reader/about-view.tsx
 msgid "“…made to be read, and not to be measured.”"
@@ -5080,6 +5085,10 @@ msgstr "Recommended articles"
 msgid "You blocked this account, so their writing is hidden."
 msgstr "You blocked this account, so their writing is hidden."
 
+#: src/routes/_layout.search.tsx
+msgid "Loading people matches"
+msgstr "Loading people matches"
+
 #: src/components/user-settings-view.tsx
 msgid "Light, dark, match your system — or Custom, to choose a palette of your own."
 msgstr "Light, dark, match your system — or Custom, to choose a palette of your own."
@@ -5355,6 +5364,10 @@ msgstr "In practice this means a reader who subscribes mid-run can come back aft
 #: src/components/reader/article-below-fold.tsx
 msgid "Keep reading"
 msgstr "Keep reading"
+
+#: src/components/guide/pages/finding-guide-page.tsx
+msgid "Search results for a query, split into Publications, People, and Articles sections, with the matching words highlighted inside each result's excerpt."
+msgstr "Search results for a query, split into Publications, People, and Articles sections, with the matching words highlighted inside each result's excerpt."
 
 #: src/components/guide/pages/reading-guide-page.tsx
 msgid "put the article in your Saved queue."
@@ -7896,8 +7909,8 @@ msgid "everything new in the order it was published, with tabs for unread, your 
 msgstr "everything new in the order it was published, with tabs for unread, your subscriptions, and the whole network."
 
 #: src/components/guide/pages/finding-guide-page.tsx
-msgid "Search results for a query, split into a Publications section and an Articles section, with the matching words highlighted inside each result's excerpt."
-msgstr "Search results for a query, split into a Publications section and an Articles section, with the matching words highlighted inside each result's excerpt."
+#~ msgid "Search results for a query, split into a Publications section and an Articles section, with the matching words highlighted inside each result's excerpt."
+#~ msgstr "Search results for a query, split into a Publications section and an Articles section, with the matching words highlighted inside each result's excerpt."
 
 #: src/components/reader/atstore-review-prompt.tsx
 msgid "Do you like Standard Reader?"

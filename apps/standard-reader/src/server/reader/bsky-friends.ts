@@ -603,7 +603,7 @@ async function displayNamesForDids(
 }
 
 /** Which of `dids` the reader already follows on standard.reader. */
-async function userFollowedDids(
+export async function userFollowedDids(
   db: Db,
   schema: Schema,
   readerDid: string,

@@ -695,7 +695,34 @@ Build each on hip-ui components + StyleX tokens (no raw HTML/inline styles).
 - [x] **Search** — editorial field, live results split into Publications + Articles. Route `/search` with URL `?q=`; paginated search APIs with full counts; load more (publications) + infinite scroll (articles); reuses `PubDirectoryRow` + `ArticleRow`.
 - [x] **Search result snippets** — `ts_headline` excerpts in `searchArticles` /
       `searchPublications`; highlighted `<mark>` terms in `ArticleRow` and
-      `PubDirectoryRow` on `/search`.
+      `PubDirectoryRow` on `/search`. Phrase-aware: when the source contains the whole
+      query the excerpt highlights the phrase, and an unmarked snippet falls back to the
+      description rather than rendering the head of the body.
+- [x] **Search relevance ranking** — articles were ordered `published_at DESC` with no
+      `ts_rank` at all, so a title you already knew ranked below every newer body match
+      ([bug report](https://userinput.app/d/did:plc:fip3nyk6tjo3senpq4ei2cxw/3mtky44lqwi2h)).
+      Tier ladder + `ts_rank` over a title/description/tags vector in
+      `server/reader/document-search.ts`, backed by the `documents_meta_search_idx`
+      expression index (migration 0044, built CONCURRENTLY out of band via
+      `scripts/search-relevance-indexes.sql`). Behind `SEARCH_RANKING=legacy` until the
+      index is built on prod.
+- [x] **Bounded search candidate pool** — a common single word (`q=ai`, ~100k matches)
+      cost **16s** on prod: recency ordering never avoided the work, it still
+      bitmap-scanned and heap-fetched the whole match set. Per-arm `LIMIT` caps
+      (title/body/author) bound it to ~600ms. A 30-day window makes it _worse_ (36s — the
+      lossy GIN bitmap poisons the `BitmapAnd`); `work_mem` 4MB → 256MB only gets 16.1s →
+      9.2s, so it's a follow-up, not a substitute.
+- [x] **Search: People results** — `server/reader/people-search.ts`, reusing
+      `FriendPersonRow`. Replaces the old behavior where any plain-text query ≥3 chars
+      ILIKE'd handles/display names and OR'd up to 50 authors' documents into the article
+      results, indistinguishable from real text matches.
+- [x] **Shared publication search ranking** — `/search` and Discover's directory had
+      separately drifted weights (0.2/0.15/0.15 vs 0.12/0.1/0.05), and both used an
+      un-normalized `ts_rank` (~0.05–0.1) that lost to a hardcoded 0.15 substring bonus.
+      One `server/reader/publication-search.ts`, normalization 32, plus a tie-break —
+      rank alone is not a total order, so OFFSET paging duplicated and dropped rows.
+- [ ] **Retire `SEARCH_RANKING`** — one release after the ranked path is default, delete
+      the flag and the legacy pool arm rather than maintaining two ranking codepaths.
 - [x] **Viewer's own recommend indicator** — document items across every surface (home, latest,
       discover, tag, publication, author, search, saved, history, article byline, and mention hover
       cards) **fill and tint the heart on the document's like count** when the signed-in reader has

@@ -9,6 +9,10 @@ export interface PerfFixtures {
   searchQuery: string;
   /** A handle/name-shaped query exercising the author pre-resolution path. */
   searchAuthorQuery: string;
+  /** A full article title — the case the relevance ranking exists for. */
+  searchTitleQuery: string;
+  /** A common single word, whose match set is large enough to need the pool caps. */
+  searchBroadQuery: string;
 }
 
 function routeFromRecordUri(
@@ -61,6 +65,11 @@ export function loadPerfFixtures(): PerfFixtures {
     searchQuery: process.env.PERF_TEST_SEARCH_QUERY?.trim() || "reader",
     searchAuthorQuery:
       process.env.PERF_TEST_SEARCH_AUTHOR_QUERY?.trim() || "stdout.dev",
+    searchTitleQuery:
+      process.env.PERF_TEST_SEARCH_TITLE_QUERY?.trim() ||
+      "Making Feeds: Custom Logic Requests",
+    searchBroadQuery:
+      process.env.PERF_TEST_SEARCH_BROAD_QUERY?.trim() || "design",
   };
 }
 
