@@ -4,7 +4,6 @@ import type * as LedgerModule from "./ledger.ts";
 import type { ClaimResult } from "./ledger.ts";
 import type * as ThreadModule from "./thread.ts";
 import type { PostThreadOptions, StrongRef } from "./thread.ts";
-import { threadRkeys, weekAnchor } from "./week.ts";
 
 vi.mock("../../db/index.ts", () => ({ db: {} }));
 vi.mock("../../db/schema.ts", () => ({}));
@@ -28,9 +27,18 @@ vi.mock("./client.ts", () => ({
 }));
 
 const postThread = vi.fn();
+const findWeekThreadRoot = vi.fn(
+  async (
+    _client: unknown,
+    _repo: string,
+    _periodKey: string,
+  ): Promise<string | null> => null,
+);
 vi.mock("./thread.ts", async (importOriginal) => ({
   ...(await importOriginal<typeof ThreadModule>()),
   fetchThumbBlob: async () => null,
+  findWeekThreadRoot: (client: unknown, repo: string, periodKey: string) =>
+    findWeekThreadRoot(client, repo, periodKey),
   postThread: (
     client: unknown,
     repo: string,
@@ -109,6 +117,7 @@ beforeEach(() => {
   delete process.env.THREAD_FORCE;
   weekInReviewArticles.mockResolvedValue([card(1), card(2)]);
   claimWeek.mockResolvedValue(granted);
+  findWeekThreadRoot.mockResolvedValue(null);
   postThread.mockImplementation(
     async (
       _client: unknown,
@@ -138,24 +147,64 @@ describe("runWeeklyThread once-a-week guard", () => {
     expect(summary.skipped).toBeUndefined();
   });
 
-  it("writes to the week's rkeys, not fresh ones", async () => {
+  it("never hands postThread record keys to write over", async () => {
     await runWeeklyThread();
 
     const options = postThread.mock.calls[0][3] as PostThreadOptions;
-    expect(options.rkeys).toEqual(threadRkeys("2026-W33", 3));
-    expect(options.createdAt).toBe(weekAnchor("2026-W33").toISOString());
+    expect(options).not.toHaveProperty("rkeys");
   });
 
-  it("would rewrite the same records if it ever ran twice", async () => {
-    await runWeeklyThread();
-    vi.setSystemTime(new Date("2026-08-16T09:30:00.000Z")); // Sunday re-run
+  it("stamps the real posting time, not a backdated week anchor", async () => {
+    vi.setSystemTime(new Date("2026-08-16T09:30:00.000Z")); // Sunday catch-up
+
     await runWeeklyThread();
 
-    const [first, second] = postThread.mock.calls.map(
-      (call) => call[3] as PostThreadOptions,
+    const options = postThread.mock.calls[0][3] as PostThreadOptions;
+    expect(options.createdAt).toBe("2026-08-16T09:30:00.000Z");
+  });
+
+  it("checks the repo for this week's thread before composing anything", async () => {
+    await runWeeklyThread();
+
+    expect(findWeekThreadRoot).toHaveBeenCalledWith(
+      expect.anything(),
+      "did:plc:bot",
+      "2026-W33",
     );
-    expect(second.rkeys).toEqual(first.rkeys);
-    expect(second.createdAt).toBe(first.createdAt);
+    expect(findWeekThreadRoot.mock.invocationCallOrder[0]).toBeLessThan(
+      postThread.mock.invocationCallOrder[0],
+    );
+  });
+
+  it("stands down and repairs the ledger when the repo already has the thread", async () => {
+    // The claim was granted — a wiped row, a different DB, a hand-run — but the
+    // thread is demonstrably already out. Posting a second one is unfixable, so
+    // the repo wins over the ledger.
+    findWeekThreadRoot.mockResolvedValue(
+      "at://did:plc:bot/app.bsky.feed.post/existing",
+    );
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    const summary = await runWeeklyThread();
+
+    expect(postThread).not.toHaveBeenCalled();
+    expect(markRootPosted).toHaveBeenCalledWith(
+      "2026-W33",
+      "at://did:plc:bot/app.bsky.feed.post/existing",
+    );
+    expect(summary.skipped).toBe("already-posted");
+    expect(summary.rootUri).toBe(
+      "at://did:plc:bot/app.bsky.feed.post/existing",
+    );
+  });
+
+  it("does not post when it cannot tell whether the thread already exists", async () => {
+    findWeekThreadRoot.mockRejectedValue(new Error("PDS down"));
+
+    await expect(runWeeklyThread()).rejects.toThrow("PDS down");
+
+    expect(postThread).not.toHaveBeenCalled();
+    expect(releaseWeek).toHaveBeenCalledWith("2026-W33", "failed", "PDS down");
   });
 
   it("posts nothing when this week's thread already went out", async () => {
@@ -265,12 +314,19 @@ describe("runWeeklyThread once-a-week guard", () => {
     expect(summary.periodKey).toBeNull();
   });
 
-  it("overrides the guard when THREAD_FORCE is set", async () => {
+  it("overrides both guards when THREAD_FORCE is set", async () => {
     process.env.THREAD_FORCE = "1";
+    findWeekThreadRoot.mockResolvedValue(
+      "at://did:plc:bot/app.bsky.feed.post/existing",
+    );
+    vi.spyOn(console, "warn").mockImplementation(() => {});
 
     await runWeeklyThread();
 
     expect(claimWeek).toHaveBeenCalledWith("2026-W33", { force: true });
+    // A forced run posts a genuinely new second thread — it does not reach for
+    // the first one's records to rewrite them.
+    expect(findWeekThreadRoot).not.toHaveBeenCalled();
     expect(postThread).toHaveBeenCalledTimes(1);
   });
 });

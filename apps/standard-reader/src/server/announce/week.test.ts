@@ -1,7 +1,6 @@
-import { parse as parseTid, validate as validateTid } from "@atcute/tid";
 import { describe, expect, it } from "vitest";
 
-import { isoWeekKey, threadRkeys, weekAnchor } from "./week.ts";
+import { isoWeekKey } from "./week.ts";
 
 describe("isoWeekKey", () => {
   it("gives every day of one ISO week the same key", () => {
@@ -44,59 +43,19 @@ describe("isoWeekKey", () => {
   });
 });
 
-describe("weekAnchor", () => {
-  it("is that week's Friday at the cron hour", () => {
-    expect(weekAnchor("2026-W33").toISOString()).toBe(
-      "2026-08-14T16:00:00.000Z",
-    );
-    expect(weekAnchor("2026-W34").toISOString()).toBe(
-      "2026-08-21T16:00:00.000Z",
-    );
-  });
-
-  it("round-trips with isoWeekKey", () => {
-    for (const key of ["2025-W01", "2026-W01", "2026-W33", "2026-W53"]) {
-      expect(isoWeekKey(weekAnchor(key))).toBe(key);
-    }
-  });
-
-  it("rejects anything that isn't an ISO week key", () => {
-    expect(() => weekAnchor("2026-08-14")).toThrow(/Not an ISO week key/);
-  });
-});
-
-describe("threadRkeys", () => {
-  it("gives the same week the same keys every time", () => {
-    expect(threadRkeys("2026-W33", 6)).toEqual(threadRkeys("2026-W33", 6));
-  });
-
-  it("gives different weeks different keys", () => {
-    const a = threadRkeys("2026-W33", 6);
-    const b = threadRkeys("2026-W34", 6);
-    expect(a.filter((rkey) => b.includes(rkey))).toEqual([]);
-  });
-
-  it("mints valid, distinct, thread-ordered TIDs", () => {
-    const rkeys = threadRkeys("2026-W33", 6);
-    expect(rkeys).toHaveLength(6);
-    expect(new Set(rkeys).size).toBe(6);
-    for (const rkey of rkeys) expect(validateTid(rkey)).toBe(true);
-    // TIDs sort lexicographically by timestamp, so thread order is rkey order.
-    expect(rkeys.toSorted()).toEqual(rkeys);
-  });
-
-  it("seeds the TIDs from the week's anchor instant", () => {
-    const [first] = threadRkeys("2026-W33", 6);
-    expect(parseTid(first).timestamp).toBe(
-      weekAnchor("2026-W33").getTime() * 1000,
-    );
-  });
-
-  it("keeps a shorter thread's keys a prefix of a longer one's", () => {
-    // An empty-ish week that later re-posts with more articles must reuse the
-    // keys it already wrote rather than shifting every post to a new record.
-    expect(threadRkeys("2026-W33", 4)).toEqual(
-      threadRkeys("2026-W33", 6).slice(0, 4),
-    );
+describe("isoWeekKey ordering", () => {
+  // `findWeekThreadRoot` walks the bot's posts newest-first and stops when a
+  // record's week sorts before the one it wants, so the keys must compare.
+  it("compares lexicographically in calendar order", () => {
+    const keys = [
+      "2025-W52",
+      "2026-W01",
+      "2026-W09",
+      "2026-W10",
+      "2026-W33",
+      "2026-W53",
+      "2027-W01",
+    ];
+    expect(keys.toSorted()).toEqual(keys);
   });
 });

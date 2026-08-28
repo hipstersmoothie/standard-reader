@@ -16,6 +16,13 @@ export const BSKY_POST_MAX_GRAPHEMES = 300;
 /** Collection NSID for a Bluesky post record. */
 export const BSKY_FEED_POST = "app.bsky.feed.post";
 
+/**
+ * Stable phrase every thread root carries. The article count in front of it
+ * varies, so this is the substring — not the whole line — that the repo-side
+ * duplicate guard (`findWeekThreadRoot`) matches a root post on.
+ */
+export const THREAD_ROOT_MARKER = "hottest reads on Standard Reader this week";
+
 /** External-embed thumbnails must fit the PDS blob ceiling (~1 MB). */
 export const MAX_THUMB_BYTES = 976_560;
 

@@ -31,10 +31,16 @@ Check items off as they land.
     `RECONCILE_INTERVAL_HOURS`). Config file `railway.reconcile.json`.
   - `thread-cron` — `pnpm thread:post` on `0 16 * * 5`, the weekly "hottest articles" Bluesky
     thread. Config file `railway.thread.json`. **A cron service's start command also runs on every
-    redeploy and restart**, which is how this job posted the same thread several times a week; it
-    is now idempotent at both layers — an ISO-week claim in `weekly_thread_runs` before it
-    composes, and `putRecord` at week-derived rkeys so a run that gets past the claim overwrites
-    that week's thread instead of publishing another. `THREAD_FORCE=1` re-posts deliberately.
+    redeploy and restart**, which is how this job posted the same thread several times a week. It
+    is guarded twice, both times _before_ it writes: an ISO-week claim in `weekly_thread_runs`, and
+    a read of the bot's own repo for a root already carrying this week's marker
+    (`findWeekThreadRoot`) for when the ledger cannot be trusted. `THREAD_FORCE=1` posts a second
+    thread deliberately. The posts themselves are `createRecord` at fresh TIDs and are **never**
+    rewritten — an earlier fix wrote them at week-derived rkeys with `putRecord` so a re-run would
+    "upsert" the thread, which silently mutated posts the network had already replied to and liked:
+    their strongRefs pin a `cid`, so every overwrite orphaned them, and AppViews that had indexed an
+    earlier version disagreed with the PDS about what the post said. A published post is immutable;
+    a duplicate is prevented before the write or not at all.
   - **Runbook gotcha:** Railway auto-detects only the root `railway.json`, so every non-web service
     in this monorepo needs its **Config File Path** set explicitly (Dashboard → service → Settings →
     Config-as-code, or `serviceInstanceUpdate{ railwayConfigFile }` via the GraphQL API) to
