@@ -480,6 +480,8 @@ importers:
         specifier: ^7.4.1
         version: 7.4.1
 
+  examples/xrpc-client: {}
+
   packages/cli:
     dependencies:
       '@atcute/atproto':
