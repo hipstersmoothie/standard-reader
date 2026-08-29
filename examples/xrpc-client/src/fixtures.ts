@@ -51,6 +51,16 @@ async function publicationSiteUrl(
   return body?.publication?.url;
 }
 
+/** The owner of a publication — anyone but the caller, who cannot follow self. */
+async function publicationOwnerDid(
+  client: StandardReaderClient,
+  publicationUri: string | undefined,
+): Promise<string | undefined> {
+  if (!publicationUri) return undefined;
+  const authority = /^at:\/\/([^/]+)/.exec(publicationUri)?.[1];
+  return authority;
+}
+
 async function ownListUri(
   client: StandardReaderClient,
   did: string,
@@ -78,6 +88,9 @@ export async function discoverFixtures(
     // The calling reader — reader-state examples must describe *this* session,
     // which is exactly what an unauthenticated call cannot answer.
     readerDid: did,
+    followTargetDid:
+      env("EXAMPLE_FOLLOW_TARGET_DID") ??
+      (await publicationOwnerDid(client, publicationUri)),
     labelerDid:
       env("EXAMPLE_LABELER_DID") ?? "did:plc:ar7c4by46qjdydhdevvrndac",
     listUri: env("EXAMPLE_LIST_URI") ?? (await ownListUri(client, did)),

@@ -45,6 +45,7 @@ import {
 } from "#/server/reader/saved-lists";
 
 import { requireScopes } from "../auth";
+import { InvalidRequestError } from "../errors";
 import {
   bodyStringArray,
   optionalBodyField,
@@ -194,7 +195,10 @@ export async function handleFollowUser(ctx: XrpcRequestContext) {
   requireScopes(auth, [XRPC_WRITE_SCOPES.userFollow]);
   const subjectDid = requireBodyField(ctx.body, "did");
   if (subjectDid === auth.did) {
-    throw new Error("You can't follow yourself.");
+    // A plain Error here is masked as "Internal error" by `handleXrpcError`,
+    // which refuses to leak non-XRPCError messages — so the caller learned
+    // nothing. This is a bad request, and it should say so.
+    throw new InvalidRequestError("You can't follow yourself.");
   }
   const createdAt = new Date().toISOString();
   const { uri, cid } = await putUserFollowRecord(

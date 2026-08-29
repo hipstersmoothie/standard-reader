@@ -548,7 +548,7 @@ export const API_DOCS_CATALOG: Array<ApiDocsCatalogEntry> = [
     [{ name: "did", type: "did", required: true }],
     {
       autoRun: false,
-      body: (f) => ({ did: f.readerDid }),
+      body: (f) => ({ did: f.followTargetDid }),
     },
   ),
   p(
@@ -558,7 +558,7 @@ export const API_DOCS_CATALOG: Array<ApiDocsCatalogEntry> = [
     [{ name: "did", type: "did", required: true }],
     {
       autoRun: false,
-      body: (f) => ({ did: f.readerDid }),
+      body: (f) => ({ did: f.followTargetDid }),
     },
   ),
   p(

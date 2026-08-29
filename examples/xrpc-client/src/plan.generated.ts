@@ -58,7 +58,7 @@ export const XRPC_EXAMPLE_PLAN: Array<XrpcExampleMethod> = [
   {
     auth: "required",
     body: {
-      did: "{{readerDid}}",
+      did: "{{followTargetDid}}",
     },
     description: "Follow another user by DID.",
     kind: "procedure",
@@ -597,7 +597,7 @@ export const XRPC_EXAMPLE_PLAN: Array<XrpcExampleMethod> = [
   {
     auth: "required",
     body: {
-      did: "{{readerDid}}",
+      did: "{{followTargetDid}}",
     },
     description: "Unfollow a user by DID.",
     kind: "procedure",

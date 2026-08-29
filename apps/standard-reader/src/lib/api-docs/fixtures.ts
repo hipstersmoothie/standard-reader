@@ -42,5 +42,7 @@ export function loadApiDocsFixtures(): ApiDocsFixtures {
     listUri: env("API_DOCS_FIXTURE_LIST_URI") ?? defaults.listUri,
     resolveUrl: env("API_DOCS_FIXTURE_URL") ?? defaults.resolveUrl,
     labelerDid: env("API_DOCS_FIXTURE_LABELER_DID") ?? defaults.labelerDid,
+    followTargetDid:
+      env("API_DOCS_FIXTURE_FOLLOW_TARGET_DID") ?? defaults.followTargetDid,
   };
 }

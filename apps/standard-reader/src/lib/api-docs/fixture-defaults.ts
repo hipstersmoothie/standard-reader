@@ -9,6 +9,7 @@ export type ApiDocsFixtures = {
   listUri: string;
   resolveUrl: string;
   labelerDid: string;
+  followTargetDid: string;
 };
 
 export function getDefaultApiDocsFixtures(): ApiDocsFixtures {
@@ -24,6 +25,9 @@ export function getDefaultApiDocsFixtures(): ApiDocsFixtures {
     // Bluesky's own moderation service — a labeler every reader can resolve,
     // so the labeler examples work without a Standard Reader-specific fixture.
     labelerDid: "did:plc:ar7c4by46qjdydhdevvrndac",
+    // Distinct from `readerDid`: `followUser` rejects following yourself, so a
+    // "Run" on the docs page has to name somebody else.
+    followTargetDid: "did:plc:example-author",
   };
 }
 
