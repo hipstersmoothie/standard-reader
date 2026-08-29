@@ -1,0 +1,33 @@
+-- Make article search rankable.
+--
+-- `/search` ordered articles by `published_at DESC` and never called `ts_rank`,
+-- so searching a title you already knew buried it under every newer document
+-- that happened to mention the same words. Ranking needs a vector to rank
+-- *against*, and `documents.search_vector` is the wrong one: it folds in
+-- `text_content`, so it is TOASTed for any real article and `ts_rank` over it
+-- costs a de-TOAST per row (measured on prod: ~190k extra buffer reads for a
+-- single broad query).
+--
+-- This indexes the title/description/tags half of that vector — the same
+-- lexemes and the same A/B/B weights as the first three arms of
+-- `search_vector`, minus the weight-C body text. Title and description average
+-- ~67 and ~34 chars, so the result stays inline and is cheap to both rank and
+-- match against.
+--
+-- An expression index rather than a second generated column on purpose:
+-- `ALTER TABLE ... ADD COLUMN ... GENERATED ALWAYS AS ... STORED` rewrites the
+-- whole table under ACCESS EXCLUSIVE, and `documents` is now ~14 GB across heap
+-- and indexes — that rewrite would run inside Railway's `preDeployCommand` with
+-- traffic waiting on it. 0013 could afford that pattern; this can't.
+--
+-- The query in `src/server/reader/document-search.ts` must repeat this
+-- expression verbatim for the planner to match the index, so both are rendered
+-- from `documentMetaVectorSql` and `document-search.test.ts` asserts this file
+-- still contains what that function produces.
+--
+-- Created CONCURRENTLY on prod out-of-band via
+-- `scripts/search-relevance-indexes.sql` (a plain CREATE INDEX takes a long
+-- lock on `documents`, which is ~3.4M rows); IF NOT EXISTS makes this a no-op
+-- there while still building it on fresh/local/CI databases. Same pattern as
+-- `documents_tags_norm_idx` in 0014 and the trigram indexes in 0003.
+CREATE INDEX IF NOT EXISTS "documents_meta_search_idx" ON "documents" USING gin ((setweight(to_tsvector('english', coalesce(title, '')), 'A') || setweight(to_tsvector('english', coalesce(description, '')), 'B') || setweight(to_tsvector('english', coalesce(immutable_array_to_string(tags), '')), 'B')));

@@ -309,6 +309,13 @@
       "when": 1787207677749,
       "tag": "0043_slimy_tusk",
       "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1787207677750,
+      "tag": "0044_document_meta_search_idx",
+      "breakpoints": true
     }
   ]
 }

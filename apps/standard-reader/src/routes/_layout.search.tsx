@@ -26,9 +26,12 @@ import { usePullToRefresh } from "#/components/reader/pull-to-refresh";
 import { searchApi } from "#/integrations/tanstack-query/api-search.functions";
 import { getPublicUrlClient } from "#/lib/public-url";
 import { pageSocialMeta } from "#/lib/site-metadata";
+import { PEOPLE_MIN_QUERY_LENGTH } from "#/server/reader/people-search";
+import { PUBLICATION_COUNT_CAP } from "#/server/reader/publication-search";
 
 import {
   ArticleRow,
+  FriendPersonRow,
   PubDirectoryRow,
   PubDirectoryRowSkeleton,
 } from "../components/reader/cards";
@@ -232,6 +235,33 @@ function PublicationResultsSkeleton({
   );
 }
 
+function PeopleResultsSkeleton({
+  isFirstSection = false,
+}: {
+  isFirstSection?: boolean;
+}) {
+  const { t } = useLingui();
+  return (
+    <div
+      aria-busy="true"
+      aria-label={t`Loading people matches`}
+      {...stylex.props(styles.section, isFirstSection && styles.sectionFirst)}
+    >
+      <SectionHead
+        kicker={<Trans>People</Trans>}
+        title={<SectionTitleSkeleton />}
+      />
+      {Array.from({ length: SKELETON_ROWS }, (_, index) => (
+        <PubDirectoryRowSkeleton
+          key={index}
+          isFirstInSection={index === 0}
+          isLast={index === SKELETON_ROWS - 1}
+        />
+      ))}
+    </div>
+  );
+}
+
 function ArticleResultsSkeleton({
   isFirstSection = false,
 }: {
@@ -338,6 +368,7 @@ function SearchPending() {
       {trimmedQ ? (
         <div {...stylex.props(styles.results)}>
           <PublicationResultsSkeleton />
+          <PeopleResultsSkeleton />
           <ArticleResultsSkeleton />
         </div>
       ) : null}
@@ -347,6 +378,12 @@ function SearchPending() {
 
 function formatMatchCount(i18n: I18n, shown: number, total: number): string {
   if (total === 0) return i18n._(msg`No matches`);
+  // The publication count is bounded (see `PUBLICATION_COUNT_CAP`), so a
+  // saturated total means "at least this many" — say so rather than claiming
+  // an exact figure we deliberately stopped counting at.
+  if (total >= PUBLICATION_COUNT_CAP) {
+    return formatShownCount(i18n, shown, true);
+  }
   if (shown < total) {
     return i18n._(msg`${shown} of ${total} matches`);
   }
@@ -415,6 +452,10 @@ function Search() {
     }),
   });
 
+  const { data: peoplePage, isFetching: peopleFetching } = useQuery({
+    ...searchApi.searchPeopleQueryOptions({ q: debouncedQ }),
+  });
+
   const {
     data: articlePages,
     fetchNextPage,
@@ -475,10 +516,15 @@ function Search() {
   const inputPending = trimmedInput !== debouncedQ;
   const pubsReady = pubPage?.query === debouncedQ;
   const articlesReady = articlePages?.pages[0]?.query === debouncedQ;
+  // Below the trigram floor the server returns nothing, so never wait on it.
+  const peopleEligible = debouncedQ.length >= PEOPLE_MIN_QUERY_LENGTH;
+  const peopleReady = !peopleEligible || peoplePage?.query === debouncedQ;
   const pubsPending = hasQuery && !pubsReady && (inputPending || pubsFetching);
   const articlesPending =
     hasQuery && !articlesReady && (inputPending || articlesFetching);
-  const resultsReady = hasQuery && pubsReady && articlesReady;
+  const peoplePending =
+    hasQuery && !peopleReady && (inputPending || peopleFetching);
+  const resultsReady = hasQuery && pubsReady && articlesReady && peopleReady;
 
   const publicationCountText = i18n._(
     msg`${plural(pubTotal, { one: "# publication", other: "# publications" })}`,
@@ -496,13 +542,21 @@ function Search() {
     : t`Try "climate", "typography", or a handle like stdout.dev`;
 
   const remainingPublications = pubTotal - publications.length;
+  const people =
+    peopleReady && peoplePage?.query === debouncedQ ? peoplePage.items : [];
   const showEmpty =
-    resultsReady && publications.length === 0 && articles.length === 0;
+    resultsReady &&
+    publications.length === 0 &&
+    people.length === 0 &&
+    articles.length === 0;
   const showPublicationSection =
     pubsPending || publications.length > 0 || pubTotal > 0;
+  const showPeopleSection = peoplePending || people.length > 0;
   const showArticleSection = articlesPending || articles.length > 0;
   const publicationSectionFirst = showPublicationSection;
-  const articleSectionFirst = !showPublicationSection && showArticleSection;
+  const peopleSectionFirst = !showPublicationSection && showPeopleSection;
+  const articleSectionFirst =
+    !showPublicationSection && !showPeopleSection && showArticleSection;
 
   return (
     <ReaderContent>
@@ -563,6 +617,32 @@ function Search() {
                     </Button>
                   </div>
                 )}
+              </section>
+            )
+          ) : null}
+
+          {showPeopleSection ? (
+            peoplePending ? (
+              <PeopleResultsSkeleton isFirstSection={peopleSectionFirst} />
+            ) : (
+              <section
+                {...stylex.props(
+                  styles.section,
+                  peopleSectionFirst && styles.sectionFirst,
+                )}
+              >
+                <SectionHead
+                  kicker={<Trans>People</Trans>}
+                  title={formatShownCount(i18n, people.length, false)}
+                />
+                {people.map((person, index) => (
+                  <FriendPersonRow
+                    key={person.did}
+                    person={person}
+                    isFirstInSection={index === 0}
+                    isLast={index === people.length - 1}
+                  />
+                ))}
               </section>
             )
           ) : null}

@@ -1237,7 +1237,14 @@ function ArticleSearchDek({
   article: ArticleCard;
   style: stylex.StyleXStyles;
 }) {
-  if (article.searchSnippetHtml) {
+  // Guard on an actual highlight, mirroring `ArticleTitleContent`. Search asks
+  // `ts_headline` for the whole phrase when the body contains it, so a snippet
+  // can legitimately come back with nothing marked — and an unmarked snippet is
+  // just the head of the body, which reads worse than the description.
+  if (
+    article.searchSnippetHtml &&
+    tsHeadlineHasMatch(article.searchSnippetHtml)
+  ) {
     return <SearchHeadline html={article.searchSnippetHtml} style={style} />;
   }
 

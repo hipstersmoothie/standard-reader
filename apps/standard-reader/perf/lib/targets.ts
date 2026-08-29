@@ -87,6 +87,22 @@ function sharedRouteDefs(): Array<SharedRouteDef> {
       budgetMs: 4000,
     },
     {
+      // The reported bug: a full title the reader already knows.
+      id: "search.title",
+      name: "Search (title)",
+      path: `/search?q=${encodeURIComponent(fixtures.searchTitleQuery)}`,
+      budgetMs: 4000,
+    },
+    {
+      // A common word matches ~100k documents. Before the pool caps this shape
+      // took 16s on prod, so it is the regression guard rather than a stretch
+      // goal — no budget would have passed.
+      id: "search.broad",
+      name: "Search (broad)",
+      path: `/search?q=${encodeURIComponent(fixtures.searchBroadQuery)}`,
+      budgetMs: 5000,
+    },
+    {
       id: "about",
       name: "About",
       path: "/about",

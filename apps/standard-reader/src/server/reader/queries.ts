@@ -19,7 +19,6 @@ import {
   desc,
   eq,
   exists,
-  ilike,
   inArray,
   isNotNull,
   isNull,
@@ -66,6 +65,11 @@ import {
   notWebBridgePublicationOwnerWhere,
   notWebBridgePublicationWhere,
 } from "#/server/reader/publication-filters";
+import {
+  publicationSearchMatchSql,
+  publicationSearchRankSql,
+  publicationSearchTerms,
+} from "#/server/reader/publication-search";
 import {
   ROTATION_POOL_MULTIPLIER,
   rotateRail,
@@ -2448,19 +2452,15 @@ export async function discoverDirectoryPublications(
   }
 
   const trimmedQuery = query?.trim() ?? "";
-  const tsq = trimmedQuery
-    ? sql`websearch_to_tsquery('english', ${trimmedQuery})`
+  // Shared with `/search`'s Publications section so the two directory searches
+  // can't drift apart again — see `publication-search.ts`.
+  const searchTerms = trimmedQuery
+    ? publicationSearchTerms(trimmedQuery)
     : null;
-  const likePattern = trimmedQuery ? `%${trimmedQuery}%` : null;
+  const searchArms = { effectiveTopicExpr: effectiveTopic };
 
-  if (trimmedQuery && tsq && likePattern) {
-    const searchMatch = or(
-      sql`${p.searchVector} @@ ${tsq}`,
-      ilike(p.url, likePattern),
-      ilike(pr.handle, likePattern),
-      sql`lower(btrim(coalesce(${effectiveTopic}, ''))) like lower(${likePattern})`,
-    );
-    if (searchMatch) conds.push(searchMatch);
+  if (searchTerms) {
+    conds.push(publicationSearchMatchSql(p, pr, searchTerms, searchArms));
   }
 
   const sortName = publicationSortNameSql(p.name, p.url);
@@ -2476,21 +2476,12 @@ export async function discoverDirectoryPublications(
             asc(p.uri),
           ];
 
-  const orderBy =
-    trimmedQuery && tsq && likePattern
-      ? [
-          desc(sql`greatest(
-            case when ${p.searchVector} @@ ${tsq}
-              then ts_rank(${p.searchVector}, ${tsq})::real
-              else 0::real
-            end,
-            case when ${p.url} ilike ${likePattern} then 0.12::real else 0::real end,
-            case when ${pr.handle} ilike ${likePattern} then 0.1::real else 0::real end,
-            case when lower(btrim(coalesce(${effectiveTopic}, ''))) like lower(${likePattern}) then 0.05::real else 0::real end
-          )`),
-          ...sortTieBreak,
-        ]
-      : sortTieBreak;
+  const orderBy = searchTerms
+    ? [
+        desc(publicationSearchRankSql(p, pr, searchTerms, searchArms)),
+        ...sortTieBreak,
+      ]
+    : sortTieBreak;
 
   const rows = await db
     .select({
