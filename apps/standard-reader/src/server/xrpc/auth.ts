@@ -66,6 +66,24 @@ function parseAuthorization(
   };
 }
 
+/**
+ * Whether a bearer token is an inter-service auth JWT rather than a PDS access
+ * token. A service JWT names the method it may call (`lxm`) and identifies its
+ * subject through `iss` alone — an access token always carries `sub`.
+ */
+function looksLikeServiceJwt(token: string): boolean {
+  const parts = token.split(".");
+  if (parts.length !== 3) return false;
+  try {
+    const payload = JSON.parse(
+      Buffer.from(parts[1], "base64url").toString("utf8"),
+    ) as { lxm?: unknown; sub?: unknown };
+    return typeof payload.lxm === "string" && payload.sub === undefined;
+  } catch {
+    return false;
+  }
+}
+
 async function getSigningKey(
   iss: string,
   _forceRefresh: boolean,
@@ -109,7 +127,14 @@ async function getSigningKey(
   if (!verificationMethod?.publicKeyMultibase) {
     throw new AuthRequiredError("Unable to resolve signing key for issuer");
   }
-  return verificationMethod.publicKeyMultibase;
+  // `verifyJwt` hands this straight to `@atproto/crypto`'s `verifySignature`,
+  // which parses it as a **did:key**. A DID document publishes the bare
+  // multibase key (`zQ3sh…`), so returning it unwrapped made every real
+  // PDS-minted service JWT fail with `BadJwtSignature` — silently, because
+  // `authenticateRequest` swallowed that and retried the token as an access
+  // token. Every `atproto-proxy` call therefore fell back to anonymous.
+  const multibase = verificationMethod.publicKeyMultibase;
+  return multibase.startsWith("did:key:") ? multibase : `did:key:${multibase}`;
 }
 
 /**
@@ -241,6 +266,14 @@ export async function authenticateRequest(
   }
 
   if (parsed.scheme === "bearer") {
+    if (looksLikeServiceJwt(parsed.token)) {
+      // Unambiguously a service JWT, so its verification error is the real
+      // answer. Falling through here reported "Unable to resolve PDS for
+      // access token" (a service JWT has no `sub`) and, on optionally
+      // authenticated queries, downgraded the caller to anonymous instead of
+      // telling them their token was rejected.
+      return verifyServiceJwt(parsed.token, lxm);
+    }
     try {
       return await verifyServiceJwt(parsed.token, lxm);
     } catch {

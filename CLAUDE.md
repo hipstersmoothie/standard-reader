@@ -30,6 +30,8 @@ apps/extension/         # the browser extension (WXT); shares app source via #/ 
 packages/               # workspace packages: design-system (shared UI) + the
                         #   publishable @standard-reader/renderer-* family + lexicons
 services/               # standalone labeler services (claudeslop, botlabeler)
+examples/xrpc-client/   # dependency-free external client for the AppView + the
+                        #   end-to-end XRPC conformance run
 scripts/                # workspace-level tooling (package publishing)
 config/oxlint/          # shared lint config — applies to the whole repo
 ```
@@ -37,8 +39,8 @@ config/oxlint/          # shared lint config — applies to the whole repo
 **Reading paths in this file:** bare `src/…`, `scripts/…`, `perf/…`, `drizzle/…`, and
 `lexicons/…` paths are relative to **`apps/standard-reader/`** unless written out in full.
 
-The workspace root (`pnpm-workspace.yaml`) covers `apps/*`, `extension`, `packages/*`, and
-`services/*`. Lint and format run **repo-wide from the root** (one oxlint/oxfmt config); build,
+The workspace root (`pnpm-workspace.yaml`) covers `apps/*`, `examples/*`, `extension`,
+`packages/*`, and `services/*`. Lint and format run **repo-wide from the root** (one oxlint/oxfmt config); build,
 typecheck, test, and every app task are `pnpm --filter` passthroughs — so `pnpm dev`, `pnpm build`,
 `pnpm test`, `pnpm db:migrate`, etc. still work unchanged from the root.
 
@@ -245,6 +247,16 @@ read when data exists in the DB.**
   need no credentials; writing runs `standard-reader login` (browser OAuth, scoped to
   `site.standard.document` updates) or falls back to
   `STANDARD_READER_IDENTIFIER` + `STANDARD_READER_APP_PASSWORD`.
+- **XRPC end-to-end** — `pnpm --filter @standard-reader/example-xrpc-client start` logs in with
+  an app password and exercises **every** XRPC method against a real deployment, plus a transport
+  probe over `direct` / `atproto-proxy` / service-JWT auth. Run it after any change to
+  `src/server/xrpc/`. The plan is generated (`pnpm --filter standard-reader xrpc:example-plan`)
+  from `API_DOCS_CATALOG`, which `registry.test.ts` holds to full parity with `XRPC_REGISTRY` —
+  so a new endpoint cannot ship without something exercising it. See
+  `examples/xrpc-client/README.md`.
+  **A status code is not an authentication check:** most reader-state queries are optionally
+  authenticated and answer `200 {"active":false}` to a stranger, so any test of a credential must
+  assert on data only the signed-in reader can see.
 - `pnpm perf:test` — Playwright load-regression suite (`perf/load-regression.spec.ts`); dev server
   must be running (`pnpm dev`). Writes JSON reports to `perf/results/` (`latest-guest.json`,
   `latest-signed-in.json`, `latest-comparison.json`).

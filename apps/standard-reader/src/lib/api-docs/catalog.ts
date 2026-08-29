@@ -488,6 +488,38 @@ export const API_DOCS_CATALOG: Array<ApiDocsCatalogEntry> = [
     },
   ),
 
+  // Labelers
+  q(
+    "app.standard-reader.getLabeler",
+    "Reader state",
+    "Resolve one labeler by DID or handle, with the calling reader's subscription state.",
+    "optional-did",
+    [{ name: "actor", type: "at-identifier", required: true }],
+    {
+      autoRun: true,
+      params: (f) => ({ actor: f.labelerDid }),
+    },
+  ),
+  q(
+    "app.standard-reader.getLabelers",
+    "Reader state",
+    "Labelers the calling reader is subscribed to, each resolved to a labeler view.",
+    "optional-did",
+    [{ name: "did", type: "did" }],
+    { autoRun: true, params: (f) => ({ did: f.readerDid }) },
+  ),
+  q(
+    "app.standard-reader.getLabels",
+    "Reader state",
+    "Labels on a set of subjects, from the calling reader's subscribed labelers.",
+    "optional-did",
+    [{ name: "uris", type: "at-uri[]", required: true }],
+    {
+      autoRun: true,
+      params: (f) => ({ uris: f.documentUri }),
+    },
+  ),
+
   // Write procedures
   p(
     "app.standard-reader.followPublication",
@@ -516,7 +548,7 @@ export const API_DOCS_CATALOG: Array<ApiDocsCatalogEntry> = [
     [{ name: "did", type: "did", required: true }],
     {
       autoRun: false,
-      body: (f) => ({ did: f.readerDid }),
+      body: (f) => ({ did: f.followTargetDid }),
     },
   ),
   p(
@@ -526,7 +558,7 @@ export const API_DOCS_CATALOG: Array<ApiDocsCatalogEntry> = [
     [{ name: "did", type: "did", required: true }],
     {
       autoRun: false,
-      body: (f) => ({ did: f.readerDid }),
+      body: (f) => ({ did: f.followTargetDid }),
     },
   ),
   p(
@@ -607,6 +639,26 @@ export const API_DOCS_CATALOG: Array<ApiDocsCatalogEntry> = [
     {
       autoRun: false,
       body: (f) => ({ list: f.listUri }),
+    },
+  ),
+  p(
+    "app.standard-reader.subscribeLabeler",
+    "Write procedures",
+    "Subscribe the calling reader to a labeler service.",
+    [{ name: "labeler", type: "did", required: true }],
+    {
+      autoRun: false,
+      body: (f) => ({ labeler: f.labelerDid }),
+    },
+  ),
+  p(
+    "app.standard-reader.unsubscribeLabeler",
+    "Write procedures",
+    "Unsubscribe the calling reader from a labeler service.",
+    [{ name: "labeler", type: "did", required: true }],
+    {
+      autoRun: false,
+      body: (f) => ({ labeler: f.labelerDid }),
     },
   ),
   p(

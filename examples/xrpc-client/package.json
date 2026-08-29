@@ -1,0 +1,16 @@
+{
+  "name": "@standard-reader/example-xrpc-client",
+  "version": "0.0.0",
+  "private": true,
+  "description": "A minimal external client for the Standard Reader AppView, and the end-to-end conformance runner for its XRPC surface.",
+  "type": "module",
+  "engines": {
+    "node": ">=22.6"
+  },
+  "scripts": {
+    "start": "pnpm -C ../../apps/standard-reader exec tsx --env-file-if-exists=.env ../../examples/xrpc-client/src/bin.ts",
+    "conformance": "pnpm -C ../../apps/standard-reader exec tsx --env-file-if-exists=.env ../../examples/xrpc-client/src/bin.ts conformance",
+    "transports": "pnpm -C ../../apps/standard-reader exec tsx --env-file-if-exists=.env ../../examples/xrpc-client/src/bin.ts transports",
+    "typecheck": "pnpm -C ../../apps/standard-reader exec tsc -p ../../examples/xrpc-client/tsconfig.json --noEmit"
+  }
+}

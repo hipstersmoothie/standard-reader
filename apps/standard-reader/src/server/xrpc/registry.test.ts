@@ -93,6 +93,20 @@ describe("XRPC registry", () => {
     }
   });
 
+  it("documents every registered method in the public API docs catalog", () => {
+    // One-directional parity used to be enough, so the five labeler methods
+    // shipped undocumented. The catalog is also what generates the example
+    // client's conformance plan (`examples/xrpc-client`) — a method missing
+    // from it is a method nothing exercises end to end.
+    const documented = new Set(API_DOCS_CATALOG.map((entry) => entry.nsid));
+    for (const nsid of XRPC_REGISTRY.keys()) {
+      expect(
+        documented.has(nsid),
+        `${nsid} missing from API_DOCS_CATALOG`,
+      ).toBe(true);
+    }
+  });
+
   it("assigns OAuth scopes to every write procedure", () => {
     for (const [nsid, entry] of XRPC_REGISTRY.entries()) {
       if (entry.method === "procedure") {

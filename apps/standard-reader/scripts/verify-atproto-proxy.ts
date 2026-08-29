@@ -9,7 +9,9 @@
  * 1. The published DID document must carry a bare-origin serviceEndpoint —
  *    a path suffix (`…/xrpc`) makes every PDS's undici dispatcher throw
  *    before sending a byte, surfacing as 502 UpstreamFailure.
- * 2. A query proxied through the PDS (`atproto-proxy` header) must succeed.
+ * 2. A query proxied through the PDS (`atproto-proxy` header) must succeed
+ *    *and be authenticated* — an optionally-authenticated query answers 200 to
+ *    an anonymous caller, so the check reads back a bookmark it just created.
  * 3. A write proxied through the PDS must fail with our explanatory error —
  *    never a 502 (unreachable) or bare 401 (reads as "bad token").
  * 4. A direct write with the account's own token must succeed (then clean up).
@@ -109,16 +111,36 @@ async function main(): Promise<void> {
     return { status: response.status, body };
   };
 
-  // 3. Proxied query must work.
+  // 3. Proxied query must work — and must actually *authenticate*.
+  //
+  // A 200 alone proves nothing here: `getBookmarkStatus` is an
+  // optionally-authenticated query that answers `{"active":false}` to an
+  // anonymous caller. When service-JWT verification was broken, every proxied
+  // call silently degraded to anonymous and still returned 200 — which is
+  // exactly what this script used to accept. So bookmark the document first
+  // and require the proxied read to *see* it.
+  const setup = await call(
+    APPVIEW_BASE,
+    "app.standard-reader.bookmarkDocument",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ document: DOC }),
+    },
+  );
+  if (setup.status !== 200) {
+    throw new Error(`Could not seed the bookmark fixture: ${setup.status}`);
+  }
   const proxiedRead = await call(
     pds,
     `app.standard-reader.getBookmarkStatus?document=${encodeURIComponent(DOC)}`,
     { proxy: true },
   );
   check(
-    "getBookmarkStatus via atproto-proxy returns 200",
-    proxiedRead.status === 200,
-    `got ${proxiedRead.status}: ${proxiedRead.body.slice(0, 200)}`,
+    "getBookmarkStatus via atproto-proxy reads as the caller",
+    proxiedRead.status === 200 &&
+      (JSON.parse(proxiedRead.body) as { active?: boolean }).active === true,
+    `got ${proxiedRead.status}: ${proxiedRead.body.slice(0, 200)} (\`active:false\` means the proxied caller was treated as anonymous)`,
   );
 
   // 4. Proxied write must fail with the explanatory error, not 502/bare 401.
@@ -134,7 +156,7 @@ async function main(): Promise<void> {
     `got ${proxiedWrite.status}: ${proxiedWrite.body.slice(0, 200)}`,
   );
 
-  // 5. Direct write + cleanup with the same token.
+  // 5. Direct write must still work (step 3 already seeded one), then clean up.
   const directWrite = await call(
     APPVIEW_BASE,
     "app.standard-reader.bookmarkDocument",
