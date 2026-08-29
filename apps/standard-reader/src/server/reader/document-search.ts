@@ -174,11 +174,16 @@ export function documentTierSql(input: DocumentScoreInput): SQL {
   arms.push(sql`when ${input.metaVector} @@ ${input.tsq} then 3`);
 
   const authorArms: Array<SQL> = [];
+  // `in`, not `= any(...)`: Drizzle expands a JS array in a template into a
+  // parenthesised tuple (`($1, $2)`), which `in` takes and `any()` rejects as a
+  // syntax error. These arms are only built when an author matched, so
+  // `searchDocuments` 500'd for exactly the queries that matched a handle or
+  // display name ("reader" did; "atproto" did not) and looked fine otherwise.
   if (input.authorDids.length > 0) {
-    authorArms.push(sql`${input.did} = any(${input.authorDids})`);
+    authorArms.push(sql`${input.did} in ${input.authorDids}`);
   }
   if (input.authorPubUris.length > 0) {
-    authorArms.push(sql`${input.publicationUri} = any(${input.authorPubUris})`);
+    authorArms.push(sql`${input.publicationUri} in ${input.authorPubUris}`);
   }
   if (authorArms.length > 0) {
     arms.push(sql`when ${sql.join(authorArms, sql` or `)} then 1`);
